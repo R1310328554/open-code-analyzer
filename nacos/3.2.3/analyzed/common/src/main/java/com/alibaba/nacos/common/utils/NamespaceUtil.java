@@ -19,6 +19,8 @@ package com.alibaba.nacos.common.utils;
 import com.alibaba.nacos.api.common.Constants;
 
 /**
+ * 命名空间（租户）工具：Config 模块将空字符串租户归一化为默认 public namespace；
+ * Naming 与 Config 对 tenant 语义不同，本类仅限 Config 侧使用。
  * namespace(tenant) util. Because config and naming treat namespace(tenant) differently, this tool class can only be
  * used by the config module.
  *
@@ -40,6 +42,7 @@ public class NamespaceUtil {
      *
      * @param tenant namespace(tenant) id
      * @return java.lang.String A namespace(tenant) string processed
+      * <p>Config 命名空间归一化；详见类级说明。</p>
      */
     public static String processNamespaceParameter(String tenant) {
         if (isNeedTransferNamespace(tenant)) {
@@ -48,6 +51,7 @@ public class NamespaceUtil {
         return tenant.trim();
     }
     
+    /** 判断租户 ID 是否应转换为默认 public namespace（空或空白时为 true） */
     public static boolean isNeedTransferNamespace(String tenant) {
         return StringUtils.isBlank(tenant);
     }
@@ -65,6 +69,7 @@ public class NamespaceUtil {
      * Get default namespace id.
      *
      * @return namespace id
+      * <p>Config 命名空间归一化；详见类级说明。</p>
      */
     public static String getNamespaceDefaultId() {
         return NamespaceUtil.namespaceDefaultId;
@@ -75,6 +80,7 @@ public class NamespaceUtil {
      *
      * @param namespaceId to check namespaceId
      * @return {@code true} if equals default namespaceId, otherwise {@code false}.
+      * <p>Config 命名空间归一化；详见类级说明。</p>
      */
     public static boolean isDefaultNamespaceId(String namespaceId) {
         return StringUtils.equals(namespaceId, getNamespaceDefaultId());

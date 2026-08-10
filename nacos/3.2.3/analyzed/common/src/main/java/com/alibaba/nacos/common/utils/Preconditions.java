@@ -19,6 +19,8 @@ package com.alibaba.nacos.common.utils;
 import java.util.Objects;
 
 /**
+ * 前置条件校验工具：表达式为 false 时抛出 {@link IllegalArgumentException}，
+ * 语义类似 Guava {@code Preconditions.checkArgument}，用于参数合法性快速失败。
  * Check precondition, throws an {@code IllegalArgumentException} If the conditions are not met.
  * @author zzq
  * @date 2021/7/29
@@ -33,6 +35,7 @@ public class Preconditions {
      * @param expression a boolean expression
      * @param errorMessage the exception message to use if the check fails
      * @throws IllegalArgumentException if {@code expression} is false
+      * <p>前置条件校验；详见类级说明。</p>
      */
     public static void checkArgument(boolean expression, Object errorMessage) {
         if (Objects.isNull(errorMessage)) {
@@ -49,6 +52,7 @@ public class Preconditions {
      * @param errorMessageTemplate the exception message template to use if the check fails
      * @param errorMessageArgs the arguments to be substituted into the message template.
      * @throws IllegalArgumentException if {@code expression} is false
+      * <p>前置条件校验；详见类级说明。</p>
      */
     public static void checkArgument(boolean expression, String errorMessageTemplate,
         Object... errorMessageArgs) {

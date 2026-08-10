@@ -26,6 +26,8 @@ import java.util.function.Predicate;
 import java.util.function.BiFunction;
 
 /**
+ * Map/Dictionary 辅助工具：空安全判空、按值非 null/非空条件写入、
+ * 带双参 BiFunction 的 computeIfAbsent 及按谓词条件删除键等常用操作。
  * Map utils.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -42,6 +44,7 @@ public class MapUtil {
      *
      * @param map the collection to check, may be null
      * @return true if empty or null
+      * <p>Map 空安全与条件写入；详见类级说明。</p>
      */
     public static boolean isEmpty(Map map) {
         return (map == null || map.isEmpty());
@@ -54,6 +57,7 @@ public class MapUtil {
      *
      * @param coll the collection to check, may be null
      * @return true if empty or null
+      * <p>Map 空安全与条件写入；详见类级说明。</p>
      */
     public static boolean isEmpty(Dictionary coll) {
         return (coll == null || coll.isEmpty());
@@ -66,6 +70,7 @@ public class MapUtil {
      *
      * @param map the collection to check, may be null
      * @return true if non-null and non-empty
+      * <p>Map 空安全与条件写入；详见类级说明。</p>
      */
     public static boolean isNotEmpty(Map map) {
         return !isEmpty(map);
@@ -78,6 +83,7 @@ public class MapUtil {
      *
      * @param coll the collection to check, may be null
      * @return true if non-null and non-empty
+      * <p>Map 空安全与条件写入；详见类级说明。</p>
      */
     public static boolean isNotEmpty(Dictionary coll) {
         return !isEmpty(coll);
@@ -89,6 +95,7 @@ public class MapUtil {
      * @param target target map
      * @param key    key
      * @param value  value
+      * <p>Map 空安全与条件写入；详见类级说明。</p>
      */
     public static void putIfValNoNull(Map target, Object key, Object value) {
         Objects.requireNonNull(key, "key");
@@ -103,6 +110,7 @@ public class MapUtil {
      * @param target target map
      * @param key    key
      * @param value  value
+      * <p>Map 空安全与条件写入；详见类级说明。</p>
      */
     public static void putIfValNoEmpty(Map target, Object key, Object value) {
         Objects.requireNonNull(key, "key");
@@ -140,6 +148,7 @@ public class MapUtil {
      * @param param1          function's parameter value1.
      * @param param2          function's parameter value1.
      * @return
+      * <p>Map 空安全与条件写入；详见类级说明。</p>
      */
     @NotThreadSafe
     public static <K, C, V, T> V computeIfAbsent(Map<K, V> target, K key,
@@ -165,6 +174,7 @@ public class MapUtil {
      * @param <K>         key type
      * @param <V>         value type
      * @return value
+      * <p>Map 空安全与条件写入；详见类级说明。</p>
      */
     public static <K, V> V removeKey(Map<K, V> map, K key, Predicate<V> removeJudge) {
         return map.computeIfPresent(key, (k, v) -> removeJudge.test(v) ? null : v);

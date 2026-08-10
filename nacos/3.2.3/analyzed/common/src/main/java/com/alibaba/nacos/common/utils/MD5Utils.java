@@ -20,6 +20,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
+ * MD5 摘要工具：计算字节或字符串的 MD5 并输出小写十六进制字符串，
+ * 用于配置校验、缓存键生成等轻量哈希场景（非密码学安全用途）。
  * MD5 util.
  *
  * @author nacos
@@ -29,6 +31,7 @@ public class MD5Utils {
     private MD5Utils() {
     }
     
+    /** 小写十六进制字符表，供 {@link #encodeHexString(byte[])} 使用 */
     private static final char[] DIGITS_LOWER =
         {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd',
             'e', 'f'};
@@ -39,6 +42,7 @@ public class MD5Utils {
      * @param bytes byte arrays
      * @return MD5 hex string of input
      * @throws NoSuchAlgorithmException if can't load md5 digest spi.
+      * <p>MD5 十六进制摘要；详见类级说明。</p>
      */
     public static String md5Hex(byte[] bytes) throws NoSuchAlgorithmException {
         MessageDigest messageDigest = MessageDigest.getInstance("MD5");
@@ -51,6 +55,7 @@ public class MD5Utils {
      * @param value  value
      * @param encode encode charset of input
      * @return MD5 hex string of input
+      * <p>MD5 十六进制摘要；详见类级说明。</p>
      */
     public static String md5Hex(String value, String encode) {
         try {
@@ -62,6 +67,7 @@ public class MD5Utils {
     
     /**
      * Convert a byte array into a visible string.
+      * <p>MD5 十六进制摘要；详见类级说明。</p>
      */
     public static String encodeHexString(byte[] bytes) {
         int l = bytes.length;

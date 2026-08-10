@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 
 /**
+ * 基于 Jackson 的 JSON 序列化/反序列化工具：全局 {@link ObjectMapper} 忽略未知字段、
+ * 序列化时省略 null，统一抛出 {@link NacosSerializationException}/{@link NacosDeserializationException}。
  * Json utils implement by Jackson.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -43,6 +45,7 @@ public final class JacksonUtils {
     private JacksonUtils() {
     }
     
+    /** 全局共享 ObjectMapper，静态块中配置反序列化与 null 序列化策略 */
     static ObjectMapper mapper = new ObjectMapper();
     
     static {
@@ -56,6 +59,7 @@ public final class JacksonUtils {
      * @param obj obj
      * @return json string
      * @throws NacosSerializationException if transfer failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static String toJson(Object obj) {
         try {
@@ -71,6 +75,7 @@ public final class JacksonUtils {
      * @param obj obj
      * @return json string byte array
      * @throws NacosSerializationException if transfer failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static byte[] toJsonBytes(Object obj) {
         try {
@@ -88,6 +93,7 @@ public final class JacksonUtils {
      * @param <T>  General type
      * @return object
      * @throws NacosDeserializationException if deserialize failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static <T> T toObj(byte[] json, Class<T> cls) {
         try {
@@ -105,6 +111,7 @@ public final class JacksonUtils {
      * @param <T>  General type
      * @return object
      * @throws NacosDeserializationException if deserialize failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static <T> T toObj(byte[] json, Type cls) {
         try {
@@ -122,6 +129,7 @@ public final class JacksonUtils {
      * @param <T>         General type
      * @return object
      * @throws NacosDeserializationException if deserialize failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static <T> T toObj(InputStream inputStream, Class<T> cls) {
         try {
@@ -139,6 +147,7 @@ public final class JacksonUtils {
      * @param <T>           General type
      * @return object
      * @throws NacosDeserializationException if deserialize failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static <T> T toObj(byte[] json, TypeReference<T> typeReference) {
         try {
@@ -156,6 +165,7 @@ public final class JacksonUtils {
      * @param <T>  General type
      * @return object
      * @throws NacosDeserializationException if deserialize failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static <T> T toObj(String json, Class<T> cls) {
         try {
@@ -173,6 +183,7 @@ public final class JacksonUtils {
      * @param <T>  General type
      * @return object
      * @throws NacosDeserializationException if deserialize failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static <T> T toObj(String json, Type type) {
         try {
@@ -190,6 +201,7 @@ public final class JacksonUtils {
      * @param <T>           General type
      * @return object
      * @throws NacosDeserializationException if deserialize failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static <T> T toObj(String json, TypeReference<T> typeReference) {
         try {
@@ -207,6 +219,7 @@ public final class JacksonUtils {
      * @param <T>         General type
      * @return object
      * @throws NacosDeserializationException if deserialize failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static <T> T toObj(InputStream inputStream, Type type) {
         try {
@@ -222,6 +235,7 @@ public final class JacksonUtils {
      * @param json json string
      * @return {@link JsonNode}
      * @throws NacosDeserializationException if deserialize failed
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static JsonNode toObj(String json) {
         try {
@@ -236,6 +250,7 @@ public final class JacksonUtils {
      *
      * @param clz  child class
      * @param type type name of child class
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static void registerSubtype(Class<?> clz, String type) {
         mapper.registerSubtypes(new NamedType(clz, type));
@@ -245,6 +260,7 @@ public final class JacksonUtils {
      * Create a new empty Jackson {@link ObjectNode}.
      *
      * @return {@link ObjectNode}
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static ObjectNode createEmptyJsonNode() {
         return new ObjectNode(mapper.getNodeFactory());
@@ -254,6 +270,7 @@ public final class JacksonUtils {
      * Create a new empty Jackson {@link ArrayNode}.
      *
      * @return {@link ArrayNode}
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static ArrayNode createEmptyArrayNode() {
         return new ArrayNode(mapper.getNodeFactory());
@@ -264,6 +281,7 @@ public final class JacksonUtils {
      *
      * @param obj object
      * @return {@link JsonNode}
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static JsonNode transferToJsonNode(Object obj) {
         return mapper.valueToTree(obj);
@@ -274,6 +292,7 @@ public final class JacksonUtils {
      *
      * @param type java type
      * @return JavaType {@link JavaType}
+      * <p>Jackson JSON 序列化；详见类级说明。</p>
      */
     public static JavaType constructJavaType(Type type) {
         return mapper.constructType(type);

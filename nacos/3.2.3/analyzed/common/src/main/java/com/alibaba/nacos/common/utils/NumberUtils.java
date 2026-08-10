@@ -17,6 +17,7 @@
 package com.alibaba.nacos.common.utils;
 
 /**
+ * 字符串与数值互转工具：解析失败时返回默认值而非抛异常，并提供纯数字字符串检测。
  * Number utils.
  * @author zzq
  */
@@ -32,6 +33,7 @@ public class NumberUtils {
      * @param str  the string to convert, may be null
      * @return the int represented by the string, or <code>zero</code> if
      *  conversion fails
+      * <p>字符串数值解析；详见类级说明。</p>
      */
     public static int toInt(String str) {
         return toInt(str, 0);
@@ -44,6 +46,7 @@ public class NumberUtils {
      * @param str  the string to convert, may be null
      * @param defaultValue  the default value
      * @return the int represented by the string, or the default if conversion fails
+      * <p>字符串数值解析；详见类级说明。</p>
      */
     public static int toInt(String str, int defaultValue) {
         if (str == null) {
@@ -63,6 +66,7 @@ public class NumberUtils {
      * @param str  the string to convert, may be null
      * @param defaultValue  the default value
      * @return the long represented by the string, or the default if conversion fails
+      * <p>字符串数值解析；详见类级说明。</p>
      */
     public static long toLong(String str, long defaultValue) {
         if (str == null) {
@@ -83,6 +87,7 @@ public class NumberUtils {
      * @param defaultValue the default value
      * @return the double represented by the string, or defaultValue
      *  if conversion fails
+      * <p>字符串数值解析；详见类级说明。</p>
      */
     public static double toDouble(String str, double defaultValue) {
         if (str == null) {
@@ -101,6 +106,7 @@ public class NumberUtils {
      *
      * @param str  the <code>String</code> to check
      * @return <code>true</code> if str contains only unicode numeric
+      * <p>字符串数值解析；详见类级说明。</p>
      */
     public static boolean isDigits(String str) {
         if (StringUtils.isEmpty(str)) {
@@ -121,6 +127,7 @@ public class NumberUtils {
      * @param str the string to convert, may be <code>null</code>
      * @return the float represented by the string, or <code>0.0f</code>
      *  if conversion fails
+      * <p>字符串数值解析；详见类级说明。</p>
      */
     public static float toFloat(final String str) {
         return toFloat(str, 0.0f);
@@ -134,6 +141,7 @@ public class NumberUtils {
      * @param defaultValue the default value
      * @return the float represented by the string, or defaultValue
      *  if conversion fails
+      * <p>字符串数值解析；详见类级说明。</p>
      */
     public static float toFloat(final String str, final float defaultValue) {
         if (str == null) {

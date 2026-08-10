@@ -20,16 +20,21 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
+ * 观察者模式可观察对象：基于 {@link ConcurrentHashSet} 维护 {@link Observer} 集合，
+ * 支持 changed 标志位与 notify/delete 等操作，语义类似 {@code java.util.Observable}。
  * Observable utils.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class Observable {
     
+    /** 状态变更标志，{@link #setChanged()} 置 true，通知后由 {@link #clearChanged()} 清除 */
     private transient boolean changed = false;
     
+    /** 已注册观察者集合，线程安全的 ConcurrentHashSet 实现 */
     private transient Set<Observer> obs = new ConcurrentHashSet<>();
     
+    /** 观察者计数，add/delete 时维护，供 {@link #countObservers()} 读取 */
     private volatile int observerCnt = 0;
     
     /**
@@ -39,6 +44,7 @@ public class Observable {
      *
      * @param o an observer to be added.
      * @throws NullPointerException if the parameter o is null.
+      * <p>观察者模式可观察对象；详见类级说明。</p>
      */
     public synchronized void addObserver(Observer o) {
         Objects.requireNonNull(o, "Observer");
@@ -52,6 +58,7 @@ public class Observable {
      * effect.
      *
      * @param o the observer to be deleted.
+      * <p>观察者模式可观察对象；详见类级说明。</p>
      */
     public synchronized void deleteObserver(Observer o) {
         obs.remove(o);
@@ -63,6 +70,7 @@ public class Observable {
      * then call the {@code clearChanged} method to indicate that this object has no longer changed.
      *
      * <p>Each observer has its {@code update} method called with one argument: this observable object.
+      * <p>观察者模式可观察对象；详见类级说明。</p>
      */
     public void notifyObservers() {
         synchronized (this) {
@@ -90,6 +98,7 @@ public class Observable {
     
     /**
      * Clears the observer list so that this object no longer has any observers.
+      * <p>观察者模式可观察对象；详见类级说明。</p>
      */
     public void deleteObservers() {
         obs.clear();
@@ -98,6 +107,7 @@ public class Observable {
     /**
      * Marks this {@code Observable} object as having been changed; the {@code hasChanged} method will now return {@code
      * true}.
+      * <p>观察者模式可观察对象；详见类级说明。</p>
      */
     protected synchronized void setChanged() {
         changed = true;
@@ -110,6 +120,7 @@ public class Observable {
      *
      * @see java.util.Observable#notifyObservers()
      * @see java.util.Observable#notifyObservers(java.lang.Object)
+      * <p>观察者模式可观察对象；详见类级说明。</p>
      */
     protected synchronized void clearChanged() {
         changed = false;
@@ -120,6 +131,7 @@ public class Observable {
      *
      * @return {@code true} if and only if the {@code setChanged} method has been called more recently than the {@code
      * clearChanged} method on this object; {@code false} otherwise.
+      * <p>观察者模式可观察对象；详见类级说明。</p>
      */
     public synchronized boolean hasChanged() {
         return changed;
@@ -129,6 +141,7 @@ public class Observable {
      * Returns the number of observers of this {@code Observable} object.
      *
      * @return the number of observers of this object.
+      * <p>观察者模式可观察对象；详见类级说明。</p>
      */
     public int countObservers() {
         return observerCnt;

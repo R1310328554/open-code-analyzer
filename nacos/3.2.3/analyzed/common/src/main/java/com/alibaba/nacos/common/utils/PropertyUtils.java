@@ -17,6 +17,8 @@
 package com.alibaba.nacos.common.utils;
 
 /**
+ * 系统属性与环境变量读取工具：优先 {@link System#getenv()}，缺失时回退 {@link System#getProperty(String)}，
+ * 并提供 Nacos 通用线程池处理器数量的解析逻辑。
  * A convenient tool to get property or env value.
  *
  * @author Pixy Yuan on 2022/3/24
@@ -26,8 +28,10 @@ public class PropertyUtils {
     private PropertyUtils() {
     }
     
+    /** 环境变量名：预设 Nacos 通用模块使用的处理器线程数 */
     private static final String PROCESSORS_ENV_NAME = "NACOS_COMMON_PROCESSORS";
     
+    /** 系统属性名：预设 Nacos 通用模块使用的处理器线程数 */
     private static final String PROCESSORS_PROP_NAME = "nacos.common.processors";
     
     /**
@@ -35,6 +39,7 @@ public class PropertyUtils {
      *
      * <p>If {@link System#getenv()} has no value for {@code envName},
      * return {@link System#getProperty(String)}.
+      * <p>系统属性与环境变量；详见类级说明。</p>
      */
     public static String getProperty(String propertyName, String envName) {
         return System.getenv().getOrDefault(envName, System.getProperty(propertyName));
@@ -45,6 +50,7 @@ public class PropertyUtils {
      *
      * <p>If {@link System#getenv()} has no value for {@code envName},
      * return {@link System#getProperty(String, String)} or {@code defaultValue}.
+      * <p>系统属性与环境变量；详见类级说明。</p>
      */
     public static String getProperty(String propertyName, String envName, String defaultValue) {
         return System.getenv().getOrDefault(envName,
@@ -53,6 +59,7 @@ public class PropertyUtils {
     
     /**
      * Get processors count maybe preset by env or property.
+      * <p>系统属性与环境变量；详见类级说明。</p>
      */
     public static int getProcessorsCount() {
         int processorsCount = 0;

@@ -5,6 +5,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied. See the License for the specific language governing permissions and limitations under the
  * License.
+  * <p>IPv4/IPv6 地址格式校验；详见类级说明。</p>
  */
 
 package com.alibaba.nacos.common.utils;
@@ -12,6 +13,8 @@ package com.alibaba.nacos.common.utils;
 import java.util.regex.Pattern;
 
 /**
+ * IPv4/IPv6 地址格式校验工具：基于正则表达式判断标准 IPv4、IPv6 标准/压缩/混合格式、
+ * 链路本地带 zone index 以及 IPv4 映射 IPv6 等常见写法，供 {@link InternetAddressUtil} 等模块复用。
  * ipv4 ipv6 check util.
  *
  * @author Dynatrace LLC
@@ -22,6 +25,7 @@ public class InetAddressValidator {
     private InetAddressValidator() {
     }
     
+    /** IPv6 链路本地地址 zone index 分隔符 */
     private static final String PERCENT = "%";
     
     private static final String DOUBLE_COLON = "::";
@@ -62,6 +66,7 @@ public class InetAddressValidator {
      *
      * @param input ip-address to check
      * @return true if <code>input</code> is in correct IPv4 notation.
+      * <p>IPv4/IPv6 地址格式校验；详见类级说明。</p>
      */
     public static boolean isIpv4Address(final String input) {
         return IPV4_PATTERN.matcher(input).matches();
@@ -73,6 +78,7 @@ public class InetAddressValidator {
      *
      * @param input ip-address to check
      * @return true if <code>input</code> is in correct IPv6 notation.
+      * <p>IPv4/IPv6 地址格式校验；详见类级说明。</p>
      */
     public static boolean isIpv6StdAddress(final String input) {
         return IPV6_STD_PATTERN.matcher(input).matches();
@@ -84,6 +90,7 @@ public class InetAddressValidator {
      *
      * @param input ip-address to check
      * @return true if <code>input</code> is in correct IPv6 (hex-compressed) notation.
+      * <p>IPv4/IPv6 地址格式校验；详见类级说明。</p>
      */
     public static boolean isIpv6HexCompressedAddress(final String input) {
         return IPV6_HEX_COMPRESSED_PATTERN.matcher(input).matches();
@@ -95,6 +102,7 @@ public class InetAddressValidator {
      *
      * @param input ip-address to check
      * @return true if <code>input</code> is in correct IPv6 notation.
+      * <p>IPv4/IPv6 地址格式校验；详见类级说明。</p>
      */
     public static boolean isIpv6Address(final String input) {
         return isIpv6StdAddress(input) || isIpv6HexCompressedAddress(input)
@@ -109,6 +117,7 @@ public class InetAddressValidator {
      *
      * @param input ip-address to check
      * @return true if <code>input</code> is in correct IPv6 (mixed-standard or mixed-compressed) notation.
+      * <p>IPv4/IPv6 地址格式校验；详见类级说明。</p>
      */
     public static boolean isIpv6MixedAddress(final String input) {
         int splitIndex = input.lastIndexOf(':');
@@ -138,6 +147,7 @@ public class InetAddressValidator {
      *
      * @param input ip-address to check
      * @return true if <code>input</code> is in correct IPv6 notation containing an IPv4 address
+      * <p>IPv4/IPv6 地址格式校验；详见类级说明。</p>
      */
     public static boolean isIpv6Ipv4MappedAddress(final String input) {
         if (input.length() > SEVEN
@@ -154,6 +164,7 @@ public class InetAddressValidator {
      *
      * @param input ip-address to check
      * @return true if address part of <code>input</code> is in correct IPv6 notation.
+      * <p>IPv4/IPv6 地址格式校验；详见类级说明。</p>
      */
     public static boolean isLinkLocalIpv6WithZoneIndex(String input) {
         if (input.length() > FIVE && input.substring(ZERO, FIVE).equalsIgnoreCase(FE80)) {

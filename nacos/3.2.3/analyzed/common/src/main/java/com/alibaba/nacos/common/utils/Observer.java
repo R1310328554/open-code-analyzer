@@ -17,6 +17,7 @@
 package com.alibaba.nacos.common.utils;
 
 /**
+ * 观察者接口：当被观察对象调用 {@link Observable#notifyObservers()} 时收到 {@link #update(Observable)} 回调。
  * Obeserver.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -29,6 +30,7 @@ public interface Observer {
      * object's {@code notifyObservers} method to have all the object's observers notified of the change.
      *
      * @param o the observable object.
+      * <p>观察者回调接口；详见类级说明。</p>
      */
     void update(Observable o);
     

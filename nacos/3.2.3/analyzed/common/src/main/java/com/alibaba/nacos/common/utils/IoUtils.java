@@ -41,12 +41,15 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
+ * IO 工具类：提供 GZIP 压缩/解压、流与字符串互转、文件读写、目录清理及
+ * {@link Closeable}/{@link HttpURLConnection} 静默关闭等通用方法，减少各模块重复样板代码。
  * IO related tool methods.
  *
  * @author nacos
  */
 public class IoUtils {
     
+    /** 本类 SLF4J 日志记录器，用于 GZIP 压缩失败等可恢复异常告警 */
     private static final Logger LOGGER = LoggerFactory.getLogger(IoUtils.class);
     
     private IoUtils() {
@@ -57,6 +60,7 @@ public class IoUtils {
      *
      * @param raw compress stream
      * @return byte array after decompress
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static byte[] tryDecompress(InputStream raw) throws IOException {
         try (GZIPInputStream gis = new GZIPInputStream(raw);
@@ -72,6 +76,7 @@ public class IoUtils {
      * @param raw compressed byte array
      * @return byte array after decompress
      * @throws Exception exception
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static byte[] tryDecompress(byte[] raw) throws Exception {
         if (!isGzipStream(raw)) {
@@ -86,6 +91,7 @@ public class IoUtils {
      * @param str      strings to be compressed.
      * @param encoding encoding.
      * @return byte[]
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static byte[] tryCompress(String str, String encoding) {
         if (str == null || str.length() == 0) {
@@ -113,6 +119,7 @@ public class IoUtils {
      * @param data     string
      * @param encoding encoding of string
      * @throws IOException io exception
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static void writeStringToFile(File file, String data, String encoding)
         throws IOException {
@@ -128,6 +135,7 @@ public class IoUtils {
      * @param input reader
      * @return list of line
      * @throws IOException io exception
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static List<String> readLines(Reader input) throws IOException {
         BufferedReader reader = toBufferedReader(input);
@@ -152,6 +160,7 @@ public class IoUtils {
      * @param encoding charset of stream
      * @return string
      * @throws IOException io exception
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static String toString(InputStream input, String encoding) throws IOException {
         if (input == null) {
@@ -167,6 +176,7 @@ public class IoUtils {
      * @param reader reader
      * @return string
      * @throws IOException io exception
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static String toString(Reader reader) throws IOException {
         CharArrayWriter sw = new CharArrayWriter();
@@ -181,6 +191,7 @@ public class IoUtils {
      * @param output target
      * @return copy size
      * @throws IOException io exception
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static long copy(Reader input, Writer output) throws IOException {
         char[] buffer = new char[1 << 12];
@@ -199,6 +210,7 @@ public class IoUtils {
      * @param output target
      * @return copy size
      * @throws IOException io exception
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static long copy(InputStream input, OutputStream output) throws IOException {
         byte[] buffer = new byte[1024];
@@ -222,6 +234,7 @@ public class IoUtils {
      *
      * @param fileOrDir file or dir
      * @throws IOException io exception
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static void delete(File fileOrDir) throws IOException {
         if (fileOrDir == null) {
@@ -282,6 +295,7 @@ public class IoUtils {
      *
      * @param bytes byte array
      * @return true if is gzip, otherwise false
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static boolean isGzipStream(byte[] bytes) {
         
@@ -297,6 +311,7 @@ public class IoUtils {
      * Close http connection quietly.
      *
      * @param connection http connection
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static void closeQuietly(HttpURLConnection connection) {
         if (connection != null) {
@@ -311,6 +326,7 @@ public class IoUtils {
      * Close closable object quietly.
      *
      * @param closeable http connection
+      * <p>IO 流与文件操作；详见类级说明。</p>
      */
     public static void closeQuietly(Closeable closeable) {
         try {
@@ -321,6 +337,7 @@ public class IoUtils {
         }
     }
     
+    /** 批量静默关闭多个 {@link Closeable}，单个失败不影响其余资源 */
     public static void closeQuietly(Closeable... closeable) {
         Arrays.stream(closeable).forEach(IoUtils::closeQuietly);
     }

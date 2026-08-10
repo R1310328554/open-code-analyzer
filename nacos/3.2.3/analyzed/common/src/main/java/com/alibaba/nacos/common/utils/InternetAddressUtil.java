@@ -22,6 +22,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * IP/域名 解析与校验工具：封装 {@link InetAddressValidator}，支持 IPv4/IPv6 判断、
+ * host:port 拆分、批量 IP 合法性检查及 IPv4 与 int/byte[] 互转，供 Naming/Config 网络层使用。
  * ip tool.
  *
  * @author Nacos
@@ -32,21 +34,27 @@ public class InternetAddressUtil {
     private InternetAddressUtil() {
     }
     
+    /** 是否优先使用 IPv6 本地回环地址，读取 JVM 属性 {@code java.net.preferIPv6Addresses} */
     public static final boolean PREFER_IPV6_ADDRESSES = Boolean.parseBoolean(
         System.getProperty("java.net.preferIPv6Addresses"));
     
+    /** IPv6 字面量在 URL/配置中的左括号标记 */
     public static final String IPV6_START_MARK = "[";
     
+    /** IPv6 字面量在 URL/配置中的右括号标记 */
     public static final String IPV6_END_MARK = "]";
     
+    /** {@link #checkIps(String...)} 失败时返回信息的前缀 */
     public static final String ILLEGAL_IP_PREFIX = "illegal ip: ";
     
+    /** IPv4 host 与 port 之间的分隔符（IPv6 需配合方括号） */
     public static final String IP_PORT_SPLITER = ":";
     
     public static final int SPLIT_IP_PORT_RESULT_LENGTH = 2;
     
     public static final String PERCENT_SIGN_IN_IPV6 = "%";
     
+    /** 本地主机名常量，{@link #isDomain(String)} 视为合法域名 */
     public static final String LOCAL_HOST = "localhost";
     
     private static final String LOCAL_HOST_IP_V4 = "127.0.0.1";
@@ -68,6 +76,7 @@ public class InternetAddressUtil {
      * get localhost ip.
      *
      * @return java.lang.String
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static String localHostIp() {
         if (PREFER_IPV6_ADDRESSES) {
@@ -81,6 +90,7 @@ public class InternetAddressUtil {
      *
      * @param addr ip address
      * @return boolean
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static boolean isIpv4(String addr) {
         return InetAddressValidator.isIpv4Address(addr);
@@ -91,6 +101,7 @@ public class InternetAddressUtil {
      *
      * @param addr ip address
      * @return boolean
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static boolean isIpv6(String addr) {
         return InetAddressValidator.isIpv6Address(removeBrackets(addr));
@@ -101,6 +112,7 @@ public class InternetAddressUtil {
      *
      * @param addr ip address str
      * @return boolean
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static boolean isIp(String addr) {
         return isIpv4(addr) || isIpv6(addr);
@@ -111,6 +123,7 @@ public class InternetAddressUtil {
      *
      * @param address address string
      * @return boolean
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static boolean containsPort(String address) {
         return splitIpPortStr(address).length == SPLIT_IP_PORT_RESULT_LENGTH;
@@ -122,6 +135,7 @@ public class InternetAddressUtil {
      *
      * @param str ip and port string
      * @return java.lang.String[]
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static String[] splitIpPortStr(String str) {
         if (StringUtils.isBlank(str)) {
@@ -148,6 +162,7 @@ public class InternetAddressUtil {
      *
      * @param str string containing IP address
      * @return java.lang.String
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static String getIpFromString(String str) {
         if (StringUtils.isBlank(str)) {
@@ -175,6 +190,7 @@ public class InternetAddressUtil {
      *
      * @param ips ips
      * @return 'ok' if check passed, otherwise illegal ip
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static String checkIps(String... ips) {
         
@@ -203,6 +219,7 @@ public class InternetAddressUtil {
      *
      * @param checkIpsResult checkIps result
      * @return boolean
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static boolean checkOk(String checkIpsResult) {
         return CHECK_OK.equals(checkIpsResult);
@@ -213,6 +230,7 @@ public class InternetAddressUtil {
      *
      * @param str is ipv6 address
      * @return string removed brackets
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static String removeBrackets(String str) {
         if (StringUtils.isBlank(str)) {
@@ -226,6 +244,7 @@ public class InternetAddressUtil {
      *
      * @param str nacosIP
      * @return nacosIP is domain
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static boolean isDomain(String str) {
         if (StringUtils.isBlank(str)) {
@@ -242,6 +261,7 @@ public class InternetAddressUtil {
      *
      * @param ip ip address.
      * @return int
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static int ipToInt(String ip) {
         try {
@@ -256,6 +276,7 @@ public class InternetAddressUtil {
      *
      * @param bytes byte array.
      * @return int
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static int bytesToInt(byte[] bytes) {
         int addr = bytes[3] & 0xFF;
@@ -270,6 +291,7 @@ public class InternetAddressUtil {
      *
      * @param ip ip address.
      * @return byte[]
+      * <p>IP 解析与校验；详见类级说明。</p>
      */
     public static byte[] ipToBytesByInet(String ip) {
         try {

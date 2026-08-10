@@ -19,6 +19,7 @@ package com.alibaba.nacos.common.utils;
 import java.util.Random;
 
 /**
+ * 随机数工具：在指定左闭右开区间内生成 int/long 随机值，共享静态 {@link Random} 实例。
  * Random utils.
  *
  * @author zzq
@@ -28,8 +29,10 @@ public class RandomUtils {
     private RandomUtils() {
     }
     
+    /** 全局 Random 实例，供 {@link #nextInt(int, int)} 与 {@link #nextLong(long, long)} 使用 */
     /**
      * Random Object for random method.
+      * <p>区间随机数生成；详见类级说明。</p>
      */
     private static final Random RANDOM = new Random();
     
@@ -40,6 +43,7 @@ public class RandomUtils {
      * @param endExclusive   the upper bound (not included)
      * @return the random long
      * @throws IllegalArgumentException if startInclusive or endExclusive illegal
+      * <p>区间随机数生成；详见类级说明。</p>
      */
     public static long nextLong(final long startInclusive, final long endExclusive) {
         checkParameters(startInclusive, endExclusive);
@@ -57,6 +61,7 @@ public class RandomUtils {
      * @param endExclusive   the upper bound (not included)
      * @return the random integer
      * @throws IllegalArgumentException if startInclusive or endExclusive illegal
+      * <p>区间随机数生成；详见类级说明。</p>
      */
     public static int nextInt(final int startInclusive, final int endExclusive) {
         checkParameters(startInclusive, endExclusive);
@@ -72,6 +77,7 @@ public class RandomUtils {
      *
      * @param startInclusive lower limit, must be non-negative
      * @param endExclusive   the upper bound (not included)
+      * <p>区间随机数生成；详见类级说明。</p>
      */
     private static void checkParameters(final long startInclusive, final long endExclusive) {
         if (endExclusive < startInclusive) {
