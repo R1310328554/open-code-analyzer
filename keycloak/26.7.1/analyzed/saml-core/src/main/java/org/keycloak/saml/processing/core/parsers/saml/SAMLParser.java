@@ -47,13 +47,16 @@ import org.keycloak.saml.processing.core.parsers.saml.protocol.SAMLSloResponsePa
 import org.keycloak.saml.processing.core.saml.v1.SAML11Constants;
 
 /**
+ * SAML 1.1/2.0 消息统一入口解析器，按根元素 QName 分派到专用解析器。
  * Parse SAML payload
  *
  * @since Oct 12, 2010
  */
 public class SAMLParser extends AbstractParser {
 
+    /** SAML 1.1 Response 解析器单例。 */
     private static final SAML11ResponseParser SAML_11_RESPONSE_PARSER = new SAML11ResponseParser();
+    /** SAML 1.1 Request 解析器单例。 */
     private static final SAML11RequestParser SAML_11_REQUEST_PARSER = new SAML11RequestParser();
 
     private static final QName SAML_11_ASSERTION = new QName(SAML11Constants.ASSERTION_11_NSURI, JBossSAMLConstants.ASSERTION.get());
@@ -61,10 +64,12 @@ public class SAMLParser extends AbstractParser {
     private static final QName SAML_11_RESPONSE = new QName(SAML11Constants.PROTOCOL_11_NSURI, JBossSAMLConstants.RESPONSE__PROTOCOL.get());
     private static final QName SAML_11_REQUEST = new QName(SAML11Constants.PROTOCOL_11_NSURI, JBossSAMLConstants.REQUEST.get());
 
-    // Since we have to support JDK 7, no lambdas are available
+    // JDK 7 兼容：使用匿名内部类而非 lambda
+    /** 解析器工厂接口。 */
     private interface ParserFactory {
         StaxParser create();
     }
+    /** 根元素 QName 到解析器工厂的映射表。 */
     private static final Map<QName, ParserFactory> PARSERS = new HashMap<>();
 
     static {
@@ -92,8 +97,10 @@ public class SAMLParser extends AbstractParser {
         PARSERS.put(SAMLProtocolQNames.ATTRIBUTE_QUERY.getQName(),    new ParserFactory() { @Override public StaxParser create() { return SAMLAttributeQueryParser.getInstance(); }});
     }
 
+    /** 单例实例。 */
     private static final SAMLParser INSTANCE = new SAMLParser();
 
+    /** 获取 SAMLParser 单例。 */
     public static SAMLParser getInstance() {
         return INSTANCE;
     }

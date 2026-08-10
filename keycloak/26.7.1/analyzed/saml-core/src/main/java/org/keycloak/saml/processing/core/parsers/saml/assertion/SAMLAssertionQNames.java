@@ -23,6 +23,8 @@ import org.keycloak.saml.processing.core.parsers.saml.xmldsig.XmlDSigQNames;
 import org.keycloak.saml.processing.core.parsers.util.HasQName;
 
 /**
+ * saml-schema-assertion-2.0.xsd 中的元素与属性 QName 枚举。
+ *
  * Elements and attribute names from saml-schema-assertion-2.0.xsd
  * @author hmlnarik
  */
@@ -62,7 +64,8 @@ public enum SAMLAssertionQNames implements HasQName {
     SUBJECT_LOCALITY("SubjectLocality"),
     SUBJECT("Subject"),
 
-    // Attribute names
+    // 属性名
+    /** 地址属性。 */
     ATTR_ADDRESS(null, "Address"),
     ATTR_AUTHN_INSTANT(null, "AuthnInstant"),
     ATTR_COUNT(null, "Count"),
@@ -85,7 +88,8 @@ public enum SAMLAssertionQNames implements HasQName {
     ATTR_SP_NAME_QUALIFIER(null, "SPNameQualifier"),
     ATTR_VERSION(null, "Version"),
 
-    // Elements from other namespaces that can be direct subelements of this namespace's elements
+    // 其他命名空间可嵌入的子元素
+    /** XML-DSig KeyInfo。 */
     KEY_INFO(XmlDSigQNames.KEY_INFO),
     SIGNATURE(XmlDSigQNames.SIGNATURE),
 
@@ -94,6 +98,7 @@ public enum SAMLAssertionQNames implements HasQName {
     UNKNOWN_ELEMENT("")
     ;
 
+    /** 对应的 QName。 */
     private final QName qName;
 
     SAMLAssertionQNames(String localName) {
@@ -108,11 +113,13 @@ public enum SAMLAssertionQNames implements HasQName {
         this.qName = new QName(nsUri == null ? null : nsUri.get(), localName);
     }
 
+    /** 返回枚举对应的 QName。 */
     @Override
     public QName getQName() {
         return qName;
     }
 
+    /** 返回带指定前缀的 QName。 */
     public QName getQName(String prefix) {
         return new QName(this.qName.getNamespaceURI(), this.qName.getLocalPart(), prefix);
     }

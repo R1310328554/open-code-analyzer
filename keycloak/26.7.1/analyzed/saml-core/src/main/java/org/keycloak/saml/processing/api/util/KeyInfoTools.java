@@ -22,17 +22,21 @@ import javax.xml.crypto.dsig.keyinfo.KeyName;
 import javax.xml.crypto.dsig.keyinfo.X509Data;
 
 /**
+ * {@link KeyInfo} 对象解析与内容提取工具。
+ *
  * Tools for {@link KeyInfo} object manipulation.
  * @author hmlnarik
  */
 public class KeyInfoTools {
 
     /**
+     * 从 Iterable 中返回首个指定类型的元素。
+     *
      * Returns the first object of the given class from the given Iterable.
-     * @param <T>
-     * @param objects
-     * @param clazz
-     * @return The object or {@code null} if not found.
+     * @param <T> 目标类型
+     * @param objects 待遍历集合
+     * @param clazz 目标 Class
+     * @return The object or {@code null} if not found. 未找到时返回 null
      */
     public static <T> T getContent(Iterable<?> objects, Class<T> clazz) {
         if (objects == null) {
@@ -47,14 +51,17 @@ public class KeyInfoTools {
     }
 
 
+    /** 从 KeyInfo 提取 KeyName。 */
     public static KeyName getKeyName(KeyInfo keyInfo) {
         return keyInfo == null ? null : getContent(keyInfo.getContent(), KeyName.class);
     }
 
+    /** 从 KeyInfo 提取 X509Data。 */
     public static X509Data getX509Data(KeyInfo keyInfo) {
         return keyInfo == null ? null : getContent(keyInfo.getContent(), X509Data.class);
     }
 
+    /** 从 KeyInfo 提取首个 X509Certificate。 */
     public static X509Certificate getX509Certificate(KeyInfo keyInfo) {
         X509Data d = getX509Data(keyInfo);
         return d == null ? null : getContent(d.getContent(), X509Certificate.class);

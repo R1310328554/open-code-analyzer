@@ -22,13 +22,16 @@ import org.keycloak.saml.common.parsers.AbstractStaxParser;
 import org.keycloak.saml.processing.core.parsers.util.QNameEnumLookup;
 
 /**
+ * SAML 2.0 断言子元素 StAX 解析器抽象基类。
  *
  * @author hmlnarik
  */
 public abstract class AbstractStaxSamlAssertionParser<T> extends AbstractStaxParser<T, SAMLAssertionQNames> {
 
+    /** 断言命名空间 QName 到枚举的查找表。 */
     protected static final QNameEnumLookup<SAMLAssertionQNames> LOOKUP = new QNameEnumLookup(SAMLAssertionQNames.values());
 
+    /** 指定期望的起始元素类型。 */
     public AbstractStaxSamlAssertionParser(SAMLAssertionQNames expectedStartElement) {
         super(expectedStartElement.getQName(), SAMLAssertionQNames.UNKNOWN_ELEMENT);
     }

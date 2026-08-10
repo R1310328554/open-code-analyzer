@@ -28,6 +28,7 @@ import java.util.zip.InflaterInputStream;
 import org.keycloak.saml.common.constants.GeneralConstants;
 
 /**
+ * 基于 DEFLATE 压缩的 SAML 消息编解码工具（HTTP-Redirect 绑定等）。
  * Encoder of saml messages based on DEFLATE compression
  *
  * @author Anil.Saldhana@redhat.com
@@ -35,21 +36,21 @@ import org.keycloak.saml.common.constants.GeneralConstants;
  */
 public class DeflateUtil {
 
-    /**
-     * Maximum size for inflating. Default is 128KB like quarkus.http.limits.max-form-attribute-size.
-     */
+    /** 解压缩上限（字节），默认 128KB，与 quarkus.http.limits.max-form-attribute-size 一致。 */
     public static long DEFAULT_MAX_INFLATING_SIZE = 131072;
 
     private DeflateUtil() {
-        // utility class
+        // 工具类，禁止实例化
     }
 
     /**
+     * 对字节数组执行 DEFLATE 压缩（raw deflate，无 zlib 头）。
+     *
      * Apply DEFLATE encoding
      *
-     * @param message
+     * @param message 原始 SAML 消息字节
      *
-     * @return
+     * @return 压缩后字节
      *
      * @throws IOException
      */
@@ -64,11 +65,13 @@ public class DeflateUtil {
     }
 
     /**
+     * 对 UTF-8 字符串执行 DEFLATE 压缩。
+     *
      * Apply DEFLATE encoding
      *
-     * @param message
+     * @param message SAML 消息字符串
      *
-     * @return
+     * @return 压缩后字节
      *
      * @throws IOException
      */
@@ -77,21 +80,25 @@ public class DeflateUtil {
     }
 
     /**
+     * DEFLATE 解压缩，使用默认大小上限。
+     *
      * DEFLATE decoding
      *
-     * @param msgToDecode the message that needs decoding
+     * @param msgToDecode the message that needs decoding 待解码字节
      *
-     * @return
+     * @return 解压后的 InputStream
      */
     public static InputStream decode(byte[] msgToDecode) {
         return decode(msgToDecode, DEFAULT_MAX_INFLATING_SIZE);
     }
 
     /**
+     * DEFLATE 解压缩，超出 maxInflatingSize 时抛出 IOException。
+     *
      * DEFLATE decoding
      *
-     * @param msgToDecode the message that needs decoding
-     * @param maxInflatingSize the maximum size to inflate, IOExceptio is thrown if more data is inflated
+     * @param msgToDecode the message that needs decoding 待解码字节
+     * @param maxInflatingSize the maximum size to inflate, IOExceptio is thrown if more data is inflated 解压上限
      *
      * @return
      */
@@ -100,6 +107,7 @@ public class DeflateUtil {
         return new LimitedInflaterInputStream(bais, maxInflatingSize);
     }
 
+    /** 带解压大小限制的 InflaterInputStream 包装。 */
     private static class LimitedInflaterInputStream extends InputStream {
 
         private final InflaterInputStream is;

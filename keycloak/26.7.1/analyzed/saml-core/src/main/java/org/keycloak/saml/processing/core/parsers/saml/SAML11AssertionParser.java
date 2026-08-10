@@ -48,6 +48,7 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import org.w3c.dom.Element;
 
 /**
+ * SAML 1.1 断言（Assertion）StAX 解析器。
  * Parse the saml assertion
  *
  * @author Anil.Saldhana@redhat.com
@@ -57,8 +58,10 @@ public class SAML11AssertionParser implements StaxParser {
 
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** Assertion 元素本地名。 */
     private final String ASSERTION = JBossSAMLConstants.ASSERTION.get();
 
+    /** 从 DOM Element 解析 SAML 1.1 断言。 */
     public SAML11AssertionType fromElement(Element element) throws ConfigurationException, ProcessingException,
             ParsingException {
         XMLEventReader xmlEventReader = StaxParserUtil.getXMLEventReader(DocumentUtil.getNodeAsStream(element));
@@ -73,7 +76,7 @@ public class SAML11AssertionParser implements StaxParser {
 
         startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
 
-        // Special case: Encrypted Assertion
+        // 校验 Assertion 起始元素
         StaxParserUtil.validate(startElement, ASSERTION);
         SAML11AssertionType assertion = parseBaseAttributes(startElement);
 
@@ -81,7 +84,7 @@ public class SAML11AssertionParser implements StaxParser {
         String issuer = StaxParserUtil.getAttributeValue(issuerAttribute);
         assertion.setIssuer(issuer);
 
-        // Peek at the next event
+        // 遍历子元素
         while (xmlEventReader.hasNext()) {
             XMLEvent xmlEvent = StaxParserUtil.peek(xmlEventReader);
             if (xmlEvent == null)

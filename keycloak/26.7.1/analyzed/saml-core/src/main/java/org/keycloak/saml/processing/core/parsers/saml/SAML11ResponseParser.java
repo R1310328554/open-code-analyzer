@@ -41,6 +41,7 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import org.w3c.dom.Element;
 
 /**
+ * SAML 1.1 响应（Response）StAX 解析器。
  * Parse the SAML 11 Response
  *
  * @author Anil.Saldhana@redhat.com
@@ -50,13 +51,14 @@ public class SAML11ResponseParser implements StaxParser {
 
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** Response 协议元素本地名。 */
     private final String RESPONSE = JBossSAMLConstants.RESPONSE__PROTOCOL.get();
 
     /**
      * @see {@link ParserNamespaceSupport#parse(XMLEventReader)}
      */
     public Object parse(XMLEventReader xmlEventReader) throws ParsingException {
-        // Get the startelement
+        // 读取 Response 起始元素并解析必填属性
         StartElement startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
         StaxParserUtil.validate(startElement, RESPONSE);
 
@@ -73,7 +75,7 @@ public class SAML11ResponseParser implements StaxParser {
         SAML11ResponseType response = new SAML11ResponseType(id, issueInstantVal);
 
         while (xmlEventReader.hasNext()) {
-            // Let us peek at the next start element
+            // 解析 Signature、Assertion、Status 等子元素
             startElement = StaxParserUtil.peekNextStartElement(xmlEventReader);
             if (startElement == null)
                 break;
@@ -94,16 +96,18 @@ public class SAML11ResponseParser implements StaxParser {
     }
 
     /**
+     * 解析 Status 元素（含 StatusCode、StatusMessage、StatusDetail）。
+     *
      * Parse the status element
      *
-     * @param xmlEventReader
+     * @param xmlEventReader StAX 事件读取器
      *
      * @return
      *
      * @throws ParsingException
      */
     protected SAML11StatusType parseStatus(XMLEventReader xmlEventReader) throws ParsingException {
-        // Get the Start Element
+        // 进入 Status 元素
         StartElement startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
         String STATUS = JBossSAMLConstants.STATUS.get();
         StaxParserUtil.validate(startElement, STATUS);

@@ -17,6 +17,7 @@
 package org.keycloak.saml.processing.core.constants;
 
 /**
+ * SAML 属性相关常量定义。
  * Constants for attributes
  *
  * @author Anil.Saldhana@redhat.com
@@ -24,9 +25,12 @@ package org.keycloak.saml.processing.core.constants;
  */
 public interface AttributeConstants {
 
+    /** 角色集合属性名。 */
     String ROLES = "roles";
 
     /**
+     * SAML2 AttributeStatement 中表示角色的默认标识符。
+     *
      * Default identifier in the saml2 attribute statements to indicate role *
      */
     String ROLE_IDENTIFIER_ASSERTION = "Role";

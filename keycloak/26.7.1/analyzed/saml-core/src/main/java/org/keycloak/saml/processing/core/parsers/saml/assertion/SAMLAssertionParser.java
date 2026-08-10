@@ -28,24 +28,29 @@ import org.keycloak.saml.processing.core.parsers.util.SAMLParserUtil;
 import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 
 /**
+ * SAML 2.0 断言（Assertion）StAX 解析器。
  * Parse the saml assertion
  *
  * @since Oct 12, 2010
  */
 public class SAMLAssertionParser extends AbstractStaxSamlAssertionParser<AssertionType> {
 
+    /** SAML 断言版本号常量。 */
     private static final String VERSION_2_0 = "2.0";
 
+    /** 单例实例。 */
     private static final SAMLAssertionParser INSTANCE = new SAMLAssertionParser();
 
     private SAMLAssertionParser() {
         super(SAMLAssertionQNames.ASSERTION);
     }
 
+    /** 获取解析器单例。 */
     public static SAMLAssertionParser getInstance() {
         return INSTANCE;
     }
 
+    /** 从起始元素读取 ID、IssueInstant 等属性并实例化 AssertionType。 */
     @Override
     protected AssertionType instantiateElement(XMLEventReader xmlEventReader, StartElement nextElement) throws ParsingException {
         SAMLParserUtil.validateAttributeValue(nextElement, SAMLAssertionQNames.ATTR_VERSION, VERSION_2_0);
@@ -55,6 +60,7 @@ public class SAMLAssertionParser extends AbstractStaxSamlAssertionParser<Asserti
         return new AssertionType(id, issueInstant);
     }
 
+    /** 按子元素类型分派到 Issuer、Subject、Conditions、Statement 等解析器。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, AssertionType target, SAMLAssertionQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {
@@ -76,7 +82,7 @@ public class SAMLAssertionParser extends AbstractStaxSamlAssertionParser<Asserti
 
             case ADVICE:
                 StaxParserUtil.bypassElementBlock(xmlEventReader);
-                // Ignored
+                // 忽略 Advice 元素
                 break;
 
             case STATEMENT:

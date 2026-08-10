@@ -37,6 +37,7 @@ import org.keycloak.saml.processing.core.saml.v1.SAML11Constants;
 import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 
 /**
+ * SAML 1.1 请求（Request）StAX 解析器。
  * Parse the SAML2 AuthnRequest
  *
  * @author Anil.Saldhana@redhat.com
@@ -46,6 +47,7 @@ public class SAML11RequestParser implements StaxParser {
 
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 解析 Request 必填属性（RequestID、IssueInstant）。 */
     protected SAML11RequestType parseRequiredAttributes(StartElement startElement) throws ParsingException {
         Attribute idAttr = startElement.getAttributeByName(new QName(SAML11Constants.REQUEST_ID));
         if (idAttr == null)
@@ -64,14 +66,14 @@ public class SAML11RequestParser implements StaxParser {
      * @see {@link ParserNamespaceSupport#parse(XMLEventReader)}
      */
     public Object parse(XMLEventReader xmlEventReader) throws ParsingException {
-        // Get the startelement
+        // 读取 Request 起始元素
         StartElement startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
         StaxParserUtil.validate(startElement, SAML11Constants.REQUEST);
 
         SAML11RequestType request = parseRequiredAttributes(startElement);
 
         while (xmlEventReader.hasNext()) {
-            // Let us peek at the next start element
+            // 依次解析子元素（Query、Artifact、Signature 等）
             startElement = StaxParserUtil.peekNextStartElement(xmlEventReader);
             if (startElement == null)
                 break;

@@ -38,6 +38,7 @@ import org.keycloak.saml.processing.core.parsers.util.SAML11ParserUtil;
 import org.keycloak.saml.processing.core.saml.v1.SAML11Constants;
 
 /**
+ * SAML 1.1 主体（Subject）StAX 解析器。
  * Parse the saml subject
  *
  * @author Anil.Saldhana@redhat.com
@@ -55,7 +56,7 @@ public class SAML11SubjectParser implements StaxParser {
 
         SAML11SubjectType subject = new SAML11SubjectType();
 
-        // Peek at the next event
+        // 解析 NameIdentifier 与 SubjectConfirmation
         while (xmlEventReader.hasNext()) {
             XMLEvent xmlEvent = StaxParserUtil.peek(xmlEventReader);
             if (xmlEvent instanceof EndElement) {

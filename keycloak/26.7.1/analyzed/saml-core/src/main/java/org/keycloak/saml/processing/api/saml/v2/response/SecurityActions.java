@@ -20,19 +20,22 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 /**
+ * SAML 2.0 响应 API 包内特权操作辅助类（类加载与系统属性读取）。
+ *
  * Privileged Blocks
  */
 class SecurityActions {
 
     /**
+     * <p>按全限定名加载 {@link Class}：先使用锚点类加载器，失败则尝试 TCL。</p>
      * <p>
      * Loads a {@link Class} using the <code>fullQualifiedName</code> supplied. This method tries first to load from
      * the
      * specified {@link Class}, if not found it will try to load from using TCL.
      * </p>
      *
-     * @param theClass
-     * @param fullQualifiedName
+     * @param theClass 锚点类
+     * @param fullQualifiedName 目标类全限定名
      *
      * @return
      */
@@ -65,12 +68,13 @@ class SecurityActions {
     }
 
     /**
+     * <p>从指定 {@link ClassLoader} 按全限定名加载类。</p>
      * <p>
      * Loads a class from the specified {@link ClassLoader} using the <code>fullQualifiedName</code> supplied.
      * </p>
      *
-     * @param classLoader
-     * @param fullQualifiedName
+     * @param classLoader 类加载器
+     * @param fullQualifiedName 目标类全限定名
      *
      * @return
      */
@@ -97,11 +101,12 @@ class SecurityActions {
     }
 
     /**
+     * <p>读取系统属性，未设置时返回默认值。</p>
      * <p>Returns a system property value using the specified <code>key</code>. If not found the
      * <code>defaultValue</code> will be returned.</p>
      *
-     * @param key
-     * @param defaultValue
+     * @param key 属性键
+     * @param defaultValue 默认值
      *
      * @return
      */

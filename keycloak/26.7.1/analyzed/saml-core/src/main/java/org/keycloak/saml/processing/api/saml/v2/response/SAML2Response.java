@@ -78,6 +78,7 @@ import org.w3c.dom.Node;
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.PROTOCOL_NSURI;
 
 /**
+ * SAML 2.0 响应（Response）的构建、解析与序列化 API。
  * API for dealing with SAML2 Response objects
  *
  * @author Anil.Saldhana@redhat.com
@@ -85,32 +86,40 @@ import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.PROTOCOL_
  */
 public class SAML2Response {
 
+    /** 日志实例。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
+    /** 断言默认有效时长（毫秒）。 */
     private final long ASSERTION_VALIDITY = 5000; // 5secs in milis
 
+    /** 时钟偏差容忍（毫秒）。 */
     private final long CLOCK_SKEW = 2000; // 2secs
 
+    /** 最近一次解析得到的 SAML 文档持有者。 */
     private SAMLDocumentHolder samlDocumentHolder = null;
 
     /**
+     * 创建 SAML 断言（Assertion）。
+     *
      * Create an assertion
      *
-     * @param id
-     * @param issuer
+     * @param id 断言 ID
+     * @param issuer 签发者 NameID
      *
-     * @return
+     * @return AssertionType 实例
      */
     public AssertionType createAssertion(String id, NameIDType issuer) {
         return AssertionUtil.createAssertion(id, issuer);
     }
 
     /**
+     * 创建认证声明（AuthnStatement）。
+     *
      * Create an AuthnStatement
      *
-     * @param authnContextDeclRef such as JBossSAMLURIConstants.AC_PASSWORD_PROTECTED_TRANSPORT
-     * @param issueInstant
+     * @param authnContextDeclRef 认证上下文声明引用，如 JBossSAMLURIConstants.AC_PASSWORD_PROTECTED_TRANSPORT
+     * @param issueInstant 签发时间
      *
-     * @return
+     * @return AuthnStatementType 实例
      */
     public AuthnStatementType createAuthnStatement(String authnContextDeclRef, XMLGregorianCalendar issueInstant) {
         AuthnStatementType authnStatement = new AuthnStatementType(issueInstant);
@@ -127,14 +136,16 @@ public class SAML2Response {
     }
 
     /**
+     * 创建授权决策声明（AuthzDecisionStatement）。
+     *
      * Create an Authorization Decision Statement Type
      *
-     * @param resource
-     * @param decision
-     * @param evidence
-     * @param actions
+     * @param resource 受保护资源 URI
+     * @param decision 决策结果
+     * @param evidence 证据
+     * @param actions 允许/拒绝的操作
      *
-     * @return
+     * @return AuthzDecisionStatementType 实例
      */
     public AuthzDecisionStatementType createAuthzDecisionStatementType(String resource, DecisionType decision,
                                                                        EvidenceType evidence, ActionType... actions) {
@@ -152,6 +163,8 @@ public class SAML2Response {
     }
 
     /**
+     * 根据 SP/IdP 信息自动构建完整 Response（含断言）。
+     *
      * Create a ResponseType
      *
      * <b>NOTE:</b>: The PicketLink STS is used to issue/update the assertion
@@ -175,10 +188,10 @@ public class SAML2Response {
 
         XMLGregorianCalendar issueInstant = XMLTimeUtil.getIssueInstant();
 
-        // Create assertion -> subject
+        // 创建断言主体
         SubjectType subjectType = new SubjectType();
 
-        // subject -> nameid
+        // 设置 NameID
         NameIDType nameIDType = new NameIDType();
         nameIDType.setFormat(idp.getNameIDFormat() == null ? null : URI.create(idp.getNameIDFormat()));
         nameIDType.setValue(idp.getNameIDFormatValue());
@@ -230,22 +243,27 @@ public class SAML2Response {
     }
 
     /**
+     * 创建仅含 ID 与 issueInstant 的空 Response。
+     *
      * Create an empty response type
      *
-     * @return
+     * @param ID 响应 ID
+     * @return ResponseType 实例
      */
     public ResponseType createResponseType(String ID) {
         return new ResponseType(ID, XMLTimeUtil.getIssueInstant());
     }
 
     /**
+     * 用已有断言创建 ResponseType。
+     *
      * Create a ResponseType
      *
-     * @param ID
-     * @param issuerInfo
-     * @param assertion
+     * @param ID 响应 ID
+     * @param issuerInfo 签发者信息
+     * @param assertion 断言对象
      *
-     * @return
+     * @return ResponseType 实例
      *
      * @throws ConfigurationException
      */
@@ -254,10 +272,12 @@ public class SAML2Response {
     }
 
     /**
+     * 用加密断言 DOM 元素创建 ResponseType。
+     *
      * Create a ResponseType
      *
-     * @param ID
-     * @param issuerInfo
+     * @param ID 响应 ID
+     * @param issuerInfo 签发者信息
      * @param encryptedAssertion a DOM {@link Element} that represents an encrypted assertion
      *
      * @return
@@ -270,10 +290,12 @@ public class SAML2Response {
     }
 
     /**
+     * 为断言添加带时效的 Conditions（NotBefore/NotOnOrAfter）。
+     *
      * Add validity conditions to the SAML2 Assertion
      *
-     * @param assertion
-     * @param durationInMilis
+     * @param assertion 目标断言
+     * @param durationInMilis 有效时长（毫秒）
      *
      * @throws ConfigurationException
      * @throws IssueInstantMissingException
@@ -284,9 +306,11 @@ public class SAML2Response {
     }
 
     /**
+     * 从输入流解析加密断言（EncryptedAssertion）。
+     *
      * Get an encrypted assertion from the stream
      *
-     * @param is
+     * @param is 输入流
      *
      * @return
      *
@@ -308,9 +332,11 @@ public class SAML2Response {
     }
 
     /**
+     * 从输入流解析明文断言。
+     *
      * Read an assertion from an input stream
      *
-     * @param is
+     * @param is 输入流
      *
      * @return
      *
@@ -329,18 +355,22 @@ public class SAML2Response {
     }
 
     /**
+     * 获取最近一次解析得到的 {@code SAMLDocumentHolder}。
+     *
      * Get the parsed {@code SAMLDocumentHolder}
      *
-     * @return
+     * @return 文档持有者，可能为 null
      */
     public SAMLDocumentHolder getSamlDocumentHolder() {
         return samlDocumentHolder;
     }
 
     /**
+     * 从输入流解析 SAML 2.0 Response。
+     *
      * Read a ResponseType from an input stream
      *
-     * @param is
+     * @param is 输入流
      *
      * @return
      *
@@ -363,9 +393,11 @@ public class SAML2Response {
     }
 
     /**
+     * 从输入流解析任意 {@code SAML2Object}（Response/Assertion 等）。
+     *
      * Read a {@code SAML2Object} from an input stream
      *
-     * @param is
+     * @param is 输入流
      *
      * @return
      *
@@ -395,9 +427,10 @@ public class SAML2Response {
     }
 
     /**
+     * 从 DOM 文档解析底层 SAML2Object。
      * Get the Underlying SAML2Object from a document
      * @param samlDocument a Document containing a SAML2Object
-     * @return a SAMLDocumentHolder
+     * @return a SAMLDocumentHolder 解析结果
      * @throws ProcessingException
      * @throws ParsingException
      */
@@ -410,9 +443,11 @@ public class SAML2Response {
     }
 
     /**
+     * 将 EncryptedElement 转为独立 DOM 文档。
+     *
      * Convert an EncryptedElement into a Document
      *
-     * @param encryptedElementType
+     * @param encryptedElementType 加密元素
      *
      * @return
      *
@@ -429,9 +464,11 @@ public class SAML2Response {
     }
 
     /**
+     * 将 StatusResponseType 序列化为 DOM 文档。
+     *
      * Convert a SAML2 Response into a Document
      *
-     * @param responseType
+     * @param responseType 响应对象
      *
      * @return
      *
@@ -459,10 +496,12 @@ public class SAML2Response {
     }
 
     /**
+     * 将 ResponseType 序列化到输出流。
+     *
      * Marshall the response type to the output stream
      *
-     * @param responseType
-     * @param os
+     * @param responseType 响应对象
+     * @param os 目标输出流
      *
      * @throws ProcessingException
      */
@@ -472,10 +511,12 @@ public class SAML2Response {
     }
 
     /**
+     * 将 ResponseType 序列化到 Writer。
+     *
      * Marshall the ResponseType into a writer
      *
-     * @param responseType
-     * @param writer
+     * @param responseType 响应对象
+     * @param writer 目标 Writer
      *
      * @throws ProcessingException
      */

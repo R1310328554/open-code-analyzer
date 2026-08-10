@@ -17,6 +17,7 @@
 package org.keycloak.saml.processing.core.constants;
 
 /**
+ * JBoss Identity Federation（PicketLink）联邦项目常用常量。
  * Constants useful to the JBoss Identity Federation project
  *
  * @author Anil.Saldhana@redhat.com
@@ -24,6 +25,8 @@ package org.keycloak.saml.processing.core.constants;
  */
 public interface PicketLinkFederationConstants {
 
+    /** DSA 签名算法标识（SHA1withDSA）。 */
     String DSA_SIGNATURE_ALGORITHM = "SHA1withDSA";
+    /** RSA 签名算法标识（SHA1withRSA）。 */
     String RSA_SIGNATURE_ALGORITHM = "SHA1withRSA";
 }
