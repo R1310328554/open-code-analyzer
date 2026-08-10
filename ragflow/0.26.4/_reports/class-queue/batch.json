@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T18:40:06Z",
   "files": [
-    "internal/harness/graph/pregel/subgraph.go",
-    "internal/harness/graph/pregel/traced_engine.go",
-    "internal/harness/graph/pregel/write.go",
-    "internal/harness/graph/runnable/inject.go",
-    "internal/harness/graph/runnable/runnable.go",
-    "internal/harness/graph/store/base.go",
-    "internal/harness/graph/store/memory.go",
-    "internal/harness/graph/task/decorator.go",
-    "internal/harness/graph/types/config.go",
-    "internal/harness/graph/types/scratchpad.go",
-    "internal/harness/graph/types/stream.go",
-    "internal/harness/graph/types/types.go",
-    "internal/harness/harness.go",
-    "internal/harness/metrics/aggregator.go",
-    "internal/harness/metrics/exporter.go",
     "internal/harness/metrics/metrics.go",
     "internal/harness/prebuilt/prebuilt.go",
     "internal/harness/replay/checkpoint.go",
@@ -33,5 +18,5 @@
     "internal/ingestion/component/chunker/group.go"
   ],
   "remaining_pending": 774,
-  "done": 960
+  "done": 975
 }
