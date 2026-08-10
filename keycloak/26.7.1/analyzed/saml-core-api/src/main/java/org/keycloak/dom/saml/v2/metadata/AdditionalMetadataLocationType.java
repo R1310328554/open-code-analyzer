@@ -21,6 +21,8 @@ import java.net.URI;
 /**
  * <p>
  * Java class for AdditionalMetadataLocationType complex type.
+ * SAML 2.0 附加元数据位置：URI 指向扩展命名空间的额外元数据，并声明 namespace 属性。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -42,6 +44,8 @@ public class AdditionalMetadataLocationType {
     protected URI namespace;
 
     /**
+     * 获取 附加元数据 URI 属性的值。
+     *
      * Gets the value of the value property.
      *
      * @return possible object is {@link URI }
@@ -51,6 +55,8 @@ public class AdditionalMetadataLocationType {
     }
 
     /**
+     * 设置 附加元数据 URI 属性的值。
+     *
      * Sets the value of the value property.
      *
      * @param value allowed object is {@link URI }
@@ -60,6 +66,8 @@ public class AdditionalMetadataLocationType {
     }
 
     /**
+     * 获取 扩展命名空间 URI 属性的值。
+     *
      * Gets the value of the namespace property.
      *
      * @return possible object is {@link URI }
@@ -69,6 +77,8 @@ public class AdditionalMetadataLocationType {
     }
 
     /**
+     * 设置 扩展命名空间 URI 属性的值。
+     *
      * Sets the value of the namespace property.
      *
      * @param value allowed object is {@link URI }

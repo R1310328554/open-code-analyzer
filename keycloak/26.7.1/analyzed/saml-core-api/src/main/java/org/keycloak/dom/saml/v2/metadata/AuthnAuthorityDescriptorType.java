@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for AuthnAuthorityDescriptorType complex type.
+ * SAML 2.0 认证权威描述符：声明认证查询服务、断言 ID 请求服务及支持的 NameID 格式。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -50,11 +52,14 @@ public class AuthnAuthorityDescriptorType extends RoleDescriptorType {
 
     protected List<String> nameIDFormat = new ArrayList<>();
 
+    /** 以支持的协议列表构造认证权威描述符。 */
     public AuthnAuthorityDescriptorType(List<String> protocolSupport) {
         super(protocolSupport);
     }
 
     /**
+     * 添加认证查询服务端点。
+     *
      * Add authn query service
      *
      * @param endpoint
@@ -64,6 +69,8 @@ public class AuthnAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 添加断言 ID 请求服务端点。
+     *
      * Add assertion id request service
      *
      * @param endpoint
@@ -73,6 +80,8 @@ public class AuthnAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 添加支持的 NameID 格式 URI。
+     *
      * Add name id format
      *
      * @param str
@@ -82,6 +91,8 @@ public class AuthnAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除认证查询服务端点。
+     *
      * Remove authn query service
      *
      * @param endpoint
@@ -91,6 +102,8 @@ public class AuthnAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除断言 ID 请求服务端点。
+     *
      * remove assertion id request service
      *
      * @param endpoint
@@ -100,6 +113,8 @@ public class AuthnAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除 NameID 格式 URI。
+     *
      * remove name id format
      *
      * @param str
@@ -109,6 +124,8 @@ public class AuthnAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 获取认证查询服务端点列表（只读）。
+     *
      * Gets the value of the authnQueryService property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EndpointType }
@@ -118,6 +135,8 @@ public class AuthnAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 获取断言 ID 请求服务端点列表（只读）。
+     *
      * Gets the value of the assertionIDRequestService property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EndpointType }
@@ -127,6 +146,8 @@ public class AuthnAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 获取 NameID 格式 URI 列表（只读）。
+     *
      * Gets the value of the nameIDFormat property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link String }

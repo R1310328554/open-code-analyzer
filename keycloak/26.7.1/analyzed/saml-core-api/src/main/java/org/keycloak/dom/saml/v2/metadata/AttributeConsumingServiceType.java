@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for AttributeConsumingServiceType complex type.
+ * SAML 2.0 属性消费服务：描述 SP 期望的服务名称、描述及请求的 SAML 属性。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -56,11 +58,14 @@ public class AttributeConsumingServiceType {
 
     protected Boolean isDefault = Boolean.FALSE;
 
+    /** 以索引号构造属性消费服务。 */
     public AttributeConsumingServiceType(int index) {
         this.index = index;
     }
 
     /**
+     * 添加本地化服务名称。
+     *
      * Add serviceName
      * <p>
      * Objects of the following type(s) are allowed in the list {@link LocalizedNameType }
@@ -70,6 +75,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 添加本地化服务描述。
+     *
      * Add serviceDescription.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link LocalizedNameType }
@@ -79,6 +86,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 添加请求的属性。
+     *
      * Add requestedAttribute
      * <p>
      * Objects of the following type(s) are allowed in the list {@link RequestedAttributeType }
@@ -88,6 +97,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 移除本地化服务名称。
+     *
      * remove serviceName
      * <p>
      * Objects of the following type(s) are allowed in the list {@link LocalizedNameType }
@@ -97,6 +108,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 移除本地化服务描述。
+     *
      * remove serviceDescription.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link LocalizedNameType }
@@ -106,6 +119,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 移除请求的属性。
+     *
      * remove requestedAttribute
      * <p>
      * Objects of the following type(s) are allowed in the list {@link RequestedAttributeType }
@@ -115,6 +130,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 获取服务名称列表（只读）。
+     *
      * Gets the value of the serviceName property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link LocalizedNameType }
@@ -124,6 +141,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 获取服务描述列表（只读）。
+     *
      * Gets the value of the serviceDescription property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link LocalizedNameType }
@@ -133,6 +152,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 获取请求属性列表（只读）。
+     *
      * Gets the value of the requestedAttribute property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link RequestedAttributeType }
@@ -142,6 +163,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 获取服务索引号。
+     *
      * Gets the value of the index property.
      */
     public int getIndex() {
@@ -149,6 +172,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 获取是否为默认属性消费服务。
+     *
      * Gets the value of the isDefault property.
      *
      * @return possible object is {@link Boolean }
@@ -158,6 +183,8 @@ public class AttributeConsumingServiceType {
     }
 
     /**
+     * 设置是否为默认属性消费服务。
+     *
      * Sets the value of the isDefault property.
      *
      * @param value allowed object is {@link Boolean }

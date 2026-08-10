@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v2.assertion;
 import java.net.URI;
 
 /**
+ * SAML 2.0 URI 值类型接口：以 {@link java.net.URI} 承载 URI 字符串值。
+ *
  * A type that holds {@code URI}
  *
  * @author Anil.Saldhana@redhat.com
@@ -26,5 +28,6 @@ import java.net.URI;
  */
 public interface URIType {
 
+    /** 获取 URI 值。 */
     URI getValue();
 }

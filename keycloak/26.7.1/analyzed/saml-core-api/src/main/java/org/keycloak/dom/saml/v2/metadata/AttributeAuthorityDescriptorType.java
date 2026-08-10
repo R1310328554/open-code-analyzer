@@ -25,6 +25,8 @@ import org.keycloak.dom.saml.v2.assertion.AttributeType;
 /**
  * <p>
  * Java class for AttributeAuthorityDescriptorType complex type.
+ * SAML 2.0 属性权威描述符：声明属性服务、断言 ID 请求服务、NameID 格式及支持的属性配置。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -60,11 +62,14 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
 
     protected List<AttributeType> attribute = new ArrayList<>();
 
+    /** 以支持的协议列表构造属性权威描述符。 */
     public AttributeAuthorityDescriptorType(List<String> protocolSupport) {
         super(protocolSupport);
     }
 
     /**
+     * 添加属性服务端点。
+     *
      * Add an attribute service
      *
      * @param endpoint
@@ -74,6 +79,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 添加断言 ID 请求服务端点。
+     *
      * Add an assertion id request service
      *
      * @param endpoint
@@ -83,6 +90,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 添加支持的 NameID 格式 URI。
+     *
      * Add a name id
      *
      * @param str
@@ -92,6 +101,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 添加属性配置文件 URI。
+     *
      * Add an attribute profile
      *
      * @param str
@@ -101,6 +112,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 添加一条支持的属性。
+     *
      * Add an attribute
      *
      * @param attribute
@@ -110,6 +123,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除属性服务端点。
+     *
      * Remove an attribute service
      *
      * @param endpoint
@@ -119,6 +134,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除断言 ID 请求服务端点。
+     *
      * Remove assertion id request service
      *
      * @param endpoint
@@ -128,6 +145,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除 NameID 格式 URI。
+     *
      * Remove Name ID
      *
      * @param str
@@ -137,6 +156,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除属性配置文件 URI。
+     *
      * Remove attribute profile
      *
      * @param str
@@ -146,6 +167,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除一条支持的属性。
+     *
      * Remove attribute
      *
      * @param attribute
@@ -155,6 +178,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 获取属性服务端点列表（只读）。
+     *
      * Gets the value of the attributeService property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EndpointType }
@@ -164,6 +189,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 获取断言 ID 请求服务端点列表（只读）。
+     *
      * Gets the value of the assertionIDRequestService property.
      *
      * <p>
@@ -174,6 +201,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 获取 NameID 格式 URI 列表（只读）。
+     *
      * Gets the value of the nameIDFormat property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link String }
@@ -183,6 +212,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 获取属性配置文件 URI 列表（只读）。
+     *
      * Gets the value of the attributeProfile property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link String }
@@ -192,6 +223,8 @@ public class AttributeAuthorityDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 获取支持的属性列表（只读）。
+     *
      * Gets the value of the attribute property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link AttributeType }

@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for ContactType complex type.
+ * SAML 2.0 元数据联系人：含公司、姓名、邮箱、电话及联系人类型（technical/support 等）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -63,11 +65,14 @@ public class ContactType extends TypeWithOtherAttributes {
 
     protected ContactTypeType contactType;
 
+    /** 以联系人类型构造联系人。 */
     public ContactType(ContactTypeType contactType) {
         this.contactType = contactType;
     }
 
     /**
+     * 获取 扩展元素 属性的值。
+     *
      * Gets the value of the extensions property.
      *
      * @return possible object is {@link ExtensionsType }
@@ -77,6 +82,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 扩展元素 属性的值。
+     *
      * Sets the value of the extensions property.
      *
      * @param value allowed object is {@link ExtensionsType }
@@ -86,6 +93,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 公司名称 属性的值。
+     *
      * Gets the value of the company property.
      *
      * @return possible object is {@link String }
@@ -95,6 +104,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 公司名称 属性的值。
+     *
      * Sets the value of the company property.
      *
      * @param value allowed object is {@link String }
@@ -104,6 +115,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 名（GivenName） 属性的值。
+     *
      * Gets the value of the givenName property.
      *
      * @return possible object is {@link String }
@@ -113,6 +126,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 名（GivenName） 属性的值。
+     *
      * Sets the value of the givenName property.
      *
      * @param value allowed object is {@link String }
@@ -122,6 +137,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 姓（SurName） 属性的值。
+     *
      * Gets the value of the surName property.
      *
      * @return possible object is {@link String }
@@ -131,6 +148,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 姓（SurName） 属性的值。
+     *
      * Sets the value of the surName property.
      *
      * @param value allowed object is {@link String }
@@ -140,6 +159,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 添加电子邮箱地址。
+     *
      * Add an email address
      *
      * @param email
@@ -149,6 +170,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除电话号码。
+     *
      * remove a telephone
      *
      * @param tel
@@ -158,6 +181,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除电子邮箱地址。
+     *
      * remove an email address
      *
      * @param email
@@ -167,6 +192,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 添加电话号码。
+     *
      * Add a telephone
      *
      * @param tel
@@ -176,6 +203,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取电子邮箱地址列表（只读）。
+     *
      * Gets the value of the emailAddress property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link String }
@@ -185,6 +214,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取电话号码列表（只读）。
+     *
      * Gets the value of the telephoneNumber property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link String }
@@ -194,6 +225,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取联系人类型。
+     *
      * Gets the value of the contactType property.
      *
      * @return possible object is {@link ContactTypeType }
@@ -203,6 +236,8 @@ public class ContactType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置联系人类型。
+     *
      * Sets the value of the contactType property.
      *
      * @param value allowed object is {@link ContactTypeType }

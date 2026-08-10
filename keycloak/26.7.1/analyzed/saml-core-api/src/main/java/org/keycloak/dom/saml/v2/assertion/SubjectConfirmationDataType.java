@@ -26,6 +26,8 @@ import javax.xml.namespace.QName;
 /**
  * <p>
  * Java class for SubjectConfirmationDataType complex type.
+ * SAML 2.0 主体确认数据：携带 NotBefore/NotOnOrAfter 时间窗口、Recipient、InResponseTo 等约束及扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -63,15 +65,19 @@ public class SubjectConfirmationDataType implements Serializable {
 
     private Object anyType;
 
+    /** 获取扩展任意类型元素。 */
     public Object getAnyType() {
         return anyType;
     }
 
+    /** 设置扩展任意类型元素。 */
     public void setAnyType(Object anyType) {
         this.anyType = anyType;
     }
 
     /**
+     * 获取 生效起始时间（NotBefore） 属性的值。
+     *
      * Gets the value of the notBefore property.
      *
      * @return possible object is {@link XMLGregorianCalendar }
@@ -81,6 +87,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 设置 生效起始时间（NotBefore） 属性的值。
+     *
      * Sets the value of the notBefore property.
      *
      * @param value allowed object is {@link XMLGregorianCalendar }
@@ -90,6 +98,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 获取 失效时间（NotOnOrAfter） 属性的值。
+     *
      * Gets the value of the notOnOrAfter property.
      *
      * @return possible object is {@link XMLGregorianCalendar }
@@ -99,6 +109,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 设置 失效时间（NotOnOrAfter） 属性的值。
+     *
      * Sets the value of the notOnOrAfter property.
      *
      * @param value allowed object is {@link XMLGregorianCalendar }
@@ -108,6 +120,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 获取 接收方 URI（Recipient） 属性的值。
+     *
      * Gets the value of the recipient property.
      *
      * @return possible object is {@link String }
@@ -117,6 +131,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 设置 接收方 URI（Recipient） 属性的值。
+     *
      * Sets the value of the recipient property.
      *
      * @param value allowed object is {@link String }
@@ -126,6 +142,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 获取 响应请求 ID（InResponseTo） 属性的值。
+     *
      * Gets the value of the inResponseTo property.
      *
      * @return possible object is {@link String }
@@ -135,6 +153,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 设置 响应请求 ID（InResponseTo） 属性的值。
+     *
      * Sets the value of the inResponseTo property.
      *
      * @param value allowed object is {@link String }
@@ -144,6 +164,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 获取 网络地址（Address） 属性的值。
+     *
      * Gets the value of the address property.
      *
      * @return possible object is {@link String }
@@ -153,6 +175,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 设置 网络地址（Address） 属性的值。
+     *
      * Sets the value of the address property.
      *
      * @param value allowed object is {@link String }
@@ -162,6 +186,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 获取未绑定到类型化属性的扩展属性映射（只读）。
+     *
      * Gets a map that contains attributes that aren't bound to any typed property on this class.
      *
      * <p>
@@ -174,6 +200,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 添加一条未绑定的扩展属性。
+     *
      * Add an other attribute
      *
      * @param qname
@@ -184,6 +212,8 @@ public class SubjectConfirmationDataType implements Serializable {
     }
 
     /**
+     * 移除一条未绑定的扩展属性。
+     *
      * Remove an other attribute
      *
      * @param qname {@link QName} of the attribute to be removed

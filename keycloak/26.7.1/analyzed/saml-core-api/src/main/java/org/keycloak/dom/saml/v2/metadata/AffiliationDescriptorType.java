@@ -26,6 +26,8 @@ import org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType;
 /**
  * <p>
  * Java class for AffiliationDescriptorType complex type.
+ * SAML 2.0 隶属描述符：描述多个实体间的隶属关系及关联成员、密钥与有效期。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -69,6 +71,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     protected String id;
 
     /**
+     * 获取 XML 数字签名 属性的值。
+     *
      * Gets the value of the signature property.
      *
      * @return possible object is {@link SignatureType }
@@ -78,6 +82,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 XML 数字签名 属性的值。
+     *
      * Sets the value of the signature property.
      *
      * @param value allowed object is {@link SignatureType }
@@ -87,6 +93,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 扩展元素 属性的值。
+     *
      * Gets the value of the extensions property.
      *
      * @return possible object is {@link ExtensionsType }
@@ -96,6 +104,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 扩展元素 属性的值。
+     *
      * Sets the value of the extensions property.
      *
      * @param value allowed object is {@link ExtensionsType }
@@ -105,6 +115,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取隶属成员 entityID 列表（实时列表，可修改）。
+     *
      * Gets the value of the affiliateMember property.
      *
      * <p>
@@ -132,6 +144,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取密钥描述符列表（实时列表，可修改）。
+     *
      * Gets the value of the keyDescriptor property.
      *
      * <p>
@@ -159,6 +173,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 隶属所有者 entityID 属性的值。
+     *
      * Gets the value of the affiliationOwnerID property.
      *
      * @return possible object is {@link String }
@@ -168,6 +184,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 隶属所有者 entityID 属性的值。
+     *
      * Sets the value of the affiliationOwnerID property.
      *
      * @param value allowed object is {@link String }
@@ -177,6 +195,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 元数据有效期 属性的值。
+     *
      * Gets the value of the validUntil property.
      *
      * @return possible object is {@link XMLGregorianCalendar }
@@ -186,6 +206,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 元数据有效期 属性的值。
+     *
      * Sets the value of the validUntil property.
      *
      * @param value allowed object is {@link XMLGregorianCalendar }
@@ -195,6 +217,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 缓存时长 属性的值。
+     *
      * Gets the value of the cacheDuration property.
      *
      * @return possible object is {@link Duration }
@@ -204,6 +228,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 缓存时长 属性的值。
+     *
      * Sets the value of the cacheDuration property.
      *
      * @param value allowed object is {@link Duration }
@@ -213,6 +239,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 文档 ID 属性的值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -222,6 +250,8 @@ public class AffiliationDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 文档 ID 属性的值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

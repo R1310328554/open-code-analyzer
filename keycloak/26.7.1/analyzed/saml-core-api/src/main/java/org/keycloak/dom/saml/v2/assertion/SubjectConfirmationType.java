@@ -22,6 +22,8 @@ import java.io.Serializable;
 /**
  * <p>
  * Java class for SubjectConfirmationType complex type.
+ * SAML 2.0 主体确认：通过 Method URI 描述确认方式，可携带 BaseID/NameID/EncryptedID 及确认数据。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -53,6 +55,8 @@ public class SubjectConfirmationType implements Serializable {
     protected String method;
 
     /**
+     * 获取 基础标识符（BaseID） 属性的值。
+     *
      * Gets the value of the baseID property.
      *
      * @return possible object is {@link BaseIDAbstractType }
@@ -62,6 +66,8 @@ public class SubjectConfirmationType implements Serializable {
     }
 
     /**
+     * 设置 基础标识符（BaseID） 属性的值。
+     *
      * Sets the value of the baseID property.
      *
      * @param value allowed object is {@link BaseIDAbstractType }
@@ -71,6 +77,8 @@ public class SubjectConfirmationType implements Serializable {
     }
 
     /**
+     * 获取 名称标识符（NameID） 属性的值。
+     *
      * Gets the value of the nameID property.
      *
      * @return possible object is {@link NameIDType }
@@ -80,6 +88,8 @@ public class SubjectConfirmationType implements Serializable {
     }
 
     /**
+     * 设置 名称标识符（NameID） 属性的值。
+     *
      * Sets the value of the nameID property.
      *
      * @param value allowed object is {@link NameIDType }
@@ -89,6 +99,8 @@ public class SubjectConfirmationType implements Serializable {
     }
 
     /**
+     * 获取 加密标识符（EncryptedID） 属性的值。
+     *
      * Gets the value of the encryptedID property.
      *
      * @return possible object is {@link EncryptedElementType }
@@ -98,6 +110,8 @@ public class SubjectConfirmationType implements Serializable {
     }
 
     /**
+     * 设置 加密标识符（EncryptedID） 属性的值。
+     *
      * Sets the value of the encryptedID property.
      *
      * @param value allowed object is {@link EncryptedElementType }
@@ -107,6 +121,8 @@ public class SubjectConfirmationType implements Serializable {
     }
 
     /**
+     * 获取 主体确认数据 属性的值。
+     *
      * Gets the value of the subjectConfirmationData property.
      *
      * @return possible object is {@link SubjectConfirmationDataType }
@@ -116,6 +132,8 @@ public class SubjectConfirmationType implements Serializable {
     }
 
     /**
+     * 设置 主体确认数据 属性的值。
+     *
      * Sets the value of the subjectConfirmationData property.
      *
      * @param value allowed object is {@link SubjectConfirmationDataType }
@@ -125,6 +143,8 @@ public class SubjectConfirmationType implements Serializable {
     }
 
     /**
+     * 获取 确认方法 URI（Method） 属性的值。
+     *
      * Gets the value of the method property.
      *
      * @return possible object is {@link String }
@@ -134,6 +154,8 @@ public class SubjectConfirmationType implements Serializable {
     }
 
     /**
+     * 设置 确认方法 URI（Method） 属性的值。
+     *
      * Sets the value of the method property.
      *
      * @param value allowed object is {@link String }
