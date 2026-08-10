@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.model.Page;
 
 /**
  * Persist service for ai_resource_version.
+ * <p>{@code ai_resource_version} 表持久化服务接口，管理版本行 CRUD、存储 JSON 与下载计数。</p>
  *
  * @author nacos
  * @since 3.2.0
@@ -50,6 +51,7 @@ public interface AiResourceVersionPersistService {
     /**
      * Update only the {@code contentMd5} entry inside the {@code storage} JSON column. The provider,
      * scope and files entries are preserved by performing a read-merge-write on the existing row.
+     * <p>仅更新 storage JSON 中的 {@code contentMd5} 字段，读-合并-写保留 provider/scope/files；用于监听器路径为历史版本回填 MD5。</p>
      *
      * <p>Used by the skill listener path to back-fill the content MD5 for historical versions that
      * were published before the listener feature shipped.
@@ -76,6 +78,7 @@ public interface AiResourceVersionPersistService {
      * @param version     version string
      * @param increment   amount to add
      * @return number of rows affected
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     int incrementDownloadCount(String namespaceId, String name, String type, String version,
         long increment);

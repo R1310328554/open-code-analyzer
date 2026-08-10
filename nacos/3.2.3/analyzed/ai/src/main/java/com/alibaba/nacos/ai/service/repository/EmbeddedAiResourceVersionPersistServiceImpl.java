@@ -45,6 +45,7 @@ import java.util.Arrays;
 
 /**
  * Embedded (Derby) persist service for {@link AiResourceVersion}.
+ * <p>嵌入式 Derby 存储的 {@link AiResourceVersion} 持久化实现，版本行 CRUD 与下载计数逻辑与外部 JDBC 实现保持一致。</p>
  */
 @Conditional(value = ConditionOnEmbeddedStorage.class)
 @Service
@@ -57,6 +58,7 @@ public class EmbeddedAiResourceVersionPersistServiceImpl
     
     private final MapperManager mapperManager;
     
+    /** 构造并注册 Derby 导入事件发布者。 */
     public EmbeddedAiResourceVersionPersistServiceImpl(DatabaseOperate databaseOperate) {
         this.databaseOperate = databaseOperate;
         this.dataSourceService = DynamicDataSource.getInstance().getDataSource();

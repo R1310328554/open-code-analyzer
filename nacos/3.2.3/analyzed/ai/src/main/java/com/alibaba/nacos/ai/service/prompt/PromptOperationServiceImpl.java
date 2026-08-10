@@ -70,6 +70,7 @@ import java.util.UUID;
 
 /**
  * Prompt lifecycle operation service implementation.
+ * <p>Prompt 生命周期操作服务实现，治理模式与 {@code SkillOperationServiceImpl} 一致：DB 元数据 + NacosConfig 内容存储。</p>
  *
  * <p>Follows the same governance pattern as {@code SkillOperationServiceImpl}:
  * DB metadata (ai_resource + ai_resource_version) + NacosConfig content (via AiResourceStorageRouter).</p>
@@ -951,6 +952,7 @@ public class PromptOperationServiceImpl implements PromptOperationService {
     
     /**
      * Parse biz tags JSON string to list. Supports JSON array format and comma-separated fallback.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static List<String> parseBizTagsList(String bizTags) {
         if (StringUtils.isBlank(bizTags)) {
@@ -1034,6 +1036,7 @@ public class PromptOperationServiceImpl implements PromptOperationService {
     
     /**
      * Load all version rows for a prompt by paginating through all pages.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private List<AiResourceVersion> loadAllVersionRows(String namespaceId, String promptKey) {
         List<AiResourceVersion> all = new ArrayList<>();
@@ -1094,6 +1097,7 @@ public class PromptOperationServiceImpl implements PromptOperationService {
     
     /**
      * Resolve version for client query. Priority: explicit version > label > latest.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private String resolveClientVersion(PromptVersionInfoPojo info, String version, String label) {
         if (StringUtils.isNotBlank(version)) {

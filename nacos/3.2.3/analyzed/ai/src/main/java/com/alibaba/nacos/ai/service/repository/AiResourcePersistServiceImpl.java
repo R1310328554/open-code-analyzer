@@ -46,6 +46,7 @@ import java.util.Arrays;
 
 /**
  * Jdbc based persist service for {@link AiResource}.
+ * <p>基于 JDBC 的外部存储 {@link AiResource} 持久化实现，通过 datasource-plugin {@link AiResourceMapper} 生成与 Nacos 配置一致的 SQL。</p>
  *
  * <p>Uses datasource-plugin {@link AiResourceMapper} to keep SQL generation consistent with Nacos config.</p>
  *
@@ -62,6 +63,7 @@ public class AiResourcePersistServiceImpl implements AiResourcePersistService {
     
     private final MapperManager mapperManager;
     
+    /** 默认构造：从 {@link DynamicDataSource} 获取 JdbcTemplate 与 MapperManager。 */
     public AiResourcePersistServiceImpl() {
         this.dataSourceService = DynamicDataSource.getInstance().getDataSource();
         this.jt = dataSourceService.getJdbcTemplate();

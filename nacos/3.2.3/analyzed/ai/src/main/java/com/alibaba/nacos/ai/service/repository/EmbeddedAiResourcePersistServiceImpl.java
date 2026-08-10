@@ -45,6 +45,7 @@ import java.util.Arrays;
 
 /**
  * Embedded (Derby) persist service for {@link AiResource}.
+ * <p>嵌入式 Derby 存储的 {@link AiResource} 持久化实现，适用于单机/嵌入式部署，通过 {@link DatabaseOperate} 与 {@link EmbeddedStorageContextHolder} 执行 SQL。</p>
  */
 @Conditional(value = ConditionOnEmbeddedStorage.class)
 @Service
@@ -56,6 +57,7 @@ public class EmbeddedAiResourcePersistServiceImpl implements AiResourcePersistSe
     
     private final MapperManager mapperManager;
     
+    /** 构造并注册 Derby 导入事件发布者。 */
     public EmbeddedAiResourcePersistServiceImpl(DatabaseOperate databaseOperate) {
         this.databaseOperate = databaseOperate;
         this.dataSourceService = DynamicDataSource.getInstance().getDataSource();

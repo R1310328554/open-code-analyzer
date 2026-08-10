@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * Prompt client operation service implementation.
+ * <p>Prompt 客户端操作服务实现，委托 {@link PromptOperationService} 从 DB 元数据与 SPI 存储读取内容，并增加 MD5 条件拉取以支持 SDK 长轮询。</p>
  *
  * <p>Delegates runtime prompt queries to {@link PromptOperationService} which reads from
  * DB metadata (ai_resource + ai_resource_version) and SPI storage (AiResourceStorageRouter).

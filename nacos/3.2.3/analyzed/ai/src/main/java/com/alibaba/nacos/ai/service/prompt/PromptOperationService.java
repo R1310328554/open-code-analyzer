@@ -29,6 +29,7 @@ import java.util.Map;
 
 /**
  * Prompt lifecycle operation service.
+ * <p>Prompt 生命周期操作服务：DB 存元数据、NacosConfig 存内容的双层架构，治理流程对标 Skill（草稿→提交→审核→发布→上下线）。</p>
  *
  * <p>Manages the complete lifecycle of prompts through a double-layer storage architecture:
  * DB (ai_resource + ai_resource_version) for metadata, NacosConfig (via AiResourceStorageRouter) for content.
@@ -38,7 +39,7 @@ import java.util.Map;
  */
 public interface PromptOperationService {
     
-    // ========== Admin APIs ==========
+    // ========== 管理端 API ==========
     
     /**
      * Create a new draft version for a prompt.
@@ -57,6 +58,7 @@ public interface PromptOperationService {
      * @param bizTags        biz tags JSON (only allowed on first creation)
      * @return the created draft version string
      * @throws NacosException if validation fails or conflict exists
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     String createDraft(String namespaceId, String promptKey, String basedOnVersion,
         String targetVersion,
@@ -73,6 +75,7 @@ public interface PromptOperationService {
      * @param variables   updated variable definitions
      * @param commitMsg   updated commit message
      * @throws NacosException if no editing draft exists or version is not in draft status
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void updateDraft(String namespaceId, String promptKey, String template,
         List<PromptVariable> variables,
@@ -84,6 +87,7 @@ public interface PromptOperationService {
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
      * @throws NacosException if prompt not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void deleteDraft(String namespaceId, String promptKey) throws NacosException;
     
@@ -95,6 +99,7 @@ public interface PromptOperationService {
      * @param version     version to submit (optional; defaults to current editing version)
      * @return the submitted version string
      * @throws NacosException if no draft version exists or submission fails
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     String submit(String namespaceId, String promptKey, String version) throws NacosException;
     
@@ -106,6 +111,7 @@ public interface PromptOperationService {
      * @param version           version to publish
      * @param updateLatestLabel whether to update the "latest" label to this version
      * @throws NacosException if version is not in reviewing/online status or pipeline not approved
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void publish(String namespaceId, String promptKey, String version, boolean updateLatestLabel)
         throws NacosException;
@@ -118,6 +124,7 @@ public interface PromptOperationService {
      * @param version           version to force-publish
      * @param updateLatestLabel whether to update the "latest" label
      * @throws NacosException if version not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void forcePublish(String namespaceId, String promptKey, String version,
         boolean updateLatestLabel)
@@ -130,6 +137,7 @@ public interface PromptOperationService {
      * @param promptKey   prompt key
      * @param version     version to re-edit
      * @throws NacosException if version not found or not in reviewed status
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void redraft(String namespaceId, String promptKey, String version) throws NacosException;
     
@@ -141,6 +149,7 @@ public interface PromptOperationService {
      * @param version     version to operate
      * @param online      true means online, false means offline
      * @throws NacosException if version not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void changeOnlineStatus(String namespaceId, String promptKey, String version, boolean online)
         throws NacosException;
@@ -152,6 +161,7 @@ public interface PromptOperationService {
      * @param promptKey   prompt key
      * @param labels      label-to-version mapping
      * @throws NacosException if prompt not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void updateLabels(String namespaceId, String promptKey, Map<String, String> labels)
         throws NacosException;
@@ -163,6 +173,7 @@ public interface PromptOperationService {
      * @param promptKey   prompt key
      * @param bizTags     biz tags JSON string
      * @throws NacosException if prompt not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void updateBizTags(String namespaceId, String promptKey, String bizTags) throws NacosException;
     
@@ -173,6 +184,7 @@ public interface PromptOperationService {
      * @param promptKey   prompt key
      * @param description new description
      * @throws NacosException if prompt not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void updateDescription(String namespaceId, String promptKey, String description)
         throws NacosException;
@@ -183,6 +195,7 @@ public interface PromptOperationService {
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
      * @throws NacosException if deletion fails
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void deletePrompt(String namespaceId, String promptKey) throws NacosException;
     
@@ -193,6 +206,7 @@ public interface PromptOperationService {
      * @param promptKey   prompt key
      * @return prompt meta info with governance data and version list
      * @throws NacosException if prompt not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     PromptMetaInfo getPromptDetail(String namespaceId, String promptKey) throws NacosException;
     
@@ -204,6 +218,7 @@ public interface PromptOperationService {
      * @param version     target version
      * @return prompt version content
      * @throws NacosException if prompt or version not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     PromptVersionInfo getPromptVersionDetail(String namespaceId, String promptKey, String version)
         throws NacosException;
@@ -217,6 +232,7 @@ public interface PromptOperationService {
      * @param version     version string
      * @return prompt version content
      * @throws NacosException if prompt or version not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     PromptVersionInfo downloadPromptVersion(String namespaceId, String promptKey, String version)
         throws NacosException;
@@ -232,6 +248,7 @@ public interface PromptOperationService {
      * @param pageSize    page size
      * @return paged prompt summary list
      * @throws NacosException if query fails
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     Page<PromptMetaSummary> listPrompts(String namespaceId, String promptKey, String search,
         String bizTags, int pageNo,
@@ -246,12 +263,13 @@ public interface PromptOperationService {
      * @param pageSize    page size
      * @return paged version summary list
      * @throws NacosException if prompt not found
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     Page<PromptVersionSummary> listPromptVersions(String namespaceId, String promptKey, int pageNo,
         int pageSize)
         throws NacosException;
     
-    // ========== Client APIs ==========
+    // ========== 客户端 API ==========
     
     /**
      * Query prompt for runtime client usage. Priority: version > label > latest(label).
@@ -262,6 +280,7 @@ public interface PromptOperationService {
      * @param label       route label, e.g. latest/stable (optional)
      * @return prompt version content
      * @throws NacosException if prompt not found or no matching version
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     PromptVersionInfo queryPrompt(String namespaceId, String promptKey, String version,
         String label)
@@ -274,10 +293,11 @@ public interface PromptOperationService {
      * @param namespaceId namespace ID
      * @param promptKey   prompt key
      * @throws NacosException if refresh fails
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     void refreshLatestMirror(String namespaceId, String promptKey) throws NacosException;
     
-    // ========== Legacy compatibility APIs (deprecated) ==========
+    // ========== 遗留兼容 API（已废弃） ==========
     
     /**
      * Legacy one-shot publish: creates a draft, submits it, and publishes if no pipeline is configured.
@@ -285,6 +305,7 @@ public interface PromptOperationService {
      * lifecycle steps (publish/online) via the new APIs.
      *
      * @deprecated Use {@link #createDraft} + {@link #submit} instead.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Deprecated
     boolean publishPromptVersion(String namespaceId, String promptKey, String version,
@@ -296,6 +317,7 @@ public interface PromptOperationService {
      * Legacy get prompt metadata.
      *
      * @deprecated Use {@link #getPromptDetail} instead.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Deprecated
     PromptMetaInfo getPromptMeta(String namespaceId, String promptKey) throws NacosException;
@@ -304,6 +326,7 @@ public interface PromptOperationService {
      * Legacy query prompt detail by version/label/latest.
      *
      * @deprecated Use {@link #getPromptVersionDetail} for admin or {@link #queryPrompt} for client.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Deprecated
     PromptVersionInfo queryPromptDetail(String namespaceId, String promptKey, String version,
@@ -314,6 +337,7 @@ public interface PromptOperationService {
      * Legacy bind label to a prompt version.
      *
      * @deprecated Use {@link #updateLabels} instead.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Deprecated
     boolean bindLabel(String namespaceId, String promptKey, String label, String version)
@@ -323,6 +347,7 @@ public interface PromptOperationService {
      * Legacy unbind label from a prompt.
      *
      * @deprecated Use {@link #updateLabels} instead.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Deprecated
     boolean unbindLabel(String namespaceId, String promptKey, String label) throws NacosException;
@@ -331,6 +356,7 @@ public interface PromptOperationService {
      * Legacy update prompt metadata (description and bizTags).
      *
      * @deprecated Use {@link #updateDescription} and {@link #updateBizTags} instead.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Deprecated
     boolean updatePromptMetadata(String namespaceId, String promptKey, String description,

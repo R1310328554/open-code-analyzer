@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Accumulates prompt download events in memory and flushes to DB periodically. Each node maintains its own counter
  * and uses atomic SQL ({@code download_count = download_count + N}) for cluster safety.
+ * <p>Prompt 下载计数管理器：内存累积 {@link PromptDownloadEvent}，定期刷入 DB；各节点独立计数，通过原子 SQL 增量更新保证集群安全。</p>
  *
  * <p>This class subscribes to {@link PromptDownloadEvent} via {@link NotifyCenter}.</p>
  *
@@ -53,14 +54,12 @@ public class PromptDownloadCountManager extends SmartSubscriber {
     
     private static final String RESOURCE_TYPE_PROMPT = "prompt";
     
-    /**
-     * Flush interval in seconds.
-     */
+    /** 刷盘间隔（秒）。 */
+
     private static final long FLUSH_INTERVAL_SECONDS = 10;
     
-    /**
-     * In-memory counter. Key = composite key (ns + name + version), Value = accumulated count.
-     */
+    /** 内存计数器：键为命名空间+名称+版本复合键，值为累计下载次数。 */
+
     private final ConcurrentHashMap<DownloadCountKey, AtomicLong> counterMap =
         new ConcurrentHashMap<>();
     
@@ -103,6 +102,7 @@ public class PromptDownloadCountManager extends SmartSubscriber {
     
     /**
      * Swap and flush all accumulated counts to DB.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private void flush() {
         if (counterMap.isEmpty()) {
@@ -116,10 +116,10 @@ public class PromptDownloadCountManager extends SmartSubscriber {
             }
             DownloadCountKey key = entry.getKey();
             try {
-                // Increment version-level count
+                // 递增版本级下载计数
                 aiResourceVersionPersistService.incrementDownloadCount(key.namespaceId, key.name,
                     RESOURCE_TYPE_PROMPT, key.version, count);
-                // Increment total count on resource
+                // 递增资源 meta 总下载计数
                 aiResourcePersistService.incrementDownloadCount(key.namespaceId, key.name,
                     RESOURCE_TYPE_PROMPT,
                     count);
@@ -127,7 +127,7 @@ public class PromptDownloadCountManager extends SmartSubscriber {
                 LOGGER.warn("Failed to flush prompt download count for {}@{}: {}", key.name,
                     key.version,
                     e.getMessage());
-                // Put the count back for retry on next flush
+                // 刷盘失败时将计数放回，下次重试
                 counterMap.computeIfAbsent(key, k -> new AtomicLong(0)).addAndGet(count);
             }
         }
@@ -135,6 +135,7 @@ public class PromptDownloadCountManager extends SmartSubscriber {
     
     /**
      * Flush remaining counts and shut down the scheduler.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @PreDestroy
     public void shutdown() {
@@ -149,6 +150,7 @@ public class PromptDownloadCountManager extends SmartSubscriber {
     
     /**
      * Composite key for download counter.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static final class DownloadCountKey {
         

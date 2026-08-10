@@ -69,6 +69,7 @@ import java.util.concurrent.Executor;
 
 /**
  * AgentSpec operation service implementation. Mirrors {@code SkillOperationServiceImpl} with AgentSpec types.
+ * <p>AgentSpec 操作服务实现，对标 {@code SkillOperationServiceImpl}，管理 AgentSpec 全生命周期：ZIP 上传（单包/批量）、内置规格引导、草稿/审核/发布工作流、查询与删除。内容由 {@link AiResourceStorageRouter} 持久化，元数据经 {@link AiResourcePersistService}（meta 行）与 {@link AiResourceVersionPersistService}（version 行）跟踪。</p>
  *
  * <p>Manages the full lifecycle of AgentSpecs: upload (single or batch), bootstrap built-in specs,
  * draft/review/publish workflow, querying, and deletion. Each AgentSpec consists of a main config
@@ -123,6 +124,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
      * Core draft creation logic shared by upload, overwrite, and createDraft flows.
      * Steps: 1) write main config + resource files to storage, 2) insert a draft version row,
      * 3) create or update the meta row with editingVersion pointer.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private void createDraftWithAgentSpec(String namespaceId, AgentSpec agentSpec, String version,
         AiResource existedMeta, boolean isNew) throws NacosException {
@@ -154,6 +156,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Get AgentSpec detail metadata including all version summaries, labels, and online count.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public AgentSpecMeta getAgentSpecDetail(String namespaceId, String agentSpecName)
@@ -214,6 +217,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Get the full content of a specific AgentSpec version by reading from storage.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public AgentSpec getAgentSpecVersionDetail(String namespaceId, String agentSpecName,
@@ -242,6 +246,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Get agentspec version metadata without resource content. Only reads the main config file (manifest.json) and
      * builds resource list from the reference entries, skipping all resource file IO.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public AgentSpec getAgentSpecVersionMeta(String namespaceId, String agentSpecName,
@@ -269,6 +274,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Delete an AgentSpec entirely. Removes all version storage files, version rows, and the meta row.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void deleteAgentSpec(String namespaceId, String agentSpecName) throws NacosException {
@@ -295,6 +301,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * List AgentSpecs with optional name filter, ordering, owner/scope filter, and pagination.
      * Supports both accurate and fuzzy name matching.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public Page<AgentSpecSummary> listAgentSpecs(String namespaceId, String agentSpecName,
@@ -361,6 +368,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Upload AgentSpec(s) from a ZIP archive. Supports both single-spec ZIPs and multi-spec seed archives
      * (containing multiple inner ZIPs). Each spec is processed via {@link #uploadSingleAgentSpecFromZip}.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public String uploadAgentSpecFromZip(String namespaceId, byte[] zipBytes, boolean overwrite)
@@ -387,6 +395,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Try to read the ZIP as a multi-spec seed archive. Returns empty list if it's a regular single-spec ZIP.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private List<AgentSpecSeedArchiveReader.AgentSpecPackage> readUploadPackages(byte[] zipBytes)
         throws NacosException {
@@ -402,6 +411,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Upload a single AgentSpec from ZIP bytes.
      * If overwrite=true, replaces existing draft or creates new. Otherwise fails on working version conflict.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private String uploadSingleAgentSpecFromZip(String namespaceId, byte[] zipBytes,
         boolean overwrite)
@@ -446,6 +456,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Bootstrap a built-in AgentSpec from a ZIP archive (delegates to the overload with null source).
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void bootstrapAgentSpecFromZip(String namespaceId, byte[] zipBytes)
@@ -457,6 +468,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
      * Bootstrap a built-in AgentSpec from a ZIP archive. Skips if the spec already exists
      * (unless it detects the existing content is broken and needs repair).
      * Directly writes storage and creates a published meta + version in one step (no draft workflow).
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void bootstrapAgentSpecFromZip(String namespaceId, byte[] zipBytes, String from)
@@ -497,6 +509,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
      * and critical content (e.g., AGENTS.md) is missing from the current storage.
      *
      * @return true if repair was performed
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private boolean repairBuiltInAgentSpecIfBroken(String namespaceId, AiResource meta,
         AgentSpec bundledAgentSpec)
@@ -558,6 +571,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Handle overwrite upload: if an editing draft exists, overwrite it in-place;
      * otherwise create a new draft with a bumped version.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private String overwriteUploadedAgentSpec(String namespaceId, AgentSpec agentSpec,
         AiResource meta)
@@ -588,6 +602,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Overwrite an existing editing draft's storage content, version description, and meta info.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private void overwriteEditingDraft(String namespaceId, AgentSpec agentSpec, AiResource meta,
         String editing)
@@ -606,6 +621,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Search AgentSpecs by keyword (fuzzy name match). Only returns enabled specs with at least one online version.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public Page<AgentSpecBasicInfo> searchAgentSpecs(String namespaceId, String keyword, int pageNo,
@@ -649,6 +665,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Query an AgentSpec for client consumption. Resolves the target version via explicit version or label,
      * checks the spec is enabled and the version is online, then loads content from storage.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public AgentSpec queryAgentSpec(String namespaceId, String name, String version, String label)
@@ -685,6 +702,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
      * Query an AgentSpec for the client listener path with MD5-based not-modified semantics.
      * When {@code clientMd5} matches the stored content MD5, returns a not-modified result so the
      * controller can return HTTP 304 without loading content.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public AgentSpecQueryResult queryAgentSpecForClient(String namespaceId, String name,
@@ -735,6 +753,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Read the persisted contentMd5 from the version row's storage JSON column.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private String readStoredContentMd5(String namespaceId, String name,
         String resolvedVersion) {
@@ -763,6 +782,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Back-fill: compute the content MD5 from the loaded AgentSpec and persist it into the
      * version row's storage column. Persistence failure is swallowed and logged.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private String backfillContentMd5(String namespaceId, String name,
         String resolvedVersion, AgentSpec agentSpec) {
@@ -794,6 +814,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
      * For brand-new specs, creates an empty AgentSpec draft.
      *
      * @return the newly created draft version string (e.g., "0.0.1", "0.0.2")
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public String createDraft(String namespaceId, String name, String basedOnVersion,
@@ -864,6 +885,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Update the content of an existing editing draft. If no meta exists, auto-creates a new draft.
      * Writes updated files to storage and bumps the meta description.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void updateDraft(String namespaceId, AgentSpec draftAgentSpec) throws NacosException {
@@ -908,6 +930,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Delete the current editing draft. Removes storage files, version row,
      * and clears the editingVersion pointer in meta.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void deleteDraft(String namespaceId, String name) throws NacosException {
@@ -921,6 +944,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
      * <p>Flow: resolve target version -> build pipeline context (with lazy file loading) ->
      * check if a publish pipeline is available. If no pipeline, publish directly;
      * otherwise move to reviewing and run the pipeline asynchronously.</p>
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public String submit(String namespaceId, String name, String version) throws NacosException {
@@ -978,6 +1002,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Publish a version: update version status to online and compute content MD5.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void publish(String namespaceId, String name, String version,
@@ -989,6 +1014,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Force-publish a draft, reviewing, or reviewed version.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void forcePublish(String namespaceId, String name, String version,
@@ -1001,6 +1027,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Compute content MD5 for a published version and persist it to the storage column.
      * Failure is logged but does not break the publish operation.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private void computeAndStoreContentMd5(String namespaceId, String name, String version) {
         try {
@@ -1021,6 +1048,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Update version labels (e.g., "latest") for an AgentSpec.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void updateLabels(String namespaceId, String name, Map<String, String> labels)
@@ -1030,6 +1058,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Update business tags on the AgentSpec meta.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void updateBizTags(String namespaceId, String name, String bizTags)
@@ -1045,6 +1074,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Toggle online/offline status at either AgentSpec scope (enable/disable the entire spec)
      * or version scope (toggle a specific version's online status).
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void changeOnlineStatus(String namespaceId, String name, String scope, String version,
@@ -1069,16 +1099,18 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Update the visibility scope of an AgentSpec.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @Override
     public void updateScope(String namespaceId, String name, String scope) throws NacosException {
         resourceManager.doUpdateScope(namespaceId, name, RESOURCE_TYPE_AGENTSPEC, scope);
     }
     
-    // ---- Private helper methods ----
+    // ---- 私有辅助方法 ----
     
     /**
      * Build main agentspec content as JSON bytes (manifest.json content stored as-is).
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static byte[] buildMainContent(AgentSpec agentSpec, long uniformId) {
         AgentSpecMainConfig mainConfig = new AgentSpecMainConfig();
@@ -1103,6 +1135,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Build resource content as JSON bytes.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static byte[] buildResourceContent(AgentSpecResource resource, long uniformId) {
         Map<String, Object> metadata = resource.getMetadata();
@@ -1116,6 +1149,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Resolve the storage provider from system config. Defaults to "nacos_config".
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static String resolveStorageProvider() {
         String provider =
@@ -1126,6 +1160,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Build storage metadata JSON for version row (provider + scope).
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static String buildStorageJson(String namespaceId, String agentSpecName,
         String version) {
@@ -1137,6 +1172,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Compute the next vN version number based on existing versions.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private String nextVersion(String namespaceId, String name) {
         List<String> existingVersions = resourceManager.listExistingVersions(namespaceId, name,
@@ -1186,6 +1222,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Check whether the built-in AgentSpec content is missing critical data (e.g., main content or AGENTS.md).
      * Used by bootstrap repair logic to decide if re-writing is needed.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static boolean isBuiltInContentMissing(AgentSpec currentAgentSpec,
         AgentSpec bundledAgentSpec) {
@@ -1220,6 +1257,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * Extract the content of the AGENTS.md resource from a resource map (case-insensitive match).
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static String extractAgentsContent(Map<String, AgentSpecResource> resources) {
         if (resources == null || resources.isEmpty()) {
@@ -1248,6 +1286,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
      *
      * <p>Files are persisted concurrently via a dedicated IO executor to reduce latency
      * when AgentSpec contains multiple resource files. Mirrors the Skill implementation.</p>
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private void writeAgentSpecToStorage(String namespaceId, AgentSpec agentSpec, String version,
         long uniformId)
@@ -1262,6 +1301,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
      * and waited on via {@link CompletableFuture#allOf}. Underlying {@link NacosException}s thrown from
      * individual save tasks are unwrapped from {@link CompletionException} and rethrown to keep the
      * original exception semantics aligned with the previous serial implementation.</p>
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private void saveAgentSpecFilesConcurrently(String namespaceId, AgentSpec agentSpec,
         String version, long uniformId) throws NacosException {
@@ -1318,6 +1358,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Load an AgentSpec from storage. Reads the main config JSON first to discover resource references,
      * then loads each resource file individually and assembles the full AgentSpec object.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private AgentSpec loadAgentSpecFromStorage(String namespaceId, String agentSpecName,
         String version)
@@ -1373,6 +1414,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Load agentspec metadata from storage without reading resource files. Only reads the main config (manifest.json)
      * and builds resource entries with name and type from the reference list.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private AgentSpec loadAgentSpecMetaFromStorage(String namespaceId, String agentSpecName,
         String version)
@@ -1413,6 +1455,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Build pipeline file representations from an AgentSpec for use by the publish pipeline executor.
      * Includes manifest.json (main content) and all resource files.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static List<ResourceFileContent> buildPipelineFiles(AgentSpec agentSpec) {
         List<ResourceFileContent> files = new ArrayList<>();
@@ -1433,6 +1476,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     /**
      * Build a storage-relative file path for a resource: "{type}/{name}" or just "{name}" if type is blank.
      * Avoids path duplication when name already contains the type prefix.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static String buildResourcePath(AgentSpecResource resource) {
         if (StringUtils.isBlank(resource.getType())) {
@@ -1450,6 +1494,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
      * Delete all storage files for a given AgentSpec version.
      * Reads the main config first to discover resource references, deletes each resource file,
      * then deletes the main config file itself.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private void deleteAgentSpecStorageForVersion(String namespaceId, String agentSpecName,
         String version)
@@ -1483,10 +1528,11 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
         storageRouter.route(mainKey).delete(mainKey);
     }
     
-    // ---- Inner classes ----
+    // ---- 内部类 ----
     
     /**
      * AgentSpec main config (from manifest.json storage wrapper).
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static class AgentSpecMainConfig {
         
@@ -1543,6 +1589,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
     
     /**
      * AgentSpec resource reference (in main config).
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static class AgentSpecResourceRef {
         

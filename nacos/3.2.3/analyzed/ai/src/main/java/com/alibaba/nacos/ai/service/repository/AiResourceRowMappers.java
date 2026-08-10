@@ -22,12 +22,14 @@ import org.springframework.jdbc.core.RowMapper;
 
 /**
  * Row mappers for ai_resource and ai_resource_version.
+ * <p>{@code ai_resource} 与 {@code ai_resource_version} 表的 RowMapper 定义，将 JDBC ResultSet 行映射为领域模型对象。</p>
  */
 final class AiResourceRowMappers {
     
     private AiResourceRowMappers() {
     }
     
+    /** 将 {@code ai_resource} 表行映射为 {@link AiResource}。 */
     static final RowMapper<AiResource> AI_RESOURCE_ROW_MAPPER = (rs, rowNum) -> {
         AiResource r = new AiResource();
         r.setId(rs.getLong("id"));
@@ -49,6 +51,7 @@ final class AiResourceRowMappers {
         return r;
     };
     
+    /** 将 {@code ai_resource_version} 表行映射为 {@link AiResourceVersion}。 */
     static final RowMapper<AiResourceVersion> AI_RESOURCE_VERSION_ROW_MAPPER = (rs, rowNum) -> {
         AiResourceVersion v = new AiResourceVersion();
         v.setId(rs.getLong("id"));

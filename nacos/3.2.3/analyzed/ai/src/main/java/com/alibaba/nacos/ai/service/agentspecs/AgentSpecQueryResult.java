@@ -22,6 +22,7 @@ import com.alibaba.nacos.api.ai.model.agentspecs.AgentSpec;
  * Result wrapper returned by the agentspec client query path. Carries the resolved {@link AgentSpec},
  * its published content MD5 and the resolved version string so the controller can populate
  * listener-related response headers without re-parsing metadata.
+ * <p>客户端 AgentSpec 查询路径的返回包装，携带已解析的 {@link AgentSpec}、内容 MD5 与版本号，供控制器填充监听器响应头而无需重复解析元数据。</p>
  *
  * <p>When the client-supplied MD5 matches the published one, {@link #isNotModified()} is
  * {@code true} and {@link #getAgentSpec()} is {@code null}; the controller maps this to HTTP 304
@@ -56,6 +57,7 @@ public class AgentSpecQueryResult {
      * Build a result that signals "client cache is fresh". The {@code agentSpec} payload is
      * intentionally left {@code null} so the controller can short-circuit to HTTP 304 without
      * loading content.
+     * <p>构建“客户端缓存仍有效”的结果，{@code agentSpec} 故意为 null 以便控制器直接返回 HTTP 304。</p>
      */
     public static AgentSpecQueryResult notModified(String md5, String resolvedVersion) {
         return new AgentSpecQueryResult(null, md5, resolvedVersion, true);

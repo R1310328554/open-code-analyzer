@@ -46,6 +46,7 @@ import java.util.Arrays;
 
 /**
  * Jdbc based persist service for {@link AiResourceVersion}.
+ * <p>基于 JDBC 的外部存储 {@link AiResourceVersion} 持久化实现，提供版本行插入、查询、分页、状态/存储更新与下载计数增量。</p>
  *
  * @author nacos
  * @since 3.2.0
@@ -60,6 +61,7 @@ public class AiResourceVersionPersistServiceImpl implements AiResourceVersionPer
     
     private final MapperManager mapperManager;
     
+    /** 默认构造：从 {@link DynamicDataSource} 获取 JdbcTemplate 与 MapperManager。 */
     public AiResourceVersionPersistServiceImpl() {
         this.dataSourceService = DynamicDataSource.getInstance().getDataSource();
         this.jt = dataSourceService.getJdbcTemplate();

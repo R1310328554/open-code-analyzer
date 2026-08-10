@@ -29,6 +29,7 @@ import java.util.List;
 
 /**
  * Service layer for Pipeline query operations.
+ * <p>流水线执行记录查询服务层，封装按 ID 查询与分页列表能力。</p>
  *
  * @author kiro
  * @since 3.2.0
@@ -44,6 +45,7 @@ public class PipelineQueryService {
     
     /**
      * Get a single pipeline execution by ID.
+     * <p>按 execution ID 查询单条流水线执行记录。</p>
      *
      * @param pipelineId the execution ID
      * @return the pipeline execution
@@ -60,6 +62,7 @@ public class PipelineQueryService {
     
     /**
      * List pipeline executions with pagination.
+     * <p>按资源维度分页列举流水线执行记录。</p>
      *
      * @param resourceType the resource type (required)
      * @param resourceName the resource name (optional)

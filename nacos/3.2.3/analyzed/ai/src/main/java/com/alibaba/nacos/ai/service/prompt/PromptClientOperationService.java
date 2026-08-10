@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 
 /**
  * Prompt client operation service.
+ * <p>Prompt 客户端操作服务，面向 SDK 运行时查询，支持基于 MD5 的条件拉取。</p>
  *
  * <p>Handles runtime prompt queries for SDK clients, including MD5-based conditional fetch.</p>
  *
@@ -30,6 +31,7 @@ public interface PromptClientOperationService {
     
     /**
      * Query prompt by version/label/latest with priority version > label > latest.
+     * <p>按 version &gt; label &gt; latest 优先级查询 Prompt，支持客户端 MD5 条件请求。</p>
      *
      * @param namespaceId the namespace id
      * @param promptKey   the prompt key
@@ -52,6 +54,7 @@ public interface PromptClientOperationService {
      * @param label       the label
      * @return the prompt version info
      * @throws NacosException the nacos exception
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     default PromptVersionInfo queryPrompt(String namespaceId, String promptKey, String version,
         String label)

@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.model.Page;
 
 /**
  * Persist service for ai_resource.
+ * <p>{@code ai_resource} 表持久化服务接口，提供 meta 行 CRUD、乐观锁更新与下载计数。</p>
  *
  * @author nacos
  * @since 3.2.0
@@ -32,6 +33,7 @@ public interface AiResourcePersistService {
     /**
      * Convert a search argument that may contain Nacos wildcard ({@code *}) to SQL LIKE syntax ({@code %}).
      * Also escapes the SQL single-char wildcard ({@code _}) with backslash.
+     * <p>将 Nacos 通配符搜索串转为 SQL LIKE 语法，与 {@code ConfigInfoPersistService#generateLikeArgument} 对齐。</p>
      *
      * <p>Aligned with {@code ConfigInfoPersistService#generateLikeArgument}.</p>
      *
@@ -58,6 +60,7 @@ public interface AiResourcePersistService {
     
     /**
      * List resources with basic filters.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     default Page<AiResource> list(String namespaceId, String type, String nameLike,
         String bizTagsLike, int pageNo,
@@ -74,6 +77,7 @@ public interface AiResourcePersistService {
      * List resources with optional ordering.
      *
      * @param orderBy sort field (e.g. "download_count"), null defaults to gmt_modified
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     default Page<AiResource> list(String namespaceId, String type, String nameLike,
         String bizTagsLike, String orderBy,
@@ -94,6 +98,7 @@ public interface AiResourcePersistService {
      * @param pageNo         page number (1-based)
      * @param pageSize       page size
      * @return paged resources
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     Page<AiResource> list(QueryCondition queryCondition, int pageNo, int pageSize);
     
@@ -101,6 +106,7 @@ public interface AiResourcePersistService {
      * Update meta with optimistic lock on meta_version.
      *
      * @return true if updated successfully (affectedRows == 1)
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     boolean updateMetaCas(String namespaceId, String name, String type, long expectedMetaVersion,
         AiResource newValue);
@@ -109,6 +115,7 @@ public interface AiResourcePersistService {
      * Update resource source with optimistic lock on meta_version.
      *
      * @return true if updated successfully (affectedRows == 1)
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     boolean updateSourceCas(String namespaceId, String name, String type, long expectedMetaVersion,
         String source);
@@ -119,6 +126,7 @@ public interface AiResourcePersistService {
      * Update the scope (visibility) of a resource.
      *
      * @return true if updated successfully (affectedRows == 1)
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     boolean updateScope(String namespaceId, String name, String type, String scope);
     
@@ -130,6 +138,7 @@ public interface AiResourcePersistService {
      * @param type        resource type
      * @param increment   amount to add
      * @return true if updated successfully
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     boolean incrementDownloadCount(String namespaceId, String name, String type, long increment);
     
