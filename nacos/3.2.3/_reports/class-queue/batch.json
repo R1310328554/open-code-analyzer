@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:53:08Z",
   "files": [
-    "logger-adapter-impl/logback-adapter-12/src/main/java/com/alibaba/nacos/logger/adapter/logback12/LogbackNacosLoggingAdapter.java",
-    "logger-adapter-impl/logback-adapter-12/src/main/java/com/alibaba/nacos/logger/adapter/logback12/LogbackNacosLoggingAdapterBuilder.java",
-    "logger-adapter-impl/logback-adapter-12/src/main/java/com/alibaba/nacos/logger/adapter/logback12/NacosClientPropertyAction.java",
-    "logger-adapter-impl/logback-adapter-12/src/main/java/com/alibaba/nacos/logger/adapter/logback12/NacosLogbackConfiguratorAdapterV1.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/DefaultAiResourceImportSourceProvider.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/http/DefaultImportHttpClient.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/http/ImportHttpResponse.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/mcp/McpRegistryClient.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/mcp/McpRegistryImportService.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/mcp/McpRegistryImportServiceBuilder.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/skill/SkillWellKnownImportService.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/skill/SkillWellKnownImportServiceBuilder.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/skill/SkillsShImportService.java",
-    "plugin-default-impl/nacos-default-ai-importer-plugin/src/main/java/com/alibaba/nacos/plugin/ai/importer/defaultimpl/skill/SkillsShImportServiceBuilder.java",
-    "plugin-default-impl/nacos-default-ai-pipeline-plugin/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/spi/impl/SkillScannerMarkdownFindingParser.java",
     "plugin-default-impl/nacos-default-ai-pipeline-plugin/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/spi/impl/SkillScannerPipelineService.java",
     "plugin-default-impl/nacos-default-ai-pipeline-plugin/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/spi/impl/SkillScannerPipelineServiceBuilder.java",
     "plugin-default-impl/nacos-default-ai-pipeline-plugin/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/spi/impl/SkillScannerScanOptions.java",
@@ -33,5 +18,5 @@
     "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/condition/ConditionOnRemoteDatasource.java"
   ],
   "remaining_pending": 317,
-  "done": 2190
+  "done": 2205
 }
