@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// users 包提供管理员级别的用户账户 CRUD API 处理器。
 package users
 
 import (
@@ -22,8 +23,7 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleList returns an http.HandlerFunc that writes a json-encoded
-// list of all registered system users to the response body.
+// HandleList 返回 HTTP 处理器，列出系统中所有注册用户并以 JSON 返回。
 func HandleList(users core.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		users, err := users.List(r.Context())

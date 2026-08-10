@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// users 包提供管理员级别的用户账户 CRUD API 处理器。
 package users
 
 import (
@@ -25,18 +26,14 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleFind returns an http.HandlerFunc that writes json-encoded
-// user account information to the response body.
+// HandleFind 返回 HTTP 处理器，按登录名或数值 ID 查询用户账户并以 JSON 返回。
 func HandleFind(users core.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		login := chi.URLParam(r, "user")
 
 		user, err := users.FindLogin(r.Context(), login)
 		if err != nil {
-			// the client can make a user request by providing
-			// the user id as opposed to the username. If a
-			// numeric user id is provided as input, attempt
-			// to lookup the user by id.
+			// 路径参数为纯数字时尝试按用户 ID 查找。
 			if id, _ := strconv.ParseInt(login, 10, 64); id != 0 {
 				user, err = users.Find(r.Context(), id)
 				if err == nil {

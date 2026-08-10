@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// user 包提供当前登录用户相关的 REST API 处理器。
 package user
 
 import (
@@ -24,8 +25,7 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleUpdate returns an http.HandlerFunc that processes an http.Request
-// to update the current user account.
+// HandleUpdate 返回 HTTP 处理器，根据请求体更新当前登录用户的账户信息。
 func HandleUpdate(users core.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		viewer, _ := request.UserFrom(r.Context())

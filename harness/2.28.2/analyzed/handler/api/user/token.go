@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// user 包提供当前登录用户相关的 REST API 处理器。
 package user
 
 import (
@@ -23,13 +24,14 @@ import (
 	"github.com/drone/drone/handler/api/request"
 )
 
+// userWithToken 在用户信息基础上附加 API 令牌字段，用于 JSON 响应。
 type userWithToken struct {
 	*core.User
 	Token string `json:"token"`
 }
 
-// HandleToken returns an http.HandlerFunc that writes json-encoded
-// account information to the http response body with the user token.
+// HandleToken 返回 HTTP 处理器，返回当前用户的账户信息及 API 令牌。
+// rotate=true 时重新生成并持久化新的令牌后再返回。
 func HandleToken(users core.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

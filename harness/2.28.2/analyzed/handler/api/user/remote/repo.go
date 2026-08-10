@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// remote 包提供从远程 SCM 查询仓库信息的 API 处理器。
 package remote
 
 import (
@@ -26,8 +27,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleRepo returns an http.HandlerFunc that writes a json-encoded
-// repository to the response body.
+// HandleRepo 返回 HTTP 处理器，按 owner/name 从远程 SCM 查询单个仓库并以 JSON 写入响应。
 func HandleRepo(repos core.RepositoryService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
@@ -46,6 +46,7 @@ func HandleRepo(repos core.RepositoryService) http.HandlerFunc {
 			return
 		}
 
+		// 附加当前用户在远程仓库上的权限信息。
 		perms, err := repos.FindPerm(r.Context(), viewer, slug)
 		if err != nil {
 			render.InternalError(w, err)

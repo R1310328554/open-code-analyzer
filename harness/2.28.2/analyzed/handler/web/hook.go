@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// web 包提供 SCM Webhook 回调与 Web UI 相关的 HTTP 处理器。
 package web
 
 import (
@@ -29,8 +30,7 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-// this is intended for local testing and instructs the handler
-// to print the contents of the hook to stdout.
+// debugPrintHook 为本地调试开关，启用时将 Webhook 请求内容打印到 stdout。
 var debugPrintHook = false
 
 func init() {
@@ -39,8 +39,7 @@ func init() {
 	)
 }
 
-// HandleHook returns an http.HandlerFunc that handles webhooks
-// triggered by source code management.
+// HandleHook 返回 HTTP 处理器，接收并处理来自源代码管理系统的 Webhook 回调。
 func HandleHook(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -50,8 +49,7 @@ func HandleHook(
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if debugPrintHook {
-			// if DRONE_DEBUG_DUMP_HOOK=true print the http.Request
-			// headers and body to stdout.
+			// DRONE_DEBUG_DUMP_HOOK=true 时将完整 HTTP 请求头与正文输出到 stderr。
 			out, _ := httputil.DumpRequest(r, true)
 			os.Stderr.Write(out)
 		}
@@ -111,12 +109,14 @@ func HandleHook(
 		ctx = logger.WithContext(ctx, log)
 		defer cancel()
 
+		// 分支删除事件：清理该分支关联的构建记录。
 		if hook.Event == core.EventPush && hook.Action == core.ActionDelete {
 			log.WithField("branch", hook.Target).Debugln("branch deleted")
 			builds.DeleteBranch(ctx, repo.ID, hook.Target)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+		// Pull Request 关闭事件：清理该 PR 关联的构建记录。
 		if hook.Event == core.EventPullRequest && hook.Action == core.ActionClose {
 			log.WithField("ref", hook.Ref).Debugln("pull request closed")
 			builds.DeletePull(ctx, repo.ID, scm.ExtractPullRequest(hook.Ref))

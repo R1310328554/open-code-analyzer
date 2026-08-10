@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// users 包提供管理员级别的用户账户 CRUD API 处理器。
 package users
 
 import (
@@ -26,13 +27,13 @@ import (
 	"github.com/drone/drone/logger"
 )
 
+// userWithToken 在用户信息基础上附加 API 令牌，用于创建机器账户时的响应。
 type userWithToken struct {
 	*core.User
 	Token string `json:"token"`
 }
 
-// HandleCreate returns an http.HandlerFunc that processes an http.Request
-// to create the named user account in the system.
+// HandleCreate 返回 HTTP 处理器，在系统中创建指定用户账户并以 JSON 返回。
 func HandleCreate(users core.UserStore, service core.UserService, sender core.WebhookSender) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		in := new(userWithToken)
@@ -57,9 +58,7 @@ func HandleCreate(users core.UserStore, service core.UserService, sender core.We
 			user.Hash = uniuri.NewLen(32)
 		}
 
-		// if the user is not a machine account, we lookup
-		// the user in the remote system. We can then augment
-		// the user input with the remote system data.
+		// 非机器账户时从远程 SCM 查找用户，用远程数据补全登录名与邮箱。
 		if !user.Machine {
 			viewer, _ := request.UserFrom(r.Context())
 			remote, err := service.FindLogin(r.Context(), viewer, user.Login)
@@ -106,8 +105,7 @@ func HandleCreate(users core.UserStore, service core.UserService, sender core.We
 		}
 
 		var out interface{} = user
-		// if the user is a machine account the api token
-		// is included in the response.
+		// 机器账户创建时在响应中附带 API 令牌。
 		if user.Machine {
 			out = &userWithToken{user, user.Hash}
 		}

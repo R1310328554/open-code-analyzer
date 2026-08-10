@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// remote 包提供从远程 SCM 查询仓库信息的 API 处理器。
 package remote
 
 import (
@@ -23,8 +24,7 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleRepos returns an http.HandlerFunc that write a json-encoded
-// list of repositories to the response body.
+// HandleRepos 返回 HTTP 处理器，列出当前用户在远程 SCM 上可访问的仓库并以 JSON 返回。
 func HandleRepos(repos core.RepositoryService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		viewer, _ := request.UserFrom(r.Context())

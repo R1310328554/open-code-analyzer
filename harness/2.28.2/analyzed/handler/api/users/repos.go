@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// users 包提供管理员级别的用户账户 CRUD API 处理器。
 package users
 
 import (
@@ -24,8 +25,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleRepoList returns an http.HandlerFunc that writes a json-encoded
-// list of all user repositories to the response body.
+// HandleRepoList 返回 HTTP 处理器，列出指定用户名下所有已激活仓库并以 JSON 返回。
 func HandleRepoList(users core.UserStore, repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		login := chi.URLParam(r, "user")

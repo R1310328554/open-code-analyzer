@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// users 包提供管理员级别的用户账户 CRUD API 处理器。
 package users
 
 import (
@@ -25,8 +26,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDelete returns an http.HandlerFunc that processes an http.Request
-// to delete the named user account from the system.
+// HandleDelete 返回 HTTP 处理器，从系统中删除指定用户账户并返回 204。
 func HandleDelete(
 	users core.UserStore,
 	transferer core.Transferer,
@@ -42,6 +42,7 @@ func HandleDelete(
 			return
 		}
 
+		// 删除前转移该用户名下仓库的所有权。
 		err = transferer.Transfer(context.Background(), user)
 		if err != nil {
 			logger.FromRequest(r).WithError(err).

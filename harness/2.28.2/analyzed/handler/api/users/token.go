@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// users 包提供管理员级别的用户账户 CRUD API 处理器。
 package users
 
 import (
@@ -24,13 +25,13 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// userWithMessage 在用户信息基础上附加操作结果消息，用于令牌轮换响应。
 type userWithMessage struct {
 	*core.User
 	Message string `json:"message"`
 }
 
-// HandleToken returns an http.HandlerFunc that writes json-encoded
-// account information to the http response body with the user token.
+// HandleTokenRotation 返回 HTTP 处理器，为指定用户重新生成 API 令牌并以 JSON 返回。
 func HandleTokenRotation(users core.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		login := chi.URLParam(r, "user")

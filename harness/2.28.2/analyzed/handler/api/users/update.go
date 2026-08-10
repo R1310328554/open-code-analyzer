@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// users 包提供管理员级别的用户账户 CRUD API 处理器。
 package users
 
 import (
@@ -26,13 +27,13 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// userInput 是更新用户时请求体中可修改的字段，指针类型表示可选更新。
 type userInput struct {
 	Admin  *bool `json:"admin"`
 	Active *bool `json:"active"`
 }
 
-// HandleUpdate returns an http.HandlerFunc that processes an http.Request
-// to update a user account.
+// HandleUpdate 返回 HTTP 处理器，更新指定用户的管理员与激活状态。
 func HandleUpdate(users core.UserStore, transferer core.Transferer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		login := chi.URLParam(r, "user")
@@ -59,9 +60,7 @@ func HandleUpdate(users core.UserStore, transferer core.Transferer) http.Handler
 		}
 		if in.Active != nil {
 			user.Active = *in.Active
-			// if the user is inactive we should always
-			// disable administrative privileges since
-			// the user may still have some API access.
+			// 停用用户时同时撤销管理员权限，避免仍通过 API 访问。
 			if user.Active == false {
 				user.Admin = false
 			}
@@ -79,6 +78,7 @@ func HandleUpdate(users core.UserStore, transferer core.Transferer) http.Handler
 			return
 		}
 
+		// 用户被停用后转移其名下仓库所有权。
 		err = transferer.Transfer(context.Background(), user)
 		if err != nil {
 			logger.FromRequest(r).WithError(err).

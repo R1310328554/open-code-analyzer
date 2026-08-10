@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// user 包提供当前登录用户相关的 REST API 处理器。
 package user
 
 import (
@@ -24,15 +25,13 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleSync returns an http.HandlerFunc synchronizes and then
-// write a json-encoded list of repositories to the response body.
+// HandleSync 返回 HTTP 处理器，将当前用户账户与远程 SCM 同步后返回仓库列表 JSON。
+// async=true 时在后台异步同步并立即返回 204，客户端需长轮询等待完成。
 func HandleSync(syncer core.Syncer, repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		viewer, _ := request.UserFrom(r.Context())
 
-		// performs asynchronous account synchronization.
-		// this requires long polling to determine when the
-		// sync is complete.
+		// 异步模式：在独立 goroutine 中执行同步，不阻塞 HTTP 响应。
 		if r.FormValue("async") == "true" {
 			ctx := context.Background()
 			go func(ctx context.Context, viewer *core.User) {

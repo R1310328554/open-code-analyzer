@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// user 包提供当前登录用户相关的 REST API 处理器。
 package user
 
 import (
@@ -23,8 +24,8 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleRepos returns an http.HandlerFunc that write a json-encoded
-// list of repositories to the response body.
+// HandleRepos 返回 HTTP 处理器，列出当前用户已激活的本地仓库并以 JSON 写入响应。
+// 查询参数 latest=true 时仅返回最近访问的仓库。
 func HandleRepos(repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		viewer, _ := request.UserFrom(r.Context())
