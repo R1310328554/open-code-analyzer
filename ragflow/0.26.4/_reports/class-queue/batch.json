@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T18:36:29Z",
-  "files": [
-    "internal/harness/graph/channels/untracked.go",
-    "internal/harness/graph/checkpoint/checkpoint.go",
-    "internal/harness/graph/checkpoint/memory.go",
-    "internal/harness/graph/checkpoint/nats.go",
-    "internal/harness/graph/constants/constants.go",
-    "internal/harness/graph/errors/errors.go",
-    "internal/harness/graph/graph/compiled.go",
-    "internal/harness/graph/graph/graph.go",
-    "internal/harness/graph/graph/loop.go",
-    "internal/harness/graph/graph/message.go",
-    "internal/harness/graph/graph/parallel.go",
-    "internal/harness/graph/graph/state.go",
-    "internal/harness/graph/graph/state_inspector.go",
-    "internal/harness/graph/interrupt/interrupt.go",
-    "internal/harness/graph/managed/managed.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 804,
-  "done": 945
+  "done": 960
 }
