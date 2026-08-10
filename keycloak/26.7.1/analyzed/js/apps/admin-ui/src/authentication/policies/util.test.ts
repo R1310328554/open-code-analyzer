@@ -2,6 +2,7 @@ import type PasswordPolicyTypeRepresentation from "@keycloak/keycloak-admin-clie
 import { describe, expect, it } from "vitest";
 import { parsePolicy, serializePolicy, SubmittedValues } from "./util";
 
+/** serializePolicy：表单值到 Keycloak 策略字符串的序列化。 */
 describe("serializePolicy", () => {
   it("returns an empty string if there are no policies", () => {
     expect(serializePolicy([], {})).toEqual("");
@@ -24,6 +25,7 @@ describe("serializePolicy", () => {
   });
 });
 
+/** parsePolicy：服务端策略字符串解析与容错。 */
 describe("parsePolicy", () => {
   it("returns an empty array if an empty value is passed", () => {
     expect(parsePolicy("", [])).toEqual([]);

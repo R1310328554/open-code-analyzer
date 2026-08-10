@@ -37,6 +37,7 @@ import {
   ScopeDetailsWithScopeIdRoute,
 } from "./routes/Scope";
 
+/** 客户端模块完整路由表：注册、CRUD、作用域、授权资源/策略/权限及 SSF 等子功能。 */
 const routes: AppRouteObject[] = [
   ClientRegistrationRoute,
   AddRegistrationProviderRoute,

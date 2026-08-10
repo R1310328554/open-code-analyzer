@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ExecutionList, IndexChange, LevelChange } from "../execution-model";
 
+/** ExecutionList 拖拽与树形展开的单元测试。 */
 describe("ExecutionList", () => {
+  // 固定层级结构：0 层三个分支，其中前两个各有 1 层与 2 层子项
   const list2 = new ExecutionList([
     { id: "1", index: 0, level: 0 },
     { id: "2", index: 1, level: 0 },

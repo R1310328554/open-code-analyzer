@@ -1,10 +1,12 @@
 import type AuthenticationExecutionInfoRepresentation from "@keycloak/keycloak-admin-client/lib/defs/authenticationExecutionInfoRepresentation";
 
+/** 可展开树形结构的认证执行步骤，子步骤列表与折叠状态由 UI 维护。 */
 export type ExpandableExecution = AuthenticationExecutionInfoRepresentation & {
   executionList?: ExpandableExecution[];
   isCollapsed: boolean;
 };
 
+/** 同一父级下仅发生排序变化（index 变更）。 */
 export class IndexChange {
   oldIndex: number;
   newIndex: number;
@@ -15,6 +17,7 @@ export class IndexChange {
   }
 }
 
+/** 跨层级移动：除 index 外还记录新的父节点（顶层时 parent 为 undefined）。 */
 export class LevelChange extends IndexChange {
   parent?: ExpandableExecution;
 
@@ -28,6 +31,10 @@ export class LevelChange extends IndexChange {
   }
 }
 
+/**
+ * 认证流执行步骤的扁平列表与树形视图之间的转换与拖拽变更计算。
+ * level/index 来自 Keycloak Admin API，expandableList 供可折叠 UI 使用。
+ */
 export class ExecutionList {
   #list: ExpandableExecution[];
   expandableList: ExpandableExecution[];
@@ -43,6 +50,7 @@ export class ExecutionList {
     this.expandableList = exList.executionList;
   }
 
+  /** 将扁平列表按 level 递归构造成嵌套 executionList。 */
   #transformToExpandableList(
     currentIndex: number,
     currentLevel: number,
@@ -69,6 +77,7 @@ export class ExecutionList {
     return this.#list.length;
   }
 
+  /** 深度优先展开树，得到与 UI 展示顺序一致的扁平列表（跳过已折叠分支）。 */
   order(list?: ExpandableExecution[]) {
     let result: ExpandableExecution[] = [];
     for (const row of list || this.expandableList) {
@@ -80,6 +89,7 @@ export class ExecutionList {
     return result;
   }
 
+  /** 按展开后的视觉顺序查找第 index 个执行步骤。 */
   findExecution(
     index: number,
     current: { index: number } = { index: 0 },
@@ -103,6 +113,7 @@ export class ExecutionList {
     return undefined;
   }
 
+  /** 在扁平 #list 中查找指定 level 与 index 对应行的直接父节点。 */
   #getParentNodes(level: number, index: number) {
     let parent = undefined;
     for (let i = 0; i < index; i++) {
@@ -114,6 +125,11 @@ export class ExecutionList {
     return parent;
   }
 
+  /**
+   * 比较拖拽前后 id 顺序，返回 IndexChange 或 LevelChange。
+   * @param changed 被移动的执行步骤
+   * @param order 拖拽后的 id 顺序
+   */
   getChange(
     changed: AuthenticationExecutionInfoRepresentation,
     order: string[],
@@ -140,6 +156,7 @@ export class ExecutionList {
     return new IndexChange(oldLocation.index!, newLocation.index!);
   }
 
+  /** 浅克隆：共享底层 #list 与 expandableList 引用。 */
   clone() {
     const newList = new ExecutionList([]);
     newList.#list = this.#list;

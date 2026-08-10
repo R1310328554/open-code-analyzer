@@ -1,11 +1,17 @@
 import type PasswordPolicyTypeRepresentation from "@keycloak/keycloak-admin-client/lib/defs/passwordPolicyTypeRepresentation";
 
+/** 表单提交的策略 id 到参数值的映射。 */
 export type SubmittedValues = {
   [index: string]: string;
 };
 
+/** Keycloak 密码策略字符串中多条规则之间的分隔符。 */
 const POLICY_SEPARATOR = " and ";
 
+/**
+ * 将策略类型列表与表单值序列化为 Keycloak API 接受的策略字符串。
+ * 格式示例：`length(8) and digits(1)`
+ */
 export const serializePolicy = (
   policies: PasswordPolicyTypeRepresentation[],
   submitted: SubmittedValues,
@@ -18,6 +24,11 @@ type PolicyValue = PasswordPolicyTypeRepresentation & {
   value?: string;
 };
 
+/**
+ * 解析领域密码策略字符串，仅保留当前已知策略类型中存在的条目。
+ * @param value 服务端返回的策略字符串
+ * @param policies 当前可用的策略类型定义
+ */
 export const parsePolicy = (
   value: string,
   policies: PasswordPolicyTypeRepresentation[],
@@ -40,6 +51,7 @@ type PolicyTokenParsed = {
   value?: string;
 };
 
+/** 解析单条策略 token，支持带括号参数与无参数两种形式。 */
 function parsePolicyToken(token: string): PolicyTokenParsed {
   const valueStart = token.indexOf("(");
 

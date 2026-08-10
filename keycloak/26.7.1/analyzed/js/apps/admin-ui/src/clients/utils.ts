@@ -2,13 +2,13 @@ import type ClientRepresentation from "@keycloak/keycloak-admin-client/lib/defs/
 import type { TFunction } from "i18next";
 
 /**
- * Checks if a client is intended to be used for authenticating a to a realm.
+ * 判断客户端是否为领域内部客户端（realm client），用于认证领域本身而非第三方应用。
  */
 export const isRealmClient = (client: ClientRepresentation): boolean =>
   client.attributes?.["realm_client"] === true.toString();
 
 /**
- * Gets a human readable name for the specified protocol.
+ * 将协议标识符转换为 i18n 可读名称；未知协议原样返回。
  */
 export const getProtocolName = (t: TFunction<"clients">, protocol: string) => {
   switch (protocol) {
@@ -25,6 +25,7 @@ export const getProtocolName = (t: TFunction<"clients">, protocol: string) => {
   return protocol;
 };
 
+/** 客户端授权上下文表达式中可选的内置属性与枚举值（供策略编辑器选用）。 */
 export const defaultContextAttributes = [
   {
     key: "custom",

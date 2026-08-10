@@ -1,9 +1,10 @@
 import { ClientScopeDefaultOptionalType } from "../../components/client-scope/ClientScopeTypes";
 import { convertAttributeNameToForm } from "../../util";
 
-/* OID4VC attributes we explicitly clean up when empty/whitespace-only.
-   Keep this list in sync with optional OID4VC form fields; add to it when
-   new string/number-like attributes are introduced that should be pruned. */
+/**
+ * 提交前需清理的空 OID4VC 属性键列表。
+ * 与可选 OID4VC 表单字段保持同步；新增字符串/数值类属性且需裁剪时请一并加入。
+ */
 export const OID4VC_ATTRIBUTE_KEYS = [
   "vc.credential_configuration_id",
   "vc.credential_identifier",
@@ -20,12 +21,15 @@ export const OID4VC_ATTRIBUTE_KEYS = [
   "vc.refresh_interval_in_seconds",
 ] as const;
 
+/** 判断值是否为空：null、undefined 或仅含空白字符的字符串。 */
 const isEmptyValue = (value: unknown) =>
   value === null ||
   value === undefined ||
   (typeof value === "string" && value.trim() === "");
 
-/** Prune known optional OID4VC attributes from the payload when they are empty. */
+/**
+ * 从客户端作用域载荷中移除已知的空 OID4VC 可选属性，避免向服务端提交无意义字段。
+ */
 export const removeEmptyOid4vcAttributes = (
   values: ClientScopeDefaultOptionalType,
 ): ClientScopeDefaultOptionalType => {
@@ -35,8 +39,7 @@ export const removeEmptyOid4vcAttributes = (
     ),
   );
 
-  /* Shallow copies are sufficient while OID4VC attributes stay flat; if we add
-     nested objects under attributes.vc.* we should switch to a deep clone here. */
+  // OID4VC 属性目前为扁平结构，浅拷贝即可；若将来 attributes.vc.* 出现嵌套对象需改为深拷贝
   const cleanedValues = { ...values } as Record<string, unknown>;
   const hadAttributes = Boolean(cleanedValues.attributes);
   const cleanedAttributes = {
