@@ -2098,3 +2098,18 @@
 2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/executor/PushExecutorRpcImpl.java wave69b [15:30] naming push/subscriber/v2 executor
 2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/executor/SpiImplPushExecutorHolder.java wave69b [15:30] naming push/subscriber/v2 executor
 2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/executor/SpiPushExecutor.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/hook/NacosMonitorPushResultHook.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/hook/PushResult.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/hook/PushResultHook.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/hook/PushResultHookHolder.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchChangeNotifyExecuteTask.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchChangeNotifyTask.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchPushDelayTaskEngine.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchSyncNotifyCallback.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchSyncNotifyExecuteTask.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchSyncNotifyTask.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/NamingPushCallback.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/PushDelayTask.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/PushDelayTaskExecuteEngine.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/PushExecuteTask.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/BatchInstanceRequestHandler.java wave70a [0:15] naming push hook/task/rpc handler

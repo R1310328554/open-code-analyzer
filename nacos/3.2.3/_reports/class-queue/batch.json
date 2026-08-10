@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:43:18Z",
   "files": [
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/hook/NacosMonitorPushResultHook.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/hook/PushResult.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/hook/PushResultHook.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/hook/PushResultHookHolder.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchChangeNotifyExecuteTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchChangeNotifyTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchPushDelayTaskEngine.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchSyncNotifyCallback.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchSyncNotifyExecuteTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/FuzzyWatchSyncNotifyTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/NamingPushCallback.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/PushDelayTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/PushDelayTaskExecuteEngine.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/PushExecuteTask.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/BatchInstanceRequestHandler.java",
     "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/DistroDataRequestHandler.java",
     "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/InstanceRequestHandler.java",
     "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/NamingFuzzyWatchRequestHandler.java",
@@ -33,5 +18,5 @@
     "naming/src/main/java/com/alibaba/nacos/naming/utils/InstanceUtil.java"
   ],
   "remaining_pending": 437,
-  "done": 2070
+  "done": 2085
 }
