@@ -17,17 +17,20 @@
 package com.alibaba.nacos.api.ai.model.skills;
 
 /**
- * Base class for Skill model objects. Contains common basic info fields shared across Skill-related models.
+ * Skill 模型基类，封装各 Skill 相关模型共用的基础信息字段。
  *
  * @author nacos
  * @since 3.2.0
  */
 public class SkillBase {
     
+    /** Nacos 命名空间 ID。 */
     private String namespaceId;
     
+    /** Skill 名称（唯一标识）。 */
     private String name;
     
+    /** Skill 的人类可读描述。 */
     private String description;
     
     public String getNamespaceId() {

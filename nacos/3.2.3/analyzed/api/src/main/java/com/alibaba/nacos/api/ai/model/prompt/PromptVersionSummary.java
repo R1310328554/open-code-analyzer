@@ -19,7 +19,7 @@ package com.alibaba.nacos.api.ai.model.prompt;
 import java.io.Serializable;
 
 /**
- * Prompt version summary for prompt version list response.
+ * Prompt 版本摘要，用于版本列表接口响应。
  *
  * @author nacos
  */
@@ -27,20 +27,28 @@ public class PromptVersionSummary implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
+    /** Prompt 唯一标识键。 */
     private String promptKey;
     
+    /** 版本号（如 major.minor.patch）。 */
     private String version;
     
+    /** 版本状态（如草稿、审核中、已上线等）。 */
     private String status;
     
+    /** 提交/发布说明信息。 */
     private String commitMsg;
     
+    /** 创建或最后修改该版本的用户标识。 */
     private String srcUser;
     
+    /** 最后修改时间戳（毫秒）。 */
     private Long gmtModified;
     
+    /** 发布流水线相关信息（JSON 字符串）。 */
     private String publishPipelineInfo;
     
+    /** 该版本的累计下载次数。 */
     private Long downloadCount;
     
     public String getPromptKey() {

@@ -17,15 +17,18 @@
 package com.alibaba.nacos.api.ai.remote;
 
 /**
- * Retain all ai module request type constants.
+ * Nacos AI 模块远程请求类型常量集合。
  *
  * @author xiweng.yy
  */
 public class AiRemoteConstants {
     
+    /** 注册端点请求类型。 */
     public static final String REGISTER_ENDPOINT = "registerEndpoint";
     
+    /** 批量注册端点请求类型。 */
     public static final String BATCH_REGISTER_ENDPOINT = "batchRegisterEndpoint";
     
+    /** 注销端点请求类型。 */
     public static final String DE_REGISTER_ENDPOINT = "deregisterEndpoint";
 }

@@ -19,16 +19,13 @@ package com.alibaba.nacos.api.ai.model.skills;
 import java.util.List;
 
 /**
- * Skill metadata for admin API response.
- * Contains governance metadata and all version summaries.
+ * Skill 管理端元数据响应，包含治理信息与全部版本摘要。
  *
  * @author nacos
  */
 public class SkillMeta extends SkillSummary {
     
-    /**
-     * All version summaries for this skill.
-     */
+    /** 该 Skill 的全部版本摘要列表。 */
     private List<SkillVersionSummary> versions;
     
     public List<SkillVersionSummary> getVersions() {
@@ -39,28 +36,31 @@ public class SkillMeta extends SkillSummary {
         this.versions = versions;
     }
     
-    /**
-     * Summary of a single skill version for admin display.
-     */
+    /** 单个 Skill 版本摘要，供管理端展示。 */
     public static class SkillVersionSummary {
         
+        /** 版本号。 */
         private String version;
         
+        /** 版本状态。 */
         private String status;
         
+        /** 版本作者。 */
         private String author;
         
+        /** 提交/发布说明。 */
         private String commitMsg;
         
+        /** 创建时间戳（毫秒）。 */
         private Long createTime;
         
+        /** 最后更新时间戳（毫秒）。 */
         private Long updateTime;
         
+        /** 发布流水线信息。 */
         private String publishPipelineInfo;
         
-        /**
-         * Download count for this version.
-         */
+        /** 该版本累计下载次数。 */
         private Long downloadCount;
         
         public String getVersion() {

@@ -20,14 +20,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Result of batch skill upload from a multi-skill zip archive.
+ * 多 Skill ZIP 批量上传的结果汇总。
+ *
+ * <p>记录成功上传的 Skill 名称列表，以及失败项及其原因。</p>
  *
  * @author nacos
  */
 public class BatchUploadResult {
     
+    /** 上传成功的 Skill 名称列表。 */
     private List<String> succeeded;
     
+    /** 上传失败的 Skill 条目列表。 */
     private List<FailedItem> failed;
     
     public BatchUploadResult() {
@@ -59,13 +63,13 @@ public class BatchUploadResult {
         this.failed.add(new FailedItem(skillName, reason));
     }
     
-    /**
-     * Represents a skill that failed during batch upload.
-     */
+    /** 批量上传过程中失败的单个 Skill 条目。 */
     public static class FailedItem {
         
+        /** 失败的 Skill 名称。 */
         private String name;
         
+        /** 失败原因描述。 */
         private String reason;
         
         public FailedItem() {

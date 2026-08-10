@@ -19,61 +19,40 @@ package com.alibaba.nacos.api.ai.model.skills;
 import java.util.Map;
 
 /**
- * Skill summary for admin list response.
- * Contains skill basic info plus governance metadata.
+ * Skill 管理端列表摘要，包含基础信息与治理元数据。
  *
  * @author nacos
  */
 public class SkillSummary extends SkillBasicInfo {
     
-    /**
-     * Owner of the skill resource.
-     */
+    /** Skill 资源所有者。 */
     private String owner;
     
-    /**
-     * Whether the skill is globally enabled. true=enable, false=disable.
-     */
+    /** 是否全局启用；true 表示启用，false 表示禁用。 */
     private boolean enable;
     
-    /**
-     * Business tags (JSON string), e.g. ["tag1","tag2"].
-     */
+    /** 业务标签（JSON 字符串），如 ["tag1","tag2"]。 */
     private String bizTags;
     
-    /**
-     * Source marker for IP attribution (e.g. local/import/sync).
-     */
+    /** 来源标记，用于 IP 归属追踪（如 local/import/sync）。 */
     private String from;
     
-    /**
-     * Visibility scope of skill metadata, e.g. PUBLIC or PRIVATE.
-     */
+    /** Skill 元数据可见范围，如 PUBLIC 或 PRIVATE。 */
     private String scope;
     
-    /**
-     * Label -> version mapping, e.g. {"latest":"v3","stable":"v2"}.
-     */
+    /** 标签到版本的映射，如 {"latest":"v3","stable":"v2"}。 */
     private Map<String, String> labels;
     
-    /**
-     * The version currently being edited (draft).
-     */
+    /** 当前正在编辑的草稿版本。 */
     private String editingVersion;
     
-    /**
-     * The version currently under pipeline review.
-     */
+    /** 当前处于发布流水线审核中的版本。 */
     private String reviewingVersion;
     
-    /**
-     * Number of online versions.
-     */
+    /** 已上线版本数量。 */
     private Integer onlineCnt;
     
-    /**
-     * Total download count across all versions.
-     */
+    /** 全部版本的累计下载次数。 */
     private Long downloadCount;
     
     public String getOwner() {

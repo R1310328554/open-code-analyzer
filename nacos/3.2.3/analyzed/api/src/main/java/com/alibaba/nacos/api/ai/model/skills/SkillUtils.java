@@ -37,7 +37,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Utility class for Skill operations.
+ * Skill 操作工具类，提供 Markdown/ZIP 转换、本地同步与 Nacos Config 键构建等功能。
  *
  * @author nacos
  */
@@ -51,41 +51,29 @@ public class SkillUtils {
     
     private static final String PATH_TRAVERSAL_SEQUENCE = "..";
     
-    /**
-     * ZIP local file header signature: PK\x03\x04.
-     */
+    /** ZIP 本地文件头魔数：PK\x03\x04。 */
     private static final byte[] ZIP_MAGIC = {0x50, 0x4B, 0x03, 0x04};
     
-    /**
-     * Minimum valid ZIP size (local file header = 30 bytes).
-     */
+    /** 合法 ZIP 的最小字节数（本地文件头为 30 字节）。 */
     private static final int ZIP_MIN_SIZE = 30;
     
-    /**
-     * Strategy for handling existing skill directories.
-     */
+    /** 本地同步时处理已存在 Skill 目录的策略。 */
     public enum ExistingDirectoryStrategy {
-        /**
-         * Overwrite existing directory (delete and recreate).
-         */
+        /** 覆盖已有目录（删除后重建）。 */
         OVERWRITE,
         
-        /**
-         * Backup existing directory by renaming it with timestamp suffix.
-         */
+        /** 将已有目录重命名为带时间戳后缀的备份目录。 */
         BACKUP,
         
-        /**
-         * Throw exception if directory already exists.
-         */
+        /** 目录已存在时抛出异常。 */
         FAIL
     }
     
     /**
-     * Get full SKILL.md markdown content from skill.
+     * 从 Skill 对象获取完整 SKILL.md Markdown 正文。
      *
-     * @param skill the Skill object to convert
-     * @return SKILL.md markdown content
+     * @param skill 待转换的 Skill 对象
+     * @return SKILL.md Markdown 正文
      */
     public static String toMarkdown(Skill skill) {
         if (skill == null) {
@@ -96,16 +84,16 @@ public class SkillUtils {
     }
     
     /**
-     * Convert Skill object to a ZIP byte array containing all skill files.
+     * 将 Skill 对象转换为包含全部 Skill 文件的 ZIP 字节数组。
      *
-     * <p>The ZIP structure mirrors the upload format:
-     * {@code skillName/SKILL.md}, {@code skillName/type/resourceName}, etc.
-     * Binary resources (marked with metadata encoding=base64) are decoded back to raw bytes.</p>
+     * <p>ZIP 目录结构与上传格式一致：
+     * {@code skillName/SKILL.md}、{@code skillName/type/resourceName} 等。
+     * 标记 metadata encoding=base64 的二进制资源会解码为原始字节。</p>
      *
-     * @param skill the Skill object to convert
-     * @return ZIP file as byte array
-     * @throws IOException if ZIP creation fails
-     * @throws IllegalArgumentException if skill is null or skill name is blank
+     * @param skill 待转换的 Skill 对象
+     * @return ZIP 文件字节数组
+     * @throws IOException ZIP 创建失败时抛出
+     * @throws IllegalArgumentException skill 为 null 或名称为空时抛出
      */
     public static byte[] toZipBytes(Skill skill) throws IOException {
         if (skill == null) {
@@ -118,12 +106,12 @@ public class SkillUtils {
         String skillName = skill.getName();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            // 1. SKILL.md
+            // 1. 写入 SKILL.md
             zos.putNextEntry(new ZipEntry(skillName + "/SKILL.md"));
             zos.write(toMarkdown(skill).getBytes(StandardCharsets.UTF_8));
             zos.closeEntry();
             
-            // 2. Resource files
+            // 2. 写入资源文件
             if (skill.getResource() != null && !skill.getResource().isEmpty()) {
                 for (SkillResource resource : skill.getResource().values()) {
                     if (resource == null || StringUtils.isBlank(resource.getName())) {
@@ -141,11 +129,11 @@ public class SkillUtils {
     }
     
     /**
-     * Build ZIP entry path for a skill resource.
+     * 构建 Skill 资源在 ZIP 中的条目路径。
      *
-     * @param skillName skill name (root directory)
-     * @param resource  skill resource
-     * @return ZIP entry path, e.g. "skillName/type/resourceName" or "skillName/resourceName"
+     * @param skillName Skill 名称（根目录）
+     * @param resource  Skill 资源
+     * @return ZIP 条目路径，如 "skillName/type/resourceName" 或 "skillName/resourceName"
      */
     private static String buildZipEntryPath(String skillName, SkillResource resource) {
         String type = resource.getType();
@@ -160,10 +148,10 @@ public class SkillUtils {
     }
     
     /**
-     * Validate that a path does not contain path traversal sequences or absolute path indicators.
+     * 校验路径不含目录穿越序列或绝对路径指示符。
      *
-     * @param path the path to validate
-     * @throws SecurityException if path contains unsafe sequences
+     * @param path 待校验路径
+     * @throws SecurityException 路径含不安全序列时抛出
      */
     public static void validatePathSafety(String path) {
         if (path == null) {
@@ -178,11 +166,11 @@ public class SkillUtils {
     }
     
     /**
-     * Validate that a resolved path stays within the expected base directory.
+     * 校验解析后的目标路径仍在指定基目录内。
      *
-     * @param baseDir the base directory that must contain the target
-     * @param target  the resolved target path
-     * @throws SecurityException if target escapes baseDir
+     * @param baseDir 必须包含目标的基目录
+     * @param target  解析后的目标路径
+     * @throws SecurityException 目标路径逃逸出基目录时抛出
      */
     public static void validatePathContainment(Path baseDir, Path target) {
         if (!target.normalize().startsWith(baseDir.normalize())) {
@@ -192,10 +180,10 @@ public class SkillUtils {
     }
     
     /**
-     * Validate that byte array is a valid ZIP file by checking the magic number header.
+     * 通过魔数头校验字节数组是否为合法 ZIP 文件。
      *
-     * @param data the byte array to validate
-     * @throws IllegalArgumentException if data is null, too short, or does not have ZIP magic header
+     * @param data 待校验字节数组
+     * @throws IllegalArgumentException 数据为 null、过短或缺少 ZIP 魔数头时抛出
      */
     public static void validateZipBytes(byte[] data) {
         if (data == null || data.length < ZIP_MIN_SIZE) {
@@ -211,14 +199,13 @@ public class SkillUtils {
     }
     
     /**
-     * Validate all ZIP entry paths for path traversal and absolute paths.
+     * 校验 ZIP 内全部条目路径，防止目录穿越与绝对路径。
      *
-     * <p>Scans entry names only without decompressing content, so it is lightweight
-     * and suitable for validating downloaded ZIP bytes on the client side.</p>
+     * <p>仅扫描条目名而不解压内容，开销小，适合客户端校验下载的 ZIP。</p>
      *
-     * @param data the ZIP byte array to validate
-     * @throws SecurityException if any entry contains path traversal or absolute path
-     * @throws IOException if ZIP cannot be read
+     * @param data 待校验 ZIP 字节数组
+     * @throws SecurityException 任一条目含目录穿越或绝对路径时抛出
+     * @throws IOException ZIP 无法读取时抛出
      */
     public static void validateZipEntryPaths(byte[] data) throws IOException {
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(data))) {
@@ -230,12 +217,11 @@ public class SkillUtils {
     }
     
     /**
-     * Resolve resource content to raw bytes.
-     * Base64-encoded binary resources (marked with metadata encoding=base64) are decoded;
-     * text resources are returned as UTF-8 bytes.
+     * 将资源内容解析为原始字节。
+     * <p>metadata encoding=base64 的二进制资源会 Base64 解码；文本资源按 UTF-8 编码返回。</p>
      *
-     * @param resource the skill resource
-     * @return raw bytes of the resource content
+     * @param resource Skill 资源
+     * @return 资源内容的原始字节
      */
     private static byte[] resolveResourceBytes(SkillResource resource) {
         String content = resource.getContent();
@@ -249,10 +235,10 @@ public class SkillUtils {
     }
     
     /**
-     * Check if a resource is Base64-encoded binary content.
+     * 判断资源是否为 Base64 编码的二进制内容。
      *
-     * @param resource the skill resource
-     * @return true if metadata contains encoding=base64
+     * @param resource Skill 资源
+     * @return metadata 含 encoding=base64 时返回 true
      */
     private static boolean isBase64Encoded(SkillResource resource) {
         Map<String, Object> metadata = resource.getMetadata();
@@ -260,14 +246,13 @@ public class SkillUtils {
     }
     
     /**
-     * Sync Skill object to local directory.
-     * Creates the skill directory structure, SKILL.md file, and resource files.
-     * Uses OVERWRITE strategy by default.
+     * 将 Skill 对象同步到本地目录（默认 OVERWRITE 策略）。
+     * <p>创建 Skill 目录结构、SKILL.md 与资源文件。</p>
      *
-     * @param skill the Skill object to sync
-     * @param baseDir the base directory path where the skill directory will be created
-     * @throws IOException if file operations fail
-     * @throws IllegalArgumentException if skill is null or skill name is blank
+     * @param skill 待同步的 Skill 对象
+     * @param baseDir Skill 目录所在的基路径
+     * @throws IOException 文件操作失败时抛出
+     * @throws IllegalArgumentException skill 为 null 或名称为空时抛出
      */
     public static void syncToLocal(Skill skill, String baseDir) throws IOException {
         syncToLocal(skill, baseDir, ExistingDirectoryStrategy.OVERWRITE);
@@ -285,6 +270,7 @@ public class SkillUtils {
      * @throws IOException if file operations fail
      * @throws IllegalArgumentException if skill is null or skill name is blank
      * @throws FileAlreadyExistsException if directory exists and strategy is FAIL
+      * <p>Nacos AI Skill 模型 API；详见上方说明。</p>
      */
     public static void syncToLocal(Skill skill, String baseDir, ExistingDirectoryStrategy strategy)
         throws IOException {
@@ -322,6 +308,7 @@ public class SkillUtils {
      * @param skillDirName the custom directory name for the skill (if null, uses skill name)
      * @throws IOException if file operations fail
      * @throws IllegalArgumentException if skill is null or baseDir is blank
+      * <p>Nacos AI Skill 模型 API；详见上方说明。</p>
      */
     public static void syncToLocal(Skill skill, String baseDir, String skillDirName)
         throws IOException {
@@ -341,6 +328,7 @@ public class SkillUtils {
      * @throws IOException if file operations fail
      * @throws IllegalArgumentException if skill is null or baseDir is blank
      * @throws FileAlreadyExistsException if directory exists and strategy is FAIL
+      * <p>Nacos AI Skill 模型 API；详见上方说明。</p>
      */
     public static void syncToLocal(Skill skill, String baseDir, String skillDirName,
         ExistingDirectoryStrategy strategy) throws IOException {
@@ -380,6 +368,7 @@ public class SkillUtils {
      * @param strategy the strategy for handling existing directories
      * @throws IOException if file operations fail
      * @throws FileAlreadyExistsException if directory exists and strategy is FAIL
+      * <p>Nacos AI Skill 模型 API；详见上方说明。</p>
      */
     private static void syncToLocalCore(Skill skill, Path skillDir, Path basePath,
         ExistingDirectoryStrategy strategy) throws IOException {
@@ -482,6 +471,7 @@ public class SkillUtils {
      *
      * @param skillDir the skill directory path
      * @return backup directory path
+      * <p>Nacos AI Skill 模型 API；详见上方说明。</p>
      */
     private static Path createBackupDirectoryPath(Path skillDir) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
@@ -506,6 +496,7 @@ public class SkillUtils {
      *
      * @param directory the directory to delete
      * @throws IOException if deletion fails
+      * <p>Nacos AI Skill 模型 API；详见上方说明。</p>
      */
     private static void deleteDirectory(Path directory) throws IOException {
         if (!Files.exists(directory)) {
@@ -525,54 +516,47 @@ public class SkillUtils {
     }
     
     /**
-     * Main config dataId for skill.
+     * Skill 主配置 dataId。
      *
-     * @deprecated No longer used. Replaced by {@link #SKILL_INDEX_DATA_ID} for the manifest
-     *             and versioned resource files for content.
+     * @deprecated 已弃用。manifest 请使用 {@link #SKILL_INDEX_DATA_ID}，内容请使用版本化资源文件。
      */
     @Deprecated
     public static final String SKILL_MAIN_DATA_ID = "skill.json";
     
-    /**
-     * Resource config dataId prefix.
-     */
+    /** 资源配置 dataId 前缀。 */
     public static final String RESOURCE_DATA_ID_PREFIX = "resource_";
     
-    /**
-     * Resource config dataId suffix.
-     */
+    /** 资源配置 dataId 后缀。 */
     public static final String RESOURCE_DATA_ID_SUFFIX = ".json";
     
-    /**
-     * Skill group prefix.
-     */
+    /** Skill 配置 group 前缀。 */
     public static final String SKILL_GROUP_PREFIX = "skill_";
     
     /**
-     * Skill index config dataId for client-side config caching.
-     * Server writes a manifest config with this dataId at group {@code skill_{name}}
-     * containing the current online version and file list.
+     * 客户端缓存用的 Skill 索引配置 dataId。
+     * <p>服务端在 group {@code skill_{name}} 下写入 manifest 配置，
+     * 包含当前在线版本与文件列表。</p>
      */
     public static final String SKILL_INDEX_DATA_ID = "skill_index.json";
     
     private static final String DOUBLE_UNDERSCORE = "__";
     
     /**
-     * Build the Nacos Config group for a skill (no version suffix).
+     * 构建 Skill 的 Nacos Config group（无版本后缀）。
      *
-     * @param skillName name of skill
-     * @return config group string, e.g. "skill_myskill"
+     * @param skillName Skill 名称
+     * @return 配置 group 字符串，如 "skill_myskill"
      */
     public static String buildSkillGroup(String skillName) {
         return SKILL_GROUP_PREFIX + NacosAiConfigKeyCodec.encodeManifestGroupNameSegment(skillName);
     }
     
     /**
-     * Build the Nacos Config group for a specific skill version.
+     * 构建指定 Skill 版本的 Nacos Config group。
      *
-     * @param skillName name of skill
-     * @param version   version string, e.g. "v1"
-     * @return config group string, e.g. "skill_myskill__v1"
+     * @param skillName Skill 名称
+     * @param version   版本字符串，如 "v1"
+     * @return 配置 group 字符串，如 "skill_myskill__v1"
      */
     public static String buildSkillVersionGroup(String skillName, String version) {
         return SKILL_GROUP_PREFIX + NacosAiConfigKeyCodec.encodeVersionedGroupSegment(skillName)
@@ -581,10 +565,10 @@ public class SkillUtils {
     }
     
     /**
-     * Decode a Skill Nacos Config {@code group} (as stored) into logical skill name and optional version.
+     * 将 Skill 的 Nacos Config {@code group} 解码为逻辑 Skill 名称与可选版本。
      *
-     * @param group physical group, e.g. {@code skill_myagent} or {@code skill_name__v1}
-     * @return array of length 2: {@code [skillName, version]}; {@code version} is {@code null} for manifest group
+     * @param group 物理 group，如 {@code skill_myagent} 或 {@code skill_name__v1}
+     * @return 长度为 2 的数组 {@code [skillName, version]}；manifest group 时 version 为 {@code null}
      */
     public static String[] decodeSkillGroupToNameAndVersion(String group) {
         if (StringUtils.isBlank(group) || !group.startsWith(SKILL_GROUP_PREFIX)) {
@@ -600,11 +584,11 @@ public class SkillUtils {
     }
     
     /**
-     * Sanitize a resource name for use in Nacos Config group names.
+     * 将资源名清理为可用于 Nacos Config group 的安全值。
      *
-     * @param name the raw resource name (e.g. skill name or agentspec name)
-     * @return value safe for use in Nacos config parameters
-     * @deprecated use {@link NacosAiConfigKeyCodec#encodeSegment(String)} for reversible encoding
+     * @param name 原始资源名（如 skill 名或 agentspec 名）
+     * @return 可用于 Nacos 配置参数的安全值
+     * @deprecated 请使用 {@link NacosAiConfigKeyCodec#encodeSegment(String)} 进行可逆编码
      */
     @Deprecated
     public static String sanitizeNameForGroup(String name) {
@@ -614,21 +598,20 @@ public class SkillUtils {
     private static final String FILE_EXTENSION_PATTERN = ".*\\.[a-zA-Z0-9]+$";
     
     /**
-     * Generate resource ID from resource type and name.
-     * Format: {type}_{resourcename}
-     * If resourcename ends with .xx, convert the last . to __
-     * Slashes in type are encoded as dots so that dataId (resource_{resourceId}.json) is valid in Nacos.
+     * 根据资源类型与名称生成资源 ID。
+     * <p>格式为 {type}_{resourcename}；若名称以 .xx 结尾，最后一个 . 转为 __。
+     * type 中的斜杠编码为点，以保证 dataId（resource_{resourceId}.json）在 Nacos 中合法。</p>
      *
-     * @param type resource type (can be null or empty; may contain / for multi-level paths)
-     * @param resourceName resource name
-     * @return resource ID (safe for use in config dataId)
+     * @param type 资源类型（可为 null 或空；可含 / 表示多级路径）
+     * @param resourceName 资源名称
+     * @return 可用于 config dataId 的资源 ID
      */
     public static String generateResourceId(String type, String resourceName) {
         if (resourceName == null || resourceName.trim().isEmpty()) {
             return "";
         }
         
-        // If resourcename ends with .xx, convert the last . to __
+        // 若资源名以 .xx 结尾，将最后一个 . 转为 __
         String processedName = resourceName;
         if (resourceName.matches(FILE_EXTENSION_PATTERN)) {
             // Replace only the last dot before the extension
@@ -640,7 +623,7 @@ public class SkillUtils {
         }
         
         if (type != null && !type.trim().isEmpty()) {
-            // Encode / as . so dataId has no slash (Nacos config key compatibility)
+            // 将 / 编码为 .，使 dataId 不含斜杠（兼容 Nacos 配置键）
             String safeType = type.trim().replace("/", ".");
             return safeType + "_" + processedName;
         } else {

@@ -19,7 +19,7 @@ package com.alibaba.nacos.api.ai.model.prompt;
 import java.util.List;
 
 /**
- * Prompt version information.
+ * Prompt 版本详情，在摘要信息基础上扩展模板正文与变量列表。
  *
  * @author nacos
  */
@@ -27,10 +27,13 @@ public class PromptVersionInfo extends PromptVersionSummary {
     
     private static final long serialVersionUID = 1L;
     
+    /** Prompt 模板正文内容。 */
     private String template;
     
+    /** 模板内容的 MD5 摘要，用于 CAS 乐观锁校验。 */
     private String md5;
     
+    /** 模板变量定义列表。 */
     private List<PromptVariable> variables;
     
     public String getTemplate() {

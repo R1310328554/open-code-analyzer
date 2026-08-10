@@ -20,16 +20,19 @@ import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.remote.request.Request;
 
 /**
- * Nacos AI module mcp request.
+ * Nacos AI 模块 MCP 远程请求抽象基类，封装命名空间与 MCP 标识等公共字段。
  *
  * @author xiweng.yy
  */
 public abstract class AbstractMcpRequest extends Request {
     
+    /** Nacos 命名空间 ID。 */
     private String namespaceId;
     
+    /** MCP 服务 ID。 */
     private String mcpId;
     
+    /** MCP 服务名称。 */
     private String mcpName;
     
     @Override

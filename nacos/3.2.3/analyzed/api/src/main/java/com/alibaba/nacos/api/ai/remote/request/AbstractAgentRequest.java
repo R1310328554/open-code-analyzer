@@ -20,14 +20,16 @@ import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.remote.request.Request;
 
 /**
- * Nacos AI module agent request.
+ * Nacos AI 模块 Agent 远程请求基类，封装命名空间与 Agent 名称等公共字段。
  *
  * @author xiweng.yy
  */
 public class AbstractAgentRequest extends Request {
     
+    /** Nacos 命名空间 ID。 */
     private String namespaceId;
     
+    /** Agent 名称。 */
     private String agentName;
     
     @Override

@@ -19,12 +19,13 @@ package com.alibaba.nacos.api.ai.model.skills;
 import java.util.Objects;
 
 /**
- * Skill basic info for list response.
+ * Skill 基础信息，用于列表接口响应。
  *
  * @author nacos
  */
 public class SkillBasicInfo extends SkillBase {
     
+    /** 最后更新时间戳（毫秒）。 */
     private Long updateTime;
     
     public Long getUpdateTime() {

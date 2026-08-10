@@ -20,14 +20,16 @@ import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.remote.request.Request;
 
 /**
- * Nacos AI module prompt request.
+ * Nacos AI 模块 Prompt 远程请求抽象基类，封装命名空间与 Prompt 键等公共字段。
  *
  * @author nacos
  */
 public abstract class AbstractPromptRequest extends Request {
     
+    /** Nacos 命名空间 ID。 */
     private String namespaceId;
     
+    /** Prompt 唯一标识键。 */
     private String promptKey;
     
     @Override

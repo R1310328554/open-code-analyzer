@@ -19,10 +19,10 @@ package com.alibaba.nacos.api.ai.model.prompt;
 import java.io.Serializable;
 
 /**
- * Prompt variable definition with optional default value.
+ * Prompt 模板变量定义，可携带可选默认值与描述信息。
  *
- * <p>Represents a variable placeholder (e.g., {{variableName}}) in a prompt template,
- * along with its optional default value and description.</p>
+ * <p>表示 Prompt 模板中的占位符（如 {{variableName}}），
+ * 并记录该变量的默认值与用途说明。</p>
  *
  * @author nacos
  */
@@ -30,19 +30,13 @@ public class PromptVariable implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
-    /**
-     * Variable name (matches the placeholder name in template, e.g., "question" for {{question}}).
-     */
+    /** 变量名，与模板占位符一致（如 {{question}} 对应 "question"）。 */
     private String name;
     
-    /**
-     * Default value for this variable. Null means the variable has no default (considered required).
-     */
+    /** 变量默认值；为 null 表示无默认值（视为必填）。 */
     private String defaultValue;
     
-    /**
-     * Optional description explaining the purpose or expected content of this variable.
-     */
+    /** 可选描述，说明变量用途或期望填入的内容。 */
     private String description;
     
     public PromptVariable() {

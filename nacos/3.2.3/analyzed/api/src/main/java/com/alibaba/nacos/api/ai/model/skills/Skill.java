@@ -19,21 +19,18 @@ package com.alibaba.nacos.api.ai.model.skills;
 import java.util.Map;
 
 /**
- * Claude Skill entity for independent Skills management.
- * Simplified structure with core fields only.
+ * Claude Skill 实体，用于独立 Skill 管理。
+ *
+ * <p>精简结构，仅包含 SKILL.md 正文与资源映射等核心字段。</p>
  *
  * @author nacos
  */
 public class Skill extends SkillBase {
     
-    /**
-     * Full SKILL.md content.
-     */
+    /** 完整 SKILL.md Markdown 正文。 */
     private String skillMd;
     
-    /**
-     * Resource map (note: singular resource, key is resource name).
-     */
+    /** 资源映射（字段名为 resource，键为资源名）。 */
     private Map<String, SkillResource> resource;
     
     public String getSkillMd() {
