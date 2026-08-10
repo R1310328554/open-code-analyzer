@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T14:24:13Z",
   "files": [
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/runonserver/FetchOnServer.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/runonserver/FetchOnServerWrapper.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/runonserver/RunOnServer.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/runonserver/RunOnServerException.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/runonserver/RunOnServerRealmResourceProvider.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/runonserver/RunOnServerRealmResourceProviderFactory.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/runonserver/SerializationUtil.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/runonserver/TestClassLoader.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/timeoffset/InfinispanTimeUtil.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/timeoffset/TimeOffSetRealmResourceProvider.java",
-    "test-framework/remote-providers/src/main/java/org/keycloak/testframework/remote/providers/timeoffset/TimeOffSetRealmResourceProviderFactory.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/InjectRemoteProviders.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/RemoteProviders.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/RemoteProvidersSupplier.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/RemoteTestFrameworkExtension.java",
     "test-framework/remote/src/main/java/org/keycloak/testframework/remote/annotations/TestOnServer.java",
     "test-framework/remote/src/main/java/org/keycloak/testframework/remote/runonserver/InjectRunOnServer.java",
     "test-framework/remote/src/main/java/org/keycloak/testframework/remote/runonserver/InjectTestClassServer.java",
@@ -33,5 +18,5 @@
     "test-framework/ui/src/main/java/org/keycloak/testframework/ui/UITestFrameworkExtension.java"
   ],
   "remaining_pending": 268,
-  "done": 5700
+  "done": 5715
 }
