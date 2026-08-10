@@ -1228,3 +1228,18 @@
 2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/DefaultLazyLoader.java wave42a public-key + cache adapters
 2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/GroupAdapter.java wave42a public-key + cache adapters
 2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/InfinispanCacheRealmProviderFactory.java wave42a public-key + cache adapters
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/PermissionTicketResourceListQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/PermissionTicketScopeListQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/PolicyListQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/PolicyQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/PolicyResourceListQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/PolicyScopeListQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/ResourceListQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/ResourceQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/ResourceScopeListQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/entities/ScopeListQuery.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/AuthorizationCacheInvalidationEvent.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/BasePermissionTicketEvent.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/BasePolicyEvent.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/BaseResourceEvent.java wave43b authz cache queries/events
+2026-08-10T07:32:28Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/BaseResourceServerEvent.java wave43b authz cache queries/events
