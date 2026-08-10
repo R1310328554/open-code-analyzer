@@ -15,23 +15,8 @@
     "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OAuthCallbackHandler.java",
     "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OAuthClient.java",
     "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OAuthClientSupplier.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OAuthIdentityProvider.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OAuthIdentityProviderConfig.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OAuthIdentityProviderConfigBuilder.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OAuthIdentityProviderSupplier.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OAuthTestFrameworkExtension.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OIDCClientRepresentationBuilder.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/SectorIdentifierRedirectUrisProvider.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/SectorIdentifierRedirectUrisSupplier.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/TestApp.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/TestAppSupplier.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/annotations/InjectCibaProvider.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/annotations/InjectCimdProvider.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/annotations/InjectOAuthClient.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/annotations/InjectOAuthIdentityProvider.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/annotations/InjectSectorIdentifierRedirectUrisProvider.java",
-    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/annotations/InjectTestApp.java"
+    "test-framework/oauth/src/main/java/org/keycloak/testframework/oauth/OAuthIdentityProvider.java"
   ],
   "remaining_pending": 298,
-  "done": 5670
+  "done": 5685
 }
