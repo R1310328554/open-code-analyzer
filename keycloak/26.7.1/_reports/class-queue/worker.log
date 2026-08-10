@@ -343,3 +343,18 @@
 2026-08-10T06:01:17Z DONE core/src/main/java/org/keycloak/representations/OAuth2DeviceAuthorizationResponse.java wave12a OIDC representations + tokens
 2026-08-10T06:01:17Z DONE core/src/main/java/org/keycloak/representations/RefreshToken.java wave12a OIDC representations + tokens
 2026-08-10T06:01:17Z DONE core/src/main/java/org/keycloak/representations/UserInfo.java wave12a OIDC representations + tokens
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/VersionRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/AccountLinkUriRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/ClientRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/ConsentRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/ConsentScopeRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/CredentialMetadataRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/DeviceRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/LinkedAccountRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/LocalizedMessage.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/OrganizationRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/SessionRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/account/UserRepresentation.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/adapters/action/AdminAction.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/adapters/action/GlobalRequestResult.java wave12b account representations + admin actions
+2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/adapters/action/LogoutAction.java wave12b account representations + admin actions

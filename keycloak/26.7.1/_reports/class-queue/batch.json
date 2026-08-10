@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:59:48Z",
-  "files": [
-    "core/src/main/java/org/keycloak/representations/VersionRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/AccountLinkUriRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/ClientRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/ConsentRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/ConsentScopeRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/CredentialMetadataRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/DeviceRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/LinkedAccountRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/LocalizedMessage.java",
-    "core/src/main/java/org/keycloak/representations/account/OrganizationRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/SessionRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/account/UserRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/adapters/action/AdminAction.java",
-    "core/src/main/java/org/keycloak/representations/adapters/action/GlobalRequestResult.java",
-    "core/src/main/java/org/keycloak/representations/adapters/action/LogoutAction.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5638,
-  "done": 345
+  "done": 360
 }
