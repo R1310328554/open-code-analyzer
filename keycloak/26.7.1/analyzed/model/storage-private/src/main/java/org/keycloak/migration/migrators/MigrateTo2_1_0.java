@@ -36,10 +36,12 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 升级至 2.1.0 的模型迁移器：将“配置 TOTP”必选动作重命名为 OTP，并将角色策略配置从角色 ID 字符串列表升级为结构化对象。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class MigrateTo2_1_0 implements Migration {
+    /** 目标模型版本 2.1.0。 */
     public static final ModelVersion VERSION = new ModelVersion("2.1.0");
 
     public ModelVersion getVersion() {
@@ -60,7 +62,8 @@ public class MigrateTo2_1_0 implements Migration {
 
     }
 
-    // KEYCLOAK-3244: Required Action "Configure Totp" should be "Configure OTP"
+    // KEYCLOAK-3244：必选动作 "Configure Totp" 应更名为 "Configure OTP"
+    /** 更新默认 OTP 必选动作的显示名称与别名。 */
     private void migrateDefaultRequiredAction(RealmModel realm) {
         RequiredActionProviderModel otpAction = realm.getRequiredActionProviderByAlias(UserModel.RequiredAction.CONFIGURE_TOTP.name());
 
@@ -69,7 +72,8 @@ public class MigrateTo2_1_0 implements Migration {
         realm.updateRequiredActionProvider(otpAction);
     }
 
-    // KEYCLOAK-3338: Changes to how role policy config is stored"
+    // KEYCLOAK-3338：角色策略配置的存储格式变更
+    /** 将角色类型策略中 roles 字段从字符串 ID 列表迁移为含 id 键的对象列表。 */
     private void migrateRolePolicies(RealmModel realm, KeycloakSession session) {
         AuthorizationProvider authorizationProvider = session.getProvider(AuthorizationProvider.class);
         StoreFactory storeFactory = authorizationProvider.getStoreFactory();

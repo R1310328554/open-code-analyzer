@@ -34,10 +34,13 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.jboss.logging.Logger;
 
 /**
+ * 升级至 4.0.0 的模型迁移器：规范化客户端作用域命名、迁移注册策略配置，并将 offline_access 从角色映射转为可选客户端作用域。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo4_0_0 implements Migration {
 
+    /** 目标模型版本 4.0.0。 */
     public static final ModelVersion VERSION = new ModelVersion("4.0.0");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo4_0_0.class);
@@ -58,8 +61,9 @@ public class MigrateTo4_0_0 implements Migration {
     }
 
 
+    /** 执行客户端作用域命名、默认作用域、注册策略与 offline_access 迁移。 */
     protected void migrateRealm(KeycloakSession session, RealmModel realm, boolean json) {
-        // Upgrade names of clientScopes to not contain space
+        // 将客户端作用域名称中的空格替换为下划线
         realm.getClientScopesStream()
                 .filter(clientScope -> clientScope.getName().contains(" "))
                 .forEach(clientScope -> {
@@ -70,12 +74,12 @@ public class MigrateTo4_0_0 implements Migration {
                 });
 
         if (!json) {
-            // Add default client scopes. But don't add them to existing clients. For JSON, they were already added
+            // 添加默认客户端作用域，但不自动关联到已有客户端；JSON 导入时已包含
             LOG.debugf("Adding defaultClientScopes for realm '%s'", realm.getName());
             DefaultClientScopes.createDefaultClientScopes(session, realm, false);
         }
 
-        // Upgrade configuration of "allowed-client-templates" client registration policy
+        // 将客户端注册策略配置键 allowed-client-templates 重命名为 allowed-client-scopes
         realm.getComponentsStream(realm.getId(), "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy")
                 .filter(component -> Objects.equals(component.getProviderId(), "allowed-client-templates"))
                 .forEach(component -> {
@@ -89,8 +93,7 @@ public class MigrateTo4_0_0 implements Migration {
                 });
 
 
-        // If client has scope for offline_access role (either directly or through fullScopeAllowed), then add offline_access client
-        // scope as optional scope to the client. If it's indirectly (no fullScopeAllowed), then remove role from the scoped roles
+        // 若客户端通过角色映射或全作用域间接持有 offline_access，则添加可选客户端作用域并清理角色映射
         RoleModel offlineAccessRole = realm.getRole(OAuth2Constants.OFFLINE_ACCESS);
         ClientScopeModel offlineAccessScope;
         if (offlineAccessRole == null) {
@@ -117,7 +120,7 @@ public class MigrateTo4_0_0 implements Migration {
         }
 
 
-        // Clients with consentRequired, which don't have any client scopes will be added itself to require consent, so that consent screen is shown when users authenticate
+        // 需要同意但未配置客户端作用域的客户端，将自身设为同意屏展示项以保留同意流程
         realm.getClientsStream()
                 .filter(ClientModel::isConsentRequired)
                 .filter(c -> c.getClientScopes(true).isEmpty())

@@ -27,7 +27,11 @@ import org.keycloak.representations.idm.RealmRepresentation;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 升级至 2.2.0 的模型迁移器：在浏览器认证流中插入身份提供者（IdP）认证器步骤。
+ */
 public class MigrateTo2_2_0 implements Migration {
+    /** 目标模型版本 2.2.0。 */
     public static final ModelVersion VERSION = new ModelVersion("2.2.0");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo2_2_0.class);
@@ -53,6 +57,7 @@ public class MigrateTo2_2_0 implements Migration {
         session.getContext().setRealm(sessionRealm);
     }
 
+    /** 查找默认启用的 IdP 并将其别名写入浏览器流的 IdP 认证器配置。 */
     private void addIdentityProviderAuthenticator(KeycloakSession session, RealmModel realm) {
         String defaultProvider = session.identityProviders()
                 .getAllStream(IdentityProviderQuery.userAuthentication().with(IdentityProviderModel.ENABLED, "true").with(IdentityProviderModel.AUTHENTICATE_BY_DEFAULT, "true"), 0, 1)

@@ -29,10 +29,13 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 升级至 3.4.1 的模型迁移器：将 CSP frame-src 指令扩展为含 frame-ancestors 与 object-src 的完整策略。
+ *
  * @author <a href="mailto:bruno@abstractj.org">Bruno Oliveira</a>
  */
 public class MigrateTo3_4_1 implements Migration {
 
+    /** 目标模型版本 3.4.1。 */
     public static final ModelVersion VERSION = new ModelVersion("3.4.1");
 
     @Override
@@ -45,6 +48,7 @@ public class MigrateTo3_4_1 implements Migration {
         migrateRealm(realm);
     }
 
+    /** 将仅含 frame-src 'self' 的 CSP 值替换为更严格的组合策略。 */
     protected void migrateRealm(RealmModel r) {
         Map<String, String> securityHeaders = new HashMap<>(r.getBrowserSecurityHeaders());
         securityHeaders.entrySet().stream()

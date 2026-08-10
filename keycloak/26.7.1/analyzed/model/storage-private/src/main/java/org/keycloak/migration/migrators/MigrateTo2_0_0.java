@@ -24,8 +24,12 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.representations.idm.RealmRepresentation;
 
+/**
+ * 升级至 2.0.0 的模型迁移器：为各域启用授权服务并补充查看/管理授权的管理员角色。
+ */
 public class MigrateTo2_0_0 implements Migration {
 
+    /** 目标模型版本 2.0.0。 */
     public static final ModelVersion VERSION = new ModelVersion("2.0.0");
 
     public ModelVersion getVersion() {
@@ -42,6 +46,7 @@ public class MigrateTo2_0_0 implements Migration {
 
     }
 
+    /** 初始化域的授权服务组件并注册对应管理员角色。 */
     private void migrateAuthorizationServices(RealmModel realm) {
         KeycloakModelUtils.setupAuthorizationServices(realm);
 

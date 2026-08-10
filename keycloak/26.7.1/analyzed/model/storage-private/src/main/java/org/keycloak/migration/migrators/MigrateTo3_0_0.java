@@ -33,10 +33,13 @@ import static org.keycloak.models.Constants.ACCOUNT_MANAGEMENT_CLIENT_ID;
 import static org.keycloak.models.Constants.defaultClients;
 
 /**
+ * 升级至 3.0.0 的模型迁移器：为内置客户端补全 openid-connect 协议，并为账户管理客户端添加链接管理复合角色。
+ *
  * @author <a href="mailto:bburke@redhat.com">Bill Burke</a>
  */
 public class MigrateTo3_0_0 implements Migration {
 
+    /** 目标模型版本 3.0.0。 */
     public static final ModelVersion VERSION = new ModelVersion("3.0.0");
 
     @Override
@@ -49,6 +52,7 @@ public class MigrateTo3_0_0 implements Migration {
         migrateRealm(realm);
     }
 
+    /** 设置默认客户端协议并为 account 客户端建立 manage-account-links 复合关系。 */
     protected void migrateRealm(RealmModel realm) {
         realm.getClientsStream()
                 .filter(clientModel -> defaultClients.contains(clientModel.getId()))

@@ -28,10 +28,13 @@ import org.keycloak.models.utils.DefaultKeyProviders;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 升级至 3.4.0 的模型迁移器：创建 AES 密钥提供者并为浏览器安全头添加 HSTS 策略。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo3_4_0 implements Migration {
 
+    /** 目标模型版本 3.4.0。 */
     public static final ModelVersion VERSION = new ModelVersion("3.4.0");
 
     @Override
@@ -45,6 +48,7 @@ public class MigrateTo3_4_0 implements Migration {
 
     }
 
+    /** 创建 AES 密钥组件并设置 strictTransportSecurity 响应头。 */
     protected void migrateRealm(RealmModel r) {
         DefaultKeyProviders.createAesProvider(r);
         Map<String, String> securityHeaders = r.getBrowserSecurityHeaders();

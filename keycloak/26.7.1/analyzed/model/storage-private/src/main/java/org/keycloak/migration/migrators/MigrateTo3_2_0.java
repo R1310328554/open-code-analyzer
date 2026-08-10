@@ -27,8 +27,12 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.models.utils.DefaultAuthenticationFlows;
 import org.keycloak.representations.idm.RealmRepresentation;
 
+/**
+ * 升级至 3.2.0 的模型迁移器：清理旧版密码哈希迭代配置、创建 Docker 认证流，并补充查询类管理员角色。
+ */
 public class MigrateTo3_2_0 implements Migration {
 
+    /** 目标模型版本 3.2.0。 */
     public static final ModelVersion VERSION = new ModelVersion("3.2.0");
 
     @Override
@@ -41,8 +45,10 @@ public class MigrateTo3_2_0 implements Migration {
         migrateRealm(session, realm);
     }
 
+    /** 迁移密码策略、Docker 认证流及 realm-management/master 客户端上的查询角色。 */
     protected void migrateRealm(KeycloakSession session, RealmModel realm) {
         PasswordPolicy.Builder builder = realm.getPasswordPolicy().toBuilder();
+        // 旧版默认 20000 次迭代且无显式哈希算法时，移除迭代次数以采用新默认值
         if (!builder.contains(PasswordPolicy.HASH_ALGORITHM_ID) && "20000".equals(builder.get(PasswordPolicy.HASH_ITERATIONS_ID))) {
             realm.setPasswordPolicy(builder.remove(PasswordPolicy.HASH_ITERATIONS_ID).build(session));
         }
@@ -62,6 +68,7 @@ public class MigrateTo3_2_0 implements Migration {
         }
     }
 
+    /** 为管理客户端添加 query-clients/users/groups 角色并建立与 view 角色的复合关系。 */
     public void addRoles(ClientModel realmAccess) {
         RoleModel queryClients = realmAccess.getRole(AdminRoles.QUERY_CLIENTS);
         if (queryClients == null) {

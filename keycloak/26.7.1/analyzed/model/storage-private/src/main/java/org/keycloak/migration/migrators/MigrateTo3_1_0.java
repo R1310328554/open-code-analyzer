@@ -28,10 +28,13 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 升级至 3.1.0 的模型迁移器：为浏览器安全响应头补充 xRobotsTag 与 xXSSProtection 默认值。
+ *
  * @author <a href="mailto:bburke@redhat.com">Bill Burke</a>
  */
 public class MigrateTo3_1_0 implements Migration {
 
+    /** 目标模型版本 3.1.0。 */
     public static final ModelVersion VERSION = new ModelVersion("3.1.0");
 
     @Override
@@ -39,6 +42,7 @@ public class MigrateTo3_1_0 implements Migration {
         session.realms().getRealmsStream().forEach(this::migrateRealm);
     }
 
+    /** 在已有浏览器安全头配置中追加 robots 与 XSS 防护相关条目。 */
     protected void migrateRealm(RealmModel realm) {
         if (realm.getBrowserSecurityHeaders() != null) {
 

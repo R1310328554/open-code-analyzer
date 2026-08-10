@@ -24,10 +24,13 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 升级至 2.3.0 的模型迁移器：更新域内客户端与客户端作用域上的协议映射器配置。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo2_3_0 implements Migration {
 
+    /** 目标模型版本 2.3.0。 */
     public static final ModelVersion VERSION = new ModelVersion("2.3.0");
 
     @Override
@@ -35,6 +38,7 @@ public class MigrateTo2_3_0 implements Migration {
         session.realms().getRealmsStream().forEach(this::migrateRealm);
     }
 
+    /** 依次迁移客户端与客户端作用域的协议映射器。 */
     protected void migrateRealm(RealmModel realm) {
         realm.getClientsStream().forEach(MigrationUtils::updateProtocolMappers);
 

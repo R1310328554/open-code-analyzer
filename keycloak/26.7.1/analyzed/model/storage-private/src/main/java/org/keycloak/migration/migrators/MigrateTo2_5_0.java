@@ -25,10 +25,13 @@ import org.keycloak.models.utils.DefaultKeyProviders;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 升级至 2.5.0 的模型迁移器：为各域创建默认的 HMAC 密钥提供者（secret provider）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo2_5_0 implements Migration {
 
+    /** 目标模型版本 2.5.0。 */
     public static final ModelVersion VERSION = new ModelVersion("2.5.0");
 
     @Override

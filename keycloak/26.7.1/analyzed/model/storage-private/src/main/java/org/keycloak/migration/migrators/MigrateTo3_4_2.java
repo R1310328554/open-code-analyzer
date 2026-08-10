@@ -28,10 +28,13 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 升级至 3.4.2 的模型迁移器：修正 admin-cli 与 admin-console 客户端的作用域映射（补做 3.2.0 遗漏项）。
+ *
  * @author <a href="mailto:bruno@abstractj.org">Bruno Oliveira</a>
  */
 public class MigrateTo3_4_2 implements Migration {
 
+    /** 目标模型版本 3.4.2。 */
     public static final ModelVersion VERSION = new ModelVersion("3.4.2");
 
     @Override
@@ -44,8 +47,9 @@ public class MigrateTo3_4_2 implements Migration {
         migrateRealm(realm);
     }
 
+    /** 清理 admin-cli 与 admin-console 的全作用域许可及角色映射。 */
     protected void migrateRealm(RealmModel realm) {
-        // this is a fix for migration that should have been done in 3_2_0
+        // 本应在 3_2_0 完成的迁移修复
         ClientModel cli = realm.getClientByClientId(Constants.ADMIN_CLI_CLIENT_ID);
         clearScope(cli);
         ClientModel console = realm.getClientByClientId(Constants.ADMIN_CONSOLE_CLIENT_ID);
@@ -53,6 +57,7 @@ public class MigrateTo3_4_2 implements Migration {
 
     }
 
+    /** 禁用全作用域并删除所有作用域映射。 */
     private void clearScope(ClientModel cli) {
         if (cli.isFullScopeAllowed()) cli.setFullScopeAllowed(false);
         cli.getScopeMappingsStream().collect(Collectors.toList()).forEach(cli::deleteScopeMapping);
