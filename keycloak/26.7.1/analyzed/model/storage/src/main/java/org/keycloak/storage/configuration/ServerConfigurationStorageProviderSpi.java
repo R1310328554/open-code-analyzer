@@ -20,25 +20,29 @@ package org.keycloak.storage.configuration;
 import org.keycloak.provider.Spi;
 
 /**
- * The {@link Spi} implementation of {@link ServerConfigStorageProvider}.
+ * {@link ServerConfigStorageProvider} 的 {@link Spi} 实现，在 Keycloak 内部注册服务器配置存储扩展点。
  */
 public class ServerConfigurationStorageProviderSpi implements Spi {
 
+    /** {@inheritDoc} 服务器配置存储为内部 SPI。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** {@inheritDoc} SPI 名称为 {@code serverConfig}。 */
     @Override
     public String getName() {
         return "serverConfig";
     }
 
+    /** {@inheritDoc} 关联的 Provider 类型。 */
     @Override
     public Class<ServerConfigStorageProvider> getProviderClass() {
         return ServerConfigStorageProvider.class;
     }
 
+    /** {@inheritDoc} 关联的工厂类型。 */
     @Override
     public Class<ServerConfigStorageProviderFactory> getProviderFactoryClass() {
         return ServerConfigStorageProviderFactory.class;

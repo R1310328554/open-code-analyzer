@@ -22,10 +22,10 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.provider.Provider;
 
 /**
- * Base interface for components that want to provide an alternative storage mechanism for clients
- *
- * This is currently a private incomplete SPI.  Please discuss on dev list if you want us to complete it or want to do the work yourself.
- * This work is described in KEYCLOAK-6408 JIRA issue.
+ * 客户端存储 Provider 的基础接口，为客户端提供替代存储机制。
+ * <p>
+ * 当前为私有且不完整的 SPI。如需完善或自行实现，请在开发邮件列表讨论。
+ * 相关工作见 JIRA KEYCLOAK-6408。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -34,10 +34,9 @@ public interface ClientStorageProvider extends Provider, ClientLookupProvider {
 
 
     /**
-     * Callback when a realm is removed.  Implement this if, for example, you want to do some
-     * cleanup in your user storage when a realm is removed
+     * realm 删除前的回调；可在外部存储中清理与该 realm 关联的客户端数据。
      *
-     * @param realm
+     * @param realm 待删除 realm
      */
     default
     void preRemove(RealmModel realm) {
@@ -45,11 +44,10 @@ public interface ClientStorageProvider extends Provider, ClientLookupProvider {
     }
 
     /**
-     * Callback when a group is removed.  Allows you to do things like remove a user
-     * group mapping in your external store if appropriate
+     * 组删除前的回调；可同步移除外部存储中的客户端-组映射（如适用）。
      *
-     * @param realm
-     * @param group
+     * @param realm 所属 realm
+     * @param group 待删除组
      */
     default
     void preRemove(RealmModel realm, GroupModel group) {
@@ -57,11 +55,10 @@ public interface ClientStorageProvider extends Provider, ClientLookupProvider {
     }
 
     /**
-     * Callback when a role is removed.  Allows you to do things like remove a user
-     * role mapping in your external store if appropriate
-
-     * @param realm
-     * @param role
+     * 角色删除前的回调；可同步移除外部存储中的客户端-角色映射（如适用）。
+     *
+     * @param realm 所属 realm
+     * @param role 待删除角色
      */
     default
     void preRemove(RealmModel realm, RoleModel role) {

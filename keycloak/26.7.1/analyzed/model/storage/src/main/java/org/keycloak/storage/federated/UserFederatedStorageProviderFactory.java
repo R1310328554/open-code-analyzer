@@ -19,6 +19,10 @@ package org.keycloak.storage.federated;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * 用户联邦存储 Provider 的工厂接口，负责创建 {@link UserFederatedStorageProvider} 实例。
+ * <p>
+ * 联邦存储用于持久化外部用户存储无法直接承载的数据（属性、角色映射、Broker 链接、同意书等）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */

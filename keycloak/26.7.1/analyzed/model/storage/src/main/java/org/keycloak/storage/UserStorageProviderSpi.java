@@ -27,30 +27,38 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 用户存储 Provider 的 {@link Spi} 实现，注册 {@link UserStorageProvider} 及其工厂，
+ * 并定义各用户存储实现共享的通用配置项（同步周期、缓存策略等）。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UserStorageProviderSpi implements Spi {
 
+    /** {@inheritDoc} 用户存储为可插拔扩展，非内部 SPI。 */
     @Override
     public boolean isInternal() {
         return false;
     }
 
+    /** {@inheritDoc} SPI 名称为 {@code storage}。 */
     @Override
     public String getName() {
         return "storage";
     }
 
+    /** {@inheritDoc} 关联的 Provider 类型为 {@link UserStorageProvider}。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return UserStorageProvider.class;
     }
 
+    /** {@inheritDoc} 关联的工厂类型为 {@link UserStorageProviderFactory}。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return UserStorageProviderFactory.class;
     }
 
+    /** 所有用户存储 Provider 共享的通用配置属性列表。 */
     private static final List<ProviderConfigProperty> commonConfig;
 
     static {
@@ -87,6 +95,11 @@ public class UserStorageProviderSpi implements Spi {
         commonConfig = Collections.unmodifiableList(config);
     }
 
+    /**
+     * 返回用户存储 Provider 的通用配置属性（启用、优先级、同步周期、缓存策略等）。
+     *
+     * @return 不可变的通用配置属性列表
+     */
     public static List<ProviderConfigProperty> commonConfig() {
         return commonConfig;
 

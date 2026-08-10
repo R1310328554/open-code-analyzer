@@ -22,14 +22,28 @@ import org.keycloak.models.cache.UserCache;
 import org.keycloak.storage.federated.UserFederatedStorageProvider;
 
 /**
+ * 用户存储相关 Provider 的便捷访问工具类。
+ *
  * @author Alexander Schwartz
  */
 public class UserStorageUtil {
 
+    /**
+     * 从当前会话获取 {@link UserFederatedStorageProvider}，用于读写联邦用户的属性、角色、组等扩展数据。
+     *
+     * @param session 当前 Keycloak 会话
+     * @return 用户联邦存储 Provider 实例
+     */
     public static UserFederatedStorageProvider userFederatedStorage(KeycloakSession session) {
         return session.getProvider(UserFederatedStorageProvider.class);
     }
 
+    /**
+     * 从当前会话获取 {@link UserCache}，用于用户查询缓存的失效与更新。
+     *
+     * @param session 当前 Keycloak 会话
+     * @return 用户缓存 Provider 实例
+     */
     public static UserCache userCache(KeycloakSession session) {
         return session.getProvider(UserCache.class);
     }

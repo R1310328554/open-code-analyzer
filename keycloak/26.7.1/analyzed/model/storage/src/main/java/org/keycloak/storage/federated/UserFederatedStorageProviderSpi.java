@@ -22,25 +22,33 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 用户联邦存储 Provider 的 {@link Spi} 实现，注册 {@link UserFederatedStorageProvider} 及其工厂。
+ * <p>
+ * 联邦存储为内部 SPI，默认由 JPA 等实现持久化外部用户无法直接存储的扩展数据。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UserFederatedStorageProviderSpi implements Spi {
 
+    /** {@inheritDoc} 联邦存储为内部 SPI。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** {@inheritDoc} SPI 名称为 {@code userFederatedStorage}。 */
     @Override
     public String getName() {
         return "userFederatedStorage";
     }
 
+    /** {@inheritDoc} 关联的 Provider 类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return UserFederatedStorageProvider.class;
     }
 
+    /** {@inheritDoc} 关联的工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return UserFederatedStorageProviderFactory.class;

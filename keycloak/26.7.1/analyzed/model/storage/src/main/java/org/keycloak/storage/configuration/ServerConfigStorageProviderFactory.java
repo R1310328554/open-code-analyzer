@@ -20,7 +20,9 @@ package org.keycloak.storage.configuration;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * A {@link ProviderFactory} to create instances of {@link ServerConfigStorageProvider}
+ * 用于创建 {@link ServerConfigStorageProvider} 实例的 {@link ProviderFactory}。
+ * <p>
+ * 实现类负责选择具体后端（如数据库、分布式缓存）以在 Keycloak 集群节点间共享服务器级配置。
  */
 public interface ServerConfigStorageProviderFactory extends ProviderFactory<ServerConfigStorageProvider> {
 }

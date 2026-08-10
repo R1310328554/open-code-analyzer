@@ -38,23 +38,36 @@ import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.StorageId;
 
 /**
- * This abstract class provides implementations for everything but getUsername().  getId() returns a default value
- * of "f:" + providerId + ":" + getUsername().  isEnabled() returns true.  getRoleMappings() will return default roles.
- * getGroups() will return default groups.
- *
- * All other read methods return null, an empty collection, or false depending
- * on the type.  All update methods throw a ReadOnlyException.
- *
- * Provider implementors should override the methods for attributes, properties, and mappings they support.
+ * 外部用户存储适配器的抽象基类，除 {@link #getUsername()} 外提供默认实现。
+ * <p>
+ * {@link #getId()} 默认返回 {@code "f:" + providerId + ":" + getUsername()}；
+ * {@link #isEnabled()} 默认 {@code true}；
+ * {@link #getRoleMappings()} 会包含 realm 默认角色；
+ * {@link #getGroups()} 会包含 realm 默认组。
+ * <p>
+ * 其余读方法按返回类型返回 {@code null}、空集合或 {@code false}；
+ * 所有写操作抛出 {@link ReadOnlyException}，表示用户只读。
+ * <p>
+ * Provider 实现者应覆盖其支持属性、属性映射与角色/组映射的相关方法。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public abstract class AbstractUserAdapter extends UserModelDefaultMethods {
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 用户所属 realm。 */
     protected RealmModel realm;
+    /** 用户存储 Provider 的组件配置模型。 */
     protected ComponentModel storageProviderModel;
 
+    /**
+     * 构造只读用户适配器。
+     *
+     * @param session               当前会话
+     * @param realm                 所属 realm
+     * @param storageProviderModel  用户存储 Provider 组件模型
+     */
     public AbstractUserAdapter(KeycloakSession session, RealmModel realm, ComponentModel storageProviderModel) {
         this.session = session;
         this.realm = realm;
@@ -97,20 +110,20 @@ public abstract class AbstractUserAdapter extends UserModelDefaultMethods {
     }
 
     /**
-     * Get group membership mappings that are managed by this storage provider
+     * 获取由本存储 Provider 直接管理的组成员关系。
      *
-     * @return
+     * @return Provider 管理的组集合，默认空集
      */
     protected Set<GroupModel> getGroupsInternal() {
         return Collections.emptySet();
     }
 
     /**
-     * Should the realm's default groups be appended to getGroups() call?
-     * If your storage provider is not managing group mappings then it is recommended that
-     * this method return true
+     * 是否在 {@link #getGroups()} 结果中追加 realm 默认组。
+     * <p>
+     * 若存储 Provider 不管理组映射，建议返回 {@code true}。
      *
-     * @return
+     * @return 追加默认组返回 {@code true}
      */
     protected boolean appendDefaultGroups() {
         return true;
@@ -187,16 +200,17 @@ public abstract class AbstractUserAdapter extends UserModelDefaultMethods {
     }
 
     /**
-     * Should the realm's default roles be appended to getRoleMappings() call?
-     * If your storage provider is not managing all role mappings then it is recommended that
-     * this method return true
+     * 是否在 {@link #getRoleMappings()} 结果中追加 realm 默认角色。
+     * <p>
+     * 若存储 Provider 不管理全部角色映射，建议返回 {@code true}。
      *
-     * @return
+     * @return 追加默认角色返回 {@code true}
      */
     protected boolean appendDefaultRolesToRoleMappings() {
         return true;
     }
 
+    /** 获取由本存储 Provider 直接管理的角色映射，默认空集。 */
     protected Set<RoleModel> getRoleMappingsInternal() {
         return Collections.emptySet();
     }
@@ -234,53 +248,42 @@ public abstract class AbstractUserAdapter extends UserModelDefaultMethods {
     }
 
     /**
-     * This method should not be overridden
+     * 返回联邦链接（存储 Provider 组件 ID）；不应被实现类覆盖。
      *
-     * @return
+     * @return Provider 组件 ID
      */
     @Override
     public String getFederationLink() {
         return StorageId.providerId(getId());
     }
 
-    /**
-     * This method should not be overridden
-     *
-     * @return
-     */
+    /** 设置联邦链接；只读适配器不允许修改，抛出 {@link ReadOnlyException}。 */
     @Override
     public void setFederationLink(String link) {
         throw new ReadOnlyException("user is read only for this update");
 
     }
 
-    /**
-     * This method should not be overridden
-     *
-     * @return
-     */
+    /** 返回服务账户客户端链接，只读适配器默认 {@code null}。 */
     @Override
     public String getServiceAccountClientLink() {
         return null;
     }
 
-    /**
-     * This method should not be overridden
-     *
-     * @return
-     */
+    /** 设置服务账户客户端链接；只读适配器不允许修改。 */
     @Override
     public void setServiceAccountClientLink(String clientInternalId) {
         throw new ReadOnlyException("user is read only for this update");
 
     }
 
+    /** 缓存的用户存储 ID 对象。 */
     protected StorageId storageId;
 
     /**
-     * Defaults to 'f:' + storageProvider.getId() + ':' + getUsername()
+     * 默认 ID 格式：{@code 'f:' + storageProvider.getId() + ':' + getUsername()}。
      *
-     * @return
+     * @return 联邦用户存储 ID
      */
     @Override
     public String getId() {
@@ -295,6 +298,7 @@ public abstract class AbstractUserAdapter extends UserModelDefaultMethods {
         throw new ReadOnlyException("user is read only for this update");
     }
 
+    /** 用户创建时间戳，默认构造时取当前毫秒时间。 */
     protected long created = System.currentTimeMillis();
 
     @Override
@@ -415,11 +419,10 @@ public abstract class AbstractUserAdapter extends UserModelDefaultMethods {
     }
 
     /**
-     * The {@link Streams} interface makes all collection-based methods in {@link AbstractUserAdapter} default by providing
-     * implementations that delegate to the {@link Stream}-based variants instead of the other way around.
+     * {@link Streams} 子类以 {@link Stream} 为首选实现方式：
+     * 集合型方法委托给 Stream 变体，便于实现类优化内存与性能。
      * <p/>
-     * It allows for implementations to focus on the {@link Stream}-based approach for processing sets of data and benefit
-     * from the potential memory and performance optimizations of that approach.
+     * 实现类只需覆盖 Stream 方法，集合方法由本类默认提供。
      */
     public abstract static class Streams extends AbstractUserAdapter implements UserModel {
 
@@ -450,7 +453,7 @@ public abstract class AbstractUserAdapter extends UserModelDefaultMethods {
             return Stream.empty();
         }
 
-        // group-related methods.
+        // 组相关方法：Stream 优先实现。
 
 
         @Override
@@ -470,7 +473,7 @@ public abstract class AbstractUserAdapter extends UserModelDefaultMethods {
             return RoleUtils.isMember(this.getGroupsStream(), group);
         }
 
-        // role-related methods.
+        // 角色相关方法：Stream 优先实现。
 
 
         @Override

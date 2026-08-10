@@ -30,6 +30,10 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
 
 /**
+ * 用户联邦存储 Provider：聚合属性、Broker 链接、同意书、组/角色映射、凭证等联邦数据的读写能力。
+ * <p>
+ * 外部用户存储（LDAP 等）通常仅提供用户名等基础字段；其余数据通过本 Provider 持久化到 Keycloak 本地存储。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -45,7 +49,7 @@ public interface UserFederatedStorageProvider extends Provider,
         UserVerifiableCredentialFederatedStorage {
 
     /**
-     * Obtains the ids of all federated users in the realm.
+     * 获取 realm 中全部联邦用户的 ID 列表（分页）。
      *
      * @param realm a reference to the realm.
      * @param first first result to return. Ignored if negative or {@code null}.
@@ -54,27 +58,40 @@ public interface UserFederatedStorageProvider extends Provider,
      */
     Stream<String> getStoredUsersStream(RealmModel realm, Integer first, Integer max);
 
+    /**
+     * 统计 realm 中联邦用户总数。
+     *
+     * @param realm 所属 realm
+     * @return 联邦用户数量
+     */
     int getStoredUsersCount(RealmModel realm);
 
+    /** realm 删除前的回调，清理该 realm 下的全部联邦存储数据。 */
     void preRemove(RealmModel realm);
 
+    /** 组删除前的回调，清理相关联邦组映射。 */
     void preRemove(RealmModel realm, GroupModel group);
 
+    /** 角色删除前的回调，清理相关联邦角色映射。 */
     void preRemove(RealmModel realm, RoleModel role);
 
+    /** 客户端删除前的回调，清理相关联邦同意书等数据。 */
     void preRemove(RealmModel realm, ClientModel client);
 
+    /** 协议映射器删除前的回调。 */
     void preRemove(ProtocolMapperModel protocolMapper);
 
+    /** 客户端作用域删除前的回调。 */
     void preRemove(ClientScopeModel clientScope);
 
+    /** 用户删除前的回调，清理该用户的全部联邦存储数据。 */
     void preRemove(RealmModel realm, UserModel user);
 
+    /** 组件（如用户存储 Provider）删除前的回调。 */
     void preRemove(RealmModel realm, ComponentModel model);
 
     /**
-     * @deprecated This interface is no longer necessary; collection-based methods were removed from the parent interface
-     * and therefore the parent interface can be used directly
+     * @deprecated 父接口已移除基于集合的方法，可直接使用本接口，无需再继承此 Streams 子接口。
      */
     @Deprecated
     interface Streams extends UserFederatedStorageProvider,

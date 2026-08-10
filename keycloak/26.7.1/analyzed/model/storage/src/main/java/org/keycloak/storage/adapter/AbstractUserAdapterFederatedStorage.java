@@ -39,34 +39,56 @@ import org.keycloak.storage.UserStorageUtil;
 import org.keycloak.storage.federated.UserFederatedStorageProvider;
 
 /**
- * Assumes everything is managed by federated storage except for username.  getId() returns a default value
- * of "f:" + providerId + ":" + getUsername().  UserModel properties like enabled, firstName, lastName, email, etc. are all
- * stored as attributes in federated storage.
- *
- * isEnabled() defaults to true if the ENABLED_ATTRIBUTE isn't set in federated storage
+ * 基于联邦存储的用户适配器抽象基类：除用户名外，其余数据均委托 {@link UserFederatedStorageProvider} 持久化。
+ * <p>
+ * {@link #getId()} 默认 {@code "f:" + providerId + ":" + getUsername()}；
+ * enabled、firstName、lastName、email 等 {@link UserModel} 属性以联邦存储中的自定义属性形式保存。
+ * <p>
+ * 若联邦存储未设置 {@link #ENABLED_ATTRIBUTE}，{@link #isEnabled()} 默认为 {@code true}。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefaultMethods {
+    /** 联邦存储中 firstName 对应的属性键。 */
     public static String FIRST_NAME_ATTRIBUTE = "FIRST_NAME";
+    /** 联邦存储中 lastName 对应的属性键。 */
     public static String LAST_NAME_ATTRIBUTE = "LAST_NAME";
+    /** 联邦存储中 email 对应的属性键。 */
     public static String EMAIL_ATTRIBUTE = "EMAIL";
+    /** 联邦存储中邮箱已验证标志对应的属性键。 */
     public static String EMAIL_VERIFIED_ATTRIBUTE = "EMAIL_VERIFIED";
+    /** 联邦存储中创建时间戳对应的属性键。 */
     public static String CREATED_TIMESTAMP_ATTRIBUTE = "CREATED_TIMESTAMP";
+    /** 联邦存储中启用状态对应的属性键。 */
     public static String ENABLED_ATTRIBUTE = "ENABLED";
 
 
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 用户所属 realm。 */
     protected RealmModel realm;
+    /** 用户存储 Provider 的组件配置模型。 */
     protected ComponentModel storageProviderModel;
 
+    /**
+     * 构造基于联邦存储的用户适配器。
+     *
+     * @param session               当前会话
+     * @param realm                 所属 realm
+     * @param storageProviderModel  用户存储 Provider 组件模型
+     */
     public AbstractUserAdapterFederatedStorage(KeycloakSession session, RealmModel realm, ComponentModel storageProviderModel) {
         this.session = session;
         this.realm = realm;
         this.storageProviderModel = storageProviderModel;
     }
 
+    /**
+     * 获取当前会话的 {@link UserFederatedStorageProvider}。
+     *
+     * @return 联邦存储 Provider 实例
+     */
     public UserFederatedStorageProvider getFederatedStorage() {
         return UserStorageUtil.userFederatedStorage(session);
     }
@@ -99,30 +121,27 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
     }
 
     /**
-     * Get group membership mappings that are managed by this storage provider
+     * 获取由本存储 Provider 直接管理的组成员关系。
      *
-     * @return
+     * @return Provider 管理的组集合，默认空集
      */
     protected Set<GroupModel> getGroupsInternal() {
         return Collections.emptySet();
     }
 
     /**
-     * Should the realm's default groups be appended to getGroups() call?
-     * If your storage provider is not managing group mappings then it is recommended that
-     * this method return true
+     * 是否在组列表中追加 realm 默认组。
+     * <p>
+     * 若存储 Provider 不管理组映射，建议返回 {@code true}。
      *
-     * @return
+     * @return 追加默认组返回 {@code true}
      */
     protected boolean appendDefaultGroups() {
         return true;
     }
 
     /**
-     * Gets groups from federated storage and automatically appends default groups of realm.
-     * Also calls getGroupsInternal() method
-     * to pull group membership from provider.  Implementors can override that method
-     *
+     * 从联邦存储读取组，并追加 realm 默认组及 {@link #getGroupsInternal()} 结果。
      */
     @Override
     public Stream<GroupModel> getGroupsStream() {
@@ -149,9 +168,7 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
     }
 
     /**
-     * Gets role mappings from federated storage and automatically appends default roles.
-     * Also calls getRoleMappingsInternal() method
-     * to pull role mappings from provider.  Implementors can override that method
+     * 从联邦存储读取 realm 角色映射（基于 {@link #getRoleMappingsStream()} 过滤）。
      */
     @Override
     public Stream<RoleModel> getRealmRoleMappingsStream() {
@@ -159,9 +176,7 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
     }
 
     /**
-     * Gets role mappings from federated storage and automatically appends default roles.
-     * Also calls getRoleMappingsInternal() method
-     * to pull role mappings from provider.  Implementors can override that method
+     * 从联邦存储读取指定客户端的角色映射。
      */
     @Override
     public Stream<RoleModel> getClientRoleMappingsStream(ClientModel app) {
@@ -181,24 +196,23 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
     }
 
     /**
-     * Should the realm's default roles be appended to getRoleMappings() call?
-     * If your storage provider is not managing all role mappings then it is recommended that
-     * this method return true
+     * 是否在角色映射中追加 realm 默认角色。
+     * <p>
+     * 若存储 Provider 不管理全部角色映射，建议返回 {@code true}。
      *
-     * @return
+     * @return 追加默认角色返回 {@code true}
      */
     protected boolean appendDefaultRolesToRoleMappings() {
         return true;
     }
 
+    /** 获取由本存储 Provider 直接管理的角色映射，默认空集。 */
     protected Set<RoleModel> getRoleMappingsInternal() {
         return Collections.emptySet();
     }
 
     /**
-     * Gets role mappings from federated storage and automatically appends default roles.
-     * Also calls getRoleMappingsInternal() method
-     * to pull role mappings from provider.  Implementors can override that method
+     * 合并联邦存储角色映射、realm 默认角色及 {@link #getRoleMappingsInternal()} 结果。
      */
     @Override
     public Stream<RoleModel> getRoleMappingsStream() {
@@ -217,6 +231,7 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
         return getFederatedRoleMappingsStream().collect(Collectors.toSet());
     }
 
+    /** 从联邦存储读取角色映射 Stream。 */
     protected Stream<RoleModel> getFederatedRoleMappingsStream() {
         return getFederatedStorage().getRoleMappingsStream(realm, this.getId());
     }
@@ -239,52 +254,37 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
        setSingleAttribute(ENABLED_ATTRIBUTE, Boolean.toString(enabled));
     }
 
-    /**
-     * This method should not be overridden
-     *
-     * @return
-     */
+    /** 返回联邦链接（存储 Provider 组件 ID）；不应被实现类覆盖。 */
     @Override
     public String getFederationLink() {
         return StorageId.providerId(getId());
     }
 
-    /**
-     * This method should not be overridden
-     *
-     * @return
-     */
+    /** 设置联邦链接；联邦存储适配器中为空操作。 */
     @Override
     public void setFederationLink(String link) {
 
     }
 
-    /**
-     * This method should not be overridden
-     *
-     * @return
-     */
+    /** 返回服务账户客户端链接，默认 {@code null}。 */
     @Override
     public String getServiceAccountClientLink() {
         return null;
     }
 
-    /**
-     * This method should not be overridden
-     *
-     * @return
-     */
+    /** 设置服务账户客户端链接；联邦存储适配器中为空操作。 */
     @Override
     public void setServiceAccountClientLink(String clientInternalId) {
 
     }
 
+    /** 缓存的用户存储 ID 对象。 */
     protected StorageId storageId;
 
     /**
-     * Defaults to 'f:' + storageProvider.getId() + ':' + getUsername()
+     * 默认 ID 格式：{@code 'f:' + storageProvider.getId() + ':' + getUsername()}。
      *
-     * @return
+     * @return 联邦用户存储 ID
      */
     @Override
     public String getId() {
@@ -368,6 +368,12 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
         return (result == null) ? Stream.empty() : result.stream();
     }
 
+    /**
+     * 将 {@link UserModel} 标准属性名映射为联邦存储中的自定义属性键。
+     *
+     * @param attributeName {@link UserModel} 属性名
+     * @return 联邦存储属性键
+     */
     protected String mapAttribute(String attributeName) {
         if (UserModel.FIRST_NAME.equals(attributeName)) {
             return FIRST_NAME_ATTRIBUTE;
@@ -387,10 +393,9 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
     }
 
     /**
-     * Stores as attribute in federated storage.
-     * EMAIL_VERIFIED_ATTRIBUTE
+     * 将邮箱验证状态写入联邦存储的 {@link #EMAIL_VERIFIED_ATTRIBUTE} 属性。
      *
-     * @param verified
+     * @param verified 是否已验证
      */
     @Override
     public void setEmailVerified(boolean verified) {
@@ -418,8 +423,7 @@ public abstract class AbstractUserAdapterFederatedStorage extends UserModelDefau
     }
 
     /**
-     * @deprecated This interface is no longer necessary; collection-based methods were removed from the parent interface
-     * and therefore the parent interface can be used directly
+     * @deprecated 父接口已移除基于集合的方法，可直接使用 {@link AbstractUserAdapterFederatedStorage}，无需此 Streams 子类。
      */
     @Deprecated
     public abstract static class Streams extends AbstractUserAdapterFederatedStorage implements UserModel {

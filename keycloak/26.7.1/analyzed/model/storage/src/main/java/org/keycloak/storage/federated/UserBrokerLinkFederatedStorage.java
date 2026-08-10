@@ -23,18 +23,40 @@ import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 联邦用户身份代理（Broker）链接存储接口：管理外部 IdP 与联邦用户的关联关系。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface UserBrokerLinkFederatedStorage {
+
+    /**
+     * 根据联邦身份查找对应用户 ID。
+     *
+     * @param socialLink 联邦身份模型
+     * @param realm      所属 realm
+     * @return 关联的用户 ID，未找到时返回 {@code null}
+     */
     String getUserByFederatedIdentity(FederatedIdentityModel socialLink, RealmModel realm);
+
+    /** 为联邦用户添加身份代理链接。 */
     void addFederatedIdentity(RealmModel realm, String userId, FederatedIdentityModel socialLink);
+
+    /**
+     * 移除联邦用户与指定身份提供商的链接。
+     *
+     * @return 成功移除返回 {@code true}
+     */
     boolean removeFederatedIdentity(RealmModel realm, String userId, String socialProvider);
+
+    /** 身份提供商删除前的回调，可清理相关联邦链接。 */
     void preRemove(RealmModel realm, IdentityProviderModel provider);
+
+    /** 更新联邦用户的身份代理链接信息。 */
     void updateFederatedIdentity(RealmModel realm, String userId, FederatedIdentityModel federatedIdentityModel);
 
     /**
-     * Obtains the identities of the federated user identified by {@code userId}.
+     * 获取指定联邦用户的全部身份代理链接。
      *
      * @param userId the user identifier.
      * @param realm a reference to the realm.
@@ -42,11 +64,18 @@ public interface UserBrokerLinkFederatedStorage {
      */
     Stream<FederatedIdentityModel> getFederatedIdentitiesStream(String userId, RealmModel realm);
 
+    /**
+     * 获取联邦用户与指定身份提供商的单条链接。
+     *
+     * @param userId         用户 ID
+     * @param socialProvider 身份提供商标识
+     * @param realm          所属 realm
+     * @return 联邦身份模型，不存在时返回 {@code null}
+     */
     FederatedIdentityModel getFederatedIdentity(String userId, String socialProvider, RealmModel realm);
 
     /**
-     * @deprecated This interface is no longer necessary; collection-based methods were removed from the parent interface
-     * and therefore the parent interface can be used directly
+     * @deprecated 父接口已移除基于集合的方法，可直接使用本接口，无需再继承此 Streams 子接口。
      */
     @Deprecated
     interface Streams extends UserBrokerLinkFederatedStorage {
