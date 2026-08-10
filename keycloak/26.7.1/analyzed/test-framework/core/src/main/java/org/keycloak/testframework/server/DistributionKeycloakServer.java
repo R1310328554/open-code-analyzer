@@ -36,27 +36,48 @@ import org.keycloak.testframework.util.TmpDir;
 import io.quarkus.fs.util.ZipUtils;
 import org.jboss.logging.Logger;
 
+/**
+ * 基于 Quarkus 发行包（ZIP 解压）的 {@link KeycloakServer} 实现。
+ * <p>
+ * 解压本地或 Maven 解析的 dist、以子进程启动 {@code kc.sh/kc.bat}，
+ * 支持进程复用、Provider 热部署与就绪探针等待。
+ */
 public class DistributionKeycloakServer implements KeycloakServer {
 
+    /** 本类日志记录器。 */
     private static final Logger log = Logger.getLogger(DistributionKeycloakServer.class);
 
+    /** 解压安装目录根路径。 */
     private static final File INSTALL_DIR = Path.of(TmpDir.resolveTmpDir().getAbsolutePath(), "kc-test-framework", "keycloak").toFile();
+    /** 平台相关的 Keycloak 启动脚本名。 */
     private static final String CMD = "kc" + (Environment.isWindows() ? ".bat" : ".sh");
 
+    /** 当前 Keycloak 安装主目录（{@code KEYCLOAK_HOME}）。 */
     private File keycloakHomeDir;
+    /** 托管 Keycloak 子进程。 */
     private Process keycloakProcess;
 
+    /** 是否在启动环境中启用 DEBUG。 */
     private final boolean debug;
+    /** 是否尝试复用已在运行的托管实例。 */
     private final boolean reuse;
+    /** 启动与就绪等待超时（秒）。 */
     private final long startTimeout;
+    /** 当前实例是否以 HTTPS 模式运行。 */
     private boolean tlsEnabled = false;
 
+    /**
+     * @param debug 是否启用远程调试环境变量
+     * @param reuse 是否复用已有进程
+     * @param startTimeout 启动超时（秒）
+     */
     public DistributionKeycloakServer(boolean debug, boolean reuse, long startTimeout) {
         this.debug = debug;
         this.reuse = reuse;
         this.startTimeout = startTimeout;
     }
 
+    /** 解压/复用安装、部署 Provider、启动进程并等待就绪。 */
     @Override
     public void start(KeycloakServerConfigBuilder keycloakServerConfigBuilder, boolean tlsEnabled) {
         this.tlsEnabled = tlsEnabled;
@@ -107,6 +128,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** 校验端口上运行的是本框架托管的 Keycloak 而非外来进程。 */
     private void checkRunning() {
         if (!Environment.isWindows()) {
             ProcessBuilder pb = new ProcessBuilder("fuser", "-n", "tcp", tlsEnabled ? "8443" : "8080");
@@ -135,6 +157,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** 在 {@code bin} 目录下启动 Keycloak 子进程并绑定输出处理器。 */
     private DistributionKeycloakServer.OutputHandler startKeycloak(List<String> args) {
         log.trace("Starting Keycloak");
         List<String> cmd = new LinkedList<>();
@@ -164,6 +187,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         return outputHandler;
     }
 
+    /** 非复用模式下终止子进程并清理 PID 文件。 */
     @Override
     public void stop() {
         if (!reuse) {
@@ -176,6 +200,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** 读取 PID 文件并终止上一次托管的 Keycloak 进程。 */
     private boolean killPreviousProcess() {
         if (!Environment.isWindows()) {
             File pidFile = getPidFile();
@@ -195,6 +220,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         return false;
     }
 
+    /** {@inheritDoc} 根据 TLS 返回 {@code https://localhost:8443} 或 HTTP 8080。 */
     @Override
     public String getBaseUrl() {
         if (tlsEnabled) {
@@ -204,6 +230,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** {@inheritDoc} 返回 Quarkus 管理端基址（端口 9000）。 */
     @Override
     public String getManagementBaseUrl() {
         if (tlsEnabled) {
@@ -213,6 +240,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** 解压发行 ZIP 到临时目录，必要时复用已有安装。 */
     private boolean createInstallation() throws IOException {
         File dist = resolveKeycloakDist();
 
@@ -254,6 +282,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         return true;
     }
 
+    /** 对基址发起短超时 HTTP(S) 连接以检测服务是否存活。 */
     private boolean ping() {
         try {
             HttpURLConnection urlConnection = (HttpURLConnection) new URL(getBaseUrl()).openConnection();
@@ -272,6 +301,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** 等待日志中出现启动完成标志且 ping 成功，否则销毁进程并抛错。 */
     private void waitForStart(OutputHandler outputHandler) {
         boolean started = outputHandler.waitForStarted();
         if (started && ping()) {
@@ -281,18 +311,22 @@ public class DistributionKeycloakServer implements KeycloakServer {
         throw new RuntimeException("Keycloak did not start within timeout: " + getErrorOutput());
     }
 
+    /** @param dir 安装目录 @return 记录源 ZIP 修改时间的标记文件 */
     private File getZipLastModifiedFile(File dir) {
         return new File(dir, "zip-last-modified");
     }
 
+    /** @return 托管进程 PID 持久化文件 */
     private File getPidFile() {
         return new File(keycloakHomeDir, "pid");
     }
 
+    /** @return 记录上次启动参数的文件，用于复用判断 */
     private File getServerArgsFile() {
         return new File(keycloakHomeDir, "startup-args");
     }
 
+    /** 通过临时 Admin 客户端拉取 {@link ServerInfoRepresentation}（Windows 校验用）。 */
     private ServerInfoRepresentation getServerInfo() {
         KeycloakBuilder kcb = KeycloakBuilder.builder()
                 .serverUrl(getBaseUrl())
@@ -307,6 +341,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         return info;
     }
 
+    /** @return 子进程 stderr 内容，用于启动失败诊断 */
     private String getErrorOutput() {
         try {
             return new String(keycloakProcess.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
@@ -315,6 +350,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** 从工作目录向上查找本地构建 ZIP，否则通过 Maven 解析 dist 构件。 */
     private static File resolveKeycloakDist() {
         Path p = Path.of(System.getProperty("user.dir"));
         String dist = "quarkus/dist/target/" + "keycloak-" + Version.VERSION + ".zip";
@@ -329,20 +365,28 @@ public class DistributionKeycloakServer implements KeycloakServer {
         return Maven.resolveArtifact("org.keycloak", "keycloak-quarkus-dist").toFile();
     }
 
+    /** 读取 Keycloak 标准输出、解析日志级别并通知启动 latch。 */
     private class OutputHandler implements Runnable {
 
+        /** Quarkus/JBoss 日志行解析正则。 */
         private static final Pattern LOG_PATTERN = Pattern.compile("([^ ]*) ([^ ]*) ([A-Z]*)([ ]*)(.*)");
+        /** 转发 Keycloak 进程日志的目标记录器。 */
         private static final Logger LOGGER = Logger.getLogger("managed.keycloak");
 
+        /** 是否已检测到 "started in" 日志行。 */
         private boolean startedInPrinted = false;
+        /** 被监控的子进程。 */
         private final Process process;
 
+        /** 启动完成信号 latch。 */
         private CountDownLatch startupLatch = new CountDownLatch(1);
 
+        /** @param process Keycloak 子进程 */
         private OutputHandler(Process process) {
             this.process = process;
         }
 
+        /** 持续读取 stdout 直至进程结束或流关闭。 */
         @Override
         public void run() {
             InputStream is = process.getInputStream();
@@ -369,7 +413,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
                     LOGGER.info(line);
                 }
             } catch (IOException e) {
-                // Ignored
+                // 读取异常时忽略
             } finally {
                 if (startupLatch.getCount() != 0) {
                     startupLatch.countDown();
@@ -377,6 +421,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
             }
         }
 
+        /** 阻塞等待启动 latch，超时后返回进程是否仍存活。 */
         public boolean waitForStarted() {
             try {
                 startupLatch.await(startTimeout, TimeUnit.SECONDS);
@@ -388,6 +433,7 @@ public class DistributionKeycloakServer implements KeycloakServer {
 
     }
 
+    /** ping 检测用：信任所有证书的 {@link X509TrustManager}（仅测试环境）。 */
     private static class NullTrustManager implements X509TrustManager {
 
         @Override

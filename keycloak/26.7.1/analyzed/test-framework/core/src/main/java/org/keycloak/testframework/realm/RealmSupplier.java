@@ -22,8 +22,15 @@ import org.keycloak.testframework.server.KeycloakUrls;
 import org.keycloak.util.JsonSerialization;
 import org.keycloak.util.Strings;
 
+/**
+ * 托管 Realm 的 {@link Supplier} 实现。
+ * <p>
+ * 可创建全新 Realm、或附着到已有 Realm；支持 JSON 导入、{@link RealmConfig} 配置及
+ * {@link RealmConfigInterceptor} 链式拦截，并在测试结束时删除托管 Realm。
+ */
 public class RealmSupplier implements Supplier<ManagedRealm, InjectRealm> {
 
+    /** {@inheritDoc} 依赖 {@link KeycloakServer}、{@link KeycloakUrls} 与 bootstrap Admin 客户端。 */
     @Override
     public List<Dependency> getDependencies(RequestedInstance<ManagedRealm, InjectRealm> instanceContext) {
         return DependenciesBuilder.create(KeycloakServer.class)
@@ -31,6 +38,7 @@ public class RealmSupplier implements Supplier<ManagedRealm, InjectRealm> {
                 .add(Keycloak.class, "bootstrap-client").build();
     }
 
+    /** {@inheritDoc} 创建或附着 Realm 并返回 {@link ManagedRealm} 封装。 */
     @Override
     public ManagedRealm getValue(InstanceContext<ManagedRealm, InjectRealm> instanceContext) {
         KeycloakServer server = instanceContext.getDependency(KeycloakServer.class);
@@ -75,7 +83,7 @@ public class RealmSupplier implements Supplier<ManagedRealm, InjectRealm> {
 
             adminClient.realms().create(realmRepresentation);
 
-            // TODO Token needs to be invalidated after creating realm to have roles for new realm in the token. Maybe lightweight access tokens could help.
+            // TODO 创建 Realm 后需使令牌失效，新 Realm 角色才会出现在令牌中；轻量访问令牌或可解决
             adminClient.tokenManager().invalidate(adminClient.tokenManager().getAccessTokenString());
         } else {
             realmRepresentation = adminClient.realm(attachTo).toRepresentation();
@@ -87,6 +95,7 @@ public class RealmSupplier implements Supplier<ManagedRealm, InjectRealm> {
         return new ManagedRealm(server.getBaseUrl() + "/realms/" + realmRepresentation.getRealm(), realmRepresentation, realmResource);
     }
 
+    /** {@inheritDoc} 当 {@code config} 与 {@code fromJson} 均相同时视为兼容。 */
     @Override
     public boolean compatible(InstanceContext<ManagedRealm, InjectRealm> a, RequestedInstance<ManagedRealm, InjectRealm> b) {
         InjectRealm aa = a.getAnnotation();
@@ -94,6 +103,7 @@ public class RealmSupplier implements Supplier<ManagedRealm, InjectRealm> {
         return aa.config().equals(ba.config()) && aa.fromJson().equals(ba.fromJson());
     }
 
+    /** {@inheritDoc} 删除本 Supplier 创建的托管 Realm（附着模式不删除）。 */
     @Override
     public void close(InstanceContext<ManagedRealm, InjectRealm> instanceContext) {
         if (instanceContext.getNote("managed", Boolean.class)) {
@@ -101,17 +111,21 @@ public class RealmSupplier implements Supplier<ManagedRealm, InjectRealm> {
         }
     }
 
+    /** {@inheritDoc} 使用 {@link SupplierOrder#REALM} 顺序。 */
     @Override
     public int order() {
         return SupplierOrder.REALM;
     }
 
+    /** 聚合并调用所有 {@link RealmConfigInterceptor} 实现。 */
     private static class RealmConfigInterceptorHelper extends AbstractInterceptorHelper<RealmConfigInterceptor, RealmBuilder> {
 
+        /** @param registry 测试框架注册表 */
         private RealmConfigInterceptorHelper(Registry registry) {
             super(registry, RealmConfigInterceptor.class);
         }
 
+        /** {@inheritDoc} 若供应器实现拦截器接口则调用其 {@code intercept}。 */
         @Override
         public RealmBuilder intercept(RealmBuilder value, Supplier<?, ?> supplier, InstanceContext<?, ?> existingInstance) {
             if (supplier instanceof RealmConfigInterceptor interceptor) {

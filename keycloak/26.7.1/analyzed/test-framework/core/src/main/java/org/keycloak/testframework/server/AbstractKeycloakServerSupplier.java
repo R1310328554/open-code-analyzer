@@ -21,8 +21,15 @@ import org.keycloak.testframework.injection.SupplierOrder;
 
 import org.jboss.logging.Logger;
 
+/**
+ * Keycloak 测试服务器的抽象 {@link Supplier} 基类。
+ * <p>
+ * 负责解析 {@link KeycloakServerConfig}、装配 TLS/MTLS 与数据库/Infinispan 依赖，
+ * 并调用具体 {@link KeycloakServer} 实现启动与停止服务器。
+ */
 public abstract class AbstractKeycloakServerSupplier implements Supplier<KeycloakServer, KeycloakIntegrationTest> {
 
+    /** {@inheritDoc} 按需依赖证书、测试数据库与外部 Infinispan。 */
     @Override
     public List<Dependency> getDependencies(RequestedInstance<KeycloakServer, KeycloakIntegrationTest> instanceContext) {
         KeycloakServerConfigBuilder command = getKeycloakServerConfigBuilder(instanceContext.getAnnotation());
@@ -39,17 +46,18 @@ public abstract class AbstractKeycloakServerSupplier implements Supplier<Keycloa
         return builder.build();
     }
 
+    /** {@inheritDoc} 构建启动命令、应用 TLS 配置并启动 {@link KeycloakServer}。 */
     @Override
     public KeycloakServer getValue(InstanceContext<KeycloakServer, KeycloakIntegrationTest> instanceContext) {
 
         KeycloakServerConfigBuilder command = getKeycloakServerConfigBuilder(instanceContext.getAnnotation());
 
-        // Database startup and Keycloak connection setup
+        // 数据库启动及 Keycloak 连接配置
         if (requiresDatabase()) {
             instanceContext.getDependency(TestDatabase.class);
         }
 
-        // External Infinispan startup and Keycloak connection setup
+        // 外部 Infinispan 启动及 Keycloak 连接配置
         if (command.isExternalInfinispanEnabled()) {
             instanceContext.getDependency(InfinispanServer.class);
         }
@@ -69,10 +77,10 @@ public abstract class AbstractKeycloakServerSupplier implements Supplier<Keycloa
             command.option("https-client-auth", "request");
             if (KeystoreUtil.TruststoreFormat.PEM.name().equalsIgnoreCase(KeystoreUtil.getTruststoreType(
                     null, managedCert.getServerTrustStorePath(), managedCert.getKeystoreFormat().name()))) {
-                // for PEM file use common truststore paths option
+                // PEM 格式使用 truststore-paths 选项
                 command.option("truststore-paths", managedCert.getServerTrustStorePath());
             } else {
-                // for other formats use the https-trust-store-file option
+                // 其他格式使用 https-trust-store-file 选项
                 command.option("https-trust-store-file", managedCert.getServerTrustStorePath());
                 command.option("https-trust-store-password", managedCert.getServerTrustStorePassword());
                 command.option("https-trust-store-type", managedCert.getKeystoreFormat().name());
@@ -96,6 +104,7 @@ public abstract class AbstractKeycloakServerSupplier implements Supplier<Keycloa
         return server;
     }
 
+    /** 从注解与全局 {@link Config} 组装 dev 模式启动命令构建器。 */
     private static KeycloakServerConfigBuilder getKeycloakServerConfigBuilder(KeycloakIntegrationTest annotation) {
         KeycloakServerConfig serverConfig = SupplierHelpers.getInstance(annotation.config());
         KeycloakServerConfigBuilder command = KeycloakServerConfigBuilder.startDev()
@@ -114,38 +123,48 @@ public abstract class AbstractKeycloakServerSupplier implements Supplier<Keycloa
         return command;
     }
 
+    /** {@inheritDoc} 服务器默认使用 {@link LifeCycle#GLOBAL} 生命周期。 */
     @Override
     public LifeCycle getDefaultLifecycle() {
         return LifeCycle.GLOBAL;
     }
 
+    /** {@inheritDoc} 仅当 {@code config} 注解值相同时视为兼容。 */
     @Override
     public boolean compatible(InstanceContext<KeycloakServer, KeycloakIntegrationTest> a, RequestedInstance<KeycloakServer, KeycloakIntegrationTest> b) {
         return a.getAnnotation().config().equals(b.getAnnotation().config());
     }
 
+    /** {@inheritDoc} 停止 Keycloak 测试服务器。 */
     @Override
     public void close(InstanceContext<KeycloakServer, KeycloakIntegrationTest> instanceContext) {
         instanceContext.getValue().stop();
     }
 
+    /** @return 具体 {@link KeycloakServer} 实现实例 */
     public abstract KeycloakServer getServer();
 
+    /** @return 启动前是否必须部署 {@link TestDatabase} */
     public abstract boolean requiresDatabase();
 
+    /** @return 本 Supplier 使用的 JBoss {@link Logger} */
     public abstract Logger getLogger();
 
+    /** {@inheritDoc} 使用 {@link SupplierOrder#KEYCLOAK_SERVER} 顺序。 */
     @Override
     public int order() {
         return SupplierOrder.KEYCLOAK_SERVER;
     }
 
+    /** 聚合并调用所有 {@link KeycloakServerConfigInterceptor} 实现。 */
     private static class ServerConfigInterceptorHelper extends AbstractInterceptorHelper<KeycloakServerConfigInterceptor, KeycloakServerConfigBuilder> {
 
+        /** @param registry 测试框架注册表 */
         private ServerConfigInterceptorHelper(Registry registry) {
             super(registry, KeycloakServerConfigInterceptor.class);
         }
 
+        /** {@inheritDoc} 若供应器实现拦截器接口则调用其 {@code intercept}。 */
         @Override
         public KeycloakServerConfigBuilder intercept(KeycloakServerConfigBuilder value, Supplier<?, ?> supplier, InstanceContext<?, ?> existingInstance) {
             if (supplier instanceof KeycloakServerConfigInterceptor keycloakServerConfigInterceptor) {
