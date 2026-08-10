@@ -22,7 +22,9 @@ import org.springframework.beans.factory.config.InstantiationAwareBeanPostProces
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * Abstract Nacos Duplicate Bean Post Processor of {@link InstantiationAwareBeanPostProcessor} to reduce duplicate rebuild bean for spring beans.
+ * 抽象重复 Bean 后处理器：避免子 Spring 上下文重复实例化父容器已有 Bean。
+ *
+ * <p>实现 {@link InstantiationAwareBeanPostProcessor}，在 Bean 实例化前若核心上下文已存在同名 Bean 且满足复用条件，则直接返回父容器实例。</p>
  *
  * @author xiweng.yy
  */
@@ -48,12 +50,12 @@ public abstract class AbstractNacosDuplicateBeanPostProcessor
     }
     
     /**
-     * Judge whether re-use beans from core context.
+     * 判断是否从核心上下文复用 Bean。
      *
      * @param beanClass bean class
      * @param beanName bean name
      * @param beanDefinition bean definition
-     * @return {@code true} means re-use beans from core context, otherwise {@code false} means to re-build bean in sub context.
+     * @return {@code true} 表示复用核心上下文 Bean，{@code false} 表示在子上下文重新构建。
      */
     protected abstract boolean isReUsingBean(Class<?> beanClass, String beanName,
         BeanDefinition beanDefinition);

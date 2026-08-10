@@ -17,7 +17,9 @@
 package com.alibaba.nacos.sys.env;
 
 /**
- * Nacos common constants.
+ * Nacos 系统模块公共常量定义。
+ *
+ * <p>集中声明启动模式、功能模式、部署类型、网络与 Web 上下文等系统属性键名及模块标识，供 {@link EnvUtil} 等组件统一引用。</p>
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  * @since 0.2.2
@@ -26,33 +28,23 @@ public interface Constants {
     
     String SYS_MODULE = "sys";
     
-    /**
-     * Spring Profile : "standalone".
-     */
+    /** Spring Profile 单机模式标识：{@code standalone}。 */
     String STANDALONE_SPRING_PROFILE = "standalone";
     
-    /**
-     * The System property name of  Standalone mode.
-     */
+    /** JVM 系统属性：是否以单机模式启动（{@code nacos.standalone}）。 */
     String STANDALONE_MODE_PROPERTY_NAME = "nacos.standalone";
     
     String STARTUP_MODE_STATE = "startup_mode";
     
-    /**
-     * The System property name of  Function mode.
-     */
+    /** JVM 系统属性：功能模式类型（config/naming 等，{@code nacos.functionMode}）。 */
     String FUNCTION_MODE_PROPERTY_NAME = "nacos.functionMode";
     
     String FUNCTION_MODE_STATE = "function_mode";
     
-    /**
-     * The System property name of prefer hostname over ip.
-     */
+    /** JVM 系统属性：是否优先使用主机名而非 IP（{@code nacos.preferHostnameOverIp}）。 */
     String PREFER_HOSTNAME_OVER_IP_PROPERTY_NAME = "nacos.preferHostnameOverIp";
     
-    /**
-     * the root context path.
-     */
+    /** Web 根上下文路径常量 {@code /}。 */
     String ROOT_WEB_CONTEXT_PATH = "/";
     
     String NACOS_VERSION = "version";

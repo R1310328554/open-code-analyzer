@@ -19,21 +19,23 @@ package com.alibaba.nacos.sys.filter;
 import java.util.Set;
 
 /**
- * Nacos server module execute filter.
+ * 按模块包前缀排除 Spring Bean 的 SPI 过滤器接口。
+ *
+ * <p>各模块通过 {@link com.alibaba.nacos.common.spi.NacosServiceLoader} 注册实现，供 {@link NacosTypeExcludeFilter} 在组件扫描阶段按部署形态裁剪类。</p>
  *
  * @author xiweng.yy
  */
 public interface NacosPackageExcludeFilter {
     
     /**
-     * Get the responsible module package prefix of filter.
+     * 返回本过滤器负责的 Java 包前缀。
      *
      * @return package prefix
      */
     String getResponsiblePackagePrefix();
     
     /**
-     * According the class name and annotations to judge whether the class should be excluded by spring bean.
+     * 根据类名与注解集合判断是否应从 Spring 容器排除。
      *
      * @param className       name of this class
      * @param annotationNames annotations of this class

@@ -28,7 +28,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * OperatingSystemBeanManager related.
+ * 操作系统 MXBean 跨 JVM 实现适配管理器。
+ *
+ * <p>兼容 HotSpot 与 IBM J9 的 {@link OperatingSystemMXBean} 扩展接口，通过反射调用 CPU 与物理内存指标，供 {@link EnvUtil} 监控展示。</p>
  *
  * @author yanhom
  */
@@ -36,10 +38,7 @@ public class OperatingSystemBeanManager {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(OperatingSystemBeanManager.class);
     
-    /**
-     * com.ibm for J9
-     * com.sun for HotSpot
-     */
+    /** HotSpot 与 IBM J9 各自的操作系统 MXBean 实现类名。 */
     private static final List<String> OPERATING_SYSTEM_BEAN_CLASS_NAMES = Arrays.asList(
         "com.sun.management.OperatingSystemMXBean",
         "com.ibm.lang.management.OperatingSystemMXBean");
@@ -63,7 +62,7 @@ public class OperatingSystemBeanManager {
         PROCESS_CPU_USAGE_METHOD = deduceMethod("getProcessCpuLoad");
         
         Method totalPhysicalMem = deduceMethod("getTotalPhysicalMemorySize");
-        // getTotalPhysicalMemory for ibm jdk 7.
+        // IBM JDK 7 使用 getTotalPhysicalMemory 而非 getTotalPhysicalMemorySize
         TOTAL_PHYSICAL_MEM_METHOD =
             totalPhysicalMem != null ? totalPhysicalMem : deduceMethod("getTotalPhysicalMemory");
         
@@ -73,22 +72,27 @@ public class OperatingSystemBeanManager {
     private OperatingSystemBeanManager() {
     }
     
+    /** 返回 JMX 标准操作系统 MXBean 实例。 */
     public static OperatingSystemMXBean getOperatingSystemBean() {
         return OPERATING_SYSTEM_BEAN;
     }
     
+    /** 获取系统整体 CPU 使用率（0.0～1.0）。 */
     public static double getSystemCpuUsage() {
         return MethodUtil.invokeAndReturnDouble(SYSTEM_CPU_USAGE_METHOD, OPERATING_SYSTEM_BEAN);
     }
     
+    /** 获取当前 Nacos 进程 CPU 使用率。 */
     public static double getProcessCpuUsage() {
         return MethodUtil.invokeAndReturnDouble(PROCESS_CPU_USAGE_METHOD, OPERATING_SYSTEM_BEAN);
     }
     
+    /** 获取物理内存总量（字节）。 */
     public static long getTotalPhysicalMem() {
         return MethodUtil.invokeAndReturnLong(TOTAL_PHYSICAL_MEM_METHOD, OPERATING_SYSTEM_BEAN);
     }
     
+    /** 获取可用物理内存（字节）。 */
     public static long getFreePhysicalMem() {
         return MethodUtil.invokeAndReturnLong(FREE_PHYSICAL_MEM_METHOD, OPERATING_SYSTEM_BEAN);
     }

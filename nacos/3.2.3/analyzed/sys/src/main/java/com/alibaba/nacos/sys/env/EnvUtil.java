@@ -50,7 +50,9 @@ import java.util.Set;
 import java.util.HashMap;
 
 /**
- * Its own configuration information manipulation tool class.
+ * Nacos 运行时环境与配置访问工具类。
+ *
+ * <p>封装 Spring {@link ConfigurableEnvironment}、单机/集群模式、Nacos Home、集群成员列表及系统资源指标等全局信息的读取与缓存。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -68,9 +70,7 @@ public class EnvUtil {
     
     public static final String FUNCTION_MODE_AI = "ai";
     
-    /**
-     * The key of nacos home.
-     */
+    /** 系统属性键：Nacos 安装根目录（{@code nacos.home}）。 */
     public static final String NACOS_HOME_KEY = "nacos.home";
     
     private static volatile String localAddress = "";
@@ -127,9 +127,7 @@ public class EnvUtil {
     
     private static DeploymentType deploymentType;
     
-    /**
-     * customEnvironment.
-     */
+    /** 若启用自定义环境插件，将插件转换后的属性注入 Spring 环境首位。 */
     public static void customEnvironment() {
         boolean enableCustom = getProperty(NACOS_CUSTOM_ENVIRONMENT_ENABLED, Boolean.class, false);
         if (enableCustom) {
@@ -269,9 +267,7 @@ public class EnvUtil {
         EnvUtil.isStandalone = isStandalone;
     }
     
-    /**
-     * Standalone mode or not.
-     */
+    /** 是否单机模式（读取 {@link Constants#STANDALONE_MODE_PROPERTY_NAME}）。 */
     public static boolean getStandaloneMode() {
         if (Objects.isNull(isStandalone)) {
             isStandalone = Boolean.getBoolean(Constants.STANDALONE_MODE_PROPERTY_NAME);
@@ -279,9 +275,7 @@ public class EnvUtil {
         return isStandalone;
     }
     
-    /**
-     * server function mode.
-     */
+    /** 获取 Server 功能模式（config/naming/microservice/ai 等）。 */
     public static String getFunctionMode() {
         if (StringUtils.isEmpty(functionModeType)) {
             functionModeType = System.getProperty(Constants.FUNCTION_MODE_PROPERTY_NAME);
@@ -308,7 +302,7 @@ public class EnvUtil {
             }
             return nacosHome;
         }
-        // test-first
+        // 测试场景优先返回注入的 nacosHomePath
         return nacosHomePath;
     }
     
@@ -353,7 +347,7 @@ public class EnvUtil {
     }
     
     /**
-     * read cluster.conf to ip list.
+     * 读取 cluster.conf 或环境变量中的集群成员 IP 列表。
      *
      * @return ip list.
      * @throws IOException ioexception {@link IOException}
@@ -376,7 +370,7 @@ public class EnvUtil {
     }
     
     /**
-     * read file stream to ip list.
+     * 解析 cluster.conf 文本流为成员地址列表（支持注释与逗号分隔）。
      *
      * @param reader reader
      * @return ip list.
@@ -389,20 +383,20 @@ public class EnvUtil {
         for (String line : lines) {
             String instance = line.trim();
             if (instance.startsWith(comment)) {
-                // # it is ip
+                // 以 # 开头的行视为注释，跳过
                 continue;
             }
             if (instance.contains(comment)) {
-                // 192.168.71.52:8848 # Instance A
+                // 行内 # 之后为注释，截取有效地址部分
                 instance = instance.substring(0, instance.indexOf(comment));
                 instance = instance.trim();
             }
             int multiIndex = instance.indexOf(Constants.COMMA_DIVISION);
             if (multiIndex > 0) {
-                // support the format: ip1:port,ip2:port  # multi inline
+                // 支持同一行逗号分隔多个 ip:port
                 instanceList.addAll(Arrays.asList(instance.split(Constants.COMMA_DIVISION)));
             } else {
-                //support the format: 192.168.71.52:8848
+                // 支持单行单地址格式 ip:port
                 instanceList.add(instance);
             }
         }
@@ -428,7 +422,7 @@ public class EnvUtil {
     }
     
     /**
-     * load resource to map.
+     * 通过 {@link OriginTrackedPropertiesLoader} 加载 properties 资源为 Map。
      *
      * @param resource resource
      * @return Map&lt;String, Object&gt;
@@ -468,12 +462,9 @@ public class EnvUtil {
     }
     
     /**
-     * Get available processor numbers from environment.
+     * 从环境配置获取可用 CPU 核心数。
      *
-     * <p>
-     * If there are setting of {@code nacos.core.sys.basic.processors} in config/JVM/system, use it. If no setting, use
-     * the one time {@code ThreadUtils.getSuitableThreadCount()}.
-     * </p>
+     * <p>优先读取 {@code nacos.core.sys.basic.processors}，未配置时使用 {@code ThreadUtils.getSuitableThreadCount()}，结果不低于 1。</p>
      *
      * @return available processor numbers from environment, will not lower than 1.
      */
@@ -484,7 +475,7 @@ public class EnvUtil {
     }
     
     /**
-     * Get a multiple time of available processor numbers from environment.
+     * 获取可用核心数的整数倍（用于线程池容量估算）。
      *
      * @param multiple multiple of available processor numbers
      * @return available processor numbers from environment, will not lower than 1.
@@ -499,7 +490,7 @@ public class EnvUtil {
     }
     
     /**
-     * Get a scale of available processor numbers from environment.
+     * 按 0～1 比例缩放可用核心数。
      *
      * @param scale scale from 0 to 1.
      * @return available processor numbers from environment, will not lower than 1.

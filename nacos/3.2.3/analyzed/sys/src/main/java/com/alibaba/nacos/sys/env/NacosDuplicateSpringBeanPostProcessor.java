@@ -21,11 +21,9 @@ import org.springframework.beans.factory.config.InstantiationAwareBeanPostProces
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * Nacos {@link InstantiationAwareBeanPostProcessor} to reduce duplicate rebuild bean for spring beans.
+ * 通用 Spring Bean 重复实例化抑制后处理器。
  *
- * <p>
- *     For some important spring beans like spring context beans, if reuse from parent, will cause some problem. So skip.
- * </p>
+ * <p>除 Spring 上下文相关 Bean 外，其余已在父容器注册的 Bean 均尝试复用；上下文类 Bean 复用可能导致生命周期问题，故显式跳过。</p>
  *
  * @author xiweng.yy
  */
@@ -41,10 +39,12 @@ public class NacosDuplicateSpringBeanPostProcessor extends AbstractNacosDuplicat
         return !isContextBean(beanClass);
     }
     
+    /** 判断是否为 Spring 上下文相关 Bean（不可复用）。 */
     private boolean isContextBean(Class<?> beanClass) {
         return isContextClass(beanClass.getCanonicalName());
     }
     
+    /** 按类名前缀识别 org.springframework.context / boot.context 包下类。 */
     private boolean isContextClass(String beanClassName) {
         return beanClassName.startsWith("org.springframework.context")
             || beanClassName.startsWith("org.springframework.boot.context");

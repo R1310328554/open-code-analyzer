@@ -23,7 +23,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Nacos {@link InstantiationAwareBeanPostProcessor} to reduce duplicate rebuild bean for spring configuration.
+ * 配置类重复 Bean 后处理器。
+ *
+ * <p>对标注 {@link Configuration} 或 {@link AutoConfiguration} 的类，若父上下文已注册则直接复用，避免子上下文重复扫描配置。</p>
  *
  * @author xiweng.yy
  */
@@ -40,6 +42,7 @@ public class NacosDuplicateConfigurationBeanPostProcessor
         return isConfiguration(beanClass);
     }
     
+    /** 判断 Bean 类是否为 Spring 配置类或 Boot 自动配置类。 */
     private boolean isConfiguration(Class<?> beanClass) {
         return null != beanClass.getAnnotation(Configuration.class)
             || null != beanClass.getAnnotation(

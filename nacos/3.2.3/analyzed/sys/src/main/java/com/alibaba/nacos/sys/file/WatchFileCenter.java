@@ -45,9 +45,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Unified file change monitoring management center, which uses {@link WatchService} internally. One file directory
- * corresponds to one {@link WatchService}. It can only monitor up to 32 file directories. When a file change occurs, a
- * {@link FileChangeEvent} will be issued
+ * 统一文件变更监听管理中心。
+ *
+ * <p>每个目录对应一个 {@link WatchService} 与守护线程，变更时构造 {@link FileChangeEvent} 分发给已注册 {@link FileWatcher}；监听目录数受 {@code nacos.watch-file.max-dirs} 限制。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -55,9 +55,7 @@ public class WatchFileCenter {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchFileCenter.class);
     
-    /**
-     * Maximum number of monitored file directories.
-     */
+    /** 可同时监听的目录数量上限（默认 16，可通过 JVM 属性调整）。 */
     private static final int MAX_WATCH_FILE_JOB =
         Integer.getInteger("nacos.watch-file.max-dirs", 16);
     
@@ -71,14 +69,12 @@ public class WatchFileCenter {
         ThreadUtils.addShutdownHook(WatchFileCenter::shutdown);
     }
     
-    /**
-     * The number of directories that are currently monitored.
-     */
+    /** 当前已注册监听的目录计数。 */
     @SuppressWarnings("checkstyle:StaticVariableName")
     private static int NOW_WATCH_JOB_CNT = 0;
     
     /**
-     * Register {@link FileWatcher} in this directory.
+     * 在指定目录注册 {@link FileWatcher}，目录首次注册时启动监听线程。
      *
      * @param paths   directory
      * @param watcher {@link FileWatcher}
@@ -102,12 +98,7 @@ public class WatchFileCenter {
         return true;
     }
     
-    /**
-     * Deregister all {@link FileWatcher} in this directory.
-     *
-     * @param path directory
-     * @return deregister is success
-     */
+    /** 注销目录下全部监听器并关闭对应 {@link WatchService}。 */
     public static synchronized boolean deregisterAllWatcher(final String path) {
         WatchDirJob job = MANAGER.get(path);
         if (job != null) {
@@ -119,9 +110,7 @@ public class WatchFileCenter {
         return false;
     }
     
-    /**
-     * close {@link WatchFileCenter}.
-     */
+    /** 关闭全部监听任务并释放资源（JVM 退出钩子也会调用）。 */
     public static void shutdown() {
         if (!CLOSED.compareAndSet(false, true)) {
             return;
@@ -147,6 +136,7 @@ public class WatchFileCenter {
      * @param path    directory
      * @param watcher {@link FileWatcher}
      * @return deregister is success
+      * <p>Nacos sys 模块：环境变量与部署类型、重复 Bean 抑制、操作系统指标、properties 加载、文件监听、组件扫描排除及 Console 模块状态；详见上方类说明。</p>
      */
     public static synchronized boolean deregisterWatcher(final String path,
         final FileWatcher watcher) {
@@ -171,7 +161,7 @@ public class WatchFileCenter {
         private final Set<FileWatcher> watchers = new ConcurrentHashSet<>();
         
         public WatchDirJob(String paths) throws NacosException {
-            // in aot process all threads must be daemon threads
+            // AOT 编译场景下监听线程须为守护线程
             setDaemon(true);
             setName(paths);
             this.paths = paths;
@@ -201,7 +191,7 @@ public class WatchFileCenter {
         void shutdown() {
             watch = false;
             
-            //fix issue[https://github.com/alibaba/nacos/issues/9393]
+            // 关闭 WatchService 避免监听线程阻塞无法退出（issue #9393）
             try {
                 watchService.close();
             } catch (IOException ignore) {
@@ -227,7 +217,7 @@ public class WatchFileCenter {
                         for (WatchEvent<?> event : events) {
                             WatchEvent.Kind<?> kind = event.kind();
                             
-                            // Since the OS's event cache may be overflow, a backstop is needed
+                            // 操作系统事件溢出时遍历目录补偿通知
                             if (StandardWatchEventKinds.OVERFLOW.equals(kind)) {
                                 eventOverflow();
                             } else {
@@ -267,7 +257,7 @@ public class WatchFileCenter {
         private void eventOverflow() {
             File dir = Paths.get(paths).toFile();
             for (File file : Objects.requireNonNull(dir.listFiles())) {
-                // Subdirectories do not participate in listening
+                // 溢出补偿仅处理文件，跳过子目录
                 if (file.isDirectory()) {
                     continue;
                 }

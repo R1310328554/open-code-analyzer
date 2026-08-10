@@ -31,7 +31,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * copy from springboot to load properties file.
+ * 带来源追踪的 properties 文件加载器（源自 Spring Boot 实现）。
+ *
+ * <p>解析 {@code .properties} 并保留 {@link OriginTrackedValue} 与 {@link TextResourceOrigin}，便于配置项溯源与覆盖链追踪。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -40,7 +42,7 @@ public class OriginTrackedPropertiesLoader {
     private final Resource resource;
     
     /**
-     * Create a new {@link OriginTrackedPropertiesLoader} instance.
+     * 构造加载器并绑定 properties 资源。
      *
      * @param resource the resource of the {@code .properties} data
      */
@@ -50,7 +52,7 @@ public class OriginTrackedPropertiesLoader {
     }
     
     /**
-     * Load {@code .properties} data and return a map of {@code String} -> {@link OriginTrackedValue}.
+     * 加载 properties 并展开 {@code key[]=a,b} 列表语法。
      *
      * @return the loaded properties
      * @throws IOException on read error
@@ -60,7 +62,7 @@ public class OriginTrackedPropertiesLoader {
     }
     
     /**
-     * Load {@code .properties} data and return a map of {@code String} -> {@link OriginTrackedValue}.
+     * 加载 properties，可选是否展开数组简写键。
      *
      * @param expandLists if list {@code name[]=a,b,c} shortcuts should be expanded
      * @return the loaded properties
@@ -135,8 +137,7 @@ public class OriginTrackedPropertiesLoader {
     }
     
     /**
-     * Reads characters from the source resource, taking care of skipping comments, handling multi-line values and
-     * tracking {@code '\'} escapes.
+     * 逐字符读取 properties 源：跳过注释、处理续行与反斜杠转义。
      */
     private static class CharacterReader implements Closeable {
         

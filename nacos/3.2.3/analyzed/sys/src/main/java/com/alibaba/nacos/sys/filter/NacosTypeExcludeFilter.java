@@ -30,7 +30,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Nacos server execute filter. To exclude some beans or features by config
+ * Spring Boot 组件扫描类型排除过滤器。
+ *
+ * <p>聚合所有 {@link NacosPackageExcludeFilter} SPI 实现，按部署类型与包前缀决定类是否参与 Bean 注册，避免重复扫描 {@link SpringBootApplication}。</p>
  *
  * @author xiweng.yy
  */
@@ -53,7 +55,7 @@ public class NacosTypeExcludeFilter implements TypeFilter {
     @Override
     public boolean match(MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory)
         throws IOException {
-        // If no exclude filters, all classes should be load.
+        // 无 SPI 过滤器时不排除任何类
         if (packageExcludeFilters.isEmpty()) {
             return false;
         }
@@ -68,14 +70,14 @@ public class NacosTypeExcludeFilter implements TypeFilter {
         }
         for (Map.Entry<String, NacosPackageExcludeFilter> entry : packageExcludeFilters
             .entrySet()) {
-            // If match the package exclude filter, judged by filter.
+            // 命中包前缀时交由对应模块过滤器裁决
             if (className.startsWith(entry.getKey())) {
                 Set<String> annotations =
                     metadataReader.getAnnotationMetadata().getAnnotationTypes();
                 return entry.getValue().isExcluded(className, annotations);
             }
         }
-        // No match filter, load class
+        // 未匹配任何过滤器前缀，保留该类
         return false;
     }
 }

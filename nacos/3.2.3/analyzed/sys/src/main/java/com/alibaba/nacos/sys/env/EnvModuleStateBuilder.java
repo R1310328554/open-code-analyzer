@@ -21,12 +21,15 @@ import com.alibaba.nacos.sys.module.AbstractServerModuleStateBuilder;
 import com.alibaba.nacos.sys.module.ModuleState;
 
 /**
- * Module state builder for env module.
+ * sys 环境模块状态构建器。
+ *
+ * <p>汇总启动模式、功能模式、版本号与服务端口等运行时信息，写入 {@link ModuleState} 供运维接口与模块发现使用。</p>
  *
  * @author xiweng.yy
  */
 public class EnvModuleStateBuilder extends AbstractServerModuleStateBuilder {
     
+    /** 构建 env 模块的 {@link ModuleState} 快照。 */
     @Override
     public ModuleState build() {
         ModuleState state = new ModuleState(Constants.SYS_MODULE);

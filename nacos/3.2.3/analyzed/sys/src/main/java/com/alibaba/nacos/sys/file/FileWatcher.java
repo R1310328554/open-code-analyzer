@@ -20,21 +20,23 @@ import java.nio.file.WatchEvent;
 import java.util.concurrent.Executor;
 
 /**
- * file watcher.
+ * 文件变更监听器抽象基类。
+ *
+ * <p>子类实现 {@link #interest(String)} 过滤关注文件，在 {@link #onChange(FileChangeEvent)} 中处理变更；可自定义 {@link #executor()} 线程池。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public abstract class FileWatcher {
     
     /**
-     * Triggered when a file change occurs.
+     * 文件变更回调，由 {@link WatchFileCenter} 异步触发。
      *
      * @param event {@link FileChangeEvent}
      */
     public abstract void onChange(FileChangeEvent event);
     
     /**
-     * WatchEvent context information.
+     * 判断是否关注该 {@link WatchEvent#context()}（通常为相对路径或文件名）。
      *
      * @param context {@link WatchEvent#context()}
      * @return is this watcher interest context
@@ -42,8 +44,7 @@ public abstract class FileWatcher {
     public abstract boolean interest(String context);
     
     /**
-     * If the FileWatcher has its own thread pool, use this thread pool to execute, otherwise use the WatchFileManager
-     * thread.
+     * 可选自定义执行器；返回 {@code null} 时在 WatchFileCenter 回调线程同步执行。
      *
      * @return {@link Executor}
      */

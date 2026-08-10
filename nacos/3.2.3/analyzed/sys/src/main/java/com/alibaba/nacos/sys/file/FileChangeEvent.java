@@ -19,7 +19,9 @@ package com.alibaba.nacos.sys.file;
 import java.io.Serializable;
 
 /**
- * file change event.
+ * 文件变更事件载体。
+ *
+ * <p>由 {@link WatchFileCenter} 在目录监听触发时分发给 {@link FileWatcher}，携带监听路径与变更上下文（通常为文件名）。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -31,6 +33,7 @@ public class FileChangeEvent implements Serializable {
     
     private Object context;
     
+    /** 创建 {@link FileChangeEventBuilder} 构建变更事件。 */
     public static FileChangeEventBuilder builder() {
         return new FileChangeEventBuilder();
     }
@@ -76,7 +79,7 @@ public class FileChangeEvent implements Serializable {
         }
         
         /**
-         * build FileChangeEvent.
+         * 组装不可变 {@link FileChangeEvent} 实例。
          *
          * @return {@link FileChangeEvent}
          */

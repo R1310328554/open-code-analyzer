@@ -19,12 +19,15 @@ package com.alibaba.nacos.sys.module;
 import com.alibaba.nacos.sys.env.DeploymentType;
 
 /**
- * Abstract console type Module State Builder.
+ * Console 相关模块状态构建器抽象基类。
+ *
+ * <p>仅在 {@link DeploymentType#MERGED} 或 {@link DeploymentType#CONSOLE} 部署形态下参与模块状态上报，Server 独立部署时跳过 Console 模块。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractConsoleModuleStateBuilder implements ModuleStateBuilder {
     
+    /** 合并部署或纯 Console 部署时返回 {@code true}。 */
     @Override
     public boolean isMatchDeployment(DeploymentType type) {
         return DeploymentType.MERGED.equals(type) || DeploymentType.CONSOLE.equals(type);
