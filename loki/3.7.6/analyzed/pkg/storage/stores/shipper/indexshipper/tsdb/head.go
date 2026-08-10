@@ -12,6 +12,8 @@
 // limitations under the License.
 package tsdb
 
+// head 实现 per-tenant 内存索引累积器：Append 写入 chunk 元数据，WAL checkpoint 后落盘为 TSDB，查询期可包装为 MultiIndex。
+
 import (
 	"sync"
 
@@ -48,6 +50,7 @@ const (
 )
 
 /*
+// Head 可被 IndexReader 查询，flush 周期结束后由 HeadManager 构建 TSDB 上传。
 Head is a per-tenant accumulator for index entries in memory.
 It can be queried as an IndexReader and consumed to generate a TSDB index.
 These are written to on the ingester component when chunks are flushed,
@@ -105,6 +108,7 @@ func NewMetrics(r prometheus.Registerer) *Metrics {
 	}
 }
 
+// Head 维护 stripeSeries、MemPostings 与时间 bounds，按租户隔离 series。
 type Head struct {
 	tenant           string
 	numSeries        atomic.Uint64
@@ -165,6 +169,7 @@ func updateMintMaxt(mint, maxt int64, mintSrc, maxtSrc *atomic.Int64) {
 }
 
 // Note: chks must not be nil or zero-length
+// Append 追加 chunk 并更新 min/max 时间；新 series 时写入 postings 并递增 numSeries。
 func (h *Head) Append(ls labels.Labels, fprint uint64, chks index.ChunkMetas) (created bool, refID uint64) {
 	from, through := chks.Bounds()
 	var id uint64
@@ -305,3 +310,4 @@ func newMemSeries(ref uint64, ls labels.Labels, fp uint64) *memSeries {
 		fp:  fp,
 	}
 }
+// stripeSeries 按 fingerprint 分片降低锁竞争，ref 与 hash 使用不同 shard 索引。

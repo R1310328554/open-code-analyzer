@@ -13,6 +13,8 @@
 
 package tsdb
 
+// head_read 将 Head 暴露为 IndexReader：按时间范围过滤 chunk，支持 LabelNames/Values 与 Postings 查询。
+
 import (
 	"math"
 	"sort"
@@ -25,6 +27,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/labelpool"
 )
 
+// Index 返回覆盖 Head 全时间范围的 headIndexReader 供 TSDBIndex 封装。
 // Index returns an IndexReader against the block.
 func (h *Head) Index() IndexReader {
 	return h.indexRange(math.MinInt64, math.MaxInt64)
@@ -56,6 +59,7 @@ func (h *headIndexReader) Symbols() index.StringIter {
 	return h.head.postings.Symbols()
 }
 
+// LabelValues 在 mint-maxt 窗口内返回匹配 matcher 的标签值集合。
 // LabelValues returns label values present in the head for the
 // specific label name that are within the time range mint to maxt.
 // If matchers are specified the returned result set is reduced
@@ -110,6 +114,7 @@ func (h *headIndexReader) Postings(name string, fpFilter index.FingerprintFilter
 	return p, nil
 }
 
+// Series 按 ref 查找 memSeries，用 Overlap 过滤时间范围内的 ChunkMeta。
 // Series returns the series for the given reference.
 // lbls can be nil, to indicate that just the chunks are needed.
 func (h *headIndexReader) Series(ref storage.SeriesRef, from int64, through int64, lbls *labels.Labels, chks *[]index.ChunkMeta) (uint64, error) {
@@ -212,3 +217,4 @@ func (h *headIndexReader) LabelNamesFor(ids ...storage.SeriesRef) ([]string, err
 	sort.Strings(names)
 	return names, nil
 }
+// ChunkStats 对查询区间内 chunk 做按比例 KB/Entries 统计，支持标签子集投影。

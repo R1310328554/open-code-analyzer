@@ -1,5 +1,7 @@
 package storage
 
+// index_set 根据 userBasedIndex 标志在公共索引与租户索引 API 之间做路由，并在调用前校验 userID 是否为空。
+
 import (
 	"context"
 	"errors"
@@ -11,6 +13,7 @@ var (
 	ErrUserIDMustBeEmpty    = errors.New("userID must be empty")
 )
 
+// IndexSet 统一 Put/Get/List/Delete 语义，隐藏 boltdb-shipper 双路径差异。
 // IndexSet provides storage operations for user or common index tables.
 type IndexSet interface {
 	RefreshIndexTableCache(ctx context.Context, tableName string)
@@ -27,6 +30,7 @@ type indexSet struct {
 	userBasedIndex bool
 }
 
+// NewIndexSet 构造 indexSet 值类型；userBasedIndex 为 true 时使用租户路径。
 // NewIndexSet handles storage operations based on the value of indexSet.userBasedIndex
 func NewIndexSet(client Client, userBasedIndex bool) IndexSet {
 	return indexSet{
@@ -35,6 +39,7 @@ func NewIndexSet(client Client, userBasedIndex bool) IndexSet {
 	}
 }
 
+// validateUserID 确保租户模式要求非空 userID，公共模式要求 userID 为空。
 func (i indexSet) validateUserID(userID string) error {
 	if i.userBasedIndex && userID == "" {
 		return ErrUserIDMustNotBeEmpty
@@ -109,3 +114,4 @@ func (i indexSet) IsFileNotFoundErr(err error) bool {
 func (i indexSet) IsUserBasedIndexSet() bool {
 	return i.userBasedIndex
 }
+// IsUserBasedIndexSet 返回构造时设定的 userBasedIndex，供上层选择缓存策略。

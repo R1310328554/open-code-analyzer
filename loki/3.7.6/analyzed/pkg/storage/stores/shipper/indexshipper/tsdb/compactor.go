@@ -1,5 +1,7 @@
 package tsdb
 
+// compactor 实现 TSDB 索引压缩：合并多租户源索引与既有租户索引，经 Builder 生成 per-tenant 压缩文件并支持 retention 删 chunk。
+
 import (
 	"context"
 	"fmt"
@@ -28,6 +30,7 @@ const readDBsConcurrency = 50
 
 type indexProcessor struct{}
 
+// NewIndexCompactor 返回 indexProcessor，注册到 Loki compactor 索引后端。
 func NewIndexCompactor() compactor.IndexCompactor {
 	return indexProcessor{}
 }
@@ -92,6 +95,7 @@ func newTableCompactor(
 	}
 }
 
+// CompactTable 并发下载多租户索引、按 TenantLabel 拆分用户并 setupBuilder 合并。
 func (t *tableCompactor) CompactTable() error {
 	multiTenantIndexes := t.commonIndexSet.ListSourceFiles()
 
@@ -242,6 +246,7 @@ func processSourceIndex(ctx context.Context, sourceIndex storage.IndexFile, sour
 	return err
 }
 
+// setupBuilder 从多租户索引筛选租户 series，叠加已有 compacted 源文件后 FinalizeChunks。
 // setupBuilder creates a Builder for a single user.
 // It combines the users index from multiTenantIndexes and its existing compacted index(es)
 func setupBuilder(ctx context.Context, indexType int, userID string, sourceIndexSet compactor.IndexSet, multiTenantIndexes []Index) (*Builder, error) {
@@ -425,6 +430,7 @@ func (c *compactedIndex) Cleanup() {}
 
 // ToIndexFile creates an indexFile from the chunksmetas stored in the builder.
 // Before building the index, it takes care of the lined up updates i.e deletes and adding of new chunks.
+// ToIndexFile 先应用 delete/index 队列变更，再 Build 生成 SingleTenantTSDB 文件。
 func (c *compactedIndex) ToIndexFile() (shipperindex.Index, error) {
 	for seriesID, chks := range c.deleteChunks {
 		for _, chk := range chks {
@@ -475,3 +481,4 @@ func (c *compactedIndex) ToIndexFile() (shipperindex.Index, error) {
 func getUnsafeBytes(s string) []byte {
 	return *((*[]byte)(unsafe.Pointer(&s))) // #nosec G103 -- we know the string is not mutated -- nosemgrep: use-of-unsafe-block
 }
+// getUnsafeBytes 零拷贝 string→[]byte，仅供 retention 回调构造 series ID 使用。

@@ -1,5 +1,7 @@
 package index
 
+// chunk 定义 TSDB 索引内 chunk 元数据 ChunkMeta 及 ChunkMetas 切片操作：排序去重、有序插入/删除与分页 marker 编码。
+
 import (
 	"sort"
 
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/encoding"
 )
 
+// ChunkMeta 记录 checksum、时间 bounds、KB 大小与 log 行数，供索引页写入。
 // Meta holds information about a chunk of data.
 type ChunkMeta struct {
 	Checksum uint32
@@ -66,6 +69,7 @@ func (c ChunkMetas) Less(i, j int) bool {
 	return a.Checksum < b.Checksum
 }
 
+// Finalize 按 (MinTime,MaxTime,Checksum) 排序并去除相邻重复项，优先复用原切片。
 // Finalize sorts and dedupes
 // TODO(owen-d): can we remove the need for this by ensuring we only push
 // in order and without duplicates?
@@ -105,6 +109,7 @@ func (c ChunkMetas) Finalize() ChunkMetas {
 
 }
 
+// Add 在已排序 ChunkMetas 中二分插入，重复 triple 时直接返回原切片。
 // Add adds ChunkMeta at the right place in order. It assumes existing ChunkMetas have already been sorted by using Finalize.
 // There is no chance of a data loss even if the chunks are not sorted because the chunk would anyways be added so the assumption is relatively safe.
 func (c ChunkMetas) Add(chk ChunkMeta) ChunkMetas {
@@ -132,6 +137,7 @@ func (c ChunkMetas) Add(chk ChunkMeta) ChunkMetas {
 	return res
 }
 
+// Drop 删除匹配 ChunkMeta 并返回是否找到，非排序输入可能导致漏删。
 // Drop drops ChunkMeta. It assumes existing ChunkMetas have already been sorted by using Finalize.
 // Calling Drop on non-sorted result can result in not dropping the chunk even if it exists.
 // It returns a boolean indicating if the chunk was found and dropped or not so the caller can take appropriate actions if not.
@@ -265,3 +271,4 @@ func (cs *ChunkStats) AddChunk(chk *ChunkMeta, from, through int64) {
 	entries := uint32(float64(chk.Entries) * factor)
 	cs.addRaw(1, kb, entries)
 }
+// ChunkPageSize=16 控制 series 内 chunk 分页 marker 粒度，大 series 加速范围查找。

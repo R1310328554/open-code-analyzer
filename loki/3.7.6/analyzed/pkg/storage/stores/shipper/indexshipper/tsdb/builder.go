@@ -1,5 +1,7 @@
 package tsdb
 
+// builder 在内存中按 stream 聚合 series 与 chunk 元数据，Finalize 后支持增删 chunk，Build/BuildInMemory 输出 TSDB 索引文件。
+
 import (
 	"context"
 	"fmt"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/index"
 )
 
+// Builder 可乱序接收 series 写入；同一 stream 的 chunk 须按序追加且不重复。
 // Builder is a helper used to create tsdb indices.
 // It can accept streams in any order and will create the tsdb
 // index appropriately via `Build()`
@@ -55,6 +58,7 @@ func (b *Builder) AddSeries(ls labels.Labels, fp model.Fingerprint, chks []index
 	s.chunks = append(s.chunks, chks...)
 }
 
+// FinalizeChunks 对各 stream 的 chunks 排序去重，之后才允许 InsertChunk/DropChunk。
 func (b *Builder) FinalizeChunks() {
 	for id := range b.streams {
 		b.streams[id].chunks = b.streams[id].chunks.Finalize()
@@ -104,6 +108,7 @@ func (b *Builder) HasChunk(streamID string, chk index.ChunkMeta) (bool, error) {
 	return s.chunks.HasChunk(chk), nil
 }
 
+// Build 写 staging 文件、读取 bounds/checksum，再 rename 为 createFn 生成的最终路径。
 func (b *Builder) Build(
 	ctx context.Context,
 	scratchDir string,
@@ -256,3 +261,4 @@ func (b *Builder) BuildInMemory(
 
 	return id, data, nil
 }
+// build 内部按 fingerprint 排序 series、构建 symbol 表并调用 index.Creator 落盘。

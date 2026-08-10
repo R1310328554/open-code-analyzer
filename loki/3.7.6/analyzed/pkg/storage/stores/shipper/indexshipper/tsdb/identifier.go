@@ -1,5 +1,7 @@
 package tsdb
 
+// identifier 解析与生成 TSDB 文件名：SingleTenantTSDBIdentifier 含 compactor 五段式命名，MultitenantTSDBIdentifier 为 ingester 多租户快照格式。
+
 import (
 	"fmt"
 	"hash"
@@ -15,6 +17,7 @@ import (
 
 const compactedFileUploader = "compactor"
 
+// Identifier 统一 Name（对象键）与 Path（本地路径）的解析逻辑。
 // Identifier can resolve an index to a name (in object storage)
 // and a path (on disk)
 type Identifier interface {
@@ -22,6 +25,7 @@ type Identifier interface {
 	Path() string
 }
 
+// identifierFromPath 优先 ParseSingleTenantTSDBPath，失败则尝试多租户文件名。
 // identifierFromPath will detect whether this is a single or multitenant TSDB
 func identifierFromPath(p string) (Identifier, error) {
 	// try parsing as single tenant since the filename is more deterministic without an arbitrary nodename for uploader
@@ -80,6 +84,7 @@ func (i SingleTenantTSDBIdentifier) Hash(h hash.Hash32) (err error) {
 	return errors.Wrap(err, "writing SingleTenantTSDBIdentifier")
 }
 
+// SingleTenantTSDBIdentifier.str 生成 compactor 上传的标准五段 .tsdb 文件名。
 // str builds filename with format <file-creation-ts> + `-` + `compactor` + `-` + <oldest-chunk-start-ts> + `-` + <latest-chunk-end-ts> `-` + <index-checksum>
 func (i SingleTenantTSDBIdentifier) str() string {
 	ts := int64(0)
@@ -204,3 +209,4 @@ func parseMultitenantTSDBNameFromBase(name string) (res MultitenantTSDBIdentifie
 		NodeName: strings.Join(xs[1:], "-"),
 	}, true
 }
+// NewPrefixedIdentifier 为 Identifier 附加父目录前缀，供 shipper 本地缓存路径拼接。

@@ -1,5 +1,7 @@
 package testutil
 
+// testutil 为 indexshipper 集成测试构造 BoltDB 索引样本：批量写入记录、SetupTable 模拟公共/租户/压缩分片布局。
+
 import (
 	"context"
 	"fmt"
@@ -21,6 +23,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/series/index"
 )
 
+// AddRecordsToDB 打开 Bolt 文件、写入递增键值记录并 Sync 后关闭。
 func AddRecordsToDB(t testing.TB, path string, start, numRecords int, bucketName []byte) {
 	t.Helper()
 	db, err := local.OpenBoltdbFile(path)
@@ -61,6 +64,7 @@ func queryIndexes(t *testing.T, ctx context.Context, queries []index.Query, inde
 
 type IndexIteratorFunc func(ctx context.Context, table string, callback func(boltdb *bbolt.DB) error) error
 
+// VerifyIndexes 注入租户上下文后查询索引，断言返回记录数与写入范围一致。
 func VerifyIndexes(t *testing.T, userID string, queries []index.Query, indexIteratorFunc IndexIteratorFunc, start, numRecords int) {
 	t.Helper()
 	minValue := start
@@ -177,6 +181,7 @@ func (c PerUserDBsConfig) String() string {
 	return fmt.Sprintf("Per User DBs - UCDBs: %d, CDBs: %d, Users: %d", c.NumUnCompactedDBs, c.NumCompactedDBs, c.NumUsers)
 }
 
+// SetupTable 按配置生成未压缩/已压缩公共库、per-user bucket 及租户子目录索引。
 func SetupTable(t *testing.T, path string, commonDBsConfig DBsConfig, perUserDBsConfig PerUserDBsConfig) {
 	numRecordsPerDB := 100
 
@@ -267,3 +272,4 @@ func queryBoltDB(ctx context.Context, db *bbolt.DB, userID []byte, queries []ind
 		return nil
 	})
 }
+// BuildUserID 生成 user-N 格式测试租户 ID，供多租户 shipper 场景复用。

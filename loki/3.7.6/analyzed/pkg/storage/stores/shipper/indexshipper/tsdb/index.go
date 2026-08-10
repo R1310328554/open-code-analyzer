@@ -1,5 +1,7 @@
 package tsdb
 
+// index 定义 TSDB 查询抽象 Index：GetChunkRefs/Series/LabelNames/Stats/Volume，并实现 NoopIndex 空实现供 MultiIndex 占位。
+
 import (
 	"context"
 
@@ -19,6 +21,7 @@ type Series struct {
 
 type shouldIncludeChunk func(index.ChunkMeta) bool
 
+// Index 继承 Bounded 与 ForSeries，支持可选 shard 与 ChunkFilterer 注入。
 type Index interface {
 	Bounded
 	SetChunkFilterer(chunkFilter chunk.RequestChunkFilterer)
@@ -43,6 +46,7 @@ type Index interface {
 	Volume(ctx context.Context, userID string, from, through model.Time, acc VolumeAccumulator, fpFilter index.FingerprintFilter, shouldIncludeChunk shouldIncludeChunk, targetLabels []string, aggregateBy string, matchers ...*labels.Matcher) error
 }
 
+// NoopIndex 所有方法返回空结果，CompactTable 在无多租户源时作为占位索引。
 type NoopIndex struct{}
 
 func (NoopIndex) Close() error                    { return nil }
@@ -75,3 +79,4 @@ func (NoopIndex) Volume(_ context.Context, _ string, _, _ model.Time, _ VolumeAc
 func (NoopIndex) ForSeries(_ context.Context, _ string, _ index.FingerprintFilter, _ model.Time, _ model.Time, _ func(labels.Labels, model.Fingerprint, []index.ChunkMeta) (stop bool), _ ...*labels.Matcher) error {
 	return nil
 }
+// GetChunkRefs 可复用调用方传入的 res 切片以减少分配，shard 须为 2 的幂分片。

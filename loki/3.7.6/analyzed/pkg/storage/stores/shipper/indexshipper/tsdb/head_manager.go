@@ -1,5 +1,7 @@
 package tsdb
 
+// head_manager 协调 ingester TSDB 写路径：接收 flush、维护 WAL 与 tenant Heads，周期 Rotate 后将旧 Head 构建为多租户/单租户 TSDB 并交给 TSDBManager 上传。
+
 import (
 	"context"
 	"fmt"
@@ -63,6 +65,7 @@ func (p period) TimeForPeriod(n int) time.Time {
 const defaultHeadManagerStripeSize = 1 << 7
 
 /*
+// HeadManager 目录布局含 scratch/wal/multitenant/per_tenant，见上方注释块。
 HeadManager both accepts flushed chunk writes
 and exposes the index interface for multiple tenants.
 It also handles updating an underlying WAL and periodically
@@ -248,6 +251,7 @@ func (m *HeadManager) Stop() error {
 	return m.buildTSDBFromHead(m.activeHeads)
 }
 
+// Append 去除 __name__ 标签副本后写入 activeHeads，并同步 Log 到 active WAL。
 func (m *HeadManager) Append(userID string, ls labels.Labels, fprint uint64, chks index.ChunkMetas) error {
 	// TSDB doesnt need the __name__="log" convention the old chunk store index used.
 	// We must create a copy of the labels here to avoid mutating the existing
@@ -372,6 +376,7 @@ func managerPerTenantDir(parent string) string {
 	return filepath.Join(parent, "per_tenant")
 }
 
+// Rotate 创建新 WAL 与 tenantHeads，将当前 active 移入 prev 供后续 Build。
 func (m *HeadManager) Rotate(t time.Time) (err error) {
 	// create new wal
 	nextWALPath := walPath(m.name, m.dir, t)
@@ -545,6 +550,7 @@ func legacyWalPath(parent string, t time.Time) string {
 	)
 }
 
+// recoverHead 重放 WAL 记录重建 tenantHeads；遇 CorruptionErr 时尝试 repairWAL。
 // recoverHead recovers from all WALs belonging to some period
 // and inserts it into the active *tenantHeads
 func recoverHead(name, dir string, heads *tenantHeads, wals []WALIdentifier, legacy bool, logger log.Logger, repairsCounter *prometheus.CounterVec) error {
@@ -865,3 +871,4 @@ func (t *tenantHeads) forAll(fn func(user string, ls labels.Labels, fp uint64, c
 
 	return nil
 }
+// tenantHeads 按 xxhash 分片管理各租户 Head，并实现 Index 接口供查询合并。

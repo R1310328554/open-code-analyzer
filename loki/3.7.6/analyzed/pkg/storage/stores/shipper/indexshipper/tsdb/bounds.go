@@ -1,5 +1,7 @@
 package tsdb
 
+// bounds 定义 TSDB 时间边界抽象：Bounded 接口、inclusiveBounds 闭区间转换，以及 chunk 与查询范围的重叠判定 Overlap。
+
 import (
 	"math"
 
@@ -11,6 +13,7 @@ type Bounded interface {
 	Bounds() (model.Time, model.Time)
 }
 
+// inclusiveBounds 将 [lower,upper) 转为闭区间 [lower,upper]，上界加一毫秒防溢出。
 // InclusiveBounds will ensure the underlying Bounded implementation
 // is turned into [lower,upper] inclusivity.
 // Generally, we consider bounds to be `[lower,upper)` inclusive
@@ -35,6 +38,7 @@ func newBounds(mint, maxt model.Time) bounds { return bounds{mint: mint, maxt: m
 
 func (b bounds) Bounds() (model.Time, model.Time) { return b.mint, b.maxt }
 
+// Overlap 判断 chunk/index 闭区间 [from,through] 是否与查询半开区间相交。
 // Overlap checks whether the given chunk or index bounds
 // overlap with the bounds of a query range.
 // chunk/index bounds are defined as [from, through]
@@ -45,3 +49,4 @@ func Overlap(chk, qry Bounded) bool {
 
 	return chkFrom < qryThrough && chkThrough >= qryFrom
 }
+// bounds 结构体实现 Bounded，供 headIndexReader 构造查询时间窗口时使用。

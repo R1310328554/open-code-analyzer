@@ -1,5 +1,7 @@
 package tsdb
 
+// head_wal 定义 TSDB Head 的 WAL 记录格式与编解码：series（含 fingerprint）先于 chunks 写入，headWAL 为多租户共享单 WAL。
+
 import (
 	"time"
 
@@ -32,6 +34,7 @@ const walSegmentSize = 128 << 10
 
 type RecordType byte
 
+// RecordType 前缀区分 series/chunks 记录，便于后续 WAL schema 演进。
 // By prefixing records with versions, we can easily update our wal schema
 const (
 	// FirstWrite is a special record type written once
@@ -140,6 +143,7 @@ func decodeChunks(b []byte, rec *WALRecord) error {
 	return nil
 }
 
+// decodeWALRecord 解析单条 WAL 记录；每条仅含一个 series 或一组 chunk metas。
 func decodeWALRecord(b []byte, walRec *WALRecord) error {
 	var (
 		userID string
@@ -194,6 +198,7 @@ func decodeWALRecord(b []byte, walRec *WALRecord) error {
 	return nil
 }
 
+// headWAL 用 wlog.WL 按 128KB 分段写入，避免为每租户维护独立 segment。
 // the headWAL, unlike Head, is multi-tenant. This is just to avoid the need to maintain
 // an open segment per tenant (potentially thousands of them)
 type headWAL struct {
@@ -246,3 +251,4 @@ func (w *headWAL) Log(record *WALRecord) error {
 
 	return nil
 }
+// Log 保证 series 记录先于 chunks 落盘，与 recoverHead 重放顺序一致。

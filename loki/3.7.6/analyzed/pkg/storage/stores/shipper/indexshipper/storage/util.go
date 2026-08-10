@@ -1,5 +1,7 @@
 package storage
 
+// util 提供索引下载辅助：sync.Pool 复用 gzip 解压器，DownloadFileFromStorage 先落临时文件再可选解压到目标路径。
+
 import (
 	"io"
 	"os"
@@ -17,6 +19,7 @@ var (
 	gzipReader = sync.Pool{}
 )
 
+// getGzipReader 从池中取出 pgzip.Reader 并重置源，减少高频下载时的分配开销。
 // getGzipReader gets or creates a new CompressionReader and reset it to read from src
 func getGzipReader(src io.Reader) (io.Reader, error) {
 	if r := gzipReader.Get(); r != nil {
@@ -41,6 +44,7 @@ func putGzipReader(reader io.Reader) {
 
 type GetFileFunc func() (io.ReadCloser, error)
 
+// DownloadFileFromStorage 经 getFileFunc 拉流、写 -tmp 文件，可选 gzip 解压后落盘。
 // DownloadFileFromStorage downloads a file from storage to given location.
 func DownloadFileFromStorage(destination string, decompressFile bool, sync bool, logger log.Logger, getFileFunc GetFileFunc) error {
 	start := time.Now()
@@ -131,6 +135,7 @@ func DownloadFileFromStorage(destination string, decompressFile bool, sync bool,
 	return nil
 }
 
+// IsCompressedFile 通过后缀 .gz 判断对象存储索引是否需解压。
 func IsCompressedFile(filename string) bool {
 	return strings.HasSuffix(filename, ".gz")
 }
@@ -138,3 +143,4 @@ func IsCompressedFile(filename string) bool {
 func LoggerWithFilename(logger log.Logger, filename string) log.Logger {
 	return log.With(logger, "file-name", filename)
 }
+// LoggerWithFilename 为下载日志附加 file-name 字段，便于 shipper sync 排查。

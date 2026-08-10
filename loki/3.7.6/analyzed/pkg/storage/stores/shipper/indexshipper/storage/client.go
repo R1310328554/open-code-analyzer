@@ -1,5 +1,7 @@
 package storage
 
+// storage client 封装 boltdb-shipper 索引在对象存储上的读写：区分公共索引与租户索引，并通过 cachedObjectClient 缓存列举结果。
+
 import (
 	"context"
 	"io"
@@ -13,6 +15,7 @@ import (
 const delimiter = "/"
 
 // UserIndexClient allows doing operations on the object store for user specific index.
+// UserIndexClient 定义租户专属索引文件在对象存储上的 CRUD 与列举接口。
 type UserIndexClient interface {
 	ListUserFiles(ctx context.Context, tableName, userID string, bypassCache bool) ([]IndexFile, error)
 	GetUserFile(ctx context.Context, tableName, userID, fileName string) (io.ReadCloser, error)
@@ -28,6 +31,7 @@ type CommonIndexClient interface {
 	DeleteFile(ctx context.Context, tableName, fileName string) error
 }
 
+// Client 组合 CommonIndexClient 与 UserIndexClient，并暴露表级缓存刷新与 NotFound 判定。
 // Client is used to manage boltdb index files in object storage, when using boltdb-shipper.
 type Client interface {
 	CommonIndexClient
@@ -49,6 +53,7 @@ type IndexFile struct {
 	ModifiedAt time.Time
 }
 
+// NewIndexStorageClient 用 storagePrefix 包装原始 ObjectClient 并注入 cachedObjectClient。
 func NewIndexStorageClient(origObjectClient client.ObjectClient, storagePrefix string) Client {
 	objectClient := newCachedObjectClient(client.NewPrefixedObjectClient(origObjectClient, storagePrefix))
 	return &indexStorageClient{objectClient: objectClient}
@@ -76,6 +81,7 @@ func (s *indexStorageClient) ListTables(ctx context.Context) ([]string, error) {
 	return tableNames, nil
 }
 
+// ListFiles 列举表根目录下公共索引文件，并返回租户子目录名列表。
 func (s *indexStorageClient) ListFiles(ctx context.Context, tableName string, bypassCache bool) ([]IndexFile, []string, error) {
 	// The forward slash here needs to stay because we are trying to list contents of a directory without which
 	// we will get the name of the same directory back with hosted object stores.
@@ -162,3 +168,4 @@ func (s *indexStorageClient) IsFileNotFoundErr(err error) bool {
 func (s *indexStorageClient) Stop() {
 	s.objectClient.Stop()
 }
+// Stop 关闭底层 cachedObjectClient，释放表名与对象列表的内存缓存。
