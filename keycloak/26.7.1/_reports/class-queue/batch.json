@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:02:12Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureParContentsExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureRedirectUrisEnforcerExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureRedirectUrisEnforcerExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureRequestObjectExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureRequestObjectExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureResponseTypeExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureResponseTypeExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureSessionEnforceExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureSessionEnforceExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureSigningAlgorithmExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureSigningAlgorithmExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureSigningAlgorithmForSignedJwtExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureSigningAlgorithmForSignedJwtExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SuppressRefreshTokenRotationExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SuppressRefreshTokenRotationExecutorFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1048,
-  "done": 4935
+  "done": 4950
 }
