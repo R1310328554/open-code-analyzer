@@ -29,20 +29,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Cached JWT token manager.
+ * 带本地缓存的 JWT 令牌管理器。
+ *
+ * <p>按 token 与 username 双索引缓存解析结果，定时清理过期项；临近过期时自动刷新。</p>
  *
  * @author majorhe
  */
 public class CachedJwtTokenManager implements TokenManager {
     
-    /**
-     * key: token string, value: token entity.
-     */
+    /** token 字符串 → 缓存实体。 */
+
     private volatile Map<String, TokenEntity> tokenMap = new ConcurrentHashMap<>(1024);
     
-    /**
-     * key: username, value: token entity. cache token created by self.
-     */
+    /** 用户名 → 本机签发的 token 实体。 */
+
     private volatile Map<String, TokenEntity> userMap = new ConcurrentHashMap<>(128);
     
     private final JwtTokenManager jwtTokenManager;
@@ -51,6 +51,7 @@ public class CachedJwtTokenManager implements TokenManager {
         this.jwtTokenManager = jwtTokenManager;
     }
     
+    /** 每分钟扫描并移除过期 token/user 缓存。 */
     @Scheduled(initialDelay = 30000, fixedDelay = 60000)
     private void cleanExpiredToken() {
         List<String> tokens = new ArrayList<>();
@@ -80,7 +81,9 @@ public class CachedJwtTokenManager implements TokenManager {
      * @param username auth info
      * @return token
      * @throws AccessException access exception
+      * <p>带本地缓存的 JWT 令牌管理器。</p>
      */
+    /** 签发或复用未临近过期的缓存 token。 */
     public String createToken(String username) throws AccessException {
         TokenEntity cached = userMap.get(username);
         if (cached != null) {
@@ -105,6 +108,7 @@ public class CachedJwtTokenManager implements TokenManager {
      * @param token token
      * @return auth info
      * @throws AccessException access exception
+      * <p>带本地缓存的 JWT 令牌管理器。</p>
      */
     public Authentication getAuthentication(String token) throws AccessException {
         TokenEntity cached = tokenMap.get(token);
@@ -119,14 +123,15 @@ public class CachedJwtTokenManager implements TokenManager {
      *
      * @param token token
      * @throws AccessException access exception
+      * <p>带本地缓存的 JWT 令牌管理器。</p>
      */
     public void validateToken(String token) throws AccessException {
         if (tokenMap.get(token) != null) {
             return;
         }
-        // jwtTokenManager.validateToken(token) will throw runtime exception if token invalid
+        // 无效 token 时 jwtTokenManager 会抛异常
         jwtTokenManager.validateToken(token);
-        // if token valid
+        // 校验通过后回填缓存
         Authentication authentication = jwtTokenManager.getAuthentication(token);
         String username = authentication.getName();
         if (username == null || username.isEmpty()) {
@@ -178,11 +183,13 @@ public class CachedJwtTokenManager implements TokenManager {
         return jwtTokenManager.getTokenValidityInSeconds();
     }
     
+    /** 剩余有效期不足 1/10 时需刷新 token。 */
     private boolean needRefresh(long expiredTimeMills) {
         long refreshWindowMills = TimeUnit.SECONDS.toMillis(getTokenValidityInSeconds() / 10);
         return System.currentTimeMillis() + refreshWindowMills > expiredTimeMills;
     }
     
+    /** 内存缓存的 token 元数据（认证信息、用户、过期时间）。 */
     static class TokenEntity {
         
         private String token;

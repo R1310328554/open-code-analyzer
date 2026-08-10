@@ -17,15 +17,19 @@
 package com.alibaba.nacos.plugin.auth.impl.users;
 
 /**
- * Nacos User.
+ * 鉴权上下文中的 Nacos 用户模型。
+ *
+ * <p>扩展持久层 {@link User}，附加 JWT token 与是否全局管理员标记。</p>
  *
  * @author nkorange
  * @since 1.2.0
  */
 public class NacosUser extends User {
     
+    /** 当前会话 JWT 令牌。 */
     private String token;
     
+    /** 是否为 GLOBAL_ADMIN 角色用户。 */
     private boolean globalAdmin = false;
     
     public NacosUser() {
@@ -35,6 +39,7 @@ public class NacosUser extends User {
         setUserName(userName);
     }
     
+    /** 构造带用户名与 token 的用户对象。 */
     public NacosUser(String userName, String token) {
         setUserName(userName);
         this.token = token;

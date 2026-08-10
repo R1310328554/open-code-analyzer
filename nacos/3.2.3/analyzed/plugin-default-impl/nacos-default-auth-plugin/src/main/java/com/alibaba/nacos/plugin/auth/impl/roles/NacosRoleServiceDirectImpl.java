@@ -30,7 +30,9 @@ import com.alibaba.nacos.plugin.auth.impl.users.NacosUserService;
 import java.util.List;
 
 /**
- * Nacos builtin role service, implemented by directly access to database.
+ * Nacos 内置角色服务：直连数据库持久层实现。
+ *
+ * <p>启用缓存时优先读 {@link AbstractCachedRoleService} 内存映射，否则回源 {@link RolePersistService}/{@link PermissionPersistService}。</p>
  *
  * @author nkorange
  * @since 1.2.0
@@ -58,6 +60,7 @@ public class NacosRoleServiceDirectImpl extends AbstractCheckedRoleService
         this.permissionPersistService = permissionPersistService;
     }
     
+    /** 获取用户角色列表，缓存未命中时查库并回填。 */
     @Override
     public List<RoleInfo> getRoles(String username) {
         List<RoleInfo> roleInfoList = getCachedRoleInfoMap().get(username);
@@ -121,6 +124,7 @@ public class NacosRoleServiceDirectImpl extends AbstractCheckedRoleService
         return pageInfo;
     }
     
+    /** 绑定角色：校验用户存在、禁止保留角色、防重复绑定。 */
     @Override
     public void addRole(String role, String username) {
         if (userDetailsService.getUser(username) == null) {
@@ -146,6 +150,7 @@ public class NacosRoleServiceDirectImpl extends AbstractCheckedRoleService
         getCachedRoleSet().add(role);
     }
     
+    /** 创建首个 GLOBAL_ADMIN 并绑定指定用户。 */
     @Override
     public void addAdminRole(String username) {
         if (userDetailsService.getUser(username) == null) {
@@ -174,6 +179,7 @@ public class NacosRoleServiceDirectImpl extends AbstractCheckedRoleService
         getCachedRoleInfoMap().remove(role);
     }
     
+    /** 为已存在角色新增权限。 */
     @Override
     public void addPermission(String role, String resource, String action) {
         if (!getCachedRoleSet().contains(role)) {
@@ -202,6 +208,7 @@ public class NacosRoleServiceDirectImpl extends AbstractCheckedRoleService
         return permissionPersistService.findPermissionsLike4Page(role, pageNo, pageSize);
     }
     
+    /** 判断用户是否已绑定指定角色。 */
     boolean isUserBoundToRole(String role, String username) {
         Page<RoleInfo> roleInfoPage =
             rolePersistService.getRolesByUserNameAndRoleName(username, role, DEFAULT_PAGE_NO,

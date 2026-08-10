@@ -24,12 +24,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 
 /**
- * custom user.
+ * Spring Security {@link UserDetails} 适配：包装持久层 {@link User}。
  *
  * @author wfnuser
  */
 public class NacosUserDetails implements UserDetails {
     
+    /** 底层持久化用户实体。 */
     private final User user;
     
     public NacosUserDetails(User user) {
@@ -38,7 +39,7 @@ public class NacosUserDetails implements UserDetails {
     
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // TODO: get authorities
+        // TODO: 从角色服务加载 GrantedAuthority
         return AuthorityUtils.commaSeparatedStringToAuthorityList("");
     }
     
@@ -52,6 +53,7 @@ public class NacosUserDetails implements UserDetails {
         return user.getUsername();
     }
     
+    /** 账户永不过期。 */
     @Override
     public boolean isAccountNonExpired() {
         return true;
@@ -67,6 +69,7 @@ public class NacosUserDetails implements UserDetails {
         return true;
     }
     
+    /** 账户始终启用。 */
     @Override
     public boolean isEnabled() {
         return true;

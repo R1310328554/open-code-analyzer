@@ -21,14 +21,16 @@ import com.alibaba.nacos.plugin.auth.impl.users.NacosUser;
 import org.springframework.security.core.Authentication;
 
 /**
- * Token Manager Interface.
+ * JWT 令牌管理器接口。
+ *
+ * <p>负责签发、校验、解析令牌及查询有效期/TTL。</p>
  *
  * @author majorhe
  */
 public interface TokenManager {
     
     /**
-     * Create token.
+     * 根据 Spring Security 认证信息签发令牌。
      *
      * @param authentication auth info
      * @return token
@@ -42,11 +44,12 @@ public interface TokenManager {
      * @param userName auth info
      * @return token
      * @throws AccessException access exception
+      * <p>JWT 令牌管理器接口。</p>
      */
     String createToken(String userName) throws AccessException;
     
     /**
-     * Get auth Info.
+     * 从令牌还原 Spring Security {@link Authentication}。
      *
      * @param token token
      * @return auth info
@@ -55,7 +58,7 @@ public interface TokenManager {
     Authentication getAuthentication(String token) throws AccessException;
     
     /**
-     * validate token.
+     * 校验令牌有效性。
      *
      * @param token token
      * @throws AccessException access exception
@@ -63,7 +66,7 @@ public interface TokenManager {
     void validateToken(String token) throws AccessException;
     
     /**
-     * parse token.
+     * 解析令牌为 {@link NacosUser}。
      *
      * @param token token
      * @return nacos user object
@@ -72,7 +75,7 @@ public interface TokenManager {
     NacosUser parseToken(String token) throws AccessException;
     
     /**
-     * validate token.
+     * 获取配置的令牌默认有效期（秒）。
      *
      * @return  token validity in seconds
      * @throws AccessException access exception
@@ -80,7 +83,7 @@ public interface TokenManager {
     long getTokenValidityInSeconds() throws AccessException;
     
     /**
-     * validate token.
+     * 获取指定令牌剩余 TTL（秒）。
      *
      * @param token token
      * @return token ttl in seconds

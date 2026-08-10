@@ -31,18 +31,24 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Nacos abstract cached role service.
+ * Nacos 角色服务抽象基类：定时从持久层加载角色与权限并维护内存缓存。
+ *
+ * <p>子类实现 {@link #getAllRoles()} 等数据访问；{@link #reload()} 每 15 秒刷新缓存。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractCachedRoleService implements NacosRoleService {
     
+    /** 分页查询默认页码。 */
     protected static final int DEFAULT_PAGE_NO = 1;
     
+    /** 已加载的全部角色名集合。 */
     private volatile Set<String> roleSet = new ConcurrentHashSet<>();
     
+    /** 用户名 → 角色绑定列表。 */
     private volatile Map<String, List<RoleInfo>> roleInfoMap = new ConcurrentHashMap<>();
     
+    /** 角色名 → 权限列表。 */
     private volatile Map<String, List<PermissionInfo>> permissionInfoMap =
         new ConcurrentHashMap<>();
     
@@ -58,9 +64,11 @@ public abstract class AbstractCachedRoleService implements NacosRoleService {
         return permissionInfoMap;
     }
     
+    /** 定时刷新角色与权限缓存（启动 5 秒后首次，之后每 15 秒）。 */
     @Scheduled(initialDelay = 5000, fixedDelay = 15000)
     protected void reload() {
         try {
+            // 拉取全部角色绑定并重建用户→角色映射
             List<RoleInfo> roleInfoPage = getAllRoles();
             Set<String> tmpRoleSet = new HashSet<>(16);
             Map<String, List<RoleInfo>> tmpRoleInfoMap = new ConcurrentHashMap<>(16);
@@ -73,6 +81,7 @@ public abstract class AbstractCachedRoleService implements NacosRoleService {
             }
             
             Map<String, List<PermissionInfo>> tmpPermissionInfoMap = new ConcurrentHashMap<>(16);
+            // 为每个角色加载全部权限
             for (String role : tmpRoleSet) {
                 Page<PermissionInfo> permissionInfoPage =
                     getPermissions(role, DEFAULT_PAGE_NO, Integer.MAX_VALUE);

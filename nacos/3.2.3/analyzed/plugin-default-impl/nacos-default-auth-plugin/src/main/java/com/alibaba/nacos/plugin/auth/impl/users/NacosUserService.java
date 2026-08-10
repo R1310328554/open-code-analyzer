@@ -23,14 +23,16 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import java.util.List;
 
 /**
- * Nacos auth plugin user service interface.
+ * Nacos 默认鉴权插件用户服务接口。
+ *
+ * <p>扩展 {@link UserDetailsService}，提供用户 CRUD、分页与模糊查询。</p>
  *
  * @author xiweng.yy
  */
 public interface NacosUserService extends UserDetailsService {
     
     /**
-     * Update user password.
+     * 更新用户密码。
      *
      * @param username username to be updated password
      * @param password new password
@@ -38,7 +40,7 @@ public interface NacosUserService extends UserDetailsService {
     void updateUserPassword(String username, String password);
     
     /**
-     * Get users by paged.
+     * 分页精确查询用户列表。
      *
      * @param pageNo       page number
      * @param pageSize     page size
@@ -54,11 +56,12 @@ public interface NacosUserService extends UserDetailsService {
      * @param pageNo       page number
      * @param pageSize     page size
      * @return user list
+      * <p>Nacos 用户服务接口。</p>
      */
     Page<User> findUsers(String username, int pageNo, int pageSize);
     
     /**
-     * Get User info by username.
+     * 按用户名获取用户信息。
      *
      * @param username     username
      * @return {@link User} information
@@ -70,6 +73,7 @@ public interface NacosUserService extends UserDetailsService {
      *
      * @param username     username
      * @return usernames
+      * <p>Nacos 用户服务接口。</p>
      */
     List<String> findUserNames(String username);
     
@@ -78,13 +82,14 @@ public interface NacosUserService extends UserDetailsService {
      *
      * @param username     username
      * @param password     password
+      * <p>Nacos 用户服务接口。</p>
      */
     default void createUser(String username, String password) {
         createUser(username, password, true);
     }
     
     /**
-     * Create user.
+     * 创建用户。
      *
      * @param username     username
      * @param password     password
@@ -93,7 +98,7 @@ public interface NacosUserService extends UserDetailsService {
     void createUser(String username, String password, boolean encode);
     
     /**
-     * Delete user.
+     * 删除用户。
      *
      * @param username     username
      */

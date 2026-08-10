@@ -40,7 +40,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Nacos builtin role service, implemented by remote request to nacos server.
+ * Nacos 角色服务远程实现：通过 HTTP 调用服务端 V3 角色/权限 API。
+ *
+ * <p>适用于 Console 等独立进程，本地仅维护缓存与远程转发。</p>
  *
  * @author xiweng.yy
  */
@@ -59,6 +61,7 @@ public class NacosRoleServiceRemoteImpl extends AbstractCheckedRoleService
         this.nacosRestTemplate = new DefaultHttpClientFactory(LOGGER).createNacosRestTemplate();
     }
     
+    /** 远程 POST 新增角色权限。 */
     @Override
     public void addPermission(String role, String resource, String action) {
         Map<String, String> body = Map.of("role", role, "resource", resource, "action", action);
@@ -92,6 +95,7 @@ public class NacosRoleServiceRemoteImpl extends AbstractCheckedRoleService
         }
     }
     
+    /** 优先读缓存，未命中则触发 reload 后返回。 */
     @Override
     public List<PermissionInfo> getPermissions(String role) {
         List<PermissionInfo> cached = getCachedPermissionInfoMap().get(role);
@@ -227,23 +231,26 @@ public class NacosRoleServiceRemoteImpl extends AbstractCheckedRoleService
         }
     }
     
+    /** 远程场景下管理员角色由创建用户流程同步，此处仅更新本地缓存标记。 */
     @Override
     public void addAdminRole(String username) {
-        // if has global admin role, means already synced admin role to console cached.
+        // 已有全局管理员说明 Console 缓存已同步
         if (hasGlobalAdminRole()) {
             return;
         }
-        // No need to call add admin role. In {@link NacosUserServiceRemoteImpl#createUser},
+        // 无需远程调用：{@link NacosUserServiceRemoteImpl#createUser} 会创建管理员
         // it will call create admin role which include add admin role operation.
         getCachedRoleSet().add(AuthConstants.GLOBAL_ADMIN_ROLE);
         authConfigs.setHasGlobalAdminRole(true);
     }
     
+    /** 拼接远程权限 API 完整 URL。 */
     private String buildRemotePermissionUrlPath(String apiPath) {
         return RequestUrlConstants.HTTP_PREFIX + RemoteServerUtil.getOneNacosServerAddress()
             + RemoteServerUtil.getRemoteServerContextPath() + apiPath;
     }
     
+    /** GET 远程权限列表并反序列化为分页结果。 */
     private Page<PermissionInfo> getPermissionInfoPageFromRemote(Query query) {
         try {
             HttpRestResult<String> httpResult = nacosRestTemplate.get(

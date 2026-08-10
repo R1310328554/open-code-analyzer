@@ -27,7 +27,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import java.util.List;
 
 /**
- * Custom user service, implemented by directly access to database.
+ * 用户服务直连实现：通过 {@link UserPersistService} 访问数据库。
  *
  * @author wfnuser
  * @author nkorange
@@ -46,6 +46,7 @@ public class NacosUserServiceDirectImpl extends AbstractCachedUserService
         this.authConfigs = authConfigs;
     }
     
+    /** Spring Security 加载用户，优先读缓存。 */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = getCachedUserMap().get(username);
@@ -78,6 +79,7 @@ public class NacosUserServiceDirectImpl extends AbstractCachedUserService
         return userPersistService.findUserLikeUsername(username);
     }
     
+    /** 创建用户：校验凭证并按需 BCrypt 编码密码。 */
     @Override
     public void createUser(String username, String password, boolean encode) {
         validateUserCredentials(username, password);
@@ -87,6 +89,7 @@ public class NacosUserServiceDirectImpl extends AbstractCachedUserService
         userPersistService.createUser(username, password);
     }
     
+    /** 删除用户，禁止删除系统保留用户名。 */
     @Override
     public void deleteUser(String username) {
         rejectReservedUsername(username);

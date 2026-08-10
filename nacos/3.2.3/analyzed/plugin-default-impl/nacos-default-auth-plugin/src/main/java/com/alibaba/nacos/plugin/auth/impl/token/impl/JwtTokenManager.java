@@ -40,18 +40,20 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * JWT token manager.
+ * 基于 {@link NacosJwtParser} 的 JWT 令牌管理器。
+ *
+ * <p>监听 {@link ServerConfigChangeEvent} 热更新密钥与过期时间；鉴权关闭时返回占位 token。</p>
  *
  * @author wfnuser
  * @author nkorange
  */
 public class JwtTokenManager extends Subscriber<ServerConfigChangeEvent> implements TokenManager {
     
+    /** 鉴权关闭时的占位 token 字符串。 */
     private static final String AUTH_DISABLED_TOKEN = "AUTH_DISABLED";
     
-    /**
-     * Token validity time(seconds).
-     */
+    /** 令牌默认有效期（秒）。 */
+
     private volatile long tokenValidityInSeconds;
     
     private volatile NacosJwtParser jwtParser;
@@ -64,6 +66,7 @@ public class JwtTokenManager extends Subscriber<ServerConfigChangeEvent> impleme
         processProperties();
     }
     
+    /** 从环境变量加载过期时间与 Base64 密钥并初始化解析器。 */
     private void processProperties() {
         this.tokenValidityInSeconds =
             EnvUtil.getProperty(AuthConstants.TOKEN_EXPIRE_SECONDS, Long.class,
@@ -90,6 +93,7 @@ public class JwtTokenManager extends Subscriber<ServerConfigChangeEvent> impleme
      *
      * @param authentication auth info
      * @return token
+      * <p>基于 NacosJwtParser 的 JWT 管理器。</p>
      */
     @Deprecated
     public String createToken(Authentication authentication) {
@@ -101,13 +105,14 @@ public class JwtTokenManager extends Subscriber<ServerConfigChangeEvent> impleme
      *
      * @param userName auth info
      * @return token
+      * <p>基于 NacosJwtParser 的 JWT 管理器。</p>
      */
     public String createToken(String userName) {
-        // create a token when auth enabled or nacos.core.auth.plugin.nacos.token.secret.key is configured
+        // 鉴权开启或已配置密钥时才签发真实 JWT
         if (!authConfigs.isAuthEnabled() && null == jwtParser) {
             return AUTH_DISABLED_TOKEN;
         } else if (authConfigs.isAuthEnabled()) {
-            // check nacos.core.auth.plugin.nacos.token.secret.key only if auth enabled
+            // 鉴权开启时必须校验密钥已配置
             checkJwtParser();
         }
         return jwtParser.jwtBuilder().setUserName(userName)
@@ -119,6 +124,7 @@ public class JwtTokenManager extends Subscriber<ServerConfigChangeEvent> impleme
      *
      * @param token token
      * @return auth info
+      * <p>基于 NacosJwtParser 的 JWT 管理器。</p>
      */
     @Deprecated
     public Authentication getAuthentication(String token) throws AccessException {
@@ -135,11 +141,13 @@ public class JwtTokenManager extends Subscriber<ServerConfigChangeEvent> impleme
      * validate token.
      *
      * @param token token
+      * <p>基于 NacosJwtParser 的 JWT 管理器。</p>
      */
     public void validateToken(String token) throws AccessException {
         parseToken(token);
     }
     
+    /** 解析 JWT 为 NacosUser，未配置密钥时抛错。 */
     public NacosUser parseToken(String token) throws AccessException {
         checkJwtParser();
         return jwtParser.parse(token);
@@ -175,6 +183,7 @@ public class JwtTokenManager extends Subscriber<ServerConfigChangeEvent> impleme
         return ServerConfigChangeEvent.class;
     }
     
+    /** 鉴权开启时校验 jwtParser 已初始化。 */
     private void checkJwtParser() {
         if (null == jwtParser) {
             throw new NacosRuntimeException(NacosException.INVALID_PARAM,

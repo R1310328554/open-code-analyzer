@@ -27,12 +27,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Nacos abstract cached user service.
+ * Nacos 用户服务抽象基类：定时加载用户列表至内存 Map。
  *
  * @author xiweng.yy
  */
 public abstract class AbstractCachedUserService implements NacosUserService {
     
+    /** 用户名 → 用户实体缓存。 */
     private volatile Map<String, User> userMap = new ConcurrentHashMap<>();
     
     protected AbstractCachedUserService() {
@@ -42,6 +43,7 @@ public abstract class AbstractCachedUserService implements NacosUserService {
         return userMap;
     }
     
+    /** 每 15 秒全量刷新用户缓存。 */
     @Scheduled(initialDelay = 5000, fixedDelay = 15000)
     protected void reload() {
         try {
@@ -61,7 +63,7 @@ public abstract class AbstractCachedUserService implements NacosUserService {
     }
     
     /**
-     * Reject reserved system usernames from being created or deleted.
+     * 禁止创建或删除系统保留用户名（如 ANONYMOUS）。
      *
      * @param username the username to check
      */
@@ -72,9 +74,8 @@ public abstract class AbstractCachedUserService implements NacosUserService {
         }
     }
     
-    /**
-     * [ISSUE #13625] check username and password is blank.
-     */
+    /** 校验用户名与密码非空，并拒绝保留用户名。 */
+
     protected void validateUserCredentials(String username, String password) {
         if (StringUtils.isBlank(username)) {
             throw new IllegalArgumentException("username is blank");

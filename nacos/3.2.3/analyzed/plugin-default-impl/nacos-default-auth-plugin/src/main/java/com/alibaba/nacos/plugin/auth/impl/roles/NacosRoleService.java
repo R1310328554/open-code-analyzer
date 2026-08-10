@@ -26,17 +26,18 @@ import com.alibaba.nacos.plugin.auth.impl.users.NacosUser;
 import java.util.List;
 
 /**
- * Nacos auth plugin role service interface.
+ * Nacos 默认鉴权插件角色服务接口。
+ *
+ * <p>涵盖角色 CRUD、权限绑定、分页/模糊查询及全局管理员判定。</p>
  *
  * @author xiweng.yy
  */
 public interface NacosRoleService {
     
     /**
-     * Determine if the user has permission of the resource.
+     * 判断用户是否拥有指定资源权限。
      *
-     * <p>Note if the user has many roles, this method returns true if any one role of the user has the desired
-     * permission.
+     * <p>用户多角色时任一角色匹配即返回 true。</p>
      *
      * @param nacosUser  user info
      * @param permission permission to auth
@@ -45,7 +46,7 @@ public interface NacosRoleService {
     boolean hasPermission(NacosUser nacosUser, Permission permission);
     
     /**
-     * Add permission to tole.
+     * 为角色新增权限。
      *
      * @param role     role name
      * @param resource resource
@@ -54,7 +55,7 @@ public interface NacosRoleService {
     void addPermission(String role, String resource, String action);
     
     /**
-     * Delete permission from role.
+     * 删除角色的指定权限。
      *
      * @param role     role name
      * @param resource resource
@@ -63,7 +64,7 @@ public interface NacosRoleService {
     void deletePermission(String role, String resource, String action);
     
     /**
-     * Get all permissions of the role.
+     * 获取角色的全部权限。
      *
      * @param role role name
      * @return List of {@link PermissionInfo} for the role
@@ -71,7 +72,7 @@ public interface NacosRoleService {
     List<PermissionInfo> getPermissions(String role);
     
     /**
-     * Accurate search permissions by role name pattern.
+     * 按角色名精确分页查询权限。
      *
      * @param role      role name pattern
      * @param pageNo    page number
@@ -81,7 +82,7 @@ public interface NacosRoleService {
     Page<PermissionInfo> getPermissions(String role, int pageNo, int pageSize);
     
     /**
-     * Blur search permissions by role name pattern.
+     * 按角色名模糊分页查询权限。
      *
      * @param role      role name pattern
      * @param pageNo    page number
@@ -91,7 +92,7 @@ public interface NacosRoleService {
     Page<PermissionInfo> findPermissions(String role, int pageNo, int pageSize);
     
     /**
-     * Judge whether the permission is duplicate.
+     * 判断权限是否重复（含 rw 通配动作）。
      *
      * @param role role name
      * @param resource resource
@@ -101,7 +102,7 @@ public interface NacosRoleService {
     Result<Boolean> isDuplicatePermission(String role, String resource, String action);
     
     /**
-     * Get All roles for target user.
+     * 获取目标用户的全部角色绑定。
      *
      * @param username username of target user
      * @return List of {@link RoleInfo} for target user
@@ -116,6 +117,7 @@ public interface NacosRoleService {
      * @param pageNo    page number
      * @param pageSize  page size
      * @return List of {@link RoleInfo} match role name pattern
+      * <p>Nacos 角色服务接口。</p>
      */
     Page<RoleInfo> getRoles(String username, String role, int pageNo, int pageSize);
     
@@ -127,6 +129,7 @@ public interface NacosRoleService {
      * @param pageNo    page number
      * @param pageSize  page size
      * @return List of {@link RoleInfo} match role name pattern
+      * <p>Nacos 角色服务接口。</p>
      */
     Page<RoleInfo> findRoles(String username, String role, int pageNo, int pageSize);
     
@@ -135,6 +138,7 @@ public interface NacosRoleService {
      *
      * @param role role name pattern
      * @return List of {@link RoleInfo} match role name pattern
+      * <p>Nacos 角色服务接口。</p>
      */
     List<String> findRoleNames(String role);
     
@@ -142,11 +146,12 @@ public interface NacosRoleService {
      * Get All roles in Nacos.
      *
      * @return List of {@link RoleInfo} in Nacos
+      * <p>Nacos 角色服务接口。</p>
      */
     List<RoleInfo> getAllRoles();
     
     /**
-     * Add role to user.
+     * 为用户绑定角色。
      *
      * @param role     role name
      * @param username user name
@@ -158,6 +163,7 @@ public interface NacosRoleService {
      *
      * @param role     role
      * @param userName userName
+      * <p>Nacos 角色服务接口。</p>
      */
     void deleteRole(String role, String userName);
     
@@ -165,6 +171,7 @@ public interface NacosRoleService {
      * Delete Role from Nacos.
      *
      * @param role role
+      * <p>Nacos 角色服务接口。</p>
      */
     void deleteRole(String role);
     
@@ -172,11 +179,12 @@ public interface NacosRoleService {
      * Add role.
      *
      * @param username user name
+      * <p>Nacos 角色服务接口。</p>
      */
     void addAdminRole(String username);
     
     /**
-     * Check if user has admin role.
+     * 判断用户是否拥有 GLOBAL_ADMIN 角色。
      *
      * @param userName user name
      * @return true if user has admin role.
@@ -184,7 +192,7 @@ public interface NacosRoleService {
     boolean hasGlobalAdminRole(String userName);
     
     /**
-     * Check if all user has at least one admin role.
+     * 判断系统中是否已存在全局管理员角色。
      *
      * @return true if all user has at least one admin role.
      */

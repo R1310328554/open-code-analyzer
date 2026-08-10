@@ -36,7 +36,9 @@ import java.util.regex.Pattern;
 import static com.alibaba.nacos.api.common.Constants.DEFAULT_NAMESPACE_ID;
 
 /**
- * Nacos abstract cached role service.
+ * 带权限校验的角色服务抽象类：在缓存基类之上实现 {@link #hasPermission} 等鉴权逻辑。
+ *
+ * <p>支持 GLOBAL_ADMIN 放行、控制台资源限制及通配符权限匹配。</p>
  *
  * @author xiweng.yy
  */
@@ -49,6 +51,7 @@ public abstract class AbstractCheckedRoleService extends AbstractCachedRoleServi
         this.authConfigs = authConfigs;
     }
     
+    /** 判断用户是否拥有指定资源权限（任一角色匹配即通过）。 */
     @Override
     public boolean hasPermission(NacosUser nacosUser, Permission permission) {
         if (isUpdatePasswordPermission(permission)) {
@@ -60,7 +63,7 @@ public abstract class AbstractCheckedRoleService extends AbstractCachedRoleServi
             return false;
         }
         
-        // Global admin pass:
+        // 全局管理员直接放行并标记 globalAdmin
         for (RoleInfo roleInfo : roleInfoList) {
             if (AuthConstants.GLOBAL_ADMIN_ROLE.equals(roleInfo.getRole())) {
                 nacosUser.setGlobalAdmin(true);
@@ -68,13 +71,13 @@ public abstract class AbstractCheckedRoleService extends AbstractCachedRoleServi
             }
         }
         
-        // Old global admin can pass resource 'console/':
+        // 非全局管理员禁止访问 console/ 前缀资源
         if (permission.getResource().getName()
             .startsWith(AuthConstants.CONSOLE_RESOURCE_NAME_PREFIX)) {
             return false;
         }
         
-        // For other roles, use a pattern match to decide if pass or not.
+        // 其他角色：按资源通配符与 action 子串匹配
         for (RoleInfo roleInfo : roleInfoList) {
             List<PermissionInfo> permissionInfoList = getPermissions(roleInfo.getRole());
             if (CollectionUtils.isEmpty(permissionInfoList)) {
@@ -137,7 +140,7 @@ public abstract class AbstractCheckedRoleService extends AbstractCachedRoleServi
     }
     
     /**
-     * Reject deletion or manual creation of system-reserved roles.
+     * 拒绝删除或手动创建系统保留角色（GLOBAL_ADMIN、ANONYMOUS）。
      *
      * @param role role name to check
      */
@@ -152,14 +155,14 @@ public abstract class AbstractCheckedRoleService extends AbstractCachedRoleServi
         }
     }
     
-    /**
-     * If API is update user password, don't do permission check, because there is permission check in API logic.
-     */
+    /** 修改密码 API 跳过权限校验（业务层已校验）。 */
+
     private boolean isUpdatePasswordPermission(Permission permission) {
         Properties properties = permission.getResource().getProperties();
         return null != properties && properties.contains(AuthConstants.UPDATE_PASSWORD_ENTRY_POINT);
     }
     
+    /** 将 {@link Resource} 拼接为权限匹配用的 namespace:group:type/name 字符串。 */
     private String joinResource(Resource resource) {
         if (SignType.SPECIFIED.equals(resource.getType())) {
             return resource.getName();

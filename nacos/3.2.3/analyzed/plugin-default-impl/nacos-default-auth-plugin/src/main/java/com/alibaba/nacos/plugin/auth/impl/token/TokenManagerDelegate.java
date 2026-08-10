@@ -21,21 +21,24 @@ import com.alibaba.nacos.plugin.auth.impl.users.NacosUser;
 import org.springframework.security.core.Authentication;
 
 /**
- * token manager delegate.
+ * {@link TokenManager} 委托包装：统一转发至实际实现（如 {@link CachedJwtTokenManager}）。
  *
  * @author majorhe
  */
 public class TokenManagerDelegate implements TokenManager {
     
+    /** 是否启用 JWT 令牌本地缓存的配置项键名。 */
     public static final String NACOS_AUTH_TOKEN_CACHING_ENABLED =
         "nacos.core.auth.plugin.nacos.token.cache.enable";
     
     private final TokenManager delegate;
     
+    /** 注入底层 TokenManager 实现。 */
     public TokenManagerDelegate(TokenManager delegate) {
         this.delegate = delegate;
     }
     
+    /** 返回实际执行的 TokenManager。 */
     private TokenManager getExecuteTokenManager() {
         return delegate;
     }

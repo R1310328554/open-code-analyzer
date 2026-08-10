@@ -40,7 +40,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Custom user service, implemented by remote request to nacos server.
+ * 用户服务远程实现：HTTP 调用服务端用户管理 API。
+ *
+ * <p>Console 等独立部署场景使用，本地维护用户缓存。</p>
  *
  * @author xiweng.yy
  */
@@ -59,6 +61,7 @@ public class NacosUserServiceRemoteImpl extends AbstractCachedUserService
         this.nacosRestTemplate = new DefaultHttpClientFactory(LOGGER).createNacosRestTemplate();
     }
     
+    /** 远程查询用户并包装为 NacosUserDetails。 */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = getUser(username);
@@ -136,7 +139,7 @@ public class NacosUserServiceRemoteImpl extends AbstractCachedUserService
             doCreateAdminUser(password);
             return;
         }
-        // ignore encode = true, let nacos server do encode
+        // 密码编码由服务端处理，忽略 encode 参数
         Query query = Query.newInstance().addParam("username", username);
         Map<String, String> body = Map.of("password", password);
         try {
@@ -152,6 +155,7 @@ public class NacosUserServiceRemoteImpl extends AbstractCachedUserService
         }
     }
     
+    /** 调用 /admin 接口创建默认管理员用户。 */
     private void doCreateAdminUser(String password) {
         Map<String, String> body = Map.of("password", password);
         try {
@@ -185,11 +189,13 @@ public class NacosUserServiceRemoteImpl extends AbstractCachedUserService
         }
     }
     
+    /** 拼接远程用户 API 完整 URL。 */
     private String buildRemoteUserUrlPath(String apiPath) {
         return RequestUrlConstants.HTTP_PREFIX + RemoteServerUtil.getOneNacosServerAddress()
             + RemoteServerUtil.getRemoteServerContextPath() + apiPath;
     }
     
+    /** GET 远程用户列表并反序列化分页结果。 */
     private Page<User> getUserPageFromRemote(Query query) {
         try {
             HttpRestResult<String> httpResult = nacosRestTemplate.get(
