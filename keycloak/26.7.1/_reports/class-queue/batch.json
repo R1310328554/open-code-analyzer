@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T06:04:04Z",
   "files": [
-    "core/src/main/java/org/keycloak/representations/idm/ClientPolicyConditionConfigurationRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientPolicyConditionRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientPolicyExecutorConfigurationRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientPolicyExecutorRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientPolicyRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientProfileRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientProfilesRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientScopeRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientTemplateRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientTypeRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientTypesRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ComponentExportRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ComponentRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ComponentTypeRepresentation.java",
     "core/src/main/java/org/keycloak/representations/idm/ConfigPropertyRepresentation.java",
     "core/src/main/java/org/keycloak/representations/idm/CredentialRepresentation.java",
     "core/src/main/java/org/keycloak/representations/idm/ErrorRepresentation.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/org/keycloak/representations/idm/MemberRepresentation.java"
   ],
   "remaining_pending": 5578,
-  "done": 390
+  "done": 405
 }

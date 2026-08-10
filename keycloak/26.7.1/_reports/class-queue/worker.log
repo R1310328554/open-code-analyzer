@@ -388,3 +388,18 @@
 2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/dpop/DPoP.java wave13a adapter config + docker/dpop reps
 2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/idm/AbstractAuthenticationExecutionRepresentation.java wave13a adapter config + docker/dpop reps
 2026-08-10T06:03:36Z DONE core/src/main/java/org/keycloak/representations/idm/AbstractUserRepresentation.java wave13a adapter config + docker/dpop reps
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientPolicyConditionConfigurationRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientPolicyConditionRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientPolicyExecutorConfigurationRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientPolicyExecutorRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientPolicyRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientProfileRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientProfilesRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientScopeRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientTemplateRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientTypeRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ClientTypesRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ComponentExportRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ComponentRepresentation.java wave14a idm client policy representations
+2026-08-10T06:05:46Z DONE core/src/main/java/org/keycloak/representations/idm/ComponentTypeRepresentation.java wave14a idm client policy representations
