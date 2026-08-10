@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T21:52:45Z",
   "files": [
-    "pkg/dataobj/internal/dataset/row_reader_basic.go",
-    "pkg/dataobj/internal/dataset/row_reader_downloader.go",
-    "pkg/dataobj/internal/dataset/value.go",
-    "pkg/dataobj/internal/dataset/value_adapter.go",
-    "pkg/dataobj/internal/dataset/value_encoding.go",
-    "pkg/dataobj/internal/dataset/value_encoding_bitmap.go",
-    "pkg/dataobj/internal/dataset/value_encoding_delta.go",
-    "pkg/dataobj/internal/dataset/value_encoding_plain.go",
-    "pkg/dataobj/internal/metadata/datasetmd/datasetmd.pb.go",
-    "pkg/dataobj/internal/metadata/filemd/filemd.pb.go",
-    "pkg/dataobj/internal/result/result.go",
-    "pkg/dataobj/internal/streamio/streamio.go",
-    "pkg/dataobj/internal/streamio/varint.go",
-    "pkg/dataobj/internal/util/bitmask/bitmask.go",
-    "pkg/dataobj/internal/util/bufpool/bucket.go",
     "pkg/dataobj/internal/util/bufpool/bufpool.go",
     "pkg/dataobj/internal/util/bufpool/reader.go",
     "pkg/dataobj/internal/util/bufpool/unsized.go",
@@ -33,5 +18,5 @@
     "pkg/dataobj/metastore/metastore.pb.go"
   ],
   "remaining_pending": 1162,
-  "done": 360
+  "done": 375
 }
