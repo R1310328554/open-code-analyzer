@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 配置模块动态 Micrometer 指标刷新服务：定时刷新配置变更 TopN 并周期性清零计数。
+ * 与 {@link MetricsMonitor} 及 {@link NacosMeterRegistryCenter} 配合暴露运维指标。
  * dynamic meter refresh service.
  *
  * @author <a href="mailto:liuyixiao0821@gmail.com">liuyixiao</a>
@@ -35,13 +37,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class ConfigDynamicMeterRefreshService {
     
+    /** TopN 配置变更计数注册表名称 */
     private static final String TOPN_CONFIG_CHANGE_REGISTRY =
         NacosMeterRegistryCenter.TOPN_CONFIG_CHANGE_REGISTRY;
     
+    /** 保留的配置变更 TopN 条数 */
     private static final int CONFIG_CHANGE_N = 10;
     
     /**
-     * refresh config change count top n per 30s.
+     * 每 30 秒刷新配置变更次数 TopN 到 Micrometer gauge。
      */
     @Scheduled(cron = "0/30 * * * * *")
     public void refreshTopnConfigChangeCount() {
@@ -58,7 +62,7 @@ public class ConfigDynamicMeterRefreshService {
     }
     
     /**
-     * reset config change count to 0 every week.
+     * 每周一零点重置配置变更累计计数，避免长期膨胀。
      */
     @Scheduled(cron = "0 0 0 ? * 1")
     public void resetTopnConfigChangeCount() {

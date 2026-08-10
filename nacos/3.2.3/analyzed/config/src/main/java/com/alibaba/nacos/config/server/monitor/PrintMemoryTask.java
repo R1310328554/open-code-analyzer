@@ -22,12 +22,14 @@ import com.alibaba.nacos.config.server.service.ConfigCacheService;
 import static com.alibaba.nacos.config.server.utils.LogUtil.MEMORY_LOG;
 
 /**
+ * 定时打印配置缓存与订阅统计：group 数、订阅客户端数、订阅条目数，并更新 configCount 指标。
  * Print memory task.
  *
  * @author zongtanghu
  */
 public class PrintMemoryTask implements Runnable {
     
+    /** 采集缓存 group 数与订阅规模，写入 MEMORY_LOG 并刷新 MetricsMonitor */
     @Override
     public void run() {
         int groupCount = ConfigCacheService.groupCount();

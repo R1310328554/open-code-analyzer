@@ -20,28 +20,39 @@ import java.text.DecimalFormat;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * 拉配置响应耗时分布监控：按毫秒区间累计请求占比，供 {@link PrintGetConfigResponeTask} 周期性输出。
+ * 类名保留历史拼写 Monitory。
  * Response Monitory.
  *
  * @author Nacos
  */
 public class ResponseMonitor {
     
+    /** 各耗时区间（0-50ms … 3000ms+）的请求计数 */
     private static AtomicLong[] getConfigCountDetail = new AtomicLong[8];
     
+    /** 拉配置请求总计数（用于计算百分比） */
     private static AtomicLong getConfigCount = new AtomicLong();
     
+    /** 耗时区间上界：50ms */
     private static final int MS_50 = 50;
     
+    /** 耗时区间上界：100ms */
     private static final int MS_100 = 100;
     
+    /** 耗时区间上界：200ms */
     private static final int MS_200 = 200;
     
+    /** 耗时区间上界：500ms */
     private static final int MS_500 = 500;
     
+    /** 耗时区间上界：1000ms */
     private static final int MS_1000 = 1000;
     
+    /** 耗时区间上界：2000ms */
     private static final int MS_2000 = 2000;
     
+    /** 耗时区间上界：3000ms */
     private static final int MS_3000 = 3000;
     
     static {
@@ -49,7 +60,7 @@ public class ResponseMonitor {
     }
     
     /**
-     * Refresh for getting configCountDetail.
+     * 初始化或重置各耗时区间计数器数组。
      */
     public static void refresh() {
         for (int i = 0; i < getConfigCountDetail.length; i++) {
@@ -58,9 +69,9 @@ public class ResponseMonitor {
     }
     
     /**
-     * AddConfigTime.
+     * 记录一次拉配置耗时并累加到对应毫秒区间。
      *
-     * @param time config time which is added.
+     * @param time 本次请求耗时（毫秒）
      */
     public static void addConfigTime(long time) {
         getConfigCount.incrementAndGet();
@@ -83,6 +94,7 @@ public class ResponseMonitor {
         }
     }
     
+    /** 生成各耗时区间占比字符串并清零区间计数（总计一并清零） */
     public static String getStringForPrint() {
         DecimalFormat df = new DecimalFormat("##.0");
         StringBuilder s = new StringBuilder("getConfig monitor:\r\n");

@@ -19,6 +19,8 @@ package com.alibaba.nacos.config.server.model.gray;
 import java.util.Map;
 
 /**
+ * 配置灰度规则 SPI 接口：定义匹配、有效性、类型版本及优先级等契约。
+ * 各实现通过 {@link com.alibaba.nacos.common.spi.NacosServiceLoader} 注册至 {@link GrayRuleManager}。
  * gray rule.
  *
  * @author rong
@@ -26,51 +28,51 @@ import java.util.Map;
 public interface GrayRule {
     
     /**
-    * gray rule match labels or not.
+    * 判断连接标签是否命中灰度规则。
     *
     * @date 2024/3/14
-    * @param labels conn labels.
-    * @return true if match, false otherwise.
+    * @param labels 连接侧标签 Map
+    * @return 命中返回 true，否则 false
     */
     boolean match(Map<String, String> labels);
     
     /**
-    * if the gray rule is valid.
+    * 规则是否有效（表达式可解析且语义合法）。
     *
     * @date 2024/3/14
-    * @return true if valid, false otherwise.
+    * @return 有效返回 true
     */
     boolean isValid();
     
     /**
-    * get gray rule type.
+    * 获取规则类型标识。
     *
     * @date 2024/3/14
-    * @return the gray rule type.
+    * @return 灰度规则 type
     */
     String getType();
     
     /**
-    * get gray rule version.
+    * 获取规则版本号。
     *
     * @date 2024/3/14
-    * @return the gray rule version.
+    * @return 灰度规则 version
     */
     String getVersion();
     
     /**
-    * get gray rule priority.
+    * 获取规则匹配优先级。
     *
     * @date 2024/3/14
-    * @return the gray rule priority.
+    * @return 优先级数值
     */
     int getPriority();
     
     /**
-    * get raw String of gray rule.
+    * 获取原始灰度表达式字符串（持久化用）。
     *
     * @date 2024/3/14
-    * @return the raw String of gray rule.
+    * @return 原始表达式
     */
     String getRawGrayRuleExp();
 }

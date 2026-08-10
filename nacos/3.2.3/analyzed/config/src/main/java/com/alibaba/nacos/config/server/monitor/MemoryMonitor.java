@@ -25,6 +25,8 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 配置服务内存与响应监控入口：启动周期性打印内存、拉配置响应分布及异步通知队列任务。
+ * 并每日清零部分 {@link MetricsMonitor} 计数器。
  * Memory monitor.
  *
  * @author Nacos
@@ -32,6 +34,11 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MemoryMonitor {
     
+    /**
+     * 注入后注册三类定时监控任务（间隔 {@link #DELAY_SECONDS} 秒）。
+     *
+     * @param notifySingleService 异步通知服务，供队列监控使用
+     */
     @Autowired
     public MemoryMonitor(AsyncNotifyService notifySingleService) {
         
@@ -49,10 +56,11 @@ public class MemoryMonitor {
         
     }
     
+    /** 监控任务初始延迟与执行间隔（秒） */
     private static final long DELAY_SECONDS = 10;
     
     /**
-     * reset some metrics to 0 every day.
+     * 每日零点重置拉配置、发布与模糊搜索等日级计数器。
      */
     @Scheduled(cron = "0 0 0 * * ?")
     public void clear() {

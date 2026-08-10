@@ -19,12 +19,15 @@ package com.alibaba.nacos.config.server.monitor;
 import static com.alibaba.nacos.config.server.utils.LogUtil.MEMORY_LOG;
 
 /**
+ * 定时打印拉配置响应耗时分布的任务：调用 {@link ResponseMonitor#getStringForPrint()} 写入 MEMORY_LOG。
+ * 类名保留历史拼写 Respone。
  * PrintGetConfigResponeTask.
  *
  * @author zongtanghu
  */
 public class PrintGetConfigResponeTask implements Runnable {
     
+    /** 将响应耗时百分比分段统计写入内存监控日志 */
     @Override
     public void run() {
         MEMORY_LOG.info(ResponseMonitor.getStringForPrint());

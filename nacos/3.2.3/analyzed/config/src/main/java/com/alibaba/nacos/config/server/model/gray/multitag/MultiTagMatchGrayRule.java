@@ -32,16 +32,21 @@ import java.util.stream.Collectors;
 import static com.alibaba.nacos.api.common.Constants.TAG_V2;
 
 /**
+ * TagV2 多标签组合灰度规则：支持 key=value 与 ||、&& 逻辑组合，版本 1.1.0。
+ * 表达式形如 a=v1,v2&&b=v3||c=v4；匹配时对标签 Map 做 OR 子句内 AND 合取判定。
  * tag v2 gray rule.
  *
  * @author rong
  */
 public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
     
+    /** 解析后的规则项列表（含连接符 OR/AND 语义） */
     private List<TagV2GrayRuleItem> ruleItems;
     
+    /** TagV2 规则类型常量 */
     public static final String TYPE_TAGV2 = TAG_V2;
     
+    /** 多标签规则版本 1.1.0 */
     public static final String VERSION_1_1_0 = "1.1.0";
     
     private static final String ELEM_PATTERN =
@@ -52,10 +57,17 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
     private static final String EXPRESSION_PATTERN =
         "^" + ELEM_PATTERN + "(" + JOINT_PATTERN + ELEM_PATTERN + ")*$";
     
+    /** 无参构造 */
     public MultiTagMatchGrayRule() {
         super();
     }
     
+    /**
+     * 构造多标签匹配规则。
+     *
+     * @param rawGrayRuleExp 含 ||、&& 的复合表达式
+     * @param priority       优先级
+     */
     public MultiTagMatchGrayRule(String rawGrayRuleExp, int priority) {
         super(rawGrayRuleExp, priority);
     }
@@ -69,7 +81,7 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
             if (StringUtils.isBlank(s)) {
                 continue;
             }
-            //each subExpression is jointed by one or multi "&&"
+            // 每个 OR 子句内由一条或多条 && 连接的键值项组成
             String[] splitSubExpressionByAndArray = s.trim()
                 .split(MultiTagMatchGrayRule.TagV2GrayRuleJoint.AND_REGEXP.getExpression());
             for (int andIndex = 0; andIndex < splitSubExpressionByAndArray.length; andIndex++) {
@@ -104,10 +116,10 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
     }
     
     /**
-     * this rule will match labelsMap.
+     * 按 OR 子句划分规则项，子句内 AND 合取匹配 labelsMap。
      *
-     * @param labelsMap labels map.
-     * @return true if match. false if not match.
+     * @param labelsMap 客户端标签 Map
+     * @return 任一 OR 子句全部 AND 项命中则 true
      * @date 2024/2/6
      */
     public boolean match(Map<String, String> labelsMap) {
@@ -129,14 +141,14 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
             TagV2GrayRuleItem curTagV2GrayRuleItem = localRuleItems.get(index);
             
             if (curTagV2GrayRuleItem.getJoint() == TagV2GrayRuleJoint.AND) {
-                //if AND, will consider the current ruleItem belong to this subRule.
+                // AND：当前项属于同一 OR 子句，需与前项同时满足
                 
-                //if one of the items in the subRule is not match, will continue to next subRule.
+                // 子句内已有项未命中则跳过该子句后续项
                 if (!subRuleMatchFlag) {
                     continue;
                 }
                 
-                //if the key has already existed in this subRule,
+                // 同一 OR 子句内重复 key 视为语法错误，子句不匹配
                 // another item with the same key appears which will be considered as a syntax error.
                 if (tempKeyExistSet.contains(curTagV2GrayRuleItem.getKey())) {
                     subRuleMatchFlag = false;
@@ -145,16 +157,16 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
                     tempKeyExistSet.add(curTagV2GrayRuleItem.getKey());
                 }
                 
-                //check current item
+                // 校验当前键值项是否命中 labelsMap
                 if (!curTagV2GrayRuleItem.match(labelsMap.get(curTagV2GrayRuleItem.getKey()))) {
                     subRuleMatchFlag = false;
                 }
                 tempResult++;
             } else if (curTagV2GrayRuleItem.getJoint() == TagV2GrayRuleJoint.OR) {
-                //if OR, will consider the current ruleItem belong to the next subRule,
+                // OR：结束当前子句，开启下一子句（首项 joint 改为 AND）
                 // and this subRule contains items between [subRuleBeginIndex, index).
                 
-                //only when subRuleMatchFlag is true, update result.
+                // 仅当上一子句匹配成功时更新已匹配项计数
                 if (subRuleMatchFlag) {
                     result = Math.max(result, tempResult);
                 }
@@ -171,9 +183,9 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
     }
     
     /**
-     * check this TagV2GrayRule is valid or not.
+     * 校验规则项非空、各项 key 合法且同一 OR 子句内无重复 key。
      *
-     * @return true if valid. false if not valid.
+     * @return 语义合法返回 true
      * @date 2024/2/7
      */
     public boolean isValid() {
@@ -218,45 +230,58 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
         return true;
     }
     
+    /** 返回 {@link #TYPE_TAGV2} */
     @Override
     public String getType() {
         return TYPE_TAGV2;
     }
     
+    /** 返回 {@link #VERSION_1_1_0} */
     @Override
     public String getVersion() {
         return VERSION_1_1_0;
     }
     
     /**
-     * tag v2 gray rule item.
+     * TagV2 单条规则项：键、运算符、允许值集合及与子句内前项的连接关系。
      *
      * @author rong
      */
     public static class TagV2GrayRuleItem implements Cloneable {
         
+        /** 标签键名 */
         public String key;
         
+        /** 匹配运算符，默认 IN（值在集合内） */
         public TagV2GrayRuleOperator operator = TagV2GrayRuleOperator.IN;
         
+        /** 参与 IN/NOT_IN 判定的值集合 */
         public final Set<String> values = new HashSet<>();
         
+        /** 与前一项的逻辑连接（OR 子句边界或 AND 合取） */
         public TagV2GrayRuleJoint joint = TagV2GrayRuleJoint.AND;
         
+        /** 仅指定键的构造 */
         public TagV2GrayRuleItem(String key) {
             this.key = key;
         }
         
+        /**
+         * 指定键与允许值集合。
+         *
+         * @param key    标签键
+         * @param values 允许值集合
+         */
         public TagV2GrayRuleItem(String key, Set<String> values) {
             this.key = key;
             this.values.addAll(values);
         }
         
         /**
-         * judge if value is match the rule.
+         * 按 operator 判断单个标签值是否满足本项。
          *
-         * @param value value
-         * @return boolean true if match, false otherwise.
+         * @param value 标签实际值
+         * @return 匹配返回 true
          * @date 2024/2/8
          */
         public boolean match(String value) {
@@ -283,16 +308,16 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
         }
         
         /**
-         * judge if rule is valid.
+         * 规则项是否有效（当前实现要求 key 非空）。
          *
-         * @return boolean true if valid, false otherwise.
-         * @throws NacosException if invalid.
+         * @return 有效返回 true
          * @date 2024/2/8
          */
         public boolean isValid() {
             return !StringUtils.isBlank(key);
         }
         
+        /** 获取规则项建造者 */
         public static TagV2GrayRuleItemBuilder builder() {
             return new TagV2GrayRuleItemBuilder();
         }
@@ -351,6 +376,7 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
                 + '}';
         }
         
+        /** 深拷贝规则项（含 values 集合） */
         @Override
         public TagV2GrayRuleItem clone() {
             try {
@@ -365,6 +391,7 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
             }
         }
         
+        /** TagV2 规则项流式构造器 */
         public static final class TagV2GrayRuleItemBuilder {
             
             private final TagV2GrayRuleItem item;
@@ -373,11 +400,13 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
                 item = new TagV2GrayRuleItem(null);
             }
             
+            /** 设置标签键并返回 builder */
             public TagV2GrayRuleItemBuilder key(String key) {
                 item.key = key;
                 return this;
             }
             
+            /** 构建规则项实例 */
             public TagV2GrayRuleItem build() {
                 return item;
             }
@@ -385,34 +414,28 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
     }
     
     /**
-     * tag v2 gray rule joint.
+     * TagV2 逻辑连接符：表达式中的 ||、&& 及对应 split 正则。
      *
      * @author rong
      */
     public enum TagV2GrayRuleJoint {
         
-        /**
-         * and.
-         */
+        /** 逻辑与（&&） */
         AND("&&", "AND"),
         
-        /**
-         * or.
-         */
+        /** 逻辑或（||），亦标记 OR 子句起始 */
         OR("||", "OR"),
         
-        /**
-         * and regexp.
-         */
+        /** 用于 split 的 AND 正则 */
         AND_REGEXP("&&", "AND_REGEXP"),
         
-        /**
-         * or regexp.
-         */
+        /** 用于 split 的 OR 正则（转义 ||） */
         OR_REGEXP("\\|\\|", "OR_REGEXP");
         
+        /** 连接符或正则字面量 */
         public final String expression;
         
+        /** 枚举名称标识 */
         public final String name;
         
         TagV2GrayRuleJoint(String expression, String name) {
@@ -430,30 +453,22 @@ public class MultiTagMatchGrayRule extends AbstractTagMatchGrayRule {
     }
     
     /**
-     * tag v2 gray rule operator.
+     * TagV2 值匹配运算符：IN、NOT_IN、EXIST、NOT_EXIST。
      *
      * @author rong
      */
     public enum TagV2GrayRuleOperator {
         
-        /**
-         * in.
-         */
+        /** 值在允许集合内 */
         IN("in", "IN"),
         
-        /**
-         * not in.
-         */
+        /** 值不在允许集合内 */
         NOT_IN("not in", "NOT_IN"),
         
-        /**
-         * exist.
-         */
+        /** 标签值存在（非 null） */
         EXIST("exist", "EXIST"),
         
-        /**
-         * not exist.
-         */
+        /** 标签值不存在（为 null） */
         NOT_EXIST("not exist", "NOT_EXIST");
         
         public final String expression;
