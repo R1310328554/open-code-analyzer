@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T14:39:52Z",
   "files": [
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/HardcodedClientScopeStorageProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/HardcodedClientScopeStorageProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/HardcodedClientStorageProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/HardcodedClientStorageProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/HardcodedGroupStorageProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/HardcodedGroupStorageProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/HardcodedRoleStorageProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/HardcodedRoleStorageProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/PassThroughFederatedUserStorageProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/PassThroughFederatedUserStorageProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/UserMapStorage.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/UserMapStorageFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/UserPropertyFileStorage.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/UserPropertyFileStorageFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/sync/IgnoredDummyUserFederationProviderFactory.java",
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/sync/SyncDummyUserFederationProviderFactory.java",
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/forms/ClickThroughAuthenticator.java",
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/forms/DummyClientAuthenticator.java",
@@ -33,5 +18,5 @@
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/rest/TestSamlApplicationResourceProvider.java"
   ],
   "remaining_pending": 88,
-  "done": 5880
+  "done": 5895
 }
