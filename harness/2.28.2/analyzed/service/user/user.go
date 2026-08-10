@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// user 包通过 SCM 客户端查询远程用户信息。
 package user
 
 import (
@@ -21,17 +22,18 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
+// service 实现 core.UserService。
 type service struct {
 	client *scm.Client
 	renew  core.Renewer
 }
 
-// New returns a new User service that provides access to
-// user data from the source code management system.
+// New 创建 User 服务，提供对 SCM 用户资料的访问。
 func New(client *scm.Client, renew core.Renewer) core.UserService {
 	return &service{client: client, renew: renew}
 }
 
+// Find 使用 access/refresh token 查询当前 OAuth 用户。
 func (s *service) Find(ctx context.Context, access, refresh string) (*core.User, error) {
 	ctx = context.WithValue(ctx, scm.TokenKey{}, &scm.Token{
 		Token:   access,
@@ -44,6 +46,7 @@ func (s *service) Find(ctx context.Context, access, refresh string) (*core.User,
 	return convert(src), nil
 }
 
+// FindLogin 按登录名查询 SCM 用户，调用前会刷新令牌。
 func (s *service) FindLogin(ctx context.Context, user *core.User, login string) (*core.User, error) {
 	err := s.renew.Renew(ctx, user, false)
 	if err != nil {
@@ -61,6 +64,7 @@ func (s *service) FindLogin(ctx context.Context, user *core.User, login string) 
 	return convert(src), nil
 }
 
+// convert 将 scm.User 映射为 core.User。
 func convert(src *scm.User) *core.User {
 	dst := &core.User{
 		Login:  src.Login,

@@ -19,9 +19,7 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-// convertRepository is a helper function that converts a
-// repository from the source code management system to the
-// local datastructure.
+// convertRepository 将 SCM 仓库对象映射为 Drone 内部 core.Repository。
 func convertRepository(src *scm.Repository, visibility string, trusted bool) *core.Repository {
 	return &core.Repository{
 		UID:        src.ID,
@@ -39,11 +37,9 @@ func convertRepository(src *scm.Repository, visibility string, trusted bool) *co
 	}
 }
 
-// convertVisibility is a helper function that returns the
-// repository visibility based on the privacy flag.
+// convertVisibility 根据 SCM 隐私标志与全局默认可见性推导仓库可见性级别。
 func convertVisibility(src *scm.Repository, visibility string) string {
-	// if the visibility is set to internal (github enterprise and gitlab)
-	// and the global visibility is empty, automatically set to internal.
+	// GitHub Enterprise / GitLab 的 internal 可见性：全局未配置时自动设为 internal。
 	if visibility == "" && src.Visibility == scm.VisibilityInternal {
 		return core.VisibilityInternal
 	}

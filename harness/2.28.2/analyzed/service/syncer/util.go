@@ -19,8 +19,7 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-// merge is a helper function that merges a subset of
-// values from the source to the destination repository.
+// merge 将源仓库的关键字段合并到目标仓库。
 func merge(dst, src *core.Repository) {
 	dst.Namespace = src.Namespace
 	dst.Name = src.Name
@@ -30,16 +29,13 @@ func merge(dst, src *core.Repository) {
 	dst.Branch = src.Branch
 	dst.Slug = scm.Join(src.Namespace, src.Name)
 
-	// the gitea and gogs repository endpoints do not
-	// return the html url, so we need to ensure we do
-	// not replace the existing value with a zero value.
+	// Gitea/Gogs 仓库 API 不返回 HTML URL，避免用空值覆盖已有链接。
 	if src.Link != "" {
 		dst.Link = src.Link
 	}
 }
 
-// diff is a helper function that compares two repositories
-// and returns true if a subset of values are different.
+// diff 比较两个仓库的关键字段，任一不同则返回 true。
 func diff(a, b *core.Repository) bool {
 	switch {
 	case a.Namespace != b.Namespace:

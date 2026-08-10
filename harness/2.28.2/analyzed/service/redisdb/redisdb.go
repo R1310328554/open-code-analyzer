@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// redisdb 包封装 Redis 客户端、Pub/Sub 订阅与分布式互斥锁。
 package redisdb
 
 import (
@@ -28,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// New 根据配置创建 RedisDB 服务；连接字符串或地址未配置时返回零值。
 func New(config config.Config) (srv RedisDB, err error) {
 	var options *redis.Options
 
@@ -64,40 +66,43 @@ func New(config config.Config) (srv RedisDB, err error) {
 	return
 }
 
+// RedisDB 定义 Redis 客户端、Pub/Sub 与分布式锁的抽象接口。
 type RedisDB interface {
 	Client() redis.Cmdable
 	Subscribe(ctx context.Context, channelName string, channelSize int, proc PubSubProcessor)
 	NewMutex(name string, expiry time.Duration) LockErr
 }
 
+// redisService 是 RedisDB 的默认实现。
 type redisService struct {
 	rdb      *redis.Client
 	mutexGen *redsync.Redsync
 }
 
-// Client exposes redis.Cmdable interface
+// Client 返回底层 redis.Cmdable 接口供调用方执行命令。
 func (r redisService) Client() redis.Cmdable {
 	return r.rdb
 }
 
+// PubSubProcessor 处理 Redis Pub/Sub 消息与连接错误。
 type PubSubProcessor interface {
 	ProcessMessage(s string)
 	ProcessError(err error)
 }
 
+// backoffDurations 定义 Pub/Sub 断线重连的递增退避间隔。
 var backoffDurations = []time.Duration{
 	0, time.Second, 3 * time.Second, 5 * time.Second, 10 * time.Second, 20 * time.Second,
 }
 
-// Subscribe subscribes to a redis pub-sub channel. The messages are processed with the supplied PubSubProcessor.
-// In case of en error the function will automatically reconnect with an increasing back of delay.
-// The only way to exit this function is to terminate or expire the supplied context.
+// Subscribe 订阅指定 Redis 频道，通过 proc 处理消息；出错时按退避策略自动重连。
+// 仅当 context 取消或超时时才会退出。
 func (r redisService) Subscribe(ctx context.Context, channelName string, channelSize int, proc PubSubProcessor) {
 	var connectTry int
 	for {
 		err := func() (err error) {
 			defer func() {
-				// panic recovery because external PubSubProcessor methods might cause panics.
+				// 捕获外部 PubSubProcessor 可能触发的 panic。
 				if p := recover(); p != nil {
 					err = fmt.Errorf("redis pubsub: panic: %v", p)
 				}
@@ -116,13 +121,13 @@ func (r redisService) Subscribe(ctx context.Context, channelName string, channel
 				_ = pubsub.Close()
 			}()
 
-			// make sure the connection is successful
+			// 确认订阅连接可用
 			err = pubsub.Ping(ctx)
 			if err != nil {
 				return
 			}
 
-			connectTry = 0 // successfully connected, reset the counter
+			connectTry = 0 // 连接成功，重置重试计数
 
 			logrus.
 				WithField("try", connectTry+1).
@@ -146,7 +151,7 @@ func (r redisService) Subscribe(ctx context.Context, channelName string, channel
 			}
 		}()
 		if err == nil {
-			// should not happen, the function should always exit with an error
+			// 不应发生：内部循环应始终以错误退出
 			continue
 		}
 
@@ -176,6 +181,7 @@ func (r redisService) Subscribe(ctx context.Context, channelName string, channel
 	}
 }
 
+// NewMutex 创建带可选过期时间的 redsync 分布式互斥锁。
 func (r redisService) NewMutex(name string, expiry time.Duration) LockErr {
 	var options []redsync.Option
 	if expiry > 0 {

@@ -16,14 +16,14 @@ package session
 
 import "time"
 
-// Config provides the session configuration.
+// Config 定义 Cookie 会话的安全标志、签名密钥与超时时间。
 type Config struct {
 	Secure  bool
 	Secret  string
 	Timeout time.Duration
 }
 
-// NewConfig returns a new session configuration.
+// NewConfig 构造会话配置。
 func NewConfig(secret string, timeout time.Duration, secure bool) Config {
 	return Config{
 		Secure:  secure,

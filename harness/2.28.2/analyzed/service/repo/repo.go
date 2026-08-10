@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// repo 包通过 SCM 客户端访问远程代码仓库信息与权限。
 package repo
 
 import (
@@ -21,6 +22,7 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
+// service 实现 core.RepositoryService，封装 SCM 仓库 API 调用。
 type service struct {
 	renew      core.Renewer
 	client     *scm.Client
@@ -28,8 +30,7 @@ type service struct {
 	trusted    bool
 }
 
-// New returns a new Repository service, providing access to the
-// repository information from the source code management system.
+// New 创建 Repository 服务，提供对 SCM 仓库元数据的访问。
 func New(client *scm.Client, renewer core.Renewer, visibility string, trusted bool) core.RepositoryService {
 	return &service{
 		renew:      renewer,
@@ -39,6 +40,7 @@ func New(client *scm.Client, renewer core.Renewer, visibility string, trusted bo
 	}
 }
 
+// List 分页拉取当前用户在 SCM 上的全部仓库并转换为本地结构。
 func (s *service) List(ctx context.Context, user *core.User) ([]*core.Repository, error) {
 	err := s.renew.Renew(ctx, user, false)
 	if err != nil {
@@ -71,6 +73,7 @@ func (s *service) List(ctx context.Context, user *core.User) ([]*core.Repository
 	return repos, nil
 }
 
+// Find 按 slug 查询单个远程仓库。
 func (s *service) Find(ctx context.Context, user *core.User, repo string) (*core.Repository, error) {
 	err := s.renew.Renew(ctx, user, false)
 	if err != nil {
@@ -88,6 +91,7 @@ func (s *service) Find(ctx context.Context, user *core.User, repo string) (*core
 	return convertRepository(result, s.visibility, s.trusted), nil
 }
 
+// FindPerm 查询当前用户对指定仓库的读/写/管理权限。
 func (s *service) FindPerm(ctx context.Context, user *core.User, repo string) (*core.Perm, error) {
 	err := s.renew.Renew(ctx, user, false)
 	if err != nil {

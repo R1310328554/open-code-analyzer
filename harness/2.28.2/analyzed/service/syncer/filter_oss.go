@@ -18,16 +18,15 @@ package syncer
 
 import "github.com/drone/drone/core"
 
-// FilterFunc can be used to filter which repositories are
-// synchronized with the local datastore.
+// FilterFunc 决定哪些远程仓库应同步到本地数据存储。
 type FilterFunc func(*core.Repository) bool
 
-// NamespaceFilter is a no-op filter.
+// NamespaceFilter 在 OSS 构建中为无操作实现，始终同步全部仓库。
 func NamespaceFilter(namespaces []string) FilterFunc {
 	return noopFilter
 }
 
-// noopFilter is a filter function that always returns true.
+// noopFilter 始终返回 true 的空操作过滤器。
 func noopFilter(*core.Repository) bool {
 	return true
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/gosimple/slug"
 )
 
+// createLabel 按构建事件类型生成 SCM 状态检查的标签名。
 func createLabel(name, event, deployTo string) string {
 	if name == "" {
 		name = "continuous-integration/drone"
@@ -40,6 +41,7 @@ func createLabel(name, event, deployTo string) string {
 	}
 }
 
+// createDesc 将内部构建状态映射为面向用户的英文描述文本。
 func createDesc(state string) string {
 	switch state {
 	case core.StatusBlocked:
@@ -67,6 +69,7 @@ func createDesc(state string) string {
 	}
 }
 
+// convertStatus 将 Drone 构建状态转换为 go-scm 的 State 枚举。
 func convertStatus(state string) scm.State {
 	switch state {
 	case core.StatusBlocked:

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// status 包向 SCM 提交构建/commit 状态检查。
 package status
 
 import (
@@ -23,14 +24,14 @@ import (
 	"github.com/drone/go-scm/scm/driver/github"
 )
 
-// Config configures the Status service.
+// Config 配置 Status 服务的基址 URL、上下文名称与是否禁用。
 type Config struct {
 	Base     string
 	Name     string
 	Disabled bool
 }
 
-// New returns a new StatusService
+// New 创建 core.StatusService 实现。
 func New(client *scm.Client, renew core.Renewer, config Config) core.StatusService {
 	return &service{
 		client:   client,
@@ -41,6 +42,7 @@ func New(client *scm.Client, renew core.Renewer, config Config) core.StatusServi
 	}
 }
 
+// service 实现向 SCM 推送构建状态。
 type service struct {
 	renew    core.Renewer
 	client   *scm.Client
@@ -49,6 +51,7 @@ type service struct {
 	disabled bool
 }
 
+// Send 将构建状态同步到 SCM；服务禁用或 cron 事件时直接跳过。
 func (s *service) Send(ctx context.Context, user *core.User, req *core.StatusInput) error {
 	if s.disabled || req.Build.Event == core.EventCron {
 		return nil
@@ -64,10 +67,9 @@ func (s *service) Send(ctx context.Context, user *core.User, req *core.StatusInp
 		Refresh: user.Refresh,
 	})
 
-	// HACK(bradrydzewski) provides support for the github deployment API
+	// HACK(bradrydzewski) 支持 GitHub Deployment API
 	if req.Build.DeployID != 0 && s.client.Driver == scm.DriverGithub {
-		// TODO(bradrydzewski) only update the deployment status when the
-		// build completes.
+		// TODO(bradrydzewski) 仅在构建完成时更新部署状态
 		if req.Build.Finished == 0 {
 			return nil
 		}

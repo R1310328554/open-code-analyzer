@@ -12,15 +12,12 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// FilterFunc can be used to filter which repositories are
-// synchronized with the local datastore.
+// FilterFunc 决定哪些远程仓库应同步到本地数据存储。
 type FilterFunc func(*core.Repository) bool
 
-// NamespaceFilter is a filter function that returns true
-// if the repository namespace matches a provided namespace
-// in the list.
+// NamespaceFilter 返回仅允许指定命名空间（大小写不敏感）通过的过滤器。
 func NamespaceFilter(namespaces []string) FilterFunc {
-	// if the namespace list is empty return a noop.
+	// 命名空间列表为空时退化为全量通过。
 	if len(namespaces) == 0 {
 		return noopFilter
 	}
@@ -34,7 +31,7 @@ func NamespaceFilter(namespaces []string) FilterFunc {
 	}
 }
 
-// noopFilter is a filter function that always returns true.
+// noopFilter 始终返回 true 的空操作过滤器。
 func noopFilter(*core.Repository) bool {
 	return true
 }

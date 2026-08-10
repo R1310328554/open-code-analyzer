@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// batch 包在单事务中批量插入、更新仓库并同步权限。
 package batch
 
 import (
@@ -24,24 +25,24 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new Batcher.
+// New 创建 core.Batcher 实现。
 func New(db *db.DB) core.Batcher {
 	return &batchUpdater{db}
 }
 
+// batchUpdater 在数据库事务中执行仓库同步批量操作。
 type batchUpdater struct {
 	db *db.DB
 }
 
+// Batch 应用 Insert/Update/Revoke 三类变更，并重置用户全部权限的 synced 标记。
 func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.Batch) error {
 	return b.db.Update(func(execer db.Execer, binder db.Binder) error {
 		now := time.Now().Unix()
 
 		//
-		// the repository list API does not return permissions, which means we have
-		// no way of knowing if permissions are current or not. We therefore mark all
-		// permissions stale in the database, so that each one must be individually
-		// verified at runtime.
+		// 仓库列表 API 不返回权限详情，因此先将该用户所有权限标记为 stale，
+		// 后续访问时再逐条校验。
 		//
 
 		stmt := permResetStmt
@@ -58,8 +59,8 @@ func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.B
 		for _, repo := range batch.Insert {
 
 			//
-			// insert repository
-			// TODO: group inserts in batches of N
+			// 插入新仓库
+			// TODO: 按 N 条分批插入
 			//
 
 			stmt := repoInsertIgnoreStmt
@@ -81,8 +82,8 @@ func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.B
 			}
 
 			//
-			// insert permissions
-			// TODO: group inserts in batches of N
+			// 插入默认读权限
+			// TODO: 按 N 条分批插入
 			//
 
 			stmt = permInsertIgnoreStmt
@@ -105,8 +106,8 @@ func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.B
 		}
 
 		//
-		// update existing repositories
-		// TODO: group updates in batches of N
+		// 更新已有仓库元数据
+		// TODO: 按 N 条分批更新
 		//
 
 		for _, repo := range batch.Update {
@@ -140,8 +141,8 @@ func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.B
 		}
 
 		//
-		// revoke permissions
-		// TODO: group deletes in batches of N
+		// 撤销远程已不可见仓库的权限
+		// TODO: 按 N 条分批删除
 		//
 
 		for _, repo := range batch.Revoke {
@@ -264,6 +265,8 @@ UPDATE repos SET
 WHERE repo_id=$10
 `
 
+// permInsertIgnoreStmt 等语句在 SQLite/MySQL/Postgres 间按驱动选择。
+
 const permInsertIgnoreStmt = `
 INSERT OR IGNORE INTO perms (
  perm_user_id
@@ -330,9 +333,7 @@ INSERT INTO perms (
 ) ON CONFLICT DO NOTHING
 `
 
-// this resets the synced date indicating that
-// the system should refresh the permissions next
-// time the user attempts to access the resource
+// permResetStmt 将 synced 置零，表示下次访问需重新校验权限。
 const permResetStmt = `
 UPDATE perms SET
  perm_updated = ?
