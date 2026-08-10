@@ -15,23 +15,8 @@
     "transport/src/main/java/io/netty/channel/ChannelOutboundHandlerAdapter.java",
     "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
     "transport/src/main/java/io/netty/channel/ChannelPipeline.java",
-    "transport/src/main/java/io/netty/channel/ChannelPipelineException.java",
-    "transport/src/main/java/io/netty/channel/ChannelProgressiveFuture.java",
-    "transport/src/main/java/io/netty/channel/ChannelProgressiveFutureListener.java",
-    "transport/src/main/java/io/netty/channel/ChannelProgressivePromise.java",
-    "transport/src/main/java/io/netty/channel/ChannelPromise.java",
-    "transport/src/main/java/io/netty/channel/ChannelPromiseAggregator.java",
-    "transport/src/main/java/io/netty/channel/ChannelPromiseNotifier.java",
-    "transport/src/main/java/io/netty/channel/CoalescingBufferQueue.java",
-    "transport/src/main/java/io/netty/channel/CombinedChannelDuplexHandler.java",
-    "transport/src/main/java/io/netty/channel/CompleteChannelFuture.java",
-    "transport/src/main/java/io/netty/channel/ConnectTimeoutException.java",
-    "transport/src/main/java/io/netty/channel/DefaultAddressedEnvelope.java",
-    "transport/src/main/java/io/netty/channel/DefaultChannelConfig.java",
-    "transport/src/main/java/io/netty/channel/DefaultChannelHandlerContext.java",
-    "transport/src/main/java/io/netty/channel/DefaultChannelId.java",
-    "transport/src/main/java/io/netty/channel/DefaultChannelPipeline.java"
+    "transport/src/main/java/io/netty/channel/ChannelPipelineException.java"
   ],
   "remaining_pending": 338,
-  "done": 1560
+  "done": 1575
 }
