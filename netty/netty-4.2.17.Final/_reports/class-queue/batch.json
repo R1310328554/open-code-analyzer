@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:52:36Z",
-  "files": [
-    "handler/src/main/java/io/netty/handler/ssl/JdkAlpnSslUtils.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkApplicationProtocolNegotiator.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkBaseApplicationProtocolNegotiator.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkDefaultApplicationProtocolNegotiator.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkDelegatingPrivateKeyMethod.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkSslClientContext.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkSslContext.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkSslEngine.java",
-    "handler/src/main/java/io/netty/handler/ssl/JdkSslServerContext.java",
-    "handler/src/main/java/io/netty/handler/ssl/NonOwnedOpenSslCredential.java",
-    "handler/src/main/java/io/netty/handler/ssl/NotSslRecordException.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSsl.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslApplicationProtocolNegotiator.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslAsyncPrivateKeyMethod.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslCachingKeyMaterialProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 578,
-  "done": 1335
+  "done": 1350
 }
