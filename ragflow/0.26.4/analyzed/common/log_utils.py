@@ -1,3 +1,4 @@
+# 根日志初始化：轮转文件 + 控制台，支持 LOG_LEVELS 按包名动态级别。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# 根日志初始化：轮转文件 + 控制台，支持 LOG_LEVELS 按包名动态级别。
+
 
 import os
 import os.path
@@ -20,11 +23,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 from common.file_utils import get_project_base_directory
 
-initialized_root_logger = False
+initialized_root_logger = False  # 防止重复 init_root_logger
 pkg_levels = {}  # module-level to allow runtime modification
 
 
 def init_root_logger(logfile_basename: str, log_format: str = "%(asctime)-15s %(levelname)-8s %(process)d %(message)s"):
+    # 配置 logs/<basename>.log 轮转文件与 StreamHandler
     global initialized_root_logger, pkg_levels
     if initialized_root_logger:
         return
@@ -74,7 +78,7 @@ def init_root_logger(logfile_basename: str, log_format: str = "%(asctime)-15s %(
 
 
 def set_log_level(pkg_name: str, level: str) -> bool:
-    """Set log level for a package at runtime. Returns True if successful."""
+    """运行时调整指定包的日志级别。"""
     global pkg_levels
     level_value = logging.getLevelName(level.strip().upper())
     if not isinstance(level_value, int):
@@ -86,12 +90,13 @@ def set_log_level(pkg_name: str, level: str) -> bool:
 
 
 def get_log_levels() -> dict:
-    """Get current log levels for all packages."""
+    """返回当前各包的日志级别快照。"""
     global pkg_levels
     return dict(pkg_levels)
 
 
 def log_exception(e, *args):
+    # 记录异常并尝试从 args 提取 .text 后重新抛出
     logging.exception(e)
     for a in args:
         try:

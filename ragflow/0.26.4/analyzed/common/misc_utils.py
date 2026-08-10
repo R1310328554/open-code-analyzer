@@ -1,3 +1,4 @@
+# 杂项工具：UUID、OAuth 头像下载（SSRF 防护）、哈希、字节格式化与线程池执行。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# 杂项工具：UUID、OAuth 头像下载（SSRF 防护）、哈希、字节格式化与线程池执行。
+
 
 import asyncio
 import base64
@@ -33,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_uuid():
+    # 返回 uuid1 十六进制字符串
     return uuid.uuid1().hex
 
 
@@ -44,6 +48,7 @@ _REDIRECT_STATUS = frozenset({301, 302, 303, 307, 308})
 
 
 async def download_img(url):
+    # 安全下载 OAuth 头像并转为 data URI；每跳 SSRF 校验与 DNS 固定
     """Fetch an image URL and return a data URI, or empty string on failure / SSRF block.
 
     URLs must resolve only to globally routable addresses; redirects are followed
@@ -167,10 +172,12 @@ async def download_img(url):
 
 
 def hash_str2int(line: str, mod: int = 10**8) -> int:
+    # SHA1 哈希取模，用于分片或采样
     return int(hashlib.sha1(line.encode("utf-8")).hexdigest(), 16) % mod
 
 
 def convert_bytes(size_in_bytes: int) -> str:
+    # 人类可读字节大小（B/KB/MB/…）
     """
     Format size in bytes.
     """
@@ -194,6 +201,7 @@ def convert_bytes(size_in_bytes: int) -> str:
 
 
 def once(func):
+    # 线程安全的一次性执行装饰器，缓存首次结果
     """
     A thread-safe decorator that ensures the decorated function runs exactly once,
     caching and returning its result for all subsequent calls. This prevents
@@ -254,6 +262,7 @@ def _thread_pool_executor():
 
 
 async def thread_pool_exec(func, *args, **kwargs):
+    # 在线程池执行阻塞函数并传播 contextvars
     # loop.run_in_executor() submits the callable without propagating the caller's
     # contextvars (unlike asyncio.to_thread, which copies the context). Copy the
     # current context and run the callable inside it so ContextVars set by the

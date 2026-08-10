@@ -1,3 +1,4 @@
+# 项目根目录解析与目录树文件遍历。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,13 +14,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# 项目根目录解析与目录树文件遍历。
+
 
 import os
 
-PROJECT_BASE = None
+PROJECT_BASE = None  # 进程内缓存的项目根路径
 
 
 def _default_project_base_directory():
+    # 默认以 common/ 的上级目录为项目根
     return os.path.abspath(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -29,6 +33,7 @@ def _default_project_base_directory():
 
 
 def get_project_base_directory(*args):
+    # 优先 RAG_PROJECT_BASE / RAG_DEPLOY_BASE，否则缓存默认根
     global PROJECT_BASE
 
     project_base = os.getenv("RAG_PROJECT_BASE") or os.getenv("RAG_DEPLOY_BASE")
@@ -43,6 +48,7 @@ def get_project_base_directory(*args):
 
 
 def traversal_files(base):
+    # os.walk 递归 yield 所有文件绝对路径
     for root, ds, fs in os.walk(base):
         for f in fs:
             fullname = os.path.join(root, f)

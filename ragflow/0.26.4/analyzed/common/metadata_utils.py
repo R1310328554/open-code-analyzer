@@ -1,3 +1,4 @@
+# 文档元数据内存过滤、条件下推协调与 JSON Schema 互转。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# 文档元数据内存过滤、条件下推协调与 JSON Schema 互转。
+
 import ast
 import logging
 from typing import Any, Callable, Dict
@@ -21,6 +24,7 @@ import json_repair
 
 
 def convert_conditions(metadata_condition):
+    # 将 UI/API 的 comparison_operator 映射为 meta_filter 操作符
     if metadata_condition is None:
         metadata_condition = {}
     op_mapping = {"is": "=", "not is": "≠", ">=": "≥", "<=": "≤", "!=": "≠"}
@@ -28,6 +32,7 @@ def convert_conditions(metadata_condition):
 
 
 def meta_filter(metas: dict, filters: list[dict], logic: str = "and"):
+    # 在内存中按元数据条件过滤 doc_id 集合，支持日期与大小写规则
     doc_ids = None
 
     def normalize_string_values(value):
@@ -252,6 +257,8 @@ async def apply_meta_data_filter(
 
 
 def _try_meta_pushdown(
+    # 优先 ES/Infinity 下推，失败时回退 meta_filter
+
     kb_ids: list[str],
     conditions: list[dict],
     logic: str,
@@ -275,6 +282,7 @@ def _try_meta_pushdown(
 
 
 def dedupe_list(values: list) -> list:
+    # 保序去重
     seen = set()
     deduped = []
     for item in values:
@@ -287,6 +295,7 @@ def dedupe_list(values: list) -> list:
 
 
 def update_metadata_to(metadata, meta):
+    # 按用户编辑的 meta 列表合并/覆盖 document metadata 字段
     if not meta:
         return metadata
     if isinstance(meta, str):
@@ -322,6 +331,7 @@ def update_metadata_to(metadata, meta):
 
 
 def metadata_schema(metadata: dict | list | None) -> Dict[str, Any]:
+    # 推断或规范化 metadata 的 JSON Schema 描述
     if not metadata:
         return {}
     properties = {}
@@ -374,6 +384,7 @@ def _is_metadata_list(obj: list) -> bool:
 
 
 def turn2jsonschema(obj: dict | list) -> Dict[str, Any]:
+    # 将 metadata 定义列表转为标准 JSON Schema
     if isinstance(obj, dict) and _is_json_schema(obj):
         return obj
     if isinstance(obj, list) and _is_metadata_list(obj):

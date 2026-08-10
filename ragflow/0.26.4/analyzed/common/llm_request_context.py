@@ -14,7 +14,10 @@
 #  limitations under the License.
 #
 
-"""Per-request identifiers forwarded to upstream LLM providers.
+"""
+按请求上下文变量向上游 LLM 传递 session_id/user_id，映射为 OpenAI 标准 user 字段。
+
+Per-request identifiers forwarded to upstream LLM providers.
 
 An agent run (or any LLM-issuing flow) installs the originating ``session_id`` /
 ``user_id`` here. The chat model layer reads it and forwards an end-user
@@ -29,15 +32,12 @@ The value is a small dict (or ``None`` when no request context is active), e.g.
 import contextvars
 import logging
 
+# 协程/线程安全的 per-request 上下文
 llm_request_context: contextvars.ContextVar = contextvars.ContextVar("ragflow_llm_request_context", default=None)
 
 
 def set_llm_request_context(session_id: str | None = None, user_id: str | None = None):
-    """Install the current request identifiers and return the reset token.
-
-    Pass the returned token to ``reset_llm_request_context`` (typically in a
-    ``finally`` block) so the value does not leak to later calls in the same task.
-    """
+    """安装当前请求的 session/user 标识，返回 reset 令牌（须在 finally 中 reset）。"""
     ctx = {}
     if session_id:
         ctx["session_id"] = str(session_id)[:128]
@@ -49,6 +49,7 @@ def set_llm_request_context(session_id: str | None = None, user_id: str | None =
 
 
 def reset_llm_request_context(token) -> None:
+    # 恢复上下文；跨上下文或 token 已消费时降级为清空
     try:
         llm_request_context.reset(token)
     except (ValueError, RuntimeError):
@@ -60,11 +61,7 @@ def reset_llm_request_context(token) -> None:
 
 
 def current_llm_user() -> str | None:
-    """Return the identifier to forward as the provider ``user`` field.
-
-    Prefers ``session_id`` (so upstream activity can be traced per chat session),
-    falling back to ``user_id``. Returns ``None`` when no context is active.
-    """
+    """返回应作为 provider user 字段转发的标识，优先 session_id。"""
     ctx = llm_request_context.get()
     if not ctx:
         return None

@@ -13,7 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""Translate RAGflow document-metadata filter lists into Elasticsearch DSL.
+"""
+将 RAGflow 文档元数据过滤条件翻译为 Elasticsearch bool DSL，实现检索下推。
+
+Translate RAGflow document-metadata filter lists into Elasticsearch DSL.
 
 The legacy ``common.metadata_utils.meta_filter`` evaluates user-defined
 metadata conditions in Python after loading every document's metadata into
@@ -87,6 +90,7 @@ MULTIVALUE_UNSAFE_NEGATIVE_OPS: frozenset[str] = frozenset({"≠", "not in"})
 
 
 class UnsupportedMetaFilter(Exception):
+    # 无法翻译为 ES DSL 时抛出，调用方回退内存 meta_filter
     """Raised when a metadata filter cannot be expressed as ES DSL.
 
     Carries the filter that failed so callers can log a precise reason and the
@@ -101,6 +105,7 @@ class UnsupportedMetaFilter(Exception):
 
 @dataclass
 class TranslatedFilter:
+    # 单条用户过滤对应的 must/must_not ES 子句
     """A single user filter rendered as one or more ES bool clauses.
 
     A clause that wants the field to be present (``≠``, ``not in``, range,
@@ -136,6 +141,7 @@ class TranslatedFilter:
 
 @dataclass
 class MetaFilterPushdownPlan:
+    # 多条过滤合并后的 ES 查询计划
     """Composed ES bool query body for an entire RAGflow filter request."""
 
     logic: str
@@ -178,6 +184,7 @@ class MetaFilterPushdownPlan:
 
 
 class MetaFilterTranslator:
+    # 逐条将 RAGflow 操作符映射为 term/range/wildcard 等 ES 子句
     """Translate one user filter clause at a time into ES DSL fragments.
 
     Stateless aside from configuration; safe to instantiate once per request
@@ -313,6 +320,8 @@ class MetaFilterTranslator:
 
 
 def build_meta_filter_query(
+    # 生成完整 ES bool 查询 JSON
+
     filters: Sequence[Dict[str, Any]],
     logic: str,
     kb_ids: Sequence[str],
@@ -347,6 +356,7 @@ def plan_pushdown(
 
 
 def is_pushdown_supported(filters: Sequence[Dict[str, Any]]) -> bool:
+    # 预判过滤列表是否均可下推（含多值不安全负向操作符检查）
     """Cheap pre-check: do all filters look translatable without coercion?
 
     Used by the routing layer to skip the heavier ``plan_pushdown`` call when
@@ -369,6 +379,7 @@ def is_pushdown_supported(filters: Sequence[Dict[str, Any]]) -> bool:
 
 
 def extract_doc_ids(es_response: Dict[str, Any]) -> List[str]:
+    # 从 ES 检索响应提取 document id 列表
     """Pull doc IDs out of an ES search response shaped like ``{hits:{hits:[...]}}``.
 
     Tolerates both the dict-typed ES 7+ response and the dict-coerced

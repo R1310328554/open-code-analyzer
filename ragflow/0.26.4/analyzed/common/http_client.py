@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 基于 httpx 的同步/异步 HTTP 客户端：重试、退避与日志脱敏。
 import asyncio
 import logging
 import os
@@ -23,6 +24,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+# 默认参数偏保守，可通过环境变量覆盖。
 # Default knobs; keep conservative to avoid unexpected behavioural changes.
 DEFAULT_TIMEOUT = float(os.environ.get("HTTP_CLIENT_TIMEOUT", "15"))
 # Align with requests default: follow redirects with a max of 30 unless overridden.
@@ -35,6 +37,7 @@ DEFAULT_USER_AGENT = os.environ.get("HTTP_CLIENT_USER_AGENT", "ragflow-http-clie
 
 
 def _clean_headers(headers: Optional[Dict[str, str]], auth_token: Optional[str] = None) -> Optional[Dict[str, str]]:
+    # 合并 User-Agent 与 Authorization，过滤 None 值
     merged_headers: Dict[str, str] = {}
     if DEFAULT_USER_AGENT:
         merged_headers["User-Agent"] = DEFAULT_USER_AGENT
@@ -55,6 +58,7 @@ _SENSITIVE_QUERY_KEYS = {"client_secret", "secret", "code", "access_token", "ref
 
 
 def _redact_sensitive_url_params(url: str) -> str:
+    # 日志用安全 URL：去掉 query/userinfo 以防泄露 token
     """
     Return a version of the URL that is safe to log.
 
@@ -86,6 +90,7 @@ def _redact_sensitive_url_params(url: str) -> str:
 
 
 def _is_sensitive_url(url: str) -> bool:
+    # 是否为已配置的 OAuth 端点（日志中跳过详细 URL）
     """Return True if URL is one of the configured OAuth endpoints."""
     # Collect known sensitive endpoint URLs from settings
     oauth_urls = set()
@@ -129,7 +134,7 @@ async def async_request(
     proxy: Any = None,
     **kwargs: Any,
 ) -> httpx.Response:
-    """Lightweight async HTTP wrapper using httpx.AsyncClient with safe defaults."""
+    """基于 httpx.AsyncClient 的轻量异步 HTTP 封装，含指数退避重试。"""
     timeout = request_timeout if request_timeout is not None else DEFAULT_TIMEOUT
     follow_redirects = DEFAULT_FOLLOW_REDIRECTS if follow_redirects is None else follow_redirects
     max_redirects = DEFAULT_MAX_REDIRECTS if max_redirects is None else max_redirects
@@ -183,7 +188,7 @@ def sync_request(
     proxy: Any = None,
     **kwargs: Any,
 ) -> httpx.Response:
-    """Synchronous counterpart to async_request, for CLI/tests or sync contexts."""
+    """async_request 的同步版本，供 CLI/测试或阻塞上下文使用。"""
     timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
     follow_redirects = DEFAULT_FOLLOW_REDIRECTS if follow_redirects is None else follow_redirects
     max_redirects = DEFAULT_MAX_REDIRECTS if max_redirects is None else max_redirects

@@ -1,3 +1,4 @@
+# MCP 工具调用会话：SSE/Streamable HTTP 传输、独立事件循环与 OpenAI 工具格式转换。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# MCP 工具调用会话：SSE/Streamable HTTP 传输、独立事件循环与 OpenAI 工具格式转换。
+
 
 import asyncio
 import logging
@@ -37,16 +40,19 @@ MCPTask = tuple[MCPTaskType, dict[str, Any], asyncio.Queue[Any]]
 
 
 class ToolCallSession(Protocol):
+    # 同步 tool_call 协议，供 Agent 绑定 MCP 工具
     def tool_call(self, name: str, arguments: dict[str, Any], timeout: float | int = 10) -> str: ...
 
 
 @dataclass(frozen=True)
 class MCPToolBinding:
+    # 将 MCP 原始工具名绑定到可调用会话
     session: ToolCallSession
     original_name: str
 
 
 class MCPToolCallSession(ToolCallSession):
+    # 后台线程运行 asyncio 循环，队列串行处理 list_tools/tool_call
     _ALL_INSTANCES: weakref.WeakSet["MCPToolCallSession"] = weakref.WeakSet()
 
     def __init__(self, mcp_server: Any, server_variables: dict[str, Any] | None = None, custom_header=None) -> None:
@@ -65,6 +71,7 @@ class MCPToolCallSession(ToolCallSession):
         asyncio.run_coroutine_threadsafe(self._mcp_server_loop(), self._event_loop)
 
     async def _mcp_server_loop(self) -> None:
+        # 按 server_type 建立 SSE 或 Streamable HTTP 长连接并处理任务队列
         url = self._mcp_server.url.strip()
         raw_headers: dict[str, str] = self._mcp_server.headers or {}
         custom_header: dict[str, str] = self._custom_header or {}
@@ -218,6 +225,7 @@ class MCPToolCallSession(ToolCallSession):
 
     @override
     def tool_call(self, name: str, arguments: dict[str, Any], timeout: float | int = 10) -> str:
+        # 同步包装：向事件循环提交 call_tool 并阻塞等待结果
         if self._close:
             return "Error: Session is closed"
 
@@ -309,6 +317,7 @@ def close_multiple_mcp_toolcall_sessions(sessions: list[MCPToolCallSession]) -> 
 
 
 def shutdown_all_mcp_sessions():
+    # 进程退出前优雅关闭所有 MCPToolCallSession 实例
     """Gracefully shutdown all active MCPToolCallSession instances."""
     sessions = list(MCPToolCallSession._ALL_INSTANCES)
     if not sessions:
@@ -321,6 +330,7 @@ def shutdown_all_mcp_sessions():
 
 
 def mcp_tool_metadata_to_openai_tool(mcp_tool: Tool | dict, function_name: str | None = None) -> dict[str, Any]:
+    # 将 MCP Tool 元数据转为 OpenAI function calling schema
     if isinstance(mcp_tool, dict):
         return {
             "type": "function",

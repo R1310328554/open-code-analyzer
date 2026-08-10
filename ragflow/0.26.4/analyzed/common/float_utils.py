@@ -17,6 +17,8 @@
 
 def get_float(v):
     """
+    将任意值安全转为 float；None 或转换失败时返回负无穷。
+
     Convert a value to float, handling None and exceptions gracefully.
 
     Attempts to convert the input value to a float. If the value is None or
@@ -48,6 +50,7 @@ def get_float(v):
 
 
 def normalize_overlapped_percent(overlapped_percent):
+    # 将重叠百分比规范到 0–90 整数；(0,1) 区间按小数比例乘 100
     try:
         value = float(overlapped_percent)
     except (TypeError, ValueError):

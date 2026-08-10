@@ -13,7 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""Translate RAGflow document-metadata filter lists into Infinity SQL filter expressions."""
+"""
+将 RAGflow 文档元数据过滤条件翻译为 Infinity SQL WHERE 片段（JSON 函数）。
+
+Translate RAGflow document-metadata filter lists into Infinity SQL filter expressions."""
 
 from __future__ import annotations
 
@@ -57,6 +60,7 @@ _RANGE_OPS: Dict[str, str] = {
 
 
 class MetaFilterTranslator:
+    # 单条过滤 → JSON_EXTRACT / JSON_CONTAINS 等 SQL 谓词
     """Translate one user filter clause at a time into Infinity SQL filter strings."""
 
     def translate(self, flt: Dict[str, Any]) -> str:
@@ -189,6 +193,7 @@ class MetaFilterTranslator:
 
 
 def plan_pushdown(filters: Sequence[Dict[str, Any]], logic: str) -> List[str]:
+    # 逐条翻译过滤，logic 决定 AND/OR 组合方式
     if logic not in {"and", "or"}:
         raise ValueError(f"unknown logic {logic!r}")
     translator = MetaFilterTranslator()
@@ -196,6 +201,7 @@ def plan_pushdown(filters: Sequence[Dict[str, Any]], logic: str) -> List[str]:
 
 
 def build_infinity_filter(filters: Sequence[Dict[str, Any]], logic: str) -> str:
+    # 合并为单条 Infinity SQL filter 字符串
     if not filters:
         return "1=1"
     fragments = plan_pushdown(filters, logic)
@@ -205,6 +211,7 @@ def build_infinity_filter(filters: Sequence[Dict[str, Any]], logic: str) -> str:
 
 
 def is_pushdown_supported(filters: Sequence[Dict[str, Any]]) -> bool:
+    # 检查是否所有操作符与键名均可翻译
     for flt in filters:
         op = flt.get("op")
         if op not in SUPPORTED_OPERATORS:
@@ -215,6 +222,7 @@ def is_pushdown_supported(filters: Sequence[Dict[str, Any]]) -> bool:
 
 
 def extract_doc_ids(df) -> List[str]:
+    # 从 Infinity 查询结果 DataFrame 提取 id 列
     if df is None or not hasattr(df, "iterrows"):
         return []
     return [str(row["id"]) for _, row in df.iterrows() if "id" in row]

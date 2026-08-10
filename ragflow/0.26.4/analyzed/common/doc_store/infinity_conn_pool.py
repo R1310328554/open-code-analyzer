@@ -1,3 +1,4 @@
+# Infinity 连接池：单例、启动健康检查与 PostgreSQL 协议 URI。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# Infinity 连接池：单例、启动健康检查与 PostgreSQL 协议 URI。
+
 import logging
 import os
 import time
@@ -27,6 +30,7 @@ from common.decorator import singleton
 
 @singleton
 class InfinityConnectionPool:
+    # @singleton 进程内共享 ConnectionPool，最多等待 120s 直至节点 healthy
     def __init__(self):
         if hasattr(settings, "INFINITY"):
             self.INFINITY_CONFIG = settings.INFINITY
@@ -79,6 +83,7 @@ class InfinityConnectionPool:
         return self.conn_pool
 
     def get_conn_uri(self):
+        # 返回 PostgreSQL 协议连接串，供 psycopg 等客户端使用
         """
         Get connection URI for PostgreSQL protocol.
         """
@@ -92,6 +97,7 @@ class InfinityConnectionPool:
         return f"host=localhost port={postgres_port} dbname={db_name}"
 
     def refresh_conn_pool(self):
+        # 节点不健康时销毁并重建连接池
         try:
             inf_conn = self.conn_pool.get_conn()
             res = inf_conn.show_current_node()
@@ -112,4 +118,4 @@ class InfinityConnectionPool:
             self.conn_pool.destroy()
 
 
-INFINITY_CONN = InfinityConnectionPool()
+INFINITY_CONN = InfinityConnectionPool()  # 模块级全局 Infinity 连接池

@@ -1,3 +1,4 @@
+# OceanBase 连接池：ObVecClient、版本校验与可选 HybridSearch 客户端。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# OceanBase 连接池：ObVecClient、版本校验与可选 HybridSearch 客户端。
+
 import logging
 import os
 import time
@@ -33,6 +36,7 @@ logger = logging.getLogger("ragflow.ob_conn_pool")
 
 @singleton
 class OceanBaseConnectionPool:
+    # @singleton：ObVecClient 连接池，要求 OB 版本 >= 4.3.5.1
     def __init__(self):
         self.client = None
         self.es = None  # HybridSearch client
@@ -99,6 +103,7 @@ class OceanBaseConnectionPool:
         logger.info(f"OceanBase {self.uri} is healthy.")
 
     def _check_ob_version(self):
+        # 查询 OB_VERSION() 并校验最低版本
         try:
             res = self.client.perform_raw_text_sql("SELECT OB_VERSION() FROM DUAL").fetchone()
             version_str = res[0] if res else None
@@ -114,6 +119,7 @@ class OceanBaseConnectionPool:
             raise Exception(f"The version of OceanBase needs to be higher than or equal to 4.3.5.1, current version is {version_str}")
 
     def _try_to_update_ob_query_timeout(self):
+        # 按需调大 GLOBAL ob_query_timeout 并刷新连接池
         try:
             rows = self.client.perform_raw_text_sql("SHOW VARIABLES LIKE 'ob_query_timeout'")
             for row in rows:
@@ -132,6 +138,7 @@ class OceanBaseConnectionPool:
             logger.warning(f"Failed to set 'ob_query_timeout' variable: {str(e)}")
 
     def _init_hybrid_search(self, max_connections, max_overflow, pool_timeout):
+        # ENABLE_HYBRID_SEARCH 为真时初始化 HybridSearch，版本不符则降级
         enable_hybrid_search = os.getenv("ENABLE_HYBRID_SEARCH", "false").lower() in ["true", "1", "yes", "y"]
         if enable_hybrid_search:
             try:
@@ -185,4 +192,4 @@ class OceanBaseConnectionPool:
                 pass
 
 
-OB_CONN = OceanBaseConnectionPool()
+OB_CONN = OceanBaseConnectionPool()  # 模块级全局 OceanBase 连接池

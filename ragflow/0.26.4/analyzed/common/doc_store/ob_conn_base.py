@@ -1,3 +1,4 @@
+# OceanBase 文档存储基类：表 DDL、全文/向量检索与分布式锁。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# OceanBase 文档存储基类：表 DDL、全文/向量检索与分布式锁。
+
 import json
 import logging
 import os
@@ -49,6 +52,7 @@ doc_meta_column_types = {col.name: col.type for col in doc_meta_columns}
 
 
 def get_value_str(value: Any) -> str:
+    # 将 Python 值转为 OceanBase SQL 字面量（含 escape_string）
     """Convert value to SQL string representation."""
     if isinstance(value, str):
         # escape_string already handles all necessary escaping for MySQL/OceanBase
@@ -66,6 +70,7 @@ def get_value_str(value: Any) -> str:
 
 
 def _try_with_lock(lock_name: str, process_func, check_func, timeout: int = None):
+    # Redis 分布式锁保护 DDL，避免多 worker 重复建表
     """Execute function with distributed lock."""
     if not timeout:
         timeout = int(os.environ.get("OB_DDL_TIMEOUT", "60"))
@@ -96,7 +101,7 @@ def _try_with_lock(lock_name: str, process_func, check_func, timeout: int = None
 
 
 class OBConnectionBase(DocStoreConnection):
-    """Base class for OceanBase document store connections."""
+    """OceanBase 文档存储连接基类：向量列缓存、全文与 HybridSearch。"""
 
     def __init__(self, logger_name: str = "ragflow.ob_conn"):
         from common.doc_store.ob_conn_pool import OB_CONN
@@ -119,6 +124,7 @@ class OBConnectionBase(DocStoreConnection):
         self.logger.info(f"OceanBase {self.uri} connection initialized.")
 
     def _load_env_vars(self):
+        # 读取全文/混合检索等特性开关，HybridSearch 启用时调整 search_original_content
         def is_true(var: str, default: str) -> bool:
             return os.getenv(var, default).lower() in ["true", "1", "yes", "y"]
 
@@ -186,6 +192,7 @@ class OBConnectionBase(DocStoreConnection):
     """
 
     def _check_table_exists_cached(self, table_name: str) -> bool:
+        # 线程安全表存在缓存，减少 INFORMATION_SCHEMA 查询
         """
         Check table existence with cache to reduce INFORMATION_SCHEMA queries.
         Thread-safe implementation using RLock.

@@ -1,3 +1,4 @@
+# Infinity 文档存储基类：索引 DDL、检索、CRUD 与元数据迁移；含 RocksDB 元数据争用重试。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# Infinity 文档存储基类：索引 DDL、检索、CRUD 与元数据迁移；含 RocksDB 元数据争用重试。
+
 
 import logging
 import os
@@ -34,6 +37,7 @@ from common import settings
 from common.doc_store.doc_store_base import DocStoreConnection, MatchExpr, OrderByExpr
 
 
+# 同一 Infinity 实例上并发 CREATE/DROP TABLE 可能在 RocksDB 元数据计数器上产生竞态。
 # Concurrent CREATE/DROP TABLE on the same Infinity instance can race on
 # Infinity's RocksDB-backed catalog counters (e.g. ``db|1|next_table_id``).
 # When two writers touch the counter at the same instant, Infinity surfaces
@@ -60,6 +64,7 @@ _INFINITY_RESOURCE_BUSY_CODE = 9003
 
 
 def _int_env(name: str, default: int) -> int:
+    # 从环境变量读取整数，非法值回退默认并打日志
     """Read an int from the environment without crashing on bad input.
 
     A misconfigured ``INFINITY_META_RETRY_MAX=`` (empty value) or non-numeric
@@ -87,6 +92,7 @@ _META_RETRY_BASE_DELAY_MS = _int_env("INFINITY_META_RETRY_BASE_DELAY_MS", 50)
 
 
 def _is_meta_contention_error(exc: BaseException) -> bool:
+    # 判断是否为 Infinity 9003 / RocksDB Resource busy 元数据争用
     """Return True iff ``exc`` is the RocksDB metadata-counter "Resource busy".
 
     Prefer the numeric error code when the SDK exposes one — substring matching
@@ -107,6 +113,8 @@ def _is_meta_contention_error(exc: BaseException) -> bool:
 
 
 def _retry_on_meta_contention(
+    # 元数据 DDL 遇争用时指数退避重试，非争用异常立即抛出
+
     op_name: str,
     operation: Callable[[], _T],
     *,
@@ -154,6 +162,7 @@ def _retry_on_meta_contention(
 
 
 class InfinityConnectionBase(DocStoreConnection):
+    # Infinity 向量文档引擎实现：连接池、表迁移与检索表达式翻译
     def __init__(self, mapping_file_name: str = "infinity_mapping.json", logger_name: str = "ragflow.infinity_conn", table_name_prefix: str = "ragflow_"):
         from common.doc_store.infinity_conn_pool import INFINITY_CONN
 
@@ -191,6 +200,7 @@ class InfinityConnectionBase(DocStoreConnection):
         self.logger.info(f"Infinity {infinity_uri} is healthy.")
 
     def _migrate_db(self, inf_conn):
+        # 按 conf/mapping JSON 创建/更新表结构与索引
         inf_db = inf_conn.create_database(self.dbName, ConflictType.Ignore)
         fp_mapping = os.path.join(get_project_base_directory(), "conf", self.mapping_file_name)
         if not os.path.exists(fp_mapping):
@@ -390,6 +400,7 @@ class InfinityConnectionBase(DocStoreConnection):
     """
 
     def create_idx(self, index_name: str, dataset_id: str, vector_size: int, parser_id: str = None):
+        # 创建 chunk 表及向量/全文索引，DDL 路径带争用重试
         table_name = f"{index_name}_{dataset_id}"
         self.logger.debug(f"CREATE_IDX: Creating table {table_name}, parser_id: {parser_id}")
 
@@ -501,6 +512,7 @@ class InfinityConnectionBase(DocStoreConnection):
             self.connPool.release_conn(inf_conn)
 
     def create_doc_meta_idx(self, index_name: str):
+        # 创建文档级 meta_fields 索引表
         """
         Create a document metadata table.
 
@@ -613,6 +625,8 @@ class InfinityConnectionBase(DocStoreConnection):
 
     @abstractmethod
     def search(
+        # 将 MatchExpr/OrderByExpr 转为 Infinity SQL 并执行
+
         self,
         select_fields: list[str],
         highlight_fields: list[str],
@@ -783,6 +797,7 @@ class InfinityConnectionBase(DocStoreConnection):
     """
 
     def sql(self, sql: str, fetch_size: int, format: str):
+        # 执行 text-to-sql 生成的 Infinity SQL
         """
         Execute SQL query on Infinity database via psql command.
         Transform text-to-sql for Infinity's SQL syntax.
