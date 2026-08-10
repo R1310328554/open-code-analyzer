@@ -31,68 +31,84 @@ import static com.alibaba.nacos.client.config.common.ConfigConstants.MD5;
 import static com.alibaba.nacos.client.config.common.ConfigConstants.TENANT;
 
 /**
- * Config Response.
+ * 配置拉取响应封装，供过滤器链在返回前处理（如解密）。
+ *
+ * <p>实现 {@link IConfigResponse}，可携带 MD5、configType 等元数据。</p>
  *
  * @author Nacos
  */
 public class ConfigResponse implements IConfigResponse {
     
+    /** 响应参数字典。 */
     private final Map<String, Object> param = new HashMap<>();
     
+    /** 过滤器上下文。 */
     private final IConfigContext configContext = new ConfigContext();
     
+    /** 获取租户。 */
     public String getTenant() {
         return (String) param.get(TENANT);
     }
     
+    /** 设置租户。 */
     public void setTenant(String tenant) {
         param.put(TENANT, tenant);
     }
     
+    /** 获取 dataId。 */
     public String getDataId() {
         return (String) param.get(DATA_ID);
     }
     
+    /** 设置 dataId。 */
     public void setDataId(String dataId) {
         param.put(DATA_ID, dataId);
     }
     
+    /** 获取 group。 */
     public String getGroup() {
         return (String) param.get(GROUP);
     }
     
+    /** 设置 group。 */
     public void setGroup(String group) {
         param.put(GROUP, group);
     }
     
+    /** 获取配置内容。 */
     public String getContent() {
         return (String) param.get(CONTENT);
     }
     
+    /** 设置配置内容。 */
     public void setContent(String content) {
         param.put(CONTENT, content);
     }
     
+    /** 获取配置类型。 */
     public String getConfigType() {
         return (String) param.get(CONFIG_TYPE);
     }
     
+    /** 设置配置类型。 */
     public void setConfigType(String configType) {
         param.put(CONFIG_TYPE, configType);
     }
     
+    /** 获取加密数据密钥。 */
     public String getEncryptedDataKey() {
         return (String) param.get(ENCRYPTED_DATA_KEY);
     }
     
+    /** 设置加密数据密钥。 */
     public void setEncryptedDataKey(String encryptedDataKey) {
         param.put(ENCRYPTED_DATA_KEY, encryptedDataKey);
     }
     
     /**
-     * Get MD5 hash of the config content.
+     * 获取配置内容的 MD5 摘要。
      *
-     * @return MD5 hash string
+     * @return MD5 字符串
      * @since 3.0
      */
     public String getMd5() {
@@ -100,9 +116,9 @@ public class ConfigResponse implements IConfigResponse {
     }
     
     /**
-     * Set MD5 hash of the config content.
+     * 设置配置内容的 MD5 摘要。
      *
-     * @param md5 MD5 hash string
+     * @param md5 MD5 字符串
      * @since 3.0
      */
     public void setMd5(String md5) {

@@ -19,7 +19,9 @@ package com.alibaba.nacos.client.config.common;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
- * Synthesize the form of dataId+groupId. Escapes reserved characters in dataId and groupId.
+ * 配置分组键工具，将 dataId、group 与可选 tenant 合成为唯一键。
+ *
+ * <p>对 {@code +} 与 {@code %} 等保留字符进行 URL 风格转义，便于本地缓存索引。</p>
  *
  * @author Nacos
  */
@@ -35,14 +37,17 @@ public class GroupKey {
     
     private static final char FIVE = '5';
     
+    /** 生成 dataId+group 组合键（不含 tenant）。 */
     public static String getKey(String dataId, String group) {
         return getKey(dataId, group, "");
     }
     
+    /** 生成 dataId+group+datumStr 组合键。 */
     public static String getKey(String dataId, String group, String datumStr) {
         return doGetKey(dataId, group, datumStr);
     }
     
+    /** 生成含 tenant 的组合键。 */
     public static String getKeyTenant(String dataId, String group, String tenant) {
         return doGetKey(dataId, group, tenant);
     }
@@ -67,10 +72,10 @@ public class GroupKey {
     }
     
     /**
-     * Parse key.
+     * 解析组合键，还原 dataId、group 与 tenant。
      *
-     * @param groupKey group key
-     * @return parsed key
+     * @param groupKey 组合键字符串
+     * @return 长度为 3 的数组：[dataId, group, tenant]
      */
     public static String[] parseKey(String groupKey) {
         StringBuilder sb = new StringBuilder();
@@ -121,7 +126,7 @@ public class GroupKey {
     }
     
     /**
-     * + -> %2B % -> %25.
+     * URL 编码：{@code +} 转 {@code %2B}，{@code %} 转 {@code %25}。
      */
     static void urlEncode(String str, StringBuilder sb) {
         for (int idx = 0; idx < str.length(); ++idx) {

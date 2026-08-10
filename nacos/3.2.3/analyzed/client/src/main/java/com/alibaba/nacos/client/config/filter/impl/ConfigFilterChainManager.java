@@ -28,16 +28,21 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 
 /**
- * Config Filter Chain Management.
+ * 配置过滤器链管理器，加载 SPI 过滤器并按 order 排序执行。
+ *
+ * <p>通过 {@link ServiceLoader} 发现 {@link IConfigFilter} 实现，支持运行时 {@link #addFilter} 追加。</p>
  *
  * @author Nacos
  */
 public class ConfigFilterChainManager implements IConfigFilterChain {
     
+    /** 已注册的过滤器列表（按 order 排序）。 */
     private final List<IConfigFilter> filters = new ArrayList<>();
     
+    /** 过滤器初始化属性。 */
     private final Properties initProperty;
     
+    /** 构造管理器并加载 SPI 过滤器。 */
     public ConfigFilterChainManager(Properties properties) {
         this.initProperty = properties;
         ServiceLoader<IConfigFilter> configFilters = ServiceLoader.load(IConfigFilter.class);
@@ -47,15 +52,15 @@ public class ConfigFilterChainManager implements IConfigFilterChain {
     }
     
     /**
-     * Add filter.
+     * 添加过滤器并按 order 插入合适位置；同名过滤器不重复添加。
      *
-     * @param filter filter
-     * @return this
+     * @param filter 待添加的过滤器
+     * @return 当前管理器实例
      */
     public synchronized ConfigFilterChainManager addFilter(IConfigFilter filter) {
-        // init
+        // 初始化过滤器
         filter.init(this.initProperty);
-        // ordered by order value
+        // 按 order 值升序插入
         int i = 0;
         while (i < this.filters.size()) {
             IConfigFilter currentValue = this.filters.get(i);
@@ -77,10 +82,12 @@ public class ConfigFilterChainManager implements IConfigFilterChain {
     }
     
     @Override
+    /** 启动虚拟过滤链，依次执行各过滤器。 */
     public void doFilter(IConfigRequest request, IConfigResponse response) throws NacosException {
         new VirtualFilterChain(this.filters).doFilter(request, response);
     }
     
+    /** 虚拟过滤链，递归驱动过滤器依次执行。 */
     private static class VirtualFilterChain implements IConfigFilterChain {
         
         private final List<? extends IConfigFilter> additionalFilters;

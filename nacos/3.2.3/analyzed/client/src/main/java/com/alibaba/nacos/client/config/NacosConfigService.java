@@ -50,27 +50,38 @@ import java.util.concurrent.Future;
 import static com.alibaba.nacos.api.common.Constants.ALL_PATTERN;
 
 /**
- * Config Impl.
+ * {@link ConfigService} 客户端实现，提供配置拉取、发布、监听与模糊监听能力。
+ *
+ * <p>内部通过 {@link ClientWorker} 长轮询服务端，经 {@link ConfigFilterChainManager} 处理加解密等过滤逻辑。</p>
  *
  * @author Nacos
  */
 public class NacosConfigService implements ConfigService {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LogUtils.logger(NacosConfigService.class);
     
+    /** 服务端健康状态：可用。 */
     private static final String UP = "UP";
     
+    /** 服务端健康状态：不可用。 */
     private static final String DOWN = "DOWN";
     
-    /**
-     * long polling.
-     */
+    /** 长轮询工作线程，负责与配置中心通信。 */
     private final ClientWorker worker;
     
+    /** 当前命名空间。 */
     private String namespace;
     
+    /** 配置过滤器链管理器。 */
     private final ConfigFilterChainManager configFilterChainManager;
     
+    /**
+     * 根据客户端属性初始化配置服务。
+     *
+     * @param properties 含 serverAddr、namespace 等
+     * @throws NacosException 参数校验或启动失败
+     */
     public NacosConfigService(Properties properties) throws NacosException {
         PreInitUtils.asyncPreLoadCostComponent();
         final NacosClientProperties clientProperties =
@@ -89,17 +100,20 @@ public class NacosConfigService implements ConfigService {
         
     }
     
+    /** 解析并设置命名空间到客户端属性。 */
     private void initNamespace(NacosClientProperties properties) {
         namespace = ClientBasicParamUtil.parseNamespace(properties);
         properties.setProperty(PropertyKeyConst.NAMESPACE, namespace);
     }
     
     @Override
+    /** 拉取配置内容（不含 MD5 等元数据）。 */
     public String getConfig(String dataId, String group, long timeoutMs) throws NacosException {
         return getConfigInner(namespace, dataId, group, timeoutMs);
     }
     
     @Override
+    /** 拉取配置并注册监听器，返回解密后的内容。 */
     public String getConfigAndSignListener(String dataId, String group, long timeoutMs,
         Listener listener)
         throws NacosException {
@@ -111,7 +125,7 @@ public class NacosConfigService implements ConfigService {
         worker.addTenantListenersWithContent(dataId, group, content, encryptedDataKey,
             Collections.singletonList(listener));
         
-        // get a decryptContent, fix https://github.com/alibaba/nacos/issues/7039
+        // 经过滤器链解密后再返回，修复 issue #7039
         ConfigResponse cr = new ConfigResponse();
         cr.setDataId(dataId);
         cr.setGroup(group);
@@ -122,11 +136,13 @@ public class NacosConfigService implements ConfigService {
     }
     
     @Override
+    /** 为指定 dataId/group 添加配置变更监听器。 */
     public void addListener(String dataId, String group, Listener listener) throws NacosException {
         worker.addTenantListeners(dataId, group, Collections.singletonList(listener));
     }
     
     @Override
+    /** 按 group 模式模糊监听配置变更。 */
     public void fuzzyWatch(String groupNamePattern, FuzzyWatchEventWatcher watcher)
         throws NacosException {
         doAddFuzzyWatch(ALL_PATTERN, groupNamePattern, watcher);
@@ -184,6 +200,7 @@ public class NacosConfigService implements ConfigService {
     }
     
     @Override
+    /** 发布配置（默认类型）。 */
     public boolean publishConfig(String dataId, String group, String content)
         throws NacosException {
         return publishConfig(dataId, group, content, ConfigType.getDefaultType().getType());
@@ -196,6 +213,7 @@ public class NacosConfigService implements ConfigService {
     }
     
     @Override
+    /** CAS 条件发布配置，md5 不匹配则失败。 */
     public boolean publishConfigCas(String dataId, String group, String content, String casMd5)
         throws NacosException {
         return publishConfigInner(namespace, dataId, group, null, null, null, content,
@@ -211,11 +229,13 @@ public class NacosConfigService implements ConfigService {
     }
     
     @Override
+    /** 删除指定配置。 */
     public boolean removeConfig(String dataId, String group) throws NacosException {
         return removeConfigInner(namespace, dataId, group, null);
     }
     
     @Override
+    /** 移除配置变更监听器。 */
     public void removeListener(String dataId, String group, Listener listener) {
         worker.removeTenantListener(dataId, group, listener);
     }
@@ -230,11 +250,8 @@ public class NacosConfigService implements ConfigService {
         cr.setTenant(tenant);
         cr.setGroup(group);
         
-        // We first try to use local failover content if exists.
-        // A config content for failover is not created by client program automatically,
-        // but is maintained by user.
-        // This is designed for certain scenario like client emergency reboot,
-        // changing config needed in the same time, while nacos server is down.
+        // 优先尝试本地 failover 缓存（由用户维护，非客户端自动生成）
+        // 适用于服务端宕机时客户端紧急重启仍需使用配置的场景
         String content =
             LocalConfigInfoProcessor.getFailover(worker.getAgentName(), dataId, group, tenant);
         if (content != null) {
@@ -286,6 +303,7 @@ public class NacosConfigService implements ConfigService {
         return content;
     }
     
+    /** 空 group 时使用默认分组。 */
     private String blank2defaultGroup(String group) {
         return (StringUtils.isBlank(group)) ? Constants.DEFAULT_GROUP : group.trim();
     }
@@ -301,7 +319,7 @@ public class NacosConfigService implements ConfigService {
         cr.setTenant(tenant);
         cr.setGroup(group);
         
-        // Try local failover first
+        // 优先尝试本地 failover
         String content =
             LocalConfigInfoProcessor.getFailover(worker.getAgentName(), dataId, group, tenant);
         if (content != null) {
@@ -313,7 +331,7 @@ public class NacosConfigService implements ConfigService {
                 LocalEncryptedDataKeyProcessor.getEncryptDataKeyFailover(worker.getAgentName(),
                     dataId, group, tenant);
             cr.setEncryptedDataKey(encryptedDataKey);
-            // Failover doesn't have MD5 from server
+            // Failover 路径无服务端 MD5
             configFilterChainManager.doFilter(null, cr);
             return cr;
         }
@@ -336,7 +354,7 @@ public class NacosConfigService implements ConfigService {
                 worker.getAgentName(), dataId, group, tenant, ioe.toString());
         }
         
-        // Fall back to snapshot
+        // 回退到本地 snapshot
         content =
             LocalConfigInfoProcessor.getSnapshot(worker.getAgentName(), dataId, group, tenant);
         if (content != null) {
@@ -349,12 +367,13 @@ public class NacosConfigService implements ConfigService {
             LocalEncryptedDataKeyProcessor.getEncryptDataKeySnapshot(worker.getAgentName(),
                 dataId, group, tenant);
         cr.setEncryptedDataKey(encryptedDataKey);
-        // Snapshot doesn't have MD5 from server
+        // Snapshot 路径无服务端 MD5
         configFilterChainManager.doFilter(null, cr);
         return cr;
     }
     
     @Override
+    /** 拉取配置并返回含 MD5、类型等元数据的结果。 */
     public ConfigQueryResult getConfigWithResult(String dataId, String group, long timeoutMs)
         throws NacosException {
         ConfigResponse response = getConfigInnerWithResponse(namespace, dataId, group, timeoutMs);
@@ -395,6 +414,7 @@ public class NacosConfigService implements ConfigService {
     }
     
     @Override
+    /** 返回配置服务端健康状态 UP/DOWN。 */
     public String getServerStatus() {
         if (worker.isHealthServer()) {
             return UP;
@@ -404,11 +424,13 @@ public class NacosConfigService implements ConfigService {
     }
     
     @Override
+    /** 动态追加自定义配置过滤器。 */
     public void addConfigFilter(IConfigFilter configFilter) {
         configFilterChainManager.addFilter(configFilter);
     }
     
     @Override
+    /** 关闭客户端工作线程与资源。 */
     public void shutDown() throws NacosException {
         worker.shutdown();
     }

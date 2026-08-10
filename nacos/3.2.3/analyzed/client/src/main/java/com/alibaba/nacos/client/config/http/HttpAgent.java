@@ -23,29 +23,31 @@ import com.alibaba.nacos.common.lifecycle.Closeable;
 import java.util.Map;
 
 /**
- * HttpAgent.
+ * 配置模块 HTTP 通信代理接口。
+ *
+ * <p>封装与 Nacos 配置服务端的 GET/POST/DELETE 调用，由 {@link ServerHttpAgent} 实现。</p>
  *
  * @author Nacos
  */
 public interface HttpAgent extends Closeable {
     
     /**
-     * start to get nacos ip list.
+     * 启动代理，初始化 Nacos 服务端地址列表。
      *
-     * @throws NacosException on get ip list error.
+     * @throws NacosException 获取地址列表失败时抛出
      */
     void start() throws NacosException;
     
     /**
-     * invoke http get method.
+     * 发起 HTTP GET 请求。
      *
-     * @param path          http path
-     * @param headers       http headers
-     * @param paramValues   http paramValues http
-     * @param encoding      http encode
-     * @param readTimeoutMs http timeout
-     * @return HttpResult http response
-     * @throws Exception If an input or output exception occurred
+     * @param path          请求路径
+     * @param headers       请求头
+     * @param paramValues   查询参数
+     * @param encoding      字符编码
+     * @param readTimeoutMs 读超时（毫秒）
+     * @return HTTP 响应结果
+     * @throws Exception 网络或 IO 异常
      */
     
     HttpRestResult<String> httpGet(String path, Map<String, String> headers,
@@ -53,60 +55,60 @@ public interface HttpAgent extends Closeable {
         String encoding, long readTimeoutMs) throws Exception;
     
     /**
-     * invoke http post method.
+     * 发起 HTTP POST 请求（表单）。
      *
-     * @param path          http path
-     * @param headers       http headers
-     * @param paramValues   http paramValues http
-     * @param encoding      http encode
-     * @param readTimeoutMs http timeout
-     * @return HttpResult http response
-     * @throws Exception If an input or output exception occurred
+     * @param path          请求路径
+     * @param headers       请求头
+     * @param paramValues   表单参数
+     * @param encoding      字符编码
+     * @param readTimeoutMs 读超时（毫秒）
+     * @return HTTP 响应结果
+     * @throws Exception 网络或 IO 异常
      */
     HttpRestResult<String> httpPost(String path, Map<String, String> headers,
         Map<String, String> paramValues,
         String encoding, long readTimeoutMs) throws Exception;
     
     /**
-     * invoke http delete method.
+     * 发起 HTTP DELETE 请求。
      *
-     * @param path          http path
-     * @param headers       http headers
-     * @param paramValues   http paramValues http
-     * @param encoding      http encode
-     * @param readTimeoutMs http timeout
-     * @return HttpResult http response
-     * @throws Exception If an input or output exception occurred
+     * @param path          请求路径
+     * @param headers       请求头
+     * @param paramValues   查询参数
+     * @param encoding      字符编码
+     * @param readTimeoutMs 读超时（毫秒）
+     * @return HTTP 响应结果
+     * @throws Exception 网络或 IO 异常
      */
     HttpRestResult<String> httpDelete(String path, Map<String, String> headers,
         Map<String, String> paramValues,
         String encoding, long readTimeoutMs) throws Exception;
     
     /**
-     * get name.
+     * 获取代理名称标识。
      *
-     * @return String
+     * @return 代理名称
      */
     String getName();
     
     /**
-     * get namespace.
+     * 获取命名空间。
      *
-     * @return String
+     * @return 命名空间字符串
      */
     String getNamespace();
     
     /**
-     * get tenant.
+     * 获取租户标识。
      *
-     * @return String
+     * @return 租户字符串
      */
     String getTenant();
     
     /**
-     * get encode.
+     * 获取字符编码。
      *
-     * @return String
+     * @return 编码名称
      */
     String getEncode();
 }

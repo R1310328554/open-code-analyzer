@@ -38,21 +38,28 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Server Agent.
+ * 与 Nacos 配置服务端通信的 HTTP 代理实现。
+ *
+ * <p>支持多节点故障转移、超时重试与连接异常切换，由 {@link ConfigServerListManager} 管理地址列表。</p>
  *
  * @author water.lyl
  */
 public class ServerHttpAgent implements HttpAgent {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LogUtils.logger(ServerHttpAgent.class);
     
+    /** Nacos REST 客户端模板。 */
     private final NacosRestTemplate nacosRestTemplate =
         ConfigHttpClientManager.getInstance().getNacosRestTemplate();
     
+    /** 字符编码。 */
     private String encode;
     
+    /** 单轮地址列表遍历的最大重试次数。 */
     private int maxRetry = 3;
     
+    /** 配置服务端地址列表管理器。 */
     final ConfigServerListManager serverListMgr;
     
     @Override
@@ -81,7 +88,7 @@ public class ServerHttpAgent implements HttpAgent {
                     LOGGER.error("[NACOS ConnectException] currentServerAddr: {}, httpCode: {}",
                         serverListMgr.getCurrentServer(), result.getCode());
                 } else {
-                    // Update the currently available server addr
+                    // 更新当前可用服务端地址
                     serverListMgr.updateCurrentServerAddr(currentServerAddr);
                     return result;
                 }
@@ -242,11 +249,13 @@ public class ServerHttpAgent implements HttpAgent {
         throw new ConnectException("no available server");
     }
     
+    /** 拼接完整请求 URL（含 contextPath）。 */
     private String getUrl(String serverAddr, String relativePath) {
         String contextPath = serverListMgr.getContextPath();
         return serverAddr + ContextPathUtil.normalizeContextPath(contextPath) + relativePath;
     }
     
+    /** 判断 HTTP 响应是否为服务端错误或不可用。 */
     private boolean isFail(HttpRestResult<String> result) {
         return result.getCode() == HttpURLConnection.HTTP_INTERNAL_ERROR
             || result.getCode() == HttpURLConnection.HTTP_BAD_GATEWAY
@@ -254,24 +263,29 @@ public class ServerHttpAgent implements HttpAgent {
             || result.getCode() == HttpURLConnection.HTTP_NOT_FOUND;
     }
     
+    /** 获取当前应用名称。 */
     public static String getAppname() {
         return AppNameUtils.getAppName();
     }
     
+    /** 使用已有地址列表管理器构造。 */
     public ServerHttpAgent(ConfigServerListManager mgr) {
         this.serverListMgr = mgr;
     }
     
+    /** 使用管理器与属性构造。 */
     public ServerHttpAgent(ConfigServerListManager mgr, Properties properties) {
         this.serverListMgr = mgr;
     }
     
+    /** 根据客户端属性创建地址列表管理器并构造。 */
     public ServerHttpAgent(Properties properties) throws NacosException {
         this.serverListMgr =
             new ConfigServerListManager(NacosClientProperties.PROTOTYPE.derive(properties));
     }
     
     @Override
+    /** 启动地址列表管理器。 */
     public void start() throws NacosException {
         serverListMgr.start();
     }
@@ -297,6 +311,7 @@ public class ServerHttpAgent implements HttpAgent {
     }
     
     @Override
+    /** 关闭 HTTP 客户端与地址列表管理器。 */
     public void shutdown() throws NacosException {
         String className = this.getClass().getName();
         LOGGER.info("{} do shutdown begin", className);

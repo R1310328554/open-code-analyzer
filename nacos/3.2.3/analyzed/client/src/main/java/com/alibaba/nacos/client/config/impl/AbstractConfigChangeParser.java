@@ -24,23 +24,35 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * AbstractConfigChangeParser.
+ * 配置变更解析器抽象基类，按配置类型过滤并对比键值差异。
+ *
+ * <p>子类实现具体格式（如 properties、yaml）的解析，{@link #filterChangeData} 产出 {@link ConfigChangeItem} 集合。</p>
  *
  * @author rushsky518
  */
 public abstract class AbstractConfigChangeParser implements ConfigChangeParser {
     
+    /** 本解析器负责的配置类型标识。 */
     private final String configType;
     
+    /** 指定负责的配置类型。 */
     public AbstractConfigChangeParser(String configType) {
         this.configType = configType;
     }
     
     @Override
+    /** 判断是否与给定配置类型匹配（忽略大小写）。 */
     public boolean isResponsibleFor(String type) {
         return this.configType.equalsIgnoreCase(type);
     }
     
+    /**
+     * 对比新旧 Map，生成新增、修改、删除的 {@link ConfigChangeItem}。
+     *
+     * @param oldMap 变更前键值
+     * @param newMap 变更后键值
+     * @return 变更项映射
+     */
     protected Map<String, ConfigChangeItem> filterChangeData(Map oldMap, Map newMap) {
         Map<String, ConfigChangeItem> result = new HashMap<>(16);
         for (Map.Entry<String, Object> e : (Iterable<Map.Entry<String, Object>>) oldMap

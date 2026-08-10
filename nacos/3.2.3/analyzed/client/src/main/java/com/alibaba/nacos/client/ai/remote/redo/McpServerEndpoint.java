@@ -19,37 +19,53 @@ package com.alibaba.nacos.client.ai.remote.redo;
 import java.util.Objects;
 
 /**
- * Nacos AI module mcp server endpoint required information for redo data.
+ * MCP 服务器端点信息，供重做（redo）数据序列化与比对使用。
+ *
+ * <p>包含地址、端口与版本，用于 {@link McpServerEndpointRedoData} 在连接恢复后重试注册。</p>
  *
  * @author xiweng.yy
  */
 public class McpServerEndpoint {
     
+    /** MCP 服务器地址。 */
     private final String address;
     
+    /** MCP 服务器端口。 */
     private final int port;
     
+    /** MCP 服务器版本号。 */
     private final String version;
     
+    /**
+     * 构造 MCP 服务器端点。
+     *
+     * @param address 服务器地址
+     * @param port    服务器端口
+     * @param version 版本号
+     */
     public McpServerEndpoint(String address, int port, String version) {
         this.address = address;
         this.port = port;
         this.version = version;
     }
     
+    /** 获取服务器地址。 */
     public String getAddress() {
         return address;
     }
     
+    /** 获取服务器端口。 */
     public int getPort() {
         return port;
     }
     
+    /** 获取版本号。 */
     public String getVersion() {
         return version;
     }
     
     @Override
+    /** 基于地址、端口与版本判断相等性。 */
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -63,6 +79,7 @@ public class McpServerEndpoint {
     }
     
     @Override
+    /** 返回哈希码。 */
     public int hashCode() {
         return Objects.hash(address, port, version);
     }

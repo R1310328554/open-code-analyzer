@@ -25,32 +25,42 @@ import java.util.Date;
 import java.util.Map;
 
 /**
- * MetricsHttpAgent.
+ * 带 Prometheus 指标采集的 HTTP 代理装饰器。
+ *
+ * <p>包装底层 {@link HttpAgent}，记录各 HTTP 方法的耗时与响应码。</p>
  *
  * @author Nacos
  */
 public class MetricsHttpAgent implements HttpAgent {
     
+    /** HTTP GET 方法标识。 */
     private static final String GET = "GET";
     
+    /** HTTP POST 方法标识。 */
     private static final String POST = "POST";
     
+    /** HTTP DELETE 方法标识。 */
     private static final String DELETE = "DELETE";
     
+    /** 请求未完成时的默认响应码占位。 */
     private static final String DEFAULT_CODE = "NA";
     
+    /** 被装饰的底层 HTTP 代理。 */
     private final HttpAgent httpAgent;
     
+    /** 构造指标装饰器。 */
     public MetricsHttpAgent(HttpAgent httpAgent) {
         this.httpAgent = httpAgent;
     }
     
     @Override
+    /** 委托底层代理启动。 */
     public void start() throws NacosException {
         httpAgent.start();
     }
     
     @Override
+    /** GET 请求并记录 Prometheus 直方图指标。 */
     public HttpRestResult<String> httpGet(String path, Map<String, String> headers,
         Map<String, String> paramValues,
         String encode, long readTimeoutMs) throws Exception {
@@ -69,6 +79,7 @@ public class MetricsHttpAgent implements HttpAgent {
     }
     
     @Override
+    /** POST 请求并记录 Prometheus 直方图指标。 */
     public HttpRestResult<String> httpPost(String path, Map<String, String> headers,
         Map<String, String> paramValues,
         String encode, long readTimeoutMs) throws Exception {
@@ -87,6 +98,7 @@ public class MetricsHttpAgent implements HttpAgent {
     }
     
     @Override
+    /** DELETE 请求并记录 Prometheus 直方图指标。 */
     public HttpRestResult<String> httpDelete(String path, Map<String, String> headers,
         Map<String, String> paramValues,
         String encode, long readTimeoutMs) throws Exception {

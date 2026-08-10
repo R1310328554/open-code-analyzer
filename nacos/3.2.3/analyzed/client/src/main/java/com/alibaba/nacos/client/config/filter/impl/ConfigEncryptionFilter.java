@@ -29,12 +29,15 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * Configure encryption filter.
+ * 配置加解密过滤器，在发布时加密、拉取时解密配置内容。
+ *
+ * <p>通过 {@link EncryptionHandler} 插件处理，order 为 0 优先执行。</p>
  *
  * @author lixiaoshuang
  */
 public class ConfigEncryptionFilter extends AbstractConfigFilter {
     
+    /** 过滤器默认名称（类全限定名）。 */
     private static final String DEFAULT_NAME = ConfigEncryptionFilter.class.getName();
     
     @Override
@@ -49,7 +52,7 @@ public class ConfigEncryptionFilter extends AbstractConfigFilter {
         if (Objects.nonNull(request) && request instanceof ConfigRequest
             && Objects.isNull(response)) {
             
-            // Publish configuration, encrypt
+            // 发布配置：对内容进行加密
             ConfigRequest configRequest = (ConfigRequest) request;
             String dataId = configRequest.getDataId();
             String content = configRequest.getContent();
@@ -71,7 +74,7 @@ public class ConfigEncryptionFilter extends AbstractConfigFilter {
         if (Objects.nonNull(response) && response instanceof ConfigResponse
             && Objects.isNull(request)) {
             
-            // Get configuration, decrypt
+            // 拉取配置：对内容进行解密
             ConfigResponse configResponse = (ConfigResponse) response;
             
             String dataId = configResponse.getDataId();
@@ -97,11 +100,13 @@ public class ConfigEncryptionFilter extends AbstractConfigFilter {
     }
     
     @Override
+    /** 过滤器执行顺序，值越小越先执行。 */
     public int getOrder() {
         return 0;
     }
     
     @Override
+    /** 返回过滤器名称。 */
     public String getFilterName() {
         return DEFAULT_NAME;
     }
