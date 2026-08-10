@@ -15,23 +15,8 @@
     "web/ui/module/codemirror-promql/src/lint/index.ts",
     "web/ui/module/codemirror-promql/src/parser/index.ts",
     "web/ui/module/codemirror-promql/src/parser/matcher.test.ts",
-    "web/ui/module/codemirror-promql/src/parser/matcher.ts",
-    "web/ui/module/codemirror-promql/src/parser/parser.test.ts",
-    "web/ui/module/codemirror-promql/src/parser/parser.ts",
-    "web/ui/module/codemirror-promql/src/parser/path-finder.test.ts",
-    "web/ui/module/codemirror-promql/src/parser/path-finder.ts",
-    "web/ui/module/codemirror-promql/src/parser/type.ts",
-    "web/ui/module/codemirror-promql/src/parser/vector.test.ts",
-    "web/ui/module/codemirror-promql/src/parser/vector.ts",
-    "web/ui/module/codemirror-promql/src/promql.test.ts",
-    "web/ui/module/codemirror-promql/src/promql.ts",
-    "web/ui/module/codemirror-promql/src/types/function.ts",
-    "web/ui/module/codemirror-promql/src/types/index.ts",
-    "web/ui/module/codemirror-promql/src/types/matcher.ts",
-    "web/ui/module/codemirror-promql/src/types/vector.ts",
-    "web/ui/module/lezer-promql/rollup.config.js",
-    "web/ui/module/lezer-promql/src/highlight.js"
+    "web/ui/module/codemirror-promql/src/parser/matcher.ts"
   ],
   "remaining_pending": 24,
-  "done": 480
+  "done": 495
 }
