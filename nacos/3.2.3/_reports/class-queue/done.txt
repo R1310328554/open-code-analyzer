@@ -2518,3 +2518,5 @@ plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/proxy/Mapper
 plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/EncryptionPluginManager.java
 plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/EncryptionPluginProvider.java
 plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/handler/EncryptionHandler.java
+plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityPluginProvider.java
+plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityService.java

@@ -15,10 +15,8 @@
     "plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/model/VisibilityResource.java",
     "plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/QueryAdvisor.java",
     "plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/ValidationResult.java",
-    "plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityPluginManager.java",
-    "plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityPluginProvider.java",
-    "plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityService.java"
+    "plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityPluginManager.java"
   ],
   "remaining_pending": 0,
-  "done": 2520
+  "done": 2522
 }

@@ -2563,3 +2563,5 @@
 2026-08-10T05:21:33Z DONE plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/EncryptionPluginManager.java wave84b [15:30] datasource mappers + encryption plugin
 2026-08-10T05:21:33Z DONE plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/EncryptionPluginProvider.java wave84b [15:30] datasource mappers + encryption plugin
 2026-08-10T05:21:33Z DONE plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/handler/EncryptionHandler.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:23:01Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityPluginProvider.java wave85b [15:17] visibility plugin provider/service
+2026-08-10T05:23:01Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityService.java wave85b [15:17] visibility plugin provider/service
