@@ -25,6 +25,8 @@ import org.keycloak.representations.idm.authorization.Permission;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 令牌内省（introspection）响应，包含活跃状态与已授予的 {@link Permission} 列表。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class TokenIntrospectionResponse extends JsonWebToken {
@@ -34,10 +36,12 @@ public class TokenIntrospectionResponse extends JsonWebToken {
 
     private List<Permission> permissions;
 
+    /** 令牌是否仍处于有效/活跃状态。 */
     public Boolean getActive() {
         return this.active;
     }
 
+    /** 内省结果中携带的权限集合。 */
     public List<Permission> getPermissions() {
         return this.permissions;
     }

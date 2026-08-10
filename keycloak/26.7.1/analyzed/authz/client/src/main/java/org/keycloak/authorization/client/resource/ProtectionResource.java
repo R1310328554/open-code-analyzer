@@ -24,7 +24,7 @@ import org.keycloak.authorization.client.util.Http;
 import org.keycloak.authorization.client.util.TokenCallable;
 
 /**
- * An entry point to access the Protection API endpoints.
+ * Protection API 端点入口，聚合资源、权限票据与策略子资源。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -47,32 +47,33 @@ public class ProtectionResource {
     }
 
     /**
-     * Creates a {@link ProtectedResource} which can be used to manage resources.
+     * 创建 {@link ProtectedResource}，用于 UMA 资源注册与管理。
      *
-     * @return a {@link ProtectedResource}
+     * @return {@link ProtectedResource} 实例
      */
     public ProtectedResource resource() {
         return new ProtectedResource(http, serverConfiguration, configuration, pat);
     }
 
     /**
-     * Creates a {@link PermissionResource} which can be used to manage permission tickets.
+     * 创建 {@link PermissionResource}，用于权限票据（permission ticket）管理。
      *
-     * @return a {@link PermissionResource}
+     * @return {@link PermissionResource} 实例
      */
     public PermissionResource permission() {
         return new PermissionResource(http, serverConfiguration, pat);
     }
 
+    /** 返回指定资源 ID 的 {@link PolicyResource}（用户托管权限）。 */
     public PolicyResource policy(String resourceId) {
         return new PolicyResource(resourceId, http, serverConfiguration, pat);
     }
 
     /**
-     * Introspects the given <code>rpt</code> using the token introspection endpoint.
+     * 通过令牌内省端点 introspect 给定的 RPT（Requesting Party Token）。
      *
-     * @param rpt the rpt to introspect
-     * @return the {@link TokenIntrospectionResponse}
+     * @param rpt 待内省的 RPT
+     * @return {@link TokenIntrospectionResponse}
      */
     public TokenIntrospectionResponse introspectRequestingPartyToken(String rpt) {
         return this.http.<TokenIntrospectionResponse>post(serverConfiguration.getIntrospectionEndpoint())

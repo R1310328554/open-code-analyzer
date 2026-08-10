@@ -35,11 +35,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.keycloak.constants.ServiceUrlConstants.AUTHZ_DISCOVERY_URL;
 
 /**
- * <p>This is class serves as an entry point for clients looking for access to Keycloak Authorization Services.
+ * <p>访问 Keycloak 授权服务（Authorization Services）的客户端入口类。
  *
- * <p>When creating a new instances make sure you have a Keycloak Server running at the location specified in the client
- * configuration. The client tries to obtain server configuration by invoking the UMA Discovery Endpoint, usually available
- * from the server at <i>http(s)://{server}:{port}/auth/realms/{realm}/.well-known/uma-configuration</i>.
+ * <p>创建实例前请确保配置中指定的 Keycloak 服务器已运行。客户端会通过 UMA 发现端点拉取服务器元数据，
+ * 通常位于 <i>http(s)://{server}:{port}/auth/realms/{realm}/.well-known/uma-configuration</i>。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -49,12 +48,12 @@ public class AuthzClient {
     private TokenCallable patSupplier;
 
     /**
-     * <p>Creates a new instance.
+     * <p>创建新实例。
      *
-     * <p>This method expects a <code>keycloak.json</code> in the classpath, otherwise an exception will be thrown.
+     * <p>要求 classpath 中存在 <code>keycloak.json</code>，否则抛出异常。
      *
-     * @return a new instance
-     * @throws RuntimeException in case there is no <code>keycloak.json</code> file in the classpath or the file could not be parsed
+     * @return 新客户端实例
+     * @throws RuntimeException 当 classpath 中无 <code>keycloak.json</code> 或解析失败时
      */
     public static AuthzClient create() throws RuntimeException {
         InputStream configStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("keycloak.json");
@@ -63,10 +62,10 @@ public class AuthzClient {
     }
 
     /**
-     * <p>Creates a new instance.
+     * <p>从配置输入流创建新实例。
      *
-     * @param configStream the input stream with the configuration data
-     * @return a new instance
+     * @param configStream 配置 JSON 输入流
+     * @return 新客户端实例
      */
     public static AuthzClient create(InputStream configStream) throws RuntimeException {
         if (configStream == null) {
@@ -85,10 +84,10 @@ public class AuthzClient {
     }
 
     /**
-     * <p>Creates a new instance.
+     * <p>从 {@link Configuration} 对象创建新实例。
      *
-     * @param configuration the client configuration
-     * @return a new instance
+     * @param configuration 客户端配置
+     * @return 新客户端实例
      */
     public static AuthzClient create(Configuration configuration) {
         CryptoIntegration.init(AuthzClient.class.getClassLoader());
@@ -99,22 +98,22 @@ public class AuthzClient {
     private final Configuration configuration;
 
     /**
-     * <p>Creates a {@link ProtectionResource} instance which can be used to access the Protection API.
+     * <p>创建 {@link ProtectionResource}，用于访问 Protection API。
      *
-     * <p>When using this method, the PAT (the access token with the uma_protection scope) is obtained for the client
-     * itself, using any of the supported credential types (client/secret, jwt, etc).
+     * <p>此方法会为客户端自身获取 PAT（带 {@code uma_protection} scope 的访问令牌），
+     * 支持 client/secret、JWT 等凭证类型。
      *
-     * @return a {@link ProtectionResource}
+     * @return {@link ProtectionResource} 实例
      */
     public ProtectionResource protection() {
         return new ProtectionResource(this.http, this.serverConfiguration, configuration, createPatSupplier());
     }
 
     /**
-     * <p>Creates a {@link ProtectionResource} instance which can be used to access the Protection API.
+     * <p>使用给定访问令牌创建 {@link ProtectionResource}。
      *
-     * @param accessToken the PAT (the access token with the uma_protection scope)
-     * @return a {@link ProtectionResource}
+     * @param accessToken PAT（带 {@code uma_protection} scope 的访问令牌）
+     * @return {@link ProtectionResource} 实例
      */
     public ProtectionResource protection(final String accessToken) {
         return new ProtectionResource(this.http, this.serverConfiguration, configuration, new TokenCallable(http, configuration, serverConfiguration) {
@@ -131,11 +130,9 @@ public class AuthzClient {
     }
 
     /**
-     * <p>Creates a {@link ProtectionResource} instance which can be used to access the Protection API.
+     * <p>使用资源所有者用户名/密码创建 {@link ProtectionResource}，并据此获取 PAT。
      *
-     * <p>When using this method, the PAT (the access token with the uma_protection scope) is obtained for a given user.
-     *
-     * @return a {@link ProtectionResource}
+     * @return {@link ProtectionResource} 实例
      */
     public ProtectionResource protection(String userName, String password) {
         patSupplier = null;
@@ -143,19 +140,19 @@ public class AuthzClient {
     }
 
     /**
-     * <p>Creates a {@link AuthorizationResource} instance which can be used to obtain permissions from the server.
+     * <p>创建 {@link AuthorizationResource}，用于向服务器申请权限（RPT）。
      *
-     * @return a {@link AuthorizationResource}
+     * @return {@link AuthorizationResource} 实例
      */
     public AuthorizationResource authorization() {
         return new AuthorizationResource(configuration, serverConfiguration, this.http, null);
     }
 
     /**
-     * <p>Creates a {@link AuthorizationResource} instance which can be used to obtain permissions from the server.
+     * <p>使用指定 Bearer 访问令牌创建 {@link AuthorizationResource}。
      *
-     * @param accessToken the Access Token that will be used as a bearer to access the token endpoint
-     * @return a {@link AuthorizationResource}
+     * @param accessToken 作为 Bearer 访问令牌端点的访问令牌
+     * @return {@link AuthorizationResource} 实例
      */
     public AuthorizationResource authorization(final String accessToken) {
         return new AuthorizationResource(configuration, serverConfiguration, this.http, new TokenCallable(http, configuration, serverConfiguration) {
@@ -172,11 +169,11 @@ public class AuthzClient {
     }
 
     /**
-     * <p>Creates a {@link AuthorizationResource} instance which can be used to obtain permissions from the server.
+     * <p>使用资源所有者凭证创建 {@link AuthorizationResource}。
      *
-     * @param userName an ID Token or Access Token representing an identity and/or access context
-     * @param password
-     * @return a {@link AuthorizationResource}
+     * @param userName 代表身份/访问上下文的 ID Token 或 Access Token，或用户名
+     * @param password 密码
+     * @return {@link AuthorizationResource} 实例
      */
     public AuthorizationResource authorization(final String userName, final String password) {
         return authorization(userName, password, null);
@@ -188,9 +185,9 @@ public class AuthzClient {
     }
 
     /**
-     * Obtains an access token using the client credentials.
+     * 使用客户端凭证（client credentials）获取访问令牌。
      *
-     * @return an {@link AccessTokenResponse}
+     * @return {@link AccessTokenResponse}
      */
     public AccessTokenResponse obtainAccessToken() {
         return this.http.<AccessTokenResponse>post(this.serverConfiguration.getTokenEndpoint())
@@ -202,9 +199,9 @@ public class AuthzClient {
     }
 
     /**
-     * Obtains an access token using the resource owner credentials.
+     * 使用资源所有者密码凭证（ROPC）获取访问令牌。
      *
-     * @return an {@link AccessTokenResponse}
+     * @return {@link AccessTokenResponse}
      */
     public AccessTokenResponse obtainAccessToken(String userName, String password) {
         return this.http.<AccessTokenResponse>post(this.serverConfiguration.getTokenEndpoint())
@@ -216,23 +213,24 @@ public class AuthzClient {
     }
 
     /**
-     * Returns the configuration obtained from the server at the UMA Discovery Endpoint.
+     * 返回自 UMA 发现端点获取的服务器 {@link ServerConfiguration}。
      *
-     * @return the {@link ServerConfiguration}
+     * @return {@link ServerConfiguration}
      */
     public ServerConfiguration getServerConfiguration() {
         return this.serverConfiguration;
     }
 
     /**
-     * Obtains the client configuration
+     * 返回本地客户端 {@link Configuration}。
      *
-     * @return the {@link Configuration}
+     * @return {@link Configuration}
      */
     public Configuration getConfiguration() {
         return this.configuration;
     }
 
+    /** 私有构造：拉取 UMA 发现文档并初始化 HTTP 客户端。 */
     private AuthzClient(Configuration configuration) {
         if (configuration == null) {
             throw new IllegalArgumentException("Client configuration can not be null.");
@@ -258,6 +256,7 @@ public class AuthzClient {
         }
     }
 
+    /** 为指定用户创建 PAT 供应器（可缓存）。 */
     public TokenCallable createPatSupplier(String userName, String password) {
         if (patSupplier == null) {
             patSupplier = createRefreshableAccessTokenSupplier(userName, password);
@@ -265,6 +264,7 @@ public class AuthzClient {
         return patSupplier;
     }
 
+    /** 为客户端自身创建 PAT 供应器。 */
     public TokenCallable createPatSupplier() {
         return createPatSupplier(null, null);
     }

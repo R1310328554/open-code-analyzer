@@ -18,14 +18,18 @@
 package org.keycloak.authorization.client;
 
 /**
+ * 授权请求被 Keycloak 授权服务拒绝时抛出的运行时异常。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AuthorizationDeniedException extends RuntimeException {
 
+    /** @param cause 原始拒绝原因 */
     public AuthorizationDeniedException(Throwable cause) {
         super(cause);
     }
 
+    /** @param message 可读错误信息 @param cause 原始拒绝原因 */
     public AuthorizationDeniedException(String message, Throwable cause) {
         super(message, cause);
     }

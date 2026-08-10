@@ -28,6 +28,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClients;
 
 /**
+ * 授权客户端配置，扩展 {@link AdapterConfig} 并提供 HTTP 客户端与凭证提供者。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class Configuration extends AdapterConfig {
@@ -43,13 +45,13 @@ public class Configuration extends AdapterConfig {
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
-     * @param authServerUrl the server's URL. E.g.: http://{server}:{port}/auth.(not {@code null})
-     * @param realm the realm name (not {@code null})
-     * @param clientId the client id (not {@code null})
-     * @param clientCredentials a map with the client credentials (not {@code null})
-     * @param httpClient the {@link HttpClient} instance that should be used when sending requests to the server, or {@code null} if a default instance should be created
+     * @param authServerUrl 授权服务器 URL，例如 http://{server}:{port}/auth（不可为 {@code null}）
+     * @param realm 领域名称（不可为 {@code null}）
+     * @param clientId 客户端 ID（不可为 {@code null}）
+     * @param clientCredentials 客户端凭证映射（不可为 {@code null}）
+     * @param httpClient 用于向服务器发送请求的 {@link HttpClient}；为 {@code null} 时使用默认实例
      */
     public Configuration(String authServerUrl, String realm, String clientId, Map<String, Object> clientCredentials, HttpClient httpClient) {
         this.authServerUrl = authServerUrl;
@@ -60,6 +62,7 @@ public class Configuration extends AdapterConfig {
         this.httpClient = httpClient;
     }
 
+    /** 懒加载默认 {@link HttpClient}。 */
     public HttpClient getHttpClient() {
         if (this.httpClient == null) {
             this.httpClient = HttpClients.createDefault();
@@ -75,6 +78,7 @@ public class Configuration extends AdapterConfig {
         this.clientCredentialsProvider = clientCredentialsProvider;
     }
 
+    /** 按需引导并返回客户端凭证提供者。 */
     public ClientCredentialsProvider getClientCredentialsProvider() {
         if (clientCredentialsProvider == null) {
             clientCredentialsProvider = ClientCredentialsProviderUtils.bootstrapClientAuthenticator(this);

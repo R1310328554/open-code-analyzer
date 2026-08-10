@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import static org.keycloak.common.util.Encode.encodePathAsIs;
 
 /**
- * An entry point for managing user-managed permissions for a particular resource
+ * 针对特定资源的用户托管权限（user-managed permission）管理入口。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -50,10 +50,10 @@ public class PolicyResource {
     }
 
     /**
-     * Creates a new user-managed permission as represented by the given {@code permission}.
+     * 创建 {@code permission} 所表示的用户托管权限。
      *
-     * @param permission the permission to create
-     * @return if successful, the permission created
+     * @param permission 待创建的权限表示
+     * @return 成功时返回已创建的权限
      */
     public UmaPermissionRepresentation create(final UmaPermissionRepresentation permission) {
         if (permission == null) {
@@ -77,9 +77,9 @@ public class PolicyResource {
     }
 
     /**
-     * Updates an existing user-managed permission
+     * 更新已有用户托管权限。
      *
-     * @param permission the permission to update
+     * @param permission 待更新的权限
      */
     public void update(final UmaPermissionRepresentation permission) {
         if (permission == null) {
@@ -107,9 +107,9 @@ public class PolicyResource {
     }
 
     /**
-     * Deletes an existing user-managed permission
+     * 删除指定 ID 的用户托管权限。
      *
-     * @param id the permission id
+     * @param id 权限 ID
      */
     public void delete(final String id) {
         Callable<Void> callable = new Callable<Void>() {
@@ -129,14 +129,14 @@ public class PolicyResource {
     }
 
     /**
-     * Queries the server for permission matching the given parameters.
+     * 按条件查询匹配的用户托管权限。
      *
-     * @param id the permission id
-     * @param name the name of the permission
-     * @param scope the scope associated with the permission
-     * @param firstResult the position of the first resource to retrieve
-     * @param maxResult the maximum number of resources to retrieve
-     * @return the permissions matching the given parameters
+     * @param id 权限 ID
+     * @param name 权限名称
+     * @param scope 关联 scope
+     * @param firstResult 分页起始位置
+     * @param maxResult 最大返回条数
+     * @return 满足条件的权限列表
      */
     public List<UmaPermissionRepresentation> find(final String name,
                                                   final String scope,
@@ -163,10 +163,10 @@ public class PolicyResource {
     }
 
     /**
-     * Queries the server for a permission with the given {@code id}.
+     * 按 {@code id} 查询单条用户托管权限。
      *
-     * @param id the permission id
-     * @return the permission with the given id
+     * @param id 权限 ID
+     * @return 对应权限；不存在时由 HTTP 层处理
      */
     public UmaPermissionRepresentation findById(final String id) {
         if (id == null) {

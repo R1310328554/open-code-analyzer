@@ -33,7 +33,7 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
- * An entry point for managing permission tickets using the Protection API.
+ * 通过 Protection API 管理权限票据（permission ticket）的入口。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -50,15 +50,16 @@ public class PermissionResource {
     }
 
     /**
-     * @deprecated use {@link #create(PermissionRequest)}
-     * @param request
-     * @return
+     * @deprecated 请使用 {@link #create(PermissionRequest)}
+     * @param request 权限请求
+     * @return 权限响应
      */
     @Deprecated
     public PermissionResponse forResource(PermissionRequest request) {
         return create(request);
     }
 
+    /** 按条件统计匹配的权限票据数量。 */
     public Long count(final String resourceId,
                       final String scopeId,
                       final String owner,
@@ -87,20 +88,20 @@ public class PermissionResource {
     }
 
     /**
-     * Creates a new permission ticket for a single resource and scope(s).
+     * 为单个资源及其 scope 创建权限票据。
      *
-     * @param request the {@link PermissionRequest} representing the resource and scope(s) (not {@code null})
-     * @return a permission response holding a permission ticket with the requested permissions
+     * @param request 表示资源与 scope 的 {@link PermissionRequest}（不可为 {@code null}）
+     * @return 含所请求权限的权限票据响应
      */
     public PermissionResponse create(PermissionRequest request) {
         return create(Arrays.asList(request));
     }
 
     /**
-     * Creates a new permission ticket for a set of one or more resource and scope(s).
+     * 为一组资源及其 scope 批量创建权限票据。
      *
-     * @param requests the {@link PermissionRequest} representing the resource and scope(s) (not {@code null})
-     * @return a permission response holding a permission ticket with the requested permissions
+     * @param requests 表示资源与 scope 的 {@link PermissionRequest} 列表（不可为 {@code null}）
+     * @return 含所请求权限的权限票据响应
      */
     public PermissionResponse create(final List<PermissionRequest> requests) {
         if (requests == null || requests.isEmpty()) {
@@ -123,10 +124,10 @@ public class PermissionResource {
     }
 
     /**
-     * Creates a new uma permission for a single resource and scope(s).
+     * 创建 UMA 权限票据（完整 {@link PermissionTicketRepresentation}）。
      *
-     * @param ticket the {@link PermissionTicketRepresentation} representing the resource and scope(s) (not {@code null})
-     * @return a permission response holding the permission ticket representation
+     * @param ticket 表示资源与 scope 的 {@link PermissionTicketRepresentation}（不可为 {@code null}）
+     * @return 创建后的权限票据表示
      */
     public PermissionTicketRepresentation create(final PermissionTicketRepresentation ticket) {
         if (ticket == null) {
@@ -158,10 +159,10 @@ public class PermissionResource {
     }
     
     /**
-     * Query the server for any permission ticket associated with the given <code>scopeId</code>.
+     * 查询与给定 <code>scopeId</code> 关联的全部权限票据。
      *
-     * @param scopeId the scope id (not {@code null})
-     * @return a list of permission tickets associated with the given <code>scopeId</code>
+     * @param scopeId scope ID（不可为 {@code null}）
+     * @return 关联的权限票据列表
      */
     public List<PermissionTicketRepresentation> findByScope(final String scopeId) {
         if (scopeId == null) {
@@ -184,10 +185,10 @@ public class PermissionResource {
     }
 
     /**
-     * Query the server for any permission ticket associated with the given <code>resourceId</code>.
+     * 查询与给定 <code>resourceId</code> 关联的全部权限票据。
      *
-     * @param resourceId the resource id (not {@code null})
-     * @return a list of permission tickets associated with the given <code>resourceId</code>
+     * @param resourceId 资源 ID（不可为 {@code null}）
+     * @return 关联的权限票据列表
      */
     public List<PermissionTicketRepresentation> findByResource(final String resourceId) {
         if (resourceId == null) {
@@ -210,17 +211,17 @@ public class PermissionResource {
     }
 
     /**
-     * Query the server for any permission ticket with the matching arguments.
+     * 按多条件组合查询权限票据。
      *
-     * @param resourceId the resource id or name
-     * @param scopeId the scope id or name
-     * @param owner the owner id or name
-     * @param requester the requester id or name
-     * @param granted if true, only permission tickets marked as granted are returned.
-     * @param returnNames if the response should include names for resource, scope and owner
-     * @param firstResult the position of the first resource to retrieve
-     * @param maxResult the maximum number of resources to retrieve
-     * @return a list of permission tickets with the matching arguments
+     * @param resourceId 资源 ID 或名称
+     * @param scopeId scope ID 或名称
+     * @param owner 所有者 ID 或名称
+     * @param requester 请求方 ID 或名称
+     * @param granted 为 true 时仅返回已授予的票据
+     * @param returnNames 响应是否包含资源、scope 与所有者名称
+     * @param firstResult 分页起始位置
+     * @param maxResult 最大返回条数
+     * @return 匹配的权限票据列表
      */
     public List<PermissionTicketRepresentation> find(final String resourceId,
                                                      final String scopeId,
@@ -254,9 +255,9 @@ public class PermissionResource {
     }
 
     /**
-     * Updates a permission ticket.
+     * 更新权限票据。
      *
-     * @param ticket the permission ticket
+     * @param ticket 待更新的权限票据
      */
     public void update(final PermissionTicketRepresentation ticket) {
         if (ticket == null) {
@@ -284,8 +285,8 @@ public class PermissionResource {
     }
 
     /**
-     * Deletes a permission ticket by ID.
-     * @param ticketId the permission ticket ID
+     * 按 ID 删除权限票据。
+     * @param ticketId 权限票据 ID
      */
     public void delete(final String ticketId) {
         if (ticketId == null || ticketId.trim().isEmpty()) {

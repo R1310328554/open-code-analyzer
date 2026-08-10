@@ -36,7 +36,7 @@ import org.keycloak.representations.idm.authorization.Permission;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
- * An entry point for obtaining permissions from the server.
+ * 向授权服务器申请权限（RPT）的 API 入口。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -55,32 +55,32 @@ public class AuthorizationResource {
     }
 
     /**
-     * Query the server for all permissions.
+     * 向服务器查询全部可授予权限。
      *
-     * @return an {@link AuthorizationResponse} with a RPT holding all granted permissions
-     * @throws AuthorizationDeniedException in case the request was denied by the server
+     * @return 含 RPT 及已授予权限的 {@link AuthorizationResponse}
+     * @throws AuthorizationDeniedException 服务器拒绝授权时
      */
     public AuthorizationResponse authorize() throws AuthorizationDeniedException {
         return authorize(new AuthorizationRequest());
     }
 
     /**
-     * Query the server for permissions given an {@link AuthorizationRequest}.
+     * 根据 {@link AuthorizationRequest} 向服务器申请权限。
      *
-     * @param request an {@link AuthorizationRequest} (not {@code null})
-     * @return an {@link AuthorizationResponse} with a RPT holding all granted permissions
-     * @throws AuthorizationDeniedException in case the request was denied by the server
+     * @param request {@link AuthorizationRequest}（不可为 {@code null}）
+     * @return 含 RPT 及已授予权限的 {@link AuthorizationResponse}
+     * @throws AuthorizationDeniedException 服务器拒绝授权时
      */
     public AuthorizationResponse authorize(final AuthorizationRequest request) throws AuthorizationDeniedException {
         return invoke(request, new TypeReference<AuthorizationResponse>(){});
     }
 
     /**
-     * Query the server for a list of permissions given an {@link AuthorizationRequest}.
+     * 以 permissions 响应模式查询权限列表。
      *
-     * @param request an {@link AuthorizationRequest} (not {@code null})
-     * @return a list of permissions granted by the server
-     * @throws AuthorizationDeniedException in case the request was denied by the server
+     * @param request {@link AuthorizationRequest}（不可为 {@code null}）
+     * @return 服务器授予的权限列表
+     * @throws AuthorizationDeniedException 服务器拒绝授权时
      */
     public List<Permission> getPermissions(final AuthorizationRequest request) throws AuthorizationDeniedException {
         AuthorizationRequest.Metadata metadata;
@@ -97,6 +97,7 @@ public class AuthorizationResource {
         return (List<Permission>) invoke(request, new TypeReference<List<Permission>>(){});
     }
 
+    /** 执行 UMA 授权请求，必要时通过 {@link TokenCallable} 刷新令牌并重试。 */
     private <T> T invoke(AuthorizationRequest request, TypeReference<T> responseType) {
         if (request == null) {
             throw new IllegalArgumentException("Authorization request must not be null");

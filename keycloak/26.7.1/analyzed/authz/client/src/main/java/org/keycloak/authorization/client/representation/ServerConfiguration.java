@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * UMA/OIDC 发现端点返回的服务器元数据，映射各授权相关 REST 端点 URL。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -108,110 +110,137 @@ public class ServerConfiguration {
     @JsonProperty("policy_endpoint")
     private String policyEndpoint;
 
+    /** 发行者标识（issuer）。 */
     public String getIssuer() {
         return issuer;
     }
 
+    /** OAuth2/OIDC 授权端点 URL。 */
     public String getAuthorizationEndpoint() {
         return authorizationEndpoint;
     }
 
+    /** 令牌端点 URL。 */
     public String getTokenEndpoint() {
         return tokenEndpoint;
     }
 
+    /** 令牌内省端点 URL。 */
     public String getIntrospectionEndpoint() {
         return introspectionEndpoint;
     }
 
+    /** UserInfo 端点 URL。 */
     public String getUserinfoEndpoint() {
         return userinfoEndpoint;
     }
 
+    /** 登出/会话结束端点 URL。 */
     public String getLogoutEndpoint() {
         return logoutEndpoint;
     }
 
+    /** JWKS 公钥集 URI。 */
     public String getJwksUri() {
         return jwksUri;
     }
 
+    /** 会话检查 iframe URL。 */
     public String getCheckSessionIframe() {
         return checkSessionIframe;
     }
 
+    /** 服务器支持的 grant_type 列表。 */
     public List<String> getGrantTypesSupported() {
         return grantTypesSupported;
     }
 
+    /** 服务器支持的 response_type 列表。 */
     public List<String> getResponseTypesSupported() {
         return responseTypesSupported;
     }
 
+    /** 支持的 subject_type 列表。 */
     public List<String> getSubjectTypesSupported() {
         return subjectTypesSupported;
     }
 
+    /** ID Token 支持的签名算法。 */
     public List<String> getIdTokenSigningAlgValuesSupported() {
         return idTokenSigningAlgValuesSupported;
     }
 
+    /** UserInfo 响应支持的签名算法。 */
     public List<String> getUserInfoSigningAlgValuesSupported() {
         return userInfoSigningAlgValuesSupported;
     }
 
+    /** Request Object 支持的签名算法。 */
     public List<String> getRequestObjectSigningAlgValuesSupported() {
         return requestObjectSigningAlgValuesSupported;
     }
 
+    /** 支持的 response_mode 列表。 */
     public List<String> getResponseModesSupported() {
         return responseModesSupported;
     }
 
+    /** 动态客户端注册端点 URL。 */
     public String getRegistrationEndpoint() {
         return registrationEndpoint;
     }
 
+    /** 令牌端点支持的客户端认证方式。 */
     public List<String> getTokenEndpointAuthMethodsSupported() {
         return tokenEndpointAuthMethodsSupported;
     }
 
+    /** 令牌端点客户端认证支持的签名算法。 */
     public List<String> getTokenEndpointAuthSigningAlgValuesSupported() {
         return tokenEndpointAuthSigningAlgValuesSupported;
     }
 
+    /** 服务器声明支持的 claim 名称。 */
     public List<String> getClaimsSupported() {
         return claimsSupported;
     }
 
+    /** 支持的 claim 类型。 */
     public List<String> getClaimTypesSupported() {
         return claimTypesSupported;
     }
 
+    /** 是否支持 claims 请求参数。 */
     public Boolean getClaimsParameterSupported() {
         return claimsParameterSupported;
     }
 
+    /** 服务器支持的 scope 列表。 */
     public List<String> getScopesSupported() {
         return scopesSupported;
     }
 
+    /** 是否支持 request 参数。 */
     public Boolean getRequestParameterSupported() {
         return requestParameterSupported;
     }
 
+    /** 是否支持 request_uri 参数。 */
     public Boolean getRequestUriParameterSupported() {
         return requestUriParameterSupported;
     }
 
+    /** UMA 资源注册（Protection API）端点 URL。 */
     public String getResourceRegistrationEndpoint() {
         return resourceRegistrationEndpoint;
     }
 
+    /** UMA 权限票据端点 URL。 */
     public String getPermissionEndpoint() {
         return permissionEndpoint;
     }
     
+    /** UMA 用户托管策略（policy）端点 URL。 */
     public String getPolicyEndpoint() {
         return policyEndpoint;
     }

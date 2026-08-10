@@ -34,6 +34,8 @@ import org.jboss.security.auth.callback.ObjectCallback;
 import org.jboss.security.auth.spi.AbstractServerLoginModule;
 
 /**
+ * JBoss/WildFly {@code LoginModule}，将 Keycloak 适配器提供的 {@link KeycloakAccount} 凭证桥接到容器安全域。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -64,8 +66,7 @@ public class KeycloakLoginModule extends AbstractServerLoginModule {
             return true;
         }
 
-        // We return false to allow the next module to attempt authentication, maybe a
-        // username and password has been supplied to a web auth.
+        // 返回 false 以便后续 LoginModule 继续尝试认证（例如 Web 表单用户名/密码）
         return false;
     }
 
@@ -94,6 +95,7 @@ public class KeycloakLoginModule extends AbstractServerLoginModule {
         return roleSets;
     }
 
+    /** 通过回调处理器从适配器获取 {@link KeycloakAccount} 凭证对象。 */
     protected Object getCredential() throws LoginException {
         NameCallback nc = new NameCallback("Alias: ");
         ObjectCallback oc = new ObjectCallback("Credential: ");

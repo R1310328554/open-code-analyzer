@@ -30,7 +30,7 @@ import com.fasterxml.jackson.core.util.JsonParserDelegate;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 
 /**
- * Provides replacing of system properties for parsed values
+ * 解析 JSON 时对字符串值执行系统属性/环境变量占位符替换的 Jackson 工厂。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -60,6 +60,7 @@ class SystemPropertiesJsonParserFactory extends MappingJsonFactory {
         return new SystemPropertiesAwareJsonParser(delegate);
     }
 
+    /** 在 {@link JsonParser#getText()} 时替换 {@code ${...}} 等占位符。 */
     public static class SystemPropertiesAwareJsonParser extends JsonParserDelegate {
 
         public SystemPropertiesAwareJsonParser(JsonParser d) {

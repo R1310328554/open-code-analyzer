@@ -18,14 +18,18 @@
 package org.keycloak.authorization.client;
 
 /**
+ * Protection API 查询或操作的目标资源不存在时抛出的运行时异常。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ResourceNotFoundException extends RuntimeException {
 
+    /** @param cause 原始异常 */
     public ResourceNotFoundException(Throwable cause) {
         super(cause);
     }
 
+    /** @param message 可读错误信息 @param cause 原始异常 */
     public ResourceNotFoundException(String message, Throwable cause) {
         super(message, cause);
     }

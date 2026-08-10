@@ -22,6 +22,7 @@ import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
 /**
+ * 客户端侧授权上下文，在 {@link AuthorizationContext} 基础上持有 {@link AuthzClient} 引用。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -29,15 +30,18 @@ public class ClientAuthorizationContext extends AuthorizationContext {
 
     private final AuthzClient client;
 
+    /** 基于 RPT 令牌、当前路径配置与授权客户端构造上下文。 */
     public ClientAuthorizationContext(AccessToken authzToken, PolicyEnforcerConfig.PathConfig current, AuthzClient client) {
         super(authzToken, current);
         this.client = client;
     }
 
+    /** 仅持有授权客户端、尚未绑定 RPT 的上下文。 */
     public ClientAuthorizationContext(AuthzClient client) {
         this.client = client;
     }
 
+    /** 返回关联的 {@link AuthzClient} 实例。 */
     public AuthzClient getClient() {
         return client;
     }

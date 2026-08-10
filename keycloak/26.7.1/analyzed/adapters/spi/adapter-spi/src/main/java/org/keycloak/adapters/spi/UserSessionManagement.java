@@ -20,12 +20,20 @@ package org.keycloak.adapters.spi;
 import java.util.List;
 
 /**
+ * 用户会话管理 SPI，供适配器实现登出与 HTTP 会话清理。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface UserSessionManagement {
 
+    /** 登出所有已关联的用户会话。 */
     void logoutAll();
 
+    /**
+     * 按 HTTP 会话 ID 列表登出指定会话。
+     *
+     * @param ids HTTP 会话标识符列表
+     */
     void logoutHttpSessions(List<String> ids);
 }
