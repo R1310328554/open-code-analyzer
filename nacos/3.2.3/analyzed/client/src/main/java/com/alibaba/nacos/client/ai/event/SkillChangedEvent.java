@@ -19,31 +19,41 @@ package com.alibaba.nacos.client.ai.event;
 import com.alibaba.nacos.common.notify.Event;
 
 /**
- * Skill changed event for internal notification.
+ * Skill 变更内部通知事件。
  *
- * <p>Published by {@code NacosSkillCacheHolder} whenever the polling loop detects that the
- * server-side published skill content has changed (i.e. the response MD5 is different from the
- * locally cached MD5). {@code AiChangeNotifier} consumes the event and dispatches it to all
- * registered {@code AbstractNacosSkillListener}s for the same cache key.
+ * <p>由 {@code NacosSkillCacheHolder} 在轮询检测到服务端 Skill 内容 MD5 与本地缓存不一致时发布。{@code AiChangeNotifier} 消费该事件并将变更分派给相同缓存键下所有已注册的 {@code AbstractNacosSkillListener}。</p>
  *
  * @author nacos
  */
 public class SkillChangedEvent extends Event {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 1L;
     
+    /** Skill 名称。 */
     private final String skillName;
     
+    /** 本地缓存键。 */
     private final String cacheKey;
     
+    /** 最新下载的 Skill ZIP 字节内容。 */
     private final byte[] zipBytes;
     
+    /** 服务端发布的 Skill 内容 MD5。 */
     private final String md5;
     
+    /** 服务端解析后的实际版本号。 */
     private final String resolvedVersion;
     
-    public SkillChangedEvent(String skillName, String cacheKey, byte[] zipBytes, String md5,
-        String resolvedVersion) {
+    /**
+     * 构造 Skill 变更事件。
+     *
+     * @param skillName       Skill 名称
+     * @param cacheKey        本地缓存键
+     * @param zipBytes        ZIP 字节内容
+     * @param md5             内容 MD5
+     * @param resolvedVersion 解析后的版本号
+     */
         this.skillName = skillName;
         this.cacheKey = cacheKey;
         this.zipBytes = zipBytes;
@@ -51,22 +61,27 @@ public class SkillChangedEvent extends Event {
         this.resolvedVersion = resolvedVersion;
     }
     
+    /** 返回 Skill 名称。 */
     public String getSkillName() {
         return skillName;
     }
     
+    /** 返回本地缓存键。 */
     public String getCacheKey() {
         return cacheKey;
     }
     
+    /** 返回 Skill ZIP 字节内容。 */
     public byte[] getZipBytes() {
         return zipBytes;
     }
     
+    /** 返回内容 MD5。 */
     public String getMd5() {
         return md5;
     }
     
+    /** 返回解析后的版本号。 */
     public String getResolvedVersion() {
         return resolvedVersion;
     }

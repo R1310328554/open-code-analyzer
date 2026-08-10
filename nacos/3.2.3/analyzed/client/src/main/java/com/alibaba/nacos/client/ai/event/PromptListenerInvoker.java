@@ -22,20 +22,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Nacos AI module prompt listener invoker.
+ * Prompt 监听器调用器。
+ *
+ * <p>将 {@link NacosPromptEvent} 分派给 {@link AbstractNacosPromptListener}，并在调用前记录 promptKey 日志。</p>
  *
  * @author nacos
  */
 public class PromptListenerInvoker
     extends AbstractAiListenerInvoker<NacosPromptEvent, AbstractNacosPromptListener> {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(PromptListenerInvoker.class);
     
-    public PromptListenerInvoker(AbstractNacosPromptListener listener) {
+    /**
+     * 构造 Prompt 监听器调用器。
+     *
+     * @param listener 目标 Prompt 监听器
+     */
         super(listener);
     }
     
     @Override
+    /** 记录 Prompt 事件分派日志。 */
     protected void logInvoke(NacosPromptEvent event) {
         LOGGER.info("Invoke event promptKey: {} to Listener: {}", event.getPromptKey(),
             listener.toString());

@@ -26,22 +26,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Nacos AI module redo task.
+ * Nacos AI 模块定时重做任务。
+ *
+ * <p>继承 {@link AbstractRedoTask}，周期性重放 MCP 服务端点与 Agent 端点的注册/注销/移除操作，确保 gRPC 连接恢复后数据与服务端一致。</p>
  *
  * @author xiweng.yy
  */
 public class AiRedoScheduledTask extends AbstractRedoTask<AiGrpcRedoService> {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(AiRedoScheduledTask.class);
     
+    /** 关联的 AI gRPC 客户端，用于执行重做 RPC。 */
     private final AiGrpcClient aiGrpcClient;
     
-    public AiRedoScheduledTask(AiGrpcRedoService redoService, AiGrpcClient aiGrpcClient) {
+    /**
+     * 构造 AI 重做定时任务。
+     *
+     * @param redoService  重做服务
+     * @param aiGrpcClient AI gRPC 客户端
+     */
         super(LOGGER, redoService);
         this.aiGrpcClient = aiGrpcClient;
     }
     
     @Override
+    /** 执行 MCP 与 Agent 端点的重做逻辑。 */
     protected void redoData() throws NacosException {
         try {
             redoForMcpSeverEndpoint();
@@ -51,6 +61,7 @@ public class AiRedoScheduledTask extends AbstractRedoTask<AiGrpcRedoService> {
         }
     }
     
+    /** 遍历并重做所有 Agent 端点操作。 */
     private void redoForAgentEndpoint() {
         for (RedoData<AgentEndpointWrapper> each : getRedoService().findAgentEndpointRedoData()) {
             AgentEndpointRedoData redoData = (AgentEndpointRedoData) each;
@@ -64,6 +75,7 @@ public class AiRedoScheduledTask extends AbstractRedoTask<AiGrpcRedoService> {
         }
     }
     
+    /** 根据重做类型执行单条 Agent 端点重做。 */
     private void redoForAgentEndpoint(AgentEndpointRedoData redoData) throws NacosException {
         NamingRedoData.RedoType redoType = redoData.getRedoType();
         String agentName = redoData.getAgentName();
@@ -96,6 +108,7 @@ public class AiRedoScheduledTask extends AbstractRedoTask<AiGrpcRedoService> {
         }
     }
     
+    /** 遍历并重做所有 MCP 服务端点操作。 */
     private void redoForMcpSeverEndpoint() {
         for (RedoData<McpServerEndpoint> each : getRedoService().findMcpServerEndpointRedoData()) {
             McpServerEndpointRedoData redoData = (McpServerEndpointRedoData) each;
@@ -109,6 +122,7 @@ public class AiRedoScheduledTask extends AbstractRedoTask<AiGrpcRedoService> {
         }
     }
     
+    /** 根据重做类型执行单条 MCP 服务端点重做。 */
     private void redoForMcpServerEndpoint(McpServerEndpointRedoData redoData)
         throws NacosException {
         NamingRedoData.RedoType redoType = redoData.getRedoType();

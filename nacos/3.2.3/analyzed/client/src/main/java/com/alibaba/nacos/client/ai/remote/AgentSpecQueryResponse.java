@@ -19,36 +19,47 @@ package com.alibaba.nacos.client.ai.remote;
 import com.alibaba.nacos.api.ai.model.agentspecs.AgentSpec;
 
 /**
- * Response wrapper for the listener-style agentspec query. Carries the resolved AgentSpec together
- * with the listener-related response headers ({@code X-Nacos-AgentSpec-Md5} and
- * {@code X-Nacos-AgentSpec-Resolved-Version}) so the client cache can short-circuit the next poll
- * when the published content has not changed.
+ * 监听式 AgentSpec 查询响应包装类。
+ *
+ * <p>携带解析后的 {@link AgentSpec} 及响应头 {@code X-Nacos-AgentSpec-Md5}、{@code X-Nacos-AgentSpec-Resolved-Version}，使客户端缓存可在下次轮询时通过 MD5 条件查询短路。</p>
  *
  * @author nacos
  * @since 3.2.0
  */
 public class AgentSpecQueryResponse {
     
+    /** 解析后的 AgentSpec 对象。 */
     private final AgentSpec agentSpec;
     
+    /** 服务端发布内容的 MD5 指纹。 */
     private final String md5;
     
+    /** 服务端解析后的实际版本号。 */
     private final String resolvedVersion;
     
-    public AgentSpecQueryResponse(AgentSpec agentSpec, String md5, String resolvedVersion) {
+    /**
+     * 构造 AgentSpec 查询响应。
+     *
+     * @param agentSpec       AgentSpec 对象
+     * @param md5             内容 MD5
+     * @param resolvedVersion 解析后的版本号
+     */
         this.agentSpec = agentSpec;
         this.md5 = md5;
         this.resolvedVersion = resolvedVersion;
     }
     
+    /** 返回 AgentSpec 对象。 */
     public AgentSpec getAgentSpec() {
         return agentSpec;
     }
     
+    /** 返回内容 MD5。 */
     public String getMd5() {
         return md5;
     }
     
+    /** 返回解析后的版本号。 */
     public String getResolvedVersion() {
         return resolvedVersion;
     }

@@ -91,37 +91,56 @@ import java.util.concurrent.TimeUnit;
 import static com.alibaba.nacos.client.constant.Constants.Security.SECURITY_INFO_REFRESH_INTERVAL_MILLS;
 
 /**
- * Nacos AI GRPC protocol client.
+ * Nacos AI gRPC 协议客户端。
+ *
+ * <p>实现 {@link AiClientProxy}，通过 gRPC 与 Nacos 服务端通信，支持 MCP 服务注册/查询/订阅、Agent Card 发布/订阅、Prompt 查询及端点注册/注销等 AI 能力。内置 {@link AiGrpcRedoService} 在连接断开后自动重放未完成的端点操作。</p>
  *
  * @author xiweng.yy
  */
 public class AiGrpcClient implements AiClientProxy {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(AiGrpcClient.class);
     
+    /** 命名空间 ID。 */
     private final String namespaceId;
     
+    /** 客户端实例唯一标识，用于日志追踪。 */
     private final String uuid;
     
+    /** RPC 请求超时毫秒数，-1 表示不限制。 */
     private final Long requestTimeout;
     
+    /** 底层 gRPC RPC 客户端。 */
     private final RpcClient rpcClient;
     
+    /** 服务端地址列表管理器。 */
     private final AbstractServerListManager serverListManager;
     
+    /** 端点注册/注销重做服务。 */
     private final AiGrpcRedoService redoService;
     
+    /** 客户端配置属性。 */
     private final NacosClientProperties properties;
     
+    /** 安全认证代理，负责登录与令牌刷新。 */
     private SecurityProxy securityProxy;
     
+    /** MCP 服务本地缓存持有者。 */
     private NacosMcpServerCacheHolder mcpServerCacheHolder;
     
+    /** Agent Card 本地缓存持有者。 */
     private NacosAgentCardCacheHolder agentCardCacheHolder;
     
+    /** 安全令牌定时刷新线程池。 */
     private ScheduledThreadPoolExecutor executorService;
     
-    public AiGrpcClient(String namespaceId, NacosClientProperties properties) {
+    /**
+     * 构造 AI gRPC 客户端并初始化 RPC 连接与重做服务。
+     *
+     * @param namespaceId 命名空间 ID
+     * @param properties  客户端配置
+     */
         this.namespaceId = namespaceId;
         this.uuid = UUID.randomUUID().toString();
         this.requestTimeout =
@@ -132,6 +151,7 @@ public class AiGrpcClient implements AiClientProxy {
         this.properties = properties;
     }
     
+    /** 根据配置构建带 AI 模块标签的 gRPC RPC 客户端。 */
     private RpcClient buildRpcClient(NacosClientProperties properties) {
         Map<String, String> labels = new HashMap<>(3);
         labels.put(RemoteConstants.LABEL_SOURCE, RemoteConstants.LABEL_SOURCE_SDK);
@@ -146,6 +166,7 @@ public class AiGrpcClient implements AiClientProxy {
      * Start the grpc client.
      *
      * @throws NacosException nacos exception
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void start(NacosMcpServerCacheHolder mcpServerCacheHolder,
         NacosAgentCardCacheHolder agentCardCacheHolder)
@@ -161,6 +182,7 @@ public class AiGrpcClient implements AiClientProxy {
         initSecurityProxy(properties);
     }
     
+    /** 初始化安全代理并启动令牌定时刷新任务。 */
     private void initSecurityProxy(NacosClientProperties properties) {
         this.executorService = new ScheduledThreadPoolExecutor(1,
             new NameThreadFactory("com.alibaba.nacos.client.ai.security"));
@@ -178,6 +200,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param version   version of mcp server, if input empty or null, return the latest version
      * @return mcp server detail info
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public McpServerDetailInfo queryMcpServer(String mcpName, String version)
         throws NacosException {
@@ -198,6 +221,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param label prompt label, optional
      * @return prompt detail
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public Prompt queryPrompt(String promptKey, String version, String label)
         throws NacosException {
@@ -213,6 +237,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param md5 client md5 for conditional query, optional
      * @return prompt detail
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public Prompt queryPrompt(String promptKey, String version, String label, String md5)
         throws NacosException {
@@ -233,6 +258,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param toolSpecification   mcp server tool specification, optional
      * @return mcp id
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public String releaseMcpServer(McpServerBasicInfo serverSpecification,
         McpToolSpecification toolSpecification,
@@ -250,6 +276,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param endpointSpecification mcp server endpoint specification, optional
      * @return mcp id
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public String releaseMcpServer(McpServerBasicInfo serverSpecification,
         McpToolSpecification toolSpecification,
@@ -278,6 +305,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param port      port of mcp endpoint
      * @param version   version of mcp endpoint, if empty, the endpoint will return for all mcp version
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void registerMcpServerEndpoint(String mcpName, String address, int port, String version)
         throws NacosException {
@@ -297,6 +325,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param port      port of mcp endpoint
      * @param version   version of mcp endpoint, if empty, the endpoint will return for all mcp version
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void doRegisterMcpServerEndpoint(String mcpName, String address, int port,
         String version)
@@ -319,6 +348,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param address   address of mcp endpoint
      * @param port      port of mcp endpoint
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void deregisterMcpServerEndpoint(String mcpName, String address, int port)
         throws NacosException {
@@ -336,6 +366,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param address   address of mcp endpoint
      * @param port      port of mcp endpoint
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void doDeregisterMcpServerEndpoint(String mcpName, String address, int port)
         throws NacosException {
@@ -356,6 +387,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param version   version of mcp server
      * @return latest version mcp server
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public McpServerDetailInfo subscribeMcpServer(String mcpName, String version)
         throws NacosException {
@@ -381,6 +413,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param mcpName   name of mcp server
      * @param version   version of mcp server
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void unsubscribeMcpServer(String mcpName, String version) throws NacosException {
         checkServerAbilityOrThrow(AbilityKey.SERVER_MCP_REGISTRY, "mcp registry");
@@ -395,6 +428,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param registrationType registration type
      * @return agent card with nacos extension detail
      * @throws NacosException if request parameter is invalid or agent card not found or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public AgentCardDetailInfo getAgentCard(String agentName, String version,
         String registrationType)
@@ -424,6 +458,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param setAsLatest      whether set new version as latest, default is false. This parameter is only effect when new version is released.
      *                         If current agent card not exist, whatever this parameter is, it will be set as latest.
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void releaseAgentCard(AgentCard agentCard, String registrationType, boolean setAsLatest)
         throws NacosException {
@@ -471,6 +506,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param agentName agent name
      * @param endpoint  agent endpoint
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void registerAgentEndpoint(String agentName, AgentEndpoint endpoint)
         throws NacosException {
@@ -487,6 +523,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param agentName agent name
      * @param endpoints agent endpoints
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void registerAgentEndpoints(String agentName, Collection<AgentEndpoint> endpoints)
         throws NacosException {
@@ -503,6 +540,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param agentName agent name
      * @param endpoint  agent endpoint
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void doRegisterAgentEndpoint(String agentName, AgentEndpoint endpoint)
         throws NacosException {
@@ -521,6 +559,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param agentName agent name
      * @param endpoints agent endpoints
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void doRegisterAgentEndpoint(String agentName, Collection<AgentEndpoint> endpoints)
         throws NacosException {
@@ -538,6 +577,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param agentName agent name
      * @param endpoint  agent endpoint
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void deregisterAgentEndpoint(String agentName, AgentEndpoint endpoint)
         throws NacosException {
@@ -554,6 +594,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param agentName agent name
      * @param endpoint  agent endpoint
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void doDeregisterAgentEndpoint(String agentName, AgentEndpoint endpoint)
         throws NacosException {
@@ -573,6 +614,7 @@ public class AiGrpcClient implements AiClientProxy {
      * @param version   version of agent card
      * @return current agent card
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public AgentCardDetailInfo subscribeAgentCard(String agentName, String version)
         throws NacosException {
@@ -598,12 +640,14 @@ public class AiGrpcClient implements AiClientProxy {
      * @param agentName name of agent card
      * @param version   version of agent card
      * @throws NacosException if request parameter is invalid or handle error
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public void unsubscribeAgentCard(String agentName, String version) throws NacosException {
         checkServerAbilityOrThrow(AbilityKey.SERVER_AGENT_REGISTRY, "agent registry");
         agentCardCacheHolder.removeAgentCardUpdateTask(agentName, version);
     }
     
+    /** 返回 gRPC 客户端是否处于运行状态。 */
     public boolean isEnable() {
         return rpcClient.isRunning();
     }
@@ -613,11 +657,13 @@ public class AiGrpcClient implements AiClientProxy {
      *
      * @param abilityKey ability key
      * @return true if supported, otherwise false
+      * <p>Nacos AI gRPC 客户端 RPC 操作；详见上方说明。</p>
      */
     public boolean isAbilitySupportedByServer(AbilityKey abilityKey) {
         return rpcClient.getConnectionAbility(abilityKey) == AbilityStatus.SUPPORTED;
     }
     
+    /** 校验服务端是否支持指定能力，不支持则抛出异常。 */
     private void checkServerAbilityOrThrow(AbilityKey abilityKey, String featureName) {
         if (!rpcClient.isRunning()) {
             throw new NacosRuntimeException(NacosException.SERVER_ERROR,
@@ -637,6 +683,7 @@ public class AiGrpcClient implements AiClientProxy {
         }
     }
     
+    /** 判断 Agent Card 发布失败是否应使用旧版字段格式重试。 */
     private boolean shouldRetryWithLegacyFormat(NacosException e) {
         if (e.getErrCode() != NacosException.INVALID_PARAM) {
             return false;
@@ -650,6 +697,7 @@ public class AiGrpcClient implements AiClientProxy {
             || errMsg.contains("agentCard.url");
     }
     
+    /** 将新版 Agent Card 转换为旧版兼容格式。 */
     private AgentCard buildLegacyCompatibleAgentCard(AgentCard source) {
         AgentCard result = JacksonUtils.toObj(JacksonUtils.toJson(source), AgentCard.class);
         List<AgentInterface> supportedInterfaces = result.getSupportedInterfaces();
@@ -671,6 +719,7 @@ public class AiGrpcClient implements AiClientProxy {
         return result;
     }
     
+    /** 向服务端发送 AI RPC 请求并解析响应，自动附加安全头。 */
     private <T extends Response> T requestToServer(Request request, Class<T> responseClass)
         throws NacosException {
         Response response = null;
@@ -696,7 +745,7 @@ public class AiGrpcClient implements AiClientProxy {
             response = requestTimeout < 0 ? rpcClient.request(request)
                 : rpcClient.request(request, requestTimeout);
             if (ResponseCode.SUCCESS.getCode() != response.getResultCode()) {
-                // If the 403 login operation is triggered, refresh the accessToken of the client
+                // 403 时触发重新登录以刷新客户端 accessToken
                 if (NacosException.NO_RIGHT == response.getErrorCode()) {
                     securityProxy.reLogin();
                 }
@@ -719,11 +768,13 @@ public class AiGrpcClient implements AiClientProxy {
         }
     }
     
+    /** 获取 AI 请求的安全身份上下文头。 */
     private Map<String, String> getSecurityHeaders(String namespace, String mcpName) {
         RequestResource resource = buildRequestResource(namespace, mcpName);
         return securityProxy.getIdentityContext(resource);
     }
     
+    /** 构建 AI 模块请求资源描述。 */
     private RequestResource buildRequestResource(String namespaceId, String mcpName) {
         RequestResource.Builder builder = RequestResource.aiBuilder();
         builder.setNamespace(namespaceId);
@@ -747,6 +798,7 @@ public class AiGrpcClient implements AiClientProxy {
     }
     
     @Override
+    /** 关闭 gRPC 客户端、服务端列表管理器及安全代理。 */
     public void shutdown() throws NacosException {
         rpcClient.shutdown();
         serverListManager.shutdown();

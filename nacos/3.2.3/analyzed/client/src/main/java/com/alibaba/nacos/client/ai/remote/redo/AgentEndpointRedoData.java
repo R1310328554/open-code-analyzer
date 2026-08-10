@@ -21,24 +21,34 @@ import com.alibaba.nacos.client.redo.data.RedoData;
 import java.util.Objects;
 
 /**
- * Nacos AI module mcp server endpoint redo data.
+ * Agent 端点重做数据。
+ *
+ * <p>继承 {@link RedoData}，绑定 agentName 与 {@link AgentEndpointWrapper}，供 {@link AiGrpcRedoService} 在连接恢复后重试注册/注销操作。</p>
  *
  * @author xiweng.yy
  */
 public class AgentEndpointRedoData extends RedoData<AgentEndpointWrapper> {
     
+    /** Agent 名称。 */
     private final String agentName;
     
-    public AgentEndpointRedoData(String agentName, AgentEndpointWrapper agentEndpoint) {
+    /**
+     * 构造 Agent 端点重做数据。
+     *
+     * @param agentName     Agent 名称
+     * @param agentEndpoint 端点包装对象
+     */
         this.agentName = agentName;
         this.set(agentEndpoint);
     }
     
+    /** 返回 Agent 名称。 */
     public String getAgentName() {
         return agentName;
     }
     
     @Override
+    /** 基于 agentName 与父类状态判断相等性。 */
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -54,6 +64,7 @@ public class AgentEndpointRedoData extends RedoData<AgentEndpointWrapper> {
     }
     
     @Override
+    /** 返回哈希码。 */
     public int hashCode() {
         return Objects.hash(super.hashCode(), agentName);
     }

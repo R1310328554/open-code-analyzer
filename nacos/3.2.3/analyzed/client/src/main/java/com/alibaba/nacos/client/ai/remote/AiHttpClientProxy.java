@@ -54,40 +54,50 @@ import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTPS_PREFIX
 import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 
 /**
- * AI HTTP client proxy for AI operations over HTTP transport.
+ * AI HTTP 传输层客户端代理。
  *
- * <p>Provides HTTP-based implementation of {@link AiClientProxy}, enabling AI operations
- * to go through HTTP instead of gRPC. This is useful when a gateway sits between client
- * and server that cannot handle gRPC traffic.</p>
+ * <p>实现 {@link AiClientProxy}，通过 HTTP REST 与 Nacos 服务端通信。适用于客户端与服务端之间存在无法转发 gRPC 流量的网关场景。</p>
  *
- * <p>Currently supports Prompt operations; extensible for Skill and other capabilities.</p>
+ * <p>当前支持 Prompt、Skill、AgentSpec 查询；内置服务端列表轮询、安全认证及 304 条件查询处理。</p>
  *
  * @author nacos
  */
 public class AiHttpClientProxy implements AiClientProxy {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(AiHttpClientProxy.class);
     
+    /** Prompt 查询 REST 路径。 */
     private static final String PROMPT_CLIENT_PATH = "/v3/client/ai/prompt";
     
+    /** Skill 下载 REST 路径。 */
     private static final String SKILL_DOWNLOAD_PATH = "/v3/client/ai/skills";
     
+    /** AgentSpec 查询 REST 路径。 */
     private static final String AGENTSPEC_CLIENT_PATH = "/v3/client/ai/agentspecs";
     
+    /** 单请求最大重试次数。 */
     private static final int MAX_RETRY = 3;
     
+    /** 是否启用 HTTPS 协议前缀。 */
     private static final boolean ENABLE_HTTPS = Boolean.getBoolean(TlsSystemConfig.TLS_ENABLE);
     
+    /** 命名空间 ID。 */
     private final String namespaceId;
     
+    /** HTTP REST 请求模板。 */
     private final NacosRestTemplate nacosRestTemplate;
     
+    /** 服务端地址列表管理器。 */
     private final NamingServerListManager serverListManager;
     
+    /** 安全认证代理。 */
     private final SecurityProxy securityProxy;
     
+    /** 安全令牌定时刷新线程池。 */
     private final ScheduledThreadPoolExecutor executorService;
     
+    /** 包级私有默认构造，供测试或框架使用。 */
     AiHttpClientProxy() {
         this.namespaceId = null;
         this.nacosRestTemplate = null;
@@ -96,8 +106,13 @@ public class AiHttpClientProxy implements AiClientProxy {
         this.executorService = null;
     }
     
-    public AiHttpClientProxy(String namespaceId, NacosClientProperties properties)
-        throws NacosException {
+    /**
+     * 构造 AI HTTP 客户端代理并初始化服务端列表与安全认证。
+     *
+     * @param namespaceId 命名空间 ID
+     * @param properties  客户端配置
+     * @throws NacosException 初始化失败时抛出
+     */
         this.namespaceId = namespaceId;
         this.nacosRestTemplate = NamingHttpClientManager.getInstance().getNacosRestTemplate();
         this.serverListManager = new NamingServerListManager(properties, namespaceId);
@@ -147,6 +162,7 @@ public class AiHttpClientProxy implements AiClientProxy {
      * @param label     route label, e.g. latest/stable (optional)
      * @return ZIP file as byte array
      * @throws NacosException if request fails
+      * <p>Nacos AI HTTP 客户端 REST 操作；详见上方说明。</p>
      */
     public byte[] downloadSkillZip(String skillName, String version, String label)
         throws NacosException {
@@ -246,6 +262,7 @@ public class AiHttpClientProxy implements AiClientProxy {
             resolvedVersion);
     }
     
+    /** 向服务端列表轮询发送 GET 请求并返回字符串响应体。 */
     private String reqApi(String api, Map<String, String> params, RequestResource resource)
         throws NacosException {
         List<String> servers = serverListManager.getServerList();
@@ -277,6 +294,7 @@ public class AiHttpClientProxy implements AiClientProxy {
                 + exception.getMessage());
     }
     
+    /** 向服务端列表轮询发送 GET 请求并返回字节响应体。 */
     private byte[] reqApiBytes(String api, Map<String, String> params, RequestResource resource)
         throws NacosException {
         List<String> servers = serverListManager.getServerList();
@@ -308,6 +326,7 @@ public class AiHttpClientProxy implements AiClientProxy {
                 + exception.getMessage());
     }
     
+    /** 发送 GET 请求并返回含响应头的字节结果（304 立即传播）。 */
     private HttpRestResult<byte[]> reqApiBytesWithHeader(String api, Map<String, String> params,
         RequestResource resource) throws NacosException {
         List<String> servers = serverListManager.getServerList();
@@ -342,6 +361,7 @@ public class AiHttpClientProxy implements AiClientProxy {
                 + exception.getMessage());
     }
     
+    /** 向指定服务端发送 GET 请求并返回字符串响应。 */
     private String callServer(String api, Map<String, String> params, String server,
         RequestResource resource)
         throws NacosException {
@@ -373,6 +393,7 @@ public class AiHttpClientProxy implements AiClientProxy {
         }
     }
     
+    /** 向指定服务端发送 GET 请求并返回字节响应。 */
     private byte[] callServerBytes(String api, Map<String, String> params, String server,
         RequestResource resource)
         throws NacosException {
@@ -405,10 +426,7 @@ public class AiHttpClientProxy implements AiClientProxy {
     }
     
     /**
-     * Variant of {@link #callServerBytes} that exposes the raw {@link HttpRestResult} so callers
-     * can inspect response headers (e.g. {@code X-Nacos-Skill-Md5}). Status code translation rules
-     * mirror {@link #callServerBytes}: 304 raises {@link NacosException#NOT_MODIFIED}, 403
-     * triggers a security re-login before bubbling the original status code up.
+     * {@link #callServerBytes} 的变体，返回原始 {@link HttpRestResult} 以便读取响应头（如 {@code X-Nacos-Skill-Md5}）。304 抛出 {@link NacosException#NOT_MODIFIED}，403 触发重新登录。
      */
     private HttpRestResult<byte[]> callServerBytesWithHeader(String api,
         Map<String, String> params, String server, RequestResource resource)
@@ -441,6 +459,7 @@ public class AiHttpClientProxy implements AiClientProxy {
         }
     }
     
+    /** 拼接完整 HTTP URL（含协议前缀与上下文路径）。 */
     private String buildUrl(String serverAddr, String relativePath) {
         if (!serverAddr.startsWith(HTTP_PREFIX) && !serverAddr.startsWith(HTTPS_PREFIX)) {
             serverAddr = (ENABLE_HTTPS ? HTTPS_PREFIX : HTTP_PREFIX) + serverAddr;
@@ -449,9 +468,8 @@ public class AiHttpClientProxy implements AiClientProxy {
         return serverAddr + ContextPathUtil.normalizeContextPath(contextPath) + relativePath;
     }
     
-    /**
-     * Request API returning String body with headers exposed, propagating 304 immediately.
-     */
+    /** 发送 GET 请求并返回含响应头的字符串结果（304 立即传播）。 */
+    /** 向服务端列表轮询发送 GET 请求并返回含响应头的字符串结果。 */
     private HttpRestResult<String> reqApiStringWithHeader(String api,
         Map<String, String> params, RequestResource resource) throws NacosException {
         List<String> servers = serverListManager.getServerList();
@@ -486,6 +504,7 @@ public class AiHttpClientProxy implements AiClientProxy {
                 + exception.getMessage());
     }
     
+    /** 向指定服务端发送 GET 请求并返回含响应头的字符串结果。 */
     private HttpRestResult<String> callServerStringWithHeader(String api,
         Map<String, String> params, String server, RequestResource resource)
         throws NacosException {
@@ -518,6 +537,7 @@ public class AiHttpClientProxy implements AiClientProxy {
     }
     
     @Override
+    /** 关闭服务端列表管理器、安全代理及定时线程池。 */
     public void shutdown() throws NacosException {
         serverListManager.shutdown();
         if (securityProxy != null) {

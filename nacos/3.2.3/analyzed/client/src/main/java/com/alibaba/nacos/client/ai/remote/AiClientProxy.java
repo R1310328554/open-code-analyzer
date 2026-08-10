@@ -21,57 +21,53 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.common.lifecycle.Closeable;
 
 /**
- * AI client proxy interface for abstracting transport layer (gRPC / HTTP).
+ * AI 客户端传输层代理接口，抽象 gRPC 与 HTTP 两种实现。
  *
- * <p>Defines AI operations that support switching between gRPC and HTTP transport.</p>
+ * <p>定义 Prompt、Skill、AgentSpec 等 AI 操作的统一入口，使上层可在 gRPC（{@link AiGrpcClient}）与 HTTP（{@link AiHttpClientProxy}）之间切换。</p>
  *
  * @author nacos
  */
 public interface AiClientProxy extends Closeable {
     
     /**
-     * Query prompt by latest/version/label with optional md5 for conditional query.
+     * 按 latest/版本/标签查询 Prompt，支持 MD5 条件查询。
      *
-     * @param promptKey prompt key
-     * @param version   prompt version, optional
-     * @param label     prompt label, optional
-     * @param md5       client md5 for conditional query, optional
-     * @return prompt detail
-     * @throws NacosException if request parameter is invalid or handle error
+     * @param promptKey Prompt 业务键
+     * @param version   Prompt 版本（可选）
+     * @param label     Prompt 标签（可选）
+     * @param md5       客户端 MD5，用于条件查询（可选）
+     * @return Prompt 详情
+     * @throws NacosException 参数无效或请求失败时抛出
      */
     Prompt queryPrompt(String promptKey, String version, String label, String md5)
         throws NacosException;
     
     /**
-     * Query skill by latest/version/label with optional md5 for conditional download.
+     * 按 latest/版本/标签查询 Skill，支持 MD5 条件下载。
      *
-     * <p>When {@code md5} matches the server-published content fingerprint, the implementation
-     * MUST throw {@link NacosException} with code {@link NacosException#NOT_MODIFIED} so the
-     * caller can keep its local cache.
+     * <p>当 {@code md5} 与服务端发布内容指纹一致时，实现必须抛出 {@link NacosException#NOT_MODIFIED}，以便调用方保留本地缓存。</p>
      *
-     * @param skillName skill name
-     * @param version   skill version, optional
-     * @param label     skill label, optional
-     * @param md5       client md5 for conditional query, optional
-     * @return skill ZIP bytes plus the published content MD5 and resolved version headers
-     * @throws NacosException if request parameter is invalid or handle error
+     * @param skillName Skill 名称
+     * @param version   Skill 版本（可选）
+     * @param label     Skill 标签（可选）
+     * @param md5       客户端 MD5（可选）
+     * @return Skill ZIP 字节及 MD5、解析版本响应头
+     * @throws NacosException 参数无效或请求失败时抛出
      */
     SkillQueryResponse querySkill(String skillName, String version, String label, String md5)
         throws NacosException;
     
     /**
-     * Query agentspec by latest/version/label with optional md5 for conditional query.
+     * 按 latest/版本/标签查询 AgentSpec，支持 MD5 条件查询。
      *
-     * <p>When {@code md5} matches the server-published content fingerprint, the implementation
-     * MUST throw {@link NacosException} with code {@link NacosException#NOT_MODIFIED} so the
-     * caller can keep its local cache.
+     * <p>当 {@code md5} 与服务端发布内容指纹一致时，实现必须抛出 {@link NacosException#NOT_MODIFIED}，以便调用方保留本地缓存。</p>
      *
-     * @param agentSpecName agentspec name
-     * @param version       agentspec version, optional
-     * @param label         agentspec label, optional
-     * @param md5           client md5 for conditional query, optional
-     * @return agentspec plus the published content MD5 and resolved version headers
-     * @throws NacosException if request parameter is invalid or handle error
+     * @param agentSpecName AgentSpec 名称
+     * @param version       AgentSpec 版本（可选）
+     * @param label         AgentSpec 标签（可选）
+     * @param md5           客户端 MD5（可选）
+     * @return AgentSpec 及 MD5、解析版本响应头
+     * @throws NacosException 参数无效或请求失败时抛出
      */
     AgentSpecQueryResponse queryAgentSpec(String agentSpecName, String version, String label,
         String md5) throws NacosException;

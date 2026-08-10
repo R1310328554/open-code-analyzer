@@ -22,19 +22,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Nacos AI module mcp server listener invoker.
+ * MCP 服务监听器调用器。
+ *
+ * <p>继承 {@link AbstractAiListenerInvoker}，将 {@link NacosMcpServerEvent} 分派给 {@link AbstractNacosMcpServerListener} 并在调用前记录命名空间、MCP ID 等日志。</p>
  *
  * @author xiweng.yy
  */
 public class McpServerListenerInvoker
     extends AbstractAiListenerInvoker<NacosMcpServerEvent, AbstractNacosMcpServerListener> {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(McpServerListenerInvoker.class);
     
-    public McpServerListenerInvoker(AbstractNacosMcpServerListener listener) {
+    /**
+     * 构造 MCP 服务监听器调用器。
+     *
+     * @param listener 目标 MCP 服务监听器
+     */
         super(listener);
     }
     
+    /** 记录 MCP 服务事件分派日志。 */
     protected void logInvoke(NacosMcpServerEvent event) {
         LOGGER.info("Invoke event namespaceId: {}, mcpId: {}, mcpName: {} to Listener: {}",
             event.getNamespaceId(),

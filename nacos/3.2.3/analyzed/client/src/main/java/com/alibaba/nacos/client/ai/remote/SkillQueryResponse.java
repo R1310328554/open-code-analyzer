@@ -17,36 +17,47 @@
 package com.alibaba.nacos.client.ai.remote;
 
 /**
- * Response wrapper for the listener-style skill query. Carries the freshly downloaded ZIP bytes
- * together with the listener-related response headers ({@code X-Nacos-Skill-Md5} and
- * {@code X-Nacos-Skill-Resolved-Version}) so the client cache can short-circuit the next poll
- * when the published content has not changed.
+ * 监听式 Skill 查询响应包装类。
+ *
+ * <p>携带新下载的 ZIP 字节及响应头 {@code X-Nacos-Skill-Md5}、{@code X-Nacos-Skill-Resolved-Version}，使客户端缓存可在下次轮询时通过 MD5 条件查询短路。</p>
  *
  * @author nacos
  * @since 3.2.0
  */
 public class SkillQueryResponse {
     
+    /** 下载的 Skill ZIP 字节内容。 */
     private final byte[] zipBytes;
     
+    /** 服务端发布内容的 MD5 指纹。 */
     private final String md5;
     
+    /** 服务端解析后的实际版本号。 */
     private final String resolvedVersion;
     
-    public SkillQueryResponse(byte[] zipBytes, String md5, String resolvedVersion) {
+    /**
+     * 构造 Skill 查询响应。
+     *
+     * @param zipBytes        ZIP 字节内容
+     * @param md5             内容 MD5
+     * @param resolvedVersion 解析后的版本号
+     */
         this.zipBytes = zipBytes;
         this.md5 = md5;
         this.resolvedVersion = resolvedVersion;
     }
     
+    /** 返回 ZIP 字节内容。 */
     public byte[] getZipBytes() {
         return zipBytes;
     }
     
+    /** 返回内容 MD5。 */
     public String getMd5() {
         return md5;
     }
     
+    /** 返回解析后的版本号。 */
     public String getResolvedVersion() {
         return resolvedVersion;
     }

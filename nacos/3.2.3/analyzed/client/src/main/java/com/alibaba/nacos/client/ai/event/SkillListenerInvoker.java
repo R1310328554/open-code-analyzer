@@ -22,20 +22,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Nacos AI module skill listener invoker.
+ * Skill 监听器调用器。
+ *
+ * <p>将 {@link NacosSkillEvent} 分派给 {@link AbstractNacosSkillListener}，并在调用前记录 skillName 日志。</p>
  *
  * @author nacos
  */
 public class SkillListenerInvoker
     extends AbstractAiListenerInvoker<NacosSkillEvent, AbstractNacosSkillListener> {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(SkillListenerInvoker.class);
     
-    public SkillListenerInvoker(AbstractNacosSkillListener listener) {
+    /**
+     * 构造 Skill 监听器调用器。
+     *
+     * @param listener 目标 Skill 监听器
+     */
         super(listener);
     }
     
     @Override
+    /** 记录 Skill 事件分派日志。 */
     protected void logInvoke(NacosSkillEvent event) {
         LOGGER.info("Invoke event skillName: {} to Listener: {}", event.getSkillName(),
             listener.toString());

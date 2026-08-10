@@ -21,39 +21,53 @@ import com.alibaba.nacos.client.ai.utils.CacheKeyUtils;
 import com.alibaba.nacos.common.notify.Event;
 
 /**
- * Nacos AI module mcp server changed event in nacos- client.
+ * Nacos 客户端 MCP 服务变更内部事件。
+ *
+ * <p>当 {@code NacosMcpServerCacheHolder} 检测到服务端 MCP 配置变更时发布，携带 MCP 名称、版本及完整 {@link McpServerDetailInfo} 详情，供 {@code AiChangeNotifier} 分发给已注册监听器。</p>
  *
  * @author xiweng.yy
  */
 public class McpServerChangedEvent extends Event {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 2010793364377243018L;
     
+    /** MCP 服务名称。 */
     private final String mcpName;
     
+    /** MCP 服务版本标识（latest 或具体版本号）。 */
     private final String version;
     
+    /** 变更后的 MCP 服务完整详情。 */
     private final McpServerDetailInfo mcpServer;
     
-    public McpServerChangedEvent(McpServerDetailInfo mcpServer) {
+    /**
+     * 根据 MCP 服务详情构造变更事件。
+     *
+     * @param mcpServer MCP 服务详情
+     */
         this.mcpServer = mcpServer;
         this.mcpName = mcpServer.getName();
         this.version = buildVersion(mcpServer);
     }
     
+    /** 根据版本详情构建缓存键版本字符串。 */
     private String buildVersion(McpServerDetailInfo mcpServer) {
         return mcpServer.getVersionDetail().getIs_latest() ? CacheKeyUtils.LATEST_VERSION
             : mcpServer.getVersionDetail().getVersion();
     }
     
+    /** 返回 MCP 服务名称。 */
     public String getMcpName() {
         return mcpName;
     }
     
+    /** 返回 MCP 服务版本标识。 */
     public String getVersion() {
         return version;
     }
     
+    /** 返回变更后的 MCP 服务详情。 */
     public McpServerDetailInfo getMcpServer() {
         return mcpServer;
     }
