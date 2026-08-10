@@ -1,5 +1,7 @@
 package sketch
 
+// quantile 封装 quantile_over_time 等算子使用的分位数草图：支持 DataDog DDSketch 与 Influx TDigest 两种实现及 proto 互转。
+
 import (
 	"errors"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// QuantileSketch 定义 Add/Merge/Quantile/ToProto/Release 等分位数估计生命周期接口。
 // QuantileSketch estimates quantiles over time.
 type QuantileSketch interface {
 	Add(float64) error
@@ -22,6 +25,7 @@ type QuantileSketch interface {
 	Release()
 }
 
+// QuantileSketchFactory 供引擎按配置选择 DDSketch 或 TDigest 实例工厂。
 type QuantileSketchFactory func() QuantileSketch
 
 func QuantileSketchFromProto(proto *logproto.QuantileSketch) (QuantileSketch, error) {
@@ -35,6 +39,7 @@ func QuantileSketchFromProto(proto *logproto.QuantileSketch) (QuantileSketch, er
 	return nil, fmt.Errorf("unknown quantile sketch type: %T", proto.Sketch)
 }
 
+// DDSketchQuantile 基于相对误差保证的可合并分位数草图，对象池复用降低分配。
 // DDSketchQuantile is a QuantileSketch implementation based on DataDog's
 // "DDSketch: A fast and fully-mergeable quantile sketch with relative-error
 // guarantees." paper.
@@ -51,6 +56,7 @@ var ddsketchPool = sync.Pool{
 	},
 }
 
+// NewDDSketch 从 sync.Pool 取出 DDSketch，相对精度 1%。
 func NewDDSketch() *DDSketchQuantile {
 	s := ddsketchPool.Get().(*ddsketch.DDSketch)
 	return &DDSketchQuantile{s}
@@ -92,6 +98,7 @@ func DDSketchQuantileFromProto(buf []byte) (*DDSketchQuantile, error) {
 	return sketch, err
 }
 
+// TDigestQuantile 使用 Influx TDigest 实现分位数估计，适合较小样本窗口。
 type TDigestQuantile struct {
 	*tdigest.TDigest
 }
@@ -157,3 +164,4 @@ func TDigestQuantileFromProto(proto *logproto.TDigest) *TDigestQuantile {
 	q.AddCentroidList(centroids)
 	return q
 }
+// Release 将 DDSketch 归还对象池；Merge 要求两侧为同类型草图否则返回错误。

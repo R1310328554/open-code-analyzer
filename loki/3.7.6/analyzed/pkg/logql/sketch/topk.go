@@ -1,5 +1,7 @@
 package sketch
 
+// topk 实现 Count-Min Sketch + 最小堆 + sketch-bf 布隆过滤的近似 Top-K 算法，用于 LogQL approx_topk 在有限内存下跟踪高频日志事件。
+
 import (
 	"container/heap"
 	"sort"
@@ -25,6 +27,7 @@ func (t TopKResult) Len() int { return len(t) }
 func (t TopKResult) Less(i, j int) bool { return t[i].Count > t[j].Count }
 func (t TopKResult) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 
+// Topk 组合 CMS、MinHeap、HyperLogLog 与 per-row 布隆位图，减少堆重平衡次数。
 // Topk is a structure that uses a Count Min Sketch and a Min-Heap to track the top k events by frequency.
 // We also use the sketch-bf (https://ietresearch.onlinelibrary.wiley.com/doi/full/10.1049/ell2.12482) notion of a
 // bloomfilter per count min sketch row to avoid having to iterate though the heap each time we want to check for
@@ -44,6 +47,7 @@ type Topk struct {
 // get the correct sketch width based on the expected cardinality of the set
 // we might need to do something smarter here to round up to next order of magnitude if we're say more than 10%
 // over a given size that currently exists, or have some more intermediate sizes
+// getCMSWidth 按预期基数选择 CMS 行宽，基数越大需要更宽矩阵以降低碰撞。
 func getCMSWidth(l log.Logger, c int) uint32 {
 	// default to something reasonable for low cardinality
 	width := 32
@@ -74,6 +78,7 @@ func makeBF(col, row uint32) [][]bool {
 	return bf
 }
 
+// NewCMSTopkForCardinality 按 k 与预期基数 c 创建 Topk，深度固定为 4 行。
 // NewCMSTopkForCardinality creates a new topk sketch where k is the amount of topk we want, and c is the expected
 // total cardinality of the dataset the sketch should be able to handle, including other sketches that we may merge in.
 func NewCMSTopkForCardinality(l log.Logger, k, c int) (*Topk, error) {
@@ -213,6 +218,7 @@ func unsafeGetBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s)) // #nosec G103 -- we know the string is not mutated -- nosemgrep: use-of-unsafe-block
 }
 
+// Observe 保守递增 CMS 计数；仅当估计超过堆顶且 sketch-bf 判定不在堆内时才入堆或替换。
 // Observe is our sketch event observation function, which is a bit more complex than the original count min sketch + heap TopK
 // literature outlines. We're using some optimizations from the sketch-bf paper (here: http://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf)
 // in order to reduce the # of heap operations required over time. As an example, with a cardinality of 100k we saw nearly 3x improvement
@@ -291,6 +297,7 @@ func removeDuplicates(t TopKResult) TopKResult {
 	return t[:w]
 }
 
+// Merge 合并 CMS 与 HLL，再取两侧堆事件并集去重后重建 Top-K 最小堆。
 // Merge the given sketch into this one.
 // The sketches must have the same dimensions.
 // Note that our merge operation currently also replaces the heap
@@ -326,6 +333,7 @@ func (t *Topk) Merge(from *Topk) error {
 }
 
 // InTopk checks to see if an event is currently in the topk for this sketch
+// InTopk 检查 sketch-bf 各行对应桶是否均为 true，快速排除非 Top-K 事件。
 func (t *Topk) InTopk(h1, h2 uint32) bool {
 	ret := true
 	var pos uint32
@@ -354,6 +362,7 @@ func (t *Topk) Topk() TopKResult {
 	return res[:n]
 }
 
+// Cardinality 返回 HLL 基数估计及 CMS 宽度是否足以覆盖该基数（含 2% 误差裕度）。
 // Cardinality returns the estimated cardinality of the input plus whether the size of t's
 // count min sketch was big enough for that estimated cardinality.
 func (t *Topk) Cardinality() (uint64, bool) {
@@ -361,3 +370,4 @@ func (t *Topk) Cardinality() (uint64, bool) {
 	// hll estimate has an overcounting error % of 2%
 	return t.hll.Estimate(), est <= uint64(float64(t.expectedCardinality)*1.02)
 }
+// heapPush/heapMinReplace 同步更新 sketch-bf，避免 InTopk 对已出堆事件误判为在堆内。

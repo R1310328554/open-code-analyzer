@@ -1,5 +1,7 @@
 package syntax
 
+// ast 定义 LogQL 抽象语法树：Expr 及其子接口描述日志选择器、样本表达式与流水线 Stage，供解析、克隆、分片判定与样本提取器构建使用。
+
 import (
 	"fmt"
 	"math"
@@ -21,12 +23,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/logqlmodel"
 )
 
+// Pipeline 与 SampleExtractor 为 log 包类型的别名，保持旧 API 兼容。
 // Type alias for backward compatibility
 type (
 	Pipeline        = log.Pipeline
 	SampleExtractor = log.SampleExtractor
 )
 
+// Expr 为 AST 根接口：支持分片判定、访问者遍历、Pretty 格式化与字符串化。
 // Expr is the root expression which can be a SampleExpr or LogSelectorExpr
 type Expr interface {
 	// Shardable performs a recursive check on the expression and its children to see whether it is shardable.
@@ -68,6 +72,7 @@ func (OffsetExpr) isExpr()                 {}
 func (UnwrapExpr) isExpr()                 {}
 func (MultiVariantExpr) isExpr()           {}
 
+// LogSelectorExpr 描述日志选择器，可编译为 log.Pipeline 并暴露标签 matchers。
 // LogSelectorExpr is a expression filtering and returning logs.
 type LogSelectorExpr interface {
 	Matchers() []*labels.Matcher
@@ -85,6 +90,7 @@ func (MultiStageExpr) isLogSelectorExpr() {}
 func (LiteralExpr) isLogSelectorExpr()    {}
 func (VectorExpr) isLogSelectorExpr()     {}
 
+// SampleExpr 描述指标查询，可提取 SampleExtractor 与 MatcherGroups 供引擎执行。
 // SampleExpr is a LogQL expression filtering logs and returning metric samples
 type SampleExpr interface {
 	Selector() (LogSelectorExpr, error)
@@ -103,6 +109,7 @@ func (VectorExpr) isSampleExpr()            {}
 func (LabelReplaceExpr) isSampleExpr()      {}
 func (MultiVariantExpr) isSampleExpr()      {}
 
+// StageExpr 表示流水线单步（过滤/解析/格式化等），Stage() 编译为 log.Stage。
 // StageExpr is an expression defining a single step into a log pipeline
 type StageExpr interface {
 	Stage() (log.Stage, error)
@@ -124,6 +131,7 @@ func (LabelFmtExpr) isStageExpr()               {}
 func (JSONExpressionParserExpr) isStageExpr()   {}
 func (LogfmtExpressionParserExpr) isStageExpr() {}
 
+// Clone 通过 cloneVisitor 深拷贝任意 Expr，类型不匹配时返回错误。
 func Clone[T Expr](e T) (T, error) {
 	var empty T
 	v := &cloneVisitor{}
@@ -135,6 +143,7 @@ func Clone[T Expr](e T) (T, error) {
 	return cast, nil
 }
 
+// MustClone 在克隆失败时 panic，供编译期已知合法 AST 的内部路径使用。
 func MustClone[T Expr](e T) T {
 	copied, err := Clone(e)
 	if err != nil {
@@ -159,6 +168,7 @@ func ExtractLineFilters(e Expr) []LineFilterExpr {
 	return filters
 }
 
+// ExtractLabelFiltersBeforeParser 收集解析 Stage 之前的标签过滤器，供 bloom 索引使用。
 func ExtractLabelFiltersBeforeParser(e Expr) []*LabelFilterExpr {
 	if e == nil {
 		return nil
@@ -208,6 +218,7 @@ func IsMatchEqualFilterer(filterer log.LabelFilterer) bool {
 	}
 }
 
+// MultiStageExpr 为 Stage 切片，reorderStages 将行过滤尽量前移以提升扫描效率。
 // MultiStageExpr is multiple stages which implements a LogSelectorExpr.
 type MultiStageExpr []StageExpr
 
@@ -324,6 +335,7 @@ func (m MultiStageExpr) String() string {
 
 func (MultiStageExpr) logQLExpr() {} // nolint:unused
 
+// MatchersExpr 仅含标签 matchers，是最简日志选择器 AST 节点。
 type MatchersExpr struct {
 	Mts []*labels.Matcher
 }
@@ -367,6 +379,7 @@ func (e *MatchersExpr) HasFilter() bool {
 	return false
 }
 
+// PipelineExpr 将 matchers 与 MultiStages 组合为完整日志流水线选择器。
 type PipelineExpr struct {
 	MultiStages MultiStageExpr
 	Left        *MatchersExpr
@@ -2638,3 +2651,4 @@ func newVariantsExpr(variants []SampleExpr, logRange *LogRangeExpr) VariantsExpr
 		logRange: logRange,
 	}
 }
+// Shardable 递归判断表达式是否可水平分片；isExpr 等私有方法防止接口被意外实现。

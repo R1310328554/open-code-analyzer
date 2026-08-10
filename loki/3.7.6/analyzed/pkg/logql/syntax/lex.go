@@ -1,5 +1,7 @@
 package syntax
 
+// lex 实现 LogQL 词法分析：将查询字符串扫描为 yacc 语法分析器所需的 token，含持续时间、字节量、函数名与管道运算符等特殊 token。
+
 import (
 	"strings"
 	"text/scanner"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logqlmodel"
 )
 
+// tokens 映射 LogQL 关键字与运算符字符串到 yacc token 常量。
 var tokens = map[string]int{
 	",":            COMMA,
 	".":            DOT,
@@ -91,6 +94,7 @@ var parserFlags = map[string]struct{}{
 	OpKeepEmpty: {},
 }
 
+// functionTokens 列出必须以 '(' 后缀才识别为函数的 token（如 rate、sum）。
 // functionTokens are tokens that needs to be suffixes with parenthesis
 var functionTokens = map[string]int{
 	// range vec ops
@@ -136,6 +140,7 @@ var functionTokens = map[string]int{
 	OpFilterIP: IP,
 }
 
+// lexer 包装 Scanner，累积 ParseError 并在 Lex 中分发各类 token。
 type lexer struct {
 	Scanner
 	errs    []logqlmodel.ParseError
@@ -257,10 +262,12 @@ func (l *lexer) Lex(lval *syntaxSymType) int {
 	return IDENTIFIER
 }
 
+// Error 将词法错误追加为带行列号的 logqlmodel.ParseError。
 func (l *lexer) Error(msg string) {
 	l.errs = append(l.errs, logqlmodel.NewParseError(msg, l.Line, l.Column))
 }
 
+// tryScanFlag 识别 --strict、--keep-empty 等解析器标志，仅在完整匹配时推进扫描器。
 // tryScanFlag scans for a parser flag and returns it on success
 // it advances the scanner only if a valid flag is found
 func tryScanFlag(l *Scanner) (string, bool) {
@@ -421,3 +428,4 @@ func trimSpace(l Scanner) Scanner {
 	}
 	return l
 }
+// isFunction 通过复制 Scanner 试探下一字符是否为 '('，区分函数名与普通标识符。

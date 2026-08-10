@@ -1,5 +1,7 @@
 package sketch
 
+// hashn 为 Count-Min Sketch 提供双哈希：FNv-1a 与 Jenkins one-at-a-time，满足 Kirsch-Mitzenmacher 从单一哈希派生多行索引的构造。
+
 import "hash/fnv"
 
 // Copyright (c) 2012-2017  Dustin Sallings <dustin@spy.net>
@@ -24,6 +26,7 @@ import "hash/fnv"
 // SOFTWARE.
 //
 // <http://www.opensource.org/licenses/mit-license.php>
+// hashn 对字节切片计算 h1/h2，供 CMS 各行独立桶定位与 sketch-bf 布隆过滤。
 func hashn(s []byte) (h1, h2 uint32) {
 	// This construction comes from
 	// http://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf
@@ -50,3 +53,4 @@ func hashn(s []byte) (h1, h2 uint32) {
 
 	return h1, h2
 }
+// 该构造在 Count-Min 理论中需 2-通用哈希族；实践中对 Loki topk 场景表现稳定。

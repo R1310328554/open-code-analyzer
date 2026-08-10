@@ -7,6 +7,8 @@
 // This file is taken from the golang text/scanner package so `bufLen` can be set to `maxInputSize`.
 package syntax
 
+// query_scanner 自 golang text/scanner  fork，将 bufLen 设为 maxInputSize，支持 Scanner 值拷贝以便 lex.go 在不读 Reader 的情况下并行扫描子串。
+
 import (
 	"bytes"
 	"fmt"
@@ -16,6 +18,7 @@ import (
 	"unicode/utf8"
 )
 
+// Position 记录文件名、字节偏移、行号与列号，Line>0 表示有效位置。
 // Position is a value that represents a source position.
 // A position is valid if Line > 0.
 type Position struct {
@@ -104,6 +107,7 @@ func TokenString(tok rune) string {
 const GoWhitespace = 1<<'\t' | 1<<'\n' | 1<<'\r' | 1<<' '
 
 // A Scanner implements reading of Unicode characters and tokens from an io.Reader.
+// Scanner 维护输入缓冲、模式位与当前 token 位置；Mode 控制识别哪些 token 类型。
 type Scanner struct {
 	// Input
 	src io.Reader
@@ -637,6 +641,7 @@ func (s *Scanner) scanComment(ch rune) rune {
 // It returns EOF at the end of the source. It reports scanner errors (read and
 // token errors) by calling s.Error, if not nil; otherwise it prints an error
 // message to os.Stderr.
+// Scan 读取下一个 token 或 Unicode 字符，更新 Pos 并写入 tok 缓冲。
 func (s *Scanner) Scan() rune {
 	ch := s.Peek()
 
@@ -761,6 +766,7 @@ func (s *Scanner) Pos() (pos Position) {
 
 // TokenText returns the string corresponding to the most recently scanned token.
 // Valid after calling Scan and in calls of Scanner.Error.
+// TokenText 返回最近一次 Scan 识别的 token 文本（不含未读前瞻字符）。
 func (s *Scanner) TokenText() string {
 	if s.tokPos < 0 {
 		// no token text
@@ -784,3 +790,4 @@ func (s *Scanner) TokenText() string {
 	s.tokPos = s.tokEnd // ensure idempotency of TokenText() call
 	return s.tokBuf.String()
 }
+// lex.go 依赖 Scanner 可拷贝：一旦调用底层 Reader 读取，拷贝扫描器将与 Reader 失步。

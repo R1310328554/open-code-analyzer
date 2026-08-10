@@ -1,5 +1,7 @@
 package syntax
 
+// clone 通过 cloneVisitor 实现 Expr AST 的深拷贝，递归复制 matchers、流水线 Stage、聚合分组与标签过滤器树。
+
 import (
 	"github.com/prometheus/prometheus/model/labels"
 
@@ -23,6 +25,7 @@ func cloneGrouping(g *Grouping) *Grouping {
 	return copied
 }
 
+// cloneVectorMatching 复制向量匹配选项及 Include/MatchingLabels 切片。
 func cloneVectorMatching(v *VectorMatching) *VectorMatching {
 	copied := *v
 	copy(copied.Include, v.Include)
@@ -128,6 +131,7 @@ func (v *cloneVisitor) VisitMatchers(e *MatchersExpr) {
 	v.cloned = copied
 }
 
+// VisitPipeline 深拷贝左侧 matchers 与每个 MultiStage StageExpr。
 func (v *cloneVisitor) VisitPipeline(e *PipelineExpr) {
 	copied := &PipelineExpr{
 		Left:        MustClone[*MatchersExpr](e.Left),
@@ -190,6 +194,7 @@ func (v *cloneVisitor) VisitLabelFilter(e *LabelFilterExpr) {
 	}
 }
 
+// cloneLabelFilterer 按具体过滤器类型递归克隆标签过滤 AST。
 func cloneLabelFilterer(filter log.LabelFilterer) log.LabelFilterer {
 	switch concrete := filter.(type) {
 	case *log.BinaryLabelFilter:
@@ -258,6 +263,7 @@ func (v *cloneVisitor) VisitLabelParser(e *LineParserExpr) {
 	}
 }
 
+// VisitLineFilter 复制行过滤树，递归克隆 Left/Or 子树以保留 AND/OR 结构。
 func (v *cloneVisitor) VisitLineFilter(e *LineFilterExpr) {
 	copied := &LineFilterExpr{
 		LineFilter: LineFilter{
@@ -313,3 +319,4 @@ func (v *cloneVisitor) VisitVariants(e *MultiVariantExpr) {
 
 	v.cloned = copied
 }
+// VisitMatchers 使用 labels.MustNewMatcher 重建 matcher，避免共享底层字符串指针。

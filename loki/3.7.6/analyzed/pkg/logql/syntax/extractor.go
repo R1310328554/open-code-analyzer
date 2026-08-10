@@ -1,5 +1,7 @@
 package syntax
 
+// extractor 将 RangeAggregationExpr 与 MultiVariantExpr 编译为 log.SampleExtractor，处理 unwrap、分组覆盖与 rate/count/bytes 等范围向量聚合。
+
 import (
 	"fmt"
 	"sort"
@@ -17,6 +19,7 @@ func (r RangeAggregationExpr) Extractors() ([]log.SampleExtractor, error) {
 	return []log.SampleExtractor{ext}, nil
 }
 
+// extractor 内部实现：可接受父级 grouping 覆盖，并区分 unwrap 与行级提取路径。
 // extractor creates a SampleExtractor but allows for the grouping to be overridden.
 func (r RangeAggregationExpr) extractor(override *Grouping) (log.SampleExtractor, error) {
 	if r.err != nil {
@@ -87,6 +90,7 @@ func (r RangeAggregationExpr) extractor(override *Grouping) (log.SampleExtractor
 	}
 }
 
+// MultiVariantExpr.Extractors 构建合并多 variant 的 ConsolidatedMultiVariantExtractor。
 func (m *MultiVariantExpr) Extractors() ([]log.SampleExtractor, error) {
 	if m.err != nil {
 		return nil, m.err
@@ -99,6 +103,7 @@ func (m *MultiVariantExpr) Extractors() ([]log.SampleExtractor, error) {
 	return []log.SampleExtractor{ext}, nil
 }
 
+// extractor 提取 logRange 公共 pipeline，再为每个 variant 构建专用 extractor 并合并。
 func (m *MultiVariantExpr) extractor() (log.SampleExtractor, error) {
 	// Extract the common pipeline from the logRange's LogSelectorExpr
 	commonPipeline, err := m.logRange.Left.Pipeline()
@@ -147,6 +152,7 @@ func (m *MultiVariantExpr) extractor() (log.SampleExtractor, error) {
 	return consolidatedExtractor, nil
 }
 
+// variantRangeAggExprExtractor 为单个 variant 创建不含公共 pipeline 的专用提取器。
 func variantRangeAggExprExtractor(rangeAgg *RangeAggregationExpr) (log.SampleExtractor, error) {
 	// Create specialized extractor depending on the operation type
 	if rangeAgg.Left.Unwrap != nil {
@@ -228,3 +234,4 @@ func variantRangeAggExprExtractor(rangeAgg *RangeAggregationExpr) (log.SampleExt
 		noLabels,
 	)
 }
+// absent_over_time 强制 noLabels=true；父级 sum by 可能覆盖子级 grouping 以符合 PromQL 语义。

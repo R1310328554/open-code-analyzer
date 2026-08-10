@@ -4,6 +4,8 @@
 
 package syntax
 
+// prettier 将 LogQL AST 格式化为多行可读字符串：自底向上 Pretty，超 MaxCharsPerLine 时按 depth 缩进换行，灵感来自 PromQL formatter。
+
 import (
 	"fmt"
 	"strconv"
@@ -34,6 +36,7 @@ import (
 // If the answer is NO, the current expression returns the normalized string value of itself.
 //
 
+// MaxCharsPerLine 默认 100，超过则 NeedSplit 为 true 触发子表达式换行。
 var (
 	// MaxCharsPerLine is used to qualify whether some LogQL expressions are worth `splitting` into new lines.
 	MaxCharsPerLine = 100
@@ -372,6 +375,7 @@ func commonPrefixIndent(level int, current Expr) string {
 	return fmt.Sprintf("%s%s", Indent(level), current.String())
 }
 
+// NeedSplit 判断表达式 String() 规范化长度是否超过 MaxCharsPerLine。
 func NeedSplit(e Expr) bool {
 	if e == nil {
 		return false
@@ -420,3 +424,4 @@ func formatBinaryOp(op string, opts *BinOpOptions) string {
 	}
 	return op
 }
+// PipelineExpr.Pretty 各 Stage 同级缩进不递增 level，保持管道各阶段视觉对齐。
