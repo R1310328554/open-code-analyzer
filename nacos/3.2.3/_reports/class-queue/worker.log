@@ -1378,3 +1378,18 @@
 2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/CopilotSseExceptionHandler.java nacos wave45a [0:15] console v3 ai/config controllers
 2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/config/ConsoleConfigController.java nacos wave45a [0:15] console v3 ai/config controllers
 2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/config/ConsoleHistoryController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/PipelineHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/PromptHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/SkillHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/config/ConfigHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/config/HistoryHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/core/ClusterHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/core/NamespaceHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/core/PluginHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/AbstractServerStateHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/ConditionFunctionEnabled.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/EnabledInnerHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/HealthInnerHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/ServerStateInnerHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/ai/A2aInnerHandler.java nacos wave46a [0:15] console handlers interfaces/inner
+2026-08-10T03:48:30Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/ai/AgentSpecInnerHandler.java nacos wave46a [0:15] console handlers interfaces/inner

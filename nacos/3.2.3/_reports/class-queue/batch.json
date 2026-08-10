@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T03:47:21Z",
   "files": [
-    "console/src/main/java/com/alibaba/nacos/console/handler/ai/PipelineHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/ai/PromptHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/ai/SkillHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/config/ConfigHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/config/HistoryHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/core/ClusterHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/core/NamespaceHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/core/PluginHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/AbstractServerStateHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/ConditionFunctionEnabled.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/EnabledInnerHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/HealthInnerHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/ServerStateInnerHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/ai/A2aInnerHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/ai/AgentSpecInnerHandler.java",
     "console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/ai/AiResourceImportInnerHandler.java",
     "console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/ai/McpInnerHandler.java",
     "console/src/main/java/com/alibaba/nacos/console/handler/impl/inner/ai/PipelineInnerHandler.java",
@@ -33,5 +18,5 @@
     "console/src/main/java/com/alibaba/nacos/console/handler/impl/noop/ai/AiResourceImportNoopHandler.java"
   ],
   "remaining_pending": 1157,
-  "done": 1350
+  "done": 1365
 }
