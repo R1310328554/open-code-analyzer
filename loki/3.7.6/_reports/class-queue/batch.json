@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:59:07Z",
-  "files": [
-    "pkg/dataobj/sections/pointers/row_reader.go",
-    "pkg/dataobj/sections/pointers/stats.go",
-    "pkg/dataobj/sections/streams/builder.go",
-    "pkg/dataobj/sections/streams/iter.go",
-    "pkg/dataobj/sections/streams/metrics.go",
-    "pkg/dataobj/sections/streams/predicate.go",
-    "pkg/dataobj/sections/streams/reader.go",
-    "pkg/dataobj/sections/streams/row_predicate.go",
-    "pkg/dataobj/sections/streams/row_reader.go",
-    "pkg/dataobj/sections/streams/stats.go",
-    "pkg/dataobj/sections/streams/streams.go",
-    "pkg/dataobj/snapshot.go",
-    "pkg/dataobj/tools/inspect.go",
-    "pkg/dataobj/tools/stats.go",
-    "pkg/dataobj/uploader/metrics.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1102,
-  "done": 435
+  "done": 450
 }
