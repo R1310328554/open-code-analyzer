@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T21:41:58Z",
   "files": [
-    "pkg/compactor/client/grpc.go",
-    "pkg/compactor/client/grpc/custom.go",
-    "pkg/compactor/client/grpc/grpc.pb.go",
-    "pkg/compactor/client/http.go",
-    "pkg/compactor/compactor.go",
-    "pkg/compactor/config.go",
-    "pkg/compactor/deletion/delete_request.go",
-    "pkg/compactor/deletion/delete_request_batch.go",
-    "pkg/compactor/deletion/delete_requests_client.go",
-    "pkg/compactor/deletion/delete_requests_db_boltdb.go",
-    "pkg/compactor/deletion/delete_requests_db_sqlite.go",
-    "pkg/compactor/deletion/delete_requests_manager.go",
-    "pkg/compactor/deletion/delete_requests_store.go",
-    "pkg/compactor/deletion/delete_requests_store_boltdb.go",
-    "pkg/compactor/deletion/delete_requests_store_sqlite.go",
     "pkg/compactor/deletion/deletion_manifest_builder.go",
     "pkg/compactor/deletion/deletionproto/custom.go",
     "pkg/compactor/deletion/deletionproto/types.pb.go",
@@ -33,5 +18,5 @@
     "pkg/compactor/index_set.go"
   ],
   "remaining_pending": 1282,
-  "done": 240
+  "done": 255
 }
