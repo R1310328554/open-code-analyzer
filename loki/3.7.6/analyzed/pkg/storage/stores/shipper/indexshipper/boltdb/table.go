@@ -1,5 +1,7 @@
 package boltdb
 
+// table 管理写入路径下单逻辑表的多份 BoltDB 分片：按 15 分钟 epoch 文件名分库，定期 Snapshot 供读路径查询，并将非活跃分片移交给 shipper 上传。
+
 import (
 	"context"
 	"fmt"
@@ -41,6 +43,7 @@ type dbSnapshot struct {
 	writesCount int64
 }
 
+// Table 维护活跃 dbs 与 dbSnapshots 两套映射，公开方法均通过互斥锁保证并发安全。
 // Table is a collection of multiple index files created for a same table by the ingester.
 // It is used on the write path for writing the index.
 // All the public methods are concurrency safe and take care of mutexes to avoid any data race.
@@ -97,6 +100,7 @@ func newTableWithDBs(dbs map[string]*bbolt.DB, path, uploader string, indexShipp
 	}, nil
 }
 
+// Snapshot 比较 TxStats.Write 计数，仅在写入变化时将 db 快照落盘并重新打开只读副本。
 func (lt *Table) Snapshot() error {
 	lt.dbsMtx.RLock()
 	defer lt.dbsMtx.RUnlock()
@@ -218,6 +222,7 @@ func (lt *Table) Write(ctx context.Context, writes local.TableWrites) error {
 	return lt.write(ctx, time.Now(), writes)
 }
 
+// write 按 Truncate(ShardDBsByDuration) 选择分片文件，且不会改写 modifyShardsSince 之前的旧分片。
 // write writes to a db locally. It shards the db files by truncating the passed time by ShardDBsByDuration using https://golang.org/pkg/time/#Time.Truncate
 // db files are named after the time shard i.e epoch of the truncated time.
 // If a db file does not exist for a shard it gets created.
@@ -279,6 +284,7 @@ func (lt *Table) removeSnapshotDB(name string) error {
 	return os.Remove(filepath.Join(lt.path, fmt.Sprintf("%s%s", name, snapshotFileSuffix)))
 }
 
+// HandoverIndexesToShipper 将过期 epoch 分片注册到 shipper 后从本地 dbs 与快照中移除。
 // HandoverIndexesToShipper hands over the inactive dbs to shipper for uploading
 func (lt *Table) HandoverIndexesToShipper(force bool) error {
 	indexesHandedOverToShipper, err := lt.handoverIndexesToShipper(force)
@@ -406,3 +412,4 @@ func getOldestActiveShardTime() time.Time {
 	// To avoid uploading it, excluding previous active shard as well if it has been not more than a minute since it became inactive.
 	return time.Now().Add(-time.Minute).Truncate(ShardDBsByDuration)
 }
+// LoadTable 启动时清理 .temp/.snapshot 残留并跳过无 bucket 的空索引文件。

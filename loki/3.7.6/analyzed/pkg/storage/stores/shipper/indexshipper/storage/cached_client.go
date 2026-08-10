@@ -1,5 +1,7 @@
 package storage
 
+// cached_client 为 ObjectClient.List 提供表名与表内对象列表的分钟级内存缓存，减少 index shipper sync 对对象存储的列举压力。
+
 import (
 	"context"
 	"fmt"
@@ -42,6 +44,7 @@ func newTable(tableName string) *table {
 	}
 }
 
+// cachedObjectClient 包装下游客户端，tables 映射每表 common/user 对象与 singleflight 防重刷。
 type cachedObjectClient struct {
 	client.ObjectClient
 
@@ -60,6 +63,7 @@ func newCachedObjectClient(downstreamClient client.ObjectClient) *cachedObjectCl
 	}
 }
 
+// RefreshIndexTableNamesCache 强制重建全局表名列表并剔除 retention 已删除的表项。
 func (c *cachedObjectClient) RefreshIndexTableNamesCache(ctx context.Context) {
 	_, _, _ = c.buildCacheGroup.Do(refreshKey, func() (interface{}, error) {
 		return nil, c.buildTableNamesCache(ctx)
@@ -80,6 +84,7 @@ func (c *cachedObjectClient) RefreshIndexTableCache(ctx context.Context, tableNa
 	})
 }
 
+// List 按 prefix 深度分发：空前缀列库表、一级列公共对象与租户、二级列租户文件。
 func (c *cachedObjectClient) List(ctx context.Context, prefix, objectDelimiter string, bypassCache bool) ([]client.StorageObject, []client.StorageCommonPrefix, error) {
 	if bypassCache {
 		return c.ObjectClient.List(ctx, prefix, objectDelimiter)
@@ -272,6 +277,7 @@ func (t *table) updateCache(ctx context.Context, objectClient client.ObjectClien
 	return err
 }
 
+// buildCache 列举 table/ 下对象，按 key 段数区分公共索引与 per-tenant 子前缀。
 func (t *table) buildCache(ctx context.Context, objectClient client.ObjectClient) (err error) {
 	defer func() {
 		if err != nil {
@@ -325,3 +331,4 @@ func (t *table) buildCache(ctx context.Context, objectClient client.ObjectClient
 	t.cacheBuiltAt = time.Now()
 	return nil
 }
+// cacheTimeout 过期后 updateCache 触发 buildCache，bypassCache 时直接透传底层 List 调用。

@@ -1,5 +1,7 @@
 package downloads
 
+// index_set 表示单表下单租户（或公共）索引文件集合：Init 从对象存储同步到本地缓存，ForEach 在就绪后遍历已打开 Index，Sync 增量对齐存储列表。
+
 import (
 	"context"
 	"errors"
@@ -43,6 +45,7 @@ type IndexSet interface {
 	AwaitReady(ctx context.Context, reason string) error
 }
 
+// indexSet 通过 mtxWithReadiness 协调 Init 与查询锁，避免未完成下载时并发读。
 // indexSet is a collection of multiple files created for a same table by various ingesters.
 // All the public methods are concurrency safe and take care of mutexes to avoid any data race.
 type indexSet struct {
@@ -92,6 +95,7 @@ func NewIndexSet(tableName, userID, cacheLocation string, baseIndexSet storage.I
 	return &is, nil
 }
 
+// Init 先打开本地已有文件再 syncWithRetry，失败时清理部分下载并记录 t.err。
 // Init downloads all the db files for the table from object storage.
 func (t *indexSet) Init(forQuerying bool, logger log.Logger) (err error) {
 	// Using background context to avoid cancellation of download when request times out.
@@ -311,6 +315,7 @@ func (t *indexSet) syncWithRetry(ctx context.Context, lock, bypassListCache bool
 	return err
 }
 
+// sync 对比 ListFiles 结果并发下载新文件，删除存储中已不存在的本地索引。
 // sync downloads updated and new files from the storage relevant for the table and removes the deleted ones
 func (t *indexSet) sync(ctx context.Context, lock, bypassListCache bool) (err error) {
 	level.Debug(t.logger).Log("msg", fmt.Sprintf("syncing files for table %s", t.tableName))
@@ -435,6 +440,7 @@ func (t *indexSet) downloadFileFromStorage(ctx context.Context, fileName, folder
 	)
 }
 
+// doConcurrentDownload 忽略 compaction 导致的 NotFound，成功文件名由调用方负责打开。
 // doConcurrentDownload downloads objects(files) concurrently. It ignores only missing file errors caused by removal of file by compaction.
 // It returns the names of the files downloaded successfully and leaves it upto the caller to open those files.
 func (t *indexSet) doConcurrentDownload(ctx context.Context, files []storage.IndexFile) ([]string, error) {
@@ -463,3 +469,4 @@ func (t *indexSet) doConcurrentDownload(ctx context.Context, files []storage.Ind
 
 	return downloadedFiles, nil
 }
+// errIndexListCacheTooStale 表示列表缓存落后于 compaction，需 RefreshIndexTableCache 后重试。

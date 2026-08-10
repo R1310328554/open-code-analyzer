@@ -1,5 +1,7 @@
 package downloads
 
+// metrics 定义 downloads 包 Prometheus 指标：查询等待时长、表级 sync 延迟，以及遗留 Counter/Gauge 型下载耗时（将被 Histogram 替代）。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -20,6 +22,7 @@ type metrics struct {
 	tableSyncLatency *prometheus.HistogramVec
 }
 
+// newMetrics 注册 query_time_table_download_duration_seconds 等 shipper 下载相关指标。
 func newMetrics(r prometheus.Registerer) *metrics {
 	m := &metrics{
 		queryTimeTableDownloadDurationSeconds: promauto.With(r).NewCounterVec(prometheus.CounterOpts{
@@ -47,3 +50,4 @@ func newMetrics(r prometheus.Registerer) *metrics {
 
 	return m
 }
+// tables_sync_operation_total 按 success/failure 统计全库周期性 syncTables 调用次数。

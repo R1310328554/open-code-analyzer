@@ -1,5 +1,7 @@
 package boltdb
 
+// boltdb index 封装单份 BoltDB 索引文件：提供 Open/Reader/Close，以及按租户 bucket 执行 QueryBoltDB 分页查询。
+
 import (
 	"context"
 	"fmt"
@@ -22,6 +24,7 @@ import (
 
 const TempFileSuffix = ".temp"
 
+// IndexFile 持有 bbolt.DB 句柄、磁盘路径及 Reader 导出的临时文件列表。
 type IndexFile struct {
 	boltDB *bbolt.DB
 	name   string
@@ -31,6 +34,7 @@ type IndexFile struct {
 	issuedReadersMtx sync.Mutex
 }
 
+// OpenIndexFile 安全打开磁盘上的 BoltDB 并包装为 shipper index.Index。
 func OpenIndexFile(path string) (index.Index, error) {
 	boltdbFile, err := util.SafeOpenBoltdbFile(path)
 	if err != nil {
@@ -65,6 +69,7 @@ func (i *IndexFile) Name() string {
 	return i.name
 }
 
+// Reader 将当前事务快照写入带 TempFileSuffix 的临时文件供上传或复制。
 func (i *IndexFile) Reader() (io.ReadSeeker, error) {
 	filePath := path.Join(filepath.Dir(i.Path()), fmt.Sprintf("%d%s", time.Now().UnixNano(), TempFileSuffix))
 	f, err := os.Create(filePath)
@@ -114,6 +119,7 @@ func (i *IndexFile) Close() error {
 	return i.boltDB.Close()
 }
 
+// QueryBoltDB 在只读事务中定位租户或默认 IndexBucket 并逐条执行 local.QueryWithCursor。
 func QueryBoltDB(ctx context.Context, db *bbolt.DB, userID []byte, queries []series_index.Query, callback series_index.QueryPagesCallback) error {
 	return db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(userID)
@@ -132,3 +138,4 @@ func QueryBoltDB(ctx context.Context, db *bbolt.DB, userID []byte, queries []ser
 		return nil
 	})
 }
+// Close 会清理所有已签发 Reader 临时文件并关闭底层 BoltDB 连接。

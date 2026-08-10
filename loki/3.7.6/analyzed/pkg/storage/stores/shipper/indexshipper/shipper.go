@@ -1,5 +1,7 @@
 package indexshipper
 
+// indexshipper 协调索引上传（uploads）与查询下载（downloads）：按 Mode 组合 TableManager，AddIndex 走写路径，ForEach 合并两侧索引文件。
+
 import (
 	"context"
 	"flag"
@@ -40,7 +42,8 @@ const (
 	// FilesystemObjectStoreType holds the periodic config type for the filesystem store
 	FilesystemObjectStoreType = "filesystem"
 
-	// UploadInterval defines interval for when we check if there are new index files to upload.
+	// UploadInterval 同时驱动 ingester 侧重 snapshot 与 handover 检查周期（默认 1 分钟）。
+// UploadInterval defines interval for when we check if there are new index files to upload.
 	// It's also used to snapshot the currently written index tables so the snapshots can be used for reads.
 	UploadInterval = 1 * time.Minute
 )
@@ -136,6 +139,7 @@ type indexShipper struct {
 	stopOnce sync.Once
 }
 
+// NewIndexShipper 按 Mode 初始化 uploads/downloads，Disabled 返回 Noop 空实现。
 // NewIndexShipper creates a shipper for providing index store functionality using index files and object storage.
 // It manages the whole life cycle of uploading the index and downloading the index at query time.
 //
@@ -207,6 +211,7 @@ func (s *indexShipper) AddIndex(tableName, userID string, index index.Index) err
 	return s.uploadsManager.AddIndex(tableName, userID, index)
 }
 
+// ForEach 先查 downloadsManager 缓存索引，再叠加 uploadsManager 尚未上传的本地文件。
 func (s *indexShipper) ForEach(ctx context.Context, tableName, userID string, callback index.ForEachIndexCallback) error {
 	if s.downloadsManager != nil {
 		if err := s.downloadsManager.ForEach(ctx, tableName, userID, callback); err != nil {
@@ -223,6 +228,7 @@ func (s *indexShipper) ForEach(ctx context.Context, tableName, userID string, ca
 	return nil
 }
 
+// ForEachConcurrent 用 errgroup 并行 downloads 与 uploads 两路 ForEach 回调。
 func (s *indexShipper) ForEachConcurrent(ctx context.Context, tableName, userID string, callback index.ForEachIndexCallback) error {
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -268,3 +274,4 @@ func (Noop) ForEachConcurrent(_ context.Context, _, _ string, _ index.ForEachInd
 	return nil
 }
 func (Noop) Stop() {}
+// GetUniqueUploaderName 将 ingester 名与时间戳持久化，重启后复用同一 uploader 前缀避免重复上传。

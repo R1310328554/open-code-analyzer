@@ -1,5 +1,7 @@
 package downloads
 
+// table 聚合单逻辑表下各租户 IndexSet 与公共 IndexSet：查询时懒加载并异步 Init，EnsureQueryReadiness 预下载查询所需索引。
+
 import (
 	"context"
 	"fmt"
@@ -56,6 +58,7 @@ type table struct {
 	indexSetsMtx sync.RWMutex
 }
 
+// NewTable 用于查询路径按需建表，不预拉对象存储文件。
 // NewTable just creates an instance of table without trying to load files from local storage or object store.
 // It is used for initializing table at query time.
 func NewTable(name, cacheLocation string, storageClient storage.Client, openIndexFileFunc index.OpenIndexFileFunc, metrics *metrics) Table {
@@ -74,6 +77,7 @@ func NewTable(name, cacheLocation string, storageClient storage.Client, openInde
 	}
 }
 
+// LoadTable 启动时扫描 cache 子目录，分别 Init 租户目录与根级公共索引集。
 // LoadTable loads a table from local storage(syncs the table too if we have it locally) or downloads it from the shared store.
 // It is used for loading and initializing table at startup. It would initialize index sets which already had files locally.
 func LoadTable(name, cacheLocation string, storageClient storage.Client, openIndexFileFunc index.OpenIndexFileFunc, metrics *metrics) (Table, error) {
@@ -297,6 +301,7 @@ func (t *table) Sync(ctx context.Context) error {
 	return nil
 }
 
+// getOrCreateIndexSet 在 goroutine 中 Init，forQuerying 为 true 时记录查询时下载耗时。
 // getOrCreateIndexSet gets or creates the index set for the userID.
 // If it does not exist, it creates a new one and initializes it in a goroutine.
 // Caller can use IndexSet.AwaitReady() to wait until the IndexSet gets ready, if required.
@@ -375,6 +380,7 @@ func (t *table) cleanupBrokenIndexSet(ctx context.Context, id string) {
 	delete(t.indexSets, id)
 }
 
+// EnsureQueryReadiness 始终等待公共索引就绪，再并发下载缺失租户专属 IndexSet。
 // EnsureQueryReadiness ensures that we have downloaded the common index as well as user index for the provided userIDs.
 // When ensuring query readiness for a table, we will always download common index set because it can include index for one of the provided user ids.
 func (t *table) EnsureQueryReadiness(ctx context.Context, userIDs []string) error {
@@ -422,3 +428,4 @@ func loggerWithUserID(logger log.Logger, userID string) log.Logger {
 
 	return log.With(logger, "user-id", userID)
 }
+// DropUnusedIndex 最后清理公共 IndexSet，因其缓存目录是各租户子目录的父路径。

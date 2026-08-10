@@ -1,5 +1,7 @@
 package boltdb
 
+// index_client 组合 IndexShipper 与本地 TableManager，实现 series 索引的 BatchWrite 与 QueryPages，并暴露 boltdb shipper 专属配置与 Prometheus 延迟指标。
+
 import (
 	"context"
 	"flag"
@@ -63,6 +65,7 @@ type writer interface {
 	Stop()
 }
 
+// IndexClient 在 RW 模式下持有 writer，只读模式仅通过 shipper 查询已下载索引。
 type IndexClient struct {
 	cfg          IndexCfg
 	indexShipper indexshipper.IndexShipper
@@ -74,6 +77,7 @@ type IndexClient struct {
 	stopOnce sync.Once
 }
 
+// NewIndexClient 初始化 shipper、可选 TableManager 与 Querier，并记录运行模式。
 // New creates a shipper for syncing local objects with a store
 func NewIndexClient(prefix string, cfg IndexCfg, storageClient client.ObjectClient, limits downloads.Limits,
 	tenantFilter downloads.TenantFilter, tableRange config.TableRange, registerer prometheus.Registerer, logger log.Logger) (*IndexClient, error) {
@@ -140,14 +144,17 @@ func (i *IndexClient) NewWriteBatch() series_index.WriteBatch {
 	return local.NewWriteBatch()
 }
 
+// BatchWrite 经 instrument 包装写入本地分片表，指标标签为 WRITE 与状态码。
 func (i *IndexClient) BatchWrite(ctx context.Context, batch series_index.WriteBatch) error {
 	return instrument.CollectedRequest(ctx, "WRITE", instrument.NewHistogramCollector(i.metrics.requestDurationSeconds), instrument.ErrorCode, func(ctx context.Context) error {
 		return i.writer.BatchWrite(ctx, batch)
 	})
 }
 
+// QueryPages 委托 Querier 合并本地 writer 快照与对象存储下载索引的结果。
 func (i *IndexClient) QueryPages(ctx context.Context, queries []series_index.Query, callback series_index.QueryPagesCallback) error {
 	return instrument.CollectedRequest(ctx, "Shipper.Query", instrument.NewHistogramCollector(i.metrics.requestDurationSeconds), instrument.ErrorCode, func(ctx context.Context) error {
 		return i.querier.QueryPages(ctx, queries, callback)
 	})
 }
+// BuildPerTenantIndex 为 true 时写入路径使用租户 ID 作为 Bolt bucket 名。

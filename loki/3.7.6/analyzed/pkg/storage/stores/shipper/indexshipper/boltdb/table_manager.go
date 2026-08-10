@@ -1,5 +1,7 @@
 package boltdb
 
+// table_manager 管理 boltdb shipper 写入侧多张逻辑表：接收 BatchWrite、周期 handover 与 snapshot，并在启动时迁移 legacy 单文件布局。
+
 import (
 	"context"
 	"fmt"
@@ -45,6 +47,7 @@ type Config struct {
 	MakePerTenantBuckets bool
 }
 
+// TableManager 持有 tables 映射、UploadInterval 驱动的后台 loop 与 tableRange 过滤。
 type TableManager struct {
 	cfg          Config
 	indexShipper Shipper
@@ -65,6 +68,7 @@ type Shipper interface {
 	ForEach(ctx context.Context, tableName, userID string, callback shipperindex.ForEachIndexCallback) error
 }
 
+// NewTableManager 加载本地表、启动 handover/sync 循环并注册打开失败计数指标。
 func NewTableManager(cfg Config, indexShipper Shipper, tableRange config.TableRange, registerer prometheus.Registerer, logger log.Logger) (*TableManager, error) {
 	err := chunk_util.EnsureDirectory(cfg.IndexDir)
 	if err != nil {
@@ -137,6 +141,7 @@ func (tm *TableManager) getTable(tableName string) (*Table, bool) {
 	return table, ok
 }
 
+// BatchWrite 要求 *local.BoltWriteBatch，按表名路由到 getOrCreateTable 后写入。
 func (tm *TableManager) BatchWrite(ctx context.Context, batch index.WriteBatch) error {
 	boltWriteBatch, ok := batch.(*local.BoltWriteBatch)
 	if !ok {
@@ -202,6 +207,7 @@ func (tm *TableManager) handoverIndexesToShipper(force bool) {
 	}
 }
 
+// loadTables 匹配 prefix+period 表名，迁移旧版单文件到同名目录并强制 handover+snapshot。
 func (tm *TableManager) loadTables() (map[string]*Table, error) {
 	localTables := make(map[string]*Table)
 	dirEntries, err := os.ReadDir(tm.cfg.IndexDir)
@@ -285,3 +291,4 @@ func (tm *TableManager) loadTables() (map[string]*Table, error) {
 
 	return localTables, nil
 }
+// Stop 取消后台协程，force handover 确保停机前剩余分片全部交给 shipper 上传。

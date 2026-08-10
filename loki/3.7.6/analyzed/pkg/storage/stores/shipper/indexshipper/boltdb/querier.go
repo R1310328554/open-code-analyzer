@@ -1,5 +1,7 @@
 package boltdb
 
+// querier 按表聚合索引查询：并行扫描本地 writer 快照与 IndexShipper 已下载文件，统一经 QueryBoltDB 回调 series 索引页。
+
 import (
 	"context"
 	"fmt"
@@ -20,11 +22,13 @@ type Querier interface {
 	QueryPages(ctx context.Context, queries []index.Query, callback index.QueryPagesCallback) error
 }
 
+// querier 绑定可选 Writer 与 Shipper，ReadOnly 模式下 writer 为 nil 仅查远程缓存。
 type querier struct {
 	writer       Writer
 	indexShipper Shipper
 }
 
+// NewQuerier 构造默认 querier 实现，供 IndexClient 在 init 阶段注入依赖。
 func NewQuerier(writer Writer, indexShipper Shipper) Querier {
 	return &querier{
 		writer:       writer,
@@ -32,6 +36,7 @@ func NewQuerier(writer Writer, indexShipper Shipper) Querier {
 	}
 }
 
+// QueryPages 先按表分组，再并行查询 writer（若存在）与 shipper 中各 IndexFile。
 // QueryPages queries both the writer and indexShipper for the given queries.
 func (q *querier) QueryPages(ctx context.Context, queries []index.Query, callback index.QueryPagesCallback) error {
 	userID, err := tenant.TenantID(ctx)
@@ -69,3 +74,4 @@ func (q *querier) QueryPages(ctx context.Context, queries []index.Query, callbac
 
 	return nil
 }
+// ForEach 回调须返回 *IndexFile 类型，否则视为 shipper 配置或打开函数不一致错误。

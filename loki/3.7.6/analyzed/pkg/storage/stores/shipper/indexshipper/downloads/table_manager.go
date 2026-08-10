@@ -1,5 +1,7 @@
 package downloads
 
+// table_manager 管理查询侧索引表缓存：加载本地 cache、ensureQueryReadiness 预下载、周期 syncTables 与 TTL 过期清理，并支持 IndexGateway 租户分片过滤。
+
 import (
 	"context"
 	"fmt"
@@ -36,6 +38,7 @@ type Limits interface {
 	VolumeMaxSeries(userID string) int
 }
 
+// TenantFilter 在 ring 模式下限定本实例负责预下载与查询就绪的租户子集。
 // TenantFilter is invoked by an IndexGateway instance and answers which
 // tenants from the given list of tenants are assigned to this instance.
 //
@@ -78,6 +81,7 @@ type tableManager struct {
 	tenantFilter TenantFilter
 }
 
+// NewTableManager 先 loadLocalTables 再 ensureQueryReadiness，最后启动 sync 与清理 loop。
 func NewTableManager(cfg Config, openIndexFileFunc index.OpenIndexFileFunc, indexStorageClient storage.Client,
 	tenantFilter TenantFilter, tableRangeToHandle config.TableRange, reg prometheus.Registerer, logger log.Logger) (TableManager, error) {
 	if err := util.EnsureDirectory(cfg.CacheDir); err != nil {
@@ -218,6 +222,7 @@ func (tm *tableManager) getOrCreateTable(tableName string) (Table, error) {
 	return table, nil
 }
 
+// syncTables 遍历已注册 table 调用 Sync，并更新 tables_sync_operation_total 指标。
 func (tm *tableManager) syncTables(ctx context.Context) error {
 	tm.tablesMtx.RLock()
 	tables := slices.Collect(maps.Keys(tm.tables))
@@ -287,6 +292,7 @@ func (tm *tableManager) cleanupCache() error {
 	return nil
 }
 
+// ensureQueryReadiness 按 QueryReadyNumDays 与租户 limits 决定需预热的表与用户索引。
 // ensureQueryReadiness compares tables required for being query ready with the tables we already have and downloads the missing ones.
 func (tm *tableManager) ensureQueryReadiness(ctx context.Context) error {
 	start := time.Now()
@@ -474,3 +480,4 @@ func getActiveTableNumber() int64 {
 func getTableNumberForTime(t model.Time) int64 {
 	return t.Unix() / daySeconds
 }
+// cleanupCache 按 CacheTTL 调用 DropUnusedIndex，空表会从 tables 映射中删除。
