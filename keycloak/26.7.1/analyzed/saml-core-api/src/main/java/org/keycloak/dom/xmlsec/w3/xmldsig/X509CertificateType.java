@@ -16,14 +16,28 @@
  */
 package org.keycloak.dom.xmlsec.w3.xmldsig;
 
+/**
+ * W3C XML Signature X509Certificate 元素对应的 Java 类型，承载 DER 编码的 X.509 证书字节。
+ */
 public class X509CertificateType {
 
+    /** DER 编码的 X.509 证书字节。 */
     private byte[] encodedCertificate;
 
+    /**
+     * 获取 DER 编码的证书字节。
+     *
+     * @return 证书字节数组
+     */
     public byte[] getEncodedCertificate() {
         return this.encodedCertificate;
     }
 
+    /**
+     * 设置 DER 编码的证书字节。
+     *
+     * @param encodedCertificate 证书字节数组
+     */
     public void setEncodedCertificate(byte[] encodedCertificate) {
         this.encodedCertificate = encodedCertificate;
     }

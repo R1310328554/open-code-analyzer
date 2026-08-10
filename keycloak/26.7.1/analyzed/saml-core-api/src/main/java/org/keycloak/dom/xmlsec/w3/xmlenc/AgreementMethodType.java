@@ -21,6 +21,7 @@ import org.keycloak.dom.xmlsec.w3.xmldsig.KeyInfoType;
 /**
  * <p>
  * Java class for AgreementMethodType complex type.
+ * W3C XML Encryption 密钥协商方法元素，用于基于密钥协商算法派生加密密钥。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,38 +44,60 @@ import org.keycloak.dom.xmlsec.w3.xmldsig.KeyInfoType;
  */
 public class AgreementMethodType {
 
+    /** 密钥协商算法 URI（必填属性 Algorithm）。 */
     protected String algorithm;
 
+    /** 密钥协商方法的详细参数封装。 */
     public static class AggrementMethod {
 
+        /** 密钥协商随机数（KA-Nonce 子元素）。 */
         protected byte[] kANonce;
+        /** 发起方密钥信息（OriginatorKeyInfo 子元素）。 */
         protected KeyInfoType originatorKeyInfo;
+        /** 接收方密钥信息（RecipientKeyInfo 子元素）。 */
         protected KeyInfoType recipientKeyInfo;
 
+        /**
+         * 构造密钥协商方法参数。
+         *
+         * @param kANonce 密钥协商随机数
+         * @param originatorKeyInfo 发起方密钥信息
+         * @param recipientKeyInfo 接收方密钥信息
+         */
         public AggrementMethod(byte[] kANonce, KeyInfoType originatorKeyInfo, KeyInfoType recipientKeyInfo) {
             this.kANonce = kANonce;
             this.originatorKeyInfo = originatorKeyInfo;
             this.recipientKeyInfo = recipientKeyInfo;
         }
 
+        /** 获取密钥协商随机数。 */
         public byte[] getkANonce() {
             return kANonce;
         }
 
+        /** 获取发起方密钥信息。 */
         public KeyInfoType getOriginatorKeyInfo() {
             return originatorKeyInfo;
         }
 
+        /** 获取接收方密钥信息。 */
         public KeyInfoType getRecipientKeyInfo() {
             return recipientKeyInfo;
         }
     }
 
+    /**
+     * 构造指定算法的密钥协商方法。
+     *
+     * @param algo 密钥协商算法 URI
+     */
     public AgreementMethodType(String algo) {
         this.algorithm = algo;
     }
 
     /**
+     * 获取密钥协商算法 URI。
+     *
      * Gets the value of the algorithm property.
      *
      * @return possible object is {@link String }

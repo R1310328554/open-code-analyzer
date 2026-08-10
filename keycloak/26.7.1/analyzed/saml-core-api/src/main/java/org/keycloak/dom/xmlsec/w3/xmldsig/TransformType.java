@@ -24,6 +24,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for TransformType complex type.
+ * W3C XML Signature 转换算法描述，用于 Reference 或 Transforms 中对被签名数据施加变换。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -44,22 +45,33 @@ import java.util.List;
  */
 public class TransformType {
 
+    /** 转换参数内容列表（可含 XPath 表达式等）。 */
     protected List<Object> content = new ArrayList<>();
+    /** 转换算法 URI（必填属性 Algorithm）。 */
     protected URI algorithm;
 
+    /**
+     * 构造指定算法的转换描述。
+     *
+     * @param algorithm 转换算法 URI
+     */
     public TransformType(URI algorithm) {
         this.algorithm = algorithm;
     }
 
+    /** 添加转换参数内容。 */
     public void addTransform(Object obj) {
         this.content.add(obj);
     }
 
+    /** 移除转换参数内容。 */
     public void removeTransform(Object obj) {
         this.content.remove(obj);
     }
 
     /**
+     * 获取转换参数内容列表（只读视图）。
+     *
      * Gets the value of the content property.
      *
      * <p>
@@ -70,6 +82,8 @@ public class TransformType {
     }
 
     /**
+     * 获取转换算法 URI。
+     *
      * Gets the value of the algorithm property.
      *
      * @return possible object is {@link String }

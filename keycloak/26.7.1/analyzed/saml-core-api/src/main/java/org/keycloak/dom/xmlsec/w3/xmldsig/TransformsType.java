@@ -24,6 +24,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for TransformsType complex type.
+ * W3C XML Signature 转换算法列表容器，按顺序应用多个 {@link TransformType}。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -42,17 +43,22 @@ import java.util.List;
  */
 public class TransformsType {
 
+    /** 转换算法列表。 */
     protected List<TransformType> transform = new ArrayList<>();
 
+    /** 添加一条转换算法。 */
     public void addTransformsType(TransformType tt) {
         this.transform.add(tt);
     }
 
+    /** 移除一条转换算法。 */
     public void removeTransformsType(TransformType tt) {
         this.transform.remove(tt);
     }
 
     /**
+     * 获取转换算法列表（只读视图）。
+     *
      * Gets the value of the transform property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link TransformType }

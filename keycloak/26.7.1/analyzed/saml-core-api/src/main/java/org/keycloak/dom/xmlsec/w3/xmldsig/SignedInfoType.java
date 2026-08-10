@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for SignedInfoType complex type.
+ * W3C XML Signature 待签名信息，包含规范化方法、签名方法及一个或多个引用（Reference）。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -44,12 +45,18 @@ import java.util.List;
  */
 public class SignedInfoType {
 
+    /** 规范化方法（CanonicalizationMethod 子元素）。 */
     protected CanonicalizationMethodType canonicalizationMethod;
+    /** 签名方法（SignatureMethod 子元素）。 */
     protected SignatureMethodType signatureMethod;
+    /** 引用列表（Reference 子元素，至少一条）。 */
     protected List<ReferenceType> reference = new ArrayList<>();
+    /** 元素标识符（可选属性 Id）。 */
     protected String id;
 
     /**
+     * 获取规范化方法。
+     *
      * Gets the value of the canonicalizationMethod property.
      *
      * @return possible object is {@link CanonicalizationMethodType }
@@ -59,6 +66,8 @@ public class SignedInfoType {
     }
 
     /**
+     * 设置规范化方法。
+     *
      * Sets the value of the canonicalizationMethod property.
      *
      * @param value allowed object is {@link CanonicalizationMethodType }
@@ -68,6 +77,8 @@ public class SignedInfoType {
     }
 
     /**
+     * 获取签名方法。
+     *
      * Gets the value of the signatureMethod property.
      *
      * @return possible object is {@link SignatureMethodType }
@@ -77,6 +88,8 @@ public class SignedInfoType {
     }
 
     /**
+     * 设置签名方法。
+     *
      * Sets the value of the signatureMethod property.
      *
      * @param value allowed object is {@link SignatureMethodType }
@@ -85,15 +98,19 @@ public class SignedInfoType {
         this.signatureMethod = value;
     }
 
+    /** 添加一条引用。 */
     public void add(ReferenceType ref) {
         this.reference.add(ref);
     }
 
+    /** 移除一条引用。 */
     public void remove(ReferenceType ref) {
         this.reference.remove(ref);
     }
 
     /**
+     * 获取引用列表（只读视图）。
+     *
      * Gets the value of the reference property.
      *
      * <p>
@@ -104,6 +121,8 @@ public class SignedInfoType {
     }
 
     /**
+     * 获取元素标识符。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -113,6 +132,8 @@ public class SignedInfoType {
     }
 
     /**
+     * 设置元素标识符。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

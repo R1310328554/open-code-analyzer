@@ -22,6 +22,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for SignaturePropertyType complex type.
+ * W3C XML Signature 单条签名属性，通过 Target 属性关联被签名的对象。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -42,11 +43,16 @@ import java.util.List;
  */
 public class SignaturePropertyType {
 
+    /** 属性内容列表（可含任意 XML 元素或文本）。 */
     protected List<Object> content = new ArrayList<>();
+    /** 目标 URI（必填属性 Target），指向关联的签名对象。 */
     protected String target;
+    /** 元素标识符（可选属性 Id）。 */
     protected String id;
 
     /**
+     * 获取属性内容列表。
+     *
      * Gets the value of the content property.
      *
      * <p>
@@ -57,6 +63,8 @@ public class SignaturePropertyType {
     }
 
     /**
+     * 获取目标 URI。
+     *
      * Gets the value of the target property.
      *
      * @return possible object is {@link String }
@@ -66,6 +74,8 @@ public class SignaturePropertyType {
     }
 
     /**
+     * 设置目标 URI。
+     *
      * Sets the value of the target property.
      *
      * @param value allowed object is {@link String }
@@ -75,6 +85,8 @@ public class SignaturePropertyType {
     }
 
     /**
+     * 获取元素标识符。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -84,6 +96,8 @@ public class SignaturePropertyType {
     }
 
     /**
+     * 设置元素标识符。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

@@ -19,6 +19,7 @@ package org.keycloak.dom.xmlsec.w3.xmlenc;
 /**
  * <p>
  * Java class for EncryptedDataType complex type.
+ * W3C XML Encryption 加密数据元素，继承 {@link EncryptedType} 表示被加密的内容载荷。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

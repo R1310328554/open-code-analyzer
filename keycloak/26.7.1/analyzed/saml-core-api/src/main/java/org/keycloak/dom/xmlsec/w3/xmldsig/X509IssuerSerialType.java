@@ -21,6 +21,7 @@ import java.math.BigInteger;
 /**
  * <p>
  * Java class for X509IssuerSerialType complex type.
+ * W3C XML Signature X509IssuerSerial 元素，以颁发者名称与序列号标识 X.509 证书。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -40,10 +41,14 @@ import java.math.BigInteger;
  */
 public class X509IssuerSerialType {
 
+    /** X509 证书颁发者名称（X509IssuerName 子元素）。 */
     protected String x509IssuerName;
+    /** X509 证书序列号（X509SerialNumber 子元素）。 */
     protected BigInteger x509SerialNumber;
 
     /**
+     * 获取证书颁发者名称。
+     *
      * Gets the value of the x509IssuerName property.
      *
      * @return possible object is {@link String }
@@ -53,6 +58,8 @@ public class X509IssuerSerialType {
     }
 
     /**
+     * 设置证书颁发者名称。
+     *
      * Sets the value of the x509IssuerName property.
      *
      * @param value allowed object is {@link String }
@@ -62,6 +69,8 @@ public class X509IssuerSerialType {
     }
 
     /**
+     * 获取证书序列号。
+     *
      * Gets the value of the x509SerialNumber property.
      *
      * @return possible object is {@link BigInteger }
@@ -71,6 +80,8 @@ public class X509IssuerSerialType {
     }
 
     /**
+     * 设置证书序列号。
+     *
      * Sets the value of the x509SerialNumber property.
      *
      * @param value allowed object is {@link BigInteger }

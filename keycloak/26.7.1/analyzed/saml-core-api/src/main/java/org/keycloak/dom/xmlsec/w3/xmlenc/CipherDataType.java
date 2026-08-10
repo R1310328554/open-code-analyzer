@@ -19,6 +19,7 @@ package org.keycloak.dom.xmlsec.w3.xmlenc;
 /**
  * <p>
  * Java class for CipherDataType complex type.
+ * W3C XML Encryption 密文数据元素，以 CipherValue 或 CipherReference 二选一承载密文。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -38,10 +39,14 @@ package org.keycloak.dom.xmlsec.w3.xmlenc;
  */
 public class CipherDataType {
 
+    /** 内联密文值（CipherValue 子元素，Base64 解码后的字节）。 */
     protected byte[] cipherValue;
+    /** 外部密文引用（CipherReference 子元素）。 */
     protected CipherReferenceType cipherReference;
 
     /**
+     * 获取内联密文值字节数组。
+     *
      * Gets the value of the cipherValue property.
      *
      * @return possible object is byte[]
@@ -51,6 +56,8 @@ public class CipherDataType {
     }
 
     /**
+     * 设置内联密文值字节数组。
+     *
      * Sets the value of the cipherValue property.
      *
      * @param value allowed object is byte[]
@@ -60,6 +67,8 @@ public class CipherDataType {
     }
 
     /**
+     * 获取外部密文引用。
+     *
      * Gets the value of the cipherReference property.
      *
      * @return possible object is {@link CipherReferenceType }
@@ -69,6 +78,8 @@ public class CipherDataType {
     }
 
     /**
+     * 设置外部密文引用。
+     *
      * Sets the value of the cipherReference property.
      *
      * @param value allowed object is {@link CipherReferenceType }

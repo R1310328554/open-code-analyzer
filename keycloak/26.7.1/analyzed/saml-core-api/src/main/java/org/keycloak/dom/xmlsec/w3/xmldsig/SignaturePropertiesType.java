@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for SignaturePropertiesType complex type.
+ * W3C XML Signature 签名属性集合容器，可包含一个或多个 {@link SignaturePropertyType}。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -42,18 +43,24 @@ import java.util.List;
  */
 public class SignaturePropertiesType {
 
+    /** 签名属性列表。 */
     protected List<SignaturePropertyType> signatureProperty = new ArrayList<>();
+    /** 元素标识符（可选属性 Id）。 */
     protected String id;
 
+    /** 添加一条签名属性。 */
     public void addSignatureProperty(SignaturePropertyType sig) {
         this.signatureProperty.add(sig);
     }
 
+    /** 移除一条签名属性。 */
     public void removeSignatureProperty(SignaturePropertyType sig) {
         this.signatureProperty.remove(sig);
     }
 
     /**
+     * 获取签名属性列表（只读视图）。
+     *
      * Gets the value of the signatureProperty property.
      *
      * <p>
@@ -64,6 +71,8 @@ public class SignaturePropertiesType {
     }
 
     /**
+     * 获取元素标识符。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -73,6 +82,8 @@ public class SignaturePropertiesType {
     }
 
     /**
+     * 设置元素标识符。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

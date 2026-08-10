@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for SignatureType complex type.
+ * W3C XML Signature 根元素，封装待签名信息、签名值及可选的密钥信息与对象。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -45,13 +46,20 @@ import java.util.List;
  */
 public class SignatureType {
 
+    /** 待签名信息（SignedInfo 子元素）。 */
     protected SignedInfoType signedInfo;
+    /** 签名值（SignatureValue 子元素）。 */
     protected SignatureValueType signatureValue;
+    /** 密钥信息（可选 KeyInfo 子元素）。 */
     protected KeyInfoType keyInfo;
+    /** 附加对象列表（可选 Object 子元素）。 */
     protected List<ObjectType> object = new ArrayList<>();
+    /** 元素标识符（可选属性 Id）。 */
     protected String id;
 
     /**
+     * 获取待签名信息。
+     *
      * Gets the value of the signedInfo property.
      *
      * @return possible object is {@link SignedInfoType }
@@ -61,6 +69,8 @@ public class SignatureType {
     }
 
     /**
+     * 设置待签名信息。
+     *
      * Sets the value of the signedInfo property.
      *
      * @param value allowed object is {@link SignedInfoType }
@@ -70,6 +80,8 @@ public class SignatureType {
     }
 
     /**
+     * 获取签名值。
+     *
      * Gets the value of the signatureValue property.
      *
      * @return possible object is {@link SignatureValueType }
@@ -79,6 +91,8 @@ public class SignatureType {
     }
 
     /**
+     * 设置签名值。
+     *
      * Sets the value of the signatureValue property.
      *
      * @param value allowed object is {@link SignatureValueType }
@@ -88,6 +102,8 @@ public class SignatureType {
     }
 
     /**
+     * 获取密钥信息。
+     *
      * Gets the value of the keyInfo property.
      *
      * @return possible object is {@link KeyInfoType }
@@ -97,6 +113,8 @@ public class SignatureType {
     }
 
     /**
+     * 设置密钥信息。
+     *
      * Sets the value of the keyInfo property.
      *
      * @param value allowed object is {@link KeyInfoType }
@@ -105,15 +123,19 @@ public class SignatureType {
         this.keyInfo = value;
     }
 
+    /** 添加附加对象。 */
     public void addObject(ObjectType obj) {
         this.object.add(obj);
     }
 
+    /** 移除附加对象。 */
     public void removeObject(ObjectType obj) {
         this.object.remove(obj);
     }
 
     /**
+     * 获取附加对象列表（只读视图）。
+     *
      * Gets the value of the object property.
      *
      * <p>
@@ -124,6 +146,8 @@ public class SignatureType {
     }
 
     /**
+     * 获取元素标识符。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -133,6 +157,8 @@ public class SignatureType {
     }
 
     /**
+     * 设置元素标识符。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

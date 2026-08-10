@@ -19,6 +19,7 @@ package org.keycloak.dom.xmlsec.w3.xmldsig;
 /**
  * <p>
  * Java class for SignatureValueType complex type.
+ * W3C XML Signature 签名值元素，承载 Base64 编码的二进制签名结果。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -35,10 +36,14 @@ package org.keycloak.dom.xmlsec.w3.xmldsig;
  */
 public class SignatureValueType {
 
+    /** 签名值的原始字节（Base64 解码后）。 */
     protected byte[] value;
+    /** 元素标识符（可选属性 Id）。 */
     protected String id;
 
     /**
+     * 获取签名值字节数组。
+     *
      * Gets the value of the value property.
      *
      * @return possible object is byte[]
@@ -48,6 +53,8 @@ public class SignatureValueType {
     }
 
     /**
+     * 设置签名值字节数组。
+     *
      * Sets the value of the value property.
      *
      * @param value allowed object is byte[]
@@ -57,6 +64,8 @@ public class SignatureValueType {
     }
 
     /**
+     * 获取元素标识符。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -66,6 +75,8 @@ public class SignatureValueType {
     }
 
     /**
+     * 设置元素标识符。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

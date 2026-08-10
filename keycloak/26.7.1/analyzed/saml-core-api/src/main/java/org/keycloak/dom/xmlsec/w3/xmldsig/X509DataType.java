@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for X509DataType complex type.
+ * W3C XML Signature X509Data 元素，封装 X.509 证书相关的多种标识信息。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -48,17 +49,22 @@ import java.util.List;
  */
 public class X509DataType {
 
+    /** X509 数据对象列表（颁发者序列号、SKI、主题名、证书或 CRL 等）。 */
     protected List<Object> x509IssuerSerialOrX509SKIOrX509SubjectName = new ArrayList<>();
 
+    /** 添加 X509 数据对象。 */
     public void add(Object obj) {
         this.x509IssuerSerialOrX509SKIOrX509SubjectName.add(obj);
     }
 
+    /** 移除 X509 数据对象。 */
     public void remove(Object obj) {
         this.x509IssuerSerialOrX509SKIOrX509SubjectName.remove(obj);
     }
 
     /**
+     * 获取 X509 数据对象列表（只读视图）。
+     *
      * Gets the value of the x509IssuerSerialOrX509SKIOrX509SubjectName property.
      *
      * <p>
