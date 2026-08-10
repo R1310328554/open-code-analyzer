@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// NHCBParser 装饰器：在底层 Parser 之上聚合 classic 直方图 _bucket/_sum/_count序列并转换为原生直方图自定义桶（NHCB）输出。
+
 package textparse
 
 import (
@@ -27,6 +29,7 @@ import (
 	"github.com/prometheus/prometheus/util/convertnhcb"
 )
 
+// collectionState 跟踪 NHCB 收集/发射/抑制状态机。
 type collectionState int
 
 const (
@@ -36,6 +39,7 @@ const (
 	stateInhibiting // Inhibiting NHCB, because there was an exponential histogram with the same labels.
 )
 
+// NHCBParser 包装 Parser，按行缓冲 classic 直方图分片后一次性转换。
 // The NHCBParser wraps a Parser and converts classic histograms to native
 // histograms with custom buckets.
 //
@@ -49,8 +53,10 @@ const (
 //   - The classic series are also returned if keepClassicHistograms is true.
 type NHCBParser struct {
 	// The parser we're wrapping.
+	// parser 为被包装的底层 exposition 解析器。
 	parser Parser
 	// Option to keep classic histograms along with converted histograms.
+	// keepClassicHistograms 为 true 时同时保留 classic 与 NHCB 输出。
 	keepClassicHistograms bool
 
 	// Labels builder.
@@ -103,6 +109,7 @@ type NHCBParser struct {
 	hBuffer []byte
 }
 
+// NewNHCBParser 构造装饰器并初始化临时直方图收集器。
 func NewNHCBParser(p Parser, st *labels.SymbolTable, keepClassicHistograms bool) Parser {
 	return &NHCBParser{
 		parser:                p,
@@ -247,6 +254,7 @@ func (p *NHCBParser) Next() (Entry, error) {
 	}
 }
 
+// differentMetric 检测指标类型/名称/标签哈希变化以触发 NHCB 输出。
 // Return true if labels have changed and we should emit the NHCB.
 func (p *NHCBParser) differentMetric() bool {
 	if p.typ != model.MetricTypeHistogram {
@@ -274,6 +282,7 @@ func (p *NHCBParser) storeExponentialLabels() {
 	p.lastHistogramLabelsHash, _ = p.lset.HashWithoutLabels(p.hBuffer)
 }
 
+// handleClassicHistogramSeries 识别 _bucket/_sum/_count 后缀并写入 TempHistogram。
 // handleClassicHistogramSeries collates the classic histogram series to be converted to NHCB
 // if it is actually a classic histogram series (and not a normal float series) and if there
 // isn't already a native histogram with the same name (assuming it is always processed
@@ -351,6 +360,7 @@ func (p *NHCBParser) swapExemplars() {
 	p.tempExemplars = p.tempExemplars[:0]
 }
 
+// processNHCB 调用 Convert 校验后进入 stateEmitting 缓存待返回样本。
 // processNHCB converts the collated classic histogram series to NHCB and caches the info
 // to be returned to callers. Returns true if the conversion was successful.
 func (p *NHCBParser) processNHCB() bool {

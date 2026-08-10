@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// textparse 包入口：按 Content-Type 选择 OpenMetrics/Prometheus 文本/Protobuf 解析器，统一 Parser 接口供 scrape 与测试使用。
+
 package textparse
 
 import (
@@ -25,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// Parser 抽象 exposition 格式的逐条迭代解析能力。
 // Parser parses samples from a byte slice of samples in different exposition formats.
 type Parser interface {
 	// Series returns the bytes of a series with a simple float64 as a
@@ -86,6 +89,7 @@ type Parser interface {
 	Next() (Entry, error)
 }
 
+// extractMediaType 解析 HTTP Content-Type，不支持时回退 fallback_scrape_protocol。
 // extractMediaType returns the mediaType of a required parser. It tries first to
 // extract a valid and supported mediaType from contentType. If that fails,
 // the provided fallbackType (possibly an empty string) is returned, together with
@@ -122,9 +126,11 @@ func extractMediaType(contentType, fallbackType string) (string, error) {
 	return fallbackType, fmt.Errorf("received unsupported Content-Type %q, using fallback_scrape_protocol %q", contentType, fallbackType)
 }
 
+// ParserOptions 控制类型/单位标签、NHCB 转换与原生直方图忽略等行为。
 type ParserOptions struct {
 	// EnableTypeAndUnitLabels enables parsing and inclusion of type and unit labels
 	// in the parsed metrics.
+	// EnableTypeAndUnitLabels 在标签中加入 __type__/__unit__ 等元数据标签。
 	EnableTypeAndUnitLabels bool
 
 	// IgnoreNativeHistograms causes the parser to completely ignore all
@@ -136,10 +142,12 @@ type ParserOptions struct {
 	// histogram that already has a native representation to an NHCB. This
 	// option has no effect on parsers for formats that do not support
 	// native histograms.
+	// IgnoreNativeHistograms 忽略原生直方图部分，仅保留 classic 语义。
 	IgnoreNativeHistograms bool
 
 	// ConvertClassicHistogramsToNHCB enables conversion of classic histograms
 	// to native histogram custom buckets (NHCB) format.
+	// ConvertClassicHistogramsToNHCB 将 classic 直方图转为 NHCB 格式。
 	ConvertClassicHistogramsToNHCB bool
 
 	// KeepClassicOnClassicAndNativeHistograms causes parser to output classic histogram
@@ -155,6 +163,7 @@ type ParserOptions struct {
 	FallbackContentType string
 }
 
+// New 工厂：按 mediaType 构造解析器，可选 NHCB 包装层。
 // New returns a new parser of the byte slice.
 //
 // This function no longer guarantees to return a valid parser.
@@ -200,6 +209,7 @@ func New(b []byte, contentType string, st *labels.SymbolTable, opts ParserOption
 	return baseParser, err
 }
 
+// Entry 标记 Next() 返回的当前行类型（series/help/type 等）。
 // Entry represents the type of a parsed entry.
 type Entry int
 

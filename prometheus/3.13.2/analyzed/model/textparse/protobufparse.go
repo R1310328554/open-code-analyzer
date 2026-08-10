@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Protobuf exposition 解析器：流式解码 dto.MetricFamily，将 counter/gauge/summary/histogram 映射为统一 Parser 接口语义。
+
 package textparse
 
 import (
@@ -32,6 +34,7 @@ import (
 	"github.com/prometheus/prometheus/util/convertnhcb"
 )
 
+// ProtobufParser 用 MetricStreamingDecoder 复用内存并按 text 解析器语义输出。
 // ProtobufParser parses the old Prometheus protobuf format and present it
 // as the text-style textparse.Parser interface.
 //
@@ -39,6 +42,7 @@ import (
 // reuses internal protobuf structs and allows direct unmarshalling to Prometheus
 // types like labels.
 type ProtobufParser struct {
+	// dec 流式解码单个 MetricFamily 内的 Metric 序列。
 	dec *dto.MetricStreamingDecoder
 
 	// Used for both the string returned by Series and Histogram, as well as,
@@ -51,8 +55,10 @@ type ProtobufParser struct {
 	// fieldPos is the position within a Summary or (legacy) Histogram. -2
 	// is the count. -1 is the sum. Otherwise, it is the index within
 	// quantiles/buckets.
+	// fieldPos 跟踪 summary/histogram 各 quantile/bucket 字段迭代位置。
 	fieldPos    int
 	fieldsDone  bool // true if no more fields of a Summary or (legacy) Histogram to be processed.
+	// redoClassic 在同时存在 native 与 classic 时二次输出 classic 分片。
 	redoClassic bool // true after parsing a native histogram if we need to parse it again as a classic histogram.
 	// exemplarPos is the position within the exemplars slice of a native histogram.
 	exemplarPos int
@@ -83,6 +89,7 @@ type ProtobufParser struct {
 }
 
 // NewProtobufParser returns a parser for the payload in the byte slice.
+// NewProtobufParser 配置原生直方图忽略、NHCB 转换与 type/unit 标签。
 func NewProtobufParser(
 	b []byte,
 	ignoreNativeHistograms, parseClassicHistograms, convertClassicHistogramsToNHCB, enableTypeAndUnitLabels bool,
@@ -422,6 +429,7 @@ func (p *ProtobufParser) StartTimestamp() int64 {
 // Next advances the parser to the next "sample" (emulating the behavior of a
 // text format parser). It returns (EntryInvalid, io.EOF) if no samples were
 // read.
+// Next 状态机：Help→Unit→Type→Series/Histogram，模拟文本格式逐条输出。
 func (p *ProtobufParser) Next() (Entry, error) {
 	p.exemplarReturned = false
 	p.nhcbH = nil
@@ -600,6 +608,7 @@ func (p *ProtobufParser) Next() (Entry, error) {
 	return p.state, nil
 }
 
+// onSeriesOrHistogramUpdate 刷新 lset、entryBytes 与 fieldsDone 标志。
 // onSeriesOrHistogramUpdate updates internal state before returning
 // a series or histogram. It updates:
 // * p.lset.
@@ -708,6 +717,7 @@ func (p *ProtobufParser) getMagicLabel() (bool, string, string) {
 // zero) to signal that the histogram is meant to be parsed as a native
 // histogram. Failing to do so will cause Prometheus to parse it as a classic
 // histogram as long as no observations have happened.
+// isNativeHistogram 根据 schema/零阈值等字段判定是否为原生直方图。
 func isNativeHistogram(h *dto.Histogram) bool {
 	return len(h.GetPositiveSpan()) > 0 ||
 		len(h.GetNegativeSpan()) > 0 ||

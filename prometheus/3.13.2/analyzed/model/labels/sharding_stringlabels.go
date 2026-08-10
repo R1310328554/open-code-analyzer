@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 默认 stringlabels 实现的 StableHash：逐条 decode 标签对，大集合时切换 xxhash.Digest 流式写入。
+
 //go:build !slicelabels && !dedupelabels
 
 package labels
@@ -19,6 +21,7 @@ import (
 	"github.com/cespare/xxhash/v2"
 )
 
+// stringlabels 后端下的稳定哈希，算法输出与其他 build tag 一致。
 // StableHash is a labels hashing implementation which is guaranteed to not change over time.
 // This function should be used whenever labels hashing backward compatibility must be guaranteed.
 func StableHash(ls Labels) uint64 {
@@ -30,6 +33,7 @@ func StableHash(ls Labels) uint64 {
 		v.Name, i = decodeString(ls.data, i)
 		v.Value, i = decodeString(ls.data, i)
 		if h == nil && len(b)+len(v.Name)+len(v.Value)+2 >= cap(b) {
+// 超过 1KB 阈值后保留已拼接字节并改用 Digest。
 			// If labels entry is 1KB+, switch to Write API. Copy in the values up to this point.
 			h = xxhash.New()
 			_, _ = h.Write(b)

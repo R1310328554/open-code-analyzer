@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus 经典文本 exposition 解析器（text/0.0.4）：解析 # HELP/# TYPE、metric{labels} value [timestamp] 行。
+
 //go:generate go get -u modernc.org/golex
 //go:generate golex -o=promlex.l.go promlex.l
 
@@ -36,6 +38,7 @@ import (
 	"github.com/prometheus/prometheus/schema"
 )
 
+// promlexer 词法扫描器状态，配合 promlex.l.go 使用。
 type promlexer struct {
 	b     []byte
 	i     int
@@ -148,6 +151,7 @@ func (l *promlexer) Error(es string) {
 
 // PromParser parses samples from a byte slice of samples in the official
 // Prometheus text exposition format.
+// PromParser 实现 Parser，不支持原生直方图与 exemplar（由 OpenMetrics 承担）。
 type PromParser struct {
 	l       *promlexer
 	builder labels.ScratchBuilder
@@ -170,6 +174,7 @@ type PromParser struct {
 }
 
 // NewPromParser returns a new parser of the byte slice.
+// NewPromParser 构造经典文本解析器。
 func NewPromParser(b []byte, st *labels.SymbolTable, enableTypeAndUnitLabels bool) Parser {
 	return &PromParser{
 		l:                       &promlexer{b: append(b, '\n')},
@@ -297,6 +302,7 @@ func (p *PromParser) parseError(exp string, got token) error {
 
 // Next advances the parser to the next sample.
 // It returns (EntryInvalid, io.EOF) if no samples were read.
+// Next 识别元数据行、注释与 metric 样本行。
 func (p *PromParser) Next() (Entry, error) {
 	var err error
 
@@ -402,6 +408,7 @@ func (p *PromParser) Next() (Entry, error) {
 	return EntryInvalid, err
 }
 
+// parseLVals 解析花括号内 label="value" 对列表。
 // parseLVals parses the contents inside the braces.
 func (p *PromParser) parseLVals() error {
 	t := p.nextToken()
@@ -465,6 +472,7 @@ func (p *PromParser) parseLVals() error {
 
 // parseMetricSuffix parses the end of the line after the metric name and
 // labels. It starts parsing with the provided token.
+// parseMetricSuffix 读取样本值与可选毫秒时间戳。
 func (p *PromParser) parseMetricSuffix(t token) (Entry, error) {
 	if p.offsets[0] == -1 {
 		return EntryInvalid, fmt.Errorf("metric name not set while parsing: %q", p.l.b[p.start:p.l.i])
@@ -518,6 +526,7 @@ func unreplace(s string) string {
 	return s
 }
 
+// yoloString/yoloBytes 零拷贝 string↔[]byte 转换（unsafe）。
 func yoloString(b []byte) string {
 	return unsafe.String(unsafe.SliceData(b), len(b))
 }

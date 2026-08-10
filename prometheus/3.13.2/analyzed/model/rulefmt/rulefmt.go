@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus 告警/录制规则 YAML 解析与校验：加载 groups/rules，校验 PromQL 表达式、指标名与模板语法，并附带 YAML 行列号错误信息。
+
 package rulefmt
 
 import (
@@ -34,6 +36,7 @@ import (
 	"github.com/prometheus/prometheus/util/namevalidationutil"
 )
 
+// Error 封装规则组/规则序号与 YAML 节点位置。
 // Error represents semantic errors on parsing rule groups.
 type Error struct {
 	Group    string
@@ -61,6 +64,7 @@ func (err *Error) Unwrap() error {
 	return &err.Err
 }
 
+// WrappedError 绑定 yaml.Node 以便输出精确行列。
 // WrappedError wraps error with the yaml node which can be used to represent
 // the line and column numbers of the error.
 type WrappedError struct {
@@ -88,6 +92,7 @@ func (we *WrappedError) Unwrap() error {
 	return we.err
 }
 
+// RuleGroups 对应 rules 文件顶层 groups 列表。
 // RuleGroups is a set of rule groups that are typically exposed in a file.
 type RuleGroups struct {
 	Groups []RuleGroup `yaml:"groups"`
@@ -97,6 +102,7 @@ type ruleGroups struct {
 	Groups []RuleGroupNode `yaml:"groups"`
 }
 
+// Validate 检查组名唯一、标签合法并逐条校验 Rule。
 // Validate validates all rules in the rule groups.
 func (g *RuleGroups) Validate(node ruleGroups, nameValidationScheme model.ValidationScheme, p parser.Parser) (errs []error) {
 	if err := namevalidationutil.CheckNameValidationScheme(nameValidationScheme); err != nil {
@@ -155,6 +161,7 @@ func (g *RuleGroups) Validate(node ruleGroups, nameValidationScheme model.Valida
 	return errs
 }
 
+// RuleGroup 含评估间隔、query_offset、limit 与 rules 数组。
 // RuleGroup is a list of sequentially evaluated recording and alerting rules.
 type RuleGroup struct {
 	Name        string            `yaml:"name"`
@@ -176,6 +183,7 @@ type RuleGroupNode struct {
 	Labels      map[string]string `yaml:"labels,omitempty"`
 }
 
+// Rule 为 record 或 alert 二选一，共享 expr/for/labels/annotations。
 // Rule describes an alerting or recording rule.
 type Rule struct {
 	Record        string            `yaml:"record,omitempty"`
@@ -198,6 +206,7 @@ type RuleNode struct {
 	Annotations   map[string]string `yaml:"annotations,omitempty"`
 }
 
+// Rule.Validate 检查 record/alert 互斥、expr 可解析与字段组合合法性。
 // Validate the rule and return a list of encountered errors.
 func (r *Rule) Validate(node RuleNode, nameValidationScheme model.ValidationScheme, p parser.Parser) (nodes []WrappedError) {
 	if r.Record != "" && r.Alert != "" {
@@ -251,6 +260,7 @@ func (r *Rule) Validate(node RuleNode, nameValidationScheme model.ValidationSche
 				node: &node.Record,
 			})
 		}
+// 录制规则名含 {} 时提示可能误把 PromQL 写入 record 字段。
 		// While record is a valid UTF-8 it's common mistake to put PromQL expression in the record name.
 		// Disallow "{}" chars.
 		if strings.Contains(r.Record, "{") || strings.Contains(r.Record, "}") {
@@ -290,6 +300,7 @@ func (r *Rule) Validate(node RuleNode, nameValidationScheme model.ValidationSche
 	return nodes
 }
 
+// testTemplateParsing 对 alert 的 labels/annotations 做模板试解析。
 // testTemplateParsing checks if the templates used in labels and annotations
 // of the alerting rules are parsed correctly.
 func testTemplateParsing(rl *Rule) (errs []error) {
@@ -339,6 +350,7 @@ func testTemplateParsing(rl *Rule) (errs []error) {
 	return errs
 }
 
+// Parse 解码 YAML、拒绝多文档并调用 RuleGroups.Validate。
 // Parse parses and validates a set of rules.
 func Parse(
 	content []byte,
@@ -381,6 +393,7 @@ func Parse(
 	return &groups, groups.Validate(node, nameValidationScheme, p)
 }
 
+// ParseFile 读磁盘文件并在错误前附加文件路径。
 // ParseFile reads and parses rules from a file.
 func ParseFile(
 	file string,

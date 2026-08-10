@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenMetrics 文本 exposition 解析器：词法+手写语法，支持 exemplar、start timestamp、类型/单位元数据及 type-and-unit 标签模式。
+
 //go:generate go get -u modernc.org/golex
 //go:generate golex -o=openmetricslex.l.go openmetricslex.l
 
@@ -36,6 +38,7 @@ import (
 	"github.com/prometheus/prometheus/schema"
 )
 
+// openMetricsLexer 持有输入缓冲与 DFA 状态，由 openmetricslex.l.go 驱动。
 type openMetricsLexer struct {
 	b     []byte
 	i     int
@@ -72,6 +75,7 @@ func (l *openMetricsLexer) Error(es string) {
 	l.err = errors.New(es)
 }
 
+// OpenMetricsParser 实现 Parser 接口，解析 OM 1.0 文本格式。
 // OpenMetricsParser parses samples from a byte slice of samples in the official
 // OpenMetrics text exposition format.
 // Specification can be found at https://prometheus.io/docs/specs/om/open_metrics_spec/
@@ -94,6 +98,7 @@ type OpenMetricsParser struct {
 	// p.offsets[1] is the end of the metric name.
 	// Subsequently, p.offsets is a pair of pair of offsets for the positions
 	// of the label name and value start and end characters.
+	// offsets 记录 metric 名与各 label name/value 在 series 字节中的起止位置。
 	offsets []int
 
 	eOffsets      []int
@@ -143,6 +148,7 @@ func WithOMParserTypeAndUnitLabels() OpenMetricsOption {
 }
 
 // NewOpenMetricsParser returns a new parser for the byte slice with option to skip ST series parsing.
+// NewOpenMetricsParser 创建解析器并应用 skip ST/_created 等选项。
 func NewOpenMetricsParser(b []byte, st *labels.SymbolTable, opts ...OpenMetricsOption) Parser {
 	options := &openMetricsParserOptions{}
 
@@ -442,6 +448,7 @@ func (p *OpenMetricsParser) parseError(exp string, got token) error {
 
 // Next advances the parser to the next sample.
 // It returns (EntryInvalid, io.EOF) if no samples were read.
+// Next 主循环：识别 HELP/TYPE/UNIT、series 行与 # EOF 终止符。
 func (p *OpenMetricsParser) Next() (Entry, error) {
 	var err error
 
@@ -629,6 +636,7 @@ func (p *OpenMetricsParser) parseComment() error {
 	return nil
 }
 
+// parseLVals 解析 {label="value",...} 块并可选收集 exemplar 标签。
 func (p *OpenMetricsParser) parseLVals(offsets []int, isExemplar bool) ([]int, error) {
 	t := p.nextToken()
 	for {
@@ -696,6 +704,7 @@ func (p *OpenMetricsParser) parseLVals(offsets []int, isExemplar bool) ([]int, e
 }
 
 // isCreatedSeries returns true if the current series is a _created series.
+// isCreatedSeries 判断是否为 _created 时间戳辅助序列。
 func (p *OpenMetricsParser) isCreatedSeries() bool {
 	metricName := p.series[p.offsets[0]-p.start : p.offsets[1]-p.start]
 	// check length so the metric is longer than len("_created")

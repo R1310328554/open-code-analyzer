@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus 毫秒时间戳工具：time.Time 与 int64 毫秒互转，以及浮点秒到毫秒的舍入转换。
+
 package timestamp
 
 import (
@@ -18,16 +20,19 @@ import (
 	"time"
 )
 
+// FromTime 将 time.Time 转为 Unix 毫秒时间戳。
 // FromTime returns a new millisecond timestamp from a time.
 func FromTime(t time.Time) int64 {
 	return t.UnixMilli()
 }
 
+// Time 从毫秒时间戳构造 UTC time.Time。
 // Time returns a new time.Time object from a millisecond timestamp, in UTC.
 func Time(ts int64) time.Time {
 	return time.UnixMilli(ts).UTC()
 }
 
+// FromFloatSeconds 对浮点秒四舍五入后乘 1000 得毫秒。
 // FromFloatSeconds returns a millisecond timestamp from float seconds.
 func FromFloatSeconds(ts float64) int64 {
 	return int64(math.Round(ts * 1000))

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Relabel 规则引擎：解析 scrape/remote-write 等场景的 relabel_configs，对 labels.Builder 按序执行 replace/keep/drop/hashmod 等动作。
+
 package relabel
 
 import (
@@ -29,6 +31,7 @@ import (
 )
 
 var (
+// legacy 模式下 target_label 允许 $ 变量插值的正则校验。
 	// relabelTargetLegacy allows targeting labels with legacy Prometheus character set, plus ${<var>} variables for dynamic characters from source the metrics.
 	relabelTargetLegacy = regexp.MustCompile(`^(?:(?:[a-zA-Z_]|\$(?:\{\w+\}|\w+))+\w*)+$`)
 
@@ -40,20 +43,25 @@ var (
 	}
 )
 
+// Action 枚举 relabel 支持的全部动作类型。
 // Action is the action to be performed on relabeling.
 type Action string
 
 const (
+// replace：正则匹配拼接值并写入 target_label。
 	// Replace performs a regex replacement.
 	Replace Action = "replace"
+// keep：不匹配则丢弃整条 target。
 	// Keep drops targets for which the input does not match the regex.
 	Keep Action = "keep"
+// drop：匹配则丢弃 target。
 	// Drop drops targets for which the input does match the regex.
 	Drop Action = "drop"
 	// KeepEqual drops targets for which the input does not match the target.
 	KeepEqual Action = "keepequal"
 	// DropEqual drops targets for which the input does match the target.
 	DropEqual Action = "dropequal"
+// hashmod：对 source 拼接值 MD5 取模写入 target_label。
 	// HashMod sets a label to the modulus of a hash of labels.
 	HashMod Action = "hashmod"
 	// LabelMap copies labels to other labelnames based on a regex.
@@ -82,6 +90,7 @@ func (a *Action) UnmarshalYAML(unmarshal func(any) error) error {
 	return fmt.Errorf("unknown relabel action %q", s)
 }
 
+// Config 对应 YAML relabel_configs 单条规则。
 // Config is the configuration for relabeling of target label sets.
 type Config struct {
 	// A list of labels from which values are taken and concatenated
@@ -191,6 +200,7 @@ func (c *Config) Validate(nameValidationScheme model.ValidationScheme) error {
 	return nil
 }
 
+// Regexp 包装锚定正则，支持 YAML/JSON 序列化。
 // Regexp encapsulates a regexp.Regexp and makes it YAML marshalable.
 type Regexp struct {
 	*regexp.Regexp
@@ -269,6 +279,7 @@ func (re Regexp) String() string {
 	return str[5 : len(str)-2]
 }
 
+// ProcessBuilder 顺序应用规则；任一规则 drop 则返回 false。
 // ProcessBuilder applies relabeling configurations (rules) to the labels in lb.
 // The rules are applied in order of input. Returns false if the rule says to drop.
 func ProcessBuilder(lb *labels.Builder, cfgs ...*Config) (keep bool) {
@@ -281,6 +292,7 @@ func ProcessBuilder(lb *labels.Builder, cfgs ...*Config) (keep bool) {
 	return true
 }
 
+// relabel 单条规则核心：拼接 source_labels、按 Action 分支处理。
 func relabel(cfg *Config, lb *labels.Builder) (keep bool) {
 	var va [16]string
 	values := va[:0]
@@ -310,6 +322,7 @@ func relabel(cfg *Config, lb *labels.Builder) (keep bool) {
 			return false
 		}
 	case Replace:
+// 无变量且无捕获组时直接 Set/Del，跳过正则展开。
 		// Fast path to add or delete label pair.
 		if val == "" && cfg.Regex == DefaultRelabelConfig.Regex &&
 			!varInRegexTemplate(cfg.TargetLabel) && !varInRegexTemplate(cfg.Replacement) {
@@ -318,6 +331,7 @@ func relabel(cfg *Config, lb *labels.Builder) (keep bool) {
 		}
 
 		indexes := cfg.Regex.FindStringSubmatchIndex(val)
+// 正则不匹配时不修改 target_label。
 		// If there is no match no replacement must take place.
 		if indexes == nil {
 			break
@@ -338,6 +352,7 @@ func relabel(cfg *Config, lb *labels.Builder) (keep bool) {
 		lb.Set(cfg.TargetLabel, strings.ToUpper(val))
 	case HashMod:
 		hash := md5.Sum([]byte(val))
+// hashmod 仅取 MD5 后 8 字节，与历史实现保持兼容。
 		// Use only the last 8 bytes of the hash to give the same result as earlier versions of this code.
 		mod := binary.BigEndian.Uint64(hash[8:]) % cfg.Modulus
 		lb.Set(cfg.TargetLabel, strconv.FormatUint(mod, 10))

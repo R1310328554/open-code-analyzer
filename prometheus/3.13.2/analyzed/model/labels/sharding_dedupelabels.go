@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// dedupelabels 构建标签下的 StableHash：从符号表解码 name/value 后按相同字节序列规则哈希，与 slicelabels 语义一致。
+
 //go:build dedupelabels
 
 package labels
@@ -19,6 +21,7 @@ import (
 	"github.com/cespare/xxhash/v2"
 )
 
+// dedupelabels 变体的稳定哈希入口，供分片路由使用。
 // StableHash is a labels hashing implementation which is guaranteed to not change over time.
 // This function should be used whenever labels hashing backward compatibility must be guaranteed.
 func StableHash(ls Labels) uint64 {
@@ -28,6 +31,7 @@ func StableHash(ls Labels) uint64 {
 		name, newPos := decodeString(ls.syms, ls.data, pos)
 		value, newPos := decodeString(ls.syms, ls.data, newPos)
 		if len(b)+len(name)+len(value)+2 >= cap(b) {
+// 缓冲将满时对剩余标签改用流式哈希。
 			// If labels entry is 1KB+, hash the rest of them via Write().
 			h := xxhash.New()
 			_, _ = h.Write(b)
