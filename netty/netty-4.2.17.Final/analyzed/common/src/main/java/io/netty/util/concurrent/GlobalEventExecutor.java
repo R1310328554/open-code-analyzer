@@ -40,10 +40,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * task pending in the task queue for {@code io.netty.globalEventExecutor.quietPeriodSeconds} second
  * (default is 1 second).  Please note it is not scalable to schedule large number of tasks to this executor;
  * use a dedicated executor.
+ *
+ * <p>全局单线程 {@link OrderedEventExecutor} 单例。有任务时自动启动工作线程；任务队列在
+ * {@code io.netty.globalEventExecutor.quietPeriodSeconds}（默认 1 秒）静默期后为空则停止线程以节省资源。
+ * 不适合大量调度，应使用专用 EventExecutorGroup。</p>
  */
 public final class GlobalEventExecutor extends AbstractScheduledEventExecutor implements OrderedEventExecutor {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(GlobalEventExecutor.class);
 
+    /** 静默期时长（纳秒），由系统属性 quietPeriodSeconds 配置。 */
     private static final long SCHEDULE_QUIET_PERIOD_INTERVAL;
 
     static {
@@ -56,14 +61,17 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
         SCHEDULE_QUIET_PERIOD_INTERVAL = TimeUnit.SECONDS.toNanos(quietPeriod);
     }
 
+    /** 全局唯一实例。 */
     public static final GlobalEventExecutor INSTANCE = new GlobalEventExecutor();
 
+    /** 普通任务队列（含从调度队列转移来的任务）。 */
     final BlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<Runnable>();
+    /** 周期性 noop 任务，用于在静默期后触发线程自终止逻辑。 */
     final ScheduledFutureTask<Void> quietPeriodTask = new ScheduledFutureTask<Void>(
             this, Executors.<Void>callable(new Runnable() {
         @Override
         public void run() {
-            // NOOP
+            // NOOP — 仅占位，使 TaskRunner 在静默期后有机会检查是否退出
         }
     }, null),
             // note: the getCurrentTimeNanos() call here only works because this is a final class, otherwise the method
@@ -76,11 +84,14 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
     // can trigger the creation of a thread from arbitrary thread groups; for this reason, the thread factory must not
     // be sticky about its thread group
     // visible for testing
+    /** 工作线程工厂；不绑定特定 ThreadGroup，因提交方可来自任意线程。 */
     final ThreadFactory threadFactory;
     private final TaskRunner taskRunner = new TaskRunner();
+    /** 工作线程是否已启动（CAS 控制单线程运行）。 */
     private final AtomicBoolean started = new AtomicBoolean();
     volatile Thread thread;
 
+    /** 不支持关闭，terminationFuture 恒为失败。 */
     private final Future<?> terminationFuture;
 
     private GlobalEventExecutor() {
@@ -96,6 +107,9 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
      * Take the next {@link Runnable} from the task queue and so will block if no task is currently present.
      *
      * @return {@code null} if the executor thread has been interrupted or waken up.
+     *
+     * <p>从任务队列取下一个 Runnable；无任务时阻塞。同时合并到期调度任务。
+     * 被中断唤醒时返回 {@code null}。</p>
      */
     Runnable takeTask() {
         BlockingQueue<Runnable> taskQueue = this.taskQueue;
@@ -106,7 +120,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
                 try {
                     task = taskQueue.take();
                 } catch (InterruptedException e) {
-                    // Ignore
+                    // Ignore — 中断时返回 null 由 TaskRunner 处理
                 }
                 return task;
             } else {
@@ -125,6 +139,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
                     // scheduled tasks are never executed if there is always one task in the taskQueue.
                     // This is for example true for the read task of OIO Transport
                     // See https://github.com/netty/netty/issues/1614
+                    // 到期调度任务转入普通队列，避免 taskQueue 一直有任务导致调度任务饿死
                     fetchFromScheduledTaskQueue();
                     task = taskQueue.poll();
                 }
@@ -136,6 +151,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
         }
     }
 
+    /** 将已到期的调度任务移入 taskQueue。 */
     private void fetchFromScheduledTaskQueue() {
         long nanoTime = getCurrentTimeNanos();
         ScheduledFutureTask scheduledTask;
@@ -149,6 +165,8 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
 
     /**
      * Return the number of tasks that are pending for processing.
+     *
+     * <p>当前 taskQueue 中待处理任务数（不含调度队列）。</p>
      */
     public int pendingTasks() {
         return taskQueue.size();
@@ -210,6 +228,8 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
      * down and there's no chance of submitting a new task afterwards.
      *
      * @return {@code true} if and only if the worker thread has been terminated
+     *
+     * <p>等待工作线程在无任务且过静默期后自行退出。应用关闭且不会再提交任务时才有意义。</p>
      */
     public boolean awaitInactivity(long timeout, TimeUnit unit) throws InterruptedException {
         ObjectUtil.checkNotNull(unit, "unit");
@@ -234,6 +254,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
         }
     }
 
+    /** CAS 启动唯一工作线程，并避免 ClassLoader 泄漏。 */
     private void startThread() {
         if (started.compareAndSet(false, true)) {
             final Thread callingThread = Thread.currentThread();
@@ -275,6 +296,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
         });
     }
 
+    /** 工作线程主循环：取任务执行，静默期后尝试自终止。 */
     final class TaskRunner implements Runnable {
         @Override
         public void run() {
@@ -327,6 +349,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor im
         }
     }
 
+    /** 无栈跟踪的 UnsupportedOperationException，避免单例 terminationFuture 长期持有栈导致 ClassLoader 泄漏。 */
     private static final class StacklessUnsupportedOperationException extends UnsupportedOperationException {
 
         private static final long serialVersionUID = -8060232216137960173L;

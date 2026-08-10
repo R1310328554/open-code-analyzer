@@ -28,6 +28,9 @@ import java.util.function.IntSupplier;
 /**
  * A multi-producer (concurrent and thread-safe {@code offer} and {@code fill}),
  * single-consumer (single-threaded {@code poll} and {@code drain}) queue of primitive integers.
+ *
+ * <p>多生产者、单消费者（MPSC）的原始 int 队列：{@code offer}/{@code fill} 可并发调用，
+ * {@code poll}/{@code drain} 须单线程。使用 {@code emptyValue} 表示槽位为空，不可作为有效元素入队。</p>
  */
 public interface MpscIntQueue {
     /**
@@ -40,6 +43,8 @@ public interface MpscIntQueue {
      * This value will be returned from {@link #poll()} when the queue is empty,
      * and giving this value to {@link #offer(int)} will cause an exception to be thrown.
      * @return The queue instance.
+     *
+     * <p>创建固定容量队列；容量会向上取整为 2 的幂。{@code emptyValue} 用于标记空槽，{@link #poll()} 空队列时返回该值。</p>
      */
     static MpscIntQueue create(int size, int emptyValue) {
         return new MpscAtomicIntegerArrayQueue(size, emptyValue);
@@ -50,12 +55,16 @@ public interface MpscIntQueue {
      * @param value The value to add to the queue.
      * @return {@code true} if the value was added to the queue,
      * or {@code false} if the value could not be added because the queue is full.
+     *
+     * <p>入队一个 int；队列满时返回 {@code false}，不可 offer {@code emptyValue}。</p>
      */
     boolean offer(int value);
 
     /**
      * Remove and return the next value from the queue, or return the "empty" value if the queue is empty.
      * @return The next value or the "empty" value.
+     *
+     * <p>出队；空队列返回 {@code emptyValue}。仅单消费者线程调用。</p>
      */
     int poll();
 
@@ -64,6 +73,8 @@ public interface MpscIntQueue {
      * @param limit The maximum number of elements to dequeue.
      * @param consumer The consumer to pass the removed elements to.
      * @return The actual number of elements removed.
+     *
+     * <p>批量出队并依次交给 {@code consumer}，返回实际出队数量。</p>
      */
     int drain(int limit, IntConsumer consumer);
 
@@ -72,6 +83,8 @@ public interface MpscIntQueue {
      * @param limit The maximum number of elements to enqueue.
      * @param supplier The supplier to obtain the elements from.
      * @return The actual number of elements added.
+     *
+     * <p>从 {@code supplier} 批量入队，最多 {@code limit} 个，返回实际入队数。</p>
      */
     int fill(int limit, IntSupplier supplier);
 
@@ -82,6 +95,8 @@ public interface MpscIntQueue {
      * @param initial The initial value to the reduction operation.
      * @param op The reduction operation, taking a prior result and an element, and producing a new result.
      * @return The last result of the reduction operation.
+     *
+     * <p>弱一致地窥视最多 {@code limit} 个元素并归约，不移除元素。默认实现直接返回 {@code initial}。</p>
      */
     default int weakPeekReduce(int limit, int initial, IntBinaryOperator op) {
         // There's no safe way to implement this method in terms of the other operations.
@@ -94,6 +109,8 @@ public interface MpscIntQueue {
      * <p>
      * This method is inherently racy and the result may be out of date by the time the method returns.
      * @return {@code true} if the queue was observed to be empty, otherwise {@code false.
+     *
+     * <p>是否为空（弱一致，结果可能已过时）。</p>
      */
     boolean isEmpty();
 
@@ -102,11 +119,15 @@ public interface MpscIntQueue {
      * <p>
      * This method is inherently racy and the result may be out of date by the time the method returns.
      * @return An estimate of the number of elements observed in the queue.
+     *
+     * <p>当前元素个数估计值（弱一致）。</p>
      */
     int size();
 
     /**
      * This implementation is based on MpscAtomicUnpaddedArrayQueue from JCTools.
+     *
+     * <p>基于 JCTools MpscAtomicUnpaddedArrayQueue 的 {@link AtomicIntegerArray} 实现。</p>
      */
     final class MpscAtomicIntegerArrayQueue extends AtomicIntegerArray implements MpscIntQueue {
         private static final long serialVersionUID = 8740338425124821455L;
@@ -116,10 +137,15 @@ public interface MpscIntQueue {
                 AtomicLongFieldUpdater.newUpdater(MpscAtomicIntegerArrayQueue.class, "producerLimit");
         private static final AtomicLongFieldUpdater<MpscAtomicIntegerArrayQueue> CONSUMER_INDEX =
                 AtomicLongFieldUpdater.newUpdater(MpscAtomicIntegerArrayQueue.class, "consumerIndex");
+        /** 容量掩码（capacity - 1），用于 index & mask 定位槽位。 */
         private final int mask;
+        /** 表示空槽的特殊值。 */
         private final int emptyValue;
+        /** 生产者已 claim 的下一槽位索引（仅递增，实际写入可能略滞后）。 */
         private volatile long producerIndex;
+        /** 生产者可写入的上界缓存，减少读取 consumerIndex 的频率。 */
         private volatile long producerLimit;
+        /** 消费者下一待读槽位索引。 */
         private volatile long consumerIndex;
 
         public MpscAtomicIntegerArrayQueue(int capacity, int emptyValue) {
@@ -165,7 +191,7 @@ public interface MpscIntQueue {
              * NOTE: the new producer index value is made visible BEFORE the element in the array. If we relied on
              * the index visibility to poll() we would need to handle the case where the element is not visible.
              */
-            // Won CAS, move on to storing
+            // Won CAS, move on to storing — 先发布 index 再写入元素
             final int offset = (int) (pIndex & mask);
             lazySet(offset, value);
             // AWESOME :)
@@ -185,6 +211,7 @@ public interface MpscIntQueue {
                  * to fill up the queue after this element.
                  */
                 if (cIndex != producerIndex) {
+                    // 生产者已 claim 但尚未写入，自旋等待
                     do {
                         value = get(offset);
                     } while (emptyValue == value);

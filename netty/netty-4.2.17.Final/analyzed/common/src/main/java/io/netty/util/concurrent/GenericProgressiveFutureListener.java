@@ -16,6 +16,13 @@
 
 package io.netty.util.concurrent;
 
+/**
+ * {@link GenericFutureListener} 的渐进式扩展，在操作完成前可多次收到进度回调。
+ *
+ * <p>实现此接口的监听器会在 {@link ProgressivePromise#setProgress} 或
+ * {@link ProgressivePromise#tryProgress} 更新进度时被调用，适用于大文件传输、
+ * 批量处理等需要向调用方报告进度的场景。</p>
+ */
 public interface GenericProgressiveFutureListener<F extends ProgressiveFuture<?>> extends GenericFutureListener<F> {
     /**
      * Invoked when the operation has progressed.
@@ -23,6 +30,9 @@ public interface GenericProgressiveFutureListener<F extends ProgressiveFuture<?>
      * @param progress the progress of the operation so far (cumulative)
      * @param total the number that signifies the end of the operation when {@code progress} reaches at it.
      *              {@code -1} if the end of operation is unknown.
+     *
+     * <p>操作取得新进度时调用；{@code progress} 为累计值，{@code total} 为预期总量，
+     * {@code -1} 表示总量未知。</p>
      */
     void operationProgressed(F future, long progress, long total) throws Exception;
 }

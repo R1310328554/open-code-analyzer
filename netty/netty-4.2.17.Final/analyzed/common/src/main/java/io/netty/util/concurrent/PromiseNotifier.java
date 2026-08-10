@@ -28,17 +28,24 @@ import static io.netty.util.internal.ObjectUtil.checkNotNullWithIAE;
  *
  * @param <V> the type of value returned by the future
  * @param <F> the type of future
+ *
+ * <p>将源 {@link Future} 的完成结果（成功、失败或取消）转发到一个或多个目标 {@link Promise}。
+ * 静态方法 {@link #cascade} 还可双向传播取消操作。</p>
  */
 public class PromiseNotifier<V, F extends Future<V>> implements GenericFutureListener<F> {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(PromiseNotifier.class);
+    /** 待通知的目标 Promise 数组（构造时已克隆，避免外部修改）。 */
     private final Promise<? super V>[] promises;
+    /** 通知失败时是否写日志。 */
     private final boolean logNotifyFailure;
 
     /**
      * Create a new instance.
      *
      * @param promises  the {@link Promise}s to notify once this {@link GenericFutureListener} is notified.
+     *
+     * <p>默认在通知失败时记录日志。</p>
      */
     @SafeVarargs
     public PromiseNotifier(Promise<? super V>... promises) {
@@ -71,6 +78,8 @@ public class PromiseNotifier<V, F extends Future<V>> implements GenericFutureLis
      * @param <V>       the type of the value.
      * @param <F>       the type of the {@link Future}
      * @return          the passed in {@link Future}
+     *
+     * <p>将 future 与 promise 级联：future 完成时更新 promise，取消双向传播。</p>
      */
     public static <V, F extends Future<V>> F cascade(final F future, final Promise<? super V> promise) {
         return cascade(true, future, promise);
@@ -91,6 +100,7 @@ public class PromiseNotifier<V, F extends Future<V>> implements GenericFutureLis
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static <V, F extends Future<V>> F cascade(boolean logNotifyFailure, final F future,
                                                      final Promise<? super V> promise) {
+        // promise 取消时同步取消 future
         promise.addListener((FutureListener) f -> {
             if (f.isCancelled()) {
                 future.cancel(false);
@@ -100,7 +110,7 @@ public class PromiseNotifier<V, F extends Future<V>> implements GenericFutureLis
             @Override
             public void operationComplete(Future f) throws Exception {
                 if (promise.isCancelled() && f.isCancelled()) {
-                    // Just return if we propagate a cancel from the promise to the future and both are notified already
+                    // 双向取消已传播完毕，避免重复通知
                     return;
                 }
                 super.operationComplete(future);

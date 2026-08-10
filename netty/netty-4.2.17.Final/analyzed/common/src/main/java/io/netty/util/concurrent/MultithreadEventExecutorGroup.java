@@ -33,13 +33,22 @@ import static io.netty.util.internal.ObjectUtil.checkPositive;
 /**
  * Abstract base class for {@link EventExecutorGroup} implementations that handles their tasks with multiple threads at
  * the same time.
+ *
+ * <p>多线程 {@link EventExecutorGroup} 抽象基类：创建 {@code nThreads} 个子 {@link EventExecutor}，
+ * 通过 {@link EventExecutorChooserFactory} 在 {@link #next()} 中轮询或按策略选择执行器。
+ * 所有子执行器终止后，{@link #terminationFuture()} 才会成功。</p>
  */
 public abstract class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
 
+    /** 子 EventExecutor 数组，与线程数 1:1。 */
     private final EventExecutor[] children;
+    /** 只读子执行器集合，供 iterator 使用。 */
     private final Set<EventExecutor> readonlyChildren;
+    /** 已终止的子执行器计数，等于 children.length 时完成 terminationFuture。 */
     private final AtomicInteger terminatedChildren = new AtomicInteger();
+    /** 整组全部子执行器终止后的聚合 Future。 */
     private final Promise<?> terminationFuture = new DefaultPromise(GlobalEventExecutor.INSTANCE);
+    /** 从 children 中选择 next 执行器的策略对象。 */
     private final EventExecutorChooserFactory.EventExecutorChooser chooser;
 
     /**
@@ -71,6 +80,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      * @param executor          the Executor to use, or {@code null} if the default should be used.
      * @param chooserFactory    the {@link EventExecutorChooserFactory} to use.
      * @param args              arguments which will passed to each {@link #newChild(Executor, Object...)} call
+     *
+     * <p>构造失败时会优雅关闭已创建成功的子执行器并等待其终止，再抛出 {@link IllegalStateException}。</p>
      */
     protected MultithreadEventExecutorGroup(int nThreads, Executor executor,
                                             EventExecutorChooserFactory chooserFactory, Object... args) {
@@ -92,6 +103,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                 throw new IllegalStateException("failed to create a child event loop", e);
             } finally {
                 if (!success) {
+                    // 部分创建失败：关闭已启动的子执行器并等待终止
                     for (int j = 0; j < i; j ++) {
                         children[j].shutdownGracefully();
                     }
@@ -146,6 +158,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
     /**
      * Return the number of {@link EventExecutor} this implementation uses. This number is the maps
      * 1:1 to the threads it use.
+     *
+     * <p>子执行器（线程）总数。</p>
      */
     public final int executorCount() {
         return children.length;
@@ -157,6 +171,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      * this method returns the total number of threads, as all are considered active.
      *
      * @return the count of active threads.
+     *
+     * <p>若 chooser 支持观测（如自动扩缩容），返回当前活跃执行器数；否则返回 {@link #executorCount()}。</p>
      */
     public int activeExecutorCount() {
         if (chooser instanceof ObservableEventExecutorChooser) {
@@ -170,6 +186,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      * with a compatible {@link EventExecutorChooserFactory}, otherwise an empty list.
      *
      * @return A list of {@link AutoScalingUtilizationMetric} objects.
+     *
+     * <p>返回各执行器实时利用率指标；chooser 不支持时返回空列表。</p>
      */
     public List<AutoScalingUtilizationMetric> executorUtilizations() {
         if (chooser instanceof ObservableEventExecutorChooser) {
@@ -182,6 +200,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      * Create a new EventExecutor which will later then accessible via the {@link #next()}  method. This method will be
      * called for each thread that will serve this {@link MultithreadEventExecutorGroup}.
      *
+     * <p>子类实现：为每个线程创建一个子 EventExecutor。</p>
      */
     protected abstract EventExecutor newChild(Executor executor, Object... args) throws Exception;
 

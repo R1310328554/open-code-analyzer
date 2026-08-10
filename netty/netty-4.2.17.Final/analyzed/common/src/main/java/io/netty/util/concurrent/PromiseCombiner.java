@@ -31,12 +31,21 @@ import io.netty.util.internal.ObjectUtil;
  *
  * <p>This implementation is <strong>NOT</strong> thread-safe and all methods must be called
  * from the {@link EventExecutor} thread.</p>
+ *
+ * <p>Promise 组合器：监听多个 {@link Future}，全部成功则聚合 Promise 成功，任一失败则聚合 Promise 失败
+ * （失败原因取自第一个观测到的失败，多个失败时具体取哪一个未定义）。须在同一 {@link EventExecutor} 线程上
+ * 调用 {@link #add}、{@link #addAll} 与 {@link #finish}，非线程安全。</p>
  */
 public final class PromiseCombiner {
+    /** 期望完成的 Future 总数（add 时递增）。 */
     private int expectedCount;
+    /** 已完成的 Future 数量。 */
     private int doneCount;
+    /** finish 时指定的聚合 Promise；全部完成后通过 tryPromise 通知。 */
     private Promise<Void> aggregatePromise;
+    /** 第一个观测到的失败原因，用于聚合 Promise 的 tryFailure。 */
     private Throwable cause;
+    /** 子 Future 完成时的统一监听器；若不在 executor 线程则 dispatch 回 executor。 */
     private final GenericFutureListener<Future<?>> listener = new GenericFutureListener<Future<?>>() {
         @Override
         public void operationComplete(final Future<?> future) {
@@ -64,10 +73,13 @@ public final class PromiseCombiner {
         }
     };
 
+    /** 所有 add/finish 操作必须在此 executor 的 event loop 线程执行。 */
     private final EventExecutor executor;
 
     /**
      * Deprecated use {@link PromiseCombiner#PromiseCombiner(EventExecutor)}.
+     *
+     * <p>已废弃：默认使用 {@link ImmediateEventExecutor#INSTANCE}。</p>
      */
     @Deprecated
     public PromiseCombiner() {
@@ -79,6 +91,8 @@ public final class PromiseCombiner {
      * and {@link #finish(Promise)} from within the {@link EventExecutor} thread.
      *
      * @param executor the {@link EventExecutor} to use for notifications.
+     *
+     * <p>指定回调与状态更新所在的 EventExecutor；add/finish 须在其 event loop 中调用。</p>
      */
     public PromiseCombiner(EventExecutor executor) {
         this.executor = ObjectUtil.checkNotNull(executor, "executor");
@@ -102,6 +116,8 @@ public final class PromiseCombiner {
      * {@link PromiseCombiner#finish(Promise)} method.
      *
      * @param future the future to add to this promise combiner
+     *
+     * <p>注册待组合的 Future；finish 之后不可再 add。</p>
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void add(Future future) {
@@ -147,6 +163,8 @@ public final class PromiseCombiner {
      * {@link PromiseCombiner#addAll(Future[])} methods.</p>
      *
      * @param aggregatePromise the promise to notify when all combined futures have finished
+     *
+     * <p>指定聚合 Promise；若调用时所有 Future 已完成则立即 trySuccess/tryFailure。</p>
      */
     public void finish(Promise<Void> aggregatePromise) {
         ObjectUtil.checkNotNull(aggregatePromise, "aggregatePromise");
@@ -160,16 +178,19 @@ public final class PromiseCombiner {
         }
     }
 
+    /** 确保在 executor 的 event loop 线程调用。 */
     private void checkInEventLoop() {
         if (!executor.inEventLoop()) {
             throw new IllegalStateException("Must be called from EventExecutor thread");
         }
     }
 
+    /** 根据 cause 决定聚合 Promise 成功或失败。 */
     private boolean tryPromise() {
         return (cause == null) ? aggregatePromise.trySuccess(null) : aggregatePromise.tryFailure(cause);
     }
 
+    /** finish 之后禁止再 add。 */
     private void checkAddAllowed() {
         if (aggregatePromise != null) {
             throw new IllegalStateException("Adding promises is not allowed after finished adding");

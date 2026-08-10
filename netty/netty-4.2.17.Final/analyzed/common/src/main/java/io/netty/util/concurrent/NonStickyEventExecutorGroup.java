@@ -37,15 +37,23 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>The {@link EventExecutorGroup#next()} for the wrapped {@link EventExecutorGroup} must <strong>NOT</strong> return
  * executors of type {@link OrderedEventExecutor}.
+ *
+ * <p>非粘性有序执行器组：保证同一包装执行器上提交的任务按顺序执行，但不保证始终由同一线程执行。
+ * 底层 {@link EventExecutorGroup#next()} 不得返回 {@link OrderedEventExecutor} 类型。
+ * 适用于需要在多线程间迁移但仍需 per-channel（或 per-context）顺序的场景。</p>
  */
 @UnstableApi
 public final class NonStickyEventExecutorGroup implements EventExecutorGroup {
+    /** 被包装的底层执行器组。 */
     private final EventExecutorGroup group;
+    /** 单次 run 循环最多连续执行的任务数，防止长时间占用底层线程。 */
     private final int maxTaskExecutePerRun;
 
     /**
      * Creates a new instance. Be aware that the given {@link EventExecutorGroup} <strong>MUST NOT</strong> contain
      * any {@link OrderedEventExecutor}s.
+     *
+     * <p>默认单次 run 最多执行 1024 个任务。</p>
      */
     public NonStickyEventExecutorGroup(EventExecutorGroup group) {
         this(group, 1024);
@@ -60,6 +68,7 @@ public final class NonStickyEventExecutorGroup implements EventExecutorGroup {
         this.maxTaskExecutePerRun = ObjectUtil.checkPositive(maxTaskExecutePerRun, "maxTaskExecutePerRun");
     }
 
+    /** 构造时校验底层组不含 OrderedEventExecutor。 */
     private static EventExecutorGroup verify(EventExecutorGroup group) {
         Iterator<EventExecutor> executors = ObjectUtil.checkNotNull(group, "group").iterator();
         while (executors.hasNext()) {
@@ -212,18 +221,25 @@ public final class NonStickyEventExecutorGroup implements EventExecutorGroup {
         group.execute(command);
     }
 
+    /**
+     * 包装单个底层 Executor：本地 MPSC 队列保证提交顺序，任务在底层 executor 的线程上分批执行。
+     * {@link #inEventLoop(Thread)} 仅当该包装器当前正在某线程上跑任务时为 true。
+     */
     private static final class NonStickyOrderedEventExecutor extends AbstractEventExecutor
             implements Runnable, OrderedEventExecutor {
         private final EventExecutor executor;
+        /** 待执行的本地有序任务队列（多生产者单消费者）。 */
         private final Queue<Runnable> tasks = PlatformDependent.newMpscQueue();
 
         private static final int NONE = 0;
         private static final int SUBMITTED = 1;
         private static final int RUNNING = 2;
 
+        /** 执行状态：NONE / SUBMITTED / RUNNING。 */
         private final AtomicInteger state = new AtomicInteger();
         private final int maxTaskExecutePerRun;
 
+        /** 当前正在执行本包装器任务的线程（若有）。 */
         private final AtomicReference<Thread> executingThread = new AtomicReference<Thread>();
 
         NonStickyOrderedEventExecutor(EventExecutor executor, int maxTaskExecutePerRun) {
@@ -251,6 +267,7 @@ public final class NonStickyEventExecutorGroup implements EventExecutorGroup {
                     }
                 } finally {
                     if (i == maxTaskExecutePerRun) {
+                        // 达到单次上限：重新提交 self 到底层 executor，让出线程
                         try {
                             state.set(SUBMITTED);
                             // Only set executingThread to null if no other thread did update it yet.

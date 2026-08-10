@@ -17,12 +17,17 @@ package io.netty.util.concurrent;
 
 /**
  * Special {@link ProgressiveFuture} which is writable.
+ *
+ * <p>可写的渐进式 {@link Future}，兼具 {@link Promise} 与 {@link ProgressiveFuture} 能力，
+ * 可在完成前多次 {@link #setProgress} 通知 {@link GenericProgressiveFutureListener}。</p>
  */
 public interface ProgressivePromise<V> extends Promise<V>, ProgressiveFuture<V> {
 
     /**
      * Sets the current progress of the operation and notifies the listeners that implement
      * {@link GenericProgressiveFutureListener}.
+     *
+     * <p>设置当前进度并通知渐进式监听器；已完成时行为由实现类决定（通常抛异常）。</p>
      */
     ProgressivePromise<V> setProgress(long progress, long total);
 
@@ -30,6 +35,8 @@ public interface ProgressivePromise<V> extends Promise<V>, ProgressiveFuture<V> 
      * Tries to set the current progress of the operation and notifies the listeners that implement
      * {@link GenericProgressiveFutureListener}.  If the operation is already complete or the progress is out of range,
      * this method does nothing but returning {@code false}.
+     *
+     * <p>尝试设置进度；参数非法或已完成时返回 {@code false} 而不通知监听器。</p>
      */
     boolean tryProgress(long progress, long total);
 
