@@ -16,6 +16,9 @@
 
 package component
 
+// document_storage.go — 文档存储解析：DAO 查 bucket/path 与二进制 fetch 辅助。
+
+
 import (
 	"context"
 	"fmt"
@@ -25,7 +28,7 @@ import (
 	"ragflow/internal/storage"
 )
 
-// DocumentStorageRef is the resolved backing storage location for a document.
+// DocumentStorageRef 为文档解析后的存储位置（bucket + path）。
 // It is exported so higher-level integration tests can inject doc_id resolution
 // without reaching into DAO state.
 type DocumentStorageRef struct {
@@ -34,7 +37,7 @@ type DocumentStorageRef struct {
 	Path   string
 }
 
-// ResolveDocumentStorageOverride is the narrow test seam for doc_id-driven
+// ResolveDocumentStorageOverride 为 doc_id 存储解析的测试注入 seam。
 // storage resolution. Production leaves this nil and uses DAO-backed lookup.
 var ResolveDocumentStorageOverride func(docID string) (*DocumentStorageRef, error)
 
@@ -136,3 +139,5 @@ func documentNameOrID(doc *entity.Document) string {
 	}
 	return ""
 }
+
+// fetchBinary 在 goroutine 中调用 storage.Get，支持 context 取消。

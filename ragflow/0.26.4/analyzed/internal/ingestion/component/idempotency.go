@@ -16,7 +16,10 @@
 
 package component
 
-// IdempotencyKey identifies one component execution.
+// idempotency.go — 组件执行幂等键：task/pipeline/组件版本与输入指纹。
+
+
+// IdempotencyKey 标识一次组件执行，用于去重与缓存键构造。
 type IdempotencyKey struct {
 	TaskID           string
 	PipelineVersion  string
@@ -28,3 +31,5 @@ type IdempotencyKey struct {
 func (k IdempotencyKey) String() string {
 	return k.TaskID + "|" + k.PipelineVersion + "|" + k.ComponentName + "|" + k.ComponentVersion + "|" + k.InputFingerprint
 }
+
+// String() 用竖线拼接各字段，形成稳定的幂等标识符。

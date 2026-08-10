@@ -14,15 +14,15 @@
 //  limitations under the License.
 //
 
-// SCOPE (honest) for hierarchy.go (Phase 2.3d):
+// SCOPE（如实说明）hierarchy.go（Phase 2.3d）：
 //
-//   - Implements the HierarchyTitleChunker variant: builds a heading
-//     tree from per-line levels, then walks the tree in DFS to emit
+//   - 实现 HierarchyTitleChunker 变体：按行级 level 构建标题树，
+//     再 DFS 遍历树，产出尊重层级作用域的 chunk（子树正文 chunk 含祖先标题文本）。
 //     chunks that respect hierarchical scope (a sub-tree's body
 //     chunks include the heading texts of all ancestor nodes).
 //
-//   - PARALLELISM: 2 goroutines (plan §4 Phase 2 row 2.3d). The
-//     tree-build pass is sequential; the subtree-to-chunk conversion
+//   - 并行度：2 个 goroutine（计划 §4 Phase 2 行 2.3d）。建树顺序执行；
+//     子树转 chunk 跨 2 goroutine，结果按 DFS 顺序合并（确定性，计划 §8 R8）。
 //     runs across 2 goroutines, then results are merged in DFS
 //     traversal order (deterministic, plan §8 R8).
 //
@@ -49,7 +49,7 @@ import (
 
 const ComponentNameHierarchyTitleChunker = "HierarchyTitleChunker"
 
-// chunkNode mirrors python `_ChunkNode` (hierarchy_chunker.py:22-32).
+// chunkNode 镜像 Python `_ChunkNode`（hierarchy_chunker.py:22-32）。
 type chunkNode struct {
 	level        int
 	titleIndexes []int
@@ -65,8 +65,8 @@ func (n *chunkNode) addChild(c *chunkNode) {
 	n.children = append(n.children, c)
 }
 
-// buildTree mirrors `_ChunkNode.build_tree` (hierarchy_chunker.py:38-52):
-// descend into nested headings via a stack. Lines whose level exceeds
+// buildTree 镜像 `_ChunkNode.build_tree`（hierarchy_chunker.py:38-52）：
+// 用栈跟踪嵌套标题；level 超过 depth 的行归入栈顶节点的 body。
 // `depth` are body lines on the topmost stack frame.
 func buildTree(indexedLines []indexedLine, depth int) *chunkNode {
 	root := &chunkNode{level: 0}
@@ -93,7 +93,7 @@ type indexedLine struct {
 	index int
 }
 
-// getPaths mirrors `_ChunkNode._dfs` (hierarchy_chunker.py:61-83).
+// getPaths 镜像 `_ChunkNode._dfs`（hierarchy_chunker.py:61-83）。
 // Returns one index-list per chunk, in DFS order. `path_titles` is
 // updated as the recursion descends and used as the leading slice
 // for each chunk path.
@@ -135,7 +135,7 @@ func (n *chunkNode) getPaths(paths *[][]int, titles []int, depth int, includeHea
 	return pathTitles
 }
 
-// invokeHierarchy runs the HierarchyTitleChunker strategy.
+// invokeHierarchy 执行 HierarchyTitleChunker 分块策略。
 func invokeHierarchy(_ context.Context, inputs map[string]any, p *titleChunkerParam) (map[string]any, error) {
 	records := extractLineRecords(inputs)
 	if len(records) == 0 {
@@ -271,7 +271,7 @@ func invokeHierarchy(_ context.Context, inputs map[string]any, p *titleChunkerPa
 	}, nil
 }
 
-// applyRootAsHeadingMaps mirrors the root_chunk_as_heading branch
+// applyRootAsHeadingMaps 镜像 root_chunk_as_heading 分支：
 // for output []map[string]any. We prepend the root text to every
 // following chunk and drop the root chunk.
 func applyRootAsHeadingMaps(chunks []map[string]any) []map[string]any {
@@ -285,13 +285,13 @@ func applyRootAsHeadingMaps(chunks []map[string]any) []map[string]any {
 	return chunks[1:]
 }
 
-// HierarchyTitleChunkerComponent is the standalone variant entry point.
+// HierarchyTitleChunkerComponent 为独立变体组件入口。
 type HierarchyTitleChunkerComponent struct {
 	name  string
 	param titleChunkerParam
 }
 
-// NewHierarchyTitleChunker constructs the variant component with
+// NewHierarchyTitleChunker 构造变体组件，method 预设为 hierarchy。
 // method pre-set to "hierarchy".
 func NewHierarchyTitleChunker(params map[string]any) (runtime.Component, error) {
 	conf := map[string]any{"method": "hierarchy"}
@@ -333,7 +333,9 @@ func (c *HierarchyTitleChunkerComponent) Invoke(ctx context.Context, inputs map[
 	})
 }
 
-// init registers HierarchyTitleChunker under CategoryIngestion.
+// init 在 CategoryIngestion 下注册 HierarchyTitleChunker。
 func init() {
 	MustRegisterChunker(ComponentNameHierarchyTitleChunker)
 }
+
+// 层级标题分块通过 buildTree + getPaths 实现 Python hierarchy_chunker 语义；非文本记录 inline 穿插于文本 run 之间。

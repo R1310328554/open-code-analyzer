@@ -14,35 +14,35 @@
 //  limitations under the License.
 //
 
-// SCOPE (honest) for token.go (Phase 2.3a):
+// SCOPE（如实说明）token.go（Phase 2.3a）：
 //
-//   - WHITELIST mirrors rag/flow/chunker/token_chunker.py:TokenChunkerParam.check
+//   - 白名单镜像 Python TokenChunkerParam.check：delimiter_mode、chunk_token_size 等。
 //     exactly: delimiter_mode ∈ {"token_size","delimiter","one"},
 //     chunk_token_size > 0, overlapped_percent ∈ [0, 1), table_context_size ≥ 0,
 //     image_context_size ≥ 0. enum/range checks live in param.Check.
 //
-//   - DELIMITER PARSING mirrors python `_compile_delimiter_pattern`:
+//   - 分隔符解析镜像 Python `_compile_delimiter_pattern`（反引号包裹为正则切分点）。
 //     entries wrapped in backticks (e.g. "`\\n\\n`") are treated as
 //     regex split points; plain strings are regex-escaped and joined
 //     into the same alternation. Empty entries are filtered.
 //
-//   - CHILDREN DELIMITERS (the secondary split) is implemented via the
+//   - 子分隔符二次切分经 splitKeepingDelim；输出 chunk 含 mom（父段）与 text。
 //     shared splitKeepingDelim helper; emitted chunks carry the parent
 //     ("mom") and the split child ("text") keys.
 //
-//   - MODE "delimiter" uses the regex-aware delimiter pattern; the
+//   - delimiter 模式用正则分隔；无有效分隔符时才回退 token_size 合并。
 //     token_size merge pass only runs when no working delimiter was
 //     detected — matching python at token_chunker.py:359-360.
 //
-//   - MODE "token_size" falls back to a chunk-engine merge plan. The
+//   - token_size 模式用 chunk 库 greedy 合并近似 Python naive_merge（已知 parity-gap）。
 //     python `naive_merge` algorithm uses a sentence-aware + stop-word
 //     strategy that the Go chunk_engine's "greedy" merge approximates;
 //     this is flagged as a TODO parity-gap and intentionally not
 //     machine-mirrored.
 //
-//   - MODE "one" emits a single chunk containing the entire payload.
+//   - one 模式输出单 chunk 含完整载荷。
 //
-//   - JSON-STRUCTURED INPUT (output_format == "json", or the default
+//   - JSON 结构化输入经 Parallelism=4 并行 fan-out，按输入索引确定性合并（§8 R8）。
 //     parser-style branch when output_format is unset) is normalized
 //     into the same internal chunk shape via a parallel fan-out
 //     (Plan §4 Phase 2 row 2.3a, Parallelism=4).
@@ -110,14 +110,14 @@ func defaultsToken(p tokenChunkerParam) tokenChunkerParam {
 	return p
 }
 
-// TokenChunkerComponent implements the runtime.Component interface for
+// TokenChunkerComponent 实现 TokenChunker 变体的 runtime.Component 接口。
 // the TokenChunker variant.
 type TokenChunkerComponent struct {
 	name  string
 	param tokenChunkerParam
 }
 
-// NewTokenChunker constructs a TokenChunker from the DSL param map.
+// NewTokenChunker 从 DSL 参数映射构造 TokenChunker。
 // Errors here surface as canvas compile failures (mirrors the
 // python check() phase).
 func NewTokenChunker(params map[string]any) (runtime.Component, error) {
@@ -132,7 +132,7 @@ func NewTokenChunker(params map[string]any) (runtime.Component, error) {
 	}, nil
 }
 
-// Parallelism is the configured intra-component fan-out (plan §4
+// Parallelism 为组件内 fan-out 度（计划 §4 Phase 2 行 2.3a，默认 4）。
 // Phase 2 row 2.3a).
 func (c *TokenChunkerComponent) Parallelism() int { return 4 }
 
@@ -142,7 +142,7 @@ func (c *TokenChunkerComponent) Inputs() map[string]string { return ChunkerInput
 // Outputs is exposed so callers can introspect.
 func (c *TokenChunkerComponent) Outputs() map[string]string { return ChunkerOutputs }
 
-// Invoke runs the chunker against the input payload.
+// Invoke 对输入载荷执行分块；文本按主分隔符段、JSON 按 item 并行。
 //
 // Concurrency: text payloads are fanned across Parallelism goroutines
 // by primary-delimiter segment; structured JSON/chunks payloads fan
@@ -220,7 +220,7 @@ func stripChunkerRuntimeTimestamps(inputs map[string]any) map[string]any {
 	return out
 }
 
-// invokeTextPayload handles plain-text input (output_format in
+// invokeTextPayload 处理 markdown/text/html 纯文本输入。
 // {markdown,text,html} on the python side).
 func (c *TokenChunkerComponent) invokeTextPayload(_ context.Context, text string, delimPattern, childrenPattern *regexp.Regexp) map[string]any {
 	if text == "" {
@@ -252,7 +252,7 @@ func (c *TokenChunkerComponent) invokeTextPayload(_ context.Context, text string
 	return chunkOutputs(docs)
 }
 
-// mergeByTokenSize uses the chunk library's split + postprocess-merge
+// mergeByTokenSize 用 chunk 库 split+merge 近似目标 token 数分块。
 // to combine the payload into chunks of approximately
 // chunk_token_size runes. Mirrors python's `naive_merge` fallback
 // (token_chunker.py:319-324) at the wire-shape level; the merge
@@ -283,7 +283,7 @@ func (c *TokenChunkerComponent) mergeByTokenSize(text string, childrenPattern *r
 	return chunkOutputs(final)
 }
 
-// invokeJSONPayload handles structured upstream input. Items fan
+// invokeJSONPayload 处理结构化上游；item 跨 goroutine fan-out，按索引合并。
 // across goroutines (Parallelism); merge is by input index.
 func (c *TokenChunkerComponent) invokeJSONPayload(ctx context.Context, items []schema.ChunkDoc, delimPattern, childrenPattern *regexp.Regexp) map[string]any {
 	if len(items) == 0 {
@@ -368,7 +368,7 @@ func (c *TokenChunkerComponent) invokeJSONPayload(ctx context.Context, items []s
 // JSON-payload internals
 // ---------------------------------------------------------------------------
 
-// chunkFromItem mirrors _build_json_chunks for a single item.
+// chunkFromItem 镜像单条 item 的 _build_json_chunks 逻辑。
 func chunkFromItem(it schema.ChunkDoc, delimPattern *regexp.Regexp) []schema.ChunkDoc {
 	ckType := itemDocType(it)
 	txt := itemTextOrFallback(it)
@@ -395,7 +395,7 @@ func chunkFromItem(it schema.ChunkDoc, delimPattern *regexp.Regexp) []schema.Chu
 	return out
 }
 
-// buildChunkMap constructs the python-compatible chunk payload.
+// buildChunkDoc 构造与 Python 兼容的 chunk 载荷（tk_nums、mom、layout 等）。
 //
 // The chunker output carries the basic text+doc_type_kwd+ck_type
 // fields plus the per-chunk meta fields the python
@@ -494,7 +494,7 @@ func attachMediaContext(perItem [][]schema.ChunkDoc, tableCtx, imageCtx int) [][
 	return perItem
 }
 
-// collectContext walks chunks around `i` (above when direction==true,
+// collectContext 在 table/image chunk 周围收集上下文文本，镜像 attachMediaContext。
 // below when false), pulling text chunks while remaining token budget
 // stays positive. Matches token_chunker.py:_attach_context_to_media_chunks.
 func collectContext(chunks []schema.ChunkDoc, i, ctxTokens int, above bool) string {
@@ -556,7 +556,7 @@ func takeFromStart(text string, tokens int) string {
 	return text[:bytes]
 }
 
-// mergeByTokenSizeFromJSON mirrors `_merge_text_chunks_by_token_size`
+// mergeByTokenSizeFromJSON 镜像 token_chunker.py 按 token 合并 JSON chunk。
 // at token_chunker.py:212-243.
 func mergeByTokenSizeFromJSON(perItem [][]schema.ChunkDoc, chunkTokens int, overlappedPct float64) [][]schema.ChunkDoc {
 	threshold := float64(chunkTokens) * (100 - overlappedPct*100) / 100.0
@@ -661,7 +661,7 @@ func splitByChildren(chunks []schema.ChunkDoc, pattern *regexp.Regexp) []schema.
 // shared text-payload helpers (used by TitleChunker et al.)
 // ---------------------------------------------------------------------------
 
-// hasActiveDelimiter reports whether a regex compiled by
+// hasActiveDelimiter 判断 compileDelimPattern 是否含有效非占位模式。
 // compileDelimPattern contains any non-placeholder pattern. The "match
 // nothing" sentinel regexp makes a quick `pattern.MatchString("")`
 // viable as a check without re-walking the source slice.
@@ -669,7 +669,7 @@ func hasActiveDelimiter(p *regexp.Regexp) bool {
 	return p != nil && p.String() != `\A(?!)`
 }
 
-// applyChildrenDelim mirrors token_chunker.py:325-334.
+// applyChildrenDelim 镜像 token_chunker.py 子分隔符切分。
 func applyChildrenDelim(segs []string, pattern *regexp.Regexp) []schema.ChunkDoc {
 	if pattern == nil {
 		out := make([]schema.ChunkDoc, 0, len(segs))
@@ -713,7 +713,7 @@ func applyChildrenDelimText(docs []schema.ChunkDoc, pattern *regexp.Regexp) []sc
 	return out
 }
 
-// compileChildrenPattern is the children_delimiters version of
+// compileChildrenPattern 为 children_delimiters 版 compileDelimPattern。
 // compileDelimPattern. Returns nil when no delimiters exist.
 func compileChildrenPattern(delims []string) *regexp.Regexp {
 	if len(delims) == 0 {
@@ -789,7 +789,9 @@ func intValue(v *int) int {
 
 func intPtr(v int) *int { return &v }
 
-// init registers TokenChunker under CategoryIngestion.
+// init 在 CategoryIngestion 下注册 TokenChunker。
 func init() {
 	MustRegisterChunker(ComponentNameTokenChunker)
 }
+
+// TokenChunker 支持 token_size/delimiter/one 三种模式；结构化 JSON 路径含媒体上下文附加与重叠合并。

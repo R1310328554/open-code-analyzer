@@ -16,9 +16,12 @@
 
 package schema
 
+// chunk_types.go — parser/chunker/tokenizer 共享 wire 类型：PayloadFormat、ChunkDoc 等。
+
+
 import "encoding/json"
 
-// PayloadFormat is the discriminator shared by parser/chunker/tokenizer
+// PayloadFormat 为 parser/chunker/tokenizer wire 载荷的格式判别符。
 // wire payloads.
 type PayloadFormat string
 
@@ -39,7 +42,7 @@ func (f PayloadFormat) isKnown() bool {
 	}
 }
 
-// ChunkerFileMeta is the common file descriptor shape carried through
+// ChunkerFileMeta 为跨组件传递的通用文件描述符；未知字段存 Extra。
 // parser/chunker/tokenizer boundaries. Known fields are modeled
 // explicitly; any parser-specific enrichments stay in Extra.
 type ChunkerFileMeta struct {
@@ -95,7 +98,7 @@ func (m ChunkerFileMeta) MarshalJSON() ([]byte, error) {
 	return json.Marshal(raw)
 }
 
-// ChunkDoc is the typed chunk item shared by chunker/tokenizer
+// ChunkDoc 为 chunker/tokenizer 边界共享的类型化 chunk 项。
 // boundaries. Common fields are explicit; dynamic enrichments are
 // preserved in Extra for forward compatibility.
 type ChunkDoc struct {
@@ -170,7 +173,7 @@ func (d ChunkDoc) MarshalJSON() ([]byte, error) {
 	return json.Marshal(raw)
 }
 
-// ChunkDocFromMap decodes a free-form map into a typed ChunkDoc.
+// ChunkDocFromMap 将自由 map 解码为 ChunkDoc。
 func ChunkDocFromMap(in map[string]any) (ChunkDoc, error) {
 	if in == nil {
 		return ChunkDoc{}, nil
@@ -186,7 +189,7 @@ func ChunkDocFromMap(in map[string]any) (ChunkDoc, error) {
 	return doc, nil
 }
 
-// ChunkDocsFromAny converts either []ChunkDoc, []map[string]any, or []any
+// ChunkDocsFromAny 将多种 slice 形态统一转为 []ChunkDoc。
 // into a typed chunk slice.
 func ChunkDocsFromAny(in any) ([]ChunkDoc, bool, error) {
 	switch t := in.(type) {
@@ -221,7 +224,7 @@ func ChunkDocsFromAny(in any) ([]ChunkDoc, bool, error) {
 	}
 }
 
-// ToMap converts a typed chunk back to the generic map form used by
+// ToMap 将 ChunkDoc 转回 runtime.Component 边界使用的 map 形式。
 // runtime.Component boundaries.
 func (d ChunkDoc) ToMap() map[string]any {
 	b, err := json.Marshal(d)
@@ -244,7 +247,7 @@ func (d ChunkDoc) ToMap() map[string]any {
 	return out
 }
 
-// ChunkDocsToMaps converts a typed chunk slice to the generic map form.
+// ChunkDocsToMaps 批量 ChunkDoc → []map[string]any。
 func ChunkDocsToMaps(in []ChunkDoc) []map[string]any {
 	out := make([]map[string]any, 0, len(in))
 	for _, doc := range in {
@@ -330,3 +333,5 @@ func decodeStructuredValue(raw json.RawMessage) any {
 	}
 	return nil
 }
+
+// Extra 字段通过自定义 MarshalJSON/UnmarshalJSON 保留 parser 专有扩展键。

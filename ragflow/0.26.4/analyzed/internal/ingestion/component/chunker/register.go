@@ -14,9 +14,9 @@
 //  limitations under the License.
 //
 
-// Package chunker holds the ingestion chunker components: TokenChunker,
-// TitleChunker, GroupTitleChunker, HierarchyTitleChunker. The four
-// components share the same upstream payload (schema.ChunkerFromUpstream)
+// Package chunker 定义 ingestion 分块组件：TokenChunker、
+// TitleChunker、GroupTitleChunker、HierarchyTitleChunker。四种组件共享
+// 相同上游载荷（schema.ChunkerFromUpstream）与输出形状（schema.ChunkerOutputs）。
 // and the same output shape (schema.ChunkerOutputs).
 //
 // The package is intentionally separate from internal/agent/component/
@@ -29,7 +29,7 @@ import (
 	"ragflow/internal/agent/runtime"
 )
 
-// MustRegisterChunker registers a single chunker component under
+// MustRegisterChunker 在 CategoryIngestion 下注册单个分块组件；
 // CategoryIngestion. The four chunker files each carry exactly one
 // init() that calls this with the registered component's name; the
 // factory body resolves the typed constructor via newChunkerByName
@@ -53,7 +53,7 @@ func MustRegisterChunker(name string) {
 	})
 }
 
-// ChunkerInputs is the static, registered input descriptor shared
+// ChunkerInputs 为四种变体共享的静态注册输入描述符。
 // by all four chunker variants.
 var ChunkerInputs = map[string]string{
 	"text":          "Plain-text input. The chunker slices this into downstream chunks.",
@@ -64,10 +64,12 @@ var ChunkerInputs = map[string]string{
 	"_elapsed_time": "Optional upstream elapsed time (s).",
 }
 
-// ChunkerOutputs is the static, registered output descriptor shared
+// ChunkerOutputs 为四种变体共享的静态注册输出描述符。
 // by all four chunker variants.
 var ChunkerOutputs = map[string]string{
 	"output_format": "Always \"chunks\" on success.",
 	"chunks":        "list[object]: per-chunk map (text + optional meta keys).",
 	"_ERROR":        "Set only on validation failure.",
 }
+
+// 各 chunker 文件 init() 调用 MustRegisterChunker，工厂经 newChunkerByName 解析具体构造器。

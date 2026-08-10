@@ -14,12 +14,12 @@
 //  limitations under the License.
 //
 
-// Package component — Parser component (Phase 2.2 of
+// Package component — Parser 组件（port-rag-flow-pipeline Phase 2.2）。
 // port-rag-flow-pipeline-to-go.md §4).
 //
-// SCOPE (honest):
+// SCOPE（如实说明）：
 //
-//   - WHAT IS PORTED:
+//   - 已移植：组件生命周期、errgroup 并行页解析（Parallelism=4）、
 //
 //   - The component's lifecycle contract: NewParserComponent /
 //     Invoke / Parallelism / Inputs / Outputs and registration
@@ -37,7 +37,7 @@
 //     stamping) — see internal/agent/runtime/helpers.go for the
 //     helpers, plan §1 background.
 //
-//   - WHAT IS NOT YET PORTED:
+//   - 尚未移植：13 种格式分支 skeleton、image2id MinIO 上传、_param.check 校验。
 //
 //   - The Python component dispatches to 13 file-format branches
 //     (pdf, markdown, text&code, html, spreadsheet, slides, doc,
@@ -67,7 +67,7 @@
 //     passed in at construction time; invalid values surface as
 //     runtime errors in the chosen parser branch.
 //
-//   - NO PERSISTENCE: parsed pages live only in the per-run
+//   - 无持久化：解析页仅存在于单次 run 输出 map。
 //     output map, exactly as the schema.Page type is intended.
 package component
 
@@ -89,26 +89,26 @@ import (
 
 const ComponentNameParser = "Parser"
 
-// parserParallelism is the fan-out degree for the Parser component.
+// parserParallelism 为 Parser fan-out 度（计划 §2 AD-5a，值为 4）。
 // Matches the plan §2 AD-5a choice ("Parser: 4 (parallel page
 // parsing)"). Used by the pipeline runner when it needs to know how
 // many goroutines the component is willing to absorb.
 const parserParallelism = 4
 
-// parserPageBatchTimeout is the per-batch timeout. Mirrors the
+// parserPageBatchTimeout 为每批超时，镜像 Python @timeout(60)。
 // Python component's `@timeout(60)` decorator on the page parse
 // branch. WithTimeout collapses the dual-layer
 // asyncio.wait_for / @timeout model into a single context, see
 // plan §8 R1.
 const parserPageBatchTimeout = 60 * time.Second
 
-// pageFormFeed is the byte that text-page mode treats as a
+// pageFormFeed 为文本页模式的硬分页符（ASCII form feed \f）。
 // hard page boundary. Matches the ASCII form feed (\f, 0x0C) — the
 // same convention used by the Python TxtParser and by most
 // "page-segmented text" codecs.
 const pageFormFeed = '\f'
 
-// ParserComponent runs the configured parser branch against the
+// ParserComponent 对上游 binary 执行配置分支并返回按页排序的 schema.Page。
 // upstream "binary" payload and returns a deterministic, page-
 // sorted slice of schema.Page values.
 //
@@ -123,7 +123,7 @@ type ParserComponent struct {
 	Param schema.ParserParam
 }
 
-// NewParserComponent constructs a Parser from a DSL param map.
+// NewParserComponent 从 DSL 参数构造 Parser（setups + allowed_output_format）。
 // The map is decoded into schema.ParserParam.Defaults() and then
 // overlaid with the supplied values. This matches the Python
 // "default + override" pattern in parser.py:ParserParam.__init__.
@@ -649,3 +649,5 @@ func init() {
 			Outputs: pc.Outputs(),
 		})
 }
+
+// Parser 在格式解析器未就绪时使用 UTF-8 原始文本回退；TrackProgress/WithTimeout/TrackElapsed 与 Python 契约对齐。

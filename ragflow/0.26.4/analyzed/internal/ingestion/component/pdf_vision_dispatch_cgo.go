@@ -1,3 +1,5 @@
+// pdf_vision_dispatch_cgo.go — CGO 构建：deepdoc PDF 引擎渲染页为 PNG base64。
+
 //go:build cgo
 
 package component
@@ -13,6 +15,7 @@ import (
 
 const pdfVisionZoom = 3.0
 
+// defaultRenderPDFVisionPages 用 deepdoc PDF 引擎逐页渲染为 data URL PNG。
 func defaultRenderPDFVisionPages(binary []byte) ([]pdfVisionPage, error) {
 	engine, err := deepdocpdf.NewEngine(binary)
 	if err != nil {
@@ -44,3 +47,5 @@ func defaultRenderPDFVisionPages(binary []byte) ([]pdfVisionPage, error) {
 	}
 	return pages, nil
 }
+
+// pdfVisionZoom=3.0 控制渲染缩放；WidthPts/HeightPts 由像素尺寸反算。

@@ -14,20 +14,20 @@
 //  limitations under the License.
 //
 
-// File ingestion component (Phase 2.1) — port of python `rag/flow/file.py`.
+// File ingestion 组件（Phase 2.1）— Python rag/flow/file.py 移植。
 //
-// SCOPE (honest):
+// SCOPE（如实说明）：
 //
-//   - DOC-ID PATH: matched. The python component only resolves the
+//   - doc_id 路径：仅解析文档元数据并输出 name，不拉取二进制（与 Python 一致）。
 //     document record and emits `name`; it does NOT fetch the binary.
 //     The Go port now mirrors that ownership boundary.
 //
-//   - BINARY FETCH: intentionally delegated to Parser. This matches the
+//   - 二进制 fetch 委托 Parser；Python 亦由 Parser 经 File2Document 取存储地址。
 //     Python runtime, where Parser resolves
 //     `File2DocumentService.get_storage_address(...)` and performs the
 //     storage GET itself.
 //
-//   - ASYNC RACE / DOCUMENT-LEVEL LOCKING: not applicable in Go;
+//   - 异步竞态/文档级锁：Go 侧不适用；进度经 runtime.TrackProgress 上报。
 //     the python `self._canvas.callback(1, ...)` short-circuit is
 //     replicated via `runtime.TrackProgress(0/1/...)` so a pipeline
 //     observer sees Started/Done transitions.
@@ -49,7 +49,7 @@ import (
 
 const ComponentNameFile = "File"
 
-// FileComponent resolves document/file metadata and forwards enough
+// FileComponent 解析文档/文件元数据，供下游 Parser fetch 字节。
 // identity for downstream Parser to fetch bytes.
 //
 // Inputs (per rag/flow/file.py:File._invoke):
@@ -70,7 +70,7 @@ const ComponentNameFile = "File"
 type FileComponent struct {
 }
 
-// SetStorageFactoryOverride lets a test inject a Storage-backed
+// SetStorageFactoryOverride 允许测试注入 Storage 工厂（生产保持 nil）。
 // factory; production wiring should leave this alone and use the
 // real factory. The override is honored only when non-nil. This
 // is the testability seam requested by the Phase 2.1 spec — it
@@ -83,7 +83,7 @@ type FileComponent struct {
 // the same pattern already used in internal/service/file_test.go:80-83.
 var SetStorageFactoryOverride func() storage.Storage
 
-// NewFileComponent constructs a FileComponent from DSL params.
+// NewFileComponent 从 DSL 参数构造 FileComponent（FileParam 当前无字段）。
 // The current schema (schema.FileParam) has no fields.
 func NewFileComponent(params map[string]any) (runtime.Component, error) {
 	p := schema.FileParam{}.Defaults()
@@ -122,7 +122,7 @@ func (c *FileComponent) Outputs() map[string]string {
 // Parallelism is fixed at 1 — File is metadata-only.
 func (c *FileComponent) Parallelism() int { return 1 }
 
-// Invoke resolves document/file metadata for downstream Parser use.
+// Invoke 解析元数据：doc_id 路径或 file 列表首项路径。
 //
 // The implementation mirrors the python flow's two paths:
 //
@@ -272,3 +272,5 @@ func init() {
 			Outputs: c.Outputs(),
 		})
 }
+
+// File 组件 Parallelism=1；二进制不在 wire schema 中，由 Parser 按 bucket/path 读取。

@@ -14,10 +14,10 @@
 //  limitations under the License.
 //
 
-// SCOPE (honest) for title.go:
+// SCOPE（如实说明）title.go：
 //
-//   - TitleChunker is the dispatcher for the three Go chunks: this
-//     file holds the TitleChunker variant itself, which mirrors
+//   - TitleChunker 是三种 Go 分块策略的分发器：本文件仅含 TitleChunker 变体，
+//     实际分块逻辑在 group.go / hierarchy.go，由 method 参数路由。
 //     python `rag/flow/chunker/title_chunker/title_chunker.py` — it
 //     holds no business logic of its own; the actual chunking
 //     happens in group.go / hierarchy.go depending on the
@@ -27,13 +27,13 @@
 //     TitleChunker.Invoke dispatches synchronously to group.go or
 //     hierarchy.go.
 //
-//   - HEADING DETECTION PARITY:
-//     The Python side uses three heading-detection strategies in
+//   - 标题检测对齐说明：
+//     Python 侧 common.py:resolve_title_levels 有三种策略：
 //     `common.py:resolve_title_levels`:
-//     (1) PDF outlines   (extract_pdf_outlines, requires deepdoc/parser)
-//     (2) Regex families (the user's `levels` param)
-//     (3) Layout hints   (layout field matches section/title/head)
-//     The Go port ships ONLY strategy (2). Strategies (1) and (3)
+//     (1) PDF 大纲（需 deepdoc/parser）
+//     (2) 正则族（用户 levels 参数）
+//     (3) 布局提示（layout 字段匹配 section/title/head）
+//     Go 版仅实现策略 (2)；(1)(3) 需 PDF 二进制与 layout 字段，deepdoc 尚未移植。
 //     require PDF binary access (deepdoc is Python-only) and a parser
 //     that emits a layout field. A canvas author who needs PDF-outline heading
 //     detection must wait for the deepdoc/parser port.
@@ -87,7 +87,7 @@ func (p *titleChunkerParam) Update(conf map[string]any) {
 	}
 }
 
-// parseLevels accepts a [[string]] representation — the natural
+// parseLevels 接受 [[string]] JSON 形式，严格校验在 schema.TitleChunkerParam.Validate。
 // JSON form — and rebroadcasts the strings verbatim. Stricter
 // validation lives in schema.TitleChunkerParam.Validate.
 func parseLevels(in []any) [][]string {
@@ -114,7 +114,7 @@ func defaultsTitle() titleChunkerParam {
 	return titleChunkerParam{TitleChunkerParam: schema.TitleChunkerParam{}.Defaults()}
 }
 
-// selectLevelGroup mirrors common.py:select_level_group. Returns the
+// selectLevelGroup 镜像 common.py:select_level_group，返回命中次数最高的正则族。
 // regex-list family with the highest hit count across the input
 // lines.
 func selectLevelGroup(lines []string, rawLevels [][]string) []string {
@@ -158,7 +158,7 @@ func selectLevelGroup(lines []string, rawLevels [][]string) []string {
 	return group
 }
 
-// matchRegexLevel mirrors common.py:match_regex_level. Levels are
+// matchRegexLevel 镜像 common.py:match_regex_level；1 起编级，无匹配返回 0（BODY）。
 // 1-indexed; "" or no-match returns 0 (BODY).
 func matchRegexLevel(text string, group []string) int {
 	stripped := trim(text)
@@ -174,7 +174,7 @@ func matchRegexLevel(text string, group []string) int {
 	return 0
 }
 
-// resolveTitleLevels mirrors common.py:resolve_title_levels in the
+// resolveTitleLevels 镜像 common.py:resolve_title_levels 的 frequency 分支。
 // "frequency" branch only (the outline branch is parity-gap territory
 // per the SCOPE comment above).
 func resolveTitleLevels(lines []string, p *titleChunkerParam) []int {
@@ -197,13 +197,13 @@ func resolveTitleLevels(lines []string, p *titleChunkerParam) []int {
 	return out
 }
 
-// bodyLevel is the sentinel python uses for non-heading lines. We use
+// bodyLevel 为非标题行的哨兵值，与 Python sys.maxsize-1 语义对齐。
 // the same large int (sys.maxsize - 1) for parity. Practically this
 // just needs to be "larger than any realistic heading level"; tests
 // only check relative ordering.
 const bodyLevel = 1<<31 - 1
 
-// lineRecords mirrors common.py:extract_line_records' markdown/text/html
+// lineRecordsFromText 镜像 common.py:extract_line_records 的 text 分支。
 // branch. Returns one record per non-empty input line.
 func lineRecordsFromText(text string) []lineRecord {
 	if text == "" {
@@ -225,7 +225,7 @@ func lineRecordsFromText(text string) []lineRecord {
 	return out
 }
 
-// lineRecord is the internal common shape — same fields as
+// lineRecord 为 Group/Hierarchy 共用的内部行记录结构。
 // common.py:extract_line_records yields. Used by Group/Hierarchy
 // chunk-builders.
 type lineRecord struct {
@@ -268,7 +268,7 @@ func compileLevelPattern(pattern string) *regexp.Regexp {
 	return re
 }
 
-// LevelContext groups the level-detection artefacts (per-line levels
+// LevelContext 缓存标题级检测结果，避免策略实现重复计算。
 // + the most-common heading level) so the strategy implementations
 // don't recompute.
 type LevelContext struct {
@@ -322,7 +322,7 @@ func buildChunksFromRecordGroupsText(groups [][]lineRecord) []map[string]any {
 // Component implementations
 // ---------------------------------------------------------------------------
 
-// TitleChunkerComponent dispatches based on `param.method`. Heading
+// TitleChunkerComponent 按 param.method 分发；标题检测共享 resolveTitleLevels。
 // detection is shared (resolveTitleLevels); the actual chunk-build
 // logic lives in group.go / hierarchy.go.
 type TitleChunkerComponent struct {
@@ -330,7 +330,7 @@ type TitleChunkerComponent struct {
 	param titleChunkerParam
 }
 
-// NewTitleChunker constructs a TitleChunker from the DSL param map.
+// NewTitleChunker 从 DSL 参数映射构造 TitleChunker。
 // Errors here surface as canvas compile failures.
 func NewTitleChunker(params map[string]any) (runtime.Component, error) {
 	p := defaultsTitle()
@@ -355,7 +355,7 @@ func (c *TitleChunkerComponent) Inputs() map[string]string { return ChunkerInput
 // Outputs is exposed so callers can introspect.
 func (c *TitleChunkerComponent) Outputs() map[string]string { return ChunkerOutputs }
 
-// Invoke delegates to the chosen strategy (group or hierarchy).
+// Invoke 委托给 group 或 hierarchy 策略实现。
 func (c *TitleChunkerComponent) Invoke(ctx context.Context, inputs map[string]any) (map[string]any, error) {
 	return runtime.TrackElapsed(ComponentNameTitleChunker, func() (map[string]any, error) {
 		if inputs == nil {
@@ -387,3 +387,5 @@ func (c *TitleChunkerComponent) Invoke(ctx context.Context, inputs map[string]an
 func init() {
 	MustRegisterChunker(ComponentNameTitleChunker)
 }
+
+// TitleChunker 默认 method=group；缺失 name 字段时返回 _ERROR 而非 panic。

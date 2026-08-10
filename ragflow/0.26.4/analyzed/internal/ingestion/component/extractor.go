@@ -14,12 +14,12 @@
 //  limitations under the License.
 //
 
-// Package component — Extractor component (Phase 2.5 of
+// Package component — Extractor 组件（port-rag-flow-pipeline Phase 2.5）。
 // port-rag-flow-pipeline-to-go.md §4 row 2.5).
 //
-// SCOPE (honest):
+// SCOPE（如实说明）：
 //
-//   - PROVIDER-AGNOSTIC (§8 Q1): the Extractor does NOT depend on any
+//   - 与 LLM 提供商无关：经 internal/entity/models 工厂路由；
 //     specific LLM provider. It dispatches every chat call through
 //     internal/entity/models — the same factory routes 48 of the 56
 //     Python ChatModel providers registered there (factory.go switch,
@@ -31,23 +31,23 @@
 //     response. We DO NOT panic: errors are surfaced as a clean
 //     "no driver for %q" wrap that callers can log and route.
 //
-//   - LLM CALL SHAPE: one chat call per chunk (no batching). Plan
+//   - LLM 调用形态：每 chunk 一次 chat（Parallelism=1，顺序确定性）。
 //     §AD-5a locks Parallelism at 1 because "LLM call is inherently
 //     serial"; sequential per-chunk processing keeps test ordering
 //     deterministic under -race.
 //
-//   - TIMEOUT / ELAPSED: the call is wrapped in
+//   - 超时/耗时：runtime.WithTimeout(60s) + TrackElapsed 打 _created_time/_elapsed_time。
 //     runtime.WithTimeout(60s) and runtime.TrackElapsed so the
 //     upstream pipeline gets _created_time / _elapsed_time stamps
 //     matching the python ProcessBase contract (base.py:42, 58).
 //
-//   - JSON PARSING: the prompt asks the LLM to return a JSON object;
+//   - JSON 解析：尽力解析 LLM 响应为 map；非 JSON 以原始字符串写入同字段。
 //     we best-effort parse the response into map[string]any. A
 //     non-JSON response is NOT a hard error — it's surfaced as the
 //     raw string under the same field name so downstream callers
 //     can decide what to do.
 //
-//   - WHAT IS NOT YET PORTED: the python _build_TOC branch
+//   - 尚未移植：Python _build_TOC 分支（field_name=="toc" 时显式报错）。
 //     (rag/flow/extractor/extractor.py:40-72) requires the TOC
 //     generator (rag.prompts.generator.run_toc_from_text). That
 //     service has no Go counterpart yet; the current Extractor
@@ -55,7 +55,7 @@
 //     so a future Phase 2.5+ task can fill the gap without a
 //     silent regression.
 //
-//   - SINGLE-CHUNK FAST PATH: when no chunk list is wired in,
+//   - 单 chunk 快路径：无 chunk 列表时直接对 args 调用 LLM 一次。
 //     the LLM is called once with the resolved args directly (no
 //     chunk substitution). Matches python _invoke path
 //     (line 108: msg, sys_prompt = self._sys_prompt_and_msg([], args)).
@@ -80,13 +80,13 @@ import (
 
 const componentNameExtractor = "Extractor"
 
-// extractorTimeout bounds one LLM chat call. Matches the python
+// extractorTimeout 限制单次 LLM chat，镜像 Python @timeout(60)。
 // `@timeout(60)` default at rag/flow/base.py:60. The pipeline
 // orchestrator (Phase 3) overrides this if a stage-level ceiling
 // is configured.
 const extractorTimeout = 60 * time.Second
 
-// ExtractorComponent performs LLM-based extraction over a chunk
+// ExtractorComponent 对 chunk 列表（或空输入）执行 LLM 抽取。
 // list (or a single empty call when no chunks are wired in).
 //
 // The instance is safe for concurrent invocation: each Invoke
@@ -98,7 +98,7 @@ type ExtractorComponent struct {
 	Param schema.ExtractorParam
 }
 
-// NewExtractorComponent constructs an Extractor from a DSL param
+// NewExtractorComponent 从 DSL 参数构造 Extractor；FieldName 必填。
 // map. Missing keys fall back to schema.ExtractorParam.Defaults();
 // an empty FieldName is rejected (matches python
 // `check_empty(self.field_name, "Result Destination")`).
@@ -136,7 +136,7 @@ func NewExtractorComponent(params map[string]any) (runtime.Component, error) {
 	return &ExtractorComponent{Param: p}, nil
 }
 
-// Inputs returns the parameter metadata. Matches the python
+// Inputs 返回参数元数据，含 chunks/prompt/llm_id/system_prompt 覆盖项。
 // Extractor._invoke kwargs plus the optional per-call llm_id
 // override (python: args["llm_id"] path is implicit via
 // self.chat_mdl; the Go port exposes it explicitly).
@@ -716,3 +716,5 @@ func init() {
 			Outputs: c.Outputs(),
 		})
 }
+
+// Extractor 经 models.NewModelFactory 解析 llm_id；extractorChatInvoker 为可测试替换 seam。

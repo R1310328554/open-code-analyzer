@@ -1,3 +1,5 @@
+// pdf_vision_dispatch.go — PDF 视觉解析分发：租户 IMAGE2TEXT 模型逐页 OCR。
+
 package component
 
 import (
@@ -17,6 +19,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// pdfVisionPage 单页渲染结果（页码、尺寸、base64 图片 URL）。
 type pdfVisionPage struct {
 	PageNumber int
 	WidthPts   float64
@@ -431,3 +434,5 @@ func newModelDriverForBaseURLLocal(driver modelModule.ModelDriver, providerName,
 func errorsIsRecordNotFound(err error) bool {
 	return err != nil && (err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), gorm.ErrRecordNotFound.Error()))
 }
+
+// maybeDispatchPDFVision 在 parse_method/layout_recognizer 为租户模型 ID 时走视觉 LLM 路径；需 tenant_id 解析 IMAGE2TEXT 模型。

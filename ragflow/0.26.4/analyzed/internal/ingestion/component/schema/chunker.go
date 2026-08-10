@@ -16,9 +16,12 @@
 
 package schema
 
+// schema/chunker.go — 四种 Chunker 变体共享的上游/参数/输出 wire 类型。
+
+
 import "fmt"
 
-// ChunkerFromUpstream is the shared upstream payload consumed by all four
+// ChunkerFromUpstream 为四种 chunker 变体共享的上游载荷。
 // chunker variants (TokenChunker, TitleChunker, GroupTitleChunker,
 // HierarchyTitleChunker).
 //
@@ -82,7 +85,7 @@ type ChunkerFromUpstream struct {
 	HTMLResult *string `json:"html,omitempty"`
 }
 
-// Validate enforces the only required field in ChunkerFromUpstream: Name.
+// Validate 强制 ChunkerFromUpstream 必填 name；output_format 与对应 *Result 一致。
 // OutputFormat is not strictly required (defaults to "" and the
 // component decides what to do with an empty payload), but the
 // combination of `OutputFormat == "chunks"` with a non-nil Chunks is the
@@ -117,7 +120,7 @@ func (c *ChunkerFromUpstream) Validate() error {
 	return nil
 }
 
-// ChunkerOutputs is the result of invoking any chunker variant. All
+// ChunkerOutputs 为任意 chunker 变体的输出（output_format=chunks + chunks 列表）。
 // four chunker components emit the same shape: a list of chunk maps
 // under the "chunks" key, plus a marker output_format = "chunks".
 //
@@ -140,14 +143,14 @@ type ChunkerOutputs struct {
 }
 
 // ---------------------------------------------------------------------------
-// TokenChunkerParam
+// TokenChunkerParam — 镜像 Python TokenChunkerParam，含 delimiter_mode 等。
 // ---------------------------------------------------------------------------
 //
 // Mirrors rag/flow/chunker/token_chunker.py:TokenChunkerParam.__init__.
 // All fields are user-tunable; defaults match the Python values.
 
 type TokenChunkerParam struct {
-	// DelimiterMode selects the chunking strategy.
+	// DelimiterMode 选择分块策略：token_size / delimiter / one。
 	// Allowed values: "token_size", "delimiter", "one".
 	DelimiterMode string `json:"delimiter_mode"`
 
@@ -173,7 +176,7 @@ type TokenChunkerParam struct {
 	ImageContextSize int `json:"image_context_size"`
 }
 
-// Defaults returns the Python default TokenChunkerParam.
+// Defaults 返回 Python 默认 TokenChunkerParam 值。
 func (TokenChunkerParam) Defaults() TokenChunkerParam {
 	return TokenChunkerParam{
 		DelimiterMode:      "token_size",
@@ -186,7 +189,7 @@ func (TokenChunkerParam) Defaults() TokenChunkerParam {
 	}
 }
 
-// Validate enforces the same enum/range checks the runtime component expects
+// Validate 强制与运行时组件一致的枚举/范围校验。
 // at construction time, keeping the schema and component decoder aligned.
 func (p TokenChunkerParam) Validate() error {
 	switch p.DelimiterMode {
@@ -210,7 +213,7 @@ func (p TokenChunkerParam) Validate() error {
 }
 
 // ---------------------------------------------------------------------------
-// TitleChunkerParam
+// TitleChunkerParam — 镜像 Python TitleChunkerParam，含 method/levels/hierarchy。
 // ---------------------------------------------------------------------------
 //
 // Mirrors rag/flow/chunker/title_chunker/common.py:TitleChunkerParam.
@@ -220,7 +223,7 @@ func (p TokenChunkerParam) Validate() error {
 // values.
 
 type TitleChunkerParam struct {
-	// Method routes to the right title-chunker strategy.
+	// Method 路由标题分块策略：hierarchy 或 group。
 	// Allowed values: "hierarchy", "group".
 	Method string `json:"method,omitempty"`
 
@@ -242,7 +245,7 @@ type TitleChunkerParam struct {
 	RootChunkAsHeading bool `json:"root_chunk_as_heading"`
 }
 
-// Defaults returns the Python default TitleChunkerParam. `Method` is
+// Defaults 返回 Python 默认 TitleChunkerParam（Method 由组件外部设置）。
 // not initialized in the Python `__init__` (it is set externally); the
 // default is left as the empty string and the component must supply it.
 func (TitleChunkerParam) Defaults() TitleChunkerParam {
@@ -254,7 +257,7 @@ func (TitleChunkerParam) Defaults() TitleChunkerParam {
 	}
 }
 
-// Validate enforces the Python `check()` invariants that are also
+// Validate 强制 Python check() 可表达的不变量（hierarchy 需 levels+hierarchy）。
 // expressible in pure-data terms: when Method == "hierarchy" the
 // hierarchy depth and level config must be present.
 func (p *TitleChunkerParam) Validate() error {
@@ -278,7 +281,7 @@ func (p *TitleChunkerParam) Validate() error {
 }
 
 // ---------------------------------------------------------------------------
-// GroupTitleChunkerParam / HierarchyTitleChunkerParam
+// GroupTitleChunkerParam / HierarchyTitleChunkerParam — Python 共用 TitleChunkerParam 的类型别名。
 // ---------------------------------------------------------------------------
 //
 // In the Python codebase, both variants share the SAME
@@ -293,3 +296,5 @@ func (p *TitleChunkerParam) Validate() error {
 
 type GroupTitleChunkerParam = TitleChunkerParam
 type HierarchyTitleChunkerParam = TitleChunkerParam
+
+// 四种 chunker 共享 ChunkerFromUpstream/ChunkerOutputs；变体差异在 Param 结构与组件实现文件。

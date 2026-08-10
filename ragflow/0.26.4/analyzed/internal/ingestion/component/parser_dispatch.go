@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// Parser dispatch validates the requested output format, resolves the
+// parser_dispatch.go — 解析分发：校验 output_format、解析后端并返回 ParseWithResult。
 // parser backend, and returns the structured ParseWithResult payload.
 //
 // `parse_method` is carried through file metadata for downstream
@@ -33,7 +33,7 @@ import (
 	"ragflow/internal/utility"
 )
 
-// parserDispatchResult is the typed outcome of dispatchParse. The
+// parserDispatchResult 为 dispatchParse 的类型化结果。
 // component's Invoke translates it into the runtime output map.
 //
 // OutputFormat is the wire format the parser actually emitted. It
@@ -79,7 +79,7 @@ func configureParserFromSetups(p any, fileType utility.FileType, setups map[stri
 	cfg.ConfigureFromSetup(map[string]any(setup))
 }
 
-// resolveOutputFormat picks the wire format for this run. The
+// resolveOutputFormat 选取本次 wire 格式并校验 allowed_output_format 白名单。
 // Python side asks the setup, then checks the value is in
 // allowed_output_format[fileType]. We mirror that exact sequence:
 //
@@ -121,7 +121,7 @@ func resolveOutputFormat(family string, setups map[string]schema.ParserSetup, al
 	)
 }
 
-// resolveLibType returns the lib_type argument for parser.GetParser.
+// resolveLibType 返回 parser.GetParser 的 lib_type 与 parse_method。
 // The Python side does not pass an explicit lib_type for the
 // Markdown / HTML / Office families — the parser constructor picks
 // the only available backend. Mirroring that, when setups[…].lib_type
@@ -146,7 +146,7 @@ func resolveLibType(fileType utility.FileType, setups map[string]schema.ParserSe
 	return libType, parseMethod
 }
 
-// dispatchParse resolves the parser for the given fileType and invokes
+// dispatchParse 解析 fileType 对应 parser 并调用 ParseWithResult；失败返回零值+Err。
 // its structured ParseWithResult contract.
 //
 // The function NEVER returns a partial result. On error the result
@@ -198,7 +198,7 @@ func dispatchParse(fileType utility.FileType, filename string, data []byte, setu
 	}
 }
 
-// fileTypeFromInputs derives the parser-library extension form
+// fileTypeFromInputs 从上游 inputs 推导 utility.FileType。
 // (utility.FileType) from the upstream inputs. The result is the
 // value passed to parser.GetParser, whose switch arms are keyed
 // off the utility constants.
@@ -448,3 +448,5 @@ func parserInputName(inputs map[string]any, docID string) string {
 	}
 	return docID
 }
+
+// parse_method 经 file 元数据透传；实际后端工作在 internal/parser/parser/*。
