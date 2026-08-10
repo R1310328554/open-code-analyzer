@@ -33,19 +33,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
- * Empty service auto cleaner for v2.x.
+ * V2 空服务自动清理器。
+ *
+ * <p>定期扫描无注册客户端且超过空闲阈值的服务单例，移除索引、存储并发布元数据删除事件。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class EmptyServiceAutoCleanerV2 extends AbstractNamingCleaner {
     
+    /** 清理器类型标识。 */
     private static final String EMPTY_SERVICE = "emptyService";
     
+    /** 客户端-服务索引管理器。 */
     private final ClientServiceIndexesManager clientServiceIndexesManager;
     
+    /** 服务实例数据存储。 */
     private final ServiceStorage serviceStorage;
     
+    /** 注册定时清理任务到全局执行器。 */
     public EmptyServiceAutoCleanerV2(ClientServiceIndexesManager clientServiceIndexesManager,
         ServiceStorage serviceStorage) {
         this.clientServiceIndexesManager = clientServiceIndexesManager;
@@ -63,7 +69,7 @@ public class EmptyServiceAutoCleanerV2 extends AbstractNamingCleaner {
     @Override
     public void doClean() {
         ServiceManager serviceManager = ServiceManager.getInstance();
-        // Parallel flow opening threshold
+        // 并行流开启阈值：服务数超过该值时使用 parallelStream
         int parallelSize = 100;
         
         for (String each : serviceManager.getAllNamespaces()) {
@@ -74,6 +80,7 @@ public class EmptyServiceAutoCleanerV2 extends AbstractNamingCleaner {
         }
     }
     
+    /** 清理单个无客户端且已超时的空服务。 */
     private void cleanEmptyService(Service service) {
         Collection<String> registeredService =
             clientServiceIndexesManager.getAllClientsRegisteredService(service);
@@ -88,6 +95,7 @@ public class EmptyServiceAutoCleanerV2 extends AbstractNamingCleaner {
         }
     }
     
+    /** 判断服务自上次更新起是否已超过空服务过期时间。 */
     private boolean isTimeExpired(Service service) {
         long currentTimeMillis = System.currentTimeMillis();
         return currentTimeMillis - service.getLastUpdatedTime() >= GlobalConfig

@@ -53,21 +53,28 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Implementation of service operator for v2.x.
+ * {@link ServiceOperator} 的 V2 实现。
+ *
+ * <p>基于 {@link ServiceManager} 单例仓库与 {@link NamingMetadataOperateService} 完成服务元数据的增删改查，并通过 {@link SubscribeManager} 提供订阅者查询。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class ServiceOperatorV2Impl implements ServiceOperator {
     
+    /** 元数据持久化操作服务。 */
     private final NamingMetadataOperateService metadataOperateService;
     
+    /** 命名元数据内存管理器。 */
     private final NamingMetadataManager metadataManager;
     
+    /** 服务实例存储，用于校验删除前是否仍有实例。 */
     private final ServiceStorage serviceStorage;
     
+    /** 订阅关系管理器。 */
     private final SubscribeManager subscribeManager;
     
+    /** 注入元数据操作、存储与订阅管理依赖。 */
     public ServiceOperatorV2Impl(NamingMetadataOperateService metadataOperateService,
         NamingMetadataManager metadataManager, ServiceStorage serviceStorage,
         SubscribeManager subscribeManager) {
@@ -86,11 +93,11 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
     }
     
     /**
-     * Create new service.
+     * 创建 V2 服务对象并写入元数据。
      *
-     * @param service  v2 service
-     * @param metadata new metadata of service
-     * @throws NacosException nacos exception during creating
+     * @param service  V2 服务对象
+     * @param metadata 服务元数据
+     * @throws NacosException 服务已存在或写入失败时抛出
      */
     public void create(Service service, ServiceMetadata metadata) throws NacosException {
         if (ServiceManager.getInstance().containSingleton(service)) {
@@ -119,10 +126,10 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
     }
     
     /**
-     * Delete service.
+     * 删除 V2 服务（须无注册实例）。
      *
-     * @param service service v2
-     * @throws NacosException nacos exception during delete
+     * @param service V2 服务对象
+     * @throws NacosException 服务不存在、仍有实例或删除失败时抛出
      */
     public void delete(Service service) throws NacosException {
         if (!ServiceManager.getInstance().containSingleton(service)) {
@@ -163,11 +170,11 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
     }
     
     /**
-     * Query service detail.
+     * 查询 V2 服务详情（含集群元数据）。
      *
-     * @param service service
-     * @return service detail with cluster info
-     * @throws NacosException nacos exception during query
+     * @param service 服务对象
+     * @return 服务详情 DTO
+     * @throws NacosException 服务不存在时抛出
      */
     public ServiceDetailInfo queryService(Service service) throws NacosException {
         if (!ServiceManager.getInstance().containSingleton(service)) {
@@ -193,6 +200,7 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
         return result;
     }
     
+    /** 将服务元数据填充到 JSON 详情节点。 */
     private void setServiceMetadata(ObjectNode serviceDetail, ServiceMetadata serviceMetadata,
         Service service) {
         serviceDetail.put(FieldsConstants.NAME_SPACE_ID, service.getNamespace());
@@ -205,6 +213,7 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
             JacksonUtils.transferToJsonNode(serviceMetadata.getSelector()));
     }
     
+    /** 将服务元数据填充到 {@link ServiceDetailInfo} DTO。 */
     private void setServiceMetadata(ServiceDetailInfo serviceDetail,
         ServiceMetadata serviceMetadata, Service service) {
         serviceDetail.setNamespaceId(service.getNamespace());
@@ -215,6 +224,7 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
         serviceDetail.setSelector(serviceMetadata.getSelector());
     }
     
+    /** 构建单个集群的 JSON 节点。 */
     private ObjectNode newClusterNode(String clusterName, ClusterMetadata clusterMetadata) {
         ObjectNode result = JacksonUtils.createEmptyJsonNode();
         result.put(FieldsConstants.NAME, clusterName);
@@ -225,6 +235,7 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
         return result;
     }
     
+    /** 构建单个集群的 {@link ClusterInfo} 对象。 */
     private ClusterInfo newClusterNodeV2(String clusterName, ClusterMetadata clusterMetadata) {
         ClusterInfo result = new ClusterInfo();
         result.setClusterName(clusterName);
@@ -243,10 +254,11 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
         if (services.isEmpty()) {
             return Collections.EMPTY_LIST;
         }
-        // TODO select service by selector
+        // TODO 按 selector 过滤服务（尚未实现）
         return selectServiceWithGroupName(services, groupName);
     }
     
+    /** 按分组名过滤服务集合并返回分组服务名。 */
     private Collection<String> selectServiceWithGroupName(Collection<Service> serviceSet,
         String groupName) {
         Collection<String> result = new HashSet<>(serviceSet.size());
@@ -258,6 +270,7 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
         return result;
     }
     
+    /** 从分组服务名解析并构造 {@link Service} 对象。 */
     private Service getServiceFromGroupedServiceName(String namespaceId, String groupedServiceName,
         boolean ephemeral) {
         String groupName = NamingUtils.getGroupName(groupedServiceName);
@@ -299,6 +312,7 @@ public class ServiceOperatorV2Impl implements ServiceOperator {
         return result;
     }
     
+    /** 将内部 {@link Subscriber} 分页结果转换为 API {@link SubscriberInfo} 分页。 */
     private Page<SubscriberInfo> convertToSubscriberInfoPage(Page<Subscriber> page) {
         Page<SubscriberInfo> result = new Page<>();
         result.setPageItems(page.getPageItems().stream().map(subscriber -> {

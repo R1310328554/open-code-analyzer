@@ -21,7 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Client data attributes.
+ * 客户端扩展属性容器。
+ *
+ * <p>以键值对形式存储客户端同步与连接相关的附加信息，支持带默认值的类型安全读取。</p>
  *
  * @author xiweng.yy
  */
@@ -29,8 +31,10 @@ public class ClientAttributes implements Serializable {
     
     private static final long serialVersionUID = -5794675800507288793L;
     
+    /** 属性键值映射表。 */
     private Map<String, Object> clientAttributes;
     
+    /** 初始化空的属性映射。 */
     public ClientAttributes() {
         this.clientAttributes = new HashMap<>(1);
     }
@@ -43,16 +47,17 @@ public class ClientAttributes implements Serializable {
         this.clientAttributes = clientAttributes;
     }
     
+    /** 添加或覆盖单个客户端属性。 */
     public void addClientAttribute(String key, Object value) {
         clientAttributes.put(key, value);
     }
     
     /**
-     * Get client attribute.
+     * 按键获取客户端属性并尝试类型转换。
      *
-     * @param key attribute key.
-     * @param <T> Expected type of attribute.
-     * @return client attribute, if not exist or type can't case, return {@code null}
+     * @param key 属性键
+     * @param <T> 期望的属性类型
+     * @return 属性值；不存在或类型不匹配时返回 {@code null}
      */
     public <T> T getClientAttribute(String key) {
         try {
@@ -63,12 +68,12 @@ public class ClientAttributes implements Serializable {
     }
     
     /**
-     * Get client attribute.
+     * 按键获取客户端属性，失败时返回默认值。
      *
-     * @param key attribute key.
-     * @param <T> Expected type of attribute.
-     * @param defaultValue default value when not exist or type can't case
-     * @return client attribute, if not exist or type can't case, return defaultValue
+     * @param key          属性键
+     * @param <T>          期望的属性类型
+     * @param defaultValue 不存在或类型不匹配时的默认值
+     * @return 属性值或默认值
      */
     public <T> T getClientAttribute(String key, T defaultValue) {
         Object result = clientAttributes.get(key);

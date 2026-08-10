@@ -37,24 +37,32 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.alibaba.nacos.naming.constants.ClientConstants.REVISION;
 
 /**
- * Abstract implementation of {@code Client}.
+ * {@link Client} 的抽象实现。
+ *
+ * <p>维护客户端发布的服务实例与订阅关系，提供 Distro 同步数据生成、修订号重算及资源释放时的指标回退。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractClient implements Client {
     
+    /** 客户端发布的服务实例映射。 */
     protected final ConcurrentHashMap<Service, InstancePublishInfo> publishers =
         new ConcurrentHashMap<>(16, 0.75f, 1);
     
+    /** 客户端订阅的服务映射。 */
     protected final ConcurrentHashMap<Service, Subscriber> subscribers =
         new ConcurrentHashMap<>(16, 0.75f, 1);
     
+    /** 客户端最后更新时间戳。 */
     protected volatile long lastUpdatedTime;
     
+    /** Distro 一致性修订号。 */
     protected final AtomicLong revision;
     
+    /** 客户端扩展属性。 */
     protected ClientAttributes attributes;
     
+    /** 初始化客户端并设置初始修订号。 */
     public AbstractClient(Long revision) {
         lastUpdatedTime = System.currentTimeMillis();
         this.revision = new AtomicLong(revision == null ? 0 : revision);
@@ -172,6 +180,7 @@ public abstract class AbstractClient implements Client {
         return data;
     }
     
+    /** 组装批量注册实例的命名空间、分组与服务名列表。 */
     private static BatchInstanceData buildBatchInstanceData(BatchInstanceData batchInstanceData,
         List<String> batchNamespaces,
         List<String> batchGroupNames, List<String> batchServiceNames,
@@ -216,13 +225,12 @@ public abstract class AbstractClient implements Client {
         this.revision.set(revision);
     }
     
-    /**
-     * get client attributes.
-     */
+    /** 获取客户端扩展属性对象。 */
     public ClientAttributes getClientAttributes() {
         return attributes;
     }
     
+    /** 设置客户端扩展属性。 */
     public void setAttributes(ClientAttributes attributes) {
         this.attributes = attributes;
     }

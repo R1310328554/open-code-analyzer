@@ -17,21 +17,21 @@
 package com.alibaba.nacos.naming.core.v2.cleaner;
 
 /**
- * Nacos naming cleaner.
+ * 命名模块清理任务接口。
+ *
+ * <p>各清理器通过 {@link #getType()} 标识类型，在 {@link #doClean()} 中执行具体清理逻辑。</p>
  *
  * @author xiweng.yy
  */
 public interface NamingCleaner {
     
     /**
-     * The type which be cleaned.
+     * 返回本清理器处理的资源类型标识。
      *
-     * @return cleaned type
+     * @return 清理类型字符串
      */
     String getType();
     
-    /**
-     * Do clean operation.
-     */
+    /** 执行一次清理操作。 */
     void doClean();
 }

@@ -20,7 +20,9 @@ import com.alibaba.nacos.common.task.AbstractExecuteTask;
 import com.alibaba.nacos.naming.misc.Loggers;
 
 /**
- * Abstract Nacos naming cleaner.
+ * 命名清理任务的抽象基类。
+ *
+ * <p>继承 {@link AbstractExecuteTask}，在 {@link #run()} 中捕获异常并记录日志，子类实现 {@link #doClean()} 完成具体清理逻辑。</p>
  *
  * @author xiweng.yy
  */

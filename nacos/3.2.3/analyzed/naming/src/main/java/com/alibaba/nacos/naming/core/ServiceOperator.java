@@ -26,92 +26,95 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Collection;
 
 /**
- * Service operator.
+ * 服务元数据运维接口。
+ *
+ * <p>定义服务的创建、更新、删除、查询及订阅者列表获取等操作，由 V2 实现类 {@link ServiceOperatorV2Impl} 提供具体逻辑。</p>
  *
  * @author xiweng.yy
  */
 public interface ServiceOperator {
     
     /**
-     * Create new service.
+     * 创建新服务。
      *
-     * @param namespaceId namespace id of service
-     * @param serviceName grouped service name format like 'groupName@@serviceName'
-     * @param metadata    new metadata of service
-     * @throws NacosException nacos exception during creating
+     * @param namespaceId 服务所属命名空间 ID
+     * @param serviceName 分组服务名，格式为 groupName@@serviceName
+     * @param metadata    服务元数据
+     * @throws NacosException 创建过程中发生的异常
      */
     void create(String namespaceId, String serviceName, ServiceMetadata metadata)
         throws NacosException;
     
     /**
-     * Update service information. Due to service basic information can't be changed, so update should only update the
-     * metadata of service.
+     * 更新服务元数据。
      *
-     * @param service  service need to be updated.
-     * @param metadata new metadata of service.
-     * @throws NacosException nacos exception during update
+     * <p>服务基础信息不可变更，仅允许更新元数据部分。</p>
+     *
+     * @param service  待更新的服务
+     * @param metadata 新的服务元数据
+     * @throws NacosException 更新过程中发生的异常
      */
     void update(Service service, ServiceMetadata metadata) throws NacosException;
     
     /**
-     * Delete service.
+     * 删除服务。
      *
-     * @param namespaceId namespace id of service
-     * @param serviceName grouped service name format like 'groupName@@serviceName'
-     * @throws NacosException nacos exception during delete
+     * @param namespaceId 服务所属命名空间 ID
+     * @param serviceName 分组服务名，格式为 groupName@@serviceName
+     * @throws NacosException 删除过程中发生的异常
      */
     void delete(String namespaceId, String serviceName) throws NacosException;
     
     /**
-     * Query service detail.
+     * 查询服务详情。
      *
-     * @param namespaceId namespace id of service
-     * @param serviceName grouped service name format like 'groupName@@serviceName'
-     * @return service detail with cluster info
-     * @throws NacosException nacos exception during query
+     * @param namespaceId 服务所属命名空间 ID
+     * @param serviceName 分组服务名，格式为 groupName@@serviceName
+     * @return 包含集群信息的服务详情 JSON
+     * @throws NacosException 查询过程中发生的异常
      */
     ObjectNode queryService(String namespaceId, String serviceName) throws NacosException;
     
     /**
-     * List service detail information.
+     * 列出命名空间下符合分组条件的服务名。
      *
-     * @param namespaceId namespace id of services
-     * @param groupName   group name of services
-     * @param selector    selector
-     * @return services name list
-     * @throws NacosException nacos exception during query
+     * @param namespaceId 命名空间 ID
+     * @param groupName   服务分组名
+     * @param selector    服务选择器表达式
+     * @return 服务名列表
+     * @throws NacosException 查询过程中发生的异常
      */
     Collection<String> listService(String namespaceId, String groupName, String selector)
         throws NacosException;
     
     /**
-     * list All service namespace.
+     * 列出所有存在服务的命名空间。
      *
-     * @return all namespace
+     * @return 命名空间 ID 集合
      */
     Collection<String> listAllNamespace();
     
     /**
-     * Search service name in namespace according to expr.
+     * 在命名空间内按表达式模糊搜索服务名。
      *
-     * @param namespaceId namespace id
-     * @param expr        search expr
-     * @return service name collection of match expr
-     * @throws NacosException nacos exception during query
+     * @param namespaceId 命名空间 ID
+     * @param expr        搜索表达式
+     * @return 匹配的服务名集合
+     * @throws NacosException 查询过程中发生的异常
      */
     Collection<String> searchServiceName(String namespaceId, String expr) throws NacosException;
     
     /**
-     * Get the list of subscribers for a service.
+     * 分页获取服务的订阅者列表。
      *
-     * @param namespaceId the namespace ID
-     * @param serviceName the service name
-     * @param groupName   the group name
-     * @param aggregation whether to aggregate the results
-     * @param pageNo      the page number
-     * @param pageSize    the size of the page
-     * @return a page of subscriber information
-     * @throws NacosException if an error occurs during fetching subscribers
+     * @param namespaceId 命名空间 ID
+     * @param serviceName 服务名
+     * @param groupName   分组名
+     * @param aggregation 是否聚合集群内所有节点的订阅者
+     * @param pageNo      页码
+     * @param pageSize    每页大小
+     * @return 订阅者信息分页结果
+     * @throws NacosException 查询订阅者时发生的异常
      */
     Page<SubscriberInfo> getSubscribers(String namespaceId, String serviceName, String groupName,
         boolean aggregation,

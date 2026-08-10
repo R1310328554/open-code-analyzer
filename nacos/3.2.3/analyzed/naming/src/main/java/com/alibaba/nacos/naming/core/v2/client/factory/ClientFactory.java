@@ -20,34 +20,36 @@ import com.alibaba.nacos.naming.core.v2.client.Client;
 import com.alibaba.nacos.naming.core.v2.client.ClientAttributes;
 
 /**
- * Client factory.
+ * 客户端工厂接口。
+ *
+ * <p>按客户端类型创建本地新建或从其他节点同步而来的 {@link Client} 实例。</p>
  *
  * @author xiweng.yy
  */
 public interface ClientFactory<C extends Client> {
     
     /**
-     * Get the type of client this factory can build.
+     * 返回本工厂支持的客户端类型标识。
      *
-     * @return client type
+     * @return 客户端类型字符串
      */
     String getType();
     
     /**
-     * Build a new {@link Client}.
+     * 创建本地新建的 {@link Client} 实例。
      *
-     * @param clientId client id
-     * @param attributes client attributes
-     * @return new {@link Client} implementation
+     * @param clientId   客户端 ID
+     * @param attributes 客户端扩展属性
+     * @return 新的客户端实现
      */
     C newClient(String clientId, ClientAttributes attributes);
     
     /**
-     * Build a new {@link Client} synced from other server node.
+     * 创建从其他集群节点同步而来的 {@link Client} 实例。
      *
-     * @param clientId   client id
-     * @param attributes client attributes
-     * @return new sync {@link Client} implementation
+     * @param clientId   客户端 ID
+     * @param attributes 客户端扩展属性
+     * @return 同步型客户端实现
      */
     C newSyncedClient(String clientId, ClientAttributes attributes);
 }

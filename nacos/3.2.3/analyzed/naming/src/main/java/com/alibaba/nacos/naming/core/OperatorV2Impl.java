@@ -32,7 +32,9 @@ import javax.annotation.Resource;
 import java.util.Collection;
 
 /**
- * OperatorV2Impl.
+ * Naming V2 运维操作实现。
+ *
+ * <p>提供开关域查询与更新、运行时指标采集以及日志级别调整，指标统计基于 {@link ClientManager} 中的客户端类型与归属信息。</p>
  *
  * @author Nacos
  */
@@ -40,28 +42,35 @@ import java.util.Collection;
 @Service
 public class OperatorV2Impl implements Operator {
     
+    /** 命名模块开关域配置。 */
     @Resource
     private SwitchDomain switchDomain;
     
+    /** 开关项读写管理器。 */
     @Resource
     private SwitchManager switchManager;
     
+    /** 集群节点状态管理器。 */
     @Resource
     private ServerStatusManager serverStatusManager;
     
+    /** V2 客户端管理器，用于统计连接型与 IP:Port 型客户端数量。 */
     @Resource
     private ClientManager clientManager;
     
+    /** 返回当前命名开关域快照。 */
     @Override
     public SwitchDomain switches() {
         return switchDomain;
     }
     
+    /** 更新指定开关项的值。 */
     @Override
     public void updateSwitch(String entry, String value, boolean debug) throws Exception {
         switchManager.update(entry, value, debug);
     }
     
+    /** 采集命名模块运行时指标；{@code onlyStatus} 为 true 时仅返回节点状态。 */
     @Override
     public MetricsInfoVo metrics(boolean onlyStatus) {
         MetricsInfoVo metricsInfoVo = new MetricsInfoVo();
@@ -70,9 +79,13 @@ public class OperatorV2Impl implements Operator {
             return metricsInfoVo;
         }
         
+        // 连接型客户端计数（clientId 不含 IP:Port 分隔符）
         int connectionBasedClient = 0;
+        // 临时 IP:Port 型客户端计数
         int ephemeralIpPortClient = 0;
+        // 持久 IP:Port 型客户端计数
         int persistentIpPortClient = 0;
+        // 当前节点负责的客户端数量
         int responsibleClientCount = 0;
         Collection<String> allClientId = clientManager.allClientId();
         for (String clientId : allClientId) {
@@ -105,6 +118,7 @@ public class OperatorV2Impl implements Operator {
         return metricsInfoVo;
     }
     
+    /** 动态调整指定命名日志器的输出级别。 */
     @Override
     public void setLogLevel(String logName, String logLevel) {
         Loggers.setLogLevel(logName, logLevel);

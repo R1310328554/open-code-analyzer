@@ -23,140 +23,138 @@ import com.alibaba.nacos.naming.pojo.Subscriber;
 import java.util.Collection;
 
 /**
- * Nacos naming client.
+ * Nacos 命名模块服务端客户端抽象。
  *
- * <p>The abstract concept of the client stored by on the server of Nacos naming module. It is used to store which
- * services the client has published and subscribed.
+ * <p>表示存储在命名服务器上的客户端概念，记录该客户端已发布与已订阅的服务集合，支持 Distro 同步所需的修订号与过期判定。</p>
  *
  * @author xiweng.yy
  */
 public interface Client {
     
     /**
-     * Get the unique id of current client.
+     * 获取当前客户端唯一标识。
      *
-     * @return id of client
+     * @return 客户端 ID
      */
     String getClientId();
     
     /**
-     * Whether is ephemeral of current client.
+     * 当前客户端是否为临时客户端。
      *
-     * @return true if client is ephemeral, otherwise false
+     * @return 临时客户端返回 true，否则 false
      */
     boolean isEphemeral();
     
-    /**
-     * Set the last time for updating current client as current time.
-     */
+    /** 将客户端最后更新时间设为当前时刻。 */
     void setLastUpdatedTime();
     
     /**
-     * Get the last time for updating current client.
+     * 获取客户端最后更新时间。
      *
-     * @return last time for updating
+     * @return 最后更新时间戳
      */
     long getLastUpdatedTime();
     
     /**
-     * Add a new instance for service for current client.
+     * 为当前客户端添加服务实例发布信息。
      *
-     * @param service             publish service
-     * @param instancePublishInfo instance
-     * @return true if add successfully, otherwise false
+     * @param service             发布的目标服务
+     * @param instancePublishInfo 实例发布信息
+     * @return 添加成功返回 true，否则 false
      */
     boolean addServiceInstance(Service service, InstancePublishInfo instancePublishInfo);
     
     /**
-     * Remove service instance from client.
+     * 从客户端移除指定服务的实例发布信息。
      *
-     * @param service service of instance
-     * @return instance info if exist, otherwise {@code null}
+     * @param service 目标服务
+     * @return 若存在则返回被移除的实例信息，否则 {@code null}
      */
     InstancePublishInfo removeServiceInstance(Service service);
     
     /**
-     * Get instance info of service from client.
+     * 获取客户端对指定服务发布的实例信息。
      *
-     * @param service service of instance
-     * @return instance info
+     * @param service 目标服务
+     * @return 实例发布信息
      */
     InstancePublishInfo getInstancePublishInfo(Service service);
     
     /**
-     * Get all published service of current client.
+     * 获取当前客户端已发布的全部服务。
      *
-     * @return published services
+     * @return 已发布服务集合
      */
     Collection<Service> getAllPublishedService();
     
     /**
-     * Add a new subscriber for target service.
+     * 为当前客户端添加服务订阅。
      *
-     * @param service    subscribe service
-     * @param subscriber subscriber
-     * @return true if add successfully, otherwise false
+     * @param service    订阅的目标服务
+     * @param subscriber 订阅者信息
+     * @return 添加成功返回 true，否则 false
      */
     boolean addServiceSubscriber(Service service, Subscriber subscriber);
     
     /**
-     * Remove subscriber for service.
+     * 移除客户端对指定服务的订阅。
      *
-     * @param service service of subscriber
-     * @return true if remove successfully, otherwise false
+     * @param service 目标服务
+     * @return 移除成功返回 true，否则 false
      */
     boolean removeServiceSubscriber(Service service);
     
     /**
-     * Get subscriber of service from client.
+     * 获取客户端对指定服务的订阅者信息。
      *
-     * @param service service of subscriber
-     * @return subscriber
+     * @param service 目标服务
+     * @return 订阅者对象
      */
     Subscriber getSubscriber(Service service);
     
     /**
-     * Get all subscribe service of current client.
+     * 获取当前客户端已订阅的全部服务。
      *
-     * @return subscribe services
+     * @return 已订阅服务集合
      */
     Collection<Service> getAllSubscribeService();
     
     /**
-     * Generate sync data.
+     * 生成用于 Distro 同步的客户端数据快照。
      *
-     * @return sync data
+     * @return 客户端同步数据
      */
     ClientSyncData generateSyncData();
     
     /**
-     * Whether current client is expired.
+     * 判断客户端是否已过期。
      *
-     * @param currentTime unified current timestamp
-     * @return true if client has expired, otherwise false
+     * @param currentTime 统一的当前时间戳
+     * @return 已过期返回 true，否则 false
      */
     boolean isExpire(long currentTime);
     
-    /**
-     * Release current client and release resources if necessary.
-     */
+    /** 释放客户端并回退相关监控指标。 */
     void release();
     
     /**
-     * Recalculate client revision and get its value.
-     * @return recalculated revision value
+     * 重新计算客户端修订号并返回新值。
+     *
+     * @return 重算后的修订号
      */
     long recalculateRevision();
     
     /**
-     * Get client revision.
-     * @return current revision without recalculation
+     * 获取当前修订号（不重算）。
+     *
+     * @return 当前修订号
      */
     long getRevision();
     
     /**
-     * Set client revision.
-     * @param revision revision of this client to update
+     * 设置客户端修订号。
+     *
+     * @param revision 待更新的修订号
      */
     void setRevision(long revision);
     

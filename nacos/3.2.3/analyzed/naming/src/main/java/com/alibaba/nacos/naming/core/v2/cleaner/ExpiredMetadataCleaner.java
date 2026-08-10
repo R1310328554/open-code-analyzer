@@ -27,21 +27,28 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Expired metadata cleaner.
+ * 过期元数据清理器。
+ *
+ * <p>定时扫描 {@link NamingMetadataManager} 中的过期元数据记录，删除超时的服务级或实例级元数据。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class ExpiredMetadataCleaner extends AbstractNamingCleaner {
     
+    /** 清理器类型标识。 */
     private static final String EXPIRED_METADATA = "expiredMetadata";
     
+    /** 首次执行前的延迟毫秒数。 */
     private static final int INITIAL_DELAY = 5000;
     
+    /** 元数据内存管理器。 */
     private final NamingMetadataManager metadataManager;
     
+    /** 元数据删除操作服务。 */
     private final NamingMetadataOperateService metadataOperateService;
     
+    /** 注册定时过期元数据清理任务。 */
     public ExpiredMetadataCleaner(NamingMetadataManager metadataManager,
         NamingMetadataOperateService metadataOperateService) {
         this.metadataManager = metadataManager;
@@ -66,6 +73,7 @@ public class ExpiredMetadataCleaner extends AbstractNamingCleaner {
         }
     }
     
+    /** 根据过期信息删除服务或实例元数据。 */
     private void removeExpiredMetadata(ExpiredMetadataInfo expiredInfo) {
         Loggers.SRV_LOG.info("Remove expired metadata {}", expiredInfo);
         if (null == expiredInfo.getMetadataId()) {

@@ -20,12 +20,15 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Client sync datum snapshot.
+ * 多客户端同步数据快照容器。
+ *
+ * <p>聚合一批 {@link ClientSyncData}，用于 Distro 全量或增量同步传输。</p>
  *
  * @author xiweng.yy
  */
 public class ClientSyncDatumSnapshot {
     
+    /** 客户端同步数据列表。 */
     private List<ClientSyncData> clientSyncDataList = new LinkedList<>();
     
     public List<ClientSyncData> getClientSyncDataList() {

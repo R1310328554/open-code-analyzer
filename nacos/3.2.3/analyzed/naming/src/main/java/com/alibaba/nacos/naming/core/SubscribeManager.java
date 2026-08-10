@@ -34,7 +34,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * Subscribe manager.
+ * 服务订阅者查询管理器。
+ *
+ * <p>根据 {@code aggregation} 标志选择本地或集群聚合订阅者数据源，并对结果按 {@link Subscriber#toString()} 去重。</p>
  *
  * @author Nicholas
  * @author xiweng.yy
@@ -43,19 +45,21 @@ import java.util.stream.Collectors;
 @org.springframework.stereotype.Service
 public class SubscribeManager {
     
+    /** 本节点订阅者查询实现。 */
     @Autowired
     private NamingSubscriberServiceLocalImpl localService;
     
+    /** 集群聚合订阅者查询实现。 */
     @Autowired
     private NamingSubscriberServiceAggregationImpl aggregationService;
     
     /**
-     * Get subscribers.
+     * 按服务名与命名空间获取订阅者列表。
      *
-     * @param serviceName service name
-     * @param namespaceId namespace id
-     * @param aggregation aggregation
-     * @return list of subscriber
+     * @param serviceName 服务名（支持模糊匹配）
+     * @param namespaceId 命名空间 ID
+     * @param aggregation 是否聚合集群订阅者
+     * @return 订阅者列表
      */
     public List<Subscriber> getSubscribers(String serviceName, String namespaceId,
         boolean aggregation) {
@@ -72,11 +76,11 @@ public class SubscribeManager {
     }
     
     /**
-     * Get subscribers.
+     * 按 {@link Service} 对象获取订阅者列表。
      *
-     * @param service service info
-     * @param aggregation aggregation
-     * @return list of subscriber
+     * @param service     服务对象
+     * @param aggregation 是否聚合集群订阅者
+     * @return 订阅者列表
      */
     public List<Subscriber> getSubscribers(Service service, boolean aggregation) {
         if (aggregation) {
@@ -90,6 +94,7 @@ public class SubscribeManager {
         }
     }
     
+    /** 基于键提取函数的去重谓词，线程安全。 */
     public static <T> Predicate<T> distinctByKey(Function<? super T, Object> keyExtractor) {
         Map<Object, Boolean> seen = new ConcurrentHashMap<>(128);
         return object -> seen.putIfAbsent(keyExtractor.apply(object), Boolean.TRUE) == null;
