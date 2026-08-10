@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:33:23Z",
-  "files": [
-    "common/src/main/java/io/netty/util/NetUtilSubstitutions.java",
-    "common/src/main/java/io/netty/util/NettyRuntime.java",
-    "common/src/main/java/io/netty/util/Recycler.java",
-    "common/src/main/java/io/netty/util/ReferenceCountUtil.java",
-    "common/src/main/java/io/netty/util/ReferenceCounted.java",
-    "common/src/main/java/io/netty/util/ResourceLeak.java",
-    "common/src/main/java/io/netty/util/ResourceLeakDetector.java",
-    "common/src/main/java/io/netty/util/ResourceLeakDetectorFactory.java",
-    "common/src/main/java/io/netty/util/ResourceLeakException.java",
-    "common/src/main/java/io/netty/util/ResourceLeakHint.java",
-    "common/src/main/java/io/netty/util/ResourceLeakTracker.java",
-    "common/src/main/java/io/netty/util/Signal.java",
-    "common/src/main/java/io/netty/util/SuppressForbidden.java",
-    "common/src/main/java/io/netty/util/ThreadDeathWatcher.java",
-    "common/src/main/java/io/netty/util/Timeout.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 788,
-  "done": 1125
+  "done": 1140
 }
