@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T17:13:23Z",
   "files": [
-    "api/db/services/tenant_model_provider_service.py",
-    "api/db/services/tenant_model_service.py",
-    "api/db/services/user_canvas_version.py",
-    "api/db/services/user_service.py",
-    "api/db/template_utils.py",
-    "api/ragflow_server.py",
-    "api/settings.py",
-    "api/utils/__init__.py",
-    "api/utils/api_utils.py",
-    "api/utils/base64_image.py",
-    "api/utils/commands.py",
-    "api/utils/common.py",
-    "api/utils/configs.py",
-    "api/utils/crypt.py",
-    "api/utils/email_templates.py",
     "api/utils/file_response.py",
     "api/utils/file_utils.py",
     "api/utils/health_utils.py",
@@ -33,5 +18,5 @@
     "cmd/ragflow_server.go"
   ],
   "remaining_pending": 1524,
-  "done": 210
+  "done": 225
 }
