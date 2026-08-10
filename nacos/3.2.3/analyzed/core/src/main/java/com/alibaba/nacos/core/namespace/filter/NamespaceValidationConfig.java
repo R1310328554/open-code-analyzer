@@ -20,6 +20,7 @@ import com.alibaba.nacos.core.config.AbstractDynamicConfig;
 import com.alibaba.nacos.sys.env.EnvUtil;
 
 /**
+ * 命名空间校验全局开关配置，默认关闭；开启后 {@link NamespaceValidationRequestFilter} 才会执行校验。
  * The type Namespace validation config, default is disable.
  *
  * @author FangYuan
@@ -27,27 +28,34 @@ import com.alibaba.nacos.sys.env.EnvUtil;
  */
 public class NamespaceValidationConfig extends AbstractDynamicConfig {
     
+    /** 动态配置分组名。 */
     private static final String NAMESPACE_VALIDATION = "NamespaceValidation";
     
+    /** 单例实例。 */
     private static final NamespaceValidationConfig INSTANCE = new NamespaceValidationConfig();
     
+    /** 全局命名空间校验开关（实际默认从环境读取为 false）。 */
     private boolean namespaceValidationEnabled = true;
     
+    /** 注册动态配置并加载初始开关值。 */
     protected NamespaceValidationConfig() {
         super(NAMESPACE_VALIDATION);
         resetConfig();
     }
     
+    /** 获取命名空间校验配置单例。 */
     public static NamespaceValidationConfig getInstance() {
         return INSTANCE;
     }
     
+    /** 从 {@code nacos.core.namespace.validation.enabled} 读取全局开关。 */
     @Override
     protected void getConfigFromEnv() {
         namespaceValidationEnabled =
             EnvUtil.getProperty("nacos.core.namespace.validation.enabled", Boolean.class, false);
     }
     
+    /** 全局命名空间校验是否启用。 */
     public boolean isNamespaceValidationEnabled() {
         return namespaceValidationEnabled;
     }

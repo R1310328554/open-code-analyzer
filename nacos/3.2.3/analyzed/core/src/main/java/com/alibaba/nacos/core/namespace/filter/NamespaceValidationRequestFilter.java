@@ -38,6 +38,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /**
+ * RPC 请求过滤器：对标注 {@link NamespaceValidation} 的处理器方法，校验请求中的 namespace 是否已创建。
  * Namespace validation request filter for NamingRequest.
  *
  * @author FangYuan
@@ -46,8 +47,14 @@ import java.util.List;
 @Component
 public class NamespaceValidationRequestFilter extends AbstractRequestFilter {
     
+    /** 命名空间查询服务，用于判断 namespace 是否存在。 */
     private final NamespaceOperationService namespaceOperationService;
     
+    /**
+     * 注入命名空间操作服务。
+     *
+     * @param namespaceOperationService 命名空间 CRUD 服务
+     */
     public NamespaceValidationRequestFilter(NamespaceOperationService namespaceOperationService) {
         this.namespaceOperationService = namespaceOperationService;
     }
@@ -56,14 +63,14 @@ public class NamespaceValidationRequestFilter extends AbstractRequestFilter {
     protected Response filter(Request request, RequestMeta meta, Class handlerClazz)
         throws NacosException {
         try {
-            // check global namespace validation config
+            // 检查全局命名空间校验开关
             boolean namespaceValidationEnabled =
                 NamespaceValidationConfig.getInstance().isNamespaceValidationEnabled();
             if (!namespaceValidationEnabled) {
                 return null;
             }
             
-            // check namespace validation
+            // 检查方法是否标注 @NamespaceValidation 且局部开关开启
             Method method = getHandleMethod(handlerClazz);
             if (method.isAnnotationPresent(NamespaceValidation.class)) {
                 NamespaceValidation namespaceValidation =
@@ -78,7 +85,7 @@ public class NamespaceValidationRequestFilter extends AbstractRequestFilter {
                 }
                 
                 for (ParamInfo paramInfo : paramInfoList) {
-                    // if namespace param is null or '', don't need to check namespace
+                    // namespace 为空或空白时跳过校验（兼容 public/default namespace）
                     String namespaceId = paramInfo.getNamespaceId();
                     if (StringUtils.isBlank(namespaceId)) {
                         continue;
@@ -104,6 +111,13 @@ public class NamespaceValidationRequestFilter extends AbstractRequestFilter {
         return null;
     }
     
+    /**
+     * 通过 {@link ExtractorManager} 从请求中提取含 namespaceId 的参数列表。
+     *
+     * @param request RPC 请求
+     * @param handlerClazz 处理器类
+     * @return 参数信息列表，无 Extractor 时返回 null
+     */
     @SuppressWarnings("unchecked")
     private List<ParamInfo> extractNamespaceParam(Request request, Class handlerClazz)
         throws NacosException {

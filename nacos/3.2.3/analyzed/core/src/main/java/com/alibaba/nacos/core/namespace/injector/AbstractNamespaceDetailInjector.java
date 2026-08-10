@@ -19,18 +19,20 @@ package com.alibaba.nacos.core.namespace.injector;
 import com.alibaba.nacos.api.model.response.Namespace;
 
 /**
+ * 命名空间详情注入器抽象基类：子类构造时自动注册到 {@link NamespaceDetailInjectorHolder}，用于向 {@link com.alibaba.nacos.api.model.response.Namespace} 补充配置数、服务数等统计信息。
  * Namespace detail injector.
  *
  * @author xiweng.yy
  */
 public abstract class AbstractNamespaceDetailInjector {
     
+    /** 构造时向 Holder 注册当前注入器实例。 */
     protected AbstractNamespaceDetailInjector() {
         NamespaceDetailInjectorHolder.getInstance().registerInjector(this);
     }
     
     /**
-     * Inject namespace detail, like config count, service count.
+     * 向命名空间对象注入扩展详情（如配置条数、服务实例数等）。
      *
      * @param namespace namespace
      */

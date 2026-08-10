@@ -19,6 +19,8 @@ package com.alibaba.nacos.core.namespace.model;
 import java.io.Serializable;
 
 /**
+ * 租户（命名空间）持久化模型，对应 tenant_info 表行。
+ * <p>旧称 TenantInfo，API 层现以 {@link com.alibaba.nacos.api.model.response.Namespace} 对外暴露。</p>
  * TenantInfo.
  *
  * <p>Old name of {@link com.alibaba.nacos.api.model.response.Namespace}</p>
@@ -29,10 +31,13 @@ public class TenantInfo implements Serializable {
     
     private static final long serialVersionUID = -1498218072016383809L;
     
+    /** 命名空间 ID（tenant_id）。 */
     private String tenantId;
     
+    /** 命名空间显示名称。 */
     private String tenantName;
     
+    /** 命名空间描述。 */
     private String tenantDesc;
     
     public String getTenantId() {

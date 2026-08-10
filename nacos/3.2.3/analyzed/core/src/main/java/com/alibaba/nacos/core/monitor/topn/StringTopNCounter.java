@@ -17,12 +17,23 @@
 package com.alibaba.nacos.core.monitor.topn;
 
 /**
+ * 以 {@link String} 为 key 的 TopN 计数器，直接复用字符串作为统计键。
+ * <p>继承 {@link BaseTopNCounter}，适用于 RPC 接口名、资源路径等天然字符串维度的热点统计。</p>
  * String key topN counter.
  *
  * @author xiweng.yy
  */
+/**
+ * String 键 TopN 计数器实现类。
+ */
 public class StringTopNCounter extends BaseTopNCounter<String> {
     
+    /**
+     * {@inheritDoc} — String key 无需转换，原样返回。
+     *
+     * @param s 统计键
+     * @return 与入参相同的字符串
+     */
     @Override
     protected String keyToString(String s) {
         return s;

@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import java.util.UUID;
 
 /**
+ * 创建命名空间 HTTP 表单：继承 {@link NamespaceForm}，支持自定义 namespaceId（未填则自动生成 UUID）。
  * Extend namespace form to adapt create nacos namespace API.
  *
  * @author xiweng.yy
@@ -32,6 +33,7 @@ public class CreateNamespaceForm extends NamespaceForm {
     
     private static final long serialVersionUID = 1069121416033814056L;
     
+    /** 可选的自定义命名空间 ID；为空时 validate 阶段生成 UUID。 */
     private String customNamespaceId;
     
     public String getCustomNamespaceId() {
@@ -42,6 +44,9 @@ public class CreateNamespaceForm extends NamespaceForm {
         this.customNamespaceId = customNamespaceId;
     }
     
+    /**
+     * 校验 namespaceName 必填；customNamespaceId 为空则生成 UUID，否则 trim。
+     */
     @Override
     public void validate() throws NacosApiException {
         if (null == super.getNamespaceName()) {

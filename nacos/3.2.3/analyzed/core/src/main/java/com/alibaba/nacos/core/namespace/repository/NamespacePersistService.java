@@ -21,18 +21,20 @@ import com.alibaba.nacos.core.namespace.model.TenantInfo;
 import java.util.List;
 
 /**
+ * 命名空间（tenant_info 表）持久化服务接口：内嵌与外置存储各有一个 {@code @Conditional} 实现。
  * Database service, providing access to other table in the database.
  *
  * @author lixiaoshuang
  */
 public interface NamespacePersistService {
     
+    /** 模糊搜索通配符，{@link #generateLikeArgument(String)} 会将其转为 SQL {@code %}。 */
     String PATTERN_STR = "*";
     
-    //------------------------------------------insert---------------------------------------------//
+    //------------------------------------------ 插入 ---------------------------------------------//
     
     /**
-     * insert tenant info.
+     * 原子插入一条 tenant_info 记录。
      *
      * @param kp             kp
      * @param tenantId       tenant Id
@@ -45,20 +47,20 @@ public interface NamespacePersistService {
         String createResource,
         final long time);
     
-    //------------------------------------------delete---------------------------------------------//
+    //------------------------------------------ 删除 ---------------------------------------------//
     
     /**
-     * Remote tenant info.
+     * 原子删除指定 kp + tenantId 的 tenant_info 记录。
      *
      * @param kp       kp
      * @param tenantId tenant id
      */
     void removeTenantInfoAtomic(final String kp, final String tenantId);
     
-    //------------------------------------------update---------------------------------------------//
+    //------------------------------------------ 更新 ---------------------------------------------//
     
     /**
-     * Update tenantInfo show name.
+     * 原子更新命名空间名称与描述。
      *
      * @param kp         kp
      * @param tenantId   tenant Id
@@ -67,10 +69,10 @@ public interface NamespacePersistService {
      */
     void updateTenantNameAtomic(String kp, String tenantId, String tenantName, String tenantDesc);
     
-    //------------------------------------------select---------------------------------------------//
+    //------------------------------------------ 查询 ---------------------------------------------//
     
     /**
-     * Query tenant info.
+     * 按 kp 查询该分区下全部命名空间。
      *
      * @param kp kp
      * @return {@link TenantInfo} list
@@ -78,7 +80,7 @@ public interface NamespacePersistService {
     List<TenantInfo> findTenantByKp(String kp);
     
     /**
-     * Query tenant info.
+     * 按 kp + tenantId 查询单个命名空间。
      *
      * @param kp       kp
      * @param tenantId tenant id
@@ -87,7 +89,7 @@ public interface NamespacePersistService {
     TenantInfo findTenantByKp(String kp, String tenantId);
     
     /**
-     * Generate fuzzy search Sql.
+     * 将用户输入的模糊搜索串转为 SQL LIKE 参数。
      *
      * @param s origin string
      * @return fuzzy search Sql
@@ -95,7 +97,7 @@ public interface NamespacePersistService {
     String generateLikeArgument(String s);
     
     /**
-     * Determine whether the table exists.
+     * 判断指定表是否存在于当前数据源。
      *
      * @param tableName table name
      * @return {@code true} if table exist
@@ -103,7 +105,7 @@ public interface NamespacePersistService {
     boolean isExistTable(String tableName);
     
     /**
-     * query tenantInfo (namespace) existence based by tenantId.
+     * 按 tenantId 统计记录数，用于判断命名空间是否已存在。
      *
      * @param tenantId tenant Id
      * @return count by tenantId

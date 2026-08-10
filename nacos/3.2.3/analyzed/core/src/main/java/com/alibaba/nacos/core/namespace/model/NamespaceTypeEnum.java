@@ -17,6 +17,8 @@
 package com.alibaba.nacos.core.namespace.model;
 
 /**
+ * 命名空间类型枚举：区分全局配置、自定义业务命名空间及 AI MCP 专用空间。
+ * <p>修改枚举值时需同步更新前端（如 Namespace.js）。</p>
  * Namespace type enum.
  * Note: Changes to this enum may require updates to the frontend code (e.g., Namespace.js).
  *
@@ -26,26 +28,28 @@ package com.alibaba.nacos.core.namespace.model;
 public enum NamespaceTypeEnum {
     
     /**
-     * Global configuration.
+     * 全局配置命名空间（type=0）。
      */
     GLOBAL(0, "Global configuration"),
     
     /**
-     * Custom namespace for naming and config.
+     * 用户自定义命名空间，用于配置中心与服务发现（type=1）。
      */
     CUSTOM(1, "Custom namespace for naming and config"),
     
     /**
-     * Nacos AI module MCP type namespace.
+     * Nacos AI 模块 MCP 默认私有命名空间（type=2）。
      */
     AI_MCP(2, "Default private namespace");
     
     /**
+     * 类型数值编码。
      * the namespace type.
      */
     private final int type;
     
     /**
+     * 类型英文描述。
      * the description.
      */
     private final String description;

@@ -25,6 +25,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * 命名空间 JDBC RowMapper 注册器：启动时将 {@link #TENANT_INFO_ROW_MAPPER} 注入 {@link RowMapperManager}。
  * Namespace row mapper injector.
  *
  * @author xiweng.yy
@@ -32,22 +33,27 @@ import java.sql.SQLException;
 @Component
 public class NamespaceRowMapperInjector {
     
+    /** tenant_info 查询结果映射器，供持久化层复用。 */
     public static final RowMapper<TenantInfo> TENANT_INFO_ROW_MAPPER = new TenantInfoRowMapper();
     
+    /** 构造时注册 RowMapper 到全局管理器。 */
     public NamespaceRowMapperInjector() {
         injectNamespaceRowMapper();
     }
     
+    /** 将 TENANT_INFO_ROW_MAPPER 注册到 RowMapperManager。 */
     private void injectNamespaceRowMapper() {
-        // TENANT_INFO_ROW_MAPPER
+        // 注册 tenant_info 行映射器
         RowMapperManager
             .registerRowMapper(
                 NamespaceRowMapperInjector.TENANT_INFO_ROW_MAPPER.getClass().getCanonicalName(),
                 NamespaceRowMapperInjector.TENANT_INFO_ROW_MAPPER);
     }
     
+    /** 将 ResultSet 的 tenant_id/name/desc 列映射为 {@link TenantInfo}。 */
     public static final class TenantInfoRowMapper implements RowMapper<TenantInfo> {
         
+        /** {@inheritDoc} — 读取 tenant_id、tenant_name、tenant_desc 三列。 */
         @Override
         public TenantInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
             TenantInfo info = new TenantInfo();

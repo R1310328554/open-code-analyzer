@@ -22,31 +22,37 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 命名空间详情注入器注册中心（单例）：聚合各模块 {@link AbstractNamespaceDetailInjector}，在查询 namespace 列表时统一调用 {@link #injectDetail(Namespace)}。
  * Holder of namespace detail injector.
  *
  * @author xiweng.yy
  */
 public class NamespaceDetailInjectorHolder {
     
+    /** 单例实例。 */
     private static final NamespaceDetailInjectorHolder INSTANCE =
         new NamespaceDetailInjectorHolder();
     
+    /** 已注册的详情注入器集合。 */
     private final Set<AbstractNamespaceDetailInjector> namespaceDetailInjectors;
     
+    /** 私有构造，初始化注入器集合。 */
     private NamespaceDetailInjectorHolder() {
         this.namespaceDetailInjectors = new HashSet<>();
     }
     
+    /** 获取 Holder 单例。 */
     public static NamespaceDetailInjectorHolder getInstance() {
         return INSTANCE;
     }
     
+    /** 注册一个命名空间详情注入器（子类构造时自动调用）。 */
     public void registerInjector(AbstractNamespaceDetailInjector injector) {
         this.namespaceDetailInjectors.add(injector);
     }
     
     /**
-     * Inject detail from all injectors.
+     * 依次调用所有已注册注入器，向同一 namespace 对象写入扩展详情。
      *
      * @param namespace namespace
      */

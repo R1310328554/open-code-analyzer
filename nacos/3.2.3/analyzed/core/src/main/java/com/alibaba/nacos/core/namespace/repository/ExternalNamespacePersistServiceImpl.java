@@ -42,6 +42,7 @@ import java.util.Objects;
 import static com.alibaba.nacos.core.namespace.repository.NamespaceRowMapperInjector.TENANT_INFO_ROW_MAPPER;
 
 /**
+ * 外置数据库（MySQL 等）下的命名空间持久化实现：通过 {@link JdbcTemplate} 直接执行 tenant_info 表 CRUD。
  * ExternalOtherPersistServiceImpl.
  *
  * @author lixiaoshuang
@@ -51,14 +52,19 @@ import static com.alibaba.nacos.core.namespace.repository.NamespaceRowMapperInje
 @Service("externalOtherPersistServiceImpl")
 public class ExternalNamespacePersistServiceImpl implements NamespacePersistService {
     
+    /** 数据源服务。 */
     private final DataSourceService dataSourceService;
     
+    /** JDBC 模板，执行 SQL。 */
     protected JdbcTemplate jt;
     
+    /** 事务模板（预留，部分操作可包事务）。 */
     protected TransactionTemplate tjt;
     
+    /** SQL Mapper 管理器。 */
     private final MapperManager mapperManager;
     
+    /** 从 {@link DynamicDataSource} 获取 JdbcTemplate 与 MapperManager。 */
     public ExternalNamespacePersistServiceImpl() {
         this.dataSourceService = DynamicDataSource.getInstance().getDataSource();
         this.jt = dataSourceService.getJdbcTemplate();
@@ -68,6 +74,7 @@ public class ExternalNamespacePersistServiceImpl implements NamespacePersistServ
         this.mapperManager = MapperManager.instance(isDataSourceLogEnable);
     }
     
+    /** {@inheritDoc} — 通过 JdbcTemplate 插入 tenant_info。 */
     @Override
     public void insertTenantInfoAtomic(String kp, String tenantId, String tenantName,
         String tenantDesc,
@@ -86,6 +93,7 @@ public class ExternalNamespacePersistServiceImpl implements NamespacePersistServ
         }
     }
     
+    /** {@inheritDoc} — 按 kp + tenantId 删除记录。 */
     @Override
     public void removeTenantInfoAtomic(final String kp, final String tenantId) {
         try {
@@ -98,6 +106,7 @@ public class ExternalNamespacePersistServiceImpl implements NamespacePersistServ
         }
     }
     
+    /** {@inheritDoc} — 更新名称、描述与时间戳。 */
     @Override
     public void updateTenantNameAtomic(String kp, String tenantId, String tenantName,
         String tenantDesc) {
@@ -115,6 +124,7 @@ public class ExternalNamespacePersistServiceImpl implements NamespacePersistServ
         }
     }
     
+    /** {@inheritDoc} — 按 kp 查询命名空间列表，无结果返回空列表。 */
     @Override
     public List<TenantInfo> findTenantByKp(String kp) {
         TenantInfoMapper tenantInfoMapper = mapperManager
@@ -135,6 +145,7 @@ public class ExternalNamespacePersistServiceImpl implements NamespacePersistServ
         }
     }
     
+    /** {@inheritDoc} — 按 kp + tenantId 查询单条，不存在返回 null。 */
     @Override
     public TenantInfo findTenantByKp(String kp, String tenantId) {
         TenantInfoMapper tenantInfoMapper = mapperManager
@@ -155,6 +166,7 @@ public class ExternalNamespacePersistServiceImpl implements NamespacePersistServ
         }
     }
     
+    /** {@inheritDoc} — 模糊搜索参数转换。 */
     @Override
     public String generateLikeArgument(String s) {
         String underscore = "_";
@@ -170,6 +182,7 @@ public class ExternalNamespacePersistServiceImpl implements NamespacePersistServ
         }
     }
     
+    /** {@inheritDoc} — 探测表是否存在。 */
     @Override
     public boolean isExistTable(String tableName) {
         String sql = String.format("SELECT COUNT(*) FROM %s ", tableName);
@@ -181,6 +194,7 @@ public class ExternalNamespacePersistServiceImpl implements NamespacePersistServ
         }
     }
     
+    /** {@inheritDoc} — 按 tenantId 计数。 */
     @Override
     public int tenantInfoCountByTenantId(String tenantId) {
         if (Objects.isNull(tenantId)) {

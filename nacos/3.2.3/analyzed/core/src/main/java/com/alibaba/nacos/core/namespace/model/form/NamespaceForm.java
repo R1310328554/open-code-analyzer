@@ -22,6 +22,7 @@ import com.alibaba.nacos.api.model.NacosForm;
 import org.springframework.http.HttpStatus;
 
 /**
+ * 命名空间 HTTP API 基础表单，实现 {@link NacosForm} 参数校验契约。
  * Nacos HTTP namespace API basic form.
  *
  * @author xiweng.yy
@@ -31,15 +32,26 @@ public class NamespaceForm implements NacosForm {
     
     private static final long serialVersionUID = -1078976569495343487L;
     
+    /** 命名空间 ID。 */
     private String namespaceId;
     
+    /** 命名空间名称。 */
     private String namespaceName;
     
+    /** 命名空间描述。 */
     private String namespaceDesc;
     
+    /** 无参构造。 */
     public NamespaceForm() {
     }
     
+    /**
+     * 全字段构造。
+     *
+     * @param namespaceId 命名空间 ID
+     * @param namespaceName 命名空间名称
+     * @param namespaceDesc 命名空间描述
+     */
     public NamespaceForm(String namespaceId, String namespaceName, String namespaceDesc) {
         this.namespaceId = namespaceId;
         this.namespaceName = namespaceName;
@@ -70,6 +82,7 @@ public class NamespaceForm implements NacosForm {
         this.namespaceDesc = namespaceDesc;
     }
     
+    /** 校验 namespaceId 与 namespaceName 非空。 */
     @Override
     public void validate() throws NacosApiException {
         if (null == namespaceId) {

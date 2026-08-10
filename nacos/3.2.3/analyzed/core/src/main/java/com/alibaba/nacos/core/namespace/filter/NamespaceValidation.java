@@ -22,6 +22,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
+ * 命名空间校验注解：标注在 RPC 处理器方法上，由 {@link NamespaceValidationRequestFilter} 读取并校验 namespace 是否存在。
  * Namespace validation annotation.
  *
  * @author FangYuan
@@ -31,7 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 public @interface NamespaceValidation {
     
     /**
-     * whether to enable namespace validation.
+     * 是否对该方法启用命名空间存在性校验，默认开启。
      */
     boolean enable() default true;
     
