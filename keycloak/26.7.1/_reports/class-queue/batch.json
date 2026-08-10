@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T11:39:24Z",
   "files": [
-    "services/src/main/java/org/keycloak/authorization/protection/permission/PermissionService.java",
-    "services/src/main/java/org/keycloak/authorization/protection/permission/PermissionTicketService.java",
-    "services/src/main/java/org/keycloak/authorization/protection/policy/UserManagedPermissionService.java",
-    "services/src/main/java/org/keycloak/authorization/protection/resource/ResourceService.java",
-    "services/src/main/java/org/keycloak/authorization/protection/resource/UmaResourceRepresentation.java",
-    "services/src/main/java/org/keycloak/authorization/util/Tokens.java",
-    "services/src/main/java/org/keycloak/broker/jwtauthorizationgrant/JWTAuthorizationGrantConfig.java",
-    "services/src/main/java/org/keycloak/broker/jwtauthorizationgrant/JWTAuthorizationGrantIdentityProvider.java",
-    "services/src/main/java/org/keycloak/broker/jwtauthorizationgrant/JWTAuthorizationGrantIdentityProviderConfig.java",
-    "services/src/main/java/org/keycloak/broker/jwtauthorizationgrant/JWTAuthorizationGrantIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/broker/kubernetes/KubernetesConstants.java",
-    "services/src/main/java/org/keycloak/broker/kubernetes/KubernetesIdentityProvider.java",
-    "services/src/main/java/org/keycloak/broker/kubernetes/KubernetesIdentityProviderConfig.java",
-    "services/src/main/java/org/keycloak/broker/kubernetes/KubernetesIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/broker/kubernetes/KubernetesJwksEndpointLoader.java",
     "services/src/main/java/org/keycloak/broker/oauth/OAuth2IdentityProvider.java",
     "services/src/main/java/org/keycloak/broker/oauth/OAuth2IdentityProviderFactory.java",
     "services/src/main/java/org/keycloak/broker/oidc/AbstractOAuth2IdentityProvider.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/broker/oidc/mappers/AdvancedClaimToGroupMapper.java"
   ],
   "remaining_pending": 2008,
-  "done": 3960
+  "done": 3975
 }
