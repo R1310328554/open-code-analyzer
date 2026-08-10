@@ -15,23 +15,8 @@
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-postgresql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/postgresql/ConfigInfoTagMapperByPostgresql.java",
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-postgresql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/postgresql/ConfigMigrateMapperByPostgresql.java",
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-postgresql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/postgresql/ConfigTagsRelationMapperByPostgresql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-postgresql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/postgresql/GroupCapacityMapperByPostgresql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-postgresql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/postgresql/HistoryConfigInfoMapperByPostgresql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-postgresql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/postgresql/TenantCapacityMapperByPostgresql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-postgresql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/postgresql/TenantInfoMapperByPostgresql.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/LdapAuthPluginService.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/authenticate/LdapAuthenticationManager.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/authenticate/MissingLdapAuthenticationManager.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/condition/ConditionOnLdapAuth.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/ldap/LdapAuthPluginConfig.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/ldap/LdapAuthenticationProvider.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/ldap/LdapDependencyMissingConfiguration.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/ldap/LdapPluginAutoConfiguration.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/ldap/LdapPluginDependencyChecker.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/ldap/LdapPluginImportSelector.java",
-    "plugin-default-impl/nacos-ldap-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/ldap/NacosLdapContextSource.java",
-    "plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/AuthorityProvider.java"
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-postgresql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/postgresql/GroupCapacityMapperByPostgresql.java"
   ],
   "remaining_pending": 167,
-  "done": 2340
+  "done": 2355
 }
