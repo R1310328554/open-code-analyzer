@@ -2488,3 +2488,18 @@
 2026-08-10T09:34:47Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/PublicKeyType.java wave84b saml2 ac.classes password/original/protection
 2026-08-10T09:34:47Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/RestrictedLengthType.java wave84b saml2 ac.classes password/original/protection
 2026-08-10T09:34:47Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/RestrictedPasswordType.java wave84b saml2 ac.classes password/original/protection
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/SecretKeyProtectionType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/SecurityAuditType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/SharedSecretChallengeResponseType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/TechnicalProtectionBaseType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/TimeSyncTokenType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/TokenType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/ActionType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AdviceType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AssertionType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AttributeStatementType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AttributeType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AudienceRestrictionType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AuthnContextClassRefType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AuthnContextDeclRefType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AuthnContextDeclType.java wave85a saml2 ac.classes end + assertion batch1
