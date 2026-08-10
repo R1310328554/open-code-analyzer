@@ -1903,3 +1903,18 @@
 2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/session/PersistentUserSessionAdapter.java wave65a cache/dblock + persistent session models
 2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/session/PersistentUserSessionModel.java wave65a cache/dblock + persistent session models
 2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/session/RevokedToken.java wave65a cache/dblock + persistent session models
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/models/session/RevokedTokenPersisterProvider.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/models/session/RevokedTokenPersisterSpi.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/models/session/RevokedTokensPersisterProviderFactory.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/models/session/UserSessionPersisterProvider.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/models/session/UserSessionPersisterProviderFactory.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/models/session/UserSessionPersisterSpi.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredAdminEvents.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredClientInitialAccessTokens.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredEvents.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredIssuedVerifiableCredentials.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredRevokedTokens.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredUserSessions.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/services/scheduled/ClusterAwareScheduledTaskRunner.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/storage/ClientScopeStorageManager.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/storage/ClientStorageManager.java wave65b session persisters + clear-expired + client storage

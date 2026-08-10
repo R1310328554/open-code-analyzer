@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:37:49Z",
-  "files": [
-    "model/storage-private/src/main/java/org/keycloak/models/session/RevokedTokenPersisterProvider.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/RevokedTokenPersisterSpi.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/RevokedTokensPersisterProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/UserSessionPersisterProvider.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/UserSessionPersisterProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/UserSessionPersisterSpi.java",
-    "model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredAdminEvents.java",
-    "model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredClientInitialAccessTokens.java",
-    "model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredEvents.java",
-    "model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredIssuedVerifiableCredentials.java",
-    "model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredRevokedTokens.java",
-    "model/storage-private/src/main/java/org/keycloak/services/scheduled/ClearExpiredUserSessions.java",
-    "model/storage-private/src/main/java/org/keycloak/services/scheduled/ClusterAwareScheduledTaskRunner.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/ClientScopeStorageManager.java",
-    "model/storage-private/src/main/java/org/keycloak/storage/ClientStorageManager.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4048,
-  "done": 1935
+  "done": 1950
 }
