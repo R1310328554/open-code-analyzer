@@ -28,29 +28,35 @@ import org.keycloak.protocol.oidc.grants.OAuth2GrantTypeFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 /**
- * Factory for OAuth 2.0 Device Authorization Grant
+ * OAuth 2.0 设备授权许可（Device Authorization Grant）工厂。
+ * <p>在 DEVICE_FLOW 特性启用时注册 {@link DeviceGrantType} 为 OAuth2 授权类型。</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public class DeviceGrantTypeFactory implements OAuth2GrantTypeFactory, EnvironmentDependentProviderFactory {
 
+    /** 授权类型快捷标识 */
     public static final String GRANT_SHORTCUT = "dg";
 
+    /** {@inheritDoc} 返回 urn:ietf:params:oauth:grant-type:device_code */
     @Override
     public String getId() {
         return OAuth2Constants.DEVICE_CODE_GRANT_TYPE;
     }
 
+    /** {@inheritDoc} 返回 {@link #GRANT_SHORTCUT} */
     @Override
     public String getShortcut() {
         return GRANT_SHORTCUT;
     }
 
+    /** {@inheritDoc} 创建设备授权许可处理器 */
     @Override
     public OAuth2GrantType create(KeycloakSession session) {
         return new DeviceGrantType();
     }
 
+    /** {@inheritDoc} 需启用 DEVICE_FLOW 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.DEVICE_FLOW);

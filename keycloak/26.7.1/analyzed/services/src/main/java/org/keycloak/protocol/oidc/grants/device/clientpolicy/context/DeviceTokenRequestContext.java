@@ -24,28 +24,38 @@ import org.keycloak.services.clientpolicy.ClientPolicyContext;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 /**
+ * 设备换令牌请求客户端策略上下文：封装 device_code 模型与令牌端点表单参数。
+ * <p>触发事件 {@link ClientPolicyEvent#DEVICE_TOKEN_REQUEST}。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class DeviceTokenRequestContext implements ClientPolicyContext {
 
+    /** 设备码模型（含 scope、nonce、PKCE 等） */
     private final OAuth2DeviceCodeModel deviceCodeModel;
+    /** 令牌端点原始表单参数 */
     private final MultivaluedMap<String, String> requestParameters;
 
-    public DeviceTokenRequestContext(OAuth2DeviceCodeModel deviceCodeModel,
-            MultivaluedMap<String, String> requestParameters) {
+    /**
+     * @param deviceCodeModel 设备码模型
+     * @param requestParameters 令牌请求表单参数
+     */
         this.deviceCodeModel = deviceCodeModel;
         this.requestParameters = requestParameters;
     }
 
+    /** {@inheritDoc} 返回 DEVICE_TOKEN_REQUEST */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.DEVICE_TOKEN_REQUEST;
     }
 
+    /** @return 设备码模型 */
     public OAuth2DeviceCodeModel getDeviceCodeModel() {
         return deviceCodeModel;
     }
 
+    /** @return 令牌请求表单参数 */
     public MultivaluedMap<String, String> getRequestParameters() {
         return requestParameters;
     }

@@ -42,6 +42,10 @@ import org.keycloak.services.managers.AuthenticationManager;
 import org.jboss.logging.Logger;
 
 /**
+ * ACR（Authentication Context Class Reference）协议映射器。
+ * <p>将认证达到的 LoA（Authentication Level）映射为令牌中的 {@code acr} 声明。</p>
+ * <p>需启用 STEP_UP_AUTHENTICATION 特性。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AcrProtocolMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, TokenIntrospectionTokenMapper, EnvironmentDependentProviderFactory {
@@ -54,6 +58,7 @@ public class AcrProtocolMapper extends AbstractOIDCProtocolMapper implements OID
         OIDCAttributeMapperHelper.addIncludeInTokensConfig(configProperties, AcrProtocolMapper.class);
     }
 
+    /** Provider 标识符 */
     public static final String PROVIDER_ID = "oidc-acr-mapper";
 
 
@@ -61,26 +66,31 @@ public class AcrProtocolMapper extends AbstractOIDCProtocolMapper implements OID
         return configProperties;
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 显示名称：Authentication Context Class Reference (ACR) */
     @Override
     public String getDisplayType() {
         return "Authentication Context Class Reference (ACR)";
     }
 
+    /** {@inheritDoc} 令牌映射器分类 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** {@inheritDoc} 将 LoA 映射为 acr 声明 */
     @Override
     public String getHelpText() {
         return "Maps the achieved LoA (Level of Authentication) to the 'acr' claim of the token";
     }
 
+    /** {@inheritDoc} 写入 acr 声明 */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession keycloakSession,
                             ClientSessionContext clientSessionCtx) {
@@ -89,7 +99,13 @@ public class AcrProtocolMapper extends AbstractOIDCProtocolMapper implements OID
         token.setAcr(acr);
     }
 
-    public static ProtocolMapperModel create(String name, boolean accessToken, boolean idToken, boolean introspectionEndpoint) {
+    /**
+     * 工厂方法：创建 ACR 映射器配置模型。
+     * @param name 映射器名称
+     * @param accessToken 是否包含于 Access Token
+     * @param idToken 是否包含于 ID Token
+     * @param introspectionEndpoint 是否包含于 Introspection
+     */
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);
         mapper.setProtocolMapper(PROVIDER_ID);
@@ -102,7 +118,10 @@ public class AcrProtocolMapper extends AbstractOIDCProtocolMapper implements OID
         return mapper;
     }
 
-    protected String getAcr(AuthenticatedClientSessionModel clientSession) {
+    /**
+     * 根据客户端 LoA 映射与 claims/acr_values 解析最终 acr 字符串。
+     * @param clientSession 已认证客户端会话
+     */
         int loa = LoAUtil.getCurrentLevelOfAuthentication(clientSession);
         logger.tracef("Loa level when authenticated to client %s: %d", clientSession.getClient().getClientId(), loa);
         if (loa < Constants.MINIMUM_LOA) {
@@ -128,6 +147,7 @@ public class AcrProtocolMapper extends AbstractOIDCProtocolMapper implements OID
         return acr;
     }
 
+    /** {@inheritDoc} 需启用 STEP_UP_AUTHENTICATION 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.STEP_UP_AUTHENTICATION);

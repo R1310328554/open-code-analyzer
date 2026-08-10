@@ -33,8 +33,13 @@ import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 
 import static org.keycloak.protocol.util.ClientCliInstallationUtil.quote;
 
+/**
+ * Keycloak OIDC JBoss/WildFly 子系统 CLI 安装提供器。
+ * <p>生成可编辑的 CLI 脚本，用于在不修改 WAR 的情况下配置 secure-deployment。</p>
+ */
 public class KeycloakOIDCJbossSubsystemClientCliInstallation implements ClientInstallationProvider {
 
+    /** 生成 JBoss 子系统 keycloak secure-deployment CLI 脚本 */
     @Override
     public Response generateInstallation(KeycloakSession session, RealmModel realm, ClientModel client, URI baseUri) {
         String deploymentName = "WAR MODULE NAME.war";
@@ -77,11 +82,13 @@ public class KeycloakOIDCJbossSubsystemClientCliInstallation implements ClientIn
         return OIDCLoginProtocol.LOGIN_PROTOCOL;
     }
 
+    /** {@inheritDoc} 显示名称：Keycloak OIDC JBoss Subsystem CLI */
     @Override
     public String getDisplayType() {
         return "Keycloak OIDC JBoss Subsystem CLI";
     }
 
+    /** {@inheritDoc} CLI 脚本使用说明 */
     @Override
     public String getHelpText() {
         return "CLI script you must edit and apply to your client app server. This type of configuration is useful when you can't or don't want to crack open your WAR file.";
@@ -107,6 +114,7 @@ public class KeycloakOIDCJbossSubsystemClientCliInstallation implements ClientIn
 
     }
 
+    /** {@inheritDoc} 返回 keycloak-oidc-jboss-subsystem-cli */
     @Override
     public String getId() {
         return "keycloak-oidc-jboss-subsystem-cli";
@@ -117,6 +125,7 @@ public class KeycloakOIDCJbossSubsystemClientCliInstallation implements ClientIn
         return false;
     }
 
+    /** {@inheritDoc} 下载文件名 keycloak-oidc-subsystem.cli */
     @Override
     public String getFilename() {
         return "keycloak-oidc-subsystem.cli";

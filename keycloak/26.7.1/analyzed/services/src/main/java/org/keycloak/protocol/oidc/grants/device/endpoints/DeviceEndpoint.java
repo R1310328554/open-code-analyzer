@@ -75,27 +75,35 @@ import org.jboss.logging.Logger;
 import static org.keycloak.protocol.oidc.grants.device.DeviceGrantType.OAUTH2_DEVICE_USER_CODE;
 
 /**
+ * OAuth 2.0 设备授权端点：处理设备授权请求、用户码验证与验证状态展示。
+ * <p>实现 RFC 8628 设备流程的服务端入口，挂载于 {@code /realms/{realm}/device}。</p>
+ *
  * @author <a href="mailto:h2-wada@nri.co.jp">Hiroyuki Wada</a>
  */
 public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmResourceProvider {
 
     protected static final Logger logger = Logger.getLogger(DeviceEndpoint.class);
 
+    /** 领域属性：自定义短验证 URI，替代默认 device 路径 */
     public static final String SHORT_VERIFICATION_URI = "shortVerificationUri";
 
+    /** 当前 HTTP 请求 */
     private final HttpRequest request;
 
+    /** CORS 处理器 */
     private Cors cors;
 
-    public DeviceEndpoint(KeycloakSession session, EventBuilder event) {
+    /**
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     */
         super(session, event);
         this.request = session.getContext().getHttpRequest();
     }
 
     /**
-     * Handles device authorization requests.
-     *
-     * @return the device authorization response.
+     * 处理设备授权请求（POST）：签发 device_code 与 user_code。
+     * @return 设备授权响应（含 verification_uri、interval 等）
      */
     @Path("")
     @POST
@@ -126,7 +134,7 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
             ServicesLogger.LOGGER.oidcScopeMissing();
         }
 
-        // So back button doesn't work
+        // 禁用浏览器后退缓存
         CacheControlUtil.noBackButtonCacheControlHeader(session);
 
         if (!realm.getOAuth2DeviceConfig().isOAuth2DeviceAuthorizationGrantEnabled(client)) {
@@ -169,7 +177,7 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
         String secret = userCodeProvider.generate();
         OAuth2DeviceUserCodeModel userCode = new OAuth2DeviceUserCodeModel(realm, deviceCode.getDeviceCode(), secret);
 
-        // To inform "expired_token" to the client, the lifespan of the cache provider is longer than device code
+        // 缓存寿命略长于 device_code，以便客户端收到 expired_token
         int lifespanSeconds = expiresIn + interval + 10;
 
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
@@ -197,6 +205,7 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
         }
     }
 
+    /** CORS 预检请求处理 */
     @OPTIONS
     public Response preflight() {
         if (logger.isDebugEnabled()) {
@@ -206,10 +215,8 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
     }
 
     /**
-     * This endpoint is used by end-users to start the flow to authorize a device.
-     *
-     * @param userCode the user code to authorize
-     * @return
+     * 终端用户验证用户码并启动设备授权浏览器流程（GET）。
+     * @param userCode 待验证的用户码（可为空，展示输入页）
      */
     @GET
     public Response verifyUserCode(@QueryParam("user_code") String userCode) {
@@ -221,11 +228,11 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
         // So back button doesn't work
         CacheControlUtil.noBackButtonCacheControlHeader(session);
 
-        // code is not known, we can infer the client neither. ask the user to provide the code.
+        // 无用户码时展示输入页
         if (StringUtil.isNullOrEmpty(userCode)) {
             return createVerificationPage(null);
         } else {
-            // code exists, probably due to using a verification_uri_complete. Start the authentication considering the client
+            // 已有用户码（如 verification_uri_complete），直接启动对应客户端的认证
             // that started the flow.
             OAuth2DeviceUserCodeProvider userCodeProvider = session.getProvider(OAuth2DeviceUserCodeProvider.class);
             String formattedUserCode = userCodeProvider.format(userCode);
@@ -253,9 +260,7 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
     }
 
     /**
-     * Verifies the code provided by the end-user and start the authentication.
-     *
-     * @return
+     * 表单提交用户码并启动认证（POST）。
      */
     @Path("/")
     @POST
@@ -266,11 +271,8 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
     }
 
     /**
-     * Showing the result of verification process for OAuth 2.0 Device Authorization Grant. This outputs login success or
-     * failure messages.
-     *
-     * @param error
-     * @return
+     * 展示设备验证结果页：成功或失败（含 access_denied、expired_token）。
+     * @param error OAuth 错误码（可为空表示成功）
      */
     @Path("status")
     @GET
@@ -301,7 +303,10 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
         }
     }
 
-    public static OAuth2DeviceCodeModel getDeviceByUserCode(KeycloakSession session, RealmModel realm, String userCode) {
+    /**
+     * 通过 user_code 查找关联的 {@link OAuth2DeviceCodeModel}。
+     * @param userCode 格式化后的用户码
+     */
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
         Map<String, String> notes = singleUseStore.get(OAuth2DeviceUserCodeModel.createKey(realm, userCode));
 
@@ -317,9 +322,9 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
     }
 
     /**
-     * @param errorMessage Message code for the verification page
-     * @param reason For event details; not exposed to end user
-     * @return Verification page response with error message
+     * 返回带错误信息的用户码验证页。
+     * @param errorMessage 验证页消息码
+     * @param reason 事件详情原因（不展示给终端用户）
      */
     private Response invalidUserCodeResponse(String errorMessage, String reason) {
         event.detail(Details.REASON, reason);
@@ -328,6 +333,7 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
         return createVerificationPage(errorMessage);
     }
 
+    /** 创建用户码输入/验证页面 */
     private Response createVerificationPage(String errorMessage) {
         String execution = AuthenticatedClientSessionModel.Action.USER_CODE_VERIFICATION.name();
 
@@ -341,20 +347,22 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
         return provider.createOAuth2DeviceVerifyUserCodePage();
     }
 
+    /** 用户码校验通过后创建认证会话并启动浏览器登录 */
     private Response processVerification(OAuth2DeviceCodeModel deviceCode, String userCode) {
         ClientModel client = realm.getClientByClientId(deviceCode.getClientId());
         AuthenticationSessionModel authenticationSession = createAuthenticationSession(client, deviceCode.getScope());
 
-        // Verification OK
+        // 验证成功，记录已验证用户码
         authenticationSession.setClientNote(DeviceGrantType.OAUTH2_DEVICE_VERIFIED_USER_CODE, userCode);
 
-        // Event logging for the verification
+        // 记录验证成功事件
         event.client(deviceCode.getClientId()).detail(Details.SCOPE, deviceCode.getScope()).success();
 
         OIDCLoginProtocol protocol = new OIDCLoginProtocol(session, realm, session.getContext().getUri(), headers, event);
         return handleBrowserAuthenticationRequest(authenticationSession, protocol, false, true);
     }
 
+    /** {@inheritDoc} 返回本端点实例 */
     @Override
     public Object getResource() {
         return this;
@@ -365,6 +373,7 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
 
     }
 
+    /** 按 RFC 6749 3.2.1 校验客户端身份（设备授权 POST） */
     private ClientModel authenticateClient() {
         // https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15#section-3.1
         // The spec says "The client authentication requirements of Section 3.2.1 of [RFC6749]
@@ -382,6 +391,7 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
         return client;
     }
 
+    /** 校验客户端存在、启用且允许设备授权流程 */
     private ClientModel checkClient(String clientId) {
         if (clientId == null) {
             event.error(Errors.INVALID_REQUEST);
@@ -433,6 +443,7 @@ public class DeviceEndpoint extends AuthorizationEndpointBase implements RealmRe
         return client;
     }
 
+    /** 创建设备验证用的 OIDC 认证会话 */
     protected AuthenticationSessionModel createAuthenticationSession(ClientModel client, String scope) {
         AuthenticationSessionModel authenticationSession = super.createAuthenticationSession(client, null);
 

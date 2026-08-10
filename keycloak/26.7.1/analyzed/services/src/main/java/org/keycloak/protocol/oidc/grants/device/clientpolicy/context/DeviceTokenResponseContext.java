@@ -26,42 +26,56 @@ import org.keycloak.services.clientpolicy.ClientPolicyContext;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 /**
+ * 设备换令牌响应客户端策略上下文：封装令牌响应构建器与客户端会话。
+ * <p>触发事件 {@link ClientPolicyEvent#DEVICE_TOKEN_RESPONSE}，可在签发前修改令牌响应。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class DeviceTokenResponseContext implements ClientPolicyContext {
 
+    /** 设备码模型 */
     private final OAuth2DeviceCodeModel deviceCodeModel;
+    /** 令牌请求表单参数 */
     private final MultivaluedMap<String, String> requestParameters;
+    /** 已认证客户端会话 */
     private final AuthenticatedClientSessionModel clientSession;
+    /** 访问令牌响应构建器 */
     private final TokenManager.AccessTokenResponseBuilder accessTokenResponseBuilder;
 
-    public DeviceTokenResponseContext(OAuth2DeviceCodeModel deviceCodeModel,
-            MultivaluedMap<String, String> requestParameters,
-            AuthenticatedClientSessionModel clientSession,
-            TokenManager.AccessTokenResponseBuilder accessTokenResponseBuilder) {
+    /**
+     * @param deviceCodeModel 设备码模型
+     * @param requestParameters 令牌请求参数
+     * @param clientSession 客户端会话
+     * @param accessTokenResponseBuilder 令牌响应构建器
+     */
         this.deviceCodeModel = deviceCodeModel;
         this.requestParameters = requestParameters;
         this.clientSession = clientSession;
         this.accessTokenResponseBuilder = accessTokenResponseBuilder;
     }
 
+    /** {@inheritDoc} 返回 DEVICE_TOKEN_RESPONSE */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.DEVICE_TOKEN_RESPONSE;
     }
 
+    /** @return 设备码模型 */
     public OAuth2DeviceCodeModel getDeviceCodeModel() {
         return deviceCodeModel;
     }
 
+    /** @return 令牌请求表单参数 */
     public MultivaluedMap<String, String> getRequestParameters() {
         return requestParameters;
     }
 
+    /** @return 访问令牌响应构建器 */
     public TokenManager.AccessTokenResponseBuilder getAccessTokenResponseBuilder() {
         return accessTokenResponseBuilder;
     }
 
+    /** @return 已认证客户端会话 */
     public AuthenticatedClientSessionModel getClientSession() {
         return clientSession;
     }

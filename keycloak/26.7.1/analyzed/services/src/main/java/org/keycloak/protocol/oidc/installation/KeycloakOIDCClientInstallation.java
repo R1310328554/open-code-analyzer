@@ -45,13 +45,18 @@ import org.keycloak.services.managers.ClientManager;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * Keycloak OIDC 客户端适配器安装提供器：生成 keycloak.json 配置。
+ * <p>供 Keycloak OIDC 客户端适配器下载并部署至 WAR 的 WEB-INF 目录。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeycloakOIDCClientInstallation implements ClientInstallationProvider {
 
-    @Override
-    public Response generateInstallation(KeycloakSession session, RealmModel realm, ClientModel client, URI baseUri) {
+    /**
+     * 生成 keycloak.json 适配器配置 JSON。
+     * @param baseUri 授权服务器基础 URI
+     */
         ClientManager.InstallationAdapterConfig rep = new ClientManager.InstallationAdapterConfig();
         rep.setAuthServerUrl(baseUri.toString());
         rep.setRealm(realm.getName());
@@ -83,6 +88,7 @@ public class KeycloakOIDCClientInstallation implements ClientInstallationProvide
         return Response.ok(json, MediaType.TEXT_PLAIN_TYPE).build();
     }
 
+    /** 从客户端认证器工厂获取适配器凭据配置 */
     public static Map<String, Object> getClientCredentialsAdapterConfig(KeycloakSession session, ClientModel client) {
         String clientAuthenticator = client.getClientAuthenticatorType();
         ClientAuthenticatorFactory authenticator = (ClientAuthenticatorFactory) session.getKeycloakSessionFactory().getProviderFactory(ClientAuthenticator.class, clientAuthenticator);
@@ -90,6 +96,7 @@ public class KeycloakOIDCClientInstallation implements ClientInstallationProvide
     }
 
 
+    /** 判断是否应在安装配置中包含凭据段 */
     public static boolean showClientCredentialsAdapterConfig(ClientModel client) {
         if (client.isPublicClient()) {
             return false;
@@ -103,13 +110,14 @@ public class KeycloakOIDCClientInstallation implements ClientInstallationProvide
     }
 
 
+    /** 判断是否应启用 verify-token-audience（客户端角色或受众映射器存在时） */
     static boolean showVerifyTokenAudience(ClientModel client) {
-        // We want to verify-token-audience if service client has any client roles
+        // 服务客户端有客户端角色时需校验令牌受众
         if (client.getRolesStream().count() > 0) {
             return true;
         }
 
-        // Check if there is client scope with audience protocol mapper created for particular client. If yes, admin wants verifying token audience
+        // 或存在针对该客户端的受众协议映射器
         String clientId = client.getClientId();
 
         return client.getRealm().getClientScopesStream().anyMatch(clientScope ->
@@ -120,16 +128,19 @@ public class KeycloakOIDCClientInstallation implements ClientInstallationProvide
     }
 
 
+    /** {@inheritDoc} 返回 openid-connect */
     @Override
     public String getProtocol() {
         return OIDCLoginProtocol.LOGIN_PROTOCOL;
     }
 
+    /** {@inheritDoc} 显示名称：Keycloak OIDC JSON */
     @Override
     public String getDisplayType() {
         return "Keycloak OIDC JSON";
     }
 
+    /** {@inheritDoc} 帮助说明：keycloak.json 用法 */
     @Override
     public String getHelpText() {
         return "keycloak.json file used by the Keycloak OIDC client adapter to configure clients.  This must be saved to a keycloak.json file and put in your WEB-INF directory of your WAR file.  You may also want to tweak this file after you download it.";
@@ -155,6 +166,7 @@ public class KeycloakOIDCClientInstallation implements ClientInstallationProvide
 
     }
 
+    /** {@inheritDoc} 返回 keycloak-oidc-keycloak-json */
     @Override
     public String getId() {
         return "keycloak-oidc-keycloak-json";
@@ -165,6 +177,7 @@ public class KeycloakOIDCClientInstallation implements ClientInstallationProvide
         return false;
     }
 
+    /** {@inheritDoc} 下载文件名 keycloak.json */
     @Override
     public String getFilename() {
         return "keycloak.json";
@@ -175,6 +188,7 @@ public class KeycloakOIDCClientInstallation implements ClientInstallationProvide
         return MediaType.APPLICATION_JSON;
     }
 
+    /** 若启用授权服务，写入 Policy Enforcer 配置 */
     private void configureAuthorizationSettings(KeycloakSession session, ClientModel client, ClientManager.InstallationAdapterConfig rep) {
         if (Profile.isFeatureEnabled(Profile.Feature.AUTHORIZATION) && new AuthorizationService(session, client, null, null).isEnabled()) {
             PolicyEnforcerConfig enforcerConfig = new PolicyEnforcerConfig();
@@ -193,6 +207,7 @@ public class KeycloakOIDCClientInstallation implements ClientInstallationProvide
         }
     }
 
+    /** 若客户端仅有一个角色则返回该角色，否则返回 null */
     private RoleModel hasOnlyOne(Iterator<RoleModel> it) {
         if (!it.hasNext()) return null;
         else {

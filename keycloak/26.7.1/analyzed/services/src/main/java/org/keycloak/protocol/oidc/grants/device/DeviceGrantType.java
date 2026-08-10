@@ -65,40 +65,53 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import static org.keycloak.protocol.oidc.OIDCLoginProtocolService.tokenServiceBaseUrl;
 
 /**
- * OAuth 2.0 Device Authorization Grant
- * https://datatracker.ietf.org/doc/html/rfc8628#section-3.4
+ * OAuth 2.0 设备授权许可（Device Authorization Grant）令牌端点处理器。
+ * <p>实现 RFC 8628 第 3.4 节：设备以 device_code 轮询换取访问令牌。</p>
+ * <p>参见 https://datatracker.ietf.org/doc/html/rfc8628#section-3.4</p>
  *
  * @author <a href="mailto:h2-wada@nri.co.jp">Hiroyuki Wada</a>
  * @author <a href="mailto:michito.okai.zn@hitachi.com">Michito Okai</a>
  */
 public class DeviceGrantType extends OAuth2GrantTypeBase {
 
-    // OAuth 2.0 Device Authorization Grant
+    // OAuth 2.0 设备授权许可常量
+    /** 认证会话中已验证用户码的客户端备注键 */
     public static final String OAUTH2_DEVICE_VERIFIED_USER_CODE = "OAUTH2_DEVICE_VERIFIED_USER_CODE";
+    /** 表单参数名：用户码 */
     public static final String OAUTH2_DEVICE_USER_CODE = "device_user_code";
+    /** 用户码验证路径片段 */
     public static final String OAUTH2_USER_CODE_VERIFY = "device/verify";
 
+    /** 构建领域设备验证页面 URI 构建器 */
     public static UriBuilder oauth2DeviceVerificationUrl(UriInfo uriInfo) {
         UriBuilder baseUriBuilder = uriInfo.getBaseUriBuilder();
         return baseUriBuilder.path(RealmsResource.class).path("{realm}").path("device");
     }
 
+    /** 构建指定领域的设备验证操作 URI */
     public static URI realmOAuth2DeviceVerificationAction(URI baseUri, String realmName) {
         return UriBuilder.fromUri(baseUri).path(RealmsResource.class).path("{realm}").path("device")
             .build(realmName);
     }
 
+    /** 构建设备授权请求端点 URI 构建器 */
     public static UriBuilder oauth2DeviceAuthUrl(UriBuilder baseUriBuilder) {
         UriBuilder uriBuilder = tokenServiceBaseUrl(baseUriBuilder);
         return uriBuilder.path(OIDCLoginProtocolService.class, "auth").path(AuthorizationEndpoint.class, "authorizeDevice")
             .path(DeviceEndpoint.class, "handleDeviceRequest");
     }
 
+    /** 构建设备验证完成/状态页 URI 构建器 */
     public static UriBuilder oauth2DeviceVerificationCompletedUrl(UriInfo baseUri) {
         return baseUri.getBaseUriBuilder().path(RealmsResource.class).path("{realm}").path("device").path("status");
     }
 
-    public static Response denyOAuth2DeviceAuthorization(AuthenticationSessionModel authSession, LoginProtocol.Error error, KeycloakSession session) {
+    /**
+     * 拒绝设备授权：重定向至状态页并携带相应 OAuth 错误码。
+     * @param authSession 认证会话
+     * @param error 登录协议错误类型
+     * @param session Keycloak 会话
+     */
         KeycloakContext context = session.getContext();
         RealmModel realm = context.getRealm();
         KeycloakUriInfo uri = context.getUri();
@@ -119,7 +132,12 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
         ).build();
     }
 
-    public static Response approveOAuth2DeviceAuthorization(AuthenticationSessionModel authSession, AuthenticatedClientSessionModel clientSession, KeycloakSession session) {
+    /**
+     * 批准设备授权：关联用户会话并清理已验证用户码。
+     * @param authSession 认证会话
+     * @param clientSession 已认证客户端会话
+     * @param session Keycloak 会话
+     */
         KeycloakContext context = session.getContext();
         RealmModel realm = context.getRealm();
         KeycloakUriInfo uriInfo = context.getUri();
@@ -143,12 +161,16 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
         ).build();
     }
 
+    /** 判断当前认证会话是否处于 OAuth2 设备验证流程 */
     public static boolean isOAuth2DeviceVerificationFlow(final AuthenticationSessionModel authSession) {
         String flow = authSession.getClientNote(DeviceGrantType.OAUTH2_DEVICE_VERIFIED_USER_CODE);
         return flow != null;
     }
 
-    public static OAuth2DeviceCodeModel getDeviceByDeviceCode(KeycloakSession session, RealmModel realm, ClientModel client, EventBuilder event, String deviceCode) {
+    /**
+     * 按 device_code 从单次使用存储中检索设备码模型并校验客户端归属。
+     * @param deviceCode 设备码
+     */
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
         Map<String, String> notes = singleUseStore.get(OAuth2DeviceCodeModel.createKey(deviceCode));
         OAuth2DeviceCodeModel deviceCodeModel = notes != null ? OAuth2DeviceCodeModel.fromCache(realm, deviceCode, notes) : null;
@@ -166,6 +188,7 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
         return deviceCodeModel;
     }
 
+    /** 在设备验证流程中检查关联设备码是否已被用户拒绝 */
     public static boolean isDeviceCodeDeniedForDeviceVerificationFlow(KeycloakSession session, RealmModel realm, AuthenticationSessionModel authSession) {
         if (DeviceGrantType.isOAuth2DeviceVerificationFlow(authSession)) {
             String verifiedUserCode = authSession.getClientNote(DeviceGrantType.OAUTH2_DEVICE_VERIFIED_USER_CODE);
@@ -177,22 +200,29 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
         return false;
     }
 
+    /** 从单次使用存储中移除指定 device_code 条目 */
     public static void removeDeviceByDeviceCode(KeycloakSession session, String deviceCode) {
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
         singleUseStore.remove(OAuth2DeviceCodeModel.createKey(deviceCode));
     }
 
+    /** 从单次使用存储中移除指定 user_code 映射条目 */
     public static void removeDeviceByUserCode(KeycloakSession session, RealmModel realm, String userCode) {
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
         singleUseStore.remove(OAuth2DeviceUserCodeModel.createKey(realm, userCode));
     }
 
+    /** 检查是否允许本次轮询（遵守 polling interval，实现 slow_down） */
     public static boolean isPollingAllowed(KeycloakSession session, OAuth2DeviceCodeModel deviceCodeModel) {
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
         return singleUseStore.putIfAbsent(deviceCodeModel.serializePollingKey(), deviceCodeModel.getPollingInterval());
     }
 
-    public static boolean approveUserCode(KeycloakSession session, RealmModel realm, String userCode, String userSessionId, Map<String, String> additionalParams) {
+    /**
+     * 批准用户码：将设备码状态更新为已批准并关联用户会话。
+     * @param userCode 用户码
+     * @param userSessionId 用户会话 ID
+     */
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
         OAuth2DeviceCodeModel deviceCodeModel = DeviceEndpoint.getDeviceByUserCode(session, realm, userCode);
 
@@ -204,6 +234,7 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
         return false;
     }
 
+    /** 拒绝用户码：将设备码状态标记为已拒绝 */
     public static boolean denyUserCode(KeycloakSession session, RealmModel realm, String userCode) {
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
         OAuth2DeviceCodeModel deviceCodeModel = DeviceEndpoint.getDeviceByUserCode(session, realm, userCode);
@@ -216,8 +247,10 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
         return false;
     }
 
-    @Override
-    public Response process(Context context) {
+    /**
+     * 处理 device_code 换令牌请求：校验轮询间隔、PKCE、用户会话并签发令牌。
+     * @param context 授权上下文
+     */
         setContext(context);
 
         if (!realm.getOAuth2DeviceConfig().isOAuth2DeviceAuthorizationGrantEnabled(client)) {
@@ -281,13 +314,13 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
             PkceUtils.checkParamsForPkceNotEnforcedClient(codeVerifier, codeChallenge, codeChallengeMethod, null, null, event, cors);
         }
 
-        // Approved
+        // 已批准，继续换令牌
 
         String userSessionId = deviceCodeModel.getUserSessionId();
         event.detail(Details.CODE_ID, userSessionId);
         event.session(userSessionId);
 
-        // Retrieve UserSession
+        // 检索用户会话
         var userSessionProvider = session.sessions();
         UserSessionModel userSession = userSessionProvider.getUserSessionIfClientExists(realm, userSessionId, false, client.getId());
 
@@ -300,7 +333,7 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
             }
         }
 
-        // Now, remove the device code
+        // 换令牌成功后移除 device_code
         removeDeviceByDeviceCode(session, deviceCode);
 
         UserModel user = userSession.getUser();
@@ -344,7 +377,7 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
                 Response.Status.BAD_REQUEST);
         }
 
-        // Compute client scopes again from scope parameter. Check if user still has them granted
+        // 根据 scope 重新计算客户端范围并校验用户仍持有同意
         // (but in device_code-to-token request, it could just theoretically happen that they are not available)
         String scopeParam = deviceCodeModel.getScope();
         if (!TokenManager.verifyConsentStillAvailable(session, user, client, clientSession, scopeParam)) {
@@ -358,17 +391,19 @@ public class DeviceGrantType extends OAuth2GrantTypeBase {
         ClientSessionContext clientSessionCtx = DefaultClientSessionContext.fromClientSessionAndScopeParameter(clientSession,
                 scopeParam, session);
 
-        // Set nonce as an attribute in the ClientSessionContext. Will be used for the token generation
+        // 将 nonce 写入 ClientSessionContext 供令牌生成使用
         clientSessionCtx.setAttribute(OIDCLoginProtocol.NONCE_PARAM, deviceCodeModel.getNonce());
 
         return createTokenResponse(user, userSession, clientSessionCtx, scopeParam, false, s -> {return new DeviceTokenResponseContext(deviceCodeModel, formParams, clientSession, s);});
     }
 
+    /** {@inheritDoc} 返回 OAUTH2_DEVICE_CODE_TO_TOKEN 事件类型 */
     @Override
     public EventType getEventType() {
         return EventType.OAUTH2_DEVICE_CODE_TO_TOKEN;
     }
 
+    /** {@inheritDoc} 设备授权换令牌无额外令牌参数 */
     @Override
     public Set<String> getTokenParameterNames() {
         return Collections.emptySet();

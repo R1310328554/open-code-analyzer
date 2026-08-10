@@ -34,7 +34,8 @@ import org.keycloak.representations.IDToken;
 import static org.keycloak.utils.JsonUtils.splitClaimPath;
 
 /**
- * Base class for mapping of user role mappings to an ID and Access Token claim.
+ * 用户角色映射协议映射器抽象基类：将用户角色集合写入 ID/Access Token 声明。
+ * <p>支持 realm_access/resource_access 特殊路径及嵌套 JSON 声明路径。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
@@ -47,17 +48,12 @@ public abstract class AbstractUserRoleMappingMapper extends AbstractOIDCProtocol
 
 
     /**
-     * Retrieves all roles of the current user based on direct roles set to the user, its groups and their parent groups.
-     * Then it recursively expands all composite roles, and restricts according to the given predicate {@code restriction}.
-     * If the current client sessions is restricted (i.e. no client found in active user session has full scope allowed),
-     * the final list of roles is also restricted by the client scope. Finally, the list is mapped to the token into
-     * a claim.
-     *
-     * @param token
-     * @param mappingModel
-     * @param rolesToAdd
-     * @param clientId
-     * @param prefix
+     * 将角色名集合写入令牌声明（支持前缀与 ${client_id} 占位符）。
+     * @param token 目标令牌
+     * @param mappingModel 映射器配置
+     * @param rolesToAdd 待写入的角色名集合
+     * @param clientId 客户端 ID（用于 resource_access 路径）
+     * @param prefix 角色名前缀
      */
     protected static void setClaim(IDToken token, ProtocolMapperModel mappingModel, Set<String> rolesToAdd,
                                    String clientId, String prefix) {
@@ -75,6 +71,7 @@ public abstract class AbstractUserRoleMappingMapper extends AbstractOIDCProtocol
     }
 
 
+    /** 声明名中 ${client_id} 占位符模式 */
     protected static final Pattern CLIENT_ID_PATTERN = Pattern.compile(Pattern.quote("${client_id}"));
 
     private static void mapClaim(IDToken token, ProtocolMapperModel mappingModel, Object attributeValue, String clientId) {
@@ -89,14 +86,14 @@ public abstract class AbstractUserRoleMappingMapper extends AbstractOIDCProtocol
         if (clientId != null) {
             Matcher matcher = CLIENT_ID_PATTERN.matcher(protocolClaim);
             if (matcher.find()) {
-                // dots and backslashes in clientId should be escaped first for the claim
+                // clientId 中的点与反斜杠需先转义再写入声明路径
                 protocolClaim = matcher.replaceAll(Matcher.quoteReplacement(clientId.replace("\\", "\\\\").replace(".", "\\.")));
             }
         }
 
         List<String> split = splitClaimPath(protocolClaim);
 
-        // Special case
+        // 特殊路径：realm_access / resource_access
         if (checkAccessToken(token, split, attributeValue)) {
             return;
         }
@@ -107,7 +104,7 @@ public abstract class AbstractUserRoleMappingMapper extends AbstractOIDCProtocol
         for (String component : split) {
             i++;
             if (i == length) {
-                // Case when we want to add to existing set of roles
+                // 合并至已有角色集合
                 Object last = jsonObject.get(component);
                 if (last instanceof Collection && attributeValue instanceof Collection) {
                     ((Collection) last).addAll((Collection) attributeValue);
@@ -129,7 +126,7 @@ public abstract class AbstractUserRoleMappingMapper extends AbstractOIDCProtocol
     }
 
 
-    // Special case when roles are put to the access token via "realmAcces, resourceAccess" properties
+    // 特殊处理：通过 realm_access / resource_access 结构写入 Access Token
     private static boolean checkAccessToken(IDToken idToken, List<String> path, Object attributeValue) {
         if (!(idToken instanceof AccessToken)) {
             return false;

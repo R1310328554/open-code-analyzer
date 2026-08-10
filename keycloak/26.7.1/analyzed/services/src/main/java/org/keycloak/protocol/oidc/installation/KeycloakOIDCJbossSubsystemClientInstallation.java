@@ -32,10 +32,14 @@ import org.keycloak.protocol.ClientInstallationProvider;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 
 /**
+ * Keycloak OIDC JBoss/WildFly 子系统 XML 安装提供器。
+ * <p>生成 secure-deployment XML 片段，可追加到应用服务器 Keycloak 子系统配置。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeycloakOIDCJbossSubsystemClientInstallation implements ClientInstallationProvider {
+    /** 生成 JBoss 子系统 secure-deployment XML 片段 */
     @Override
     public Response generateInstallation(KeycloakSession session, RealmModel realm, ClientModel client, URI baseUri) {
         StringBuffer buffer = new StringBuffer();
@@ -85,11 +89,13 @@ public class KeycloakOIDCJbossSubsystemClientInstallation implements ClientInsta
         return OIDCLoginProtocol.LOGIN_PROTOCOL;
     }
 
+    /** {@inheritDoc} 显示名称：Keycloak OIDC JBoss Subsystem XML */
     @Override
     public String getDisplayType() {
         return "Keycloak OIDC JBoss Subsystem XML";
     }
 
+    /** {@inheritDoc} XML 片段使用说明 */
     @Override
     public String getHelpText() {
         return "XML snippet you must edit and add to the Keycloak OIDC subsystem on your client app server.  This type of configuration is useful when you can't or don't want to crack open your WAR file.";
@@ -115,6 +121,7 @@ public class KeycloakOIDCJbossSubsystemClientInstallation implements ClientInsta
 
     }
 
+    /** {@inheritDoc} 返回 keycloak-oidc-jboss-subsystem */
     @Override
     public String getId() {
         return "keycloak-oidc-jboss-subsystem";
@@ -125,6 +132,7 @@ public class KeycloakOIDCJbossSubsystemClientInstallation implements ClientInsta
         return false;
     }
 
+    /** {@inheritDoc} 下载文件名 keycloak-oidc-subsystem.xml */
     @Override
     public String getFilename() {
         return "keycloak-oidc-subsystem.xml";

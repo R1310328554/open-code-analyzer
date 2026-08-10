@@ -21,12 +21,17 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * 默认 CIBA 登录用户解析器工厂：注册 {@link DefaultCIBALoginUserResolver} 为 SPI 提供者。
+ * <p>用于 CIBA 流程中根据 login_hint 等参数解析待认证用户。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class DefaultCIBALoginUserResolverFactory implements CIBALoginUserResolverFactory {
 
+    /** SPI 提供者标识符 */
     public static final String PROVIDER_ID = "default-ciba-login-user-resolver";
 
+    /** {@inheritDoc} 创建默认 CIBA 登录用户解析器实例 */
     @Override
     public CIBALoginUserResolver create(KeycloakSession session) {
         return new DefaultCIBALoginUserResolver(session);
@@ -44,6 +49,7 @@ public class DefaultCIBALoginUserResolverFactory implements CIBALoginUserResolve
     public void close() {
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
