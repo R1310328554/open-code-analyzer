@@ -2188,3 +2188,18 @@
 2026-08-10T04:50:21Z DONE server/src/main/java/com/alibaba/nacos/server/NacosNormalBeanTypeFilter.java wave72b [15:30] persistence utils + prometheus/server
 2026-08-10T04:50:21Z DONE server/src/main/java/com/alibaba/nacos/server/NacosWebBeanPostProcessorConfiguration.java wave72b [15:30] persistence utils + prometheus/server
 2026-08-10T04:50:21Z DONE server/src/main/java/com/alibaba/nacos/server/NacosWebBeanTypeFilter.java wave72b [15:30] persistence utils + prometheus/server
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/EmbeddedPaginationHelperImpl.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/EmbeddedStorageContextHolder.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/hook/EmbeddedApplyHook.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/hook/EmbeddedApplyHookHolder.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/operate/BaseDatabaseOperate.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/operate/DatabaseOperate.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/operate/StandaloneDatabaseOperateImpl.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/ModifyRequest.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/QueryType.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/SelectRequest.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/limiter/SqlLimiter.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/limiter/SqlTypeLimiter.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/extrnal/ExternalStoragePaginationHelperImpl.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/utils/ConnectionCheckUtil.java wave72a [0:15] persistence embedded repo/sql
+2026-08-10T04:50:29Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/utils/DatasourcePlatformUtil.java wave72a [0:15] persistence embedded repo/sql
