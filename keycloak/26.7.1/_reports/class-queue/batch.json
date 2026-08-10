@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:57:16Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/ClientSecretRotationExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/ConfidentialClientAcceptExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/ConfidentialClientAcceptExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/ConsentRequiredExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/ConsentRequiredExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/DPoPBindEnforcerExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/DPoPBindEnforcerExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/DownscopeAssertionGrantEnforcerExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/DownscopeAssertionGrantEnforcerExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/FapiConstant.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/FullScopeDisabledExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/FullScopeDisabledExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/HolderOfKeyEnforcerExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/HolderOfKeyEnforcerExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/IntentClientBindCheckExecutor.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1108,
-  "done": 4875
+  "done": 4890
 }
