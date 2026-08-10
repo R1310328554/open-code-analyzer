@@ -1,5 +1,8 @@
 package core
 
+// tool.go — AgentTool：将 Agent 包装为 Tool，支持嵌套深度限制与内部事件转发。
+
+
 import (
 	"context"
 	"fmt"
@@ -7,27 +10,27 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// subAgentDepthKey is a context key for tracking sub-agent recursion depth across
-// nested AgentTool invocations. The value is an int representing current depth.
+// subAgentDepthKey 上下文键，跟踪嵌套 AgentTool 的递归深度。
+// 值为 int，表示当前嵌套层级。
 type subAgentDepthKey struct{}
 
-// AgentToolOptions configures an AgentTool.
+// AgentToolOptions AgentTool 行为配置。
 type AgentToolOptions struct {
 	FullChatHistoryAsInput bool
 	EmitInternalEvents     bool // Forward inner agent's events to parent stream
 	MaxDepth               int  // 0 = unlimited sub-agent nesting depth. Set via WithMaxDepth.
 }
 
-// AgentToolOption configures the AgentTool.
+// AgentToolOption AgentTool 配置选项函数。
 type AgentToolOption func(*AgentToolOptions)
 
-// WithFullChatHistoryAsInput uses the full chat history as input to the inner agent.
+// WithFullChatHistoryAsInput 使用完整聊天历史作为内部智能体输入。
 func WithFullChatHistoryAsInput() AgentToolOption {
 	return func(o *AgentToolOptions) { o.FullChatHistoryAsInput = true }
 }
 
-// WithEmitInternalEvents enables forwarding internal events from the wrapped agent
-// to the parent agent's event stream. This allows real-time streaming of nested
+// WithEmitInternalEvents 启用内部事件转发（不写入父 runSession）。
+// 中断经 CompositeInterrupt 传播；Exit/Transfer/BreakLoop 限定在工具边界内。
 // agent output to the end user via Runner.
 //
 // Action Scoping:
@@ -40,7 +43,7 @@ func WithEmitInternalEvents() AgentToolOption {
 	return func(o *AgentToolOptions) { o.EmitInternalEvents = true }
 }
 
-// WithMaxDepth sets the maximum sub-agent nesting depth for recursion protection.
+// WithMaxDepth 设置最大嵌套深度以防无限递归。
 // When set (>=1), AgentTool checks a depth counter in the context before executing
 // the inner agent. If the current depth >= maxDepth, the call returns an error.
 // Default: 0 (no limit).
@@ -48,7 +51,7 @@ func WithMaxDepth(d int) AgentToolOption {
 	return func(o *AgentToolOptions) { o.MaxDepth = d }
 }
 
-// NewAgentTool wraps an Agent as a Tool for use by other agents.
+// NewAgentTool 将 Agent 包装为 Tool 供其他智能体调用。
 // The agent must have non-empty Name and Description, used as the tool name/description.
 //
 // Action Scoping:
@@ -81,6 +84,7 @@ type agentTool struct {
 func (t *agentTool) Name() string        { return t.name }
 func (t *agentTool) Description() string { return t.desc }
 
+// Invoke 运行内部智能体，收集助手输出；超深度或中断时返回错误。
 func (t *agentTool) Invoke(ctx context.Context, args string, opts ...ToolOption) (result string, err error) {
 	// Panic recovery: runner.Run or iter.Next may panic; catch and convert to Go error.
 	defer func() {
@@ -167,6 +171,7 @@ func (t *agentTool) Invoke(ctx context.Context, args string, opts ...ToolOption)
 	return result, nil
 }
 
+// Stream 调用 Invoke 并将结果包装为字符串流。
 func (t *agentTool) Stream(ctx context.Context, args string, opts ...ToolOption) (*schema.StreamReader[string], error) {
 	r, err := t.Invoke(ctx, args, opts...)
 	if err != nil {
@@ -174,3 +179,5 @@ func (t *agentTool) Stream(ctx context.Context, args string, opts ...ToolOption)
 	}
 	return schema.StreamReaderFromArray([]string{r}), nil
 }
+
+// 内部事件转发仅面向终端用户，不影响父智能体状态或检查点。

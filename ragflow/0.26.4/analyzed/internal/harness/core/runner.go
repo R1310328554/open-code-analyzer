@@ -1,5 +1,8 @@
 package core
 
+// runner.go — 智能体执行入口：TypedRunner 封装 Run/Query/Resume 与检查点迭代器。
+
+
 import (
 	"context"
 	"errors"
@@ -8,35 +11,42 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// TypedRunner is the primary entry point for agent execution.
+// TypedRunner 智能体执行的主入口，封装 Run/Query/Resume 与流式事件迭代。
 type TypedRunner[M MessageType] struct {
 	a               TypedAgent[M]
 	enableStreaming bool
 	store           CheckPointStore
 }
 
+// Runner 默认 Message 类型的 Runner 别名。
 type Runner = TypedRunner[*schema.Message]
 
+// RunnerConfig 创建 Runner 时的配置。
 type RunnerConfig[M MessageType] struct {
 	Agent           TypedAgent[M]
 	EnableStreaming bool
 	CheckPointStore CheckPointStore
 }
 
+// ResumeParams 恢复执行时传入的目标数据。
 type ResumeParams struct{ Targets map[string]any }
 
+// NewRunner 创建默认 Message 类型的 Runner。
 func NewRunner(ctx context.Context, conf RunnerConfig[*schema.Message]) *Runner {
 	return NewTypedRunner[*schema.Message](conf)
 }
 
+// NewTypedRunner 创建泛型 TypedRunner。
 func NewTypedRunner[M MessageType](conf RunnerConfig[M]) *TypedRunner[M] {
 	return &TypedRunner[M]{a: conf.Agent, enableStreaming: conf.EnableStreaming, store: conf.CheckPointStore}
 }
 
+// Run 以给定消息启动智能体并返回异步事件迭代器。
 func (r *TypedRunner[M]) Run(ctx context.Context, msgs []M, opts ...RunOption) *AsyncIterator[*TypedAgentEvent[M]] {
 	return runImpl(r.a, r.enableStreaming, r.store, ctx, msgs, opts...)
 }
 
+// Query 将用户查询包装为单条消息后执行 Run。
 func (r *TypedRunner[M]) Query(ctx context.Context, query string, opts ...RunOption) *AsyncIterator[*TypedAgentEvent[M]] {
 	msgs, err := newUserMsg[M](query)
 	if err != nil {
@@ -45,15 +55,17 @@ func (r *TypedRunner[M]) Query(ctx context.Context, query string, opts ...RunOpt
 	return r.Run(ctx, []M{msgs}, opts...)
 }
 
+// Resume 从检查点 ID 恢复中断的执行。
 func (r *TypedRunner[M]) Resume(ctx context.Context, cid string, opts ...RunOption) (*AsyncIterator[*TypedAgentEvent[M]], error) {
 	return resumeInternal(r.a, r.store, ctx, cid, nil, opts...)
 }
 
+// ResumeWithParams 恢复时附带自定义目标数据。
 func (r *TypedRunner[M]) ResumeWithParams(ctx context.Context, cid string, params *ResumeParams, opts ...RunOption) (*AsyncIterator[*TypedAgentEvent[M]], error) {
 	return resumeInternal(r.a, r.store, ctx, cid, params.Targets, opts...)
 }
 
-// ---- Internal ----
+// ---- 内部实现 ----
 
 func errorIter[M MessageType](err error) *AsyncIterator[*TypedAgentEvent[M]] {
 	it, gen := NewAsyncIteratorPair[*TypedAgentEvent[M]]()
@@ -144,15 +156,15 @@ func resumeInternal[M MessageType](a TypedAgent[M], store CheckPointStore, ctx c
 	return newIterForStore(streaming, store, ctx, ra.Resume(ctx, info, opts...), &cid, o.cancelCtx), nil
 }
 
-// setupRunContext initializes the run context and applies session values for a new Run.
+// setupRunContext 初始化运行上下文并为新 Run 注入 session 值。
 func setupRunContext[M MessageType](ctx context.Context, input *TypedAgentInput[M], o *runOptions) context.Context {
 	ctx = ctxWithNewTypedRunCtx(ctx, input, o.sharedParentSession)
 	AddSessionValues(ctx, o.sessionValues)
 	return ctx
 }
 
-// wrapIterForStore conditionally wraps an event iterator with handleIter when a checkpoint
-// store or cancel context is active. Returns the original iterator unchanged otherwise.
+// wrapIterForStore 在启用检查点或取消上下文时，用 handleIter 包装事件迭代器；
+// 否则直接返回原始迭代器。
 func wrapIterForStore[M MessageType](streaming bool, store CheckPointStore, ctx context.Context, iter *AsyncIterator[*TypedAgentEvent[M]], o *runOptions) *AsyncIterator[*TypedAgentEvent[M]] {
 	if store == nil && o.cancelCtx == nil {
 		return iter
@@ -160,7 +172,7 @@ func wrapIterForStore[M MessageType](streaming bool, store CheckPointStore, ctx 
 	return newIterForStore(streaming, store, ctx, iter, o.checkPointID, o.cancelCtx)
 }
 
-// newIterForStore creates a new iterator pair backed by handleIter for checkpoint store
+// newIterForStore 创建由 handleIter 驱动的迭代器对，负责检查点持久化与取消处理。
 // and cancel handling.
 func newIterForStore[M MessageType](streaming bool, store CheckPointStore, ctx context.Context, iter *AsyncIterator[*TypedAgentEvent[M]], cid *string, cc *cancelContext) *AsyncIterator[*TypedAgentEvent[M]] {
 	nit, gen := NewAsyncIteratorPair[*TypedAgentEvent[M]]()
@@ -212,9 +224,11 @@ func handleIter[M MessageType](streaming bool, store CheckPointStore, ctx contex
 	}
 }
 
-// ResumeWithData creates a ResumeInfo with custom resume data.
-// Use this to pass ReActAgentResumeData (e.g., HistoryModifier)
-// when resuming an interrupted agent.
+// ResumeWithData 构造带自定义恢复数据的 ResumeInfo。
+// 可用于传入 ReActAgentResumeData（如 HistoryModifier）
+// 以在中断恢复时修改历史等行为。
 func ResumeWithData(data any) *ResumeInfo {
 	return &ResumeInfo{ResumeData: data}
 }
+
+// handleIter 在后台转发事件并在中断/取消时写入检查点。

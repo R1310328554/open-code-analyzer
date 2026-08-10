@@ -1,5 +1,8 @@
 package core
 
+// session.go — 运行会话与上下文：事件历史、并行分支合并、Session 值与 RunPath 管理。
+
+
 import (
 	"bytes"
 	"context"
@@ -17,14 +20,14 @@ func init() {
 	schema.RegisterType("_harness_event_wrap_entry", func() any { return &eventWrapEntry{} })
 }
 
-// eventWrapEntry wraps an event with metadata for checkpoint persistence.
+// eventWrapEntry 为检查点持久化包装事件及时间戳。
 type eventWrapEntry struct {
 	Event     any
 	Timestamp int64
 }
 
-// consumeStream checks if the wrapped event contains a streaming message and, if so,
-// fully consumes the stream before checkpoint. This prevents partial data in checkpoints.
+// consumeStream 若事件含流式消息则在检查点前完整消费，
+// 避免检查点中残留不完整流数据。
 func (e *eventWrapEntry) consumeStream() {
 	if e.Event == nil {
 		return
@@ -99,15 +102,15 @@ func (e *eventWrapEntry) GobDecode(data []byte) error {
 	return nil
 }
 
-// branchEvents holds per-lane event history for parallel workflows.
-// Each parallel branch in a workflow gets its own branchEvents, forming a linked
-// list via Parent. Events are collected per-lane and merged chronologically on join.
+// branchEvents 并行工作流中每条 lane 的事件历史，
+// 各并行分支拥有独立 branchEvents，通过 Parent 形成链表；
+// join 时按时间戳合并为全局有序事件序列。
 type branchEvents struct {
 	Events []*eventWrapEntry
 	Parent *branchEvents
 }
 
-// runSession holds per-execution mutable state for an agent run.
+// runSession 单次智能体运行的可变状态（Values、事件、分支）。
 type runSession struct {
 	mu           sync.Mutex
 	Values       map[string]any
@@ -167,7 +170,7 @@ func (s *runSession) getEvents() []any {
 	return unwrapEvents(all)
 }
 
-// unwrapEvents extracts the inner Event from eventWrapEntry slice.
+// unwrapEvents 从 eventWrapEntry 切片提取内部 Event。
 func unwrapEvents(entries []*eventWrapEntry) []any {
 	r := make([]any, 0, len(entries))
 	for _, e := range entries {
@@ -178,7 +181,7 @@ func unwrapEvents(entries []*eventWrapEntry) []any {
 	return r
 }
 
-// runContext holds runtime metadata for an agent execution.
+// runContext 运行期元数据：根输入、RunPath 与会话引用。
 type runContext struct {
 	mu        sync.Mutex
 	RootInput any
@@ -186,7 +189,7 @@ type runContext struct {
 	Session   *runSession
 }
 
-// getRunPath safely returns a copy of RunPath under lock.
+// getRunPath 加锁复制 RunPath 后返回。
 func (rc *runContext) getRunPath() []RunStep {
 	if rc == nil {
 		return nil
@@ -198,7 +201,7 @@ func (rc *runContext) getRunPath() []RunStep {
 	return cp
 }
 
-// setRunPath safely replaces RunPath under lock.
+// setRunPath 加锁替换 RunPath。
 func (rc *runContext) setRunPath(v []RunStep) {
 	if rc == nil {
 		return
@@ -208,7 +211,7 @@ func (rc *runContext) setRunPath(v []RunStep) {
 	rc.mu.Unlock()
 }
 
-// appendRunPath safely appends to RunPath under lock.
+// appendRunPath 加锁追加 RunPath 步骤。
 func (rc *runContext) appendRunPath(v RunStep) {
 	if rc == nil {
 		return
@@ -220,6 +223,7 @@ func (rc *runContext) appendRunPath(v RunStep) {
 
 type runContextKey struct{}
 
+// ctxWithNewTypedRunCtx 创建隔离的新 runContext 并注入 ctx。
 func ctxWithNewTypedRunCtx[M MessageType](ctx context.Context, input *TypedAgentInput[M], _ bool) context.Context {
 	// sharedParentSession parameter is reserved for future use.
 	// Currently a new isolated session is always created.
@@ -227,9 +231,9 @@ func ctxWithNewTypedRunCtx[M MessageType](ctx context.Context, input *TypedAgent
 	return context.WithValue(ctx, runContextKey{}, rc)
 }
 
-// initRunCtx initializes or extends a run context and appends the agent name
-// to the run path. If a run context already exists in ctx, it is reused — this
-// means nested agent calls share the same Session (Values, events) and the
+// initRunCtx 初始化或扩展运行上下文并将智能体名追加到 RunPath。
+// 若 ctx 中已有 runContext 则复用——嵌套调用共享 Session 与 Values，
+// RunPath 在整条调用链上累积。
 // RunPath accumulates across all agents in the call chain.
 func initRunCtx(ctx context.Context, agentName string, input *AgentInput) (context.Context, *runContext) {
 	rc := getRunCtx(ctx)
@@ -252,6 +256,7 @@ func setRunCtx(ctx context.Context, rc *runContext) context.Context {
 	return context.WithValue(ctx, runContextKey{}, rc)
 }
 
+// forkRunCtx 为并行子 lane fork 运行上下文，共享 Values 但独立 BranchEvents。
 func forkRunCtx(ctx context.Context) context.Context {
 	parent := getRunCtx(ctx)
 	if parent == nil || parent.Session == nil {
@@ -298,6 +303,7 @@ func updateRunPathOnly(ctx context.Context, steps ...string) context.Context {
 	return ctx
 }
 
+// joinRunCtxs 合并子 lane 事件并按时间戳排序写回父 Session。
 func joinRunCtxs(ctx context.Context, childCtxs ...context.Context) {
 	parent := getRunCtx(ctx)
 	if parent == nil || parent.Session == nil {
@@ -325,7 +331,7 @@ func joinRunCtxs(ctx context.Context, childCtxs ...context.Context) {
 	commitEvents(parent, newEvents)
 }
 
-// commitEvents appends events to the correct parent lane or main event log.
+// commitEvents 将事件提交到父 lane 或主事件日志。
 func commitEvents(rc *runContext, entries []*eventWrapEntry) {
 	if rc == nil || rc.Session == nil {
 		return
@@ -341,8 +347,8 @@ func commitEvents(rc *runContext, entries []*eventWrapEntry) {
 	}
 }
 
-// unwindLaneEvents collects all events from the BranchEvents linked list of the given
-// contexts. Traverses the full Parent chain to capture events from deeply forked lanes.
+// unwindLaneEvents 遍历 BranchEvents 链表收集各 lane 事件。
+// 沿 Parent 链捕获深层 fork 分支的全部事件。
 func unwindLaneEvents(ctxs ...context.Context) []*eventWrapEntry {
 	var all []*eventWrapEntry
 	for _, ctx := range ctxs {
@@ -364,6 +370,7 @@ func getSession(ctx context.Context) *runSession {
 	return nil
 }
 
+// AddSessionValues 向当前 Session 批量写入键值。
 func AddSessionValues(ctx context.Context, values map[string]any) {
 	rc := getRunCtx(ctx)
 	if rc == nil || rc.Session == nil || values == nil {
@@ -375,3 +382,5 @@ func AddSessionValues(ctx context.Context, values map[string]any) {
 		rc.Session.Values[k] = v
 	}
 }
+
+// GobEncode/Decode 使 eventWrapEntry 可跨检查点序列化。

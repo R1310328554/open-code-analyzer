@@ -1,5 +1,7 @@
-// Package agentcore provides graph-based workflow agents (Sequential, Parallel,
-// Loop) using the project's own StateGraph/Pregel engine.
+// workflow_graph.go — 基于 StateGraph/Pregel 的图式工作流（顺序/并行/循环）。
+
+// Package core 提供基于 StateGraph/Pregel 的工作流智能体（顺序/并行/循环），
+// 支持子智能体边界自动检查点、中断恢复与流式事件。
 //
 // Unlike the legacy workflow.go implementation, these graph-based workflows:
 //   - Auto-checkpoint at each sub-agent boundary (via graph.WithCheckpointer)
@@ -29,7 +31,7 @@ func init() {
 	schema.RegisterType("_harness_wf_graph_state", func() any { return &WorkflowGraphState{} })
 }
 
-// WorkflowGraphState is the shared state for graph-based workflow agents.
+// WorkflowGraphState 图工作流的共享状态，在子智能体间传递消息。
 // It carries messages between sub-agents and tracks the current position.
 type WorkflowGraphState struct {
 	Messages      []*schema.Message
@@ -42,35 +44,35 @@ type WorkflowGraphState struct {
 	mu sync.Mutex // protects Messages from concurrent access in inline execution
 }
 
-// AppendMessage safely appends a message to the Messages slice.
+// AppendMessage 加锁追加消息到 Messages。
 func (s *WorkflowGraphState) AppendMessage(msg *schema.Message) {
 	s.mu.Lock()
 	s.Messages = append(s.Messages, msg)
 	s.mu.Unlock()
 }
 
-// SnapshotMessages safely returns a copy of the Messages slice.
+// SnapshotMessages 加锁复制 Messages 切片。
 func (s *WorkflowGraphState) SnapshotMessages() []*schema.Message {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return append([]*schema.Message(nil), s.Messages...)
 }
 
-// MessagesLen safely returns the length of Messages.
+// MessagesLen 加锁返回 Messages 长度。
 func (s *WorkflowGraphState) MessagesLen() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return len(s.Messages)
 }
 
-// WorkflowGraph wraps a CompiledGraph that runs sub-agents as graph nodes.
+// WorkflowGraph 封装已编译图，以节点形式运行各子智能体。
 type WorkflowGraph struct {
 	compiled types.CompiledGraph
 }
 
-// ---- Sequential ----
+// ---- 顺序图 ----
 
-// NewSequentialGraph builds a StateGraph where sub-agents run sequentially.
+// NewSequentialGraph 构建 start→sub_0→…→sub_n→end 的顺序图。
 //
 //	start → sub_0 → sub_1 → ... → sub_n → end
 //
@@ -145,9 +147,9 @@ func NewSequentialGraph(ctx context.Context, cfg *SequentialConfig, cptr checkpo
 	return &WorkflowGraph{compiled: compiled}, nil
 }
 
-// ---- Parallel ----
+// ---- 并行图 ----
 
-// NewParallelGraph builds a StateGraph where sub-agents run in parallel via
+// NewParallelGraph 经 __wf_split__ 扇出到各 sub_i 并行执行。
 // a split node that fans out to all sub-agents.
 //
 //	start → __wf_split__ ─┬→ sub_0 ─┬→ end
@@ -222,9 +224,9 @@ func NewParallelGraph(ctx context.Context, cfg *ParallelConfig, cptr checkpoint.
 	return &WorkflowGraph{compiled: compiled}, nil
 }
 
-// ---- Loop ----
+// ---- 循环图 ----
 
-// NewLoopGraph builds a StateGraph that runs sub-agents in a loop with bounded
+// NewLoopGraph 构建有界循环图，末节点条件边决定回环或结束。
 // iterations.
 //
 //	start → sub_0 → sub_1 → ... → sub_n → [iter < max?] → back to sub_0
@@ -331,9 +333,9 @@ func NewLoopGraph(ctx context.Context, cfg *LoopConfig, cptr checkpoint.BaseChec
 	return &WorkflowGraph{compiled: compiled}, nil
 }
 
-// ---- Invocation ----
+// ---- 调用入口 ----
 
-// toWorkflowGraphState converts the engine's result (map or typed struct)
+// toWorkflowGraphState 将 Pregel 引擎结果转为 WorkflowGraphState。
 // back to *WorkflowGraphState. The Pregel engine serializes state through
 // channels which may flatten structs into map[string]interface{}.
 func toWorkflowGraphState(result interface{}) (*WorkflowGraphState, error) {
@@ -347,7 +349,7 @@ func toWorkflowGraphState(result interface{}) (*WorkflowGraphState, error) {
 	}
 }
 
-// mapToWorkflowGraphState converts a map result to WorkflowGraphState.
+// mapToWorkflowGraphState 将 map 通道结果转为强类型状态。
 // The Pregel engine uses Go struct field names as channel keys (PascalCase).
 func mapToWorkflowGraphState(m map[string]interface{}) (*WorkflowGraphState, error) {
 	s := &WorkflowGraphState{}
@@ -383,7 +385,7 @@ func mapToWorkflowGraphState(m map[string]interface{}) (*WorkflowGraphState, err
 	return s, nil
 }
 
-// Invoke runs the workflow graph synchronously and returns the final state.
+// Invoke 同步运行工作流图并返回最终状态。
 func (wg *WorkflowGraph) Invoke(ctx context.Context, input *AgentInput) (*WorkflowGraphState, error) {
 	if wg == nil || wg.compiled == nil {
 		return nil, fmt.Errorf("workflow graph is not compiled")
@@ -402,7 +404,7 @@ func (wg *WorkflowGraph) Invoke(ctx context.Context, input *AgentInput) (*Workfl
 	return toWorkflowGraphState(result)
 }
 
-// Stream runs the workflow graph with streaming events via Pregel.
+// Stream 通过 Pregel 以流式模式运行工作流图。
 func (wg *WorkflowGraph) Stream(ctx context.Context, input *AgentInput, mode types.StreamMode) (<-chan interface{}, <-chan error) {
 	if input == nil {
 		input = &AgentInput{}
@@ -414,7 +416,7 @@ func (wg *WorkflowGraph) Stream(ctx context.Context, input *AgentInput, mode typ
 	return wg.compiled.Stream(ctx, state, mode)
 }
 
-// Resume resumes a previously interrupted workflow.
+// Resume 从检查点恢复先前中断的工作流图。
 // Resume resumes a previously interrupted workflow graph from its checkpoint.
 // Note: this is a thin wrapper that invokes the compiled graph with an empty state.
 // For proper checkpoint resume, ensure the compiled graph was configured with a
@@ -427,7 +429,7 @@ func (wg *WorkflowGraph) Resume(ctx context.Context) (*WorkflowGraphState, error
 	return toWorkflowGraphState(result)
 }
 
-// Compile returns the underlying CompiledGraph.
+// Compile 返回底层 CompiledGraph 供高级用法。
 func (wg *WorkflowGraph) Compile() types.CompiledGraph { return wg.compiled }
 
-// ---- helpers ----
+// ---- 辅助 ----

@@ -1,5 +1,8 @@
 package core
 
+// state_guard.go — 模型调用状态守卫：消息深拷贝、取消检查与 ID 注入。
+
+
 import (
 	"context"
 	"encoding/json"
@@ -8,30 +11,31 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// typedStateModelWrapper unifies message deep copy, ID injection, cancel checking,
-// and event sending into a single wrapper layer for the model call.
+// typedStateModelWrapper 统一消息深拷贝、ID 注入、取消检查与输出事件发送，
+// 作为中间件与重试链之间的核心包装层。
 //
-// This is the central wrapper (typedStateModelWrapper) that sits between
+// 位于中间件与 retry/failover 链之间，提供：
 // middlewares and the retry/failover chain, adding:
-//   - Message deep copy (prevent pointer-sharing in middleware chain)
-//   - Message ID auto-assignment
-//   - Cancel context checking before model call
-//   - Model output event emission
-//   - BeforeModelRewrite / AfterModelRewrite orchestration (via chatmodel.go loop)
+//   - 消息深拷贝（防止中间件链中指针共享）
+//   - 消息 ID 自动赋值
+//   - 模型调用前取消上下文检查
+//   - 模型输出事件发送
+//   - BeforeModelRewrite/AfterModelRewrite 编排（经 chatmodel 循环）
 type typedStateModelWrapper[M MessageType] struct {
 	inner     Model[M]
 	cancelCtx *cancelContext
 }
 
+// newTypedStateModelWrapper 构造带取消守卫的模型包装器。
 func newTypedStateModelWrapper[M MessageType](inner Model[M], cc *cancelContext) Model[M] {
 	return &typedStateModelWrapper[M]{inner: inner, cancelCtx: cc}
 }
 
-// copyMessage performs a deep copy of a Message or AgenticMessage to prevent
-// pointer-sharing bugs when the same message flows through multiple wrappers.
+// copyMessage 深拷贝 Message/AgenticMessage，
+// 避免同一消息经多层包装器时指针共享。
 //
-// The Extra map uses JSON marshal/unmarshal for deep copy (same approach as
-// checkpoint.deepCopy) so that nested maps/slices are fully independent.
+// Extra 通过 JSON 往返深拷贝（与 checkpoint.deepCopy 一致）；
+// 失败时保留原引用以免丢数据。
 // If JSON round-trip fails for a value, the original reference is kept as
 // a fallback to avoid data loss.
 func copyMessage[M MessageType](msg M) M {
@@ -67,7 +71,7 @@ func copyMessage[M MessageType](msg M) M {
 	return msg
 }
 
-// deepCopyAny performs a deep copy of an arbitrary value via JSON round-trip.
+// deepCopyAny 通过 JSON 往返深拷贝任意值，失败则回退原引用。
 // Falls back to the original value if JSON marshal/unmarshal fails.
 func deepCopyAny(v any) any {
 	if v == nil {
@@ -84,7 +88,7 @@ func deepCopyAny(v any) any {
 	return result
 }
 
-// preprocessInput performs cancel check, deep copy, and message ID injection.
+// preprocessInput 执行取消检查、深拷贝与消息 ID 注入；取消时返回 nil。
 // Returns nil if cancelled (caller should return ErrStreamCanceled immediately).
 func (w *typedStateModelWrapper[M]) preprocessInput(msgs []M) []M {
 	if w.cancelCtx != nil && w.cancelCtx.isImmediate() {
@@ -106,6 +110,7 @@ func (w *typedStateModelWrapper[M]) preprocessInput(msgs []M) []M {
 	return copied
 }
 
+// Generate 预处理输入后调用内部模型并深拷贝响应。
 func (w *typedStateModelWrapper[M]) Generate(ctx context.Context, msgs []M, opts ...ModelOption) (M, error) {
 	copied := w.preprocessInput(msgs)
 	if copied == nil {
@@ -119,6 +124,7 @@ func (w *typedStateModelWrapper[M]) Generate(ctx context.Context, msgs []M, opts
 	return copyMessage(resp), nil
 }
 
+// Stream 流式调用内部模型，逐块深拷贝并监听取消。
 func (w *typedStateModelWrapper[M]) Stream(ctx context.Context, msgs []M, opts ...ModelOption) (*schema.StreamReader[M], error) {
 	// Cancel check before allocating any resources (returns error-embedded StreamReader)
 	if w.cancelCtx != nil && w.cancelCtx.isImmediate() {
@@ -166,3 +172,5 @@ func (w *typedStateModelWrapper[M]) Stream(ctx context.Context, msgs []M, opts .
 func (w *typedStateModelWrapper[M]) BindTools(tools []*schema.ToolInfo) error {
 	return w.inner.BindTools(tools)
 }
+
+// 取消时 Stream 返回嵌入 ErrStreamCanceled 的 StreamReader。

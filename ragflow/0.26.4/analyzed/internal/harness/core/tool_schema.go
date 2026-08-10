@@ -1,5 +1,8 @@
 package core
 
+// tool_schema.go — 反射生成 ToolInfo/JSON Schema 与 ReflectTool 便捷构造。
+
+
 import (
 	"context"
 	"encoding/json"
@@ -10,19 +13,19 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ---- Reflection-based ToolInfo generation ----
+// ---- 基于反射的 ToolInfo 生成 ----
 
-// ToolSchemaOptions configures schema generation.
+// ToolSchemaOptions 配置 schema 生成选项。
 type ToolSchemaOptions struct {
 	DescriptionTag string // struct tag to use for field descriptions (default: "description")
 }
 
-// DefaultToolSchemaOptions returns the default schema generation options.
+// DefaultToolSchemaOptions 返回默认 schema 选项（description 标签）。
 func DefaultToolSchemaOptions() *ToolSchemaOptions {
 	return &ToolSchemaOptions{DescriptionTag: "description"}
 }
 
-// GenerateToolInfo generates a *schema.ToolInfo from a function's parameter type
+// GenerateToolInfo 从参数结构体 T 反射生成 ToolInfo 与 input_schema。
 // using reflection. The function must have the signature:
 //
 //	func(ctx context.Context, args *T) (string, error)
@@ -53,7 +56,7 @@ func GenerateToolInfo[T any](name string, desc string, fn any, opts ...*ToolSche
 	}, nil
 }
 
-// structToJSONSchema converts a struct type to a JSON Schema map.
+// structToJSONSchema 将 Go 结构体转为 JSON Schema 对象。
 func structToJSONSchema(t reflect.Type, descTag string) (map[string]interface{}, error) {
 	if t.Kind() != reflect.Struct {
 		// For non-struct types, just use a simple schema
@@ -102,7 +105,7 @@ func structToJSONSchema(t reflect.Type, descTag string) (map[string]interface{},
 	return schema, nil
 }
 
-// fieldNameFromTag extracts the JSON field name from a struct field's tags.
+// fieldNameFromTag 从 struct tag 提取 JSON 字段名。
 func fieldNameFromTag(field reflect.StructField) string {
 	if tag := field.Tag.Get("json"); tag != "" {
 		return strings.Split(tag, ",")[0]
@@ -110,7 +113,7 @@ func fieldNameFromTag(field reflect.StructField) string {
 	return strings.ToLower(field.Name)
 }
 
-// fieldToJSONSchema generates a JSON schema for a single struct field.
+// fieldToJSONSchema 为单个字段生成 JSON Schema 属性。
 func fieldToJSONSchema(field reflect.StructField, descTag string) map[string]interface{} {
 	s := map[string]interface{}{
 		"type": jsonTypeName(field.Type),
@@ -157,7 +160,7 @@ func fieldToJSONSchema(field reflect.StructField, descTag string) map[string]int
 	return s
 }
 
-// jsonTypeName returns the JSON Schema type name for a Go type.
+// jsonTypeName 将 Go 类型映射为 JSON Schema 类型名。
 func jsonTypeName(t reflect.Type) string {
 	switch t.Kind() {
 	case reflect.String:
@@ -178,9 +181,9 @@ func jsonTypeName(t reflect.Type) string {
 	}
 }
 
-// ---- ReflectTool: create a Tool from any function ----
+// ---- ReflectTool：从函数反射创建 Tool ----
 
-// ReflectTool creates a Tool from a function by automatically generating
+// ReflectTool 自动反射参数类型并生成 schema 创建 Tool。
 // the ToolInfo schema via reflection. The function must have the signature:
 //
 //	func(ctx context.Context, args *T) (string, error)
@@ -204,7 +207,7 @@ func ReflectTool[T any](name, desc string, fn func(context.Context, *T) (string,
 	}, nil
 }
 
-// ReflectToolImpl is a Tool backed by a function with reflection-generated schema.
+// ReflectToolImpl 由反射生成 schema 的函数式 Tool 实现。
 type ReflectToolImpl[T any] struct {
 	name string
 	desc string
@@ -232,7 +235,7 @@ func (t *ReflectToolImpl[T]) Stream(ctx context.Context, argsJSON string, opts .
 	return schema.StreamReaderFromArray([]string{result}), nil
 }
 
-// MustReflectTool is like ReflectTool but panics on error (for use in init()).
+// MustReflectTool 同 ReflectTool，失败时 panic。
 func MustReflectTool[T any](name, desc string, fn func(context.Context, *T) (string, error)) *ReflectToolImpl[T] {
 	t, err := ReflectTool(name, desc, fn)
 	if err != nil {
@@ -241,9 +244,9 @@ func MustReflectTool[T any](name, desc string, fn func(context.Context, *T) (str
 	return t
 }
 
-// ---- Convenience constructors for migration compatibility ----
+// ---- 迁移兼容的便捷构造 ----
 
-// InferTool creates a Tool by reflecting on the struct type T to
+// InferTool 以 T 的类型名作为工具名反射创建 Tool。
 // automatically generate the JSON input schema. The function must have
 // signature: func(ctx context.Context, args *T) (string, error).
 func InferTool[T any](ctx context.Context, fn func(context.Context, *T) (string, error)) (*ReflectToolImpl[T], error) {
@@ -251,13 +254,13 @@ func InferTool[T any](ctx context.Context, fn func(context.Context, *T) (string,
 	return ReflectTool[T](name, "", fn)
 }
 
-// InferToolWithName creates a Tool with an explicit name and description,
+// InferToolWithName 显式指定名称与描述，schema 仍由反射生成。
 // using reflection for the input schema.
 func InferToolWithName[T any](name, desc string, fn func(context.Context, *T) (string, error)) (*ReflectToolImpl[T], error) {
 	return ReflectTool[T](name, desc, fn)
 }
 
-// NewTool creates a Tool with an explicitly provided ToolInfo.
+// NewTool 使用显式 ToolInfo 创建 Tool，T 为参数反序列化类型。
 // The generic parameter T is the struct type for argument unmarshalling.
 func NewTool[T any](info *schema.ToolInfo, fn func(context.Context, *T) (string, error)) Tool {
 	return &toolWithInfo[T]{
@@ -266,7 +269,7 @@ func NewTool[T any](info *schema.ToolInfo, fn func(context.Context, *T) (string,
 	}
 }
 
-// toolWithInfo is a simple Tool backed by an explicit ToolInfo.
+// toolWithInfo 基于显式 ToolInfo 的简单 Tool 实现。
 type toolWithInfo[T any] struct {
 	info *schema.ToolInfo
 	fn   func(context.Context, *T) (string, error)
@@ -292,7 +295,7 @@ func (t *toolWithInfo[T]) Stream(ctx context.Context, argsJSON string, opts ...T
 	return schema.StreamReaderFromArray([]string{result}), nil
 }
 
-// GoStructToToolInfo converts a Go struct type T to a *schema.ToolInfo
+// GoStructToToolInfo 将结构体类型 T 转为 ToolInfo（供 NewTool 或手动绑定）。
 // for use with NewTool or manual binding.
 func GoStructToToolInfo[T any](name, desc string) (*schema.ToolInfo, error) {
 	return GenerateToolInfo[T](name, desc, nil)

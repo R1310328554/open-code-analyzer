@@ -1,5 +1,8 @@
 package core
 
+// tools_node.go — ReAct 工具节点：解析 tool_calls、并发/串行调度、中间件链与 LoopGuard。
+
+
 import (
 	"context"
 	"crypto/md5"
@@ -10,36 +13,36 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ToolsNodeConfig configures the tools node for a ReActAgent.
+// ToolsNodeConfig 配置 ReActAgent 的工具执行节点。
 type ToolsNodeConfig struct {
-	// Tools is the list of tools available for execution.
+	// Tools 可直接注册的工具列表。
 	Tools []Tool
 
-	// Registry provides centralized tool management with aliases, categories,
+	// Registry 集中式工具注册表，优先加载后与 Tools 合并（同名以 Tools 为准）。
 	// and filtering. When set, tools are loaded from the registry first,
 	// then any tools in the Tools slice are added on top.
 	Registry *ToolRegistry
 
-	// ReturnDirectly specifies tool names that cause the agent to return immediately.
+	// ReturnDirectly 指定执行后立即退出的工具名。
 	ReturnDirectly map[string]bool
 
-	// ToolInvokeMiddlewares are middleware wrappers using ToolInvocationContext.
+	// ToolInvokeMiddlewares 基于 ToolInvocationContext 的中间件链。
 	// Applied before tool execution in a chain (outermost first).
 	ToolInvokeMiddlewares []ToolInvokeMiddleware
 
-	// EmitInternalEvents enables forwarding internal events from AgentTool children.
+	// EmitInternalEvents 是否转发 AgentTool 子智能体的内部事件。
 	EmitInternalEvents bool
 
-	// LoopGuard prevents infinite loops by detecting repeated tool calls
+	// LoopGuard 检测相同参数重复调用或连续失败以防死循环。
 	// with identical arguments or consecutive failures. If nil, no guard is applied.
 	LoopGuard *LoopGuard
 
-	// UnknownToolHandler handles tool calls for tools that are not registered.
+	// UnknownToolHandler 处理未注册工具的调用。
 	// If nil, an error message is returned to the model when a tool is not found.
 	// The function receives the tool name and arguments JSON string.
 	UnknownToolHandler func(ctx context.Context, name, arguments string) (string, error)
 
-	// ArgumentsAliases maps tool names to their argument field aliases.
+	// ArgumentsAliases 工具参数别名映射，执行前将别名键转为规范键。
 	// Key = canonical tool name, value = map[canonicalArgumentKey][]alias.
 	// When a tool call's JSON contains an alias key instead of the canonical key,
 	// it is remapped before execution.
@@ -47,14 +50,14 @@ type ToolsNodeConfig struct {
 	ArgumentsAliases map[string]map[string][]string
 }
 
-// ToolsNode handles tool extraction from model output, dispatching to tools,
+// ToolsNode 从模型输出提取 tool_calls、调度执行并收集结果。
 // collecting results, and applying middleware chains.
 type ToolsNode[M MessageType] struct {
 	config  *ToolsNodeConfig
 	toolMap map[string]Tool
 }
 
-// NewToolsNode creates a new ToolsNode with the given configuration.
+// NewToolsNode 创建 ToolsNode 并构建 name→Tool 映射。
 // Tools are loaded from the Registry first (if set), then any Tools slice
 // entries are added on top (taking precedence on name conflict).
 func NewToolsNode[M MessageType](cfg *ToolsNodeConfig) *ToolsNode[M] {
@@ -75,7 +78,7 @@ func NewToolsNode[M MessageType](cfg *ToolsNodeConfig) *ToolsNode[M] {
 	return tn
 }
 
-// Execute processes all tool calls found in the model response.
+// Execute 处理模型响应中的全部 tool_calls；多调用时按能力分批并发/串行。
 // It returns the list of tool result messages to append to state,
 // and any agent action (e.g., return-directly) that should be handled.
 //
@@ -167,6 +170,7 @@ func (tn *ToolsNode[M]) Execute(ctx context.Context, resp M, state *TypedReActAg
 	return results, action, nil
 }
 
+// executeOne 执行单次 tool_call，含 panic 恢复、LoopGuard 与中断检测。
 func (tn *ToolsNode[M]) executeOne(ctx context.Context, tc schema.ToolCall) (msg M, err error) {
 	// Panic recovery: tool.Invoke may panic, catch and convert to tool result message.
 	defer func() {
@@ -199,6 +203,7 @@ func (tn *ToolsNode[M]) executeOne(ctx context.Context, tc schema.ToolCall) (msg
 	return tn.executeWithNewChain(ctx, tc, tool)
 }
 
+// executeWithNewChain 经中间件链调用工具并构造结果消息。
 func (tn *ToolsNode[M]) executeWithNewChain(ctx context.Context, tc schema.ToolCall, tool Tool) (M, error) {
 	// Remap argument aliases if configured.
 	argsJSON := tc.Function.Arguments
@@ -248,7 +253,7 @@ func (tn *ToolsNode[M]) executeWithNewChain(ctx context.Context, tc schema.ToolC
 	return tn.makeToolMsg(content, tc.ID), nil
 }
 
-// interruptResult wraps a tool interrupt for propagation up the call chain.
+// interruptResult 包装工具中断以便向上传播并保留恢复地址。
 type interruptResult struct {
 	tie         *ToolInterruptError
 	toolAddress Address // address segments at time of interrupt; preserved for resume routing
@@ -256,7 +261,7 @@ type interruptResult struct {
 
 func (e *interruptResult) Error() string { return fmt.Sprintf("interrupt: %v", e.tie.Info) }
 
-// remapToolArgs replaces alias keys in JSON arguments with canonical keys.
+// remapToolArgs 将 JSON 参数中的别名键替换为规范键。
 func remapToolArgs(argsJSON string, aliases map[string][]string) string {
 	if len(aliases) == 0 || argsJSON == "" {
 		return argsJSON
@@ -302,7 +307,7 @@ func (tn *ToolsNode[M]) makeToolMsg(content, callID string) M {
 	}
 }
 
-// ---- Helper: convert tool results for event emission ----
+// ---- 辅助：工具结果转事件 ----
 
 func toolResultToEvent[M MessageType](msg M, roleName string) *TypedAgentEvent[M] {
 	if m, ok := any(msg).(*schema.Message); ok {
@@ -311,7 +316,7 @@ func toolResultToEvent[M MessageType](msg M, roleName string) *TypedAgentEvent[M
 	return nil
 }
 
-// ---- JSON helpers ----
+// ---- JSON 辅助 ----
 
 func parseToolArgs(argsJSON string, target any) error {
 	if err := json.Unmarshal([]byte(argsJSON), target); err != nil {
@@ -320,9 +325,9 @@ func parseToolArgs(argsJSON string, target any) error {
 	return nil
 }
 
-// ---- LoopGuard: detect repeated tool calls with same args ----
+// ---- LoopGuard：检测相同参数重复调用 ----
 
-// LoopGuard prevents infinite loops where the model repeatedly calls a tool
+// LoopGuard 跟踪同工具同参数连续次数与连续失败次数。
 // with identical parameters. It tracks consecutive same-args calls per tool.
 type LoopGuard struct {
 	mu       sync.Mutex
@@ -332,7 +337,7 @@ type LoopGuard struct {
 	maxFails int
 }
 
-// NewLoopGuard creates a LoopGuard with the given thresholds.
+// NewLoopGuard 创建 LoopGuard，maxSame/maxFails 为 0 则禁用对应检测。
 func NewLoopGuard(maxSame, maxFails int) *LoopGuard {
 	return &LoopGuard{
 		sameArgs: make(map[string]int),
@@ -342,7 +347,7 @@ func NewLoopGuard(maxSame, maxFails int) *LoopGuard {
 	}
 }
 
-// CheckSameArgs returns an error if the same tool+args pair is called too many times.
+// CheckSameArgs 相同工具+参数超过阈值时返回错误。
 func (g *LoopGuard) CheckSameArgs(toolName, argsJSON string) error {
 	if g == nil || g.maxSame <= 0 {
 		return nil
@@ -357,7 +362,7 @@ func (g *LoopGuard) CheckSameArgs(toolName, argsJSON string) error {
 	return nil
 }
 
-// RecordFailure tracks consecutive failures for a tool.
+// RecordFailure 记录工具连续失败次数。
 // Returns an error if the failure limit is exceeded.
 func (g *LoopGuard) RecordFailure(toolName string) error {
 	if g == nil || g.maxFails <= 0 {
@@ -373,7 +378,7 @@ func (g *LoopGuard) RecordFailure(toolName string) error {
 	return nil
 }
 
-// Reset clears tracking for a tool (called on success or different args).
+// Reset 成功或参数变化时清除该工具的跟踪状态。
 func (g *LoopGuard) Reset(toolName string) {
 	if g == nil {
 		return
@@ -389,9 +394,9 @@ func (g *LoopGuard) Reset(toolName string) {
 	delete(g.failures, toolName)
 }
 
-// ---- Tool capability and batch planning ----
+// ---- 工具能力与批次规划 ----
 
-// toolCapFromTool returns the capability of a tool.
+// toolCapFromTool 返回工具能力，默认 ToolCapWritesFiles（保守串行）。
 func toolCapFromTool(t Tool) ToolCapability {
 	if ct, ok := t.(CapableTool); ok {
 		return ct.Capability()
@@ -399,7 +404,7 @@ func toolCapFromTool(t Tool) ToolCapability {
 	return ToolCapWritesFiles // default: conservative serial
 }
 
-// executionBatch represents a group of tool calls to execute together.
+// executionBatch 同一批次内的 tool_calls 共享并行或串行模式。
 type executionBatch struct {
 	mode  batchMode
 	calls []schema.ToolCall
@@ -412,7 +417,7 @@ const (
 	batchSerial
 )
 
-// planBatches groups tool calls into parallel/serial batches based on capability.
+// planBatches 只读工具合并并行批次，其余串行执行。
 // Read-only tools are grouped for parallel execution; others run serially.
 func (tn *ToolsNode[M]) planBatches(tcs []schema.ToolCall) []executionBatch {
 	var batches []executionBatch
@@ -445,9 +450,9 @@ func (tn *ToolsNode[M]) planBatches(tcs []schema.ToolCall) []executionBatch {
 	return batches
 }
 
-// ---- LoopGuard integration in executeOne ----
+// ---- executeOne 中的 LoopGuard 集成 ----
 
-// getLoopGuard returns the LoopGuard from the ToolsNode if configured.
+// getLoopGuard 返回配置中的 LoopGuard（共享指针状态）。
 // It is stored on the ToolsNode to share state across invocation cycles.
 func (tn *ToolsNode[M]) getLoopGuard() *LoopGuard {
 	if tn.config != nil {
@@ -458,3 +463,5 @@ func (tn *ToolsNode[M]) getLoopGuard() *LoopGuard {
 
 // clearLoopGuard writes the LoopGuard config back (no-op, config is shared by pointer).
 func (tn *ToolsNode[M]) clearLoopGuard() {}
+
+// 多工具并发默认上限 10；单工具走快速路径无 goroutine 开销。

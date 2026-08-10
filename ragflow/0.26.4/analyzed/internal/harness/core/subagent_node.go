@@ -1,5 +1,7 @@
-// Package agentcore provides a reusable SubAgentNode component that wraps an
-// Agent as a first-class StateGraph node with field-level data projection.
+// subagent_node.go — SubAgentNode：将 Agent 包装为 StateGraph 节点，支持字段映射与自定义提取/收集。
+
+// Package core 提供可复用 SubAgentNode：将 Agent 包装为 StateGraph 节点，
+// 支持字段级输入/输出映射与检查点/中断传播。
 //
 // Usage:
 //
@@ -24,28 +26,28 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// SubAgentNodeOption configures a SubAgentNode.
+// SubAgentNodeOption SubAgentNode 配置选项函数。
 type SubAgentNodeOption func(*SubAgentNodeConfig)
 
-// SubAgentNodeConfig holds configuration for the sub-agent node.
+// SubAgentNodeConfig 子智能体节点的完整配置。
 type SubAgentNodeConfig struct {
-	// InputMapping maps state field paths to agent input fields.
+	// InputMapping 图状态字段到智能体输入字段的映射。
 	// Format: types.FieldMapping{From: "state_field", To: "agent_input_field"}
 	InputMapping []types.FieldMapping
-	// OutputMapping maps agent output fields to state field paths.
+	// OutputMapping 智能体输出到图状态字段的映射。
 	// Format: types.FieldMapping{From: "agent_output_field", To: "state_field"}
 	OutputMapping []types.FieldMapping
-	// InputExtractor extracts the AgentInput from the graph state.
+	// InputExtractor 自定义从图状态提取 AgentInput。
 	// If nil, the entire state is passed as the input messages.
 	InputExtractor func(ctx context.Context, state interface{}) (*AgentInput, error)
-	// OutputCollector merges agent output messages back into the graph state.
+	// OutputCollector 自定义将智能体输出写回图状态。
 	// If nil, messages from the agent output are appended to state.
 	OutputCollector func(ctx context.Context, state interface{}, messages []*schema.Message) (interface{}, error)
-	// NodeName is the name of this sub-agent node in the graph.
+	// NodeName 图中该子智能体节点的名称。
 	NodeName string
 }
 
-// WithSubAgentInput configures which state fields map to the agent's input messages.
+// WithSubAgentInput 配置状态字段到智能体输入的映射。
 // The 'from' path is in the graph state, 'to' path is in the agent's input.
 func WithSubAgentInput(from, to string) SubAgentNodeOption {
 	return func(cfg *SubAgentNodeConfig) {
@@ -53,7 +55,7 @@ func WithSubAgentInput(from, to string) SubAgentNodeOption {
 	}
 }
 
-// WithSubAgentOutput configures which agent output fields map back to the graph state.
+// WithSubAgentOutput 配置智能体输出到图状态的映射。
 // The 'from' path is in the agent's output, 'to' path is in the graph state.
 func WithSubAgentOutput(from, to string) SubAgentNodeOption {
 	return func(cfg *SubAgentNodeConfig) {
@@ -61,29 +63,29 @@ func WithSubAgentOutput(from, to string) SubAgentNodeOption {
 	}
 }
 
-// WithSubAgentExtractor sets a custom input extractor function.
+// WithSubAgentExtractor 设置自定义输入提取器。
 func WithSubAgentExtractor(fn func(ctx context.Context, state interface{}) (*AgentInput, error)) SubAgentNodeOption {
 	return func(cfg *SubAgentNodeConfig) {
 		cfg.InputExtractor = fn
 	}
 }
 
-// WithSubAgentCollector sets a custom output collector function.
+// WithSubAgentCollector 设置自定义输出收集器。
 func WithSubAgentCollector(fn func(ctx context.Context, state interface{}, messages []*schema.Message) (interface{}, error)) SubAgentNodeOption {
 	return func(cfg *SubAgentNodeConfig) {
 		cfg.OutputCollector = fn
 	}
 }
 
-// WithSubAgentName sets the node name for the sub-agent.
+// WithSubAgentName 设置子智能体节点名称。
 func WithSubAgentName(name string) SubAgentNodeOption {
 	return func(cfg *SubAgentNodeConfig) {
 		cfg.NodeName = name
 	}
 }
 
-// NewSubAgentNode creates a StateGraph-compatible node function that wraps an
-// Agent. The returned function can be used with sg.AddNode() to place an agent
+// NewSubAgentNode 创建 StateGraph 兼容节点函数，
+// 流程：提取输入 → 运行智能体 → 合并输出到图状态。
 // as a first-class graph node with field-level data projection.
 //
 // The sub-agent node:
@@ -118,7 +120,7 @@ func NewSubAgentNode(agent Agent, opts ...SubAgentNodeOption) func(ctx context.C
 	}
 }
 
-// subAgentExtractInput builds the AgentInput from graph state using the configured
+// subAgentExtractInput 按配置从图状态构建 AgentInput。
 // extractor or FieldMapping.
 func subAgentExtractInput(cfg *SubAgentNodeConfig, ctx context.Context, state interface{}) (*AgentInput, error) {
 	// Custom extractor takes precedence
@@ -163,7 +165,7 @@ func subAgentExtractInput(cfg *SubAgentNodeConfig, ctx context.Context, state in
 	return input, nil
 }
 
-// subAgentRunAgent executes the agent and collects its output messages.
+// subAgentRunAgent 执行智能体并收集非流式输出消息。
 func subAgentRunAgent(ctx context.Context, agent Agent, input *AgentInput) ([]*schema.Message, error) {
 	iter := agent.Run(ctx, input)
 	var messages []*schema.Message
@@ -184,7 +186,7 @@ func subAgentRunAgent(ctx context.Context, agent Agent, input *AgentInput) ([]*s
 	return messages, nil
 }
 
-// subAgentCollectOutput merges agent output messages back into the graph state.
+// subAgentCollectOutput 将输出消息合并回图状态（默认追加到 Messages）。
 // NOTE: Agent output messages are stored as []interface{} (not []*schema.Message)
 // in the state map. Callers reading st["Messages"] back must handle []interface{}
 // with type assertions, or use the default extractor which already does this.

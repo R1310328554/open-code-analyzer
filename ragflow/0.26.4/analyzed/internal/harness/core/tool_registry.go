@@ -1,5 +1,8 @@
 package core
 
+// tool_registry.go — 集中式工具注册表：别名、分类、合并与过滤。
+
+
 import (
 	"fmt"
 	"sync"
@@ -7,7 +10,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ToolRegistry provides centralized tool management with aliases, categories,
+// ToolRegistry 集中管理工具，支持别名、分类与过滤查询。
 // and filtering. It replaces raw []Tool slices for more flexible tool discovery.
 type ToolRegistry struct {
 	mu       sync.RWMutex
@@ -16,7 +19,7 @@ type ToolRegistry struct {
 	category map[string][]string // category -> tool names
 }
 
-// NewToolRegistry creates an empty ToolRegistry.
+// NewToolRegistry 创建空注册表。
 func NewToolRegistry() *ToolRegistry {
 	return &ToolRegistry{
 		tools:    make(map[string]Tool),
@@ -25,7 +28,7 @@ func NewToolRegistry() *ToolRegistry {
 	}
 }
 
-// Register adds a tool and optionally aliases and categories.
+// Register 注册工具并可附加别名与分类。
 func (r *ToolRegistry) Register(tool Tool, opts ...RegistryOption) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -36,17 +39,17 @@ func (r *ToolRegistry) Register(tool Tool, opts ...RegistryOption) {
 	}
 }
 
-// RegistryOption configures a tool registration.
+// RegistryOption 注册时的可选配置。
 type RegistryOption func(name string, r *ToolRegistry)
 
-// WithAlias registers an alias for the tool.
+// WithAlias 为工具注册别名。
 func WithAlias(alias string) RegistryOption {
 	return func(name string, r *ToolRegistry) {
 		r.aliases[alias] = name
 	}
 }
 
-// WithCategory assigns the tool to one or more categories.
+// WithCategory 将工具归入一个或多个分类。
 func WithCategory(categories ...string) RegistryOption {
 	return func(name string, r *ToolRegistry) {
 		for _, cat := range categories {
@@ -55,7 +58,7 @@ func WithCategory(categories ...string) RegistryOption {
 	}
 }
 
-// Lookup finds a tool by name or alias.
+// Lookup 按名称或别名查找工具。
 func (r *ToolRegistry) Lookup(name string) (Tool, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -69,7 +72,7 @@ func (r *ToolRegistry) Lookup(name string) (Tool, bool) {
 	return nil, false
 }
 
-// LookupByCategory returns all tools in a category.
+// LookupByCategory 返回指定分类下的全部工具。
 func (r *ToolRegistry) LookupByCategory(category string) []Tool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -83,7 +86,7 @@ func (r *ToolRegistry) LookupByCategory(category string) []Tool {
 	return result
 }
 
-// AllTools returns all registered tools as a slice.
+// AllTools 返回所有已注册工具的切片。
 func (r *ToolRegistry) AllTools() []Tool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -94,12 +97,12 @@ func (r *ToolRegistry) AllTools() []Tool {
 	return result
 }
 
-// ToSlice converts the registry to a []Tool for use with existing APIs.
+// ToSlice 转为 []Tool 以兼容现有 API。
 func (r *ToolRegistry) ToSlice() []Tool {
 	return r.AllTools()
 }
 
-// Merge merges another registry into this one. Conflicts are resolved by source winning.
+// Merge 合并另一注册表，冲突时以源覆盖；自合并为 no-op。
 // Uses a snapshot-then-apply pattern to avoid deadlock: other's data is read under
 // RLock before locking r. Self-merge (r.Merge(r)) is handled as a no-op.
 func (r *ToolRegistry) Merge(other *ToolRegistry) {
@@ -137,7 +140,7 @@ func (r *ToolRegistry) Merge(other *ToolRegistry) {
 	}
 }
 
-// Filter returns a new registry containing only tools matching the predicate.
+// Filter 按谓词筛选并返回新注册表。
 func (r *ToolRegistry) Filter(fn func(Tool) bool) *ToolRegistry {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -150,7 +153,7 @@ func (r *ToolRegistry) Filter(fn func(Tool) bool) *ToolRegistry {
 	return result
 }
 
-// MustLookup looks up a tool by name and panics if not found (for use in init()).
+// MustLookup 查找工具，未找到则 panic（适用于 init）。
 func (r *ToolRegistry) MustLookup(name string) Tool {
 	t, ok := r.Lookup(name)
 	if !ok {
@@ -159,7 +162,7 @@ func (r *ToolRegistry) MustLookup(name string) Tool {
 	return t
 }
 
-// Unregister removes a tool by name.
+// Unregister 按名称移除工具及其别名/分类引用。
 func (r *ToolRegistry) Unregister(name string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -184,7 +187,7 @@ func (r *ToolRegistry) Unregister(name string) {
 	}
 }
 
-// ToolInfos returns metadata for all registered tools. When a tool implements
+// ToolInfos 返回全部工具的元数据；实现 ToolInfoProvider 时使用完整 schema。
 // ToolInfoProvider, its full structured info is used; otherwise a minimal
 // Name+Description info is created.
 func (r *ToolRegistry) ToolInfos() []*schema.ToolInfo {

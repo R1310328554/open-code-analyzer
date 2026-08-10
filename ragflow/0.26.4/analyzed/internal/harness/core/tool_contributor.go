@@ -1,13 +1,16 @@
 package core
 
+// tool_contributor.go — ToolContributor 接口：中间件在构建阶段贡献工具与 ReturnDirectly。
+
+
 import (
 	"context"
 
 	"ragflow/internal/harness/core/schema"
 )
 
-// ToolContributor is an optional interface that middlewares can implement to
-// contribute tools, tool infos, and return-directly entries to the agent.
+// ToolContributor 可选接口，中间件可在构建阶段贡献工具、ToolInfo 与 ReturnDirectly。
+// 在 BeforeAgent 之前收集，确保 ToolsNode 与中间件均可使用。
 //
 // The agent loop collects contributions BEFORE calling BeforeAgent, ensuring
 // that tools are available for both ToolsNode construction and BeforeAgent
@@ -25,25 +28,25 @@ import (
 //	    return []Tool{NewBaseTool("my_tool", "Does something", myFunc)}
 //	}
 type ToolContributor[M MessageType] interface {
-	// ContributeTools returns tools to add to the agent's tool set.
+	// ContributeTools 返回需加入智能体的 Tool 列表。
 	// Called once during agent build (before BeforeAgent).
 	ContributeTools(ctx context.Context) []Tool
 
-	// ContributeToolInfos returns structured ToolInfo entries to bind to the
+	// ContributeToolInfos 返回需绑定到模型的 ToolInfo（如无对应 Tool 的元工具）。
 	// model. These are merged with auto-generated infos from ContributeTools.
 	// Use this for special entries that don't correspond to a Tool (e.g.,
 	// a meta-tool like "search_tools" for dynamic tool search).
 	ContributeToolInfos(ctx context.Context) []*schema.ToolInfo
 
-	// ContributeReturnDirectly returns tool names that should cause the agent
+	// ContributeReturnDirectly 返回执行后应立即返回的工具名集合。
 	// to return immediately after execution. Merged with config-level
 	// ReturnDirectly.
 	ContributeReturnDirectly(ctx context.Context) map[string]bool
 }
 
-// ---- Collection helpers ----
+// ---- 收集辅助函数 ----
 
-// collectContributorTools returns tools contributed by all ToolContributor middlewares.
+// collectContributorTools 汇总所有 ToolContributor 中间件贡献的工具。
 func collectContributorTools[M MessageType](ctx context.Context, middlewares []TypedReActMiddleware[M]) []Tool {
 	var all []Tool
 	for _, mw := range middlewares {
@@ -57,7 +60,7 @@ func collectContributorTools[M MessageType](ctx context.Context, middlewares []T
 	return all
 }
 
-// collectContributorToolInfos returns tool infos contributed by all ToolContributor middlewares.
+// collectContributorToolInfos 汇总所有中间件贡献的 ToolInfo。
 func collectContributorToolInfos[M MessageType](ctx context.Context, middlewares []TypedReActMiddleware[M]) []*schema.ToolInfo {
 	var all []*schema.ToolInfo
 	for _, mw := range middlewares {
@@ -71,7 +74,7 @@ func collectContributorToolInfos[M MessageType](ctx context.Context, middlewares
 	return all
 }
 
-// collectContributorReturnDirectly merges return-directly entries from all ToolContributor middlewares.
+// collectContributorReturnDirectly 合并所有中间件的 ReturnDirectly 配置。
 func collectContributorReturnDirectly[M MessageType](ctx context.Context, middlewares []TypedReActMiddleware[M]) map[string]bool {
 	all := make(map[string]bool)
 	for _, mw := range middlewares {

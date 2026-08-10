@@ -1,11 +1,14 @@
 package core
 
+// utils.go — 异步迭代器/生成器对与事件拷贝、Session 事件追加辅助。
+
+
 import (
 	"context"
 	"sync"
 )
 
-// AsyncIterator provides blocking iteration over a typed stream.
+// AsyncIterator 对类型化流提供阻塞式迭代，多读者各得一项。
 // Multiple goroutines reading from the same iterator will receive each item
 // exactly once.
 type AsyncIterator[T any] struct {
@@ -18,6 +21,7 @@ type iterationItem[T any] struct {
 	ok    bool
 }
 
+// NewAsyncIterator 创建带 64 缓冲的异步迭代器。
 func NewAsyncIterator[T any]() *AsyncIterator[T] {
 	return &AsyncIterator[T]{ch: make(chan iterationItem[T], 64)}
 }
@@ -39,7 +43,7 @@ func (it *AsyncIterator[T]) Close() {
 	}
 }
 
-// AsyncGenerator produces items for an AsyncIterator.
+// AsyncGenerator 向配对的 AsyncIterator 生产数据项。
 // Multiple goroutines can safely Send to the same generator.
 type AsyncGenerator[T any] struct {
 	ch     chan iterationItem[T]
@@ -47,11 +51,13 @@ type AsyncGenerator[T any] struct {
 	mu     sync.Mutex
 }
 
+// NewAsyncIteratorPair 创建共享通道的迭代器/生成器对。
 func NewAsyncIteratorPair[T any]() (*AsyncIterator[T], *AsyncGenerator[T]) {
 	ch := make(chan iterationItem[T], 64)
 	return &AsyncIterator[T]{ch: ch}, &AsyncGenerator[T]{ch: ch}
 }
 
+// Send 线程安全地向迭代器发送一项。
 func (g *AsyncGenerator[T]) Send(value T) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -74,6 +80,7 @@ func (g *AsyncGenerator[T]) trySend(value T) bool {
 	}
 }
 
+// Close 关闭生成器并关闭底层通道。
 func (g *AsyncGenerator[T]) Close() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -89,7 +96,7 @@ func (g *AsyncGenerator[T]) IsClosed() bool {
 	return g.closed
 }
 
-// SendCtx sends a value, respecting context cancellation to prevent goroutine leaks
+// SendCtx 发送时尊重 ctx 取消，避免消费者停止读取时 goroutine 泄漏。
 // when the consumer stops reading from the iterator.
 func (g *AsyncGenerator[T]) SendCtx(ctx context.Context, value T) bool {
 	g.mu.Lock()
@@ -107,8 +114,9 @@ func (g *AsyncGenerator[T]) SendCtx(ctx context.Context, value T) bool {
 	}
 }
 
-// ===== Copy helpers =====
+// ===== 拷贝辅助 =====
 
+// copyTypedAgentEvent 深拷贝 TypedAgentEvent（RunPath/Output/Action）。
 func copyTypedAgentEvent[M MessageType](event *TypedAgentEvent[M]) *TypedAgentEvent[M] {
 	if event == nil {
 		return nil
@@ -157,6 +165,7 @@ func setAutomaticClose[M MessageType](event *TypedAgentEvent[M]) {
 	}
 }
 func typedSetAutomaticClose[M MessageType](event *TypedAgentEvent[M]) { setAutomaticClose(event) }
+// addTypedEvent 向 Session 的 TypedEvents 追加类型化事件。
 func addTypedEvent[M MessageType](s *runSession, event *TypedAgentEvent[M]) {
 	if s == nil {
 		return
@@ -191,3 +200,5 @@ func cloneSlice[T any](src []T) []T {
 	copy(dst, src)
 	return dst
 }
+
+// copyMap/cloneSlice 提供浅拷贝 map 与 slice 的通用辅助。

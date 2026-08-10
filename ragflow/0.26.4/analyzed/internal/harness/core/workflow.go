@@ -1,5 +1,8 @@
 package core
 
+// workflow.go — 传统工作流智能体：顺序/并行/循环模式与子智能体中断恢复。
+
+
 import (
 	"context"
 	"fmt"
@@ -9,6 +12,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
+// workflowMode 工作流执行模式枚举。
 type workflowMode int
 
 const (
@@ -18,19 +22,24 @@ const (
 	workflowModeParallel
 )
 
+// workflowState 顺序工作流中断恢复状态。
 type workflowState struct {
 	InterruptIdx int
 }
+// workflowParallelState 并行工作流各分支事件快照。
 type workflowParallelState struct {
 	SubEvents map[int][]*agentEventWrap
 }
+// workflowLoopState 循环工作流迭代与索引状态。
 type workflowLoopState struct {
 	Iter int
 	Idx  int
 }
 
+// agentEventWrap 包装任意事件以便 gob 序列化。
 type agentEventWrap struct{ Event any }
 
+// WorkflowInterruptInfo 工作流级中断的恢复元数据。
 type WorkflowInterruptInfo struct {
 	OrigInput      *AgentInput
 	SequentialIdx  int
@@ -39,6 +48,7 @@ type WorkflowInterruptInfo struct {
 	ParallelInfo   map[int]*InterruptInfo
 }
 
+// workflowAgent 封装顺序/并行/循环子智能体编排。
 type workflowAgent struct {
 	name      string
 	desc      string
@@ -62,6 +72,7 @@ func (a *workflowAgent) GetType() string {
 	}
 }
 
+// Run 按模式启动工作流并在 goroutine 中执行。
 func (a *workflowAgent) Run(ctx context.Context, _ *AgentInput, opts ...RunOption) *AsyncIterator[*AgentEvent] {
 	it, gen := NewAsyncIteratorPair[*AgentEvent]()
 	cc := getCommonOptions(nil, opts...).cancelCtx
@@ -87,6 +98,7 @@ func (a *workflowAgent) Run(ctx context.Context, _ *AgentInput, opts ...RunOptio
 	return it
 }
 
+// Resume 从中断状态恢复对应模式的工作流。
 func (a *workflowAgent) Resume(ctx context.Context, info *ResumeInfo, opts ...RunOption) *AsyncIterator[*AgentEvent] {
 	it, gen := NewAsyncIteratorPair[*AgentEvent]()
 	cc := getCommonOptions(nil, opts...).cancelCtx
@@ -117,7 +129,7 @@ func (a *workflowAgent) Resume(ctx context.Context, info *ResumeInfo, opts ...Ru
 	return it
 }
 
-// ---- Sequential ----
+// ---- 顺序模式 ----
 
 func (a *workflowAgent) runSeq(ctx context.Context, gen *AsyncGenerator[*AgentEvent], st *workflowState, info *ResumeInfo, opts ...RunOption) error {
 	start := 0
@@ -191,7 +203,7 @@ func (a *workflowAgent) runSeq(ctx context.Context, gen *AsyncGenerator[*AgentEv
 	return nil
 }
 
-// ---- Loop ----
+// ---- 循环模式 ----
 
 func (a *workflowAgent) runLoop(ctx context.Context, gen *AsyncGenerator[*AgentEvent], ls *workflowLoopState, info *ResumeInfo, opts ...RunOption) error {
 	if len(a.subAgents) == 0 {
@@ -274,7 +286,7 @@ func (a *workflowAgent) runLoop(ctx context.Context, gen *AsyncGenerator[*AgentE
 	return nil
 }
 
-// ---- Parallel ----
+// ---- 并行模式 ----
 
 func (a *workflowAgent) runPar(ctx context.Context, gen *AsyncGenerator[*AgentEvent], ps *workflowParallelState, info *ResumeInfo, opts ...RunOption) error {
 	if len(a.subAgents) == 0 {
@@ -382,7 +394,7 @@ func (a *workflowAgent) runPar(ctx context.Context, gen *AsyncGenerator[*AgentEv
 	return nil
 }
 
-// ---- Helpers ----
+// ---- 辅助函数 ----
 
 func buildPath(ctx context.Context, subs []*flowAgent, idx, iter int) context.Context {
 	var steps []string
@@ -426,16 +438,19 @@ func inputFromCtx(ctx context.Context) *AgentInput {
 	return nil
 }
 
-// ---- Constructors ----
+// ---- 构造函数 ----
 
+// SequentialConfig 顺序工作流配置。
 type SequentialConfig struct {
 	Name, Description string
 	SubAgents         []Agent
 }
+// ParallelConfig 并行工作流配置。
 type ParallelConfig struct {
 	Name, Description string
 	SubAgents         []Agent
 }
+// LoopConfig 循环工作流配置。
 type LoopConfig struct {
 	Name, Description string
 	SubAgents         []Agent
@@ -460,18 +475,21 @@ func newWf(ctx context.Context, name, desc string, subs []Agent, mode workflowMo
 	return fa.(*flowAgent), nil
 }
 
+// NewSequential 创建顺序执行子智能体的工作流。
 func NewSequential(ctx context.Context, cfg *SequentialConfig) (ResumableAgent, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("SequentialConfig is nil")
 	}
 	return newWf(ctx, cfg.Name, cfg.Description, cfg.SubAgents, workflowModeSequential, 0)
 }
+// NewParallel 创建并行执行子智能体的工作流。
 func NewParallel(ctx context.Context, cfg *ParallelConfig) (ResumableAgent, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("ParallelConfig is nil")
 	}
 	return newWf(ctx, cfg.Name, cfg.Description, cfg.SubAgents, workflowModeParallel, 0)
 }
+// NewLoop 创建循环执行子智能体的工作流（默认 maxIter=10）。
 func NewLoop(ctx context.Context, cfg *LoopConfig) (ResumableAgent, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("LoopConfig is nil")
@@ -488,3 +506,5 @@ func init() {
 	schema.RegisterType("_harness_wf_parallel_state", func() any { return &workflowParallelState{} })
 	schema.RegisterType("_harness_wf_loop_state", func() any { return &workflowLoopState{} })
 }
+
+// init 注册工作流状态类型供 gob 检查点序列化。
