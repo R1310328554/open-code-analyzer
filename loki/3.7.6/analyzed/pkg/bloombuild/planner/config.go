@@ -1,5 +1,8 @@
 package planner
 
+// Bloom Planner 配置与租户限流适配：定义规划周期、日表偏移范围、
+// 保留策略及任务队列参数，并将 Limits 接口映射为队列消费者上限。
+
 import (
 	"flag"
 	"fmt"
@@ -9,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/bloombuild/planner/strategies"
 )
 
+// Config 控制规划间隔、可构建的日表窗口及 retention/queue 嵌套配置。
 // Config configures the bloom-planner component.
 type Config struct {
 	PlanningInterval time.Duration   `yaml:"planning_interval"`
@@ -18,6 +22,7 @@ type Config struct {
 	Queue            queue.Config    `yaml:"queue"`
 }
 
+// RegisterFlagsWithPrefix 以给定前缀注册 interval、table-offset 等标志。
 // RegisterFlagsWithPrefix registers flags for the bloom-planner configuration.
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.DurationVar(&cfg.PlanningInterval, prefix+".interval", 8*time.Hour, "Interval at which to re-run the bloom creation planning.")
@@ -49,6 +54,7 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// Limits 聚合 retention、规划策略与 builder 超时/重试等租户级限制。
 type Limits interface {
 	RetentionLimits
 	strategies.Limits
@@ -58,6 +64,7 @@ type Limits interface {
 	BloomTaskMaxRetries(tenantID string) int
 }
 
+// QueueLimits 将租户 BloomBuildMaxBuilders 限制桥接到通用任务队列。
 type QueueLimits struct {
 	limits Limits
 }
@@ -66,6 +73,7 @@ func NewQueueLimits(limits Limits) *QueueLimits {
 	return &QueueLimits{limits: limits}
 }
 
+// MaxConsumers 计算某租户最多可占用的 builder 数量，0 表示不限制。
 // MaxConsumers is used to compute how many of the available builders are allowed to handle tasks for a given tenant.
 // 0 is returned when neither limits are applied. 0 means all builders can be used.
 func (c *QueueLimits) MaxConsumers(tenantID string, allConsumers int) int {

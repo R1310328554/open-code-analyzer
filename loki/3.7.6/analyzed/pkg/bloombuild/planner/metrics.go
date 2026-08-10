@@ -1,5 +1,8 @@
 package planner
 
+// Bloom Planner Prometheus 指标：覆盖运行状态、任务队列、规划/构建
+// 耗时、租户任务进度及 bloom 保留清理等可观测性计数器与直方图。
+
 import (
 	"time"
 
@@ -19,9 +22,11 @@ const (
 	phaseBuilding = "building"
 )
 
+// Metrics 聚合 planner 运行、队列、构建与 retention 全套 Prometheus 指标。
 type Metrics struct {
 	running prometheus.Gauge
 
+// 队列相关指标：连接数、排队时长、在途任务采样及重入队/丢失计数。
 	// Extra Queue metrics
 	connectedBuilders prometheus.GaugeFunc
 	queueDuration     prometheus.Histogram
@@ -43,6 +48,7 @@ type Metrics struct {
 	tenantTasksCompleted *prometheus.GaugeVec
 	tenantTasksTiming    *prometheus.HistogramVec
 
+// Retention 指标：运行状态、耗时、处理天数/租户数及超出 lookback 租户数。
 	// Retention metrics
 	retentionRunning                  prometheus.Gauge
 	retentionTime                     *prometheus.HistogramVec
@@ -51,6 +57,7 @@ type Metrics struct {
 	retentionTenantsExceedingLookback prometheus.Gauge
 }
 
+// NewMetrics 注册 loki_bloomplanner_* 命名空间指标并绑定已连接 builder 回调。
 func NewMetrics(
 	r prometheus.Registerer,
 	getConnectedBuilders func() float64,

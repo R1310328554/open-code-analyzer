@@ -1,5 +1,8 @@
 package planner
 
+// TSDB 版本化指纹覆盖环：维护各 TSDB 版本在指纹轴上的 token 区间，
+// 用于判定重复/过时的 bloom meta，支撑规划与构建阶段的 meta 清理。
+
 import (
 	"sort"
 
@@ -14,6 +17,7 @@ type tsdbToken struct {
 	version int               // TSDB version
 }
 
+// tsdbTokenRange 是按 through 排序的 token 环，负版本表示尚未被任何 TSDB 覆盖。
 // a ring of token ranges used to identify old metas.
 // each token represents that a TSDB version has covered the entire range
 // up to that point from the previous token.
@@ -31,6 +35,7 @@ func (t tsdbTokenRange) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
+// Add 将新版本 meta 的指纹边界并入环；若已被更高版本完全覆盖则返回 added=false。
 // Add ensures a versioned set of bounds is added to the range. If the bounds are already
 // covered by a more up to date version, it returns false.
 func (t tsdbTokenRange) Add(version int, bounds v1.FingerprintBounds) (res tsdbTokenRange, added bool) {
@@ -193,6 +198,7 @@ func (t tsdbTokenRange) boundsForToken(i int) v1.FingerprintBounds {
 }
 
 // reassemble merges neighboring tokens with the same version
+// reassemble 合并相邻且版本相同的 token，压缩环结构避免碎片化。
 func (t tsdbTokenRange) reassemble(from int) tsdbTokenRange {
 	reassembleTo := from
 	for i := from; i < len(t)-1; i++ {
@@ -210,6 +216,7 @@ func (t tsdbTokenRange) reassemble(from int) tsdbTokenRange {
 	return t[:len(t)-(reassembleTo-from)]
 }
 
+// outdatedMetas 按 TSDB 源时间降序遍历 meta，用 token 环区分 upToDate 与 outdated。
 func outdatedMetas(metas []bloomshipper.Meta) ([]bloomshipper.Meta, []bloomshipper.Meta) {
 	var outdated []bloomshipper.Meta
 	var upToDate []bloomshipper.Meta

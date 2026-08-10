@@ -1,5 +1,8 @@
 package strategies
 
+// 按 series chunk 体积分块规划策略：将 TSDB 指纹缺口内的 series 按
+// 目标字节阈值分批，每批生成一个 bloom 构建 Task 并关联重叠 block 加速。
+
 import (
 	"context"
 	"fmt"
@@ -28,6 +31,7 @@ const (
 	metricsSubsystem = "bloomplanner"
 )
 
+// ChunkSizeStrategyMetrics 记录各租户生成任务的估算字节大小直方图。
 type ChunkSizeStrategyMetrics struct {
 	tenantTaskSize *prometheus.HistogramVec
 }
@@ -49,6 +53,7 @@ type ChunkSizeStrategyLimits interface {
 	BloomTaskTargetSeriesChunksSizeBytes(tenantID string) uint64
 }
 
+// ChunkSizeStrategy 实现 PlanningStrategy，名称 split_by_series_chunks_size。
 type ChunkSizeStrategy struct {
 	limits  ChunkSizeStrategyLimits
 	metrics *ChunkSizeStrategyMetrics
@@ -71,6 +76,7 @@ func (s *ChunkSizeStrategy) Name() string {
 	return SplitBySeriesChunkSizeStrategyName
 }
 
+// Plan 找出 TSDB 与 meta 缺口，按 targetTaskSize 切分 series 并构造 Gap/Task。
 func (s *ChunkSizeStrategy) Plan(
 	ctx context.Context,
 	table config.DayTable,
@@ -132,6 +138,7 @@ func (s *ChunkSizeStrategy) Plan(
 	return tasks, nil
 }
 
+// getBlocksMatchingBounds 收集与 gap 相交的 block 引用并去重排序。
 func getBlocksMatchingBounds(metas []bloomshipper.Meta, bounds v1.FingerprintBounds) ([]bloomshipper.BlockRef, error) {
 	blocks := make([]bloomshipper.BlockRef, 0, 10)
 
@@ -183,6 +190,7 @@ func getBlocksMatchingBounds(metas []bloomshipper.Meta, bounds v1.FingerprintBou
 	return deduped, nil
 }
 
+// seriesBatch 表示同一 TSDB 内累计到目标大小的一批 series 及其 chunk 字节和。
 type seriesBatch struct {
 	tsdb   tsdb.SingleTenantTSDBIdentifier
 	series []*v1.Series
@@ -227,6 +235,7 @@ func (b *seriesBatch) TSDB() tsdb.SingleTenantTSDBIdentifier {
 	return b.tsdb
 }
 
+// sizedSeriesIter 遍历各 TSDB gap，按 chunk KB 累积分批直至达到 targetTaskSizeBytes。
 func (s *ChunkSizeStrategy) sizedSeriesIter(
 	ctx context.Context,
 	tenant string,

@@ -1,5 +1,8 @@
 package strategies
 
+// 规划策略公共工具：将指纹 keyspace 按因子均分，以及在 ownership
+// 范围内合并 meta 边界并检测相对已有 bloom 覆盖的指纹缺口。
+
 import (
 	"fmt"
 	"math"
@@ -9,6 +12,7 @@ import (
 	v1 "github.com/grafana/loki/v3/pkg/storage/bloom/v1"
 )
 
+// SplitFingerprintKeyspaceByFactor 将 0..MaxUint64 指纹空间切成 factor 个连续区间。
 // SplitFingerprintKeyspaceByFactor splits the keyspace covered by model.Fingerprint into contiguous non-overlapping ranges.
 func SplitFingerprintKeyspaceByFactor(factor int) []v1.FingerprintBounds {
 	if factor <= 0 {
@@ -43,6 +47,7 @@ func SplitFingerprintKeyspaceByFactor(factor int) []v1.FingerprintBounds {
 	return bounds
 }
 
+// FindGapsInFingerprintBounds 合并重叠 meta 后计算 ownership 内未被覆盖的指纹段。
 func FindGapsInFingerprintBounds(ownershipRange v1.FingerprintBounds, metas []v1.FingerprintBounds) (gaps []v1.FingerprintBounds, err error) {
 	if len(metas) == 0 {
 		return []v1.FingerprintBounds{ownershipRange}, nil

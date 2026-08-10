@@ -1,5 +1,8 @@
 package planner
 
+// Planner 队列任务包装：将 protos.ProtoTask 与运行时元数据绑定，
+// 跟踪入队次数、排队时间与结果 channel，供 BuilderLoop 异步回传构建结果。
+
 import (
 	"context"
 	"time"
@@ -18,6 +21,7 @@ type TaskMeta struct {
 	ctx           context.Context
 }
 
+// QueueTask 嵌入 ProtoTask 与 TaskMeta，是队列与 builder 之间的传输单元。
 type QueueTask struct {
 	*protos.ProtoTask
 	*TaskMeta

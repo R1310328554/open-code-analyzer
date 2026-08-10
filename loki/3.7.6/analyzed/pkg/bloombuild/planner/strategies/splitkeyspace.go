@@ -1,5 +1,8 @@
 package strategies
 
+// 按指纹 keyspace 等分规划策略：将 uint64 指纹空间切成 N 份 ownership
+// 范围，逐段查找 TSDB 与 meta 缺口并生成带重叠 block 引用的构建计划。
+
 import (
 	"context"
 	"fmt"
@@ -20,6 +23,7 @@ type SplitKeyspaceStrategyLimits interface {
 	BloomSplitSeriesKeyspaceBy(tenantID string) int
 }
 
+// SplitKeyspaceStrategy 使用 BloomSplitSeriesKeyspaceBy 租户配置决定切分因子。
 type SplitKeyspaceStrategy struct {
 	limits SplitKeyspaceStrategyLimits
 	logger log.Logger
@@ -39,6 +43,7 @@ func (s *SplitKeyspaceStrategy) Name() string {
 	return SplitKeyspaceStrategyName
 }
 
+// Plan 对每个 ownership 范围过滤 meta、查找 outdated gap 并追加 Task。
 func (s *SplitKeyspaceStrategy) Plan(
 	ctx context.Context,
 	table config.DayTable,
@@ -74,6 +79,7 @@ func (s *SplitKeyspaceStrategy) Plan(
 	return tasks, nil
 }
 
+// blockPlan 描述单个 TSDB 上需补齐的 Gap 列表及可复用的重叠 block。
 // blockPlan is a plan for all the work needed to build a meta.json
 // It includes:
 //   - the tsdb (source of truth) which contains all the series+chunks
@@ -88,6 +94,7 @@ type blockPlan struct {
 	gaps []protos.Gap
 }
 
+// findOutdatedGaps 在 ownership 范围内对比 TSDB 与 meta 来源，返回 blockPlan 列表。
 func (s *SplitKeyspaceStrategy) findOutdatedGaps(
 	ctx context.Context,
 	tenant string,
@@ -119,12 +126,14 @@ func (s *SplitKeyspaceStrategy) findOutdatedGaps(
 }
 
 // Used to signal the gaps that need to be populated for a tsdb
+// tsdbGaps 绑定 TSDB 标识、可读接口及该库内尚未被 meta 覆盖的指纹缺口。
 type tsdbGaps struct {
 	tsdbIdentifier tsdb.SingleTenantTSDBIdentifier
 	tsdb           common.ClosableForSeries
 	gaps           []v1.FingerprintBounds
 }
 
+// gapsBetweenTSDBsAndMetas 检查每个 TSDB 是否有来源匹配的 meta 完整覆盖 ownership 范围。
 // gapsBetweenTSDBsAndMetas returns if the metas are up-to-date with the TSDBs. This is determined by asserting
 // that for each TSDB, there are metas covering the entire ownership range which were generated from that specific TSDB.
 func gapsBetweenTSDBsAndMetas(
@@ -161,6 +170,7 @@ func gapsBetweenTSDBsAndMetas(
 	return res, err
 }
 
+// blockPlansForGaps 为每个 gap 加载 series 并收集可加速构建的重叠 block 引用。
 // blockPlansForGaps groups tsdb gaps we wish to fill with overlapping but out of date blocks.
 // This allows us to expedite bloom generation by using existing blocks to fill in the gaps
 // since many will contain the same chunks.

@@ -1,5 +1,8 @@
 package planner
 
+// Bloom 数据保留管理：按租户 retention 与 max_lookback 逐日扫描对象存储，
+// 删除过期 bloom 键并上报 Prometheus 指标，每日最多执行一次。
+
 import (
 	"context"
 	"flag"
@@ -18,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// RetentionConfig 控制是否启用保留及最远回溯天数上限。
 type RetentionConfig struct {
 	Enabled         bool `yaml:"enabled"`
 	MaxLookbackDays int  `yaml:"max_lookback_days" doc:"hidden"`
@@ -39,6 +43,7 @@ func (cfg *RetentionConfig) Validate() error {
 	return nil
 }
 
+// RetentionLimits 提供租户全局/流级 retention 及默认 limits 查询。
 type RetentionLimits interface {
 	RetentionPeriod(userID string) time.Duration
 	StreamRetention(userID string) []validation.StreamRetention
@@ -46,6 +51,7 @@ type RetentionLimits interface {
 	DefaultLimits() *validation.Limits
 }
 
+// RetentionManager 持有 bloomStore 客户端，记录 lastDayRun 避免同日重复清理。
 type RetentionManager struct {
 	cfg        RetentionConfig
 	limits     RetentionLimits
@@ -76,6 +82,7 @@ func NewRetentionManager(
 	}
 }
 
+// Apply 从 startDay 向 endDay 递减遍历，按租户 retention 过滤并逐键 DeleteObject。
 func (r *RetentionManager) Apply(ctx context.Context) error {
 	if !r.cfg.Enabled {
 		level.Debug(r.logger).Log("msg", "retention is disabled")
@@ -198,6 +205,7 @@ func (r *RetentionManager) reportTenantsExceedingLookback(retentionByTenant map[
 	r.metrics.retentionTenantsExceedingLookback.Set(float64(tenantsExceedingLookback))
 }
 
+// findLongestRetention 取全局 retention 与各 stream 规则中的最大保留期。
 func findLongestRetention(globalRetention time.Duration, streamRetention []validation.StreamRetention) time.Duration {
 	if len(streamRetention) == 0 {
 		return globalRetention
@@ -231,6 +239,7 @@ func retentionByTenant(limits RetentionLimits) map[string]time.Duration {
 	return retentions
 }
 
+// smallestEnabledRetention 决定迭代起始日：取所有已配置租户中最短 retention。
 // smallestEnabledRetention returns the smallest retention period across all tenants and the default.
 func smallestEnabledRetention(defaultRetention time.Duration, perTenantRetention map[string]time.Duration) time.Duration {
 	if len(perTenantRetention) == 0 {

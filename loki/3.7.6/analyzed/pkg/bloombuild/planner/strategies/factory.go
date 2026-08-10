@@ -1,5 +1,8 @@
 package strategies
 
+// Bloom 规划策略工厂：根据租户 Limits 中的 BloomPlanningStrategy 名称
+// 实例化 split_keyspace 或 split_by_series_chunks_size 具体策略实现。
+
 import (
 	"context"
 	"fmt"
@@ -14,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb"
 )
 
+// 策略名称常量与 Limits 配置及 YAML 文档字符串保持一致。
 const (
 	SplitKeyspaceStrategyName          = "split_keyspace_by_factor"
 	SplitBySeriesChunkSizeStrategyName = "split_by_series_chunks_size"
@@ -27,6 +31,7 @@ type Limits interface {
 
 type TSDBSet = map[tsdb.SingleTenantTSDBIdentifier]common.ClosableForSeries
 
+// PlanningStrategy 为给定 table/tenant/TSDB 集合输出待执行的 protos.Task 列表。
 type PlanningStrategy interface {
 	Name() string
 	// Plan returns a set of tasks for a given tenant-table tuple and TSDBs.
@@ -43,6 +48,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 	}
 }
 
+// Factory 缓存 limits、logger 与策略指标，按需构造 PlanningStrategy。
 type Factory struct {
 	limits  Limits
 	logger  log.Logger
@@ -61,6 +67,7 @@ func NewFactory(
 	}
 }
 
+// GetStrategy 读取租户策略配置并返回 SplitKeyspace 或 ChunkSize 策略实例。
 func (f *Factory) GetStrategy(tenantID string) (PlanningStrategy, error) {
 	strategy := f.limits.BloomPlanningStrategy(tenantID)
 

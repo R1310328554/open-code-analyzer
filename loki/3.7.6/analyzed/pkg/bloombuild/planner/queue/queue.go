@@ -1,5 +1,8 @@
 package queue
 
+// Bloom 任务队列封装：基于 pkg/queue.RequestQueue，可选将 ProtoTask
+// 序列化到本地文件系统，元数据驻留内存，出队后延迟 Release 才删盘。
+
 import (
 	"bytes"
 	"context"
@@ -24,6 +27,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// Queue 在 StoreTasksOnDisk 时仅将路径入队，Dequeue 再从磁盘反序列化任务。
 // Queue is a wrapper of queue.RequestQueue that uses the file system to store the pending tasks.
 // The queue also allows to store metadata with the task. This metadata can be anything. Metadata is stored in memory.
 // When a task is enqueued (Enqueue), it's stored in the file system and recorded as pending.
@@ -51,6 +55,7 @@ type Queue struct {
 	subservicesWatcher *services.FailureWatcher
 }
 
+// NewQueue 按需创建 filesystem ObjectClient，并启动 RequestQueue 与活跃用户清理。
 func NewQueue(
 	logger log.Logger,
 	cfg Config,
@@ -101,6 +106,7 @@ func NewQueue(
 	return q, nil
 }
 
+// starting 可选清空任务目录（尚未实现从盘恢复队列），再启动子服务管理器。
 func (q *Queue) starting(ctx context.Context) error {
 	// TODO(salvacorts): We do not recover the queue from the disk yet.
 	// Until then, we just remove all the files in the directory so the disk
@@ -166,6 +172,7 @@ type metaWithTask struct {
 	metadata any
 }
 
+// Enqueue 写入磁盘（若启用）、更新活跃用户时间戳并将任务路径或对象入队。
 // Enqueue adds a task to the queue.
 // The task is enqueued only if it doesn't already exist in the queue.
 func (q *Queue) Enqueue(task *protos.ProtoTask, metadata any, successFn func()) error {
@@ -194,6 +201,7 @@ func (q *Queue) Enqueue(task *protos.ProtoTask, metadata any, successFn func()) 
 	})
 }
 
+// Dequeue 从 RequestQueue 取项；磁盘模式下按路径读取 protobuf 任务体。
 // Dequeue takes a task from the queue. The task is not removed from the filesystem until Release is called.
 func (q *Queue) Dequeue(ctx context.Context, last Index, consumerID string) (*protos.ProtoTask, any, Index, error) {
 	item, idx, err := q.queue.Dequeue(ctx, last, consumerID)
@@ -216,6 +224,7 @@ func (q *Queue) Dequeue(ctx context.Context, last Index, consumerID string) (*pr
 	return task, meta.metadata, idx, nil
 }
 
+// Release 在任务完成后从 pendingTasks 与磁盘删除对应文件。
 // Release removes a task from the filesystem.
 // Dequeue should be called before Remove.
 func (q *Queue) Release(task *protos.ProtoTask) {
@@ -291,12 +300,14 @@ func (q *Queue) TotalPending() (total int) {
 	return total
 }
 
+// getTaskPath 按 tenant/table/taskId 组织 tasks 目录下的 protobuf 文件路径。
 func getTaskPath(task *protos.ProtoTask) string {
 	table := protos.FromProtoDayTableToDayTable(task.Table)
 	taskFile := task.Id + ".protobuf"
 	return filepath.Join("tasks", task.Tenant, table.String(), taskFile)
 }
 
+// 以下类型别名与 StartIndex/ErrStopped 常量转发至 pkg/queue 公共 API。
 // The following are aliases for the queue package types.
 
 type Metrics = queue.Metrics

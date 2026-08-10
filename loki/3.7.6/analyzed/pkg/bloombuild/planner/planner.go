@@ -1,5 +1,8 @@
 package planner
 
+// Bloom Planner 核心服务：周期性发现租户与日表、按策略生成构建任务、
+// 经队列分发给 builder、汇总结果并清理过期 meta/block，SSD 模式支持 ring 选主。
+
 import (
 	"context"
 	"fmt"
@@ -36,6 +39,7 @@ var (
 	errPlannerIsNotLeader  = errors.New("planner is not leader")
 )
 
+// Planner 实现 dskit Service，协调 TSDB 解析、任务队列、策略工厂与保留管理。
 type Planner struct {
 	services.Service
 	// Subservices manager.
@@ -61,6 +65,7 @@ type Planner struct {
 	ringWatcher *common.RingWatcher
 }
 
+// New 创建 TSDB 存储、任务队列、策略工厂与 retention 子服务并组装 Planner。
 func New(
 	cfg Config,
 	limits Limits,
@@ -125,6 +130,7 @@ func New(
 	return p, nil
 }
 
+// isLeader 在微服务模式恒为 true；SSD 模式通过 ringWatcher 判定唯一 planner。
 func (p *Planner) isLeader() bool {
 	if p.ringWatcher == nil {
 		// when the planner runs as standalone service in microserivce mode, then there is no ringWatcher
@@ -154,6 +160,7 @@ func (p *Planner) stopping(_ error) error {
 	return nil
 }
 
+// running 启动后延迟 1 分钟首次规划，之后按 PlanningInterval 周期执行 runOne。
 func (p *Planner) running(ctx context.Context) error {
 	go p.trackInflightRequests(ctx)
 
@@ -218,6 +225,7 @@ type tenantTable struct {
 	tenant string
 }
 
+// runOne 单次构建迭代：并行 retention、加载租户表、计算并入队任务、等待 builder 结果。
 func (p *Planner) runOne(ctx context.Context) error {
 	if !p.isLeader() {
 		return errPlannerIsNotLeader
@@ -366,6 +374,7 @@ func (p *Planner) runOne(ctx context.Context) error {
 	return nil
 }
 
+// computeTasks 拉取 meta、清理过期项、打开 TSDB 并调用租户策略生成 Task 列表。
 // computeTasks computes the tasks for a given table and tenant.
 // It returns the tasks to be executed and the existing metas.
 func (p *Planner) computeTasks(
@@ -431,6 +440,7 @@ func (p *Planner) computeTasks(
 	return tasks, metas, nil
 }
 
+// processTenantTaskResults 收集 builder 返回的新 meta，成功后删除被取代的旧 meta/block。
 func (p *Planner) processTenantTaskResults(
 	ctx context.Context,
 	table config.DayTable,
@@ -518,6 +528,7 @@ func openAllTSDBs(
 	return openTSDBs, nil
 }
 
+// deleteOutdatedMetasAndBlocks 用 versioned_range 判定过期 meta 并从对象存储删除。
 // deleteOutdatedMetasAndBlocks filters out the outdated metas from the `metas` argument and deletes them from the store.
 // It returns the up-to-date metas from the `metas` argument.
 func (p *Planner) deleteOutdatedMetasAndBlocks(
@@ -622,6 +633,7 @@ func isBlockInMetas(block bloomshipper.BlockRef, metas []bloomshipper.Meta) bool
 	return false
 }
 
+// tables 根据 min/max table offset 配置生成待规划日表范围迭代器。
 func (p *Planner) tables(ts time.Time) *dayRangeIterator {
 	// adjust the minimum by one to make it inclusive, which is more intuitive
 	// for a configuration variable
@@ -638,6 +650,7 @@ func (p *Planner) tables(ts time.Time) *dayRangeIterator {
 	return newDayRangeIterator(fromDay, throughDay, p.schemaCfg)
 }
 
+// loadTenantTables 遍历日表并过滤 BloomCreationEnabled 租户，重置租户级进度指标。
 // loadTenantTables loads all tenants with bloom build enabled for each table.
 func (p *Planner) loadTenantTables(
 	ctx context.Context,
@@ -722,6 +735,7 @@ func (p *Planner) NotifyBuilderShutdown(
 	return &protos.NotifyBuilderShutdownResponse{}, nil
 }
 
+// BuilderLoop 为单个 builder 长连接循环：出队任务、转发、处理超时与重试逻辑。
 func (p *Planner) BuilderLoop(builder protos.PlannerForBuilder_BuilderLoopServer) error {
 	resp, err := builder.Recv()
 	if err != nil {
@@ -877,6 +891,7 @@ func (p *Planner) forwardTaskToBuilder(
 	}
 }
 
+// receiveResultFromBuilder 阻塞接收 builder 响应并校验 builderID 与 taskID 一致性。
 // receiveResultFromBuilder waits for a response from the builder and returns the result and an error if any
 // The error will be populated if there is an error receiving the response from the builder, in other words,
 // errors on the builder side will not be returned as an error here, but as an error in the TaskResult.

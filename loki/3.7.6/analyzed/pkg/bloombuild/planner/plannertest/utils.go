@@ -1,5 +1,8 @@
 package plannertest
 
+// Planner 单元测试辅助：构造固定日表、TSDB 标识、bloom meta/block
+// 及合成 series，便于策略与 planner 逻辑在无真实对象存储时验证。
+
 import (
 	"bytes"
 	"context"
@@ -15,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb"
 )
 
+// TestDay/TestTable 为测试提供统一的固定日表与 index 前缀上下文。
 var TestDay = ParseDayTime("2023-09-01")
 var TestTable = config.NewDayTable(TestDay, "index_")
 
@@ -24,6 +28,7 @@ func TsdbID(n int) tsdb.SingleTenantTSDBIdentifier {
 	}
 }
 
+// GenMeta 生成带 fakeTenant、指纹边界、来源 TSDB 与 block 引用的测试 meta。
 func GenMeta(minVal, maxVal model.Fingerprint, sources []int, blocks []bloomshipper.BlockRef) bloomshipper.Meta {
 	m := bloomshipper.Meta{
 		MetaRef: bloomshipper.MetaRef{
@@ -55,6 +60,7 @@ func GenBlockRef(minVal, maxVal model.Fingerprint) bloomshipper.BlockRef {
 	}
 }
 
+// GenBlock 用内存 writer 构建空 bloom block 并 tar 压缩为可读 seeker。
 func GenBlock(ref bloomshipper.BlockRef) (bloomshipper.Block, error) {
 	indexBuf := bytes.NewBuffer(nil)
 	bloomsBuf := bytes.NewBuffer(nil)
@@ -91,6 +97,7 @@ func GenSeries(bounds v1.FingerprintBounds) []*v1.Series {
 	return GenSeriesWithStep(bounds, 1)
 }
 
+// GenSeriesWithStep 在指纹范围内按步长生成带占位 chunk 引用的 v1.Series 切片。
 func GenSeriesWithStep(bounds v1.FingerprintBounds, step int) []*v1.Series {
 	series := make([]*v1.Series, 0, int(bounds.Max-bounds.Min+1)/step)
 	for i := bounds.Min; i <= bounds.Max; i += model.Fingerprint(step) {
@@ -108,6 +115,7 @@ func GenSeriesWithStep(bounds v1.FingerprintBounds, step int) []*v1.Series {
 	return series
 }
 
+// PutMetas 将 meta 及其关联 block 写入 mock bloom 客户端，供集成测试种子数据。
 func PutMetas(bloomClient bloomshipper.Client, metas []bloomshipper.Meta) error {
 	for _, meta := range metas {
 		err := bloomClient.PutMeta(context.Background(), meta)
