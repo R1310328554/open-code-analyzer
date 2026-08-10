@@ -21,25 +21,29 @@ import io.netty.channel.ChannelHandlerAdapter;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A builder for {@link Http2MultiplexCodec}.
+ * {@link Http2MultiplexCodec} 构建器：配置编解码器、流控与入站子 handler。
  *
  * @deprecated use {@link Http2FrameCodecBuilder} together with {@link Http2MultiplexHandler}.
  */
 @Deprecated
 public class Http2MultiplexCodecBuilder
         extends AbstractHttp2ConnectionHandlerBuilder<Http2MultiplexCodec, Http2MultiplexCodecBuilder> {
+    /** 测试注入用帧写入器，生产路径为 null */
     private Http2FrameWriter frameWriter;
 
+    /** 每条入站流子 channel 挂载的 handler（须 Sharable） */
     final ChannelHandler childHandler;
+    /** 客户端 HTTP/1.1 升级流（stream 1）专用 handler */
     private ChannelHandler upgradeStreamHandler;
 
     Http2MultiplexCodecBuilder(boolean server, ChannelHandler childHandler) {
         server(server);
         this.childHandler = checkSharable(checkNotNull(childHandler, "childHandler"));
-        // For backwards compatibility we should disable to timeout by default at this layer.
+        // 兼容旧行为：此层默认禁用 graceful shutdown 超时
         gracefulShutdownTimeoutMillis(0);
     }
 
+    /** 子 handler 必须 Sharable，因会被多条流共享 */
     private static ChannelHandler checkSharable(ChannelHandler handler) {
         if (handler instanceof ChannelHandlerAdapter && !((ChannelHandlerAdapter) handler).isSharable() &&
                 !handler.getClass().isAnnotationPresent(ChannelHandler.Sharable.class)) {
@@ -55,7 +59,7 @@ public class Http2MultiplexCodecBuilder
     }
 
     /**
-     * Creates a builder for an HTTP/2 client.
+     * 创建 HTTP/2 客户端多路复用编解码器构建器。
      *
      * @param childHandler the handler added to channels for remotely-created streams. It must be
      *     {@link ChannelHandler.Sharable}.
@@ -65,7 +69,7 @@ public class Http2MultiplexCodecBuilder
     }
 
     /**
-     * Creates a builder for an HTTP/2 server.
+     * 创建 HTTP/2 服务端多路复用编解码器构建器。
      *
      * @param childHandler the handler added to channels for remotely-created streams. It must be
      *     {@link ChannelHandler.Sharable}.

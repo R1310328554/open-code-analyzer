@@ -17,12 +17,13 @@ package io.netty.handler.codec.http2;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Provides an extensibility point for users to define the validity of push requests.
+ * Server Push 合法性校验扩展点：按 RFC 7540 §8.2 判定 promised 请求是否可接受。
+ * <p>解码器在收到 {@code PUSH_PROMISE} 时调用，任一校验失败则拒绝推送。
  * @see <a href="https://tools.ietf.org/html/rfc7540#section-8.2">[RFC 7540], Section 8.2</a>.
  */
 public interface Http2PromisedRequestVerifier {
     /**
-     * Determine if a {@link Http2Headers} are authoritative for a particular {@link ChannelHandlerContext}.
+     * 判断 {@code headers} 对于当前 {@code ctx} 所代表的 authority 是否权威（host/scheme 匹配）。
      * @param ctx The context on which the {@code headers} where received on.
      * @param headers The headers to be verified.
      * @return {@code true} if the {@code ctx} is authoritative for the {@code headers}, {@code false} otherwise.
@@ -32,7 +33,7 @@ public interface Http2PromisedRequestVerifier {
     boolean isAuthoritative(ChannelHandlerContext ctx, Http2Headers headers);
 
     /**
-     * Determine if a request is cacheable.
+     * 判断推送请求是否可缓存（RFC 7231 §4.2.3）；不可缓存的请求不应被 push。
      * @param headers The headers for a push request.
      * @return {@code true} if the request associated with {@code headers} is known to be cacheable,
      * {@code false} otherwise.
@@ -41,7 +42,7 @@ public interface Http2PromisedRequestVerifier {
     boolean isCacheable(Http2Headers headers);
 
     /**
-     * Determine if a request is safe.
+     * 判断推送请求是否安全（无副作用，RFC 7231 §4.2.1）；仅 GET 等安全方法适合 push。
      * @param headers The headers for a push request.
      * @return {@code true} if the request associated with {@code headers} is known to be safe,
      * {@code false} otherwise.
@@ -50,8 +51,7 @@ public interface Http2PromisedRequestVerifier {
     boolean isSafe(Http2Headers headers);
 
     /**
-     * A default implementation of {@link Http2PromisedRequestVerifier} which always returns positive responses for
-     * all verification challenges.
+     * 默认实现：对所有校验均返回 {@code true}，等同于关闭 push 合法性过滤。
      */
     Http2PromisedRequestVerifier ALWAYS_VERIFY = new Http2PromisedRequestVerifier() {
         @Override

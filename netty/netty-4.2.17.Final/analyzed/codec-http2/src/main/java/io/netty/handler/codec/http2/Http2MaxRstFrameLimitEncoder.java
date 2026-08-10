@@ -24,17 +24,20 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
- * {@link DecoratingHttp2ConnectionEncoder} which guards against a remote peer that will trigger a massive amount
- * of RST frames on an existing connection.
- * This encoder will tear-down the connection once we reached the configured limit to reduce the risk of DDOS.
+ * 出站 RST 帧速率限制装饰器：统计本端在窗口内发送的 {@code RST_STREAM} 帧，
+ * 防止因对端恶意行为导致本端无节制发送 RST，达到上限后主动拆连以降低 DDoS 风险。
  */
 final class Http2MaxRstFrameLimitEncoder extends DecoratingHttp2ConnectionEncoder {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Http2MaxRstFrameLimitEncoder.class);
 
+    /** 统计窗口长度（纳秒） */
     private final long nanosPerWindow;
+    /** 每个窗口内允许发送的最大 RST 帧数 */
     private final int maxRstFramesPerWindow;
     private final Ticker ticker;
+    /** 当前窗口起始时刻（纳秒） */
     private long lastRstFrameNano;
+    /** 当前窗口内已发送的 RST 帧计数 */
     private int sendRstInWindow;
     private Http2LifecycleManager lifecycleManager;
 
@@ -64,6 +67,7 @@ final class Http2MaxRstFrameLimitEncoder extends DecoratingHttp2ConnectionEncode
         if (countRstFrameErrorCode(errorCode)) {
             long currentNano = ticker.nanoTime();
             if (currentNano - lastRstFrameNano >= nanosPerWindow) {
+                // 窗口过期，重置计数
                 lastRstFrameNano = currentNano;
                 sendRstInWindow = 1;
             } else {
@@ -77,7 +81,7 @@ final class Http2MaxRstFrameLimitEncoder extends DecoratingHttp2ConnectionEncode
                                     "closing connection with {} error", ctx.channel(), maxRstFramesPerWindow,
                             TimeUnit.NANOSECONDS.toSeconds(nanosPerWindow), exception.error(),
                             exception);
-                    // First notify the Http2LifecycleManager and then close the connection.
+                    // 先通知生命周期管理器，再关闭连接
                     lifecycleManager.onError(ctx, true, exception);
                     ctx.close();
                 }
@@ -87,8 +91,10 @@ final class Http2MaxRstFrameLimitEncoder extends DecoratingHttp2ConnectionEncode
         return future;
     }
 
+    /**
+     * 判断该 errorCode 是否计入 RST 速率；{@code CANCEL} 与 {@code NO_ERROR} 为正常关闭语义，不计入。
+     */
     private boolean countRstFrameErrorCode(long errorCode) {
-        // Don't count CANCEL and NO_ERROR as these might be ok.
         return errorCode != Http2Error.CANCEL.code() && errorCode != Http2Error.NO_ERROR.code();
     }
 }

@@ -16,22 +16,22 @@
 package io.netty.handler.codec.http2;
 
 /**
- * HTTP/2 Priority Frame
+ * HTTP/2 {@code PRIORITY} 帧对象：调整流的依赖树与权重，影响多路复用下的调度优先级。
  */
 public interface Http2PriorityFrame extends Http2StreamFrame {
 
     /**
-     * Parent Stream Id of this Priority request
+     * 父流 id；{@code 0} 表示直接依赖连接（虚拟根）。
      */
     int streamDependency();
 
     /**
-     * Stream weight
+     * 流权重，范围 1–256，与同父流下其他子流相对分配带宽。
      */
     short weight();
 
     /**
-     * Set to {@code true} if this stream is exclusive else set to {@code false}
+     * {@code true} 表示本流成为父流的独占依赖（其他兄弟流改挂到本流之下）。
      */
     boolean exclusive();
 

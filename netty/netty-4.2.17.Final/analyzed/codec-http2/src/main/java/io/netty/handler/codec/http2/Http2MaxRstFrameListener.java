@@ -22,9 +22,13 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
-
+/**
+ * 入站 RST 帧速率监听器装饰器：在 {@link #onRstStreamRead} 中按滑动窗口统计 RST 帧，
+ * 超限时抛出预分配的 {@link Http2Error#ENHANCE_YOUR_CALM} 异常以硬关闭连接。
+ */
 final class Http2MaxRstFrameListener extends Http2FrameListenerDecorator {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Http2MaxRstFrameListener.class);
+    /** 预分配异常，避免热路径上重复构造 */
     private static final Http2Exception RST_FRAME_RATE_EXCEEDED = Http2Exception.newStatic(Http2Error.ENHANCE_YOUR_CALM,
             "Maximum number of RST frames reached",
             Http2Exception.ShutdownHint.HARD_SHUTDOWN, Http2MaxRstFrameListener.class, "onRstStreamRead(..)");
@@ -33,6 +37,7 @@ final class Http2MaxRstFrameListener extends Http2FrameListenerDecorator {
     private final int maxRstFramesPerWindow;
     private final Ticker ticker;
     private long lastRstFrameNano;
+    /** 当前窗口内已收到的 RST 帧计数 */
     private int receivedRstInWindow;
 
     Http2MaxRstFrameListener(Http2FrameListener listener, int maxRstFramesPerWindow, int secondsPerWindow,
@@ -41,6 +46,7 @@ final class Http2MaxRstFrameListener extends Http2FrameListenerDecorator {
         this.maxRstFramesPerWindow = maxRstFramesPerWindow;
         this.nanosPerWindow = TimeUnit.SECONDS.toNanos(secondsPerWindow);
         this.ticker = ticker;
+        // 初始偏移一个窗口，使首帧立即进入新窗口计数
         this.lastRstFrameNano = ticker.nanoTime() - nanosPerWindow;
     }
 

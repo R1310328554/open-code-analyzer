@@ -17,17 +17,17 @@
 package io.netty.handler.codec.http2;
 
 /**
- * HTTP/2 PING Frame.
+ * HTTP/2 {@code PING} 帧对象：用于连接保活、RTT 测量或确认对端仍存活。
  */
 public interface Http2PingFrame extends Http2Frame {
 
     /**
-     * When {@code true}, indicates that this ping is a ping response.
+     * 为 {@code true} 表示这是对先前 PING 的 ACK 响应，而非新发起的探测。
      */
     boolean ack();
 
     /**
-     * Returns the eight byte opaque data.
+     * 返回 8 字节不透明载荷；发送方自定义，对端原样回显。
      */
     long content();
 }

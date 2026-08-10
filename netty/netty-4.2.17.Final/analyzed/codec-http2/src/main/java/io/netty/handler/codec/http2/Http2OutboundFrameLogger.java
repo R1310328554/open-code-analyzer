@@ -23,8 +23,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
 /**
- * Decorator around a {@link Http2FrameWriter} that logs all outbound frames before calling the
- * writer.
+ * {@link Http2FrameWriter} 出站日志装饰器：在委托写入前以 {@link Http2FrameLogger.Direction#OUTBOUND}
+ * 方向记录各类型帧，便于调试协议交互而不改变写入语义。
  */
 public class Http2OutboundFrameLogger implements Http2FrameWriter {
     private final Http2FrameWriter writer;

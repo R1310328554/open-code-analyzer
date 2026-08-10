@@ -17,7 +17,8 @@ package io.netty.handler.codec.http2;
 import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 
 /**
- * This exception is thrown when there are no more stream IDs available for the current connection
+ * 流 ID 耗尽异常：当前 HTTP/2 连接已无法分配新的 stream id（31 位 id 空间用尽）。
+ * <p>触发 {@link ShutdownHint#GRACEFUL_SHUTDOWN}，允许已有流正常收尾。
  */
 public class Http2NoMoreStreamIdsException extends Http2Exception {
     private static final long serialVersionUID = -7756236161274851110L;

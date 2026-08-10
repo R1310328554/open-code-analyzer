@@ -39,66 +39,43 @@ import static io.netty.handler.codec.http2.Http2Error.INTERNAL_ERROR;
 import static io.netty.handler.codec.http2.Http2Exception.connectionError;
 
 /**
- * An HTTP/2 handler that creates child channels for each stream.
+ * HTTP/2 多路复用编解码器（旧版一体式）：继承 {@link Http2FrameCodec}，为每条流创建子 {@link Channel}。
  *
- * <p>When a new stream is created, a new {@link Channel} is created for it. Applications send and
- * receive {@link Http2StreamFrame}s on the created channel. {@link ByteBuf}s cannot be processed by the channel;
- * all writes that reach the head of the pipeline must be an instance of {@link Http2StreamFrame}. Writes that reach
- * the head of the pipeline are processed directly by this handler and cannot be intercepted.
+ * <p>应用通过子 channel 收发 {@link Http2StreamFrame}，不能直接写 {@link ByteBuf}；到达 pipeline 头部的写操作
+ * 由本 handler 直接处理。{@link Http2GoAwayFrame}、{@link Http2ResetFrame} 等以 user event 通知子 channel；
+ * 连接级帧（如 {@link Http2SettingsFrame}）同时向下游传播。出站流通过 {@link Http2StreamChannelBootstrap} 创建。
  *
- * <p>The child channel will be notified of user events that impact the stream, such as {@link
- * Http2GoAwayFrame} and {@link Http2ResetFrame}, as soon as they occur. Although {@code
- * Http2GoAwayFrame} and {@code Http2ResetFrame} signify that the remote is ignoring further
- * communication, closing of the channel is delayed until any inbound queue is drained with {@link
- * Channel#read()}, which follows the default behavior of channels in Netty. Applications are
- * free to close the channel in response to such events if they don't have use for any queued
- * messages. Any connection level events like {@link Http2SettingsFrame} and {@link Http2GoAwayFrame}
- * will be processed internally and also propagated down the pipeline for other handlers to act on.
+ * <h3>引用计数</h3>
+ * 携带 {@link ByteBuf} 的帧在传播前会 {@link ReferenceCounted#retain()}，应用消费后须 release。
  *
- * <p>Outbound streams are supported via the {@link Http2StreamChannelBootstrap}.
+ * <h3>Channel 生命周期</h3>
+ * 子 channel 注册后即 active，但 HTTP/2 流需成功收发 {@link Http2HeadersFrame} 后才真正激活；
+ * 超出最大并发流数时子 channel 收异常并关闭。
  *
- * <p>{@link ChannelConfig#setMaxMessagesPerRead(int)} and {@link ChannelConfig#setAutoRead(boolean)} are supported.
- *
- * <h3>Reference Counting</h3>
- *
- * Some {@link Http2StreamFrame}s implement the {@link ReferenceCounted} interface, as they carry
- * reference counted objects (e.g. {@link ByteBuf}s). The multiplex codec will call {@link ReferenceCounted#retain()}
- * before propagating a reference counted object through the pipeline, and thus an application handler needs to release
- * such an object after having consumed it. For more information on reference counting take a look at
- * https://netty.io/wiki/reference-counted-objects.html
- *
- * <h3>Channel Events</h3>
- *
- * A child channel becomes active as soon as it is registered to an {@link EventLoop}. Therefore, an active channel
- * does not map to an active HTTP/2 stream immediately. Only once a {@link Http2HeadersFrame} has been successfully sent
- * or received, does the channel map to an active HTTP/2 stream. In case it is not possible to open a new HTTP/2 stream
- * (i.e. due to the maximum number of active streams being exceeded), the child channel receives an exception
- * indicating the cause and is closed immediately thereafter.
- *
- * <h3>Writability and Flow Control</h3>
- *
- * A child channel observes outbound/remote flow control via the channel's writability. A channel only becomes writable
- * when it maps to an active HTTP/2 stream and the stream's flow control window is greater than zero. A child channel
- * does not know about the connection-level flow control window. {@link ChannelHandler}s are free to ignore the
- * channel's writability, in which case the excessive writes will be buffered by the parent channel. It's important to
- * note that only {@link Http2DataFrame}s are subject to HTTP/2 flow control.
+ * <h3>可写性与流控</h3>
+ * 子 channel 可写性反映流级出站窗口；仅 {@link Http2DataFrame} 受 HTTP/2 流控约束。
  *
  * @deprecated use {@link Http2FrameCodecBuilder} together with {@link Http2MultiplexHandler}.
  */
 @Deprecated
 public class Http2MultiplexCodec extends Http2FrameCodec {
 
+    /** 远端发起的新入站流使用的 handler（须 {@link ChannelHandler.Sharable}） */
     private final ChannelHandler inboundStreamHandler;
+    /** HTTP/1.1 升级至 HTTP/2 时 stream 1 使用的 handler（仅客户端） */
     private final ChannelHandler upgradeStreamHandler;
+    /** 待触发 readComplete 的子 channel 队列，合并 flush 以降低 syscall */
     private final Queue<AbstractHttp2StreamChannel> readCompletePendingQueue =
             new MaxCapacityQueue<AbstractHttp2StreamChannel>(new ArrayDeque<AbstractHttp2StreamChannel>(8),
                     // Choose 100 which is what is used most of the times as default.
                     Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS);
 
+    /** 父 channel 是否处于 read 回调中，子 channel 据此决定是否 auto-read */
     private boolean parentReadInProgress;
+    /** 子 channel 本地 id 递增计数器 */
     private int idCount;
 
-    // Need to be volatile as accessed from within the Http2MultiplexCodecStreamChannel in a multi-threaded fashion.
+    // 子 channel 可能跨线程访问，须 volatile
     volatile ChannelHandlerContext ctx;
 
     Http2MultiplexCodec(Http2ConnectionEncoder encoder,
@@ -136,6 +113,7 @@ public class Http2MultiplexCodec extends Http2FrameCodec {
         readCompletePendingQueue.clear();
     }
 
+    /** 将流级帧路由到对应子 channel，连接级帧继续向下游传播 */
     @Override
     final void onHttp2Frame(ChannelHandlerContext ctx, Http2Frame frame) {
         if (frame instanceof Http2StreamFrame) {
@@ -152,6 +130,7 @@ public class Http2MultiplexCodec extends Http2FrameCodec {
         ctx.fireChannelRead(frame);
     }
 
+    /** 流状态变为 OPEN/HALF_CLOSED 时注册子 channel，CLOSED 时通知 streamClosed */
     @Override
     final void onHttp2StreamStateChanged(ChannelHandlerContext ctx, DefaultHttp2FrameStream stream) {
         switch (stream.state()) {
@@ -242,9 +221,7 @@ public class Http2MultiplexCodec extends Http2FrameCodec {
         }
     }
 
-    /**
-     * Notifies any child streams of the read completion.
-     */
+    /** 批量触发子 channel 的 readComplete，并合并为一次 flush */
     @Override
     public final void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         processPendingReadCompleteQueue();

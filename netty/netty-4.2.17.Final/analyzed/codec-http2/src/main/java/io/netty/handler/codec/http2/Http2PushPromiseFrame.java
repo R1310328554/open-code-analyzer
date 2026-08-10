@@ -16,33 +16,32 @@
 package io.netty.handler.codec.http2;
 
 /**
- * HTTP/2 Push Promise Frame
+ * HTTP/2 {@code PUSH_PROMISE} 帧对象：服务端主动推送资源，预先声明将开启的关联流及其请求头。
  */
 public interface Http2PushPromiseFrame extends Http2StreamFrame {
 
     /**
-     * Set the Promise {@link Http2FrameStream} object for this frame.
+     * 绑定被推送（promised）流的 {@link Http2FrameStream} 对象。
      */
     Http2StreamFrame pushStream(Http2FrameStream stream);
 
     /**
-     * Returns the Promise {@link Http2FrameStream} object for this frame, or {@code null} if the
-     * frame has yet to be associated with a stream.
+     * 返回 promised 流对象；尚未关联流时返回 {@code null}。
      */
     Http2FrameStream pushStream();
 
     /**
-     * {@link Http2Headers} sent in Push Promise
+     * PUSH_PROMISE 携带的请求头（伪头部 + 常规头部）。
      */
     Http2Headers http2Headers();
 
     /**
-     * Frame padding to use. Will be non-negative and less than 256.
+     * 帧填充字节数，非负且小于 256。
      */
     int padding();
 
     /**
-     * Promised Stream ID
+     * 服务端预分配的 promised stream id。
      */
     int promisedStreamId();
 

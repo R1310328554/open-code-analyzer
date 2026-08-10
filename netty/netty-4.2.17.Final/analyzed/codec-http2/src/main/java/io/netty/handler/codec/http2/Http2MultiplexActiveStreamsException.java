@@ -16,9 +16,9 @@
 package io.netty.handler.codec.http2;
 
 /**
- * {@link Exception} that can be used to wrap some {@link Throwable} and fire it through the pipeline.
- * The {@link Http2MultiplexHandler} will unwrap the original {@link Throwable} and fire it to all its
- * active {@link Http2StreamChannel}.
+ * 多路复用活跃流异常包装器：将底层 {@link Throwable} 包装后沿父 channel pipeline 传播。
+ * <p>{@link Http2MultiplexHandler} 捕获后会解包原始异常，并分发给所有活跃
+ * {@link Http2StreamChannel} 子 channel。
  */
 public final class Http2MultiplexActiveStreamsException extends Exception {
 
@@ -26,6 +26,9 @@ public final class Http2MultiplexActiveStreamsException extends Exception {
         super(cause);
     }
 
+    /**
+     * 跳过堆栈填充：此异常仅作传播载体，不需要真实调用栈。
+     */
     @Override
     public Throwable fillInStackTrace() {
         return this;

@@ -43,66 +43,25 @@ import static io.netty.handler.codec.http2.Http2Error.INTERNAL_ERROR;
 import static io.netty.handler.codec.http2.Http2Exception.connectionError;
 
 /**
- * An HTTP/2 handler that creates child channels for each stream. This handler must be used in combination
- * with {@link Http2FrameCodec}.
+ * HTTP/2 多路复用 handler（推荐方案）：须与 {@link Http2FrameCodec} 配合，为每条流创建 {@link Http2StreamChannel}。
  *
- * <p>When a new stream is created, a new {@link Http2StreamChannel} is created for it. Applications send and
- * receive {@link Http2StreamFrame}s on the created channel. {@link ByteBuf}s cannot be processed by the channel;
- * all writes that reach the head of the pipeline must be an instance of {@link Http2StreamFrame}. Writes that reach
- * the head of the pipeline are processed directly by this handler and cannot be intercepted.
+ * <p>流级帧路由到子 channel；{@link Http2ResetFrame}、{@link Http2PriorityFrame} 以 user event 传递（不受
+ * auto-read 抑制）。{@link Http2WindowUpdateFrame} 被吞掉不向上游暴露。连接级事件继续沿 pipeline 传播。
  *
- * <p>The child channel will be notified of user events that impact the stream, such as {@link
- * Http2GoAwayFrame} and {@link Http2ResetFrame}, as soon as they occur. Although {@code
- * Http2GoAwayFrame} and {@code Http2ResetFrame} signify that the remote is ignoring further
- * communication, closing of the channel is delayed until any inbound queue is drained with {@link
- * Channel#read()}, which follows the default behavior of channels in Netty. Applications are
- * free to close the channel in response to such events if they don't have use for any queued
- * messages. Any connection level events like {@link Http2SettingsFrame} and {@link Http2GoAwayFrame}
- * will be processed internally and also propagated down the pipeline for other handlers to act on.
- *
- * <p>Outbound streams are supported via the {@link Http2StreamChannelBootstrap}.
- *
- * <p>{@link ChannelConfig#setMaxMessagesPerRead(int)} and {@link ChannelConfig#setAutoRead(boolean)} are supported.
- *
- * <h3>Reference Counting</h3>
- *
- * Some {@link Http2StreamFrame}s implement the {@link ReferenceCounted} interface, as they carry
- * reference counted objects (e.g. {@link ByteBuf}s). The multiplex codec will call {@link ReferenceCounted#retain()}
- * before propagating a reference counted object through the pipeline, and thus an application handler needs to release
- * such an object after having consumed it. For more information on reference counting take a look at
- * <a href="https://netty.io/wiki/reference-counted-objects.html">the reference counted docs.</a>
- *
- * <h3>Channel Events</h3>
- *
- * A child channel becomes active as soon as it is registered to an {@link EventLoop}. Therefore, an active channel
- * does not map to an active HTTP/2 stream immediately. Only once a {@link Http2HeadersFrame} has been successfully sent
- * or received, does the channel map to an active HTTP/2 stream. In case it is not possible to open a new HTTP/2 stream
- * (i.e. due to the maximum number of active streams being exceeded), the child channel receives an exception
- * indicating the cause and is closed immediately thereafter.
- *
- * <h3>Writability and Flow Control</h3>
- *
- * A child channel observes outbound/remote flow control via the channel's writability. A channel only becomes writable
- * when it maps to an active HTTP/2 stream . A child channel does not know about the connection-level flow control
- * window. {@link ChannelHandler}s are free to ignore the channel's writability, in which case the excessive writes will
- * be buffered by the parent channel. It's important to note that only {@link Http2DataFrame}s are subject to
- * HTTP/2 flow control.
- *
- * <h3>Closing a {@link Http2StreamChannel}</h3>
- *
- * Once you close a {@link Http2StreamChannel} a {@link Http2ResetFrame} will be sent to the remote peer with
- * {@link Http2Error#CANCEL} if needed. If you want to close the stream with another {@link Http2Error} (due
- * errors / limits) you should propagate a {@link Http2FrameStreamException} through the {@link ChannelPipeline}.
- * Once it reaches the end of the {@link ChannelPipeline} it will automatically close the {@link Http2StreamChannel}
- * and send a {@link Http2ResetFrame} with the unwrapped {@link Http2Error} set. Another possibility is to just
- * directly write a {@link Http2ResetFrame} to the {@link Http2StreamChannel}l.
+ * <h3>关闭流</h3>
+ * 关闭 {@link Http2StreamChannel} 会按需发送 {@link Http2Error#CANCEL} 的 {@link Http2ResetFrame}；
+ * 需指定其他错误码时传播 {@link Http2FrameStreamException} 或直接写 {@link Http2ResetFrame}。
  */
 public final class Http2MultiplexHandler extends Http2ChannelDuplexHandler {
 
+    /** 子 channel 注册完成后的回调，失败则关闭子 channel */
     static final ChannelFutureListener CHILD_CHANNEL_REGISTRATION_LISTENER = Http2MultiplexHandler::registerDone;
 
+    /** 远端发起的新入站流 handler */
     private final ChannelHandler inboundStreamHandler;
+    /** HTTP/1.1 升级流 handler（仅客户端 stream 1） */
     private final ChannelHandler upgradeStreamHandler;
+    /** 待 batch 触发 readComplete 的子 channel 队列 */
     private final Queue<AbstractHttp2StreamChannel> readCompletePendingQueue =
             new MaxCapacityQueue<AbstractHttp2StreamChannel>(new ArrayDeque<AbstractHttp2StreamChannel>(8),
                     // Choose 100 which is what is used most of the times as default.
@@ -115,7 +74,7 @@ public final class Http2MultiplexHandler extends Http2ChannelDuplexHandler {
     private volatile ChannelHandlerContext ctx;
 
     /**
-     * Creates a new instance
+     * 创建实例，入站流使用单一 handler。
      *
      * @param inboundStreamHandler the {@link ChannelHandler} that will be added to the {@link ChannelPipeline} of
      *                             the {@link Channel}s created for new inbound streams.
@@ -125,7 +84,7 @@ public final class Http2MultiplexHandler extends Http2ChannelDuplexHandler {
     }
 
     /**
-     * Creates a new instance
+     * 创建实例，可单独指定 HTTP/1.1 升级流 handler。
      *
      * @param inboundStreamHandler the {@link ChannelHandler} that will be added to the {@link ChannelPipeline} of
      *                             the {@link Channel}s created for new inbound streams.
@@ -164,12 +123,12 @@ public final class Http2MultiplexHandler extends Http2ChannelDuplexHandler {
         readCompletePendingQueue.clear();
     }
 
+    /** 将流级帧分派到子 channel；WINDOW_UPDATE 仅用于内部流控，不暴露给应用 */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         parentReadInProgress = true;
         if (msg instanceof Http2StreamFrame) {
             if (msg instanceof Http2WindowUpdateFrame) {
-                // We dont want to propagate update frames to the user
                 return;
             }
             Http2StreamFrame streamFrame = (Http2StreamFrame) msg;
@@ -279,6 +238,7 @@ public final class Http2MultiplexHandler extends Http2ChannelDuplexHandler {
         return new Http2MultiplexHandlerStreamChannel((DefaultHttp2FrameStream) newStream(), null);
     }
 
+    /** 单流异常路由到子 channel；{@link Http2MultiplexActiveStreamsException} 广播到所有活跃流 */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, final Throwable cause) throws Exception {
         if (cause instanceof Http2FrameStreamException) {
@@ -349,9 +309,7 @@ public final class Http2MultiplexHandler extends Http2ChannelDuplexHandler {
         }
     }
 
-    /**
-     * Notifies any child streams of the read completion.
-     */
+    /** 批量触发子 channel readComplete 并合并 flush */
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         processPendingReadCompleteQueue();

@@ -17,24 +17,19 @@ package io.netty.handler.codec.http2;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * A {@link Http2FlowController} for controlling the flow of outbound {@code DATA} frames to the remote
- * endpoint.
+ * 出站流控控制器：管理发往远端的 {@code DATA} 帧，按连接/流窗口与优先级调度写入。
+ * <p>实现 {@link Http2FlowController}；payload 先入队，由 {@link #writePendingBytes()} 在窗口允许时刷出。
  */
 public interface Http2RemoteFlowController extends Http2FlowController {
     /**
-     * Get the {@link ChannelHandlerContext} for which to apply flow control on.
-     * <p>
-     * This is intended for us by {@link FlowControlled} implementations only. Use with caution.
+     * 返回应用流控的 {@link ChannelHandlerContext}；仅供 {@link FlowControlled} 内部使用。
      * @return The {@link ChannelHandlerContext} for which to apply flow control on.
      */
     ChannelHandlerContext channelHandlerContext();
 
     /**
-     * Queues a payload for transmission to the remote endpoint. There is no guarantee as to when the data
-     * will be written or how it will be assigned to frames.
-     * before sending.
-     * <p>
-     * Writes do not actually occur until {@link #writePendingBytes()} is called.
+     * 将待发送 payload 加入流控队列；实际写入需调用 {@link #writePendingBytes()}。
+     * <p>写入时机与分帧策略由控制器决定，调用方无法保证立即发出。
      *
      * @param stream the subject stream. Must not be the connection stream object.
      * @param payload payload to write subject to flow-control accounting and ordering rules.
@@ -42,31 +37,29 @@ public interface Http2RemoteFlowController extends Http2FlowController {
     void addFlowControlled(Http2Stream stream, FlowControlled payload);
 
     /**
-     * Determine if {@code stream} has any {@link FlowControlled} frames currently queued.
+     * 判断 {@code stream} 是否仍有排队中的 {@link FlowControlled} 帧。
      * @param stream the stream to check if it has flow controlled frames.
      * @return {@code true} if {@code stream} has any {@link FlowControlled} frames currently queued.
      */
     boolean hasFlowControlled(Http2Stream stream);
 
     /**
-     * Write all data pending in the flow controller up to the flow-control limits.
+     * 在流控窗口允许范围内写出所有排队数据。
      *
      * @throws Http2Exception throws if a protocol-related error occurred.
      */
     void writePendingBytes() throws Http2Exception;
 
     /**
-     * Set the active listener on the flow-controller.
+     * 设置流控监听器；{@code listener} 可为 {@code null} 以取消监听。
      *
      * @param listener to notify when the a write occurs, can be {@code null}.
      */
     void listener(Listener listener);
 
     /**
-     * Determine if the {@code stream} has bytes remaining for use in the flow control window.
-     * <p>
-     * Note that this method respects channel writability. The channel must be writable for this method to
-     * return {@code true}.
+     * 判断 {@code stream} 是否仍有可用发送窗口且底层 channel 可写。
+     * <p>同时考虑 HTTP/2 窗口与 Netty channel writability。
      *
      * @param stream The stream to test.
      * @return {@code true} if the {@code stream} has bytes remaining for use in the flow control window and the
@@ -75,13 +68,13 @@ public interface Http2RemoteFlowController extends Http2FlowController {
     boolean isWritable(Http2Stream stream);
 
     /**
-     * Notification that the writability of {@link #channelHandlerContext()} has changed.
+     * 底层 channel 可写状态变化时的回调；可能触发排队数据的写出。
      * @throws Http2Exception If any writes occur as a result of this call and encounter errors.
      */
     void channelWritabilityChanged() throws Http2Exception;
 
     /**
-     * Explicitly update the dependency tree. This method is called independently of stream state changes.
+     * 显式更新优先级依赖树，与流状态变迁解耦调用。
      * @param childStreamId The stream identifier associated with the child stream.
      * @param parentStreamId The stream identifier associated with the parent stream. May be {@code 0},
      *                       to make {@code childStreamId} and immediate child of the connection.
@@ -92,26 +85,17 @@ public interface Http2RemoteFlowController extends Http2FlowController {
     void updateDependencyTree(int childStreamId, int parentStreamId, short weight, boolean exclusive);
 
     /**
-     * Implementations of this interface are used to progressively write chunks of the underlying
-     * payload to the stream. A payload is considered to be fully written if {@link #write} has
-     * been called at least once and it's {@link #size} is now zero.
+     * 可分块写出、参与流控计费的出站 payload 抽象。
+     * <p>{@link #write} 至少调用一次且 {@link #size()} 归零后视为完全写出。
      */
     interface FlowControlled {
         /**
-         * The size of the payload in terms of bytes applied to the flow-control window.
-         * Some payloads like {@code HEADER} frames have no cost against flow control and would
-         * return 0 for this value even though they produce a non-zero number of bytes on
-         * the wire. Other frames like {@code DATA} frames have both their payload and padding count
-         * against flow-control.
+         * 计入流控窗口的字节数；{@code HEADERS} 等帧返回 0，{@code DATA} 含 payload 与 padding。
          */
         int size();
 
         /**
-         * Called to indicate that an error occurred before this object could be completely written.
-         * <p>
-         * The {@link Http2RemoteFlowController} will make exactly one call to either
-         * this method or {@link #writeComplete()}.
-         * </p>
+         * 写出完成前发生错误时的回调；控制器对同一对象只会调用本方法或 {@link #writeComplete()} 之一。
          *
          * @param ctx The context to use if any communication needs to occur as a result of the error.
          * This may be {@code null} if an exception occurs when the connection has not been established yet.
@@ -120,23 +104,13 @@ public interface Http2RemoteFlowController extends Http2FlowController {
         void error(ChannelHandlerContext ctx, Throwable cause);
 
         /**
-         * Called after this object has been successfully written.
-         * <p>
-         * The {@link Http2RemoteFlowController} will make exactly one call to either
-         * this method or {@link #error(ChannelHandlerContext, Throwable)}.
-         * </p>
+         * payload 全部成功写出后的回调。
          */
         void writeComplete();
 
         /**
-         * Writes up to {@code allowedBytes} of the encapsulated payload to the stream. Note that
-         * a value of 0 may be passed which will allow payloads with flow-control size == 0 to be
-         * written. The flow-controller may call this method multiple times with different values until
-         * the payload is fully written, i.e it's size after the write is 0.
-         * <p>
-         * When an exception is thrown the {@link Http2RemoteFlowController} will make a call to
-         * {@link #error(ChannelHandlerContext, Throwable)}.
-         * </p>
+         * 在不超过 {@code allowedBytes} 的前提下写出部分 payload；{@code allowedBytes} 为 0 时
+         * 仍可用于写出 size==0 的帧。控制器可能多次调用直至 {@link #size()} 为 0。
          *
          * @param ctx The context to use for writing.
          * @param allowedBytes an upper bound on the number of bytes the payload can write at this time.
@@ -144,8 +118,7 @@ public interface Http2RemoteFlowController extends Http2FlowController {
         void write(ChannelHandlerContext ctx, int allowedBytes);
 
         /**
-         * Merge the contents of the {@code next} message into this message so they can be written out as one unit.
-         * This allows many small messages to be written as a single DATA frame.
+         * 尝试将 {@code next} 合并进当前 payload，合并后可一次 {@code DATA} 帧发出以减少开销。
          *
          * @return {@code true} if {@code next} was successfully merged and does not need to be enqueued,
          *     {@code false} otherwise.
@@ -154,13 +127,11 @@ public interface Http2RemoteFlowController extends Http2FlowController {
     }
 
     /**
-     * Listener to the number of flow-controlled bytes written per stream.
+     * 监听各流可写状态变化（窗口或 channel writability 改变时触发）。
      */
     interface Listener {
         /**
-         * Notification that {@link Http2RemoteFlowController#isWritable(Http2Stream)} has changed for {@code stream}.
-         * <p>
-         * This method should not throw. Any thrown exceptions are considered a programming error and are ignored.
+         * {@link #isWritable(Http2Stream)} 结果变化时的通知；实现不应抛异常。
          * @param stream The stream which writability has changed for.
          */
         void writabilityChanged(Http2Stream stream);
