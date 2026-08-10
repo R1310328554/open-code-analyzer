@@ -27,9 +27,11 @@ import org.keycloak.provider.Provider;
 import org.keycloak.util.Booleans;
 
 /**
- * The {@link IdentityProviderStorageProvider} is concerned with the storage/retrieval of the configured identity providers
+ * 身份提供方存储提供者：负责 Keycloak 中已配置 IdP 的持久化 CRUD 与查询。
+ * <p>The {@link IdentityProviderStorageProvider} is concerned with the storage/retrieval of the configured identity providers
  * in Keycloak. In other words, it is a provider of identity providers (IDPs) and, as such, handles the CRUD operations for IDPs.
  * </p>
+ * <p>勿与 server-spi-private 中的 {@code IdentityProvider} 混淆——后者由 Google、GitHub 等具体联邦实现。</p>
  * It is not to be confused with the {@code IdentityProvider} found in server-spi-private as that provider is meant to be
  * implemented by actual identity providers that handle the logic of authenticating users with third party brokers, such
  * as Microsoft, Google, GitHub, LinkedIn, etc.
@@ -39,6 +41,7 @@ import org.keycloak.util.Booleans;
 public interface IdentityProviderStorageProvider extends Provider {
 
     /**
+     * 根据模型创建新 IdP。
      * Creates a new identity provider from the specified model.
      *
      * @param model a {@link IdentityProviderModel} containing the identity provider's data.
@@ -47,6 +50,7 @@ public interface IdentityProviderStorageProvider extends Provider {
     IdentityProviderModel create(IdentityProviderModel model);
 
     /**
+     * 根据模型更新 IdP 配置。
      * Updates the identity provider using the specified model.
      *
      * @param model a {@link IdentityProviderModel} containing the identity provider's data.
@@ -54,6 +58,7 @@ public interface IdentityProviderStorageProvider extends Provider {
     void update(IdentityProviderModel model);
 
     /**
+     * 按别名删除 IdP。
      * Removes the identity provider with the specified alias.
      *
      * @param providerAlias the alias of the identity provider to be removed.
@@ -62,11 +67,13 @@ public interface IdentityProviderStorageProvider extends Provider {
     boolean remove(String providerAlias);
 
     /**
+     * 删除 Realm 内所有 IdP。
      * Removes all identity providers from the realm.
      */
     void removeAll();
 
     /**
+     * 按内部 ID 获取 IdP。
      * Obtains the identity provider with the specified internal id.
      *
      * @param internalId the identity provider's internal id.
@@ -75,6 +82,7 @@ public interface IdentityProviderStorageProvider extends Provider {
     IdentityProviderModel getById(String internalId);
 
     /**
+     * 按别名获取 IdP。
      * Obtains the identity provider with the specified alias.
      *
      * @param alias the identity provider's alias.
@@ -102,6 +110,7 @@ public interface IdentityProviderStorageProvider extends Provider {
     }
 
     /**
+     * 返回当前 Realm 中匹配查询条件的所有 IdP。
      * Returns all identity providers in the current realm of a given type.
      * @param query the query of identity provider to return
      * @return a non-null stream of {@link IdentityProviderModel}s that match the specified type
@@ -129,6 +138,14 @@ public interface IdentityProviderStorageProvider extends Provider {
      *     cases, the implementations must search the providers whose config contains a pair that matches the specified search
      *     option</li>
      * </ul>
+     *
+     * @param query the query for identity providers to match.
+     * @param first the position of the first result to be processed (pagination offset). Ignored if negative or {@code null}.
+     * @param max the maximum number of results to be returned. Ignored if negative or {@code null}.
+     * @return a non-null stream of {@link IdentityProviderModel}s that match the search criteria.
+     */
+    /**
+     * 按查询条件返回分页 IdP 流，支持别名、启用状态、配置属性等筛选。
      *
      * @param query the query for identity providers to match.
      * @param first the position of the first result to be processed (pagination offset). Ignored if negative or {@code null}.
@@ -165,6 +182,7 @@ public interface IdentityProviderStorageProvider extends Provider {
     Stream<String> getByFlow(String flowId, String search, Integer first, Integer max);
 
     /**
+     * 返回可用于登录页的 IdP（已启用、非仅关联、未隐藏）。
      * Returns all identity providers available for login, according to the specified mode. An IDP can be used for login
      * if it is enabled, is not a link-only IDP, and is not configured to be hidden on login page.
      * </p>
@@ -202,6 +220,7 @@ public interface IdentityProviderStorageProvider extends Provider {
     }
 
     /**
+     * 返回 Realm 内 IdP 总数。
      * Returns the number of IDPs in the realm.
      *
      * @return the number of IDPs found in the realm.
@@ -209,6 +228,7 @@ public interface IdentityProviderStorageProvider extends Provider {
     long count();
 
     /**
+     * 检查 Realm 是否已配置 IdP（是否启用身份联邦）。
      * Checks whether the realm has any configured identity providers or not.
      *
      * @return {@code true} if the realm has at least one configured identity provider (federation is enabled); {@code false}
@@ -219,15 +239,13 @@ public interface IdentityProviderStorageProvider extends Provider {
     }
 
     /**
+     * 控制登录页 IdP 获取范围（Realm 级、组织级或全部）。
      * Enum to control how login identity providers should be fetched.
      */
     enum FetchMode {
-        /** only realm-level providers should be fetched (not linked to any organization) **/
-        REALM_ONLY,
-        /** only providers linked to organizations should be fetched **/
-        ORG_ONLY,
-        /** all providers should fetched, regardless of being linked to an organization or not **/
-        ALL
+        /** 仅 Realm 级 IdP（未关联组织） */ REALM_ONLY,
+        /** 仅组织关联 IdP */ ORG_ONLY,
+        /** 全部 IdP */ ALL
     }
 
     /**
@@ -274,6 +292,7 @@ public interface IdentityProviderStorageProvider extends Provider {
     }
 
     /**
+     * 创建 IdP 映射器。
      * Creates a new identity provider mapper from the specified model.
      *
      * @param model a {@link IdentityProviderMapperModel} containing the identity provider mapper's data.
@@ -319,6 +338,7 @@ public interface IdentityProviderStorageProvider extends Provider {
     IdentityProviderMapperModel getMapperByName(String identityProviderAlias, String name);
 
     /**
+     * 返回所有 IdP 映射器流。
      * Returns all identity provider mappers as a stream.
      * @return Stream of {@link IdentityProviderMapperModel}. Never returns {@code null}.
      */

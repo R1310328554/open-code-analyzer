@@ -25,6 +25,7 @@ import org.keycloak.common.Profile;
 import org.keycloak.common.Profile.Feature;
 
 /**
+ * 身份提供方配置模型：封装 IdP 通用属性及实现特定的 {@link org.keycloak.models.IdentityProviderModel#config} 配置项。
  * <p>A model type representing the configuration for identity providers. It provides some common properties and also a {@link org.keycloak.models.IdentityProviderModel#config}
  * for configuration options and properties specifics to a identity provider.</p>
  *
@@ -66,11 +67,13 @@ public class IdentityProviderModel implements Serializable {
     private String internalId;
 
     /**
+     * 用户定义的别名，用于唯一标识一个 IdP 实例。
      * <p>An user-defined identifier to unique identify an identity provider instance.</p>
      */
     private String alias;
 
     /**
+     * 引用具体 IdP 实现类型的标识符，同一实现的所有实例共享该值。
      * <p>An identifier used to reference a specific identity provider implementation. The value of this field is the same
      * across instances of the same provider implementation.</p>
      */
@@ -87,6 +90,7 @@ public class IdentityProviderModel implements Serializable {
     protected Boolean linkOnly;
 
     /**
+     * 是否在显示登录页之前默认使用该 IdP 进行认证。
      * Specifies if particular provider should be used by default for authentication even before displaying login screen
      */
     private Boolean authenticateByDefault;
@@ -104,6 +108,7 @@ public class IdentityProviderModel implements Serializable {
     private Boolean hideOnLogin;
 
     /**
+     * 存储 IdP 实例与实现特定的配置项，由具体 IdP 实现解析。
      * <p>A map containing the configuration and properties for a specific identity provider instance and implementation. The items
      * in the map are understood by the identity provider implementation.</p>
      */
@@ -133,6 +138,7 @@ public class IdentityProviderModel implements Serializable {
         }
     }
 
+    /** @return 内部持久化 ID */
     public String getInternalId() {
         return this.internalId;
     }
@@ -141,6 +147,7 @@ public class IdentityProviderModel implements Serializable {
         this.internalId = internalId;
     }
 
+    /** @return IdP 别名 */
     public String getAlias() {
         return this.alias;
     }
@@ -149,6 +156,7 @@ public class IdentityProviderModel implements Serializable {
         this.alias = id;
     }
 
+    /** @return IdP 实现类型 ID */
     public String getProviderId() {
         return this.providerId;
     }
@@ -157,6 +165,7 @@ public class IdentityProviderModel implements Serializable {
         this.providerId = providerId;
     }
 
+    /** @return 是否已启用 */
     public boolean isEnabled() {
         return this.enabled;
     }
@@ -169,6 +178,7 @@ public class IdentityProviderModel implements Serializable {
         return this.storeToken;
     }
 
+    /** @return 是否在会话中存储联邦令牌（API v2 特性） */
     public boolean isStoreTokenInSession() {
         String isStoreTokenInSession = getConfig().get(STORE_TOKEN_IN_SESSION);
         return Profile.isFeatureEnabled(Feature.IDENTITY_BROKERING_API_V2) && isStoreTokenInSession != null
@@ -263,6 +273,7 @@ public class IdentityProviderModel implements Serializable {
     }
 
     /**
+     * 校验 IdP 配置；子类可覆盖以添加实现特定校验。
      * <p>Validates this configuration.
      *
      * <p>Sub-classes can override this method in order to enforce provider specific validations.
@@ -272,6 +283,7 @@ public class IdentityProviderModel implements Serializable {
     public void validate(RealmModel realm) {
     }
 
+    /** @return IdP 级用户同步模式 */
     public IdentityProviderSyncMode getSyncMode() {
         String syncMode = getConfig().get(SYNC_MODE);
         return syncMode != null ? IdentityProviderSyncMode.valueOf(syncMode) : null;
@@ -306,6 +318,7 @@ public class IdentityProviderModel implements Serializable {
     }
 
     /**
+     * 该 IdP 用户是否为临时用户（不写入 Keycloak 数据库），默认 {@code false}。
      * Returns flag whether the users within this IdP should be transient, ie. not stored in Keycloak database.
      * Default value: {@code false}.
      * @return
@@ -315,6 +328,7 @@ public class IdentityProviderModel implements Serializable {
     }
 
     /**
+     * 配置 IdP 不将用户持久化到 Keycloak 数据库，默认 {@code false}。
      * Configures the IdP to not store users in Keycloak database. Default value: {@code false}.
      * @return
      */
@@ -366,6 +380,7 @@ public class IdentityProviderModel implements Serializable {
         getConfig().put(MIN_VALIDITY_TOKEN, Integer.toString(minValidityToken));
     }
 
+	/** @return 在账户控制台中的显示策略 */
 	public IdentityProviderShowInAccountConsole getShowInAccountConsole() {
 		return IdentityProviderShowInAccountConsole.valueOf(getConfig().getOrDefault(SHOW_IN_ACCOUNT_CONSOLE, IdentityProviderShowInAccountConsole.ALWAYS.name()));
 	}

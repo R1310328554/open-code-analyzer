@@ -1,5 +1,8 @@
 package org.keycloak.models;
 
+/**
+ * 已签发可验证凭证（VC）记录模型，用于 OID4VCI 场景。
+ */
 public class IssuedVerifiableCredentialModel {
 
     private String id;
@@ -7,7 +10,7 @@ public class IssuedVerifiableCredentialModel {
     private String verifiableCredentialId;
     private Long issuedAt;
     private Long expiresAt;
-    // This represents UUID of the client, which acts as OID4VCI wallet
+    // 表示作为 OID4VCI 钱包的客户端 UUID
     private String clientId;
     private String revision;
 
@@ -20,6 +23,7 @@ public class IssuedVerifiableCredentialModel {
         this.clientId = clientId;
     }
 
+    /** @return 记录唯一标识符 */
     public String getId() {
         return id;
     }
@@ -28,6 +32,7 @@ public class IssuedVerifiableCredentialModel {
         this.id = id;
     }
 
+    /** @return 持有该 VC 的用户 ID */
     public String getUserId() {
         return userId;
     }
@@ -36,6 +41,7 @@ public class IssuedVerifiableCredentialModel {
         this.userId = userId;
     }
 
+    /** @return 可验证凭证定义 ID */
     public String getVerifiableCredentialId() {
         return verifiableCredentialId;
     }
@@ -44,6 +50,7 @@ public class IssuedVerifiableCredentialModel {
         this.verifiableCredentialId = verifiableCredentialId;
     }
 
+    /** @return 签发时间戳（毫秒） */
     public Long getIssuedAt() {
         return issuedAt;
     }
@@ -52,6 +59,7 @@ public class IssuedVerifiableCredentialModel {
         this.issuedAt = issuedAt;
     }
 
+    /** @return 过期时间戳（毫秒） */
     public Long getExpiresAt() {
         return expiresAt;
     }
@@ -60,6 +68,7 @@ public class IssuedVerifiableCredentialModel {
         this.expiresAt = expiresAt;
     }
 
+    /** @return OID4VCI 钱包客户端 UUID */
     public String getClientId() {
         return clientId;
     }
@@ -68,6 +77,7 @@ public class IssuedVerifiableCredentialModel {
         this.clientId = clientId;
     }
 
+    /** @return 记录修订版本号 */
     public String getRevision() {
         return revision;
     }

@@ -29,16 +29,22 @@ import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.vault.VaultTranscriber;
 
 /**
+ * Keycloak 会话：单次请求/事务的工作单元，提供 Provider 访问与上下文管理。
+ * <p>实现 {@link AutoCloseable}，会话结束时释放资源。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface KeycloakSession extends AutoCloseable {
 
+    /** @return 当前请求上下文 */
     KeycloakContext getContext();
 
+    /** @return 事务管理器 */
     KeycloakTransactionManager getTransactionManager();
 
     /**
+     * 获取本会话的 Provider 实例；若尚未创建则通过工厂分配。
      * Get dedicated provider instance of provider type clazz that was created for this session.  If one hasn't been created yet,
      * find the factory and allocate by calling ProviderFactory.create(KeycloakSession).  The provider to use is determined
      * by the "provider" config entry in keycloak-server boot configuration. See the <a href="https://www.keycloak.org/docs/latest/server_development/index.html#_use_available_providers">Server developer guide</a> for the details.
@@ -64,6 +70,7 @@ public interface KeycloakSession extends AutoCloseable {
     <T extends Provider> T getProvider(Class<T> clazz, String id);
 
     /**
+     * 从当前 Realm 获取组件 Provider；调用前须在上下文中设置 Realm，见 {@link KeycloakContext#getRealm()}。
      * Returns a component provider for a component from the realm that is relevant to this session.
      * The relevant realm must be set prior to calling this method in the context, see {@link KeycloakContext#getRealm()}.
      * @param <T>
@@ -128,6 +135,7 @@ public interface KeycloakSession extends AutoCloseable {
     Map<String, Object> getAttributes();
 
     /**
+     * 立即使给定对象的中间状态失效，并在会话结束时再次失效。
      * Invalidates intermediate states of the given objects, both immediately and at the end of this session.
      * @param type Type of the objects to invalidate
      * @param params Parameters used for the invalidation
@@ -139,6 +147,7 @@ public interface KeycloakSession extends AutoCloseable {
     KeycloakSessionFactory getKeycloakSessionFactory();
 
     /**
+     * 返回受管 Realm Provider，并启动 Provider 事务（由 KeycloakSession 事务管理）。
      * Returns a managed provider instance.  Will start a provider transaction.  This transaction is managed by the KeycloakSession
      * transaction.
      *
@@ -166,6 +175,7 @@ public interface KeycloakSession extends AutoCloseable {
     ClientScopeProvider clientScopes();
 
     /**
+     * 返回受管组 Provider 实例。
      * Returns a managed group provider instance.
      *
      * @return Currently used GroupProvider instance.
@@ -207,6 +217,7 @@ public interface KeycloakSession extends AutoCloseable {
     RevokedTokenProvider revokedTokens();
 
     /**
+     * 返回默认 IdP 存储 Provider。
      * Returns the default IDP provider .
      *
      * @return the default IDP provider.
@@ -217,6 +228,7 @@ public interface KeycloakSession extends AutoCloseable {
     void close();
 
     /**
+     * 系统内所有用户的缓存视图，包含 UserStorageProvider 加载的用户。
      * A cached view of all users in system including  users loaded by UserStorageProviders
      *
      * @return UserProvider instance
@@ -224,6 +236,7 @@ public interface KeycloakSession extends AutoCloseable {
     UserProvider users();
 
     /**
+     * 密钥管理器。
      * Key manager
      *
       * @return
@@ -231,6 +244,7 @@ public interface KeycloakSession extends AutoCloseable {
     KeyManager keys();
 
     /**
+     * 主题管理器。
      * Theme manager
      *
      * @return
@@ -238,6 +252,7 @@ public interface KeycloakSession extends AutoCloseable {
     ThemeManager theme();
 
     /**
+     * 令牌管理器。
      * Token manager
      *
      * @return
@@ -245,15 +260,18 @@ public interface KeycloakSession extends AutoCloseable {
     TokenManager tokens();
 
     /**
+     * 保险库转录器，用于读取密钥等敏感配置。
      * Vault transcriber
      */
     VaultTranscriber vault();
 
     /**
+     * 客户端策略管理器。
      * Client Policy Manager
      */
     ClientPolicyManager clientPolicy();
 
+    /** @return 会话是否已关闭 */
     boolean isClosed();
 
 }

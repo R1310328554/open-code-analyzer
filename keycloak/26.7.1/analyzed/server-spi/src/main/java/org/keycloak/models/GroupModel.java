@@ -25,14 +25,18 @@ import java.util.stream.Stream;
 import org.keycloak.provider.ProviderEvent;
 
 /**
+ * 用户组模型：表示 Realm 或组织内的层级组结构，支持角色映射与属性。
+ * <p>继承 {@link RoleMapperModel} 与 {@link Model}，提供子组、事件与组织关联。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface GroupModel extends RoleMapperModel, Model {
 
+    /** 组类型：Realm 级组或组织级组。 */
     enum Type {
-        REALM(0),
-        ORGANIZATION(1);
+        /** Realm 级组 */ REALM(0),
+        /** 组织级组 */ ORGANIZATION(1);
 
         private final int value;
 
@@ -57,12 +61,14 @@ public interface GroupModel extends RoleMapperModel, Model {
         }
     }
 
+    /** 组生命周期相关事件的基接口。 */
     interface GroupEvent extends ProviderEvent {
         RealmModel getRealm();
         GroupModel getGroup();
         KeycloakSession getKeycloakSession();
     }
 
+    /** 组创建事件。 */
     interface GroupCreatedEvent extends GroupEvent {
         static void fire(GroupModel group, KeycloakSession session) {
             session.getKeycloakSessionFactory().publish(new GroupCreatedEvent() {
@@ -84,10 +90,12 @@ public interface GroupModel extends RoleMapperModel, Model {
         }
     }
 
+    /** 组删除事件。 */
     interface GroupRemovedEvent extends GroupEvent {
 
     }
 
+    /** 组更新事件。 */
     interface GroupUpdatedEvent extends GroupEvent {
         static void fire(GroupModel group, KeycloakSession session) {
             session.getKeycloakSessionFactory().publish(new GroupUpdatedEvent() {
@@ -109,6 +117,7 @@ public interface GroupModel extends RoleMapperModel, Model {
         }
     }
 
+    /** 用户加入组事件。 */
     interface GroupMemberJoinEvent extends GroupEvent {
         static void fire(GroupModel group, UserModel user, KeycloakSession session) {
             session.getKeycloakSessionFactory().publish(new GroupMemberJoinEvent() {
@@ -137,6 +146,7 @@ public interface GroupModel extends RoleMapperModel, Model {
         UserModel getUser();
     }
 
+    /** 用户离开组事件。 */
     interface GroupMemberLeaveEvent extends GroupEvent {
         static void fire(GroupModel group, UserModel user, KeycloakSession session) {
             session.getKeycloakSessionFactory().publish(new GroupMemberLeaveEvent() {
@@ -165,6 +175,7 @@ public interface GroupModel extends RoleMapperModel, Model {
         UserModel getUser();
     }
 
+    /** 组路径变更事件（移动组层级时触发）。 */
     interface GroupPathChangeEvent extends GroupEvent {
         String getNewPath();
         String getPreviousPath();
@@ -202,6 +213,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     Comparator<GroupModel> COMPARE_BY_NAME = Comparator.comparing(GroupModel::getName);
 
     /**
+     * 获取组创建时间戳；该功能引入前创建的组可能为 {@code null}。
      * Get timestamp of group creation. May be null for groups created before this feature introduction.
      */
     default Long getCreatedTimestamp() {
@@ -212,6 +224,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     }
 
     /**
+     * 获取组最后修改时间戳；自该功能引入后未修改的组可能为 {@code null}。
      * Get timestamp of last group modification. May be null for groups that have not been modified
      * since this feature was introduced.
      */
@@ -222,17 +235,23 @@ public interface GroupModel extends RoleMapperModel, Model {
     default void setLastModifiedTimestamp(Long timestamp) {
     }
 
+    /** @return 组唯一标识符 */
     String getId();
 
+    /** @return 组名称 */
     String getName();
 
+    /** @param name 组名称 */
     void setName(String name);
 
+    /** @return 组描述 */
     String getDescription();
 
+    /** @param description 组描述 */
     void setDescription(String description);
 
     /**
+     * 设置指定属性的单一值，并移除该属性的其他已有值。
      * Set single value of specified attribute. Remove all other existing values
      *
      * @param name
@@ -245,6 +264,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     void removeAttribute(String name);
 
     /**
+     * 获取指定属性的第一个值；无值时返回 {@code null}，多值时不抛异常。
      * @param name
      * @return null if there is not any value of specified attribute or first value otherwise. Don't throw exception if there are more values of the attribute
      */
@@ -252,6 +272,7 @@ public interface GroupModel extends RoleMapperModel, Model {
 
 
     /**
+     * 以流形式返回匹配给定名称的组属性值。
      * Returns group attributes that match the given name as a stream.
      * @param name {@code String} Name of the attribute to be used as a filter.
      * @return Stream of all attribute values or empty stream if there are not any values. Never return {@code null}.
@@ -264,6 +285,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     String getParentId();
 
     /**
+     * 返回父组下所有子组的流，按组名排序。
      * Returns all sub groups for the parent group as a stream.
      * The stream is sorted by the group name.
      *
@@ -272,6 +294,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     Stream<GroupModel> getSubGroupsStream();
 
     /**
+     * 返回匹配模糊搜索的子组流（分页），按组名排序。
      * Returns all sub groups for the parent group matching the fuzzy search as a stream, paginated.
      * Stream is sorted by the group name.
      *
@@ -283,6 +306,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     }
 
     /**
+     * 返回父组下所有子组的流（分页）。
      * Returns all sub groups for the parent group as a stream, paginated.
      *
      * @param firstResult First result to return. Ignored if negative or {@code null}.
@@ -294,6 +318,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     }
 
     /**
+     * 返回匹配搜索条件的子组流（分页），按组名排序。
      * Returns all subgroups for the parent group matching the search as a stream, paginated.
      * Stream is sorted by the group name.
      *
@@ -326,6 +351,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     }
 
     /**
+     * 返回该组下子组的数量。
      * Returns the number of groups contained beneath this group.
      *
      * @return The number of groups beneath this group. Never returns {@code null}.
@@ -335,6 +361,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     }
 
     /**
+     * 设置父组；同时需在父组上调用 {@code addChild}，若无父组则在 {@link RealmModel} 上调用。
      * You must also call addChild on the parent group, addChild on RealmModel if there is no parent group
      *
      * @param group
@@ -342,6 +369,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     void setParent(GroupModel group);
 
     /**
+     * 添加子组，并自动在子组上调用 {@code setParent()}。
      * Automatically calls setParent() on the subGroup
      *
      * @param subGroup
@@ -349,6 +377,12 @@ public interface GroupModel extends RoleMapperModel, Model {
     void addChild(GroupModel subGroup);
 
     /**
+     * Automatically calls setParent() on the subGroup
+     *
+     * @param subGroup
+     */
+    /**
+     * 移除子组，并自动在子组上调用 {@code setParent()}。
      * Automatically calls setParent() on the subGroup
      *
      * @param subGroup
@@ -364,6 +398,7 @@ public interface GroupModel extends RoleMapperModel, Model {
     }
 
     /**
+     * 返回组所属组织；{@link Type#REALM} 类型组返回 {@code null}。
      * @return Organization this group belongs to, or null if the group is of {@link Type#REALM}.
      */
     OrganizationModel getOrganization();

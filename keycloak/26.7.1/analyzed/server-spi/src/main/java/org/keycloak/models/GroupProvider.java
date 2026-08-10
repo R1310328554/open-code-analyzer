@@ -24,16 +24,18 @@ import org.keycloak.provider.Provider;
 import org.keycloak.storage.group.GroupLookupProvider;
 
 /**
- *
- * Provider of group records
+ * 组数据提供者：负责 Realm 内用户组的 CRUD、查询与层级移动。
+ * <p>Provider of group records</p>
  * @author mhajas
  *
  */
 public interface GroupProvider extends Provider, GroupLookupProvider {
 
+    /** 组路径中是否转义斜杠的默认值。 */
     static boolean DEFAULT_ESCAPE_SLASHES = false;
 
     /**
+     * 返回指定 Realm 内的所有组。
      * Returns groups for the given realm.
      *
      * @param realm Realm.
@@ -42,6 +44,7 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
     Stream<GroupModel> getGroupsStream(RealmModel realm);
 
     /**
+     * 按 ID 流返回组，等价于 {@code getGroupsStream(realm, ids, null, null, null)}。
      * Returns a stream of groups with given ids.
      * Effectively the same as {@code getGroupsStream(realm, ids, null, null, null)}.
      *
@@ -54,6 +57,7 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
     }
 
     /**
+     * 按 ID 与名称搜索条件返回分页组流。
      * Returns a paginated stream of groups with given ids and given search value in group names.
      *
      * @param realm Realm.
@@ -80,6 +84,7 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
     }
 
     /**
+     * 返回名称包含搜索字符串的组数量。
      * Returns a number of groups that contains the search string in the name
      *
      * @param realm Realm.
@@ -92,6 +97,7 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
     }
 
     /**
+     * 返回 Realm 内组或顶级组（无父组）的数量。
      * Returns a number of groups/top level groups (i.e. groups without parent group) for the given realm.
      *
      * @param realm Realm.
@@ -110,6 +116,7 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
     Long getGroupsCountByNameContaining(RealmModel realm, String search);
 
     /**
+     * 返回拥有指定角色的组流。
      * Returns groups with the given role in the given realm.
      *
      * @param realm Realm.
@@ -121,6 +128,7 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
      Stream<GroupModel> getGroupsByRoleStream(RealmModel realm, RoleModel role, Integer firstResult, Integer maxResults);
 
     /**
+     * 返回 Realm 内所有顶级组（无父组）。
      * Returns all top level groups (i.e. groups without parent group) for the given realm.
      *
      * @param realm Realm.
@@ -154,6 +162,7 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
     Stream<GroupModel> getTopLevelGroupsStream(RealmModel realm, String search, Boolean exact, Integer firstResult, Integer maxResults);
 
     /**
+     * 在 Realm 中创建指定名称的新组，等价于 {@code createGroup(realm, null, name, null)}。
      * Creates a new group with the given name in the given realm.
      * Effectively the same as {@code createGroup(realm, null, name, null)}.
      *
@@ -219,9 +228,21 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
      * @throws ModelDuplicateException If a group with the given id already exists or the toParent group has a subgroup with the given name
      * @return Model of the created group
      */
+    /**
+     * 创建指定类型、名称与父组的新组。
+     *
+     * @param realm Realm.
+     * @param id Id, will be generated if {@code null}.
+     * @param type the group type. if not set, defaults to {@link Type#REALM}
+     * @param name Name.
+     * @param toParent Parent group, or {@code null} if the group is top level group
+     * @throws ModelDuplicateException If a group with the given id already exists or the toParent group has a subgroup with the given name
+     * @return Model of the created group
+     */
     GroupModel createGroup(RealmModel realm, String id, Type type, String name, GroupModel toParent);
 
     /**
+     * 从 Realm 中移除指定组。
      * Removes the given group for the given realm.
      *
      * @param realm Realm.
@@ -231,6 +252,7 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
     boolean removeGroup(RealmModel realm, GroupModel group);
 
     /**
+     * 在组层级结构中移动组（变更父组或提升为顶级组）。
      * This method is used for moving groups in group structure, for example:
      * <ul>
      * <li>making an existing child group child group of some other group,</li>
@@ -255,6 +277,7 @@ public interface GroupProvider extends Provider, GroupLookupProvider {
     void addTopLevelGroup(RealmModel realm, GroupModel subGroup);
 
     /**
+     * Realm 删除前的清理回调，应移除该 Realm 下所有组。
      * Called when a realm is removed.
      * Should remove all groups that belong to the realm.
      *

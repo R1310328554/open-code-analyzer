@@ -31,15 +31,27 @@ import org.keycloak.keys.RsaKeyMetadata;
 import org.keycloak.keys.SecretKeyMetadata;
 
 /**
+ * 密钥管理器：提供 Realm 级签名、加密与 HMAC 密钥的查询与获取。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface KeyManager {
 
+    /** @param realm Realm
+     * @param use 密钥用途
+     * @param algorithm 算法名称
+     * @return 当前活动密钥 */
     KeyWrapper getActiveKey(RealmModel realm, KeyUse use, String algorithm);
 
+    /** @param realm Realm
+     * @param kid 密钥 ID
+     * @param use 密钥用途
+     * @param algorithm 算法名称
+     * @return 匹配的密钥包装器 */
     KeyWrapper getKey(RealmModel realm, String kid, KeyUse use, String algorithm);
 
     /**
+     * 返回 Realm 内所有密钥。
      * Returns all {@code KeyWrapper} for the given realm.
      * @param realm {@code RealmModel}.
      * @return Stream of all {@code KeyWrapper} in the realm. Never returns {@code null}.
@@ -47,6 +59,7 @@ public interface KeyManager {
     Stream<KeyWrapper> getKeysStream(RealmModel realm);
 
     /**
+     * 按用途与算法筛选 Realm 密钥。
      * Returns all {@code KeyWrapper} for the given realm that match given criteria.
      * @param realm {@code RealmModel}.
      * @param use {@code KeyUse}.
@@ -85,6 +98,7 @@ public interface KeyManager {
     @Deprecated
     List<SecretKeyMetadata> getAesKeys(RealmModel realm);
 
+    /** 当前活动 RSA 密钥（含私钥、公钥与证书）。 */
     class ActiveRsaKey {
         private final String kid;
         private final PrivateKey privateKey;
@@ -119,6 +133,7 @@ public interface KeyManager {
         }
     }
 
+    /** 当前活动 HMAC 密钥。 */
     class ActiveHmacKey {
         private final String kid;
         private final SecretKey secretKey;
@@ -137,6 +152,7 @@ public interface KeyManager {
         }
     }
 
+    /** 当前活动 AES 密钥。 */
     class ActiveAesKey {
         private final String kid;
         private final SecretKey secretKey;

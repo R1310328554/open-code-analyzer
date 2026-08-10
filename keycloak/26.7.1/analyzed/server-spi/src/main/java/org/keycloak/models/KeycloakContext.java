@@ -32,11 +32,14 @@ import org.keycloak.theme.Theme;
 import org.keycloak.urls.UrlType;
 
 /**
+ * Keycloak 请求上下文：封装当前 Realm、客户端、HTTP 请求/响应、URI 与用户会话等运行时状态。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface KeycloakContext {
 
     /**
+     * 获取认证服务器基础 URL。
      * @throws ContextNotActiveException if no request is active and a non-full URL hostname is configured
      */
     URI getAuthServerUrl();
@@ -55,6 +58,7 @@ public interface KeycloakContext {
 
 
     /**
+     * 获取前端请求 URI；后端请求请使用 {@link #getUri(UrlType)}。
      * Returns the URI assuming it is a frontend request. To resolve URI for a backend request use {@link #getUri(UrlType)}
      *
      * method calls on the returned {@link KeycloakUriInfo} may throw a {@link ContextNotActiveException} if no request is active
@@ -84,23 +88,30 @@ public interface KeycloakContext {
         return null;
     }
 
+    /** @return 当前 Realm */
     RealmModel getRealm();
 
+    /** @param realm 设置当前 Realm */
     void setRealm(RealmModel realm);
 
+    /** @return 当前客户端 */
     ClientModel getClient();
 
     void setClient(ClientModel client);
 
+    /** @return 当前组织上下文 */
     OrganizationModel getOrganization();
 
     void setOrganization(OrganizationModel organization);
 
     /**
+     * 获取客户端连接信息；无活动请求时仍可返回 {@link ClientConnection}。
      * If there is no active request, a {@link ClientConnection} will still be returned
      */
     ClientConnection getConnection();
 
+    /** @param user 用户
+     * @return 解析后的区域设置 */
     Locale resolveLocale(UserModel user);
 
     default Locale resolveLocale(UserModel user, Theme.Type themeType) {
@@ -112,6 +123,7 @@ public interface KeycloakContext {
     }
 
     /**
+     * 获取当前认证会话；认证会话上下文外可能为 {@code null}。
      * Get current AuthenticationSessionModel, can be null out of the AuthenticationSession context.
      *
      * @return current AuthenticationSessionModel or null
@@ -121,6 +133,7 @@ public interface KeycloakContext {
     void setAuthenticationSession(AuthenticationSessionModel authenticationSession);
 
     /**
+     * 获取当前 HTTP 请求；无活动请求时抛出 {@link ContextNotActiveException}。
      * If there is no active request, a {@link ContextNotActiveException} will be thrown
      */
     HttpRequest getHttpRequest();
@@ -141,6 +154,7 @@ public interface KeycloakContext {
     void setUserSession(UserSessionModel session);
 
     /**
+     * 返回用于认证与授权当前请求的 Bearer 令牌。
      * Returns a {@link Token} representing the bearer token used to authenticate and authorize the current request.
      *
      * @return the bearer token
@@ -150,6 +164,7 @@ public interface KeycloakContext {
     void setBearerToken(Token token);
 
     /**
+     * 返回绑定到上下文的用户：优先从 Bearer 令牌解析，否则从用户会话解析。
      * Returns the {@link UserModel} bound to this context. The user is first resolved from the {@link #getBearerToken()} set to this
      * context, if any. Otherwise, it will be resolved from the {@link #getUserSession()} set to this context, if any.
      *
@@ -158,6 +173,7 @@ public interface KeycloakContext {
     UserModel getUser();
 
     /**
+     * 返回权限评估器，用于检查当前用户对 Realm 资源的操作权限。
      * Returns the permissions evaluator that can be used to check if the current user has permissions to perform an action on realm resources.
      * @return the permissions evaluator
      */

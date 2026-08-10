@@ -7,14 +7,17 @@ import java.util.stream.Collectors;
 
 import static org.keycloak.models.IdentityProviderCapability.USER_LINKING;
 
+/**
+ * 身份提供方类型：区分用户认证、客户端断言、信任材料等用途。
+ */
 public enum IdentityProviderType {
 
-    ANY,
-    USER_AUTHENTICATION(USER_LINKING),
-    CLIENT_ASSERTION,
-    TRUST_MATERIAL,
-    EXCHANGE_EXTERNAL_TOKEN(USER_LINKING),
-    JWT_AUTHORIZATION_GRANT(USER_LINKING);
+    /** 任意类型 */ ANY,
+    /** 用户认证（支持账号关联） */ USER_AUTHENTICATION(USER_LINKING),
+    /** 客户端断言 */ CLIENT_ASSERTION,
+    /** 信任材料 */ TRUST_MATERIAL,
+    /** 外部令牌交换 */ EXCHANGE_EXTERNAL_TOKEN(USER_LINKING),
+    /** JWT 授权授予 */ JWT_AUTHORIZATION_GRANT(USER_LINKING);
 
     private final Set<IdentityProviderCapability> capabilities;
 
@@ -26,6 +29,7 @@ public enum IdentityProviderType {
         }
     }
 
+    /** @return 该类型支持的能力集合 */
     public Set<IdentityProviderCapability> getCapabilities() {
         return capabilities;
     }
