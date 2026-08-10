@@ -1,5 +1,7 @@
 package queryrangebase
 
+// queryrangebase 包 retry 为 Handler 链提供指数退避重试：gRPC 错误或 HTTP 5xx 时最多 maxRetries 次，4xx 直接返回。
+
 import (
 	"context"
 	"reflect"
@@ -16,6 +18,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// RetryMiddlewareMetrics 记录 query_frontend_retries 直方图分布。
 type RetryMiddlewareMetrics struct {
 	retriesCount prometheus.Histogram
 }
@@ -39,6 +42,7 @@ type retry struct {
 	metrics *RetryMiddlewareMetrics
 }
 
+// NewRetryMiddleware 包装 next Handler，metrics 为 nil 时用 noop registerer 构造。
 // NewRetryMiddleware returns a middleware that retries requests if they
 // fail with 500 or a non-HTTP error.
 func NewRetryMiddleware(log log.Logger, maxRetries int, metrics *RetryMiddlewareMetrics, metricsNamespace string) Middleware {
@@ -56,6 +60,7 @@ func NewRetryMiddleware(log log.Logger, maxRetries int, metrics *RetryMiddleware
 	})
 }
 
+// Do 在 ctx 未取消时对 code<100 或 5xx 错误执行 backoff 重试并记录 query_hash。
 func (r retry) Do(ctx context.Context, req Request) (Response, error) {
 	tries := 0
 	defer func() { r.metrics.retriesCount.Observe(float64(tries)) }()
@@ -130,6 +135,7 @@ func (r retry) Do(ctx context.Context, req Request) (Response, error) {
 	return nil, lastErr
 }
 
+// logImplementingType 用反射输出 Request 具体类型，便于排查 split 失败。
 func logImplementingType(i Request) string {
 	if i == nil {
 		return "nil"
@@ -144,3 +150,4 @@ func logImplementingType(i Request) string {
 
 	return t.String()
 }
+// 连接池关闭导致的 gRPC Canceled 也会重试，因底层常以 cancel 终止旧连接。

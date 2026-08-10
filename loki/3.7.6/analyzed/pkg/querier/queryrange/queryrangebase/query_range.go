@@ -1,5 +1,7 @@
 package queryrangebase
 
+// queryrangebase 包 query_range 实现 Prometheus 兼容的范围/即时查询编解码、多响应 matrixMerge 与 SampleStream JSON 互转。
+
 import (
 	"bytes"
 	"context"
@@ -28,6 +30,7 @@ import (
 
 var tracer = otel.Tracer("pkg/querier/queryrange/queryrangebase")
 
+// StatusSuccess 为 Prometheus JSON status 字段的成功常量。
 // StatusSuccess Prometheus success result.
 const StatusSuccess = "success"
 
@@ -56,6 +59,7 @@ var (
 	cacheControlHeader = "Cache-Control"
 )
 
+// prometheusCodec 按 resultType（matrix/vector）合并子响应并构造空响应。
 type prometheusCodec struct {
 	// prometheusCodec is used to merge multiple response of either range (matrix) or instant queries(vector).
 	// when creating empty responses during merge, it need to be aware what kind of valueType it should create with.
@@ -63,6 +67,7 @@ type prometheusCodec struct {
 	resultType model.ValueType
 }
 
+// PrometheusRequest WithStartEnd/WithQuery 供 split 与 cache 中间件克隆请求。
 // WithStartEnd clones the current `PrometheusRequest` with a new `start` and `end` timestamp.
 func (q *PrometheusRequest) WithStartEnd(start, end time.Time) Request {
 	clone := *q
@@ -140,6 +145,7 @@ func (resp *PrometheusResponse) SetHeader(name, value string) {
 	resp.Headers = append(resp.Headers, &PrometheusResponseHeader{Name: name, Values: []string{value}})
 }
 
+// NewEmptyPrometheusResponse 创建指定 ResultType 的空 SampleStream 响应。
 // NewEmptyPrometheusResponse returns an empty successful Prometheus query range response.
 func NewEmptyPrometheusResponse(v model.ValueType) *PrometheusResponse {
 	return &PrometheusResponse{
@@ -151,6 +157,7 @@ func NewEmptyPrometheusResponse(v model.ValueType) *PrometheusResponse {
 	}
 }
 
+// MergeResponse 按首样本时间排序后 matrixMerge，合并 warnings 与 cache gen 头。
 func (p prometheusCodec) MergeResponse(responses ...Response) (Response, error) {
 	if len(responses) == 0 {
 		return NewEmptyPrometheusResponse(p.resultType), nil
@@ -228,6 +235,7 @@ func (prometheusCodec) DecodeResponse(ctx context.Context, r *http.Response, _ R
 	return &resp, nil
 }
 
+// Buffer 接口允许 frontend 复用已缓冲的 response body，避免重复读取。
 // Buffer can be used to read a response body.
 // This allows to avoid reading the body multiple times from the `http.Response.Body`.
 type Buffer interface {
@@ -307,6 +315,7 @@ func (s *SampleStream) MarshalJSON() ([]byte, error) {
 	return json.Marshal(stream)
 }
 
+// matrixMerge 按 metric 指纹合并多条 SampleStream 的时间序列样本点。
 func matrixMerge(resps []*PrometheusResponse) []SampleStream {
 	output := map[string]*SampleStream{}
 	for _, resp := range resps {
@@ -400,3 +409,4 @@ func decorateWithParamName(err error, field string) error {
 	}
 	return fmt.Errorf(errTmpl, field, err)
 }
+// PrometheusCodecForRangeQueries/InstantQueries 分别面向 matrix 与 vector 结果类型。

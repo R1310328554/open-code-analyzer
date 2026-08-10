@@ -15,6 +15,8 @@
 
 package queryrangebase
 
+// queryrangebase 包 roundtrip 定义 query-frontend middleware 链的核心类型：Handler、Middleware、Config 与 MergeMiddlewares 组合顺序。
+
 import (
 	"context"
 	"flag"
@@ -28,11 +30,13 @@ import (
 
 const day = 24 * time.Hour
 
+// PassthroughMiddleware 直接透传 Handler，用于禁用可选中间件时的占位。
 // PassthroughMiddleware is a noop middleware
 var PassthroughMiddleware = MiddlewareFunc(func(next Handler) Handler {
 	return next
 })
 
+// Config 控制 step 对齐、results cache、重试次数与 LogQL 分片并行开关。
 // Config for query_range middleware chain.
 type Config struct {
 	AlignQueriesWithStep bool                   `yaml:"align_queries_with_step"`
@@ -80,6 +84,7 @@ func (q HandlerFunc) Do(ctx context.Context, req Request) (Response, error) {
 	return q(ctx, req)
 }
 
+// Handler.Do 接受 context 与 Request，返回 Response，供整条 middleware 链调用。
 // Handler is like http.Handle, but specifically for Prometheus query_range calls.
 type Handler interface {
 	Do(context.Context, Request) (Response, error)
@@ -98,6 +103,7 @@ type Middleware interface {
 	Wrap(Handler) Handler
 }
 
+// MergeMiddlewares 自右向左 Wrap，等价 f(g(h(handler))) 的洋葱模型。
 // MergeMiddlewares produces a middleware that applies multiple middleware in turn;
 // ie Merge(f,g,h).Wrap(handler) == f.Wrap(g.Wrap(h.Wrap(handler)))
 func MergeMiddlewares(middleware ...Middleware) Middleware {
@@ -109,6 +115,7 @@ func MergeMiddlewares(middleware ...Middleware) Middleware {
 	})
 }
 
+// Tripperware/RoundTripFunc 为 HTTP 客户端侧 round tripper 中间件签名。
 // Tripperware is a signature for all http client-side middleware.
 type Tripperware func(http.RoundTripper) http.RoundTripper
 
@@ -119,3 +126,4 @@ type RoundTripFunc func(*http.Request) (*http.Response, error)
 func (f RoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
+// Validate 要求启用 shard_aggregations 时必须 parallelise_shardable_queries=true。

@@ -3,6 +3,8 @@
 
 package queryrange
 
+// queryrange.pb.go 由 queryrange.proto 生成，定义 Loki query-frontend 与 querier 间gRPC/序列化用的 LokiRequest、LokiResponse、Series/Label 等 protobuf 消息。
+
 import (
 	bytes "bytes"
 	fmt "fmt"
@@ -42,6 +44,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// LokiRequest 携带 LogQL 查询、limit/step/interval、起止时间与 QueryPlan AST。
 type LokiRequest struct {
 	Query     string                                                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
 	Limit     uint32                                                 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -168,6 +171,7 @@ func (m *LokiRequest) GetCachingOptions() resultscache.CachingOptions {
 	return resultscache.CachingOptions{}
 }
 
+// LokiInstantRequest 为即时查询，含 direction、path 与 cachingOptions。
 type LokiInstantRequest struct {
 	Query     string                                                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
 	Limit     uint32                                                 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -313,6 +317,7 @@ func (m *Plan) GetRaw() []byte {
 	return nil
 }
 
+// LokiResponse 封装日志查询结果 LokiData、统计 stats 与 HTTP 风格 headers。
 type LokiResponse struct {
 	Status     string                                                                                                  `protobuf:"bytes,1,opt,name=Status,proto3" json:"status"`
 	Data       LokiData                                                                                                `protobuf:"bytes,2,opt,name=Data,proto3" json:"data,omitempty"`
@@ -421,6 +426,7 @@ func (m *LokiResponse) GetWarnings() []string {
 	return nil
 }
 
+// LokiSeriesRequest 描述 Series API 的 matcher 组、时间窗与 groupsKey。
 type LokiSeriesRequest struct {
 	Match   []string  `protobuf:"bytes,1,rep,name=match,proto3" json:"match,omitempty"`
 	StartTs time.Time `protobuf:"bytes,2,opt,name=startTs,proto3,stdtime" json:"startTs"`
@@ -632,6 +638,7 @@ func (m *LokiLabelNamesResponse) GetStatistics() stats.Result {
 	return stats.Result{}
 }
 
+// LokiData 含 ResultType 与 logproto.Stream 切片，对应 JSON streams 字段。
 type LokiData struct {
 	ResultType string                                    `protobuf:"bytes,1,opt,name=ResultType,proto3" json:"resultType"`
 	Result     []github_com_grafana_loki_pkg_push.Stream `protobuf:"bytes,2,rep,name=Result,proto3,customtype=github.com/grafana/loki/pkg/push.Stream" json:"result"`
@@ -677,6 +684,7 @@ func (m *LokiData) GetResultType() string {
 }
 
 // LokiPromResponse wraps a Prometheus response with statistics.
+// LokiPromResponse 嵌入 queryrangebase.PrometheusResponse 并附加 Loki 查询统计。
 type LokiPromResponse struct {
 	Response   *queryrangebase.PrometheusResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 	Statistics stats.Result                       `protobuf:"bytes,2,opt,name=statistics,proto3" json:"statistics"`
@@ -11063,3 +11071,4 @@ var (
 	ErrInvalidLengthQueryrange = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowQueryrange   = fmt.Errorf("proto: integer overflow")
 )
+// 消息实现 proto.Message 供 middleware 链编解码与 results cache 键生成。

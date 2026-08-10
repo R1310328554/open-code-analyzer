@@ -1,5 +1,7 @@
 package queryrange
 
+// queryrange 包 prometheus 实现 LokiPromResponse 的 JSON 序列化及 results cache 用的 PrometheusExtractor 适配器。
+
 import (
 	"bytes"
 	"context"
@@ -25,9 +27,11 @@ var (
 	extractor = queryrangebase.PrometheusResponseExtractor{}
 )
 
+// PrometheusExtractor 包装 queryrangebase 提取器，在 LokiPromResponse 与 PrometheusResponse 间转换。
 // PrometheusExtractor implements Extractor interface
 type PrometheusExtractor struct{}
 
+// Extract 从缓存条目截取 [start,end] 区间样本并重新封装为 LokiPromResponse。
 // Extract wraps the original prometheus cache extractor
 func (PrometheusExtractor) Extract(start, end int64, res resultscache.Response, resStart, resEnd int64) resultscache.Response {
 	response := extractor.Extract(start, end, res.(*LokiPromResponse).Response, resStart, resEnd)
@@ -36,6 +40,7 @@ func (PrometheusExtractor) Extract(start, end int64, res resultscache.Response, 
 	}
 }
 
+// ResponseWithoutHeaders 去掉 HTTP 头以减小缓存对象体积。
 // ResponseWithoutHeaders wraps the original prometheus caching without headers
 func (PrometheusExtractor) ResponseWithoutHeaders(resp queryrangebase.Response) queryrangebase.Response {
 	response := extractor.ResponseWithoutHeaders(resp.(*LokiPromResponse).Response)
@@ -44,6 +49,7 @@ func (PrometheusExtractor) ResponseWithoutHeaders(resp queryrangebase.Response) 
 	}
 }
 
+// encode/encodeTo 按 ResultType 选择 vector/matrix/scalar 序列化并注入 stats 字段。
 // encode encodes a Prometheus response and injects Loki stats.
 func (p *LokiPromResponse) encode(ctx context.Context) (*http.Response, error) {
 	var buf bytes.Buffer
@@ -87,6 +93,7 @@ func (p *LokiPromResponse) encodeTo(w io.Writer) error {
 	return err
 }
 
+// marshalVector 将 SampleStream 转为 loghttp.Vector 并附带 Statistics。
 func (p *LokiPromResponse) marshalVector() ([]byte, error) {
 	vec := make(loghttp.Vector, len(p.Response.Data.Result))
 	for i, v := range p.Response.Data.Result {
@@ -128,6 +135,7 @@ func (p *LokiPromResponse) marshalVector() ([]byte, error) {
 	})
 }
 
+// marshalMatrix 嵌入 PrometheusData，nil Result 时置空切片避免 JSON null。
 func (p *LokiPromResponse) marshalMatrix() ([]byte, error) {
 
 	// Make sure nil is not encoded as null.
@@ -160,6 +168,7 @@ func (p *LokiPromResponse) marshalMatrix() ([]byte, error) {
 	})
 }
 
+// marshalScalar 取首个样本构造 loghttp.Scalar 标量响应。
 func (p *LokiPromResponse) marshalScalar() ([]byte, error) {
 	var scalar loghttp.Scalar
 
@@ -201,3 +210,4 @@ func (p *LokiPromResponse) marshalScalar() ([]byte, error) {
 		Warnings:  p.Response.Warnings,
 	})
 }
+// jsonStd 使用 jsoniter 兼容标准库，extractor 变量供 cache 子系统复用。

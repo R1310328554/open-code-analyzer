@@ -1,5 +1,7 @@
 package queryrangebase
 
+// queryrangebase 包 middleware 提供 Results-Cache-Gen-Number 头/上下文注入，使 frontend 与 querier 对 results cache 版本保持一致。
+
 import (
 	"context"
 	"net/http"
@@ -11,6 +13,7 @@ import (
 )
 
 const (
+// ResultsCacheGenNumberHeaderName 为 HTTP 响应头名，标识当前缓存世代。
 	// ResultsCacheGenNumberHeaderName holds name of the header we want to set in http response
 	ResultsCacheGenNumberHeaderName = "Results-Cache-Gen-Number"
 )
@@ -32,6 +35,7 @@ func CacheGenNumberHeaderSetterMiddleware(cacheGenNumbersLoader resultscache.Cac
 	})
 }
 
+// CacheGenNumberContextSetterMiddleware 在 gRPC Handler 响应 SetHeader 注入世代号。
 func CacheGenNumberContextSetterMiddleware(cacheGenNumbersLoader resultscache.CacheGenNumberLoader) Middleware {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(ctx context.Context, req Request) (Response, error) {
@@ -52,3 +56,4 @@ func CacheGenNumberContextSetterMiddleware(cacheGenNumbersLoader resultscache.Ca
 		})
 	})
 }
+// tenant.TenantIDs 解析失败时 HTTP 路径返回 401，Handler 路径直接返回错误。

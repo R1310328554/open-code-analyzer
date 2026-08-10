@@ -1,5 +1,7 @@
 package definitions
 
+// definitions 包 interface 定义 query-frontend middleware 链使用的 Codec、Merger、Request 与 Response 抽象，解耦编解码与中间件实现。
+
 import (
 	"context"
 	"net/http"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/chunk/cache/resultscache"
 )
 
+// Codec 负责 HTTP/gRPC 与内部 Request/Response 的双向转换，并嵌入 Merger。
 // Codec is used to encode/decode query range requests and responses so they can be passed down to middlewares.
 type Codec interface {
 	Merger
@@ -26,12 +29,14 @@ type Codec interface {
 	EncodeResponse(context.Context, *http.Request, Response) (*http.Response, error)
 }
 
+// Merger.MergeResponse 将 split/shard 后的多个子响应合并为单一 Response。
 // Merger is used by middlewares making multiple requests to merge back all responses into a single one.
 type Merger interface {
 	// MergeResponse merges responses from multiple requests into a single Response
 	MergeResponse(...Response) (Response, error)
 }
 
+// Request 扩展 proto.Message，提供时间窗、step、query 克隆与 OTel span 日志。
 // Request represents a query range request that can be process by middlewares.
 type Request interface {
 	proto.Message
@@ -55,6 +60,7 @@ type Request interface {
 
 type CachingOptions = resultscache.CachingOptions
 
+// Response 支持 GetHeaders/WithHeaders/SetHeader，供 cache 世代号等元数据传递。
 // Response represents a query range response.
 type Response interface {
 	proto.Message
@@ -67,3 +73,4 @@ type Response interface {
 	// SetHeader sets one header key-value pair. If the key already exists its value is overridden.
 	SetHeader(string, string)
 }
+// CachingOptions 别名指向 resultscache，控制单请求是否参与 results cache。

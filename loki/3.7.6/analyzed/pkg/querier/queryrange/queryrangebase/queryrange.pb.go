@@ -3,6 +3,8 @@
 
 package queryrangebase
 
+// queryrangebase/queryrange.pb.go 由 queryrange.proto 生成，定义 PrometheusRequest、PrometheusResponse 与 SampleStream 等 query_range 核心 protobuf 消息。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -34,6 +36,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// PrometheusRequest 含 path、起止时间、step、timeout、query 与 cachingOptions。
 type PrometheusRequest struct {
 	Path           string                                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	Start          time.Time                              `protobuf:"bytes,2,opt,name=start,proto3,stdtime" json:"start"`
@@ -133,6 +136,7 @@ func (m *PrometheusRequest) GetHeaders() []*definitions.PrometheusRequestHeader 
 	return nil
 }
 
+// PrometheusResponse 携带 status、error、warnings、PrometheusData 与 headers。
 type PrometheusResponse struct {
 	Status    string                                  `protobuf:"bytes,1,opt,name=Status,proto3" json:"status"`
 	Data      PrometheusData                          `protobuf:"bytes,2,opt,name=Data,proto3" json:"data,omitempty"`
@@ -216,6 +220,7 @@ func (m *PrometheusResponse) GetWarnings() []string {
 	return nil
 }
 
+// PrometheusData 含 resultType 字符串与 SampleStream 切片。
 type PrometheusData struct {
 	ResultType string         `protobuf:"bytes,1,opt,name=ResultType,proto3" json:"resultType"`
 	Result     []SampleStream `protobuf:"bytes,2,rep,name=Result,proto3" json:"result"`
@@ -1990,3 +1995,4 @@ var (
 	ErrInvalidLengthQueryrange = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowQueryrange   = fmt.Errorf("proto: integer overflow")
 )
+// PrometheusRequest 实现 definitions.Request，供 middleware 链统一处理指标查询。

@@ -3,6 +3,8 @@
 
 package definitions
 
+// definitions.pb.go 由 definitions.proto 生成，定义 Prometheus 兼容 query_range请求/响应在 gRPC 中携带的 HTTP 头键值对结构。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -25,6 +27,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// PrometheusRequestHeader 保存转发至下游 querier 的原始 HTTP 头名与值列表。
 type PrometheusRequestHeader struct {
 	Name   string   `protobuf:"bytes,1,opt,name=Name,proto3" json:"-"`
 	Values []string `protobuf:"bytes,2,rep,name=Values,proto3" json:"-"`
@@ -76,6 +79,7 @@ func (m *PrometheusRequestHeader) GetValues() []string {
 	return nil
 }
 
+// PrometheusResponseHeader 在 Response.GetHeaders 中返回，供 cache 与客户端透传。
 type PrometheusResponseHeader struct {
 	Name   string   `protobuf:"bytes,1,opt,name=Name,proto3" json:"-"`
 	Values []string `protobuf:"bytes,2,rep,name=Values,proto3" json:"-"`
@@ -758,3 +762,4 @@ var (
 	ErrInvalidLengthDefinitions = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowDefinitions   = fmt.Errorf("proto: integer overflow")
 )
+// 头结构独立于主 Request/Response 消息，避免 protobuf 重复定义 header map。

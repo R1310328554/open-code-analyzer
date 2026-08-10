@@ -1,5 +1,7 @@
 package queryrangebase
 
+// queryrangebase 包 results_cache 封装 resultscache.ResultsCache 为 Middleware，按 (step,query,user) 与 interval 缓存 query_range 片段并支持部分命中补全。
+
 import (
 	"context"
 	"flag"
@@ -32,6 +34,7 @@ const (
 	reasonMismatch = "mismatch"
 )
 
+// ResultsCacheMetrics 统计 frontend 与 querier 间 cache key 版本比较成功与失败次数。
 type ResultsCacheMetrics struct {
 	versionComparisons        prometheus.Counter
 	versionComparisonFailures *prometheus.CounterVec
@@ -52,6 +55,7 @@ func NewResultsCacheMetrics(registerer prometheus.Registerer) *ResultsCacheMetri
 	}
 }
 
+// ResultsCacheConfig 内联 resultscache.Config，RegisterFlags 加 frontend. 前缀。
 // ResultsCacheConfig is the config for the results cache.
 type ResultsCacheConfig struct {
 	resultscache.Config `yaml:",inline"`
@@ -62,12 +66,14 @@ func (cfg *ResultsCacheConfig) RegisterFlags(f *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix(f, "frontend.")
 }
 
+// Extractor 扩展 resultscache.Extractor，额外提供 ResponseWithoutHeaders。
 // Extractor is used by the cache to extract a subset of a response from a cache entry.
 type Extractor interface {
 	resultscache.Extractor
 	ResponseWithoutHeaders(resp Response) Response
 }
 
+// PrometheusResponseExtractor.Extract 调用 extractMatrix 截取时间窗内样本。
 // PrometheusResponseExtractor helps extracting specific info from Query Response.
 type PrometheusResponseExtractor struct{}
 
@@ -113,6 +119,7 @@ type resultsCache struct {
 	metrics              *ResultsCacheMetrics
 }
 
+// NewResultsCacheMiddleware 组装 keygen、limits、merger 与 shouldCache 回调。
 // NewResultsCacheMiddleware creates results cache middleware from config.
 // The middleware cache result using a unique cache key for a given request (step,query,user) and interval.
 // The cache assumes that each request length (end-start) is below or equal the interval.
@@ -198,6 +205,7 @@ func (s resultsCache) Do(ctx context.Context, r Request) (Response, error) {
 }
 
 // shouldCacheResponse says whether the response should be cached or not.
+// shouldCacheResponse 检查 Cache-Control、@ 修饰符可缓存性与 cache gen 一致性。
 func (s resultsCache) shouldCacheResponse(ctx context.Context, req Request, r Response, maxCacheTime int64) bool {
 	headerValues := getHeaderValuesWithName(r, cacheControlHeader)
 
@@ -247,6 +255,7 @@ func (s resultsCache) shouldCacheResponse(ctx context.Context, req Request, r Re
 
 var errAtModifierAfterEnd = errors.New("at modifier after end")
 
+// isAtModifierCachable 解析 PromQL，拒绝 @ 时间超出 maxCacheTime 或 query end 的查询。
 // isAtModifierCachable returns true if the @ modifier result
 // is safe to cache.
 func (s resultsCache) isAtModifierCachable(r Request, maxCacheTime int64) bool {
@@ -313,6 +322,7 @@ func getHeaderValuesWithName(r Response, headerName string) (headerValues []stri
 	return
 }
 
+// extractMatrix 对每条 stream 调用 extractSampleStream 过滤样本时间戳。
 func extractMatrix(start, end int64, matrix []SampleStream) []SampleStream {
 	result := make([]SampleStream, 0, len(matrix))
 	for _, stream := range matrix {
@@ -339,3 +349,4 @@ func extractSampleStream(start, end int64, stream SampleStream) (SampleStream, b
 	}
 	return result, true
 }
+// reasonMissing/reasonMismatch 标签区分响应缺世代号与 store/response 世代不一致。
