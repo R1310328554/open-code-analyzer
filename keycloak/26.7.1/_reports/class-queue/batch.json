@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T11:20:55Z",
   "files": [
-    "server-spi/src/main/java/org/keycloak/theme/ThemeResourceProvider.java",
-    "server-spi/src/main/java/org/keycloak/theme/ThemeResourceProviderFactory.java",
-    "server-spi/src/main/java/org/keycloak/theme/ThemeResourceSpi.java",
-    "server-spi/src/main/java/org/keycloak/theme/ThemeSelectorProvider.java",
-    "server-spi/src/main/java/org/keycloak/theme/ThemeSelectorProviderFactory.java",
-    "server-spi/src/main/java/org/keycloak/theme/ThemeSelectorSpi.java",
-    "server-spi/src/main/java/org/keycloak/urls/HostnameProvider.java",
-    "server-spi/src/main/java/org/keycloak/urls/HostnameProviderFactory.java",
-    "server-spi/src/main/java/org/keycloak/urls/HostnameSpi.java",
-    "server-spi/src/main/java/org/keycloak/urls/UrlType.java",
-    "server-spi/src/main/java/org/keycloak/userprofile/AttributeContext.java",
-    "server-spi/src/main/java/org/keycloak/userprofile/AttributeGroupMetadata.java",
-    "server-spi/src/main/java/org/keycloak/userprofile/AttributeMetadata.java",
-    "server-spi/src/main/java/org/keycloak/userprofile/AttributeValidatorMetadata.java",
-    "server-spi/src/main/java/org/keycloak/userprofile/Attributes.java",
     "server-spi/src/main/java/org/keycloak/userprofile/UserProfileAttributeValidationContext.java",
     "server-spi/src/main/java/org/keycloak/userprofile/UserProfileConstants.java",
     "server-spi/src/main/java/org/keycloak/userprofile/UserProfileContext.java",
@@ -33,5 +18,5 @@
     "server-spi/src/main/java/org/keycloak/validate/ValidatorConfig.java"
   ],
   "remaining_pending": 2248,
-  "done": 3720
+  "done": 3735
 }
