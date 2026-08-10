@@ -1,5 +1,7 @@
 package distributor
 
+// 字段探测：从标签、结构化元数据或日志正文自动发现日志级别与通用结构化字段。
+
 import (
 	"bytes"
 	"errors"
@@ -63,6 +65,7 @@ func allowedLabelsForLevel(allowedFields []string) []string {
 	return allowedFields
 }
 
+// FieldDetector 持有租户校验上下文与允许的 level 字段白名单。
 type FieldDetector struct {
 	validationContext        validationContext
 	allowedLevelLabelsMap    map[string]struct{}
@@ -93,6 +96,7 @@ func (l *FieldDetector) shouldDiscoverGenericFields() bool {
 	return l.validationContext.allowStructuredMetadata && len(l.validationContext.discoverGenericFields) > 0
 }
 
+// extractLogLevel 依次从 structuredMetadata、stream 标签与日志行解析并规范化级别。
 func (l *FieldDetector) extractLogLevel(labels labels.Labels, structuredMetadata labels.Labels, entry logproto.Entry) (logproto.LabelAdapter, bool) {
 	// Check if detected_level is already present in entry.StructuredMetadata and normalize it
 	for i, sm := range entry.StructuredMetadata {
@@ -152,6 +156,7 @@ func labelsContainAny(labels labels.Labels, names []string) (string, bool) {
 	return "", false
 }
 
+// normalizeLogLevel 将 trace/debug/info 等别名映射为 Loki 标准小写级别常量。
 // normalizeLogLevel normalizes log level strings to lowercase standard values
 func normalizeLogLevel(level string) string {
 	levelBytes := unsafe.Slice(unsafe.StringData(level), len(level)) // #nosec G103 -- we know the string is not mutated -- nosemgrep: use-of-unsafe-block
@@ -384,6 +389,7 @@ func indexOfBoundedLevel(log, level string) int {
 	}
 }
 
+// detectLevelFromLogLine 在纯文本行中按词边界启发式匹配最早出现的级别关键字。
 func detectLevelFromLogLine(log string) string {
 	lowerLog := strings.ToLower(log)
 	idx, bestGuess := len(lowerLog), constants.LogLevelUnknown
@@ -401,3 +407,4 @@ func detectLevelFromLogLine(log string) string {
 	}
 	return bestGuess
 }
+// JSON/logfmt 解析路径支持 OTLP severity number 与可配置 JSON 嵌套深度限制。

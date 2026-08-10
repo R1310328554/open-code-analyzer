@@ -1,5 +1,7 @@
 package uploader
 
+// dataobj 对象上传器：按 SHA-224 前缀生成对象存储键，带指数退避重试将 dataobj 写入 bucket。
+
 import (
 	"context"
 	"crypto/sha256"
@@ -18,11 +20,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj"
 )
 
+// Config 控制对象键路径中 SHA 前缀长度，用于在对象存储中分散热点。
 type Config struct {
 	// SHAPrefixSize is the size of the SHA prefix used for splitting object storage keys
 	SHAPrefixSize int
 }
 
+// RegisterFlagsWithPrefix 注册 sha-prefix-size 等上传相关命令行参数。
 // RegisterFlagsWithPrefix registers flags with the given prefix.
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.IntVar(&cfg.SHAPrefixSize, prefix+"sha-prefix-size", 2, "The size of the SHA prefix to use for generating object storage keys for data objects.")
@@ -35,6 +39,7 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// Uploader 封装 bucket 客户端、Prometheus 指标与 SHA 前缀配置。
 type Uploader struct {
 	SHAPrefixSize int
 	bucket        objstore.Bucket
@@ -61,6 +66,7 @@ func (d *Uploader) UnregisterMetrics(reg prometheus.Registerer) {
 	d.metrics.unregister(reg)
 }
 
+// getKey 读取对象内容计算 SHA-224，生成 objects/<前缀>/<完整哈希> 存储路径。
 // getKey determines the key in object storage to upload the object to, based on our path scheme.
 func (d *Uploader) getKey(ctx context.Context, object *dataobj.Object) (string, error) {
 	hash := sha256.New224()
@@ -82,6 +88,7 @@ func (d *Uploader) getKey(ctx context.Context, object *dataobj.Object) (string, 
 	return fmt.Sprintf("objects/%s/%s", sumStr[:d.SHAPrefixSize], sumStr[d.SHAPrefixSize:]), nil
 }
 
+// Upload 在最多 20 次指数退避重试内将 dataobj 写入 bucket 并记录耗时与大小指标。
 // Upload uploads an object to the configured bucket and returns the key.
 func (d *Uploader) Upload(ctx context.Context, object *dataobj.Object) (key string, err error) {
 	start := time.Now()
@@ -136,3 +143,4 @@ func (d *Uploader) Upload(ctx context.Context, object *dataobj.Object) (key stri
 	level.Info(logger).Log("msg", "uploaded dataobj to object storage", "duration", time.Since(start))
 	return objectPath, nil
 }
+// 上传失败时递增 uploadFailures 并按成功/失败标签记录对象字节大小。

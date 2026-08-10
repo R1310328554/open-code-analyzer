@@ -1,5 +1,7 @@
 package distributor
 
+// rateBatcher：按 BatchWindow 聚合 UpdateRates 请求，异步刷新 limits-frontend 并缓存分段键速率。
+
 import (
 	"context"
 	"sync"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/limits/proto"
 )
 
+// RateBatcherConfig 仅含 BatchWindow，决定速率更新批量发送的时间窗口。
 // RateBatcherConfig contains the configuration for the RateBatcher.
 type RateBatcherConfig struct {
 	// BatchWindow is the duration to accumulate rate updates before flushing.
@@ -27,6 +30,7 @@ type rateBatcherClient interface {
 	UpdateRatesRaw(ctx context.Context, req *proto.UpdateRatesRequest) ([]*proto.UpdateRatesResult, error)
 }
 
+// rateBatcher 为 fire-and-forget 设计：Add 非阻塞，周期 flush 更新 rates 映射。
 // rateBatcher accumulates UpdateRates requests and dispatches them in batches.
 // This is a fire-and-forget mechanism - callers add streams to the batch and
 // don't wait for results. The batch is periodically flushed to the frontend.
@@ -105,6 +109,7 @@ func (b *rateBatcher) running(ctx context.Context) error {
 	}
 }
 
+// Add 合并同分段键 TotalSize，立即返回上次 flush 已知速率（新流为 0）。
 // Add adds streams to the pending batch and returns the last known rates for them.
 // This is a non-blocking operation. Streams with unknown rates will have rate=0.
 func (b *rateBatcher) Add(tenant string, streams []segmentedStream) map[uint64]uint64 {
@@ -161,6 +166,7 @@ func (b *rateBatcher) Add(tenant string, streams []segmentedStream) map[uint64]u
 }
 
 // flush sends all pending streams to the frontend.
+// flush 交换 pending 映射后按租户调用 UpdateRatesRaw 并 storeRates 替换租户速率表。
 func (b *rateBatcher) flush(ctx context.Context) {
 	// Swap out the pending map so we don't hold the lock during the RPC.
 	b.pendingMu.Lock()
@@ -239,6 +245,7 @@ func (b *rateBatcher) storeRates(tenant string, results []*proto.UpdateRatesResu
 }
 
 // GetRate returns the last known rate for a stream, or 0 if unknown.
+// GetRate 只读查询某租户分段键哈希的上次已知字节/秒速率。
 func (b *rateBatcher) GetRate(tenant string, segmentationKeyHash uint64) uint64 {
 	b.ratesMu.RLock()
 	defer b.ratesMu.RUnlock()
@@ -248,3 +255,4 @@ func (b *rateBatcher) GetRate(tenant string, segmentationKeyHash uint64) uint64 
 	}
 	return 0
 }
+// storeRates 在空结果时删除租户条目，避免已停止推送的流残留过期速率。

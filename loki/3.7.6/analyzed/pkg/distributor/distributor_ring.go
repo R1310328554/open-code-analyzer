@@ -1,5 +1,7 @@
 package distributor
 
+// Distributor 自环配置：精简 lifecycler 选项，供全局 ingestion 限流统计健康 distributor 数量。
+
 import (
 	"flag"
 	"net"
@@ -17,6 +19,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// RingConfig 只暴露 distributor ring 必需的 KV、心跳与实例标识字段。
 // RingConfig masks the ring lifecycler config which contains
 // many options not really required by the distributors ring. This config
 // is used to strip down the config to the minimum, and avoid confusion
@@ -37,6 +40,7 @@ type RingConfig struct {
 	ListenPort int `yaml:"-"`
 }
 
+// RegisterFlags 注册 distributor.ring.* 前缀的 ring 与实例网络参数。
 // RegisterFlags adds the flags required to config this to the given FlagSet
 func (cfg *RingConfig) RegisterFlags(f *flag.FlagSet) {
 	hostname, err := os.Hostname()
@@ -59,6 +63,7 @@ func (cfg *RingConfig) RegisterFlags(f *flag.FlagSet) {
 	f.BoolVar(&cfg.EnableIPv6, "distributor.ring.instance-enable-ipv6", false, "Enable using a IPv6 instance address.")
 }
 
+// ToBasicLifecyclerConfig 解析实例地址/端口并生成 BasicLifecycler 启动配置。
 // ToBasicLifecyclerConfig returns a BasicLifecyclerConfig based on the distributor
 // ring config.
 func (cfg *RingConfig) ToBasicLifecyclerConfig(logger log.Logger) (ring.BasicLifecyclerConfig, error) {
@@ -83,6 +88,7 @@ func (cfg *RingConfig) ToBasicLifecyclerConfig(logger log.Logger) (ring.BasicLif
 	}, nil
 }
 
+// ToRingConfig 将 distributor ring 配置转换为 dskit ring.Config，复制因子固定为 1。
 func (cfg *RingConfig) ToRingConfig() ring.Config {
 	rc := ring.Config{}
 	flagext.DefaultValues(&rc)
@@ -93,3 +99,4 @@ func (cfg *RingConfig) ToRingConfig() ring.Config {
 
 	return rc
 }
+// distributor ring 仅用于全局速率限制时的实例计数，不参与日志数据分片。

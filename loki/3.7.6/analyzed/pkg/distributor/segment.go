@@ -1,5 +1,7 @@
 package distributor
 
+// 分段键与分区解析：按 service_name 分组流，结合租户限额 shuffle-shard 到 Kafka 分区。
+
 import (
 	"context"
 	"errors"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logql/syntax"
 )
 
+// segmentationKey 在保持租户局部性的同时尽量均衡分区负载。
 // A segmentationKey is a special partition key that attempts to equally
 // distribute load while preserving stream locality for tenants.
 type segmentationKey string
@@ -29,6 +32,7 @@ func (key segmentationKey) Sum64() uint64 {
 }
 
 // getSegmentationKey returns the segmentation key for the stream or an error.
+// getSegmentationKey 从 stream 标签解析 service_name，缺失时使用 unknown_service。
 func getSegmentationKey(stream KeyedStream) (segmentationKey, error) {
 	labels, err := syntax.ParseLabels(stream.Stream.Labels)
 	if err != nil {
@@ -41,6 +45,7 @@ func getSegmentationKey(stream KeyedStream) (segmentationKey, error) {
 }
 
 // segmentationPartitionResolver resolves the partition for a segmentation key.
+// segmentationPartitionResolver 结合 partition ring 与 perPartitionRateBytes 选择目标分区。
 type segmentationPartitionResolver struct {
 	perPartitionRateBytes uint64
 	ringReader            ring.PartitionRingReader
@@ -68,6 +73,7 @@ func newSegmentationPartitionResolver(perPartitionRateBytes uint64, ringReader r
 	}
 }
 
+// Resolve 先按租户速率 shuffle-shard 子环，再按分段键速率决定进一步 shuffle 或 hashKey 回退。
 func (r *segmentationPartitionResolver) Resolve(ctx context.Context, tenant string, key segmentationKey, hashKey uint32, rateBytes, tenantRateBytes uint64) (int32, error) {
 	r.resolveTotal.Inc()
 	// We use a snapshot of the partition ring to ensure resolving the
@@ -123,6 +129,7 @@ func (r *segmentationPartitionResolver) tenantShuffleShard(_ context.Context, ri
 
 // numPartitionsForRate returns the number of partitions needed to keep within
 // perPartitionRateBytes. It cannot exceed the total number of partitions.
+// numPartitionsForRate 根据速率与每分区上限计算所需分区数，至少 1 且不超过总数。
 func numPartitionsForRate(rateBytes, perPartitionRateBytes uint64, numPartitions int) int {
 	partitions := rateBytes / perPartitionRateBytes
 	// Must be at least 1 partition.
@@ -133,3 +140,4 @@ func numPartitionsForRate(rateBytes, perPartitionRateBytes uint64, numPartitions
 	// than or equal to the number of partitions, which is an int.
 	return int(partitions)
 }
+// Sum64 在哈希前写入保留前缀 __loki_segmentation_key__ 以避免与普通流哈希冲突。

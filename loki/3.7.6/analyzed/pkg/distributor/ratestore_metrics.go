@@ -1,5 +1,7 @@
 package distributor
 
+// rateStore Prometheus 指标：刷新失败、流数量、分片分布、速率直方图与刷新耗时。
+
 import (
 	"github.com/grafana/dskit/instrument"
 	"github.com/prometheus/client_golang/prometheus"
@@ -8,6 +10,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// ratestoreMetrics 聚合 rate store 周期同步所需的 Counter/Gauge/Histogram 句柄。
 type ratestoreMetrics struct {
 	rateRefreshFailures *prometheus.CounterVec
 	streamCount         prometheus.Gauge
@@ -20,8 +23,10 @@ type ratestoreMetrics struct {
 	refreshDuration     *instrument.HistogramCollector
 }
 
+// newRateStoreMetrics 在 loki 命名空间下注册 refresh、shard 与 stream rate 相关指标。
 func newRateStoreMetrics(reg prometheus.Registerer) *ratestoreMetrics {
 	return &ratestoreMetrics{
+// rateRefreshFailures 按 source（ring 或 ingester 地址）统计刷新失败次数。
 		rateRefreshFailures: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
 			Namespace: constants.Loki,
 			Name:      "rate_store_refresh_failures_total",
@@ -76,3 +81,4 @@ func newRateStoreMetrics(reg prometheus.Registerer) *ratestoreMetrics {
 		),
 	}
 }
+// maxStreamRate 合并分片后最大值，maxUniqueStreamRate 将各分片视为独立流统计。

@@ -1,5 +1,7 @@
 package distributor
 
+// rateStore：周期从 ingester 拉取各流速率，指数滑动平均后供 distributor 流分片决策使用。
+
 import (
 	"context"
 	"flag"
@@ -32,6 +34,7 @@ const (
 	smoothingFactor = .4
 )
 
+// RateStoreConfig 控制并行度、刷新间隔、ingester RPC 超时与 debug 追踪开关。
 type RateStoreConfig struct {
 	MaxParallelism           int           `yaml:"max_request_parallelism"`
 	StreamRateUpdateInterval time.Duration `yaml:"stream_rate_update_interval"`
@@ -58,6 +61,7 @@ type expiringRate struct {
 	pushes    float64
 }
 
+// rateStore 维护 tenant→streamHash→expiringRate 映射，由 TimerService 周期刷新。
 type rateStore struct {
 	services.Service
 
@@ -75,6 +79,7 @@ type rateStore struct {
 	debug bool
 }
 
+// NewRateStore 注册 metrics 并以带抖动的 StreamRateUpdateInterval 启动定时刷新。
 func NewRateStore(cfg RateStoreConfig, r ring.ReadRing, cf poolClientFactory, l Limits, registerer prometheus.Registerer) *rateStore { //nolint
 	s := &rateStore{
 		ring:            r,
@@ -104,6 +109,7 @@ func (s *rateStore) instrumentedUpdateAllRates(ctx context.Context) error {
 	return instrument.CollectedRequest(ctx, "GetAllStreamRates", s.metrics.refreshDuration, instrument.ErrorCode, s.updateAllRates)
 }
 
+// updateAllRates 并行 GetStreamRates、按 shard 聚合、加权滑动平均并清理过期条目。
 func (s *rateStore) updateAllRates(ctx context.Context) error {
 	clients, err := s.getClients(ctx)
 	if err != nil {
@@ -217,6 +223,7 @@ func (s *rateStore) wasUpdated(tenantID string, streamID uint64, lastUpdated map
 	return true
 }
 
+// anyShardingEnabled 若任一租户启用 ShardStreams 则继续刷新，否则跳过 RPC。
 func (s *rateStore) anyShardingEnabled() bool {
 	limits := s.limits.AllByUserID()
 	if limits == nil {
@@ -365,6 +372,7 @@ func (s *rateStore) getClients(ctx context.Context) ([]ingesterClient, error) {
 	return clients, nil
 }
 
+// RateFor 返回某租户未分片流哈希的当前字节速率与推送次数估计。
 func (s *rateStore) RateFor(tenant string, streamHash uint64) (int64, float64) {
 	s.rateLock.RLock()
 	defer s.rateLock.RUnlock()
@@ -376,3 +384,4 @@ func (s *rateStore) RateFor(tenant string, streamHash uint64) (int64, float64) {
 
 	return 0, 0
 }
+// smoothingFactor=0.4 的指数滑动平均平衡近期样本与历史速率，rateKeepAlive 默认十分钟。

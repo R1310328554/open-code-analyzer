@@ -1,5 +1,7 @@
 package distributor
 
+// Distributor 核心：校验与分片日志流，复制写入 ingester 与/或 Kafka，并执行租户级限流。
+
 import (
 	"context"
 	"flag"
@@ -80,6 +82,7 @@ var (
 	}
 )
 
+// Config 聚合 ring、推送 worker、OTLP、Kafka/ingester 开关及 dataobj tee 等配置。
 // Config for a Distributor.
 type Config struct {
 	// Distributors ring
@@ -144,6 +147,7 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// RateStore 接口供流分片决策查询各租户流的当前速率与推送次数。
 // RateStore manages the ingestion rate of streams, populated by data fetched from ingesters.
 type RateStore interface {
 	RateFor(tenantID string, streamHash uint64) (int64, float64)
@@ -154,6 +158,7 @@ type KafkaProducer interface {
 	Close()
 }
 
+// Distributor 协调标签校验、流分片、ingester 复制与 Kafka 分区写入。
 // Distributor coordinates replicates and distribution of log streams.
 type Distributor struct {
 	services.Service
@@ -227,6 +232,7 @@ type Distributor struct {
 	kafkaRecordsPerRequest prometheus.Histogram
 }
 
+// New 组装 validator、ingester 连接池、限流策略、rateStore 与可选 dataObjTee。
 // New a distributor creates.
 func New(
 	cfg Config,
@@ -493,6 +499,7 @@ func (d *Distributor) stopping(_ error) error {
 	return services.StopManagerAndAwaitStopped(context.Background(), d.subservices)
 }
 
+// KeyedStream 携带 logproto.Stream、一致性哈希键与 ingestion policy。
 type KeyedStream struct {
 	HashKey        uint32
 	HashKeyNoShard uint64
@@ -510,6 +517,7 @@ type streamTracker struct {
 }
 
 // TODO taken from Cortex, see if we can refactor out an usable interface.
+// PushTracker 用原子计数跟踪并发推送任务，全部完成后汇总首个错误。
 type PushTracker struct {
 	streamsPending atomic.Int32
 	streamsFailed  atomic.Int32
@@ -557,6 +565,7 @@ func (d *Distributor) Push(ctx context.Context, req *logproto.PushRequest) (*log
 	return d.PushWithResolver(ctx, req, newRequestScopedStreamResolver(tenantID, d.validator.Limits, d.logger), constants.Loki)
 }
 
+// PushWithResolver 是推送主路径：校验、分片、限流后并行写入 ingester/Kafka/tee。
 // Push a set of streams.
 // The returned error is the last one seen.
 func (d *Distributor) PushWithResolver(ctx context.Context, req *logproto.PushRequest, streamResolver *requestScopedStreamResolver, format string) (*logproto.PushResponse, error) {
@@ -1077,6 +1086,7 @@ func shardStreamByTime(stream logproto.Stream, lbls labels.Labels, timeShardLen 
 // streams and their associated keys for hashing to ingesters.
 //
 // The number of shards is limited by the number of entries.
+// shardStream 按 rateStore 与 shardstreams 配置将单流拆成多个 KeyedStream。
 func (d *Distributor) shardStream(stream logproto.Stream, pushSize int, tenantID string, policy string) []KeyedStream {
 	shardStreamsCfg := d.validator.ShardStreams(tenantID)
 	logger := log.With(util_log.WithUserID(tenantID, d.logger), "stream", stream.Labels)
@@ -1281,6 +1291,7 @@ func (d *Distributor) sendStreamsErr(ctx context.Context, ingester ring.Instance
 	return err
 }
 
+// sendStreamsToKafka 按 partition ring 为各 KeyedStream 选择分区并 ProduceSync。
 func (d *Distributor) sendStreamsToKafka(ctx context.Context, streams []KeyedStream, tenant string, tracker *PushTracker, subring *ring.PartitionRing) {
 	for _, s := range streams {
 		go func(s KeyedStream) {
@@ -1525,3 +1536,4 @@ func (r requestScopedStreamResolver) PolicyFor(ctx context.Context, lbs labels.L
 
 	return policy
 }
+// 全局 ingestion 限流策略需 distributors ring 统计健康实例数以均摊租户配额。

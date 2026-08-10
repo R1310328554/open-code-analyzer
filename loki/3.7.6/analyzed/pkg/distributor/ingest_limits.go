@@ -1,5 +1,7 @@
 package distributor
 
+// ingest-limits 前端客户端：经 ring 发现实例，检查流是否超限并更新分段键速率。
+
 import (
 	"context"
 	"errors"
@@ -17,6 +19,7 @@ import (
 )
 
 // The ingestLimitsFrontendClient interface is used to mock calls in tests.
+// ingestLimitsFrontendClient 抽象 ExceedsLimits 与 UpdateRates RPC，便于单测 mock。
 type ingestLimitsFrontendClient interface {
 	ExceedsLimits(context.Context, *proto.ExceedsLimitsRequest) (*proto.ExceedsLimitsResponse, error)
 	UpdateRates(context.Context, *proto.UpdateRatesRequest) (*proto.UpdateRatesResponse, error)
@@ -24,6 +27,7 @@ type ingestLimitsFrontendClient interface {
 
 // ingestLimitsFrontendRingClient uses the ring to discover ingest-limits-frontend
 // instances and proxy requests to them.
+// ingestLimitsFrontendRingClient 通过 ring 与健康实例池代理 limits-frontend 请求。
 type ingestLimitsFrontendRingClient struct {
 	ring ring.ReadRing
 	pool *ring_client.Pool
@@ -58,6 +62,7 @@ func (c *ingestLimitsFrontendRingClient) UpdateRates(ctx context.Context, req *p
 	return resp, err
 }
 
+// withRandomShuffle 随机打乱健康 frontend 列表并依次 failover 调用 RPC。
 // withRandomShuffle gets all healthy frontends in the ring, randomly shuffles
 // them, and then calls f.
 func (c *ingestLimitsFrontendRingClient) withRandomShuffle(ctx context.Context, f func(ctx context.Context, client proto.IngestLimitsFrontendClient) error) error {
@@ -116,6 +121,7 @@ func newIngestLimits(client ingestLimitsFrontendClient, r prometheus.Registerer)
 	}
 }
 
+// EnforceLimits 将 ExceedsLimits 结果拆分为 accepted/rejected 两个 KeyedStream 切片。
 // EnforceLimits checks all streams against the per-tenant limits and returns
 // two slices: one containing the streams that are accepted (within the per-tenant
 // limits) and one containing the streams that are rejected. Any streams that
@@ -198,6 +204,7 @@ func newExceedsLimitsRequest(tenant string, streams []KeyedStream) (*proto.Excee
 	}, nil
 }
 
+// UpdateRates 向 limits-frontend 上报分段键流元数据并返回各流最新字节速率。
 // UpdateRates updates the rates for the streams and returns a slice of the
 // updated rates for all streams. Any streams that could not have rates updated
 // have a rate of zero.
@@ -214,6 +221,7 @@ func (l *ingestLimits) UpdateRates(ctx context.Context, tenant string, streams [
 
 // UpdateRatesRaw sends a pre-built UpdateRatesRequest to the frontend.
 // This is used by the rate batcher which accumulates stream data over time.
+// UpdateRatesRaw 供 rateBatcher 发送预构建的批量 UpdateRates 请求。
 func (l *ingestLimits) UpdateRatesRaw(ctx context.Context, req *proto.UpdateRatesRequest) ([]*proto.UpdateRatesResult, error) {
 	l.requests.WithLabelValues("UpdateRates").Inc()
 	resp, err := l.client.UpdateRates(ctx, req)
@@ -243,3 +251,4 @@ func newUpdateRatesRequest(tenant string, streams []segmentedStream) (*proto.Upd
 		Streams: streamMetadata,
 	}, nil
 }
+// ExceedsLimits 失败或 ReasonFailed 的流仍被接受，避免限流服务故障阻断写入。

@@ -1,5 +1,7 @@
 package distributor
 
+// Distributor HTTP 入口：解析 snappy 压缩的 Loki/OTLP push 请求并委托 PushWithResolver。
+
 import (
 	"errors"
 	"fmt"
@@ -24,11 +26,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// PushHandler 处理原生 Loki push API，使用 ParseLokiRequest 解析请求体。
 // PushHandler reads a snappy-compressed proto from the HTTP body.
 func (d *Distributor) PushHandler(w http.ResponseWriter, r *http.Request) {
 	d.pushHandler(w, r, push.ParseLokiRequest, push.HTTPError, constants.Loki)
 }
 
+// OTLPPushHandler 处理 OpenTelemetry 日志 push，错误格式遵循 OTLP 约定。
 func (d *Distributor) OTLPPushHandler(w http.ResponseWriter, r *http.Request) {
 	d.pushHandler(w, r, push.ParseOTLPRequest, push.OTLPError, constants.OTLP)
 }
@@ -182,6 +186,7 @@ func (d *Distributor) pushHandler(w http.ResponseWriter, r *http.Request, pushRe
 	}
 }
 
+// ServeHTTP 在全局限流策略下展示 distributor ring 状态，本地策略则返回说明页。
 // ServeHTTP implements the distributor ring status page.
 //
 // If the rate limiting strategy is local instead of global, no ring is used by
@@ -207,8 +212,10 @@ func (d *Distributor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	util.WriteHTMLResponse(w, noRingPage)
 }
 
+// extractPresumedAgentIP 取 X-Forwarded-For 首段作为推测的 agent IP 用于审计过滤。
 func extractPresumedAgentIP(r *http.Request) string {
 	// X-Forwarded-For header may have 2 or more comma-separated addresses: the 2nd (and additional) are typically appended by proxies which handled the traffic.
 	// Therefore, if the header is included, only log the first address
 	return strings.Split(r.Header.Get("X-Forwarded-For"), ",")[0]
 }
+// 请求体过大时按压缩长度累加 DiscardedBytes 且无法附带 retention/policy 标签。

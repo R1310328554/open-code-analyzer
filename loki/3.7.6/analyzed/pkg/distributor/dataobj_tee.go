@@ -1,5 +1,7 @@
 package distributor
 
+// DataObj Tee：在写入路径将流副本异步复制到 Kafka dataobj 主题，供分段键分区解析。
+
 import (
 	"context"
 	"errors"
@@ -27,6 +29,7 @@ const (
 	TeeCouldntProduceRecordsError TeeErrorCodes = 1002
 )
 
+// DataObjTeeConfig 控制 tee 开关、主题、缓冲上限、分区速率与批量窗口。
 type DataObjTeeConfig struct {
 	Enabled               bool          `yaml:"enabled"`
 	Topic                 string        `yaml:"topic"`
@@ -61,6 +64,7 @@ func (c *DataObjTeeConfig) Validate() error {
 	return nil
 }
 
+// DataObjTee 实现 Tee 接口，在 segmentation key 就绪前作为临时双写方案。
 // DataObjTee is a tee that duplicates streams to the data object topic.
 // It is a temporary solution while we work on segmentation keys.
 type DataObjTee struct {
@@ -79,6 +83,7 @@ type DataObjTee struct {
 	producedRecords *prometheus.CounterVec
 }
 
+// NewDataObjTee 初始化 Kafka 客户端、限流客户端与可选 rateBatcher 服务。
 // NewDataObjTee returns a new DataObjTee.
 func NewDataObjTee(
 	cfg *DataObjTeeConfig,
@@ -132,6 +137,7 @@ func NewDataObjTee(
 }
 
 // A segmentedStream is a KeyedStream with a segmentation key.
+// segmentedStream 在 KeyedStream 上附加 segmentationKey 及其 64 位哈希。
 type segmentedStream struct {
 	KeyedStream
 	SegmentationKey     segmentationKey
@@ -143,6 +149,7 @@ func (t *DataObjTee) Register(_ context.Context, _ string, streams []KeyedStream
 	pushTracker.streamsPending.Add(int32(len(streams)))
 }
 
+// Duplicate 解析分段键、更新速率后并发调用 duplicate 写入 Kafka 分区。
 // Duplicate implements the [Tee] interface.
 func (t *DataObjTee) Duplicate(ctx context.Context, tenant string, streams []KeyedStream, pushTracker *PushTracker) {
 	segmentationKeyStreams := make([]segmentedStream, 0, len(streams))
@@ -247,6 +254,7 @@ func (t *DataObjTee) observeDuplicate(partition int32, tenant, segmentationKey s
 	).Inc()
 }
 
+// RateBatcher 供 distributor 将批量速率更新服务纳入 subservices 生命周期。
 // RateBatcher returns the rate batcher service if batching is enabled, nil otherwise.
 // This is used to add the batcher to the distributor's subservices for lifecycle management.
 func (t *DataObjTee) RateBatcher() services.Service {
@@ -255,3 +263,4 @@ func (t *DataObjTee) RateBatcher() services.Service {
 	}
 	return t.rateBatcher
 }
+// duplicate 失败时通过 PushTracker 返回 1000–1002 范围的 tee 专用错误码。
