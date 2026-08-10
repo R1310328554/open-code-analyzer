@@ -31,6 +31,11 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.BuildableReference;
 
+/**
+ * Keycloak 领域导入自定义资源（CR），用于将 {@link RealmRepresentation} 导入已部署的 Keycloak 实例。
+ *
+ * <p>命名空间级资源，通过 {@link KeycloakRealmImportSpec} 指定目标 Keycloak CR 与领域配置。
+ */
 @CSVMetadata(
     description="Represents a Keycloak Realm Import",
     displayName="KeycloakRealmImport"
@@ -43,12 +48,14 @@ import io.sundr.builder.annotations.BuildableReference;
         @BuildableReference(io.fabric8.kubernetes.client.CustomResource.class),
         @BuildableReference(KeycloakRealmImportSpec.class)
 })
+// 递归嵌套结构在 OpenAPI 中替换为占位类型，避免 CRD 生成器无限展开
 @SchemaSwap(originalType = GroupRepresentation.class, fieldName = "subGroups", depth = 10)
 @SchemaSwap(originalType = ComponentExportRepresentation.class, fieldName = "subComponents", depth = 10)
 @SchemaSwap(originalType = ScopeRepresentation.class, fieldName = "policies")
 @SchemaSwap(originalType = ScopeRepresentation.class, fieldName = "resources")
 public class KeycloakRealmImport extends CustomResource<KeycloakRealmImportSpec, KeycloakRealmImportStatus> implements Namespaced {
 
+    /** 从 spec 中读取领域名称，不参与 JSON 序列化。 */
     @JsonIgnore
     public String getRealmName() {
         return this.getSpec().getRealm().getRealm();

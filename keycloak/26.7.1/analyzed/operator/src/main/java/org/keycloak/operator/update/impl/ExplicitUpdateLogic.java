@@ -12,9 +12,9 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 
 /**
- * Implements an explicit update logic.
- * <p>
- * The decision is controlled by an outside actor using the revision field.
+ * 显式更新策略：由外部操作者通过 revision 注解控制是否允许滚动更新。
+ *
+ * <p>当前 StatefulSet revision 与 CR 中期望 revision 一致时选择滚动，否则重建。
  */
 public class ExplicitUpdateLogic extends BaseUpdateLogic {
 
@@ -30,7 +30,7 @@ public class ExplicitUpdateLogic extends BaseUpdateLogic {
             decideRecreateUpdate("Explicit strategy configured. Revision annotation not present in stateful set.");
             return Optional.empty();
         }
-        // CRD validation ensures the revision is present
+        // CRD 校验保证 revision 在 Explicit 策略下已配置
         var desiredRevision = UpdateSpec.getRevision(keycloak).orElseThrow();
         if (Objects.equals(maybeCurrentRevision.get(), desiredRevision)) {
             decideRollingUpdate("Explicit strategy configured. Revision matches.");

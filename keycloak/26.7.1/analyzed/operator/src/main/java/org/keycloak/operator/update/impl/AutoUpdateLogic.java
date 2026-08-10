@@ -38,6 +38,9 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkus.logging.Log;
 
+/**
+ * 自动更新策略：创建更新 Job 运行兼容性检查命令，根据退出码决定滚动或重建。
+ */
 public class AutoUpdateLogic extends BaseUpdateLogic {
 
     private final KeycloakUpdateJobDependentResource updateJobResource;
@@ -56,7 +59,7 @@ public class AutoUpdateLogic extends BaseUpdateLogic {
             return Optional.of(UpdateControl.noUpdate());
         }
 
-        // Keycloak CR may be updated while the job is running; we need to delete and start over.
+        // CR 可能在 Job 运行期间被修改，需删除旧 Job 并重新开始
         if (!KeycloakUpdateJobDependentResource.isJobFromCurrentKeycloakCr(existingJob.get(), keycloak)) {
             context.getClient().resource(existingJob.get()).lockResourceVersion().delete();
             return Optional.of(UpdateControl.noUpdate());
@@ -78,6 +81,7 @@ public class AutoUpdateLogic extends BaseUpdateLogic {
         return Optional.empty();
     }
 
+    /** 根据 Job 条件判断更新 Job 是否仍在运行。 */
     private boolean isJobRunning(Job job) {
         var status = job.getStatus();
         Log.debugf("Update Job Status:%n%s", CRDUtils.toJsonNode(status, context).toPrettyString());
@@ -87,8 +91,9 @@ public class AutoUpdateLogic extends BaseUpdateLogic {
                 .orElse(true);
     }
 
+    /** 解析 init 容器与主容器的退出码，决定 ROLLING 或 RECREATE。 */
     private void checkUpdateType(Pod pod) {
-        // check init container.
+        // 检查 init 容器（运行 update-compatibility 命令）
         var initContainerExitCode = initContainer(pod)
                 .map(AutoUpdateLogic::exitCode);
         if (initContainerExitCode.isEmpty()) {
@@ -107,7 +112,7 @@ public class AutoUpdateLogic extends BaseUpdateLogic {
             return;
         }
 
-        // check container.
+        // 检查主容器
         var containerExitCode = container(pod)
                 .map(AutoUpdateLogic::exitCode);
         if (containerExitCode.isEmpty()) {
@@ -147,6 +152,7 @@ public class AutoUpdateLogic extends BaseUpdateLogic {
         }
     }
 
+    /** 按 Job 标签选择器查找关联 Pod。 */
     public static Optional<Pod> findPodForJob(KubernetesClient client, Job job) {
         return client.pods()
                 .inNamespace(job.getMetadata().getNamespace())
@@ -164,6 +170,7 @@ public class AutoUpdateLogic extends BaseUpdateLogic {
                 .flatMap(Stream::findFirst);
     }
 
+    /** 获取 Pod 中第一个主容器的状态。 */
     public static Optional<ContainerStatus> container(Pod pod) {
         return java.util.Optional.ofNullable(pod.getStatus())
                 .map(PodStatus::getContainerStatuses)
@@ -171,6 +178,7 @@ public class AutoUpdateLogic extends BaseUpdateLogic {
                 .flatMap(Stream::findFirst);
     }
 
+    /** 从容器的 terminated 状态读取退出码，缺失时默认为 1。 */
     public static int exitCode(ContainerStatus containerStatus) {
         return Optional.ofNullable(containerStatus)
                 .map(ContainerStatus::getState)

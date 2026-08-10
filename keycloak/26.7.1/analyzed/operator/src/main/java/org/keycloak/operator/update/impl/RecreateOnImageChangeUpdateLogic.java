@@ -31,9 +31,7 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 
 /**
- * Implements Keycloak 26.0 logic.
- * <p>
- * It uses a {@link UpdateType#RECREATE} if the image changes; otherwise uses {@link UpdateType#ROLLING}.
+ * Keycloak 26.0 兼容的更新逻辑：镜像变更时使用 {@link UpdateType#RECREATE}，否则滚动更新。
  */
 public class RecreateOnImageChangeUpdateLogic extends BaseUpdateLogic {
 
@@ -54,6 +52,7 @@ public class RecreateOnImageChangeUpdateLogic extends BaseUpdateLogic {
         return Optional.empty();
     }
 
+    /** 从 StatefulSet 首个容器读取镜像引用。 */
     public static String extractImage(StatefulSet statefulSet) {
         return CRDUtils.firstContainerOf(statefulSet)
                 .map(Container::getImage)

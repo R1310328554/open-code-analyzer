@@ -28,24 +28,32 @@ import io.fabric8.generator.annotation.Required;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * {@link KeycloakRealmImport} 的期望状态：指定导入目标、领域数据及可选 Job 配置。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class KeycloakRealmImportSpec {
 
+    /** 同命名空间内目标 Keycloak CR 的名称。 */
     @Required
     @JsonPropertyDescription("The name of the Keycloak CR to reference, in the same namespace.")
     private String keycloakCRName;
+    /** 要导入 Keycloak 的领域表示（RealmRepresentation）。 */
     @Required
     @JsonPropertyDescription("The RealmRepresentation to import into Keycloak.")
     private RealmRepresentation realm;
 
+    /** 导入 Job 中 Keycloak 容器的计算资源；未设置时继承 Keycloak CR 配置。 */
     @JsonProperty("resources")
     @JsonPropertyDescription("Compute Resources required by Keycloak container. If not specified, the value is inherited from the Keycloak CR.")
     private ResourceRequirements resourceRequirements;
 
+    /** 领域导入 JSON 中环境变量占位符的替换映射。 */
     @JsonPropertyDescription("Optionally set to replace ENV variable placeholders in the realm import.")
     private Map<String, Placeholder> placeholders;
 
+    /** 追加到导入 Job 的额外 Kubernetes 标签。 */
     @JsonProperty("labels")
     @JsonPropertyDescription("Optionally set to add additional labels to the Job created for the import.")
     Map<String, String> labels = new LinkedHashMap<String, String>();

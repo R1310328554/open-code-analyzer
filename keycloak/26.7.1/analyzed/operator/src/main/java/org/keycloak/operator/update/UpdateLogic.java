@@ -27,33 +27,30 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 
 /**
- * An API to implement to handle Keycloak CR updates.
- * <p>
- * This interface is invoked all the time before creating the {@link StatefulSet} and it can manipulate the
- * reconciliation to perform or check other tasks required before the {@link StatefulSet} is created or updated.
+ * Keycloak CR 更新决策 API，在创建或更新 {@link StatefulSet} 之前介入协调流程。
+ *
+ * <p>实现类可中断协调以执行兼容性检查、更新 Job 等前置任务，
+ * 并通过 {@link org.keycloak.operator.ContextUtils#storeUpdateType(Context, UpdateType, String)}
+ * 记录滚动或重建更新类型。
  */
 public interface UpdateLogic {
 
     /**
-     * It must check is an existing {@link StatefulSet} exists and decided on the {@link UpdateType} to update the
-     * {@link StatefulSet}.
-     * <p>
-     * The method should use {@link org.keycloak.operator.ContextUtils#storeUpdateType(Context, UpdateType, String)} to store
-     * its decision. If no prior {@link StatefulSet} is present, no decision is required and
-     * {@link org.keycloak.operator.ContextUtils#storeUpdateType(Context, UpdateType, String)} must not be invoked.
-     * <p>
-     * Return a non-empty {@link Optional} to interrupt the reconciliation until the next event. The interrupted
-     * prevents the {@link StatefulSet} from being updated.
+     * 检查现有 {@link StatefulSet} 是否存在，并决定以何种 {@link UpdateType} 更新。
      *
-     * @return The {@link UpdateControl} if the reconciliation needs to be interrupted or an empty {@link Optional} if
-     * it can proceed.
+     * <p>应通过 {@link org.keycloak.operator.ContextUtils#storeUpdateType(Context, UpdateType, String)}
+     * 持久化决策；若尚无 {@link StatefulSet}，则无需决策且不得调用该方法。
+     *
+     * <p>返回非空 {@link Optional} 时中断协调，阻止 {@link StatefulSet} 被更新，直至下次事件。
+     *
+     * @return 需要中断协调时返回 {@link UpdateControl}，否则返回空 {@link Optional}
      */
     Optional<UpdateControl<Keycloak>> decideUpdate();
 
     /**
-     * Updates the Keycloak CR status.
+     * 将更新类型与原因写入 Keycloak CR 状态。
      *
-     * @param statusAggregator The {@link KeycloakStatusAggregator} to update.
+     * @param statusAggregator 用于聚合 status 条件的 {@link KeycloakStatusAggregator}
      */
     void updateStatus(KeycloakStatusAggregator statusAggregator);
 

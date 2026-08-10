@@ -40,10 +40,9 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.quarkus.logging.Log;
 
 /**
- * Common {@link UpdateLogic} implementation that checks if the update logic needs to be run.
- * <p>
- * The update logic can be skipped if it is the first deployment or if the change is not relevance (like, updating the
- * number of replicas or annotations).
+ * {@link UpdateLogic} 的公共基类：判断是否需要运行更新逻辑，并封装滚动/重建决策。
+ *
+ * <p>首次部署或仅变更副本数、注解等无关字段时可跳过更新逻辑。
  */
 abstract class BaseUpdateLogic implements UpdateLogic {
 
@@ -60,7 +59,7 @@ abstract class BaseUpdateLogic implements UpdateLogic {
     public final Optional<UpdateControl<Keycloak>> decideUpdate() {
         var existing = ContextUtils.getCurrentStatefulSet(context);
         if (existing.isEmpty()) {
-            // new deployment, no update needed
+            // 首次部署，无需更新决策
             Log.debug("New deployment - skipping update logic");
             return Optional.empty();
         }
@@ -78,7 +77,7 @@ abstract class BaseUpdateLogic implements UpdateLogic {
         var actualContainer = CRDUtils.firstContainerOf(existing.get()).orElseThrow(BaseUpdateLogic::containerNotFound);
 
         if (isContainerEquals(actualContainer, desiredContainer)) {
-            // container is equals, no update required
+            // 容器配置未变，跳过更新逻辑
             Log.debug("No changes detected in the container - skipping update logic");
             return Optional.empty();
         }
@@ -92,20 +91,19 @@ abstract class BaseUpdateLogic implements UpdateLogic {
     }
 
     /**
-     * Concrete update logic should be implemented here.
-     * <p>
-     * Use {@link ContextUtils#getCurrentStatefulSet(Context)} and/or
-     * {@link ContextUtils#getDesiredStatefulSet(Context)} to get the current and the desired {@link StatefulSet},
-     * respectively.
-     * <p>
-     * Use the methods {@link #decideRecreateUpdate(String)} or {@link #decideRollingUpdate(String)} to use one of the available
-     * update logics.
+     * 子类实现具体更新决策逻辑。
      *
-     * @return An {@link UpdateControl} if the reconciliation must be interrupted before updating the
-     * {@link StatefulSet}.
+     * <p>可通过 {@link ContextUtils#getCurrentStatefulSet(Context)} 与
+     * {@link ContextUtils#getDesiredStatefulSet(Context)} 获取当前与期望 {@link StatefulSet}。
+     *
+     * <p>使用 {@link #decideRecreateUpdate(String)} 或 {@link #decideRollingUpdate(String)}
+     * 记录更新类型。
+     *
+     * @return 需在更新 {@link StatefulSet} 前中断协调时返回 {@link UpdateControl}
      */
     abstract Optional<UpdateControl<Keycloak>> onUpdate();
 
+    /** 从现有 StatefulSet 注解恢复上次更新类型到 status 聚合器。 */
     private void copyStatusFromExistStatefulSet(StatefulSet current) {
         var maybeRecreate = CRDUtils.fetchIsRecreateUpdate(current);
         if (maybeRecreate.isEmpty()) {
@@ -116,12 +114,14 @@ abstract class BaseUpdateLogic implements UpdateLogic {
         statusConsumer = statusAggregator -> statusAggregator.addUpdateType(recreate, reason);
     }
 
+    /** 决策为滚动更新并写入上下文。 */
     void decideRollingUpdate(String reason) {
         Log.debugf("Decided rolling update type. Reason: %s", reason);
         statusConsumer = status -> status.addUpdateType(false, reason);
         ContextUtils.storeUpdateType(context, UpdateType.ROLLING, reason);
     }
 
+    /** 决策为重建更新并写入上下文。 */
     void decideRecreateUpdate(String reason) {
         Log.debugf("Decided recreate update type. Reason: %s", reason);
         statusConsumer = status -> status.addUpdateType(true, reason);
@@ -132,6 +132,7 @@ abstract class BaseUpdateLogic implements UpdateLogic {
         return new IllegalStateException("Container not found in stateful set.");
     }
 
+    /** 比较镜像、启动参数与环境变量（忽略 Pod IP 等运行时注入项）。 */
     private static boolean isContainerEquals(Container actual, Container desired) {
         return isImageEquals(actual, desired) &&
                 isArgsEquals(actual, desired) &&
@@ -153,7 +154,7 @@ abstract class BaseUpdateLogic implements UpdateLogic {
     }
 
     private static Map<String, EnvVar> envVars(Container container) {
-        // The operator only sets value or secrets. Any other combination is from unsupported pod template.
+        // Operator 仅设置 value 或 secret；其他组合来自不支持的 pod 模板
         return container.getEnv().stream()
                 .filter(envVar -> !envVar.getName().equals(KeycloakDeploymentDependentResource.POD_IP))
                 .filter(envVar -> !envVar.getName().equals(KeycloakDeploymentDependentResource.HOST_IP_SPI_OPTION))

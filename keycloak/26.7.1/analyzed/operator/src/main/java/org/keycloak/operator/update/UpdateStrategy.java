@@ -19,14 +19,20 @@ package org.keycloak.operator.update;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Keycloak 集群更新策略枚举，对应 CR {@code spec.update.strategy} 字段。
+ */
 public enum UpdateStrategy {
 
+    /** 镜像变更时先重建集群，否则滚动更新（Keycloak 26.0 默认行为）。 */
     @JsonProperty("RecreateOnImageChange")
     RECREATE_ON_IMAGE_CHANGE,
 
+    /** 通过更新 Job 自动检测变更兼容性并选择滚动或重建。 */
     @JsonProperty("Auto")
     AUTO,
 
+    /** 由外部操作者通过 revision 字段显式控制是否允许滚动更新。 */
     @JsonProperty("Explicit")
     EXPLICIT
 }

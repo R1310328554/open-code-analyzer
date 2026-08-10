@@ -30,13 +30,20 @@ import org.keycloak.operator.update.impl.RecreateOnImageChangeUpdateLogic;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 
 /**
- * The {@link UpdateLogic} factory. It returns an implementation based on the {@link Keycloak} configuration.
+ * {@link UpdateLogic} 工厂，根据 Keycloak CR 中配置的 {@link UpdateStrategy} 返回对应实现。
  */
 @ApplicationScoped
 public class UpdateLogicFactory {
     @Inject
     KeycloakUpdateJobDependentResource updateJobDependentResource;
 
+    /**
+     * 按 CR 更新策略实例化更新逻辑。
+     *
+     * @param keycloak 当前协调的 Keycloak CR
+     * @param context 协调上下文
+     * @return 与策略匹配的 {@link UpdateLogic} 实现
+     */
     public UpdateLogic create(Keycloak keycloak, Context<Keycloak> context) {
         var strategy = UpdateSpec.getUpdateStrategy(keycloak);
         return switch (strategy) {

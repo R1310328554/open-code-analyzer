@@ -24,11 +24,14 @@ import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.sundr.builder.annotations.Buildable;
 
 /**
+ * 领域导入 JSON 中环境变量占位符的替换来源，通常指向 Kubernetes Secret 的键。
+ *
  * @author Scott Tustison
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class Placeholder {
+    /** 从 Secret 读取占位符替换值的键选择器。 */
     private SecretKeySelector secret;
 
     public Placeholder() {

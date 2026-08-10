@@ -22,15 +22,15 @@ import org.keycloak.operator.controllers.KeycloakDeploymentDependentResource;
 import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 
 /**
- * Supported update types by {@link KeycloakDeploymentDependentResource}.
+ * {@link KeycloakDeploymentDependentResource} 支持的 StatefulSet 更新方式。
  */
 public enum UpdateType {
     /**
-     * Shutdown the existing cluster before updating the {@link StatefulSet}.
+     * 先关闭现有集群再更新 {@link StatefulSet}（全量重建）。
      */
     RECREATE,
     /**
-     * Updates the {@link StatefulSet} and does a rolling update.
+     * 直接更新 {@link StatefulSet} 并执行滚动发布。
      */
     ROLLING
 }

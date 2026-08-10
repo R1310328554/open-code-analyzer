@@ -23,7 +23,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import static org.keycloak.operator.crds.v2beta1.realmimport.KeycloakRealmImportStatusCondition.DONE;
 
+/**
+ * {@link KeycloakRealmImport} 的观测状态，以条件列表反映导入进度与错误。
+ */
 public class KeycloakRealmImportStatus {
+    /** 导入相关的状态条件集合（Started、Done、HasErrors 等）。 */
     private List<KeycloakRealmImportStatusCondition> conditions;
 
     public List<KeycloakRealmImportStatusCondition> getConditions() {
@@ -34,6 +38,10 @@ public class KeycloakRealmImportStatus {
         this.conditions = conditions;
     }
 
+    /**
+     * 判断导入是否已完成：存在类型为 {@link KeycloakRealmImportStatusCondition#DONE}
+     * 且 status 为 True 的条件。
+     */
     @JsonIgnore
     public boolean isDone() {
         return conditions
