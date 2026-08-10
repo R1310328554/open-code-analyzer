@@ -23,7 +23,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents the credential_response_encryption metadata for an OID4VCI Credential Issuer.
+ * OID4VCI 凭证签发者元数据中的 credential_response_encryption 段。
+ * <p>声明签发者支持的密钥管理算法、内容加密算法及是否强制加密响应。</p>
  * @see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-issuer-metadata-p"></a>
  *
  * @author <a href="mailto:Bertrand.Ogen@adorsys.com">Bertrand Ogen</a>
@@ -31,49 +32,61 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialResponseEncryptionMetadata {
 
+    /** 支持的密钥管理算法（alg）列表。 */
     @JsonProperty("alg_values_supported")
     private List<String> algValuesSupported;
 
+    /** 支持的内容加密算法（enc）列表。 */
     @JsonProperty("enc_values_supported")
     private List<String> encValuesSupported;
 
+    /** 支持的压缩算法（zip）列表。 */
     @JsonProperty("zip_values_supported")
     private List<String> zipValuesSupported;
 
+    /** 是否强制加密凭证响应。 */
     @JsonProperty("encryption_required")
     private Boolean encryptionRequired;
 
+    /** @return 密钥管理算法列表 */
     public List<String> getAlgValuesSupported() {
         return algValuesSupported;
     }
 
+    /** @param algValuesSupported 密钥管理算法列表 */
     public CredentialResponseEncryptionMetadata setAlgValuesSupported(List<String> algValuesSupported) {
         this.algValuesSupported = algValuesSupported;
         return this;
     }
 
+    /** @return 内容加密算法列表 */
     public List<String> getEncValuesSupported() {
         return encValuesSupported;
     }
 
+    /** @param encValuesSupported 内容加密算法列表 */
     public CredentialResponseEncryptionMetadata setEncValuesSupported(List<String> encValuesSupported) {
         this.encValuesSupported = encValuesSupported;
         return this;
     }
 
+    /** @return 压缩算法列表 */
     public List<String> getZipValuesSupported() {
         return zipValuesSupported;
     }
 
+    /** @param zipValuesSupported 压缩算法列表 */
     public CredentialResponseEncryptionMetadata setZipValuesSupported(List<String> zipValuesSupported) {
         this.zipValuesSupported = zipValuesSupported;
         return this;
     }
 
+    /** @return 是否强制响应加密 */
     public Boolean getEncryptionRequired() {
         return encryptionRequired;
     }
 
+    /** @param encryptionRequired 是否强制加密 */
     public CredentialResponseEncryptionMetadata setEncryptionRequired(Boolean encryptionRequired) {
         this.encryptionRequired = encryptionRequired;
         return this;

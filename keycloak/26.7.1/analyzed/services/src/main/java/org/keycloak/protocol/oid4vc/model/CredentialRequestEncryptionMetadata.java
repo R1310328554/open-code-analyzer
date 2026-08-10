@@ -25,7 +25,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents the credential_request_encryption metadata for an OID4VCI Credential Issuer.
+ * OID4VCI 凭证签发者元数据中的 credential_request_encryption 段。
+ * <p>声明签发者支持的 JWE 密钥集、加密算法及是否强制加密请求。</p>
  * @see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-16.html#name-credential-issuer-metadata-p
  *
  * @author <a href="mailto:Bertrand.Ogen@adorsys.com">Bertrand Ogen</a>
@@ -33,49 +34,61 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialRequestEncryptionMetadata {
 
+    /** 用于解密凭证请求的 JWK 集合。 */
     @JsonProperty("jwks")
     private JSONWebKeySet jwks;
 
+    /** 支持的内容加密算法列表（enc）。 */
     @JsonProperty("enc_values_supported")
     private List<String> encValuesSupported;
 
+    /** 支持的压缩算法列表（zip）。 */
     @JsonProperty("zip_values_supported")
     private List<String> zipValuesSupported;
 
+    /** 是否强制客户端加密凭证请求。 */
     @JsonProperty("encryption_required")
     private Boolean encryptionRequired;
 
+    /** @return 解密用 JWK 集合 */
     public JSONWebKeySet getJwks() {
         return jwks;
     }
 
+    /** @param jwks 解密用 JWK 集合 */
     public CredentialRequestEncryptionMetadata setJwks(JSONWebKeySet jwks) {
         this.jwks = jwks;
         return this;
     }
 
+    /** @return 支持的内容加密算法 */
     public List<String> getEncValuesSupported() {
         return encValuesSupported;
     }
 
+    /** @param encValuesSupported 内容加密算法列表 */
     public CredentialRequestEncryptionMetadata setEncValuesSupported(List<String> encValuesSupported) {
         this.encValuesSupported = encValuesSupported;
         return this;
     }
 
+    /** @return 支持的压缩算法 */
     public List<String> getZipValuesSupported() {
         return zipValuesSupported;
     }
 
+    /** @param zipValuesSupported 压缩算法列表 */
     public CredentialRequestEncryptionMetadata setZipValuesSupported(List<String> zipValuesSupported) {
         this.zipValuesSupported = zipValuesSupported;
         return this;
     }
 
+    /** @return 是否强制请求加密 */
     public Boolean isEncryptionRequired() {
         return encryptionRequired;
     }
 
+    /** @param encryptionRequired 是否强制加密 */
     public CredentialRequestEncryptionMetadata setEncryptionRequired(Boolean encryptionRequired) {
         this.encryptionRequired = encryptionRequired;
         return this;

@@ -26,26 +26,34 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * Pojo to represent a CredentialSubject for internal handling
+ * 内部处理用的凭证主体（Credential Subject）POJO。
+ * <p>通过 {@link JsonAnyGetter}/{@link JsonAnySetter} 动态承载任意声明键值对。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialSubject {
 
+    /** 凭证主体声明映射（键为声明名，值为声明内容）。 */
     @JsonIgnore
     private Map<String, Object> claims = new HashMap<>();
 
+    /** @return 全部主体声明 */
     @JsonAnyGetter
     public Map<String, Object> getClaims() {
         return claims;
     }
 
-    @JsonAnySetter
-    public void setClaims(String name, Object claim) {
+    /**
+     * 设置单个声明（Jackson 反序列化入口）。
+     *
+     * @param name  声明名
+     * @param claim 声明值
+     */
         claims.put(name, claim);
     }
 
+    /** @param claims 完整声明映射 */
     public CredentialSubject setClaims(Map<String, Object> claims) {
         this.claims = claims;
         return this;

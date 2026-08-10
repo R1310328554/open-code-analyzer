@@ -37,7 +37,8 @@ import static org.keycloak.protocol.oid4vc.model.AuthorizationCodeGrant.AUTH_COD
 import static org.keycloak.protocol.oid4vc.model.PreAuthorizedCodeGrant.PRE_AUTH_GRANT_TYPE;
 
 /**
- * Represents a CredentialsOffer according to the OID4VCI Spec
+ * OID4VCI 规范中的凭证发放（Credential Offer）模型。
+ * <p>描述签发者、可发放凭证配置 ID 及授权码/预授权码等 grant 信息。</p>
  * {@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer}
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
@@ -45,28 +46,36 @@ import static org.keycloak.protocol.oid4vc.model.PreAuthorizedCodeGrant.PRE_AUTH
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialsOffer {
 
+    /** 凭证签发者标识 URI。 */
     @JsonProperty("credential_issuer")
     private String credentialIssuer;
 
-    //ids of credentials as offered in the issuer metadata
+    // 签发者元数据中提供的凭证配置 ID 列表
+    /** 本次发放包含的凭证配置 ID 列表。 */
     @JsonProperty("credential_configuration_ids")
     private List<String> credentialConfigurationIds;
 
+    /** grant 映射（键为 grant 类型，如 authorization_code、urn:ietf:params:oauth:grant-type:pre-authorized_code）。 */
     @JsonProperty("grants")
     @JsonDeserialize(using = CredentialOfferGrantsDeserializer.class)
     private Map<String, CredentialOfferGrant> grants = new HashMap<>();
 
+    /** @return 凭证签发者 URI */
     public String getCredentialIssuer() {
         return credentialIssuer;
     }
 
+    /** @param credentialIssuer 签发者 URI */
     public CredentialsOffer setCredentialIssuer(String credentialIssuer) {
         this.credentialIssuer = credentialIssuer;
         return this;
     }
 
-    @JsonIgnore
-    public String getIssuerMetadataUrl() {
+    /**
+     * 推导凭证签发者元数据 well-known URL。
+     *
+     * @return openid-credential-issuer 元数据地址
+     */
         var metadataUrl = KeycloakUriBuilder
                 .fromUri(credentialIssuer)
                 .path("/.well-known/" + WELL_KNOWN_OPENID_CREDENTIAL_ISSUER);
@@ -82,25 +91,34 @@ public class CredentialsOffer {
         return metadataUrl.buildAsString();
     }
 
+    /** @return 凭证配置 ID 列表 */
     public List<String> getCredentialConfigurationIds() {
         return credentialConfigurationIds;
     }
 
+    /** @param credentialConfigurationIds 配置 ID 列表 */
     public CredentialsOffer setCredentialConfigurationIds(List<String> credentialConfigurationIds) {
         this.credentialConfigurationIds = Collections.unmodifiableList(credentialConfigurationIds);
         return this;
     }
 
-    public CredentialsOffer addGrant(CredentialOfferGrant grant) {
+    /**
+     * 添加 grant 条目。
+     *
+     * @param grant grant 对象
+     * @return 当前实例
+     */
         grants.put(grant.getGrantType(), grant);
         return this;
     }
 
+    /** @return 授权码 grant，无则 null */
     @JsonIgnore
     public AuthorizationCodeGrant getAuthorizationCodeGrant() {
         return (AuthorizationCodeGrant) grants.get(AUTH_CODE_GRANT_TYPE);
     }
 
+    /** @return 授权码 grant 中的 issuer_state */
     @JsonIgnore
     public String getIssuerState() {
         return Optional.ofNullable(getAuthorizationCodeGrant())
@@ -108,11 +126,13 @@ public class CredentialsOffer {
                 .orElse(null);
     }
 
+    /** @return 预授权码 grant */
     @JsonIgnore
     public PreAuthorizedCodeGrant getPreAuthorizedGrant() {
         return (PreAuthorizedCodeGrant) grants.get(PRE_AUTH_GRANT_TYPE);
     }
 
+    /** @return 预授权码字符串 */
     @JsonIgnore
     public String getPreAuthorizedCode() {
         return Optional.ofNullable(getPreAuthorizedGrant())
@@ -120,11 +140,13 @@ public class CredentialsOffer {
                 .orElse(null);
     }
 
+    /** @return 是否包含预授权 grant */
     @JsonIgnore
     public boolean hasPreAuthorizedGrant() {
         return grants.get(PRE_AUTH_GRANT_TYPE) != null;
     }
 
+    /** 按签发者、配置 ID 与 grants 比较相等性。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -135,11 +157,13 @@ public class CredentialsOffer {
         return match;
     }
 
+    /** @return 哈希码 */
     @Override
     public int hashCode() {
         return Objects.hash(credentialIssuer, credentialConfigurationIds, grants);
     }
 
+    /** @return JSON 字符串 */
     public String toString() {
         return JsonSerialization.valueAsString(this);
     }

@@ -22,7 +22,8 @@ import org.keycloak.jose.jwk.JWK;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * Represents the credential_response_encryption object in a Credential Request.
+ * 凭证请求中的 credential_response_encryption 对象。
+ * <p>钱包指定接收加密凭证响应时使用的算法、压缩方式及公钥 JWK。</p>
  * {@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-request}
  *
  * @author <a href="mailto:Bertrand.Ogen@adorsys.com">Bertrand Ogen</a>
@@ -30,46 +31,43 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialResponseEncryption {
 
-    /**
-     * REQUIRED. A string specifying the content encryption algorithm to be used for encrypting the
-     * Credential Response, as per the supported content encryption algorithms in the Credential Issuer Metadata.
-     */
+    /** 必填。内容加密算法（enc），须为签发者元数据 enc_values_supported 中的值。 */
     private String enc;
 
-    /**
-     * OPTIONAL. A string specifying the compression algorithm to be used for compressing the
-     * Credential Response prior to encryption.
-     */
+    /** 可选。加密前压缩算法（zip）。 */
     private String zip;
 
-    /**
-     * REQUIRED if credential_response_encryption is included in the Credential Request.
-     * A JSON Web Key (JWK) that represents the public key to which the Credential Response will be encrypted.
-     */
+    /** 请求含 credential_response_encryption 时必填；凭证响应将加密到此 JWK 公钥。 */
     private JWK jwk;
 
+    /** @return 内容加密算法 */
     public String getEnc() {
         return enc;
     }
 
+    /** @param enc 内容加密算法 */
     public CredentialResponseEncryption setEnc(String enc) {
         this.enc = enc;
         return this;
     }
 
+    /** @return 压缩算法 */
     public String getZip() {
         return zip;
     }
 
+    /** @param zip 压缩算法 */
     public CredentialResponseEncryption setZip(String zip) {
         this.zip = zip;
         return this;
     }
 
+    /** @return 接收方公钥 JWK */
     public JWK getJwk() {
         return jwk;
     }
 
+    /** @param jwk 接收方公钥 JWK */
     public CredentialResponseEncryption setJwk(JWK jwk) {
         this.jwk = jwk;
         return this;

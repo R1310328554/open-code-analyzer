@@ -27,8 +27,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Container for the issuer state used by the authorization code grant in a Credential Offer
- * <p>
+ * 凭证发放授权码 grant 中的 issuer_state 容器。
+ * <p>封装 credentials_offer_id，支持 URL-safe Base64 编解码以便在 OAuth 参数中传递。</p>
  * {@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer}
  *
  * @author <a href="mailto:tdiesler@ibm.com">Thomas Diesler</a>
@@ -36,29 +36,42 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class IssuerState {
 
+    /** 关联的凭证发放记录 ID。 */
     @JsonProperty("credentials_offer_id")
     private String credentialsOfferId;
 
+    /** @return 凭证发放 ID */
     public String getCredentialsOfferId() {
         return credentialsOfferId;
     }
 
+    /** @param credentialsOfferId 凭证发放 ID */
     public IssuerState setCredentialsOfferId(String credentialsOfferId) {
         this.credentialsOfferId = credentialsOfferId;
         return this;
     }
 
-    public static IssuerState fromEncodedString(String encoded) {
+    /**
+     * 从 URL-safe Base64 编码字符串解码为 {@link IssuerState}。
+     *
+     * @param encoded Base64 编码的 JSON
+     * @return 解析后的 IssuerState
+     */
         byte[] encodedBytes = encoded.getBytes(StandardCharsets.UTF_8);
         String value = new String(Base64.getUrlDecoder().decode(encodedBytes));
         return JsonSerialization.valueFromString(value, IssuerState.class);
     }
 
-    public String encodeToString() {
+    /**
+     * 序列化为 JSON 并进行 URL-safe Base64 编码。
+     *
+     * @return 编码后的 issuer_state 字符串
+     */
         String value = JsonSerialization.valueAsString(this);
         return Base64.getUrlEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 
+    /** 按 credentialsOfferId 比较相等性。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -66,6 +79,7 @@ public class IssuerState {
         return Objects.equals(credentialsOfferId, grant.credentialsOfferId);
     }
 
+    /** @return 哈希码 */
     @Override
     public int hashCode() {
         return Objects.hash(credentialsOfferId);

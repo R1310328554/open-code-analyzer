@@ -24,7 +24,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents a CredentialResponse according to the OID4VCI Spec
+ * OID4VCI 规范中的凭证响应（Credential Response）模型。
+ * <p>签发者返回已签发的凭证列表，或延迟签发时的 transaction_id。</p>
  * {@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-response}
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
@@ -32,22 +33,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialResponse {
 
+    /** 已签发的凭证对象列表。 */
     @JsonProperty("credentials")
     private List<Credential> credentials;
 
+    /** 延迟签发场景下的交易标识符。 */
     @JsonProperty("transaction_id")
     private String transactionId;
 
+    /** @return 凭证列表 */
     public List<Credential> getCredentials() {
         return credentials;
     }
 
+    /** @param credentials 凭证列表 */
     public CredentialResponse setCredentials(List<Credential> credentials) {
         this.credentials = credentials;
         return this;
     }
 
-    public CredentialResponse addCredential(Object credential) {
+    /**
+     * 追加单个凭证到响应列表。
+     *
+     * @param credential 凭证载荷（JWT、LD 等格式）
+     * @return 当前实例
+     */
         if (this.credentials == null) {
             this.credentials = new ArrayList<>();
         }
@@ -55,27 +65,32 @@ public class CredentialResponse {
         return this;
     }
 
+    /** @return 延迟签发交易 ID */
     public String getTransactionId() {
         return transactionId;
     }
 
+    /** @param transactionId 交易 ID */
     public CredentialResponse setTransactionId(String transactionId) {
         this.transactionId = transactionId;
         return this;
     }
 
     /**
-     * Inner class to represent a single credential object within the credentials array.
+     * credentials 数组中的单个凭证包装对象。
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Credential {
+        /** 实际凭证载荷。 */
         @JsonProperty("credential")
         private Object credential;
 
+        /** @return 凭证载荷 */
         public Object getCredential() {
             return credential;
         }
 
+        /** @param credential 凭证载荷 */
         public Credential setCredential(Object credential) {
             this.credential = credential;
             return this;
