@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T11:44:22Z",
   "files": [
-    "services/src/main/java/org/keycloak/broker/spiffe/SpiffeIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/broker/spiffe/SpiffeJSONWebKeySet.java",
-    "services/src/main/java/org/keycloak/broker/trust/DefaultTrustIdentityProvider.java",
-    "services/src/main/java/org/keycloak/broker/trust/DefaultTrustIdentityProviderConfig.java",
-    "services/src/main/java/org/keycloak/broker/trust/DefaultTrustIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/broker/trust/DefaultTrustMaterialPublicKeyLoader.java",
-    "services/src/main/java/org/keycloak/broker/trust/TrustKeyUtil.java",
-    "services/src/main/java/org/keycloak/cache/CachedValue.java",
-    "services/src/main/java/org/keycloak/cache/ComputedKey.java",
-    "services/src/main/java/org/keycloak/cache/DefaultAlternativeLookupProvider.java",
-    "services/src/main/java/org/keycloak/cache/DefaultAlternativeLookupProviderFactory.java",
-    "services/src/main/java/org/keycloak/cache/DefaultLocalCacheProviderFactory.java",
-    "services/src/main/java/org/keycloak/compatibility/FeatureCompatibilityMetadataProvider.java",
-    "services/src/main/java/org/keycloak/compatibility/KeycloakCompatibilityMetadataProvider.java",
-    "services/src/main/java/org/keycloak/connections/httpclient/DefaultHttpClientFactory.java",
     "services/src/main/java/org/keycloak/connections/httpclient/HttpClientBuilder.java",
     "services/src/main/java/org/keycloak/connections/httpclient/ProxyMappings.java",
     "services/src/main/java/org/keycloak/connections/httpclient/ProxyMappingsAwareRoutePlanner.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/credential/PasswordCredentialProvider.java"
   ],
   "remaining_pending": 1948,
-  "done": 4020
+  "done": 4035
 }
