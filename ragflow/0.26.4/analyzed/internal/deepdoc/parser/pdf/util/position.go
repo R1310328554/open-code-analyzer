@@ -1,3 +1,5 @@
+// position.go — RAGFlow @@ 位置标签解析与生成：格式 @@页码\tleft\tright\ttop\tbottom##，页码 1 起写入、0 起读出。
+
 package util
 
 import (
@@ -10,24 +12,15 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// @@ page position tag regex patterns.
+// @@ 页位置标签正则。
 //
-// Python: pdf_parser.py:1868 remove_tag, 1872 extract_positions
+// 对齐 Python remove_tag / extract_positions
 
-// posTagPattern matches the full @@...## tag including coordinates.
-// Format: @@{page_range}\t{left}\t{right}\t{top}\t{bottom}##
+// posTagPattern 匹配完整 @@...## 标签含坐标。
+// 格式：@@{page_range}\t{left}\t{right}\t{top}\t{bottom}##
 var posTagPattern = regexp.MustCompile(`@@[0-9-]+\t[0-9.\t]+##`)
 
-// ExtractPositions parses @@ position tags from a text string.
-//
-// Each tag has format:
-//
-//	@@{page_range}\t{left}\t{right}\t{top}\t{bottom}##
-//
-// page_range can be a single page ("3") or a range ("0-2").
-// Pages are zero-indexed in the returned values (subtracting 1 from PDF page numbers).
-//
-// Python: pdf_parser.py:1872 extract_positions()
+// ExtractPositions 从文本解析所有 @@ 位置标签；page_range 可为单页或范围；返回页码为 0 起索引。
 //
 // Example:
 //
@@ -43,7 +36,7 @@ func ExtractPositions(text string) []pdf.Position {
 			continue
 		}
 
-		// Parse page range
+		// 解析页码范围
 		var pageNums []int
 		for _, p := range strings.Split(parts[0], "-") {
 			n, err := strconv.Atoi(p)
@@ -51,7 +44,7 @@ func ExtractPositions(text string) []pdf.Position {
 				slog.Warn("ExtractPositions: invalid page number in tag", "tag", tag, "part", p, "err", err)
 				continue
 			}
-			pageNums = append(pageNums, n-1) // 0-index
+			pageNums = append(pageNums, n-1) // 转为 0 起索引
 		}
 
 		left, err := strconv.ParseFloat(parts[1], 64)
@@ -86,10 +79,7 @@ func ExtractPositions(text string) []pdf.Position {
 	return poss
 }
 
-// FormatPositionTag creates a @@ position tag string from page number and bounding box.
-//
-// Reverse of ExtractPositions. Used when converting PDF engine
-// bboxes back to RAGFlow position tag format.
+// FormatPositionTag 由页码与 bbox 生成 @@ 标签；ExtractPositions 的逆操作。
 //
 // Example:
 //
@@ -100,7 +90,7 @@ func FormatPositionTag(pageNum int, left, right, top, bottom float64) string {
 		pageNum+1, left, right, top, bottom)
 }
 
-// FormatPositionTagRange creates a @@ position tag for multi-page content.
+// FormatPositionTagRange 生成跨页 @@ 位置标签。
 //
 // Example:
 //

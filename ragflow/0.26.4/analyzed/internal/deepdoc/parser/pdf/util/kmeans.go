@@ -1,3 +1,5 @@
+// kmeans.go — 一维 KMeans 聚类与轮廓系数：用于表格列/行坐标分组；初始化与 sklearn 固定种子行为等价。
+
 package util
 
 import (
@@ -5,11 +7,7 @@ import (
 	"sort"
 )
 
-// KMeans1D performs 1-dimensional KMeans clustering.
-// Returns per-point labels and final centroid values.
-//
-// Initialization: evenly spaced centroids (deterministic, equivalent to
-// sklearn KMeans with fixed seed in practice for 1D data).
+// KMeans1D 一维 KMeans：返回各点标签与最终质心；质心沿 min–max 均匀初始化，确定性等价 sklearn 固定种子。
 func KMeans1D(data []float64, k int) (labels []int, centroids []float64) {
 	n := len(data)
 	labels = make([]int, n)
@@ -22,8 +20,7 @@ func KMeans1D(data []float64, k int) (labels []int, centroids []float64) {
 		return labels, []float64{sum / float64(n)}
 	}
 	if n <= k {
-		// Each point gets its own centroid. When n < k we return n
-		// centroids (you cannot have more clusters than data points).
+		// n≤k 时每点自成一簇，簇数不超过点数。
 		centroids = make([]float64, n)
 		for i, v := range data {
 			centroids[i] = v
@@ -32,7 +29,7 @@ func KMeans1D(data []float64, k int) (labels []int, centroids []float64) {
 		return labels, centroids
 	}
 
-	// Linear scan for min/max: O(n) instead of O(n log n) sort.
+	// 线性扫描 min/max，O(n) 优于排序。
 	minV, maxV := data[0], data[0]
 	for _, v := range data {
 		if v < minV {
@@ -45,7 +42,7 @@ func KMeans1D(data []float64, k int) (labels []int, centroids []float64) {
 
 	centroids = make([]float64, k)
 	for c := 0; c < k; c++ {
-		// Evenly space between min and max
+		// 在 min 与 max 间均匀布质心
 		if k == 1 {
 			centroids[c] = minV
 		} else {
@@ -53,10 +50,10 @@ func KMeans1D(data []float64, k int) (labels []int, centroids []float64) {
 		}
 	}
 
-	// Lloyd's algorithm
+	// Lloyd 迭代：分配→更新质心，最多 100 轮
 	for iter := 0; iter < 100; iter++ {
 		changed := false
-		// Assign each point to nearest centroid
+		// 每点分配到最近质心
 		for i, v := range data {
 			bestC, bestD := 0, math.Abs(v-centroids[0])
 			for c := 1; c < k; c++ {
@@ -73,7 +70,7 @@ func KMeans1D(data []float64, k int) (labels []int, centroids []float64) {
 		if !changed {
 			break
 		}
-		// Update centroids
+		// 按簇内均值更新质心
 		counts := make([]int, k)
 		sums := make([]float64, k)
 		for i, v := range data {
@@ -90,12 +87,7 @@ func KMeans1D(data []float64, k int) (labels []int, centroids []float64) {
 	return
 }
 
-// Silhouette1D computes the silhouette score for 1D data.
-// Returns a score in [-1, 1]. Higher is better.
-// Returns -1 if the score cannot be computed (fewer than 2 unique labels).
-// Samples alone in their cluster contribute 0, matching sklearn behavior.
-//
-// Python: sklearn.metrics.silhouette_score with Euclidean distance.
+// Silhouette1D 计算一维轮廓系数 [-1,1]，越高越好；少于 2 个簇返回 -1；单点簇贡献 0，对齐 sklearn。
 func Silhouette1D(data []float64, labels []int) float64 {
 	n := len(data)
 	if n <= 1 {
@@ -112,7 +104,7 @@ func Silhouette1D(data []float64, labels []int) float64 {
 		uniqueClusters = append(uniqueClusters, cl)
 	}
 
-	// Need at least 2 distinct labels for silhouette.
+	// 轮廓系数至少需要 2 个不同标签。
 	if len(uniqueClusters) < 2 {
 		return -1
 	}
@@ -120,12 +112,12 @@ func Silhouette1D(data []float64, labels []int) float64 {
 
 	var totalScore float64
 	for i := 0; i < n; i++ {
-		// sklearn convention: silhouette = 0 for samples alone in their cluster.
+		// sklearn：单点簇样本轮廓为 0。
 		if clusterCounts[labels[i]] <= 1 {
 			continue
 		}
 
-		// a_i: mean distance to other points in same cluster
+		// a_i：同簇内到其他点的平均距离
 		var aSum float64
 		aCount := 0
 		for j := 0; j < n; j++ {
@@ -139,7 +131,7 @@ func Silhouette1D(data []float64, labels []int) float64 {
 			a = aSum / float64(aCount)
 		}
 
-		// b_i: min mean distance to points in other clusters
+		// b_i：到其他簇的最小平均距离
 		b := math.MaxFloat64
 		for _, cl := range uniqueClusters {
 			if cl == labels[i] {

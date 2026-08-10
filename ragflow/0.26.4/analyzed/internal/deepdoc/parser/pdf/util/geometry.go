@@ -1,3 +1,5 @@
+// geometry.go — PDF 文本几何度量：字符/框宽高、间距、重叠比、中位高度、FastCrop 与矩形相交；对齐 Python pdf_parser 中 __char_width/_x_dis/_y_dis 等。
+
 package util
 
 import (
@@ -7,10 +9,7 @@ import (
 	"sort"
 )
 
-// CharWidth returns the average character width: (x1 - x0) / len(text).
-// Returns 0 if text is empty.
-//
-// Python: pdf_parser.py:107 __char_width()
+// CharWidth 返回平均字符宽度 (x1-x0)/len(text)；空文本为 0。
 //
 // Example:
 //
@@ -23,7 +22,7 @@ func CharWidth(c pdf.TextChar) float64 {
 	return (c.X1 - c.X0) / float64(len(c.Text))
 }
 
-// CharHeight returns the character height in PDF points.
+// CharHeight 返回字符高度（PDF 点）bottom-top。
 //
 // Python: pdf_parser.py:110 __height()
 //
@@ -35,7 +34,7 @@ func CharHeight(c pdf.TextChar) float64 {
 	return c.Bottom - c.Top
 }
 
-// XDis computes the minimum horizontal distance between two characters.
+// XDis 计算两字符最小水平间距，用于同行判定。
 // Used to determine if they belong to the same text line.
 //
 // Python: pdf_parser.py:113 _x_dis()
@@ -52,7 +51,7 @@ func XDis(a, b pdf.TextChar) float64 {
 	)
 }
 
-// YDis computes the vertical distance between two characters' centerlines.
+// YDis 计算两字符中心线垂直距离；正表示 b 在 a 下方。
 // Positive means b is below a.
 //
 // Python: pdf_parser.py:116 _y_dis()
@@ -66,23 +65,23 @@ func YDis(a, b pdf.TextChar) float64 {
 	return (b.Top + b.Bottom - a.Top - a.Bottom) / 2
 }
 
-// BoxWidth returns the width of a text box.
+// BoxWidth 返回文本框宽度。
 func BoxWidth(b pdf.TextBox) float64 {
 	return b.X1 - b.X0
 }
 
-// BoxHeight returns the height of a text box.
+// BoxHeight 返回文本框高度。
 func BoxHeight(b pdf.TextBox) float64 {
 	return b.Bottom - b.Top
 }
 
-// BoxYDis computes vertical centerline distance between boxes.
+// BoxYDis 两框中心线垂直距离。
 // Positive means b2 is below b1.
 func BoxYDis(b1, b2 pdf.TextBox) float64 {
 	return (b2.Top + b2.Bottom - b1.Top - b1.Bottom) / 2
 }
 
-// BoxXDis computes horizontal distance between boxes.
+// BoxXDis 两框水平距离。
 func BoxXDis(b1, b2 pdf.TextBox) float64 {
 	return min(
 		math.Abs(b1.X1-b2.X0),
@@ -90,7 +89,7 @@ func BoxXDis(b1, b2 pdf.TextBox) float64 {
 	)
 }
 
-// OverlapRatio returns intersection(a,b) / Area(denom).
+// OverlapRatio 交集面积除以 denom 面积。
 // Returns 0 when denom has zero area or there is no intersection.
 func OverlapRatio(a, b, denom pdf.Rectangular) float64 {
 	inter := OverlapInter(a, b)
@@ -104,7 +103,7 @@ func OverlapRatio(a, b, denom pdf.Rectangular) float64 {
 	return inter / d
 }
 
-// OverlapRatioMax returns intersection(a,b) / max(Area(a), Area(b)).
+// OverlapRatioMax 交集除以两矩形较大面积。
 func OverlapRatioMax(a, b pdf.Rectangular) float64 {
 	inter := OverlapInter(a, b)
 	if inter <= 0 {
@@ -117,8 +116,7 @@ func OverlapRatioMax(a, b pdf.Rectangular) float64 {
 	return inter / d
 }
 
-// OverlapX returns the horizontal (X-axis only) overlap ratio between two rectangles.
-// Ratio = overlap_width / max(1, min(width(a), width(b))).
+// OverlapX 仅 X 轴方向重叠宽度比；用于 _naive_vertical_merge。
 //
 // Python: pdf_parser.py:964-965 overlap calculation in _naive_vertical_merge
 func OverlapX(a, b pdf.Rectangular) float64 {
@@ -131,9 +129,7 @@ func OverlapX(a, b pdf.Rectangular) float64 {
 	return overlap / minWidth
 }
 
-// MedianCharHeight computes the median character height for a page,
-// matching Python's np.median(char height) in __images__ (pdf_parser.py:1552).
-// Used as a reference unit for vertical spacing decisions.
+// MedianCharHeight 页内字符高度中位数，作纵向间距参考单位。
 func MedianCharHeight(chars []pdf.TextChar) float64 {
 	heights := make([]float64, len(chars))
 	for i, c := range chars {
@@ -142,7 +138,7 @@ func MedianCharHeight(chars []pdf.TextChar) float64 {
 	return medianFloat64(heights, 10)
 }
 
-// MedianCharWidth computes the median character width for a page,
+// MedianCharWidth 页内字符宽度中位数。
 // matching Python's np.median(char width) in __images__ (pdf_parser.py:1553).
 func MedianCharWidth(chars []pdf.TextChar) float64 {
 	widths := make([]float64, len(chars))
@@ -152,7 +148,7 @@ func MedianCharWidth(chars []pdf.TextChar) float64 {
 	return medianFloat64(widths, 5)
 }
 
-// MedianHeight computes the median height of a set of text boxes.
+// MedianHeight 文本框高度中位数；空列表回退 10。
 // Falls back to 10 if list is empty.
 //
 // Python: np.median([b["bottom"]-b["top"] for b in bxs]) or 10
@@ -165,7 +161,7 @@ func MedianHeight(boxes []pdf.TextBox) float64 {
 	return medianFloat64(heights, 10)
 }
 
-// medianFloat64 returns the median of vals, or fallback if empty.
+// medianFloat64 求中位数，空切片返回 fallback。
 func medianFloat64(vals []float64, fallback float64) float64 {
 	if len(vals) == 0 {
 		return fallback
@@ -178,22 +174,19 @@ func medianFloat64(vals []float64, fallback float64) float64 {
 	return vals[n/2]
 }
 
-// Rect is a lightweight rectangle for overlap calculations.
-// Coordinates are in whatever space the caller uses (pixel or PDF points).
+// Rect 轻量矩形，坐标空间由调用方决定（像素或 PDF 点）。
 type Rect struct{ X0, Y0, X1, Y1 float64 }
 
 func (r Rect) Bounds() (float64, float64, float64, float64) { return r.X0, r.Y0, r.X1, r.Y1 }
 
-// RectOverlap returns the overlap ratio between two Rects.
+// RectOverlap 两 Rect 重叠比（OverlapRatioMax）。
 func RectOverlap(a, b Rect) float64 {
 	return OverlapRatioMax(a, b)
 }
 
-// fastCrop copies a rectangular region from src to a new *image.RGBA.
-// Uses direct Pix slice copy for *image.RGBA sources (zero allocation per row);
-// falls back to pixel-by-pixel for other image types.
+// FastCrop 从 src 裁剪矩形到 RGBA；RGBA 源走 Pix 行拷贝快路径。
 func FastCrop(src image.Image, x0, y0, x1, y1 int) *image.RGBA {
-	// Clamp to source bounds
+	//  clamp 到源图边界
 	b := src.Bounds()
 	if x0 < b.Min.X {
 		x0 = b.Min.X
@@ -229,9 +222,9 @@ func FastCrop(src image.Image, x0, y0, x1, y1 int) *image.RGBA {
 	return dst
 }
 
-// ── Geometry helpers (pure functions, moved from type/types.go) ─────────
+// ── 几何辅助纯函数（自 type/types.go 迁出）──
 
-// Area returns the area of a Rectangular. Returns 0 for degenerate rects.
+// Area 返回 Rectangular 面积；退化矩形为 0。
 func Area(r pdf.Rectangular) float64 {
 	x0, y0, x1, y1 := r.Bounds()
 	if x1 <= x0 || y1 <= y0 {
@@ -240,7 +233,7 @@ func Area(r pdf.Rectangular) float64 {
 	return (x1 - x0) * (y1 - y0)
 }
 
-// RectOverlapInter returns the intersection area of two axis-aligned rectangles.
+// RectOverlapInter 两轴对齐矩形交集面积。
 func RectOverlapInter(x0a, y0a, x1a, y1a, x0b, y0b, x1b, y1b float64) float64 {
 	x0 := max(x0a, x0b)
 	y0 := max(y0a, y0b)
@@ -252,14 +245,14 @@ func RectOverlapInter(x0a, y0a, x1a, y1a, x0b, y0b, x1b, y1b float64) float64 {
 	return (x1 - x0) * (y1 - y0)
 }
 
-// OverlapInter returns the raw intersection area of two rectangles.
+// OverlapInter 两 Rectangular 交集面积。
 func OverlapInter(a, b pdf.Rectangular) float64 {
 	ax0, ay0, ax1, ay1 := a.Bounds()
 	bx0, by0, bx1, by1 := b.Bounds()
 	return RectOverlapInter(ax0, ay0, ax1, ay1, bx0, by0, bx1, by1)
 }
 
-// OverlapRatioA returns intersection(a,b) / Area(a).
+// OverlapRatioA 交集除以 a 的面积。
 func OverlapRatioA(a, b pdf.Rectangular) float64 {
 	inter := OverlapInter(a, b)
 	if inter <= 0 {

@@ -18,13 +18,7 @@ package deepdoc
 
 import "context"
 
-// TSR is a stub. The Python deepdoc service has no remote TSR
-// endpoint — table structure recognition is a 100% local ONNX
-// pipeline (deepdoc/vision/table_structure_recognizer.py:30).
-// Callers that need TSR must keep using the Python deepdoc
-// service directly; this Go client exists for DLA only. Returns
-// ErrNoRemoteEndpoint unconditionally so the absence of a remote
-// endpoint is loud rather than silent.
+// TSR 为占位实现：Python deepdoc 无远程 TSR 端点，表格结构识别为本地 ONNX 管道。需 TSR 的调用方应继续用 Python 服务；本 Go 客户端仅支持 DLA。无条件返回 ErrNoRemoteEndpoint，避免静默失败。
 func (c *Client) TSR(_ context.Context, _ [][]byte) ([][]byte, error) {
 	return nil, ErrNoRemoteEndpoint
 }

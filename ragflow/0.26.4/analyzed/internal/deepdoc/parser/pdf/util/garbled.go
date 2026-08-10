@@ -1,3 +1,5 @@
+// garbled.go — PDF 乱码/扫描噪声检测：CID 占位符、PUA 私用区、子集字体编码异常、pdf_oxide # 占位与扫描页噪声；触发 OCR 回退。对齐 Python _is_garbled_* / _is_scan_noise。
+
 package util
 
 import (
@@ -8,26 +10,26 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// CIDPattern matches pdfminer's CID placeholder like "(cid:123)".
+// CIDPattern 匹配 pdfminer CID 占位符如 "(cid:123)"。
 //
-// Python: pdf_parser.py:198 _CID_PATTERN
+// 对齐 Python pdf_parser.py:198 _CID_PATTERN
 var CIDPattern = regexp.MustCompile(`\(cid\s*:\s*\d+\s*\)`)
 
-// subsetFontPattern matches PDF subset font prefixes like "ABCDEF+".
-// PDF subset fonts use a 2-6 uppercase alphanumeric tag followed by '+'.
+// subsetFontPattern 匹配 PDF 子集字体前缀如 "ABCDEF+"。
+// 子集字体名为 2–6 位大写字数字 + '+'。
 //
-// Python: pdf_parser.py:261 _has_subset_font_prefix()
+// 对齐 Python _has_subset_font_prefix()
 var subsetFontPattern = regexp.MustCompile(`^[A-Z0-9]{2,6}\+`)
 
-// HasSubsetFontPrefix checks if a font name has a PDF subset prefix.
+// HasSubsetFontPrefix 判断字体名是否含 PDF 子集前缀。
 //
-// Example:
+// 示例：
 //
 //	HasSubsetFontPrefix("DY1+ZLQDm1-1") → true
 //	HasSubsetFontPrefix("SimSun")        → false
 //	HasSubsetFontPrefix("")              → false
 //
-// Python: pdf_parser.py:253 _has_subset_font_prefix()
+// 对齐 Python pdf_parser.py:253
 func HasSubsetFontPrefix(fontname string) bool {
 	if fontname == "" {
 		return false
@@ -35,16 +37,9 @@ func HasSubsetFontPrefix(fontname string) bool {
 	return subsetFontPattern.MatchString(fontname)
 }
 
-// IsGarbledChar checks if a single character is garbled (unmappable from PDF font encoding).
+// IsGarbledChar 判断单字符是否乱码：PUA、U+FFFD、控制符（除\t\n\r）、C1 控制区、Unicode Cn/Cs 等。
 //
-// A character is garbled if it falls into:
-//   - Private Use Areas (PUA): U+E000-U+F8FF, U+F0000-U+FFFFF, U+100000-U+10FFFF
-//   - Replacement character U+FFFD
-//   - Control characters (except tab, newline, carriage return)
-//   - C1 control range U+0080-U+009F
-//   - Unicode categories "Cn" (unassigned) or "Cs" (surrogate)
-//
-// Python: pdf_parser.py:201 _is_garbled_char()
+// 对齐 Python _is_garbled_char()
 //
 // Example:
 //
@@ -56,30 +51,30 @@ func IsGarbledChar(ch string) bool {
 	if ch == "" {
 		return false
 	}
-	// Always use the actual rune value (handles multi-byte UTF-8 correctly)
+	// 始终按 rune 值判断（正确处理多字节 UTF-8）
 	runes := []rune(ch)
 	cp := int(runes[0])
 
-	// Private Use Area
+	// 私用区 PUA
 	if (cp >= 0xE000 && cp <= 0xF8FF) ||
 		(cp >= 0xF0000 && cp <= 0xFFFFF) ||
 		(cp >= 0x100000 && cp <= 0x10FFFF) {
 		return true
 	}
-	// Replacement character
+	// 替换字符 U+FFFD
 	if cp == 0xFFFD {
 		return true
 	}
-	// Control characters (except \t \n \r)
+	// 控制字符（tab/换行/回车除外）
 	if cp < 0x20 && ch != "\t" && ch != "\n" && ch != "\r" {
 		return true
 	}
-	// C1 control range
+	// C1 控制区 U+0080–U+009F
 	if cp >= 0x80 && cp <= 0x9F {
 		return true
 	}
 
-	// Check Unicode category for each rune
+	// 逐 rune 检查 Unicode 类别
 	for _, r := range ch {
 		cat := catOf(rune(r))
 		if cat == "Cn" || cat == "Cs" {
@@ -89,10 +84,10 @@ func IsGarbledChar(ch string) bool {
 	return false
 }
 
-// IsGarbledText checks if a text string contains too many garbled characters.
-// Also detects CID placeholder patterns like "(cid:123)".
+// IsGarbledText 判断文本乱码字符占比是否超过阈值；亦检测 CID 模式。
+// 亦将 "(cid:123)" 类 CID 占位视为乱码。
 //
-// Python: pdf_parser.py:229 _is_garbled_text()
+// 对齐 Python _is_garbled_text()
 //
 // Example:
 //
@@ -126,14 +121,9 @@ func IsGarbledText(text string, threshold float64) bool {
 	return float64(garbledCount)/float64(total) >= threshold
 }
 
-// IsGarbledByFontEncoding detects if a page's text is garbled due to
-// broken font encoding mappings.
+// IsGarbledByFontEncoding 检测子集字体编码映射异常：≥30% 子集字体且 CJK<5% 且 ASCII 标点>40% 时判乱码，需 OCR。
 //
-// Detection: if ≥30% of characters come from subset fonts AND
-// <5% are CJK/Hangul/Kana AND >40% are ASCII punctuation/symbols,
-// the page is likely garbled.
-//
-// Python: pdf_parser.py:264 _is_garbled_by_font_encoding()
+// 对齐 Python _is_garbled_by_font_encoding()
 //
 // Example:
 //
@@ -201,10 +191,7 @@ func IsGarbledByFontEncoding(chars []pdf.TextChar, minChars int) bool {
 	return cjkRatio < 0.05 && punctRatio > 0.4
 }
 
-// catOf returns "Cs" for surrogates, "Cn" for unassigned code points
-// (not in any Unicode category), and "" for everything else.
-// Python unicodedata.category() returns "Cc" for control chars, "Cn" only
-// for truly unassigned — we match that behavior.
+// catOf 返回 Unicode 类别简写：Cs  surrogate、Cn 未分配、其余为空；对齐 unicodedata.category。
 func catOf(r rune) string {
 	if r >= 0xD800 && r <= 0xDFFF {
 		return "Cs" // surrogate
@@ -227,13 +214,12 @@ func catOf(r rune) string {
 	return ""
 }
 
-// IsGarbledPage returns true if a page is garbled by PUA ratio, font encoding,
-// pdf_oxide unmapped glyphs, or scan noise (no real words).
+// IsGarbledPage 综合 PUA 比例、字体编码、pdf_oxide # 占位与扫描噪声判定整页乱码。
 func IsGarbledPage(chars []pdf.TextChar) bool {
 	if len(chars) < 20 {
 		return false
 	}
-	// Build full-page text for detection (all O(n) single pass).
+	// 单次遍历拼接全页文本供检测。
 	var fullText strings.Builder
 	for _, c := range chars {
 		fullText.WriteString(c.Text)
@@ -254,18 +240,7 @@ func IsGarbledPage(chars []pdf.TextChar) bool {
 	return false
 }
 
-// IsScanNoise detects scanned pages where pdf_oxide extracts noise glyphs
-// instead of real text.  Real text in any language contains word-like runs
-// of consecutive letters (L category).  Scan noise consists of random ASCII
-// symbols with at most 2-letter fragments.
-//
-// Three indicators of real (non-noise) text, any one is sufficient:
-//   - ≥4 consecutive lowercase Latin letters (e.g. "the", "and")
-//   - ≥2 consecutive CJK characters (Han, Hiragana, Katakana, Hangul)
-//   - ≥4 consecutive non-ASCII letters (Arabic, Thai, Cyrillic, etc.)
-//
-// Pure-uppercase fragments like "RASB" are common in pdf_oxide noise but
-// never appear as standalone words in real text without lowercase context.
+// IsScanNoise 检测扫描页 pdf_oxide 噪声：无≥4 小写拉丁、≥2 CJK 或≥4 非 ASCII 字母连续段；纯大写碎片如 RASB 不计为真实词。
 func IsScanNoise(text string) bool {
 	nonSpace := 0
 	digitCount := 0
@@ -285,13 +260,13 @@ func IsScanNoise(text string) bool {
 		}
 		nonSpace++
 
-		// Digit density: real content (tables, dates) has digits;
-		// pdf_oxide noise (unmapped glyphs) never produces digits.
+		// 数字密度：真实内容（表格/日期）含数字；
+		// pdf_oxide 噪声不会产生数字。
 		if r >= '0' && r <= '9' {
 			digitCount++
 		}
 
-		// Lowercase Latin (Ll)
+		// 小写拉丁 Ll
 		if unicode.Is(unicode.Ll, r) {
 			lowerRun++
 			if lowerRun > maxLowerRun {
@@ -301,7 +276,7 @@ func IsScanNoise(text string) bool {
 			lowerRun = 0
 		}
 
-		// CJK: Han, Hiragana, Katakana, Hangul Syllables & Jamo
+		// CJK：汉字/假名/谚文
 		if pdf.IsCJK(r) {
 			cjkRun++
 			if cjkRun > maxCJKRun {
@@ -311,9 +286,7 @@ func IsScanNoise(text string) bool {
 			cjkRun = 0
 		}
 
-		// Non-ASCII letter (Arabic U+0600–U+06FF, Thai U+0E00–U+0E7F,
-		// Cyrillic U+0400–U+04FF, etc.).  Excludes ASCII so uppercase
-		// Latin fragments like "RASB" don't count.
+		// 非 ASCII 字母（阿拉伯/泰/西里尔等）；排除 ASCII 大写碎片。
 		if unicode.IsLetter(r) && r > unicode.MaxASCII {
 			nonASCIILetterRun++
 			if nonASCIILetterRun > maxNonASCIILetterRun {
@@ -324,35 +297,26 @@ func IsScanNoise(text string) bool {
 		}
 	}
 
-	// Need enough characters to make a meaningful decision.
+	// 非空格字符≥30 才做判定。
 	if nonSpace < 30 {
 		return false
 	}
 
-	// Digit density: pdf_oxide never substitutes digits for unmapped
-	// glyphs. Real content (tables, dates, page numbers) has ≥10%
-	// digits; noise consists of random ASCII punctuation.
+	// 数字占比≥10% 视为真实内容而非噪声。
 	if float64(digitCount)/float64(nonSpace) >= 0.10 {
 		return false
 	}
 
-	// Real text in any script — any one indicator is sufficient.
+	// 任一脚本的真实文本指标满足即非噪声。
 	isNoise := maxLowerRun < 4 && maxCJKRun < 2 && maxNonASCIILetterRun < 4
 
 	return isNoise
 }
 
-// isCJK reports whether r is a CJK character: Han ideograph, Hiragana,
+// isCJK 注释已移至 doctype.IsCJK；此处为历史占位。
 // Katakana, Hangul syllable, or Hangul Jamo.
 
-// PdfOxideUnmappedGarbled detects pdf_oxide's '#' placeholder glyphs.
-// pdf_oxide uses '#' (U+0023) for every glyph it cannot map; consecutive
-// unmapped glyphs form "##", "###", "####" sequences.  Three or more
-// consecutive '#' is virtually impossible in normal text.
-//
-// Two conditions (either is sufficient):
-//   - ≥ 2 occurrences of "###" (3+ consecutive #)
-//   - # density ≥ 5% of non-space characters
+// PdfOxideUnmappedGarbled 检测 pdf_oxide 用 '#' 占位未映射字形：≥2 处 "###" 或非空格中 # 密度≥3%（≥40 字符时）。
 func PdfOxideUnmappedGarbled(text string) bool {
 	hashCount := 0
 	total := 0
@@ -384,14 +348,11 @@ func PdfOxideUnmappedGarbled(text string) bool {
 	if tripleClusters >= 1 {
 		return true
 	}
-	// Density check only meaningful with enough chars (matches isGarbledPage's
-	// min 20 char guard).  In production the sample is 200 chars.
+	// 密度判定需足够字符数；生产采样约 200 字符。
 	if total >= 40 && density >= 0.03 {
 		return true
 	}
 	return false
 }
 
-// ocrDetectAndRecognize runs OCR detection + recognition and returns
-// recognized pdf.TextBox results. logLabel distinguishes callers in log output
-// ("scan page", "garbled page").
+// ocrDetectAndRecognize（声明）对乱码/扫描页跑 OCR 检测+识别，logLabel 区分调用场景。

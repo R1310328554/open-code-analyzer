@@ -14,6 +14,8 @@
 //  limitations under the License.
 //
 
+// chunk.go — Elasticsearch 分块索引 CRUD 与检索：建索引、bulk 写入/更新/删除、混合文本+向量搜索、search_after 深分页、memory/skill 专用映射与高亮聚合；对齐 Python es_conn.py。
+
 package elasticsearch
 
 import (
@@ -55,13 +57,13 @@ var (
 	elasticsearchEnglishLetterRE      = regexp.MustCompile(`[A-Za-z]`)
 )
 
-// CreateChunkStore creates an index
+// CreateChunkStore 创建分块索引（含 memory_/skill 特殊映射）
 func (e *elasticsearchEngine) CreateChunkStore(ctx context.Context, baseName, datasetID string, vectorSize int, parserID string) error {
 	if baseName == "" {
 		return fmt.Errorf("index name cannot be empty")
 	}
 
-	// Check if index already exists
+	// 检查索引是否已存在
 	exists, err := e.indexExists(ctx, baseName)
 	if err != nil {
 		return fmt.Errorf("failed to check index existence: %w", err)
@@ -78,19 +80,19 @@ func (e *elasticsearchEngine) CreateChunkStore(ctx context.Context, baseName, da
 		return nil
 	}
 
-	// Load mapping based on index type
+	// 按索引类型加载 mapping
 	var mapping map[string]interface{}
 	if strings.HasPrefix(baseName, "memory_") {
 		mapping = getMemoryMessageMapping(vectorSize)
 	} else if datasetID == "skill" {
-		// Load skill-specific mapping
+		// skill 数据集加载专用 mapping
 		skillMapping, err := loadSkillMapping()
 		if err != nil {
 			return fmt.Errorf("failed to load skill mapping: %w", err)
 		}
 		mapping = skillMapping
 	} else {
-		// Default mapping for dataset
+		// 普通数据集默认 settings
 		mapping = map[string]interface{}{
 			"settings": map[string]interface{}{
 				"number_of_shards":   1,
@@ -99,7 +101,7 @@ func (e *elasticsearchEngine) CreateChunkStore(ctx context.Context, baseName, da
 		}
 	}
 
-	// Prepare request body
+	// 组装创建请求体
 	var body io.Reader
 	if mapping != nil {
 		data, err := json.Marshal(mapping)
@@ -109,7 +111,7 @@ func (e *elasticsearchEngine) CreateChunkStore(ctx context.Context, baseName, da
 		body = bytes.NewReader(data)
 	}
 
-	// Create index
+	// 调用 IndicesCreate 创建索引
 	req := esapi.IndicesCreateRequest{
 		Index: baseName,
 		Body:  body,
@@ -130,7 +132,7 @@ func (e *elasticsearchEngine) CreateChunkStore(ctx context.Context, baseName, da
 		return fmt.Errorf("elasticsearch returned error: %s, body: %s", res.Status(), string(bodyBytes))
 	}
 
-	// Parse response
+	// 解析响应并确认 acknowledged
 	var result map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		return fmt.Errorf("failed to parse response: %w", err)
@@ -145,8 +147,7 @@ func (e *elasticsearchEngine) CreateChunkStore(ctx context.Context, baseName, da
 	return nil
 }
 
-// InsertChunks inserts chunks into a chunk index
-// If a chunk with the same id + doc_id + kb_id already exists, it will be updated with the new value
+// InsertChunks bulk 写入分块；同 id 存在则 upsert 更新
 func (e *elasticsearchEngine) InsertChunks(ctx context.Context, chunks []map[string]interface{}, baseName string, datasetID string) ([]string, error) {
 	common.Info("ElasticsearchConnection.InsertChunks called", zap.String("index_name", baseName), zap.Int("chunkCount", len(chunks)))
 
@@ -164,7 +165,7 @@ func (e *elasticsearchEngine) InsertChunks(ctx context.Context, chunks []map[str
 		}
 	}
 
-	// Build bulk request body with index operations (upsert behavior: insert if not exists, update if exists)
+	// 构建 bulk index 行（存在则覆盖）
 	var buf bytes.Buffer
 	for _, doc := range chunks {
 		docID, _ := doc["doc_id"].(string)
@@ -174,7 +175,7 @@ func (e *elasticsearchEngine) InsertChunks(ctx context.Context, chunks []map[str
 			continue
 		}
 
-		// Action line: use json.Marshal to properly escape string values
+		// action 行：json.Marshal 转义
 		action, err := json.Marshal(map[string]interface{}{
 			"index": map[string]interface{}{
 				"_index": baseName,
@@ -188,7 +189,7 @@ func (e *elasticsearchEngine) InsertChunks(ctx context.Context, chunks []map[str
 		buf.Write(action)
 		buf.WriteByte('\n')
 
-		// Document line: work with a copy to avoid mutating the original
+		// document 行：拷贝 doc 避免修改原 map
 		docCopy := copyFields(doc)
 		docCopy["kb_id"] = datasetID
 		if err := jsonIterator.NewEncoder(&buf).Encode(docCopy); err != nil {
@@ -196,7 +197,7 @@ func (e *elasticsearchEngine) InsertChunks(ctx context.Context, chunks []map[str
 		}
 	}
 
-	// Execute bulk request with refresh="wait_for"
+	// bulk 执行并 refresh=wait_for
 	req := esapi.BulkRequest{
 		Body:    bytes.NewReader(buf.Bytes()),
 		Refresh: "wait_for",
@@ -215,7 +216,7 @@ func (e *elasticsearchEngine) InsertChunks(ctx context.Context, chunks []map[str
 		return nil, fmt.Errorf("elasticsearch bulk request returned error: %s, body: %s", res.Status(), string(bodyBytes))
 	}
 
-	// Parse bulk response
+	// 解析 bulk 响应并检查 errors 标志
 	var bulkResponse map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&bulkResponse); err != nil {
 		common.Error("Failed to parse bulk response", err)
@@ -232,7 +233,7 @@ func (e *elasticsearchEngine) InsertChunks(ctx context.Context, chunks []map[str
 	return []string{}, nil
 }
 
-// UpdateChunks updates chunks by condition
+// UpdateChunks 按条件更新分块（单条或 UpdateByQuery）
 func (e *elasticsearchEngine) UpdateChunks(ctx context.Context, condition map[string]interface{}, newValue map[string]interface{}, baseName string, datasetID string) error {
 	fullIndexName := baseName
 	common.Info("ElasticsearchConnection.UpdateChunks called", zap.String("index_name", fullIndexName), zap.Any("condition", condition), zap.Any("new_value", newValue))
@@ -271,8 +272,7 @@ func (e *elasticsearchEngine) UpdateChunks(ctx context.Context, condition map[st
 	return e.updateChunksByQuery(ctx, fullIndexName, condition, newValue)
 }
 
-// AdjustChunkPagerank atomically adjusts pagerank_fea and clamps it to
-// [minWeight, maxWeight].
+// AdjustChunkPagerank 原子调整 pagerank_fea 并 clamp 到 [min,max]；kb_id 不匹配则 noop。
 func (e *elasticsearchEngine) AdjustChunkPagerank(ctx context.Context, indexName, chunkID, kbID string, delta, minWeight, maxWeight float64) error {
 	if indexName == "" {
 		return fmt.Errorf("index name cannot be empty")
@@ -411,11 +411,11 @@ func mapMemoryMessageESConditionFields(condition map[string]interface{}) map[str
 	return mapped
 }
 
-// updateSingleChunk handles single document update
+// updateSingleChunk 按 chunk id 搜索 _id 后局部更新
 func (e *elasticsearchEngine) updateSingleChunk(ctx context.Context, indexName, chunkID string, newValue map[string]interface{}) error {
 	common.Debug("ElasticsearchConnection.updateSingleChunk called", zap.String("indexName", indexName), zap.String("chunkID", chunkID))
 
-	// First find the document by id field to get the actual _id
+	// 先按 id 字段搜索得到 ES _id
 	searchReq := map[string]interface{}{
 		"query": map[string]interface{}{
 			"term": map[string]interface{}{"id": chunkID},
@@ -474,7 +474,7 @@ func (e *elasticsearchEngine) updateSingleChunk(ctx context.Context, indexName, 
 	removeField, _ := removeValue.(string)
 	removeDict, _ := removeValue.(map[string]interface{})
 
-	// Remove *_feas fields
+	// 移除 doc 中 *_feas 特征字段
 	var feasFields []string
 	for k := range doc {
 		if strings.HasSuffix(k, "feas") {
@@ -501,7 +501,7 @@ func (e *elasticsearchEngine) updateSingleChunk(ctx context.Context, indexName, 
 		}
 	}
 
-	// Remove specific field if removeField is set
+	// remove 字符串时删除指定字段
 	if removeField != "" {
 		scriptBody := map[string]interface{}{
 			"script": map[string]interface{}{
@@ -522,7 +522,7 @@ func (e *elasticsearchEngine) updateSingleChunk(ctx context.Context, indexName, 
 		}
 	}
 
-	// Remove specific values from array fields (removeDict)
+	// remove 字典时从数组字段删指定值
 	if removeDict != nil {
 		scripts := []string{}
 		params := make(map[string]interface{})
@@ -554,7 +554,7 @@ func (e *elasticsearchEngine) updateSingleChunk(ctx context.Context, indexName, 
 		}
 	}
 
-	// Update document fields if any remain
+	// 剩余字段走 doc 部分更新
 	if len(doc) > 0 {
 		updateBody := map[string]interface{}{"doc": doc}
 		body, _ := json.Marshal(updateBody)
@@ -580,11 +580,11 @@ func (e *elasticsearchEngine) updateSingleChunk(ctx context.Context, indexName, 
 	return nil
 }
 
-// updateChunksByQuery handles multi-document update
+// updateChunksByQuery 按 bool 过滤批量 painless 更新
 func (e *elasticsearchEngine) updateChunksByQuery(ctx context.Context, indexName string, condition map[string]interface{}, newValue map[string]interface{}) error {
 	common.Debug("ElasticsearchConnection.updateChunksByQuery called", zap.String("indexName", indexName))
 
-	// Build bool query from condition
+	// 由 condition 构建 bool filter
 	var mustClauses []map[string]interface{}
 	for k, v := range condition {
 		if k == "exists" {
@@ -617,7 +617,7 @@ func (e *elasticsearchEngine) updateChunksByQuery(ctx context.Context, indexName
 		},
 	}
 
-	// Build painless scripts from newValue
+	// 由 newValue 生成 painless 脚本
 	var scripts []string
 	params := make(map[string]interface{})
 
@@ -670,7 +670,7 @@ func (e *elasticsearchEngine) updateChunksByQuery(ctx context.Context, indexName
 
 	scriptSource := strings.Join(scripts, "")
 
-	// Build update by query body
+	// 组装 update_by_query 请求
 	updateBody := map[string]interface{}{
 		"query": boolQuery,
 		"script": map[string]interface{}{
@@ -710,7 +710,7 @@ func (e *elasticsearchEngine) updateChunksByQuery(ctx context.Context, indexName
 	return nil
 }
 
-// sanitizeString replaces ' \n \r with space
+// sanitizeString 将引号/换行替换为空格并 trim
 func sanitizeString(s string) string {
 	s = strings.ReplaceAll(s, "'", " ")
 	s = strings.ReplaceAll(s, "\n", " ")
@@ -718,7 +718,7 @@ func sanitizeString(s string) string {
 	return strings.TrimSpace(s)
 }
 
-// copyFields creates a shallow copy of a map
+// copyFields 浅拷贝 map
 func copyFields(m map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	for k, v := range m {
@@ -727,9 +727,9 @@ func copyFields(m map[string]interface{}) map[string]interface{} {
 	return result
 }
 
-// DeleteChunks deletes chunks from a dataset index by condition
+// DeleteChunks 按条件 delete_by_query 删除分块
 func (e *elasticsearchEngine) DeleteChunks(ctx context.Context, condition map[string]interface{}, indexName string, datasetID string) (int64, error) {
-	// For ES, index name is just indexName (e.g., "ragflow_{tenantID}"), not indexName_datasetID
+	// ES 索引名为 ragflow_{tenantID}，非 indexName_datasetID
 	fullIndexName := indexName
 	common.Info("Deleting chunks from Elasticsearch index", zap.String("index_name", fullIndexName), zap.Any("condition", condition))
 
@@ -743,12 +743,12 @@ func (e *elasticsearchEngine) DeleteChunks(ctx context.Context, condition map[st
 		return 0, nil
 	}
 
-	// Build bool query from condition
+	// 由 condition 构建删除用 bool 查询
 	var mustClauses []map[string]interface{}
 	var filterClauses []map[string]interface{}
 	var mustNotClauses []map[string]interface{}
 
-	// Handle chunk IDs - use terms query on "id" field instead of ids query on _id
+	// id 条件用 terms 查 id 字段而非 _id
 	if idVal, ok := condition["id"]; ok && idVal != nil {
 		switch v := idVal.(type) {
 		case []interface{}:
@@ -770,14 +770,14 @@ func (e *elasticsearchEngine) DeleteChunks(ctx context.Context, condition map[st
 		}
 	}
 
-	// Handle kb_id - add as term filter
+	// kb_id 作为 term filter
 	if kbID, ok := condition["kb_id"].(string); ok && kbID != "" {
 		filterClauses = append(filterClauses, map[string]interface{}{
 			"term": map[string]interface{}{"kb_id": kbID},
 		})
 	}
 
-	// Add all other conditions as filters/must/must_not
+	// 其余条件归入 filter/must/must_not
 	for k, v := range condition {
 		if k == "id" || k == "kb_id" {
 			continue // Already handled above
@@ -813,7 +813,7 @@ func (e *elasticsearchEngine) DeleteChunks(ctx context.Context, condition map[st
 		}
 	}
 
-	// Build the query
+	// 无条件时用 match_all
 	var qry map[string]interface{}
 	if len(filterClauses) == 0 && len(mustClauses) == 0 && len(mustNotClauses) == 0 {
 		qry = map[string]interface{}{"match_all": map[string]interface{}{}}
@@ -831,7 +831,7 @@ func (e *elasticsearchEngine) DeleteChunks(ctx context.Context, condition map[st
 		qry = map[string]interface{}{"bool": boolMap}
 	}
 
-	// Build delete by query body
+	// 组装 delete_by_query
 	deleteBody := map[string]interface{}{
 		"query": qry,
 	}
@@ -841,7 +841,7 @@ func (e *elasticsearchEngine) DeleteChunks(ctx context.Context, condition map[st
 		return 0, fmt.Errorf("failed to marshal delete body: %w", err)
 	}
 
-	// Execute delete by query with refresh=true
+	// 执行 delete_by_query 并 refresh
 	refreshTrue := true
 	req := esapi.DeleteByQueryRequest{
 		Index:   []string{fullIndexName},
@@ -869,7 +869,7 @@ func (e *elasticsearchEngine) DeleteChunks(ctx context.Context, condition map[st
 		return 0, fmt.Errorf("elasticsearch delete by query returned error: %s", res.Status())
 	}
 
-	// Parse response
+	// 解析 deleted 计数
 	var result map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		common.Error("Failed to parse delete response", err)
@@ -885,7 +885,7 @@ func (e *elasticsearchEngine) DeleteChunks(ctx context.Context, condition map[st
 	return deleted, nil
 }
 
-// SearchResponse Elasticsearch search response
+// SearchResponse ES 搜索响应结构（含 sort 游标）
 type SearchResponse struct {
 	Hits struct {
 		Total struct {
@@ -898,21 +898,18 @@ type SearchResponse struct {
 			Source    map[string]interface{} `json:"_source"`
 			Fields    map[string]interface{} `json:"fields"` // ES 9.x stores dense_vector here
 			Highlight map[string]interface{} `json:"highlight,omitempty"`
-			// Sort is populated when the request body specifies a `sort`
-			// clause. The last hit's Sort is the cursor for the next
-			// search_after request — without it, deep pagination can't
-			// advance.
+			// Sort 供 search_after 深分页；末条 hit 的 sort 为下一页游标。
 			Sort []interface{} `json:"sort,omitempty"`
 		} `json:"hits"`
 	} `json:"hits"`
 	Aggregations map[string]interface{} `json:"aggregations"`
 }
 
-// Search executes search with unified types.SearchRequest
+// Search 统一 SearchRequest 检索：文本/KNN/融合/rank_feature
 func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchRequest) (*types.SearchResult, error) {
 	types.LogSearchRequest("Elasticsearch", req)
 
-	// Validate inputs and set defaults
+	// 校验入参并设 offset/limit 默认
 	if len(req.IndexNames) == 0 {
 		return nil, fmt.Errorf("index names cannot be empty")
 	}
@@ -926,7 +923,7 @@ func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchReque
 		limit = 30
 	}
 
-	// Detect index types
+	// 识别 skill_/memory_ 索引类型
 	isSkillIndex := false
 	isMemoryIndex := false
 	for _, idx := range req.IndexNames {
@@ -938,10 +935,10 @@ func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchReque
 		}
 	}
 
-	// Build bool query from condition
+	// 由 Filter/KbIDs 构建 bool 查询
 	boolQuery := buildBoolQueryFromCondition(req.Filter, req.KbIDs, isSkillIndex, isMemoryIndex)
 
-	// Extract vector_similarity_weight from FusionExpr
+	// 从 FusionExpr 解析向量相似度权重
 	var matchText *types.MatchTextExpr
 	var matchDense *types.MatchDenseExpr
 	vectorSimilarityWeight := 0.5
@@ -981,7 +978,7 @@ func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchReque
 		}
 	}
 
-	// Build query body with text match and/or knn match
+	// 组装 query_string 与/或 knn
 	queryBody := make(map[string]interface{})
 
 	if matchText != nil {
@@ -1048,7 +1045,7 @@ func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchReque
 		}
 	}
 
-	// Add rank_feature queries
+	// 追加 rank_feature 学习排序特征
 	if req.RankFeature != nil && len(req.RankFeature) > 0 && !isSkillIndex && !isMemoryIndex {
 		rankFeatureQuery := buildRankFeatureQuery(req.RankFeature)
 		if rankFeatureQuery != nil {
@@ -1070,7 +1067,7 @@ func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchReque
 		}
 	}
 
-	// Add sorting if order_by specified
+	// 指定 OrderBy 时添加 sort
 	if req.OrderBy != nil && len(req.OrderBy.Fields) > 0 {
 		sort := parseOrderByExpr(req.OrderBy)
 		if len(sort) > 0 {
@@ -1102,7 +1099,7 @@ func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchReque
 		queryBody["from"] = offset
 	}
 
-	// Set _source and fields for vector fields
+	// 设置 _source 与 dense_vector 的 fields
 	hasTextMatch := matchText != nil
 	selectFields := req.SelectFields
 	if isMemoryIndex {
@@ -1139,7 +1136,7 @@ func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchReque
 		}
 	}
 
-	// Serialize query
+	// 序列化查询体
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(queryBody); err != nil {
 		return nil, fmt.Errorf("error encoding query: %w", err)
@@ -1204,7 +1201,7 @@ func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchReque
 		normalizeMemoryMessageChunks(allResults)
 	}
 
-	// Post-processing: Sort results by score
+	// 后处理：合并 pagerank 并重排截断
 	if len(allResults) > 0 && (matchText != nil || hasVectorMatch) {
 		scoreColumn := "_score"
 		if matchText != nil && hasVectorMatch {
@@ -1231,10 +1228,7 @@ func (e *elasticsearchEngine) Search(ctx context.Context, req *types.SearchReque
 	}, nil
 }
 
-// searchAfterFetcher issues one ES search request with the given batch
-// size and search_after cursor, returning the decoded response. Defined
-// as a function type so the pagination logic below can be unit-tested
-// with a mock fetcher instead of a real Elasticsearch client.
+// searchAfterFetcher 单次 search_after 请求回调类型，便于单测 mock。
 type searchAfterFetcher func(
 	ctx context.Context,
 	baseQuery map[string]interface{},
@@ -1243,25 +1237,7 @@ type searchAfterFetcher func(
 	trackTotalHits bool,
 ) (SearchResponse, error)
 
-// searchAfterCursor walks ES with the search_after pagination protocol,
-// returning the page [offset, offset+limit) of an explicitly-sorted
-// result set. Used when offset+limit exceeds common.MAX_RESULT_WINDOW
-// and ES would otherwise reject the from/size combination.
-//
-// Mirrors rag/utils/es_conn.py:ESConnection._search_with_search_after:
-//
-//  1. Drop from/size from the base query (the caller has already omitted
-//     them on this path; this is a defensive no-op).
-//  2. Skip phase: discard hits until we have skipped `offset` of them.
-//  3. Take phase: collect hits until we have `limit` of them, or the
-//     index is exhausted.
-//  4. After each batch, advance the cursor with the last hit's `sort`
-//     field. If `sort` is missing or unchanged, the index is exhausted.
-//
-// The first request carries trackTotalHits=true so the caller still
-// gets an accurate total; subsequent requests skip it for efficiency.
-// Returns the (possibly empty) collected hits and the total hit count
-// from the first response.
+// searchAfterCursor 用 search_after 取 [offset,offset+limit) 页；先 skip 再 take，游标为末条 sort；首请求 trackTotalHits。
 func (e *elasticsearchEngine) searchAfterCursor(
 	ctx context.Context,
 	req *types.SearchRequest,
@@ -1277,7 +1253,7 @@ func (e *elasticsearchEngine) searchAfterCursor(
 	return searchAfterPaginate(ctx, baseQuery, offset, limit, e.buildSearchAfterFetcher(req))
 }
 
-// buildSearchAfterFetcher returns a fetcher that delegates each
+// buildSearchAfterFetcher 绑定真实 ES executeSearchRequest
 // iteration to executeSearchRequest, which talks to the real ES client.
 func (e *elasticsearchEngine) buildSearchAfterFetcher(req *types.SearchRequest) searchAfterFetcher {
 	return func(
@@ -1291,9 +1267,7 @@ func (e *elasticsearchEngine) buildSearchAfterFetcher(req *types.SearchRequest) 
 	}
 }
 
-// searchAfterPaginate is the pure, callback-driven pagination loop
-// shared by the engine and the unit tests. See searchAfterCursor for
-// the semantics.
+// searchAfterPaginate 可测试的纯分页循环（skip/take 两阶段）。
 func searchAfterPaginate(
 	ctx context.Context,
 	baseQuery map[string]interface{},
@@ -1308,7 +1282,7 @@ func searchAfterPaginate(
 		firstCall     = true
 	)
 
-	// Skip phase: walk past `offset` hits without retaining them.
+	// Skip 阶段：丢弃前 offset 条不保留。
 	remainingSkip := offset
 	for remainingSkip > 0 {
 		batch := remainingSkip
@@ -1343,7 +1317,7 @@ func searchAfterPaginate(
 		}
 	}
 
-	// Take phase: collect up to `limit` hits. ES may return up to
+	// Take 阶段：收集最多 limit 条。 ES may return up to
 	// `batch` hits per request, but we stop at `limit` (the absolute
 	// target) regardless of how many we asked for in this iteration.
 	for collectedTake < limit {
@@ -1412,10 +1386,7 @@ func searchAfterPaginate(
 	return collected, totalHits, nil
 }
 
-// executeSearchRequest sends one ES search request with the given
-// batch size and search_after cursor. If trackTotalHits is true the
-// request asks ES to compute an exact total (cheap to omit on
-// pagination iterations after the first).
+// executeSearchRequest 发送单次 search 请求，可选 search_after 与 trackTotalHits。
 func (e *elasticsearchEngine) executeSearchRequest(
 	ctx context.Context,
 	req *types.SearchRequest,
@@ -1463,10 +1434,7 @@ func (e *elasticsearchEngine) executeSearchRequest(
 	return esResp, nil
 }
 
-// sortValuesEqual reports whether two sort cursors are identical.
-// ES guarantees that successive requests with `search_after: <cursor>`
-// advance strictly past the cursor, so an unchanged cursor between
-// iterations means the index is exhausted.
+// sortValuesEqual 判断 sort 游标是否未变（未变则索引已耗尽）。
 func sortValuesEqual(a, b []interface{}) bool {
 	if len(a) != len(b) {
 		return false
@@ -1562,15 +1530,13 @@ func memoryMessageStatusBool(value interface{}) bool {
 	}
 }
 
-// buildBoolQueryFromCondition builds an ES bool query from condition map.
-// Skill indexes use status, regular chunk indexes use kb_id, and memory
-// message indexes use memory_id plus message-specific storage fields.
+// buildBoolQueryFromCondition 由 condition 构建 bool；skill 用 status，memory 用 memory_id。
 func buildBoolQueryFromCondition(filter map[string]interface{}, kbIDs []string, isSkillIndex, isMemoryIndex bool) map[string]interface{} {
 	var mustClauses []interface{}
 	var filterClauses []interface{}
 	var shouldClauses []interface{}
 
-	// Memory message indexes use memory_id, regular chunk indexes use kb_id.
+	// memory 索引用 memory_id，普通索引用 kb_id。
 	if kbIDs != nil && len(kbIDs) > 0 {
 		fieldName := "kb_id"
 		if isMemoryIndex {
@@ -1581,7 +1547,7 @@ func buildBoolQueryFromCondition(filter map[string]interface{}, kbIDs []string, 
 		})
 	}
 
-	// For skill index, add status = "1" filter by default (active skills)
+	// skill 索引默认过滤 status="1" 活跃技能
 	if isSkillIndex {
 		filterClauses = append(filterClauses, map[string]interface{}{
 			"term": map[string]interface{}{
@@ -1721,9 +1687,7 @@ func buildBoolQueryFromCondition(filter map[string]interface{}, kbIDs []string, 
 	return map[string]interface{}{"bool": boolQuery}
 }
 
-// buildQueryStringQuery builds a query_string query from MatchTextExpr
-// When isSkillIndex is true, uses skill-specific fields (name_tks, tags_tks, etc.)
-// Otherwise uses document fields (title_tks, content_ltks, etc.)
+// buildQueryStringQuery 由 MatchTextExpr 构建 query_string；skill/memory 字段映射不同。
 func buildQueryStringQuery(matchText *types.MatchTextExpr, vectorSimilarityWeight float64, isSkillIndex, isMemoryIndex bool) map[string]interface{} {
 	if matchText == nil {
 		return nil
@@ -1794,7 +1758,7 @@ func mapSkillSearchFields(fields []string) []string {
 	return mapped
 }
 
-// buildRankFeatureQuery builds rank_feature queries for learning to rank
+// buildRankFeatureQuery 构建 rank_feature 学习排序查询
 func buildRankFeatureQuery(rankFeature map[string]float64) []map[string]interface{} {
 	if rankFeature == nil || len(rankFeature) == 0 {
 		return nil
@@ -1825,7 +1789,7 @@ func buildRankFeatureQuery(rankFeature map[string]float64) []map[string]interfac
 	return queries
 }
 
-// GetChunk gets a chunk by ID using ES search API
+// GetChunk 按 id+kb_id 搜索单条分块
 func (e *elasticsearchEngine) GetChunk(ctx context.Context, baseName, chunkID string, datasetIDs []string) (interface{}, error) {
 	if strings.HasPrefix(baseName, "memory_") {
 		return e.getMemoryMessage(ctx, baseName, chunkID)
@@ -1934,10 +1898,7 @@ func (e *elasticsearchEngine) getMemoryMessage(ctx context.Context, indexName, d
 	return message, nil
 }
 
-// GetFields extracts the requested fields from ES search response chunks
-//
-// Unlike Infinity, Elasticsearch does NOT use convertSelectFields before querying.
-// The original requested field names ARE the database column names:
+// GetFields 从检索结果 chunks 提取指定字段；ES 字段名即库列名，无 convertSelectFields。
 //   - "content_with_weight" is stored and returned as "content_with_weight"
 //   - No field name mapping is needed in GetFields
 func (e *elasticsearchEngine) GetFields(chunks []map[string]interface{}, fields []string) map[string]map[string]interface{} {
@@ -2016,9 +1977,7 @@ func (e *elasticsearchEngine) GetFields(chunks []map[string]interface{}, fields 
 	return result
 }
 
-// GetAggregation aggregates chunk values by field name
-// Input: [{"docnm_kwd": "docA"}, {"docnm_kwd": "docA"}, {"docnm_kwd": "docB"}]
-// Returns: [{"key": "docA", "count": 2}, {"key": "docB", "count": 1}]
+// GetAggregation 按字段聚合 tag 等值计数并排序返回 key/count。
 func (e *elasticsearchEngine) GetAggregation(chunks []map[string]interface{}, fieldName string) []map[string]interface{} {
 	if len(chunks) == 0 || fieldName == "" {
 		return []map[string]interface{}{}
@@ -2077,8 +2036,7 @@ func (e *elasticsearchEngine) GetAggregation(chunks []map[string]interface{}, fi
 	return result
 }
 
-// GetChunkIDs extracts chunk IDs from ES search response chunks.
-// Uses _id field (composite: {doc_id}_{kb_id}_{chunk_id}).
+// GetChunkIDs 从 chunks 提取 id/_id 列表。
 func (e *elasticsearchEngine) GetChunkIDs(chunks []map[string]interface{}) []string {
 	ids := make([]string, 0, len(chunks))
 	for _, chunk := range chunks {
@@ -2089,7 +2047,7 @@ func (e *elasticsearchEngine) GetChunkIDs(chunks []map[string]interface{}) []str
 	return ids
 }
 
-// GetHighlight returns highlighted text for matching keywords
+// GetHighlight 为关键词生成高亮片段（ES highlight 或本地 regex）
 func (e *elasticsearchEngine) GetHighlight(chunks []map[string]interface{}, keywords []string, fieldName string) map[string]string {
 	result := make(map[string]string)
 	if len(chunks) == 0 || len(keywords) == 0 {
@@ -2225,18 +2183,17 @@ func normalizeElasticsearchHighlightKeywords(keywords []string) []string {
 	return normalized
 }
 
-// DropChunkStore deletes a chunk index
+// DropChunkStore 删除分块索引
 func (e *elasticsearchEngine) DropChunkStore(ctx context.Context, baseName, datasetID string) error {
 	return e.dropIndex(ctx, baseName)
 }
 
-// ChunkStoreExists checks if a chunk index exists
+// ChunkStoreExists 检查分块索引是否存在
 func (e *elasticsearchEngine) ChunkStoreExists(ctx context.Context, baseName, datasetID string) (bool, error) {
 	return e.indexExists(ctx, baseName)
 }
 
-// KNNScores performs a second-pass KNN search to get clean cosine similarities for ES.
-// This keeps chunk vectors in the index and asks ES to compute the cosine similarity.
+// KNNScores 二阶段 KNN 在候选 id 上重算余弦相似度。
 func (e *elasticsearchEngine) KNNScores(ctx context.Context, chunks []map[string]interface{}, queryVector []float64, topK int) (map[string]interface{}, error) {
 	if len(chunks) == 0 || len(queryVector) == 0 {
 		return nil, nil
@@ -2326,7 +2283,7 @@ func (e *elasticsearchEngine) KNNScores(ctx context.Context, chunks []map[string
 	return knnResult, nil
 }
 
-// GetScores extracts similarity scores from KNN search result
+// GetScores 从 KNN 结果 map 提取 _id→score
 func (e *elasticsearchEngine) GetScores(knnResult map[string]interface{}) map[string]float64 {
 	scores := make(map[string]float64)
 	hits, ok := knnResult["hits"].(map[string]interface{})
@@ -2390,7 +2347,7 @@ func (e *elasticsearchEngine) GetScores(knnResult map[string]interface{}) map[st
 	return scores
 }
 
-// loadSkillMapping loads the skill index mapping from config file
+// loadSkillMapping 从 conf 加载 skill 索引 mapping
 func loadSkillMapping() (map[string]interface{}, error) {
 	// Try multiple possible locations for the mapping file
 	possiblePaths := []string{
@@ -2654,7 +2611,7 @@ func getMemoryMessageMapping(vectorSize int) map[string]interface{} {
 	}
 }
 
-// getDefaultSkillMapping returns the default skill index mapping
+// getDefaultSkillMapping 内置默认 skill mapping（含多档 q_*_vec）
 func getDefaultSkillMapping() map[string]interface{} {
 	return map[string]interface{}{
 		"settings": map[string]interface{}{
@@ -2774,16 +2731,7 @@ func getDefaultSkillMapping() map[string]interface{} {
 	}
 }
 
-// rerankWindow returns the candidate-window size shared by retrieval's
-// block fetch and slice. Mirrors Dealer._rerank_window in rag/nlp/search.py.
-//
-// `size` is the per-page size; the window MUST be an exact multiple of it,
-// otherwise the block fetched (offset // window) and the in-block page slice
-// (offset % window) drift apart and deep pagination silently drops results.
-//
-// The window targets a provider-friendly pool of ~64 candidates, bounded by
-// `topK` when given (i.e. when an external reranker is active), and is always
-// rounded UP to a whole number of pages to preserve the alignment invariant.
+// rerankWindow 重排候选窗口大小，须为 size 整数倍；目标约 64 条，对齐 Python _rerank_window。
 func rerankWindow(size, topK int) int {
 	if size <= 1 {
 		if topK > 0 {
@@ -2800,7 +2748,7 @@ func rerankWindow(size, topK int) int {
 	return window
 }
 
-// calculatePagination calculates offset and limit based on page, size and topK
+// calculatePagination 由 page/size/topK 计算 offset 与 window
 func calculatePagination(page, size, topK int) (int, int) {
 	if page < 1 {
 		page = 1
@@ -2822,7 +2770,7 @@ func calculatePagination(page, size, topK int) (int, int) {
 	return offset, window
 }
 
-// convertESResponse converts ES SearchResponse to unified chunks format
+// convertESResponse 将 ES 响应转为统一 chunk map 列表
 func convertESResponse(esResp *SearchResponse, vectorFieldName string) []map[string]interface{} {
 	if esResp == nil || esResp.Hits.Hits == nil {
 		return []map[string]interface{}{}
@@ -2844,7 +2792,7 @@ func convertESResponse(esResp *SearchResponse, vectorFieldName string) []map[str
 	return chunks
 }
 
-// parseOrderByExpr parses the OrderBy expression into ES sort format
+// parseOrderByExpr 将 OrderBy 转为 ES sort 数组
 func parseOrderByExpr(orderBy *types.OrderByExpr) []map[string]interface{} {
 	if orderBy == nil || len(orderBy.Fields) == 0 {
 		return nil
@@ -2898,7 +2846,7 @@ func parseOrderByExpr(orderBy *types.OrderByExpr) []map[string]interface{} {
 	return result
 }
 
-// calculateScores calculates _score for chunks
+// calculateScores 合并文本分与 pagerank 到 _score
 func calculateScores(chunks []map[string]interface{}, scoreColumn, pagerankField string) []map[string]interface{} {
 	for i := range chunks {
 		score := 0.0
@@ -2919,7 +2867,7 @@ func calculateScores(chunks []map[string]interface{}, scoreColumn, pagerankField
 	return chunks
 }
 
-// toFloat64 converts a value to float64
+// toFloat64 安全转换为 float64
 func toFloat64(v interface{}) (float64, bool) {
 	switch val := v.(type) {
 	case float64:
@@ -2934,7 +2882,7 @@ func toFloat64(v interface{}) (float64, bool) {
 	return 0, false
 }
 
-// sortByScore sorts chunks by _score descending and limits
+// sortByScore 按 _score 降序并截断 limit
 func sortByScore(chunks []map[string]interface{}, limit int) []map[string]interface{} {
 	if len(chunks) == 0 {
 		return chunks
@@ -2955,7 +2903,7 @@ func sortByScore(chunks []map[string]interface{}, limit int) []map[string]interf
 	return chunks
 }
 
-// getChunkScore extracts the score from a chunk
+// getChunkScore 从 chunk 读取 _score/SCORE/SIMILARITY
 func getChunkScore(chunk map[string]interface{}) float64 {
 	if v, ok := chunk["_score"].(float64); ok {
 		return v

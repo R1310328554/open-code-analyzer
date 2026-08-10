@@ -14,6 +14,8 @@
 //  limitations under the License.
 //
 
+// common.go — Elasticsearch 索引存在性检查、删除与元数据索引命名。
+
 package elasticsearch
 
 import (
@@ -24,13 +26,13 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
 
-// dropIndex deletes an index
+// dropIndex 删除指定索引（须先存在）
 func (e *elasticsearchEngine) dropIndex(ctx context.Context, indexName string) error {
 	if indexName == "" {
 		return fmt.Errorf("index name cannot be empty")
 	}
 
-	// Check if index exists
+	// 检查索引是否存在
 	exists, err := e.indexExists(ctx, indexName)
 	if err != nil {
 		return fmt.Errorf("failed to check index existence: %w", err)
@@ -39,7 +41,7 @@ func (e *elasticsearchEngine) dropIndex(ctx context.Context, indexName string) e
 		return fmt.Errorf("index '%s' does not exist", indexName)
 	}
 
-	// Delete index
+	// 调用 IndicesDelete 删除
 	req := esapi.IndicesDeleteRequest{
 		Index: []string{indexName},
 	}
@@ -62,7 +64,7 @@ func (e *elasticsearchEngine) dropIndex(ctx context.Context, indexName string) e
 	return nil
 }
 
-// indexExists checks if index exists
+// indexExists 通过 HEAD 判断索引是否存在（200/404）
 func (e *elasticsearchEngine) indexExists(ctx context.Context, indexName string) (bool, error) {
 	if indexName == "" {
 		return false, fmt.Errorf("index name cannot be empty")
@@ -92,7 +94,7 @@ func (e *elasticsearchEngine) indexExists(ctx context.Context, indexName string)
 	return false, fmt.Errorf("elasticsearch returned error: %s", res.Status())
 }
 
-// buildMetadataIndexName returns the metadata index name for a tenant
+// buildMetadataIndexName 生成租户元数据索引名 ragflow_doc_meta_{tenantID}
 func buildMetadataIndexName(tenantID string) string {
 	return fmt.Sprintf("ragflow_doc_meta_%s", tenantID)
 }

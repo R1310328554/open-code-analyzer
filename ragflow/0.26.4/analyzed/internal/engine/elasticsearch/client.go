@@ -14,6 +14,8 @@
 //  limitations under the License.
 //
 
+// client.go — Elasticsearch 引擎客户端：连接配置、健康检查、索引模板注册与集群/索引统计。
+
 package elasticsearch
 
 import (
@@ -32,13 +34,13 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
 
-// elasticsearchEngine is the Elasticsearch engine implementation
+// elasticsearchEngine Elasticsearch 文档引擎实现
 type elasticsearchEngine struct {
 	client *elasticsearch.Client
 	config *server.ElasticsearchConfig
 }
 
-// NewEngine creates an Elasticsearch engine
+// NewEngine 从配置创建 ES 客户端并注册索引模板
 func NewEngine(cfg interface{}) (*elasticsearchEngine, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("elasticsearch config is nil, please check your configuration file for 'doc_engine.es' settings")
@@ -51,7 +53,7 @@ func NewEngine(cfg interface{}) (*elasticsearchEngine, error) {
 		return nil, fmt.Errorf("elasticsearch config is nil, please check your configuration file for 'doc_engine.es' settings")
 	}
 
-	// Create ES client
+	// 创建 go-elasticsearch 客户端
 	client, err := elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: []string{esConfig.Hosts},
 		Username:  esConfig.Username,
@@ -65,7 +67,7 @@ func NewEngine(cfg interface{}) (*elasticsearchEngine, error) {
 		return nil, fmt.Errorf("failed to create Elasticsearch client: %w", err)
 	}
 
-	// Check connection
+	// Ping 验证连接
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -85,12 +87,11 @@ func NewEngine(cfg interface{}) (*elasticsearchEngine, error) {
 		config: esConfig,
 	}
 
-	// Create two index templates for different index types
-	// Template for chunk indices (ragflow_*) - priority 1
+	// 注册 ragflow_* 分块索引模板（priority 1）
 	if err = engine.CreateIndexTemplate(context.Background(), "ragflow_mapping", "ragflow_*", "mapping.json", 1); err != nil {
 		return nil, fmt.Errorf("failed to create chunk index template: %w", err)
 	}
-	// Template for doc_meta indices (ragflow_doc_meta_*) - priority 2 (higher than ragflow_*)
+	// 注册 ragflow_doc_meta_* 元数据模板（priority 2）
 	if err = engine.CreateIndexTemplate(context.Background(), "ragflow_doc_meta_mapping", "ragflow_doc_meta_*", "doc_meta_es_mapping.json", 2); err != nil {
 		return nil, fmt.Errorf("failed to create doc_meta index template: %w", err)
 	}
@@ -98,12 +99,12 @@ func NewEngine(cfg interface{}) (*elasticsearchEngine, error) {
 	return engine, nil
 }
 
-// GetType returns the engine type
+// GetType 返回引擎类型标识 elasticsearch
 func (e *elasticsearchEngine) GetType() string {
 	return "elasticsearch"
 }
 
-// Ping health check
+// Ping 健康检查
 func (e *elasticsearchEngine) Ping(ctx context.Context) error {
 	req := esapi.InfoRequest{}
 	res, err := req.Do(ctx, e.client)
@@ -117,14 +118,13 @@ func (e *elasticsearchEngine) Ping(ctx context.Context) error {
 	return nil
 }
 
-// Close closes the connection
+// Close 关闭连接（Go 客户端由 Transport 管理）
 func (e *elasticsearchEngine) Close() error {
 	// Go-elasticsearch client doesn't have a Close method, connection is managed by the transport
 	return nil
 }
 
-// CreateIndexTemplate creates an index template with the specified mapping
-// The template will be automatically applied to any new index matching the pattern
+// CreateIndexTemplate 创建索引模板，匹配 index_patterns 的新索引自动应用 mapping。
 func (e *elasticsearchEngine) CreateIndexTemplate(ctx context.Context, templateName, indexPattern, mappingFileName string, priority ...int) error {
 	if templateName == "" || indexPattern == "" {
 		return fmt.Errorf("template name and index pattern cannot be empty")
@@ -144,7 +144,7 @@ func (e *elasticsearchEngine) CreateIndexTemplate(ctx context.Context, templateN
 		return err
 	}
 
-	// Read mapping from file
+	// 从 conf 读取 mapping JSON
 	data, err := os.ReadFile(*mappingPath)
 	if err != nil {
 		return fmt.Errorf("failed to read mapping file %q: %w", *mappingPath, err)
@@ -155,11 +155,11 @@ func (e *elasticsearchEngine) CreateIndexTemplate(ctx context.Context, templateN
 		return fmt.Errorf("failed to parse mapping file %q: %w", *mappingPath, err)
 	}
 
-	// Separate settings and mappings from the mapping file
+	// 拆分 settings 与 mappings 写入 template
 	templateSettings := mapping["settings"]
 	templateMappings := mapping["mappings"]
 
-	// Build template body with proper structure
+	// 组装 put_index_template 请求体
 	templateBody := map[string]interface{}{
 		"index_patterns": []string{indexPattern},
 		"priority":       p, // Configurable priority to override existing templates
@@ -174,7 +174,7 @@ func (e *elasticsearchEngine) CreateIndexTemplate(ctx context.Context, templateN
 		return fmt.Errorf("failed to marshal template: %w", err)
 	}
 
-	// Create or update template
+	// 创建或更新模板
 	req := esapi.IndicesPutIndexTemplateRequest{
 		Name: templateName,
 		Body: bytes.NewReader(templateBytes),
@@ -203,8 +203,7 @@ func (e *elasticsearchEngine) CreateIndexTemplate(ctx context.Context, templateN
 	return nil
 }
 
-// GetClusterStats gets Elasticsearch cluster statistics
-// Reference: curl -XGET "http://{es_host}/_cluster/stats" -H "kbn-xsrf: reporting"
+// GetClusterStats 获取集群统计并格式化为可读字段（索引数、文档数、节点/JVM 等）。 -H "kbn-xsrf: reporting"
 func (e *elasticsearchEngine) GetClusterStats() (map[string]interface{}, error) {
 	req := esapi.ClusterStatsRequest{}
 	res, err := req.Do(context.Background(), e.client)
@@ -224,7 +223,7 @@ func (e *elasticsearchEngine) GetClusterStats() (map[string]interface{}, error) 
 
 	result := make(map[string]interface{})
 
-	// Basic cluster info
+	// 集群名与 status
 	if clusterName, ok := rawStats["cluster_name"].(string); ok {
 		result["cluster_name"] = clusterName
 	}
@@ -232,7 +231,7 @@ func (e *elasticsearchEngine) GetClusterStats() (map[string]interface{}, error) 
 		result["status"] = status
 	}
 
-	// Indices info
+	// 索引/分片/文档/store 统计
 	if indices, ok := rawStats["indices"].(map[string]interface{}); ok {
 		if count, ok := indices["count"].(float64); ok {
 			result["indices"] = int(count)
@@ -271,7 +270,7 @@ func (e *elasticsearchEngine) GetClusterStats() (map[string]interface{}, error) 
 		}
 	}
 
-	// Nodes info
+	// 节点数、OS/JVM 内存等
 	if nodes, ok := rawStats["nodes"].(map[string]interface{}); ok {
 		if count, ok := nodes["count"].(map[string]interface{}); ok {
 			if total, ok := count["total"].(float64); ok {
@@ -316,7 +315,7 @@ func (e *elasticsearchEngine) GetClusterStats() (map[string]interface{}, error) 
 	return result, nil
 }
 
-// convertBytes converts bytes to human readable format
+// convertBytes 字节数转 kb/mb/gb 可读字符串
 func convertBytes(bytes int64) string {
 	const (
 		KB = 1024
@@ -344,8 +343,7 @@ func convertBytes(bytes int64) string {
 	return fmt.Sprintf("%d b", bytes)
 }
 
-// extractErrorReason extracts the error reason from Elasticsearch error response
-// It tries to find the most specific error message in the response
+// extractErrorReason 从 ES 错误 JSON 提取 root_cause 或 reason 文本。
 func extractErrorReason(bodyBytes []byte) string {
 	var errResp map[string]interface{}
 	if err := json.Unmarshal(bodyBytes, &errResp); err != nil {
@@ -380,8 +378,7 @@ func extractErrorReason(bodyBytes []byte) string {
 	return ""
 }
 
-// GetIndexStats gets statistics for specified indices using the _cat/indices API
-// Returns index, health, status, docs.count, store.size, dataset.size for each index
+// GetIndexStats 通过 _cat/indices 返回指定索引的健康、文档数、store 大小等。
 func (e *elasticsearchEngine) GetIndexStats(indices []string) ([]map[string]interface{}, error) {
 	if len(indices) == 0 {
 		return []map[string]interface{}{}, nil

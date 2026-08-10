@@ -1,3 +1,5 @@
+// crop.go — PDF 段落/区域图像裁剪：按 @@ 位置标签或 DLA 区域从渲染页图裁剪、拼接上下文带、旋转坐标映射，输出 base64 PNG；对齐 Python RAGFlowPdfParser.crop/cropout。
+
 package util
 
 import (
@@ -10,11 +12,7 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// CropSectionImage crops region(s) from rendered page images based on a
-// position tag and returns a base64-encoded PNG.  Returns "" if cropping
-// is not possible (missing images, out-of-bounds, invalid tag).
-//
-// Python: pdf_parser.py:1802 RAGFlowPdfParser.crop()
+// CropSectionImage 按 @@ 位置标签从渲染页图裁剪并拼接，返回 base64 PNG；缺图/越界/无效标签时返回空串。对齐 Python RAGFlowPdfParser.crop()。
 func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom float64) string {
 	if len(decodedImages) == 0 {
 		slog.Warn("cropSectionImage: no page images available, skipping image generation")
@@ -27,7 +25,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		return ""
 	}
 
-	// Filter valid positions (all pages available).
+	// 过滤页图均存在的有效位置。
 	var valid []pdf.Position
 	for _, pos := range positions {
 		allValid := true
@@ -46,11 +44,11 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		return ""
 	}
 
-	// Context padding (Python: 120px above first, 120 below last, 6px gap)
+	// 上下文填充：首段上 120px、末段下 120px、段间 6px 灰隙。
 	const contextPad = 120.0
 	const gap = 6
 
-	// Compute max width across original positions for full-width edge bands.
+	// 计算原始位置最大宽度，供边缘全宽条带使用。
 	maxWidth := 6.0
 	for _, pos := range valid {
 		w := pos.Right - pos.Left
@@ -59,16 +57,14 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		}
 	}
 
-	// Python-style: insert synthetic context bands at edges.
-	// Original positions are all middle entries (narrow width).
-	// Synthetic bands are edge entries (full width + semi-transparent overlay).
+	// Python 风格：首尾插入合成上下文条带（全宽+半透明遮罩），中间为窄内容段。
 	first := valid[0]
 	last := valid[len(valid)-1]
 	firstPageIdx := first.PageNumbers[0]
 	lastPageIdx := last.PageNumbers[len(last.PageNumbers)-1]
 	lastPageH := float64(decodedImages[lastPageIdx].Bounds().Dy()) / zoom
 
-	// topBand: 120px context above the first content position.
+	// topBand：首段上方 120px 上下文。
 	topBandPos := pdf.Position{
 		PageNumbers: []int{firstPageIdx},
 		Left:        first.Left,
@@ -76,7 +72,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		Top:         math.Max(0, first.Top-contextPad),
 		Bottom:      math.Max(first.Top-gap, 0),
 	}
-	// bottomBand: 120px context below the last content position.
+	// bottomBand：末段下方 120px 上下文。
 	bottomBandPos := pdf.Position{
 		PageNumbers: []int{lastPageIdx},
 		Left:        last.Left,
@@ -85,7 +81,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		Bottom:      math.Min(lastPageH, last.Bottom+contextPad),
 	}
 
-	// Build entry list: [topBand, original positions..., bottomBand].
+	// 构建序列：[topBand, 原位置..., bottomBand]。
 	type segment struct {
 		img    image.Image
 		isEdge bool
@@ -120,7 +116,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		left := pos.Left
 		right := pos.Right
 
-		// Width: edge segments are full-width, middle are narrow.
+		// 边缘段全宽，中间段保持窄宽。
 		if !isEdge {
 			right = math.Max(left+10, right)
 		} else {
@@ -129,7 +125,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 
 		pn0 := pos.PageNumbers[0]
 
-		// Accumulate bottom for multi-page positions.
+		// 跨页位置累加 bottom 像素高度。
 		accumBottom := bottom * zoom
 		for _, pn := range pos.PageNumbers[1:] {
 			if pn == pn0 {
@@ -148,7 +144,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		pageH := float64(pageImg.Bounds().Dy())
 		bottomClamped := math.Min(accumBottom, pageH)
 
-		// Crop first page of this position.
+		// 裁剪该位置的首页区域。
 		cropped := FastCrop(pageImg,
 			int(left*zoom), int(top*zoom),
 			int(right*zoom), int(bottomClamped))
@@ -157,7 +153,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		}
 		segments = append(segments, segment{img: cropped, isEdge: isEdge})
 
-		// Subsequent pages (only those different from the first page).
+		// 后续页（页码不同于首页）。
 		bottomRemaining := accumBottom - pageH
 		for _, pn := range pos.PageNumbers[1:] {
 			if pn == pn0 {
@@ -185,7 +181,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		return ""
 	}
 
-	// Stitch vertically with gray background and 6px gaps.
+	// 垂直拼接，灰底 245 与 6px 间隔。
 	totalH := 0
 	maxW := 0
 	for _, seg := range segments {
@@ -194,8 +190,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 	}
 	stitched := image.NewRGBA(image.Rect(0, 0, maxW, totalH))
 
-	// Fill background using direct Pix slice write (matching fastCrop pattern).
-	// Gray 245,245,245,255 as BGRA bytes.
+	// 直接写 Pix 填充灰底（与 fastCrop 一致），BGRA 245,245,245,255。
 	for y := 0; y < totalH; y++ {
 		row := stitched.Pix[stitched.PixOffset(0, y):stitched.PixOffset(maxW, y)]
 		for i := 0; i < len(row); i += 4 {
@@ -211,7 +206,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 		srcW := seg.img.Bounds().Dx()
 		srcH := seg.img.Bounds().Dy()
 		if rgba, ok := seg.img.(*image.RGBA); ok {
-			// Fast path: direct Pix slice copy (matching fastCrop in geometry.go).
+			// 快路径：RGBA 直接 Pix 行拷贝。
 			srcMinX := seg.img.Bounds().Min.X
 			srcMinY := seg.img.Bounds().Min.Y
 			for ry := 0; ry < srcH; ry++ {
@@ -221,7 +216,7 @@ func CropSectionImage(posTag string, decodedImages map[int]image.Image, zoom flo
 				copy(stitched.Pix[dstStart:], srcRow)
 			}
 		} else {
-			// Fallback: pixel-by-pixel for non-RGBA images (e.g. edge overlays).
+			// 非 RGBA（如边缘遮罩）逐像素回退。
 			for y := 0; y < srcH; y++ {
 				for x := 0; x < srcW; x++ {
 					stitched.Set(x, curY+y, seg.img.At(x+seg.img.Bounds().Min.X, y+seg.img.Bounds().Min.Y))
@@ -259,7 +254,7 @@ func CropSectionByDLA(sec pdf.Section, dlaDebug []pdf.DLAPageRegions, pageImages
 	pg := sec.Positions[0].PageNumbers[0]
 	pos := sec.Positions[0]
 
-	// Find DLA regions for this page.
+	// 查找该页的 DLA 区域列表。
 	var regions []pdf.DLARegion
 	for _, dp := range dlaDebug {
 		if dp.Page == pg {
@@ -271,7 +266,7 @@ func CropSectionByDLA(sec pdf.Section, dlaDebug []pdf.DLAPageRegions, pageImages
 		return ""
 	}
 
-	// Convert section bbox from PDF points (72 DPI) to DLA pixel space (216 DPI).
+	// 段落 bbox 从 72 DPI 点坐标缩放到 216 DPI 像素空间。
 	scale := pdf.DlaDPI / 72.0 // 3.0
 	bx := Rect{
 		X0: pos.Left * scale,
@@ -280,7 +275,7 @@ func CropSectionByDLA(sec pdf.Section, dlaDebug []pdf.DLAPageRegions, pageImages
 		Y1: pos.Bottom * scale,
 	}
 
-	// Find best-overlapping figure or equation DLA region.
+	// 在 figure/equation 中取重叠最大的 DLA 区域。
 	bestIdx := -1
 	bestOverlap := 0.0
 	for i, r := range regions {
@@ -315,8 +310,7 @@ func CropSectionByDLA(sec pdf.Section, dlaDebug []pdf.DLAPageRegions, pageImages
 	return base64.StdEncoding.EncodeToString(data)
 }
 
-// applyEdgeOverlay applies a semi-transparent black overlay to the image,
-// matching Python's self.crop edge-segment treatment:
+// applyEdgeOverlay 对边缘条带施加半透明黑色遮罩，对齐 Python crop 边缘段处理：
 //
 //	img.convert("RGBA")
 //	overlay = Image.new("RGBA", img.size, (0,0,0,0))
@@ -342,9 +336,7 @@ func applyEdgeOverlay(img image.Image) *image.RGBA {
 	return result
 }
 
-// rotateCoordCW returns the clockwise-rotated coordinates of (x, y) for the
-// given original dimensions and angle. Only 0/90/180/270 are meaningful;
-// other values are passed through unchanged.
+// rotateCoordCW 将 (x,y) 按顺时针角度映射到新坐标系；仅 0/90/180/270 有效。
 func rotateCoordCW(x, y float64, origW, origH int, angle int) (float64, float64) {
 	switch angle {
 	case 0:
@@ -360,8 +352,7 @@ func rotateCoordCW(x, y float64, origW, origH int, angle int) (float64, float64)
 	}
 }
 
-// rotateImageCW rotates an image clockwise. Only 0/90/180/270 supported;
-// other values return nil. Matches Python PIL.Image.rotate(-angle, expand=True).
+// RotateImageCW 顺时针旋转图像；仅 0/90/180/270，对齐 PIL rotate(-angle, expand=True)。
 func RotateImageCW(img image.Image, angle int) *image.RGBA {
 	b := img.Bounds()
 	w, h := b.Dx(), b.Dy()
@@ -386,11 +377,7 @@ func RotateImageCW(img image.Image, angle int) *image.RGBA {
 	return dst
 }
 
-// mapRotatedPointToOriginal maps a point from rotated image coords back to
-// original coords. angle is the clockwise rotation applied. origW, origH
-// are the ORIGINAL (pre-rotation) image dimensions.
-//
-// Python: pdf_parser.py:602 _map_rotated_point()
+// MapRotatedPointToOriginal 将旋转后坐标逆映射回原图；origW/origH 为旋转前尺寸。
 func MapRotatedPointToOriginal(x, y float64, angle int, origW, origH int) (float64, float64) {
 	switch angle {
 	case 0:
@@ -412,8 +399,7 @@ func MapRotatedPointToOriginal(x, y float64, angle int, origW, origH int) (float
 	}
 }
 
-// CropImageRegion crops a pdf.DLARegion from an image with a 3% margin
-// (matching Python's _table_transformer_job: w*0.03, h*0.03).
+// CropImageRegion 按 DLA 区域裁剪并加 3% 边距；无效区域返回 error 而非整页回退。
 func CropImageRegion(img image.Image, r pdf.DLARegion) (image.Image, error) {
 	w := r.X1 - r.X0
 	h := r.Y1 - r.Y0
@@ -425,9 +411,7 @@ func CropImageRegion(img image.Image, r pdf.DLARegion) (image.Image, error) {
 	y0 := int(math.Max(0, r.Y0-marginY))
 	x1 := int(math.Min(maxX, r.X1+marginX))
 	y1 := int(math.Min(maxY, r.Y1+marginY))
-	// Python PIL.Image.crop() raises ValueError when right < left or
-	// bottom < top.  We return an error instead of silently falling back
-	// to the full-page image — the caller skips this table gracefully.
+	// 与 PIL crop 一致：x0>=x1 或 y0>=y1 时返回 error，调用方跳过该表。
 	if x0 >= x1 || y0 >= y1 {
 		return nil, fmt.Errorf("crop: invalid region x0=%d y0=%d x1=%d y1=%d (DLA raw: %.1f,%.1f,%.1f,%.1f)",
 			x0, y0, x1, y1, r.X0, r.Y0, r.X1, r.Y1)

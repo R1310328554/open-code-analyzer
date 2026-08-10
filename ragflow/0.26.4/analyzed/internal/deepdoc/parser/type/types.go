@@ -1,7 +1,4 @@
-// Package doctype provides shared types, interfaces, and constants for the
-// deepdoc parser pipeline.  All format-specific parsers (pdf, docx, xlsx, etc.)
-// share these definitions.  The package has zero dependencies on sibling
-// packages so that any sub-package can import it without circular imports.
+// doctype 包提供 deepdoc 解析管道共享的类型、接口与常量。pdf/docx/xlsx 等格式解析器共用；无同级包依赖，避免循环 import。
 package doctype
 
 import (
@@ -10,9 +7,9 @@ import (
 	"unicode"
 )
 
-// ── Pipeline types ────────────────────────────────────────────────────────
+// ── 管道类型 ──
 
-// PipelineMetrics records diagnostic counts at each pipeline stage.
+// PipelineMetrics 记录各管道阶段的诊断计数。
 type PipelineMetrics struct {
 	BoxesInitial   int
 	BoxesTextMerge int
@@ -21,31 +18,31 @@ type PipelineMetrics struct {
 	TablesCount    int
 }
 
-// ParseResult encapsulates all outputs from a single Parse() call.
+// ParseResult 封装单次 Parse() 的全部输出。
 type ParseResult struct {
 	Sections   []Section
 	Tables     []TableItem
 	PageImages map[int]image.Image
 	Metrics    PipelineMetrics
-	Outlines   []Outline // PDF outlines/bookmarks extracted from the document
+	Outlines   []Outline // PDF 大纲/书签
 
 	DLADebug []DLAPageRegions
 	TSRDebug []TSRRawCell
 }
 
-// Figures returns all sections with LayoutType "figure".
-// Computed on demand from Sections — no stored field.
+// Figures 返回 layout 为 figure 的全部段落。
+// 按需从 Sections 计算，无独立存储字段。
 func (r *ParseResult) Figures() []Section {
 	return CollectFigures(r.Sections)
 }
 
-// DLAPageRegions holds DLA layout regions for one page.
+// DLAPageRegions 单页 DLA 布局区域列表。
 type DLAPageRegions struct {
 	Page    int
 	Regions []DLARegion
 }
 
-// TSRRawCell holds a raw TSR cell before row/column grouping.
+// TSRRawCell TSR 原始单元格（行列分组前）。
 type TSRRawCell struct {
 	TableIndex int     `json:"table_index"`
 	Page       int     `json:"page"`
@@ -57,9 +54,9 @@ type TSRRawCell struct {
 	Text       string  `json:"text"`
 }
 
-// ── Character and text box types ──────────────────────────────────────────
+// ── 字符与文本框类型 ──
 
-// TextChar represents a single character extracted from a PDF page.
+// TextChar 表示 PDF 页上提取的单个字符。
 type TextChar struct {
 	X0, X1      float64
 	Top, Bottom float64
@@ -77,7 +74,7 @@ func (c TextChar) Bounds() (float64, float64, float64, float64) {
 	return c.X0, c.Top, c.X1, c.Bottom
 }
 
-// TextBox represents a rectangular region of text on a PDF page.
+// TextBox 表示页上矩形文本区域（合并后）。
 type TextBox struct {
 	X0, X1      float64
 	Top, Bottom float64
@@ -87,7 +84,7 @@ type TextBox struct {
 	LayoutNo    string
 	ColID       int
 	R           int
-	// Post-TSR table annotation fields (Python: R/H/C/SP tags)
+	// TSR 后表格网格注释字段（Python R/H/C/SP 标签）
 	RTop, RBott   float64
 	HTop, HBott   float64
 	HLeft, HRight float64
@@ -101,9 +98,9 @@ func (b TextBox) Bounds() (float64, float64, float64, float64) {
 	return b.X0, b.Top, b.X1, b.Bottom
 }
 
-// ── Position and section types ────────────────────────────────────────────
+// ── 位置与段落类型 ──
 
-// Position represents a parsed position tag from @@...## format.
+// Position 表示解析后的 @@...## 位置。
 type Position struct {
 	PageNumbers []int
 	Left        float64
@@ -112,18 +109,18 @@ type Position struct {
 	Bottom      float64
 }
 
-// Section represents a text segment with its spatial position on a PDF page.
+// Section 带空间位置的文本段，可含表格/图片。
 type Section struct {
 	Text        string
 	PositionTag string
 	LayoutType  string
-	DocTypeKwd  string // "text"/"table"/"image" — assigned during post-processing
+	DocTypeKwd  string // 文档类型关键字 text/table/image，后处理赋值
 	Positions   []Position
 	TableItem   *TableItem
-	Image       string // base64-encoded cropped page image
+	Image       string // base64 裁剪页图
 }
 
-// CollectFigures returns all sections with LayoutType "figure".
+// CollectFigures 收集 layout 为 figure 的段落。
 func CollectFigures(sections []Section) []Section {
 	if sections == nil {
 		return nil
@@ -137,9 +134,9 @@ func CollectFigures(sections []Section) []Section {
 	return figures
 }
 
-// ── Table types ───────────────────────────────────────────────────────────
+// ── 表格类型 ──
 
-// TableItem represents a detected table or figure region.
+// TableItem 检测到的表格或图区域及其内容。
 type TableItem struct {
 	ImageB64  string
 	Rows      [][]string
@@ -155,7 +152,7 @@ type TableItem struct {
 	Grid                                             [][]TSRCell
 }
 
-// TSRCell represents one table cell from TSR.
+// TSRCell TSR 识别的单个表格单元格。
 type TSRCell struct {
 	X0, Y0, X1, Y1 float64
 	Text           string
@@ -166,9 +163,9 @@ func (c TSRCell) Bounds() (float64, float64, float64, float64) {
 	return c.X0, c.Y0, c.X1, c.Y1
 }
 
-// ── DeepDoc vision types ─────────────────────────────────────────────────
+// ── DeepDoc 视觉类型 ──
 
-// DLARegion represents one detected layout region.
+// DLARegion 单块 DLA 布局检测区域。
 type DLARegion struct {
 	X0, Y0, X1, Y1 float64
 	Label          string
@@ -179,20 +176,20 @@ func (r DLARegion) Bounds() (float64, float64, float64, float64) {
 	return r.X0, r.Y0, r.X1, r.Y1
 }
 
-// OCRBox represents a detected text region from DeepDoc OCR detection.
+// OCRBox DeepDoc OCR 检测到的文本框四边形。
 type OCRBox struct {
 	X0, Y0, X1, Y1, X2, Y2, X3, Y3 float64
 }
 
-// OCRText represents recognized text with confidence from DeepDoc OCR rec.
+// OCRText OCR 识别文本与置信度。
 type OCRText struct {
 	Text       string
 	Confidence float64
 }
 
-// ── Parser configuration ──────────────────────────────────────────────────
+// ── 解析器配置 ──
 
-// ParserConfig holds parser configuration.
+// ParserConfig 解析器运行参数。
 type ParserConfig struct {
 	Zoom               float64
 	FromPage           int
@@ -207,7 +204,7 @@ type ParserConfig struct {
 	MaxOCRConcurrency  int
 }
 
-// DefaultParserConfig returns a ParserConfig with sensible defaults.
+// DefaultParserConfig 返回默认配置（zoom=3 等）。
 func DefaultParserConfig() ParserConfig {
 	return ParserConfig{
 		Zoom:               3,
@@ -220,13 +217,13 @@ func DefaultParserConfig() ParserConfig {
 	}
 }
 
-// DlaDPI is the DPI used for rendering page images for DeepDoc DLA/OCR.
+// DlaDPI DeepDoc DLA/OCR 渲染 DPI，216。
 const DlaDPI = 216
 
-// DlaScale is the scale factor from PDF points (72 DPI) to DLA image space.
+// DlaScale PDF 点（72 DPI）到 DLA 像素空间的缩放比。
 const DlaScale = DlaDPI / 72.0
 
-// ── Layout type constants ─────────────────────────────────────────────────
+// ── 布局类型常量 ──
 
 const (
 	LayoutTypeText      = "text"
@@ -242,9 +239,9 @@ const (
 	DLALabelTableCaption  = "table caption"
 )
 
-// ── Interfaces ────────────────────────────────────────────────────────────
+// ── 接口 ──
 
-// DocAnalyzer abstracts DeepDoc vision operations.
+// DocAnalyzer 抽象 DeepDoc 视觉能力：DLA/TSR/OCR。
 type DocAnalyzer interface {
 	DLA(ctx context.Context, pageImage image.Image) ([]DLARegion, error)
 	TSR(ctx context.Context, cropped image.Image) ([]TSRCell, error)
@@ -254,17 +251,16 @@ type DocAnalyzer interface {
 	Health() bool
 }
 
-// ── Outline ────────────────────────────────────────────────────────────
+// ── PDF 大纲 ──
 
-// Outline represents one entry in a PDF's document outline (table of contents).
-// Python: extract_pdf_outlines() in deepdoc/parser/utils.py
+// Outline PDF 文档大纲（目录）的一项；对齐 extract_pdf_outlines()。
 type Outline struct {
 	Title      string
 	Level      int
 	PageNumber int // 1-indexed, matching Python
 }
 
-// PDFEngine abstracts page extraction capabilities.
+// PDFEngine 抽象 PDF 页字符提取与渲染。
 type PDFEngine interface {
 	ExtractChars(pageNum int) ([]TextChar, error)
 	RenderPage(pageNum int, dpi float64) ([]byte, error)
@@ -275,27 +271,27 @@ type PDFEngine interface {
 	Close() error
 }
 
-// Tokenizer provides text tokenization matching rag_tokenizer.
+// Tokenizer 与 rag_tokenizer 一致的分词接口。
 type Tokenizer interface {
 	Tag(token string) string
 }
 
-// SampleFunc samples up to n characters from a page's chars.
+// SampleFunc 从页字符中采样最多 n 个。
 type SampleFunc func(chars []TextChar, n int) string
 
-// TableBuilder encapsulates TSR model-specific cell detection and grouping.
+// TableBuilder 封装 TSR 模型单元格检测与分组。
 type TableBuilder interface {
 	Name() string
 	DetectCells(ctx context.Context, cropped image.Image) ([]TSRCell, error)
 	GroupCells(cells []TSRCell) [][]TSRCell
 }
 
-// Rectangular is any 2D axis-aligned rectangle that can report its bounds.
+// Rectangular 可报告边界的轴对齐矩形接口。
 type Rectangular interface {
 	Bounds() (x0, y0, x1, y1 float64)
 }
 
-// IsCJK reports whether r is a CJK character.
+// IsCJK 判断是否为 CJK（汉字/假名/谚文）字符。
 func IsCJK(r rune) bool {
 	return unicode.Is(unicode.Han, r) ||
 		unicode.Is(unicode.Hiragana, r) ||
