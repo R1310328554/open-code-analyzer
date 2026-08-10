@@ -748,3 +748,18 @@
 2026-08-10T06:40:14Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/AuthorizationResource.java wave25b sssd impl + admin-client
 2026-08-10T06:40:14Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/BasicAuthFilter.java wave25b sssd impl + admin-client
 2026-08-10T06:40:14Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/BearerAuthFilter.java wave25b sssd impl + admin-client
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ComponentsResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/DPoPAuthFilter.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/GroupPoliciesResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/GroupPolicyResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/GroupResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/GroupsResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/IdentityProviderResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/IdentityProvidersResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/JSPoliciesResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/JSPolicyResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/KeyResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationGroupResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationGroupsResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationIdentityProviderResource.java wave26b admin-client group/idp/org resources
+2026-08-10T06:43:37Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/OrganizationIdentityProvidersResource.java wave26b admin-client group/idp/org resources
