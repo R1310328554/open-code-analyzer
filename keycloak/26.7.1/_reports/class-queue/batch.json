@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T05:45:29Z",
   "files": [
-    "common/src/main/java/org/keycloak/common/crypto/PemUtilsProvider.java",
-    "common/src/main/java/org/keycloak/common/crypto/UserIdentityExtractor.java",
-    "common/src/main/java/org/keycloak/common/crypto/UserIdentityExtractorProvider.java",
-    "common/src/main/java/org/keycloak/common/enums/AccountRestApiVersion.java",
-    "common/src/main/java/org/keycloak/common/enums/HostnameVerificationPolicy.java",
-    "common/src/main/java/org/keycloak/common/enums/RelativeUrlsUsed.java",
-    "common/src/main/java/org/keycloak/common/enums/SslRequired.java",
-    "common/src/main/java/org/keycloak/common/profile/CommaSeparatedListProfileConfigResolver.java",
-    "common/src/main/java/org/keycloak/common/profile/ProfileConfigResolver.java",
-    "common/src/main/java/org/keycloak/common/profile/ProfileException.java",
-    "common/src/main/java/org/keycloak/common/profile/PropertiesProfileConfigResolver.java",
-    "common/src/main/java/org/keycloak/common/profile/SingleProfileConfigResolver.java",
-    "common/src/main/java/org/keycloak/common/util/Base64.java",
-    "common/src/main/java/org/keycloak/common/util/Base64Url.java",
-    "common/src/main/java/org/keycloak/common/util/BouncyIntegration.java",
     "common/src/main/java/org/keycloak/common/util/CertificateUtils.java",
     "common/src/main/java/org/keycloak/common/util/CollectionUtil.java",
     "common/src/main/java/org/keycloak/common/util/ConcurrentMultivaluedHashMap.java",
@@ -33,5 +18,5 @@
     "common/src/main/java/org/keycloak/common/util/KerberosJdkProvider.java"
   ],
   "remaining_pending": 5788,
-  "done": 180
+  "done": 195
 }

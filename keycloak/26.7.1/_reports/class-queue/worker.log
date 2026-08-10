@@ -178,3 +178,18 @@
 2026-08-10T05:45:03Z DONE common/src/main/java/org/keycloak/common/crypto/CryptoProvider.java wave6b authzen services + common crypto
 2026-08-10T05:45:03Z DONE common/src/main/java/org/keycloak/common/crypto/ECDSACryptoProvider.java wave6b authzen services + common crypto
 2026-08-10T05:45:03Z DONE common/src/main/java/org/keycloak/common/crypto/FipsMode.java wave6b authzen services + common crypto
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/crypto/PemUtilsProvider.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/crypto/UserIdentityExtractor.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/crypto/UserIdentityExtractorProvider.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/enums/AccountRestApiVersion.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/enums/HostnameVerificationPolicy.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/enums/RelativeUrlsUsed.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/enums/SslRequired.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/profile/CommaSeparatedListProfileConfigResolver.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/profile/ProfileConfigResolver.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/profile/ProfileException.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/profile/PropertiesProfileConfigResolver.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/profile/SingleProfileConfigResolver.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/util/Base64.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/util/Base64Url.java wave7a common crypto providers
+2026-08-10T05:46:49Z DONE common/src/main/java/org/keycloak/common/util/BouncyIntegration.java wave7a common crypto providers
