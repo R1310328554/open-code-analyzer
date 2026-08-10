@@ -20,15 +20,19 @@ import com.alibaba.nacos.api.ai.model.mcp.McpServerBasicInfo;
 
 /**
  * Storage model for AI MCP server.
+ * <p>MCP 服务持久化存储模型，继承 {@link McpServerBasicInfo}，额外持有 tools/prompt/resource 描述内容的外部引用（dataId 或 URL）。</p>
  *
  * @author xiweng.yy
  */
 public class McpServerStorageInfo extends McpServerBasicInfo {
     
+    /** Tools 描述内容的配置引用或存储路径。 */
     private String toolsDescriptionRef;
     
+    /** Prompt 描述内容的配置引用或存储路径。 */
     private String promptDescriptionRef;
     
+    /** Resource 描述内容的配置引用或存储路径。 */
     private String resourceDescriptionRef;
     
     public String getToolsDescriptionRef() {

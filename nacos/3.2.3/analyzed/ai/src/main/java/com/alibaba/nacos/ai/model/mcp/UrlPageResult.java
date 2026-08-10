@@ -22,14 +22,18 @@ import java.util.List;
 
 /**
  * Url page result.
+ * <p>基于游标的 MCP 服务 URL 分页查询结果，包含当前页服务详情列表与下一页游标。</p>
  * @author xinluo
  */
 public class UrlPageResult {
     
+    /** 当前页的 MCP 服务详情列表。 */
     private List<McpServerDetailInfo> servers;
     
+    /** 下一页游标；为空表示无更多数据。 */
     private String nextCursor;
     
+    /** 构造分页结果。 */
     public UrlPageResult(List<McpServerDetailInfo> servers, String nextCursor) {
         this.servers = servers;
         this.nextCursor = nextCursor;

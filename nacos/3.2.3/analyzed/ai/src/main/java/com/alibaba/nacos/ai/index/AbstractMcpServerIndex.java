@@ -35,13 +35,16 @@ import com.alibaba.nacos.core.service.NamespaceOperationService;
 
 /**
  * Abstract base class for MCP server index implementations.
+ * <p>MCP 服务索引抽象基类，封装命名空间遍历、配置分页搜索及 {@link ConfigInfo} 到 {@link McpServerIndexData} 的映射逻辑。</p>
  *
  * @author xinluo
  */
 public abstract class AbstractMcpServerIndex implements McpServerIndex {
     
+    /** 命名空间操作服务，用于获取有序命名空间列表。 */
     private final NamespaceOperationService namespaceOperationService;
     
+    /** 配置详情服务，用于分页搜索 MCP 配置。 */
     protected final ConfigDetailService configDetailService;
     
     public AbstractMcpServerIndex(NamespaceOperationService namespaceOperationService,
@@ -50,12 +53,14 @@ public abstract class AbstractMcpServerIndex implements McpServerIndex {
         this.configDetailService = configDetailService;
     }
     
+    /** 按命名空间 ID 字典序返回全部命名空间列表。 */
     protected List<String> fetchOrderedNamespaceList() {
         return namespaceOperationService.getNamespaceList().stream()
             .sorted(Comparator.comparing(Namespace::getNamespace)).map(Namespace::getNamespace)
             .toList();
     }
     
+    /** 跨命名空间按名称查找首个匹配的 MCP 服务索引。 */
     protected McpServerIndexData getFirstMcpServerByName(String name) {
         return fetchOrderedNamespaceList()
             .stream()
@@ -90,6 +95,7 @@ public abstract class AbstractMcpServerIndex implements McpServerIndex {
     
     /**
      * Callback after search operation. Subclasses can implement this to perform additional operations.
+     * <p>搜索完成后的回调，子类可在此更新缓存或执行附加操作。</p>
      *
      * @param searchResult the search results
      * @param name the search name
@@ -98,6 +104,7 @@ public abstract class AbstractMcpServerIndex implements McpServerIndex {
     
     /**
      * Search MCP servers.
+     * <p>按命名空间、服务名与搜索模式分页查询 MCP 配置，支持模糊（blur）与精确（accurate）两种标签检索。</p>
      */
     protected Page<ConfigInfo> searchMcpServers(String namespace, String serverName, String search,
         int pageNo,
@@ -107,7 +114,7 @@ public abstract class AbstractMcpServerIndex implements McpServerIndex {
             serverName = "";
         }
         String dataId = Constants.ALL_PATTERN;
-        if (Constants.MCP_LIST_SEARCH_BLUR.equals(search) || serverName.isEmpty()) {
+        if (Constants.MCP_LIST_SEARCH_BLUR.equals(search) || serverName.isEmpty()) { // 模糊搜索：按名称标签匹配
             String nameTag = McpConfigUtils.formatServerNameTagBlurSearchValue(serverName);
             advanceInfo.put(Constants.CONFIG_TAGS_NAME, nameTag);
             search = Constants.MCP_LIST_SEARCH_BLUR;
@@ -120,6 +127,7 @@ public abstract class AbstractMcpServerIndex implements McpServerIndex {
             Constants.MCP_SERVER_VERSIONS_GROUP, namespace, advanceInfo);
     }
     
+    /** 将配置内容反序列化为 {@link McpServerVersionInfo} 并填充命名空间。 */
     protected McpServerVersionInfo mapToMcpServerVersionInfo(ConfigInfo configInfo) {
         McpServerVersionInfo obj =
             JacksonUtils.toObj(configInfo.getContent(), McpServerVersionInfo.class);
@@ -127,6 +135,7 @@ public abstract class AbstractMcpServerIndex implements McpServerIndex {
         return obj;
     }
     
+    /** 构建索引数据并触发 {@link #afterSearch} 回调（如更新缓存）。 */
     protected McpServerIndexData mcpToIndexAndUpdateToCache(McpServerVersionInfo versionInfo) {
         McpServerIndexData data = new McpServerIndexData();
         data.setId(versionInfo.getId());

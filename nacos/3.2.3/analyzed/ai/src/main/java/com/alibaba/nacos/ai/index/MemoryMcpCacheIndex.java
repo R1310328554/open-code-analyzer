@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Memory-based MCP cache index implementation with optimized locking.
+ * <p>基于内存的 MCP 缓存索引，采用读写锁 + LRU 双向链表，支持容量上限、TTL 过期与定时清理。</p>
  *
  * <p>
  * TODO This Memory cache might include some design issues:
@@ -61,10 +62,13 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
     
     private static final int DEFAULT_SHUTDOWN_TIMEOUT_SECONDS = 5;
     
+    /** 缓存配置：最大容量、过期时间、清理间隔等。 */
     private final McpCacheIndexProperties properties;
     
+    /** MCP ID → 缓存节点（含索引数据与 LRU 链表指针）。 */
     private final ConcurrentHashMap<String, CacheNode> idToEntry;
     
+    /** 「namespaceId::mcpName」→ MCP ID 的名称映射表。 */
     private final ConcurrentHashMap<String, String> nameKeyToId;
     
     private final CacheNode head;
@@ -90,34 +94,34 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
     public MemoryMcpCacheIndex(McpCacheIndexProperties properties) {
         this.properties = properties;
         
-        // Initialize cache storage
+        // 初始化 ID 与名称映射存储
         this.idToEntry = new ConcurrentHashMap<>(properties.getMaxSize());
         this.nameKeyToId = new ConcurrentHashMap<>();
         
-        // Initialize LRU linked list
+        // 初始化 LRU 哨兵双向链表（head/tail）
         this.head = new CacheNode("", null, 0);
         this.tail = new CacheNode("", null, 0);
         this.head.next = this.tail;
         this.tail.prev = this.head;
         
-        // Initialize lock
+        // 初始化读写锁，读路径更新 LRU 位置
         this.lock = new ReentrantReadWriteLock();
         this.readLock = lock.readLock();
         this.writeLock = lock.writeLock();
         
-        // Initialize statistics
+        // 初始化命中/未命中/驱逐计数器
         this.hitCount = new AtomicLong(0);
         this.missCount = new AtomicLong(0);
         this.evictionCount = new AtomicLong(0);
         
-        // Start cleanup scheduler
+        // 启动后台清理调度线程
         this.cleanupScheduler = new ScheduledThreadPoolExecutor(1, r -> {
             Thread t = new Thread(r, "mcp-cache-cleanup");
             t.setDaemon(true);
             return t;
         }, new ThreadPoolExecutor.CallerRunsPolicy());
         
-        // Schedule periodic cleanup
+        // 按配置间隔定期扫描过期条目
         this.cleanupScheduler.scheduleWithFixedDelay(this::cleanupExpiredEntries,
             properties.getCleanupIntervalSeconds(), properties.getCleanupIntervalSeconds(),
             TimeUnit.SECONDS);
@@ -140,7 +144,7 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
             
             CacheNode node = idToEntry.get(id);
             if (node == null || node.isExpired(properties.getExpireTimeSeconds())) {
-                // Clean up invalid mapping
+                // 清理已失效的名称映射
                 nameKeyToId.remove(key, id);
                 if (node != null) {
                     removeFromLru(node);
@@ -150,7 +154,7 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
                 return null;
             }
             
-            // Update LRU position
+            // 命中后将节点移至 LRU 链表头部
             moveToHead(node);
             hitCount.incrementAndGet();
             return id;
@@ -210,19 +214,19 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
         try {
             CacheNode oldNode = idToEntry.put(mcpId, newNode);
             if (oldNode != null) {
-                // Remove old node from LRU list
+                // 更新索引时移除旧 LRU 节点
                 removeFromLru(oldNode);
             }
             
-            // Add to head of LRU list
+            // 新节点插入 LRU 链表头部
             addToHead(newNode);
             
-            // Check if eviction is needed and evict until size is correct
+            // 超出 maxSize 时循环驱逐最久未使用条目
             while (idToEntry.size() > properties.getMaxSize()) {
                 evictLeastRecentlyUsed();
             }
             
-            // Update name mapping
+            // 同步更新名称→ID 映射
             String key = buildNameKey(namespaceId, mcpName);
             nameKeyToId.put(key, mcpId);
         } finally {
@@ -298,6 +302,7 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
     
     /**
      * Shuts down the cache and cleans up resources.
+     * <p>关闭清理调度器、等待线程结束并清空全部缓存。</p>
      */
     public void shutdown() {
         if (!shutdown) {
@@ -316,14 +321,17 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
         }
     }
     
+    /** 构造名称缓存键：{@code namespaceId::mcpName}。 */
     private String buildNameKey(String namespaceId, String mcpName) {
         return namespaceId + "::" + mcpName;
     }
     
+    /** 删除指向指定 MCP ID 的全部名称映射。 */
     private void cleanupInvalidMappings(String mcpId) {
         nameKeyToId.entrySet().removeIf(entry -> mcpId.equals(entry.getValue()));
     }
     
+    /** 定时任务：扫描并移除 TTL 过期的缓存节点。 */
     private void cleanupExpiredEntries() {
         if (shutdown) {
             return;
@@ -348,6 +356,7 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
         }
     }
     
+    /** 驱逐 LRU 链表尾部（最久未使用）的条目。 */
     private void evictLeastRecentlyUsed() {
         CacheNode last = tail.prev;
         if (last != head) {
@@ -360,6 +369,7 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
         }
     }
     
+    /** 将节点插入 LRU 链表头部（哨兵 head 之后）。 */
     private void addToHead(CacheNode node) {
         node.prev = head;
         node.next = head.next;
@@ -367,6 +377,7 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
         head.next = node;
     }
     
+    /** 从 LRU 链表中摘除节点（synchronized 保证与 moveToHead 互斥）。 */
     private synchronized void removeFromLru(CacheNode node) {
         if (node.prev != null && node.next != null) {
             node.prev.next = node.next;
@@ -374,21 +385,23 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
         }
     }
     
+    /** 将节点移至 LRU 链表头部，表示最近访问。 */
     private synchronized void moveToHead(CacheNode node) {
-        // Remove from current position
+        // 先从当前位置摘除
         if (node.prev != null && node.next != null) {
             node.prev.next = node.next;
             node.next.prev = node.prev;
         }
-        // Add to head
+        // 再插入链表头部
         node.prev = head;
         node.next = head.next;
         head.next.prev = node;
         head.next = node;
     }
     
-    // Inner classes
+    // 内部类：LRU 缓存节点
     
+    /** LRU 缓存节点，持有 MCP ID、索引数据与链表指针。 */
     private static class CacheNode {
         
         final String key;
@@ -407,6 +420,7 @@ public class MemoryMcpCacheIndex implements McpCacheIndex {
             this.createTimeSeconds = createTimeSeconds;
         }
         
+        /** 判断节点是否已超过配置的 TTL（秒）；expireTimeSeconds≤0 表示永不过期。 */
         boolean isExpired(long expireTimeSeconds) {
             if (expireTimeSeconds <= 0) {
                 return false;

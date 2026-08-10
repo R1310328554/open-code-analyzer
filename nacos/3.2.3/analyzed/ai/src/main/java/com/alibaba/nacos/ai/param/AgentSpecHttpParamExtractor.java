@@ -29,25 +29,28 @@ import java.util.List;
 
 /**
  * Nacos AI AgentSpec param extractor.
+ * <p>AgentSpec HTTP 请求参数提取器，解析 namespaceId 与 agentSpecName，支持从 agentSpecCard JSON 体反序列化名称。</p>
  *
  * @author nacos
  */
 public class AgentSpecHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** 请求参数名：AgentSpec JSON 载荷。 */
     private static final String AGENTSPEC_CARD_PARAM = "agentSpecCard";
     
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) throws NacosException {
         ParamInfo paramInfo = new ParamInfo();
-        paramInfo.setNamespaceId(request.getParameter("namespaceId"));
-        paramInfo.setAgentName(request.getParameter("agentSpecName"));
-        if (request.getParameterMap().containsKey(AGENTSPEC_CARD_PARAM)) {
+        paramInfo.setNamespaceId(request.getParameter("namespaceId")); // 命名空间
+        paramInfo.setAgentName(request.getParameter("agentSpecName")); // 显式 agentSpecName 参数
+        if (request.getParameterMap().containsKey(AGENTSPEC_CARD_PARAM)) { // 优先从 AgentSpec JSON 解析名称
             paramInfo.setAgentName(
                 deserializeAndGetAgentSpecName(request.getParameter(AGENTSPEC_CARD_PARAM)));
         }
         return Collections.singletonList(paramInfo);
     }
     
+    /** 反序列化 AgentSpec JSON 并提取 name；失败返回空字符串。 */
     private String deserializeAndGetAgentSpecName(String agentSpecCardJson) {
         try {
             AgentSpec agentSpec = JacksonUtils.toObj(agentSpecCardJson, AgentSpec.class);

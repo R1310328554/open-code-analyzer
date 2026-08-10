@@ -18,17 +18,21 @@ package com.alibaba.nacos.ai.model.mcp;
 
 /**
  * McpServerIndexData.
+ * <p>MCP 服务索引轻量数据模型，仅持有 MCP ID 与命名空间 ID，用于缓存与快速路由，不含完整服务详情。</p>
  * 
  * @author xinluo
  */
 public class McpServerIndexData {
     
+    /** MCP 服务唯一 ID。 */
     private String id;
     
+    /** 所属命名空间 ID。 */
     private String namespaceId;
     
     /**
      * Factory method for index data.
+     * <p>工厂方法，快速构造索引数据实例。</p>
      * @param id server id
      * @param namespaceId namespaceId
      * @return index

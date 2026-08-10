@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Enhanced MCP cache index implementation combining memory cache and database queries.
+ * <p>带缓存的 MCP 服务索引实现，优先读 {@link McpCacheIndex}，未命中时回源数据库并回填缓存；支持定时全量同步。</p>
  *
  * @author misselvexu
  */
@@ -46,20 +47,27 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(CachedMcpServerIndex.class);
     
+    /** 内存缓存索引，维护名称/ID 双向映射。 */
     private final McpCacheIndex cacheIndex;
     
+    /** 配置查询链服务，用于按 ID 精确查库。 */
     private final ConfigQueryChainService configQueryChainService;
     
+    /** 定时任务调度器，驱动缓存同步。 */
     private final ScheduledExecutorService scheduledExecutor;
     
+    /** 缓存同步定时任务的 Future，销毁时取消。 */
     private ScheduledFuture<?> syncTask;
     
+    /** 是否启用缓存；关闭时所有查询直接走数据库。 */
     private final boolean cacheEnabled;
     
+    /** 缓存同步间隔（秒）。 */
     private final long syncInterval;
     
     /**
      * Constructor.
+     * <p>构造缓存索引；若 {@code cacheEnabled} 为 true 则立即启动定时同步任务。</p>
      */
     public CachedMcpServerIndex(ConfigDetailService configDetailService,
         NamespaceOperationService namespaceOperationService,
@@ -82,6 +90,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Get MCP server information by ID.
+     * <p>按 MCP ID 查询：缓存命中直接返回，未命中则遍历命名空间查库并回填。</p>
      */
     @Override
     public McpServerIndexData getMcpServerById(String id) {
@@ -89,13 +98,13 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
             LOGGER.debug("Cache disabled, querying directly from database for mcpId: {}", id);
             return getMcpServerByIdFromDatabase(id);
         }
-        // Priority query cache
+        // 优先查询缓存
         McpServerIndexData cachedData = cacheIndex.getMcpServerById(id);
         if (cachedData != null) {
             LOGGER.debug("Cache hit for mcpId: {}", id);
             return cachedData;
         }
-        // Cache miss, query database
+        // 缓存未命中，回源数据库
         LOGGER.debug("Cache miss for mcpId: {}, querying database", id);
         McpServerIndexData dbData = getMcpServerByIdFromDatabase(id);
         if (dbData != null) {
@@ -107,6 +116,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Get MCP server information by name.
+     * <p>按命名空间与服务名查询；命名空间为空时跨空间查找首个匹配项。</p>
      */
     @Override
     public McpServerIndexData getMcpServerByName(String namespaceId, String name) {
@@ -143,7 +153,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     @Override
     protected void afterSearch(McpServerIndexData indexData, String name) {
-        // Update cache
+        // 搜索完成后更新缓存映射
         if (cacheEnabled) {
             cacheIndex.updateIndex(indexData.getNamespaceId(), name, indexData.getId());
         }
@@ -151,6 +161,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Get MCP server from database by ID.
+     * <p>遍历全部命名空间，按版本 dataId 后缀查配置链，找到即返回索引数据。</p>
      */
     private McpServerIndexData getMcpServerByIdFromDatabase(String id) {
         ConfigQueryChainRequest request = new ConfigQueryChainRequest();
@@ -176,6 +187,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Get MCP server from database by name.
+     * <p>精确搜索单条配置并解析 MCP ID，避免经分页接口重复写缓存。</p>
      */
     private McpServerIndexData getMcpServerByNameFromDatabase(String namespaceId, String name) {
         // 直接查询数据库，避免调用searchMcpServerByName导致重复更新缓存
@@ -197,6 +209,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Start scheduled sync task.
+     * <p>以固定延迟调度 {@link #syncCacheFromDatabase}，异常仅记录日志不中断调度。</p>
      */
     private void startSyncTask() {
         syncTask = scheduledExecutor.scheduleWithFixedDelay(() -> {
@@ -213,6 +226,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Shutdown the cache sync task and cleanup resources.
+     * <p>Bean 销毁时取消同步任务并关闭调度线程池。</p>
      */
     @PreDestroy
     public void destroy() {
@@ -228,6 +242,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Sync cache from database.
+     * <p>对每个命名空间执行模糊分页搜索，间接预热全部 MCP 名称→ID 缓存。</p>
      */
     private void syncCacheFromDatabase() {
         LOGGER.debug("Syncing cache from database");
@@ -244,6 +259,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Get cache statistics.
+     * <p>返回命中率、未命中、驱逐次数与当前条目数等统计信息。</p>
      */
     public McpCacheIndex.CacheStats getCacheStats() {
         McpCacheIndex.CacheStats stats = cacheIndex.getStats();
@@ -256,6 +272,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Clear cache.
+     * <p>清空底层 {@link McpCacheIndex} 全部条目。</p>
      */
     public void clearCache() {
         cacheIndex.clear();
@@ -264,6 +281,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Manually trigger cache synchronization.
+     * <p>手动触发一次全量缓存同步；缓存禁用时忽略。</p>
      */
     public void triggerCacheSync() {
         if (cacheEnabled) {
@@ -276,6 +294,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Remove cache entry by namespace ID and MCP server name.
+     * <p>按命名空间与服务名移除缓存条目；缓存禁用时为 no-op。</p>
      *
      * @param namespaceId namespace ID
      * @param mcpName     MCP server name
@@ -296,6 +315,7 @@ public class CachedMcpServerIndex extends AbstractMcpServerIndex {
     
     /**
      * Remove cache entry by MCP server ID.
+     * <p>按 MCP ID 移除缓存条目及关联的名称映射。</p>
      *
      * @param mcpId MCP server ID
      */

@@ -21,6 +21,7 @@ import java.util.Map;
 
 /**
  * Skill index manifest stored in Nacos Config for client-side caching.
+ * <p>存储于 Nacos Config 的 Skill 索引清单，供客户端本地缓存；包含标签→版本映射与各版本文件列表。</p>
  *
  * <p>Contains skill metadata (labels) and per-version file storage information.
  * Stored at group={@code skill_{name}}, dataId={@code skill_index.json}.</p>
@@ -29,15 +30,18 @@ import java.util.Map;
  */
 public class SkillIndexManifest {
     
+    /** 内置标签名：指向最新发布版本。 */
     public static final String LABEL_LATEST = "latest";
     
     /**
      * Label-to-version mapping, e.g. {"latest": "v3"}.
+     * <p>标签到版本的映射，例如 {@code {"latest": "v3"}}。</p>
      */
     private Map<String, String> labels;
     
     /**
      * Version-to-files mapping, e.g. {"v1": ["SKILL.md", "script/run.sh"], "v3": ["SKILL.md"]}.
+     * <p>版本到文件路径列表的映射，客户端据此拉取 Skill 包内容。</p>
      */
     private Map<String, List<String>> versions;
     

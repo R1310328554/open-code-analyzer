@@ -20,36 +20,50 @@ import java.sql.Timestamp;
 
 /**
  * Entity of ai_resource_version.
+ * <p>AI 资源版本实体，对应表 {@code ai_resource_version}，记录某一资源的具体版本内容、存储位置与发布流水线信息。</p>
  *
  * @author nacos
  * @since 3.2.0
  */
 public class AiResourceVersion {
     
+    /** 主键 ID。 */
     private Long id;
     
+    /** 创建时间。 */
     private Timestamp gmtCreate;
     
+    /** 最后修改时间。 */
     private Timestamp gmtModified;
     
+    /** 资源类型。 */
     private String type;
     
+    /** 版本作者。 */
     private String author;
     
+    /** 资源名称。 */
     private String name;
     
+    /** 版本描述。 */
     private String desc;
     
+    /** 版本状态（草稿、审核中、已发布等）。 */
     private String status;
     
+    /** 语义化版本号。 */
     private String version;
     
+    /** 所属命名空间 ID。 */
     private String namespaceId;
     
+    /** 存储位置描述（配置 dataId/group 或对象存储路径）。 */
     private String storage;
     
+    /** 发布流水线执行信息（JSON）。 */
     private String publishPipelineInfo;
     
+    /** 该版本累计下载次数。 */
     private Long downloadCount;
     
     public Long getId() {
