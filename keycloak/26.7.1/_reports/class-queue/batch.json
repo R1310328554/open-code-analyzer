@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:32:05Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/email/EmailSenderSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/email/EmailTemplateProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/email/EmailTemplateProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/email/EmailTemplateSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/events/Details.java",
-    "server-spi-private/src/main/java/org/keycloak/events/Errors.java",
-    "server-spi-private/src/main/java/org/keycloak/events/Event.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventBuilder.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventListenerProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventListenerProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventListenerSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventListenerTransaction.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventQuery.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventStoreProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventStoreProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2848,
-  "done": 3135
+  "done": 3150
 }
