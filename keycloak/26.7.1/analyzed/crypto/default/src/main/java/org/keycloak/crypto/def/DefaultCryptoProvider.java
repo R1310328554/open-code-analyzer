@@ -40,6 +40,8 @@ import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认 {@link CryptoProvider} 实现，注册 BouncyCastle 并暴露 JWE、证书、PEM、OCSP 等算法提供器。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultCryptoProvider implements CryptoProvider {
@@ -48,10 +50,12 @@ public class DefaultCryptoProvider implements CryptoProvider {
 
     private final Provider bcProvider;
 
+    /** JWE 等算法提供器注册表。 */
     private Map<String, Object> providers = new ConcurrentHashMap<>();
 
+    /** 初始化 BC 提供器并注册 JWE 算法实现；BC 已存在时复用。 */
     public DefaultCryptoProvider() {
-        // Make sure to instantiate this only once due it is expensive. And skip registration if already available in Java security providers (EG. due explicitly configured in java security file)
+        // 仅实例化一次（开销大）；若 java.security 已配置 BC 则跳过注册
         Provider existingBc = Security.getProvider(CryptoConstants.BC_PROVIDER_ID);
         this.bcProvider = existingBc == null ? new BouncyCastleProvider() : existingBc;
 
@@ -73,16 +77,19 @@ public class DefaultCryptoProvider implements CryptoProvider {
     }
 
 
+    /** {@inheritDoc} 返回 BouncyCastle {@link Provider}。 */
     @Override
     public Provider getBouncyCastleProvider() {
         return bcProvider;
     }
 
+    /** {@inheritDoc} 提供器优先级为 200。 */
     @Override
     public int order() {
         return 200;
     }
 
+    /** {@inheritDoc} 按算法类型获取已注册的提供器。 */
     @Override
     public <T> T getAlgorithmProvider(Class<T> clazz, String algorithmType) {
         Object o = providers.get(algorithmType);
@@ -92,66 +99,78 @@ public class DefaultCryptoProvider implements CryptoProvider {
         return clazz.cast(o);
     }
 
+    /** {@inheritDoc} */
     @Override
     public CertificateUtilsProvider getCertificateUtils() {
         return new BCCertificateUtilsProvider();
     }
 
+    /** {@inheritDoc} */
     @Override
     public PemUtilsProvider getPemUtils() {
         return new BCPemUtilsProvider();
     }
 
+    /** {@inheritDoc} 由命名曲线创建 {@link ECParameterSpec}。 */
     @Override
     public ECParameterSpec createECParams(String curveName) {
         ECNamedCurveParameterSpec spec = ECNamedCurveTable.getParameterSpec(curveName);
         return new ECNamedCurveSpec("prime256v1", spec.getCurve(), spec.getG(), spec.getN());
     }
 
+    /** {@inheritDoc} */
     @Override
     public UserIdentityExtractorProvider getIdentityExtractorProvider() {
         return new BCUserIdentityExtractorProvider();
     }
 
+    /** {@inheritDoc} */
     @Override
     public ECDSACryptoProvider getEcdsaCryptoProvider() {
         return new BCECDSACryptoProvider();
     }
 
 
+    /** {@inheritDoc} 返回 {@link BCOCSPProvider} 实例。 */
     @Override
     public <T> T getOCSPProver(Class<T> clazz) {
         return clazz.cast(new BCOCSPProvider());
     }
 
 
+    /** {@inheritDoc} 使用 BC 提供器的密钥对生成器。 */
     @Override
     public KeyPairGenerator getKeyPairGen(String algorithm) throws NoSuchAlgorithmException, NoSuchProviderException {
         return KeyPairGenerator.getInstance(algorithm, BouncyIntegration.PROVIDER);
     }
 
 
+    /** {@inheritDoc} */
     @Override
     public KeyFactory getKeyFactory(String algorithm) throws NoSuchAlgorithmException, NoSuchProviderException {
         return KeyFactory.getInstance(algorithm, BouncyIntegration.PROVIDER);
     }
 
 
+    /** {@inheritDoc} AES/CBC/PKCS7Padding Cipher。 */
     @Override
     public Cipher getAesCbcCipher() throws NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException {
         return Cipher.getInstance("AES/CBC/PKCS7Padding", BouncyIntegration.PROVIDER);
     }
 
+    /** {@inheritDoc} AES/GCM/NoPadding Cipher。 */
     @Override
     public Cipher getAesGcmCipher() throws NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException {
         return Cipher.getInstance("AES/GCM/NoPadding", BouncyIntegration.PROVIDER);
     }
 
+    /** {@inheritDoc} */
     @Override
     public SecretKeyFactory getSecretKeyFact(String keyAlgorithm) throws NoSuchAlgorithmException, NoSuchProviderException {
         return SecretKeyFactory.getInstance(keyAlgorithm, BouncyIntegration.PROVIDER);
     }
 
+    /** {@inheritDoc} JKS 使用默认提供器，其他格式使用 BC。 */
     @Override
     public KeyStore getKeyStore(KeystoreFormat format) throws KeyStoreException, NoSuchProviderException {
         if (format == KeystoreFormat.JKS) {
@@ -161,11 +180,13 @@ public class DefaultCryptoProvider implements CryptoProvider {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public CertificateFactory getX509CertFactory() throws CertificateException, NoSuchProviderException {
         return CertificateFactory.getInstance("X.509", BouncyIntegration.PROVIDER);
     }
 
+    /** {@inheritDoc} Collection 类型 CertStore。 */
     @Override
     public CertStore getCertStore(CollectionCertStoreParameters certStoreParams) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
 
@@ -174,17 +195,20 @@ public class DefaultCryptoProvider implements CryptoProvider {
     }
 
 
+    /** {@inheritDoc} PKIX CertPathBuilder。 */
     @Override
     public CertPathBuilder getCertPathBuilder() throws NoSuchAlgorithmException, NoSuchProviderException {
         return CertPathBuilder.getInstance("PKIX", BouncyIntegration.PROVIDER);
     }
 
+    /** {@inheritDoc} 将 Keycloak 算法名映射为 JCA 签名实例。 */
     @Override
     public Signature getSignature(String sigAlgName) throws NoSuchAlgorithmException, NoSuchProviderException {
         return Signature.getInstance(JavaAlgorithm.getJavaAlgorithm(sigAlgName), BouncyIntegration.PROVIDER);
 
     }
 
+    /** {@inheritDoc} 默认实现直接返回委托工厂，不做包装。 */
     @Override
     public SSLSocketFactory wrapFactoryForTruststore(SSLSocketFactory delegate) {
         return delegate;

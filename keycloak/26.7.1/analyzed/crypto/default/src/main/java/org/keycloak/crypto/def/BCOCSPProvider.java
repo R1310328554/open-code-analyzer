@@ -84,6 +84,8 @@ import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 
 
 /**
+ * 基于 BouncyCastle 的 OCSP 吊销状态校验实现。
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 10/29/2016
@@ -93,20 +95,22 @@ public class BCOCSPProvider extends OCSPProvider {
 
     private final static Logger logger = Logger.getLogger(BCOCSPProvider.class.getName());
 
+    /** 向 OCSP 响应器发送请求并解析响应。 */
     protected OCSPResp getResponse(KeycloakSession session, OCSPReq ocspReq, URI responderUri) throws IOException {
         byte[] data = getEncodedOCSPResponse(session, ocspReq.getEncoded(), responderUri);
         return new OCSPResp(data);
     }
 
     /**
-     * Requests certificate revocation status using OCSP.
-     * @param cert the certificate to be checked
-     * @param issuerCertificate the issuer certificate
-     * @param responderURIs the OCSP responder URIs
-     * @param responderCert the OCSP responder certificate
-     * @param date if null, the current time is used.
-     * @return a revocation status
-     * @throws CertPathValidatorException
+     * 通过 OCSP 查询证书吊销状态。
+     *
+     * @param cert 待检证书
+     * @param issuerCertificate 颁发者证书
+     * @param responderURIs OCSP 响应器 URI 列表
+     * @param responderCert OCSP 响应器证书（可选）
+     * @param date 校验时间点，null 表示当前时间
+     * @return 吊销状态
+     * @throws CertPathValidatorException 校验失败或响应无效时抛出
      */
     @Override
     protected OCSPRevocationStatus check(KeycloakSession session, X509Certificate cert, X509Certificate issuerCertificate, List<URI> responderURIs, X509Certificate responderCert, Date date) throws CertPathValidatorException {
@@ -123,7 +127,7 @@ public class BCOCSPProvider extends OCSPProvider {
             URI responderURI = responderURIs.get(0);
 
             try {
-                // Create a nonce extension to protect against replay attacks
+                // 创建 nonce 扩展以防重放攻击
                 DEROctetString requestNonce = new DEROctetString(new DEROctetString(JWEUtils.generateSecret(16)));
                 Extension nonceExtension = new Extension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce, false, requestNonce);
                 Extensions extensions = new Extensions(nonceExtension);
@@ -170,6 +174,7 @@ public class BCOCSPProvider extends OCSPProvider {
         }
     }
 
+    /** 处理 Basic OCSP 响应，匹配 CertID 并验证签名与 nonce。 */
     private OCSPRevocationStatus processBasicOCSPResponse(X509Certificate issuerCertificate, X509Certificate responderCertificate, Date date, JcaCertificateID certificateID, DEROctetString requestNonce, BasicOCSPResp basicOcspResponse)
             throws OCSPException, NoSuchProviderException, NoSuchAlgorithmException, CertificateNotYetValidException, CertificateExpiredException, CertPathValidatorException {
         SingleResp expectedResponse = null;
@@ -188,6 +193,7 @@ public class BCOCSPProvider extends OCSPProvider {
         }
     }
 
+    /** 比较两个 CertificateID 是否指向同一证书。 */
     private boolean compareCertIDs(JcaCertificateID idLeft, CertificateID idRight) {
         if (idLeft == idRight)
             return true;
@@ -199,6 +205,7 @@ public class BCOCSPProvider extends OCSPProvider {
                 idLeft.getSerialNumber().equals(idRight.getSerialNumber());
     }
 
+    /** 验证 OCSP 响应签名、响应者授权及 nonce/有效期。 */
     private void verifyResponse(BasicOCSPResp basicOcspResponse, X509Certificate issuerCertificate, X509Certificate responderCertificate, DEROctetString requestNonce, Date date) throws NoSuchProviderException, NoSuchAlgorithmException, CertificateNotYetValidException, CertificateExpiredException, CertPathValidatorException {
 
         List<X509CertificateHolder> certs = new ArrayList<>(Arrays.asList(basicOcspResponse.getCerts()));
@@ -277,15 +284,10 @@ public class BCOCSPProvider extends OCSPProvider {
             if (signingCert.equals(issuerCertificate)) {
                 logger.log(Level.INFO, "OCSP response is signed by the target''s Issuing CA");
             } else if (responderCertificate != null && signingCert.equals(responderCertificate)) {
-                // https://www.ietf.org/rfc/rfc2560.txt
-                // 2.6  OCSP Signature Authority Delegation
-                // - The responder certificate is issued to the responder by CA
+                // RFC 2560：OCSP 签名权限委托 — 响应器证书由 CA 签发
                 logger.log(Level.INFO, "OCSP response is signed by an authorized responder certificate");
             } else {
-                // 4.2.2.2  Authorized Responders
-                // 3. Includes a value of id-ad-ocspSigning in an ExtendedKeyUsage
-                // extension and is issued by the CA that issued the certificate in
-                // question."
+                // RFC 2560 4.2.2.2 授权响应器：ExtendedKeyUsage 含 id-ad-ocspSigning 且由目标 CA 签发
                 if (!signingCert.getIssuerX500Principal().equals(issuerCertificate.getSubjectX500Principal())) {
                     logger.log(Level.INFO, "Signer certificate''s Issuer: {0}\nIssuer certificate''s Subject: {1}",
                             new Object[] {signingCert.getIssuerX500Principal().getName(), issuerCertificate.getSubjectX500Principal().getName()});
@@ -307,8 +309,7 @@ public class BCOCSPProvider extends OCSPProvider {
                 }
                 try {
                     Extension noOCSPCheck = new JcaX509CertificateHolder(signingCert).getExtension(OCSPObjectIdentifiers.id_pkix_ocsp_nocheck);
-                    // TODO If the extension is present, the OCSP client can trust the
-                    // responder's certificate for the lifetime of the certificate.
+                    // TODO：若存在 id-pkix-ocsp-nocheck 扩展，客户端可在证书有效期内信任响应器
                     logger.log(Level.INFO, "OCSP no-check extension is {0} present", noOCSPCheck == null ? "not" : "");
                 } catch (CertificateEncodingException e) {
                     logger.log(Level.FINE, "Certificate encoding exception: {0}", e.getMessage());
@@ -336,9 +337,7 @@ public class BCOCSPProvider extends OCSPProvider {
                 if (responseNonce != null && requestNonce != null && !requestNonce.equals(responseNonce.getExtnValue())) {
                     throw new CertPathValidatorException("Nonces do not match.");
                 } else {
-                    // See Sun's OCSP implementation.
-                    // https://www.ietf.org/rfc/rfc2560.txt, if nextUpdate is not set,
-                    // the responder is indicating that newer update is avilable all the time
+                    // RFC 2560：未设置 nextUpdate 时表示响应始终可更新
                     long current = date == null ? System.currentTimeMillis() : date.getTime();
                     Date stop = new Date(current + TIME_SKEW);
                     Date start = new Date(current - TIME_SKEW);
@@ -360,6 +359,7 @@ public class BCOCSPProvider extends OCSPProvider {
         }
     }
 
+    /** 使用响应者证书公钥验证 Basic OCSP 响应签名。 */
     private boolean verifySignature(BasicOCSPResp basicOcspResponse, X509Certificate cert) {
         try {
             ContentVerifierProvider contentVerifier = new JcaContentVerifierProviderBuilder()
@@ -373,6 +373,7 @@ public class BCOCSPProvider extends OCSPProvider {
         return false;
     }
 
+    /** 将 SingleResp 转换为 {@link OCSPRevocationStatus}。 */
     private OCSPRevocationStatus singleResponseToRevocationStatus(final SingleResp singleResponse) throws CertPathValidatorException {
         final CertificateStatus certStatus = singleResponse.getCertStatus();
 
@@ -417,11 +418,11 @@ public class BCOCSPProvider extends OCSPProvider {
 
 
     /**
-     * Extracts OCSP responder URI from X509 AIA v3 extension, if available. There can be
-     * multiple responder URIs encoded in the certificate.
-     * @param cert
-     * @return a list of available responder URIs.
-     * @throws CertificateEncodingException
+     * 从 X509 AIA 扩展提取 OCSP 响应器 URI；证书中可编码多个 URI。
+     *
+     * @param cert X509 证书
+     * @return OCSP 响应器 URI 列表
+     * @throws CertificateEncodingException 证书编码失败时抛出
      */
     @Override
     protected List<String> getResponderURIs(X509Certificate cert) throws CertificateEncodingException {
@@ -436,7 +437,7 @@ public class BCOCSPProvider extends OCSPProvider {
                 AuthorityInformationAccess authorityInfoAccess = AuthorityInformationAccess.getInstance(seq);
                 for (AccessDescription ad : authorityInfoAccess.getAccessDescriptions()) {
                     if (ad.getAccessMethod().equals(AccessDescription.id_ad_ocsp)) {
-                        // See https://www.ietf.org/rfc/rfc2560.txt, 3.1 Certificate Content
+                        // RFC 2560 3.1：OCSP 访问描述须为 URI
                         if (ad.getAccessLocation().getTagNo() == GeneralName.uniformResourceIdentifier) {
                             ASN1IA5String value = DERIA5String.getInstance(ad.getAccessLocation().getName());
                             responderURIs.add(value.getString());

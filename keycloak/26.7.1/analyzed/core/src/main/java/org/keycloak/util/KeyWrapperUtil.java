@@ -9,8 +9,17 @@ import org.keycloak.crypto.KeyWrapper;
 import org.keycloak.crypto.SignatureSignerContext;
 import org.keycloak.crypto.SignatureVerifierContext;
 
+/**
+ * {@link KeyWrapper} 签名上下文工厂，按密钥算法类型选择对应的签名/验签实现。
+ */
 public class KeyWrapperUtil {
 
+    /**
+     * 根据密钥类型创建签名器上下文。
+     *
+     * @param keyWrapper 包装后的密钥
+     * @return 与密钥类型匹配的 {@link SignatureSignerContext}
+     */
     public static SignatureSignerContext createSignatureSignerContext(KeyWrapper keyWrapper) {
         switch (keyWrapper.getType()) {
             case KeyType.EC:
@@ -23,6 +32,12 @@ public class KeyWrapperUtil {
         }
     }
 
+    /**
+     * 根据密钥类型创建验签器上下文。
+     *
+     * @param keyWrapper 包装后的密钥
+     * @return 与密钥类型匹配的 {@link SignatureVerifierContext}
+     */
     public static SignatureVerifierContext createSignatureVerifierContext(KeyWrapper keyWrapper) {
         switch (keyWrapper.getType()) {
             case KeyType.EC:
@@ -35,6 +50,7 @@ public class KeyWrapperUtil {
         }
     }
 
+    /** 工具类，禁止实例化。 */
     private KeyWrapperUtil() {
     }
 }

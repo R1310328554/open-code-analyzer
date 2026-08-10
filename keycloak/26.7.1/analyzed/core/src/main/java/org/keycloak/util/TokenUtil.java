@@ -42,40 +42,58 @@ import static org.keycloak.representations.AccessToken.REALM_ACCESS;
 import static org.keycloak.representations.AccessToken.RESOURCE_ACCESS;
 
 /**
+ * OAuth/OIDC 令牌与 JWE 编解码辅助工具。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class TokenUtil {
 
+    /** Bearer 令牌类型标识。 */
     public static final String TOKEN_TYPE_BEARER = "Bearer";
 
+    /** DPoP 令牌类型标识。 */
     public static final String TOKEN_TYPE_DPOP = "DPoP";
 
-    // Mentioned in the token-exchange specification https://datatracker.ietf.org/doc/html/rfc8693#name-successful-response
+    // RFC 8693 令牌交换成功响应中提及的类型
     public static final String TOKEN_TYPE_NA = "N_A";
 
-    // JWT Access Token types from https://datatracker.ietf.org/doc/html/rfc9068#section-2.1
+    // RFC 9068 定义的 JWT 访问令牌类型
     public static final String TOKEN_TYPE_JWT_ACCESS_TOKEN = "at+jwt";
+    /** 带 {@code application/} 前缀的 JWT 访问令牌类型。 */
     public static final String TOKEN_TYPE_JWT_ACCESS_TOKEN_PREFIXED = "application/" + TOKEN_TYPE_JWT_ACCESS_TOKEN;
 
-    // https://openid.net/specs/openid-connect-backchannel-1_0.html#LogoutToken
+    // OpenID Connect 后台登出令牌类型
     public static final String TOKEN_TYPE_JWT_LOGOUT_TOKEN = "logout+jwt";
 
+    /** Keycloak 内部序列化 ID 令牌类型。 */
     public static final String TOKEN_TYPE_KEYCLOAK_ID = "Serialized-ID";
 
+    /** ID 令牌类型标识。 */
     public static final String TOKEN_TYPE_ID = "ID";
 
+    /** 刷新令牌类型标识。 */
     public static final String TOKEN_TYPE_REFRESH = "Refresh";
 
+    /** 离线令牌类型标识。 */
     public static final String TOKEN_TYPE_OFFLINE = "Offline";
 
+    /** 登出令牌类型标识。 */
     public static final String TOKEN_TYPE_LOGOUT = "Logout";
 
+    /** 后台通道登出事件 URI。 */
     public static final String TOKEN_BACKCHANNEL_LOGOUT_EVENT = "http://schemas.openid.net/event/backchannel-logout";
     
+    /** 后台登出事件中撤销离线访问的声明名。 */
     public static final String TOKEN_BACKCHANNEL_LOGOUT_EVENT_REVOKE_OFFLINE_TOKENS = "revoke_offline_access";
 
     private static final Logger logger = Logger.getLogger(TokenUtil.class);
 
+    /**
+     * 确保 scope 参数包含 {@code openid}。
+     *
+     * @param scopeParam 原始 scope 字符串
+     * @return 含 openid 的 scope 字符串
+     */
     public static String attachOIDCScope(String scopeParam) {
         if (scopeParam == null || scopeParam.isEmpty()) {
             return OAuth2Constants.SCOPE_OPENID;
@@ -86,14 +104,33 @@ public class TokenUtil {
         }
     }
 
+    /**
+     * 判断 scope 是否包含 {@code openid}，即是否为 OIDC 请求。
+     *
+     * @param scopeParam scope 字符串
+     * @return 包含 openid 时返回 true
+     */
     public static boolean isOIDCRequest(String scopeParam) {
         return hasScope(scopeParam, OAuth2Constants.SCOPE_OPENID);
     }
 
+    /**
+     * 判断 scope 是否请求离线访问（offline_access）。
+     *
+     * @param scopeParam scope 字符串
+     * @return 包含 offline_access 时返回 true
+     */
     public static boolean isOfflineTokenRequested(String scopeParam) {
         return hasScope(scopeParam, OAuth2Constants.OFFLINE_ACCESS);
     }
 
+    /**
+     * 检查 scope 字符串是否包含指定 scope。
+     *
+     * @param scopeParam 空格分隔的 scope 列表
+     * @param targetScope 目标 scope
+     * @return 包含时返回 true
+     */
     public static boolean hasScope(String scopeParam, String targetScope) {
         if (scopeParam == null || targetScope == null) {
             return false;
@@ -109,6 +146,13 @@ public class TokenUtil {
     }
 
 
+    /**
+     * 检查 prompt 参数是否包含指定值。
+     *
+     * @param promptParam 空格分隔的 prompt 列表
+     * @param targetPrompt 目标 prompt
+     * @return 包含时返回 true
+     */
     public static boolean hasPrompt(String promptParam, String targetPrompt) {
         if (promptParam == null || targetPrompt == null) {
             return false;
@@ -126,10 +170,10 @@ public class TokenUtil {
 
 
     /**
-     * Return refresh token or offline token
+     * 从已解码的字节内容解析刷新令牌或离线令牌。
      *
-     * @param decodedToken
-     * @return
+     * @param decodedToken JWS 载荷字节
+     * @return {@link RefreshToken} 实例
      */
     public static RefreshToken getRefreshToken(byte[] decodedToken) throws JWSInputException {
         try {
@@ -139,16 +183,22 @@ public class TokenUtil {
         }
     }
 
+    /**
+     * 从 Compact JWS 字符串解析刷新令牌。
+     *
+     * @param refreshToken Compact 序列化的刷新令牌
+     * @return {@link RefreshToken} 实例
+     */
     public static RefreshToken getRefreshToken(String refreshToken) throws JWSInputException {
         byte[] encodedContent = new JWSInput(refreshToken).getContent();
         return getRefreshToken(encodedContent);
     }
 
     /**
-     * Return true if given refreshToken represents offline token
+     * 判断给定刷新令牌是否为离线令牌。
      *
-     * @param refreshToken
-     * @return
+     * @param refreshToken Compact 序列化的刷新令牌
+     * @return 类型为 {@link #TOKEN_TYPE_OFFLINE} 时返回 true
      */
     public static boolean isOfflineToken(String refreshToken) throws JWSInputException {
         RefreshToken token = getRefreshToken(refreshToken);
@@ -156,6 +206,14 @@ public class TokenUtil {
     }
 
 
+    /**
+     * 使用 dir 算法将 JWT 直接加密为 JWE 字符串。
+     *
+     * @param aesKey AES 内容加密密钥
+     * @param hmacKey HMAC 完整性密钥（可为 null，使用 GCM 模式）
+     * @param jwt 待加密的 JWT
+     * @return Compact JWE 字符串
+     */
     public static String jweDirectEncode(Key aesKey, Key hmacKey, JsonWebToken jwt) throws JWEException {
         try {
             byte[] contentBytes = JsonSerialization.writeValueAsBytes(jwt);
@@ -166,6 +224,15 @@ public class TokenUtil {
     }
 
 
+    /**
+     * 解密 JWE 并反序列化为指定 JWT 类型。
+     *
+     * @param aesKey AES 内容加密密钥
+     * @param hmacKey HMAC 完整性密钥
+     * @param jweStr Compact JWE 字符串
+     * @param expectedClass 期望的 JWT 类型
+     * @return 解密后的 JWT 对象
+     */
     public static <T extends JsonWebToken> T jweDirectVerifyAndDecode(Key aesKey, Key hmacKey, String jweStr, Class<T> expectedClass) throws JWEException {
         byte[] contentBytes = jweDirectVerifyAndDecode(aesKey, hmacKey, jweStr);
         try {
@@ -175,10 +242,26 @@ public class TokenUtil {
         }
     }
 
+    /**
+     * 使用密钥加密算法编码 JWE，内容类型默认为 {@code JWT}。
+     */
     public static String jweKeyEncryptionEncode(Key encryptionKEK, byte[] contentBytes, String algAlgorithm, String encAlgorithm, String kid, JWEAlgorithmProvider jweAlgorithmProvider, JWEEncryptionProvider jweEncryptionProvider) throws JWEException {
         return jweKeyEncryptionEncode(encryptionKEK, contentBytes, algAlgorithm, encAlgorithm, kid, jweAlgorithmProvider, jweEncryptionProvider, "JWT");
     }
 
+    /**
+     * 使用密钥加密算法编码 JWE。
+     *
+     * @param encryptionKEK 密钥加密密钥
+     * @param contentBytes 明文载荷
+     * @param algAlgorithm JWE 头部 alg
+     * @param encAlgorithm JWE 头部 enc
+     * @param kid 密钥 ID
+     * @param jweAlgorithmProvider 算法提供器
+     * @param jweEncryptionProvider 内容加密提供器
+     * @param jweContentType cty 头字段值
+     * @return Compact JWE 字符串
+     */
     public static String jweKeyEncryptionEncode(Key encryptionKEK, byte[] contentBytes, String algAlgorithm,
                                                 String encAlgorithm, String kid, JWEAlgorithmProvider jweAlgorithmProvider,
                                                 JWEEncryptionProvider jweEncryptionProvider, String jweContentType) throws JWEException {
@@ -186,6 +269,7 @@ public class TokenUtil {
         return jweKeyEncryptionEncode(encryptionKEK, contentBytes, jweHeader, jweAlgorithmProvider, jweEncryptionProvider);
     }
 
+    /** 使用指定 JWE 头部与提供器编码密钥加密 JWE。 */
     private static String jweKeyEncryptionEncode(Key encryptionKEK, byte[] contentBytes, JWEHeader jweHeader, JWEAlgorithmProvider jweAlgorithmProvider, JWEEncryptionProvider jweEncryptionProvider) throws JWEException {
         JWE jwe = new JWE()
                 .header(jweHeader)
@@ -196,6 +280,13 @@ public class TokenUtil {
         return encodedContent;
     }
 
+    /**
+     * 使用 KEK 解密 JWE 并返回明文载荷。
+     *
+     * @param decryptionKEK 解密密钥
+     * @param encodedContent Compact JWE 字符串
+     * @return 解密后的字节内容
+     */
     public static byte[] jweKeyEncryptionVerifyAndDecode(Key decryptionKEK, String encodedContent) throws JWEException {
         JWE jwe = new JWE();
         jwe.getKeyStorage()
@@ -204,6 +295,9 @@ public class TokenUtil {
         return jwe.getContent();
     }
 
+    /**
+     * 使用指定算法与加密提供器解密 JWE。
+     */
     public static byte[] jweKeyEncryptionVerifyAndDecode(Key decryptionKEK, String encodedContent, JWEAlgorithmProvider algorithmProvider, JWEEncryptionProvider encryptionProvider) throws JWEException {
         JWE jwe = new JWE();
         jwe.getKeyStorage()
@@ -212,10 +306,20 @@ public class TokenUtil {
         return jwe.getContent();
     }
 
+    /** 使用 dir 算法加密字节内容（无 kid）。 */
     public static String jweDirectEncode(Key aesKey, Key hmacKey, byte[] contentBytes) throws JWEException {
         return jweDirectEncode(null, aesKey, hmacKey, contentBytes);
     }
 
+    /**
+     * 使用 dir 算法加密字节内容为 JWE。
+     *
+     * @param kid 可选密钥 ID
+     * @param aesKey AES CEK
+     * @param hmacKey HMAC 密钥（null 时使用 AEAD GCM）
+     * @param contentBytes 明文
+     * @return Compact JWE 字符串
+     */
     public static String jweDirectEncode(String kid, Key aesKey, Key hmacKey, byte[] contentBytes) throws JWEException {
         int keyLength = aesKey.getEncoded().length;
         String encAlgorithm;
@@ -242,6 +346,14 @@ public class TokenUtil {
 
     }
 
+    /**
+     * 解密 dir 算法 JWE 并返回明文载荷。
+     *
+     * @param aesKey AES CEK
+     * @param hmacKey HMAC 密钥
+     * @param jweStr Compact JWE 字符串
+     * @return 解密后的字节内容
+     */
     public static byte[] jweDirectVerifyAndDecode(Key aesKey, Key hmacKey, String jweStr) throws JWEException {
         JWE jwe = new JWE();
         jwe.getKeyStorage()
@@ -255,10 +367,10 @@ public class TokenUtil {
     }
 
     /**
-     * If token contains claims like "realm_access" or "resource_access" inside the "otherClaims" map, then those would be merged with the original fields "realm_access"
-     * and "resource_access", which are present directly on the token
+     * 若 {@code otherClaims} 中存在 {@code realm_access} 或 {@code resource_access}，
+     * 则将其合并到令牌顶层的对应字段并移除 otherClaims 中的副本。
      *
-     * @param token access token
+     * @param token 访问令牌
      */
     public static void convertTokenRolesFromOtherClaims(AccessToken token) {
         if (token.getOtherClaims() == null) return;
@@ -272,7 +384,7 @@ public class TokenUtil {
         }
 
         if (token.getOtherClaims().containsKey(RESOURCE_ACCESS)) {
-            token.setResourceAccess(new HashMap<>(token.getResourceAccess())); // Re-create as hashMap as it might be unmodifiable map
+            token.setResourceAccess(new HashMap<>(token.getResourceAccess())); // 重建 HashMap，原 map 可能不可变
 
             if (token.getOtherClaims().get(RESOURCE_ACCESS) instanceof Map) {
                 for (Map.Entry<String, Object> entry : ((Map<String, Object>) token.getOtherClaims().get(RESOURCE_ACCESS)).entrySet()) {
@@ -290,6 +402,7 @@ public class TokenUtil {
         }
     }
 
+    /** 将 otherClaims 中的角色对象转换为 {@link AccessToken.Access}。 */
     private static AccessToken.Access convertToAccess(Object accessClaim, String claimName) {
         try {
             return JsonSerialization.readValue(JsonSerialization.writeValueAsString(accessClaim), AccessToken.Access.class);
@@ -299,6 +412,7 @@ public class TokenUtil {
         }
     }
 
+    /** 合并两个 Access 对象的角色列表。 */
     private static AccessToken.Access mergeAccess(AccessToken.Access access1, AccessToken.Access access2) {
         if (access1 == null) return access2;
         if (access2 == null) return access1;

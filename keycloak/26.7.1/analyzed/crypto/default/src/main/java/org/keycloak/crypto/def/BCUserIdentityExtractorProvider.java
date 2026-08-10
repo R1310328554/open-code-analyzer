@@ -48,6 +48,8 @@ import org.bouncycastle.asn1.x500.style.IETFUtils;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于 BouncyCastle 的 X.509 用户身份提取器工厂，从 DN 或 SAN 解析登录主体。
+ *
  * @author <a href="mailto:pnalyvayko@agi.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @date 7/30/2016
@@ -57,11 +59,13 @@ public class BCUserIdentityExtractorProvider  extends UserIdentityExtractorProvi
 
     private static final Logger logger = Logger.getLogger(BCUserIdentityExtractorProvider.class.getName());
 
+    /** 从 X500Name RDN 属性提取用户身份。 */
     class X500NameRDNExtractorBCProvider extends X500NameRDNExtractor {
 
         private ASN1ObjectIdentifier x500NameStyle;
         Function<X509Certificate[],Principal> x500Name;
 
+        /** @param attrName RDN 属性名（如 CN） */
         public X500NameRDNExtractorBCProvider(String attrName, Function<X509Certificate[], Principal> x500Name) {
             this.x500NameStyle = BCStyle.INSTANCE.attrNameToOID(attrName);
             this.x500Name = x500Name;
@@ -96,19 +100,19 @@ public class BCUserIdentityExtractorProvider  extends UserIdentityExtractorProvi
     }
 
     /**
-     * Extracts the subject identifier from the subjectAltName extension.
+     * 从 subjectAltName 扩展提取主体标识符。
      */
     class SubjectAltNameExtractorBCProvider extends SubjectAltNameExtractor {
 
-        // User Principal Name. Used typically by Microsoft in certificates for Smart Card Login
+        // 用户主体名（UPN），常见于微软智能卡登录证书
         private static final String UPN_OID = "1.3.6.1.4.1.311.20.2.3";
 
         private final int generalName;
 
         /**
-         * Creates a new instance
+         * 创建 SAN 提取器实例。
          *
-         * @param generalName an integer representing the general name. See {@link X509Certificate#getSubjectAlternativeNames()}
+         * @param generalName GeneralName 类型整数，参见 {@link X509Certificate#getSubjectAlternativeNames()}
          */
         SubjectAltNameExtractorBCProvider(int generalName) {
             this.generalName = generalName;
@@ -138,19 +142,17 @@ public class BCUserIdentityExtractorProvider  extends UserIdentityExtractorProvi
 
                     if (Integer.class.cast(next.get(0)) == generalName) {
 
-                        // We will try to find UPN_OID among the subjectAltNames of type 'otherName' . Just if not found, we will fallback to the other type
+                        // 优先在 otherName 类型中查找 UPN_OID，未找到则回退到其他类型
                         for (int i = 1 ; i<next.size() ; i++) {
                             Object obj = next.get(i);
 
-                            // We have Subject Alternative Name of other type than 'otherName' . Just return it directly
+                            // 非 otherName 类型直接返回对应值
                             if (generalName != 0) {
                                 logger.tracef("Extracted identity '%s' from Subject Alternative Name of type '%d'", obj, generalName);
                                 return obj;
                             }
 
-                            // From Java 21, the 3rd entry can be present with the type-id as String and 4th entry with the value (either in String or byte format).
-                            // See javadoc of X509Certificate.getSubjectAlternativeNames in Java 21. For the sake of simplicity, we just ignore those additional String entries and
-                            // always parse it from byte (2nd entry) as we still need to support Java 17 and it is not reliable anyway that entries are present in Java 21.
+                            // Java 21 起 SAN 可能含额外 String 条目；为兼容 Java 17 仍从 byte[]（第 2 项）解析
                             if (obj instanceof byte[]) {
                                 byte[] otherNameBytes = (byte[]) obj;
 
@@ -171,7 +173,7 @@ public class BCUserIdentityExtractorProvider  extends UserIdentityExtractorProvi
 
                                         tempOtherName = principalName.getString();
 
-                                        // We found UPN among the 'otherName' principal. We don't need to look other
+                                        // 在 otherName 中找到 UPN 则停止搜索
                                         if (UPN_OID.equals(tempOid)) {
                                             foundUpn = true;
                                             break;
@@ -201,6 +203,7 @@ public class BCUserIdentityExtractorProvider  extends UserIdentityExtractorProvi
         }
 
 
+        /** 递归解包 ASN.1 上下文标签对象。 */
         private ASN1Encodable unwrap(ASN1Encodable encodable) {
             while (encodable instanceof ASN1TaggedObject) {
                 ASN1TaggedObject taggedObj = ASN1TaggedObject.getInstance(encodable, BERTags.CONTEXT_SPECIFIC);
@@ -211,11 +214,13 @@ public class BCUserIdentityExtractorProvider  extends UserIdentityExtractorProvi
         }
     }
 
+    /** {@inheritDoc} 创建基于 X500 RDN 的身份提取器。 */
     @Override
     public UserIdentityExtractor getX500NameExtractor(String identifier, Function<X509Certificate[], Principal> x500Name) {
         return new X500NameRDNExtractorBCProvider(identifier, x500Name);
     }
 
+    /** {@inheritDoc} 创建基于 subjectAltName 的身份提取器。 */
     @Override
     public SubjectAltNameExtractor getSubjectAltNameExtractor(int generalName) {
         return new SubjectAltNameExtractorBCProvider(generalName);
