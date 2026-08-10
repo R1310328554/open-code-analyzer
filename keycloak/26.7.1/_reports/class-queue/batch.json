@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:44:37Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/RedirectUtils.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/SubjectType.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/WebOriginsUtils.java",
-    "services/src/main/java/org/keycloak/protocol/saml/DefaultSamlArtifactResolver.java",
-    "services/src/main/java/org/keycloak/protocol/saml/DefaultSamlArtifactResolverFactory.java",
-    "services/src/main/java/org/keycloak/protocol/saml/EntityDescriptorDescriptionConverter.java",
-    "services/src/main/java/org/keycloak/protocol/saml/IDPMetadataDescriptor.java",
-    "services/src/main/java/org/keycloak/protocol/saml/JaxrsSAML2BindingBuilder.java",
-    "services/src/main/java/org/keycloak/protocol/saml/SAMLDecryptionKeysLocator.java",
-    "services/src/main/java/org/keycloak/protocol/saml/SAMLEncryptionAlgorithms.java",
-    "services/src/main/java/org/keycloak/protocol/saml/SamlAbstractMetadataPublicKeyLoader.java",
-    "services/src/main/java/org/keycloak/protocol/saml/SamlClient.java",
-    "services/src/main/java/org/keycloak/protocol/saml/SamlConfigAttributes.java",
-    "services/src/main/java/org/keycloak/protocol/saml/SamlMetadataKeyLocator.java",
-    "services/src/main/java/org/keycloak/protocol/saml/SamlMetadataPublicKeyLoader.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1258,
-  "done": 4725
+  "done": 4740
 }
