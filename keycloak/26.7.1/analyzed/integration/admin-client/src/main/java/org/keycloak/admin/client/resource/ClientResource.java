@@ -42,17 +42,22 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.UserSessionRepresentation;
 
 /**
+ * 单个 OAuth/OIDC 客户端的管理 REST 资源。
+ * <p>
+ * 提供客户端 CRUD、密钥管理、会话查询、作用域映射、
+ * 证书配置、适配器安装文件导出及细粒度权限等完整管理能力。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 public interface ClientResource {
 
     /**
-     * Enables or disables the fine grain permissions feature.
-     * Returns the updated status of the server in the
-     * {@link ManagementPermissionReference}.
+     * 启用或禁用细粒度权限功能。
+     * <p>
+     * 返回更新后的服务器状态，封装于 {@link ManagementPermissionReference} 中。
      *
-     * @param status status request to apply
-     * @return permission reference indicating the updated status
+     * @param status 待应用的权限状态请求
+     * @return 指示更新后状态的权限引用
      */
     @PUT
     @Path("/management/permissions")
@@ -61,43 +66,49 @@ public interface ClientResource {
     ManagementPermissionReference setPermissions(ManagementPermissionRepresentation status);
 
     /**
-     * Returns indicator if the fine grain permissions are enabled or not.
+     * 查询细粒度权限功能是否已启用。
      *
-     * @return current representation of the permissions feature
+     * @return 当前权限功能的表示对象
      */
     @GET
     @Path("/management/permissions")
     @Produces(MediaType.APPLICATION_JSON)
     ManagementPermissionReference getPermissions();
 
+    /** 获取协议映射器（Protocol Mappers）子资源。 */
     @Path("protocol-mappers")
     ProtocolMappersResource getProtocolMappers();
 
+    /** 获取当前客户端的完整表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ClientRepresentation toRepresentation();
 
+    /** 更新客户端配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(ClientRepresentation clientRepresentation);
 
+    /** 删除当前客户端。 */
     @DELETE
     void remove();
 
+    /** 生成新的客户端密钥（Client Secret）。 */
     @POST
     @Path("client-secret")
     @Produces(MediaType.APPLICATION_JSON)
     CredentialRepresentation generateNewSecret();
 
+    /** 获取当前客户端密钥。 */
     @GET
     @Path("client-secret")
     @Produces(MediaType.APPLICATION_JSON)
     CredentialRepresentation getSecret();
 
     /**
-     * Generate a new registration access token for the client
+     * 重新生成客户端注册访问令牌（Registration Access Token）。
      *
-     * @return
+     * @return 包含新注册访问令牌的客户端表示对象
      */
     @Path("registration-access-token")
     @POST
@@ -106,132 +117,153 @@ public interface ClientResource {
     ClientRepresentation regenerateRegistrationAccessToken();
 
     /**
-     * Get representation of certificate resource
+     * 获取指定属性前缀的证书管理子资源。
      *
-     * @param attributePrefix
-     * @return
+     * @param attributePrefix 证书属性前缀（如 saml.signing）
+     * @return 客户端属性证书资源
      */
     @Path("certificates/{attr}")
     ClientAttributeCertificateResource getCertficateResource(@PathParam("attr") String attributePrefix);
 
     /**
-     * Return installation provider as a String. String is typically XML format specific to the requested provider
+     * 以字符串形式返回适配器安装配置。
+     * <p>
+     * 返回内容通常为特定提供程序的 XML 格式配置。
      *
-     * @param providerId installation provider ID
-     * @return response as a string
+     * @param providerId 安装提供程序 ID
+     * @return 安装配置字符串
      */
     @GET
     @Path("installation/providers/{providerId}")
     String getInstallationProvider(@PathParam("providerId") String providerId);
 
     /**
-     * Return installation provider as a response
+     * 以 HTTP 响应形式返回适配器安装配置。
      *
-     * @param providerId installation provider ID
-     * @return Jakarta response
+     * @param providerId 安装提供程序 ID
+     * @return Jakarta REST 响应
      */
     @GET
     @Path("installation/providers/{providerId}")
     Response getInstallationProviderAsResponse(@PathParam("providerId") String providerId);
 
+    /** 获取当前客户端的活跃会话数量统计。 */
     @Path("session-count")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     Map<String, Integer> getApplicationSessionCount();
 
+    /** 分页列出当前客户端的在线用户会话。 */
     @Path("user-sessions")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserSessionRepresentation> getUserSessions(@QueryParam("first") Integer firstResult, @QueryParam("max") Integer maxResults);
 
+    /** 获取当前客户端的离线会话数量统计。 */
     @Path("offline-session-count")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     Map<String, Long> getOfflineSessionCount();
 
+    /** 分页列出当前客户端的离线用户会话。 */
     @Path("offline-sessions")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<UserSessionRepresentation> getOfflineUserSessions(@QueryParam("first") Integer firstResult, @QueryParam("max") Integer maxResults);
 
+    /** 向所有已注册节点推送令牌吊销通知。 */
     @POST
     @Path("push-revocation")
     @Produces(MediaType.APPLICATION_JSON)
     void pushRevocation();
 
+    /** 获取客户端作用域映射（Scope Mappings）子资源。 */
     @Path("/scope-mappings")
     RoleMappingResource getScopeMappings();
 
+    /** 获取客户端角色（Roles）子资源。 */
     @Path("/roles")
     RolesResource roles();
 
+    /** 获取客户端作用域评估（Evaluate Scopes）子资源。 */
     @Path("/evaluate-scopes")
     ClientScopeEvaluateResource clientScopesEvaluate();
 
     /**
-     * Get default client scopes.  Only name and ids are returned.
+     * 获取默认客户端作用域列表（仅返回名称与 ID）。
      *
-     * @return default client scopes
+     * @return 默认客户端作用域列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("default-client-scopes")
     List<ClientScopeRepresentation> getDefaultClientScopes();
 
+    /** 将指定作用域添加为默认客户端作用域。 */
     @PUT
     @Path("default-client-scopes/{clientScopeId}")
     void addDefaultClientScope(@PathParam("clientScopeId") String clientScopeId);
 
+    /** 从默认客户端作用域中移除指定作用域。 */
     @DELETE
     @Path("default-client-scopes/{clientScopeId}")
     void removeDefaultClientScope(@PathParam("clientScopeId") String clientScopeId);
 
     /**
-     * Get optional client scopes.  Only name and ids are returned.
+     * 获取可选客户端作用域列表（仅返回名称与 ID）。
      *
-     * @return optional client scopes
+     * @return 可选客户端作用域列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("optional-client-scopes")
     List<ClientScopeRepresentation> getOptionalClientScopes();
 
+    /** 将指定作用域添加为可选客户端作用域。 */
     @PUT
     @Path("optional-client-scopes/{clientScopeId}")
     void addOptionalClientScope(@PathParam("clientScopeId") String clientScopeId);
 
+    /** 从可选客户端作用域中移除指定作用域。 */
     @DELETE
     @Path("optional-client-scopes/{clientScopeId}")
     void removeOptionalClientScope(@PathParam("clientScopeId") String clientScopeId);
 
+    /** 获取客户端服务账户对应的用户表示对象。 */
     @Path("/service-account-user")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     UserRepresentation getServiceAccountUser();
 
+    /** 注册客户端集群节点（用于适配器会话同步）。 */
     @Path("nodes")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     void registerNode(Map<String, String> formParams);
 
+    /** 注销指定集群节点。 */
     @Path("nodes/{node}")
     @DELETE
     void unregisterNode(final @PathParam("node") String node);
 
+    /** 测试所有已注册节点是否可达。 */
     @Path("test-nodes-available")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     GlobalRequestResult testNodesAvailable();
 
+    /** 获取细粒度授权（Authorization）子资源。 */
     @Path("/authz/resource-server")
     AuthorizationResource authorization();
 
 
+    /** 获取轮换中的客户端密钥（密钥轮换功能）。 */
     @Path("client-secret/rotated")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public CredentialRepresentation getClientRotatedSecret();
 
+    /** 作废轮换中的客户端密钥。 */
     @Path("client-secret/rotated")
     @DELETE
     @Produces(MediaType.APPLICATION_JSON)

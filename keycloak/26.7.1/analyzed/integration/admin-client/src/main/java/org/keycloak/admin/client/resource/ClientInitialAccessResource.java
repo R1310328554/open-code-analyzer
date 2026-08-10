@@ -32,19 +32,27 @@ import org.keycloak.representations.idm.ClientInitialAccessCreatePresentation;
 import org.keycloak.representations.idm.ClientInitialAccessPresentation;
 
 /**
+ * 客户端初始访问令牌（Initial Access Token）的管理 REST 资源。
+ * <p>
+ * 初始访问令牌用于客户端动态注册（Client Registration）流程，
+ * 允许持有者在限定次数与有效期内注册新客户端。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ClientInitialAccessResource {
 
+    /** 创建新的初始访问令牌。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     ClientInitialAccessPresentation create(ClientInitialAccessCreatePresentation rep);
-    
+
+    /** 列出领域内所有初始访问令牌。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<ClientInitialAccessPresentation> list();
 
+    /** 删除指定 ID 的初始访问令牌。 */
     @DELETE
     @Path("{id}")
     void delete(final @PathParam("id") String id);

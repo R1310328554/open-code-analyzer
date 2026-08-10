@@ -28,15 +28,21 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.authorization.ClientScopePolicyRepresentation;
 
 /**
+ * 授权服务中客户端作用域策略（Client Scope Policy）集合的管理 REST 资源。
+ * <p>
+ * 用于细粒度授权场景，基于 OAuth 客户端作用域定义访问控制策略。
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 public interface ClientScopePoliciesResource {
 
+    /** 创建新的客户端作用域授权策略。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Response create(ClientScopePolicyRepresentation representation);
 
+    /** 按名称搜索客户端作用域授权策略。 */
     @Path("/search")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

@@ -28,24 +28,28 @@ import org.keycloak.representations.KeyStoreConfig;
 import org.keycloak.representations.idm.CertificateRepresentation;
 
 /**
+ * 客户端属性证书与密钥对的管理 REST 资源。
+ * <p>
+ * 用于管理客户端 SAML/OIDC 签名或加密所需的 X.509 证书与密钥，
+ * 支持查看、生成、上传证书以及导出密钥库文件。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public interface ClientAttributeCertificateResource {
 
     /**
-     * Get key info
+     * 获取当前证书/密钥的元数据信息。
      *
-     * @return
+     * @return 证书表示对象
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     CertificateRepresentation getKeyInfo();
 
     /**
-     * Generate a new certificate with new key pair
+     * 生成新的密钥对及自签名证书。
      *
-     * @return
+     * @return 新生成的证书表示对象
      */
     @POST
     @Path("generate")
@@ -53,10 +57,10 @@ public interface ClientAttributeCertificateResource {
     CertificateRepresentation generate();
 
     /**
-     * Upload certificate and eventually private key
+     * 上传 JKS 密钥库（含证书及可选私钥）。
      *
-     * @param output
-     * @return
+     * @param output 多部分表单数据，包含密钥库文件
+     * @return 上传后的证书表示对象
      */
     @POST
     @Path("upload")
@@ -65,10 +69,10 @@ public interface ClientAttributeCertificateResource {
     CertificateRepresentation uploadJks(Object output);
 
     /**
-     * Upload only certificate, not private key
+     * 仅上传公钥证书，不包含私钥。
      *
-     * @param output
-     * @return
+     * @param output 多部分表单数据，包含证书文件
+     * @return 上传后的证书表示对象
      */
     @POST
     @Path("upload-certificate")
@@ -77,11 +81,13 @@ public interface ClientAttributeCertificateResource {
     CertificateRepresentation uploadJksCertificate(Object output);
 
     /**
-     * Get a keystore file for the client, containing private key and public certificate
+     * 下载包含私钥与公钥证书的客户端密钥库文件。
+     * <p>
+     * 配置参数 {@code keySize} 与 {@code validity} 自 Keycloak 26.3 起支持；
+     * 默认密钥长度 4096、有效期 3 年。更早版本默认 2048 位、10 年有效期。
      *
-     * @param config Keystore configuration as JSON. Parameters "keySize" and "validity" of the config are supported since Keycloak 26.3. Key size is 4096 by default and validity is 3 years by default.
-     *               For older versions than Keycloak 26.3, the key size is 2048 and validity is 10 years.
-     * @return
+     * @param config 密钥库配置 JSON
+     * @return 密钥库二进制内容
      */
     @POST
     @Path("/download")
@@ -90,13 +96,12 @@ public interface ClientAttributeCertificateResource {
     byte[] getKeystore(final KeyStoreConfig config);
 
     /**
-     * Generate a new keypair and certificate, and get the private key file
+     * 生成新密钥对与证书，并返回含私钥的密钥库文件。
+     * <p>
+     * 仅将生成的公钥证书保存至 Keycloak 数据库，私钥不会持久化。
      *
-     * Generates a keypair and certificate and serves the private key in a specified keystore format.
-     * Only generated public certificate is saved in Keycloak DB - the private key is not.
-     *
-     * @param config Keystore configuration as JSON
-     * @return
+     * @param config 密钥库配置 JSON
+     * @return 含私钥的密钥库二进制内容
      */
     @POST
     @Path("/generate-and-download")

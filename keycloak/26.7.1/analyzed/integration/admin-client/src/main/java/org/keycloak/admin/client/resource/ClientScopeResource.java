@@ -28,24 +28,34 @@ import jakarta.ws.rs.core.MediaType;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
 
 /**
+ * 单个客户端作用域（Client Scope）的管理 REST 资源。
+ * <p>
+ * 客户端作用域定义可复用的 OIDC 声明与角色映射，
+ * 可被多个客户端引用以统一令牌内容。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 public interface ClientScopeResource {
 
+    /** 获取协议映射器（Protocol Mappers）子资源。 */
     @Path("protocol-mappers")
     ProtocolMappersResource getProtocolMappers();
 
+    /** 获取作用域角色映射（Scope Mappings）子资源。 */
     @Path("/scope-mappings")
     RoleMappingResource getScopeMappings();
 
+    /** 获取当前客户端作用域的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ClientScopeRepresentation toRepresentation();
 
+    /** 更新客户端作用域配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(ClientScopeRepresentation rep);
 
+    /** 删除当前客户端作用域。 */
     @DELETE
     void remove();
 

@@ -27,23 +27,29 @@ import jakarta.ws.rs.core.MediaType;
 import org.keycloak.representations.idm.ClientTypesRepresentation;
 
 /**
- *  @since Keycloak 25. All the child endpoints are also available since that version<p>
+ * 领域客户端类型（Client Types）的管理 REST 资源。
+ * <p>
+ * 客户端类型定义客户端的默认配置模板，简化同类客户端的批量创建与管理。
+ * 自 Keycloak 25 起可用，需启用 {@link org.keycloak.common.Profile.Feature#CLIENT_TYPES} 特性。
  *
- *  This endpoint including all the child endpoints requires feature {@link org.keycloak.common.Profile.Feature#CLIENT_TYPES} to be enabled<p>
+ * @since Keycloak 25. All the child endpoints are also available since that version<p>
  *
- * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
+ *  @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientTypesResource {
 
+    /** 获取领域内配置的客户端类型（含全局类型）。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ClientTypesRepresentation getClientTypes();
 
 
     /**
-     * Update client types in the realm. The "global-client-types" field of client types is ignored as it is not possible to update global types
+     * 更新领域内的客户端类型配置。
+     * <p>
+     * {@code global-client-types} 字段会被忽略，全局类型不可通过此接口修改。
      *
-     * @param clientTypes
+     * @param clientTypes 待更新的客户端类型
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)

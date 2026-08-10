@@ -31,31 +31,41 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 
 /**
+ * 单个客户端授权策略的管理 REST 资源。
+ * <p>
+ * 支持读取、更新、删除客户端策略，并查询关联策略、依赖策略及受保护资源。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface ClientPolicyResource {
 
+    /** 获取当前客户端策略的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ClientPolicyRepresentation toRepresentation();
 
+    /** 更新客户端策略配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(ClientPolicyRepresentation representation);
 
+    /** 删除当前客户端策略。 */
     @DELETE
     void remove();
 
+    /** 列出引用本策略的关联策略。 */
     @Path("/associatedPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> associatedPolicies();
 
+    /** 列出依赖本策略的其他策略。 */
     @Path("/dependentPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> dependentPolicies();
 
+    /** 列出受本策略保护的资源。 */
     @Path("/resources")
     @GET
     @Produces("application/json")

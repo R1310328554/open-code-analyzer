@@ -31,25 +31,33 @@ import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.ComponentTypeRepresentation;
 
 /**
+ * 单个领域组件（Component）的管理 REST 资源。
+ * <p>
+ * 组件用于配置用户存储、LDAP 联邦、密钥提供程序等可插拔 SPI 实例，
+ * 支持读取、更新、删除及查询可用子组件类型。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ComponentResource {
+    /** 获取当前组件的表示对象。 */
     @GET
     ComponentRepresentation toRepresentation();
 
+    /** 更新组件配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(ComponentRepresentation rep);
 
+    /** 删除当前组件。 */
     @DELETE
     void remove();
 
     /**
-     * List of subcomponent types that are available to configure for a particular parent component.
+     * 列出指定父组件下可配置的子组件类型。
      *
-     * @param subtype fully qualified name of the java class of the provider, which is subtype of this component
-     * @return
+     * @param subtype 提供程序 Java 类的全限定名，须为当前组件类型的子类型
+     * @return 可用的子组件类型列表
      */
     @GET
     @Path("sub-component-types")

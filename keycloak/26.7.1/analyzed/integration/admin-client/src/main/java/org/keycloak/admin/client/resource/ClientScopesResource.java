@@ -31,17 +31,24 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
 
 /**
+ * 客户端作用域（Client Scope）集合的管理 REST 资源。
+ * <p>
+ * 支持列出、创建客户端作用域，并按 ID 访问单个作用域的详细管理接口。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 public interface ClientScopesResource {
 
+    /** 按 ID 获取单个客户端作用域资源。 */
     @Path("{id}")
     ClientScopeResource get(@PathParam("id") String id);
 
+    /** 创建新的客户端作用域。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     Response create(ClientScopeRepresentation clientScopeRepresentation);
 
+    /** 列出领域内所有客户端作用域。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<ClientScopeRepresentation> findAll();

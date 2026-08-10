@@ -27,10 +27,16 @@ import jakarta.ws.rs.core.MediaType;
 import org.keycloak.representations.idm.ComponentTypeRepresentation;
 
 /**
+ * 客户端注册策略（Client Registration Policy）的管理 REST 资源。
+ * <p>
+ * 用于查询可用的客户端注册策略提供程序类型，
+ * 这些策略在动态客户端注册时校验注册请求的合规性。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientRegistrationPolicyResource {
 
+    /** 列出所有可用的客户端注册策略提供程序类型。 */
     @Path("providers")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

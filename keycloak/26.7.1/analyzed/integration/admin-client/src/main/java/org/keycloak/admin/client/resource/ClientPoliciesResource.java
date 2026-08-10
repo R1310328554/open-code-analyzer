@@ -29,18 +29,26 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.authorization.ClientPolicyRepresentation;
 
 /**
+ * 授权服务中客户端策略（Client Policy）集合的管理 REST 资源。
+ * <p>
+ * 用于细粒度授权（Fine-Grained Authorization）场景，
+ * 基于客户端身份定义访问控制策略。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface ClientPoliciesResource {
 
+    /** 创建新的客户端授权策略。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Response create(ClientPolicyRepresentation representation);
 
+    /** 按 ID 获取单个客户端授权策略资源。 */
     @Path("{id}")
     ClientPolicyResource findById(@PathParam("id") String id);
 
+    /** 按名称搜索客户端授权策略。 */
     @Path("/search")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
