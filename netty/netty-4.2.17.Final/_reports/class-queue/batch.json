@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:08:25Z",
-  "files": [
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3RequestStreamFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3RequestStreamFrameTypeValidator.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3RequestStreamInboundHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3RequestStreamInitializer.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3RequestStreamValidationHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3RequestStreamValidationUtils.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ServerConnectionHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ServerPushStreamManager.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3SettingIdentifier.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3Settings.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3SettingsFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3UnidirectionalStreamInboundClientHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3UnidirectionalStreamInboundHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3UnidirectionalStreamInboundServerHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3UnknownFrame.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1088,
-  "done": 825
+  "done": 840
 }
