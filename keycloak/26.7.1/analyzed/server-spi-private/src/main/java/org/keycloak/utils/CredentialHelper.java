@@ -43,6 +43,7 @@ import org.keycloak.util.JsonSerialization;
 import org.jboss.logging.Logger;
 
 /**
+ * 凭证辅助工具：按类型设置认证执行状态，并创建 OTP/恢复码等凭证。
  * used to set an execution a state based on type.
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -52,6 +53,7 @@ public class CredentialHelper {
 
     private static final Logger logger = Logger.getLogger(CredentialHelper.class);
 
+    /** 将指定类型认证执行的要求状态设为 {@code requirement}（可选过滤当前状态）。 */
     public static void setOrReplaceAuthenticationRequirement(KeycloakSession session, RealmModel realm, String type, AuthenticationExecutionModel.Requirement requirement, AuthenticationExecutionModel.Requirement currentRequirement) {
         realm.getAuthenticationFlowsStream().forEach(flow -> realm.getAuthenticationExecutionsStream(flow.getId())
                 .filter(exe -> {
@@ -74,6 +76,7 @@ public class CredentialHelper {
                 }));
     }
 
+    /** 按 {@code providerId} 查找可配置的认证器/表单/客户端认证器工厂。 */
     public static ConfigurableAuthenticatorFactory getConfigurableAuthenticatorFactory(KeycloakSession session, String providerId) {
         ConfigurableAuthenticatorFactory factory = (AuthenticatorFactory)session.getKeycloakSessionFactory().getProviderFactory(Authenticator.class, providerId);
         if (factory == null) {
@@ -86,9 +89,9 @@ public class CredentialHelper {
     }
 
     /**
-     * Create OTP credential either in userStorage or local storage (Keycloak DB)
+     * 在用户存储或 Keycloak 本地库中创建 OTP 凭证。
      *
-     * @return true if credential was successfully created either in the user storage or Keycloak DB. False if error happened (EG. during HOTP validation)
+     * @return 成功创建且校验通过时返回 {@code true}；HOTP 校验失败等错误时返回 {@code false}
      */
     public static boolean createOTPCredential(KeycloakSession session, RealmModel realm, UserModel user, String totpCode, OTPCredentialModel credentialModel) {
         CredentialProvider otpCredentialProvider = session.getProvider(CredentialProvider.class, "keycloak-otp");
@@ -105,12 +108,14 @@ public class CredentialHelper {
             credentialId = createdCredential.getId();
         }
 
+        // HOTP 类型需验证一次以消耗注册用 OTP 并递增计数器
         //If the type is HOTP, call verify once to consume the OTP used for registration and increase the counter.
         UserCredentialModel credential = new UserCredentialModel(credentialId, otpCredentialProvider.getType(), totpCode);
         return user.credentialManager().isValid(credential);
     }
 
     /**
+     * 在用户存储或 Keycloak 本地库中创建恢复认证码凭证。
      * Create RecoveryCodes credential either in userStorage or local storage (Keycloak DB)
      */
     public static void createRecoveryCodesCredential(KeycloakSession session, RealmModel realm, UserModel user, RecoveryAuthnCodesCredentialModel credentialModel, List<String> generatedCodes) {
@@ -132,11 +137,10 @@ public class CredentialHelper {
     }
 
     /**
-     * Create "dummy" representation of the credential. Typically used when credential is provided by userStorage and we don't know further
-     * details about the credential besides the type
+     * 创建凭证的占位表示，通常用于用户存储仅提供类型而无更多细节的场景。
      *
-     * @param credentialProviderType
-     * @return dummy credential
+     * @param credentialProviderType 凭证提供者类型
+     * @return 占位凭证表示
      */
     public static CredentialRepresentation createUserStorageCredentialRepresentation(String credentialProviderType) {
         CredentialRepresentation credential = new CredentialRepresentation();

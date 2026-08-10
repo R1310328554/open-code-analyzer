@@ -43,6 +43,8 @@ import org.jboss.logging.Logger.Level;
 
 
 /**
+ * OCSP（在线证书状态协议）提供者抽象基类：查询 X.509 证书吊销状态。
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 10/29/2016
@@ -52,14 +54,17 @@ public abstract class OCSPProvider {
 
     private final static Logger logger = Logger.getLogger(OCSPProvider.class);
 
+    /** 允许的时间偏差（毫秒），默认 15 分钟。 */
     protected static final int TIME_SKEW = 900000;
 
+    /** 证书吊销状态枚举。 */
     public enum RevocationStatus {
-        GOOD,
-        REVOKED,
-        UNKNOWN
+        /** 证书有效。 */ GOOD,
+        /** 证书已吊销。 */ REVOKED,
+        /** 状态未知。 */ UNKNOWN
     }
 
+    /** OCSP 吊销查询结果。 */
     public interface OCSPRevocationStatus {
         RevocationStatus getRevocationStatus();
         Date getRevocationTime();
@@ -67,6 +72,7 @@ public abstract class OCSPProvider {
     }
 
     /**
+     * 通过指定 OCSP 响应器 URI 查询证书吊销状态。
      * Requests certificate revocation status using OCSP.
      * @param session Keycloak session
      * @param cert the certificate to be checked
@@ -87,6 +93,7 @@ public abstract class OCSPProvider {
         return check(session, cert, issuerCertificate, Collections.singletonList(responderURI), responderCert, date);
     }
     /**
+     * 从证书 AIA 扩展获取 OCSP 响应器 URI 并查询吊销状态。
      * Requests certificate revocation status using OCSP. The OCSP responder URI
      * is obtained from the certificate's AIA extension.
      * @param session Keycloak session
@@ -120,6 +127,7 @@ public abstract class OCSPProvider {
         return check(session, cert, issuerCertificate, Collections.unmodifiableList(uris), responderCert, date);
     }
 
+    /** 向 OCSP 响应器发送请求并返回编码后的 OCSP 响应。 */
     protected byte[] getEncodedOCSPResponse(KeycloakSession session, byte[] encodedOCSPReq, URI responderUri) throws IOException {
 
         CloseableHttpClient httpClient = session.getProvider(HttpClientProvider.class).getHttpClient();
@@ -127,6 +135,7 @@ public abstract class OCSPProvider {
         post.setHeader(HttpHeaders.CONTENT_TYPE, "application/ocsp-request");
         post.setEntity(new ByteArrayEntity(encodedOCSPReq));
 
+        // 获取 OCSP 响应
         //Get Response
         try (CloseableHttpResponse response = httpClient.execute(post)) {
             try {
@@ -146,6 +155,7 @@ public abstract class OCSPProvider {
     }
 
     /**
+     * 从证书 AIA 扩展获取响应器 URI 并查询吊销状态（无日期/响应器证书参数）。
      * Requests certificate revocation status using OCSP. The OCSP responder URI
      * is obtained from the certificate's AIA extension.
      * @param session Keycloak session
@@ -158,6 +168,7 @@ public abstract class OCSPProvider {
     }
 
     /**
+     * 向多个 OCSP 响应器 URI 查询证书吊销状态（子类实现）。
      * Requests certificate revocation status using OCSP.
      * @param session Keycloak session
      * @param cert the certificate to be checked
@@ -173,6 +184,7 @@ public abstract class OCSPProvider {
             throws CertPathValidatorException;
 
 
+    /** @return 表示状态未知的 OCSP 吊销结果 */
     protected static OCSPRevocationStatus unknownStatus() {
         return new OCSPRevocationStatus() {
             @Override
@@ -193,6 +205,7 @@ public abstract class OCSPProvider {
     }
 
     /**
+     * 从 X509 证书 AIA v3 扩展提取 OCSP 响应器 URI（可能多个）。
      * Extracts OCSP responder URI from X509 AIA v3 extension, if available. There can be
      * multiple responder URIs encoded in the certificate.
      * @param cert

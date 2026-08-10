@@ -22,27 +22,34 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 用户配置 SPI：定义 {@link UserProfileProvider} 的注册与发现机制。
+ *
  * @author <a href="mailto:markus.till@bosch.io">Markus Till</a>
  */
 public class UserProfileSpi implements Spi {
 
+    /** SPI 标识符 {@code userProfile}。 */
     public static final String ID = "userProfile";
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@link #ID} */
     @Override
     public String getName() {
         return ID;
     }
 
+    /** @return 提供者接口 {@link UserProfileProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return UserProfileProvider.class;
     }
 
+    /** @return 工厂接口 {@link UserProfileProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return UserProfileProviderFactory.class;

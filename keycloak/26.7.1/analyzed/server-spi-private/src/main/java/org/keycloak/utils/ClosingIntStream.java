@@ -38,12 +38,14 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
+ * 自动关闭的 {@link IntStream} 包装器：终结操作后自动释放底层资源。
  * This stream will automatically close itself after terminal operation.
  */
 class ClosingIntStream implements IntStream {
 
     private final IntStream delegate;
 
+    /** @param delegate 被包装的 {@link IntStream} */
     public ClosingIntStream(IntStream delegate) {
         this.delegate = delegate;
     }
@@ -279,6 +281,7 @@ class ClosingIntStream implements IntStream {
         return delegate.isParallel();
     }
 
+    /** 迭代耗尽时自动关闭底层流的迭代器。 */
     private class ClosingIterator implements PrimitiveIterator.OfInt {
 
         private final PrimitiveIterator.OfInt iterator;
@@ -318,6 +321,7 @@ class ClosingIntStream implements IntStream {
         }
     }
 
+    /** 遍历完成时自动关闭底层流的分 spliterator。 */
     private class ClosingSpliterator implements Spliterator.OfInt {
 
         private final Spliterator.OfInt spliterator;

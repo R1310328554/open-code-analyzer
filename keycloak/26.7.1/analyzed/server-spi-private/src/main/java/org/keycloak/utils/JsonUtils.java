@@ -31,17 +31,19 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * JSON 操作工具类：提供 claim 路径拆分、映射及取值等辅助方法。
  * Utility methods for manipulating JSON objects.
  */
 public class JsonUtils {
 
+    // claim 组件中的字符：反斜杠转义字面量，或非反斜杠/点（组件分隔符）的任意字符
     // A character in a claim component is either a literal character escaped by a backslash (\., \\, \_, \q, etc.)
     // or any character other than backslash (escaping) and dot (claim component separator)
     private static final Pattern CLAIM_COMPONENT = Pattern.compile("^((\\\\.|[^\\\\.])+?)\\.");
     private static final Pattern BACKSLASHED_CHARACTER = Pattern.compile("\\\\(.)");
 
     /**
-     * Splits the given {@code claim} into separate paths if the value contains separators as per {@link #CLAIM_COMPONENT}.
+     * 按 {@link #CLAIM_COMPONENT} 规则将 {@code claim} 拆分为路径组件列表。
      *
      * @param claim the claim
      * @return a list with the paths
@@ -53,6 +55,7 @@ public class JsonUtils {
         while (m.find()) {
             claimComponents.add(BACKSLASHED_CHARACTER.matcher(m.group(1)).replaceAll("$1"));
             start = m.end();
+            // 重置 region 起始以匹配 ^ 锚定的字符串开头
             // This is necessary to match the start of region as the start of string as determined by ^
             m.region(start, claim.length());
         }
@@ -63,6 +66,7 @@ public class JsonUtils {
     }
 
     /**
+     * 将 {@code attributeValue} 按路径 {@code split} 映射到 {@code jsonObject} 中。
      * Maps the Claim with the value {@code attributeValue} into the {@code jsonObject} under the path {@code split}.
      * <br />
      * <b>Input</b>
@@ -131,7 +135,7 @@ public class JsonUtils {
     }
 
     /**
-     * Determines if the given {@code claim} contains paths.
+     * 判断 {@code claim} 是否包含嵌套路径（含点分隔符）。
      *
      * @param claim the claim
      * @return {@code true} if the {@code claim} contains paths. Otherwise, false.
@@ -141,7 +145,8 @@ public class JsonUtils {
     }
 
     /**
-     * <p>Returns the value corresponding to the given {@code claim}.
+     * 从 JSON 节点中按 claim 路径取值。
+     * <p>Returns the value corresponding to the given {@code claim}.</p>
      *
      * @param node the JSON node
      * @param claim the claim
@@ -160,11 +165,12 @@ public class JsonUtils {
         return null;
     }
 
+    /** 按已拆分的路径列表从 JSON 节点取值（支持数组下标）。 */
     public static Object getJsonValue(JsonNode node, List<String> paths) {
         JsonNode currentNode = node;
         for (String currentFieldName : paths) {
 
-            // if array path, retrieve field name and index
+            // 数组路径：解析字段名与下标
             String currentNodeName = currentFieldName;
             int arrayIndex = -1;
             if (currentFieldName.endsWith("]")) {

@@ -37,12 +37,14 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
+ * 自动关闭的 {@link DoubleStream} 包装器：终结操作后自动释放底层资源。
  * This stream will automatically close itself after terminal operation.
  */
 class ClosingDoubleStream implements DoubleStream {
 
     private final DoubleStream delegate;
 
+    /** @param delegate 被包装的 {@link DoubleStream} */
     public ClosingDoubleStream(DoubleStream delegate) {
         this.delegate = delegate;
     }
@@ -264,6 +266,7 @@ class ClosingDoubleStream implements DoubleStream {
         return delegate.isParallel();
     }
 
+    /** 迭代耗尽时自动关闭底层流的迭代器。 */
     private class ClosingIterator implements PrimitiveIterator.OfDouble {
 
         private final PrimitiveIterator.OfDouble iterator;
@@ -303,6 +306,7 @@ class ClosingDoubleStream implements DoubleStream {
         }
     }
 
+    /** 遍历完成时自动关闭底层流的分 spliterator。 */
     private class ClosingSpliterator implements Spliterator.OfDouble {
 
         private final Spliterator.OfDouble spliterator;

@@ -25,6 +25,7 @@ import jakarta.ws.rs.BadRequestException;
 import org.jboss.logging.Logger;
 
 /**
+ * 保留字符校验器：检测字符串是否包含 RFC 3986 等定义的非法字符。
  *
  * @author Stan Silvert
  * @author Lukas Hanusovsky lhanusov@redhat.com
@@ -32,18 +33,22 @@ import org.jboss.logging.Logger;
 public class ReservedCharValidator {
     protected static final Logger logger = Logger.getLogger(ReservedCharValidator.class);
 
-    // https://tools.ietf.org/html/rfc3986#section-2.2
+    // RFC 3986 保留字符：https://tools.ietf.org/html/rfc3986#section-2.2
     private static final Pattern RESERVED_CHARS_PATTERN = Pattern.compile("[:/?#@!$&()*+,;=\\[\\]\\\\]");
 
+    // KEYCLOAK-14231：语言环境额外禁止 {、}、%
     // KEYCLOAK-14231 - Supported Locales: Three new characters were added on top of this RFC: "{", "}", "%"
     private static final Pattern RESERVED_CHARS_LOCALES_PATTERN = Pattern.compile("[:/?#@!$&()*+,;=\\[\\]\\\\{}%]");
 
+    /** 工具类，禁止实例化。 */
     private ReservedCharValidator() {}
 
+    /** 使用默认错误消息校验字符串。 */
     public static void validate(String str, Pattern pattern) {
         validate(str, pattern, null);
     }
 
+    /** @param message 自定义错误消息；为 {@code null} 时使用默认消息 */
     public static void validate(String str, Pattern pattern, String message) throws ReservedCharException {
         if (str == null) return;
 
@@ -57,15 +62,18 @@ public class ReservedCharValidator {
         }
     }
 
+    /** 校验字符串不含空格及 RFC 3986 保留字符。 */
     public static void validateNoSpace(String str) {
         validate(str, Pattern.compile("\\s"), "Empty Space not allowed.");
         validate(str, RESERVED_CHARS_PATTERN);
     }
 
+    /** 校验字符串不含 RFC 3986 保留字符。 */
     public static void validate(String str) {
         validate(str, RESERVED_CHARS_PATTERN);
     }
 
+    /** 校验语言环境字符串集合（含额外禁止的 {、}、%）。 */
     public static void validateLocales(Iterable<String> strIterable) {
         if (strIterable == null) return;
 
@@ -74,6 +82,7 @@ public class ReservedCharValidator {
         }
     }
 
+    /** 校验安全响应头键值不含换行符。 */
     public static void validateSecurityHeaders(Map<String, String> headers) {
         if (headers == null) return;
 
@@ -83,6 +92,7 @@ public class ReservedCharValidator {
         }
     }
 
+    /** 检测到保留字符时抛出的 400 异常。 */
     public static class ReservedCharException extends BadRequestException {
         ReservedCharException(String msg) {
             super(msg);

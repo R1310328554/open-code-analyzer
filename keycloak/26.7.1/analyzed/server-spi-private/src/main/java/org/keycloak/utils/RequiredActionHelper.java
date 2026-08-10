@@ -27,12 +27,15 @@ import org.keycloak.models.utils.Base32;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 必需操作（Required Action）管理辅助工具。
  * Helpers for managing RequiredActions.
  */
 public class RequiredActionHelper {
 
+    /** 工具类，禁止实例化。 */
     private RequiredActionHelper() {}
 
+    /** 查找具有配置元数据的可配置必需操作工厂。 */
     public static RequiredActionFactory getConfigurableRequiredActionFactory(KeycloakSession session, String providerId) {
         RequiredActionFactory providerFactory = (RequiredActionFactory)session.getKeycloakSessionFactory().getProviderFactory(RequiredActionProvider.class, providerId);
 
@@ -48,6 +51,7 @@ public class RequiredActionHelper {
         return null;
     }
 
+    /** 查找可配置必需操作工厂；未找到时尝试 Base32 解码 {@code providerId} 后重试。 */
     public static RequiredActionFactory lookupConfigurableRequiredActionFactory(KeycloakSession session, String providerId) {
 
         RequiredActionFactory factory = getConfigurableRequiredActionFactory(session, providerId);
@@ -60,6 +64,9 @@ public class RequiredActionHelper {
         return factory;
     }
 
+    /** @param realm 领域
+     * @param providerId 提供者 ID
+     * @return 匹配的必需操作模型，未找到时返回 {@code null} */
     public static RequiredActionProviderModel getRequiredActionByProviderId(RealmModel realm, String providerId) {
         return realm.getRequiredActionProvidersStream() //
                 .filter(action -> action.getProviderId().equals(providerId)) //

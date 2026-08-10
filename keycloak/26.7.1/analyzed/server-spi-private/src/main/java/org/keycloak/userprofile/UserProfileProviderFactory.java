@@ -20,6 +20,9 @@ package org.keycloak.userprofile;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link UserProfileProvider} 的 SPI 工厂接口。
+ * <p>负责注册并创建用户配置提供者实例。</p>
+ *
  * @author <a href="mailto:markus.till@bosch.io">Markus Till</a>
  */
 public interface UserProfileProviderFactory extends  ProviderFactory<UserProfileProvider> {

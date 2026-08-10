@@ -40,21 +40,25 @@ import org.keycloak.validate.Validators;
 import org.jboss.logging.Logger;
 
 /**
+ * 用户配置工具类：提供元数据组查找、属性创建及 REST 元数据转换等辅助方法。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UserProfileUtil {
 
     private static final Logger logger = Logger.getLogger(UserProfileUtil.class);
 
+    /** 用户元数据组名称。 */
     public static final String USER_METADATA_GROUP = "user-metadata";
 
+    /** 仅管理员上下文可读写的条件谓词。 */
     public static final Predicate<AttributeContext> ONLY_ADMIN_CONDITION = context -> context.getContext().isAdminContext();
 
     /**
-     * Find the metadata group "user-metadata"
+     * 查找名为 {@link #USER_METADATA_GROUP} 的元数据组。
      *
-     * @param session
-     * @return metadata group if exists, otherwise null
+     * @param session Keycloak 会话
+     * @return 元数据组；不存在时返回 {@code null}
      */
     public static AttributeGroupMetadata lookupUserMetadataGroup(KeycloakSession session) {
         UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
@@ -67,19 +71,20 @@ public class UserProfileUtil {
     }
 
     /**
-     * Adds metadata attribute to the user-profile for users from specified userStorageProvider
+     * 为指定用户存储提供者的用户向用户配置添加元数据属性（仅管理员可读写）。
      *
      * @param attrName attribute name
      * @param metadata user-profile metadata where attribute would be added
      * @param metadataGroup metadata group in user-profile
      * @param guiOrder guiOrder to where to put the attribute
      * @param storageProviderName storageProviderName (just for logging purposes)
-     * @return the attribute metadata if attribute was created. False otherwise
+     * @return 成功创建时返回属性元数据，否则返回 {@code null}
      */
     public static AttributeMetadata createAttributeMetadata(String attrName, UserProfileMetadata metadata, AttributeGroupMetadata metadataGroup, int guiOrder, String storageProviderName) {
         return createAttributeMetadata(attrName, metadata, metadataGroup, ONLY_ADMIN_CONDITION, AttributeMetadata.ALWAYS_FALSE, guiOrder, storageProviderName);
     }
 
+    /** 创建仅管理员可读写的属性元数据（无元数据组）。 */
     public static AttributeMetadata createAttributeMetadata(String attrName, UserProfileMetadata metadata, int guiOrder, String storageProviderName) {
         return createAttributeMetadata(attrName, metadata, null, ONLY_ADMIN_CONDITION, ONLY_ADMIN_CONDITION, guiOrder, storageProviderName);
     }
@@ -107,10 +112,10 @@ public class UserProfileUtil {
     }
 
     /**
-     * Returns whether the attribute with the given {@code name} is a root attribute.
+     * 判断给定 {@code name} 是否为用户根属性（用户名、邮箱、姓名、语言等）。
      *
      * @param name the attribute name
-     * @return
+     * @return 是根属性时返回 {@code true}
      */
     public static boolean isRootAttribute(String name) {
         return UserModel.USERNAME.equals(name)
@@ -120,6 +125,7 @@ public class UserProfileUtil {
                 || UserModel.LOCALE.equals(name);
     }
 
+    /** 将 {@link UserProfile} 转换为 REST API 用的 {@link org.keycloak.representations.idm.UserProfileMetadata}。 */
     public static org.keycloak.representations.idm.UserProfileMetadata createUserProfileMetadata(KeycloakSession session, UserProfile profile) {
         Attributes profileAttributes = profile.getAttributes();
         Map<String, List<String>> am = profileAttributes.getReadable();
@@ -170,6 +176,7 @@ public class UserProfileUtil {
     }
 
     private static Map<String, Map<String, Object>> toValidatorMetadata(AttributeMetadata am, KeycloakSession session){
+        // 仅返回实现了 ConfiguredProvider 的校验器；其余视为内部校验器
         // we return only validators which are instance of ConfiguredProvider. Others are expected as internal.
         return am.getValidators() == null ? null : am.getValidators().stream()
                 .filter(avm -> (Validators.validator(session, avm.getValidatorId()) instanceof ConfiguredProvider))
