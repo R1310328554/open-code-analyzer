@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:55:38Z",
-  "files": [
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/CRDUtils.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/StatusCondition.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/Keycloak.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/KeycloakSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/KeycloakStatus.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/KeycloakStatusAggregator.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/KeycloakStatusCondition.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/ValueOrSecret.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/AdminSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/BootstrapAdminSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/CacheSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/DatabaseSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/FeatureSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/HostnameSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/HttpManagementSpec.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3898,
-  "done": 2085
+  "done": 2100
 }

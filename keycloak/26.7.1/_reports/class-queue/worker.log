@@ -2053,3 +2053,18 @@
 2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/TruststoreSource.java wave70b operator v2beta1 deployment specs
 2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/UnsupportedSpec.java wave70b operator v2beta1 deployment specs
 2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/UpdateSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/CRDUtils.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/StatusCondition.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/Keycloak.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/KeycloakSpec.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/KeycloakStatus.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/KeycloakStatusAggregator.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/KeycloakStatusCondition.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/ValueOrSecret.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/AdminSpec.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/BootstrapAdminSpec.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/CacheSpec.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/DatabaseSpec.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/FeatureSpec.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/HostnameSpec.java wave70a operator v2beta1 CRDs + specs
+2026-08-10T08:58:07Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/HttpManagementSpec.java wave70a operator v2beta1 CRDs + specs
