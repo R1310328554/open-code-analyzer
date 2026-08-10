@@ -22,28 +22,19 @@ import org.keycloak.ssf.transmitter.stream.StreamConfig;
 import org.jboss.logging.Logger;
 
 /**
- * SSF push handler for the generic outbox. The drainer looks up this
- * handler by {@code entryKind = "ssf-push"} and invokes
- * {@link #deliver(KeycloakSession, OutboxEntryEntity)} for each due
- * row; this implementation resolves the realm/client/stream the row
- * targets and hands the encoded SET to {@link PushDeliveryService}.
+ * 通用发件箱的 SSF push 处理器。drainer 按 {@code entryKind = "ssf-push"} 查找此处理器，
+ * 对每个到期行调用 {@link #deliver(KeycloakSession, OutboxEntryEntity)}；
+ * 本实现解析行所指向的 realm/client/stream，并将编码 SET 交给 {@link PushDeliveryService}。
  *
- * <p>Resolve-then-deliver-then-classify behavior:
- *
+ * <p>解析→投递→分类行为：
  * <ul>
- *   <li>Realm / client / stream gone → {@link OutboxDeliveryOutcome#ORPHANED}.</li>
- *   <li>Push succeeds → {@link OutboxDeliveryOutcome#DELIVERED}.</li>
- *   <li>Push fails → {@link OutboxDeliveryOutcome#RETRY}; the drainer
- *       decides RETRY-vs-DEAD_LETTER based on attempts.</li>
+ *   <li>Realm/client/stream 已不存在 → {@link OutboxDeliveryOutcome#ORPHANED}。</li>
+ *   <li>Push 成功 → {@link OutboxDeliveryOutcome#DELIVERED}。</li>
+ *   <li>Push 失败 → {@link OutboxDeliveryOutcome#RETRY}；drainer 根据尝试次数决定 RETRY 或 DEAD_LETTER。</li>
  * </ul>
  *
- * <p>Emits the {@code keycloak.ssf.push.delivery} meter on every
- * outcome — DELIVERED / RETRY / ORPHANED. The DEAD_LETTER counter
- * is bumped here
- * when the handler can detect attempt-exhaustion ahead of time
- * (handler returns RETRY but knows the next attempt will be the
- * final one); the drainer's escalation path ensures the row's
- * transition matches.
+ * <p>每种结果均上报 {@code keycloak.ssf.push.delivery} 计量——DELIVERED/RETRY/ORPHANED。
+ * 当处理器可提前检测到尝试耗尽时也会在此递增 DEAD_LETTER 计数；drainer 升级路径确保行状态一致。</p>
  */
 public class SsfPushDeliveryHandler implements OutboxDeliveryHandler {
 
@@ -91,11 +82,8 @@ public class SsfPushDeliveryHandler implements OutboxDeliveryHandler {
 
         SsfTransmitterProvider transmitter = session.getProvider(SsfTransmitterProvider.class);
         if (transmitter == null) {
-            // Feature unavailable mid-flight — leave the row pending,
-            // try again next tick. Returning RETRY without bumping
-            // attempts would be ideal, but the drainer always bumps;
-            // a feature-disabled scenario is rare enough that one
-            // wasted attempt is acceptable here.
+            // 中途特性不可用——保留行待处理，下 tick 重试。理想情况是 RETRY 但不增加尝试次数，
+            // 但 drainer 总会递增；特性被禁用场景足够罕见，浪费一次尝试可接受。
             log.warnf("SSF push handler: transmitter provider unavailable — retrying row %s next tick", row.getId());
             return OutboxDeliveryResult.retry("transmitter provider unavailable");
         }
@@ -122,11 +110,9 @@ public class SsfPushDeliveryHandler implements OutboxDeliveryHandler {
             return OutboxDeliveryResult.delivered();
         }
 
-        // Push failed: the drainer will compute next_attempt_at or
-        // dead-letter based on attempt budget. Emit the metric here
-        // with RETRY semantics; if the drainer escalates to
-        // DEAD_LETTER on exhaustion, that's a separate metric path
-        // the drainer can hook in a follow-up.
+        // Push 失败：drainer 将根据尝试预算计算 next_attempt_at 或 dead-letter。
+        // 此处以 RETRY 语义上报指标；若 drainer 在耗尽时升级为 DEAD_LETTER，
+        // 可由 drainer 在后续挂钩单独指标路径。
         String lastError = formatLastError(push);
         log.debugf("SSF push handler delivery failed. id=%s ownerId=%s streamId=%s correlationId=%s lastError=%s",
                 row.getId(), row.getOwnerId(), stream.getStreamId(), row.getCorrelationId(), lastError);
@@ -136,17 +122,13 @@ public class SsfPushDeliveryHandler implements OutboxDeliveryHandler {
     }
 
     /**
-     * Delivers the row's stored encoded SET via a fresh
-     * {@link PushDeliveryService}. {@code PushDeliveryService} is
-     * stateless beyond its captured HTTP client + transmitter config,
-     * so per-row construction is cheap. A minimal stub
-     * {@link SsfSecurityEventToken} carries the correlation id (jti)
-     * so the push service's logging stays useful — the actual payload
-     * on the wire is the row's {@code payload} (signed encoded SET).
+     * 通过新建的 {@link PushDeliveryService} 投递行内存储的编码 SET。
+     * {@code PushDeliveryService} 除捕获的 HTTP 客户端与发送方配置外无状态，按行构造成本低。
+     * 最小桩 {@link SsfSecurityEventToken} 携带关联 ID（jti）以便 push 服务日志有用——
+     * 线上实际载荷为行的 {@code payload}（已签名编码 SET）。
      *
-     * <p>Catches any RuntimeException so the structured failure path
-     * stays the only way out — the drainer's own catch-all would
-     * otherwise erase the {@link PushDeliveryOutcome} detail.
+     * <p>捕获任意 RuntimeException，使结构化失败路径为唯一出口——
+     * 否则 drainer 自身的 catch-all 会抹掉 {@link PushDeliveryOutcome} 细节。</p>
      */
     protected PushDeliveryOutcome deliverEncoded(KeycloakSession session, StreamConfig stream, OutboxEntryEntity row) {
         PushDeliveryService push = pushDeliveryServiceFactory.apply(session, context);
@@ -164,20 +146,14 @@ public class SsfPushDeliveryHandler implements OutboxDeliveryHandler {
     }
 
     /**
-     * Builds the {@code last_error} summary line. Three shapes mirror
-     * {@link PushDeliveryOutcome}:
-     *
+     * 构建 {@code last_error} 摘要行。三种形态对应 {@link PushDeliveryOutcome}：
      * <ul>
-     *   <li>HTTP non-2xx: {@code "HTTP <status> <url>: <body excerpt>"}</li>
-     *   <li>Transport failure: {@code "<ExceptionClass> <url>: <message>"}</li>
-     *   <li>Invalid stream config: {@code "InvalidStreamConfig: <reason>"}</li>
+     *   <li>HTTP 非 2xx：{@code "HTTP <status> <url>: <body excerpt>"}</li>
+     *   <li>传输失败：{@code "<ExceptionClass> <url>: <message>"}</li>
+     *   <li>无效流配置：{@code "InvalidStreamConfig: <reason>"}</li>
      * </ul>
-     *
-     * <p>The body / exception message is truncated at
-     * {@link #LAST_ERROR_DETAIL_MAX} so the column ({@code VARCHAR(2048)})
-     * comfortably absorbs the prefix + url + detail. The store's own
-     * {@code truncateError} provides a final hard cap as defense in
-     * depth.
+     * <p>body/异常消息在 {@link #LAST_ERROR_DETAIL_MAX} 处截断，使列（{@code VARCHAR(2048)}）
+     * 能容纳前缀+url+细节。存储层 {@code truncateError} 提供最终硬上限作为纵深防御。</p>
      */
     protected String formatLastError(PushDeliveryOutcome push) {
         if (push.status() != null) {

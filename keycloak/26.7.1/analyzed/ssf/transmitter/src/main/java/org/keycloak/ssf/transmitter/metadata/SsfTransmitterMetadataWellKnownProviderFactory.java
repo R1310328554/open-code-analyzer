@@ -10,13 +10,13 @@ import org.keycloak.wellknown.WellKnownProvider;
 import org.keycloak.wellknown.WellKnownProviderFactory;
 
 /**
- * Factory implementation for creating instances of {@code SsfTransmitterMetadataWellKnownProvider}.
- * This factory integrates with Keycloak's Well-Known Provider infrastructure and is enabled only
- * when the SSF feature is activated within the system configuration profile and the SSF Transmitter
- * feature is enabled for the current realm.
+ * {@code SsfTransmitterMetadataWellKnownProvider} 的工厂实现。
+ * 与 Keycloak Well-Known Provider 基础设施集成，仅在系统配置 Profile 启用 SSF 功能
+ * 且当前 realm 启用了 SSF 发送方特性时可用。
  */
 public class SsfTransmitterMetadataWellKnownProviderFactory implements WellKnownProviderFactory, EnvironmentDependentProviderFactory {
 
+    /** Well-Known 端点的 Provider 标识符。 */
     public static final String PROVIDER_ID = "ssf-configuration";
 
     @Override
@@ -27,6 +27,7 @@ public class SsfTransmitterMetadataWellKnownProviderFactory implements WellKnown
         return new SsfTransmitterMetadataWellKnownProvider(session);
     }
 
+    /** 判断当前 realm 是否启用了 SSF 发送方。 */
     protected boolean isEnabledForRealm(KeycloakSession session) {
         return Ssf.isTransmitterEnabled(session.getContext().getRealm());
     }

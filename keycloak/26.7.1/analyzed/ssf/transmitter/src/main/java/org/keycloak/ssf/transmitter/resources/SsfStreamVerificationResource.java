@@ -28,7 +28,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Endpoint for SSF stream verification.
+ * SSF 流验证端点，触发发送方向流的投递端点推送验证 SET（SSF 1.0 §7.1.3）。
  */
 public class SsfStreamVerificationResource {
 
@@ -55,10 +55,10 @@ public class SsfStreamVerificationResource {
     }
 
     /**
-     * Triggers a verification event for a stream.
+     * 为流触发验证事件。
      *
-     * @param verificationRequest The verification request
-     * @return A response indicating success or failure
+     * @param verificationRequest 验证请求
+     * @return 表示成功或失败的响应
      */
     @POST
     @NoCache
@@ -86,7 +86,7 @@ public class SsfStreamVerificationResource {
             String streamId = verificationRequest.getStreamId();
             ClientModel client = session.getContext().getClient();
             if (streamId == null) {
-                // use streamId from client attributes
+                // 使用客户端属性中的 streamId
                 streamId = client.getAttribute(ClientStreamStore.SSF_STREAM_ID_KEY);
                 verificationRequest.setStreamId(streamId);
             }
@@ -97,7 +97,7 @@ public class SsfStreamVerificationResource {
                         .build();
             }
 
-            // Ensure the receiver client can only verify its own stream
+            // 确保接收方客户端只能验证自己的流
             String clientStreamId = client.getAttribute(ClientStreamStore.SSF_STREAM_ID_KEY);
             if (clientStreamId == null || !clientStreamId.equals(streamId)) {
                 log.debugf("Stream verification denied. clientId=%s requestedStreamId=%s clientStreamId=%s", client.getClientId(), streamId, clientStreamId);
@@ -133,9 +133,8 @@ public class SsfStreamVerificationResource {
                     .header(HttpHeaders.CACHE_CONTROL, "no-store")
                     .build();
         } catch (WebApplicationException wae) {
-            // Let JAX-RS mapped status responses (e.g. 429 from the min
-            // verification interval check) propagate unchanged instead of
-            // rewriting them to a generic 500.
+            // 让 JAX-RS 映射的状态响应（如最小验证间隔检查的 429）原样传播，
+            // 而非改写为通用 500。
             throw wae;
         } catch (Exception e) {
             log.error("Error triggering verification", e);
@@ -153,10 +152,8 @@ public class SsfStreamVerificationResource {
 
     protected void checkMinVerificationInterval(ClientModel client) {
 
-        // Per-stream / per-client override takes precedence over the
-        // transmitter-wide default. The stream config includes overlays
-        // applied by ClientStreamStore.applyReceiverAttributeOverlays
-        // (reads ssf.minVerificationInterval from the client attribute).
+        // 每流/每客户端覆盖优先于发送方全局默认。流配置包含 ClientStreamStore
+        // .applyReceiverAttributeOverlays 应用的覆盖（读取客户端属性 ssf.minVerificationInterval）。
         var streamConfig = clientStreamStore.getStreamForClient(client);
         Integer streamInterval = streamConfig != null ? streamConfig.getMinVerificationInterval() : null;
 
@@ -165,7 +162,7 @@ public class SsfStreamVerificationResource {
                 : transmitterConfig.getMinVerificationIntervalSeconds();
 
         if (minVerificationIntervalSeconds <= 0) {
-            // Rate limiting disabled.
+            // 速率限制已禁用。
             return;
         }
 

@@ -19,47 +19,34 @@ import io.micrometer.core.instrument.binder.BaseUnits;
 import org.jboss.logging.Logger;
 
 /**
- * Facade for SSF transmitter Prometheus metrics. All hot paths
- * (dispatcher, drainer, poll endpoint) route their telemetry through
- * this class so meter lookups + cardinality policy live in exactly
- * one place.
+ * SSF 发送方 Prometheus 指标的门面类。所有热路径（分发器、drainer、轮询端点）
+ * 的遥测均经由此类，使计量器查找与基数策略集中在一处。
  *
- * <p>Follows Keycloak's existing Micrometer convention of using the
- * {@link Metrics#globalRegistry global registry} (see
- * {@code MicrometerUserEventMetricsEventListenerProviderFactory}). The
- * registry increments and timers are cheap even when the Quarkus
- * Prometheus endpoint is disabled — they land in an empty collector.
+ * <p>遵循 Keycloak 现有 Micrometer 约定，使用 {@link Metrics#globalRegistry 全局注册表}
+ *（参见 {@code MicrometerUserEventMetricsEventListenerProviderFactory}）。
+ * 即使 Quarkus Prometheus 端点被禁用，计数器与计时器开销也很低——写入空收集器。
  *
- * <h3>Cardinality policy</h3>
+ * <h3>基数策略</h3>
  * <ul>
- *     <li>Counters / timers are labeled by {@code realm} + {@code client_id}.
- *         Label cardinality is bounded by the typical 1–5 SSF receiver
- *         clients per realm, so a per-client slice is cheap and gives
- *         operators the "which downstream is flaking?" signal they need.</li>
- *     <li>Outbox depth is a gauge labeled by {@code realm} + {@code status}
- *         only. Per-client gauges would blow up cardinality for large
- *         deployments and the admin UI already serves per-client depth
- *         on demand.</li>
- *     <li>The drainer tick counter is <em>not</em> labeled by node id:
- *         cluster-aggregate rate answers "is SSF draining somewhere?",
- *         and Kubernetes pod-name churn keeps node-labeled series
- *         otherwise clean.</li>
+ *     <li>计数器/计时器按 {@code realm} + {@code client_id} 打标签。
+ *         每个 realm 通常仅 1–5 个 SSF 接收方客户端，按客户端切片成本低，
+ *         便于运维判断「哪个下游在抖动」。</li>
+ *     <li>发件箱深度仪表仅按 {@code realm} + {@code status} 打标签。
+ *         按客户端的仪表会在大规模部署中爆炸基数，管理 UI 已按需提供按客户端深度。</li>
+ *     <li>drainer tick 计数器<em>不</em>按节点 ID 打标签：集群聚合速率回答
+ *         「SSF 是否在别处 draining」，避免 Kubernetes Pod 名变更污染序列。</li>
  * </ul>
  *
- * <h3>Depth gauges (cached)</h3>
- * Outbox depth would be an expensive per-scrape {@code COUNT(*)} if
- * bound as a normal gauge. Instead, the drainer calls
- * {@link #updateOutboxDepthSnapshot(Map)} once per tick with the result
- * of one grouped aggregate; gauges read from the in-memory snapshot
- * and scrapes pay nothing. Depth is therefore scrape-lagged by up to
- * one drainer tick — fine for "backlog growing" alerting.
+ * <h3>深度仪表（缓存）</h3>
+ * 若将发件箱深度绑定为普通仪表，每次抓取都需昂贵的 {@code COUNT(*)}。
+ * drainer 每 tick 调用一次 {@link #updateOutboxDepthSnapshot(Map)} 写入分组聚合结果；
+ * 仪表从内存快照读取，抓取零 DB 开销。深度因此最多滞后一个 drainer tick——
+ * 对「积压增长」告警足够。
  *
- * <h3>No-op fallback</h3>
- * When {@link SsfTransmitterConfig#isMetricsEnabled()} is false (or the
- * runtime omits Micrometer for some reason), the factory constructs
- * {@link #NOOP} instead of a real binder. Every method then becomes a
- * branch-predicted no-op — the hot paths can call the binder
- * unconditionally without a null-check cascade.
+ * <h3>空操作回退</h3>
+ * 当 {@link SsfTransmitterConfig#isMetricsEnabled()} 为 false（或运行时缺少 Micrometer）时，
+ * 工厂构造 {@link #NOOP} 而非真实绑定器。各方法变为可分支预测的空操作——
+ * 热路径可无条件调用绑定器，无需 null 检查链。
  */
 public class SsfMetricsBinder {
 
@@ -67,7 +54,7 @@ public class SsfMetricsBinder {
 
     private static final String PREFIX = "keycloak.ssf.";
 
-    // Counters --------------------------------------------------------------
+    // 计数器 --------------------------------------------------------------
     public static final String METER_EVENTS_ENQUEUED = PREFIX + "events.enqueued";
     public static final String METER_EVENTS_SUPPRESSED = PREFIX + "events.suppressed";
     public static final String METER_PUSH_DELIVERY = PREFIX + "push.delivery";
@@ -77,31 +64,26 @@ public class SsfMetricsBinder {
     public static final String METER_DRAINER_TICK = PREFIX + "drainer.tick";
     public static final String METER_VERIFICATION_REQUESTS = PREFIX + "verification.requests";
 
-    // Timers ----------------------------------------------------------------
+    // 计时器 ----------------------------------------------------------------
     public static final String METER_PUSH_DELIVERY_DURATION = PREFIX + "push.delivery.duration";
     public static final String METER_DRAINER_TICK_DURATION = PREFIX + "drainer.tick.duration";
     public static final String METER_VERIFICATION_DURATION = PREFIX + "verification.duration";
 
-    // Gauges ----------------------------------------------------------------
+    // 仪表 ----------------------------------------------------------------
     public static final String METER_OUTBOX_DEPTH = PREFIX + "outbox.depth";
 
     /**
-     * Epoch-second timestamp of the most recent drainer tick attempt.
-     * Lets operators alert on
-     * {@code time() - keycloak_ssf_drainer_tick_last_at_seconds > 120}
-     * for a stalled drainer — complements
-     * {@link #METER_DRAINER_TICK} (counter-rate based) with an absolute
-     * "how long ago" answer in a single gauge query. Exposed as `0`
-     * before the first tick so a freshly-started server doesn't register
-     * as instantly stalled — alerting rules should ignore the value
-     * until it's been observed non-zero at least once.
+     * 最近一次 drainer tick 尝试的 epoch 秒时间戳。
+     * 运维可对 {@code time() - keycloak_ssf_drainer_tick_last_at_seconds > 120} 告警以检测停滞 drainer——
+     * 与 {@link #METER_DRAINER_TICK}（基于计数器速率）互补，单条仪表查询给出「多久以前」。
+     * 首次 tick 前暴露为 {@code 0}，避免新启动服务器被误判为立即停滞——
+     * 告警规则应忽略直至至少观测到一次非零值。
      */
     public static final String METER_DRAINER_TICK_LAST_AT = PREFIX + "drainer.tick.last_at_seconds";
 
     /**
-     * Dispatcher outcome classifications used as the {@code reason}
-     * label on the suppressed counter. Stable string values so
-     * Prometheus alerting rules can match them.
+     * 分发器抑制结果分类，用作 suppressed 计数器的 {@code reason} 标签。
+     * 字符串值稳定，便于 Prometheus 告警规则匹配。
      */
     public enum SuppressReason {
         STATUS_DISABLED("status_disabled"),
@@ -121,7 +103,7 @@ public class SsfMetricsBinder {
     }
 
     /**
-     * Drainer outcome classifications for one pending row.
+     * 单条待发发件箱行的 drainer 推送结果分类。
      */
     public enum PushOutcome {
         DELIVERED("delivered"),
@@ -156,11 +138,10 @@ public class SsfMetricsBinder {
     }
 
     /**
-     * Who triggered a verification dispatch. Lets operators slice
-     * {@code verification.requests} by entry point so a spike in
-     * {@code initiator="receiver"} (over-polling) is distinguishable
-     * from {@code initiator="transmitter"} (post-create auto-fire) or
-     * {@code initiator="admin"} (UI / REST).
+     * 触发验证分发的来源。便于按入口点切片 {@code verification.requests}，
+     * 区分 {@code initiator="receiver"}（过度轮询）、
+     * {@code initiator="transmitter"}（创建后自动触发）与
+     * {@code initiator="admin"}（UI/REST）。
      */
     public enum VerificationInitiator {
         RECEIVER("receiver"),
@@ -179,16 +160,13 @@ public class SsfMetricsBinder {
     }
 
     /**
-     * Outcome of a verification request:
+     * 验证请求结果：
      * <ul>
-     *     <li>{@code delivered} — receiver accepted the verification SET.</li>
-     *     <li>{@code failed} — sync push to the receiver failed
-     *         (network error, non-2xx, or the receiver-side stream
-     *         lookup turned up empty).</li>
-     *     <li>{@code rate_limited} — request rejected with 429 because
-     *         the receiver-side {@code min_verification_interval} has
-     *         not yet elapsed. Only fires on the receiver-initiated
-     *         path.</li>
+     *     <li>{@code delivered} — 接收方接受了验证 SET。</li>
+     *     <li>{@code failed} — 同步推送到接收方失败
+     *         （网络错误、非 2xx，或接收方侧流查找为空）。</li>
+     *     <li>{@code rate_limited} — 因接收方 {@code min_verification_interval}
+     *         尚未到期而以 429 拒绝。仅在接收方发起路径触发。</li>
      * </ul>
      */
     public enum VerificationOutcome {
@@ -208,10 +186,8 @@ public class SsfMetricsBinder {
     }
 
     /**
-     * NOOP binder used when metrics are disabled or Micrometer is
-     * unavailable. Every method is a no-op, including the snapshot
-     * update — so hot-path callers can invoke the binder without
-     * null-checks or conditionals.
+     * 指标禁用或 Micrometer 不可用时的 NOOP 绑定器。所有方法均为空操作，
+     * 包括快照更新——热路径调用方可无条件调用绑定器，无需 null 检查或分支。
      */
     public static final SsfMetricsBinder NOOP = new SsfMetricsBinder(true) {
         @Override
@@ -257,27 +233,21 @@ public class SsfMetricsBinder {
     private final MeterRegistry registry;
 
     /**
-     * Cached outbox depth snapshot, refreshed at the end of each
-     * drainer tick. Gauges read from this map; scrapes pay nothing
-     * beyond a {@link ConcurrentHashMap} lookup.
+     * 缓存的发件箱深度快照，每个 drainer tick 结束时刷新。
+     * 仪表从此映射读取；抓取除 {@link ConcurrentHashMap} 查找外无额外开销。
      */
     private volatile Map<RealmStatus, Long> depthSnapshot = Collections.emptyMap();
 
     /**
-     * Tracks which {@code (realm, status)} gauge keys we've already
-     * registered so repeated snapshot updates don't register the same
-     * gauge twice. Micrometer's {@code Gauge#builder} is idempotent in
-     * principle, but guarding here avoids the log noise and keeps the
-     * hot path tight.
+     * 跟踪已注册的 {@code (realm, status)} 仪表键，避免重复快照更新时二次注册。
+     * Micrometer 的 {@code Gauge#builder} 理论上幂等，但此处防护可减少日志噪音并保持热路径精简。
      */
     private final ConcurrentHashMap<RealmStatus, Boolean> registeredDepthGauges = new ConcurrentHashMap<>();
 
     /**
-     * Epoch-second timestamp of the most recent drainer tick. Stamped
-     * from {@link #recordDrainerTick}; read by the
-     * {@link #METER_DRAINER_TICK_LAST_AT} gauge bound in the
-     * constructor. {@code volatile} because the drainer tick runs on a
-     * scheduler thread while scrapes run on HTTP worker threads.
+     * 最近一次 drainer tick 的 epoch 秒时间戳。由 {@link #recordDrainerTick} 写入；
+     * 构造函数绑定的 {@link #METER_DRAINER_TICK_LAST_AT} 仪表读取。
+     * 使用 {@code volatile}，因 drainer tick 在调度线程运行而抓取在 HTTP 工作线程。
      */
     private volatile long drainerTickLastAtEpochSeconds = 0L;
 
@@ -291,9 +261,8 @@ public class SsfMetricsBinder {
     }
 
     /**
-     * Single, label-free gauge — bound eagerly in the constructor so
-     * scrapes can read it immediately. The supplier reads the volatile
-     * field, so the gauge always reflects the most recent stamp.
+     * 无标签的单仪表——构造函数中 eagerly 绑定以便抓取立即可读。
+     * 供应函数读取 volatile 字段，仪表始终反映最新时间戳。
      */
     private void registerDrainerLastTickGauge() {
         try {
@@ -310,18 +279,18 @@ public class SsfMetricsBinder {
         }
     }
 
-    // private constructor only used by NOOP to skip registry wiring.
+    // 仅供 NOOP 使用的私有构造器，跳过注册表 wiring。
     private SsfMetricsBinder(boolean skipRegistry) {
         this.registry = null;
     }
 
     /**
-     * Compound key for the outbox depth gauge map.
+     * 发件箱深度仪表映射的复合键。
      */
     public record RealmStatus(String realmId, OutboxEntryStatus status) {
     }
 
-    // ---------------------------------------------------------------- record
+    // ---------------------------------------------------------------- 记录
 
     public void recordEnqueued(String realmId, String clientId, String deliveryMethod, String eventType) {
         counter(METER_EVENTS_ENQUEUED,
@@ -392,20 +361,15 @@ public class SsfMetricsBinder {
                 .description("Total SSF outbox drainer tick duration.")
                 .register(registry)
                 .record(took);
-        // Stamped on every tick (ok or error) so a failing-but-still-
-        // ticking drainer reports a fresh timestamp; a *stuck* drainer
-        // that never returns is the only thing that lets the gauge fall
-        // behind. Time.currentTime() (epoch seconds, wall clock) is the
-        // Keycloak-wide convention and is directly comparable to
-        // Prometheus' time().
+        // 每次 tick（成功或失败）均写入时间戳，使失败但仍 tick 的 drainer 报告新鲜时间；
+        // 仅当 drainer 卡住永不返回时仪表才会落后。Time.currentTime()（epoch 秒、墙钟）
+        // 为 Keycloak 全站约定，可直接与 Prometheus time() 比较。
         drainerTickLastAtEpochSeconds = Time.currentTime();
     }
 
     /**
-     * Records one verification dispatch. {@code took} is allowed to be
-     * {@code null} for outcomes where there is no measured duration —
-     * notably {@link VerificationOutcome#RATE_LIMITED}, which is rejected
-     * before any HTTP push happens.
+     * 记录一次验证分发。对无耗时测量的结果（ notably {@link VerificationOutcome#RATE_LIMITED}，
+     * 在任何 HTTP 推送前即被拒绝）{@code took} 可为 {@code null}。
      */
     public void recordVerification(String realmName,
                                    String clientId,
@@ -432,10 +396,8 @@ public class SsfMetricsBinder {
     }
 
     /**
-     * Swaps the current outbox-depth snapshot with the one produced by
-     * the drainer tick. Registers any newly-seen {@code (realm, status)}
-     * gauges lazily; gauges read from the cached map so scrapes don't
-     * touch the database.
+     * 用 drainer tick 产生的快照替换当前发件箱深度快照。
+     * 懒注册新出现的 {@code (realm, status)} 仪表；仪表从缓存映射读取，抓取不触库。
      */
     public void updateOutboxDepthSnapshot(Map<RealmStatus, Long> snapshot) {
         Map<RealmStatus, Long> safeSnapshot = snapshot == null ? Collections.emptyMap() : snapshot;
@@ -469,7 +431,7 @@ public class SsfMetricsBinder {
         }
     }
 
-    // ------------------------------------------------------------ internals
+    // ------------------------------------------------------------ 内部
 
     private Counter counter(String name, String... tagPairs) {
         return Counter.builder(name)
@@ -478,9 +440,8 @@ public class SsfMetricsBinder {
     }
 
     /**
-     * Prometheus label values must be strings; null clients / realms
-     * during startup races become a literal {@code "unknown"} so the
-     * meter never silently drops the increment.
+     * Prometheus 标签值必须为字符串；启动竞态中的 null 客户端/realm
+     * 变为字面量 {@code "unknown"}，避免计量器静默丢弃增量。
      */
     private static String safe(String value) {
         return value == null || value.isEmpty() ? "unknown" : value;

@@ -39,7 +39,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Endpoint for managing SSF streams.
+ * SSF 流管理 REST 端点，支持创建、查询、更新、替换与删除流配置（SSF 1.0 §7.1.1）。
  */
 public class SsfStreamManagementResource {
 
@@ -55,10 +55,10 @@ public class SsfStreamManagementResource {
     }
 
     /**
-     * Creates a new stream.
+     * 创建新流。
      *
-     * @param streamConfig The stream configuration
-     * @return The created stream configuration
+     * @param streamConfig 流配置输入
+     * @return 已创建的流配置
      */
     @POST
     @NoCache
@@ -108,10 +108,10 @@ public class SsfStreamManagementResource {
     }
 
     /**
-     * Gets a stream by ID.
+     * 按 ID 获取流；省略 stream_id 时返回调用方客户端的全部流。
      *
-     * @param streamId The stream ID
-     * @return The stream configuration
+     * @param streamId 流 ID
+     * @return 流配置
      */
     @GET
     @NoCache
@@ -167,10 +167,10 @@ public class SsfStreamManagementResource {
     }
 
     /**
-     * Updates a stream.
+     * 部分更新流配置（PATCH）。
      *
-     * @param streamConfig The updated stream configuration
-     * @return The updated stream configuration
+     * @param streamConfig 更新内容
+     * @return 更新后的流配置
      */
     @PATCH
     @NoCache
@@ -227,10 +227,10 @@ public class SsfStreamManagementResource {
     }
 
     /**
-     * Replace a stream.
+     * 全量替换流配置（PUT）。
      *
-     * @param streamConfig The updated stream configuration
-     * @return The updated stream configuration
+     * @param streamConfig 完整流配置
+     * @return 替换后的流配置
      */
     @PUT
     @NoCache
@@ -287,10 +287,10 @@ public class SsfStreamManagementResource {
     }
 
     /**
-     * Deletes a stream.
+     * 删除流。
      *
-     * @param streamId The stream ID
-     * @return A response indicating success or failure
+     * @param streamId 流 ID；省略时使用客户端存储的 stream_id
+     * @return 表示成功或失败的响应
      */
     @DELETE
     @NoCache
@@ -314,7 +314,7 @@ public class SsfStreamManagementResource {
         }
 
         if (streamId == null) {
-            // try to use stored streamId from client attributes
+            // 尝试使用客户端属性中存储的 streamId
             ClientModel client = session.getContext().getClient();
             streamId = client.getAttribute(ClientStreamStore.SSF_STREAM_ID_KEY);
         }
@@ -351,11 +351,10 @@ public class SsfStreamManagementResource {
     }
 
     /**
-     * Determines if the given stream ID matches the currently authenticated client's stream ID.
+     * 判断给定 stream ID 是否与当前已认证客户端关联的 stream ID 一致。
      *
-     * @param streamId The stream ID to be validated against the client's associated stream ID.
-     * @return {@code true} if the given stream ID matches the client's associated stream ID;
-     *         {@code false} otherwise.
+     * @param streamId 待校验的流 ID
+     * @return 匹配返回 {@code true}，否则 {@code false}
      */
     protected boolean isCurrentClientStream(String streamId) {
         ClientModel client = session.getContext().getClient();

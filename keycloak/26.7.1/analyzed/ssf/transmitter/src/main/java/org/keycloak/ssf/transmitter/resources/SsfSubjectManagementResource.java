@@ -23,14 +23,11 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Receiver-facing subject management endpoints per SSF 1.0 §8.1.3.
- * Authenticated via the receiver's bearer token with {@code ssf.manage}
- * scope.
+ * 面向接收方的主体管理端点（SSF 1.0 §8.1.3）。
+ * 通过接收方 bearer 令牌及 {@code ssf.manage} 范围认证。
  *
- * <p>Privacy-by-default: unknown subjects and unsupported formats
- * return 200/204 in silent mode (the default). Verbose mode
- * (opt-in via SPI config) returns informative 400/404 status codes
- * for debugging.
+ * <p>默认隐私模式：未知主体与不支持的格式在静默模式下返回 200/204。
+ * 详细模式（SPI 配置可选）返回 400/404 等便于调试的状态码。</p>
  */
 public class SsfSubjectManagementResource {
 
@@ -51,7 +48,7 @@ public class SsfSubjectManagementResource {
     }
 
     /**
-     * Adds a subject to the caller's stream (SSF §8.1.3.2).
+     * 向调用方流添加主体（SSF §8.1.3.2）。
      */
     @POST
     @Path("/add")
@@ -89,10 +86,8 @@ public class SsfSubjectManagementResource {
     }
 
     protected Response toAddResponse(SubjectManagementResult result) {
-        // 200 OK per SSF §8.1.3.2. We include an explicit empty JSON
-        // entity so the response carries a Content-Type header —
-        // Keycloak's DefaultSecurityHeadersProvider rejects 2xx
-        // responses with no media type as a 500 internal error.
+        // SSF §8.1.3.2 要求 200 OK。显式包含空 JSON 实体以使响应带 Content-Type——
+        // Keycloak DefaultSecurityHeadersProvider 会将无 media type 的 2xx 视为 500。
         if (result == SubjectManagementResult.OK) {
             return okEmptyJson();
         }
@@ -118,17 +113,15 @@ public class SsfSubjectManagementResource {
     }
 
     /**
-     * 200 OK with an explicit empty JSON object body. Required because
-     * Keycloak's response-header filter rejects 2xx responses without
-     * a media type. The empty object is a valid JSON value receivers
-     * can parse without special-casing.
+     * 返回带显式空 JSON 对象体的 200 OK。Keycloak 响应头过滤器会拒绝无 media type 的 2xx。
+     * 空对象为合法 JSON，接收方可直接解析而无需特殊处理。
      */
     protected Response okEmptyJson() {
         return Response.ok("{}", MediaType.APPLICATION_JSON_TYPE).build();
     }
 
     /**
-     * Removes a subject from the caller's stream (SSF §8.1.3.3).
+     * 从调用方流移除主体（SSF §8.1.3.3）。
      */
     @POST
     @Path("/remove")

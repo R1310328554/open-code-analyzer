@@ -1,29 +1,24 @@
 package org.keycloak.ssf.transmitter.outbox;
 
 /**
- * SSF-specific {@code entryKind} constants for the generic outbox
- * ({@link org.keycloak.events.outbox.OutboxStore}). Two kinds because push
- * and poll have genuinely different runtime paths:
+ * 通用发件箱（{@link org.keycloak.events.outbox.OutboxStore}）的 SSF 专用 {@code entryKind} 常量。
+ * push 与 poll 运行时路径不同，故有两种 kind：
  *
  * <ul>
- *   <li>{@link #PUSH} — drained by a server-side
- *       {@link org.keycloak.events.outbox.OutboxDrainerTask} that hands rows
- *       to the receiver's HTTP endpoint.</li>
- *   <li>{@link #POLL} — never drained; rows wait until the receiver's
- *       POLL request reads them from the outbox.</li>
+ *   <li>{@link #PUSH} — 由服务端 {@link org.keycloak.events.outbox.OutboxDrainerTask}
+ *       排空并将行投递到接收方 HTTP 端点。</li>
+ *   <li>{@link #POLL} — 永不排空；行等待接收方 POLL 请求从发件箱读取。</li>
  * </ul>
  *
- * <p>Within both kinds the row's {@code entryType} carries the SSF
- * security event type (e.g. {@code session-revoked}) and
- * {@code metadata} carries the SSF-specific extensions (streamId,
- * etc.) that don't have first-class generic columns.
+ * <p>两种 kind 下，行的 {@code entryType} 携带 SSF 安全事件类型（如 {@code session-revoked}），
+ * {@code metadata} 携带无通用列的 SSF 扩展（streamId 等）。</p>
  */
 public final class SsfOutboxKinds {
 
-    /** Outbox kind for SET rows delivered via HTTP push (RFC 8935). */
+    /** 通过 HTTP push 投递的 SET 行发件箱 kind（RFC 8935）。 */
     public static final String PUSH = "ssf-push";
 
-    /** Outbox kind for SET rows served on receiver POLL (RFC 8936). */
+    /** 在接收方 POLL 上提供的 SET 行发件箱 kind（RFC 8936）。 */
     public static final String POLL = "ssf-poll";
 
     private SsfOutboxKinds() {

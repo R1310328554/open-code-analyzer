@@ -28,7 +28,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Endpoint for managing SSF stream status.
+ * SSF 流状态管理端点，支持查询与更新流的启用/暂停等状态（SSF 1.0 §7.1.2）。
  */
 public class SsfStreamStatusResource {
 
@@ -44,10 +44,10 @@ public class SsfStreamStatusResource {
     }
 
     /**
-     * Gets the status of a stream.
+     * 获取流状态。
      *
-     * @param streamId The stream ID
-     * @return The stream status
+     * @param streamId 流 ID
+     * @return 流状态
      */
     @GET
     @NoCache
@@ -96,10 +96,10 @@ public class SsfStreamStatusResource {
     }
 
     /**
-     * Updates the status of a stream.
+     * 更新流状态（如暂停或禁用）。
      *
-     * @param streamStatus The updated stream status
-     * @return The updated stream status
+     * @param streamStatus 新状态
+     * @return 更新后的流状态
      */
     @POST
     @NoCache

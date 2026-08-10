@@ -15,14 +15,17 @@ import org.keycloak.ssf.transmitter.SsfTransmitterConfig;
 import org.keycloak.ssf.transmitter.support.SsfTransmitterUrls;
 
 /**
- * Service for managing the SSF transmitter functionality.
+ * 管理 SSF 发送方元数据的服务，组装并缓存 Well-Known 端点所需的配置信息。
  */
 public class TransmitterMetadataService {
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** 根据会话生成 issuer URL 的函数。 */
     protected  final Function<KeycloakSession, String> issuerGenerator;
 
+    /** 发送方 SPI 配置。 */
     protected final SsfTransmitterConfig transmitterConfig;
 
     public TransmitterMetadataService(KeycloakSession session,
@@ -34,9 +37,9 @@ public class TransmitterMetadataService {
     }
 
     /**
-     * Returns the SSF transmitter configuration metadata.
+     * 返回 SSF 发送方配置元数据，同一会话内缓存以避免重复构建。
      *
-     * @return The SSF transmitter configuration metadata
+     * @return SSF 发送方配置元数据
      */
     public TransmitterMetadata getTransmitterMetadata() {
 
@@ -63,12 +66,12 @@ public class TransmitterMetadataService {
         metadata.setJwksUri(createJwksUri(issuerUrl));
         metadata.setDeliveryMethodSupported(createDeliveryMethods());
 
-        // Stream management endpoints
+        // 流管理端点
         metadata.setConfigurationEndpoint(SsfTransmitterUrls.getStreamsEndpointUrl(issuerUrl));
         metadata.setStatusEndpoint(SsfTransmitterUrls.getStreamStatusEndpointUrl(issuerUrl));
         metadata.setVerificationEndpoint(SsfTransmitterUrls.getStreamVerificationEndpointUrl(issuerUrl));
 
-        // Subject management endpoints (only advertised when enabled)
+        // 主体管理端点（仅在启用时对外公布）
         if (transmitterConfig.isSubjectManagementEnabled()) {
             metadata.setAddSubjectEndpoint(SsfTransmitterUrls.getAddSubjectEndpointUrl(issuerUrl));
             metadata.setRemoveSubjectEndpoint(SsfTransmitterUrls.getRemoveSubjectEndpointUrl(issuerUrl));
@@ -78,9 +81,8 @@ public class TransmitterMetadataService {
 
         metadata.setDefaultSubjects(transmitterConfig.getDefaultSubjects().name());
 
-        // critical_subject_members tells a receiver which complex-subject
-        // member keys (e.g. "user", "session", "tenant") it MUST be able
-        // to interpret. Empty / null configured set omits the field.
+        // critical_subject_members 告知接收方必须能解析的复合主体成员键
+        //（如 "user"、"session"、"tenant"）。配置为空/null 时不输出该字段。
         Set<String> critical = transmitterConfig.getCriticalSubjectMembers();
         if (critical != null && !critical.isEmpty()) {
             metadata.setCriticalSubjectMembers(new LinkedHashSet<>(critical));
@@ -90,21 +92,19 @@ public class TransmitterMetadataService {
     }
 
     protected Set<String> createDeliveryMethods() {
-        // Spec-standard SSF 1.0 delivery methods are always advertised.
-        // The RISC variants (Apple Business Manager / Apple School
-        // Manager interop) are gated on the sse-caep-enabled SPI flag
-        // so deployments that don't integrate with Apple-style
-        // receivers can keep the advertised surface to the
-        // spec-standard URIs only.
+        // 规范标准的 SSF 1.0 投递方式始终对外公布。
+        // RISC 变体（Apple Business Manager / Apple School Manager 互操作）
+        // 受 sse-caep-enabled SPI 标志控制，未集成 Apple 风格接收方的部署
+        // 可仅公布规范标准 URI。
         Set<String> deliveryMethods = new LinkedHashSet<>();
-        // PUSH (RFC 8935)
+        // PUSH 投递（RFC 8935）
         deliveryMethods.add(Ssf.DELIVERY_METHOD_PUSH_URI);
-        // POLL (RFC 8936)
+        // POLL 轮询（RFC 8936）
         deliveryMethods.add(Ssf.DELIVERY_METHOD_POLL_URI);
         if (transmitterConfig.isSseCaepEnabled()) {
-            // Legacy RISC PUSH URI (Apple Business Manager)
+            // 遗留 RISC PUSH URI（Apple Business Manager）
             deliveryMethods.add(Ssf.DELIVERY_METHOD_RISC_PUSH_URI);
-            // Legacy RISC POLL URI
+            // 遗留 RISC POLL URI
             deliveryMethods.add(Ssf.DELIVERY_METHOD_RISC_POLL_URI);
         }
         return deliveryMethods;

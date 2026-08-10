@@ -30,24 +30,19 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * RFC 8936 Poll-Based SET Delivery endpoint.
+ * RFC 8936 基于轮询的 SET 投递端点。
  *
- * <p>Mounted from {@link SsfTransmitterResource} at
- * {@code receivers/{clientId}/streams/{streamId}/poll} so the wire URL
- * matches the {@code delivery.endpoint_url} the transmitter writes back
- * into the stream-create response per SSF §6.1.2.
+ * <p>由 {@link SsfTransmitterResource} 挂载于
+ * {@code receivers/{clientId}/streams/{streamId}/poll}，使线上 URL 与
+ * 发送方在流创建响应中写回的 {@code delivery.endpoint_url} 一致（SSF §6.1.2）。
  *
- * <p>Authorization layers:
+ * <p>授权分层：
  * <ol>
- *     <li>{@link SsfAuthUtil#canRead()} — bearer token valid, ssf
- *         enabled on the calling client, {@code ssf.read} scope present,
- *         optional service-account / required-role checks.</li>
- *     <li>Path-vs-token ownership: {@code {clientId}} from the URL must
- *         match the bearer token's resolved client's clientId, and
- *         {@code {streamId}} must equal that client's registered stream
- *         id. Mismatch on either field collapses to a single silent
- *         {@code 404 stream_not_found} response so the URL surface
- *         doesn't leak which clients / streams exist.</li>
+ *     <li>{@link SsfAuthUtil#canRead()} — bearer 有效、调用客户端启用 ssf、
+ *         具备 {@code ssf.read} 范围，及可选的服务账户/必需角色检查。</li>
+ *     <li>路径与令牌归属：URL 中 {@code {clientId}} 须与 bearer 解析客户端的 clientId 一致，
+ *         {@code {streamId}} 须等于该客户端注册的 stream id。任一不匹配均静默返回
+ *         {@code 404 stream_not_found}，避免 URL 表面泄露存在哪些客户端/流。</li>
  * </ol>
  */
 public class SsfStreamPollResource {
@@ -89,19 +84,15 @@ public class SsfStreamPollResource {
             @PathParam("streamId") String streamId,
             PollRequest request) {
 
-        // 1. Standard SSF receiver-facing auth — same gate the other
-        //    transmitter endpoints use. Returns 401 on a bad token,
-        //    missing scope, etc.
+        // 1. 标准 SSF 面向接收方的认证——与其他发送方端点相同。无效令牌、缺少范围等返回 401。
         if (!SsfAuthUtil.canRead()) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
         ClientModel callerClient = session.getContext().getClient();
 
-        // 2. Path-vs-token ownership check. Both mismatches (client and
-        //    stream) collapse to the same silent 404 to avoid telling
-        //    a probing caller which clientIds / streamIds exist on the
-        //    transmitter.
+        // 2. 路径与令牌归属检查。客户端与流不匹配均折叠为同一静默 404，
+        //    避免向探测者泄露发送方上存在哪些 clientId/streamId。
         if (callerClient == null
                 || clientId == null
                 || !clientId.equals(callerClient.getClientId())) {
@@ -117,8 +108,7 @@ public class SsfStreamPollResource {
             return streamNotFound();
         }
 
-        // 3. Stream must actually exist and be owned by this client.
-        //    Belt-and-braces against a stale stream id attribute.
+        // 3. 流必须真实存在且归此客户端所有——防止过期的 stream id 属性。
         StreamConfig stream = lookupStream(callerClient);
         if (stream == null || !streamId.equals(stream.getStreamId())) {
             log.debugf("SSF poll denied: stream lookup failed for clientId=%s streamId=%s",
@@ -128,11 +118,8 @@ public class SsfStreamPollResource {
 
         PollRequest body = request != null ? request : new PollRequest();
 
-        // 4. Cap the batch size of ack and setErrs at MAX_BATCH_CAP
-        //    (1000 each). Bounds the request payload + the
-        //    per-(client, jti) IN-clause query that follows. Receivers
-        //    that need to ack/NACK more than the cap split into
-        //    multiple polls.
+        // 4. 将 ack 与 setErrs 批量上限设为 MAX_BATCH_CAP（各 1000）。
+        //    限制请求载荷及后续 per-(client,jti) IN 查询。需 ack/NACK 超过上限的接收方应拆成多次轮询。
         if (body.getAck() != null && body.getAck().size() > PollDeliveryService.MAX_BATCH_CAP) {
             return invalidRequest("ack array exceeds " + PollDeliveryService.MAX_BATCH_CAP
                     + " entries — split into multiple polls");
