@@ -1603,3 +1603,18 @@
 2026-08-10T04:04:31Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/raft/processor/AbstractProcessor.java nacos wave53b [15:30] core raft server/processors
 2026-08-10T04:04:31Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/raft/processor/NacosReadRequestProcessor.java nacos wave53b [15:30] core raft server/processors
 2026-08-10T04:04:31Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/raft/processor/NacosWriteRequestProcessor.java nacos wave53b [15:30] core raft server/processors
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/DistroTaskEngineHolder.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/delay/DistroDelayTask.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/delay/DistroDelayTaskExecuteEngine.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/delay/DistroDelayTaskProcessor.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/execute/AbstractDistroExecuteTask.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/execute/DistroExecuteTaskExecuteEngine.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/execute/DistroSyncChangeTask.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/execute/DistroSyncDeleteTask.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/load/DistroLoadDataTask.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/verify/DistroVerifyExecuteTask.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/task/verify/DistroVerifyTimedTask.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/id/IdGeneratorManager.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/id/SnowFlowerIdGenerator.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/raft/JRaftMaintainService.java nacos wave53a [0:15] core distro tasks + raft protocol
+2026-08-10T04:04:55Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/raft/JRaftProtocol.java nacos wave53a [0:15] core distro tasks + raft protocol
