@@ -18,19 +18,27 @@ package io.netty.handler.proxy;
 
 import java.net.ConnectException;
 
+/**
+ * 经代理建立连接失败时抛出的 {@link ConnectException} 子类。
+ * <p>表示 TCP 已连上代理，但代理握手/CONNECT 未成功。</p>
+ */
 public class ProxyConnectException extends ConnectException {
     private static final long serialVersionUID = 5211364632246265538L;
 
+    /** 无消息构造。 */
     public ProxyConnectException() { }
 
+    /** @param msg 异常消息 */
     public ProxyConnectException(String msg) {
         super(msg);
     }
 
+    /** @param cause 根因 */
     public ProxyConnectException(Throwable cause) {
         initCause(cause);
     }
 
+    /** @param msg 异常消息；@param cause 根因 */
     public ProxyConnectException(String msg, Throwable cause) {
         super(msg);
         initCause(cause);

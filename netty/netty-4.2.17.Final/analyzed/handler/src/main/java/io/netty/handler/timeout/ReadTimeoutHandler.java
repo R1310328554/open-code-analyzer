@@ -24,8 +24,8 @@ import io.netty.channel.ChannelInitializer;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Raises a {@link ReadTimeoutException} when no data was read within a certain
- * period of time.
+ * 读超时处理器：在指定时间内无入站数据时抛出 {@link ReadTimeoutException} 并关闭连接。
+ * <p>基于 {@link IdleStateHandler} 的 {@link IdleState#READER_IDLE} 检测实现。</p>
  *
  * <pre>
  * // The connection is closed when there is no inbound traffic
@@ -60,10 +60,11 @@ import java.util.concurrent.TimeUnit;
  * @see IdleStateHandler
  */
 public class ReadTimeoutHandler extends IdleStateHandler {
+    /** 是否已因超时关闭，避免重复触发。 */
     private boolean closed;
 
     /**
-     * Creates a new instance.
+     * 以秒为单位的读超时构造。
      *
      * @param timeoutSeconds
      *        read timeout in seconds
@@ -73,7 +74,7 @@ public class ReadTimeoutHandler extends IdleStateHandler {
     }
 
     /**
-     * Creates a new instance.
+     * 指定时间单位构造读超时。
      *
      * @param timeout
      *        read timeout
@@ -91,7 +92,8 @@ public class ReadTimeoutHandler extends IdleStateHandler {
     }
 
     /**
-     * Is called when a read timeout was detected.
+     * 检测到读超时时回调；默认抛出 {@link ReadTimeoutException} 并关闭 channel。
+     * <p>子类可覆盖以自定义超时行为（如仅告警不关闭）。</p>
      */
     protected void readTimedOut(ChannelHandlerContext ctx) throws Exception {
         if (!closed) {

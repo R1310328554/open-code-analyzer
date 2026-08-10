@@ -31,10 +31,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * <p>This implementation of the {@link AbstractTrafficShapingHandler} is for global
- * traffic shaping, that is to say a global limitation of the bandwidth, whatever
- * the number of opened channels.</p>
- * <p>Note the index used in {@code OutboundBuffer.setUserDefinedWritability(index, boolean)} is <b>2</b>.</p>
+ * <p>全局流量整形：所有 channel 共享同一带宽限额，writability 索引为 <b>2</b>。</p>
+ * <p><b>Pipeline Coverage 为 all</b>：全进程仅创建一个实例并共享。</p>
+ * <p>不再使用时须调用 {@link #release()} 释放内部资源（不会关闭 {@link EventExecutor}）。</p>
  *
  * <p>The general use should be as follow:</p>
  * <ul>
@@ -77,22 +76,18 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Sharable
 public class GlobalTrafficShapingHandler extends AbstractTrafficShapingHandler {
-    /**
-     * All queues per channel
-     */
+    /** 每个 channel 的写队列与读/写时间戳 */
     private final ConcurrentMap<Integer, PerChannel> channelQueues = new ConcurrentHashMap<>();
 
-    /**
-     * Global queues size
-     */
+    /** 所有 channel 写队列总字节数 */
     private final AtomicLong queuesSize = new AtomicLong();
 
     /**
-     * Max size in the list before proposing to stop writing new objects from next handlers
-     * for all channel (global)
+     * 全局写缓冲上限（所有 channel 合计），默认 400MB
      */
     long maxGlobalWriteSize = DEFAULT_MAX_SIZE * 100; // default 400MB
 
+    /** 单 channel 的排队写状态 */
     private static final class PerChannel {
         ArrayDeque<ToSend> messagesQueue;
         long queueSize;
@@ -101,7 +96,7 @@ public class GlobalTrafficShapingHandler extends AbstractTrafficShapingHandler {
     }
 
     /**
-     * Create the global TrafficCounter.
+     * 创建并启动全局 {@link TrafficCounter}。
      */
     void createGlobalTrafficCounter(ScheduledExecutorService executor) {
         TrafficCounter tc = new TrafficCounter(this,
@@ -232,14 +227,14 @@ public class GlobalTrafficShapingHandler extends AbstractTrafficShapingHandler {
     }
 
     /**
-     * Release all internal resources of this instance.
+     * 释放计数器与定时任务；不再使用时必须调用。
      */
     public final void release() {
         trafficCounter.stop();
     }
 
     private PerChannel getOrSetPerChannel(ChannelHandlerContext ctx) {
-        // ensure creation is limited to one thread per channel
+        // 每 channel 单线程创建 PerChannel
         Channel channel = ctx.channel();
         Integer key = channel.hashCode();
         PerChannel perChannel = channelQueues.get(key);
@@ -266,7 +261,7 @@ public class GlobalTrafficShapingHandler extends AbstractTrafficShapingHandler {
         Integer key = channel.hashCode();
         PerChannel perChannel = channelQueues.remove(key);
         if (perChannel != null) {
-            // write operations need synchronization
+            // 写操作需同步
             synchronized (perChannel) {
                 if (channel.isActive()) {
                     for (ToSend toSend : perChannel.messagesQueue) {
@@ -335,8 +330,7 @@ public class GlobalTrafficShapingHandler extends AbstractTrafficShapingHandler {
         Integer key = channel.hashCode();
         PerChannel perChannel = channelQueues.get(key);
         if (perChannel == null) {
-            // in case write occurs before handlerAdded is raised for this handler
-            // imply a synchronized only if needed
+            // handlerAdded 之前可能发生 write
             perChannel = getOrSetPerChannel(ctx);
         }
         final ToSend newToSend;

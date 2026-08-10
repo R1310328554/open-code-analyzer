@@ -45,33 +45,34 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 /**
- * Handler that establishes a blind forwarding proxy tunnel using
- * <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-4.3.6">HTTP/1.1 CONNECT</a> request. It can be used to
- * establish plaintext or secure tunnels.
- * <p>
- * HTTP users who need to connect to a
- * <a href="https://datatracker.ietf.org/doc/html/rfc7230#page-10">message-forwarding HTTP proxy agent</a> instead of a
- * tunneling proxy should not use this handler.
+ * HTTP CONNECT 隧道代理处理器：通过
+ * <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-4.3.6">HTTP/1.1 CONNECT</a>
+ * 建立到目标 host:port 的盲转发隧道（明文或 TLS 均可）。
+ * <p>若需连接<strong>消息转发型</strong> HTTP 代理（非隧道），请勿使用本 handler。</p>
  */
 public final class HttpProxyHandler extends ProxyHandler {
 
     private static final String PROTOCOL = "http";
     private static final String AUTH_BASIC = "basic";
 
-    // Wrapper for the HttpClientCodec to prevent it to be removed by other handlers by mistake (for example the
-    // WebSocket*Handshaker.
-    //
-    // See:
-    // - https://github.com/netty/netty/issues/5201
-    // - https://github.com/netty/netty/issues/5070
+    // 包装 HttpClientCodec，防止 WebSocket 等 handler 误删编解码器
+    // 见 https://github.com/netty/netty/issues/5201 与 #5070
     private final HttpClientCodecWrapper codecWrapper = new HttpClientCodecWrapper();
+    /** Basic 认证用户名；无认证时为 null */
     private final String username;
+    /** Basic 认证密码 */
     private final String password;
+    /** 预计算的 Proxy-Authorization 头；无认证时为 null */
     private final CharSequence authorization;
+    /** 附加到 CONNECT 请求的出站头 */
     private final HttpHeaders outboundHeaders;
+    /** CONNECT Host 头是否省略默认端口 80/443 */
     private final boolean ignoreDefaultPortsInConnectHostHeader;
+    /** 是否校验 CONNECT 初始请求头 */
     private final boolean validateInitialHeaders;
+    /** 代理响应状态（首条 HttpResponse） */
     private HttpResponseStatus status;
+    /** 代理响应头 */
     private HttpHeaders inboundHeaders;
 
     public HttpProxyHandler(SocketAddress proxyAddress) {
@@ -237,11 +238,12 @@ public final class HttpProxyHandler extends ProxyHandler {
     }
 
     /**
-     * Specific case of a connection failure, which may include headers from the proxy.
+     * 连接失败且代理返回了 HTTP 头时的异常（如 407、502）。
      */
     public static final class HttpProxyConnectException extends ProxyConnectException {
         private static final long serialVersionUID = -8824334609292146066L;
 
+        /** 代理响应头；可能为 {@code null} */
         private final HttpHeaders headers;
 
         /**
@@ -254,13 +256,14 @@ public final class HttpProxyHandler extends ProxyHandler {
         }
 
         /**
-         * Returns headers, if any.  May be {@code null}.
+         * 返回代理响应头；可能为 {@code null}。
          */
         public HttpHeaders headers() {
             return headers;
         }
     }
 
+    /** 委托给内部 {@link HttpClientCodec} 的包装 handler，避免被 pipeline 误删。 */
     private static final class HttpClientCodecWrapper implements ChannelInboundHandler, ChannelOutboundHandler {
         final HttpClientCodec codec = new HttpClientCodec();
 

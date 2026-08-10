@@ -21,16 +21,21 @@ import io.netty.util.internal.StringUtil;
 
 import java.net.SocketAddress;
 
+/**
+ * 代理隧道建立成功后通过 userEvent 下发的连接事件。
+ * <p>包含协议名、认证方式、代理地址与目标地址，便于日志与监控。</p>
+ */
 public final class ProxyConnectionEvent {
 
     private final String protocol;
     private final String authScheme;
     private final SocketAddress proxyAddress;
     private final SocketAddress destinationAddress;
+    /** 缓存的 toString 结果 */
     private String strVal;
 
     /**
-     * Creates a new event that indicates a successful connection attempt to the destination address.
+     * 创建表示已成功连到目标地址的事件。
      */
     public ProxyConnectionEvent(
             String protocol, String authScheme, SocketAddress proxyAddress, SocketAddress destinationAddress) {
@@ -41,21 +46,21 @@ public final class ProxyConnectionEvent {
     }
 
     /**
-     * Returns the name of the proxy protocol in use.
+     * 返回代理协议名称（如 {@code http}、{@code socks5}）。
      */
     public String protocol() {
         return protocol;
     }
 
     /**
-     * Returns the name of the authentication scheme in use.
+     * 返回认证方案名称（如 {@code basic}、{@code none}）。
      */
     public String authScheme() {
         return authScheme;
     }
 
     /**
-     * Returns the address of the proxy server.
+     * 返回代理服务器地址。
      */
     @SuppressWarnings("unchecked")
     public <T extends SocketAddress> T proxyAddress() {
@@ -63,7 +68,7 @@ public final class ProxyConnectionEvent {
     }
 
     /**
-     * Returns the address of the destination.
+     * 返回目标（远端）地址。
      */
     @SuppressWarnings("unchecked")
     public <T extends SocketAddress> T destinationAddress() {

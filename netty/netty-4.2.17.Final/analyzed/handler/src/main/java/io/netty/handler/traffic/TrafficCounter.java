@@ -27,145 +27,93 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
- * Counts the number of read and written bytes for rate-limiting traffic.
- * <p>
- * It computes the statistics for both inbound and outbound traffic periodically at the given
- * {@code checkInterval}, and calls the {@link AbstractTrafficShapingHandler#doAccounting(TrafficCounter)} method back.
- * If the {@code checkInterval} is {@code 0}, no accounting will be done and statistics will only be computed at each
- * receive or write operation.
- * </p>
+ * 流量计数器：统计读写字节并周期性计算带宽，回调 {@link AbstractTrafficShapingHandler#doAccounting}。
+ * <p>{@code checkInterval} 为 0 时不启动定时统计，仅在每次读/写时更新；
+ * 整形精度随统计间隔增大而降低。</p>
  */
 public class TrafficCounter {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(TrafficCounter.class);
 
     /**
+     * 基于 {@link System#nanoTime()} 的毫秒时间（非 EPOCH，用于间隔计算）。
      * @return the time in ms using nanoTime, so not real EPOCH time but elapsed time in ms.
      */
     public static long milliSecondFromNano() {
         return System.nanoTime() / 1000000;
     }
 
-    /**
-     * Current written bytes
-     */
+    /** 当前统计周期内已写字节数 */
     private final AtomicLong currentWrittenBytes = new AtomicLong();
 
-    /**
-     * Current read bytes
-     */
+    /** 当前统计周期内已读字节数 */
     private final AtomicLong currentReadBytes = new AtomicLong();
 
-    /**
-     * Last writing time during current check interval
-     */
+    /** 本周期内写整形等待结束时间 */
     private long writingTime;
 
-    /**
-     * Last reading delay during current check interval
-     */
+    /** 本周期内读整形等待结束时间 */
     private long readingTime;
 
-    /**
-     * Long life written bytes
-     */
+    /** 生命周期累计写字节 */
     private final AtomicLong cumulativeWrittenBytes = new AtomicLong();
 
-    /**
-     * Long life read bytes
-     */
+    /** 生命周期累计读字节 */
     private final AtomicLong cumulativeReadBytes = new AtomicLong();
 
-    /**
-     * Last Time where cumulative bytes where reset to zero: this time is a real EPOC time (informative only)
-     */
+    /** 累计计数上次清零的 EPOCH 时间（毫秒） */
     private long lastCumulativeTime;
 
-    /**
-     * Last writing bandwidth
-     */
+    /** 上一周期写吞吐量（字节/秒） */
     private long lastWriteThroughput;
 
-    /**
-     * Last reading bandwidth
-     */
+    /** 上一周期读吞吐量（字节/秒） */
     private long lastReadThroughput;
 
-    /**
-     * Last Time Check taken
-     */
+    /** 上次统计快照时间 */
     final AtomicLong lastTime = new AtomicLong();
 
-    /**
-     * Last written bytes number during last check interval
-     */
+    /** 上一周期写字节数 */
     private volatile long lastWrittenBytes;
 
-    /**
-     * Last read bytes number during last check interval
-     */
+    /** 上一周期读字节数 */
     private volatile long lastReadBytes;
 
-    /**
-     * Last future writing time during last check interval
-     */
+    /** 上一周期写整形结束时间快照 */
     private volatile long lastWritingTime;
 
-    /**
-     * Last reading time during last check interval
-     */
+    /** 上一周期读整形结束时间快照 */
     private volatile long lastReadingTime;
 
-    /**
-     * Real written bytes
-     */
+    /** 实际已 flush 写字节 */
     private final AtomicLong realWrittenBytes = new AtomicLong();
 
-    /**
-     * Real writing bandwidth
-     */
+    /** 实际写吞吐量（字节/秒） */
     private long realWriteThroughput;
 
-    /**
-     * Delay between two captures
-     */
+    /** 两次统计间隔（毫秒） */
     final AtomicLong checkInterval = new AtomicLong(
             AbstractTrafficShapingHandler.DEFAULT_CHECK_INTERVAL);
 
-    // default 1 s
+    // 默认 1 秒
 
-    /**
-     * Name of this Monitor
-     */
+    /** 计数器名称 */
     final String name;
 
-    /**
-     * The associated TrafficShapingHandler
-     */
+    /** 宿主 TrafficShapingHandler */
     final AbstractTrafficShapingHandler trafficShapingHandler;
 
-    /**
-     * Executor that will run the monitor
-     */
+    /** 定时统计调度器 */
     final ScheduledExecutorService executor;
-    /**
-     * Monitor created once in start()
-     */
+    /** start() 创建的监控任务 */
     Runnable monitor;
-    /**
-     * used in stop() to cancel the timer
-     */
+    /** stop() 时 cancel 用 */
     volatile ScheduledFuture<?> scheduledFuture;
 
-    /**
-     * Is Monitor active
-     */
+    /** 监控是否激活 */
     volatile boolean monitorActive;
 
-    /**
-     * Class to implement monitoring at fix delay
-     *
-     */
+    /** 固定间隔执行的统计任务 */
     private final class TrafficMonitoringTask implements Runnable {
         @Override
         public void run() {
@@ -180,7 +128,7 @@ public class TrafficCounter {
     }
 
     /**
-     * Start the monitoring process.
+     * 启动周期性统计；{@code checkInterval > 0} 且 {@code executor != null} 时生效。
      */
     public synchronized void start() {
         if (monitorActive) {
@@ -188,7 +136,7 @@ public class TrafficCounter {
         }
         lastTime.set(milliSecondFromNano());
         long localCheckInterval = checkInterval.get();
-        // if executor is null, it means it is piloted by a GlobalChannelTrafficCounter, so no executor
+        // executor 为 null 时由 GlobalChannelTrafficCounter 统一调度 per-channel 计数器
         if (localCheckInterval > 0 && executor != null) {
             monitorActive = true;
             monitor = new TrafficMonitoringTask();
@@ -197,9 +145,7 @@ public class TrafficCounter {
         }
     }
 
-    /**
-     * Stop the monitoring process.
-     */
+    /** 停止统计并做最后一次 accounting。 */
     public synchronized void stop() {
         if (!monitorActive) {
             return;
@@ -215,14 +161,14 @@ public class TrafficCounter {
     }
 
     /**
-     * Reset the accounting on Read and Write.
+     * 重置本周期读/写计数并计算吞吐量。
      *
      * @param newLastTime the milliseconds unix timestamp that we should be considered up-to-date for.
      */
     synchronized void resetAccounting(long newLastTime) {
         long interval = newLastTime - lastTime.getAndSet(newLastTime);
         if (interval == 0) {
-            // nothing to do
+            // 无间隔，跳过
             return;
         }
         if (logger.isDebugEnabled() && interval > checkInterval() << 1) {
@@ -231,9 +177,8 @@ public class TrafficCounter {
         lastReadBytes = currentReadBytes.getAndSet(0);
         lastWrittenBytes = currentWrittenBytes.getAndSet(0);
         lastReadThroughput = lastReadBytes * 1000 / interval;
-        // nb byte / checkInterval in ms * 1000 (1s)
+        // 字节 / 间隔(ms) * 1000 => 字节/秒
         lastWriteThroughput = lastWrittenBytes * 1000 / interval;
-        // nb byte / checkInterval in ms * 1000 (1s)
         realWriteThroughput = realWrittenBytes.getAndSet(0) * 1000 / interval;
         lastWritingTime = Math.max(lastWritingTime, writingTime);
         lastReadingTime = Math.max(lastReadingTime, readingTime);
@@ -285,7 +230,7 @@ public class TrafficCounter {
     }
 
     private void init(long checkInterval) {
-        // absolute time: informative only
+        // 绝对时间戳，仅作信息展示
         lastCumulativeTime = System.currentTimeMillis();
         writingTime = milliSecondFromNano();
         readingTime = writingTime;
@@ -304,10 +249,10 @@ public class TrafficCounter {
         if (checkInterval.getAndSet(newInterval) != newInterval) {
             if (newInterval <= 0) {
                 stop();
-                // No more active monitoring
+                // 不再定时统计
                 lastTime.set(milliSecondFromNano());
             } else {
-                // Restart
+                // 间隔变化时重启定时器
                 stop();
                 start();
             }
@@ -474,8 +419,7 @@ public class TrafficCounter {
     }
 
     /**
-     * Returns the time to wait (if any) for the given length message, using the given limitTraffic and the max wait
-     * time.
+     * 根据当前读速率与限额，计算读操作前应等待的毫秒数（并更新读计数）。
      *
      * @param size
      *            the recv size
@@ -513,7 +457,7 @@ public class TrafficCounter {
             readingTime = Math.max(localReadingTime, now);
             return 0;
         }
-        // take the last read interval check to get enough interval time
+        // 间隔过短：合并上一周期字节数以估算
         long lastsum = sum + lastRB;
         long lastinterval = interval + checkInterval.get();
         long time = lastsum * 1000 / limitTraffic - lastinterval + pastDelay;
@@ -549,8 +493,7 @@ public class TrafficCounter {
     }
 
     /**
-     * Returns the time to wait (if any) for the given length message, using the given limitTraffic and
-     * the max wait time.
+     * 根据当前写速率与限额，计算写操作前应等待的毫秒数（并更新写计数）。
      *
      * @param size
      *            the write size

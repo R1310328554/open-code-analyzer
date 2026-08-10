@@ -30,7 +30,8 @@ import io.netty.util.internal.ObjectUtil;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Raises a {@link WriteTimeoutException} when a write operation cannot finish in a certain period of time.
+ * 写超时处理器：单次 {@code write} 在指定时间内未完成时抛出 {@link WriteTimeoutException} 并关闭连接。
+ * <p>为每个待完成的 {@link ChannelPromise} 调度超时任务，完成后从双向链表中移除。</p>
  *
  * <pre>
  * // The connection is closed when a write operation cannot finish in 30 seconds.
@@ -64,19 +65,22 @@ import java.util.concurrent.TimeUnit;
  * @see IdleStateHandler
  */
 public class WriteTimeoutHandler extends ChannelOutboundHandlerAdapter {
+    /** 超时下限（纳秒），避免过短定时器。 */
     private static final long MIN_TIMEOUT_NANOS = TimeUnit.MILLISECONDS.toNanos(1);
 
+    /** 写超时阈值（纳秒）；0 表示禁用。 */
     private final long timeoutNanos;
 
     /**
-     * A doubly-linked list to track all WriteTimeoutTasks
+     * 跟踪所有未完成写操作的超时任务（双向链表，尾指针为 {@link #lastTask}）。
      */
     private WriteTimeoutTask lastTask;
 
+    /** 是否已因超时关闭，避免重复触发。 */
     private boolean closed;
 
     /**
-     * Creates a new instance.
+     * 以秒为单位的写超时构造。
      *
      * @param timeoutSeconds
      *        write timeout in seconds
@@ -86,7 +90,7 @@ public class WriteTimeoutHandler extends ChannelOutboundHandlerAdapter {
     }
 
     /**
-     * Creates a new instance.
+     * 指定时间单位构造写超时。
      *
      * @param timeout
      *        write timeout
@@ -127,15 +131,16 @@ public class WriteTimeoutHandler extends ChannelOutboundHandlerAdapter {
         }
     }
 
+    /** 为本次 write 的 promise 注册超时定时器。 */
     private void scheduleTimeout(final ChannelHandlerContext ctx, final ChannelPromise promise) {
-        // Schedule a timeout.
+        // 调度写超时检查
         final WriteTimeoutTask task = new WriteTimeoutTask(ctx, promise);
         task.scheduledFuture = ctx.executor().schedule(task, timeoutNanos, TimeUnit.NANOSECONDS);
 
         if (!task.scheduledFuture.isDone()) {
             addWriteTimeoutTask(task);
 
-            // Cancel the scheduled timeout if the flush promise is complete.
+            // flush 完成时取消尚未触发的超时
             promise.addListener(task);
         }
     }
@@ -152,17 +157,17 @@ public class WriteTimeoutHandler extends ChannelOutboundHandlerAdapter {
     private void removeWriteTimeoutTask(WriteTimeoutTask task) {
         assert task.ctx.executor().inEventLoop();
         if (task == lastTask) {
-            // task is the tail of list
+            // 尾节点
             assert task.next == null;
             lastTask = lastTask.prev;
             if (lastTask != null) {
                 lastTask.next = null;
             }
         } else if (task.prev == null && task.next == null) {
-            // Since task is not lastTask, then it has been removed or not been added.
+            // 已移除或未加入链表
             return;
         } else if (task.prev == null) {
-            // task is the head of list and the list has at least 2 nodes
+            // 头节点且链表至少两个节点
             task.next.prev = null;
         } else {
             task.prev.next = task.next;
@@ -173,7 +178,7 @@ public class WriteTimeoutHandler extends ChannelOutboundHandlerAdapter {
     }
 
     /**
-     * Is called when a write timeout was detected
+     * 检测到写超时时回调；默认抛出 {@link WriteTimeoutException} 并关闭 channel。
      */
     protected void writeTimedOut(ChannelHandlerContext ctx) throws Exception {
         if (!closed) {
@@ -183,12 +188,13 @@ public class WriteTimeoutHandler extends ChannelOutboundHandlerAdapter {
         }
     }
 
+    /** 单次写操作的超时任务，同时作为双向链表节点。 */
     private final class WriteTimeoutTask implements Runnable, ChannelFutureListener {
 
         private final ChannelHandlerContext ctx;
         private final ChannelPromise promise;
 
-        // WriteTimeoutTask is also a node of a doubly-linked list
+        // 双向链表指针
         WriteTimeoutTask prev;
         WriteTimeoutTask next;
 
@@ -201,9 +207,8 @@ public class WriteTimeoutHandler extends ChannelOutboundHandlerAdapter {
 
         @Override
         public void run() {
-            // Was not written yet so issue a write timeout
-            // The promise itself will be failed with a ClosedChannelException once the close() was issued
-            // See https://github.com/netty/netty/issues/2159
+            // 写尚未完成则触发超时；close 后 promise 会以 ClosedChannelException 失败
+            // 见 https://github.com/netty/netty/issues/2159
             if (!promise.isDone()) {
                 try {
                     writeTimedOut(ctx);
@@ -216,18 +221,14 @@ public class WriteTimeoutHandler extends ChannelOutboundHandlerAdapter {
 
         @Override
         public void operationComplete(ChannelFuture future) throws Exception {
-            // scheduledFuture has already be set when reaching here
             scheduledFuture.cancel(false);
 
-            // Check if its safe to modify the "doubly-linked-list" that we maintain. If its not we will schedule the
-            // modification so its picked up by the executor..
+            // 非 EventLoop 线程完成时需调度到 EventLoop 再改链表，避免竞态
             if (ctx.executor().inEventLoop()) {
                 removeWriteTimeoutTask(this);
             } else {
-                // So let's just pass outself to the executor which will then take care of remove this task
-                // from the doubly-linked list. Schedule ourself is fine as the promise itself is done.
-                //
-                // This fixes https://github.com/netty/netty/issues/11053
+                // promise 已完成，在 EventLoop 上安全移除节点
+                // 修复 https://github.com/netty/netty/issues/11053
                 assert promise.isDone();
                 ctx.executor().execute(this);
             }

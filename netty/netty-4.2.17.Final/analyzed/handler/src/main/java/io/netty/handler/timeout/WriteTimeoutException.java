@@ -16,21 +16,27 @@
 package io.netty.handler.timeout;
 
 /**
- * A {@link TimeoutException} raised by {@link WriteTimeoutHandler} when a write operation
- * cannot finish in a certain period of time.
+ * 写超时异常：{@link WriteTimeoutHandler} 在指定时间内写操作未完成时抛出。
+ * <p>默认使用无堆栈的 {@link #INSTANCE} 单例。</p>
  */
 public final class WriteTimeoutException extends TimeoutException {
 
     private static final long serialVersionUID = -144786655770296065L;
 
+    /** 无堆栈的共享实例，供 handler 高频抛出。 */
     public static final WriteTimeoutException INSTANCE = new WriteTimeoutException(true);
 
+    /** 创建带默认消息的可变实例。 */
     public WriteTimeoutException() { }
 
+    /**
+     * @param message 自定义异常消息
+     */
     public WriteTimeoutException(String message) {
         super(message, false);
     }
 
+    /** @param shared 是否为共享单例（不填充堆栈） */
     private WriteTimeoutException(boolean shared) {
         super(null, shared);
     }

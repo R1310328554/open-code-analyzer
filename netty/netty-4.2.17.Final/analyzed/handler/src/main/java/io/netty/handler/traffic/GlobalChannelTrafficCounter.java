@@ -23,10 +23,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Version for {@link GlobalChannelTrafficShapingHandler}.
- * This TrafficCounter is the Global one, and its special property is to directly handle
- * other channel's TrafficCounters. In particular, there are no scheduler for those
- * channel's TrafficCounters because it is managed by this one.
+ * {@link GlobalChannelTrafficShapingHandler} 专用全局计数器：
+ * 统一调度各 channel 的 {@link TrafficCounter}，per-channel 计数器无独立 executor。
  */
 public class GlobalChannelTrafficCounter extends TrafficCounter {
     /**
@@ -42,18 +40,13 @@ public class GlobalChannelTrafficCounter extends TrafficCounter {
     }
 
     /**
-     * Class to implement monitoring at fix delay.
-     * This version is Mixed in the way it mixes Global and Channel counters.
+     * 混合监控任务：同时重置全局与各 channel 计数器并回调 accounting。
      */
     private static class MixedTrafficMonitoringTask implements Runnable {
-        /**
-         * The associated TrafficShapingHandler
-         */
+        /** 宿主 GlobalChannelTrafficShapingHandler */
         private final GlobalChannelTrafficShapingHandler trafficShapingHandler1;
 
-        /**
-         * The associated TrafficCounter
-         */
+        /** 全局 TrafficCounter */
         private final TrafficCounter counter;
 
         /**
@@ -81,9 +74,7 @@ public class GlobalChannelTrafficCounter extends TrafficCounter {
         }
     }
 
-    /**
-     * Start the monitoring process.
-     */
+    /** 启动混合监控（全局 + 各 channel 计数器）。 */
     @Override
     public synchronized void start() {
         if (monitorActive) {
@@ -99,9 +90,7 @@ public class GlobalChannelTrafficCounter extends TrafficCounter {
         }
     }
 
-    /**
-     * Stop the monitoring process.
-     */
+    /** 停止混合监控。 */
     @Override
     public synchronized void stop() {
         if (!monitorActive) {

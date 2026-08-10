@@ -23,9 +23,8 @@ import java.util.ArrayDeque;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <p>This implementation of the {@link AbstractTrafficShapingHandler} is for channel
- * traffic shaping, that is to say a per channel limitation of the bandwidth.</p>
- * <p>Note the index used in {@code OutboundBuffer.setUserDefinedWritability(index, boolean)} is <b>1</b>.</p>
+ * <p>单 channel 流量整形：每个连接独立限速，{@code OutboundBuffer} writability 索引为 <b>1</b>。</p>
+ * <p><b>Pipeline Coverage 为 one</b>：每个 channel 须单独创建 handler，计数器不可共享。</p>
  *
  * <p>The general use should be as follow:</p>
  * <ul>
@@ -63,7 +62,9 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  */
 public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler {
+    /** 延迟写出的消息队列（保证写顺序） */
     private final ArrayDeque<ToSend> messagesQueue = new ArrayDeque<ToSend>();
+    /** 当前写队列占用字节数 */
     private long queueSize;
 
     /**
@@ -139,7 +140,7 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         trafficCounter.stop();
-        // write order control
+        // 写出顺序控制：移除 handler 时 flush 或失败排队写
         synchronized (this) {
             if (ctx.channel().isActive()) {
                 for (ToSend toSend : messagesQueue) {
@@ -162,6 +163,7 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
         super.handlerRemoved(ctx);
     }
 
+    /** 待延迟发送的写操作条目。 */
     private static final class ToSend {
         final long relativeTimeAction;
         final Object toSend;
@@ -179,7 +181,7 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
             final long size, final long delay, final long now,
             final ChannelPromise promise) {
         final ToSend newToSend;
-        // write order control
+        // 写顺序控制
         synchronized (this) {
             if (delay == 0 && messagesQueue.isEmpty()) {
                 trafficCounter.bytesRealWriteFlowControl(size);
@@ -201,7 +203,7 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
     }
 
     private void sendAllValid(final ChannelHandlerContext ctx, final long now) {
-        // write order control
+        // 按 scheduled 时间顺序写出到期消息
         synchronized (this) {
             ToSend newToSend = messagesQueue.pollFirst();
             for (; newToSend != null; newToSend = messagesQueue.pollFirst()) {
@@ -223,7 +225,7 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
     }
 
     /**
-    * @return current size in bytes of the write buffer.
+    * @return 当前写缓冲队列字节数
     */
    public long queueSize() {
        return queueSize;

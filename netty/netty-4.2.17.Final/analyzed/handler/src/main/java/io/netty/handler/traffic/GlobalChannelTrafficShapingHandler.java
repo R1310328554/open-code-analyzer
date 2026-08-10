@@ -41,10 +41,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This implementation of the {@link AbstractTrafficShapingHandler} is for global
- * and per channel traffic shaping, that is to say a global limitation of the bandwidth, whatever
- * the number of opened channels and a per channel limitation of the bandwidth.<br><br>
- * This version shall not be in the same pipeline than other TrafficShapingHandler.<br><br>
+ * 全局 + 单 channel 双层流量整形：同时限制总带宽与各连接带宽。
+ * <p>writability 索引为 <b>3</b>；勿与其他 TrafficShapingHandler 同 pipeline。</p>
+ * <p><b>Pipeline Coverage 为 all</b>：全进程共享一个实例。用完须 {@link #release()}。</p>
  *
  * The general use should be as follow:<br>
  * <ul>
@@ -91,52 +90,43 @@ import java.util.concurrent.atomic.AtomicLong;
 public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHandler {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(GlobalChannelTrafficShapingHandler.class);
-    /**
-     * All queues per channel
-     */
+    /** 各 channel 的队列与 per-channel 计数器 */
     final ConcurrentMap<Integer, PerChannel> channelQueues = new ConcurrentHashMap<>();
 
-    /**
-     * Global queues size
-     */
+    /** 全局写队列总字节数 */
     private final AtomicLong queuesSize = new AtomicLong();
 
-    /**
-     * Maximum cumulative writing bytes for one channel among all (as long as channels stay the same)
-     */
+    /** 各 channel 累计写字节的最大值（用于公平性/deviation） */
     private final AtomicLong cumulativeWrittenBytes = new AtomicLong();
 
-    /**
-     * Maximum cumulative read bytes for one channel among all (as long as channels stay the same)
-     */
+    /** 各 channel 累计读字节的最大值 */
     private final AtomicLong cumulativeReadBytes = new AtomicLong();
 
-    /**
-     * Max size in the list before proposing to stop writing new objects from next handlers
-     * for all channel (global)
-     */
+    /** 全局写缓冲上限，默认 400MB */
     volatile long maxGlobalWriteSize = DEFAULT_MAX_SIZE * 100; // default 400MB
 
-    /**
-     * Limit in B/s to apply to write
-     */
+    /** 单 channel 写带宽上限（字节/秒） */
     private volatile long writeChannelLimit;
 
-    /**
-     * Limit in B/s to apply to read
-     */
+    /** 单 channel 读带宽上限（字节/秒） */
     private volatile long readChannelLimit;
 
     private static final float DEFAULT_DEVIATION = 0.1F;
     private static final float MAX_DEVIATION = 0.4F;
     private static final float DEFAULT_SLOWDOWN = 0.4F;
     private static final float DEFAULT_ACCELERATION = -0.1F;
+    /** 允许带宽偏差比例（相对目标带宽） */
     private volatile float maxDeviation;
+    /** 过快 channel 的减速因子 */
     private volatile float accelerationFactor;
+    /** 过慢 channel 的加速因子 */
     private volatile float slowDownFactor;
+    /** 是否在读方向启用 channel 间均衡 */
     private volatile boolean readDeviationActive;
+    /** 是否在写方向启用 channel 间均衡 */
     private volatile boolean writeDeviationActive;
 
+    /** 单 channel 状态：队列、计数器、时间戳 */
     static final class PerChannel {
         ArrayDeque<ToSend> messagesQueue;
         TrafficCounter channelTrafficCounter;
@@ -146,10 +136,10 @@ public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHa
     }
 
     /**
-     * Create the global TrafficCounter
+     * 创建 {@link GlobalChannelTrafficCounter} 并设置默认 deviation 参数。
      */
     void createGlobalTrafficCounter(ScheduledExecutorService executor) {
-        // Default
+        // 默认偏差/加减速因子
         setMaxDeviation(DEFAULT_DEVIATION, DEFAULT_SLOWDOWN, DEFAULT_ACCELERATION);
         checkNotNullWithIAE(executor, "executor");
         TrafficCounter tc = new GlobalChannelTrafficCounter(this, executor, "GlobalChannelTC", checkInterval);
@@ -311,7 +301,7 @@ public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHa
     }
 
     private void computeDeviationCumulativeBytes() {
-        // compute the maximum cumulativeXxxxBytes among still connected Channels
+        // 统计仍连接 channel 的累计读/写字节极值，决定是否启用均衡
         long maxWrittenBytes = 0;
         long maxReadBytes = 0;
         long minWrittenBytes = Long.MAX_VALUE;
@@ -345,13 +335,14 @@ public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHa
         super.doAccounting(counter);
     }
 
+    /** 按 channel 与全局累计量比值调整等待时间，实现多连接公平性。 */
     private long computeBalancedWait(float maxLocal, float maxGlobal, long wait) {
         if (maxGlobal == 0) {
-            // no change
+            // 无全局参考，不调整
             return wait;
         }
         float ratio = maxLocal / maxGlobal;
-        // if in the boundaries, same value
+        // 在偏差带内保持原 wait
         if (ratio > maxDeviation) {
             if (ratio < 1 - maxDeviation) {
                 return wait;
@@ -445,7 +436,7 @@ public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHa
     }
 
     /**
-     * Release all internal resources of this instance.
+     * 释放全局计数器资源。
      */
     public final void release() {
         trafficCounter.stop();
@@ -459,7 +450,7 @@ public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHa
         if (perChannel == null) {
             perChannel = new PerChannel();
             perChannel.messagesQueue = new ArrayDeque<ToSend>();
-            // Don't start it since managed through the Global one
+            // 由 Global 计数器统一调度，不单独 start
             perChannel.channelTrafficCounter = new TrafficCounter(this, null, "ChannelTC" +
                     ctx.channel().hashCode(), checkInterval);
             perChannel.queueSize = 0L;
@@ -524,7 +515,7 @@ public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHa
             if (perChannel != null) {
                 wait = perChannel.channelTrafficCounter.readTimeToWait(size, readChannelLimit, maxTime, now);
                 if (readDeviationActive) {
-                    // now try to balance between the channels
+                    // 多 channel 读均衡：按累计读量比值调整 wait
                     long maxLocalRead;
                     maxLocalRead = perChannel.channelTrafficCounter.cumulativeReadBytes();
                     long maxGlobalRead = cumulativeReadBytes.get();
@@ -541,9 +532,8 @@ public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHa
                 wait = waitGlobal;
             }
             wait = checkWaitReadTime(ctx, wait, now);
-            if (wait >= MINIMAL_WAIT) { // At least 10ms seems a minimal
-                // time in order to try to limit the traffic
-                // Only AutoRead AND HandlerActive True means Context Active
+            if (wait >= MINIMAL_WAIT) { // 至少 10ms 才暂停读
+                // AutoRead 且 handler active
                 Channel channel = ctx.channel();
                 ChannelConfig config = channel.config();
                 if (logger.isDebugEnabled()) {
@@ -617,7 +607,7 @@ public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHa
     }
 
     /**
-     * To allow for instance doAccounting to use the TrafficCounter per channel.
+     * 供 {@link #doAccounting} 等访问各 channel 的 {@link TrafficCounter} 快照。
      * @return the list of TrafficCounters that exists at the time of the call.
      */
     public Collection<TrafficCounter> channelTrafficCounters() {
@@ -661,7 +651,7 @@ public class GlobalChannelTrafficShapingHandler extends AbstractTrafficShapingHa
             if (perChannel != null) {
                 wait = perChannel.channelTrafficCounter.writeTimeToWait(size, writeChannelLimit, maxTime, now);
                 if (writeDeviationActive) {
-                    // now try to balance between the channels
+                    // 多 channel 写均衡
                     long maxLocalWrite;
                     maxLocalWrite = perChannel.channelTrafficCounter.cumulativeWrittenBytes();
                     long maxGlobalWrite = cumulativeWrittenBytes.get();
