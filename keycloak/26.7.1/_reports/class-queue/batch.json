@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/validate/validators/OptionsValidator.java",
     "server-spi-private/src/main/java/org/keycloak/validate/validators/PatternValidator.java",
     "server-spi-private/src/main/java/org/keycloak/validate/validators/UriValidator.java",
-    "server-spi-private/src/main/java/org/keycloak/validate/validators/ValidatorConfigValidator.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/ClientValidationContext.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/ClientValidationProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/ClientValidationProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/ClientValidationSPI.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/DefaultValidationContext.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/ValidationContext.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/ValidationError.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/ValidationResult.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/ValidationUtil.java",
-    "server-spi-private/src/main/java/org/keycloak/validation/Validator.java",
-    "server-spi/src/main/java/org/keycloak/component/ComponentFactory.java",
-    "server-spi/src/main/java/org/keycloak/component/ComponentModel.java",
-    "server-spi/src/main/java/org/keycloak/component/ComponentValidationException.java",
-    "server-spi/src/main/java/org/keycloak/component/ConfiguredComponent.java",
-    "server-spi/src/main/java/org/keycloak/component/JsonConfigComponentModel.java"
+    "server-spi-private/src/main/java/org/keycloak/validate/validators/ValidatorConfigValidator.java"
   ],
   "remaining_pending": 2458,
-  "done": 3510
+  "done": 3525
 }
