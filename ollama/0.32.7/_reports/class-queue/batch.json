@@ -15,23 +15,8 @@
     "x/create/prequant.go",
     "x/create/quantize.go",
     "x/create/quantpolicy.go",
-    "x/create/qwen35.go",
-    "x/create/transform.go",
-    "x/create/writer.go",
-    "x/imagegen/manifest/manifest.go",
-    "x/internal/mlxtest/mlxtest.go",
-    "x/internal/mlxthread/thread.go",
-    "x/mlxrunner/batch/batch.go",
-    "x/mlxrunner/cache/cache.go",
-    "x/mlxrunner/cache/kvcache.go",
-    "x/mlxrunner/cache/recurrent.go",
-    "x/mlxrunner/cache/rotating.go",
-    "x/mlxrunner/cache_trie.go",
-    "x/mlxrunner/client.go",
-    "x/mlxrunner/dflash.go",
-    "x/mlxrunner/imports.go",
-    "x/mlxrunner/media.go"
+    "x/create/qwen35.go"
   ],
   "remaining_pending": 73,
-  "done": 360
+  "done": 375
 }
