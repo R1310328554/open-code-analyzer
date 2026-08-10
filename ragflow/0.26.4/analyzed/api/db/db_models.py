@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Peewee ORM 模型层：自定义字段、连接池、分布式锁、全部业务表定义与增量 migrate_db。
+"""
+
 #
 import hashlib
 import inspect
@@ -59,6 +63,7 @@ from common.constants import ParserType, MAXIMUM_TASK_PAGE_NUMBER
 from common import settings
 
 
+# 可用于范围查询的连续型 Peewee 字段
 CONTINUOUS_FIELD_TYPE = {IntegerField, FloatField, DateTimeField}
 AUTO_DATE_TIMESTAMP_FIELD_PREFIX = {"create", "start", "end", "update", "read_access", "write_access"}
 
@@ -74,6 +79,7 @@ class LongTextField(TextField):
 
 
 class JSONField(LongTextField):
+    # 以 JSON 字符串持久化 dict/list
     default_value = {}
 
     def __init__(self, object_hook=None, object_pairs_hook=None, **kwargs):
@@ -97,6 +103,7 @@ class ListField(JSONField):
 
 
 class SerializedField(LongTextField):
+    # Pickle 或带类型 JSON 的序列化列
     def __init__(self, serialized_type=SerializedType.PICKLE, object_hook=None, object_pairs_hook=None, **kwargs):
         self._serialized_type = serialized_type
         self._object_hook = object_hook
@@ -150,6 +157,7 @@ def remove_field_name_prefix(field_name):
 
 
 class BaseModel(Model):
+    # 所有表的 create/update 时间戳与通用查询辅助
     create_time = BigIntegerField(null=True, index=True)
     create_date = DateTimeField(null=True, index=True)
     update_time = BigIntegerField(null=True, index=True)
@@ -258,6 +266,7 @@ class JsonSerializedField(SerializedField):
 
 
 class RetryingPooledMySQLDatabase(PooledMySQLDatabase):
+    # MySQL 连接池：断线自动重连与事务重试
     def __init__(self, *args, **kwargs):
         self.max_retries = kwargs.pop("max_retries", 5)
         self.retry_delay = kwargs.pop("retry_delay", 1)
@@ -319,6 +328,7 @@ class RetryingPooledMySQLDatabase(PooledMySQLDatabase):
 
 
 class RetryingPooledPostgresqlDatabase(PooledPostgresqlDatabase):
+    # PostgreSQL 连接池：断线重连
     def __init__(self, *args, **kwargs):
         self.max_retries = kwargs.pop("max_retries", 5)
         self.retry_delay = kwargs.pop("retry_delay", 1)
@@ -470,6 +480,7 @@ class DatabaseMigrator(Enum):
 
 @singleton
 class BaseDataBase:
+    # 按 settings.DATABASE 初始化全局 DB 连接
     def __init__(self):
         database_config = settings.DATABASE.copy()
         db_name = database_config.pop("name")
@@ -485,7 +496,9 @@ class BaseDataBase:
 
 
 def with_retry(max_retries=3, retry_delay=1.0):
-    """Decorator: Add retry mechanism to database operations
+    """数据库操作重试装饰器（指数退避）。
+
+    Decorator: Add retry mechanism to database operations
 
     Args:
         max_retries (int): maximum number of retries
@@ -526,6 +539,7 @@ def with_retry(max_retries=3, retry_delay=1.0):
 
 
 class PostgresDatabaseLock:
+    # pg_try_advisory_lock 实现的命名锁
     def __init__(self, lock_name, timeout=10, db=None):
         self.lock_name = lock_name
         self.lock_id = int(hashlib.md5(lock_name.encode()).hexdigest(), 16) % (2**31 - 1)
@@ -573,6 +587,7 @@ class PostgresDatabaseLock:
 
 
 class MysqlDatabaseLock:
+    # GET_LOCK / RELEASE_LOCK 命名锁
     def __init__(self, lock_name, timeout=10, db=None):
         self.lock_name = lock_name
         self.timeout = int(timeout)
@@ -638,6 +653,7 @@ def close_connection():
 
 
 class DataBaseModel(BaseModel):
+    # 绑定全局 DB 的业务表基类
     class Meta:
         database = DB
 
@@ -645,6 +661,7 @@ class DataBaseModel(BaseModel):
 @DB.connection_context()
 @DB.lock("init_database_tables", 60)
 def init_database_tables(alter_fields=[]):
+    # 创建缺失表并执行 migrate_db 增量列变更
     members = inspect.getmembers(sys.modules[__name__], inspect.isclass)
     table_objs = []
     create_failed_list = []
@@ -678,6 +695,7 @@ def fill_db_model_object(model_object, human_model_dict):
 
 
 class User(DataBaseModel, AuthUser):
+    # 用户账号（Quart AuthUser 兼容）
     SENSITIVE_FIELDS = {"password", "access_token", "email"}
 
     id = CharField(max_length=32, primary_key=True)
@@ -721,6 +739,7 @@ class User(DataBaseModel, AuthUser):
 
 
 class Tenant(DataBaseModel):
+    # 租户/workspace：默认 LLM/Embedding 等模型 ID
     id = CharField(max_length=32, primary_key=True)
     name = CharField(max_length=100, null=True, help_text="Tenant name", index=True)
     public_key = CharField(max_length=255, null=True, index=True)
@@ -836,6 +855,7 @@ class TenantLangfuse(DataBaseModel):
 
 
 class Knowledgebase(DataBaseModel):
+    # 知识库（数据集）元数据与索引任务状态
     id = CharField(max_length=32, primary_key=True)
     avatar = TextField(null=True, help_text="avatar base64 string")
     tenant_id = CharField(max_length=32, null=False, index=True)
@@ -878,6 +898,7 @@ class Knowledgebase(DataBaseModel):
 
 
 class Document(DataBaseModel):
+    # 知识库内文档解析进度与分块统计
     id = CharField(max_length=32, primary_key=True)
     thumbnail = TextField(null=True, help_text="thumbnail base64 string")
     kb_id = CharField(max_length=256, null=False, index=True)
@@ -908,6 +929,7 @@ class Document(DataBaseModel):
 
 
 class File(DataBaseModel):
+    # 租户文件树节点（含文件夹）
     id = CharField(max_length=32, primary_key=True)
     parent_id = CharField(max_length=32, null=False, help_text="parent folder id", index=True)
     tenant_id = CharField(max_length=32, null=False, help_text="tenant id", index=True)
@@ -986,6 +1008,7 @@ class FileCommitItem(DataBaseModel):
 
 
 class Task(DataBaseModel):
+    # 异步任务（解析/GraphRAPTOR/记忆提取等）
     id = CharField(max_length=32, primary_key=True)
     doc_id = CharField(max_length=32, null=False, index=True)
     from_page = IntegerField(default=0)
@@ -1004,6 +1027,7 @@ class Task(DataBaseModel):
 
 
 class Dialog(DataBaseModel):
+    # 对话应用配置（检索参数、Prompt、模型）
     id = CharField(max_length=32, primary_key=True)
     tenant_id = CharField(max_length=32, null=False, index=True)
     name = CharField(max_length=255, null=True, help_text="dialog application name", index=True)
@@ -1085,6 +1109,7 @@ class API4Conversation(DataBaseModel):
 
 
 class UserCanvas(DataBaseModel):
+    # Agent/DataFlow Canvas DSL
     id = CharField(max_length=32, primary_key=True)
     avatar = TextField(null=True, help_text="avatar base64 string")
     user_id = CharField(max_length=255, null=False, help_text="user_id", index=True)
@@ -1274,6 +1299,7 @@ class Connector2Kb(DataBaseModel):
 
 
 class ChatChannel(DataBaseModel):
+    # 即时通讯 Bot 渠道配置（WhatsApp/飞书等）
     id = CharField(max_length=32, primary_key=True)
     tenant_id = CharField(max_length=32, null=False, index=True)
     name = CharField(max_length=128, null=False, help_text="Bot name", index=False)
@@ -1401,6 +1427,7 @@ class EvaluationResult(DataBaseModel):
 
 
 class Memory(DataBaseModel):
+    # Agent 长期记忆库配置
     id = CharField(max_length=32, primary_key=True)
     name = CharField(max_length=128, null=False, index=False, help_text="Memory name")
     avatar = TextField(null=True, help_text="avatar base64 string")
@@ -1434,6 +1461,7 @@ class SystemSettings(DataBaseModel):
 
 
 class TenantModelProvider(DataBaseModel):
+    # 租户 LLM Provider（工厂）绑定
     id = CharField(max_length=32, primary_key=True)
     provider_name = CharField(max_length=128, null=False, index=False, help_text="LLM provider name")
     tenant_id = CharField(max_length=32, null=False, index=True)
@@ -1444,6 +1472,7 @@ class TenantModelProvider(DataBaseModel):
 
 
 class TenantModelInstance(DataBaseModel):
+    # Provider 下的实例（API Key、base_url）
     id = CharField(max_length=32, primary_key=True)
     instance_name = CharField(max_length=128, null=False, index=False, help_text="Model instance name")
     provider_id = CharField(max_length=32, null=False, index=False)
@@ -1456,6 +1485,7 @@ class TenantModelInstance(DataBaseModel):
 
 
 class TenantModel(DataBaseModel):
+    # 实例下具体模型及启停状态
     id = CharField(max_length=32, primary_key=True)
     model_name = CharField(max_length=128, null=True, index=False, help_text="Model name")
     provider_id = CharField(max_length=32, null=False, index=False)
@@ -1492,6 +1522,7 @@ class TenantModelGroupMapping(DataBaseModel):
 
 
 def alter_db_add_column(migrator, table_name, column_name, column_type):
+    # 幂等 ADD COLUMN（忽略重复列错误）
     try:
         migrate(migrator.add_column(table_name, column_name, column_type))
     except OperationalError as ex:
@@ -1526,7 +1557,7 @@ def alter_db_rename_column(migrator, table_name, old_column_name, new_column_nam
 
 
 def migrate_add_unique_email(migrator):
-    """Deduplicates user emails and add UNIQUE constraint to email column (idempotent)"""
+    """去重 user.email 并添加 UNIQUE 约束（幂等）。"""
     # step 0: check existing index state on user.email and prepare for unique constraint
     try:
         if settings.DATABASE_TYPE.upper() == "POSTGRES":
@@ -1732,6 +1763,7 @@ def _update_tenant_llm_to_id_primary_key_postgres():
 
 
 def migrate_db():
+    # 启动时增量 schema 变更：新列、改类型、删遗留索引等
     logging.disable(logging.ERROR)
     migrator = DatabaseMigrator[settings.DATABASE_TYPE.upper()].value(DB)
     alter_db_add_column(migrator, "file", "source_type", CharField(max_length=128, null=False, default="", help_text="where dose this document come from", index=True))

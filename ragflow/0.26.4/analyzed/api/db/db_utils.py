@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+数据库工具：批量插入、动态分表、查询表达式构建与分页 query_db。
+"""
+
 #
 import operator
 from functools import reduce
@@ -25,6 +29,7 @@ from api.db.db_models import DB, DataBaseModel
 
 @DB.connection_context()
 def bulk_insert_into_db(model, data_source, replace_on_conflict=False):
+    # 批量 insert_many，自动填充 create/update 时间戳
     DB.create_tables([model])
 
     for i, data in enumerate(data_source):
@@ -52,6 +57,7 @@ def bulk_insert_into_db(model, data_source, replace_on_conflict=False):
 
 
 def get_dynamic_db_model(base, job_id):
+    # 按 job_id 前缀选择动态 tracking 分表
     return type(base.model(table_index=get_dynamic_tracking_table_index(job_id=job_id)))
 
 
@@ -60,6 +66,7 @@ def get_dynamic_tracking_table_index(job_id):
 
 
 def fill_db_model_object(model_object, human_model_dict):
+    # 将无前缀字段名写入 f_* Peewee 属性
     for k, v in human_model_dict.items():
         attr_name = "f_%s" % k
         if hasattr(model_object.__class__, attr_name):
@@ -85,6 +92,7 @@ supported_operators = {
 
 
 def query_dict2expression(model: type[DataBaseModel], query: dict[str, bool | int | str | list | tuple]):
+    # 将 {"field": (op, val)} 转为 Peewee WHERE 表达式
     expression = []
 
     for field, value in query.items():
@@ -100,6 +108,7 @@ def query_dict2expression(model: type[DataBaseModel], query: dict[str, bool | in
 
 
 def query_db(model: type[DataBaseModel], limit: int = 0, offset: int = 0, query: dict = None, order_by: str | list | tuple | None = None):
+    # 通用分页查询，返回 (rows, total_count)
     data = model.select()
     if query:
         data = data.where(query_dict2expression(model, query))

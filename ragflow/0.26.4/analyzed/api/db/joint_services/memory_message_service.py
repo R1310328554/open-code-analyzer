@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+记忆消息联合服务：LLM 抽取、向量化入库、FIFO 淘汰、检索与异步任务队列。
+"""
+
 #
 import logging
 from datetime import datetime
@@ -37,6 +41,7 @@ from rag.utils.redis_conn import REDIS_CONN
 
 
 async def save_to_memory(memory_id: str, message_dict: dict):
+    # 同步写入：RAW 行 + LLM 抽取结构化记忆并 embed
     """
     :param memory_id:
     :param message_dict: {
@@ -64,7 +69,7 @@ async def save_to_memory(memory_id: str, message_dict: dict):
         )
         if memory.memory_type != MemoryType.RAW.value
         else []
-    )  # if only RAW, no need to extract
+    )  # 非 RAW 类型才走 LLM 抽取
     raw_message_id = REDIS_CONN.generate_auto_increment_id(namespace="memory")
     message_list = [
         {
@@ -103,6 +108,7 @@ async def save_to_memory(memory_id: str, message_dict: dict):
 
 
 async def save_extracted_to_memory_only(memory_id: str, message_dict, source_message_id: int, task_id: str = None):
+    # 异步任务第二阶段：仅 LLM 抽取并入库
     memory = MemoryService.get_by_memory_id(memory_id)
     if not memory:
         msg = f"Memory '{memory_id}' not found."
@@ -167,6 +173,7 @@ async def extract_by_llm(
     task_id: str = None,
     llm_id: str = "",
 ) -> List[dict]:
+    # 组装 prompt 并调用租户 chat 模型，解析 JSON 抽取结果
     if not system_prompt:
         system_prompt = PromptAssembler.assemble_system_prompt({"memory_type": memory_type})
     conversation_content = f"User Input: {user_input}\nAgent Response: {agent_response}"
@@ -198,6 +205,7 @@ async def extract_by_llm(
 
 
 async def embed_and_save(memory, message_list: list[dict], task_id: str = None):
+    # Embedding、建索引、容量 FIFO 淘汰并写入 doc store
     embd_model_config = get_model_config_from_provider_instance(memory.tenant_id, LLMType.EMBEDDING, memory.embd_id)
     with LLMBundle(memory.tenant_id, embd_model_config) as embedding_model:
         if task_id:
@@ -243,6 +251,7 @@ async def embed_and_save(memory, message_list: list[dict], task_id: str = None):
 
 
 def query_message(filter_dict: dict, params: dict):
+    # 跨记忆库混合检索（向量 + 关键词加权融合）
     """
     :param filter_dict: {
         "memory_id": List[str],
@@ -279,6 +288,7 @@ def query_message(filter_dict: dict, params: dict):
 
 
 def init_message_id_sequence():
+    # Redis 自增 message_id，与 ES 最大 id 对齐
     message_id_redis_key = "id_generator:memory"
     if REDIS_CONN.exist(message_id_redis_key):
         current_max_id = REDIS_CONN.get(message_id_redis_key)
@@ -295,6 +305,7 @@ def init_message_id_sequence():
 
 
 def get_memory_size_cache(memory_id: str, uid: str):
+    # Redis 缓存记忆库已用字节数
     redis_key = f"memory_{memory_id}"
     if REDIS_CONN.exist(redis_key):
         return int(REDIS_CONN.get(redis_key))
@@ -331,6 +342,7 @@ def init_memory_size_cache():
 
 
 def fix_missing_tokenized_memory():
+    # ES 引擎下补写缺失 tokenized_content_ltks 字段
     if settings.DOC_ENGINE != "elasticsearch":
         logging.info("Not using elasticsearch as doc engine, no need to fix missing tokenized memory.")
         return
@@ -354,6 +366,7 @@ def judge_system_prompt_is_default(system_prompt: str, memory_type: int | list[s
 
 
 async def queue_save_to_memory_task(memory_ids: list[str], message_dict: dict):
+    # 先存 RAW，再入 Redis 队列异步抽取
     """
     :param memory_ids:
     :param message_dict: {
@@ -423,6 +436,7 @@ async def queue_save_to_memory_task(memory_ids: list[str], message_dict: dict):
 
 
 async def handle_save_to_memory_task(task_param: dict):
+    # task_executor 消费 memory 任务
     """
     :param task_param: {
         "id": task_id

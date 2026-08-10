@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+团队权限校验：判断其他用户是否可访问团队共享的知识库或关联文件。
+"""
+
 #
 
 
@@ -23,6 +27,7 @@ from api.db.services.user_service import TenantService
 
 
 def check_kb_team_permission(kb: dict | Knowledgebase, other: str) -> bool:
+    # 本人租户或 TEAM 权限且 other 已加入该租户
     kb = kb.to_dict() if isinstance(kb, Knowledgebase) else kb
 
     kb_tenant_id = kb["tenant_id"]
@@ -38,6 +43,7 @@ def check_kb_team_permission(kb: dict | Knowledgebase, other: str) -> bool:
 
 
 def check_file_team_permission(file: dict | File, other: str) -> bool:
+    # 文件所属租户或任一关联 KB 对 other 开放团队权限
     file = file.to_dict() if isinstance(file, File) else file
 
     file_tenant_id = file["tenant_id"]

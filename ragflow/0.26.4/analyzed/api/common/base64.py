@@ -12,11 +12,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Base64 编码工具：将 UTF-8 字符串编码为标准 Base64 文本（用于密码等字段存储）。
+"""
+
 #
 
 import base64
 
 
 def encode_to_base64(input_string):
+    # 输入 str → UTF-8 bytes → Base64 字符串
     base64_encoded = base64.b64encode(input_string.encode("utf-8"))
     return base64_encoded.decode("utf-8")

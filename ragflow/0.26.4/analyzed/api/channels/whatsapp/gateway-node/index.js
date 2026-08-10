@@ -1,3 +1,7 @@
+/**
+ * WhatsApp 网关 Node 服务：基于 Baileys 维护会话、扫码登录、收发消息，
+ * 并通过 HTTP/WebSocket 向 RAGFlow Python 侧暴露 start/status/send/events 接口。
+ */
 import http from 'node:http';
 import crypto from 'node:crypto';
 import os from 'node:os';
@@ -12,6 +16,7 @@ import makeWASocket, {
 } from 'baileys';
 import QRCode from 'qrcode';
 
+// 监听地址与 Bearer 鉴权（未配置 token 则跳过校验）
 const PORT = Number.parseInt(process.env.WHATSAPP_GATEWAY_PORT || '3005', 10);
 const HOST = process.env.WHATSAPP_GATEWAY_HOST || '127.0.0.1';
 const AUTH_TOKEN = String(process.env.WHATSAPP_GATEWAY_TOKEN || '').trim();
@@ -24,6 +29,7 @@ function now() {
   return Date.now() / 1000;
 }
 
+// 将手机号或裸 JID 规范化为 WhatsApp 用户 JID
 function normalizeJid(chatId) {
   const raw = String(chatId || '').trim();
   if (!raw) {
@@ -49,6 +55,7 @@ function detectChatType(jid) {
   return 'dm';
 }
 
+// 从 Baileys 消息体中提取可读文本（含 caption/按钮回复等）
 function extractText(message) {
   if (!message) {
     return '';
@@ -74,6 +81,7 @@ function safeMessageKey(message) {
   };
 }
 
+// 手工构造 WebSocket 文本帧（无 ws 库依赖）
 function buildWsFrame(text) {
   const data = Buffer.from(String(text), 'utf8');
   let header;
@@ -105,6 +113,7 @@ function isAuthorized(req) {
   return auth === `Bearer ${AUTH_TOKEN}`;
 }
 
+/** 单个 WhatsApp 会话：管理 Baileys socket、QR、事件队列与 WebSocket 订阅者 */
 class WhatsAppSession {
   constructor(sessionKey) {
     this.sessionKey = sessionKey;
@@ -231,6 +240,7 @@ class WhatsAppSession {
     this.lastSnapshotAt = now();
   }
 
+  // 连接状态变更：生成 QR、标记 connected、断线自动重连
   async _handleConnectionUpdate(update) {
     if (update.qr) {
       this.status = 'qr';
@@ -279,6 +289,7 @@ class WhatsAppSession {
     }
   }
 
+  // 入站消息：过滤自发消息，广播 event 并裁剪事件队列
   async _handleMessagesUpsert(update) {
     for (const message of update.messages || []) {
       const key = safeMessageKey(message);
@@ -372,6 +383,7 @@ class WhatsAppSession {
   }
 }
 
+// 进程内 session_key → WhatsAppSession 实例
 const sessions = new Map();
 
 function getSession(sessionKey) {
@@ -417,6 +429,7 @@ function sendError(res, statusCode, message) {
   sendJson(res, statusCode, { code: statusCode, message, data: null });
 }
 
+// REST：/health、/whatsapp/:key/{start|status|send|stop}
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
@@ -480,6 +493,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+// WebSocket 升级：/whatsapp/:key/events/ws?after=<seq>
 server.on('upgrade', (req, socket) => {
   try {
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);

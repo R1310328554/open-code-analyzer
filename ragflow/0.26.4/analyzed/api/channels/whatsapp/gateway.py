@@ -1,3 +1,6 @@
+"""
+WhatsApp 网关子进程运行时：按需启动 Node gateway、自动 npm install 并与渠道启用状态同步。
+"""
 from __future__ import annotations
 
 import asyncio
@@ -15,6 +18,7 @@ _deps_install_warned = False
 
 
 def _env_flag(name: str, default: bool = False) -> bool:
+    # 解析 WHATSAPP_GATEWAY_* 等布尔环境变量
     raw = os.getenv(name)
     if raw is None:
         return default
@@ -22,6 +26,7 @@ def _env_flag(name: str, default: bool = False) -> bool:
 
 
 def _default_gateway_command() -> list[str]:
+    # 优先 WHATSAPP_GATEWAY_COMMAND，否则 node gateway-node/index.js
     raw = os.getenv("WHATSAPP_GATEWAY_COMMAND", "").strip()
     if raw:
         return shlex.split(raw)
@@ -38,12 +43,14 @@ def _gateway_dir() -> Path:
 
 @dataclass
 class WhatsAppGatewayConfig:
+    # 子进程启动命令、工作目录与总开关
     command: list[str]
     cwd: str
     enabled: bool
 
 
 class WhatsAppGatewayRuntime:
+    # 单例运行时：sync 与渠道 bootstrap 对账启停
     def __init__(self) -> None:
         self._process: Optional[asyncio.subprocess.Process] = None
         self._lock = asyncio.Lock()
@@ -62,6 +69,7 @@ class WhatsAppGatewayRuntime:
         return bool(self._process and self._process.returncode is None)
 
     async def sync(self, enabled: bool) -> None:
+        # 根据 enabled 与配置决定启动或终止 gateway 子进程
         cfg = self._config()
         should_run = bool(enabled and cfg.enabled and cfg.command)
         async with self._lock:
@@ -84,6 +92,7 @@ class WhatsAppGatewayRuntime:
             await self._start_locked(cfg)
 
     async def _ensure_dependencies(self, cfg: WhatsAppGatewayConfig) -> None:
+        # WHATSAPP_GATEWAY_AUTO_INSTALL 为真时在 gateway-node 执行 npm install
         global _deps_install_warned
         if not _env_flag("WHATSAPP_GATEWAY_AUTO_INSTALL", True):
             return
@@ -168,4 +177,5 @@ _gateway_runtime = WhatsAppGatewayRuntime()
 
 
 async def sync_whatsapp_gateway(enabled: bool) -> None:
+    # 模块级入口：供 channels bootstrap 调用
     await _gateway_runtime.sync(enabled)

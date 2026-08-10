@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户模型联合服务：解析 model@instance@provider 复合键、默认模型与 OCR 环境变量自举。
+"""
+
 #
 import logging
 import os
@@ -104,6 +108,7 @@ def _collect_env_config(env_keys: list[str], default_config: dict) -> dict | Non
 
 
 def _ensure_ocr_provider_from_env(tenant_id: str, provider_name: str, model_name: str, config: dict | None) -> str | None:
+    # 从环境变量创建 MinerU/PaddleOCR 等 OCR Provider 实例
     if not config:
         return None
 
@@ -141,6 +146,7 @@ def _ensure_ocr_provider_from_env(tenant_id: str, provider_name: str, model_name
 
 
 def ensure_mineru_from_env(tenant_id: str) -> str | None:
+    # Docker/环境变量 MinerU OCR 自举
     return _ensure_ocr_provider_from_env(
         tenant_id,
         "MinerU",
@@ -159,6 +165,7 @@ def ensure_paddleocr_from_env(tenant_id: str) -> str | None:
 
 
 def get_tenant_default_model_by_type(tenant_id: str, model_type: str | enum.Enum):
+    # 从 Tenant 表字段读取默认模型并解析为 llm_config
     exist, tenant = TenantService.get_by_id(tenant_id)
     if not exist:
         raise LookupError("Tenant not found")
@@ -187,6 +194,7 @@ def get_tenant_default_model_by_type(tenant_id: str, model_type: str | enum.Enum
 
 
 def split_model_name(model_name: str):
+    # 右锚定 rsplit('@', 2) 解析复合模型 ID（模型名可含 @）
     # Parse model_name: {model_name} or {model_name}@{factory_name} or {model_name}@{instance_name}@{factory_name}
     #
     # The composite key is right-anchored on the provider: the *last* '@'-separated
@@ -236,6 +244,7 @@ def _resolve_instance_for_model(provider_obj, instance_name: str, model_name: st
 
 
 def get_model_config_from_provider_instance(tenant_id, model_type: str | enum.Enum, model_name: str):
+    # 解析 Provider/Instance/Model 并合并工厂目录与 tenant_model 记录
     pure_model_name, instance_name, provider_name = split_model_name(model_name)
     model_type_val = model_type if isinstance(model_type, str) else model_type.value
     # Builtin embedding model
@@ -323,6 +332,7 @@ def get_model_config_from_provider_instance(tenant_id, model_type: str | enum.En
 
 
 def get_api_key(tenant_id: str, model_name: str):
+    # 按复合模型名返回实例 api_key
     _, instance_name, provider_name = split_model_name(model_name)
 
     if not provider_name:
@@ -335,6 +345,7 @@ def get_api_key(tenant_id: str, model_name: str):
 
 
 def get_model_type_by_name(tenant_id: str, model_name: str):
+    # 查询模型支持的 model_type 列表
     pure_model_name, instance_name, provider_name = split_model_name(model_name)
     provider_obj = TenantModelProviderService.get_by_tenant_id_and_provider_name(tenant_id, provider_name)
     if not provider_obj:
@@ -390,6 +401,8 @@ def ensure_somark_from_env(tenant_id: str) -> str | None:
 
 def get_models_by_tenant_and_provider_and_model_type(tenant_id: str, provider_name: str, model_type: str):
     """
+    按租户、Provider 与 model_type 列出全部可用 TenantModel。
+
     Query TenantModel records by tenant_id, provider_name and model_name.
     Returns all matching model records under all instances of the specified provider.
     """

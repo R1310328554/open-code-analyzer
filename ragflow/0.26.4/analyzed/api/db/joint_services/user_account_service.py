@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+用户账号联合服务：注册时创建租户/根目录，以及非活跃用户级联删除。
+"""
+
 #
 import logging
 import uuid
@@ -41,6 +45,7 @@ from common import settings
 
 
 def create_new_user(user_info: dict) -> dict:
+    # 原子创建 User + Tenant + UserTenant + 根文件夹
     """
     Add a new user, and create tenant, tenant llm, file folder for new user.
     :param user_info: {
@@ -136,6 +141,7 @@ def create_new_user(user_info: dict) -> dict:
 
 
 def delete_user_data(user_id: str) -> dict:
+    # 仅允许删除 inactive 非超管用户；级联清理 KB/ES/记忆等
     # use user_id to delete
     usr = UserService.filter_by_id(user_id)
     if not usr:
@@ -151,12 +157,12 @@ def delete_user_data(user_id: str) -> dict:
 
     done_msg = ""
     try:
-        # step1. delete owned tenant info
+        # 步骤1：删除用户拥有的租户及全部数据集/Agent/对话
         if owned_tenant:
             done_msg += "Start to delete owned tenant.\n"
             tenant_id = owned_tenant[0]["tenant_id"]
             kb_ids = KnowledgebaseService.get_kb_ids(usr.id)
-            # step1.1 delete dataset related file and info
+            # 1.1 删除对象存储 bucket、DB 记录与 ES 分块
             if kb_ids:
                 # step1.1.1 delete files in storage, remove bucket
                 for kb_id in kb_ids:
@@ -226,7 +232,7 @@ def delete_user_data(user_id: str) -> dict:
             done_msg += f"- Deleted {tenant_delete_res} tenant.\n"
         # step2 delete user-tenant relation
         if tenants:
-            # step2.1 delete docs and files in joined team
+            # 2.1 清理用户在其他租户中上传的文档与文件
             joined_tenants = [t for t in tenants if t["role"] == UserTenantRole.NORMAL.value]
             if joined_tenants:
                 done_msg += "Start to delete data in joined tenants.\n"
@@ -293,6 +299,7 @@ def delete_user_data(user_id: str) -> dict:
 
 
 def delete_user_agents(user_id: str) -> dict:
+    # 删除 Canvas 及版本历史
     """
     use user_id to delete
     :return: {
@@ -310,6 +317,7 @@ def delete_user_agents(user_id: str) -> dict:
 
 
 def delete_user_dialogs(user_id: str) -> dict:
+    # 删除 Dialog、Conversation、APIToken 与 API4Conversation
     """
     use user_id to delete
     :return: {

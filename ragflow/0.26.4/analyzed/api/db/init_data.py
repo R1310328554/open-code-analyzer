@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Web 服务启动数据初始化：建表后种子数据、模板、系统设置与记忆索引修复。
+"""
+
 #
 import asyncio
 import logging
@@ -45,6 +49,7 @@ DEFAULT_SUPERUSER_PASSWORD = os.getenv("DEFAULT_SUPERUSER_PASSWORD", "admin")
 
 
 def init_superuser(nickname=DEFAULT_SUPERUSER_NICKNAME, email=DEFAULT_SUPERUSER_EMAIL, password=DEFAULT_SUPERUSER_PASSWORD, role=UserTenantRole.OWNER):
+    # 创建默认超级用户、租户并探测默认 chat/embedding 模型
     if UserService.query(email=email):
         logging.info("User with email %s already exists, skipping initialization.", email)
         return
@@ -101,12 +106,14 @@ def init_superuser(nickname=DEFAULT_SUPERUSER_NICKNAME, email=DEFAULT_SUPERUSER_
 
 
 def update_document_number_in_init():
+    # 启动时同步各 KB 的 doc_num 统计
     doc_count = DocumentService.get_all_kb_doc_count()
     for kb_id in KnowledgebaseService.get_all_ids():
         KnowledgebaseService.update_document_number_in_init(kb_id=kb_id, doc_num=doc_count.get(kb_id, 0))
 
 
 def add_graph_templates():
+    # 从 agent/templates 加载 Canvas 模板
     dir = os.path.join(get_project_base_directory(), "agent", "templates")
     CanvasTemplateService.filter_delete([1 == 1])
     if not os.path.exists(dir):
@@ -131,10 +138,12 @@ def add_graph_templates():
 
 
 def add_compilation_templates():
+    # 种子内置知识编译模板
     CompilationTemplateService.seed_builtins_from_files()
 
 
 def init_web_data():
+    # 主入口：表结构、文档计数、模板、记忆 Redis 序列等
     start_time = time.time()
 
     init_table()
@@ -153,6 +162,7 @@ def init_web_data():
 
 
 def init_table():
+    # 从 conf/system_settings.json 增量写入 system_settings
     # init system_settings
     with open(os.path.join(get_project_base_directory(), "conf", "system_settings.json"), "r") as f:
         records_from_file = json.load(f)["system_settings"]

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+api.db 包：Peewee ORM 枚举与租户/文件/流水线等领域常量定义。
+"""
+
 #
 
 from enum import IntEnum
@@ -21,6 +25,7 @@ from common.constants import PipelineTaskType
 
 
 class UserTenantRole(StrEnum):
+    # 用户在租户内的角色
     OWNER = "owner"
     ADMIN = "admin"
     NORMAL = "normal"
@@ -28,6 +33,7 @@ class UserTenantRole(StrEnum):
 
 
 class TenantPermission(StrEnum):
+    # 知识库/Canvas 等资源可见性：仅本人或团队
     ME = "me"
     TEAM = "team"
 
@@ -38,6 +44,7 @@ class SerializedType(IntEnum):
 
 
 class FileType(StrEnum):
+    # 文件管理器中的逻辑类型（含 folder/virtual）
     PDF = "pdf"
     DOC = "doc"
     VISUAL = "visual"
@@ -51,6 +58,7 @@ VALID_FILE_TYPES = {FileType.PDF, FileType.DOC, FileType.VISUAL, FileType.AURAL,
 
 
 class InputType(StrEnum):
+    # 数据连接器输入模式
     LOAD_STATE = "load_state"  # e.g. loading a current full state or a save state, such as from a file
     POLL = "poll"  # e.g. calling an API to get all documents in the last hour
     EVENT = "event"  # e.g. registered an endpoint as a listener, and processing connector events
@@ -73,6 +81,7 @@ VALID_PIPELINE_TASK_TYPES = {
 }
 
 
+# 知识库级扇出任务：Task.doc_id 使用占位符，collect_task 再回填真实 doc_id
 # KB-level fan-out task types: their Task row uses GRAPH_RAPTOR_FAKE_DOC_ID as a
 # sentinel doc_id, and ``task_executor.collect_task`` substitutes the first real
 # doc_id from ``msg["doc_ids"]`` before re-running ``TaskService.get_task`` so
@@ -88,5 +97,6 @@ PIPELINE_SPECIAL_PROGRESS_FREEZE_TASK_TYPES = {
 }
 
 
+# 虚拟文件夹名：挂载知识库与 Skill 空间
 KNOWLEDGEBASE_FOLDER_NAME = ".knowledgebase"
 SKILLS_FOLDER_NAME = "skills"
