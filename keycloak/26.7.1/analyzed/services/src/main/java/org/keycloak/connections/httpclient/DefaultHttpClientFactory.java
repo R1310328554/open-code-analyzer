@@ -59,25 +59,39 @@ import static org.keycloak.utils.StringUtil.isBlank;
  */
 public class DefaultHttpClientFactory implements HttpClientFactory {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(DefaultHttpClientFactory.class);
+    /** 系统属性配置前缀。 */
     private static final String configScope = "keycloak.connectionsHttpClient.default.";
 
+    /** 环境变量：HTTPS 代理。 */
     private static final String HTTPS_PROXY = "https_proxy";
+    /** 环境变量：HTTP 代理。 */
     private static final String HTTP_PROXY = "http_proxy";
+    /** 环境变量：代理绕过列表。 */
     private static final String NO_PROXY = "no_proxy";
+    /** 配置键：响应体最大消费字节数（防 DoS）。 */
     public static final String MAX_CONSUMED_RESPONSE_SIZE = "max-consumed-response-size";
+    /** 配置键：是否跟随 HTTP 重定向（已弃用）。 */
     public static final String ALLOW_REDIRECTS = "allow-redirects";
 
+    /** 延迟初始化的共享 Apache HttpClient。 */
     private volatile CloseableHttpClient httpClient;
+    /** SPI 配置作用域。 */
     private Config.Scope config;
 
+    /** 带大小限制的字符串响应处理器。 */
     private BasicResponseHandler stringResponseHandler;
 
+    /** 流式响应处理器。 */
     private final InputStreamResponseHandler inputStreamResponseHandler = new InputStreamResponseHandler();
+    /** 允许消费的最大响应体长度。 */
     private long maxConsumedResponseSize;
 
+    /** 将 HTTP 实体内容作为 {@link InputStream} 返回。 */
     private static class InputStreamResponseHandler extends AbstractResponseHandler<InputStream> {
 
+        /** 直接返回实体输入流。 */
         @Override
         public InputStream handleEntity(HttpEntity entity) throws IOException {
             return entity.getContent();
@@ -89,11 +103,13 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         }
     }
 
+    /** 懒加载 HttpClient 并返回匿名 {@link HttpClientProvider}。 */
     @Override
     public HttpClientProvider create(KeycloakSession session) {
         lazyInit(session);
 
         return new HttpClientProvider() {
+            /** @return 共享 Apache HttpClient 实例 */
             @Override
             public CloseableHttpClient getHttpClient() {
                 return httpClient;
@@ -104,6 +120,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
 
             }
 
+            /** POST 纯文本并返回 HTTP 状态码。 */
             @Override
             public int postText(String uri, String text) throws IOException {
                 HttpPost request = new HttpPost(uri);
@@ -120,6 +137,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                 }
             }
 
+            /** GET 请求并以字符串返回响应体。 */
             @Override
             public String getString(String uri) throws IOException {
                 HttpGet request = new HttpGet(uri);
@@ -131,6 +149,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                 return body;
             }
 
+            /** GET 请求并以输入流返回响应体。 */
             @Override
             public InputStream getInputStream(String uri) throws IOException {
                 HttpGet request = new HttpGet(uri);
@@ -142,6 +161,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                 return body;
             }
 
+            /** @return 配置的最大响应消费字节数 */
             @Override
             public long getMaxConsumedResponseSize() {
                 return maxConsumedResponseSize;
@@ -149,6 +169,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         };
     }
 
+    /** 关闭底层 HttpClient 连接池。 */
     @Override
     public void close() {
         try {
@@ -160,16 +181,19 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         }
     }
 
+    /** @return provider id "default" */
     @Override
     public String getId() {
         return "default";
     }
 
+    /** 保存 SPI 配置引用。 */
     @Override
     public void init(Config.Scope config) {
         this.config = config;
     }
 
+    /** 双重检查锁构建 HttpClient：超时、连接池、代理、TLS 与重试。 */
     private void lazyInit(KeycloakSession session) {
         if (httpClient == null) {
             synchronized(this) {
@@ -190,9 +214,9 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                     boolean expectContinueEnabled = getBooleanConfigWithSysPropFallback("expect-continue-enabled", false);
                     boolean reuseConnections = getBooleanConfigWithSysPropFallback("reuse-connections", true);
 
-                    // optionally configure proxy mappings
-                    // direct SPI config (e.g. via standalone.xml) takes precedence over env vars
-                    // lower case env vars take precedence over upper case env vars
+                    // 可选配置代理映射：SPI 优先于环境变量
+                    // SPI 直连配置优先于环境变量
+                    // 小写环境变量优先于大写
                     ProxyMappings proxyMappings = ProxyMappings.valueOf(config.getArray("proxy-mappings"));
                     if (proxyMappings == null || proxyMappings.isEmpty()) {
                         logger.debug("Trying to use proxy mapping from env vars");
@@ -253,7 +277,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                         }
                     }
 
-                    // Configure retry behavior
+                    // 配置出站请求重试与指数退避
                     configureRetries(builder);
 
                     httpClient = builder.build();
@@ -263,6 +287,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
     }
 
     /**
+     * 为 HTTP 客户端构建器配置重试行为（指数退避与抖动）。
      * Configures retry behavior for the HTTP client builder.
      * Applies server-wide retry configuration if enabled.
      *
@@ -271,9 +296,9 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
     private void configureRetries(HttpClientBuilder builder) {
         int maxRetries = config.getInt("max-retries", 0);
         if (maxRetries <= 0) {
-            return; // Retries disabled
+            return; // 重试次数为 0，禁用重试
         }
-        // Always enable request-sent retries for common requests (e.g., GET, POST)
+        // 对已发送请求启用重试（如 GET/POST）
         long initialBackoffMillis = config.getLong("initial-backoff-millis", 1000L);
         String backoffMultiplierStr = config.get("backoff-multiplier", "2.0");
         double backoffMultiplier = Double.parseDouble(backoffMultiplierStr);
@@ -308,6 +333,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
     }
 
     /**
+     * @deprecated 请使用 {@link #newHttpClientBuilder(KeycloakSession)}
      * @deprecated use {@link #newHttpClientBuilder(KeycloakSession)}
      */
     @Deprecated(since = "26.6.0")
@@ -315,16 +341,19 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         return new HttpClientBuilder();
     }
 
+    /** 子类可覆盖以定制 {@link HttpClientBuilder}。 */
     protected HttpClientBuilder newHttpClientBuilder(KeycloakSession session) {
         return newHttpClientBuilder();
     }
 
+    /** 初始化最大响应大小与 SafeBasicResponseHandler。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         maxConsumedResponseSize = config.getLong(MAX_CONSUMED_RESPONSE_SIZE, HttpClientProvider.DEFAULT_MAX_CONSUMED_RESPONSE_SIZE);
         stringResponseHandler = new SafeBasicResponseHandler(maxConsumedResponseSize);
     }
 
+    /** 导出 HttpClient SPI 全部可配置项元数据。 */
     @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         return ProviderConfigurationBuilder.create()
@@ -456,6 +485,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
                 .build();
     }
 
+    /** 读取布尔配置，缺失时回退系统属性。 */
     private boolean getBooleanConfigWithSysPropFallback(String key, boolean defaultValue) {
         Boolean value = config.getBoolean(key);
         if (value == null) {
@@ -467,6 +497,7 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         return value != null ? value : defaultValue;
     }
 
+    /** 读取环境变量，小写优先于大写。 */
     private String getEnvVarValue(String name) {
         String value = System.getenv(name.toLowerCase());
         if (isBlank(value)) {
@@ -475,7 +506,8 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         return value;
     }
 
-    // For testing purposes
+    // 供测试访问配置
+    /** @return 当前 SPI 配置作用域（测试用） */
     public Config.Scope getConfig() {
         return config;
     }

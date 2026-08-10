@@ -27,16 +27,25 @@ import org.keycloak.util.JWKSUtils;
 import org.keycloak.util.JsonSerialization;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * 信任材料公钥加载器：从 JWKS URL 拉取或解析配置中的静态 JWKS，
+ * 仅返回 {@link JWK.Use#SIG} 用途的 {@link KeyWrapper} 集合。
+ */
 public class DefaultTrustMaterialPublicKeyLoader implements PublicKeyLoader {
 
+    /** Keycloak 会话，用于 HTTP JWKS 请求。 */
     private final KeycloakSession session;
+    /** 信任 IdP 配置。 */
     private final DefaultTrustIdentityProviderConfig config;
 
+    /** @param session 当前会话
+     * @param config 信任材料配置 */
     public DefaultTrustMaterialPublicKeyLoader(KeycloakSession session, DefaultTrustIdentityProviderConfig config) {
         this.session = session;
         this.config = config;
     }
 
+    /** 按配置从远程 JWKS 或内嵌 JSON 加载签名公钥；无配置时返回空包装。 */
     @Override
     public PublicKeysWrapper loadKeys() throws Exception {
         if (config.isUseJwksUrl() && StringUtil.isNotBlank(config.getTrustedJwksUrl())) {

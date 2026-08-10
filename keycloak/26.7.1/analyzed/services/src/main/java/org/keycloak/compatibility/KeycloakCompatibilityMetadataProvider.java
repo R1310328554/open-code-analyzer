@@ -10,40 +10,46 @@ import org.keycloak.migration.ModelVersion;
  */
 public class KeycloakCompatibilityMetadataProvider implements CompatibilityMetadataProvider {
 
+    /** 兼容性 provider id。 */
     public static final String ID = "keycloak";
+    /** 元数据中版本字段键名。 */
     public static final String VERSION_KEY = "version";
+    /** 当前 Keycloak 版本字符串。 */
     private final String version;
 
-    // Constructor required for ServiceLoader
+    // ServiceLoader 所需的无参构造
     @SuppressWarnings("unused")
     public KeycloakCompatibilityMetadataProvider() {
         this(Version.VERSION);
     }
 
+    /** @param version 要报告的版本号 */
     public KeycloakCompatibilityMetadataProvider(String version) {
         this.version = version;
     }
 
+    /** @return 仅含 version 键的单条目元数据 */
     @Override
     public Map<String, String> metadata() {
         return Map.of(VERSION_KEY, version);
     }
 
+    /** 默认相等比较；同 major.minor 且 micro 不降级时允许滚动升级。 */
     @Override
     public CompatibilityResult isCompatible(Map<String, String> other) {
         CompatibilityResult equalComparison = CompatibilityMetadataProvider.super.isCompatible(other);
 
-        // We consider versions upgradable in a rolling way if the other is a previous micro release
+        // 对端为同 major.minor 的较早 micro 版本时允许滚动加入
         if (!Util.isNotCompatible(equalComparison)) {
             return equalComparison;
         }
 
-        // We need to make sure the previous version is not null
+        // 对端版本号缺失则沿用默认比较结果
         String otherVersion = other.get(VERSION_KEY);
         if (otherVersion == null)
             return equalComparison;
 
-        // Check if only version attribute is incompatible we don't want to allow rolling update if some other metadata didn't match
+        // 仅当版本是唯一不兼容项时才尝试 micro 滚动规则
         boolean versionMismatch = equalComparison.incompatibleAttributes()
                 .map(erroredAttributes -> erroredAttributes.size() == 1 && erroredAttributes.iterator().next().equals(VERSION_KEY))
                 .orElse(false);
@@ -55,7 +61,7 @@ public class KeycloakCompatibilityMetadataProvider implements CompatibilityMetad
         ModelVersion otherModelVersion = new ModelVersion(otherVersion);
         ModelVersion currentModelVersion = new ModelVersion(version);
 
-        // Check we are in the same major.minor release stream
+        // 要求 major.minor 一致
         if (!currentModelVersion.hasSameMajorMinor(otherModelVersion)) {
             return equalComparison;
         }
@@ -63,12 +69,13 @@ public class KeycloakCompatibilityMetadataProvider implements CompatibilityMetad
         int otherMicro = otherModelVersion.getMicro();
         int currentMicro = currentModelVersion.getMicro();
 
-        // Make sure we are updating to a newer or the same micro release and do not allow rolling rollback
+        // 禁止滚动降级 micro 版本
         return currentMicro < otherMicro ?
                 equalComparison :
                 CompatibilityResult.providerCompatible(ID);
     }
 
+    /** @return {@value #ID} */
     @Override
     public String getId() {
         return ID;

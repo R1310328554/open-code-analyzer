@@ -18,15 +18,23 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.utils.KeycloakModelUtils.CLIENT_ROLE_SEPARATOR;
 import static org.keycloak.models.utils.KeycloakModelUtils.MAX_CLIENT_LOOKUPS_DURING_ROLE_RESOLVE;
 
+/**
+ * 默认替代查找提供者：通过 issuer、客户端属性或角色名字符串
+ * 解析 IdP、Client 与 Role，并使用本地 Caffeine 缓存加速重复查询。
+ */
 public class DefaultAlternativeLookupProvider implements AlternativeLookupProvider {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(DefaultAlternativeLookupProvider.class);
+    /** issuer/属性/角色查找结果缓存。 */
     private final LocalCache<String, CachedValue> lookupCache;
 
+    /** @param lookupCache 共享本地查找缓存 */
     DefaultAlternativeLookupProvider(LocalCache<String, CachedValue> lookupCache) {
         this.lookupCache = lookupCache;
     }
 
+    /** 按 issuer URL 与 IdP 类型查找唯一启用的身份代理，命中缓存时校验仍有效。 */
     @Override
     public IdentityProviderModel lookupIdentityProviderFromIssuer(KeycloakSession session, IdentityProviderType type, String issuerUrl) {
         String alternativeKey = ComputedKey.computeKey(session.getContext().getRealm().getId(), type.toString(), issuerUrl);
@@ -58,6 +66,7 @@ public class DefaultAlternativeLookupProvider implements AlternativeLookupProvid
         return idp;
     }
 
+    /** 按客户端自定义属性查找唯一启用客户端。 */
     @Override
     public ClientModel lookupClientFromClientAttributes(KeycloakSession session, Map<String, String> attributes) {
         String alternativeKey = ComputedKey.computeKey(session.getContext().getRealm().getId(), "client", attributes);
@@ -96,6 +105,7 @@ public class DefaultAlternativeLookupProvider implements AlternativeLookupProvid
         return client;
     }
 
+    /** 解析 clientId.roleName 或 realm 角色名，带点分段尝试 client 前缀匹配。 */
     @Override
     public RoleModel lookupRoleFromString(RealmModel realm, String roleName) {
         if (roleName == null) {
@@ -107,7 +117,7 @@ public class DefaultAlternativeLookupProvider implements AlternativeLookupProvid
             return roleModel;
         }
 
-        // Check client roles for all possible splits by dot
+        // 按点号从右向左尝试 clientId 前缀，解析 client 角色
         int counter = 0;
         int scopeIndex = roleName.lastIndexOf(CLIENT_ROLE_SEPARATOR);
         while (scopeIndex >= 0 && counter < MAX_CLIENT_LOOKUPS_DURING_ROLE_RESOLVE) {
@@ -128,10 +138,12 @@ public class DefaultAlternativeLookupProvider implements AlternativeLookupProvid
         return storeRealmRoleInCache(realm, roleName);
     }
 
+    /** 无额外资源需释放。 */
     @Override
     public void close() {
     }
 
+    /** 从缓存读取角色限定并校验底层角色仍存在。 */
     private RoleModel findRoleInCache(RealmModel realm, String roleName) {
         var cacheKey = cachedRoleKey(realm, roleName);
         var cachedRole = lookupCache.get(cacheKey);
@@ -159,8 +171,9 @@ public class DefaultAlternativeLookupProvider implements AlternativeLookupProvid
         return role;
     }
 
+    /** 查找 client 角色；仅当点分段数大于 1 时写入缓存（单段已由内部缓存覆盖）。 */
     private RoleModel storeClientRoleInCache(ClientModel client, String cacheKey, String roleName, int dotCount) {
-        // If dotCount is equals to 1, we skip caching.
+        // dotCount 为 1（client-id.role）时跳过缓存，底层已有内部缓存
         // It means, we have the following format, client-id.role-name.
         // Both realm.getClientByClientId and client.getRole methods already use an internal cache.
         var roleModel = client.getRole(roleName);
@@ -170,20 +183,23 @@ public class DefaultAlternativeLookupProvider implements AlternativeLookupProvid
         return roleModel;
     }
 
+    /** 查找 realm 角色并在存在时缓存。 */
     private RoleModel storeRealmRoleInCache(RealmModel realm, String roleName) {
-        // determine if roleName is a realm role
+        // 判断 roleName 是否为 realm 级角色
         var roleModel = realm.getRole(roleName);
         if (roleModel != null) {
-            // only cache if the role is present
+            // 仅当角色存在时写入缓存
             lookupCache.put(cachedRoleKey(realm, roleName), CachedValue.ofRealmRole(roleName));
         }
         return roleModel;
     }
 
+    /** 生成 realmId 与角色名拼接的缓存键。 */
     private static String cachedRoleKey(RealmModel realm, String roleName) {
         return realm.getId() + roleName;
     }
 
+    /** 校验 IdP 实例是否匹配请求的 {@link IdentityProviderType}。 */
     private static boolean isType(KeycloakSession session, IdentityProviderModel idp, IdentityProviderType type) {
         IdentityProvider provider = IdentityBrokerService.getIdentityProvider(session, idp, IdentityProvider.class);
         return provider != null ? provider.isType(session, type) : false;

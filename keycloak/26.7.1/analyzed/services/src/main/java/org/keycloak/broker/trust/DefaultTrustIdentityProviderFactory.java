@@ -26,35 +26,45 @@ import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
+/**
+ * 默认信任材料 IdP 工厂：在 OID4VC VCI 或 CLIENT_AUTH_ABCA 特性启用时注册。
+ */
 public class DefaultTrustIdentityProviderFactory extends AbstractIdentityProviderFactory<DefaultTrustIdentityProvider> implements EnvironmentDependentProviderFactory {
 
+    /** 默认信任 IdP provider id。 */
     public static final String PROVIDER_ID = "default-trust";
 
+    /** @return 控制台显示名称 Default Trust */
     @Override
     public String getName() {
         return "Default Trust";
     }
 
+    /** 创建 {@link DefaultTrustIdentityProvider} 实例。 */
     @Override
     public DefaultTrustIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new DefaultTrustIdentityProvider(session, new DefaultTrustIdentityProviderConfig(model));
     }
 
+    /** 不支持字符串配置解析。 */
     @Override
     public Map<String, String> parseConfig(KeycloakSession session, String config) {
         throw new UnsupportedOperationException();
     }
 
+    /** @return 空 {@link DefaultTrustIdentityProviderConfig} */
     @Override
     public IdentityProviderModel createConfig() {
         return new DefaultTrustIdentityProviderConfig();
     }
 
+    /** @return provider id {@value #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** OID4VC VCI 或 ABCA 任一特性启用时可用。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.OID4VC_VCI) || Profile.isFeatureEnabled(Profile.Feature.CLIENT_AUTH_ABCA);

@@ -33,21 +33,31 @@ import org.keycloak.protocol.oidc.utils.JWKSServerUtils;
 import org.keycloak.util.Strings;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * 默认信任材料身份代理：从 JWKS URL 或内嵌公钥解析签名密钥，
+ * 供 OID4VC VCI 与 ABCA 等场景校验外部 JWT/断言。
+ */
 public class DefaultTrustIdentityProvider implements TrustMaterialIdentityProvider<DefaultTrustIdentityProviderConfig> {
 
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 信任 IdP 配置。 */
     private final DefaultTrustIdentityProviderConfig config;
 
+    /** @param session 当前 Keycloak 会话
+     * @param config 信任材料 IdP 配置 */
     public DefaultTrustIdentityProvider(KeycloakSession session, DefaultTrustIdentityProviderConfig config) {
         this.session = session;
         this.config = config;
     }
 
+    /** @return 当前信任 IdP 配置 */
     @Override
     public DefaultTrustIdentityProviderConfig getConfig() {
         return config;
     }
 
+    /** 按 kid/算法从公钥缓存或加载器解析 JWK，并经 {@link TrustKeyUtil} 过滤。 */
     @Override
     public Stream<JWK> resolveKeys(TrustMaterialRequest request) {
         PublicKeyLoader loader = getPublicKeyLoader(request);
@@ -61,6 +71,7 @@ public class DefaultTrustIdentityProvider implements TrustMaterialIdentityProvid
         return TrustKeyUtil.filterKeys(keys.map(JWKSServerUtils::toJwk), request);
     }
 
+    /** 启用 JWKS URL 时强制刷新公钥缓存；否则返回 false。 */
     @Override
     public boolean reloadKeys() {
         if (!config.isEnabled() || !config.isUseJwksUrl()
@@ -73,10 +84,12 @@ public class DefaultTrustIdentityProvider implements TrustMaterialIdentityProvid
         return keyStorage.reloadKeys(modelKey, new DefaultTrustMaterialPublicKeyLoader(session, config));
     }
 
+    /** 无额外资源需释放。 */
     @Override
     public void close() {
     }
 
+    /** 根据配置选择硬编码 PEM/JWK 或 HTTP JWKS 加载器。 */
     private PublicKeyLoader getPublicKeyLoader(TrustMaterialRequest request) {
         if (!config.isUseJwksUrl() && StringUtil.isNotBlank(config.getTrustedJwks())
                 && !config.getTrustedJwks().trim().startsWith("{")) {

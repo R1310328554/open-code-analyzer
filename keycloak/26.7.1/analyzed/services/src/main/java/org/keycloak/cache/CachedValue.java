@@ -22,6 +22,7 @@ import java.util.Objects;
 /**
  * Internal representation of cached lookup values.
  * <p>
+ * <p>供 {@link DefaultAlternativeLookupProvider} 缓存替代查找路径，降低数据库访问。</p>
  * This is an implementation detail used by {@link DefaultAlternativeLookupProvider} to cache alternative lookups and
  * reduce database load. The interface provides type-safe wrappers for different kinds of cached values used in the
  * lookup cache.
@@ -29,6 +30,7 @@ import java.util.Objects;
 interface CachedValue {
 
     /**
+     * 创建包装简单标识符字符串的缓存值。
      * Creates a cached value wrapping a simple identifier string.
      *
      * @param value the non-null identifier value to cache
@@ -39,6 +41,7 @@ interface CachedValue {
     }
 
     /**
+     * 创建客户端角色查找的缓存值。
      * Creates a cached value for a client role lookup.
      *
      * @param clientId the non-null client identifier
@@ -50,6 +53,7 @@ interface CachedValue {
     }
 
     /**
+     * 创建 realm 角色查找的缓存值。
      * Creates a cached value for a realm role lookup.
      *
      * @param roleName the non-null role name
@@ -60,6 +64,7 @@ interface CachedValue {
     }
 
     /**
+     * 包装简单字符串标识符的缓存值。
      * A cached value wrapping a simple string identifier.
      *
      * @param value the non-null identifier value
@@ -71,9 +76,11 @@ interface CachedValue {
     }
 
     /**
+     * 包装角色限定信息（clientId + roleName）的缓存值。
      * A cached value wrapping role qualifier information.
      * <p>
-     * For client roles, both {@code clientId} and {@code roleName} are present. For realm roles, {@code clientId} is
+     * <p>客户端角色同时包含 clientId 与 roleName；realm 角色时 clientId 为 null。</p>
+ * For client roles, both {@code clientId} and {@code roleName} are present. For realm roles, {@code clientId} is
      * {@code null}.
      *
      * @param clientId the client identifier, or {@code null} for realm roles
