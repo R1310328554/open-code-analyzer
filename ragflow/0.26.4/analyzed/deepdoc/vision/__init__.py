@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+DeepDoc 视觉子包：OCR、版面识别、表格结构识别及 CLI 输入输出工具。
+"""
+
+
 import io
 import sys
 import threading
@@ -25,12 +30,14 @@ from .layout_recognizer import AscendLayoutRecognizer
 from .layout_recognizer import LayoutRecognizer4YOLOv10 as LayoutRecognizer
 from .table_structure_recognizer import TableStructureRecognizer
 
+# pdfplumber 全局锁，避免多线程并发打开 PDF
 LOCK_KEY_pdfplumber = "global_shared_lock_pdfplumber"
 if LOCK_KEY_pdfplumber not in sys.modules:
     sys.modules[LOCK_KEY_pdfplumber] = threading.Lock()
 
 
 def init_in_out(args):
+    # 从目录或单文件加载 PDF/图像，返回 PIL 列表与输出路径
     import os
     import traceback
 
@@ -45,6 +52,7 @@ def init_in_out(args):
         os.mkdir(args.output_dir)
 
     def pdf_pages(fnm, zoomin=3):
+        # PDF 每页渲染为 RGB 图像，zoomin 控制分辨率
         nonlocal outputs, images
         with sys.modules[LOCK_KEY_pdfplumber]:
             pdf = pdfplumber.open(fnm)
@@ -79,6 +87,7 @@ def init_in_out(args):
     return images, outputs
 
 
+# 对外导出的识别器与工具函数
 __all__ = [
     "OCR",
     "Recognizer",

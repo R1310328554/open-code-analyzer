@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+文档版面识别：将 OCR 文本框与版面区域（标题/表格/图等）对齐并过滤页眉页脚。
+"""
+
+
 
 import logging
 import math
@@ -31,6 +36,7 @@ from deepdoc.vision.operators import nms
 
 
 class LayoutRecognizer(Recognizer):
+    # 默认 ONNX 版面模型，支持远程 DLA 服务与本地推理
     labels = [
         "_background_",
         "Text",
@@ -46,6 +52,7 @@ class LayoutRecognizer(Recognizer):
     ]
 
     def __init__(self, domain):
+        # 可丢弃的低价值版面类型
         self.garbage_layouts = ["footer", "header", "reference"]
         self.client = None
 
@@ -66,6 +73,7 @@ class LayoutRecognizer(Recognizer):
             super().__init__(self.labels, domain, model_dir)
 
     def __call__(self, image_list, ocr_res, scale_factor=3, thr=0.2, batch_size=16, drop=True):
+        # 为 OCR 框打 layout_type，可选丢弃页眉页脚等垃圾文本
         def __is_garbage(b):
             patt = [r"\(cid\s*:\s*\d+\s*\)"]
             return any([re.search(p, b.get("text", "")) for p in patt])
@@ -76,7 +84,7 @@ class LayoutRecognizer(Recognizer):
             layouts = super().__call__(image_list, thr, batch_size)
         # save_results(image_list, layouts, self.labels, output_dir='output/', threshold=0.7)
         assert len(image_list) == len(ocr_res)
-        # Tag layout type
+        # 逐页将 OCR 框与版面框匹配并标注类型
         boxes = []
         assert len(image_list) == len(layouts)
         garbages = {}
@@ -162,10 +170,12 @@ class LayoutRecognizer(Recognizer):
         return ocr_res, page_layout
 
     def forward(self, image_list, thr=0.7, batch_size=16):
+        # 仅推理版面框，不与 OCR 结果融合
         return super().__call__(image_list, thr, batch_size)
 
 
 class LayoutRecognizer4YOLOv10(LayoutRecognizer):
+    # YOLOv10 版面模型：letterbox 预处理 + 按类 NMS 后处理
     labels = [
         "title",
         "Text",
@@ -243,6 +253,7 @@ class LayoutRecognizer4YOLOv10(LayoutRecognizer):
 
 
 class AscendLayoutRecognizer(Recognizer):
+    # 昇腾 NPU 版版面识别，加载 .om 离线模型
     labels = [
         "title",
         "Text",

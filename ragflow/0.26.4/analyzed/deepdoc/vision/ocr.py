@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+OCR 流水线：文本检测(det.onnx) + 识别(rec.onnx)，含 ONNX 加载与多 GPU 批处理。
+"""
+
+
 import gc
 import logging
 import copy
@@ -33,6 +38,7 @@ import onnxruntime as ort
 
 from .postprocess import build_post_process
 
+# 进程内 ONNX 会话缓存，避免重复加载
 loaded_models = {}
 
 
@@ -48,6 +54,7 @@ def transform(data, ops=None):
 
 
 def create_operators(op_param_list, global_config=None):
+    # 按 YAML 配置实例化预处理算子链
     """
     create operators based on the config
 
@@ -68,6 +75,7 @@ def create_operators(op_param_list, global_config=None):
 
 
 def load_model(model_dir, nm, device_id: int | None = None):
+    # 按任务名加载 det/rec/layout/tsr 等 ONNX，优先 CUDA
     model_file_path = os.path.join(model_dir, nm + ".onnx")
     model_cached_tag = model_file_path + str(device_id) if device_id is not None else model_file_path
 
@@ -127,6 +135,7 @@ def load_model(model_dir, nm, device_id: int | None = None):
 
 
 class TextRecognizer:
+    # 文字识别：CTC 解码，支持多种 resize 策略（CRNN/SRN/SAR 等）
     def __init__(self, model_dir, device_id: int | None = None):
         self.rec_image_shape = [int(v) for v in "3, 48, 320".split(",")]
         self.rec_batch_num = 16
@@ -382,6 +391,7 @@ class TextRecognizer:
 
 
 class TextDetector:
+    # 文本检测：DB 后处理提取四边形文本框
     def __init__(self, model_dir, device_id: int | None = None):
         pre_process_list = [
             {
@@ -491,6 +501,7 @@ class TextDetector:
 
 
 class OCR:
+    # 检测+识别一体入口，支持远程 OCR 服务与本地 ONNX
     def __init__(self, model_dir=None):
         """
         If you have trouble downloading HuggingFace models, -_^ this might help!!

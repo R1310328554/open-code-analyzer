@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+OCR CLI：对 PDF/图像批量检测识别，输出标注图与 .txt 文本。
+"""
+
+
 
 import asyncio
 import logging
@@ -35,6 +40,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # 1 gpu
 
 
 def main(args):
+    # 多 GPU 时用 asyncio 信号量限流并发 OCR
     import torch.cuda
 
     cuda_devices = torch.cuda.device_count()
@@ -43,6 +49,7 @@ def main(args):
     images, outputs = init_in_out(args)
 
     def __ocr(i, id, img):
+        # 单页 OCR：检测框转 bbox 字典，保存可视化与纯文本
         print("Task {} start".format(i))
         bxs = ocr(np.array(img), id)
         bxs = [(line[0], line[1][0]) for line in bxs]
@@ -85,6 +92,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    # --inputs 目录或单文件；--output_dir 默认可视化输出目录
     parser.add_argument("--inputs", help="Directory where to store images or PDFs, or a file path to a single image or PDF", required=True)
     parser.add_argument("--output_dir", help="Directory where to store the output images. Default: './ocr_outputs'", default="./ocr_outputs")
     args = parser.parse_args()

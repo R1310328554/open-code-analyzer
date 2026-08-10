@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+表格结构识别：检测列/行/表头/跨行单元格，并重建 HTML/Markdown 表格。
+"""
+
+
 import logging
 import os
 import re
@@ -28,6 +33,7 @@ from .recognizer import Recognizer
 
 
 class TableStructureRecognizer(Recognizer):
+    # tsr.onnx 或昇腾 TSR，输出对齐后的结构元素列表
     labels = [
         "table",
         "table column",
@@ -51,6 +57,7 @@ class TableStructureRecognizer(Recognizer):
             )
 
     def __call__(self, images, thr=0.2):
+        # 推理后按行左右、列上下对齐 bbox 边界
         table_structure_recognizer_type = os.getenv("TABLE_STRUCTURE_RECOGNIZER_TYPE", "onnx").lower()
         if table_structure_recognizer_type not in ["onnx", "ascend"]:
             raise RuntimeError("Unsupported table structure recognizer type.")
@@ -63,7 +70,7 @@ class TableStructureRecognizer(Recognizer):
             tbls = self._run_ascend_tsr(images, thr)
 
         res = []
-        # align left&right for rows, align top&bottom for columns
+        # 行元素左右对齐，列元素上下对齐，减少结构抖动
         for tbl in tbls:
             lts = [
                 {
@@ -111,6 +118,7 @@ class TableStructureRecognizer(Recognizer):
 
     @staticmethod
     def is_caption(bx):
+        # 判断 OCR 框是否为图表/表格标题说明文字
         patt = [
             r"[图表]+[ 0-9:：]{2,}",
             r"(?i)Fig\.?\s*\d+",

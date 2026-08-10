@@ -1,4 +1,4 @@
-"""OCR LitServe endpoint — detect + rec via operator form field."""
+"""OCR LitServe 端点：通过 operator 表单字段选择检测(det)或识别(rec)模式。"""
 
 import logging
 
@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class OCREndpoint(ls.LitAPI):
+    # /predict/ocr：operator=det|rec，request=JPEG 图像
     """OCR endpoint at /predict/ocr.
 
     Form field 'operator' (det or rec) selects the mode.
@@ -23,11 +24,13 @@ class OCREndpoint(ls.LitAPI):
         self.adapter: OCRAdapter | None = None
 
     def setup(self, device):
+        # 懒加载 OCR 检测与识别模型
         self.adapter = OCRAdapter(model_dir=self.model_dir)
         self.adapter.load()
         logger.info("OCR model loaded")
 
     def decode_request(self, request):
+        # 解析 operator 与图像字节，校验模式与大小
         # Handle both old Starlette UploadFile and new Starlette FormData
         if hasattr(request, "file"):
             data = request.file.read()
@@ -55,6 +58,7 @@ class OCREndpoint(ls.LitAPI):
         return operator, data
 
     def predict(self, inputs: tuple):
+        # 按 operator 分发至 detect 或 recognize
         operator, image_data = inputs
         if operator == "det":
             return self.adapter.detect(image_data)

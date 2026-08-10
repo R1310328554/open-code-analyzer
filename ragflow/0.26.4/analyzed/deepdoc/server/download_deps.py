@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Download OSS DeepDoc ONNX models from HuggingFace."""
+"""从 HuggingFace 下载 OSS DeepDoc 所需 ONNX 模型与字典文件。"""
 
 import os
 import sys
 
+# HuggingFace 模型仓库 ID
 REPO_ID = "InfiniFlow/deepdoc"
+# 版面/检测/识别/表格结构 ONNX 及 OCR 字典
 FILES = [
     "layout.onnx",
     "det.onnx",
@@ -15,6 +17,7 @@ FILES = [
 
 
 def main():
+    # 将模型下载到指定目录，已存在则跳过
     target_dir = sys.argv[1] if len(sys.argv) > 1 else "models"
     os.makedirs(target_dir, exist_ok=True)
 
@@ -24,6 +27,7 @@ def main():
         print("ERROR: huggingface_hub not installed. Run: pip install huggingface_hub")
         sys.exit(1)
 
+    # 支持 HF 镜像（如 hf-mirror.com）
     hf_endpoint = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
 
     for filename in FILES:

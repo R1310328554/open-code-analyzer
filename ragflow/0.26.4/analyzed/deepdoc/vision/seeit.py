@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+可视化工具：在图像上绘制检测框、类别标签与置信度并保存。
+"""
+
+
 
 import logging
 import os
@@ -21,6 +26,7 @@ from PIL import ImageDraw
 
 
 def save_results(image_list, results, labels, output_dir="output/", threshold=0.5):
+    # 批量绘制检测框并写入 output_dir
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     for idx, im in enumerate(image_list):
@@ -32,6 +38,7 @@ def save_results(image_list, results, labels, output_dir="output/", threshold=0.
 
 
 def draw_box(im, result, labels, threshold=0.5):
+    # 按类别着色绘制 bbox 与 score 文本
     draw_thickness = min(im.size) // 320
     draw = ImageDraw.Draw(im)
     color_list = get_color_map_list(len(labels))
@@ -52,6 +59,7 @@ def draw_box(im, result, labels, threshold=0.5):
 
 
 def get_color_map_list(num_classes):
+    # 为每个类别生成可区分的 RGB 色
     """
     Args:
         num_classes (int): number of class

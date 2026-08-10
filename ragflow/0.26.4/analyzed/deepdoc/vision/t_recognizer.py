@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+版面/表格结构 CLI：layout 模式画版面框，tsr 模式输出 HTML 表格。
+"""
+
+
 
 import logging
 import os
@@ -28,6 +33,7 @@ import numpy as np
 
 
 def main(args):
+    # mode=layout 用 LayoutRecognizer；mode=tsr 用 TSR+OCR 拼 HTML
     images, outputs = init_in_out(args)
     if args.mode.lower() == "layout":
         detr = LayoutRecognizer("layout")
@@ -49,6 +55,7 @@ def main(args):
 
 
 def get_table_html(img, tb_cpns, ocr):
+    # 将 TSR 结构元素与 OCR 文本对齐，生成带样式的 HTML 表格
     boxes = ocr(np.array(img))
     boxes = LayoutRecognizer.sort_Y_firstly(
         [{"x0": b[0][0], "x1": b[1][0], "top": b[0][1], "text": t[0], "bottom": b[-1][1], "layout_type": "table", "page_number": 0} for b, t in boxes if b[0][0] <= b[1][0] and b[0][1] <= b[-1][1]],
@@ -56,6 +63,7 @@ def get_table_html(img, tb_cpns, ocr):
     )
 
     def gather(kwd, fzy=10, ption=0.6):
+        # 按标签正则筛选结构元素并做 layouts_cleanup
         nonlocal boxes
         eles = LayoutRecognizer.sort_Y_firstly([r for r in tb_cpns if re.match(kwd, r["label"])], fzy)
         eles = LayoutRecognizer.layouts_cleanup(boxes, eles, 5, ption)

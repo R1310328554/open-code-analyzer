@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+检测与识别后处理：DB 二值化框提取、CTC 标签解码等。
+"""
+
+
 
 import copy
 import re
@@ -23,6 +28,7 @@ import pyclipper
 
 
 def build_post_process(config, global_config=None):
+    # 按配置 name 实例化 DBPostProcess 或 CTCLabelDecode
     support_dict = {"DBPostProcess": DBPostProcess, "CTCLabelDecode": CTCLabelDecode}
 
     config = copy.deepcopy(config)
@@ -38,6 +44,7 @@ def build_post_process(config, global_config=None):
 
 
 class DBPostProcess:
+    # Differentiable Binarization 检测后处理：轮廓→多边形→unclip
     """
     The post process for Differentiable Binarization (DB).
     """
@@ -235,6 +242,7 @@ class DBPostProcess:
 
 
 class BaseRecLabelDecode:
+    # 识别结果解码基类：字典映射与空白符处理
     """Convert between text-label and text-index"""
 
     def __init__(self, character_dict_path=None, use_space_char=False):
@@ -316,6 +324,7 @@ class BaseRecLabelDecode:
 
 
 class CTCLabelDecode(BaseRecLabelDecode):
+    # CTC 贪心解码，去除重复与 blank 索引
     """Convert between text-label and text-index"""
 
     def __init__(self, character_dict_path=None, use_space_char=False, **kwargs):

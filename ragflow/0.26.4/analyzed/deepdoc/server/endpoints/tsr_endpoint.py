@@ -1,4 +1,4 @@
-"""TSR LitServe endpoint."""
+"""TSR（表格结构识别）LitServe 端点，路径 /predict/tsr。"""
 
 import logging
 
@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class TSREndpoint(ls.LitAPI):
+    # 对裁剪表格图推理，返回行列/表头等结构 bbox
     """Table Structure Recognition endpoint at /predict/tsr."""
 
     def __init__(self, model_dir: str, thr: float = 0.2):
@@ -20,11 +21,13 @@ class TSREndpoint(ls.LitAPI):
         self.adapter: TSRAdapter | None = None
 
     def setup(self, device):
+        # 加载 TableStructureRecognizer 封装适配器
         self.adapter = TSRAdapter(model_dir=self.model_dir, thr=self.thr)
         self.adapter.load()
         logger.info("TSR model loaded")
 
     def decode_request(self, request):
+        # 读取 JPEG 字节，拒绝空体与超大图
         # Handle both Starlette UploadFile (old) and FormData (Starlette >=1.3)
         if hasattr(request, "file"):
             data = request.file.read()

@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+视觉预处理算子：解码、缩放、归一化、Padding 及检测后 NMS 等 Paddle 风格流水线。
+"""
+
+
 
 import logging
 import sys
@@ -26,6 +31,7 @@ from rag.utils.lazy_image import ensure_pil_image
 
 
 class DecodeImage:
+    # 将 bytes 解码为 OpenCV BGR/RGB 数组
     """decode image"""
 
     def __init__(self, img_mode="RGB", channel_first=False, ignore_orientation=False, **kwargs):
@@ -60,6 +66,7 @@ class DecodeImage:
 
 
 class StandardizeImag:
+    # 均值方差标准化或 /255 缩放
     """normalize image
     Args:
         mean (list): im - mean
@@ -272,6 +279,7 @@ class Resize:
 
 
 class DetResizeForTest:
+    # 检测模型测试阶段 resize，保持长宽比并限制边长
     def __init__(self, **kwargs):
         super(DetResizeForTest, self).__init__()
         self.resize_type = 0
@@ -653,6 +661,7 @@ def decode_image(im_file, im_info):
 
 
 def preprocess(im, preprocess_ops):
+    # 顺序执行算子列表，任一返回 None 则中断
     # process image by preprocess_ops
     im_info = {
         "scale_factor": np.array([1.0, 1.0], dtype=np.float32),
@@ -665,6 +674,7 @@ def preprocess(im, preprocess_ops):
 
 
 def nms(bboxes, scores, iou_thresh):
+    # 非极大值抑制，按 IoU 阈值过滤重叠检测框
     import numpy as np
 
     x1 = bboxes[:, 0]

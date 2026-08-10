@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+通用 ONNX 识别器基类：预处理、推理、后处理及版面/OCR 框几何工具方法。
+"""
+
+
 import gc
 import logging
 import os
@@ -30,8 +35,11 @@ from .ocr import load_model
 
 
 class Recognizer:
+    # 加载指定 task 的 ONNX，提供排序、重叠度与 batch 推理
     def __init__(self, label_list, task_name, model_dir=None):
         """
+        若 HuggingFace 下载困难，可设置 HF_ENDPOINT 镜像。
+
         If you have trouble downloading HuggingFace models, -_^ this might help!!
 
         For Linux:
@@ -52,6 +60,7 @@ class Recognizer:
 
     @staticmethod
     def sort_Y_firstly(arr, threshold):
+        # 先按 top 再按 x0 排序，阈值内视为同一行
         def cmp(c1, c2):
             diff = c1["top"] - c2["top"]
             if abs(diff) < threshold:
@@ -123,6 +132,7 @@ class Recognizer:
 
     @staticmethod
     def layouts_cleanup(boxes, layouts, far=2, thr=0.7):
+        # 合并重叠版面框，保留与 OCR 框重叠面积更大者
         def not_overlapped(a, b):
             return any([a["x1"] < b["x0"], a["x0"] > b["x1"], a["bottom"] < b["top"], a["top"] > b["bottom"]])
 
@@ -246,6 +256,7 @@ class Recognizer:
 
     @staticmethod
     def find_overlapped_with_threshold(box, boxes, thr=0.3):
+        # 在候选框中找与 box 双向重叠比均达阈值的最佳匹配
         if not boxes:
             return
         max_overlapped_i, max_overlapped, _max_overlapped = None, thr, 0
@@ -385,6 +396,7 @@ class Recognizer:
         gc.collect()
 
     def __call__(self, image_list, thr=0.7, batch_size=16):
+        # 批量推理并返回每图 [{type, bbox, score}, ...]
         res = []
         images = []
         for i in range(len(image_list)):
