@@ -15,23 +15,8 @@
     "services/src/main/java/org/keycloak/WebAuthnConstants.java",
     "services/src/main/java/org/keycloak/authentication/AbstractFormAuthenticator.java",
     "services/src/main/java/org/keycloak/authentication/AuthenticationProcessor.java",
-    "services/src/main/java/org/keycloak/authentication/AuthenticationSelectionResolver.java",
-    "services/src/main/java/org/keycloak/authentication/AuthenticatorUtil.java",
-    "services/src/main/java/org/keycloak/authentication/ClientAuthenticationFlow.java",
-    "services/src/main/java/org/keycloak/authentication/DefaultAuthenticationFlow.java",
-    "services/src/main/java/org/keycloak/authentication/ExplainedVerificationException.java",
-    "services/src/main/java/org/keycloak/authentication/FormAuthenticationFlow.java",
-    "services/src/main/java/org/keycloak/authentication/RequiredActionContextResult.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/AbstractActionTokenHandler.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/ActionTokenContext.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/ActionTokenHandler.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/ActionTokenHandlerFactory.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/ActionTokenHandlerSpi.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/DefaultActionToken.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/ExplainedTokenVerificationException.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/TokenUtils.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/execactions/ExecuteActionsActionToken.java"
+    "services/src/main/java/org/keycloak/authentication/AuthenticationSelectionResolver.java"
   ],
   "remaining_pending": 2218,
-  "done": 3750
+  "done": 3765
 }
