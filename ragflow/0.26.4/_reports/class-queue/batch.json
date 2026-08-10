@@ -15,23 +15,8 @@
     "internal/agent/canvas/checkpoint_store.go",
     "internal/agent/canvas/compile.go",
     "internal/agent/canvas/decode.go",
-    "internal/agent/canvas/interrupt_resume.go",
-    "internal/agent/canvas/loop_subgraph.go",
-    "internal/agent/canvas/multibranch.go",
-    "internal/agent/canvas/node_body.go",
-    "internal/agent/canvas/parallel_subgraph.go",
-    "internal/agent/canvas/run_tracker.go",
-    "internal/agent/canvas/runner.go",
-    "internal/agent/canvas/scheduler.go",
-    "internal/agent/canvas/state.go",
-    "internal/agent/canvas/state_export.go",
-    "internal/agent/canvas/state_serializer.go",
-    "internal/agent/canvas/stream.go",
-    "internal/agent/canvas/timeout.go",
-    "internal/agent/canvas/variable.go",
-    "internal/agent/component/agent.go",
-    "internal/agent/component/base.go"
+    "internal/agent/canvas/interrupt_resume.go"
   ],
   "remaining_pending": 1344,
-  "done": 390
+  "done": 405
 }
