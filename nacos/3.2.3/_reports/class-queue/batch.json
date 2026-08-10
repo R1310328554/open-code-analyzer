@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T02:31:41Z",
   "files": [
-    "api/src/main/java/com/alibaba/nacos/api/config/model/ConfigDetailInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/model/ConfigGrayInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/model/ConfigHistoryBasicInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/model/ConfigHistoryDetailInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/model/ConfigListenerInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/model/SameConfigPolicy.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/remote/request/AbstractConfigRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/remote/request/AbstractFuzzyWatchNotifyRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/remote/request/ClientConfigMetricRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/remote/request/ConfigBatchListenRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/remote/request/ConfigChangeNotifyRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/remote/request/ConfigFuzzyWatchChangeNotifyRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/remote/request/ConfigFuzzyWatchRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/remote/request/ConfigFuzzyWatchSyncRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/config/remote/request/ConfigPublishRequest.java",
     "api/src/main/java/com/alibaba/nacos/api/config/remote/request/ConfigQueryRequest.java",
     "api/src/main/java/com/alibaba/nacos/api/config/remote/request/ConfigRemoveRequest.java",
     "api/src/main/java/com/alibaba/nacos/api/config/remote/request/cluster/ConfigChangeClusterSyncRequest.java",
@@ -33,5 +18,5 @@
     "api/src/main/java/com/alibaba/nacos/api/exception/api/NacosApiException.java"
   ],
   "remaining_pending": 2087,
-  "done": 420
+  "done": 435
 }
