@@ -26,7 +26,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import java.util.Collections;
 
 /**
- * The derby implementation of ConfigInfoGrayMapper.
+ * {@link ConfigInfoGrayMapper} 的 Derby 实现。
+ *
+ * <p>灰度配置表的 dump 分页与增量变更拉取，使用 Derby 标准 OFFSET/FETCH 语法。</p>
  *
  * @author rong
  **/
@@ -34,6 +36,7 @@ import java.util.Collections;
 public class ConfigInfoGrayMapperByDerby extends AbstractMapperByDerby
     implements ConfigInfoGrayMapper {
     
+    /** 分页拉取灰度配置用于全量 dump。 */
     @Override
     public MapperResult findAllConfigInfoGrayForDumpAllFetchRows(MapperContext context) {
         String sql =
@@ -45,6 +48,7 @@ public class ConfigInfoGrayMapperByDerby extends AbstractMapperByDerby
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 按修改时间与上次最大 id 增量拉取灰度配置变更。 */
     @Override
     public MapperResult findChangeConfig(MapperContext context) {
         String sql =
@@ -57,6 +61,7 @@ public class ConfigInfoGrayMapperByDerby extends AbstractMapperByDerby
                 context.getWhereParameter(FieldConstant.PAGE_SIZE)));
     }
     
+    /** 返回 Derby 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;

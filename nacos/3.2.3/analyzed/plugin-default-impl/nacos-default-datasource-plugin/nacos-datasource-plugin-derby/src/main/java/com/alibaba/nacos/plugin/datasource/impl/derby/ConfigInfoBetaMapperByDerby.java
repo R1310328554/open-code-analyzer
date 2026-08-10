@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The derby implementation of ConfigInfoBetaMapper.
+ * {@link ConfigInfoBetaMapper} 的 Derby 实现。
+ *
+ * <p>Beta 配置全量导出时使用子查询 + 关联方式分页，避免 Derby 大结果集一次性加载。</p>
  *
  * @author hyx
  **/
@@ -33,6 +35,7 @@ import java.util.List;
 public class ConfigInfoBetaMapperByDerby extends AbstractMapperByDerby
     implements ConfigInfoBetaMapper {
     
+    /** 分页拉取 Beta 配置用于全量 dump 导出。 */
     @Override
     public MapperResult findAllConfigInfoBetaForDumpAllFetchRows(MapperContext context) {
         Integer startRow = context.getStartRow();
@@ -51,6 +54,7 @@ public class ConfigInfoBetaMapperByDerby extends AbstractMapperByDerby
         return new MapperResult(sql, paramList);
     }
     
+    /** 返回 Derby 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;

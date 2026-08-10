@@ -26,12 +26,15 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import java.util.List;
 
 /**
- * The derby implementation of {@link AiResourceMapper}.
+ * {@link AiResourceMapper} 的 Derby 实现。
+ *
+ * <p>使用 Derby {@code OFFSET … ROWS FETCH NEXT … ROWS ONLY} 语法分页查询 AI 资源表。</p>
  *
  * @author nacos
  */
 public class AiResourceMapperByDerby extends AbstractMapperByDerby implements AiResourceMapper {
     
+    /** 按命名空间与扩展条件分页查询 AI 资源列表。 */
     @Override
     public MapperResult findAiResourceFetchRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder(
@@ -40,6 +43,7 @@ public class AiResourceMapperByDerby extends AbstractMapperByDerby implements Ai
                 + "FROM ai_resource");
         where.eq("namespace_id", context.getWhereParameter(FieldConstant.NAMESPACE_ID));
         
+        // 追加可选扩展查询条件
         appendExtraQueryCondition(where, context);
         
         MapperResult built = where.build();
@@ -49,6 +53,7 @@ public class AiResourceMapperByDerby extends AbstractMapperByDerby implements Ai
         return new MapperResult(sql, built.getParamList());
     }
     
+    /** 向 WHERE 追加单字段条件，支持等值、LIKE 及 IN 列表匹配。 */
     @Override
     public void appendSingleAndCondition(WhereBuilder where, String field, Object value,
         boolean likeMatch) {
@@ -69,6 +74,7 @@ public class AiResourceMapperByDerby extends AbstractMapperByDerby implements Ai
         }
     }
     
+    /** 返回 Derby 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;

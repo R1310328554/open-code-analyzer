@@ -20,12 +20,15 @@ import com.alibaba.nacos.plugin.datasource.impl.enums.derby.TrustedDerbylFunctio
 import com.alibaba.nacos.plugin.datasource.mapper.AbstractMapper;
 
 /**
- * The abstract derby mapper contains CRUD methods.
+ * Derby 数据源 Mapper 抽象基类。
+ *
+ * <p>继承 {@link com.alibaba.nacos.plugin.datasource.mapper.AbstractMapper}， 通过 {@link com.alibaba.nacos.plugin.datasource.impl.enums.derby.TrustedDerbylFunctionEnum} 解析 Derby 可信 SQL 函数。</p>
  *
  * @author blake.qiu
  **/
 public abstract class AbstractMapperByDerby extends AbstractMapper {
     
+    /** 从 Derby 可信函数白名单解析 SQL 函数片段。 */
     @Override
     public String getFunction(String functionName) {
         return TrustedDerbylFunctionEnum.getFunctionByName(functionName);

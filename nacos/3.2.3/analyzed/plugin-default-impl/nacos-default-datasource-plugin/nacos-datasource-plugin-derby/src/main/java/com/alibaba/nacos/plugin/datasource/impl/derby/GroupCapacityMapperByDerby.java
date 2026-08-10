@@ -29,18 +29,22 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The derby implementation of {@link GroupCapacityMapper}.
+ * {@link GroupCapacityMapper} 的 Derby 实现。
+ *
+ * <p>管理默认命名空间下 group 级配置容量：配额、用量增减及从 config_info 统计回填。</p>
  *
  * @author lixiaoshuang
  */
 public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
     implements GroupCapacityMapper {
     
+    /** 返回 Derby 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;
     }
     
+    /** 按 id 游标分页扫描 group 容量表。 */
     @Override
     public MapperResult selectGroupInfoBySize(MapperContext context) {
         String sql =
@@ -50,6 +54,7 @@ public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
                 context.getPageSize()));
     }
     
+    /** 按 group_id 查询容量配额与用量。 */
     @Override
     public MapperResult select(MapperContext context) {
         String sql =
@@ -59,6 +64,7 @@ public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
             Collections.singletonList(context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 无条件将指定 group 用量 +1。 */
     @Override
     public MapperResult incrementUsageByWhere(MapperContext context) {
         return new MapperResult(
@@ -67,6 +73,7 @@ public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
                 context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 配额非零且未超限时将用量 +1。 */
     @Override
     public MapperResult incrementUsageByWhereQuotaNotEqualZero(MapperContext context) {
         return new MapperResult(
@@ -75,6 +82,7 @@ public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
                 context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 从 config_info 统计 count 并插入新 group 容量行。 */
     @Override
     public MapperResult insertIntoSelect(MapperContext context) {
         List<Object> paramList = new ArrayList<>();
@@ -92,6 +100,7 @@ public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
         return new MapperResult(sql, paramList);
     }
     
+    /** 按 group 与默认 tenant 统计后插入容量行。 */
     @Override
     public MapperResult insertIntoSelectByWhere(MapperContext context) {
         final String sql =
@@ -112,6 +121,7 @@ public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
         return new MapperResult(sql, paramList);
     }
     
+    /** 配额为零时按 max_size 上限递增用量。 */
     @Override
     public MapperResult incrementUsageByWhereQuotaEqualZero(MapperContext context) {
         return new MapperResult(
@@ -121,6 +131,7 @@ public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
                 context.getWhereParameter(FieldConstant.USAGE)));
     }
     
+    /** 用量大于零时将指定 group 用量 -1。 */
     @Override
     public MapperResult decrementUsageByWhere(MapperContext context) {
         return new MapperResult(
@@ -129,6 +140,7 @@ public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
                 context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 按全表 config_info 计数校正 group 用量。 */
     @Override
     public MapperResult updateUsage(MapperContext context) {
         return new MapperResult(
@@ -137,6 +149,7 @@ public class GroupCapacityMapperByDerby extends AbstractMapperByDerby
                 context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 按 group 与默认 tenant 统计校正用量。 */
     @Override
     public MapperResult updateUsageByWhere(MapperContext context) {
         return new MapperResult(

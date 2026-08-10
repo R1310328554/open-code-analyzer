@@ -24,7 +24,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The derby implementation of ConfigInfoMapper.
+ * {@link HistoryConfigInfoMapper} 的 Derby 实现。
+ *
+ * <p>配置历史表 his_config_info 的清理、分页查询与删除事件增量同步。</p>
  *
  * @author hyx
  **/
@@ -32,6 +34,7 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 public class HistoryConfigInfoMapperByDerby extends AbstractMapperByDerby
     implements HistoryConfigInfoMapper {
     
+    /** 分批删除早于指定时间的过期历史记录。 */
     @Override
     public MapperResult removeConfigHistory(MapperContext context) {
         String sql = "DELETE FROM his_config_info WHERE nid IN( "
@@ -41,6 +44,7 @@ public class HistoryConfigInfoMapperByDerby extends AbstractMapperByDerby
                 context.getWhereParameter(FieldConstant.LIMIT_SIZE)));
     }
     
+    /** 按 dataId/group/tenant 倒序分页查询配置变更历史。 */
     @Override
     public MapperResult pageFindConfigHistoryFetchRows(MapperContext context) {
         String sql =
@@ -55,11 +59,13 @@ public class HistoryConfigInfoMapperByDerby extends AbstractMapperByDerby
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 返回 Derby 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;
     }
     
+    /** 增量拉取删除类型（op_type='D'）的历史配置。 */
     @Override
     public MapperResult findDeletedConfig(MapperContext context) {
         return new MapperResult(

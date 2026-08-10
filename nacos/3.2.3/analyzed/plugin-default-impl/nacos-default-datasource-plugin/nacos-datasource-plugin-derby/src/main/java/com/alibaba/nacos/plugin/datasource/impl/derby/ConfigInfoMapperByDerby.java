@@ -34,15 +34,19 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The derby implementation of ConfigInfoMapper.
+ * {@link ConfigInfoMapper} 的 Derby 实现。
+ *
+ * <p>配置中心核心表的 Derby SQL 方言适配：LIKE 转义、OFFSET/FETCH 分页及模糊查询。</p>
  *
  * @author hyx
  **/
 
 public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements ConfigInfoMapper {
     
+    /** Derby LIKE 子句反斜杠转义后缀。 */
     private static final String SQL_DERBY_ESCAPE_BACK_SLASH_FOR_LIKE = " ESCAPE '\\' ";
     
+    /** 按租户与应用名分页查询配置。 */
     @Override
     public MapperResult findConfigInfoByAppFetchRows(MapperContext context) {
         final String appName = (String) context.getWhereParameter(FieldConstant.APP_NAME);
@@ -57,6 +61,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
         return new MapperResult(sql, CollectionUtils.list(tenantId, appName));
     }
     
+    /** 分页获取非默认命名空间的租户 id 列表。 */
     @Override
     public MapperResult getTenantIdList(MapperContext context) {
         
@@ -69,6 +74,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
             Collections.emptyList());
     }
     
+    /** 分页获取默认命名空间下的 group_id 列表。 */
     @Override
     public MapperResult getGroupIdList(MapperContext context) {
         
@@ -81,6 +87,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
             Collections.emptyList());
     }
     
+    /** 分页拉取配置键（data_id/group_id/app_name）。 */
     @Override
     public MapperResult findAllConfigKey(MapperContext context) {
         
@@ -94,6 +101,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
             CollectionUtils.list(context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 分页拉取基础配置内容（含 md5）。 */
     @Override
     public MapperResult findAllConfigInfoBaseFetchRows(MapperContext context) {
         
@@ -106,6 +114,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
             Collections.emptyList());
     }
     
+    /** 按 id 游标分页拉取配置片段，可按需包含 content。 */
     @Override
     public MapperResult findAllConfigInfoFragment(MapperContext context) {
         String contextParameter = context.getContextParameter(ContextConstant.NEED_CONTENT);
@@ -118,6 +127,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
             CollectionUtils.list(context.getWhereParameter(FieldConstant.ID)));
     }
     
+    /** 按多条件与时间范围分页查询变更配置。 */
     @Override
     public MapperResult findChangeConfigFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT);
@@ -168,6 +178,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
             paramList);
     }
     
+    /** 分页列出配置的 group 键与 md5 摘要。 */
     @Override
     public MapperResult listGroupKeyMd5ByPageFetchRows(MapperContext context) {
         
@@ -179,6 +190,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
             Collections.emptyList());
     }
     
+    /** 默认命名空间下按 dataId/group/content 模糊分页查询。 */
     @Override
     public MapperResult findConfigInfoBaseLikeFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT);
@@ -208,6 +220,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
             paramList);
     }
     
+    /** 控制台分页精确查询配置详情。 */
     @Override
     public MapperResult findConfigInfo4PageFetchRows(MapperContext context) {
         final String tenantId = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -251,6 +264,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
             paramList);
     }
     
+    /** 按 group 与 tenant 分页查询基础配置。 */
     @Override
     public MapperResult findConfigInfoBaseByGroupFetchRows(MapperContext context) {
         return new MapperResult(
@@ -262,6 +276,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 模糊查询配置总数（供分页计数）。 */
     @Override
     public MapperResult findConfigInfoLike4PageCountRows(MapperContext context) {
         final String dataId = (String) context.getWhereParameter(FieldConstant.DATA_ID);
@@ -292,6 +307,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
         return where.build();
     }
     
+    /** 模糊分页查询配置列表。 */
     @Override
     public MapperResult findConfigInfoLike4PageFetchRows(MapperContext context) {
         
@@ -326,6 +342,7 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
         return where.build();
     }
     
+    /** 按租户模糊匹配分页拉取全部配置。 */
     @Override
     public MapperResult findAllConfigInfoFetchRows(MapperContext context) {
         return new MapperResult(" SELECT t.id,data_id,group_id,tenant_id,app_name,content,md5 "
@@ -338,11 +355,13 @@ public class ConfigInfoMapperByDerby extends AbstractMapperByDerby implements Co
                 context.getPageSize()));
     }
     
+    /** 返回 Derby 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;
     }
     
+    /** 增量拉取配置变更（按 gmt_modified 与 id 游标）。 */
     @Override
     public MapperResult findChangeConfig(MapperContext context) {
         String sql =

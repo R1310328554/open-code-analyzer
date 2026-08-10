@@ -26,13 +26,16 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import java.util.ArrayList;
 
 /**
- * The type Config migrate mapper by derby.
+ * {@link ConfigMigrateMapper} 的 Derby 实现。
+ *
+ * <p>空 tenant 到 public 命名空间的配置/灰度配置迁移： 识别待插入与待更新记录，并生成 INSERT … SELECT 语句。</p>
  *
  * @author Sunrisea
  */
 public class ConfigMigrateMapperByDerby extends AbstractMapperByDerby
     implements ConfigMigrateMapper {
     
+    /** 分页查找需从空 tenant 插入 public 的配置 id。 */
     @Override
     public MapperResult findConfigIdNeedInsertMigrate(MapperContext context) {
         String sql = "SELECT ci.id FROM config_info ci WHERE ci.tenant_id = '' AND NOT EXISTS "
@@ -43,6 +46,7 @@ public class ConfigMigrateMapperByDerby extends AbstractMapperByDerby
                 context.getPageSize()));
     }
     
+    /** 分页查找 public 侧需同步更新的配置（md5 不一致且更新更晚）。 */
     @Override
     public MapperResult findConfigNeedUpdateMigrate(MapperContext context) {
         String sql = "SELECT ci.id, ci.data_id, ci.group_id, ci.tenant_id"
@@ -61,6 +65,7 @@ public class ConfigMigrateMapperByDerby extends AbstractMapperByDerby
                 context.getPageSize()));
     }
     
+    /** 分页查找需迁移插入的灰度配置 id。 */
     @Override
     public MapperResult findConfigGrayIdNeedInsertMigrate(MapperContext context) {
         String sql = "SELECT ci.id FROM config_info_gray ci WHERE ci.tenant_id = '' AND NOT EXISTS "
@@ -72,6 +77,7 @@ public class ConfigMigrateMapperByDerby extends AbstractMapperByDerby
                 context.getPageSize()));
     }
     
+    /** 分页查找 public 侧需同步更新的灰度配置。 */
     @Override
     public MapperResult findConfigGrayNeedUpdateMigrate(MapperContext context) {
         String sql = "SELECT ci.id, ci.data_id, ci.group_id, ci.tenant_id, ci.gray_name "
@@ -90,6 +96,7 @@ public class ConfigMigrateMapperByDerby extends AbstractMapperByDerby
                 context.getPageSize()));
     }
     
+    /** 按 id 将源配置 INSERT SELECT 到 public tenant。 */
     @Override
     public MapperResult migrateConfigInsertByIds(MapperContext context) {
         ArrayList<Object> paramList = new ArrayList<>();
@@ -104,6 +111,7 @@ public class ConfigMigrateMapperByDerby extends AbstractMapperByDerby
         return new MapperResult(sql.toString(), paramList);
     }
     
+    /** 按 id 将源灰度配置 INSERT SELECT 到 public tenant。 */
     @Override
     public MapperResult migrateConfigGrayInsertByIds(MapperContext context) {
         ArrayList<Object> paramList = new ArrayList<>();
@@ -118,6 +126,7 @@ public class ConfigMigrateMapperByDerby extends AbstractMapperByDerby
         return new MapperResult(sql.toString(), paramList);
     }
     
+    /** 返回 Derby 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;

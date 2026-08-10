@@ -20,13 +20,16 @@ import com.alibaba.nacos.plugin.datasource.constants.DataSourceConstant;
 import com.alibaba.nacos.plugin.datasource.mapper.TenantInfoMapper;
 
 /**
- * The derby implementation of TenantInfoMapper.
+ * {@link TenantInfoMapper} 的 Derby 实现。
+ *
+ * <p>租户元数据 Mapper 的 Derby 绑定，CRUD SQL 由基类 {@link AbstractMapperByDerby} 提供。</p>
  *
  * @author hyx
  **/
 
 public class TenantInfoMapperByDerby extends AbstractMapperByDerby implements TenantInfoMapper {
     
+    /** 返回 Derby 嵌入式数据源平台标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;

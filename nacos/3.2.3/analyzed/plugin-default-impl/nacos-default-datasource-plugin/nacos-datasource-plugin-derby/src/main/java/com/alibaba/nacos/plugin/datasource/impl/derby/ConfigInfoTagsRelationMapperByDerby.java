@@ -29,7 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The derby implementation of ConfigTagsRelationMapper.
+ * {@link ConfigTagsRelationMapper} 的 Derby 实现。
+ *
+ * <p>配置与标签关联查询；Derby 不支持 GROUP_CONCAT，SELECT 不含聚合标签列。</p>
  *
  * @author hyx
  **/
@@ -37,6 +39,7 @@ import java.util.List;
 public class ConfigInfoTagsRelationMapperByDerby extends AbstractMapperByDerby
     implements ConfigTagsRelationMapper {
     
+    /** 按标签 IN 条件精确分页查询配置。 */
     @Override
     public MapperResult findConfigInfo4PageFetchRows(MapperContext context) {
         final String appName = (String) context.getWhereParameter(FieldConstant.APP_NAME);
@@ -88,6 +91,7 @@ public class ConfigInfoTagsRelationMapperByDerby extends AbstractMapperByDerby
         return new MapperResult(sql, paramList);
     }
     
+    /** 标签模糊匹配下的配置总数统计。 */
     @Override
     public MapperResult findConfigInfoLike4PageCountRows(MapperContext context) {
         final String appName = (String) context.getWhereParameter(FieldConstant.APP_NAME);
@@ -126,6 +130,7 @@ public class ConfigInfoTagsRelationMapperByDerby extends AbstractMapperByDerby
         return where.build();
     }
     
+    /** 标签模糊匹配分页查询配置列表。 */
     @Override
     public MapperResult findConfigInfoLike4PageFetchRows(MapperContext context) {
         final String appName = (String) context.getWhereParameter(FieldConstant.APP_NAME);
@@ -174,6 +179,7 @@ public class ConfigInfoTagsRelationMapperByDerby extends AbstractMapperByDerby
         return where.build();
     }
     
+    /** 返回 Derby 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;

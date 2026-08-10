@@ -25,13 +25,16 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The derby implementation of {@link AiResourceVersionMapper}.
+ * {@link AiResourceVersionMapper} 的 Derby 实现。
+ *
+ * <p>按命名空间、资源名及可选 type/status/version 过滤， 按修改时间倒序分页查询 AI 资源版本。</p>
  *
  * @author nacos
  */
 public class AiResourceVersionMapperByDerby extends AbstractMapperByDerby
     implements AiResourceVersionMapper {
     
+    /** 分页查询 AI 资源版本记录。 */
     @Override
     public MapperResult findAiResourceVersionFetchRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder(
@@ -40,10 +43,12 @@ public class AiResourceVersionMapperByDerby extends AbstractMapperByDerby
         where.eq("namespace_id", context.getWhereParameter(FieldConstant.NAMESPACE_ID));
         where.and().eq("name", context.getWhereParameter(FieldConstant.NAME));
         
+        // 可选：按资源类型过滤
         Object type = context.getWhereParameter(FieldConstant.TYPE);
         if (type != null && StringUtils.isNotBlank(String.valueOf(type))) {
             where.and().eq("type", type);
         }
+        // 可选：按发布状态过滤
         Object status = context.getWhereParameter(FieldConstant.STATUS);
         if (status != null && StringUtils.isNotBlank(String.valueOf(status))) {
             where.and().eq("status", status);
@@ -59,6 +64,7 @@ public class AiResourceVersionMapperByDerby extends AbstractMapperByDerby
         return new MapperResult(sql, built.getParamList());
     }
     
+    /** 返回 Derby 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.DERBY;
