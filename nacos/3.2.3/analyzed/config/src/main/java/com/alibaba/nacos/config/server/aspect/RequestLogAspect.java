@@ -39,6 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * 配置请求日志与监控切面：拦截发布/查询/删除/监听 RPC，
+ * 记录客户端 IP、耗时、MD5 并更新 MetricsMonitor 计数。
  * Aspect for logging HTTP API and SDK API requests in Nacos.
  *
  * @author Nacos
@@ -47,21 +49,26 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class RequestLogAspect {
     
+    /** 发布配置切点 */
     private static final String PUBLISH_CONFIG =
         "execution(* com.alibaba.nacos.config.server.service.ConfigOperationService.publishConfig(..))";
     
+    /** 查询配置切点 */
     private static final String GET_CONFIG =
         "execution(* com.alibaba.nacos.config.server.service.query.ConfigQueryChainService.handle(..))";
     
+    /** 删除配置切点 */
     private static final String DELETE_CONFIG =
         "execution(* com.alibaba.nacos.config.server.service.ConfigOperationService.deleteConfig(..))";
     
+    /** 批量监听配置变更 RPC 切点 */
     private static final String CONFIG_CHANGE_LISTEN_RPC =
         "execution(* com.alibaba.nacos.core.remote.RequestHandler.handleRequest(..)) "
             + " && target(com.alibaba.nacos.config.server.remote.ConfigChangeBatchListenRequestHandler) && args(request,meta)";
     
     /**
      * Intercepts configuration publishing operations, records metrics, and logs client requests.
+      * <p>配置 HTTP/RPC 请求日志与监控；详见类级说明。</p>
      */
     @Around(PUBLISH_CONFIG)
     public Object interfacePublishConfig(ProceedingJoinPoint pjp) throws Throwable {
@@ -86,6 +93,7 @@ public class RequestLogAspect {
     
     /**
      * Intercepts configuration get operations, records metrics, and logs client requests.
+      * <p>配置 HTTP/RPC 请求日志与监控；详见类级说明。</p>
      */
     @Around(GET_CONFIG)
     public Object interfaceGetConfig(ProceedingJoinPoint pjp) throws Throwable {
@@ -113,6 +121,7 @@ public class RequestLogAspect {
     
     /**
      * Deletes a configuration entry and logs the operation.
+      * <p>配置 HTTP/RPC 请求日志与监控；详见类级说明。</p>
      */
     @Around(DELETE_CONFIG)
     public Object interfaceRemoveConfig(ProceedingJoinPoint pjp) throws Throwable {
@@ -135,6 +144,7 @@ public class RequestLogAspect {
     
     /**
      * Client api request log rt | status | requestIp | opType | dataId | group | datumId | md5.
+      * <p>配置 HTTP/RPC 请求日志与监控；详见类级说明。</p>
      */
     private Object logClientRequest(String requestType, ProceedingJoinPoint pjp, String dataId,
         String group,
@@ -170,6 +180,7 @@ public class RequestLogAspect {
     
     /**
      * Handles configuration change listening requests.
+      * <p>配置 HTTP/RPC 请求日志与监控；详见类级说明。</p>
      */
     @Around(CONFIG_CHANGE_LISTEN_RPC)
     public Object interfaceListenConfigRpc(ProceedingJoinPoint pjp,

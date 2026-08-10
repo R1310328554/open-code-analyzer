@@ -27,6 +27,8 @@ import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 /**
+ * 字符串工具类：空值/空白判断、路径规范化、集合拼接、UUID 校验等，
+ * 借鉴 Spring {@code StringUtils} 常用 API，供 Nacos 全模块复用。
  * string util.
  *
  * @author Nacos
@@ -37,24 +39,32 @@ public class StringUtils {
     private StringUtils() {
     }
     
+    /** 点号常量 */
     public static final String DOT = ".";
     
     private static final int INDEX_NOT_FOUND = -1;
     
+    /** 逗号分隔符 */
     public static final String COMMA = ",";
     
+    /** 空字符串常量 */
     public static final String EMPTY = "";
     
+    /** 换行符常量 */
     public static final String LF = "\n";
     
     private static final String[] EMPTY_STRING_ARRAY = {};
     
+    /** 路径上级目录标记 */
     public static final String TOP_PATH = "..";
     
+    /** Unix 风格路径分隔符 */
     public static final String FOLDER_SEPARATOR = "/";
     
+    /** Windows 路径分隔符 */
     public static final String WINDOWS_FOLDER_SEPARATOR = "\\";
     
+    /** 标准 UUID 字符串正则（8-4-4-4-12 十六进制） */
     public static final Pattern UUID_PATTERN = Pattern.compile(
         "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
     
@@ -63,6 +73,7 @@ public class StringUtils {
      *
      * @param bytes the bytes that make up the string
      * @return created string
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String newStringForUtf8(byte[] bytes) {
         return new String(bytes, StandardCharsets.UTF_8);
@@ -73,6 +84,7 @@ public class StringUtils {
      *
      * @param cs the string to check
      * @return {@code true} if the string is empty and null and whitespace
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean isBlank(final CharSequence cs) {
         int strLen;
@@ -92,6 +104,7 @@ public class StringUtils {
      *
      * @param str the string to check, may be null
      * @return {@code true} if the string is not empty and not null and not whitespace
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean isNotBlank(String str) {
         return !isBlank(str);
@@ -102,6 +115,7 @@ public class StringUtils {
      *
      * @param str the str to check, may be null
      * @return {@code true} if the str is not empty or not null
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean isNotEmpty(String str) {
         return !isEmpty(str);
@@ -112,6 +126,7 @@ public class StringUtils {
      *
      * @param str the str to check, may be null
      * @return {@code true} if the str is empty or null
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean isEmpty(String str) {
         return str == null || str.length() == 0;
@@ -124,6 +139,7 @@ public class StringUtils {
      * @param str        the CharSequence to check, may be null
      * @param defaultStr the default CharSequence to return if the input is empty ("") or {@code null}, may be null
      * @return the passed in CharSequence, or the default
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String defaultIfEmpty(String str, String defaultStr) {
         return isEmpty(str) ? defaultStr : str;
@@ -136,6 +152,7 @@ public class StringUtils {
      * @param str        the CharSequence to check, may be null, may be whitespace only
      * @param defaultStr the default CharSequence to return if the input is empty ("") or {@code null}, may be null
      * @return the passed in CharSequence, or the default
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String defaultIfBlank(String str, String defaultStr) {
         return isBlank(str) ? defaultStr : str;
@@ -147,6 +164,7 @@ public class StringUtils {
      *
      * @param str the CharSequence to check, may be null, may be whitespace only
      * @return the passed in CharSequence, or the empty string
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String defaultEmptyIfBlank(String str) {
         return defaultIfBlank(str, EMPTY);
@@ -160,6 +178,7 @@ public class StringUtils {
      * @param str2 the second string, may be {@code null}
      * @return {@code true} if the string are equal (case-sensitive), or both {@code null}
      * @see Object#equals(Object)
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean equals(String str1, String str2) {
         return str1 == null ? str2 == null : str1.equals(str2);
@@ -171,6 +190,7 @@ public class StringUtils {
      *
      * @param str the String to be trimmed, may be null
      * @return the trimmed string, {@code null} if null String input
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String trim(final String str) {
         return str == null ? null : str.trim();
@@ -183,6 +203,7 @@ public class StringUtils {
      * @param open  start index to sub
      * @param close end index to sub
      * @return substring
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String substringBetween(String str, String open, String close) {
         if (str == null || open == null || close == null) {
@@ -205,6 +226,7 @@ public class StringUtils {
      * @param collection the Collection of values to join together, may be null
      * @param separator  the separator string to use
      * @return the joined String, {@code null} if null array input
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String join(Collection collection, String separator) {
         if (collection == null) {
@@ -236,6 +258,7 @@ public class StringUtils {
      * @param searchStr the CharSequence to find, may be null
      * @return true if the CharSequence contains the search CharSequence irrespective of case or false if not or {@code
      * null} string input
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean containsIgnoreCase(final CharSequence str, final CharSequence searchStr) {
         if (str == null || searchStr == null) {
@@ -252,6 +275,7 @@ public class StringUtils {
      * @param str       the CharSequence to check, may be null
      * @param searchStr the CharSequence to find, may be null
      * @return true if the CharSequence contains the search CharSequence
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean contains(final CharSequence str, final CharSequence searchStr) {
         if (str == null || searchStr == null) {
@@ -265,6 +289,7 @@ public class StringUtils {
      *
      * @param css the CharSequences to check, may be null or empty
      * @return {@code true} if none of the CharSequences are blank or null or whitespace only
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean isNoneBlank(final CharSequence... css) {
         return !isAnyBlank(css);
@@ -275,6 +300,7 @@ public class StringUtils {
      *
      * @param css the CharSequences to check, may be null or empty
      * @return {@code true} if any of the CharSequences are blank or null or whitespace only
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean isAnyBlank(final CharSequence... css) {
         if (ArrayUtils.isEmpty(css)) {
@@ -298,6 +324,7 @@ public class StringUtils {
      * @param prefix the prefix to find, may be null
      * @return {@code true} if the CharSequence starts with the prefix, case sensitive, or both {@code null}
      * @see java.lang.String#startsWith(String)
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean startsWith(final CharSequence str, final CharSequence prefix) {
         return startsWith(str, prefix, false);
@@ -311,6 +338,7 @@ public class StringUtils {
      * @param ignoreCase indicates whether the compare should ignore case (case insensitive) or not.
      * @return {@code true} if the CharSequence starts with the prefix or both {@code null}
      * @see java.lang.String#startsWith(String)
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     private static boolean startsWith(final CharSequence str, final CharSequence prefix,
         final boolean ignoreCase) {
@@ -339,6 +367,7 @@ public class StringUtils {
      * @param prefix the prefix to find, may be null
      * @return {@code true} if the CharSequence starts with the prefix, case insensitive, or both {@code null}
      * @see java.lang.String#startsWith(String)
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean startsWithIgnoreCase(final CharSequence str, final CharSequence prefix) {
         return startsWith(str, prefix, true);
@@ -350,6 +379,7 @@ public class StringUtils {
      *
      * @param str the String to delete whitespace from, may be null
      * @return the String without whitespaces, <code>null</code> if null String input
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String deleteWhitespace(String str) {
         if (isEmpty(str)) {
@@ -376,6 +406,7 @@ public class StringUtils {
      * @param str1 the first string, may be null
      * @param str2 the second string, may be null
      * @return {@code true} if the string are equal, case insensitive, or both {@code null}
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean equalsIgnoreCase(String str1, String str2) {
         return str1 == null ? str2 == null : str1.equalsIgnoreCase(str2);
@@ -387,6 +418,7 @@ public class StringUtils {
      *
      * @param str the String to parse, may be null
      * @return an array of parsed Strings
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     @SuppressWarnings("checkstyle:WhitespaceAround")
     public static String[] split(final String str, String separatorChars) {
@@ -419,6 +451,7 @@ public class StringUtils {
      * @return an array of the tokens
      * @see java.util.StringTokenizer
      * @see String#trim()
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String[] tokenizeToStringArray(String str, String delimiters, boolean trimTokens,
         boolean ignoreEmptyTokens) {
@@ -448,6 +481,7 @@ public class StringUtils {
      *
      * @param collection the {@code Collection} to copy (potentially {@code null} or empty)
      * @return the resulting {@code String} array
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String[] toStringArray(Collection<String> collection) {
         return (!CollectionUtils.isEmpty(collection) ? collection.toArray(EMPTY_STRING_ARRAY)
@@ -465,6 +499,7 @@ public class StringUtils {
      * @return {@code true} if the {@code String} is not {@code null}, its length is greater than 0, and it does not
      * contain whitespace only
      * @see Character#isWhitespace
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean hasText(String str) {
         return (str != null && !str.isEmpty() && containsText(str));
@@ -491,6 +526,7 @@ public class StringUtils {
      *
      * @param path the original path
      * @return the normalized path
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String cleanPath(String path) {
         if (!hasLength(path)) {
@@ -500,12 +536,12 @@ public class StringUtils {
         String normalizedPath = replace(path, WINDOWS_FOLDER_SEPARATOR, FOLDER_SEPARATOR);
         String pathToUse = normalizedPath;
         
-        // Shortcut if there is no work to do
+        // 无点号时无需规范化，直接返回
         if (pathToUse.indexOf(DOT) == -1) {
             return pathToUse;
         }
         
-        // Strip prefix from path to analyze, to not treat it as part of the
+        // 剥离协议前缀后再解析路径，避免将 file: 等前缀当作路径段
         // first path element. This is necessary to correctly parse paths like
         // "file:core/../core/io/Resource.class", where the ".." should just
         // strip the first "core" directory while keeping the "file:" prefix.
@@ -532,37 +568,37 @@ public class StringUtils {
         for (int i = pathArray.length - 1; i >= 0; i--) {
             String element = pathArray[i];
             if (DOT.equals(element)) {
-                // Points to current directory - drop it.
+                // 当前目录标记，丢弃
             } else if (TOP_PATH.equals(element)) {
-                // Registering top path found.
+                // 记录上级目录段
                 tops++;
             } else {
                 if (tops > 0) {
-                    // Merging path element with element corresponding to top path.
+                    // 与上级路径段合并抵消
                     tops--;
                 } else {
-                    // Normal path element found.
+                    // 普通路径段，保留
                     pathElements.addFirst(element);
                 }
             }
         }
         
-        // All path elements stayed the same - shortcut
+        // 路径段未变化，短路返回原串
         if (pathArray.length == pathElements.size()) {
             return normalizedPath;
         }
-        // Remaining top paths need to be retained.
+        // 保留剩余的上级目录前缀
         for (int i = 0; i < tops; i++) {
             pathElements.addFirst(TOP_PATH);
         }
-        // If nothing else left, at least explicitly point to current path.
+        // 仅剩空段时显式保留当前目录
         if (pathElements.size() == 1 && pathElements.getLast().isEmpty()
             && !prefix.endsWith(FOLDER_SEPARATOR)) {
             pathElements.addFirst(DOT);
         }
         
         final String joined = collectionToDelimitedString(pathElements, FOLDER_SEPARATOR);
-        // avoid string concatenation with empty prefix
+        // 空前缀时避免多余拼接
         return prefix.isEmpty() ? joined : prefix + joined;
     }
     
@@ -574,6 +610,7 @@ public class StringUtils {
      * @param coll  the {@code Collection} to convert (potentially {@code null} or empty)
      * @param delim the delimiter to use (typically a ",")
      * @return the delimited {@code String}
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String collectionToDelimitedString(Collection<?> coll, String delim) {
         return collectionToDelimitedString(coll, delim, "", "");
@@ -589,6 +626,7 @@ public class StringUtils {
      * @param prefix the {@code String} to start each element with
      * @param suffix the {@code String} to end each element with
      * @return the delimited {@code String}
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String collectionToDelimitedString(Collection<?> coll, String delim,
         String prefix, String suffix) {
@@ -623,6 +661,7 @@ public class StringUtils {
      * @param str the {@code String} to check (maybe {@code null})
      * @return {@code true} if the {@code String} is not {@code null} and has length
      * @see #hasText(String)
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static boolean hasLength(String str) {
         return (str != null && !str.isEmpty());
@@ -640,6 +679,7 @@ public class StringUtils {
      *                  delimiter characters)
      * @return an array of the tokens in the list
      * @see #tokenizeToStringArray
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String[] delimitedListToStringArray(String str, String delimiter) {
         return delimitedListToStringArray(str, delimiter, null);
@@ -659,6 +699,7 @@ public class StringUtils {
      *                      delete all new lines and line feeds in a {@code String}
      * @return an array of the tokens in the list
      * @see #tokenizeToStringArray
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String[] delimitedListToStringArray(String str, String delimiter,
         String charsToDelete) {
@@ -696,6 +737,7 @@ public class StringUtils {
      * @param inString      the original {@code String}
      * @param charsToDelete a set of characters to delete. E.g. "az\n" will delete 'a's, 'z's and new lines.
      * @return the resulting {@code String}
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String deleteAny(String inString, String charsToDelete) {
         if (!hasLength(inString) || !hasLength(charsToDelete)) {
@@ -723,6 +765,7 @@ public class StringUtils {
      * @param oldPattern {@code String} to replace
      * @param newPattern {@code String} to insert
      * @return a {@code String} with the replacements
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String replace(String inString, String oldPattern, String newPattern) {
         if (!hasLength(inString) || !hasLength(oldPattern) || newPattern == null) {
@@ -761,6 +804,7 @@ public class StringUtils {
      * @param path         the path to start from (usually a full file path)
      * @param relativePath the relative path to apply (relative to the full file path above)
      * @return the full file path that results from applying the relative path
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String applyRelativePath(String path, String relativePath) {
         int separatorIndex = path.lastIndexOf(FOLDER_SEPARATOR);
@@ -780,6 +824,7 @@ public class StringUtils {
      *
      * @param path the file path (maybe {@code null})
      * @return the extracted filename, or {@code null} if none
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     
     public static String getFilename(String path) {
@@ -797,6 +842,7 @@ public class StringUtils {
      *
      * @param str the {@code String} to capitalize
      * @return the capitalized {@code String}
+      * <p>字符串判空、路径与拼接工具；详见类级说明。</p>
      */
     public static String capitalize(String str) {
         return changeFirstCharacterCase(str);
@@ -819,6 +865,7 @@ public class StringUtils {
         return new String(chars);
     }
     
+    /** 判断字符串是否为合法 UUID 格式 */
     public static boolean isUuidString(String str) {
         return UUID_PATTERN.matcher(str).matches();
     }

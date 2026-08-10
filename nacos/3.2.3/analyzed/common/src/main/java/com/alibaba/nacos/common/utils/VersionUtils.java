@@ -26,6 +26,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * 版本工具：从 nacos-version.txt 加载客户端版本、比较 x.y.z 格式，
+ * 并扩展 semver 与 legacy vN 格式的解析、比较与递增。
  * Version utils.
  *
  * @author xingxuechao on:2019/2/27 12:32 PM
@@ -37,12 +39,14 @@ public class VersionUtils {
     private VersionUtils() {
     }
     
+    /** 当前 Nacos 版本号（静态块从资源文件加载） */
     public static String version;
     
     private static String clientVersion;
     
     /**
      * current version.
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static final String VERSION_PLACEHOLDER = "${project.version}";
     
@@ -70,6 +74,7 @@ public class VersionUtils {
      * @param versionA version A, like x.y.z(-beta)
      * @param versionB version B, like x.y.z(-beta)
      * @return compare result
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static int compareVersion(final String versionA, final String versionB) {
         final String[] sA = versionA.split("\\.");
@@ -102,15 +107,18 @@ public class VersionUtils {
         }
     }
     
+    /** 返回完整客户端版本标识，如 {@code Nacos-Java-Client:v3.2.3} */
     public static String getFullClientVersion() {
         return clientVersion;
     }
     
-    // ---- AI Resource Version Utilities (semver x.y.z + legacy vN) ----
+    // ---- AI 资源版本工具（semver x.y.z 与 legacy vN） ----
     
+    /** 纯 semver 正则（主版本.次版本.修订号，可选预发布后缀） */
     private static final Pattern PURE_SEMVER_PATTERN =
         Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)(?:-([a-zA-Z0-9]+(?:\\.[a-zA-Z0-9]+)*))?$");
     
+    /** semver 无效时的默认起始版本 */
     private static final String DEFAULT_INITIAL_SEMVER = "0.0.1";
     
     /**
@@ -119,6 +127,7 @@ public class VersionUtils {
      *
      * @param version version string, e.g. "1.2.3", "v1.2.3", "0.0.1-beta"
      * @return normalized semver string (e.g. "1.2.3", "0.0.1-beta"), or null if not a valid semver
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static String normalizeSemver(String version) {
         if (version == null || version.trim().isEmpty()) {
@@ -140,6 +149,7 @@ public class VersionUtils {
      *
      * @param version version string
      * @return true if valid semver
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static boolean isSemver(String version) {
         return normalizeSemver(version) != null;
@@ -151,6 +161,7 @@ public class VersionUtils {
      *
      * @param version version string, e.g. "1.2.3", "v1.2.3", "0.0.1-beta"
      * @return int array of [major, minor, patch], or null if not a valid semver
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static int[] parseSemverParts(String version) {
         String normalized = normalizeSemver(version);
@@ -178,6 +189,7 @@ public class VersionUtils {
      * @param a first version (e.g. "1.2.3", "v1.2.3", "0.0.1-beta")
      * @param b second version
      * @return negative if a &lt; b, 0 if equal, positive if a &gt; b; null values are treated as smallest
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static int compareSemverVersion(String a, String b) {
         String na = normalizeSemver(a);
@@ -221,6 +233,7 @@ public class VersionUtils {
      *
      * @param normalizedVersion normalized version, e.g. "1.0.0-beta"
      * @return pre-release part (e.g. "beta"), or null if none
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     private static String extractPreRelease(String normalizedVersion) {
         if (normalizedVersion == null) {
@@ -235,6 +248,7 @@ public class VersionUtils {
      *
      * @param version semver string, e.g. "1.2.3" or "1.2.3-beta"
      * @return incremented version, e.g. "1.2.4"; returns "0.0.1" if input is not valid semver
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static String nextSemverPatch(String version) {
         int[] parts = parseSemverParts(version);
@@ -249,6 +263,7 @@ public class VersionUtils {
      *
      * @param versions list of version strings (supports x.y.z and x.y.z-prerelease)
      * @return the highest semver string (normalized, without 'v' prefix), or null if none found
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static String maxSemver(List<String> versions) {
         if (versions == null || versions.isEmpty()) {
@@ -272,6 +287,7 @@ public class VersionUtils {
      *
      * @param version version string, e.g. "v3", "V10"
      * @return the numeric part, or null if not a valid vN format
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static Integer parseVNumber(String version) {
         if (version == null || version.trim().isEmpty()) {
@@ -295,6 +311,7 @@ public class VersionUtils {
      *
      * @param version version string
      * @return true if valid vN format
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static boolean isVNumber(String version) {
         return parseVNumber(version) != null;
@@ -306,6 +323,7 @@ public class VersionUtils {
      *
      * @param versions list of version strings
      * @return the highest numeric value, or 0 if none found
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static int maxVNumber(List<String> versions) {
         int max = 0;
@@ -326,6 +344,7 @@ public class VersionUtils {
      *
      * @param versions list of version strings
      * @return the version string with the highest number (e.g. "v3"), or null if none found
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static String maxVNumberVersion(List<String> versions) {
         int max = maxVNumber(versions);
@@ -337,6 +356,7 @@ public class VersionUtils {
      *
      * @param versions list of existing version strings
      * @return next version string, e.g. "v4" if max is "v3"; returns "v1" if no vN versions exist
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static String nextVNumberVersion(List<String> versions) {
         return "v" + (maxVNumber(versions) + 1);
@@ -347,6 +367,7 @@ public class VersionUtils {
      *
      * @param version version string
      * @return true if the version is semver or vN format
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static boolean isSupportedVersionFormat(String version) {
         return isSemver(version) || isVNumber(version);
@@ -360,6 +381,7 @@ public class VersionUtils {
      * @param base   base version string
      * @return {@code true} if target &gt; base, {@code false} if target &lt;= base or formats are incompatible / not
      *         recognized
+      * <p>版本号加载、比较与 semver 工具；详见类级说明。</p>
      */
     public static boolean isGreaterVersion(String target, String base) {
         String targetSemver = normalizeSemver(target);

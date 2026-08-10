@@ -20,6 +20,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 /**
+ * 泛型类型工具：构造 {@link ParameterizedType} 实例，
+ * 供反射与序列化场景描述带类型参数的 Class。
  * type utils.
  *
  * @author zzq
@@ -35,6 +37,7 @@ public class TypeUtils {
      * @param raw           raw class
      * @param typeArguments the types used for parameterization
      * @return {@link ParameterizedType}
+      * <p>ParameterizedType 构造；详见类级说明。</p>
      */
     public static ParameterizedType parameterize(final Class<?> raw, final Type... typeArguments) {
         checkParameterizeMethodParameter(raw, typeArguments);
@@ -46,6 +49,7 @@ public class TypeUtils {
      *
      * @param raw           raw class
      * @param typeArguments the types used for parameterization
+      * <p>ParameterizedType 构造；详见类级说明。</p>
      */
     private static void checkParameterizeMethodParameter(Class<?> raw,
         final Type... typeArguments) {
@@ -71,22 +75,21 @@ public class TypeUtils {
     
     /**
      * ParameterizedType implementation class.
+      * <p>ParameterizedType 构造；详见类级说明。</p>
      */
+    /** {@link ParameterizedType} 的简单实现类 */
     private static final class ParameterizedTypeImpl implements ParameterizedType {
         
-        /**
-         * type.
-         */
+        /** 原始 Class 类型 */
+
         private final Class<?> raw;
         
-        /**
-         * owner type to use, if any.
-         */
+        /** 外部类类型（内部类时非 null） */
+
         private final Type useOwner;
         
-        /**
-         * formal type arguments.typeArguments
-         */
+        /** 形式类型参数数组 */
+
         private final Type[] typeArguments;
         
         private ParameterizedTypeImpl(final Class<?> raw, final Type useOwner,

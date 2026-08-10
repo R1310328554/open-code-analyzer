@@ -32,6 +32,9 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
+ * 配置变更插件配置持有者：从环境变量读取
+ * {@code nacos.core.config.plugin.*} 前缀属性，按插件类型分组；
+ * 订阅 {@link ServerConfigChangeEvent} 热刷新。
  * config change plugin configs.
  *
  * @author liyunfei
@@ -41,15 +44,19 @@ public class ConfigChangeConfigs extends Subscriber<ServerConfigChangeEvent> {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigChangeConfigs.class);
     
+    /** 插件配置环境变量前缀 */
     private static final String PREFIX = ConfigChangeConstants.NACOS_CORE_CONFIG_PLUGIN_PREFIX;
     
+    /** 插件类型 → 属性映射（volatile 保证刷新可见性） */
     private volatile Map<String, Properties> configPluginProperties = new HashMap<>();
     
+    /** 注册配置变更订阅并首次加载插件属性 */
     public ConfigChangeConfigs() {
         NotifyCenter.registerSubscriber(this);
         refreshPluginProperties();
     }
     
+    /** 从 {@link EnvUtil} 重新解析带前缀的插件配置 */
     private void refreshPluginProperties() {
         try {
             Map<String, Properties> newProperties = new HashMap<>(3);
@@ -70,6 +77,12 @@ public class ConfigChangeConfigs extends Subscriber<ServerConfigChangeEvent> {
         }
     }
     
+    /**
+     * 按插件类型返回 Properties；不存在时返回空 Properties 并 WARN。
+     *
+     * @param configPluginType 插件 serviceType
+     * @return 插件专属配置
+     */
     public Properties getPluginProperties(String configPluginType) {
         Properties properties = configPluginProperties.get(configPluginType);
         if (properties == null) {
@@ -82,11 +95,13 @@ public class ConfigChangeConfigs extends Subscriber<ServerConfigChangeEvent> {
     }
     
     @Override
+    /** 服务端配置变更时刷新插件属性缓存 */
     public void onEvent(ServerConfigChangeEvent event) {
         refreshPluginProperties();
     }
     
     @Override
+    /** 订阅 {@link ServerConfigChangeEvent} 类型 */
     public Class<? extends Event> subscribeType() {
         return ServerConfigChangeEvent.class;
     }

@@ -50,6 +50,9 @@ import static com.alibaba.nacos.config.server.constant.Constants.HTTP;
 import static com.alibaba.nacos.config.server.constant.Constants.RPC;
 
 /**
+ * 配置变更插件切面：在发布/删除配置前后调用已注册的
+ * {@link com.alibaba.nacos.plugin.config.spi.ConfigChangePluginService}，
+ * 支持 HTTP/RPC 不同切点类型与异步 after 插件。
  * Config change pointcut aspect,which config change plugin services will pointcut.
  *
  * @author Nacos
@@ -60,20 +63,25 @@ public class ConfigChangeAspect {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigChangeAspect.class);
     
+    /** before 插件列表初始容量 */
     private static final Integer DEFAULT_BEFORE_LIST_CAPACITY = 2;
     
+    /** after 插件列表初始容量 */
     private static final Integer DEFAULT_AFTER_LIST_CAPACITY = 1;
     
+    /** 插件配置中启用开关的属性名 */
     private static final String ENABLED = "enabled";
     
     /**
      * Publish config.
+      * <p>配置变更插件切点与执行链；详见类级说明。</p>
      */
     private static final String PUBLISH_CONFIG =
         "execution(* com.alibaba.nacos.config.server.service.ConfigOperationService.publishConfig(..))";
     
     /**
      * Delete config.
+      * <p>配置变更插件切点与执行链；详见类级说明。</p>
      */
     private static final String DELETE_CONFIG =
         "execution(* com.alibaba.nacos.config.server.service.ConfigOperationService.deleteConfig(..))";
@@ -86,6 +94,7 @@ public class ConfigChangeAspect {
     
     /**
      * Publish or update config.
+      * <p>配置变更插件切点与执行链；详见类级说明。</p>
      */
     @Around(PUBLISH_CONFIG)
     Object publishOrUpdateConfigAround(ProceedingJoinPoint pjp) throws Throwable {
@@ -120,7 +129,7 @@ public class ConfigChangeAspect {
             resolvePublishPointCutType(scrType);
         final List<ConfigChangePluginService> pluginServices = getPluginServices(
             configChangePointCutType);
-        // didn't enabled or add relative plugin
+        // 未启用或未注册对应插件时直接放行
         if (pluginServices.isEmpty()) {
             return pjp.proceed();
         }
@@ -144,6 +153,7 @@ public class ConfigChangeAspect {
     
     /**
      * Remove config.
+      * <p>配置变更插件切点与执行链；详见类级说明。</p>
      */
     @Around(DELETE_CONFIG)
     Object removeConfigByIdAround(ProceedingJoinPoint pjp) throws Throwable {
@@ -177,13 +187,14 @@ public class ConfigChangeAspect {
     
     /**
      * Execute relevant config change plugin services.
+      * <p>配置变更插件切点与执行链；详见类级说明。</p>
      */
     private Object configChangeServiceHandle(ProceedingJoinPoint pjp,
         List<ConfigChangePluginService> configChangePluginServiceList,
         ConfigChangeRequest configChangeRequest) {
         ConfigChangePointCutTypes handleType = configChangeRequest.getRequestType();
         ConfigChangeResponse configChangeResponse = new ConfigChangeResponse(handleType);
-        // default success,when before plugin service verify failed , set false
+        // 默认成功；before 插件校验失败时置 false
         configChangeResponse.setSuccess(true);
         
         List<ConfigChangePluginService> beforeExecutePluginServices =
@@ -206,7 +217,7 @@ public class ConfigChangeAspect {
             }
         }
         
-        // before plugin service execute
+        // 执行 before 类型插件（可修改 args 或阻断）
         for (ConfigChangePluginService ccs : beforeExecutePluginServices) {
             final String serviceType = ccs.getServiceType().toLowerCase(Locale.ROOT);
             final Properties properties = configChangeConfigs.getPluginProperties(serviceType);
@@ -234,7 +245,7 @@ public class ConfigChangeAspect {
             retVal = false;
         }
         
-        // after plugin service execute
+        // 异步执行 after 类型插件
         ConfigExecutor.executeAsyncConfigChangePluginTask(() -> {
             for (ConfigChangePluginService ccs : afterExecutePluginServices) {
                 try {
@@ -270,11 +281,11 @@ public class ConfigChangeAspect {
     private ConfigChangePointCutTypes resolvePublishPointCutType(String srcType) {
         String resolvedSourceType = resolveSourceType(srcType);
         if (HTTP.equals(resolvedSourceType)) {
-            // via console or api calls
+            // 控制台或 Open API 调用
             return ConfigChangePointCutTypes.PUBLISH_BY_HTTP;
         }
         if (RPC.equals(resolvedSourceType)) {
-            // via sdk rpc calls
+            // SDK gRPC 调用
             return ConfigChangePointCutTypes.PUBLISH_BY_RPC;
         }
         logUnknownSourceType(srcType);

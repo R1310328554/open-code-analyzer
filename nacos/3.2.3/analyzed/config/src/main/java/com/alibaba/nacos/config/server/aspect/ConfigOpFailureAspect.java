@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 /**
+ * 配置持久化失败日志切面：拦截 repository 包内方法异常，
+ * 记录方法名、参数及堆栈，便于排查配置写入失败。
  * The pointcut for configuration change operations, it will log when the configuration change fails.
  *
  * @author blake.qiu
@@ -37,15 +39,19 @@ public class ConfigOpFailureAspect {
     
     /**
      * Pointcut for all methods from 'configRepositoryInterface'.
+      * <p>配置持久化失败日志切面；详见类级说明。</p>
      */
     @Pointcut("within(com.alibaba.nacos.config.server.service.repository..*)")
+    /** 切点：config.server.service.repository 包下所有方法 */
     public void configRepositoryInterfaceMethods() {
     }
     
     /**
      * Log message when a method from 'configRepositoryInterface' throws an exception.
+      * <p>配置持久化失败日志切面；详见类级说明。</p>
      */
     @AfterThrowing(pointcut = "configRepositoryInterfaceMethods()", throwing = "exception")
+    /** 方法抛异常时记录 ERROR 日志（含参数列表） */
     public void logException(JoinPoint joinPoint, Throwable exception) {
         try {
             Object[] args = joinPoint.getArgs();

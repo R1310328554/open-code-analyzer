@@ -19,6 +19,7 @@ package com.alibaba.nacos.common.utils;
 import java.util.UUID;
 
 /**
+ * UUID 生成工具：基于 {@link UUID#randomUUID()} 生成标准字符串。
  * UUID utils.
  *
  * @author nkorange
@@ -28,6 +29,7 @@ public class UuidUtils {
     private UuidUtils() {
     }
     
+    /** 生成随机 UUID 字符串（含连字符的标准格式） */
     public static String generateUuid() {
         return UUID.randomUUID().toString();
     }

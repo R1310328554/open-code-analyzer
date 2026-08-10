@@ -22,6 +22,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
 
 /**
+ * 反射工具类：封装字段读写、方法调用及反射异常统一处理，
+ * 供 Nacos 各模块在运行时访问私有成员或调用目标方法。
  * reflect utils.
  *
  * @author liuzunfei
@@ -33,7 +35,7 @@ public class ReflectUtils {
     }
     
     /**
-     * get filed value of  obj.
+     * 按字段名读取对象声明字段值（含私有字段，失败时抛 RuntimeException）。
      *
      * @param obj       obj.
      * @param fieldName file name to get value.
@@ -55,6 +57,15 @@ public class ReflectUtils {
      * @param obj       obj.
      * @param fieldName file name to get value.
      * @return field value.
+      * <p>反射字段/方法访问与异常处理；详见类级说明。</p>
+     */
+    /**
+     * 按字段名读取值；反射失败时返回 defaultValue 而非抛异常。
+     *
+     * @param obj           目标对象
+     * @param fieldName     字段名
+     * @param defaultValue  失败时的默认值
+     * @return 字段值或默认值
      */
     public static Object getFieldValue(Object obj, String fieldName, Object defaultValue) {
         try {
@@ -76,6 +87,15 @@ public class ReflectUtils {
      * @param field  the field to get
      * @param target the target object from which to get the field (or {@code null} for a static field)
      * @return the field's current value
+      * <p>反射字段/方法访问与异常处理；详见类级说明。</p>
+     */
+    /**
+     * 通过 {@link Field} 读取目标对象字段值，语义同 {@link Field#get(Object)}。
+     * 异常经 {@link #handleReflectionException(Exception)} 处理。
+     *
+     * @param field  待读字段
+     * @param target 目标对象（静态字段可为 {@code null}）
+     * @return 当前字段值
      */
     public static Object getField(Field field, Object target) {
         try {
@@ -97,6 +117,13 @@ public class ReflectUtils {
      * UndeclaredThrowableException otherwise.
      *
      * @param ex the reflection exception to handle
+      * <p>反射字段/方法访问与异常处理；详见类级说明。</p>
+     */
+    /**
+     * 统一处理反射异常：NoSuchMethod/IllegalAccess 转为 IllegalStateException，
+     * InvocationTargetException 解包后重抛 RuntimeException/Error。
+     *
+     * @param ex 反射异常
      */
     public static void handleReflectionException(Exception ex) {
         if (ex instanceof NoSuchMethodException) {
@@ -122,7 +149,9 @@ public class ReflectUtils {
      * cause. Throws an UndeclaredThrowableException otherwise.
      *
      * @param ex the invocation target exception to handle
+      * <p>反射字段/方法访问与异常处理；详见类级说明。</p>
      */
+    /** 处理 {@link InvocationTargetException}，重抛目标方法抛出的运行时异常 */
     public static void handleInvocationTargetException(InvocationTargetException ex) {
         rethrowRuntimeException(ex.getTargetException());
     }
@@ -137,7 +166,9 @@ public class ReflectUtils {
      *
      * @param ex the exception to rethrow
      * @throws RuntimeException the rethrown exception
+      * <p>反射字段/方法访问与异常处理；详见类级说明。</p>
      */
+    /** 将 {@link Throwable} 转为 RuntimeException/Error 或 {@link UndeclaredThrowableException} 重抛 */
     public static void rethrowRuntimeException(Throwable ex) {
         if (ex instanceof RuntimeException) {
             throw (RuntimeException) ex;
@@ -158,6 +189,16 @@ public class ReflectUtils {
      * @param target the target object to invoke the method on
      * @param args   the invocation arguments (may be {@code null})
      * @return the invocation result, if any
+      * <p>反射字段/方法访问与异常处理；详见类级说明。</p>
+     */
+    /**
+     * 调用指定 {@link Method}；静态方法时 target 可为 {@code null}。
+     * 异常经 {@link #handleReflectionException(Exception)} 处理。
+     *
+     * @param method 待调用方法
+     * @param target 目标对象
+     * @param args   参数（可为 {@code null}）
+     * @return 调用返回值
      */
     public static Object invokeMethod(Method method, Object target, Object... args) {
         try {

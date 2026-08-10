@@ -39,6 +39,8 @@ import java.nio.charset.StandardCharsets;
 import static com.alibaba.nacos.config.server.constant.Constants.LIMIT_ERROR_CODE;
 
 /**
+ * 配置容量管理切面：拦截发布/删除配置，按集群、Group、Namespace 维度
+ * 校验配额与单条内容大小，并在失败时回滚 usage 计数。
  * Capacity management aspect for config service.
  *
  * @author Nacos
@@ -49,9 +51,11 @@ public class CapacityManagementAspect {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(CapacityManagementAspect.class);
     
+    /** 发布配置切点表达式 */
     private static final String PUBLISH_CONFIG =
         "execution(* com.alibaba.nacos.config.server.service.ConfigOperationService.publishConfig(..))";
     
+    /** 删除配置切点表达式 */
     private static final String DELETE_CONFIG =
         "execution(* com.alibaba.nacos.config.server.service.ConfigOperationService.deleteConfig(..))";
     
@@ -67,6 +71,7 @@ public class CapacityManagementAspect {
     
     /**
      * Intercept publish config operations to perform capacity management checks.
+      * <p>配置发布/删除容量配额切面；详见类级说明。</p>
      */
     @Around(PUBLISH_CONFIG)
     public Object aroundPublishConfig(ProceedingJoinPoint pjp) throws Throwable {
@@ -90,12 +95,12 @@ public class CapacityManagementAspect {
         
         if (StringUtils.isBlank(betaIps) && StringUtils.isBlank(tag)
             && StringUtils.isBlank(configForm.getGrayName())) {
-            // do capacity management limitation check for writing or updating config_info table.
+            // 对写入/更新 config_info 表执行容量限制校验（非 beta/tag/灰度）
             if (configInfoPersistService.findConfigInfo(dataId, group, namespaceId) == null) {
-                // Write operation.
+                // 新增配置：走插入配额逻辑
                 return do4Insert(pjp, group, namespaceId, content);
             } else {
-                // Update operation.
+                // 更新已有配置：仅校验内容大小
                 return do4Update(pjp, dataId, group, namespaceId, content);
             }
         }
@@ -106,6 +111,7 @@ public class CapacityManagementAspect {
      * Update operation: open the limitation of capacity management, and it will check the size of content.
      *
      * @throws Throwable Throws Exception when actually operate.
+      * <p>配置发布/删除容量配额切面；详见类级说明。</p>
      */
     private Object do4Update(ProceedingJoinPoint pjp, String dataId, String group,
         String namespaceId, String content) throws Throwable {
@@ -136,6 +142,7 @@ public class CapacityManagementAspect {
      * open limitation checking capacity management and check size of content and quota;
      *
      * @throws Throwable Exception.
+      * <p>配置发布/删除容量配额切面；详见类级说明。</p>
      */
     private Object do4Insert(ProceedingJoinPoint pjp, String group, String namespaceId,
         String content) throws Throwable {
@@ -164,6 +171,7 @@ public class CapacityManagementAspect {
     
     /**
      * Intercept delete config operations to perform capacity management checks.
+      * <p>配置发布/删除容量配额切面；详见类级说明。</p>
      */
     @Around(DELETE_CONFIG)
     public Object aroundDeleteConfig(ProceedingJoinPoint pjp) throws Throwable {
@@ -197,6 +205,7 @@ public class CapacityManagementAspect {
      * Delete Operation.
      *
      * @throws Throwable Exception.
+      * <p>配置发布/删除容量配额切面；详见类级说明。</p>
      */
     private Object do4Delete(ProceedingJoinPoint pjp, String group, String namespaceId,
         ConfigInfo configInfo) throws Throwable {
@@ -259,6 +268,7 @@ public class CapacityManagementAspect {
     
     /**
      * Usage counting service: it will count whether the limitation check function will be open.
+      * <p>配置发布/删除容量配额切面；详见类级说明。</p>
      */
     private void insertOrUpdateUsage(String group, String namespaceId, CounterMode counterMode,
         boolean hasTenant) {
@@ -302,6 +312,7 @@ public class CapacityManagementAspect {
     
     /**
      * Get and return the byte size of encoding.
+      * <p>配置发布/删除容量配额切面；详见类级说明。</p>
      */
     private int getCurrentSize(String content) {
         try {
@@ -449,12 +460,17 @@ public class CapacityManagementAspect {
      * limit type.
      *
      * @author Nacos.
+      * <p>配置发布/删除容量配额切面；详见类级说明。</p>
+     */
+    /**
+     * 容量超限类型枚举，映射 {@link ErrorCode} 与 HTTP 状态码。
+     *
+     * @author Nacos.
      */
     public enum LimitType {
         
-        /**
-         * over limit.
-         */
+        /** 超出限制（各枚举值见 description） */
+
         OVER_CLUSTER_QUOTA("Exceeded the maximum number of configurations in the cluster",
             LIMIT_ERROR_CODE),
         OVER_GROUP_QUOTA("Exceeded the maximum number of configurations in this group",

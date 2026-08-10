@@ -22,49 +22,44 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * 线程工厂构建器（Builder 模式）：可配置线程名模板、优先级、
+ * 守护线程、未捕获异常处理器及自定义底层工厂。
  * build thread factory.
  * @author zzq
  * @date 2021/8/3
  */
 public class ThreadFactoryBuilder {
     
-    /**
-     *  Whether it is a daemon thread.
-     */
+    /** 是否为守护线程，默认 false */
+
     private Boolean daemon = false;
     
-    /**
-     *   Thread priority.
-     */
+    /** 线程优先级，null 表示不修改 */
+
     private Integer priority = null;
     
-    /**
-     *   Thread name template.
-     */
+    /** 线程名格式串（支持 {@code String.format} 占位） */
+
     private String nameFormat = null;
     
-    /**
-     *   Uncaught exception handler.
-     */
+    /** 未捕获异常处理器 */
+
     private Thread.UncaughtExceptionHandler uncaughtExceptionHandler = null;
     
-    /**
-     *   Customize thread factory.
-     */
+    /** 自定义底层 ThreadFactory，null 时使用 Executors 默认工厂 */
+
     private ThreadFactory customizeFactory = null;
     
-    /**
-     * set nameFormat property.
-     */
+    /** 设置线程名模板并返回 this */
+
     public ThreadFactoryBuilder nameFormat(String nameFormat) {
         checkNullParameter(nameFormat, "nameFormat cannot be null.");
         this.nameFormat = nameFormat;
         return this;
     }
     
-    /**
-     * set priority property.
-     */
+    /** 设置线程优先级（须在 MIN~MAX 范围内）并返回 this */
+
     public ThreadFactoryBuilder priority(int priority) {
         if (priority > Thread.MAX_PRIORITY || priority < Thread.MIN_PRIORITY) {
             throw new IllegalArgumentException(
@@ -75,9 +70,8 @@ public class ThreadFactoryBuilder {
         return this;
     }
     
-    /**
-     * set uncaughtExceptionHandler property.
-     */
+    /** 设置未捕获异常处理器并返回 this */
+
     public ThreadFactoryBuilder uncaughtExceptionHandler(
         Thread.UncaughtExceptionHandler uncaughtExceptionHandler) {
         checkNullParameter(uncaughtExceptionHandler, "uncaughtExceptionHandler cannot be null.");
@@ -85,26 +79,23 @@ public class ThreadFactoryBuilder {
         return this;
     }
     
-    /**
-     * set daemon property.
-     */
+    /** 设置是否为守护线程并返回 this */
+
     public ThreadFactoryBuilder daemon(boolean daemon) {
         this.daemon = daemon;
         return this;
     }
     
-    /**
-     * set customizeFactory property.
-     */
+    /** 设置自定义 ThreadFactory 并返回 this */
+
     public ThreadFactoryBuilder customizeFactory(ThreadFactory factory) {
         checkNullParameter(factory, "factory cannot be null.");
         this.customizeFactory = factory;
         return this;
     }
     
-    /**
-     *  build thread factory.
-     */
+    /** 构建最终 {@link ThreadFactory}，按配置包装新线程 */
+
     public ThreadFactory build() {
         ThreadFactory factory =
             customizeFactory == null ? Executors.defaultThreadFactory() : customizeFactory;

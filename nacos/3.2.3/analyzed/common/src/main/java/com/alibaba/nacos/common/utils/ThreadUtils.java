@@ -24,6 +24,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 线程与线程池工具：安全 sleep、CountDownLatch 等待、
+ * 按 CPU 核数估算线程数及 ExecutorService 优雅关闭。
  * Thread utils.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -33,12 +35,14 @@ public final class ThreadUtils {
     private ThreadUtils() {
     }
     
+    /** 默认线程数相对 CPU 核数的倍数 */
     private static final int THREAD_MULTIPLER = 2;
     
     /**
      * Sleep.
      *
      * @param millis sleep millisecond
+      * <p>线程 sleep、Latch 与线程池关闭；详见类级说明。</p>
      */
     public static void sleep(long millis) {
         try {
@@ -48,6 +52,7 @@ public final class ThreadUtils {
         }
     }
     
+    /** 对 CountDownLatch 执行 countDown（非空校验） */
     public static void countDown(CountDownLatch latch) {
         Objects.requireNonNull(latch, "latch");
         latch.countDown();
@@ -57,6 +62,7 @@ public final class ThreadUtils {
      * Await count down latch.
      *
      * @param latch count down latch
+      * <p>线程 sleep、Latch 与线程池关闭；详见类级说明。</p>
      */
     public static void latchAwait(CountDownLatch latch) {
         try {
@@ -72,6 +78,7 @@ public final class ThreadUtils {
      * @param latch count down latch
      * @param time  timeout time
      * @param unit  time unit
+      * <p>线程 sleep、Latch 与线程池关闭；详见类级说明。</p>
      */
     public static void latchAwait(CountDownLatch latch, long time, TimeUnit unit) {
         try {
@@ -85,6 +92,7 @@ public final class ThreadUtils {
      * Through the number of cores, calculate the appropriate number of threads; 1.5-2 times the number of CPU cores.
      *
      * @return thread count
+      * <p>线程 sleep、Latch 与线程池关闭；详见类级说明。</p>
      */
     public static int getSuitableThreadCount() {
         return getSuitableThreadCount(THREAD_MULTIPLER);
@@ -95,6 +103,7 @@ public final class ThreadUtils {
      *
      * @param threadMultiple multiple time of cores
      * @return thread count
+      * <p>线程 sleep、Latch 与线程池关闭；详见类级说明。</p>
      */
     public static int getSuitableThreadCount(int threadMultiple) {
         final int coreCount = PropertyUtils.getProcessorsCount();
@@ -114,6 +123,7 @@ public final class ThreadUtils {
      *
      * @param executor thread pool
      * @param logger   logger
+      * <p>线程 sleep、Latch 与线程池关闭；详见类级说明。</p>
      */
     public static void shutdownThreadPool(ExecutorService executor, Logger logger) {
         executor.shutdown();
@@ -136,6 +146,7 @@ public final class ThreadUtils {
         executor.shutdownNow();
     }
     
+    /** 向 JVM 注册 shutdown hook 线程 */
     public static void addShutdownHook(Runnable runnable) {
         Runtime.getRuntime().addShutdownHook(new Thread(runnable));
     }

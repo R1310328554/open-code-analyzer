@@ -27,6 +27,8 @@ import java.net.URL;
 import java.util.Properties;
 
 /**
+ * 类路径与文件系统资源加载工具：支持 {@code classpath:} 前缀、
+ * 指定 ClassLoader 及 Properties/Reader/File 多种形式读取。
  * resource util.
  *
  * @author boyan
@@ -36,6 +38,7 @@ public class ResourceUtils {
     private ResourceUtils() {
     }
     
+    /** classpath 资源 URI 前缀 */
     private static final String CLASSPATH_PREFIX = "classpath:";
     
     /**
@@ -44,6 +47,14 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
+     */
+    /**
+     * 解析资源为 URL：{@code classpath:} 走类加载器，否则尝试 URL 或本地文件。
+     *
+     * @param resource 资源路径
+     * @return 资源 URL
+     * @throws IOException 资源不存在或无法读取
      */
     public static URL getResourceUrl(String resource) throws IOException {
         if (resource.startsWith(CLASSPATH_PREFIX)) {
@@ -74,7 +85,9 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 使用指定 ClassLoader 查找 classpath 资源 URL */
     public static URL getResourceUrl(ClassLoader loader, String resource) throws IOException {
         URL url = null;
         if (loader != null) {
@@ -95,7 +108,9 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 以 InputStream 打开 classpath 资源 */
     public static InputStream getResourceAsStream(String resource) throws IOException {
         ClassLoader loader = ResourceUtils.class.getClassLoader();
         return getResourceAsStream(loader, resource);
@@ -108,7 +123,9 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 使用指定 ClassLoader 以 InputStream 打开资源 */
     public static InputStream getResourceAsStream(ClassLoader loader, String resource)
         throws IOException {
         InputStream in = null;
@@ -130,7 +147,9 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 加载 classpath 资源为 {@link Properties} */
     public static Properties getResourceAsProperties(String resource) throws IOException {
         ClassLoader loader = ResourceUtils.class.getClassLoader();
         return getResourceAsProperties(loader, resource);
@@ -143,7 +162,9 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 使用指定 ClassLoader 加载 Properties 资源 */
     public static Properties getResourceAsProperties(ClassLoader loader, String resource)
         throws IOException {
         Properties props = new Properties();
@@ -159,7 +180,9 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 以指定字符集创建 {@link InputStreamReader} 读取资源 */
     public static InputStreamReader getResourceAsReader(String resource, String charsetName)
         throws IOException {
         return new InputStreamReader(getResourceAsStream(resource), charsetName);
@@ -172,7 +195,9 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 使用指定 ClassLoader 与字符集创建 Reader */
     public static Reader getResourceAsReader(ClassLoader loader, String resource,
         String charsetName)
         throws IOException {
@@ -185,7 +210,9 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 将 classpath 资源解析为 {@link File}（基于 URL.getFile） */
     public static File getResourceAsFile(String resource) throws IOException {
         return new File(getResourceUrl(resource).getFile());
     }
@@ -195,7 +222,9 @@ public class ResourceUtils {
      *
      * @param url The resource url to find
      * @return The resource
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 由 URL 构造 File 对象 */
     public static File getResourceAsFile(URL url) {
         return new File(url.getFile());
     }
@@ -207,7 +236,9 @@ public class ResourceUtils {
      * @param resource The resource to find
      * @return The resource
      * @throws IOException If the resource cannot be found or read
+      * <p>classpath 与文件资源加载；详见类级说明。</p>
      */
+    /** 使用指定 ClassLoader 将资源解析为 File */
     public static File getResourceAsFile(ClassLoader loader, String resource) throws IOException {
         return new File(getResourceUrl(loader, resource).getFile());
     }

@@ -21,6 +21,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
+ * Nacos 配置中心服务端启动入口：Spring Boot 应用，
+ * 扫描 config.server 与 core 包并启用定时任务。
  * Config main.
  *
  * @author Nacos
@@ -31,6 +33,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
     "com.alibaba.nacos.core"})
 public class Config {
     
+    /** JVM 入口，启动 Spring Boot 容器 */
     public static void main(String[] args) {
         SpringApplication.run(Config.class, args);
     }
