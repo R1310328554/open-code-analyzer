@@ -36,11 +36,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import static org.keycloak.OAuth2Constants.CODE;
 
 /**
+ * 拒绝隐式授权（Implicit/Hybrid）执行器。
+ * <p>在客户端注册/更新、PAR 与授权请求中禁止 implicit/hybrid 流程，无论客户端是否显式启用 implicit flow。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class RejectImplicitGrantExecutor implements ClientPolicyExecutorProvider<RejectImplicitGrantExecutor.Configuration> {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
     public RejectImplicitGrantExecutor(KeycloakSession session) {
@@ -57,7 +62,9 @@ public class RejectImplicitGrantExecutor implements ClientPolicyExecutorProvider
         return Configuration.class;
     }
 
+    /** 隐式授权拒绝执行器配置项 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 为 true 时在注册/更新时自动关闭 implicit flow */
         @JsonProperty("auto-configure")
         protected Boolean autoConfigure;
 
@@ -75,6 +82,7 @@ public class RejectImplicitGrantExecutor implements ClientPolicyExecutorProvider
         return RejectImplicitGrantExecutorFactory.PROVIDER_ID;
     }
 
+    /** 按事件类型自动配置、校验或拒绝 implicit/hybrid 请求 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -100,28 +108,32 @@ public class RejectImplicitGrantExecutor implements ClientPolicyExecutorProvider
         }
     }
 
+    /** 自动将 implicitFlowEnabled 设为 false */
     private void autoConfigure(ClientRepresentation rep) {
         if (configuration.isAutoConfigure())
             rep.setImplicitFlowEnabled(Boolean.FALSE);
     }
 
+    /** 校验客户端元数据不得启用 implicit flow */
     private void validate(ClientRepresentation rep) throws ClientPolicyException {
         boolean isImplicitFlowEnabled = rep.isImplicitFlowEnabled().booleanValue();
         if (!isImplicitFlowEnabled) return;
         throw new ClientPolicyException(OAuthErrorException.INVALID_CLIENT_METADATA, "Invalid client metadata: implicit flow enabled");
     }
 
+    /** 在授权请求中拒绝 implicit/hybrid response_type */
     private void executeOnAuthorizationRequest(
             OIDCResponseType parsedResponseType,
             AuthorizationEndpointRequest request,
             String redirectUri) throws ClientPolicyException {
-        // Before client policies operation, Authorization Endpoint logic has already checked whether implicit/hybrid flow is activated for a client.
-        // This method rejects implicit grant regardless of client setting for allowing implicit grant.
+        // 授权端点已检查客户端 implicit/hybrid 开关；本方法仍一律拒绝 implicit/hybrid
+        // 无论客户端配置如何，均禁止 implicit grant
         if (parsedResponseType.isImplicitOrHybridFlow()) {
             throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "Implicit/Hybrid flow is prohibited.");
         }
     }
 
+    /** 在 PAR 请求中仅允许 authorization code（response_type=code） */
     private void executeOnPushedAuthorizationRequest(
             AuthorizationEndpointRequest request,
             MultivaluedMap<String, String> requestParameters) throws ClientPolicyException {

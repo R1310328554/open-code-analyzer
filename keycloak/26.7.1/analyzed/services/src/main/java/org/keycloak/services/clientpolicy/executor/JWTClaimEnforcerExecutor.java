@@ -35,11 +35,18 @@ import org.keycloak.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+/**
+ * JWT 声明（claim）强制执行器。
+ * <p>在 JWT 授权授予（RFC 7523）或标准令牌交换请求中，校验传入 JWT 必须包含指定 claim，且其值（可选）须匹配配置的正则表达式；仅支持 string/number 类型 claim。</p>
+ */
 public class JWTClaimEnforcerExecutor implements ClientPolicyExecutorProvider<JWTClaimEnforcerExecutor.Configuration> {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
+    /** @param session Keycloak 会话 */
     public JWTClaimEnforcerExecutor(KeycloakSession session) {
         this.session = session;
     }
@@ -59,11 +66,14 @@ public class JWTClaimEnforcerExecutor implements ClientPolicyExecutorProvider<JW
         return Configuration.class;
     }
 
+    /** JWT claim 校验配置项 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
 
+        /** 待校验的 JWT claim 名称 */
         @JsonProperty("claim-name")
         protected String claimName;
 
+        /** claim 允许值正则；为空时仅校验 claim 存在 */
         @JsonProperty("allowed-value")
         protected String allowedValue;
 
@@ -84,8 +94,10 @@ public class JWTClaimEnforcerExecutor implements ClientPolicyExecutorProvider<JW
         }
     }
 
+    /** 在 JWT 授权授予或令牌交换事件中校验 claim */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
+        // 按事件类型解析 JWT 并校验 claim
         switch (context.getEvent()) {
             case JWT_AUTHORIZATION_GRANT -> {
                 JWTAuthorizationGrantContext jwtAuthnGrantContext = ((JWTAuthorizationGrantContext) context);
@@ -102,6 +114,7 @@ public class JWTClaimEnforcerExecutor implements ClientPolicyExecutorProvider<JW
         }
     }
 
+    /** 将 JWT 字符串解析为 claim 映射 */
     private  Map<String, Object> getAccessTokenMapFromJWTString(String jwt) throws ClientPolicyException {
         try {
             return new  JWSInput(jwt).readJsonContent(new TypeReference<>() {});
@@ -110,27 +123,28 @@ public class JWTClaimEnforcerExecutor implements ClientPolicyExecutorProvider<JW
         }
     }
 
+    /** 按配置校验 token 中指定 claim 的存在性与取值 */
     private void checkClaims(Map<String, Object> tokenMap) throws ClientPolicyException {
         String claimName = configuration.getClaimName();
-        // Validate configuration
+        // 校验 claim-name 已配置
         if (claimName == null) {
             throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST,  "Invalid configuration");
         }
 
         String allowedValue = configuration.getAllowedValue();
 
-        // Extract claim value
+        // 提取 claim 值
         Object claimValue = tokenMap.get(claimName);
         if (claimValue == null) {
             throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "Required claim '" + claimName + "' is missing from the token");
         }
 
-        // If allowedValue is empty validate only if the claim exists
+        // allowedValue 为空时仅要求 claim 存在
         if (StringUtil.isBlank(allowedValue)) {
             return;
         }
 
-        //allow only numbers or strings
+        // 仅允许 string 或 number 类型
         if (!isAllowedClaimType(claimValue)) {
             throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "Value type for claim '" + claimName + "' not allowed");
         }
@@ -142,6 +156,7 @@ public class JWTClaimEnforcerExecutor implements ClientPolicyExecutorProvider<JW
         }
     }
 
+    /** 判断 claim 值类型是否为 string 或 number */
     private boolean isAllowedClaimType(Object claimValue) {
         return claimValue instanceof String || claimValue instanceof Number;
     }

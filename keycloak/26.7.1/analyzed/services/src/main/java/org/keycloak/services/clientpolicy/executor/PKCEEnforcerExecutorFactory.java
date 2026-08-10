@@ -26,44 +26,56 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link PKCEEnforcerExecutor} 的 Provider 工厂。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class PKCEEnforcerExecutorFactory implements ClientPolicyExecutorProviderFactory  {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "pkce-enforcer";
 
+    /** 配置键：是否自动配置客户端 PKCE */
     public static final String AUTO_CONFIGURE = "auto-configure";
 
+    /** 自动配置开关的配置属性定义 */
     private static final ProviderConfigProperty AUTO_CONFIGURE_PROPERTY = new ProviderConfigProperty(
             AUTO_CONFIGURE, "Auto-configure", "If On, then the during client creation or update, the configuration of the client will be auto-configured to enforce usage of PKCE with secure algorithm S256", ProviderConfigProperty.BOOLEAN_TYPE, false);
 
+    /** @param session Keycloak 会话 @return 新的执行器实例 */
     @Override
     public ClientPolicyExecutorProvider create(KeycloakSession session) {
         return new PKCEEnforcerExecutor(session);
     }
 
+    /** 工厂初始化（无全局配置） */
     @Override
     public void init(Scope config) {
     }
 
+    /** 会话工厂就绪回调 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 工厂关闭钩子 */
     @Override
     public void close() {
     }
 
+    /** @return 执行器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "It makes the client enforce Proof Key for Code Exchange operation with secure algorithm like S256.";
     }
 
+    /** @return 可配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.singletonList(AUTO_CONFIGURE_PROPERTY);

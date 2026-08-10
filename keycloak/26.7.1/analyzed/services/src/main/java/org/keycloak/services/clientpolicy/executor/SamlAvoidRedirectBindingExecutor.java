@@ -34,11 +34,14 @@ import org.keycloak.services.clientpolicy.context.SamlAuthnRequestContext;
 import org.keycloak.services.clientpolicy.context.SamlLogoutRequestContext;
 
 /**
+ * SAML 避免 Redirect 绑定执行器。
+ * <p>在 SAML 客户端注册/更新时强制启用 POST 绑定；在认证与登出请求中禁止使用 HTTP-Redirect 绑定。</p>
  *
  * @author rmartinc
  */
 public class SamlAvoidRedirectBindingExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
+    /** @param session Keycloak 会话（本执行器不使用） */
     public SamlAvoidRedirectBindingExecutor(KeycloakSession session) {
     }
 
@@ -47,8 +50,10 @@ public class SamlAvoidRedirectBindingExecutor implements ClientPolicyExecutorPro
         return SamlAvoidRedirectBindingExecutorFactory.PROVIDER_ID;
     }
 
+    /** 按 SAML 客户端 CRUD 或请求事件校验绑定方式 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
+        // 客户端注册/更新或 SAML 认证/登出请求
         switch (context.getEvent()) {
             case REGISTERED -> {
                 confirmPostBindingIsForced(((AdminClientRegisteredContext)context).getTargetClient());
@@ -65,6 +70,7 @@ public class SamlAvoidRedirectBindingExecutor implements ClientPolicyExecutorPro
         }
     }
 
+    /** 校验 SAML 协议客户端必须启用 forcePostBinding */
     private void confirmPostBindingIsForced(ClientModel client) throws ClientPolicyException {
         if (SamlProtocol.LOGIN_PROTOCOL.equals(client.getProtocol())) {
             SamlClient samlClient = new SamlClient(client);
@@ -74,6 +80,7 @@ public class SamlAvoidRedirectBindingExecutor implements ClientPolicyExecutorPro
         }
     }
 
+    /** 校验 SAML 认证请求未使用 Redirect 绑定 */
     private void confirmRedirectBindingIsNotUsed(SamlAuthnRequestContext context) throws ClientPolicyException {
         SamlClient samlClient = new SamlClient(context.getClient());
         if (samlClient.forcePostBinding()) {
@@ -81,12 +88,12 @@ public class SamlAvoidRedirectBindingExecutor implements ClientPolicyExecutorPro
         }
         URI requestedBinding = context.getRequest().getProtocolBinding();
         if (requestedBinding == null) {
-            // no request binding explicitly requested so using the one used by the request
+            // 未显式指定 binding 时，按实际请求 binding 判断
             if (context.getProtocolBinding().equals(SamlProtocol.SAML_REDIRECT_BINDING)) {
                 throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "REDIRECT binding is used for the login request and it is not allowed.");
             }
         } else {
-            // explicit request binding request check it's not redirect or artifact+redirect
+            // 显式指定 binding 时，禁止 redirect 或 artifact+redirect 组合
             if (JBossSAMLURIConstants.SAML_HTTP_REDIRECT_BINDING.get().equals(requestedBinding.toString())
                     || (JBossSAMLURIConstants.SAML_HTTP_ARTIFACT_BINDING.get().equals(requestedBinding.toString())
                             && context.getProtocolBinding().equals(SamlProtocol.SAML_REDIRECT_BINDING))) {
@@ -95,6 +102,7 @@ public class SamlAvoidRedirectBindingExecutor implements ClientPolicyExecutorPro
         }
     }
 
+    /** 校验 SAML 登出请求未使用 Redirect 绑定 */
     private void confirmRedirectBindingIsNotUsed(SamlLogoutRequestContext context) throws ClientPolicyException {
         SamlClient samlClient = new SamlClient(context.getClient());
         if (samlClient.forcePostBinding()) {

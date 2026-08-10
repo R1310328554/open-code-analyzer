@@ -24,10 +24,14 @@ import org.keycloak.services.clientpolicy.ClientPolicyContext;
 import org.keycloak.services.clientpolicy.ClientPolicyException;
 
 /**
+ * 拒绝全部请求执行器。
+ * <p>在任意客户端策略事件触发时直接抛出 {@link ClientPolicyException}，用于测试或强制阻断客户端访问。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class RejectRequestExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
+    /** @param session Keycloak 会话（本执行器不使用） */
     public RejectRequestExecutor(KeycloakSession session) {
     }
 
@@ -36,6 +40,7 @@ public class RejectRequestExecutor implements ClientPolicyExecutorProvider<Clien
         return RejectRequestExecutorFactory.PROVIDER_ID;
     }
 
+    /** 无条件拒绝当前客户端策略事件对应的请求 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "Request not allowed");

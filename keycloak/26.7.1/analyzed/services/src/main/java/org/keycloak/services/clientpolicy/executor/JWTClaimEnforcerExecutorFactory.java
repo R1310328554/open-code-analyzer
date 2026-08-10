@@ -23,19 +23,28 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link JWTClaimEnforcerExecutor} 的 Provider 工厂。
+ * <p>暴露 claim 名称与允许值正则等配置项。</p>
+ */
 public class JWTClaimEnforcerExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "jwt-claim-enforcer";
 
+    /** 配置键：待校验 claim 名称 */
     public static final String CLAIM_NAME = "claim-name";
 
+    /** 配置键：claim 允许值正则表达式 */
     public static final String ALLOWED_VALUE = "allowed-value";
 
+    /** @param session Keycloak 会话 @return 新的执行器实例 */
     @Override
     public ClientPolicyExecutorProvider create(KeycloakSession session) {
         return new JWTClaimEnforcerExecutor(session);
     }
 
+    /** claim 名称配置属性定义 */
     private static final ProviderConfigProperty CLAIM_NAME_PROPERTY = new ProviderConfigProperty(
             CLAIM_NAME,
             "Claim Name",
@@ -44,6 +53,7 @@ public class JWTClaimEnforcerExecutorFactory implements ClientPolicyExecutorProv
             null
     );
 
+    /** claim 允许值正则配置属性定义 */
     private static final ProviderConfigProperty ALLOWED_VALUE_PROPERTY = new ProviderConfigProperty(
             ALLOWED_VALUE,
             "Allowed Value",
@@ -52,23 +62,28 @@ public class JWTClaimEnforcerExecutorFactory implements ClientPolicyExecutorProv
             null
     );
 
+    /** 工厂初始化（无全局配置） */
     @Override
     public void init(Scope config) {
     }
 
+    /** 会话工厂就绪回调 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 工厂关闭钩子 */
     @Override
     public void close() {
     }
 
+    /** @return 执行器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return """
@@ -81,6 +96,7 @@ public class JWTClaimEnforcerExecutorFactory implements ClientPolicyExecutorProv
         """;
     }
 
+    /** @return 可配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return List.of(CLAIM_NAME_PROPERTY, ALLOWED_VALUE_PROPERTY);

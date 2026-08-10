@@ -31,11 +31,16 @@ import org.keycloak.services.clientpolicy.context.ResourceOwnerPasswordCredentia
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 拒绝资源所有者密码凭证（ROPC）授权执行器。
+ * <p>在客户端注册/更新与 ROPC 令牌请求中禁止 password grant，无论客户端 directAccessGrantsEnabled 配置如何。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class RejectResourceOwnerPasswordCredentialsGrantExecutor implements ClientPolicyExecutorProvider<RejectResourceOwnerPasswordCredentialsGrantExecutor.Configuration> {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
     public RejectResourceOwnerPasswordCredentialsGrantExecutor(KeycloakSession session) {
@@ -52,7 +57,9 @@ public class RejectResourceOwnerPasswordCredentialsGrantExecutor implements Clie
         return Configuration.class;
     }
 
+    /** ROPC 拒绝执行器配置项 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 为 true 时在注册/更新时自动关闭 direct access grants */
         @JsonProperty("auto-configure")
         protected Boolean autoConfigure;
 
@@ -70,6 +77,7 @@ public class RejectResourceOwnerPasswordCredentialsGrantExecutor implements Clie
         return RejectResourceOwnerPasswordCredentialsGrantExecutorFactory.PROVIDER_ID;
     }
 
+    /** 按事件类型自动配置、校验或拒绝 ROPC 请求 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -88,20 +96,23 @@ public class RejectResourceOwnerPasswordCredentialsGrantExecutor implements Clie
         }
     }
 
+    /** 自动将 directAccessGrantsEnabled 设为 false */
     private void autoConfigure(ClientRepresentation rep) {
         if (configuration.isAutoConfigure())
             rep.setDirectAccessGrantsEnabled(Boolean.FALSE);
     }
 
+    /** 校验客户端元数据不得启用 ROPC grant */
     private void validate(ClientRepresentation rep) throws ClientPolicyException {
         boolean isResourceOwnerPasswordCredentialsGrantEnabled = rep.isDirectAccessGrantsEnabled().booleanValue();
         if (!isResourceOwnerPasswordCredentialsGrantEnabled) return;
         throw new ClientPolicyException(OAuthErrorException.INVALID_CLIENT_METADATA, "Invalid client metadata: resource owner password credentials grant enabled");
     }
 
+    /** 在 ROPC 令牌请求中一律拒绝 password grant */
     private void executeOnAuthorizationRequest(MultivaluedMap<String, String> params) throws ClientPolicyException {
-        // Before client policies operation, Token Endpoint logic has already checked whether resource owner password credentials grant is activated for a client.
-        // This method rejects resource owner password credentials grant regardless of client setting for allowing resource owner password credentials grant.
+        // 令牌端点已检查客户端 ROPC 开关；本方法仍一律拒绝 password grant
+        // 无论客户端配置如何，均禁止 ROPC
         throw new ClientPolicyException(OAuthErrorException.INVALID_GRANT, "resource owner password credentials grant is prohibited.");
     }
 
