@@ -21,8 +21,14 @@ import java.nio.channels.Selector;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Set;
 
+/**
+ * 包装 JDK {@link Selector}：每次 select 前重置 {@link SelectedSelectionKeySet}，
+ * 使就绪 key 写入数组集合而非默认 HashSet，优化事件循环。
+ */
 final class SelectedSelectionKeySetSelector extends Selector {
+    /** 自定义 selectedKeys 后端存储 */
     private final SelectedSelectionKeySet selectionKeys;
+    /** 被装饰的原始 Selector */
     private final Selector delegate;
 
     SelectedSelectionKeySetSelector(Selector delegate, SelectedSelectionKeySet selectionKeys) {

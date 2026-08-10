@@ -38,17 +38,24 @@ import java.util.Queue;
 
 /**
  * A {@link ServerChannel} for the local transport which allows in VM communication.
+ * <p>本地传输的 {@link ServerChannel}，用于 JVM 内进程间通信，接受 {@link LocalChannel} 连接。</p>
  */
 public class LocalServerChannel extends AbstractServerChannel {
 
+    /** channel 配置 */
     private final ChannelConfig config =
             new DefaultChannelConfig(this, new ServerChannelRecvByteBufAllocator()) { };
+    /** 待 accept 的入站 {@link LocalChannel} 缓冲队列 */
     private final Queue<Object> inboundBuffer = new ArrayDeque<Object>();
 
+    /** 在 {@link IoEventLoop} 上注册后得到的 I/O 注册句柄 */
     private IoRegistration registration;
 
+    /** 生命周期状态：0 打开 / 1 激活 / 2 已关闭 */
     private volatile int state; // 0 - open, 1 - active, 2 - closed
+    /** 绑定后的本地地址 */
     private volatile LocalAddress localAddress;
+    /** 是否正在等待新的 accept（入站缓冲为空时置 true） */
     private volatile boolean acceptInProgress;
 
     public LocalServerChannel() {
@@ -162,6 +169,7 @@ public class LocalServerChannel extends AbstractServerChannel {
         readInbound();
     }
 
+    /** 接受本地连接并创建子 channel */
     LocalChannel serve(final LocalChannel peer) {
         final LocalChannel child = newLocalChannel(peer);
         if (eventLoop().inEventLoop()) {
@@ -177,6 +185,7 @@ public class LocalServerChannel extends AbstractServerChannel {
         return child;
     }
 
+    /** 将 inboundBuffer 中的对象 fireChannelRead 到 pipeline */
     private void readInbound() {
         RecvByteBufAllocator.Handle handle = unsafe().recvBufAllocHandle();
         handle.reset(config());
@@ -195,11 +204,13 @@ public class LocalServerChannel extends AbstractServerChannel {
     /**
      * A factory method for {@link LocalChannel}s. Users may override it
      * to create custom instances of {@link LocalChannel}s.
+     * <p>创建子 {@link LocalChannel} 的工厂方法，子类可覆盖以返回自定义实现。</p>
      */
     protected LocalChannel newLocalChannel(LocalChannel peer) {
         return new LocalChannel(this, peer);
     }
 
+    /** 在 EventLoop 上将 peer 放入 inbound 并触发 read */
     private void serve0(final LocalChannel child) {
         inboundBuffer.add(child);
         if (acceptInProgress) {
@@ -215,6 +226,7 @@ public class LocalServerChannel extends AbstractServerChannel {
     }
 
     private class LocalServerUnsafe extends AbstractUnsafe implements LocalIoHandle {
+        /** EventLoop 关闭时自动 close 的钩子 */
         private final Runnable shutdownHook = this::closeNow;
 
         @Override

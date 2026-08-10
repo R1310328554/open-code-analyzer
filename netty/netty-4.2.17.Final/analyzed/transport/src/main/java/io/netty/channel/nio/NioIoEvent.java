@@ -19,11 +19,13 @@ import io.netty.channel.IoEvent;
 
 /**
  * {@link IoEvent} that must be handled by the {@link NioIoHandle}.
+ * <p>须由 {@link NioIoHandle} 处理的 NIO {@link IoEvent}，携带就绪的 {@link NioIoOps}。</p>
  */
 public interface NioIoEvent extends IoEvent {
 
     /**
      * Returns the {@link NioIoOps} which did trigger the {@link NioIoEvent}.
+     * <p>返回触发本事件的 {@link NioIoOps}（即 {@link java.nio.channels.SelectionKey} 的就绪位）。</p>
      *
      * @return  ops.
      */

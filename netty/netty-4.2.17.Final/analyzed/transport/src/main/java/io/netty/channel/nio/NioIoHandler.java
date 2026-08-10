@@ -53,19 +53,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * {@link IoHandler} implementation which register the {@link IoHandle}'s to a {@link Selector}.
+ * <p>将 {@link IoHandle} 注册到 {@link Selector} 的 {@link IoHandler} 实现，负责 select 循环与就绪 key 分发。</p>
  */
 public final class NioIoHandler implements IoHandler {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(NioIoHandler.class);
 
+    /** 累计取消 key 达到该间隔时触发 selectNow 清理 */
     private static final int CLEANUP_INTERVAL = 256; // XXX Hard-coded value, but won't need customization.
 
+    /** 为 true 时不注入 SelectedSelectionKeySet 优化 */
     private static final boolean DISABLE_KEY_SET_OPTIMIZATION =
             SystemPropertyUtil.getBoolean("io.netty.noKeySetOptimization", false);
 
     private static final int MIN_PREMATURE_SELECTOR_RETURNS = 3;
+    /** select 空转次数超过该阈值时自动 rebuild Selector */
     private static final int SELECTOR_AUTO_REBUILD_THRESHOLD;
 
+    /** 供 {@link SelectStrategy} 调用的非阻塞 selectNow 供应商 */
     private final IntSupplier selectNowSupplier = new IntSupplier() {
         @Override
         public int get() throws Exception {
@@ -73,7 +78,7 @@ public final class NioIoHandler implements IoHandler {
         }
     };
 
-    // Workaround for JDK NIO bug.
+    // 规避 JDK NIO bug（select 空转 / selectedKeys 实现问题）
     //
     // See:
     // - https://bugs.openjdk.java.net/browse/JDK-6427854 for first few dev (unreleased) builds of JDK 7
@@ -95,11 +100,15 @@ public final class NioIoHandler implements IoHandler {
 
     /**
      * The NIO {@link Selector}.
+     * <p>对外使用的 {@link Selector}（可能为 SelectedSelectionKeySetSelector 包装）。</p>
      */
     private Selector selector;
+    /** 未包装的原始 Selector */
     private Selector unwrappedSelector;
+    /** 注入的数组型 selectedKeys 集合（优化路径） */
     private SelectedSelectionKeySet selectedKeys;
 
+    /** 打开 Selector 的 Provider */
     private final SelectorProvider provider;
 
     /**
@@ -107,12 +116,17 @@ public final class NioIoHandler implements IoHandler {
      * break out of its selection process. In our case we use a timeout for
      * the select method and the select method will block for that time unless
      * waken up.
+     * <p>是否有线程请求唤醒阻塞中的 select。</p>
      */
     private final AtomicBoolean wakenUp = new AtomicBoolean();
 
+    /** select 策略（是否阻塞、忙等） */
     private final SelectStrategy selectStrategy;
+    /** 所属 EventLoop 执行器，用于 wakeup 线程判断 */
     private final ThreadAwareExecutor executor;
+    /** 自上次 select 以来 cancel 的 key 计数 */
     private int cancelledKeys;
+    /** 处理 selected key 过程中是否需要再次 selectNow 清理 cancel 缓存 */
     private boolean needsToSelectAgain;
 
     private NioIoHandler(ThreadAwareExecutor executor, SelectorProvider selectorProvider,
@@ -126,7 +140,9 @@ public final class NioIoHandler implements IoHandler {
     }
 
     private static final class SelectorTuple {
+        /** JDK 原始 Selector */
         final Selector unwrappedSelector;
+        /** 可能经 SelectedSelectionKeySetSelector 包装后的 Selector */
         final Selector selector;
 
         SelectorTuple(Selector unwrappedSelector) {
@@ -187,8 +203,7 @@ public final class NioIoHandler implements IoHandler {
                     Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
 
                     if (PlatformDependent.javaVersion() >= 9 && PlatformDependent.hasUnsafe()) {
-                        // Let us try to use sun.misc.Unsafe to replace the SelectionKeySet.
-                        // This allows us to also do this in Java9+ without any extra flags.
+                        // Java 9+ 尝试用 Unsafe 替换 selectedKeys Set
                         long selectedKeysFieldOffset = PlatformDependent.objectFieldOffset(selectedKeysField);
                         long publicSelectedKeysFieldOffset =
                                 PlatformDependent.objectFieldOffset(publicSelectedKeysField);
@@ -200,7 +215,7 @@ public final class NioIoHandler implements IoHandler {
                                     unwrappedSelector, publicSelectedKeysFieldOffset, selectedKeySet);
                             return null;
                         }
-                        // We could not retrieve the offset, lets try reflection as last-resort.
+                        // 无法取得字段偏移则回退反射
                     }
 
                     Throwable cause = ReflectionUtil.trySetAccessible(selectedKeysField, true);
@@ -235,6 +250,7 @@ public final class NioIoHandler implements IoHandler {
 
     /**
      * Returns the {@link SelectorProvider} used by this {@link NioEventLoop} to obtain the {@link Selector}.
+     * <p>返回用于创建 {@link Selector} 的 {@link SelectorProvider}。</p>
      */
     public SelectorProvider selectorProvider() {
         return provider;
@@ -267,7 +283,7 @@ public final class NioIoHandler implements IoHandler {
             return;
         }
 
-        // Register all channels to the new Selector.
+        // 将所有 channel 迁移到新 Selector
         int nChannels = 0;
         for (SelectionKey key : oldSelector.keys()) {
             DefaultNioRegistration handle = (DefaultNioRegistration) key.attachment();
@@ -288,7 +304,7 @@ public final class NioIoHandler implements IoHandler {
         unwrappedSelector = newSelectorTuple.unwrappedSelector;
 
         try {
-            // time to close the old selector as everything else is registered to the new one
+            // 关闭旧 Selector，注册已全部迁移
             oldSelector.close();
         } catch (Throwable t) {
             if (logger.isWarnEnabled()) {
@@ -315,9 +331,13 @@ public final class NioIoHandler implements IoHandler {
         throw new IllegalArgumentException("IoOps of type " + StringUtil.simpleClassName(ops) + " not supported");
     }
 
+    /** 单次 {@link IoHandle} 在 Selector 上的注册状态 */
     final class DefaultNioRegistration implements IoRegistration {
+        /** 是否已 cancel */
         private final AtomicBoolean canceled = new AtomicBoolean();
+        /** 关联的 NIO handle */
         private final NioIoHandle handle;
+        /** 当前 SelectionKey */
         private volatile SelectionKey key;
 
         DefaultNioRegistration(ThreadAwareExecutor executor, NioIoHandle handle, NioIoOps initialOps, Selector selector)
@@ -402,8 +422,7 @@ public final class NioIoHandler implements IoHandler {
                 return registration;
             } catch (CancelledKeyException e) {
                 if (!selected) {
-                    // Force the Selector to select now as the "canceled" SelectionKey may still be
-                    // cached and not removed because no Select.select(..) operation was called yet.
+                    // CancelledKey 可能仍被缓存，先 selectNow 再重试 register
                     selectNow();
                     selected = true;
                 } else {
@@ -433,9 +452,7 @@ public final class NioIoHandler implements IoHandler {
                     case SelectStrategy.SELECT:
                         select(context, wakenUp.getAndSet(false));
 
-                        // 'wakenUp.compareAndSet(false, true)' is always evaluated
-                        // before calling 'selector.wakeup()' to reduce the wake-up
-                        // overhead. (Selector.wakeup() is an expensive operation.)
+                        // wakenUp 与 selector.wakeup() 的竞态说明见注释
                         //
                         // However, there is a race condition in this approach.
                         // The race condition is triggered when 'wakenUp' is set to
@@ -468,8 +485,8 @@ public final class NioIoHandler implements IoHandler {
                     default:
                 }
             } catch (IOException e) {
-                // If we receive an IOException here its because the Selector is messed up. Let's rebuild
-                // the selector and retry. https://github.com/netty/netty/issues/8566
+                // Selector 异常时 rebuild 并重试
+                // https://github.com/netty/netty/issues/8566
                 rebuildSelector0();
                 handleLoopException(e);
                 return 0;
@@ -498,8 +515,7 @@ public final class NioIoHandler implements IoHandler {
     private static void handleLoopException(Throwable t) {
         logger.warn("Unexpected exception in the selector loop.", t);
 
-        // Prevent possible consecutive immediate failures that lead to
-        // excessive CPU consumption.
+        // 防止连续失败导致 CPU 空转
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -525,8 +541,7 @@ public final class NioIoHandler implements IoHandler {
     }
 
     private int processSelectedKeysPlain(Set<SelectionKey> selectedKeys) {
-        // check if the set is empty and if so just return to not create garbage by
-        // creating a new Iterator every time even if there is nothing to process.
+        // 空 selectedKeys 时不创建 Iterator，减少 GC
         // See https://github.com/netty/netty/issues/597
         if (selectedKeys.isEmpty()) {
             return 0;
@@ -564,7 +579,7 @@ public final class NioIoHandler implements IoHandler {
         int handled = 0;
         for (int i = 0; i < selectedKeys.size; ++i) {
             final SelectionKey k = selectedKeys.keys[i];
-            // null out entry in the array to allow to have it GC'ed once the Channel close
+            // 置 null 便于 Channel 关闭后 GC
             // See https://github.com/netty/netty/issues/2363
             selectedKeys.keys[i] = null;
 
@@ -633,8 +648,7 @@ public final class NioIoHandler implements IoHandler {
             int selectCnt = 0;
             long currentTimeNanos = System.nanoTime();
             final long delayNanos = runner.delayNanos(currentTimeNanos);
-            // that's some special value which is used to indicate that no scheduled task is present.
-            // we set the deadline to a bogus (unused) value for us to represent infinity
+            // 无定时任务时用 Long.MAX_VALUE 表示无限阻塞
             long selectDeadLineNanos = Long.MAX_VALUE;
             if (delayNanos != Long.MAX_VALUE) {
                 selectDeadLineNanos = currentTimeNanos + runner.delayNanos(currentTimeNanos);
@@ -652,13 +666,10 @@ public final class NioIoHandler implements IoHandler {
                     }
                     timeoutMillis = millisBeforeDeadline;
                 } else {
-                    // in NIO this means to block without any deadline
+                    // NIO 下 timeoutMillis=0 表示无超时阻塞
                     timeoutMillis = 0;
                 }
-                // If a task was submitted when wakenUp value was true, the task didn't get a chance to call
-                // Selector#wakeup. So we need to check task queue again before executing select operation.
-                // If we don't, the task might be pended until select operation was timed out.
-                // It might be pended until idle timeout if IdleStateHandler existed in pipeline.
+                // submit 任务时若 wakenUp 已为 true，须在 select 前再检查任务队列
                 if (!runner.canBlock() && wakenUp.compareAndSet(false, true)) {
                     selector.selectNow();
                     selectCnt = 1;
@@ -669,18 +680,11 @@ public final class NioIoHandler implements IoHandler {
                 selectCnt ++;
 
                 if (selectedKeys != 0 || oldWakenUp || wakenUp.get() || !runner.canBlock()) {
-                    // - Selected something,
-                    // - waken up by user, or
-                    // - the task queue has a pending task.
-                    // - a scheduled task is ready for processing
+                    // 已选中 key / 被唤醒 / 任务队列非空 / 定时任务到期
                     break;
                 }
                 if (Thread.interrupted()) {
-                    // Thread was interrupted so reset selected keys and break so we not run into a busy loop.
-                    // As this is most likely a bug in the handler of the user or it's client library we will
-                    // also log it.
-                    //
-                    // See https://github.com/netty/netty/issues/2426
+                    // 线程被 interrupt 时重置并退出，避免 busy loop
                     if (logger.isDebugEnabled()) {
                         logger.debug("Selector.select() returned prematurely because " +
                                 "Thread.currentThread().interrupt() was called. Use " +
@@ -692,12 +696,11 @@ public final class NioIoHandler implements IoHandler {
 
                 long time = System.nanoTime();
                 if (time - TimeUnit.MILLISECONDS.toNanos(timeoutMillis) >= currentTimeNanos) {
-                    // timeoutMillis elapsed without anything selected.
+                    // 超时到期仍未选中
                     selectCnt = 1;
                 } else if (SELECTOR_AUTO_REBUILD_THRESHOLD > 0 &&
                         selectCnt >= SELECTOR_AUTO_REBUILD_THRESHOLD) {
-                    // The code exists in an extra method to ensure the method is not too big to inline as this
-                    // branch is not very likely to get hit very frequently.
+                    // select 连续空转过多，rebuild Selector
                     selector = selectRebuildSelector(selectCnt);
                     selectCnt = 1;
                     break;
@@ -770,6 +773,7 @@ public final class NioIoHandler implements IoHandler {
 
     /**
      * Returns a new {@link IoHandlerFactory} that creates {@link NioIoHandler} instances
+     * <p>使用默认 {@link SelectorProvider} 与 {@link SelectStrategy} 创建工厂。</p>
      *
      * @return factory                  the {@link IoHandlerFactory}.
      */
@@ -779,6 +783,7 @@ public final class NioIoHandler implements IoHandler {
 
     /**
      * Returns a new {@link IoHandlerFactory} that creates {@link NioIoHandler} instances.
+     * <p>指定 {@link SelectorProvider} 创建 {@link NioIoHandler} 工厂。</p>
      *
      * @param selectorProvider          the {@link SelectorProvider} to use.
      * @return factory                  the {@link IoHandlerFactory}.
@@ -789,6 +794,7 @@ public final class NioIoHandler implements IoHandler {
 
     /**
      * Returns a new {@link IoHandlerFactory} that creates {@link NioIoHandler} instances.
+     * <p>同时指定 {@link SelectorProvider} 与 {@link SelectStrategyFactory}。</p>
      *
      * @param selectorProvider          the {@link SelectorProvider} to use.
      * @param selectStrategyFactory     the {@link SelectStrategyFactory} to use.

@@ -28,8 +28,10 @@ import java.nio.channels.SelectionKey;
  * Allows to create an {@link IoHandle} for a {@link SelectableChannel}, not necessarily created by Netty. This
  * {@link IoHandle} can be used together with {@link NioIoHandler} and so have events dispatched for
  * the {@link SelectableChannel}.
+ * <p>为非 Netty 创建的 {@link SelectableChannel} 提供 {@link IoHandle} 适配，可与 {@link NioIoHandler} 注册并接收 I/O 事件。</p>
  */
 public abstract class NioSelectableChannelIoHandle<S extends SelectableChannel> implements IoHandle, NioIoHandle {
+    /** 被监听的底层 channel */
     private final S channel;
 
     public NioSelectableChannelIoHandle(S channel) {
@@ -54,6 +56,7 @@ public abstract class NioSelectableChannelIoHandle<S extends SelectableChannel> 
 
     protected abstract void handle(S channel, SelectionKey key);
 
+    /** 取消注册时的扩展点，默认无操作 */
     protected void deregister(S channel) {
         // NOOP.
     }

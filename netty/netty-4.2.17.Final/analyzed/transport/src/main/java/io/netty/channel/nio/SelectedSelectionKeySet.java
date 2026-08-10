@@ -22,9 +22,14 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+/**
+ * 基于数组的 {@link SelectionKey} 集合，替代 JDK {@link java.util.Set} 实现以降低 select 热路径开销。
+ */
 final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
 
+    /** 存储本次 select 就绪的 key，按插入顺序排列 */
     SelectionKey[] keys;
+    /** 当前有效元素个数 */
     int size;
 
     SelectedSelectionKeySet() {
@@ -92,15 +97,18 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
         };
     }
 
+    /** 清空全部已选 key（从索引 0 开始） */
     void reset() {
         reset(0);
     }
 
+    /** 从 {@code start} 起将槽位置 null 并重置 size */
     void reset(int start) {
         Arrays.fill(keys, start, size, null);
         size = 0;
     }
 
+    /** 容量翻倍扩容 */
     private void increaseCapacity() {
         SelectionKey[] newKeys = new SelectionKey[keys.length << 1];
         System.arraycopy(keys, 0, newKeys, 0, size);

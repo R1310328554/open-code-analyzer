@@ -30,12 +30,15 @@ import java.util.List;
 
 /**
  * {@link AbstractNioChannel} base class for {@link Channel}s that operate on messages.
+ * <p>面向消息/datagram 的 {@link AbstractNioChannel} 基类，一次 read 可产生多条离散消息。</p>
  */
 public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
+    /** 读侧是否已 shutdown（EOF 或错误后不再 beginRead） */
     boolean inputShutdown;
 
     /**
      * @see AbstractNioChannel#AbstractNioChannel(Channel, SelectableChannel, int)
+     * <p>使用整型 read interest 构造。</p>
      */
     protected AbstractNioMessageChannel(Channel parent, SelectableChannel ch, int readInterestOp) {
         super(parent, ch, readInterestOp);
@@ -64,6 +67,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
     private final class NioMessageUnsafe extends AbstractNioUnsafe {
 
+        /** 单次 read 循环收集的消息，再批量 fireChannelRead */
         private final List<Object> readBuf = new ArrayList<Object>();
 
         @Override
@@ -116,11 +120,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                     }
                 }
             } finally {
-                // Check if there is a readPending which was not processed yet.
-                // This could be for two reasons:
-                // * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method
-                // * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method
-                //
+                // 检查 channelRead/channelReadComplete 中是否再次 read
                 // See https://github.com/netty/netty/issues/2254
                 if (!readPending && !config.isAutoRead()) {
                     removeReadOp();
@@ -162,16 +162,17 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
             }
         }
         if (in.isEmpty()) {
-            // Wrote all messages.
+            // 全部写出
             removeAndSubmit(NioIoOps.WRITE);
         } else {
-            // Did not write all messages.
+            // 仍有待发消息，关注 OP_WRITE
             addAndSubmit(NioIoOps.WRITE);
         }
     }
 
     /**
      * Returns {@code true} if we should continue the write loop on a write error.
+     * <p>写失败时是否继续写 outbound 队列中的下一条消息。</p>
      */
     protected boolean continueOnWriteError() {
         return false;
@@ -179,15 +180,15 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
     protected boolean closeOnReadError(Throwable cause) {
         if (!isActive()) {
-            // If the channel is not active anymore for whatever reason we should not try to continue reading.
+            // channel 已非 active，不应继续读
             return true;
         }
         if (cause instanceof PortUnreachableException) {
             return false;
         }
         if (cause instanceof IOException) {
-            // ServerChannel should not be closed even on IOException because it can often continue
-            // accepting incoming connections. (e.g. too many open files)
+            // ServerChannel 遇 IOException 通常仍可 accept，不关闭
+            // (e.g. too many open files)
             return !(this instanceof ServerChannel);
         }
         return true;
@@ -195,11 +196,13 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
     /**
      * Read messages into the given array and return the amount which was read.
+     * <p>读入若干条消息到列表，返回条数；负值表示 EOF。</p>
      */
     protected abstract int doReadMessages(List<Object> buf) throws Exception;
 
     /**
      * Write a message to the underlying {@link java.nio.channels.Channel}.
+     * <p>写出单条消息；{@code true} 表示该消息已完全写出。</p>
      *
      * @return {@code true} if and only if the message has been written
      */

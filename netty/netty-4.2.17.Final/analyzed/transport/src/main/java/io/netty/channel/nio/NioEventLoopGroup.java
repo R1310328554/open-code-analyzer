@@ -38,6 +38,7 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * {@link MultiThreadIoEventLoopGroup} implementation which is used for NIO {@link Selector} based {@link Channel}s.
+ * <p>基于 NIO {@link Selector} 的多线程 {@link IoEventLoopGroup} 实现（已废弃，请改用 {@link MultiThreadIoEventLoopGroup} + {@link NioIoHandler#newFactory()}）。</p>
  *
  * @deprecated Use {@link MultiThreadIoEventLoopGroup} with {@link NioIoHandler#newFactory()}.
  */
@@ -49,6 +50,7 @@ public class NioEventLoopGroup extends MultiThreadIoEventLoopGroup implements Io
     /**
      * Create a new instance using the default number of threads, the default {@link ThreadFactory} and
      * the {@link SelectorProvider} which is returned by {@link SelectorProvider#provider()}.
+     * <p>使用默认线程数、默认 {@link ThreadFactory} 与 {@link SelectorProvider#provider()} 创建实例。</p>
      */
     public NioEventLoopGroup() {
         this(0);
@@ -57,6 +59,7 @@ public class NioEventLoopGroup extends MultiThreadIoEventLoopGroup implements Io
     /**
      * Create a new instance using the specified number of threads, {@link ThreadFactory} and the
      * {@link SelectorProvider} which is returned by {@link SelectorProvider#provider()}.
+     * <p>指定线程数，使用默认 {@link ThreadFactory} 与系统 {@link SelectorProvider}。</p>
      */
     public NioEventLoopGroup(int nThreads) {
         this(nThreads, (Executor) null);
@@ -65,6 +68,7 @@ public class NioEventLoopGroup extends MultiThreadIoEventLoopGroup implements Io
     /**
      * Create a new instance using the default number of threads, the given {@link ThreadFactory} and the
      * {@link SelectorProvider} which is returned by {@link SelectorProvider#provider()}.
+     * <p>使用给定 {@link ThreadFactory} 与系统 {@link SelectorProvider}，线程数为默认值。</p>
      */
     public NioEventLoopGroup(ThreadFactory threadFactory) {
         this(0, threadFactory, SelectorProvider.provider());
@@ -73,6 +77,7 @@ public class NioEventLoopGroup extends MultiThreadIoEventLoopGroup implements Io
     /**
      * Create a new instance using the specified number of threads, the given {@link ThreadFactory} and the
      * {@link SelectorProvider} which is returned by {@link SelectorProvider#provider()}.
+     * <p>指定线程数与 {@link ThreadFactory}，使用系统 {@link SelectorProvider}。</p>
      */
     public NioEventLoopGroup(int nThreads, ThreadFactory threadFactory) {
         this(nThreads, threadFactory, SelectorProvider.provider());
@@ -85,6 +90,7 @@ public class NioEventLoopGroup extends MultiThreadIoEventLoopGroup implements Io
     /**
      * Create a new instance using the specified number of threads, the given {@link ThreadFactory} and the given
      * {@link SelectorProvider}.
+     * <p>同时指定线程数、{@link ThreadFactory} 与 {@link SelectorProvider}。</p>
      */
     public NioEventLoopGroup(
             int nThreads, ThreadFactory threadFactory, final SelectorProvider selectorProvider) {
@@ -158,6 +164,7 @@ public class NioEventLoopGroup extends MultiThreadIoEventLoopGroup implements Io
 
     /**
      * This method is a no-op.
+     * <p>已废弃：I/O 比例调节逻辑已移除，调用无效果。</p>
      *
      * @deprecated
      */
@@ -169,6 +176,7 @@ public class NioEventLoopGroup extends MultiThreadIoEventLoopGroup implements Io
     /**
      * Replaces the current {@link Selector}s of the child event loops with newly created {@link Selector}s to work
      * around the  infamous epoll 100% CPU bug.
+     * <p>为各子 {@link NioEventLoop} 重建 {@link Selector}，规避 epoll 空转占满 CPU 的 JDK 问题。</p>
      */
     public void rebuildSelectors() {
         for (EventExecutor e: this) {

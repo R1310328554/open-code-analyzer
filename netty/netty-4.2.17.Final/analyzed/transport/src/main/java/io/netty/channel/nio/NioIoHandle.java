@@ -21,11 +21,13 @@ import java.nio.channels.SelectableChannel;
 
 /**
  * {@link IoHandle} subtype for NIO based implementations that will work with {@link NioIoHandler}.
+ * <p>与 {@link NioIoHandler} 配合使用的 NIO {@link IoHandle} 子类型，暴露底层 {@link SelectableChannel}。</p>
  */
 public interface NioIoHandle extends IoHandle {
 
     /**
      * The underlying {@link SelectableChannel}.
+     * <p>返回关联的 JDK {@link SelectableChannel}。</p>
      *
      * @return the channel
      */

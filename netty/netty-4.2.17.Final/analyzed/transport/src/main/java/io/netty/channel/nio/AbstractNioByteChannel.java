@@ -42,6 +42,7 @@ import static io.netty.util.internal.StringUtil.className;
 
 /**
  * {@link AbstractNioChannel} base class for {@link Channel}s that operate on bytes.
+ * <p>面向字节流 I/O 的 {@link AbstractNioChannel} 基类，实现 read/write 循环与 OP_WRITE 管理。</p>
  */
 public abstract class AbstractNioByteChannel extends AbstractNioChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
@@ -49,18 +50,20 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
             " (expected: " + StringUtil.simpleClassName(ByteBuf.class) + ", " +
             StringUtil.simpleClassName(FileRegion.class) + ')';
 
+    /** 在 EventLoop 上延迟再次 flush 的任务 */
     private final Runnable flushTask = new Runnable() {
         @Override
         public void run() {
-            // Calling flush0 directly to ensure we not try to flush messages that were added via write(...) in the
-            // meantime.
+            // 直接 flush0，避免 write 期间新入队消息被误 flush
             ((AbstractNioUnsafe) unsafe()).flush0();
         }
     };
+    /** 输入已 shutdown 后是否在 read 上见过错误 */
     private boolean inputClosedSeenErrorOnRead;
 
     /**
      * Create a new instance
+     * <p>默认以 {@link SelectionKey#OP_READ} 作为读 interest。</p>
      *
      * @param parent            the parent {@link Channel} by which this instance was created. May be {@code null}
      * @param ch                the underlying {@link SelectableChannel} on which it operates
@@ -71,6 +74,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
     /**
      * Shutdown the input side of the channel.
+     * <p>关闭 channel 输入侧（半关闭读）。</p>
      */
     protected abstract ChannelFuture shutdownInput();
 
@@ -131,7 +135,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
             pipeline.fireChannelReadComplete();
             pipeline.fireExceptionCaught(cause);
 
-            // If oom will close the read event, release connection.
+            // OOM 等致命错误时关闭读/连接
             // See https://github.com/netty/netty/issues/10434
             if (close ||
                     cause instanceof OutOfMemoryError ||
@@ -160,12 +164,12 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
                     byteBuf = allocHandle.allocate(allocator);
                     allocHandle.lastBytesRead(doReadBytes(byteBuf));
                     if (allocHandle.lastBytesRead() <= 0) {
-                        // nothing was read. release the buffer.
+                        // 未读到数据，释放 buf
                         byteBuf.release();
                         byteBuf = null;
                         close = allocHandle.lastBytesRead() < 0;
                         if (close) {
-                            // There is nothing left to read as we received an EOF.
+                            // EOF：对端关闭，无更多可读数据
                             readPending = false;
                         }
                         break;
@@ -186,11 +190,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
             } catch (Throwable t) {
                 handleReadException(pipeline, byteBuf, t, close, allocHandle);
             } finally {
-                // Check if there is a readPending which was not processed yet.
-                // This could be for two reasons:
-                // * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method
-                // * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method
-                //
+                // 检查 channelRead/channelReadComplete 中是否再次 read 但未处理
                 // See https://github.com/netty/netty/issues/2254
                 if (!readPending && !config.isAutoRead()) {
                     removeReadOp();
@@ -201,6 +201,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
     /**
      * Write objects to the OS.
+     * <p>向操作系统写出当前 outbound 消息，返回值用于扣减 write spin 配额。</p>
      * @param in the collection which contains objects to write.
      * @return The value that should be decremented from the write quantum which starts at
      * {@link ChannelConfig#getWriteSpinCount()}. The typical use cases are as follows:
@@ -216,7 +217,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
     protected final int doWrite0(ChannelOutboundBuffer in) throws Exception {
         Object msg = in.current();
         if (msg == null) {
-            // Directly return here so incompleteWrite(...) is not called.
+            // 直接返回，避免调用 incompleteWrite
             return 0;
         }
         return doWriteInternal(in, in.current());
@@ -266,9 +267,9 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
         do {
             Object msg = in.current();
             if (msg == null) {
-                // Wrote all messages.
+                // 全部写出完毕
                 clearOpWrite();
-                // Directly return here so incompleteWrite(...) is not called.
+                // 直接返回，避免 incompleteWrite
                 return;
             }
             writeSpinCount -= doWriteInternal(in, msg);
@@ -297,23 +298,21 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
     }
 
     protected final void incompleteWrite(boolean setOpWrite) {
-        // Did not write completely.
+        // 未完全写出
         if (setOpWrite) {
             setOpWrite();
         } else {
-            // It is possible that we have set the write OP, woken up by NIO because the socket is writable, and then
-            // use our write quantum. In this case we no longer want to set the write OP because the socket is still
-            // writable (as far as we know). We will find out next time we attempt to write if the socket is writable
-            // and set the write OP if necessary.
+            // 可能已设 OP_WRITE 且 socket 仍可写；先 clear 再依赖下次 write 重设
             clearOpWrite();
 
-            // Schedule flush again later so other tasks can be picked up in the meantime
+            // 稍后再次 flush，让 EventLoop 处理其他任务
             eventLoop().execute(flushTask);
         }
     }
 
     /**
      * Write a {@link FileRegion}
+     * <p>写出 {@link FileRegion} 中的文件区域数据。</p>
      *
      * @param region        the {@link FileRegion} from which the bytes should be written
      * @return amount       the amount of written bytes
@@ -322,16 +321,19 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
     /**
      * Read bytes into the given {@link ByteBuf} and return the amount.
+     * <p>从底层 channel 读到 {@link ByteBuf}，返回字节数（EOF 为负值）。</p>
      */
     protected abstract int doReadBytes(ByteBuf buf) throws Exception;
 
     /**
      * Write bytes form the given {@link ByteBuf} to the underlying {@link java.nio.channels.Channel}.
+     * <p>将 {@link ByteBuf} 内容写入底层 channel。</p>
      * @param buf           the {@link ByteBuf} from which the bytes should be written
      * @return amount       the amount of written bytes
      */
     protected abstract int doWriteBytes(ByteBuf buf) throws Exception;
 
+    /** 在 interest 上增加 OP_WRITE，等待可写 */
     protected final void setOpWrite() {
         final IoRegistration registration = registration();
         // Check first if the key is still valid as it may be canceled as part of the deregistration

@@ -35,6 +35,7 @@ import java.io.IOException;
 
 /**
  * Abstract base class for OIO which reads and writes bytes from/to a Socket
+ * <p>OIO（阻塞 I/O）字节 channel 抽象基类；已废弃，请使用 NIO/EPOLL/KQUEUE。</p>
  *
  * @deprecated use NIO / EPOLL / KQUEUE transport.
  */
@@ -47,6 +48,7 @@ public abstract class AbstractOioByteChannel extends AbstractOioChannel {
 
     /**
      * @see AbstractOioByteChannel#AbstractOioByteChannel(Channel)
+     * <p>指定父 channel 构造 OIO 字节 channel。</p>
      */
     protected AbstractOioByteChannel(Channel parent) {
         super(parent);
@@ -59,12 +61,14 @@ public abstract class AbstractOioByteChannel extends AbstractOioChannel {
 
     /**
      * Determine if the input side of this channel is shutdown.
+     * <p>输入侧是否已 shutdown。</p>
      * @return {@code true} if the input side of this channel is shutdown.
      */
     protected abstract boolean isInputShutdown();
 
     /**
      * Shutdown the input side of this channel.
+     * <p>关闭输入侧（半关闭读）。</p>
      * @return A channel future that will complete when the shutdown is complete.
      */
     protected abstract ChannelFuture shutdownInput();
@@ -95,7 +99,7 @@ public abstract class AbstractOioByteChannel extends AbstractOioChannel {
         pipeline.fireChannelReadComplete();
         pipeline.fireExceptionCaught(cause);
 
-        // If oom will close the read event, release connection.
+        // OOM 等致命错误时关闭读
         // See https://github.com/netty/netty/issues/10434
         if (close ||
                 cause instanceof OutOfMemoryError ||
@@ -109,12 +113,10 @@ public abstract class AbstractOioByteChannel extends AbstractOioChannel {
     protected void doRead() {
         final ChannelConfig config = config();
         if (isInputShutdown() || !readPending) {
-            // We have to check readPending here because the Runnable to read could have been scheduled and later
-            // during the same read loop readPending was set to false.
+            // 同一次 read 循环内 readPending 可能被置 false，须再检查
             return;
         }
-        // In OIO we should set readPending to false even if the read was not successful so we can schedule
-        // another read on the event loop if no reads are done.
+        // OIO：即使本次未读到数据也清 readPending，以便 EventLoop 再次调度 read
         readPending = false;
 
         final ChannelPipeline pipeline = pipeline();
@@ -149,7 +151,7 @@ public abstract class AbstractOioByteChannel extends AbstractOioChannel {
                     break;
                 }
 
-                // Oio collects consecutive read operations into 1 ByteBuf before propagating up the pipeline.
+                // OIO：将连续读到的数据合并进同一 ByteBuf 再向上传播
                 if (!byteBuf.isWritable()) {
                     final int capacity = byteBuf.capacity();
                     final int maxCapacity = byteBuf.maxCapacity();
@@ -193,8 +195,7 @@ public abstract class AbstractOioByteChannel extends AbstractOioChannel {
             handleReadException(pipeline, byteBuf, t, close, allocHandle);
         } finally {
             if (readPending || config.isAutoRead() || !readData && isActive()) {
-                // Reading 0 bytes could mean there is a SocketTimeout and no data was actually read, so we
-                // should execute read() again because no data may have been read.
+                // 读 0 字节可能是 SocketTimeout，仍应再次 read
                 read();
             }
         }
@@ -243,11 +244,13 @@ public abstract class AbstractOioByteChannel extends AbstractOioChannel {
 
     /**
      * Return the number of bytes ready to read from the underlying Socket.
+     * <p>底层 Socket 可读字节数（{@code available()}）。</p>
      */
     protected abstract int available();
 
     /**
      * Read bytes from the underlying Socket.
+     * <p>从底层 Socket 读到 {@link ByteBuf}。</p>
      *
      * @param buf           the {@link ByteBuf} into which the read bytes will be written
      * @return amount       the number of bytes read. This may return a negative amount if the underlying
@@ -258,6 +261,7 @@ public abstract class AbstractOioByteChannel extends AbstractOioChannel {
 
     /**
      * Write the data which is hold by the {@link ByteBuf} to the underlying Socket.
+     * <p>将 {@link ByteBuf} 写入底层 Socket。</p>
      *
      * @param buf           the {@link ByteBuf} which holds the data to transfer
      * @throws Exception    is thrown if an error occurred
@@ -266,6 +270,7 @@ public abstract class AbstractOioByteChannel extends AbstractOioChannel {
 
     /**
      * Write the data which is hold by the {@link FileRegion} to the underlying Socket.
+     * <p>将 {@link FileRegion} 写入底层 Socket。</p>
      *
      * @param region        the {@link FileRegion} which holds the data to transfer
      * @throws Exception    is thrown if an error occurred

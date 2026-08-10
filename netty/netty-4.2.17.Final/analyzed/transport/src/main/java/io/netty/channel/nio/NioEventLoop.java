@@ -38,6 +38,7 @@ import java.util.concurrent.Executor;
 /**
  * {@link SingleThreadIoEventLoop} implementation which register the {@link Channel}'s to a
  * {@link Selector} and so does the multi-plexing of these in the event loop.
+ * <p>单线程 NIO 事件循环：将 {@link Channel} 注册到 {@link Selector} 并在循环中多路复用 I/O（已废弃）。</p>
  *
  * @deprecated Use {@link SingleThreadIoEventLoop} with {@link NioIoHandler}
  */
@@ -63,6 +64,7 @@ public final class NioEventLoop extends SingleThreadIoEventLoop {
 
     /**
      * Returns the {@link SelectorProvider} used by this {@link NioEventLoop} to obtain the {@link Selector}.
+     * <p>返回本事件循环用于打开 {@link Selector} 的 {@link SelectorProvider}。</p>
      */
     public SelectorProvider selectorProvider() {
         return ((NioIoHandler) ioHandler()).selectorProvider();
@@ -72,6 +74,8 @@ public final class NioEventLoop extends SingleThreadIoEventLoop {
      * Registers an arbitrary {@link SelectableChannel}, not necessarily created by Netty, to the {@link Selector}
      * of this event loop.  Once the specified {@link SelectableChannel} is registered, the specified {@code task} will
      * be executed by this event loop when the {@link SelectableChannel} is ready.
+     * <p>将任意 {@link SelectableChannel}（不必由 Netty 创建）注册到本循环的 {@link Selector}，
+     * 就绪时由 {@link NioTask} 回调。</p>
      */
     public void register(final SelectableChannel ch, final int interestOps, final NioTask<?> task) {
         ObjectUtil.checkNotNull(ch, "ch");
@@ -94,8 +98,7 @@ public final class NioEventLoop extends SingleThreadIoEventLoop {
             register0(ch, interestOps, nioTask);
         } else {
             try {
-                // Offload to the EventLoop as otherwise java.nio.channels.spi.AbstractSelectableChannel.register
-                // may block for a long time while trying to obtain an internal lock that may be hold while selecting.
+                // 委托到 EventLoop 线程，避免 AbstractSelectableChannel.register 在 select 持锁时长时间阻塞
                 submit(new Runnable() {
                     @Override
                     public void run() {
@@ -139,6 +142,7 @@ public final class NioEventLoop extends SingleThreadIoEventLoop {
 
     /**
      * Always return 0.
+     * <p>始终返回 0（I/O 时间比例 API 已移除）。</p>
      */
     public int getIoRatio() {
         return 0;
@@ -146,6 +150,7 @@ public final class NioEventLoop extends SingleThreadIoEventLoop {
 
     /**
      * This method is a no-op.
+     * <p>已废弃：{@code setIoRatio} 逻辑已移除，调用无效果。</p>
      *
      * @deprecated
      */
@@ -157,6 +162,7 @@ public final class NioEventLoop extends SingleThreadIoEventLoop {
     /**
      * Replaces the current {@link Selector} of this event loop with newly created {@link Selector}s to work
      * around the infamous epoll 100% CPU bug.
+     * <p>重建本循环的 {@link Selector}，规避 epoll 空转导致 CPU 100% 的问题。</p>
      */
     public void rebuildSelector() {
         if (!inEventLoop()) {
@@ -244,6 +250,7 @@ public final class NioEventLoop extends SingleThreadIoEventLoop {
         };
     }
 
+    /** 返回底层未包装的 {@link Selector}（供诊断与迁移 key 使用） */
     Selector unwrappedSelector() {
         return ((NioIoHandler) ioHandler()).unwrappedSelector();
     }

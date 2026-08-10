@@ -49,17 +49,24 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract base class for {@link Channel} implementations which use a Selector based approach.
+ * <p>基于 {@link java.nio.channels.Selector} 的 {@link Channel} 抽象基类，管理注册、connect、读 interest 与 {@link NioIoHandle} 事件分发。</p>
  */
 public abstract class AbstractNioChannel extends AbstractChannel {
 
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(AbstractNioChannel.class);
 
+    /** 底层 JDK {@link SelectableChannel} */
     private final SelectableChannel ch;
+    /** 读 interest 的整型值（与 {@link #readOps} 对应） */
     protected final int readInterestOp;
+    /** 读操作的 {@link NioIoOps} 常量 */
     protected final NioIoOps readOps;
+    /** 在 {@link IoEventLoop} 上的 I/O 注册句柄 */
     volatile IoRegistration registration;
+    /** 用户是否已调用 read 且尚未完成读循环 */
     boolean readPending;
+    /** 在 EventLoop 上清除 readPending 并移除读 interest 的任务 */
     private final Runnable clearReadPendingRunnable = new Runnable() {
         @Override
         public void run() {
@@ -70,13 +77,17 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     /**
      * The future of the current connection attempt.  If not null, subsequent
      * connection attempts will fail.
+     * <p>当前 connect 的 Promise；非 null 时拒绝新的 connect。</p>
      */
     private ChannelPromise connectPromise;
+    /** connect 超时调度 Future */
     private Future<?> connectTimeoutFuture;
+    /** 正在连接的远程地址（用于超时/异常消息） */
     private SocketAddress requestedRemoteAddress;
 
     /**
      * Create a new instance
+     * <p>使用整型 readOps 构造，内部转换为 {@link NioIoOps}。</p>
      *
      * @param parent            the parent {@link Channel} by which this instance was created. May be {@code null}
      * @param ch                the underlying {@link SelectableChannel} on which it operates
@@ -143,6 +154,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
     /**
      * Return the current {@link SelectionKey}
+     * <p>返回当前 {@link SelectionKey}（已废弃，请使用 {@link #registration}）。</p>
      *
      * @deprecated use {@link #registration}.
      */
@@ -160,6 +172,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     /**
      * @deprecated No longer supported.
      * No longer supported.
+     * <p>已废弃：请改用 {@link #clearReadPending()}。</p>
      */
     @Deprecated
     protected boolean isReadPending() {
@@ -169,6 +182,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     /**
      * @deprecated Use {@link #clearReadPending()} if appropriate instead.
      * No longer supported.
+     * <p>已废弃：请改用 {@link #clearReadPending()}。</p>
      */
     @Deprecated
     protected void setReadPending(final boolean readPending) {
@@ -185,15 +199,14 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                 });
             }
         } else {
-            // Best effort if we are not registered yet clear readPending.
-            // NB: We only set the boolean field instead of calling clearReadPending0(), because the SelectionKey is
-            // not set yet so it would produce an assertion failure.
+            // 尚未 register 时仅清 boolean，避免 selectionKey 断言失败
             this.readPending = readPending;
         }
     }
 
     /**
      * Set read pending to {@code false}.
+     * <p>清除 readPending 并从 interest 中移除读 ops。</p>
      */
     protected final void clearReadPending() {
         if (isRegistered()) {
@@ -204,9 +217,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                 eventLoop.execute(clearReadPendingRunnable);
             }
         } else {
-            // Best effort if we are not registered yet clear readPending. This happens during channel initialization.
-            // NB: We only set the boolean field instead of calling clearReadPending0(), because the SelectionKey is
-            // not set yet so it would produce an assertion failure.
+            // channel 初始化阶段尚未 register，仅清标志位
             readPending = false;
         }
     }
@@ -225,23 +236,28 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
     /**
      * Special {@link Unsafe} sub-type which allows to access the underlying {@link SelectableChannel}
+     * <p>扩展 {@link Unsafe}，暴露 NIO channel 与 connect/read/flush 语义。</p>
      */
     public interface NioUnsafe extends Unsafe {
         /**
          * Return underlying {@link SelectableChannel}
+         * <p>返回底层 {@link SelectableChannel}。</p>
          */
         SelectableChannel ch();
 
         /**
          * Finish connect
+         * <p>在 OP_CONNECT 就绪后完成连接并触发 active。</p>
          */
         void finishConnect();
 
         /**
          * Read from underlying {@link SelectableChannel}
+         * <p>从底层 channel 读取并入站 fireChannelRead。</p>
          */
         void read();
 
+        /** 强制 flush，忽略 pending flush 优化 */
         void forceFlush();
     }
 
@@ -262,8 +278,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
         protected final void removeReadOp() {
             IoRegistration registration = registration();
-            // Check first if the key is still valid as it may be canceled as part of the deregistration
-            // from the EventLoop
+            // key 可能在 deregister 时已 cancel，先校验有效性
             // See https://github.com/netty/netty/issues/2104
             if (!registration.isValid()) {
                 return;
@@ -279,15 +294,14 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         @Override
         public final void connect(
                 final SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise promise) {
-            // Don't mark the connect promise as uncancellable as in fact we can cancel it as it is using
-            // non-blocking io.
+            // 非阻塞 connect：Promise 可取消，勿标记为不可取消
             if (promise.isDone() || !ensureOpen(promise)) {
                 return;
             }
 
             try {
                 if (connectPromise != null) {
-                    // Already a connect in process.
+                    // 已有 connect 进行中
                     throw new ConnectionPendingException();
                 }
 
@@ -298,7 +312,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                     connectPromise = promise;
                     requestedRemoteAddress = remoteAddress;
 
-                    // Schedule connect timeout.
+                    // 调度 connect 超时
                     final int connectTimeoutMillis = config().getConnectTimeoutMillis();
                     if (connectTimeoutMillis > 0) {
                         connectTimeoutFuture = eventLoop().schedule(new Runnable() {
@@ -397,9 +411,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
         @Override
         protected final void flush0() {
-            // Flush immediately only when there's no pending flush.
-            // If there's a pending flush operation, event loop will call forceFlush() later,
-            // and thus there's no need to call it now.
+            // 仅当无 pending flush 时立即 flush；否则由 forceFlush 在 OP_WRITE 就绪时处理
             if (!isFlushPending()) {
                 super.flush0();
             }
@@ -407,7 +419,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
         @Override
         public final void forceFlush() {
-            // directly call super.flush0() to force a flush now
+            // 直接 super.flush0() 强制立即写出
             super.flush0();
         }
 
@@ -422,25 +434,22 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             try {
                 NioIoEvent nioEvent = (NioIoEvent) event;
                 NioIoOps nioReadyOps = nioEvent.ops();
-                // We first need to call finishConnect() before try to trigger a read(...) or write(...) as otherwise
-                // the NIO JDK channel implementation may throw a NotYetConnectedException.
+                // 须先 finishConnect，否则 read/write 可能抛 NotYetConnectedException
                 if (nioReadyOps.contains(NioIoOps.CONNECT)) {
-                    // remove OP_CONNECT as otherwise Selector.select(..) will always return without blocking
+                    // 移除 OP_CONNECT，否则 select 可能永不阻塞
                     // See https://github.com/netty/netty/issues/924
                     removeAndSubmit(NioIoOps.CONNECT);
 
                     unsafe().finishConnect();
                 }
 
-                // Process OP_WRITE first as we may be able to write some queued buffers and so free memory.
+                // 优先处理 OP_WRITE，可能写出队列数据并释放内存
                 if (nioReadyOps.contains(NioIoOps.WRITE)) {
-                    // Call forceFlush which will also take care of clear the OP_WRITE once there is nothing left to
-                    // write
+                    // forceFlush 会在无数据可写时清除 OP_WRITE
                     forceFlush();
                 }
 
-                // Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead
-                // to a spin loop
+                // readOps 为 0 时也尝试 read，规避部分 JDK 自旋 bug
                 if (nioReadyOps.contains(NioIoOps.READ_AND_ACCEPT) || nioReadyOps.equals(NioIoOps.NONE)) {
                     read();
                 }
@@ -480,7 +489,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
     @Override
     protected void doBeginRead() throws Exception {
-        // Channel.read() or ChannelHandlerContext.read() was called
+        // 用户调用了 Channel.read() / ChannelHandlerContext.read()
         IoRegistration registration = this.registration;
         if (registration == null || !registration.isValid()) {
             return;
@@ -493,11 +502,13 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
     /**
      * Connect to the remote peer
+     * <p>发起非阻塞 connect；返回 {@code true} 表示已同步连接完成。</p>
      */
     protected abstract boolean doConnect(SocketAddress remoteAddress, SocketAddress localAddress) throws Exception;
 
     /**
      * Finish the connect
+     * <p>在 OP_CONNECT 就绪后完成 JDK channel 的 connect 握手。</p>
      */
     protected abstract void doFinishConnect() throws Exception;
 
@@ -505,6 +516,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
      * Returns an off-heap copy of the specified {@link ByteBuf}, and releases the original one.
      * Note that this method does not create an off-heap copy if the allocation / deallocation cost is too high,
      * but just returns the original {@link ByteBuf}..
+     * <p>将 {@link ByteBuf} 复制为堆外/direct 缓冲并释放原 buf；分配成本过高时直接返回原 buf。</p>
      */
     protected final ByteBuf newDirectBuffer(ByteBuf buf) {
         final int readableBytes = buf.readableBytes();
@@ -528,7 +540,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             return directBuf;
         }
 
-        // Allocating and deallocating an unpooled direct buffer is very expensive; give up.
+        // 非池化 direct 分配/释放代价高，放弃复制
         return buf;
     }
 
@@ -537,6 +549,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
      * The caller must ensure that the holder releases the original {@link ByteBuf} when the holder is released by
      * this method.  Note that this method does not create an off-heap copy if the allocation / deallocation cost is
      * too high, but just returns the original {@link ByteBuf}..
+     * <p>复制为 direct 缓冲并释放 holder；成本过高时保留原 buf 并释放 holder。</p>
      */
     protected final ByteBuf newDirectBuffer(ReferenceCounted holder, ByteBuf buf) {
         final int readableBytes = buf.readableBytes();
@@ -560,9 +573,9 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             return directBuf;
         }
 
-        // Allocating and deallocating an unpooled direct buffer is very expensive; give up.
+        // 非池化 direct 分配/释放代价高，放弃复制
         if (holder != buf) {
-            // Ensure to call holder.release() to give the holder a chance to release other resources than its content.
+            // 确保 holder.release() 以释放除内容外的其他资源
             buf.retain();
             ReferenceCountUtil.safeRelease(holder);
         }
