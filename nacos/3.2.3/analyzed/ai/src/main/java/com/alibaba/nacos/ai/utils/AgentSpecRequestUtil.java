@@ -38,6 +38,7 @@ import java.io.IOException;
 
 /**
  * AgentSpec request util.
+ * <p>AgentSpec 请求工具：解析/校验表单、ZIP 上传校验、构建带监听器头的 HTTP 响应。</p>
  *
  * @author nacos
  */
@@ -47,6 +48,7 @@ public class AgentSpecRequestUtil {
     
     /**
      * Parse AgentSpec request form to {@link AgentSpec}.
+     * <p>将 agentSpecCard JSON 反序列化为 {@link AgentSpec} 并校验 name 等必填项。</p>
      *
      * @param detailForm agentspec detail form.
      * @return agentSpec
@@ -73,6 +75,7 @@ public class AgentSpecRequestUtil {
     
     /**
      * Validate agentSpec is legal.
+     * <p>校验 AgentSpec 必填字段（当前要求 name 非空）。</p>
      *
      * @param agentSpec agentSpec
      * @throws NacosApiException if agentSpec is illegal.
@@ -92,6 +95,7 @@ public class AgentSpecRequestUtil {
     
     /**
      * Validate uploaded agentspec zip file and extract bytes.
+     * <p>校验上传 ZIP 非空且未超过 {@link AgentSpecZipParser#resolveMaxUploadBytes()} 限制后读取字节。</p>
      *
      * @param file the uploaded multipart file
      * @return the file bytes
@@ -121,6 +125,7 @@ public class AgentSpecRequestUtil {
     
     /**
      * Build an HTTP 200 response carrying the AgentSpec with listener-related headers.
+     * <p>构建 HTTP 200 响应，附带 ETag、MD5 与 resolvedVersion 等监听器相关头。</p>
      *
      * @param agentSpec       the AgentSpec object
      * @param md5             published content MD5
@@ -136,6 +141,7 @@ public class AgentSpecRequestUtil {
     
     /**
      * Build an HTTP 304 Not Modified response with listener-related headers.
+     * <p>客户端 MD5 未变时返回 HTTP 304 及监听器头。</p>
      *
      * @param md5 published content MD5
      * @return ResponseEntity with status 304 and headers

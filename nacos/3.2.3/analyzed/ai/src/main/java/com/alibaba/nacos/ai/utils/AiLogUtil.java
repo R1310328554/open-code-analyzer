@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * AI module log util.
+ * <p>AI 模块日志工具，提供 AI 资源版本操作审计专用 TRACE 日志器。</p>
  *
  * @author nacos
  */
@@ -28,6 +29,7 @@ public class AiLogUtil {
     
     /**
      * AI resource trace log for auditing AI resource version operations.
+     * <p>AI 资源版本操作审计追踪日志（logger 名 com.alibaba.nacos.ai.resource.trace）。</p>
      */
     public static final Logger TRACE_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.ai.resource.trace");

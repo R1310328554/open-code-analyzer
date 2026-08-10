@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Nacos Config based {@link AiResourceStorage} implementation.
+ * <p>基于 Nacos 配置中心的 {@link AiResourceStorage} 实现，通过 group 前缀区分 Skill、AgentSpec 与 Prompt。StorageKey.key 支持 4 段旧格式（Skill 兼容）与 5 段带 resourceType 的新格式；主文件、资源文件与 manifest 的路径约定见各静态辅助方法。</p>
  *
  * <p>Supports Skill, AgentSpec and Prompt resource types via parameterized group prefixes.
  * StorageKey.key format:
@@ -54,18 +55,18 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
     
     public static final String TYPE = "nacos_config";
     
-    /** Resource type identifier for Skill storage keys. */
+    /** Skill 存储键的资源类型标识。 */
     public static final String RESOURCE_TYPE_SKILL = "skill";
     
-    /** Resource type identifier for AgentSpec storage keys. */
+    /** AgentSpec 存储键的资源类型标识。 */
     public static final String RESOURCE_TYPE_AGENTSPEC = "agentspec";
     
-    /** Resource type identifier for Prompt storage keys. */
+    /** Prompt 存储键的资源类型标识。 */
     public static final String RESOURCE_TYPE_PROMPT = "prompt";
     
     /**
      * Build storage key for Skill resources (legacy 4-part format).
-     * Key format: namespaceId:skillName:version:filePath.
+     * <p>构建 Skill 存储键（旧版 4 段格式），键格式为 namespaceId:skillName:version:filePath。</p>
      * Kept for backward compatibility; new Skill code may also use
      * {@link #buildStorageKey(String, String, String, String, String, String)} with {@link #RESOURCE_TYPE_SKILL}.
      *
@@ -85,7 +86,7 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
     
     /**
      * Build storage key with explicit resource type (5-part format).
-     * Key format: namespaceId:resourceType:name:version:filePath.
+     * <p>构建带显式 resourceType 的 5 段存储键。</p>
      *
      * @param provider     storage provider (e.g. {@link #TYPE})
      * @param namespaceId  namespace
@@ -104,6 +105,7 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
     
     /**
      * Main Skill file path (dataId) for Nacos Config.
+     * <p>Skill 主文件在 Nacos Config 中的 dataId。</p>
      */
     public static String getMainFilePath() {
         return SkillUtils.SKILL_MAIN_DATA_ID;
@@ -111,6 +113,7 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
     
     /**
      * Main file path (dataId) for a given main dataId. Use this for AgentSpec or other resource types.
+     * <p>返回指定主 dataId，适用于 AgentSpec 等其他资源类型。</p>
      *
      * @param mainDataId the main dataId (e.g. {@link AgentSpecUtils#AGENTSPEC_MAIN_DATA_ID})
      * @return the main dataId as-is
@@ -121,6 +124,7 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
     
     /**
      * Skill resource file path (dataId) for Nacos Config, from type and name.
+     * <p>根据类型与名称生成 Skill 资源文件的 dataId。</p>
      * Uses {@link SkillUtils} for resource ID generation.
      */
     public static String getResourceFilePath(String type, String name) {
@@ -130,6 +134,7 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
     
     /**
      * AgentSpec resource file path (dataId) for Nacos Config, from type and name.
+     * <p>根据类型与名称生成 AgentSpec 资源文件的 dataId。</p>
      * Uses {@link AgentSpecUtils} for resource ID generation.
      *
      * @param type resource type (can be null or empty)
@@ -144,6 +149,7 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
     
     /**
      * Build StorageKey for skill manifest (index) config. The version part is left blank so the
+     * <p>构建 Skill manifest（索引）配置的 StorageKey，版本段留空使 group 无版本后缀。</p>
      * config group has no version suffix, i.e. group = "skill_{skillName}".
      *
      * @param provider    storage provider (e.g. {@link #TYPE})
@@ -199,8 +205,8 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
             }
         }
         
-        // Keep compatibility: single save still waits for effect.
-        // Batch writers should call SyncEffectService#toSyncConcurrent at higher level.
+        // 保持兼容：单次 save 仍等待配置生效。
+        // 批量写入应在更高层调用 SyncEffectService#toSyncConcurrent。
         if (syncEffectService != null) {
             syncEffectService.toSync(form, startTimeStamp);
         }
@@ -252,6 +258,7 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
     
     /**
      * Parse StorageKey into KeyParts. Supports three key formats:
+     * <p>将 StorageKey 解析为 KeyParts，支持旧版 4 段与新版 5 段三种键格式；resourceType 决定 group 前缀（skill / agentspec / prompt）。</p>
      * <ul>
      *   <li>Legacy 4-part (Skill): {@code namespaceId:name:version:filePath} → group = skill__{name}__{version}</li>
      *   <li>Legacy 4-part manifest: {@code namespaceId:name::filePath} (blank version) → group = skill_{name}</li>
@@ -267,7 +274,7 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
         if (parts.length == 5 && !StringUtils.isBlank(parts[0]) && !StringUtils.isBlank(parts[1])
             && !StringUtils.isBlank(parts[2]) && !StringUtils.isBlank(parts[3])
             && !StringUtils.isBlank(parts[4])) {
-            // 5-part typed format: namespaceId:resourceType:name:version:filePath
+            // 5 段 typed 格式：namespaceId:resourceType:name:version:filePath
             String namespaceId = parts[0];
             String resourceType = parts[1];
             String name = parts[2];
@@ -285,9 +292,9 @@ public class NacosConfigAiResourceStorage implements AiResourceStorage {
             }
             return new KeyParts(namespaceId, group, filePath);
         }
-        // Fall back to legacy 4-part format (Skill): namespaceId:name:version:filePath
+        // 回退到旧版 4 段 Skill 格式：namespaceId:name:version:filePath
         String[] legacyParts = storageKey.getKey().split(":", 4);
-        // parts[2] (version) may be blank for manifest keys
+        // parts[2]（version）在 manifest 键中可能为空
         if (legacyParts.length != 4 || StringUtils.isBlank(legacyParts[0])
             || StringUtils.isBlank(legacyParts[1])
             || StringUtils.isBlank(legacyParts[3])) {

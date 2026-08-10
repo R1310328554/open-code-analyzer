@@ -32,6 +32,7 @@ import java.util.Map;
 
 /**
  * Utility for computing the canonical content MD5 of a published {@link AgentSpec}.
+ * <p>计算已发布 {@link AgentSpec} 的规范内容 MD5，发布时写入 ai_resource_version.storage.contentMd5，监听器路径无需运行时重算。哈希输入覆盖 description、content 及按 map 键升序排列的资源内容，字段间以 0x00 分隔以保证确定性。</p>
  *
  * <p>The MD5 is computed once at publish time and persisted into the {@code storage.contentMd5}
  * field of the corresponding {@code ai_resource_version} row, so the listener path never
@@ -66,6 +67,7 @@ public final class AgentSpecContentDigestUtils {
     
     /**
      * Compute the canonical content MD5 for an agentspec.
+     * <p>按规范格式拼接 AgentSpec 主内容与资源后计算 MD5 十六进制字符串。</p>
      *
      * @param agentSpec the agentspec object; must not be {@code null}
      * @return lowercase hex MD5 string

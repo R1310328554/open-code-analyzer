@@ -41,6 +41,7 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * Read a bundled agentspec archive and convert each agentspec directory (with manifest.json) into a standalone zip.
+ * <p>读取内置 AgentSpec 种子压缩包，将含 manifest.json 的每个目录拆分为独立 ZIP 包，供启动引导批量导入。</p>
  *
  * @author nacos
  */
@@ -55,6 +56,7 @@ public final class AgentSpecSeedArchiveReader {
     
     /**
      * Read bundled seed archive and return standalone agentspec packages.
+     * <p>解析种子归档，按 manifest 中 worker.suggested_name 去重后返回 AgentSpecPackage 列表。</p>
      *
      * @param inputStream archive input stream
      * @return agentspec packages
@@ -221,6 +223,7 @@ public final class AgentSpecSeedArchiveReader {
     
     /**
      * Standalone agentspec package built from the seed archive.
+     * <p>从种子归档拆出的独立 AgentSpec ZIP 包及其元数据。</p>
      */
     public static final class AgentSpecPackage {
         

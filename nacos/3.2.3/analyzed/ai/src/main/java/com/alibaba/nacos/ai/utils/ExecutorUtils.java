@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 
 /**
  * Executor utilities for AI module.
+ * <p>AI 模块线程池工具：为 Skill 与 AgentSpec 资源文件异步持久化提供固定大小 IO 执行器，并发度可通过系统属性配置。</p>
  */
 public final class ExecutorUtils {
     
@@ -33,24 +34,28 @@ public final class ExecutorUtils {
     
     /**
      * System config key for async concurrency when persisting skill resource files to storage.
+     * <p>Skill 资源文件异步写入存储时的并发度配置键。</p>
      */
     public static final String SKILL_STORAGE_IO_CONCURRENCY_CONFIG_KEY =
         "nacos.ai.skill.storage.io.concurrency";
     
     /**
      * System config key for async concurrency when persisting AgentSpec resource files to storage.
+     * <p>AgentSpec 资源文件异步写入存储时的并发度配置键。</p>
      */
     public static final String AGENTSPEC_STORAGE_IO_CONCURRENCY_CONFIG_KEY =
         "nacos.ai.agentspec.storage.io.concurrency";
     
     /**
      * Default concurrency for async skill resource persistence.
+     * <p>Skill 资源异步持久化默认并发度（CPU 核数）。</p>
      */
     private static final int DEFAULT_SKILL_STORAGE_IO_CONCURRENCY =
         PropertyUtils.getProcessorsCount();
     
     /**
      * Default concurrency for async AgentSpec resource persistence.
+     * <p>AgentSpec 资源异步持久化默认并发度（CPU 核数）。</p>
      */
     private static final int DEFAULT_AGENTSPEC_STORAGE_IO_CONCURRENCY =
         PropertyUtils.getProcessorsCount();
@@ -69,6 +74,7 @@ public final class ExecutorUtils {
     
     /**
      * Executor for async storage IO of skill resources.
+     * <p>Skill 资源存储 IO 专用固定线程池。</p>
      */
     public static ExecutorService getSkillStorageIoExecutor() {
         return SKILL_STORAGE_IO_EXECUTOR;
@@ -76,6 +82,7 @@ public final class ExecutorUtils {
     
     /**
      * Executor for async storage IO of AgentSpec resources.
+     * <p>AgentSpec 资源存储 IO 专用固定线程池。</p>
      */
     public static ExecutorService getAgentSpecStorageIoExecutor() {
         return AGENTSPEC_STORAGE_IO_EXECUTOR;

@@ -27,6 +27,7 @@ import java.util.Map;
 /**
  * Pure helpers to manipulate the JSON payload stored in
  * {@code ai_resource_version.storage}.
+ * <p>操作 ai_resource_version.storage 列 JSON 的无状态工具，与 JDBC/Derby 等持久化后端解耦，避免在多个 PersistService 实现中重复逻辑。</p>
  *
  * <p>This logic is independent of the storage backend (external JDBC vs embedded
  * Derby + Raft), so it lives here as a stateless utility instead of being
@@ -40,6 +41,7 @@ public final class AiResourceVersionStorageJsonUtil {
     
     /**
      * Merge a new {@code contentMd5} into the existing {@code storage} JSON while preserving the
+     * <p>将 contentMd5 合并进现有 storage JSON，保留 provider/scope/files 等其它字段。</p>
      * other entries (provider/scope/files/...). Returns a JSON string suitable for the
      * {@code storage} column.
      *

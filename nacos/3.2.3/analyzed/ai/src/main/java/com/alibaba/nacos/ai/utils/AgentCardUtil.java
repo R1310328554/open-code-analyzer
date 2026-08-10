@@ -34,6 +34,7 @@ import java.util.Collections;
 
 /**
  * Utils for Agent Card of A2A.
+ * <p>A2A Agent Card 工具类：构建存储/版本信息、从服务实例生成 {@link AgentInterface} 等。</p>
  *
  * @author xiweng.yy
  */
@@ -43,6 +44,7 @@ public class AgentCardUtil {
     
     /**
      * Build Agent Card Storage Info from Agent Detail form.
+     * <p>由 AgentCard 构建详情存储信息并设置注册类型。</p>
      *
      * @param agentCard agent card
      * @return Agent Card Storage Info
@@ -57,6 +59,7 @@ public class AgentCardUtil {
     
     /**
      * Build Agent Card Storage Info from AgentCard.
+     * <p>由 AgentCard 构建版本信息，可选标记为最新已发布版本。</p>
      *
      * @param agentCard agent detail form
      * @param registrationType target registrationType
@@ -79,6 +82,7 @@ public class AgentCardUtil {
     
     /**
      * Build Agent version detail from Agent Detail form.
+     * <p>由 AgentCard 构建版本明细（创建/更新时间、版本号、是否最新）。</p>
      *
      * @param agentCard agent detail form
      * @return Agent Version Detail
@@ -95,6 +99,7 @@ public class AgentCardUtil {
     
     /**
      * Update update time of agent version detail.
+     * <p>刷新版本明细的 updatedAt 为当前 UTC 时间。</p>
      *
      * @param versionDetail agent version detail
      */
@@ -104,6 +109,7 @@ public class AgentCardUtil {
     
     /**
      * Build {@link AgentInterface} from service {@link Instance}.
+     * <p>从 Nacos 服务实例元数据组装 Agent 访问端点 URL、传输协议与租户等信息。</p>
      *
      * @param instance service instance.
      * @return agent interface (endpoint)

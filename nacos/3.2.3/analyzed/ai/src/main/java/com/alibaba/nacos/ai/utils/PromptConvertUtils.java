@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.ai.model.prompt.PromptVersionInfo;
 
 /**
  * Utility class for converting prompt related models.
+ * <p>Prompt 模型转换工具，将服务层 {@link PromptVersionInfo} 转为客户端 {@link Prompt} 视图。</p>
  *
  * @author nacos
  */
@@ -31,6 +32,7 @@ public class PromptConvertUtils {
     
     /**
      * Convert {@link PromptVersionInfo} to client-facing {@link Prompt}.
+     * <p>复制 promptKey、version、template、md5 与 variables 至客户端 Prompt 对象。</p>
      *
      * @param versionInfo prompt version info from service layer, must not be {@code null}
      * @return client-facing prompt

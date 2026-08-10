@@ -39,6 +39,7 @@ import java.util.Objects;
 
 /**
  * Agent and AgentCard request util.
+ * <p>Agent/AgentCard 请求解析与校验：反序列化表单、新旧协议字段归一化、命名空间补全等。</p>
  *
  * @author xiweng.yy
  */
@@ -48,6 +49,7 @@ public class AgentRequestUtil {
     
     /**
      * Parse Agent card request form to {@link AgentCard}.
+     * <p>将 AgentCardForm JSON 解析为 {@link AgentCard} 并校验必填字段。</p>
      *
      * @param agentCardForm agent card request.
      * @return agent card
@@ -74,6 +76,7 @@ public class AgentRequestUtil {
     
     /**
      * Validate agent card is legal.
+     * <p>校验 AgentCard 合法性，兼容旧版三字段与 A2A 1.0 supportedInterfaces 协议。</p>
      *
      * @param agentCard agent card
      * @throws NacosApiException if agent card is illegal.
@@ -109,6 +112,7 @@ public class AgentRequestUtil {
     
     /**
      * If request contains valid namespaceId, do nothing. If not, fill default namespaceId.
+     * <p>命名空间为空时填充 A2A 默认命名空间。</p>
      *
      * @param request agent request
      */
@@ -128,6 +132,7 @@ public class AgentRequestUtil {
     
     /**
      * Normalize new/legacy AgentCard fields in place.
+     * <p>就地归一化新旧 AgentCard 字段，统一 supportedInterfaces 与 legacy url/transport。</p>
      *
      * @param agentCard target card
      */
@@ -156,6 +161,7 @@ public class AgentRequestUtil {
     
     /**
      * Determine whether AgentCard is already normalized for read path.
+     * <p>判断 AgentCard 是否已在读路径完成归一化（字段内部一致）。</p>
      *
      * @param agentCard target card
      * @return {@code true} when new/legacy fields are internally consistent

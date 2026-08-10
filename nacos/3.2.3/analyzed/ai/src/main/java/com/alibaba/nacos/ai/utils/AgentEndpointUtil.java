@@ -29,6 +29,7 @@ import java.util.Map;
 
 /**
  * Utils for Agent Endpoint of A2A.
+ * <p>A2A Agent 端点与 Nacos {@link Instance} 之间的双向转换工具。</p>
  *
  * @author xiweng.yy
  */
@@ -36,6 +37,7 @@ public class AgentEndpointUtil {
     
     /**
      * Transfer a collection of AgentEndpoint to a list of Instance.
+     * <p>批量将 {@link AgentEndpoint} 转为可注册到 Nacos 的 {@link Instance} 列表。</p>
      *
      * @param endpoints the collection of AgentEndpoint to transfer
      * @return the list of Instance transferred from AgentEndpoint
@@ -52,6 +54,7 @@ public class AgentEndpointUtil {
     
     /**
      * Transfer a single AgentEndpoint to an Instance.
+     * <p>将单个 AgentEndpoint 转为 Instance，路径/协议等写入实例元数据并校验。</p>
      *
      * @param endpoint the AgentEndpoint to transfer
      * @return the Instance transferred from AgentEndpoint

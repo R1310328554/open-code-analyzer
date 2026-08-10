@@ -38,6 +38,7 @@ import java.util.Map;
 
 /**
  * MCP request util.
+ * <p>MCP 请求工具：解析 server/tool/resource/endpoint 规格 JSON、反序列化与命名空间补全。</p>
  *
  * @author xiweng.yy
  */
@@ -47,6 +48,7 @@ public class McpRequestUtil {
     
     /**
      * Parse Mcp detail request form to {@link McpServerBasicInfo}.
+     * <p>从 McpDetailForm 解析服务器基础信息，name 为空时回退 mcpName。</p>
      *
      * @param mcpForm mcp detail request.
      * @return mcp server basic info.
@@ -65,6 +67,7 @@ public class McpRequestUtil {
     
     /**
      * Parse Mcp tools request form to {@link McpTool}.
+     * <p>解析工具规格 JSON，为空则返回 null。</p>
      *
      * @param mcpForm mcp detail request.
      * @return mcp server tool info
@@ -82,6 +85,7 @@ public class McpRequestUtil {
     
     /**
      * Parse Mcp resources request form to {@link McpResourceSpecification}.
+     * <p>解析资源规格 JSON，为空则返回 null。</p>
      *
      * @param mcpForm mcp detail request.
      * @return mcp server resource info
@@ -99,6 +103,7 @@ public class McpRequestUtil {
     
     /**
      * Parse Mcp endpoint request form to {@link McpEndpointSpec}.
+     * <p>解析端点规格；stdio 协议返回 null，非 local 类型时 endpointSpecification 必填。</p>
      *
      * @param basicInfo mcp server basic info
      * @param mcpForm   mcp detail request.
@@ -123,6 +128,7 @@ public class McpRequestUtil {
     
     /**
      * Deserialize spec from json request.
+     * <p>将 JSON 字符串反序列化为指定类型规格对象。</p>
      *
      * @param spec          spec json string.
      * @param typeReference the type of spec.
@@ -144,6 +150,7 @@ public class McpRequestUtil {
      * @param <T>           the type of spec.
      * @return spec object.
      * @throws NacosApiException if deserialize failed.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     public static <T> T deserializeSpec(String spec, TypeReference<T> typeReference, Logger logger)
         throws NacosApiException {
@@ -162,6 +169,7 @@ public class McpRequestUtil {
     
     /**
      * Transfer input to McpServiceRef.
+     * <p>将 McpServiceRef 或 Map 输入转为 {@link McpServiceRef}。</p>
      *
      * @param input input object, should be McpServiceRef type or Map type.
      * @return McpServiceRef
@@ -178,6 +186,7 @@ public class McpRequestUtil {
     
     /**
      * If request contains valid namespaceId, do nothing. If not, fill default namespaceId.
+     * <p>命名空间为空时填充 MCP 默认命名空间。</p>
      *
      * @param request mcp request
      */

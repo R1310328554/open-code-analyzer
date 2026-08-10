@@ -25,6 +25,7 @@ import com.alibaba.nacos.sys.utils.ApplicationUtils;
 
 /**
  * SPI builder for {@link NacosConfigAiResourceStorage}.
+ * <p>{@link NacosConfigAiResourceStorage} 的 SPI 构建器，从 Spring 容器注入配置查询/操作服务与可选的 {@link SyncEffectService} 后实例化存储实现。</p>
  */
 public class NacosConfigAiResourceStorageBuilder implements AiResourceStorageBuilder {
     

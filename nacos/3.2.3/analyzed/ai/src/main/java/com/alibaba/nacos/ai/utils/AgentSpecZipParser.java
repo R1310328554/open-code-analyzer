@@ -43,6 +43,7 @@ import java.util.Map;
 
 /**
  * AgentSpec zip parser utility. Mirrors {@link SkillZipParser} for HiClaw Worker packages.
+ * <p>AgentSpec ZIP 解析工具（对标 {@link SkillZipParser}）：以 manifest.json 为主元数据，其余条目转为 {@link AgentSpecResource}；文本 UTF-8 存储，二进制 Base64 编码；内置 Zip Bomb 与路径遍历防护。</p>
  * Parses zip files containing manifest.json as the main metadata and additional resource files.
  * Text files are stored as UTF-8; binary files (e.g. .ttf, .png) are stored as Base64 with metadata encoding=base64.
  *
@@ -54,7 +55,7 @@ public class AgentSpecZipParser {
     
     private static final String MANIFEST_JSON = "manifest.json";
     
-    /** macOS AppleDouble/resource fork metadata file prefix (e.g. ._LICENSE.txt). */
+    /** macOS AppleDouble/资源分叉元数据文件前缀（如 ._LICENSE.txt）。 */
     private static final String MACOS_METADATA_PREFIX = "._";
     
     private static final String DS_STORE = ".DS_Store";
@@ -62,7 +63,9 @@ public class AgentSpecZipParser {
     private static final String SLASH = "/";
     
     /**
-     * Default maximum compressed (upload) size in MB for an AgentSpec ZIP. Derived from the
+     * Default maximum compressed (upload) size in MB for an AgentSpec ZIP.
+     * <p>AgentSpec ZIP 默认最大上传体积（MB），运行时以 {@link #resolveMaxUploadBytes()} 为准。</p>
+     * Derived from the
      * historical {@link Constants.AgentSpecs#MAX_UPLOAD_ZIP_BYTES} so the public constant remains
      * the single source of truth; runtime callers should consult {@link #resolveMaxUploadBytes()}
      * which honors the {@value #CONFIG_MAX_UPLOAD_SIZE_MB} override.
@@ -73,6 +76,7 @@ public class AgentSpecZipParser {
     /**
      * Default maximum number of entries allowed in an AgentSpec ZIP. Overridable via the
      * {@value #CONFIG_MAX_ZIP_ENTRIES} property when users legitimately upload larger specs.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     static final int DEFAULT_MAX_ZIP_ENTRIES = 500;
     
@@ -80,6 +84,7 @@ public class AgentSpecZipParser {
      * Default maximum total decompressed size (in MB) for an AgentSpec ZIP. Prevents Zip Bomb
      * attacks while still permitting legitimate uploads. Overridable via the
      * {@value #CONFIG_MAX_UNCOMPRESSED_SIZE_MB} property.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     static final int DEFAULT_MAX_UNCOMPRESSED_SIZE_MB = 50;
     
@@ -87,24 +92,29 @@ public class AgentSpecZipParser {
      * Property key for overriding {@link #DEFAULT_MAX_UPLOAD_SIZE_MB}. The value is in megabytes
      * and applies to the raw compressed AgentSpec ZIP before parsing. Non-positive values are
      * ignored.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     static final String CONFIG_MAX_UPLOAD_SIZE_MB =
         "nacos.ai.agentspec.zip.max-upload-size-mb";
     
     /**
      * Property key for overriding {@link #DEFAULT_MAX_ZIP_ENTRIES}. Non-positive values are ignored.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     static final String CONFIG_MAX_ZIP_ENTRIES = "nacos.ai.agentspec.zip.max-entries";
     
     /**
      * Property key for overriding {@link #DEFAULT_MAX_UNCOMPRESSED_SIZE_MB}. The value is in
      * megabytes. Non-positive values are ignored.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     static final String CONFIG_MAX_UNCOMPRESSED_SIZE_MB =
         "nacos.ai.agentspec.zip.max-uncompressed-size-mb";
     
     /**
-     * Parse AgentSpec from zip file bytes. Zip size must not exceed the limit returned by
+     * Parse AgentSpec from zip file bytes.
+     * <p>从 ZIP 字节解析 AgentSpec：定位 manifest.json、提取 suggested_name、过滤 macOS 元数据并将其余条目转为资源。</p>
+     * Zip size must not exceed the limit returned by
      * {@link #resolveMaxUploadBytes()} (configurable via {@value #CONFIG_MAX_UPLOAD_SIZE_MB}).
      * Looks for manifest.json as the main metadata, extracts worker.suggested_name as the AgentSpec name.
      * Other entries become AgentSpecResource instances. Binary files are Base64 encoded.
@@ -187,6 +197,7 @@ public class AgentSpecZipParser {
      * because they represent invalid user input rather than an underlying I/O failure. The caller
      * {@link #parseAgentSpecFromZip(byte[], String)} translates them into a {@link NacosApiException}
      * for the HTTP layer.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static List<ZipEntryData> unzipToEntries(byte[] zipBytes) throws IOException {
         final int maxEntries = resolveMaxZipEntries();
@@ -203,7 +214,7 @@ public class AgentSpecZipParser {
                     continue;
                 }
                 String name = entry.getName();
-                // Security: reject path traversal (..) and absolute paths.
+                // 安全：拒绝路径遍历（..）与绝对路径
                 SkillUtils.validatePathSafety(name);
                 if (name != null && (name.startsWith("__MACOSX/") || name.contains("/__MACOSX/"))) {
                     continue;
@@ -235,6 +246,7 @@ public class AgentSpecZipParser {
      * {@value #CONFIG_MAX_UPLOAD_SIZE_MB} override (interpreted in megabytes) when present and
      * positive. Returns {@link #DEFAULT_MAX_UPLOAD_SIZE_MB} MB otherwise. Keep this in sync with
      * the Spring multipart cap; the multipart filter rejects oversize uploads first.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     static long resolveMaxUploadBytes() {
         int mb = resolvePositiveIntProperty(CONFIG_MAX_UPLOAD_SIZE_MB, DEFAULT_MAX_UPLOAD_SIZE_MB);
@@ -246,6 +258,7 @@ public class AgentSpecZipParser {
      * {@value #CONFIG_MAX_ZIP_ENTRIES} override when present and positive.
      * Returns {@link #DEFAULT_MAX_ZIP_ENTRIES} when no override is configured or when the
      * Nacos environment has not been initialized (e.g. in unit tests that bypass Spring boot-up).
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     static int resolveMaxZipEntries() {
         return resolvePositiveIntProperty(CONFIG_MAX_ZIP_ENTRIES, DEFAULT_MAX_ZIP_ENTRIES);
@@ -255,6 +268,7 @@ public class AgentSpecZipParser {
      * Resolve the maximum total decompressed size in bytes, honoring the
      * {@value #CONFIG_MAX_UNCOMPRESSED_SIZE_MB} override (interpreted in megabytes) when present
      * and positive. Returns {@link #DEFAULT_MAX_UNCOMPRESSED_SIZE_MB} MB otherwise.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     static long resolveMaxUncompressedBytes() {
         int mb = resolvePositiveIntProperty(
@@ -267,6 +281,7 @@ public class AgentSpecZipParser {
      * the override is missing, non-positive, or the environment has not yet been initialized.
      * Non-positive overrides are deliberately rejected so misconfiguration cannot silently
      * disable the underlying security guards.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static int resolvePositiveIntProperty(String key, int defaultValue) {
         if (EnvUtil.getEnvironment() == null) {
@@ -279,6 +294,7 @@ public class AgentSpecZipParser {
     /**
      * Parse manifest.json content to extract AgentSpec metadata.
      * Extracts worker.suggested_name as the AgentSpec name.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     @SuppressWarnings("unchecked")
     private static AgentSpec parseManifest(String manifestContent, String namespaceId)
@@ -352,6 +368,7 @@ public class AgentSpecZipParser {
     /**
      * Parse resources from zip entries. Text files use UTF-8 content; binary (by extension) use Base64 content
      * and metadata encoding=base64. manifest.json is excluded from resources.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static Map<String, AgentSpecResource> parseResources(List<ZipEntryData> entries,
         String agentSpecName) {
@@ -362,7 +379,7 @@ public class AgentSpecZipParser {
             if (isMacOsMetadataFile(itemName)) {
                 continue;
             }
-            // Skip manifest.json and directories
+            // 跳过 manifest.json 与目录项
             if (itemName.endsWith(MANIFEST_JSON) || itemName.endsWith("/")) {
                 continue;
             }
@@ -371,11 +388,11 @@ public class AgentSpecZipParser {
             String type;
             String resourceName;
             if (parts.length == 1) {
-                // Top-level file (e.g. Dockerfile)
+                // 顶层文件（如 Dockerfile）
                 type = determineResourceType(itemName);
                 resourceName = parts[0];
             } else {
-                // Files in subdirectories
+                // 子目录中的文件
                 StringBuilder typeSb = new StringBuilder();
                 for (int i = 0; i < parts.length - 1; i++) {
                     if (typeSb.length() > 0) {
@@ -404,6 +421,7 @@ public class AgentSpecZipParser {
     
     /**
      * Determine resource type for top-level files based on filename.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static String determineResourceType(String fileName) {
         if ("Dockerfile".equals(fileName)) {
@@ -418,27 +436,29 @@ public class AgentSpecZipParser {
     /**
      * Check if a file is macOS metadata that should be filtered out.
      * Filters: __MACOSX/* entries, .DS_Store files, and ._ prefixed files.
+      * <p>Nacos AI 模块；详见上方英文说明。</p>
      */
     private static boolean isMacOsMetadataFile(String itemName) {
         if (StringUtils.isBlank(itemName)) {
             return false;
         }
-        // __MACOSX directory entries
+        // __MACOSX 目录条目
         if (itemName.startsWith("__MACOSX/") || itemName.contains("/__MACOSX/")) {
             return true;
         }
         int lastSlash = itemName.lastIndexOf('/');
         String fileName = lastSlash >= 0 ? itemName.substring(lastSlash + 1) : itemName;
-        // .DS_Store files
+        // .DS_Store 文件
         if (DS_STORE.equals(fileName)) {
             return true;
         }
-        // ._ prefixed files (AppleDouble resource fork metadata)
+        // ._ 前缀文件（AppleDouble 资源分叉元数据）
         return fileName.startsWith(MACOS_METADATA_PREFIX);
     }
     
     /**
      * Internal data holder for zip entry name and raw bytes.
+     * <p>ZIP 条目名称与原始字节的内部持有结构。</p>
      */
     private static final class ZipEntryData {
         
