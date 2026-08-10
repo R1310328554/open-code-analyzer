@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T16:57:10Z",
   "files": [
-    "agent/sandbox/executor_manager/services/security.py",
-    "agent/sandbox/executor_manager/util.py",
-    "agent/sandbox/executor_manager/utils/__init__.py",
-    "agent/sandbox/executor_manager/utils/common.py",
-    "agent/sandbox/providers/__init__.py",
-    "agent/sandbox/providers/aliyun_codeinterpreter.py",
-    "agent/sandbox/providers/base.py",
-    "agent/sandbox/providers/e2b.py",
-    "agent/sandbox/providers/local.py",
-    "agent/sandbox/providers/manager.py",
-    "agent/sandbox/providers/self_managed.py",
-    "agent/sandbox/providers/ssh.py",
-    "agent/sandbox/result_protocol.py",
-    "agent/settings.py",
-    "agent/tools/__init__.py",
     "agent/tools/akshare.py",
     "agent/tools/arxiv.py",
     "agent/tools/base.py",
@@ -33,5 +18,5 @@
     "agent/tools/keenable.py"
   ],
   "remaining_pending": 1674,
-  "done": 60
+  "done": 75
 }
