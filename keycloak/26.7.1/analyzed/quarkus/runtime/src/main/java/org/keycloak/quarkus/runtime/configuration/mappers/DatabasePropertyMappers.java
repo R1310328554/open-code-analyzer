@@ -50,7 +50,12 @@ import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvi
 import static org.keycloak.quarkus.runtime.configuration.mappers.DatabasePropertyMappers.Datasources.appendDatasourceMappers;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 数据库与 Quarkus Agroal 数据源相关 {@link PropertyMapper} 分组：
+ * 涵盖 JDBC URL/驱动/连接池、各厂商 TLS/mTLS、多数据源通配映射及 JDBC_PING 池大小校验。
+ */
 public final class DatabasePropertyMappers implements PropertyMapperGrouping {
+    /** 运行时合成 db 选项，用于派生仅与当前库类型相关的 JDBC 属性。 */
     private static final Option<String> SYNTHETIC_RUNTIME_DB_OPTION = DB.toBuilder().synthetic().buildTime(false).build();
     public static final String PG_TARGET_SERVER_TYPE = "quarkus.datasource.jdbc.additional-jdbc-properties.targetServerType";
     public static final String PG_LOG_SERVER_ERROR_DETAIL = "quarkus.datasource.jdbc.additional-jdbc-properties.logServerErrorDetail";
@@ -64,7 +69,11 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
 
     private static final Logger log = Logger.getLogger(DatabasePropertyMappers.class);
 
+    // --- 各数据库厂商 additional-jdbc-properties 键名常量 ---
+
     /**
+     * {@link Stack#jdbc_ping} 与 {@link Stack#jdbc_ping_udp} 所需的最小 {@code db-pool-max-size}。
+     * 经实验确定——过小会导致连接池耗尽与启动失败。
      * Minimum {@code db-pool-max-size} required for {@link Stack#jdbc_ping} and {@link Stack#jdbc_ping_udp}.
      * Determined experimentally — lower values cause startup failures due to connection pool exhaustion.
      * Verified by {@code KeycloakDeploymentTest#testDocumentedMinimalPoolMaxSizeWorks}.
@@ -159,7 +168,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
                 fromOption(DatabaseOptions.DB_SQL_LOG_SLOW_QUERIES)
                         .paramLabel("milliseconds")
                         .build(),
-                // Database TLS configuration
+                // 数据库 TLS/mTLS 通用与用户输入映射
                 fromOption(DB_TLS_MODE)
                         .paramLabel("mode")
                         .build(),
@@ -184,7 +193,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
                         .isMasked(true)
                         .build(),
 
-                // Oracle
+                // Oracle TLS/mTLS JDBC 属性
                 setTlsJdbcProperty("ssl_server_dn_match", Map.of(Database.Vendor.ORACLE, "true")),
                 setInputTlsJdbcProperty(DB_TLS_TRUST_STORE_FILE, "javax.net.ssl.trustStore", EnumSet.of(Database.Vendor.ORACLE)),
                 setInputTlsJdbcProperty(DB_TLS_TRUST_STORE_PASSWORD, "javax.net.ssl.trustStorePassword", EnumSet.of(Database.Vendor.ORACLE)),
@@ -198,13 +207,13 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
                         .to("quarkus.datasource.jdbc.additional-jdbc-properties.oracle.net.authentication_services")
                         .build(),
 
-                // MSSQL
+                // MSSQL TLS JDBC 属性
                 setTlsJdbcProperty("encrypt", Map.of(Database.Vendor.MSSQL, "true")),
                 setTlsJdbcProperty("trustServerCertificate", Map.of(Database.Vendor.MSSQL, "false")),
                 setInputTlsJdbcProperty(DB_TLS_TRUST_STORE_FILE, "trustStore", EnumSet.of(Database.Vendor.MSSQL)),
                 setInputTlsJdbcProperty(DB_TLS_TRUST_STORE_PASSWORD, "trustStorePassword", EnumSet.of(Database.Vendor.MSSQL)),
 
-                // Mysql/MariaDB/TiDB
+                // MySQL/MariaDB/TiDB TLS JDBC 属性
                 setTlsJdbcProperty("sslMode",
                         Map.of(
                                 Database.Vendor.MARIADB, "verify-full",
@@ -223,7 +232,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
                 setInputTlsJdbcProperty(DB_MTLS_KEY_STORE_FILE, "keyStore", EnumSet.of(Database.Vendor.MARIADB)),
                 setInputTlsJdbcProperty(DB_MTLS_KEY_STORE_PASSWORD, "keyStorePassword", EnumSet.of(Database.Vendor.MARIADB)),
 
-                // PostgreSQL
+                // PostgreSQL TLS JDBC 属性
                 setTlsJdbcProperty("sslmode", Map.of(Database.Vendor.POSTGRES, "verify-full")),
                 fromOption(SYNTHETIC_RUNTIME_DB_OPTION)
                         .mapFrom(DB)
@@ -232,7 +241,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
                         .build(),
                 setInputTlsJdbcProperty(DB_TLS_TRUST_STORE_FILE, "sslrootcert", EnumSet.of(Database.Vendor.POSTGRES)),
 
-                // PostgreSQL mTLS (pgjdbc supports PKCS#12 via sslkey with .p12/.pfx extension since 42.2.9)
+                // PostgreSQL TLS JDBC 属性 mTLS (pgjdbc supports PKCS#12 via sslkey with .p12/.pfx extension since 42.2.9)
                 setInputTlsJdbcProperty(DB_MTLS_KEY_STORE_FILE, "sslkey", EnumSet.of(Database.Vendor.POSTGRES)),
                 setInputTlsJdbcProperty(DB_MTLS_KEY_STORE_PASSWORD, "sslpassword", EnumSet.of(Database.Vendor.POSTGRES))
         );
@@ -243,7 +252,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
                 DB_POOL_MAX_SIZE, mapper -> mapper.mapFrom(DB_POOL_MAX_SIZE)
         ));
 
-        // finally add mappers that aren't intended to work with all datasources
+        // 追加不适用于所有数据源的映射（含主库 kind 与 PostgreSQL/MSSQL 特例）
         // - also this usage of isEnabled won't work correctly with wildcard mappers
         result.addAll(List.of(
                 fromOption(DB)
@@ -283,7 +292,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
         return result;
     }
 
-    @Override
+        /** JDBC_PING 栈下校验 db-pool-max-size 不低于 {@link #JDBC_PING_MIN_POOL_MAX_SIZE}。 */
     public void validateConfig(Picocli picocli) {
         Configuration.getOptionalIntegerValue(DB_POOL_MAX_SIZE).ifPresent(poolMaxSize -> {
             if (poolMaxSize < JDBC_PING_MIN_POOL_MAX_SIZE && isJdbcPingStack()) {
@@ -302,6 +311,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
         return Stack.jdbc_ping.toString().equals(stack) || Stack.jdbc_ping_udp.toString().equals(stack);
     }
 
+    /** PostgreSQL 且未在 URL 中设置 targetServerType 时启用默认 primary。 */
     public static boolean isPostgresqlTargetServerTypeEnabled() {
         String db = Configuration.getConfigValue(DB).getValue();
         Database.Vendor vendor = Database.getVendor(db).orElse(null);
@@ -321,6 +331,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
         return dbUrl == null || !dbUrl.contains("targetServerType");
     }
 
+    /** PostgreSQL 且 URL 未含 logServerErrorDetail 时注入 false。 */
     public static boolean isPostgresqlLogServerErrorDetailEnabled() {
         String db = Configuration.getConfigValue(DB).getValue();
         Database.Vendor vendor = Database.getVendor(db).orElse(null);
@@ -334,6 +345,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
         return dbUrl == null || !dbUrl.contains("logServerErrorDetail");
     }
 
+    /** MSSQL 默认驱动且 URL/属性未设置 sendStringParametersAsUnicode 时注入 false。 */
     public static boolean isMssqlSendStringParametersAsUnicode() {
         String db = Configuration.getConfigValue(DB).getValue();
         Database.Vendor vendor = Database.getVendor(db).orElse(null);
@@ -449,6 +461,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
     }
 
     /**
+     * H2 开发库须保证 min-pool-size 至少为 1，避免 Keycloak 关闭前 Agroal 关闭连接池时数据库被提前 shutdown。
      * For H2 databases we must ensure that the min-pool size is at least one so that the DB is not shutdown until the
      * Agroal connection pool is closed on Keycloak shutdown.
      */
@@ -468,9 +481,11 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
         };
     }
 
+    /** 多数据源通配选项扩展：将 quarkus.datasource.* 路径变换为 quarkus.datasource."<datasource>".*。 */
     public static final class Datasources extends org.keycloak.config.DatabaseOptions.Datasources {
 
         /**
+         * 为各命名数据源自动复制并变换父级 mapper（通配 datasource 选项）。
          * Automatically create mappers for datasource options
          */
         static List<PropertyMapper<?>> appendDatasourceMappers(List<PropertyMapper<?>> mappers, Map<Option<?>, Consumer<PropertyMapper.Builder<?>>> transformDatasourceMappers) {
@@ -605,7 +620,7 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
         }
         var jdbcUrl = findDatabaseUrl(datasource).orElse("");
         if (vendor == Database.Vendor.ORACLE && !jdbcUrl.toLowerCase().contains("tcps")) {
-            // Oracle needs the transport set to TCPS to support encryption
+            // Oracle TLS/mTLS JDBC 属性 needs the transport set to TCPS to support encryption
             return null;
         }
 
@@ -625,6 +640,12 @@ public final class DatabasePropertyMappers implements PropertyMapperGrouping {
         return findTlsTrustStoreFile(datasource).isEmpty() ? value : null;
     }
 
+    /**
+     * 读取主库或命名数据源的选项值。
+     *
+     * @param opt 选项定义
+     * @param datasource 数据源名，null 表示主库
+     */
     public static Optional<String> getDatasourceOptionValue(Option<?> opt, String datasource) {
         if (datasource == null) {
             return Configuration.getOptionalKcValue(opt);

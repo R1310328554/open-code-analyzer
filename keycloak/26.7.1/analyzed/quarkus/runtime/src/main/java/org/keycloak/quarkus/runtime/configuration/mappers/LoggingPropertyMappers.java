@@ -35,19 +35,27 @@ import static org.keycloak.quarkus.runtime.configuration.Configuration.isSet;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.isTrue;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 日志（控制台/文件/Syslog/MDC）相关 {@link PropertyMapper} 分组：
+ * 映射 Quarkus 日志 handler、JSON 输出、异步队列、分类级别与 tracing/MDC 格式扩展。
+ */
 public final class LoggingPropertyMappers implements PropertyMapperGrouping {
 
+    /** 控制台 handler 已启用时的条件描述。 */
     private static final String CONSOLE_ENABLED_MSG = "Console log handler is activated";
+    /** 文件 handler 已启用时的条件描述。 */
     private static final String FILE_ENABLED_MSG = "File log handler is activated";
+    /** Syslog handler 已启用时的条件描述。 */
     private static final String SYSLOG_ENABLED_MSG = "Syslog is activated";
     private static final String DEFAULT_ROOT_LOG_LEVEL = toLevel(LoggingOptions.LOG_LEVEL.getDefaultValue().orElseThrow().get(0)).getName();
 
+    /** 缓存 log-level 解析结果（category -> level），供通配分类 mapper 使用。 */
     private final static Map<String, Map<String, String>> rootLogLevels = new HashMap<String, Map<String,String>>();
 
 
     @Override
     public List<PropertyMapper<?>> getPropertyMappers() {
-        rootLogLevels.clear(); // reset the cached root log level and categories
+        rootLogLevels.clear(); // 重置缓存的根级别与各分类级别
         return List.of(
                 fromOption(LoggingOptions.LOG)
                         .paramLabel("<handler>")
@@ -60,7 +68,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
                 fromOption(LoggingOptions.LOG_SERVICE_ENVIRONMENT)
                         .paramLabel("environment")
                         .build(),
-                // Console
+                // 控制台输出
                 fromOption(LoggingOptions.LOG_CONSOLE_OUTPUT)
                         .isEnabled(LoggingPropertyMappers::isConsoleEnabled, CONSOLE_ENABLED_MSG)
                         .to("quarkus.log.console.json.enabled")
@@ -109,7 +117,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
                         .mapFrom(LoggingOptions.LOG, LoggingPropertyMappers.resolveLogHandler(LoggingOptions.DEFAULT_LOG_HANDLER.name()))
                         .to("quarkus.log.console.enable")
                         .build(),
-                // Console async
+                // 控制台输出 async
                 fromOption(LoggingOptions.LOG_CONSOLE_ASYNC)
                         .mapFrom(LoggingOptions.LOG_ASYNC)
                         .isEnabled(LoggingPropertyMappers::isConsoleEnabled, CONSOLE_ENABLED_MSG)
@@ -120,7 +128,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
                         .to("quarkus.log.console.async.queue-length")
                         .paramLabel("queue-length")
                         .build(),
-                // File
+                // 文件输出
                 fromOption(LoggingOptions.LOG_FILE_ENABLED)
                         .mapFrom(LoggingOptions.LOG, LoggingPropertyMappers.resolveLogHandler("file"))
                         .to("quarkus.log.file.enable")
@@ -170,7 +178,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
                         .paramLabel("output")
                         .transformer(LoggingPropertyMappers::resolveLogOutput)
                         .build(),
-                // File async
+                // 文件输出 async
                 fromOption(LoggingOptions.LOG_FILE_ASYNC)
                         .mapFrom(LoggingOptions.LOG_ASYNC)
                         .isEnabled(LoggingPropertyMappers::isFileEnabled, FILE_ENABLED_MSG)
@@ -181,7 +189,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
                         .to("quarkus.log.file.async.queue-length")
                         .paramLabel("queue-length")
                         .build(),
-                // File rotation
+                // 文件输出 rotation
                 fromOption(LoggingOptions.LOG_FILE_ROTATION_ENABLED)
                         .isEnabled(LoggingPropertyMappers::isFileEnabled, FILE_ENABLED_MSG)
                         .to("quarkus.log.file.rotation.enabled")
@@ -205,7 +213,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
                         .isEnabled(LoggingPropertyMappers::isFileRotationEnabled, "%s and log file rotation is enabled".formatted(FILE_ENABLED_MSG))
                         .to("quarkus.log.file.rotation.rotate-on-boot")
                         .build(),
-                // Log level
+                // 根级别与分类级别
                 fromOption(LoggingOptions.LOG_LEVEL)
                         .to("quarkus.log.level")
                         .transformer(LoggingPropertyMappers::resolveRootLogLevel)
@@ -220,7 +228,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
                         .wildcardMapFrom(LoggingOptions.LOG_LEVEL, LoggingPropertyMappers::resolveCategoryLogLevelFromParentLogLevelOption) // a fallback to log-level
                         .paramLabel("level")
                         .build(),
-                // Syslog
+                // Syslog 输出
                 fromOption(LoggingOptions.LOG_SYSLOG_ENABLED)
                         .mapFrom(LoggingOptions.LOG, LoggingPropertyMappers.resolveLogHandler("syslog"))
                         .to("quarkus.log.syslog.enable")
@@ -295,7 +303,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
                         .to("quarkus.log.syslog.use-counting-framing")
                         .paramLabel("strategy")
                         .build(),
-                // Syslog async
+                // Syslog 输出 async
                 fromOption(LoggingOptions.LOG_SYSLOG_ASYNC)
                         .mapFrom(LoggingOptions.LOG_ASYNC)
                         .isEnabled(LoggingPropertyMappers::isSyslogEnabled, SYSLOG_ENABLED_MSG)
@@ -306,7 +314,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
                         .to("quarkus.log.syslog.async.queue-length")
                         .paramLabel("queue-length")
                         .build(),
-                // MDC
+                // MDC（映射诊断上下文）
                 fromOption(LoggingOptions.LOG_MDC_ENABLED)
                         .to("kc.spi-mapped-diagnostic-context--default--enabled")
                         .isEnabled(LoggingPropertyMappers::isMdcAvailable, "log-mdc preview feature is enabled")
@@ -324,6 +332,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
         return Optional.ofNullable(value).orElseGet(() -> Boolean.toString(Picocli.hasColorSupport()));
     }
 
+    /** 控制台日志 handler 是否启用。 */
     public static boolean isConsoleEnabled() {
         return isHandlerEnabled(LoggingOptions.Handler.console);
     }
@@ -336,6 +345,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
         return isConsoleEnabled() && isTrue("quarkus.log.console.json.enabled");
     }
 
+    /** 文件日志 handler 是否启用。 */
     public static boolean isFileEnabled() {
         return isHandlerEnabled(LoggingOptions.Handler.file);
     }
@@ -352,6 +362,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
         return isFileEnabled() && isTrue(LoggingOptions.LOG_FILE_ROTATION_ENABLED);
     }
 
+    /** Syslog handler 是否启用。 */
     public static boolean isSyslogEnabled() {
         return isHandlerEnabled(LoggingOptions.Handler.syslog);
     }
@@ -364,6 +375,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
         return Profile.isFeatureEnabled(Profile.Feature.LOG_MDC);
     }
 
+    /** MDC SPI 是否已启用。 */
     public static boolean isMdcActive() {
         return Configuration.isTrue(LoggingOptions.LOG_MDC_ENABLED);
     }
@@ -471,6 +483,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
     }
 
     /**
+     * 格式为默认且 tracing/MDC 选项启用时，向日志格式追加 trace 或 MDC 占位符。
      * Add tracing info to the log if the format is not explicitly set, and tracing and {@code includeTraceOption} options are enabled
      */
     private static String addTracingAndMdcInfo(String value, Option<Boolean> includeTraceOption, Option<Boolean> includeMdcOption) {
@@ -489,6 +502,7 @@ public final class LoggingPropertyMappers implements PropertyMapperGrouping {
         return LoggingOptions.DEFAULT_LOG_FORMAT;
     }
 
+    /** 将日志级别字符串转为大写（JUL Level 名）。 */
     static String upperCase(String value, ConfigSourceInterceptorContext context) {
         return value.toUpperCase(Locale.ROOT);
     }

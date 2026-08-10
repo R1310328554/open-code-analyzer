@@ -35,9 +35,16 @@ import static org.keycloak.exportimport.ExportImportConfig.PROVIDER;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getOptionalValue;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * Realm 导入（{@code kc.sh import}）相关 {@link PropertyMapper} 分组：
+ * 根据 {@code --file} 或 {@code --dir} 推断导入 SPI 提供方及覆盖策略。
+ */
 public final class ImportPropertyMappers implements PropertyMapperGrouping {
+    /** 导入 SPI 根属性：决定使用 singleFile 还是 dir 提供方。 */
     private static final String IMPORTER_PROPERTY = "kc.spi-import--importer";
+    /** 单文件导入提供方标识。 */
     private static final String SINGLE_FILE = "singleFile";
+    /** 目录导入提供方标识。 */
     private static final String DIR = "dir";
 
     @Override
@@ -78,6 +85,7 @@ public final class ImportPropertyMappers implements PropertyMapperGrouping {
         }
     }
 
+    /** 合成选项：根据 file/dir 推断导入模式。 */
     private static final Option<String> IMPORTER_PLACEHOLDER = new OptionBuilder<>("importer", String.class)
             .category(OptionCategory.IMPORT)
             .description("Placeholder for determining import mode")
@@ -99,6 +107,7 @@ public final class ImportPropertyMappers implements PropertyMapperGrouping {
                 .isPresent();
     }
 
+    /** 将布尔 {@code override} 转为 {@link Strategy} 枚举名。 */
     private static String transformOverride(String option, ConfigSourceInterceptorContext context) {
         if (Boolean.parseBoolean(option)) {
             return Strategy.OVERWRITE_EXISTING.name();
@@ -107,6 +116,13 @@ public final class ImportPropertyMappers implements PropertyMapperGrouping {
         }
     }
 
+    /**
+     * 根据已配置的 file/dir 或 SPI 属性推断导入提供方名称。
+     *
+     * @param option 占位选项值（未使用）
+     * @param context 配置上下文
+     * @return {@code singleFile}、{@code dir} 或 null
+     */
     private static String transformImporter(String option, ConfigSourceInterceptorContext context) {
         ConfigValue importer = context.proceed(IMPORTER_PROPERTY);
         if (importer != null) {
@@ -118,7 +134,7 @@ public final class ImportPropertyMappers implements PropertyMapperGrouping {
                 .or(() -> getOptionalValue("kc.dir"))
                 .map(f -> DIR);
 
-        // Only one option can be specified
+        // 仅允许指定 file 或 dir 之一（异或）
         boolean xor = file.isPresent() ^ dir.isPresent();
 
         return xor ? file.or(() -> dir).get() : null;

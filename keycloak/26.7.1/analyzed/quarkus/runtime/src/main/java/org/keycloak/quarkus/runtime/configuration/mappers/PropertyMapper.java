@@ -58,8 +58,16 @@ import static org.keycloak.quarkus.runtime.configuration.Configuration.toCliForm
 import static org.keycloak.quarkus.runtime.configuration.Configuration.toEnvVarFormat;
 import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX;
 
+/**
+ * Keycloak 配置选项到 Quarkus/SmallRye 属性的核心映射器。
+ * <p>
+ * 负责解析 {@link #from}、{@link #mapFrom} 与默认值，经 {@link #transformValue} 转换后写入 {@link #to} 目标属性。
+ *
+ * @param <T> 选项值类型
+ */
 public class PropertyMapper<T> {
 
+    /** Keycloak 默认值的 ordinal，逻辑上高于 classpath 配置源。 */
     public static final int DEFAULT_VALUE_ORDINAL = 251; // keycloak defaults are logically higher than classpath entries
     protected final Option<T> option;
     private final String to;
@@ -110,10 +118,12 @@ public class PropertyMapper<T> {
     }
 
     /**
+     * 属性映射核心逻辑：先解析属性值，再转换为目标形式。
+     * <p>
      * This is the heart of the property mapping logic. In the first step, we need to find the value of the property and then transform it into a form of our needs.
      * <p>
      *
-     * <b>1. Find value</b>
+     * <b>1. Find value</b>（查找值）
      * <p>
      * In preference order we are looking for:
      * <pre>
@@ -122,13 +132,13 @@ public class PropertyMapper<T> {
      * </pre>
      * <p>
      *
-     * <b>2. Use to</b>
+     * <b>2. Use to</b>（使用 to 目标值）
      * <p>
      * If we are looking for the `to` value, and no value was found from step 1 or it is effectively a default value,
      * then use the `to` value if it was set by the user.
      * <p>
      *
-     * <b>3. Transform found value</b>
+     * <b>3. Transform found value</b>（转换已找到的值）
      * <p>
      * If we found a value for the attribute name, it needs to be transformed via {@link #transformValue} method. How to transform it?
      * <ul>
@@ -137,16 +147,16 @@ public class PropertyMapper<T> {
      *   <li>Finally the returned {@link ConfigValue} is made to match what was requested - with the name, value, rawValue, and ordinal set appropriately.
      * </ul>
      *
-     * <b>4. Use to</b>
+     * <b>4. Use to</b>（最终回退到 to）
      * <p>
      * If no value is found or mapped, return the `to` value.
      */
     ConfigValue getConfigValue(String name, ConfigSourceInterceptorContext context) {
         String from = getFrom();
 
-        // try to obtain the value for the property we want to map first
-        // we don't want the NestedPropertyMappingInterceptor to restart the chain here, so we force a proceed
-        // this ensures that mapFrom transformers, and regular transformers are applied exclusively - not chained
+        // 首先尝试获取待映射属性的值
+        // 避免 NestedPropertyMappingInterceptor 在此重启链，强制 proceed
+        // 确保 mapFrom 与普通 transformer 互斥应用，而非链式叠加
         ConfigValue config = null;
         if (!option.isSynthetic()) {
             config = convertValue(NestedPropertyMappingInterceptor.proceed(context, from));
@@ -155,15 +165,15 @@ public class PropertyMapper<T> {
 
         boolean parentValue = false;
         if (mapFrom != null && (config == null || config.getValue() == null)) {
-            // if the property we want to map depends on another one, we use the value from the other property to call the mapper
-            // not getting the value directly from SmallRye Config to avoid the risk of infinite recursion when Config is initializing
+            // 若依赖其他属性，则从其值调用 mapper
+            // 不直接从 SmallRye Config 取值，避免初始化时无限递归
             String mapFromWithPrefix = NS_KEYCLOAK_PREFIX + mapFrom;
             config = context.restart(mapFromWithPrefix);
             parentValue = true;
         }
 
-        // instead of using a default or mapping from a default, check if the value is already set and use that instead
-        // a warning should be emitted about this in picocli
+        // 在回退默认或 mapFrom 默认前，检查目标 to 是否已被用户显式设置
+        // picocli 侧应对此发出警告
         if (!name.equals(from) && (config == null || config.getValue() == null || (parentValue && Configuration.isDefault(config)))) {
             directValue = Optional.ofNullable(context.proceed(name));
             if (directValue.filter(c -> c.getValue() != null && Configuration.isUserModifiable(c)).isPresent()) {
@@ -184,7 +194,7 @@ public class PropertyMapper<T> {
             return config;
         }
 
-        // now try any defaults from quarkus
+        // 最后尝试 Quarkus 侧默认值
         if (directValue != null) {
             return directValue.orElse(null);
         }
@@ -236,6 +246,7 @@ public class PropertyMapper<T> {
     }
 
     /**
+     * 若 {@link #isStrictExpectedValues()} 为 false 则允许自定义值；否则仅接受预期值列表。
      * If {@link #isStrictExpectedValues()} is false, custom values can be provided
      * Otherwise, only specified expected values can be used.
      *
@@ -300,6 +311,7 @@ public class PropertyMapper<T> {
     }
 
     /**
+     * 判断选项键是否含通配占位符（如 log-level-<category>），占位符须以 '<' 与 '>' 界定。
      * An option is considered a wildcard option if its key contains a wildcard placeholder (e.g. log-level-<category>).
      * The placeholder must be denoted by the '<' and '>' characters.
      */
@@ -316,15 +328,15 @@ public class PropertyMapper<T> {
         String mappedValue = value;
 
         boolean mapped = false;
-        // fall back to the transformer when no mapper is explicitly specified in .mapFrom()
+        // mapFrom 未指定 parentMapper 时回退到普通 transformer
         var theMapper = parentValue && parentMapper != null ? this.parentMapper : this.mapper;
-        // since our mapping logic assumes fully resolved values, we cannot reliably map if Expressions are disabled
+        // 映射逻辑假设值已完全解析；Expressions 禁用时无法可靠映射
         if (Expressions.isEnabled() && theMapper != null && (name.equals(getTo()) || parentValue)) {
             mappedValue = theMapper.map(getNamedProperty().orElse(null), value, context);
             mapped = true;
         }
 
-        // defaults and values from transformers may not have been subject to expansion
+        // 默认值与 transformer 输出可能尚未经历表达式展开
         if ((mapped || configValue.getConfigSourceName() == null) && mappedValue != null && Expressions.isEnabled() && mappedValue.contains("$")) {
             mappedValue = new ExpressionConfigSourceInterceptor().getValue(
                     new ContextWrapper(context, new ConfigValueBuilder().withName(name).withValue(mappedValue).build()),
@@ -339,7 +351,7 @@ public class PropertyMapper<T> {
             return configValue;
         }
 
-        // by unsetting the configsource name this will not be seen as directly modified by the user
+        // 清除 configSourceName 表示非用户直接修改
         return configValue.from().withName(name).withValue(mappedValue).withRawValue(value).withConfigSourceName(null).build();
     }
 
@@ -351,11 +363,13 @@ public class PropertyMapper<T> {
         return configValue.withValue(ofNullable(configValue.getValue()).map(String::trim).orElse(null));
     }
 
+    /** 将源字符串值映射为目标配置字符串。 */
     @FunctionalInterface
     public interface ValueMapper {
         String map(String name, String value, ConfigSourceInterceptorContext context);
     }
 
+    /** 表达式展开时包装单个 ConfigValue 的拦截上下文。 */
     private static final class ContextWrapper implements ConfigSourceInterceptorContext {
         private final ConfigSourceInterceptorContext context;
         private final ConfigValue value;
@@ -384,6 +398,7 @@ public class PropertyMapper<T> {
         }
     }
 
+    /** {@link PropertyMapper} 构建器，链式配置 to/mapFrom/transformer/validator 等。 */
     public static class Builder<T> {
 
         private final Option<T> option;
@@ -611,6 +626,7 @@ public class PropertyMapper<T> {
     }
 
     /**
+     * 从 Profile 特性创建映射器：特性启用时映射为 {@code true}，否则 {@code null}。
      * Create a property mapper from a feature.
      * The mapper maps to external properties the state of the feature.
      * <p>
@@ -719,6 +735,7 @@ public class PropertyMapper<T> {
     }
 
     /**
+     * 为给定键返回定制的 PropertyMapper；{@link WildcardPropertyMapper} 中用于填充通配键的 to/from。
      * Returns a new PropertyMapper tailored for the given key.
      * This is currently useful in {@link WildcardPropertyMapper} where "to" and "from" fields need to include a specific
      * wildcard key.

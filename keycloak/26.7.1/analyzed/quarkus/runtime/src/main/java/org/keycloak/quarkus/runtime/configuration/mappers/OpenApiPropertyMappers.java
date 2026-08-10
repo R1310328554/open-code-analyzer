@@ -8,6 +8,10 @@ import org.keycloak.config.OpenApiOptions;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.isTrue;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * OpenAPI / Swagger UI 相关 {@link PropertyMapper} 分组：
+ * 依赖 {@link Profile.Feature#OPENAPI} 特性，映射到 Quarkus SmallRye OpenAPI 与 Swagger UI 开关。
+ */
 public final class OpenApiPropertyMappers implements PropertyMapperGrouping {
 
   @Override
@@ -24,10 +28,12 @@ public final class OpenApiPropertyMappers implements PropertyMapperGrouping {
     );
   }
 
+  /** OpenAPI 端点（非 UI）是否已启用。 */
   private static boolean isOpenApiEnabled() {
     return isTrue(OpenApiOptions.OPENAPI_ENABLED);
   }
 
+  /** Client API OpenAPI 预览特性是否已启用。 */
   private static boolean isClientApiEnabled() {
     return Profile.isFeatureEnabled(Profile.Feature.OPENAPI);
   }

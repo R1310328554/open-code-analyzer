@@ -12,8 +12,14 @@ import io.smallrye.config.ConfigSourceInterceptorContext;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * HTTP 访问日志（Quarkus access log）相关 {@link PropertyMapper} 分组：
+ * 支持控制台/文件输出、掩码头与 Cookie、日志轮转等配置映射。
+ */
 public class HttpAccessLogPropertyMappers implements PropertyMapperGrouping {
+    /** 访问日志已启用时的条件描述。 */
     private static final String ACCESS_LOG_ENABLED_MSG = "HTTP Access log is enabled";
+    /** 访问日志写入文件已启用时的条件描述。 */
     private static final String ACCESS_LOG_FILE_ENABLED_MSG = "HTTP Access logging to file is enabled";
 
     @Override
@@ -44,7 +50,7 @@ public class HttpAccessLogPropertyMappers implements PropertyMapperGrouping {
                         .to("quarkus.http.access-log.masked-cookies")
                         .transformer(HttpAccessLogPropertyMappers::transformMaskedCookies)
                         .build(),
-                // file
+                // 文件输出
                 fromOption(HttpAccessLogOptions.HTTP_ACCESS_LOG_FILE_ENABLED)
                         .isEnabled(HttpAccessLogPropertyMappers::isHttpAccessLogEnabled, ACCESS_LOG_ENABLED_MSG)
                         .to("quarkus.http.access-log.log-to-file")
@@ -66,14 +72,17 @@ public class HttpAccessLogPropertyMappers implements PropertyMapperGrouping {
         );
     }
 
+    /** 合并用户配置的掩码头与默认隐藏头列表。 */
     private static String transformMaskedHeaders(String value, ConfigSourceInterceptorContext context) {
         return transformMaskedElements(value, HttpAccessLogOptions.DEFAULT_HIDDEN_HEADERS);
     }
 
+    /** 合并用户配置的掩码 Cookie 与默认隐藏 Cookie 列表。 */
     private static String transformMaskedCookies(String value, ConfigSourceInterceptorContext context) {
         return transformMaskedElements(value, HttpAccessLogOptions.DEFAULT_HIDDEN_COOKIES);
     }
 
+    /** 将用户额外指定的元素追加到默认掩码列表并以逗号连接。 */
     private static String transformMaskedElements(String value, List<String> defaultMaskedElements) {
         var defaultMasked = new ArrayList<>(defaultMaskedElements);
         if (StringUtil.isNotBlank(value)) {
@@ -84,11 +93,12 @@ public class HttpAccessLogPropertyMappers implements PropertyMapperGrouping {
         return String.join(",", defaultMasked);
     }
 
-
+    /** HTTP 访问日志是否已启用。 */
     static boolean isHttpAccessLogEnabled() {
         return Configuration.isTrue(HttpAccessLogOptions.HTTP_ACCESS_LOG_ENABLED);
     }
 
+    /** HTTP 访问日志文件输出是否已启用。 */
     static boolean isHttpAccessLogFileEnabled() {
         return Configuration.isTrue(HttpAccessLogOptions.HTTP_ACCESS_LOG_FILE_ENABLED);
     }

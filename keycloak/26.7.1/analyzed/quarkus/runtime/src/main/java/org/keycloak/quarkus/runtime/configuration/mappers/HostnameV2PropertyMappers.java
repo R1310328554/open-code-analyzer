@@ -19,9 +19,15 @@ import org.keycloak.utils.SecureContextResolver;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * Hostname v2（{@link Profile.Feature#HOSTNAME_V2}）相关 {@link PropertyMapper} 分组：
+ * 映射 public/admin/backchannel 主机名到 hostname SPI，并在启动时校验 v1 遗留选项与 HTTPS/代理配置。
+ */
 public final class HostnameV2PropertyMappers implements PropertyMapperGrouping {
 
+    /** 非安全上下文警告消息片段。 */
     private static final String CONTEXT_WARNING = "the server is running in an insecure context. Secure contexts are required for full functionality, including cross-origin cookies.";
+    /** Hostname v1 已移除但仍可能被用户配置的选项键列表。 */
     private static final List<String> REMOVED_OPTIONS = Arrays.asList("hostname-admin-url", "hostname-path", "hostname-port", "hostname-strict-backchannel", "hostname-url", "proxy", "hostname-strict-https");
 
     @Override
@@ -44,12 +50,18 @@ public final class HostnameV2PropertyMappers implements PropertyMapperGrouping {
     }
 
     @Override
+    /** 服务模式下校验 hostname v2 配置并发出迁移/安全警告。 */
     public void validateConfig(Picocli picocli) {
         if (picocli.getParsedCommand().filter(AbstractCommand::isServing).isPresent()) {
             validateConfig(picocli::warn);
         }
     }
 
+    /**
+     * 校验 hostname 配置：检测 v1 遗留项、HTTP/HTTPS 与 proxy-headers 组合是否合理。
+     *
+     * @param warn 警告消息消费者
+     */
     public static void validateConfig(Consumer<String> warn) {
         List<String> inUse = REMOVED_OPTIONS.stream().filter(s -> Configuration.getOptionalKcValue(s).isPresent()).toList();
 
@@ -80,6 +92,7 @@ public final class HostnameV2PropertyMappers implements PropertyMapperGrouping {
         }
     }
 
+    /** 当 hostname 为完整 URL 时校验协议、代理头与路径一致性。 */
     static boolean validateFullHostname(boolean httpsEnabled, boolean isProd, String host, String proxyHeaders, Consumer<String> warn) {
         try {
             URL url = new URL(host);
@@ -115,6 +128,7 @@ public final class HostnameV2PropertyMappers implements PropertyMapperGrouping {
         }
     }
 
+    /** 规范化 URL 路径：确保 leading/trailing slash 一致以便比较。 */
     private static String normalizePath(String path) {
         if (path == null) {
             return path;

@@ -34,7 +34,12 @@ import static org.keycloak.quarkus.runtime.configuration.Configuration.isSet;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromFeature;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * HTTP/HTTPS 服务器相关 {@link PropertyMapper} 分组：
+ * 映射 Quarkus Vert.x HTTP 端口、TLS 材料、线程池、关闭超时及 Infinispan shutdown 同步等。
+ */
 public final class HttpPropertyMappers implements PropertyMapperGrouping {
+    /** 线程池 max-threads 下限（未显式配置时与 CPU 核数计算值取较大者）。 */
     private static final int MIN_MAX_THREADS = 50;
     private static final String QUARKUS_HTTPS_CERT_FILES = "quarkus.http.ssl.certificate.files";
     private static final String QUARKUS_HTTPS_CERT_KEY_FILES = "quarkus.http.ssl.certificate.key-files";
@@ -43,7 +48,7 @@ public final class HttpPropertyMappers implements PropertyMapperGrouping {
     public static final String QUARKUS_HTTPS_TRUST_STORE_FILE_TYPE = "quarkus.http.ssl.certificate.trust-store-file-type";
     private static final String QUARKUS_HTTPS_KEY_STORE_FILE_TYPE = "quarkus.http.ssl.certificate.key-store-file-type";
 
-    // Transform runtime exceptions obtained from Quarkus to ours with a relevant message
+    // 将 Quarkus TLS 相关运行时异常转换为带 Keycloak 选项名的 PropertyException
     private static void setCustomExceptionTransformer() {
         ExecutionExceptionHandler.addExceptionTransformer(TlsUtils.class, exception -> {
             if (exception instanceof IOException ioe) {
@@ -123,22 +128,23 @@ public final class HttpPropertyMappers implements PropertyMapperGrouping {
                 && normalizedConfigured.getFileName().equals(normalizedActual.getFileName());
     }
 
-    // taken from VertxConfigBuilder
+    // 检测 WSL 环境（摘自 VertxConfigBuilder）
     private static boolean isWSL() {
         var sysEnv = System.getenv();
         return sysEnv.containsKey("IS_WSL") || sysEnv.containsKey("WSL_DISTRO_NAME");
     }
 
+    /** 解析 HTTP 绑定主机：容器/远程 dev/WSL 用 0.0.0.0，dev 模式用 localhost。 */
     String getHttpHost(String value) {
         if (value != null) {
             return value;
         }
-        // account for modes that always need to be all interfaces
+        // 容器、远程 dev、WSL 等场景需监听所有接口
         if (Environment.isRunInContainer() || LaunchMode.current().isRemoteDev()
                 || isWSL()) {
             return "0.0.0.0";
         }
-        // using start-dev from the cli, is not the same as LaunchMode dev or test, so we need a specific override
+        // CLI start-dev 与 LaunchMode dev/test 不同，需单独判断
         if (Environment.isDevMode()) {
             return "localhost";
         }
@@ -270,6 +276,7 @@ public final class HttpPropertyMappers implements PropertyMapperGrouping {
     }
 
     @Override
+    /** 服务模式下要求 HTTP 或 HTTPS 至少一种可用。 */
     public void validateConfig(Picocli picocli) {
         if (picocli.getParsedCommand().filter(AbstractCommand::isServing).isPresent()) {
             boolean enabled = isHttpEnabled(getOptionalKcValue(HttpOptions.HTTP_ENABLED.getKey()).orElse(null));
@@ -279,6 +286,7 @@ public final class HttpPropertyMappers implements PropertyMapperGrouping {
         }
     }
 
+    /** 是否配置了证书文件或密钥库（即 HTTPS 已启用）。 */
     public static boolean isHttpsEnabled() {
         Optional<String> certFile = getOptionalValue(QUARKUS_HTTPS_CERT_FILES);
         Optional<String> keystoreFile = getOptionalValue(QUARKUS_HTTPS_KEY_STORE_FILE);
@@ -294,7 +302,7 @@ public final class HttpPropertyMappers implements PropertyMapperGrouping {
     }
 
     static String transformNegativeReloadPeriod(String value, ConfigSourceInterceptorContext context) {
-        // -1 means no reload
+        // -1 表示禁用证书自动重载
         return "-1".equals(value) ? null : value;
     }
 

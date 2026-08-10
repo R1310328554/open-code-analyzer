@@ -15,7 +15,10 @@ import static org.keycloak.quarkus.runtime.configuration.mappers.MetricsProperty
 import static org.keycloak.quarkus.runtime.configuration.mappers.MetricsPropertyMappers.metricsEnabled;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
-
+/**
+ * 用户事件 Micrometer 指标相关 {@link PropertyMapper} 分组：
+ * 将事件监听器 SPI 配置映射到 {@code kc.spi-events-listener--micrometer-user-event-metrics--*}。
+ */
 final class EventPropertyMappers implements PropertyMapperGrouping {
 
     @Override
@@ -38,6 +41,7 @@ final class EventPropertyMappers implements PropertyMapperGrouping {
         );
     }
 
+    /** 构建用户事件指标允许的事件类型列表（排除 *_ERROR 与已废弃事件）。 */
     private static List<String> expectedUserMetricEvents() {
         List<String> values = new ArrayList<>();
         for (EventType event : EventType.values()) {
@@ -45,7 +49,7 @@ final class EventPropertyMappers implements PropertyMapperGrouping {
                 continue;
             }
             if (event == EventType.VALIDATE_ACCESS_TOKEN) {
-                // event is deprecated and no longer used in the code base
+                // 该事件已废弃，代码库中不再使用
                 continue;
             }
             String value = event.name().toLowerCase();
@@ -55,10 +59,12 @@ final class EventPropertyMappers implements PropertyMapperGrouping {
         return values;
     }
 
+    /** 全局指标与用户事件指标特性均启用时返回 true。 */
     private static boolean userEventsMetricsEnabled() {
         return metricsEnabled() && Profile.isFeatureEnabled(Profile.Feature.USER_EVENT_METRICS);
     }
 
+    /** 用户事件指标开关本身是否已启用。 */
     private static boolean userEventsMetricsTags() {
         return isTrue(USER_EVENT_METRICS_ENABLED);
     }

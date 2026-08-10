@@ -14,8 +14,14 @@ import org.keycloak.quarkus.runtime.configuration.SimilarityUtil;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * Keycloak 特性（Profile Feature）开关相关 {@link PropertyMapper} 分组：
+ * 支持 {@code features}、{@code features-disabled} 及通配 {@code feature-<name>} 配置。
+ */
 public final class FeaturePropertyMappers implements PropertyMapperGrouping {
+    /** 匹配 {@code vN} 版本后缀的正则。 */
     private static final Pattern VERSION_SUFFIX_PATTERN = Pattern.compile("^v(\\d+)$");
+    /** 匹配 {@code feature:vN} 带版本特性名的正则。 */
     private static final Pattern VERSIONED_PATTERN = Pattern.compile("([^:]+):v(\\d+)");
 
     @Override
@@ -35,6 +41,7 @@ public final class FeaturePropertyMappers implements PropertyMapperGrouping {
         );
     }
 
+    /** 校验单个通配特性键的值（enabled/disabled 或 vN 版本号）。 */
     public static void validateSingleFeature(String feature, String value) {
         if (!Profile.getAllUnversionedFeatureNames().contains(feature)) {
             throw new PropertyException(unrecognizedFeatureMessage(feature, FeatureOptions.getFeatureValues(false, false)));
@@ -49,6 +56,7 @@ public final class FeaturePropertyMappers implements PropertyMapperGrouping {
         }
     }
 
+    /** 校验 {@code features} 列表中的启用项格式与版本。 */
     public static void validateEnabledFeature(String feature) {
         if (!Profile.getFeatureVersions(feature).isEmpty()) {
             return;
@@ -70,6 +78,7 @@ public final class FeaturePropertyMappers implements PropertyMapperGrouping {
         validateFeatureVersions(unversionedFeature, version);
     }
 
+    /** 生成未识别特性名的错误消息，必要时附带相似建议。 */
     private static String unrecognizedFeatureMessage(String feature, List<String> validFeatures) {
         List<String> suggestions = SimilarityUtil.findSimilar(feature, validFeatures);
         if (!suggestions.isEmpty()) {
@@ -78,6 +87,7 @@ public final class FeaturePropertyMappers implements PropertyMapperGrouping {
         return "'%s' is an unrecognized feature, it should be one of %s".formatted(feature, validFeatures);
     }
 
+    /** 校验指定特性版本号是否在 Profile 已知版本集合中。 */
     private static void validateFeatureVersions(String feature, int version) {
         Set<Feature> featureVersions = Profile.getFeatureVersions(feature);
         if (featureVersions.isEmpty() || featureVersions.stream().noneMatch(f -> f.getVersion() == version)) {

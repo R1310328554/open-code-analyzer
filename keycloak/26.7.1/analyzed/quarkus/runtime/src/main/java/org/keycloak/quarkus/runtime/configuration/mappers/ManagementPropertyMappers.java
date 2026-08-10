@@ -30,11 +30,19 @@ import static org.keycloak.config.ManagementOptions.LEGACY_OBSERVABILITY_INTERFA
 import static org.keycloak.quarkus.runtime.configuration.Configuration.isTrue;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 管理接口（management port）相关 {@link PropertyMapper} 分组：
+ * 控制 Quarkus management 端点、健康/指标/OpenAPI 聚合及 HTTPS 继承/独立 TLS 配置。
+ */
 public class ManagementPropertyMappers implements PropertyMapperGrouping {
 
+    /** management scheme 为 inherited 时的启用条件描述。 */
     private static final String HTTP_MANAGEMENT_SCHEME_IS_INHERITED = "http-management-scheme is inherited";
+    /** Quarkus management HTTPS 密钥库文件属性名。 */
     static final String QUARKUS_MANAGEMENT_HTTPS_KEY_STORE_FILE = "quarkus.management.ssl.certificate.key-store-file";
+    /** Quarkus management HTTPS 信任库文件属性名。 */
     static final String QUARKUS_MANAGEMENT_HTTPS_TRUST_STORE_FILE = "quarkus.management.ssl.certificate.trust-store-file";
+    /** Quarkus management HTTPS 信任库类型属性名。 */
     static final String QUARKUS_MANAGEMENT_HTTPS_TRUST_STORE_FILE_TYPE = "quarkus.management.ssl.certificate.trust-store-file-type";
 
     @Override
@@ -64,7 +72,7 @@ public class ManagementPropertyMappers implements PropertyMapperGrouping {
                         .to("quarkus.management.host")
                         .paramLabel("host")
                         .build(),
-                // HTTPS
+                // HTTPS 独立 TLS 配置（scheme 非 http 时从主 HTTP 映射继承）
                 fromOption(ManagementOptions.HTTP_MANAGEMENT_SCHEME)
                         .paramLabel("scheme")
                         .build(),
@@ -145,6 +153,7 @@ public class ManagementPropertyMappers implements PropertyMapperGrouping {
         );
     }
 
+    /** 非遗留 observability 接口且 health/metrics/openapi 任一需要 management 时返回 true。 */
     public static boolean isManagementEnabled() {
         if (isTrue(LEGACY_OBSERVABILITY_INTERFACE)) {
             return false;
@@ -154,15 +163,18 @@ public class ManagementPropertyMappers implements PropertyMapperGrouping {
             || isTrue(OpenApiOptions.OPENAPI_ENABLED);
     }
 
+    /** 将 {@link #isManagementEnabled()} 结果写入 quarkus.management.enabled。 */
     private static String managementEnabledTransformer() {
         return Boolean.toString(isManagementEnabled());
     }
 
+    /** management scheme 是否为 inherited（非纯 http）。 */
     public static boolean isInheritedScheme() {
         return !Scheme.http.name()
                 .equals(Configuration.getKcConfigValue(ManagementOptions.HTTP_MANAGEMENT_SCHEME.getKey()).getValue());
     }
 
+    /** inherited scheme 下是否配置了 management 侧 TLS 材料。 */
     public static boolean isManagementTlsEnabled() {
         if (isInheritedScheme()) {
             var key = Configuration.getOptionalKcValue(ManagementOptions.HTTPS_MANAGEMENT_CERTIFICATE_KEY_FILE.getKey());
