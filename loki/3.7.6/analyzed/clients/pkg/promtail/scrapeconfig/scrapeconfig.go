@@ -1,5 +1,8 @@
 package scrapeconfig
 
+// Promtail scrape 任务配置：job_name、pipeline_stages 与各 target 专用块（journal/kafka/azure 等）。
+// 内嵌 Prometheus 风格 service discovery 列表，UnmarshalYAML 强制非空 job_name。
+
 import (
 	"fmt"
 	"reflect"
@@ -31,6 +34,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/discovery/consulagent"
 )
 
+// 单个 scrape job：目标类型互斥块 + relabel + SD 配置与可选解压/编码。
 // Config describes a job to scrape.
 type Config struct {
 	JobName              string                      `mapstructure:"job_name,omitempty" yaml:"job_name,omitempty"`
@@ -59,6 +63,7 @@ type DecompressionConfig struct {
 	Format       string
 }
 
+// Prometheus 兼容 SD 配置集合，Configs() 展平为 discovery.Configs 切片。
 type ServiceDiscoveryConfig struct {
 	// List of labeled target groups for this job.
 	StaticConfigs discovery.StaticConfig `mapstructure:"static_configs" yaml:"static_configs"`
@@ -146,6 +151,7 @@ func (cfg ServiceDiscoveryConfig) Configs() (res discovery.Configs) {
 	return res
 }
 
+// systemd journal 抓取：MaxAge、JSON 输出、matches 过滤与 positions cursor。
 // JournalTargetConfig describes systemd journal records to scrape.
 type JournalTargetConfig struct {
 	// MaxAge determines the oldest relative time from process start that will
@@ -183,6 +189,7 @@ const (
 	SyslogFormatRFC3164 = "rfc3164"
 )
 
+// TCP/UDP syslog 监听目标，支持 RFC3164/RFC5424 与结构化数据转标签。
 // SyslogTargetConfig describes a scrape config that listens for log lines over syslog.
 type SyslogTargetConfig struct {
 	// ListenAddress is the address to listen on for syslog messages.
@@ -271,6 +278,7 @@ type WindowsEventsTargetConfig struct {
 	Labels model.LabelSet `yaml:"labels"`
 }
 
+// Azure Event Hubs 消费配置：连接串、命名空间、event_hubs 列表与消费者组。
 type AzureEventHubsTargetConfig struct {
 	// Labels optionally holds labels to associate with each log line.
 	Labels model.LabelSet `yaml:"labels"`
@@ -402,6 +410,7 @@ type CloudflareConfig struct {
 	AdditionalFields []string `yaml:"additional_fields"`
 }
 
+// GCP Pub/Sub 日志拉取或 push 订阅，可选保留 Cloud Logging 原始时间戳。
 // GcplogTargetConfig describes a scrape config to pull logs from any pubsub topic.
 type GcplogTargetConfig struct {
 	// ProjectID is the Cloud project id
@@ -446,6 +455,7 @@ type HerokuDrainTargetConfig struct {
 	UseIncomingTimestamp bool `yaml:"use_incoming_timestamp"`
 }
 
+// 内置 Loki Push API 监听目标，供外部 agent 直接向 Promtail 推送日志行。
 // PushTargetConfig describes a scrape config that listens for Loki push messages.
 type PushTargetConfig struct {
 	// Server is the weaveworks server config for listening connections

@@ -1,5 +1,8 @@
 package promtail
 
+// Promtail 根模块：组装 client、WAL、target managers 与 HTTP server，支持 SIGHUP/HTTP 热重载。
+// reloadConfig 校验配置后重建 pipeline 与抓取目标，dry-run 模式仅 stdout 打印条目。
+
 import (
 	"errors"
 	"fmt"
@@ -46,6 +49,7 @@ var reloadFailTotal = prometheus.NewCounter(prometheus.CounterOpts{
 
 var errConfigNotChange = errors.New("config has not changed")
 
+// 函数式选项，在 New 时覆盖默认 logger 与 Prometheus registerer。
 // Option is a function that can be passed to the New method of Promtail and
 // customize the Promtail that is created.
 type Option func(p *Promtail)
@@ -64,6 +68,7 @@ func WithRegisterer(reg prometheus.Registerer) Option {
 	}
 }
 
+// Promtail 主结构：client、entries fanout、target managers 与配置哈希状态。
 // Promtail is the root struct for Promtail.
 type Promtail struct {
 	client         client.Client
@@ -122,6 +127,7 @@ func New(cfg config.Config, newConfig func() (*config.Config, error), metrics *c
 	return promtail, nil
 }
 
+// 热重载核心：比对配置 SHA3，停止旧 target/client 后按 WAL/dry-run 重建全链路。
 func (p *Promtail) reloadConfig(cfg *config.Config) error {
 	level.Debug(p.logger).Log("msg", "Reloading configuration file")
 	p.mtx.Lock()
@@ -208,6 +214,7 @@ func (p *Promtail) reloadConfig(cfg *config.Config) error {
 	return nil
 }
 
+// 启动 watchConfig goroutine 并阻塞于 server.Run，直至收到关闭信号。
 // Run the promtail; will block until a signal is received.
 func (p *Promtail) Run() error {
 	p.mtx.Lock()
@@ -226,6 +233,7 @@ func (p *Promtail) Client() client.Client {
 	return p.client
 }
 
+// 幂等关闭：server → targets → fanout → WAL → client，顺序释放资源。
 // Shutdown the promtail.
 func (p *Promtail) Shutdown() {
 	p.mtx.Lock()
@@ -255,6 +263,7 @@ func (p *Promtail) ActiveTargets() map[string][]target.Target {
 	return p.targetManagers.ActiveTargets()
 }
 
+// 监听 SIGHUP 与 HTTP /reload 通道，调用 reload 并更新 reload 成功/失败计数。
 func (p *Promtail) watchConfig() {
 	// Reload handler.
 	if p.newConfig == nil {

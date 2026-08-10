@@ -1,5 +1,8 @@
 package azureeventhubs
 
+// Azure Event Hubs target 同步器工厂：Sarama 客户端 + ConsumerGroup，复用 kafka.TargetSyncer。
+// 连接串经 SASL PLAIN 认证，pipeline stages 在推送 Loki 前处理每条 Entry。
+
 import (
 	"context"
 	"errors"
@@ -16,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/kafka"
 )
 
+// 校验 azure_event_hubs 配置，创建 Kafka client/group 与 messageParser 并启动 syncer。
 func NewSyncer(
 	reg prometheus.Registerer,
 	logger log.Logger,
@@ -57,6 +61,7 @@ func NewSyncer(
 	return t, nil
 }
 
+// 必填 fully_qualified_namespace 与 event_hubs；默认 GroupID 为 promtail。
 func validateConfig(cfg *scrapeconfig.Config) error {
 	if cfg.AzureEventHubsConfig == nil {
 		return errors.New("azure_event_hubs configuration is empty")
@@ -76,6 +81,7 @@ func validateConfig(cfg *scrapeconfig.Config) error {
 	return nil
 }
 
+// Event Hubs Kafka 协议：SASL 用户 $ConnectionString、TLS 与 V1_0_0_0 版本。
 func getConfig(connection string) *sarama.Config {
 	config := sarama.NewConfig()
 	config.Net.DialTimeout = 30 * time.Second

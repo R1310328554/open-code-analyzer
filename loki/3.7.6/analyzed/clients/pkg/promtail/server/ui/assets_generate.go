@@ -3,6 +3,9 @@
 
 package main
 
+// go:generate 构建工具：将 ui.Assets 经 modtimevfs 固定 mtime 后由 vfsgen 生成 assets_vfsdata.go。
+// 仅 ignore 标签编译，产物带 !dev build tag 供生产嵌入静态资源。
+
 import (
 	"log"
 	"time"

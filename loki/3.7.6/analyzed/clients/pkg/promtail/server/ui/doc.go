@@ -1,3 +1,4 @@
+// ui 包通过 vfs 暴露 Promtail 管理界面静态资源；go:generate 触发 assets 再生成。
 // Package ui provides the assets via a virtual filesystem.
 package ui
 

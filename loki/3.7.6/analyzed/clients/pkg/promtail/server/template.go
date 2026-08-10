@@ -1,5 +1,8 @@
 package server
 
+// Promtail Web UI 模板渲染：从 ui.Assets 加载 _base 与页面 HTML，经 Prometheus template 展开。
+// 提供 since/pathPrefix 等通用 FuncMap，结果写入 http.ResponseWriter。
+
 import (
 	"context"
 	"io"
@@ -16,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/server/ui"
 )
 
+// 单次页面渲染参数：外部 URL、页面标题、数据与额外模板函数。
 // templateOptions is a set of options to render a template.
 type templateOptions struct {
 	ExternalURL                   *url.URL
@@ -25,6 +29,7 @@ type templateOptions struct {
 }
 
 // tmplFuncs create a default template function for a given template options
+// 默认模板函数：相对时间 since、路径前缀与构建版本字符串。
 func (opts templateOptions) tmplFuncs() template_text.FuncMap {
 	return template_text.FuncMap{
 		"since": func(t time.Time) time.Duration {
@@ -36,6 +41,7 @@ func (opts templateOptions) tmplFuncs() template_text.FuncMap {
 	}
 }
 
+// 加载模板、合并 FuncMap、ExpandHTML 后输出；出错返回 500。
 // executeTemplate execute a template and write result to the http.ResponseWriter
 func executeTemplate(ctx context.Context, w http.ResponseWriter, tmplOpts templateOptions) {
 	text, err := getTemplate(tmplOpts.Name)
@@ -65,6 +71,7 @@ func executeTemplate(ctx context.Context, w http.ResponseWriter, tmplOpts templa
 	_, _ = io.WriteString(w, result)
 }
 
+// 拼接 _base.html 与指定页面模板，自 vfs 读取为单一字符串。
 func getTemplate(name string) (string, error) {
 	var tmpl string
 

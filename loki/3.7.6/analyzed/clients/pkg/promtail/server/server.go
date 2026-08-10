@@ -1,5 +1,8 @@
 package server
 
+// Promtail HTTP 管理面：targets/config/service-discovery 页面、/ready 探针与可选 /reload。
+// 嵌入 dskit server，静态资源来自 ui.Assets，Disable 时使用 NoopServer 仅等信号退出。
+
 import (
 	"flag"
 	"fmt"
@@ -33,11 +36,13 @@ var (
 	readinessProbeSuccess = []byte("Ready")
 )
 
+// Promtail 对外 server 抽象：Run 阻塞监听，Shutdown 触发优雅退出。
 type Server interface {
 	Shutdown()
 	Run() error
 }
 
+// PromtailServer 包装 dskit Server，持有 target managers 与热重载 channel。
 // Server embed weaveworks server with static file and templating capability
 type PromtailServer struct {
 	*serverww.Server
@@ -77,6 +82,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 }
 
 // New makes a new Server
+// 注册 /targets、/config、/static 等路由；ProfilingEnabled 时暴露 pprof/fgprof。
 func New(cfg Config, log log.Logger, tms *targets.TargetManagers, promtailCfg string) (Server, error) {
 	if cfg.Disable {
 		return newNoopServer(log), nil
@@ -139,6 +145,7 @@ func New(cfg Config, log log.Logger, tms *targets.TargetManagers, promtailCfg st
 	return serv, nil
 }
 
+// 渲染 service-discovery.html，每 job 最多展示 100 个 dropped target。
 // serviceDiscovery serves the service discovery page.
 func (s *PromtailServer) serviceDiscovery(rw http.ResponseWriter, req *http.Request) {
 	s.mtx.Lock()
@@ -219,6 +226,7 @@ func (s *PromtailServer) config(rw http.ResponseWriter, req *http.Request) {
 	})
 }
 
+// 展示各 job 活跃 target 池，模板 helper 暴露 file/journal 详情与 ready 计数。
 // targets serves the targets page.
 func (s *PromtailServer) targets(rw http.ResponseWriter, req *http.Request) {
 	s.mtx.Lock()
@@ -281,6 +289,7 @@ func (s *PromtailServer) ReloadServer(tms *targets.TargetManagers, promtailCfg s
 }
 
 // ready serves the ready endpoint
+// 就绪探针：health_check_target 开启时要求至少一个 target Ready。
 func (s *PromtailServer) ready(rw http.ResponseWriter, _ *http.Request) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
@@ -297,6 +306,7 @@ func (s *PromtailServer) ready(rw http.ResponseWriter, _ *http.Request) {
 
 // computeExternalURL computes a sanitized external URL from a raw input. It infers unset
 // URL parts from the OS and the given listen address.
+// 推断或规范化 external_url，空值时默认 http://hostname:port。
 func computeExternalURL(u string, port int) (*url.URL, error) {
 	if u == "" {
 		hostname, err := os.Hostname()

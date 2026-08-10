@@ -1,3 +1,6 @@
+// Promtail targets 页交互：展开/折叠 job 表格、过滤未就绪 target，状态持久化到 localStorage。
+// 支持 all-targets 与 unready-targets 切换，刷新后恢复上次 tab 与各 job 折叠状态。
+
 function toggleJobTable(button, shouldExpand){
   if (button.length === 0) { return; }
 
@@ -15,6 +18,7 @@ function showAll(_, container) {
   $(container).show();
 }
 
+// 隐藏 h2 无 danger 类的就绪 job 容器，仅展示未就绪 target。
 function showUnready(_, container) {
   const isReady = $(container).find("h2").attr("class").indexOf("danger") < 0;
   if (isReady) { $(container).hide(); }

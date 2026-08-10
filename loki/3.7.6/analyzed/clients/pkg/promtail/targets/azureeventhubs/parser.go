@@ -1,5 +1,8 @@
 package azureeventhubs
 
+// Azure Event Hubs 消息解析：将 Kafka 消费字节 unmarshaling 为 Azure Monitor 资源日志 schema。
+// 支持 records 批量、单引号 JSON 修复、relabel 丢弃与自定义 payload 直通 Loki。
+
 import (
 	"bytes"
 	"encoding/json"
@@ -16,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// relabel 规则丢弃条目时返回，processRecords 会跳过而非失败整批。
 // errEntryDropped is returned when a log entry is dropped by relabeling rules.
 var errEntryDropped = errors.New("entry dropped by relabeling")
 
@@ -34,6 +38,7 @@ func (l azureMonitorResourceLogs) validate() error {
 
 // azureMonitorResourceLog used to unmarshal common schema for Azure resource logs
 // https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema
+// Azure 资源日志公共字段；time 与 timeStamp 二选一（部分服务仅提供其一）。
 type azureMonitorResourceLog struct {
 	Time string `json:"time"`
 	// Some logs have `time` field, some have `timeStamp` field : https://github.com/grafana/loki/issues/14176
@@ -89,6 +94,7 @@ type messageParser struct {
 	disallowCustomMessages bool
 }
 
+// 入口：尝试 schema 解析，失败时按 disallowCustomMessages 决定丢弃或原样推送。
 func (e *messageParser) Parse(message *sarama.ConsumerMessage, labelSet model.LabelSet, relabels []*relabel.Config, useIncomingTimestamp bool) ([]api.Entry, error) {
 	messageTime := time.Now()
 	if useIncomingTimestamp {
@@ -111,6 +117,7 @@ func (e *messageParser) Parse(message *sarama.ConsumerMessage, labelSet model.La
 	return e.processRecords(labelSet, relabels, useIncomingTimestamp, data.Records, messageTime)
 }
 
+// 先标准 JSON 解析，失败则将单引号替换为双引号后重试（Azure Function 已知问题）。
 // tryUnmarshal tries to unmarshal raw message data, in case of error tries to fix it and unmarshal fixed data.
 // If both attempts fail, return the initial unmarshal error.
 func (e *messageParser) tryUnmarshal(message []byte) (*azureMonitorResourceLogs, error) {
@@ -203,6 +210,7 @@ func (e *messageParser) getTime(messageTime time.Time, useIncomingTimestamp bool
 	return recordTime
 }
 
+// 从 category 等字段构建标签，relabel 后过滤 __ 内部标签与非法 UTF-8 名。
 func (e *messageParser) getLabels(logRecord *azureMonitorResourceLog, relabelConfig []*relabel.Config) model.LabelSet {
 	lbs := labels.New(labels.Label{
 		Name:  "__azure_event_hubs_category",
