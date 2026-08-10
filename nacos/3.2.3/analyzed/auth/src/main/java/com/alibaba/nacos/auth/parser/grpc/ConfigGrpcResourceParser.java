@@ -25,12 +25,16 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import java.util.List;
 
 /**
- * Config Grpc resource parser.
+ * 配置中心 gRPC 资源解析器。
+ *
+ * <p>从配置相关远程请求（含批量监听）中提取 tenant（命名空间）、group 与 dataId，
+ * 对非标准请求类型通过反射读取字段作为兜底。</p>
  *
  * @author xiweng.yy
  */
 public class ConfigGrpcResourceParser extends AbstractGrpcResourceParser {
     
+    /** {@inheritDoc} — 批量监听取首个上下文 tenant，否则读 AbstractConfigRequest 或反射字段。 */
     @Override
     protected String getNamespaceId(Request request) {
         String namespaceId = StringUtils.EMPTY;
@@ -45,11 +49,13 @@ public class ConfigGrpcResourceParser extends AbstractGrpcResourceParser {
         } else if (request instanceof AbstractConfigRequest) {
             namespaceId = ((AbstractConfigRequest) request).getTenant();
         } else {
+            // 非标准配置请求，反射读取 tenant 字段
             namespaceId = (String) ReflectUtils.getFieldValue(request, "tenant", StringUtils.EMPTY);
         }
         return StringUtils.isBlank(namespaceId) ? StringUtils.EMPTY : namespaceId;
     }
     
+    /** {@inheritDoc} — 优先从 AbstractConfigRequest 读取 group，否则反射读取。 */
     @Override
     protected String getGroup(Request request) {
         String groupName;
@@ -63,6 +69,7 @@ public class ConfigGrpcResourceParser extends AbstractGrpcResourceParser {
         return StringUtils.isBlank(groupName) ? StringUtils.EMPTY : groupName;
     }
     
+    /** {@inheritDoc} — 优先从 AbstractConfigRequest 读取 dataId，否则反射读取。 */
     @Override
     protected String getResourceName(Request request) {
         String dataId;

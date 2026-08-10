@@ -20,25 +20,28 @@ import com.alibaba.nacos.auth.annotation.Secured;
 import com.alibaba.nacos.auth.config.NacosAuthConfig;
 
 /**
- * Nacos server identity checker for nacos inner/admin API identity check.
+ * Nacos 服务端身份校验器接口。
+ *
+ * <p>用于 Nacos 内部/管理 API 的服务端身份互信校验；实现类可通过 SPI 扩展，
+ * 未找到自定义实现时使用 {@link DefaultChecker}。</p>
  *
  * @author xiweng.yy
  */
 public interface ServerIdentityChecker {
     
     /**
-     * Do init checker.
+     * 初始化校验器，注入认证配置。
      *
-     * @param authConfig config for nacos auth.
+     * @param authConfig Nacos 认证配置
      */
     void init(NacosAuthConfig authConfig);
     
     /**
-     * Do check nacos server identity.
+     * 校验请求携带的服务端身份是否与配置匹配。
      *
-     * @param serverIdentity server identity
-     * @param secured secured api secured annotation
-     * @return result of checking server identity
+     * @param serverIdentity 请求中提取的服务端身份
+     * @param secured        目标 API 的 {@link Secured} 注解
+     * @return 校验结果，见 {@link ServerIdentityResult}
      */
     ServerIdentityResult check(ServerIdentity serverIdentity, Secured secured);
 }

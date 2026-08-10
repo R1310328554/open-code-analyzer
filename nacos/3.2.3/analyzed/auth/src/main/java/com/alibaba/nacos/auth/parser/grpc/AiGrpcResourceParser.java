@@ -34,12 +34,16 @@ import static com.alibaba.nacos.plugin.auth.constant.Constants.Resource.AI_TYPE_
 import static com.alibaba.nacos.plugin.auth.constant.Constants.Resource.AI_TYPE_PROMPT;
 
 /**
- * AI Grpc resource parser.
+ * AI 模块 gRPC 资源解析器。
+ *
+ * <p>从 MCP、Agent、Prompt 等 AI 远程请求中提取命名空间、分组与资源名，
+ * 并在扩展属性中标记 AI 子类型（MCP / Agent / Prompt），供授权插件区分资源类别。</p>
  *
  * @author hongye.nhy xiweng.yy
  */
 public class AiGrpcResourceParser extends AbstractGrpcResourceParser {
     
+    /** {@inheritDoc} — 按请求类型读取 namespaceId，缺省时使用 MCP 默认命名空间。 */
     @Override
     protected String getNamespaceId(Request request) {
         String namespaceId = null;
@@ -56,11 +60,13 @@ public class AiGrpcResourceParser extends AbstractGrpcResourceParser {
         return namespaceId;
     }
     
+    /** {@inheritDoc} — AI 资源统一使用默认分组。 */
     @Override
     protected String getGroup(Request request) {
         return Constants.DEFAULT_GROUP;
     }
     
+    /** {@inheritDoc} — 按 MCP / Agent / Prompt 请求类型解析资源名。 */
     @Override
     protected String getResourceName(Request request) {
         if (request instanceof AbstractMcpRequest) {
@@ -73,6 +79,7 @@ public class AiGrpcResourceParser extends AbstractGrpcResourceParser {
         return StringUtils.EMPTY;
     }
     
+    /** 从 MCP 请求解析 MCP 服务名，发布请求优先取规格中的名称。 */
     private String getMcpName(AbstractMcpRequest request) {
         String mcpName = request.getMcpName();
         if (request instanceof ReleaseMcpServerRequest) {
@@ -84,6 +91,7 @@ public class AiGrpcResourceParser extends AbstractGrpcResourceParser {
         return StringUtils.isBlank(mcpName) ? StringUtils.EMPTY : mcpName;
     }
     
+    /** 从 Agent 请求解析 Agent 名称，发布 AgentCard 时优先取卡片名称。 */
     private String getAgentName(AbstractAgentRequest request) {
         String agentName = request.getAgentName();
         if (request instanceof ReleaseAgentCardRequest) {
@@ -95,11 +103,13 @@ public class AiGrpcResourceParser extends AbstractGrpcResourceParser {
         return StringUtils.isBlank(agentName) ? StringUtils.EMPTY : agentName;
     }
     
+    /** 从 Prompt 请求解析 promptKey 作为资源名。 */
     private String getPromptName(AbstractPromptRequest request) {
         String promptKey = request.getPromptKey();
         return StringUtils.isBlank(promptKey) ? StringUtils.EMPTY : promptKey;
     }
     
+    /** {@inheritDoc} — 在父类属性基础上写入 AI 子类型标识。 */
     @Override
     protected Properties getProperties(Request request) {
         Properties properties = super.getProperties(request);

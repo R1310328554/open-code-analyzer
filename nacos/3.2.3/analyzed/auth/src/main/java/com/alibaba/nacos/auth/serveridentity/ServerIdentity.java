@@ -17,25 +17,38 @@
 package com.alibaba.nacos.auth.serveridentity;
 
 /**
- * Nacos server identity.
+ * Nacos 服务端身份凭证。
+ *
+ * <p>集群内节点或管理端通过约定的键值对标识自身身份，用于内部 API 的快速互信校验，
+ * 匹配成功时可跳过常规用户认证流程。</p>
  *
  * @author xiweng.yy
  */
 public class ServerIdentity {
     
+    /** 身份标识的请求头/参数键名。 */
     private final String identityKey;
     
+    /** 身份标识对应的密钥值。 */
     private final String identityValue;
     
+    /**
+     * 构造服务端身份凭证。
+     *
+     * @param identityKey   身份键名
+     * @param identityValue 身份密钥值
+     */
     public ServerIdentity(String identityKey, String identityValue) {
         this.identityKey = identityKey;
         this.identityValue = identityValue;
     }
     
+    /** 返回身份键名。 */
     public String getIdentityKey() {
         return identityKey;
     }
     
+    /** 返回身份密钥值。 */
     public String getIdentityValue() {
         return identityValue;
     }

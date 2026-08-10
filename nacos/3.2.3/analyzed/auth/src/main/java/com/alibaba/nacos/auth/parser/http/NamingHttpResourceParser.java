@@ -25,12 +25,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Properties;
 
 /**
- * Naming Http resource parser.
+ * 命名服务 HTTP 资源解析器。
+ *
+ * <p>从 HTTP 请求参数中提取 namespaceId、groupName 与 serviceName；
+ * 服务名可能含 {@code group@@service} 格式，需借助 {@link NamingUtils} 拆分。</p>
  *
  * @author xiweng.yy
  */
 public class NamingHttpResourceParser extends AbstractHttpResourceParser {
     
+    /** {@inheritDoc} — 读取并规范化 namespaceId 请求参数。 */
     @Override
     protected String getNamespaceId(HttpServletRequest request) {
         return NamespaceUtil
@@ -39,11 +43,13 @@ public class NamingHttpResourceParser extends AbstractHttpResourceParser {
     }
     
     /**
-     * Group name from http request might be in service name with format ${group}@@${service}. So if group name is blank
-     * or {@code null}, should try to get group name from service.
+     * 从 HTTP 请求解析分组名。
      *
-     * @param request http request
-     * @return group
+     * <p>HTTP 请求中的 groupName 可能为空，此时 serviceName 可能为 {@code group@@service} 格式，
+     * 需从 serviceName 中解析分组。</p>
+     *
+     * @param request HTTP 请求
+     * @return 分组名，无法解析时返回空字符串
      */
     @Override
     protected String getGroup(HttpServletRequest request) {
@@ -55,14 +61,16 @@ public class NamingHttpResourceParser extends AbstractHttpResourceParser {
         return StringUtils.isBlank(groupName) ? StringUtils.EMPTY : groupName;
     }
     
+    /** {@inheritDoc} — 从 serviceName 参数解析纯服务名（去除分组前缀）。 */
     @Override
     protected String getResourceName(HttpServletRequest request) {
-        // See comment in #getGroup
+        // 逻辑与 #getGroup 对应：serviceName 可能含 group@@service 前缀
         String serviceName =
             NamingUtils.getServiceName(request.getParameter(CommonParams.SERVICE_NAME));
         return StringUtils.isBlank(serviceName) ? StringUtils.EMPTY : serviceName;
     }
     
+    /** {@inheritDoc} — 命名 HTTP 资源无额外扩展属性。 */
     @Override
     protected Properties getProperties(HttpServletRequest request) {
         return new Properties();

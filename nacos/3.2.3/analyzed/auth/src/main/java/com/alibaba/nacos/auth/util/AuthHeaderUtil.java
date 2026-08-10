@@ -22,17 +22,22 @@ import com.alibaba.nacos.common.http.param.Header;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
- * Auth header util.
+ * 认证请求头工具类。
+ *
+ * <p>在集群节点间 HTTP 调用或 gRPC 请求中自动附加服务端身份键值对，
+ * 使对端可通过 {@link com.alibaba.nacos.auth.serveridentity.ServerIdentityChecker} 快速互信。</p>
  *
  * @author xiweng.yy
  */
 public class AuthHeaderUtil {
     
     /**
-     * Add identity info to Http header.
+     * 向 HTTP 请求头写入服务端身份信息。
      *
-     * @param header     http header
-     * @param authConfig nacos auth config
+     * <p>仅当 {@link NacosAuthConfig#isSupportServerIdentity()} 为 true 且身份键非空时写入。</p>
+     *
+     * @param header     HTTP 请求头
+     * @param authConfig Nacos 认证配置
      */
     public static void addIdentityToHeader(Header header, NacosAuthConfig authConfig) {
         if (!authConfig.isSupportServerIdentity()) {
@@ -44,10 +49,12 @@ public class AuthHeaderUtil {
     }
     
     /**
-     * Add identity info to Grpc request header.
+     * 向 gRPC 远程请求头写入服务端身份信息。
      *
-     * @param request     grpc request
-     * @param authConfig  nacos auth config
+     * <p>仅当 {@link NacosAuthConfig#isSupportServerIdentity()} 为 true 且身份键非空时写入。</p>
+     *
+     * @param request    gRPC 远程请求
+     * @param authConfig Nacos 认证配置
      */
     public static void addIdentityToHeader(Request request, NacosAuthConfig authConfig) {
         if (!authConfig.isSupportServerIdentity()) {

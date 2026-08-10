@@ -20,7 +20,10 @@ import com.alibaba.nacos.auth.annotation.Secured;
 import com.alibaba.nacos.plugin.auth.api.Resource;
 
 /**
- * Resource parser.
+ * 资源解析器接口。
+ *
+ * <p>将入站请求（HTTP 或 gRPC）与 {@link Secured} 注解信息组合，解析为授权插件可识别的
+ * {@link Resource} 对象，供后续权限校验使用。</p>
  *
  * @author nkorange
  * @author mai.jh
@@ -29,11 +32,11 @@ import com.alibaba.nacos.plugin.auth.api.Resource;
 public interface ResourceParser<R> {
     
     /**
-     * Parse resource from request.
+     * 从请求中解析授权资源。
      *
-     * @param request request
-     * @param secured request secured
-     * @return resource
+     * @param request 原始请求对象
+     * @param secured 接口上的 {@link Secured} 安全注解
+     * @return 解析得到的 {@link Resource}，包含命名空间、分组、资源名及扩展属性
      */
     Resource parse(R request, Secured secured);
 }

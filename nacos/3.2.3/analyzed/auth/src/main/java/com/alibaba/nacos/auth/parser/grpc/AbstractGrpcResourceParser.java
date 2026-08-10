@@ -23,15 +23,25 @@ import com.alibaba.nacos.plugin.auth.constant.Constants;
 import java.util.Properties;
 
 /**
- * Abstract Grpc Resource Parser.
+ * gRPC 资源解析器抽象基类。
+ *
+ * <p>面向 {@link Request} 类型的远程调用请求，在扩展属性中记录请求类的简单类名，
+ * 便于授权插件区分不同 RPC 操作类型。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractGrpcResourceParser extends AbstractResourceParser<Request> {
     
+    /**
+     * 构建 gRPC 请求的扩展属性，写入请求类名。
+     *
+     * @param request gRPC 远程请求
+     * @return 包含 {@code REQUEST_CLASS} 的扩展属性
+     */
     @Override
     protected Properties getProperties(Request request) {
         Properties properties = new Properties();
+        // 记录请求类型，供授权插件按 RPC 类名做细粒度策略
         properties.setProperty(Constants.Resource.REQUEST_CLASS,
             request.getClass().getSimpleName());
         return properties;

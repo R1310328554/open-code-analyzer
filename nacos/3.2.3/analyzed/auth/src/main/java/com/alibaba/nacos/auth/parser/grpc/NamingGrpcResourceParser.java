@@ -24,12 +24,16 @@ import com.alibaba.nacos.common.utils.ReflectUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
- * Naming Grpc resource parser.
+ * 命名服务 gRPC 资源解析器。
+ *
+ * <p>从命名相关远程请求中提取 namespace、groupName 与 serviceName，
+ * 对非 {@link AbstractNamingRequest} 类型通过反射读取对应字段。</p>
  *
  * @author xiweng.yy
  */
 public class NamingGrpcResourceParser extends AbstractGrpcResourceParser {
     
+    /** {@inheritDoc} — 优先读 AbstractNamingRequest#getNamespace，否则反射 namespace 字段。 */
     @Override
     protected String getNamespaceId(Request request) {
         if (request instanceof AbstractNamingRequest) {
@@ -39,6 +43,7 @@ public class NamingGrpcResourceParser extends AbstractGrpcResourceParser {
             StringUtils.EMPTY);
     }
     
+    /** {@inheritDoc} — 优先读 AbstractNamingRequest#getGroupName，否则反射 groupName 字段。 */
     @Override
     protected String getGroup(Request request) {
         String groupName;
@@ -51,6 +56,7 @@ public class NamingGrpcResourceParser extends AbstractGrpcResourceParser {
         return StringUtils.isBlank(groupName) ? StringUtils.EMPTY : groupName;
     }
     
+    /** {@inheritDoc} — 优先读 AbstractNamingRequest#getServiceName，否则反射 serviceName 字段。 */
     @Override
     protected String getResourceName(Request request) {
         String serviceName;

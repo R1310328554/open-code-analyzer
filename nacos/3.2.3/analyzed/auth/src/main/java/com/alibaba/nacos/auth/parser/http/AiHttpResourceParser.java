@@ -33,24 +33,34 @@ import static com.alibaba.nacos.plugin.auth.constant.Constants.Resource.AI_TYPE_
 import static com.alibaba.nacos.plugin.auth.constant.Constants.Resource.AI_TYPE_SKILL;
 
 /**
- * Config Http resource parser.
+ * AI 模块 HTTP 资源解析器。
+ *
+ * <p>根据请求 URI 路径（MCP、A2A、Skill、Prompt、AgentSpec）解析对应 AI 资源的
+ * 命名空间、分组与资源名，并在扩展属性中标记 AI 子类型。</p>
  *
  * @author xiweng.yy
  */
 public class AiHttpResourceParser extends AbstractHttpResourceParser {
     
+    /** MCP 相关 API 路径前缀。 */
     public static final String MCP_PATH = "/ai/mcp";
     
+    /** A2A Agent 相关 API 路径前缀。 */
     public static final String A2A_PATH = "/ai/a2a";
     
+    /** Skill 相关 API 路径前缀。 */
     public static final String SKILL_PATH = "/ai/skills";
     
+    /** Prompt 相关 API 路径前缀。 */
     public static final String PROMPT_PATH = "/ai/prompt";
     
+    /** AgentSpec 相关 API 路径前缀。 */
     public static final String AGENT_SPEC_PATH = "/ai/agentSpec";
     
+    /** 请求参数中 AgentCard JSON 的键名。 */
     private static final String AGENT_CARD_PARAM = "agentCard";
     
+    /** {@inheritDoc} — 从请求参数读取 namespaceId，缺省使用 MCP 默认命名空间。 */
     @Override
     protected String getNamespaceId(HttpServletRequest request) {
         String namespaceId = request.getParameter(Constants.NAMESPACE_ID);
@@ -60,11 +70,13 @@ public class AiHttpResourceParser extends AbstractHttpResourceParser {
         return namespaceId;
     }
     
+    /** {@inheritDoc} — AI 资源统一使用默认分组。 */
     @Override
     protected String getGroup(HttpServletRequest request) {
         return Constants.DEFAULT_GROUP;
     }
     
+    /** {@inheritDoc} — 按 URI 路径分支解析 MCP / Agent / Skill / Prompt / AgentSpec 资源名。 */
     @Override
     protected String getResourceName(HttpServletRequest request) {
         String url = request.getRequestURI();
@@ -82,11 +94,13 @@ public class AiHttpResourceParser extends AbstractHttpResourceParser {
         return StringUtils.EMPTY;
     }
     
+    /** 从请求参数 mcpName 读取 MCP 服务名。 */
     private String getMcpName(HttpServletRequest request) {
         String mcpName = request.getParameter("mcpName");
         return StringUtils.isBlank(mcpName) ? StringUtils.EMPTY : mcpName;
     }
     
+    /** 从 agentName 或 agentCard JSON 解析 Agent 名称。 */
     private String getAgentName(HttpServletRequest request) {
         String agentName = request.getParameter("agentName");
         if (request.getParameterMap().containsKey(AGENT_CARD_PARAM)) {
@@ -95,6 +109,7 @@ public class AiHttpResourceParser extends AbstractHttpResourceParser {
         return StringUtils.isBlank(agentName) ? StringUtils.EMPTY : agentName;
     }
     
+    /** 反序列化 AgentCard JSON 并提取 name 字段。 */
     private String deserializeAndGetAgentName(String agentCardJson) {
         try {
             AgentCard agentCard = JacksonUtils.toObj(agentCardJson, AgentCard.class);
@@ -104,21 +119,25 @@ public class AiHttpResourceParser extends AbstractHttpResourceParser {
         }
     }
     
+    /** 从请求参数 skillName 读取 Skill 名称。 */
     private String getSkillName(HttpServletRequest request) {
         String skillName = request.getParameter("skillName");
         return StringUtils.isBlank(skillName) ? StringUtils.EMPTY : skillName;
     }
     
+    /** 从请求参数 promptKey 读取 Prompt 键名。 */
     private String getPromptName(HttpServletRequest request) {
         String promptKey = request.getParameter("promptKey");
         return StringUtils.isBlank(promptKey) ? StringUtils.EMPTY : promptKey;
     }
     
+    /** 从请求参数 agentSpecName 读取 AgentSpec 名称。 */
     private String getAgentSpecName(HttpServletRequest request) {
         String agentSpecName = request.getParameter("agentSpecName");
         return StringUtils.isBlank(agentSpecName) ? StringUtils.EMPTY : agentSpecName;
     }
     
+    /** {@inheritDoc} — 按 URI 路径写入 AI 子类型扩展属性。 */
     @Override
     protected Properties getProperties(HttpServletRequest request) {
         Properties properties = new Properties();

@@ -24,30 +24,40 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 
 /**
- * Server Identity Checker SPI holder.
+ * 服务端身份校验器 SPI 持有者（单例）。
+ *
+ * <p>启动时通过 {@link NacosServiceLoader} 加载 {@link ServerIdentityChecker} 实现类；
+ * 未找到 SPI 实现时使用 {@link DefaultChecker}，多个实现时取第一个并打印警告。</p>
  *
  * @author xiweng.yy
  */
 public class ServerIdentityCheckerHolder {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerIdentityCheckerHolder.class);
     
+    /** 单例实例。 */
     private static final ServerIdentityCheckerHolder INSTANCE = new ServerIdentityCheckerHolder();
     
+    /** SPI 发现的校验器实现类，供 {@link #newChecker()} 反射实例化。 */
     private Class<? extends ServerIdentityChecker> checkerClass;
     
+    /** 私有构造，初始化时加载 SPI 实现。 */
     private ServerIdentityCheckerHolder() {
         tryGetCheckerBySpi();
     }
     
+    /** 返回持有者单例。 */
     public static ServerIdentityCheckerHolder getInstance() {
         return INSTANCE;
     }
     
     /**
-     * Build a new checker.
+     * 创建新的校验器实例。
      *
-     * @return new checker instance.
+     * <p>反射实例化 SPI 发现的实现类；失败时回退为 {@link DefaultChecker}。</p>
+     *
+     * @return 新的 {@link ServerIdentityChecker} 实例
      */
     public ServerIdentityChecker newChecker() {
         try {
@@ -58,6 +68,7 @@ public class ServerIdentityCheckerHolder {
         }
     }
     
+    /** 通过 SPI 加载校验器实现并确定 checkerClass。 */
     private synchronized void tryGetCheckerBySpi() {
         Collection<ServerIdentityChecker> checkers =
             NacosServiceLoader.load(ServerIdentityChecker.class);
@@ -75,6 +86,7 @@ public class ServerIdentityCheckerHolder {
             checkerClass.getClass().getCanonicalName());
     }
     
+    /** 多个 SPI 实现时打印全部候选并选用第一个。 */
     private Class<? extends ServerIdentityChecker> showAllImplementations(
         Collection<ServerIdentityChecker> checkers) {
         ServerIdentityChecker result = checkers.iterator().next();

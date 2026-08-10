@@ -20,19 +20,31 @@ import com.alibaba.nacos.auth.annotation.Secured;
 import com.alibaba.nacos.auth.config.NacosAuthConfig;
 
 /**
- * Nacos default server identity checker.
+ * Nacos 默认服务端身份校验器。
+ *
+ * <p>将请求中的身份值与 {@link NacosAuthConfig#getServerIdentityValue()} 做字符串相等比较；
+ * SPI 未提供自定义实现时由 {@link ServerIdentityCheckerHolder} 回退使用本类。</p>
  *
  * @author xiweng.yy
  */
 public class DefaultChecker implements ServerIdentityChecker {
     
+    /** 认证配置，在 {@link #init} 时注入。 */
     private NacosAuthConfig authConfig;
     
+    /** {@inheritDoc} */
     @Override
     public void init(NacosAuthConfig authConfigs) {
         this.authConfig = authConfigs;
     }
     
+    /**
+     * 比较请求身份值与配置中的服务端身份密钥。
+     *
+     * @param serverIdentity 请求携带的服务端身份
+     * @param secured        目标 API 的安全注解（默认实现未使用）
+     * @return 值相等返回 {@link ServerIdentityResult#success()}，否则 {@link ServerIdentityResult#noMatched()}
+     */
     @Override
     public ServerIdentityResult check(ServerIdentity serverIdentity, Secured secured) {
         if (authConfig.getServerIdentityValue().equals(serverIdentity.getIdentityValue())) {

@@ -21,7 +21,10 @@ import com.alibaba.nacos.auth.parser.AbstractResourceParser;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Abstract Http Resource Parser.
+ * HTTP 资源解析器抽象基类。
+ *
+ * <p>将 {@link AbstractResourceParser} 的泛型参数固定为 {@link HttpServletRequest}，
+ * 各模块 HTTP 解析器（配置、命名、AI 等）继承此类并实现具体的字段提取逻辑。</p>
  *
  * @author xiweng.yy
  */
