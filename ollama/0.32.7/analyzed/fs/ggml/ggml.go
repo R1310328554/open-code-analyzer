@@ -1,3 +1,4 @@
+// GGML/GGUF 模型解析：KV 元数据、张量与显存估算。
 package ggml
 
 import (
@@ -19,32 +20,39 @@ import (
 	"github.com/ollama/ollama/ml"
 )
 
+// GGML 表示已解码的 GGML/GGUF 模型容器。
 type GGML struct {
 	container
 	model
 	Length int64
 }
 
+// model 内部接口：暴露 KV 与张量集合。
 type model interface {
 	KV() KV
 	Tensors() Tensors
 }
 
+// KV 为 GGUF 键值元数据映射。
 type KV map[string]any
 
+// Architecture 返回 general.architecture，默认 unknown。
 func (kv KV) Architecture() string {
 	return kv.String("general.architecture", "unknown")
 }
 
+// Kind 返回 general.type 模型种类。
 func (kv KV) Kind() string {
 	return kv.String("general.type", "unknown")
 }
 
+// ParameterCount 返回 general.parameter_count。
 func (kv KV) ParameterCount() uint64 {
 	val, _ := keyValue(kv, "general.parameter_count", uint64(0))
 	return val
 }
 
+// FileType 返回 general.file_type 量化类型。
 func (kv KV) FileType() FileType {
 	if t := kv.Uint("general.file_type"); t > 0 {
 		return FileType(t)
@@ -53,14 +61,17 @@ func (kv KV) FileType() FileType {
 	return FileTypeUnknown
 }
 
+// BlockCount 返回 transformer 层数 block_count。
 func (kv KV) BlockCount() uint64 {
 	return uint64(kv.Uint("block_count"))
 }
 
+// EmbeddingLength 返回 embedding 维度。
 func (kv KV) EmbeddingLength() uint64 {
 	return uint64(kv.Uint("embedding_length"))
 }
 
+// HeadCount 返回各层 attention.head_count，不足层用默认值填充。
 func (kv KV) HeadCount() []uint64 {
 	headCountDefault := uint32(1)
 	headCount := kv.UintOrArrayValueAsArray("attention.head_count", headCountDefault)
@@ -135,14 +146,17 @@ func (kv KV) EmbeddingHeadCountV() uint64 {
 	return uint64(kv.Uint("attention.value_length", uint32(kv.EmbeddingHeadCountMax())))
 }
 
+// ContextLength 返回 context_length 上下文长度。
 func (kv KV) ContextLength() uint64 {
 	return uint64(kv.Uint("context_length"))
 }
 
+// ChatTemplate 返回 tokenizer.chat_template。
 func (kv KV) ChatTemplate() string {
 	return kv.String("tokenizer.chat_template")
 }
 
+// SSM（状态空间模型）架构参数访问器。
 // ssm architecture parameters
 
 func (kv KV) SSMConvKernel() uint64 {
@@ -182,6 +196,7 @@ func (kv KV) FFNLength() []uint64 {
 	return out
 }
 
+// 通用 KV 类型安全读取辅助方法。
 // general types
 
 func (kv KV) String(key string, defaultValue ...string) string {
@@ -275,6 +290,7 @@ func (kv KV) Value(key string) any {
 	return kv[key]
 }
 
+// OllamaEngineRequired 判断架构是否必须使用 Ollama 自有推理引擎。
 func (kv KV) OllamaEngineRequired() bool {
 	return slices.Contains([]string{
 		"bert",
@@ -328,11 +344,13 @@ func keyValue[T valueTypes | arrayValueTypes](kv KV, key string, defaultValue ..
 	return defaultValue[0], false
 }
 
+// Tensors 聚合模型张量列表与数据区偏移。
 type Tensors struct {
 	items  []*Tensor
 	Offset uint64
 }
 
+// Items 按名称前缀过滤张量。
 func (s Tensors) Items(prefix ...string) []*Tensor {
 	if len(prefix) == 0 {
 		return s.items
@@ -348,6 +366,7 @@ func (s Tensors) Items(prefix ...string) []*Tensor {
 	return items
 }
 
+// GroupLayers 将张量按层名分组为 Layer 映射。
 func (ts Tensors) GroupLayers() map[string]Layer {
 	layers := make(map[string]Layer)
 	for _, t := range ts.items {
@@ -371,8 +390,10 @@ func (ts Tensors) GroupLayers() map[string]Layer {
 	return layers
 }
 
+// Layer 表示单层内的命名张量映射。
 type Layer map[string]*Tensor
 
+// Size 累加层内所有张量字节大小。
 func (l Layer) Size() (size uint64) {
 	for _, t := range l {
 		size += t.Size()
@@ -381,11 +402,13 @@ func (l Layer) Size() (size uint64) {
 	return size
 }
 
+// Tensor 描述 GGUF 中单个张量的元数据与 WriterTo 载荷。
 type Tensor struct {
 	Name   string `json:"name"`
 	Kind   uint32 `json:"kind"`
 	Offset uint64 `json:"-"`
 
+	// Shape 为各维度元素个数。
 	// Shape is the number of elements in each dimension
 	Shape []uint64 `json:"shape"`
 
@@ -404,6 +427,7 @@ func (t Tensor) blockSize() uint64 {
 	return TensorType(t.Kind).BlockSize()
 }
 
+// BlockSize 返回量化类型的块大小（元素数）。
 func (t TensorType) BlockSize() uint64 {
 	switch t {
 	case
@@ -439,6 +463,7 @@ func (t Tensor) typeSize() uint64 {
 	return TensorType(t.Kind).TypeSize()
 }
 
+// TypeSize 返回单个量化块的字节大小。
 func (t TensorType) TypeSize() uint64 {
 	blockSize := t.BlockSize()
 
@@ -512,6 +537,7 @@ func (t TensorType) TypeSize() uint64 {
 	}
 }
 
+// Elements 返回张量元素总数。
 func (t Tensor) Elements() uint64 {
 	var count uint64 = 1
 	for _, n := range t.Shape {
@@ -531,6 +557,7 @@ func (t Tensor) elements() (uint64, bool) {
 	return count, true
 }
 
+// Size 返回张量存储字节数。
 func (t Tensor) Size() uint64 {
 	return t.Elements() * t.typeSize() / t.blockSize()
 }
@@ -567,6 +594,7 @@ func (t Tensor) Type() string {
 	return TensorType(t.Kind).String()
 }
 
+// container 抽象 GGML/GGUF 容器解码。
 type container interface {
 	Name() string
 	Decode(io.ReadSeeker) (model, error)
@@ -605,6 +633,7 @@ func DetectContentType(b []byte) string {
 	}
 }
 
+// Decode 从 reader 解码 GGUF 模型，maxArraySize 限制收集的数组大小。
 // Decode decodes a GGML model from the given reader.
 //
 // It collects array values for arrays with a size less than or equal to
@@ -645,6 +674,7 @@ func Decode(rs io.ReadSeeker, maxArraySize int) (*GGML, error) {
 	}, nil
 }
 
+// GraphSize 按架构估算 KV cache 与各 GPU 部分/完全 offload 显存需求。
 func (f GGML) GraphSize(context, batch uint64, numParallel int, kvCacheType string, useFlashAttention ml.FlashAttentionType) (kv []uint64, partialOffload, fullOffload uint64) {
 	context *= uint64(numParallel)
 
@@ -663,6 +693,7 @@ func (f GGML) GraphSize(context, batch uint64, numParallel int, kvCacheType stri
 
 	bytesPerElement := kvCacheBytesPerElement(kvCacheType)
 
+	// 默认估算逻辑与 llama.cpp cache 假设一致，特殊架构需下方单独处理。
 	// Default for models unless special-cased below. These defaults mirror the
 	// cache usage in llama.cpp under the assumption that models without special
 	// cases below will use the llamarunner and caching will be handled by the
@@ -681,11 +712,13 @@ func (f GGML) GraphSize(context, batch uint64, numParallel int, kvCacheType stri
 		headsL := headsArr[i]
 		headsKVL := headsKVArr[i]
 		if headsL > 0 && headsKVL > 0 {
+			// 全注意力层 KV cache 估算。
 			// full attention layer
 			// NOTE: Assumes uniform values for all attn layers
 			kv[i] = uint64(float64(context*(embeddingHeadsK+embeddingHeadsV)*headsKVL) * bytesPerElement)
 			kvSizeAttn += kv[i]
 		} else {
+			// 循环/SSM 层 KV cache 估算（recurrent 固定 f32）。
 			// recurrent layer
 			ssmDConv := f.KV().SSMConvKernel()
 			ssmDState := f.KV().SSMStateSize()
@@ -895,6 +928,7 @@ func (f GGML) GraphSize(context, batch uint64, numParallel int, kvCacheType stri
 	return
 }
 
+// SupportsKVCacheType 检查请求的 KV cache 量化类型是否受支持。
 // SupportsKVCacheType checks if the requested cache type is supported
 func (f GGML) SupportsKVCacheType(cacheType string) bool {
 	if cacheType == "" || cacheType == "f16" {
@@ -904,6 +938,7 @@ func (f GGML) SupportsKVCacheType(cacheType string) bool {
 	return slices.Contains([]string{"q8_0", "q4_0"}, cacheType)
 }
 
+// KVCacheTypeIsQuantized 判断 cache 类型是否为量化类型。
 // KVCacheTypeIsQuantized checks if the requested cache type is a quantized type
 func (f GGML) KVCacheTypeIsQuantized(cacheType string) bool {
 	if cacheType == "" || cacheType == "f16" || cacheType == "f32" || cacheType == "bf16" {
@@ -912,6 +947,7 @@ func (f GGML) KVCacheTypeIsQuantized(cacheType string) bool {
 	return true
 }
 
+// SupportsFlashAttention 检查模型是否支持 Flash Attention。
 // SupportsFlashAttention checks if the model supports flash attention
 func (f GGML) SupportsFlashAttention() bool {
 	_, isEmbedding := f.KV()[fmt.Sprintf("%s.pooling_type", f.KV().Architecture())]
@@ -934,6 +970,7 @@ func (f GGML) SupportsFlashAttention() bool {
 	return headCountK != 0 && headCountV != 0 && headCountK == headCountV
 }
 
+// FlashAttention 判断该架构是否默认启用 Flash Attention。
 // FlashAttention checks if the model should enable flash attention
 func (f GGML) FlashAttention() bool {
 	return slices.Contains([]string{
@@ -955,6 +992,7 @@ func (f GGML) FlashAttention() bool {
 	}, f.KV().String("general.architecture"))
 }
 
+// kvCacheBytesPerElement 返回各 KV cache 类型的每元素字节数。
 // kvCacheBytesPerElement returns the number of bytes per element for a given KV cache type
 func kvCacheBytesPerElement(cacheType string) float64 {
 	switch cacheType {

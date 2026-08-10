@@ -1,3 +1,4 @@
+// 字节格式化：十进制与二进制人类可读大小。
 package format
 
 import (
@@ -5,6 +6,7 @@ import (
 	"math"
 )
 
+// 字节单位常量：十进制（KB/MB/GB/TB）与二进制（KiB/MiB/GiB）。
 const (
 	Byte = 1
 
@@ -18,6 +20,7 @@ const (
 	GibiByte = MebiByte * 1024
 )
 
+// HumanBytes 将字节数格式化为十进制单位（KB/MB/GB/TB）。
 func HumanBytes(b int64) string {
 	var value float64
 	var unit string
@@ -49,6 +52,7 @@ func HumanBytes(b int64) string {
 	}
 }
 
+// HumanBytes2 将字节数格式化为二进制单位（KiB/MiB/GiB）。
 func HumanBytes2(b uint64) string {
 	switch {
 	case b >= GibiByte:

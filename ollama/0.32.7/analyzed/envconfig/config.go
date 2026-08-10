@@ -1,3 +1,4 @@
+// 环境配置：读取 OLLAMA_* 环境变量与 ~/.ollama/server.json。
 package envconfig
 
 import (
@@ -17,6 +18,7 @@ import (
 	"time"
 )
 
+// Host 返回 Ollama 服务的 scheme 与 host，可通过 OLLAMA_HOST 配置，默认 http://127.0.0.1:11434。
 // Host returns the scheme and host. Host can be configured via the OLLAMA_HOST environment variable.
 // Default is scheme "http" and host "127.0.0.1:11434"
 func Host() *url.URL {
@@ -59,6 +61,7 @@ func Host() *url.URL {
 	}
 }
 
+// ConnectableHost 将 0.0.0.0/:: 绑定地址替换为对应回环地址，供客户端连接。
 // ConnectableHost returns Host() with unspecified bind addresses (0.0.0.0, ::)
 // replaced by the corresponding loopback address (127.0.0.1, ::1).
 // Unspecified addresses are valid for binding a server socket but not for
@@ -82,6 +85,7 @@ func ConnectableHost() *url.URL {
 	return u
 }
 
+// AllowedOrigins 返回 CORS 允许的来源列表，可通过 OLLAMA_ORIGINS 配置。
 // AllowedOrigins returns a list of allowed origins. AllowedOrigins can be configured via the OLLAMA_ORIGINS environment variable.
 func AllowedOrigins() (origins []string) {
 	if s := Var("OLLAMA_ORIGINS"); s != "" {
@@ -108,6 +112,7 @@ func AllowedOrigins() (origins []string) {
 	return origins
 }
 
+// Models 返回模型目录路径，默认 $HOME/.ollama/models。
 // Models returns the path to the models directory. Models directory can be configured via the OLLAMA_MODELS environment variable.
 // Default is $HOME/.ollama/models
 func Models() string {
@@ -123,6 +128,7 @@ func Models() string {
 	return filepath.Join(home, ".ollama", "models")
 }
 
+// KeepAlive 返回模型在内存中的保活时长，负值表示无限，零表示不保活，默认 5 分钟。
 // KeepAlive returns the duration that models stay loaded in memory. KeepAlive can be configured via the OLLAMA_KEEP_ALIVE environment variable.
 // Negative values are treated as infinite. Zero is treated as no keep alive.
 // Default is 5 minutes.
@@ -143,6 +149,7 @@ func KeepAlive() (keepAlive time.Duration) {
 	return keepAlive
 }
 
+// LoadTimeout 返回模型加载停滞检测超时，零或负值表示无限，默认 5 分钟。
 // LoadTimeout returns the duration for stall detection during model loads. LoadTimeout can be configured via the OLLAMA_LOAD_TIMEOUT environment variable.
 // Zero or Negative values are treated as infinite.
 // Default is 5 minutes.
@@ -163,6 +170,7 @@ func LoadTimeout() (loadTimeout time.Duration) {
 	return loadTimeout
 }
 
+// Remotes 返回允许的远程模型主机列表，默认 ollama.com。
 func Remotes() []string {
 	var r []string
 	raw := strings.TrimSpace(Var("OLLAMA_REMOTES"))
@@ -174,6 +182,7 @@ func Remotes() []string {
 	return r
 }
 
+// BoolWithDefault 返回读取布尔环境变量的闭包，解析失败时返回 true。
 func BoolWithDefault(k string) func(defaultValue bool) bool {
 	return func(defaultValue bool) bool {
 		if s := Var(k); s != "" {
@@ -189,6 +198,7 @@ func BoolWithDefault(k string) func(defaultValue bool) bool {
 	}
 }
 
+// Bool 返回读取布尔环境变量的闭包，未设置时默认 false。
 func Bool(k string) func() bool {
 	withDefault := BoolWithDefault(k)
 	return func() bool {
@@ -196,6 +206,7 @@ func Bool(k string) func() bool {
 	}
 }
 
+// LogLevel 从 OLLAMA_DEBUG 解析 slog 日志级别（0/INFO、1/DEBUG、2/TRACE）。
 // LogLevel returns the log level for the application.
 // Values are 0 or false INFO (Default), 1 or true DEBUG, 2 TRACE
 func LogLevel() slog.Level {
@@ -212,32 +223,45 @@ func LogLevel() slog.Level {
 }
 
 var (
+	// FlashAttention 启用实验性 Flash Attention。
 	// FlashAttention enables the experimental flash attention feature.
 	FlashAttention = BoolWithDefault("OLLAMA_FLASH_ATTENTION")
+	// GoTemplate 启用 Modelfile TEMPLATE 模板渲染。
 	// GoTemplate enables Modelfile TEMPLATE rendering when a model has one.
 	GoTemplate = BoolWithDefault("OLLAMA_GO_TEMPLATE")
+	// DebugLogRequests 将推理请求体写入磁盘以便重放调试。
 	// DebugLogRequests logs inference requests to disk for replay/debugging.
 	DebugLogRequests = Bool("OLLAMA_DEBUG_LOG_REQUESTS")
+	// KvCacheType 设置 K/V cache 量化类型。
 	// KvCacheType is the quantization type for the K/V cache.
 	KvCacheType = String("OLLAMA_KV_CACHE_TYPE")
+	// NoHistory 禁用 readline 历史记录。
 	// NoHistory disables readline history.
 	NoHistory = Bool("OLLAMA_NOHISTORY")
+	// NoPrune 禁用启动时模型 blob 修剪。
 	// NoPrune disables pruning of model blobs on startup.
 	NoPrune = Bool("OLLAMA_NOPRUNE")
+	// SchedSpread 允许将模型调度到所有 GPU。
 	// SchedSpread allows scheduling models across all GPUs.
 	SchedSpread = Bool("OLLAMA_SCHED_SPREAD")
+	// ContextLength 设置默认上下文长度。
 	// ContextLength sets the default context length
 	ContextLength = Uint("OLLAMA_CONTEXT_LENGTH", 0)
+	// UseAuth 启用 Ollama 客户端与服务端之间的认证。
 	// Auth enables authentication between the Ollama client and server
 	UseAuth = Bool("OLLAMA_AUTH")
+	// EnableVulkan 控制是否启用 Vulkan 后端发现。
 	// EnableVulkan controls Vulkan backend discovery.
 	EnableVulkan = BoolWithDefault("OLLAMA_VULKAN")
+	// EnableIntegratedGPU 控制是否允许选择集成 GPU。
 	// EnableIntegratedGPU controls whether integrated GPUs may be selected.
 	EnableIntegratedGPU = BoolWithDefault("OLLAMA_IGPU_ENABLE")
+	// NoCloudEnv 读取 OLLAMA_NO_CLOUD 环境变量。
 	// NoCloudEnv checks the OLLAMA_NO_CLOUD environment variable.
 	NoCloudEnv = Bool("OLLAMA_NO_CLOUD")
 )
 
+// String 返回读取字符串环境变量的闭包。
 func String(s string) func() string {
 	return func() string {
 		return Var(s)
@@ -256,6 +280,7 @@ var (
 	HsaOverrideGfxVersion = String("HSA_OVERRIDE_GFX_VERSION")
 )
 
+// Uint 返回读取无符号整数环境变量的闭包，解析失败时使用默认值。
 func Uint(key string, defaultValue uint) func() uint {
 	return func() uint {
 		if s := Var(key); s != "" {
@@ -271,12 +296,16 @@ func Uint(key string, defaultValue uint) func() uint {
 }
 
 var (
+	// NumParallel 设置并行模型请求数，默认 1。
 	// NumParallel sets the number of parallel model requests. NumParallel can be configured via the OLLAMA_NUM_PARALLEL environment variable.
 	NumParallel = Uint("OLLAMA_NUM_PARALLEL", 1)
+	// MaxRunners 设置每 GPU 最大已加载模型数。
 	// MaxRunners sets the maximum number of loaded models. MaxRunners can be configured via the OLLAMA_MAX_LOADED_MODELS environment variable.
 	MaxRunners = Uint("OLLAMA_MAX_LOADED_MODELS", 0)
+	// MaxQueue 设置请求队列最大长度，默认 512。
 	// MaxQueue sets the maximum number of queued requests. MaxQueue can be configured via the OLLAMA_MAX_QUEUE environment variable.
 	MaxQueue = Uint("OLLAMA_MAX_QUEUE", 512)
+	// MaxTransferStreams 限制 safetensors 拉取/推送的并行传输流数，默认 4。
 	// MaxTransferStreams caps the number of simultaneous body-bearing
 	// transfers during safetensors model pulls/pushes, keeping slower
 	// networks from being saturated. Tune higher for fast networks. Has
@@ -285,6 +314,7 @@ var (
 	MaxTransferStreams = Uint("OLLAMA_MAX_TRANSFER_STREAMS", 4)
 )
 
+// Uint64 返回读取 uint64 环境变量的闭包。
 func Uint64(key string, defaultValue uint64) func() uint64 {
 	return func() uint64 {
 		if s := Var(key); s != "" {
@@ -299,15 +329,18 @@ func Uint64(key string, defaultValue uint64) func() uint64 {
 	}
 }
 
+// GpuOverhead 为每块 GPU 预留的 VRAM 字节数。
 // Set aside VRAM per GPU
 var GpuOverhead = Uint64("OLLAMA_GPU_OVERHEAD", 0)
 
+// EnvVar 描述单个环境变量的名称、当前值与说明。
 type EnvVar struct {
 	Name        string
 	Value       any
 	Description string
 }
 
+// AsMap 返回所有已知 Ollama 环境变量及其元数据。
 func AsMap() map[string]EnvVar {
 	ret := map[string]EnvVar{
 		"OLLAMA_DEBUG":                {"OLLAMA_DEBUG", LogLevel(), "Show additional debug information (e.g. OLLAMA_DEBUG=1)"},
@@ -337,6 +370,7 @@ func AsMap() map[string]EnvVar {
 		"OLLAMA_EDITOR":               {"OLLAMA_EDITOR", Editor(), "Path to editor for interactive prompt editing (Ctrl+G)"},
 		"OLLAMA_REMOTES":              {"OLLAMA_REMOTES", Remotes(), "Allowed hosts for remote models (default \"ollama.com\")"},
 
+		// 以下为信息性代理变量。
 		// Informational
 		"HTTP_PROXY":  {"HTTP_PROXY", String("HTTP_PROXY")(), "HTTP proxy"},
 		"HTTPS_PROXY": {"HTTPS_PROXY", String("HTTPS_PROXY")(), "HTTPS proxy"},
@@ -344,6 +378,7 @@ func AsMap() map[string]EnvVar {
 	}
 
 	if runtime.GOOS != "windows" {
+		// Windows 环境变量大小写不敏感，无需重复小写键。
 		// Windows environment variables are case-insensitive so there's no need to duplicate them
 		ret["http_proxy"] = EnvVar{"http_proxy", String("http_proxy")(), "HTTP proxy"}
 		ret["https_proxy"] = EnvVar{"https_proxy", String("https_proxy")(), "HTTPS proxy"}
@@ -363,6 +398,7 @@ func AsMap() map[string]EnvVar {
 	return ret
 }
 
+// Values 返回环境变量名到字符串值的映射。
 func Values() map[string]string {
 	vals := make(map[string]string)
 	for k, v := range AsMap() {
@@ -371,11 +407,13 @@ func Values() map[string]string {
 	return vals
 }
 
+// Var 读取环境变量并去除首尾空格与引号。
 // Var returns an environment variable stripped of leading and trailing quotes or spaces
 func Var(key string) string {
 	return strings.Trim(strings.TrimSpace(os.Getenv(key)), "\"'")
 }
 
+// serverConfigData 表示 ~/.ollama/server.json 的解析字段。
 // serverConfigData holds the parsed fields from ~/.ollama/server.json.
 type serverConfigData struct {
 	DisableOllamaCloud bool `json:"disable_ollama_cloud,omitempty"`
@@ -387,6 +425,7 @@ var (
 	serverCfg       serverConfigData
 )
 
+// loadServerConfig 懒加载并缓存 ~/.ollama/server.json。
 func loadServerConfig() {
 	serverCfgMu.RLock()
 	if serverCfgLoaded {
@@ -418,12 +457,14 @@ func loadServerConfig() {
 	serverCfgLoaded = true
 }
 
+// cachedServerConfig 返回已缓存的服务端配置（需先 loadServerConfig）。
 func cachedServerConfig() serverConfigData {
 	serverCfgMu.RLock()
 	defer serverCfgMu.RUnlock()
 	return serverCfg
 }
 
+// ReloadServerConfig 刷新 ~/.ollama/server.json 缓存。
 // ReloadServerConfig refreshes the cached ~/.ollama/server.json settings.
 func ReloadServerConfig() {
 	serverCfgMu.Lock()
@@ -434,6 +475,7 @@ func ReloadServerConfig() {
 	loadServerConfig()
 }
 
+// NoCloud 检查 Ollama 云功能是否被环境变量或 server.json 禁用。
 // NoCloud returns true if Ollama cloud features are disabled,
 // checking both the OLLAMA_NO_CLOUD environment variable and
 // the disable_ollama_cloud field in ~/.ollama/server.json.
@@ -445,6 +487,7 @@ func NoCloud() bool {
 	return cachedServerConfig().DisableOllamaCloud
 }
 
+// NoCloudSource 返回云功能禁用的来源：none、env、config 或 both。
 // NoCloudSource returns the source of the cloud-disabled decision.
 // Returns "none", "env", "config", or "both".
 func NoCloudSource() string {

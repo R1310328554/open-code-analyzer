@@ -1,5 +1,6 @@
 package discover
 
+// Runner 式 GPU 发现：启动 llama-server 引导探测、过滤与显存刷新。
 // Runner based GPU discovery
 
 import (
@@ -28,11 +29,14 @@ var (
 	bootstrapped bool
 )
 
+// defaultIntegratedROCmGFXTargets 列出默认允许的集成 ROCm gfx 目标。
 var defaultIntegratedROCmGFXTargets = map[string]struct{}{
+	// AMD Radeon 8060S / Ryzen AI Max+ 395 等 APU。
 	// AMD Radeon 8060S / Ryzen AI Max+ 395.
 	"gfx1151": {},
 }
 
+// GPUDevices 返回可用 GPU 列表；首次调用执行完整引导发现，后续刷新空闲显存。
 func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.DeviceInfo {
 	deviceMu.Lock()
 	defer deviceMu.Unlock()
@@ -61,12 +65,14 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 		detectIncompatibleLibraries()
 		detectOldAMDDriverWindows()
 
+		// 若用户设置了可见设备覆盖，可能导致发现结果不准确。
 		// Warn if any user-overrides are set which could lead to incorrect GPU discovery
 		overrideWarnings()
 
 		requested := envconfig.LLMLibrary()
 		jetpack := cudaJetpack()
 
+		// 若检测到的 JetPack runner 未安装，清除覆盖以便选择标准 CUDA 构建。
 		// If the detected JetPack runner isn't installed, clear the override so
 		// normal discovery can select a standard CUDA build (e.g. cuda_v13,
 		// which supports Orin on JetPack 7).
@@ -76,18 +82,21 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 			}
 		}
 
+		// 首轮发现串行遍历各库目录，收集所有已知 GPU（可能含不兼容设备）。
 		// For our initial discovery pass, we gather all the known GPUs through
 		// all the libraries that were detected. This pass may include GPUs that
 		// are enumerated, but not actually supported.
 		// We run this in serial to avoid potentially initializing a GPU multiple
 		// times concurrently leading to memory contention
 		for dir := range libDirs {
+			// 引导发现通常 <1s；低功耗设备或 Windows Defender 扫描可能需更长超时。
 			// Typically bootstrapping takes < 1s, but on some systems, with devices
 			// in low power/idle mode, initialization can take multiple seconds.  We
 			// set a longer timeout just for bootstrap discovery to reduce the chance
 			// of giving up too quickly
 			bootstrapTimeout := 30 * time.Second
 			if runtime.GOOS == "windows" {
+				// Windows Defender 会顺序扫描 DLL，首次发现可能显著变慢。
 				// On Windows with Defender enabled, AV scanning of the DLLs
 				// takes place sequentially and this can significantly increase
 				// the time it takes too do the initial discovery pass.
@@ -125,6 +134,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 
 		devices = filterIntegratedGPUs(devices)
 
+		// 第二轮并行深度初始化，过滤当前库不支持的设备。
 		// In the second pass, we more deeply initialize the GPUs to weed out devices that
 		// aren't supported by a given library.  We run this phase in parallel to speed up discovery.
 		// Only devices that need verification are included in this pass
@@ -134,7 +144,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 		var wg sync.WaitGroup
 		needsDelete := make([]bool, len(devices))
 		supportedMu := sync.Mutex{}
-		supported := make(map[string]map[string]map[string]int) // [Library][libDir][ID] = pre-deletion devices index
+		supported := make(map[string]map[string]map[string]int) // [Library][libDir][ID] = 删除前设备索引
 		for i := range devices {
 			libDir := devices[i].LibraryPath[len(devices[i].LibraryPath)-1]
 			if !devices[i].NeedsInitValidation() {
@@ -180,9 +190,11 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 		wg.Wait()
 		logutil.Trace("supported GPU library combinations before filtering", "supported", supported)
 
+		// 标记重叠库版本待删，优先保留能覆盖全部 GPU 的最新版本。
 		// Mark for deletion any overlaps - favoring the library version that can cover all GPUs if possible
 		filterOverlapByLibrary(supported, needsDelete)
 
+		// 过滤后需重排使用数字 ID 的库的设备序号。
 		// Any Libraries that utilize numeric IDs need adjusting based on any possible filtering taking place
 		postFilteredID := map[string]int{}
 		for i := 0; i < len(needsDelete); i++ {
@@ -196,6 +208,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 					postFilteredID[devices[i].Library] = 0
 				}
 				if _, err := strconv.Atoi(devices[i].ID); err == nil {
+					// 用过滤后的连续序号替换原始数字 ID。
 					// Replace the numeric ID with the post-filtered IDs
 					slog.Debug("adjusting filtering IDs", "FilterID", devices[i].ID, "new_ID", strconv.Itoa(postFilteredID[devices[i].Library]))
 					devices[i].FilterID = devices[i].ID
@@ -206,17 +219,21 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 			}
 		}
 
-		// Now filter out any overlap with different libraries (favor CUDA/HIP over others)
+		// 跨库去重，优先保留 CUDA/HIP 而非其他后端。
+		// Now filter out any overlap with different libraries (favor CUDA/HIP over others
 		for i := 0; i < len(devices); i++ {
 			for j := i + 1; j < len(devices); j++ {
+				// 此轮仅丢弃完全重复的设备。
 				// For this pass, we only drop exact duplicates
 				switch devices[i].Compare(devices[j]) {
 				case ml.SameBackendDevice:
+					// 同库同设备，跳过。
 					// Same library and device, skip it
 					devices = append(devices[:j], devices[j+1:]...)
 					j--
 					continue
 				case ml.DuplicateDevice:
+					// 不同库重复设备，按 PreferredLibrary 优先级保留其一。
 					// Different library, choose based on priority
 					var droppedDevice ml.DeviceInfo
 					if devices[i].PreferredLibrary(devices[j]) {
@@ -250,6 +267,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 			}
 		}
 
+		// 将 libDirs 重置为实际使用的库目录，供后续显存刷新。
 		// Reset the libDirs to what we actually wind up using for future refreshes
 		libDirs = make(map[string]struct{})
 		for _, dev := range devices {
@@ -265,6 +283,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 		bootstrapped = true
 	} else {
 		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+			// macOS Metal 不更新空闲显存，直接返回缓存列表。
 			// metal never updates free VRAM
 			return append([]ml.DeviceInfo{}, devices...)
 		}
@@ -282,6 +301,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 			return allDone
 		}
 
+		// 优先通过已运行的 runner 刷新显存，避免重复引导。
 		// First try to use existing runners to refresh VRAM since they're already
 		// active on GPU(s)
 		for _, runner := range runners {
@@ -290,6 +310,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 			}
 			deviceIDs := runner.GetActiveDeviceIDs()
 			if len(deviceIDs) == 0 {
+				// 该 runner 无活跃 GPU 设备，跳过。
 				// Skip this runner since it doesn't have active GPU devices
 				continue
 			}
@@ -311,6 +332,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 				continue
 			}
 
+			// 已有 runner 刷新通常约 500ms，系统压力大时允许更长超时。
 			// Typical refresh on existing runner is ~500ms but allow longer if the system
 			// is under stress before giving up and using stale data.
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -327,6 +349,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 					}
 				}
 			}
+			// 全部设备已更新则提前结束。
 			// Short circuit if we've updated all the devices
 			if allDone() {
 				break
@@ -335,11 +358,13 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 		if !allDone() {
 			slog.Debug("unable to refresh all GPUs with existing runners, performing bootstrap discovery")
 
+			// 引导刷新可能较慢，但优先用旧显存数据尽快启动模型。
 			// Bootstrapping may take longer in some cases (AMD windows), but we
 			// would rather use stale free data to get the model running sooner
 			rctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
 
+			// 应用设备过滤器，避免重新发现不支持的设备并保持 ID 对齐。
 			// Apply any device filters to avoid re-discovering unsupported devices
 			// and keep remapped IDs aligned.
 			devFilter := ml.GetDevicesEnv(devices)
@@ -354,6 +379,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 							break
 						}
 					}
+					// TODO：检测热插拔等新出现的设备。
 					// TODO - consider evaluating if new devices have appeared (e.g. hotplug)
 				}
 				if allDone() {
@@ -369,6 +395,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 	return append([]ml.DeviceInfo{}, devices...)
 }
 
+// sameRefreshDevice 判断刷新结果是否与已有设备为同一块 GPU。
 func sameRefreshDevice(updated, existing ml.DeviceInfo) bool {
 	if updated.Library != existing.Library {
 		return false
@@ -379,6 +406,7 @@ func sameRefreshDevice(updated, existing ml.DeviceInfo) bool {
 	return updated.DeviceID == existing.DeviceID
 }
 
+// filterIntegratedGPUs 按策略过滤集成 GPU，可通过 OLLAMA_IGPU_ENABLE 启用。
 func filterIntegratedGPUs(devices []ml.DeviceInfo) []ml.DeviceInfo {
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 		return devices
@@ -414,6 +442,7 @@ func filterIntegratedGPUs(devices []ml.DeviceInfo) []ml.DeviceInfo {
 	return filtered
 }
 
+// integratedGPUAdmission 解析 OLLAMA_IGPU_ENABLE 是否显式设置及取值。
 func integratedGPUAdmission() (allow, explicit bool) {
 	enabledWithTrueDefault := envconfig.EnableIntegratedGPU(true)
 	enabledWithFalseDefault := envconfig.EnableIntegratedGPU(false)
@@ -423,6 +452,7 @@ func integratedGPUAdmission() (allow, explicit bool) {
 	return false, false
 }
 
+// integratedGPUAllowedByDefault 判断集成 GPU 是否默认允许（CUDA 全允许，ROCm 按 gfx 白名单）。
 func integratedGPUAllowedByDefault(device ml.DeviceInfo) bool {
 	switch device.Library {
 	case "CUDA":
@@ -435,7 +465,9 @@ func integratedGPUAllowedByDefault(device ml.DeviceInfo) bool {
 	}
 }
 
+// filterOverlapByLibrary 多 GPU 系统上保留能覆盖全部设备的最新库版本。
 func filterOverlapByLibrary(supported map[string]map[string]map[string]int, needsDelete []bool) {
+	// 多 GPU 系统优先选用支持全部设备的最新库目录。
 	// For multi-GPU systems, use the newest version that supports all the GPUs
 	for _, byLibDirs := range supported {
 		libDirs := make([]string, 0, len(byLibDirs))
@@ -465,6 +497,7 @@ func filterOverlapByLibrary(supported map[string]map[string]map[string]int, need
 				break
 			}
 		}
+		// 标记与最新版本重叠的旧库目录设备待删。
 		// Now we can mark overlaps for deletion
 		for _, libDir := range libDirs {
 			if libDir == newest {
@@ -485,6 +518,7 @@ func filterOverlapByLibrary(supported map[string]map[string]map[string]int, need
 	}
 }
 
+// bootstrapDevicesWithMetalRetry 引导发现 GPU，Metal 失败时禁用 tensor API 重试。
 func bootstrapDevicesWithMetalRetry(firstAttemptCtx, retryParentCtx context.Context, timeout time.Duration, ollamaLibDirs []string, extraEnvs map[string]string) []ml.DeviceInfo {
 	extraEnvs = normalizeDiscoveryEnv(ollamaLibDirs, extraEnvs)
 
@@ -523,10 +557,12 @@ func bootstrapDevicesWithMetalRetry(firstAttemptCtx, retryParentCtx context.Cont
 	return devices
 }
 
+// normalizeDiscoveryEnv 按当前 GOOS 规范化 ROCm 可见设备环境变量。
 func normalizeDiscoveryEnv(ollamaLibDirs []string, extraEnvs map[string]string) map[string]string {
 	return normalizeDiscoveryEnvForGOOS(runtime.GOOS, ollamaLibDirs, extraEnvs)
 }
 
+// normalizeDiscoveryEnvForGOOS Linux ROCm 上将 HIP/GPU 序号映射为 ROCR_VISIBLE_DEVICES。
 func normalizeDiscoveryEnvForGOOS(goos string, ollamaLibDirs []string, extraEnvs map[string]string) map[string]string {
 	if goos != "linux" || len(ollamaLibDirs) == 0 || !isROCmLibraryDir(filepath.Base(ollamaLibDirs[len(ollamaLibDirs)-1])) {
 		return extraEnvs
@@ -551,16 +587,19 @@ func normalizeDiscoveryEnvForGOOS(goos string, ollamaLibDirs []string, extraEnvs
 	return env
 }
 
+// isROCmLibraryDir 判断库目录名是否为 rocm 前缀。
 func isROCmLibraryDir(name string) bool {
 	return strings.HasPrefix(name, "rocm")
 }
 
+// bootstrapDevicesResult 封装引导发现的异步结果。
 type bootstrapDevicesResult struct {
 	devices []ml.DeviceInfo
 	status  *llm.StatusWriter
 	err     error
 }
 
+// bootstrapDevicesWithStatusWatchdog 带超时看门狗的 llama-server 引导发现。
 func bootstrapDevicesWithStatusWatchdog(ctx context.Context, ollamaLibDirs []string, extraEnvs map[string]string) ([]ml.DeviceInfo, *llm.StatusWriter, error) {
 	return runBootstrapDevicesWithStatusWatchdog(ctx, ollamaLibDirs, extraEnvs, llamaServerBootstrapDevicesWithStatus)
 }
@@ -586,6 +625,7 @@ func runBootstrapDevicesWithStatusWatchdog(
 	}
 }
 
+// remapFilterIDForUserVisibleDevices 将 FilterID 映射为用户可见设备列表中的 token。
 func remapFilterIDForUserVisibleDevices(device *ml.DeviceInfo) {
 	tokens := visibleDeviceFilterTokens(runtime.GOOS, device.Library)
 	if len(tokens) == 0 {
@@ -604,6 +644,7 @@ func remapFilterIDForUserVisibleDevices(device *ml.DeviceInfo) {
 	device.FilterID = tokens[index]
 }
 
+// visibleDeviceFilterTokens 按库类型读取 CUDA/ROCm/Vulkan 可见设备过滤 token。
 func visibleDeviceFilterTokens(goos, library string) []string {
 	switch library {
 	case "CUDA":
@@ -630,6 +671,7 @@ func visibleDeviceFilterTokens(goos, library string) []string {
 	return nil
 }
 
+// rocmNumericVisibleDeviceSource 查找首个含数字序号的 ROCm 可见设备环境变量。
 func rocmNumericVisibleDeviceSource(extraEnvs map[string]string) (string, []string) {
 	for _, name := range []string{"HIP_VISIBLE_DEVICES", "GPU_DEVICE_ORDINAL", "CUDA_VISIBLE_DEVICES"} {
 		value := extraEnvs[name]
@@ -650,6 +692,7 @@ func rocmNumericVisibleDeviceSource(extraEnvs map[string]string) (string, []stri
 	return "", nil
 }
 
+// splitVisibleDeviceList 按逗号拆分并 trim 可见设备列表。
 func splitVisibleDeviceList(value string) []string {
 	fields := strings.Split(value, ",")
 	tokens := make([]string, 0, len(fields))
@@ -662,6 +705,7 @@ func splitVisibleDeviceList(value string) []string {
 	return tokens
 }
 
+// splitNumericVisibleDeviceList 解析纯非负整数序号的可见设备列表。
 func splitNumericVisibleDeviceList(value string) []string {
 	tokens := splitVisibleDeviceList(value)
 	if len(tokens) == 0 {
@@ -676,6 +720,7 @@ func splitNumericVisibleDeviceList(value string) []string {
 	return tokens
 }
 
+// visibleDeviceOrdinals 生成 0..count-1 的逗号分隔序号串。
 func visibleDeviceOrdinals(count int) string {
 	ordinals := make([]string, count)
 	for i := range ordinals {
@@ -684,6 +729,7 @@ func visibleDeviceOrdinals(count int) string {
 	return strings.Join(ordinals, ",")
 }
 
+// lastDiscoveryStatusError 从 StatusWriter 提取最后一次 discovery 错误详情。
 func lastDiscoveryStatusError(status *llm.StatusWriter) string {
 	if status == nil {
 		return ""
@@ -691,6 +737,7 @@ func lastDiscoveryStatusError(status *llm.StatusWriter) string {
 	return status.LastError()
 }
 
+// recordPersistentRunnerEnv 将 Metal tensor 禁用标志持久化到设备 RunnerEnvOverrides。
 func recordPersistentRunnerEnv(devices []ml.DeviceInfo, extraEnvs map[string]string) {
 	if extraEnvs["GGML_METAL_TENSOR_DISABLE"] != "1" {
 		return
@@ -706,6 +753,7 @@ func recordPersistentRunnerEnv(devices []ml.DeviceInfo, extraEnvs map[string]str
 	}
 }
 
+// overrideWarnings 检测并警告可能干扰 GPU 发现的用户环境变量覆盖。
 func overrideWarnings() {
 	anyFound := false
 	m := envconfig.AsMap()
@@ -727,6 +775,7 @@ func overrideWarnings() {
 	}
 }
 
+// detectIncompatibleLibraries Windows 上检测 PATH 中可能冲突的 ggml-base.dll。
 func detectIncompatibleLibraries() {
 	if runtime.GOOS != "windows" {
 		return

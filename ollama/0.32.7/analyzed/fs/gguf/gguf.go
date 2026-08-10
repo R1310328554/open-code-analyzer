@@ -1,3 +1,4 @@
+// GGUF 懒加载读取器：按需解析键值与张量元数据。
 package gguf
 
 import (
@@ -36,8 +37,10 @@ const (
 	typeFloat64
 )
 
+// ErrUnsupported 表示不支持的 GGUF 特性或格式。
 var ErrUnsupported = errors.New("unsupported")
 
+// File 表示已打开的 GGUF 文件及懒加载元数据。
 type File struct {
 	Magic   [4]byte
 	Version uint32
@@ -51,6 +54,7 @@ type File struct {
 	bts    []byte
 }
 
+// Open 打开 GGUF 文件并初始化懒加载 key-value 与张量索引。
 func Open(path string) (f *File, err error) {
 	f = &File{bts: make([]byte, 4096)}
 	f.file, err = os.Open(path)
@@ -100,6 +104,7 @@ func Open(path string) (f *File, err error) {
 	return f, nil
 }
 
+// readTensor 读取单个张量信息条目。
 func (f *File) readTensor() (TensorInfo, error) {
 	name, err := readString(f)
 	if err != nil {
@@ -144,6 +149,7 @@ func (f *File) readTensor() (TensorInfo, error) {
 	return ti, nil
 }
 
+// readKeyValue 读取单个键值对。
 func (f *File) readKeyValue() (KeyValue, error) {
 	key, err := readString(f)
 	if err != nil {
@@ -202,6 +208,7 @@ func read[T any](f *File) (t T, err error) {
 	return t, err
 }
 
+// readString 读取 GGUF 长度前缀字符串。
 func readString(f *File) (string, error) {
 	n, err := read[uint64](f)
 	if err != nil {
@@ -226,6 +233,7 @@ func readString(f *File) (string, error) {
 	return string(bts), nil
 }
 
+// readArray 读取 GGUF 数组值。
 func readArray(f *File) (any, error) {
 	t, err := read[uint32](f)
 	if err != nil {
@@ -323,12 +331,14 @@ func maxInt64() uint64 {
 	return 1<<63 - 1
 }
 
+// Close 停止懒加载 goroutine 并关闭底层文件。
 func (f *File) Close() error {
 	f.keyValues.stop()
 	f.tensors.stop()
 	return f.file.Close()
 }
 
+// KeyValue 按键查找 KV，非 general/tokenizer 前缀会自动加架构前缀。
 func (f *File) KeyValue(key string) KeyValue {
 	if !strings.HasPrefix(key, "general.") && !strings.HasPrefix(key, "tokenizer.") {
 		key = f.KeyValue("general.architecture").String() + "." + key
@@ -357,6 +367,7 @@ func (f *File) KeyValues() iter.Seq2[int, KeyValue] {
 	return f.keyValues.All()
 }
 
+// TensorInfo 按名称查找张量元数据。
 func (f *File) TensorInfo(name string) TensorInfo {
 	if index := slices.IndexFunc(f.tensors.values, func(t TensorInfo) bool {
 		return t.Name == name
@@ -364,6 +375,7 @@ func (f *File) TensorInfo(name string) TensorInfo {
 		return f.tensors.values[index]
 	}
 
+	// 若尚未读完 KV 段则快进跳过。
 	// fast-forward through key values if we haven't already
 	_ = f.keyValues.rest()
 	for tensor, ok := f.tensors.next(); ok; tensor, ok = f.tensors.next() {
@@ -385,6 +397,7 @@ func (f *File) TensorInfos() iter.Seq2[int, TensorInfo] {
 	return f.tensors.All()
 }
 
+// TensorReader 返回指定张量的 SectionReader 与元数据。
 func (f *File) TensorReader(name string) (TensorInfo, io.Reader, error) {
 	t := f.TensorInfo(name)
 	if err := f.Err(); err != nil {
@@ -426,7 +439,9 @@ func (f *File) TensorReader(name string) (TensorInfo, io.Reader, error) {
 	return t, io.NewSectionReader(f.file, offset, numBytes), nil
 }
 
+// Err 返回懒加载解析过程中累积的首个错误。
 func (f *File) Err() error {
+	// KV 与张量元数据懒加载，Open 成功后仍可能在此暴露解析错误。
 	// Key/value and tensor metadata are read lazily, so parse errors can surface
 	// after Open succeeds.
 	if f.keyValues != nil {

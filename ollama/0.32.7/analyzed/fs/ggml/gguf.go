@@ -1,3 +1,4 @@
+// GGUF 容器编解码：读写键值、张量元数据与并行写入。
 package ggml
 
 import (
@@ -22,6 +23,7 @@ const (
 	maxGGUFWriteConcurrency = 2
 )
 
+// containerGGUF 表示 GGUF 文件头与版本特定计数字段。
 type containerGGUF struct {
 	ByteOrder binary.ByteOrder
 
@@ -49,6 +51,7 @@ func (c *containerGGUF) Name() string {
 	return "gguf"
 }
 
+// Decode 读取 GGUF 版本头并解码完整模型。
 func (c *containerGGUF) Decode(rs io.ReadSeeker) (model, error) {
 	if err := binary.Read(rs, c.ByteOrder, &c.Version); err != nil {
 		return nil, err
@@ -91,6 +94,7 @@ const (
 	ggufTypeFloat64
 )
 
+// gguf 为 GGUF v1/v2/v3 内存模型表示。
 type gguf struct {
 	*containerGGUF
 
@@ -103,6 +107,7 @@ type gguf struct {
 	scratch [16 << 10]byte
 }
 
+// newGGUF 创建空的 GGUF 模型实例。
 func newGGUF(container *containerGGUF) *gguf {
 	return &gguf{
 		containerGGUF: container,
@@ -143,7 +148,9 @@ func (llm *gguf) numKV() uint64 {
 	}
 }
 
+// Decode 顺序读取 KV 对与张量信息，校验偏移与文件边界。
 func (llm *gguf) Decode(rs io.ReadSeeker) error {
+	// 解码键值对。
 	// decode key-values
 	for i := 0; uint64(i) < llm.numKV(); i++ {
 		k, err := readGGUFString(llm, rs)
@@ -195,6 +202,7 @@ func (llm *gguf) Decode(rs io.ReadSeeker) error {
 		llm.kv[k] = v
 	}
 
+	// 解码张量元数据。
 	// decode tensors
 	for range llm.numTensor() {
 		name, err := readGGUFString(llm, rs)
@@ -202,6 +210,7 @@ func (llm *gguf) Decode(rs io.ReadSeeker) error {
 			return fmt.Errorf("failed to read tensor name: %w", err)
 		}
 
+		// dims 为张量维度数。
 		// dims is the number of dimensions in the tensor
 		dims, err := readGGUF[uint32](llm, rs)
 		if err != nil {
@@ -247,6 +256,7 @@ func (llm *gguf) Decode(rs io.ReadSeeker) error {
 		llm.parameters += elements
 	}
 
+	// 将统计的参数总数写入 general.parameter_count。
 	// patch KV with parameter count
 	llm.kv["general.parameter_count"] = llm.parameters
 
@@ -311,12 +321,14 @@ func (llm *gguf) Decode(rs io.ReadSeeker) error {
 	return nil
 }
 
+// readGGUF 按容器字节序读取单个 GGUF 标量值。
 func readGGUF[T any](llm *gguf, r io.Reader) (T, error) {
 	var t T
 	err := binary.Read(r, llm.ByteOrder, &t)
 	return t, err
 }
 
+// writeGGUF 写入 GGUF 类型标签与值（小端）。
 func writeGGUF[V any](w io.Writer, t uint32, v V) error {
 	if err := binary.Write(w, binary.LittleEndian, t); err != nil {
 		return err

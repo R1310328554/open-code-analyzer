@@ -1,3 +1,4 @@
+// 时间格式化：相对时间的人类可读描述。
 package format
 
 import (
@@ -7,6 +8,7 @@ import (
 	"time"
 )
 
+// humanDuration 将时长近似为人类可读字符串（如「约 1 分钟」）。
 // humanDuration returns a human-readable approximation of a
 // duration (eg. "About a minute", "4 hours ago", etc.).
 func humanDuration(d time.Duration) string {
@@ -46,14 +48,17 @@ func humanDuration(d time.Duration) string {
 	return fmt.Sprintf("%d years", int(d.Hours())/24/365)
 }
 
+// HumanTime 返回时间的相对描述，零值时返回 zeroValue。
 func HumanTime(t time.Time, zeroValue string) string {
 	return humanTime(t, zeroValue)
 }
 
+// HumanTimeLower 同 HumanTime 但结果转为小写。
 func HumanTimeLower(t time.Time, zeroValue string) string {
 	return strings.ToLower(humanTime(t, zeroValue))
 }
 
+// humanTime 计算距现在或未来的 humanDuration 描述。
 func humanTime(t time.Time, zeroValue string) string {
 	if t.IsZero() {
 		return zeroValue

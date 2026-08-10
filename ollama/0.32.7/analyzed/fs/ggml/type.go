@@ -1,3 +1,4 @@
+// GGUF 量化类型：FileType 与 TensorType 映射与解析。
 package ggml
 
 import (
@@ -6,6 +7,7 @@ import (
 	"strings"
 )
 
+// FileType 对应 llama.cpp 的 llama_ftype，表示 GGUF 文件级量化类型。
 // FileType is the Go equivalent to llama_ftype used for gguf file typing
 type FileType uint32
 
@@ -55,6 +57,7 @@ const (
 	FileTypeUnknown = 1024
 )
 
+// ParseFileType 解析 GGUF 文件类型字符串，仅 Ollama 支持的类型有效。
 // ParseFileType parses the provided GGUF file type
 // Only Ollama supported types are considered valid
 func ParseFileType(s string) (FileType, error) {
@@ -78,7 +81,8 @@ func ParseFileType(s string) (FileType, error) {
 			FileTypeQ4_K_S,
 			FileTypeQ4_K_M,
 			FileTypeQ8_0,
-			// fsggml.FileTypeBF16, // TODO
+			// fsggml.FileTypeBF16, // TODO：BF16 尚未列入支持列表
+		// fsggml.FileTypeBF16, // TODO
 		}
 		strs := make([]string, len(supportedFileTypes))
 		for i := range supportedFileTypes {
@@ -90,6 +94,7 @@ func ParseFileType(s string) (FileType, error) {
 }
 
 func (t FileType) String() string {
+	// 对已存在模型可能返回更广泛的类型名。
 	// Note: this routine will return a broader set of file types for existing models
 	switch t {
 	case FileTypeF32:
@@ -171,6 +176,7 @@ func (t FileType) Value() uint32 {
 	return uint32(t)
 }
 
+// ToTensorType 将 FileType 映射为对应的 TensorType。
 func (ftype FileType) ToTensorType() TensorType {
 	switch ftype {
 	case FileTypeF32:
@@ -245,6 +251,7 @@ func (ftype FileType) ToTensorType() TensorType {
 	}
 }
 
+// TensorType 对应 ggml_type，表示单个张量的存储类型。
 // TensorType is equivalent to ggml_type for individual tensor types
 // Note: these are not the same as FileType
 type TensorType uint32
@@ -294,6 +301,7 @@ const (
 	TensorTypeQ1_0
 )
 
+// ParseTensorType 解析张量类型字符串，仅 Ollama 支持的类型有效。
 // ParseTensorType parses the provided GGUF tensor type
 // Only Ollama supported types are considered valid
 func ParseTensorType(s string) (TensorType, error) {
@@ -337,6 +345,7 @@ func ParseTensorType(s string) (TensorType, error) {
 	}
 }
 
+// IsQuantized 判断张量类型是否为量化类型。
 func (t TensorType) IsQuantized() bool {
 	switch t {
 	case TensorTypeF32, TensorTypeF16, TensorTypeBF16:
@@ -346,6 +355,7 @@ func (t TensorType) IsQuantized() bool {
 	}
 }
 
+// RowSize 返回 ne 个元素行的字节大小。
 func (t TensorType) RowSize(ne uint64) uint64 {
 	return t.TypeSize() * ne / t.BlockSize()
 }

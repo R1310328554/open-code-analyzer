@@ -1,3 +1,4 @@
+// Windows Vulkan 物理设备探测：直接调用 vkCreateInstance 枚举 GPU。
 package discover
 
 import (
@@ -15,6 +16,7 @@ const (
 	vkPhysicalDevicePropertiesByteCount = 4096
 )
 
+// vkInstanceCreateInfo 对应 Vulkan VkInstanceCreateInfo 头部字段。
 type vkInstanceCreateInfo struct {
 	SType                   uint32
 	PNext                   uintptr
@@ -26,10 +28,12 @@ type vkInstanceCreateInfo struct {
 	PpEnabledExtensionNames uintptr
 }
 
+// init 将 probeLlamaServerVulkanDevices 绑定为 Windows Vulkan 枚举实现。
 func init() {
 	probeLlamaServerVulkanDevices = windowsVulkanPhysicalDevices
 }
 
+// windowsVulkanPhysicalDevices 创建 Vulkan 实例并枚举物理设备类型与名称。
 func windowsVulkanPhysicalDevices(libDirs []string) ([]vulkanPhysicalDevice, error) {
 	vulkanPath, err := llm.WindowsVulkanRuntimeDLLPath(libDirs)
 	if err != nil {
@@ -109,6 +113,7 @@ func windowsVulkanPhysicalDevices(libDirs []string) ([]vulkanPhysicalDevice, err
 	return devices, nil
 }
 
+// nulTerminatedString 从属性缓冲区提取 NUL 结尾的设备名字符串。
 func nulTerminatedString(data []byte) string {
 	for i, b := range data {
 		if b == 0 {

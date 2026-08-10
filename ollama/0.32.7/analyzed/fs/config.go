@@ -1,7 +1,9 @@
+// 模型配置接口：统一访问 GGUF 键值元数据。
 package fs
 
 import "iter"
 
+// Config 抽象 GGUF 模型配置的键值读取能力。
 type Config interface {
 	Architecture() string
 	String(string, ...string) string

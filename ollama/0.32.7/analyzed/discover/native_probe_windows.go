@@ -1,3 +1,4 @@
+// Windows 原生 GPU 探测：动态加载 GGML/CUDA/HIP/NVML 库枚举设备。
 //go:build windows
 
 package discover
@@ -25,6 +26,7 @@ const (
 	hipDeviceAttributeIntegratedWindows      = 16
 )
 
+// runPlatformNativeProbe 合并 GGML、CUDA 驱动与 HIP 运行时三路 Windows 探测结果。
 func runPlatformNativeProbe(ctx context.Context, libDirs []string) ([]nativeProbeDevice, error) {
 	select {
 	case <-ctx.Done():
@@ -58,6 +60,7 @@ func runPlatformNativeProbe(ctx context.Context, libDirs []string) ([]nativeProb
 	return nil, cudaErr
 }
 
+// probeGGMLDevicesWindows 加载 ggml-base/ggml 并枚举各 backend 注册设备。
 func probeGGMLDevicesWindows(libDirs []string) ([]nativeProbeDevice, error) {
 	if len(libDirs) == 0 || libDirs[0] == "" {
 		return nil, errors.New("empty GGML library directory")
@@ -137,6 +140,7 @@ func probeGGMLDevicesWindows(libDirs []string) ([]nativeProbeDevice, error) {
 	return devices, nil
 }
 
+// probeCUDADriverWindows 通过 nvcuda.dll 直接查询 CUDA 设备 CC、PCI 与驱动版本。
 func probeCUDADriverWindows() ([]nativeProbeDevice, error) {
 	cuda, err := loadDLLFromSystem32("nvcuda.dll")
 	if err != nil {
@@ -239,6 +243,7 @@ func probeCUDADriverWindows() ([]nativeProbeDevice, error) {
 	return devices, nil
 }
 
+// probeHIPRuntimeWindows 加载 HIP 运行时 DLL 枚举 ROCm 设备。
 func probeHIPRuntimeWindows(libDirs []string) ([]nativeProbeDevice, error) {
 	hipPath, err := llm.WindowsROCmRuntimeDLLPath(libDirs)
 	if err != nil {
@@ -305,6 +310,7 @@ func probeHIPRuntimeWindows(libDirs []string) ([]nativeProbeDevice, error) {
 	return devices, nil
 }
 
+// probeNVIDIADriverMajorWindows 通过 NVML 读取 NVIDIA 驱动主版本号。
 func probeNVIDIADriverMajorWindows() (int, error) {
 	nvml, err := loadDLLFromSystem32("nvml.dll")
 	if err != nil {
@@ -337,6 +343,7 @@ func probeNVIDIADriverMajorWindows() (int, error) {
 	return parseNVIDIADriverMajor(byteCString(version))
 }
 
+// cudaDeviceAttributeWindows 调用 cuDeviceGetAttribute 读取单个 CUDA 设备属性。
 func cudaDeviceAttributeWindows(fn *windows.Proc, attr int, device int32) int {
 	var value int32
 	if ret, _, _ := fn.Call(uintptr(unsafe.Pointer(&value)), uintptr(attr), uintptr(device)); ret != cuSuccessWindows {
@@ -345,6 +352,7 @@ func cudaDeviceAttributeWindows(fn *windows.Proc, attr int, device int32) int {
 	return int(value)
 }
 
+// hipDeviceAttributeWindows 调用 hipDeviceGetAttribute 读取单个 HIP 设备属性。
 func hipDeviceAttributeWindows(fn *windows.Proc, attr int, device int32) int {
 	var value int32
 	if ret, _, _ := fn.Call(uintptr(unsafe.Pointer(&value)), uintptr(attr), uintptr(device)); ret != hipSuccessWindows {
@@ -353,15 +361,18 @@ func hipDeviceAttributeWindows(fn *windows.Proc, attr int, device int32) int {
 	return int(value)
 }
 
+// findProc 在已加载 DLL 中查找导出函数。
 func findProc(dll *windows.DLL, name string) (*windows.Proc, error) {
 	return dll.FindProc(name)
 }
 
+// loadDLLFromSystem32 使用 LoadLibraryEx 从 System32 加载，避免受当前目录或 PATH 影响。
 // Use LoadLibraryEx so GPU discovery does not honor the current directory or PATH for DLL resolution.
 func loadDLLFromSystem32(name string) (*windows.DLL, error) {
 	return loadDLLWithFlags(name, windows.LOAD_LIBRARY_SEARCH_SYSTEM32)
 }
 
+// loadDLLFromPath 以绝对路径加载 DLL，限定搜索目录为 DLL 所在目录。
 func loadDLLFromPath(path string) (*windows.DLL, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -370,6 +381,7 @@ func loadDLLFromPath(path string) (*windows.DLL, error) {
 	return loadDLLWithFlags(absPath, windows.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|windows.LOAD_LIBRARY_SEARCH_DEFAULT_DIRS)
 }
 
+// loadDLLWithFlags 封装 LoadLibraryEx 并包装为 windows.DLL。
 func loadDLLWithFlags(name string, flags uintptr) (*windows.DLL, error) {
 	handle, err := windows.LoadLibraryEx(name, 0, flags)
 	if err != nil {
@@ -378,6 +390,7 @@ func loadDLLWithFlags(name string, flags uintptr) (*windows.DLL, error) {
 	return &windows.DLL{Name: name, Handle: handle}, nil
 }
 
+// loadDLLFromDirs 在多个目录中依次尝试加载指定 DLL 名称。
 func loadDLLFromDirs(names, dirs []string) (*windows.DLL, error) {
 	var errs []string
 	for _, name := range names {
@@ -399,6 +412,7 @@ func loadDLLFromDirs(names, dirs []string) (*windows.DLL, error) {
 	return nil, errors.New(strings.Join(errs, "; "))
 }
 
+// nvidiaNVMLDirsWindows 返回 Windows 上 NVML.dll 常见安装路径。
 func nvidiaNVMLDirsWindows() []string {
 	var dirs []string
 	for _, root := range windowsProgramFilesDirs() {
@@ -407,6 +421,7 @@ func nvidiaNVMLDirsWindows() []string {
 	return uniqueAbsDirs(dirs)
 }
 
+// windowsProgramFilesDirs 收集 ProgramFiles 与 ProgramW6432 绝对路径。
 func windowsProgramFilesDirs() []string {
 	return uniqueAbsDirs([]string{
 		os.Getenv("ProgramW6432"),
@@ -414,6 +429,7 @@ func windowsProgramFilesDirs() []string {
 	})
 }
 
+// uniqueAbsDirs 规范化目录列表并去重（大小写不敏感）。
 func uniqueAbsDirs(dirs []string) []string {
 	seen := map[string]bool{}
 	var out []string
@@ -436,6 +452,7 @@ func uniqueAbsDirs(dirs []string) []string {
 	return out
 }
 
+// procAny 按顺序尝试多个导出符号名，返回首个匹配的 Proc。
 func procAny(dll *windows.DLL, names ...string) (*windows.Proc, error) {
 	var errs []string
 	for _, name := range names {
@@ -449,6 +466,7 @@ func procAny(dll *windows.DLL, names ...string) (*windows.Proc, error) {
 }
 
 //nolint:govet // Windows Proc.Call returns C string pointers as uintptr.
+// windowsCString 将 C 字符串指针转为 Go string。
 func windowsCString(ptr uintptr) string {
 	if ptr == 0 {
 		return ""
@@ -456,6 +474,7 @@ func windowsCString(ptr uintptr) string {
 	return windows.BytePtrToString((*byte)(unsafe.Pointer(ptr)))
 }
 
+// byteCString 从 NUL 结尾的字节切片提取 C 风格字符串。
 func byteCString(data []byte) string {
 	for i, b := range data {
 		if b == 0 {
