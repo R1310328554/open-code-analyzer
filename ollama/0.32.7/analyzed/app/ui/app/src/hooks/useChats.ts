@@ -1,3 +1,6 @@
+/**
+ * 聊天列表、单聊详情、发送/取消消息及流式 optimistic 更新的 React Query 钩子集合。
+ */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getChats, getChat, sendMessage, type ChatEventUnion } from "../api";
 import { Chat, ErrorEvent, Model } from "@/gotypes";
@@ -9,6 +12,7 @@ import { useStreamingContext } from "@/contexts/StreamingContext";
 import { getModelCapabilities } from "@/api";
 import { useCloudStatus } from "./useCloudStatus";
 
+/** 查询全部聊天会话摘要列表。 */
 export const useChats = () => {
   return useQuery({
     queryKey: ["chats"],
@@ -16,6 +20,7 @@ export const useChats = () => {
   });
 };
 
+/** 加载单条聊天；流式进行中时保留 optimistic 消息。 */
 export const useChat = (chatId: string) => {
   const queryClient = useQueryClient();
   const { streamingChatIds } = useStreamingContext();
@@ -68,6 +73,7 @@ export const useChat = (chatId: string) => {
   });
 };
 
+/** 客户端缓存：各模型是否被标记为版本过期。 */
 export const useStaleModels = () => {
   return useQuery({
     queryKey: ["staleModels"],
@@ -78,6 +84,7 @@ export const useStaleModels = () => {
   });
 };
 
+/** 客户端缓存：用户已忽略过期提示的模型名集合。 */
 export const useDismissedStaleModels = () => {
   return useQuery({
     queryKey: ["dismissedStaleModels"],
@@ -88,6 +95,7 @@ export const useDismissedStaleModels = () => {
   });
 };
 
+/** 读取指定聊天的最近一次流式错误事件。 */
 export const useChatError = (chatId: string) => {
   return useQuery({
     queryKey: ["chatError", chatId],
@@ -98,21 +106,25 @@ export const useChatError = (chatId: string) => {
   });
 };
 
+/** 判断 chatId 是否处于流式生成中。 */
 export const useIsStreaming = (chatId: string) => {
   const { streamingChatIds } = useStreamingContext();
   return streamingChatIds.has(chatId);
 };
 
+/** 获取该聊天关联的模型下载进度事件。 */
 export const useDownloadProgress = (chatId: string) => {
   const { downloadProgress } = useStreamingContext();
   return downloadProgress.get(chatId);
 };
 
+/** 模型是否在 staleModels 映射中标记为过期。 */
 export const useIsModelStale = (modelName: string) => {
   const { data: staleModels } = useStaleModels();
   return staleModels?.get(modelName) || false;
 };
 
+/** 是否应向用户展示模型过期横幅（排除云端且未禁用云的情况）。 */
 export const useShouldShowStaleDisplay = (model: Model | null) => {
   const isStale = useIsModelStale(model?.model || "");
   const { data: dismissedModels } = useDismissedStaleModels();
@@ -125,6 +137,7 @@ export const useShouldShowStaleDisplay = (model: Model | null) => {
   return isStale && !dismissedModels?.has(model?.model || "");
 };
 
+/** 返回将模型加入“已忽略过期”集合并 refetch 列表的函数。 */
 export const useDismissStaleModel = () => {
   const queryClient = useQueryClient();
   const refetchModels = useRefetchModels();
@@ -141,6 +154,8 @@ export const useDismissStaleModel = () => {
   };
 };
 
+/** 流式已开始但尚未收到首 token 时是否显示加载条（同模型近期复用可跳过）。 */
+export const useIsWaitingForLoad
 // Helper hook to check if we should show loading bar (streaming but no first token yet)
 export const useIsWaitingForLoad = (chatId: string) => {
   const { streamingChatIds, loadingChats } = useStreamingContext();
@@ -194,6 +209,7 @@ export const useIsWaitingForLoad = (chatId: string) => {
   return isWaitingForLoad && !isSameModel;
 };
 
+/** 发送消息 mutation：optimistic UI、JSONL 事件分发与批处理更新。 */
 export const useSendMessage = (chatId: string) => {
   let updatableChatId = chatId;
   const queryClient = useQueryClient();
@@ -730,6 +746,7 @@ export const useSendMessage = (chatId: string) => {
   });
 };
 
+/** 返回取消指定聊天 in-flight 请求的函数。 */
 export const useCancelMessage = () => {
   const {
     abortControllers,

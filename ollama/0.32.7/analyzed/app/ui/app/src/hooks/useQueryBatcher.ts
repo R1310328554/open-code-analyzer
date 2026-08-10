@@ -1,11 +1,16 @@
+/**
+ * 将高频 React Query setQueryData 合并为定时批量更新，降低流式聊天时的渲染压力。
+ */
 import { useCallback, useRef } from "react";
 import { useQueryClient, QueryClient } from "@tanstack/react-query";
 
+/** 批处理间隔（毫秒）与是否立即应用首次更新。 */
 interface BatcherConfig {
   batchInterval?: number; // milliseconds, default 8ms (~120fps)
   immediateFirst?: boolean; // if true, first update is immediate
 }
 
+/** Hook 版查询批处理器，绑定组件生命周期内的 queryClient。 */
 export const useQueryBatcher = <T>(
   queryKey: readonly unknown[],
   config: BatcherConfig = {},
@@ -73,6 +78,7 @@ export const useQueryBatcher = <T>(
   };
 };
 
+/** 非 Hook 工厂：供 mutation 流等场景创建独立批处理器。 */
 export const createQueryBatcher = <T>(
   queryClient: QueryClient,
   queryKey: readonly unknown[],

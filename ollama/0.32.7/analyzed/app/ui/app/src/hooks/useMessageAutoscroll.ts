@@ -1,3 +1,6 @@
+/**
+ * 聊天消息列表自动滚动与底部 spacer 高度计算（流式回复时保持用户消息可见）。
+ */
 import {
   useRef,
   useCallback,
@@ -8,20 +11,25 @@ import {
 } from "react";
 import type { Message } from "@/gotypes";
 
-// warning: this file is all claude code, needs to be looked into more closely
+// 注意：本文件由 Claude 生成，后续可能需要进一步审查
 
+/** useMessageAutoscroll 的输入参数。 */
 interface UseMessageAutoscrollOptions {
   messages: Message[];
   isStreaming: boolean;
   chatId: string;
 }
 
+/** 钩子返回值：滚动容器 ref、spacer 高度与新消息回调。 */
 interface MessageAutoscrollBehavior {
   handleNewUserMessage: () => void;
   containerRef: React.RefObject<HTMLElement | null>;
   spacerHeight: number;
 }
 
+/**
+ * 管理聊天视口滚动：新用户消息滚到顶部/大消息滚到底，流式时为助手回复预留空间。
+ */
 export const useMessageAutoscroll = ({
   messages,
   isStreaming,

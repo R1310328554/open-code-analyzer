@@ -1,3 +1,6 @@
+/**
+ * 合并本地已安装模型与推荐模型列表，并尊重云端禁用过滤与搜索。
+ */
 import { useQuery } from "@tanstack/react-query";
 import { Model } from "@/gotypes";
 import { getModels } from "@/api";
@@ -5,6 +8,7 @@ import { useMemo } from "react";
 import { useCloudStatus } from "./useCloudStatus";
 import { useFeaturedModels } from "./useFeaturedModels";
 
+/** 返回排序后的可见模型列表及 React Query 状态。 */
 export function useModels(searchQuery = "") {
   const { cloudDisabled } = useCloudStatus();
   const { data: recommendations, isLoading: recommendationsLoading } =
@@ -47,11 +51,13 @@ export function useModels(searchQuery = "") {
   };
 }
 
+/** 返回 refetch 本地模型列表的便捷函数。 */
 export function useRefetchModels() {
   const { refetch } = useModels();
   return refetch;
 }
 
+/** 按子串过滤模型名并去重。 */
 function filterBySearch(models: Model[], query: string): Model[] {
   const q = query.trim().toLowerCase();
   if (!q) return models;

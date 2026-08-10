@@ -1,7 +1,11 @@
+/**
+ * 删除聊天会话的 mutation 钩子；成功时刷新列表并在必要时导航离开。
+ */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteChat } from "@/api";
 import { useNavigate } from "@tanstack/react-router";
 
+/** 返回删除 chat 的 useMutation 实例。 */
 export function useDeleteChat() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();

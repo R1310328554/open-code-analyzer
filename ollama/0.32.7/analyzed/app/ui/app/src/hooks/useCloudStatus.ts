@@ -1,6 +1,10 @@
+/**
+ * React Query 钩子：轮询并暴露 Ollama 云端功能开关状态。
+ */
 import { useQuery } from "@tanstack/react-query";
 import { getCloudStatus, type CloudStatusResponse } from "@/api";
 
+/** 返回云端禁用标志、加载/错误状态及原始响应。 */
 export function useCloudStatus() {
   const cloudQuery = useQuery<CloudStatusResponse | null>({
     queryKey: ["cloudStatus"],

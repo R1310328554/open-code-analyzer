@@ -1,3 +1,6 @@
+/**
+ * Ollama 桌面 UI 的后端 REST API 客户端：用户、聊天、模型、设置与流式消息。
+ */
 import {
   ChatResponse,
   ChatsResponse,
@@ -16,6 +19,7 @@ import { ollamaClient as ollama } from "./lib/ollama-client";
 import type { ModelResponse } from "ollama/browser";
 import { API_BASE, OLLAMA_DOT_COM } from "./lib/config";
 
+/** 为 Model 原型扩展 isCloud 工具方法。 */
 // Extend Model class with utility methods
 declare module "@/gotypes" {
   interface Model {
@@ -27,12 +31,14 @@ Model.prototype.isCloud = function (): boolean {
   return this.model.endsWith("cloud");
 };
 
+/** 云端功能禁用状态的配置来源：环境变量、配置文件、两者或无。 */
 export type CloudStatusSource = "env" | "config" | "both" | "none";
+/** 云端功能开关查询/更新 API 的响应体。 */
 export interface CloudStatusResponse {
   disabled: boolean;
   source: CloudStatusSource;
 }
-// Helper function to convert Uint8Array to base64
+/** 将 Uint8Array 分块转为 base64，避免大数组展开导致栈溢出。 */
 function uint8ArrayToBase64(uint8Array: Uint8Array): string {
   const chunkSize = 0x8000; // 32KB chunks to avoid stack overflow
   let binary = "";
@@ -45,6 +51,7 @@ function uint8ArrayToBase64(uint8Array: Uint8Array): string {
   return btoa(binary);
 }
 
+/** 获取当前登录用户；401/403 返回 null，其他错误抛出异常。 */
 export async function fetchUser(): Promise<User | null> {
   const response = await fetch(`${API_BASE}/api/me`, {
     method: "POST",
@@ -70,6 +77,7 @@ export async function fetchUser(): Promise<User | null> {
   throw new Error(`Failed to fetch user: ${response.status}`);
 }
 
+/** 未登录时从 /api/me 解析 signin_url 用于账户连接。 */
 export async function fetchConnectUrl(): Promise<string> {
   const response = await fetch(`${API_BASE}/api/me`, {
     method: "POST",
@@ -88,6 +96,7 @@ export async function fetchConnectUrl(): Promise<string> {
   throw new Error("Failed to fetch connect URL");
 }
 
+/** 调用 /api/signout 登出当前用户。 */
 export async function disconnectUser(): Promise<void> {
   const response = await fetch(`${API_BASE}/api/signout`, {
     method: "POST",
@@ -101,6 +110,8 @@ export async function disconnectUser(): Promise<void> {
   }
 }
 
+/** 拉取全部聊天会话列表。 */
+/** 按 chatId 获取单条聊天详情。 */
 export async function getChats(): Promise<ChatsResponse> {
   const response = await fetch(`${API_BASE}/api/v1/chats`);
   const data = await response.json();
@@ -113,6 +124,7 @@ export async function getChat(chatId: string): Promise<ChatResponse> {
   return new ChatResponse(data);
 }
 
+/** 列出本地模型，可选按前缀过滤并合并 registry 上游存在性。 */
 export async function getModels(query?: string): Promise<Model[]> {
   try {
     const { models: modelsResponse } = await ollama.list();
@@ -176,6 +188,7 @@ export async function getModels(query?: string): Promise<Model[]> {
   }
 }
 
+/** 查询模型能力标签；未下载时返回空 capabilities。 */
 export async function getModelCapabilities(
   modelName: string,
 ): Promise<ModelCapabilitiesResponse> {
@@ -194,8 +207,12 @@ export async function getModelCapabilities(
   }
 }
 
+/** 聊天流中可能出现的 JSONL 事件类型联合。 */
 export type ChatEventUnion = ChatEvent | DownloadEvent | ErrorEvent;
 
+/**
+ * 向指定聊天发送消息并以异步生成器流式返回事件（正文、下载、错误等）。
+ */
 export async function* sendMessage(
   chatId: string,
   message: string,
@@ -257,6 +274,7 @@ export async function* sendMessage(
   }
 }
 
+/** 读取应用设置。 */
 export async function getSettings(): Promise<{
   settings: Settings;
 }> {
@@ -270,6 +288,7 @@ export async function getSettings(): Promise<{
   };
 }
 
+/** 提交并保存应用设置。 */
 export async function updateSettings(settings: Settings): Promise<{
   settings: Settings;
 }> {
@@ -290,6 +309,7 @@ export async function updateSettings(settings: Settings): Promise<{
   };
 }
 
+/** 启用或禁用云端模型功能。 */
 export async function updateCloudSetting(
   enabled: boolean,
 ): Promise<CloudStatusResponse> {
@@ -312,6 +332,7 @@ export async function updateCloudSetting(
   };
 }
 
+/** 重命名聊天会话标题。 */
 export async function renameChat(chatId: string, title: string): Promise<void> {
   const response = await fetch(`${API_BASE}/api/v1/chat/${chatId}/rename`, {
     method: "PUT",
@@ -326,6 +347,7 @@ export async function renameChat(chatId: string, title: string): Promise<void> {
   }
 }
 
+/** 删除指定聊天会话。 */
 export async function deleteChat(chatId: string): Promise<void> {
   const response = await fetch(`${API_BASE}/api/v1/chat/${chatId}`, {
     method: "DELETE",
@@ -336,7 +358,7 @@ export async function deleteChat(chatId: string): Promise<void> {
   }
 }
 
-// Get upstream information for model staleness checking
+/** 查询模型在上游 registry 是否存在及本地版本是否过期。 */
 export async function getModelUpstreamInfo(
   model: Model,
 ): Promise<{ stale: boolean; exists: boolean; error?: string }> {
@@ -372,6 +394,7 @@ export async function getModelUpstreamInfo(
   }
 }
 
+/** 拉取模型并以 JSONL 流返回下载进度。 */
 export async function* pullModel(
   modelName: string,
   signal?: AbortSignal,
@@ -406,6 +429,7 @@ export async function* pullModel(
   }
 }
 
+/** 实验性模型推荐条目。 */
 export interface ModelRecommendation {
   model: string;
   description: string;
@@ -414,10 +438,12 @@ export interface ModelRecommendation {
   vram_bytes?: number;
 }
 
+/** 模型推荐列表 API 响应。 */
 export interface ModelRecommendationsResponse {
   recommendations: ModelRecommendation[];
 }
 
+/** 获取实验性模型推荐列表。 */
 export async function getModelRecommendations(): Promise<ModelRecommendation[]> {
   const response = await fetch(
     `${API_BASE}/api/experimental/model-recommendations`,
@@ -431,6 +457,7 @@ export async function getModelRecommendations(): Promise<ModelRecommendation[]> 
   return data.recommendations || [];
 }
 
+/** 获取本机推理设备与默认上下文长度信息。 */
 export async function getInferenceCompute(): Promise<InferenceComputeResponse> {
   const response = await fetch(`${API_BASE}/api/v1/inference-compute`);
   if (!response.ok) {
@@ -443,6 +470,7 @@ export async function getInferenceCompute(): Promise<InferenceComputeResponse> {
   return new InferenceComputeResponse(data);
 }
 
+/** 通过 /api/version 探测后端是否可用。 */
 export async function fetchHealth(): Promise<boolean> {
   try {
     // Use the /api/version endpoint as a health check
@@ -466,6 +494,7 @@ export async function fetchHealth(): Promise<boolean> {
   }
 }
 
+/** 读取云端功能禁用状态与来源。 */
 export async function getCloudStatus(): Promise<CloudStatusResponse | null> {
   const response = await fetch(`${API_BASE}/api/v1/cloud`);
   if (!response.ok) {

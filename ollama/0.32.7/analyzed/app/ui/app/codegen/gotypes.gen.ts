@@ -1,6 +1,10 @@
-/* Do not change, this code is generated from Golang structs */
+/**
+ * 由 Go 结构体自动生成的 TypeScript 类型；请勿手工修改。
+ * Do not change, this code is generated from Golang structs
+ */
 
 
+/** 聊天会话摘要信息（id、标题、摘录与时间戳）。 */
 export class ChatInfo {
     id: string;
     title: string;
@@ -17,6 +21,7 @@ export class ChatInfo {
         this.updatedAt = new Date(source["updatedAt"]);
     }
 }
+/** 聊天列表 API 响应，包含多条 ChatInfo。 */
 export class ChatsResponse {
     chatInfos: ChatInfo[];
 
@@ -43,6 +48,7 @@ export class ChatsResponse {
 	    return a;
 	}
 }
+/** Go time.Time 在 TypeScript 侧的占位类型。 */
 export class Time {
 
 
@@ -51,6 +57,7 @@ export class Time {
 
     }
 }
+/** 工具调用中的函数名、参数 JSON 与可选结果。 */
 export class ToolFunction {
     name: string;
     arguments: string;
@@ -63,6 +70,7 @@ export class ToolFunction {
         this.result = source["result"];
     }
 }
+/** 模型发起的一次工具调用（类型 + 函数详情）。 */
 export class ToolCall {
     type: string;
     function: ToolFunction;
@@ -91,6 +99,7 @@ export class ToolCall {
 	    return a;
 	}
 }
+/** 消息附件的文件名与二进制数据。 */
 export class File {
     filename: string;
     data: number[];
@@ -101,6 +110,7 @@ export class File {
         this.data = source["data"];
     }
 }
+/** 聊天消息：角色、正文、思考内容、附件与工具调用等。 */
 export class Message {
     role: string;
     content: string;
@@ -153,6 +163,7 @@ export class Message {
 	    return a;
 	}
 }
+/** 完整聊天会话：消息列表、标题与浏览器状态等。 */
 export class Chat {
     id: string;
     messages: Message[];
@@ -187,6 +198,7 @@ export class Chat {
 	    return a;
 	}
 }
+/** 单条聊天详情 API 响应。 */
 export class ChatResponse {
     chat: Chat;
 
@@ -213,6 +225,7 @@ export class ChatResponse {
 	    return a;
 	}
 }
+/** 本地或远程模型标识（名称、摘要与修改时间）。 */
 export class Model {
     model: string;
     digest?: string;
@@ -243,6 +256,7 @@ export class Model {
 	    return a;
 	}
 }
+/** 模型列表 API 响应。 */
 export class ModelsResponse {
     models: Model[];
 
@@ -269,6 +283,7 @@ export class ModelsResponse {
 	    return a;
 	}
 }
+/** 单块推理设备的库、驱动与显存描述。 */
 export class InferenceCompute {
     library: string;
     variant: string;
@@ -287,6 +302,7 @@ export class InferenceCompute {
         this.vram = source["vram"];
     }
 }
+/** 推理算力探测结果与默认上下文长度。 */
 export class InferenceComputeResponse {
     inferenceComputes: InferenceCompute[];
     defaultContextLength: number;
@@ -315,6 +331,7 @@ export class InferenceComputeResponse {
 	    return a;
 	}
 }
+/** 模型能力标签列表（如 vision、tools）。 */
 export class ModelCapabilitiesResponse {
     capabilities: string[];
 
@@ -323,6 +340,7 @@ export class ModelCapabilitiesResponse {
         this.capabilities = source["capabilities"];
     }
 }
+/** 聊天流式 SSE/JSONL 事件联合体（正文、思考、工具等）。 */
 export class ChatEvent {
     eventName: "chat" | "thinking" | "assistant_with_tools" | "tool_call" | "tool" | "tool_result" | "done" | "chat_created";
     content?: string;
@@ -371,6 +389,7 @@ export class ChatEvent {
 	    return a;
 	}
 }
+/** 模型下载进度事件。 */
 export class DownloadEvent {
     eventName: "download";
     total: number;
@@ -385,6 +404,7 @@ export class DownloadEvent {
         this.done = source["done"];
     }
 }
+/** 聊天或 API 错误事件。 */
 export class ErrorEvent {
     eventName: "error";
     error: string;
@@ -399,6 +419,7 @@ export class ErrorEvent {
         this.details = source["details"];
     }
 }
+/** 桌面应用用户设置（模型、功能开关与 UI 状态）。 */
 export class Settings {
     Expose: boolean;
     Browser: boolean;
@@ -437,6 +458,7 @@ export class Settings {
         this.AutoUpdateEnabled = source["AutoUpdateEnabled"];
     }
 }
+/** 设置读写 API 的响应包装。 */
 export class SettingsResponse {
     settings: Settings;
 
@@ -463,6 +485,7 @@ export class SettingsResponse {
 	    return a;
 	}
 }
+/** 健康检查布尔结果。 */
 export class HealthResponse {
     healthy: boolean;
 
@@ -471,6 +494,7 @@ export class HealthResponse {
         this.healthy = source["healthy"];
     }
 }
+/** 已登录 Ollama 账户用户信息。 */
 export class User {
     id: string;
     email: string;
@@ -493,6 +517,7 @@ export class User {
         this.plan = source["plan"];
     }
 }
+/** 发送消息时的附件（文件名与 base64 数据）。 */
 export class Attachment {
     filename: string;
     data?: string;
@@ -503,6 +528,7 @@ export class Attachment {
         this.data = source["data"];
     }
 }
+/** 向聊天端点发送的用户提示与选项。 */
 export class ChatRequest {
     model: string;
     prompt: string;
@@ -543,6 +569,7 @@ export class ChatRequest {
 	    return a;
 	}
 }
+/** 通用错误消息包装。 */
 export class Error {
     error: string;
 
@@ -551,6 +578,7 @@ export class Error {
         this.error = source["error"];
     }
 }
+/** 模型上游版本是否过期的探测结果。 */
 export class ModelUpstreamResponse {
     stale: boolean;
     error?: string;
@@ -561,6 +589,7 @@ export class ModelUpstreamResponse {
         this.error = source["error"];
     }
 }
+/** 浏览器工具抓取的网页快照。 */
 export class Page {
     url: string;
     title: string;
@@ -597,6 +626,7 @@ export class Page {
 	    return a;
 	}
 }
+/** Agent 浏览器工具的页面栈与 token 视图状态。 */
 export class BrowserStateData {
     page_stack: string[];
     view_tokens: number;
