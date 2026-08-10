@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:39:05Z",
   "files": [
-    "naming/src/main/java/com/alibaba/nacos/naming/misc/NamingExecuteTaskDispatcher.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/misc/NamingTraceEventInitializer.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/misc/SwitchDomain.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/misc/SwitchDomainSnapshotOperation.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/misc/SwitchEntry.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/misc/SwitchManager.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/misc/UtilsAndCommons.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/form/ClientServiceForm.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/form/InstanceForm.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/form/InstanceListForm.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/form/InstanceMetadataBatchOperationForm.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/form/ServiceForm.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/form/ServiceListForm.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/form/UpdateClusterForm.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/form/UpdateHealthForm.java",
     "naming/src/main/java/com/alibaba/nacos/naming/model/form/UpdateSwitchForm.java",
     "naming/src/main/java/com/alibaba/nacos/naming/model/vo/InstanceDetailInfoVo.java",
     "naming/src/main/java/com/alibaba/nacos/naming/model/vo/MetricsInfoVo.java",
@@ -33,5 +18,5 @@
     "naming/src/main/java/com/alibaba/nacos/naming/paramcheck/NamingInstanceListHttpParamExtractor.java"
   ],
   "remaining_pending": 497,
-  "done": 2010
+  "done": 2025
 }
