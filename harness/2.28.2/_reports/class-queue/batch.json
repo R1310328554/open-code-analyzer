@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:06:17Z",
-  "files": [
-    "handler/api/secrets/none.go",
-    "handler/api/secrets/update.go",
-    "handler/api/system/license.go",
-    "handler/api/system/limits.go",
-    "handler/api/system/none.go",
-    "handler/api/system/stats.go",
-    "handler/api/template/all.go",
-    "handler/api/template/create.go",
-    "handler/api/template/delete.go",
-    "handler/api/template/find.go",
-    "handler/api/template/list.go",
-    "handler/api/template/none.go",
-    "handler/api/template/update.go",
-    "handler/api/user/activity.go",
-    "handler/api/user/find.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 238,
-  "done": 135
+  "done": 150
 }
