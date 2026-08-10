@@ -27,25 +27,35 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class IdpVerifyAccountLinkActionToken extends DefaultActionToken {
 
+    /** 令牌类型 idp-verify-account-via-email。 */
     public static final String TOKEN_TYPE = "idp-verify-account-via-email";
 
+    /** JSON 字段：身份提供者用户名。 */
     private static final String JSON_FIELD_IDENTITY_PROVIDER_USERNAME = "idpu";
+    /** JSON 字段：IdP 外部用户 ID。 */
     private static final String JSON_FIELD_IDENTITY_PROVIDER_EXTERNAL_ID = "idpuid";
+    /** JSON 字段：身份提供者别名。 */
     private static final String JSON_FIELD_IDENTITY_PROVIDER_ALIAS = "idpa";
+    /** JSON 字段：原始复合认证会话 ID。 */
     private static final String JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID = "oasid";
 
     @JsonProperty(value = JSON_FIELD_IDENTITY_PROVIDER_USERNAME)
+    /** 身份提供者侧用户名。 */
     private String identityProviderUsername;
 
     @JsonProperty(value = JSON_FIELD_IDENTITY_PROVIDER_ALIAS)
+    /** 身份提供者别名。 */
     private String identityProviderAlias;
 
     @JsonProperty(value = JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID)
+    /** 发起关联流程的原始认证会话 ID。 */
     private String originalAuthenticationSessionId;
 
     @JsonProperty(value = JSON_FIELD_IDENTITY_PROVIDER_EXTERNAL_ID)
+    /** IdP 外部用户唯一标识。 */
     private String externalId;
 
+    /** 构造 IdP 账户关联邮箱验证令牌。 */
     public IdpVerifyAccountLinkActionToken(String userId, String email, int absoluteExpirationInSecs, String compoundAuthenticationSessionId,
       String identityProviderUsername, String externalId, String identityProviderAlias, String clientId) {
         super(userId, TOKEN_TYPE, absoluteExpirationInSecs, null, compoundAuthenticationSessionId);
@@ -59,6 +69,7 @@ public class IdpVerifyAccountLinkActionToken extends DefaultActionToken {
     private IdpVerifyAccountLinkActionToken() {
     }
 
+    /** @return 身份提供者用户名 */
     public String getIdentityProviderUsername() {
         return identityProviderUsername;
     }
@@ -67,6 +78,7 @@ public class IdpVerifyAccountLinkActionToken extends DefaultActionToken {
         this.identityProviderUsername = identityProviderUsername;
     }
 
+    /** @return IdP 外部用户 ID */
     public String getExternalId() {
         return externalId;
     }
@@ -75,6 +87,7 @@ public class IdpVerifyAccountLinkActionToken extends DefaultActionToken {
         this.externalId = externalId;
     }
 
+    /** @return 身份提供者别名 */
     public String getIdentityProviderAlias() {
         return identityProviderAlias;
     }
@@ -83,6 +96,7 @@ public class IdpVerifyAccountLinkActionToken extends DefaultActionToken {
         this.identityProviderAlias = identityProviderAlias;
     }
 
+    /** @return 原始复合认证会话 ID */
     public String getOriginalCompoundAuthenticationSessionId() {
         return originalAuthenticationSessionId;
     }

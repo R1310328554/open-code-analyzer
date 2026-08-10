@@ -27,17 +27,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class VerifyEmailActionToken extends DefaultActionToken {
 
+    /** 令牌类型 verify-email。 */
     public static final String TOKEN_TYPE = "verify-email";
 
+    /** JSON 字段：原始复合认证会话 ID（跨浏览器场景）。 */
     private static final String JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID = "oasid";
+    /** JSON 字段：验证完成后的重定向 URI。 */
     private static final String JSON_FIELD_REDIRECT_URI = "reduri";
 
     @JsonProperty(value = JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID)
+    /** 发起验证的原始认证会话 ID。 */
     private String originalAuthenticationSessionId;
 
     @JsonProperty(JSON_FIELD_REDIRECT_URI)
+    /** 验证完成后的重定向地址。 */
     private String redirectUri;
 
+    /** 构造邮箱验证操作令牌。 */
     public VerifyEmailActionToken(String userId, int absoluteExpirationInSecs, String compoundAuthenticationSessionId, String email, String clientId) {
         super(userId, TOKEN_TYPE, absoluteExpirationInSecs, null, compoundAuthenticationSessionId);
         setEmail(email);
@@ -47,6 +53,7 @@ public class VerifyEmailActionToken extends DefaultActionToken {
     private VerifyEmailActionToken() {
     }
 
+    /** @return 原始复合认证会话 ID */
     public String getCompoundOriginalAuthenticationSessionId() {
         return originalAuthenticationSessionId;
     }
@@ -55,6 +62,7 @@ public class VerifyEmailActionToken extends DefaultActionToken {
         this.originalAuthenticationSessionId = originalAuthenticationSessionId;
     }
 
+    /** @return 重定向 URI */
     public String getRedirectUri() {
         return redirectUri;
     }

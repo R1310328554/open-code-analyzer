@@ -55,6 +55,7 @@ import org.keycloak.sessions.AuthenticationSessionModel;
  */
 public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<InviteOrgActionToken> {
 
+    /** 注册 ORGIVT 组织邀请令牌处理器。 */
     public InviteOrgActionTokenHandler() {
         super(
           InviteOrgActionToken.TOKEN_TYPE,
@@ -76,6 +77,7 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
     }
 
     @Override
+    /** 预检组织功能、组织状态与邀请有效性，并写入组织上下文。 */
     public Response preHandleToken(InviteOrgActionToken token, ActionTokenContext<InviteOrgActionToken> tokenContext) {
         KeycloakSession session = tokenContext.getSession();
 
@@ -116,6 +118,7 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
     }
 
     @Override
+    /** 确认后将用户加入组织、删除邀请并处理后续必需操作或重定向。 */
     public Response handleToken(InviteOrgActionToken token, ActionTokenContext<InviteOrgActionToken> tokenContext) {
         UserModel user = tokenContext.getAuthenticationSession().getAuthenticatedUser();
         KeycloakSession session = tokenContext.getSession();
@@ -160,9 +163,11 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
             return confirmMembershipResponse(organization, user, tokenContext, token);
         }
 
+        // 校验通过，将用户加入组织
         // if we made it this far then go ahead and add the user to the organization
         orgProvider.addMember(orgProvider.getById(token.getOrgId()), user);
 
+        // 邀请已消费，从存储中删除
         // Delete the invitation since it has been used
         invitationManager.remove(token.getId());
 
@@ -181,10 +186,12 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
         String nextAction = AuthenticationManager.nextRequiredAction(session, authSession, tokenContext.getRequest(), event);
 
         if (nextAction == null) {
+            // 跳过后续「账户已更新」页
             // do not show account updated page
             authSession.removeAuthNote(AuthenticationManager.END_AFTER_REQUIRED_ACTIONS);
 
             if (redirectUri != null) {
+                // 若指定了重定向 URI 则直接跳转
                 // always redirect to the expected URI if provided
                 return Response.status(Status.FOUND).location(URI.create(redirectUri)).build();
             }
@@ -193,6 +200,7 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
         return AuthenticationManager.redirectToRequiredActions(session, realm, authSession, uriInfo, nextAction);
     }
 
+    /** 邀请无效或已过期时的错误页。 */
     private Response invalidTokenResponse(ActionTokenContext<InviteOrgActionToken> tokenContext, InviteOrgActionToken token) {
         EventBuilder event = tokenContext.getEvent();
         KeycloakSession session = tokenContext.getSession();
@@ -210,6 +218,7 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
                 .createInfoPage();
     }
 
+    /** 组织不存在时的错误页。 */
     private Response invalidOrganizationResponse(ActionTokenContext<InviteOrgActionToken> tokenContext, InviteOrgActionToken token) {
         EventBuilder event = tokenContext.getEvent();
         KeycloakSession session = tokenContext.getSession();
@@ -227,6 +236,7 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
                 .createInfoPage();
     }
 
+    /** 组织功能关闭或组织已禁用时的错误页。 */
     private Response disabledOrganizationResponse(ActionTokenContext<InviteOrgActionToken> tokenContext, InviteOrgActionToken token) {
         EventBuilder event = tokenContext.getEvent();
         KeycloakSession session = tokenContext.getSession();
@@ -244,6 +254,7 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
                 .createInfoPage();
     }
 
+    /** 用户已是组织成员时的错误页。 */
     private Response alreadyMemberResponse(OrganizationModel organization, UserModel user, ActionTokenContext<InviteOrgActionToken> tokenContext, InviteOrgActionToken token) {
         EventBuilder event = tokenContext.getEvent();
         KeycloakSession session = tokenContext.getSession();
@@ -262,6 +273,7 @@ public class InviteOrgActionTokenHandler extends AbstractActionTokenHandler<Invi
                 .createInfoPage();
     }
 
+    /** 首次访问时展示加入组织确认页。 */
     private Response confirmMembershipResponse(OrganizationModel organization, UserModel user, ActionTokenContext<InviteOrgActionToken> tokenContext, InviteOrgActionToken token) {
         KeycloakSession session = tokenContext.getSession();
         AuthenticationSessionModel authSession = tokenContext.getAuthenticationSession();

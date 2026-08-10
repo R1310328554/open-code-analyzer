@@ -21,19 +21,28 @@ import org.keycloak.authentication.actiontoken.DefaultActionToken;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * 更新邮箱操作令牌，携带旧/新邮箱、是否注销其他会话及可选重定向 URI。
+ */
 public class UpdateEmailActionToken extends DefaultActionToken {
 
+	/** 令牌类型 update-email。 */
 	public static final String TOKEN_TYPE = "update-email";
 
+	/** 变更前的邮箱地址。 */
 	@JsonProperty("oldEmail")
 	private String oldEmail;
+	/** 待验证的新邮箱地址。 */
 	@JsonProperty("newEmail")
 	private String newEmail;
+    /** 确认更新后是否注销其他会话（仅 true 时序列化）。 */
     @JsonProperty("logoutSessions")
     private Boolean logoutSessions;
+    /** 更新完成后的重定向 URI。 */
     @JsonProperty("reduri")
     private String redirectUri;
 
+	/** 构造更新邮箱令牌（默认不注销其他会话）。 */
     public UpdateEmailActionToken(String userId, int absoluteExpirationInSecs, String oldEmail, String newEmail, String clientId) {
           this(userId, absoluteExpirationInSecs, oldEmail, newEmail, clientId, null);
     }
@@ -55,6 +64,7 @@ public class UpdateEmailActionToken extends DefaultActionToken {
 
 	}
 
+	/** @return 旧邮箱 */
 	public String getOldEmail() {
 		return oldEmail;
 	}
@@ -63,6 +73,7 @@ public class UpdateEmailActionToken extends DefaultActionToken {
 		this.oldEmail = oldEmail;
 	}
 
+	/** @return 新邮箱 */
 	public String getNewEmail() {
 		return newEmail;
 	}
@@ -71,6 +82,7 @@ public class UpdateEmailActionToken extends DefaultActionToken {
 		this.newEmail = newEmail;
 	}
 
+    /** @return 是否在确认后注销其他会话 */
     public Boolean getLogoutSessions() {
         return this.logoutSessions;
     }
@@ -79,6 +91,7 @@ public class UpdateEmailActionToken extends DefaultActionToken {
         this.logoutSessions = Boolean.TRUE.equals(logoutSessions)? true : null;
     }
 
+    /** @return 重定向 URI */
     public String getRedirectUri() {
         return redirectUri;
 	}

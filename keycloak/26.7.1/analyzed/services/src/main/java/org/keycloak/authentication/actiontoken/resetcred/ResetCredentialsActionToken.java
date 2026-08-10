@@ -25,8 +25,10 @@ import org.keycloak.authentication.actiontoken.DefaultActionToken;
  */
 public class ResetCredentialsActionToken extends DefaultActionToken {
 
+    /** 令牌类型 reset-credentials。 */
     public static final String TOKEN_TYPE = "reset-credentials";
 
+    /** 构造重置凭据操作令牌。 */
     public ResetCredentialsActionToken(String userId, String email, int absoluteExpirationInSecs, String compoundAuthenticationSessionId, String clientId) {
         super(userId, TOKEN_TYPE, absoluteExpirationInSecs, null, compoundAuthenticationSessionId);
         this.issuedFor = clientId;

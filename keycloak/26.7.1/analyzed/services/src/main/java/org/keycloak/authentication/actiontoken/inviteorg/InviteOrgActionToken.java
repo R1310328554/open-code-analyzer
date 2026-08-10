@@ -27,18 +27,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class InviteOrgActionToken extends DefaultActionToken {
 
+    /** 令牌类型 ORGIVT（组织邀请）。 */
     public static final String TOKEN_TYPE = "ORGIVT";
 
+    /** JSON 字段：接受邀请后的重定向 URI。 */
     private static final String JSON_FIELD_REDIRECT_URI = "reduri";
+    /** JSON 字段：目标组织 ID。 */
     private static final String JSON_ORG_ID = "org_id";
 
     @JsonProperty(JSON_FIELD_REDIRECT_URI)
+    /** 接受邀请后的重定向地址。 */
     private String redirectUri;
 
 
     @JsonProperty(JSON_ORG_ID)
+    /** 被邀请加入的组织 ID。 */
     private String orgId;
 
+    /** 构造组织邀请操作令牌。 */
     public InviteOrgActionToken(String userId, int absoluteExpirationInSecs, String email, String clientId) {
         super(userId, TOKEN_TYPE, absoluteExpirationInSecs, null);
         setEmail(email);
@@ -48,6 +54,7 @@ public class InviteOrgActionToken extends DefaultActionToken {
     private InviteOrgActionToken() {
     }
 
+    /** @return 重定向 URI */
     public String getRedirectUri() {
         return redirectUri;
     }
@@ -56,6 +63,7 @@ public class InviteOrgActionToken extends DefaultActionToken {
         this.redirectUri = redirectUri;
     }
 
+    /** @return 组织 ID */
     public String getOrgId() {
         return orgId;
     }

@@ -28,10 +28,13 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 「允许访问」认证器工厂，注册 {@link AllowAccessAuthenticator} 单例。
+ *
  * @author <a href="mailto:mabartos@redhat.com">Martin Bartos</a>
  */
 public class AllowAccessAuthenticatorFactory implements AuthenticatorFactory {
     private final static AllowAccessAuthenticator SINGLETON = new AllowAccessAuthenticator();
+    /** Provider ID：allow-access-authenticator。 */
     public static final String PROVIDER_ID = "allow-access-authenticator";
 
     @Override
@@ -45,6 +48,7 @@ public class AllowAccessAuthenticatorFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Allow access";
     }
@@ -75,6 +79,7 @@ public class AllowAccessAuthenticatorFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 帮助说明文本 */
     public String getHelpText() {
         return "Authenticator will always successfully authenticate. Useful for example in the conditional flows to be used after satisfying the previous conditions";
     }

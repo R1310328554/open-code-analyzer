@@ -40,8 +40,12 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.ValidationException;
 
+/**
+ * 更新邮箱操作令牌处理器：校验待验证邮箱与用户 pending 属性一致后完成邮箱变更。
+ */
 public class UpdateEmailActionTokenHandler extends AbstractActionTokenHandler<UpdateEmailActionToken> {
 
+    /** 注册 update-email 令牌处理器。 */
     public UpdateEmailActionTokenHandler() {
         super(UpdateEmailActionToken.TOKEN_TYPE, UpdateEmailActionToken.class, Messages.STALE_VERIFY_EMAIL_LINK,
                 EventType.EXECUTE_ACTIONS, Errors.INVALID_TOKEN);
@@ -56,6 +60,7 @@ public class UpdateEmailActionTokenHandler extends AbstractActionTokenHandler<Up
     }
 
     @Override
+    /** 验证 pending 邮箱、执行更新并按需注销其他会话。 */
     public Response handleToken(UpdateEmailActionToken token, ActionTokenContext<UpdateEmailActionToken> tokenContext) {
         AuthenticationSessionModel authenticationSession = tokenContext.getAuthenticationSession();
         UserModel user = authenticationSession.getAuthenticatedUser();
@@ -67,6 +72,7 @@ public class UpdateEmailActionTokenHandler extends AbstractActionTokenHandler<Up
 
         String newEmail = token.getNewEmail();
 
+        // 检查 EMAIL_PENDING 属性是否存在且与新邮箱一致，防止管理员取消验证后误用令牌
         // Check if EMAIL_PENDING attribute exists and matches the token's new email
         // This prevents the token from being used if an admin has removed the pending verification
         String pendingEmail = user.getFirstAttribute(UserModel.EMAIL_PENDING);
@@ -90,6 +96,7 @@ public class UpdateEmailActionTokenHandler extends AbstractActionTokenHandler<Up
 
         tokenContext.getEvent().success();
 
+        // 入口已校验，标记邮箱已验证并清除相关 required action
         // verify user email as we know it is valid as this entry point would never have gotten here.
         user.setEmailVerified(true);
         tokenContext.getAuthenticationSession().removeRequiredAction(UserModel.RequiredAction.UPDATE_EMAIL);
@@ -102,6 +109,7 @@ public class UpdateEmailActionTokenHandler extends AbstractActionTokenHandler<Up
     }
 
     @Override
+    /** 更新邮箱令牌不可重复使用。 */
     public boolean canUseTokenRepeatedly(UpdateEmailActionToken token,
             ActionTokenContext<UpdateEmailActionToken> tokenContext) {
         return false;

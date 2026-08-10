@@ -40,6 +40,7 @@ import org.keycloak.services.messages.Messages;
 public class DenyAccessAuthenticator implements Authenticator {
 
     @Override
+    /** 记录 ACCESS_DENIED 事件并返回 401 错误页。 */
     public void authenticate(AuthenticationFlowContext context) {
         String errorMessage = Optional.ofNullable(context.getAuthenticatorConfig())
                 .map(AuthenticatorConfigModel::getConfig)
@@ -59,6 +60,7 @@ public class DenyAccessAuthenticator implements Authenticator {
     }
 
     @Override
+    /** 不依赖已认证用户。 */
     public boolean requiresUser() {
         return false;
     }

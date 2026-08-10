@@ -54,6 +54,7 @@ import org.keycloak.sessions.RootAuthenticationSessionModel;
  */
 public class VerifyEmailActionTokenHandler extends AbstractActionTokenHandler<VerifyEmailActionToken> {
 
+    /** 注册 verify-email 令牌处理器。 */
     public VerifyEmailActionTokenHandler() {
         super(
           VerifyEmailActionToken.TOKEN_TYPE,
@@ -75,6 +76,7 @@ public class VerifyEmailActionTokenHandler extends AbstractActionTokenHandler<Ve
     }
 
     @Override
+    /** 处理已验证/待确认/完成验证等分支并管理跨浏览器会话。 */
     public Response handleToken(VerifyEmailActionToken token, ActionTokenContext<VerifyEmailActionToken> tokenContext) {
         UserModel user = tokenContext.getAuthenticationSession().getAuthenticatedUser();
         KeycloakSession session = tokenContext.getSession();
@@ -99,6 +101,7 @@ public class VerifyEmailActionTokenHandler extends AbstractActionTokenHandler<Ve
         final RealmModel realm = tokenContext.getRealm();
 
         if (tokenContext.isAuthenticationSessionFresh()) {
+            // 保存原始会话 ID 并刷新令牌中的复合认证会话
             // Update the authentication session in the token
             token.setCompoundOriginalAuthenticationSessionId(token.getCompoundAuthenticationSessionId());
 
@@ -117,6 +120,7 @@ public class VerifyEmailActionTokenHandler extends AbstractActionTokenHandler<Ve
                     .createInfoPage();
         }
 
+        // 入口已校验邮箱，标记 verified 并清除 VERIFY_EMAIL 必需操作
         // verify user email as we know it is valid as this entry point would never have gotten here.
         user.setEmailVerified(true);
         user.removeRequiredAction(RequiredAction.VERIFY_EMAIL);
@@ -134,6 +138,7 @@ public class VerifyEmailActionTokenHandler extends AbstractActionTokenHandler<Ve
         String nextAction = AuthenticationManager.nextRequiredAction(session, authSession, tokenContext.getRequest(), event);
 
         if (token.getCompoundOriginalAuthenticationSessionId() != null) {
+            // 在另一浏览器完成验证：移除原始认证会话，当前会话在必需操作后结束
             // Email verified in other browser than the one originally started. Removing original authSession. This authenticationSession would be finished after requiredAction
             AuthenticationSessionCompoundId origAuthSession = AuthenticationSessionCompoundId.encoded(token.getCompoundOriginalAuthenticationSessionId());
             RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, origAuthSession.getRootSessionId());
@@ -150,6 +155,7 @@ public class VerifyEmailActionTokenHandler extends AbstractActionTokenHandler<Ve
                         .setUser(user)
                         .createInfoPage();
             } else {
+                // 确保当前会话在必需操作完成后终止登录
                 // Updating current authSession to end after required actions (should be marked already, but just to re-add in case of some corner case scenarios)
                 authSession.setAuthNote(AuthenticationManager.END_AFTER_REQUIRED_ACTIONS, "true");
             }
@@ -159,6 +165,7 @@ public class VerifyEmailActionTokenHandler extends AbstractActionTokenHandler<Ve
         return AuthenticationManager.redirectToRequiredActions(session, realm, authSession, uriInfo, nextAction);
     }
 
+    /** 检查用户或会话是否仍挂起 VERIFY_EMAIL 必需操作。 */
     private boolean isVerifyEmailActionSet(UserModel user, AuthenticationSessionModel authSession) {
         return Stream.concat(user.getRequiredActionsStream(), authSession.getRequiredActions().stream())
                 .anyMatch(RequiredAction.VERIFY_EMAIL.name()::equals);

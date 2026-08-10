@@ -52,6 +52,7 @@ import org.keycloak.sessions.AuthenticationSessionModel;
  */
 public class IdpVerifyAccountLinkActionTokenHandler extends AbstractActionTokenHandler<IdpVerifyAccountLinkActionToken> {
 
+    /** 注册 idp-verify-account-via-email 令牌处理器。 */
     public IdpVerifyAccountLinkActionTokenHandler() {
         super(
           IdpVerifyAccountLinkActionToken.TOKEN_TYPE,
@@ -70,6 +71,7 @@ public class IdpVerifyAccountLinkActionTokenHandler extends AbstractActionTokenH
     }
 
     @Override
+    /** 展示关联确认页或完成邮箱验证并写回 broker 会话备注。 */
     public Response handleToken(IdpVerifyAccountLinkActionToken token, ActionTokenContext<IdpVerifyAccountLinkActionToken> tokenContext) {
         UserModel user = tokenContext.getAuthenticationSession().getAuthenticatedUser();
         EventBuilder event = tokenContext.getEvent();
@@ -115,6 +117,7 @@ public class IdpVerifyAccountLinkActionTokenHandler extends AbstractActionTokenH
                     .createInfoPage();
         }
 
+        // 入口已校验邮箱有效性，直接标记 verified
         // verify user email as we know it is valid as this entry point would never have gotten here.
         user.setEmailVerified(true);
         event.success();
@@ -144,6 +147,7 @@ public class IdpVerifyAccountLinkActionTokenHandler extends AbstractActionTokenH
         return tokenContext.brokerFlow(null, null, authSession.getAuthNote(AuthenticationProcessor.CURRENT_FLOW_PATH));
     }
 
+    /** 写入一次性对象标记用户已通过 IdP 邮箱验证。 */
     private void setUserVerifiedSingleObject(IdpVerifyAccountLinkActionToken token, RealmModel realm, KeycloakSession session, UserModel user) {
         int singleObjectLifespan = realm.getActionTokenGeneratedByUserLifespan();
         String userId = user.getId();
@@ -151,6 +155,7 @@ public class IdpVerifyAccountLinkActionTokenHandler extends AbstractActionTokenH
         session.singleUseObjects().put(getUserVerifiedSingleObjectKey(userId, idpAlias, token.getExternalId()), singleObjectLifespan, Map.of());
     }
 
+    /** 若一次性验证标记存在则执行回调并消费标记。 */
     public static boolean runIfUserVerified(KeycloakSession session, UserModel user, IdentityProviderModel broker, String externalId, Runnable runnable) {
         if (user == null) {
             return false;
@@ -167,10 +172,12 @@ public class IdpVerifyAccountLinkActionTokenHandler extends AbstractActionTokenH
         return isUserVerified;
     }
 
+    /** 生成 broker 用户邮箱验证一次性对象键。 */
     private static String getUserVerifiedSingleObjectKey(String userId, String idpAlias, String externalId) {
         return "kc.brokering.user.verified." + userId  + "." + idpAlias + "." + externalId;
     }
 
+    /** 邮箱已验证或会话无效时返回提示页。 */
     private Response sendEmailAlreadyVerified(KeycloakSession session, EventBuilder event, UserModel user) {
         event.user(user).error(Errors.EMAIL_ALREADY_VERIFIED);
         return session.getProvider(LoginFormsProvider.class)

@@ -51,11 +51,13 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import static org.keycloak.models.utils.DefaultRequiredActions.getDefaultRequiredActionCaseInsensitively;
 
 /**
+ * 「执行必需操作」操作令牌处理器：校验重定向 URI 与必需操作列表，引导用户确认并依次完成 required actions。
  *
  * @author hmlnarik
  */
 public class ExecuteActionsActionTokenHandler extends AbstractActionTokenHandler<ExecuteActionsActionToken> {
 
+    /** 注册 execute-actions 令牌类型与默认事件/错误码。 */
     public ExecuteActionsActionTokenHandler() {
         super(
           ExecuteActionsActionToken.TOKEN_TYPE,
@@ -67,6 +69,7 @@ public class ExecuteActionsActionTokenHandler extends AbstractActionTokenHandler
     }
 
     @Override
+    /** 校验重定向 URI、邮箱及令牌内必需操作合法性。 */
     public Predicate<? super ExecuteActionsActionToken>[] getVerifiers(ActionTokenContext<ExecuteActionsActionToken> tokenContext) {
         return TokenUtils.predicates(
           TokenUtils.checkThat(
@@ -84,12 +87,14 @@ public class ExecuteActionsActionTokenHandler extends AbstractActionTokenHandler
     }
 
     @Override
+    /** 首次访问展示确认页；确认后将操作写入认证会话并跳转下一必需操作。 */
     public Response handleToken(ExecuteActionsActionToken token, ActionTokenContext<ExecuteActionsActionToken> tokenContext) {
         AuthenticationSessionModel authSession = tokenContext.getAuthenticationSession();
         final UriInfo uriInfo = tokenContext.getUriInfo();
         final RealmModel realm = tokenContext.getRealm();
         final KeycloakSession session = tokenContext.getSession();
         if (tokenContext.isAuthenticationSessionFresh()) {
+            // 刷新令牌中的复合认证会话 ID 并生成确认链接
             // Update the authentication session in the token
             String authSessionEncodedId = AuthenticationSessionCompoundId.fromAuthSession(authSession).getEncodedId();
             token.setCompoundAuthenticationSessionId(authSessionEncodedId);
@@ -118,6 +123,7 @@ public class ExecuteActionsActionTokenHandler extends AbstractActionTokenHandler
         token.getRequiredActions().stream().forEach(authSession::addRequiredAction);
 
         UserModel user = tokenContext.getAuthenticationSession().getAuthenticatedUser();
+        // 入口已校验邮箱，此处直接标记为已验证
         // verify user email as we know it is valid as this entry point would never have gotten here.
         user.setEmailVerified(true);
 
@@ -126,6 +132,7 @@ public class ExecuteActionsActionTokenHandler extends AbstractActionTokenHandler
     }
 
     @Override
+    /** 若任一必需操作为一次性操作则禁止重复使用令牌。 */
     public boolean canUseTokenRepeatedly(ExecuteActionsActionToken token, ActionTokenContext<ExecuteActionsActionToken> tokenContext) {
         RealmModel realm = tokenContext.getRealm();
         KeycloakSessionFactory sessionFactory = tokenContext.getSession().getKeycloakSessionFactory();
@@ -143,6 +150,7 @@ public class ExecuteActionsActionTokenHandler extends AbstractActionTokenHandler
           .noneMatch(RequiredActionFactory::isOneTimeAction);
     }
 
+    /** 校验令牌携带的必需操作 ID 在域内有效且已启用。 */
     // Verify required actions included in the token are valid
     protected TokenVerifier.Predicate<ExecuteActionsActionToken> verifyRequiredActions(ActionTokenContext<ExecuteActionsActionToken> tokenContext) {
         return TokenUtils.checkThat(t -> RequiredActionsValidator.validRequiredActions(tokenContext.getSession(), t.getRequiredActions()),

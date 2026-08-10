@@ -36,11 +36,13 @@ import org.keycloak.sessions.CommonClientSessionModel.Action;
 import static org.keycloak.services.resources.LoginActionsService.RESET_CREDENTIALS_PATH;
 
 /**
+ * 重置凭据操作令牌处理器：校验域策略与邮箱后启动 reset-credentials 认证流。
  *
  * @author hmlnarik
  */
 public class ResetCredentialsActionTokenHandler extends AbstractActionTokenHandler<ResetCredentialsActionToken> {
 
+    /** 注册 reset-credentials 令牌类型。 */
     public ResetCredentialsActionTokenHandler() {
         super(
           ResetCredentialsActionToken.TOKEN_TYPE,
@@ -64,6 +66,7 @@ public class ResetCredentialsActionTokenHandler extends AbstractActionTokenHandl
     }
 
     @Override
+    /** 启动域配置的 reset-credentials 认证流程。 */
     public Response handleToken(ResetCredentialsActionToken token, ActionTokenContext tokenContext) {
         AuthenticationProcessor authProcessor = new ResetCredsAuthenticationProcessor();
 
@@ -77,13 +80,16 @@ public class ResetCredentialsActionTokenHandler extends AbstractActionTokenHandl
     }
 
     @Override
+    /** 重置凭据令牌不可重复使用。 */
     public boolean canUseTokenRepeatedly(ResetCredentialsActionToken token, ActionTokenContext tokenContext) {
         return false;
     }
 
+    /** 扩展认证处理器，在首次 broker 登录后完成忘记密码流程的特殊收尾。 */
     public static class ResetCredsAuthenticationProcessor extends AuthenticationProcessor {
 
         @Override
+        /** 若处于首次 broker 登录则重定向到 broker 登录后端点，否则走默认完成逻辑。 */
         protected Response authenticationComplete() {
             boolean firstBrokerLoginInProgress = (authenticationSession.getAuthNote(AbstractIdpAuthenticator.BROKERED_CONTEXT_NOTE) != null);
             if (firstBrokerLoginInProgress) {

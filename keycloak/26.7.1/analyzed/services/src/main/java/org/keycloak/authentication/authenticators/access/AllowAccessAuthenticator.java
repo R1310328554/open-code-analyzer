@@ -35,6 +35,7 @@ public class AllowAccessAuthenticator implements Authenticator {
     private final Logger log = Logger.getLogger(AllowAccessAuthenticator.class);
 
     @Override
+    /** 直接标记认证成功。 */
     public void authenticate(AuthenticationFlowContext context) {
         log.trace("Explicitly allowed access to the resource.");
         context.success();
@@ -46,11 +47,13 @@ public class AllowAccessAuthenticator implements Authenticator {
     }
 
     @Override
+    /** 不依赖已认证用户。 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** 始终返回 false（无需用户级配置）。 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return false;
     }
