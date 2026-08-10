@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T15:47:15Z",
   "files": [
-    "app/webview/webview.go",
-    "app/wintray/eventloop.go",
-    "app/wintray/menus.go",
-    "app/wintray/messages.go",
-    "app/wintray/notifyicon.go",
-    "app/wintray/tray.go",
-    "app/wintray/w32api.go",
-    "app/wintray/winclass.go",
-    "auth/auth.go",
-    "cmd/agent_tui.go",
-    "cmd/bench/bench.go",
-    "cmd/cloud_suggest.go",
-    "cmd/cmd.go",
-    "cmd/config/config.go",
-    "cmd/editor_unix.go",
     "cmd/editor_windows.go",
     "cmd/interactive.go",
     "cmd/internal/filedata/filedata.go",
@@ -33,5 +18,5 @@
     "cmd/launch/kimi.go"
   ],
   "remaining_pending": 343,
-  "done": 90
+  "done": 105
 }
