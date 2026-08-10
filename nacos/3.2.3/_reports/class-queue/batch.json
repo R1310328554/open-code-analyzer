@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:36:10Z",
   "files": [
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/InstanceBeatChecker.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/InstanceEnableBeatCheckInterceptor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/ServiceEnableBeatCheckInterceptor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/UnhealthyInstanceChecker.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/interceptor/AbstractHealthCheckInterceptor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/interceptor/HealthCheckEnableInterceptor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/interceptor/HealthCheckInterceptorChain.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/interceptor/HealthCheckResponsibleInterceptor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/interceptor/HealthCheckTaskInterceptWrapper.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/v2/HealthCheckTaskV2.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/v2/HealthStatusSynchronizer.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/v2/PersistentHealthStatusSynchronizer.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/v2/processor/HealthCheckCommonV2.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/v2/processor/HealthCheckProcessorV2.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/v2/processor/HealthCheckProcessorV2Delegate.java",
     "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/v2/processor/HttpHealthCheckProcessor.java",
     "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/v2/processor/MysqlHealthCheckProcessor.java",
     "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/v2/processor/NoneHealthCheckProcessor.java",
@@ -33,5 +18,5 @@
     "naming/src/main/java/com/alibaba/nacos/naming/misc/Loggers.java"
   ],
   "remaining_pending": 527,
-  "done": 1980
+  "done": 1995
 }
