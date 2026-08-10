@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T12:59:58Z",
   "files": [
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/IntentClientBindCheckExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/JWTClaimEnforcerExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/JWTClaimEnforcerExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/PKCEEnforcerExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/PKCEEnforcerExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/RegistrationAccessTokenRotationDisabledExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/RegistrationAccessTokenRotationDisabledExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/RejectImplicitGrantExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/RejectImplicitGrantExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/RejectRequestExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/RejectRequestExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/RejectResourceOwnerPasswordCredentialsGrantExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/RejectResourceOwnerPasswordCredentialsGrantExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SamlAvoidRedirectBindingExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SamlAvoidRedirectBindingExecutorFactory.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/SamlSecureClientUrisExecutor.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/SamlSecureClientUrisExecutorFactory.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/SamlSignatureEnforcerExecutor.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureParContentsExecutor.java"
   ],
   "remaining_pending": 1078,
-  "done": 4890
+  "done": 4905
 }
