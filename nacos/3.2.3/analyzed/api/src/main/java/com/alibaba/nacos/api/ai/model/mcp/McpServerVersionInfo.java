@@ -21,15 +21,21 @@ import com.alibaba.nacos.api.ai.model.mcp.registry.ServerVersionDetail;
 import java.util.List;
 
 /**
- * McpServerVersionInfo.
+ * MCP Server 版本汇总信息，列举各历史版本及最新发布版本。
+ *
+ * <p>继承 {@link McpServerBasicInfo} 的基础字段，附加版本明细列表，
+ * 便于客户端选择特定版本订阅或展示版本时间线。</p>
+ *
  * @author xinluo
  */
 @SuppressWarnings({"checkstyle:MethodName", "checkstyle:ParameterName", "checkstyle:MemberName",
     "checkstyle:SummaryJavadoc"})
 public class McpServerVersionInfo extends McpServerBasicInfo {
     
+    /** 最新已发布版本号。 */
     private String latestPublishedVersion;
     
+    /** 各历史版本的明细列表。 */
     private List<ServerVersionDetail> versionDetails;
     
     public String getLatestPublishedVersion() {

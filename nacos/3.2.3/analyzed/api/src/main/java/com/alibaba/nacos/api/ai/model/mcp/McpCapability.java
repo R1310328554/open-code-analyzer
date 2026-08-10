@@ -17,24 +17,21 @@
 package com.alibaba.nacos.api.ai.model.mcp;
 
 /**
- * AI MCP Server Capability enum, Mark the MCP Server support which capability such as support tools, prompts or resources.
+ * MCP Server 能力枚举，标识服务端支持的 MCP 能力类型（工具、提示词或资源）。
+ *
+ * <p>由 Nacos 自动探测或注册时写入，客户端可据此判断 Server 是否提供
+ * 对应类别的 MCP 接口。</p>
  *
  * @author xiweng.yy
  */
 public enum McpCapability {
     
-    /**
-     * The MCP Server provider tools.
-     */
+    /** MCP Server 提供工具（Tools）能力。 */
     TOOL,
     
-    /**
-     * The MCP Server provider prompts.
-     */
+    /** MCP Server 提供提示词（Prompts）能力。 */
     PROMPT,
     
-    /**
-     * The MCP Server provider resources.
-     */
+    /** MCP Server 提供资源（Resources）能力。 */
     RESOURCE;
 }

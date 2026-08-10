@@ -20,7 +20,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * MCP Server Validation Item.
+ * 导入预校验中的单个 MCP Server 条目，含校验状态、错误与转换后的详情。
  *
  * @author nacos
  */
@@ -28,39 +28,25 @@ public class McpServerValidationItem implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
-    /**
-     * Server name.
-     */
+    /** Server 名称。 */
     private String serverName;
     
-    /**
-     * Server ID (generated or provided).
-     */
+    /** Server ID（自动生成或外部提供）。 */
     private String serverId;
     
-    /**
-     * Validation status: valid, invalid, duplicate.
-     */
+    /** 校验状态：valid、invalid 或 duplicate。 */
     private String status;
     
-    /**
-     * Validation errors.
-     */
+    /** 校验错误信息列表。 */
     private List<String> errors;
     
-    /**
-     * Whether server exists.
-     */
+    /** 该 Server 是否已在 Nacos 中存在。 */
     private boolean exists;
     
-    /**
-     * Transformed server detail.
-     */
+    /** 转换后的 Server 详情对象。 */
     private McpServerDetailInfo server;
     
-    /**
-     * Whether selected for import.
-     */
+    /** 是否选中参与导入，默认 {@code true}。 */
     private boolean selected = true;
     
     public String getServerName() {

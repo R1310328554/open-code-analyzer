@@ -21,20 +21,28 @@ import com.alibaba.nacos.api.ai.model.mcp.registry.ServerVersionDetail;
 import java.util.List;
 
 /**
- * AI Mcp server spec in nacos.
+ * MCP Server 完整详情模型，在 {@link McpServerBasicInfo} 基础上扩展端点与规范信息。
+ *
+ * <p>包含前后端端点、工具规范、资源规范及全部历史版本列表，
+ * 用于详情查询、导入预览与治理控制台展示。</p>
  *
  * @author xiweng.yy
  */
 public class McpServerDetailInfo extends McpServerBasicInfo {
     
+    /** 后端端点列表。 */
     private List<McpEndpointInfo> backendEndpoints;
     
+    /** 前端端点列表。 */
     private List<McpEndpointInfo> frontendEndpoints;
     
+    /** 工具规范（Tools）。 */
     private McpToolSpecification toolSpec;
     
+    /** 资源规范（Resources）。 */
     private McpResourceSpecification resourceSpec;
     
+    /** 全部历史版本明细列表。 */
     private List<ServerVersionDetail> allVersions;
     
     public List<McpEndpointInfo> getBackendEndpoints() {

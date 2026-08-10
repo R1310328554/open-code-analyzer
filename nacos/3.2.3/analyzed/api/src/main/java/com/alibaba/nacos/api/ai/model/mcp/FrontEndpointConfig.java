@@ -23,30 +23,38 @@ import java.util.List;
 import com.alibaba.nacos.api.ai.constant.AiConstants;
 
 /**
- * Specific endpoint information exposed to the outside.
+ * 对外暴露的前端端点配置，描述 MCP Server 面向客户端的访问入口。
+ *
+ * <p>根据 {@link #endpointType} 不同，{@link #endpointData} 的实际类型各异，
+ * 可指向 Nacos 服务引用、直连地址或透传后端端点。</p>
  *
  * @author OmCheeLin
  */
 public class FrontEndpointConfig {
     
+    /** 端点配置类型标识。 */
     private String type;
     
+    /** 访问协议（如 http、https）。 */
     private String protocol;
     
+    /** 端点数据类型，决定 {@link #endpointData} 的解析方式。 */
     private String endpointType;
     
     /**
-     * According To the {@link #endpointType}, the data type will be different.
+     * 端点数据，具体类型取决于 {@link #endpointType}：
      * <ul>
-     *     <li>If {@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_REF}, the data type is {@link McpServiceRef}</li>
-     *     <li>If {@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_DIRECT}, the data type is {@link String}</li>
-     *     <li>If {@link AiConstants.Mcp#MCP_FRONT_ENDPOINT_TYPE_TO_BACK}, the data is {@code null}</li>
+     *     <li>{@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_REF} 时为 {@link McpServiceRef}</li>
+     *     <li>{@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_DIRECT} 时为 {@link String}</li>
+     *     <li>{@link AiConstants.Mcp#MCP_FRONT_ENDPOINT_TYPE_TO_BACK} 时为 {@code null}（透传后端）</li>
      * </ul>
      */
     private Object endpointData;
     
+    /** 端点访问路径。 */
     private String path;
     
+    /** 请求头列表。 */
     private List<KeyValueInput> headers;
     
     public String getType() {

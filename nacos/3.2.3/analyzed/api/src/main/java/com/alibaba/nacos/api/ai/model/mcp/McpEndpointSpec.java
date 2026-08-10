@@ -22,27 +22,29 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * AI MCP Server Endpoint Specification.
+ * MCP Server 端点规格声明，以类型 + 键值对描述端点连接方式。
+ *
+ * <p>支持直连（DIRECT）与 Nacos 服务引用（REF）两种模式，
+ * {@link #data} 字段随 {@link #type} 不同而包含不同键集合。</p>
  *
  * @author xiweng.yy
  */
 public class McpEndpointSpec {
     
     /**
-     * Endpoint type. Should be {@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_DIRECT} or
-     * {@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_REF}.
+     * 端点类型，应为 {@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_DIRECT} 或
+     * {@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_REF}。
      */
     private String type;
     
     /**
-     * Endpoint data. Depend on the `type`, the data should be different.
+     * 端点数据，随 {@link #type} 不同而包含不同键：
      * <p>
-     *  If `type` is {@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_DIRECT}, the data should be include `address` and `port` to
-     *  spec mcp server endpoint.
+     *  DIRECT 模式需包含 {@code address}、{@code port} 以指定 MCP Server 直连地址。
      * </p>
      * <p>
-     *  If `type` is {@link AiConstants.Mcp#MCP_ENDPOINT_TYPE_REF}, the data should be include `namespaceId`, `groupName` and `serviceName`
-     *  to spec the ref server which already register into Nacos.
+     *  REF 模式需包含 {@code namespaceId}、{@code groupName}、{@code serviceName}，
+     *  引用已注册到 Nacos 的服务实例。
      * </p>
      */
     private Map<String, String> data = new HashMap<>();

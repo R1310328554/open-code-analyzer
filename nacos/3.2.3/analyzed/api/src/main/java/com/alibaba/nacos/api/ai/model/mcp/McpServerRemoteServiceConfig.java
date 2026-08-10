@@ -19,16 +19,22 @@ package com.alibaba.nacos.api.ai.model.mcp;
 import java.util.List;
 
 /**
- * AI MCP server remote service config.
+ * MCP Server 远程服务配置，关联 Nacos 注册服务与前端暴露端点。
+ *
+ * <p>用于非 STDIO 协议场景，通过 {@link McpServiceRef} 引用后端实例，
+ * 并由 {@link FrontEndpointConfig} 列表定义对外访问入口。</p>
  *
  * @author xiweng.yy
  */
 public class McpServerRemoteServiceConfig {
     
+    /** 引用的 Nacos 服务实例。 */
     private McpServiceRef serviceRef;
     
+    /** MCP 协议导出路径。 */
     private String exportPath;
     
+    /** 前端端点配置列表。 */
     private List<FrontEndpointConfig> frontEndpointConfigList;
     
     public McpServiceRef getServiceRef() {

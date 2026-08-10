@@ -21,23 +21,28 @@ import java.util.List;
 import com.alibaba.nacos.api.ai.model.mcp.registry.KeyValueInput;
 
 /**
- * AI MCP backend endpoint info.
+ * MCP 后端端点信息，描述 Server 实际监听或转发的网络地址。
+ *
+ * <p>用于 {@link McpServerDetailInfo} 中配置前后端端点列表，
+ * 包含协议、地址、端口、路径及自定义请求头。</p>
  *
  * @author xiweng.yy
  */
 public class McpEndpointInfo {
     
-    /**
-     * Indicate the protocol of the endpoint (http / https).
-     */
+    /** 端点协议（http / https）。 */
     private String protocol;
     
+    /** 主机地址（IP 或域名）。 */
     private String address;
     
+    /** 监听端口。 */
     private int port;
     
+    /** URL 路径。 */
     private String path;
     
+    /** 自定义请求头列表。 */
     private List<KeyValueInput> headers;
     
     public String getAddress() {

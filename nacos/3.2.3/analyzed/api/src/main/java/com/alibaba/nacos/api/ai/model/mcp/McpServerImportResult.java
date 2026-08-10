@@ -19,7 +19,7 @@ package com.alibaba.nacos.api.ai.model.mcp;
 import java.io.Serializable;
 
 /**
- * MCP Server Import Result.
+ * 单个 MCP Server 的导入结果，记录名称、ID、状态及错误信息。
  *
  * @author nacos
  */
@@ -27,29 +27,19 @@ public class McpServerImportResult implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
-    /**
-     * Server name.
-     */
+    /** Server 名称。 */
     private String serverName;
     
-    /**
-     * Server ID after import.
-     */
+    /** 导入后的 Server ID。 */
     private String serverId;
     
-    /**
-     * Import status: success, failed, skipped.
-     */
+    /** 导入状态：success、failed 或 skipped。 */
     private String status;
     
-    /**
-     * Error message if failed.
-     */
+    /** 失败时的错误信息。 */
     private String errorMessage;
     
-    /**
-     * Conflict type if skipped.
-     */
+    /** 跳过时记录的冲突类型。 */
     private String conflictType;
     
     public String getServerName() {

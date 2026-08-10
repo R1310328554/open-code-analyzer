@@ -22,28 +22,32 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Mcp resource specification.
+ * MCP 资源规范模型，描述 Server 暴露的资源列表与模板。
+ *
+ * <p>支持明文与加密两种存储模式；加密模式下服务端原样持久化
+ * {@link #encryptData}，跳过 resources/resourceTemplates 解析。</p>
  *
  * @author xiweng.yy
  */
 public class McpResourceSpecification {
     
     /**
-     * Resource specification storage type. Defaults to "normal" (plaintext storage).
-     * When set to "encrypted" (or vendor-specific like "encrypt-kms"), server will persist encryptData as-is
-     * and skip parsing resources/resourceTemplates.
+     * 资源规范存储类型，默认 {@code normal}（明文存储）。
+     * 设为 {@code encrypted}（或 {@code encrypt-kms} 等厂商扩展值）时，
+     * 服务端原样持久化 {@link #encryptData}，不再解析 resources/resourceTemplates。
      */
     private String specificationType;
     
-    /**
-     * Encrypted payload and metadata when specificationType indicates encryption.
-     */
+    /** 加密模式下的载荷与元数据，类型为 {@link EncryptObject}。 */
     private EncryptObject encryptData;
     
+    /** MCP 资源定义列表（明文模式）。 */
     private List<Map<String, Object>> resources = new LinkedList<>();
     
+    /** MCP 资源模板列表（明文模式）。 */
     private List<Map<String, Object>> resourceTemplates = new LinkedList<>();
     
+    /** 扩展字段键值对。 */
     private Map<String, Object> extensions = new HashMap<>(1);
     
     public String getSpecificationType() {

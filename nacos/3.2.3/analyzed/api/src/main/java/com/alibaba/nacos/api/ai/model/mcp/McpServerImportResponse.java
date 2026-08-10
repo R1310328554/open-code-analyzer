@@ -20,7 +20,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * MCP Server Import Response.
+ * MCP Server 批量导入响应，汇总导入成功/失败/跳过数量及逐项结果。
  *
  * @author nacos
  */
@@ -28,39 +28,25 @@ public class McpServerImportResponse implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
-    /**
-     * Import success.
-     */
+    /** 整体导入是否成功。 */
     private boolean success;
     
-    /**
-     * Total count of servers to import.
-     */
+    /** 待导入 Server 总数。 */
     private int totalCount = 0;
     
-    /**
-     * Successfully imported count.
-     */
+    /** 成功导入数量。 */
     private int successCount = 0;
     
-    /**
-     * Failed import count.
-     */
+    /** 导入失败数量。 */
     private int failedCount = 0;
     
-    /**
-     * Skipped count (duplicates).
-     */
+    /** 跳过数量（如重复项）。 */
     private int skippedCount = 0;
     
-    /**
-     * Import results for each server.
-     */
+    /** 各 Server 的导入结果列表。 */
     private List<McpServerImportResult> results;
     
-    /**
-     * Overall error message.
-     */
+    /** 整体错误信息。 */
     private String errorMessage;
     
     public boolean isSuccess() {

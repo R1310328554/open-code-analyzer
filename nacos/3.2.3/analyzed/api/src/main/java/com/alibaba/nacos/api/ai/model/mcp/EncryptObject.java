@@ -20,22 +20,21 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * Encrypted payload wrapper for MCP tool specification.
- * Holds ciphertext and encryption metadata (algorithm, iv, keyId, version, etc.).
+ * MCP 工具规范加密载荷包装类，承载密文及加密元数据（算法、IV、密钥 ID、版本等）。
+ *
+ * <p>当工具或资源规范需加密存储时，服务端将明文序列化后加密，
+ * 并以本模型持久化 {@link #data} 与 {@link #encryptInfo}。</p>
+ *
  * @author luoxiner
  */
 public class EncryptObject implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
-    /**
-     * The ciphertext or encoded payload.
-     */
+    /** 密文或编码后的载荷内容。 */
     private String data;
     
-    /**
-     * Additional encryption metadata, e.g. alg, iv, keyId, version.
-     */
+    /** 加密元数据，如 alg、iv、keyId、version 等键值对。 */
     private Map<String, String> encryptInfo;
     
     public String getData() {

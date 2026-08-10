@@ -20,7 +20,9 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * MCP Server Import Validation Result.
+ * MCP Server 导入预校验结果，汇总解析数量、有效/无效/重复统计及逐项明细。
+ *
+ * <p>URL 导入模式下还包含分页游标 {@link #nextCursor} 与 {@link #hasMore} 标志。</p>
  *
  * @author nacos
  */
@@ -28,49 +30,31 @@ public class McpServerImportValidationResult implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
-    /**
-     * Validation success.
-     */
+    /** 整体验证是否通过。 */
     private boolean valid;
     
-    /**
-     * Parsed servers count.
-     */
+    /** 解析出的 Server 总数。 */
     private int totalCount;
     
-    /**
-     * Valid servers count.
-     */
+    /** 有效 Server 数量。 */
     private int validCount;
     
-    /**
-     * Invalid servers count.
-     */
+    /** 无效 Server 数量。 */
     private int invalidCount;
     
-    /**
-     * Duplicate servers count.
-     */
+    /** 重复 Server 数量。 */
     private int duplicateCount;
     
-    /**
-     * Parsed and validated servers.
-     */
+    /** 解析并校验后的 Server 明细列表。 */
     private List<McpServerValidationItem> servers;
     
-    /**
-     * Overall validation errors.
-     */
+    /** 整体验证错误信息列表。 */
     private List<String> errors;
     
-    /**
-     * Cursor for fetching next page (URL import only). Null if no more pages.
-     */
+    /** 下一页游标（仅 URL 导入）；无更多页时为 null。 */
     private String nextCursor;
     
-    /**
-     * Whether there are more pages available to load.
-     */
+    /** 是否还有更多分页数据可加载。 */
     private boolean hasMore;
     
     public boolean isValid() {
