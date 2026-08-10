@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:37:17Z",
-  "files": [
-    "services/src/main/java/org/keycloak/authorization/admin/ResourceSetService.java",
-    "services/src/main/java/org/keycloak/authorization/admin/ScopeService.java",
-    "services/src/main/java/org/keycloak/authorization/admin/representation/FGAPPolicyEvaluationResponseBuilder.java",
-    "services/src/main/java/org/keycloak/authorization/admin/representation/PolicyEvaluationResponseBuilder.java",
-    "services/src/main/java/org/keycloak/authorization/authorization/AuthorizationTokenService.java",
-    "services/src/main/java/org/keycloak/authorization/common/ClientModelIdentity.java",
-    "services/src/main/java/org/keycloak/authorization/common/DefaultEvaluationContext.java",
-    "services/src/main/java/org/keycloak/authorization/common/KeycloakIdentity.java",
-    "services/src/main/java/org/keycloak/authorization/config/UmaConfiguration.java",
-    "services/src/main/java/org/keycloak/authorization/config/UmaWellKnownProvider.java",
-    "services/src/main/java/org/keycloak/authorization/config/UmaWellKnownProviderFactory.java",
-    "services/src/main/java/org/keycloak/authorization/protection/ProtectionService.java",
-    "services/src/main/java/org/keycloak/authorization/protection/introspect/RPTIntrospectionProvider.java",
-    "services/src/main/java/org/keycloak/authorization/protection/introspect/RPTIntrospectionProviderFactory.java",
-    "services/src/main/java/org/keycloak/authorization/protection/permission/AbstractPermissionService.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2038,
-  "done": 3945
+  "done": 3960
 }
