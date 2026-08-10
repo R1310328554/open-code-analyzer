@@ -28,10 +28,16 @@ import org.keycloak.utils.KeycloakSessionUtil;
 
 import static org.keycloak.utils.StringUtil.isBlank;
 
+/**
+ * Group 核心 SCIM schema，映射 {@link GroupModel} 与 {@link Group} 表示。
+ * <p>定义 displayName、externalId、members 及 meta 时间戳等属性，并集成 FGAP 成员权限校验。</p>
+ */
 public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, Group> {
 
+    /** 当前 Keycloak 会话，用于权限与成员查询。 */
     private final KeycloakSession session;
 
+    /** 以 Group 核心 schema URN 构造。 */
     public GroupCoreModelSchema(KeycloakSession session) {
         super(Group.SCHEMA);
         this.session = session;
@@ -52,11 +58,13 @@ public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, 
         return getName();
     }
 
+    /** 返回 Group 模型侧可映射的属性名集合。 */
     @Override
     protected Set<String> getModelAttributeNames() {
         return Set.of("name", "externalId", "members");
     }
 
+    /** 从 {@link GroupModel} 读取指定属性值，members 受 VIEW_MEMBERS 权限过滤。 */
     @Override
     protected Object getAttributeValue(GroupModel model, String name) {
         return switch (name) {
@@ -79,6 +87,7 @@ public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, 
         };
     }
 
+    /** 将模型属性名映射为 SCIM schema 属性名。 */
     @Override
     protected String getAttributeSchemaName(String name) {
         return switch (name) {
@@ -89,6 +98,7 @@ public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, 
         };
     }
 
+    /** 构建 displayName、externalId、meta 与 members 等属性映射器。 */
     @Override
     protected Map<String, Attribute<GroupModel, Group>> getAttributeMappers() {
         List<Attribute<GroupModel, Group>> attributes = new ArrayList<>(Attribute.<GroupModel, Group>simple("displayName")
@@ -125,7 +135,7 @@ public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, 
                 .modelAttributeResolver(Attribute::getName)
                 .withModelSetter((TriConsumer<GroupModel, String, Set<Member>>) (model, name, values) -> {
                     if (!Optional.ofNullable(values).orElse(Set.of()).isEmpty()) {
-                        // managing members on updates are not supported, client should use PATCH
+                        // PUT 更新不支持直接管理成员，客户端应使用 PATCH
                         throw new ModelValidationException("Managing members on updates are not supported");
                     }
                 }, (BiConsumer<Group, Collection<UserModel>>) (group, users) -> {
@@ -185,6 +195,7 @@ public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, 
         setTimestamps(resource, model);
     }
 
+    /** 校验 displayName 必填。 */
     @Override
     public void validate(Group representation) throws ModelValidationException {
         if (isBlank(representation.getDisplayName())) {
@@ -192,6 +203,7 @@ public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, 
         }
     }
 
+    /** 将模型时间戳写入 SCIM 表示的内部字段。 */
     private void setTimestamps(Group resource, GroupModel model) {
         Long createdTimestamp = model.getCreatedTimestamp();
         if (createdTimestamp != null) {
@@ -203,6 +215,7 @@ public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, 
         }
     }
 
+    /** 校验当前会话是否具备管理组成员的权限。 */
     private static void checkGroupMembershipPermission(Permissions permissions, GroupModel group) {
         if (GroupModel.Type.ORGANIZATION.equals(group.getType()) && group.getOrganization() != null) {
             throw new ModelValidationException("Cannot access organization related group via non Organization API.");
@@ -221,6 +234,7 @@ public final class GroupCoreModelSchema extends AbstractModelSchema<GroupModel, 
         }
     }
 
+    /** 判断当前会话是否可查看指定用户。 */
     private boolean canViewUser(UserModel u) {
         Permissions permissions = session.getContext().getPermissions();
         return permissions.hasPermission(u, AdminPermissionsSchema.USERS_RESOURCE_TYPE, AdminPermissionsSchema.VIEW);

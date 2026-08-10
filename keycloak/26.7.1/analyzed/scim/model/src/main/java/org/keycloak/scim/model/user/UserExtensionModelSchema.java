@@ -18,8 +18,13 @@ import static org.keycloak.scim.resource.Scim.ENTERPRISE_USER_SCHEMA;
 import static org.keycloak.scim.resource.Scim.USER_CORE_SCHEMA;
 import static org.keycloak.userprofile.UserProfileUtil.isRootAttribute;
 
+/**
+ * User 扩展 schema 基类，从 User Profile 注解动态生成自定义属性映射。
+ * <p>默认使用 Keycloak realm 扩展 URN，标记为内部 schema。</p>
+ */
 public class UserExtensionModelSchema extends AbstractUserModelSchema {
 
+    /** Keycloak realm User 扩展 schema URN。 */
     public static final String KEYCLOAK_USER_SCHEMA = "urn:keycloak:params:scim:schemas:extension:realm:1.0:User";
 
     public UserExtensionModelSchema(KeycloakSession session) {
@@ -40,6 +45,7 @@ public class UserExtensionModelSchema extends AbstractUserModelSchema {
         return "Realm User";
     }
 
+    /** 扩展 schema 非核心 schema。 */
     @Override
     public boolean isCore() {
         return false;
@@ -50,6 +56,7 @@ public class UserExtensionModelSchema extends AbstractUserModelSchema {
         return true;
     }
 
+    /** 当请求的 schema 集合包含本 schema 中任一属性时返回 true。 */
     @Override
     public boolean supports(Set<String> schemas) {
         for (Attribute<UserModel, User> value : getAttributes().values()) {
@@ -95,6 +102,7 @@ public class UserExtensionModelSchema extends AbstractUserModelSchema {
         return names;
     }
 
+    /** 按模型属性名动态创建扩展 Attribute 映射器。 */
     @Override
     protected Attribute<UserModel, User> getAttributeMapperByModelAttribute(String name) {
         UserProfile profile = getUserProfile();
@@ -128,10 +136,11 @@ public class UserExtensionModelSchema extends AbstractUserModelSchema {
     protected boolean hasSchema(String attributeName) {
         String schema = Attribute.getSchema(attributeName);
 
-        // it should be possible to query other schemas from the providers
+        // 允许从 provider 查询非核心/非 Enterprise 的其他 schema
         return schema != null && !List.of(USER_CORE_SCHEMA, ENTERPRISE_USER_SCHEMA).contains(schema);
     }
 
+    /** 为 Profile 注解中的 SCIM 属性名创建动态 Attribute。 */
     private Attribute<UserModel,  User> createCustomAttribute(Object scimName) {
         return Attribute.<UserModel, User>simple(scimName.toString())
                 .modelAttributeResolver(attribute -> {

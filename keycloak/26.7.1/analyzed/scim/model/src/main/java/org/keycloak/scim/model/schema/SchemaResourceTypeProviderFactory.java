@@ -5,8 +5,12 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.scim.resource.spi.ScimResourceTypeProviderFactory;
 
+/**
+ * SCIM Schemas 端点的 SPI 工厂。
+ */
 public class SchemaResourceTypeProviderFactory implements ScimResourceTypeProviderFactory<SchemaResourceTypeProvider> {
 
+    /** 工厂与端点 ID：{@code Schemas}。 */
     public static final String ID = "Schemas";
 
     @Override
@@ -16,17 +20,17 @@ public class SchemaResourceTypeProviderFactory implements ScimResourceTypeProvid
 
     @Override
     public void init(Scope config) {
-        // No initialization needed
+        // 无需初始化
     }
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-        // No post-initialization needed
+        // 无需后置初始化
     }
 
     @Override
     public void close() {
-        // No resources to close
+        // 无需要关闭的资源
     }
 
     @Override

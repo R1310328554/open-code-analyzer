@@ -50,12 +50,17 @@ import org.keycloak.utils.StringUtil;
 import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
+/**
+ * SCIM Group 资源类型提供者。
+ * <p>负责 Group CRUD、JPA 过滤查询及 members 属性的自定义 JPA 表达式解析。</p>
+ */
 public class GroupResourceTypeProvider extends AbstractScimResourceTypeProvider<GroupModel, Group> implements ScimAttributeJpaExpressionResolver {
 
     public GroupResourceTypeProvider(KeycloakSession session) {
         super(session, new GroupCoreModelSchema(session));
     }
 
+    /** 创建 Realm 顶级 Group 并填充 SCIM 表示。 */
     @Override
     public Group onCreate(Group group) {
         RealmModel realm = session.getContext().getRealm();
@@ -66,6 +71,7 @@ public class GroupResourceTypeProvider extends AbstractScimResourceTypeProvider<
         return group;
     }
 
+    /** 管理员组仅返回最小可见字段，避免泄露完整属性。 */
     @Override
     protected Group createResourceTypeInstance(GroupModel model, List<String> attributes, List<String> excludedAttributes) {
         if (session.getContext().getPermissions().isAdminGroup(model)) {
@@ -81,6 +87,7 @@ public class GroupResourceTypeProvider extends AbstractScimResourceTypeProvider<
         return super.createResourceTypeInstance(model, attributes, excludedAttributes);
     }
 
+    /** PUT 更新拒绝携带 members，成员变更须通过 PATCH。 */
     @Override
     public Group update(Group resource) {
         List<Member> members = resource.getMembers();
@@ -100,6 +107,7 @@ public class GroupResourceTypeProvider extends AbstractScimResourceTypeProvider<
         return resource;
     }
 
+    /** 按 ID 获取 Realm 类型 Group，排除其他类型。 */
     @Override
     protected GroupModel getModel(String id) {
         RealmModel realm = session.getContext().getRealm();
@@ -125,20 +133,20 @@ public class GroupResourceTypeProvider extends AbstractScimResourceTypeProvider<
         maxResults = maxResults != null ? Math.min(maxResults, DEFAULT_MAX_RESULTS) : DEFAULT_MAX_RESULTS;
 
         if (StringUtil.isNotBlank(searchRequest.getFilter())) {
-            // parse filter into AST
+            // 将 filter 解析为 AST
             ScimFilterParser.FilterContext filterContext = FilterUtils.parseFilter(searchRequest.getFilter());
 
-            // execute JPA query with filter
+            // 使用 JPA Criteria 执行带过滤的查询
             EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
             CriteriaBuilder cb = em.getCriteriaBuilder();
             CriteriaQuery<GroupEntity> query = cb.createQuery(GroupEntity.class);
             Root<GroupEntity> root = query.from(GroupEntity.class);
             List<Predicate> predicates = getGroupPredicates(filterContext, cb, query, root);
 
-            // apply distinct and order by name to ensure consistency with no-filter case
+            // distinct 并按 name 排序，与无过滤查询保持一致
             query.where(predicates).distinct(true).orderBy(cb.asc(root.get("name")));
 
-            // execute query and convert to UserModel stream
+            // 执行查询并映射为 GroupModel 流
             return closing(paginateQuery(em.createQuery(query), firstResult, maxResults).getResultStream()
                     .map(entity -> new GroupAdapter(session, realm, em, entity)));
         } else {
@@ -182,14 +190,15 @@ public class GroupResourceTypeProvider extends AbstractScimResourceTypeProvider<
     public void close() {
     }
 
+    /** 组装 Group 查询谓词：SCIM 过滤、realm/type 限制及 FGAP 授权过滤。 */
     private List<Predicate> getGroupPredicates(ScimFilterParser.FilterContext filterContext, CriteriaBuilder cb, CriteriaQuery<?> query, Root<GroupEntity> root) {
         List<Predicate> predicates = new ArrayList<>();
 
-        // create filter predicate using the same query and root that will be used for execution
+        // 使用与最终查询相同的 root 构建 SCIM 过滤谓词
         ScimJPAPredicateEvaluator evaluator = new ScimJPAPredicateEvaluator(this, getSchemas(), cb, root);
         predicates.add(evaluator.visit(filterContext).predicate());
 
-        // apply realm restriction and group type restrictions
+        // 限制为当前 realm 的顶级 REALM 类型组
         RealmModel realm = session.getContext().getRealm();
 
         predicates.add(cb.equal(root.get("realm"), realm.getId()));
@@ -201,6 +210,7 @@ public class GroupResourceTypeProvider extends AbstractScimResourceTypeProvider<
         return predicates;
     }
 
+    /** 为 members 属性解析用户组成员 Join 与用户 ID 表达式。 */
     @Override
     public Expression<?> getAttributeExpression(Attribute<?, ?> attribute, CriteriaBuilder cb, Root<?> root, BiFunction<Class<?>, Supplier<Join<?, ?>>, Join<?, ?>> joinResolver) {
         if ("members".equals(attribute.getName())) {

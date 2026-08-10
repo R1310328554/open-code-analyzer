@@ -23,8 +23,8 @@ import org.keycloak.scim.resource.spi.ScimResourceTypeProvider;
 import org.jboss.logging.Logger;
 
 /**
- * Creates JPA predicates for SCIM filter operators. Handles both direct root entity fields and custom attributes stored
- * in an associated "attributes" collection. Also handles necessary type conversions for temporal fields.
+ * 为 SCIM 过滤运算符创建 JPA 谓词。
+ * <p>支持根实体直接字段与存储于 {@code attributes} 集合中的自定义属性，并对时间戳、布尔等类型做规范化转换。</p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
@@ -32,9 +32,13 @@ public class ScimJPAPredicateProvider {
 
     private static final Logger logger = Logger.getLogger(ScimJPAPredicateProvider.class);
 
+    /** 当前 SCIM 资源类型提供者。 */
     private final ScimResourceTypeProvider resourceTypeProvider;
+    /** 用于解析属性元数据的 schema 列表。 */
     private final List<ModelSchema<?, ?>> schemas;
+    /** JPA Criteria 构建器。 */
     private final CriteriaBuilder cb;
+    /** 查询根实体。 */
     private final Root<?> root;
 
     @SuppressWarnings("rawtypes,unchecked")
@@ -51,7 +55,8 @@ public class ScimJPAPredicateProvider {
             "ew", (cb, exp, val) -> cb.like(exp.as(String.class), "%" + escapeLike(val.toString()), '\\')
     );
 
-    // cache joins to avoid creating duplicate joins for the same filter
+    // 缓存 Join，避免同一过滤条件重复创建关联
+    /** 按 Join 类型缓存已创建的关联。 */
     private Map<String, Join<?, ?>> attributeJoin = new HashMap<>();
 
     public ScimJPAPredicateProvider(ScimResourceTypeProvider resourceTypeProvider, List<ModelSchema<?, ?>> schemas, CriteriaBuilder cb, Root<?> root) {
@@ -62,16 +67,13 @@ public class ScimJPAPredicateProvider {
     }
 
     /**
-     * Create a predicate for SCIM operators (eq, ne, pr, gt, ge, lt, le, co, sw, ew). This method first resolves the SCIM
-     * attribute path to get the corresponding metadata, then validates that the operator is supported for the attribute type,
-     * normalizes the value to the correct type, and finally builds the appropriate predicate based on whether the attribute
-     * is a direct field or a custom attribute.
+     * 为 SCIM 运算符（eq、ne、pr、gt、ge、lt、le、co、sw、ew）创建谓词。
+     * <p>先解析属性路径获取元数据，校验运算符是否适用于该类型，规范化比较值，再按直接字段或自定义属性构建谓词。</p>
      *
-     * @param path the SCIM attribute path to compare
-     * @param operator the comparison operator (eq, ne, pr, gt, ge, lt, le, co, sw, ew)
-     * @param value the value to compare against, as a string (will be normalized to the correct type based on the attribute metadata)
-     * @return a {@link JPAFilterResult} containing the comparison predicate if the attribute is known and mapped, or an unsupported
-     * result if the attribute is unknown
+     * @param path SCIM 属性路径
+     * @param operator 比较运算符
+     * @param value 字符串形式的比较值（将按属性类型规范化）
+     * @return 属性已知且已映射时返回有效 {@link JPAFilterResult}，未知属性返回 unsupported
      */
     public JPAFilterResult createPredicate(String path, String operator, String value) {
         Attribute<?,?> attrInfo = resolve(path);
@@ -81,24 +83,23 @@ public class ScimJPAPredicateProvider {
         }
 
         String op = operator.toLowerCase();
-        // validate operator before normalization or predicate building
+        // 在规范化与构建谓词前先校验运算符
         validateOperator(attrInfo, path, op);
 
-        // normalize the value (String -> Long, Boolean, etc.)
+        // 规范化值（String → Long、Boolean 等）
         Object normalizedValue = normalizeValue(attrInfo, value);
 
-        // build the predicate
+        // 构建 JPA 谓词
         return JPAFilterResult.valid(getAttributePredicate(attrInfo, op, normalizedValue));
     }
 
     /**
-     * Normalize the string value from the filter expression to the correct type based on the attribute metadata. For timestamp attributes,
-     * this converts the ISO 8601 date/time string to a Long timestamp. For boolean attributes, this converts "true"/"false" strings to Boolean.
-     * For other types, it returns the original string value (no normalization needed).
+     * 按属性元数据将过滤表达式中的字符串规范化为正确类型。
+     * <p>时间戳属性转为 Long 毫秒；布尔属性转为 Boolean；其他类型保持原字符串。</p>
      *
-     * @param attrInfo the attribute metadata to determine the type for normalization
-     * @param value the original string value from the filter expression
-     * @return the normalized value, converted to the appropriate type based on the attribute metadata, or the original string if no normalization is needed
+     * @param attrInfo 属性元数据
+     * @param value 原始字符串值
+     * @return 规范化后的值
      */
     private Object normalizeValue(Attribute<?,?> attrInfo, String value) {
         if (value == null) return null;
@@ -108,14 +109,13 @@ public class ScimJPAPredicateProvider {
     }
 
     /**
-     * Build a JPA predicate for the given attribute, operator, and value. This method handles both direct fields (primary attributes) and custom attributes
-     * stored in the "attributes" collection. For direct fields, it applies the operator directly to the root entity field. For custom attributes, it creates a join
-     * to the "attributes" collection, adds a condition to match the attribute name, and then applies the operator to the "value" field of the joined entity.
+     * 为给定属性、运算符与值构建 JPA 谓词。
+     * <p>直接字段在根实体上应用运算符；自定义属性则 Join {@code attributes} 集合并匹配 name/value。</p>
      *
-     * @param attrInfo the attribute metadata to determine how to build the predicate
-     * @param operation the comparison operator (eq, ne, gt, ge, lt, le, co, sw, ew)
-     * @param value the value to compare against, already normalized to the correct type
-     * @return the JPA {@link Predicate} representing the comparison for the given attribute, operator, and value
+     * @param attrInfo 属性元数据
+     * @param operation 比较运算符
+     * @param value 已规范化的比较值
+     * @return JPA {@link Predicate}
      */
     private Predicate getAttributePredicate(Attribute<?,?> attrInfo, String operation, Object value) {
         Expression<?> expression = null;
@@ -125,7 +125,7 @@ public class ScimJPAPredicateProvider {
         try {
             expression = root.get(modelAttributeName);
         } catch (IllegalArgumentException ignore) {
-            // not a primary attribute - continue to check for custom attribute
+            // 非主属性字段，继续尝试自定义属性或表达式解析器
         }
 
         if (expression == null) {
@@ -150,29 +150,26 @@ public class ScimJPAPredicateProvider {
     }
 
     /**
-     * Helper method to get or create a join to the "attributes" collection. This method checks if the join has already been created
-     * and cached in the {@code attributeJoin} field.
+     * 获取或创建 Join，优先使用 {@code attributeJoin} 缓存。
      *
-     * @return the existing or newly created join to the "attributes" collection
+     * @return 已存在或新创建的 Join
      */
     private Join<?, ?> getOrCreateAttributeJoin(String type, Supplier<Join<?, ?>> joinFactory) {
         return attributeJoin.computeIfAbsent(type, k -> joinFactory.get());
     }
 
     /**
-     * Validate that the operator is supported for the attribute type. For example, boolean attributes only support "eq" and "ne",
-     * while timestamp attributes do not support string-specific operators like "co", "sw", or "ew". If the operator is not valid for the attribute type,
-     * this method throws a {@link ScimFilterException} with a descriptive error message.
+     * 校验运算符是否适用于属性类型（如布尔仅支持 eq/ne/pr，时间戳不支持 co/sw/ew）。
      *
-     * @param attrInfo the attribute metadata to validate against
-     * @param scimAttribute the original SCIM attribute path (used for error messages)
-     * @param operator the operator to validate
-     * @throws ScimFilterException if the operator is not supported for the attribute type
+     * @param attrInfo 属性元数据
+     * @param scimAttribute 原始 SCIM 属性路径（用于错误信息）
+     * @param operator 待校验运算符
+     * @throws ScimFilterException 运算符不支持时抛出
      */
     private void validateOperator(Attribute<?,?> attrInfo, String scimAttribute, String operator) {
         String op = operator.toLowerCase();
 
-        // boolean validation: only allows equality and presence operators
+        // 布尔属性：仅允许相等与存在性运算符
         if (attrInfo.isBoolean()) {
             if (!op.equals("eq") && !op.equals("ne") && !op.equals("pr")) {
                 throw new ScimFilterException(
@@ -180,7 +177,7 @@ public class ScimJPAPredicateProvider {
             }
         }
 
-        // timestamp/numeric validation: block string-specific operators
+        // 时间戳/数值属性：禁止字符串专用运算符
         if (attrInfo.isTimestamp()) {
             if (op.equals("co") || op.equals("sw") || op.equals("ew")) {
                 throw new ScimFilterException(
@@ -190,19 +187,18 @@ public class ScimJPAPredicateProvider {
     }
 
     /**
-     * Parse ISO 8601 date/time string to {@link Long} timestamp (milliseconds since epoch). SCIM uses ISO 8601 format
-     * (e.g., "2011-05-13T04:42:34Z") while Keycloak stores timestamps as Long (milliseconds).
+     * 将 ISO 8601 日期时间字符串解析为 {@link Long} 毫秒时间戳。
      *
-     * @param dateTimeString the date/time string to parse
-     * @return the parsed timestamp as {@link Long}
-     * @throws ScimFilterException if the input string is not a valid ISO 8601 date/time format or a valid numeric timestamp
+     * @param dateTimeString 日期时间字符串
+     * @return 毫秒时间戳
+     * @throws ScimFilterException 格式无效时抛出
      */
     private Long parseDateTime(String dateTimeString) {
         try {
             Instant instant = Instant.parse(dateTimeString);
             return instant.toEpochMilli();
         } catch (DateTimeParseException e) {
-            // If not a valid ISO 8601 date, try parsing as number (might be a timestamp already)
+            // 非 ISO 8601 时尝试按数字时间戳解析
             try {
                 return Long.parseLong(dateTimeString);
             } catch (NumberFormatException nfe) {
@@ -214,11 +210,11 @@ public class ScimJPAPredicateProvider {
     }
 
     /**
-     * Parse boolean string ("true"/"false") to {@link Boolean}. This method also validates that the value is a valid boolean string.
+     * 将 "true"/"false" 字符串解析为 {@link Boolean}。
      *
-     * @param value the string to parse as boolean
-     * @return the parsed {@link Boolean} value
-     * @throws ScimFilterException if the value is not a valid boolean string
+     * @param value 待解析字符串
+     * @return 布尔值
+     * @throws ScimFilterException 非法布尔字符串时抛出
      */
     private Boolean parseBoolean(String value) {
         if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
@@ -228,12 +224,11 @@ public class ScimJPAPredicateProvider {
     }
 
     /**
-     * Helper method to cast an object to {@link Comparable}. This is used for comparison operators (gt, ge, lt, le) which
-     * require the value to be comparable.
+     * 将对象转为 {@link Comparable}，供 gt/ge/lt/le 比较使用。
      *
-      * @param val the object to cast
-     * @return the object cast to {@link Comparable}
-     * @throws ScimFilterException if the object is not an instance of {@link Comparable}
+     * @param val 待转换对象
+     * @return Comparable 实例
+     * @throws ScimFilterException 不可比较时抛出
      */
     @SuppressWarnings("unchecked")
     private Comparable<Object> asComparable(Object val) {
@@ -244,13 +239,11 @@ public class ScimJPAPredicateProvider {
     }
 
     /**
-     * Resolve the SCIM attribute path to the corresponding {@link Attribute} metadata. This method checks all registered schemas
-     * to find the attribute. If the attribute is found but does not have a model attribute name (i.e., it is not mapped to a model field),
-     * it returns {@code null} to indicate that this is an unknown attribute for filtering purposes. If the attribute is not found in any schema,
-     * it also returns {@code null}.
+     * 将 SCIM 属性路径解析为 {@link Attribute} 元数据。
+     * <p>遍历已注册 schema；未映射到模型字段或未找到时返回 {@code null}。</p>
      *
-     * @param path the SCIM attribute path to resolve
-     * @return the corresponding {@link Attribute} metadata if found and mapped to a model field, or {@code null} if not found or not mapped
+     * @param path SCIM 属性路径
+     * @return 已映射的 Attribute，否则 {@code null}
      */
     public Attribute<?, ?> resolve(String path) {
         Attribute<?, ?> metadata = null;
@@ -267,24 +260,24 @@ public class ScimJPAPredicateProvider {
                 return metadata;
             }
         }
-        // haven't found the attribute - return null to indicate that this is an unknown attribute.
+        // 未找到属性，返回 null 表示过滤不支持
         return null;
     }
 
     /**
-     * Escape special characters in a string for use in SQL LIKE expressions. This method escapes the backslash, percent,
-     * and underscore characters, which are special in SQL LIKE patterns.
+     * 转义 SQL LIKE 特殊字符（反斜杠、%、下划线）。
      *
-     * @param value the string value to escape
-     * @return the escaped string, safe for use in SQL LIKE expressions
+     * @param value 原始字符串
+     * @return 可用于 LIKE 的安全字符串
      */
     private String escapeLike(String value) {
-        // Escape SQL LIKE special characters
+        // 转义 SQL LIKE 特殊字符
         return value.replace("\\", "\\\\")
                 .replace("%", "\\%")
                 .replace("_", "\\_");
     }
 
+    /** 创建指向 {@code attributes} 集合的 LEFT JOIN 供应器。 */
     private Supplier<Join<?, ?>> createAttributesJoinSupplier() {
         return () -> root.join("attributes", JoinType.LEFT);
     }

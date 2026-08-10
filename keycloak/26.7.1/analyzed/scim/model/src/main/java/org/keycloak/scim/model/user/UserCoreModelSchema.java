@@ -28,8 +28,13 @@ import org.keycloak.scim.resource.user.User;
 import org.keycloak.utils.GroupUtils;
 import org.keycloak.utils.KeycloakSessionUtil;
 
+/**
+ * User 核心 SCIM schema，定义 userName、emails、name、groups 等标准属性映射。
+ * <p>继承 {@link AbstractUserModelSchema}，通过 User Profile 解析自定义字段。</p>
+ */
 public final class UserCoreModelSchema extends AbstractUserModelSchema {
 
+    /** 使用 User 核心 schema URN 构造。 */
     public UserCoreModelSchema(KeycloakSession session) {
         super(session, Scim.getCoreSchema(User.class));
     }
@@ -51,6 +56,7 @@ public final class UserCoreModelSchema extends AbstractUserModelSchema {
         return schema == null || getId().equals(schema);
     }
 
+    /** 构建核心 User 属性（userName、emails、name、active、groups 等）映射器。 */
     @Override
     protected Map<String, Attribute<UserModel, User>> getAttributeMappers() {
         List<Attribute<UserModel, User>> attributes = new ArrayList<>();
@@ -236,6 +242,7 @@ public final class UserCoreModelSchema extends AbstractUserModelSchema {
         return attributes.stream().collect(Collectors.toMap(Attribute::getName, Function.identity()));
     }
 
+    /** 填充 SCIM 表示并写入时间戳。 */
     @Override
     public void populate(User resource, UserModel model) {
         super.populate(resource, model);
@@ -248,12 +255,14 @@ public final class UserCoreModelSchema extends AbstractUserModelSchema {
         setTimestamps(resource, model);
     }
 
+    /** 校验是否具备管理用户组成员关系的权限。 */
     private static void checkUserMembershipPermission(Permissions permissions, UserModel user) {
         if (!permissions.hasPermission(user, AdminPermissionsSchema.USERS_RESOURCE_TYPE, AdminPermissionsSchema.MANAGE_GROUP_MEMBERSHIP)) {
             throw new ForbiddenException();
         }
     }
 
+    /** 校验是否具备管理指定组成员的权限。 */
     private static void checkGroupMembershipPermission(Permissions permissions, GroupModel group) {
         if (GroupModel.Type.ORGANIZATION.equals(group.getType()) && group.getOrganization() != null) {
             throw new ModelValidationException("Cannot access organization related group via non Organization API.");
@@ -266,6 +275,7 @@ public final class UserCoreModelSchema extends AbstractUserModelSchema {
         }
     }
 
+    /** 将模型创建/修改时间戳写入 User 表示。 */
     private void setTimestamps(User resource, UserModel model) {
         Long createdTimestamp = model.getCreatedTimestamp();
         if (createdTimestamp != null) {

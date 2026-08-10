@@ -46,8 +46,13 @@ import org.keycloak.utils.StringUtil;
 import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
+/**
+ * SCIM User 资源类型提供者。
+ * <p>负责 User CRUD、User Profile 校验、JPA 过滤查询及 groups 属性的 JPA 表达式解析。</p>
+ */
 public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<UserModel, User> implements ScimAttributeJpaExpressionResolver {
 
+    /** 构造 User 提供者，注册核心、Enterprise 与扩展 schema。 */
     public UserResourceTypeProvider(KeycloakSession session) {
         super(session, new UserCoreModelSchema(session), List.of(new UserEnterpriseModelSchema(session), new UserExtensionModelSchema(session)));
     }
@@ -57,6 +62,7 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
         return "User Account";
     }
 
+    /** 通过 User Profile 创建用户并校验 SCIM 表示。 */
     @Override
     public User onCreate(User resource) {
         UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
@@ -84,6 +90,7 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
         return resource;
     }
 
+    /** 更新用户并触发 Profile 校验与时间戳刷新。 */
     @Override
     protected User onUpdate(UserModel model, User resource) {
         try {
@@ -101,6 +108,7 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
         return resource;
     }
 
+    /** 按 ID 获取用户，排除服务账户链接用户。 */
     @Override
     protected UserModel getModel(String id) {
         RealmModel realm = session.getContext().getRealm();
@@ -118,6 +126,7 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
         return AdminPermissionsSchema.USERS_RESOURCE_TYPE;
     }
 
+    /** 管理员用户仅返回最小可见字段。 */
     @Override
     protected User createResourceTypeInstance(UserModel model, List<String> attributes, List<String> excludedAttributes) {
         if (session.getContext().getPermissions().isAdminUser(model)) {
@@ -140,10 +149,10 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
         maxResults = maxResults != null ? Math.min(maxResults, DEFAULT_MAX_RESULTS) : DEFAULT_MAX_RESULTS;
 
         if (StringUtil.isNotBlank(searchRequest.getFilter())) {
-            // parse filter into AST
+            // 将 filter 解析为 AST
             ScimFilterParser.FilterContext filterContext = FilterUtils.parseFilter(searchRequest.getFilter());
 
-            // execute JPA query with filter
+            // 使用 JPA Criteria 执行带过滤的查询
             EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
             CriteriaBuilder cb = em.getCriteriaBuilder();
             CriteriaQuery<UserEntity> query = cb.createQuery(UserEntity.class);
@@ -151,10 +160,10 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
 
             List<Predicate> predicates = getUserPredicates(filterContext, cb, query, root);
 
-            // apply distinct and order by username to ensure consistency with no-filter case
+            // distinct 并按 username 排序，与无过滤查询保持一致
             query.where(predicates).distinct(true).orderBy(cb.asc(root.get("username")));
 
-            // execute query and convert to UserModel stream
+            // 执行查询并映射为 UserModel 流
             return closing(paginateQuery(em.createQuery(query), firstResult, maxResults).getResultStream()
                     .map(entity -> new UserAdapter(session, realm, em, entity)));
         } else {
@@ -169,7 +178,7 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
             // parse filter into AST
             ScimFilterParser.FilterContext filterContext = FilterUtils.parseFilter(searchRequest.getFilter());
 
-            // execute JPA count query with filter
+            // 使用 JPA 执行带过滤的 count 查询
             EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
             CriteriaBuilder cb = em.getCriteriaBuilder();
             CriteriaQuery<Long> query = cb.createQuery(Long.class);
@@ -199,6 +208,7 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
 
     }
 
+    /** 将 User Profile {@link ValidationException} 转为 {@link ModelValidationException}。 */
     private ModelValidationException handleValidationException(ValidationException ve) {
         List<Error> errors = ve.getErrors();
 
@@ -214,17 +224,18 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
         return exception;
     }
 
+    /** 组装 User 查询谓词：SCIM 过滤、排除服务账户、realm 限制及 FGAP 授权。 */
     private List<Predicate> getUserPredicates(FilterContext filterContext, CriteriaBuilder cb, CriteriaQuery<?> query, Root<UserEntity> root) {
         List<Predicate> predicates = new ArrayList<>();
 
-        // create filter predicate using the same query and root that will be used for execution
+        // 使用与最终查询相同的 root 构建 SCIM 过滤谓词
         ScimJPAPredicateEvaluator evaluator = new ScimJPAPredicateEvaluator(this, getSchemas(), cb, root);
         predicates.add(evaluator.visit(filterContext).predicate());
 
-        // apply service account restriction
+        // 排除服务账户用户
         predicates.add(root.get("serviceAccountClientLink").isNull());
 
-        // apply realm restriction
+        // 限制为当前 realm
         RealmModel realm = session.getContext().getRealm();
         predicates.add(cb.equal(root.get("realmId"), realm.getId()));
 
@@ -234,6 +245,7 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
         return predicates;
     }
 
+    /** 为 groups 属性解析用户-组成员 Join 与 groupId 表达式。 */
     @Override
     public Expression<?> getAttributeExpression(Attribute<?, ?> attribute, CriteriaBuilder cb, Root<?> root, BiFunction<Class<?>, Supplier<Join<?, ?>>, Join<?, ?>> joinResolver) {
         if ("groups".equals(attribute.getName())) {

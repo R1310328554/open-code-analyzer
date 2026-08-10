@@ -20,9 +20,15 @@ import org.keycloak.scim.resource.spi.ScimResourceTypeProviderFactory;
 
 import static org.keycloak.scim.resource.Scim.hasDiscoveryEndpointPermission;
 
+/**
+ * SCIM ResourceTypes Discovery 提供者。
+ * <p>聚合已注册 {@link ScimResourceTypeProviderFactory}，生成各资源类型的元数据表示。</p>
+ */
 public class ResourceTypeProvider implements ScimResourceTypeProvider<ResourceType> {
 
+    /** Discovery 列表中排除的元资源类型。 */
     private static final List<Class<? extends ResourceTypeRepresentation>> EXCLUDED_RESOURCE_TYPES = List.of(ServiceProviderConfig.class, ResourceType.class, Schema.class);
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
     public ResourceTypeProvider(KeycloakSession session) {
@@ -53,6 +59,7 @@ public class ResourceTypeProvider implements ScimResourceTypeProvider<ResourceTy
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
+    /** 列出所有可发现的 SCIM 资源类型（需 Discovery 权限）。 */
     @Override
     public Stream<ResourceType> getAll(SearchRequest searchRequest) {
         if (hasDiscoveryEndpointPermission(session)) {
@@ -69,6 +76,7 @@ public class ResourceTypeProvider implements ScimResourceTypeProvider<ResourceTy
         return getAll(searchRequest).count();
     }
 
+    /** 将工厂转换为 {@link ResourceType} Discovery 表示。 */
     private ResourceType toRepresentation(ScimResourceTypeProviderFactory<? extends ScimResourceTypeProvider<? extends ResourceTypeRepresentation>> factory) {
         ScimResourceTypeProvider<? extends ResourceTypeRepresentation> provider = factory.create(session);
 

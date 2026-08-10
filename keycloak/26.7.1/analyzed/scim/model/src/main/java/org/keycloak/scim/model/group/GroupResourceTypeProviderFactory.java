@@ -15,8 +15,12 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.scim.resource.spi.ScimResourceTypeProviderFactory;
 
+/**
+ * SCIM Groups 资源类型的 SPI 工厂，注册 ID 为 {@code Groups}。
+ */
 public class GroupResourceTypeProviderFactory implements ScimResourceTypeProviderFactory<GroupResourceTypeProvider> {
 
+    /** 为会话创建 {@link GroupResourceTypeProvider} 实例。 */
     @Override
     public GroupResourceTypeProvider create(KeycloakSession session) {
         return new GroupResourceTypeProvider(session);
@@ -37,6 +41,7 @@ public class GroupResourceTypeProviderFactory implements ScimResourceTypeProvide
 
     }
 
+    /** 返回 SCIM 端点路径段 {@code Groups}。 */
     @Override
     public String getId() {
         return "Groups";

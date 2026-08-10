@@ -24,18 +24,18 @@ import org.keycloak.scim.resource.spi.ScimResourceTypeProvider;
 import static org.keycloak.scim.resource.Scim.hasDiscoveryEndpointPermission;
 
 /**
- * Provider for SCIM Schema resources. This provider exposes the supported SCIM schemas
- * for discovery by SCIM clients via the /Schemas endpoint.
+ * SCIM Schema 资源提供者，通过 /Schemas 端点向客户端暴露支持的 schema。
  * <p>
- * Schemas are read-only resources that describe the structure of SCIM resources.
- * This implementation supports:
- * - Built-in core schemas (User, Group)
- * - Built-in extension schemas (EnterpriseUser)
- * - Custom extension schemas based on user profile configuration (future)
+ * Schema 为只读资源，描述 SCIM 资源的属性结构。本实现支持：
+ * - 内置核心 schema（User、Group）
+ * - 内置扩展 schema（EnterpriseUser）
+ * - 基于用户配置文件的自定义扩展 schema（规划中）
  */
 public class SchemaResourceTypeProvider implements ScimResourceTypeProvider<Schema> {
 
+    /** schema URN 到 {@link Schema} 表示的缓存。 */
     private final Map<String, Schema> schemas = new HashMap<>();
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
     public SchemaResourceTypeProvider(KeycloakSession session) {
@@ -43,6 +43,7 @@ public class SchemaResourceTypeProvider implements ScimResourceTypeProvider<Sche
         initializeSchemas();
     }
 
+    /** 启动时从各资源类型 provider 收集 ModelSchema 并构建 Schema 表示。 */
     private void initializeSchemas() {
         Stream<ProviderFactory> schemas = session.getKeycloakSessionFactory().getProviderFactoriesStream(ScimResourceTypeProvider.class);
 
@@ -55,13 +56,14 @@ public class SchemaResourceTypeProvider implements ScimResourceTypeProvider<Sche
                 }).forEach(this::buildSchema);
     }
 
+    /** 将 {@link ModelSchema} 转换为 Discovery {@link Schema}，嵌套子属性。 */
     private void buildSchema(ModelSchema<?, ?> modelSchema) {
         Schema rep = new Schema();
         rep.setId(modelSchema.getId());
         rep.setName(modelSchema.getName());
         rep.setDescription(modelSchema.getDescription());
 
-        // Collect top-level attributes, nesting sub-attributes under their parent
+        // 收集顶层属性，将子属性嵌套于父属性下
         Map<String, Attribute> topLevelAttributes = new HashMap<>();
 
         for (org.keycloak.scim.resource.schema.attribute.Attribute<?, ?> attribute : modelSchema.getAttributes().values()) {
@@ -74,16 +76,16 @@ public class SchemaResourceTypeProvider implements ScimResourceTypeProvider<Sche
             String parentName = attribute.getParentName();
 
             if (!modelSchema.isCore()) {
-                // extensions attributes should be set in a top-level attribute with the schema name as the name
+                // 扩展 schema 属性以 schema 名称为顶层属性名
                 parentName = attribute.getSchema();
             }
 
             if (parentName != null && !parentName.equals(name)) {
-                // This is a sub-attribute — strip the parent prefix to get the relative path
+                // 子属性：去掉父前缀得到相对路径
                 String relativeName = name.substring(parentName.length() + 1);
 
                 if (relativeName.indexOf('.') != -1) {
-                    // Nested complex sub-attribute (e.g., "manager.value" → top-level "manager", sub "value")
+                    // 嵌套复合子属性（如 manager.value → 顶层 manager，子 value）
                     String topName = relativeName.substring(0, relativeName.indexOf('.'));
                     String subName = relativeName.substring(relativeName.indexOf('.') + 1);
 
@@ -114,7 +116,7 @@ public class SchemaResourceTypeProvider implements ScimResourceTypeProvider<Sche
                     }
                     subAttributes.add(subAttr);
                 } else if (modelSchema.isCore()) {
-                    // Core schema sub-attribute (e.g., "name.givenName" → parent "name", sub "givenName")
+                    // 核心 schema 子属性（如 name.givenName）
                     Attribute parent = topLevelAttributes.computeIfAbsent(parentName, k -> {
                         Attribute p = new Attribute();
                         p.setName(k);
@@ -144,11 +146,11 @@ public class SchemaResourceTypeProvider implements ScimResourceTypeProvider<Sche
                     }
                     subAttributes.add(subAttr);
                 } else {
-                    // Extension schema simple sub-attribute (e.g., "enterpriseUser.employeeNumber" → "employeeNumber")
+                    // 扩展 schema 简单子属性
                     topLevelAttributes.computeIfAbsent(relativeName, createExtensionAttribute(modelSchema, parentName, attribute));
                 }
             } else {
-                // Top-level attribute — only add if not already created as a parent
+                // 顶层属性：若尚未作为父节点创建则添加
                 topLevelAttributes.computeIfAbsent(name, k -> createTopLevelAttribute(attribute, k));
             }
         }
@@ -208,12 +210,11 @@ public class SchemaResourceTypeProvider implements ScimResourceTypeProvider<Sche
         return schemas.get(id);
     }
 
+    /** 返回全部 schema（Discovery 端点，不支持过滤/分页）。 */
     @Override
     public Stream<Schema> getAll(SearchRequest searchRequest) {
         if (hasDiscoveryEndpointPermission(session)) {
-            // Per RFC 7644 Section 4, /Schemas is a discovery endpoint that SHALL return all schemas.
-            // Filtering, sorting, and pagination are not supported for discovery endpoints.
-            // The searchRequest parameter is ignored.
+            // 按 RFC 7644 §4，/Schemas 为 Discovery 端点，须返回全部 schema，忽略过滤/排序/分页
             return schemas.values().stream();
         }
 
@@ -257,6 +258,6 @@ public class SchemaResourceTypeProvider implements ScimResourceTypeProvider<Sche
 
     @Override
     public void close() {
-        // No resources to close
+        // 无需要关闭的资源
     }
 }
