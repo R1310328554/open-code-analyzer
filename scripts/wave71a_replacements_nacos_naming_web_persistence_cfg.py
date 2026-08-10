@@ -30,7 +30,7 @@ R["naming/src/main/java/com/alibaba/nacos/naming/utils/NamingRequestUtil.java"] 
         "        // 上下文未携带 IP 时，从 HTTP 请求头/连接信息解析。",
     ),
     (
-        "    /**\n     * Get source ip from request context first, if it can't found, get from grpc request meta.\n     *\n"
+        "    /**\n     * Get source ip from request context first, if it can't found, get from http request.\n     *\n"
         "     * @param meta grpc request meta\n     * @return source ip, null if not found\n     */",
         "    /**\n     * 获取 gRPC 请求的客户端源 IP。\n     *\n"
         "     * <p>上下文无 IP 时使用 {@link RequestMeta#getClientIp()}。</p>\n     *\n"
