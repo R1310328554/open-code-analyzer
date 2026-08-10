@@ -33,10 +33,8 @@ import (
 	deepdoctype "ragflow/internal/deepdoc/parser/type"
 )
 
-// ErrPDFEngineUnavailable is returned by PDFParser.ParseWithResult
-// when the current build cannot construct the DeepDOC PDF backend.
-// The normal reason is a non-cgo build, because the pdfoxide bridge
-// is compiled behind `//go:build cgo`.
+// ErrPDFEngineUnavailable 在当前构建无法构造 DeepDOC PDF 后端时返回。
+// 常见原因为非 cgo 构建（pdfoxide 桥接仅在 //go:build cgo 下编译）。
 var ErrPDFEngineUnavailable = errors.New("parser: PDF backend unavailable in this build")
 
 var supportedPDFParseMethods = map[string]struct{}{
@@ -51,10 +49,11 @@ var supportedPDFParseMethods = map[string]struct{}{
 	"tcadp":          {},
 }
 
+// PDFParser 聚合 PDF 解析方法与各远程引擎的连接/格式配置。
 type PDFParser struct {
-	ParserType string // DeepDoc, PaddleOCR, MinerU
-	Model      string // DeepDoc@buildin@ragflow
-	LibType    string // pdf_oxide, used by DeepDoc
+	ParserType string // 解析器类型：DeepDoc、PaddleOCR、MinerU 等
+	Model      string // 内置 DeepDoc 模型标识
+	LibType    string // DeepDoc 使用的底层库（pdf_oxide）
 
 	FlattenMediaToText                bool
 	RemoveTOC                         bool
@@ -96,6 +95,7 @@ type PDFParser struct {
 	TCADPMarkdownImageResponseType    string
 }
 
+// NewPDFParser 返回带 Python 对齐默认值的 PDF 解析器实例。
 func NewPDFParser() *PDFParser {
 	return &PDFParser{
 		ParserType:                     "DeepDoc",
@@ -124,6 +124,7 @@ func (p *PDFParser) String() string {
 	return "PDFParser"
 }
 
+// ConfigureFromSetup 从 ingestion DSL setups 映射写入解析器字段。
 func (p *PDFParser) ConfigureFromSetup(setup map[string]any) {
 	if p == nil || setup == nil {
 		return
@@ -250,6 +251,7 @@ func (p *PDFParser) ConfigureFromSetup(setup map[string]any) {
 	}
 }
 
+// normalizePDFParseMethod 规范化 parse_method 别名（如 @mineru 后缀、plaintext→plain_text）。
 func normalizePDFParseMethod(raw string) string {
 	method := strings.ToLower(strings.TrimSpace(raw))
 	switch {
@@ -271,6 +273,7 @@ func normalizePDFParseMethod(raw string) string {
 	return method
 }
 
+// validateParseMethod 校验 parse_method 是否在 Go 层支持的集合内。
 func (p *PDFParser) validateParseMethod() error {
 	method := normalizePDFParseMethod(p.ParseMethod)
 	if _, ok := supportedPDFParseMethods[method]; ok {
@@ -279,6 +282,7 @@ func (p *PDFParser) validateParseMethod() error {
 	return fmt.Errorf("parser: unsupported PDF parse_method %q (Go currently supports: deepdoc, plain_text, mineru, paddleocr, docling, opendataloader, somark, tcadp; tenant-resolved custom IMAGE2TEXT/VLM model names are not supported in the Go parser layer)", p.ParseMethod)
 }
 
+// emptyPDFResult 为空 PDF 输入构造最小合法 JSON 解析结果。
 func emptyPDFResult(filename string) ParseResult {
 	return ParseResult{
 		OutputFormat: "json",
@@ -291,6 +295,7 @@ func emptyPDFResult(filename string) ParseResult {
 	}
 }
 
+// deepDocAnalyzerFromEnv 按 DEEPDOC_URL/OSSDEEPDOC_URL 构造远程推理客户端或 Mock。
 func deepDocAnalyzerFromEnv() deepdoctype.DocAnalyzer {
 	baseURL := strings.TrimSpace(os.Getenv("DEEPDOC_URL"))
 	if baseURL == "" {
@@ -309,10 +314,12 @@ func deepDocAnalyzerFromEnv() deepdoctype.DocAnalyzer {
 	return client
 }
 
+// pdfParseResultToJSON 将 DeepDOC ParseResult 转为默认 JSON 输出。
 func pdfParseResultToJSON(filename string, parsed *deepdoctype.ParseResult) ParseResult {
 	return pdfParseResultToJSONWithOptions(filename, parsed, pdfPostProcessOptions{})
 }
 
+// pdfParseResultToJSONWithOptions 应用后处理选项后将 DeepDOC 结果序列化为 JSON section 列表。
 func pdfParseResultToJSONWithOptions(filename string, parsed *deepdoctype.ParseResult, opts pdfPostProcessOptions) ParseResult {
 	if parsed == nil {
 		return ParseResult{Err: fmt.Errorf("parser: nil DeepDOC PDF result for %s", filename)}
@@ -356,6 +363,7 @@ func pdfParseResultToJSONWithOptions(filename string, parsed *deepdoctype.ParseR
 	}
 }
 
+// pdfParseResultToMarkdownWithOptions 将 DeepDOC section 列表渲染为 Markdown 字符串。
 func pdfParseResultToMarkdownWithOptions(filename string, parsed *deepdoctype.ParseResult, opts pdfPostProcessOptions) ParseResult {
 	if parsed == nil {
 		return ParseResult{Err: fmt.Errorf("parser: nil DeepDOC PDF result for %s", filename)}
@@ -379,6 +387,7 @@ func pdfParseResultToMarkdownWithOptions(filename string, parsed *deepdoctype.Pa
 	}
 }
 
+// outlinesToFileMeta 将 DeepDOC 大纲转为 file.outline 元数据切片。
 func outlinesToFileMeta(outlines []deepdoctype.Outline) []map[string]any {
 	if len(outlines) == 0 {
 		return []map[string]any{}
@@ -394,6 +403,7 @@ func outlinesToFileMeta(outlines []deepdoctype.Outline) []map[string]any {
 	return result
 }
 
+// firstPageNumber 从 _pdf_positions 首元组提取页码。
 func firstPageNumber(raw any) int {
 	positions, ok := raw.([][]any)
 	if !ok || len(positions) == 0 || len(positions[0]) == 0 {
@@ -411,6 +421,7 @@ func firstPageNumber(raw any) int {
 	}
 }
 
+// inlinePNGDataURL 为裸 base64 或已有 data URL 的 PNG 补全 data:image/png 前缀。
 func inlinePNGDataURL(raw string) string {
 	if raw == "" {
 		return ""
@@ -424,6 +435,7 @@ func inlinePNGDataURL(raw string) string {
 	return "data:image/png;base64," + raw
 }
 
+// sectionsToMarkdown 将 DeepDOC Section 列表拼接为 Markdown（标题加 ##，figure 转图片语法）。
 func sectionsToMarkdown(sections []deepdoctype.Section) string {
 	var b strings.Builder
 	for _, section := range sections {
@@ -443,6 +455,7 @@ func sectionsToMarkdown(sections []deepdoctype.Section) string {
 	return b.String()
 }
 
+// firstPDFPageWidth 取首页渲染图宽度并按 zoom 还原 PDF 点宽，供多栏重排使用。
 func firstPDFPageWidth(pageImages map[int]image.Image, zoom float64) float64 {
 	if len(pageImages) == 0 {
 		return 0
@@ -462,6 +475,7 @@ func firstPDFPageWidth(pageImages map[int]image.Image, zoom float64) float64 {
 	return float64(img.Bounds().Dx()) / zoom
 }
 
+// normalizePDFPositions 清洗 _pdf_positions 为 [page, left, right, top, bottom] 五元组。
 func normalizePDFPositions(raw any) [][]any {
 	positions, ok := raw.([][]any)
 	if !ok || len(positions) == 0 {
@@ -488,6 +502,7 @@ func normalizePDFPositions(raw any) [][]any {
 	return normalized
 }
 
+// normalizePDFPageNumber 将多种页码表示（含嵌套切片）归一化为 1-based 页号。
 func normalizePDFPageNumber(raw any) (int, bool) {
 	switch v := raw.(type) {
 	case int:
@@ -514,6 +529,7 @@ func normalizePDFPageNumber(raw any) (int, bool) {
 	}
 }
 
+// numericAny 将 int/int64/float64 转为 float64。
 func numericAny(raw any) (float64, bool) {
 	switch v := raw.(type) {
 	case int:
@@ -527,6 +543,7 @@ func numericAny(raw any) (float64, bool) {
 	}
 }
 
+// normalizePDFDocType 按 layout_type/image 字段补全 doc_type_kwd（table/image/text）。
 func normalizePDFDocType(item map[string]any) {
 	if item == nil {
 		return
@@ -549,10 +566,12 @@ func normalizePDFDocType(item map[string]any) {
 	}
 }
 
+// parsePDFWithDeepDoc 调用 DeepDOC parseFn 并按 output_format 分支输出。
 func parsePDFWithDeepDoc(ctx context.Context, filename string, data []byte, parseFn func(context.Context, []byte, deepdoctype.DocAnalyzer) (*deepdoctype.ParseResult, error)) ParseResult {
 	return parsePDFWithDeepDocOptions(ctx, filename, data, pdfPostProcessOptions{}, parseFn)
 }
 
+// parsePDFWithDeepDocOptions 带后处理选项的 DeepDOC 解析入口。
 func parsePDFWithDeepDocOptions(ctx context.Context, filename string, data []byte, opts pdfPostProcessOptions, parseFn func(context.Context, []byte, deepdoctype.DocAnalyzer) (*deepdoctype.ParseResult, error)) ParseResult {
 	if len(data) == 0 {
 		return emptyPDFResult(filename)
@@ -577,3 +596,4 @@ func parsePDFWithDeepDocOptions(ctx context.Context, filename string, data []byt
 	}
 	return res
 }
+// pdf_parser_common.go — PDF 解析器公共类型、配置映射、DeepDOC 结果转换与坐标归一化。

@@ -12,6 +12,7 @@ import (
 	models "ragflow/internal/entity/models"
 )
 
+// doclingChunk Docling 分块响应中单条 chunk 的 JSON 形状。
 type doclingChunk struct {
 	Text  string `json:"text"`
 	Chunk *struct {
@@ -19,6 +20,7 @@ type doclingChunk struct {
 	} `json:"chunk"`
 }
 
+// doclingDocument Docling 转换结果中的 document 载荷。
 type doclingDocument struct {
 	MDContent   string         `json:"md_content"`
 	TextContent string         `json:"text_content"`
@@ -36,6 +38,7 @@ type doclingResponse struct {
 	Results   []doclingResult   `json:"results"`
 }
 
+// parsePDFWithDocling 依次尝试 Docling v1/v1alpha 标准与分块端点直至成功。
 func parsePDFWithDocling(filename string, data []byte, parser *PDFParser) ParseResult {
 	if len(data) == 0 {
 		return emptyPDFResult(filename)
@@ -127,6 +130,7 @@ func parsePDFWithDocling(filename string, data []byte, parser *PDFParser) ParseR
 	return ParseResult{Err: fmt.Errorf("parser: Docling convert: %w", lastErr)}
 }
 
+// doclingStandardPayload 构造 Docling /convert/source 标准请求体。
 func doclingStandardPayload(filename string, encoded string, alpha bool) map[string]any {
 	source := map[string]any{"filename": filename, "base64_string": encoded}
 	options := map[string]any{"from_formats": []string{"pdf"}, "to_formats": []string{"json", "md", "text"}}
@@ -143,6 +147,7 @@ func doclingStandardPayload(filename string, encoded string, alpha bool) map[str
 	}
 }
 
+// doclingChunkedPayload 在标准载荷上启用 do_chunking 与 tokenizer 选项。
 func doclingChunkedPayload(filename string, encoded string, alpha bool) map[string]any {
 	payload := doclingStandardPayload(filename, encoded, alpha)
 	payload["options"] = map[string]any{
@@ -158,6 +163,7 @@ func doclingChunkedPayload(filename string, encoded string, alpha bool) map[stri
 	return payload
 }
 
+// parseDoclingChunkedResult 解析分块 JSON 数组并合并为 section 列表。
 func parseDoclingChunkedResult(filename string, body []byte, outputFormat string) (ParseResult, bool) {
 	var chunks []doclingChunk
 	if err := json.Unmarshal(body, &chunks); err != nil {
@@ -189,6 +195,7 @@ func parseDoclingChunkedResult(filename string, body []byte, outputFormat string
 	return doclingTextsToResult(filename, texts, outputFormat, pageCount), true
 }
 
+// parseDoclingStandardResult 从标准响应中提取 md/text/json_content。
 func parseDoclingStandardResult(filename string, body []byte, outputFormat string) (ParseResult, bool) {
 	var payload doclingResponse
 	if err := json.Unmarshal(body, &payload); err != nil {
@@ -221,6 +228,7 @@ func parseDoclingStandardResult(filename string, body []byte, outputFormat strin
 	return ParseResult{}, false
 }
 
+// doclingTextsToResult 将文本切片转为 JSON section 或 Markdown 输出。
 func doclingTextsToResult(filename string, texts []string, outputFormat string, pageCount int) ParseResult {
 	fileMeta := pdfFileMeta(filename, pageCount)
 	switch strings.ToLower(strings.TrimSpace(outputFormat)) {
@@ -247,3 +255,4 @@ func doclingTextsToResult(filename string, texts []string, outputFormat string, 
 		return ParseResult{Err: fmt.Errorf("parser: unsupported PDF output_format %q", outputFormat)}
 	}
 }
+// pdf_parser_docling.go — 经 Docling 远程 API 将 PDF 转为 JSON/Markdown/纯文本。

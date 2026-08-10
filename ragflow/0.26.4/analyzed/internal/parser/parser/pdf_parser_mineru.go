@@ -9,9 +9,12 @@ import (
 	models "ragflow/internal/entity/models"
 )
 
+// minerUPollTimeout MinerU 任务轮询默认超时。
 const minerUPollTimeout = 30 * time.Second
+// minerUPollInterval MinerU 轮询间隔。
 const minerUPollInterval = 200 * time.Millisecond
 
+// parsePDFWithMinerU 提交 MinerU 异步解析任务并轮询 Markdown 结果。
 func parsePDFWithMinerU(filename string, data []byte, parser *PDFParser) ParseResult {
 	if len(data) == 0 {
 		return emptyPDFResult(filename)
@@ -65,6 +68,7 @@ func parsePDFWithMinerU(filename string, data []byte, parser *PDFParser) ParseRe
 	return parseMinerUMarkdownResult(filename, content, parser.OutputFormat, pageCount)
 }
 
+// pollMinerUTask 在超时前周期性查询 MinerU 任务直至 segment 含非空内容。
 func pollMinerUTask(driver *models.MinerULocalModel, taskID string, apiConfig *models.APIConfig, timeout time.Duration) (string, error) {
 	if timeout <= 0 {
 		timeout = minerUPollTimeout
@@ -93,6 +97,7 @@ func pollMinerUTask(driver *models.MinerULocalModel, taskID string, apiConfig *m
 	}
 }
 
+// parseMinerUMarkdownResult 将 MinerU/Docling 等引擎返回的 Markdown 转为 JSON 或原样输出。
 func parseMinerUMarkdownResult(filename, markdown, outputFormat string, pageCount int) ParseResult {
 	fileMeta := pdfFileMeta(filename, pageCount)
 	switch strings.ToLower(strings.TrimSpace(outputFormat)) {
@@ -117,3 +122,4 @@ func parseMinerUMarkdownResult(filename, markdown, outputFormat string, pageCoun
 		return ParseResult{Err: fmt.Errorf("parser: unsupported PDF output_format %q", outputFormat)}
 	}
 }
+// pdf_parser_mineru.go — MinerU 异步任务提交与轮询，Markdown 结果再分块。

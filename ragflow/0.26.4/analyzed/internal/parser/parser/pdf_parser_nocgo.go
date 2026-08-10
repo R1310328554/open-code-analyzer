@@ -1,11 +1,13 @@
 //go:build !cgo
 
+// 非 CGO 构建：DeepDOC 本地 PDF 引擎不可用，远程 parse_method 仍可用。
 package parser
 
 import (
 	"fmt"
 )
 
+// ParseWithResult 非 CGO 下仅支持远程引擎；deepdoc 返回 ErrPDFEngineUnavailable。
 func (p *PDFParser) ParseWithResult(filename string, data []byte) ParseResult {
 	if err := p.validateParseMethod(); err != nil {
 		return ParseResult{Err: err}
@@ -33,3 +35,4 @@ func (p *PDFParser) ParseWithResult(filename string, data []byte) ParseResult {
 		Err: fmt.Errorf("%w: %s", ErrPDFEngineUnavailable, filename),
 	}
 }
+// pdf_parser_nocgo.go — 非 CGO 构建下 PDF 解析入口，DeepDOC 本地引擎不可用。

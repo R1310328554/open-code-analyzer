@@ -22,10 +22,12 @@ import (
 	"fmt"
 )
 
+// PPTParser 旧版 .ppt 二进制解析器，底层委托 PPTX 路径。
 type PPTParser struct {
 	libType string
 }
 
+// NewPPTParser 目前仅支持 OfficeOxide 库类型。
 func NewPPTParser(libType string) (*PPTParser, error) {
 	switch libType {
 	case OfficeOxide:
@@ -41,10 +43,7 @@ func (p *PPTParser) String() string {
 	return "PPTParser"
 }
 
-// ParseWithResult delegates to PPTXParser's structured output
-// for the legacy PPT format. The two file families differ only
-// in the binary container; the python parser.py:slides branch
-// treats them uniformly.
+// ParseWithResult 委托 PPTXParser 输出结构化 JSON；Python slides 分支对 ppt/pptx 统一处理。
 func (p *PPTParser) ParseWithResult(filename string, data []byte) ParseResult {
 	delegate, err := NewPPTXParser(OfficeOxide)
 	if err != nil {
@@ -56,3 +55,4 @@ func (p *PPTParser) ParseWithResult(filename string, data []byte) ParseResult {
 	}
 	return res
 }
+// ppt_parser.go — 旧版 PPT 解析器，委托 PPTX 路径并标记 format=ppt。

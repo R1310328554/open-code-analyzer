@@ -1,5 +1,6 @@
 //go:build cgo
 
+// CGO 构建：可调用 pdfoxide/DeepDOC 本地 PDF 引擎。
 package parser
 
 import (
@@ -11,6 +12,7 @@ import (
 	deepdoctype "ragflow/internal/deepdoc/parser/type"
 )
 
+// ParseWithResult 按 parse_method 分发 PDF 解析；默认走 DeepDOC 本地引擎。
 func (p *PDFParser) ParseWithResult(filename string, data []byte) ParseResult {
 	if err := p.validateParseMethod(); err != nil {
 		return ParseResult{Err: err}
@@ -50,3 +52,4 @@ func (p *PDFParser) ParseWithResult(filename string, data []byte) ParseResult {
 	}
 	return res
 }
+// pdf_parser_cgo.go — CGO 构建下 PDF 解析入口，按 parse_method 分发至 DeepDOC 或远程引擎。

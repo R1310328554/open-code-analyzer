@@ -8,6 +8,7 @@ import (
 	models "ragflow/internal/entity/models"
 )
 
+// parsePDFWithPaddleOCR 调用 PaddleOCR-VL layout-parsing 端点并将 Markdown 结果分块。
 func parsePDFWithPaddleOCR(filename string, data []byte, parser *PDFParser) ParseResult {
 	if len(data) == 0 {
 		return emptyPDFResult(filename)
@@ -60,3 +61,4 @@ func parsePDFWithPaddleOCR(filename string, data []byte, parser *PDFParser) Pars
 	}
 	return parseMinerUMarkdownResult(filename, *resp.Text, parser.OutputFormat, pageCount)
 }
+// pdf_parser_paddleocr.go — PaddleOCR-VL 布局解析远程调用封装。

@@ -1,5 +1,6 @@
 //go:build cgo
 
+// CGO 构建：plain_text 模式经 pdfoxide 逐页提取文本层。
 package parser
 
 import (
@@ -8,6 +9,7 @@ import (
 	"ragflow/internal/deepdoc/parser/pdf/pdfoxide"
 )
 
+// parsePDFWithPlainText 使用 pdfoxide 打开 PDF 并逐页 GetPageText，不做 OCR。
 func parsePDFWithPlainText(filename string, data []byte, parser *PDFParser) ParseResult {
 	if len(data) == 0 {
 		return emptyPDFResult(filename)
@@ -36,3 +38,4 @@ func parsePDFWithPlainText(filename string, data []byte, parser *PDFParser) Pars
 	}
 	return pdfItemsToResult(filename, items, parser.OutputFormat, pageCount)
 }
+// pdf_parser_plaintext_cgo.go — CGO 下 pdfoxide 逐页提取纯文本。

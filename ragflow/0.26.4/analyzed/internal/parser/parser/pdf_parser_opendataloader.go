@@ -13,6 +13,7 @@ import (
 	models "ragflow/internal/entity/models"
 )
 
+// parsePDFWithOpenDataLoader 向 OpenDataLoader /file_parse 提交 multipart PDF 并解析响应。
 func parsePDFWithOpenDataLoader(filename string, data []byte, parser *PDFParser) ParseResult {
 	if len(data) == 0 {
 		return emptyPDFResult(filename)
@@ -72,6 +73,7 @@ func parsePDFWithOpenDataLoader(filename string, data []byte, parser *PDFParser)
 	return ParseResult{Err: fmt.Errorf("parser: OpenDataLoader returned no parsed content")}
 }
 
+// openDataLoaderMultipart 构造含 hybrid/image_output/sanitize 字段的 multipart 表单。
 func openDataLoaderMultipart(filename string, data []byte, parser *PDFParser) (io.Reader, string, error) {
 	var body strings.Builder
 	writer := multipart.NewWriter(&body)
@@ -101,6 +103,7 @@ func openDataLoaderMultipart(filename string, data []byte, parser *PDFParser) (i
 	return strings.NewReader(body.String()), writer.FormDataContentType(), nil
 }
 
+// openDataLoaderItems 深度遍历 json_doc 树并收集可映射的 layout 节点。
 func openDataLoaderItems(root any) []map[string]any {
 	items := []map[string]any{}
 	var walk func(any)
@@ -123,6 +126,7 @@ func openDataLoaderItems(root any) []map[string]any {
 	return items
 }
 
+// openDataLoaderNodeToItem 将单节点 type/content 转为 RAGFlow section 字典。
 func openDataLoaderNodeToItem(el map[string]any) map[string]any {
 	rawType, _ := el["type"].(string)
 	t := strings.ToLower(strings.TrimSpace(rawType))
@@ -171,6 +175,7 @@ func openDataLoaderNodeToItem(el map[string]any) map[string]any {
 	}
 }
 
+// openDataLoaderCellsText 将表格 cells 按行拼接为纯文本。
 func openDataLoaderCellsText(raw any) string {
 	cells, ok := raw.([]any)
 	if !ok {
@@ -204,6 +209,7 @@ func openDataLoaderCellsText(raw any) string {
 	return strings.Join(parts, "\n")
 }
 
+// openDataLoaderPageCount 从 json_doc 推断页数。
 func openDataLoaderPageCount(root any) int {
 	pages := collectPDFPageNumbers(root)
 	if len(pages) > 0 {
@@ -229,3 +235,4 @@ func numberValue(v any) float64 {
 	}
 	return 0
 }
+// pdf_parser_opendataloader.go — OpenDataLoader 远程 multipart 解析与 JSON 树遍历。

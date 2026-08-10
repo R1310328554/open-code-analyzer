@@ -15,6 +15,7 @@ import (
 	models "ragflow/internal/entity/models"
 )
 
+// parsePDFWithTCADP 调用腾讯云 ADP reconstruct_document 并下载 ZIP 结果。
 func parsePDFWithTCADP(filename string, data []byte, parser *PDFParser) ParseResult {
 	if len(data) == 0 {
 		return emptyPDFResult(filename)
@@ -84,6 +85,7 @@ func parsePDFWithTCADP(filename string, data []byte, parser *PDFParser) ParseRes
 	return pdfItemsToResult(filename, items, parser.OutputFormat, pageCount)
 }
 
+// tcadpItemsFromZip 解压 ZIP 中的 .md/.json 并转为 section 列表。
 func tcadpItemsFromZip(zipBytes []byte) ([]map[string]any, int, error) {
 	reader, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
 	if err != nil {
@@ -132,6 +134,7 @@ func tcadpItemsFromZip(zipBytes []byte) ([]map[string]any, int, error) {
 	return items, pageCount, nil
 }
 
+// tcadpAnyToItems 递归解析 TCADP JSON 节点为 table/image/equation/text section。
 func tcadpAnyToItems(raw any) []map[string]any {
 	switch v := raw.(type) {
 	case []any:
@@ -173,6 +176,7 @@ func tcadpAnyToItems(raw any) []map[string]any {
 	return nil
 }
 
+// tcadpTableRowsText 将 table_data.rows 拼接为 Markdown 风格表格文本。
 func tcadpTableRowsText(raw any) string {
 	table, ok := raw.(map[string]any)
 	if !ok {
@@ -197,9 +201,11 @@ func tcadpTableRowsText(raw any) string {
 	return strings.Join(lines, "\n")
 }
 
+// bearer 为非空 API Key 构造 Authorization Bearer 头值。
 func bearer(apiKey string) string {
 	if strings.TrimSpace(apiKey) == "" {
 		return ""
 	}
 	return "Bearer " + apiKey
 }
+// pdf_parser_tcadp.go — 腾讯云 ADP 文档重建 API 与 ZIP 结果解压。

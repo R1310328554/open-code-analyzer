@@ -15,6 +15,7 @@ import (
 	models "ragflow/internal/entity/models"
 )
 
+// parsePDFWithSoMark 向 SoMark /parse/async 提交 PDF 并轮询块级 JSON 结果。
 func parsePDFWithSoMark(filename string, data []byte, parser *PDFParser) ParseResult {
 	if len(data) == 0 {
 		return emptyPDFResult(filename)
@@ -45,6 +46,7 @@ func parsePDFWithSoMark(filename string, data []byte, parser *PDFParser) ParseRe
 	return pdfItemsToResult(filename, items, parser.OutputFormat, pageCount)
 }
 
+// soMarkSubmit 构造 multipart 表单（element_formats/feature_config）并返回 task_id。
 func soMarkSubmit(baseURL, filename string, data []byte, parser *PDFParser, apiKey string) (string, error) {
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
@@ -112,6 +114,7 @@ func soMarkSubmit(baseURL, filename string, data []byte, parser *PDFParser, apiK
 	return payload.Data.TaskID, nil
 }
 
+// soMarkPoll 查询异步任务直至 status=SUCCESS 并返回 result 映射。
 func soMarkPoll(baseURL, taskID, apiKey string) (map[string]any, error) {
 	form := url.Values{"task_id": {taskID}}
 	if apiKey != "" {
@@ -153,6 +156,7 @@ func soMarkPoll(baseURL, taskID, apiKey string) (map[string]any, error) {
 	return result, nil
 }
 
+// soMarkItems 遍历 pages/blocks 并映射为 RAGFlow section 列表。
 func soMarkItems(result map[string]any, keepHeaderFooter bool) ([]map[string]any, int) {
 	outputs, _ := result["outputs"].(map[string]any)
 	jsonPayload, _ := outputs["json"].(map[string]any)
@@ -177,6 +181,7 @@ func soMarkItems(result map[string]any, keepHeaderFooter bool) ([]map[string]any
 	return items, len(pages)
 }
 
+// soMarkBlockToItem 按 block type 转为 text/table/image/title section。
 func soMarkBlockToItem(block map[string]any, keepHeaderFooter bool) map[string]any {
 	blockType := strings.ToLower(strings.TrimSpace(stringValue(block["type"])))
 	switch blockType {
@@ -221,6 +226,7 @@ func soMarkBlockToItem(block map[string]any, keepHeaderFooter bool) map[string]a
 	}
 }
 
+// envOrDefault 优先使用配置值，其次环境变量，最后 fallback。
 func envOrDefault(envKey, configured, fallback string) string {
 	if configured != "" {
 		return configured
@@ -231,6 +237,7 @@ func envOrDefault(envKey, configured, fallback string) string {
 	return fallback
 }
 
+// envOrBool 解析环境变量布尔值，未设置则使用 configured。
 func envOrBool(envKey string, configured bool) bool {
 	if raw := strings.TrimSpace(os.Getenv(envKey)); raw != "" {
 		switch strings.ToLower(raw) {
@@ -255,3 +262,4 @@ func urlEncoded(values map[string]string) string {
 	}
 	return strings.Join(parts, "&")
 }
+// pdf_parser_somark.go — SoMark 异步解析：提交、轮询与块级 JSON 映射。

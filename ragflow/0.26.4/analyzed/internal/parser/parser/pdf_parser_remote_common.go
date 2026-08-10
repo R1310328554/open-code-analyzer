@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// pdfFileMeta 构造远程 PDF 引擎共用的 file 元数据（name/page_count/outline）。
 func pdfFileMeta(filename string, pageCount int) map[string]any {
 	if pageCount < 0 {
 		pageCount = 0
@@ -16,6 +17,7 @@ func pdfFileMeta(filename string, pageCount int) map[string]any {
 	}
 }
 
+// pdfItemsToResult 将 section 切片按 output_format 输出 JSON 或 Markdown。
 func pdfItemsToResult(filename string, items []map[string]any, outputFormat string, pageCount int) ParseResult {
 	if len(items) == 0 {
 		items = []map[string]any{{"text": "", "doc_type_kwd": "text"}}
@@ -52,6 +54,7 @@ func pdfItemsToResult(filename string, items []map[string]any, outputFormat stri
 	}
 }
 
+// normalizePDFPageCount 从 items 推断页数并与 fallback 取较大值。
 func normalizePDFPageCount(fallback int, items []map[string]any) int {
 	if inferred := inferPDFPageCountFromItems(items); inferred > fallback {
 		return inferred
@@ -59,6 +62,7 @@ func normalizePDFPageCount(fallback int, items []map[string]any) int {
 	return fallback
 }
 
+// inferPDFPageCountFromItems 统计 items 中出现的唯一页码数量。
 func inferPDFPageCountFromItems(items []map[string]any) int {
 	pages := map[int]struct{}{}
 	for _, item := range items {
@@ -69,6 +73,7 @@ func inferPDFPageCountFromItems(items []map[string]any) int {
 	return len(pages)
 }
 
+// collectPDFPageNumbers 递归收集 map 树中的 page_number/positions 页码。
 func collectPDFPageNumbers(raw any) map[int]struct{} {
 	pages := map[int]struct{}{}
 	var walk func(any)
@@ -107,3 +112,4 @@ func collectPDFPageNumbers(raw any) map[int]struct{} {
 	walk(raw)
 	return pages
 }
+// pdf_parser_remote_common.go — 远程 PDF 引擎共用的文件元数据与输出格式转换。

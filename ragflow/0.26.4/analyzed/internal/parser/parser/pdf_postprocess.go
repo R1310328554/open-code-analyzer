@@ -9,9 +9,12 @@ import (
 	deepdoctype "ragflow/internal/deepdoc/parser/type"
 )
 
+// pdfHeaderFooterPattern 匹配页眉/页脚/页码 layout 类型。
 var pdfHeaderFooterPattern = regexp.MustCompile(`(?i)^(header|footer|number)$`)
+// pdfTOCTitlePattern 匹配目录页大纲标题（含中英文常见词）。
 var pdfTOCTitlePattern = regexp.MustCompile(`(?i)^(contents|目录|目次|table of contents|致谢|acknowledge)$`)
 
+// pdfPostProcessOptions DeepDOC PDF 后处理开关与渲染参数。
 type pdfPostProcessOptions struct {
 	outputFormat       string
 	pageWidth          float64
@@ -22,6 +25,7 @@ type pdfPostProcessOptions struct {
 	removeHeaderFooter bool
 }
 
+// applyPDFPostProcess 依次执行多栏重排、目录剔除、layout 归一化、页眉页脚过滤与 doc_type 赋值。
 func applyPDFPostProcess(result *deepdoctype.ParseResult, opts pdfPostProcessOptions) {
 	if result == nil {
 		return
@@ -39,6 +43,7 @@ func applyPDFPostProcess(result *deepdoctype.ParseResult, opts pdfPostProcessOpt
 	assignPDFDocTypeKeywords(result, opts.flattenMediaToText)
 }
 
+// normalizePDFLayoutTypes 将空 layout_type 默认设为 text。
 func normalizePDFLayoutTypes(result *deepdoctype.ParseResult) {
 	for i := range result.Sections {
 		layoutType := strings.TrimSpace(result.Sections[i].LayoutType)
@@ -49,6 +54,7 @@ func normalizePDFLayoutTypes(result *deepdoctype.ParseResult) {
 	}
 }
 
+// filterPDFHeaderFooter 移除 header/footer/number 类型 section。
 func filterPDFHeaderFooter(result *deepdoctype.ParseResult) {
 	filtered := result.Sections[:0]
 	for _, s := range result.Sections {
@@ -60,6 +66,7 @@ func filterPDFHeaderFooter(result *deepdoctype.ParseResult) {
 	result.Sections = filtered
 }
 
+// assignPDFDocTypeKeywords 按 layout 或 flatten 模式写入 DocTypeKwd。
 func assignPDFDocTypeKeywords(result *deepdoctype.ParseResult, flatten bool) {
 	for i := range result.Sections {
 		section := &result.Sections[i]
@@ -82,6 +89,7 @@ func assignPDFDocTypeKeywords(result *deepdoctype.ParseResult, flatten bool) {
 	}
 }
 
+// removePDFTOCByOutlines 根据大纲定位目录页区间并剔除对应 section。
 func removePDFTOCByOutlines(result *deepdoctype.ParseResult, outlines []deepdoctype.Outline) {
 	if result == nil || len(outlines) == 0 {
 		return
@@ -101,6 +109,7 @@ func removePDFTOCByOutlines(result *deepdoctype.ParseResult, outlines []deepdoct
 	result.Sections = filtered
 }
 
+// findPDFTOCPageRange 在大纲中查找目录起始页与正文起始页。
 func findPDFTOCPageRange(outlines []deepdoctype.Outline) (tocPage, contentPage int) {
 outer:
 	for i, o := range outlines {
@@ -131,6 +140,7 @@ outer:
 	return
 }
 
+// reorderPDFMultiColumn 检测窄栏文本块并按页内 X/Y 坐标重排阅读顺序。
 func reorderPDFMultiColumn(result *deepdoctype.ParseResult, pageWidth, _ float64) {
 	if result == nil || len(result.Sections) < 2 {
 		return
@@ -183,6 +193,7 @@ func reorderPDFMultiColumn(result *deepdoctype.ParseResult, pageWidth, _ float64
 	}
 }
 
+// firstSectionPage 取 section 首个 position 的页码。
 func firstSectionPage(s deepdoctype.Section) int {
 	for _, p := range s.Positions {
 		for _, pn := range p.PageNumbers {
@@ -192,6 +203,7 @@ func firstSectionPage(s deepdoctype.Section) int {
 	return 0
 }
 
+// firstSectionLeft 取 section 首个 position 的 left 坐标。
 func firstSectionLeft(s deepdoctype.Section) float64 {
 	for _, p := range s.Positions {
 		return p.Left
@@ -199,9 +211,11 @@ func firstSectionLeft(s deepdoctype.Section) float64 {
 	return 0
 }
 
+// firstSectionTop 取 section 首个 position 的 top 坐标。
 func firstSectionTop(s deepdoctype.Section) float64 {
 	for _, p := range s.Positions {
 		return p.Top
 	}
 	return 0
 }
+// pdf_postprocess.go — DeepDOC PDF 后处理：多栏重排、目录/页眉页脚过滤与 doc_type 标注。
