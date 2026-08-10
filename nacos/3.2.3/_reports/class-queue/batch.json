@@ -15,23 +15,8 @@
     "istio/src/main/java/com/alibaba/nacos/istio/util/IstioExecutor.java",
     "istio/src/main/java/com/alibaba/nacos/istio/util/NonceGenerator.java",
     "istio/src/main/java/com/alibaba/nacos/istio/xds/CdsGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/DeltaConnection.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/EdsGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/EmptyXdsGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/LdsGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/NacosXdsService.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/RdsGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/ServiceEntryXdsGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/XdsConnection.java",
-    "k8s-sync/src/main/java/com/alibaba/nacos/k8s/sync/K8sSyncConfig.java",
-    "k8s-sync/src/main/java/com/alibaba/nacos/k8s/sync/K8sSyncEnabledFilter.java",
-    "k8s-sync/src/main/java/com/alibaba/nacos/k8s/sync/K8sSyncServer.java",
-    "k8s-sync/src/main/java/com/alibaba/nacos/k8s/sync/Loggers.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/LockManager.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/NacosLockManager.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/aspect/RequestLockAspect.java",
-    "lock/src/main/java/com/alibaba/nacos/lock/constant/Constants.java"
+    "istio/src/main/java/com/alibaba/nacos/istio/xds/DeltaConnection.java"
   ],
   "remaining_pending": 737,
-  "done": 1770
+  "done": 1785
 }
