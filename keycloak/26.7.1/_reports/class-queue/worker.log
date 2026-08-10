@@ -1618,3 +1618,18 @@
 2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate25_0_0_ConsentConstraints.java wave55a Liquibase JpaUpdate migrations
 2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate25_0_0_MySQL_ConsentConstraints.java wave55a Liquibase JpaUpdate migrations
 2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_0_0_IdentityProviderAttributesMigration.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/CustomLockDatabaseChangeLogGenerator.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/CustomLockDatabaseChangeLogStatement.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/CustomLockService.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/DummyLockService.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/LiquibaseDBLockProvider.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/LiquibaseDBLockProviderFactory.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/LockRetryException.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/log/KeycloakLogService.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/log/KeycloakLogger.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/util/JpaUtils.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/events/jpa/AdminEventEntity.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/events/jpa/EventEntity.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/events/jpa/JpaAdminEventQuery.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/events/jpa/JpaEventQuery.java wave56a Liquibase lock/log + JPA event store
+2026-08-10T08:11:57Z DONE model/jpa/src/main/java/org/keycloak/events/jpa/JpaEventStoreProvider.java wave56a Liquibase lock/log + JPA event store
