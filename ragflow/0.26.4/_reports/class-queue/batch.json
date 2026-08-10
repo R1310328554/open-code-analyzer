@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T20:07:52Z",
   "files": [
-    "web/src/pages/user-setting/utils.ts",
-    "web/src/services/admin-service.ts",
-    "web/src/services/admin.service.d.ts",
-    "web/src/services/agent-service.ts",
-    "web/src/services/chat-channel-service.ts",
-    "web/src/services/data-source-service.ts",
-    "web/src/services/dataflow-service.ts",
-    "web/src/services/file-manager-service.ts",
-    "web/src/services/knowledge-service.ts",
-    "web/src/services/llm-service.ts",
-    "web/src/services/mcp-server-service.ts",
-    "web/src/services/memory-service.ts",
-    "web/src/services/next-chat-service.ts",
-    "web/src/services/plugin-service.ts",
-    "web/src/services/search-service.ts",
     "web/src/services/skill-space-service.ts",
     "web/src/services/user-service.ts",
     "web/src/stories/avatar-upload.stories.ts",
@@ -33,5 +18,5 @@
     "web/src/utils/chat.ts"
   ],
   "remaining_pending": 24,
-  "done": 1710
+  "done": 1725
 }
