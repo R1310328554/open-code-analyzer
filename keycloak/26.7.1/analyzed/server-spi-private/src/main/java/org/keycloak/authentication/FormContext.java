@@ -30,6 +30,8 @@ import org.keycloak.models.UserModel;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * 表单执行上下文：封装当前表单流程的状态（用户、领域、会话、HTTP 等）。
+ *
  * Interface that encapsulates the current state of the current form being executed
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -37,6 +39,8 @@ import org.keycloak.sessions.AuthenticationSessionModel;
  */
 public interface FormContext {
     /**
+     * 当前事件构建器。
+     *
      * Current event builder being used
      *
      * @return
@@ -44,6 +48,8 @@ public interface FormContext {
     EventBuilder getEvent();
 
     /**
+     * 创建新的 EventBuilder 供本上下文使用。
+     *
      * Create a refresh new EventBuilder to use within this context
      *
      * @return
@@ -51,6 +57,8 @@ public interface FormContext {
     EventBuilder newEvent();
 
     /**
+     * 流程中的当前认证执行步骤。
+     *
      * The current execution in the flow
      *
      * @return
@@ -58,6 +66,8 @@ public interface FormContext {
     AuthenticationExecutionModel getExecution();
 
     /**
+     * 当前流程关联的用户；尚未识别时为 null。
+     *
      * Current user attached to this flow.  It can return null if no user has been identified yet
      *
      * @return
@@ -65,6 +75,8 @@ public interface FormContext {
     UserModel getUser();
 
     /**
+     * 将指定用户绑定到本流程。
+     *
      * Attach a specific user to this flow.
      *
      * @param user
@@ -72,6 +84,8 @@ public interface FormContext {
     void setUser(UserModel user);
 
     /**
+     * 当前领域。
+     *
      * Current realm
      *
      * @return
@@ -79,6 +93,8 @@ public interface FormContext {
     RealmModel getRealm();
 
     /**
+     * 本流程关联的认证会话。
+     *
      * AuthenticationSessionModel attached to this flow
      *
      * @return
@@ -86,6 +102,8 @@ public interface FormContext {
     AuthenticationSessionModel getAuthenticationSession();
 
     /**
+     * 客户端连接信息（含 IP）。
+     *
      * Information about the IP address from the connecting HTTP client.
      *
      * @return
@@ -93,6 +111,8 @@ public interface FormContext {
     ClientConnection getConnection();
 
     /**
+     * 当前请求的 URI 信息。
+     *
      * UriInfo of the current request
      *
      * @return
@@ -100,15 +120,20 @@ public interface FormContext {
     UriInfo getUriInfo();
 
     /**
+     * 当前 Keycloak 会话。
+     *
      * Current session
      *
      * @return
      */
     KeycloakSession getSession();
 
+    /** 当前 HTTP 请求。 */
     HttpRequest getHttpRequest();
 
     /**
+     * 当前执行步骤关联的认证器配置。
+     *
      * Get any configuration associated with the current execution
      *
      * @return

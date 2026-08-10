@@ -23,9 +23,16 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link AuthorizationProvider} 工厂：按会话与领域创建授权 Provider 实例。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface AuthorizationProviderFactory extends ProviderFactory<AuthorizationProvider> {
 
+    /**
+     * 为指定会话与领域创建 {@link AuthorizationProvider}。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     */
     AuthorizationProvider create(KeycloakSession session, RealmModel realm);
 }

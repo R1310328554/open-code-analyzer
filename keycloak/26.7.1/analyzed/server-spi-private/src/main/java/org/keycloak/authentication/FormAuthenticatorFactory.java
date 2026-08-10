@@ -20,6 +20,9 @@ package org.keycloak.authentication;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link FormAuthenticator} 工厂：Keycloak 启动时创建单例。
+ * <p>须在 META-INF/services/org.keycloak.authentication.FormAuthenticatorFactory 中注册实现类全名。</p>
+ *
  * Factory for instantiating FormAuthenticators.  This is a singleton and created when Keycloak boots.
  *
  * You must specify a file

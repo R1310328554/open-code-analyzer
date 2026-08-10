@@ -50,6 +50,10 @@ import org.keycloak.provider.Provider;
 import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentation;
 
 /**
+ * 授权服务 Provider：管理策略评估与持久化存储，是细粒度授权（FGAP）的核心入口。
+ * <p>主要职责是通过 {@link #evaluators()} 创建 {@link org.keycloak.authorization.permission.evaluator.PermissionEvaluator} 实例。</p>
+ * <p>通常每个应用持有一个 {@link AuthorizationProvider}，工作线程通过 {@link #evaluators()} 获取评估器。</p>
+ *
  * <p>The main contract here is the creation of {@link org.keycloak.authorization.permission.evaluator.PermissionEvaluator} instances.  Usually
  * an application has a single {@link AuthorizationProvider} instance and threads servicing client requests obtain {@link org.keycloak.authorization.permission.evaluator.PermissionEvaluator}
  * from the {@link #evaluators()} method.
@@ -77,12 +81,18 @@ import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentati
  */
 public final class AuthorizationProvider implements Provider {
 
+    /** 策略评估器。 */
     private final PolicyEvaluator policyEvaluator;
+    /** 带缓存的存储工厂。 */
     private StoreFactory storeFactory;
+    /** 本地（无缓存）存储工厂。 */
     private StoreFactory storeFactoryDelegate;
+    /** Keycloak 会话。 */
     private final KeycloakSession keycloakSession;
+    /** 当前领域。 */
     private final RealmModel realm;
 
+    /** 构造授权 Provider。 */
     public AuthorizationProvider(KeycloakSession session, RealmModel realm, PolicyEvaluator policyEvaluator) {
         this.keycloakSession = session;
         this.realm = realm;
@@ -90,6 +100,8 @@ public final class AuthorizationProvider implements Provider {
     }
 
     /**
+     * 返回 {@link Evaluators}，用于获取 {@link org.keycloak.authorization.policy.evaluation.PolicyEvaluator}。
+     *
      * Returns a {@link Evaluators} instance from where {@link org.keycloak.authorization.policy.evaluation.PolicyEvaluator} instances
      * can be obtained.
      *
@@ -100,6 +112,8 @@ public final class AuthorizationProvider implements Provider {
     }
 
     /**
+     * 返回带缓存层的 {@link StoreFactory}。
+     *
      * Cache sits in front of this
      *
      * Returns a {@link StoreFactory}.
@@ -115,6 +129,8 @@ public final class AuthorizationProvider implements Provider {
     }
 
     /**
+     * 返回无缓存的本地 {@link StoreFactory}。
+     *
      * No cache sits in front of this
      *
      * @return
@@ -126,6 +142,8 @@ public final class AuthorizationProvider implements Provider {
     }
 
     /**
+     * 返回已注册的全部 {@link PolicyProviderFactory}。
+     *
      * Returns the registered {@link PolicyProviderFactory}.
      *
      * @return a {@link Stream} containing all registered {@link PolicyProviderFactory}
@@ -136,6 +154,8 @@ public final class AuthorizationProvider implements Provider {
     }
 
     /**
+     * 按策略类型返回 {@link PolicyProviderFactory}。
+     *
      * Returns a {@link PolicyProviderFactory} given a <code>type</code>.
      *
      * @param type the type of the policy provider
@@ -146,6 +166,8 @@ public final class AuthorizationProvider implements Provider {
     }
 
     /**
+     * 按类型创建 {@link PolicyProvider} 实例。
+     *
      * Returns a {@link PolicyProviderFactory} given a <code>type</code>.
      *
      * @param type the type of the policy provider
@@ -162,14 +184,17 @@ public final class AuthorizationProvider implements Provider {
         return (P) policyProviderFactory.create(this);
     }
 
+    /** 返回 Keycloak 会话。 */
     public KeycloakSession getKeycloakSession() {
         return this.keycloakSession;
     }
 
+    /** 返回当前领域。 */
     public RealmModel getRealm() {
         return realm;
     }
 
+    /** 返回资源服务器对应的策略评估器（管理权限 schema 可覆盖默认评估器）。 */
     public PolicyEvaluator getPolicyEvaluator(ResourceServer resourceServer) {
         PolicyEvaluator schemaPolicyEvaluator = AdminPermissionsSchema.SCHEMA.getPolicyEvaluator(keycloakSession, resourceServer);
         return schemaPolicyEvaluator == null ? policyEvaluator : schemaPolicyEvaluator;
@@ -180,6 +205,7 @@ public final class AuthorizationProvider implements Provider {
 
     }
 
+    /** 包装 StoreFactory，在删除资源/范围/策略时级联清理关联数据。 */
     private StoreFactory createStoreFactory(StoreFactory storeFactory) {
         return new StoreFactory() {
 
@@ -238,6 +264,7 @@ public final class AuthorizationProvider implements Provider {
         };
     }
 
+    /** 包装 ScopeStore，删除范围时同步删除关联 PermissionTicket。 */
     private ScopeStore createScopeWrapper(StoreFactory storeFactory) {
         return new ScopeStore() {
 
@@ -288,6 +315,7 @@ public final class AuthorizationProvider implements Provider {
         };
     }
 
+    /** 包装 PolicyStore，创建/删除策略时处理 FGAP 资源解析与级联删除。 */
     private PolicyStore createPolicyWrapper(StoreFactory storeFactory) {
         return new PolicyStore() {
 
@@ -360,10 +388,10 @@ public final class AuthorizationProvider implements Provider {
                 if (policy != null) {
                     ResourceServer resourceServer = policy.getResourceServer();
 
-                    // if uma policy (owned by a user) also remove associated policies
+                    // UMA 策略（用户拥有）删除时一并移除其关联策略
                     if (policy.getOwner() != null) {
                         for (Policy associatedPolicy : policy.getAssociatedPolicies()) {
-                            // only remove associated policies created from the policy being deleted
+                            // 仅移除由被删策略创建的关联策略
                             if (associatedPolicy.getOwner() != null) {
                                 policy.removeAssociatedPolicy(associatedPolicy);
                                 policyStore.delete(associatedPolicy.getId());
@@ -459,6 +487,7 @@ public final class AuthorizationProvider implements Provider {
         };
     }
 
+    /** 包装 ResourceStore，删除资源时清理权限票与关联策略。 */
     private ResourceStore createResourceStoreWrapper(StoreFactory storeFactory) {
         return new ResourceStore() {
             ResourceStore delegate = storeFactory.getResourceStore();

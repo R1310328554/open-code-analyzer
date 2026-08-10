@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 必需操作 SPI 描述符，注册 {@link RequiredActionProvider} 与 {@link RequiredActionFactory}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class RequiredActionSpi implements Spi {
 
+    /** 内部 SPI。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：required-action。 */
     @Override
     public String getName() {
         return "required-action";
     }
 
+    /** Provider 接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return RequiredActionProvider.class;
     }
 
+    /** ProviderFactory 接口类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return RequiredActionFactory.class;

@@ -24,6 +24,8 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.keycloak.models.utils.FormMessage;
 
 /**
+ * 表单校验上下文：继承 {@link FormContext}，通过 success() 或 validationError() 设置校验结果。
+ *
  * Interface that encapsulates the current validation that is being performed.  Calling success() or validationError()
  * sets the status of this current validation.
  *
@@ -32,6 +34,8 @@ import org.keycloak.models.utils.FormMessage;
  */
 public interface ValidationContext extends FormContext {
     /**
+     * 标记校验失败并携带表单回显数据与错误消息。
+     *
      * Mark this validation as having a validation error
      *
      * @param formData form data you want to display when the form is refreshed
@@ -39,15 +43,20 @@ public interface ValidationContext extends FormContext {
      */
     void validationError(MultivaluedMap<String, String> formData, List<FormMessage> errors);
 
+    /** 以单一错误消息标记校验失败。 */
     void error(String error);
 
     /**
+     * 标记校验成功。
+     *
      * Mark this validation as successful
      *
      */
     void success();
 
     /**
+     * 仅展示本校验的错误，隐藏其他错误以防信息泄露（如 reCAPTCHA 防用户名枚举）。
+     *
      * The error messages of this current validation will take precedence over any others. Other error messages will not
      * be shown. This is useful to prevent validation from leaking to an attacker. For example, the recaptcha validator
      * calls this method so that usernames cannot be phished

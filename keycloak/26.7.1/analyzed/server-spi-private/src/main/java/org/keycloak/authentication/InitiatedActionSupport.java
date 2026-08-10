@@ -17,9 +17,13 @@
 package org.keycloak.authentication;
 
 /**
+ * 必需操作是否支持应用发起（AIA，Application-Initiated Action）。
  *
  * @author Stan Silvert
  */
 public enum InitiatedActionSupport {
-    SUPPORTED, NOT_SUPPORTED
+    /** 支持 AIA。 */
+    SUPPORTED,
+    /** 不支持 AIA。 */
+    NOT_SUPPORTED
 }

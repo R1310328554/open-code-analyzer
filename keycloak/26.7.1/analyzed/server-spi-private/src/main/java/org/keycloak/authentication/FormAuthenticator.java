@@ -23,6 +23,9 @@ import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.provider.Provider;
 
 /**
+ * 表单认证器 SPI：负责渲染登录/注册表单页面。
+ * <p>各子 {@link FormAction} 先调用 buildPage() 填充表单，再调用本接口的 render()。</p>
+ *
  * This class is responsible for rendering a form.  The way it works is that each FormAction that is a child of this
  * FormAuthenticator, will have its buildPage() method call first, then the FormAuthenticator.render() method will be invoked.
  *
@@ -33,6 +36,8 @@ import org.keycloak.provider.Provider;
  */
 public interface FormAuthenticator extends Provider {
     /**
+     * 渲染表单挑战页；返回 null 表示成功并继续流程下一步。
+     *
      * Called to render the FormAuthenticator's challenge page.  If null is returned, then success is assumed and the
      * next authenticator in the flow will be invoked.
      *

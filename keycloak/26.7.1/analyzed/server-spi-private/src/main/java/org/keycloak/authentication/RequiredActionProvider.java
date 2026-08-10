@@ -30,6 +30,8 @@ import org.keycloak.utils.RequiredActionHelper;
 
 
 /**
+ * 必需操作 Provider：用户登录前须完成的一次性动作（如改密、配置 OTP）。
+ *
  * RequiredAction provider.  Required actions are one-time actions that a user must perform before they are logged in.
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -38,6 +40,8 @@ import org.keycloak.utils.RequiredActionHelper;
 public interface RequiredActionProvider extends Provider {
 
     /**
+     * 是否支持应用发起的必需操作（AIA）。
+     *
      * Determines what type of support is provided for application-initiated
      * actions.
      * 
@@ -48,6 +52,8 @@ public interface RequiredActionProvider extends Provider {
     }
 
     /**
+     * AIA 被用户取消时的回调。
+     *
      * Callback to let the action know that an application-initiated action
      * was canceled.
      *
@@ -60,6 +66,9 @@ public interface RequiredActionProvider extends Provider {
     }
     
     /**
+     * 每次用户认证时调用，判断是否应触发本必需操作并在 UserModel 上设置。
+     * 例如 UpdatePassword 检查密码是否过期。
+     *
      * Called every time a user authenticates.  This checks to see if this required action should be triggered.
      * The implementation of this method is responsible for setting the required action on the UserModel.
      *
@@ -70,6 +79,8 @@ public interface RequiredActionProvider extends Provider {
     void evaluateTriggers(RequiredActionContext context);
 
     /**
+     * 用户有待办必需操作时，首次调用以渲染浏览器挑战页。
+     *
      * If the user has a required action set, this method will be the initial call to obtain what to display to the
      * user's browser.  Return null if no action should be done.
      *
@@ -79,6 +90,8 @@ public interface RequiredActionProvider extends Provider {
     void requiredActionChallenge(RequiredActionContext context);
 
     /**
+     * 处理用户提交的必需操作表单。
+     *
      * Called when a required action has form input you want to process.
      *
      * @param context
@@ -87,7 +100,12 @@ public interface RequiredActionProvider extends Provider {
 
 
     /**
+     * @deprecated 请使用 {@link #getMaxAuthAge(KeycloakSession)}；本方法已无效果。
+     *
      * @deprecated in favor of {@link #getMaxAuthAge(KeycloakSession)} to support individual configuration of max auth age for all required actions. This method has no effect anymore.
+     *
+     * AIA 场景下登录后允许执行的最长间隔（秒）；0 表示始终要求重新认证。
+     * 默认读取必需操作配置的 max_auth_age，否则使用 KeycloakConstants 默认值。
      *
      * Defines the max time after a user login, after which re-authentication is requested for an AIA. 0 means that re-authentication is always requested.
      * On default uses configured max_auth_age value from the required action config. If not configured, it uses the default max_auth_age value from the KeycloakConstants class.
@@ -103,7 +121,7 @@ public interface RequiredActionProvider extends Provider {
      */
     default int getMaxAuthAge(KeycloakSession session) {
         if (session == null) {
-            // session is null, support for legacy implementation, fallback to default maxAuthAge
+            // session 为 null 时兼容旧实现，回退默认 maxAuthAge
             return Constants.KC_ACTION_MAX_AGE;
         }
 
@@ -111,11 +129,11 @@ public interface RequiredActionProvider extends Provider {
         RealmModel realm = keycloakContext.getRealm();
         int maxAge;
 
-        // try required action config
+        // 尝试读取必需操作配置
         AuthenticationSessionModel authSession = keycloakContext.getAuthenticationSession();
         if (authSession != null) {
 
-            // we need to figure out the alias for the current required action
+            // 解析当前必需操作的 alias
             String providerId = authSession.getClientNote(Constants.KC_ACTION);
             RequiredActionProviderModel requiredAction = RequiredActionHelper.getRequiredActionByProviderId(realm, providerId);
 
@@ -130,7 +148,7 @@ public interface RequiredActionProvider extends Provider {
             }
         }
 
-        // fallback to default
+        // 回退到默认值
         return Constants.KC_ACTION_MAX_AGE;
     }
 

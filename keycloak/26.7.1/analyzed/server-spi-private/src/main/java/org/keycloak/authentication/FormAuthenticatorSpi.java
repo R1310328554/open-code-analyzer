@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 表单认证器 SPI 描述符，注册 {@link FormAuthenticator} 与 {@link FormAuthenticatorFactory}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FormAuthenticatorSpi implements Spi {
 
+    /** 内部 SPI，不对外暴露。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：form-authenticator。 */
     @Override
     public String getName() {
         return "form-authenticator";
     }
 
+    /** Provider 接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return FormAuthenticator.class;
     }
 
+    /** ProviderFactory 接口类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return FormAuthenticatorFactory.class;
