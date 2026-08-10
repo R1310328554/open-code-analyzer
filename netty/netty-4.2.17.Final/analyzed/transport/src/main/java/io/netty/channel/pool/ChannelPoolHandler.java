@@ -21,11 +21,13 @@ import io.netty.util.concurrent.Promise;
 
 /**
  * Handler which is called for various actions done by the {@link ChannelPool}.
+ * <p>{@link ChannelPool} 生命周期回调：创建、借出、归还 channel 时通知应用。</p>
  */
 public interface ChannelPoolHandler {
     /**
      * Called once a {@link Channel} was released by calling {@link ChannelPool#release(Channel)} or
      * {@link ChannelPool#release(Channel, Promise)}.
+     * <p>channel 归还池后调用；在 channel 的 {@link EventLoop} 上执行。</p>
      *
      * This method will be called by the {@link EventLoop} of the {@link Channel}.
      */
@@ -34,6 +36,7 @@ public interface ChannelPoolHandler {
     /**
      * Called once a {@link Channel} was acquired by calling {@link ChannelPool#acquire()} or
      * {@link ChannelPool#acquire(Promise)}.
+     * <p>channel 被借出后调用；在 channel 的 {@link EventLoop} 上执行。</p>
      *
      * This method will be called by the {@link EventLoop} of the {@link Channel}.
      */
@@ -41,6 +44,7 @@ public interface ChannelPoolHandler {
 
     /**
      * Called once a new {@link Channel} is created in the {@link ChannelPool}.
+     * <p>池中新建 channel 时调用；在 channel 的 {@link EventLoop} 上执行。</p>
      *
      * This method will be called by the {@link EventLoop} of the {@link Channel}.
      */

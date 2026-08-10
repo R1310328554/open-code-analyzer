@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  * {@link EventLoopGroup} which is used to handle OIO {@link Channel}'s. Each {@link Channel} will be handled by its
  * own {@link EventLoop} to not block others.
+ * <p>处理 OIO {@link Channel} 的 {@link EventLoopGroup}：每 channel 独占一个 {@link EventLoop}，避免阻塞 I/O 互相影响。</p>
  *
  * @deprecated use NIO / EPOLL / KQUEUE transport.
  */
@@ -37,6 +38,7 @@ public class OioEventLoopGroup extends ThreadPerChannelEventLoopGroup {
 
     /**
      * Create a new {@link OioEventLoopGroup} with no limit in place.
+     * <p>创建无 channel 数量上限的 OIO EventLoopGroup。</p>
      */
     public OioEventLoopGroup() {
         this(0);
@@ -44,6 +46,7 @@ public class OioEventLoopGroup extends ThreadPerChannelEventLoopGroup {
 
     /**
      * Create a new {@link OioEventLoopGroup}.
+     * <p>指定最大 channel 数创建 OIO EventLoopGroup。</p>
      *
      * @param maxChannels       the maximum number of channels to handle with this instance. Once you try to register
      *                          a new {@link Channel} and the maximum is exceed it will throw an
@@ -57,6 +60,7 @@ public class OioEventLoopGroup extends ThreadPerChannelEventLoopGroup {
 
     /**
      * Create a new {@link OioEventLoopGroup}.
+     * <p>指定最大 channel 数与 {@link Executor} 创建实例。</p>
      *
      * @param maxChannels       the maximum number of channels to handle with this instance. Once you try to register
      *                          a new {@link Channel} and the maximum is exceed it will throw an
@@ -72,6 +76,7 @@ public class OioEventLoopGroup extends ThreadPerChannelEventLoopGroup {
 
     /**
      * Create a new {@link OioEventLoopGroup}.
+     * <p>指定最大 channel 数与 {@link ThreadFactory} 创建实例。</p>
      *
      * @param maxChannels       the maximum number of channels to handle with this instance. Once you try to register
      *                          a new {@link Channel} and the maximum is exceed it will throw an

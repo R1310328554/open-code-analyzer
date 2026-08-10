@@ -23,11 +23,14 @@ import io.netty.channel.ChannelInboundHandler;
  * {@link ChannelInboundHandler#userEventTriggered(ChannelHandlerContext, Object)} methods once the input of
  * a {@link SocketChannel} was shutdown and the {@link SocketChannelConfig#isAllowHalfClosure()} method returns
  * {@code true}.
+ * <p>用户事件：{@link SocketChannel} 输入侧已 shutdown 且允许半关闭时，
+ * 经 {@link ChannelInboundHandler#userEventTriggered} 向上传播。</p>
  */
 public final class ChannelInputShutdownEvent {
 
     /**
      * Instance to use
+     * <p>单例实例，用于 {@code fireUserEventTriggered}。</p>
      */
     @SuppressWarnings("InstantiationOfUtilityClass")
     public static final ChannelInputShutdownEvent INSTANCE = new ChannelInputShutdownEvent();

@@ -36,22 +36,29 @@ import static io.netty.util.internal.ObjectUtil.*;
 /**
  * Simple {@link ChannelPool} implementation which will create new {@link Channel}s if someone tries to acquire
  * a {@link Channel} but none is in the pool atm. No limit on the maximal concurrent {@link Channel}s is enforced.
+ * <p>简单连接池：池中无可用 channel 时新建连接；不限制最大并发借出数。</p>
  *
  * This implementation uses LIFO order for {@link Channel}s in the {@link ChannelPool}.
+ * <p>默认可用 LIFO（最近归还优先复用）。</p>
  *
  */
 public class SimpleChannelPool implements ChannelPool {
+    /** channel 属性：标记其所属 SimpleChannelPool，release 时校验 */
     private static final AttributeKey<SimpleChannelPool> POOL_KEY =
         AttributeKey.newInstance("io.netty.channel.pool.SimpleChannelPool");
+    /** 空闲 channel 双端队列（LIFO 或 FIFO 由 lastRecentUsed 决定） */
     private final Deque<Channel> deque = PlatformDependent.newConcurrentDeque();
     private final ChannelPoolHandler handler;
     private final ChannelHealthChecker healthCheck;
     private final Bootstrap bootstrap;
+    /** 归还前是否再次健康检查 */
     private final boolean releaseHealthCheck;
+    /** true 为 LIFO，false 为 FIFO */
     private final boolean lastRecentUsed;
 
     /**
      * Creates a new instance using the {@link ChannelHealthChecker#ACTIVE}.
+     * <p>使用默认 ACTIVE 健康检查创建简单连接池。</p>
      *
      * @param bootstrap         the {@link Bootstrap} that is used for connections
      * @param handler           the {@link ChannelPoolHandler} that will be notified for the different pool actions
@@ -103,6 +110,7 @@ public class SimpleChannelPool implements ChannelPool {
         this.handler = checkNotNull(handler, "handler");
         this.healthCheck = checkNotNull(healthCheck, "healthCheck");
         this.releaseHealthCheck = releaseHealthCheck;
+        // 克隆 Bootstrap 以便设置 pool 专用的 ChannelInitializer
         // Clone the original Bootstrap as we want to set our own handler
         this.bootstrap = checkNotNull(bootstrap, "bootstrap").clone();
         this.bootstrap.handler(new ChannelInitializer<Channel>() {
@@ -164,6 +172,7 @@ public class SimpleChannelPool implements ChannelPool {
 
     /**
      * Tries to retrieve healthy channel from the pool if any or creates a new channel otherwise.
+     * <p>优先从池中取健康 channel，否则 bootstrap 新连接。</p>
      * @param promise the promise to provide acquire result.
      * @return future for acquiring a channel.
      */
@@ -171,6 +180,7 @@ public class SimpleChannelPool implements ChannelPool {
         try {
             final Channel ch = pollChannel();
             if (ch == null) {
+                // 池中无 channel，克隆 Bootstrap 并连接
                 // No Channel left in the pool bootstrap a new Channel
                 Bootstrap bs = bootstrap.clone();
                 bs.attr(POOL_KEY, this);
@@ -206,6 +216,7 @@ public class SimpleChannelPool implements ChannelPool {
                 channel = future.channel();
                 handler.channelAcquired(channel);
                 if (!promise.trySuccess(channel)) {
+                    // promise 已被取消等完成，须再次 release
                     // Promise was completed in the meantime (like cancelled), just release the channel again
                     release(channel);
                 }
@@ -250,6 +261,7 @@ public class SimpleChannelPool implements ChannelPool {
     /**
      * Bootstrap a new {@link Channel}. The default implementation uses {@link Bootstrap#connect()}, sub-classes may
      * override this.
+     * <p>建立新连接；子类可覆盖以自定义 connect 逻辑。</p>
      * <p>
      * The {@link Bootstrap} that is passed in here is cloned via {@link Bootstrap#clone()}, so it is safe to modify.
      */
@@ -287,9 +299,11 @@ public class SimpleChannelPool implements ChannelPool {
     private void doReleaseChannel(Channel channel, Promise<Void> promise) {
         try {
             assert channel.eventLoop().inEventLoop();
+            // 清除 POOL_KEY 并校验 channel 是否来自本池
             // Remove the POOL_KEY attribute from the Channel and check if it was acquired from this pool, if not fail.
             if (channel.attr(POOL_KEY).getAndSet(null) != this) {
                 closeAndFail(channel,
+                             // 用户错误：应包含堆栈便于排查
                              // Better include a stacktrace here as this is an user error.
                              new IllegalArgumentException(
                                      "Channel " + channel + " was not acquired from this ChannelPool"),
@@ -317,6 +331,7 @@ public class SimpleChannelPool implements ChannelPool {
 
     /**
      * Adds the channel back to the pool only if the channel is healthy.
+     * <p>仅当健康检查通过时将 channel 放回池中。</p>
      * @param channel the channel to put back to the pool
      * @param promise offer operation promise.
      * @param future the future that contains information fif channel is healthy or not.
@@ -324,9 +339,11 @@ public class SimpleChannelPool implements ChannelPool {
      */
     private void releaseAndOfferIfHealthy(Channel channel, Promise<Void> promise, Future<Boolean> future) {
         try {
-            if (future.getNow()) { //channel turns out to be healthy, offering and releasing it.
+            if (future.getNow()) { // channel 健康，归还入池
+                //channel turns out to be healthy, offering and releasing it.
                 releaseAndOffer(channel, promise);
-            } else { //channel not healthy, just releasing it.
+            } else { // 不健康，仅通知 released 不入池
+                //channel not healthy, just releasing it.
                 handler.channelReleased(channel);
                 promise.setSuccess(null);
             }
@@ -363,6 +380,7 @@ public class SimpleChannelPool implements ChannelPool {
     /**
      * Poll a {@link Channel} out of the internal storage to reuse it. This will return {@code null} if no
      * {@link Channel} is ready to be reused.
+     * <p>从内部队列取出可复用 channel；无则返回 {@code null}。</p>
      *
      * Sub-classes may override {@link #pollChannel()} and {@link #offerChannel(Channel)}. Be aware that
      * implementations of these methods needs to be thread-safe!
@@ -374,6 +392,7 @@ public class SimpleChannelPool implements ChannelPool {
     /**
      * Offer a {@link Channel} back to the internal storage. This will return {@code true} if the {@link Channel}
      * could be added, {@code false} otherwise.
+     * <p>将 channel 放回内部存储；成功返回 {@code true}。</p>
      *
      * Sub-classes may override {@link #pollChannel()} and {@link #offerChannel(Channel)}. Be aware that
      * implementations of these methods needs to be thread-safe!
@@ -389,6 +408,7 @@ public class SimpleChannelPool implements ChannelPool {
             if (channel == null) {
                 break;
             }
+            // 忽略 close 失败
             // Just ignore any errors that are reported back from close().
             channel.close().awaitUninterruptibly();
         }
@@ -396,10 +416,12 @@ public class SimpleChannelPool implements ChannelPool {
 
     /**
      * Closes the pool in an async manner.
+     * <p>在 GlobalEventExecutor 上异步 close，避免在 EventLoop 内阻塞。</p>
      *
      * @return Future which represents completion of the close task
      */
     public Future<Void> closeAsync() {
+        // 若在 EventLoop 上调用 close，异步执行以免阻塞
         // Execute close asynchronously in case this is being invoked on an eventloop to avoid blocking
         return GlobalEventExecutor.INSTANCE.submit(new Callable<Void>() {
             @Override

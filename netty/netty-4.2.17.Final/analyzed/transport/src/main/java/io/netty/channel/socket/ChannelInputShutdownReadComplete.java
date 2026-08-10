@@ -18,8 +18,10 @@ package io.netty.channel.socket;
 /**
  * User event that signifies the channel's input side is shutdown, and we tried to shut it down again. This typically
  * indicates that there is no more data to read.
+ * <p>用户事件：输入侧已 shutdown 且再次尝试 shutdown 读完成，通常表示无更多可读数据。</p>
  */
 public final class ChannelInputShutdownReadComplete {
+    /** 单例，配合半关闭读流程 fire 到 pipeline */
     public static final ChannelInputShutdownReadComplete INSTANCE = new ChannelInputShutdownReadComplete();
 
     private ChannelInputShutdownReadComplete() {

@@ -31,9 +31,11 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 /**
  * A skeletal {@link ChannelPoolMap} implementation. To find the right {@link ChannelPool}
  * the {@link Object#hashCode()} and {@link Object#equals(Object)} is used.
+ * <p>{@link ChannelPoolMap} 骨架实现：用 key 的 {@code hashCode}/{@code equals} 映射到 {@link ChannelPool}。</p>
  */
 public abstract class AbstractChannelPoolMap<K, P extends ChannelPool>
         implements ChannelPoolMap<K, P>, Iterable<Entry<K, P>>, Closeable {
+    /** key 到 ChannelPool 的并发映射 */
     private final ConcurrentMap<K, P> map = new ConcurrentHashMap<>();
 
     @Override
@@ -43,6 +45,7 @@ public abstract class AbstractChannelPoolMap<K, P extends ChannelPool>
             pool = newPool(key);
             P old = map.putIfAbsent(key, pool);
             if (old != null) {
+                // 并发下已有其他线程创建池，关闭本次新建的
                 // We need to destroy the newly created pool as we not use it.
                 poolCloseAsyncIfSupported(pool);
                 pool = old;
@@ -53,6 +56,7 @@ public abstract class AbstractChannelPoolMap<K, P extends ChannelPool>
     /**
      * Remove the {@link ChannelPool} from this {@link AbstractChannelPoolMap}. Returns {@code true} if removed,
      * {@code false} otherwise.
+     * <p>从映射中移除指定 key 的 {@link ChannelPool}；若池为 {@link SimpleChannelPool} 则异步关闭。</p>
      *
      * If the removed pool extends {@link SimpleChannelPool} it will be closed asynchronously to avoid blocking in
      * this method.
@@ -71,6 +75,7 @@ public abstract class AbstractChannelPoolMap<K, P extends ChannelPool>
     /**
      * Remove the {@link ChannelPool} from this {@link AbstractChannelPoolMap}. Returns a future that comletes with a
      * {@code true} result if the pool has been removed by this call, otherwise the result is {@code false}.
+     * <p>异步移除并关闭池；返回的 Future 在关闭完成后完成。</p>
      *
      * If the removed pool extends {@link SimpleChannelPool} it will be closed asynchronously to avoid blocking in
      * this method. The returned future will be completed once this asynchronous pool close operation completes.
@@ -94,6 +99,7 @@ public abstract class AbstractChannelPoolMap<K, P extends ChannelPool>
     /**
      * If the pool implementation supports asynchronous close, then use it to avoid a blocking close call in case
      * the ChannelPoolMap operations are called from an EventLoop.
+     * <p>优先异步关闭池，避免在 EventLoop 上阻塞。</p>
      *
      * @param pool the ChannelPool to be closed
      */
@@ -117,6 +123,7 @@ public abstract class AbstractChannelPoolMap<K, P extends ChannelPool>
 
     /**
      * Returns the number of {@link ChannelPool}s currently in this {@link AbstractChannelPoolMap}.
+     * <p>当前映射中的 {@link ChannelPool} 数量。</p>
      */
     public final int size() {
         return map.size();
@@ -124,6 +131,7 @@ public abstract class AbstractChannelPoolMap<K, P extends ChannelPool>
 
     /**
      * Returns {@code true} if the {@link AbstractChannelPoolMap} is empty, otherwise {@code false}.
+     * <p>映射是否为空。</p>
      */
     public final boolean isEmpty() {
         return map.isEmpty();
@@ -136,12 +144,14 @@ public abstract class AbstractChannelPoolMap<K, P extends ChannelPool>
 
     /**
      * Called once a new {@link ChannelPool} needs to be created as non exists yet for the {@code key}.
+     * <p>当 key 尚无对应池时，子类创建新 {@link ChannelPool}。</p>
      */
     protected abstract P newPool(K key);
 
     @Override
     public final void close() {
         for (K key: map.keySet()) {
+            // 等待各 key 的异步移除完成，确保资源释放后再返回
             // Wait for remove to finish to ensure that resources are released before returning from close
             removeAsyncIfSupported(key).syncUninterruptibly();
         }

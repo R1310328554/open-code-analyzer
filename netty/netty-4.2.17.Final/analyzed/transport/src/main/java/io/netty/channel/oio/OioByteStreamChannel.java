@@ -32,12 +32,14 @@ import java.nio.channels.WritableByteChannel;
 
 /**
  * Abstract base class for OIO Channels that are based on streams.
+ * <p>基于 {@link InputStream}/{@link OutputStream} 的 OIO 字节 channel 抽象基类；已废弃。</p>
  *
  * @deprecated use NIO / EPOLL / KQUEUE transport.
  */
 @Deprecated
 public abstract class OioByteStreamChannel extends AbstractOioByteChannel {
 
+    /** 已关闭 channel 的占位输入流，{@code read()} 恒返回 -1 */
     private static final InputStream CLOSED_IN = new InputStream() {
         @Override
         public int read() {
@@ -45,6 +47,7 @@ public abstract class OioByteStreamChannel extends AbstractOioByteChannel {
         }
     };
 
+    /** 已关闭 channel 的占位输出流，写入时抛 {@link ClosedChannelException} */
     private static final OutputStream CLOSED_OUT = new OutputStream() {
         @Override
         public void write(int b) throws IOException {
@@ -54,10 +57,12 @@ public abstract class OioByteStreamChannel extends AbstractOioByteChannel {
 
     private InputStream is;
     private OutputStream os;
+    /** 懒创建的 {@link WritableByteChannel}，用于 {@link FileRegion} 传输 */
     private WritableByteChannel outChannel;
 
     /**
      * Create a new instance
+     * <p>创建实例；{@code parent} 可为 {@code null}（自举创建）。</p>
      *
      * @param parent    the parent {@link Channel} which was used to create this instance. This can be null if the
      *                  {@link} has no parent as it was created by your self.
@@ -68,6 +73,7 @@ public abstract class OioByteStreamChannel extends AbstractOioByteChannel {
 
     /**
      * Activate this instance. After this call {@link #isActive()} will return {@code true}.
+     * <p>绑定输入/输出流并激活 channel；若此前有挂起的读请求会立即调度。</p>
      */
     protected final void activate(InputStream is, OutputStream os) {
         if (this.is != null) {
@@ -145,6 +151,7 @@ public abstract class OioByteStreamChannel extends AbstractOioByteChannel {
         }
     }
 
+    /** 传输提前结束（EOF）时校验是否写满预期字节数 */
     private static void checkEOF(FileRegion region) throws IOException {
         if (region.transferred() < region.count()) {
             throw new EOFException("Expected to be able to write " + region.count() + " bytes, " +

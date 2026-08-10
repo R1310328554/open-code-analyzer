@@ -23,11 +23,13 @@ import io.netty.util.concurrent.Promise;
 /**
  * Called before a {@link Channel} will be returned via {@link ChannelPool#acquire()} or
  * {@link ChannelPool#acquire(Promise)}.
+ * <p>在 {@link ChannelPool#acquire()} 将 channel 交给调用方之前执行健康检查。</p>
  */
 public interface ChannelHealthChecker {
 
     /**
      * {@link ChannelHealthChecker} implementation that checks if {@link Channel#isActive()} returns {@code true}.
+     * <p>默认实现：以 {@link Channel#isActive()} 判断 channel 是否仍可用。</p>
      */
     ChannelHealthChecker ACTIVE = new ChannelHealthChecker() {
         @Override
@@ -40,6 +42,7 @@ public interface ChannelHealthChecker {
     /**
      * Check if the given channel is healthy which means it can be used. The returned {@link Future} is notified once
      * the check is complete. If notified with {@link Boolean#TRUE} it can be used {@link Boolean#FALSE} otherwise.
+     * <p>检查 channel 是否健康；在 channel 的 {@link EventLoop} 上调用。</p>
      *
      * This method will be called by the {@link EventLoop} of the {@link Channel}.
      */

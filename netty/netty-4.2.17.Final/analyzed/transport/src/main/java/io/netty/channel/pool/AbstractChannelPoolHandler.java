@@ -19,11 +19,13 @@ import io.netty.channel.Channel;
 
 /**
  * A skeletal {@link ChannelPoolHandler} implementation.
+ * <p>{@link ChannelPoolHandler} 的骨架实现：默认对 acquire/release 为空操作。</p>
  */
 public abstract class AbstractChannelPoolHandler implements ChannelPoolHandler {
 
     /**
      * NOOP implementation, sub-classes may override this.
+     * <p>空实现；子类可覆盖以在 channel 被借出时做初始化。</p>
      *
      * {@inheritDoc}
      */
@@ -34,6 +36,7 @@ public abstract class AbstractChannelPoolHandler implements ChannelPoolHandler {
 
     /**
      * NOOP implementation, sub-classes may override this.
+     * <p>空实现；子类可覆盖以在 channel 归还池时做清理。</p>
      *
      * {@inheritDoc}
      */

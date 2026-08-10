@@ -26,14 +26,17 @@ import java.util.List;
 
 /**
  * Abstract base class for OIO which reads and writes objects from/to a Socket
+ * <p>OIO 消息型 channel 抽象基类：从 Socket 读/写完整消息对象；已废弃。</p>
  *
  * @deprecated use NIO / EPOLL / KQUEUE transport.
  */
 @Deprecated
 public abstract class AbstractOioMessageChannel extends AbstractOioChannel {
 
+    /** 单次 read 循环内累积的消息，再批量 fireChannelRead */
     private final List<Object> readBuf = new ArrayList<Object>();
 
+    /** 指定父 channel 构造消息型 OIO channel */
     protected AbstractOioMessageChannel(Channel parent) {
         super(parent);
     }
@@ -41,10 +44,12 @@ public abstract class AbstractOioMessageChannel extends AbstractOioChannel {
     @Override
     protected void doRead() {
         if (!readPending) {
+            // 同一次 read 循环内 readPending 可能被置 false，须再检查
             // We have to check readPending here because the Runnable to read could have been scheduled and later
             // during the same read loop readPending was set to false.
             return;
         }
+        // OIO：即使本次未读到数据也清 readPending，以便 EventLoop 再次调度 read
         // In OIO we should set readPending to false even if the read was not successful so we can schedule
         // another read on the event loop if no reads are done.
         readPending = false;
@@ -58,6 +63,7 @@ public abstract class AbstractOioMessageChannel extends AbstractOioChannel {
         Throwable exception = null;
         try {
             do {
+                // 执行一次消息读
                 // Perform a read.
                 int localRead = doReadMessages(readBuf);
                 if (localRead == 0) {
@@ -100,6 +106,7 @@ public abstract class AbstractOioMessageChannel extends AbstractOioChannel {
                 unsafe().close(unsafe().voidPromise());
             }
         } else if (readPending || config.isAutoRead() || !readData && isActive()) {
+            // 读 0 条消息可能是 SocketTimeout，仍应再次 read
             // Reading 0 bytes could mean there is a SocketTimeout and no data was actually read, so we
             // should execute read() again because no data may have been read.
             read();
@@ -108,6 +115,7 @@ public abstract class AbstractOioMessageChannel extends AbstractOioChannel {
 
     /**
      * Read messages into the given array and return the amount which was read.
+     * <p>从底层读消息到列表；返回读到的条数，&lt;0 表示 EOF。</p>
      */
     protected abstract int doReadMessages(List<Object> msgs) throws Exception;
 }

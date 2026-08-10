@@ -22,8 +22,11 @@ import io.netty.channel.ChannelInboundHandler;
  * Special event which will be fired and passed to the
  * {@link ChannelInboundHandler#userEventTriggered(ChannelHandlerContext, Object)} methods once the output of
  * a {@link SocketChannel} was shutdown.
+ * <p>用户事件：{@link SocketChannel} 输出侧 shutdown 后，
+ * 经 {@link ChannelInboundHandler#userEventTriggered} 通知 pipeline。</p>
  */
 public final class ChannelOutputShutdownEvent {
+    /** 单例实例 */
     public static final ChannelOutputShutdownEvent INSTANCE = new ChannelOutputShutdownEvent();
 
     private ChannelOutputShutdownEvent() {
