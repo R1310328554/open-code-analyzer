@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:49:24Z",
-  "files": [
-    "handler/src/main/java/io/netty/handler/pcap/PcapWriter.java",
-    "handler/src/main/java/io/netty/handler/pcap/State.java",
-    "handler/src/main/java/io/netty/handler/pcap/TCPPacket.java",
-    "handler/src/main/java/io/netty/handler/pcap/UDPPacket.java",
-    "handler/src/main/java/io/netty/handler/ssl/AbstractSniHandler.java",
-    "handler/src/main/java/io/netty/handler/ssl/ApplicationProtocolAccessor.java",
-    "handler/src/main/java/io/netty/handler/ssl/ApplicationProtocolConfig.java",
-    "handler/src/main/java/io/netty/handler/ssl/ApplicationProtocolNames.java",
-    "handler/src/main/java/io/netty/handler/ssl/ApplicationProtocolNegotiationHandler.java",
-    "handler/src/main/java/io/netty/handler/ssl/ApplicationProtocolNegotiator.java",
-    "handler/src/main/java/io/netty/handler/ssl/ApplicationProtocolUtil.java",
-    "handler/src/main/java/io/netty/handler/ssl/AsyncRunnable.java",
-    "handler/src/main/java/io/netty/handler/ssl/BouncyCastleAlpnSslEngine.java",
-    "handler/src/main/java/io/netty/handler/ssl/BouncyCastleAlpnSslUtils.java",
-    "handler/src/main/java/io/netty/handler/ssl/BouncyCastlePemReader.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 608,
-  "done": 1305
+  "done": 1320
 }
