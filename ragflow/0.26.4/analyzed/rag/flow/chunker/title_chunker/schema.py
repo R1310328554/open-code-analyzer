@@ -1,3 +1,7 @@
+"""
+TitleChunker 上游输入 Pydantic 模型：file/chunks 与各格式结果字段。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -18,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class TitleChunkerFromUpstream(BaseModel):
+    """TitleChunker 上游节点输出 schema。"""
     created_time: float | None = Field(default=None, alias="_created_time")
     elapsed_time: float | None = Field(default=None, alias="_elapsed_time")
 

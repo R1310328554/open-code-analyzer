@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Parser 工具函数：目录/页眉页脚过滤、Word 大纲提取、VLM 媒体增强。
+"""
+
+
 import re
 from io import BytesIO
 
@@ -29,6 +34,7 @@ from rag.nlp import is_english, random_choices, remove_contents_table
 
 
 def remove_toc(items):
+    """通用目录页检测与移除（依赖 remove_contents_table）。"""
     indexed = [(_item_text(item), i) for i, item in enumerate(items)]
     remove_contents_table(indexed, eng=_is_english(indexed))
     kept_indices = [i for _, i in indexed]
@@ -36,6 +42,7 @@ def remove_toc(items):
 
 
 def extract_docx_header_footer_texts(filename=None, binary=None):
+    """提取 DOCX 各节页眉页脚文本集合。"""
     doc = Document(filename) if binary is None else Document(BytesIO(binary))
     texts = set()
     for section in doc.sections:
@@ -54,6 +61,7 @@ def extract_docx_header_footer_texts(filename=None, binary=None):
 
 
 def remove_header_footer_docx_sections(items, header_footer_texts):
+    """过滤与页眉页脚文本完全匹配的段落。"""
     if not header_footer_texts:
         return items
 
@@ -68,13 +76,15 @@ def remove_header_footer_docx_sections(items, header_footer_texts):
 
 
 def remove_header_footer_html_blob(blob):
+    """移除 HTML header/footer 与 ARIA banner/contentinfo 区域。"""
     soup = BeautifulSoup(blob, "html.parser")
     for element in soup.find_all(lambda tag: tag.name in {"header", "footer"} or tag.get("role") in {"banner", "contentinfo"}):
         element.decompose()
     return str(soup).encode("utf-8")
 
 
-def extract_word_outlines(filename, binary=None):
+def extract_word_outlines(filename=None, binary=None):
+    """从 DOCX Heading 样式提取 (text, level, None) 大纲列表。"""
     doc = Document(filename) if binary is None else Document(BytesIO(binary))
     outlines = []
     for paragraph in doc.paragraphs:
@@ -90,6 +100,7 @@ def extract_word_outlines(filename, binary=None):
 
 
 def remove_toc_pdf(items, outlines):
+    """基于 PDF 书签页码范围移除目录页对应 bbox。"""
     if not outlines:
         return items
 
@@ -113,6 +124,7 @@ def remove_toc_pdf(items, outlines):
 
 
 def remove_toc_word(items, outlines):
+    """Word 文档目录标题与点线页码行过滤。"""
     if not outlines:
         filtered_items, _ = remove_toc(items)
         return filtered_items
@@ -160,6 +172,7 @@ def _is_english(indexed):
 
 
 def enhance_media_sections_with_vision(
+    # 对 image/table 块调用 VisionFigureParser 补充 VLM 描述文本
     sections,
     tenant_id,
     vlm_conf=None,

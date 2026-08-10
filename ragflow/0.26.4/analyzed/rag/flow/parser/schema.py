@@ -1,3 +1,7 @@
+"""
+Parser 上游输入 Pydantic 模型。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -16,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ParserFromUpstream(BaseModel):
+    """Parser 上游输入：文件名、file blob 与摘要/作者开关。"""
     created_time: float | None = Field(default=None, alias="_created_time")
     elapsed_time: float | None = Field(default=None, alias="_elapsed_time")
 

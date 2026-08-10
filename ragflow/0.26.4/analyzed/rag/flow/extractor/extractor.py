@@ -12,6 +12,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+"""
+Extractor 流程组件：对 chunk 批量 LLM 抽取，或生成 TOC / 知识编译结构。
+"""
+
 import json
 import logging
 import random
@@ -32,6 +37,7 @@ from rag.prompts.generator import run_toc_from_text
 
 
 class ExtractorParam(ProcessParamBase, LLMParam):
+    """抽取器参数：目标字段名与知识编译配置。"""
     def __init__(self):
         super().__init__()
         self.field_name = ""
@@ -43,9 +49,11 @@ class ExtractorParam(ProcessParamBase, LLMParam):
 
 
 class Extractor(ProcessBase, LLM):
+    """LLM 抽取节点：逐 chunk 生成字段，或构建 TOC / set/list/graph 知识结构。"""
     component_name = "Extractor"
 
     async def _build_TOC(self, docs):
+        """按页序排序 chunk，调用 LLM 生成目录并映射 chunk id。"""
         self.callback(0.2, message="Start to generate table of content ...")
         docs = sorted(
             docs,
@@ -83,6 +91,7 @@ class Extractor(ProcessBase, LLM):
         return None
 
     async def _knowledge_compile(self, docs):
+        """编译文档结构并合并为知识库可检索制品。"""
         embedding_model = LLMBundle(self._canvas.get_tenant_id(), LLMType.EMBEDDING, max_retries=self._param.max_retries, retry_interval=self._param.delay_after_error)
         self.callback(0.2, message="Start to generate table of content ...")
         docs = sorted(
@@ -97,6 +106,7 @@ class Extractor(ProcessBase, LLM):
         return info
 
     async def _invoke(self, **kwargs):
+        """根据 field_name 路由 TOC、知识编译或逐 chunk LLM 抽取。"""
         self.set_output("output_format", "chunks")
         self.callback(random.randint(1, 5) / 100.0, "Start to generate.")
         inputs = self.get_input_elements()

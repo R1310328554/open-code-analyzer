@@ -12,6 +12,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+"""
+按 token/分隔符分块：支持 markdown/text/html 与 JSON 结构化输入，含媒体上下文与 PDF 坐标。
+"""
+
 import random
 import re
 from copy import deepcopy
@@ -30,6 +35,7 @@ from rag.nlp import naive_merge
 
 
 class TokenChunkerParam(ProcessParamBase):
+    """Token 分块参数：分隔符模式、chunk 大小、重叠率、子分隔符与媒体上下文。"""
     def __init__(self):
         super().__init__()
         self.delimiter_mode = "token_size"
@@ -68,7 +74,8 @@ class TokenChunkerParam(ProcessParamBase):
 
 
 def _compile_delimiter_pattern(delimiters):
-    # Build the primary delimiter regex from active delimiters wrapped by backticks.
+    """从反引号包裹的分隔符编译主分隔正则。"""
+    # 从反引号包裹的活跃分隔符构建主分隔正则
     raw_delimiters = "".join(delimiter for delimiter in (delimiters or []) if delimiter)
     custom_delimiters = [m.group(1) for m in re.finditer(r"`([^`]+)`", raw_delimiters)]
     if not custom_delimiters:
@@ -77,6 +84,7 @@ def _compile_delimiter_pattern(delimiters):
 
 
 def _split_text_by_pattern(text, pattern):
+    """按分隔正则切分文本并保留分隔符在 chunk 内。"""
     # Split text by the compiled delimiter pattern and keep delimiter text in each chunk.
     if not pattern:
         return [text or ""]
@@ -95,6 +103,7 @@ def _split_text_by_pattern(text, pattern):
 
 
 def _build_json_chunks(json_result, delimiter_pattern):
+    """将上游 JSON 项转为内部工作 chunk 列表。"""
     # Convert upstream JSON items into internal working chunks.
     chunks = []
     for item in json_result:
@@ -112,7 +121,7 @@ def _build_json_chunks(json_result, delimiter_pattern):
         if not isinstance(text, str):
             text = ""
 
-        # Keep PDF coordinates as an internal preview field until the final
+        # PDF 坐标暂存为内部预览字段，finalize 时再写入公开索引字段
         # output is assembled. This avoids leaking two public coordinate
         # formats downstream.
         preview_positions = extract_pdf_positions(item)
@@ -151,6 +160,7 @@ def _build_json_chunks(json_result, delimiter_pattern):
 
 
 def _take_sentences(text, need_tokens, from_end=False):
+    """从文本一端按句子累积直到达到目标 token 数。"""
     # Take text from one side until the target token budget is reached.
     split_pat = r"([。!?？；！\n]|\. )"
     texts = re.split(split_pat, text or "", flags=re.DOTALL)
@@ -167,6 +177,7 @@ def _take_sentences(text, need_tokens, from_end=False):
 
 
 def _attach_context_to_media_chunks(chunks, table_context_size, image_context_size):
+    """为表格/图片 chunk 附加前后文本上下文窗口。"""
     # Add surrounding text to table/image chunks when context windows are enabled.
     for i, chunk in enumerate(chunks):
         if chunk["ck_type"] not in {"table", "image"}:
@@ -210,6 +221,7 @@ def _attach_context_to_media_chunks(chunks, table_context_size, image_context_si
 
 
 def _merge_text_chunks_by_token_size(chunks, chunk_token_size, overlapped_percent):
+    """无分隔符时按 token 上限合并相邻文本 chunk，支持重叠。"""
     # Merge adjacent text chunks when delimiter-based splitting is not active.
     merged = []
     prev_text_idx = -1
@@ -244,6 +256,7 @@ def _merge_text_chunks_by_token_size(chunks, chunk_token_size, overlapped_percen
 
 
 def _finalize_json_chunks(chunks):
+    """将内部 chunk 转为最终输出格式并 finalize PDF 字段。"""
     # Convert internal chunks into the final token chunker output format.
     docs = []
     for chunk in chunks:
@@ -269,6 +282,7 @@ def _finalize_json_chunks(chunks):
 
 
 def _split_chunk_docs_by_children(chunks, pattern):
+    """对文本 chunk 应用二级 children_delimiters 再切分。"""
     # Apply the secondary children_delimiters split to text chunks only.
     if not pattern:
         return chunks
@@ -294,6 +308,7 @@ def _split_chunk_docs_by_children(chunks, pattern):
 
 
 class TokenChunker(ProcessBase):
+    """RAG 流程 Token 分块节点。"""
     component_name = "TokenChunker"
 
     async def _invoke(self, **kwargs):
@@ -303,7 +318,7 @@ class TokenChunker(ProcessBase):
             self.set_output("_ERROR", f"Input error: {str(e)}")
             return
 
-        # Build the primary delimiter regex. If no active custom delimiter exists,
+        # 构建主分隔正则；无自定义分隔符时回退到按 token 大小合并
         # the token chunker falls back to token-size based merging.
         delimiter_pattern = _compile_delimiter_pattern(self._param.delimiters)
         custom_pattern = "|".join(re.escape(t) for t in sorted(set(self._param.children_delimiters), key=len, reverse=True))
@@ -357,7 +372,7 @@ class TokenChunker(ProcessBase):
             self.set_output("chunks", [{"text": merged_text}] if merged_text.strip() else [])
             self.callback(1, "Done.")
             return
-        # Structured JSON input is normalized first, then optionally enriched with
+        # 结构化 JSON 先归一化，可选附加媒体上下文，无分隔符时再按 token 合并
         # media context, and finally merged only when delimiter splitting is inactive.
         chunks = _build_json_chunks(json_result, delimiter_pattern)
         _attach_context_to_media_chunks(chunks, self._param.table_context_size, self._param.image_context_size)

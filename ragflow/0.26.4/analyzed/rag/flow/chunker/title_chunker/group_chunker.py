@@ -13,17 +13,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+按标题层级分组的分块策略：同节内按 token 上下限合并相邻文本行。
+"""
+
 from common.token_utils import num_tokens_from_string
 from rag.flow.chunker.title_chunker.common import (
     BaseTitleChunker,
     resolve_target_level,
 )
 
-MIN_GROUP_TOKENS = 32
-MAX_GROUP_TOKENS = 1024
+MIN_GROUP_TOKENS = 32  # 分组最小 token 阈值
+MAX_GROUP_TOKENS = 1024  # 分组最大 token 阈值
 
 
 def _build_section_ids(levels, target_level):
+    """为每行生成节 id：遇到不高于目标层级的标题则递增。"""
     sec_ids = []
     sid = 0
     for i, level in enumerate(levels):
@@ -34,12 +39,14 @@ def _build_section_ids(levels, target_level):
 
 
 def _resolve_group_target_level(levels, hierarchy, most_level):
+    """解析分组目标层级：优先 hierarchy，否则取众数层级。"""
     if hierarchy and int(hierarchy) > 0:
         return resolve_target_level(levels, hierarchy)
     return most_level
 
 
 class GroupTitleChunker(BaseTitleChunker):
+    """标题分组分块器：同节内合并小 chunk，跨节受 token 上限约束。"""
     start_message = "Start to group by title levels."
 
     def resolve_levels(self, line_records):
@@ -56,7 +63,7 @@ class GroupTitleChunker(BaseTitleChunker):
         tk_cnt = 0
         last_sid = -2
 
-        # The merge state is driven by (current section id, current token size).
+        # 合并状态由（当前节 id，当前 token 数）驱动
         # A chunk stays open while records remain in the same logical section,
         # except that very small chunks are allowed to absorb the next record
         # regardless of section change.

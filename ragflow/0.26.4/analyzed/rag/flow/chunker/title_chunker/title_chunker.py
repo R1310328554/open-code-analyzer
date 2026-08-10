@@ -13,6 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+标题分块流程组件：按 method 分发 hierarchy 或 group 策略。
+"""
+
 from rag.flow.base import ProcessBase
 from rag.flow.chunker.title_chunker.group_chunker import GroupTitleChunker
 from rag.flow.chunker.title_chunker.hierarchy_chunker import HierarchyTitleChunker
@@ -20,9 +24,11 @@ from rag.flow.chunker.title_chunker.schema import TitleChunkerFromUpstream
 
 
 class TitleChunker(ProcessBase):
+    """RAG 流程标题分块节点，支持 hierarchy / group 两种方法。"""
     component_name = "TitleChunker"
 
     async def _invoke(self, **kwargs):
+        """校验上游输入并路由到对应分块策略。"""
         try:
             from_upstream = TitleChunkerFromUpstream.model_validate(kwargs)
         except Exception as e:

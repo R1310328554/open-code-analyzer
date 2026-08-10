@@ -12,6 +12,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+"""
+Parser 流程组件：按文件后缀路由到 PDF/DOCX/表格/邮件等解析分支。
+
+ParserParam 定义各格式的 parse_method、output_format 与 setups 默认配置；Parser 在 _invoke 中加载 blob 并 dispatch 到 _pdf/_docx/_spreadsheet 等方法。
+"""
+
 import asyncio
 import io
 import json
@@ -65,6 +72,7 @@ from rag.utils.base64_image import image2id
 
 
 class ParserParam(ProcessParamBase):
+    """解析器参数：allowed_output_format 与各格式 setups 默认配置。"""
     def __init__(self):
         super().__init__()
         self.allowed_output_format = {
@@ -249,6 +257,7 @@ class ParserParam(ProcessParamBase):
         }
 
     def check(self):
+        """校验各格式 parse_method 与 output_format 合法性。"""
         pdf_config = self.setups.get("pdf", {})
         if pdf_config:
             pdf_parse_method = pdf_config.get("parse_method", "")
@@ -325,17 +334,18 @@ class ParserParam(ProcessParamBase):
 
 
 class Parser(ProcessBase):
+    """RAG 流程多格式文档解析节点。"""
     component_name = "Parser"
 
     def _pdf(self, name, blob, **kwargs):
-        """Parse PDF files into structured boxes or markdown/json output."""
+        """解析 PDF：DeepDOC/OCR/VLM 等多引擎，输出 json 或 markdown。"""
         self.callback(random.randint(1, 5) / 100.0, "Start to work on a PDF.")
         conf = self._param.setups["pdf"]
         self.set_output("output_format", conf["output_format"])
         flatten_media_to_text = conf.get("flatten_media_to_text")
         pdf_parser = None
 
-        # Normalize parser selection and optional provider-specific model name.
+        # 规范化解析器选择与 Provider 模型名（MinerU/PaddleOCR/SoMark 后缀）
         raw_parse_method = conf.get("parse_method", "")
         parser_model_name = None
         parse_method = raw_parse_method
@@ -356,20 +366,20 @@ class Parser(ProcessBase):
                 parser_model_name = raw_parse_method
                 parse_method = "SoMark"
 
-        # DeepDOC returns structured page boxes directly.
+        # DeepDOC 直接返回结构化页面 bbox
         if parse_method.lower() == "deepdoc":
             pdf_parser = RAGFlowPdfParser()
             bboxes = pdf_parser.parse_into_bboxes(blob, callback=self.callback)
             if conf.get("enable_multi_column"):
                 bboxes = reorder_multi_column_bboxes(pdf_parser, bboxes)
 
-        # Plain text only keeps extracted text lines.
+        # Plain text 仅保留提取的文本行
         elif parse_method.lower() == "plain_text":
             pdf_parser = PlainParser()
             lines, _ = pdf_parser(blob)
             bboxes = [{"text": t, "layout_type": "text"} for t, _ in lines]
 
-        # MinerU/PaddleOCR/Docling/TCADP all return line-like sections that need
+        # MinerU/PaddleOCR/Docling/TCADP 返回行式结果，需转为统一 bbox 结构
         # to be converted into the shared bbox-like structure used below.
         elif parse_method.lower() == "mineru":
 
@@ -641,7 +651,7 @@ class Parser(ProcessBase):
                 if image is not None:
                     box["image"] = image
                 bboxes.append(box)
-        # Vision parser treats each page as a large image block.
+        # Vision 解析器将每页视为大图块
         else:
             if conf.get("parse_method"):
                 vision_model_config = get_model_config_from_provider_instance(self._canvas._tenant_id, LLMType.IMAGE2TEXT, conf["parse_method"])
@@ -665,7 +675,7 @@ class Parser(ProcessBase):
                         }
                     )
 
-        # Persist outlines and optionally remove TOC before normalizing metadata.
+        # 持久化书签大纲，可选移除目录后再归一化元数据
         self.set_output("file", {**kwargs.get("file", {}), "outlines": pdf_parser.outlines})
         if conf.get("remove_toc"):
             if not pdf_parser.outlines:
@@ -688,7 +698,7 @@ class Parser(ProcessBase):
                 bboxes = toc_bboxes + bboxes[split_at:]
 
         normalize_bboxes = []
-        # Normalize shared bbox fields for downstream consumers.
+        # 归一化 layout_type/doc_type_kwd 供下游消费
         for b in bboxes:
             raw_layout = str(b.get("layout_type") or "").strip()
             has_layout = bool(raw_layout)
@@ -719,7 +729,7 @@ class Parser(ProcessBase):
             callback=self.callback,
         )
 
-        # Emit the requested final PDF output format.
+        # 按配置输出 json 或 markdown
         if conf.get("output_format") == "json":
             normalize_pdf_items_metadata(bboxes)
             self.set_output("json", bboxes)
@@ -735,7 +745,7 @@ class Parser(ProcessBase):
             self.set_output("markdown", mkdn)
 
     def _spreadsheet(self, name, blob, **kwargs):
-        """Parse spreadsheet files and normalize them into html/json/markdown output."""
+        """解析表格：DeepDOC 或 TCADP，输出 html/json/markdown。"""
         self.callback(random.randint(1, 5) / 100.0, "Start to work on a Spreadsheet.")
         conf = self._param.setups["spreadsheet"]
         self.set_output("output_format", conf["output_format"])
@@ -827,7 +837,7 @@ class Parser(ProcessBase):
                 self.set_output("markdown", spreadsheet_parser.markdown(blob))
 
     def _doc(self, name, blob, **kwargs):
-        """Parse DOC files into text/json sections."""
+        """解析 DOC（Tika）：输出 json 或 markdown 段落。"""
         self.callback(random.randint(1, 5) / 100.0, "Start to work on a DOC document")
         conf = self._param.setups["doc"]
         self.set_output("output_format", conf["output_format"])
@@ -844,7 +854,7 @@ class Parser(ProcessBase):
         self.set_output("markdown", "\n".join(sections))
 
     def _docx(self, name, blob, **kwargs):
-        """Parse DOCX files and optionally remove table-of-contents content."""
+        """解析 DOCX：支持 .doc 回退 Tika、大纲提取、TOC/页眉页脚过滤。"""
         self.callback(random.randint(1, 5) / 100.0, "Start to work on a DOCX document")
         conf = self._param.setups["docx"]
         self.set_output("output_format", conf["output_format"])
@@ -886,11 +896,11 @@ class Parser(ProcessBase):
 
         docx_parser = Docx()
 
-        # Extract heading-based outlines for metadata and TOC removal.
+        # 提取 Heading 大纲供元数据与 TOC 移除
         outlines = extract_word_outlines(name, blob)
         self.set_output("file", {**kwargs.get("file", {}), "outlines": outlines})
 
-        # JSON output keeps text/image blocks and appends table HTML as table items.
+        # JSON 输出保留文本/图片块，表格 HTML 作为 table 项追加
         if conf.get("output_format") == "json":
             main_sections = docx_parser(name, binary=blob)
             if conf.get("remove_header_footer"):
@@ -937,7 +947,7 @@ class Parser(ProcessBase):
             self.set_output("markdown", markdown_text)
 
     def _slides(self, name, blob, **kwargs):
-        """Parse presentation files into json sections."""
+        """解析 PPT/PPTX：DeepDOC 或 TCADP，输出 json 段落。"""
         self.callback(random.randint(1, 5) / 100.0, "Start to work on a PowerPoint Document")
 
         conf = self._param.setups["slides"]
@@ -1003,7 +1013,7 @@ class Parser(ProcessBase):
                 self.set_output("json", sections)
 
     def _markdown(self, name, blob, **kwargs):
-        """Parse markdown files into text/json sections."""
+        """解析 Markdown：分离表格与节图，可选 VLM 增强。"""
         from functools import reduce
 
         from rag.app.naive import Markdown as naive_markdown_parser
@@ -1064,7 +1074,7 @@ class Parser(ProcessBase):
             self.set_output("text", "\n".join(texts))
 
     def _code(self, name, blob, **kwargs):
-        """Parse text and source code files as plain text chunks."""
+        """解析纯文本与源码：TxtParser 按 token 切分。"""
         self.callback(random.randint(1, 5) / 100.0, "Start to work on a text or code file.")
         conf = self._param.setups["text&code"]
         self.set_output("output_format", conf["output_format"])
@@ -1082,7 +1092,7 @@ class Parser(ProcessBase):
         self.set_output("text", "\n".join([section[0] for section in sections if section[0]]))
 
     def _html(self, name, blob, **kwargs):
-        """Parse HTML files into text/json sections."""
+        """解析 HTML：可选移除 header/footer 与目录。"""
         self.callback(random.randint(1, 5) / 100.0, "Start to work on an HTML document.")
         conf = self._param.setups["html"]
         self.set_output("output_format", conf["output_format"])
@@ -1100,7 +1110,7 @@ class Parser(ProcessBase):
         self.set_output("text", "\n".join([section for section in sections if section]))
 
     def _image(self, name, blob, **kwargs):
-        """Parse images with OCR or image-to-text models."""
+        """解析图片：OCR 或 VLM 描述，输出 json。"""
         from deepdoc.vision import OCR
 
         self.callback(random.randint(1, 5) / 100.0, "Start to work on an image.")
@@ -1139,7 +1149,7 @@ class Parser(ProcessBase):
         self.set_output("json", json_result)
 
     def _audio(self, name, blob, **kwargs):
-        """Parse audio files with speech-to-text models."""
+        """解析音频：Speech2Text 模型转写为 text。"""
         import os
         import tempfile
 
@@ -1160,7 +1170,7 @@ class Parser(ProcessBase):
             self.set_output("text", txt)
 
     def _video(self, name, blob, **kwargs):
-        """Parse video files with image-to-text models."""
+        """解析视频：VLM 异步 chat 生成 text。"""
         self.callback(random.randint(1, 5) / 100.0, "Start to work on an video.")
 
         conf = self._param.setups["video"]
@@ -1174,7 +1184,7 @@ class Parser(ProcessBase):
         self.set_output("text", txt)
 
     def _email(self, name, blob, **kwargs):
-        """Parse eml/msg files into structured email content."""
+        """解析邮件 eml/msg：结构化头、正文与附件。"""
         self.callback(random.randint(1, 5) / 100.0, "Start to work on an email.")
 
         email_content = {}
@@ -1311,7 +1321,7 @@ class Parser(ProcessBase):
             self.set_output("text", content_txt)
 
     def _epub(self, name, blob, **kwargs):
-        """Parse EPUB files into text/json sections."""
+        """解析 EPUB：EpubParser 输出 json 或 text。"""
         from deepdoc.parser import EpubParser
 
         self.callback(random.randint(1, 5) / 100.0, "Start to work on an EPUB.")
@@ -1328,7 +1338,7 @@ class Parser(ProcessBase):
             self.set_output("text", "\n".join(s for s in sections if s))
 
     async def _invoke(self, **kwargs):
-        """Dispatch the current file to the matching parser branch by suffix."""
+        """按文件后缀匹配 setups，在线程池执行对应解析分支并上传 json 内嵌图片。"""
         function_map = {
             "pdf": self._pdf,
             "markdown": self._markdown,

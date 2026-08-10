@@ -12,6 +12,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+"""
+PDF 分块坐标元数据：提取/归一化/合并坐标，生成预览图并 finalize 索引字段。
+"""
+
 import io
 import logging
 import sys
@@ -32,11 +37,12 @@ from rag.utils.base64_image import image2id
 PDF_PREVIEW_GAP = 6
 PDF_PREVIEW_CONTEXT = 120
 PDF_PREVIEW_ZOOM = 3
-PDF_POSITIONS_KEY = "_pdf_positions"
+PDF_POSITIONS_KEY = "_pdf_positions"  # 内部 PDF 坐标列表键名
 PDF_MULTI_COLUMN_ZOOM = 3
 
 
 def _extract_raw_positions(item):
+    """从多种历史字段形态提取原始坐标列表。"""
     positions = item.get(PDF_POSITIONS_KEY)
     if isinstance(positions, list):
         return deepcopy(positions)
@@ -60,7 +66,8 @@ def _extract_raw_positions(item):
 
 
 def extract_pdf_positions(item):
-    # Parser-owned canonical PDF coordinate shape:
+    """归一化为 [[page, left, right, top, bottom], ...]  canonical 形态。"""
+    # Parser 侧 canonical PDF 坐标形态
     # [[page_number, left, right, top, bottom], ...]
     if not isinstance(item, dict):
         return []
@@ -92,6 +99,7 @@ def extract_pdf_positions(item):
 
 
 def normalize_pdf_item_metadata(item):
+    """写入 _pdf_positions 或清除无效坐标。"""
     if not isinstance(item, dict):
         return item
 
@@ -104,6 +112,7 @@ def normalize_pdf_item_metadata(item):
 
 
 def normalize_pdf_items_metadata(items):
+    """批量归一化 JSON 项的 PDF 元数据。"""
     if not isinstance(items, list):
         return items
     for item in items:
@@ -112,6 +121,7 @@ def normalize_pdf_items_metadata(items):
 
 
 def reorder_multi_column_bboxes(pdf_parser, bboxes, zoom=PDF_MULTI_COLUMN_ZOOM):
+    """多栏 PDF 按栏宽重排 bbox 阅读顺序。"""
     text_boxes = [box for box in bboxes if box.get("layout_type") == "text" and all(box.get(key) is not None for key in ["x0", "x1", "page_number"])]
     if not text_boxes or not pdf_parser.page_images:
         return bboxes
@@ -125,6 +135,7 @@ def reorder_multi_column_bboxes(pdf_parser, bboxes, zoom=PDF_MULTI_COLUMN_ZOOM):
 
 
 def merge_pdf_positions(sources):
+    """合并多源坐标并去重、按页/位置排序。"""
     merged = []
     seen = set()
     for source in sources or []:
@@ -149,6 +160,7 @@ def merge_pdf_positions(sources):
 
 
 def build_pdf_position_fields(positions):
+    """由坐标列表生成 position_int / page_num_int / top_int 索引字段。"""
     position_int = []
     page_num_int = []
     top_int = []
@@ -176,6 +188,7 @@ def build_pdf_position_fields(positions):
 
 
 def finalize_pdf_chunk(chunk):
+    """写入公开索引字段并移除内部 _pdf_positions。"""
     if not isinstance(chunk, dict):
         return chunk
 
@@ -187,6 +200,7 @@ def finalize_pdf_chunk(chunk):
 
 
 def _fetch_source_blob(from_upstream, canvas):
+    """从 doc_id 或 file 记录获取 PDF 二进制 blob。"""
     if canvas._doc_id:
         bucket, name = File2DocumentService.get_storage_address(doc_id=canvas._doc_id)
         return settings.STORAGE_IMPL.get(bucket, name)
@@ -196,12 +210,14 @@ def _fetch_source_blob(from_upstream, canvas):
 
 
 def _load_pdf_page_images(blob, zoom=PDF_PREVIEW_ZOOM):
+    """用 pdfplumber 渲染各页为 PIL 图像。"""
     with sys.modules[LOCK_KEY_pdfplumber]:
         with pdfplumber.open(io.BytesIO(blob)) as pdf:
             return [page.to_image(resolution=72 * zoom, antialias=True).annotated for page in pdf.pages]
 
 
 def _crop_pdf_preview(page_images, positions, zoom=PDF_PREVIEW_ZOOM):
+    """按坐标裁剪并拼接 chunk 预览长图。"""
     if not page_images or not positions:
         return None
 
@@ -271,7 +287,7 @@ def _crop_pdf_preview(page_images, positions, zoom=PDF_PREVIEW_ZOOM):
     height = 0
     for idx, img in enumerate(imgs):
         if idx in {0, len(imgs) - 1}:
-            # Dim the extra context so the highlighted body stays visually distinct.
+            # 上下扩展区域降透明度，突出正文区域
             img = img.convert("RGBA")
             overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
             overlay.putalpha(128)
@@ -284,6 +300,7 @@ def _crop_pdf_preview(page_images, positions, zoom=PDF_PREVIEW_ZOOM):
 
 
 async def restore_pdf_text_previews(chunks, from_upstream, canvas):
+    """为 PDF 文本 chunk 生成预览图并写入 img_id。"""
     if not chunks or not str(from_upstream.name).lower().endswith(".pdf"):
         return
 

@@ -13,3 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+extractor 包：LLM 字段抽取、目录生成与知识编译流程组件。
+"""
+

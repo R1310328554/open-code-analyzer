@@ -13,6 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+层级树分块策略：按标题深度构建树，DFS 输出路径作为 chunk。
+"""
+
 from rag.flow.chunker.title_chunker.common import (
     BaseTitleChunker,
     resolve_target_level,
@@ -20,6 +24,7 @@ from rag.flow.chunker.title_chunker.common import (
 
 
 class _ChunkNode:
+    """分块树节点：标题索引、正文索引与子节点列表。"""
     def __init__(self, level, title_indexes=None, body_indexes=None):
         self.level = level
         self.title_indexes = title_indexes or []
@@ -33,6 +38,7 @@ class _ChunkNode:
         self.body_indexes.append(index)
 
     def build_tree(self, indexed_lines, depth):
+        """用栈按层级构建标题树。"""
         stack = [self]
         for level, index in indexed_lines:
             if level > depth:
@@ -49,6 +55,7 @@ class _ChunkNode:
         return self
 
     def get_paths(self, depth, include_heading_content):
+        """DFS 收集深度范围内的 chunk 路径（行索引列表）。"""
         chunk_paths = []
         self._dfs(chunk_paths, [], depth, include_heading_content)
         return chunk_paths
@@ -75,6 +82,7 @@ class _ChunkNode:
 
 
 class HierarchyTitleChunker(BaseTitleChunker):
+    """层级标题分块器：按 hierarchy 深度合并标题路径为 chunk。"""
     start_message = "Start to merge hierarchically."
 
     def resolve_levels(self, line_records):
@@ -86,6 +94,7 @@ class HierarchyTitleChunker(BaseTitleChunker):
         text_levels = []
 
         def flush_text_records():
+            # 将累积的文本行按树结构展开为 record_groups
             if not text_records:
                 return
 

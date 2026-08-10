@@ -13,11 +13,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+File 流程组件：从文档 ID 或上传文件获取文件名与 file 元数据。
+"""
+
+
 from api.db.services.document_service import DocumentService
 from rag.flow.base import ProcessBase, ProcessParamBase
 
 
 class FileParam(ProcessParamBase):
+    """File 节点参数（当前无额外配置项）。"""
     def __init__(self):
         super().__init__()
 
@@ -29,9 +35,11 @@ class FileParam(ProcessParamBase):
 
 
 class File(ProcessBase):
+    """RAG 流程文件输入节点：解析 doc_id 或 kwargs.file 并输出 name/file。"""
     component_name = "File"
 
     async def _invoke(self, **kwargs):
+        """从画布 doc_id 或上传文件列表获取文件信息。"""
         if self._canvas._doc_id:
             e, doc = DocumentService.get_by_id(self._canvas._doc_id)
             if not e:

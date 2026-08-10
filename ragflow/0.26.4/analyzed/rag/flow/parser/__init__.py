@@ -1,3 +1,7 @@
+"""
+parser 包：多格式文档解析流程组件（PDF/DOCX/表格/邮件等）。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
