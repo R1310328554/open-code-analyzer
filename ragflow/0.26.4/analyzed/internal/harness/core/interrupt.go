@@ -1,5 +1,8 @@
 package core
 
+// interrupt.go — 中断与检查点：Interrupt/Resume 类型、地址段、HMAC 完整性校验与租户隔离。
+
+
 import (
 	"bytes"
 	"context"
@@ -18,7 +21,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// ---- Resume types ----
+// ---- 恢复类型 ----
 
 type ResumeInfo struct {
 	EnableStreaming bool
@@ -34,7 +37,7 @@ type InterruptInfo struct {
 	InterruptContexts []*InterruptCtx
 }
 
-// ---- Address types ----
+// ---- 地址段类型 ----
 
 type Address = []AddressSegment
 
@@ -65,8 +68,9 @@ type InterruptSignal struct {
 	Children []*InterruptSignal
 }
 
-// ---- Interrupt constructors ----
+// ---- 中断构造器 ----
 
+// Interrupt 创建无状态中断事件
 func Interrupt(ctx context.Context, info any) *AgentEvent {
 	return TypedInterrupt[*schema.Message](ctx, info)
 }
@@ -75,6 +79,7 @@ func TypedInterrupt[M MessageType](ctx context.Context, info any) *TypedAgentEve
 	return &TypedAgentEvent[M]{Action: &AgentAction{Interrupted: &InterruptInfo{Data: info}}}
 }
 
+// StatefulInterrupt 创建带状态与地址的中断
 func StatefulInterrupt(ctx context.Context, info, state any) *AgentEvent {
 	return TypedStatefulInterrupt[*schema.Message](ctx, info, state)
 }
@@ -89,6 +94,7 @@ func TypedStatefulInterrupt[M MessageType](ctx context.Context, info, state any)
 	}}
 }
 
+// CompositeInterrupt 创建含子信号树的复合中断
 func CompositeInterrupt(ctx context.Context, info, state any, subs ...*InterruptSignal) *AgentEvent {
 	return TypedCompositeInterrupt[*schema.Message](ctx, info, state, subs...)
 }
@@ -108,7 +114,7 @@ func TypedCompositeInterrupt[M MessageType](ctx context.Context, info, state any
 	}}
 }
 
-// captureAddress copies the current address segments from context.
+// captureAddress 从 context 复制当前地址段。
 func captureAddress(ctx context.Context) Address {
 	segs := getAddressSegments(ctx)
 	if len(segs) == 0 {
@@ -121,6 +127,7 @@ func captureAddress(ctx context.Context) Address {
 
 type addrSegKey struct{}
 
+// AppendAddressSegment 追加 agent/tool 地址段
 func AppendAddressSegment(ctx context.Context, t AddressSegmentType, id string) context.Context {
 	parent, _ := ctx.Value(addrSegKey{}).([]AddressSegment)
 	seg := make([]AddressSegment, len(parent)+1)
@@ -136,7 +143,7 @@ func getAddressSegments(ctx context.Context) []AddressSegment {
 	return nil
 }
 
-// FromInterruptContexts builds an InterruptSignal tree from a flat slice of
+// FromInterruptContexts 将 InterruptCtx 切片构建为 InterruptSignal 树。
 // InterruptCtx. Returns nil when ctxs is empty.
 func FromInterruptContexts(ctxs []*InterruptCtx) *InterruptSignal {
 	if len(ctxs) == 0 {
@@ -158,14 +165,14 @@ func buildFromCtxs(ctxs []*InterruptCtx, parent *InterruptSignal) {
 	}
 }
 
-// ---- Checkpoint store ----
+// ---- 检查点存储 ----
 
 type CheckPointStore interface {
 	Get(ctx context.Context, key string) ([]byte, bool, error)
 	Set(ctx context.Context, key string, data []byte) error
 }
 
-// InterruptState wraps the opaque interrupt state for checkpoint serialization.
+// InterruptState 包装不透明中断状态供 gob 序列化。
 // Callers MUST register the concrete type stored in State via schema.RegisterName
 // or gob.Register before saving a checkpoint; otherwise gob.Encode/Decode will
 // panic at runtime for unregistered interface types.
@@ -185,13 +192,13 @@ func init() {
 	schema.RegisterType("agentcore_interrupt_state", func() any { return &InterruptState{} })
 }
 
-// ---- Checkpoint tenant isolation ----
+// ---- 检查点租户隔离 ----
 
 type checkpointTenantKey struct{}
 
 const DefaultCheckpointTenantKey = "tenant_id"
 
-// WithCheckpointTenant embeds a tenant ID in the context for checkpoint tenant isolation.
+// WithCheckpointTenant 在 context 嵌入租户 ID，加载时校验匹配。
 // loadCheckpoint will reject checkpoints whose TenantID does not match this value.
 func WithCheckpointTenant(ctx context.Context, tenantID string) context.Context {
 	return context.WithValue(ctx, checkpointTenantKey{}, tenantID)
@@ -209,7 +216,7 @@ func extractCheckpointTenant(ctx context.Context) string {
 	return ""
 }
 
-// ---- Checkpoint integrity (HMAC) ----
+// ---- 检查点完整性（HMAC） ----
 
 const (
 	hmacLen    = 32
@@ -248,6 +255,7 @@ func computeCheckpointHMAC(payload []byte) []byte {
 	return mac.Sum(nil)
 }
 
+// loadCheckpoint 读取、验 HMAC、验租户并重建 ResumeInfo
 func loadCheckpoint(store CheckPointStore, ctx context.Context, cid string) (context.Context, *runContext, *ResumeInfo, error) {
 	data, exist, err := store.Get(ctx, cid)
 	if err != nil {
@@ -302,6 +310,7 @@ func loadCheckpoint(store CheckPointStore, ctx context.Context, cid string) (con
 	}, nil
 }
 
+// saveCheckpoint 序列化 payload 并 prepend HMAC 后写入 store
 func saveCheckpoint(store CheckPointStore, ctx context.Context, key string, enableStreaming bool, info *InterruptInfo, is *InterruptSignal) error {
 	if store == nil {
 		return nil
@@ -375,7 +384,7 @@ func mapsToInterruptContexts(id2addr map[string]Address, id2state map[string]Int
 	return ics
 }
 
-// getNextResumeAgent returns the deepest (innermost) agent address segment for
+// getNextResumeAgent 返回最内层 agent 地址段用于单 Agent 恢复路由。
 // single-agent resume routing. It scans address segments from the end.
 func getNextResumeAgent(ctx context.Context, info *ResumeInfo) (string, error) {
 	segs := getAddressSegments(ctx)
@@ -391,7 +400,7 @@ func getNextResumeAgent(ctx context.Context, info *ResumeInfo) (string, error) {
 	return "", errors.New("no agent address segment found for resume")
 }
 
-// getNextResumeAgents returns ALL agent address segments for multi-agent resume
+// getNextResumeAgents 返回全部 agent 地址段，供并行分支恢复。
 // routing (e.g., parallel branches). Returns all agent segments as a set.
 func getNextResumeAgents(ctx context.Context, info *ResumeInfo) (map[string]bool, error) {
 	segs := getAddressSegments(ctx)
@@ -410,7 +419,7 @@ func getNextResumeAgents(ctx context.Context, info *ResumeInfo) (map[string]bool
 	return result, nil
 }
 
-// buildResumeInfo copies all ResumeInfo fields into a new struct and appends
+// buildResumeInfo 复制 ResumeInfo 并追加 agent 地址段与 RunPath。
 // the agent address segment. IsResumeTarget and ResumeData are always copied
 // regardless of WasInterrupted — callers that set them for non-interrupted
 // resumes (e.g., initial resume of a fresh run) should have them preserved.
@@ -426,3 +435,5 @@ func buildResumeInfo(ctx context.Context, nextID string, info *ResumeInfo) (cont
 	ctx = updateRunPathOnly(ctx, nextID)
 	return ctx, ri
 }
+
+// 未设置 CHECKPOINT_HMAC_KEY 时使用进程内随机密钥，跨重启恢复会失败。

@@ -1,6 +1,8 @@
-// Package filesystem provides a middleware that registers file system tools
+// Package filesystem 注册文件系统工具的中间件。
 // (read, write, edit, ls, glob, grep, execute) for agent use.
 package filesystem
+
+// filesystem.go — 文件系统中间件：注册 read/write/edit/ls/glob/grep/execute 等 Agent 工具。
 
 import (
 	"context"
@@ -12,7 +14,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// Backend abstracts file system operations.
+// Backend 抽象读写、编辑、列目录、glob、grep 与 shell 执行。
 type Backend interface {
 	Read(path string) (string, error)
 	Write(path, content string) error
@@ -23,7 +25,7 @@ type Backend interface {
 	Execute(command string) (string, error)
 }
 
-// ToolConfig configures a single tool.
+// ToolConfig 配置单个工具的启用、描述与自定义实现。
 type ToolConfig struct {
 	Name        string
 	Description string
@@ -31,7 +33,7 @@ type ToolConfig struct {
 	Custom      func(ctx context.Context, args string) (string, error)
 }
 
-// TypedConfig configures the filesystem middleware.
+// TypedConfig 配置 Backend、单工具覆盖与 ReadBytes 上限。
 type TypedConfig[M core.MessageType] struct {
 	Backend    Backend
 	ToolConfig map[string]*ToolConfig // Override individual tools
@@ -45,6 +47,7 @@ type middleware[M core.MessageType] struct {
 	cfg *Config
 }
 
+// NewTyped 创建 filesystem 中间件
 func NewTyped[M core.MessageType](cfg *Config) *middleware[M] {
 	if cfg == nil {
 		cfg = &Config{ReadBytes: 1 << 20}
@@ -76,6 +79,7 @@ func (m *middleware[M]) BeforeAgent(ctx context.Context, rc *core.ReActAgentCont
 	return ctx, rc, nil
 }
 
+// buildTools 按配置组装七个文件系统工具
 func (m *middleware[M]) buildTools() []core.Tool {
 	tools := make([]core.Tool, 0, 7)
 	if tool := m.maybeTool("read_file", "Read file contents. Accepts file path.", m.newReadTool()); tool != nil {
@@ -102,6 +106,7 @@ func (m *middleware[M]) buildTools() []core.Tool {
 	return tools
 }
 
+// maybeTool 应用 ToolConfig 覆盖或禁用单个工具
 func (m *middleware[M]) maybeTool(name, defaultDesc string, defaultFn func(ctx context.Context, args string) (string, error)) core.Tool {
 	if m.cfg.ToolConfig != nil {
 		if tc, ok := m.cfg.ToolConfig[name]; ok {
@@ -243,6 +248,7 @@ func (m *middleware[M]) newGrepTool() func(ctx context.Context, args string) (st
 	}
 }
 
+// formatGrepResult 按 content/count/files 模式格式化 grep 结果
 func formatGrepResult(result, outputMode string) (string, error) {
 	switch outputMode {
 	case "count":
@@ -277,3 +283,5 @@ func (m *middleware[M]) newExecTool() func(ctx context.Context, args string) (st
 		return m.cfg.Backend.Execute(args)
 	}
 }
+
+// read_file 输出带行号；write/edit 支持 JSON 与 pipe 分隔两种参数格式。

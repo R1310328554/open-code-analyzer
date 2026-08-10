@@ -1,5 +1,8 @@
 package core
 
+// flow.go — 流程编排 Agent：子 Agent、历史重写、TransferToAgent 转交、Resume 与 typedFlowAgent 事件循环。
+
+
 import (
 	"context"
 	"errors"
@@ -10,17 +13,17 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// HistoryEntry represents a message in conversation history.
+// HistoryEntry 表示会话历史中的一条消息及其来源。
 type HistoryEntry struct {
 	IsUserInput bool
 	AgentName   string
 	Message     Message
 }
 
-// HistoryRewriter transforms conversation history during agent transfers.
+// HistoryRewriter 在 Agent 转交时重写历史消息。
 type HistoryRewriter func(ctx context.Context, entries []*HistoryEntry) ([]Message, error)
 
-// flowAgent wraps an Agent with orchestration (sub-agents, history, transfer, callbacks).
+// flowAgent 包装 Agent，提供子 Agent、历史、转交与回调编排。
 //
 // TODO: flowAgent and workflowAgent share sub-agent management. workflowAgent
 // creates sub-agents AND injects them into flowAgent via SetSubAgents(),
@@ -45,6 +48,7 @@ func (a *flowAgent) deepCopy() *flowAgent {
 	return cp
 }
 
+// SetSubAgents 为 Agent 注册子 Agent 列表
 func SetSubAgents(ctx context.Context, agent Agent, subs []Agent) (ResumableAgent, error) {
 	var fa *flowAgent
 	var ok bool
@@ -63,15 +67,18 @@ func SetSubAgents(ctx context.Context, agent Agent, subs []Agent) (ResumableAgen
 	return fa, nil
 }
 
+// AgentWithOptions 用选项包装为 flowAgent
 func AgentWithOptions(ctx context.Context, agent Agent, opts ...AgentOption) Agent {
 	return toFlowAgent(ctx, agent, opts...)
 }
 
 type AgentOption func(*flowAgent)
 
+// WithDisallowTransferToParent 禁止向父 Agent 转交
 func WithDisallowTransferToParent() AgentOption {
 	return func(fa *flowAgent) { fa.disallowTransferToParent = true }
 }
+// WithHistoryRewriter 注入自定义历史重写器
 func WithHistoryRewriter(h HistoryRewriter) AgentOption {
 	return func(fa *flowAgent) { fa.historyRewriter = h }
 }
@@ -105,6 +112,7 @@ func (a *flowAgent) getAgent(ctx context.Context, name string) *flowAgent {
 	return nil
 }
 
+// defaultHistoryRewriter 将其他 Agent 消息改写为 For context 用户消息
 func defaultHistoryRewriter(name string) HistoryRewriter {
 	return func(ctx context.Context, entries []*HistoryEntry) ([]Message, error) {
 		msgs := make([]Message, 0, len(entries))
@@ -121,6 +129,7 @@ func defaultHistoryRewriter(name string) HistoryRewriter {
 	}
 }
 
+// rewriteMsg 将 assistant/tool 消息转为带上下文的 user 消息
 func rewriteMsg(msg Message, agentName string) Message {
 	if msg.Role == schema.RoleAssistant && msg.Content == "" && len(msg.ToolCalls) == 0 {
 		return nil
@@ -155,6 +164,7 @@ func deepCopyInput(ai *AgentInput) *AgentInput {
 // conversation history. This is O(n) per transfer, where n grows with conversation
 // length. Consider caching the reconstructed history per agent and invalidating
 // on state changes rather than re-scanning the full event list.
+// genInput 从根输入与会话事件重建当前 Agent 输入
 func (a *flowAgent) genInput(ctx context.Context, rc *runContext, skipTransfer bool) (*AgentInput, error) {
 	input := deepCopyInput(rc.RootInput.(*AgentInput))
 	entries := make([]*HistoryEntry, 0)
@@ -197,6 +207,7 @@ func msgFromEvent(ev *AgentEvent) Message {
 	return mv.Message
 }
 
+// Run 启动 flowAgent 事件循环并支持 TransferToAgent
 func (a *flowAgent) Run(ctx context.Context, input *AgentInput, opts ...RunOption) *AsyncIterator[*AgentEvent] {
 	name := a.Name(ctx)
 	ctx, rc := initRunCtx(ctx, name, input)
@@ -221,6 +232,7 @@ func (a *flowAgent) Run(ctx context.Context, input *AgentInput, opts ...RunOptio
 	return wrapIterWithCancelCtx(it, cc)
 }
 
+// runLoop 转发内层事件、写入 session，并在转交时路由到子 Agent
 func (a *flowAgent) runLoop(ctx, subCtx context.Context, rc *runContext, ai *AsyncIterator[*AgentEvent], gen *AsyncGenerator[*AgentEvent], opts ...RunOption) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -285,6 +297,7 @@ func (a *flowAgent) runLoop(ctx, subCtx context.Context, rc *runContext, ai *Asy
 	}
 }
 
+// Resume 恢复中断或继续子 Agent 运行
 func (a *flowAgent) Resume(ctx context.Context, info *ResumeInfo, opts ...RunOption) *AsyncIterator[*AgentEvent] {
 	name := a.Name(ctx)
 	ctx, info = buildResumeInfo(ctx, name, info)
@@ -329,6 +342,7 @@ func (a *flowAgent) Resume(ctx context.Context, info *ResumeInfo, opts ...RunOpt
 	return wrapIterWithCancelCtx(wrapIterEnd(ctx, inner), cc)
 }
 
+// pathMatch 比较两条 RunPath 是否完全一致
 func pathMatch(a, b []RunStep) bool {
 	if len(a) != len(b) {
 		return false
@@ -365,7 +379,7 @@ func errorIterMsg(err error) *AsyncIterator[*AgentEvent] {
 	return it
 }
 
-// ---- Typed flow agent (AgenticMessage path) ----
+// ---- 泛型 flowAgent（AgenticMessage 路径） ----
 
 type typedFlowAgent[M MessageType] struct {
 	TypedAgent[M]
@@ -392,7 +406,7 @@ func (a *typedFlowAgent[M]) Run(ctx context.Context, input *TypedAgentInput[M], 
 	return wrapIterWithCancelCtx(it, cc)
 }
 
-// runLoop for typedFlowAgent drains events only. Unlike flowAgent.runLoop,
+// typedFlowAgent.runLoop 仅转发事件，不支持 TransferToAgent 子 Agent 路由。
 // it does NOT handle TransferToAgent actions or route to sub-agents. This is
 // a design choice: the typed agent path currently does not support agent-to-agent
 // transfers. If transfer support is needed, add sub-agent routing logic here.
@@ -476,3 +490,5 @@ func typedWrapIterEnd[M MessageType](ctx context.Context, iter *AsyncIterator[*T
 func typedErrorIterEnd[M MessageType](ctx context.Context, err error) *AsyncIterator[*TypedAgentEvent[M]] {
 	return errorIter[M](err)
 }
+
+// genInput 每次转交重放全部事件为 O(n)；typed 路径暂不支持 agent 间转交。

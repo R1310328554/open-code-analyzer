@@ -1,5 +1,8 @@
 package core
 
+// interface.go — agentcore 公共类型与 Agent 接口：MessageType 约束、事件/动作、RunStep 序列化与事件构造辅助。
+
+
 import (
 	"bytes"
 	"context"
@@ -13,27 +16,30 @@ func init() {
 	gob.Register(&RunStep{})
 }
 
-// MessageType is the sealed type constraint for agent message types.
+// MessageType 密封类型约束，限定 *Message 或 *AgenticMessage。
 type MessageType interface {
 	*schema.Message | *schema.AgenticMessage
 }
 
-// ===== Type aliases =====
+// ===== 类型别名 =====
 type Message = *schema.Message
 type MessageStream = *schema.StreamReader[Message]
 type AgenticMessage = *schema.AgenticMessage
 type AgenticMessageStream = *schema.StreamReader[AgenticMessage]
 
-// ===== Agent action =====
+// ===== Agent 动作 =====
 
+// TransferToAgentAction 转交目标 Agent 名称
 type TransferToAgentAction struct {
 	DestAgentName string
 }
 
+// NewTransferToAgentAction 构造转交动作
 func NewTransferToAgentAction(dest string) *AgentAction {
 	return &AgentAction{TransferToAgent: &TransferToAgentAction{DestAgentName: dest}}
 }
 
+// NewExitAction 构造退出动作
 func NewExitAction() *AgentAction {
 	return &AgentAction{Exit: true}
 }
@@ -44,6 +50,7 @@ type BreakLoopAction struct {
 	CurrentIterations int
 }
 
+// NewBreakLoopAction 构造跳出循环动作
 func NewBreakLoopAction(agentName string) *AgentAction {
 	return &AgentAction{BreakLoop: &BreakLoopAction{From: agentName}}
 }
@@ -57,7 +64,7 @@ type AgentAction struct {
 	internalInterrupted *InterruptSignal
 }
 
-// ===== Run step =====
+// ===== 运行步骤 =====
 
 type RunStep struct {
 	agentName string
@@ -67,7 +74,7 @@ func NewRunStep(agentName string) *RunStep { return &RunStep{agentName: agentNam
 func (r *RunStep) String() string          { return r.agentName }
 func (r *RunStep) Equals(r1 RunStep) bool  { return r.agentName == r1.agentName }
 
-// GobEncode implements gob.GobEncoder for checkpoint serialization.
+// GobEncode 实现 gob 编码，供检查点序列化 RunStep。
 func (r *RunStep) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
@@ -77,14 +84,14 @@ func (r *RunStep) GobEncode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// GobDecode implements gob.GobDecoder for checkpoint deserialization.
+// GobDecode 实现 gob 解码，恢复 RunStep。
 func (r *RunStep) GobDecode(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(buf)
 	return dec.Decode(&r.agentName)
 }
 
-// ===== Events =====
+// ===== 事件 =====
 
 type TypedMessageVariant[M MessageType] struct {
 	IsStreaming   bool
@@ -95,6 +102,7 @@ type TypedMessageVariant[M MessageType] struct {
 	ToolName      string
 }
 
+// GetMessage 流式时拼接 MessageStream，否则返回 Message
 func (mv *TypedMessageVariant[M]) GetMessage() (M, error) {
 	if mv.IsStreaming {
 		return concatMessageStream(mv.MessageStream)
@@ -128,7 +136,7 @@ type TypedAgentInput[M MessageType] struct {
 
 type AgentInput = TypedAgentInput[*schema.Message]
 
-// ===== Agent interfaces =====
+// ===== Agent 接口 =====
 
 type TypedAgent[M MessageType] interface {
 	Name(ctx context.Context) string
@@ -145,8 +153,9 @@ type TypedResumableAgent[M MessageType] interface {
 
 type ResumableAgent = TypedResumableAgent[*schema.Message]
 
-// ===== Event constructors =====
+// ===== 事件构造 =====
 
+// EventFromMessage 从 Message 构造 AgentEvent
 func EventFromMessage(msg Message, msgStream MessageStream, role schema.RoleType, toolName string) *AgentEvent {
 	return typedEventFromMessage(msg, msgStream, role, toolName)
 }
@@ -176,6 +185,7 @@ func typedModelOutputEvent[M MessageType](msg M, msgStream *schema.StreamReader[
 	return event
 }
 
+// EventFromAgenticMessage 从 AgenticMessage 构造事件
 func EventFromAgenticMessage(msg AgenticMessage, msgStream AgenticMessageStream, agenticRole schema.AgenticRoleType) *TypedAgentEvent[*schema.AgenticMessage] {
 	return &TypedAgentEvent[*schema.AgenticMessage]{
 		Output: &TypedAgentOutput[*schema.AgenticMessage]{
@@ -187,13 +197,14 @@ func EventFromAgenticMessage(msg AgenticMessage, msgStream AgenticMessageStream,
 	}
 }
 
-// ===== Utilities =====
+// ===== 工具函数 =====
 
 func isNilMessage[M MessageType](msg M) bool {
 	var zero M
 	return any(msg) == any(zero)
 }
 
+// concatMessageStream 将 Message 或 AgenticMessage 流拼接为单条
 func concatMessageStream[M MessageType](stream *schema.StreamReader[M]) (M, error) {
 	var zero M
 	switch s := any(stream).(type) {
@@ -242,3 +253,5 @@ func init() {
 	schema.RegisterType("agentcore_run_step", func() any { return &RunStep{} })
 	schema.RegisterType("agentcore_event", func() any { return &TypedAgentEvent[*schema.Message]{} })
 }
+
+// init 注册 RunStep 与 AgentEvent 的 schema/gob 类型名。

@@ -1,7 +1,9 @@
-// Package toolsearch provides dynamic tool search middleware.
+// Package toolsearch 提供动态工具搜索中间件。
 // Instead of passing all tools to the model, agents can search for tools
 // by keyword using a meta-tool, suitable for large tool libraries.
 package toolsearch
+
+// toolsearch.go — 动态工具搜索中间件：大工具库场景下通过元工具按关键词检索而非全量绑定。
 
 import (
 	"context"
@@ -13,7 +15,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// TypedConfig configures the toolsearch middleware.
+// TypedConfig 配置全部工具、阈值、Deferred 模式等。
 type TypedConfig[M core.MessageType] struct {
 	AllTools        []core.Tool
 	MaxResults      int
@@ -27,6 +29,7 @@ type middleware[M core.MessageType] struct {
 	initOnce sync.Once
 }
 
+// NewTyped 创建 toolsearch 中间件
 func NewTyped[M core.MessageType](cfg *TypedConfig[M]) core.TypedReActMiddleware[M] {
 	if cfg == nil {
 		cfg = &TypedConfig[M]{MaxResults: 5, SearchThreshold: 10}
@@ -44,6 +47,7 @@ func New(cfg *TypedConfig[*schema.Message]) core.TypedReActMiddleware[*schema.Me
 	return NewTyped[*schema.Message](cfg)
 }
 
+// ContributeTools 工具数超阈值时返回搜索元工具或部分直传
 func (m *middleware[M]) ContributeTools(ctx context.Context) []core.Tool {
 	if len(m.cfg.AllTools) <= m.cfg.SearchThreshold {
 		return m.cfg.AllTools
@@ -80,6 +84,7 @@ func (m *middleware[M]) BeforeAgent(ctx context.Context, rc *core.ReActAgentCont
 	return ctx, rc, nil
 }
 
+// BeforeModelRewrite Deferred 模式下填充 DeferredToolInfos
 func (m *middleware[M]) BeforeModelRewrite(ctx context.Context, state *core.TypedReActAgentState[M], mc *core.TypedModelContext[M]) (context.Context, *core.TypedReActAgentState[M], error) {
 	if !m.cfg.UseDeferred {
 		return ctx, state, nil
@@ -94,6 +99,7 @@ func (m *middleware[M]) BeforeModelRewrite(ctx context.Context, state *core.Type
 	return ctx, state, nil
 }
 
+// newSearchTool 创建 tool_search 元工具，支持关键词与 select: 语法
 func (m *middleware[M]) newSearchTool() core.Tool {
 	return core.NewBaseTool("tool_search",
 		"Search for available tools by keyword. Supports: keywords, select:name1,name2, +required.",
@@ -208,7 +214,7 @@ func (m *middleware[M]) newSearchTool() core.Tool {
 		})
 }
 
-// splitToolName splits tool names by separators (__ or _ or camelCase).
+// splitToolName 按 __/_/camelCase 拆分工具名用于打分。
 func splitToolName(name string) []string {
 	// Handle __ (MCP separator), _ (underscore), and camelCase
 	name = strings.ReplaceAll(name, "__", "|")
@@ -237,3 +243,5 @@ func splitToolName(name string) []string {
 	}
 	return result
 }
+
+// +前缀为必选关键词；工具数 ≤ SearchThreshold 时直接贡献全部工具。

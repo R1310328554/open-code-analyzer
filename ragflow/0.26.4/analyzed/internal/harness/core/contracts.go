@@ -1,36 +1,39 @@
 package core
 
+// contracts.go — agentcore 核心契约：工具/模型端点签名、Tool/Model 接口、中间件生命周期与 BaseTool 实现。
+
+
 import (
 	"context"
 	"ragflow/internal/harness/core/schema"
 )
 
-// ---- Endpoint types for tool wrapping ---
+// ---- 工具包装用端点类型 ----
 
-// InvokableToolEndpoint is the function signature for invoking a tool synchronously.
+// InvokableToolEndpoint 同步调用工具的函数签名。
 type InvokableToolEndpoint func(ctx context.Context, args string, opts ...ToolOption) (string, error)
 
-// StreamableToolEndpoint is the function signature for invoking a tool with streaming output.
+// StreamableToolEndpoint 流式调用工具的函数签名。
 type StreamableToolEndpoint func(ctx context.Context, args string, opts ...ToolOption) (*schema.StreamReader[string], error)
 
-// EnhancedInvokableToolEndpoint is the function signature for invoking an enhanced tool synchronously.
+// EnhancedInvokableToolEndpoint 增强工具同步调用签名，返回结构化 ToolResult。
 // Enhanced tools return structured *schema.ToolResult instead of raw strings.
 type EnhancedInvokableToolEndpoint func(ctx context.Context, args *schema.ToolArgument, opts ...ToolOption) (*schema.ToolResult, error)
 
-// EnhancedStreamableToolEndpoint is the function signature for invoking an enhanced tool with streaming output.
+// EnhancedStreamableToolEndpoint 增强工具流式调用签名。
 type EnhancedStreamableToolEndpoint func(ctx context.Context, args *schema.ToolArgument, opts ...ToolOption) (*schema.StreamReader[*schema.ToolResult], error)
 
-// ModelOption configures a model call.
+// ModelOption 配置模型调用选项。
 type ModelOption interface{ applyModel() }
 
 type modelOption = ModelOption
 
-// ToolOption configures a tool call.
+// ToolOption 配置工具调用选项。
 type ToolOption interface{ applyTool() }
 
 type toolOption = ToolOption
 
-// ---- Model interface ----
+// ---- 模型接口 ----
 
 type Model[M MessageType] interface {
 	Generate(ctx context.Context, messages []M, opts ...ModelOption) (M, error)
@@ -38,9 +41,9 @@ type Model[M MessageType] interface {
 	BindTools(tools []*schema.ToolInfo) error
 }
 
-// ---- Tool interface ----
+// ---- 工具接口 ----
 
-// Tool is the basic tool interface for synchronous and streaming invocation.
+// Tool 基础工具接口，支持同步与流式调用。
 type Tool interface {
 	Name() string
 	Description() string
@@ -48,17 +51,17 @@ type Tool interface {
 	Stream(ctx context.Context, argumentsInJSON string, opts ...ToolOption) (*schema.StreamReader[string], error)
 }
 
-// ToolCapability describes a tool's access pattern for concurrency control.
+// ToolCapability 描述工具访问模式，用于并发调度。
 type ToolCapability int
 
 const (
-	ToolCapReadOnly     ToolCapability = iota // Safe to run in parallel
-	ToolCapWritesFiles                        // File mutation, serialize
-	ToolCapExecutesCode                       // Code execution, serialize
-	ToolCapNetwork                            // Network access, serialize
+	ToolCapReadOnly     ToolCapability = iota // 只读，可并行执行
+	ToolCapWritesFiles                        // 写文件，需串行
+	ToolCapExecutesCode                       // 执行代码，需串行
+	ToolCapNetwork                            // 网络访问，需串行
 )
 
-// CapableTool is an optional interface that tools can implement to declare
+// CapableTool 可选接口，声明工具能力以支持并发感知调度。
 // their capability for concurrency-aware scheduling. Tools without this
 // interface default to ToolCapWritesFiles (safe serialization).
 type CapableTool interface {
@@ -66,7 +69,7 @@ type CapableTool interface {
 	Capability() ToolCapability
 }
 
-// EnhancedTool is an optional interface that tools can implement to return
+// EnhancedTool 可选接口，返回结构化 ToolResult 而非原始字符串。
 // structured *schema.ToolResult instead of raw strings.
 // When a Tool also satisfies EnhancedTool, the framework will call the enhanced
 // methods and route through WrapEnhancedInvokableToolCall / WrapEnhancedStreamableToolCall.
@@ -78,7 +81,7 @@ type EnhancedTool interface {
 	EnhancedStream(ctx context.Context, args *schema.ToolArgument, opts ...ToolOption) (*schema.StreamReader[*schema.ToolResult], error)
 }
 
-// ToolInfoProvider is an optional interface that tools can implement to
+// ToolInfoProvider 可选接口，提供含 JSON Schema 的工具元数据。
 // provide structured metadata including the input JSON schema.
 // When present, this full metadata is used when binding tools to the LLM,
 // rather than the minimal Name/Description from the Tool interface.
@@ -86,13 +89,14 @@ type ToolInfoProvider interface {
 	ToolInfo() *schema.ToolInfo
 }
 
-// BaseTool provides a simple Tool implementation from a function.
+// BaseTool 由函数构造的简单 Tool 实现。
 type BaseTool struct {
 	name     string
 	desc     string
 	invokeFn func(ctx context.Context, args string) (string, error)
 }
 
+// NewBaseTool 用名称、描述与 invoke 函数创建 BaseTool
 func NewBaseTool(name, desc string, fn func(ctx context.Context, args string) (string, error)) *BaseTool {
 	return &BaseTool{name: name, desc: desc, invokeFn: fn}
 }
@@ -105,7 +109,7 @@ func (t *BaseTool) Stream(ctx context.Context, args string, opts ...toolOption) 
 	return schema.StreamReaderFromArray([]string{""}), nil
 }
 
-// ---- Model context ----
+// ---- 模型上下文 ----
 
 type TypedModelContext[M MessageType] struct {
 	Tools               []*schema.ToolInfo
@@ -117,9 +121,9 @@ type TypedModelContext[M MessageType] struct {
 
 type ModelContext = TypedModelContext[*schema.Message]
 
-// ---- Middleware interface ----
+// ---- 中间件接口 ----
 //
-// TypedReActMiddleware[M MessageType] is the interface for agent middleware.
+// TypedReActMiddleware 定义 ReAct 智能体中间件接口。
 // Implement *BaseMiddleware[M] to get default no-op implementations, then override only what you need.
 //
 // Execution order (outermost to innermost wrapper chain):
@@ -150,7 +154,7 @@ type (
 	AfterModelRewriteState[M MessageType]  = TypedReActAgentState[M]
 )
 
-// BaseMiddleware provides no-op defaults for TypedReActMiddleware.
+// BaseMiddleware 为中间件各钩子提供空实现，按需覆写。
 // Embed in custom middlewares to only override needed methods.
 type BaseMiddleware[M MessageType] struct{}
 
@@ -169,3 +173,5 @@ func (b *BaseMiddleware[M]) AfterModelRewrite(ctx context.Context, state *TypedR
 func (b *BaseMiddleware[M]) WrapModel(_ context.Context, m Model[M], _ *TypedModelContext[M]) (Model[M], error) {
 	return m, nil
 }
+
+// 模型调用链：BeforeAgent → BeforeModelRewrite → failover/retry/eventSender/WrapModel → AfterModelRewrite → AfterAgent。

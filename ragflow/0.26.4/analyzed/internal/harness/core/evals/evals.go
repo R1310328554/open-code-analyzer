@@ -1,4 +1,4 @@
-// Package evals provides an evaluation framework for agentcore agents.
+// Package evals 提供 agentcore 智能体评测框架。
 //
 // Modeled after deepagents/libs/evals, it enables running real-LLM agent
 // evaluations with trajectory scoring, success assertions, and report generation.
@@ -30,6 +30,10 @@
 //	}
 package evals
 
+// evals.go — agentcore 智能体评测框架：真实 LLM 运行、轨迹采集、断言打分与报告生成。
+
+// evals.go — agentcore 智能体评测框架：真实 LLM 运行、轨迹采集、断言打分与报告生成。
+
 import (
 	"context"
 	"fmt"
@@ -47,7 +51,7 @@ import (
 // Core types
 // ========================================================================
 
-// EvalCase defines a single evaluation scenario.
+// EvalCase 定义单个评测用例（查询、Agent、Scorers）。
 type EvalCase struct {
 	// Name identifies this case in reports.
 	Name string
@@ -71,11 +75,11 @@ type EvalCase struct {
 	WorkDir string
 }
 
-// Scorer evaluates an agent's output against an expectation.
+// Scorer 对智能体输出做断言，失败返回 error。
 // Returns nil on success, or an error describing the failure.
 type Scorer func(ctx context.Context, result *EvalResult) error
 
-// EvalResult captures the agent's output for a single case.
+// EvalResult 记录单次运行的消息轨迹、事件与耗时。
 type EvalResult struct {
 	Case     EvalCase
 	Messages []*schema.Message // full conversation trajectory
@@ -85,7 +89,7 @@ type EvalResult struct {
 	Snapshot map[string]string // file snapshots after execution
 }
 
-// CaseReport is the output of evaluating a single case.
+// CaseReport 单用例评测结果摘要。
 type CaseReport struct {
 	CaseName string
 	Passed   bool
@@ -94,13 +98,13 @@ type CaseReport struct {
 	Tags     []string
 }
 
-// Failure describes a single assertion failure.
+// Failure 描述一条断言失败详情。
 type Failure struct {
 	ScorerName string
 	Message    string
 }
 
-// EvalReport aggregates results from multiple cases.
+// EvalReport 聚合多用例通过率与总耗时。
 type EvalReport struct {
 	Cases    []CaseReport
 	Total    int
@@ -109,7 +113,7 @@ type EvalReport struct {
 	Duration time.Duration
 }
 
-// EvalConfig configures an evaluation run.
+// EvalConfig 配置模型、Agent、并发、超时与报告目录。
 type EvalConfig struct {
 	// Model is the chat model for the agent. Required.
 	Model core.Model[*schema.Message]
@@ -139,7 +143,7 @@ type EvalConfig struct {
 // RunT — single-function entry point for go test
 // ========================================================================
 
-// RunT runs all eval cases and reports results via testing.T.
+// RunT 在 go test 中运行全部用例并输出 PASS/FAIL。
 // It's the primary entry point for use in go test functions.
 //
 //go:generate echo "RunT is designed for use with go test"
@@ -171,7 +175,7 @@ func RunT(t testingT, cfg *EvalConfig) {
 	}
 }
 
-// testingT is the minimal interface we need from testing.T.
+// testingT 测试入口所需的最小 testing.T 子集。
 type testingT interface {
 	Fatal(args ...any)
 	Errorf(format string, args ...any)
@@ -182,7 +186,7 @@ type testingT interface {
 // Run — execute all eval cases
 // ========================================================================
 
-// Run executes all eval cases and returns a report.
+// Run 执行全部用例并返回 EvalReport。
 func Run(ctx context.Context, cfg *EvalConfig) *EvalReport {
 	start := time.Now()
 	report := &EvalReport{}
@@ -289,7 +293,7 @@ func runCase(ctx context.Context, cfg *EvalConfig, c EvalCase) CaseReport {
 // Built-in Scorers
 // ========================================================================
 
-// FinalTextContains returns a Scorer that checks the agent's final output
+// FinalTextContains 断言最终助手输出包含指定子串。
 // contains the given substring (case-insensitive).
 func FinalTextContains(substr string) Scorer {
 	return func(ctx context.Context, r *EvalResult) error {
@@ -304,7 +308,7 @@ func FinalTextContains(substr string) Scorer {
 	}
 }
 
-// FinalTextExcludes returns a Scorer that checks the agent's final output
+// FinalTextExcludes 断言最终输出不包含禁止子串。
 // does NOT contain the given substring.
 func FinalTextExcludes(substr string) Scorer {
 	return func(ctx context.Context, r *EvalResult) error {
@@ -316,7 +320,7 @@ func FinalTextExcludes(substr string) Scorer {
 	}
 }
 
-// AgentError returns a Scorer that passes if the agent completed without error.
+// AgentError 断言智能体运行无错误。
 func AgentError() Scorer {
 	return func(ctx context.Context, r *EvalResult) error {
 		if r.Err != nil {
@@ -326,7 +330,7 @@ func AgentError() Scorer {
 	}
 }
 
-// AgentErrorContains returns a Scorer that passes if the agent error contains
+// AgentErrorContains 断言智能体错误信息包含指定文本。
 // the given substring.
 func AgentErrorContains(substr string) Scorer {
 	return func(ctx context.Context, r *EvalResult) error {
@@ -340,7 +344,7 @@ func AgentErrorContains(substr string) Scorer {
 	}
 }
 
-// FileContentEquals returns a Scorer that checks a file's content matches exactly.
+// FileContentEquals 断言文件内容与期望值完全一致。
 func FileContentEquals(path, expectedContent string) Scorer {
 	return func(ctx context.Context, r *EvalResult) error {
 		data, err := os.ReadFile(path)
@@ -355,7 +359,7 @@ func FileContentEquals(path, expectedContent string) Scorer {
 	}
 }
 
-// FileContains returns a Scorer that checks a file contains the substring.
+// FileContains 断言文件内容包含子串。
 func FileContains(path, substr string) Scorer {
 	return func(ctx context.Context, r *EvalResult) error {
 		data, err := os.ReadFile(path)
@@ -369,7 +373,7 @@ func FileContains(path, substr string) Scorer {
 	}
 }
 
-// ToolCalled returns a Scorer that checks the agent called a specific tool.
+// ToolCalled 断言智能体调用了指定工具。
 func ToolCalled(toolName string) Scorer {
 	return func(ctx context.Context, r *EvalResult) error {
 		for _, msg := range r.Messages {
@@ -383,7 +387,7 @@ func ToolCalled(toolName string) Scorer {
 	}
 }
 
-// Steps returns a Scorer that counts agent steps and passes if >= min.
+// Steps 断言助手消息步数不少于 minSteps。
 func Steps(minSteps int) Scorer {
 	return func(ctx context.Context, r *EvalResult) error {
 		steps := countAssistantMessages(r.Messages)
@@ -394,7 +398,7 @@ func Steps(minSteps int) Scorer {
 	}
 }
 
-// LLMJudge returns a Scorer that uses a judge LLM to evaluate the agent's
+// LLMJudge 使用裁判 LLM 按自然语言标准评判输出。
 // output against the given criteria.
 //
 // The judge model receives a structured prompt with the original query, the
@@ -415,7 +419,7 @@ func LLMJudge(judgeModel core.Model[*schema.Message], instruction string) Scorer
 	}
 }
 
-// judgeOutput sends the agent output to a judge LLM and returns the verdict.
+// judgeOutput 向裁判模型发送结构化提示并解析 PASS/FAIL。
 func judgeOutput(ctx context.Context, model core.Model[*schema.Message], query, output, instruction string) error {
 	prompt := fmt.Sprintf(judgePromptTemplate, query, output, instruction)
 	judgeMsgs := []*schema.Message{
@@ -458,6 +462,7 @@ Reply with EXACTLY one line:
 // Helpers
 // ========================================================================
 
+// lastAssistantText 取轨迹中最后一条 assistant 消息文本
 func lastAssistantText(r *EvalResult) string {
 	for i := len(r.Messages) - 1; i >= 0; i-- {
 		if r.Messages[i].Role == schema.RoleAssistant {
@@ -509,6 +514,7 @@ func takeSnapshot(workDir string) map[string]string {
 	return snap
 }
 
+// writeReport 写入 summary.json 与 results.csv
 func writeReport(dir string, report *EvalReport) error {
 	os.MkdirAll(dir, 0755)
 
@@ -535,3 +541,5 @@ func writeReport(dir string, report *EvalReport) error {
 	}
 	return os.WriteFile(filepath.Join(dir, "results.csv"), []byte(buf.String()), 0644)
 }
+
+// 支持顺序/并发执行；未指定 Agent 时自动创建默认 ReActAgent。

@@ -1,5 +1,8 @@
 package core
 
+// failover.go — 模型故障转移：主模型失败后按序尝试备用模型，支持自定义 ShouldFailover 策略。
+
+
 import (
 	"context"
 	"fmt"
@@ -7,7 +10,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// FailoverConfig configures model failover behavior.
+// FailoverConfig 配置故障转移行为与备用模型列表。
 type FailoverConfig[M MessageType] struct {
 	// Models contains backup models tried in order after the primary.
 	Models []Model[M]
@@ -19,13 +22,14 @@ type FailoverConfig[M MessageType] struct {
 
 type FailoverConfigMsg = FailoverConfig[*schema.Message]
 
-// failoverModel provides failover across multiple chat models.
+// failoverModel 封装多模型顺序尝试逻辑。
 type failoverModel[M MessageType] struct {
 	models           []Model[M]
 	shouldFailover   func(ctx context.Context, err error) bool
 	getFailoverModel func(ctx context.Context, err error) Model[M]
 }
 
+// newFailoverModel 构造 failover 包装模型
 func newFailoverModel[M MessageType](models []Model[M], cfg *FailoverConfig[M]) Model[M] {
 	var sf func(ctx context.Context, err error) bool
 	var gf func(ctx context.Context, err error) Model[M]
@@ -81,8 +85,10 @@ func (m *failoverModel[M]) BindTools(tools []*schema.ToolInfo) error {
 	return nil
 }
 
-// WithModelFailover creates a failover-wrapped model.
+// WithModelFailover 用主模型与备用模型列表创建 failover 模型。
 func WithModelFailover[M MessageType](primary Model[M], secondaries ...Model[M]) Model[M] {
 	all := append([]Model[M]{primary}, secondaries...)
 	return newFailoverModel(all, nil)
 }
+
+// Generate/Stream 均遍历 models；BindTools 对所有候选模型绑定工具。

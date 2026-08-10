@@ -1,4 +1,4 @@
-// Package plantask provides a task management middleware for core.
+// Package plantask 提供 Agent 运行期任务管理。
 // It allows agents to create, list, update, and manage tasks during execution,
 // with task state persisted in the run session.
 //
@@ -7,6 +7,8 @@
 // Consider moving to agentcore/tools/ or integrating its TaskManager with
 // prebuilt/deep's TaskManager to eliminate duplication.
 package plantask
+
+// plantask.go — 任务管理工具库：在 run session 中创建/列出/更新/删除任务，供 Agent 规划使用。
 
 import (
 	"context"
@@ -17,7 +19,7 @@ import (
 	"ragflow/internal/harness/core"
 )
 
-// TaskState represents the lifecycle state of a task.
+// TaskState 任务生命周期状态。
 type TaskState string
 
 const (
@@ -28,7 +30,7 @@ const (
 	TaskCancelled TaskState = "cancelled"
 )
 
-// Task represents a unit of work managed by plantask.
+// Task 表示 plantask 管理的工作单元。
 type Task struct {
 	ID           string         `json:"id"`
 	Title        string         `json:"title"`
@@ -41,7 +43,7 @@ type Task struct {
 	Metadata     map[string]any `json:"metadata,omitempty"`
 }
 
-// Manager manages tasks for an agent run session.
+// Manager 管理单次运行会话中的任务树。
 type Manager struct {
 	mu     sync.RWMutex
 	tasks  map[string]*taskInternal
@@ -53,14 +55,14 @@ type taskInternal struct {
 	subtasks map[string]*taskInternal
 }
 
-// NewManager creates a new task Manager.
+// NewManager 创建空任务管理器。
 func NewManager() *Manager {
 	return &Manager{
 		tasks: make(map[string]*taskInternal),
 	}
 }
 
-// Create creates a new task. When ParentID is set, the task is also registered
+// Create 创建任务；ParentID 非空时同时注册为父任务子项。
 // as a subtask of the parent within the same lock (TOCTOU-safe).
 func (m *Manager) Create(ctx context.Context, title, desc string, opts ...CreateOption) (*Task, error) {
 	cfg := &createConfig{State: TaskPending}
@@ -92,7 +94,7 @@ func (m *Manager) Create(ctx context.Context, title, desc string, opts ...Create
 	return t, nil
 }
 
-// Get retrieves a task by ID.
+// Get 按 ID 获取任务。
 func (m *Manager) Get(id string) (*Task, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -103,7 +105,7 @@ func (m *Manager) Get(id string) (*Task, error) {
 	return t.Task, nil
 }
 
-// List returns all top-level tasks (tasks without a parent).
+// List 返回全部顶层任务。
 func (m *Manager) List() ([]*Task, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -131,7 +133,7 @@ func (m *Manager) ListByState(state TaskState) ([]*Task, error) {
 	return result, nil
 }
 
-// Update modifies task fields.
+// Update 修改任务字段。
 func (m *Manager) Update(id string, opts ...UpdateOption) (*Task, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -145,7 +147,7 @@ func (m *Manager) Update(id string, opts ...UpdateOption) (*Task, error) {
 	return t.Task, nil
 }
 
-// SetState transitions a task to a new state.
+// SetState 切换任务状态。
 func (m *Manager) SetState(id string, state TaskState) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -243,7 +245,7 @@ func WithMetadata(md map[string]any) UpdateOption { return func(task *Task) { ta
 
 // ---- Tools ----
 
-// GetManagerFromContext retrieves the plantask.Manager from the run session.
+// GetManagerFromContext 从 run session 读取 Manager。
 // Returns nil if not found or if called outside agent execution.
 func GetManagerFromContext(ctx context.Context) *Manager {
 	val, ok, _ := core.GetRunLocalValue(ctx, plantaskSessionKey)
@@ -258,7 +260,7 @@ func GetManagerFromContext(ctx context.Context) *Manager {
 
 const plantaskSessionKey = "_plantask_manager"
 
-// InitManager creates a plantask Manager and stores it in the run session.
+// InitManager 创建 Manager 并写入 run session。
 // Call this in BeforeAgent middleware before tools that need task management are used.
 func InitManager(ctx context.Context) (*Manager, error) {
 	m := NewManager()
@@ -268,7 +270,7 @@ func InitManager(ctx context.Context) (*Manager, error) {
 	return m, nil
 }
 
-// ToolCreateTask returns an core.Tool for creating tasks.
+// ToolCreateTask 返回 create_task 工具。
 func ToolCreateTask() core.Tool {
 	return core.NewBaseTool(
 		"create_task",
@@ -423,7 +425,7 @@ func ToolDeleteTask() core.Tool {
 	)
 }
 
-// AllTools returns all plantask tool definitions as a slice.
+// AllTools 返回全部 plantask 工具定义。
 func AllTools() []core.Tool {
 	return []core.Tool{
 		ToolCreateTask(),
@@ -433,3 +435,5 @@ func AllTools() []core.Tool {
 		ToolDeleteTask(),
 	}
 }
+
+// 工具库非 TypedReActMiddleware；BeforeAgent 中需 InitManager 后工具才可用。

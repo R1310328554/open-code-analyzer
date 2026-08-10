@@ -1,7 +1,7 @@
-// Package internal provides shared internal helpers for core.
+// Package internal 提供 core 包内部共享辅助（多语言提示词）。
 package internal
 
-// Language represents the language for agent prompts.
+// Language 表示 Agent 提示词语言。
 type Language string
 
 const (
@@ -11,9 +11,12 @@ const (
 
 var currentLanguage Language = LanguageEnglish
 
+// SetLanguage 设置全局提示词语言
 func SetLanguage(lang Language) { currentLanguage = lang }
+// GetLanguage 返回当前提示词语言
 func GetLanguage() Language     { return currentLanguage }
 
+// GetPrompt 按当前语言返回英文或中文提示
 func GetPrompt(en, zh string) string {
 	if currentLanguage == LanguageChinese {
 		return zh
@@ -35,3 +38,5 @@ var (
 		"完成任务后请说'完成'。",
 	)
 )
+
+// DefaultSystemPrompt/TransferPrompt/ExitPrompt 随 Language 切换中英文。

@@ -1,12 +1,15 @@
 package core
 
+// event_sender.go — 模型/工具事件发送中间件：在 Handlers 链中控制事件发射位置，避免与内置 sender 重复。
+
+
 import (
 	"context"
 
 	"ragflow/internal/harness/core/schema"
 )
 
-// ---- NewEventSenderModelWrapper creates a handler that sends model output events.
+// ---- NewEventSenderModelWrapper 创建模型输出事件发送处理器 ----
 // Place this in the Handlers chain to control WHERE events are emitted:
 // - Innermost position (last in Handlers list): events contain original (unmodified) model output
 // - Outermost position (first in Handlers list): events contain fully processed output
@@ -26,7 +29,7 @@ func (h *eventSenderModelHandler[M]) WrapModel(ctx context.Context, m Model[M], 
 	return wrapModelWithEventSender(m, ec), nil
 }
 
-// All other middleware methods are no-op
+// 其余中间件方法均为空实现
 func (h *eventSenderModelHandler[M]) BeforeAgent(ctx context.Context, rc *ReActAgentContext) (context.Context, *ReActAgentContext, error) {
 	return ctx, rc, nil
 }
@@ -40,7 +43,7 @@ func (h *eventSenderModelHandler[M]) AfterModelRewrite(ctx context.Context, stat
 	return ctx, state, nil
 }
 
-// HasUserEventSenderModelWrapper checks if the handlers list contains a user-provided
+// HasUserEventSenderModelWrapper 检测用户是否已注册事件 sender，避免重复。
 // NewEventSenderModelWrapper. When present, the framework skips its internal default
 // model event sender to avoid duplicate events.
 func HasUserEventSenderModelWrapper[M MessageType](handlers []TypedReActMiddleware[M]) bool {
@@ -52,15 +55,15 @@ func HasUserEventSenderModelWrapper[M MessageType](handlers []TypedReActMiddlewa
 	return false
 }
 
-// ---- Tool event constructors ----
+// ---- 工具事件构造器 ----
 
-// TypedToolInvokeEvent creates an event for a synchronous tool result.
+// TypedToolInvokeEvent 为同步工具结果构造 AgentEvent。
 func TypedToolInvokeEvent(result string, tc *ToolContext) *TypedAgentEvent[*schema.Message] {
 	msg := schema.ToolMessage(result, tc.CallID)
 	return typedEventFromMessage(msg, nil, schema.RoleTool, tc.Name)
 }
 
-// TypedToolStreamEvent creates an event for a streaming tool result.
+// TypedToolStreamEvent 为流式工具结果构造 AgentEvent。
 func TypedToolStreamEvent(resultChunks []string, tc *ToolContext) *TypedAgentEvent[*schema.Message] {
 	content := ""
 	for _, ch := range resultChunks {
@@ -70,7 +73,7 @@ func TypedToolStreamEvent(resultChunks []string, tc *ToolContext) *TypedAgentEve
 	return typedEventFromMessage(msg, nil, schema.RoleTool, tc.Name)
 }
 
-// TypedEnhancedToolInvokeEvent creates an event for an enhanced tool result.
+// TypedEnhancedToolInvokeEvent 为增强工具结果构造事件，传播 Extra 元数据。
 // Propagates Extra metadata for multimodal support.
 func TypedEnhancedToolInvokeEvent(result *schema.ToolResult, tc *ToolContext) *TypedAgentEvent[*schema.Message] {
 	content := result.Content
@@ -90,7 +93,7 @@ func TypedEnhancedToolInvokeEvent(result *schema.ToolResult, tc *ToolContext) *T
 	return typedEventFromMessage(msg, nil, schema.RoleTool, tc.Name)
 }
 
-// TypedEnhancedToolStreamEvent creates an event for a streaming enhanced tool result.
+// TypedEnhancedToolStreamEvent 为流式增强工具结果构造事件。
 // Propagates the last result's Extra metadata.
 func TypedEnhancedToolStreamEvent(results []*schema.ToolResult, tc *ToolContext) *TypedAgentEvent[*schema.Message] {
 	if len(results) == 0 {
@@ -113,3 +116,5 @@ func TypedEnhancedToolStreamEvent(results []*schema.ToolResult, tc *ToolContext)
 	}
 	return typedEventFromMessage(msg, nil, schema.RoleTool, tc.Name)
 }
+
+// Handlers 最外层：事件反映完全处理后输出；最内层：反映原始模型输出。

@@ -1,7 +1,9 @@
-// Package patchtoolcalls patches incomplete tool calls in conversation history.
+// Package patchtoolcalls 修补会话历史中未完成的工具调用。
 // When the model's tool call was interrupted or cut off, this middleware
 // inserts placeholder tool messages so the conversation remains consistent.
 package patchtoolcalls
+
+// patchtoolcalls.go — 修补未完成工具调用：为中断或截断的 tool call 插入占位 tool 消息以保持对话一致。
 
 import (
 	"context"
@@ -11,10 +13,10 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// PatchedContentGenerator generates the content for a placeholder tool message.
+// PatchedContentGenerator 生成占位 tool 消息内容。
 type PatchedContentGenerator func(toolName, toolCallID string) string
 
-// Config configures the patchtoolcalls middleware.
+// Config 配置占位文案生成器与语言。
 type Config struct {
 	// PatchedContent overrides the default patch message content.
 	PatchedContent PatchedContentGenerator
@@ -45,6 +47,7 @@ func getPatchContent(cfg *Config, toolName, toolCallID string) string {
 	return defaultPatchContent(toolName, toolCallID)
 }
 
+// New 创建 patchtoolcalls 中间件
 func New[M core.MessageType](cfg *Config) core.TypedReActMiddleware[M] {
 	if cfg == nil {
 		cfg = &Config{}
@@ -52,6 +55,7 @@ func New[M core.MessageType](cfg *Config) core.TypedReActMiddleware[M] {
 	return &middleware[M]{cfg: cfg}
 }
 
+// buildPatchPlaceholder 按 MessageType 构造 tool 或 Agentic 占位消息
 func buildPatchPlaceholder[M core.MessageType](content, callID string) M {
 	var zero M
 	switch any(zero).(type) {
@@ -71,6 +75,7 @@ func buildPatchPlaceholder[M core.MessageType](content, callID string) M {
 	}
 }
 
+// BeforeModelRewrite 扫描 assistant 工具调用并插入缺失的 tool 结果
 func (m *middleware[M]) BeforeModelRewrite(ctx context.Context, state *core.TypedReActAgentState[M], mc *core.TypedModelContext[M]) (context.Context, *core.TypedReActAgentState[M], error) {
 	// Build a new slice instead of mutating state.Messages in-place to avoid
 	// fragility from slice reallocation mid-iteration.
@@ -131,3 +136,5 @@ func (m *middleware[M]) BeforeModelRewrite(ctx context.Context, state *core.Type
 	state.Messages = patched
 	return ctx, state, nil
 }
+
+// 下一消息已是 tool 结果则跳过；AgenticMessage 用 ContentBlocks 索引 O(1) 查重。
