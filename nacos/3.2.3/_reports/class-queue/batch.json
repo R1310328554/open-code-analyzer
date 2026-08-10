@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:25:16Z",
   "files": [
-    "naming/src/main/java/com/alibaba/nacos/naming/cluster/ServerStatusManager.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/cluster/remote/request/DistroDataRequest.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/cluster/remote/request/RequestRegistry.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/cluster/remote/response/DistroDataResponse.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/cluster/remote/response/ResponseRegistry.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/cluster/transport/JacksonSerializer.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/cluster/transport/Serializer.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/config/NamingEnabledFilter.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/consistency/Datum.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/consistency/KeyBuilder.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/consistency/ephemeral/distro/v2/DistroClientComponentRegistry.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/consistency/ephemeral/distro/v2/DistroClientDataProcessor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/consistency/ephemeral/distro/v2/DistroClientTaskFailedHandler.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/consistency/ephemeral/distro/v2/DistroClientTransportAgent.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/consistency/ephemeral/distro/v2/DistroClientVerifyInfo.java",
     "naming/src/main/java/com/alibaba/nacos/naming/consistency/persistent/impl/AbstractSnapshotOperation.java",
     "naming/src/main/java/com/alibaba/nacos/naming/consistency/persistent/impl/BatchReadResponse.java",
     "naming/src/main/java/com/alibaba/nacos/naming/consistency/persistent/impl/BatchWriteRequest.java",
@@ -33,5 +18,5 @@
     "naming/src/main/java/com/alibaba/nacos/naming/controllers/v3/InstanceOpenApiController.java"
   ],
   "remaining_pending": 647,
-  "done": 1860
+  "done": 1875
 }
