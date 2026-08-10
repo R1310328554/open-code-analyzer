@@ -1,3 +1,4 @@
+// 模型创建 API：从 from/files 组装 manifest、转换 safetensors/GGUF 与量化。
 package server
 
 import (
@@ -38,6 +39,7 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// create 流程常见校验错误。
 var (
 	errNoFilesProvided         = errors.New("no files provided to convert")
 	errOnlyOneAdapterSupported = errors.New("only one adapter is currently supported")
@@ -48,6 +50,7 @@ var (
 	errRemoteDraftUnsupported  = errors.New("DRAFT cannot be used with remote models")
 )
 
+// CreateHandler 处理 POST /api/create：校验请求、异步转换层并流式返回进度。
 func (s *Server) CreateHandler(c *gin.Context) {
 	config := &model.ConfigV2{
 		OS:           "linux",
@@ -355,6 +358,7 @@ func (s *Server) CreateHandler(c *gin.Context) {
 	streamResponse(c, ch)
 }
 
+// remoteURL 规范化远程模型主机（路径、ollama.com、默认 11434 端口）。
 func remoteURL(raw string) (string, error) {
 	// Special‑case: user supplied only a path ("/foo/bar").
 	if strings.HasPrefix(raw, "/") {
@@ -400,10 +404,12 @@ func remoteURL(raw string) (string, error) {
 	return u.String(), nil
 }
 
+// convertModelFromFiles 按文件后缀将 blob 转为 GGML 层（含模板检测）。
 func convertModelFromFiles(files map[string]string, baseLayers []*layerGGML, isAdapter bool, fn func(resp api.ProgressResponse)) ([]*layerGGML, error) {
 	return convertModelFromFilesWithMediaType(files, baseLayers, isAdapter, "", true, fn)
 }
 
+// convertDraftModelFromFiles 转换 speculative draft 模型层。
 func convertDraftModelFromFiles(files map[string]string, baseLayers []*layerGGML, fn func(resp api.ProgressResponse)) ([]*layerGGML, error) {
 	return convertModelFromFilesWithMediaType(files, baseLayers, false, manifest.MediaTypeImageDraft, false, fn)
 }
@@ -473,6 +479,7 @@ func maxCreateInfoInt() int {
 	return int(^uint(0) >> 1)
 }
 
+// detectModelTypeFromFiles 按后缀或魔数识别 safetensors/gguf。
 func detectModelTypeFromFiles(files map[string]string) string {
 	for fn := range files {
 		if strings.HasSuffix(fn, ".safetensors") {
@@ -511,6 +518,7 @@ func detectModelTypeFromFiles(files map[string]string) string {
 	return ""
 }
 
+// convertFromSafetensors 在临时目录链接 blob 并调用 convert 包生成 GGUF 层。
 func convertFromSafetensors(files map[string]string, baseLayers []*layerGGML, isAdapter bool, mediaType string, detectTemplate bool, fn func(resp api.ProgressResponse)) ([]*layerGGML, error) {
 	tmpDir, err := os.MkdirTemp(envconfig.Models(), "ollama-safetensors")
 	if err != nil {
@@ -721,6 +729,7 @@ func kvFromLayers(baseLayers []*layerGGML) (ofs.Config, error) {
 	return ggml.KV{}, fmt.Errorf("no base model was found")
 }
 
+// createModel 量化/合并层、写入 template/license/params 并持久化 manifest。
 func createModel(r api.CreateRequest, name model.Name, baseLayers []*layerGGML, config *model.ConfigV2, fn func(resp api.ProgressResponse)) (err error) {
 	var layers []manifest.Layer
 	for _, layer := range baseLayers {
@@ -928,6 +937,7 @@ func isEmbeddedCompatibilityTensor(name string) bool {
 	return false
 }
 
+// quantizeLayer 用 llama-quantize 将 F16/BF16/F32 层量化为目标类型。
 func quantizeLayer(layer *layerGGML, quantizeType string, fn func(resp api.ProgressResponse)) (*layerGGML, error) {
 	ftype, err := ggml.ParseFileType(quantizeType)
 	if err != nil {
@@ -1152,6 +1162,7 @@ func splitGGUFGroupKey(layer *layerGGML) (string, bool, error) {
 	return fmt.Sprintf("%s:%s:%d", layer.MediaType, prefix, count), true, nil
 }
 
+// mergeSplitGGUFLayers 按 split.no 合并分片 GGUF 为单一 layerGGML。
 func mergeSplitGGUFLayers(layers []*layerGGML) (*layerGGML, error) {
 	if len(layers) == 0 {
 		return nil, fmt.Errorf("empty split GGUF group")
@@ -1310,6 +1321,7 @@ func removeLayer(layers []manifest.Layer, mediatype string) []manifest.Layer {
 	})
 }
 
+// setTemplate 替换或追加 Go template 层。
 func setTemplate(layers []manifest.Layer, t string) ([]manifest.Layer, error) {
 	layers = removeLayer(layers, "application/vnd.ollama.image.template")
 	if _, err := template.Parse(t); err != nil {
@@ -1421,6 +1433,7 @@ func setMessages(layers []manifest.Layer, m []api.Message) ([]manifest.Layer, er
 	return layers, nil
 }
 
+// createConfigLayer 将 ConfigV2 编码为 manifest config 层。
 func createConfigLayer(config model.ConfigV2) (*manifest.Layer, error) {
 	var b bytes.Buffer
 	if err := json.NewEncoder(&b).Encode(config); err != nil {

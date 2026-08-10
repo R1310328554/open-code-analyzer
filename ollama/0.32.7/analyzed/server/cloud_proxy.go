@@ -1,3 +1,4 @@
+// 云端模型代理：检测 cloud 模型引用、签名转发与响应流复制。
 package server
 
 import (
@@ -24,6 +25,7 @@ import (
 	"github.com/ollama/ollama/version"
 )
 
+// 默认云端代理基址、签名主机与环境变量名。
 const (
 	defaultCloudProxyBaseURL      = "https://ollama.com:443"
 	defaultCloudProxySigningHost  = "ollama.com"
@@ -31,6 +33,7 @@ const (
 	legacyCloudAnthropicKey       = "legacy_cloud_anthropic_web_search"
 	cloudProxyClientVersionHeader = "X-Ollama-Client-Version"
 
+	// maxDecompressedBodySize 限制 zstd 解压后请求体最大 20MB。
 	// maxDecompressedBodySize limits the size of a decompressed request body
 	maxDecompressedBodySize = 20 << 20
 )
@@ -42,6 +45,7 @@ var (
 	cloudProxySigninURL   = signinURL
 )
 
+// hopByHopHeaders 为代理转发时需剥离的逐跳头。
 var hopByHopHeaders = map[string]struct{}{
 	"connection":          {},
 	"content-length":      {},
@@ -55,6 +59,7 @@ var hopByHopHeaders = map[string]struct{}{
 	"upgrade":             {},
 }
 
+// init 解析 OLLAMA_CLOUD_BASE_URL 覆盖并校验 release 模式限制。
 func init() {
 	baseURL, signingHost, overridden, err := resolveCloudProxyBaseURL(envconfig.Var(cloudProxyBaseURLEnv), mode)
 	if err != nil {
@@ -70,6 +75,7 @@ func init() {
 	}
 }
 
+// cloudPassthroughMiddleware 在 JSON body 含 cloud 模型时改写 model 并代理请求。
 func cloudPassthroughMiddleware(disabledOperation string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method != http.MethodPost {
@@ -135,6 +141,7 @@ func cloudPassthroughMiddleware(disabledOperation string) gin.HandlerFunc {
 	}
 }
 
+// cloudModelPathPassthroughMiddleware 对路径参数中的 cloud 模型做路径级代理。
 func cloudModelPathPassthroughMiddleware(disabledOperation string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		modelName := strings.TrimSpace(c.Param("model"))
@@ -155,6 +162,7 @@ func cloudModelPathPassthroughMiddleware(disabledOperation string) gin.HandlerFu
 	}
 }
 
+// proxyCloudJSONRequest 序列化 JSON 负载并沿当前路径代理。
 func proxyCloudJSONRequest(c *gin.Context, payload any, disabledOperation string) {
 	// TEMP(drifkin): we currently split out this `WithPath` method because we are
 	// mapping `/v1/messages` + web_search to `/api/chat` temporarily. Once we
@@ -176,6 +184,7 @@ func proxyCloudRequest(c *gin.Context, body []byte, disabledOperation string) {
 	proxyCloudRequestWithPath(c, body, c.Request.URL.Path, disabledOperation)
 }
 
+// proxyCloudRequestWithPath 签名出站请求、复制响应头体并处理流式 jsonl 分帧。
 func proxyCloudRequestWithPath(c *gin.Context, body []byte, path string, disabledOperation string) {
 	if disabled, _ := internalcloud.Status(); disabled {
 		c.JSON(http.StatusForbidden, gin.H{"error": internalcloud.DisabledError(disabledOperation)})
@@ -267,6 +276,7 @@ func proxyCloudRequestWithPath(c *gin.Context, body []byte, path string, disable
 	}
 }
 
+// replaceJSONModelField 将 JSON 中 model 字段替换为云端基名。
 func replaceJSONModelField(body []byte, model string) ([]byte, error) {
 	if len(body) == 0 {
 		return body, nil
@@ -300,6 +310,7 @@ func readRequestBody(r *http.Request) ([]byte, error) {
 	return body, nil
 }
 
+// extractModelField 从请求 JSON 提取非空 model 字符串。
 func extractModelField(body []byte) (string, bool) {
 	if len(body) == 0 {
 		return "", false
@@ -324,6 +335,7 @@ func extractModelField(body []byte) (string, bool) {
 	return model, model != ""
 }
 
+// hasAnthropicWebSearchTool 检测 Anthropic web_search 工具以走本地编排路径。
 func hasAnthropicWebSearchTool(body []byte) bool {
 	if len(body) == 0 {
 		return false
@@ -357,6 +369,7 @@ func writeCloudUnauthorized(c *gin.Context) {
 	c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "signin_url": signinURL})
 }
 
+// signCloudProxyRequest 对 ollama.com 目标请求附加 Authorization 签名。
 func signCloudProxyRequest(ctx context.Context, req *http.Request) error {
 	if !strings.EqualFold(req.URL.Hostname(), cloudProxySigningHost) {
 		return nil
@@ -381,6 +394,7 @@ func buildCloudSignatureChallenge(req *http.Request, ts string) string {
 	return fmt.Sprintf("%s,%s", req.Method, req.URL.RequestURI())
 }
 
+// resolveCloudProxyBaseURL 校验并解析可覆盖的云端基址（release 仅允许 loopback）。
 func resolveCloudProxyBaseURL(rawOverride string, runMode string) (baseURL string, signingHost string, overridden bool, err error) {
 	baseURL = defaultCloudProxyBaseURL
 	signingHost = defaultCloudProxySigningHost
@@ -465,6 +479,7 @@ func copyProxyResponseHeaders(dst, src http.Header) {
 	}
 }
 
+// copyProxyResponseBody 分块复制上游响应并在可 flush 时逐块刷新。
 func copyProxyResponseBody(dst http.ResponseWriter, src io.Reader) error {
 	flusher, canFlush := dst.(http.Flusher)
 	buf := make([]byte, 32*1024)
@@ -491,6 +506,7 @@ func copyProxyResponseBody(dst http.ResponseWriter, src io.Reader) error {
 	}
 }
 
+// jsonlFramingResponseWriter 将合并 Write 拆成逐行 JSON 以兼容 web_search 回退。
 type jsonlFramingResponseWriter struct {
 	http.ResponseWriter
 	pending []byte

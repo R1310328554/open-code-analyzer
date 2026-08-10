@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// blob 目录迁移：将 sha256: 前缀文件名重命名为 sha256-。
+// fixBlobs 遍历目录，将 blob 文件名中的 sha256: 替换为 sha256-。
 // fixBlobs walks the provided dir and replaces (":") to ("-") in the file
 // prefix. (e.g. sha256:1234 -> sha256-1234)
 func fixBlobs(dir string) error {

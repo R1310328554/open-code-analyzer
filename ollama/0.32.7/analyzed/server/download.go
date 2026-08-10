@@ -1,3 +1,4 @@
+// 镜像 blob 并行分片下载：断点续传、退避重试与 stall 检测。
 package server
 
 import (
@@ -28,6 +29,7 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// maxRetries 为单分片下载最大重试次数。
 const maxRetries = 6
 
 var (
@@ -36,8 +38,10 @@ var (
 	errMaxRedirectsExceeded = errors.New("maximum redirects exceeded (10) for directURL")
 )
 
+// blobDownloadManager 按 digest 去重并发 pull 的同一 blob。
 var blobDownloadManager sync.Map
 
+// blobDownload 跟踪整 blob 与各分片的进度与取消。
 type blobDownload struct {
 	Name   string
 	Digest string
@@ -54,6 +58,7 @@ type blobDownload struct {
 	references atomic.Int32
 }
 
+// blobDownloadPart 表示单个 byte-range 分片及其持久化状态。
 type blobDownloadPart struct {
 	N         int
 	Offset    int64
@@ -96,6 +101,7 @@ func (p *blobDownloadPart) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// 分片数量与单分片大小上下限。
 const (
 	numDownloadParts          = 16
 	minDownloadPartSize int64 = 100 * format.MegaByte
@@ -127,6 +133,7 @@ func (p *blobDownloadPart) Write(b []byte) (n int, err error) {
 	return n, nil
 }
 
+// Prepare 恢复已有 partial 文件或 HEAD 后切分分片。
 func (b *blobDownload) Prepare(ctx context.Context, requestURL *url.URL, opts *registryOptions) error {
 	partFilePaths, err := filepath.Glob(b.Name + "-partial-*")
 	if err != nil {
@@ -184,11 +191,13 @@ func (b *blobDownload) Prepare(ctx context.Context, requestURL *url.URL, opts *r
 	return nil
 }
 
+// Run 在 goroutine 中执行并行 range 下载并 rename 成最终 blob。
 func (b *blobDownload) Run(ctx context.Context, requestURL *url.URL, opts *registryOptions) {
 	defer close(b.done)
 	b.err = b.run(ctx, requestURL, opts)
 }
 
+// newBackoff 返回 n² 抖动退避，避免 herd 效应。
 func newBackoff(maxBackoff time.Duration) func(ctx context.Context) error {
 	var n int
 	return func(ctx context.Context) error {
@@ -330,6 +339,7 @@ func (b *blobDownload) run(ctx context.Context, requestURL *url.URL, opts *regis
 	return nil
 }
 
+// downloadChunk 拉取单分片 Range 并在 stall 超时后触发重试。
 func (b *blobDownload) downloadChunk(ctx context.Context, requestURL *url.URL, w io.Writer, part *blobDownloadPart) error {
 	g, ctx := errgroup.WithContext(ctx)
 	attemptStarted := time.Now()
@@ -465,6 +475,7 @@ func (b *blobDownload) Wait(ctx context.Context, fn func(api.ProgressResponse)) 
 	}
 }
 
+// downloadOpts 封装 pull 所需的模型名、digest 与进度回调。
 type downloadOpts struct {
 	n       model.Name
 	digest  string
@@ -472,6 +483,7 @@ type downloadOpts struct {
 	fn      func(api.ProgressResponse)
 }
 
+// downloadBlob 从 registry 下载 blob 至本地；已存在则报告 cache hit。
 // downloadBlob downloads a blob from the registry and stores it in the blobs directory
 func downloadBlob(ctx context.Context, opts downloadOpts) (cacheHit bool, _ error) {
 	if opts.digest == "" {

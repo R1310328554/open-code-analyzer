@@ -1,3 +1,4 @@
+// 推理请求调试日志：OLLAMA_DEBUG_LOG_REQUESTS 时记录 body 与 curl 重放脚本。
 package server
 
 import (
@@ -16,11 +17,13 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
+// inferenceRequestLogger 在临时目录写入请求体与 shell 重放脚本。
 type inferenceRequestLogger struct {
 	dir     string
 	counter uint64
 }
 
+// newInferenceRequestLogger 创建临时日志目录。
 func newInferenceRequestLogger() (*inferenceRequestLogger, error) {
 	dir, err := os.MkdirTemp("", "ollama-request-logs-*")
 	if err != nil {
@@ -30,6 +33,7 @@ func newInferenceRequestLogger() (*inferenceRequestLogger, error) {
 	return &inferenceRequestLogger{dir: dir}, nil
 }
 
+// initRequestLogging 在 DebugLogRequests 开启时挂载 requestLogger。
 func (s *Server) initRequestLogging() error {
 	if !envconfig.DebugLogRequests() {
 		return nil
@@ -46,6 +50,7 @@ func (s *Server) initRequestLogging() error {
 	return nil
 }
 
+// withInferenceRequestLogging 为路由前置调试中间件。
 func (s *Server) withInferenceRequestLogging(route string, handlers ...gin.HandlerFunc) []gin.HandlerFunc {
 	if s.requestLogger == nil {
 		return handlers
@@ -54,6 +59,7 @@ func (s *Server) withInferenceRequestLogging(route string, handlers ...gin.Handl
 	return append([]gin.HandlerFunc{s.requestLogger.middleware(route)}, handlers...)
 }
 
+// middleware 读取并还原请求体，handler 执行后异步写日志文件。
 func (l *inferenceRequestLogger) middleware(route string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request == nil {
@@ -84,6 +90,7 @@ func (l *inferenceRequestLogger) middleware(route string) gin.HandlerFunc {
 	}
 }
 
+// log 写入 JSON body 与可执行的 curl 重放脚本。
 func (l *inferenceRequestLogger) log(route, method, scheme, host, contentType string, body []byte) {
 	if l == nil || l.dir == "" {
 		return
@@ -124,6 +131,7 @@ func (l *inferenceRequestLogger) log(route, method, scheme, host, contentType st
 	slog.Info(fmt.Sprintf("logged to %s, replay using curl with `sh %s`", bodyPath, curlPath))
 }
 
+// sanitizeRouteForFilename 将路由路径转为安全文件名片段。
 func sanitizeRouteForFilename(route string) string {
 	route = strings.TrimPrefix(route, "/")
 	if route == "" {

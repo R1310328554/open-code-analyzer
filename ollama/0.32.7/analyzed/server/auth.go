@@ -1,3 +1,4 @@
+// 镜像仓库认证：OAuth 质询 URL 构造与签名换取 bearer token。
 package server
 
 import (
@@ -19,12 +20,14 @@ import (
 	"github.com/ollama/ollama/auth"
 )
 
+// registryChallenge 描述 WWW-Authenticate 中的 registry 质询字段。
 type registryChallenge struct {
 	Realm   string
 	Service string
 	Scope   string
 }
 
+// URL 组装带 service/scope/ts/nonce 的授权重定向 URL。
 func (r registryChallenge) URL() (*url.URL, error) {
 	redirectURL, err := url.Parse(r.Realm)
 	if err != nil {
@@ -50,12 +53,14 @@ func (r registryChallenge) URL() (*url.URL, error) {
 	return redirectURL, nil
 }
 
+// getAuthorizationToken 校验 realm 主机后签名 GET 并解析 TokenResponse。
 func getAuthorizationToken(ctx context.Context, challenge registryChallenge, originalHost string) (string, error) {
 	redirectURL, err := challenge.URL()
 	if err != nil {
 		return "", err
 	}
 
+	// 校验 realm 主机与原始请求一致，防止跨域泄露 token。
 	// Validate that the realm host matches the original request host to prevent sending tokens cross-origin.
 	if redirectURL.Host != originalHost {
 		return "", fmt.Errorf("realm host %q does not match original host %q", redirectURL.Host, originalHost)

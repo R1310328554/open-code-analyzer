@@ -1,3 +1,4 @@
+// 模型列表缓存：启动时 hydrate manifest 摘要，供 /api/tags 快速响应。
 package server
 
 import (
@@ -25,6 +26,7 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// modelListSummary 缓存单模型的 tags 展示字段与能力。
 type modelListSummary struct {
 	Model        string
 	Name         string
@@ -37,11 +39,13 @@ type modelListSummary struct {
 	Capabilities []model.Capability
 }
 
+// modelListCacheEntry 绑定 manifest digest 与摘要快照。
 type modelListCacheEntry struct {
 	Digest  string
 	Summary modelListSummary
 }
 
+// modelListCache 线程安全 map，启动 hydrate 后与 manifest 增量同步。
 type modelListCache struct {
 	mu sync.RWMutex
 
@@ -62,6 +66,7 @@ func newModelListCache() *modelListCache {
 	}
 }
 
+// Start 异步 hydrate 全部 manifest 并在 ready channel 关闭后可供 List。
 func (c *modelListCache) Start(ctx context.Context) {
 	if c == nil {
 		return
@@ -82,6 +87,7 @@ func (c *modelListCache) Start(ctx context.Context) {
 	})
 }
 
+// hydrate 遍历本地 manifest 构建初始 entries。
 func (c *modelListCache) hydrate(ctx context.Context) error {
 	start := time.Now()
 
@@ -142,6 +148,7 @@ func (c *modelListCache) Wait(ctx context.Context) error {
 	}
 }
 
+// List 等待就绪、同步变更后返回排序后的模型列表。
 func (c *modelListCache) List(ctx context.Context) ([]api.ListModelResponse, error) {
 	if err := c.Wait(ctx); err != nil {
 		return nil, err
@@ -229,6 +236,7 @@ func (c *modelListCache) syncManifests(ctx context.Context) error {
 	return nil
 }
 
+// RefreshModel 在 create/pull 后更新或删除单条缓存。
 func (c *modelListCache) RefreshModel(name model.Name) error {
 	if c == nil {
 		return nil
@@ -308,6 +316,7 @@ func (c *modelListCache) set(name model.Name, digest string, summary modelListSu
 	c.mu.Unlock()
 }
 
+// buildModelListSummary 从 config/层/GGUF 头推断 details 与 capabilities。
 func buildModelListSummary(name model.Name, mf *manifest.Manifest) (modelListSummary, error) {
 	cfg, err := readModelListConfig(mf)
 	if err != nil {
@@ -492,6 +501,7 @@ const (
 	modelListGGUFTypeFloat64
 )
 
+// readModelListGGUF 仅扫描 GGUF KV 头所需字段，避免 tokenizer 大数组。
 // readModelListGGUF scans only the small GGUF header values launch needs
 // and stops before tokenizer arrays. Using gguf.File.KeyValue for missing keys
 // can otherwise advance through large arrays just to discover absence.
@@ -831,6 +841,7 @@ func cloneModelListSummary(summary modelListSummary) modelListSummary {
 	return summary
 }
 
+// ListModelResponse 将内部摘要转为 api.ListModelResponse。
 func (s modelListSummary) ListModelResponse() api.ListModelResponse {
 	resp := api.ListModelResponse{
 		Model:       s.Model,
@@ -864,6 +875,7 @@ func sortListModelResponses(models []api.ListModelResponse) {
 	})
 }
 
+// refreshModelListCache create/delete 后刷新列表 cache。
 func (s *Server) refreshModelListCache(name model.Name) {
 	if s == nil || s.modelCaches == nil || s.modelCaches.modelList == nil {
 		return

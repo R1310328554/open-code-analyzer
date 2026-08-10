@@ -34,6 +34,8 @@ import (
 	"github.com/ollama/ollama/x/transfer"
 )
 
+// 本地模型镜像：加载 manifest、能力推断、pull/push 与层裁剪。
+// 宽限期内的 blob 可能仍被其他进程写入，稍后 mark-and-sweep 再清理。
 // Blobs newer than this may belong to another process that has not written its
 // manifest yet. They become eligible for the normal mark-and-sweep pass later.
 const layerPruneGracePeriod = time.Hour
@@ -51,6 +53,7 @@ var (
 	errInsecureProtocol     = errors.New("insecure protocol http")
 )
 
+// registryOptions 控制 registry HTTP 认证与重定向行为。
 type registryOptions struct {
 	Insecure bool
 	Username string
@@ -60,6 +63,7 @@ type registryOptions struct {
 	CheckRedirect func(req *http.Request, via []*http.Request) error
 }
 
+// Model 聚合 manifest 层路径、模板、选项与运行时能力。
 type Model struct {
 	Name               string `json:"name"`
 	Config             model.ConfigV2
@@ -69,7 +73,7 @@ type Model struct {
 	ParentModel        string
 	HasChatTemplate    bool
 	HasGoTemplate      bool
-	PreferChatTemplate bool // set when GGUF chat_template should take precedence over Go TEMPLATE
+	PreferChatTemplate bool // 为 true 时 GGUF chat_template 优先于 Go TEMPLATE
 	AdapterPaths       []string
 	ProjectorPaths     []string
 	System             string
@@ -81,6 +85,7 @@ type Model struct {
 	Template *template.Template
 }
 
+// IsMLX 判断模型格式是否为 safetensors（MLX runner）。
 func (m *Model) IsMLX() bool {
 	return m.Config.ModelFormat == "safetensors"
 }
@@ -104,6 +109,7 @@ const (
 	templateCapabilityChat
 )
 
+// Capabilities 返回模型支持的 completion/tools/vision 等能力列表。
 // Capabilities returns the capabilities that the model supports
 func (m *Model) Capabilities() []model.Capability {
 	capabilities := m.capabilitiesForTemplate(templateCapabilitySelected, nil)
@@ -114,6 +120,7 @@ func (m *Model) Capabilities() []model.Capability {
 	return capabilities
 }
 
+// capabilitiesForTemplate 按 config/GGUF/模板/parser 等来源合并能力。
 func (m *Model) capabilitiesForTemplate(source templateCapabilitySource, f *gguf.File) []model.Capability {
 	capabilities := []model.Capability{}
 	var modelArch string
@@ -176,6 +183,7 @@ func (m *Model) ggufCapabilities(capabilities []model.Capability, source templat
 	return capabilities, modelArch
 }
 
+// chatTemplateCapabilities 从 GGUF chat_template 推断 tools/thinking。
 func chatTemplateCapabilities(capabilities []model.Capability, chatTemplate string) []model.Capability {
 	if chatTemplate == "" {
 		return capabilities
@@ -507,6 +515,7 @@ func projectorSuppressesAudioCapability(f *gguf.File) bool {
 
 // CheckCapabilities checks if the model has the specified capabilities returning an error describing
 // any missing or unknown capabilities
+// CheckCapabilities 校验请求所需能力是否满足，否则返回 errCapabilities 链。
 func (m *Model) CheckCapabilities(want ...model.Capability) error {
 	available := m.Capabilities()
 	var errs []error
@@ -641,6 +650,7 @@ func (m *Model) String() string {
 	return modelfile.String()
 }
 
+// GetModel 解析名称、读取 manifest 并填充 Model 路径与模板。
 func GetModel(name string) (*Model, error) {
 	n := model.ParseName(name)
 	mf, err := manifest.ParseNamedManifest(n)
@@ -768,6 +778,7 @@ func GetModel(name string) (*Model, error) {
 	return m, nil
 }
 
+// CopyModel 复制 manifest 与 blob 引用到新名称。
 func CopyModel(src, dst model.Name) error {
 	if !dst.IsFullyQualified() {
 		return model.Unqualified(dst)
@@ -838,6 +849,7 @@ func deleteUnusedLayers(deleteMap map[string]struct{}) error {
 	return nil
 }
 
+// PruneLayers mark-and-sweep 删除未被任何 manifest 引用的 blob。
 func PruneLayers() error {
 	deleteMap := make(map[string]struct{})
 	p, err := manifest.BlobsPath("")
@@ -895,6 +907,7 @@ func PruneLayers() error {
 	return nil
 }
 
+// PushModel 将本地 manifest 各层上传到远程 registry。
 func PushModel(ctx context.Context, name string, regOpts *registryOptions, fn func(api.ProgressResponse)) error {
 	n := model.ParseName(name)
 	fn(api.ProgressResponse{Status: "retrieving manifest"})

@@ -1,3 +1,4 @@
+// 模型层解析：从已有 manifest 拉取/解码 GGML 层与聊天模板自动检测。
 package server
 
 import (
@@ -18,11 +19,14 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// intermediateBlobs 缓存 create/pull 过程中的临时 blob 路径映射。
 var intermediateBlobs map[string]string = make(map[string]string)
 
+// layerGGML 将 manifest.Layer 与解码后的 GGML 及分片元数据绑定。
 type layerGGML struct {
 	manifest.Layer
 	*ggml.GGML
+	// rewriteForCreate 标记用户上传或 safetensors 转换的 GGUF，create 时需 llama-quantize 校验。
 	// rewriteForCreate marks GGUF model layers that came from user-supplied
 	// files or safetensors conversion. Text-only GGUFs are validated with
 	// llama-quantize. GGUFs with embedded compatibility tensors stay in their
@@ -31,12 +35,14 @@ type layerGGML struct {
 	splitParts       []splitGGUFPart
 }
 
+// splitGGUFPart 描述分片 GGUF 的 digest、源名与解码视图。
 type splitGGUFPart struct {
 	Digest string
 	Name   string
 	GGML   *ggml.GGML
 }
 
+// parseFromModel 解析 manifest；缺失时 pull 并为各层附加 GGML 解码。
 func parseFromModel(ctx context.Context, name model.Name, fn func(api.ProgressResponse)) (layers []*layerGGML, err error) {
 	m, err := manifest.ParseNamedManifest(name)
 	switch {
@@ -90,6 +96,7 @@ func parseFromModel(ctx context.Context, name model.Name, fn func(api.ProgressRe
 	return layers, nil
 }
 
+// detectChatTemplate 从 GGUF chat_template 匹配内置模板并追加 template/params 层。
 func detectChatTemplate(layers []*layerGGML) ([]*layerGGML, error) {
 	for _, layer := range layers {
 		if s := layer.GGML.KV().ChatTemplate(); s != "" {
@@ -124,6 +131,7 @@ func detectChatTemplate(layers []*layerGGML) ([]*layerGGML, error) {
 	return layers, nil
 }
 
+// detectContentType 读取文件头识别 gguf 或 HTTP 内容类型。
 func detectContentType(r io.Reader) (string, error) {
 	var b bytes.Buffer
 	if _, err := io.Copy(&b, r); err != nil {
