@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:26:12Z",
-  "files": [
-    "rag/svr/task_executor_refactor/chunk_post_processor.py",
-    "rag/svr/task_executor_refactor/chunk_service.py",
-    "rag/svr/task_executor_refactor/comparator.py",
-    "rag/svr/task_executor_refactor/constants.py",
-    "rag/svr/task_executor_refactor/dataflow_service.py",
-    "rag/svr/task_executor_refactor/dataset_skill_generator.py",
-    "rag/svr/task_executor_refactor/dataset_wiki_generator.py",
-    "rag/svr/task_executor_refactor/embedding_service.py",
-    "rag/svr/task_executor_refactor/embedding_utils.py",
-    "rag/svr/task_executor_refactor/post_processor.py",
-    "rag/svr/task_executor_refactor/raptor_service.py",
-    "rag/svr/task_executor_refactor/raptor_utils.py",
-    "rag/svr/task_executor_refactor/recording_context.py",
-    "rag/svr/task_executor_refactor/report_generator.py",
-    "rag/svr/task_executor_refactor/task_context.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 474,
-  "done": 1275
+  "done": 1290
 }
