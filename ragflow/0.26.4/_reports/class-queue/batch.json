@@ -1,18 +1,6 @@
 {
   "claimed_at": "2026-08-10T20:10:49Z",
   "files": [
-    "web/src/utils/citation-utils.ts",
-    "web/src/utils/common-util.ts",
-    "web/src/utils/component-util.ts",
-    "web/src/utils/css-support.ts",
-    "web/src/utils/dataset-util.ts",
-    "web/src/utils/date.ts",
-    "web/src/utils/document-util.ts",
-    "web/src/utils/dom-util.ts",
-    "web/src/utils/file-util.ts",
-    "web/src/utils/form.ts",
-    "web/src/utils/index.ts",
-    "web/src/utils/list-filter-util.ts",
     "web/src/utils/llm-cache.ts",
     "web/src/utils/llm-util.ts",
     "web/src/utils/next-request.ts",
@@ -27,5 +15,5 @@
     "web/vite.config.ts"
   ],
   "remaining_pending": 0,
-  "done": 1740
+  "done": 1752
 }
