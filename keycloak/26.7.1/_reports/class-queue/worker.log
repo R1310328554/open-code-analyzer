@@ -1888,3 +1888,18 @@
 2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CachePublicKeyProviderFactory.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
 2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CachePublicKeyProviderSpi.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
 2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CacheRealmProvider.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CacheRealmProviderFactory.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CacheRealmProviderSpi.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CacheUserProviderSpi.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CachedRealmModel.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/UserCacheProviderFactory.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/dblock/DBLockManager.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/dblock/DBLockProvider.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/dblock/DBLockProviderFactory.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/dblock/DBLockSpi.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/session/DisabledUserSessionPersisterProvider.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/session/PersistentAuthenticatedClientSessionAdapter.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/session/PersistentClientSessionModel.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/session/PersistentUserSessionAdapter.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/session/PersistentUserSessionModel.java wave65a cache/dblock + persistent session models
+2026-08-10T08:39:44Z DONE model/storage-private/src/main/java/org/keycloak/models/session/RevokedToken.java wave65a cache/dblock + persistent session models

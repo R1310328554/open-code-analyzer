@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T08:37:49Z",
   "files": [
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CacheRealmProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CacheRealmProviderSpi.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CacheUserProviderSpi.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CachedRealmModel.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/UserCacheProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/models/dblock/DBLockManager.java",
-    "model/storage-private/src/main/java/org/keycloak/models/dblock/DBLockProvider.java",
-    "model/storage-private/src/main/java/org/keycloak/models/dblock/DBLockProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/models/dblock/DBLockSpi.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/DisabledUserSessionPersisterProvider.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/PersistentAuthenticatedClientSessionAdapter.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/PersistentClientSessionModel.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/PersistentUserSessionAdapter.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/PersistentUserSessionModel.java",
-    "model/storage-private/src/main/java/org/keycloak/models/session/RevokedToken.java",
     "model/storage-private/src/main/java/org/keycloak/models/session/RevokedTokenPersisterProvider.java",
     "model/storage-private/src/main/java/org/keycloak/models/session/RevokedTokenPersisterSpi.java",
     "model/storage-private/src/main/java/org/keycloak/models/session/RevokedTokensPersisterProviderFactory.java",
@@ -33,5 +18,5 @@
     "model/storage-private/src/main/java/org/keycloak/storage/ClientStorageManager.java"
   ],
   "remaining_pending": 4048,
-  "done": 1920
+  "done": 1935
 }
