@@ -1,5 +1,7 @@
 package tsdb
 
+// tsdb 单文件索引实现：TSDBFile 封装可 ship 的磁盘 TSDB，TSDBIndex 将 IndexReader 翻译为 indexshipper 的 Index 接口。
+
 import (
 	"context"
 	"errors"
@@ -23,6 +25,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// ErrAlreadyOnDesiredVersion 表示 RebuildWithVersion 时文件已为目标版本，无需重建。
 var ErrAlreadyOnDesiredVersion = errors.New("tsdb file already on desired version")
 
 // GetRawFileReaderFunc returns an io.ReadSeeker for reading raw tsdb file from disk
@@ -82,6 +85,7 @@ func RebuildWithVersion(ctx context.Context, path string, desiredVer int) (shipp
 }
 
 // nolint
+// TSDBFile 组合 Identifier 与 TSDBIndex，并提供 Reader/Close 供 shipper 上传。
 // TSDBFile is backed by an actual file and implements the indexshipper/index.Index interface
 type TSDBFile struct {
 	// reuse Identifier for resolving locations
@@ -116,6 +120,7 @@ func (f *TSDBFile) Reader() (io.ReadSeeker, error) {
 }
 
 // nolint
+// TSDBIndex 在内存中加载索引页，不长期持有文件描述符，由 reader 负责底层 IO。
 // TSDBIndex is backed by an IndexReader
 // and translates the IndexReader to an Index implementation
 // It loads the file into memory and doesn't keep a file descriptor open
@@ -161,6 +166,7 @@ func (i *TSDBIndex) SetChunkFilterer(chunkFilter chunk.RequestChunkFilterer) {
 // Iteration will stop if the callback returns true.
 // Accepts a userID argument in order to implement `Index` interface, but since this is a single tenant index,
 // it is ignored (it's enforced elsewhere in index selection)
+// ForSeries 经 postings 匹配后逐条拉取 series，支持 fingerprint 分片与 chunk 过滤。
 func (i *TSDBIndex) ForSeries(ctx context.Context, _ string, fpFilter index.FingerprintFilter, from model.Time, through model.Time, fn func(labels.Labels, model.Fingerprint, []index.ChunkMeta) (stop bool), matchers ...*labels.Matcher) error {
 	var filterer chunk.Filterer
 	if i.chunkFilter != nil {
@@ -377,6 +383,7 @@ func (i *TSDBIndex) Stats(ctx context.Context, _ string, from, through model.Tim
 	})
 }
 
+// Volume 按 matcher 与 targetLabels 聚合 series 或 label 体积，写入 VolumeAccumulator。
 // Volume returns the volumes of the series described by the passed
 // matchers by the names of the passed matchers. All non-requested labels are
 // aggregated into the requested series.
@@ -514,3 +521,4 @@ func cloneStringList(strs []string) []string {
 	}
 	return res
 }
+// cloneStringList 深拷贝 label 字符串，避免返回底层 mmap 缓冲的可变引用。

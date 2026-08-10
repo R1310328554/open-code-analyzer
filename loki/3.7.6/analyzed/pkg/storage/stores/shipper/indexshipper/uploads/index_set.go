@@ -1,5 +1,7 @@
 package uploads
 
+// uploads indexSet 管理同表多 ingester 产生的索引文件集合：本地 gzip 压缩后上传对象存储，并按保留期清理已上传副本。
+
 import (
 	"context"
 	"fmt"
@@ -17,6 +19,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// IndexSet 定义添加、上传、清理与遍历索引的生命周期操作。
 type IndexSet interface {
 	Add(idx index.Index)
 	Upload(ctx context.Context) error
@@ -25,6 +28,7 @@ type IndexSet interface {
 	Close()
 }
 
+// indexSet 以 mutex 保护 index 与 uploadTime 映射，区分租户与公共索引集。
 // indexSet is a collection of multiple files created for a same table by various ingesters.
 // All the public methods are concurrency safe and take care of mutexes to avoid any data race.
 type indexSet struct {
@@ -78,6 +82,7 @@ func (t *indexSet) ForEach(callback index.ForEachIndexCallback) error {
 	return nil
 }
 
+// Upload 跳过已上传文件，对其余索引写临时文件、gzip 压缩后 PutFile 到 storage。
 // Upload uploads all the dbs which are never uploaded or have been modified since the last batch was uploaded.
 func (t *indexSet) Upload(ctx context.Context) error {
 	t.indexMtx.RLock()
@@ -181,6 +186,7 @@ func (t *indexSet) uploadIndex(ctx context.Context, idx index.Index) error {
 	return t.storageIndexSet.PutFile(ctx, t.tableName, t.userID, t.buildFileName(fileName), f)
 }
 
+// Cleanup 删除上传时间早于 retain 截止点的本地索引并关闭文件句柄。
 // Cleanup removes indexes which are already uploaded and have been retained for period longer than indexRetainPeriod since they were uploaded.
 func (t *indexSet) Cleanup(indexRetainPeriod time.Duration) error {
 	level.Info(util_log.Logger).Log("msg", fmt.Sprintf("cleaning up unwanted indexes from table %s", t.tableName))
@@ -240,3 +246,4 @@ func (t *indexSet) removeIndex(name string) error {
 func (t *indexSet) buildFileName(indexName string) string {
 	return fmt.Sprintf("%s.gz", indexName)
 }
+// buildFileName 为对象键追加 .gz 后缀，与 shipper 下载时的解压逻辑一致。

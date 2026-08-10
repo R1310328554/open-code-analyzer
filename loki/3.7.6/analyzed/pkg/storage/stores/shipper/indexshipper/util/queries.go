@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util queries 提供 index 查询批处理与去重：按表分组、并行分批执行，并在 range value 维度过滤重复页结果。
+
 import (
 	"context"
 	"sync"
@@ -16,6 +18,7 @@ const (
 
 type QueryIndexFunc func(ctx context.Context, queries []index.Query, callback index.QueryPagesCallback) error
 
+// QueriesByTable 将 Query 切片按 TableName 分桶，便于表级并发查询。
 // QueriesByTable groups and returns queries by tables.
 func QueriesByTable(queries []index.Query) map[string][]index.Query {
 	queriesByTable := make(map[string][]index.Query)
@@ -30,6 +33,7 @@ func QueriesByTable(queries []index.Query) map[string][]index.Query {
 	return queriesByTable
 }
 
+// DoParallelQueries 超过 maxQueriesBatch 时分 job 并行，小批量直接单次查询。
 func DoParallelQueries(ctx context.Context, queryIndex QueryIndexFunc, queries []index.Query, callback index.QueryPagesCallback) error {
 	if len(queries) == 0 {
 		return nil
@@ -48,6 +52,7 @@ func DoParallelQueries(ctx context.Context, queryIndex QueryIndexFunc, queries [
 	})
 }
 
+// NewSyncCallbackDeduper 用 RWMutex 保护 seen 映射，供多 goroutine 共享去重。
 // NewSyncCallbackDeduper should always be used on table level not the whole query level because it just looks at range values which can be repeated across tables
 // NewSyncCallbackDeduper is safe to used by multiple goroutines
 // Cortex anyways dedupes entries across tables
@@ -64,6 +69,7 @@ func NewSyncCallbackDeduper(callback index.QueryPagesCallback, queries int) inde
 	}
 }
 
+// NewCallbackDeduper 为单 goroutine 场景的无锁 range value 去重包装器。
 // NewCallbackDeduper should always be used on table level not the whole query level because it just looks at range values which can be repeated across tables
 // NewCallbackDeduper is safe not to used by multiple goroutines
 // Cortex anyways dedupes entries across tables
@@ -160,3 +166,4 @@ func (f *readBatchDeduperSync) Next() bool {
 
 	return false
 }
+// 去重仅比较 hashValue 与 rangeValue，跨表重复由 Cortex 层再次合并。

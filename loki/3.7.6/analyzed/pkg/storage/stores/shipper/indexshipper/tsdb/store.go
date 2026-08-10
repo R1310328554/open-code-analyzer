@@ -1,5 +1,7 @@
 package tsdb
 
+// store 将 TSDB index shipper 与 HeadManager 组合为 index.ReaderWriter：写路径追加 chunk 元数据，读路径经 MultiIndex 查询本地 head 与远端索引。
+
 import (
 	"context"
 	"fmt"
@@ -23,6 +25,7 @@ import (
 	tsdbindex "github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/index"
 )
 
+// IndexWriter 定义向 TSDB head 追加 series/chunk 元数据的写入接口。
 type IndexWriter interface {
 	Append(userID string, ls labels.Labels, fprint uint64, chks tsdbindex.ChunkMetas) error
 }
@@ -35,6 +38,7 @@ type store struct {
 	stopOnce     sync.Once
 }
 
+// NewStore 按 shipper 模式初始化 HeadManager 或 noop/failing writer，并返回 Stop 清理函数。
 // NewStore creates a new tsdb index ReaderWriter.
 func NewStore(
 	name, prefix string,
@@ -156,6 +160,7 @@ func (s *store) Stop() {
 	})
 }
 
+// IndexChunk 将 chunk 指纹、时间 bounds 与大小估算写入 TSDB 索引以提升持久性。
 func (s *store) IndexChunk(_ context.Context, _ model.Time, _ model.Time, chk chunk.Chunk) error {
 	// Always write the index to benefit durability via replication factor.
 	approxKB := math.Round(float64(chk.Data.UncompressedSize()) / float64(1<<10))
@@ -174,6 +179,7 @@ func (s *store) IndexChunk(_ context.Context, _ model.Time, _ model.Time, chk ch
 	return nil
 }
 
+// failingIndexWriter 在只读模式下拒绝 Append，提示 index writer 未初始化。
 type failingIndexWriter struct{}
 
 func (f failingIndexWriter) Append(_ string, _ labels.Labels, _ uint64, _ tsdbindex.ChunkMetas) error {
@@ -185,3 +191,4 @@ type noopIndexWriter struct{}
 func (f noopIndexWriter) Append(_ string, _ labels.Labels, _ uint64, _ tsdbindex.ChunkMetas) error {
 	return nil
 }
+// WriteOnly 节点关闭 bloom filter 以降低 Stats 内存开销，读节点仍可使用完整索引。

@@ -1,5 +1,7 @@
 package audit
 
+// audit 命令行工具校验 compaction 后 TSDB 索引：下载云索引、解析 series/chunk 引用并并行检查 chunk 是否存在于对象存储。
+
 import (
 	"context"
 	"fmt"
@@ -27,6 +29,7 @@ const (
 	TsFormat = time.RFC3339Nano
 )
 
+// Run 串联下载、解析 CompactedIndex 与 ValidateCompactedIndex 完整审计流程。
 func Run(ctx context.Context, cloudIndexPath, table string, cfg Config, logger log.Logger) (int, int, error) {
 	level.Info(logger).Log("msg", "auditing index", "index", cloudIndexPath, "table", table, "tenant", cfg.Tenant, "working_dir", cfg.WorkingDir)
 
@@ -59,6 +62,7 @@ func GetObjectClient(cfg Config) (client.ObjectClient, error) {
 	return objClient, nil
 }
 
+// DownloadIndexFile 识别 .gz 后缀并按需解压到 WorkingDir 本地路径。
 func DownloadIndexFile(ctx context.Context, cfg Config, cloudIndexPath string, objClient client.ObjectClient, logger log.Logger) (string, error) {
 	splitPath := strings.Split(cloudIndexPath, "/")
 	localFileName := splitPath[len(splitPath)-1]
@@ -89,6 +93,7 @@ func ParseCompactexIndex(ctx context.Context, localFilePath, table string, cfg C
 	return compactedIdx, nil
 }
 
+// ValidateCompactedIndex 用 errgroup 限流并行 ObjectExists，统计缺失与命中 chunk 数。
 func ValidateCompactedIndex(ctx context.Context, objClient client.ObjectClient, compactedIdx compactor.CompactedIndex, parallelism int, logger log.Logger) (int, int, error) {
 	var missingChunks, foundChunks atomic.Int32
 	foundChunks.Store(0)
@@ -122,6 +127,7 @@ func ValidateCompactedIndex(ctx context.Context, objClient client.ObjectClient, 
 	return int(foundChunks.Load()), int(missingChunks.Load()), nil
 }
 
+// CheckChunkExistance 封装 ObjectExists，供每个 chunk ID 存在性探测。
 func CheckChunkExistance(key string, objClient client.ObjectClient) (bool, error) {
 	exists, err := objClient.ObjectExists(context.Background(), key)
 	if err != nil {
@@ -130,3 +136,4 @@ func CheckChunkExistance(key string, objClient client.ObjectClient) (bool, error
 
 	return exists, nil
 }
+// progressbar 展示已校验 series 进度，missing chunk 逐条写入日志便于排查。

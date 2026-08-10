@@ -1,5 +1,7 @@
 package uploads
 
+// uploads TableManager 按 UploadInterval 周期触发全表上传：成功后按 DBRetainPeriod 清理本地已上传索引并上报 metrics。
+
 import (
 	"context"
 	"sync"
@@ -18,6 +20,7 @@ type Config struct {
 	DBRetainPeriod time.Duration
 }
 
+// TableManager 对外提供 Stop、AddIndex 与 ForEach 表级索引管理。
 type TableManager interface {
 	Stop()
 	AddIndex(tableName, userID string, index index.Index) error
@@ -38,6 +41,7 @@ type tableManager struct {
 	wg     sync.WaitGroup
 }
 
+// NewTableManager 启动后台 loop，立即执行一次 upload 再按 ticker 周期同步。
 func NewTableManager(cfg Config, storageClient storage.Client, reg prometheus.Registerer, logger log.Logger) (TableManager, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	tm := tableManager{
@@ -102,6 +106,7 @@ func (tm *tableManager) getTable(tableName string) (Table, bool) {
 	return table, ok
 }
 
+// getOrCreateTable 双重检查锁下懒创建 Table，避免并发重复实例化。
 func (tm *tableManager) getOrCreateTable(tableName string) Table {
 	table, ok := tm.getTable(tableName)
 	if ok {
@@ -129,6 +134,7 @@ func (tm *tableManager) ForEach(tableName, userID string, callback index.ForEach
 	return table.ForEach(userID, callback)
 }
 
+// uploadTables 遍历 tables 上传并在 retain 后 cleanup，单表失败不阻断其余表。
 func (tm *tableManager) uploadTables(ctx context.Context) {
 	tm.tablesMtx.RLock()
 	defer tm.tablesMtx.RUnlock()
@@ -154,3 +160,4 @@ func (tm *tableManager) uploadTables(ctx context.Context) {
 
 	tm.metrics.tablesUploadOperationTotal.WithLabelValues(status).Inc()
 }
+// Stop 取消 ticker、等待 goroutine 结束并最后一次 upload 后关闭全部 table。

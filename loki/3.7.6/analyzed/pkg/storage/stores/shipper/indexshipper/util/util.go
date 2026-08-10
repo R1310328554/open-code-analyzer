@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 提供 boltdb-shipper 通用辅助：索引对象键命名、安全打开 boltdb 文件，以及 string/[]byte 零拷贝转换。
+
 import (
 	"fmt"
 	"os"
@@ -15,6 +17,7 @@ import (
 const maxStackSize = 8 * 1024
 const sep = "\xff"
 
+// BuildIndexFileName 生成 <uploader>-<db> 对象键，迁移表避免重复追加 db 名。
 func BuildIndexFileName(tableName, uploader, dbName string) string {
 	// Files are stored with <uploader>-<db-name>
 	objectKey := fmt.Sprintf("%s-%s", uploader, dbName)
@@ -32,6 +35,7 @@ type result struct {
 	err    error
 }
 
+// SafeOpenBoltdbFile 在独立 goroutine 打开 boltdb，捕获 fault 并转为 error 返回。
 // SafeOpenBoltdbFile will recover from a panic opening a DB file, and return the panic message in the err return object.
 func SafeOpenBoltdbFile(path string) (*bbolt.DB, error) {
 	result := make(chan *result)
@@ -81,10 +85,12 @@ func safeOpenBoltDbFile(path string, ret chan *result) {
 // 	return ret
 // }
 
+// GetUnsafeBytes 无拷贝将 string 视为 []byte，调用方不得修改返回切片。
 func GetUnsafeBytes(s string) []byte {
 	return *((*[]byte)(unsafe.Pointer(&s))) // #nosec G103 -- we know the string is not mutated -- nosemgrep: use-of-unsafe-block
 }
 
+// GetUnsafeString 无拷贝将 []byte 视为 string，buf 生命周期须覆盖使用期。
 func GetUnsafeString(buf []byte) string {
 	return *((*string)(unsafe.Pointer(&buf))) // #nosec G103 -- we know the string is not mutated -- nosemgrep: use-of-unsafe-block
 }
@@ -95,3 +101,4 @@ func logPanic(p interface{}) {
 	// keep a multiline stack
 	fmt.Fprintf(os.Stderr, "panic: %v\n%s", p, stack)
 }
+// logPanic 将 recover 的 stack 写入 stderr，便于定位损坏 boltdb 文件。

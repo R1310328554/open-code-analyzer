@@ -1,5 +1,7 @@
 package uploads
 
+// uploads table 按 schema period 逻辑分组索引：维护 user/common 两套 IndexSet，协调多租户与公共 boltdb 文件上传。
+
 import (
 	"context"
 	"sync"
@@ -17,6 +19,7 @@ const (
 	tempFileSuffix = ".temp"
 )
 
+// Table 表示一个 period 表，负责 AddIndex、Upload、Cleanup 与 Stop。
 type Table interface {
 	Name() string
 	AddIndex(userID string, idx index.Index) error
@@ -26,6 +29,7 @@ type Table interface {
 	Stop()
 }
 
+// table 以 RWMutex 保护 indexSet 映射，按 userID 懒创建对应 IndexSet。
 // table is a collection of one or more index files created by the ingester or compacted by the compactor.
 // A table would provide a logical grouping for index by a period. This period is controlled by `schema_config.configs.index.period` config.
 // It contains index for all the users sending logs to Loki.
@@ -39,6 +43,7 @@ type table struct {
 	indexSetMtx sync.RWMutex
 }
 
+// NewTable 注入 storage Client 并分别构造租户与公共 base IndexSet。
 // NewTable create a new table instance.
 func NewTable(name string, storageClient storage.Client) Table {
 	return &table{
@@ -77,6 +82,7 @@ func (lt *table) AddIndex(userID string, idx index.Index) error {
 	return nil
 }
 
+// ForEach 依次遍历指定 userID 与公共空 userID 的 IndexSet 索引。
 // ForEach iterates over all the indexes belonging to the user.
 func (lt *table) ForEach(userID string, callback index.ForEachIndexCallback) error {
 	lt.indexSetMtx.RLock()
@@ -143,3 +149,4 @@ func loggerWithUserID(logger log.Logger, userID string) log.Logger {
 
 	return log.With(logger, "user-id", userID)
 }
+// tempFileSuffix 标记上传过程中的临时文件，完成后删除避免磁盘泄漏。

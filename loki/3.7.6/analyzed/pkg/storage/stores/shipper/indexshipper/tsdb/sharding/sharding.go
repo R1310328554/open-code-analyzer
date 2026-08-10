@@ -1,5 +1,7 @@
 package sharding
 
+// sharding 基于带统计信息的 fingerprint 序列做贪心分片：按目标 shard 字节上限合并相邻 stream，超大单 stream 单独成 shard。
+
 import (
 	"math"
 
@@ -14,6 +16,7 @@ var (
 	SizedFPsPool = queue.NewSlicePool[SizedFP](1<<8, 1<<16, 4) // 256->65536
 )
 
+// SizedFP 将 fingerprint 与 stats 绑定，供 ShardsFor 按字节预算切分查询。
 type SizedFP struct {
 	Fp    model.Fingerprint
 	Stats stats.Stats
@@ -33,6 +36,7 @@ func (xs SizedFPs) Swap(i, j int) {
 	xs[i], xs[j] = xs[j], xs[i]
 }
 
+// newShard 创建以 minFP 为下界的新 shard，Stats 初始为空以便累加。
 func (xs SizedFPs) newShard(minFP model.Fingerprint) logproto.Shard {
 	return logproto.Shard{
 		Bounds: logproto.FPBounds{
@@ -42,6 +46,7 @@ func (xs SizedFPs) newShard(minFP model.Fingerprint) logproto.Shard {
 	}
 }
 
+// ShardsFor 顺序扫描排序后的 SizedFP，在 shard 容量不足时切分并更新边界。
 func (xs SizedFPs) ShardsFor(targetShardBytes uint64) (res []logproto.Shard) {
 	if len(xs) == 0 {
 		full := xs.newShard(0)
@@ -100,3 +105,4 @@ func (xs SizedFPs) ShardsFor(targetShardBytes uint64) (res []logproto.Shard) {
 	res[len(res)-1].Bounds.Max = model.Fingerprint(math.MaxUint64)
 	return res
 }
+// SizedFPsPool 复用 SizedFP 切片，减少大规模分片时的堆分配开销。
