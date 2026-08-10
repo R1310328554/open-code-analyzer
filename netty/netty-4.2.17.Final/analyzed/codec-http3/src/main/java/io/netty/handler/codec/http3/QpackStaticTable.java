@@ -22,8 +22,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * QPACK 静态表：RFC 9204 附录 A 预定义的常见 HTTP 头名/值对，编码时可直接用索引引用以节省字节。
+ * <p>与 HPACK 不同，QPACK 静态表索引从 0 开始；同名头可能有多条记录，查找时需区分「精确匹配」与「仅匹配名」。</p>
+ */
 final class QpackStaticTable {
 
+    /** 查找未命中时的返回值。 */
     static final int NOT_FOUND = -1;
 
     /**
@@ -32,11 +37,14 @@ final class QpackStaticTable {
      * to be used internally. The value should be large enough
      * not to override bits from static table index (current size
      * of the table is 99 elements).
+     * <p>当值无法在静态表精确匹配时，将最低索引与 {@code MASK_NAME_REF} 按位或，
+     * 表示「可引用该名、但值需以字面量发送」，避免二次查表。</p>
      */
     static final int MASK_NAME_REF = 1 << 10;
 
     /**
      * <a href="https://www.rfc-editor.org/rfc/rfc9204.html#name-static-table-2>Appendix A: Static Table</a>
+     * <p>启动时一次性构建，条目顺序与 RFC 一致；{@link AsciiString#cached} 避免重复分配。</p>
      */
     private static final List<QpackHeaderField> STATIC_TABLE = Arrays.asList(
         newEmptyHeaderField(":authority"),
@@ -141,11 +149,14 @@ final class QpackStaticTable {
 
     /**
      * The number of header fields in the static table.
+     * <p>静态表条目总数，供编解码器校验索引范围。</p>
      */
     static final int length = STATIC_TABLE.size();
 
+    /** 头名 → 该名在静态表中所有索引的列表（同名多条时按表顺序排列）。 */
     private static final CharSequenceMap<List<Integer>> STATIC_INDEX_BY_NAME = createMap(length);
 
+    /** 仅含头名、值为空的静态表项（如 {@code cookie} 只有名无预设值）。 */
     private static QpackHeaderField newEmptyHeaderField(String name) {
         return new QpackHeaderField(AsciiString.cached(name), AsciiString.EMPTY_STRING);
     }
@@ -157,6 +168,7 @@ final class QpackStaticTable {
     /**
      * Return the header field at the given index value.
      * Note that QPACK uses 0-based indexing when HPACK is using 1-based.
+     * <p>按 0 基索引取静态表项，解码器解析索引引用时调用。</p>
      */
     static QpackHeaderField getField(int index) {
         return STATIC_TABLE.get(index);
@@ -165,6 +177,7 @@ final class QpackStaticTable {
     /**
      * Returns the lowest index value for the given header field name in the static
      * table. Returns -1 if the header field name is not in the static table.
+     * <p>返回该头名在静态表中的最小索引，用于「仅索引头名」编码。</p>
      */
     static int getIndex(CharSequence name) {
         List<Integer> index = STATIC_INDEX_BY_NAME.get(name);
@@ -180,16 +193,17 @@ final class QpackStaticTable {
      *    a) the index value for the given header field in the static table (when found);
      *    b) the index value for a given name with a single bit masked (no exact match);
      *    c) -1 if name was not found in the static table.
+     * <p>编码器首选入口：先尝试名+值精确匹配；否则返回带 {@link #MASK_NAME_REF} 的名索引。</p>
      */
     static int findFieldIndex(CharSequence name, CharSequence value) {
         final List<Integer> nameIndex = STATIC_INDEX_BY_NAME.get(name);
 
-        // Early return if name not found in the table.
+        // 头名不在静态表中，无法引用。
         if (nameIndex == null) {
             return NOT_FOUND;
         }
 
-        // If name was found, check all subsequence elements of the table for exact match.
+        // 遍历同名所有条目，用变长时比较（静态表查找无需防时序侧信道）。
         for (int index: nameIndex) {
             QpackHeaderField field = STATIC_TABLE.get(index);
             if (QpackUtil.equalsVariableTime(value, field.value)) {
@@ -197,12 +211,13 @@ final class QpackStaticTable {
             }
         }
 
-        // No exact match was found but we still can reference the name.
+        // 值不匹配时仍可引用头名，掩码标记「非完整静态表项」。
         return nameIndex.get(0) | MASK_NAME_REF;
     }
 
     /**
      * Creates a map CharSequenceMap header name to index value to allow quick lookup.
+     * <p>构建头名到索引列表的反向索引，启动时 O(n) 完成，后续查找 O(1) 取列表。</p>
      */
     @SuppressWarnings("unchecked")
     private static CharSequenceMap<List<Integer>> createMap(int length) {

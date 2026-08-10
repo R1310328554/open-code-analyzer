@@ -31,7 +31,8 @@ import org.jboss.marshalling.Marshaller;
  * for more information
  *
  * Use {@link MarshallingEncoder} if possible.
- *
+ * <p>输出为纯 Marshalling 字节流（无 Netty 长度头），与 {@link CompatibleMarshallingDecoder} 配对；
+ * {@code @Sharable} 表示无 per-channel 状态，可安全复用同一实例。</p>
  */
 @Sharable
 public class CompatibleMarshallingEncoder extends MessageToByteEncoder<Object> {

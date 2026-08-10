@@ -28,7 +28,8 @@ import java.io.StreamCorruptedException;
  *
  * A {@link LengthFieldBasedFrameDecoder} which use an {@link Unmarshaller} to read the Object out
  * of the {@link ByteBuf}.
- *
+ * <p>帧格式：4 字节大端长度 + Marshalling 载荷；父类按长度切帧后，本类对每帧 slice 反序列化。
+ * 与 {@link CompatibleMarshallingDecoder} 不同，依赖长度前缀做粘包/半包处理。</p>
  */
 public class MarshallingDecoder extends LengthFieldBasedFrameDecoder {
 
@@ -39,7 +40,7 @@ public class MarshallingDecoder extends LengthFieldBasedFrameDecoder {
      * bytes.  If the size of the received object is greater than
      * {@code 1048576} bytes, a {@link StreamCorruptedException} will be
      * raised.
-     *
+     * <p>默认最大对象 1 MiB；长度字段在偏移 0、长度 4，长度值不含自身 4 字节（{@code lengthAdjustment = -4}）。</p>
      */
     public MarshallingDecoder(UnmarshallerProvider provider) {
         this(provider, 1048576);
@@ -74,14 +75,14 @@ public class MarshallingDecoder extends LengthFieldBasedFrameDecoder {
             unmarshaller.finish();
             return obj;
         } finally {
-            // Call close in a finally block as the ReplayingDecoder will throw an Error if not enough bytes are
-            // readable. This helps to be sure that we do not leak resource
+            // 与 CompatibleMarshallingDecoder 相同：确保半包重试时也能 close Unmarshaller
             unmarshaller.close();
         }
     }
 
     @Override
     protected ByteBuf extractFrame(ChannelHandlerContext ctx, ByteBuf buffer, int index, int length) {
+        // slice 零拷贝视图，帧内容仍引用原 inbound 缓冲区
         return buffer.slice(index, length);
     }
 }

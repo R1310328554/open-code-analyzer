@@ -24,10 +24,12 @@ import java.io.IOException;
 /**
  * {@link ByteInput} implementation which wraps another {@link ByteInput} and throws a {@link TooBigObjectException}
  * if the read limit was reached.
+ * <p>装饰器模式：在反序列化过程中累计已读字节，超过 {@code limit} 即中止，
+ * 防止恶意超大对象拖垮内存（{@link CompatibleMarshallingDecoder} 将其转为 {@link io.netty.handler.codec.TooLongFrameException}）。</p>
  */
 class LimitingByteInput implements ByteInput {
 
-    // Use a static instance here to remove the overhead of fillStacktrace
+    // 静态单例异常，避免每次超限都填充堆栈
     private static final TooBigObjectException EXCEPTION = new TooBigObjectException();
 
     private final ByteInput input;
@@ -90,13 +92,14 @@ class LimitingByteInput implements ByteInput {
         }
     }
 
+    /** 返回本次最多还能读的字节数（剩余配额与请求长度的较小值）。 */
     private int readable(int length) {
         return (int) Math.min(length, limit - read);
     }
 
     /**
      * Exception that will get thrown if the {@link Object} is too big to unmarshall
-     *
+     * <p>由 {@link CompatibleMarshallingDecoder} 捕获并映射为帧过长，触发连接关闭。</p>
      */
     static final class TooBigObjectException extends IOException {
         private static final long serialVersionUID = 1L;

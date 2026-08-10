@@ -29,8 +29,8 @@ import org.jboss.marshalling.Unmarshaller;
  * {@link ChannelHandlerContext} via the {@link ChannelHandlerContext#attr(AttributeKey)}
  * method. So the same {@link Unmarshaller} will be used during the life-time of a {@link Channel}
  * for the {@link ChannelHandler}'s {@link ChannelHandlerContext}.
- *
- *
+ * <p>在 {@link Channel} 属性中缓存 {@link Unmarshaller}，同一连接上多次解码复用同一实例，
+ * 比 {@link DefaultUnmarshallerProvider} 少创建对象，但须在每次 {@code start/finish} 间正确重置状态。</p>
  */
 public class ContextBoundUnmarshallerProvider extends DefaultUnmarshallerProvider {
 

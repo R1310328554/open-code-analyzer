@@ -32,11 +32,12 @@ import org.jboss.marshalling.Marshaller;
  *
  * See <a href="https://www.jboss.org/jbossmarshalling">JBoss Marshalling website</a>
  * for more information
- *
+ * <p>先写 4 字节占位，序列化完成后回填真实载荷长度（不含长度字段本身），供 {@link MarshallingDecoder} 定界。</p>
  */
 @Sharable
 public class MarshallingEncoder extends MessageToByteEncoder<Object> {
 
+    /** 序列化前预留的长度字段占位（4 字节），finish 后由 {@link #encode} 回填。 */
     private static final byte[] LENGTH_PLACEHOLDER = new byte[4];
     private final MarshallerProvider provider;
 
@@ -61,6 +62,7 @@ public class MarshallingEncoder extends MessageToByteEncoder<Object> {
         marshaller.finish();
         marshaller.close();
 
+        // 回填：当前 writerIndex 减去长度字段起始位置再减 4，即纯载荷字节数
         out.setInt(lengthPos, out.writerIndex() - lengthPos - 4);
     }
 }

@@ -24,6 +24,7 @@ import org.jboss.marshalling.MarshallingConfiguration;
 /**
  * Default implementation of {@link MarshallerProvider} which just create a new {@link Marshaller}
  * on ever {@link #getMarshaller(ChannelHandlerContext)} call.
+ * <p>每次编码新建 {@link Marshaller}，无共享状态，线程安全但分配开销较大；适合低频或测试场景。</p>
  */
 public class DefaultMarshallerProvider implements MarshallerProvider {
 

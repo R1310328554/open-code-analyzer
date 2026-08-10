@@ -22,9 +22,12 @@ import java.io.IOException;
 
 /**
  * {@link ByteInput} implementation which reads its data from a {@link ByteBuf}
+ * <p>将 JBoss Marshalling 的 {@link ByteInput} 适配到 Netty {@link ByteBuf}，
+ * 使 {@link Unmarshaller} 可直接从 Channel 缓冲区反序列化，无需额外拷贝到 {@code InputStream}。</p>
  */
 class ChannelBufferByteInput implements ByteInput {
 
+    /** 底层可读缓冲区；读指针随 {@link Unmarshaller} 消费而前移。 */
     private final ByteBuf buffer;
 
     ChannelBufferByteInput(ByteBuf buffer) {
@@ -33,7 +36,7 @@ class ChannelBufferByteInput implements ByteInput {
 
     @Override
     public void close() throws IOException {
-        // nothing to do
+        // ByteBuf 生命周期由 Netty 管理，此处无需释放
     }
 
     @Override
@@ -44,6 +47,7 @@ class ChannelBufferByteInput implements ByteInput {
     @Override
     public int read() throws IOException {
         if (buffer.isReadable()) {
+            // 与 InputStream.read() 一致：返回 0–255 或 -1 表示 EOF
             return buffer.readByte() & 0xff;
         }
         return -1;

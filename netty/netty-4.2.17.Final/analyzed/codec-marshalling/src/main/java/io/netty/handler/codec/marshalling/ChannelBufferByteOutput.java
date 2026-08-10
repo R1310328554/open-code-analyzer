@@ -22,8 +22,8 @@ import java.io.IOException;
 
 /**
  * {@link ByteOutput} implementation which writes the data to a {@link ByteBuf}
- *
- *
+ * <p>JBoss {@link Marshaller} 序列化输出的桥接层：写入直接追加到 Netty 出站 {@link ByteBuf}，
+ * 编码完成后可通过 {@link #getBuffer()} 取回完整字节序列。</p>
  */
 class ChannelBufferByteOutput implements ByteOutput {
 
@@ -31,6 +31,7 @@ class ChannelBufferByteOutput implements ByteOutput {
 
     /**
      * Create a new instance which use the given {@link ByteBuf}
+     * <p>通常传入 {@link io.netty.handler.codec.MessageToByteEncoder} 的 {@code out} 参数。</p>
      */
     ChannelBufferByteOutput(ByteBuf buffer) {
         this.buffer = buffer;
@@ -43,7 +44,7 @@ class ChannelBufferByteOutput implements ByteOutput {
 
     @Override
     public void flush() throws IOException {
-        // nothing to do
+        // ByteBuf 无缓冲刷新语义
     }
 
     @Override
@@ -63,7 +64,7 @@ class ChannelBufferByteOutput implements ByteOutput {
 
     /**
      * Return the {@link ByteBuf} which contains the written content
-     *
+     * <p>供 {@link MarshallingEncoder} 在 {@code marshaller.finish()} 后回填长度字段等后处理。</p>
      */
     ByteBuf getBuffer() {
         return buffer;

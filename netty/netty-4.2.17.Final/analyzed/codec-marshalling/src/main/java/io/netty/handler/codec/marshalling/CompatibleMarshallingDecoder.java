@@ -30,10 +30,13 @@ import java.util.List;
  * {@link ReplayingDecoder} which use an {@link Unmarshaller} to read the Object out of the {@link ByteBuf}.
  *
  * If you can you should use {@link MarshallingDecoder}.
+ * <p>「兼容」指不依赖 4 字节长度前缀，可直接对接裸 JBoss Marshalling 流；
+ * 通过 {@link ReplayingDecoder} 在数据不足时自动重试。新代码应优先用成对的 {@link MarshallingDecoder}。</p>
  */
 public class CompatibleMarshallingDecoder extends ReplayingDecoder<Void> {
     protected final UnmarshallerProvider provider;
     protected final int maxObjectSize;
+    /** 对象超过 {@link #maxObjectSize} 后置 true，丢弃剩余字节直至帧结束。 */
     private boolean discardingTooLongFrame;
 
     /**
@@ -48,6 +51,7 @@ public class CompatibleMarshallingDecoder extends ReplayingDecoder<Void> {
      *        {@link Integer#MAX_VALUE} to disable this.  You should only do this if you are sure
      *        that the received Objects will never be big and the sending side are trusted, as this
      *        opens the possibility for a DOS-Attack due an {@link OutOfMemoryError}.
+     * <p>配合 {@link LimitingByteInput} 在反序列化过程中累计读取字节，超限抛 {@link TooLongFrameException} 并关连接。</p>
      */
     public CompatibleMarshallingDecoder(UnmarshallerProvider provider, int maxObjectSize) {
         this.provider = provider;
@@ -76,8 +80,7 @@ public class CompatibleMarshallingDecoder extends ReplayingDecoder<Void> {
             discardingTooLongFrame = true;
             throw new TooLongFrameException();
         } finally {
-            // Call close in a finally block as the ReplayingDecoder will throw an Error if not enough bytes are
-            // readable. This helps to be sure that we do not leak resource
+            // ReplayingDecoder 在字节不足时会抛 Error；finally 确保 Unmarshaller 始终 close，避免泄漏
             unmarshaller.close();
         }
     }
@@ -88,7 +91,7 @@ public class CompatibleMarshallingDecoder extends ReplayingDecoder<Void> {
         case 0:
             return;
         case 1:
-            // Ignore the last TC_RESET
+            // Java 序列化流末尾可能单独出现 TC_RESET，忽略以免误报
             if (buffer.getByte(buffer.readerIndex()) == ObjectStreamConstants.TC_RESET) {
                 buffer.skipBytes(1);
                 return;

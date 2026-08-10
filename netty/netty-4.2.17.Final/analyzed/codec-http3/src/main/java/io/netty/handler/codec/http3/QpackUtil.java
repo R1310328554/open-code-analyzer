@@ -23,7 +23,12 @@ import io.netty.util.internal.PlatformDependent;
 import static io.netty.util.internal.ObjectUtil.checkInRange;
 import static java.lang.Math.floorDiv;
 
+/**
+ * QPACK 编解码共用工具：前缀整数、常量时间比较、动态表容量公式及 Huffman 码表。
+ * <p>前缀整数格式与 HPACK 相同；Huffman 表复用 RFC 7541 附录 B。</p>
+ */
 final class QpackUtil {
+    /** 前缀整数超出 32 位有符号 int 范围时抛出的静态异常实例。 */
     private static final QpackException PREFIXED_INTEGER_TOO_LONG =
             QpackException.newStatic(QpackDecoder.class, "toIntOrThrow(...)",
                     "QPACK - invalid prefixed integer");
@@ -31,6 +36,7 @@ final class QpackUtil {
     /**
      * Encode integer according to
      * <a href="https://tools.ietf.org/html/rfc7541#section-5.1">Section 5.1</a>.
+     * <p>{@code mask} 保留指令高位；若整数小于 {@code 2^prefixLength-1} 则单字节编码，否则走变长扩展。</p>
      */
     static void encodePrefixedInteger(ByteBuf out, byte mask, int prefixLength, long toEncode) {
         checkInRange(toEncode, 0, MAX_UNSIGNED_INT, "toEncode");
@@ -56,6 +62,7 @@ final class QpackUtil {
      * @param in the input {@link ByteBuf}
      * @param prefixLength the prefix length
      * @return the integer or {@code -1} if not enough readable bytes are in the {@link ByteBuf).
+     * <p>解码为 int 的便捷方法；超长时通过 {@link #toIntOrThrow(long)} 抛 {@link QpackException}。</p>
      */
     static int decodePrefixedIntegerAsInt(ByteBuf in, int prefixLength) throws QpackException {
         return toIntOrThrow(decodePrefixedInteger(in, prefixLength));
@@ -67,6 +74,7 @@ final class QpackUtil {
      *
      * @param aLong to convert.
      * @throws QpackException If the value does not fit an {@code int}.
+     * <p>防止静默截断：Java int 装不下时明确失败而非返回错误值。</p>
      */
     static int toIntOrThrow(long aLong) throws QpackException {
         if ((int) aLong != aLong) {
@@ -82,6 +90,7 @@ final class QpackUtil {
      * @param in the input {@link ByteBuf}
      * @param prefixLength the prefix length
      * @return the integer or {@code -1} if not enough readable bytes are in the {@link ByteBuf).
+     * <p>半包友好：字节不足时回滚 {@code readerIndex} 并返回 -1，供上层等待更多数据。</p>
      */
     static long decodePrefixedInteger(ByteBuf in, int prefixLength) {
         int readerIndex = in.readerIndex();
@@ -113,6 +122,7 @@ final class QpackUtil {
         return i;
     }
 
+    /** 判断当前读指针处首字节在 {@code mask} 位上是否与 mask 完全匹配（用于识别帧类型前缀）。 */
     static boolean firstByteEquals(ByteBuf in, byte mask) {
         return (in.getByte(in.readerIndex()) & mask) == mask;
     }
@@ -131,6 +141,7 @@ final class QpackUtil {
      * @param s1 the first value.
      * @param s2 the second value.
      * @return {@code 0} if not equal. {@code 1} if equal.
+     * <p>返回 int 而非 boolean，便于用 {@code &} 串联多次比较而不短路泄露时序；{@link AsciiString} 走底层字节比较。</p>
      */
     static int equalsConstantTime(CharSequence s1, CharSequence s2) {
         if (s1 instanceof AsciiString && s2 instanceof AsciiString) {
@@ -151,6 +162,7 @@ final class QpackUtil {
      * @param s1 the first value.
      * @param s2 the second value.
      * @return {@code false} if not equal. {@code true} if equal.
+     * <p>静态表查找等非安全敏感场景使用，性能优于常量时间比较。</p>
      */
     static boolean equalsVariableTime(CharSequence s1, CharSequence s2) {
         return AsciiString.contentEquals(s1, s2);
@@ -162,20 +174,21 @@ final class QpackUtil {
      *
      * @param maxTableCapacity the maximum table capacity.
      * @return maxEntries.
+     * <p>RFC 9204：动态表最大条目数 = floor(MaxTableCapacity / 32)。</p>
      */
     static long maxEntries(long maxTableCapacity) {
         // MaxEntries = floor( MaxTableCapacity / 32 )
         return floorDiv(maxTableCapacity, 32);
     }
 
-    // Section 6.2. Literal Header Field Representation
+    // RFC 9204 第 6.2 节：字面量头的三种索引策略
     enum IndexType {
-        INCREMENTAL, // Section 6.2.1. Literal Header Field with Incremental Indexing
-        NONE,        // Section 6.2.2. Literal Header Field without Indexing
-        NEVER        // Section 6.2.3. Literal Header Field never Indexed
+        INCREMENTAL, // 6.2.1 增量索引：写入动态表
+        NONE,        // 6.2.2 不索引：仅字面量
+        NEVER        // 6.2.3 永不索引：敏感头，N=1
     }
 
-    // Appendix B: Huffman Codes
+    // 附录 B：Huffman 编码表（与 HPACK 相同）
     // https://tools.ietf.org/html/rfc7541#appendix-B
     static final int[] HUFFMAN_CODES = {
         0x1ff8,
@@ -457,8 +470,10 @@ final class QpackUtil {
         30 // EOS
     };
 
+    /** Huffman 符号表中的 EOS（End-of-String）占位符索引。 */
     static final int HUFFMAN_EOS = 256;
 
+    /** 动态表容量下限；上限为 32 位无符号整数最大值。 */
     static final long MIN_HEADER_TABLE_SIZE = 0;
     static final long MAX_UNSIGNED_INT = 0xffffffffL;
     static final long MAX_HEADER_TABLE_SIZE = MAX_UNSIGNED_INT;

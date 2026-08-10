@@ -21,11 +21,14 @@ import org.jboss.marshalling.Marshaller;
 
 /**
  * This provider is responsible to get a {@link Marshaller} for the given {@link ChannelHandlerContext}.
+ * <p>策略接口：编码器通过它获取（或复用）{@link Marshaller}，具体生命周期由
+ * {@link DefaultMarshallerProvider}、{@link ThreadLocalMarshallerProvider} 等实现决定。</p>
  */
 public interface MarshallerProvider {
 
     /**
      * Get a {@link Marshaller} for the given {@link ChannelHandlerContext}
+     * <p>每次 {@link MarshallingEncoder#encode} 调用前获取；实现须保证 {@code start/finish/close} 语义正确。</p>
      */
     Marshaller getMarshaller(ChannelHandlerContext ctx) throws Exception;
 }

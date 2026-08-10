@@ -26,6 +26,8 @@ import org.jboss.marshalling.MarshallingConfiguration;
  * {@link UnmarshallerProvider} implementation which use a {@link ThreadLocal} to store references
  * to {@link Marshaller} instances. This may give you some performance boost if you need to marshall
  * many small {@link Object}'s and your actual Thread count is not to big
+ * <p>每个 EventLoop 线程缓存一个 {@link Marshaller}（{@link FastThreadLocal}），
+ * 适合高并发、小对象、线程数可控的场景；线程过多时内存占用会随线程数线性增长。</p>
  */
 public class ThreadLocalMarshallerProvider implements MarshallerProvider {
     private final FastThreadLocal<Marshaller> marshallers = new FastThreadLocal<Marshaller>();

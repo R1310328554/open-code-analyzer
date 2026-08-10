@@ -29,6 +29,7 @@ import org.jboss.marshalling.Unmarshaller;
  * and should not be used without defining a list of classes that are
  * allowed to be deserialized. This explicitly needs to be done via {@link MarshallingConfiguration},
  * missing to do so is a security risk.
+ * <p>每次解码新建 {@link Unmarshaller}；须在 {@link MarshallingConfiguration} 中配置允许反序列化的类白名单，否则存在任意类加载风险。</p>
  */
 public class DefaultUnmarshallerProvider implements UnmarshallerProvider {
 

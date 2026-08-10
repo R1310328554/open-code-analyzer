@@ -26,6 +26,8 @@ import org.jboss.marshalling.Unmarshaller;
  * {@link UnmarshallerProvider} implementation which use a {@link ThreadLocal} to store references
  * to {@link Unmarshaller} instances. This may give you some performance boost if you need to unmarshall
  * many small {@link Object}'s.
+ * <p>与 {@link ThreadLocalMarshallerProvider} 对称：按 EventLoop 线程复用 {@link Unmarshaller}，
+ * 减少频繁 {@code createUnmarshaller}；同一 marshaller 实例不可跨线程使用。</p>
  */
 public class ThreadLocalUnmarshallerProvider implements UnmarshallerProvider {
     private final FastThreadLocal<Unmarshaller> unmarshallers = new FastThreadLocal<Unmarshaller>();
