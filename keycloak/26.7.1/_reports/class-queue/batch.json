@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T07:06:54Z",
   "files": [
-    "js/libs/keycloak-admin-client/src/defs/protocolMapperRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/realmEventsConfigRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/realmRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/requiredActionConfigInfoRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/requiredActionConfigRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/requiredActionProviderRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/requiredActionProviderSimpleRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/resourceEvaluation.ts",
-    "js/libs/keycloak-admin-client/src/defs/resourceRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/resourceServerRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/roleRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/rolesRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/scopeRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/serverInfoRepesentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/synchronizationResultRepresentation.ts",
     "js/libs/keycloak-admin-client/src/defs/systemInfoRepersantation.ts",
     "js/libs/keycloak-admin-client/src/defs/testLdapConnection.ts",
     "js/libs/keycloak-admin-client/src/defs/userConsentRepresentation.ts",
@@ -33,5 +18,5 @@
     "js/libs/keycloak-admin-client/src/resources/cache.ts"
   ],
   "remaining_pending": 4888,
-  "done": 1080
+  "done": 1095
 }
