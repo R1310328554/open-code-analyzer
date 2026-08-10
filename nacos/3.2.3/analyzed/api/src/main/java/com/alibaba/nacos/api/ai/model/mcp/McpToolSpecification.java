@@ -23,30 +23,35 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Mcp Tool specification.
+ * MCP 工具规格文档，聚合工具列表、元数据、安全方案与扩展字段。
+ *
+ * <p>作为 MCP Server 工具配置的持久化载体，支持明文与加密两种存储模式，
+ * 对应 Nacos Config 中的 tools 描述配置。</p>
  *
  * @author xiweng.yy
  */
 public class McpToolSpecification {
     
     /**
-     * Tool specification storage type. Defaults to "normal" (plaintext storage).
-     * When set to "encrypted" (or vendor-specific like "encrypt-kms"), server will persist encryptData as-is
-     * and skip parsing tools/securitySchemes.
+     * 工具规格存储类型，默认 "normal"（明文）。
+     * 设为 "encrypted" 或 "encrypt-kms" 等时，服务端原样持久化 encryptData，
+     * 并跳过 tools/securitySchemes 解析。
      */
     private String specificationType;
     
-    /**
-     * Encrypted payload and metadata when specificationType indicates encryption.
-     */
+    /** 当 specificationType 为加密类型时的密文载荷及元数据。 */
     private EncryptObject encryptData;
     
+    /** MCP 工具定义列表。 */
     private List<McpTool> tools = new LinkedList<>();
     
+    /** 以工具名为键的元数据映射。 */
     private Map<String, McpToolMeta> toolsMeta = new HashMap<>(1);
     
+    /** 工具调用所需的安全认证方案列表。 */
     private List<SecurityScheme> securitySchemes = new ArrayList<>();
     
+    /** 厂商或业务自定义扩展字段。 */
     private Map<String, Object> extensions = new HashMap<>(1);
     
     public String getSpecificationType() {

@@ -25,13 +25,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.List;
 
 /**
- * Icon per Icon schema:
- * An optionally-sized icon that can be displayed in a user interface.
- * Required: src (HTTPS URI). Optional: mimeType, sizes, theme.
+ * MCP Registry 图标模型，可在 UI 中展示可选尺寸的图标。
  *
- * <p>
- * Fields align with components.schemas.Icon.
- * </p>
+ * <p>必填 {@link #src}（HTTPS URI）；可选 mimeType、sizes、theme。
+ * 字段与 components.schemas.Icon 一致。</p>
  *
  * @author xinluo
  */
@@ -49,18 +46,18 @@ public class Icon {
     private Theme theme;
     
     /**
-     * Get src.
+     * 返回图标 HTTPS 资源地址。
      *
-     * @return src
+     * @return src 图标 URI
      */
     public String getSrc() {
         return src;
     }
     
     /**
-     * Set src.
+     * 设置图标 HTTPS 资源地址。
      *
-     * @param src src
+     * @param src 图标 URI
      */
     public void setSrc(String src) {
         this.src = src;
@@ -70,6 +67,7 @@ public class Icon {
      * Get mime type.
      *
      * @return mime type
+      * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
      */
     public MimeType getMimeType() {
         return mimeType;
@@ -79,6 +77,7 @@ public class Icon {
      * Set mime type.
      *
      * @param mimeType mime type
+      * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
      */
     public void setMimeType(MimeType mimeType) {
         this.mimeType = mimeType;
@@ -88,6 +87,7 @@ public class Icon {
      * Get sizes.
      *
      * @return sizes
+      * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
      */
     public List<String> getSizes() {
         return sizes;
@@ -97,6 +97,7 @@ public class Icon {
      * Set sizes.
      *
      * @param sizes sizes
+      * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
      */
     public void setSizes(List<String> sizes) {
         this.sizes = sizes;
@@ -106,6 +107,7 @@ public class Icon {
      * Get theme.
      *
      * @return theme
+      * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
      */
     public Theme getTheme() {
         return theme;
@@ -115,35 +117,41 @@ public class Icon {
      * Set theme.
      *
      * @param theme theme
+      * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
      */
     public void setTheme(Theme theme) {
         this.theme = theme;
     }
     
     /**
-     * Mime type enum: image/png, image/jpeg, image/jpg, image/svg+xml, image/webp.
-     * Serialized/deserialized as the lowercase string value.
+     * 图标 MIME 类型枚举：image/png、jpeg、jpg、svg+xml、webp。
+     * 序列化/反序列化为小写字符串值。
      */
     public static enum MimeType {
         
         /**
          * PNG mime type.
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         IMAGE_PNG("image/png"),
         /**
          * JPEG mime type.
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         IMAGE_JPEG("image/jpeg"),
         /**
          * JPG mime type.
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         IMAGE_JPG("image/jpg"),
         /**
          * SVG XML mime type.
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         IMAGE_SVG_XML("image/svg+xml"),
         /**
          * WebP mime type.
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         IMAGE_WEBP("image/webp");
         
@@ -153,6 +161,7 @@ public class Icon {
          * Constructor.
          *
          * @param value value
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         MimeType(String value) {
             this.value = value;
@@ -162,6 +171,7 @@ public class Icon {
          * Get value.
          *
          * @return value
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         @JsonValue
         public String getValue() {
@@ -173,6 +183,7 @@ public class Icon {
          *
          * @param value value
          * @return MimeType
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         @JsonCreator
         public static MimeType fromValue(String value) {
@@ -186,17 +197,19 @@ public class Icon {
     }
     
     /**
-     * Theme enum: light or dark.
-     * Serialized/deserialized as the lowercase string value.
+     * 图标主题枚举：light 或 dark。
+     * 序列化/反序列化为小写字符串值。
      */
     public static enum Theme {
         
         /**
          * Light theme.
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         LIGHT("light"),
         /**
          * Dark theme.
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         DARK("dark");
         
@@ -206,6 +219,7 @@ public class Icon {
          * Constructor.
          *
          * @param value value
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         Theme(String value) {
             this.value = value;
@@ -215,6 +229,7 @@ public class Icon {
          * Get value.
          *
          * @return value
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         @JsonValue
         public String getValue() {
@@ -226,6 +241,7 @@ public class Icon {
          *
          * @param value value
          * @return Theme
+          * <p>Nacos AI MCP 模型 API；详见上方说明。</p>
          */
         @JsonCreator
         public static Theme fromValue(String value) {

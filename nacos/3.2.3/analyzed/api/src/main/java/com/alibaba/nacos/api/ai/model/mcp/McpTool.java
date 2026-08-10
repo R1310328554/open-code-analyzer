@@ -21,28 +21,35 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 
 /**
- * AI MCP Tool.
+ * MCP 工具定义模型，描述单个可调用工具的名称、入参/出参 Schema 及扩展元数据。
+ *
+ * <p>对应 MCP 协议 tools/list 与 tools/call 中的工具条目，
+ * 可携带 {@link McpToolAnnotations} 提示客户端工具行为特征。</p>
  *
  * @author xiweng.yy
  */
 public class McpTool {
     
+    /** 工具唯一名称，用于 tools/call 请求标识。 */
     private String name;
     
+    /** 工具的人类可读描述。 */
     private String description;
     
+    /** JSON Schema 形式的入参结构定义。 */
     private Map<String, Object> inputSchema;
     
+    /** JSON Schema 形式的出参结构定义（可选）。 */
     private Map<String, Object> outputSchema;
     
     /**
-     * MCP protocol meta field. See MCP specification for `_meta` usage.
+     * MCP 协议 `_meta` 扩展字段，用法见 MCP 规范。
      */
     @JsonProperty("_meta")
     private Map<String, Object> meta;
     
     /**
-     * MCP Tool annotations - additional properties describing a Tool to clients.
+     * 工具注解，向客户端补充描述工具行为特征的提示信息。
      */
     private McpToolAnnotations annotations;
     

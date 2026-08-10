@@ -19,16 +19,22 @@ package com.alibaba.nacos.api.ai.model.mcp;
 import java.util.Map;
 
 /**
- * AI MCP Tool metadata.
+ * MCP 工具元数据，承载调用上下文、启用开关与模板等治理信息。
+ *
+ * <p>以工具名为键存储于 {@link McpToolSpecification#getToolsMeta()} 映射中，
+ * 供服务端在工具列表与调用链路中附加 Nacos 侧扩展配置。</p>
  *
  * @author xiweng.yy
  */
 public class McpToolMeta {
     
+    /** 工具调用时注入的上下文键值对（如租户、链路 ID 等）。 */
     private Map<String, String> invokeContext;
     
+    /** 是否启用该工具，默认 true。 */
     private boolean enabled = true;
     
+    /** 与工具关联的模板配置（如请求体、响应映射模板）。 */
     private Map<String, Object> templates;
     
     public Map<String, String> getInvokeContext() {

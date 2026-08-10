@@ -24,7 +24,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * McpRegistryServerList (renamed from ServerList) aligns with registry package.
+ * MCP Registry 服务端列表响应（由原 ServerList 重命名）。
+ *
+ * <p>包含分页 Server 条目及 nextCursor 等元数据，
+ * 与 Registry 包 list servers API 响应对齐。</p>
  *
  * @author xinluo
  */
@@ -32,8 +35,10 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpRegistryServerList {
     
+    /** 当前页的 Server 摘要列表。 */
     private List<ServerResponse> servers;
     
+    /** 分页元数据（游标、总数等）。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Metadata metadata;
     
@@ -56,10 +61,12 @@ public class McpRegistryServerList {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Metadata {
         
+        /** 下一页游标，无更多数据时为 null。 */
         @JsonProperty("nextCursor")
         @JsonAlias("next_cursor")
         private String nextCursor;
         
+        /** 当前页或总计数量（依 API 语义）。 */
         private Integer count;
         
         public Metadata() {

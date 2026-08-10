@@ -17,30 +17,22 @@
 package com.alibaba.nacos.api.ai.model.mcp.registry;
 
 /**
- * McpServerStatusEnum.
+ * MCP Server 在 Registry 中的生命周期状态枚举。
  *
  * @author xinluo
  */
 public enum McpServerStatusEnum {
     
-    /**
-     * active.
-     */
+    /** 活跃可用状态。 */
     ACTIVE("active"),
     
-    /**
-     * deleted.
-     */
+    /** 已删除状态。 */
     DELETED("deleted"),
     
-    /**
-     * deprecated.
-     */
+    /** 已废弃状态。 */
     DEPRECATED("deprecated");
     
-    /**
-     * name.
-     */
+    /** 状态字符串值。 */
     private final String name;
     
     McpServerStatusEnum(String name) {
@@ -52,10 +44,10 @@ public enum McpServerStatusEnum {
     }
     
     /**
-     * parse string status to enum.
-     * return null if status is not valid.
-     * @param status status.
-     * @return McpServerStatusEnum.
+     * 将字符串状态解析为枚举值。
+     *
+     * @param status 状态字符串
+     * @return 对应枚举，无效时返回 null
      */
     public static McpServerStatusEnum parseStatus(String status) {
         for (McpServerStatusEnum value : values()) {

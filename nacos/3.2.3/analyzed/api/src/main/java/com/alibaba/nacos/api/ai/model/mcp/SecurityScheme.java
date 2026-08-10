@@ -8,35 +8,25 @@ package com.alibaba.nacos.api.ai.model.mcp;
  */
 public class SecurityScheme {
     
-    /**
-     * ID of the security scheme. Will be used and reference by tools.
-     */
+    /** 安全方案 ID，供工具引用。 */
     private String id;
     
-    /**
-     * Type of the security scheme. Possible values are: 'http', 'apiKey', 'localEnv' or other custom extension.
-     */
+    /** 安全方案类型，可取 'http'、'apiKey'、'localEnv' 或自定义扩展。 */
     private String type;
     
-    /**
-     * Scheme of the security scheme. Used when {@link #type} is `http`. Possible values are: `basic` 或 `bearer`.
-     */
+    /** HTTP 认证子方案；当 {@link #type} 为 `http` 时有效，可取 `basic` 或 `bearer`。 */
     private String scheme;
     
-    /**
-     * Location of the security scheme. Possible values are: `query`, `header`.
-     */
+    /** 凭证传递位置，可取 `query` 或 `header`。 */
     private String in;
     
     /**
-     * Name of the security scheme. Used when {@link #type} is `apiKey` or `localEnv`.
-     * e.g. the key name for `apiKey` or environment name for `localEnv`.
+     * 方案名称；{@link #type} 为 `apiKey` 时表示 Header/Query 键名，
+     * 为 `localEnv` 时表示环境变量名。
      */
     private String name;
     
-    /**
-     * The default credential when leak input identity by properties. Optional.
-     */
+    /** 未显式传入身份凭证时使用的默认凭证（可选）。 */
     private String defaultCredential;
     
     public String getId() {

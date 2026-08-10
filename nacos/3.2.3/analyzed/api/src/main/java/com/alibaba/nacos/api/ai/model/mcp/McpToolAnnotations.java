@@ -17,49 +17,36 @@
 package com.alibaba.nacos.api.ai.model.mcp;
 
 /**
- * MCP Tool Annotations - Additional properties describing a Tool to clients.
- * 
- * <p>
- * NOTE: all properties in ToolAnnotations are <b>hints</b>.
- * They are not guaranteed to provide a faithful description of tool behavior.
- * Clients should never make tool use decisions based on ToolAnnotations
- * received from untrusted servers.
- * </p>
+ * MCP 工具注解，向客户端提供描述工具行为的附加提示属性。
+ *
+ * <p>注意：ToolAnnotations 中所有属性均为<b>提示性</b>信息，
+ * 不保证与实际工具行为完全一致。客户端切勿仅依据来自不可信服务端的
+ * ToolAnnotations 做出工具调用决策。</p>
  *
  * @author xiweng.yy
  */
 public class McpToolAnnotations {
     
-    /**
-     * A human-readable title for the tool.
-     */
+    /** 工具的人类可读标题。 */
     private String title;
     
-    /**
-     * If true, the tool does not modify its environment. Default: false
-     */
+    /** 若为 true，表示工具不修改其运行环境；默认 false。 */
     private Boolean readOnlyHint;
     
     /**
-     * If true, the tool may perform destructive updates to its environment.
-     * If false, the tool performs only additive updates.
-     * (This property is meaningful only when readOnlyHint == false)
-     * Default: true
+     * 若为 true，工具可能对环境做破坏性更新；为 false 时仅做增量更新。
+     * （仅当 readOnlyHint 为 false 时此属性有意义；默认 true。）
      */
     private Boolean destructiveHint;
     
     /**
-     * If true, calling the tool repeatedly with the same arguments
-     * will have no additional effect on its environment.
-     * (This property is meaningful only when readOnlyHint == false)
-     * Default: false
+     * 若为 true，以相同参数重复调用不会产生额外环境副作用。
+     * （仅当 readOnlyHint 为 false 时此属性有意义；默认 false。）
      */
     private Boolean idempotentHint;
     
     /**
-     * If true, this tool may interact with an "open world" of external entities.
-     * If false, the tool's domain of interaction is closed.
-     * Default: true
+     * 若为 true，工具可能与外部开放实体交互；为 false 时交互域封闭；默认 true。
      */
     private Boolean openWorldHint;
     

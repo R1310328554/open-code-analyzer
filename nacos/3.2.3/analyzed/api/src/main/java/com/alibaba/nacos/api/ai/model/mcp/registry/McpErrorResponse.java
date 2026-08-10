@@ -19,13 +19,14 @@ package com.alibaba.nacos.api.ai.model.mcp.registry;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Error response wrapper with single error string.
+ * MCP Registry API 错误响应包装，携带单一 error 描述字符串。
  *
  * @author xinluo
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpErrorResponse {
     
+    /** 错误描述信息。 */
     private String error;
     
     public String getError() {

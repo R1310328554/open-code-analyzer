@@ -21,13 +21,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Map;
 
 /**
- * InputWithVariables per components.schemas.InputWithVariables.
+ * 带变量占位符的输入项，继承 {@link Input} 并附加 variables 映射。
+ *
+ * <p>与 components.schemas.InputWithVariables 对齐，
+ * 用于模板化命令或 URL 中的可替换变量定义。</p>
  *
  * @author xinluo
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class InputWithVariables extends Input {
     
+    /** 变量名到子输入项定义的映射。 */
     private Map<String, Input> variables;
     
     public Map<String, Input> getVariables() {

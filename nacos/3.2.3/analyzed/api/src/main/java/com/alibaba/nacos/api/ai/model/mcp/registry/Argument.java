@@ -20,8 +20,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
- * Argument union for MCP registry (named | positional).
- * Aligns with components.schemas.Argument.
+ * MCP Registry 命令行参数联合类型（命名参数 | 位置参数）。
+ *
+ * <p>与 OpenAPI components.schemas.Argument 对齐，
+ * 通过 Jackson 多态反序列化为 {@link NamedArgument} 或 {@link PositionalArgument}。</p>
  *
  * @author xinluo
  */

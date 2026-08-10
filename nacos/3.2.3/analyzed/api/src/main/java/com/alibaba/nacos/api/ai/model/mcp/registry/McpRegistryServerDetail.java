@@ -27,7 +27,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * McpRegistryServerDetail (renamed from ServerDetail).
+ * MCP Registry 服务端详情模型（由原 ServerDetail 重命名）。
+ *
+ * <p>描述 Registry 中单个 MCP Server 的名称、版本、仓库、远程端点、
+ * 安装包及发布者元数据等完整清单信息。</p>
  *
  * @author xinluo
  */
@@ -35,27 +38,38 @@ import java.util.Map;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpRegistryServerDetail {
     
+    /** Server 唯一名称标识。 */
     private String name;
     
+    /** Server 功能描述。 */
     private String description;
     
+    /** 展示用标题。 */
     private String title;
     
+    /** 源码或制品仓库信息。 */
     private Repository repository;
     
+    /** Server 版本号。 */
     private String version;
     
+    /** 官方网站 URL。 */
     private String websiteUrl;
     
+    /** UI 展示图标列表。 */
     private List<Icon> icons;
     
+    /** JSON Schema 引用 URI。 */
     @JsonProperty("$schema")
     private String schema;
     
+    /** 可安装包定义列表。 */
     private List<Package> packages;
     
+    /** 远程传输端点列表。 */
     private List<Remote> remotes;
     
+    /** Registry 扩展元数据（含发布者自定义字段）。 */
     @JsonProperty("_meta")
     private Meta meta;
     
