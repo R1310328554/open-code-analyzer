@@ -1,0 +1,7 @@
+{
+  "project": "keycloak",
+  "version": "26.7.1",
+  "git_ref": "26.7.1",
+  "repo_url": "https://github.com/keycloak/keycloak",
+  "source": "release"
+}

@@ -1,0 +1,17 @@
+{
+  "created_at": "2026-08-10T05:24:55Z",
+  "total": 5998,
+  "modules": [
+    "spring-beans",
+    "spring-context",
+    "spring-core",
+    "spring-aop",
+    "spring-tx",
+    "spring-webmvc",
+    "spring-web",
+    "spring-jdbc",
+    "spring-expression"
+  ],
+  "mode": "class-by-class-understand",
+  "note": "逐个类精读：读懂代码后再英译中/补充注释，禁止批量查找替换机翻；版权头保留英文"
+}

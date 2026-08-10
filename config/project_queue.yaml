@@ -91,6 +91,8 @@ projects:
   version: "3.2.3"
 - id: keycloak
   url: https://github.com/keycloak/keycloak
+  status: in_progress
+  version: "26.7.1"
 - id: gin
   url: https://github.com/gin-gonic/gin
   languages:
