@@ -25,14 +25,19 @@ import static io.netty.util.internal.PriorityQueueNode.INDEX_NOT_IN_QUEUE;
 
 /**
  * A priority queue which uses natural ordering of elements. Elements are also required to be of type
+ * <p>基于数组的最小堆优先队列；元素须为 {@link PriorityQueueNode} 以维护在队列中的索引，支持 O(log n) 删除与优先级变更。</p>
  * {@link PriorityQueueNode} for the purpose of maintaining the index in the priority queue.
  * @param <T> The object that is maintained in the queue.
  */
 public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends AbstractQueue<T>
                                                                      implements PriorityQueue<T> {
+    /** 初始容量为 0 时使用的共享空数组。 */
     private static final PriorityQueueNode[] EMPTY_ARRAY = new PriorityQueueNode[0];
+    /** 元素优先级比较器。 */
     private final Comparator<T> comparator;
+    /** 堆数组存储。 */
     private T[] queue;
+    /** 当前堆中元素个数。 */
     private int size;
 
     @SuppressWarnings("unchecked")
@@ -89,6 +94,7 @@ public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends Abs
                     " (expected: " + INDEX_NOT_IN_QUEUE + ") + e: " + e);
         }
 
+        // 容量不足时按 JDK PriorityQueue 策略扩容
         // Check that the array capacity is enough to hold values by doubling capacity.
         if (size >= queue.length) {
             // Use a policy which allows for a 0 initial capacity. Same policy as JDK's priority queue, double when
@@ -112,7 +118,8 @@ public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends Abs
 
         T last = queue[--size];
         queue[size] = null;
-        if (size != 0) { // Make sure we don't add the last element back.
+        if (size != 0) { // 非空堆时对移出的末尾元素下沉调整
+        // Make sure we don't add the last element back.
             bubbleDown(0, last);
         }
 
@@ -145,16 +152,19 @@ public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends Abs
 
         node.priorityQueueIndex(this, INDEX_NOT_IN_QUEUE);
         if (--size == 0 || size == i) {
+            // 堆空或删除的是最后一个槽位，直接置空
             // If there are no node left, or this is the last node in the array just remove and return.
             queue[i] = null;
             return true;
         }
 
+        // 用堆尾元素填补被删位置
         // Move the last element where node currently lives in the array.
         T moved = queue[i] = queue[size];
         queue[size] = null;
         // priorityQueueIndex will be updated below in bubbleUp or bubbleDown
 
+        // 与待删节点比较决定上浮或下沉
         // Make sure the moved node still preserves the min-heap properties.
         if (comparator.compare(node, moved) < 0) {
             bubbleDown(i, moved);
@@ -171,6 +181,7 @@ public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends Abs
             return;
         }
 
+        // 根据与父/子关系决定 bubbleUp 或 bubbleDown
         // Preserve the min-heap property by comparing the new priority with parents/children in the heap.
         if (i == 0) {
             bubbleDown(i, node);
@@ -206,6 +217,7 @@ public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends Abs
 
     /**
      * This iterator does not return elements in any particular order.
+     * <p>按数组下标顺序遍历，不保证堆优先级顺序。</p>
      */
     @Override
     public Iterator<T> iterator() {
@@ -239,9 +251,11 @@ public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends Abs
         return i >= 0 && i < size && node.equals(queue[i]);
     }
 
+    /** 将 {@code node} 从索引 {@code k} 下沉直至满足最小堆性质。 */
     private void bubbleDown(int k, T node) {
         final int half = size >>> 1;
         while (k < half) {
+            // 与左右子中较小者比较
             // Compare node to the children of index k.
             int iChild = (k << 1) + 1;
             T child = queue[iChild];
@@ -251,12 +265,14 @@ public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends Abs
             if (rightChild < size && comparator.compare(child, queue[rightChild]) > 0) {
                 child = queue[iChild = rightChild];
             }
+            // 已不大于最小子节点，插入当前位置
             // If the bubbleDown node is less than or equal to the smallest child then we will preserve the min-heap
             // property by inserting the bubbleDown node here.
             if (comparator.compare(node, child) <= 0) {
                 break;
             }
 
+            // 子节点上移到 k
             // Bubble the child up.
             queue[k] = child;
             child.priorityQueueIndex(this, k);
@@ -265,22 +281,26 @@ public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends Abs
             k = iChild;
         }
 
+        // 确定最终位置并更新节点索引
         // We have found where node should live and still satisfy the min-heap property, so put it in the queue.
         queue[k] = node;
         node.priorityQueueIndex(this, k);
     }
 
+    /** 将 {@code node} 从索引 {@code k} 上浮直至满足最小堆性质。 */
     private void bubbleUp(int k, T node) {
         while (k > 0) {
             int iParent = (k - 1) >>> 1;
             T parent = queue[iParent];
 
+            // 已不小于父节点，插入当前位置
             // If the bubbleUp node is less than the parent, then we have found a spot to insert and still maintain
             // min-heap properties.
             if (comparator.compare(node, parent) >= 0) {
                 break;
             }
 
+            // 父节点下移到 k
             // Bubble the parent down.
             queue[k] = parent;
             parent.priorityQueueIndex(this, k);
@@ -289,6 +309,7 @@ public final class DefaultPriorityQueue<T extends PriorityQueueNode> extends Abs
             k = iParent;
         }
 
+        // 确定最终位置并更新节点索引
         // We have found where node should live and still satisfy the min-heap property, so put it in the queue.
         queue[k] = node;
         node.priorityQueueIndex(this, k);

@@ -17,6 +17,10 @@ package io.netty.util.internal;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 基于 {@link PlatformDependent0} 直接分配/释放堆外内存的 {@link Cleaner} 实现。
+ * <p>在 Unsafe 可用时使用 {@code allocateDirectNoCleaner} 与 {@code freeMemory}，支持高效 {@link #reallocate}。</p>
+ */
 final class DirectCleaner implements Cleaner {
     @Override
     public CleanableDirectBuffer allocate(int capacity) {
@@ -48,9 +52,11 @@ final class DirectCleaner implements Cleaner {
         return false;
     }
 
+    /** {@link CleanableDirectBuffer} 包装，持有已分配或重分配后的堆外 {@link ByteBuffer}。 */
     private static final class CleanableDirectBufferImpl implements CleanableDirectBuffer {
         private final ByteBuffer buffer;
 
+        // 常规分配：分配内存并递增全局计数器
         // Used for normal allocation — allocates memory and increments counter
         CleanableDirectBufferImpl(int capacity) {
             PlatformDependent.incrementMemoryCounter(capacity);
@@ -62,6 +68,7 @@ final class DirectCleaner implements Cleaner {
             }
         }
 
+        // 重分配路径：内存已分配，计数器已在外部调整
         // Used for reallocation — memory already allocated, counter already adjusted
         CleanableDirectBufferImpl(ByteBuffer buffer) {
             this.buffer = buffer;

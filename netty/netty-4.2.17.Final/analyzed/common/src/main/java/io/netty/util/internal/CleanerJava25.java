@@ -27,15 +27,18 @@ import static java.lang.invoke.MethodType.methodType;
 /**
  * Provide a way to clean direct {@link ByteBuffer} instances on Java 24+,
  * where we don't have {@code Unsafe} available, but we have memory segments.
+ * <p>通过共享 {@code Arena} 与 {@code MemorySegment} 管理堆外内存；clean 时关闭 Arena。</p>
  */
 final class CleanerJava25 implements Cleaner {
     private static final InternalLogger logger;
 
+    /** (int capacity) -> CleanableDirectBufferImpl 的复合分配方法句柄。 */
     private static final MethodHandle INVOKE_ALLOCATOR;
 
     static {
         boolean suitableJavaVersion;
         if (System.getProperty("org.graalvm.nativeimage.imagecode") != null) {
+            // Native Image 构建期初始化路径，Java 25+ 才启用
             // native image supports this since 25, but we don't use PlatformDependent0 here, since
             // we need to initialize CleanerJava25 at build time.
             String v = System.getProperty("java.specification.version");
@@ -47,6 +50,7 @@ final class CleanerJava25 implements Cleaner {
             // also need to prevent initializing the logger at build time
             logger = null;
         } else {
+            // Java 25+ 才启用，规避 GLOBAL_SESSION 相关 JDK 缺陷
             // Only attempt to use MemorySegments on Java 25 or greater, because of the following JDK bugs:
             // - https://bugs.openjdk.org/browse/JDK-8357145
             // - https://bugs.openjdk.org/browse/JDK-8357268
@@ -58,6 +62,7 @@ final class CleanerJava25 implements Cleaner {
         Throwable error;
         if (suitableJavaVersion) {
             try {
+                // 用 MethodHandle 组合 recreate：Arena.ofShared -> allocate -> asByteBuffer/address -> 构造 Impl
                 // Here we compose and construct a MethodHandle that takes an 'int' capacity argument,
                 // and produces a 'CleanableDirectBufferImpl' instance.
                 // The method handle will create a new shared Arena instance, allocate a MemorySegment from it,
@@ -85,6 +90,7 @@ final class CleanerJava25 implements Cleaner {
                 // ofShared.type() = ()Arena
                 MethodHandle ofShared = lookup.findStatic(arenaCls, "ofShared", methodType(arenaCls));
 
+                // 探测共享 Arena 是否可用（GraalVM 25.0.0 可能默认禁用）
                 // Try to access shared Arena which might fail on GraalVM 25.0.0 if not enabled
                 // See https://github.com/netty/netty/issues/15762
                 Object shared = ofShared.invoke();
@@ -188,6 +194,7 @@ final class CleanerJava25 implements Cleaner {
 
     @Override
     public boolean hasExpensiveClean() {
+        // 频繁关闭共享 Arena 涉及跨线程握手，开销相对较大
         // Closing shared arenas can be fairly expensive if we do it a lot,
         // because it relies on inter-thread handshakes.
         return true;
@@ -198,6 +205,7 @@ final class CleanerJava25 implements Cleaner {
         private final ByteBuffer buffer;
         private final long memoryAddress;
 
+        // 须包可见以便 MethodHandle 反射调用构造器
         // NOTE: must be at least package-protected to allow calls from the method handles!
         CleanableDirectBufferImpl(AutoCloseable closeable, ByteBuffer buffer, long memoryAddress) {
             this.closeable = closeable;

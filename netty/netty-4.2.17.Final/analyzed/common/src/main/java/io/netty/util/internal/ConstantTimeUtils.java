@@ -15,6 +15,10 @@
  */
 package io.netty.util.internal;
 
+/**
+ * 常数时间比较工具，避免通过执行时间泄露相等性信息。
+ * <p>方法返回 {@code int}（0 或 1）而非 {@code boolean}，便于用位与串联多个常数时间比较。</p>
+ */
 public final class ConstantTimeUtils {
     private ConstantTimeUtils() { }
 
@@ -29,6 +33,7 @@ public final class ConstantTimeUtils {
      *     int l4 = 500;
      *     boolean equals = (equalsConstantTime(l1, l2) & equalsConstantTime(l3, l4)) != 0;
      * </pre>
+     * <p>通过位运算扩散异或结果，使比较耗时与数值差异无关。</p>
      * @param x the first value.
      * @param y the second value.
      * @return {@code 0} if not equal. {@code 1} if equal.
@@ -54,6 +59,7 @@ public final class ConstantTimeUtils {
      *     long l4 = 500;
      *     boolean equals = (equalsConstantTime(l1, l2) & equalsConstantTime(l3, l4)) != 0;
      * </pre>
+     * <p>对 64 位值同样采用逐级掩码归约至最低位。</p>
      * @param x the first value.
      * @param y the second value.
      * @return {@code 0} if not equal. {@code 1} if equal.
@@ -82,6 +88,7 @@ public final class ConstantTimeUtils {
      *     boolean equals = (equalsConstantTime(s1, 0, s2, 0, s1.length) &
      *                       equalsConstantTime(s3, 0, s4, 0, s3.length)) != 0;
      * </pre>
+     * <p>逐字节异或累加至 {@code b}，再与 0 做常数时间比较；调用方须保证索引合法。</p>
      * @param bytes1 the first byte array.
      * @param startPos1 the position (inclusive) to start comparing in {@code bytes1}.
      * @param bytes2 the second byte array.
@@ -92,6 +99,7 @@ public final class ConstantTimeUtils {
      */
     public static int equalsConstantTime(byte[] bytes1, int startPos1,
                                          byte[] bytes2, int startPos2, int length) {
+        // 基准测试表明用 int 累加异或结果比 byte/long 更快
         // Benchmarking demonstrates that using an int to accumulate is faster than other data types.
         int b = 0;
         final int end = startPos1 + length;
@@ -112,6 +120,7 @@ public final class ConstantTimeUtils {
      *     String s4 = "goo";
      *     boolean equals = (equalsConstantTime(s1, s2) & equalsConstantTime(s3, s4)) != 0;
      * </pre>
+     * <p>长度不等时立即返回 0；否则逐字符异或累加后常数时间判等。</p>
      * @param s1 the first value.
      * @param s2 the second value.
      * @return {@code 0} if not equal. {@code 1} if equal.

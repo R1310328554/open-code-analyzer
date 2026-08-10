@@ -25,16 +25,24 @@ import java.nio.ByteBuffer;
 
 import static java.lang.invoke.MethodType.methodType;
 
+/**
+ * Java 24+ 通过 FFM {@code Linker} 链接 C {@code malloc}/{@code free} 分配堆外内存的 {@link Cleaner}。
+ * <p>使用 {@code MemorySegment.ofAddress} 包装为 {@link ByteBuffer}，不依赖 Unsafe。</p>
+ */
 public class CleanerJava24Linker implements Cleaner {
     private static final InternalLogger logger;
 
+    /** 本机 malloc 方法句柄。 */
     private static final MethodHandle INVOKE_MALLOC;
+    /** 由地址与容量构造 ByteBuffer 的方法句柄。 */
     private static final MethodHandle INVOKE_CREATE_BYTEBUFFER;
+    /** 本机 free 方法句柄。 */
     private static final MethodHandle INVOKE_FREE;
 
     static {
         boolean suitableJavaVersion;
         if (System.getProperty("org.graalvm.nativeimage.imagecode") != null) {
+            // GraalVM Native Image 自 Java 25 起支持；此处不用 PlatformDependent0 以便构建期初始化
             // native image supports this since 25, but we don't use PlatformDependent0 here, since
             // we need to initialize CleanerJava24Linker at build time.
             String v = System.getProperty("java.specification.version");
@@ -46,6 +54,7 @@ public class CleanerJava24Linker implements Cleaner {
             // also need to prevent initializing the logger at build time
             logger = null;
         } else {
+            // Java 24+ 启用 MemorySegment；此版本起 Unsafe 堆外访问会触发警告
             // Only attempt to use MemorySegments on Java 24 or greater, where warnings about Unsafe
             // memory access operations start to appear.
             // The following JDK bugs do NOT affect our implementation because the memory segments we
@@ -63,6 +72,7 @@ public class CleanerJava24Linker implements Cleaner {
 
         if (suitableJavaVersion) {
             try {
+                // 检查 io.netty.common 模块是否已启用本机访问（restricted methods）
                 // First, we need to check if we have access to "restricted" methods through the Java Module system.
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
                 Class<?> moduleCls = Class.forName("java.lang.Module");
@@ -79,6 +89,7 @@ public class CleanerJava24Linker implements Cleaner {
                             "Native access (restricted methods) is not enabled for the io.netty.common module.");
                 }
 
+                // 指针宽度须与 long 相同（64 位平台）
                 // Second, we need to check the size of a pointer address. For simplicity, we'd like to assume the size
                 // of an address is the same as a Java long. So effectively, we're only enabled on 64-bit platforms.
                 Class<?> memoryLayoutCls = Class.forName("java.lang.foreign.MemoryLayout");
@@ -127,6 +138,7 @@ public class CleanerJava24Linker implements Cleaner {
                         lookup.findVirtual(symbolLookupCls, "findOrThrow", methodType(memSegCls, String.class)),
                         defaultLookupStatic);
 
+                // 构造 malloc(long) -> long 下行调用句柄
                 // Constructing the malloc (long)long handle
                 Object longLayout = lookup.findStaticGetter(valueLayoutCls, "JAVA_LONG", ofLongValueLayoutCls).invoke();
                 Object layoutArray = Array.newInstance(memoryLayoutCls, 1);
@@ -142,6 +154,7 @@ public class CleanerJava24Linker implements Cleaner {
                         mallocFuncDesc);
                 mallocMethod = (MethodHandle) mallocLinker.invoke(Array.newInstance(linkerOptionCls, 0));
 
+                // 构造 free(long) -> void 下行调用句柄
                 // Constructing the free (long)void handle
                 MethodHandle freeFuncDesc = MethodHandles.insertArguments(
                         lookup.findStatic(funcDescCls, "ofVoid",
@@ -154,6 +167,7 @@ public class CleanerJava24Linker implements Cleaner {
                         freeFuncDesc);
                 freeMethod = (MethodHandle) freeLinker.invoke(Array.newInstance(linkerOptionCls, 0));
 
+                // 构造 (地址, 容量) -> ByteBuffer 包装句柄
                 // Constructing the wrapper (long, long)ByteBuffer handle
                 MethodHandle ofAddress = lookup.findStatic(memSegCls, "ofAddress", methodType(memSegCls, long.class));
                 MethodHandle reinterpret = lookup.findVirtual(memSegCls, "reinterpret",
@@ -211,6 +225,7 @@ public class CleanerJava24Linker implements Cleaner {
     static long malloc(int capacity) {
         final long addr;
         try {
+            // 至少分配 1 字节，避免 malloc(0) 的可移植性问题
             // Always allocate at least 1 byte, to avoid relying on non-portable behavior
             // of malloc(3) for zero size allocations.
             addr = (long) INVOKE_MALLOC.invokeExact(Math.max(capacity, 1L));
@@ -231,6 +246,7 @@ public class CleanerJava24Linker implements Cleaner {
         }
     }
 
+    /** malloc 分配的本机内存段，clean 时 free 并更新内存计数。 */
     private static final class CleanableDirectBufferImpl implements CleanableDirectBuffer {
         private final ByteBuffer buffer;
         private final long memoryAddress;

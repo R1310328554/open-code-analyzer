@@ -28,12 +28,15 @@ import java.util.Objects;
 import static java.lang.invoke.MethodType.methodType;
 
 /**
- * Allows to free direct {@link ByteBuffer} by using Cleaner. This is encapsulated in an extra class to be able
+ * Allows to free direct {@link ByteBuffer} by using Cleaner.
+ * <p>通过 {@code sun.misc.Cleaner} 释放堆外缓冲；独立类以便 Android 上隔离 {@link PlatformDependent0} 依赖。</p> This is encapsulated in an extra class to be able
  * to use {@link PlatformDependent0} on Android without problems.
  * <p>
  * For more details see <a href="https://github.com/netty/netty/issues/2604">#2604</a>.
  */
+/** Java 6+ 基于 DirectBuffer.cleaner() 的 {@link Cleaner} 实现。 */
 final class CleanerJava6 implements Cleaner {
+    /** 调用 DirectBuffer 关联 Cleaner 的 clean 方法句柄；不可用时为 null。 */
     private static final MethodHandle CLEAN_METHOD;
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(CleanerJava6.class);
@@ -51,6 +54,7 @@ final class CleanerJava6 implements Cleaner {
                         Class<?> directBufClass = Class.forName("sun.nio.ch.DirectBuffer");
                         MethodHandles.Lookup lookup = MethodHandles.lookup();
 
+                        // 在 cleaner 非空时调用 clean()
                         // Call clean() on the cleaner
                         MethodHandle clean = lookup.findVirtual(
                                 cleanerClass, "clean", methodType(void.class));
@@ -82,6 +86,7 @@ final class CleanerJava6 implements Cleaner {
             clean = (MethodHandle) mayBeCleanerField;
             clean.invokeExact(direct);
         } catch (Throwable t) {
+            // 当前环境无 ByteBuffer.cleaner() 能力
             // We don't have ByteBuffer.cleaner().
             clean = null;
             error = t;
@@ -115,6 +120,7 @@ final class CleanerJava6 implements Cleaner {
         return false;
     }
 
+    /** 释放堆外 ByteBuffer；无 SecurityManager 时走快速路径。 */
     private static void freeDirectBufferStatic(ByteBuffer buffer) {
         if (!buffer.isDirect()) {
             return;
@@ -151,6 +157,7 @@ final class CleanerJava6 implements Cleaner {
         CLEAN_METHOD.invokeExact(buffer);
     }
 
+    /** 包装 {@link ByteBuffer#allocateDirect(int)} 结果并维护内存计数。 */
     private static final class CleanableDirectBufferImpl implements CleanableDirectBuffer {
         private final ByteBuffer buffer;
 

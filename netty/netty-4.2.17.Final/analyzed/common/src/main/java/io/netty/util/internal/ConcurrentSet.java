@@ -23,16 +23,19 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * @deprecated For removal in Netty 4.2. Please use {@link ConcurrentHashMap#newKeySet()} instead
+ * <p>基于 {@link ConcurrentHashMap} 键集合实现的并发 {@link java.util.Set}；Netty 4.2 起请改用 {@link ConcurrentHashMap#newKeySet()}。</p>
  */
 @Deprecated
 public final class ConcurrentSet<E> extends AbstractSet<E> implements Serializable {
 
     private static final long serialVersionUID = -6761513279741915432L;
 
+    /** 以元素为键、{@link Boolean#TRUE} 为占位值的并发映射。 */
     private final ConcurrentMap<E, Boolean> map;
 
     /**
      * Creates a new instance which wraps the specified {@code map}.
+     * <p>创建空并发集合，内部使用新的 {@link ConcurrentHashMap}。</p>
      */
     public ConcurrentSet() {
         map = new ConcurrentHashMap<>();
@@ -50,6 +53,7 @@ public final class ConcurrentSet<E> extends AbstractSet<E> implements Serializab
 
     @Override
     public boolean add(E o) {
+        // putIfAbsent 成功表示原先不存在该元素
         return map.putIfAbsent(o, Boolean.TRUE) == null;
     }
 

@@ -21,16 +21,27 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * 带读取字节数上限的 {@link FilterInputStream} 包装器。
+ * <p>累计已读字节超过 {@code maxBytesRead} 时抛出 {@link IOException}，用于限制不可信输入源的消耗。</p>
+ */
 public final class BoundedInputStream extends FilterInputStream {
 
+    /** 允许读取的最大字节数。 */
     private final int maxBytesRead;
+    /** 已累计读取的字节数。 */
     private int numRead;
 
+    /**
+     * @param in 底层输入流
+     * @param maxBytesRead 最大可读字节数，必须为正
+     */
     public BoundedInputStream(@NotNull InputStream in, int maxBytesRead) {
         super(in);
         this.maxBytesRead = ObjectUtil.checkPositive(maxBytesRead, "maxRead");
     }
 
+    /** 默认上限 8 KiB。 */
     public BoundedInputStream(@NotNull InputStream in) {
         this(in, 8 * 1024);
     }
@@ -50,6 +61,7 @@ public final class BoundedInputStream extends FilterInputStream {
     public int read(byte[] buf, int off, int len) throws IOException {
         checkMaxBytesRead();
 
+        // 单次读取量不超过剩余配额
         // Calculate the maximum number of bytes that we should try to read.
         int num = Math.min(len, maxBytesRead - numRead + 1);
 
@@ -61,6 +73,7 @@ public final class BoundedInputStream extends FilterInputStream {
         return b;
     }
 
+    /** 超出上限时抛出 IOException。 */
     private void checkMaxBytesRead() throws IOException {
         if (numRead > maxBytesRead) {
             throw new IOException("Maximum number of bytes read: " + numRead);

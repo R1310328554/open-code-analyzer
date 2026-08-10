@@ -23,6 +23,10 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 
+/**
+ * 各类型的共享空数组常量，避免重复分配零长度数组。
+ * <p>在泛型、API 返回值等场景复用同一空数组实例，减少 GC 压力。</p>
+ */
 public final class EmptyArrays {
 
     public static final int[] EMPTY_INTS = {};

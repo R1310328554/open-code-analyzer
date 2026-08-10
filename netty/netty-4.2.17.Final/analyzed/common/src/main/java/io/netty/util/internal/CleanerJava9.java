@@ -29,10 +29,12 @@ import static java.lang.invoke.MethodType.methodType;
 
 /**
  * Provide a way to clean a ByteBuffer on Java9+.
+ * <p>通过 {@code Unsafe.invokeCleaner} 在 Java 9+ 上释放堆外 {@link ByteBuffer}。</p>
  */
 final class CleanerJava9 implements Cleaner {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(CleanerJava9.class);
 
+    /** 绑定到全局 Unsafe 的 invokeCleaner 方法句柄。 */
     private static final MethodHandle INVOKE_CLEANER;
 
     static {
@@ -44,6 +46,7 @@ final class CleanerJava9 implements Cleaner {
                 @Override
                 public Object run() {
                     try {
+                        // JDK-8171377：通过 Unsafe.invokeCleaner 清理 DirectBuffer
                         // See https://bugs.openjdk.java.net/browse/JDK-8171377
                         Class<? extends Unsafe> unsafeClass = PlatformDependent0.UNSAFE.getClass();
                         MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -98,6 +101,7 @@ final class CleanerJava9 implements Cleaner {
     }
 
     private static void freeDirectBufferStatic(ByteBuffer buffer) {
+        // 无 SecurityManager 时直接调用，避免特权块开销
         // Try to minimize overhead when there is no SecurityManager present.
         // See https://bugs.openjdk.java.net/browse/JDK-8191053.
         if (System.getSecurityManager() == null) {
@@ -128,6 +132,7 @@ final class CleanerJava9 implements Cleaner {
         }
     }
 
+    /** allocateDirect 包装，clean 时调用 invokeCleaner 并递减内存计数。 */
     private static final class CleanableDirectBufferImpl implements CleanableDirectBuffer {
         private final ByteBuffer buffer;
 

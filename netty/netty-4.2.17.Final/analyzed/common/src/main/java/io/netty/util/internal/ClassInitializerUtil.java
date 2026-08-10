@@ -17,6 +17,7 @@ package io.netty.util.internal;
 
 /**
  * Utility which ensures that classes are loaded by the {@link ClassLoader}.
+ * <p>在 Netty 启动或模块初始化阶段预加载指定类，避免运行期首次加载时的类加载器竞争或延迟。</p>
  */
 public final class ClassInitializerUtil {
 
@@ -24,6 +25,7 @@ public final class ClassInitializerUtil {
 
     /**
      * Preload the given classes and so ensure the {@link ClassLoader} has these loaded after this method call.
+     * <p>使用 {@code loadingClass} 所在类加载器加载并初始化（{@code initialize=true}）给定类列表。</p>
      *
      * @param loadingClass      the {@link Class} that wants to load the classes.
      * @param classes           the classes to load.
@@ -35,8 +37,10 @@ public final class ClassInitializerUtil {
         }
     }
 
+    /** 尝试加载并链接类；{@link ClassNotFoundException} 与 {@link SecurityException} 静默忽略。 */
     private static void tryLoadClass(ClassLoader classLoader, String className) {
         try {
+            // initialize=true 确保类完成链接与初始化
             // Load the class and also ensure we init it which means its linked etc.
             Class.forName(className, true, classLoader);
         } catch (ClassNotFoundException | SecurityException ignore) {
