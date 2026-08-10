@@ -36,6 +36,7 @@ import com.alibaba.nacos.sys.env.EnvUtil;
 import org.springframework.stereotype.Component;
 
 /**
+ * Distro 协议核心入口：协调数据同步、远程查询、接收处理与校验，并在集群模式下启动全量加载与定时校验任务。
  * Distro protocol.
  *
  * @author xiweng.yy
@@ -43,14 +44,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class DistroProtocol {
     
+    /** 集群成员管理器。 */
     private final ServerMemberManager memberManager;
     
+    /** Distro 组件注册表（传输、存储、处理器等）。 */
     private final DistroComponentHolder distroComponentHolder;
     
+    /** Distro 延迟/执行类任务引擎持有者。 */
     private final DistroTaskEngineHolder distroTaskEngineHolder;
     
+    /** 全量数据是否加载完成（单机模式直接为 true）。 */
     private volatile boolean isInitialized = false;
     
+    /** 构造并启动 Distro 后台任务（校验与全量加载）。 */
     public DistroProtocol(ServerMemberManager memberManager,
         DistroComponentHolder distroComponentHolder,
         DistroTaskEngineHolder distroTaskEngineHolder) {
@@ -60,6 +66,7 @@ public class DistroProtocol {
         startDistroTask();
     }
     
+    /** 单机模式跳过任务；集群模式启动校验与加载。 */
     private void startDistroTask() {
         if (EnvUtil.getStandaloneMode()) {
             isInitialized = true;
@@ -69,6 +76,7 @@ public class DistroProtocol {
         startLoadTask();
     }
     
+    /** 提交全量数据加载任务，成功后标记 initialized。 */
     private void startLoadTask() {
         DistroCallback loadCallback = new DistroCallback() {
             
@@ -87,6 +95,7 @@ public class DistroProtocol {
                 loadCallback));
     }
     
+    /** 按配置间隔调度分区数据校验任务。 */
     private void startVerifyTask() {
         GlobalExecutor.schedulePartitionDataTimedSync(
             new DistroVerifyTimedTask(memberManager, distroComponentHolder,
@@ -94,12 +103,13 @@ public class DistroProtocol {
             DistroConfig.getInstance().getVerifyIntervalMillis());
     }
     
+    /** 返回 Distro 是否已完成初始化（全量加载成功）。 */
     public boolean isInitialized() {
         return isInitialized;
     }
     
     /**
-     * Start to sync by configured delay.
+     * 使用 {@link DistroConfig} 默认延迟，向所有远程节点发起同步。
      *
      * @param distroKey distro key of sync data
      * @param action    the action of data operation
@@ -109,7 +119,7 @@ public class DistroProtocol {
     }
     
     /**
-     * Start to sync data to all remote server.
+     * 向除本机外的所有集群成员同步指定数据。
      *
      * @param distroKey distro key of sync data
      * @param action    the action of data operation
@@ -122,7 +132,7 @@ public class DistroProtocol {
     }
     
     /**
-     * Start to sync to target server.
+     * 向指定目标节点投递延迟同步任务。
      *
      * @param distroKey    distro key of sync data
      * @param action       the action of data operation
@@ -143,7 +153,7 @@ public class DistroProtocol {
     }
     
     /**
-     * Query data from specified server.
+     * 通过传输代理从目标服务器拉取 Distro 数据。
      *
      * @param distroKey data key
      * @return data
@@ -164,7 +174,7 @@ public class DistroProtocol {
     }
     
     /**
-     * Receive synced distro data, find processor to process.
+     * 接收远端同步数据，按资源类型路由到对应 {@link DistroDataProcessor} 处理。
      *
      * @param distroData Received data
      * @return true if handle receive data successfully, otherwise false
@@ -183,7 +193,7 @@ public class DistroProtocol {
     }
     
     /**
-     * Receive verify data, find processor to process.
+     * 接收校验数据并交由处理器比对，必要时从源节点拉取完整数据。
      *
      * @param distroData    verify data
      * @param sourceAddress source server address, might be get data from source server
@@ -206,7 +216,7 @@ public class DistroProtocol {
     }
     
     /**
-     * Query data of input distro key.
+     * 本地查询：从对应 {@link DistroDataStorage} 读取单条 Distro 数据。
      *
      * @param distroKey key of data
      * @return data
@@ -223,7 +233,7 @@ public class DistroProtocol {
     }
     
     /**
-     * Query all datum snapshot.
+     * 本地查询：返回指定类型的全量数据快照。
      *
      * @param type datum type
      * @return all datum snapshot

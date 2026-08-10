@@ -22,28 +22,27 @@ import com.alibaba.nacos.core.distributed.distro.entity.DistroKey;
 import java.util.List;
 
 /**
+ * Distro 本地数据存储抽象：提供单条读取、全量快照与校验数据枚举，并跟踪初始化完成状态。
  * Distro data storage.
  *
  * @author xiweng.yy
  */
 public interface DistroDataStorage {
     
-    /**
-     * Set this distro data storage has finished initial step.
-     */
+    /** 标记本存储已完成初始化（如全量加载结束）。 */
     void finishInitial();
     
     /**
-     * Whether this distro data is finished initial.
+     * 是否已完成初始化。
      *
-     * <p>If not finished, this data storage should not send verify data to other node.
+     * <p>未完成时不应向其他节点发送校验数据。
      *
      * @return {@code true} if finished, otherwise false
      */
     boolean isFinishInitial();
     
     /**
-     * Get distro datum.
+     * 按 key 读取待同步的单条 Distro 数据。
      *
      * @param distroKey key of distro datum
      * @return need to sync datum
@@ -51,14 +50,14 @@ public interface DistroDataStorage {
     DistroData getDistroData(DistroKey distroKey);
     
     /**
-     * Get all distro datum snapshot.
+     * 返回本类型全部数据的快照（用于全量同步/加载）。
      *
      * @return all datum
      */
     DistroData getDatumSnapshot();
     
     /**
-     * Get verify datum.
+     * 返回用于定时校验的数据摘要列表。
      *
      * @return verify datum
      */

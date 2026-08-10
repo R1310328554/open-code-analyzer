@@ -19,6 +19,7 @@ package com.alibaba.nacos.core.distributed.distro.component;
 import com.alibaba.nacos.core.distributed.distro.entity.DistroData;
 
 /**
+ * Distro 入站数据处理器：负责处理同步数据、校验数据与快照数据。
  * Distro data processor.
  *
  * @author xiweng.yy
@@ -26,14 +27,14 @@ import com.alibaba.nacos.core.distributed.distro.entity.DistroData;
 public interface DistroDataProcessor {
     
     /**
-     * Process type of this processor.
+     * 返回本处理器负责的资源/处理类型标识。
      *
      * @return type of this processor
      */
     String processType();
     
     /**
-     * Process received data.
+     * 处理远端同步过来的 Distro 数据。
      *
      * @param distroData received data
      * @return true if process data successfully, otherwise false
@@ -41,7 +42,7 @@ public interface DistroDataProcessor {
     boolean processData(DistroData distroData);
     
     /**
-     * Process received verify data.
+     * 处理校验数据；不一致时可从 {@code sourceAddress} 拉取完整数据修复。
      *
      * @param distroData    verify data
      * @param sourceAddress source server address, might be get data from source server
@@ -50,7 +51,7 @@ public interface DistroDataProcessor {
     boolean processVerifyData(DistroData distroData, String sourceAddress);
     
     /**
-     * Process snapshot data.
+     * 处理全量快照数据（如启动加载阶段）。
      *
      * @param distroData snapshot data
      * @return true if process data successfully, otherwise false

@@ -19,46 +19,58 @@ package com.alibaba.nacos.core.distributed.distro.entity;
 import com.alibaba.nacos.consistency.DataOperation;
 
 /**
+ * Distro 数据载体：包含资源键、操作类型与序列化后的内容字节。
  * Distro data.
  *
  * @author xiweng.yy
  */
 public class DistroData {
     
+    /** 数据对应的 Distro 键（资源 key、类型、目标节点等）。 */
     private DistroKey distroKey;
     
+    /** 数据操作类型（增删改等）。 */
     private DataOperation type;
     
+    /** 序列化后的业务载荷。 */
     private byte[] content;
     
+    /** 无参构造，供反序列化使用。 */
     public DistroData() {
     }
     
+    /** 构造指定 key 与内容的 Distro 数据。 */
     public DistroData(DistroKey distroKey, byte[] content) {
         this.distroKey = distroKey;
         this.content = content;
     }
     
+    /** 返回 Distro 键。 */
     public DistroKey getDistroKey() {
         return distroKey;
     }
     
+    /** 设置 Distro 键。 */
     public void setDistroKey(DistroKey distroKey) {
         this.distroKey = distroKey;
     }
     
+    /** 返回操作类型。 */
     public DataOperation getType() {
         return type;
     }
     
+    /** 设置操作类型。 */
     public void setType(DataOperation type) {
         this.type = type;
     }
     
+    /** 返回内容字节数组。 */
     public byte[] getContent() {
         return content;
     }
     
+    /** 设置内容字节数组。 */
     public void setContent(byte[] content) {
         this.content = content;
     }

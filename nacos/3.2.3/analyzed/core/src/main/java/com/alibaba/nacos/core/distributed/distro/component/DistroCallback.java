@@ -17,19 +17,18 @@
 package com.alibaba.nacos.core.distributed.distro.component;
 
 /**
+ * Distro 异步任务回调：在同步/加载等任务成功或失败时通知调用方。
  * Distro callback.
  *
  * @author xiweng.yy
  */
 public interface DistroCallback {
     
-    /**
-     * Callback when distro task execute successfully.
-     */
+    /** 任务执行成功时回调。 */
     void onSuccess();
     
     /**
-     * Callback when distro task execute failed.
+     * 任务执行失败时回调。
      *
      * @param throwable throwable if execute failed caused by exception
      */

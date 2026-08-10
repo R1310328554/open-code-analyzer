@@ -20,6 +20,7 @@ import com.alibaba.nacos.core.distributed.distro.entity.DistroData;
 import com.alibaba.nacos.core.distributed.distro.entity.DistroKey;
 
 /**
+ * Distro 传输代理：封装跨节点同步、校验与拉取数据的网络交互。
  * Distro transport agent.
  *
  * @author xiweng.yy
@@ -27,14 +28,14 @@ import com.alibaba.nacos.core.distributed.distro.entity.DistroKey;
 public interface DistroTransportAgent {
     
     /**
-     * Whether support transport data with callback.
+     * 是否支持带回调的异步传输。
      *
      * @return true if support, otherwise false
      */
     boolean supportCallbackTransport();
     
     /**
-     * Sync data.
+     * 同步单条 Distro 数据到目标节点（同步调用）。
      *
      * @param data         data
      * @param targetServer target server
@@ -43,7 +44,7 @@ public interface DistroTransportAgent {
     boolean syncData(DistroData data, String targetServer);
     
     /**
-     * Sync data with callback.
+     * 异步同步数据并在完成时回调。
      *
      * @param data         data
      * @param targetServer target server
@@ -54,7 +55,7 @@ public interface DistroTransportAgent {
     void syncData(DistroData data, String targetServer, DistroCallback callback);
     
     /**
-     * Sync verify data.
+     * 向目标节点发送校验数据（同步调用）。
      *
      * @param verifyData   verify data
      * @param targetServer target server
@@ -63,7 +64,7 @@ public interface DistroTransportAgent {
     boolean syncVerifyData(DistroData verifyData, String targetServer);
     
     /**
-     * Sync verify data.
+     * 异步发送校验数据并在完成时回调。
      *
      * @param verifyData   verify data
      * @param targetServer target server
@@ -74,7 +75,7 @@ public interface DistroTransportAgent {
     void syncVerifyData(DistroData verifyData, String targetServer, DistroCallback callback);
     
     /**
-     * get Data from target server.
+     * 从目标节点拉取指定 key 的 Distro 数据。
      *
      * @param key          key of data
      * @param targetServer target server
@@ -83,7 +84,7 @@ public interface DistroTransportAgent {
     DistroData getData(DistroKey key, String targetServer);
     
     /**
-     * Get all datum snapshot from target server.
+     * 从目标节点拉取全量数据快照。
      *
      * @param targetServer target server.
      * @return distro data

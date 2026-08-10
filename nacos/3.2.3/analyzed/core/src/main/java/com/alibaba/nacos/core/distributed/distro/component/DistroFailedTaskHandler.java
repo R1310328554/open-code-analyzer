@@ -20,6 +20,7 @@ import com.alibaba.nacos.consistency.DataOperation;
 import com.alibaba.nacos.core.distributed.distro.entity.DistroKey;
 
 /**
+ * Distro 失败任务处理器：在同步等任务失败时构建重试逻辑。
  * Distro failed task handler.
  *
  * @author xiweng.yy
@@ -27,7 +28,7 @@ import com.alibaba.nacos.core.distributed.distro.entity.DistroKey;
 public interface DistroFailedTaskHandler {
     
     /**
-     * Build retry task when distro task execute failed.
+     * 同步任务失败时，根据 key 与操作类型调度重试。
      *
      * @param distroKey distro key of failed task
      * @param action action of task
