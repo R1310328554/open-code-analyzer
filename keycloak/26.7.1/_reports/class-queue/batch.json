@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:09:59Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/CredentialOfferException.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/JWTVCIssuerWellKnownProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/JWTVCIssuerWellKnownProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/OID4VCAuthorizationCheckProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/OID4VCAuthorizationCheckProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/OID4VCAuthorizationDetailsParser.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/OID4VCAuthorizationDetailsProcessor.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/OID4VCAuthorizationDetailsProcessorFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/OID4VCIssuerEndpoint.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/OID4VCIssuerWellKnownProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/OID4VCIssuerWellKnownProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/OffsetTimeProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/TimeClaimNormalizer.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/TimeProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/VCIssuanceContext.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1618,
-  "done": 4365
+  "done": 4380
 }
