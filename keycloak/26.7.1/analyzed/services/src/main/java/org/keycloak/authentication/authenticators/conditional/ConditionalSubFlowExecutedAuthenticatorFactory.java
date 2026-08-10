@@ -33,10 +33,15 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
  */
 public class ConditionalSubFlowExecutedAuthenticatorFactory implements ConditionalAuthenticatorFactory {
 
+    /** Provider ID：conditional-sub-flow-executed。 */
     public static final String PROVIDER_ID = "conditional-sub-flow-executed";
+    /** 配置键：待检查的子流程别名。 */
     public static final String FLOW_TO_CHECK = "flow_to_check";
+    /** 配置键：期望的校验结果类型。 */
     public static final String CHECK_RESULT = "check_result";
+    /** 校验模式：子流程已成功执行时为真。 */
     public static final String CHECK_RESULT_EXECUTED = "executed";
+    /** 校验模式：子流程未成功执行时为真。 */
     public static final String CHECK_RESULT_NOT_EXECUTED = "not-executed";
 
     @Override
@@ -60,6 +65,7 @@ public class ConditionalSubFlowExecutedAuthenticatorFactory implements Condition
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Condition - sub-flow executed";
     }
@@ -80,11 +86,13 @@ public class ConditionalSubFlowExecutedAuthenticatorFactory implements Condition
     }
 
     @Override
+    /** @return 帮助说明：评估子流程是否在认证过程中成功执行 */
     public String getHelpText() {
         return "Condition to evaluate if a sub-flow was executed successfully during the authentication process";
     }
 
     @Override
+    /** @return 子流程名称与期望结果配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()
                 .property()
@@ -113,6 +121,7 @@ public class ConditionalSubFlowExecutedAuthenticatorFactory implements Condition
     }
 
     @Override
+    /** @return {@link ConditionalSubFlowExecutedAuthenticator} 单例 */
     public ConditionalAuthenticator getSingleton() {
         return ConditionalSubFlowExecutedAuthenticator.SINGLETON;
     }

@@ -44,14 +44,18 @@ import org.keycloak.services.managers.AuthenticationManager;
 import static org.keycloak.authentication.authenticators.util.AuthenticatorUtils.getDisabledByBruteForceEventError;
 
 /**
+ * Direct Grant 用户名校验认证器：从表单参数 username 查找用户，并处理服务账号、暴力破解锁定及禁用账户等边界情况。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ValidateUsername extends AbstractDirectGrantAuthenticator {
 
+    /** Provider ID：direct-grant-validate-username。 */
     public static final String PROVIDER_ID = "direct-grant-validate-username";
 
     @Override
+    /** 解析用户名、查找用户并校验启用状态与暴力破解限制。 */
     public void authenticate(AuthenticationFlowContext context) {
         String username = retrieveUsername(context);
         if (username == null) {
@@ -117,6 +121,7 @@ public class ValidateUsername extends AbstractDirectGrantAuthenticator {
     }
 
     @Override
+    /** @return 本步骤负责识别用户，不要求前置用户 */
     public boolean requiresUser() {
         return false;
     }
@@ -138,6 +143,7 @@ public class ValidateUsername extends AbstractDirectGrantAuthenticator {
 
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Username Validation";
     }
@@ -152,6 +158,7 @@ public class ValidateUsername extends AbstractDirectGrantAuthenticator {
         return false;
     }
 
+    /** 执行要求选项：仅 REQUIRED。 */
     public static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED
     };
@@ -162,6 +169,7 @@ public class ValidateUsername extends AbstractDirectGrantAuthenticator {
     }
 
     @Override
+    /** @return 帮助说明：校验 Direct Grant 请求中的 username 表单参数 */
     public String getHelpText() {
         return "Validates the username supplied as a 'username' form parameter in direct grant request";
     }
@@ -172,15 +180,18 @@ public class ValidateUsername extends AbstractDirectGrantAuthenticator {
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }
  
+    /** 从解码后的表单参数中提取 username 字段。 */
     protected String retrieveUsername(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> inputData = context.getHttpRequest().getDecodedFormParameters();
         return inputData.getFirst(AuthenticationManager.FORM_USERNAME);
     }
 
+    /** 从解码后的表单参数中提取 password 字段（用于禁用账户时的凭证探测）。 */
     protected String retrievePassword(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> inputData = context.getHttpRequest().getDecodedFormParameters();
         return inputData.getFirst(CredentialRepresentation.PASSWORD);

@@ -12,19 +12,26 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
+/**
+ * 条件认证器：仅当同级流程中其他认证器已为当前用户配置完成时才执行子流程。
+ * 对 REQUIRED 执行项要求全部已配置，对 ALTERNATIVE 执行项要求至少一项已配置。
+ */
 public class ConditionalUserConfiguredAuthenticator implements ConditionalAuthenticator {
+    /** 单例实例。 */
     public static final ConditionalUserConfiguredAuthenticator SINGLETON = new ConditionalUserConfiguredAuthenticator();
 
     @Override
+    /** 从当前执行项的父流程开始评估同级认证器的配置状态。 */
     public boolean matchCondition(AuthenticationFlowContext context) {
         return matchConditionInFlow(context, context.getExecution().getParentFlow());
     }
 
+    /** 递归评估指定流程内 REQUIRED/ALTERNATIVE 认证器的 configuredFor 状态。 */
     private boolean matchConditionInFlow(AuthenticationFlowContext context, String flowId) {
         List<AuthenticationExecutionModel> requiredExecutions = new LinkedList<>();
         List<AuthenticationExecutionModel> alternativeExecutions = new LinkedList<>();
         context.getRealm().getAuthenticationExecutionsStream(flowId)
-                //Check if the execution's authenticator is a conditional authenticator, as they must not be evaluated here.
+                // 跳过条件认证器本身，不参与 configuredFor 评估
                 .filter(e -> !isConditionalExecution(context, e))
                 .filter(e -> !Objects.equals(context.getExecution().getId(), e.getId()) && !e.isAuthenticatorFlow())
                 .forEachOrdered(e -> {
@@ -42,6 +49,7 @@ public class ConditionalUserConfiguredAuthenticator implements ConditionalAuthen
         return true;
     }
 
+    /** 判断执行项是否为条件认证器（需排除）。 */
     private boolean isConditionalExecution(AuthenticationFlowContext context, AuthenticationExecutionModel e) {
         AuthenticatorFactory factory = (AuthenticatorFactory) context.getSession().getKeycloakSessionFactory()
                 .getProviderFactory(Authenticator.class, e.getAuthenticator());
@@ -52,6 +60,7 @@ public class ConditionalUserConfiguredAuthenticator implements ConditionalAuthen
         return false;
     }
 
+    /** 检查单个执行项（或嵌套子流程）是否已为当前用户配置。 */
     private boolean isConfiguredFor(AuthenticationExecutionModel model, AuthenticationFlowContext context) {
         if (model.isAuthenticatorFlow()) {
             return matchConditionInFlow(context, model.getId());
@@ -66,10 +75,11 @@ public class ConditionalUserConfiguredAuthenticator implements ConditionalAuthen
 
     @Override
     public void action(AuthenticationFlowContext context) {
-        // Not used
+        // 未使用
     }
 
     @Override
+    /** @return 配置检查需要已识别用户 */
     public boolean requiresUser() {
         return true;
     }
@@ -81,6 +91,6 @@ public class ConditionalUserConfiguredAuthenticator implements ConditionalAuthen
 
     @Override
     public void close() {
-        // Does nothing
+        // 无资源需释放
     }
 }

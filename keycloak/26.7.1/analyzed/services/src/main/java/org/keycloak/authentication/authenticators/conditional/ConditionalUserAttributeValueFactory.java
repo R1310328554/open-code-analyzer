@@ -25,14 +25,23 @@ import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * 用户属性条件认证器工厂：注册 {@link ConditionalUserAttributeValue}，可配置属性名、期望值、组属性及正则/取反选项。
+ */
 public class ConditionalUserAttributeValueFactory implements ConditionalAuthenticatorFactory {
 
+    /** Provider ID：conditional-user-attribute。 */
     public static final String PROVIDER_ID = "conditional-user-attribute";
 
+    /** 配置键：待校验的属性名。 */
     public static final String CONF_ATTRIBUTE_NAME = "attribute_name";
+    /** 配置键：期望的属性值。 */
     public static final String CONF_ATTRIBUTE_EXPECTED_VALUE = "attribute_expected_value";
+    /** 配置键：是否包含用户所属组的属性。 */
     public static final String CONF_INCLUDE_GROUP_ATTRIBUTES = "include_group_attributes";
+    /** 配置键：是否对校验结果取反。 */
     public static final String CONF_NOT = "not";
+    /** 配置键：是否使用正则匹配属性值。 */
     public static final String REGEX = "regex";
 
     private static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
@@ -60,6 +69,7 @@ public class ConditionalUserAttributeValueFactory implements ConditionalAuthenti
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Condition - user attribute";
     }
@@ -80,11 +90,13 @@ public class ConditionalUserAttributeValueFactory implements ConditionalAuthenti
     }
 
     @Override
+    /** @return 帮助说明：仅当用户属性存在且匹配期望值时执行流程 */
     public String getHelpText() {
         return "Flow is executed only if the user attribute exists and has the expected value";
     }
 
     @Override
+    /** @return 属性名、期望值、组属性、取反及正则配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         ProviderConfigProperty authNoteName = new ProviderConfigProperty();
         authNoteName.setType(ProviderConfigProperty.STRING_TYPE);
@@ -120,6 +132,7 @@ public class ConditionalUserAttributeValueFactory implements ConditionalAuthenti
     }
 
     @Override
+    /** @return {@link ConditionalUserAttributeValue} 单例 */
     public ConditionalAuthenticator getSingleton() {
         return ConditionalUserAttributeValue.SINGLETON;
     }

@@ -8,8 +8,13 @@ import org.keycloak.models.AuthenticationExecutionModel.Requirement;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * 用户已配置条件认证器工厂：注册 {@link ConditionalUserConfiguredAuthenticator}，无额外配置项。
+ */
 public class ConditionalUserConfiguredAuthenticatorFactory implements ConditionalAuthenticatorFactory {
+    /** Provider ID：conditional-user-configured。 */
     public static final String PROVIDER_ID = "conditional-user-configured";
+    /** 内部配置键（当前未使用）。 */
     protected static final String CONDITIONAL_USER_ROLE = "condUserConfigured";
 
     @Override
@@ -33,6 +38,7 @@ public class ConditionalUserConfiguredAuthenticatorFactory implements Conditiona
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Condition - user configured";
     }
@@ -57,6 +63,7 @@ public class ConditionalUserConfiguredAuthenticatorFactory implements Conditiona
     }
 
     @Override
+    /** @return 帮助说明：仅当同级认证器已配置时执行当前流程 */
     public String getHelpText() {
         return "Executes the current flow only if authenticators are configured";
     }
@@ -67,6 +74,7 @@ public class ConditionalUserConfiguredAuthenticatorFactory implements Conditiona
     }
 
     @Override
+    /** @return {@link ConditionalUserConfiguredAuthenticator} 单例 */
     public ConditionalAuthenticator getSingleton() {
         return ConditionalUserConfiguredAuthenticator.SINGLETON;
     }

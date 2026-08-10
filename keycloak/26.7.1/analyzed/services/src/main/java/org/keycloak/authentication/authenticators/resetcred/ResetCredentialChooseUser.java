@@ -47,17 +47,23 @@ import org.keycloak.services.validation.Validation;
 import org.jboss.logging.Logger;
 
 /**
+ * 重置凭证「选择用户」认证器：展示密码重置表单让用户输入用户名，或在 SSO/Action Token/IdP 再认证场景下自动预选用户。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ResetCredentialChooseUser implements Authenticator, AuthenticatorFactory {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(ResetCredentialChooseUser.class);
 
+    /** Provider ID：reset-credentials-choose-user。 */
     public static final String PROVIDER_ID = "reset-credentials-choose-user";
+    /** 认证会话备注键：标记用户已成功选定。 */
     public static final String RESET_CREDENTIAL_USER_CHOSEN = "RESET_CREDENTIAL_USER_CHOSEN";
 
     @Override
+    /** 根据 IdP/Action Token/SSO 上下文展示或跳过用户选择表单。 */
     public void authenticate(AuthenticationFlowContext context) {
         String existingUserId = context.getAuthenticationSession().getAuthNote(AbstractIdpAuthenticator.EXISTING_USER_INFO);
         if (existingUserId != null) {
@@ -83,7 +89,7 @@ public class ResetCredentialChooseUser implements Authenticator, AuthenticatorFa
         }
 
         AuthenticationManager.AuthResult authResult = AuthenticationManager.authenticateIdentityCookie(context.getSession(), context.getRealm(), true);
-        //skip user choice if sso session exists
+        // 存在 SSO 会话时跳过用户选择
         if (authResult != null) {
             context.getAuthenticationSession().setAuthNote(AbstractUsernameFormAuthenticator.ATTEMPTED_USERNAME, authResult.user().getUsername());
             context.setUser(authResult.user());
@@ -96,6 +102,7 @@ public class ResetCredentialChooseUser implements Authenticator, AuthenticatorFa
     }
 
     @Override
+    /** 处理用户提交的用户名，查找用户但不泄露账户是否存在。 */
     public void action(AuthenticationFlowContext context) {
         EventBuilder event = context.getEvent();
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
@@ -119,8 +126,8 @@ public class ResetCredentialChooseUser implements Authenticator, AuthenticatorFa
 
         context.getAuthenticationSession().setAuthNote(AbstractUsernameFormAuthenticator.ATTEMPTED_USERNAME, username);
 
-        // we don't want people guessing usernames, so if there is a problem, just continue, but don't set the user
-        // a null user will notify further executions, that this was a failure.
+        // 防止用户名枚举：出错时继续流程但不设置用户
+        // null 用户会通知后续执行步骤本次选择失败
         if (user == null) {
             event.clone()
                     .detail(Details.USERNAME, username)
@@ -140,6 +147,7 @@ public class ResetCredentialChooseUser implements Authenticator, AuthenticatorFa
     }
 
     @Override
+    /** @return 本步骤负责识别用户 */
     public boolean requiresUser() {
         return false;
     }
@@ -155,6 +163,7 @@ public class ResetCredentialChooseUser implements Authenticator, AuthenticatorFa
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Choose User";
     }
@@ -184,6 +193,7 @@ public class ResetCredentialChooseUser implements Authenticator, AuthenticatorFa
     }
 
     @Override
+    /** @return 帮助说明：选择要重置凭证的用户 */
     public String getHelpText() {
         return "Choose a user to reset credentials for";
     }
@@ -214,6 +224,7 @@ public class ResetCredentialChooseUser implements Authenticator, AuthenticatorFa
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }

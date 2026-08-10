@@ -29,13 +29,19 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
+/**
+ * 条件认证器：根据用户属性值是否匹配期望值决定子流程是否执行。
+ * 支持正则匹配、组属性继承及结果取反。
+ */
 public class ConditionalUserAttributeValue implements ConditionalAuthenticator {
 
+    /** 单例实例。 */
     static final ConditionalUserAttributeValue SINGLETON = new ConditionalUserAttributeValue();
 
     @Override
+    /** 读取配置并比对用户（及可选组）属性，支持正则与取反。 */
     public boolean matchCondition(AuthenticationFlowContext context) {
-        // Retrieve configuration
+        // 读取认证器配置
         Map<String, String> config = context.getAuthenticatorConfig().getConfig();
         String attributeName = config.get(ConditionalUserAttributeValueFactory.CONF_ATTRIBUTE_NAME);
         String attributeValue = config.get(ConditionalUserAttributeValueFactory.CONF_ATTRIBUTE_EXPECTED_VALUE);
@@ -57,10 +63,11 @@ public class ConditionalUserAttributeValue implements ConditionalAuthenticator {
 
     @Override
     public void action(AuthenticationFlowContext context) {
-        // Not used
+        // 未使用
     }
 
     @Override
+    /** @return 属性校验需要已识别用户 */
     public boolean requiresUser() {
         return true;
     }
@@ -72,6 +79,6 @@ public class ConditionalUserAttributeValue implements ConditionalAuthenticator {
 
     @Override
     public void close() {
-        // Does nothing
+        // 无资源需释放
     }
 }

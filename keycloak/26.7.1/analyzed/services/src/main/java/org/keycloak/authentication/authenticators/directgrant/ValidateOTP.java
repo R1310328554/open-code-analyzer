@@ -38,14 +38,18 @@ import org.keycloak.models.credential.OTPCredentialModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * Direct Grant OTP 校验认证器：从表单参数 otp（或兼容 totp）读取一次性密码并验证。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ValidateOTP extends AbstractDirectGrantAuthenticator implements CredentialValidator<OTPCredentialProvider> {
 
+    /** Provider ID：direct-grant-validate-otp。 */
     public static final String PROVIDER_ID = "direct-grant-validate-otp";
 
     @Override
+    /** 校验用户 OTP 凭证；未配置时按条件/必需执行项分别 attempted 或失败。 */
     public void authenticate(AuthenticationFlowContext context) {
         if (!configuredFor(context.getSession(), context.getRealm(), context.getUser())) {
             if (context.getExecution().isConditional()) {
@@ -61,10 +65,10 @@ public class ValidateOTP extends AbstractDirectGrantAuthenticator implements Cre
 
         String otp = inputData.getFirst("otp");
 
-        // KEYCLOAK-12908 Backwards compatibility. If paramter "otp" is null, then assign "totp".
+        // KEYCLOAK-12908 向后兼容：otp 参数为空时回退读取 totp
         otp = (otp == null) ? inputData.getFirst("totp") : otp;
 
-        // Always use default OTP credential in case of direct grant authentication
+        // Direct Grant 场景始终使用用户的默认 OTP 凭证
         String credentialId = getCredentialProvider(context.getSession())
                     .getDefaultCredential(context.getSession(), context.getRealm(), context.getUser()).getId();
 
@@ -90,11 +94,13 @@ public class ValidateOTP extends AbstractDirectGrantAuthenticator implements Cre
     }
 
     @Override
+    /** @return 校验 OTP 需要前置步骤已识别用户 */
     public boolean requiresUser() {
         return true;
     }
 
     @Override
+    /** @return 用户是否已配置 OTP 凭证 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return getCredentialProvider(session).isConfiguredFor(realm, user);
     }
@@ -111,6 +117,7 @@ public class ValidateOTP extends AbstractDirectGrantAuthenticator implements Cre
 
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "OTP";
     }
@@ -131,6 +138,7 @@ public class ValidateOTP extends AbstractDirectGrantAuthenticator implements Cre
     }
 
     @Override
+    /** @return 帮助说明：校验 Direct Grant 请求中的 totp/otp 表单参数 */
     public String getHelpText() {
         return "Validates the one time password supplied as a 'totp' form parameter in direct grant request";
     }
@@ -141,10 +149,12 @@ public class ValidateOTP extends AbstractDirectGrantAuthenticator implements Cre
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return OTP 凭证 Provider */
     public OTPCredentialProvider getCredentialProvider(KeycloakSession session) {
         return (OTPCredentialProvider)session.getProvider(CredentialProvider.class, "keycloak-otp");
     }

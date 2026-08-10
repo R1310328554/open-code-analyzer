@@ -37,10 +37,13 @@ import org.jboss.logging.Logger;
  */
 public class ConditionalSubFlowExecutedAuthenticator implements ConditionalAuthenticator {
 
+    /** 单例实例。 */
     protected static final ConditionalSubFlowExecutedAuthenticator SINGLETON = new ConditionalSubFlowExecutedAuthenticator();
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(ConditionalSubFlowExecutedAuthenticator.class);
 
     @Override
+    /** 在顶层流程中定位目标子流程，比较其执行状态与配置期望。 */
     public boolean matchCondition(AuthenticationFlowContext context) {
         final AuthenticatorConfigModel configModel = context.getAuthenticatorConfig();
         if (configModel == null || configModel.getConfig() == null) {
@@ -82,6 +85,7 @@ public class ConditionalSubFlowExecutedAuthenticator implements ConditionalAuthe
     }
 
     @Override
+    /** @return 子流程状态检查不要求已识别用户 */
     public boolean requiresUser() {
         return false;
     }
@@ -96,14 +100,16 @@ public class ConditionalSubFlowExecutedAuthenticator implements ConditionalAuthe
         // no-op
     }
 
+    /** 递归展平嵌套流程的执行节点。 */
     private Stream<AuthenticationExecutionModel> flattened(RealmModel realm, AuthenticationExecutionModel flowExec) {
-        // flatten the execution model recursively only for flows
+        // 仅对流程节点递归展平执行模型
         return Stream.concat(Stream.of(flowExec),
                 realm.getAuthenticationExecutionsStream(flowExec.getFlowId())
                         .filter(AuthenticationExecutionModel::isAuthenticatorFlow)
                         .flatMap(exec -> flattened(realm, exec)));
     }
 
+    /** 在顶层流程树中查找与目标 flowId 匹配的执行节点。 */
     private AuthenticationExecutionModel locateExecutionFlowToCheck(RealmModel realm, String topFlowId, String flowId) {
         return realm.getAuthenticationExecutionsStream(topFlowId)
                 .filter(AuthenticationExecutionModel::isAuthenticatorFlow)

@@ -31,6 +31,8 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 重置凭证流程认证器抽象基类：同时实现 {@link Authenticator} 与 {@link AuthenticatorFactory}，提供工厂默认空实现，子类在 authenticate 中设置 Required Action。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -42,6 +44,7 @@ public abstract class AbstractSetRequiredActionAuthenticator implements Authenti
     }
 
     @Override
+    /** @return 重置凭证步骤需要已识别用户 */
     public boolean requiresUser() {
         return true;
     }
@@ -82,6 +85,7 @@ public abstract class AbstractSetRequiredActionAuthenticator implements Authenti
     }
 
     @Override
+    /** @return 自身作为单例认证器实例 */
     public Authenticator create(KeycloakSession session) {
         return this;
     }
@@ -97,6 +101,7 @@ public abstract class AbstractSetRequiredActionAuthenticator implements Authenti
     }
 
     @Override
+    /** @return 始终视为已配置 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }

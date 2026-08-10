@@ -29,10 +29,19 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.representations.idm.OAuth2ErrorRepresentation;
 
 /**
+ * Direct Grant（资源所有者密码凭证）认证器抽象基类：同时实现 {@link Authenticator} 与 {@link AuthenticatorFactory}，提供 OAuth2 JSON 错误响应构建及工厂默认空实现。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public abstract class AbstractDirectGrantAuthenticator implements Authenticator, AuthenticatorFactory {
+    /**
+     * 构建 OAuth2 标准 JSON 错误响应。
+     * @param status HTTP 状态码
+     * @param error OAuth2 error 字段
+     * @param errorDescription 错误描述
+     * @return JAX-RS Response
+     */
     public Response errorResponse(int status, String error, String errorDescription) {
         OAuth2ErrorRepresentation errorRep = new OAuth2ErrorRepresentation(error, errorDescription);
         return Response.status(status).entity(errorRep).type(MediaType.APPLICATION_JSON_TYPE).build();
@@ -49,6 +58,7 @@ public abstract class AbstractDirectGrantAuthenticator implements Authenticator,
     }
 
     @Override
+    /** @return 自身作为单例认证器实例 */
     public Authenticator create(KeycloakSession session) {
         return this;
     }

@@ -63,25 +63,32 @@ import org.keycloak.storage.StorageId;
 import org.jboss.logging.Logger;
 
 /**
+ * 重置凭证邮件发送认证器：向用户邮箱发送含 Action Token 的密码重置链接，并统一以「邮件已发送」消息防止用户名/邮箱枚举。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ResetCredentialEmail implements Authenticator, AuthenticatorFactory {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(ResetCredentialEmail.class);
 
+    /** Provider ID：reset-credential-email。 */
     public static final String PROVIDER_ID = "reset-credential-email";
+    /** 配置键：重置后是否强制重新登录。 */
     public static final String FORCE_LOGIN = "force-login";
+    /** force-login 选项值：仅联邦用户强制重新登录。 */
     public static final String FEDERATED_OPTION = "only-federated";
 
     @Override
+    /** 生成重置令牌链接并发送邮件；用户不存在或无邮箱时仍显示成功消息。 */
     public void authenticate(AuthenticationFlowContext context) {
         UserModel user = context.getUser();
         AuthenticationSessionModel authenticationSession = context.getAuthenticationSession();
         String username = authenticationSession.getAuthNote(AbstractUsernameFormAuthenticator.ATTEMPTED_USERNAME);
 
-        // we don't want people guessing usernames, so if there was a problem obtaining the user, the user will be null.
-        // just reset login for with a success message
+        // 防止用户名枚举：无法获取用户时仍显示「邮件已发送」
+        // 以成功消息结束当前分支
         if (user == null) {
             context.forkWithSuccessMessage(new FormMessage(Messages.EMAIL_SENT));
             return;
@@ -100,7 +107,7 @@ public class ResetCredentialEmail implements Authenticator, AuthenticatorFactory
 
 
         EventBuilder event = context.getEvent();
-        // we don't want people guessing usernames, so if there is a problem, just continuously challenge
+        // 防止用户名枚举：邮箱无效时仍显示成功消息
         if (user.getEmail() == null || user.getEmail().trim().length() == 0) {
             event.user(user)
                     .detail(Details.USERNAME, username)
@@ -113,7 +120,7 @@ public class ResetCredentialEmail implements Authenticator, AuthenticatorFactory
         int validityInSecs = context.getRealm().getActionTokenGeneratedByUserLifespan(ResetCredentialsActionToken.TOKEN_TYPE);
         int absoluteExpirationInSecs = Time.currentTime() + validityInSecs;
 
-        // We send the secret in the email in a link as a query param.
+        // 将 Action Token 序列化后嵌入重置链接的查询参数
         String authSessionEncodedId = AuthenticationSessionCompoundId.fromAuthSession(authenticationSession).getEncodedId();
         ResetCredentialsActionToken token = new ResetCredentialsActionToken(user.getId(), user.getEmail(), absoluteExpirationInSecs, authSessionEncodedId, authenticationSession.getClient().getClientId());
         String link = UriBuilder
@@ -140,8 +147,9 @@ public class ResetCredentialEmail implements Authenticator, AuthenticatorFactory
         }
     }
 
+    /** @return 用户密码凭证最后修改时间戳（毫秒），无密码时返回 null */
     public static Long getLastChangedTimestamp(KeycloakSession session, RealmModel realm, UserModel user) {
-        // TODO(hmlnarik): Make this more generic to support non-password credential types
+        // TODO(hmlnarik)：扩展以支持非密码凭证类型
         PasswordCredentialProvider passwordProvider = (PasswordCredentialProvider) session.getProvider(CredentialProvider.class, PasswordCredentialProviderFactory.PROVIDER_ID);
         CredentialModel password = passwordProvider.getPassword(realm, user);
 
@@ -149,12 +157,14 @@ public class ResetCredentialEmail implements Authenticator, AuthenticatorFactory
     }
 
     @Override
+    /** 用户点击邮件链接后标记邮箱已验证并继续流程。 */
     public void action(AuthenticationFlowContext context) {
         context.getUser().setEmailVerified(true);
         context.success();
     }
 
     @Override
+    /** @return 邮件发送步骤不强制前置用户（允许 null 用户防枚举） */
     public boolean requiresUser() {
         return false;
     }
@@ -170,6 +180,7 @@ public class ResetCredentialEmail implements Authenticator, AuthenticatorFactory
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Send Reset Email";
     }
@@ -199,11 +210,13 @@ public class ResetCredentialEmail implements Authenticator, AuthenticatorFactory
     }
 
     @Override
+    /** @return 帮助说明：向用户发送重置邮件并等待响应 */
     public String getHelpText() {
         return "Send email to user and wait for response.";
     }
 
     @Override
+    /** @return 重置后是否强制登录的配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()
                 .property()
@@ -246,14 +259,16 @@ public class ResetCredentialEmail implements Authenticator, AuthenticatorFactory
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 根据 force-login 配置及用户存储类型决定是否重置后强制登录。 */
     private boolean forceLogin(AuthenticatorConfigModel config, UserModel user) {
         final String forceLogin = config != null? config.getConfig().get(FORCE_LOGIN) : null;
         if (forceLogin == null || FEDERATED_OPTION.equalsIgnoreCase(forceLogin)) {
-            // default is only-federated, return true only for federated users
+            // 默认 only-federated：仅联邦用户强制重新登录
             return !StorageId.isLocalStorage(user.getId()) || user.isFederated();
         } else if (Boolean.TRUE.toString().equalsIgnoreCase(forceLogin)) {
             return Boolean.TRUE;

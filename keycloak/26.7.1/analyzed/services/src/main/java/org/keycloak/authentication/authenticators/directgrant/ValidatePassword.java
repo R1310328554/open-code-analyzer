@@ -37,14 +37,18 @@ import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.services.managers.AuthenticationManager;
 
 /**
+ * Direct Grant 密码校验认证器：从表单参数 password 读取并验证用户密码。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ValidatePassword extends AbstractDirectGrantAuthenticator {
 
+    /** Provider ID：direct-grant-validate-password。 */
     public static final String PROVIDER_ID = "direct-grant-validate-password";
 
     @Override
+    /** 校验密码并在认证会话中标记 PASSWORD_VALIDATED。 */
     public void authenticate(AuthenticationFlowContext context) {
         String password = retrievePassword(context);
         boolean valid = context.getUser().credentialManager().isValid(UserCredentialModel.password(password));
@@ -60,11 +64,13 @@ public class ValidatePassword extends AbstractDirectGrantAuthenticator {
     }
 
     @Override
+    /** @return 校验密码需要前置步骤已识别用户 */
     public boolean requiresUser() {
         return true;
     }
 
     @Override
+    /** @return 密码校验始终可用 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }
@@ -81,6 +87,7 @@ public class ValidatePassword extends AbstractDirectGrantAuthenticator {
 
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Password";
     }
@@ -101,6 +108,7 @@ public class ValidatePassword extends AbstractDirectGrantAuthenticator {
     }
 
     @Override
+    /** @return 帮助说明：校验 Direct Grant 请求中的 password 表单参数 */
     public String getHelpText() {
         return "Validates the password supplied as a 'password' form parameter in direct grant request";
     }
@@ -111,10 +119,12 @@ public class ValidatePassword extends AbstractDirectGrantAuthenticator {
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 从解码后的表单参数中提取 password 字段。 */
     protected String retrievePassword(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> inputData = context.getHttpRequest().getDecodedFormParameters();
         return inputData.getFirst(CredentialRepresentation.PASSWORD);
