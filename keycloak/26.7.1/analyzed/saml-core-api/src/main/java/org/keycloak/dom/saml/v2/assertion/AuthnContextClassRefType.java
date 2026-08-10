@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.net.URI;
 
 /**
+ * SAML 2.0 认证上下文类引用（AuthnContextClassRef）类型，以 URI 标识认证上下文类别。
+ *
  * Type that represents an AuthnContextClassRef
  *
  * @author Anil.Saldhana@redhat.com
@@ -29,10 +31,12 @@ public class AuthnContextClassRefType implements URIType, Serializable {
 
     private final URI value;
 
+    /** 以 URI 值构造认证上下文类引用。 */
     public AuthnContextClassRefType(URI value) {
         this.value = value;
     }
 
+    /** 获取认证上下文类 URI 值。 */
     public URI getValue() {
         return value;
     }

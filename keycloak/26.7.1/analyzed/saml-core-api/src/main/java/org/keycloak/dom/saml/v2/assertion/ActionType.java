@@ -21,6 +21,8 @@ import org.keycloak.dom.saml.common.CommonActionType;
 /**
  * <p>
  * Java class for ActionType complex type.
+ * SAML 2.0 操作（Action）类型，继承 {@link org.keycloak.dom.saml.common.CommonActionType}，携带必填 Namespace 属性标识操作所属命名空间。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

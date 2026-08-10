@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v2.assertion;
 import java.io.Serializable;
 
 /**
+ * SAML 2.0 认证上下文声明（AuthnContextDecl）类型，携带 XML 元素或任意对象形式的声明内容。
+ *
  * Type that represents an AuthnContextDecl
  *
  * @author Anil.Saldhana@redhat.com
@@ -28,10 +30,12 @@ public class AuthnContextDeclType implements Serializable {
 
     private Object value;
 
+    /** 以声明内容构造认证上下文声明。 */
     public AuthnContextDeclType(Object value) {
         this.value = value;
     }
 
+    /** 获取认证上下文声明内容。 */
     public Object getValue() {
         return value;
     }

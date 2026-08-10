@@ -25,6 +25,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for AttributeStatementType complex type.
+ * SAML 2.0 属性声明（AttributeStatement）：携带明文或加密属性元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -47,6 +49,8 @@ public class AttributeStatementType extends StatementAbstractType {
     protected List<ASTChoiceType> attributes = new ArrayList<>();
 
     /**
+     * 添加一条属性（明文或加密）。
+     *
      * Add an attribute
      *
      * @param attribute
@@ -56,6 +60,8 @@ public class AttributeStatementType extends StatementAbstractType {
     }
 
     /**
+     * 移除一条属性。
+     *
      * Remove an attribute
      *
      * @param attribute
@@ -65,6 +71,8 @@ public class AttributeStatementType extends StatementAbstractType {
     }
 
     /**
+     * 获取属性列表（只读）。
+     *
      * Gets the attributes.
      *
      * @return a read only {@link List}
@@ -73,29 +81,35 @@ public class AttributeStatementType extends StatementAbstractType {
         return Collections.unmodifiableList(this.attributes);
     }
 
+    /** 批量添加属性。 */
     public void addAttributes(List<ASTChoiceType> attributes) {
         this.attributes.addAll(attributes);
     }
 
+    /** 属性声明中的选择项：明文 {@link AttributeType} 或加密 {@link EncryptedElementType}。 */
     public static class ASTChoiceType implements Serializable {
 
         private AttributeType attribute;
         private EncryptedElementType encryptedAssertion;
 
+        /** 构造明文属性选择项。 */
         public ASTChoiceType(AttributeType attribute) {
             super();
             this.attribute = attribute;
         }
 
+        /** 构造加密属性选择项。 */
         public ASTChoiceType(EncryptedElementType encryptedAssertion) {
             super();
             this.encryptedAssertion = encryptedAssertion;
         }
 
+        /** 获取明文属性。 */
         public AttributeType getAttribute() {
             return attribute;
         }
 
+        /** 获取加密属性元素。 */
         public EncryptedElementType getEncryptedAssertion() {
             return encryptedAssertion;
         }

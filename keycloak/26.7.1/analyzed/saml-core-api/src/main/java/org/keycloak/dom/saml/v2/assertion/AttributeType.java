@@ -27,6 +27,8 @@ import javax.xml.namespace.QName;
 /**
  * <p>
  * Java class for AttributeType complex type.
+ * SAML 2.0 属性类型：包含名称、格式、友好名及一个或多个属性值。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -55,11 +57,14 @@ public class AttributeType implements Serializable {
     protected String friendlyName;
     private Map<QName, String> otherAttributes = new HashMap<>();
 
+    /** 按属性名称构造 {@link AttributeType}。 */
     public AttributeType(String name) {
         this.name = name;
     }
 
     /**
+     * 向属性添加一个属性值。
+     *
      * Add an attribute value to the attribute
      *
      * @param value {@link Object}
@@ -69,6 +74,8 @@ public class AttributeType implements Serializable {
     }
 
     /**
+     * 从属性中移除一个属性值。
+     *
      * Remove an attribute value to the attribute
      *
      * @param value {@link Object}
@@ -78,6 +85,8 @@ public class AttributeType implements Serializable {
     }
 
     /**
+     * 获取属性值列表（只读）。
+     *
      * Gets the value of the attributeValue property.
      *
      * <p>
@@ -96,6 +105,8 @@ public class AttributeType implements Serializable {
     }
 
     /**
+     * 获取 属性名称 属性的值。
+     *
      * Gets the value of the name property.
      *
      * @return possible object is {@link String }
@@ -105,6 +116,8 @@ public class AttributeType implements Serializable {
     }
 
     /**
+     * 设置 属性名称 属性的值。
+     *
      * Sets the value of the name property.
      *
      * @param value allowed object is {@link String }
@@ -114,6 +127,8 @@ public class AttributeType implements Serializable {
     }
 
     /**
+     * 获取 名称格式 URI 属性的值。
+     *
      * Gets the value of the nameFormat property.
      *
      * @return possible object is {@link String }
@@ -123,6 +138,8 @@ public class AttributeType implements Serializable {
     }
 
     /**
+     * 设置 名称格式 URI 属性的值。
+     *
      * Sets the value of the nameFormat property.
      *
      * @param value allowed object is {@link String }
@@ -132,6 +149,8 @@ public class AttributeType implements Serializable {
     }
 
     /**
+     * 获取 友好名称 属性的值。
+     *
      * Gets the value of the friendlyName property.
      *
      * @return possible object is {@link String }
@@ -141,6 +160,8 @@ public class AttributeType implements Serializable {
     }
 
     /**
+     * 设置 友好名称 属性的值。
+     *
      * Sets the value of the friendlyName property.
      *
      * @param value allowed object is {@link String }
@@ -150,6 +171,8 @@ public class AttributeType implements Serializable {
     }
 
     /**
+     * 获取未绑定到类型化属性的扩展属性映射（实时可写，无 setter）。
+     *
      * Gets a map that contains attributes that aren't bound to any typed property on this class.
      *
      * <p>

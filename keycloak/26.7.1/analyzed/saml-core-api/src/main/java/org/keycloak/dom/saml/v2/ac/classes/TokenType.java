@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for TokenType complex type.
+ * SAML 2.0 令牌（Token）类型：包含时间同步令牌及可选扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,6 +45,8 @@ public class TokenType extends ExtensionListType {
     protected TimeSyncTokenType timeSyncToken;
 
     /**
+     * 获取 时间同步令牌 属性的值。
+     *
      * Gets the value of the timeSyncToken property.
      *
      * @return possible object is {@link TimeSyncTokenType }
@@ -52,6 +56,8 @@ public class TokenType extends ExtensionListType {
     }
 
     /**
+     * 设置 时间同步令牌 属性的值。
+     *
      * Sets the value of the timeSyncToken property.
      *
      * @param value allowed object is {@link TimeSyncTokenType }

@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for SecurityAuditType complex type.
+ * SAML 2.0 安全审计类型：可包含开关审计（SwitchAudit）及扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,6 +45,8 @@ public class SecurityAuditType extends ExtensionListType {
     protected ExtensionOnlyType switchAudit;
 
     /**
+     * 获取 开关审计 属性的值。
+     *
      * Gets the value of the switchAudit property.
      *
      * @return possible object is {@link ExtensionOnlyType }
@@ -52,6 +56,8 @@ public class SecurityAuditType extends ExtensionListType {
     }
 
     /**
+     * 设置 开关审计 属性的值。
+     *
      * Sets the value of the switchAudit property.
      *
      * @param value allowed object is {@link ExtensionOnlyType }

@@ -18,6 +18,8 @@
 package org.keycloak.dom.saml.v2.ac.classes;
 
 /**
+ * SAML 2.0 共享密钥挑战-应答类型：表示主体已通过共享密钥与对称密码的挑战-应答协议完成认证。
+ *
  * This element indicates that the Principal has been authenticated by a challenge-response protocol utilizing shared
  * secret
  * keys and symmetric cryptography.
@@ -48,6 +50,8 @@ public class SharedSecretChallengeResponseType extends ExtensionListType {
     protected String method;
 
     /**
+     * 获取 挑战-应答方法 URI 属性的值。
+     *
      * Gets the value of the method property.
      *
      * @return possible object is {@link String }
@@ -57,6 +61,8 @@ public class SharedSecretChallengeResponseType extends ExtensionListType {
     }
 
     /**
+     * 设置 挑战-应答方法 URI 属性的值。
+     *
      * Sets the value of the method property.
      *
      * @param value allowed object is {@link String }

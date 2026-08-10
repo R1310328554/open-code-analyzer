@@ -22,6 +22,8 @@ import org.keycloak.dom.saml.common.CommonAdviceType;
 /**
  * <p>
  * Java class for AdviceType complex type.
+ * SAML 2.0 Advice 类型，继承 {@link org.keycloak.dom.saml.common.CommonAdviceType}，可引用断言 ID/URI、嵌套断言或携带扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

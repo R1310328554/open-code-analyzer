@@ -28,6 +28,8 @@ import org.keycloak.dom.saml.common.CommonAssertionType;
 import org.w3c.dom.Element;
 
 /**
+ * SAML 2.0 断言类型：包含签发者、主体、条件、Advice、各类 Statement 及可选 XML 签名。
+ *
  * <complexType name="AssertionType"> <sequence> <element ref="saml:Issuer"/> <element ref="ds:Signature"
  * minOccurs="0"/>
  * <element ref="saml:Subject" minOccurs="0"/> <element ref="saml:Conditions" minOccurs="0"/> <element
@@ -58,6 +60,8 @@ public class AssertionType extends CommonAssertionType {
     private final Set<StatementAbstractType> statements = new LinkedHashSet<StatementAbstractType>();
 
     /**
+     * 构造 SAML 2.0 断言。
+     *
      * Create an assertion
      *
      * @param iD ID of the assertion (Required)
@@ -69,6 +73,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 获取断言主体。
+     *
      * Get the subject
      *
      * @return {@link SubjectType}
@@ -79,6 +85,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 设置断言主体。
+     *
      * Set the subject
      *
      * @param subject
@@ -89,6 +97,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 获取 SAML 版本号（固定为 2.0）。
+     *
      * Get the version of SAML
      *
      * @return {@link String}
@@ -98,6 +108,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 获取 Advice 元素。
+     *
      * Get the advice
      *
      * @return {@link AdviceType}
@@ -107,6 +119,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 设置 Advice 元素。
+     *
      * Set the advice
      *
      * @param advice {@link advice}
@@ -118,6 +132,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 获取断言条件。
+     *
      * Get the conditions
      *
      * @return {@link ConditionsType}
@@ -129,6 +145,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 设置断言条件。
+     *
      * Set the conditions
      *
      * @param conditions {@link ConditionsType}
@@ -140,6 +158,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 获取断言签发者。
+     *
      * Get the issuer
      *
      * @return {@link NameIDType}
@@ -149,6 +169,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 设置断言签发者。
+     *
      * Set the issuer
      *
      * @param issuer {@link NameIDType}
@@ -160,6 +182,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 添加一条 Statement。
+     *
      * Add a statement
      *
      * @param statement {@link StatementAbstractType}
@@ -171,6 +195,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 批量添加 Statement（集合）。
+     *
      * Add a collection of statements
      *
      * @param statement {@link Collection}
@@ -182,6 +208,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 批量添加 Statement（Set）。
+     *
      * Add a set of statements
      *
      * @param statement {@link Collection}
@@ -193,6 +221,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 获取 Statement 集合（只读）。
+     *
      * Get a read only set of statements
      *
      * @return {@link Set}
@@ -204,6 +234,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 获取 XML 数字签名 DOM 元素。
+     *
      * Get the signature as a DOM element
      *
      * @return {@link Element}
@@ -213,6 +245,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 设置 XML 数字签名 DOM 元素。
+     *
      * Set the signature DOM element
      *
      * @param signature
@@ -221,6 +255,7 @@ public class AssertionType extends CommonAssertionType {
         this.signature = signature;
     }
 
+    /** 从 Statement 集合中筛选属性声明（AttributeStatement）。 */
     public Set<AttributeStatementType> getAttributeStatements() {
         Set<AttributeStatementType> attributeStatements = new HashSet<>();
         Set<StatementAbstractType> statements = getStatements();
@@ -237,6 +272,8 @@ public class AssertionType extends CommonAssertionType {
     }
 
     /**
+     * 更新断言签发时间。
+     *
      * Update the issue instant
      *
      * @param xg

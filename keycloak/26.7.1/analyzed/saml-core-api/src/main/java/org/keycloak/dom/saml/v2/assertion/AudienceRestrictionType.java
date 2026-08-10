@@ -25,6 +25,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for AudienceRestrictionType complex type.
+ * SAML 2.0 受众限制条件：限定断言可被哪些受众 URI 接受。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -46,6 +48,8 @@ public class AudienceRestrictionType extends ConditionAbstractType implements Se
     protected List<URI> audience = new ArrayList<>();
 
     /**
+     * 添加一个受众 URI。
+     *
      * Add an audience
      *
      * @param audienceval
@@ -55,6 +59,8 @@ public class AudienceRestrictionType extends ConditionAbstractType implements Se
     }
 
     /**
+     * 移除一个受众 URI。
+     *
      * Remove an audience
      *
      * @param audienceval
@@ -64,6 +70,8 @@ public class AudienceRestrictionType extends ConditionAbstractType implements Se
     }
 
     /**
+     * 获取受众 URI 列表（只读）。
+     *
      * Gets the value of the audience property.
      */
     public List<URI> getAudience() {

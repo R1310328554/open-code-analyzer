@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for TechnicalProtectionBaseType complex type.
+ * SAML 2.0 技术保护基类：在私钥保护或对称密钥保护中二选一，并可携带扩展。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -47,6 +49,8 @@ public class TechnicalProtectionBaseType extends ExtensionListType {
     protected SecretKeyProtectionType secretKeyProtection;
 
     /**
+     * 获取 私钥保护 属性的值。
+     *
      * Gets the value of the privateKeyProtection property.
      *
      * @return possible object is {@link PrivateKeyProtectionType }
@@ -56,6 +60,8 @@ public class TechnicalProtectionBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 私钥保护 属性的值。
+     *
      * Sets the value of the privateKeyProtection property.
      *
      * @param value allowed object is {@link PrivateKeyProtectionType }
@@ -65,6 +71,8 @@ public class TechnicalProtectionBaseType extends ExtensionListType {
     }
 
     /**
+     * 获取 对称密钥保护 属性的值。
+     *
      * Gets the value of the secretKeyProtection property.
      *
      * @return possible object is {@link SecretKeyProtectionType }
@@ -74,6 +82,8 @@ public class TechnicalProtectionBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 对称密钥保护 属性的值。
+     *
      * Sets the value of the secretKeyProtection property.
      *
      * @param value allowed object is {@link SecretKeyProtectionType }

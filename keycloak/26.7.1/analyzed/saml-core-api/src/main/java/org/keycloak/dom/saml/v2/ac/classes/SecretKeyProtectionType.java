@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for SecretKeyProtectionType complex type.
+ * SAML 2.0 对称密钥保护类型：描述密钥激活、存储介质及扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -46,6 +48,8 @@ public class SecretKeyProtectionType extends ExtensionListType {
     protected KeyStorageType keyStorage;
 
     /**
+     * 获取 密钥激活 属性的值。
+     *
      * Gets the value of the keyActivation property.
      *
      * @return possible object is {@link KeyActivationType }
@@ -55,6 +59,8 @@ public class SecretKeyProtectionType extends ExtensionListType {
     }
 
     /**
+     * 设置 密钥激活 属性的值。
+     *
      * Sets the value of the keyActivation property.
      *
      * @param value allowed object is {@link KeyActivationType }
@@ -64,6 +70,8 @@ public class SecretKeyProtectionType extends ExtensionListType {
     }
 
     /**
+     * 获取 密钥存储 属性的值。
+     *
      * Gets the value of the keyStorage property.
      *
      * @return possible object is {@link KeyStorageType }
@@ -73,6 +81,8 @@ public class SecretKeyProtectionType extends ExtensionListType {
     }
 
     /**
+     * 设置 密钥存储 属性的值。
+     *
      * Sets the value of the keyStorage property.
      *
      * @param value allowed object is {@link KeyStorageType }
