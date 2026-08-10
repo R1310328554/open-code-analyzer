@@ -15,23 +15,8 @@
     "pkg/engine/internal/types/literal.go",
     "pkg/engine/internal/types/operators.go",
     "pkg/engine/internal/types/types.go",
-    "pkg/engine/internal/types/util.go",
-    "pkg/engine/internal/util/array_list.go",
-    "pkg/engine/internal/util/dag/dag.go",
-    "pkg/engine/internal/util/dag/node_set.go",
-    "pkg/engine/internal/util/dag/walk.go",
-    "pkg/engine/internal/util/ewma/ewma.go",
-    "pkg/engine/internal/util/ewma/window.go",
-    "pkg/engine/internal/util/objtest/objtest.go",
-    "pkg/engine/internal/util/queue/fair/fair.go",
-    "pkg/engine/internal/util/queue/fair/node.go",
-    "pkg/engine/internal/util/queue/fair/pqueue.go",
-    "pkg/engine/internal/util/queue/fair/scope.go",
-    "pkg/engine/internal/util/time.go",
-    "pkg/engine/internal/util/tree/mermaid.go",
-    "pkg/engine/internal/util/tree/printer.go",
-    "pkg/engine/internal/util/tree/tree.go"
+    "pkg/engine/internal/types/util.go"
   ],
   "remaining_pending": 922,
-  "done": 600
+  "done": 615
 }
