@@ -8,7 +8,8 @@ import (
 	"strings"
 )
 
-// IntegrationInstallSpec describes how launcher should detect and guide installation.
+// registry 注册所有 ollama launch 集成及其安装检测、排序与查找逻辑。
+// IntegrationInstallSpec 描述启动器如何检测集成是否已安装并引导用户安装。
 type IntegrationInstallSpec struct {
 	CheckInstalled  func() bool
 	EnsureInstalled func() error
@@ -16,7 +17,7 @@ type IntegrationInstallSpec struct {
 	Command         []string
 }
 
-// IntegrationSpec is the canonical registry entry for one integration.
+// IntegrationSpec 是某一集成的规范注册项（名称、Runner、别名、安装说明）。
 type IntegrationSpec struct {
 	Name        string
 	Runner      Runner
@@ -26,7 +27,7 @@ type IntegrationSpec struct {
 	Install     IntegrationInstallSpec
 }
 
-// IntegrationInfo contains display information about a registered integration.
+// IntegrationInfo 供根启动器菜单展示的集成摘要信息。
 type IntegrationInfo struct {
 	Name        string
 	DisplayName string
@@ -291,10 +292,12 @@ func init() {
 	rebuildIntegrationSpecIndexes()
 }
 
+// hyperlink 生成 OSC 8 超链接转义，供 stderr 可点击 URL。
 func hyperlink(url, text string) string {
 	return fmt.Sprintf("\033]8;;%s\033\\%s\033]8;;\033\\", url, text)
 }
 
+// rebuildIntegrationSpecIndexes 构建名称/别名索引并校验启动器排序表。
 func rebuildIntegrationSpecIndexes() {
 	integrationSpecsByName = make(map[string]*IntegrationSpec, len(integrationSpecs))
 
@@ -350,7 +353,7 @@ func rebuildIntegrationSpecIndexes() {
 	}
 }
 
-// LookupIntegrationSpec resolves either a canonical integration name or alias to its spec.
+// LookupIntegrationSpec 将规范名或别名解析为 IntegrationSpec。
 func LookupIntegrationSpec(name string) (*IntegrationSpec, error) {
 	spec, ok := integrationSpecsByName[strings.ToLower(name)]
 	if !ok {
@@ -359,7 +362,7 @@ func LookupIntegrationSpec(name string) (*IntegrationSpec, error) {
 	return spec, nil
 }
 
-// LookupIntegration resolves a registry name to the canonical key and runner.
+// LookupIntegration 解析名称并返回规范键与 Runner 实例。
 func LookupIntegration(name string) (string, Runner, error) {
 	spec, err := LookupIntegrationSpec(name)
 	if err != nil {
@@ -368,7 +371,7 @@ func LookupIntegration(name string) (string, Runner, error) {
 	return spec.Name, spec.Runner, nil
 }
 
-// ListVisibleIntegrationSpecs returns the canonical integrations that should appear in interactive UIs.
+// ListVisibleIntegrationSpecs 返回交互 UI 应展示的可见集成（排除 Hidden 与不支持平台）。
 func ListVisibleIntegrationSpecs() []IntegrationSpec {
 	visible := make([]IntegrationSpec, 0, len(integrationSpecs))
 	for _, spec := range integrationSpecs {
@@ -406,7 +409,7 @@ func ListVisibleIntegrationSpecs() []IntegrationSpec {
 	return visible
 }
 
-// ListIntegrationInfos returns the registered integrations in launcher display order.
+// ListIntegrationInfos 按启动器顺序返回集成展示信息。
 func ListIntegrationInfos() []IntegrationInfo {
 	visible := ListVisibleIntegrationSpecs()
 	infos := make([]IntegrationInfo, 0, len(visible))
@@ -420,7 +423,7 @@ func ListIntegrationInfos() []IntegrationInfo {
 	return infos
 }
 
-// IntegrationSelectionItems returns the sorted integration items shown by launcher selection UIs.
+// IntegrationSelectionItems 构造集成选择 UI 的 ModelItem 行。
 func IntegrationSelectionItems() ([]ModelItem, error) {
 	visible := ListVisibleIntegrationSpecs()
 	if len(visible) == 0 {
@@ -438,7 +441,7 @@ func IntegrationSelectionItems() ([]ModelItem, error) {
 	return items, nil
 }
 
-// IsIntegrationInstalled checks if an integration binary is installed.
+// IsIntegrationInstalled 检查集成二进制是否已安装。
 func IsIntegrationInstalled(name string) bool {
 	integration, err := integrationFor(name)
 	if err != nil {
@@ -448,7 +451,7 @@ func IsIntegrationInstalled(name string) bool {
 	return integration.installed
 }
 
-// integration is resolved registry metadata used by launcher state and install checks.
+// integration 合并注册表 spec 与运行时推导的安装/Editor 等特征。
 // It combines immutable registry spec data with computed runtime traits.
 type integration struct {
 	spec            *IntegrationSpec
@@ -458,7 +461,7 @@ type integration struct {
 	installHint     string
 }
 
-// integrationFor resolves an integration name into the canonical spec plus
+// integrationFor 解析名称并得到安装状态、是否 Editor 及安装提示文案。
 // derived launcher/install traits used across registry and launch flows.
 func integrationFor(name string) (integration, error) {
 	spec, err := LookupIntegrationSpec(name)
@@ -488,7 +491,7 @@ func integrationFor(name string) (integration, error) {
 	}, nil
 }
 
-// EnsureIntegrationInstalled installs auto-installable integrations when missing.
+// EnsureIntegrationInstalled 在缺失且支持自动安装时调用 EnsureInstalled。
 func EnsureIntegrationInstalled(name string, runner Runner) error {
 	integration, err := integrationFor(name)
 	if err != nil {

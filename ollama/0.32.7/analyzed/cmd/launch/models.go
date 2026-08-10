@@ -22,6 +22,7 @@ import (
 	"github.com/ollama/ollama/progress"
 )
 
+// models 提供推荐模型列表、云端 token 限制、鉴权/拉取与模型选择 UI 合并逻辑。
 var recommendedModels = []ModelItem{
 	{Name: "kimi-k2.6:cloud", Description: "State-of-the-art coding, long-horizon execution, and multimodal agent swarm capability", Recommended: true, Details: api.ModelDetails{ContextLength: 262_144}, MaxOutputTokens: 262_144},
 	{Name: "qwen3.5:cloud", Description: "Reasoning, coding, and agentic tool use with vision", Recommended: true, Details: api.ModelDetails{ContextLength: 262_144}, MaxOutputTokens: 32_768},
@@ -31,6 +32,7 @@ var recommendedModels = []ModelItem{
 	{Name: "qwen3.5", Description: "Reasoning, coding, and visual understanding locally", Recommended: true, VRAMBytes: 14 * format.GigaByte},
 }
 
+// displayVRAM 将 VRAM 字节数格式化为 ~NGB 展示字符串。
 func displayVRAM(vramBytes int64) string {
 	if vramBytes <= 0 {
 		return ""
@@ -42,13 +44,13 @@ func displayVRAM(vramBytes int64) string {
 	return fmt.Sprintf("~%.1fGB", gb)
 }
 
-// cloudModelLimit holds context and output token limits for a cloud model.
+// cloudModelLimit 保存云端模型的上下文与最大输出 token 上限。
 type cloudModelLimit struct {
 	Context int
 	Output  int
 }
 
-// extraCloudModelLimits maps cloud model base names to token limits for models
+// extraCloudModelLimits 为推荐列表未覆盖的云端模型补充硬编码 token 限制。
 // that are not already covered by recommendedModels fallback entries.
 // TODO(parthsareen): grab context/output limits from model info instead of hardcoding
 var extraCloudModelLimits = map[string]cloudModelLimit{
@@ -80,7 +82,7 @@ var (
 	dynamicCloudModelLimits   = map[string]cloudModelLimit{}
 )
 
-// lookupCloudModelLimit returns the token limits for a cloud model.
+// lookupCloudModelLimit 查询云端模型 token 限制，会先剥离显式 cloud 源后缀。
 // It normalizes explicit cloud source suffixes before checking the shared limit map.
 func lookupCloudModelLimit(name string) (cloudModelLimit, bool) {
 	base, stripped := modelref.StripCloudSourceTag(name)
@@ -141,7 +143,7 @@ func mergeCloudModelLimits(base map[string]cloudModelLimit, overlay map[string]c
 	return out
 }
 
-// missingModelPolicy controls how model-not-found errors should be handled.
+// missingModelPolicy 控制本地模型缺失时的提示/自动 pull/直接失败策略。
 type missingModelPolicy int
 
 const (
@@ -153,7 +155,7 @@ const (
 	missingModelFail
 )
 
-// OpenBrowser opens the URL in the user's browser.
+// OpenBrowser 在 macOS/Linux/Windows 上用系统默认浏览器打开 URL。
 func OpenBrowser(url string) {
 	switch runtime.GOOS {
 	case "darwin":
@@ -169,7 +171,7 @@ func OpenBrowser(url string) {
 	}
 }
 
-// ensureAuth ensures the user is signed in before cloud-backed models run.
+// ensureAuth 在运行云端模型前确保用户已完成 Ollama Cloud 登录。
 func ensureAuth(ctx context.Context, client *api.Client, cloudModels map[string]bool, selected []string) error {
 	var selectedCloudModels []string
 	for _, m := range selected {
@@ -183,6 +185,7 @@ func ensureAuth(ctx context.Context, client *api.Client, cloudModels map[string]
 	return ensureCloudAuth(ctx, client, strings.Join(selectedCloudModels, ", "))
 }
 
+// ensureCloudAuth 打开登录 URL 并轮询 whoami 直至登录成功或取消。
 func ensureCloudAuth(ctx context.Context, client *api.Client, modelList string) error {
 	if disabled, known := cloudStatusDisabled(ctx, client); known && disabled {
 		return errors.New(internalcloud.DisabledError("remote inference is unavailable"))
@@ -253,7 +256,7 @@ func ensureCloudAuth(ctx context.Context, client *api.Client, modelList string) 
 	}
 }
 
-// showOrPullWithPolicy checks if a model exists and applies the provided missing-model policy.
+// showOrPullWithPolicy 检查模型是否存在并按策略提示 pull 或失败。
 func showOrPullWithPolicy(ctx context.Context, client *api.Client, model string, policy missingModelPolicy, isCloudModel bool) error {
 	if _, err := client.Show(ctx, &api.ShowRequest{Model: model}); err == nil {
 		return nil
@@ -302,7 +305,7 @@ func pullMissingModel(ctx context.Context, client *api.Client, model string) err
 	return nil
 }
 
-// prepareEditorIntegration persists models and applies editor-managed config files.
+// prepareEditorIntegration 调用 Editor.Edit 并 SaveIntegration 持久化模型列表。
 func prepareEditorIntegration(name string, editor Editor, models []LaunchModel) error {
 	if err := editor.Edit(models); err != nil {
 		return fmt.Errorf("setup failed: %w", err)
@@ -313,6 +316,7 @@ func prepareEditorIntegration(name string, editor Editor, models []LaunchModel) 
 	return nil
 }
 
+// prepareManagedSingleIntegration 写入托管单模型集成的应用配置与 launch 状态。
 func prepareManagedSingleIntegration(name string, managed ManagedSingleModel, model string, models []LaunchModel) error {
 	var err error
 	if withModels, ok := managed.(ManagedModelListConfigurer); ok {
@@ -329,6 +333,7 @@ func prepareManagedSingleIntegration(name string, managed ManagedSingleModel, mo
 	return nil
 }
 
+// prepareManagedAutodiscoveryIntegration 配置自动发现类集成并保存代表模型名。
 func prepareManagedAutodiscoveryIntegration(name string, autodiscovery ManagedAutodiscoveryIntegration, model string) error {
 	if err := autodiscovery.ConfigureAutodiscovery(); err != nil {
 		return fmt.Errorf("setup failed: %w", err)
@@ -339,7 +344,7 @@ func prepareManagedAutodiscoveryIntegration(name string, autodiscovery ManagedAu
 	return nil
 }
 
-// buildModelList merges existing models with recommendations for selection UIs.
+// buildModelList 合并清单与推荐模型，供单选/多选 UI 使用。
 func buildModelList(existing []modelInfo, preChecked []string, current string) (items []ModelItem, orderedChecked []string, existingModels, cloudModels map[string]bool) {
 	return buildModelListWithRecommendations(existing, recommendedModels, preChecked, current)
 }
@@ -435,6 +440,7 @@ func buildModelListWithRecommendations(existing []modelInfo, recommendations []M
 	}
 
 	if hasLocalModel || hasCloudModel {
+		// Recommended 分区固定按推荐顺序；More 分区内才应用勾选与默认模型优先级
 		// Keep the Recommended section pinned to recommendation order. Checked
 		// and default-model priority only apply within the More section.
 		slices.SortStableFunc(items, func(a, b ModelItem) int {
@@ -495,12 +501,12 @@ func modelItemFromInventory(name string, info modelInfo, item ModelItem) ModelIt
 	return item
 }
 
-// isCloudModelName reports whether the model name has an explicit cloud source.
+// isCloudModelName 判断模型名是否带显式 cloud 源标记。
 func isCloudModelName(name string) bool {
 	return modelref.HasExplicitCloudSource(name)
 }
 
-// filterCloudItems removes cloud models from selection items.
+// filterCloudItems 在云端禁用时从选择项中移除 cloud 模型。
 func filterCloudItems(items []ModelItem) []ModelItem {
 	filtered := items[:0]
 	for _, item := range items {
@@ -522,7 +528,7 @@ func isCloudModel(ctx context.Context, client *api.Client, name string) bool {
 	return resp.RemoteModel != ""
 }
 
-// cloudStatusDisabled returns whether cloud usage is currently disabled.
+// cloudStatusDisabled 查询实验性 CloudStatus API 判断云端是否禁用。
 func cloudStatusDisabled(ctx context.Context, client *api.Client) (disabled bool, known bool) {
 	status, err := client.CloudStatusExperimental(ctx)
 	if err != nil {
@@ -535,8 +541,10 @@ func cloudStatusDisabled(ctx context.Context, client *api.Client) (disabled bool
 	return status.Cloud.Disabled, true
 }
 
+// TODO(parthsareen): 与 cmd.PullHandler 的 pull 进度 UI 重复，后续可抽取共享工具。
 // TODO(parthsareen): this duplicates the pull progress UI in cmd.PullHandler.
 // Move the shared pull rendering to a small utility once the package boundary settles.
+// pullModel 拉取模型并在 stderr 渲染分层进度条。
 func pullModel(ctx context.Context, client *api.Client, model string, insecure bool) error {
 	p := progress.NewProgress(os.Stderr)
 	defer p.Stop()

@@ -16,6 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// omp 集成 OMP 编码代理：写入 models.yml/config.yml 并以 ollama/ 前缀启动。
 const (
 	ompIntegrationName = "omp"
 	ompProviderName    = "ollama"
@@ -23,7 +24,7 @@ const (
 	ompWebSearchPlugin = "@ollama/pi-web-search"
 )
 
-// OMP implements Runner for the OMP coding-agent integration.
+// OMP 实现 Runner 与 ManagedSingleModel，配置 OMP 的 Ollama 提供商并启动 omp CLI。
 type OMP struct{}
 
 func (o *OMP) String() string { return "OMP" }
@@ -42,10 +43,12 @@ func (o *OMP) Paths() []string {
 	return paths
 }
 
+// Configure 以单模型 fallback 写入 OMP 配置。
 func (o *OMP) Configure(model string) error {
 	return o.ConfigureWithModels(model, []LaunchModel{fallbackLaunchModel(model)})
 }
 
+// ConfigureWithModels 写入 models.yml 并更新 agent config 版本标记。
 func (o *OMP) ConfigureWithModels(primary string, models []LaunchModel) error {
 	if primary == "" {
 		return nil
@@ -59,6 +62,7 @@ func (o *OMP) ConfigureWithModels(primary string, models []LaunchModel) error {
 	return writeOMPAgentConfig()
 }
 
+// CurrentModel 从 models.yml 读取当前 Ollama 提供商下的首选模型 id。
 func (o *OMP) CurrentModel() string {
 	cfg, err := readOMPModelsConfig()
 	if err != nil {
@@ -84,6 +88,7 @@ func (o *OMP) CurrentModel() string {
 	return ""
 }
 
+// Onboard 将 OMP 集成标记为已完成引导。
 func (o *OMP) Onboard() error {
 	return config.MarkIntegrationOnboarded(ompIntegrationName)
 }
@@ -135,6 +140,7 @@ func ompExecutableNames() []string {
 	return []string{"omp"}
 }
 
+// Run 定位 omp 二进制、确保 web search 插件后启动子进程。
 func (o *OMP) Run(model string, _ []LaunchModel, args []string) error {
 	ompPath, err := o.findPath()
 	if err != nil {
@@ -151,6 +157,7 @@ func (o *OMP) Run(model string, _ []LaunchModel, args []string) error {
 	return cmd.Run()
 }
 
+// ensureOMPWebSearchPlugin 在云端可用时安装/更新 @ollama/pi-web-search 插件。
 func ensureOMPWebSearchPlugin(bin string) {
 	if !shouldManageOllamaWebSearch() {
 		fmt.Fprintf(os.Stderr, "%sCloud is disabled; skipping %s setup.%s\n", ansiGray, ompWebSearchPlugin, ansiReset)
@@ -261,6 +268,7 @@ func readOMPModelsConfig() (map[string]any, error) {
 	return cfg, nil
 }
 
+// writeOMPModelsConfig 合并写入 OMP models.yml 中的 ollama 提供商模型列表。
 func writeOMPModelsConfig(primary string, models []LaunchModel) error {
 	path, err := ompModelsPath()
 	if err != nil {
@@ -323,6 +331,7 @@ func writeOMPModelsConfig(primary string, models []LaunchModel) error {
 	return fileutil.WriteWithBackup(path, data, ompIntegrationName)
 }
 
+// writeOMPAgentConfig 写入 setupVersion 等 agent 级配置。
 func writeOMPAgentConfig() error {
 	path, err := ompConfigPath()
 	if err != nil {
@@ -422,6 +431,7 @@ func ompModelEntriesByID(provider map[string]any) map[string]map[string]any {
 	return out
 }
 
+// ompModelConfig 由 LaunchModel 生成 OMP YAML 模型条目（含 vision/context）。
 func ompModelConfig(modelInfo LaunchModel) map[string]any {
 	entry := map[string]any{
 		"id":   modelInfo.Name,

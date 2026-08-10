@@ -14,11 +14,12 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
+// opencode 集成 Anomaly OpenCode：通过 OPENCODE_CONFIG_CONTENT 注入内联 JSON 配置。
 const openCodeInstallScript = "curl -fsSL https://opencode.ai/install | bash"
 
 var openCodeGOOS = runtime.GOOS
 
-// OpenCode implements Runner and Editor for OpenCode integration.
+// OpenCode 实现 Runner 与 Editor；配置经环境变量注入而非写入 opencode 全局文件。
 // Config is passed via OPENCODE_CONFIG_CONTENT env var at launch time
 // instead of writing to opencode's config files.
 type OpenCode struct {
@@ -27,7 +28,7 @@ type OpenCode struct {
 
 func (o *OpenCode) String() string { return "OpenCode" }
 
-// findOpenCode returns the opencode binary path, checking PATH first then the
+// findOpenCode 在 PATH 与 ~/.opencode/bin 中定位 opencode 可执行文件。
 // curl installer location (~/.opencode/bin) which may not be on PATH yet.
 func findOpenCode() (string, bool) {
 	if p, err := exec.LookPath("opencode"); err == nil {
@@ -48,6 +49,7 @@ func findOpenCode() (string, bool) {
 	return "", false
 }
 
+// Run 确保已安装后以 OPENCODE_CONFIG_CONTENT 环境变量启动 OpenCode。
 func (o *OpenCode) Run(model string, models []LaunchModel, args []string) error {
 	opencodePath, err := ensureOpenCodeInstalled()
 	if err != nil {
@@ -65,6 +67,7 @@ func (o *OpenCode) Run(model string, models []LaunchModel, args []string) error 
 	return cmd.Run()
 }
 
+// ensureOpenCodeInstalled 交互式安装 OpenCode（curl|bash 或 npm -g）。
 func ensureOpenCodeInstalled() (string, error) {
 	if opencodePath, ok := findOpenCode(); ok {
 		return opencodePath, nil
@@ -137,7 +140,7 @@ func openCodeInstallerCommand(goos string) (string, []string, error) {
 	}
 }
 
-// resolveContent returns the inline config to send via OPENCODE_CONFIG_CONTENT.
+// resolveContent 返回应写入 OPENCODE_CONFIG_CONTENT 的内联 JSON 配置。
 // Returns content built by Edit if available, otherwise builds from model.json
 // with the requested model as primary (e.g. re-launch with saved config).
 func (o *OpenCode) resolveContent(model string, models []LaunchModel) string {
@@ -202,7 +205,7 @@ func (o *OpenCode) Paths() []string {
 	return nil
 }
 
-// openCodeStatePath returns the path to opencode's model state file.
+// openCodeStatePath 返回 OpenCode model.json 状态文件路径（当前硬编码 XDG 布局）。
 // TODO: this hardcodes the Linux/macOS XDG path. On Windows, opencode stores
 // state under %LOCALAPPDATA% (or similar) — verify and branch on runtime.GOOS.
 func openCodeStatePath() (string, error) {
@@ -213,6 +216,7 @@ func openCodeStatePath() (string, error) {
 	return filepath.Join(home, ".local", "state", "opencode", "model.json"), nil
 }
 
+// Edit 构建内联配置并更新 model.json 的 recent 列表供选择器展示。
 func (o *OpenCode) Edit(models []LaunchModel) error {
 	modelList := launchModelNames(models)
 	if len(modelList) == 0 {
@@ -284,7 +288,7 @@ func (o *OpenCode) Models() []string {
 	return nil
 }
 
-// buildInlineConfig produces the JSON string for OPENCODE_CONFIG_CONTENT.
+// buildInlineConfig 生成 OPENCODE_CONFIG_CONTENT 所需的 provider/model JSON。
 // primary is the model to launch with, models is the full list of available models.
 func buildInlineConfig(primary LaunchModel, models []LaunchModel) (string, error) {
 	if primary.Name == "" || len(models) == 0 {
@@ -312,7 +316,7 @@ func buildInlineConfig(primary LaunchModel, models []LaunchModel) (string, error
 	return string(data), nil
 }
 
-// readModelJSONModels reads ollama model IDs from the opencode model.json state file
+// readModelJSONModels 从 model.json recent 条目读取已配置的 Ollama 模型 ID。
 func readModelJSONModels() []string {
 	statePath, err := openCodeStatePath()
 	if err != nil {
@@ -343,6 +347,7 @@ func readModelJSONModels() []string {
 	return models
 }
 
+// buildModelEntries 为内联配置构造各模型的 capabilities/limit/variants 条目。
 func buildModelEntries(modelList []LaunchModel) map[string]any {
 	models := make(map[string]any)
 	for _, model := range modelList {

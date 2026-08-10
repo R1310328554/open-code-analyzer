@@ -19,7 +19,8 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
-// Pi implements Runner and Editor for Pi (Pi Coding Agent) integration
+// pi 集成 Pi Coding Agent：维护 ~/.pi/agent 配置并管理 npm 包与 web search 扩展。
+// Pi 实现 Runner 与 Editor，写入 models.json/settings.json 并启动 pi CLI。
 type Pi struct{}
 
 const (
@@ -33,6 +34,7 @@ func (p *Pi) String() string { return "Pi" }
 
 var npmRegistryBaseURL = "https://registry.npmjs.org"
 
+// Run 确保 npm/pi 与 web search 包就绪后启动 pi 子进程。
 func (p *Pi) Run(_ string, _ []LaunchModel, args []string) error {
 	fmt.Fprintf(os.Stderr, "\n%sPreparing Pi...%s\n", ansiGray, ansiReset)
 	if err := ensureNpmInstalled(); err != nil {
@@ -63,6 +65,7 @@ func ensureNpmInstalled() error {
 	return nil
 }
 
+// ensurePiInstalled 检测/迁移/安装官方 @earendil-works/pi-coding-agent 包。
 func ensurePiInstalled() (string, error) {
 	if _, err := exec.LookPath("pi"); err == nil {
 		install, pkgErr := installedPiPackageInfo()
@@ -149,6 +152,7 @@ func installPiPackageWithPrefix(prefix string) error {
 	return nil
 }
 
+// migrateLegacyPiPackage 从 @mariozechner 包迁移到官方 @earendil-works 包。
 func migrateLegacyPiPackage(prefix string) error {
 	if err := installPiPackageForced(prefix); err != nil {
 		return err
@@ -350,6 +354,7 @@ func npmArgs(prefix string, args ...string) []string {
 	return append([]string{"--prefix", prefix}, args...)
 }
 
+// ensurePiWebSearchPackage 在云端可用时安装或更新 @ollama/pi-web-search。
 func ensurePiWebSearchPackage(bin string) {
 	if !shouldManageOllamaWebSearch() {
 		fmt.Fprintf(os.Stderr, "%sCloud is disabled; skipping %s setup.%s\n", ansiGray, piWebSearchPkg, ansiReset)
@@ -395,6 +400,7 @@ func ensurePiWebSearchPackage(bin string) {
 	fmt.Fprintf(os.Stderr, "%s  ✓ Updated %s%s\n", ansiGreen, piWebSearchPkg, ansiReset)
 }
 
+// shouldManageOllamaWebSearch 在云端禁用时跳过 web search 包管理。
 func shouldManageOllamaWebSearch() bool {
 	client, err := api.ClientFromEnvironment()
 	if err != nil {
@@ -530,6 +536,7 @@ func (p *Pi) Paths() []string {
 	return paths
 }
 
+// Edit 更新 providers.ollama 模型列表与 defaultProvider/defaultModel。
 func (p *Pi) Edit(models []LaunchModel) error {
 	if len(models) == 0 {
 		return nil
@@ -666,7 +673,7 @@ func (p *Pi) Models() []string {
 	return result
 }
 
-// isPiOllamaModel reports whether a model config entry is managed by ollama launch
+// isPiOllamaModel 判断 models.json 条目是否由 ollama launch 管理（_launch 标记）。
 func isPiOllamaModel(cfg map[string]any) bool {
 	if v, ok := cfg["_launch"].(bool); ok && v {
 		return true
@@ -687,7 +694,7 @@ func hasContextWindow(cfg map[string]any) bool {
 	}
 }
 
-// createConfig builds Pi model config with capability detection.
+// createConfig 根据 LaunchModel 能力生成 Pi 模型配置（vision/thinking/context）。
 func createConfig(model LaunchModel) map[string]any {
 	cfg := map[string]any{
 		"id":      model.Name,

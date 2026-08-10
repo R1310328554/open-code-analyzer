@@ -19,12 +19,13 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
-// VSCode implements Runner and Editor for Visual Studio Code integration.
+// vscode 集成 Visual Studio Code：写入 chatLanguageModels.json 并更新 Copilot 模型选择器偏好。
+// VSCode 实现 Runner 与 Editor，配置 BYOK Ollama 供应商并同步 Copilot Chat 模型列表。
 type VSCode struct{}
 
 func (v *VSCode) String() string { return "Visual Studio Code" }
 
-// findBinary returns the path/command to launch VS Code, or "" if not found.
+// findBinary 返回各平台 VS Code 可执行路径，未找到则返回空字符串。
 // It checks platform-specific locations only.
 func (v *VSCode) findBinary() string {
 	var candidates []string
@@ -51,7 +52,7 @@ func (v *VSCode) findBinary() string {
 	return ""
 }
 
-// IsRunning reports whether VS Code is currently running.
+// IsRunning 检测 VS Code 主进程是否在运行（排除 Cursor 等 fork）。
 // Each platform uses a pattern specific enough to avoid matching Cursor or
 // other VS Code forks.
 func (v *VSCode) IsRunning() bool {
@@ -77,7 +78,7 @@ func (v *VSCode) IsRunning() bool {
 	}
 }
 
-// Quit gracefully quits VS Code and waits for it to exit so that it flushes
+// Quit 优雅退出 VS Code 并等待其将内存状态刷回 state.vscdb。
 // its in-memory state back to the database.
 func (v *VSCode) Quit() {
 	if !v.IsRunning() {
@@ -126,6 +127,7 @@ const (
 	minVSCodeVersion      = "1.113"
 )
 
+// Run 校验版本、注册云端模型、更新模型选择器并按需重启 VS Code。
 func (v *VSCode) Run(model string, _ []LaunchModel, args []string) error {
 	v.checkVSCodeVersion()
 	v.checkCopilotChatVersion()
@@ -185,7 +187,7 @@ func (v *VSCode) Run(model string, _ []LaunchModel, args []string) error {
 	return nil
 }
 
-// ensureModelsRegistered pulls models that the server knows about (Show succeeds)
+// ensureModelsRegistered 对 Show 已知但 ls 未列出的模型执行 pull，供 VS Code 发现。
 // but aren't in ollama ls yet. This is needed for cloud models so that VS Code
 // can discover them from the Ollama API.
 func (v *VSCode) ensureModelsRegistered(ctx context.Context, client *api.Client, models []string) {
@@ -212,7 +214,7 @@ func (v *VSCode) ensureModelsRegistered(ctx context.Context, client *api.Client,
 	}
 }
 
-// FocusVSCode brings VS Code to the foreground.
+// FocusVSCode 将 VS Code 窗口带到前台。
 func (v *VSCode) FocusVSCode() {
 	binary := v.findBinary()
 	if binary == "" {
@@ -225,7 +227,7 @@ func (v *VSCode) FocusVSCode() {
 	}
 }
 
-// printModelAccessTip shows instructions for finding Ollama models in VS Code.
+// printModelAccessTip 提示用户在 Copilot Chat 模型选择器中找到 Ollama 模型。
 func (v *VSCode) printModelAccessTip() {
 	fmt.Fprintf(os.Stderr, "\nTip: To use Ollama models, open Copilot Chat and click the model picker.\n")
 	fmt.Fprintf(os.Stderr, "     If you don't see your models, click \"Other models\" to find them.\n\n")
@@ -238,6 +240,7 @@ func (v *VSCode) Paths() []string {
 	return nil
 }
 
+// Edit 写入 chatLanguageModels.json 的 ollama vendor 并清理遗留 settings。
 func (v *VSCode) Edit(models []LaunchModel) error {
 	if len(models) == 0 {
 		return nil
@@ -293,7 +296,7 @@ func (v *VSCode) Models() []string {
 	return nil
 }
 
-// hasOllamaVendor checks if chatLanguageModels.json contains an Ollama vendor entry.
+// hasOllamaVendor 检查 chatLanguageModels.json 是否已配置 ollama vendor。
 func (v *VSCode) hasOllamaVendor() bool {
 	data, err := os.ReadFile(v.chatLanguageModelsPath())
 	if err != nil {
@@ -321,7 +324,7 @@ func (v *VSCode) settingsPath() string {
 	return v.vscodePath("settings.json")
 }
 
-// updateSettings cleans up legacy settings from older Ollama integrations.
+// updateSettings 删除旧版 Ollama 集成写入的 VS Code settings 键。
 func (v *VSCode) updateSettings() {
 	settingsPath := v.settingsPath()
 	data, err := os.ReadFile(settingsPath)
@@ -357,7 +360,7 @@ func (v *VSCode) statePath() string {
 	return v.vscodePath("globalStorage", "state.vscdb")
 }
 
-// ShowInModelPicker ensures the given models are visible in VS Code's Copilot
+// ShowInModelPicker 在 state.vscdb 中设置 chatModelPickerPreferences 以显示配置模型。
 // Chat model picker. It sets the configured models to true in the picker
 // preferences so they appear in the dropdown. Models use the VS Code identifier
 // format "ollama/Ollama/<name>".
@@ -440,7 +443,7 @@ func (v *VSCode) ShowInModelPicker(models []string) error {
 	return nil
 }
 
-// modelVSCodeIDs returns all possible VS Code picker IDs for a model name.
+// modelVSCodeIDs 返回模型在 Copilot 选择器中可能出现的 identifier 列表。
 func (v *VSCode) modelVSCodeIDs(model string, nameToID map[string]string) []string {
 	var ids []string
 	if id, ok := nameToID[model]; ok {
@@ -471,7 +474,7 @@ func (v *VSCode) vscodePath(parts ...string) string {
 	return filepath.Join(append([]string{base}, parts...)...)
 }
 
-// checkVSCodeVersion warns if VS Code is older than minVSCodeVersion.
+// checkVSCodeVersion 若 VS Code 版本低于推荐值则 stderr 警告。
 func (v *VSCode) checkVSCodeVersion() {
 	codeCLI := v.findCodeCLI()
 	if codeCLI == "" {
@@ -496,7 +499,7 @@ func (v *VSCode) checkVSCodeVersion() {
 	}
 }
 
-// checkCopilotChatVersion warns if the GitHub Copilot Chat extension is
+// checkCopilotChatVersion 检查 Copilot Chat 扩展是否安装且版本足够新。
 // missing or older than minCopilotChatVersion.
 func (v *VSCode) checkCopilotChatVersion() {
 	codeCLI := v.findCodeCLI()
@@ -521,7 +524,7 @@ func (v *VSCode) checkCopilotChatVersion() {
 	}
 }
 
-// findCodeCLI returns the path to the VS Code CLI for querying extensions.
+// findCodeCLI 返回可用于 --list-extensions 的 code CLI 路径（macOS 需解析 .app 内二进制）。
 // On macOS, findBinary may return an .app bundle which can't run --list-extensions,
 // so this resolves to the actual CLI binary inside the bundle.
 func (v *VSCode) findCodeCLI() string {
@@ -556,7 +559,7 @@ func parseCopilotChatVersion(output string) (installed bool, version string) {
 	return false, ""
 }
 
-// compareVersions compares two dot-separated version strings.
+// compareVersions 比较点分版本号，返回 -1/0/1。
 // Returns -1 if a < b, 0 if a == b, 1 if a > b.
 func compareVersions(a, b string) int {
 	aParts := strings.Split(a, ".")

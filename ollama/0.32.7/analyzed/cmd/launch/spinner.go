@@ -7,18 +7,18 @@ import (
 	"time"
 )
 
-// SpinnerFrames are the braille spinner frames used by the bubbletea TUIs in
+// SpinnerFrames 为 bubbletea TUI（登录、升级等）与 ANSI 回退共用的盲文帧序列。
 // this codebase (sign-in, upgrade). StartSpinner uses the same frames for its
 // fallback so the restart spinner matches the look of those flows.
 var SpinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
-// DefaultSpinner, when set, starts an animated spinner displaying message and
+// DefaultSpinner 若已注册，则用 bubbletea 实现启动动画；否则走 ANSI 回退。
 // returns a *Spinner. cmd/cmd.go registers a bubbletea implementation from
 // cmd/tui; when unset (or when it returns nil, e.g. no TTY) StartSpinner falls
 // back to a simple ANSI spinner using SpinnerFrames.
 var DefaultSpinner func(message string) *Spinner
 
-// Spinner is a handle on a running animated spinner. Stop halts the spinner
+// Spinner 表示运行中的加载动画句柄；Stop 停止并清行，Cancelled 供 select 监听中断。
 // and clears its line (it blocks until the spinner has fully stopped and is
 // safe to call multiple times). Cancelled returns a channel that is closed if
 // the user interrupts the spinner (e.g. with Ctrl+C); wait loops can select on
@@ -29,7 +29,7 @@ type Spinner struct {
 	cancelled chan struct{}
 }
 
-// NewSpinner builds a Spinner from a stop function and a cancellation channel.
+// NewSpinner 由 DefaultSpinner 实现调用，封装 stop 与 cancelled 通道。
 // It is intended for implementations of DefaultSpinner (e.g. the bubbletea
 // spinner in cmd/tui). stop must be safe to call multiple times; cancelled is
 // closed by the implementation when the user interrupts the spinner, or left
@@ -38,7 +38,7 @@ func NewSpinner(stop func(), cancelled chan struct{}) *Spinner {
 	return &Spinner{stop: stop, cancelled: cancelled}
 }
 
-// Stop halts the spinner and clears its line. It is a no-op when the spinner
+// Stop 停止动画并清除 stderr 上的 spinner 行，重复调用安全。
 // already stopped (for example after the user cancelled it).
 func (s *Spinner) Stop() {
 	if s != nil && s.stop != nil {
@@ -46,7 +46,7 @@ func (s *Spinner) Stop() {
 	}
 }
 
-// Cancelled returns a channel that is closed when the user interrupts the
+// Cancelled 返回用户中断 spinner 时关闭的通道。
 // spinner. Callers may select on it to abort a blocking wait.
 func (s *Spinner) Cancelled() <-chan struct{} {
 	if s == nil {
@@ -55,7 +55,7 @@ func (s *Spinner) Cancelled() <-chan struct{} {
 	return s.cancelled
 }
 
-// StartSpinner begins an animated spinner displaying message and returns a
+// StartSpinner 显示 message 并返回 Spinner；优先 DefaultSpinner，否则 ANSI 回退。
 // *Spinner handle. It uses DefaultSpinner when available, otherwise a simple
 // ANSI fallback that renders SpinnerFrames to stderr without requiring a TTY.
 func StartSpinner(message string) *Spinner {
@@ -67,7 +67,7 @@ func StartSpinner(message string) *Spinner {
 	return defaultSpinner(message)
 }
 
-// defaultSpinner renders SpinnerFrames to stderr without requiring a TTY. It
+// defaultSpinner 在无 TTY 时用 goroutine 向 stderr 渲染 SpinnerFrames。
 // runs in its own goroutine so it can animate while a caller polls; Stop
 // signals the goroutine to exit, waits for it, and clears the spinner line.
 func defaultSpinner(message string) *Spinner {
@@ -102,6 +102,7 @@ func defaultSpinner(message string) *Spinner {
 		})
 	}
 
+	// 非 raw 模式下 Ctrl+C 直接 SIGINT 终止进程，故 cancelled 通道永不关闭
 	// Ctrl+C in non-raw mode raises SIGINT and terminates the process by
 	// default (the launch flow installs no SIGINT handler), so this cancelled
 	// channel is intentionally never closed.

@@ -1,5 +1,6 @@
 package launch
 
+// launch 包实现 ollama launch 子命令：集成注册、模型选择、配置持久化与各第三方应用启动流程。
 import (
 	"context"
 	"errors"
@@ -17,7 +18,7 @@ import (
 	"golang.org/x/term"
 )
 
-// LauncherState is the launch-owned snapshot used to render the root launcher menu.
+// LauncherState 是根启动器菜单渲染用的快照（上次选择、运行模型与各集成状态）。
 type LauncherState struct {
 	LastSelection  string
 	RunModel       string
@@ -26,7 +27,7 @@ type LauncherState struct {
 	AccountState   *AccountState
 }
 
-// LauncherIntegrationState is the launch-owned status for one launcher integration.
+// LauncherIntegrationState 描述单个集成在启动器中的安装/可选/当前模型等 UI 状态。
 type LauncherIntegrationState struct {
 	Name            string
 	DisplayName     string
@@ -41,7 +42,7 @@ type LauncherIntegrationState struct {
 	Editor          bool
 }
 
-// RunModelRequest controls how the root launcher resolves the chat model.
+// RunModelRequest 控制「运行模型」动作如何解析交互式聊天模型。
 type RunModelRequest struct {
 	ForcePicker          bool
 	Policy               *LaunchPolicy
@@ -50,19 +51,22 @@ type RunModelRequest struct {
 	AccountStateUpdates  func(context.Context) <-chan *AccountState
 }
 
-// LaunchConfirmMode controls confirmation behavior across launch flows.
+// LaunchConfirmMode 控制启动流程中的确认行为（交互/--yes/非交互需 --yes）。
 type LaunchConfirmMode int
 
 const (
+	// LaunchConfirmPrompt 交互式提示用户确认。
 	// LaunchConfirmPrompt prompts the user for confirmation.
 	LaunchConfirmPrompt LaunchConfirmMode = iota
+	// LaunchConfirmAutoApprove 跳过提示并视为已确认。
 	// LaunchConfirmAutoApprove skips prompts and treats confirmation as accepted.
 	LaunchConfirmAutoApprove
+	// LaunchConfirmRequireYes 非交互模式下拒绝未带 --yes 的确认请求。
 	// LaunchConfirmRequireYes rejects confirmation requests with a --yes hint.
 	LaunchConfirmRequireYes
 )
 
-// LaunchMissingModelMode controls local missing-model handling in launch flows.
+// LaunchMissingModelMode 控制本地模型缺失时的 pull 策略。
 type LaunchMissingModelMode int
 
 const (
@@ -74,12 +78,13 @@ const (
 	LaunchMissingModelFail
 )
 
-// LaunchPolicy controls launch behavior that may vary by caller context.
+// LaunchPolicy 汇总确认与缺失模型策略，供 CLI 与 TUI 共用。
 type LaunchPolicy struct {
 	Confirm      LaunchConfirmMode
 	MissingModel LaunchMissingModelMode
 }
 
+// defaultLaunchPolicy 根据是否交互会话与 --yes 推导默认 LaunchPolicy。
 func defaultLaunchPolicy(interactive bool, yes bool) LaunchPolicy {
 	policy := LaunchPolicy{
 		Confirm:      LaunchConfirmPrompt,
@@ -87,6 +92,7 @@ func defaultLaunchPolicy(interactive bool, yes bool) LaunchPolicy {
 	}
 	switch {
 	case yes:
+		// --yes 时自动确认并自动 pull 缺失模型
 		// if yes flag is set, auto approve and auto pull
 		policy.Confirm = LaunchConfirmAutoApprove
 		policy.MissingModel = LaunchMissingModelAutoPull
@@ -120,7 +126,7 @@ func (p LaunchPolicy) missingModelPolicy() missingModelPolicy {
 	}
 }
 
-// IntegrationLaunchRequest controls the canonical integration launcher flow.
+// IntegrationLaunchRequest 描述启动某一集成的完整请求（模型覆盖、restore、策略等）。
 type IntegrationLaunchRequest struct {
 	Name                 string
 	ModelOverride        string
@@ -138,21 +144,21 @@ var isInteractiveSession = func() bool {
 	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }
 
-// Runner executes an integration with the selected model and its resolved
+// Runner 以选定模型及解析后的 LaunchModel 列表启动外部集成进程。
 // launch metadata. models is ordered with the primary model first.
 type Runner interface {
 	Run(model string, models []LaunchModel, args []string) error
 	String() string
 }
 
-// Editor can edit config files for integrations that support model configuration.
+// Editor 表示支持多模型配置文件写入的集成（如 OpenCode、Pi、VS Code）。
 type Editor interface {
 	Paths() []string
 	Edit(models []LaunchModel) error
 	Models() []string
 }
 
-// ManagedSingleModel is the narrow launch-owned config path for integrations
+// ManagedSingleModel 描述由 launch 持久化单一主模型的托管集成路径（如 Hermes、OMP、Qwen）。
 // like Hermes that have one primary model selected by launcher, need launcher
 // to persist minimal config, and still keep their own model discovery and
 // onboarding UX. This stays separate from Runner-only integrations and the
@@ -164,13 +170,13 @@ type ManagedSingleModel interface {
 	Onboard() error
 }
 
-// ManagedModelListConfigurer lets managed single-model integrations receive
+// ManagedModelListConfigurer 允许托管集成接收完整模型列表同时保留单一主模型。
 // the launcher's model list while still preserving one primary selected model.
 type ManagedModelListConfigurer interface {
 	ConfigureWithModels(primary string, models []LaunchModel) error
 }
 
-// ManagedAutodiscoveryIntegration is for managed integrations that do not need
+// ManagedAutodiscoveryIntegration 表示应用自行发现模型、launch 仅写代表模型名的集成。
 // a launcher-selected model because the app discovers available models itself.
 type ManagedAutodiscoveryIntegration interface {
 	Paths() []string
@@ -180,74 +186,74 @@ type ManagedAutodiscoveryIntegration interface {
 	Onboard() error
 }
 
-// ManagedAutodiscoveryCloudIntegration marks an autodiscovery integration whose
+// ManagedAutodiscoveryCloudIntegration 标记自动发现集成是否依赖 Ollama Cloud 登录态。
 // discovered model catalog depends on the user's local Ollama Cloud auth state.
 type ManagedAutodiscoveryCloudIntegration interface {
 	UsesOllamaCloud() bool
 }
 
-// RestoreHintIntegration can provide a short restore command after launch
+// RestoreHintIntegration 在切换为 launch 托管模式后可打印 restore 提示。
 // switches an app into a launch-managed mode.
 type RestoreHintIntegration interface {
 	RestoreHint() string
 }
 
-// ConfigurationSuccessIntegration can print a short message after launcher
+// ConfigurationSuccessIntegration 配置成功后打印自定义成功消息。
 // successfully switches an app into a launch-managed mode.
 type ConfigurationSuccessIntegration interface {
 	ConfigurationSuccessMessage() string
 }
 
-// RestoreSuccessIntegration can print a short message after launcher restores
+// RestoreSuccessIntegration restore 成功后打印自定义消息。
 // an app back to its default mode.
 type RestoreSuccessIntegration interface {
 	RestoreSuccessMessage() string
 }
 
-// RestoreInstallCheckSkipper lets cleanup-only restore flows run even when the
+// RestoreInstallCheckSkipper 允许在二进制已卸载时仍执行仅清理的 restore。
 // external integration binary has already been removed.
 type RestoreInstallCheckSkipper interface {
 	SkipRestoreInstallCheck() bool
 }
 
-// ManagedRuntimeRefresher lets managed integrations refresh any long-lived
+// ManagedRuntimeRefresher 配置重写后刷新集成后台运行时（如网关进程）。
 // background runtime after launch rewrites their config.
 type ManagedRuntimeRefresher interface {
 	RefreshRuntimeAfterConfigure() error
 }
 
-// ManagedOnboardingValidator lets managed integrations re-check saved
+// ManagedOnboardingValidator 允许 launch 用更强信号复验 onboarding 是否真正完成。
 // onboarding state when launcher needs a stronger live readiness signal.
 type ManagedOnboardingValidator interface {
 	OnboardingComplete() bool
 }
 
-// ManagedInteractiveOnboarding lets a managed integration declare whether its
+// ManagedInteractiveOnboarding 声明 onboarding 是否必须交互式终端（Hermes 为否）。
 // onboarding step really requires an interactive terminal. Hermes does not.
 type ManagedInteractiveOnboarding interface {
 	RequiresInteractiveOnboarding() bool
 }
 
-// ManagedModelReadinessSkipper lets managed integrations opt out of local
+// ManagedModelReadinessSkipper 跳过本地 Ollama 模型就绪检查（远程运行时）。
 // Ollama model readiness checks when the configured runtime is not the local
 // daemon.
 type ManagedModelReadinessSkipper interface {
 	SkipModelReadiness() bool
 }
 
-// RestorableIntegration lets integrations switch back from a launch-managed
+// RestorableIntegration 支持 --restore 将应用恢复为默认非托管配置。
 // mode to the application's normal/default mode.
 type RestorableIntegration interface {
 	Restore() error
 }
 
-// SupportedIntegration lets an integration report platform support separately
+// SupportedIntegration 单独报告平台支持情况，与是否已安装二进制解耦。
 // from whether the underlying app binary is installed.
 type SupportedIntegration interface {
 	Supported() error
 }
 
-// ModelItem represents model metadata before selector-only UI state is derived.
+// ModelItem 表示选择器用的模型元数据（推荐、VRAM、能力等，尚未派生 badge）。
 type ModelItem struct {
 	Name            string
 	Description     string
@@ -261,7 +267,7 @@ type ModelItem struct {
 	Details         api.ModelDetails
 }
 
-// SelectionItem represents a model row after launch has derived selector-only UI state.
+// SelectionItem 表示已派生可用性 badge 后的模型选择行。
 type SelectionItem struct {
 	Name              string
 	Description       string
@@ -269,7 +275,7 @@ type SelectionItem struct {
 	AvailabilityBadge string
 }
 
-// LaunchCmd returns the cobra command for launching integrations.
+// LaunchCmd 注册 ollama launch 子命令；无参数时 runTUI 显示根启动器。
 // The runTUI callback is called when the root launcher UI should be shown.
 func LaunchCmd(checkServerHeartbeat func(cmd *cobra.Command, args []string) error, runTUI func(cmd *cobra.Command)) *cobra.Command {
 	var modelFlag string
@@ -444,7 +450,7 @@ func (c *launcherClient) modelInventory() *modelInventory {
 	return c.inventory
 }
 
-// BuildLauncherState returns the launch-owned root launcher menu snapshot.
+// BuildLauncherState 构建根启动器菜单所需的 LauncherState 快照。
 func BuildLauncherState(ctx context.Context) (*LauncherState, error) {
 	launchClient, err := newLauncherClient(defaultLaunchPolicy(isInteractiveSession(), false))
 	if err != nil {
@@ -453,7 +459,7 @@ func BuildLauncherState(ctx context.Context) (*LauncherState, error) {
 	return launchClient.buildLauncherState(ctx)
 }
 
-// ResolveRunModel returns the model that should be used for interactive chat.
+// ResolveRunModel 解析交互式「运行模型」应使用的模型名。
 func ResolveRunModel(ctx context.Context, req RunModelRequest) (string, error) {
 	// Called by the launcher TUI "Run a model" action (cmd/runLauncherAction),
 	// which resolves models separately from LaunchIntegration. Callers can pass
@@ -474,6 +480,7 @@ func ResolveRunModel(ctx context.Context, req RunModelRequest) (string, error) {
 }
 
 // LaunchIntegration runs the canonical launcher flow for one integration.
+// LaunchIntegration 执行某一集成的规范启动流程（restore/托管/Editor/单模型）。
 func LaunchIntegration(ctx context.Context, req IntegrationLaunchRequest) error {
 	name, runner, err := LookupIntegration(req.Name)
 	if err != nil {
@@ -528,6 +535,7 @@ func LaunchIntegration(ctx context.Context, req IntegrationLaunchRequest) error 
 	return launchClient.launchSingleIntegration(ctx, name, runner, saved, req)
 }
 
+// restoreIntegration 处理 --restore：调用 RestorableIntegration.Restore。
 func restoreIntegration(name string, runner Runner, req IntegrationLaunchRequest) error {
 	if req.ModelOverride != "" || req.ConfigureOnly || len(req.ExtraArgs) > 0 {
 		return fmt.Errorf("--restore cannot be combined with --model, --config, or extra args")
@@ -566,6 +574,7 @@ func prepareIntegrationLaunch(name string, policy LaunchPolicy) (*launcherClient
 	return launchClient, saved, nil
 }
 
+// buildLauncherState 加载模型清单并汇总各集成的 LauncherIntegrationState。
 func (c *launcherClient) buildLauncherState(ctx context.Context) (*LauncherState, error) {
 	_, _ = c.modelInventory().Load(ctx)
 
@@ -690,6 +699,7 @@ func (c *launcherClient) launcherManagedAutodiscoveryState(ctx context.Context, 
 	return "", false, nil
 }
 
+// resolveRunModel 在无强制选择器时复用上次模型，否则打开单选器。
 func (c *launcherClient) resolveRunModel(ctx context.Context, req RunModelRequest) (string, error) {
 	current := config.LastModel()
 	if !req.ForcePicker && current != "" && c.policy.Confirm == LaunchConfirmAutoApprove && !isInteractiveSession() {
@@ -747,6 +757,7 @@ func (c *launcherClient) launchSingleIntegration(ctx context.Context, name strin
 	return launchAfterConfiguration(name, runner, target, c.resolveRunModels(ctx, []string{target}), req)
 }
 
+// launchEditorIntegration 处理 Editor 集成的多模型选择与配置文件写入。
 func (c *launcherClient) launchEditorIntegration(ctx context.Context, name string, runner Runner, editor Editor, saved *config.IntegrationConfig, req IntegrationLaunchRequest) error {
 	models, needsConfigure := c.resolveEditorLaunchModels(ctx, saved, req)
 
@@ -788,6 +799,7 @@ func (c *launcherClient) launchEditorIntegration(ctx context.Context, name strin
 	return launchAfterConfiguration(name, runner, models[0], launchModels, req)
 }
 
+// launchManagedSingleIntegration 配置托管单模型集成、onboard 并按需启动 Runner。
 func (c *launcherClient) launchManagedSingleIntegration(ctx context.Context, name string, runner Runner, managed ManagedSingleModel, saved *config.IntegrationConfig, req IntegrationLaunchRequest) error {
 	current := managed.CurrentModel()
 	selectionCurrent := current
@@ -847,6 +859,7 @@ func (c *launcherClient) launchManagedSingleIntegration(ctx context.Context, nam
 	return runIntegration(runner, target, c.resolveRunModels(ctx, []string{target}), req.ExtraArgs)
 }
 
+// launchManagedAutodiscoveryIntegration 配置自动发现集成并拒绝 --model 覆盖。
 func (c *launcherClient) launchManagedAutodiscoveryIntegration(ctx context.Context, name string, runner Runner, autodiscovery ManagedAutodiscoveryIntegration, saved *config.IntegrationConfig, req IntegrationLaunchRequest) error {
 	if req.ModelOverride != "" {
 		return fmt.Errorf("%s discovers models automatically; omit --model", runner)
@@ -1032,6 +1045,7 @@ func managedIntegrationOnboarded(saved *config.IntegrationConfig, managed any) b
 	return validator.OnboardingComplete()
 }
 
+// 多数托管集成将 onboarding 视为交互步骤；Hermes 等可声明无需交互终端。
 // Most managed integrations treat onboarding as an interactive terminal step.
 // Hermes opts out because its launch-owned onboarding is just bookkeeping, so
 // headless launches should not be blocked once config is already prepared.
@@ -1184,6 +1198,7 @@ func (c *launcherClient) recommendations(ctx context.Context) []ModelItem {
 
 	recommendations, err := c.requestRecommendations(ctx)
 	if err != nil || len(recommendations) == 0 {
+		// 推荐接口失败时 fail-open：不阻塞启动，回退内置推荐列表
 		// Fail open: recommendation issues should not block launch flows.
 		// Fall back to built-in recommendations until server data is available.
 		fallback := append([]ModelItem(nil), recommendedModels...)
@@ -1246,6 +1261,7 @@ func (c *launcherClient) ensureModelsReady(ctx context.Context, models []string)
 	return c.ensureModelsReadyFor(ctx, models, "ollama launch", "")
 }
 
+// ensureModelsReadyFor 校验废弃模型提示、云端权限、pull 与登录。
 func (c *launcherClient) ensureModelsReadyFor(ctx context.Context, models []string, label, commandName string) error {
 	models = dedupeModelList(models)
 	if len(models) == 0 {
@@ -1462,6 +1478,7 @@ func runIntegration(runner Runner, modelName string, models []LaunchModel, args 
 	return runner.Run(modelName, models, args)
 }
 
+// launchAfterConfiguration 在 --config 后可选确认并 EnsureIntegrationInstalled 后 Run。
 func launchAfterConfiguration(name string, runner Runner, model string, models []LaunchModel, req IntegrationLaunchRequest) error {
 	if req.ConfigureOnly {
 		launch, err := ConfirmPrompt(fmt.Sprintf("Launch %s now?", runner))
@@ -1478,6 +1495,7 @@ func launchAfterConfiguration(name string, runner Runner, model string, models [
 	return runIntegration(runner, model, models, req.ExtraArgs)
 }
 
+// loadStoredIntegrationConfig 读取集成配置并迁移旧别名下的 legacy 条目。
 func loadStoredIntegrationConfig(name string) (*config.IntegrationConfig, error) {
 	cfg, err := config.LoadIntegration(name)
 	if err == nil {

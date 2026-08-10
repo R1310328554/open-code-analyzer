@@ -8,7 +8,7 @@ import (
 	"golang.org/x/term"
 )
 
-// ANSI escape sequences for terminal formatting.
+// 终端 ANSI 转义序列，用于启动器 stderr 着色与强调。
 const (
 	ansiBold   = "\033[1m"
 	ansiReset  = "\033[0m"
@@ -17,13 +17,13 @@ const (
 	ansiYellow = "\033[33m"
 )
 
-// ErrCancelled is returned when the user cancels a selection.
+// ErrCancelled 表示用户在确认或选择流程中取消操作。
 var ErrCancelled = errors.New("cancelled")
 
-// errCancelled is kept as an internal alias for existing call sites.
+// errCancelled 为既有调用点保留的内部别名。
 var errCancelled = ErrCancelled
 
-// DefaultConfirmPrompt provides a TUI-based confirmation prompt.
+// DefaultConfirmPrompt 若设置，ConfirmPrompt 委托给 TUI 而非 raw 终端 I/O。
 // When set, ConfirmPrompt delegates to it instead of using raw terminal I/O.
 var DefaultConfirmPrompt func(prompt string, options ConfirmOptions) (bool, error)
 
@@ -34,44 +34,44 @@ const (
 	ConfirmDefaultNo
 )
 
-// ConfirmOptions customizes labels for confirmation prompts.
+// ConfirmOptions 自定义确认对话框的是/否标签与默认选项。
 type ConfirmOptions struct {
 	YesLabel string
 	NoLabel  string
 	Default  ConfirmDefault
 }
 
-// SingleSelector is a function type for single item selection.
+// SingleSelector 单选模型/集成项的回调类型；current 为预选高亮项。
 // current is the name of the previously selected item to highlight; empty means no pre-selection.
 type SingleSelector func(title string, items []SelectionItem, current string) (string, error)
 
-// SingleSelectorWithUpdates is a single item selector that can receive refreshed item state while open.
+// SingleSelectorWithUpdates 支持在列表打开时接收刷新后的 SelectionItem。
 type SingleSelectorWithUpdates func(title string, items []SelectionItem, current string, updates <-chan []SelectionItem) (string, error)
 
-// MultiSelector is a function type for multi item selection.
+// MultiSelector 多选模型列表的回调类型。
 type MultiSelector func(title string, items []SelectionItem, preChecked []string) ([]string, error)
 
-// MultiSelectorWithUpdates is a multi item selector that can receive refreshed item state while open.
+// MultiSelectorWithUpdates 多选器，支持打开期间接收账户状态驱动的列表更新。
 type MultiSelectorWithUpdates func(title string, items []SelectionItem, preChecked []string, updates <-chan []SelectionItem) ([]string, error)
 
-// DefaultSingleSelector is the default single-select implementation.
+// DefaultSingleSelector 默认单选实现，由 cmd/tui 注册。
 var DefaultSingleSelector SingleSelector
 
-// DefaultSingleSelectorWithUpdates is the default single-select implementation with live updates.
+// DefaultSingleSelectorWithUpdates 带 live updates 的默认单选实现。
 var DefaultSingleSelectorWithUpdates SingleSelectorWithUpdates
 
-// DefaultMultiSelector is the default multi-select implementation.
+// DefaultMultiSelector 默认多选实现。
 var DefaultMultiSelector MultiSelector
 
-// DefaultMultiSelectorWithUpdates is the default multi-select implementation with live updates.
+// DefaultMultiSelectorWithUpdates 带 live updates 的默认多选实现。
 var DefaultMultiSelectorWithUpdates MultiSelectorWithUpdates
 
-// DefaultSignIn provides a TUI-based sign-in flow.
+// DefaultSignIn 若设置，ensureAuth 使用 TUI 登录而非纯文本提示。
 // When set, ensureAuth uses it instead of plain text prompts.
 // Returns the signed-in username or an error.
 var DefaultSignIn func(modelName, signInURL string) (string, error)
 
-// DefaultUpgrade provides a TUI-based upgrade flow.
+// DefaultUpgrade 若设置，云端套餐升级走 TUI 流程。
 // Returns the updated plan or an error.
 var DefaultUpgrade func(modelName, requiredPlan string) (string, error)
 
@@ -90,7 +90,7 @@ func withLaunchConfirmPolicy(policy launchConfirmPolicy) func() {
 	}
 }
 
-// ConfirmPrompt is the shared confirmation gate for launch flows (integration
+// ConfirmPrompt 是启动流程的共享确认门控（安装、拉模型、登录等），受 currentLaunchConfirmPolicy 与 --yes 影响。
 // edits, missing-model pulls, sign-in prompts, OpenClaw install/security, etc).
 // Behavior is controlled by currentLaunchConfirmPolicy, typically scoped by
 // withLaunchConfirmPolicy in LaunchCmd (e.g. auto-approve with --yes).
@@ -98,7 +98,7 @@ func ConfirmPrompt(prompt string) (bool, error) {
 	return ConfirmPromptWithOptions(prompt, ConfirmOptions{})
 }
 
-// ConfirmPromptWithOptions is the shared confirmation gate for launch flows
+// ConfirmPromptWithOptions 支持自定义是/否标签的确认门控。
 // that need custom yes/no labels in interactive UIs.
 func ConfirmPromptWithOptions(prompt string, options ConfirmOptions) (bool, error) {
 	if currentLaunchConfirmPolicy.yes {

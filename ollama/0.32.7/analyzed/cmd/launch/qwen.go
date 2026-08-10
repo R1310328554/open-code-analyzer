@@ -14,14 +14,17 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
+// qwen 集成 Qwen Code CLI：写入 ~/.qwen/settings.json 并以 OpenAI 兼容模式连接 Ollama。
 const qwenOllamaEnvKey = "OLLAMA_API_KEY"
 
 var qwenGOOS = runtime.GOOS
 
+// Qwen 实现 Runner 与 ManagedSingleModel，管理 Qwen Code 的 Ollama 提供商配置。
 type Qwen struct{}
 
 func (q *Qwen) String() string { return "Qwen Code" }
 
+// findPath 在 PATH 与常见 npm/nvm/Homebrew 路径中查找 qwen 二进制。
 func (q *Qwen) findPath() (string, error) {
 	if p, err := exec.LookPath("qwen"); err == nil {
 		return p, nil
@@ -93,6 +96,7 @@ func qwenWindowsLocalAppData(home string) string {
 	return filepath.Join(home, "AppData", "Local")
 }
 
+// ensureQwenInstalled 交互式下载并安装 Qwen Code。
 func ensureQwenInstalled() (string, error) {
 	if path, err := (&Qwen{}).findPath(); err == nil {
 		return path, nil
@@ -222,6 +226,7 @@ func qwenInstallerCommand(goos string) (string, []string, error) {
 	}
 }
 
+// Run 以 OpenAI 兼容环境变量与 --auth-type openai 启动 Qwen Code。
 func (q *Qwen) Run(model string, _ []LaunchModel, args []string) error {
 	qwenPath, err := q.findPath()
 	if err != nil {
@@ -244,6 +249,7 @@ func (q *Qwen) Paths() []string {
 	return []string{path}
 }
 
+// Configure 将 settings.json 中的 modelProviders 指向 Ollama 端点。
 func (q *Qwen) Configure(model string) error {
 	if model == "" {
 		return nil
@@ -272,6 +278,7 @@ func (q *Qwen) Configure(model string) error {
 	return fileutil.WriteWithBackup(configPath, data, "qwen")
 }
 
+// applyQwenOllamaConfig 合并 env、modelProviders 与 security.auth 中的 Ollama 设置。
 func applyQwenOllamaConfig(cfg map[string]any, model string) {
 	envCfg := qwenMap(cfg["env"])
 	envCfg[qwenOllamaEnvKey] = "ollama"
@@ -336,6 +343,7 @@ func qwenIsOllamaProvider(value any) bool {
 	return envKey == qwenOllamaEnvKey && strings.TrimRight(baseURL, "/") == qwenBaseURL()
 }
 
+// CurrentModel 从 settings.json 读取当前选中的模型名。
 func (q *Qwen) CurrentModel() string {
 	cfg, err := q.readConfig()
 	if err != nil {
@@ -416,6 +424,7 @@ func qwenProvider(model string) map[string]any {
 	}
 }
 
+// qwenLaunchArgs 确保包含 --auth-type openai 与 --model。
 func qwenLaunchArgs(model string, args []string) []string {
 	launchArgs := append([]string{}, args...)
 	if !qwenHasFlag(launchArgs, "--auth-type") {
@@ -427,6 +436,7 @@ func qwenLaunchArgs(model string, args []string) []string {
 	return launchArgs
 }
 
+// qwenLaunchEnv 设置 OPENAI_API_KEY/BASE_URL/MODEL 指向 Ollama。
 func qwenLaunchEnv(model string) []string {
 	env := os.Environ()
 	env = qwenUpsertEnv(env, "OPENAI_API_KEY", "ollama")

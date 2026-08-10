@@ -16,9 +16,10 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
+// openclaw 集成 OpenClaw 个人助手：引导安装、网关生命周期、频道预检与 Ollama 提供商配置。
 const defaultGatewayPort = 18789
 
-// openclawFreshInstall is set to true when ensureOpenclawInstalled performs an install
+// openclawFreshInstall 在本次会话通过 npm 新装 OpenClaw 时为 true。
 var openclawFreshInstall bool
 
 var openclawCanInstallDaemon = canInstallDaemon
@@ -27,6 +28,7 @@ type Openclaw struct{}
 
 func (c *Openclaw) String() string { return "OpenClaw" }
 
+// Run 执行首次安全确认、onboard、网关启动与默认 TUI 流程。
 func (c *Openclaw) Run(model string, _ []LaunchModel, args []string) error {
 	bin, err := ensureOpenclawInstalled()
 	if err != nil {
@@ -156,6 +158,7 @@ func shouldEnsureGatewayForArgs(args []string) bool {
 	return len(args) > 0 && args[0] == "tui"
 }
 
+// ensureGatewayReady 确保本地网关监听并返回 cleanup、token 与端口。
 func (c *Openclaw) ensureGatewayReady(bin string) (func(), string, int, error) {
 	token, port := c.gatewayInfo()
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
@@ -212,7 +215,7 @@ func (c *Openclaw) ensureGatewayReady(bin string) (func(), string, int, error) {
 	return cleanup, token, port, nil
 }
 
-// runChannelSetupPreflight prompts users to connect a messaging channel before
+// runChannelSetupPreflight 在启动网关+TUI 前可选引导用户连接消息频道。
 // starting the built-in gateway+TUI flow. In interactive sessions, it loops
 // until a channel is configured, unless the user chooses "Set up later".
 func (c *Openclaw) runChannelSetupPreflight(bin string) error {
@@ -253,7 +256,7 @@ func (c *Openclaw) runChannelSetupPreflight(bin string) error {
 	}
 }
 
-// channelsConfigured reports whether local OpenClaw config contains at least
+// channelsConfigured 检查 openclaw.json 是否已有有效频道配置。
 // one meaningfully configured channel entry.
 func (c *Openclaw) channelsConfigured() bool {
 	home, err := os.UserHomeDir()
@@ -300,7 +303,7 @@ func (c *Openclaw) channelsConfigured() bool {
 	return false
 }
 
-// gatewayInfo reads the gateway auth token and port from the OpenClaw config.
+// gatewayInfo 从配置读取网关 auth token 与监听端口。
 func (c *Openclaw) gatewayInfo() (token string, port int) {
 	port = defaultGatewayPort
 	home, err := os.UserHomeDir()
@@ -352,7 +355,7 @@ func printOpenclawReady(bin, token string, port int, firstLaunch bool) {
 	}
 }
 
-// openclawEnv returns the current environment with provider API keys cleared
+// openclawEnv 清除各云厂商 API Key，使 OpenClaw 仅经 Ollama 网关推理。
 // so openclaw only uses the Ollama gateway, not keys from the user's shell.
 func openclawEnv() []string {
 	clear := map[string]bool{
@@ -396,7 +399,7 @@ func openclawPluginStageDir() string {
 	return filepath.Join(home, ".openclaw", "plugin-runtime-deps")
 }
 
-// portOpen checks if a TCP port is currently accepting connections.
+// portOpen 检测 TCP 地址是否已有服务监听。
 func portOpen(addr string) bool {
 	conn, err := net.DialTimeout("tcp", addr, 500*time.Millisecond)
 	if err != nil {
@@ -429,7 +432,7 @@ func windowsHint(err error) error {
 		"Guide: https://docs.openclaw.ai/windows", err)
 }
 
-// onboarded checks if OpenClaw onboarding wizard was completed
+// onboarded 根据 wizard.lastRunAt 判断引导向导是否已完成。
 // by looking for the wizard.lastRunAt marker in the config
 func (c *Openclaw) onboarded() bool {
 	home, err := os.UserHomeDir()
@@ -458,7 +461,7 @@ func (c *Openclaw) onboarded() bool {
 	return lastRunAt != ""
 }
 
-// patchDeviceScopes upgrades the local CLI device's paired operator scopes so
+// patchDeviceScopes 最佳努力升级本地设备的 operator scopes，避免 TUI 重连需重新配对。
 // newer gateway auth baselines (approvedScopes) allow launch+TUI reconnects
 // without forcing an interactive re-pair. Only patches the local device,
 // not remote ones. Best-effort: silently returns on any error.
@@ -569,7 +572,7 @@ func isOperatorToken(tokenRole string, token map[string]any) bool {
 	return strings.EqualFold(strings.TrimSpace(role), "operator")
 }
 
-// canInstallDaemon reports whether the openclaw daemon can be installed as a
+// canInstallDaemon 判断当前 Linux 环境是否适合 --install-daemon（需 systemd 与用户 manager）。
 // background service. Returns false on Linux when systemd is absent (e.g.
 // containers) so that --install-daemon is omitted and the gateway is started
 // as a foreground child process instead. Returns true in all other cases.
@@ -588,6 +591,7 @@ func canInstallDaemon() bool {
 	return os.Getenv("XDG_RUNTIME_DIR") != ""
 }
 
+// ensureOpenclawInstalled 查找 openclaw/clawdbot 或通过 npm 全局安装。
 func ensureOpenclawInstalled() (string, error) {
 	if _, err := exec.LookPath("openclaw"); err == nil {
 		return "openclaw", nil
@@ -649,6 +653,7 @@ func (c *Openclaw) Paths() []string {
 	return nil
 }
 
+// Edit 写入 models.providers.ollama 与 agents.defaults.model.primary。
 func (c *Openclaw) Edit(models []LaunchModel) error {
 	if len(models) == 0 {
 		return nil
@@ -754,7 +759,7 @@ func (c *Openclaw) Edit(models []LaunchModel) error {
 	return nil
 }
 
-// clearSessionModelOverride removes per-session model overrides from the main
+// clearSessionModelOverride 清除会话级 modelOverride，使新 primary 立即生效。
 // agent session so the global primary model takes effect on the next TUI launch.
 func clearSessionModelOverride(primary string) {
 	home, err := os.UserHomeDir()
@@ -791,7 +796,7 @@ func clearSessionModelOverride(primary string) {
 	_ = os.WriteFile(path, out, 0o600)
 }
 
-// configureOllamaWebSearch keeps launch-managed OpenClaw installs on the
+// configureOllamaWebSearch 迁移旧 openclaw-web-search 插件配置到内置 ollama 插件。
 // bundled Ollama web_search provider. Older launch builds installed an
 // external openclaw-web-search plugin that added custom ollama_web_search and
 // ollama_web_fetch tools. Current OpenClaw versions ship Ollama web_search as
@@ -925,7 +930,7 @@ func configureOllamaWebSearch() {
 	_ = os.WriteFile(configPath, out, 0o600)
 }
 
-// openclawModelConfig builds an OpenClaw model config entry with capability detection.
+// openclawModelConfig 根据 LaunchModel 能力生成 OpenClaw 模型 JSON 条目。
 // The second return value indicates whether the model is a cloud (remote) model.
 func openclawModelConfig(model LaunchModel) (map[string]any, bool) {
 	entry := map[string]any{

@@ -9,17 +9,19 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
-// Poolside implements Runner for Poolside's CLI.
+// Poolside 实现 Runner，将 Poolside CLI 指向本地 Ollama OpenAI 兼容端点。
 type Poolside struct{}
 
 var poolsideGOOS = runtime.GOOS
 
 func (p *Poolside) String() string { return "Pool" }
 
+// poolsideUnsupportedError 在 Windows 上返回不支持提示。
 func poolsideUnsupportedError() error {
 	return fmt.Errorf("Warning: Poolside is not currently supported on Windows")
 }
 
+// args 组装 pool 子进程的 -m 与透传参数。
 func (p *Poolside) args(model string, extra []string) []string {
 	var args []string
 	if model != "" {
@@ -29,6 +31,7 @@ func (p *Poolside) args(model string, extra []string) []string {
 	return args
 }
 
+// Run 在 PATH 中查找 pool 并以 Ollama 独立模式环境变量启动。
 func (p *Poolside) Run(model string, _ []LaunchModel, args []string) error {
 	if poolsideGOOS == "windows" {
 		return poolsideUnsupportedError()
