@@ -17,25 +17,43 @@
 package com.alibaba.nacos.api.naming.listener;
 
 /**
- * Fuzzy Watch Notify Event.
+ * 模糊订阅（Fuzzy Watch）变更通知事件。
+ *
+ * <p>当模糊订阅匹配的服务发生新增、删除或同步状态变化时，客户端通过 {@link Event} 回调收到本事件，
+ * 携带服务名、分组、命名空间及变更/同步类型等上下文信息。</p>
  *
  * @author tanyongquan
  */
 public class FuzzyWatchChangeEvent implements Event {
     
+    /** 发生变更的服务名。 */
     private String serviceName;
     
+    /** 服务所属分组名。 */
     private String groupName;
     
+    /** 服务所在命名空间 ID。 */
     private String namespace;
     
+    /** 本地监听器视角的变更类型，如 ADD_SERVICE、DELETE_SERVICE。 */
     private String changeType;
     
+    /** 触发本次变更的同步类型。 */
     private String syncType;
     
+    /** 无参构造，供序列化或框架实例化使用。 */
     public FuzzyWatchChangeEvent() {
     }
     
+    /**
+     * 构造包含完整上下文的模糊订阅变更事件。
+     *
+     * @param serviceName 服务名
+     * @param groupName   分组名
+     * @param namespace   命名空间 ID
+     * @param changeType  变更类型
+     * @param syncType    同步类型
+     */
     public FuzzyWatchChangeEvent(String serviceName, String groupName, String namespace,
         String changeType,
         String syncType) {
@@ -46,30 +64,35 @@ public class FuzzyWatchChangeEvent implements Event {
         this.syncType = syncType;
     }
     
+    /** 获取发生变更的服务名。 */
     public String getServiceName() {
         return serviceName;
     }
     
+    /** 获取服务所属分组名。 */
     public String getGroupName() {
         return groupName;
     }
     
+    /** 获取服务所在命名空间 ID。 */
     public String getNamespace() {
         return namespace;
     }
     
     /**
-     * The change type of local watcher , contains {"ADD_SERVICE", "DELETE_SERVICE"}. see Constants.ServiceChangedType
+     * 获取本地监听器视角的变更类型，取值包含 {@code ADD_SERVICE}、{@code DELETE_SERVICE} 等，
+     * 详见 {@code Constants.ServiceChangedType}。
      */
     public String getChangeType() {
         return changeType;
     }
     
     /**
-     * the sync type that trigger this changed,contains {"FUZZY_WATCH_INIT_NOTIFY","FUZZY_WATCH_RESOURCE_CHANGED",
-     * "FUZZY_WATCH_DIFF_SYNC_NOTIFY"}.
+     * 获取触发本次变更的同步类型，取值包含
+     * {@code FUZZY_WATCH_INIT_NOTIFY}、{@code FUZZY_WATCH_RESOURCE_CHANGED}、
+     * {@code FUZZY_WATCH_DIFF_SYNC_NOTIFY} 等。
      *
-     * @return The sync type that triggered this change
+     * @return 触发本次变更的同步类型
      */
     public String getSyncType() {
         return syncType;

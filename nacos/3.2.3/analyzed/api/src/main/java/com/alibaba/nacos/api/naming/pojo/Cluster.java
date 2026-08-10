@@ -24,10 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Cluster.
+ * 服务集群模型，描述同一服务下实例的逻辑分组及其健康检查配置。
  *
- * <p>The class will be serialized to json, and there are some variables and method can't use Camel naming rule for
- * compatibility
+ * <p>本类会序列化为 JSON，部分字段与方法命名未采用驼峰规则以保持历史兼容。</p>
  *
  * @author nkorange
  */
@@ -37,97 +36,118 @@ public class Cluster implements Serializable {
     private static final long serialVersionUID = -7196138840047197271L;
     
     /**
-     * Name of belonging service.
+     * 所属服务名。
      */
     private String serviceName;
     
     /**
-     * Name of cluster.
+     * 集群名称。
      */
     private String name;
     
     /**
-     * Health check config of this cluster.
+     * 本集群的健康检查配置，默认使用 TCP 探测。
      */
     private AbstractHealthChecker healthChecker = new Tcp();
     
     /**
-     * Default registered port for instances in this cluster.
+     * 本集群实例的默认注册端口。
      */
     private int defaultPort = 80;
     
     /**
-     * Default health check port of instances in this cluster.
+     * 本集群实例的默认健康检查端口。
      */
     private int defaultCheckPort = 80;
     
     /**
-     * Whether or not use instance port to do health check.
+     * 是否使用实例 IP 与端口进行健康检查。
      */
     private boolean useIpPort4Check = true;
     
+    /** 集群扩展元数据键值对。 */
     private Map<String, String> metadata = new HashMap<>();
     
+    /** 无参构造。 */
     public Cluster() {
         
     }
     
+    /**
+     * 按集群名构造集群对象。
+     *
+     * @param clusterName 集群名称
+     */
     public Cluster(String clusterName) {
         this.name = clusterName;
     }
     
+    /** 获取所属服务名。 */
     public String getServiceName() {
         return serviceName;
     }
     
+    /** 设置所属服务名。 */
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
     }
     
+    /** 获取集群名称。 */
     public String getName() {
         return name;
     }
     
+    /** 设置集群名称。 */
     public void setName(String name) {
         this.name = name;
     }
     
+    /** 获取健康检查配置。 */
     public AbstractHealthChecker getHealthChecker() {
         return healthChecker;
     }
     
+    /** 设置健康检查配置。 */
     public void setHealthChecker(AbstractHealthChecker healthChecker) {
         this.healthChecker = healthChecker;
     }
     
+    /** 获取默认注册端口。 */
     public int getDefaultPort() {
         return defaultPort;
     }
     
+    /** 设置默认注册端口。 */
     public void setDefaultPort(int defaultPort) {
         this.defaultPort = defaultPort;
     }
     
+    /** 获取默认健康检查端口。 */
     public int getDefaultCheckPort() {
         return defaultCheckPort;
     }
     
+    /** 设置默认健康检查端口。 */
     public void setDefaultCheckPort(int defaultCheckPort) {
         this.defaultCheckPort = defaultCheckPort;
     }
     
+    /** 是否使用实例 IP 与端口进行健康检查。 */
     public boolean isUseIpPort4Check() {
         return useIpPort4Check;
     }
     
+    /** 设置是否使用实例 IP 与端口进行健康检查。 */
     public void setUseIpPort4Check(boolean useIpPort4Check) {
         this.useIpPort4Check = useIpPort4Check;
     }
     
+    /** 获取集群元数据。 */
     public Map<String, String> getMetadata() {
         return metadata;
     }
     
+    /** 设置集群元数据。 */
     public void setMetadata(Map<String, String> metadata) {
         this.metadata = metadata;
     }

@@ -19,21 +19,25 @@ package com.alibaba.nacos.api.naming.listener;
 import java.util.concurrent.Executor;
 
 /**
- * Abstract fuzzy watch event listener, to support handle event by user custom executor.
+ * 模糊订阅事件监听器接口，支持使用自定义线程池异步处理事件。
+ *
+ * <p>实现类可指定 {@link #getExecutor()} 控制回调线程；返回 {@code null} 时由 Nacos 内部通知器执行。</p>
  *
  * @author tanyongquan
  */
 public interface FuzzyWatchEventWatcher {
     
     /**
-     * executor to notify event, using nacos internal notifier if null  .
-     * @return The executor for event notification
+     * 获取用于通知事件的执行器；为 {@code null} 时使用 Nacos 内部默认通知器。
+     *
+     * @return 事件通知所用执行器
      */
     Executor getExecutor();
     
     /**
-     * handle FuzzyWatchChangeEvent.
-     * @param event fuzzy watch change event.
+     * 处理模糊订阅变更事件 {@link FuzzyWatchChangeEvent}。
+     *
+     * @param event 模糊订阅变更事件
      */
     void onEvent(FuzzyWatchChangeEvent event);
     

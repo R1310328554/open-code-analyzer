@@ -28,7 +28,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import java.io.Serializable;
 
 /**
- * Abstract health checker.
+ * 健康检查器抽象基类，定义集群级探测策略的多态序列化结构。
+ *
+ * <p>Jackson 按 {@code type} 字段多态反序列化为 {@link Http}、{@link Mysql}、{@link Tcp} 或 {@link None} 等实现。</p>
  *
  * @author nkorange
  */
@@ -41,35 +43,44 @@ public abstract class AbstractHealthChecker implements Cloneable, Serializable {
     
     private static final long serialVersionUID = 3848305577423336421L;
     
+    /** 健康检查类型标识，序列化时写入 JSON 的 {@code type} 字段。 */
     @JsonIgnore
     protected final String type;
     
+    /**
+     * 子类构造时传入类型名。
+     *
+     * @param type 检查器类型标识
+     */
     protected AbstractHealthChecker(String type) {
         this.type = type;
     }
     
+    /** 获取健康检查类型标识。 */
     public String getType() {
         return type;
     }
     
     /**
-     * Clone all fields of this instance to another one.
+     * 克隆当前检查器全部字段到新实例。
      *
-     * @return Another instance with exactly the same fields
-     * @throws CloneNotSupportedException clone not supported exception
+     * @return 字段完全一致的新实例
+     * @throws CloneNotSupportedException 不支持克隆时抛出
      */
     @Override
     public abstract AbstractHealthChecker clone() throws CloneNotSupportedException;
     
     /**
-     * Default implementation of Health checker.
+     * 默认空实现：不进行任何健康检查。
      */
     public static class None extends AbstractHealthChecker {
         
+        /** 类型常量 {@code NONE}。 */
         public static final String TYPE = "NONE";
         
         private static final long serialVersionUID = -760631831097384737L;
         
+        /** 构造 NONE 类型检查器。 */
         public None() {
             super(TYPE);
         }

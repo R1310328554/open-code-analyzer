@@ -22,46 +22,59 @@ import com.alibaba.nacos.api.utils.StringUtils;
 import java.util.Objects;
 
 /**
- * Implementation of health checker for MYSQL.
+ * MySQL 协议健康检查器实现，通过执行 SQL 命令探测数据库实例可用性。
+ *
+ * <p>配置数据库用户名、密码及探测 SQL，由 Nacos 服务端定期连接并执行以更新实例健康状态。</p>
  *
  * @author yangyi
  */
 public class Mysql extends AbstractHealthChecker {
     
+    /** 类型常量 {@code MYSQL}。 */
     public static final String TYPE = "MYSQL";
     
     private static final long serialVersionUID = 7928108094599401491L;
     
+    /** 数据库用户名。 */
     private String user;
     
+    /** 数据库密码。 */
     private String pwd;
     
+    /** 健康探测 SQL 命令。 */
     private String cmd;
     
+    /** 构造 MySQL 类型健康检查器。 */
     public Mysql() {
         super(Mysql.TYPE);
     }
     
+    /** 获取探测 SQL 命令。 */
     public String getCmd() {
         return this.cmd;
     }
     
+    /** 获取数据库密码。 */
     public String getPwd() {
         return this.pwd;
     }
     
+    /** 获取数据库用户名。 */
     public String getUser() {
         return this.user;
     }
     
+    /** 设置数据库用户名。 */
     public void setUser(final String user) {
         this.user = user;
     }
     
+    /** 设置探测 SQL 命令。 */
     public void setCmd(final String cmd) {
         this.cmd = cmd;
     }
     
+    /** 设置数据库密码。 */
     public void setPwd(final String pwd) {
         this.pwd = pwd;
     }

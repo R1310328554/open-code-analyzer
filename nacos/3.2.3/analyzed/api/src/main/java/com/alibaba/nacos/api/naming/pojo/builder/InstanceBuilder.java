@@ -23,94 +23,118 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Builder for {@link Instance}.
+ * {@link Instance} 的流式构建器，支持链式设置各属性后一次性生成实例对象。
+ *
+ * <p>未显式设置的字段在 {@link #build()} 时保持 {@link Instance} 默认值。</p>
  *
  * @author xiweng.yy
  */
 public class InstanceBuilder {
     
+    /** 实例 ID。 */
     private String instanceId;
     
+    /** 实例 IP。 */
     private String ip;
     
+    /** 实例端口。 */
     private Integer port;
     
+    /** 负载均衡权重。 */
     private Double weight;
     
+    /** 健康状态。 */
     private Boolean healthy;
     
+    /** 是否启用。 */
     private Boolean enabled;
     
+    /** 是否为临时实例。 */
     private Boolean ephemeral;
     
+    /** 所属集群名。 */
     private String clusterName;
     
+    /** 所属服务名。 */
     private String serviceName;
     
+    /** 扩展元数据。 */
     private Map<String, String> metadata = new HashMap<>();
     
+    /** 私有构造，通过 {@link #newBuilder()} 创建。 */
     private InstanceBuilder() {
     }
     
+    /** 设置实例 ID 并返回构建器自身。 */
     public InstanceBuilder setInstanceId(String instanceId) {
         this.instanceId = instanceId;
         return this;
     }
     
+    /** 设置 IP 并返回构建器自身。 */
     public InstanceBuilder setIp(String ip) {
         this.ip = ip;
         return this;
     }
     
+    /** 设置端口并返回构建器自身。 */
     public InstanceBuilder setPort(Integer port) {
         this.port = port;
         return this;
     }
     
+    /** 设置权重并返回构建器自身。 */
     public InstanceBuilder setWeight(Double weight) {
         this.weight = weight;
         return this;
     }
     
+    /** 设置健康状态并返回构建器自身。 */
     public InstanceBuilder setHealthy(Boolean healthy) {
         this.healthy = healthy;
         return this;
     }
     
+    /** 设置是否启用并返回构建器自身。 */
     public InstanceBuilder setEnabled(Boolean enabled) {
         this.enabled = enabled;
         return this;
     }
     
+    /** 设置是否为临时实例并返回构建器自身。 */
     public InstanceBuilder setEphemeral(Boolean ephemeral) {
         this.ephemeral = ephemeral;
         return this;
     }
     
+    /** 设置集群名并返回构建器自身。 */
     public InstanceBuilder setClusterName(String clusterName) {
         this.clusterName = clusterName;
         return this;
     }
     
+    /** 设置服务名并返回构建器自身。 */
     public InstanceBuilder setServiceName(String serviceName) {
         this.serviceName = serviceName;
         return this;
     }
     
+    /** 设置元数据 Map 并返回构建器自身。 */
     public InstanceBuilder setMetadata(Map<String, String> metadata) {
         this.metadata = metadata;
         return this;
     }
     
+    /** 向元数据添加键值对并返回构建器自身。 */
     public InstanceBuilder addMetadata(String metaKey, String metaValue) {
         this.metadata.put(metaKey, metaValue);
         return this;
     }
     
     /**
-     * Build a new {@link Instance}.
+     * 根据已设置的属性构建新的 {@link Instance}。
      *
-     * @return new instance
+     * @return 新实例对象
      */
     public Instance build() {
         Instance result = new Instance();
@@ -145,6 +169,7 @@ public class InstanceBuilder {
         return result;
     }
     
+    /** 创建新的构建器实例。 */
     public static InstanceBuilder newBuilder() {
         return new InstanceBuilder();
     }

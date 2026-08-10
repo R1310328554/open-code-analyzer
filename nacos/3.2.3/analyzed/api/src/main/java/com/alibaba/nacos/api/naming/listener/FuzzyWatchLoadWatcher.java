@@ -17,18 +17,21 @@
 package com.alibaba.nacos.api.naming.listener;
 
 /**
- * naming fuzzy watch watcher that triggered when  loader over limit.
+ * 模糊订阅负载超限监听器，在加载器超过配额限制时触发回调。
+ *
+ * <p>用于感知服务端模糊订阅模式数量或匹配服务数量达到上限时的告警场景。</p>
+ *
  * @author shiyiyue
  */
 public interface FuzzyWatchLoadWatcher {
     
     /**
-     * triggered when server pattern count over limit.
+     * 当服务端模糊订阅模式（pattern）数量超过上限时触发。
      */
     void onPatternOverLimit();
     
     /**
-     *  triggered when pattern match service count over limit.
+     * 当单个模式匹配到的服务数量超过上限时触发。
      */
     void onServiceReachUpLimit();
     

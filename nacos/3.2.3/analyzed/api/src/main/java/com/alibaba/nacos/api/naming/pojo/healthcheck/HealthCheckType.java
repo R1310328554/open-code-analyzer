@@ -26,47 +26,55 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Health check type.
+ * 健康检查类型枚举，映射类型名与 {@link AbstractHealthChecker} 实现类。
+ *
+ * <p>内置 TCP、HTTP、MySQL 与 NONE；支持通过 {@link #registerHealthChecker} 注册 SPI 扩展类型。</p>
  *
  * @author nkorange
  */
 public enum HealthCheckType {
     
     /**
-     * TCP type.
+     * TCP 端口探测。
      */
     TCP(Tcp.class),
     /**
-     * HTTP type.
+     * HTTP 路径探测。
      */
     HTTP(Http.class),
     /**
-     * MySQL type.
+     * MySQL 命令探测。
      */
     MYSQL(Mysql.class),
     /**
-     * No check.
+     * 不进行健康检查。
      */
     NONE(AbstractHealthChecker.None.class);
     
+    /** 对应的检查器实现类。 */
     private final Class<? extends AbstractHealthChecker> healthCheckerClass;
     
     /**
-     * In JDK 1.6, the map need full class for general. So ignore check style.
+     * JDK 1.6 环境下 Map 泛型需完整类名，故忽略行宽检查。
      */
     @SuppressWarnings("checkstyle:linelength")
     private static final Map<String, Class<? extends AbstractHealthChecker>> EXTEND =
         new ConcurrentHashMap<>();
     
+    /**
+     * 枚举构造，绑定实现类。
+     *
+     * @param healthCheckerClass 检查器实现类
+     */
     HealthCheckType(Class<? extends AbstractHealthChecker> healthCheckerClass) {
         this.healthCheckerClass = healthCheckerClass;
     }
     
     /**
-     * Register extend health checker.
+     * 注册扩展健康检查器类型。
      *
-     * @param type               type name of extend health checker
-     * @param healthCheckerClass class of extend health checker
+     * @param type               扩展检查器类型名
+     * @param healthCheckerClass 扩展检查器实现类
      */
     public static void registerHealthChecker(String type,
         Class<? extends AbstractHealthChecker> healthCheckerClass) {
@@ -77,10 +85,10 @@ public enum HealthCheckType {
     }
     
     /**
-     * Get health checker class from type.
+     * 根据类型名解析对应的检查器实现类。
      *
-     * @param type type name of extend health checker
-     * @return registered class if have, otherwise default class
+     * @param type 检查器类型名（内置枚举名或扩展注册名）
+     * @return 已注册的实现类；扩展类型未命中时返回 {@code null}
      */
     public static Class<? extends AbstractHealthChecker> ofHealthCheckerClass(String type) {
         HealthCheckType enumType;
@@ -92,6 +100,7 @@ public enum HealthCheckType {
         return enumType.healthCheckerClass;
     }
     
+    /** 返回所有已加载的内置与扩展检查器实现类列表。 */
     public static List<Class<? extends AbstractHealthChecker>> getLoadedHealthCheckerClasses() {
         List<Class<? extends AbstractHealthChecker>> all = new ArrayList<>();
         for (HealthCheckType type : values()) {
