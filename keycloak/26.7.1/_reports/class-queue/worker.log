@@ -1468,3 +1468,18 @@
 2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteInfinispanSingleUseObjectProviderFactory.java wave50b expiration listeners + remote providers
 2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteStickySessionEncoderProviderFactory.java wave50b expiration listeners + remote providers
 2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteUserLoginFailureProvider.java wave50b expiration listeners + remote providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/GroupAndCountCollectorSupplier.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/LoginFailuresLifespanUpdate.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/MapEntryToKeyMapper.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/Mappers.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/RemoveKeyConsumer.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/SessionPredicate.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/SessionUnwrapMapper.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/SessionWrapperPredicate.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/UserSessionPredicate.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/ValueIdentityBiFunction.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/transaction/DatabaseUpdate.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/transaction/DefaultInfinispanTransactionProvider.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/transaction/DefaultInfinispanTransactionProviderFactory.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/transaction/InfinispanTransactionProvider.java wave51b stream predicates + infinispan tx providers
+2026-08-10T07:57:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/transaction/InfinispanTransactionProviderFactory.java wave51b stream predicates + infinispan tx providers
