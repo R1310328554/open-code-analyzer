@@ -1,3 +1,5 @@
+// Mantine UI 全局图标尺寸样式常量，统一导航、菜单与表单控件图标大小。
+
 import { em, rem } from "@mantine/core";
 
 export const navIconStyle = { width: rem(16), height: rem(16) };

@@ -1,3 +1,5 @@
+// Targets 页 Redux slice：抓取池折叠状态与 targets 列表数量限制提示。
+
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { initializeFromLocalStorage } from "./initializeFromLocalStorage";
 
@@ -17,6 +19,7 @@ const initialState: TargetsPage = {
   showLimitAlert: false,
 };
 
+// targetsPageSlice 管理 targets 页面局部 UI 状态。
 export const targetsPageSlice = createSlice({
   name: "targetsPage",
   initialState,

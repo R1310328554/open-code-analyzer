@@ -1,3 +1,5 @@
+// 服务发现页 Redux slice：抓取池折叠状态与结果数量限制提示。
+
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { initializeFromLocalStorage } from "./initializeFromLocalStorage";
 
@@ -18,6 +20,7 @@ const initialState: ServiceDiscoveryPage = {
   showLimitAlert: false,
 };
 
+// serviceDiscoveryPageSlice 管理服务发现列表 UI 局部状态。
 export const serviceDiscoveryPageSlice = createSlice({
   name: "serviceDiscoveryPage",
   initialState,

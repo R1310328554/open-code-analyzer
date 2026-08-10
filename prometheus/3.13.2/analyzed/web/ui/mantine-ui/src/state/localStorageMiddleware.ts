@@ -1,3 +1,5 @@
+// Redux Listener Middleware：将 targets/服务发现/查询历史/设置变更同步写入 localStorage。
+
 import { createListenerMiddleware } from "@reduxjs/toolkit";
 import { AppDispatch, RootState } from "./store";
 import {
@@ -14,6 +16,7 @@ import {
   localStorageKeyQueryHistory,
 } from "./queryPageSlice";
 
+// persistToLocalStorage 将任意可 JSON 序列化的值写入指定键。
 const persistToLocalStorage = <T>(key: string, value: T) => {
   localStorage.setItem(key, JSON.stringify(value));
 };

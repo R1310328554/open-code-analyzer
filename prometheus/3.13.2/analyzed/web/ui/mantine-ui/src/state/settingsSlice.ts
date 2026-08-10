@@ -1,3 +1,5 @@
+// 全局设置 Redux slice：服务端注入常量、路径前缀推断与用户偏好持久化。
+
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { useAppSelector } from "./hooks";
 import { initializeFromLocalStorage } from "./initializeFromLocalStorage";
@@ -20,6 +22,7 @@ interface Settings {
   alertGroupsPerPage: number;
 }
 
+// 以下全局变量在 index.html 声明，由 Prometheus 服务端渲染 bundle 时替换占位符。
 // Declared/defined in public/index.html, value replaced by Prometheus when serving bundle.
 declare const GLOBAL_CONSOLES_LINK: string;
 declare const GLOBAL_AGENT_MODE: string;
@@ -39,6 +42,7 @@ export const localStorageKeyShowQueryInfoNotices =
 export const localStorageKeyRuleGroupsPerPage = "settings.ruleGroupsPerPage";
 export const localStorageKeyAlertGroupsPerPage = "settings.alertGroupsPerPage";
 
+// getPathPrefix 通过剥离已知页面路径后缀推断 UI 根路径前缀，适配反代部署。
 // This dynamically/generically determines the pathPrefix by stripping the first known
 // endpoint suffix from the window location path. It works out of the box for both direct
 // hosting and reverse proxy deployments with no additional configurations required.
@@ -65,6 +69,7 @@ const getPathPrefix = (path: string) => {
   return path.slice(0, path.length - (pagePath || "").length);
 };
 
+// initialState 合并服务端全局变量与 localStorage 中的用户偏好默认值。
 export const initialState: Settings = {
   consolesLink:
     GLOBAL_CONSOLES_LINK === "CONSOLES_LINK_PLACEHOLDER" ||
@@ -122,6 +127,7 @@ export const initialState: Settings = {
   ),
 };
 
+// settingsSlice 提供 updateSettings 批量更新部分设置字段。
 export const settingsSlice = createSlice({
   name: "settings",
   initialState,
@@ -134,6 +140,7 @@ export const settingsSlice = createSlice({
 
 export const { updateSettings } = settingsSlice.actions;
 
+// useSettings 便捷 hook，订阅整个 settings 子树。
 export const useSettings = () => {
   return useAppSelector((state) => state.settings);
 };
