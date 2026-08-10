@@ -1228,3 +1228,18 @@
 2026-08-10T03:34:17Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/dump/processor/DumpProcessor.java nacos 3.2.3 wave40b [15:30] config dump disk
 2026-08-10T03:34:17Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/dump/task/DumpAllBetaTask.java nacos 3.2.3 wave40b [15:30] config dump disk
 2026-08-10T03:34:17Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/dump/task/DumpAllGrayTask.java nacos 3.2.3 wave40b [15:30] config dump disk
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/dump/task/DumpAllTagTask.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/dump/task/DumpAllTask.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/dump/task/DumpTask.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/listener/ConfigListenerStateDelegate.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/listener/ConfigListenerStateService.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/listener/LocalConfigListenerStateServiceImpl.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/listener/RemoteConfigListenerStateServiceImpl.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/notify/AsyncNotifyService.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/notify/HttpClientManager.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/query/ConfigChainRequestExtractorService.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/query/ConfigQueryChainRequestExtractor.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/query/ConfigQueryChainService.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/query/ConfigQueryHandlerChain.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/query/ConfigQueryHandlerChainBuilder.java nacos 3.2.3 wave41a [0:15] config listener/query
+2026-08-10T03:36:02Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/query/DefaultChainRequestExtractor.java nacos 3.2.3 wave41a [0:15] config listener/query
