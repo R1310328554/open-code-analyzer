@@ -15,23 +15,8 @@
     "handler/api/users/token.go",
     "handler/api/users/update.go",
     "handler/health/health.go",
-    "handler/web/hook.go",
-    "handler/web/link/link.go",
-    "handler/web/login.go",
-    "handler/web/logout.go",
-    "handler/web/pages.go",
-    "handler/web/varz.go",
-    "handler/web/version.go",
-    "handler/web/web.go",
-    "handler/web/writer.go",
-    "livelog/livelog.go",
-    "livelog/livelog_oss.go",
-    "livelog/stream.go",
-    "livelog/stream_redis.go",
-    "livelog/streamer.go",
-    "livelog/sub.go",
-    "logger/handler.go"
+    "handler/web/hook.go"
   ],
   "remaining_pending": 208,
-  "done": 150
+  "done": 165
 }
