@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T02:20:33Z",
-  "files": [
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/agentspecs/AgentSpecSummary.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/agentspecs/AgentSpecUtils.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportCandidateItem.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportExecuteRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportExecuteResponse.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportItem.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportResultItem.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportResultStatus.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportSearchRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportSearchResponse.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportSourceInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportValidateRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportValidateResponse.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportValidationItem.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportValidationStatus.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2237,
-  "done": 285
+  "done": 300
 }
