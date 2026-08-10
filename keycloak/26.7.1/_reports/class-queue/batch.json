@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T09:01:16Z",
   "files": [
-    "quarkus/config-api/src/main/java/org/keycloak/config/MetricsOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/OpenApiOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/Option.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/OptionBuilder.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/OptionCategory.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/OptionsUtil.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/ProxyOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/SecurityOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/ServerOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/TelemetryOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/TracingOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/TransactionOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/TruststoreOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/VaultOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/WildcardOptionsUtil.java",
     "quarkus/config-api/src/main/java/org/keycloak/config/database/Database.java",
     "quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/CheckJdbcBuildStep.java",
     "quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/CheckMultipleDatasourcesBuildStep.java",
@@ -33,5 +18,5 @@
     "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/Environment.java"
   ],
   "remaining_pending": 3838,
-  "done": 2130
+  "done": 2145
 }

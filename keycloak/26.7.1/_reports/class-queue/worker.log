@@ -2098,3 +2098,18 @@
 2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/ImportOptions.java wave71b quarkus config-api options
 2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/LoggingOptions.java wave71b quarkus config-api options
 2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/ManagementOptions.java wave71b quarkus config-api options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/MetricsOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/OpenApiOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/Option.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/OptionBuilder.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/OptionCategory.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/OptionsUtil.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/ProxyOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/SecurityOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/ServerOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/TelemetryOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/TracingOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/TransactionOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/TruststoreOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/VaultOptions.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/WildcardOptionsUtil.java wave72a quarkus config-api remaining options
