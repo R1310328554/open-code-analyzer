@@ -15,23 +15,8 @@
     "fs/ggml/ggml.go",
     "fs/ggml/gguf.go",
     "fs/ggml/type.go",
-    "fs/gguf/gguf.go",
-    "fs/gguf/keyvalue.go",
-    "fs/gguf/lazy.go",
-    "fs/gguf/reader.go",
-    "fs/gguf/tensor.go",
-    "fs/util/bufioutil/buffer_seeker.go",
-    "harmony/harmonyparser.go",
-    "internal/cloud/policy.go",
-    "internal/modelref/modelref.go",
-    "internal/orderedmap/orderedmap.go",
-    "llm/exit_status.go",
-    "llm/exit_status_other.go",
-    "llm/exit_status_windows.go",
-    "llm/llama_binary.go",
-    "llm/llama_server.go",
-    "llm/llm_darwin.go"
+    "fs/gguf/gguf.go"
   ],
   "remaining_pending": 223,
-  "done": 210
+  "done": 225
 }
