@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+"""
+QQ 官方机器人渠道：Gateway WebSocket 收事件，Open API 发消息。
+"""
+
 import asyncio
 import json
 import logging
@@ -29,10 +33,12 @@ class QQBotAccount:
 
 
 def _msg_seq() -> int:
+    """生成 outbound msg_seq（0–65535）。"""
     return int((time.time() * 1000) % 65535) or random.randint(1, 65535)
 
 
 def _normalize_target(chat_id: str) -> tuple[str, str]:
+    """解析 qqbot:group:/channel:/dm:/c2c: 前缀 chat_id。"""
     raw = (chat_id or "").strip()
     if raw.startswith("qqbot:"):
         raw = raw[len("qqbot:") :]
@@ -48,6 +54,7 @@ def _normalize_target(chat_id: str) -> tuple[str, str]:
 
 
 def _incoming_chat_id(chat_type: str, peer_id: str) -> str:
+    """构造带 qqbot: 前缀的标准 chat_id。"""
     if chat_type == "group":
         return f"qqbot:group:{peer_id}"
     if chat_type == "channel":
@@ -104,6 +111,7 @@ class QQBotChannel(Channel):
         self._ws_thread = None
 
     def _run_ws_thread(self) -> None:
+        # 独立线程运行 Gateway 长连接
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self._ws_loop = loop
@@ -213,6 +221,7 @@ class QQBotChannel(Channel):
         if isinstance(seq, int):
             self._seq = seq
 
+        # Hello：发送 identify/resume 并启动心跳
         if op == 10:
             interval = int((data or {}).get("heartbeat_interval", heartbeat_interval))
             heartbeat_interval = interval
@@ -225,11 +234,13 @@ class QQBotChannel(Channel):
         if op == 11:
             return
 
+        # 服务端要求重连
         if op == 7:
             LOGGER.info("[qqbot:%s] gateway requested reconnect", self.account_id)
             await ws.close()
             return
 
+        # 会话无效：不可 resume 时清空 session
         if op == 9:
             can_resume = bool(data)
             LOGGER.info("[qqbot:%s] invalid session (can_resume=%s)", self.account_id, can_resume)
@@ -285,6 +296,7 @@ class QQBotChannel(Channel):
                 "op": 2,
                 "d": {
                     "token": f"QQBot {token}",
+                    # 订阅 C2C/群/频道/DM 等消息 Intent
                     "intents": (1 << 30) | (1 << 12) | (1 << 25) | (1 << 26),
                     "shard": [0, 1],
                 },
@@ -292,6 +304,7 @@ class QQBotChannel(Channel):
         )
 
     def _normalize_incoming_event(self, event_type: str, data: Any) -> Optional[IncomingMessage]:
+        # 将 Gateway 事件映射为 IncomingMessage
         if not isinstance(data, dict):
             return None
 

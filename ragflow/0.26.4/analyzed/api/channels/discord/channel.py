@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+"""
+Discord 渠道：discord.py 网关收消息，支持 DM/群/线程回复。
+"""
+
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -20,6 +24,7 @@ class DiscordAccount:
 
 
 def _chat_type(channel: discord.abc.Messageable) -> str:
+    """将 Discord 频道类型映射为 p2p/group/thread。"""
     if isinstance(channel, discord.DMChannel):
         return "p2p"
     if isinstance(channel, discord.Thread):
@@ -37,6 +42,7 @@ class DiscordChannel(Channel):
         self.account = account
         self.account_id = account.account_id
         intents = discord.Intents.default()
+        # Message Content 为特权 Intent，需在开发者门户启用
         # Message Content is a privileged intent; must also be enabled in the
         # Developer Portal under the application's Bot page.
         intents.message_content = True
@@ -45,6 +51,7 @@ class DiscordChannel(Channel):
         self._register_handlers()
 
     def _register_handlers(self) -> None:
+        # 注册 on_ready / on_message 事件处理器
         @self._client.event
         async def on_ready() -> None:
             try:
@@ -61,6 +68,7 @@ class DiscordChannel(Channel):
         @self._client.event
         async def on_message(message: discord.Message) -> None:
             try:
+                # 忽略 Bot 自身及其他 Bot 消息
                 if message.author.bot:
                     return
                 me = self._client.user
@@ -94,6 +102,7 @@ class DiscordChannel(Channel):
                 pass
 
     async def send(self, message: OutgoingMessage) -> None:
+        # 按 chat_id 定位频道并可选引用回复
         try:
             channel_id = int(message.chat_id)
         except (TypeError, ValueError):

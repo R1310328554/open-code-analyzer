@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+"""
+钉钉 Stream 渠道：WebSocket 长连接收消息，经 sessionWebhook 回发 Markdown 回复。
+"""
+
 import hashlib
 import asyncio
 import json
@@ -19,17 +23,21 @@ LOGGER = logging.getLogger(__name__)
 DINGTALK_API_BASE = "https://api.dingtalk.com"
 DINGTALK_WS_FALLBACK = "wss://wss-open-connection.dingtalk.com:443/connect"
 DINGTALK_STREAM_TOPIC = "/v1.0/im/bot/messages/get"
+# 入站消息去重缓存 TTL（秒）
 DINGTALK_MESSAGE_TTL_SECS = 3600
 
 
 @dataclass
 class DingTalkAccount:
+    # 单账号 OAuth 凭据
     account_id: str
     client_id: str
     client_secret: str
 
 
 class DingTalkChannel(Channel):
+    """钉钉机器人 Stream 客户端。"""
+
     channel_id = "dingtalk"
 
     def __init__(self, account: DingTalkAccount) -> None:
@@ -39,11 +47,13 @@ class DingTalkChannel(Channel):
         self._stream_task: Optional[asyncio.Task] = None
         self._ws: Optional[aiohttp.ClientWebSocketResponse] = None
         self._stop_requested = False
+        # chat_id → sessionWebhook，供 send() 主动回复
         self._session_webhooks: Dict[str, str] = {}
         self._processed_message_ids: Dict[str, float] = {}
         self._inflight_message_ids: Dict[str, float] = {}
 
     async def start(self) -> None:
+        # 启动后台 Stream 任务（已运行则跳过）
         self._stop_requested = False
         if self._stream_task and not self._stream_task.done():
             return
@@ -77,6 +87,7 @@ class DingTalkChannel(Channel):
         self._inflight_message_ids.clear()
 
     async def send(self, message: OutgoingMessage) -> None:
+        # 使用缓存的 sessionWebhook POST Markdown 消息
         session_webhook = self._session_webhooks.get(message.chat_id)
         if not session_webhook:
             LOGGER.warning(
@@ -115,6 +126,7 @@ class DingTalkChannel(Channel):
             LOGGER.error("[dingtalk:%s] send failed", self.account_id, exc_info=True)
 
     async def _run_stream(self) -> None:
+        # 断线指数退避重连主循环
         backoff = 3
         while not self._stop_requested:
             try:
@@ -172,6 +184,7 @@ class DingTalkChannel(Channel):
         endpoint: str,
         ticket: str,
     ) -> aiohttp.ClientWebSocketResponse:
+        # 依次尝试 query/header/bare 三种 ticket 传递方式
         candidates = [
             ("query", self._build_ws_url(endpoint, ticket), {}),
             ("header", endpoint, {"ticket": ticket}),
@@ -200,6 +213,7 @@ class DingTalkChannel(Channel):
         raise RuntimeError("websocket connect failed")
 
     async def _open_connection(self) -> tuple[str, str]:
+        # 调用 connections/open 换取 WS endpoint 与 ticket
         payload = {
             "clientId": self.account.client_id,
             "clientSecret": self.account.client_secret,
@@ -237,12 +251,14 @@ class DingTalkChannel(Channel):
         return endpoint, ticket
 
     async def _subscribe(self, ws: aiohttp.ClientWebSocketResponse) -> None:
+        # 当前协议凭 ticket 鉴权，预留 subscribe 钩子
         # DingTalk Stream uses the `connections/open` ticket to authorize the
         # websocket connection. We keep this hook for future protocol-specific
         # frames, but the current minimal integration does not emit anything.
         _ = ws
 
     async def _handle_ws_payload(self, payload: str) -> None:
+        # 解析回调帧、去重并 dispatch 入站消息
         if not payload:
             return
         try:
@@ -323,6 +339,7 @@ class DingTalkChannel(Channel):
                 self._processed_message_ids[dedup_key] = time.time()
 
     async def _ack_callback(self, message_id: str, data: Dict[str, Any]) -> None:
+        # 向平台 ACK 回调，避免重复推送
         if not message_id or self._ws is None or self._ws.closed:
             return
         payload = {
@@ -372,6 +389,7 @@ class DingTalkChannel(Channel):
         return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
 
     def _build_dedup_key(self, data: Dict[str, Any], obj: Dict[str, Any]) -> str:
+        # msgId → callback messageId → 会话+发送者+文本哈希
         message_id = str(data.get("msgId") or obj.get("msgId") or "").strip()
         if message_id:
             return f"msg:{message_id}"
@@ -406,6 +424,7 @@ class DingTalkChannel(Channel):
 
 
 def _build(account_id: str, cfg: dict) -> Channel:
+    """从配置构造 DingTalkChannel 并供 registry 调用。"""
     credential = cfg.get("credential") or cfg
     client_id = credential.get("client_id") or credential.get("clientId")
     client_secret = credential.get("client_secret") or credential.get("clientSecret")

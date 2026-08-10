@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+"""
+企业微信渠道：Webhook 回调或 AI Bot WebSocket 双模式，支持应用消息与 Markdown 回复。
+"""
+
 import asyncio
 import json
 import logging
@@ -37,7 +41,7 @@ class WeComAccount:
 
 
 class _SharedWebhookServer:
-    """Single aiohttp server shared by all WeComChannel instances."""
+    """多 WeComChannel 实例共享的 aiohttp Webhook 服务器。"""
 
     def __init__(self, host: str, port: int) -> None:
         self.host = host
@@ -81,6 +85,7 @@ class _SharedWebhookServer:
             timestamp = request.query.get("timestamp", "")
             nonce = request.query.get("nonce", "")
 
+            # GET：管理后台保存回调 URL 时的 echostr 验签
             # GET = URL verification on first save in the WeCom admin console.
             if request.method == "GET":
                 echo_str = request.query.get("echostr", "")
@@ -90,6 +95,7 @@ class _SharedWebhookServer:
                 except InvalidSignatureException:
                     return web.Response(status=403, text="bad signature")
 
+            # POST：解密 XML 入站事件
             # POST = encrypted inbound event.
             body = await request.text()
             try:
@@ -108,6 +114,7 @@ class _SharedWebhookServer:
                 LOGGER.error("[wecom:%s] handler error", account_id, exc_info=True)
         except Exception:
             LOGGER.error("[wecom:%s] inbound request handling error", account_id, exc_info=True)
+        # 空 200 表示已接收（无需被动回复 XML）
         # Empty 200 OK tells WeCom we accepted the event.
         return web.Response(text="")
 
@@ -242,6 +249,8 @@ class WeComChannel(Channel):
             )
 
     async def handle_decrypted_message(self, msg) -> None:
+        # Webhook 短连接模式：仅处理文本私聊
+        # 短连接 Webhook 模式入口
         # Short-connection webhook mode.
         try:
             if getattr(msg, "type", "") != "text":
@@ -331,6 +340,7 @@ class WeComChannel(Channel):
             LOGGER.error("[wecom:%s] websocket heartbeat failed", self.account_id, exc_info=True)
 
     async def _subscribe_websocket(self, ws: aiohttp.ClientWebSocketResponse) -> None:
+        # AI Bot 模式：发送 aibot_subscribe 并等待 ACK
         if not self.account.bot_id:
             raise RuntimeError(f"wecom account '{self.account_id}' missing bot_id")
         payload = {
@@ -432,6 +442,7 @@ class WeComChannel(Channel):
             if self._ws is not None and not self._ws.closed:
                 await self._ws.close()
             return
+        # 其他事件仅记录，不触发 RAG 处理
         # Other events are accepted but do not trigger the RAG handler.
 
     async def _get_access_token(self) -> str:
@@ -449,6 +460,7 @@ class WeComChannel(Channel):
             if data.get("errcode", 0) != 0 or "access_token" not in data:
                 raise RuntimeError(f"wecom gettoken failed: {data}")
             self._access_token = data["access_token"]
+            # 提前 60 秒过期，避免时钟漂移导致 token 失效
             # 60s safety margin against clock skew / in-flight calls.
             self._access_token_expires_at = now + int(data.get("expires_in", 7200)) - 60
             return self._access_token
@@ -487,6 +499,7 @@ class WeComChannel(Channel):
             return
 
         if data.get("errcode", 0) != 0:
+            # access_token 失效时清缓存以便下次重取
             # 40014 / 42001 = access_token expired or invalid; drop cache.
             if data.get("errcode") in (40014, 42001):
                 self._access_token = None
@@ -542,6 +555,7 @@ def _build(account_id: str, cfg: dict) -> Channel:
             agent_id = int(cfg["agent_id"])
         except (TypeError, ValueError) as err:
             raise ValueError(f"wecom account '{account_id}' agent_id must be int: {err}") from err
+        # EncodingAESKey 固定 43 字符，提前校验避免 base64 报错
         # WeCom EncodingAESKey is always 43 characters; reject placeholders early so
         # the failure is a clear message instead of a base64 "Incorrect padding" error.
         aes_key = str(cfg["aes_key"])

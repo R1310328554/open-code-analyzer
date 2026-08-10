@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+"""
+飞书/Lark 渠道：独立线程运行 lark-oapi WebSocket，REST API 发消息。
+"""
+
 import asyncio
 import json
 import logging
@@ -29,7 +33,7 @@ class FeishuAccount:
     account_id: str
     app_id: str
     app_secret: str
-    domain: str = "feishu"  # "feishu" or "lark"
+    domain: str = "feishu"  # "feishu" 国内飞书，"lark" 国际版
 
 
 def _lark_domain(domain: str) -> str:
@@ -49,6 +53,7 @@ class FeishuChannel(Channel):
         self._rest = lark.Client.builder().app_id(account.app_id).app_secret(account.app_secret).domain(_lark_domain(account.domain)).log_level(lark.LogLevel.DEBUG).build()
 
     async def start(self) -> None:
+        # 记录主 asyncio 循环，供 WS 线程 bounce dispatch
         # The channel loop is the cross-thread dispatch target for inbound events.
         self._loop = asyncio.get_running_loop()
         LOGGER.info("[feishu:%s] starting WebSocket client", self.account_id)
@@ -60,6 +65,7 @@ class FeishuChannel(Channel):
         self._ws_thread.start()
 
     def _run_ws(self) -> None:
+        # lark SDK 必须在独立线程+事件循环中构建，避免与 run_channels 冲突
         # Everything lark touches must be created and run on THIS thread with its
         # own event loop. lark captures the running loop when the handler/client
         # are built and when start() runs; building them on the channel daemon
@@ -69,6 +75,7 @@ class FeishuChannel(Channel):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.set_exception_handler(self._handle_loop_exception)
+        # 重绑 lark 模块级 loop 指针到本线程
         # lark_oapi.ws.client stores a module-level `loop` at import time and all
         # websocket task scheduling goes through that object. Rebind it here so
         # this Feishu channel uses the thread-local loop instead of the API
@@ -84,6 +91,7 @@ class FeishuChannel(Channel):
                 auto_reconnect=False,
                 log_level=lark.LogLevel.DEBUG,
             )
+            # 阻塞运行 lark 自带重连循环
             # Blocks, running lark's own connect/reconnect loop on this thread.
             self._ws_client.start()
         except Exception:
@@ -101,6 +109,7 @@ class FeishuChannel(Channel):
         loop.default_exception_handler(context)
 
     async def stop(self) -> None:
+        # lark WS 无公开 stop API，尽力断开
         # lark's ws client exposes no clean public stop; disconnect best-effort.
         client = self._ws_client
         if client is not None:
@@ -124,6 +133,7 @@ class FeishuChannel(Channel):
         self._ws_thread = None
 
     async def send(self, message: OutgoingMessage) -> None:
+        # 有 reply_to 走 reply API，否则 create 新消息
         content = json.dumps({"text": message.text}, ensure_ascii=False)
         if message.reply_to_message_id:
             req = ReplyMessageRequest.builder().message_id(message.reply_to_message_id).request_body(ReplyMessageRequestBody.builder().content(content).msg_type("text").build()).build()
@@ -142,6 +152,7 @@ class FeishuChannel(Channel):
             )
 
     def _on_message_receive(self, data: P2ImMessageReceiveV1) -> None:
+        # WS 线程回调：threadsafe 投递到主循环 dispatch
         # Runs on the lark-oapi WS thread; bounce into asyncio for downstream handlers.
         try:
             incoming = self._normalize(data)
@@ -158,6 +169,7 @@ class FeishuChannel(Channel):
             LOGGER.error("[feishu:%s] dispatch error", self.account_id, exc_info=True)
 
     def _normalize(self, data: P2ImMessageReceiveV1) -> IncomingMessage:
+        # 将 lark 事件体转为统一 IncomingMessage
         event = data.event
         msg = event.message
         sender = event.sender

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+"""
+WhatsApp 渠道：连接本地 Gateway HTTP/WS，管理扫码登录与会话事件流。
+"""
+
 import asyncio
 import json
 import logging
@@ -30,6 +34,7 @@ class WhatsAppAccount:
     timeout_secs: int = WHATSAPP_DEFAULT_TIMEOUT_SECS
 
 
+# 运行中实例索引，供 get_runtime_snapshot 查询
 _live_channels: dict[str, "WhatsAppChannel"] = {}
 
 
@@ -38,6 +43,7 @@ def _default_gateway_base_url() -> str:
 
 
 def get_runtime_snapshot(account_id: str) -> dict[str, Any] | None:
+    """返回指定账号的连接状态、QR 码等运行时快照。"""
     channel = _live_channels.get(account_id)
     if channel is None:
         return None
@@ -79,6 +85,7 @@ class WhatsAppChannel(Channel):
         return f"{base_url}/{path.lstrip('/')}"
 
     def _events_ws_url(self) -> str:
+        # HTTP base → WS events 端点，带 after 游标断点续传
         base_url = self._gateway_base_url()
         if not base_url:
             raise ValueError("WhatsApp gateway_base_url is required")
@@ -132,6 +139,7 @@ class WhatsAppChannel(Channel):
             except Exception as ex:
                 raise RuntimeError(f"invalid json response: {text[:200]}") from ex
 
+    # Gateway 启动前对连接错误短暂重试
     async def _request_json_with_retry(
         self,
         method: str,
@@ -229,6 +237,7 @@ class WhatsAppChannel(Channel):
             LOGGER.error("[whatsapp:%s] send failed", self.account_id, exc_info=True)
 
     async def _run(self) -> None:
+        # 调用 gateway start 后循环订阅 events WebSocket
         self._status = "connecting"
         self._last_error = ""
         try:
@@ -266,6 +275,7 @@ class WhatsAppChannel(Channel):
             self._last_snapshot_at = time.time()
 
     def _apply_snapshot(self, snapshot: dict[str, Any]) -> None:
+        # 合并 Gateway 推送的连接/QR/错误状态
         self._last_snapshot_at = time.time()
         self._status = str(snapshot.get("status") or "connecting")
         self._last_error = str(snapshot.get("last_error") or "")
@@ -309,6 +319,7 @@ class WhatsAppChannel(Channel):
             return
 
     async def _handle_event_item(self, item: dict[str, Any]) -> None:
+        # 处理 kind=message 事件，去重后 dispatch
         seq = int(item.get("seq") or 0)
         if seq > self._event_cursor:
             self._event_cursor = seq
@@ -349,6 +360,7 @@ class WhatsAppChannel(Channel):
             self._seen_message_ids.pop(key, None)
 
     def get_status_snapshot(self) -> dict[str, Any]:
+        """导出供管理 API 查询的状态字典。"""
         return {
             "account_id": self.account_id,
             "session_key": self._session_key(),

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+"""
+LINE 渠道：共享 aiohttp Webhook 服务器收事件，Messaging API 回复/推送。
+"""
+
 import logging
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
@@ -39,6 +43,7 @@ class LineAccount:
 
 
 class _SharedWebhookServer:
+    """同 host:port 多账号共享的 LINE Webhook HTTP 服务。"""
     def __init__(self, host: str, port: int) -> None:
         self.host = host
         self.port = port
@@ -79,6 +84,7 @@ class _SharedWebhookServer:
                 return web.Response(status=404, text="unknown account")
             try:
                 events = channel.parser.parse(body, signature)
+            # 签名校验失败返回 403
             except InvalidSignatureError:
                 return web.Response(status=403, text="bad signature")
             for event in events:
@@ -91,6 +97,7 @@ class _SharedWebhookServer:
         return web.Response(status=200, text="ok")
 
 
+# (host, port) → 共享 Webhook 实例
 _servers: Dict[Tuple[str, int], _SharedWebhookServer] = {}
 _active_per_server: Dict[Tuple[str, int], int] = {}
 
@@ -118,6 +125,7 @@ async def _release_server(host: str, port: int) -> None:
 
 
 def _chat_type_and_id(source) -> Tuple[str, str]:
+    """从事件 source 解析 chat_type 与 chat_id。"""
     if isinstance(source, GroupSource):
         return ("group", source.group_id or "")
     if isinstance(source, RoomSource):
@@ -137,6 +145,7 @@ class LineChannel(Channel):
         self.parser = WebhookParser(account.channel_secret)
         self._config = Configuration(access_token=account.channel_access_token)
         self._server: Optional[_SharedWebhookServer] = None
+        # reply_token 一次性且约 30 秒过期
         # LINE reply tokens are single-use and expire ~30s after the event.
         self._reply_tokens: Dict[str, str] = {}
 
@@ -181,6 +190,7 @@ class LineChannel(Channel):
             LOGGER.error("[line:%s] inbound message handling error", self.account_id, exc_info=True)
 
     async def send(self, message: OutgoingMessage) -> None:
+        # 优先 reply_token 回复，否则 push 主动推送
         reply_token: Optional[str] = None
         if message.reply_to_message_id:
             reply_token = self._reply_tokens.pop(message.reply_to_message_id, None)

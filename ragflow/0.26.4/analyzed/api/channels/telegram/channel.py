@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+"""
+Telegram 渠道：python-telegram-bot 长轮询收消息并发送回复。
+"""
+
 import logging
 from dataclasses import dataclass
 from typing import Optional
@@ -20,6 +24,7 @@ class TelegramAccount:
 
 
 def _chat_type(chat) -> str:
+    """Telegram chat.type → p2p/group/channel。"""
     t = getattr(chat, "type", "")
     if t == "private":
         return "p2p"
@@ -45,6 +50,7 @@ class TelegramChannel(Channel):
         LOGGER.info("[telegram:%s] starting long-poll", self.account_id)
         await self._app.initialize()
         await self._app.start()
+        # drop_pending_updates 忽略启动前的积压消息
         await self._app.updater.start_polling(drop_pending_updates=True)
 
     async def stop(self) -> None:
@@ -90,8 +96,10 @@ class TelegramChannel(Channel):
     async def _on_update(self, update: Update, _ctx: ContextTypes.DEFAULT_TYPE) -> None:
         try:
             msg = update.effective_message
+            # 忽略无发送者或 Bot 消息
             if msg is None or msg.from_user is None or msg.from_user.is_bot:
                 return
+            # 文本消息或媒体 caption
             text = msg.text or msg.caption or ""
             incoming = IncomingMessage(
                 channel=self.channel_id,
