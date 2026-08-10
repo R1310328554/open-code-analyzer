@@ -21,43 +21,51 @@ import org.keycloak.dom.saml.v2.SAML2Object;
 import org.w3c.dom.Document;
 
 /**
- * A Holder class that can store the SAML object as well as the corresponding DOM object.
- *
- * Users of this class need to make it threadsafe by having one instance per thread (ThreadLocal)
+ * 同时持有 SAML 领域对象及其对应 DOM 文档的容器类。
+ * <p>调用方需通过 {@link ThreadLocal} 等方式保证线程安全，每线程独立实例。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Aug 13, 2009
  */
 public class SAMLDocumentHolder {
 
+    /** SAML 2.0 领域对象。 */
     private SAML2Object samlObject;
+    /** 对应的 W3C DOM 文档。 */
     private Document samlDocument;
 
+    /** 仅持有 SAML 对象的构造器。 */
     public SAMLDocumentHolder(SAML2Object samlObject) {
         this.samlObject = samlObject;
     }
 
+    /** 仅持有 DOM 文档的构造器。 */
     public SAMLDocumentHolder(Document samlDocument) {
         this.samlDocument = samlDocument;
     }
 
+    /** 同时持有 SAML 对象与 DOM 文档的构造器。 */
     public SAMLDocumentHolder(SAML2Object samlObject, Document samlDocument) {
         this.samlObject = samlObject;
         this.samlDocument = samlDocument;
     }
 
+    /** 返回 SAML 领域对象。 */
     public SAML2Object getSamlObject() {
         return samlObject;
     }
 
+    /** 设置 SAML 领域对象。 */
     public void setSamlObject(SAML2Object samlObject) {
         this.samlObject = samlObject;
     }
 
+    /** 返回 SAML DOM 文档。 */
     public Document getSamlDocument() {
         return samlDocument;
     }
 
+    /** 设置 SAML DOM 文档。 */
     public void setSamlDocument(Document samlDocument) {
         this.samlDocument = samlDocument;
     }

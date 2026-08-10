@@ -49,21 +49,23 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Deals with SAML2 Metadata
+ * SAML 2.0 元数据（Metadata）读写与签名工具类。
+ * <p>支持 EntityDescriptor 解析、证书提取、IDP/SP 描述符定位及元数据签名。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jan 31, 2011
  */
 public class SAMLMetadataUtil {
 
+    /** UTF-8 字节顺序标记（BOM），解析前需移除。 */
     public static final String UTF8_BOM = "\uFEFF";
 
     /**
-     * Get the {@link X509Certificate} from the KeyInfo
+     * 从 KeyDescriptor 的 KeyInfo 元素中提取 {@link X509Certificate}。
      *
-     * @param keyDescriptor
+     * @param keyDescriptor 密钥描述符
      *
-     * @return
+     * @return X509 证书，未找到时返回 null
      *
      * @throws org.keycloak.saml.common.exceptions.ProcessingException
      * @throws org.keycloak.saml.common.exceptions.ConfigurationException
@@ -101,6 +103,13 @@ public class SAMLMetadataUtil {
         return cert;
     }
 
+    /**
+     * 从 SSO 描述符中按密钥用途（signing/encryption）查找 X509 证书。
+     *
+     * @param use 密钥用途，null 表示任意
+     * @param ssoDescriptorType IDP 或 SP SSO 描述符
+     * @return 匹配的证书，未找到时返回 null
+     */
     public static X509Certificate getCertificate(KeyTypes use, SSODescriptorType ssoDescriptorType) {
         if (ssoDescriptorType != null) {
             for (KeyDescriptorType keyDescriptorType : ssoDescriptorType.getKeyDescriptor()) {
@@ -119,6 +128,10 @@ public class SAMLMetadataUtil {
         return null;
     }
 
+    /**
+     * 解析 SAML 元数据 XML 字符串为 {@link EntityDescriptorType}。
+     * <p>自动处理 UTF-8 BOM 及 EntitiesDescriptor 包装。</p>
+     */
     public static EntityDescriptorType parseEntityDescriptorType(String descriptor) throws ParsingException {
         descriptor = removeUTF8BOM(descriptor);
         Object parsedObject = SAMLParser.getInstance().parse(StaxParserUtil.getXMLEventReader(descriptor));
@@ -133,10 +146,12 @@ public class SAMLMetadataUtil {
         return entityType;
     }
 
+    /** 在 EntityDescriptor 中定位 IDP SSO 描述符。 */
     public static IDPSSODescriptorType locateIDPSSODescriptorType(EntityDescriptorType entityType) {
         return locateSSODescriptorType(entityType, SAMLMetadataUtil::getIDPSSODescriptorType);
     }
 
+    /** 在 EntityDescriptor 中定位 SP SSO 描述符。 */
     public static SPSSODescriptorType locateSPSSODescriptorType(EntityDescriptorType entityType) {
         return locateSSODescriptorType(entityType, SAMLMetadataUtil::getSPSSODescriptorType);
     }
@@ -155,8 +170,7 @@ public class SAMLMetadataUtil {
         T descriptor = null;
         if (!choiceType.isEmpty()) {
 
-            //Metadata documents can contain multiple Descriptors (See ADFS metadata documents) such as RoleDescriptor, SPSSODescriptor, IDPSSODescriptor.
-            //So we need to loop through to find the correct Descriptor.
+            // 元数据可能含多种描述符（如 ADFS），需遍历查找目标类型
             for (EntityDescriptorType.EDTChoiceType edtChoiceType : entityType.getChoiceType()) {
                 List<EntityDescriptorType.EDTDescriptorChoiceType> descriptors = edtChoiceType.getDescriptors();
 
@@ -168,6 +182,7 @@ public class SAMLMetadataUtil {
         return descriptor;
     }
 
+    /** 移除字符串开头的 UTF-8 BOM 字符。 */
     public static String removeUTF8BOM(String s) {
         if (s.startsWith(UTF8_BOM)) {
             s = s.substring(1);
@@ -175,6 +190,7 @@ public class SAMLMetadataUtil {
         return s;
     }
 
+    /** 将 EntityDescriptor 序列化为 XML 字符串。 */
     public static String writeEntityDescriptorType(EntityDescriptorType type) throws ProcessingException {
         final StringWriter sw = new StringWriter();
         final SAMLMetadataWriter writer = new SAMLMetadataWriter(StaxUtil.getXMLStreamWriter(sw));
@@ -182,16 +198,20 @@ public class SAMLMetadataUtil {
         return sw.toString();
     }
 
+    /**
+     * 对 EntityDescriptor 元数据进行 XML 数字签名。
+     * <p>若 ID 为空则自动生成，签名后返回完整 XML 字符串。</p>
+     */
     public static String signEntityDescriptorType(EntityDescriptorType type, SignatureAlgorithm sigAlg,
             String kid, X509Certificate certificate, KeyPair keyPair) throws ProcessingException, ConfigurationException, ParsingException {
         if (type.getID() == null) {
             type.setID(IDGenerator.create("ID_"));
         }
 
-        // write descriptor to XML
+        // 将描述符序列化为 XML
         final String descriptor = writeEntityDescriptorType(type);
 
-        // create the document from the XML
+        // 从 XML 创建 DOM 文档
         final Document metadataDocument = DocumentUtil.getDocument(descriptor);
         final SAML2Signature signatureHelper = new SAML2Signature();
         signatureHelper.setSignatureMethod(sigAlg.getXmlSignatureMethod());
@@ -201,7 +221,7 @@ public class SAMLMetadataUtil {
         final Node nextSibling = metadataDocument.getDocumentElement().getFirstChild();
         signatureHelper.setNextSibling(nextSibling);
 
-        // sign the document
+        // 对元数据文档进行 XML 签名
         signatureHelper.signSAMLDocument(metadataDocument, kid, keyPair, CanonicalizationMethod.EXCLUSIVE);
 
         return DocumentUtil.getDocumentAsString(metadataDocument);

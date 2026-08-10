@@ -24,8 +24,8 @@ import java.util.Objects;
 import org.keycloak.dom.saml.v2.assertion.AttributeType;
 
 /**
- * X500 SAML Profile Constants Adapted from
- * http://code.google.com/p/simplesamlphp/source/browse/trunk/attributemap/name2oid.php?r=2654
+ * X.500 属性名与 SAML Profile OID 映射常量枚举。
+ * <p>改编自 SimpleSAMLphp 属性名到 OID 的映射表，用于 X500 风格 SAML 属性解析。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Sep 11, 2009
@@ -127,9 +127,12 @@ public enum X500SAMLProfileConstants {
             "urn:oid:2.16.840.1.113730.3.1.40"), USERID("userid", "urn:oid:0.9.2342.19200300.100.1.1"), X121_ADDRESS(
             "x121Address", "urn:oid:2.5.4.24"), X500_UNIQUE_IDENTIFIER("x500UniqueIdentifier", "urn:oid:2.5.4.45");
 
+    /** 属性的友好名称（如 cn、mail）。 */
     private String friendlyName = null;
+    /** 属性对应的 OID URI（如 urn:oid:2.5.4.3）。 */
     private String uri = null;
 
+    /** friendlyName 到 OID URI 的静态查找表。 */
     private static final Map<String, String> lookup = new HashMap<>();
 
     static {
@@ -137,25 +140,38 @@ public enum X500SAMLProfileConstants {
             lookup.put(s.friendlyName, s.uri);
     }
 
+    /** 构造枚举常量并绑定友好名与 OID URI。 */
     X500SAMLProfileConstants(String friendlyName, String uristr) {
         this.uri = uristr;
         this.friendlyName = friendlyName;
     }
 
+    /** 返回该属性对应的 OID URI。 */
     public String get() {
         return this.uri;
     }
 
+    /** 返回属性的友好名称。 */
     public String getFriendlyName() {
         return friendlyName;
     }
 
+    /**
+     * 判断给定 SAML 属性是否与本枚举常量匹配。
+     * <p>比较 {@link AttributeType#getName()} 或 {@link AttributeType#getFriendlyName()}。</p>
+     */
     public boolean correspondsTo(AttributeType attribute) {
         return attribute != null
             ? Objects.equals(this.uri, attribute.getName()) || Objects.equals(this.friendlyName, attribute.getFriendlyName())
             : false;
     }
 
+    /**
+     * 根据友好名称查找对应的 OID URI。
+     *
+     * @param key 属性友好名称
+     * @return OID URI，未找到时返回 null
+     */
     public static String getOID(final String key) {
         return lookup.get(key);
     }

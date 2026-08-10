@@ -33,31 +33,33 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Utility class to manipulate SAML ArtifactResponse and embedded Response.
+ * 操作 SAML ArtifactResponse 及其内嵌 Response 元素的工具类。
+ * <p>从 Artifact 响应文档中提取并序列化内嵌的 SAML Response。</p>
  * @author Thibault Morin (https://tmorin.github.io)
  */
 public final class ArtifactResponseUtil {
 
+    /** 工具类私有构造器，禁止实例化。 */
     private ArtifactResponseUtil() {
     }
 
     /**
-     * Convert the Document to a string.
+     * 将文档中的内嵌 Response 元素转换为 XML 字符串。
      * <p>
-     * The Response shall match the namespace "urn:oasis:names:tc:SAML:2.0:protocol" and the element "Response".
+     * Response 须位于命名空间 {@code urn:oasis:names:tc:SAML:2.0:protocol} 且本地名为 {@code Response}。
      *
-     * @param document the Document to convert
-     * @return the Document as a string
+     * @param document 含 ArtifactResponse 的 DOM 文档
+     * @return 内嵌 Response 的 XML 字符串，未找到时为空
      */
     public static Optional<String> convertResponseToString(Document document) {
         return extractResponseElement(document).map(ArtifactResponseUtil::nodeToString);
     }
 
     /**
-     * Convert a Node to a string.
+     * 将 DOM 节点序列化为 XML 字符串。
      *
-     * @param node the Node to convert
-     * @return the Node as a string
+     * @param node 待序列化的节点
+     * @return XML 字符串
      */
     static String nodeToString(Node node) {
         try {
@@ -70,32 +72,32 @@ public final class ArtifactResponseUtil {
     }
 
     /**
-     * Extract the Response element from the Document.
+     * 从 ArtifactResponse 文档中提取内嵌的 Response 元素。
      *
-     * @param document the Document to extract the Response element from
-     * @return the Response element
+     * @param document ArtifactResponse DOM 文档
+     * @return Response 元素，未找到或格式不符时为空
      */
     static Optional<Element> extractResponseElement(Document document) {
-        // extract from the ArtifactResponse the embedded Response
+        // 从 ArtifactResponse 中提取内嵌的 Response 元素
         final NodeList responseNodeList = document.getElementsByTagNameNS(
                 JBossSAMLConstants.RESPONSE__PROTOCOL.getNsUri().get(),
                 JBossSAMLConstants.RESPONSE__PROTOCOL.get()
         );
 
-        // leave early if there is no embedded Response
+        // 未找到唯一内嵌 Response 时提前返回
         if (responseNodeList.getLength() != 1) {
             return Optional.empty();
         }
 
-        // convert the embedded Response to a string and then to a base64 serialized string
+        // 获取内嵌 Response 节点以便后续序列化
         final Node responseNode = responseNodeList.item(0);
 
-        // leave early if the response node is not an Element
+        // 节点非 Element 类型时提前返回
         if (responseNode.getNodeType() != Node.ELEMENT_NODE) {
             return Optional.empty();
         }
 
-        // return the response node as an Element
+        // 将 Response 节点作为 Element 返回
         return Optional.of((Element) responseNode);
     }
 

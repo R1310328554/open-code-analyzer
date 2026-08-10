@@ -32,7 +32,8 @@ import org.keycloak.dom.saml.v2.assertion.SubjectType;
 import org.keycloak.dom.xmlsec.w3.xmldsig.KeyInfoType;
 
 /**
- * Deal with {@code AssertionType}
+ * SAML 2.0 断言（{@link AssertionType}）构造工厂。
+ * <p>提供受众限制、NameID、Conditions、Subject 等断言子元素的便捷创建方法。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jan 28, 2009
@@ -41,7 +42,7 @@ public class SAMLAssertionFactory {
 
     /**
      * <p>
-     * Creates an {@code AudienceRestrictionType} with the specified values.
+     * 创建包含指定受众 URI 的 {@code AudienceRestrictionType}。
      * </p>
      *
      * @param values a {@code String[]} containing the restriction values.
@@ -60,7 +61,7 @@ public class SAMLAssertionFactory {
 
     /**
      * <p>
-     * Creates a {@code NameIDType} instance with the specified values.
+     * 创建包含格式、限定符和值的 {@code NameIDType} 实例。
      * </p>
      *
      * @param format a {@code String} representing the name format.
@@ -80,7 +81,7 @@ public class SAMLAssertionFactory {
 
     /**
      * <p>
-     * Creates a {@code Conditions} instance with the specified values.
+     * 创建包含有效期及限制条件的 {@code ConditionsType} 实例。
      * </p>
      *
      * @param notBefore a {@code XMLGregorianCalendar} representing the start of the token lifetime period.
@@ -105,7 +106,7 @@ public class SAMLAssertionFactory {
 
     /**
      * <p>
-     * Creates a {@code KeyInfoConfirmationDataType} with the specified {@code KeyInfoType}.
+     * 使用指定 {@code KeyInfoType} 创建持有者密钥确认数据 {@code KeyInfoConfirmationDataType}。
      * </p>
      *
      * @param keyInfo the {@code KeyInfoType} object that wraps the proof-of-possession token.
@@ -120,7 +121,7 @@ public class SAMLAssertionFactory {
 
     /**
      * <p>
-     * Creates a {@code SubjectConfirmationType} object with the specified values.
+     * 创建包含确认方法与密钥数据的 {@code SubjectConfirmationType}。
      * </p>
      *
      * @param nameID the identifier of the confirmation.
@@ -140,7 +141,7 @@ public class SAMLAssertionFactory {
 
     /**
      * <p>
-     * Creates a {@code SubjectType} object with the specified values.
+     * 创建将 NameID 与 SubjectConfirmation 绑定的 {@code SubjectType}。
      * </p>
      *
      * @param nameID the identifier of the subject.
@@ -163,7 +164,7 @@ public class SAMLAssertionFactory {
 
     /**
      * <p>
-     * Creates a SAMLV2 {@code AssertionType} with the specified values.
+     * 组装完整的 SAML 2.0 {@code AssertionType}，含 Issuer、Conditions、Subject 及语句列表。
      * </p>
      *
      * @param id a {@code String} representing the assertion ID.

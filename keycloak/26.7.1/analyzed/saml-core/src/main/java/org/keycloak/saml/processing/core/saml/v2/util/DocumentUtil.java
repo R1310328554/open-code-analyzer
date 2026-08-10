@@ -17,7 +17,8 @@
 package org.keycloak.saml.processing.core.saml.v2.util;
 
 /**
- * PLINK-158: Maintain backward compatibility
+ * SAML v2 模块的 DocumentUtil 兼容层（PLINK-158）。
+ * <p>继承 {@link org.keycloak.saml.common.util.DocumentUtil}，保持旧包路径下的向后兼容。</p>
  *
  * @author Anil Saldhana
  * @since June 20, 2013

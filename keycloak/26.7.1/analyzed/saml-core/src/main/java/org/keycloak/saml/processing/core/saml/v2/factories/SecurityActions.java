@@ -20,7 +20,8 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 /**
- * Privileged Blocks
+ * 在安全策略受限环境下执行特权操作的内部工具类。
+ * <p>当 {@link SecurityManager} 启用时，通过 {@link AccessController#doPrivileged} 加载类与读取系统属性。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Dec 9, 2008
@@ -29,9 +30,8 @@ class SecurityActions {
 
     /**
      * <p>
-     * Loads a {@link Class} using the <code>fullQualifiedName</code> supplied. This method tries first to load from
-     * the
-     * specified {@link Class}, if not found it will try to load from using TCL.
+     * 按全限定类名加载 {@link Class}。
+     * 优先使用给定 {@link Class} 的 ClassLoader，失败则回退到线程上下文 ClassLoader（TCL）。
      * </p>
      *
      * @param theClass
@@ -69,7 +69,7 @@ class SecurityActions {
 
     /**
      * <p>
-     * Loads a class from the specified {@link ClassLoader} using the <code>fullQualifiedName</code> supplied.
+     * 从指定 {@link ClassLoader} 加载类；未找到时返回 null 而非抛出异常。
      * </p>
      *
      * @param classLoader
@@ -100,8 +100,7 @@ class SecurityActions {
     }
 
     /**
-     * <p>Returns a system property value using the specified <code>key</code>. If not found the
-     * <code>defaultValue</code> will be returned.</p>
+     * <p>读取系统属性；未设置时返回 {@code defaultValue}。</p>
      *
      * @param key
      * @param defaultValue

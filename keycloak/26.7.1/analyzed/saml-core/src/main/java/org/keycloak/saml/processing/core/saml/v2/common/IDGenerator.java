@@ -22,30 +22,34 @@ import org.keycloak.saml.common.PicketLinkLogger;
 import org.keycloak.saml.common.PicketLinkLoggerFactory;
 
 /**
- * Utility class that generates unique IDs
+ * 生成 SAML 消息唯一标识符的工具类。
+ * <p>基于 {@link UUID} 生成符合 SAML 规范的 ID 字符串。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jan 5, 2009
  */
 public class IDGenerator {
 
+    /** 日志记录器。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
-    /*
-     * Create a basic unique ID
+    /**
+     * 创建不带前缀的唯一 ID。
+     *
+     * @return UUID 字符串
      */
     public static String create() {
         return UUID.randomUUID().toString();
     }
 
     /**
-     * Create an id that is prefixed by a string
+     * 创建带指定前缀的唯一 ID。
      *
-     * @param prefix
+     * @param prefix 前缀字符串，不可为 null
      *
-     * @return an id
+     * @return 前缀与 UUID 拼接后的 ID
      *
-     * @throws IllegalArgumentException when prefix is null
+     * @throws IllegalArgumentException 当 prefix 为 null 时抛出
      */
     public static String create(String prefix) {
         if (prefix == null)

@@ -73,7 +73,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Utility to deal with assertions
+ * SAML 断言（Assertion）处理工具类。
+ * <p>提供断言序列化、有效期校验、签名验证、角色提取及加解密等操作。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 3, 2009
@@ -83,13 +84,13 @@ public class AssertionUtil {
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
     /**
-     * Given {@code AssertionType}, convert it into a String
+     * 将 {@link AssertionType} 序列化为 XML 字符串。
      *
-     * @param assertion
+     * @param assertion SAML 2.0 断言
      *
-     * @return
+     * @return XML 字符串
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 序列化失败时抛出
      */
     public static String asString(AssertionType assertion) throws ProcessingException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -99,13 +100,13 @@ public class AssertionUtil {
     }
 
     /**
-     * Given {@code AssertionType}, convert it into a DOM Document.
+     * 将 {@link AssertionType} 转换为 DOM {@link Document}。
      *
-     * @param assertion
+     * @param assertion SAML 2.0 断言
      *
-     * @return
+     * @return DOM 文档
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 转换失败时抛出
      */
     public static Document asDocument(AssertionType assertion) throws ProcessingException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -121,12 +122,13 @@ public class AssertionUtil {
     }
 
     /**
-     * Create an assertion
+     * 创建 SAML 1.1 断言。
      *
-     * @param id
-     * @param issuer
+     * @param id 断言 ID
+     * @param issueInstant 签发时间
+     * @param issuer 签发者字符串
      *
-     * @return
+     * @return SAML 1.1 断言
      */
     public static SAML11AssertionType createSAML11Assertion(String id, XMLGregorianCalendar issueInstant, String issuer) {
         SAML11AssertionType assertion = new SAML11AssertionType(id, issueInstant);
@@ -142,6 +144,13 @@ public class AssertionUtil {
      *
      * @return
      */
+    /**
+     * 创建含 Issuer 的 SAML 2.0 断言，签发时间为当前时刻。
+     *
+     * @param id 断言 ID
+     * @param issuer 签发者 NameID
+     * @return SAML 2.0 断言
+     */
     public static AssertionType createAssertion(String id, NameIDType issuer) {
         XMLGregorianCalendar issueInstant = XMLTimeUtil.getIssueInstant();
         AssertionType assertion = new AssertionType(id, issueInstant);
@@ -150,11 +159,11 @@ public class AssertionUtil {
     }
 
     /**
-     * Given a user name, create a {@code SubjectType} that can then be inserted into an assertion
+     * 根据用户名创建可嵌入断言的 {@link SubjectType}。
      *
-     * @param userName
+     * @param userName 主体用户名
      *
-     * @return
+     * @return SubjectType 实例
      */
     public static SubjectType createAssertionSubject(String userName) {
         SubjectType assertionSubject = new SubjectType();
@@ -167,13 +176,13 @@ public class AssertionUtil {
     }
 
     /**
-     * Create an attribute type
+     * 创建 SAML 属性（{@link AttributeType}）。
      *
-     * @param name Name of the attribute
-     * @param nameFormat name format uri
-     * @param attributeValues an object array of attribute values
+     * @param name 属性名称
+     * @param nameFormat 属性格式 URI
+     * @param attributeValues 属性值数组
      *
-     * @return
+     * @return AttributeType 实例
      */
     public static AttributeType createAttribute(String name, String nameFormat, Object... attributeValues) {
         AttributeType att = new AttributeType(name);
@@ -189,7 +198,7 @@ public class AssertionUtil {
 
     /**
      * <p>
-     * Add validity conditions to the SAML2 Assertion
+     * 为 SAML 2.0 断言添加有效期条件（不含时钟偏差）
      * </p>
      * <p>
      * There is no clock skew added.
@@ -267,7 +276,7 @@ public class AssertionUtil {
     }
 
     /**
-     * Given an {@linkplain Element}, validate the Signature direct child element
+     * 验证元素直接子节点中的 XML 数字签名
      *
      * @param element parent {@linkplain Element}
      * @param publicKey the {@link PublicKey}
@@ -318,7 +327,7 @@ public class AssertionUtil {
     }
 
     /**
-     * Check whether the assertion has expired.
+     * 检查断言是否已过期（依据 Conditions 的 notBefore/notOnOrAfter）。
      * Processing rules defined in Section 2.5.1.2 of saml-core-2.0-os.pdf.
      *
      * @param assertion
@@ -330,7 +339,7 @@ public class AssertionUtil {
     public static boolean hasExpired(AssertionType assertion) throws ConfigurationException {
         boolean expiry = false;
 
-        // Check for validity of assertion
+        // 根据 Conditions 检查断言有效期
         ConditionsType conditionsType = assertion.getConditions();
         if (conditionsType != null) {
             XMLGregorianCalendar now = XMLTimeUtil.getIssueInstant();
@@ -459,7 +468,7 @@ public class AssertionUtil {
     }
 
     /**
-     * Extract the expiration time from an {@link AssertionType}
+     * 从 {@link AssertionType} 提取过期时间（notOnOrAfter）。
      *
      * @param assertion
      *
@@ -476,7 +485,7 @@ public class AssertionUtil {
     }
 
     /**
-     * Given an assertion, return the list of roles it may have
+     * 从断言的属性语句中提取角色列表
      *
      * @param assertion The {@link AssertionType}
      * @param roleKeys a list of string values representing the role keys. The list can be null.
@@ -552,6 +561,7 @@ public class AssertionUtil {
         return roles;
     }
 
+    /** 从响应中获取断言，若为加密断言则先解密。 */
     public static AssertionType getAssertion(SAMLDocumentHolder holder, ResponseType responseType, PrivateKey privateKey) throws ParsingException, ProcessingException, ConfigurationException {
         List<ResponseType.RTChoiceType> assertions = responseType.getAssertions();
 
@@ -572,6 +582,7 @@ public class AssertionUtil {
         return responseType.getAssertions().get(0).getAssertion();
     }
 
+    /** 从 SAML 文档持有者中提取第一个 Assertion DOM 元素。 */
     public static Element getAssertionElement(SAMLDocumentHolder holder) throws ProcessingException {
         Document doc = holder.getSamlDocument();
         Element response = doc.getDocumentElement();
@@ -580,7 +591,7 @@ public class AssertionUtil {
             throw new ProcessingException("No response type.");
         }
 
-        // get the first assertion in the response
+        // 遍历响应子节点，查找第一个 Assertion 元素
         NodeList children = response.getChildNodes();
         for(int i = 0; i < children.getLength(); i++) {
             Node childNode = children.item(i);
@@ -596,6 +607,7 @@ public class AssertionUtil {
         throw new ProcessingException("No assertion from response.");
     }
 
+    /** 判断响应中的断言是否为加密形式。 */
     public static boolean isAssertionEncrypted(ResponseType responseType) throws ProcessingException {
         List<ResponseType.RTChoiceType> assertions = responseType.getAssertions();
 
@@ -607,12 +619,13 @@ public class AssertionUtil {
         return rtChoiceType.getEncryptedAssertion() != null;
     }
 
+    /** 使用私钥解密响应中的加密断言。 */
     public static Element decryptAssertion(ResponseType responseType, PrivateKey privateKey) throws ParsingException, ProcessingException, ConfigurationException {
         return decryptAssertion(responseType, encryptedData -> Collections.singletonList(privateKey));
     }
 
     /**
-     * This method modifies the given responseType, and replaces the encrypted assertion with a decrypted version.
+     * 解密响应中的加密断言并替换为明文断言（会修改 responseType）。
      *
      * @param responseType a response containing an encrypted assertion
      * @param decryptionKeyLocator locator of keys suitable for decrypting encrypted element
@@ -648,13 +661,14 @@ public class AssertionUtil {
         return decryptedDocumentElement;
     }
 
+    /** 判断 Subject 中的 NameID 是否为加密形式。 */
     public static boolean isIdEncrypted(final ResponseType responseType) {
         final STSubType subTypeElement = getSubTypeElement(responseType);
         return subTypeElement != null && subTypeElement.getEncryptedID() != null;
     }
 
     /**
-     * This method modifies the given responseType, and replaces the encrypted id with a decrypted version.
+     * 解密 Subject 中的加密 NameID 并替换为明文（会修改 responseType）。
      *
      * @param responseType a response containing an encrypted id
      * @param decryptionKeyLocator locator of keys suitable for decrypting encrypted element

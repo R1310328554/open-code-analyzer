@@ -17,27 +17,38 @@
 package org.keycloak.saml.processing.core.saml.v2.holders;
 
 /**
- * Holds information about signature
+ * 保存 SAML 数字签名值与算法信息的容器。
+ * <p>用于 HTTP-Redirect 绑定等需要单独传递签名参数的场景。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jul 24, 2009
  */
 public class SignatureInfoHolder {
 
+    /** 签名二进制值。 */
     private byte[] signatureValue;
 
+    /** 签名算法 URI 或标识。 */
     private String sigAlg;
 
+    /**
+     * 构造签名信息容器。
+     *
+     * @param signatureValue 签名值字节数组
+     * @param sigAlg 签名算法标识
+     */
     public SignatureInfoHolder(byte[] signatureValue, String sigAlg) {
         super();
         this.signatureValue = signatureValue;
         this.sigAlg = sigAlg;
     }
 
+    /** 返回签名值。 */
     public byte[] getSignatureValue() {
         return signatureValue;
     }
 
+    /** 返回签名算法标识。 */
     public String getSigAlg() {
         return sigAlg;
     }
