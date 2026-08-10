@@ -17,22 +17,27 @@
 package com.alibaba.nacos.config.server.model;
 
 /**
+ * Nacos 默认 {@link ConfigCacheFactory} 实现：创建 {@link ConfigCache} 与 {@link ConfigCacheGray}。
+ * 通过 SPI 或委托注册为名称 {@code nacos} 的缓存工厂。
  * The type Nacos config cache factory.
  *
  * @author Sunrisea
  */
 public class NacosConfigCacheFactory implements ConfigCacheFactory {
     
+    /** 创建主版本内存配置缓存实例 */
     @Override
     public ConfigCache createConfigCache() {
         return new ConfigCache();
     }
     
+    /** 创建灰度版本内存配置缓存实例 */
     @Override
     public ConfigCacheGray createConfigCacheGray() {
         return new ConfigCacheGray();
     }
     
+    /** 返回工厂标识 {@code nacos} */
     @Override
     public String getName() {
         return "nacos";

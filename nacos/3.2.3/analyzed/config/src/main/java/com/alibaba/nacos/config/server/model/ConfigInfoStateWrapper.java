@@ -20,30 +20,41 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
+ * 配置状态快照包装：聚合主键、三元组、MD5、修改时间及可选灰度名。
+ * 用于长轮询 listen 接口返回客户端比对用的轻量状态体。
  * ConfigInfoStateWrapper. include id，dataId，group，tenant，lastModified.
  *
  * @author zunfei.lzf
  */
 public class ConfigInfoStateWrapper implements Serializable {
     
+    /** 配置持久化主键 ID */
     private long id;
     
+    /** 配置 dataId */
     private String dataId;
     
+    /** 配置 group */
     private String group;
     
+    /** 命名空间/租户 */
     private String tenant;
     
+    /** 最后修改时间戳 */
     private long lastModified;
     
+    /** 配置内容 MD5 摘要，供客户端比对 */
     private String md5;
     
+    /** 关联灰度版本名（非灰度配置可为空） */
     private String grayName;
     
+    /** 获取配置 ID */
     public long getId() {
         return id;
     }
     
+    /** 设置配置 ID */
     public void setId(long id) {
         this.id = id;
     }
@@ -109,10 +120,12 @@ public class ConfigInfoStateWrapper implements Serializable {
         return Objects.hash(dataId, group, tenant);
     }
     
+    /** 获取内容 MD5 */
     public String getMd5() {
         return md5;
     }
     
+    /** 设置内容 MD5 */
     public void setMd5(String md5) {
         this.md5 = md5;
     }

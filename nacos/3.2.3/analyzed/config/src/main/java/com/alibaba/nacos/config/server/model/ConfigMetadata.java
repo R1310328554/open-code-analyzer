@@ -20,26 +20,35 @@ import java.util.List;
 import java.util.Objects;
 
 /**
+ * 配置导出元数据容器：包装 {@link ConfigExportItem} 列表，用于批量导入/导出附加描述。
  * config export Metadata.
  *
  * @author Nacos
  */
 public class ConfigMetadata {
     
+    /** 导出项元数据列表 */
     private List<ConfigExportItem> metadata;
     
+    /** 单条配置的导出元数据（group、dataId、描述、类型等） */
     public static class ConfigExportItem {
         
+        /** 配置 group */
         private String group;
         
+        /** 配置 dataId */
         private String dataId;
         
+        /** 配置描述说明 */
         private String desc;
         
+        /** 文件/内容类型（yaml、properties 等） */
         private String type;
         
+        /** 关联应用名 */
         private String appName;
         
+        /** 配置标签字符串 */
         private String configTags;
         
         public String getGroup() {
@@ -113,10 +122,12 @@ public class ConfigMetadata {
         }
     }
     
+    /** 获取导出元数据列表 */
     public List<ConfigExportItem> getMetadata() {
         return metadata;
     }
     
+    /** 设置导出元数据列表 */
     public void setMetadata(List<ConfigExportItem> metadata) {
         this.metadata = metadata;
     }

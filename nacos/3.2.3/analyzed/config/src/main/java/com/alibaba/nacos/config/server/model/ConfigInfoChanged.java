@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
+ * 配置变更标识：以 dataId、group、tenant 三元组描述一条发生变更的配置。
+ * 用于长轮询比对、集群同步及变更通知的去重键。
  * ConfigInfoChanged.
  *
  * @author leiwen.zh
@@ -28,34 +30,49 @@ public class ConfigInfoChanged implements Serializable {
     
     private static final long serialVersionUID = -1819539062100125171L;
     
+    /** 配置 dataId */
     private String dataId;
     
+    /** 配置 group */
     private String group;
     
+    /** 命名空间/租户标识 */
     private String tenant;
     
+    /**
+     * 构造变更标识。
+     *
+     * @param dataId 配置 dataId
+     * @param group  配置 group
+     * @param tenant 命名空间
+     */
     public ConfigInfoChanged(String dataId, String group, String tenant) {
         this.dataId = dataId;
         this.group = group;
         this.setTenant(tenant);
     }
     
+    /** 无参构造，供序列化使用 */
     public ConfigInfoChanged() {
         
     }
     
+    /** 获取 dataId */
     public String getDataId() {
         return dataId;
     }
     
+    /** 设置 dataId */
     public void setDataId(String dataId) {
         this.dataId = dataId;
     }
     
+    /** 获取 group */
     public String getGroup() {
         return group;
     }
     
+    /** 设置 group */
     public void setGroup(String group) {
         this.group = group;
     }
@@ -99,10 +116,12 @@ public class ConfigInfoChanged implements Serializable {
         return "ConfigInfoChanged [dataId=" + dataId + ", group=" + group + "]";
     }
     
+    /** 获取命名空间 */
     public String getTenant() {
         return tenant;
     }
     
+    /** 设置命名空间 */
     public void setTenant(String tenant) {
         this.tenant = tenant;
     }

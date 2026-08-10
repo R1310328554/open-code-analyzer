@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.model;
 
 /**
+ * Tag 标签配置包装类：在 {@link ConfigInfo4Tag} 上附加最后修改时间。
+ * 用于按 tag 维度查询或推送配置时携带版本信息。
  * ConfigInfoTagWrapper.
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -24,15 +26,19 @@ public class ConfigInfoTagWrapper extends ConfigInfo4Tag {
     
     private static final long serialVersionUID = 4511997359365712505L;
     
+    /** 标签配置最后修改时间（毫秒） */
     private long lastModified;
     
+    /** 无参构造 */
     public ConfigInfoTagWrapper() {
     }
     
+    /** 获取最后修改时间 */
     public long getLastModified() {
         return lastModified;
     }
     
+    /** 设置最后修改时间 */
     public void setLastModified(long lastModified) {
         this.lastModified = lastModified;
     }

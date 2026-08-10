@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
+ * 配置请求上下文：记录来源 IP、客户端类型、Beta IP、CAS MD5 及命名空间迁移等。
+ * 持久化与鉴权链路据此做审计、Beta 校验与乐观锁比对。
  * ConfigRequestInfo.
  * @author dongyafei
  * @date 2022/8/11
@@ -28,20 +30,36 @@ public class ConfigRequestInfo implements Serializable {
     
     private static final long serialVersionUID = 326726654448860273L;
     
+    /** 请求来源 IP */
     private String srcIp;
     
+    /** 来源类型（如 dubbo、http、grpc） */
     private String srcType;
     
+    /** 请求 IP 关联的应用标识 */
     private String requestIpApp;
     
+    /** Beta 发布允许的 IP 列表 */
     private String betaIps;
     
+    /** 客户端 CAS 比对用 MD5（乐观锁） */
     private String casMd5;
     
+    /** 是否命名空间已迁移 */
     private boolean namespaceTransferred;
     
+    /** 配置已存在时是否允许更新，默认 true */
     private Boolean updateForExist = Boolean.TRUE;
     
+    /**
+     * 构造请求上下文。
+     *
+     * @param srcIp          来源 IP
+     * @param srcType        来源类型
+     * @param requestIpApp   请求 IP 应用
+     * @param betaIps        Beta IP 列表
+     * @param casMd5         CAS MD5
+     */
     public ConfigRequestInfo(String srcIp, String srcType, String requestIpApp, String betaIps,
         String casMd5) {
         this.srcIp = srcIp;
@@ -51,9 +69,11 @@ public class ConfigRequestInfo implements Serializable {
         this.casMd5 = casMd5;
     }
     
+    /** 无参构造 */
     public ConfigRequestInfo() {
     }
     
+    /** 获取来源 IP */
     public String getSrcIp() {
         return srcIp;
     }
@@ -102,10 +122,12 @@ public class ConfigRequestInfo implements Serializable {
         this.updateForExist = updateForExist;
     }
     
+    /** 是否命名空间已迁移 */
     public boolean isNamespaceTransferred() {
         return namespaceTransferred;
     }
     
+    /** 设置命名空间迁移标志 */
     public void setNamespaceTransferred(boolean namespaceTransferred) {
         this.namespaceTransferred = namespaceTransferred;
     }
