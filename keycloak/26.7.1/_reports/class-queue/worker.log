@@ -2278,3 +2278,33 @@
 2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/tracing/OTelHttpClientFactory.java wave77a jpa/liquibase/themes/otel
 2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/tracing/OTelTracingProvider.java wave77a jpa/liquibase/themes/otel
 2026-08-10T09:17:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/tracing/OTelTracingProviderFactory.java wave77a jpa/liquibase/themes/otel
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/SessionsResource.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/UIRealmResource.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/UIRealmsResource.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/Authentication.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/AuthenticationMapper.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/BruteUser.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/ClientIdSessionType.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/ClientRole.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/ConfigurableRequiredActionProviderRepresentation.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/EffectiveRole.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/EventListener.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/ProviderMapper.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/RealmNameRepresentation.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/RoleDeleteRequest.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:20:32Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/RoleMapper.java wave78a admin-ui-ext sessions/realm models
+2026-08-10T09:21:14Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/RoleMappingRepresentation.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/SessionRepresentation.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/UIRealmInfo.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/UIRealmRepresentation.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/model/UsedBy.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/admin/api/AdminApi.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/admin/api/AdminRootV2.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/admin/api/ClientField.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/admin/api/ListOptions.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/admin/api/PatchTypeNames.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/admin/api/SortOption.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/admin/api/SortOrder.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/admin/api/client/ClientApi.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/admin/api/client/ClientsApi.java wave78b admin-ui models + admin-v2 api
+2026-08-10T09:21:14Z DONE rest/admin-v2/api/src/main/java/org/keycloak/representations/admin/v2/BaseClientRepresentation.java wave78b admin-ui models + admin-v2 api
