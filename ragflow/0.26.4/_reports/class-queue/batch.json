@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:39:06Z",
-  "files": [
-    "internal/agent/component/string_transform.go",
-    "internal/agent/component/switch.go",
-    "internal/agent/component/universe_a_wrappers.go",
-    "internal/agent/component/userfillup.go",
-    "internal/agent/component/variable_aggregator.go",
-    "internal/agent/component/variable_assigner.go",
-    "internal/agent/dsl/errors.go",
-    "internal/agent/dsl/extract.go",
-    "internal/agent/dsl/normalize.go",
-    "internal/agent/dsl/reset.go",
-    "internal/agent/runtime/component.go",
-    "internal/agent/runtime/context.go",
-    "internal/agent/runtime/helpers.go",
-    "internal/agent/runtime/json_safe.go",
-    "internal/agent/runtime/metrics.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1284,
-  "done": 465
+  "done": 480
 }
