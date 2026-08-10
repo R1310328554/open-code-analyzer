@@ -15,21 +15,8 @@
     "themes/src/main/resources/theme/base/login/resources/js/authChecker.js",
     "themes/src/main/resources/theme/base/login/resources/js/common.js",
     "themes/src/main/resources/theme/base/login/resources/js/kcMultivalued.js",
-    "themes/src/main/resources/theme/base/login/resources/js/kcNumberFormat.js",
-    "themes/src/main/resources/theme/base/login/resources/js/kcNumberUnFormat.js",
-    "themes/src/main/resources/theme/base/login/resources/js/menu-button-links.js",
-    "themes/src/main/resources/theme/base/login/resources/js/passkeysConditionalAuth.js",
-    "themes/src/main/resources/theme/base/login/resources/js/passwordVisibility.js",
-    "themes/src/main/resources/theme/base/login/resources/js/userProfile.js",
-    "themes/src/main/resources/theme/base/login/resources/js/webauthnAuthenticate.js",
-    "themes/src/main/resources/theme/base/login/resources/js/webauthnRegister.js",
-    "themes/src/main/resources/theme/keycloak.v2/login/resources/js/password-policy.js",
-    "themes/src/main/resources/theme/keycloak.v2/login/resources/js/userProfile.js",
-    "util/embedded-ldap/src/main/java/org/keycloak/util/ldap/JdbmPartitionFactoryFast.java",
-    "util/embedded-ldap/src/main/java/org/keycloak/util/ldap/KerberosKeytabCreator.java",
-    "util/embedded-ldap/src/main/java/org/keycloak/util/ldap/LDAPEmbeddedServer.java",
-    "util/embedded-ldap/src/main/java/org/keycloak/util/ldap/RangedAttributeInterceptor.java"
+    "themes/src/main/resources/theme/base/login/resources/js/kcNumberFormat.js"
   ],
   "remaining_pending": 0,
-  "done": 5970
+  "done": 5983
 }

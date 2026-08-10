@@ -5968,3 +5968,16 @@ testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils
 testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/tls/TLSUtils.java
 testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/undertow/SimpleWebXmlParser.java
 testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/undertow/UndertowDeployerHelper.java
+themes/src/main/resources/theme/base/login/resources/js/kcNumberUnFormat.js
+themes/src/main/resources/theme/base/login/resources/js/menu-button-links.js
+themes/src/main/resources/theme/base/login/resources/js/passkeysConditionalAuth.js
+themes/src/main/resources/theme/base/login/resources/js/passwordVisibility.js
+themes/src/main/resources/theme/base/login/resources/js/userProfile.js
+themes/src/main/resources/theme/base/login/resources/js/webauthnAuthenticate.js
+themes/src/main/resources/theme/base/login/resources/js/webauthnRegister.js
+themes/src/main/resources/theme/keycloak.v2/login/resources/js/password-policy.js
+themes/src/main/resources/theme/keycloak.v2/login/resources/js/userProfile.js
+util/embedded-ldap/src/main/java/org/keycloak/util/ldap/JdbmPartitionFactoryFast.java
+util/embedded-ldap/src/main/java/org/keycloak/util/ldap/KerberosKeytabCreator.java
+util/embedded-ldap/src/main/java/org/keycloak/util/ldap/LDAPEmbeddedServer.java
+util/embedded-ldap/src/main/java/org/keycloak/util/ldap/RangedAttributeInterceptor.java
