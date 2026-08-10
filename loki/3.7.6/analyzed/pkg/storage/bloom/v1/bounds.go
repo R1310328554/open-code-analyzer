@@ -1,5 +1,7 @@
 package v1
 
+// bounds 定义 Prometheus 指纹区间 FingerprintBounds：比较、相交、并集与 TSDB FingerprintFilter 适配，用于 bloom 块分片寻址。
+
 import (
 	"fmt"
 	"hash"
@@ -23,7 +25,8 @@ const (
 )
 
 var (
-	// FullBounds is the bounds that covers the entire fingerprint space
+	// FullBounds 覆盖 [0, MaxUint64] 全指纹空间，用作无界查询默认区间。
+// FullBounds is the bounds that covers the entire fingerprint space
 	FullBounds = NewBounds(0, model.Fingerprint(math.MaxUint64))
 )
 
@@ -86,6 +89,7 @@ func (b FingerprintBounds) Less(other FingerprintBounds) bool {
 	return b.Max <= other.Max
 }
 
+// Cmp 返回 Before/Overlap/After，Match 在 Overlap 时为 true。
 // Cmp returns the fingerprint's position relative to the bounds
 func (b FingerprintBounds) Cmp(fp model.Fingerprint) BoundsCheck {
 	if fp < b.Min {
@@ -106,6 +110,7 @@ func (b FingerprintBounds) Match(fp model.Fingerprint) bool {
 	return b.Cmp(fp) == Overlap
 }
 
+// GetFromThrough 将闭区间 [Min,Max] 转为 TSDB 半开区间 [from, through)。
 // GetFromThrough implements TSDBs FingerprintFilter interface,
 // NB(owen-d): adjusts to return `[from,through)` instead of `[from,through]` which the
 // fingerprint bounds struct tracks.
@@ -134,6 +139,7 @@ func (b FingerprintBounds) Equal(target FingerprintBounds) bool {
 	return b.Min == target.Min && b.Max == target.Max
 }
 
+// Intersection/Union/Unless 支持分片合并与差集裁剪；相邻区间 Union 会合并为一段。
 // Intersection returns the intersection of the two bounds
 func (b FingerprintBounds) Intersection(target FingerprintBounds) *FingerprintBounds {
 	if !b.Overlaps(target) {
@@ -199,6 +205,7 @@ func (b FingerprintBounds) Range() uint64 {
 }
 
 // unused, but illustrative
+// BoundedIter 包装迭代器，仅产出 Cmp 结果为 Overlap 的元素。
 type BoundedIter[V any] struct {
 	iter.Iterator[V]
 	cmp func(V) BoundsCheck
@@ -221,3 +228,4 @@ func (bi *BoundedIter[V]) Next() bool {
 func NewBoundedIter[V any](itr iter.Iterator[V], cmp func(V) BoundsCheck) *BoundedIter[V] {
 	return &BoundedIter[V]{Iterator: itr, cmp: cmp}
 }
+// ParseBoundsFromAddr 解析十六进制 min-max 地址串，供内容寻址存储键使用。

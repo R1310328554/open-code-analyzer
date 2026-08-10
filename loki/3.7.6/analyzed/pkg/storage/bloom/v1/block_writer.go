@@ -1,5 +1,7 @@
 package v1
 
+// block_writer 定义 Bloom 块写入抽象：分别写入 series 索引与 bloom 数据，支持内存缓冲与目录落盘两种实现。
+
 import (
 	"bytes"
 	"io"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/chunk/client/util"
 )
 
+// BloomFileName 与 SeriesFileName 为块目录内 bloom 与 series 文件名常量。
 const (
 	BloomFileName  = "bloom"
 	SeriesFileName = "series"
@@ -26,6 +29,7 @@ type BlockWriter interface {
 	Cleanup() error
 }
 
+// MemoryBlockWriter 在内存 bytes.Buffer 中累积索引与 bloom，适合测试或小批量构建。
 // in memory impl
 type MemoryBlockWriter struct {
 	index, blooms *bytes.Buffer
@@ -50,6 +54,7 @@ func (b MemoryBlockWriter) Size() (int, error) {
 	return b.index.Len() + b.blooms.Len(), nil
 }
 
+// Full 在 maxSize 为 0 时永不判满，否则比较 index+blooms 总字节数。
 func (b MemoryBlockWriter) Full(maxSize uint64) (full bool, size int, err error) {
 	size, err = b.Size()
 	if err != nil {
@@ -69,6 +74,7 @@ func (b MemoryBlockWriter) Cleanup() error {
 	return nil
 }
 
+// DirectoryBlockWriter 在指定目录创建 series/bloom 文件，Init 懒初始化目录与文件句柄。
 // Directory based impl
 type DirectoryBlockWriter struct {
 	dir           string
@@ -149,6 +155,7 @@ func (b *DirectoryBlockWriter) Full(maxSize uint64) (full bool, size int, err er
 	return uint64(size) >= maxSize, size, nil
 }
 
+// Cleanup 删除 index/bloom 文件及整个块目录，重置 initialized 标志。
 func (b *DirectoryBlockWriter) Cleanup() error {
 	b.initialized = false
 	err := multierror.New()
@@ -157,3 +164,4 @@ func (b *DirectoryBlockWriter) Cleanup() error {
 	err.Add(os.RemoveAll(b.dir))
 	return err.Err()
 }
+// 目录实现通过 Stat 汇总两文件大小；内存实现 Reset 缓冲区即可复用 writer。

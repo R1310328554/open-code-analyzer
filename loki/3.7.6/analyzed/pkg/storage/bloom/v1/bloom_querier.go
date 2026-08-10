@@ -1,5 +1,7 @@
 package v1
 
+// bloom_querier 提供按 BloomOffset 懒加载 bloom 页的迭代器，用于查询路径按需解码而非全块载入。
+
 import (
 	"github.com/pkg/errors"
 
@@ -23,6 +25,7 @@ type LazyBloomIter struct {
 	curPage      *BloomPageDecoder
 }
 
+// NewLazyBloomIter 绑定 Block 与内存分配器，m 为单页最大字节数。
 // NewLazyBloomIter returns a new lazy bloom iterator.
 // If pool is true, the underlying byte slice of the bloom page
 // will be returned to the pool for efficiency.
@@ -46,6 +49,7 @@ func (it *LazyBloomIter) ensureInit() {
 	}
 }
 
+// LoadOffset 在页变化时 Relinquish 旧页并加载目标页；skip 表示页过大被跳过。
 // LoadOffset returns whether the bloom page at the given offset should
 // be skipped (due to being too large) _and_ there's no error
 func (it *LazyBloomIter) LoadOffset(offset BloomOffset) (skip bool) {
@@ -91,6 +95,7 @@ func (it *LazyBloomIter) Next() bool {
 	return it.next()
 }
 
+// next 顺序遍历各页内 bloom，跳过超大页并处理页耗尽后的页切换。
 func (it *LazyBloomIter) next() bool {
 	if it.err != nil {
 		return false
@@ -170,3 +175,4 @@ func (it *LazyBloomIter) Reset() {
 	}
 	it.curPage = nil
 }
+// ensureInit 首次访问时 LoadHeaders；Reset 释放当前页缓冲并重置页索引。

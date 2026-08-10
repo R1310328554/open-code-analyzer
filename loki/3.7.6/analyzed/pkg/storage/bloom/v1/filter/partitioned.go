@@ -22,6 +22,8 @@ copies or substantial portions of the Software.
 
 package filter
 
+// PartitionedBloomFilter 将 M 位数组划分为 k 个大小 m 的 slice，每位元素恰占 k 位，误报率在各元素间均匀分布（Scalable Bloom 论文）。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -46,6 +48,7 @@ func getNewHashFunction() hash.Hash64 {
 // size m = M/k bits. Each hash function produces an index over m for its
 // respective slice. Thus, each element is described by exactly k bits, meaning
 // the distribution of false positives is uniform across all elements.
+// 每个哈希函数对应一个 Buckets 分区；hashKernel 生成 k 个分区内的桶索引。
 type PartitionedBloomFilter struct {
 	partitions     []*Buckets  // partitioned filter data
 	hash           hash.Hash64 // hash function (kernel for all k functions)
@@ -117,6 +120,7 @@ func (p *PartitionedBloomFilter) FillRatio() float64 {
 	return t / float64(p.k)
 }
 
+// UpdateCount 用 FillRatio 反推 estimatedCount，避免重复插入导致计数膨胀。
 // Since duplicates can be added to a bloom filter,
 // we update the count via the following formula via
 // https://gsd.di.uminho.pt/members/cbm/ps/dbloom.pdf
@@ -139,6 +143,7 @@ func (p *PartitionedBloomFilter) OptimalCount() uint {
 	return p.optimalCount
 }
 
+// Test 任一分区对应位为 0 则非成员；Add/TestAndAdd 设置 k 个分区位。
 // Test will test for membership of the data and returns true if it is a
 // member, false if not. This is a probabilistic test, meaning there is a
 // non-zero probability of false positives but a zero probability of false
@@ -307,6 +312,7 @@ func (p *PartitionedBloomFilter) ReadFrom(stream io.Reader) (int64, error) {
 	return bytesParams + int64(binary.Size(uint64(0))) + numBytes, nil
 }
 
+// DecodeFrom 对各分区调用 Buckets.DecodeFrom 保持对底层字节的引用。
 // DecodeFrom reads a binary representation of PartitionedBloomFilter (such as might
 // have been written by WriteTo()) from a buffer.
 // Whereas ReadFrom() calls Buckets.ReadFrom() hence making a copy of the data,
@@ -355,3 +361,4 @@ func (p *PartitionedBloomFilter) GobDecode(data []byte) error {
 
 	return err
 }
+// NewPartitionedBloomFilter 用 OptimalM(n,fp) 分配总容量并按 k 均分为 s=m/k 的各分区。

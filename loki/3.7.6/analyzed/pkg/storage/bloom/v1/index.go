@@ -1,5 +1,7 @@
 package v1
 
+// index 实现 Bloom 块 series 索引：分页压缩存储、delta 编码指纹/chunk/offset，以及 Seek 定位与 chunk 集合运算。
+
 import (
 	"bytes"
 	"io"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/encoding"
 )
 
+// BlockIndex 持有 BlockOptions 与各 SeriesPageHeaderWithOffset 页描述符。
 // Block index is a set of series pages along with
 // the headers for each page
 type BlockIndex struct {
@@ -69,6 +72,7 @@ func (b *BlockIndex) DecodeHeaders(r io.ReadSeeker) (uint32, error) {
 	return checksum, nil
 }
 
+// NewSeriesPageDecoder 读页、CRC 校验、解压后构造可逐条 Decode 的 SeriesPageDecoder。
 // decompress page and return an iterator over the bytes
 func (b *BlockIndex) NewSeriesPageDecoder(r io.ReadSeeker, header SeriesPageHeaderWithOffset, metrics *Metrics) (res *SeriesPageDecoder, err error) {
 	defer func() {
@@ -186,6 +190,7 @@ func (h *SeriesHeader) Decode(dec *encoding.Decbuf) error {
 	return dec.Err()
 }
 
+// SeriesPageDecoder.Seek 在页内线性扫描至首个 fp>=目标 并回退一条供 Next 使用。
 // can decode a series page one item at a time, useful when we don't
 // need to iterate an entire page
 type SeriesPageDecoder struct {
@@ -299,6 +304,7 @@ type SeriesWithMeta struct {
 	Meta
 }
 
+// SeriesWithMeta.Encode delta 编码指纹、bloom 偏移、排序后 chunk 与 indexed Fields。
 func (s *SeriesWithMeta) Encode(
 	enc *encoding.Encbuf,
 	version Version,
@@ -472,6 +478,7 @@ func (refs ChunkRefs) Swap(i, j int) {
 	refs[i], refs[j] = refs[j], refs[i]
 }
 
+// ChunkRefs.Compare/Unless/Union/Intersect 要求输入已排序，双指针线性合并。
 // Unless returns the chunk refs in this set that are not in the other set.
 // Both must be sorted.
 func (refs ChunkRefs) Unless(others []ChunkRef) ChunkRefs {
@@ -547,3 +554,4 @@ func (refs ChunkRefs) Union(others ChunkRefs) ChunkRefs {
 
 	return res
 }
+// V3 以下 schema 的 SeriesWithMeta.Decode 返回 ErrUnsupportedSchemaVersion。

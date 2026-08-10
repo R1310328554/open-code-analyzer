@@ -23,6 +23,8 @@ copies or substantial portions of the Software.
 
 package filter
 
+// ScalableBloomFilter 串联多个误报率几何递减的分区 Bloom：数据量未知时动态扩容且整体误报率有上界。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -48,6 +50,7 @@ import (
 // isn't known a priori and memory constraints aren't of particular concern.
 // For situations where memory is bounded, consider using Inverse or Stable
 // Bloom Filters.
+// filters 链表中后者 fp 更严；additionsSinceFillRatioCheck 节流昂贵 FillRatio 计算。
 type ScalableBloomFilter struct {
 	filters []*PartitionedBloomFilter // filters with geometrically decreasing error rates
 	r       float64                   // tightening ratio
@@ -68,6 +71,7 @@ type ScalableBloomFilter struct {
 	additionsSinceFillRatioCheck uint
 }
 
+// fillCheckFraction 控制每 OptimalCount/100 次插入才做一次真实填充率检查。
 const fillCheckFraction = 100
 
 // NewScalableBloomFilter creates a new Scalable Bloom Filter with the
@@ -146,6 +150,7 @@ func (s *ScalableBloomFilter) Add(data []byte) Filter {
 	return s
 }
 
+// AddWithMaxSize 在扩容会超过 maxSize（位）时返回 full 且不插入新元素。
 // AddWithMaxSize adds a new element to the filter,
 // unless adding would require the filter to grow above a given maxSize (0 for unlimited).
 // returns true if the filter is full, in which case the key was not added
@@ -195,6 +200,7 @@ func (s *ScalableBloomFilter) TestAndAdd(data []byte) bool {
 	return member
 }
 
+// TestAndAddWithMaxSize 同时返回是否已存在与 filter 是否已满。
 // TestAndAdd is equivalent to calling Test followed by Add. It returns both if the key exists in the filter
 // already and if the filter is full. If full, the key was _not_ added.
 func (s *ScalableBloomFilter) TestAndAddWithMaxSize(data []byte, maxSize int) (exists, full bool) {
@@ -219,6 +225,7 @@ func (s *ScalableBloomFilter) nextFilterCapacity() (m uint, fpRate float64) {
 
 // addFilter adds a new Bloom filter with a restricted false-positive rate to
 // the Scalable Bloom Filter
+// addFilter 按 hint 或前一 filter 容量×s（默认 4）创建新 PartitionedBloomFilter。
 func (s *ScalableBloomFilter) addFilter() {
 	nextCap, fpRate := s.nextFilterCapacity()
 	p := NewPartitionedBloomFilterWithCapacity(nextCap, fpRate)
@@ -398,3 +405,4 @@ func (s *ScalableBloomFilter) GobDecode(data []byte) error {
 
 	return err
 }
+// Test 需在所有子 filter 上为 false 才判定非成员；同哈希函数由首 filter 传播到后续层。

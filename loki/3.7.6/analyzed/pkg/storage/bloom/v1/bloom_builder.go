@@ -1,5 +1,7 @@
 package v1
 
+// bloom_builder 顺序追加单条 bloom 到 bloom 块：首写 schema，按页大小 flush 并记录 BloomPageHeader 元数据。
+
 import (
 	"io"
 
@@ -32,6 +34,7 @@ func (b *BloomBlockBuilder) UnflushedSize() int {
 	return b.scratch.Len() + b.page.UnflushedSize()
 }
 
+// Append 编码 bloom 写入当前页，页满时 flushPage 并返回页号与页内字节偏移。
 func (b *BloomBlockBuilder) Append(bloom *Bloom) (BloomOffset, error) {
 	if !b.writtenSchema {
 		if err := b.writeSchema(); err != nil {
@@ -71,6 +74,7 @@ func (b *BloomBlockBuilder) writeSchema() error {
 	return nil
 }
 
+// Close 刷最后一页、写入全部页头、BE64 头区偏移与 CRC32 后关闭 writer。
 func (b *BloomBlockBuilder) Close() (uint32, error) {
 	if !b.writtenSchema {
 		// We will get here only if we haven't appended any bloom filters to the block
@@ -107,6 +111,7 @@ func (b *BloomBlockBuilder) Close() (uint32, error) {
 	return crc32Hash.Sum32(), errors.Wrap(b.writer.Close(), "closing bloom writer")
 }
 
+// flushPage 压缩当前页、追加 BloomPageHeader（N/Offset/Len/DecompressedLen）。
 func (b *BloomBlockBuilder) flushPage() error {
 	crc32Hash := Crc32HashPool.Get()
 	defer Crc32HashPool.Put(crc32Hash)
@@ -130,3 +135,4 @@ func (b *BloomBlockBuilder) flushPage() error {
 	b.page.Reset()
 	return nil
 }
+// 空块（全无结构化元数据的 series）Close 时仍写 schema，保证块格式合法可读。

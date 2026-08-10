@@ -1,5 +1,7 @@
 package v1
 
+// builder 定义 Bloom 块构建选项、页写入器与 MergeBuilder：合并旧块索引与新 store chunk，按指纹顺序增量填充 bloom。
+
 import (
 	"bytes"
 	"hash"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/encoding"
 )
 
+// UnencodedBlockOptions 含 MaxBloomSizeBytes，仅构建期使用不写入块二进制。
 // Options for the block which are not encoded into it iself.
 type UnencodedBlockOptions struct {
 	MaxBloomSizeBytes uint64
@@ -118,6 +121,7 @@ func (w *PageWriter) UnflushedSize() int {
 	return w.enc.Len()
 }
 
+// SpaceFor 允许单条 bloom 超过页目标大小（n==0 时必接纳），否则检查累计不超限。
 func (w *PageWriter) SpaceFor(numBytes int) bool {
 	// if a single bloom exceeds the target size, still accept it
 	// otherwise only accept it if adding it would not exceed the target size
@@ -185,6 +189,7 @@ type BloomCreation struct {
 	Err   error
 }
 
+// MergeBuilder 合并多 block 与 store，同指纹取 chunk 差集并 populate 新 bloom。
 // Simplistic implementation of a merge builder that builds a single block
 // from a list of blocks and a store of series.
 type MergeBuilder struct {
@@ -241,6 +246,7 @@ func NewMergeBuilder(
 	}
 }
 
+// processNextSeries 对齐 store 与 blocks 指纹，复用已有 bloom 并追加新 chunk 索引。
 func (mb *MergeBuilder) processNextSeries(
 	builder *BlockBuilder,
 	nextInBlocks *SeriesWithBlooms,
@@ -339,6 +345,7 @@ func (mb *MergeBuilder) processNextSeries(
 	return nextInBlocks, info.sourceBytes, chunksIndexed + chunksCopied, blocksFinished, done, nil
 }
 
+// Build 循环 processNextSeries 直至 store 耗尽，记录块级 metrics 后 Close 块。
 func (mb *MergeBuilder) Build(builder *BlockBuilder) (checksum uint32, totalBytes int, err error) {
 	var (
 		nextInBlocks     *SeriesWithBlooms
@@ -381,3 +388,4 @@ func (mb *MergeBuilder) Build(builder *BlockBuilder) (checksum uint32, totalByte
 	}
 	return checksum, totalBytes, nil
 }
+// 指纹碰撞时 DedupingIter 合并 chunk 集合，因 bloom 仅存指纹不存完整标签集。

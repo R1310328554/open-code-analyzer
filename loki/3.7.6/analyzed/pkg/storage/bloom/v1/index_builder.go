@@ -1,5 +1,7 @@
 package v1
 
+// index_builder 顺序写入 series 到 series 块：首写 BlockOptions，按 SeriesPageSize 切页并 delta 编码，Close 写入页头表与尾部元数据。
+
 import (
 	"fmt"
 	"io"
@@ -50,6 +52,7 @@ func (b *IndexBuilder) WriteOpts() error {
 	return nil
 }
 
+// Append 要求指纹单调递增；页首 series 记录 fromFp 与时间边界。
 func (b *IndexBuilder) Append(series SeriesWithMeta) error {
 	if !b.writtenSchema {
 		if err := b.WriteOpts(); err != nil {
@@ -101,6 +104,7 @@ func (b *IndexBuilder) Append(series SeriesWithMeta) error {
 	return nil
 }
 
+// chkBounds 扫描 chunk 列表求最小 From 与最大 Through 作为页时间范围。
 // must be > 1
 func chkBounds(chks []ChunkRef) (from, through model.Time) {
 	from, through = chks[0].From, chks[0].Through
@@ -116,6 +120,7 @@ func chkBounds(chks []ChunkRef) (from, through model.Time) {
 	return
 }
 
+// flushPage 压缩页、生成 SeriesPageHeader（NumSeries/Bounds/FromTs/ThroughTs）。
 func (b *IndexBuilder) flushPage() error {
 	crc32Hash := Crc32HashPool.Get()
 	defer Crc32HashPool.Put(crc32Hash)
@@ -154,6 +159,7 @@ func (b *IndexBuilder) flushPage() error {
 	return nil
 }
 
+// Close 写入全部 SeriesPageHeaderWithOffset、BE64 头偏移与 CRC32 校验和。
 func (b *IndexBuilder) Close() (uint32, error) {
 	if b.page.Count() > 0 {
 		if err := b.flushPage(); err != nil {
@@ -181,3 +187,4 @@ func (b *IndexBuilder) Close() (uint32, error) {
 	}
 	return crc32Hash.Sum32(), errors.Wrap(b.writer.Close(), "closing series writer")
 }
+// 页切换后需用重置的 previousFp/Offset 重新 Encode series，保证 delta 基准正确。

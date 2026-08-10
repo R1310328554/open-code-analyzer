@@ -1,5 +1,7 @@
 package v1
 
+// bloom 封装可扩展 Bloom 过滤器及其页级编解码：支持压缩页懒加载、页内多 bloom 顺序迭代与网关侧大页跳过保护。
+
 import (
 	"bytes"
 	"fmt"
@@ -17,6 +19,7 @@ import (
 // bigger), and loading multiple pages into memory in parallel can cause the
 // gateways to OOM.
 // Figure out a decent default maximum page size that we can process.
+// DefaultMaxPageSize 限制并行解码单页上限，避免网关 OOM（部分页可达数百 MiB）。
 var DefaultMaxPageSize = 64 << 20 // 64MB
 
 type Bloom struct {
@@ -30,6 +33,7 @@ func NewBloom() *Bloom {
 	}
 }
 
+// Encode 将 bloom 位数组写入 Encbuf：先 uvarint 长度再原始字节。
 func (b *Bloom) Encode(enc *encoding.Encbuf) error {
 	// divide by 8 b/c bloom capacity is measured in bits, but we want bytes
 	buf := bytes.NewBuffer(make([]byte, 0, int(b.Capacity()/8)))
@@ -59,6 +63,7 @@ func (b *Bloom) Decode(dec *encoding.Decbuf) error {
 	return nil
 }
 
+// LazyDecodeBloomPage 读压缩页、校验 CRC、解压后构造页内 bloom 解码器。
 func LazyDecodeBloomPage(r io.Reader, alloc mempool.Allocator, pool compression.ReaderPool, page BloomPageHeader) (*BloomPageDecoder, error) {
 	data, err := alloc.Get(page.Len)
 	if err != nil {
@@ -96,6 +101,7 @@ func LazyDecodeBloomPage(r io.Reader, alloc mempool.Allocator, pool compression.
 	return decoder, nil
 }
 
+// LazyDecodeBloomPageNoCompression 在无压缩 schema 下跳过解压池分配。
 // shortcut to skip allocations when we know the page is not compressed
 func LazyDecodeBloomPageNoCompression(r io.Reader, alloc mempool.Allocator, page BloomPageHeader) (*BloomPageDecoder, error) {
 	// data + checksum
@@ -140,6 +146,7 @@ func NewBloomPageDecoder(data []byte) *BloomPageDecoder {
 	return decoder
 }
 
+// BloomPageDecoder 可 Seek/Next 遍历页内 bloom；Relinquish 将底层切片归还内存池。
 // Decoder is a seekable, reset-able iterator
 // TODO(owen-d): use buffer pools. The reason we don't currently
 // do this is because the `data` slice currently escapes the decoder
@@ -282,6 +289,7 @@ func (b *BloomBlock) DecodeHeaders(r io.ReadSeeker) (uint32, error) {
 // BloomPageDecoder returns a decoder for the given page index.
 // It may skip the page if it's too large.
 // NB(owen-d): if `skip` is true, err _must_ be nil.
+// BloomPageDecoder 按页索引定位；超 maxPageSize 时 skip 并记 metrics，不返回错误。
 func (b *BloomBlock) BloomPageDecoder(r io.ReadSeeker, alloc mempool.Allocator, pageIdx int, maxPageSize int, metrics *Metrics) (res *BloomPageDecoder, skip bool, err error) {
 	if pageIdx < 0 || pageIdx >= len(b.pageHeaders) {
 		metrics.pagesSkipped.WithLabelValues(pageTypeBloom, skipReasonOOB).Inc()
@@ -320,3 +328,4 @@ func (b *BloomBlock) BloomPageDecoder(r io.ReadSeeker, alloc mempool.Allocator, 
 	metrics.bytesRead.WithLabelValues(pageTypeBloom).Add(float64(page.DecompressedLen))
 	return res, false, nil
 }
+// 块尾 12 字节存页头偏移与 CRC；页头列表在文件末尾 varint 编码并单独校验。

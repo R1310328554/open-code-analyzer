@@ -1,5 +1,7 @@
 package v1
 
+// bloom_tester 将 LogQL 标签匹配器编译为 BloomTest：支持 AND/OR、键值与仅键匹配，并结合 series 标签做假阳性消歧。
+
 import (
 	"fmt"
 	"unsafe"
@@ -11,6 +13,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// BloomTest 判断 series 与 bloom 是否匹配；MatchesWithPrefixBuf 支持 chunk 前缀 token。
 type BloomTest interface {
 	Matches(series labels.Labels, bloom filter.Checker) bool
 	MatchesWithPrefixBuf(series labels.Labels, bloom filter.Checker, buf []byte, prefixLen int) bool
@@ -54,6 +57,7 @@ type orTest struct {
 	left, right BloomTest
 }
 
+// orTest 用于 skip>0 时不同 ngram 偏移序列的析取匹配（任一路径命中即通过）。
 // In addition to common `|= "foo" or "bar"`,
 // orTest is particularly useful when testing skip-factors>0, which
 // can result in different "sequences" of ngrams for a particular line
@@ -106,6 +110,7 @@ func (a andTest) MatchesWithPrefixBuf(series labels.Labels, bloom filter.Checker
 	return a.left.MatchesWithPrefixBuf(series, bloom, buf, prefixLen) && a.right.MatchesWithPrefixBuf(series, bloom, buf, prefixLen)
 }
 
+// LabelMatchersToBloomTest 将多个 LabelMatcher 合为 AND 语义的 BloomTests。
 func LabelMatchersToBloomTest(matchers ...LabelMatcher) BloomTest {
 	tests := make(BloomTests, 0, len(matchers))
 	for _, matcher := range matchers {
@@ -178,6 +183,7 @@ func (kvm keyValueMatcherTest) MatchesWithPrefixBuf(series labels.Labels, bloom 
 	return kvm.match(series, bloom, prefixedCombined)
 }
 
+// keyValueMatcherTest.match：series 已有该键值或在 bloom 中检测到 token 即视为匹配。
 // match returns true if the series matches the matcher or is in the bloom filter.
 func (kvm keyValueMatcherTest) match(series labels.Labels, bloom filter.Checker, combined []byte) bool {
 	// If we don't have the series labels, we cannot disambiguate which labels come from the series in which case
@@ -196,6 +202,7 @@ func (kvm keyValueMatcherTest) match(series labels.Labels, bloom filter.Checker,
 	return inSeries || inBloom
 }
 
+// appendToBuf 复用 buf 前缀区拼接 chunk 派生 token，避免热路径额外分配。
 // appendToBuf is the equivalent of append(buf[:prefixLen], str). len(buf) must
 // be greater than or equal to prefixLen+len(str) to avoid allocations.
 func appendToBuf(buf []byte, prefixLen int, str string) []byte {
@@ -252,3 +259,4 @@ func (km keyMatcherTest) match(series labels.Labels, bloom filter.Checker, key [
 	inBloom := bloom.Test(key)
 	return inSeries || inBloom
 }
+// series 标签为空时保守返回 true 并打 warn，避免误滤无结构化元数据的 chunk。

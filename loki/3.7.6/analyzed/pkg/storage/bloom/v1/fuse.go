@@ -1,5 +1,7 @@
 package v1
 
+// fuse 将多条 bloom 查询按指纹归并单次扫描块索引：逐 bloom 测试 chunk 是否可过滤，并汇总 BloomRecorder 统计。
+
 import (
 	"context"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/spanlogger"
 )
 
+// Request 携带指纹、标签、待查 chunk、BloomTest 与结果 channel。
 type Request struct {
 	Fp       model.Fingerprint
 	Labels   labels.Labels
@@ -23,6 +26,7 @@ type Request struct {
 	Recorder *BloomRecorder
 }
 
+// BloomRecorder 原子计数 found/skipped/missed/empty/filtered 系列与 chunk 维度指标。
 // BloomRecorder records the results of a bloom search
 func NewBloomRecorder(ctx context.Context, id string) *BloomRecorder {
 	return &BloomRecorder{
@@ -130,6 +134,7 @@ func (r *BloomRecorder) record(seriesFound, chunksFound, seriesSkipped, chunksSk
 	r.chunksFiltered.Add(int64(chunksFiltered))
 }
 
+// Output.Removals 为未在任何 bloom 中命中的 chunk，需下游下载完整数据。
 // Output represents a chunk that failed to pass all searches
 // and must be downloaded
 type Output struct {
@@ -137,6 +142,7 @@ type Output struct {
 	Removals ChunkRefs
 }
 
+// Fuse 用堆合并多路 Request，同指纹 batch 在 runSeries 中共享 bloom 加载。
 // Fuse combines multiple requests into a single loop iteration
 // over the data set and returns the corresponding outputs
 // TODO(owen-d): better async control
@@ -285,6 +291,7 @@ func (fq *FusedQuerier) Run() error {
 	return nil
 }
 
+// runSeries 要求 chunk 在所有 bloom 上均未命中才可 removal；空 bloom 或跳页则不滤 chunk。
 func (fq *FusedQuerier) runSeries(_ Schema, lbs labels.Labels, series *SeriesWithMeta, reqs []Request) {
 	// For a given chunk|series to be removed, it must fail to match all blooms.
 	// Because iterating/loading blooms can be expensive, we iterate blooms one at a time, collecting
@@ -435,3 +442,4 @@ func removalsFor(chunks ChunkRefs, found map[int]bool) ChunkRefs {
 	}
 	return removals
 }
+// series 级 Matches 失败可跳过该 bloom 的 chunk 级测试；found 映射记录任 bloom 命中即保留。

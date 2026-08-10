@@ -1,5 +1,7 @@
 package filter
 
+// filter 包实现 Boom Filters 概率数据结构：经典/可扩展/分区 Bloom、HyperLogLog 等，供 Loki bloom 块底层 membership 测试。
+
 /*
 Original work Copyright (c) 2015 Tyler Treat
 Modified work Copyright (c) 2023 Owen Diehl
@@ -51,6 +53,7 @@ import (
 	"math"
 )
 
+// fillRatio 0.5 为 Bloom 最优装载率，OptimalM/OptimalK 据此计算 m 与哈希函数数。
 // optimal fill ratio
 const fillRatio = 0.5
 
@@ -74,6 +77,7 @@ type Filter interface {
 	TestAndAdd([]byte) bool
 }
 
+// OptimalM 按期望元素数 n 与目标误报率 fpRate 计算最优位数组长度 m。
 // OptimalM calculates the optimal Bloom filter size, m, based on the number of
 // items and the desired rate of false positives.
 func OptimalM(n uint, fpRate float64) uint {
@@ -92,6 +96,7 @@ func estimatedCount(m uint, p float64) uint {
 	return uint(-float64(m) * math.Log(1-p))
 }
 
+// hashKernel 从单次 64 位哈希派生 k 个独立索引的上/下 32 位基值。
 // hashKernel returns the upper and lower base hash values from which the k
 // hashes are derived.
 func hashKernel(data []byte, hash hash.Hash64) (uint32, uint32) {
@@ -102,3 +107,4 @@ func hashKernel(data []byte, hash hash.Hash64) (uint32, uint32) {
 	lower := uint32((sum >> 32) & 0xffffffff)
 	return upper, lower
 }
+// 本文件为 Tyler Treat BoomFilters 的 Loki 分支，保留原 Apache 许可与出处注释。

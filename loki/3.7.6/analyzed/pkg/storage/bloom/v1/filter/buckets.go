@@ -9,6 +9,8 @@
 
 package filter
 
+// Buckets 用紧凑字节数组实现固定位宽计数桶，供分区 Bloom 各位平面存储 0/1 或计数值。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -51,6 +53,7 @@ func (b *Buckets) Count() uint {
 // delta. A bucket can be decremented by providing a negative delta. The value
 // is clamped to zero and the maximum bucket value. Returns itself to allow for
 // chaining.
+// Increment 增减桶值并钳制到 [0, max]；支持链式调用。
 func (b *Buckets) Increment(bucket uint, delta int32) *Buckets {
 	val := int32(b.getBits(bucket*uint(b.bucketSize), uint(b.bucketSize))) + delta
 	if val > int32(b.max) {
@@ -79,6 +82,7 @@ func (b *Buckets) Get(bucket uint) uint32 {
 	return b.getBits(bucket*uint(b.bucketSize), uint(b.bucketSize))
 }
 
+// PopCount 统计全部桶中置位总数，用于估算 Bloom 填充率。
 func (b *Buckets) PopCount() (count int) {
 	for _, x := range b.data {
 		count += bits.OnesCount8(x)
@@ -196,6 +200,7 @@ func (b *Buckets) ReadFrom(stream io.Reader) (int64, error) {
 	return bytesParams + int64(binary.Size(uint64(0))) + int64(len), nil
 }
 
+// DecodeFrom 零拷贝引用原始 buffer，只读 Test 场景下避免复制 data。
 // DecodeFrom reads a binary representation of Buckets (such as might
 // have been written by WriteTo()) from a buffer.
 // Whereas ReadFrom() reads the entire data into memory and
@@ -233,3 +238,4 @@ func (b *Buckets) GobDecode(data []byte) error {
 
 	return err
 }
+// getBits/setBits 处理跨字节边界的位域读写，WriteTo/ReadFrom 为大端二进制序列化。

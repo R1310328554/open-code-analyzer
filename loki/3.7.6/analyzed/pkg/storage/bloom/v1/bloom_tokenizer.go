@@ -1,5 +1,7 @@
 package v1
 
+// bloom_tokenizer 从 chunk 结构化元数据提取 ngram token 填充 Bloom：单 series 多 bloom 切分、缓存去重与满 bloom 自动滚动新建。
+
 import (
 	"math"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/pkg/push"
 )
 
+// BloomTokenizer 将 Loki chunk 或日志行转为 ngram token 写入可扩展 Bloom 过滤器。
 /*
 BloomTokenizer is a utility that converts either Loki chunks or individual lines into tokens.
 These tokens are n-grams, representing adjacent letters, that are used to populate a bloom filter.
@@ -31,6 +34,7 @@ const cacheSize = 150000
 const bloomTokenizerMetricsSubsystem = "bloom_tokenizer"
 const eightBits = 8
 
+// NewBloomTokenizer 返回的 token 切片复用内部缓冲，非线程安全且不可跨 Tokens 调用保留。
 // NewBloomTokenizer returns a new instance of the Bloom Tokenizer.
 // Warning: the tokens returned use the same byte slice to reduce allocations. This has two consequences:
 // 1) The token slices generated must not be mutated externally
@@ -56,6 +60,7 @@ func estimatedCount(m uint, p float64) uint {
 	return uint(-float64(m) * math.Log(1-p))
 }
 
+// Populate 按 series 处理：已有 bloom 原样转发，最后一个 bloom 增量索引新 chunk。
 // Populates a bloom filter(s) with the tokens from the given chunks.
 // Called once per series
 func (bt *BloomTokenizer) Populate(blooms v2iter.SizedIterator[*Bloom], chks v2iter.Iterator[ChunkRefWithIter], ch chan *BloomCreation) {
@@ -139,6 +144,7 @@ func (bt *BloomTokenizer) sendBloom(ch chan<- *BloomCreation, bloom *Bloom, info
 	}
 }
 
+// prefixForChunkRef 将 From/Through/Checksum 编码为 chunk 级 token 前缀（20 字节）。
 func prefixForChunkRef(chk ChunkRef) []byte {
 	enc := encoding.EncWith(make([]byte, 0, 20))
 	enc.PutBE64(uint64(chk.From))    // 8 bytes
@@ -147,6 +153,7 @@ func prefixForChunkRef(chk ChunkRef) []byte {
 	return enc.Get()
 }
 
+// addChunkToBloom 用 chunk ref 前缀构造 tokenizer，Peek 迭代确保整行元数据写入后再前进。
 // addChunkToBloom adds the values from structured metadata from the entries of the given chunk to the given bloom.
 // addChunkToBloom returns true if the bloom has been completely filled, and may not have consumed the entire iterator.
 // addChunkToBloom must be called multiple times until returning false with new blooms until the iterator has been fully consumed.
@@ -220,3 +227,4 @@ func (bt *BloomTokenizer) addChunkToBloom(bloom *Bloom, ref ChunkRef, entryIter 
 
 	return full, info
 }
+// cache 在 bloom 切换时必须 clear，保证每条日志行 token 至少进入一个 bloom。
