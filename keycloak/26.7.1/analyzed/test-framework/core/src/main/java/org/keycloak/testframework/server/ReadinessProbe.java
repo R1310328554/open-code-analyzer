@@ -12,24 +12,41 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 /**
- * Polls the server's endpoint until it reports ready, supporting both HTTP and HTTPS connections.
+ * 轮询服务器端点直至就绪，同时支持 HTTP 与 HTTPS 连接。
+ * <p>
+ * 测试环境通常未启用 {@code /health/ready}，因此以 master realm 可访问性作为就绪信号。
  */
 public final class ReadinessProbe {
 
+    /** 单次 HTTP 连接与读取超时（毫秒）。 */
     private static final int CONNECTION_TIMEOUT_MILLIS = Math.toIntExact(Duration.ofSeconds(5).toMillis());
+    /** 就绪轮询间隔（毫秒）。 */
     private static final long POLL_INTERVAL_MILLIS = Duration.ofMillis(500).toMillis();
 
     private ReadinessProbe() {
     }
 
+    /**
+     * 等待单节点 {@link KeycloakServer} 就绪。
+     *
+     * @param server 托管服务器实例
+     * @param timeout 超时时间（秒）
+     */
     public static void waitUntilReady(KeycloakServer server, long timeout) {
         waitUntilReady(index -> server.getBaseUrl(), 1, timeout);
     }
 
+    /**
+     * 等待集群中每个节点的基址均可访问。
+     *
+     * @param baseUrlFunction 按节点索引返回基址的函数
+     * @param clusterSize 集群节点数
+     * @param timeout 每个节点的超时时间（秒）
+     */
     public static void waitUntilReady(IntFunction<String> baseUrlFunction, int clusterSize, long timeout) {
         var sslContext = createTrustAllSslContext();
         for (int i = 0; i < clusterSize; i++) {
-            // can't use /health/ready has it is not enabled in most tests
+            // 多数测试未启用 /health/ready，改用 master realm 探测
             var url = baseUrlFunction.apply(i) + "/realms/master";
             waitUntilReady(url, sslContext, timeout);
         }
@@ -56,7 +73,7 @@ public final class ReadinessProbe {
                     connection.disconnect();
                 }
             } catch (Exception e) {
-                // server not yet available, retry
+                // 服务器尚未可用，稍后重试
             }
 
             try {

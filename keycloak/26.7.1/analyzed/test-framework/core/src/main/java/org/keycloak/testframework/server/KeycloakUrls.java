@@ -6,20 +6,29 @@ import java.net.URL;
 import org.keycloak.common.util.KeycloakUriBuilder;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 
+/**
+ * 封装托管 Keycloak 服务器常用端点的 URL 解析。
+ * <p>
+ * 提供应用基址、管理端口、master realm、Admin API 与 metrics 等路径的字符串与 {@link URL} 形式。
+ */
 public class KeycloakUrls {
 
     private final String baseUrl;
     private final String managementBaseUrl;
 
+    /**
+     * @param baseUrl 应用 HTTP(S) 基址
+     * @param managementBaseUrl 管理/指标端口基址
+     */
     public KeycloakUrls(String baseUrl, String managementBaseUrl) {
         this.baseUrl = baseUrl;
         this.managementBaseUrl = managementBaseUrl;
     }
 
     /**
-     * The base string representation of the URL of the Keycloak server (for example <code>http://localhost:8080</code>)
+     * Keycloak 服务器基址的字符串形式（例如 {@code http://localhost:8080}）。
      *
-     * @return the server base URL as a string
+     * @return 服务器基址字符串
      */
     public String getBase() {
         return baseUrl;
@@ -27,25 +36,25 @@ public class KeycloakUrls {
 
 
     /**
-     * The URL of the Keycloak server (for example <code>http://localhost:8080</code>)
+     * Keycloak 服务器基址的 {@link URL} 形式。
      *
-     * @return the server base URL
+     * @return 服务器基址 URL
      */
     public URL getBaseUrl() {
         return toUrl(getBase());
     }
 
     /**
-     * The string representation of the base URL of the master realm
+     * master realm 基址的字符串形式。
      *
-     * @return
+     * @return master realm URL 字符串
      */
     public String getMasterRealm() {
         return baseUrl + "/realms/master";
     }
 
     /**
-     * The URL of the master realm
+     * master realm 的 {@link URL}。
      *
      * @return master realm URL
      */
@@ -54,45 +63,45 @@ public class KeycloakUrls {
     }
 
     /**
-     * The string representation of the URL of Admin endpoints
+     * Admin REST API 基址的字符串形式。
      *
-     * @return admin URL as a string
+     * @return 管理端 URL 字符串
      */
     public String getAdmin() {
         return baseUrl + "/admin";
     }
 
     /**
-     * The URL of Admin endpoints
+     * Admin REST API 基址的 {@link URL}。
      *
-     * @return admin URL
+     * @return 管理端 URL
      */
     public URL getAdminUrl() {
         return toUrl(getAdmin());
     }
 
     /**
-     * Builder to resolve paths from the Keycloak server base URL
+     * 基于服务器基址构建 URI 路径。
      *
-     * @return base URL builder
+     * @return 基址 URI 构建器
      */
     public KeycloakUriBuilder getBaseBuilder() {
         return toBuilder(getBase());
     }
 
     /**
-     * Builder to resolve paths from the admin URL
+     * 基于 Admin API 基址构建 URI 路径。
      *
-     * @return admin URL builder
+     * @return 管理端 URI 构建器
      */
     public KeycloakUriBuilder getAdminBuilder() {
         return toBuilder(getAdmin());
     }
 
     /**
-     * String representation of the URL of the metrics endpoint
+     * metrics 端点的 URL 字符串。
      *
-     * @return metrics endpoint
+     * @return metrics 端点地址
      */
     public String getMetric() {
         return managementBaseUrl + "/metrics";
@@ -110,6 +119,12 @@ public class KeycloakUrls {
         return KeycloakUriBuilder.fromUri(url);
     }
 
+    /**
+     * 返回指定 realm 的 OIDC token 端点 URL。
+     *
+     * @param realm realm 名称
+     * @return token 端点 URL 字符串
+     */
     public String getToken(String realm) {
         return baseUrl + "/realms/" + realm + "/protocol/" + OIDCLoginProtocol.LOGIN_PROTOCOL + "/token";
     }

@@ -12,6 +12,11 @@ import org.keycloak.testframework.config.Config;
 
 import static java.lang.System.out;
 
+/**
+ * 连接本地已手动或脚本启动的 Keycloak 进程的 {@link KeycloakServer} 实现。
+ * <p>
+ * 不负责启动或停止进程，仅在未检测到监听端口时打印启动命令并等待。
+ */
 public class RemoteKeycloakServer implements KeycloakServer {
 
     private final long startTimeout;
@@ -20,10 +25,14 @@ public class RemoteKeycloakServer implements KeycloakServer {
 
     private String kcwCommand;
 
+    /**
+     * @param startTimeout 就绪探测超时时间（秒）
+     */
     public RemoteKeycloakServer(long startTimeout) {
         this.startTimeout = startTimeout;
     }
 
+    /** {@inheritDoc} — 检测远程进程，必要时输出启动说明并等待就绪。 */
     @Override
     public void start(KeycloakServerConfigBuilder keycloakServerConfigBuilder, boolean tlsEnabled) {
         this.tlsEnabled = tlsEnabled;
@@ -39,10 +48,12 @@ public class RemoteKeycloakServer implements KeycloakServer {
         ReadinessProbe.waitUntilReady(this, startTimeout);
     }
 
+    /** {@inheritDoc} — 远程模式不停止外部进程。 */
     @Override
     public void stop() {
     }
 
+    /** {@inheritDoc} — 返回本地默认 HTTP/HTTPS 应用端口。 */
     @Override
     public String getBaseUrl() {
         if (tlsEnabled) {
@@ -52,6 +63,7 @@ public class RemoteKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** {@inheritDoc} — 返回本地默认管理/指标端口。 */
     @Override
     public String getManagementBaseUrl() {
         if (tlsEnabled) {
@@ -61,6 +73,7 @@ public class RemoteKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** 打印手动启动 Keycloak 所需的 CLI 命令与 provider 列表。 */
     private void printStartupInstructionsManual(KeycloakServerConfigBuilder config) {
         out.println("Remote Keycloak server is not running on " + getBaseUrl() + ", please start Keycloak with:");
         out.println();
@@ -77,6 +90,7 @@ public class RemoteKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** 打印使用 {@code kcw} 包装脚本启动时的命令与环境变量提示。 */
     private void printStartupInstructionsKcw(KeycloakServerConfigBuilder config) {
         out.println("Remote Keycloak server is not running on " + getBaseUrl() + ", please start Keycloak with:");
         out.println();
@@ -91,6 +105,7 @@ public class RemoteKeycloakServer implements KeycloakServer {
         out.println();
     }
 
+    /** 尝试连接基址以判断 Keycloak 是否已在监听。 */
     private boolean verifyRunningKeycloak() {
         try {
             new URL(getBaseUrl()).openConnection().connect();
@@ -106,6 +121,7 @@ public class RemoteKeycloakServer implements KeycloakServer {
         }
     }
 
+    /** 在固定窗口内轮询，直至检测到 Keycloak 开始监听。 */
     private void waitForStartup() {
         long waitUntil = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5);
         while (!verifyRunningKeycloak() && System.currentTimeMillis() < waitUntil) {

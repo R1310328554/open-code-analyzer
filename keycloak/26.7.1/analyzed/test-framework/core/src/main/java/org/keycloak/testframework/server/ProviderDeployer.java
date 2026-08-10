@@ -18,6 +18,11 @@ import org.keycloak.testframework.util.MavenProjectUtil;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import org.jboss.logging.Logger;
 
+/**
+ * 将测试声明的 Maven provider 依赖同步到 Keycloak {@code providers} 目录。
+ * <p>
+ * 支持热部署（从编译输出打包 JAR）与远程 artifact 复制，并清理未请求的遗留 JAR。
+ */
 final class ProviderDeployer {
 
     private final Logger log;
@@ -25,6 +30,12 @@ final class ProviderDeployer {
     private final boolean hotDeployEnabled;
     private final Set<KeycloakDependency> requestedDependencies;
 
+    /**
+     * @param log 日志记录器
+     * @param keycloakHomeDir Keycloak 安装根目录
+     * @param requestedDependencies 测试请求的 provider 依赖
+     * @param hotDeployEnabled 是否允许热部署本地模块
+     */
     ProviderDeployer(Logger log, File keycloakHomeDir, Set<KeycloakDependency> requestedDependencies, boolean hotDeployEnabled) {
         this.log = log;
         this.providersDir = new File(keycloakHomeDir, "providers");
@@ -32,6 +43,12 @@ final class ProviderDeployer {
         this.hotDeployEnabled = hotDeployEnabled;
     }
 
+    /**
+     * 同步 providers 目录：删除多余 JAR、复制或打包请求的依赖。
+     *
+     * @return 是否有任何 provider 文件被新增或更新
+     * @throws IOException 读写 provider 文件失败时
+     */
     boolean updateDependencies() throws IOException {
         boolean anyDependenciesModified = deleteNotRequestedDependencies();
 
@@ -64,6 +81,7 @@ final class ProviderDeployer {
         return anyDependenciesModified;
     }
 
+    /** 根据 Maven 坐标生成 providers 目录下的 JAR 文件名。 */
     private String getDependencyJarName(KeycloakDependency dependency) {
         String groupId = dependency.getGroupId();
         String artifactId = dependency.getArtifactId();
@@ -78,6 +96,7 @@ final class ProviderDeployer {
         return groupId + "__" + artifactId + ".jar";
     }
 
+    /** 删除 providers 目录中不在请求列表内的 JAR 及其 {@code .lastModified}  sidecar。 */
     private boolean deleteNotRequestedDependencies() {
         Set<String> requestedJarNames = requestedDependencies.stream()
                 .map(this::getDependencyJarName)
@@ -97,6 +116,7 @@ final class ProviderDeployer {
         return !toDelete.isEmpty();
     }
 
+    /** 列出 providers 目录下现有的 {@code .jar} 文件。 */
     private List<File> listExistingDependencies() {
         if (providersDir.isDirectory()) {
             File[] files = providersDir.listFiles(n -> n.getName().endsWith(".jar"));
@@ -107,6 +127,7 @@ final class ProviderDeployer {
         return List.of();
     }
 
+    /** 解析依赖源路径：当前模块 classes、本地模块输出或 Maven 仓库 artifact。 */
     private Path getDependencyPath(KeycloakDependency d) {
         if (d.dependencyCurrentProject()) {
             return MavenProjectUtil.getCurrentModule().getClassesDir();
@@ -119,6 +140,7 @@ final class ProviderDeployer {
         return Maven.resolveArtifact(d.getGroupId(), d.getArtifactId());
     }
 
+    /** 返回文件或目录树中最新的最后修改时间戳，用于增量部署判断。 */
     private long getMostRecentModification(Path path) throws IOException {
         File file = path.toFile();
         if (!file.exists()) {
