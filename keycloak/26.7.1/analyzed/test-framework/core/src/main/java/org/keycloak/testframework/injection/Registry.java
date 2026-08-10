@@ -28,39 +28,65 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
+/**
+ * Keycloak 测试框架的核心依赖注入注册表。
+ * <p>
+ * 在 JUnit 5 扩展生命周期中扫描测试类/方法/字段的注入需求，部署 {@link Supplier} 实例，
+ * 解析依赖图、注入字段，并在各生命周期阶段销毁或清理托管资源。
+ */
 public class Registry implements AutoCloseable {
 
+    /** 注册表操作日志记录器。 */
     private final RegistryLogger logger;
 
+    /** 当前 JUnit 扩展上下文。 */
     private ExtensionContext currentContext;
+    /** 全局扩展与供应器注册中心。 */
     private final Extensions extensions;
+    /** 已部署的托管实例列表。 */
     private final List<InstanceContext<?, ?>> deployedInstances = new LinkedList<>();
+    /** 当前测试方法待部署的请求实例列表。 */
     private final List<RequestedInstance<?, ?>> requestedInstances = new LinkedList<>();
+    /** 测试类级致命错误，导致后续方法被跳过。 */
     private FatalTestClassException fatalTestClassException;
 
+    /** 当前测试类实例，用于 {@link org.keycloak.testframework.annotations.TestSetup}/{@link org.keycloak.testframework.annotations.TestCleanup}。 */
     private Object currentTestInstance;
 
+    /** 构造注册表并初始化扩展与日志记录器。 */
     public Registry() {
         extensions = Extensions.getInstance();
         logger = new RegistryLogger(extensions.getValueTypeAlias());
     }
 
+    /** @return 内部日志记录器 */
     RegistryLogger getLogger() {
         return logger;
     }
 
+    /** @return 扩展注册中心 */
     Extensions getExtensions() {
         return extensions;
     }
 
+    /** @return 当前 JUnit 扩展上下文 */
     public ExtensionContext getCurrentContext() {
         return currentContext;
     }
 
+    /** 设置当前 JUnit 扩展上下文。 */
     public void setCurrentContext(ExtensionContext currentContext) {
         this.currentContext = currentContext;
     }
 
+    /**
+     * 为已部署实例解析并返回已声明的依赖值。
+     *
+     * @param typeClass 依赖类型
+     * @param ref 实例引用标识
+     * @param dependent 请求依赖的实例上下文
+     * @return 依赖对象值
+     */
     public <T> T getDependency(Class<T> typeClass, String ref, InstanceContext dependent) {
         ref = StringUtil.convertEmptyToNull(ref);
 
@@ -83,14 +109,17 @@ public class Registry implements AutoCloseable {
         throw new RuntimeException("Dependency not found: " + typeClass);
     }
 
+    /** @return 已部署实例列表 */
     public List<InstanceContext<?, ?>> getDeployedInstances() {
         return deployedInstances;
     }
 
+    /** @return 当前待部署请求实例列表 */
     public List<RequestedInstance<?, ?>> getRequestedInstances() {
         return requestedInstances;
     }
 
+    /** 从已部署实例中查找依赖并登记反向依赖关系。 */
     private <T> T getDeployedDependency(Class<T> typeClass, String ref, InstanceContext dependent) {
         InstanceContext dependency = getDeployedInstance(typeClass, ref);
         if (dependency != null) {
@@ -103,6 +132,7 @@ public class Registry implements AutoCloseable {
         return null;
     }
 
+    /** 将待部署请求实例即时部署并作为依赖返回。 */
     private <T> T getRequestedDependency(Class<T> typeClass, String ref, InstanceContext dependent) {
         RequestedInstance requestedDependency = getRequestedInstance(typeClass, ref);
         if (requestedDependency != null) {
@@ -120,6 +150,12 @@ public class Registry implements AutoCloseable {
         return null;
     }
 
+    /**
+     * 每个测试方法执行前的核心准备流程：扫描请求、匹配/部署实例、注入字段并运行 {@link TestSetup}。
+     *
+     * @param testInstance 测试类实例
+     * @param testMethod 即将执行的测试方法
+     */
     public void beforeEach(Object testInstance, Method testMethod) {
         if (fatalTestClassException != null) {
             skipTestMethod();
@@ -145,10 +181,14 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 因致命测试类错误而中止当前测试方法。 */
     private void skipTestMethod() {
         Assumptions.abort("Skipping test method due to fatal test class error");
     }
 
+    /**
+     * JUnit 调用拦截：若存在匹配的 {@link TestFrameworkExecutor} 则由其执行并跳过原方法。
+     */
     public void intercept(InvocationInterceptor.Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext) throws Throwable {
         Class<?> testClass = invocationContext.getTargetClass();
         Method testMethod = invocationContext.getExecutable();
@@ -162,6 +202,7 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 判断测试方法参数是否由测试框架执行器支持注入。 */
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) {
         Method testMethod = (Method) parameterContext.getParameter().getDeclaringExecutable();
         Class<?> parameterType = parameterContext.getParameter().getType();
@@ -169,6 +210,7 @@ public class Registry implements AutoCloseable {
         return testFrameworkExecutor != null && testFrameworkExecutor.supportsParameter(testMethod, parameterType);
     }
 
+    /** 扫描始终启用类型、方法级类型、类/字段注解及隐式依赖，构建请求实例列表。 */
     private void findRequestedInstances(Object testInstance, Method testMethod) {
         List<Class<?>> alwaysEnabledValueTypes = extensions.getAlwaysEnabledValueTypes();
         for (Class<?> valueType : alwaysEnabledValueTypes) {
@@ -206,6 +248,7 @@ public class Registry implements AutoCloseable {
         logger.logRequestedInstances(requestedInstances);
     }
 
+    /** 销毁与当前请求不兼容的已部署实例。 */
     private void destroyIncompatibleInstances() {
         for (RequestedInstance<?, ?> requestedInstance : requestedInstances) {
             InstanceContext deployedInstance = getDeployedInstance(requestedInstance);
@@ -219,6 +262,7 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 复用生命周期与配置均兼容的已部署实例，并从请求列表移除。 */
     private void matchDeployedInstancesWithRequestedInstances() {
         Iterator<RequestedInstance<?, ?>> itr = requestedInstances.iterator();
         while (itr.hasNext()) {
@@ -233,6 +277,7 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 按依赖顺序与供应器 {@link Supplier#order()} 部署所有待请求实例。 */
     private void deployRequestedInstances() {
         requestedInstances.sort(RequestedInstanceComparator.INSTANCE);
 
@@ -264,16 +309,18 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 将已部署实例值注入测试类中带注入注解的字段。 */
     private void injectFields(Object testInstance) {
         for (Field f : ReflectionUtils.listFields(testInstance.getClass())) {
             InstanceContext<?, ?> instance = getDeployedInstance(f.getType(), f.getAnnotations());
-            if (instance == null) { // a test class might have fields not meant for injection
+            if (instance == null) { // 测试类可能含有非注入用途的字段
                 continue;
             }
             ReflectionUtils.setField(f, testInstance, instance.getValue());
         }
     }
 
+    /** 调用测试类上带指定注解且无参的方法（如 {@link TestSetup}、{@link TestCleanup}）。 */
     private void executeSetup(Object testInstance, Class<? extends Annotation> annotation) {
         for (Method m : ReflectionUtils.listMethods(testInstance.getClass(), annotation)) {
             if (m.getParameterCount() != 0) {
@@ -289,6 +336,7 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 测试类结束后运行 {@link TestCleanup}、销毁 CLASS 生命周期实例并抛出累积的致命错误。 */
     public void afterAll() {
         FatalTestClassException exception = fatalTestClassException;
         fatalTestClassException = null;
@@ -306,6 +354,7 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 每个测试方法结束后销毁 METHOD 生命周期实例，并对 {@link ManagedTestResource} 执行清理或重建。 */
     public void afterEach() {
         logger.logAfterEach();
         List<InstanceContext<?, ?>> destroy = deployedInstances.stream().filter(InstanceContextPredicates.hasLifeCycle(LifeCycle.METHOD)).toList();
@@ -324,16 +373,25 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 关闭注册表，按相反顺序销毁所有剩余已部署实例。 */
     public void close() {
         logger.logClose();
         List<InstanceContext<?, ?>> destroy = deployedInstances.stream().sorted(InstanceContextComparator.INSTANCE.reversed()).toList();
         destroy.forEach(this::destroy);
     }
 
+    /** @return 已加载供应器列表 */
     List<Supplier<?, ?>> getSuppliers() {
         return extensions.getSuppliers();
     }
 
+    /**
+     * 根据注解数组或值类型创建 {@link RequestedInstance}。
+     *
+     * @param annotations 字段/类注解，可为 {@code null} 表示按类型查找
+     * @param valueType 期望的值类型
+     * @return 请求实例，无匹配供应器时返回 {@code null}
+     */
     RequestedInstance<?, ?> createRequestedInstance(Annotation[] annotations, Class<?> valueType) {
         if (annotations != null) {
             for (Annotation annotation : annotations) {
@@ -355,6 +413,7 @@ public class Registry implements AutoCloseable {
         return null;
     }
 
+    /** 按字段注解与值类型匹配已部署实例。 */
     private InstanceContext<?, ?> getDeployedInstance(Class<?> valueType, Annotation[] annotations) {
         for (Annotation a : annotations) {
             for (InstanceContext<?, ?> i : deployedInstances) {
@@ -369,6 +428,7 @@ public class Registry implements AutoCloseable {
         return null;
     }
 
+    /** 递归销毁实例及其依赖方，并调用供应器 {@link Supplier#close}。 */
     private void destroy(InstanceContext instanceContext) {
         boolean removed = deployedInstances.remove(instanceContext);
         if (removed) {
@@ -380,6 +440,7 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 按 ref 与值类型/供应器匹配已部署实例。 */
     private InstanceContext getDeployedInstance(RequestedInstance requestedInstance) {
         String requestedRef = requestedInstance.getRef();
         Class requestedValueType = requestedInstance.getValueType();
@@ -399,28 +460,33 @@ public class Registry implements AutoCloseable {
         return null;
     }
 
+    /** 按类型与 ref 查找已部署实例。 */
     private InstanceContext getDeployedInstance(Class typeClass, String ref) {
         return deployedInstances.stream()
                 .filter(InstanceContextPredicates.matches(typeClass, ref))
                 .findFirst().orElse(null);
     }
 
+    /** 按类型与 ref 查找待部署请求实例。 */
     private RequestedInstance getRequestedInstance(Class typeClass, String ref) {
         return requestedInstances.stream()
                 .filter(RequestedInstancePredicates.matches(typeClass, ref))
                 .findFirst().orElse(null);
     }
 
+    /** 对所有已部署实例调用供应器 {@link Supplier#onBeforeEach}。 */
     private void invokeBeforeEachOnSuppliers() {
         for (InstanceContext i : deployedInstances) {
             i.getSupplier().onBeforeEach(i);
         }
     }
 
+    /** 返回应拦截指定测试方法的第一个执行器。 */
     private TestFrameworkExecutor getExecutor(Method testMethod) {
         return extensions.getTestFrameworkExecutors().stream().filter(TestFrameworkExecutorPredicates.shouldExecute(testMethod)).findFirst().orElse(null);
     }
 
+    /** 构造注解与字段类型不匹配的致命测试类异常。 */
     private FatalTestClassException typeMismatch(
             Class<? extends Annotation> annotation,
             Class<?> expectedType,
@@ -433,8 +499,10 @@ public class Registry implements AutoCloseable {
         );
     }
 
+    /** 按供应器 {@link Supplier#order()} 比较请求实例部署顺序。 */
     private static class RequestedInstanceComparator implements Comparator<RequestedInstance> {
 
+        /** 单例比较器实例。 */
         static final RequestedInstanceComparator INSTANCE = new RequestedInstanceComparator();
 
         @Override
@@ -443,8 +511,10 @@ public class Registry implements AutoCloseable {
         }
     }
 
+    /** 按供应器顺序比较已部署实例，用于关闭时的销毁顺序。 */
     private static class InstanceContextComparator implements Comparator<InstanceContext> {
 
+        /** 单例比较器实例。 */
         static final InstanceContextComparator INSTANCE = new InstanceContextComparator();
 
         @Override
