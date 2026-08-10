@@ -22,9 +22,11 @@ import java.net.SocketAddress;
 
 /**
  * A {@link AddressResolverGroup} of {@link NoopAddressResolver}s.
+ * <p>{@link NoopAddressResolver} 的解析器组单例，禁用 Netty 默认的地址解析行为。</p>
  */
 public final class NoopAddressResolverGroup extends AddressResolverGroup<SocketAddress> {
 
+    /** 全局单例，与 {@link DefaultAddressResolverGroup#INSTANCE} 相对。 */
     public static final NoopAddressResolverGroup INSTANCE = new NoopAddressResolverGroup();
 
     private NoopAddressResolverGroup() { }

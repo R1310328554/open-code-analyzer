@@ -26,6 +26,8 @@ import static io.netty.util.internal.ObjectUtil.*;
 
 /**
  * A skeletal {@link NameResolver} implementation.
+ * <p>{@link NameResolver} 的模板基类：公共方法处理 {@link Promise} 创建与异常捕获，
+ * 子类仅需实现 {@link #doResolve} 与 {@link #doResolveAll}。</p>
  */
 public abstract class SimpleNameResolver<T> implements NameResolver<T> {
 
@@ -42,6 +44,7 @@ public abstract class SimpleNameResolver<T> implements NameResolver<T> {
     /**
      * Returns the {@link EventExecutor} which is used to notify the listeners of the {@link Future} returned
      * by {@link #resolve(String)}.
+     * <p>供子类在异步回调中完成 {@link Promise}。</p>
      */
     protected EventExecutor executor() {
         return executor;
@@ -85,11 +88,13 @@ public abstract class SimpleNameResolver<T> implements NameResolver<T> {
 
     /**
      * Invoked by {@link #resolve(String)} to perform the actual name resolution.
+     * <p>子类实现单次名称解析逻辑。</p>
      */
     protected abstract void doResolve(String inetHost, Promise<T> promise) throws Exception;
 
     /**
      * Invoked by {@link #resolveAll(String)} to perform the actual name resolution.
+     * <p>子类实现返回全部地址的解析逻辑。</p>
      */
     protected abstract void doResolveAll(String inetHost, Promise<List<T>> promise) throws Exception;
 

@@ -23,8 +23,11 @@ import java.net.InetSocketAddress;
 
 /**
  * A skeletal {@link NameResolver} implementation that resolves {@link InetAddress}.
+ * <p>解析 {@link InetAddress} 的 {@link NameResolver} 骨架基类，
+ * 提供 {@link #asAddressResolver()} 将自身包装为 {@link InetSocketAddress} 解析器。</p>
  */
 public abstract class InetNameResolver extends SimpleNameResolver<InetAddress> {
+    /** 懒加载缓存的地址解析器，与当前 NameResolver 共享同一 executor。 */
     private volatile AddressResolver<InetSocketAddress> addressResolver;
 
     /**
@@ -38,6 +41,7 @@ public abstract class InetNameResolver extends SimpleNameResolver<InetAddress> {
     /**
      * Return a {@link AddressResolver} that will use this name resolver underneath.
      * It's cached internally, so the same instance is always returned.
+     * <p>返回基于本解析器的 {@link AddressResolver}；双重检查锁定保证单例缓存。</p>
      */
     public AddressResolver<InetSocketAddress> asAddressResolver() {
         AddressResolver<InetSocketAddress> result = addressResolver;

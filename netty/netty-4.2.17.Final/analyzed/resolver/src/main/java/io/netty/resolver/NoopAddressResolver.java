@@ -26,6 +26,8 @@ import java.util.List;
 /**
  * A {@link AddressResolver} that does not perform any resolution but always reports successful resolution.
  * This resolver is useful when name resolution is performed by a handler in a pipeline, such as a proxy handler.
+ * <p>空操作地址解析器：不执行 DNS/hosts 查询，直接原样返回输入地址。
+ * 适用于代理 Handler 等已在 Pipeline 中完成名称解析的场景。</p>
  */
 public class NoopAddressResolver extends AbstractAddressResolver<SocketAddress> {
 
@@ -35,6 +37,7 @@ public class NoopAddressResolver extends AbstractAddressResolver<SocketAddress> 
 
     @Override
     protected boolean doIsResolved(SocketAddress address) {
+        // 始终视为已解析，跳过 Bootstrap 的自动解析阶段
         return true;
     }
 

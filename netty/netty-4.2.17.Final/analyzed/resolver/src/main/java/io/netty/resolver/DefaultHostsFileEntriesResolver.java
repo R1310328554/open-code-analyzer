@@ -32,17 +32,24 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Default {@link HostsFileEntriesResolver} that resolves hosts file entries only once.
+ * <p>默认 hosts 文件解析器：启动时加载 {@code /etc/hosts}（或 Windows 等价路径），
+ * 可按系统属性 {@code io.netty.hostsFileRefreshInterval} 定期刷新缓存。</p>
  */
 public final class DefaultHostsFileEntriesResolver implements HostsFileEntriesResolver {
 
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(DefaultHostsFileEntriesResolver.class);
+    /** 默认刷新间隔（纳秒）；0 表示仅加载一次、不自动刷新。 */
     private static final long DEFAULT_REFRESH_INTERVAL;
 
+    /** 两次刷新之间的最小间隔（纳秒）。 */
     private final long refreshInterval;
+    /** 上次成功刷新的单调时钟时间戳。 */
     private final AtomicLong lastRefresh = new AtomicLong(System.nanoTime());
     private final HostsFileEntriesProvider.Parser hostsFileParser;
+    /** IPv4 主机名到地址列表的 volatile 快照。 */
     private volatile Map<String, List<InetAddress>> inet4Entries;
+    /** IPv6 主机名到地址列表的 volatile 快照。 */
     private volatile Map<String, List<InetAddress>> inet6Entries;
 
     static {
@@ -102,6 +109,7 @@ public final class DefaultHostsFileEntriesResolver implements HostsFileEntriesRe
         }
     }
 
+    /** 若配置了刷新间隔且已过期，则 CAS 竞争成功后重新解析 hosts 文件。 */
     private void ensureHostsFileEntriesAreFresh() {
         long interval = refreshInterval;
         if (interval == 0) {
@@ -138,9 +146,7 @@ public final class DefaultHostsFileEntriesResolver implements HostsFileEntriesRe
 
     private static HostsFileEntriesProvider parseEntries(HostsFileEntriesProvider.Parser parser) {
         if (PlatformDependent.isWindows()) {
-            // Ony windows there seems to be no standard for the encoding used for the hosts file, so let us
-            // try multiple until we either were able to parse it or there is none left and so we return an
-            // empty instance.
+            // Windows 上 hosts 文件编码无统一标准，依次尝试系统默认、UTF-16、UTF-8
             return parser.parseSilently(Charset.defaultCharset(), CharsetUtil.UTF_16, CharsetUtil.UTF_8);
         }
         return parser.parseSilently();

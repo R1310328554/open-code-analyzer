@@ -17,22 +17,27 @@ package io.netty.resolver;
 
 /**
  * Defined resolved address types.
+ * <p>hosts 文件或名称解析时 IPv4/IPv6 地址类型的选择策略。</p>
  */
 public enum ResolvedAddressTypes {
     /**
      * Only resolve IPv4 addresses
+     * <p>仅解析 IPv4 地址。</p>
      */
     IPV4_ONLY,
     /**
      * Only resolve IPv6 addresses
+     * <p>仅解析 IPv6 地址。</p>
      */
     IPV6_ONLY,
     /**
      * Prefer IPv4 addresses over IPv6 ones
+     * <p>优先 IPv4；若无 IPv4 条目则回退 IPv6。</p>
      */
     IPV4_PREFERRED,
     /**
      * Prefer IPv6 addresses over IPv4 ones
+     * <p>优先 IPv6；若无 IPv6 条目则回退 IPv4。</p>
      */
     IPV6_PREFERRED
 }

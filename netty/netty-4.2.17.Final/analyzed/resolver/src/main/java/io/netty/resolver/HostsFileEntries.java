@@ -25,18 +25,23 @@ import java.util.Map;
  * A container of hosts file entries.
  * The mappings contain only the first entry per hostname.
  * Consider using {@link HostsFileEntriesProvider} when mappings with all entries per hostname are needed.
+ * <p>hosts 文件解析结果的不可变容器；每个主机名仅保留第一条映射。
+ * 若需同一主机名对应多个 IP，请使用 {@link HostsFileEntriesProvider}。</p>
  */
 public final class HostsFileEntries {
 
     /**
      * Empty entries
+     * <p>解析失败或无条目时的空实例。</p>
      */
     static final HostsFileEntries EMPTY =
             new HostsFileEntries(
                     Collections.<String, Inet4Address>emptyMap(),
                     Collections.<String, Inet6Address>emptyMap());
 
+    /** IPv4 主机名到地址的只读映射。 */
     private final Map<String, Inet4Address> inet4Entries;
+    /** IPv6 主机名到地址的只读映射。 */
     private final Map<String, Inet6Address> inet6Entries;
 
     public HostsFileEntries(Map<String, Inet4Address> inet4Entries, Map<String, Inet6Address> inet6Entries) {

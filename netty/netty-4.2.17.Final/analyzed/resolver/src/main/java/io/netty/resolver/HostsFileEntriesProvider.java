@@ -41,6 +41,8 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
  * A container of hosts file entries
+ * <p>hosts 文件解析结果容器，支持同一主机名对应多个 {@link InetAddress}。
+ * 通过 {@link #parser()} 获取 {@link Parser} 从 OS 标准路径或自定义文件读取。</p>
  */
 public final class HostsFileEntriesProvider {
 
@@ -123,6 +125,7 @@ public final class HostsFileEntriesProvider {
         return ParserImpl.INSTANCE;
     }
 
+    /** 解析无有效条目时的共享空实例。 */
     static final HostsFileEntriesProvider EMPTY =
             new HostsFileEntriesProvider(
                     Collections.<String, List<InetAddress>>emptyMap(),
@@ -160,6 +163,7 @@ public final class HostsFileEntriesProvider {
         private static final String WINDOWS_HOSTS_FILE_RELATIVE_PATH = "\\system32\\drivers\\etc\\hosts";
         private static final String X_PLATFORMS_HOSTS_FILE_PATH = "/etc/hosts";
 
+        /** 行内空白分隔符（空格与制表符）。 */
         private static final Pattern WHITESPACES = Pattern.compile("[ \t]+");
 
         private static final InternalLogger logger = InternalLoggerFactory.getInstance(Parser.class);
@@ -209,18 +213,18 @@ public final class HostsFileEntriesProvider {
                 Map<String, List<InetAddress>> ipv6Entries = new HashMap<>();
                 String line;
                 while ((line = buff.readLine()) != null) {
-                    // remove comment
+                    // 截断 # 注释
                     int commentPosition = line.indexOf('#');
                     if (commentPosition != -1) {
                         line = line.substring(0, commentPosition);
                     }
-                    // skip empty lines
+                    // 跳过空行
                     line = line.trim();
                     if (line.isEmpty()) {
                         continue;
                     }
 
-                    // split
+                    // 按空白拆分字段
                     List<String> lineParts = new ArrayList<>();
                     for (String s : WHITESPACES.split(line)) {
                         if (!s.isEmpty()) {
@@ -228,20 +232,20 @@ public final class HostsFileEntriesProvider {
                         }
                     }
 
-                    // a valid line should be [IP, hostname, alias*]
+                    // 有效行格式：[IP, hostname, alias*]
                     if (lineParts.size() < 2) {
-                        // skip invalid line
+                        // 字段不足，跳过
                         continue;
                     }
 
                     byte[] ipBytes = NetUtil.createByteArrayFromIpAddressString(lineParts.get(0));
 
                     if (ipBytes == null) {
-                        // skip invalid IP
+                        // IP 格式无效，跳过
                         continue;
                     }
 
-                    // loop over hostname and aliases
+                    // 遍历主机名与别名
                     for (int i = 1; i < lineParts.size(); i++) {
                         String hostname = lineParts.get(i);
                         String hostnameLower = hostname.toLowerCase(Locale.ENGLISH);
@@ -291,6 +295,7 @@ public final class HostsFileEntriesProvider {
             }
         }
 
+        /** 按平台定位 hosts 文件：Windows 尝试 SystemRoot，Unix 使用 /etc/hosts。 */
         private static File locateHostsFile() {
             File hostsFile;
             if (PlatformDependent.isWindows()) {

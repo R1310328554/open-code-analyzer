@@ -22,15 +22,19 @@ import java.net.InetSocketAddress;
 
 /**
  * A {@link AddressResolverGroup} of {@link DefaultNameResolver}s.
+ * <p>基于 {@link DefaultNameResolver} 的默认 {@link AddressResolverGroup} 单例，
+ * 为每个 {@link EventExecutor} 创建使用 JDK 域名解析的 {@link InetSocketAddress} 解析器。</p>
  */
 public final class DefaultAddressResolverGroup extends AddressResolverGroup<InetSocketAddress> {
 
+    /** 全局共享实例，Bootstrap 等组件默认使用此解析器组。 */
     public static final DefaultAddressResolverGroup INSTANCE = new DefaultAddressResolverGroup();
 
     private DefaultAddressResolverGroup() { }
 
     @Override
     protected AddressResolver<InetSocketAddress> newResolver(EventExecutor executor) throws Exception {
+        // 将 InetNameResolver 包装为 AddressResolver，供 Channel 连接前解析未解析地址
         return new DefaultNameResolver(executor).asAddressResolver();
     }
 }

@@ -27,9 +27,12 @@ import java.util.List;
 
 /**
  * A {@link AbstractAddressResolver} that resolves {@link InetSocketAddress}.
+ * <p>将未解析的 {@link InetSocketAddress} 委托给 {@link NameResolver} 解析主机名，
+ * 解析成功后保留原端口号构造已解析地址。</p>
  */
 public class InetSocketAddressResolver extends AbstractAddressResolver<InetSocketAddress> {
 
+    /** 底层主机名解析器，负责将 hostname 转为 {@link InetAddress}。 */
     final NameResolver<InetAddress> nameResolver;
 
     /**
@@ -50,8 +53,7 @@ public class InetSocketAddressResolver extends AbstractAddressResolver<InetSocke
     @Override
     protected void doResolve(final InetSocketAddress unresolvedAddress, final Promise<InetSocketAddress> promise)
             throws Exception {
-        // Note that InetSocketAddress.getHostName() will never incur a reverse lookup here,
-        // because an unresolved address always has a host name.
+        // 未解析地址的 getHostName() 不会触发反向 DNS 查询
         nameResolver.resolve(unresolvedAddress.getHostName())
                 .addListener((FutureListener<InetAddress>) future -> {
                     if (future.isSuccess()) {
@@ -65,8 +67,7 @@ public class InetSocketAddressResolver extends AbstractAddressResolver<InetSocke
     @Override
     protected void doResolveAll(final InetSocketAddress unresolvedAddress,
                                 final Promise<List<InetSocketAddress>> promise) throws Exception {
-        // Note that InetSocketAddress.getHostName() will never incur a reverse lookup here,
-        // because an unresolved address always has a host name.
+        // 未解析地址的 getHostName() 不会触发反向 DNS 查询
         nameResolver.resolveAll(unresolvedAddress.getHostName())
                 .addListener((FutureListener<List<InetAddress>>) future -> {
                     if (future.isSuccess()) {

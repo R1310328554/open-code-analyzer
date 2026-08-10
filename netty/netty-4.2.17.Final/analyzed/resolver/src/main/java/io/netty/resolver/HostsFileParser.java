@@ -30,6 +30,8 @@ import java.util.Map;
  * A parser for hosts files.
  * The produced mappings contain only the first entry per hostname.
  * Consider using {@link HostsFileEntriesProvider} when mappings with all entries per hostname are needed.
+ * <p>hosts 文件解析工具类；每个主机名仅保留第一条 IP 映射。
+ * 内部委托 {@link HostsFileEntriesProvider} 完成实际解析。</p>
  */
 public final class HostsFileParser {
 
@@ -99,6 +101,7 @@ public final class HostsFileParser {
 
     /**
      * Can't be instantiated.
+     * <p>工具类，禁止实例化。</p>
      */
     private HostsFileParser() {
     }
@@ -110,6 +113,7 @@ public final class HostsFileParser {
                         (Map<String, Inet6Address>) toMapWithSingleValue(provider.ipv6Entries()));
     }
 
+    /** 将「主机名 → 地址列表」压缩为「主机名 → 首个地址」，符合 HostsFileEntries 语义。 */
     private static Map<String, ?> toMapWithSingleValue(Map<String, List<InetAddress>> fromMapWithListValue) {
         Map<String, InetAddress> result = new HashMap<String, InetAddress>(fromMapWithListValue.size());
         for (Map.Entry<String, List<InetAddress>> entry : fromMapWithListValue.entrySet()) {

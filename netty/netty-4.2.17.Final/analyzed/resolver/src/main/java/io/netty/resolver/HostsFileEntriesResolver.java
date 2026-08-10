@@ -19,11 +19,13 @@ import java.net.InetAddress;
 
 /**
  * Resolves a hostname against the hosts file entries.
+ * <p>根据本地 hosts 文件条目解析主机名的接口，可在 DNS 解析之前提供静态映射。</p>
  */
 public interface HostsFileEntriesResolver {
 
     /**
      * Default instance: a {@link DefaultHostsFileEntriesResolver}.
+     * <p>默认实现：{@link DefaultHostsFileEntriesResolver} 单例。</p>
      */
     HostsFileEntriesResolver DEFAULT = new DefaultHostsFileEntriesResolver();
 

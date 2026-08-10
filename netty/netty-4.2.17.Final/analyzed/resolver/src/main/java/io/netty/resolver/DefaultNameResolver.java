@@ -28,6 +28,8 @@ import java.util.List;
 /**
  * A {@link InetNameResolver} that resolves using JDK's built-in domain name lookup mechanism.
  * Note that this resolver performs a blocking name lookup from the caller thread.
+ * <p>使用 JDK 内置 {@code InetAddress} 机制解析主机名的默认实现。
+ * 解析在调用线程中同步阻塞执行，适合作为通用后备解析器。</p>
  */
 public class DefaultNameResolver extends InetNameResolver {
 
@@ -38,6 +40,7 @@ public class DefaultNameResolver extends InetNameResolver {
     @Override
     protected void doResolve(String inetHost, Promise<InetAddress> promise) throws Exception {
         try {
+            // SocketUtils 封装 JDK 调用，便于测试与平台差异隔离
             promise.setSuccess(SocketUtils.addressByName(inetHost));
         } catch (UnknownHostException e) {
             promise.setFailure(e);

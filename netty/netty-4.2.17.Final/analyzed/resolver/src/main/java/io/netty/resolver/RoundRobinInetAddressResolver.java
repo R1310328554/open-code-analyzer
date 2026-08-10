@@ -33,6 +33,9 @@ import java.util.concurrent.ThreadLocalRandom;
  * randomly in {@link #resolve(String)} and {@link #resolve(String, Promise)}
  * if multiple are returned by the {@link NameResolver}.
  * Use {@link #asAddressResolver()} to create a {@link InetSocketAddress} resolver
+ * <p>包装底层 {@link NameResolver}，在 {@link #resolve} 时从多地址中随机选取一条实现客户端负载均衡；
+ * {@link #resolveAll} 则随机旋转列表顺序以分散连接分布。
+ * 可通过 {@link #asAddressResolver()} 获得 {@link InetSocketAddress} 解析器。</p>
  */
 public class RoundRobinInetAddressResolver extends InetNameResolver {
     private final NameResolver<InetAddress> nameResolver;
@@ -49,16 +52,13 @@ public class RoundRobinInetAddressResolver extends InetNameResolver {
 
     @Override
     protected void doResolve(final String inetHost, final Promise<InetAddress> promise) throws Exception {
-        // hijack the doResolve request, but do a doResolveAll request under the hood.
-        // Note that InetSocketAddress.getHostName() will never incur a reverse lookup here,
-        // because an unresolved address always has a host name.
+        // 对外暴露 resolve，内部调用 resolveAll 再随机挑选一个地址
         nameResolver.resolveAll(inetHost).addListener((FutureListener<List<InetAddress>>) future -> {
             if (future.isSuccess()) {
                 List<InetAddress> inetAddresses = future.getNow();
                 int numAddresses = inetAddresses.size();
                 if (numAddresses > 0) {
-                    // if there are multiple addresses: we shall pick one by one
-                    // to support the round robin distribution
+                    // 多地址时随机索引，实现轮询式客户端负载均衡
                     promise.setSuccess(inetAddresses.get(randomIndex(numAddresses)));
                 } else {
                     promise.setFailure(new UnknownHostException(inetHost));
@@ -75,9 +75,8 @@ public class RoundRobinInetAddressResolver extends InetNameResolver {
             if (future.isSuccess()) {
                 List<InetAddress> inetAddresses = future.getNow();
                 if (!inetAddresses.isEmpty()) {
-                    // create a copy to make sure that it's modifiable random access collection
+                    // 复制为可变列表，每次随机旋转不同步长以打散顺序
                     List<InetAddress> result = new ArrayList<InetAddress>(inetAddresses);
-                    // rotate by different distance each time to force round robin distribution
                     Collections.rotate(result, randomIndex(inetAddresses.size()));
                     promise.setSuccess(result);
                 } else {
@@ -89,6 +88,7 @@ public class RoundRobinInetAddressResolver extends InetNameResolver {
         });
     }
 
+    /** 单地址时固定返回 0，多地址时使用 ThreadLocalRandom 选取索引。 */
     private static int randomIndex(int numAddresses) {
         return numAddresses == 1 ? 0 : ThreadLocalRandom.current().nextInt(numAddresses);
     }

@@ -24,6 +24,8 @@ import java.util.List;
 
 /**
  * Resolves an arbitrary string that represents the name of an endpoint into an address.
+ * <p>将端点名称字符串异步解析为地址的通用接口；所有方法返回 {@link Future}，
+ * 便于在 {@link EventExecutor} 上链式组合解析逻辑。</p>
  */
 public interface NameResolver<T> extends Closeable {
 
@@ -67,6 +69,7 @@ public interface NameResolver<T> extends Closeable {
 
     /**
      * Closes all the resources allocated and used by this resolver.
+     * <p>释放解析器占用的资源；无状态实现可为空操作。</p>
      */
     @Override
     void close();
