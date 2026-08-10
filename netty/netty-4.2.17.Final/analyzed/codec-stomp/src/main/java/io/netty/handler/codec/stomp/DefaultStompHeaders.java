@@ -27,8 +27,14 @@ import io.netty.handler.codec.HeadersUtils;
 import static io.netty.util.AsciiString.CASE_INSENSITIVE_HASHER;
 import static io.netty.util.AsciiString.CASE_SENSITIVE_HASHER;
 
+/**
+ * {@link StompHeaders} 的默认实现。
+ * <p>基于 {@link DefaultHeaders}，头部名大小写敏感；提供 {@link String} 视图及按值查找的便捷方法。</p>
+ */
 public class DefaultStompHeaders
         extends DefaultHeaders<CharSequence, CharSequence, StompHeaders> implements StompHeaders {
+
+    /** 使用大小写敏感哈希的默认构造。 */
     public DefaultStompHeaders() {
         super(CASE_SENSITIVE_HASHER, CharSequenceValueConverter.INSTANCE);
     }
@@ -48,6 +54,7 @@ public class DefaultStompHeaders
         return HeadersUtils.iteratorAsString(this);
     }
 
+    /** 大小写敏感地判断名值对是否存在。 */
     @Override
     public boolean contains(CharSequence name, CharSequence value) {
         return contains(name, value, false);
@@ -59,6 +66,7 @@ public class DefaultStompHeaders
                 ignoreCase ? CASE_INSENSITIVE_HASHER : CASE_SENSITIVE_HASHER);
     }
 
+    /** 深拷贝全部头部条目到新实例。 */
     @Override
     public DefaultStompHeaders copy() {
         DefaultStompHeaders copyHeaders = new DefaultStompHeaders();

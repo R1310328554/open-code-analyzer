@@ -19,9 +19,14 @@ import io.netty.buffer.ByteBuf;
 
 /**
  * The default implementation for the {@link LastStompContentSubframe}.
+ * <p>{@link LastStompContentSubframe} 的默认实现，继承 {@link DefaultStompContentSubframe}，
+ * 表示正文分块序列的最后一帧。</p>
  */
 public class DefaultLastStompContentSubframe extends DefaultStompContentSubframe implements LastStompContentSubframe {
 
+    /**
+     * @param content 末块正文；可为空缓冲区表示无正文
+     */
     public DefaultLastStompContentSubframe(ByteBuf content) {
         super(content);
     }

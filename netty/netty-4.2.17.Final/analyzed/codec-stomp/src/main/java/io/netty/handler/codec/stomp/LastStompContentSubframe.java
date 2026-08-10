@@ -25,9 +25,13 @@ import io.netty.handler.codec.DecoderResult;
  * Note, even when no content is emitted by the protocol, an
  * empty {@link LastStompContentSubframe} is issued to make the upstream parsing
  * easier.
+ * <p>标记正文分块序列结束的最后一个 {@link StompContentSubframe}。
+ * 即使协议层未携带任何正文，解码器仍会发出空的 {@link LastStompContentSubframe}（见 {@link #EMPTY_LAST_CONTENT}），
+ * 以便上游统一以「头部子帧 + 若干内容子帧 + 末内容子帧」的模式解析。</p>
  */
 public interface LastStompContentSubframe extends StompContentSubframe {
 
+    /** 无正文的只读末内容子帧单例，引用计数恒为 1 且不可释放。 */
     LastStompContentSubframe EMPTY_LAST_CONTENT = new LastStompContentSubframe() {
         @Override
         public ByteBuf content() {

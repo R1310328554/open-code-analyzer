@@ -22,10 +22,16 @@ import io.netty.handler.codec.DecoderResult;
 
 /**
  * The default {@link StompContentSubframe} implementation.
+ * <p>{@link StompContentSubframe} 的默认实现，正文由 {@link DefaultByteBufHolder} 持有，
+ * 并附带 {@link DecoderResult} 记录解码状态。</p>
  */
 public class DefaultStompContentSubframe extends DefaultByteBufHolder implements StompContentSubframe {
+    /** 解码结果，默认为成功。 */
     private DecoderResult decoderResult = DecoderResult.SUCCESS;
 
+    /**
+     * @param content 本块正文数据，不可为 {@code null}
+     */
     public DefaultStompContentSubframe(ByteBuf content) {
         super(content);
     }

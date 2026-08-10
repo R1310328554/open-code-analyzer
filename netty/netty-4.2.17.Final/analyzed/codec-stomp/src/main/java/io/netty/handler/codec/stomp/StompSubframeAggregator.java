@@ -26,12 +26,15 @@ import io.netty.handler.codec.TooLongFrameException;
  * and its following {@link StompContentSubframe}s into a single {@link StompFrame}.
  * It is useful when you don't want to take care of STOMP frames whose content is 'chunked'.  Insert this
  * handler after {@link StompSubframeDecoder} in the {@link ChannelPipeline}:
+ * <p>将 {@link StompHeadersSubframe} 及其后若干 {@link StompContentSubframe} 聚合成单个 {@link StompFrame}。
+ * 适用于不希望在上游手动拼接分块正文的场景；应置于 {@link StompSubframeDecoder} 之后。</p>
  */
 public class StompSubframeAggregator
         extends MessageAggregator<StompSubframe, StompHeadersSubframe, StompContentSubframe, StompFrame> {
 
     /**
      * Creates a new instance.
+     * <p>创建聚合器，限制聚合后正文的最大字节数。</p>
      *
      * @param maxContentLength
      *        the maximum length of the aggregated content.
@@ -42,32 +45,38 @@ public class StompSubframeAggregator
         super(maxContentLength, StompSubframe.class);
     }
 
+    /** 起始消息：头部子帧。 */
     @Override
     protected boolean isStartMessage(StompSubframe msg) throws Exception {
         return msg instanceof StompHeadersSubframe;
     }
 
+    /** 中间消息：非末块的内容子帧。 */
     @Override
     protected boolean isContentMessage(StompSubframe msg) throws Exception {
         return msg instanceof StompContentSubframe;
     }
 
+    /** 末块内容子帧标志聚合结束。 */
     @Override
     protected boolean isLastContentMessage(StompContentSubframe msg) throws Exception {
         return msg instanceof LastStompContentSubframe;
     }
 
+    /** 已是完整帧则无需再聚合。 */
     @Override
     protected boolean isAggregated(StompSubframe msg) throws Exception {
         return msg instanceof StompFrame;
     }
 
+    /** 根据 content-length 头部预判正文是否超长。 */
     @Override
     protected boolean isContentLengthInvalid(StompHeadersSubframe start, int maxContentLength) {
         return (int) Math.min(Integer.MAX_VALUE, start.headers().getLong(StompHeaders.CONTENT_LENGTH, -1)) >
                      maxContentLength;
     }
 
+    /** STOMP 无 HTTP 式 100-continue 响应。 */
     @Override
     protected Object newContinueResponse(StompHeadersSubframe start, int maxContentLength, ChannelPipeline pipeline) {
         return null;
@@ -83,6 +92,7 @@ public class StompSubframeAggregator
         throw new UnsupportedOperationException();
     }
 
+    /** 用起始头部与已拼接的正文创建 {@link DefaultStompFrame}。 */
     @Override
     protected StompFrame beginAggregation(StompHeadersSubframe start, ByteBuf content) throws Exception {
         StompFrame ret = new DefaultStompFrame(start.command(), content);

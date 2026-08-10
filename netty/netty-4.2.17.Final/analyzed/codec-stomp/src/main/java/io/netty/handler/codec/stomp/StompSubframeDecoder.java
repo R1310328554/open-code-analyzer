@@ -52,31 +52,50 @@ import static io.netty.util.internal.ObjectUtil.*;
  * 'chunked', this decoder generates multiple {@link StompContentSubframe} instances to avoid excessive memory
  * consumption. Note, that every message, even with no content decodes with {@link LastStompContentSubframe} at the end
  * to simplify upstream message parsing.
+ * <p>将入站 {@link ByteBuf} 解码为 {@link StompHeadersSubframe} 与 {@link StompContentSubframe} 序列。
+ * {@code maxLineLength} 限制命令行与头部行长度；{@code maxChunkSize} 限制单块正文大小，超出则拆成多块；
+ * {@code maxNumHeaders} 限制每帧头部条数。即使无正文，也会输出 {@link LastStompContentSubframe} 以统一上游处理逻辑。</p>
  */
 public class StompSubframeDecoder extends ReplayingDecoder<State> {
 
+    /** 默认单块正文上限（字节）。 */
     private static final int DEFAULT_CHUNK_SIZE = 8132;
+    /** 默认单行（命令/头部）最大长度。 */
     private static final int DEFAULT_MAX_LINE_LENGTH = 1024;
+    /** 默认每帧最大头部数量。 */
     private static final int DEFAULT_MAX_NUMBER_HEADERS = 128;
 
     /**
      * @deprecated this should never be used by an user!
+     * <p>解码状态机；仅供框架内部使用，应用代码不应依赖。</p>
      */
     @Deprecated
     public enum State {
+        /** 跳过帧间多余的 CR/LF。 */
         SKIP_CONTROL_CHARACTERS,
+        /** 读取命令行与头部行。 */
         READ_HEADERS,
+        /** 按 content-length 或 NUL 终止符读取正文。 */
         READ_CONTENT,
+        /** 跳过帧尾 NUL 并输出末内容子帧。 */
         FINALIZE_FRAME_READ,
+        /** 坏帧：丢弃剩余可读字节直至连接复位。 */
         BAD_FRAME,
+        /** 无效分块（保留状态）。 */
         INVALID_CHUNK
     }
 
+    /** 解析 STOMP 命令首行（UTF-8 行）。 */
     private final Utf8LineParser commandParser;
+    /** 解析 name:value 头部行。 */
     private final HeaderParser headerParser;
+    /** 单块正文最大长度。 */
     private final int maxChunkSize;
+    /** 当前帧已读正文累计长度。 */
     private int alreadyReadChunkSize;
+    /** 待输出的末内容子帧（可能尚未加入 out）。 */
     private LastStompContentSubframe lastContent;
+    /** 来自 content-length 头部的定长正文长度；-1 表示按 NUL 终止。 */
     private long contentLength = -1;
 
     public StompSubframeDecoder() {
@@ -122,6 +141,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
                     checkpoint(readHeaders(in, frame));
                     out.add(frame);
                 } catch (Exception e) {
+                    // 解析失败仍输出带失败结果的头部子帧，并进入 BAD_FRAME
                     if (frame == null) {
                         frame = new DefaultStompHeadersSubframe(command);
                     }
@@ -146,6 +166,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
                         toRead = maxChunkSize;
                     }
                     if (contentLength >= 0) {
+                        // 定长正文：按 content-length 切分，读满后进入 FINALIZE
                         int remainingLength = (int) (contentLength - alreadyReadChunkSize);
                         if (toRead > remainingLength) {
                             toRead = remainingLength;
@@ -159,6 +180,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
                             return;
                         }
                     } else {
+                        // 无 content-length：正文以 NUL 结束
                         int nulIndex = indexOf(in, in.readerIndex(), in.writerIndex(), StompConstants.NUL);
                         if (nulIndex == in.readerIndex()) {
                             checkpoint(State.FINALIZE_FRAME_READ);
@@ -201,6 +223,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 读取并解析命令行，映射为 {@link StompCommand}。 */
     private StompCommand readCommand(ByteBuf in) {
         CharSequence commandSequence = commandParser.parse(in);
         if (commandSequence == null) {
@@ -214,6 +237,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 逐行解析头部，直至空行；返回下一解码状态。 */
     private State readHeaders(ByteBuf buffer, StompHeadersSubframe headersSubframe) {
         StompHeaders headers = headersSubframe.headers();
         for (;;) {
@@ -230,6 +254,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 校验并读取 content-length 头部值。 */
     private static long getContentLength(StompHeaders headers) {
         long contentLength = headers.getLong(StompHeaders.CONTENT_LENGTH, 0L);
         if (contentLength < 0) {
@@ -238,6 +263,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
         return contentLength;
     }
 
+    /** 帧尾必须紧跟一个 NUL 字节。 */
     private static void skipNullCharacter(ByteBuf buffer) {
         byte b = buffer.readByte();
         if (b != StompConstants.NUL) {
@@ -245,6 +271,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 跳过帧开始处可能存在的 CR/LF 分隔符。 */
     private static void skipControlCharacters(ByteBuf buffer) {
         byte b;
         for (;;) {
@@ -259,6 +286,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 重置状态机，准备解析下一帧。 */
     private void resetDecoder() {
         checkpoint(State.SKIP_CONTROL_CHARACTERS);
         contentLength = -1;
@@ -266,6 +294,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
         lastContent = null;
     }
 
+    /** 按 CRLF 终止的 UTF-8 行解析器，供命令行与头部行复用。 */
     private static class Utf8LineParser implements ByteProcessor {
 
         private final AppendableCharSequence charSeq;
@@ -280,6 +309,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
             this.maxLineLength = maxLineLength;
         }
 
+        /** 扫描至 LF 或缓冲区不足；成功则推进 readerIndex 并返回已解析字符序列。 */
         AppendableCharSequence parse(ByteBuf byteBuf) {
             reset();
             int offset = byteBuf.forEachByte(this);
@@ -315,6 +345,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
             // 1 byte   -   0xxxxxxx                    -  7 bits
             // 2 byte   -   110xxxxx 10xxxxxx           -  11 bits
             // 3 byte   -   1110xxxx 10xxxxxx 10xxxxxx  -  16 bits
+            // 手工 UTF-8 解码：处理多字节字符的续字节
             if (nextRead) {
                 interim |= (nextByte & 0x3F) << 6;
                 nextRead = false;
@@ -349,6 +380,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 头部行解析：识别 name:value，支持 STOMP 1.1+ 转义序列。 */
     private static final class HeaderParser extends Utf8LineParser {
 
         private final boolean validateHeaders;
@@ -366,6 +398,10 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
             this.maxNumHeaders = maxNumHeaders;
         }
 
+        /**
+         * 解析一行头部；空行表示头部结束，返回 {@code false}。
+         * @return {@code true} 若本行是有效头部并已加入 frame
+         */
         boolean parseHeader(StompHeadersSubframe headersSubframe, ByteBuf buf) {
             shouldUnescape = shouldUnescape(headersSubframe.command());
             AppendableCharSequence value = super.parse(buf);
@@ -405,6 +441,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
                         name = StringUtil.EMPTY_STRING;
                     }
                 } else {
+                    // 值部分再次出现冒号，标记为无效头部
                     valid = false;
                 }
             }
@@ -419,6 +456,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
                 return;
             }
 
+            // CONNECT/CONNECTED 之外的头部分支持 \c \r \n 转义
             if (chr == '\\') {
                 if (unescapeInProgress) {
                     super.appendTo(charSeq, chr);
@@ -456,6 +494,7 @@ public class StompSubframeDecoder extends ReplayingDecoder<State> {
             super.reset();
         }
 
+        /** CONNECT 与 CONNECTED 帧头部不做转义处理。 */
         private static boolean shouldUnescape(StompCommand command) {
             return command != StompCommand.CONNECT && command != StompCommand.CONNECTED;
         }

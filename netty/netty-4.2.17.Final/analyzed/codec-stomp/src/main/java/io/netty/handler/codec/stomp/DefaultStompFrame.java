@@ -22,11 +22,15 @@ import io.netty.util.internal.ObjectUtil;
 
 /**
  * Default implementation of {@link StompFrame}.
+ * <p>完整 STOMP 帧的默认实现：命令与头部继承自 {@link DefaultStompHeadersSubframe}，
+ * 正文单独持有 {@link ByteBuf} 并参与引用计数。</p>
  */
 public class DefaultStompFrame extends DefaultStompHeadersSubframe implements StompFrame {
 
+    /** 帧正文缓冲区。 */
     private final ByteBuf content;
 
+    /** 无正文的帧，正文为空缓冲区。 */
     public DefaultStompFrame(StompCommand command) {
         this(command, Unpooled.buffer(0));
     }
@@ -60,6 +64,7 @@ public class DefaultStompFrame extends DefaultStompHeadersSubframe implements St
         return replace(content.retainedDuplicate());
     }
 
+    /** 复制命令、头部副本与新正文，构造新帧。 */
     @Override
     public StompFrame replace(ByteBuf content) {
         return new DefaultStompFrame(command, content, headers.copy());

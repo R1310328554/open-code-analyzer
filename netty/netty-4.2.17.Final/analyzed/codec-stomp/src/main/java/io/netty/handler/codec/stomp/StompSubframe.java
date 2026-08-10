@@ -19,5 +19,7 @@ import io.netty.handler.codec.DecoderResultProvider;
 
 /**
  * Defines a common interface for all {@link StompSubframe} implementations.
+ * <p>所有 STOMP 子帧的公共标记接口，继承 {@link DecoderResultProvider} 以携带解码成败信息。
+ * 具体子类型包括 {@link StompHeadersSubframe}、{@link StompContentSubframe} 及聚合后的 {@link StompFrame}。</p>
  */
 public interface StompSubframe extends DecoderResultProvider { }

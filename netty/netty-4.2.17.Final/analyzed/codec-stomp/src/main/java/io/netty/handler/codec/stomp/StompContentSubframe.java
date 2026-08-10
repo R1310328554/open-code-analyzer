@@ -25,6 +25,9 @@ import io.netty.channel.ChannelPipeline;
  * the content is 'chunked.  If you prefer not to receive multiple {@link StompSubframe}s for a single
  * {@link StompFrame}, place {@link StompSubframeAggregator} after {@link StompSubframeDecoder} in the
  * {@link ChannelPipeline}.
+ * <p>STOMP 帧正文的单个分块。当正文较大或按分块方式传输时，{@link StompSubframeDecoder} 在
+ * {@link StompHeadersSubframe} 之后依次输出多个本类型子帧；最后一帧为 {@link LastStompContentSubframe}。
+ * 若希望上游只处理完整的 {@link StompFrame}，可在管道中于解码器之后插入 {@link StompSubframeAggregator}。</p>
  */
 public interface StompContentSubframe extends ByteBufHolder, StompSubframe {
     @Override

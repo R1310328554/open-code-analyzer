@@ -17,6 +17,8 @@ package io.netty.handler.codec.stomp;
 
 /**
  * An interface that defines a {@link StompFrame}'s command and headers.
+ * <p>表示 STOMP 帧的「命令 + 头部」部分，通常由 {@link StompSubframeDecoder} 作为解码输出的第一个子帧。
+ * 后续可能跟随若干 {@link StompContentSubframe} 承载正文。</p>
  *
  * @see StompCommand
  * @see StompHeaders
@@ -24,11 +26,13 @@ package io.netty.handler.codec.stomp;
 public interface StompHeadersSubframe extends StompSubframe {
     /**
      * Returns command of this frame.
+     * <p>返回本帧的命令字（如 CONNECT、SEND、MESSAGE 等）。</p>
      */
     StompCommand command();
 
     /**
      * Returns headers of this frame.
+     * <p>返回本帧的头部多值映射，键值均为 {@link CharSequence}。</p>
      */
     StompHeaders headers();
 }

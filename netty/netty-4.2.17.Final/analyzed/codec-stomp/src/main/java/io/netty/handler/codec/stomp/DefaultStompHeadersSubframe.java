@@ -20,17 +20,26 @@ import io.netty.util.internal.ObjectUtil;
 
 /**
  * Default implementation of {@link StompHeadersSubframe}.
+ * <p>{@link StompHeadersSubframe} 的默认实现，持有命令字与 {@link DefaultStompHeaders}。</p>
  */
 public class DefaultStompHeadersSubframe implements StompHeadersSubframe {
 
+    /** 本帧 STOMP 命令。 */
     protected final StompCommand command;
+    /** 解码结果，默认可用。 */
     protected DecoderResult decoderResult = DecoderResult.SUCCESS;
+    /** 本帧头部集合。 */
     protected final DefaultStompHeaders headers;
 
+    /** 使用空 {@link DefaultStompHeaders} 构造。 */
     public DefaultStompHeadersSubframe(StompCommand command) {
         this(command, null);
     }
 
+    /**
+     * @param command 命令字，不可为 {@code null}
+     * @param headers 可选头部；为 {@code null} 时新建空头部
+     */
     DefaultStompHeadersSubframe(StompCommand command, DefaultStompHeaders headers) {
         this.command = ObjectUtil.checkNotNull(command, "command");
         this.headers = headers == null ? new DefaultStompHeaders() : headers;

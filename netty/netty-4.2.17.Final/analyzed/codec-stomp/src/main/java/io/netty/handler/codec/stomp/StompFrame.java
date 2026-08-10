@@ -20,6 +20,8 @@ import io.netty.buffer.ByteBuf;
 /**
  * Combines {@link StompHeadersSubframe} and {@link LastStompContentSubframe} into one
  * frame. So it represent a <i>complete</i> STOMP frame.
+ * <p>将 {@link StompHeadersSubframe} 与 {@link LastStompContentSubframe} 合并为完整 STOMP 帧。
+ * 通常由 {@link StompSubframeAggregator} 聚合多个子帧后产生，也可直接构造 {@link DefaultStompFrame}。</p>
  */
 public interface StompFrame extends StompHeadersSubframe, LastStompContentSubframe {
     @Override
