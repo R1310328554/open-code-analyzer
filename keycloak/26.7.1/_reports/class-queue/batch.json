@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:07:29Z",
-  "files": [
-    "server-spi/src/main/java/org/keycloak/models/GroupModel.java",
-    "server-spi/src/main/java/org/keycloak/models/GroupProvider.java",
-    "server-spi/src/main/java/org/keycloak/models/IdentityProviderCapability.java",
-    "server-spi/src/main/java/org/keycloak/models/IdentityProviderMapperModel.java",
-    "server-spi/src/main/java/org/keycloak/models/IdentityProviderMapperSyncMode.java",
-    "server-spi/src/main/java/org/keycloak/models/IdentityProviderModel.java",
-    "server-spi/src/main/java/org/keycloak/models/IdentityProviderQuery.java",
-    "server-spi/src/main/java/org/keycloak/models/IdentityProviderShowInAccountConsole.java",
-    "server-spi/src/main/java/org/keycloak/models/IdentityProviderStorageProvider.java",
-    "server-spi/src/main/java/org/keycloak/models/IdentityProviderSyncMode.java",
-    "server-spi/src/main/java/org/keycloak/models/IdentityProviderType.java",
-    "server-spi/src/main/java/org/keycloak/models/IssuedVerifiableCredentialModel.java",
-    "server-spi/src/main/java/org/keycloak/models/KeyManager.java",
-    "server-spi/src/main/java/org/keycloak/models/KeycloakContext.java",
-    "server-spi/src/main/java/org/keycloak/models/KeycloakSession.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2398,
-  "done": 3585
+  "done": 3600
 }
