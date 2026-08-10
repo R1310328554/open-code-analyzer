@@ -2248,3 +2248,18 @@
 2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/web/VertxClientCertificateLookupFactory.java wave76a jaxrs/resteasy/web/logging integration
 2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/logging/ClearMappedDiagnosticContextFilter.java wave76a jaxrs/resteasy/web/logging integration
 2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/logging/KeycloakLogFilter.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:16:45Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/transaction/QuarkusJtaTransactionManagerLookup.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/transaction/TransactionalSessionHandler.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/vault/FilesKeystoreVaultProviderFactory.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/vault/FilesPlainTextVaultProviderFactory.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/AdminExtProvider.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/AdminExtResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/AllEffectiveRoleMappingResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/AuthenticationManagementResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/AvailableEventListenersResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/AvailableRoleMappingResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/BruteForceUsersResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/EffectiveRoleMappingResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/RoleCompositeResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/RoleMappingDeleteResource.java wave77b vault/tx + admin-ui-ext rest
+2026-08-10T09:16:45Z DONE rest/admin-ui-ext/src/main/java/org/keycloak/admin/ui/rest/RoleMappingResource.java wave77b vault/tx + admin-ui-ext rest
