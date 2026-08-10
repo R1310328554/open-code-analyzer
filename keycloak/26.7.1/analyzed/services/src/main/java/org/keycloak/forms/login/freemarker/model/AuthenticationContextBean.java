@@ -28,6 +28,8 @@ import org.keycloak.forms.login.LoginFormsPages;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * 认证流程上下文 Bean：向 FreeMarker 模板暴露认证器选择、用户名展示与“尝试其他方式”链接等 UI 状态。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthenticationContextBean {
@@ -35,20 +37,24 @@ public class AuthenticationContextBean {
     private final AuthenticationFlowContext context;
     private final LoginFormsPages page;
 
+    /** @param context 当前认证流上下文 @param page 正在渲染的登录页类型 */
     public AuthenticationContextBean(AuthenticationFlowContext context, LoginFormsPages page) {
         this.context = context;
         this.page = page;
     }
 
+    /** @return 可选认证方式列表；无上下文时为空 */
     public List<AuthenticationSelectionOption> getAuthenticationSelections() {
         return context==null ? Collections.emptyList() : context.getAuthenticationSelections();
     }
 
+    /** @return 是否存在多种认证方式且当前非选择器页时展示“尝试其他方式” */
     public boolean showTryAnotherWayLink() {
         return getAuthenticationSelections().size() > 1 && page != LoginFormsPages.LOGIN_SELECT_AUTHENTICATOR;
     }
 
 
+    /** @return 是否应在页面上展示用户名/尝试用户名 */
     public boolean showUsername() {
         if (context == null) {
             return false;
@@ -63,13 +69,15 @@ public class AuthenticationContextBean {
         return context.getUser() != null && authenticationSession != null && page!=LoginFormsPages.ERROR;
     }
 
+    /** @return 重置凭证页且应展示用户名时为 true */
     public boolean showResetCredentials() {
         return showUsername() && page == LoginFormsPages.LOGIN_RESET_PASSWORD;
     }
 
 
-    // NOTE: This is called "attemptedUsername" as we won't necessarily display the username of the user, but the "attempted username", which he
-    // used on the login screen (which could be eventually email or something else)
+    // 注：attemptedUsername 指登录页输入的用户标识，未必等于账户真实 username
+    // （可能是邮箱等其他标识）
+    /** @return 登录页尝试输入的用户标识，必要时回退真实 username */
     public String getAttemptedUsername() {
         if (context == null) {
             return null;
@@ -77,7 +85,7 @@ public class AuthenticationContextBean {
 
         String username = context.getAuthenticationSession().getAuthNote(AbstractUsernameFormAuthenticator.ATTEMPTED_USERNAME);
 
-        // Fallback to real username of the user just if attemptedUsername doesn't exist
+        // attemptedUsername 不存在时回退到用户真实 username
         if (username == null && context.getUser() != null) {
             username = context.getUser().getUsername();
         }

@@ -20,10 +20,13 @@ package org.keycloak.forms.login.freemarker;
 import org.keycloak.forms.login.LoginFormsPages;
 
 /**
+ * {@link LoginFormsPages} 枚举到 FreeMarker 模板文件名的映射表。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class Templates {
 
+    /** 根据登录页类型返回对应 {@code .ftl} 模板路径。 */
     public static String getTemplate(LoginFormsPages page) {
         switch (page) {
             case LOGIN:

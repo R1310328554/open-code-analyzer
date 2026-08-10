@@ -22,8 +22,9 @@ import org.keycloak.userprofile.Attributes;
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileProvider;
 /**
- * Abstract base for Freemarker context bean providing information about user profile to render dynamic or crafted forms.  
- * 
+ * 用户配置 FreeMarker 上下文 Bean 的抽象基类，为动态或手工表单提供属性元数据。
+ * Abstract base for Freemarker context bean providing information about user profile to render dynamic or crafted forms.
+ *
  * @author Vlastimil Elias <velias@redhat.com>
  */
 public abstract class AbstractUserProfileBean {
@@ -54,10 +55,10 @@ public abstract class AbstractUserProfileBean {
     }
     
     /**
-     * Subclass have to call this method at the end of constructor to init user profile data. 
-     * 
-     * @param session
-     * @param writeableOnly if true then only writeable (no read-only) attributes are put into template, if false then all readable attributes are there 
+     * 子类应在构造函数末尾调用，初始化用户配置属性列表。
+     *
+     * @param session Keycloak 会话
+     * @param writeableOnly true 时仅包含可写字段；false 时包含所有可读字段
      */
     protected void init(KeycloakSession session, boolean writeableOnly) {
         UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
@@ -68,32 +69,32 @@ public abstract class AbstractUserProfileBean {
     }
 
     /**
-     * Create UserProfile instance of the relevant type. Is called from {@link #init(KeycloakSession, boolean)}.
-     * 
-     * @param provider to create UserProfile from
-     * @return user profile instance
+     * 创建具体场景的 {@link UserProfile} 实例，由 {@link #init(KeycloakSession, boolean)} 调用。
+     *
+     * @param provider 用户配置提供者
+     * @return UserProfile 实例
      */
     protected abstract UserProfile createUserProfile(UserProfileProvider provider);
 
     /**
-     * Get attribute default values to be pre-filled into the form on first show.
-     * 
-     * @param name of the attribute
-     * @return attribute default value (can be null)
+     * 首次展示表单时属性的默认值流。
+     *
+     * @param name 属性名
+     * @return 默认值流（可为 null）
      */
     protected abstract Stream<String> getAttributeDefaultValues(String name);
 
     /**
-     * Get context the template is used for, so view can be customized for distinct contexts. 
-     * 
-     * @return name of the context
+     * 模板使用场景名称，便于按上下文定制视图。
+     *
+     * @return 上下文标识
      */
     public abstract String getContext();
     
     /**
-     * All attributes to be shown in form sorted by the configured GUI order. Useful to render dynamic form.
-     * 
-     * @return list of attributes
+     * 按 GUI 顺序排序、待展示的全部属性，用于动态表单渲染。
+     *
+     * @return 属性列表
      */
     public List<Attribute> getAttributes() {
         return attributes;
@@ -107,9 +108,9 @@ public abstract class AbstractUserProfileBean {
     }
     
     /**
-     * Get map of all attributes where attribute name is key. Useful to render crafted form.
-     * 
-     * @return map of attributes by name
+     * 属性名 → 属性 Bean 映射，便于手工模板按名访问。
+     *
+     * @return 按名称索引的属性映射
      */
     public Map<String, Attribute> getAttributesByName() {
         return attributesByName;
@@ -128,9 +129,7 @@ public abstract class AbstractUserProfileBean {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Info about user profile attribute available in Freemarker template. 
-     */
+    /** FreeMarker 模板中可用的单个用户配置属性视图。 */
     public class Attribute implements Comparable<Attribute> {
 
         private final AttributeMetadata metadata;
@@ -185,7 +184,7 @@ public abstract class AbstractUserProfileBean {
             return profile.getAttributes().isReadOnly(getName());
         }
         
-        /** define value of the autocomplete attribute for html input tag. if null then no html input tag attribute is added */
+        /** HTML input 的 autocomplete 值；null 表示不输出该属性。 */
         public String getAutocomplete() {
             if(getName().equals("email") || getName().equals("username"))
                 return getName();
@@ -218,9 +217,9 @@ public abstract class AbstractUserProfileBean {
         }
       
         /**
-         * Get info about validators applied to attribute.  
-         * 
-         * @return never null, map where key is validatorId and value is map with configuration for given validator (loaded from UserProfile configuration, never null)
+         * 属性上配置的校验器及其参数。
+         *
+         * @return 非 null；键为 validatorId，值为校验器配置映射
          */
         public Map<String, Map<String, Object>> getValidators(){
             

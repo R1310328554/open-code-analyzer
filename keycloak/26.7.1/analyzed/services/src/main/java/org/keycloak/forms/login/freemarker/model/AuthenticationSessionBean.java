@@ -26,6 +26,9 @@ import org.keycloak.crypto.JavaAlgorithm;
 import org.keycloak.jose.jws.crypto.HashUtils;
 
 /**
+ * 认证会话标识 Bean：向模板暴露根认证会话 ID、其 SHA-384 哈希与浏览器标签页 ID。
+ * <p>供前端脚本在不泄露完整会话 ID 的情况下关联会话。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthenticationSessionBean {
@@ -34,20 +37,24 @@ public class AuthenticationSessionBean {
     private final String authSessionIdHash;
     private final String tabId;
 
+    /** @param authSessionId 根认证会话 ID @param tabId 浏览器标签页 ID */
     public AuthenticationSessionBean(String authSessionId, String tabId) {
         this.authSessionId = authSessionId;
         this.authSessionIdHash = Base64.getEncoder().withoutPadding().encodeToString(HashUtils.hash(JavaAlgorithm.SHA384, authSessionId.getBytes(StandardCharsets.UTF_8)));
         this.tabId = tabId;
     }
 
+    /** @return 根认证会话 ID */
     public String getAuthSessionId() {
         return authSessionId;
     }
 
+    /** @return 会话 ID 的 Base64(SHA-384) 哈希 */
     public String getAuthSessionIdHash() {
         return authSessionIdHash;
     }
 
+    /** @return 浏览器标签页 ID */
     public String getTabId() {
         return tabId;
     }

@@ -27,6 +27,8 @@ import org.keycloak.TokenCategory;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 封装 info/error 页展示数据的内部 Token，在 authenticationSession 不存在时仍保留消息与状态。
+ * <p>用户切换语言后可通过 Cookie 恢复页面内容。</p>
  * Cookie encapsulating data to be displayed on the info/error page. We need this data due the fact that authenticationSession may not exists.
  * This is needed so the info/error page can be restored after user changed language.
  *
@@ -34,24 +36,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class DetachedInfoStateCookie implements Token {
 
+    /** 国际化消息键。 */
     @JsonProperty("mky")
     private String messageKey;
 
+    /** 消息类型（INFO/ERROR 等）。 */
     @JsonProperty("mty")
     private String messageType;
 
+    /** 消息格式化参数列表。 */
     @JsonProperty("mpar")
     private List<String> messageParameters;
 
+    /** HTTP 状态码（可选）。 */
     @JsonProperty("stat")
     private Integer status;
 
+    /** 关联客户端 UUID。 */
     @JsonProperty("clid")
     private String clientUuid;
 
+    /** 渲染 detached 页时浏览器 URL 中的状态校验值。 */
     @JsonProperty("st1")
     private String currentUrlState;
 
+    /** 语言下拉链接中嵌入的状态校验值。 */
     @JsonProperty("st2")
     private String renderedUrlState;
 
@@ -111,6 +120,7 @@ public class DetachedInfoStateCookie implements Token {
         this.renderedUrlState = renderedUrlState;
     }
 
+    /** @return 内部 Token 类别 */
     @Override
     public TokenCategory getCategory() {
         return TokenCategory.INTERNAL;

@@ -115,6 +115,9 @@ import static org.keycloak.models.UserModel.RequiredAction.UPDATE_PASSWORD;
 import static org.keycloak.organization.utils.Organizations.resolveOrganization;
 
 /**
+ * 基于 FreeMarker 的登录表单 {@link LoginFormsProvider} 实现。
+ * <p>负责加载主题、组装模板属性（realm、client、消息、认证上下文等）并渲染各类登录/注册/错误页面。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
@@ -136,9 +139,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     protected boolean detachedAuthSession = false;
 
     protected KeycloakSession session;
-    /**
-     * authenticationSession can be null for some renderings, mainly error pages
-     */
+    /** 认证会话；部分渲染（尤其错误页）可能为 null。 */
     protected AuthenticationSessionModel authenticationSession;
     protected RealmModel realm;
     protected ClientModel client;
@@ -172,6 +173,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
         scripts.add(scriptUrl);
     }
 
+    /** 根据必需操作类型选择对应登录页模板并渲染。 */
     @Override
     public Response createResponse(UserModel.RequiredAction action) {
 
@@ -245,7 +247,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
 
         handleMessages(locale, messagesBundle);
 
-        // for some reason Resteasy 2.3.7 doesn't like query params and form params with the same name and will null out the code form param
+        // Resteasy 2.3.7 不允许 query 与 form 同名参数，会清空 code 表单字段，部分页面需重置 query
         UriBuilder uriBuilder = prepareBaseUriBuilder(page == LoginFormsPages.OAUTH_GRANT);
         createCommonAttributes(theme, locale, messagesBundle, uriBuilder, page);
 
@@ -270,7 +272,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
                 attributes.put("totp", totpBean);
                 break;
             case LOGIN_RECOVERY_AUTHN_CODES_CONFIG:
-                // generate the recovery codes and assign to the auth session
+                // 生成恢复码并写入认证会话 authNote
                 RecoveryAuthnCodesBean recoveryAuthnCodesBean = new RecoveryAuthnCodesBean();
                 attributes.put("recoveryAuthnCodesConfigBean", recoveryAuthnCodesBean);
                 authenticationSession.setAuthNote(RecoveryAuthnCodesFormAuthenticator.GENERATED_RECOVERY_AUTHN_CODES_NOTE, recoveryAuthnCodesBean.getGeneratedRecoveryAuthnCodesAsString());
@@ -287,7 +289,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
             case UPDATE_EMAIL:
                 EmailBean emailBean = new EmailBean(user, formData, session);
                 attributes.put("profile", emailBean);
-                // only for backward compatibility but should be removed once declarative user profile is supported
+                // 向后兼容保留，声明式用户配置全面支持后可移除
                 attributes.put("email", emailBean);
                 break;
             case LOGIN_IDP_LINK_CONFIRM:
@@ -313,9 +315,9 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
                 break;
             case REGISTER:
                 RegisterBean rb = new RegisterBean(formData, session);
-                //legacy bean for static template
+                // 静态模板使用的遗留 bean
                 attributes.put("register", rb);
-                //bean for dynamic template
+                // 动态模板使用的 profile bean
                 attributes.put("profile", rb);
                 break;
             case OAUTH_GRANT:
@@ -323,7 +325,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
                         new OAuthGrantBean(accessCode, client, clientScopesRequested));
                 break;
             case CODE:
-                attributes.remove("message"); // No need to include "message" attribute as error is included in separate field anyway
+                attributes.remove("message"); // CODE 页错误已单独字段展示，无需 message 属性
                 attributes.put(OAuth2Constants.CODE, new CodeBean(accessCode, messageType == MessageType.ERROR ? getFirstMessageUnformatted() : null));
                 break;
             case X509_CONFIRM:
@@ -351,10 +353,9 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     /**
-     * Get sure that correct hostname and path is used for totp form.
-     * Relevant when running in proxy mode.
+     * 构建 TOTP 表单 URI，确保代理模式下主机名与路径正确。
      *
-     * @return UriBuilder with configured hostname and path set
+     * @return 已配置主机名与路径的 UriBuilder
      */
     private UriBuilder getTotpUriBuilder() {
         return uriInfo.getBaseUriBuilder()
@@ -362,6 +363,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
                 .replaceQuery(uriInfo.getRequestUri().getQuery());
     }
 
+    /** 渲染指定 FreeMarker 模板路径的自定义表单。 */
     @Override
     public Response createForm(String form) {
         Theme theme;
@@ -384,10 +386,10 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     /**
-     * Prepare base uri builder for later use
+     * 准备后续模板使用的基准 URI 构建器。
      *
-     * @param resetRequestUriParams - for some reason Resteasy 2.3.7 doesn't like query params and form params with the same name and will null out the code form param, so we have to reset them for some pages
-     * @return base uri builder
+     * @param resetRequestUriParams 为 true 时清空 query（避免与表单同名字段冲突）
+     * @return 基准 UriBuilder
      */
     protected UriBuilder prepareBaseUriBuilder(boolean resetRequestUriParams) {
         String requestURI = uriInfo.getBaseUri().getPath();
@@ -410,21 +412,21 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     /**
-     * Get Theme used for page rendering.
+     * 获取 LOGIN 类型主题。
      *
-     * @return theme for page rendering, never null
-     * @throws IOException in case of Theme loading problem
+     * @return 页面渲染主题，非 null
+     * @throws IOException 主题加载失败
      */
     protected Theme getTheme() throws IOException {
         return session.theme().getTheme(Theme.Type.LOGIN);
     }
 
     /**
-     * Load message bundle and place it into <code>msg</code> template attribute. Also load Theme properties and place them into <code>properties</code> template attribute.
+     * 加载消息包并注入 {@code msg}/{@code advancedMsg} 模板属性，同时加载主题 properties。
      *
-     * @param theme  actual Theme to load bundle from
-     * @param locale to load bundle for
-     * @return message bundle for other use
+     * @param theme 当前主题
+     * @param locale 目标语言
+     * @return 消息 Properties，供后续格式化使用
      */
     protected Properties handleThemeResources(Theme theme, Locale locale) {
         Properties messagesBundle;
@@ -454,10 +456,10 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     /**
-     * Handle messages to be shown on the page - set them to template attributes
+     * 将待展示消息写入模板属性 {@code message} 与 {@code messagesPerField}。
      *
-     * @param locale         to be used for message text loading
-     * @param messagesBundle to be used for message text loading
+     * @param locale 消息语言
+     * @param messagesBundle 主题消息包
      * @see #messageType
      * @see #messages
      */
@@ -485,13 +487,13 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     /**
-     * Create common attributes used in all templates.
+     * 填充各模板共用的上下文属性（realm、client、locale、social、auth 等）。
      *
-     * @param theme          actual Theme used (provided by <code>getTheme()</code>)
-     * @param locale         actual locale
-     * @param messagesBundle actual message bundle (provided by <code>handleThemeResources()</code>)
-     * @param baseUriBuilder actual base uri builder (provided by <code>prepareBaseUriBuilder()</code>)
-     * @param page           in case if common page is rendered, is null if called from <code>createForm()</code>
+     * @param theme 当前主题
+     * @param locale 当前语言
+     * @param messagesBundle 消息包
+     * @param baseUriBuilder 基准 URI 构建器
+     * @param page 当前页面枚举；{@code createForm} 调用时为 null
      */
     protected void createCommonAttributes(Theme theme, Locale locale, Properties messagesBundle, UriBuilder baseUriBuilder, LoginFormsPages page) {
         URI baseUri = baseUriBuilder.build();
@@ -581,7 +583,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
                     MultivaluedMap<String, String> queryParameters = request.getUri().getQueryParameters();
 
                     if (queryParameters != null && queryParameters.getFirst(Constants.TOKEN) != null) {
-                        // changing locale should forward the action token
+                        // 切换语言时需转发 action token
                         b.queryParam(Constants.TOKEN, queryParameters.getFirst(Constants.TOKEN));
                     }
                 }
@@ -619,18 +621,18 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     private UriBuilder getDefaultPageUriForLocale(URI baseUri) {
-        // Using "actionUri" by default in the language combobox when available
+        // 语言下拉默认可用时使用 actionUri 作为基准
         return actionUri != null ? UriBuilder.fromUri(actionUri.getPath()).replaceQuery(baseUri.getQuery()) :
                 UriBuilder.fromUri(baseUri).path(uriInfo.getPath());
     }
 
     /**
-     * Process FreeMarker template and prepare Response. Some fields are used for rendering also.
+     * 渲染 FreeMarker 模板并构建 HTTP 响应。
      *
-     * @param theme        to be used (provided by <code>getTheme()</code>)
-     * @param templateName name of the template to be rendered
-     * @param locale       to be used
-     * @return Response object to be returned to the browser, never null
+     * @param theme 当前主题
+     * @param templateName 模板文件名
+     * @param locale 响应语言
+     * @return 返回浏览器的 JAX-RS Response
      */
     protected Response processTemplate(Theme theme, String templateName, Locale locale) {
         try {
@@ -653,6 +655,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
         }
     }
 
+    /** 用户名+密码登录页。 */
     @Override
     public Response createLoginUsernamePassword() {
         return createResponse(LoginFormsPages.LOGIN);
@@ -736,7 +739,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
 
     @Override
     public Response createUpdateProfilePage() {
-        // Don't display initial message if we already have some errors
+        // 已有错误时不重复展示初始提示消息
         if (messageType != MessageType.ERROR) {
             setMessage(MessageType.WARNING, Messages.UPDATE_PROFILE);
         }
@@ -780,6 +783,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
         return createResponse(LoginFormsPages.LOGIN_IDP_LINK_EMAIL);
     }
 
+    /** 错误页；JSON 请求时返回 {@link OAuth2ErrorRepresentation}。 */
     @Override
     public Response createErrorPage(Response.Status status) {
         if (MediaTypeMatcher.isJsonRequest(session.getContext().getRequestHeaders())) {
@@ -941,6 +945,7 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
         return this;
     }
 
+    /** 标记为 detached 模式（无 authenticationSession 的信息/错误页）。 */
     @Override
     public LoginFormsProvider setDetachedAuthSession() {
         detachedAuthSession = true;

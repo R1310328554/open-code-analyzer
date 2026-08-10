@@ -28,18 +28,25 @@ import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModelException;
 
 /**
+ * FreeMarker 模板方法：查询指定认证器是否已为当前用户配置完成。
+ * <p>模板中通过 {@code authenticatorConfigured(providerId)} 调用。</p>
  */
 public class AuthenticatorConfiguredMethod implements TemplateMethodModelEx {
+    /** 当前领域。 */
     private final RealmModel realm;
+    /** 当前用户。 */
     private final UserModel user;
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** @param realm 领域 @param user 用户 @param session 会话 */
     public AuthenticatorConfiguredMethod(RealmModel realm, UserModel user, KeycloakSession session) {
         this.realm = realm;
         this.user = user;
         this.session = session;
     }
 
+    /** 第一个参数为认证器 providerId，返回 {@link Authenticator#configuredFor} 结果。 */
     @Override
     public Object exec(List list) throws TemplateModelException {
         String providerId = list.get(0).toString();

@@ -26,18 +26,24 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * Keycloak 内置客户端描述转换器：识别并解析含 {@code clientId} 的 JSON 客户端表示。
+ * <p>同时实现 {@link ClientDescriptionConverterFactory} 与 {@link ClientDescriptionConverter}，工厂 ID 为 {@code keycloak}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class KeycloakClientDescriptionConverter implements ClientDescriptionConverterFactory, ClientDescriptionConverter {
 
+    /** 提供者工厂标识。 */
     public static final String ID = "keycloak";
 
+    /** 判断描述是否为含 {@code clientId} 字段的 JSON 对象。 */
     @Override
     public boolean isSupported(String description) {
         description = description.trim();
         return (description.startsWith("{") && description.endsWith("}") && description.contains("\"clientId\""));
     }
 
+    /** 将 JSON 字符串反序列化为 {@link ClientRepresentation}。 */
     @Override
     public ClientRepresentation convertToInternal(String description) {
         try {
@@ -47,6 +53,7 @@ public class KeycloakClientDescriptionConverter implements ClientDescriptionConv
         }
     }
 
+    /** 无状态单例，直接返回自身。 */
     @Override
     public ClientDescriptionConverter create(KeycloakSession session) {
         return this;
@@ -64,6 +71,7 @@ public class KeycloakClientDescriptionConverter implements ClientDescriptionConv
     public void close() {
     }
 
+    /** @return 工厂 ID {@code keycloak} */
     @Override
     public String getId() {
         return ID;

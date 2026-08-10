@@ -18,6 +18,8 @@
 package org.keycloak.forms.login.freemarker.model;
 
 /**
+ * OAuth 设备/授权码结果 Bean：向 {@code code.ftl} 模板提供授权码与错误信息。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class CodeBean {
@@ -25,19 +27,23 @@ public class CodeBean {
     private final String code;
     private final String error;
 
+    /** @param code 授权码 @param error 错误消息键或文本（成功时为 null） */
     public CodeBean(String code, String error) {
         this.code = code;
         this.error = error;
     }
 
+    /** @return 存在 code 且无 error 时为 true */
     public boolean isSuccess() {
         return code != null && error == null;
     }
 
+    /** @return 授权码 */
     public String getCode() {
         return code;
     }
 
+    /** @return 错误信息 */
     public String getError() {
         return error;
     }

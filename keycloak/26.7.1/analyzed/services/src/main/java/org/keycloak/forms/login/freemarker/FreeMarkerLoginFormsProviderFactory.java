@@ -24,10 +24,13 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link FreeMarkerLoginFormsProvider} 的 {@link LoginFormsProviderFactory} 工厂，ID 为 {@code freemarker}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FreeMarkerLoginFormsProviderFactory implements LoginFormsProviderFactory {
 
+    /** 为会话创建 FreeMarker 登录表单提供者实例。 */
     @Override
     public LoginFormsProvider create(KeycloakSession session) {
         return new FreeMarkerLoginFormsProvider(session);
@@ -45,6 +48,7 @@ public class FreeMarkerLoginFormsProviderFactory implements LoginFormsProviderFa
     public void close() {
     }
 
+    /** @return 工厂标识 {@code freemarker} */
     @Override
     public String getId() {
         return "freemarker";

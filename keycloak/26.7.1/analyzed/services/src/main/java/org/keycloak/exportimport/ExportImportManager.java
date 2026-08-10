@@ -40,18 +40,25 @@ import static org.keycloak.exportimport.ExportImportConfig.PROVIDER;
 import static org.keycloak.exportimport.ExportImportConfig.PROVIDER_DEFAULT;
 
 /**
+ * 导出/导入管理器：根据 {@link ExportImportConfig} 初始化 {@link ExportProvider} 或 {@link ImportProvider}，
+ * 并在启动时扫描目录自动导入领域快照。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ExportImportManager {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(ExportImportManager.class);
 
     private final KeycloakSessionFactory sessionFactory;
     private final KeycloakSession session;
 
+    /** 导出提供者；非导出模式时为 null。 */
     private ExportProvider exportProvider;
+    /** 待执行的导入提供者列表。 */
     private List<ImportProvider> importProviders = List.of();
 
+    /** 根据系统属性与配置解析导出或导入提供者。 */
     public ExportImportManager(KeycloakSession session) {
         this.sessionFactory = session.getKeycloakSessionFactory();
         this.session = session;
@@ -59,11 +66,11 @@ public class ExportImportManager {
         String exportImportAction = ExportImportConfig.getAction();
 
         if (ExportImportConfig.ACTION_EXPORT.equals(exportImportAction)) {
-            // Future Refactoring: If the system properties are no longer needed for integration tests, refactor to use
+            // 后续重构：若集成测试不再依赖系统属性，可改为标准 Provider 配置方式
             // a default provider in its standard way.
-            // Setting this to "provider" doesn't work yet when instrumenting Keycloak with Quarkus as it leads to
-            // "java.lang.NullPointerException: Cannot invoke "String.indexOf(String)" because "value" is null"
-            // when calling "Config.getProvider()" from "KeycloakProcessor.loadFactories()"
+            // Quarkus 环境下将此项设为 "provider" 尚不可用，会在 KeycloakProcessor.loadFactories() 中触发 NPE
+            // （Config.getProvider() 时 value 为 null）
+            // 调用 KeycloakProcessor.loadFactories() 中的 Config.getProvider() 时发生
             String providerId = System.getProperty(PROVIDER, Config.scope("export").get("exporter", PROVIDER_DEFAULT));
             exportProvider = session.getProvider(ExportProvider.class, providerId);
             if (exportProvider == null) {
@@ -76,15 +83,16 @@ public class ExportImportManager {
                 throw new RuntimeException("Import provider '" + providerId + "' not found");
             }
             importProviders = List.of(importProvider);
-        } else if (ExportImportConfig.getDir().isPresent()) { // import at startup
+        } else if (ExportImportConfig.getDir().isPresent()) { // 启动时按目录自动导入
             ExportImportConfig.setStrategy(Strategy.IGNORE_EXISTING);
             ExportImportConfig.setReplacePlaceholders(true);
-            // enables logging of what is imported
+            // 启用导入过程日志
             ExportImportConfig.setAction(ExportImportConfig.ACTION_IMPORT);
             importProviders = getStartupImportProviders();
         }
     }
 
+    /** @return 待导入数据是否包含 master 领域 */
     public boolean isImportMasterIncluded() {
         return importProviders.stream().anyMatch(provider -> {
                     try {
@@ -95,10 +103,12 @@ public class ExportImportManager {
                 });
     }
 
+    /** @return 当前是否配置了导出动作 */
     public boolean isRunExport() {
         return exportProvider != null;
     }
 
+    /** 依次执行所有已配置的导入提供者。 */
     public void runImport() {
         importProviders.forEach(ip -> {
             try {
@@ -109,6 +119,7 @@ public class ExportImportManager {
         });
     }
 
+    /** 扫描迁移目录，为 {@code dir} 与 {@code singleFile} 提供者创建启动导入实例。 */
     private List<ImportProvider> getStartupImportProviders() {
         var dirProp = ExportImportConfig.getDir();
         if (dirProp.isEmpty()) {
@@ -154,6 +165,7 @@ public class ExportImportManager {
         }).toList();
     }
 
+    /** 执行已配置的导出提供者。 */
     public void runExport() {
         try {
             exportProvider.exportModel();

@@ -24,6 +24,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.util.ResolveRelative;
 
 /**
+ * OAuth/OIDC 客户端 FreeMarker 视图 Bean：暴露 clientId、名称、描述、根 URL 与自定义属性。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -32,31 +34,38 @@ public class ClientBean {
     private KeycloakSession session;
     protected ClientModel client;
 
+    /** @param session Keycloak 会话 @param client 客户端模型 */
     public ClientBean(KeycloakSession session, ClientModel client) {
         this.session = session;
         this.client = client;
     }
 
+    /** @return 客户端公开标识 */
     public String getClientId() {
         return client.getClientId();
     }
 
+    /** @return 客户端显示名称 */
     public String getName() {
         return client.getName();
     }
 
+    /** @return 客户端描述 */
     public String getDescription() {
         return client.getDescription();
     }
 
+    /** @return 解析相对路径后的客户端 base URL */
     public String getBaseUrl() {
         return ResolveRelative.resolveRelativeUri(session, client.getRootUrl(), client.getBaseUrl());
     }
 
+    /** @return 客户端全部字符串属性 */
     public Map<String,String> getAttributes(){
         return client.getAttributes();
     }
 
+    /** @param key 属性键 @return 单个客户端属性值 */
     public String getAttribute(String key){
         return client.getAttribute(key);
     }

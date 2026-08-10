@@ -35,22 +35,28 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.jboss.logging.Logger;
 
 /**
+ * detached 信息/错误页状态校验器：生成并验证 URL 中的 {@code kc_state_checker} 参数与 Cookie 一致性。
+ * <p>用于 authenticationSession 不存在时仍能在切换语言后恢复 info/error 页内容。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DetachedInfoStateChecker {
 
     private static final Logger logger = Logger.getLogger(DetachedInfoStateChecker.class);
 
+    /** URL 查询参数名，携带当前页状态校验 token。 */
     public static final String STATE_CHECKER_PARAM = "kc_state_checker";
 
     private final KeycloakSession session;
     private final RealmModel realm;
 
+    /** @param session Keycloak 会话 @param realm 当前领域 */
     public DetachedInfoStateChecker(KeycloakSession session, RealmModel realm) {
         this.session = session;
         this.realm = realm;
     }
 
+    /** 编码消息与状态写入 {@link CookieType#AUTH_DETACHED} Cookie，并返回 token 对象。 */
     public DetachedInfoStateCookie generateAndSetCookie(String messageKey, String messageType, Integer status, String clientId, Object[] messageParameters) {
         UriInfo uriInfo = session.getContext().getHttpRequest().getUri();
 
@@ -78,6 +84,7 @@ public class DetachedInfoStateChecker {
         return cookie;
     }
 
+    /** 校验 URL 状态参数与 Cookie 中 current/rendered 状态是否匹配。 */
     public DetachedInfoStateCookie verifyStateCheckerParameter(String stateCheckerParam) throws VerificationException {
         String cookieVal = session.getProvider(CookieProvider.class).get(CookieType.AUTH_DETACHED);
         if (cookieVal == null || cookieVal.isEmpty()) {
@@ -92,8 +99,8 @@ public class DetachedInfoStateChecker {
             throw new VerificationException("Failed to verify DetachedInfoStateCookie");
         }
 
-        // May want to compare with the currentUrlState (when refreshing detached info/error page) or with renderedUrlState (when user changes locale on the info/error page through the combobox).
-        // As the currentUrlState is in the browser URL when renderedUrlState is in the link inside the user's combobox
+        // 可与 currentUrlState（刷新 detached 页）或 renderedUrlState（语言下拉切换）比对
+        // currentUrlState 在浏览器 URL 中，renderedUrlState 在语言下拉链接中
         if (stateCheckerParam.equals(cookie.getCurrentUrlState()) || stateCheckerParam.equals(cookie.getRenderedUrlState())) {
             return cookie;
         } else {

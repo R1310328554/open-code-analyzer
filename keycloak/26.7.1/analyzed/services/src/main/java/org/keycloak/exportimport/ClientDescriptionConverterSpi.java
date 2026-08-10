@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 客户端描述转换 SPI，注册 {@link ClientDescriptionConverter} 提供者类型。
+ * <p>用于将外部 JSON 客户端描述解析为 {@link org.keycloak.representations.idm.ClientRepresentation}。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientDescriptionConverterSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code client-description-converter} */
     @Override
     public String getName() {
         return "client-description-converter";
     }
 
+    /** @return 客户端描述转换提供者接口类型 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ClientDescriptionConverter.class;
     }
 
+    /** @return 客户端描述转换工厂类型 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ClientDescriptionConverterFactory.class;
