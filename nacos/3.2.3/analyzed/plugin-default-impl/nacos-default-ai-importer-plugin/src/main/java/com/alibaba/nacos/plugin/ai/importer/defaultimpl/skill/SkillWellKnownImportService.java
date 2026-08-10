@@ -59,7 +59,9 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 /**
- * Importer for Skill well-known registry endpoints.
+ * Skill well-known 发现端点导入服务。
+ *
+ * <p>从 {@code /.well-known/agent-skills/index.json} 或 {@code /.well-known/skills/index.json} 拉取索引，支持 0.1.0/0.2.0 schema， 将 Skill 文件或归档制品打包为 ZIP 导入。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -68,6 +70,7 @@ public class SkillWellKnownImportService implements AiResourceImportService {
     
     public static final String RESOURCE_TYPE_SKILL = AiResourceImportConstants.RESOURCE_TYPE_SKILL;
     
+    /** Agent Skills well-known 路径前缀。 */
     private static final String WELL_KNOWN_AGENT_SKILLS = "/.well-known/agent-skills";
     
     private static final String WELL_KNOWN_SKILLS = "/.well-known/skills";
@@ -82,6 +85,7 @@ public class SkillWellKnownImportService implements AiResourceImportService {
     private static final String SCHEMA_0_2 =
         "https://schemas.agentskills.io/discovery/0.2.0/schema.json";
     
+    /** Skill 包内必需的 Markdown 描述文件名。 */
     private static final String MARKDOWN_FILE = "SKILL.md";
     
     private static final String METADATA_FILE_COUNT = "fileCount";
@@ -142,6 +146,7 @@ public class SkillWellKnownImportService implements AiResourceImportService {
         return Collections.singleton(RESOURCE_TYPE_SKILL);
     }
     
+    /** 拉取 well-known 索引并按 query 过滤、分页返回 Skill 候选。 */
     @Override
     public AiResourceImportCandidatePage search(AiResourceImportContext context)
         throws NacosException {
@@ -168,6 +173,7 @@ public class SkillWellKnownImportService implements AiResourceImportService {
         }
     }
     
+    /** 下载指定 Skill 的文件或归档并打包为 SKILL_ZIP 制品。 */
     @Override
     public AiResourceImportArtifact fetch(AiResourceImportContext context,
         AiResourceImportItem item) throws NacosException {

@@ -43,7 +43,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Minimal MCP official registry client used by the default importer plugin.
+ * 官方 MCP Registry HTTP 客户端（默认导入插件内部使用）。
+ *
+ * <p>分页拉取 Registry 列表、按 externalId 检索单个 Server， 并将 Registry JSON 适配为 {@link com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo}。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -82,6 +84,7 @@ class McpRegistryClient {
         this.httpClient = httpClient;
     }
     
+    /** 分页查询官方 Registry，支持 cursor、limit 与 search 参数。 */
     Page fetchOfficialRegistryPage(AiResourceImportSource source, String cursor, Integer limit,
         String search) throws Exception {
         if (source == null || StringUtils.isBlank(source.getEndpoint())) {
@@ -90,6 +93,7 @@ class McpRegistryClient {
         return fetchUrlPage(source, source.getEndpoint().trim(), cursor, limit, search);
     }
     
+    /** 按 externalId（name 或 id）在 Registry 中定位单个 MCP Server 详情。 */
     McpServerDetailInfo fetchOfficialRegistryServer(AiResourceImportSource source,
         String externalId, int limit) throws Exception {
         if (StringUtils.isBlank(externalId)) {
@@ -313,6 +317,7 @@ class McpRegistryClient {
         return UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)).toString();
     }
     
+    /** Registry 分页结果：Server 列表与下一页 cursor。 */
     static class Page {
         
         private final List<McpServerDetailInfo> servers;

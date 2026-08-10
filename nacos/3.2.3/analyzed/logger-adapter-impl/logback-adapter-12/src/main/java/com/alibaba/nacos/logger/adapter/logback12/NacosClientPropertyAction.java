@@ -25,23 +25,29 @@ import com.alibaba.nacos.common.logging.NacosLoggingProperties;
 import org.xml.sax.Attributes;
 
 /**
- * support logback read properties from NacosClientProperties. just like springProperty. for example:
- * <nacosClientProperty scope="context" name="logPath" source="system.log.path" defaultValue="/root" />
+ * Logback Joran 自定义动作 {@code nacosClientProperty}，从 Nacos 客户端属性注入配置。
+ *
+ * <p>用法类似 Spring Boot 的 {@code springProperty}，例如： {@code <nacosClientProperty scope="context" name="logPath" source="system.log.path" defaultValue="/root" />}。</p>
  *
  * @author onewe
  */
 class NacosClientPropertyAction extends Action {
     
+    /** XML 属性名：默认值。 */
     private static final String DEFAULT_VALUE_ATTRIBUTE = "defaultValue";
     
+    /** XML 属性名：Nacos 客户端属性源 key。 */
     private static final String SOURCE_ATTRIBUTE = "source";
     
+    /** 当前加载配置时绑定的 Nacos 日志属性。 */
     private final NacosLoggingProperties loggingProperties;
     
+    /** 构造动作并注入属性查找源。 */
     NacosClientPropertyAction(NacosLoggingProperties loggingProperties) {
         this.loggingProperties = loggingProperties;
     }
     
+    /** 解析 {@code nacosClientProperty} 元素并将属性写入指定 scope。 */
     @Override
     public void begin(InterpretationContext ic, String elementName, Attributes attributes)
         throws ActionException {

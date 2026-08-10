@@ -22,13 +22,16 @@ import com.alibaba.nacos.plugin.ai.importer.spi.AiResourceImportServiceBuilder;
 import java.util.Properties;
 
 /**
- * Builder for the built-in skills.sh Skill import service.
+ * skills.sh Skill 导入服务的 SPI 构建器。
+ *
+ * <p>importer 类型标识为 {@code skills-sh}。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class SkillsShImportServiceBuilder implements AiResourceImportServiceBuilder {
     
+    /** 导入器类型常量：{@code skills-sh}。 */
     public static final String IMPORTER_TYPE = "skills-sh";
     
     @Override
@@ -36,6 +39,7 @@ public class SkillsShImportServiceBuilder implements AiResourceImportServiceBuil
         return IMPORTER_TYPE;
     }
     
+    /** 创建 {@link SkillsShImportService} 实例。 */
     @Override
     public AiResourceImportService build(Properties properties) {
         return new SkillsShImportService();

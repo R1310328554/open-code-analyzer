@@ -22,13 +22,16 @@ import com.alibaba.nacos.plugin.ai.importer.spi.AiResourceImportServiceBuilder;
 import java.util.Properties;
 
 /**
- * Builder for the built-in official MCP registry import service.
+ * 官方 MCP Registry 导入服务的 SPI 构建器。
+ *
+ * <p>importer 类型标识为 {@code mcp-registry}， 通过 {@link com.alibaba.nacos.common.spi.NacosServiceLoader} 注册。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class McpRegistryImportServiceBuilder implements AiResourceImportServiceBuilder {
     
+    /** 导入器类型常量：{@code mcp-registry}。 */
     public static final String IMPORTER_TYPE = "mcp-registry";
     
     @Override
@@ -36,6 +39,7 @@ public class McpRegistryImportServiceBuilder implements AiResourceImportServiceB
         return IMPORTER_TYPE;
     }
     
+    /** 创建 {@link McpRegistryImportService} 实例。 */
     @Override
     public AiResourceImportService build(Properties properties) {
         return new McpRegistryImportService();

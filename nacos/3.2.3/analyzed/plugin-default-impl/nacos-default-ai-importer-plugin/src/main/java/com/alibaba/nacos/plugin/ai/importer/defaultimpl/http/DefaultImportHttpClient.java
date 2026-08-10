@@ -41,17 +41,21 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow;
 
 /**
- * Shared HTTP client for built-in AI importers.
+ * 内置 AI 导入插件共享 HTTP 客户端。
+ *
+ * <p>基于 {@link java.net.http.HttpClient} 发起 GET 请求， 强制执行 HTTPS、禁止跟随重定向、限制响应体大小， 并可选允许 HTTP 或内网/本地地址（由导入源属性控制）。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class DefaultImportHttpClient {
     
+    /** 导入源属性：是否允许明文 HTTP（kebab-case）。 */
     public static final String PROPERTY_ALLOW_HTTP = "allow-http";
     
     public static final String PROPERTY_ALLOW_HTTP_CAMEL = "allowHttp";
     
+    /** 导入源属性：是否允许访问内网/本地地址（kebab-case）。 */
     public static final String PROPERTY_ALLOW_PRIVATE_NETWORK = "allow-private-network";
     
     public static final String PROPERTY_ALLOW_PRIVATE_NETWORK_CAMEL = "allowPrivateNetwork";
@@ -74,6 +78,7 @@ public class DefaultImportHttpClient {
     
     private final DnsResolver dnsResolver;
     
+    /** 使用默认超时与不跟随重定向策略构造客户端。 */
     public DefaultImportHttpClient() {
         this(HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NEVER)
@@ -86,7 +91,7 @@ public class DefaultImportHttpClient {
     }
     
     /**
-     * Create a default importer HTTP client with custom DNS resolver.
+     * 使用自定义 {@link HttpClient} 与 DNS 解析器构造（便于测试）。
      *
      * @param httpClient HTTP client
      * @param dnsResolver DNS resolver
@@ -97,7 +102,7 @@ public class DefaultImportHttpClient {
     }
     
     /**
-     * Send a GET request with the default read timeout.
+     * 以默认读超时发送 GET 请求。
      *
      * @param source import source
      * @param url request URL
@@ -111,7 +116,7 @@ public class DefaultImportHttpClient {
     }
     
     /**
-     * Send a GET request after applying importer network policy.
+     * 校验 URL 与网络安全策略后发送 GET 请求。
      *
      * @param source import source
      * @param url request URL
@@ -244,6 +249,7 @@ public class DefaultImportHttpClient {
             ErrorCode.PARAMETER_VALIDATE_ERROR, message);
     }
     
+    /** 可插拔 DNS 解析器，用于 SSRF 防护中的地址判定。 */
     public interface DnsResolver {
         
         /**
@@ -252,10 +258,12 @@ public class DefaultImportHttpClient {
          * @param host request host
          * @return resolved addresses
          * @throws UnknownHostException if the host cannot be resolved
+          * <p>Nacos 3.2.3：Logback 1.2 日志适配与 AI 资源导入（MCP Registry、Skill well-known、skills.sh）及 skill-scanner Markdown 解析；详见上方类说明。</p>
          */
         InetAddress[] resolve(String host) throws UnknownHostException;
     }
     
+    /** 限制响应体最大字节数的 BodyHandler 工厂。 */
     private static class LimitedByteArrayBodyHandler implements HttpResponse.BodyHandler<byte[]> {
         
         private final long maxBytes;

@@ -20,12 +20,15 @@ import com.alibaba.nacos.common.logging.NacosLoggingAdapter;
 import com.alibaba.nacos.common.logging.NacosLoggingAdapterBuilder;
 
 /**
- * Builder of {@link com.alibaba.nacos.common.logging.NacosLoggingAdapter} for logback 1.2.x and below.
+ * Logback 1.2.x 日志适配器的 SPI 构建器。
+ *
+ * <p>通过 {@link com.alibaba.nacos.common.spi.NacosServiceLoader} 注册， 在 classpath 存在 Logback 1.2 且非 1.3+ 时由 {@link com.alibaba.nacos.common.logging.NacosLogging} 选用。</p>
  *
  * @author xiweng.yy
  */
 public class LogbackNacosLoggingAdapterBuilder implements NacosLoggingAdapterBuilder {
     
+    /** 创建 {@link LogbackNacosLoggingAdapter} 实例。 */
     @Override
     public NacosLoggingAdapter build() {
         return new LogbackNacosLoggingAdapter();

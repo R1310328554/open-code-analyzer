@@ -37,19 +37,25 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Default AI resource import source presets.
+ * 内置 AI 资源导入源预设提供者。
+ *
+ * <p>根据配置属性组装官方 MCP Registry、Skill well-known 端点与 skills.sh 三类 {@link com.alibaba.nacos.plugin.ai.importer.model.AiResourceImportSource}， 供控制台与导入管线选用。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class DefaultAiResourceImportSourceProvider implements AiResourceImportSourceProvider {
     
+    /** 导入插件配置键前缀。 */
     public static final String PREFIX = "nacos.plugin.ai.importer.";
     
+    /** 官方 MCP Registry 导入源配置前缀。 */
     public static final String MCP_OFFICIAL_PREFIX = PREFIX + "mcp.official.";
     
+    /** Skill well-known 发现端点配置前缀。 */
     public static final String SKILL_WELL_KNOWN_PREFIX = PREFIX + "skills.well-known.";
     
+    /** skills.sh 平台导入源配置前缀。 */
     public static final String SKILLS_SH_PREFIX = PREFIX + "skills.skills-sh.";
     
     public static final String OFFICIAL_MCP_ENDPOINT =
@@ -67,6 +73,7 @@ public class DefaultAiResourceImportSourceProvider implements AiResourceImportSo
     
     private static final long DEFAULT_MAX_ARTIFACT_SIZE = 10L * 1024L * 1024L;
     
+    /** 按开关与属性加载全部已启用的内置导入源。 */
     @Override
     public Collection<AiResourceImportSource> loadSources(Properties properties)
         throws NacosException {
@@ -152,6 +159,7 @@ public class DefaultAiResourceImportSourceProvider implements AiResourceImportSo
         return result;
     }
     
+    /** 写入超时、分页上限、制品大小等通用导入选项。 */
     private void applyCommonSourceOptions(Properties properties, String prefix,
         AiResourceImportSource source) {
         source.setEnabled(true);
@@ -169,6 +177,7 @@ public class DefaultAiResourceImportSourceProvider implements AiResourceImportSo
         applySecurityOptions(properties, prefix, source);
     }
     
+    /** 写入 allow-http、allow-private-network 等网络安全策略属性。 */
     private void applySecurityOptions(Properties properties, String prefix,
         AiResourceImportSource source) {
         Map<String, String> sourceProperties = new LinkedHashMap<>(2);

@@ -19,19 +19,25 @@ package com.alibaba.nacos.plugin.ai.importer.defaultimpl.http;
 import java.net.http.HttpHeaders;
 
 /**
- * HTTP response fetched by default AI importers.
+ * 内置 AI 导入 HTTP 客户端返回的响应封装。
+ *
+ * <p>包含最终 URL、状态码、响应头与 body 字节数组， 并提供 {@link #isSuccess()} 与 {@link #getContentType()} 便捷方法。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class ImportHttpResponse {
     
+    /** 实际请求的 URL（重定向解析后）。 */
     private final String url;
     
+    /** HTTP 状态码。 */
     private final int statusCode;
     
+    /** 响应头集合。 */
     private final HttpHeaders headers;
     
+    /** 响应体字节数组（永不为 null）。 */
     private final byte[] body;
     
     public ImportHttpResponse(String url, int statusCode, HttpHeaders headers, byte[] body) {
@@ -41,6 +47,7 @@ public class ImportHttpResponse {
         this.body = body == null ? new byte[0] : body;
     }
     
+    /** 判断状态码是否为 2xx。 */
     public boolean isSuccess() {
         return statusCode >= 200 && statusCode < 300;
     }
@@ -57,6 +64,7 @@ public class ImportHttpResponse {
         return body;
     }
     
+    /** 返回 Content-Type 响应头，缺失时为空串。 */
     public String getContentType() {
         return headers.firstValue("Content-Type").orElse("");
     }

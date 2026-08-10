@@ -27,7 +27,9 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import org.slf4j.LoggerFactory;
 
 /**
- * Support for Logback version 1.0.8 to 1.2.X.
+ * Logback 1.0.8～1.2.x 版 Nacos 日志适配器。
+ *
+ * <p>实现 {@link com.alibaba.nacos.common.logging.NacosLoggingAdapter}， 加载 {@code nacos-logback12.xml} 并在 LoggerContext 重置时自动恢复 Nacos 配置； 通过检测 {@code ch.qos.logback.core.model.Model} 排除 Logback 1.3+。</p>
  *
  * @author <a href="mailto:huangxiaoyu1018@gmail.com">hxy1991</a>
  * @author <a href="mailto:hujun3@xiaomi.com">hujun</a>
@@ -36,16 +38,21 @@ import org.slf4j.LoggerFactory;
  */
 public class LogbackNacosLoggingAdapter implements NacosLoggingAdapter {
     
+    /** Nacos 默认 Logback 1.2 配置文件 classpath 位置。 */
     private static final String NACOS_LOGBACK_LOCATION = "classpath:nacos-logback12.xml";
     
+    /** Logback Classic Logger 实现类名，用于 classpath 探测。 */
     private static final String LOGBACK_CLASSES = "ch.qos.logback.classic.Logger";
     
+    /** 自定义 Joran 配置器，支持 nacosClientProperty 且不污染用户 savepoint。 */
     private final NacosLogbackConfiguratorAdapterV1 configurator;
     
+    /** 构造适配器并初始化 Logback 1.2 配置器。 */
     public LogbackNacosLoggingAdapter() {
         configurator = new NacosLogbackConfiguratorAdapterV1();
     }
     
+    /** 判断 Logger 类是否为 Logback 1.2 Classic 且非 1.3+。 */
     @Override
     public boolean isAdaptedLogger(Class<?> loggerClass) {
         Class<?> expectedLoggerClass = getExpectedLoggerClass();
@@ -64,7 +71,7 @@ public class LogbackNacosLoggingAdapter implements NacosLoggingAdapter {
     }
     
     /**
-     * logback use 'ch.qos.logback.core.model.Model' since 1.3.0, set logback version during initialization.
+     * Logback 自 1.3.0 起引入 {@code ch.qos.logback.core.model.Model}， 通过该类是否存在判断是否为 1.3 及以上版本。
      */
     private boolean isUpperLogback13() {
         try {
@@ -75,16 +82,19 @@ public class LogbackNacosLoggingAdapter implements NacosLoggingAdapter {
         }
     }
     
+    /** Logback 1.2 适配器无需检测重载，固定返回 false。 */
     @Override
     public boolean isNeedReloadConfiguration() {
         return false;
     }
     
+    /** 返回默认 nacos-logback12.xml 位置。 */
     @Override
     public String getDefaultConfigLocation() {
         return NACOS_LOGBACK_LOCATION;
     }
     
+    /** 加载指定位置 Logback 配置并注册 Context 重置监听器。 */
     @Override
     public void loadConfiguration(NacosLoggingProperties loggingProperties) {
         String location = loggingProperties.getLocation();
@@ -120,6 +130,7 @@ public class LogbackNacosLoggingAdapter implements NacosLoggingAdapter {
         return loggerContext;
     }
     
+    /** LoggerContext 监听器：在 reset 后重新加载 Nacos 日志配置。 */
     class NacosLoggerContextListener implements LoggerContextListener {
         
         private final String location;
@@ -128,11 +139,13 @@ public class LogbackNacosLoggingAdapter implements NacosLoggingAdapter {
             this.location = location;
         }
         
+        /** 标记为 reset  resistant，避免被 Logback 自动移除。 */
         @Override
         public boolean isResetResistant() {
             return true;
         }
         
+        /** Context 重置时按原 location 重新加载 Nacos 配置。 */
         @Override
         public void onReset(LoggerContext context) {
             loadConfigurationOnStart(location);

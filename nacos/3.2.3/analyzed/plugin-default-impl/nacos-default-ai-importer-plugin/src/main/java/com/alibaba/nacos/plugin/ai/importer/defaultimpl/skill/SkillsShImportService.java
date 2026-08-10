@@ -51,7 +51,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Importer for the skills.sh search and download APIs.
+ * skills.sh 平台搜索与下载 API 导入服务。
+ *
+ * <p>调用 {@code /api/search} 检索 Skill、 {@code /api/download} 拉取文件快照并打包为含 {@code SKILL.md} 的 ZIP 制品。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -60,8 +62,10 @@ public class SkillsShImportService implements AiResourceImportService {
     
     public static final String RESOURCE_TYPE_SKILL = AiResourceImportConstants.RESOURCE_TYPE_SKILL;
     
+    /** skills.sh 搜索 API 路径后缀。 */
     private static final String API_SEARCH = "/api/search";
     
+    /** skills.sh 下载 API 路径后缀。 */
     private static final String API_DOWNLOAD = "/api/download";
     
     private static final String METADATA_SOURCE = "source";
@@ -114,6 +118,7 @@ public class SkillsShImportService implements AiResourceImportService {
         return Collections.singleton(RESOURCE_TYPE_SKILL);
     }
     
+    /** 调用 skills.sh 搜索 API 返回 Skill 候选列表。 */
     @Override
     public AiResourceImportCandidatePage search(AiResourceImportContext context)
         throws NacosException {
@@ -141,6 +146,7 @@ public class SkillsShImportService implements AiResourceImportService {
         }
     }
     
+    /** 按仓库与 skillId 下载文件快照并打包为 SKILL_ZIP 制品。 */
     @Override
     public AiResourceImportArtifact fetch(AiResourceImportContext context,
         AiResourceImportItem item) throws NacosException {

@@ -25,10 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Extracts skill-scanner {@code --format markdown} finding titles from stdout for {@link Checkpoint} rows.
+ * 从 skill-scanner {@code --format markdown} 输出中提取发现项标题，映射为 {@link Checkpoint} 行。
  *
- * <p>Looks for an {@code ## Findings} section and collects each {@code ### ...} heading line as one
- * finding title (e.g. {@code ### HIGH — Prompt injection} → {@code HIGH — Prompt injection}).</p>
+ * <p>定位 {@code ## Findings} 小节，收集其下每条 {@code ### ...} 标题作为失败检查点（例如 {@code ### HIGH — Prompt injection}）。</p>
  *
  * @author qiacheng.cxy
  * @since 3.2.0
@@ -55,8 +54,8 @@ final class SkillScannerMarkdownFindingParser {
     }
     
     /**
-     * Builds reject checkpoints: one failed checkpoint per finding heading under {@code ## Findings}.
-     * If no headings are found, returns a single fallback checkpoint so callers still get a structured result.
+     * 构建拒绝（失败）检查点：{@code ## Findings} 下每个三级标题对应一条失败记录。
+     * 若未解析到标题，返回一条 HIGH/CRITICAL 兜底检查点以保证结构化输出。
      */
     static List<Checkpoint> buildRejectCheckpoints(String markdown) {
         List<String> titles = extractFindingTitles(markdown);
@@ -71,8 +70,8 @@ final class SkillScannerMarkdownFindingParser {
     }
     
     /**
-     * Builds pass checkpoints when the scanner exits successfully: either a generic pass row, or
-     * derived from report text if needed later.
+     * 扫描成功时构建通过检查点列表，按扫描选项包含 Prompt 注入、数据外泄等项；
+     * 启用 LLM/Meta 分析时追加对应检查行。
      */
     static List<Checkpoint> buildPassCheckpoints(SkillScannerScanOptions scanOptions) {
         List<Checkpoint> list = new ArrayList<>();
@@ -90,9 +89,8 @@ final class SkillScannerMarkdownFindingParser {
         return list;
     }
     
-    /**
-     * Extracts heading text from each {@code ### } line inside the {@code ## Findings} section.
-     */
+    /** 从 {@code ## Findings} 小节内提取所有 {@code ### } 标题文本。 */
+
     static List<String> extractFindingTitles(String markdown) {
         if (markdown == null || markdown.isEmpty()) {
             return Collections.emptyList();

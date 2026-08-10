@@ -43,13 +43,16 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Built-in importer for the official MCP registry API.
+ * 官方 MCP Registry API 内置导入服务。
+ *
+ * <p>实现 {@link com.alibaba.nacos.plugin.ai.importer.spi.AiResourceImportService}， 提供 MCP Server 搜索分页与详情拉取，制品 payload 为 {@code MCP_DETAIL} JSON。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class McpRegistryImportService implements AiResourceImportService {
     
+    /** 支持的资源类型：MCP Server。 */
     public static final String RESOURCE_TYPE_MCP = AiResourceImportConstants.RESOURCE_TYPE_MCP;
     
     private static final int DEFAULT_FETCH_LIMIT = 30;
@@ -82,6 +85,7 @@ public class McpRegistryImportService implements AiResourceImportService {
         return Collections.singleton(RESOURCE_TYPE_MCP);
     }
     
+    /** 调用 Registry 分页 API 搜索 MCP Server 候选列表。 */
     @Override
     public AiResourceImportCandidatePage search(AiResourceImportContext context)
         throws NacosException {
@@ -101,6 +105,7 @@ public class McpRegistryImportService implements AiResourceImportService {
         }
     }
     
+    /** 按 externalId 拉取单个 MCP Server 详情并封装为导入制品。 */
     @Override
     public AiResourceImportArtifact fetch(AiResourceImportContext context,
         AiResourceImportItem item) throws NacosException {

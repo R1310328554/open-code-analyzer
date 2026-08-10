@@ -22,13 +22,16 @@ import com.alibaba.nacos.plugin.ai.importer.spi.AiResourceImportServiceBuilder;
 import java.util.Properties;
 
 /**
- * Builder for the built-in well-known Skill import service.
+ * Skill well-known 导入服务的 SPI 构建器。
+ *
+ * <p>importer 类型标识为 {@code skills-well-known}。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class SkillWellKnownImportServiceBuilder implements AiResourceImportServiceBuilder {
     
+    /** 导入器类型常量：{@code skills-well-known}。 */
     public static final String IMPORTER_TYPE = "skills-well-known";
     
     @Override
@@ -36,6 +39,7 @@ public class SkillWellKnownImportServiceBuilder implements AiResourceImportServi
         return IMPORTER_TYPE;
     }
     
+    /** 创建 {@link SkillWellKnownImportService} 实例。 */
     @Override
     public AiResourceImportService build(Properties properties) {
         return new SkillWellKnownImportService();
