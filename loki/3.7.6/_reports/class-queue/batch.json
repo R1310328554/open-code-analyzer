@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:45:23Z",
-  "files": [
-    "pkg/compactor/jobqueue/metrics.go",
-    "pkg/compactor/jobqueue/queue.go",
-    "pkg/compactor/jobqueue/worker.go",
-    "pkg/compactor/metrics.go",
-    "pkg/compactor/retention/expiration.go",
-    "pkg/compactor/retention/marker.go",
-    "pkg/compactor/retention/metrics.go",
-    "pkg/compactor/retention/pool.go",
-    "pkg/compactor/retention/retention.go",
-    "pkg/compactor/retention/series.go",
-    "pkg/compactor/retention/util.go",
-    "pkg/compactor/table.go",
-    "pkg/compactor/table_locker.go",
-    "pkg/compactor/tables_manager.go",
-    "pkg/compactor/testutil.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1252,
-  "done": 285
+  "done": 300
 }
