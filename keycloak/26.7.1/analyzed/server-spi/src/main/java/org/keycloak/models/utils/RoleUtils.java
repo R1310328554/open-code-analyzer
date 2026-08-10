@@ -36,6 +36,8 @@ import org.keycloak.models.UserModel;
 import org.keycloak.utils.KeycloakSessionUtil;
 
 /**
+ * 角色工具类：组/角色成员关系判断、复合角色展开与深度角色映射查询。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class RoleUtils {
@@ -47,6 +49,7 @@ public class RoleUtils {
      * @return true if targetGroup is in groups (directly or indirectly via parent child relationship)
      */
     public static boolean isMember(Stream<GroupModel> groups, GroupModel targetGroup) {
+        // 收集为 Set 以保持广度优先搜索语义
         // collecting to set to keep "Breadth First Search" like functionality
         Set<GroupModel> groupsSet = groups.collect(Collectors.toSet());
         if (groupsSet.contains(targetGroup)) return true;
@@ -72,6 +75,7 @@ public class RoleUtils {
     }
 
     /**
+     * 判断 targetRole 是否在 roles 中（含复合角色）。
      * @param roles
      * @param targetRole
      * @return true if targetRole is in roles (directly or indirectly via composite role)
@@ -95,6 +99,7 @@ public class RoleUtils {
     }
 
     /**
+     * 检查 targetRole 是否在组或其父组中。
      * Checks whether the {@code targetRole} is contained in the given group or its parents
      * (if requested)
      * @param group Group to check role for
@@ -115,6 +120,7 @@ public class RoleUtils {
     }
 
     /**
+     * 检查 targetRole 是否在任一组或其父组中。
      * Checks whether the {@code targetRole} is contained in any of the {@code groups} or their parents
      * (if requested)
      * @param groups
@@ -131,6 +137,7 @@ public class RoleUtils {
     }
 
     /**
+     * 展开复合角色并返回新集合。
      * @param roles
      * @return new set with composite roles expanded
      */
@@ -141,7 +148,9 @@ public class RoleUtils {
 
         KeycloakSession session = KeycloakSessionUtil.getKeycloakSession();
         if (session == null) {
+            // 非会话绑定线程无 KeycloakSession，回退到逐角色展开
             // Outside a Resteasy/session-bound thread there is no KeycloakSession available.
+            // 回退到不依赖会话的逐角色展开
             // Fall back to per-role expansion, which works without a session context.
             Set<RoleModel> visited = new HashSet<>();
             return roles.stream()
@@ -186,11 +195,17 @@ public class RoleUtils {
                 RoleModel current = stack.pop();
                 sb.add(current);
 
+                // 直接获取复合角色，避免 isComposite() 重复查询
                 // Fetch the composites directly rather than gating on isComposite() first.
+                // JPA 路径上 isComposite() 会额外触发 getChildRoles 查询
                 // On the JPA (cache-miss) path isComposite() runs its own getChildRoles query --
+                // FlushMode.AUTO 刷新后立即再查 getCompositesStream()，导致双倍往返
                 // and the FlushMode.AUTO flush before it -- immediately before getCompositesStream()
+                // 展开树时每个节点往返翻倍
                 // runs another, doubling the per-node round-trips while expanding the tree.
+                // getCompositesStream() 对非复合角色已返回空流
                 // getCompositesStream() already yields an empty stream for non-composite roles,
+                // 因此 isComposite() 预检查是多余的
                 // so the pre-check is redundant.
                 current.getCompositesStream()
                         .filter(r -> !visited.contains(r))
@@ -205,6 +220,7 @@ public class RoleUtils {
     }
 
     /**
+     * 展开复合角色并返回流。
      * @param roles
      * @return stream with composite roles expanded
      */
@@ -213,16 +229,23 @@ public class RoleUtils {
     }
 
     /**
+     * 返回给定映射器的全部角色（含复合展开；用户含组继承角色）。
      * @param roleMapper
      * @return all role mappings for the given mapper with composite roles expanded.
      * For {@link UserModel} instances, group-inherited roles are also included.
      */
     public static Set<RoleModel> getDeepRoleMappings(RoleMapperModel roleMapper) {
+        // RoleMapperModel 仅有 UserModel 与 GroupModel 两种实现
         // RoleMapperModel has exactly two implementations: UserModel and GroupModel.
+        // UserModel.hasRole() 含组继承角色，此处也需包含
         // UserModel.hasRole() considers group-inherited roles, so we must include them
+        // 否则用户通过组获得的角色会缺失
         // here too — otherwise the effective role set would be incomplete for users
+        // 通过组成员关系获得角色的用户会受影响
         // who receive roles through group membership.
+        // GroupModel 无父组角色继承，直接展开即可
         // GroupModel has no parent-group role inheritance at this level, so a plain
+        // 对其直接映射做复合展开即可
         // composite expansion of its direct mappings is sufficient.
         if (roleMapper instanceof UserModel) {
             return getDeepUserRoleMappings((UserModel) roleMapper);
@@ -231,6 +254,7 @@ public class RoleUtils {
     }
 
     /**
+     * 返回用户全部角色映射（含组角色，复合角色已展开）。
      * @param user
      * @return all user role mappings including all groups of user. Composite roles will be expanded
      */
@@ -254,10 +278,12 @@ public class RoleUtils {
         return ((ClientModel) container).getRealm();
     }
 
+    /** @return 是否为 realm 级角色 */
     public static boolean isRealmRole(RoleModel r) {
         return r.getContainer() instanceof RealmModel;
     }
 
+    /** 判断角色是否属于指定 realm。 */
     public static boolean isRealmRole(RoleModel r, RealmModel realm) {
         if (isRealmRole(r)) {
             if (Objects.equals(r.getContainer().getId(), realm.getId()))
@@ -266,6 +292,7 @@ public class RoleUtils {
         return false;
     }
 
+    /** 判断角色是否属于指定客户端。 */
     public static boolean isClientRole(RoleModel r, ClientModel c) {
         RoleContainerModel container = r.getContainer();
         if (container instanceof ClientModel) {

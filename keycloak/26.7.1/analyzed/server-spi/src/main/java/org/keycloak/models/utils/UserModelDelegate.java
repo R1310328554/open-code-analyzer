@@ -28,14 +28,17 @@ import org.keycloak.models.SubjectCredentialManager;
 import org.keycloak.models.UserModel;
 
 /**
+ * 用户模型委托：代理 {@link UserModel} 实现，便于装饰/扩展而不重写全部方法。
  * Delegation pattern.  Used to proxy UserModel implementations.
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UserModelDelegate implements UserModel {
+    /** 被委托的 {@link UserModel} 实例。 */
     protected UserModel delegate;
 
+    /** @param delegate 被委托的用户模型 */
     public UserModelDelegate(UserModel delegate) {
         this.delegate = delegate;
     }
@@ -215,6 +218,7 @@ public class UserModelDelegate implements UserModel {
         return delegate.credentialManager();
     }
 
+    /** @return 被委托的用户模型 */
     public UserModel getDelegate() {
         return delegate;
     }

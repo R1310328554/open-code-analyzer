@@ -25,6 +25,7 @@ package org.keycloak.models.utils;
  */
 
 /**
+ * RFC3548 Base32 编解码工具（参见 http://www.faqs.org/rfcs/rfc3548.html ）。
  * Base32 - encodes and decodes RFC3548 Base32 (see http://www.faqs.org/rfcs/rfc3548.html )
  *
  * @author Robert Kaye
@@ -39,6 +40,7 @@ public class Base32 {
             0x15, 0x16, 0x17, 0x18, 0x19, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
     /**
+     * 将字节数组编码为 Base32 字符串。
      * Encodes byte array to Base32 String.
      *
      * @param bytes Bytes to encode.
@@ -53,6 +55,7 @@ public class Base32 {
         while (i < bytes.length) {
             currByte = (bytes[i] >= 0) ? bytes[i] : (bytes[i] + 256);
 
+            /* 当前位是否跨越字节边界？ */
             /* Is the current digit going to span a byte boundary? */
             if (index > 3) {
                 if ((i + 1) < bytes.length) {
@@ -79,6 +82,7 @@ public class Base32 {
     }
 
     /**
+     * 将 Base32 字符串解码为原始字节数组。
      * Decodes the given Base32 String to a raw byte array.
      *
      * @param base32
@@ -91,6 +95,7 @@ public class Base32 {
         for (i = 0, index = 0, offset = 0; i < base32.length(); i++) {
             lookup = base32.charAt(i) - '0';
 
+            /* 跳过查找表外的字符 */
             /* Skip chars outside the lookup table */
             if (lookup < 0 || lookup >= base32Lookup.length) {
                 continue;
@@ -98,6 +103,7 @@ public class Base32 {
 
             digit = base32Lookup[lookup];
 
+            /* 无效字符则忽略 */
             /* If this digit is not in the table, ignore it */
             if (digit == 0xFF) {
                 continue;

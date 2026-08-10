@@ -32,6 +32,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import static java.util.Collections.emptyMap;
 
 /**
+ * {@link org.keycloak.provider.ProviderConfigProperty#MAP_TYPE} 的 JSON 序列化/反序列化工具。
  * Serializer and deserializer for {@link org.keycloak.provider.ProviderConfigProperty#MAP_TYPE}
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -41,6 +42,8 @@ public class MapperTypeSerializer {
     private static final TypeReference<List<StringPair>> MAP_TYPE_REPRESENTATION = new TypeReference<>() {
     };
 
+    /** 将 JSON 字符串反序列化为 Map<String, List<String>>。
+     * @param configString JSON 配置字符串 */
     public static Map<String, List<String>> deserialize(String configString) {
         if (configString == null) {
             return emptyMap();
@@ -58,6 +61,8 @@ public class MapperTypeSerializer {
         }
     }
 
+    /** 将 Map 序列化为 JSON 字符串。
+     * @param config 键值对映射 */
     public static String serialize(Map<String, List<String>> config) {
         List<StringPair> pairs = config.entrySet()
                 .stream()
@@ -76,10 +81,12 @@ public class MapperTypeSerializer {
         }
     }
 
+    /** JSON 序列化用的键值对内部类。 */
     static class StringPair {
         private String key;
         private String value;
 
+        /** 默认构造器（Jackson 反序列化）。 */
         public StringPair() {
         }
 
@@ -88,18 +95,22 @@ public class MapperTypeSerializer {
             this.value = value;
         }
 
+        /** @return 键 */
         public String getKey() {
             return key;
         }
 
+        /** @param key 键 */
         public void setKey(String key) {
             this.key = key;
         }
 
+        /** @return 值 */
         public String getValue() {
             return value;
         }
 
+        /** @param value 值 */
         public void setValue(String value) {
             this.value = value;
         }

@@ -21,10 +21,13 @@ package org.keycloak.models.credential.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 /**
+ * WebAuthn 凭据密钥数据 DTO：WebAuthn 凭据无私钥存储，此类为占位/序列化结构。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class WebAuthnSecretData {
 
+    /** Jackson 反序列化构造器（空结构）。 */
     @JsonCreator
     public WebAuthnSecretData() {
     }
