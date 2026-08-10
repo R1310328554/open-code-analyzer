@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:34:34Z",
-  "files": [
-    "web/src/components/api-service/hooks.ts",
-    "web/src/components/avatar-name-description/use-editable-field.ts",
-    "web/src/components/chunk-method-dialog/hooks.ts",
-    "web/src/components/chunk-method-dialog/use-default-parser-values.ts",
-    "web/src/components/document-preview/hooks.ts",
-    "web/src/components/embed-dialog/use-show-embed-dialog.ts",
-    "web/src/components/empty/interface.ts",
-    "web/src/components/json-edit/interface.ts",
-    "web/src/components/jsonjoy-builder/components/schema-editor/context.ts",
-    "web/src/components/jsonjoy-builder/components/schema-editor/interface.ts",
-    "web/src/components/jsonjoy-builder/hooks/use-monaco-theme.ts",
-    "web/src/components/jsonjoy-builder/hooks/use-translation.ts",
-    "web/src/components/jsonjoy-builder/i18n/locales/de.ts",
-    "web/src/components/jsonjoy-builder/i18n/locales/en.ts",
-    "web/src/components/jsonjoy-builder/i18n/locales/fr.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 384,
-  "done": 1365
+  "done": 1380
 }
