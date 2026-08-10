@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T20:16:39Z",
   "files": [
-    "discovery/consul/consul.go",
-    "discovery/consul/metrics.go",
-    "discovery/digitalocean/digitalocean.go",
-    "discovery/digitalocean/digitalocean_db.go",
-    "discovery/digitalocean/metrics.go",
-    "discovery/discoverer_metrics_noop.go",
-    "discovery/discovery.go",
-    "discovery/dns/dns.go",
-    "discovery/dns/metrics.go",
-    "discovery/eureka/client.go",
-    "discovery/eureka/eureka.go",
-    "discovery/eureka/metrics.go",
-    "discovery/file/file.go",
-    "discovery/file/metrics.go",
-    "discovery/gce/gce.go",
     "discovery/gce/metrics.go",
     "discovery/hetzner/hcloud.go",
     "discovery/hetzner/hetzner.go",
@@ -33,5 +18,5 @@
     "discovery/kubernetes/ingress.go"
   ],
   "remaining_pending": 474,
-  "done": 30
+  "done": 45
 }
