@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T22:30:54Z",
   "files": [
-    "pkg/logcli/output/default.go",
-    "pkg/logcli/output/jsonl.go",
-    "pkg/logcli/output/loki.go",
-    "pkg/logcli/output/output.go",
-    "pkg/logcli/output/raw.go",
-    "pkg/logcli/print/print.go",
-    "pkg/logcli/query/part_file.go",
-    "pkg/logcli/query/query.go",
-    "pkg/logcli/query/tail.go",
-    "pkg/logcli/seriesquery/series.go",
-    "pkg/logcli/util/util.go",
-    "pkg/logcli/volume/volume.go",
-    "pkg/loghttp/detected.go",
-    "pkg/loghttp/entry.go",
-    "pkg/loghttp/labels.go",
     "pkg/loghttp/legacy/labels.go",
     "pkg/loghttp/legacy/query.go",
     "pkg/loghttp/legacy/tail.go",
@@ -33,5 +18,5 @@
     "pkg/logproto/bloomgateway.pb.go"
   ],
   "remaining_pending": 772,
-  "done": 750
+  "done": 765
 }
