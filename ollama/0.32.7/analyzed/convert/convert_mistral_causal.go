@@ -1,3 +1,4 @@
+// Mistral 3 纯文本转换：无视觉塔的 Mistral 3 Causal LM。
 package convert
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// mistral3CausalModel 解析 Mistral 3 纯文本 Causal LM 配置。
 type mistral3CausalModel struct {
 	ModelParameters
 
@@ -39,11 +41,13 @@ type mistral3CausalModel struct {
 	} `json:"rope_parameters"`
 }
 
+// KV 写入 mistral3 文本模型 GGUF 元数据。
 func (p *mistral3CausalModel) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "mistral3"
 	kv["mistral3.vocab_size"] = p.VocabSize
 
+	// 文本模型超参。
 	// Text configuration
 	kv["mistral3.block_count"] = p.NumHiddenLayers
 	kv["mistral3.context_length"] = p.MaxPositionEmbeddings
@@ -76,6 +80,7 @@ func (p *mistral3CausalModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 对 Q/K 权重做 NeoX 重排。
 func (p *mistral3CausalModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -98,6 +103,7 @@ func (p *mistral3CausalModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 Mistral 3 文本模型张量路径。
 func (p *mistral3CausalModel) Replacements() []string {
 	return []string{
 		"model.norm", "output_norm",
@@ -130,6 +136,7 @@ func (p *mistral3CausalModel) Replacements() []string {
 	}
 }
 
+// repack 将 Q/K 从交错序重排为 GGML NeoX 旋转序。
 func (p *mistral3CausalModel) repack(name string, data []float32, shape []uint64) ([]float32, error) {
 	var dims []int
 	for _, dim := range shape {

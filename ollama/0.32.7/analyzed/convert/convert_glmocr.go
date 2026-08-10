@@ -1,3 +1,4 @@
+// GLM-OCR 转换：M-RoPE 文本 + 视觉 OCR 多模态 checkpoint 到 GGUF。
 package convert
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/pdevine/tensor/native"
 )
 
+// normalToNeoXRepacker 将 Q/K 权重从 LLaMA 交错序重排为 NeoX 序以兼容 M-RoPE。
 // normalToNeoXRepacker creates a repacker that permutes Q/K weights from interleaved (LLaMA)
 // to NeoX ordering for compatibility with GGML's M-RoPE kernel.
 //
@@ -26,6 +28,7 @@ func normalToNeoXRepacker(nHeads, headDim int, partialRotaryFactor float32) func
 			rotaryDim = (rotaryDim / 2) * 2 // Round down to even
 		}
 
+		// 支持一维 bias 或二维 weight 张量。
 		// Handle 1D (bias) or 2D (weight) tensors
 		is1D := len(shape) == 1
 		var inFeatures int
@@ -45,6 +48,7 @@ func normalToNeoXRepacker(nHeads, headDim int, partialRotaryFactor float32) func
 		reshaped := make([]float32, len(data))
 		copy(reshaped, data)
 
+		// 旋转维重排：偶数维在前、奇数维在后。
 		// Permute the rotary dimensions: even indices first, then odd
 		// For each head, reorder [0,1,2,3,4,5...] to [0,2,4...,1,3,5...]
 		result := make([]float32, len(data))
@@ -76,6 +80,7 @@ func normalToNeoXRepacker(nHeads, headDim int, partialRotaryFactor float32) func
 	}
 }
 
+// glmOcrModel 承载 GLM-OCR 文本/视觉配置与预处理器参数。
 type glmOcrModel struct {
 	ModelParameters
 
@@ -118,6 +123,7 @@ type glmOcrModel struct {
 	ImageTokenID      uint32 `json:"image_token_id"`
 	VideoTokenID      uint32 `json:"video_token_id"`
 
+	// 来自 preprocessor_config.json 的图像预处理配置。
 	// Preprocessor config (preprocessor_config.json)
 	Preprocessor struct {
 		Size struct {
@@ -132,8 +138,10 @@ type glmOcrModel struct {
 	} `json:"-"`
 }
 
+// glmOcrModel 实现 MultimodalConverter 接口。
 var _ MultimodalConverter = (*glmOcrModel)(nil)
 
+// parseMore 读取 preprocessor_config.json 填充 Processor。
 func (m *glmOcrModel) parseMore(fsys fs.FS) error {
 	bts, err := fs.ReadFile(fsys, "preprocessor_config.json")
 	if err != nil {
@@ -143,11 +151,13 @@ func (m *glmOcrModel) parseMore(fsys fs.FS) error {
 	return json.Unmarshal(bts, &m.Preprocessor)
 }
 
+// KV 写入 glmocr 完整多模态元数据（文本、视觉与特殊 token）。
 func (m *glmOcrModel) KV(t *Tokenizer) KV {
 	kv := m.ModelParameters.KV(t)
 	kv["general.architecture"] = "glmocr"
 	applyGlmOcrTokenizerKV(kv, t)
 
+	// 文本子模型超参。
 	// Text model parameters
 	numHiddenLayers := cmp.Or(m.TextConfig.NumHiddenLayers, 16)
 	kv["glmocr.block_count"] = numHiddenLayers + m.TextConfig.NumNextNPredict
@@ -169,6 +179,7 @@ func (m *glmOcrModel) KV(t *Tokenizer) KV {
 		kv["glmocr.rope.mrope_section"] = m.TextConfig.RopeParameters.MRopeSection
 	}
 
+	// 视觉编码器超参。
 	// Vision model parameters
 	kv["glmocr.vision.block_count"] = cmp.Or(m.VisionConfig.Depth, 24)
 	kv["glmocr.vision.embedding_length"] = cmp.Or(m.VisionConfig.HiddenSize, 1024)
@@ -204,6 +215,7 @@ func (m *glmOcrModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// applyGlmOcrTokenizerKV 设置 chatglm-bpe 前缀与 BOS/EOT token ID。
 func applyGlmOcrTokenizerKV(kv KV, t *Tokenizer) {
 	kv["tokenizer.ggml.pre"] = "chatglm-bpe"
 	if id, ok := glmOcrTokenID(t, "<|endoftext|>"); ok {
@@ -215,6 +227,7 @@ func applyGlmOcrTokenizerKV(kv KV, t *Tokenizer) {
 	}
 }
 
+// TextKV 仅导出文本子模型的 GGUF 元数据（glm4 架构键）。
 func (m *glmOcrModel) TextKV(t *Tokenizer) KV {
 	kv := m.ModelParameters.KV(t)
 	kv["general.architecture"] = "glm4"
@@ -248,6 +261,7 @@ func (m *glmOcrModel) TextKV(t *Tokenizer) KV {
 	return kv
 }
 
+// ProjectorKV 返回 CLIP mmproj 格式的视觉投影器元数据。
 func (m *glmOcrModel) ProjectorKV(*Tokenizer) KV {
 	kv := KV{
 		"general.architecture":                     "clip",
@@ -289,6 +303,7 @@ func (m *glmOcrModel) ProjectorKV(*Tokenizer) KV {
 	return kv
 }
 
+// glmOcrTokenID 在词表中查找指定 token 的 ID。
 func glmOcrTokenID(t *Tokenizer, token string) (int, bool) {
 	if t == nil || t.Vocabulary == nil {
 		return 0, false
@@ -301,10 +316,12 @@ func glmOcrTokenID(t *Tokenizer, token string) (int, bool) {
 	return 0, false
 }
 
+// isGlmOcrVisionTensor 判断张量是否属于视觉塔或投影器。
 func isGlmOcrVisionTensor(name string) bool {
 	return strings.HasPrefix(name, "v.") || strings.HasPrefix(name, "mm.")
 }
 
+// TextTensors 过滤视觉张量后委托 Tensors 处理纯文本权重。
 func (m *glmOcrModel) TextTensors(ts []Tensor, t *Tokenizer) []*ggml.Tensor {
 	textOnly := make([]Tensor, 0, len(ts))
 	for _, tensor := range ts {
@@ -315,6 +332,7 @@ func (m *glmOcrModel) TextTensors(ts []Tensor, t *Tokenizer) []*ggml.Tensor {
 	return m.Tensors(textOnly)
 }
 
+// ProjectorTensors 仅导出 v./mm. 前缀的视觉与投影器张量。
 func (m *glmOcrModel) ProjectorTensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	for _, t := range ts {
@@ -406,6 +424,7 @@ func (m *glmOcrModel) ProjectorTensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Tensors 处理 NextN 层重命名、gate_up 拆分、patch 嵌入与 M-RoPE Q/K 重排。
 func (m *glmOcrModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -448,6 +467,7 @@ func (m *glmOcrModel) Tensors(ts []Tensor) []*ggml.Tensor {
 			}
 		}
 
+		// 将融合的 ffn_gate_up 拆为 gate 与 up 投影。
 		// Split ffn_gate_up into separate gate and up projections
 		if strings.Contains(name, "ffn_gate_up") {
 			for t := range splitDim(t, 0,
@@ -578,6 +598,7 @@ func (m *glmOcrModel) Tensors(ts []Tensor) []*ggml.Tensor {
 			continue
 		}
 
+		// 为 M-RoPE 将 Q/K 从交错序转为 NeoX 序。
 		// Permute Q/K weights for M-RoPE compatibility (interleaved -> NeoX ordering)
 		// GGML's M-RoPE kernel uses NeoX-style rotation, but GLM-OCR uses interleaved (LLaMA-style)
 		// We permute at conversion time so the weights work correctly with GGML's kernel
@@ -619,6 +640,7 @@ func (m *glmOcrModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射视觉塔、投影器与语言模型张量路径。
 func (m *glmOcrModel) Replacements() []string {
 	return []string{
 		// Vision encoder

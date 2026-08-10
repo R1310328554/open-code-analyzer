@@ -1,3 +1,4 @@
+// LLaMA 转换：标准 LLaMA/LLaMA2 架构 checkpoint 到 GGUF。
 package convert
 
 import (
@@ -11,6 +12,8 @@ import (
 
 	"github.com/ollama/ollama/fs/ggml"
 )
+
+// llamaModel 兼容多种 JSON 字段命名（n_layers/num_hidden_layers 等）。
 
 type llamaModel struct {
 	ModelParameters
@@ -44,8 +47,10 @@ type llamaModel struct {
 	skipRepack bool
 }
 
+// llamaModel 实现 ModelConverter。
 var _ ModelConverter = (*llamaModel)(nil)
 
+// KV 写入 llama 架构 GGUF 元数据（RoPE、GQA 与 RMS norm）。
 func (p *llamaModel) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "llama"
@@ -103,6 +108,7 @@ func (p *llamaModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 可选生成 llama3 RoPE 因子并对 Q/K 做 NeoX 重排。
 func (p *llamaModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -134,6 +140,7 @@ func (p *llamaModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// ropeFactors 为 llama3 RoPE 类型计算 per-dimension 频率缩放因子。
 func (p *llamaModel) ropeFactors() ropeFactor {
 	if p.RopeScaling.RopeType != "llama3" || p.HiddenSize == 0 || p.NumAttentionHeads == 0 || p.RopeTheta == 0 {
 		return nil
@@ -168,6 +175,7 @@ func (p *llamaModel) ropeFactors() ropeFactor {
 	return factors
 }
 
+// Replacements 映射标准 LLaMA HF 张量名到 GGUF 短名。
 func (p *llamaModel) Replacements() []string {
 	return []string{
 		"lm_head", "output",
@@ -186,6 +194,7 @@ func (p *llamaModel) Replacements() []string {
 	}
 }
 
+// repack 将 Q/K 权重从交错序重排为 GGML NeoX 旋转序。
 func (p *llamaModel) repack(name string, data []float32, shape []uint64) ([]float32, error) {
 	var dims []int
 	for _, dim := range shape {

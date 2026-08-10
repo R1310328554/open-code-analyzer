@@ -1,3 +1,4 @@
+// Laguna 转换：混合全局/SWA 注意力、逐头门控与 MoE 路由。
 package convert
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// lagunaModel 解析 Laguna MoE 解码器配置。
 type lagunaModel struct {
 	ModelParameters
 
@@ -48,8 +50,10 @@ type lagunaModel struct {
 	SwaAttentionSinkEnabled bool `json:"swa_attention_sink_enabled"`
 }
 
+// lagunaGatingMode 表示注意力门控模式（如 per-head）。
 type lagunaGatingMode string
 
+// lagunaRopeParameters 承载 RoPE/YaRN 缩放参数。
 type lagunaRopeParameters struct {
 	RopeTheta                     float32 `json:"rope_theta"`
 	RopeType                      string  `json:"rope_type"`
@@ -62,6 +66,7 @@ type lagunaRopeParameters struct {
 	PartialRotaryFactor           float32 `json:"partial_rotary_factor"`
 }
 
+// lagunaRopeConfig 支持扁平或嵌套（full/sliding）RoPE 配置。
 type lagunaRopeConfig struct {
 	flat    lagunaRopeParameters
 	full    lagunaRopeParameters
@@ -69,6 +74,7 @@ type lagunaRopeConfig struct {
 	nested  bool
 }
 
+// UnmarshalJSON 接受字符串或布尔 JSON 表示门控开关。
 func (g *lagunaGatingMode) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err == nil {
@@ -92,10 +98,12 @@ func (g *lagunaGatingMode) UnmarshalJSON(b []byte) error {
 	return fmt.Errorf("unsupported Laguna gating JSON value %s", string(b))
 }
 
+// perHead 判断是否为逐头门控模式。
 func (g lagunaGatingMode) perHead() bool {
 	return strings.EqualFold(string(g), "per-head") || strings.EqualFold(string(g), "true")
 }
 
+// UnmarshalJSON 解析嵌套 full_attention/sliding_attention 或扁平 RoPE 块。
 func (r *lagunaRopeConfig) UnmarshalJSON(b []byte) error {
 	if string(b) == "null" {
 		return nil
@@ -168,6 +176,7 @@ func (r lagunaRopeParameters) empty() bool {
 	return r == (lagunaRopeParameters{})
 }
 
+// rawLagunaModel 为 JSON 反序列化中间态（含指针布尔字段）。
 type rawLagunaModel struct {
 	ModelParameters
 
@@ -205,6 +214,7 @@ type rawLagunaModel struct {
 	SwaAttentionSinkEnabled bool `json:"swa_attention_sink_enabled"`
 }
 
+// UnmarshalJSON 从 raw 配置归一化默认值并校验 MLP 层类型。
 func (p *lagunaModel) UnmarshalJSON(b []byte) error {
 	var raw rawLagunaModel
 	if err := json.Unmarshal(b, &raw); err != nil {
@@ -257,6 +267,7 @@ func (p *lagunaModel) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// defaultBool 解引用可选布尔，nil 时返回 fallback。
 func defaultBool(v *bool, fallback bool) bool {
 	if v == nil {
 		return fallback
@@ -264,6 +275,7 @@ func defaultBool(v *bool, fallback bool) bool {
 	return *v
 }
 
+// Laguna 门控函数与层类型枚举常量。
 const (
 	lagunaGatingFuncSoftmax uint32 = 1
 	lagunaGatingFuncSigmoid uint32 = 2
@@ -272,9 +284,11 @@ const (
 	lagunaLayerTypeSliding uint32 = 1
 )
 
+// KV 写入 laguna 元数据（SWA 模式、MoE、双 RoPE 与 tokenizer 策略）。
 func (p *lagunaModel) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "laguna"
+	// Laguna 聊天模板已含 leading special token，禁用自动 BOS。
 	// Laguna's chat template and built-in renderer both emit the leading
 	// special token explicitly. Auto-prepending BOS here would duplicate it.
 	kv["tokenizer.ggml.add_bos_token"] = false
@@ -367,10 +381,12 @@ func (p *lagunaModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// parseMore 触发配置校验。
 func (p *lagunaModel) parseMore(_ iofs.FS) error {
 	return p.validate()
 }
 
+// validate 校验 Laguna 当前支持的配置子集。
 func (p *lagunaModel) validate() error {
 	if p.NumHiddenLayers == 0 {
 		return fmt.Errorf("laguna: num_hidden_layers must be set")
@@ -441,6 +457,7 @@ func (p *lagunaModel) validate() error {
 	return nil
 }
 
+// numHeadsForLayer 返回指定层的注意力头数（支持逐层数组）。
 func (p *lagunaModel) numHeadsForLayer(layer uint32) uint32 {
 	if len(p.NumAttentionHeadsPerLayer) > int(layer) && p.NumAttentionHeadsPerLayer[layer] > 0 {
 		return p.NumAttentionHeadsPerLayer[layer]
@@ -448,6 +465,7 @@ func (p *lagunaModel) numHeadsForLayer(layer uint32) uint32 {
 	return p.NumAttentionHeads
 }
 
+// layerUsesMoE 判断该层是否使用路由 MoE FFN。
 func (p *lagunaModel) layerUsesMoE(layer uint32) bool {
 	for _, denseLayer := range p.MLPOnlyLayers {
 		if denseLayer == layer {
@@ -458,6 +476,7 @@ func (p *lagunaModel) layerUsesMoE(layer uint32) bool {
 	return p.NumExperts > 0 && (layer+1)%step == 0
 }
 
+// Replacements 映射 Laguna 注意力门控与 MoE 张量名。
 func (p *lagunaModel) Replacements() []string {
 	return []string{
 		"lm_head", "output",
@@ -487,7 +506,9 @@ func (p *lagunaModel) Replacements() []string {
 	}
 }
 
+// Tensors 将逐专家 gate/up/down 合并为堆叠 GGUF 张量。
 func (p *lagunaModel) Tensors(ts []Tensor) []*ggml.Tensor {
+	// Laguna checkpoint 按专家分散存储，GGUF 需合并为堆叠张量。
 	// Current Laguna drops store routed MoE experts as separate per-expert
 	// tensors. GGUF stores each projection as one stacked tensor. If future
 	// drops change expert naming or layout, update these patterns with a
@@ -522,18 +543,22 @@ func (p *lagunaModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// specialTokenTypes 声明需导出的特殊 token 类型。
 func (p *lagunaModel) specialTokenTypes() []string {
 	return []string{"bos", "eos", "pad", "unk"}
 }
 
+// lagunaLayerIsSliding 判断层类型是否为滑动窗口注意力。
 func lagunaLayerIsSliding(layerType string) bool {
 	return strings.EqualFold(layerType, "sliding_attention")
 }
 
+// lagunaLayerIsGlobal 判断层类型是否为全局注意力。
 func lagunaLayerIsGlobal(layerType string) bool {
 	return strings.EqualFold(layerType, "full_attention") || strings.EqualFold(layerType, "global_attention")
 }
 
+// lagunaLeadingDensePrefix 若 dense 层为 [0..n-1] 前缀则返回 n。
 func lagunaLeadingDensePrefix(layers []uint32) (uint32, bool) {
 	for i, v := range layers {
 		if v != uint32(i) {
@@ -543,6 +568,7 @@ func lagunaLeadingDensePrefix(layers []uint32) (uint32, bool) {
 	return uint32(len(layers)), true
 }
 
+// lagunaDenseLayers 从 mlp_layer_types 推导 dense 层索引列表。
 func lagunaDenseLayers(mlpOnlyLayers []uint32, mlpLayerTypes []string) ([]uint32, error) {
 	if len(mlpOnlyLayers) > 0 {
 		return mlpOnlyLayers, nil
@@ -564,6 +590,7 @@ func lagunaDenseLayers(mlpOnlyLayers []uint32, mlpLayerTypes []string) ([]uint32
 	return denseLayers, nil
 }
 
+// lagunaMoeGatingFunc 返回 MoE 路由激活函数枚举。
 func lagunaMoeGatingFunc(useSigmoid bool) uint32 {
 	if useSigmoid {
 		return lagunaGatingFuncSigmoid
@@ -571,6 +598,7 @@ func lagunaMoeGatingFunc(useSigmoid bool) uint32 {
 	return lagunaGatingFuncSoftmax
 }
 
+// lagunaAttentionFactor 计算 YaRN 注意力缩放因子。
 func lagunaAttentionFactor(ropeType string, scaleFactor, attentionFactor float32) float32 {
 	if attentionFactor != 0 {
 		return attentionFactor
@@ -581,6 +609,7 @@ func lagunaAttentionFactor(ropeType string, scaleFactor, attentionFactor float32
 	return 1
 }
 
+// lagunaRopeDim 根据 partial_rotary_factor 计算有效 RoPE 维度（偶数对齐）。
 func lagunaRopeDim(headDim uint32, partialRotaryFactor float32) uint32 {
 	if headDim == 0 {
 		return 0

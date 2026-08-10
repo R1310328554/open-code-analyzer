@@ -1,3 +1,4 @@
+// LFM2 转换：ShortConv + 注意力混合层与可选 MoE。
 package convert
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// lfm2Model 解析 Liquid Foundation Model 2 配置。
 type lfm2Model struct {
 	ModelParameters
 	HiddenSize            uint32   `json:"hidden_size"`
@@ -37,17 +39,21 @@ type lfm2Model struct {
 	} `json:"rope_parameters"`
 }
 
+// lfm2Model 实现 ModelConverter。
 var _ ModelConverter = (*lfm2Model)(nil)
 
+// 默认上下文长度与已知 MoE 变体的回退值。
 const (
 	defaultMaxPositionEmbeddings = uint32(128_000)
 	fallbackContextLength        = uint32(32_768)
 )
 
+// isMoE 根据 model_type 或专家数判断是否为 MoE 变体。
 func (p *lfm2Model) isMoE() bool {
 	return p.ModelType == "lfm2_moe" || p.expertCount() > 0
 }
 
+// ropeFreqBase 读取 RoPE 基频（兼容 rope_parameters）。
 func (p *lfm2Model) ropeFreqBase() float32 {
 	if p.RopeTheta != 0 {
 		return p.RopeTheta
@@ -56,6 +62,7 @@ func (p *lfm2Model) ropeFreqBase() float32 {
 	return p.RopeParameters.RopeTheta
 }
 
+// expertCount 优先 num_local_experts，否则 num_experts。
 func (p *lfm2Model) expertCount() uint32 {
 	if p.NumLocalExperts > 0 {
 		return p.NumLocalExperts
@@ -63,6 +70,7 @@ func (p *lfm2Model) expertCount() uint32 {
 	return p.NumExperts
 }
 
+// feedForwardLength 按 llama.cpp 规则计算 FFN 隐层宽度（含倍数对齐）。
 func (p *lfm2Model) feedForwardLength() uint32 {
 	ff := p.IntermediateSize
 	if p.BlockFFDim != 0 {
@@ -75,6 +83,7 @@ func (p *lfm2Model) feedForwardLength() uint32 {
 
 	ff = (2 * ff) / 3
 
+	// 与 llama.cpp 转换保持相同的 FFN 倍数默认值。
 	// Keep default multiplier behavior consistent with llama.cpp conversion.
 	if p.BlockFFNDimMultiplier != 0 {
 		ff = uint32(float32(ff) * p.BlockFFNDimMultiplier)
@@ -84,6 +93,7 @@ func (p *lfm2Model) feedForwardLength() uint32 {
 	return m * ((ff + m - 1) / m)
 }
 
+// hasKnownContextLengthFallbackSignature 识别需 32K 上下文回退的已知 MoE 签名。
 func (p *lfm2Model) hasKnownContextLengthFallbackSignature() bool {
 	return p.isMoE() &&
 		p.VocabSize == 65536 &&
@@ -98,6 +108,7 @@ func (p *lfm2Model) hasKnownContextLengthFallbackSignature() bool {
 		p.MoEIntermediateSize == 1536
 }
 
+// contextLength 在特定 MoE 签名下将 128K 回退为 32K。
 func (p *lfm2Model) contextLength() uint32 {
 	if p.MaxPositionEmbeddings == defaultMaxPositionEmbeddings && p.hasKnownContextLengthFallbackSignature() {
 		return fallbackContextLength
@@ -106,6 +117,7 @@ func (p *lfm2Model) contextLength() uint32 {
 	return p.MaxPositionEmbeddings
 }
 
+// KV 写入 lfm2/lfm2moe 元数据与逐层 KV 头数组。
 func (p *lfm2Model) KV(t *Tokenizer) KV {
 	architecture := "lfm2"
 	if p.isMoE() {
@@ -121,6 +133,7 @@ func (p *lfm2Model) KV(t *Tokenizer) KV {
 	kv["feed_forward_length"] = p.feedForwardLength()
 	kv["context_length"] = p.contextLength()
 
+	// 按 layer_types 构建逐层 KV 头数（0 表示 ShortConv 层）。
 	// Build per-layer KV head count array based on layer_types
 	// (0 = shortconv layer, non-zero = attention layer with that many KV heads).
 	//
@@ -162,6 +175,7 @@ func (p *lfm2Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 合并 MoE 专家并压缩 shortconv 卷积权重维度。
 func (p *lfm2Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -192,6 +206,7 @@ func (p *lfm2Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	for _, t := range ts {
 		shape := t.Shape()
 
+		// ShortConv 权重 [D,1,K] 压成 [D,K]。
 		// Squeeze conv weights: [D, 1, K] -> [D, K]
 		if strings.HasSuffix(t.Name(), "shortconv.conv.weight") {
 			if len(shape) == 3 && shape[1] == 1 {
@@ -210,6 +225,7 @@ func (p *lfm2Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 LFM2 注意力、ShortConv 与 MoE 张量名。
 func (p *lfm2Model) Replacements() []string {
 	return []string{
 		"model.embed_tokens", "token_embd",

@@ -1,3 +1,4 @@
+// LFM2-VL 转换：LFM2 语言模型 + 视觉塔与多模态投影器。
 package convert
 
 import (
@@ -12,7 +13,9 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// lfm2VLTextModel 转换 LFM2-VL checkpoint 的语言模型部分（含视觉 KV 扩展）。
 // lfm2VLTextModel converts the language model component of LFM2 VL checkpoints.
+// lfm2VLTextModel 聚合文本、视觉与图像预处理配置。
 type lfm2VLTextModel struct {
 	TextConfig            lfm2Model `json:"text_config"`
 	DoImageSplitting      *bool     `json:"do_image_splitting"`
@@ -60,14 +63,17 @@ type lfm2VLTextModel struct {
 	}
 }
 
+// textModel 返回内嵌的 lfm2Model 指针。
 func (p *lfm2VLTextModel) textModel() *lfm2Model {
 	return &p.TextConfig
 }
 
+// specialTokenTypes 委托文本模型的特殊 token 类型。
 func (p *lfm2VLTextModel) specialTokenTypes() []string {
 	return p.textModel().specialTokenTypes()
 }
 
+// parseMore 读取 processor_config.json。
 func (p *lfm2VLTextModel) parseMore(fsys fs.FS) error {
 	bts, err := fs.ReadFile(fsys, "processor_config.json")
 	if err != nil {
@@ -80,7 +86,9 @@ func (p *lfm2VLTextModel) parseMore(fsys fs.FS) error {
 	return json.Unmarshal(bts, &p.Processor)
 }
 
+// visionImageSize 由 tile 尺寸与下采样因子推算有效图像边长。
 func (p *lfm2VLTextModel) visionImageSize() uint32 {
+	// LFM2-VL 以 512 像素 tile 经 2× 下采样后作为有效 image_size。
 	// LFM2-VL image processor operates on 512 tiles and downsamples by factor 2
 	// before projection. Keep a fixed square image size compatible with position
 	// embeddings and the simplified runtime image pipeline.
@@ -98,6 +106,7 @@ func (p *lfm2VLTextModel) visionImageSize() uint32 {
 	return max(uint32(1), tile/downsample)
 }
 
+// KV 在 LFM2 文本 KV 基础上追加视觉与分块推理元数据。
 func (p *lfm2VLTextModel) KV(t *Tokenizer) KV {
 	kv := p.textModel().KV(t)
 
@@ -151,6 +160,7 @@ func (p *lfm2VLTextModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 重排 v.patch_embd 为四维并委托 lfm2Model.Tensors。
 func (p *lfm2VLTextModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	patchSize := int(cmp.Or(p.VisionConfig.PatchSize, p.EncoderPatchSize, uint32(16)))
 	numChannels := int(cmp.Or(p.VisionConfig.NumChannels, uint32(3)))
@@ -180,6 +190,7 @@ func (p *lfm2VLTextModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 扩展 LFM2 规则以覆盖 vision_tower 与 mm 投影器路径。
 func (p *lfm2VLTextModel) Replacements() []string {
 	out := make([]string, 0, 96)
 
@@ -199,6 +210,7 @@ func (p *lfm2VLTextModel) Replacements() []string {
 		addText(base[i], base[i+1])
 	}
 
+	// 单文件转换中的视觉塔与多模态投影器张量映射。
 	// Vision tower + multimodal projector tensors (single-file conversion).
 	out = append(out,
 		"model.vision_tower.vision_model.embeddings.patch_embedding", "v.patch_embd",
@@ -221,7 +233,9 @@ func (p *lfm2VLTextModel) Replacements() []string {
 	return out
 }
 
+// lfm2VLProjectorModel 仅转换 LFM2-VL 视觉编码器与投影器（mmproj）。
 // lfm2VLProjectorModel converts the vision encoder + projector component of LFM2 VL checkpoints.
+// lfm2VLProjectorModel 承载独立 mmproj 转换所需配置。
 type lfm2VLProjectorModel struct {
 	ModelParameters
 	DownsampleFactor   uint32 `json:"downsample_factor"`
@@ -257,6 +271,7 @@ var (
 	_ moreParser     = (*lfm2VLProjectorModel)(nil)
 )
 
+// parseMore 读取 processor_config.json。
 func (p *lfm2VLProjectorModel) parseMore(fsys fs.FS) error {
 	bts, err := fs.ReadFile(fsys, "processor_config.json")
 	if err != nil {
@@ -269,6 +284,7 @@ func (p *lfm2VLProjectorModel) parseMore(fsys fs.FS) error {
 	return json.Unmarshal(bts, &p.Processor)
 }
 
+// imageSize 计算 CLIP 元数据中的有效图像尺寸。
 func (p *lfm2VLProjectorModel) imageSize() uint32 {
 	if p.VisionModel.ImageSize > 0 {
 		return p.VisionModel.ImageSize
@@ -288,6 +304,7 @@ func (p *lfm2VLProjectorModel) imageSize() uint32 {
 	return max(uint32(1), baseSize/downsample)
 }
 
+// KV 返回 clip/lfm2 mmproj 格式的视觉元数据。
 func (p *lfm2VLProjectorModel) KV(_ *Tokenizer) KV {
 	kv := KV{
 		"general.architecture":         "clip",
@@ -314,6 +331,7 @@ func (p *lfm2VLProjectorModel) KV(_ *Tokenizer) KV {
 	return kv
 }
 
+// defaultFloat32Slice 非空则返回 v，否则返回 fallback。
 func defaultFloat32Slice(v, fallback []float32) []float32 {
 	if len(v) > 0 {
 		return v
@@ -322,6 +340,7 @@ func defaultFloat32Slice(v, fallback []float32) []float32 {
 	return fallback
 }
 
+// Tensors 仅导出 v./mm. 前缀张量并重排 patch 嵌入。
 func (p *lfm2VLProjectorModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -358,6 +377,7 @@ func (p *lfm2VLProjectorModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射独立 mmproj 的视觉与投影器路径。
 func (p *lfm2VLProjectorModel) Replacements() []string {
 	return []string{
 		"model.multi_modal_projector.linear_1", "mm.1",
@@ -377,6 +397,7 @@ func (p *lfm2VLProjectorModel) Replacements() []string {
 	}
 }
 
+// repackPatchEmbeddingWeight 将 HF 展平 patch 权重重排为 [out, C, H, W]。
 func repackPatchEmbeddingWeight(data []float32, srcShape []uint64, channels, patch int) ([]float32, error) {
 	if len(srcShape) != 2 {
 		return nil, fmt.Errorf("invalid patch embedding shape rank: %d", len(srcShape))

@@ -1,3 +1,4 @@
+// GLM4 MoE Lite 转换：DeepSeek2 MLA 架构与路由 MoE 专家合并。
 package convert
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// glm4MoeLiteModel 解析 GLM-4 MoE Lite（DeepSeek2 MLA）配置。
 type glm4MoeLiteModel struct {
 	ModelParameters
 	MaxPositionEmbeddings uint32  `json:"max_position_embeddings"`
@@ -44,6 +46,7 @@ type glm4MoeLiteModel struct {
 	ExpertGroupUsedCount uint32 `json:"topk_group"`
 }
 
+// KV 写入 deepseek2 元数据并设置 glm4 tokenizer 前缀。
 func (p *glm4MoeLiteModel) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "deepseek2"
@@ -86,6 +89,7 @@ func (p *glm4MoeLiteModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// setGLM4MoeLiteExtraEOGFromEOSIDs 从 eos_token_ids 提取 eot/eom 特殊 token。
 func setGLM4MoeLiteExtraEOGFromEOSIDs(kv KV) {
 	switch ids := kv["tokenizer.ggml.eos_token_ids"].(type) {
 	case []int32:
@@ -105,6 +109,7 @@ func setGLM4MoeLiteExtraEOGFromEOSIDs(kv KV) {
 	}
 }
 
+// Replacements 映射 MLA 低秩投影与 MoE 专家张量名。
 func (p *glm4MoeLiteModel) Replacements() []string {
 	return []string{
 		"lm_head", "output",
@@ -131,6 +136,7 @@ func (p *glm4MoeLiteModel) Replacements() []string {
 	}
 }
 
+// repackKVB 从合并的 attn_kv_b 中拆出 K 或 V 供 MLA 吸收。
 // repackKVB extracts K or V from the combined KV_B tensor for MLA absorption.
 // K output row-major: [n_head, kv_lora_rank, qk_nope] -> GGML ne[]={qk_nope, kv_lora_rank, n_head}
 // V output row-major: [n_head, v_head, kv_lora_rank] -> GGML ne[]={kv_lora_rank, v_head, n_head}
@@ -149,6 +155,7 @@ func (p *glm4MoeLiteModel) repackKVB(extractK bool, kvFirst bool, numHeads int) 
 		var tt tensor.Tensor = tensor.New(tensor.WithShape(dims...), tensor.WithBacking(data))
 		var err error
 
+		// 归一化为 [n_head×(qk_nope+v_head), kv_lora_rank] 布局。
 		// Normalize to [n_head * (qk_nope + v_head), kv_lora_rank] layout
 		if kvFirst {
 			tt, err = tensor.Transpose(tt, 1, 0)
@@ -164,6 +171,7 @@ func (p *glm4MoeLiteModel) repackKVB(extractK bool, kvFirst bool, numHeads int) 
 		}
 
 		if extractK {
+			// 切片 K 并转置为 [n_head, kv_lora_rank, qk_nope]。
 			// Slice K: [n_head, qk_nope, kv_lora_rank]
 			tt, err = tt.Slice(nil, tensor.S(0, qkNope), nil)
 			if err != nil {
@@ -177,6 +185,7 @@ func (p *glm4MoeLiteModel) repackKVB(extractK bool, kvFirst bool, numHeads int) 
 			}
 			tt = tensor.Materialize(tt)
 		} else {
+			// 切片 V，布局已为 [n_head, v_head, kv_lora_rank]。
 			// Slice V: [n_head, v_head, kv_lora_rank] - already correct layout
 			tt, err = tt.Slice(nil, tensor.S(qkNope, kvPerHead), nil)
 			if err != nil {
@@ -192,6 +201,7 @@ func (p *glm4MoeLiteModel) repackKVB(extractK bool, kvFirst bool, numHeads int) 
 	}
 }
 
+// Tensors 合并逐专家 FFN 并将 attn_kv_b 拆为 attn_k_b/attn_v_b。
 func (p *glm4MoeLiteModel) Tensors(s []Tensor) (out []*ggml.Tensor) {
 	merges := make([]merge, p.HiddenLayers*3)
 	for i := range p.HiddenLayers {
@@ -226,12 +236,14 @@ func (p *glm4MoeLiteModel) Tensors(s []Tensor) (out []*ggml.Tensor) {
 
 	out, s = mergeTensors(s, merges...)
 	for _, t := range s {
+		// 跳过超出 block_count 的附加层（如 MTP 层）。
 		// skip any additional layers (such as the Multi-Token Prediction layer)
 		if skipLayer(t.Name(), p.HiddenLayers) {
 			slog.Debug("skipping layer", "name", t.Name())
 			continue
 		}
 
+		// 将 attn_kv_b 拆成 attn_k_b 与 attn_v_b。
 		// Split attn_kv_b into separate attn_k_b and attn_v_b for MLA absorption
 		if strings.HasSuffix(t.Name(), ".attn_kv_b.weight") {
 			qkNope := int(p.QKNopeHeadDim)

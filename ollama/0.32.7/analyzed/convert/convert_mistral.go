@@ -1,3 +1,4 @@
+// Mistral 3 多模态转换：Pixtral 风格文本 + 视觉塔到 GGUF。
 package convert
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// mistral3Model 解析 Mistral 3 多模态（文本 + 视觉）配置。
 type mistral3Model struct {
 	ModelParameters
 	ImageTokenIndex    uint32 `json:"image_token_index"`
@@ -60,11 +62,13 @@ type mistral3Model struct {
 	ProjectorHiddenAct      string `json:"projector_hidden_act"`
 }
 
+// KV 写入 mistral3 文本、视觉与多模态投影元数据。
 func (p *mistral3Model) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "mistral3"
 	kv["mistral3.vocab_size"] = p.TextModel.VocabSize
 
+	// 文本子模型超参。
 	// Text configuration
 	kv["mistral3.block_count"] = p.TextModel.NumHiddenLayers
 	kv["mistral3.context_length"] = p.TextModel.MaxPositionEmbeddings
@@ -92,6 +96,7 @@ func (p *mistral3Model) KV(t *Tokenizer) KV {
 		kv["mistral3.attention.temperature_scale"] = *p.TextModel.RopeParameters.Llama4ScalingBeta
 	}
 
+	// 视觉编码器超参。
 	// Vision configuration
 	kv["mistral3.vision.block_count"] = p.VisionModel.NumHiddenLayers
 	kv["mistral3.vision.embedding_length"] = p.VisionModel.HiddenSize
@@ -104,6 +109,7 @@ func (p *mistral3Model) KV(t *Tokenizer) KV {
 	// kv["mistral3.vision.attention.layer_norm_epsilon"] = 1e-05 // Default value
 	kv["mistral3.vision.rope.freq_base"] = cmp.Or(p.VisionModel.RopeTheta, p.VisionModel.RopeParameters.RopeTheta)
 
+	// 多模态 token 索引与投影器选项。
 	// Multimodal configuration
 	kv["mistral3.image_token_index"] = p.ImageTokenIndex
 	kv["mistral3.spatial_merge_size"] = p.SpatialMergeSize
@@ -117,6 +123,7 @@ func (p *mistral3Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 对非视觉 Q/K 权重做 NeoX 重排。
 func (p *mistral3Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -139,6 +146,7 @@ func (p *mistral3Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 Mistral 3 语言/视觉/投影器张量路径。
 func (p *mistral3Model) Replacements() []string {
 	return []string{
 		"language_model.model.norm", "output_norm",
@@ -172,6 +180,7 @@ func (p *mistral3Model) Replacements() []string {
 	}
 }
 
+// repack 将 Q/K 从交错序重排为 GGML NeoX 旋转序。
 func (p *mistral3Model) repack(name string, data []float32, shape []uint64) ([]float32, error) {
 	var dims []int
 	for _, dim := range shape {

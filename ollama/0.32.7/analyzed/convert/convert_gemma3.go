@@ -1,3 +1,4 @@
+// Gemma3 模型转换：支持纯文本与多模态（视觉塔）checkpoint 到 GGUF。
 package convert
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// gemma3Model 解析 HuggingFace Gemma3/Gemma3ForConditionalGeneration 配置。
 type gemma3Model struct {
 	gemmaModel
 	Architecture string
@@ -51,12 +53,14 @@ type gemma3Model struct {
 	} `json:"rope_scaling"`
 }
 
+// 各规格 Gemma3 默认层数，用于推断注意力头数。
 const (
 	gemma4BLayerCount  = 34
 	gemma12BLayerCount = 48
 	gemma27BLayerCount = 62
 )
 
+// KV 将 Gemma3 超参写入 GGUF 元数据（含 SWA、YaRN 与视觉分支）。
 func (p *gemma3Model) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "gemma3"
@@ -95,6 +99,7 @@ func (p *gemma3Model) KV(t *Tokenizer) KV {
 		kv["gemma3.attention.value_length"] = p.HeadDim
 		kv["gemma3.attention.sliding_window"] = p.SlidingWindow
 
+		// 滑动窗口模式来自 sliding_window_pattern 整数或 layer_types 字符串列表。
 		// The sliding window pattern is either provided as the sliding_window_pattern
 		// key (an int) or as the layer_types key (a list of strings).
 		if p.SlidingWindowPattern != nil || len(p.LayerTypes) > 0 {
@@ -152,6 +157,7 @@ func (p *gemma3Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Replacements 返回 HF 张量名到 GGUF 短名的替换规则。
 func (p *gemma3Model) Replacements() []string {
 	return []string{
 		"lm_head", "output",
@@ -183,6 +189,7 @@ func (p *gemma3Model) Replacements() []string {
 	}
 }
 
+// TensorsWithTokenizer 处理 token_embd 裁剪与 RMS norm +1 重打包。
 func (p *gemma3Model) TensorsWithTokenizer(ts []Tensor, t *Tokenizer) []*ggml.Tensor {
 	vocabSize := uint64(0)
 	if t != nil && t.Vocabulary != nil {

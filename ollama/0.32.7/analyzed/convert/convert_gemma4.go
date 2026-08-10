@@ -1,3 +1,4 @@
+// Gemma4 转换：文本/视觉/音频多模态、MoE 与 PLE 的 GGUF 导出。
 package convert
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// gemma4Model 聚合 Gemma4 文本、视觉与可选音频子配置。
 type gemma4Model struct {
 	gemmaModel
 	Architecture string
@@ -66,6 +68,7 @@ type gemma4Model struct {
 	} `json:"audio_config"`
 }
 
+// KV 写入 gemma4 元数据（分层 KV 头、MoE、RoPE 与视听塔参数）。
 func (p *gemma4Model) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "gemma4"
@@ -77,6 +80,7 @@ func (p *gemma4Model) KV(t *Tokenizer) KV {
 	kv["gemma4.block_count"] = tc.NumHiddenLayers
 	kv["gemma4.embedding_length"] = tc.HiddenSize
 
+	// use_double_wide_mlp 时 KV 共享层 FFN 宽度翻倍。
 	// Per-layer FFN width: when use_double_wide_mlp is set, KV-shared layers get 2x FFN width.
 	if tc.UseDoubleWideMLP && tc.NumKVSharedLayers > 0 {
 		firstShared := int(tc.NumHiddenLayers) - int(tc.NumKVSharedLayers)
@@ -94,6 +98,7 @@ func (p *gemma4Model) KV(t *Tokenizer) KV {
 	}
 	kv["gemma4.context_length"] = tc.MaxPositionEmbeddings
 	kv["gemma4.attention.head_count"] = tc.NumAttentionHeads
+	// 按 layer_types 为 SWA/全局层分别设置 KV 头数。
 	// Per-layer KV head count array: SWA layers use NumKeyValueHeads, global layers use NumGlobalKeyValueHeads
 	if tc.NumGlobalKeyValueHeads != nil && *tc.NumGlobalKeyValueHeads != tc.NumKeyValueHeads && len(tc.LayerTypes) > 0 {
 		kvHeads := make([]int32, len(tc.LayerTypes))
@@ -116,6 +121,7 @@ func (p *gemma4Model) KV(t *Tokenizer) KV {
 	kv["gemma4.attention.layer_norm_rms_epsilon"] = tc.RMSNormEps
 	kv["gemma4.attention.sliding_window"] = tc.SlidingWindow
 
+	// 由 layer_types 生成滑动窗口布尔模式。
 	// Sliding window pattern from layer_types
 	if len(tc.LayerTypes) > 0 {
 		kv["gemma4.attention.sliding_window_pattern"] = slices.Collect(func(yield func(bool) bool) {
@@ -143,6 +149,7 @@ func (p *gemma4Model) KV(t *Tokenizer) KV {
 		kv["gemma4.final_logit_softcapping"] = tc.FinalLogitSoftcapping
 	}
 
+	// MoE 专家数、Top-K 与专家 FFN 宽度。
 	// MoE
 	if tc.EnableMoeBlock && tc.NumExperts != nil {
 		kv["gemma4.expert_count"] = *tc.NumExperts
@@ -154,6 +161,7 @@ func (p *gemma4Model) KV(t *Tokenizer) KV {
 		}
 	}
 
+	// PLE（逐层输入嵌入）维度，为 0 也写入。
 	// PLE — always emit, even when 0
 	pleSize := uint32(0)
 	if tc.HiddenSizePerLayerInput != nil {
@@ -161,6 +169,7 @@ func (p *gemma4Model) KV(t *Tokenizer) KV {
 	}
 	kv["gemma4.embedding_length_per_layer_input"] = pleSize
 
+	// 视觉编码器 GGUF 元数据。
 	// Vision model KV metadata
 	vc := p.VisionModel
 	if vc.NumHiddenLayers > 0 {
@@ -186,6 +195,7 @@ func (p *gemma4Model) KV(t *Tokenizer) KV {
 		kv["gemma4.vision.attention.layer_norm_epsilon"] = eps
 	}
 
+	// 音频 Conformer 塔 GGUF 元数据。
 	// Audio model KV metadata
 	if p.AudioModel != nil && p.AudioModel.NumHiddenLayers > 0 {
 		ac := p.AudioModel
@@ -206,7 +216,9 @@ func (p *gemma4Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 重命名视觉张量、打包 clamp 数据并生成全局 rope_freqs。
 func (p *gemma4Model) Tensors(ts []Tensor) []*ggml.Tensor {
+	// 第一遍收集视觉 ClippableLinear 的 clamp 标量。
 	// First pass: collect vision clamp scalar values into a packed tensor.
 	// Layout: per vision layer (0..N-1), 7 linears (q,k,v,out,gate,up,down) × 4 values (inMin,inMax,outMin,outMax).
 	// Then 4 values for the projector (mm.input_projection).
@@ -230,11 +242,13 @@ func (p *gemma4Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	for _, t := range ts {
 		name := t.Name()
 
+		// 跳过无权重 RMS norm 用的 embedding_post_projection_norm。
 		// Skip embedding_post_projection_norm — used as weightless RMS norm in inference
 		if strings.Contains(name, "embedding_post_projection_norm") {
 			continue
 		}
 
+		// 视觉块张量名对齐已发布 mmproj GGUF。
 		// Vision tensor renaming: match published mmproj GGUF names
 		if strings.HasPrefix(name, "v.blk.") {
 			name = strings.Replace(name, ".attn_norm.", ".ln1.", 1)
@@ -245,12 +259,14 @@ func (p *gemma4Model) Tensors(ts []Tensor) []*ggml.Tensor {
 			name = strings.Replace(name, ".layer_output_scale.", ".out_scale.", 1)
 		}
 
+		// per_dim_scale 对权重做 softplus 并追加 .weight 后缀。
 		// per_dim_scale: apply softplus to weight data and add .weight suffix.
 		if strings.HasPrefix(name, "a.blk.") && strings.HasSuffix(name, "per_dim_scale") {
 			name = name + ".weight"
 			t.SetRepacker(softplusRepacker)
 		}
 
+		// 深度可分离 conv1d 权重 [C,1,K] 压成 [C,K]。
 		// Depthwise conv1d: squeeze middle dimension [C, 1, K] → [C, K].
 		if strings.HasPrefix(name, "a.blk.") && strings.Contains(name, "conv_dw") && strings.HasSuffix(name, ".weight") {
 			t.SetRepacker(squeezeMiddleDim)
@@ -271,6 +287,7 @@ func (p *gemma4Model) Tensors(ts []Tensor) []*ggml.Tensor {
 			shape = []uint64{shape[0], shape[2]}
 		}
 
+		// MoE 专家权重无需转置，布局已匹配 ggml_mul_mat_id。
 		// MoE expert weights: no transpose needed. Safetensors stores [experts, out, in]
 		// which the framework reverses to GGUF ne=[in, out, experts], matching ggml_mul_mat_id.
 		// (transposeExperts was incorrectly swapping dims — removed)
@@ -280,6 +297,7 @@ func (p *gemma4Model) Tensors(ts []Tensor) []*ggml.Tensor {
 		// controls both the GGUF header type AND the WriteTo data encoding path.
 		var kindOverride *uint32
 
+		// 视觉 patch 嵌入从 HF 二维展平重排为 Conv2D 四维。
 		// Vision patch embedding: reshape from [n_embd, ksize_sq_c] to [n_embd, 3, patch_size, patch_size]
 		// Must be stored as F16 (not BF16) because the Conv2D im2col kernel requires F16/F32.
 		if strings.Contains(name, "v.patch_embd.weight") && len(shape) == 2 {
@@ -393,6 +411,7 @@ func (p *gemma4Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// reshapePatchEmbed 将 HF [n_embd, ksize²×channels] 重排为 GGUF [n_embd, C, H, W]。
 // reshapePatchEmbed reshapes the vision patch embedding from HF layout [n_embd, ksize*ksize*channels]
 // to GGUF layout [n_embd, channels, patch_size, patch_size].
 func (*gemma4Model) reshapePatchEmbed(_ string, data []float32, shape []uint64) ([]float32, error) {
@@ -423,6 +442,7 @@ func (*gemma4Model) reshapePatchEmbed(_ string, data []float32, shape []uint64) 
 	return result, nil
 }
 
+// softplusRepacker 对 per_dim_scale 权重施加 softplus（ln(1+exp(x))）。
 // softplusRepacker applies softplus (ln(1 + exp(x))) to tensor data.
 // Used for per_dim_scale tensors which the published GGUF stores pre-activated.
 func softplusRepacker(_ string, data []float32, shape []uint64) ([]float32, error) {
@@ -433,12 +453,14 @@ func softplusRepacker(_ string, data []float32, shape []uint64) ([]float32, erro
 	return result, nil
 }
 
+// squeezeMiddleDim 去掉深度卷积中间维度 1，仅改 shape。
 // squeezeMiddleDim squeezes the middle dimension from [C, 1, K] → [C, K] for depthwise conv1d weights.
 // Data layout stays the same since the middle dim is 1 — just a shape change.
 func squeezeMiddleDim(_ string, data []float32, _ []uint64) ([]float32, error) {
 	return data, nil
 }
 
+// Replacements 覆盖音频 SSCP、Conformer、视觉与 MoE 张量路径。
 func (p *gemma4Model) Replacements() []string {
 	return []string{
 		// ClippableLinear wraps nn.Linear — strip .linear. from weight path

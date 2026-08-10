@@ -1,3 +1,4 @@
+// LLaMA 4 转换：MoE 文本 + 视觉多模态与交错专家层。
 package convert
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// llama4Model 聚合 LLaMA4 文本与视觉子配置。
 type llama4Model struct {
 	ModelParameters
 	TextModel struct {
@@ -34,7 +36,7 @@ type llama4Model struct {
 	} `json:"vision_config"`
 }
 
-// KV implements ModelConverter.
+// KV 写入 llama4 元数据（继承 llama 文本 KV 并追加 MoE/视觉字段）。
 func (p *llama4Model) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "llama4"
@@ -66,7 +68,7 @@ func (p *llama4Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
-// Replacements implements ModelConverter.
+// Replacements 扩展 LLaMA 规则以覆盖 MoE、视觉与 PLE 路径。
 func (p *llama4Model) Replacements() []string {
 	return append(
 		p.TextModel.Replacements(),
@@ -87,7 +89,7 @@ func (p *llama4Model) Replacements() []string {
 	)
 }
 
-// Tensors implements ModelConverter.
+// Tensors 拆分融合 gate_up 专家权重并跳过文本 Q/K repack。
 func (p *llama4Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -101,7 +103,9 @@ func (p *llama4Model) Tensors(ts []Tensor) []*ggml.Tensor {
 				WriterTo: t,
 			})
 		} else if strings.Contains(t.Name(), "ffn_gate_up_exps") {
+			// gate 与 up 投影融合存储，需切片并交换维。
 			// gate and up projectors are fused
+			// 专家权重 [experts,out,in] 需交换中间两维。
 			// dims[1], dims[2] must be swapped
 			// [experts, hidden_size, intermediate_size * 2] --> [experts, intermediate_size, hidden_size]
 			halfDim := int(t.Shape()[2]) / 2
@@ -141,6 +145,7 @@ func (p *llama4Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// repack 返回转置/切片 repacker，用于 MoE 专家权重维交换。
 func (p *llama4Model) repack(slice ...tensor.Slice) Repacker {
 	return func(name string, data []float32, shape []uint64) ([]float32, error) {
 		dims := make([]int, len(shape))

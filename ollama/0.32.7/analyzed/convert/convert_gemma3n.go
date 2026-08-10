@@ -1,3 +1,4 @@
+// Gemma3n 转换：AltUp、激活稀疏与共享 KV 层等 Gemma3 下一代架构。
 package convert
 
 import (
@@ -12,6 +13,7 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
+// gemma3nModel 承载 Gemma3n 文本配置与 AltUp 相关字段。
 type gemma3nModel struct {
 	ModelParameters
 
@@ -40,8 +42,10 @@ type gemma3nModel struct {
 	VisionModel struct{} `json:"vision_config"`
 }
 
+// gemma3nIntermediateSize 兼容标量或等长数组形式的 intermediate_size。
 type gemma3nIntermediateSize uint32
 
+// UnmarshalJSON 接受单个 uint32 或元素一致的 uint32 数组。
 func (s *gemma3nIntermediateSize) UnmarshalJSON(data []byte) error {
 	var scalar uint32
 	if err := json.Unmarshal(data, &scalar); err == nil {
@@ -68,6 +72,7 @@ func (s *gemma3nIntermediateSize) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// KV 写入 gemma3n 架构元数据（AltUp、SWA 模式、共享 KV 层等）。
 func (m *gemma3nModel) KV(t *Tokenizer) KV {
 	kv := m.ModelParameters.KV(t)
 	kv["general.architecture"] = "gemma3n"
@@ -106,6 +111,7 @@ func (m *gemma3nModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 合并 AltUp 投影、裁剪系数并跳过尚未支持的视听塔。
 func (m *gemma3nModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	out, ts := mergeTensors(ts,
 		merge{"altup_proj.*.weight", "altup_proj.weight"},
@@ -118,6 +124,7 @@ func (m *gemma3nModel) Tensors(ts []Tensor) []*ggml.Tensor {
 			strings.Contains(t.Name(), "embed_audio"),
 			strings.Contains(t.Name(), "vision_tower"),
 			strings.Contains(t.Name(), "embed_vision"):
+			// 视听塔张量暂跳过，待后续实现。
 			// TODO: handle audio and vision towers
 			continue
 		case strings.Contains(t.Name(), "altup_predict_coef"),
@@ -156,6 +163,7 @@ func (m *gemma3nModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 Gemma3n 语言模型与 AltUp/Laurel 张量名。
 func (m *gemma3nModel) Replacements() []string {
 	return []string{
 		"model.language_model.embed_tokens_per_layer", "per_layer_token_embd",

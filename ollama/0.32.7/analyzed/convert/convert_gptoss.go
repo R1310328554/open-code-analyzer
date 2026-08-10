@@ -1,3 +1,4 @@
+// GPT-OSS 转换：MoE + MXFP4 量化权重与 YaRN 长上下文。
 package convert
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/pdevine/tensor/native"
 )
 
+// gptossModel 解析 OpenAI GPT-OSS（gpt-oss）MoE 模型配置。
 type gptossModel struct {
 	ModelParameters
 	HiddenLayers          uint32  `json:"num_hidden_layers"`
@@ -39,8 +41,10 @@ type gptossModel struct {
 	SlidingWindow uint32 `json:"sliding_window"`
 }
 
+// gptossModel 实现 ModelConverter。
 var _ ModelConverter = (*gptossModel)(nil)
 
+// KV 写入 gpt-oss 元数据并硬编码 GPT-4o 风格 tokenizer 特殊 token。
 func (m *gptossModel) KV(t *Tokenizer) KV {
 	kv := m.ModelParameters.KV(t)
 	kv["general.architecture"] = "gpt-oss"
@@ -81,6 +85,7 @@ func (m *gptossModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 合并 MXFP4 blocks/scales、拆分 gate_up_exps 并输出 GGML 张量。
 func (m *gptossModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	mxfp4s := make(map[string]*mxfp4)
@@ -99,6 +104,10 @@ func (m *gptossModel) Tensors(ts []Tensor) []*ggml.Tensor {
 				mxfp4s[name].scales = t
 			}
 		} else if strings.HasSuffix(t.Name(), "gate_up_exps.bias") {
+			// gate_up_exps 交错存储，需拆成 gate_exps 与 up_exps。
+			// MXFP4 路径下同样按奇偶维拆分 gate_up。
+			// gate_up_exps 交错存储，需拆成 gate_exps 与 up_exps。
+			// MXFP4 路径下同样按奇偶维拆分 gate_up。
 			// gate_up_exps is interleaved, need to split into gate_exps and up_exps
 			// e.g. gate_exps, up_exps = gate_up_exps[:, 0::2, ...], gate_up_exps[:, 1::2, ...]
 			out = append(out, slices.Collect(splitDim(t, 1,
@@ -153,6 +162,7 @@ func (m *gptossModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 按 HF 或原生 checkpoint 布局返回张量名替换表。
 func (m *gptossModel) Replacements() []string {
 	var replacements []string
 	if m.MaxPositionEmbeddings > 0 {
@@ -175,6 +185,7 @@ func (m *gptossModel) Replacements() []string {
 		}
 	} else {
 		replacements = []string{
+			// 占位替换，防止 .blocks/.scales 被后续规则误改。
 			// noop replacements so other replacements will not be applied
 			".blocks", ".blocks",
 			".scales", ".scales",
@@ -197,12 +208,14 @@ func (m *gptossModel) Replacements() []string {
 	return replacements
 }
 
+// mxfp4 将分离的 blocks 与 scales 张量合并为 GGML MXFP4 格式。
 type mxfp4 struct {
 	slices []tensor.Slice
 
 	blocks, scales Tensor
 }
 
+// slice 返回沿指定维切片后的 mxfp4 视图（用于 gate/up 拆分）。
 func (m *mxfp4) slice(dim, start, end, step int) *mxfp4 {
 	slice := slices.Repeat([]tensor.Slice{nil}, len(m.blocks.Shape()))
 	slice[dim] = tensor.S(start, end, step)
@@ -213,6 +226,7 @@ func (m *mxfp4) slice(dim, start, end, step int) *mxfp4 {
 	}
 }
 
+// WriteTo 重排 nibble、拼接 scales 与 blocks 并写出 MXFP4 字节流。
 func (m *mxfp4) WriteTo(w io.Writer) (int64, error) {
 	var b bytes.Buffer
 	if _, err := m.blocks.WriteTo(&b); err != nil {
@@ -228,6 +242,7 @@ func (m *mxfp4) WriteTo(w io.Writer) (int64, error) {
 	var tmp [16]byte
 	for i := 0; i < b.Len(); i += 16 {
 		for j := range 8 {
+			// 将 8 字节 nibble 对重排为 GGML 期望的 MXFP4 字节序。
 			// transform a1b2c3 ... x7y8z9 -> 71xa82yb93zc
 			a, b := bts[i+j], bts[i+j+8]
 			tmp[2*j+0] = (a & 0x0F) | (b << 4)

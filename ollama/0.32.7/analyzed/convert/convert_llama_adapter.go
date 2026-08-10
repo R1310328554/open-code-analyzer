@@ -1,3 +1,4 @@
+// LLaMA LoRA 适配器转换：将 PEFT 低秩权重重排为 GGUF 格式。
 package convert
 
 import (
@@ -11,14 +12,17 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// llamaAdapter 解析 LLaMA 架构 LoRA/PEFT 适配器配置。
 type llamaAdapter struct {
 	AdapterParameters
 	NumAttentionHeads uint32 `json:"num_attention_heads"`
 	NumKeyValueHeads  uint32 `json:"num_key_value_heads"`
 }
 
+// llamaAdapter 实现 AdapterConverter。
 var _ AdapterConverter = (*llamaAdapter)(nil)
 
+// KV 继承基座 llama KV 并写入适配器注意力头数。
 func (p *llamaAdapter) KV(baseKV fs.Config) KV {
 	kv := p.AdapterParameters.KV()
 	kv["general.architecture"] = "llama"
@@ -30,6 +34,7 @@ func (p *llamaAdapter) KV(baseKV fs.Config) KV {
 	return kv
 }
 
+// Tensors 对 LoRA A/B 矩阵做 NeoX 重排与必要时转置。
 func (p *llamaAdapter) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	for _, t := range ts {
@@ -53,6 +58,7 @@ func (p *llamaAdapter) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 PEFT 路径到 blk 短名与 lora_a/lora_b 后缀。
 func (p *llamaAdapter) Replacements() []string {
 	return []string{
 		"base_model.model.", "",
@@ -71,6 +77,7 @@ func (p *llamaAdapter) Replacements() []string {
 	}
 }
 
+// repack 对 attn Q/K 的 lora_a 做多头 NeoX 维重排。
 func (p *llamaAdapter) repack(name string, data []float32, shape []uint64) ([]float32, error) {
 	dims := []int{int(shape[1]), int(shape[0])}
 
@@ -114,6 +121,7 @@ func (p *llamaAdapter) repack(name string, data []float32, shape []uint64) ([]fl
 	return f32s, nil
 }
 
+// repackAndTranspose 在 repack 基础上对非方形 LoRA 矩阵转置。
 func (p *llamaAdapter) repackAndTranspose(name string, data []float32, shape []uint64) ([]float32, error) {
 	dims := []int{int(shape[1]), int(shape[0])}
 
