@@ -29,6 +29,7 @@ import java.util.Map;
 
 /**
  * Bridges {@link PublishPipelineService} instances to {@link com.alibaba.nacos.core.plugin.PluginManager}.
+ * <p>将 {@link PublishPipelineService} 实例桥接到核心 {@code PluginManager}，供控制台列举与管理发布流水线插件。</p>
  *
  * <p>Publish pipeline nodes are <b>optional</b>: if none are configured or all fail to load, publishing
  * still proceeds without pipeline interception.</p>
@@ -48,14 +49,14 @@ public class AiPipelinePluginProvider implements PluginProvider<PublishPipelineS
     
     @Override
     public Map<String, PublishPipelineService> getAllPlugins() {
-        if (ApplicationUtils.getApplicationContext() == null) {
+        if (ApplicationUtils.getApplicationContext() == null) { // Spring 上下文未就绪时返回空
             return Collections.emptyMap();
         }
         try {
-            PublishPipelineManager manager = ApplicationUtils.getBean(PublishPipelineManager.class);
+            PublishPipelineManager manager = ApplicationUtils.getBean(PublishPipelineManager.class); // 从 Spring 获取流水线管理器
             Map<String, PublishPipelineService> map = new LinkedHashMap<>();
             for (PublishPipelineService service : manager.getAllServices()) {
-                if (service != null && service.pipelineId() != null) {
+                if (service != null && service.pipelineId() != null) { // 以 pipelineId 去重注册
                     map.putIfAbsent(service.pipelineId(), service);
                 }
             }

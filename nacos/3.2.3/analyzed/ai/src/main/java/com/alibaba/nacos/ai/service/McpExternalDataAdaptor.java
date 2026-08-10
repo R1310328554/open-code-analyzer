@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 /**
  * <p>Adapt the External data(mcp server json file, mcp registry api data) to Nacos MCP server format
  * {@link McpServerDetailInfo}. MCP official formats docs.</p>
+ * <p>将外部 MCP 数据（官方 seed 文件、JSON 文本、Registry API）适配为 Nacos {@link McpServerDetailInfo} 格式，支持分页拉取与全量导入。</p>
  *
  * <p>1. MCP Server format is defined in
  * <a href="https://github.com/modelcontextprotocol/registry/blob/main/docs/reference/server-json/server.schema.json">
@@ -66,6 +67,7 @@ import java.util.stream.Collectors;
 @Service
 public class McpExternalDataAdaptor {
     
+    /** 可注入的 HTTP 客户端（测试用）。 */
     private HttpClient httpClient;
     
     private static final String CURSOR_QUERY_NAME = "cursor";
@@ -94,12 +96,14 @@ public class McpExternalDataAdaptor {
     
     /**
      * Safety guard to avoid infinite loops when server keeps returning cursors.
+     * <p>URL 分页拉取时的最大页数防护，避免 cursor 循环导致无限请求。</p>
      * Limits the maximum number of pages iterated when fetching from URL.
      */
     private static final int MAX_PAGES_GUARD = 200;
     
     /**
      * Adapt the external data to Nacos MCP server format.
+     * <p>按 importType（FILE/JSON/URL）分发到对应适配路径。</p>
      *
      * @param request import request
      * @return Nacos MCP server format
@@ -123,6 +127,7 @@ public class McpExternalDataAdaptor {
     
     /**
      * Fetch one official MCP registry page and adapt it to Nacos MCP server detail info.
+     * <p>拉取 Registry 单页并转换为 {@link UrlPageResult}。</p>
      *
      * @param urlData registry endpoint
      * @param cursor page cursor
@@ -142,6 +147,7 @@ public class McpExternalDataAdaptor {
     
     /**
      * Fetch one official MCP registry server by name or generated id.
+     * <p>按 externalId（名称或生成 ID）搜索 Registry 并返回首个匹配服务。</p>
      *
      * @param urlData registry endpoint
      * @param externalId selected server name or generated id
@@ -167,6 +173,7 @@ public class McpExternalDataAdaptor {
         throw new IllegalStateException("MCP server not found in registry: " + externalId);
     }
     
+    /** HTTP GET 单页 Registry 并解析为 Nacos MCP 列表与 nextCursor。 */
     private UrlPageResult fetchUrlPage(String urlData, String cursor, Integer limit, String search)
         throws Exception {
         String base = urlData.trim();
@@ -197,6 +204,7 @@ public class McpExternalDataAdaptor {
         return new UrlPageResult(servers, next);
     }
     
+    /** 循环分页直至无 nextCursor 或达到 MAX_PAGES_GUARD。 */
     private List<McpServerDetailInfo> fetchUrlServersAll(String urlData, String search)
         throws Exception {
         List<McpServerDetailInfo> collected = new ArrayList<>();
@@ -217,6 +225,7 @@ public class McpExternalDataAdaptor {
         return collected;
     }
     
+    /** 将 Registry 服务详情映射为 Nacos MCP 基本信息、版本、协议与远程配置。 */
     private McpServerDetailInfo adaptOfficialMcpServer(McpRegistryServerDetail registryServer) {
         if (registryServer == null) {
             return null;
@@ -231,6 +240,7 @@ public class McpExternalDataAdaptor {
     
     /**
      * Adapt official mcp server from server response.
+     * <p>在 adaptOfficialMcpServer 基础上附加官方 meta（发布日期、latest 标记、status）。</p>
      * Just append version meta info to the result of adaptOfficialMcpServer.
      *
      * @param response the server response object
@@ -252,6 +262,7 @@ public class McpExternalDataAdaptor {
         return adaptOfficialMcpServer;
     }
     
+    /** 填充 id/name/description/repository。 */
     private void applyBasicInfo(McpRegistryServerDetail registryServer, McpServerDetailInfo out) {
         String id = generateMcpServerId(registryServer.getName());
         out.setId(id);
@@ -260,6 +271,7 @@ public class McpExternalDataAdaptor {
         out.setRepository(registryServer.getRepository());
     }
     
+    /** 填充版本号到 VersionDetail。 */
     private void applyVersionInfo(McpRegistryServerDetail registryServer, McpServerDetailInfo out) {
         ServerVersionDetail v = null;
         if (StringUtils.isNotBlank(registryServer.getVersion())) {
@@ -269,6 +281,7 @@ public class McpExternalDataAdaptor {
         out.setVersionDetail(v);
     }
     
+    /** 根据 packages/remotes 推断 stdio/SSE/streamable 协议。 */
     private void applyProtocolInfo(McpRegistryServerDetail registryServer,
         McpServerDetailInfo out) {
         String protocol = resolveServerProtocol(registryServer);
@@ -278,6 +291,7 @@ public class McpExternalDataAdaptor {
         }
     }
     
+    /** 设置 packages 与 remoteServerConfig（前端 endpoint 列表）。 */
     private void applyLocalAndRemoteConfig(McpRegistryServerDetail registryServer,
         McpServerDetailInfo server) {
         if (registryServer != null) {
@@ -286,6 +300,7 @@ public class McpExternalDataAdaptor {
         }
     }
     
+    /** packages 非空为 stdio；remotes 首项 type 映射 SSE/streamable。 */
     private String resolveServerProtocol(McpRegistryServerDetail detail) {
         if (CollectionUtils.isNotEmpty(detail.getPackages())) {
             return AiConstants.Mcp.MCP_PROTOCOL_STDIO;
@@ -307,6 +322,7 @@ public class McpExternalDataAdaptor {
         return null;
     }
     
+    /** 将 Registry Remote URL 解析为 FrontEndpointConfig 列表。 */
     private McpServerRemoteServiceConfig generateRemoteServiceConfig(List<Remote> remotes) {
         if (CollectionUtils.isEmpty(remotes)) {
             return null;
@@ -333,7 +349,7 @@ public class McpExternalDataAdaptor {
                 cfg.setHeaders(remote.getHeaders());
                 endpoints.add(cfg);
                 
-                // Use first remote's path as export path
+                // 首个 remote 的 path 作为 exportPath
                 if (remoteConfig.getExportPath() == null) {
                     remoteConfig
                         .setExportPath(components.getPath() != null ? components.getPath() : "/");
@@ -349,6 +365,7 @@ public class McpExternalDataAdaptor {
     
     /**
      * Parse URL into components (scheme, host, port, path).
+     * <p>手动解析 URL 各组成部分（不使用 URI 类）。</p>
      * Manual parsing without using URI class.
      *
      * @param url the URL string to parse
@@ -360,14 +377,14 @@ public class McpExternalDataAdaptor {
         int port = -1;
         String path = null;
         
-        // Parse scheme
+        // 解析 scheme
         int schemeEnd = url.indexOf("://");
         if (schemeEnd > 0) {
             scheme = url.substring(0, schemeEnd);
             url = url.substring(schemeEnd + 3);
         }
         
-        // Parse host, port, and path
+        // 解析 host、port 与 path
         int pathStart = url.indexOf('/');
         String hostPart;
         if (pathStart > 0) {
@@ -378,14 +395,14 @@ public class McpExternalDataAdaptor {
             path = null;
         }
         
-        // Parse host and port
+        // 从 hostPart 拆分 host 与 port
         int portStart = hostPart.lastIndexOf(':');
         if (portStart > 0) {
             host = hostPart.substring(0, portStart);
             try {
                 port = Integer.parseInt(hostPart.substring(portStart + 1));
             } catch (NumberFormatException e) {
-                // Invalid port, treat the whole thing as host
+                // 端口非法则整段视为 host
                 host = hostPart;
                 port = -1;
             }
@@ -398,6 +415,7 @@ public class McpExternalDataAdaptor {
     
     /**
      * Inner class to hold URL components parsed from a URI.
+     * <p>URL 解析结果：scheme、host、port、path。</p>
      */
     private static class UrlComponents {
         
@@ -432,6 +450,7 @@ public class McpExternalDataAdaptor {
     
     /**
      * URL import wrapper: fetch contents from specified URL and adapt to Nacos mcp servers.
+     * <p>URL 导入：limit=-1 时全量分页，否则单页。</p>
      * Fetch specified contents from specified URL and adapt to Nacos mcp servers.
      *
      * @param urlData URL data to parse. Only support official mcp registry api.
@@ -448,12 +467,12 @@ public class McpExternalDataAdaptor {
             throw new IllegalArgumentException("URL is blank");
         }
         
-        // If limit = -1, fetch all pages
+        // limit=-1 表示拉取全部页
         if (limit != null && limit == FETCH_ALL_LIMIT_MARK) {
             return fetchUrlServersAll(urlData.trim(), search);
         }
         
-        // Otherwise, fetch a single page using fetchUrlPage
+        // 否则仅拉取单页
         UrlPageResult page = fetchUrlPage(urlData.trim(), cursor, limit, search);
         return page.getServers();
     }
@@ -461,6 +480,7 @@ public class McpExternalDataAdaptor {
     /**
      * File import wrapper: parse into a list of RegistryDetails and convert to
      * Nacos servers.
+     * <p>官方 seed 文件导入：反序列化为 Registry 列表并逐条适配。</p>
      */
     private List<McpServerDetailInfo> adaptOfficialSeedFile(String data) {
         return unmarshaledSeedToServerList(data).stream()
@@ -469,16 +489,19 @@ public class McpExternalDataAdaptor {
             .collect(Collectors.toList());
     }
     
+    /** 单条官方 JSON 文本适配。 */
     private List<McpServerDetailInfo> adaptOfficialMcpServerJsonText(String data) {
         McpRegistryServerDetail detail = JacksonUtils.toObj(data, McpRegistryServerDetail.class);
         return Collections.singletonList(adaptOfficialMcpServer(detail));
     }
     
+    /** 反序列化 seed 文件为 Registry 服务列表。 */
     private List<McpRegistryServerDetail> unmarshaledSeedToServerList(String data) {
         return JacksonUtils.toObj(data, new TypeReference<>() {
         });
     }
     
+    /** 懒加载带超时与重定向的 HttpClient。 */
     private HttpClient getHttpClient() {
         if (httpClient == null) {
             httpClient = HttpClient.newBuilder()
@@ -493,6 +516,7 @@ public class McpExternalDataAdaptor {
         this.httpClient = client;
     }
     
+    /** 拼接 cursor/limit/search 查询参数。 */
     private String buildPageUrl(String base, String cursor, Integer limit, String search) {
         StringBuilder url = new StringBuilder(base);
         boolean hasQuery = base.contains(QUERY_MARK);
@@ -515,6 +539,7 @@ public class McpExternalDataAdaptor {
         return url.toString();
     }
     
+    /** 构建带 Accept: application/json 的 GET 请求。 */
     private HttpRequest buildGetRequest(String url) {
         return HttpRequest.newBuilder(URI.create(url))
             .timeout(Duration.ofSeconds(READ_TIMEOUT_SECONDS))
@@ -522,10 +547,12 @@ public class McpExternalDataAdaptor {
             .header(HEADER_ACCEPT, HEADER_ACCEPT_JSON).build();
     }
     
+    /** HTTP 2xx 视为成功。 */
     private boolean isSuccessStatus(int code) {
         return code >= HTTP_STATUS_SUCCESS_MIN && code <= HTTP_STATUS_SUCCESS_MAX;
     }
     
+    /** 由服务名生成确定性 UUID 作为 Nacos MCP ID。 */
     private String generateMcpServerId(String name) {
         return UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)).toString();
     }

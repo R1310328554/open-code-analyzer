@@ -49,6 +49,7 @@ import java.util.function.Supplier;
 
 /**
  * Compatibility adapter from legacy MCP import APIs to unified AI resource import APIs.
+ * <p>旧版 MCP 导入 API 与统一 AI 资源导入 API 的兼容适配层：按配置决定走旧服务、拒绝用户 URL 或路由到 {@link AiResourceImportManager}。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -56,16 +57,22 @@ import java.util.function.Supplier;
 @Service
 public class McpLegacyImportAdapter {
     
+    /** 旧版校验状态：有效。 */
     private static final String STATUS_VALID = "valid";
     
+    /** 旧版校验状态：无效。 */
     private static final String STATUS_INVALID = "invalid";
     
+    /** 旧版校验状态：与现有资源冲突。 */
     private static final String STATUS_DUPLICATE = "duplicate";
     
+    /** 旧版 MCP 导入服务（非 URL 源或显式 URL 时）。 */
     private final McpServerImportService mcpServerImportService;
     
+    /** 统一 AI 资源导入管理器。 */
     private final com.alibaba.nacos.ai.importer.manager.AiResourceImportManager importManager;
     
+    /** 导入配置加载器（可测试替换）。 */
     private Supplier<AiResourceImportProperties> propertiesSupplier =
         AiResourceImportProperties::loadFromEnvironment;
     
@@ -77,6 +84,7 @@ public class McpLegacyImportAdapter {
     
     /**
      * Validate a legacy MCP import request.
+     * <p>校验旧版导入请求，按路由策略调用旧服务或统一 validate。</p>
      *
      * @param namespaceId namespace ID
      * @param request legacy import request
@@ -103,6 +111,7 @@ public class McpLegacyImportAdapter {
     
     /**
      * Execute a legacy MCP import request.
+     * <p>执行旧版导入，按路由策略调用旧服务或统一 execute。</p>
      *
      * @param namespaceId namespace ID
      * @param request legacy import request
@@ -127,20 +136,24 @@ public class McpLegacyImportAdapter {
         }
     }
     
+    /** URL 类型且 data 非 http(s) URL 时路由到统一导入（视为 sourceId）。 */
     private boolean shouldRouteToUnifiedImport(McpServerImportRequest request) {
         return request != null && ExternalDataTypeEnum.URL.getName().equals(request.getImportType())
             && !isUrl(request.getData());
     }
     
+    /** 是否启用旧版 MCP 导入 API 兼容窗口。 */
     private boolean isLegacyApiEnabled() {
         return propertiesSupplier.get().isLegacyMcpImportApiEnabled();
     }
     
+    /** 用户直接传入 URL 且未允许 allow-user-url 时拒绝。 */
     private boolean shouldRejectUserUrl(McpServerImportRequest request) {
         return request != null && ExternalDataTypeEnum.URL.getName().equals(request.getImportType())
             && isUrl(request.getData()) && !propertiesSupplier.get().isAllowUserUrl();
     }
     
+    /** 判断字符串是否为 http/https URL。 */
     private boolean isUrl(String value) {
         if (StringUtils.isBlank(value)) {
             return false;
@@ -154,6 +167,7 @@ public class McpLegacyImportAdapter {
         }
     }
     
+    /** 将旧版请求转为统一 validate 请求（含 selectedItems 解析）。 */
     private AiResourceImportValidateRequest buildValidateRequest(String namespaceId,
         McpServerImportRequest request) throws NacosException {
         AiResourceImportValidateRequest result = new AiResourceImportValidateRequest();
@@ -165,6 +179,7 @@ public class McpLegacyImportAdapter {
         return result;
     }
     
+    /** 将旧版请求转为统一 execute 请求。 */
     private AiResourceImportExecuteRequest buildExecuteRequest(String namespaceId,
         McpServerImportRequest request) throws NacosException {
         AiResourceImportExecuteRequest result = new AiResourceImportExecuteRequest();
@@ -177,6 +192,7 @@ public class McpLegacyImportAdapter {
         return result;
     }
     
+    /** 优先使用 selectedServers；否则 search 分页解析候选项。 */
     private List<AiResourceImportItem> resolveSelectedItems(String namespaceId,
         McpServerImportRequest request) throws NacosException {
         if (request.getSelectedServers() != null && request.getSelectedServers().length > 0) {
@@ -207,6 +223,7 @@ public class McpLegacyImportAdapter {
         return result;
     }
     
+    /** 构造单条选中导入项。 */
     private AiResourceImportItem selectedItem(String externalId, String name, String version) {
         AiResourceImportItem result = new AiResourceImportItem();
         result.setExternalId(externalId);
@@ -215,6 +232,7 @@ public class McpLegacyImportAdapter {
         return result;
     }
     
+    /** 统一校验响应转为旧版 McpServerImportValidationResult。 */
     private McpServerImportValidationResult toLegacyValidationResult(
         AiResourceImportValidateResponse response) {
         McpServerImportValidationResult result = new McpServerImportValidationResult();
@@ -243,6 +261,7 @@ public class McpLegacyImportAdapter {
         return result;
     }
     
+    /** 单条校验项状态映射（VALID/WARNING→valid，CONFLICT→duplicate）。 */
     private McpServerValidationItem toLegacyValidationItem(AiResourceImportValidationItem item) {
         McpServerValidationItem result = new McpServerValidationItem();
         result.setServerId(item.getExternalId());
@@ -261,6 +280,7 @@ public class McpLegacyImportAdapter {
         return result;
     }
     
+    /** 统一 execute 响应转为旧版 McpServerImportResponse。 */
     private McpServerImportResponse toLegacyExecuteResponse(
         AiResourceImportExecuteResponse response) {
         McpServerImportResponse result = new McpServerImportResponse();
@@ -277,6 +297,7 @@ public class McpLegacyImportAdapter {
         return result;
     }
     
+    /** 单条导入结果状态映射为 success/skipped/failed。 */
     private McpServerImportResult toLegacyImportResult(AiResourceImportResultItem item) {
         McpServerImportResult result = new McpServerImportResult();
         result.setServerId(item.getExternalId());
@@ -292,27 +313,32 @@ public class McpLegacyImportAdapter {
         return result;
     }
     
+    /** 用户 URL 导入被禁用时返回拒绝校验结果。 */
     private McpServerImportValidationResult rejectedValidation() {
         return failedValidation(
             "Legacy URL import is disabled. Please use a configured source id.");
     }
     
+    /** 用户 URL 导入被禁用时返回拒绝执行响应。 */
     private McpServerImportResponse rejectedResponse() {
         return failedResponse("Legacy URL import is disabled. Please use a configured source id.");
     }
     
+    /** 旧版 API 整体关闭时的校验提示。 */
     private McpServerImportValidationResult deprecatedValidation() {
         return failedValidation("Legacy MCP import API is disabled. Please use the unified "
             + "AI resource import API or enable nacos.ai.resource.import.legacy-mcp-api-enabled "
             + "for a compatibility window.");
     }
     
+    /** 旧版 API 整体关闭时的执行提示。 */
     private McpServerImportResponse deprecatedResponse() {
         return failedResponse("Legacy MCP import API is disabled. Please use the unified "
             + "AI resource import API or enable nacos.ai.resource.import.legacy-mcp-api-enabled "
             + "for a compatibility window.");
     }
     
+    /** 构造失败校验结果。 */
     private McpServerImportValidationResult failedValidation(String errorMessage) {
         McpServerImportValidationResult result = new McpServerImportValidationResult();
         result.setValid(false);
@@ -320,6 +346,7 @@ public class McpLegacyImportAdapter {
         return result;
     }
     
+    /** 构造失败执行响应。 */
     private McpServerImportResponse failedResponse(String errorMessage) {
         McpServerImportResponse result = new McpServerImportResponse();
         result.setSuccess(false);

@@ -54,6 +54,7 @@ import java.util.Set;
 
 /**
  * Batch Register endpoints for agent to nacos AI module request handler.
+ * <p>Agent 端点批量注册 RPC 处理器：同一 agent 下多个 endpoint 须共享同一 version，一次性 batchRegister 到对应 Naming 服务。</p>
  *
  * @author xiweng.yy
  */
@@ -65,8 +66,10 @@ public class BatchAgentEndpointRequestHandler
     private static final Logger LOGGER =
         LoggerFactory.getLogger(BatchAgentEndpointRequestHandler.class);
     
+    /** 临时实例批量注册服务。 */
     private final EphemeralClientOperationServiceImpl clientOperationService;
     
+    /** Agent 名称编码器。 */
     private final AgentIdCodecHolder agentIdCodecHolder;
     
     public BatchAgentEndpointRequestHandler(
@@ -106,6 +109,7 @@ public class BatchAgentEndpointRequestHandler
         return response;
     }
     
+    /** 校验 agentName、endpoints 非空且所有 endpoint 版本一致。 */
     private void validateRequest(BatchAgentEndpointRequest request) throws NacosApiException {
         if (StringUtils.isBlank(request.getAgentName())) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
@@ -134,6 +138,7 @@ public class BatchAgentEndpointRequestHandler
         }
     }
     
+    /** 为每个实例发布 BatchRegisterInstanceTraceEvent。 */
     private void publishBatchRegisterInstanceTraceEvent(Service service, List<Instance> instances,
         RequestMeta meta) {
         long eventTime = System.currentTimeMillis();

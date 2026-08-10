@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Nacos AI module query prompt request handler.
+ * <p>客户端按 promptKey/版本/标签查询 Prompt 的 RPC 处理器，支持 MD5 条件请求（NOT_MODIFIED）。</p>
  *
  * @author nacos
  */
@@ -49,6 +50,7 @@ public class QueryPromptRequestHandler
     
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryPromptRequestHandler.class);
     
+    /** Prompt 客户端读操作服务。 */
     private final PromptClientOperationService promptOperationService;
     
     public QueryPromptRequestHandler(PromptClientOperationService promptOperationService) {
@@ -60,7 +62,7 @@ public class QueryPromptRequestHandler
     @ExtractorManager.Extractor(rpcExtractor = PromptRequestParamExtractor.class)
     @Secured(action = ActionTypes.READ, signType = SignType.AI)
     public QueryPromptResponse handle(QueryPromptRequest request, RequestMeta meta) {
-        request.setNamespaceId(NamespaceUtil.processNamespaceParameter(request.getNamespaceId()));
+        request.setNamespaceId(NamespaceUtil.processNamespaceParameter(request.getNamespaceId())); // 规范化命名空间
         if (StringUtils.isBlank(request.getPromptKey())) {
             QueryPromptResponse errorResponse = new QueryPromptResponse();
             errorResponse.setErrorInfo(NacosException.INVALID_PARAM,
@@ -74,7 +76,7 @@ public class QueryPromptRequestHandler
                 request.getLabel(), request.getMd5());
             response.setPromptInfo(PromptConvertUtils.toClientPrompt(result));
         } catch (NacosException e) {
-            if (e.getErrCode() == NacosException.NOT_MODIFIED) {
+            if (e.getErrCode() == NacosException.NOT_MODIFIED) { // 客户端缓存仍有效
                 response.setErrorInfo(NacosException.NOT_MODIFIED, "prompt data is up to date");
                 return response;
             }

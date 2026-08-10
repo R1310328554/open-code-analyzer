@@ -42,6 +42,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Nacos AI module release agent card request handler.
+ * <p>客户端发布 AgentCard：Agent 不存在则注册，存在但版本缺失则更新；同版本已存在则记录日志（不抛冲突）。</p>
  *
  * @author xiweng.yy
  */
@@ -53,6 +54,7 @@ public class ReleaseAgentCardRequestHandler
     private static final Logger LOGGER =
         LoggerFactory.getLogger(ReleaseAgentCardRequestHandler.class);
     
+    /** A2A Agent 注册与版本更新服务。 */
     private final A2aServerOperationService a2aServerOperationService;
     
     public ReleaseAgentCardRequestHandler(A2aServerOperationService a2aServerOperationService) {
@@ -80,6 +82,7 @@ public class ReleaseAgentCardRequestHandler
         return response;
     }
     
+    /** 校验 agentCard 非空并通过 AgentRequestUtil 校验卡片字段。 */
     private void validateRequest(ReleaseAgentCardRequest request) throws NacosApiException {
         if (null == request.getAgentCard()) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
@@ -103,11 +106,11 @@ public class ReleaseAgentCardRequestHandler
                 existAgentCard.getVersion());
         } catch (NacosApiException e) {
             if (ErrorCode.AGENT_NOT_FOUND.getCode() == e.getDetailErrCode()) {
-                // agent card not found, create new agent card.
+                // Agent 不存在，注册新卡片
                 createAgentCard(namespaceId, agentCard, request.getRegistrationType());
                 LOGGER.info("AgentCard {} released.", agentCard.getName());
             } else if (ErrorCode.AGENT_VERSION_NOT_FOUND.getCode() == e.getDetailErrCode()) {
-                // agent card found but version not found, update agent card.
+                // Agent 存在但版本不存在，发布新版本
                 createNewVersionAgentCard(namespaceId, agentCard, request.getRegistrationType(),
                     request.isSetAsLatest());
                 LOGGER.info("AgentCard {} new version {} released.", agentCard.getName(),
@@ -119,11 +122,13 @@ public class ReleaseAgentCardRequestHandler
         }
     }
     
+    /** 首次注册 AgentCard。 */
     private void createAgentCard(String namespaceId, AgentCard agentCard, String registrationType)
         throws NacosException {
         a2aServerOperationService.registerAgent(agentCard, namespaceId, registrationType);
     }
     
+    /** 为已有 Agent 追加新版本，可选设为 latest。 */
     private void createNewVersionAgentCard(String namespaceId, AgentCard agentCard,
         String registrationType,
         boolean setAsLatest) throws NacosException {

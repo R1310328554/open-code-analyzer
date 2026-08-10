@@ -39,6 +39,7 @@ import java.util.List;
 
 /**
  * JDBC-based implementation of {@link PipelineExecutionRepository}.
+ * <p>基于 JDBC 的流水线执行记录仓储实现，通过 {@link DynamicDataSource} 获取 {@link JdbcTemplate}，将执行记录持久化到 {@code pipeline_execution} 表；pipeline 字段（{@link PipelineNodeResult} 列表）以 JSON 序列化存储。</p>
  *
  * <p>Uses {@link DynamicDataSource} to obtain a {@link JdbcTemplate} and persists pipeline execution
  * records to the {@code pipeline_execution} table. The pipeline field (List of PipelineNodeResult)
@@ -52,29 +53,36 @@ public class PipelineExecutionRepositoryImpl implements PipelineExecutionReposit
     private static final Logger LOGGER =
         LoggerFactory.getLogger(PipelineExecutionRepositoryImpl.class);
     
+    /** 插入流水线执行记录的 SQL。 */
     private static final String SQL_INSERT = "INSERT INTO pipeline_execution "
         + "(execution_id, resource_type, resource_name, namespace_id, version, status, pipeline, create_time, update_time) "
         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
+    /** 按 execution_id 更新状态与 pipeline 的 SQL。 */
     private static final String SQL_UPDATE =
         "UPDATE pipeline_execution SET status=?, pipeline=?, update_time=? "
             + "WHERE execution_id=?";
     
+    /** 按 execution_id 查询单条记录的 SQL。 */
     private static final String SQL_FIND_BY_ID =
         "SELECT * FROM pipeline_execution WHERE execution_id=?";
     
+    /** 按资源维度查询执行记录（按创建时间倒序）的 SQL。 */
     private static final String SQL_FIND_BY_RESOURCE = "SELECT * FROM pipeline_execution "
         + "WHERE resource_type=? AND resource_name=? AND namespace_id=? AND version=? "
         + "ORDER BY create_time DESC";
     
     private static final PipelineExecutionRowMapper ROW_MAPPER = new PipelineExecutionRowMapper();
     
+    /** 测试注入的 JdbcTemplate，非空时优先使用。 */
     private final JdbcTemplate injectedJdbcTemplate;
     
+    /** 测试注入的数据源类型，用于方言相关 SQL 拼接。 */
     private final String injectedDataSourceType;
     
     /**
      * Default constructor. Uses {@link DynamicDataSource} to obtain the JdbcTemplate.
+     * <p>默认构造，运行时从 {@link DynamicDataSource} 获取 JdbcTemplate。</p>
      */
     public PipelineExecutionRepositoryImpl() {
         this.injectedJdbcTemplate = null;
@@ -83,6 +91,7 @@ public class PipelineExecutionRepositoryImpl implements PipelineExecutionReposit
     
     /**
      * Constructor for testing. Accepts a JdbcTemplate directly.
+     * <p>测试构造，直接注入 JdbcTemplate。</p>
      *
      * @param jdbcTemplate the JdbcTemplate to use
      */
@@ -92,6 +101,7 @@ public class PipelineExecutionRepositoryImpl implements PipelineExecutionReposit
     
     /**
      * Constructor for testing. Accepts a JdbcTemplate and datasource type directly.
+     * <p>测试构造，同时注入 JdbcTemplate 与数据源类型以生成方言 SQL。</p>
      *
      * @param jdbcTemplate the JdbcTemplate to use
      * @param dataSourceType datasource type used to build dialect-specific SQL
@@ -101,6 +111,7 @@ public class PipelineExecutionRepositoryImpl implements PipelineExecutionReposit
         this.injectedDataSourceType = dataSourceType;
     }
     
+    /** 获取 JdbcTemplate：优先使用注入实例，否则从动态数据源获取。 */
     private JdbcTemplate getJdbcTemplate() {
         if (injectedJdbcTemplate != null) {
             return injectedJdbcTemplate;
@@ -108,6 +119,7 @@ public class PipelineExecutionRepositoryImpl implements PipelineExecutionReposit
         return DynamicDataSource.getInstance().getDataSource().getJdbcTemplate();
     }
     
+    /** 获取当前数据源类型，用于 LIMIT/OFFSET 等方言差异。 */
     private String getDataSourceType() {
         if (StringUtils.isNotBlank(injectedDataSourceType)) {
             return injectedDataSourceType;
@@ -118,12 +130,14 @@ public class PipelineExecutionRepositoryImpl implements PipelineExecutionReposit
         return DynamicDataSource.getInstance().getDataSource().getDataSourceType();
     }
     
+    /** 构建查询资源最新一条执行记录的 SQL（含方言分页子句）。 */
     String buildSingleLatestSql() {
         return appendFirstRowClause("SELECT * FROM pipeline_execution "
             + "WHERE resource_type=? AND resource_name=? AND namespace_id=? AND version=? "
             + "ORDER BY create_time DESC");
     }
     
+    /** 按数据源类型追加 OFFSET/LIMIT 或 FETCH NEXT 分页子句。 */
     String appendPageClause(String baseSql, int offset, int limit) {
         String dataSourceType = getDataSourceType();
         if (DataSourceConstant.DERBY.equalsIgnoreCase(dataSourceType)
@@ -133,6 +147,7 @@ public class PipelineExecutionRepositoryImpl implements PipelineExecutionReposit
         return baseSql + " LIMIT " + limit + " OFFSET " + offset;
     }
     
+    /** 追加仅取首行的方言子句（LIMIT 1 或 FETCH FIRST 1 ROW ONLY）。 */
     private String appendFirstRowClause(String baseSql) {
         String dataSourceType = getDataSourceType();
         if (DataSourceConstant.DERBY.equalsIgnoreCase(dataSourceType)
@@ -262,6 +277,7 @@ public class PipelineExecutionRepositoryImpl implements PipelineExecutionReposit
     
     /**
      * RowMapper for mapping ResultSet rows to PipelineExecution objects.
+     * <p>将 ResultSet 行映射为 {@link PipelineExecution}，pipeline 列反序列化为节点结果列表。</p>
      */
     private static class PipelineExecutionRowMapper implements RowMapper<PipelineExecution> {
         

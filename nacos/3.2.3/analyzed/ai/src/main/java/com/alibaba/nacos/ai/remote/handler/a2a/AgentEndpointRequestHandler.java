@@ -50,6 +50,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Register or Deregister endpoint for agent to nacos AI module request handler.
+ * <p>Agent 端点注册/注销 RPC 处理器：将 endpoint 实例注册到 {@code AGENT_ENDPOINT_GROUP} 下以 agentName::version 命名的 Naming 服务。</p>
  *
  * @author xiweng.yy
  */
@@ -60,8 +61,10 @@ public class AgentEndpointRequestHandler
     
     private static final Logger LOGGER = LoggerFactory.getLogger(AgentEndpointRequestHandler.class);
     
+    /** 临时实例注册/注销。 */
     private final EphemeralClientOperationServiceImpl clientOperationService;
     
+    /** Agent 名称编码（服务名安全字符）。 */
     private final AgentIdCodecHolder agentIdCodecHolder;
     
     public AgentEndpointRequestHandler(EphemeralClientOperationServiceImpl clientOperationService,
@@ -112,10 +115,12 @@ public class AgentEndpointRequestHandler
         return response;
     }
     
+    /** 将请求 endpoint 转为 Naming Instance。 */
     private Instance transferInstance(AgentEndpointRequest request) throws NacosApiException {
         return AgentEndpointUtil.transferToInstance(request.getEndpoint());
     }
     
+    /** 校验 agentName、endpoint 及 endpoint.version。 */
     private void validateRequest(AgentEndpointRequest request) throws NacosApiException {
         if (StringUtils.isBlank(request.getAgentName())) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
@@ -131,6 +136,7 @@ public class AgentEndpointRequestHandler
         }
     }
     
+    /** 注册 Agent endpoint 并发布追踪事件。 */
     private void doRegisterEndpoint(Service service, Instance instance, RequestMeta meta)
         throws NacosException {
         clientOperationService.registerInstance(service, instance, meta.getConnectionId());
@@ -141,6 +147,7 @@ public class AgentEndpointRequestHandler
         
     }
     
+    /** 注销 Agent endpoint 并发布追踪事件。 */
     private void doDeregisterEndpoint(Service service, Instance instance, RequestMeta meta) {
         clientOperationService.deregisterInstance(service, instance, meta.getConnectionId());
         NotifyCenter.publishEvent(new DeregisterInstanceTraceEvent(System.currentTimeMillis(),

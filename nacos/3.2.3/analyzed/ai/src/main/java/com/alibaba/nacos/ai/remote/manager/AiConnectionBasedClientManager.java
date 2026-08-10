@@ -31,6 +31,7 @@ import java.util.Collection;
 
 /**
  * The manager of {@code ConnectionBasedClient} For AI module.
+ * <p>AI 模块专用的基于连接的 Naming 客户端管理器：代理 {@link ConnectionBasedClientManager}，仅处理 label 为 {@code ai} 的 gRPC 连接事件。</p>
  *
  * <p>
  *     proxy for {@link ConnectionBasedClientManager}, only listen connection that module `ai`.
@@ -43,6 +44,7 @@ import java.util.Collection;
 public class AiConnectionBasedClientManager extends ClientConnectionEventListener
     implements ClientManager {
     
+    /** 底层 Naming 连接客户端管理器。 */
     private final ConnectionBasedClientManager delegate;
     
     public AiConnectionBasedClientManager(
@@ -52,7 +54,7 @@ public class AiConnectionBasedClientManager extends ClientConnectionEventListene
     
     @Override
     public void clientConnected(Connection connect) {
-        // ignore `naming`, `config` and `lock` module connection
+        // 忽略 naming/config/lock 等非 AI 模块连接
         if (!RemoteConstants.LABEL_MODULE_AI
             .equals(connect.getMetaInfo().getLabel(RemoteConstants.LABEL_MODULE))) {
             return;

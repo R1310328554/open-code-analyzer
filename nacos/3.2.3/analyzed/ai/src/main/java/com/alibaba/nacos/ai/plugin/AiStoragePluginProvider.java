@@ -27,6 +27,7 @@ import java.util.Map;
 /**
  * Bridges {@link AiResourceStorage} instances registered on {@link AiResourceStorageRouter}
  * to {@link com.alibaba.nacos.core.plugin.PluginManager}.
+ * <p>将 {@link AiResourceStorageRouter} 上注册的 AI 资源存储后端桥接到 {@code PluginManager}，供控制台列举与启停存储插件。</p>
  *
  * <p>AI skill/resource persistence <b>requires</b> a storage backend; the default implementation is
  * {@code nacos_config} ({@link com.alibaba.nacos.ai.storage.NacosConfigAiResourceStorageBuilder}),
@@ -47,8 +48,8 @@ public class AiStoragePluginProvider implements PluginProvider<AiResourceStorage
     @Override
     public Map<String, AiResourceStorage> getAllPlugins() {
         Map<String, AiResourceStorage> map = new LinkedHashMap<>();
-        AiResourceStorageRouter.getInstance().allStorages().forEach((type, storage) -> {
-            if (type != null && storage != null) {
+        AiResourceStorageRouter.getInstance().allStorages().forEach((type, storage) -> { // 遍历路由器中全部存储实现
+            if (type != null && storage != null) { // 过滤空键值
                 map.put(type, storage);
             }
         });

@@ -54,6 +54,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Register or Deregister endpoint for mcp server to nacos AI module request handler.
+ * <p>MCP 服务端点注册/注销 RPC 处理器：将客户端实例注册到 MCP 关联的 Naming 服务，或从该服务注销；支持 HTTP 前端 REF 与直连两种 endpoint 解析方式。</p>
  *
  * @author xiweng.yy
  */
@@ -65,12 +66,16 @@ public class McpServerEndpointRequestHandler
     private static final Logger LOGGER =
         LoggerFactory.getLogger(McpServerEndpointRequestHandler.class);
     
+    /** 实例 metadata 中存放 MCP 版本号的键。 */
     private static final String VERSION_TAG = "_mcp_server_version";
     
+    /** 临时实例注册/注销服务。 */
     private final EphemeralClientOperationServiceImpl clientOperationService;
     
+    /** MCP 服务详情查询与业务操作。 */
     private final McpServerOperationService mcpServerOperationService;
     
+    /** MCP 名称到 ID 的索引。 */
     private final McpServerIndex mcpServerIndex;
     
     public McpServerEndpointRequestHandler(
@@ -99,6 +104,7 @@ public class McpServerEndpointRequestHandler
         }
     }
     
+    /** 校验 mcpName 非空。 */
     private void checkParameters(McpServerEndpointRequest request) throws NacosApiException {
         if (StringUtils.isBlank(request.getMcpName())) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
@@ -106,6 +112,7 @@ public class McpServerEndpointRequestHandler
         }
     }
     
+    /** 解析 MCP 服务与 endpoint 服务引用，按 type 执行注册或注销。 */
     private McpServerEndpointResponse doHandler(McpServerEndpointRequest request, Instance instance,
         RequestMeta meta)
         throws NacosException {
@@ -155,6 +162,7 @@ public class McpServerEndpointRequestHandler
         return response;
     }
     
+    /** 由请求地址/端口构建 Naming {@link Instance}，可选写入版本 metadata。 */
     private Instance buildInstance(McpServerEndpointRequest request) throws NacosApiException {
         Instance instance = new Instance();
         instance.setIp(request.getAddress());
@@ -166,9 +174,10 @@ public class McpServerEndpointRequestHandler
         return instance;
     }
     
+    /** HTTP 协议从前端 REF 配置解析服务引用，否则使用 remoteServerConfig.serviceRef。 */
     private McpServiceRef buildServiceRef(McpServerDetailInfo mcpServer) {
         boolean isRegisterToFrontend =
-            AiConstants.Mcp.MCP_PROTOCOL_HTTP.equals(mcpServer.getProtocol());
+            AiConstants.Mcp.MCP_PROTOCOL_HTTP.equals(mcpServer.getProtocol()); // HTTP 协议走前端 REF
         McpServiceRef result = null;
         if (isRegisterToFrontend) {
             for (FrontEndpointConfig each : mcpServer.getRemoteServerConfig()
@@ -184,6 +193,7 @@ public class McpServerEndpointRequestHandler
         return result;
     }
     
+    /** 注册实例并发布 RegisterInstanceTraceEvent。 */
     private void doRegister(Service service, Instance instance, RequestMeta meta)
         throws NacosException {
         clientOperationService.registerInstance(service, instance, meta.getConnectionId());
@@ -193,6 +203,7 @@ public class McpServerEndpointRequestHandler
             service.getName(), instance.getIp(), instance.getPort()));
     }
     
+    /** 注销实例并发布 DeregisterInstanceTraceEvent。 */
     private void doDeregister(Service service, Instance instance, RequestMeta meta) {
         clientOperationService.deregisterInstance(service, instance, meta.getConnectionId());
         NotifyCenter.publishEvent(new DeregisterInstanceTraceEvent(System.currentTimeMillis(),

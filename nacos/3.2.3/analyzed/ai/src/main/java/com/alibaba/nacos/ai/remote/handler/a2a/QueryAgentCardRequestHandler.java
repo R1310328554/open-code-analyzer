@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Nacos AI module query agent card request handler.
+ * <p>按 agentName/版本/注册类型查询 AgentCard 详情的 RPC 处理器。</p>
  *
  * @author xiweng.yy
  */
@@ -49,6 +50,7 @@ public class QueryAgentCardRequestHandler
     private static final Logger LOGGER =
         LoggerFactory.getLogger(QueryAgentCardRequestHandler.class);
     
+    /** A2A Agent 卡片读服务。 */
     private final A2aServerOperationService a2aServerOperationService;
     
     public QueryAgentCardRequestHandler(A2aServerOperationService a2aServerOperationService) {
@@ -71,6 +73,7 @@ public class QueryAgentCardRequestHandler
         return doHandler(request);
     }
     
+    /** 调用 A2A 服务加载 AgentCard 并封装响应或错误。 */
     private QueryAgentCardResponse doHandler(QueryAgentCardRequest request) {
         QueryAgentCardResponse response = new QueryAgentCardResponse();
         try {

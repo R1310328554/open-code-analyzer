@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Nacos AI module query mcp request handler.
+ * <p>按命名空间与 mcpName 查询 MCP 服务详情的 RPC 处理器，先经索引解析 ID 再加载完整 {@link McpServerDetailInfo}。</p>
  *
  * @author xiweng.yy
  */
@@ -46,8 +47,10 @@ import org.springframework.stereotype.Component;
 public class QueryMcpServerRequestHandler
     extends RequestHandler<QueryMcpServerRequest, QueryMcpServerResponse> {
     
+    /** MCP 服务业务查询服务。 */
     private final McpServerOperationService mcpServerOperationService;
     
+    /** MCP 名称索引。 */
     private final McpServerIndex mcpServerIndex;
     
     public QueryMcpServerRequestHandler(McpServerOperationService mcpServerOperationService,
@@ -72,6 +75,7 @@ public class QueryMcpServerRequestHandler
         return doHandler(request, meta);
     }
     
+    /** 索引查 ID 后加载 MCP 详情并封装响应。 */
     private QueryMcpServerResponse doHandler(QueryMcpServerRequest request, RequestMeta meta)
         throws NacosException {
         McpServerIndexData indexData = mcpServerIndex.getMcpServerByName(request.getNamespaceId(),
