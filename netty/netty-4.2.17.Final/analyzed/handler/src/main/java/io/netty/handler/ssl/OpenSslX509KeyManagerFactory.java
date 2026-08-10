@@ -62,11 +62,16 @@ import java.util.Map;
  *
  * {@link #init(ManagerFactoryParameters)} is not supported by this implementation and so a call to it will always
  * result in an {@link InvalidAlgorithmParameterException}.
+ *
+ * <p>在 {@code init} 时预计算各 alias 的 {@link OpenSslKeyMaterial}，供 OpenSSL 握手快速取用；
+ * init 后修改 {@link KeyStore} 无效；不支持 {@link ManagerFactoryParameters} 初始化。</p>
  */
 public final class OpenSslX509KeyManagerFactory extends KeyManagerFactory {
 
+    /** 委托给内部 SPI，持有预填充的密钥材料映射。 */
     private final OpenSslKeyManagerFactorySpi spi;
 
+    /** 使用默认算法与 Provider 构造。 */
     public OpenSslX509KeyManagerFactory() {
         this(newOpenSslKeyManagerFactorySpi(null));
     }
@@ -107,8 +112,10 @@ public final class OpenSslX509KeyManagerFactory extends KeyManagerFactory {
         return spi.newProvider();
     }
 
+    /** SPI：init 时扫描 alias 并预填充 {@link OpenSslKeyMaterial}。 */
     private static final class OpenSslKeyManagerFactorySpi extends KeyManagerFactorySpi {
         final KeyManagerFactory kmf;
+        /** init 成功后非 null，用于创建 {@link OpenSslKeyMaterialProvider}。 */
         private volatile ProviderFactory providerFactory;
 
         OpenSslKeyManagerFactorySpi(KeyManagerFactory kmf) {
@@ -195,8 +202,7 @@ public final class OpenSslX509KeyManagerFactory extends KeyManagerFactory {
                                     materialMap.put(alias, super.chooseKeyMaterial(
                                             UnpooledByteBufAllocator.DEFAULT, alias));
                                 } catch (Exception e) {
-                                    // Just store the exception and rethrow it when we try to choose the keymaterial
-                                    // for this alias later on.
+                                    // 预计算失败时存异常，choose 时再抛出
                                     materialMap.put(alias, e);
                                 }
                             }
@@ -214,7 +220,7 @@ public final class OpenSslX509KeyManagerFactory extends KeyManagerFactory {
                 OpenSslKeyMaterial chooseKeyMaterial(ByteBufAllocator allocator, String alias) throws Exception {
                     Object value = materialMap.get(alias);
                     if (value == null) {
-                        // There is no keymaterial for the requested alias, return null
+                        // 请求的 alias 无预计算材料
                         return null;
                     }
                     if (value instanceof OpenSslKeyMaterial) {
@@ -243,6 +249,8 @@ public final class OpenSslX509KeyManagerFactory extends KeyManagerFactory {
      * an {@code OpenSSL engine} via the
      * <a href="https://www.openssl.org/docs/man1.1.0/crypto/ENGINE_load_private_key.html">ENGINE_load_private_key</a>
      * function.
+     *
+     * <p>通过 OpenSSL ENGINE 按 alias 加载私钥并初始化工厂（硬件密钥等场景）。</p>
      */
     public static OpenSslX509KeyManagerFactory newEngineBased(File certificateChain, String password)
             throws CertificateException, IOException,
@@ -288,6 +296,8 @@ public final class OpenSslX509KeyManagerFactory extends KeyManagerFactory {
     /**
      * Returns a new initialized {@link OpenSslX509KeyManagerFactory} which will provide its private key by using the
      * {@link OpenSslPrivateKeyMethod}.
+     *
+     * <p>无私钥实体、签名由 {@link OpenSslPrivateKeyMethod} 回调完成的“无密钥”服务端配置。</p>
      */
     public static OpenSslX509KeyManagerFactory newKeyless(X509Certificate... certificateChain)
             throws CertificateException, IOException,
@@ -300,6 +310,7 @@ public final class OpenSslX509KeyManagerFactory extends KeyManagerFactory {
         return factory;
     }
 
+    /** 虚拟 KeyStore：证书链来自构造参数，私钥来自 ENGINE 或 keyless（地址 0）。 */
     private static final class OpenSslKeyStore extends KeyStore {
         private OpenSslKeyStore(final X509Certificate[] certificateChain, final boolean keyless) {
             super(new KeyStoreSpi() {
@@ -314,6 +325,7 @@ public final class OpenSslX509KeyManagerFactory extends KeyManagerFactory {
                             privateKeyAddress = 0;
                         } else {
                             try {
+                                // 从 OpenSSL ENGINE 按 alias 加载 native 私钥指针
                                 privateKeyAddress = SSL.loadPrivateKeyFromEngine(
                                         alias, password == null ? null : new String(password));
                             } catch (Exception e) {

@@ -41,6 +41,9 @@ import io.netty.util.internal.ObjectUtil;
  * All methods other than what's implemented in {@link PemEncoded}'s throw
  * {@link UnsupportedOperationException}s.
  *
+ * <p>将 PEM 编码的 X.509 证书链直接传入 OpenSSL，跳过 Java 侧完整证书对象解析；仅实现
+ * {@link PemEncoded} 与引用计数相关 API。</p>
+ *
  * @see PemEncoded
  * @see OpenSslContext
  * @see #valueOf(byte[])
@@ -53,17 +56,15 @@ public final class PemX509Certificate extends X509Certificate implements PemEnco
 
     /**
      * Creates a {@link PemEncoded} value from the {@link X509Certificate}s.
+     *
+     * <p>单元素且已是 {@link PemEncoded} 时 retain；否则逐张编码并拼接 PEM。</p>
      */
     static PemEncoded toPEM(ByteBufAllocator allocator, boolean useDirect,
             X509Certificate... chain) throws CertificateEncodingException {
 
         checkNonEmpty(chain, "chain");
 
-        // We can take a shortcut if there is only one certificate and
-        // it already happens to be a PemEncoded instance. This is the
-        // ideal case and reason why all this exists. It allows the user
-        // to pass pre-encoded bytes straight into OpenSSL without having
-        // to do any of the extra work.
+        // 单证书且已为 PemEncoded 时短路，避免重复编码
         if (chain.length == 1) {
             X509Certificate first = chain[0];
             if (first instanceof PemEncoded) {
@@ -91,7 +92,7 @@ public final class PemX509Certificate extends X509Certificate implements PemEnco
             success = true;
             return value;
         } finally {
-            // Make sure we never leak the PEM's ByteBuf in the event of an Exception
+            // 异常路径释放已分配的 PEM 缓冲，防止泄漏
             if (!success && pem != null) {
                 pem.release();
             }
@@ -101,6 +102,8 @@ public final class PemX509Certificate extends X509Certificate implements PemEnco
     /**
      * Appends the {@link PemEncoded} value to the {@link ByteBuf} (last arg) and returns it.
      * If the {@link ByteBuf} didn't exist yet it'll create it using the {@link ByteBufAllocator}.
+     *
+     * <p>将已有 PEM 片段 slice 写入目标缓冲；首次调用时按链长度估算 initialCapacity。</p>
      */
     private static ByteBuf append(ByteBufAllocator allocator, boolean useDirect,
             PemEncoded encoded, int count, ByteBuf pem) {
@@ -108,7 +111,7 @@ public final class PemX509Certificate extends X509Certificate implements PemEnco
         ByteBuf content = encoded.content();
 
         if (pem == null) {
-            // see the other append() method
+            // 见 append(X509Certificate...)：按单张可读字节 × count 估算容量
             pem = newBuffer(allocator, useDirect, content.readableBytes() * count);
         }
 
@@ -119,6 +122,8 @@ public final class PemX509Certificate extends X509Certificate implements PemEnco
     /**
      * Appends the {@link X509Certificate} value to the {@link ByteBuf} (last arg) and returns it.
      * If the {@link ByteBuf} didn't exist yet it'll create it using the {@link ByteBufAllocator}.
+     *
+     * <p>DER 编码后 Base64 并写入 BEGIN/END CERTIFICATE 行。</p>
      */
     private static ByteBuf append(ByteBufAllocator allocator, boolean useDirect,
             X509Certificate cert, int count, ByteBuf pem) throws CertificateEncodingException {
@@ -128,9 +133,7 @@ public final class PemX509Certificate extends X509Certificate implements PemEnco
             ByteBuf base64 = SslUtils.toBase64(allocator, encoded);
             try {
                 if (pem == null) {
-                    // We try to approximate the buffer's initial size. The sizes of
-                    // certificates can vary a lot so it'll be off a bit depending
-                    // on the number of elements in the array (count argument).
+                    // 证书 DER 大小差异大，按 (BEGIN+Base64+END)*count 近似初始容量
                     pem = newBuffer(allocator, useDirect,
                             (BEGIN_CERT.length + base64.readableBytes() + END_CERT.length) * count);
                 }
@@ -157,6 +160,8 @@ public final class PemX509Certificate extends X509Certificate implements PemEnco
      *
      * ATTENTION: It's assumed that the given argument is a PEM/PKCS#8 encoded value.
      * No input validation is performed to validate it.
+     *
+     * <p>假定字节为 PEM 证书文本，不做 ASN.1 校验。</p>
      */
     public static PemX509Certificate valueOf(byte[] key) {
         return valueOf(Unpooled.wrappedBuffer(key));
@@ -167,11 +172,14 @@ public final class PemX509Certificate extends X509Certificate implements PemEnco
      *
      * ATTENTION: It's assumed that the given argument is a PEM/PKCS#8 encoded value.
      * No input validation is performed to validate it.
+     *
+     * <p>包装已有 PEM {@link ByteBuf}，引用计数委托给 content。</p>
      */
     public static PemX509Certificate valueOf(ByteBuf key) {
         return new PemX509Certificate(key);
     }
 
+    /** PEM 证书字节；引用计数与 content 同步。 */
     private final ByteBuf content;
 
     private PemX509Certificate(ByteBuf content) {
@@ -180,7 +188,7 @@ public final class PemX509Certificate extends X509Certificate implements PemEnco
 
     @Override
     public boolean isSensitive() {
-        // There is no sensitive information in a X509 Certificate
+        // X.509 证书为公开材料，无需清零
         return false;
     }
 

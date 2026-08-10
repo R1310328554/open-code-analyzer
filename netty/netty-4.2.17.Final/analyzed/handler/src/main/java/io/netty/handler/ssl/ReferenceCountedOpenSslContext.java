@@ -87,26 +87,34 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
  * <p>Instances of this class <strong>must not</strong> be released before any {@link ReferenceCountedOpenSslEngine}
  * which depends upon the instance of this class is released. Otherwise if any method of
  * {@link ReferenceCountedOpenSslEngine} is called which uses this class's JNI resources the JVM may crash.
+ *
+ * <p>OpenSSL {@link SslContext} 的引用计数基类：持有 native {@code SSL_CTX}、密码套件与 ALPN 配置，
+ * {@link #newEngine} 创建 {@link ReferenceCountedOpenSslEngine}；生产环境须配对 release，且 Context
+ * 生命周期须覆盖其下所有 Engine。</p>
  */
 public abstract class ReferenceCountedOpenSslContext extends SslContext implements ReferenceCounted {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(ReferenceCountedOpenSslContext.class);
 
+    /** 是否允许无法 getEncoded 的私钥回退到 JDK 签名 Provider。 */
     private static final boolean DEFAULT_USE_JDK_PROVIDERS = SystemPropertyUtil.getBoolean(
             "io.netty.handler.ssl.useJdkProviderSignatures", true);
+    /** network BIO 非应用数据缓冲默认大小（可通过系统属性覆盖）。 */
     private static final int DEFAULT_BIO_NON_APPLICATION_BUFFER_SIZE = Math.max(1,
             SystemPropertyUtil.getInt("io.netty.handler.ssl.openssl.bioNonApplicationBufferSize",
                     2048));
-    // Let's use tasks by default but still allow the user to disable it via system property just in case.
+    // 默认启用 OpenSSL task 模式，可通过系统属性关闭
     static final boolean USE_TASKS =
             SystemPropertyUtil.getBoolean("io.netty.handler.ssl.openssl.useTasks", true);
     private static final Integer DH_KEY_LENGTH;
     private static final ResourceLeakDetector<ReferenceCountedOpenSslContext> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(ReferenceCountedOpenSslContext.class);
 
+    /** 证书链校验最大深度。 */
     // TODO: Maybe make configurable ?
     protected static final int VERIFY_DEPTH = 10;
 
+    /** 客户端 TLS1.2 及以下 session ticket 扩展开关（JDK 属性名）。 */
     static final boolean CLIENT_ENABLE_SESSION_TICKET =
             SystemPropertyUtil.getBoolean("jdk.tls.client.enableSessionTicketExtension", false);
 
@@ -119,8 +127,10 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
     static final boolean SERVER_ENABLE_SESSION_TICKET_TLSV13 =
             SystemPropertyUtil.getBoolean("jdk.tls.server.enableSessionTicketExtension", true);
 
+    /** 服务端会话缓存默认是否启用。 */
     static final boolean SERVER_ENABLE_SESSION_CACHE =
             SystemPropertyUtil.getBoolean("io.netty.handler.ssl.openssl.sessionCacheServer", true);
+    /** 客户端会话缓存默认是否启用。 */
     static final boolean CLIENT_ENABLE_SESSION_CACHE =
             SystemPropertyUtil.getBoolean("io.netty.handler.ssl.openssl.sessionCacheClient", true);
 
@@ -128,10 +138,14 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
      * The OpenSSL SSL_CTX object.
      *
      * <strong>{@link #ctxLock} must be hold while using ctx!</strong>
+     *
+     * <p>native {@code SSL_CTX*} 指针；访问须持有 {@link #ctxLock}。</p>
      */
     protected long ctx;
+    /** 不可变协商密码套件列表（已去重）。 */
     private final List<String> unmodifiableCiphers;
     private final OpenSslApplicationProtocolNegotiator apn;
+    /** {@link SSL#SSL_MODE_CLIENT} 或 {@link SSL#SSL_MODE_SERVER}。 */
     private final int mode;
 
     // Reference Counting
@@ -168,12 +182,16 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
     final boolean hasTmpDhKeys;
     final String[] groups;
     final boolean enableOcsp;
+    /** ssl 指针 -> {@link ReferenceCountedOpenSslEngine} 映射，供 native 回调反查。 */
     final OpenSslEngineMap engines = new OpenSslEngineMap();
+    /** 保护 {@link #ctx} 读写的读写锁。 */
     final ReadWriteLock ctxLock = new ReentrantReadWriteLock();
+    /** 附加 OpenSsl 凭证列表（引用计数）。 */
     final List<OpenSslCredential> credentials = new ArrayList<>();
 
     private volatile int bioNonApplicationBufferSize = DEFAULT_BIO_NON_APPLICATION_BUFFER_SIZE;
 
+    /** ALPN 未配置时的占位协商器。 */
     @SuppressWarnings("deprecation")
     static final OpenSslApplicationProtocolNegotiator NONE_PROTOCOL_NEGOTIATOR =
             new OpenSslApplicationProtocolNegotiator() {
@@ -219,6 +237,7 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
 
     final boolean tlsFalseStart;
 
+    /** 构造 OpenSSL SSL_CTX 并应用密码套件、协议、ALPN、OCSP 等选项。 */
     ReferenceCountedOpenSslContext(Iterable<String> ciphers, CipherSuiteFilter cipherFilter,
                                    OpenSslApplicationProtocolNegotiator apn, int mode, Certificate[] keyCertChain,
                                    ClientAuth clientAuth, String[] protocols, boolean startTls,
@@ -309,7 +328,7 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
 
         this.apn = checkNotNull(apn, "apn");
 
-        // Create a new SSL_CTX and configure it.
+        // 创建并配置 native SSL_CTX
         boolean success = false;
         try {
             boolean tlsv13Supported = OpenSsl.isTlsv13Supported();
@@ -575,6 +594,7 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
         return new SslHandler(newEngine0(alloc, peerHost, peerPort, false), startTls, executor, resumptionController);
     }
 
+    /** 创建 {@link ReferenceCountedOpenSslEngine}；jdkCompatibilityMode 影响 SSLEngine 语义兼容。 */
     SSLEngine newEngine0(ByteBufAllocator alloc, String peerHost, int peerPort, boolean jdkCompatibilityMode) {
         return new ReferenceCountedOpenSslEngine(this, alloc, peerHost, peerPort, jdkCompatibilityMode, true,
                 endpointIdentificationAlgorithm, serverNames);
@@ -594,6 +614,8 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
      * At this point {@code 0} will be returned.
      *
      * @deprecated this method is considered unsafe as the returned pointer may be released later. Dont use it!
+     *
+     * <p>返回 native {@code SSL_CTX*}；release 后为 0。已废弃，指针生命周期不安全。</p>
      */
     @Deprecated
     public final long context() {
@@ -838,6 +860,8 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
         return trustManager instanceof X509ExtendedTrustManager;
     }
 
+    // —— ReferenceCounted 实现：refCnt 归零时 destroy SSL_CTX ——
+
     @Override
     public final int refCnt() {
         return refCnt.refCnt();
@@ -877,6 +901,7 @@ public abstract class ReferenceCountedOpenSslContext extends SslContext implemen
         return refCnt.release(decrement);
     }
 
+    /** 证书校验 native 回调基类：由 ssl 指针反查 {@link ReferenceCountedOpenSslEngine}。 */
     abstract static class AbstractCertificateVerifier extends CertificateVerifier {
         private final OpenSslEngineMap engines;
 

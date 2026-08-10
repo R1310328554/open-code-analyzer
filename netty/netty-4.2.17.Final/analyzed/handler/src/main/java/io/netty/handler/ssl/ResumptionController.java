@@ -29,8 +29,14 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 
+/**
+ * 协调 TLS 会话恢复与 {@link ResumableX509ExtendedTrustManager}：包装 TrustManager、
+ * 记录已完成完整校验的 {@link SSLEngine}，并在 ticket 恢复路径触发 resume 回调。
+ */
 final class ResumptionController {
+    /** 已通过 check*Trusted(SSLEngine) 的引擎集合（WeakHashMap，防泄漏）。 */
     private final Set<SSLEngine> confirmedValidations;
+    /** 全局唯一可配置的 Resumable TM（compareAndSet 保证仅一个）。 */
     private final AtomicReference<ResumableX509ExtendedTrustManager> resumableTm;
 
     ResumptionController() {
@@ -39,6 +45,7 @@ final class ResumptionController {
         resumableTm = new AtomicReference<ResumableX509ExtendedTrustManager>();
     }
 
+    /** 若为 {@link ResumableX509ExtendedTrustManager} 则包装并注册；否则原样返回。 */
     public TrustManager wrapIfNeeded(TrustManager tm) {
         if (tm instanceof ResumableX509ExtendedTrustManager) {
             if (!(tm instanceof X509ExtendedTrustManager)) {
@@ -54,28 +61,28 @@ final class ResumptionController {
         return tm;
     }
 
+    /** 引擎销毁时从 confirmed 集合移除，避免 WeakHashMap 长期持有。 */
     public void remove(SSLEngine engine) {
         if (resumableTm.get() != null) {
             confirmedValidations.remove(unwrapEngine(engine));
         }
     }
 
+    /**
+     * 会话有效且非首次完整校验路径时，调用 Resumable TM 的 resume 方法。
+     * @return true 表示触发了 resume 回调
+     */
     public boolean validateResumeIfNeeded(SSLEngine engine)
             throws CertificateException, SSLPeerUnverifiedException {
         ResumableX509ExtendedTrustManager tm;
         SSLSession session = engine.getSession();
         boolean valid = session.isValid();
 
-        // Look for resumption if the session is valid, and we expect to authenticate our peer:
-        //   1.   Clients always authenticate the server.
-        //   2.a. Servers only authenticate the client if they need auth,
-        //   2.b. or if they requested auth and the client provided.
-        //
-        // If a server only "want" but don't "need" auth (ClientAuth.OPTIONAL) and the client didn't provide
-        // any certificates, then `session.getPeerCertificates()` will throw `SSLPeerUnverifiedException`.
+        // 会话恢复场景：valid 且需要验证对端（客户端验服；服务端 need/want 客户端证）
+        // 若 OPTIONAL 且客户端未提供证书，getPeerCertificates 会抛 SSLPeerUnverifiedException
         if (valid && (engine.getUseClientMode() || engine.getNeedClientAuth() || engine.getWantClientAuth()) &&
                 (tm = resumableTm.get()) != null) {
-            // Unwrap JdkSslEngines because they add their inner JDK SSLEngine objects to the set.
+            // JdkSslEngine 包装层须 unwrap，否则集合键与 check* 时不一致
             engine = unwrapEngine(engine);
 
             if (!confirmedValidations.remove(engine)) {
@@ -84,14 +91,14 @@ final class ResumptionController {
                     peerCertificates = session.getPeerCertificates();
                 } catch (SSLPeerUnverifiedException e) {
                     if (engine.getUseClientMode() || engine.getNeedClientAuth()) {
-                        // Auth is required, and we got none.
+                        // 必须验证对端但未提供证书
                         throw e;
                     }
-                    // Auth is optional, and none were provided. Skip out; session resumed but nothing to authenticate.
+                    // OPTIONAL 且无客户端证书：会话恢复但无需 resume 校验
                     return false;
                 }
 
-                // This is a resumed session.
+                // ticket 恢复路径：调用 Resumable TM
                 if (engine.getUseClientMode()) {
                     // We are the client, resuming a session trusting the server
                     tm.resumeServerTrusted(chainOf(peerCertificates), engine);
@@ -129,6 +136,7 @@ final class ResumptionController {
         return chain;
     }
 
+    /** 仅允许 SSLEngine 参数的 X509ExtendedTrustManager 包装：check* 后登记 engine。 */
     private static final class X509ExtendedWrapTrustManager extends X509ExtendedTrustManager {
         private final X509ExtendedTrustManager trustManager;
         private final Set<SSLEngine> confirmedValidations;

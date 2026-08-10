@@ -43,11 +43,16 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
  * <p>Instances of this class <strong>must not</strong> be released before any {@link ReferenceCountedOpenSslEngine}
  * which depends upon the instance of this class is released. Otherwise if any method of
  * {@link ReferenceCountedOpenSslEngine} is called which uses this class's JNI resources the JVM may crash.
+ *
+ * <p>服务端引用计数 OpenSSL {@link SslContext}：配置服务端证书、客户端认证、SNI 主机名匹配与
+ * 会话 ticket；释放顺序要求同客户端上下文。</p>
  */
 public final class ReferenceCountedOpenSslServerContext extends ReferenceCountedOpenSslContext {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(ReferenceCountedOpenSslServerContext.class);
+    /** 写入 OpenSSL session id context 的固定标识。 */
     private static final byte[] ID = {'n', 'e', 't', 't', 'y'};
+    /** 服务端会话缓存上下文。 */
     private final OpenSslServerSessionContext sessionContext;
 
     ReferenceCountedOpenSslServerContext(
@@ -73,9 +78,9 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
             List<OpenSslCredential> credentials) throws SSLException {
         super(ciphers, cipherFilter, apn, SSL.SSL_MODE_SERVER, keyCertChain,
                 clientAuth, protocols, startTls,
-                null, // No endpoint validation for servers.
+                null, // 服务端不做 endpoint 主机名校验
                 enableOcsp, true, null, resumptionController, options, credentials);
-        // Create a new SSL_CTX and configure it.
+        // 创建 SSL_CTX 并完成服务端特有配置
         boolean success = false;
         try {
             sessionContext = newSessionContext(this, ctx, engines, trustCertCollection, trustManagerFactory,
@@ -112,11 +117,10 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
             try {
                 SSLContext.setVerify(ctx, SSL.SSL_CVERIFY_NONE, VERIFY_DEPTH);
 
-                // Check if we have an alternative key that requires special handling
-                // Only detect alternative keys when we have an actual key object that can't be accessed directly
+                // 替代签名私钥（HSM 等）路径
                 if (keyManagerFactory == null && key != null && key.getEncoded() == null) {
                     if (!fallbackToJdkSignatureProviders) {
-                        // Alternative key without fallback enabled
+                        // 未启用 JDK Provider 回退时不支持
                         throw new SSLException("Private key requiring alternative signature provider detected " +
                                 "(such as hardware security key, smart card, or remote signing service) but " +
                                 "alternative key fallback is disabled.");
@@ -129,12 +133,11 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
                                 "KeyManagerFactory not supported with external keys");
                     } else {
                         checkNotNull(keyCertChain, "keyCertChain");
-                        // Regular key without KeyManagerFactory support
+                        // 无 KMF 支持时直接 setKeyMaterial
                         setKeyMaterial(ctx, keyCertChain, key, keyPassword);
                     }
                 } else {
-                    // javadocs state that keyManagerFactory has precedent over keyCertChain, and we must have a
-                    // keyManagerFactory for the server so build one if it is not specified.
+                    // 服务端必须提供 KeyManagerFactory（或由 certChain 构造）
                     if (keyManagerFactory == null) {
                         keyManagerFactory = certChainToKeyManagerFactory(keyCertChain, key, keyPassword, keyStore);
                     }
@@ -159,9 +162,7 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
                 final X509TrustManager manager = chooseTrustManager(
                         trustManagerFactory.getTrustManagers(), resumptionController);
 
-                // IMPORTANT: The callbacks set for verification must be static to prevent memory leak as
-                //            otherwise the context can never be collected. This is because the JNI code holds
-                //            a global reference to the callbacks.
+                // static 校验回调，避免 JNI 全局引用泄漏（#5372）
                 //
                 //            See https://github.com/netty/netty/issues/5372
 
@@ -185,9 +186,7 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
                     }
                 }
 
-                // IMPORTANT: The callbacks set for hostname matching must be static to prevent memory leak as
-                //            otherwise the context can never be collected. This is because the JNI code holds
-                //            a global reference to the matcher.
+                // SNI 主机名匹配回调同样须 static（#5372 同类问题）
                 SSLContext.setSniHostnameMatcher(ctx, new OpenSslSniHostnameMatcher(engines));
             } catch (SSLException e) {
                 throw e;
@@ -197,7 +196,7 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
 
             OpenSslServerSessionContext sessionContext = new OpenSslServerSessionContext(thiz, keyMaterialProvider);
             sessionContext.setSessionIdContext(ID);
-            // Enable session caching by default
+            // 默认启用服务端会话缓存
             sessionContext.setSessionCacheEnabled(SERVER_ENABLE_SESSION_CACHE);
             if (sessionCacheSize > 0) {
                 sessionContext.setSessionCacheSize((int) Math.min(sessionCacheSize, Integer.MAX_VALUE));
@@ -228,6 +227,7 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
         }
     }
 
+    /** 服务端证书选择 native 回调（忽略客户端 CA 列表，与 OpenJDK SSLEngineImpl 行为一致）。 */
     private static final class OpenSslServerCertificateCallback implements CertificateCallback {
         private final OpenSslEngineMap engines;
         private final OpenSslKeyMaterialManager keyManagerHolder;
@@ -246,8 +246,7 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
                 return;
             }
             try {
-                // For now we just ignore the asn1DerEncodedPrincipals as this is kind of inline with what the
-                // OpenJDK SSLEngineImpl does.
+                // 暂不解析 asn1DerEncodedPrincipals，与 OpenJDK 行为对齐
                 keyManagerHolder.setKeyMaterialServerSide(engine);
             } catch (Throwable cause) {
                 engine.initHandshakeException(cause);
@@ -292,6 +291,7 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
         }
     }
 
+    /** SNI 扩展中的主机名与引擎 {@link SNIMatcher} 规则匹配。 */
     private static final class OpenSslSniHostnameMatcher implements SniHostNameMatcher {
         private final OpenSslEngineMap engines;
 
@@ -303,7 +303,7 @@ public final class ReferenceCountedOpenSslServerContext extends ReferenceCounted
         public boolean match(long ssl, String hostname) {
             ReferenceCountedOpenSslEngine engine = engines.get(ssl);
             if (engine != null) {
-                // TODO: In the next release of tcnative we should pass the byte[] directly in and not use a String.
+                // TODO: 下版 tcnative 宜直接传 byte[] 而非 String
                 return engine.checkSniHostnameMatch(hostname);
             }
             logger.warn("No ReferenceCountedOpenSslEngine found for SSL pointer: {}", ssl);

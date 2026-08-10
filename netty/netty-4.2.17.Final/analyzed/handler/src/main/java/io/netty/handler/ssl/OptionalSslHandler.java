@@ -30,17 +30,23 @@ import java.util.List;
 /**
  * {@link OptionalSslHandler} is a utility decoder to support both SSL and non-SSL handlers
  * based on the first message received.
+ *
+ * <p>根据首包是否为 TLS 记录头，动态将 pipeline 中的本 handler 替换为 {@link SslHandler} 或
+ * 明文 {@link ChannelHandler}，实现同一端口同时接受 SSL 与明文流量。</p>
  */
 public class OptionalSslHandler extends ByteToMessageDecoder {
 
+    /** 检测到 TLS 时使用的 {@link SslContext}。 */
     private final SslContext sslContext;
 
+    /** @param sslContext 非 null，用于构造 {@link SslHandler} */
     public OptionalSslHandler(SslContext sslContext) {
         this.sslContext = ObjectUtil.checkNotNull(sslContext, "sslContext");
     }
 
     @Override
     protected void decode(ChannelHandlerContext context, ByteBuf in, List<Object> out) throws Exception {
+        // 至少需要 5 字节 TLS 记录头才能判断
         if (in.readableBytes() < SslUtils.SSL_RECORD_HEADER_LENGTH) {
             return;
         }
@@ -51,6 +57,7 @@ public class OptionalSslHandler extends ByteToMessageDecoder {
         }
     }
 
+    /** 首包为 TLS：创建 {@link SslHandler} 并替换自身。 */
     private void handleSsl(ChannelHandlerContext context) {
         SslHandler sslHandler = null;
         try {
@@ -58,14 +65,14 @@ public class OptionalSslHandler extends ByteToMessageDecoder {
             context.pipeline().replace(this, newSslHandlerName(), sslHandler);
             sslHandler = null;
         } finally {
-            // Since the SslHandler was not inserted into the pipeline the ownership of the SSLEngine was not
-            // transferred to the SslHandler.
+            // 若 replace 失败，SslHandler 未入 pipeline，须手动释放 SSLEngine
             if (sslHandler != null) {
                 ReferenceCountUtil.safeRelease(sslHandler.engine());
             }
         }
     }
 
+    /** 首包非 TLS：替换为明文 handler 或直接移除自身。 */
     private void handleNonSsl(ChannelHandlerContext context) {
         ChannelHandler handler = newNonSslHandler(context);
         if (handler != null) {
@@ -78,6 +85,8 @@ public class OptionalSslHandler extends ByteToMessageDecoder {
     /**
      * Optionally specify the SSL handler name, this method may return {@code null}.
      * @return the name of the SSL handler.
+     *
+     * <p>子类可指定插入 pipeline 的 {@link SslHandler} 名称；默认 {@code null} 由 Netty 自动命名。</p>
      */
     protected String newSslHandlerName() {
         return null;
@@ -92,6 +101,9 @@ public class OptionalSslHandler extends ByteToMessageDecoder {
      * @param sslContext the {@link SSLContext} to use.
      * @return the {@link SslHandler} which will replace the {@link OptionalSslHandler} in the pipeline if the
      * traffic is SSL.
+     *
+     * <p>子类可在此配置 {@link SSLParameters} 等；服务端若需 SNI 主机名应改用
+     * {@link SslContext#newHandler(ByteBufAllocator, String, int)} 重载。</p>
      */
     protected SslHandler newSslHandler(ChannelHandlerContext context, SslContext sslContext) {
         return sslContext.newHandler(context.alloc());
@@ -100,6 +112,8 @@ public class OptionalSslHandler extends ByteToMessageDecoder {
     /**
      * Optionally specify the non-SSL handler name, this method may return {@code null}.
      * @return the name of the non-SSL handler.
+     *
+     * <p>明文分支插入 pipeline 的 handler 名称；可为 {@code null}。</p>
      */
     protected String newNonSslHandlerName() {
         return null;
@@ -110,6 +124,8 @@ public class OptionalSslHandler extends ByteToMessageDecoder {
      * @param context the {@link ChannelHandlerContext} to use.
      * @return the {@link ChannelHandler} which will replace the {@link OptionalSslHandler} in the pipeline
      * or {@code null} to simply remove the {@link OptionalSslHandler} if the traffic is non-SSL.
+     *
+     * <p>返回替换本 handler 的明文处理器；{@code null} 表示仅移除自身。</p>
      */
     protected ChannelHandler newNonSslHandler(ChannelHandlerContext context) {
         return null;

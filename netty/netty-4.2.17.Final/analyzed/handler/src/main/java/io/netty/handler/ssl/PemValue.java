@@ -24,16 +24,22 @@ import io.netty.util.internal.ObjectUtil;
 /**
  * A PEM encoded value.
  *
+ * <p>通用 PEM 容器：持有 ASCII PEM 字节并配合引用计数；敏感内容在 {@link #deallocate()} 时调用
+ * {@link SslUtils#zeroout} 清零后再释放 {@link ByteBuf}。</p>
+ *
  * @see PemEncoded
  * @see PemPrivateKey#toPEM(ByteBufAllocator, boolean, java.security.PrivateKey)
  * @see PemX509Certificate#toPEM(ByteBufAllocator, boolean, java.security.cert.X509Certificate[])
  */
 class PemValue extends AbstractReferenceCounted implements PemEncoded {
 
+    /** PEM 正文（含 BEGIN/END 行与 Base64）。 */
     private final ByteBuf content;
 
+    /** 是否为私钥等敏感材料。 */
     private final boolean sensitive;
 
+    /** @param sensitive 为 true 时释放前清零 content */
     PemValue(ByteBuf content, boolean sensitive) {
         this.content = ObjectUtil.checkNotNull(content, "content");
         this.sensitive = sensitive;
@@ -98,6 +104,7 @@ class PemValue extends AbstractReferenceCounted implements PemEncoded {
     @Override
     protected void deallocate() {
         if (sensitive) {
+            // 私钥类 PEM 必须先清零再 release
             SslUtils.zeroout(content);
         }
         content.release();

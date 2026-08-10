@@ -39,12 +39,17 @@ import javax.net.ssl.X509TrustManager;
  * <p>
  * This is really a "hack" until there is an official API as requested on the in
  * <a href="https://bugs.openjdk.java.net/projects/JDK/issues/JDK-8210843">JDK-8210843</a>.
+ *
+ * <p>通过反射获取 SunJSSE {@link SSLContextImpl} 内部的 {@link X509ExtendedTrustManager} 包装层，
+ * 使 OpenSSL 证书校验路径与 JDK 扩展校验（如 hostname 验证）行为一致；Unsafe 不可用时退化为原样返回。</p>
  */
 final class OpenSslX509TrustManagerWrapper {
     private static final InternalLogger LOGGER = InternalLoggerFactory
             .getInstance(OpenSslX509TrustManagerWrapper.class);
+    /** 运行时选中的包装策略（默认不包装）。 */
     private static final TrustManagerWrapper WRAPPER;
 
+    /** 无 Unsafe 或未探测到内部包装器时使用。 */
     private static final TrustManagerWrapper DEFAULT = new TrustManagerWrapper() {
         @Override
         public X509TrustManager wrapIfNeeded(X509TrustManager manager) {
@@ -53,7 +58,7 @@ final class OpenSslX509TrustManagerWrapper {
     };
 
     static {
-        // By default we will not do any wrapping but just return the passed in manager.
+        // 默认不包装；仅在 SunJSSE + Unsafe 可用时替换为 UnsafeTrustManagerWrapper
         TrustManagerWrapper wrapper = DEFAULT;
 
         Throwable cause = null;
@@ -62,9 +67,7 @@ final class OpenSslX509TrustManagerWrapper {
             SSLContext context;
             try {
                 context = newSSLContext();
-                // Now init with an array that only holds a X509TrustManager. This should be wrapped into an
-                // AbstractTrustManagerWrapper which will delegate the TrustManager itself but also do extra
-                // validations.
+                // 用占位 X509TrustManager init，SunJSSE 会包装为 AbstractTrustManagerWrapper
                 //
                 // See:
                 // - https://hg.openjdk.java.net/jdk8u/jdk8u/jdk/file/
@@ -107,8 +110,7 @@ final class OpenSslX509TrustManagerWrapper {
                             if (spi != null) {
                                 Class<?> clazz = spi.getClass();
 
-                                // Let's cycle through the whole hierarchy until we find what we are looking for or
-                                // there is nothing left in which case we will not wrap at all.
+                                // 沿 SPI 继承链查找 trustManager 字段，定位 X509ExtendedTrustManager
                                 do {
                                     try {
                                         Field trustManagerField = clazz.getDeclaredField("trustManager");
@@ -141,6 +143,7 @@ final class OpenSslX509TrustManagerWrapper {
         WRAPPER = wrapper;
     }
 
+    /** @return 是否已成功探测到 JDK 内部 TrustManager 包装能力 */
     static boolean isWrappingSupported() {
         return WRAPPER != DEFAULT;
     }
@@ -156,11 +159,11 @@ final class OpenSslX509TrustManagerWrapper {
     }
 
     private static SSLContext newSSLContext() throws NoSuchAlgorithmException, NoSuchProviderException {
-        // As this depends on the implementation detail we should explicit select the correct provider.
-        // See https://github.com/netty/netty/issues/10374
+        // 显式 SunJSSE，避免其他 Provider 的 SPI 布局不同（见 netty#10374）
         return SSLContext.getInstance("TLS", "SunJSSE");
     }
 
+    /** 非 {@link X509ExtendedTrustManager} 时通过临时 SSLContext 获取 JDK 扩展包装实例。 */
     private static final class UnsafeTrustManagerWrapper implements TrustManagerWrapper {
         private final long spiOffset;
         private final long tmOffset;

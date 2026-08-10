@@ -31,13 +31,14 @@ import java.util.Arrays;
  * This is used by the TLS RFC to construct/deconstruct an array of bytes into
  * composite secrets.
  *
+ * <p>实现 TLS PRF（P_hash）：以 secret、label 与 seed 为输入，通过 HMAC 迭代扩展为任意长度密钥材料，
+ * 供 master secret 等复合密钥派生使用。</p>
+ *
  * {@link <a href="https://tools.ietf.org/html/rfc5246">rfc5246</a>}
  */
 final class PseudoRandomFunction {
 
-    /**
-     * Constructor never to be called.
-     */
+    /** 工具类，禁止实例化。 */
     private PseudoRandomFunction() {
     }
 
@@ -59,6 +60,8 @@ final class PseudoRandomFunction {
      * @param algo the hmac algorithm to use
      * @return The expanded secrets
      * @throws IllegalArgumentException if the algo could not be found.
+     *
+     * <p>按 RFC 5246 P_hash 定义迭代 HMAC，将 label 与 seed 拼接为 data，A(i) 递推生成输出。</p>
      */
     static byte[] hash(byte[] secret, byte[] label, byte[] seed, int length, String algo) {
         checkPositiveOrZero(length, "length");
@@ -72,6 +75,7 @@ final class PseudoRandomFunction {
              * = HMAC_hash(secret, A(i-1))
              */
 
+            // 按 MAC 输出块大小向上取整迭代次数
             int iterations = (int) Math.ceil(length / (double) hmac.getMacLength());
             byte[] expansion = EmptyArrays.EMPTY_BYTES;
             byte[] data = concat(label, seed);

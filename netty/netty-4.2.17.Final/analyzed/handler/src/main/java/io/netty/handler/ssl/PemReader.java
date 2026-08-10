@@ -36,9 +36,13 @@ import java.util.regex.Pattern;
 
 /**
  * Reads a PEM file and converts it into a list of DERs so that they are imported into a {@link KeyStore} easily.
+ *
+ * <p>用正则解析 PEM 文本，提取证书链与 PKCS#8 私钥的 Base64 体并解码为 DER {@link ByteBuf}，
+ * 供 {@link SslContextBuilder} 等无需 KeyStore 的路径使用。</p>
  */
 final class PemReader {
 
+    /** 证书 BEGIN 行匹配（兼容多种 CERTIFICATE 变体）。 */
     private static final Pattern CERT_HEADER = Pattern.compile(
             "-+BEGIN\\s[^-\\r\\n]*CERTIFICATE[^-\\r\\n]*-+(?:\\s|\\r|\\n)+");
     private static final Pattern CERT_FOOTER = Pattern.compile(
@@ -49,6 +53,7 @@ final class PemReader {
             "-+END\\s[^-\\r\\n]*PRIVATE\\s+KEY[^-\\r\\n]*-+(?:\\s|\\r|\\n)*");
     private static final Pattern BODY = Pattern.compile("[a-z0-9+/=][a-z0-9+/=\\r\\n]*", Pattern.CASE_INSENSITIVE);
 
+    /** 从文件读取并解析全部 X.509 证书 DER。 */
     static ByteBuf[] readCertificates(File file) throws CertificateException {
         try (InputStream in = new FileInputStream(file)) {
             return readCertificates(in);
@@ -57,6 +62,7 @@ final class PemReader {
         }
     }
 
+    /** 从输入流顺序扫描 PEM，每段证书解码为一个 DER {@link ByteBuf}。 */
     static ByteBuf[] readCertificates(InputStream in) throws CertificateException {
         String content;
         try {
@@ -74,10 +80,7 @@ final class PemReader {
                     break;
                 }
 
-                // Here and below it's necessary to save the position as it is reset
-                // after calling usePattern() on Android due to a bug.
-                //
-                // See https://issuetracker.google.com/issues/293206296
+                // Android 上 usePattern 会重置 Matcher 位置，须保存 start（见 Google issue 293206296）
                 start = m.end();
                 m.usePattern(BODY);
                 if (!m.find(start)) {
@@ -89,7 +92,7 @@ final class PemReader {
                     start = m.end();
                     m.usePattern(CERT_FOOTER);
                     if (!m.find(start)) {
-                        // Certificate is incomplete.
+                        // 证书块不完整，停止解析
                         break;
                     }
                     ByteBuf der = Base64.decode(base64);
@@ -115,6 +118,7 @@ final class PemReader {
         return certs.toArray(new ByteBuf[0]);
     }
 
+    /** 从文件读取 PKCS#8 私钥 DER。 */
     static ByteBuf readPrivateKey(File file) throws KeyException {
         try (InputStream in = new FileInputStream(file)) {
             return readPrivateKey(in);
@@ -123,6 +127,7 @@ final class PemReader {
         }
     }
 
+    /** 解析首个 PRIVATE KEY PEM 块并 Base64 解码为 DER。 */
     static ByteBuf readPrivateKey(InputStream in) throws KeyException {
         String content;
         try {
@@ -146,7 +151,7 @@ final class PemReader {
             start = m.end();
             m.usePattern(KEY_FOOTER);
             if (!m.find(start)) {
-                // Key is incomplete.
+                // 私钥块缺少 END 行
                 throw keyNotFoundException();
             }
             return Base64.decode(base64);

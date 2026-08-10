@@ -35,6 +35,9 @@ import io.netty.util.internal.ObjectUtil;
  * All methods other than what's implemented in {@link PemEncoded} and {@link Destroyable}
  * throw {@link UnsupportedOperationException}s.
  *
+ * <p>将 PKCS#8/PEM 私钥字节直接交给 {@link OpenSslContext}，避免 Java 侧解析再编码；除
+ * {@link PemEncoded}/{@link Destroyable} 外的方法均不支持。</p>
+ *
  * @see PemEncoded
  * @see OpenSslContext
  * @see #valueOf(byte[])
@@ -46,16 +49,16 @@ public final class PemPrivateKey extends AbstractReferenceCounted implements Pri
     private static final byte[] BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\n".getBytes(CharsetUtil.US_ASCII);
     private static final byte[] END_PRIVATE_KEY = "\n-----END PRIVATE KEY-----\n".getBytes(CharsetUtil.US_ASCII);
 
+    /** {@link PrivateKey#getFormat()} 返回值，标识 PKCS#8。 */
     private static final String PKCS8_FORMAT = "PKCS#8";
 
     /**
      * Creates a {@link PemEncoded} value from the {@link PrivateKey}.
+     *
+     * <p>若已是 {@link PemEncoded} 则 retain；否则 getEncoded 后包装为 PEM {@link PemValue}。</p>
      */
     static PemEncoded toPEM(ByteBufAllocator allocator, boolean useDirect, PrivateKey key) {
-        // We can take a shortcut if the private key happens to be already
-        // PEM/PKCS#8 encoded. This is the ideal case and reason why all
-        // this exists. It allows the user to pass pre-encoded bytes straight
-        // into OpenSSL without having to do any of the extra work.
+        // 已为 PEM 编码时直接 retain，避免重复 Base64 与拷贝
         if (key instanceof PemEncoded) {
             return ((PemEncoded) key).retain();
         }
@@ -68,6 +71,7 @@ public final class PemPrivateKey extends AbstractReferenceCounted implements Pri
         return toPEM(allocator, useDirect, bytes);
     }
 
+    /** 将 DER PKCS#8 字节编码为标准 PEM {@link PemValue}（敏感，释放时清零）。 */
     static PemEncoded toPEM(ByteBufAllocator allocator, boolean useDirect, byte[] bytes) {
         ByteBuf encoded = Unpooled.wrappedBuffer(bytes);
         try {
@@ -86,7 +90,7 @@ public final class PemPrivateKey extends AbstractReferenceCounted implements Pri
                     success = true;
                     return value;
                 } finally {
-                    // Make sure we never leak that PEM ByteBuf if there's an Exception.
+                    // 构造失败时须释放已分配的 PEM ByteBuf，防止泄漏
                     if (!success) {
                         SslUtils.zerooutAndRelease(pem);
                     }
@@ -104,6 +108,8 @@ public final class PemPrivateKey extends AbstractReferenceCounted implements Pri
      *
      * ATTENTION: It's assumed that the given argument is a PEM/PKCS#8 encoded value.
      * No input validation is performed to validate it.
+     *
+     * <p>假定入参已是 PEM/PKCS#8 文本，不做格式校验。</p>
      */
     public static PemPrivateKey valueOf(byte[] key) {
         return valueOf(Unpooled.wrappedBuffer(key));
@@ -114,11 +120,14 @@ public final class PemPrivateKey extends AbstractReferenceCounted implements Pri
      *
      * ATTENTION: It's assumed that the given argument is a PEM/PKCS#8 encoded value.
      * No input validation is performed to validate it.
+     *
+     * <p>从 {@link ByteBuf} 包装 PEM 私钥，不拷贝内容。</p>
      */
     public static PemPrivateKey valueOf(ByteBuf key) {
         return new PemPrivateKey(key);
     }
 
+    /** PEM/PKCS#8 原始字节（引用计数由本对象管理）。 */
     private final ByteBuf content;
 
     private PemPrivateKey(ByteBuf content) {
@@ -184,8 +193,7 @@ public final class PemPrivateKey extends AbstractReferenceCounted implements Pri
 
     @Override
     protected void deallocate() {
-        // Private Keys are sensitive. We need to zero the bytes
-        // before we're releasing the underlying ByteBuf
+        // 私钥敏感：释放前清零底层 ByteBuf
         SslUtils.zerooutAndRelease(content);
     }
 
@@ -210,6 +218,8 @@ public final class PemPrivateKey extends AbstractReferenceCounted implements Pri
      * this method.
      *
      * @see Destroyable#destroy()
+     *
+     * <p>通过 release 至 0 销毁密钥材料（JDK8 {@link Destroyable} 兼容）。</p>
      */
     @Override
     public void destroy() {

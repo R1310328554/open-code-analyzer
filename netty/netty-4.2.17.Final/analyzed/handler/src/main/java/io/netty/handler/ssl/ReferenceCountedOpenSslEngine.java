@@ -93,6 +93,9 @@ import static javax.net.ssl.SSLEngineResult.Status.OK;
  * <p>Instances of this class <strong>must</strong> be released before the {@link ReferenceCountedOpenSslContext}
  * the instance depends upon are released. Otherwise if any method of this class is called which uses the
  * the {@link ReferenceCountedOpenSslContext} JNI resources the JVM may crash.
+ *
+ * <p>基于 OpenSSL BIO 的引用计数 {@link SSLEngine}：{@link #wrap}/{@link #unwrap} 驱动握手与
+ * 加解密；须先于所属 {@link ReferenceCountedOpenSslContext} 释放，否则 native _use-after-free 可致 JVM 崩溃。</p>
  */
 public class ReferenceCountedOpenSslEngine extends SSLEngine implements ReferenceCounted, ApplicationProtocolAccessor {
 
@@ -100,6 +103,7 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
 
     private static final ResourceLeakDetector<ReferenceCountedOpenSslEngine> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(ReferenceCountedOpenSslEngine.class);
+    /** OpenSSL OP_NO_* 与协议索引对应表。 */
     private static final int OPENSSL_OP_NO_PROTOCOL_INDEX_SSLV2 = 0;
     private static final int OPENSSL_OP_NO_PROTOCOL_INDEX_SSLV3 = 1;
     private static final int OPENSSL_OP_NO_PROTOCOL_INDEX_TLSv1 = 2;
@@ -117,10 +121,14 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
 
     /**
      * Depends upon tcnative ... only use if tcnative is available!
+     *
+     * <p>单条 TLS 记录允许的最大明文长度（tcnative 常量）。</p>
      */
     static final int MAX_PLAINTEXT_LENGTH = SSL.SSL_MAX_PLAINTEXT_LENGTH;
     /**
      * Depends upon tcnative ... only use if tcnative is available!
+     *
+     * <p>单条 TLS 记录最大长度（含 MAC/填充/密文）。</p>
      */
     static final int MAX_RECORD_SIZE = SSL.SSL_MAX_RECORD_LENGTH;
 
@@ -130,33 +138,27 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
     private static final SSLEngineResult NEED_WRAP_CLOSED = new SSLEngineResult(CLOSED, NEED_WRAP, 0, 0);
     private static final SSLEngineResult CLOSED_NOT_HANDSHAKING = new SSLEngineResult(CLOSED, NOT_HANDSHAKING, 0, 0);
 
-    // OpenSSL state
+    // OpenSSL 实例状态
+    /** native {@code SSL*} 指针。 */
     private long ssl;
+    /** 网络侧 BIO 指针（读写 TLS 记录）。 */
     private long networkBIO;
 
     private enum HandshakeState {
-        /**
-         * Not started yet.
-         */
+        /** 尚未开始握手。 */
         NOT_STARTED,
-        /**
-         * Started via unwrap/wrap.
-         */
+        /** 通过 wrap/unwrap 隐式启动。 */
         STARTED_IMPLICITLY,
-        /**
-         * Started via {@link #beginHandshake()}.
-         */
+        /** 通过 {@link #beginHandshake()} 显式启动。 */
         STARTED_EXPLICITLY,
-        /**
-         * Handshake is finished.
-         */
+        /** 握手已完成。 */
         FINISHED
     }
 
     private HandshakeState handshakeState = HandshakeState.NOT_STARTED;
     private boolean receivedShutdown;
     private volatile boolean destroyed;
-    // Credentials added via addCredential(); released in shutdown() to balance the retain() in addCredential().
+    /** {@link #addCredential} 登记列表；{@link #shutdown()} 时 release 平衡 retain。 */
     private List<OpenSslCredential> engineCredentials;
     private volatile String applicationProtocol;
     private volatile boolean needTask;
@@ -207,6 +209,7 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
     final ByteBufAllocator alloc;
     private final OpenSslEngineMap engines;
     private final OpenSslApplicationProtocolNegotiator apn;
+    /** 所属 OpenSSL 上下文；引擎 release 时递减其 refCnt。 */
     private final ReferenceCountedOpenSslContext parentContext;
     private final OpenSslInternalSession session;
     private final ByteBuffer[] singleSrcBuffer = new ByteBuffer[1];
@@ -227,6 +230,9 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
      *                             {@code false} allows for partial and/or multiple packets to be process in a single
      *                             wrap or unwrap call.
      * @param leakDetection {@code true} to enable leak detection of this object.
+     *
+     * <p>构造时 retain {@code context}；{@code jdkCompatibilityMode} 为 false 时允许单次 wrap/unwrap
+     * 处理多条 TLS 记录（Netty 扩展语义）。</p>
      */
     ReferenceCountedOpenSslEngine(ReferenceCountedOpenSslContext context, final ByteBufAllocator alloc, String peerHost,
                                   int peerPort, boolean jdkCompatibilityMode, boolean leakDetection,
@@ -581,6 +587,8 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
      * Returns the pointer to the {@code SSL} object for this {@link ReferenceCountedOpenSslEngine}.
      * Be aware that it is freed as soon as the {@link #release()} or {@link #shutdown()} methods are called.
      * At this point {@code 0} will be returned.
+     *
+     * <p>返回 native {@code SSL*}；{@link #shutdown()} 后恒为 0。</p>
      */
     public final synchronized long sslPointer() {
         return ssl;
@@ -588,13 +596,13 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
 
     /**
      * Destroys this engine.
+     *
+     * <p>释放 {@code SSL*}/BIO、从 {@link OpenSslEngineMap} 移除并 release 引擎凭证；可重复调用。</p>
      */
     public final synchronized void shutdown() {
         if (!destroyed) {
             destroyed = true;
-            // Let's check if engineMap is null as it could be in theory if we throw an OOME during the construction of
-            // ReferenceCountedOpenSslEngine (before we assign the field). This is needed as shutdown() is called from
-            // the finalizer as well.
+            // 构造 OOME 时 engines 可能尚未赋值，finalizer 也会调用 shutdown
             if (engines != null) {
                 engines.remove(ssl);
             }
@@ -610,7 +618,7 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
             isInboundDone = outboundClosed = true;
         }
 
-        // On shutdown clear all errors
+        // shutdown 后清空 OpenSSL 错误队列
         SSL.clearError();
     }
 
@@ -618,6 +626,8 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
      * Write plaintext data to the OpenSSL internal BIO
      *
      * Calling this function with src.remaining == 0 is undefined.
+     *
+     * <p>将明文写入 OpenSSL 内部 BIO；非 direct {@link ByteBuffer} 经临时 direct 缓冲拷贝。</p>
      */
     private int writePlaintextData(final ByteBuffer src, int len) {
         final int pos = src.position();
@@ -789,7 +799,7 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
     @Override
     public final SSLEngineResult wrap(
             final ByteBuffer[] srcs, int offset, final int length, final ByteBuffer dst) throws SSLException {
-        // Throw required runtime exceptions
+        // SSLEngine 规范：null/只读/越界检查
         checkNotNullWithIAE(srcs, "srcs");
         checkNotNullWithIAE(dst, "dst");
 
@@ -805,14 +815,14 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
 
         synchronized (this) {
             if (isOutboundDone()) {
-                // All drained in the outbound buffer
+                // 出站已关闭：若入站亦完成则 CLOSED，否则仍需 unwrap
                 return isInboundDone() || destroyed ? CLOSED_NOT_HANDSHAKING : NEED_UNWRAP_CLOSED;
             }
 
             int bytesProduced = 0;
             ByteBuf bioReadCopyBuf = null;
             try {
-                // Setup the BIO buffer so that we directly write the encryption results into dst.
+                // direct dst 时让 BIO 直接写入目标缓冲，减少拷贝
                 if (dst.isDirect()) {
                     SSL.bioSetByteBuffer(networkBIO, bufferAddress(dst) + dst.position(), dst.remaining(),
                             true);
@@ -1883,12 +1893,7 @@ public class ReferenceCountedOpenSslEngine extends SSLEngine implements Referenc
             case STARTED_IMPLICITLY:
                 checkEngineClosed();
 
-                // A user did not start handshake by calling this method by him/herself,
-                // but handshake has been started already by wrap() or unwrap() implicitly.
-                // Because it's the user's first time to call this method, it is unfair to
-                // raise an exception.  From the user's standpoint, he or she never asked
-                // for renegotiation.
-
+                // 用户首次显式调用，但 wrap/unwrap 已隐式启动握手：升级为 EXPLICIT 而非抛重协商异常
                 handshakeState = HandshakeState.STARTED_EXPLICITLY; // Next time this method is invoked by the user,
                 calculateMaxWrapOverhead();
                 // we should raise an exception.

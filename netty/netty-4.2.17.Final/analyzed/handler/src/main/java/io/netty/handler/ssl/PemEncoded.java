@@ -20,12 +20,17 @@ import io.netty.buffer.ByteBufHolder;
 
 /**
  * A marker interface for PEM encoded values.
+ *
+ * <p>标记 PEM 编码内容的 {@link ByteBufHolder} 接口；实现类通过 {@link #isSensitive()} 区分私钥等
+ * 敏感材料与证书，以便释放时决定是否清零 {@link ByteBuf}。</p>
  */
 interface PemEncoded extends ByteBufHolder {
 
     /**
      * Returns {@code true} if the PEM encoded value is considered
      * sensitive information such as a private key.
+     *
+     * <p>敏感 PEM（如私钥）返回 {@code true}，{@code deallocate} 时会擦除底层字节。</p>
      */
     boolean isSensitive();
 

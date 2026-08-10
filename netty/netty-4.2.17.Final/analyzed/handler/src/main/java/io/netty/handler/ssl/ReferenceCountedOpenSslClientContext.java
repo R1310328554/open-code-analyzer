@@ -42,9 +42,14 @@ import java.util.Set;
  * <p>Instances of this class <strong>must not</strong> be released before any {@link ReferenceCountedOpenSslEngine}
  * which depends upon the instance of this class is released. Otherwise if any method of
  * {@link ReferenceCountedOpenSslEngine} is called which uses this class's JNI resources the JVM may crash.
+ *
+ * <p>客户端 {@link SslContext} 的引用计数 OpenSSL 实现：配置 trust/客户端证书回调、
+ * {@link SSL_CVERIFY_OPTIONAL} 校验服务端证书；须显式 {@link #release()}，且不得早于依赖它的
+ * {@link ReferenceCountedOpenSslEngine} 释放。</p>
  */
 public final class ReferenceCountedOpenSslClientContext extends ReferenceCountedOpenSslContext {
 
+    /** 客户端证书可选密钥类型，映射 TLS ClientCertificateType。 */
     private static final String[] SUPPORTED_KEY_TYPES = {
             OpenSslKeyMaterialManager.KEY_TYPE_RSA,
             OpenSslKeyMaterialManager.KEY_TYPE_DH_RSA,
@@ -53,6 +58,7 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
             OpenSslKeyMaterialManager.KEY_TYPE_EC_EC
     };
 
+    /** 客户端会话缓存与 ticket 配置上下文。 */
     private final OpenSslSessionContext sessionContext;
 
     ReferenceCountedOpenSslClientContext(X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
@@ -112,6 +118,7 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
                                                    ResumptionController resumptionController,
                                                    boolean fallbackToJdkProviders)
             throws SSLException {
+        // key 与 keyCertChain 必须同时 null 或同时非 null
         if (key == null && keyCertChain != null || key != null && keyCertChain == null) {
             throw new IllegalArgumentException(
                     "Either both keyCertChain and key needs to be null or none of them");
@@ -119,8 +126,7 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
         OpenSslKeyMaterialProvider keyMaterialProvider = null;
         try {
             try {
-                // Check if we have an alternative key that requires special handling
-                // Only detect alternative keys when we have an actual key object that can't be accessed directly
+                // 替代签名源（HSM/智能卡等 getEncoded()==null）且允许 JDK Provider 回退
                 if (keyManagerFactory == null && key != null && key.getEncoded() == null) {
                     if (!fallbackToJdkProviders) {
                         throw new SSLException("Private key requiring alternative signature provider detected " +
@@ -139,7 +145,7 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
                         setKeyMaterial(ctx, keyCertChain, key, keyPassword);
                     }
                 } else {
-                    // javadocs state that keyManagerFactory has precedent over keyCertChain
+                    // KeyManagerFactory 优先于内联 keyCertChain
                     if (keyManagerFactory == null && keyCertChain != null) {
                         keyManagerFactory = certChainToKeyManagerFactory(keyCertChain, key, keyPassword, keyStore);
                     }
@@ -158,8 +164,7 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
                 throw new SSLException("failed to set certificate and key", e);
             }
 
-            // On the client side we always need to use SSL_CVERIFY_OPTIONAL (which will translate to SSL_VERIFY_PEER)
-            // to ensure that when the TrustManager throws we will produce the correct alert back to the server.
+            // 客户端固定 SSL_CVERIFY_OPTIONAL，TrustManager 抛错时仍能向服务端回送正确 alert（见 #8942）
             //
             // See:
             //   - https://www.openssl.org/docs/man1.0.2/man3/SSL_CTX_set_verify.html
@@ -177,9 +182,7 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
                 final X509TrustManager manager = chooseTrustManager(
                         trustManagerFactory.getTrustManagers(), resumptionController);
 
-                // IMPORTANT: The callbacks set for verification must be static to prevent memory leak as
-                //            otherwise the context can never be collected. This is because the JNI code holds
-                //            a global reference to the callbacks.
+                // 校验回调须为 static，否则 JNI 全局引用导致 SSL_CTX 无法 GC（#5372）
                 //
                 //            See https://github.com/netty/netty/issues/5372
 
@@ -232,12 +235,14 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
         }
     }
 
+    /** 客户端会话上下文：CLIENT 模式缓存 + {@link OpenSslClientSessionCache}。 */
     static final class OpenSslClientSessionContext extends OpenSslSessionContext {
         OpenSslClientSessionContext(ReferenceCountedOpenSslContext context, OpenSslKeyMaterialProvider provider) {
             super(context, provider, SSL.SSL_SESS_CACHE_CLIENT, new OpenSslClientSessionCache(context.engines));
         }
     }
 
+    /** 非 Extended TM 时的服务端证书校验回调。 */
     private static final class TrustManagerVerifyCallback extends AbstractCertificateVerifier {
         private final X509TrustManager manager;
 
@@ -269,6 +274,7 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
         }
     }
 
+    /** OpenSSL 请求客户端证书时的 native 回调：选择 alias 并设置密钥材料。 */
     private static final class OpenSslClientCertificateCallback implements CertificateCallback {
         private final OpenSslEngineMap engines;
         private final OpenSslKeyMaterialManager keyManagerHolder;
@@ -282,7 +288,7 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
         @Override
         public void handle(long ssl, byte[] keyTypeBytes, byte[][] asn1DerEncodedPrincipals) throws Exception {
             final ReferenceCountedOpenSslEngine engine = engines.get(ssl);
-            // May be null if it was destroyed in the meantime.
+            // 并发 destroy 时 engine 可能已为 null
             if (engine == null) {
                 return;
             }
@@ -314,10 +320,12 @@ public final class ReferenceCountedOpenSslClientContext extends ReferenceCounted
          *        See https://www.ietf.org/assignments/tls-parameters/tls-parameters.xml.
          * @return supported key types that can be used in {@code X509KeyManager.chooseClientAlias} and
          *         {@code X509ExtendedKeyManager.chooseEngineClientAlias}.
+         *
+         * <p>将 TLS ClientCertificateType 字节码映射为 KeyManager 密钥类型字符串。</p>
          */
         private static String[] supportedClientKeyTypes(byte[] clientCertificateTypes) {
             if (clientCertificateTypes == null) {
-                // Try all of the supported key types.
+                // 服务端未指定类型时尝试全部支持类型
                 return SUPPORTED_KEY_TYPES.clone();
             }
             Set<String> result = new HashSet<>(clientCertificateTypes.length);

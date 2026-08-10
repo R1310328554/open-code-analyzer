@@ -45,6 +45,9 @@ import javax.net.ssl.X509TrustManager;
  * <p>
  * <strong>Note:</strong> The implementing trust manager class must extend {@code X509ExtendedTrustManager},
  * otherwise this interface will be ignored by the {@link SslHandler}.
+ *
+ * <p>会话_ticket 恢复时 {@link SslHandler} 在握手完成前回调，供 {@link TrustManager} 恢复
+ * 首次握手写入 {@link SSLSession} 的应用状态；须同时继承 {@code X509ExtendedTrustManager} 才会生效。</p>
  */
 public interface ResumableX509ExtendedTrustManager extends X509TrustManager {
     /**
@@ -70,6 +73,9 @@ public interface ResumableX509ExtendedTrustManager extends X509TrustManager {
      * before the session ticket.
      * <p>
      * This method is called on the server-side, restoring sessions for clients.
+     *
+     * <p>服务端恢复客户端会话：根据 ticket 中的证书链与 {@link SSLEngine} 还原会话属性；
+     * 抛 {@link CertificateException} 时本地握手可能仍显示失败，对端或已收到 Finished。</p>
      *
      * @param chain The peer certificate chain.
      * @param engine The begine used for this connection.
@@ -100,6 +106,8 @@ public interface ResumableX509ExtendedTrustManager extends X509TrustManager {
      * before the session ticket.
      * <p>
      * This method is called on the client-side, restoring sessions for servers.
+     *
+     * <p>客户端恢复服务端会话：语义同 {@link #resumeClientTrusted}，方向相反。</p>
      *
      * @param chain The peer certificate chain.
      * @param engine The begine used for this connection.
