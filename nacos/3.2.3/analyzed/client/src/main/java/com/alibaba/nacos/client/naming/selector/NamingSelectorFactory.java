@@ -31,22 +31,25 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
- * Selectors factory.
+ * 命名选择器工厂。
+ *
+ * <p>提供集群、IP 正则、元数据及健康状态等常用 {@link NamingSelector} 的静态构造方法，供订阅回调前过滤实例列表。</p>
  *
  * @author lideyou
  */
 public final class NamingSelectorFactory {
     
+    /** 空选择器：原样返回上下文中的全部实例。 */
     public static final NamingSelector EMPTY_SELECTOR = context -> context::getInstances;
     
+    /** 健康实例选择器：仅保留 {@link Instance#isHealthy()} 为 true 的实例。 */
     public static final NamingSelector HEALTHY_SELECTOR =
         new DefaultNamingSelector(Instance::isHealthy);
     
-    /**
-     * Cluster selector.
-     */
+    /** 按集群名过滤的内部选择器，支持基于 clusterString 的 equals/hashCode。 */
     private static class ClusterSelector extends DefaultNamingSelector {
         
+        /** 排序后的集群名拼接串，用于选择器相等性判定。 */
         private final String clusterString;
         
         public ClusterSelector(Predicate<Instance> filter, String clusterString) {
@@ -72,14 +75,17 @@ public final class NamingSelectorFactory {
         }
     }
     
+    /** 工具类，禁止实例化。 */
     private NamingSelectorFactory() {
     }
     
     /**
-     * Create a cluster selector.
+     * 创建集群选择器。
      *
-     * @param clusters target cluster
-     * @return cluster selector
+     * <p>clusters 为空时返回 {@link #EMPTY_SELECTOR}。</p>
+     *
+     * @param clusters 目标集群名集合
+     * @return 集群选择器
      */
     public static NamingSelector newClusterSelector(Collection<String> clusters) {
         if (CollectionUtils.isNotEmpty(clusters)) {
@@ -93,10 +99,10 @@ public final class NamingSelectorFactory {
     }
     
     /**
-     * Create a IP selector.
+     * 创建 IP 正则选择器。
      *
-     * @param regex regular expression of IP
-     * @return IP selector
+     * @param regex IP 匹配正则表达式
+     * @return IP 选择器
      */
     public static NamingSelector newIpSelector(String regex) {
         if (regex == null) {
@@ -106,21 +112,21 @@ public final class NamingSelectorFactory {
     }
     
     /**
-     * Create a metadata selector.
+     * 创建元数据选择器（全部键值均需匹配）。
      *
-     * @param metadata metadata that needs to be matched
-     * @return metadata selector
+     * @param metadata 待匹配的元数据键值对
+     * @return 元数据选择器
      */
     public static NamingSelector newMetadataSelector(Map<String, String> metadata) {
         return newMetadataSelector(metadata, false);
     }
     
     /**
-     * Create a metadata selector.
+     * 创建元数据选择器。
      *
-     * @param metadata target metadata
-     * @param isAny    true if any of the metadata needs to be matched, false if all the metadata need to be matched.
-     * @return metadata selector
+     * @param metadata 目标元数据
+     * @param isAny {@code true} 表示任一键值匹配即可；{@code false} 表示全部键值均需匹配
+     * @return 元数据选择器
      */
     public static NamingSelector newMetadataSelector(Map<String, String> metadata, boolean isAny) {
         if (metadata == null) {
@@ -143,6 +149,7 @@ public final class NamingSelectorFactory {
         return new DefaultNamingSelector(filter);
     }
     
+    /** 将集群名集排序后用逗号拼接，保证相同集合产生唯一字符串。 */
     public static String getUniqueClusterString(Collection<String> cluster) {
         TreeSet<String> treeSet = new TreeSet<>(cluster);
         return StringUtils.join(treeSet, ",");

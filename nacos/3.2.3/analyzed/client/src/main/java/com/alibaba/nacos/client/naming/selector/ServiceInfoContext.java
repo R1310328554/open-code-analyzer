@@ -23,14 +23,18 @@ import com.alibaba.nacos.api.naming.selector.NamingContext;
 import java.util.List;
 
 /**
- * Service info context.
+ * 基于 {@link ServiceInfo} 的命名上下文。
+ *
+ * <p>将本地缓存的服务信息适配为 {@link NamingContext}，供选择器直接读取服务名、分组、集群与实例列表。</p>
  *
  * @author xiweng.yy
  */
 public class ServiceInfoContext implements NamingContext {
     
+    /** 底层服务信息快照。 */
     private final ServiceInfo serviceInfo;
     
+    /** 使用指定 {@link ServiceInfo} 构造命名上下文。 */
     public ServiceInfoContext(ServiceInfo serviceInfo) {
         this.serviceInfo = serviceInfo;
     }

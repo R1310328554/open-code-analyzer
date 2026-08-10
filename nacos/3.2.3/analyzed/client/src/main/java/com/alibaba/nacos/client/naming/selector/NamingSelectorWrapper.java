@@ -31,23 +31,31 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Naming selector wrapper.
+ * 命名选择器包装器。
+ *
+ * <p>将 {@link NamingSelector} 与 {@link EventListener} 绑定，在 {@link InstancesChangeEvent} 到达时按选择器过滤实例并构造 {@link NamingChangeEvent} 回调监听器。</p>
  *
  * @author lideyou
  */
 public class NamingSelectorWrapper
     extends AbstractSelectorWrapper<NamingSelector, NamingEvent, InstancesChangeEvent> {
     
+    /** 服务名。 */
     private String serviceName;
     
+    /** 分组名。 */
     private String groupName;
     
+    /** 集群列表（逗号分隔）。 */
     private String clusters;
     
+    /** 可复用的命名上下文，避免每次选择都分配新对象。 */
     private final InnerNamingContext namingContext = new InnerNamingContext();
     
+    /** 内部 {@link NamingContext} 实现，持有当前待筛选实例列表。 */
     private class InnerNamingContext implements NamingContext {
         
+        /** 当前上下文中的实例列表。 */
         private List<Instance> instances;
         
         @Override
@@ -70,15 +78,18 @@ public class NamingSelectorWrapper
             return instances;
         }
         
+        /** 更新待筛选实例列表（包内可见）。 */
         private void setInstances(List<Instance> instances) {
             this.instances = instances;
         }
     }
     
+    /** 构造包装器，仅绑定选择器与监听器（服务维度由后续 setter 或子类填充）。 */
     public NamingSelectorWrapper(NamingSelector selector, EventListener listener) {
         super(selector, new NamingListenerInvoker(listener));
     }
     
+    /** 构造包装器并绑定服务名、分组、集群与选择器、监听器。 */
     public NamingSelectorWrapper(String serviceName, String groupName, String clusters,
         NamingSelector selector,
         EventListener listener) {
@@ -88,11 +99,13 @@ public class NamingSelectorWrapper
         this.clusters = clusters;
     }
     
+    /** 事件非空且含 hosts 与 instancesDiff 时才可进入选择流程。 */
     @Override
     protected boolean isSelectable(InstancesChangeEvent event) {
         return event != null && event.getHosts() != null && event.getInstancesDiff() != null;
     }
     
+    /** 仅当存在新增、删除或修改实例时才回调监听器。 */
     @Override
     public boolean isCallable(NamingEvent event) {
         if (event == null) {
@@ -102,6 +115,7 @@ public class NamingSelectorWrapper
         return changeEvent.isAdded() || changeEvent.isRemoved() || changeEvent.isModified();
     }
     
+    /** 对当前全量实例与各 diff 分片分别执行选择器，组装 {@link NamingChangeEvent}。 */
     @Override
     protected NamingEvent buildListenerEvent(InstancesChangeEvent event) {
         List<Instance> currentIns = Collections.emptyList();
@@ -124,11 +138,13 @@ public class NamingSelectorWrapper
         return new NamingChangeEvent(serviceName, groupName, clusters, currentIns, newDiff);
     }
     
+    /** 在命名上下文中执行选择器并返回结果列表。 */
     private List<Instance> doSelect(List<Instance> instances) {
         NamingContext context = getNamingContext(instances);
         return this.getSelector().select(context).getResult();
     }
     
+    /** 填充内部上下文并返回供选择器使用的 {@link NamingContext}。 */
     private NamingContext getNamingContext(final List<Instance> instances) {
         namingContext.setInstances(instances);
         return namingContext;

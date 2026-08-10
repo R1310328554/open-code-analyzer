@@ -21,21 +21,27 @@ import com.alibaba.nacos.common.task.AbstractExecuteTask;
 import org.slf4j.Logger;
 
 /**
- * Nacos client abstract redo task.
+ * 客户端 Redo 定时任务抽象基类。
+ *
+ * <p>由 {@link AbstractRedoService} 调度；连接断开时跳过执行，连接正常时调用子类 {@link #redoData()}。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractRedoTask<S extends AbstractRedoService> extends AbstractExecuteTask {
     
+    /** 模块日志器。 */
     private final Logger logger;
     
+    /** 关联的 redo 服务实例。 */
     private final S redoService;
     
+    /** 绑定日志器与 redo 服务。 */
     public AbstractRedoTask(Logger logger, S redoService) {
         this.logger = logger;
         this.redoService = redoService;
     }
     
+    /** 未连接时跳过；否则执行 redo 并捕获异常避免任务终止。 */
     @Override
     public void run() {
         if (!redoService.isConnected()) {
@@ -50,12 +56,13 @@ public abstract class AbstractRedoTask<S extends AbstractRedoService> extends Ab
     }
     
     /**
-     * Do actual redo task.
+     * 子类实现具体 redo 逻辑（注册/注销重试等）。
      *
-     * @throws NacosException if redo task failed.
+     * @throws NacosException redo 失败时抛出
      */
     protected abstract void redoData() throws NacosException;
     
+    /** 返回关联的 redo 服务。 */
     protected S getRedoService() {
         return redoService;
     }

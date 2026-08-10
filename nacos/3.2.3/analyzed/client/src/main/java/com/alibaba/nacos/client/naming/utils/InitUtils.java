@@ -32,7 +32,9 @@ import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
- * Init utils.
+ * 命名客户端初始化工具。
+ *
+ * <p>负责解析 namespace、Web 上下文路径及 Jackson 选择器子类型注册等启动期配置。</p>
  *
  * @author liaochuntao
  * @author deshao
@@ -40,11 +42,12 @@ import com.alibaba.nacos.common.utils.StringUtils;
 public class InitUtils {
     
     /**
-     * Add a difference to the name naming. This method simply initializes the namespace for Naming. Config
-     * initialization is not the same, so it cannot be reused directly.
+     * 为命名模块解析 namespace（与 Config 初始化逻辑不同，不可直接复用）。
      *
-     * @param properties properties
-     * @return namespace
+     * <p>依次尝试云环境 ANS、ALIWARE 环境变量、JVM 与配置文件，最终回退 {@link UtilAndComs#DEFAULT_NAMESPACE_ID}。</p>
+     *
+     * @param properties 客户端配置
+     * @return 解析后的 namespace ID
      */
     public static String initNamespaceForNaming(NacosClientProperties properties) {
         String tmpNamespace = null;
@@ -89,9 +92,9 @@ public class InitUtils {
     }
     
     /**
-     * Init web root context.
+     * 根据 {@link PropertyKeyConst#CONTEXT_PATH} 初始化 Web 根路径与命名 HTTP URL 常量。
      *
-     * @param properties properties
+     * @param properties 客户端配置
      * @since 1.4.1
      */
     public static void initWebRootContext(NacosClientProperties properties) {
@@ -104,19 +107,12 @@ public class InitUtils {
     }
     
     /**
-     * Register subType for serialization.
+     * 预注册 Jackson 选择器子类型，避免 classloader 延迟加载导致反序列化失败。
      *
-     * <p>
-     * Now these subType implementation class has registered in static code. But there are some problem for classloader.
-     * The implementation class will be loaded when they are used, which will make deserialize before register.
-     * </p>
-     *
-     * <p>
-     * 子类实现类中的静态代码串中已经向Jackson进行了注册，但是由于classloader的原因，只有当 该子类被使用的时候，才会加载该类。这可能会导致Jackson先进性反序列化，再注册子类，从而导致 反序列化失败。
-     * </p>
+     * <p>实现类静态块中虽已注册，但若子类尚未加载，Jackson 可能先反序列化后注册而失败。</p>
      */
     public static void initSerialization() {
-        // TODO register in implementation class or remove subType
+        // TODO：考虑在实现类中注册或移除 subType 机制
         JacksonUtils.registerSubtype(NoneSelector.class, SelectorType.none.name());
         JacksonUtils.registerSubtype(ExpressionSelector.class, SelectorType.label.name());
     }

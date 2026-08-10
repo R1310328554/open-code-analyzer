@@ -24,28 +24,37 @@ import java.io.File;
 import com.alibaba.nacos.client.env.NacosClientProperties;
 
 /**
- * Cache Dir Utils.
+ * 命名客户端磁盘缓存目录工具。
+ *
+ * <p>根据 JVM 属性、客户端配置与 namespace 解析本地快照目录路径，供 {@link com.alibaba.nacos.client.naming.cache.DiskCache} 使用。</p>
  *
  * @author zongkang.guo
  */
 public class CacheDirUtil {
     
+    /** 全局缓存目录（init 后有效）。 */
     private static String cacheDir;
     
+    /** JVM 快照根路径属性键。 */
     private static final String JM_SNAPSHOT_PATH_PROPERTY = "JM.SNAPSHOT.PATH";
     
+    /** 缓存路径中的 nacos 子目录名。 */
     private static final String FILE_PATH_NACOS = "nacos";
     
+    /** 缓存路径中的 naming 子目录名。 */
     private static final String FILE_PATH_NAMING = "naming";
     
+    /** 用户主目录 JVM 属性键。 */
     private static final String USER_HOME_PROPERTY = "user.home";
     
     /**
-     * Init cache dir.
+     * 初始化并返回命名磁盘缓存目录。
      *
-     * @param namespace  namespace.
-     * @param properties nacosClientProperties.
-     * @return
+     * <p>优先使用 {@code JM.SNAPSHOT.PATH}，否则回退至 {@code user.home}/nacos/naming/{namespace}。</p>
+     *
+     * @param namespace 命名空间 ID
+     * @param properties 客户端配置
+     * @return 缓存目录绝对路径
      */
     public static String initCacheDir(String namespace, NacosClientProperties properties) {
         
@@ -72,6 +81,7 @@ public class CacheDirUtil {
         return cacheDir;
     }
     
+    /** 返回最近一次 init 设置的缓存目录。 */
     public static String getCacheDir() {
         return cacheDir;
     }

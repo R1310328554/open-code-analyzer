@@ -35,26 +35,36 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Abstract redo service.
+ * 客户端 Redo 服务抽象基类。
+ *
+ * <p>监听 gRPC 连接事件，断连时将缓存标记为未注册并定时调度 {@link AbstractRedoTask} 重试；各模块通过子类实现具体 redo 逻辑。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractRedoService implements ConnectionEventListener, Closeable {
     
+    /** redo 线程名格式（module 占位）。 */
     private static final String REDO_THREAD_NAME_PATTERN = "com.alibaba.nacos.client.%s.redo";
     
+    /** 模块日志器。 */
     private final Logger logger;
     
+    /** 定时 redo 调度线程池。 */
     private final ScheduledExecutorService redoExecutor;
     
+    /** 按业务类型与 key 索引的 redo 数据映射。 */
     private final Map<Class<?>, Map<String, RedoData<?>>> redoDataMap;
     
+    /** redo 线程池大小（来自配置）。 */
     private int redoThreadCount;
     
+    /** redo 任务固定延迟间隔（毫秒）。 */
     private long redoDelayTime;
     
+    /** gRPC 是否已连接。 */
     private volatile boolean connected = false;
     
+    /** 从配置初始化 redo 参数并创建命名线程池。 */
     protected AbstractRedoService(Logger logger, NacosClientProperties properties, String module) {
         this.logger = logger;
         setProperties(properties);
@@ -63,6 +73,7 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
         this.redoDataMap = new ConcurrentHashMap<>(2);
     }
     
+    /** 读取 {@link PropertyKeyConst#REDO_DELAY_TIME} 等 redo 相关配置。 */
     private void setProperties(NacosClientProperties properties) {
         redoDelayTime = properties.getLong(PropertyKeyConst.REDO_DELAY_TIME,
             Constants.DEFAULT_REDO_DELAY_TIME);
@@ -70,24 +81,27 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
             Constants.DEFAULT_REDO_THREAD_COUNT);
     }
     
+    /** 以固定延迟启动 redo 定时任务。 */
     protected void startRedoTask() {
         this.redoExecutor.scheduleWithFixedDelay(buildRedoTask(), redoDelayTime, redoDelayTime,
             TimeUnit.MILLISECONDS);
     }
     
     /**
-     * Build redo task to do redo work.
+     * 由子类构造具体 redo 任务。
      *
-     * @return redo task
+     * @return redo 任务实例
      */
     protected abstract AbstractRedoTask buildRedoTask();
     
+    /** 连接建立时标记 connected 为 true。 */
     @Override
     public void onConnected(Connection connection) {
         connected = true;
         logger.info("Grpc connection connect");
     }
     
+    /** 断连时将所有 redo 数据标记为未注册，触发后续重试注册。 */
     @Override
     public void onDisConnect(Connection connection) {
         connected = false;
@@ -101,6 +115,7 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
         logger.warn("mark to redo completed");
     }
     
+    /** 清空缓存并立即关闭 redo 线程池。 */
     @Override
     public void shutdown() {
         logger.info("Shutdown grpc redo service executor {}", redoExecutor);
@@ -108,16 +123,17 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
         redoExecutor.shutdownNow();
     }
     
+    /** 返回当前 gRPC 连接状态。 */
     public boolean isConnected() {
         return connected;
     }
     
     /**
-     * Cache the redo data by class and redo data key.
+     * 按类型与 key 缓存 redo 数据。
      *
-     * @param key       key of redo data
-     * @param redoData  the redo data
-     * @param clazz     clazz of stored in {@link RedoData}.
+     * @param key redo 数据键
+     * @param redoData redo 数据
+     * @param clazz {@link RedoData} 中负载的类型
      */
     public <T> void cachedRedoData(String key, RedoData<T> redoData, Class<T> clazz) {
         Map<String, RedoData<?>> actualRedoData = this.redoDataMap.computeIfAbsent(clazz,
@@ -128,10 +144,10 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
     }
     
     /**
-     * Remove data for redo.
+     * 移除不再期望注册的 redo 条目。
      *
-     * @param key       key of redo data
-     * @param clazz     clazz of stored in {@link RedoData}.
+     * @param key redo 数据键
+     * @param clazz 负载类型
      */
     public <T> void removeRedoData(String key, Class<T> clazz) {
         Map<String, RedoData<?>> actualRedoData = this.redoDataMap.computeIfAbsent(clazz,
@@ -145,10 +161,10 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
     }
     
     /**
-     * Data register successfully, mark registered status as {@code true}.
+     * 注册成功后标记 registered 状态。
      *
-     * @param key   key of redo data
-     * @param clazz clazz of stored in {@link RedoData}.
+     * @param key redo 数据键
+     * @param clazz 负载类型
      */
     public <T> void dataRegistered(String key, Class<T> clazz) {
         Map<String, RedoData<?>> actualRedoData = this.redoDataMap.computeIfAbsent(clazz,
@@ -162,10 +178,10 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
     }
     
     /**
-     * Data deregister, mark unregistering status as {@code true}.
+     * 发起注销时标记 unregistering 并清除期望注册。
      *
-     * @param key   key of redo data
-     * @param clazz clazz of stored in {@link RedoData}.
+     * @param key redo 数据键
+     * @param clazz 负载类型
      */
     public <T> void dataDeregister(String key, Class<T> clazz) {
         Map<String, RedoData<?>> actualRedoData = this.redoDataMap.computeIfAbsent(clazz,
@@ -180,10 +196,10 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
     }
     
     /**
-     * Data deregister finished, mark unregistering status as {@code true}.
+     * 注销完成后更新 redo 状态。
      *
-     * @param key   key of redo data
-     * @param clazz clazz of stored in {@link RedoData}.
+     * @param key redo 数据键
+     * @param clazz 负载类型
      */
     public <T> void dataDeregistered(String key, Class<T> clazz) {
         Map<String, RedoData<?>> actualRedoData = this.redoDataMap.computeIfAbsent(clazz,
@@ -197,11 +213,11 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
     }
     
     /**
-     * Judge data has registered to server.
+     * 判断指定 key 的数据是否已在服务端注册。
      *
-     * @param key   key of redo data
-     * @param clazz clazz of stored in {@link RedoData}.
-     * @return {@code true} if registered, otherwise {@code false}
+     * @param key redo 数据键
+     * @param clazz 负载类型
+     * @return 已注册返回 {@code true}
      */
     public boolean isDataRegistered(String key, Class<?> clazz) {
         Map<String, RedoData<?>> actualRedoData = this.redoDataMap.computeIfAbsent(clazz,
@@ -213,9 +229,9 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
     }
     
     /**
-     * Find all redo data which need to do redo.
+     * 查找指定类型下所有需要执行 redo 的数据。
      *
-     * @return set of {@link RedoData} need to do redo.
+     * @return 待 redo 的 {@link RedoData} 集合
      */
     public <T> Set<RedoData<T>> findRedoData(Class<T> clazz) {
         Set<RedoData<T>> result = new HashSet<>();
@@ -232,11 +248,11 @@ public abstract class AbstractRedoService implements ConnectionEventListener, Cl
     }
     
     /**
-     * get Cache redo data.
+     * 获取缓存的 redo 数据。
      *
-     * @param key   key of redo data
-     * @param clazz clazz of stored in {@link RedoData}.
-     * @return cache redo data
+     * @param key redo 数据键
+     * @param clazz 负载类型
+     * @return 缓存的 redo 数据，不存在时返回 null
      */
     public <T> RedoData<T> getRedoData(String key, Class<?> clazz) {
         Map<String, RedoData<?>> actualRedoData = this.redoDataMap.computeIfAbsent(clazz,

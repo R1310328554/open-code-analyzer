@@ -21,25 +21,32 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Generic Poller.
+ * 通用轮询器实现。
+ *
+ * <p>基于原子递增索引对列表循环取模，提供简单的 round-robin 选取。</p>
  *
  * @author nkorange
  */
 public class GenericPoller<T> implements Poller<T> {
     
+    /** 轮询游标（线程安全递增）。 */
     private final AtomicInteger index = new AtomicInteger(0);
     
+    /** 候选项列表。 */
     private List<T> items = new ArrayList<>();
     
+    /** 使用指定列表创建轮询器。 */
     public GenericPoller(List<T> items) {
         this.items = items;
     }
     
+    /** 返回下一项（索引对 size 取模）。 */
     @Override
     public T next() {
         return items.get(Math.abs(index.getAndIncrement() % items.size()));
     }
     
+    /** 用新列表创建轮询器实例（不保留旧索引）。 */
     @Override
     public Poller<T> refresh(List<T> items) {
         return new GenericPoller<>(items);

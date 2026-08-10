@@ -22,20 +22,26 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Chooser.
+ * 带权随机与轮询选择器。
+ *
+ * <p>维护 {@link Pair} 权重列表，支持均匀随机、按权重随机及 {@link Poller} 轮询；refresh 时重建累积概率数组与轮询器。</p>
  *
  * @author alibaba
  */
 public class Chooser<K, T> {
     
+    /** 选择器唯一标识（如 serviceKey），用于 equals/hashCode。 */
     private final K uniqueKey;
     
+    /** 当前权重与轮询状态引用（volatile 保证 refresh 可见性）。 */
     private volatile Ref<T> ref;
     
+    /** 创建空项列表的选择器。 */
     public Chooser(K uniqueKey) {
         this(uniqueKey, new ArrayList<>());
     }
     
+    /** 使用初始权重对创建选择器并计算累积权重。 */
     public Chooser(K uniqueKey, List<Pair<T>> pairs) {
         Ref<T> ref = new Ref<>(pairs);
         ref.refresh();
@@ -44,9 +50,9 @@ public class Chooser<K, T> {
     }
     
     /**
-     * Random get one item.
+     * 均匀随机选取一项。
      *
-     * @return item
+     * @return 选中项，列表为空时返回 null
      */
     public T random() {
         List<T> items = ref.items;
@@ -60,9 +66,11 @@ public class Chooser<K, T> {
     }
     
     /**
-     * Random get one item with weight.
+     * 按权重随机选取一项。
      *
-     * @return item
+     * <p>使用预计算的累积概率数组与二分查找定位区间。</p>
+     *
+     * @return 选中项
      */
     public T randomWithWeight() {
         Ref<T> ref = this.ref;
@@ -85,24 +93,24 @@ public class Chooser<K, T> {
                 "Cumulative Weight wrong , the array length is equal to 0.");
         }
         
-        /* This should never happen, but it ensures we will return a correct
-         * object in case there is some floating point inequality problem
-         * wrt the cumulative probabilities. */
+        /* 浮点精度导致未命中区间时的兜底：返回最后一项（参见 ChooserTest）。 */
         return ref.items.get(ref.items.size() - 1);
     }
     
+    /** 返回选择器唯一键。 */
     public K getUniqueKey() {
         return uniqueKey;
     }
     
+    /** 返回当前权重引用（测试或诊断用）。 */
     public Ref<T> getRef() {
         return ref;
     }
     
     /**
-     * refresh items.
+     * 刷新候选项与权重，保留原轮询进度。
      *
-     * @param itemsWithWeight items with weight
+     * @param itemsWithWeight 带权重的候选项列表
      */
     public void refresh(List<Pair<T>> itemsWithWeight) {
         Ref<T> newRef = new Ref<>(itemsWithWeight);
@@ -111,14 +119,19 @@ public class Chooser<K, T> {
         this.ref = newRef;
     }
     
+    /** 权重快照与轮询器状态容器。 */
     public class Ref<T> {
         
+        /** 原始带权列表。 */
         private List<Pair<T>> itemsWithWeight = new ArrayList<>();
         
+        /** 有效候选项（权重 &gt; 0）。 */
         private final List<T> items = new ArrayList<>();
         
+        /** 轮询器，refresh 时继承进度。 */
         private Poller<T> poller = new GenericPoller<>(items);
         
+        /** 累积权重上界数组，供按权随机二分查找。 */
         private double[] weights;
         
         public Ref(List<Pair<T>> itemsWithWeight) {
@@ -127,16 +140,14 @@ public class Chooser<K, T> {
             }
         }
         
-        /**
-         * Refresh.
-         */
+        /** 根据 itemsWithWeight 重建 items 与累积权重数组。 */
         public void refresh() {
             double originWeightSum = 0;
             int size = 0;
             for (Pair<T> item : itemsWithWeight) {
                 
                 double weight = item.weight();
-                //ignore item which weight is zero.see test_randomWithWeight_weight0 in ChooserTest
+                // 忽略权重为 0 的项，参见 ChooserTest#test_randomWithWeight_weight0
                 if (weight <= 0) {
                     continue;
                 }

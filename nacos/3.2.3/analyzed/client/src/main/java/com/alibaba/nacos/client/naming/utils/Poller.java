@@ -19,24 +19,26 @@ package com.alibaba.nacos.client.naming.utils;
 import java.util.List;
 
 /**
- * Poller.
+ * 轮询选取策略接口。
+ *
+ * <p>由 {@link GenericPoller} 实现，供 {@link Chooser} 在权重刷新后延续轮询进度。</p>
  *
  * @author nkorange
  */
 public interface Poller<T> {
     
     /**
-     * Get next element selected by poller.
+     * 获取轮询器选中的下一元素。
      *
-     * @return next element
+     * @return 下一元素
      */
     T next();
     
     /**
-     * Update items stored in poller.
+     * 使用新列表更新轮询器。
      *
-     * @param items new item list
-     * @return new poller instance
+     * @param items 新候选项列表
+     * @return 新的轮询器实例
      */
     Poller<T> refresh(List<T> items);
 }

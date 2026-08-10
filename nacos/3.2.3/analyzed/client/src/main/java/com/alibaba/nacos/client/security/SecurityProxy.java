@@ -37,7 +37,9 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Security proxy to update security information.
+ * 客户端安全代理。
+ *
+ * <p>管理 {@link ClientAuthPluginManager} 与各 {@link ClientAuthService} SPI 实现，负责登录、身份上下文注入及服务端列表变更时的插件刷新。</p>
  *
  * @author nkorange
  * @since 1.2.0
@@ -46,13 +48,14 @@ public class SecurityProxy implements Closeable {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityProxy.class);
     
+    /** 客户端鉴权插件管理器。 */
     private ClientAuthPluginManager clientAuthPluginManager;
     
     /**
-     * Construct from serverListManager, nacosRestTemplate, init client auth plugin.
+     * 初始化鉴权插件并订阅服务端列表变更事件。
      *
-     * @param serverListManager a server list manager that client request to.
-     * @Param nacosRestTemplate http request template.
+     * @param serverListManager 客户端请求的服务端列表管理器
+     * @Param nacosRestTemplate HTTP 请求模板
      */
     public SecurityProxy(AbstractServerListManager serverListManager,
         NacosRestTemplate nacosRestTemplate) {
@@ -73,9 +76,9 @@ public class SecurityProxy implements Closeable {
     }
     
     /**
-     * Login all available ClientAuthService instance.
+     * 对所有已加载的 {@link ClientAuthService} 执行登录。
      *
-     * @param properties login identity information.
+     * @param properties 登录身份信息（用户名、密码等）
      */
     public void login(Properties properties) {
         if (clientAuthPluginManager.getAuthServiceSpiImplSet().isEmpty()) {
@@ -88,9 +91,10 @@ public class SecurityProxy implements Closeable {
     }
     
     /**
-     * get the context of all nacosRestTemplate instance.
+     * 合并各鉴权插件的登录身份上下文，供 HTTP/gRPC 请求头注入。
      *
-     * @return a combination of all context.
+     * @param resource 请求资源描述
+     * @return 合并后的身份头键值对
      */
     public Map<String, String> getIdentityContext(RequestResource resource) {
         Map<String, String> header = new HashMap<>(1);
@@ -105,14 +109,13 @@ public class SecurityProxy implements Closeable {
         return header;
     }
     
+    /** 关闭所有鉴权插件。 */
     @Override
     public void shutdown() throws NacosException {
         clientAuthPluginManager.shutdown();
     }
     
-    /**
-     * Login again to refresh the accessToken.
-     */
+    /** 设置 reLogin 标志，触发各插件在下次请求前刷新 accessToken。 */
     public void reLogin() {
         if (clientAuthPluginManager.getAuthServiceSpiImplSet().isEmpty()) {
             return;
