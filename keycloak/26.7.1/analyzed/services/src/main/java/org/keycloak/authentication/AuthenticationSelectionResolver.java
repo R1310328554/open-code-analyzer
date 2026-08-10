@@ -33,15 +33,20 @@ import org.keycloak.models.RealmModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 解析向用户展示的认证方式选择列表（{@link AuthenticationSelectionOption}）。
+ * 处理 REQUIRED/ALTERNATIVE 执行与子流组合场景。
+ *
  * Resolves set of AuthenticationSelectionOptions
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 class AuthenticationSelectionResolver {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(AuthenticationSelectionResolver.class);
 
     /**
+     * 构建用户可选认证方式列表：REQUIRED 执行仅含关联凭据，ALTERNATIVE 含同级备选及凭据；凭据顺序按用户/管理员配置。
      * This method creates the list of authenticators that is presented to the user. For a required execution, this is
      * only the credentials associated to the authenticator, and for an alternative execution, this is all other alternative
      * executions in the flow, including the credentials.
@@ -77,6 +82,7 @@ class AuthenticationSelectionResolver {
                 addAllExecutionsFromSubflow(processor, topFlowId, typeAuthExecMap, nonCredentialExecutions);
             }
 
+            // 按用户凭据顺序添加凭据类认证器
             //add credential authenticators in order
             if (processor.getAuthenticationSession().getAuthenticatedUser() != null) {
                 authenticationSelectionList =
@@ -91,6 +97,7 @@ class AuthenticationSelectionResolver {
                         .collect(Collectors.toList());
             }
             else {
+                // 无关联用户：收集不需要用户的凭据认证器
                 // No user associated with session. Check if this flow contains executions linked to authenticators that don't require a user
                 typeAuthExecMap.forEach((key, value) -> {
                     AuthenticatorFactory credbasedAuthenticatorFactory = (AuthenticatorFactory) processor.getSession().getKeycloakSessionFactory().getProviderFactory(Authenticator.class, value.getAuthenticator());
@@ -101,11 +108,13 @@ class AuthenticationSelectionResolver {
                 });
             }
 
+            // 添加其余非凭据认证器
             //add all other authenticators
             for (AuthenticationExecutionModel exec : nonCredentialExecutions) {
                 authenticationSelectionList.add(new AuthenticationSelectionOption(processor.getSession(), exec));
             }
 
+            // 无用户凭据认证器选项排在常规选项之后
             // Add options for userless credential based authenticators AFTER regular authenticators options
             authenticationSelectionList.addAll(userlessCredBasedAuthenticationSelectionList);
         }
@@ -117,6 +126,7 @@ class AuthenticationSelectionResolver {
 
 
     /**
+     * 返回创建认证方式列表时需考虑的“最高层”子流 ID（跨子流 ALTERNATIVE 场景）。
      * Return the flowId of the "highest" subflow, which we need to take into account when creating list of authentication mechanisms
      * shown to the user.
      *
@@ -139,6 +149,7 @@ class AuthenticationSelectionResolver {
 
         while (true) {
             if (execution.isAlternative()) {
+                // ALTERNATIVE 执行需考虑父流以列出全部备选
                 //Consider parent flow as we need to get all alternative executions to be able to list their credentials
                 flowId = execution.getParentFlow();
             } else if (execution.isRequired()  || execution.isConditional()) {
@@ -146,6 +157,7 @@ class AuthenticationSelectionResolver {
                     flowId = execution.getFlowId();
                 }
 
+                // 子流首个 REQUIRED 执行需上溯父流
                 // Find the corresponding execution. If it is 1st REQUIRED execution in the particular subflow, we need to consider parent flow as well
                 List<AuthenticationExecutionModel> executions = realm.getAuthenticationExecutionsStream(execution.getParentFlow())
                         .collect(Collectors.toList());
@@ -166,9 +178,11 @@ class AuthenticationSelectionResolver {
     }
 
 
+    // 处理单个非子流认证执行，填充 typeAuthExecMap 与 nonCredentialExecutions
     // Process single authenticaion execution, which does NOT point to authentication flow.
     // Fill the typeAuthExecMap and nonCredentialExecutions accordingly
     private static void addSimpleAuthenticationExecution(AuthenticationProcessor processor, AuthenticationExecutionModel execution, Map<String, AuthenticationExecutionModel> typeAuthExecMap, List<AuthenticationExecutionModel> nonCredentialExecutions) {
+        // 跳过已处理执行
         // Don't add already processed executions
         if (DefaultAuthenticationFlow.isProcessed(processor, execution)) {
             return;
@@ -185,6 +199,7 @@ class AuthenticationSelectionResolver {
 
 
     /**
+     * 递归收集指定子流下全部认证机制，填充 typeAuthExecMap 与 nonCredentialExecutions。
      * Fill the typeAuthExecMap and nonCredentialExecutions collections with all available authentication mechanisms for the particular subflow with
      * given flowId
      *
@@ -204,12 +219,14 @@ class AuthenticationSelectionResolver {
         List<AuthenticationExecutionModel> alternativeList = new ArrayList<>();
         flow.fillListsOfExecutions(processor.getRealm().getAuthenticationExecutionsStream(flowId), requiredList, alternativeList);
 
+        // REQUIRED 子流仅收集首个有效执行
         // If requiredList is not empty, we're going to collect just very first execution from the flow
         if (!requiredList.isEmpty()) {
             AuthenticationExecutionModel requiredExecution = requiredList.stream().filter(ex -> {
 
                 if (ex.isRequired()) return true;
 
+                // 条件执行需判断条件是否满足
                 // For conditional execution, we must check if condition is true. Otherwise return false, which means trying next
                 // requiredExecution in the list
                 return !flow.isConditionalSubflowDisabled(ex);
@@ -226,6 +243,7 @@ class AuthenticationSelectionResolver {
 
             FormAuthenticatorFactory factory = (FormAuthenticatorFactory) processor.getSession().getKeycloakSessionFactory().getProviderFactory(FormAuthenticator.class, requiredExecution.getAuthenticator());
 
+            // 递归收集 REQUIRED 子流中的凭据
             // Recursively add credentials from required execution
             if (requiredExecution.isAuthenticatorFlow() && factory == null) {
                 return addAllExecutionsFromSubflow(processor, requiredExecution.getFlowId(), typeAuthExecMap, nonCredentialExecutions);
@@ -234,6 +252,7 @@ class AuthenticationSelectionResolver {
                 return true;
             }
         } else {
+            // 遍历全部 ALTERNATIVE 执行
             // We're going through all the alternatives
             boolean anyAdded = false;
 

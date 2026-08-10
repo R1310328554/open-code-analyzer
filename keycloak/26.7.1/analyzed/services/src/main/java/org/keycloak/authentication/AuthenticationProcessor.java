@@ -85,48 +85,79 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.light.LightweightUserAdapter.isLightweightUser;
 
 /**
+ * 认证流程处理器：驱动浏览器/客户端认证流、执行步骤、处理异常与会话附加。
+ * 封装 {@link AuthenticationFlowContext} 的 {@link Result} 内部类供认证器回调。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class AuthenticationProcessor {
+    /** 当前正在执行的认证步骤 ID（auth note）。 */
     public static final String CURRENT_AUTHENTICATION_EXECUTION = "current.authentication.execution";
+    /** 上次已处理的执行步骤 ID。 */
     public static final String LAST_PROCESSED_EXECUTION = "last.processed.execution";
+    /** 当前认证流路径片段。 */
     public static final String CURRENT_FLOW_PATH = "current.flow.path";
+    /** 分叉会话来源 tab ID。 */
     public static final String FORKED_FROM = "forked.from";
+    /** 本次认证使用的凭据类型集合。 */
     public static final String AUTHN_CREDENTIALS = "authn.credentials";
 
+    /** 身份代理（broker）会话 ID。 */
     public static final String BROKER_SESSION_ID = "broker.session.id";
+    /** 身份代理用户 ID。 */
     public static final String BROKER_USER_ID = "broker.user.id";
+    /** 被动登录转发标志。 */
     public static final String FORWARDED_PASSIVE_LOGIN = "forwarded.passive.login";
 
+    // 为 true 时渲染认证方式选择页（通常由“尝试其他方式”链接触发）
     // Boolean flag, which is true when authentication-selector screen should be rendered (typically displayed when user clicked on 'try another way' link)
+    /** 认证选择器页面是否已展示。 */
     public static final String AUTHENTICATION_SELECTOR_SCREEN_DISPLAYED = "auth.selector.screen.rendered";
 
+    // 客户端会话 note：标记首次创建是否为 offline 会话
     // Boolean note in the client session indicating it was first created for offline session
+    /** 首次 offline access 标志 note 键。 */
     public static final String FIRST_OFFLINE_ACCESS = "first.offline.access";
 
+    /** 日志记录器。 */
     protected static final Logger logger = Logger.getLogger(AuthenticationProcessor.class);
+    /** 当前 realm。 */
     protected RealmModel realm;
+    /** 关联的用户会话（认证完成后附加）。 */
     protected UserSessionModel userSession;
+    /** 当前认证会话。 */
     protected AuthenticationSessionModel authenticationSession;
+    /** 客户端连接信息。 */
     protected ClientConnection connection;
+    /** JAX-RS URI 信息。 */
     protected UriInfo uriInfo;
+    /** Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 事件构建器。 */
     protected EventBuilder event;
+    /** 当前 HTTP 请求。 */
     protected HttpRequest request;
+    /** 认证流 ID。 */
     protected String flowId;
+    /** 认证流 URL 路径段。 */
     protected String flowPath;
 
 
+    /** 是否为浏览器认证流。 */
     protected boolean browserFlow;
+    /** 暴力破解保护器（懒加载）。 */
     protected BruteForceProtector protector;
+    /** 流重置后执行的回调。 */
     protected Runnable afterResetListener;
     /**
+     * 可能由其他认证器转发的错误消息。
      * This could be an error message forwarded from another authenticator
      */
     protected ForwardedFormMessageStore forwardedErrorMessageStore = new ForwardedFormMessageStore(ForwardedFormMessageType.ERROR);
 
     /**
+     * 可能由其他认证器转发的成功/信息消息。
      * This could be an success message forwarded from another authenticator
      */
     protected ForwardedFormMessageStore forwardedSuccessMessageStore = new ForwardedFormMessageStore(ForwardedFormMessageType.SUCCESS);
@@ -136,10 +167,14 @@ public class AuthenticationProcessor {
      */
     protected ForwardedFormMessageStore forwardedInfoMessageStore = new ForwardedFormMessageStore(ForwardedFormMessageType.INFO);
 
+    // 客户端认证上下文
     // Used for client authentication
+    /** 客户端认证时的客户端模型。 */
     protected ClientModel client;
+    /** 客户端认证附加属性。 */
     protected Map<String, String> clientAuthAttributes = new HashMap<>();
 
+    /** 默认构造器。 */
     public AuthenticationProcessor() {
     }
 
@@ -236,6 +271,7 @@ public class AuthenticationProcessor {
     }
 
     /**
+     * 生成 action URL 时附加的路径段。
      * This is the path segment to append when generating an action URL.
      *
      * @param flowPath
@@ -268,6 +304,9 @@ public class AuthenticationProcessor {
         return this;
     }
 
+    /** 生成或刷新客户端会话 action code。
+     * @return 会话码
+     */
     public String generateCode() {
         ClientSessionCode accessCode = new ClientSessionCode(session, getRealm(), getAuthenticationSession());
         authenticationSession.getParentSession().setTimestamp(Time.currentTime());
@@ -291,6 +330,9 @@ public class AuthenticationProcessor {
         return flowPath;
     }
 
+    /** 设置已认证用户并校验冲突。
+     * @param user 用户
+     */
     public void setAutheticatedUser(UserModel user) {
         UserModel previousUser = getAuthenticationSession().getAuthenticatedUser();
         if (previousUser != null && !user.getId().equals(previousUser.getId()))
@@ -299,6 +341,7 @@ public class AuthenticationProcessor {
         getAuthenticationSession().setAuthenticatedUser(user);
     }
 
+    /** 清除认证会话中的已认证用户。 */
     public void clearAuthenticatedUser() {
         getAuthenticationSession().setAuthenticatedUser(null);
     }
@@ -307,6 +350,9 @@ public class AuthenticationProcessor {
         return getClientData(getSession(), getAuthenticationSession());
     }
 
+    /** 编码客户端数据供 URL 传递。
+     * @return 编码后的 client data
+     */
     public static String getClientData(KeycloakSession session, AuthenticationSessionModel authSession) {
         LoginProtocol protocol = session.getProvider(LoginProtocol.class, authSession.getProtocol());
         ClientData clientData = protocol.getClientData(authSession);
@@ -318,6 +364,10 @@ public class AuthenticationProcessor {
         return authenticationSessionManager.signAndEncodeToBase64AuthSessionId(getAuthenticationSession().getParentSession().getId());
     }
 
+    /** 构建刷新/继续认证的 URL。
+     * @param authSessionIdParam 是否附加 auth session id
+     * @return 刷新 URL
+     */
     public URI getRefreshUrl(boolean authSessionIdParam) {
         UriBuilder uriBuilder = LoginActionsService.loginActionsBaseUrl(getUriInfo())
                 .path(AuthenticationProcessor.this.flowPath)
@@ -332,6 +382,7 @@ public class AuthenticationProcessor {
     }
 
 
+    /** 认证/客户端认证流上下文实现，供认证器回调设置状态与挑战响应。 */
     public class Result implements AuthenticationFlowContext, ClientAuthenticationFlowContext {
         AuthenticatorConfigModel authenticatorConfig;
         AuthenticationExecutionModel execution;
@@ -703,7 +754,8 @@ public class AuthenticationProcessor {
         }
 
         @Override
-        public void resetFlow() {
+        /** 重置当前认证会话中的流状态。 */
+    public void resetFlow() {
             this.status = FlowStatus.FLOW_RESET;
         }
 
@@ -766,6 +818,9 @@ public class AuthenticationProcessor {
         }
     }
 
+    /** 记录登录失败（暴力破解计数）。
+     * @param executionId 执行 ID
+     */
     public void logFailure(String executionId) {
         if (realm.isBruteForceProtected()) {
             UserModel user = AuthenticationManager.lookupUserForBruteForceLog(session, realm, authenticationSession);
@@ -777,12 +832,19 @@ public class AuthenticationProcessor {
         }
     }
 
+    /** 判断指定执行是否已成功。
+     * @param model 执行模型
+     * @return 是否 SUCCESS
+     */
     public boolean isSuccessful(AuthenticationExecutionModel model) {
         AuthenticationSessionModel.ExecutionStatus status = authenticationSession.getExecutionStatus().get(model.getId());
         if (status == null) return false;
         return status == AuthenticationSessionModel.ExecutionStatus.SUCCESS;
     }
 
+    /** 处理聚合的浏览器认证异常列表。
+     * @return 错误页响应
+     */
     public Response handleBrowserExceptionList(AuthenticationFlowException e) {
         LoginFormsProvider forms = session.getProvider(LoginFormsProvider.class).setAuthenticationSession(authenticationSession);
         ServicesLogger.LOGGER.failedAuthentication(e);
@@ -823,6 +885,9 @@ public class AuthenticationProcessor {
         return forms.createErrorPage(Response.Status.BAD_REQUEST);
     }
 
+    /** 将浏览器认证异常映射为错误页或分叉流。
+     * @return 响应
+     */
     public Response handleBrowserException(Exception failure) {
         if (failure instanceof AuthenticationFlowException) {
             AuthenticationFlowException e = (AuthenticationFlowException) failure;
@@ -915,6 +980,9 @@ public class AuthenticationProcessor {
 
     }
 
+    /** 将客户端认证异常映射为 OAuth 错误响应。
+     * @return 错误响应
+     */
     public Response handleClientAuthException(Exception failure) {
         if (failure instanceof AuthenticationFlowException) {
             AuthenticationFlowException e = (AuthenticationFlowException) failure;
@@ -939,6 +1007,11 @@ public class AuthenticationProcessor {
         }
     }
 
+    /** 按流 provider 创建 {@link AuthenticationFlow} 实例。
+     * @param flowId 流 ID
+     * @param execution 当前执行（表单流需要）
+     * @return 认证流实现
+     */
     public AuthenticationFlow createFlowExecution(String flowId, AuthenticationExecutionModel execution) {
         AuthenticationFlowModel flow = realm.getAuthenticationFlowById(flowId);
         if (flow == null) {
@@ -955,6 +1028,9 @@ public class AuthenticationProcessor {
         throw new AuthenticationFlowException("Unknown flow provider type", AuthenticationFlowError.INTERNAL_ERROR);
     }
 
+    /** 执行完整浏览器认证：先 {@link #authenticateOnly()}，成功后 {@link #authenticationComplete()}。
+     * @return 挑战响应或完成响应
+     */
     public Response authenticate() throws AuthenticationFlowException {
         logger.debug("AUTHENTICATE");
         Response challenge = authenticateOnly();
@@ -962,6 +1038,9 @@ public class AuthenticationProcessor {
         return authenticationComplete();
     }
 
+    /** 执行客户端认证流。
+     * @return 挑战响应；成功时 {@code null}
+     */
     public Response authenticateClient() throws AuthenticationFlowException {
         logger.debug("AUTHENTICATE CLIENT");
         AuthenticationFlow authenticationFlow = createFlowExecution(this.flowId, null);
@@ -978,6 +1057,9 @@ public class AuthenticationProcessor {
     }
 
 
+    /** 重定向到上次执行的认证 URL。
+     * @return 302 重定向响应
+     */
     public Response redirectToFlow() {
         URI redirect = new AuthenticationFlowURLHelper(session, realm, uriInfo).getLastExecutionUrl(authenticationSession);
 
@@ -995,6 +1077,10 @@ public class AuthenticationProcessor {
         }
     }
 
+    /** 重置给定认证会话：清空用户、执行状态与 auth notes。
+     * @param authSession 认证会话
+     * @param flowPath 流路径
+     */
     public static void resetFlow(AuthenticationSessionModel authSession, String flowPath) {
         logger.debug("RESET FLOW");
         authSession.getParentSession().setTimestamp(Time.currentTime());
@@ -1013,7 +1099,11 @@ public class AuthenticationProcessor {
         authSession.setAuthNote(CURRENT_FLOW_PATH, flowPath);
     }
 
+    // 基于给定会话重建根认证会话与新 tab 会话
     // Recreate new root auth session and new auth session from the given auth session.
+    /** 重建根认证会话并迁移客户端 note。
+     * @return 新认证会话
+     */
     public static AuthenticationSessionModel recreate(KeycloakSession session, AuthenticationSessionModel authSession) {
         AuthenticationSessionManager authenticationSessionManager =  new AuthenticationSessionManager(session);
         RootAuthenticationSessionModel rootAuthenticationSession = authenticationSessionManager.createAuthenticationSession(authSession.getRealm(), true);
@@ -1030,7 +1120,11 @@ public class AuthenticationProcessor {
         return newAuthSession;
     }
 
+    // 克隆认证会话（同根会话、同客户端）
     // Clone new authentication session from the given authSession. New authenticationSession will have same parent (rootSession) and will use same client
+    /** 分叉克隆认证会话，用于 FORK 流。
+     * @return 克隆会话
+     */
     public static AuthenticationSessionModel clone(KeycloakSession session, AuthenticationSessionModel authSession) {
         AuthenticationSessionModel clone = authSession.getParentSession().createAuthenticationSession(authSession.getClient());
 
@@ -1053,6 +1147,10 @@ public class AuthenticationProcessor {
     }
 
 
+    /** 处理用户对某执行步骤提交的 action（表单 POST）。
+     * @param execution 执行 ID
+     * @return 挑战或完成响应
+     */
     public Response authenticationAction(String execution) {
         logger.debug("authenticationAction");
         checkClientSession(true);
@@ -1106,6 +1204,9 @@ public class AuthenticationProcessor {
         authenticationSession.getParentSession().setTimestamp(Time.currentTime());
     }
 
+    /** 仅执行认证流，不触发 required actions 完成逻辑。
+     * @return 挑战响应；成功时 {@code null}
+     */
     public Response authenticateOnly() throws AuthenticationFlowException {
         logger.debug("AUTHENTICATE ONLY");
         checkClientSession(false);
@@ -1135,7 +1236,11 @@ public class AuthenticationProcessor {
         return null;
     }
 
+    // 可能同时创建 userSession
     // May create userSession too
+    /** 将认证会话附加到用户/客户端会话。
+     * @return 客户端会话上下文
+     */
     public ClientSessionContext attachSession() {
         ClientSessionContext clientSessionCtx = attachSession(authenticationSession, userSession, session, realm, connection, event);
 
@@ -1146,7 +1251,11 @@ public class AuthenticationProcessor {
         return clientSessionCtx;
     }
 
+    // 若 userSession 为 null 则可能新建用户会话
     // May create new userSession too (if userSession argument is null)
+    /** 静态版本：附加认证会话并处理 remember-me、broker 与 offline 首次访问。
+     * @return 客户端会话上下文
+     */
     public static ClientSessionContext attachSession(AuthenticationSessionModel authSession, UserSessionModel userSession, KeycloakSession session, RealmModel realm, ClientConnection connection, EventBuilder event) {
         String username = authSession.getAuthenticatedUser().getUsername();
         String attemptedUsername = authSession.getAuthNote(AbstractUsernameFormAuthenticator.ATTEMPTED_USERNAME);
@@ -1214,10 +1323,15 @@ public class AuthenticationProcessor {
         return clientSessionCtx;
     }
 
+    /** 评估并触发 required action。 */
     public void evaluateRequiredActionTriggers() {
         AuthenticationManager.evaluateRequiredActionTriggers(session, authenticationSession, request, event, realm, authenticationSession.getAuthenticatedUser());
     }
 
+    /** 认证成功后附加会话并重定向。
+     * @param protocol 登录协议
+     * @return 成功重定向响应
+     */
     public Response finishAuthentication(LoginProtocol protocol) {
         RealmModel realm = authenticationSession.getRealm();
         ClientSessionContext clientSessionCtx = attachSession();
@@ -1226,6 +1340,9 @@ public class AuthenticationProcessor {
 
     }
 
+    /** 校验用户已启用且非服务账户。
+     * @param authenticatedUser 待校验用户
+     */
     public void validateUser(UserModel authenticatedUser) {
         if (authenticatedUser == null) return;
         if (!authenticatedUser.isEnabled()) {
@@ -1235,6 +1352,9 @@ public class AuthenticationProcessor {
         if (authenticatedUser.getServiceAccountClientLink() != null) throw new AuthenticationFlowException(AuthenticationFlowError.UNKNOWN_USER);
     }
 
+    /** 认证步骤完成：设置 scope、跳转 required actions 或通知协议完成。
+     * @return 响应
+     */
     protected Response authenticationComplete() {
         new AcrStore(session, authenticationSession).setAuthFlowLevelAuthenticatedToCurrentRequest();
 
@@ -1257,18 +1377,26 @@ public class AuthenticationProcessor {
         }
     }
 
+    /** @return 下一个 required action ID，无则 {@code null} */
     public String nextRequiredAction() {
         return AuthenticationManager.nextRequiredAction(session, authenticationSession, request, event);
     }
 
+    /** 创建用户认证流上下文。
+     * @return {@link Result} 实例
+     */
     public AuthenticationProcessor.Result createAuthenticatorContext(AuthenticationExecutionModel model, Authenticator authenticator, List<AuthenticationExecutionModel> executions) {
         return new Result(model, authenticator, executions);
     }
 
+    /** 创建客户端认证流上下文。
+     * @return {@link Result} 实例
+     */
     public AuthenticationProcessor.Result createClientAuthenticatorContext(AuthenticationExecutionModel model, ClientAuthenticator clientAuthenticator, List<AuthenticationExecutionModel> executions) {
         return new Result(model, clientAuthenticator, executions);
     }
 
+    // 跨 HTTP 请求在认证会话中存取 FormMessage，供表单展示
     // This takes care of CRUD of FormMessage to the authenticationSession, so that message can be displayed on the forms in different HTTP request
     private class ForwardedFormMessageStore {
 

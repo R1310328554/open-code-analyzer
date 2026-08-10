@@ -21,6 +21,8 @@ import java.nio.CharBuffer;
 import java.util.Optional;
 
 /**
+ * 基于 {@link CharBuffer} 的保险库密钥表示，支持自动清理内存。
+ *
  * A {@link CharBuffer} based representation of the secret obtained from the vault that supports automated cleanup of memory.
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
@@ -28,6 +30,7 @@ import java.util.Optional;
 public interface VaultCharSecret extends AutoCloseable {
 
     /**
+     * 返回封装在 {@link CharBuffer} 中的密钥；解析成功时含值（可为 {@code null}），否则为空 {@link Optional}。
      * Returns the secret enclosed in a {@link CharBuffer}.
      *
      * @return If the secret was successfully resolved by vault, returns an {@link Optional} containing the value returned
@@ -36,6 +39,7 @@ public interface VaultCharSecret extends AutoCloseable {
     Optional<CharBuffer> get();
 
     /**
+     * 以 {@code char[]} 形式返回密钥。
      * Returns the secret in its {@code char[]} form.
      *
      * @return If the secret was successfully resolved by vault, returns an {@link Optional} containing the value returned
@@ -44,6 +48,7 @@ public interface VaultCharSecret extends AutoCloseable {
     Optional<char[]> getAsArray();
 
     /**
+     * 销毁内存中的密钥（例如覆写为随机数据）。
      *  Destroys the secret in memory by e.g. overwriting it with random garbage.
      */
     @Override

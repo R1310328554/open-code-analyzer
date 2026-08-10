@@ -22,26 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 底层保险库访问 SPI。
+ *
  * SPI for a low-level vault access.
  */
 public class VaultSpi implements Spi {
 
     @Override
+    /** @return 是否为内部 SPI */
     public boolean isInternal() {
         return true;
     }
 
     @Override
+    /** @return SPI 名称 {@code vault} */
     public String getName() {
         return "vault";
     }
 
     @Override
+    /** @return Provider 类型 {@link VaultProvider} */
     public Class<? extends Provider> getProviderClass() {
         return VaultProvider.class;
     }
 
     @Override
+    /** @return 工厂类型 {@link VaultProviderFactory} */
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return VaultProviderFactory.class;
     }

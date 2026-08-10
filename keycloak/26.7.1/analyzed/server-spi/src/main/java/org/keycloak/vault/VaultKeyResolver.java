@@ -20,6 +20,9 @@ package org.keycloak.vault;
 import java.util.function.BiFunction;
 
 /**
+ * 保险库密钥解析器：将 realm 名与 {@code ${vault.key}} 表达式中的 key 组合为最终 vault 条目名。
+ * 实现定义 realm 与 key 的拼接算法。
+ *
  * {@code VaultKeyResolver} is a {@link BiFunction} whose implementation of the {@link #apply(Object, Object)} method takes
  * two {@link String}s representing the realm name and the key name (as used in {@code ${vault.key}} expressions) and returns
  * another {@link String} representing the final constructed key that is to be used when obtaining secrets from the vault.

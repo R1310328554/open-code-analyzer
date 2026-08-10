@@ -18,6 +18,8 @@
 package org.keycloak.authentication;
 
 /**
+ * 表单认证器实现的抽象辅助基类。
+ *
  * Abstract helper class that Authenticator implementations can leverage
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -25,6 +27,7 @@ package org.keycloak.authentication;
  */
 public abstract class AbstractFormAuthenticator implements Authenticator {
 
+    /** 默认空实现，子类可覆盖以释放资源。 */
     @Override
     public void close() {
 

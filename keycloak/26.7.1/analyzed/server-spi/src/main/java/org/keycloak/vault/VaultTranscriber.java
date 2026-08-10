@@ -20,6 +20,8 @@ package org.keycloak.vault;
 import java.lang.ref.WeakReference;
 
 /**
+ * 已配置保险库 Provider 的门面，提供多种格式（{@link VaultRawSecret}、{@link VaultCharSecret}、{@link VaultStringSecret}）的密钥读取工具。
+ *
  * A facade to the configured vault provider that exposes utility methods for obtaining the vault secrets in different
  * formats (such as {@link VaultRawSecret}, {@link VaultCharSecret} or {@link VaultStringSecret}).
  *
@@ -31,6 +33,7 @@ import java.lang.ref.WeakReference;
 public interface VaultTranscriber {
 
     /**
+     * 解析 {@code ${vault.<KEY>}} 表达式并返回 {@link VaultRawSecret}；非 vault 表达式则直接编码为原始密钥。
      * Obtains the raw secret from the vault that matches the entry in the specified value string. The value must follow
      * the format {@code ${vault.<KEY>}} where {@code <KEY>} identifies the entry in the vault. If the value doesn't follow
      * the vault expression format, it is assumed to be the secret itself and is encoded into a {@link VaultRawSecret}.
@@ -46,6 +49,7 @@ public interface VaultTranscriber {
     VaultRawSecret getRawSecret(final String value);
 
     /**
+     * 解析 vault 表达式并返回 {@link VaultCharSecret} 表示的密钥。
      * Obtains the secret represented as a {@link VaultCharSecret} from the vault that matches the entry in the specified
      * value string. The value must follow the format {@code ${vault.<KEY>}} where {@code <KEY>} identifies the entry in
      * the vault. If the value doesn't follow the vault expression format, it is assumed to be the secret itself and is
@@ -62,6 +66,7 @@ public interface VaultTranscriber {
     VaultCharSecret getCharSecret(final String value);
 
     /**
+     * 解析 vault 表达式并返回 {@link VaultStringSecret}；调用方应尽早释放字符串引用。
      * Obtains the secret represented as a {@link String} from the vault that matches the entry in the specified value.
      * The value must follow the format {@code ${vault.<KEY>}} where {@code <KEY>} identifies the entry in the vault. If
      * the value doesn't follow the vault expression format, it is assumed to be the secret itself.

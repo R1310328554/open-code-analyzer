@@ -22,16 +22,21 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * 验证功能门面：支持按 id 查找 {@link Validator} 与 {@link ValidatorFactory}。
+ *
  * Facade for Validation functions with support for {@link Validator} implementation lookup by id.
  */
 public class Validators {
 
     /**
+     * 持有当前 {@link KeycloakSession}。
      * Holds the {@link KeycloakSession}.
      */
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
     /**
+     * 使用给定 {@link KeycloakSession} 创建 {@link Validators} 实例。
      * Creates a new {@link Validators} instance with the given {@link KeycloakSession}.
      *
      * @param session
@@ -41,6 +46,7 @@ public class Validators {
     }
 
     /**
+     * 按 provider {@code id} 查找内置或已注册的 {@link Validator}。
      * Look-up for a built-in or registered {@link Validator} with the given provider {@code id}.
      *
      * @param id
@@ -52,6 +58,7 @@ public class Validators {
     }
 
     /**
+     * 按 provider {@code id} 查找内置或已注册的 {@link ValidatorFactory}。
      * Look-up for a built-in or registered {@link ValidatorFactory} with the given provider {@code id}.
      *
      * @param id
@@ -63,6 +70,7 @@ public class Validators {
     }
 
     /**
+     * 校验指定 provider {@code id} 对应 {@link Validator} 的 {@link ValidatorConfig}。
      * Validates the {@link ValidatorConfig} of {@link Validator} referenced by the given provider {@code id}.
      *
      * @param id
@@ -75,6 +83,7 @@ public class Validators {
     }
     
     /**
+     * 按 validatorId 查找内置或已注册的 {@link Validator}。
      * Look-up up for a built-in or registered {@link Validator} with the given validatorId.
      *
      * @param session the {@link KeycloakSession}
@@ -86,11 +95,13 @@ public class Validators {
             throw new IllegalArgumentException("KeycloakSession must be not null");
         }
 
+        // 从注册表查找验证器
         // Lookup validator in registry
         return session.getProvider(Validator.class, id);
     }
 
     /**
+     * 按 validatorId 查找 {@link ValidatorFactory}；可用于动态创建验证器或校验配置。
      * Look-up for a built-in or registered {@link ValidatorFactory} with the given validatorId.
      * <p>
      * This is intended for users who want to dynamically create new {@link Validator} instances, validate
@@ -105,6 +116,7 @@ public class Validators {
             throw new IllegalArgumentException("KeycloakSession must be not null");
         }
 
+        // 从注册表查找工厂
         // Lookup factory in registry
         KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
         return (ValidatorFactory) sessionFactory.getProviderFactory(Validator.class, id);
@@ -125,6 +137,7 @@ public class Validators {
             return validatorFactory.validateConfig(session, config);
         }
 
+        // 未找到对应 ValidationFactory，假定配置有效
         // We could not find a ValidationFactory to validate that config, so we assume the config is valid.
         return ValidationResult.OK;
     }

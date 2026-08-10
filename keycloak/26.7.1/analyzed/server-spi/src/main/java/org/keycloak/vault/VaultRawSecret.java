@@ -20,6 +20,8 @@ import java.nio.ByteBuffer;
 import java.util.Optional;
 
 /**
+ * 从保险库获取的原始密钥表示，支持自动内存清理。
+ *
  *  Raw representation of the secret obtained from vault that supports automated cleanup of memory.
  *
  *  @author hmlnarik
@@ -27,6 +29,7 @@ import java.util.Optional;
 public interface VaultRawSecret extends AutoCloseable {
 
     /**
+     * 返回原始密钥字节；解析成功时含 {@link ByteBuffer}，否则为空 {@link Optional}。
      * Returns the raw secret bytes.
      * @return If the secret was successfully resolved by vault, returns
      *         an {@link Optional} containing the value returned by the vault
@@ -35,6 +38,7 @@ public interface VaultRawSecret extends AutoCloseable {
     Optional<ByteBuffer> get();
 
     /**
+     * 以 {@code byte[]} 形式返回原始密钥。
      * Returns the raw secret bytes in {@code byte[]} form.
      * @return If the secret was successfully resolved by vault, returns
      *         an {@link Optional} containing the value returned by the vault
@@ -43,6 +47,7 @@ public interface VaultRawSecret extends AutoCloseable {
     Optional<byte[]> getAsArray();
 
     /**
+     * 销毁内存中的密钥（例如覆写为随机数据）。
      *  Destroys the secret in memory by e.g. overwriting it with random garbage.
      */
     @Override

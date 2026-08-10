@@ -21,27 +21,34 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 自定义 {@link Validator} 实现的 {@link Spi} 描述。
+ *
  * An {@link Spi} for custom {@link Validator} implementations.
  */
 public class ValidatorSPI implements Spi {
 
     @Override
+    /** @return 是否为内部 SPI */
     public boolean isInternal() {
+        // 当前为内部 API，后续计划公开。
         // this API is internal for now, but is intended to be public later.
         return true;
     }
 
     @Override
+    /** @return SPI 名称 {@code validator} */
     public String getName() {
         return "validator";
     }
 
     @Override
+    /** @return Provider 类型 {@link Validator} */
     public Class<? extends Provider> getProviderClass() {
         return Validator.class;
     }
 
     @Override
+    /** @return 工厂类型 {@link ValidatorFactory} */
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ValidatorFactory.class;
     }

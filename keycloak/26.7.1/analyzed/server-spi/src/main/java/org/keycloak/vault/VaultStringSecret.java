@@ -20,6 +20,8 @@ package org.keycloak.vault;
 import java.util.Optional;
 
 /**
+ * 基于 {@link String} 的保险库密钥表示；因字符串不可变，清理方式为释放引用以便 GC 回收。
+ *
  * A {@link String} based representation of the secret obtained from the vault that supports automated cleanup of memory.
  * In this case, due to the immutable nature of strings, the cleanup should consist in releasing any references to the
  * secret string so it can be disposed by the GC as soon as possible.
@@ -29,6 +31,7 @@ import java.util.Optional;
 public interface VaultStringSecret extends AutoCloseable {
 
     /**
+     * 以 {@link String} 形式返回密钥。
      * Returns the secret represented as a {@link String}.
      * @return If the secret was successfully resolved by vault, returns an {@link Optional} containing the value returned
      *         by the vault as a {@link String} (a valid value can be {@code null}), or an empty {@link Optional}
@@ -36,6 +39,7 @@ public interface VaultStringSecret extends AutoCloseable {
     Optional<String> get();
 
     /**
+     * 销毁密钥：不可变字符串则释放引用，可变缓冲区则覆写。
      *  Destroys the secret in memory by e.g. overwriting it with random garbage or release references in case of immutable
      *  secrets.
      */

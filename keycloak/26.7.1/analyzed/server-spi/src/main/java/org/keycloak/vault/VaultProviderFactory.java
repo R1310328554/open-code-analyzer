@@ -20,6 +20,7 @@ package org.keycloak.vault;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link VaultProvider} 工厂接口。
  */
 public interface VaultProviderFactory extends ProviderFactory<VaultProvider> {
 }

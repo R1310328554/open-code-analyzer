@@ -20,11 +20,14 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * 自定义 {@link Validator} 实现的工厂接口，通过本 SPI 插件化注册。
+ *
  * A factory for custom {@link Validator} implementations plugged-in through this SPI.
  */
 public interface ValidatorFactory extends ProviderFactory<Validator> {
 
     /**
+     * 校验给定验证配置；实现可借助 {@link KeycloakSession} 验证 {@link ValidatorConfig}。
      * Validates the given validation config.
      * <p>
      * Implementations can use the {@link KeycloakSession} to validate the given {@link ValidatorConfig}.
@@ -38,6 +41,7 @@ public interface ValidatorFactory extends ProviderFactory<Validator> {
     }
 
     /**
+     * 服务器关闭时调用。
      * This is called when the server shuts down.
      */
     @Override

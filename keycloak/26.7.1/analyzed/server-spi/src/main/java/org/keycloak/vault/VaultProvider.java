@@ -20,11 +20,14 @@ package org.keycloak.vault;
 import org.keycloak.provider.Provider;
 
 /**
+ * 保险库 Provider 接口，唯一职责是检索密钥。
+ *
  * Provider interface for a vault. The only purpose of a vault is retrieval of secrets.
  */
 public interface VaultProvider extends Provider {
 
     /**
+     * 从保险库检索密钥；实现应至少按 realm ID 隔离条目。成功时返回含密钥的 {@link VaultRawSecret}，建议在 try-with-resources 中立即销毁。
      * Retrieves a secret from vault. The implementation should respect
      * at least the realm ID to separate the secrets within the vault.
      * If the secret is retrieved successfully, it is returned;
