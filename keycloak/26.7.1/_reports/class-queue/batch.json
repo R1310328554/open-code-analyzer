@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:11:07Z",
-  "files": [
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/AdminEventsParser.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/AdminEventsSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/EventAssertion.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/EventMatchers.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/EventParser.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/Events.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/EventsSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/SysLog.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/SysLogListener.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/SysLogServer.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/events/SysLogServerSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/github/GitHubActionReport.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/http/HttpClientSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/http/HttpServerSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/http/SimpleHttpSupplier.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 418,
-  "done": 5565
+  "done": 5580
 }
