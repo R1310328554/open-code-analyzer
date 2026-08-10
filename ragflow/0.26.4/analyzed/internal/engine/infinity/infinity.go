@@ -12,11 +12,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// infinity.go — Infinity 包类型别名：MatchTextExpr 复用 internal/engine/types 中的共享搜索表达式定义。
 //
 
 package infinity
 
 import "ragflow/internal/engine/types"
 
-// MatchTextExpr is a type alias for the shared search expression type.
+// MatchTextExpr 全文匹配表达式，与 types.MatchTextExpr 同义别名。
 type MatchTextExpr = types.MatchTextExpr

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// sql.go — Elasticsearch SQL 检索路径：预处理用户 SQL（分词字段改写为 MATCH），调用 /_sql 并将行转为 chunk 形 map。
 //
 
 package elasticsearch
@@ -46,14 +48,14 @@ const esSQLRetryDelay = 3 * time.Second
 var whitespaceRe = regexp.MustCompile("[ `]+")
 var lktksMatchRe = regexp.MustCompile(` ([a-z_]+_l?tks)( like | ?= ?)'([^']+)'`)
 
-// Preprocess normalizes SQL for ES: collapses whitespace/backticks,
+// Preprocess 规范化 SQL：折叠空白/反引号、去掉 %，并将 *_l?tks like/= 改写为 tokenizer 驱动的 MATCH() 调用。
 // strips '%', and rewrites `<field>_l?tks like/= 'value'` into a
 // tokenized MATCH() call.
 func Preprocess(sql string) string {
 	sql = whitespaceRe.ReplaceAllString(sql, " ")
 	sql = strings.ReplaceAll(sql, "%", "")
 
-	// Collect replacements so we don't re-scan tokens we've already rewritten
+	// 收集替换项后一次性应用，避免重复扫描已改写片段
 	type replacement struct {
 		old, new string
 	}
@@ -84,7 +86,7 @@ func Preprocess(sql string) string {
 	return sql
 }
 
-// RunSQL posts SQL to `/_sql`, translates the response into chunk-shaped maps.
+// RunSQL 向 ES SQL API 提交查询；超时重试，空结果返回 (nil,nil)。
 // Returns (nil, nil) on empty rows; (nil, error) when retries exhausted.
 func (e *elasticsearchEngine) RunSQL(ctx context.Context, tableName string, sqlText string, kbIDs []string, format string) ([]map[string]interface{}, error) {
 	if e == nil || e.client == nil {
@@ -155,7 +157,7 @@ func (e *elasticsearchEngine) runSQLOnce(ctx context.Context, sqlText string, fo
 		return nil, fmt.Errorf("status=%d body=%s", res.StatusCode, string(errBody))
 	}
 
-	// Parse the SQL response.
+	// 解析 columns + rows 结构
 	var resp struct {
 		Columns []struct {
 			Name string `json:"name"`
@@ -171,7 +173,7 @@ func (e *elasticsearchEngine) runSQLOnce(ctx context.Context, sqlText string, fo
 		return nil, nil
 	}
 
-	// Convert to chunk-shaped maps. Column names map 1:1 to JSON keys.
+	// 将行数组转为 []map[string]interface{}，列名即 JSON 键
 	out := make([]map[string]interface{}, 0, len(resp.Rows))
 	for _, row := range resp.Rows {
 		cm := make(map[string]interface{}, len(resp.Columns))
@@ -185,7 +187,7 @@ func (e *elasticsearchEngine) runSQLOnce(ctx context.Context, sqlText string, fo
 	return out, nil
 }
 
-// isTimeoutError detects connection-level and per-attempt timeouts
+// isTimeoutError 检测 context 超时、net.Error.Timeout 及常见超时子串
 // via context.DeadlineExceeded, net.Error.Timeout(), and substring
 // matches (for SDKs that wrap without typed errors).
 func isTimeoutError(err error) bool {

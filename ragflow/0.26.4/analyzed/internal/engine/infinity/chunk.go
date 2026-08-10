@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// chunk.go — Infinity 分块表生命周期与检索：建表/索引、插入更新删除、混合全文+向量搜索、字段映射与 PageRank 调整等核心实现。
 //
 
 package infinity
@@ -36,7 +38,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// ChinesePunctRegex splits on comma, semicolon, Chinese punctuations, and newlines
+// ChinesePunctRegex 按中英文标点与换行切分关键词列表
 var ChinesePunctRegex = regexp.MustCompile(`[,，;；、\r\n]+`)
 
 const (
@@ -46,14 +48,14 @@ const (
 
 var pagerankAdjustLocks [pagerankAdjustLockCount]sync.Mutex
 
-// CreateChunkStore creates a chunk table in Infinity
+// CreateChunkStore 创建或打开分块表 {baseName}_{datasetID}，按 mapping JSON 建列、HNSW 向量索引与全文/二级索引。
 // baseName is the table name prefix (e.g., "ragflow_<tenant_id>")
 // The full table name is built as "{baseName}_{datasetID}"
 // For skill index (datasetID="skill"), tableName is just baseName and uses skill_infinity_mapping.json
 func (e *infinityEngine) CreateChunkStore(ctx context.Context, baseName, datasetID string, vectorSize int, parserID string) error {
 	vecSize := vectorSize
 
-	// Determine table name and mapping file based on index type
+	// 按是否为 skill 索引选择表名与 mapping 文件
 	var tableName string
 	var mappingFile string
 
@@ -91,7 +93,7 @@ func (e *infinityEngine) CreateChunkStore(ctx context.Context, baseName, dataset
 	// Determine vector column name
 	vectorColName := fmt.Sprintf("q_%d_vec", vecSize)
 
-	// Check if table already exists
+	// 表已存在则检查向量列是否需要追加（换 embedding 模型）
 	exists, err := e.tableExists(ctx, tableName)
 	if err != nil {
 		return fmt.Errorf("failed to check if table exists: %w", err)
@@ -166,7 +168,7 @@ func (e *infinityEngine) CreateChunkStore(ctx context.Context, baseName, dataset
 		common.Debug("Infinity created table", zap.String("tableName", tableName))
 	}
 
-	// Create HNSW index on vector column with unique name based on vector size
+	// 在向量列上创建 HNSW 索引，索引名含维度避免冲突
 	// Use unique index name to avoid conflict when embedding model changes
 	vectorIndexName := fmt.Sprintf("q_%d_vec_idx", vecSize)
 	_, err = table.CreateIndex(
@@ -185,7 +187,7 @@ func (e *infinityEngine) CreateChunkStore(ctx context.Context, baseName, dataset
 	}
 	common.Info("Created vector index", zap.String("indexName", vectorIndexName), zap.String("column", vectorColName))
 
-	// Create full-text indexes for varchar fields with analyzers
+	// 为带 analyzer 的 varchar 列创建全文索引
 	for _, fieldName := range schema.Keys {
 		fieldInfo := schema.Fields[fieldName]
 		if fieldInfo.Type != "varchar" || fieldInfo.Analyzer == nil {
@@ -221,7 +223,7 @@ func (e *infinityEngine) CreateChunkStore(ctx context.Context, baseName, dataset
 		}
 	}
 
-	// Create secondary indexes for fields with index_type
+	// 为 index_type=secondary 的字段建二级索引
 	for _, fieldName := range schema.Keys {
 		fieldInfo := schema.Fields[fieldName]
 		if fieldInfo.IndexType == nil {
@@ -260,10 +262,10 @@ func (e *infinityEngine) CreateChunkStore(ctx context.Context, baseName, dataset
 	return nil
 }
 
-// InsertChunks inserts documents into a dataset table;
+// InsertChunks 写入分块；表不存在时从向量维数推断并自动建表，同 ID 先删后插。
 // Table name format: {baseName}_{datasetID}
 // Auto-create the table if it doesn't exist
-// Delete existing rows with matching IDs before insert
+// 同 ID 先删后插实现 upsert before insert
 func (e *infinityEngine) InsertChunks(ctx context.Context, chunks []map[string]interface{}, baseName string, datasetID string) ([]string, error) {
 	tableName := buildChunkTableName(baseName, datasetID)
 	common.Info("InfinityConnection.InsertChunks called", zap.String("tableName", tableName), zap.Int("chunkCount", len(chunks)))
@@ -344,7 +346,7 @@ func (e *infinityEngine) InsertChunks(ctx context.Context, chunks []map[string]i
 		}
 	}
 
-	// Transform chunks using helper function
+	// 经 transformChunkFields 转换后插入
 	insertChunks := make([]map[string]interface{}, len(chunks))
 	for i, chunk := range chunks {
 		insertChunks[i] = transformChunkFields(chunk, embeddingCols)
@@ -381,7 +383,7 @@ func (e *infinityEngine) InsertChunks(ctx context.Context, chunks []map[string]i
 	return []string{}, nil
 }
 
-// UpdateChunks updates chunks in a dataset table
+// UpdateChunks 按 condition 更新分块，支持 remove 子操作（### 分隔值删除）。
 // Table name format: {baseName}_{datasetID}
 func (e *infinityEngine) UpdateChunks(ctx context.Context, condition map[string]interface{}, newValue map[string]interface{}, baseName string, datasetID string) error {
 	tableName := buildChunkTableName(baseName, datasetID)
@@ -428,7 +430,7 @@ func (e *infinityEngine) UpdateChunks(ctx context.Context, condition map[string]
 		}
 	}
 
-	// Build filter string from condition
+	// 由 condition 与表 schema 生成 filter
 	filter := buildFilterFromCondition(condition, clmns)
 
 	// Process remove operation first
@@ -453,7 +455,7 @@ func (e *infinityEngine) UpdateChunks(ctx context.Context, condition map[string]
 		delete(newValue, key)
 	}
 
-	// Handle remove operations if any
+	// 处理 remove：从 ### 拼接字段中剔除指定值
 	if len(removeValue) > 0 {
 		colToRemove := make([]string, 0, len(removeValue))
 		for k := range removeValue {
@@ -529,7 +531,7 @@ func (e *infinityEngine) UpdateChunks(ctx context.Context, condition map[string]
 	return nil
 }
 
-// AdjustChunkPagerank adjusts pagerank_fea and clamps it to [minWeight, maxWeight].
+// AdjustChunkPagerank 乐观锁式调整 pagerank_fea，带分片锁与重试。
 func (e *infinityEngine) AdjustChunkPagerank(ctx context.Context, baseName, chunkID, datasetID string, delta, minWeight, maxWeight float64) error {
 	if baseName == "" {
 		return fmt.Errorf("index name cannot be empty")
@@ -620,7 +622,7 @@ func (e *infinityEngine) AdjustChunkPagerank(ctx context.Context, baseName, chun
 	return fmt.Errorf("failed to adjust chunk pagerank: %w", lastErr)
 }
 
-// DeleteChunks deletes chunks from a dataset table
+// DeleteChunks 按条件删除分块，表不存在时返回 0。
 // Table name format: {baseName}_{datasetID}
 // condition specifies which chunks to delete
 func (e *infinityEngine) DeleteChunks(ctx context.Context, condition map[string]interface{}, baseName string, datasetID string) (int64, error) {
@@ -679,7 +681,7 @@ func (e *infinityEngine) DeleteChunks(ctx context.Context, condition map[string]
 	return delResp.DeletedRows, nil
 }
 
-// Search searches the Infinity engine for matching chunks.
+// Search 执行 Infinity 检索，支持 MatchText、MatchDense、Fusion 及纯 filter 查询。
 // It supports three matching types: MatchTextExpr (full-text), MatchDenseExpr (vector), and FusionExpr (combined).
 // If no match expressions are provided, Search relies solely on filter (e.g., doc_id, available_int) to find results.
 func (e *infinityEngine) Search(ctx context.Context, req *types.SearchRequest) (*types.SearchResult, error) {
@@ -772,7 +774,7 @@ func (e *infinityEngine) Search(ctx context.Context, req *types.SearchRequest) (
 		if hasTextMatch {
 			outputColumns = append(outputColumns, "score()")
 		}
-		// similarity() is only allowed by Infinity when there is ONLY MATCH VECTOR.
+		// 仅纯向量检索时允许 similarity()；混合检索只用 score()
 		// When both text and vector matches exist (hybrid search with Fusion),
 		// only score() is valid — Fusion produces a unified SCORE column.
 		if hasVectorMatch && !hasTextMatch {
@@ -793,7 +795,7 @@ func (e *infinityEngine) Search(ctx context.Context, req *types.SearchRequest) (
 		outputColumns = append(outputColumns, "row_id()")
 	}
 
-	// Strip score pseudo-columns when there's no match expression — Infinity
+	// 无 MATCH 时去掉 score/similarity 伪列，避免 Infinity 3013 错误
 	// rejects SCORE()/SCORE_FACTORS() without MATCH TEXT/TENSOR/Fusion with
 	// "InfinityException(3013)". This protects callers (e.g. the no-match
 	// fallback in retrieval.go) that reuse a SelectFields list containing
@@ -889,7 +891,7 @@ func (e *infinityEngine) Search(ctx context.Context, req *types.SearchRequest) (
 			}
 		}
 
-		// minMatch comes from matchText.ExtraOptions when set (Python parity).
+		// minMatch 来自 MatchText ExtraOptions，英文默认 0 对齐 Python
 		// Mirrors rag/utils/infinity_conn.py which reads
 		// matchExpr.extra_options.get("minimum_should_match", 0.0) — for the
 		// English (non-Chinese) path, the Go Question() builder omits
@@ -1066,7 +1068,7 @@ func (e *infinityEngine) Search(ctx context.Context, req *types.SearchRequest) (
 				table = table.MatchDense(vecFieldName, vectorData, dataType, distanceType, vectorTopN, extraOptions)
 			}
 
-			// Add fusion (for text + vector combination)
+			// 文本+向量同时存在时应用 Fusion（如 weighted_sum）
 			if hasTextMatch && hasVectorMatch && fusionExpr != nil {
 				fusionMethod := fusionExpr.Method
 				fusionTopK := fusionExpr.TopN
@@ -1130,7 +1132,7 @@ func (e *infinityEngine) Search(ctx context.Context, req *types.SearchRequest) (
 				continue
 			}
 
-			// Convert DataFrame to chunks format (column-oriented to row-oriented)
+			// 列式 DataFrame 转行式 chunk map
 			searchChunks := make([]map[string]interface{}, 0)
 			for colName, colData := range df.ColumnData {
 				for i, val := range colData {
@@ -1207,7 +1209,7 @@ func (e *infinityEngine) Search(ctx context.Context, req *types.SearchRequest) (
 	}, nil
 }
 
-// GetChunk gets a chunk by ID
+// GetChunk 跨 dataset 表按 chunk ID 查询并合并字段映射
 func (e *infinityEngine) GetChunk(ctx context.Context, tableName, chunkID string, datasetIDs []string) (interface{}, error) {
 	if e.client == nil || e.client.conn == nil {
 		return nil, fmt.Errorf("Infinity client not initialized")
@@ -1343,7 +1345,7 @@ func (e *infinityEngine) GetChunk(ctx context.Context, tableName, chunkID string
 	return chunk, nil
 }
 
-// applyFieldMappings applies field mappings to chunks (side-effect only).
+// applyFieldMappings 将 Infinity 列名映射为 RAGFlow 逻辑字段（docnm→title_tks 等）。
 // Used by Search() to mutate chunks with derived fields before returning.
 func applyFieldMappings(chunks []map[string]interface{}) {
 	for _, chunk := range chunks {
@@ -1472,7 +1474,7 @@ func memoryMessageStatusBool(value interface{}) bool {
 	}
 }
 
-// GetFields extracts the requested fields from Infinity search results
+// GetFields 从搜索结果提取指定字段，对齐 Python infinity_conn.GetFields 语义。
 func (e *infinityEngine) GetFields(chunks []map[string]interface{}, fields []string) map[string]map[string]interface{} {
 	result := make(map[string]map[string]interface{})
 
@@ -1492,7 +1494,7 @@ func (e *infinityEngine) GetFields(chunks []map[string]interface{}, fields []str
 	}
 	fieldsAll["id"] = true
 
-	// noneColumns is rebuilt per chunk inside the loop below. The
+	// 每 chunk 重建 noneColumns，避免跨行共享导致 nil 占位丢失 The
 	// per-chunk "missing → nil" map MUST be fresh for every iteration; if
 	// it's reused, the first chunk that contains a field removes it from
 	// the shared set, and later chunks missing that same field silently
@@ -1765,7 +1767,7 @@ func (e *infinityEngine) GetFields(chunks []map[string]interface{}, fields []str
 	return result
 }
 
-// GetAggregation aggregates chunk values by field name.
+// GetAggregation 按字段聚合计数；tag_kwd 用 ### 分隔，其余默认逗号分隔。
 // Input: [{"docnm_kwd": "docA"}, {"docnm_kwd": "docA"}, {"docnm_kwd": "docB"}]
 //
 // GetAggregation(chunks, "docnm_kwd") returns:
@@ -1869,7 +1871,7 @@ func (e *infinityEngine) GetAggregation(chunks []map[string]interface{}, fieldNa
 	return result
 }
 
-// GetChunkIDs extracts chunk IDs from Infinity search results.
+// GetChunkIDs 提取结果中的 id 列表
 func (e *infinityEngine) GetChunkIDs(chunks []map[string]interface{}) []string {
 	ids := make([]string, 0, len(chunks))
 	for _, chunk := range chunks {
@@ -1880,7 +1882,7 @@ func (e *infinityEngine) GetChunkIDs(chunks []map[string]interface{}) []string {
 	return ids
 }
 
-// GetHighlight generates highlighted text snippets for search results.
+// GetHighlight Infinity 路径暂不高亮，返回空 map。
 // Matches keywords in text and wraps them with <em> tags.
 func (e *infinityEngine) GetHighlight(chunks []map[string]interface{}, keywords []string, fieldName string) map[string]string {
 	result := make(map[string]string)
@@ -1893,7 +1895,7 @@ func (e *infinityEngine) GetHighlight(chunks []map[string]interface{}, keywords 
 	return result
 }
 
-// KNNScores for Infinity - since Infinity normalizes scores during fusion,
+// KNNScores 将已有 _score 包装为 GetScores 可解析的结构（Infinity 无二次 KNN）。
 // we just need to return a result structure that GetScores can parse.
 // This matches Python's approach where Infinity doesn't use the two-pass KNN.
 func (e *infinityEngine) KNNScores(ctx context.Context, chunks []map[string]interface{}, queryVector []float64, topK int) (map[string]interface{}, error) {
@@ -1920,7 +1922,7 @@ func (e *infinityEngine) KNNScores(ctx context.Context, chunks []map[string]inte
 	return result, nil
 }
 
-// GetScores extracts similarity scores from KNN search result.
+// GetScores 从 KNNScores 返回结构中提取 docID→score 映射。
 // For Infinity, it parses the result from KNNScores and extracts _score values.
 func (e *infinityEngine) GetScores(knnResult map[string]interface{}) map[string]float64 {
 	scores := make(map[string]float64)
@@ -1956,7 +1958,7 @@ func (e *infinityEngine) GetScores(knnResult map[string]interface{}) map[string]
 	return scores
 }
 
-// convertSelectFields converts field names to Infinity format
+// convertSelectFields 将逻辑字段名映射为 Infinity 存储列名，不修改调用方 slice。
 // isSkillIndex indicates if this is a skill index (uses skill_id instead of id)
 //
 // Does NOT mutate the input slice — callers (e.g. retrieval.go) reuse the same
@@ -2027,7 +2029,7 @@ func convertSelectFields(output []string, isSkillIndex ...bool) []string {
 	return result
 }
 
-// convertMatchingField converts field names for matching
+// convertMatchingField 将带权字段转为 column@index_name 格式供 MatchText 使用。
 // For regular document indices: maps _tks/_kwd fields to column@index_name format
 // For skill indices: maps raw field names to column@index_name format
 // Infinity requires column@index_name when a column has multiple full-text indexes
@@ -2066,7 +2068,7 @@ func convertMatchingField(fieldWeightStr string) string {
 	return strings.Join(parts, "^")
 }
 
-// escapeFilterValue escapes single quotes for filter values
+// escapeFilterValue 转义 filter 中的单引号
 func escapeFilterValue(s string) string {
 	return strings.ReplaceAll(s, "'", "''")
 }
@@ -2142,7 +2144,7 @@ func floatsEqual(a, b float64) bool {
 	return diff < 1e-9
 }
 
-// equivalentConditionToStr converts a condition map to an Infinity filter string
+// equivalentConditionToStr 将 condition map 转为 Infinity SQL filter 字符串。
 func equivalentConditionToStr(condition map[string]interface{}) string {
 	if len(condition) == 0 {
 		return ""
@@ -2300,7 +2302,7 @@ func equivalentConditionToStr(condition map[string]interface{}) string {
 	return strings.Join(cond, " AND ")
 }
 
-// calculateScores calculates _score = score_column + pagerank
+// calculateScores 合成 _score = 检索分 + pagerank
 func calculateScores(chunks []map[string]interface{}, scoreColumn, pagerankField string) []map[string]interface{} {
 	for i := range chunks {
 		score := 0.0
@@ -2321,7 +2323,7 @@ func calculateScores(chunks []map[string]interface{}, scoreColumn, pagerankField
 	return chunks
 }
 
-// sortByScore sorts by _score descending and limits
+// sortByScore 按 _score 降序并截断
 func sortByScore(chunks []map[string]interface{}, limit int) []map[string]interface{} {
 	if len(chunks) == 0 {
 		return chunks
@@ -2342,7 +2344,7 @@ func sortByScore(chunks []map[string]interface{}, limit int) []map[string]interf
 	return chunks
 }
 
-// getChunkScore extracts the score from a chunk
+// getChunkScore 从 chunk 读取 _score/SCORE/SIMILARITY
 func getChunkScore(chunk map[string]interface{}) float64 {
 	if v, ok := chunk["_score"].(float64); ok {
 		return v
@@ -2356,7 +2358,7 @@ func getChunkScore(chunk map[string]interface{}) float64 {
 	return 0.0
 }
 
-// transformChunkFields converts chunk field names to Infinity format.
+// transformChunkFields 写入前将 RAGFlow 字段转为 Infinity 列（含向量零填充）。
 // Converts internal field names (like docnm_kwd) to Infinity column names (docnm).
 // Also handles:
 // - kb_id: extracts first element if it's a list
@@ -2503,12 +2505,12 @@ func transformChunkFields(chunk map[string]interface{}, embeddingCols [][2]inter
 	return d
 }
 
-// DropChunkStore drops a chunk table from Infinity
+// DropChunkStore 删除分块表
 func (e *infinityEngine) DropChunkStore(ctx context.Context, baseName, datasetID string) error {
 	return e.dropTable(ctx, buildChunkTableName(baseName, datasetID))
 }
 
-// ChunkStoreExists checks if a chunk table exists in Infinity
+// ChunkStoreExists 检查分块表是否存在
 func (e *infinityEngine) ChunkStoreExists(ctx context.Context, baseName, datasetID string) (bool, error) {
 	return e.tableExists(ctx, buildChunkTableName(baseName, datasetID))
 }

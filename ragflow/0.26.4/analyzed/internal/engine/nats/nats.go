@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// nats.go — NATS JetStream 任务队列：实现 engine.MessageQueue，负责任务发布、消费、队列状态查询与消息 Ack/Nack。
 //
 
 package nats
@@ -30,6 +32,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
+// NatsEngine NATS JetStream 消息队列引擎。
 type NatsEngine struct {
 	host      string
 	port      int
@@ -39,6 +42,7 @@ type NatsEngine struct {
 	consumer  jetstream.Consumer
 }
 
+// NewNatsEngine 构造 NATS 引擎（连接在 Init 中建立）。
 func NewNatsEngine(host string, port int) *NatsEngine {
 	return &NatsEngine{
 		host: host,
@@ -46,6 +50,7 @@ func NewNatsEngine(host string, port int) *NatsEngine {
 	}
 }
 
+// Init 连接 NATS、创建或复用 RAGFLOW_TASKS 流（WorkQueue 策略）。
 func (n *NatsEngine) Init() error {
 	var err error
 	natsURL := fmt.Sprintf("nats://%s:%d", n.host, n.port)
@@ -92,6 +97,7 @@ func (n *NatsEngine) Init() error {
 	return nil
 }
 
+// PublishTask 向 JetStream 发布任务消息。
 func (n *NatsEngine) PublishTask(subject string, payload []byte) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -104,6 +110,7 @@ func (n *NatsEngine) PublishTask(subject string, payload []byte) error {
 	return nil
 }
 
+// ShowMessageQueue 返回流/消费者 pending、ack 等统计信息。
 func (n *NatsEngine) ShowMessageQueue() (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -138,6 +145,7 @@ func (n *NatsEngine) ShowMessageQueue() (map[string]string, error) {
 	return result, nil
 }
 
+// ListMessages 按序遍历流中 tasks.> 主题消息（调试/运维）。
 func (n *NatsEngine) ListMessages(messageType string, pending bool) ([]map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -181,6 +189,7 @@ func (n *NatsEngine) ListMessages(messageType string, pending bool) ([]map[strin
 	return messages, nil
 }
 
+// InitConsumer 创建或更新 RAGFLOW_CONSUMER（显式 Ack，FilterSubject tasks.>）。
 func (n *NatsEngine) InitConsumer(subject string) error {
 	if n.stream == nil {
 		return fmt.Errorf("NATS stream is nil, engine not properly initialized")
@@ -197,7 +206,7 @@ func (n *NatsEngine) InitConsumer(subject string) error {
 		FilterSubject: "tasks.>",
 	})
 	if err != nil {
-		// MaxAckPending is immutable after consumer creation.
+		// 消费者已存在时 MaxAckPending 不可变，需 fallback 到已有 consumer
 		// If the consumer already exists, fall back to fetching it.
 		if strings.Contains(err.Error(), "max waiting can not be updated") {
 			n.consumer, err = n.stream.Consumer(ctx, "RAGFLOW_CONSUMER")
@@ -210,6 +219,7 @@ func (n *NatsEngine) InitConsumer(subject string) error {
 	}
 	return nil
 }
+// GetMessages 从 consumer Fetch 一批任务并包装为 TaskHandle。
 func (n *NatsEngine) GetMessages(messageCount int) ([]common.TaskHandle, error) {
 	resultMessages := make([]common.TaskHandle, 0)
 	messages, err := n.consumer.Fetch(messageCount, jetstream.FetchMaxWait(1*time.Second))
@@ -222,11 +232,13 @@ func (n *NatsEngine) GetMessages(messageCount int) ([]common.TaskHandle, error) 
 	return resultMessages, nil
 }
 
+// CheckStatus 返回 NATS 连接状态字符串。
 func (n *NatsEngine) CheckStatus() string {
 	n.nc.Stats()
 	return n.nc.Status().String()
 }
 
+// NatsMessageHandle 单条 JetStream 消息的 Ack 封装。
 type NatsMessageHandle struct {
 	message jetstream.Msg
 }
@@ -237,6 +249,7 @@ func NewNatsMessageHandle(message jetstream.Msg) *NatsMessageHandle {
 	}
 }
 
+// GetMessage 反序列化 payload 为 TaskMessage。
 func (m *NatsMessageHandle) GetMessage() common.TaskMessage {
 	// convert to task message
 	var taskMessage common.TaskMessage
@@ -246,10 +259,12 @@ func (m *NatsMessageHandle) GetMessage() common.TaskMessage {
 	return taskMessage
 }
 
+// Ack 确认消息处理成功。
 func (m *NatsMessageHandle) Ack() error {
 	return m.message.Ack()
 }
 
+// Nack 否定确认，触发重投递。
 func (m *NatsMessageHandle) Nack() error {
 	return m.message.Nak()
 }

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// document.go — Infinity 文档/技能写入：IndexDocument/BulkIndex 当前主要服务 skill_ 前缀表，普通文档索引待 SDK 完善。
 //
 
 package infinity
@@ -25,18 +27,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// IndexDocument indexes a single document
+// IndexDocument skill_ 表走 InsertSkill，普通文档暂返回未实现。
 // For skill index (tableName starts with "skill_"), uses InsertSkill
 // For regular document index, returns not implemented error
 func (e *infinityEngine) IndexDocument(ctx context.Context, tableName, docID string, doc interface{}) error {
-	// Check if this is a skill index
+	// 表名 skill_ 前缀判定为技能索引
 	if strings.HasPrefix(tableName, "skill_") {
 		return e.InsertSkill(ctx, tableName, docID, doc)
 	}
 	return fmt.Errorf("infinity insert not implemented for regular documents: waiting for official Go SDK")
 }
 
-// InsertSkill inserts a skill document into skill index
+// InsertSkill 写入技能文档，同 skill_id 先删后插；表须由 SkillIndexer 预先创建。
 // Auto-creates the table if it doesn't exist
 func (e *infinityEngine) InsertSkill(ctx context.Context, tableName, docID string, doc interface{}) error {
 	db, err := e.client.conn.GetDatabase(e.client.dbName)
@@ -57,7 +59,7 @@ func (e *infinityEngine) InsertSkill(ctx context.Context, tableName, docID strin
 		return fmt.Errorf("skill table %s does not exist, please ensure index is initialized first", tableName)
 	}
 
-	// Transform doc to map
+	// 将 doc 转为 map 并设置 skill_id
 	docMap, ok := doc.(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("invalid doc type, expected map[string]interface{}")
@@ -72,7 +74,7 @@ func (e *infinityEngine) InsertSkill(ctx context.Context, tableName, docID strin
 	insertDoc["skill_id"] = docID
 
 	// Delete existing document with same skill_id
-	// Escape single quotes to prevent filter injection
+	// 转义单引号防止 filter 注入
 	docIDEscaped := strings.ReplaceAll(docID, "'", "''")
 	filter := fmt.Sprintf("skill_id = '%s'", docIDEscaped)
 	delResp, delErr := table.Delete(filter)
@@ -90,7 +92,7 @@ func (e *infinityEngine) InsertSkill(ctx context.Context, tableName, docID strin
 	return nil
 }
 
-// BulkIndex indexes documents in bulk
+// BulkIndex skill 表批量 upsert，普通文档暂未实现。
 // For skill index (tableName starts with "skill_"), uses BulkInsertSkill
 // For regular document index, returns not implemented error
 func (e *infinityEngine) BulkIndex(ctx context.Context, tableName string, docs []interface{}) (interface{}, error) {
@@ -102,7 +104,7 @@ func (e *infinityEngine) BulkIndex(ctx context.Context, tableName string, docs [
 	return nil, fmt.Errorf("infinity bulk insert not implemented for regular documents: waiting for official Go SDK")
 }
 
-// BulkInsertSkill inserts multiple skill documents in bulk with upsert semantics.
+// BulkInsertSkill 批量技能写入，逐条浅拷贝并 upsert。
 // For each document, deletes existing rows with the same skill_id before inserting,
 // matching the behavior of InsertSkill. Creates shallow copies of input maps to
 // avoid mutating caller data.
@@ -186,17 +188,17 @@ func (e *infinityEngine) BulkInsertSkill(ctx context.Context, tableName string, 
 	return len(insertDocs), nil
 }
 
-// BulkResponse bulk operation response
+// BulkResponse 批量插入计数
 type BulkResponse struct {
 	Inserted int
 }
 
-// GetDocument gets a document
+// GetDocument 暂未实现
 func (e *infinityEngine) GetDocument(ctx context.Context, tableName, docID string) (interface{}, error) {
 	return nil, fmt.Errorf("infinity get document not implemented: waiting for official Go SDK")
 }
 
-// DeleteDocument deletes a document by ID
+// DeleteDocument 按 id 或 skill_id 删除单行
 func (e *infinityEngine) DeleteDocument(ctx context.Context, tableName, docID string) error {
 	if tableName == "" {
 		return fmt.Errorf("table name cannot be empty")

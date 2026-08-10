@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// metadata.go — Elasticsearch 文档元数据索引：租户级 ragflow_doc_meta_* 索引的创建、CRUD、搜索与元数据过滤下推。
 //
 
 package elasticsearch
@@ -32,11 +34,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// CreateMetadataStore creates the document metadata index
+// CreateMetadataStore 创建租户文档元数据索引（映射由 index template 提供）。
 func (e *elasticsearchEngine) CreateMetadataStore(ctx context.Context, tenantID string) error {
 	indexName := buildMetadataIndexName(tenantID)
 
-	// Check if index already exists
+	// 索引已存在则直接返回
 	exists, err := e.indexExists(ctx, indexName)
 	if err != nil {
 		return fmt.Errorf("failed to check index existence: %w", err)
@@ -45,7 +47,7 @@ func (e *elasticsearchEngine) CreateMetadataStore(ctx context.Context, tenantID 
 		return nil
 	}
 
-	// Index will be created with mapping from index template (ragflow_doc_meta_mapping)
+	// 映射由 ragflow_doc_meta_mapping 模板提供 (ragflow_doc_meta_mapping)
 	req := esapi.IndicesCreateRequest{
 		Index: indexName,
 	}
@@ -73,7 +75,7 @@ func (e *elasticsearchEngine) CreateMetadataStore(ctx context.Context, tenantID 
 	return nil
 }
 
-// InsertMetadata inserts documents into tenant's metadata index
+// InsertMetadata 批量写入元数据；复合 _id 为 len:id|len:kb_id 格式，存在则覆盖。
 // If a document with the same id and kb_id already exists, it will be updated with the new value
 func (e *elasticsearchEngine) InsertMetadata(ctx context.Context, metadata []map[string]interface{}, tenantID string) ([]string, error) {
 	indexName := buildMetadataIndexName(tenantID)
@@ -100,7 +102,7 @@ func (e *elasticsearchEngine) InsertMetadata(ctx context.Context, metadata []map
 		}
 	}
 
-	// Build bulk request body
+	// 组装 bulk NDJSON
 	var buf bytes.Buffer
 	for _, doc := range metadata {
 		docIDRaw, hasID := doc["id"]
@@ -168,7 +170,7 @@ func (e *elasticsearchEngine) InsertMetadata(ctx context.Context, metadata []map
 	return []string{}, nil
 }
 
-// UpdateMetadata updates or inserts document metadata in tenant's metadata index.
+// UpdateMetadata 按 id+kb_id 合并 meta_fields（Painless 脚本），无匹配行则 InsertMetadata。
 //
 // Examples (existing row → input → resulting meta_fields):
 //
@@ -206,7 +208,7 @@ func (e *elasticsearchEngine) UpdateMetadata(ctx context.Context, docID string, 
 		},
 	}
 
-	// Painless script: for every (key, value) in params.meta_fields,
+	// Painless：逐键合并 meta_fields，保留未出现在 params 中的键
 	// set ctx._source.meta_fields[key] = value. Existing keys not
 	// present in params.meta_fields are preserved. If the row has no
 	// meta_fields at all yet, initialize it to an empty map first.
@@ -265,7 +267,7 @@ func (e *elasticsearchEngine) UpdateMetadata(ctx context.Context, docID string, 
 	return nil
 }
 
-// DeleteMetadata deletes metadata from tenant's metadata index by condition
+// DeleteMetadata 按条件 delete_by_query，返回删除条数。
 // The condition is a map used to build an ES query (e.g., map["kb_id"]="xxx")
 // Returns the number of deleted documents
 func (e *elasticsearchEngine) DeleteMetadata(ctx context.Context, condition map[string]interface{}, tenantID string) (int64, error) {
@@ -332,7 +334,7 @@ func (e *elasticsearchEngine) DeleteMetadata(ctx context.Context, condition map[
 	return deleted, nil
 }
 
-// DeleteMetadataKeys deletes specific metadata keys from a document's meta_fields.
+// DeleteMetadataKeys 删除指定 meta 键；删空后整行移除。
 // If deleting those keys leaves no metadata entries, the metadata document is removed.
 func (e *elasticsearchEngine) DeleteMetadataKeys(ctx context.Context, docID string, datasetID string, keys []string, tenantID string) error {
 	indexName := buildMetadataIndexName(tenantID)
@@ -361,7 +363,7 @@ func (e *elasticsearchEngine) DeleteMetadataKeys(ctx context.Context, docID stri
 		},
 	}
 
-	// First, get the current meta_fields to check if it will be empty after deletion
+	// 先读取当前 meta_fields 以判断删键后是否应删整行
 	getReq := map[string]interface{}{
 		"query":   query,
 		"_source": []string{"meta_fields"},
@@ -461,7 +463,7 @@ func (e *elasticsearchEngine) DeleteMetadataKeys(ctx context.Context, docID stri
 		}
 	}
 
-	// If no other keys would remain after deletion, delete the document directly
+	// 删键后无剩余字段则删除整份元数据文档
 	if remainingKeys == 0 {
 		common.Info("All metadata keys would be deleted, removing document from index", zap.String("docID", docID))
 
@@ -527,19 +529,19 @@ func (e *elasticsearchEngine) DeleteMetadataKeys(ctx context.Context, docID stri
 	return nil
 }
 
-// DropMetadataStore drops a metadata index from Elasticsearch
+// DropMetadataStore 删除租户元数据索引。
 func (e *elasticsearchEngine) DropMetadataStore(ctx context.Context, tenantID string) error {
 	indexName := buildMetadataIndexName(tenantID)
 	return e.dropIndex(ctx, indexName)
 }
 
-// MetadataStoreExists checks if a metadata index exists in Elasticsearch
+// MetadataStoreExists 检查元数据索引是否存在。
 func (e *elasticsearchEngine) MetadataStoreExists(ctx context.Context, tenantID string) (bool, error) {
 	indexName := buildMetadataIndexName(tenantID)
 	return e.indexExists(ctx, indexName)
 }
 
-// SearchMetadata executes search specifically for metadata indices (ragflow_doc_meta_*)
+// SearchMetadata 在元数据索引上执行条件搜索，支持排序与字段投影。
 func (e *elasticsearchEngine) SearchMetadata(ctx context.Context, req *types.SearchMetadataRequest) (*types.SearchMetadataResult, error) {
 	tenantID := req.TenantID
 	common.Debug("SearchMetadata in Elasticsearch started", zap.String("tenantID", tenantID))
@@ -641,7 +643,7 @@ func (e *elasticsearchEngine) SearchMetadata(ctx context.Context, req *types.Sea
 	}, nil
 }
 
-// buildMetadataQueryFromCondition builds an ES query for metadata index
+// buildMetadataQueryFromCondition 将 condition map 转为 ES term/terms 组合。
 func (e *elasticsearchEngine) buildMetadataQueryFromCondition(condition map[string]interface{}) map[string]interface{} {
 	if len(condition) == 0 {
 		return nil
@@ -705,7 +707,7 @@ func (e *elasticsearchEngine) buildMetadataQueryFromCondition(condition map[stri
 	}
 }
 
-// metaPushdownMaxSize caps how many doc IDs the metadata push-down is
+// metaPushdownMaxSize 元数据下推单次最多返回的 doc ID 数（默认 10000，对齐 Python）。
 // willing to return in one shot. Matches the Python reference
 // (DocMetadataService.filter_doc_ids_by_meta_pushdown, default limit=10000)
 // and ES's default index.max_result_window.
@@ -716,7 +718,7 @@ func (e *elasticsearchEngine) buildMetadataQueryFromCondition(condition map[stri
 // a truncated slice as a definitive answer would silently drop docs.
 const metaPushdownMaxSize = 10000
 
-// FilterDocIdsByMetaPushdown runs a metadata filter directly against the ES doc metadata index.
+// FilterDocIdsByMetaPushdown 在 ES 元数据索引执行过滤；nil 表示应回退内存过滤，[] 表示确定零匹配。
 //
 // Return value convention (matching Python's filter_doc_ids_by_meta_pushdown):
 //
@@ -825,7 +827,7 @@ func (e *elasticsearchEngine) FilterDocIdsByMetaPushdown(ctx context.Context, kb
 	return docIDs
 }
 
-// dedupeStrings returns the unique values of s, preserving first-seen order.
+// dedupeStrings 去重并保持首次出现顺序。
 func dedupeStrings(s []string) []string {
 	if len(s) == 0 {
 		return s
@@ -842,7 +844,7 @@ func dedupeStrings(s []string) []string {
 	return out
 }
 
-// totalHitsFromESResponse extracts the exact total hit count from an ES
+// totalHitsFromESResponse 从 ES 响应提取精确 total（需 track_total_hits）。
 // search response. Returns ok=false when the field is missing or in an
 // unexpected shape; callers should treat that as "cannot verify" rather
 // than "no overflow".

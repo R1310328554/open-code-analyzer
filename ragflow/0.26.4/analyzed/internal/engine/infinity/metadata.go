@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// metadata.go — Infinity 文档元数据表：租户表创建、CRUD、SearchMetadata 与元数据过滤下推（JSON 字段 + 二级索引）。
 //
 
 package infinity
@@ -33,7 +35,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// CreateMetadataStore creates a metadata table in Infinity
+// CreateMetadataStore 按 doc_meta mapping 建表并为 id/kb_id/meta_fields 建二级索引。
 // tenantID is the tenant identifier used to build the table name
 func (e *infinityEngine) CreateMetadataStore(ctx context.Context, tenantID string) error {
 	tableName := buildMetadataTableName(tenantID)
@@ -129,7 +131,7 @@ func (e *infinityEngine) CreateMetadataStore(ctx context.Context, tenantID strin
 	return nil
 }
 
-// InsertMetadata inserts document metadata into tenant's metadata table
+// InsertMetadata 写入元数据，meta_fields 序列化为 JSON 字符串，同 id+kb_id 先删后插。
 // Auto-create the table if it doesn't exist
 // Replace existing metadata with same id and kb_id
 func (e *infinityEngine) InsertMetadata(ctx context.Context, metadata []map[string]interface{}, tenantID string) ([]string, error) {
@@ -203,9 +205,9 @@ func (e *infinityEngine) InsertMetadata(ctx context.Context, metadata []map[stri
 	return []string{}, nil
 }
 
-// UpdateMetadata updates or inserts document metadata in tenant's metadata table.
+// UpdateMetadata 合并 meta_fields（非整行替换）；无行则 insert。
 //
-// "Updates" here means MERGE, not replace. The supplied metaFields are
+// // 此处 Update 为 MERGE：新键覆盖、旧键保留、无行则插入。
 // overlaid on top of the row's existing meta_fields map: keys already
 // present are overwritten with the new value, keys not in the input
 // are preserved, and brand-new keys are added. If no row exists for
@@ -333,7 +335,7 @@ func (e *infinityEngine) UpdateMetadata(ctx context.Context, docID string, datas
 	return nil
 }
 
-// DeleteMetadata deletes metadata from tenant's metadata table by condition
+// DeleteMetadata 按 condition 删除元数据行。
 // Returns the number of deleted documents.
 func (e *infinityEngine) DeleteMetadata(ctx context.Context, condition map[string]interface{}, tenantID string) (int64, error) {
 	tableName := buildMetadataTableName(tenantID)
@@ -391,7 +393,7 @@ func (e *infinityEngine) DeleteMetadata(ctx context.Context, condition map[strin
 	return delResp.DeletedRows, nil
 }
 
-// DeleteMetadataKeys deletes specific metadata keys from a document's meta_fields.
+// DeleteMetadataKeys 删除指定键，删空则删整行。
 // If deleting those keys leaves no metadata entries, the metadata row is removed.
 func (e *infinityEngine) DeleteMetadataKeys(ctx context.Context, docID string, datasetID string, keys []string, tenantID string) error {
 	tableName := buildMetadataTableName(tenantID)
@@ -528,19 +530,19 @@ func (e *infinityEngine) DeleteMetadataKeys(ctx context.Context, docID string, d
 	return nil
 }
 
-// DropMetadataStore drops a metadata table from Infinity
+// DropMetadataStore 删除租户元数据表
 func (e *infinityEngine) DropMetadataStore(ctx context.Context, tenantID string) error {
 	tableName := buildMetadataTableName(tenantID)
 	return e.dropTable(ctx, tableName)
 }
 
-// MetadataStoreExists checks if a metadata table exists in Infinity
+// MetadataStoreExists 检查元数据表是否存在。
 func (e *infinityEngine) MetadataStoreExists(ctx context.Context, tenantID string) (bool, error) {
 	tableName := buildMetadataTableName(tenantID)
 	return e.tableExists(ctx, tableName)
 }
 
-// SearchMetadata executes search specifically for metadata tables
+// SearchMetadata 在元数据表上 filter/sort/分页查询，与 chunk Search 分离。
 // This is separate from Search() which handles only chunk tables
 func (e *infinityEngine) SearchMetadata(ctx context.Context, req *types.SearchMetadataRequest) (*types.SearchMetadataResult, error) {
 	tenantID := req.TenantID
@@ -681,7 +683,7 @@ func (e *infinityEngine) SearchMetadata(ctx context.Context, req *types.SearchMe
 	}, nil
 }
 
-// parseLengthPrefixedJSON parses Infinity's length-prefixed JSON format
+// parseLengthPrefixedJSON 解析 Infinity 多行拼接的长度前缀 JSON  blob。
 // (a sequence of [4-byte little-endian length][JSON] records) and returns
 // each parsed JSON object. This is the same on-the-wire format that the
 // service layer's ParseAllLengthPrefixedJSON understands; duplicated here
@@ -723,7 +725,7 @@ func parseLengthPrefixedJSON(data []byte) []map[string]interface{} {
 	return results
 }
 
-// realignMetaFieldsColumn fixes a column-oriented data-frame
+// realignMetaFieldsColumn 修正多行查询时 meta_fields 列错位问题。
 // misalignment that happens when Infinity's SDK returns the
 // `meta_fields` column for a multi-row query as a single
 // length-prefixed byte array instead of one entry per row. After the
@@ -762,7 +764,7 @@ func realignMetaFieldsColumn(chunks []map[string]interface{}) {
 	}
 }
 
-// metaPushdownMaxSize caps how many doc IDs the metadata push-down is
+// metaPushdownMaxSize 下推结果上限 10000，超出则回退内存过滤。
 // willing to return in one shot. Matches the Python reference
 // (DocMetadataService.filter_doc_ids_by_meta_pushdown, default limit=10000)
 // and ES's default index.max_result_window.
@@ -773,7 +775,7 @@ func realignMetaFieldsColumn(chunks []map[string]interface{}) {
 // a truncated slice as a definitive answer would silently drop docs.
 const metaPushdownMaxSize = 10000
 
-// FilterDocIdsByMetaPushdown runs a metadata filter directly against the Infinity table.
+// FilterDocIdsByMetaPushdown 在 Infinity 元数据表执行 WHERE 下推。
 //
 // Return value convention (matching Python's filter_doc_ids_by_meta_pushdown):
 //
@@ -888,7 +890,7 @@ func (e *infinityEngine) FilterDocIdsByMetaPushdown(ctx context.Context, kbIDs [
 	return docIDs
 }
 
-// totalHitsFromInfinityExtraInfo parses the JSON blob Infinity returns
+// totalHitsFromInfinityExtraInfo 从 ExtraInfo 解析 total_hits_count 检测溢出。
 // in QueryResult.ExtraInfo when the total_hits_count option is set. The
 // shape is not part of the public SDK contract today (it's a string
 // field with an undocumented layout), so we accept several common

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// document.go — Elasticsearch 文档 CRUD 与批量索引：封装 Index/Get/Delete 及 Bulk API，供技能索引与普通文档写入。
 //
 
 package elasticsearch
@@ -26,7 +28,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
 
-// IndexDocument indexes a single document
+// IndexDocument 向指定索引写入单条文档，Refresh=true 立即可搜。
 func (e *elasticsearchEngine) IndexDocument(ctx context.Context, indexName, docID string, doc interface{}) error {
 	if indexName == "" {
 		return fmt.Errorf("index name cannot be empty")
@@ -38,13 +40,13 @@ func (e *elasticsearchEngine) IndexDocument(ctx context.Context, indexName, docI
 		return fmt.Errorf("document cannot be nil")
 	}
 
-	// Serialize document
+	// 序列化文档为 JSON
 	data, err := json.Marshal(doc)
 	if err != nil {
 		return fmt.Errorf("failed to marshal document: %w", err)
 	}
 
-	// Index document
+	// 构造 IndexRequest 并执行
 	req := esapi.IndexRequest{
 		Index:      indexName,
 		DocumentID: docID,
@@ -70,7 +72,7 @@ func (e *elasticsearchEngine) IndexDocument(ctx context.Context, indexName, docI
 	return nil
 }
 
-// BulkIndex indexes documents in bulk
+// BulkIndex 批量索引文档；每条须含 _id，写入前会从 body 中移除 _id 字段。
 func (e *elasticsearchEngine) BulkIndex(ctx context.Context, indexName string, docs []interface{}) (interface{}, error) {
 	if indexName == "" {
 		return nil, fmt.Errorf("index name cannot be empty")
@@ -79,7 +81,7 @@ func (e *elasticsearchEngine) BulkIndex(ctx context.Context, indexName string, d
 		return nil, fmt.Errorf("documents cannot be empty")
 	}
 
-	// Build bulk request
+	// 组装 NDJSON 格式的 bulk 请求体
 	var buf bytes.Buffer
 	for _, doc := range docs {
 		docMap, ok := doc.(map[string]interface{})
@@ -92,10 +94,10 @@ func (e *elasticsearchEngine) BulkIndex(ctx context.Context, indexName string, d
 			return nil, fmt.Errorf("document missing _id field")
 		}
 
-		// Delete _id field to avoid duplication
+		// 删除 _id 避免与 meta 行重复
 		delete(docMap, "_id")
 
-		// Add index operation
+		// 写入 index 操作行
 		meta := map[string]interface{}{
 			"_index": indexName,
 			"_id":    docID,
@@ -109,7 +111,7 @@ func (e *elasticsearchEngine) BulkIndex(ctx context.Context, indexName string, d
 		buf.WriteByte('\n')
 	}
 
-	// Execute bulk request
+	// 执行 bulk 请求
 	req := esapi.BulkRequest{
 		Body:    &buf,
 		Refresh: "true",
@@ -130,15 +132,15 @@ func (e *elasticsearchEngine) BulkIndex(ctx context.Context, indexName string, d
 		return nil, fmt.Errorf("elasticsearch returned error: %s", res.Status())
 	}
 
-	// Parse response
+	// 解析 bulk 响应
 	var result map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	// Check for errors
+	// 检查 items 中是否有单条失败
 	if errors, ok := result["errors"].(bool); ok && errors {
-		// Get error details
+		// 提取首条错误 reason
 		if items, ok := result["items"].([]interface{}); ok && len(items) > 0 {
 			for _, item := range items {
 				if itemMap, ok := item.(map[string]interface{}); ok {
@@ -166,14 +168,14 @@ func (e *elasticsearchEngine) BulkIndex(ctx context.Context, indexName string, d
 	return response, nil
 }
 
-// BulkResponse bulk operation response
+// BulkResponse 批量写入响应摘要。
 type BulkResponse struct {
 	Took    int64
 	Errors  bool
 	Indexed int
 }
 
-// GetDocument gets a document
+// GetDocument 按索引名与文档 ID 读取 _source。
 func (e *elasticsearchEngine) GetDocument(ctx context.Context, indexName, docID string) (interface{}, error) {
 	if indexName == "" {
 		return nil, fmt.Errorf("index name cannot be empty")
@@ -182,7 +184,7 @@ func (e *elasticsearchEngine) GetDocument(ctx context.Context, indexName, docID 
 		return nil, fmt.Errorf("document id cannot be empty")
 	}
 
-	// Get document
+	// 执行 GetRequest
 	req := esapi.GetRequest{
 		Index:      indexName,
 		DocumentID: docID,
@@ -220,7 +222,7 @@ func (e *elasticsearchEngine) GetDocument(ctx context.Context, indexName, docID 
 	return result["_source"], nil
 }
 
-// DeleteDocument deletes a document
+// DeleteDocument 按 ID 删除文档，404 视为未找到。
 func (e *elasticsearchEngine) DeleteDocument(ctx context.Context, indexName, docID string) error {
 	if indexName == "" {
 		return fmt.Errorf("index name cannot be empty")
@@ -229,7 +231,7 @@ func (e *elasticsearchEngine) DeleteDocument(ctx context.Context, indexName, doc
 		return fmt.Errorf("document id cannot be empty")
 	}
 
-	// Delete document
+	// 执行 DeleteRequest
 	req := esapi.DeleteRequest{
 		Index:      indexName,
 		DocumentID: docID,

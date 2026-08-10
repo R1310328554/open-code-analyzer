@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// sql.go — Infinity SQL 检索（psql 子进程）：预处理 SQL、按 infinity_mapping 别名反写列名，解析 psql 表格输出为行 map。
 //
 
 package infinity
@@ -46,13 +48,13 @@ var whitespaceRe = regexp.MustCompile("[ `]+")
 
 var rowCountFooterRe = regexp.MustCompile(`^\(\d+ rows?`)
 
-// fieldMappingEntry is one entry in infinity_mapping.json.
+// fieldMappingEntry mapping 中单字段类型与 comment 中的别名列表。
 type fieldMappingEntry struct {
 	Type    string `json:"type"`
 	Comment string `json:"comment"`
 }
 
-// loadFieldMapping reads infinity_mapping.json and returns alias→actual
+// loadFieldMapping 读取 mapping，构建别名↔实际列名双向映射。
 // and actual→firstAlias maps. Silently returns empty maps on missing file.
 func loadFieldMapping(mappingFileName string) (aliasToActual map[string]string, actualToFirstAlias map[string]string, err error) {
 	if mappingFileName == "" {
@@ -101,14 +103,14 @@ func loadFieldMapping(mappingFileName string) (aliasToActual map[string]string, 
 	return aliasToActual, actualToFirstAlias, nil
 }
 
-// preprocessSQL collapses spaces/backticks and strips '%'.
+// preprocessSQL 折叠空白/反引号并去掉 %
 func preprocessSQL(sql string) string {
 	sql = whitespaceRe.ReplaceAllString(sql, " ")
 	sql = strings.ReplaceAll(sql, "%", "")
 	return sql
 }
 
-// rewriteFieldAliases rewrites alias field names to actual stored names
+// rewriteFieldAliases 在 SELECT/WHERE/ORDER BY/GROUP BY/HAVING 中替换别名。
 // in SELECT, WHERE, ORDER BY, GROUP BY, and HAVING clauses.
 func rewriteFieldAliases(sql string, aliasToActual map[string]string) string {
 	if len(aliasToActual) == 0 {
@@ -154,13 +156,13 @@ func rewriteFirstAliasAfterKeyword(sql, keyword string, aliasToActual map[string
 	return sql
 }
 
-// psqlResult is the structured parse of a psql table-format output.
+// psqlResult 解析后的 psql 列名与行数据。
 type psqlResult struct {
 	Columns []string
 	Rows    [][]string
 }
 
-// runPsql shells out to psql and parses the table-format output.
+// runPsql 调用 psql 子进程执行 SQL，带超时。
 func runPsql(ctx context.Context, host, port, sql string) (*psqlResult, error) {
 	psqlPath, err := findPsqlBinary()
 	if err != nil {
@@ -189,7 +191,7 @@ func runPsql(ctx context.Context, host, port, sql string) (*psqlResult, error) {
 	return parsePsqlTable(stdout.String()), nil
 }
 
-// findPsqlBinary checks PATH first, then falls back to defaultPsqlPath.
+// findPsqlBinary 查找 psql 可执行文件。
 func findPsqlBinary() (string, error) {
 	if path, err := exec.LookPath("psql"); err == nil {
 		return path, nil
@@ -200,7 +202,7 @@ func findPsqlBinary() (string, error) {
 	return "", fmt.Errorf("psql not found on PATH and not at %q", defaultPsqlPath)
 }
 
-// parsePsqlTable parses psql's pipe-delimited output:
+// parsePsqlTable 解析 psql 管道分隔表格输出。
 //
 //	col1 | col2
 //	-----+-----
@@ -252,7 +254,7 @@ func parsePsqlTable(output string) *psqlResult {
 	return res
 }
 
-// toRowMaps converts psqlResult to a slice of column-keyed maps.
+// toRowMaps 转为 []map[string]interface{} 供上层 chunk 消费。
 func toRowMaps(res *psqlResult) []map[string]interface{} {
 	if res == nil || len(res.Rows) == 0 {
 		return nil
@@ -284,7 +286,7 @@ func resolvePsqlHostPort(hostURI string, postgresPort int) (host, port string) {
 	return host, port
 }
 
-// RunSQL implements the SQL retrieval path: preprocess, rewrite aliases,
+// RunSQL Infinity SQL 入口：预处理 → 别名改写 → psql 执行 → 解析。
 // run psql subprocess, parse output.
 func (e *infinityEngine) RunSQL(ctx context.Context, tableName string, sqlText string, kbIDs []string, _ string) ([]map[string]interface{}, error) {
 	if e == nil || e.client == nil {

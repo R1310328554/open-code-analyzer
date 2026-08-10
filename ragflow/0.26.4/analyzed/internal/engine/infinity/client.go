@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// client.go — Infinity SDK 客户端与引擎构造：连接重试、健康等待、数据库迁移及 Ping/Close 生命周期。
 //
 
 package infinity
@@ -30,21 +32,22 @@ import (
 	infinity "github.com/infiniflow/infinity-go-sdk"
 )
 
+// infinityClient 封装 Infinity SDK 连接与配置。
 type infinityClient struct {
 	conn   *infinity.InfinityConnection
 	dbName string
 
-	// Original URI from config, used by RunSQL to extract the host.
+	// hostURI 配置中的原始 URI，RunSQL 解析 psql 主机用
 	hostURI string
 
-	// Port for psql wire-protocol listener (default 5432).
+	// postgresPort Infinity PostgreSQL 协议端口
 	postgresPort int
 
-	// JSON file (under conf/) with the field-name alias map.
+	// mappingFileName 字段别名映射 JSON 文件名
 	mappingFileName string
 }
 
-// NewInfinityClient creates a new Infinity client using the SDK
+// NewInfinityClient 解析 URI 并最多重试 120 秒建立 SDK 连接。
 func NewInfinityClient(cfg *server.InfinityConfig) (*infinityClient, error) {
 	// Parse URI like "localhost:23817" to get IP and port
 	host := "127.0.0.1"
@@ -60,7 +63,7 @@ func NewInfinityClient(cfg *server.InfinityConfig) (*infinityClient, error) {
 		}
 	}
 
-	// Retry connecting for up to 120 seconds (24 attempts * 5 seconds)
+	// 最多 24 次、每次间隔 5 秒重连
 	common.Info("Connecting to Infinity")
 	var conn *infinity.InfinityConnection
 	var err error
@@ -88,7 +91,7 @@ func NewInfinityClient(cfg *server.InfinityConfig) (*infinityClient, error) {
 	return client, nil
 }
 
-// WaitForHealthy blocks until Infinity is healthy or timeout
+// WaitForHealthy 轮询 ShowCurrentNode 直至 ErrorCode=0 且状态 started/alive。
 func (c *infinityClient) WaitForHealthy(ctx context.Context, timeout time.Duration) error {
 	common.Info("Waiting for Infinity to be healthy")
 	deadline := time.Now().Add(timeout)
@@ -104,7 +107,7 @@ func (c *infinityClient) WaitForHealthy(ctx context.Context, timeout time.Durati
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		// Use reflection to access ErrorCode and ServerStatus fields
+		// 通过反射读取 SDK 内部响应字段
 		// since ShowCurrentNodeResponse is in an internal package
 		v := reflect.ValueOf(res)
 		if v.Kind() != reflect.Ptr {
@@ -131,7 +134,7 @@ func (c *infinityClient) WaitForHealthy(ctx context.Context, timeout time.Durati
 	return fmt.Errorf("Infinity not healthy after %v", timeout)
 }
 
-// Engine Infinity engine implementation using Go SDK
+// infinityEngine Infinity 文档引擎实现。
 type infinityEngine struct {
 	config                 *server.InfinityConfig
 	client                 *infinityClient
@@ -139,7 +142,7 @@ type infinityEngine struct {
 	docMetaMappingFileName string
 }
 
-// NewEngine creates an Infinity engine
+// NewEngine 创建引擎、等待健康并执行 MigrateDB
 func NewEngine(cfg interface{}) (*infinityEngine, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("infinity config is nil, please check your configuration file for 'doc_engine.infinity' settings")
@@ -178,7 +181,7 @@ func NewEngine(cfg interface{}) (*infinityEngine, error) {
 		return nil, fmt.Errorf("Infinity not healthy: %w", err)
 	}
 
-	// MigrateDB creates the database if it doesn't exist
+	// MigrateDB 若库不存在则 CreateDatabase（ConflictTypeIgnore）。
 	if err := engine.MigrateDB(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
@@ -186,12 +189,12 @@ func NewEngine(cfg interface{}) (*infinityEngine, error) {
 	return engine, nil
 }
 
-// GetType returns the engine type
+// GetType 返回 "infinity"
 func (e *infinityEngine) GetType() string {
 	return "infinity"
 }
 
-// Ping checks if Infinity is accessible
+// Ping 检查连接是否存活
 func (e *infinityEngine) Ping(ctx context.Context) error {
 	if e.client == nil || e.client.conn == nil {
 		return fmt.Errorf("Infinity client not initialized")
@@ -202,7 +205,7 @@ func (e *infinityEngine) Ping(ctx context.Context) error {
 	return nil
 }
 
-// Close closes the Infinity connection
+// Close 断开 Infinity 连接
 func (e *infinityEngine) Close() error {
 	if e.client != nil && e.client.conn != nil {
 		_, err := e.client.conn.Disconnect()

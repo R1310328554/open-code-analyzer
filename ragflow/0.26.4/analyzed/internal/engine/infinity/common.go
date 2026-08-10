@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// common.go — Infinity 表/列辅助：删表、表存在检查、mapping 有序解析、filter 构建与表名规则。
 //
 
 package infinity
@@ -29,7 +31,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// dropTable drops a table from Infinity
+// dropTable 删除 Infinity 表（须已存在）
 func (e *infinityEngine) dropTable(ctx context.Context, tableName string) error {
 	if tableName == "" {
 		return fmt.Errorf("table name cannot be empty")
@@ -58,7 +60,7 @@ func (e *infinityEngine) dropTable(ctx context.Context, tableName string) error 
 	return nil
 }
 
-// tableExists checks if a table exists in Infinity
+// tableExists 通过 GetTable 判断是否存在的表
 func (e *infinityEngine) tableExists(ctx context.Context, tableName string) (bool, error) {
 	if tableName == "" {
 		return false, fmt.Errorf("table name cannot be empty")
@@ -81,7 +83,7 @@ func (e *infinityEngine) tableExists(ctx context.Context, tableName string) (boo
 	return true, nil
 }
 
-// fieldInfo represents a field in the infinity mapping schema
+// fieldInfo mapping JSON 中单字段的类型、默认值、分词器与索引类型。
 type fieldInfo struct {
 	Type      string      `json:"type"`
 	Default   interface{} `json:"default"`
@@ -90,7 +92,7 @@ type fieldInfo struct {
 	Comment   string      `json:"comment"`
 }
 
-// orderedFields preserves the order of fields as defined in JSON
+// orderedFields 保序解析 mapping，建表时列顺序与 JSON 一致。
 type orderedFields struct {
 	Keys   []string
 	Fields map[string]fieldInfo
@@ -133,7 +135,7 @@ func (o *orderedFields) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// fieldKeyword checks if field is a keyword field
+// fieldKeyword 判断是否为需 filter_fulltext 的 *_kwd 类字段
 func fieldKeyword(fieldName string) bool {
 	if fieldName == "source_id" {
 		return true
@@ -148,7 +150,7 @@ func fieldKeyword(fieldName string) bool {
 	return false
 }
 
-// existsCondition builds a NOT EXISTS or field!=" condition
+// existsCondition 按列类型生成非空判断（char 列用 !=''）
 func existsCondition(field string, tableColumns map[string]struct {
 	Type    string
 	Default interface{}
@@ -170,6 +172,7 @@ func existsCondition(field string, tableColumns map[string]struct {
 	return fmt.Sprintf("%s!=null", field)
 }
 
+// buildFilterFromCondition 将 condition map 转为 Infinity filter SQL（含 must_not、IN、exists）。
 func buildFilterFromCondition(condition map[string]interface{}, tableColumns map[string]struct {
 	Type    string
 	Default interface{}
@@ -184,7 +187,7 @@ func buildFilterFromCondition(condition map[string]interface{}, tableColumns map
 			continue
 		}
 
-		// Handle must_not conditions -> NOT (...)
+		// must_not.exists 转为 NOT (existsCondition)
 		if k == "must_not" {
 			if mustNotMap, ok := v.(map[string]interface{}); ok {
 				for kk, vv := range mustNotMap {
@@ -198,7 +201,7 @@ func buildFilterFromCondition(condition map[string]interface{}, tableColumns map
 			continue
 		}
 
-		// Handle keyword fields -> filter_fulltext with converted field name
+		// 关键词字段用 filter_fulltext 与 convertMatchingField
 		if fieldKeyword(k) {
 			var orConds []string
 			addFullText := func(item string) {
@@ -280,7 +283,7 @@ func buildFilterFromCondition(condition map[string]interface{}, tableColumns map
 	return strings.Join(conditions, " AND ")
 }
 
-// columnExists checks if a column exists in the table
+// columnExists 检查表中是否存在指定列
 func (e *infinityEngine) columnExists(table *infinity.Table, columnName string) (bool, error) {
 	colsResp, err := table.ShowColumns()
 	if err != nil {
@@ -304,7 +307,7 @@ func (e *infinityEngine) columnExists(table *infinity.Table, columnName string) 
 	return false, nil
 }
 
-// buildChunkTableName returns the chunk table name for a dataset
+// buildChunkTableName skill 索引仅 baseName，普通表为 {baseName}_{datasetID}。
 // Skill Table: table name is just baseName (e.g., "skill_abc123_def456")
 // Regular chunk Table: table name is {baseName}_{datasetID}
 func buildChunkTableName(baseName, datasetID string) string {
@@ -314,7 +317,7 @@ func buildChunkTableName(baseName, datasetID string) string {
 	return fmt.Sprintf("%s_%s", baseName, datasetID)
 }
 
-// buildMetadataTableName returns the metadata table name for a tenant
+// buildMetadataTableName 租户元数据表 ragflow_doc_meta_{tenantID}。
 func buildMetadataTableName(tenantID string) string {
 	return fmt.Sprintf("ragflow_doc_meta_%s", tenantID)
 }

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// meta_filter.go — Elasticsearch 元数据过滤器下推：将 UI/API 的 {key,op,value} 条件翻译为 ES bool DSL，支持等值、范围、in、contains 等算子，供 FilterDocIdsByMetaPushdown 使用。
 //
 
 package elasticsearch
@@ -27,13 +29,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// Field prefix in the doc-metadata ES index
+// doc-metadata 索引中 meta_fields 字段前缀
 const metaFieldsPrefix = "meta_fields"
 
-// Date pattern for YYYY-MM-DD
+// 日期格式 YYYY-MM-DD 校验
 var dateRegex = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
-// Supported operators
+// 支持的过滤算子集合
 var supportedOperators = map[string]bool{
 	"=":            true,
 	"≠":            true,
@@ -51,7 +53,7 @@ var supportedOperators = map[string]bool{
 	"not empty":    true,
 }
 
-// Range operators mapping
+// 范围算子到 ES range 子句的映射
 var rangeOps = map[string]string{
 	">": "gt",
 	"<": "lt",
@@ -59,13 +61,13 @@ var rangeOps = map[string]string{
 	"≤": "lte",
 }
 
-// Negative operators unsafe for multi-valued fields
+// 多值字段上语义不安全的否定算子（下推时排除）
 var multivalueUnsafeNegativeOps = map[string]bool{
 	"≠":      true,
 	"not in": true,
 }
 
-// UnsupportedMetaFilterError is raised when a filter cannot be expressed as ES DSL
+// UnsupportedMetaFilterError 表示该过滤条件无法翻译为 ES DSL。
 type UnsupportedMetaFilterError struct {
 	Reason       string
 	FilterClause map[string]interface{}
@@ -75,13 +77,13 @@ func (e *UnsupportedMetaFilterError) Error() string {
 	return e.Reason
 }
 
-// TranslatedFilter represents a single filter rendered as ES bool clauses
+// TranslatedFilter 单条过滤翻译结果，拆分为 must / must_not 子句。
 type TranslatedFilter struct {
 	Must    []map[string]interface{}
 	MustNot []map[string]interface{}
 }
 
-// ToClauses converts to ES clauses
+// ToClauses 合并为 ES 查询子句数组
 func (f *TranslatedFilter) ToClauses() []map[string]interface{} {
 	if len(f.Must) == 0 && len(f.MustNot) == 0 {
 		return []map[string]interface{}{}
@@ -95,18 +97,18 @@ func (f *TranslatedFilter) ToClauses() []map[string]interface{} {
 	return []map[string]interface{}{{"bool": map[string]interface{}{"must": f.Must, "must_not": f.MustNot}}}
 }
 
-// MetaFilterPushdownPlan represents composed ES bool query body
+// MetaFilterPushdownPlan 多条过滤的组合计划（and/or 逻辑）。
 type MetaFilterPushdownPlan struct {
 	Logic      string
 	translated []*TranslatedFilter
 }
 
-// IsEmpty returns true if plan has no filters
+// IsEmpty 判断是否无任何已翻译过滤
 func (p *MetaFilterPushdownPlan) IsEmpty() bool {
 	return len(p.translated) == 0
 }
 
-// ToQuery renders the full ES query body scoped to given KB IDs
+// ToQuery 渲染完整 ES 查询体，外层 filter 固定包含 kb_id terms。
 func (p *MetaFilterPushdownPlan) ToQuery(kbIDs []string) map[string]interface{} {
 	kbClause := map[string]interface{}{"terms": map[string]interface{}{"kb_id": kbIDs}}
 
@@ -151,12 +153,12 @@ func (p *MetaFilterPushdownPlan) ToQuery(kbIDs []string) map[string]interface{} 
 	}
 }
 
-// MetaFilterTranslator translates filter clauses to ES DSL
+// MetaFilterTranslator 将单条过滤字典翻译为 ES bool 子句。
 type MetaFilterTranslator struct {
 	prefix string
 }
 
-// NewMetaFilterTranslator creates a new translator
+// NewMetaFilterTranslator 创建翻译器，默认前缀 meta_fields。
 func NewMetaFilterTranslator() *MetaFilterTranslator {
 	return &MetaFilterTranslator{prefix: metaFieldsPrefix}
 }
@@ -165,7 +167,7 @@ func (t *MetaFilterTranslator) fieldName(key string) string {
 	return t.prefix + "." + key
 }
 
-// Translate translates a single filter dict into ES bool clauses
+// Translate 校验 key/op/value 并按算子分派到具体翻译函数。
 func (t *MetaFilterTranslator) Translate(flt map[string]interface{}) (*TranslatedFilter, error) {
 	op, _ := flt["op"].(string)
 	key, _ := flt["key"].(string)
@@ -320,7 +322,7 @@ func (t *MetaFilterTranslator) translateEndWith(fieldPath string, value interfac
 	}
 }
 
-// BuildMetaFilterQuery translates filters and renders ES query body
+// BuildMetaFilterQuery 翻译全部过滤并生成可执行的 ES 查询体。
 func BuildMetaFilterQuery(filters []map[string]interface{}, logic string, kbIDs []string) (map[string]interface{}, error) {
 	plan, err := planPushdown(filters, logic)
 	if err != nil {
@@ -329,7 +331,7 @@ func BuildMetaFilterQuery(filters []map[string]interface{}, logic string, kbIDs 
 	return plan.ToQuery(kbIDs), nil
 }
 
-// PlanPushdown translates every filter and builds a composed plan
+// planPushdown 逐条翻译并组装 MetaFilterPushdownPlan。
 func planPushdown(filters []map[string]interface{}, logic string) (*MetaFilterPushdownPlan, error) {
 	if logic != "and" && logic != "or" {
 		return nil, fmt.Errorf("unsupported logic %q", logic)
@@ -348,7 +350,7 @@ func planPushdown(filters []map[string]interface{}, logic string) (*MetaFilterPu
 	return plan, nil
 }
 
-// IsPushdownSupported checks if all filters can be pushed down
+// IsPushdownSupported 检查是否所有条件均支持下推（算子合法且无多值否定）。
 func IsPushdownSupported(filters []map[string]interface{}) bool {
 	for _, flt := range filters {
 		op, _ := flt["op"].(string)
@@ -366,7 +368,7 @@ func IsPushdownSupported(filters []map[string]interface{}) bool {
 	return true
 }
 
-// ExtractDocIDs extracts doc IDs from ES search response
+// ExtractDocIDs 从 ES hits 中提取文档 ID（优先 _id，否则 _source.id/doc_id）。
 func ExtractDocIDs(esResponse map[string]interface{}) []string {
 	var docIDs []string
 
@@ -406,7 +408,7 @@ func ExtractDocIDs(esResponse map[string]interface{}) []string {
 	return docIDs
 }
 
-// coerceScalar mirrors ast.literal_eval then str.lower() flow
+// coerceScalar 标量 coercion：日期原样、整数/浮点解析、字符串转小写。
 func coerceScalar(value interface{}, flt map[string]interface{}) interface{} {
 	if value == nil {
 		return nil
@@ -429,7 +431,7 @@ func coerceScalar(value interface{}, flt map[string]interface{}) interface{} {
 	return strings.ToLower(s)
 }
 
-// coerceRangeValue handles range comparison values
+// coerceRangeValue 范围比较值的类型规范化。
 func coerceRangeValue(value interface{}, flt map[string]interface{}) interface{} {
 	if value == nil {
 		return nil
@@ -448,7 +450,7 @@ func coerceRangeValue(value interface{}, flt map[string]interface{}) interface{}
 	return s
 }
 
-// coerceString ensures value is a non-empty string
+// coerceString 将 value 转为字符串。
 func coerceString(value interface{}, flt map[string]interface{}) string {
 	if value == nil {
 		return ""
@@ -460,7 +462,7 @@ func coerceString(value interface{}, flt map[string]interface{}) string {
 	return s
 }
 
-// csvOrList handles in/not in values
+// csvOrList 解析 in/not in 的成员列表（JSON 数组或逗号分隔）
 func csvOrList(value interface{}, flt map[string]interface{}) []interface{} {
 	if value == nil {
 		return nil
@@ -511,12 +513,12 @@ func csvOrList(value interface{}, flt map[string]interface{}) []interface{} {
 	return result
 }
 
-// keywordPath returns .keyword sub-field path
+// keywordPath 返回用于精确匹配的 .keyword 子字段路径
 func keywordPath(fieldPath string) string {
 	return fieldPath + ".keyword"
 }
 
-// termOrMatch creates exact-match clause
+// termOrMatch 字符串走 case_insensitive term，数值走 term
 func termOrMatch(fieldPath string, value interface{}) map[string]interface{} {
 	if s, ok := value.(string); ok {
 		return map[string]interface{}{
@@ -533,7 +535,7 @@ func termOrMatch(fieldPath string, value interface{}) map[string]interface{} {
 	}
 }
 
-// termsStringOrNumeric creates terms query for in/not in
+// termsStringOrNumeric 全数值用 terms，含字符串则用 bool should 组合 term
 func termsStringOrNumeric(fieldPath string, members []interface{}) map[string]interface{} {
 	allNumeric := true
 	for _, m := range members {
@@ -562,7 +564,7 @@ func termsStringOrNumeric(fieldPath string, members []interface{}) map[string]in
 	}
 }
 
-// wildcard creates wildcard query
+// wildcard 构造大小写不敏感的 wildcard 查询
 func wildcard(fieldPath string, pattern string) map[string]interface{} {
 	return map[string]interface{}{
 		"wildcard": map[string]interface{}{
@@ -574,7 +576,7 @@ func wildcard(fieldPath string, pattern string) map[string]interface{} {
 	}
 }
 
-// escapeWildcard escapes wildcard metacharacters
+// escapeWildcard 转义 * ? \ 通配符元字符
 func escapeWildcard(text string) string {
 	text = strings.ReplaceAll(text, "\\", "\\\\")
 	text = strings.ReplaceAll(text, "*", "\\*")
@@ -582,7 +584,7 @@ func escapeWildcard(text string) string {
 	return text
 }
 
-// parseJSONArray parses a simple JSON array string
+// parseJSONArray 解析简单 JSON 数组字符串
 func parseJSONArray(s string) []interface{} {
 	// Remove brackets
 	s = strings.TrimSpace(s)
@@ -609,7 +611,7 @@ func parseJSONArray(s string) []interface{} {
 	return result
 }
 
-// splitJSONParts splits JSON array parts. It tracks the actual quote
+// splitJSONParts 按逗号分割 JSON 数组元素，正确处理引号嵌套与转义引号。
 // character that opened the current quoted region so a double-quoted
 // string isn't terminated by a stray single quote inside it (e.g. an
 // apostrophe) and a single-quoted string isn't split by a comma inside
@@ -629,7 +631,7 @@ func splitJSONParts(s string) []string {
 	for i := 0; i < len(runes); i++ {
 		c := runes[i]
 		if c == '\'' || c == '"' {
-			// Inside a quoted string, count the consecutive backslashes
+			// 统计引号前连续反斜杠数以判断是否为转义引号
 			// immediately before this rune. An odd count means this
 			// quote is escaped (e.g. JSON `\"`); an even count (incl. 0)
 			// means it really does toggle the quote state.

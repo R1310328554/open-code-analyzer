@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// meta_filter.go — Infinity 元数据 JSON 过滤下推：将过滤条件翻译为 JSON_EXTRACT/JSON_CONTAINS 等 SQL 片段，供 FilterDocIdsByMetaPushdown 使用。
 //
 
 package infinity
@@ -25,10 +27,10 @@ import (
 	infinity "github.com/infiniflow/infinity-go-sdk"
 )
 
-// Key pattern for validation
+// key 须为标识符风格，防 SQL 注入
 var keyPattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
-// Supported operators
+// 支持的过滤算子
 var supportedOperators = map[string]bool{
 	"=":            true,
 	"≠":            true,
@@ -46,7 +48,7 @@ var supportedOperators = map[string]bool{
 	"not empty":    true,
 }
 
-// Range operators mapping
+// 范围算子到 SQL 比较符
 var rangeOps = map[string]string{
 	">": ">",
 	"<": "<",
@@ -54,7 +56,7 @@ var rangeOps = map[string]string{
 	"≤": "<=",
 }
 
-// MetaFilterTranslator translates filter clauses to Infinity SQL
+// MetaFilterTranslator 单条过滤 → Infinity WHERE 片段。
 type MetaFilterTranslator struct{}
 
 // NewMetaFilterTranslator creates a new translator
@@ -62,7 +64,7 @@ func NewMetaFilterTranslator() *MetaFilterTranslator {
 	return &MetaFilterTranslator{}
 }
 
-// Translate translates a single filter dict into Infinity SQL filter string
+// Translate 校验并分派各算子翻译函数。
 func (t *MetaFilterTranslator) Translate(flt map[string]interface{}) (string, error) {
 	op, _ := flt["op"].(string)
 	key, _ := flt["key"].(string)
@@ -193,7 +195,7 @@ func (t *MetaFilterTranslator) translateNotIn(key string, value interface{}, flt
 }
 
 func (t *MetaFilterTranslator) translateContains(key string, value interface{}, flt map[string]interface{}) (string, error) {
-	// Python guard: if not value and value != 0 -> raise ValueError.
+	// contains 空值须报错，避免生成残缺 SQL
 	// Returning "" here would let the empty fragment slip into the
 	// joined SQL (e.g. "( AND other_condition)"), so we surface the
 	// error instead and let the caller decide how to respond.
@@ -230,7 +232,7 @@ func (t *MetaFilterTranslator) translateEndWith(key string, value interface{}, f
 	return fmt.Sprintf("JSON_EXTRACT_STRING(meta_fields, '$.%s') LIKE '%%%s'", key, escaped)
 }
 
-// PlanPushdown translates every filter
+// PlanPushdown 翻译全部过滤为 SQL 片段列表。
 func PlanPushdown(filters []map[string]interface{}, logic string) ([]string, error) {
 	if logic != "and" && logic != "or" {
 		return nil, fmt.Errorf("unknown logic %q", logic)
@@ -248,7 +250,7 @@ func PlanPushdown(filters []map[string]interface{}, logic string) ([]string, err
 	return result, nil
 }
 
-// BuildInfinityFilter builds the full WHERE clause
+// BuildInfinityFilter 用 AND/OR 连接片段；空过滤为 1=1。
 func BuildInfinityFilter(filters []map[string]interface{}, logic string) (string, error) {
 	if len(filters) == 0 {
 		return "1=1", nil
@@ -267,7 +269,7 @@ func BuildInfinityFilter(filters []map[string]interface{}, logic string) (string
 	return "(" + strings.Join(fragments, joiner) + ")", nil
 }
 
-// IsPushdownSupported checks if all filters can be pushed down
+// IsPushdownSupported 检查 key 格式与算子是否均支持下推。
 func IsPushdownSupported(filters []map[string]interface{}) bool {
 	for _, flt := range filters {
 		op, _ := flt["op"].(string)
@@ -282,7 +284,7 @@ func IsPushdownSupported(filters []map[string]interface{}) bool {
 	return true
 }
 
-// ExtractDocIDs extracts doc IDs from Infinity result
+// ExtractDocIDs 从 QueryResult 或 map 中提取 id 列。
 func ExtractDocIDs(result interface{}) []string {
 	var docIDs []string
 
@@ -312,7 +314,7 @@ func ExtractDocIDs(result interface{}) []string {
 	return docIDs
 }
 
-// coerceScalar handles scalar comparison values.
+// coerceScalar 标量 coercion，对齐 Python ast.literal_eval 顺序。
 // Mirrors Python's ast.literal_eval: tries int first, then float, then string.
 func coerceScalar(value interface{}, flt map[string]interface{}) interface{} {
 	if value == nil {
@@ -461,7 +463,7 @@ func isNumericZero(value interface{}) bool {
 	}
 }
 
-// isEmptyValue mirrors Python's `not value` truthiness for the small
+// isEmptyValue 对齐 Python 空值语义（nil/空串/空 slice/map）。
 // set of types we receive in filter dicts. nil, empty strings, and
 // zero-length slices/maps are all considered "empty" — calling
 // fmt.Sprintf("%v", ...) on an empty slice or map produces "[]" or
@@ -509,7 +511,7 @@ func parseJSONArray(s string) []interface{} {
 	return result
 }
 
-// splitJSONParts splits JSON array parts. It tracks the actual quote
+// splitJSONParts 安全分割 JSON 数组元素（引号与转义感知）。
 // character that opened the current quoted region so a double-quoted
 // string isn't terminated by a stray single quote inside it (e.g. an
 // apostrophe) and a single-quoted string isn't split by a comma inside
