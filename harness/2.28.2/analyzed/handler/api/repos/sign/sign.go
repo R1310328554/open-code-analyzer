@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// sign 包提供流水线配置文件签名相关的 HTTP API 处理器。
 package sign
 
 import (
@@ -25,12 +26,12 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// payload 是签名请求与响应共用的 JSON 载体，data 字段存放 YAML 或签名结果。
 type payload struct {
 	Data string `json:"data"`
 }
 
-// HandleSign returns an http.HandlerFunc that processes http
-// requests to sign a pipeline configuration file.
+// HandleSign 返回 HTTP 处理器，使用仓库密钥对流水线配置 YAML 进行 HMAC 签名。
 func HandleSign(repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (

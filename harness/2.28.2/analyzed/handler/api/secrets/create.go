@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// secretInput 是创建全局密钥时请求体的 JSON 结构。
 type secretInput struct {
 	Type            string `json:"type"`
 	Name            string `json:"name"`
@@ -23,8 +24,7 @@ type secretInput struct {
 	PullRequestPush bool   `json:"pull_request_push"`
 }
 
-// HandleCreate returns an http.HandlerFunc that processes http
-// requests to create a new secret.
+// HandleCreate 返回 HTTP 处理器，在指定命名空间下创建新的全局密钥。
 func HandleCreate(secrets core.GlobalSecretStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		in := new(secretInput)

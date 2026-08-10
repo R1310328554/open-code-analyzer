@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// secrets 包提供全局（组织/命名空间级）密钥管理的 HTTP API 处理器。
 package secrets
 
 import (
@@ -13,8 +14,7 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
-// HandleAll returns an http.HandlerFunc that writes a json-encoded
-// list of secrets to the response body.
+// HandleAll 返回 HTTP 处理器，列出系统中全部全局密钥（不含明文值）。
 func HandleAll(secrets core.GlobalSecretStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := secrets.ListAll(r.Context())
@@ -22,8 +22,7 @@ func HandleAll(secrets core.GlobalSecretStore) http.HandlerFunc {
 			render.NotFound(w, err)
 			return
 		}
-		// the secret list is copied and the secret value is
-		// removed from the response.
+		// 复制每条记录并剔除密钥明文后再返回。
 		secrets := []*core.Secret{}
 		for _, secret := range list {
 			secrets = append(secrets, secret.Copy())

@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// secrets 包提供仓库级密钥 CRUD 的 HTTP API 处理器（非 OSS 构建）。
 package secrets
 
 import (
@@ -16,6 +17,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// secretInput 是创建仓库密钥时请求体的 JSON 结构。
 type secretInput struct {
 	Type            string `json:"type"`
 	Name            string `json:"name"`
@@ -24,8 +26,7 @@ type secretInput struct {
 	PullRequestPush bool   `json:"pull_request_push"`
 }
 
-// HandleCreate returns an http.HandlerFunc that processes http
-// requests to create a new secret.
+// HandleCreate 返回 HTTP 处理器，在指定仓库下创建新密钥。
 func HandleCreate(
 	repos core.RepositoryStore,
 	secrets core.SecretStore,
@@ -67,6 +68,7 @@ func HandleCreate(
 			return
 		}
 
+		// 返回副本，避免响应中泄露原始密钥值以外的敏感字段。
 		s = s.Copy()
 		render.JSON(w, s, 200)
 	}

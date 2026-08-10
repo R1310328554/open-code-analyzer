@@ -16,14 +16,14 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// secretUpdate 是更新仓库密钥时请求体的 JSON 结构，字段均为可选指针。
 type secretUpdate struct {
 	Data            *string `json:"data"`
 	PullRequest     *bool   `json:"pull_request"`
 	PullRequestPush *bool   `json:"pull_request_push"`
 }
 
-// HandleUpdate returns an http.HandlerFunc that processes http
-// requests to update a secret.
+// HandleUpdate 返回 HTTP 处理器，按名称更新指定仓库下的密钥字段。
 func HandleUpdate(
 	repos core.RepositoryStore,
 	secrets core.SecretStore,
@@ -54,6 +54,7 @@ func HandleUpdate(
 			return
 		}
 
+		// 仅合并请求体中显式提供的字段。
 		if in.Data != nil {
 			s.Data = *in.Data
 		}

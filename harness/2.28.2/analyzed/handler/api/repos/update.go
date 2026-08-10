@@ -27,6 +27,7 @@ import (
 )
 
 type (
+	// repositoryInput 是更新仓库设置时请求体的 JSON 结构，各字段均为可选指针。
 	repositoryInput struct {
 		Visibility    *string `json:"visibility"`
 		Config        *string `json:"config_path"`
@@ -43,8 +44,7 @@ type (
 	}
 )
 
-// HandleUpdate returns an http.HandlerFunc that processes http
-// requests to update the repository details.
+// HandleUpdate 返回 HTTP 处理器，更新仓库配置；部分字段仅系统管理员可修改。
 func HandleUpdate(repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
@@ -103,6 +103,7 @@ func HandleUpdate(repos core.RepositoryStore) http.HandlerFunc {
 		//
 		// system administrator only
 		//
+		// 以下字段（trusted、timeout、throttle、counter）仅管理员可更新。
 		if user != nil && user.Admin {
 			if in.Trusted != nil {
 				repo.Trusted = *in.Trusted

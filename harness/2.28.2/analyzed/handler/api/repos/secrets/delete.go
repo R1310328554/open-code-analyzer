@@ -15,8 +15,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDelete returns an http.HandlerFunc that processes http
-// requests to delete the secret.
+// HandleDelete 返回 HTTP 处理器，按名称删除指定仓库下的密钥。
 func HandleDelete(
 	repos core.RepositoryStore,
 	secrets core.SecretStore,

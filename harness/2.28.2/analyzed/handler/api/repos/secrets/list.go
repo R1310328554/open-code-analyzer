@@ -15,8 +15,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleList returns an http.HandlerFunc that writes a json-encoded
-// list of secrets to the response body.
+// HandleList 返回 HTTP 处理器，列出指定仓库下的全部密钥（不含明文值）。
 func HandleList(
 	repos core.RepositoryStore,
 	secrets core.SecretStore,
@@ -36,8 +35,7 @@ func HandleList(
 			render.NotFound(w, err)
 			return
 		}
-		// the secret list is copied and the secret value is
-		// removed from the response.
+		// 复制每条记录并剔除密钥明文后再返回。
 		secrets := []*core.Secret{}
 		for _, secret := range list {
 			secrets = append(secrets, secret.Copy())

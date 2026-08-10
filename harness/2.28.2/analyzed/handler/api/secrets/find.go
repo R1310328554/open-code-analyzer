@@ -16,8 +16,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleFind returns an http.HandlerFunc that writes json-encoded
-// secret details to the response body.
+// HandleFind 返回 HTTP 处理器，查询并返回单个全局密钥的 JSON 详情。
 func HandleFind(secrets core.GlobalSecretStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (

@@ -15,8 +15,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDelete returns an http.HandlerFunc that processes http
-// requests to delete the secret.
+// HandleDelete 返回 HTTP 处理器，按命名空间与名称删除全局密钥。
 func HandleDelete(secrets core.GlobalSecretStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (

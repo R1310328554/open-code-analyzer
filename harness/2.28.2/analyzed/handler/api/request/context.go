@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// request 包在 context.Context 中存取当前请求的用户、权限与仓库信息。
 package request
 
 // https://github.com/kubernetes/apiserver/blob/master/pkg/endpoints/request/context.go
@@ -22,6 +23,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// key 是 context 值的私有键类型，避免与其他包冲突。
 type key int
 
 const (
@@ -30,34 +32,34 @@ const (
 	repoKey
 )
 
-// WithUser returns a copy of parent in which the user value is set
+// WithUser 返回携带指定用户的新 context。
 func WithUser(parent context.Context, user *core.User) context.Context {
 	return context.WithValue(parent, userKey, user)
 }
 
-// UserFrom returns the value of the user key on the ctx
+// UserFrom 从 context 读取当前用户；第二个返回值表示是否存在。
 func UserFrom(ctx context.Context) (*core.User, bool) {
 	user, ok := ctx.Value(userKey).(*core.User)
 	return user, ok
 }
 
-// WithPerm returns a copy of parent in which the perm value is set
+// WithPerm 返回携带指定权限对象的新 context。
 func WithPerm(parent context.Context, perm *core.Perm) context.Context {
 	return context.WithValue(parent, permKey, perm)
 }
 
-// PermFrom returns the value of the perm key on the ctx
+// PermFrom 从 context 读取权限对象；第二个返回值表示是否存在。
 func PermFrom(ctx context.Context) (*core.Perm, bool) {
 	perm, ok := ctx.Value(permKey).(*core.Perm)
 	return perm, ok
 }
 
-// WithRepo returns a copy of parent in which the repo value is set
+// WithRepo 返回携带指定仓库的新 context。
 func WithRepo(parent context.Context, repo *core.Repository) context.Context {
 	return context.WithValue(parent, repoKey, repo)
 }
 
-// RepoFrom returns the value of the repo key on the ctx
+// RepoFrom 从 context 读取当前仓库；第二个返回值表示是否存在。
 func RepoFrom(ctx context.Context) (*core.Repository, bool) {
 	repo, ok := ctx.Value(repoKey).(*core.Repository)
 	return repo, ok

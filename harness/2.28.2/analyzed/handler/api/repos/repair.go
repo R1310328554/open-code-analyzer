@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// repos 包提供仓库管理相关的 HTTP API 处理器。
 package repos
 
 import (
@@ -24,9 +25,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleRepair returns an http.HandlerFunc that processes http
-// requests to repair the repository hooks and sync the repository
-// details.
+// HandleRepair 返回 HTTP 处理器，修复仓库 Webhook 并从远程 SCM 同步仓库元数据。
 func HandleRepair(
 	hooks core.HookService,
 	repoz core.RepositoryService,
@@ -73,14 +72,13 @@ func HandleRepair(
 			return
 		}
 
+		// 用远程仓库信息刷新本地记录的分支、URL 与可见性。
 		repo.Branch = remote.Branch
 		repo.HTTPURL = remote.HTTPURL
 		repo.Private = remote.Private
 		repo.SSHURL = remote.SSHURL
 
-		// the gitea and gogs repository endpoints do not
-		// return the http url, so we need to ensure we do
-		// not replace the existing value with a zero value.
+		// gitea 与 gogs 的仓库端点不返回 http url，避免用空值覆盖已有链接。
 		if remote.Link != "" {
 			repo.Link = remote.Link
 		}
