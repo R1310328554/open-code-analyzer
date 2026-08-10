@@ -71,7 +71,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 /**
- * The Class CertificateUtils provides utility functions for generation of V1 and V3 {@link X509Certificate}
+ * 基于 BouncyCastle FIPS 的 X.509 证书工具实现，提供 V1/V3 证书生成、策略与 CRL 分发点解析。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author <a href="mailto:giriraj.sharma27@gmail.com">Giriraj Sharma</a>
@@ -80,7 +80,7 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 public class BCFIPSCertificateUtilsProvider implements CertificateUtilsProvider{
 
     /**
-     * Generates version 3 {@link X509Certificate}.
+     * 生成由 CA 签名的 X.509 v3 证书（使用 BCFIPS 提供器签名）。
      *
      * @param keyPair the key pair
      * @param caPrivateKey the CA private key
@@ -152,7 +152,7 @@ public class BCFIPSCertificateUtilsProvider implements CertificateUtilsProvider{
     }
 
     /**
-     * Generate version 1 self signed {@link X509Certificate}..
+     * 生成自签名的 X.509 v1 证书（序列号取当前时间戳）。
      *
      * @param caKeyPair the CA key pair
      * @param subject the subject name
@@ -189,7 +189,7 @@ public class BCFIPSCertificateUtilsProvider implements CertificateUtilsProvider{
     }
 
     /**
-     * Creates the content signer for generation of Version 1 {@link X509Certificate}.
+     * 为 V1 证书创建内容签名器，支持 RSA、EC 及 Ed25519/Ed448。
      *
      * @param privateKey the private key
      *
@@ -245,7 +245,7 @@ public class BCFIPSCertificateUtilsProvider implements CertificateUtilsProvider{
 
 
     /**
-     * Retrieves a list of CRL distribution points from CRLDP v3 certificate extension
+     * 从 CRLDP v3 扩展解析 CRL 分发点 URL 列表。
      * See <a href="www.nakov.com/blog/2009/12/01/x509-certificate-validation-in-java-build-and-verify-cchain-and-verify-clr-with-bouncy-castle/">CRL validation</a>
      * @param cert
      * @return

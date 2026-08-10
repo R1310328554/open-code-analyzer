@@ -57,8 +57,7 @@ import org.wildfly.security.x500.cert.X509CertificateExtension;
 import org.wildfly.security.x500.cert.util.KeyUtil;
 
 /**
- * The Class CertificateUtils provides utility functions for generation
- * and usage of X.509 certificates
+ * 基于 WildFly Elytron 的 X.509 证书工具实现，提供 V1/V3 证书生成、策略与 CRL 分发点解析等功能。
  *
  * @author <a href="mailto:david.anderson@redhat.com">David Anderson</a>
  */
@@ -67,7 +66,7 @@ public class ElytronCertificateUtilsProvider implements CertificateUtilsProvider
     Logger log = Logger.getLogger(getClass());
 
     /**
-     * Generates version 3 {@link java.security.cert.X509Certificate}.
+     * 生成由 CA 签名的 X.509 v3 证书。
      *
      * @param keyPair the key pair
      * @param caPrivateKey the CA private key
@@ -151,7 +150,7 @@ public class ElytronCertificateUtilsProvider implements CertificateUtilsProvider
     }
 
     /**
-     * Generate version 1 self signed {@link java.security.cert.X509Certificate}..
+     * 生成自签名的 X.509 v1 证书（序列号取当前时间戳）。
      *
      * @param caKeyPair the CA key pair
      * @param subject the subject name
@@ -213,7 +212,7 @@ public class ElytronCertificateUtilsProvider implements CertificateUtilsProvider
     }
 
 
-    // Some subject names will not conform to the RFC format
+    // 部分 subject 名称不符合 RFC 2253 格式
     private static X500Principal subjectToX500Principle(String subject) {
         if(!subject.startsWith("CN=")) {
             subject = "CN="+subject;
@@ -222,9 +221,8 @@ public class ElytronCertificateUtilsProvider implements CertificateUtilsProvider
     }
 
     /**
-     * Builds an {@link X500Principal} with a single CN RDN, encoding the given value directly as the
-     * RDN's attribute value rather than parsing it as part of an RFC 2253 DN string. This allows the
-     * value (e.g. a client ID) to contain characters that would otherwise need escaping, such as '=' or ','.
+     * 构建仅含单个 CN 的 {@link X500Principal}，直接编码原始值而非解析 RFC 2253 DN 字符串，
+     * 以便 client ID 等值可包含 '='、',' 等无需转义的字符。
      *
      * @param commonName the raw CN value
      *

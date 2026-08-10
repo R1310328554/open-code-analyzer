@@ -28,12 +28,15 @@ import org.wildfly.security.asn1.DERDecoder;
 import org.wildfly.security.asn1.DEREncoder;
 
 /**
+ * 基于 WildFly Elytron ASN.1 工具的 ECDSA 辅助实现，处理 R||S 与 ASN.1 DER 签名格式互转。
+ *
  * @author <a href="mailto:david.anderson@redhat.com">David Anderson</a>
  */
 public class ElytronECDSACryptoProvider implements ECDSACryptoProvider {
 
     Logger log = Logger.getLogger(getClass());
 
+    /** {@inheritDoc} 将拼接的 R||S 签名转换为 ASN.1 DER 编码。 */
     @Override
     public byte[] concatenatedRSToASN1DER(final byte[] signature, int signLength) throws IOException {
         int len = signLength / 2;
@@ -57,6 +60,7 @@ public class ElytronECDSACryptoProvider implements ECDSACryptoProvider {
 
     }
 
+    /** {@inheritDoc} 将 ASN.1 DER 编码的 ECDSA 签名转换为固定长度 R||S 格式。 */
     @Override
     public byte[] asn1derToConcatenatedRS(final byte[] derEncodedSignatureValue, int signLength) throws IOException {
         int len = signLength / 2;
@@ -74,13 +78,13 @@ public class ElytronECDSACryptoProvider implements ECDSACryptoProvider {
         return concatenatedSignatureValue;
     }
 
+    /** {@inheritDoc} Elytron 实现暂不支持从 EC 私钥推导公钥。 */
     @Override
     public ECPublicKey getPublicFromPrivate(ECPrivateKey ecPrivateKey) {
         throw new UnsupportedOperationException("Elytron Crypto Provider currently does not support extraction of EC Public Keys.");
     }
 
-    // If byte array length doesn't match expected length, copy to new
-    // byte array of the expected length
+    // 若整数字节长度与预期不符，则复制/填充到目标长度
     private byte[] convertToBytes(BigInteger decodeInteger, int len) {
 
         byte[] bytes = decodeInteger.toByteArray();

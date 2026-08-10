@@ -67,7 +67,7 @@ import org.bouncycastle.crypto.fips.FipsKDF.AgreementKDFPRF;
 import org.bouncycastle.jcajce.spec.ECDomainParameterSpec;
 
 /**
- * ECDH Ephemeral Static Algorithm Provider.
+ * FIPS 140-2 环境下的 ECDH 临时-静态 JWE 算法提供器，使用 BCFIPS ECDH 与 AES Key Wrap。
  *
  * @author Justin Tay
  * @see <a href=
@@ -76,6 +76,7 @@ import org.bouncycastle.jcajce.spec.ECDomainParameterSpec;
  */
 public class BCFIPSEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
 
+    /** {@inheritDoc} 使用 BCFIPS ECDH 派生密钥并解封 CEK。 */
     @Override
     public byte[] decodeCek(byte[] encodedCek, Key encryptionKey, JWEHeader header,
             JWEEncryptionProvider encryptionProvider) throws Exception {
@@ -96,6 +97,7 @@ public class BCFIPSEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         }
     }
 
+    /** {@inheritDoc} 生成临时 EC 密钥对、派生 CEK 并用 BCFIPS AES Wrap 封装。 */
     @Override
     public byte[] encodeCek(JWEEncryptionProvider encryptionProvider, JWEKeyStorage keyStorage, Key encryptionKey,
             JWEHeaderBuilder headerBuilder) throws Exception {
@@ -124,8 +126,8 @@ public class BCFIPSEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
             encryptionProvider.deserializeCEK(keyStorage);
             return new byte[0];
         } else {
-            byte[] inputKeyBytes = keyStorage.getCekBytes(); // bytes making up the key to be wrapped
-            byte[] keyBytes = derivedKey; // bytes making up AES key doing the wrapping
+            byte[] inputKeyBytes = keyStorage.getCekBytes(); // 待封装的 CEK 字节
+            byte[] keyBytes = derivedKey; // 用于 AES Wrap 的派生密钥
             SymmetricKey aesKey = new SymmetricSecretKey(FipsAES.KW, keyBytes);
             FipsAES.KeyWrapOperatorFactory factory = new FipsAES.KeyWrapOperatorFactory();
             KeyWrapper<WrapParameters> wrapper = factory.createKeyWrapper(aesKey, FipsAES.KW);

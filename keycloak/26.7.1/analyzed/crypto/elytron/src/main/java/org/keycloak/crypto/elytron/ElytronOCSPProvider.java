@@ -52,6 +52,8 @@ import org.wildfly.security.x500.X500;
 
 
 /**
+ * 基于 WildFly Elytron 与 Java PKIX 的 OCSP 证书吊销状态检查实现。
+ *
  * @author <a href="mailto:david.anderson@redhat.com">David Anderson</a>
  */
 public class ElytronOCSPProvider extends OCSPProvider {
@@ -59,8 +61,8 @@ public class ElytronOCSPProvider extends OCSPProvider {
     private final static Logger logger = Logger.getLogger(ElytronOCSPProvider.class.getName());
 
     /**
-     * Requests certificate revocation status using OCSP.
-     * 
+     * 通过 OCSP 查询证书吊销状态。
+     *
      * @param cert the certificate to be checked
      * @param issuerCertificate the issuer certificate
      * @param responderURIs the OCSP responder URIs
@@ -131,9 +133,8 @@ public class ElytronOCSPProvider extends OCSPProvider {
     }
 
     /**
-     * Extracts OCSP responder URI from X509 AIA v3 extension, if available. There can be
-     * multiple responder URIs encoded in the certificate.
-     * 
+     * 从 X.509 AIA v3 扩展解析 OCSP 响应者 URI（证书中可包含多个）。
+     *
      * @param cert
      * @return a list of available responder URIs.
      * @throws CertificateEncodingException

@@ -36,6 +36,8 @@ import org.wildfly.security.asn1.OidsUtil;
 import org.wildfly.security.x500.principal.X500AttributePrincipalDecoder;
 
 /**
+ * 基于 WildFly Elytron 的 X.509 用户身份提取器工厂，支持 X500 RDN 与 SubjectAltName 解析。
+ *
  * @author <a href="mailto:david.anderson@redhat.com">David Anderson</a>
  */
 public class ElytronUserIdentityExtractorProvider  extends UserIdentityExtractorProvider {
@@ -48,8 +50,8 @@ public class ElytronUserIdentityExtractorProvider  extends UserIdentityExtractor
         Function<X509Certificate[],Principal> x500Name;
         
         public X500NameRDNExtractorElytronProvider(String attrName, Function<X509Certificate[], Principal> x500Name) {
-            // The OidsUtil fails to map 'EmailAddress', instead 'E' is mapped to the OID.
-            // TODO: Open an issue with wildfly-elytron to include 'EmailAddress' in the oid mapping
+            // OidsUtil 无法映射 'EmailAddress'，需改用 'E' 对应的 OID
+            // TODO: 向 wildfly-elytron 提交 issue，补充 'EmailAddress' 的 OID 映射
             if(attrName.equals("EmailAddress")) {
                 attrName = "E";
             }
@@ -75,18 +77,17 @@ public class ElytronUserIdentityExtractorProvider  extends UserIdentityExtractor
     }
 
     /**
-     * Extracts the subject identifier from the subjectAltName extension.
+     * 从 SubjectAltName 扩展中提取用户标识（含 Microsoft UPN 等 otherName）。
      */
     class SubjectAltNameExtractorEltronProvider extends SubjectAltNameExtractor {
 
-        // User Principal Name. Used typically by Microsoft in certificates for
-        // Smart Card Login
+        // 用户主体名（UPN），常见于 Microsoft 智能卡登录证书
         private static final String UPN_OID = "1.3.6.1.4.1.311.20.2.3";
 
         private final int generalName;
 
         /**
-         * Creates a new instance
+         * 创建 SubjectAltName 提取器实例。
          *
          * @param generalName an integer representing the general name. See
          *                    {@link X509Certificate#getSubjectAlternativeNames()}
@@ -122,15 +123,13 @@ public class ElytronUserIdentityExtractorProvider  extends UserIdentityExtractor
                         altName: for (int i = 1 ; i<sbjAltName.size() ; i++) {
                             Object obj = sbjAltName.get(i);
 
-                            // We have Subject Alternative Name of other type than 'otherName' . Just return it directly
+                            // 非 otherName 类型的 SAN 直接返回
                             if (generalName != 0) {
                                 log.tracef("Extracted identity '%s' from Subject Alternative Name of type '%d'", obj, generalName);
                                 return obj;
                             }
 
-                            // From Java 21, the 3rd entry can be present with the type-id as String and 4th entry with the value (either in String or byte format).
-                            // See javadoc of X509Certificate.getSubjectAlternativeNames in Java 21. For the sake of simplicity, we just ignore those additional String entries and
-                            // always parse it from byte (2nd entry) as we still need to support Java 17 and it is not reliable anyway that entries are present in Java 21.
+                            // Java 21 起 SAN 可能含额外 String 条目；为兼容 Java 17，仍从第 2 个 byte[] 条目解析
                             if (obj instanceof byte[]) {
                                 byte[] otherNameBytes = (byte[]) obj;
 
@@ -191,11 +190,13 @@ public class ElytronUserIdentityExtractorProvider  extends UserIdentityExtractor
                 
 
 
+    /** {@inheritDoc} 返回基于 X500 RDN 的身份提取器。 */
     @Override
     public UserIdentityExtractor getX500NameExtractor(String identifier, Function<X509Certificate[], Principal> x500Name) {
         return new X500NameRDNExtractorElytronProvider(identifier, x500Name);
     }
 
+    /** {@inheritDoc} 返回基于 SubjectAltName 的身份提取器。 */
     @Override
     public SubjectAltNameExtractor getSubjectAltNameExtractor(int generalName) {
         return new SubjectAltNameExtractorEltronProvider(generalName);

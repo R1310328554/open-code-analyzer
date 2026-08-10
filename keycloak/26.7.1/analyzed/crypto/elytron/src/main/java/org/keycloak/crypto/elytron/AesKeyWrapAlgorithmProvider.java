@@ -27,10 +27,13 @@ import org.keycloak.jose.jwe.alg.JWEAlgorithmProvider;
 import org.keycloak.jose.jwe.enc.JWEEncryptionProvider;
 
 /**
+ * 基于 AES Key Wrap（128 位）的 JWE 算法提供器，使用 JCA {@link Cipher} 封装/解封 CEK。
+ *
  * @author <a href="mailto:david.anderson@redhat.com">David Anderson</a>
  */
 public class AesKeyWrapAlgorithmProvider implements JWEAlgorithmProvider {
 
+    /** {@inheritDoc} 使用 AESWrap_128 解封已加密的 CEK。 */
     @Override
     public byte[] decodeCek(byte[] encodedCek, Key encryptionKey, JWEHeader header, JWEEncryptionProvider encryptionProvider) throws Exception {
         Cipher cipher = Cipher.getInstance("AESWrap_128");
@@ -38,6 +41,7 @@ public class AesKeyWrapAlgorithmProvider implements JWEAlgorithmProvider {
         return cipher.unwrap(encodedCek, "AES", Cipher.SECRET_KEY).getEncoded();
     }
 
+    /** {@inheritDoc} 使用 AESWrap_128 封装 CEK。 */
     @Override
     public byte[] encodeCek(JWEEncryptionProvider encryptionProvider, JWEKeyStorage keyStorage, Key encryptionKey, JWEHeaderBuilder headerBuilder) throws Exception {
         Cipher cipher = Cipher.getInstance("AESWrap_128");

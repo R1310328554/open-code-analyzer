@@ -29,12 +29,15 @@ import org.keycloak.common.util.PemException;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于 WildFly Elytron 的 PEM 编解码工具，支持密钥与证书的 Base64 编码及私钥解析。
+ *
  * @author <a href="mailto:david.anderson@redhat.com">David Anderson</a>
  */
 public class ElytronPEMUtilsProvider extends PemUtilsProvider {
 
     Logger log = Logger.getLogger(ElytronPEMUtilsProvider.class);
 
+    /** {@inheritDoc} 将 {@link Key} 或 {@link Certificate} 编码为 Base64 字符串。 */
     @Override
     protected String encode(Object obj) {
         String encoded = null;
@@ -54,6 +57,7 @@ public class ElytronPEMUtilsProvider extends PemUtilsProvider {
         return encoded;
     }
 
+    /** {@inheritDoc} 从 PEM 字符串解析 {@link PrivateKey}。 */
     @Override
     public PrivateKey decodePrivateKey(String pem) {
         if (pem == null) {

@@ -22,9 +22,13 @@ import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.jcajce.spec.ECDomainParameterSpec;
 import org.bouncycastle.math.ec.ECPoint;
 
+/**
+ * 基于 BouncyCastle FIPS 的 ECDSA 辅助实现，处理 R||S 与 ASN.1 DER 签名格式互转，并支持由私钥推导公钥。
+ */
 public class BCFIPSECDSACryptoProvider implements ECDSACryptoProvider {
 
 
+    /** {@inheritDoc} 将拼接的 R||S 签名转换为 ASN.1 DER 编码。 */
     @Override
     public byte[] concatenatedRSToASN1DER(final byte[] signature, int signLength) throws IOException {
         int len = signLength / 2;
@@ -48,6 +52,7 @@ public class BCFIPSECDSACryptoProvider implements ECDSACryptoProvider {
         return bos.toByteArray();
     }
 
+    /** {@inheritDoc} 将 ASN.1 DER 编码的 ECDSA 签名转换为固定长度 R||S 格式。 */
     @Override
     public byte[] asn1derToConcatenatedRS(final byte[] derEncodedSignatureValue, int signLength) throws IOException {
         int len = signLength / 2;
@@ -70,6 +75,7 @@ public class BCFIPSECDSACryptoProvider implements ECDSACryptoProvider {
         return concatenatedSignatureValue;
     }
 
+    /** {@inheritDoc} 由 EC 私钥标量与域参数推导对应公钥。 */
     @Override
     public ECPublicKey getPublicFromPrivate(ECPrivateKey ecPrivateKey) {
         try {

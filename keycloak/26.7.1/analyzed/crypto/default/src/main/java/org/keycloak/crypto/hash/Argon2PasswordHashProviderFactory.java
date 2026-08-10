@@ -14,6 +14,11 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
+/**
+ * Argon2 密码哈希提供器工厂，负责创建 {@link Argon2PasswordHashProvider} 并暴露可配置参数。
+ * <p>
+ * 在 FIPS 模式下不可用（{@link #isSupported} 返回 false）。
+ */
 public class Argon2PasswordHashProviderFactory implements PasswordHashProviderFactory, EnvironmentDependentProviderFactory {
 
     public static final String ID = "argon2";
@@ -26,9 +31,7 @@ public class Argon2PasswordHashProviderFactory implements PasswordHashProviderFa
     public static final String CPU_CORES_KEY = "cpuCores";
 
     /**
-     * The Argon2 password hashing is CPU bound, so it doesn't make sense to hash more values concurrently than there are cores on the machine.
-     * When we run more, this only leads to an increased memory usage and to throttling of the process in containerized environments
-     * when a CPU limit is imposed. The throttling would have a negative impact on other concurrent non-hashing activities of Keycloak.
+     * Argon2 哈希为 CPU 密集型，并发哈希数不应超过机器核心数；否则在容器 CPU 限额下会触发节流并影响 Keycloak 其他任务。
      */
     private Semaphore cpuCoreSemaphore;
 
@@ -39,11 +42,13 @@ public class Argon2PasswordHashProviderFactory implements PasswordHashProviderFa
     private int iterations;
     private int parallelism;
 
+    /** {@inheritDoc} 使用工厂配置创建 Argon2 密码哈希提供器。 */
     @Override
     public PasswordHashProvider create(KeycloakSession session) {
         return new Argon2PasswordHashProvider(version, type, hashLength, memory, iterations, parallelism, cpuCoreSemaphore);
     }
 
+    /** {@inheritDoc} 从配置读取 Argon2 版本、类型、内存、迭代等参数并初始化 CPU 核心信号量。 */
     @Override
     public void init(Config.Scope config) {
         version = config.get(VERSION_KEY, Argon2Parameters.DEFAULT_VERSION);
@@ -63,11 +68,13 @@ public class Argon2PasswordHashProviderFactory implements PasswordHashProviderFa
     public void close() {
     }
 
+    /** {@inheritDoc} 返回提供器标识 {@value #ID}。 */
     @Override
     public String getId() {
         return ID;
     }
 
+    /** {@inheritDoc} 返回 Argon2 相关配置项元数据。 */
     @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         ProviderConfigurationBuilder builder = ProviderConfigurationBuilder.create();
@@ -125,11 +132,13 @@ public class Argon2PasswordHashProviderFactory implements PasswordHashProviderFa
         return builder.build();
     }
 
+    /** {@inheritDoc} FIPS 特性启用时不支持 Argon2。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return !Profile.isFeatureEnabled(Profile.Feature.FIPS);
     }
 
+    /** {@inheritDoc} 提供器排序优先级。 */
     @Override
     public int order() {
         return 300;

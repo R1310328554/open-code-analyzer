@@ -54,7 +54,7 @@ import org.jose4j.keys.EllipticCurves;
 import org.jose4j.lang.JoseException;
 
 /**
- * ECDH Ephemeral Static Algorithm Provider.
+ * ECDH 临时-静态（Ephemeral Static）JWE 算法提供器，基于 JCA {@link KeyAgreement} 与 Concat KDF 派生 CEK。
  *
  * @author Justin Tay
  * @see <a href=
@@ -63,6 +63,7 @@ import org.jose4j.lang.JoseException;
  */
 public class ElytronEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
 
+    /** {@inheritDoc} 解密/解封 JWE 中的 CEK（ECDH-ES 或 ECDH-ES+A*KW）。 */
     @Override
     public byte[] decodeCek(byte[] encodedCek, Key encryptionKey, JWEHeader header,
             JWEEncryptionProvider encryptionProvider) throws Exception {
@@ -82,6 +83,7 @@ public class ElytronEcdhEsAlgorithmProvider implements JWEAlgorithmProvider {
         }
     }
 
+    /** {@inheritDoc} 生成临时 EC 密钥对、派生 CEK 并写入 JWE 头部。 */
     @Override
     public byte[] encodeCek(JWEEncryptionProvider encryptionProvider, JWEKeyStorage keyStorage, Key encryptionKey,
             JWEHeaderBuilder headerBuilder) throws Exception {

@@ -34,7 +34,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 /**
- * Forked from wildfly-elytron
+ * 委托模式 {@link SSLSocket} 抽象基类，将所有 SSL/TCP 操作转发至内部 delegate（fork 自 wildfly-elytron）。
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
@@ -42,6 +42,9 @@ abstract class AbstractDelegatingSSLSocket extends SSLSocket {
 
     private final SSLSocket delegate;
 
+    /**
+     * @param delegate 被委托的 SSLSocket 实例
+     */
     AbstractDelegatingSSLSocket(final SSLSocket delegate) {
         this.delegate = delegate;
     }
@@ -310,6 +313,7 @@ abstract class AbstractDelegatingSSLSocket extends SSLSocket {
         delegate.setPerformancePreferences(connectionTime, latency, bandwidth);
     }
 
+    /** 返回内部委托的 SSLSocket。 */
     protected SSLSocket getDelegate() {
         return delegate;
     }

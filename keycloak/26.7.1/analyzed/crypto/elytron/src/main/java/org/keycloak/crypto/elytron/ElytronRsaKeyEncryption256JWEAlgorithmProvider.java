@@ -25,14 +25,20 @@ import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 
 /**
+ * RSA-OAEP-256 JWE 算法提供器，使用 SHA-256 作为 OAEP 哈希与 MGF1 参数。
+ *
  * @author <a href="mailto:david.anderson@redhat.com">David Anderson</a>
  */
 public class ElytronRsaKeyEncryption256JWEAlgorithmProvider extends ElytronRsaKeyEncryptionJWEAlgorithmProvider {
 
+    /**
+     * @param jcaAlgorithmName JCA 加密算法名称
+     */
     public ElytronRsaKeyEncryption256JWEAlgorithmProvider(String jcaAlgorithmName) {
         super(jcaAlgorithmName);
     }
 
+    /** 使用 OAEP SHA-256 参数初始化 {@link Cipher}。 */
     @Override
     protected void initCipher(Cipher cipher, int mode, Key key) throws Exception {
         AlgorithmParameters algp = AlgorithmParameters.getInstance("OAEP");
