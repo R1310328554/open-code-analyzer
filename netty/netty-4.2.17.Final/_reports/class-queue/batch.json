@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:11:11Z",
-  "files": [
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsResolveContext.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsServerAddressStream.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsServerAddressStreamProvider.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsServerAddressStreamProviders.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsServerAddresses.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsServerResponseFeedbackAddressStream.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/InflightNameResolver.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/LoggingDnsQueryLifeCycleObserverFactory.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/LoggingDnsQueryLifecycleObserver.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/MultiDnsServerAddressStreamProvider.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/NameServerComparator.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/NoopAuthoritativeDnsServerCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/NoopDnsCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/NoopDnsCnameCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/NoopDnsQueryLifecycleObserver.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 398,
-  "done": 1515
+  "done": 1530
 }
