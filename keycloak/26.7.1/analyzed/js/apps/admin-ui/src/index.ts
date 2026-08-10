@@ -1,4 +1,11 @@
+/**
+ * Admin UI 公共导出入口（barrel）。
+ * 供 @keycloak/keycloak-admin-ui 包及扩展/测试引用：页面区块、表单组件、Context 与路由。
+ */
+
+// —— 认证流 ——
 export * as AuthenticationSection from "./authentication/AuthenticationSection";
+// —— 客户端作用域 ——
 export { AddMapperDialog } from "./client-scopes/add/MapperDialog";
 export { MapperList } from "./client-scopes/details/MapperList";
 export * as MappingDetails from "./client-scopes/details/MappingDetails";
@@ -8,6 +15,7 @@ export { ChangeTypeDropdown } from "./client-scopes/ChangeTypeDropdown";
 export * as ClientScopeSection from "./client-scopes/ClientScopesSection";
 export * as CreateClientScope from "./client-scopes/CreateClientScope";
 export * as EditClientScope from "./client-scopes/EditClientScope";
+// —— 客户端（OAuth/OIDC/SAML、授权、密钥、注册等）——
 export { AuthorizationSettings } from "./clients/authorization/Settings";
 export { AccessSettings } from "./clients/add/AccessSettings";
 export { CapabilityConfig } from "./clients/add/CapabilityConfig";
@@ -68,6 +76,7 @@ export * as ClientDetails from "./clients/ClientDetails";
 export { ClientSessions } from "./clients/ClientSessions";
 export { ClientSettings } from "./clients/ClientSettings";
 export * as ClientsSection from "./clients/ClientsSection";
+// —— 共享 UI 组件 ——
 export { GroupBreadCrumbs } from "./components/bread-crumb/GroupBreadCrumbs";
 export { PageBreadCrumbs } from "./components/bread-crumb/PageBreadCrumbs";
 export { ClientSelect } from "./components/client/ClientSelect";
@@ -125,6 +134,7 @@ export { UserDataTableToolbarItems } from "./components/users/UserDataTableToolb
 export { ViewHeader } from "./components/view-header/ViewHeader";
 export { WizardSectionHeader } from "./components/wizard-section-header/WizardSectionHeader";
 export { DefaultSwitchControl } from "./components/SwitchControl";
+// —— React Context（权限、Realm、ServerInfo、WhoAmI 等）——
 export {
   useAccess,
   AccessContextProvider,
@@ -150,11 +160,13 @@ export {
   ErrorBoundaryProvider,
 } from "@keycloak/keycloak-ui-shared";
 export { useRecentRealms, RecentRealmsProvider } from "./context/RecentRealms";
+// —— 仪表盘与事件 ——
 export * as DashboardSection from "./dashboard/Dashboard";
 export { ProviderInfo } from "./dashboard/ProviderInfo";
 export { AdminEvents } from "./events/AdminEvents";
 export * as EventsSection from "./events/EventsSection";
 export { ResourceLink } from "./events/ResourceLinks";
+// —— 用户组 ——
 export { CheckableTreeView } from "./groups/components/CheckableTreeView";
 export { DeleteGroup } from "./groups/components/DeleteGroup";
 export { GroupToolbar } from "./groups/components/GroupToolbar";
@@ -168,6 +180,7 @@ export { GroupTable } from "./groups/GroupTable";
 export { Members } from "./groups/Members";
 export { MemberModal } from "./groups/MembersModal";
 export { useSubGroups, SubGroups } from "./groups/SubGroupsContext";
+// —— 身份提供方 ——
 export * as AddIdentyProvider from "./identity-providers/add/AddIdentityProvider";
 export * as AddMapper from "./identity-providers/add/AddMapper";
 export { AddMapperForm } from "./identity-providers/add/AddMapperForm";
@@ -194,6 +207,7 @@ export { SwitchField } from "./identity-providers/component/SwitchField";
 export { TextField } from "./identity-providers/component/TextField";
 export * as IdentityProvidersSection from "./identity-providers/IdentityProvidersSection";
 export { ManageOrderDialog } from "./identity-providers/ManageOrderDialog";
+// —— 组织 ——
 export { DetailOrganizationHeader } from "./organizations/DetailOraganzationHeader";
 export { IdentityProviders as OrganizationIdentityProviders } from "./organizations/IdentityProviders";
 export { InviteMemberModal } from "./organizations/InviteMemberModal";
@@ -202,14 +216,17 @@ export { Members as OrganizationMembers } from "./organizations/Members";
 export { Invitations as OrganizationInvitations } from "./organizations/Invitations";
 export { OrganizationForm } from "./organizations/OrganizationForm";
 export * as OrganizationSection from "./organizations/OrganizationsSection";
+// —— UI 扩展自定义页面 ——
 export * as Page from "./page/Page";
 export { PageHandler } from "./page/PageHandler";
 export * as PageList from "./page/PageList";
+// —— 领域与领域角色 ——
 export * as NewRealmForm from "./realm/add/NewRealmForm";
 export * as CreateRealmRole from "./realm-roles/CreateRealmRole";
 export * as RealmRolesSection from "./realm-roles/RealmRolesSection";
 export * as RealmRoleTabs from "./realm-roles/RealmRoleTabs";
 export { UsersInRoleTab } from "./realm-roles/UsersInRoleTab";
+// —— 领域设置（事件、密钥、本地化、安全、用户档案、主题等）——
 export { AddEventTypesDialog } from "./realm-settings/event-config/AddEventTypesDialog";
 export { EventConfigForm } from "./realm-settings/event-config/EventConfigForm";
 export { EventListenersForm } from "./realm-settings/event-config/EventListenersForm";
@@ -269,9 +286,11 @@ export { ThemeColors } from "./realm-settings/themes/ThemeColors";
 export { ThemeSettingsTab } from "./realm-settings/themes/ThemeSettings";
 export { RealmSettingsTokensTab } from "./realm-settings/TokensTab";
 export { UserRegistration } from "./realm-settings/UserRegistration";
+// —— 会话 ——
 export { RevocationModal } from "./sessions/RevocationModal";
 export * as SessionsSection from "./sessions/SessionsSection";
 export * as SessionsTable from "./sessions/SessionsTable";
+// —— 用户 ——
 export {
   SearchDropdown as UserSearchDropdown,
   SearchToolbar,
@@ -296,6 +315,7 @@ export { UserIdpModal } from "./user/UserIdPModal";
 export { UserRoleMapping } from "./user/UserRoleMapping";
 export { UserSessions } from "./user/UserSessions";
 export * as UserSection from "./user/UsersSection";
+// —— 用户联邦（LDAP / Kerberos / 自定义）——
 export * as CustomProviderSettings from "./user-federation/custom/CustomProviderSettings";
 export { KerberosSettingsRequired } from "./user-federation/kerberos/KerberosSettingsRequired";
 export * as LdapMapperDetails from "./user-federation/ldap/mappers/LdapMapperDetails";
@@ -317,6 +337,7 @@ export { UserFederationLdapForm } from "./user-federation/UserFederationLdapForm
 export * as UserFederationLdapSettings from "./user-federation/UserFederationLdapSettings";
 export { UserFederationLdapWizard } from "./user-federation/UserFederationLdapWizard";
 export * as UserFederationSection from "./user-federation/UserFederationSection";
+// —— 应用壳层、环境与 Admin Client ——
 export { ForbiddenSection } from "./ForbiddenSection";
 export { Header } from "./PageHeader";
 export { PageNav } from "./PageNav";
@@ -331,5 +352,6 @@ export {
   useAdminClient,
 } from "./admin-client";
 export { AppContexts } from "./App";
+// —— 权限配置 ——
 export * as PermissionsConfigurationSection from "./permissions-configuration/PermissionsConfigurationSection";
 export { routes } from "./routes";

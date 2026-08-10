@@ -21,6 +21,7 @@ import {
 import { ThemeTabRoute } from "./routes/ThemesTab";
 import { UserProfileRoute } from "./routes/UserProfile";
 
+/** 领域设置模块路由：通用设置、密钥、客户端策略、用户档案、主题等子功能页。 */
 const routes: AppRouteObject[] = [
   RealmSettingsRoute,
   RealmSettingsRouteWithTab,

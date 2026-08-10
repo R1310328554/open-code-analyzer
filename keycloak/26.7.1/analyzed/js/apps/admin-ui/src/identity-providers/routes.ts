@@ -13,6 +13,7 @@ import { IdentityProviderCreateRoute } from "./routes/IdentityProviderCreate";
 import { IdentityProviderOAuth2Route } from "./routes/IdentityProviderOAuth2";
 import { IdentityProviderJWTAuthorizationGrantRoute } from "./routes/IdentityProviderJWTAuthorizationGrant";
 
+/** 身份提供方模块路由：列表、各协议详情（OIDC/SAML/OAuth2 等）、映射器与创建向导。 */
 const routes: AppRouteObject[] = [
   IdentityProviderAddMapperRoute,
   IdentityProviderEditMapperRoute,

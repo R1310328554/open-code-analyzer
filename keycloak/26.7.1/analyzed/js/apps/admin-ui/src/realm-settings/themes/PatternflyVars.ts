@@ -1,20 +1,30 @@
-// variable is the PF5 variable with the --pf-v5-global-- prefix removed
-// Dependencies use {{color}} token which gets replaced with parent's current value
+/**
+ * Patternfly 5 主题变量定义与解析工具。
+ * 将 Admin Console 可配置的主题色映射为 PF CSS 变量，并支持明暗主题与 {{color}} 依赖推导。
+ */
+
+// variable 为去掉 --pf-v5-global-- 前缀后的 PF5 变量名
+// 依赖项使用 {{color}} 占位符，运行时替换为父级颜色的当前值
+/** 支持明暗双模式的色值定义。 */
 type Value = { light?: string; dark?: string };
+/** 变量默认值：纯色字符串或按主题区分的对象。 */
 export type DefaultValueType = string | Value;
 
+/** 依赖父级主题色的衍生变量（如 primary 的 hover 态）。 */
 type DependencyVariable = {
   name: string;
   defaultValue: DefaultValueType;
   variable: string | Value;
 };
 
+/** 展平后用于 UI 绑定的依赖变量（variable 已解析为单一字符串）。 */
 type FlattenedDependencyVariable = {
   name: string;
   defaultValue: DefaultValueType;
   variable: string;
 };
 
+/** 顶层或可嵌套依赖的主题变量完整定义。 */
 type VariableDefinition = {
   name: string;
   defaultValue: string | Value;
@@ -22,6 +32,7 @@ type VariableDefinition = {
   dependencies?: DependencyVariable[];
 };
 
+/** 内置主题调色板：字体、语义色、背景与文本等 Patternfly 全局变量。 */
 const variables: VariableDefinition[] = [
   {
     name: "font",
@@ -142,16 +153,20 @@ const variables: VariableDefinition[] = [
   },
 ];
 
+/** 当前解析的主题维度：明色或暗色。 */
 type ThemeType = keyof Value;
 
+/** 展平后的变量条目，供主题编辑器表单绑定；dependencies 保留直接子依赖。 */
 export type FlattenedVariable = Omit<VariableDefinition, "dependencies"> & {
   parentName?: string;
   dependencies?: FlattenedDependencyVariable[];
 };
 
+/** 将 string | Value 解析为指定主题下的单一字符串值。 */
 const convert = (v: string | Value | undefined, theme: ThemeType) =>
   typeof v === "string" ? v : v?.[theme];
 
+/** 按主题展平变量树：跳过无对应 CSS 变量名的项，并将依赖项追加为独立条目。 */
 const flattenVariables = (theme: ThemeType): FlattenedVariable[] => {
   const result: FlattenedVariable[] = [];
 
@@ -159,7 +174,7 @@ const flattenVariables = (theme: ThemeType): FlattenedVariable[] => {
     const defaultValue = convert(v.defaultValue, theme);
     const variable = convert(v.variable, theme);
 
-    // Skip variables that don't apply to this theme (no CSS variable name to set)
+    // 当前主题下无 CSS 变量名则跳过（仅适用于另一主题的条目）
     if (variable === undefined) return;
 
     const flattenedVar: FlattenedVariable = {
@@ -201,12 +216,18 @@ const flattenVariables = (theme: ThemeType): FlattenedVariable[] => {
   return result;
 };
 
+/** 返回明色主题下的展平变量列表。 */
 export const lightTheme = (): FlattenedVariable[] => flattenVariables("light");
 
+/** 返回暗色主题下的展平变量列表。 */
 export const darkTheme = (): FlattenedVariable[] => flattenVariables("dark");
 
+/**
+ * 将任意 CSS 颜色表达式解析为 #rrggbb 十六进制字符串。
+ * 支持已是 hex、color(srgb ...) 以及 rgb/rgba 计算结果。
+ */
 export function resolveColorToHex(colorValue: string) {
-  // If already a valid hex color, return it directly
+  // 已是合法 hex 则直接归一化返回
   if (/^#[0-9a-fA-F]{6}$/i.test(colorValue)) {
     return colorValue.toLowerCase();
   }
@@ -221,7 +242,7 @@ export function resolveColorToHex(colorValue: string) {
     g = 0,
     b = 0;
 
-  // Parse color(srgb 0 0.252 0.504) format (0-1 range)
+  // 解析 color(srgb 0 0.252 0.504) 格式（分量 0–1）
   let matches = /color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(
     computed || "",
   );
@@ -231,7 +252,7 @@ export function resolveColorToHex(colorValue: string) {
     g = Math.round(g * 255);
     b = Math.round(b * 255);
   } else {
-    // Parse rgb(r, g, b) or rgba(r, g, b, a) format
+    // 解析 rgb(r, g, b) 或 rgba(r, g, b, a) 格式
     matches = /rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/.exec(computed || "");
     if (matches) {
       [, r, g, b] = matches.map(Number);
@@ -240,6 +261,9 @@ export function resolveColorToHex(colorValue: string) {
   return "#" + [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * 将默认值中的 {{color}} 占位符替换为父级颜色，并按主题选取 light/dark 分支。
+ */
 export function resolveColorReferences(
   colorValue: DefaultValueType,
   parentValue: string,

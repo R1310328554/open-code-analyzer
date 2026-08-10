@@ -13,6 +13,7 @@ import { UserFederationLdapMapperRoute } from "./routes/UserFederationLdapMapper
 import { UserFederationsKerberosRoute } from "./routes/UserFederationsKerberos";
 import { UserFederationsLdapRoute } from "./routes/UserFederationsLdap";
 
+/** 用户联邦模块路由：LDAP/Kerberos/自定义提供方列表、向导、详情与映射器子页。 */
 const routes: AppRouteObject[] = [
   UserFederationRoute,
   UserFederationsKerberosRoute,
