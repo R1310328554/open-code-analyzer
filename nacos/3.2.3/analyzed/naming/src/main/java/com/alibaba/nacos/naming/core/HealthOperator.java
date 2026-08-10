@@ -23,7 +23,7 @@ import com.alibaba.nacos.api.naming.utils.NamingUtils;
 import java.util.Map;
 
 /**
- * Persistent Health operator.
+ * 持久实例健康状态运维接口，支持手动改健康态与查询可用健康检查器。
  *
  * @author xiweng.yy
  */
@@ -42,6 +42,7 @@ public interface HealthOperator {
      * @param healthy         health status of instance
      * @throws NacosException any exception during updating
      * @deprecated use {@link #updateHealthStatusForPersistentInstance(String, String, String, String, String, int, boolean)} replaced
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     default void updateHealthStatusForPersistentInstance(String namespace, String fullServiceName,
@@ -66,6 +67,19 @@ public interface HealthOperator {
      * @param port            port of instance
      * @param healthy         health status of instance
      * @throws NacosException any exception during updating
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 手动更新持久实例健康状态（仅 NONE 健康检查类型允许）。
+     *
+     * @param namespace       namespace of service
+     * @param groupName       groupName of service
+     * @param serviceName     service name
+     * @param clusterName     cluster of instance
+     * @param ip              ip of instance
+     * @param port            port of instance
+     * @param healthy         health status of instance
+     * @throws NacosException any exception during updating
      */
     void updateHealthStatusForPersistentInstance(String namespace, String groupName,
         String serviceName,
@@ -76,6 +90,13 @@ public interface HealthOperator {
      *
      * <p>Each key in the map represents the type of health checker, and the corresponding value is an instance
      * of {@link AbstractHealthChecker} that implements the specific health check logic.
+     *
+     * @return a map of health checkers, where the key is the health checker type and the value is the
+     *         corresponding {@link AbstractHealthChecker} instance
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 返回已加载的健康检查器类型映射。
      *
      * @return a map of health checkers, where the key is the health checker type and the value is the
      *         corresponding {@link AbstractHealthChecker} instance

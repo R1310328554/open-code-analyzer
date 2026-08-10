@@ -40,7 +40,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Operator controller.
+ * V3 运维控制器，暴露开关、指标与日志级别等管理 API。
+ *
+ * <p>委托 {@link Operator} 执行实际运维操作，路径前缀见 {@link UtilsAndCommons#OPERATOR_CONTROLLER_V3_ADMIN_PATH}。</p>
  *
  * @author Nacos
  */
@@ -50,14 +52,17 @@ import org.springframework.web.bind.annotation.RestController;
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class OperatorControllerV3 {
     
+    /** 运维操作实现（V2 实现类）。 */
     private final Operator operatorV2Impl;
     
     public OperatorControllerV3(Operator operatorV2Impl) {
         this.operatorV2Impl = operatorV2Impl;
     }
     
+    /** 获取当前命名模块开关配置（{@link SwitchDomain}）。 */
     /**
      * Get switch information.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @GetMapping("/switches")
@@ -67,8 +72,10 @@ public class OperatorControllerV3 {
         return Result.success(operatorV2Impl.switches());
     }
     
+    /** 更新指定开关项的值，支持 debug 模式。 */
     /**
      * Update switch information.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @PutMapping("/switches")
@@ -87,8 +94,10 @@ public class OperatorControllerV3 {
         }
     }
     
+    /** 查询命名服务运行指标，{@code onlyStatus} 为 true 时仅返回状态摘要。 */
     /**
      * Get metrics information.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @GetMapping("/metrics")
@@ -100,8 +109,10 @@ public class OperatorControllerV3 {
         return Result.success(MetricsInfoVo.toNewMetricsInfo(operatorV2Impl.metrics(onlyStatus)));
     }
     
+    /** 动态调整指定 Logger 的日志级别。 */
     /**
      * Set log level.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @PutMapping("/log")

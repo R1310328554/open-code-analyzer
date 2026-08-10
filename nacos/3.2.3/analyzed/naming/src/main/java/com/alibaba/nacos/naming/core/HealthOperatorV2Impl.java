@@ -42,17 +42,22 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Health operator implementation for v1.x.
+ * V2 健康运维实现：校验集群健康检查类型后更新持久实例状态。
+ *
+ * <p>通过 {@link ClientOperationService} 重新注册实例以传播健康变更。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class HealthOperatorV2Impl implements HealthOperator {
     
+    /** 元数据读取，用于校验集群健康检查配置。 */
     private final NamingMetadataManager metadataManager;
     
+    /** 客户端管理器，定位 ip:port 持久客户端。 */
     private final ClientManager clientManager;
     
+    /** 客户端实例注册/注销操作入口。 */
     private final ClientOperationService clientOperationService;
     
     public HealthOperatorV2Impl(NamingMetadataManager metadataManager,
@@ -109,6 +114,7 @@ public class HealthOperatorV2Impl implements HealthOperator {
         return checkerMap;
     }
     
+    /** 集群仍启用自动健康检查时抛出参数错误。 */
     private void throwHealthCheckerException(String groupName, String serviceName,
         String clusterName)
         throws NacosException {

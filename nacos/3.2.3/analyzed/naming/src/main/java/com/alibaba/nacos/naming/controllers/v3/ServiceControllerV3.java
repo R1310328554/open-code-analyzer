@@ -65,7 +65,9 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Service controller.
+ * V3 服务管理控制器，提供服务的 CRUD、列表与订阅者查询。
+ *
+ * <p>组合 {@link ServiceOperatorV2Impl}、{@link CatalogServiceV2Impl} 与 {@link SelectorManager} 完成持久化服务运维。</p>
  *
  * @author Nacos
  */
@@ -75,10 +77,13 @@ import java.util.Optional;
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class ServiceControllerV3 {
     
+    /** 服务 CRUD 业务实现。 */
     private final ServiceOperatorV2Impl serviceOperatorV2;
     
+    /** 服务路由选择器管理器。 */
     private final SelectorManager selectorManager;
     
+    /** V2 服务目录，用于分页列表与详情聚合。 */
     private final CatalogServiceV2Impl catalogServiceV2;
     
     public ServiceControllerV3(ServiceOperatorV2Impl serviceOperatorV2,
@@ -89,8 +94,10 @@ public class ServiceControllerV3 {
         this.catalogServiceV2 = catalogServiceV2;
     }
     
+    /** 创建持久化服务并写入元数据与选择器配置。 */
     /**
      * Create a new service. This API will create a persistence service.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @PostMapping()
@@ -113,8 +120,10 @@ public class ServiceControllerV3 {
         return Result.success("ok");
     }
     
+    /** 删除指定命名空间下的服务。 */
     /**
      * Remove service.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @DeleteMapping()
@@ -133,8 +142,10 @@ public class ServiceControllerV3 {
         return Result.success("ok");
     }
     
+    /** 查询单个服务的完整详情（含集群与元数据）。 */
     /**
      * Get detail of service.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @GetMapping()
@@ -160,6 +171,7 @@ public class ServiceControllerV3 {
      *         if {@link ServiceListForm#isWithInstances()} is {@code false}, will return list {@link ServiceView }
      *     </li>
      * </ul>
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @GetMapping("/list")
@@ -187,8 +199,10 @@ public class ServiceControllerV3 {
                 hasIpCount));
     }
     
+    /** 更新服务元数据、保护阈值与选择器。 */
     /**
      * Update service.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @PutMapping()
@@ -214,6 +228,7 @@ public class ServiceControllerV3 {
         return Result.success("ok");
     }
     
+    /** 解析 URL 编码的 JSON 选择器配置为 {@link Selector} 实例。 */
     private Selector parseSelector(String selectorJsonString) throws Exception {
         if (StringUtils.isBlank(selectorJsonString)) {
             return new NoneSelector();
@@ -235,8 +250,10 @@ public class ServiceControllerV3 {
         return selector;
     }
     
+    /** 分页查询服务的订阅者列表，支持聚合模式。 */
     /**
      * get subscriber list.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @GetMapping("/subscribers")
@@ -256,8 +273,10 @@ public class ServiceControllerV3 {
                 pageNo, pageSize));
     }
     
+    /** 返回系统支持的全部 {@link Selector} 类型名称。 */
     /**
      * Get all {@link Selector} types.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Since("3.0.0")
     @GetMapping("/selector/types")

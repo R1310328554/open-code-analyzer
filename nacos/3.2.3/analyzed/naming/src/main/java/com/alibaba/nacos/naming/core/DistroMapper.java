@@ -35,20 +35,27 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Distro mapper, judge which server response input service.
+ * Distro 分片映射器，判定本节点是否负责指定标签的数据。
+ *
+ * <p>标签在 v1 为 serviceName，v2 为 ip:port；healthyList 全集群排序后保证各节点一致。</p>
  *
  * @author nkorange
  */
 @Component("distroMapper")
 public class DistroMapper extends MemberChangeListener {
     
+    /** 健康节点地址列表，全集群必须保持相同排序。 */
     /**
      * List of service nodes, you must ensure that the order of healthyList is the same for all nodes.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
+    /** 当前 UP/SUSPICIOUS 成员的有序地址列表。 */
     private volatile List<String> healthyList = new ArrayList<>();
     
+    /** 运维开关域，可关闭 Distro 分片。 */
     private final SwitchDomain switchDomain;
     
+    /** 集群成员管理器。 */
     private final ServerMemberManager memberManager;
     
     public DistroMapper(ServerMemberManager memberManager, SwitchDomain switchDomain) {
@@ -60,8 +67,10 @@ public class DistroMapper extends MemberChangeListener {
         return healthyList;
     }
     
+    /** 订阅成员变更并初始化 healthyList。 */
     /**
      * init server list.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @PostConstruct
     public void init() {
@@ -74,7 +83,9 @@ public class DistroMapper extends MemberChangeListener {
      *
      * @param responsibleTag responsible tag, serviceName for v1 and ip:port for v2
      * @return true if input service is response, otherwise false
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
+    /** 判断本节点是否负责处理指定 responsibleTag 的请求/数据。 */
     public boolean responsible(String responsibleTag) {
         final List<String> servers = healthyList;
         
@@ -83,7 +94,7 @@ public class DistroMapper extends MemberChangeListener {
         }
         
         if (CollectionUtils.isEmpty(servers)) {
-            // means distro config is not ready yet
+            // Distro 配置尚未就绪
             return false;
         }
         
@@ -103,7 +114,9 @@ public class DistroMapper extends MemberChangeListener {
      *
      * @param responsibleTag responsible tag, serviceName for v1 and ip:port for v2
      * @return server which response input service
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
+    /** 计算负责指定标签的对端节点地址。 */
     public String mapSrv(String responsibleTag) {
         final List<String> servers = healthyList;
         
@@ -122,14 +135,14 @@ public class DistroMapper extends MemberChangeListener {
         }
     }
     
+    /** 对 responsibleTag 做一致性哈希取模。 */
     private int distroHash(String responsibleTag) {
         return Math.abs(responsibleTag.hashCode() % Integer.MAX_VALUE);
     }
     
     @Override
     public void onEvent(MembersChangeEvent event) {
-        // Here, the node list must be sorted to ensure that all nacos-server's
-        // node list is in the same order
+        // 节点列表必须排序，确保各 nacos-server 的 healthyList 顺序一致
         List<String> list =
             MemberUtil.simpleMembers(MemberUtil.selectTargetMembers(event.getMembers(),
                 member -> NodeState.UP.equals(member.getState())

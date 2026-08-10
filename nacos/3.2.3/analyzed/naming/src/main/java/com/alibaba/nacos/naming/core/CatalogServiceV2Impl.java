@@ -49,17 +49,22 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**
- * Catalog service for v2.x .
+ * V2 服务目录实现，基于 {@link ServiceStorage} 与 {@link NamingMetadataManager} 聚合查询。
+ *
+ * <p>支持模糊匹配、分页、健康实例统计与保护阈值触发标记。</p>
  *
  * @author xiweng.yy
  */
 @Component()
 public class CatalogServiceV2Impl implements CatalogService {
     
+    /** 服务实例与集群索引存储。 */
     private final ServiceStorage serviceStorage;
     
+    /** 服务/集群/实例元数据管理器。 */
     private final NamingMetadataManager metadataManager;
     
+    /** 默认 HTTP 端口，用于部分统计场景。 */
     private static final int DEFAULT_PORT = 80;
     
     public CatalogServiceV2Impl(ServiceStorage serviceStorage,
@@ -201,6 +206,7 @@ public class CatalogServiceV2Impl implements CatalogService {
         return serviceViews;
     }
     
+    /** 统计服务下健康实例数量。 */
     private int countHealthyInstance(ServiceInfo data) {
         int result = 0;
         for (Instance each : data.getHosts()) {
@@ -211,6 +217,7 @@ public class CatalogServiceV2Impl implements CatalogService {
         return result;
     }
     
+    /** 判断健康实例比例是否低于保护阈值（触发降级标记）。 */
     private boolean isProtectThreshold(ServiceView serviceView, ServiceMetadata metadata) {
         return (serviceView.getHealthyInstanceCount() * 1.0 / serviceView.getIpCount()) <= metadata
             .getProtectThreshold();
@@ -241,6 +248,7 @@ public class CatalogServiceV2Impl implements CatalogService {
         return result;
     }
     
+    /** 按集群分组聚合实例列表。 */
     private Map<String, ClusterInfo> getClusterMap(Service service) {
         Map<String, ClusterInfo> result = new HashMap<>(1);
         for (Instance each : serviceStorage.getData(service).getHosts()) {
@@ -254,6 +262,7 @@ public class CatalogServiceV2Impl implements CatalogService {
         return result;
     }
     
+    /** 按命名空间与 group/service 模糊模式筛选服务集合。 */
     private Collection<Service> patternServices(String namespaceId, String group,
         String serviceName) {
         boolean noFilter = StringUtils.isBlank(serviceName) && StringUtils.isBlank(group);
@@ -273,11 +282,13 @@ public class CatalogServiceV2Impl implements CatalogService {
         return result;
     }
     
+    /** 将通配符目标转换为正则匹配片段。 */
     private String getRegexString(String target) {
         return StringUtils.isBlank(target) ? Constants.ANY_PATTERN
             : Constants.ANY_PATTERN + target + Constants.ANY_PATTERN;
     }
     
+    /** 对服务集合执行内存分页（兼容旧 API）。 */
     private Collection<Service> doPage(Collection<Service> services, int pageNo, int pageSize) {
         if (pageNo == 0 && services.size() < pageSize) {
             return services;

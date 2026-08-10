@@ -25,14 +25,16 @@ import com.alibaba.nacos.api.naming.pojo.maintainer.ServiceView;
 import java.util.List;
 
 /**
- * Catalog service.
+ * 服务目录查询接口，提供服务详情、实例列表与分页浏览能力。
+ *
+ * <p>供 Open API 与控制台调用，V2 实现见 {@link CatalogServiceV2Impl}。</p>
  *
  * @author xiweng.yy
  */
 public interface CatalogService {
     
     /**
-     * Get service detail information.
+     * 获取服务详情（集群、元数据、保护阈值等）。
      *
      * @param namespaceId namespace id of service
      * @param groupName   group name of service
@@ -44,7 +46,7 @@ public interface CatalogService {
         throws NacosException;
     
     /**
-     * List all instances of specified services.
+     * 列出指定集群下的服务实例。
      *
      * @param namespaceId namespace id of service
      * @param groupName   group name of service
@@ -64,6 +66,7 @@ public interface CatalogService {
      * @param groupName   group name of service
      * @param serviceName service name
      * @return instances list
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     List<? extends Instance> listAllInstances(String namespaceId, String groupName,
         String serviceName);
@@ -81,6 +84,7 @@ public interface CatalogService {
      * @return service list
      * @throws NacosException exception in query
      * @deprecated after v1 http api removed, use {@link #listService(String, String, String, int, int, boolean)} replace.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     Object pageListService(String namespaceId, String groupName, String serviceName, int pageNo,
@@ -97,6 +101,7 @@ public interface CatalogService {
      * @param pageSize    page size
      * @return service page object
      * @throws NacosException exception in query
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     Page<ServiceDetailInfo> pageListServiceDetail(String namespaceId, String groupName,
         String serviceName, int pageNo,
@@ -104,6 +109,19 @@ public interface CatalogService {
     
     /**
      * List service by page.
+     *
+     * @param namespaceId        namespace id of service
+     * @param groupName          group name of service
+     * @param serviceName        service name
+     * @param pageNo             page number
+     * @param pageSize           page size
+     * @param ignoreEmptyService whether ignore empty service
+     * @return service page object
+     * @throws NacosException exception in query
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 分页列出服务摘要视图。
      *
      * @param namespaceId        namespace id of service
      * @param groupName          group name of service

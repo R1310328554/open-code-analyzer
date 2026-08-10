@@ -26,13 +26,14 @@ import com.alibaba.nacos.naming.core.v2.pojo.Service;
 import java.util.Optional;
 
 /**
- * Implementation of cluster operator for v2.x.
+ * V2 集群元数据运维实现，委托 {@link NamingMetadataOperateService} 持久化变更。
  *
  * @author xiweng.yy
  */
 @org.springframework.stereotype.Service
 public class ClusterOperatorV2Impl implements ClusterOperator {
     
+    /** 命名元数据写操作服务。 */
     private final NamingMetadataOperateService metadataOperateService;
     
     public ClusterOperatorV2Impl(NamingMetadataOperateService metadataOperateService) {

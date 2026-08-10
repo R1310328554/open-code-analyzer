@@ -48,7 +48,9 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Client controller.
+ * 客户端查询服务实现，聚合 {@link ClientManager} 与索引管理器提供运维视图。
+ *
+ * <p>支持按客户端或服务双向查询发布/订阅关系，并计算 Distro 归属节点。</p>
  *
  * @author Nacos
  */
@@ -56,15 +58,19 @@ import java.util.Optional;
 @Component
 public class ClientServiceImpl implements ClientService {
     
+    /** V2 客户端生命周期管理器。 */
     @Resource
     private ClientManager clientManager;
     
+    /** gRPC 连接管理器，用于读取 2.x 连接型客户端元信息。 */
     @Resource
     private ConnectionManager connectionManager;
     
+    /** 客户端-服务双向索引，加速发布/订阅反查。 */
     @Resource
     private ClientServiceIndexesManager clientServiceIndexesManager;
     
+    /** Distro 分片映射器，用于计算负责节点。 */
     @Resource
     private DistroMapper distroMapper;
     
@@ -86,7 +92,7 @@ public class ClientServiceImpl implements ClientService {
         result.setLastUpdatedTime(client.getLastUpdatedTime());
         result.setClientType("ipPort");
         if (client instanceof ConnectionBasedClient) {
-            // upper 2.x client
+            // 2.x 及以上 gRPC 连接型客户端
             result.setClientType("connection");
             Connection connection = connectionManager.getConnection(clientId);
             ConnectionMeta connectionMetaInfo = connection.getMetaInfo();
@@ -139,6 +145,7 @@ public class ClientServiceImpl implements ClientService {
         return result;
     }
     
+    /** 将单实例发布信息包装为 JSON 节点（兼容旧 API）。 */
     private ObjectNode wrapSingleInstanceNode(InstancePublishInfo instancePublishInfo,
         Service service) {
         ObjectNode item = JacksonUtils.createEmptyJsonNode();
@@ -250,6 +257,7 @@ public class ClientServiceImpl implements ClientService {
         return result;
     }
     
+    /** 按 IP/Port 过滤实例发布信息并附加 clientId。 */
     private Optional<ClientPublisherInfo> filterInstancePublishInfo(
         InstancePublishInfo instancePublishInfo,
         String expectedIp, Integer expectedPort, String clientId) {
@@ -328,6 +336,7 @@ public class ClientServiceImpl implements ClientService {
         return result;
     }
     
+    /** 组装客户端-服务关联信息 DTO。 */
     private ClientServiceInfo buildClientServiceInfo(Service service,
         InstancePublishInfo instancePublishInfo,
         Subscriber subscriber) {

@@ -29,7 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Instance operator.
+ * 实例运维接口，涵盖 AP 模式下的注册、注销、更新、心跳与批量元数据操作。
+ *
+ * <p>客户端 Open API 主要使用 {@link InstanceOperatorClientImpl} 实现。</p>
  *
  * @author xiweng.yy
  */
@@ -43,6 +45,7 @@ public interface InstanceOperator {
      * @param instance    instance to register
      * @throws NacosException nacos exception when register failed
      * @deprecated use {@link #registerInstance(String, String, String, Instance)} replaced
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     default void registerInstance(String namespaceId, String serviceName, Instance instance)
@@ -54,6 +57,16 @@ public interface InstanceOperator {
     
     /**
      * Register an instance to a service in AP mode.
+     *
+     * @param namespaceId id of namespace
+     * @param groupName   group name of service
+     * @param serviceName service name without group
+     * @param instance    instance to register
+     * @throws NacosException nacos exceptioxn when register failed
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 向服务注册实例（AP 模式）。
      *
      * @param namespaceId id of namespace
      * @param groupName   group name of service
@@ -73,6 +86,7 @@ public interface InstanceOperator {
      * @param instance    instance
      * @throws NacosException nacos exception when remove failed
      * @deprecated use {@link #removeInstance(String, String, String, Instance)} replaced
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     default void removeInstance(String namespaceId, String serviceName, Instance instance)
@@ -84,6 +98,16 @@ public interface InstanceOperator {
     
     /**
      * Remove instance from service.
+     *
+     * @param namespaceId namespace
+     * @param groupName   group name of service
+     * @param serviceName service name without group
+     * @param instance    instance
+     * @throws NacosException nacos exception when remove failed
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 从服务注销实例。
      *
      * @param namespaceId namespace
      * @param groupName   group name of service
@@ -105,6 +129,7 @@ public interface InstanceOperator {
      * @param instance    instance
      * @throws NacosException nacos exception when update failed
      * @deprecated use {@link #updateInstance(String, String, String, Instance)} replaced
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     default void updateInstance(String namespaceId, String serviceName, Instance instance)
@@ -125,6 +150,7 @@ public interface InstanceOperator {
      * @param serviceName service name without group
      * @param instance    instance
      * @throws NacosException nacos exception when update failed
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     void updateInstance(String namespaceId, String groupName, String serviceName, Instance instance)
         throws NacosException;
@@ -140,6 +166,7 @@ public interface InstanceOperator {
      * @param patchObject objects need to be patched
      * @throws NacosException nacos exception when update failed
      * @deprecated use {@link #patchInstance(String, String, String, InstancePatchObject)} replaced
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     default void patchInstance(String namespaceId, String serviceName,
@@ -155,6 +182,16 @@ public interface InstanceOperator {
      * update metadata.
      *
      * <p>Patch update will only update variables in requests, the others will keep original value.
+     *
+     * @param namespaceId namespace
+     * @param groupName   group name of service
+     * @param serviceName service name without group
+     * @param patchObject objects need to be patched
+     * @throws NacosException nacos exception when update failed
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 部分字段 PATCH 更新实例元数据（仅更新请求中出现的字段）。
      *
      * @param namespaceId namespace
      * @param groupName   group name of service
@@ -177,6 +214,7 @@ public interface InstanceOperator {
      * @return service info
      * @throws Exception exception when list instance failed
      * @deprecated use {@link #listInstance(String, String, String, Subscriber, String, boolean)} replaced
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     default ServiceInfo listInstance(String namespaceId, String serviceName, Subscriber subscriber,
@@ -199,6 +237,7 @@ public interface InstanceOperator {
      * @param healthOnly  whether only return health instances
      * @return service info
      * @throws NacosException exception when list instance failed
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     ServiceInfo listInstance(String namespaceId, String groupName, String serviceName,
         Subscriber subscriber,
@@ -215,6 +254,7 @@ public interface InstanceOperator {
      * @return instance info
      * @throws NacosException nacos exception during query
      * @deprecated use {@link #getInstance(String, String, String, String, String, int)} replaced
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     default Instance getInstance(String namespaceId, String serviceName, String cluster, String ip,
@@ -236,6 +276,7 @@ public interface InstanceOperator {
      * @param port        port of instance
      * @return instance info
      * @throws NacosException nacos exception during query
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     Instance getInstance(String namespaceId, String groupName, String serviceName, String cluster,
         String ip, int port)
@@ -256,6 +297,7 @@ public interface InstanceOperator {
      * @throws NacosException nacos exception when service non-exist and client beat info is null
      * @deprecated use {@link #handleBeat(String, String, String, String, int, String, RsInfo, BeatInfoInstanceBuilder)}
      * replaced
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     default int handleBeat(String namespaceId, String serviceName, String ip, int port,
@@ -269,6 +311,22 @@ public interface InstanceOperator {
     
     /**
      * Handle beat request.
+     *
+     * @param namespaceId namespace
+     * @param groupName   group name of service
+     * @param serviceName service name without group
+     * @param ip          ip of instance
+     * @param port        port of instance
+     * @param cluster     cluster of instance
+     * @param clientBeat  client beat info
+     * @param builder     client beat instance builder, will be used when current instance is not exist and clientBeat
+     *                    exist
+     * @return result code
+     * @throws NacosException nacos exception when service non-exist and client beat info is null
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 处理客户端心跳：续期实例或按需自动注册。
      *
      * @param namespaceId namespace
      * @param groupName   group name of service
@@ -296,6 +354,7 @@ public interface InstanceOperator {
      * @param cluster     cluster of instance
      * @return heart beat interval
      * @deprecated removed after not support v1 client.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Deprecated
     long getHeartBeatInterval(String namespaceId, String serviceName, String ip, int port,
@@ -308,12 +367,23 @@ public interface InstanceOperator {
      * @param serviceName grouped service name group@@service
      * @return all instances
      * @throws NacosException nacos exception during query
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     List<? extends Instance> listAllInstances(String namespaceId, String serviceName)
         throws NacosException;
     
     /**
      * Batch update metadata of instances.
+     *
+     * @param namespaceId           namespace Id of instances
+     * @param instanceOperationInfo instance operation info
+     * @param metadata              updated metadata
+     * @return updated instance
+     * @throws NacosException nacos exception during update
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 批量合并更新实例元数据。
      *
      * @param namespaceId           namespace Id of instances
      * @param instanceOperationInfo instance operation info
@@ -333,6 +403,7 @@ public interface InstanceOperator {
      * @param metadata              delete metadata
      * @return updated instance
      * @throws NacosException nacos exception during update
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     List<String> batchDeleteMetadata(String namespaceId,
         InstanceOperationInfo instanceOperationInfo,

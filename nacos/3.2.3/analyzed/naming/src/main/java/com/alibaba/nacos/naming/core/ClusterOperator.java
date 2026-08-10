@@ -20,7 +20,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.naming.core.v2.metadata.ClusterMetadata;
 
 /**
- * Cluster operator.
+ * 集群元数据运维接口，用于更新服务下某集群的健康检查与扩展配置。
  *
  * @author xiweng.yy
  */
@@ -34,12 +34,33 @@ public interface ClusterOperator {
      * @param clusterName     cluster name
      * @param clusterMetadata cluster metadata
      * @throws NacosException exception during update metadata
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 按 grouped 服务名更新集群元数据（兼容旧 API）。
+     *
+     * @param namespaceId     namespace id
+     * @param serviceName     grouped service name of cluster
+     * @param clusterName     cluster name
+     * @param clusterMetadata cluster metadata
+     * @throws NacosException exception during update metadata
      */
     void updateClusterMetadata(String namespaceId, String serviceName, String clusterName,
         ClusterMetadata clusterMetadata) throws NacosException;
     
     /**
      * Update cluster metadata.
+     *
+     * @param namespaceId     namespace id
+     * @param groupName       group name of cluster
+     * @param serviceName     service name of cluster
+     * @param clusterName     cluster name
+     * @param clusterMetadata cluster metadata
+     * @throws NacosException exception during update metadata
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 按命名空间、分组与服务名更新集群元数据。
      *
      * @param namespaceId     namespace id
      * @param groupName       group name of cluster

@@ -20,25 +20,33 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 /**
- * Patch object for instance update. To save which variables will be update by {@link
- * com.alibaba.nacos.legacy.adapter.naming.InstanceController#patch(HttpServletRequest)} API
+ * 实例 PATCH 更新载荷，记录本次请求需变更的字段子集。
+ *
+ * <p>供 {@link com.alibaba.nacos.legacy.adapter.naming.InstanceController#patch(HttpServletRequest)} 与 {@link InstanceOperator#patchInstance} 使用；未设置的字段保持原值。</p>
  *
  * @author xiweng.yy
  */
 public class InstancePatchObject {
     
+    /** 目标实例所属集群名（不可变）。 */
     private final String cluster;
     
+    /** 目标实例 IP（不可变）。 */
     private final String ip;
     
+    /** 目标实例端口（不可变）。 */
     private final int port;
     
+    /** 待替换的元数据映射（可选）。 */
     private Map<String, String> metadata;
     
+    /** 待更新权重（可选）。 */
     private Double weight;
     
+    /** 待更新健康状态（可选）。 */
     private Boolean healthy;
     
+    /** 待更新启用状态（可选）。 */
     private Boolean enabled;
     
     public InstancePatchObject(String cluster, String ip, int port) {

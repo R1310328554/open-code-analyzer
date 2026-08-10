@@ -20,7 +20,10 @@ import com.alibaba.nacos.naming.misc.SwitchDomain;
 import com.alibaba.nacos.naming.model.vo.MetricsInfoVo;
 
 /**
- * Operator service.
+ * 命名模块运维接口：开关、指标与日志级别管理。
+ *
+ * <p>由 {@link OperatorControllerV3} 暴露 HTTP API，实现类负责读写 {@link SwitchDomain} 等运行时状态。</p>
+ *
  * @author Matthew
  */
 public interface Operator {
@@ -29,11 +32,26 @@ public interface Operator {
      * Retrieves the current state of system switches.
      *
      * @return A {@link SwitchDomain} object containing the current switch configurations.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 获取当前系统开关域快照。
+     *
+     * @return A {@link SwitchDomain} object containing the current switch configurations.
      */
     SwitchDomain switches();
     
     /**
      * Updates a specific system switch with a new value.
+     *
+     * @param entry The name of the switch entry to update.
+     * @param value The new value to set for the switch.
+     * @param debug If true, enables debug mode for the operation.
+     * @throws Exception If an error occurs during the update process.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 更新指定开关项。
      *
      * @param entry The name of the switch entry to update.
      * @param value The new value to set for the switch.
@@ -48,11 +66,25 @@ public interface Operator {
      *
      * @param onlyStatus If true, returns only the status information; otherwise, returns full metrics.
      * @return A {@link MetricsInfoVo} object containing the requested metrics data.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 查询命名服务运行指标。
+     *
+     * @param onlyStatus If true, returns only the status information; otherwise, returns full metrics.
+     * @return A {@link MetricsInfoVo} object containing the requested metrics data.
      */
     MetricsInfoVo metrics(boolean onlyStatus);
     
     /**
      * Sets the log level for a specified logger.
+     *
+     * @param logName  The name of the logger to configure.
+     * @param logLevel The log level to set (e.g., "DEBUG", "INFO", "WARN", "ERROR").
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
+     */
+    /**
+     * 动态设置 Logger 日志级别。
      *
      * @param logName  The name of the logger to configure.
      * @param logLevel The log level to set (e.g., "DEBUG", "INFO", "WARN", "ERROR").

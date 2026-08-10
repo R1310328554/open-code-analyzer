@@ -64,23 +64,29 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Instance service.
+ * 客户端 Open API 实例运维实现，基于 V2 Client 模型操作临时/持久实例。
+ *
+ * <p>负责注册、心跳、订阅兼容、元数据 PATCH 与批量更新等核心路径。</p>
  *
  * @author xiweng.yy
  */
 @org.springframework.stereotype.Service
 public class InstanceOperatorClientImpl implements InstanceOperator {
     
+    /** V2 客户端管理器。 */
     private final ClientManager clientManager;
     
+    /** 实例注册/注销/订阅操作代理。 */
     private final ClientOperationService clientOperationService;
     
+    /** 服务实例索引存储。 */
     private final ServiceStorage serviceStorage;
     
     private final NamingMetadataOperateService metadataOperateService;
     
     private final NamingMetadataManager metadataManager;
     
+    /** 运维开关（如默认心跳间隔）。 */
     private final SwitchDomain switchDomain;
     
     public InstanceOperatorClientImpl(ClientManagerDelegate clientManager,
@@ -95,8 +101,10 @@ public class InstanceOperatorClientImpl implements InstanceOperator {
         this.switchDomain = switchDomain;
     }
     
+    /** 注册实例；若 ip:port 客户端不存在则自动创建。 */
     /**
      * This method creates {@code IpPortBasedClient} if it doesn't exist.
+      * <p>Nacos 命名模块控制器与核心运维接口；详见上方类/接口说明。</p>
      */
     @Override
     public void registerInstance(String namespaceId, String groupName, String serviceName,
@@ -196,7 +204,7 @@ public class InstanceOperatorClientImpl implements InstanceOperator {
         Subscriber subscriber,
         String cluster, boolean healthOnly) {
         Service service = Service.newService(namespaceId, groupName, serviceName, true);
-        // For adapt 1.X subscribe logic
+        // 兼容 1.x HTTP 订阅逻辑
         if (null != subscriber && subscriber.getPort() > 0) {
             Loggers.SRV_LOG.warn("[DEPRECATED] UDP push has been removed in Nacos 3.2.0. "
                 + "Client {} is using legacy HTTP API for subscription which will not receive push notifications. "
@@ -211,7 +219,7 @@ public class InstanceOperatorClientImpl implements InstanceOperator {
         ServiceInfo result =
             ServiceUtil.selectInstancesWithHealthyProtection(serviceInfo, serviceMetadata, cluster,
                 healthOnly, true, null == subscriber ? StringUtils.EMPTY : subscriber.getIp());
-        // adapt for v1.x sdk
+        // 适配 v1.x SDK 的分组服务名格式
         result.setName(NamingUtils.getGroupedName(result.getName(), result.getGroupName()));
         return result;
     }
@@ -224,6 +232,7 @@ public class InstanceOperatorClientImpl implements InstanceOperator {
         return getInstance0(service, cluster, ip, port);
     }
     
+    /** 从服务存储中按集群/IP/Port 定位实例。 */
     private Instance getInstance0(Service service, String cluster, String ip, int port)
         throws NacosException {
         ServiceInfo serviceInfo = serviceStorage.getData(service);
@@ -379,6 +388,7 @@ public class InstanceOperatorClientImpl implements InstanceOperator {
         return result;
     }
     
+    /** 若客户端不存在则创建并关联当前请求 ClientAttributes。 */
     private void createIpPortClientIfAbsent(String clientId) {
         if (!clientManager.contains(clientId)) {
             ClientAttributes clientAttributes = ClientAttributesFilter.getCurrentClientAttributes()
@@ -387,6 +397,7 @@ public class InstanceOperatorClientImpl implements InstanceOperator {
         }
     }
     
+    /** 从 grouped 服务名解析并构造 {@link Service} 对象。 */
     private Service getService(String namespaceId, String serviceName, boolean ephemeral) {
         String groupName = NamingUtils.getGroupName(serviceName);
         String serviceNameNoGrouped = NamingUtils.getServiceName(serviceName);
