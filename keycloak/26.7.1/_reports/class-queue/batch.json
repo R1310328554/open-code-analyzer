@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T14:07:38Z",
   "files": [
-    "test-framework/core/src/main/java/org/keycloak/testframework/annotations/InjectUser.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/annotations/KeycloakIntegrationTest.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/annotations/TestCleanup.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/annotations/TestSetup.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/conditions/AbstractDisabledForSupplierCondition.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/conditions/DisabledForDatabases.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/conditions/DisabledForDatabasesCondition.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/conditions/DisabledForServers.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/conditions/DisabledForServersCondition.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/config/Config.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/config/LogConfigInterceptor.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/config/SuiteConfigSource.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/crypto/CryptoHelper.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/crypto/CryptoHelperSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/crypto/CryptoKeyStore.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/crypto/KeystoreInfo.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/database/AbstractDatabaseSupplier.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/database/DatabaseConfig.java",
@@ -33,5 +18,5 @@
     "test-framework/core/src/main/java/org/keycloak/testframework/events/AdminEvents.java"
   ],
   "remaining_pending": 448,
-  "done": 5520
+  "done": 5535
 }
