@@ -20,23 +20,37 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * request to publish a config.
+ * 发布配置的远程请求。
+ *
+ * <p>携带配置内容、CAS MD5 及可选扩展参数，由客户端发往服务端。</p>
  *
  * @author liuzunfei
  * @version $Id: ConfigPublishRequest.java, v 0.1 2020年07月16日 4:30 PM liuzunfei Exp $
  */
 public class ConfigPublishRequest extends AbstractConfigRequest {
     
+    /** 待发布的配置内容。 */
     String content;
     
+    /** CAS 发布时期望的当前内容 MD5。 */
     String casMd5;
     
+    /** 附加参数字典（如配置类型、加密密钥等）。 */
     private Map<String, String> additionMap;
     
+    /** 无参构造。 */
     public ConfigPublishRequest() {
         
     }
     
+    /**
+     * 构造发布请求。
+     *
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param tenant  命名空间 ID
+     * @param content 配置内容
+     */
     public ConfigPublishRequest(String dataId, String group, String tenant, String content) {
         this.content = content;
         super.setGroup(group);
@@ -45,20 +59,20 @@ public class ConfigPublishRequest extends AbstractConfigRequest {
     }
     
     /**
-     * get additional param.
+     * 获取附加参数值。
      *
-     * @param key key of param.
-     * @return value of param ,return null if not exist.
+     * @param key 参数键
+     * @return 参数值，不存在时返回 {@code null}
      */
     public String getAdditionParam(String key) {
         return additionMap == null ? null : additionMap.get(key);
     }
     
     /**
-     * put additional param value. will override if exist.
+     * 写入附加参数，已存在则覆盖。
      *
-     * @param key   key of param.
-     * @param value value of param.
+     * @param key   参数键
+     * @param value 参数值
      */
     public void putAdditionalParam(String key, String value) {
         if (additionMap == null) {
@@ -68,54 +82,54 @@ public class ConfigPublishRequest extends AbstractConfigRequest {
     }
     
     /**
-     * Getter method for property <tt>content</tt>.
+     * 获取配置内容。
      *
-     * @return property value of content
+     * @return 配置正文
      */
     public String getContent() {
         return content;
     }
     
     /**
-     * Setter method for property <tt>content</tt>.
+     * 设置配置内容。
      *
-     * @param content value to be assigned to property content
+     * @param content 配置正文
      */
     public void setContent(String content) {
         this.content = content;
     }
     
     /**
-     * Getter method for property <tt>casMd5</tt>.
+     * 获取 CAS MD5。
      *
-     * @return property value of casMd5
+     * @return 期望的当前内容 MD5
      */
     public String getCasMd5() {
         return casMd5;
     }
     
     /**
-     * Setter method for property <tt>casMd5</tt>.
+     * 设置 CAS MD5。
      *
-     * @param casMd5 value to be assigned to property content
+     * @param casMd5 期望的当前内容 MD5
      */
     public void setCasMd5(String casMd5) {
         this.casMd5 = casMd5;
     }
     
     /**
-     * Getter method for property <tt>casMd5</tt>.
+     * 获取附加参数字典。
      *
-     * @return property value of casMd5
+     * @return 附加参数映射
      */
     public Map<String, String> getAdditionMap() {
         return additionMap;
     }
     
     /**
-     * Setter method for property <tt>additionMap</tt>.
+     * 设置附加参数字典。
      *
-     * @param additionMap value to be assigned to property additionMap
+     * @param additionMap 附加参数映射
      */
     public void setAdditionMap(Map<String, String> additionMap) {
         this.additionMap = additionMap;

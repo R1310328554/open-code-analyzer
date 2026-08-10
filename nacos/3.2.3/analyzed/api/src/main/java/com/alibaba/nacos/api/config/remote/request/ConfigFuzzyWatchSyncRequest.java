@@ -21,70 +21,69 @@ import com.alibaba.nacos.api.common.Constants;
 import java.util.Set;
 
 /**
- * Represents a request to notify the difference between client and server side.
+ * 模糊监听差异同步请求，服务端向客户端推送与本地不一致的配置集合。
  *
- * <p>This request is used to notify clients about the difference in configurations that match fuzzy listening
- * patterns.
+ * <p>用于模糊订阅初始化及增量对齐，支持分批传输。</p>
  *
  * @author stone-98
  * @date 2024/3/6
  */
 public class ConfigFuzzyWatchSyncRequest extends AbstractFuzzyWatchNotifyRequest {
     
-    /**
-     * The pattern used to match group keys for the configurations.
-     */
+    /** 模糊匹配的 groupKey 模式。 */
     private String groupKeyPattern;
     
-    /**
-     * The set of contexts containing information about the configurations.
-     */
+    /** 差异配置上下文集合。 */
     private Set<Context> contexts;
     
-    /**
-     * see FUZZY_WATCH_INIT_NOTIFY,FINISH_FUZZY_WATCH_INIT_NOTIFY,FUZZY_WATCH_DIFF_SYNC_NOTIFY.
-     */
+    /** 同步类型，参见 FUZZY_WATCH_INIT_NOTIFY 等常量。 */
     private String syncType;
     
+    /** 分批同步的总批次数。 */
     private int totalBatch;
     
+    /** 当前批次序号（从 1 起）。 */
     private int currentBatch;
     
+    /** 获取同步类型。 */
     public String getSyncType() {
         return syncType;
     }
     
+    /** 设置同步类型。 */
     public void setSyncType(String syncType) {
         this.syncType = syncType;
     }
     
+    /** 获取总批次数。 */
     public int getTotalBatch() {
         return totalBatch;
     }
     
+    /** 设置总批次数。 */
     public void setTotalBatch(int totalBatch) {
         this.totalBatch = totalBatch;
     }
     
+    /** 获取当前批次。 */
     public int getCurrentBatch() {
         return currentBatch;
     }
     
+    /** 设置当前批次。 */
     public void setCurrentBatch(int currentBatch) {
         this.currentBatch = currentBatch;
     }
     
-    /**
-     * Constructs an empty FuzzyListenNotifyDiffRequest.
-     */
+    /** 无参构造。 */
     public ConfigFuzzyWatchSyncRequest() {
     }
     
     /**
-     * Constructs a FuzzyListenNotifyDiffRequest with the specified parameters.
+     * 私有构造，通过静态工厂方法创建实例。
      *
-     * @param groupKeyPattern The pattern used to match group keys for the configurations
-     * @param contexts        The set of contexts containing information about the configurations
+     * @param groupKeyPattern groupKey 匹配模式
+     * @param contexts        差异配置上下文集合
      */
     private ConfigFuzzyWatchSyncRequest(String syncType, String groupKeyPattern,
         Set<Context> contexts, int totalBatch,
@@ -98,11 +97,11 @@ public class ConfigFuzzyWatchSyncRequest extends AbstractFuzzyWatchNotifyRequest
     }
     
     /**
-     * Builds an initial FuzzyListenNotifyDiffRequest with the specified set of contexts and group key pattern.
+     * 构建分批差异同步请求。
      *
-     * @param contexts        The set of contexts containing information about the configurations
-     * @param groupKeyPattern The pattern used to match group keys for the configurations
-     * @return An initial FuzzyListenNotifyDiffRequest
+     * @param contexts        差异配置上下文
+     * @param groupKeyPattern groupKey 匹配模式
+     * @return 同步请求实例
      */
     public static ConfigFuzzyWatchSyncRequest buildSyncRequest(String syncType,
         Set<Context> contexts,
@@ -112,57 +111,55 @@ public class ConfigFuzzyWatchSyncRequest extends AbstractFuzzyWatchNotifyRequest
     }
     
     /**
-     * Builds fuzzy watch init finish request.
+     * 构建模糊监听初始化完成通知。
      *
-     * @param groupKeyPattern The pattern used to match group keys for the configurations
-     * @return A final FuzzyListenNotifyDiffRequest
+     * @param groupKeyPattern groupKey 匹配模式
+     * @return 初始化完成同步请求
      */
     public static ConfigFuzzyWatchSyncRequest buildInitFinishRequest(String groupKeyPattern) {
         return new ConfigFuzzyWatchSyncRequest(Constants.FINISH_FUZZY_WATCH_INIT_NOTIFY,
             groupKeyPattern, null, 0, 0);
     }
     
+    /** 获取 groupKey 匹配模式。 */
     public String getGroupKeyPattern() {
         return groupKeyPattern;
     }
     
+    /** 设置 groupKey 匹配模式。 */
     public void setGroupKeyPattern(String groupKeyPattern) {
         this.groupKeyPattern = groupKeyPattern;
     }
     
+    /** 获取差异上下文集合。 */
     public Set<Context> getContexts() {
         return contexts;
     }
     
+    /** 设置差异上下文集合。 */
     public void setContexts(Set<Context> contexts) {
         this.contexts = contexts;
     }
     
-    /**
-     * Represents context information about a configuration.
-     */
+    /** 单条模糊监听差异的配置上下文。 */
     public static class Context {
         
+        /** 配置的 groupKey。 */
         String groupKey;
         
-        /**
-         * see {@link com.alibaba.nacos.api.common.Constants.ConfigChangedType ADD_CONFIG&} ADD_CONFIG: a new config
-         * should be added for  clientside . DELETE_CONFIG: a  config should be removed for  clientside .
-         */
+        /** 变更类型，参见 {@link com.alibaba.nacos.api.common.Constants.ConfigChangedType}：ADD_CONFIG 表示客户端应新增，DELETE_CONFIG 表示应移除。 */
         private String changedType;
         
-        /**
-         * Constructs an empty Context object.
-         */
+        /** 无参构造。 */
         public Context() {
         }
         
         /**
-         * Builds a new context object with the provided parameters.
+         * 构造差异上下文。
          *
-         * @param groupKey    The groupKey associated of the configuration.
-         * @param changedType The type of the configuration change event.
-         * @return A new context object initialized with the provided parameters.
+         * @param groupKey    配置 groupKey
+         * @param changedType 变更类型
+         * @return 上下文实例
          */
         public static Context build(String groupKey, String changedType) {
             Context context = new Context();
@@ -171,18 +168,22 @@ public class ConfigFuzzyWatchSyncRequest extends AbstractFuzzyWatchNotifyRequest
             return context;
         }
         
+        /** 获取 groupKey。 */
         public String getGroupKey() {
             return groupKey;
         }
         
+        /** 设置 groupKey。 */
         public void setGroupKey(String groupKey) {
             this.groupKey = groupKey;
         }
         
+        /** 获取变更类型。 */
         public String getChangedType() {
             return changedType;
         }
         
+        /** 设置变更类型。 */
         public void setChangedType(String changedType) {
             this.changedType = changedType;
         }

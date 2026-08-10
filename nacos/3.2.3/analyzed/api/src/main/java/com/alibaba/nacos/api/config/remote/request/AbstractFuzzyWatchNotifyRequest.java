@@ -21,16 +21,20 @@ import com.alibaba.nacos.api.remote.request.ServerRequest;
 import static com.alibaba.nacos.api.common.Constants.Config.CONFIG_MODULE;
 
 /**
- * AbstractFuzzyListenNotifyRequest.
+ * 模糊监听通知类服务端请求的抽象基类。
+ *
+ * <p>服务端向客户端推送模糊订阅变更或同步时使用。</p>
  *
  * @author stone-98
  * @date 2024/3/14
  */
 public abstract class AbstractFuzzyWatchNotifyRequest extends ServerRequest {
     
+    /** 无参构造，供序列化框架使用。 */
     public AbstractFuzzyWatchNotifyRequest() {
     }
     
+    /** 返回配置模块标识。 */
     @Override
     public String getModule() {
         return CONFIG_MODULE;

@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.config.model;
 
 /**
- * Nacos configuration gray information.
+ * Nacos 配置灰度信息，在 {@link ConfigDetailInfo} 基础上附加灰度名称与规则。
+ *
+ * <p>用于灰度发布场景下区分不同灰度版本。</p>
  *
  * @author xiweng.yy
  */
@@ -25,22 +27,28 @@ public class ConfigGrayInfo extends ConfigDetailInfo {
     
     private static final long serialVersionUID = 4462719176825261439L;
     
+    /** 灰度版本名称。 */
     private String grayName;
     
+    /** 灰度匹配规则表达式。 */
     private String grayRule;
     
+    /** 获取灰度名称。 */
     public String getGrayName() {
         return grayName;
     }
     
+    /** 设置灰度名称。 */
     public void setGrayName(String grayName) {
         this.grayName = grayName;
     }
     
+    /** 获取灰度规则。 */
     public String getGrayRule() {
         return grayRule;
     }
     
+    /** 设置灰度规则。 */
     public void setGrayRule(String grayRule) {
         this.grayRule = grayRule;
     }

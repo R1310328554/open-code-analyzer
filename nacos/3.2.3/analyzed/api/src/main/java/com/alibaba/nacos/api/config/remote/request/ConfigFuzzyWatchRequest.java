@@ -22,75 +22,75 @@ import com.alibaba.nacos.api.remote.request.Request;
 import java.util.Set;
 
 /**
- * Represents a request for batch fuzzy listening configurations.
+ * 批量模糊监听配置的客户端请求。
  *
- * <p>This request is used to request batch fuzzy listening configurations from the server. It contains a set of
- * contexts, each representing a fuzzy listening context.
+ * <p>携带 groupKey 模式、已接收键集合及监听类型，向服务端注册或同步模糊订阅。</p>
  *
  * @author stone-98
  * @date 2024/3/4
  */
 public class ConfigFuzzyWatchRequest extends Request {
     
-    /**
-     * The namespace or tenant associated with the configurations.
-     */
+    /** 模糊匹配的 groupKey 模式。 */
     private String groupKeyPattern;
     
+    /** 客户端已知的 groupKey 集合，用于差异同步。 */
     private Set<String> receivedGroupKeys;
     
-    /**
-     * Flag indicating whether to listen for changes.
-     */
+    /** 监听类型（注册、取消等）。 */
     private String watchType;
     
-    /**
-     * Flag indicating whether the client is initializing.
-     */
+    /** 客户端是否处于模糊监听初始化阶段。 */
     private boolean isInitializing;
     
-    /**
-     * Constructs an empty ConfigBatchFuzzyListenRequest.
-     */
+    /** 无参构造。 */
     public ConfigFuzzyWatchRequest() {
     }
     
+    /** 获取 groupKey 匹配模式。 */
     public String getGroupKeyPattern() {
         return groupKeyPattern;
     }
     
+    /** 设置 groupKey 匹配模式。 */
     public void setGroupKeyPattern(String groupKeyPattern) {
         this.groupKeyPattern = groupKeyPattern;
     }
     
+    /** 获取已接收的 groupKey 集合。 */
     public Set<String> getReceivedGroupKeys() {
         return receivedGroupKeys;
     }
     
+    /** 设置已接收的 groupKey 集合。 */
     public void setReceivedGroupKeys(Set<String> receivedGroupKeys) {
         this.receivedGroupKeys = receivedGroupKeys;
     }
     
+    /** 获取监听类型。 */
     public String getWatchType() {
         return watchType;
     }
     
+    /** 设置监听类型。 */
     public void setWatchType(String watchType) {
         this.watchType = watchType;
     }
     
+    /** 是否处于初始化阶段。 */
     public boolean isInitializing() {
         return isInitializing;
     }
     
+    /** 设置初始化标志。 */
     public void setInitializing(boolean initializing) {
         isInitializing = initializing;
     }
     
     /**
-     * Get the module name for this request.
+     * 返回所属模块名。
      *
-     * @return The module name
+     * @return 配置模块标识
      */
     @Override
     public String getModule() {

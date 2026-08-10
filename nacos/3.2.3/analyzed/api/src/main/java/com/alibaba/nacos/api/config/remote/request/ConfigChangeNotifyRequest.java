@@ -20,50 +20,61 @@ import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.remote.request.ServerRequest;
 
 /**
- * ConfigChangeNotifyRequest.
+ * 配置变更通知请求，由服务端主动推送给客户端。
+ *
+ * <p>告知指定 dataId/group/tenant 的配置已发生变更，客户端应拉取最新内容。</p>
  *
  * @author liuzunfei
  * @version $Id: ConfigChangeNotifyRequest.java, v 0.1 2020年07月14日 3:20 PM liuzunfei Exp $
  */
 public class ConfigChangeNotifyRequest extends ServerRequest {
     
+    /** 发生变更的配置 Data ID。 */
     String dataId;
     
+    /** 配置分组。 */
     String group;
     
+    /** 命名空间 ID。 */
     String tenant;
     
+    /** 获取 Data ID。 */
     public String getDataId() {
         return dataId;
     }
     
+    /** 设置 Data ID。 */
     public void setDataId(String dataId) {
         this.dataId = dataId;
     }
     
+    /** 获取配置分组。 */
     public String getGroup() {
         return group;
     }
     
+    /** 设置配置分组。 */
     public void setGroup(String group) {
         this.group = group;
     }
     
+    /** 获取命名空间 ID。 */
     public String getTenant() {
         return tenant;
     }
     
+    /** 设置命名空间 ID。 */
     public void setTenant(String tenant) {
         this.tenant = tenant;
     }
     
     /**
-     * build success response.
+     * 构造配置变更通知请求。
      *
-     * @param dataId dataId
-     * @param group  group
-     * @param tenant tenant
-     * @return ConfigChangeNotifyResponse
+     * @param dataId 配置 Data ID
+     * @param group  配置分组
+     * @param tenant 命名空间 ID
+     * @return 填充完毕的通知请求
      */
     public static ConfigChangeNotifyRequest build(String dataId, String group, String tenant) {
         ConfigChangeNotifyRequest request = new ConfigChangeNotifyRequest();
@@ -73,6 +84,7 @@ public class ConfigChangeNotifyRequest extends ServerRequest {
         return request;
     }
     
+    /** 返回配置模块标识。 */
     @Override
     public String getModule() {
         return Constants.Config.CONFIG_MODULE;

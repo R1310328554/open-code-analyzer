@@ -17,62 +17,60 @@
 package com.alibaba.nacos.api.config.remote.request;
 
 /**
- * Represents a request to notify changes when a fuzzy watched configuration changed.
+ * 模糊监听配置变更通知请求。
  *
- * <p>This request is used to notify clients about changes in configurations that match fuzzy listening patterns.
+ * <p>当匹配模糊订阅模式的配置发生变更时，服务端向客户端推送本请求。</p>
  *
  * @author stone-98
  * @date 2024/3/13
  */
 public class ConfigFuzzyWatchChangeNotifyRequest extends AbstractFuzzyWatchNotifyRequest {
     
-    /**
-     * The groupKey of the configuration that has changed.
-     */
+    /** 发生变更的配置 groupKey（tenant@@group@@dataId）。 */
     private String groupKey;
     
-    /**
-     * Indicates whether the configuration exists or not.
-     */
+    /** 变更类型，如新增或删除。 */
     private String changeType;
     
-    /**
-     * Constructs an empty FuzzyListenNotifyChangeRequest.
-     */
+    /** 无参构造，供序列化使用。 */
     public ConfigFuzzyWatchChangeNotifyRequest() {
     }
     
     /**
-     * Constructs a FuzzyListenNotifyChangeRequest with the specified parameters.
+     * 构造模糊监听变更通知。
      *
-     * @param groupKey   The group of the configuration that has changed
-     * @param changeType Indicates whether the configuration exists or not
+     * @param groupKey   变更配置的 groupKey
+     * @param changeType 变更类型
      */
     public ConfigFuzzyWatchChangeNotifyRequest(String groupKey, String changeType) {
         this.groupKey = groupKey;
         this.changeType = changeType;
     }
     
+    /** 获取变更配置的 groupKey。 */
     public String getGroupKey() {
         return groupKey;
     }
     
+    /** 设置变更配置的 groupKey。 */
     public void setGroupKey(String groupKey) {
         this.groupKey = groupKey;
     }
     
+    /** 获取变更类型。 */
     public String getChangeType() {
         return changeType;
     }
     
+    /** 设置变更类型。 */
     public void setChangeType(String changeType) {
         this.changeType = changeType;
     }
     
     /**
-     * Returns a string representation of the FuzzyListenNotifyChangeRequest.
+     * 返回请求的字符串表示。
      *
-     * @return A string representation of the request
+     * @return 调试字符串
      */
     @Override
     public String toString() {

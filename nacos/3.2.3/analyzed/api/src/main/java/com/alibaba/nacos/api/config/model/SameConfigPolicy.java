@@ -17,25 +17,21 @@
 package com.alibaba.nacos.api.config.model;
 
 /**
- * SameConfigPolicy.
+ * 导入配置时遇到同名配置的处理策略。
+ *
+ * <p>用于批量导入或迁移场景，决定冲突时中止、跳过或覆盖。</p>
  *
  * @author klw
  */
 public enum SameConfigPolicy {
     
-    /**
-     * Abort import  on duplicate.
-     */
+    /** 发现重复配置时中止整个导入。 */
     ABORT,
     
-    /**
-     * Skipping on duplicate.
-     */
+    /** 发现重复配置时跳过该项。 */
     SKIP,
     
-    /**
-     * Overwrite on duplicate.
-     */
+    /** 发现重复配置时覆盖已有配置。 */
     OVERWRITE
     
 }
