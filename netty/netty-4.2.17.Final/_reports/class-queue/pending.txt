@@ -1,8 +1,0 @@
-transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtByteConnectorChannel.java
-transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtByteRendezvousChannel.java
-transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtMessageAcceptorChannel.java
-transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtMessageConnectorChannel.java
-transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtMessageRendezvousChannel.java
-transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtProvider.java
-varhandle-stub/src/main/java/java/lang/invoke/MethodHandle.java
-varhandle-stub/src/main/java/java/lang/invoke/VarHandle.java
