@@ -2,6 +2,9 @@
 
 package integration
 
+// 集成测试 Prometheus 文本 exposition 解析：从 /metrics 响应体提取
+// 指定 metric 的 counter/gauge 值与标签，供断言 Loki 组件指标。
+
 import (
 	"fmt"
 	"strings"
@@ -11,6 +14,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// ErrNoMetricFound 与 ErrInvalidMetricType 表示指标缺失或类型非 counter/gauge。
 var (
 	ErrNoMetricFound     = fmt.Errorf("metric not found")
 	ErrInvalidMetricType = fmt.Errorf("invalid metric type")
@@ -30,6 +34,7 @@ func extractMetricFamily(name, metrics string) (*io_prometheus_client.MetricFami
 	return mf, nil
 }
 
+// extractMetric 返回首个样本的数值与标签 map，仅支持 counter 与 gauge 类型。
 func extractMetric(metricName, metrics string) (float64, map[string]string, error) {
 	mf, err := extractMetricFamily(metricName, metrics)
 	if err != nil {

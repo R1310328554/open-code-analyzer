@@ -1,5 +1,8 @@
 package analytics
 
+// 用量统计 Report 构建与 expvar 指标注册：汇总 runtime/memstats、自定义 Counter/Statistics
+// 及 WordCounter，POST 至 stats.grafana.org/loki-usage-report 端点。
+
 import (
 	"bytes"
 	"context"
@@ -31,6 +34,7 @@ var (
 	createLock sync.RWMutex
 )
 
+// createOrRetrieveExpvar 双重检查锁：同名 expvar 已存在则复用，避免重复注册 panic。
 func createOrRetrieveExpvar[K any](check func() (*K, error), create func() *K) *K {
 	// check if string exists holding read lock
 	createLock.RLock()
@@ -57,6 +61,7 @@ func createOrRetrieveExpvar[K any](check func() (*K, error), create func() *K) *
 	return create()
 }
 
+// Report 含 clusterID、interval、版本、OS/Arch 及 metrics 字典等上报字段。
 // Report is the JSON object sent to the stats server
 type Report struct {
 	ClusterID              string    `json:"clusterID"`
@@ -71,6 +76,7 @@ type Report struct {
 	Metrics                map[string]interface{} `json:"metrics"`
 }
 
+// sendReport 将 buildReport 结果 MarshalIndent 后以 POST JSON 发送并校验 2xx 响应。
 // sendReport sends the report to the stats server
 func sendReport(ctx context.Context, seed *ClusterSeed, interval time.Time, URL string, httpClient *http.Client) error {
 	report := buildReport(seed, interval)
@@ -98,6 +104,7 @@ func sendReport(ctx context.Context, seed *ClusterSeed, interval time.Time, URL 
 	return nil
 }
 
+// buildReport 从 expvar 读取 target/edition 字符串并调用 buildMetrics 填充 metrics。
 // buildReport builds the report to be sent to the stats server
 func buildReport(seed *ClusterSeed, interval time.Time) Report {
 	var (
@@ -129,6 +136,7 @@ func buildReport(seed *ClusterSeed, interval time.Time) Report {
 	}
 }
 
+// buildMetrics 遍历 github.com/grafana/loki/ 前缀 expvar，Counter 上报前计算 rate 并重置。
 // buildMetrics builds the metrics part of the report to be sent to the stats server
 func buildMetrics() map[string]interface{} {
 	result := map[string]interface{}{
@@ -266,6 +274,7 @@ type Statistics struct {
 	value *atomic.Float64
 }
 
+// Statistics 用 CAS 在线维护 min/max/avg/count 及 Welford 算法的 stddev/stdvar。
 // NewStatistics returns a new Statistics object.
 // Statistics object is thread-safe and compute statistics on the fly based on sample recorded.
 // Available statistics are:
@@ -376,6 +385,7 @@ type Counter struct {
 	resetTime time.Time
 }
 
+// Counter 记录 total 与基于 resetTime 的 rate，上报 interval 内增量速率。
 // NewCounter returns a new Counter stats object.
 // If a Counter stats object with the same name already exists it is returned.
 func NewCounter(name string) *Counter {
@@ -434,6 +444,7 @@ type WordCounter struct {
 	count *atomic.Int64
 }
 
+// WordCounter 用 xxhash 对字符串去重计数，用于统计 distinct 配置项或特性名。
 // NewWordCounter returns a new WordCounter stats object.
 // The WordCounter object is thread-safe and counts the number of words recorded.
 // If a WordCounter stats object with the same name already exists it is returned.

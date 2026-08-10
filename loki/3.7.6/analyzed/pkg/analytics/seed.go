@@ -1,5 +1,8 @@
 package analytics
 
+// 集群用量统计 seed 定义：ClusterSeed 含唯一 UID 与创建时间，实现 memberlist.Mergeable
+// 以便 gossip KV 在节点间合并时始终保留最老（或 UID 字典序最小）的 cluster 标识。
+
 import (
 	"fmt"
 	"time"
@@ -10,6 +13,7 @@ import (
 	"github.com/grafana/dskit/kv/memberlist"
 )
 
+// 每个 Loki 集群对应一个匿名 ClusterID，随 usage report 上报至 Grafana 统计服务。
 // ClusterSeed is the seed for the usage stats.
 // A unique ID is generated for each cluster.
 type ClusterSeed struct {
@@ -18,6 +22,7 @@ type ClusterSeed struct {
 	prom.PrometheusVersion `json:"version"`
 }
 
+// Merge 比较 CreatedAt：保留更早 seed；同秒则取较小 UID 保证确定性收敛。
 // Merge implements the memberlist.Mergeable interface.
 // It allow to merge the content of two different seeds.
 func (c *ClusterSeed) Merge(mergeable memberlist.Mergeable, _ bool) (change memberlist.Mergeable, err error) {
@@ -64,12 +69,14 @@ func (c *ClusterSeed) Clone() memberlist.Mergeable {
 	return &clone
 }
 
+// JSONCodec 供 dskit KV 序列化 ClusterSeed，CodecID 为 usagestats.jsonCodec。
 var JSONCodec = jsonCodec{}
 
 type jsonCodec struct{}
 
 // todo we need to use the default codec for the rest of the code
 // currently crashing because the in-memory kvstore use a singleton.
+// Decode 使用 jsoniter ConfigFastest 反序列化为 *ClusterSeed 指针。
 func (jsonCodec) Decode(data []byte) (interface{}, error) {
 	var seed ClusterSeed
 	if err := jsoniter.ConfigFastest.Unmarshal(data, &seed); err != nil {

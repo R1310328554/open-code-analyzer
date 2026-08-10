@@ -1,5 +1,8 @@
 package builder
 
+// Bloom Builder Prometheus 指标：任务生命周期、block/meta 创建、chunk 大小及
+// 每任务 series/bytes 直方图，namespace 为 loki，subsystem 为 bloombuilder。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -14,6 +17,7 @@ const (
 	statusFailure = "failure"
 )
 
+// Metrics 含 running/processing_task  gauge 及 task_duration 等 histogram/counter。
 type Metrics struct {
 	running        prometheus.Gauge
 	processingTask prometheus.Gauge
@@ -32,6 +36,7 @@ type Metrics struct {
 	chunkSize prometheus.Histogram
 }
 
+// NewMetrics 用 promauto 注册指标；task_duration 桶覆盖 1s 至 24h 量级构建耗时。
 func NewMetrics(r prometheus.Registerer) *Metrics {
 	return &Metrics{
 		running: promauto.With(r).NewGauge(prometheus.GaugeOpts{

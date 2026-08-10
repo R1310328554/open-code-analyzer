@@ -1,5 +1,8 @@
 package common //nolint:revive
 
+// Bloom Planner/Builder 用的 Ring 领导者监视器：在 SSD backend 目标中复用 index gateway ring，
+// 周期性查找持有 RingKeyOfLeader(0xffff) 的 ACTIVE 实例并暴露其 gRPC 地址。
+
 import (
 	"context"
 	"time"
@@ -23,6 +26,7 @@ type RingWatcher struct {
 	logger       log.Logger
 }
 
+// NewRingWatcher 包装 BasicService，updateLoop 按 lookupPeriod 刷新 leader 缓存。
 // NewRingWatcher creates a service.Service that watches a ring for a leader instance.
 // The leader instance is the instance that owns the key `RingKeyOfLeader`.
 // It provides functions to get the leader's address, and to check whether a given instance in the ring is leader.
@@ -40,6 +44,7 @@ func NewRingWatcher(id string, ring *ring.Ring, lookupPeriod time.Duration, logg
 	return w
 }
 
+// waitForInitialLeader 每秒 lookup 直到 ring 中出现首个有效 leader 或 ctx 取消。
 func (w *RingWatcher) waitForInitialLeader(ctx context.Context) error {
 	syncTicker := time.NewTicker(time.Second)
 	defer syncTicker.Stop()
@@ -73,6 +78,7 @@ func (w *RingWatcher) updateLoop(ctx context.Context) error {
 	}
 }
 
+// lookupAddresses 遍历 replication set，校验 ACTIVE 且 token 范围包含 leader key。
 func (w *RingWatcher) lookupAddresses() {
 	bufDescs, bufHosts, bufZones := ring.MakeBuffersForGet()
 	rs, err := w.ring.Get(RingKeyOfLeader, ring.WriteNoExtend, bufDescs, bufHosts, bufZones)
@@ -111,6 +117,7 @@ func (w *RingWatcher) IsInstanceLeader(instanceID string) bool {
 	return res
 }
 
+// GetLeaderAddress 返回当前 leader Addr；无 leader 时返回 ring.ErrEmptyRing。
 func (w *RingWatcher) GetLeaderAddress() (string, error) {
 	if w.leader == nil {
 		return "", ring.ErrEmptyRing

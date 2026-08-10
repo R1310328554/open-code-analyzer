@@ -1,5 +1,8 @@
 package common //nolint:revive
 
+// Bloom 构建 TSDB 访问层：BloomTSDBStore 列出/加载 gzip 压缩的单租户 TSDB index，
+// TSDBStores 按 schema period 路由 store；NewTSDBSeriesIter 扫描 fingerprint 范围内 series。
+
 import (
 	"context"
 	"fmt"
@@ -34,6 +37,7 @@ type ClosableForSeries interface {
 	Close() error
 }
 
+// TSDBStore 抽象按 period 列租户、解析 TSDB 标识及加载可关闭的 ForSeries 索引。
 type TSDBStore interface {
 	UsersForPeriod(ctx context.Context, table config.DayTable) ([]string, error)
 	ResolveTSDBs(ctx context.Context, table config.DayTable, tenant string) ([]tsdb.SingleTenantTSDBIdentifier, error)
@@ -45,6 +49,7 @@ type TSDBStore interface {
 	) (ClosableForSeries, error)
 }
 
+// BloomTSDBStore 封装 indexshipper storage.Client，List 时 bypass cache 便于测试。
 // BloomTSDBStore is a wrapper around the storage.Client interface which
 // implements the TSDBStore interface for this pkg.
 type BloomTSDBStore struct {
@@ -88,6 +93,7 @@ func (b *BloomTSDBStore) ResolveTSDBs(ctx context.Context, table config.DayTable
 	return ids, nil
 }
 
+// LoadTSDB 读取 .gz 用户文件、GZIP 解压后 index.NewReader 构造 tsdb.TSDBIndex。
 func (b *BloomTSDBStore) LoadTSDB(
 	ctx context.Context,
 	table config.DayTable,
@@ -124,6 +130,7 @@ func (b *BloomTSDBStore) LoadTSDB(
 	return idx, nil
 }
 
+// NewTSDBSeriesIter 调用 ForSeries 回调收集 chunk meta，转为 v1.Series 切片迭代器。
 func NewTSDBSeriesIter(ctx context.Context, user string, f sharding.ForSeries, bounds v1.FingerprintBounds) (iter.Iterator[*v1.Series], error) {
 	// TODO(salvacorts): Create a pool
 	series := make([]*v1.Series, 0, 100)
@@ -197,6 +204,7 @@ func NewTSDBStores(
 	return res, nil
 }
 
+// storeForPeriod 自最新 schema 向前匹配 DayTime，非 TSDB index 类型则报错。
 func (s *TSDBStores) storeForPeriod(table config.DayTime) (TSDBStore, error) {
 	for i := len(s.schemaCfg.Configs) - 1; i >= 0; i-- {
 		period := s.schemaCfg.Configs[i]

@@ -1,5 +1,8 @@
 package builder
 
+// SimpleBloomGenerator 与 ChunkLoader 实现：串联 series 迭代器、重叠 bloom block
+// 与 chunk 加载，LazyBlockBuilderIterator 按 block 容量惰性构建并上传 bloom 块。
+
 import (
 	"context"
 	"fmt"
@@ -18,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/bloomshipper"
 )
 
+// SimpleBloomGenerator 组合 BloomTokenizer、MergeBuilder 与 schema 兼容性过滤。
 // Simple implementation of a BloomGenerator.
 type SimpleBloomGenerator struct {
 	userID      string
@@ -37,6 +41,7 @@ type SimpleBloomGenerator struct {
 	tokenizer *v1.BloomTokenizer
 }
 
+// 不兼容 schema 的旧 block 被 Filter 跳过，其 chunk 将重新索引进新 bloom。
 // SimpleBloomGenerator is a foundational implementation of BloomGenerator.
 // It mainly wires up a few different components to generate bloom filters for a set of blocks
 // and handles schema compatibility:
@@ -79,6 +84,7 @@ func NewSimpleBloomGenerator(
 	}
 }
 
+// populator 为每条 series 加载待索引 chunk 并调用 tokenizer.Populate 写入 bloom channel。
 func (s *SimpleBloomGenerator) populator(ctx context.Context) v1.BloomPopulatorFunc {
 	return func(
 		series *v1.Series,
@@ -140,6 +146,7 @@ func (s *SimpleBloomGenerator) Generate(ctx context.Context) *LazyBlockBuilderIt
 	return NewLazyBlockBuilderIterator(ctx, s.opts, s.metrics, s.logger, s.populator(ctx), s.writerReaderFunc, series, s.blocksIter)
 }
 
+// LazyBlockBuilderIterator 在 Next 时 Reset blocks、MergeBuilder 填满一块再暴露 At()。
 // LazyBlockBuilderIterator is a lazy iterator over blocks that builds
 // each block by adding series to them until they are full.
 type LazyBlockBuilderIterator struct {
@@ -234,6 +241,7 @@ type ChunkItersByFingerprint struct {
 	itr iter.Iterator[v1.ChunkRefWithIter]
 }
 
+// StoreChunkLoader 按 chunk.From 分组 fetcher，经 batchedChunkLoader 批量拉取迭代器。
 // ChunkLoader loads chunks from a store
 type ChunkLoader interface {
 	Load(ctx context.Context, userID string, series *v1.Series) *ChunkItersByFingerprint

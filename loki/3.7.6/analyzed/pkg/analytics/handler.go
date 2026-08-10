@@ -1,5 +1,8 @@
 package analytics
 
+// 匿名用量统计 HTTP 处理器：暴露 JSON 格式的集群 usage report，
+// 供本地调试或 Reporter 上报前预览 buildReport 输出内容。
+
 import (
 	"encoding/json"
 	"net/http"

@@ -1,5 +1,8 @@
 package builder
 
+// Bloom Builder 服务：通过 gRPC BuilderLoop 连接 Planner 接收任务，
+// 为每个 gap 生成 bloom block/meta 上传对象存储，并可 prefetch 至 Bloom Gateway。
+
 import (
 	"context"
 	"fmt"
@@ -39,6 +42,7 @@ import (
 // TODO(chaudum): Make configurable via (per-tenant?) setting.
 var defaultBlockCompressionCodec = compression.None
 
+// Builder 持有 bloomStore、chunkLoader、planner 客户端；SSD 模式用 ringWatcher 解析 leader 地址。
 type Builder struct {
 	services.Service
 
@@ -60,6 +64,7 @@ type Builder struct {
 	ringWatcher *common.RingWatcher
 }
 
+// New 生成 builder UUID、注册 metrics，可选启动 index gateway ring 上的 RingWatcher。
 func New(
 	cfg Config,
 	limits Limits,
@@ -137,6 +142,7 @@ func (b *Builder) stopping(_ error) error {
 	return nil
 }
 
+// running 在 backoff 循环中调用 connectAndBuild；EOF 重置退避，Canceled 在关停时退出。
 func (b *Builder) running(ctx context.Context) error {
 	// Retry if the connection to the planner is lost.
 	retries := backoff.New(ctx, b.cfg.BackoffConfig)
@@ -183,6 +189,7 @@ func (b *Builder) running(ctx context.Context) error {
 	return nil
 }
 
+// 将 codes.Canceled 映射为 context.Canceled，Unavailable+EOF 映射为 io.EOF 便于重连。
 // standardizeRPCError converts some gRPC errors we want to handle differently to standard errors.
 // 1. codes.Canceled -> context.Canceled
 // 2. codes.Unavailable with EOF -> io.EOF
@@ -254,6 +261,7 @@ func (b *Builder) connectAndBuild(ctx context.Context) error {
 	return nil
 }
 
+// builderLoop 发送 BuilderID 就绪消息后循环 Recv 任务、processTask 并回传 TaskResult。
 func (b *Builder) builderLoop(c protos.PlannerForBuilder_BuilderLoopClient) error {
 	ctx := c.Context()
 
@@ -355,6 +363,7 @@ func (b *Builder) notifyTaskCompletedToPlanner(
 	return nil
 }
 
+// processTask 逐 gap 加载 series/重叠 block，SimpleBloomGenerator 生成后 PutBlock/PutMeta。
 // processTask generates the blooms blocks and metas and uploads them to the object storage.
 // Now that we have the gaps, we will generate a bloom block for each gap.
 // We can accelerate this by using existing blocks which may already contain
@@ -544,6 +553,7 @@ func (b *Builder) processTask(
 	return created, nil
 }
 
+// loadWorkForGap 构造 gap.Series 迭代器与 blockLoadingIter，忽略未找到的 block ref。
 func (b *Builder) loadWorkForGap(
 	ctx context.Context,
 	table config.DayTable,

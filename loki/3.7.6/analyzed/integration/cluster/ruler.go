@@ -1,5 +1,8 @@
 package cluster
 
+// 集成测试集群组件的 Ruler 配置辅助：为测试集群注入 remote_write 客户端
+// 并将多租户告警规则 YAML 写入共享 rules 目录，供 Loki ruler 集成测试使用。
+
 import (
 	"fmt"
 	"os"
@@ -29,6 +32,7 @@ ruler:
 `, name, url))
 }
 
+// WithTenantRules 在集群共享路径下按租户/文件名写入规则文件，权限 0750/0640。
 func (c *Component) WithTenantRules(tenantFilesMap map[string]map[string]string) error {
 	sharedPath := c.ClusterSharedPath()
 	rulesPath := filepath.Join(sharedPath, "rules")

@@ -1,5 +1,8 @@
 package analytics
 
+// Loki 匿名用量上报 Reporter：leader 通过 KV CAS 生成 cluster seed 并写入对象存储，
+// follower 轮询 seed 文件；定时向 stats.grafana.org 发送 buildReport JSON。
+
 import (
 	"bytes"
 	"context"
@@ -32,7 +35,8 @@ import (
 )
 
 const (
-	// File name for the cluster seed file.
+	// ClusterSeedFileName 为对象存储中持久化 cluster UID 的文件名。
+// File name for the cluster seed file.
 	ClusterSeedFileName = "loki_cluster_seed.json"
 	// attemptNumber how many times we will try to read a corrupted cluster seed before deleting it.
 	attemptNumber = 4
@@ -56,6 +60,7 @@ type Config struct {
 	TLSConfig     dskittls.ClientConfig `yaml:"tls_config"`
 }
 
+// RegisterFlags 注册 reporting.enabled、usage-stats-url 与 TLS/代理相关命令行参数。
 // RegisterFlags adds the flags required to config this to the given FlagSet
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.BoolVar(&cfg.Enabled, "reporting.enabled", true, "Enable anonymous usage reporting.")
@@ -79,6 +84,7 @@ type Reporter struct {
 	lastReport time.Time
 }
 
+// NewReporter 在 reporting 禁用时返回 nil；否则克隆 DefaultTransport 并包装 BasicService。
 func NewReporter(config Config, kvConfig kv.Config, objectClient client.ObjectClient, logger log.Logger, reg prometheus.Registerer) (*Reporter, error) {
 	if !config.Enabled {
 		return nil, nil
@@ -118,6 +124,7 @@ func NewReporter(config Config, kvConfig kv.Config, objectClient client.ObjectCl
 	return r, nil
 }
 
+// initLeader 通过 KV CAS 竞争 seedKey，稳定后写入或读取对象存储中的 seed 文件。
 func (rep *Reporter) initLeader(ctx context.Context) *ClusterSeed {
 	kvClient, err := kv.NewClient(rep.kvConfig, JSONCodec, nil, rep.logger)
 	if err != nil {
@@ -180,6 +187,7 @@ func (rep *Reporter) initLeader(ctx context.Context) *ClusterSeed {
 	return nil
 }
 
+// memberlist 等 gossip KV 需连续多次读到相同 UID 才视为 seed 已收敛。
 // ensureStableKey ensures that the cluster seed is stable for at least 30seconds.
 // This is required when using gossiping kv client like memberlist which will never have the same seed
 // but will converge eventually.
@@ -224,6 +232,7 @@ func (rep *Reporter) init(ctx context.Context) {
 	rep.cluster = seed
 }
 
+// fetchSeed 带退避重试读 seed；连续损坏超过 attemptNumber 次则删除对象。
 // fetchSeed fetches the cluster seed from the object store and try until it succeeds.
 // continueFn allow you to decide if we should continue retrying. Nil means always retry
 func (rep *Reporter) fetchSeed(ctx context.Context, continueFn func(err error) bool) (*ClusterSeed, error) {
@@ -290,6 +299,7 @@ func (rep *Reporter) writeSeedFile(ctx context.Context, seed ClusterSeed) error 
 	return rep.objectClient.PutObject(ctx, ClusterSeedFileName, bytes.NewReader(data))
 }
 
+// running 初始化 seed、启动 CPU 采样，每分钟检查是否到达下一上报窗口。
 // running inits the reporter seed and start sending report for every interval
 func (rep *Reporter) running(ctx context.Context) error {
 	rep.init(ctx)
@@ -387,6 +397,7 @@ func (rep *Reporter) startCPUPercentCollection(ctx context.Context, cpuCollectio
 	}()
 }
 
+// nextReport 按 seed 创建时间对齐 4 小时间隔，避免全集群同时上报。
 // nextReport compute the next report time based on the interval.
 // The interval is based off the creation of the cluster seed to avoid all cluster reporting at the same time.
 func nextReport(interval time.Duration, createdAt, now time.Time) time.Time {
@@ -394,6 +405,7 @@ func nextReport(interval time.Duration, createdAt, now time.Time) time.Time {
 	return createdAt.Add(time.Duration(math.Ceil(float64(now.Sub(createdAt))/float64(interval))) * interval)
 }
 
+// HTTPS 代理场景：DialTLSContext 对代理主机用自定义 TLS，目标端点仍用系统 CA。
 // createCustomTransportForHTTPSProxy creates a transport that validates the HTTPS proxy certificate
 // while maintaining system CA trust for the final destination.
 func createCustomTransportForHTTPSProxy(tr *http.Transport, proxyURL *url.URL, tlsConfig dskittls.ClientConfig) (*http.Transport, error) {

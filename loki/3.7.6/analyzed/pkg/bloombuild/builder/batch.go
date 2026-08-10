@@ -1,5 +1,8 @@
 package builder
 
+// Bloom 构建批加载迭代器：batchedLoader 分批 Fetch chunk/block，映射为 ChunkRefWithIter
+// 或 SeriesWithBlooms；blockLoadingIter 处理重叠 block 合并与去重。
+
 import (
 	"context"
 	"io"
@@ -19,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/bloomshipper"
 )
 
+// Fetcher 抽象批量拉取：输入 []A 返回 []B，FetchFunc 提供函数式实现。
 type Fetcher[A, B any] interface {
 	Fetch(ctx context.Context, inputs []A) ([]B, error)
 }
@@ -29,6 +33,7 @@ func (f FetchFunc[A, B]) Fetch(ctx context.Context, inputs []A) ([]B, error) {
 	return f(ctx, inputs)
 }
 
+// batchedLoader 按 batchSize 切分 work 队列，耗尽一批后再取下一组 inputs/fetcher。
 // batchedLoader implements `v1.Iterator[C]` in batches
 type batchedLoader[A, B, C any] struct {
 	metrics   *Metrics
@@ -118,6 +123,7 @@ func (b *batchedLoader[_, _, _]) Err() error {
 
 // to ensure memory is bounded while loading chunks
 // TODO(owen-d): testware
+// newBatchedChunkLoader 将 chunk 转为 ChunkRefWithIter 并记录 chunk 未压缩大小 histogram。
 func newBatchedChunkLoader(
 	ctx context.Context,
 	fetchers []Fetcher[chunk.Chunk, chunk.Chunk],
@@ -186,6 +192,7 @@ func newBlockLoadingIter(ctx context.Context, blocks []bloomshipper.BlockRef, fe
 	}
 }
 
+// blockLoadingIter 按重叠 block 分组加载，堆合并 series 并按 fingerprint 去重保留 chunk 多者。
 type blockLoadingIter struct {
 	// constructor arguments
 	ctx         context.Context
@@ -343,6 +350,7 @@ func (i *blockLoadingIter) Filter(filter func(*bloomshipper.CloseableBlockQuerie
 	i.filter = filter
 }
 
+// overlappingBlocksIter 用 DedupingIter 将 fingerprint 范围重叠的 block 聚为一批。
 func overlappingBlocksIter(inputs []bloomshipper.BlockRef) iter.Iterator[[]bloomshipper.BlockRef] {
 	// can we assume sorted blocks?
 	peekIter := iter.NewPeekIter(iter.NewSliceIter(inputs))
