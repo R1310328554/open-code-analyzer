@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T16:53:33Z",
-  "files": [
-    "agent/sandbox/client.py",
-    "agent/sandbox/executor_manager/api/__init__.py",
-    "agent/sandbox/executor_manager/api/handlers.py",
-    "agent/sandbox/executor_manager/api/routes.py",
-    "agent/sandbox/executor_manager/core/__init__.py",
-    "agent/sandbox/executor_manager/core/config.py",
-    "agent/sandbox/executor_manager/core/container.py",
-    "agent/sandbox/executor_manager/core/logger.py",
-    "agent/sandbox/executor_manager/main.py",
-    "agent/sandbox/executor_manager/models/__init__.py",
-    "agent/sandbox/executor_manager/models/enums.py",
-    "agent/sandbox/executor_manager/models/schemas.py",
-    "agent/sandbox/executor_manager/services/__init__.py",
-    "agent/sandbox/executor_manager/services/execution.py",
-    "agent/sandbox/executor_manager/services/limiter.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1704,
-  "done": 45
+  "done": 60
 }
