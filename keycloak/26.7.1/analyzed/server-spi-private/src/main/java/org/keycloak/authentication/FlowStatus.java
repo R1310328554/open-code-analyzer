@@ -18,60 +18,36 @@
 package org.keycloak.authentication;
 
 /**
+ * 认证流程中单个执行步骤/认证器的运行状态。
+ *
  * Status of an execution/authenticator in a Authentication Flow
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public enum FlowStatus {
-    /**
-     * Successful execution
-     */
+    /** 执行成功。 Successful execution */
     SUCCESS,
 
-    /**
-     * Execution offered a challenge.  Optional executions will ignore this challenge.  Alternative executions may
-     * ignore the challenge depending on the status of other executions in the flow.
-     *
-     */
+    /** 已发起挑战；OPTIONAL 可忽略，ALTERNATIVE 视其他执行结果而定。 Execution offered a challenge. */
     CHALLENGE,
 
-    /**
-     * Regardless of the execution's requirement, this challenge will be sent to the user.
-     *
-     */
+    /** 强制向用户发送挑战，不受执行要求级别影响。 Regardless of the execution's requirement, this challenge will be sent to the user. */
     FORCE_CHALLENGE,
 
-    /**
-     * Flow will be aborted and a Response provided by the execution will be sent.
-     *
-     */
+    /** 中止流程并返回执行提供的 HTTP 响应。 Flow will be aborted and a Response provided by the execution will be sent. */
     FAILURE_CHALLENGE,
 
-    /**
-     * Flow will be aborted.
-     *
-     */
+    /** 中止流程（无特定响应体）。 Flow will be aborted. */
     FAILED,
 
-    /**
-     * This is not an error condition.  Execution was attempted, but the authenticator is unable to process the request.  An example of this is if
-     * a Kerberos authenticator did not see a negotiate header.  There was no error, but the execution was attempted.
-     *
-     */
+    /** 已尝试但无法处理（非错误），如 Kerberos 未收到 negotiate 头。 This is not an error condition. Execution was attempted, but the authenticator is unable to process the request. */
     ATTEMPTED,
 
-    /**
-     * This flow is being forked.  The current authentication session is being cloned, reset, and redirected to browser login.
-     *
-     */
+    /** 分叉流程：克隆并重置认证会话，重定向到浏览器登录。 This flow is being forked. */
     FORK,
 
-    /**
-     * This flow was reset to the beginning.  An example is hitting cancel on the OTP page which will bring you back to the
-     * username password page.
-     *
-     */
+    /** 流程重置到起点，如在 OTP 页取消返回用户名密码页。 This flow was reset to the beginning. */
     FLOW_RESET
 
 }

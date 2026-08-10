@@ -20,6 +20,9 @@ package org.keycloak.authentication;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * FormAction 工厂：Keycloak 启动时创建单例，负责实例化 {@link FormAction}。
+ * <p>须在 META-INF/services/org.keycloak.authentication.FormActionFactory 中注册实现类。</p>
+ *
  * Factory for instantiating FormAction objects.  This is a singleton and created when Keycloak boots.
  *
  * You must specify a file

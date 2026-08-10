@@ -23,6 +23,9 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * 标记与用户凭证相关的 Required Action 实现。
+ * <p>实现类应返回与 {@link org.keycloak.credential.CredentialProvider#getType} 及 {@link AuthenticatorFactory#getReferenceCategory} 一致的凭证类型。</p>
+ *
  * Marking any required action implementation, that is supposed to work with user credentials
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -30,6 +33,9 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 public interface CredentialAction {
 
     /**
+     * 返回本 Action 可注册/管理的凭证类型。
+     * <p>应与对应 {@link org.keycloak.credential.CredentialProvider#getType} 及 {@link AuthenticatorFactory#getReferenceCategory()} 一致。</p>
+     *
      * @return credential type, which this action is able to register. This should refer to the same value as returned by {@link org.keycloak.credential.CredentialProvider#getType} of the
      * corresponding credential provider and {@link AuthenticatorFactory#getReferenceCategory()} of the corresponding authenticator
      */

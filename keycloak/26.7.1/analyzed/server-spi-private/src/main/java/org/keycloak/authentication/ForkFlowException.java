@@ -20,24 +20,31 @@ package org.keycloak.authentication;
 import org.keycloak.models.utils.FormMessage;
 
 /**
- * Thrown internally when authenticator wants to fork the current flow.
+ * 认证器请求分叉当前流程时内部抛出的异常。
+ * <p>携带成功/错误 {@link org.keycloak.models.utils.FormMessage}，错误码为 {@link AuthenticationFlowError#FORK_FLOW}。</p>
  *
+ * Thrown internally when authenticator wants to fork the current flow.
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ForkFlowException extends AuthenticationFlowException {
+    /** 分叉成功时展示的消息。 */
     protected FormMessage successMessage;
+    /** 分叉失败时展示的消息。 */
     protected FormMessage errorMessage;
 
+    /** 返回分叉成功消息。 */
     public FormMessage getSuccessMessage() {
         return successMessage;
     }
 
+    /** 返回分叉错误消息。 */
     public FormMessage getErrorMessage() {
         return errorMessage;
     }
 
+    /** 以成功/错误消息构造分叉异常。 */
     public ForkFlowException(FormMessage successMessage, FormMessage errorMessage) {
         super(AuthenticationFlowError.FORK_FLOW);
         this.successMessage = successMessage;

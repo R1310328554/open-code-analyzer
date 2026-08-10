@@ -28,6 +28,9 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.representations.idm.ClientRepresentation;
 
 /**
+ * 客户端认证器工厂：Keycloak 启动时创建单例，负责实例化 {@link ClientAuthenticator}。
+ * <p>须在 META-INF/services/org.keycloak.authentication.ClientAuthenticatorFactory 中注册实现类。</p>
+ *
  * Factory for creating ClientAuthenticator instances.  This is a singleton and created when Keycloak boots.
  *
  * You must specify a file
@@ -40,6 +43,8 @@ public interface ClientAuthenticatorFactory extends ProviderFactory<ClientAuthen
     ClientAuthenticator create();
 
     /**
+     * 该认证器是否支持全局配置。
+     *
      * Is this authenticator configurable globally?
      *
      * @return
@@ -48,6 +53,8 @@ public interface ClientAuthenticatorFactory extends ProviderFactory<ClientAuthen
     boolean isConfigurable();
 
     /**
+     * 返回客户端适配器（keycloak.json）所需的配置；部分实现仅返回模板，需用户按环境填写。
+     *
      * Get configuration, which needs to be used for adapter ( keycloak.json ) of particular client. Some implementations
      * may return just template and user needs to edit the values according to his environment (For example fill the location of keystore file)
      *
@@ -56,6 +63,8 @@ public interface ClientAuthenticatorFactory extends ProviderFactory<ClientAuthen
     Map<String, Object> getAdapterConfiguration(KeycloakSession session, ClientModel client);
 
     /**
+     * 返回指定登录协议支持的客户端认证方法名称集合。
+     *
      * Get authentication methods for the specified protocol
      *
      * @param loginProtocol corresponds to {@link org.keycloak.protocol.LoginProtocolFactory#getId}
@@ -64,6 +73,8 @@ public interface ClientAuthenticatorFactory extends ProviderFactory<ClientAuthen
     Set<String> getProtocolAuthenticatorMethods(String loginProtocol);
 
     /**
+     * 获取客户端当前配置的协议认证方法（如 client_secret_basic、private_key_jwt）。
+     *
      * Get protocol authentication method, which is set on the specified client.
      *
      * @param client client whose authentication method will be returned
@@ -77,6 +88,8 @@ public interface ClientAuthenticatorFactory extends ProviderFactory<ClientAuthen
     }
 
     /**
+     * 将指定协议认证方法写入客户端表示。
+     *
      * Set specified client authentication method to the specified client
      *
      * @param client client to update
@@ -88,6 +101,8 @@ public interface ClientAuthenticatorFactory extends ProviderFactory<ClientAuthen
     }
 
     /**
+     * 该认证器是否支持客户端密钥（client secret）。
+     *
      * Is this authenticator supports client secret?
      *
      * @return if it supports secret

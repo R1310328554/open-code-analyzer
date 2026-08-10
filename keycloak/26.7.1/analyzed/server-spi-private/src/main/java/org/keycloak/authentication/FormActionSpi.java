@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * FormAction SPI 定义，注册 {@link FormAction} 与 {@link FormActionFactory} 提供者类型。
+ * <p>内部 SPI，名称 {@code form-action}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FormActionSpi implements Spi {
 
+    /** 内部 SPI，不对外暴露。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** 返回 SPI 名称 {@code form-action}。 */
     @Override
     public String getName() {
         return "form-action";
     }
 
+    /** 提供者接口类型 {@link FormAction}。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return FormAction.class;
     }
 
+    /** 工厂接口类型 {@link FormActionFactory}。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return FormActionFactory.class;

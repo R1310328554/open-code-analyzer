@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 客户端认证器 SPI 定义，注册 {@link ClientAuthenticator} 与 {@link ClientAuthenticatorFactory}。
+ * <p>内部 SPI，名称 {@code client-authenticator}。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientAuthenticatorSpi implements Spi {
 
+    /** 内部 SPI，不对外暴露。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** 返回 SPI 名称 {@code client-authenticator}。 */
     @Override
     public String getName() {
         return "client-authenticator";
     }
 
+    /** 提供者接口类型 {@link ClientAuthenticator}。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ClientAuthenticator.class;
     }
 
+    /** 工厂接口类型 {@link ClientAuthenticatorFactory}。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ClientAuthenticatorFactory.class;

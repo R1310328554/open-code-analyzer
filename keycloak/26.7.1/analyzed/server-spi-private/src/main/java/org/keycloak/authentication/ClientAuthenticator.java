@@ -20,6 +20,9 @@ package org.keycloak.authentication;
 import org.keycloak.provider.Provider;
 
 /**
+ * 客户端认证器 SPI：在认证流程中校验请求中的客户端凭证。
+ * <p>须同时实现 {@link ClientAuthenticatorFactory}；适配器侧需实现 {@link org.keycloak.protocol.oidc.client.authentication.ClientCredentialsProvider} 向请求附加凭证。</p>
+ *
  * This interface is for users that want to add custom client authenticators to an authentication flow.
  * You must implement this interface as well as a ClientAuthenticatorFactory.
  *
@@ -34,6 +37,8 @@ import org.keycloak.provider.Provider;
 public interface ClientAuthenticator extends Provider {
 
     /**
+     * 客户端认证器入口：检查 HTTP 请求是否满足要求，否则通过 context.challenge 返回挑战。
+     *
      * Initial call for the authenticator.  This method should check the current HTTP request to determine if the request
      * satisfies the ClientAuthenticator's requirements.  If it doesn't, it should send back a challenge response by calling
      * the ClientAuthenticationFlowContext.challenge(Response).

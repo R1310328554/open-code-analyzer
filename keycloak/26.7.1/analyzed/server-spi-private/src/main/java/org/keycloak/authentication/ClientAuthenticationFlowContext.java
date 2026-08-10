@@ -22,6 +22,9 @@ import java.util.Map;
 import org.keycloak.models.ClientModel;
 
 /**
+ * 客户端认证流程执行上下文，封装当前客户端、认证状态与共享数据。
+ * <p>继承 {@link AbstractAuthenticationFlowContext}，供 {@link ClientAuthenticator} 读写流程信息。</p>
+ *
  * Encapsulates information about the execution in ClientAuthenticationFlow
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -29,6 +32,8 @@ import org.keycloak.models.ClientModel;
 public interface ClientAuthenticationFlowContext extends AbstractAuthenticationFlowContext {
 
     /**
+     * 当前流程关联的客户端；尚未识别时可能为 null。
+     *
      * Current client attached to this flow.  It can return null if no client has been identified yet
      *
      * @return
@@ -36,6 +41,8 @@ public interface ClientAuthenticationFlowContext extends AbstractAuthenticationF
     ClientModel getClient();
 
     /**
+     * 将指定客户端绑定到本流程。
+     *
      * Attach a specific client to this flow.
      *
      * @param client
@@ -43,6 +50,9 @@ public interface ClientAuthenticationFlowContext extends AbstractAuthenticationF
     void setClient(ClientModel client);
 
     /**
+     * 返回可写的客户端认证附加属性映射（如证书属性等）。
+     * <p>认证成功后会写入 UserSession notes，可通过 UserSessionNote 协议映射器映射到 access token。</p>
+     *
      * Return the map where the authenticators can put some additional state related to authenticated client and the context how was
      * client authenticated (ie. attributes from client certificate etc). Map is writable, so you can add/remove items from it as needed.
      *
@@ -54,6 +64,8 @@ public interface ClientAuthenticationFlowContext extends AbstractAuthenticationF
     Map<String, String> getClientAuthAttributes();
 
     /**
+     * 在多个客户端认证器之间共享计算状态；未设置时由 supplier 初始化。
+     *
      * Provides a mechanism for sharing computed state across multiple authenticators. Returns state of the given type.
      * If not already set the supplier is used to initialise the state.
      *

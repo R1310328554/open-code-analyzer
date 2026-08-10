@@ -24,6 +24,9 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
 
 /**
+ * 表单细粒度处理 SPI：将单页表单拆分为可独立启用的 FormAction（如 Recaptcha）。
+ * <p>管理员可在控制台单独开关各 FormAction，而无需改动整页表单逻辑。</p>
+ *
  * Fine grain processing of a form.  Allows you to split up the processing of a form into smaller parts so that you can
  * enable/disable them from the admin console.  For example, Recaptcha is a FormAction.  This allows you as the admin
  * to turn Recaptcha on/off even though it is on the same form/page as other registration validation.
@@ -33,6 +36,8 @@ import org.keycloak.provider.Provider;
  */
 public interface FormAction extends Provider {
     /**
+     * 渲染挑战页时调用，向表单注入额外展示属性。
+     *
      * When a FormAuthenticator is rendering the challenge page, even FormAction.buildPage() method will be called
      * This gives the FormAction the opportunity to add additional attributes to the form to be displayed.
      *
@@ -41,6 +46,8 @@ public interface FormAction extends Provider {
      */
     void buildPage(FormContext context, LoginFormsProvider form);
     /**
+     * 表单处理第一阶段：校验用户输入，无效时可发起挑战。
+     *
      * This is the first phase of form processing.  Each FormAction.validate() method is called.  This gives the
      * FormAction a chance to validate and challenge if user input is invalid.
      *
@@ -49,6 +56,8 @@ public interface FormAction extends Provider {
     void validate(ValidationContext context);
 
     /**
+     * 所有 FormAction 的 validate 均成功后调用。
+     *
      * Called after all validate() calls of all FormAction providers are successful.
      *
      * @param context
@@ -56,6 +65,8 @@ public interface FormAction extends Provider {
     void success(FormContext context);
 
     /**
+     * 是否要求用户已设置（注册场景通常为 false）。
+     *
      * Does this FormAction require that a user be set? For registration, this method will always return false.
      *
      * @return
@@ -63,6 +74,8 @@ public interface FormAction extends Provider {
     boolean requiresUser();
 
     /**
+     * 当前用户是否已配置本 FormAction 所需凭证/设置。
+     *
      * Is this FormAction configured for the current user?
      *
      * @param session
@@ -73,8 +86,9 @@ public interface FormAction extends Provider {
     boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user);
 
     /**
-     * Set actions to configure authenticator
+     * 为用户设置配置本 FormAction 所需的 Required Actions。
      *
+     * Set actions to configure authenticator
      */
     void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user);
 

@@ -25,17 +25,23 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ConfiguredProvider;
 
 /**
+ * 可配置认证器工厂的通用契约，定义管理控制台中的展示与执行要求选项。
+ * <p>由 {@link AuthenticatorFactory}、{@link ClientAuthenticatorFactory}、{@link FormActionFactory} 等继承。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ConfigurableAuthenticatorFactory extends ConfiguredProvider {
 
+    /** 管理控制台可选的执行要求：必需、备选、禁用。 */
     AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED,
             AuthenticationExecutionModel.Requirement.ALTERNATIVE,
             AuthenticationExecutionModel.Requirement.DISABLED};
 
     /**
+     * 认证器在管理控制台中的友好显示名称。
+     *
      * Friendly name for the authenticator
      *
      * @return
@@ -43,6 +49,8 @@ public interface ConfigurableAuthenticatorFactory extends ConfiguredProvider {
     String getDisplayType();
 
     /**
+     * 认证器通用类型标识（如 totp、password、cert），用于凭证与 LoA 分类。
+     *
      * General authenticator type, i.e. totp, password, cert.
      *
      * @return null if not a referenceable category
@@ -50,6 +58,8 @@ public interface ConfigurableAuthenticatorFactory extends ConfiguredProvider {
     String getReferenceCategory();
 
     /**
+     * 可选附加分类（如 username/form 中的 passkeys）；不参与 LoA 计算。
+     *
      * Optional categories that this authenticator can have (for example passkeys in username/form).
      * Optional categories are not taken into account by LoA.
      * @param session The current session in the request
@@ -60,6 +70,8 @@ public interface ConfigurableAuthenticatorFactory extends ConfiguredProvider {
     }
 
     /**
+     * 该认证器是否可在流程执行中配置。
+     *
      * Is this authenticator configurable?
      *
      * @return
@@ -67,6 +79,8 @@ public interface ConfigurableAuthenticatorFactory extends ConfiguredProvider {
     boolean isConfigurable();
 
     /**
+     * 允许的执行要求选项（REQUIRED、ALTERNATIVE、DISABLED 等）。
+     *
      * What requirement settings are allowed.
      *
      * @return
@@ -74,10 +88,10 @@ public interface ConfigurableAuthenticatorFactory extends ConfiguredProvider {
     AuthenticationExecutionModel.Requirement[] getRequirementChoices();
 
     /**
+     * 用户未配置该认证器时，是否允许通过 Required Action 引导设置。
      *
      * Does this authenticator have required actions that can set if the user does not have
      * this authenticator set up?
-     *
      *
      * @return
      */
