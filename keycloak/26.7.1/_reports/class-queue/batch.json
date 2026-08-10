@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:50:34Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/protocol/ClientData.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/ClientInstallationProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/ClientInstallationSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/LoginProtocol.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/LoginProtocolFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/LoginProtocolSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/ProtocolMapper.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/ProtocolMapperConfigException.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/ProtocolMapperSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/JWTAuthorizationGrantValidationContext.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/OIDCConfigAttributes.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenExchangeContext.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenExchangeProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenExchangeProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/oidc/TokenExchangeSpi.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2608,
-  "done": 3375
+  "done": 3390
 }
