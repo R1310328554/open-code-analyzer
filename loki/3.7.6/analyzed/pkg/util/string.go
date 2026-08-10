@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包字符串小工具：SnakeCase 转换、切片包含判断与去重集合 UniqueStrings。
+
 import (
 	"bytes"
 	"fmt"
@@ -11,6 +13,7 @@ func StringRef(value string) *string {
 	return &value
 }
 
+// SnakeCase 在大写字母前插入下划线并转小写，已有下划线不重复插入。
 // SnakeCase converts given string `s` into `snake_case`.
 func SnakeCase(s string) string {
 	var buf bytes.Buffer
@@ -24,6 +27,7 @@ func SnakeCase(s string) string {
 	return buf.String()
 }
 
+// StringsContain 线性扫描等值匹配，适合短列表配置项校验。
 // StringsContain returns true if the search value is within the list of input values.
 func StringsContain(values []string, search string) bool {
 	for _, v := range values {
@@ -35,6 +39,7 @@ func StringsContain(values []string, search string) bool {
 	return false
 }
 
+// UniqueStrings 用 map 去重并保持插入顺序，Strings 输出前 sort 排序。
 // UniqueStrings keeps a slice of unique strings.
 type UniqueStrings struct {
 	values map[string]struct{}
@@ -65,3 +70,4 @@ func (us UniqueStrings) Strings() []string {
 	sort.Strings(us.result)
 	return us.result
 }
+// NewUniqueStrings 预分配 result 容量，Add 懒初始化 values map 降低小集合开销。

@@ -1,5 +1,7 @@
 package topk
 
+// topk 包泛型 Heap 在流式数据上维护 Top-K：Limit 限制容量，Push 满时仅保留 Less 意义下更大的元素。
+
 import (
 	"container/heap"
 	"iter"
@@ -7,6 +9,7 @@ import (
 	"slices"
 )
 
+// Heap 基于 container/heap，values[0] 始终为最小元；作 max-heap 时 PopAll 需反序理解。
 // Heap implements a heap of T. If Limit is specified, only the greatest
 // elements (according to Less) up to Limit are kept.
 //
@@ -20,6 +23,7 @@ type Heap[T any] struct {
 	values []T // Current values in the heap.
 }
 
+// Push 返回 PushResult 区分未变/新增/替换，替换时 prev 为被挤出的最小值。
 // Push adds v into the heap. If the heap is full, v is added only if it is
 // larger than the smallest value in the heap.
 //
@@ -81,6 +85,7 @@ func (h *Heap[T]) Peek() (T, bool) {
 // Len returns the current number of elements in the heap.
 func (h *Heap[T]) Len() int { return len(h.values) }
 
+// PopAll 排序后清空内部 slice，避免返回切片与堆共享底层数组。
 // PopAll removes and returns all elements from the heap in sorted order.
 func (h *Heap[T]) PopAll() []T {
 	res := h.values
@@ -98,6 +103,7 @@ func (h *Heap[T]) PopAll() []T {
 	return res
 }
 
+// Range 随机起点环形遍历，顺序不稳定，需有序请用 Pop 或 PopAll。
 // Range returns an iterator over elements in the heap in random order without
 // modifying the heap. The iteration order is not consistent between calls to
 // Range.
@@ -162,3 +168,4 @@ func (impl heapImpl[T]) Pop() any {
 	impl.values = old[:n-1]
 	return x
 }
+// heapImpl 实现 heap.Interface，Pop 从 slice 尾部取出以符合标准堆索引约定。

@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包 Jitter 与 TickerWithJitter：在固定周期上叠加随机偏移，降低多实例定时任务同时唤醒的 thundering herd。
+
 import (
 	"context"
 	"math/rand"
@@ -11,6 +13,7 @@ type Jitter struct {
 	deviation time.Duration
 }
 
+// NewJitter 构造抖动器，dev 为半宽，实际区间为 base±dev（见 Duration 实现）。
 // NewJitter returns a Jitter object that creates durations with random jitter.
 func NewJitter(b time.Duration, d time.Duration) Jitter {
 	return Jitter{base: b, deviation: d}
@@ -23,6 +26,7 @@ func (j Jitter) Duration() time.Duration {
 	return base + jitter
 }
 
+// TickerWithJitter 暴露 C 通道与 Stop，内部 goroutine 在 ctx 取消时 drain timer。
 type TickerWithJitter struct {
 	C    chan time.Time
 	ctx  context.Context
@@ -51,6 +55,7 @@ func (t *TickerWithJitter) start(d, dev time.Duration) {
 	}
 }
 
+// NewTickerWithJitter 后台 start 循环 Reset 随机间隔并向 C 发送 time.Now。
 // NewTickerWithJitter returns a new Ticker-like object, but instead of a
 // constant tick duration, it adds random +/- dev to each iteration.
 func NewTickerWithJitter(d, dev time.Duration) *TickerWithJitter {
@@ -63,3 +68,4 @@ func NewTickerWithJitter(d, dev time.Duration) *TickerWithJitter {
 	go t.start(d, dev)
 	return t
 }
+// 抖动使用 math/rand 非 CSPRNG，仅用于调度分散，不应用于安全相关随机。

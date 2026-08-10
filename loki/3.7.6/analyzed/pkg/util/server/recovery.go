@@ -1,5 +1,7 @@
 package server
 
+// server 包 recovery 中间件统一捕获 HTTP/gRPC/queryrange panic：记录堆栈、递增 panic_total 并返回 500 httpgrpc 错误。
+
 import (
 	"context"
 	"fmt"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// maxStacksize 限制 runtime.Stack 缓冲，防止超大栈输出阻塞 stderr。
 const maxStacksize = 8 * 1024
 
 var (
@@ -52,6 +55,7 @@ var (
 	})
 )
 
+// onPanic 打印 multiline 栈到 stderr，Inc panic_total，包装 InternalServerError。
 func onPanic(p interface{}) error {
 	stack := make([]byte, maxStacksize)
 	stack = stack[:runtime.Stack(stack, true)]
@@ -60,3 +64,4 @@ func onPanic(p interface{}) error {
 	panicTotal.Inc()
 	return httpgrpc.Errorf(http.StatusInternalServerError, "error while processing request: %v", p)
 }
+// queryrange 路径 panic 转为 error 返回，避免整个 querier 进程因单请求崩溃退出。

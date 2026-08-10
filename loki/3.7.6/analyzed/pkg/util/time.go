@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包时间工具：毫秒时间戳互转、RFC3339 解析、抖动 duration、区间切分 ForInterval 与 chunk 重叠比例 GetFactorOfTime。
+
 import (
 	"math"
 	"math/rand"
@@ -15,6 +17,7 @@ const (
 	nanosecondsInMillisecond = int64(time.Millisecond / time.Nanosecond)
 )
 
+// TimeToMillis 将 time.Time 转为 Unix 毫秒，Loki API 与 chunk 边界常用此尺度。
 func TimeToMillis(t time.Time) int64 {
 	return t.UnixNano() / nanosecondsInMillisecond
 }
@@ -34,6 +37,7 @@ func FormatTimeModel(t model.Time) string {
 	return TimeFromMillis(int64(t)).String()
 }
 
+// ParseTime 先尝试浮点秒（含小数毫秒），失败则 RFC3339Nano，否则 400 错误。
 // ParseTime parses the string into an int64, milliseconds since epoch.
 func ParseTime(s string) (int64, error) {
 	if t, err := strconv.ParseFloat(s, 64); err == nil {
@@ -48,6 +52,7 @@ func ParseTime(s string) (int64, error) {
 	return 0, httpgrpc.Errorf(http.StatusBadRequest, "cannot parse %q to a valid timestamp", s)
 }
 
+// DurationWithJitter 对称抖动，variancePerc 为相对 input 的比例半宽。
 // DurationWithJitter returns random duration from "input - input*variance" to "input + input*variance" interval.
 func DurationWithJitter(input time.Duration, variancePerc float64) time.Duration {
 	// No duration? No jitter.
@@ -74,6 +79,7 @@ func DurationWithPositiveJitter(input time.Duration, variancePerc float64) time.
 	return input + time.Duration(jitter)
 }
 
+// NewDisableableTicker interval 为 0 时返回空 stop 与 nil channel，便于配置关闭轮询。
 // NewDisableableTicker essentially wraps NewTicker but allows the ticker to be disabled by passing
 // zero duration as the interval. Returns a function for stopping the ticker, and the ticker channel.
 func NewDisableableTicker(interval time.Duration) (func(), <-chan time.Time) {
@@ -87,6 +93,7 @@ func NewDisableableTicker(interval time.Duration) (func(), <-chan time.Time) {
 
 const SplitGap = time.Millisecond
 
+// ForInterval 按 interval 对齐切分 [start,end]，endTimeInclusive 时在 split 间留 1ms SplitGap。
 // ForInterval splits the given start and end time into given interval.
 // The start and end time in splits would be aligned to the interval
 // except for the start time of first split and end time of last split which would be kept same as original start/end
@@ -118,6 +125,7 @@ func ForInterval(interval time.Duration, start, end time.Time, endTimeInclusive 
 	}
 }
 
+// GetFactorOfTime 计算查询窗口在 chunk 时间轴上的重叠比例，单点 chunk 返回 1。
 // GetFactorOfTime returns the percentage of time that the span `from` to `through`
 // accounts for inside the range `minTime` to `maxTime`.
 // It also returns the leading and trailing time that is not accounted for.
@@ -156,3 +164,4 @@ func GetFactorOfTime(from, through int64, minTime, maxTime int64) (factor float6
 func RetentionHours(retention time.Duration) string {
 	return strconv.FormatInt(int64(math.Floor(retention.Hours())), 10)
 }
+// RetentionHours 向下取整 retention 小时数并 FormatInt，供标签或配置展示。
