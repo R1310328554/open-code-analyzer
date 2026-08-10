@@ -22,27 +22,34 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 客户端策略执行器 SPI：注册 {@link ClientPolicyExecutorProvider} 与 {@link ClientPolicyExecutorProviderFactory}。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientPolicyExecutorSpi implements Spi {
 
+    /** SPI 名称常量。 */
     public static final String SPI_NAME = "client-policy-executor";
 
+    /** @return 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code client-policy-executor} */
     @Override
     public String getName() {
         return SPI_NAME;
     }
 
+    /** @return 提供者接口 {@link ClientPolicyExecutorProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ClientPolicyExecutorProvider.class;
     }
 
+    /** @return 工厂接口 {@link ClientPolicyExecutorProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ClientPolicyExecutorProviderFactory.class;

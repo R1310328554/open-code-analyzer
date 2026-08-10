@@ -25,18 +25,21 @@ import org.keycloak.services.clientpolicy.ClientPolicyException;
 import org.keycloak.services.clientpolicy.ClientPolicyVote;
 
 /**
- * This condition determines to which client a client policy is adopted.
- * The condition can be evaluated on the events defined in {@link ClientPolicyEvent}.
+ * 客户端策略条件提供者：判定客户端策略适用于哪些客户端。
+ * <p>This condition determines to which client a client policy is adopted.
+ * The condition can be evaluated on the events defined in {@link ClientPolicyEvent}.</p>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public interface ClientPolicyConditionProvider<CONFIG extends ClientPolicyConditionConfigurationRepresentation> extends Provider {
 
+    /** 默认无关闭资源逻辑。 */
     @Override
     default void close() {
     }
 
     /**
+     * 设置本条件的配置。
      * setup this condition's configuration.
      *
      * @param config
@@ -44,13 +47,14 @@ public interface ClientPolicyConditionProvider<CONFIG extends ClientPolicyCondit
     void setupConfiguration(CONFIG config);
 
     /**
-     * @return Class, which should match the "config" argument of the {@link #setupConfiguration(ClientPolicyConditionConfigurationRepresentation)}
+     * @return 与 {@link #setupConfiguration(ClientPolicyConditionConfigurationRepresentation)} 的 config 参数匹配的配置类
      */
     default Class<CONFIG> getConditionConfigurationClass() {
         return (Class<CONFIG>) ClientPolicyConditionConfigurationRepresentation.class;
     }
 
     /**
+     * 在 {@link ClientPolicyEvent} 定义的事件上评估条件。
      * returns ABSTAIN if this condition is not evaluated due to its nature.
      * returns YES if the client satisfies this condition on the event defined in {@link ClientPolicyEvent}.
      * If not, returns NO.
@@ -64,6 +68,7 @@ public interface ClientPolicyConditionProvider<CONFIG extends ClientPolicyCondit
     }
 
     /**
+     * 是否反转 {@link #applyPolicy} 的投票结果（YES↔NO，ABSTAIN 不变）。
      * tells whether the result of applyPolicy method is inverted or not as follows.
      *  ClientPolicyVote.YES is inverted to ClientPolicyVote.NO
      *  ClientPolicyVote.NO is inverted to ClientPolicyVote.YES
@@ -73,9 +78,11 @@ public interface ClientPolicyConditionProvider<CONFIG extends ClientPolicyCondit
      */
     boolean isNegativeLogic() throws ClientPolicyException;
 
+    /** @return 条件提供者名称（默认类名） */
     default String getName() {
         return getClass().toString();
     }
 
+    /** @return 提供者 ID */
     String getProviderId();
 }

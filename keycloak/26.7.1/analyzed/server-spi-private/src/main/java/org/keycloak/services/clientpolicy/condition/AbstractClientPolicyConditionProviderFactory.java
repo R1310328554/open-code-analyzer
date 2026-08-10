@@ -24,12 +24,16 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 客户端策略条件工厂抽象基类：提供通用配置属性与生命周期空实现。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public abstract class AbstractClientPolicyConditionProviderFactory implements ClientPolicyConditionProviderFactory {
 
+    /** 负向逻辑配置项键名。 */
     public static final String IS_NEGATIVE_LOGIC = "is-negative-logic";
 
+    /** 向工厂配置列表添加负向逻辑等通用属性。 */
     static protected void addCommonConfigProperties(List<ProviderConfigProperty> configProperties) {
         ProviderConfigProperty property = new ProviderConfigProperty(IS_NEGATIVE_LOGIC, "Negative Logic",
                 "If On, the result of condition's evaluation is reverted from true to false and vice versa.",
@@ -37,14 +41,17 @@ public abstract class AbstractClientPolicyConditionProviderFactory implements Cl
         configProperties.add(property);
     }
 
+    /** 默认无初始化逻辑。 */
     @Override
     public void init(Scope config) {
     }
 
+    /** 默认无后置初始化逻辑。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 默认无关闭资源逻辑。 */
     @Override
     public void close() {
     }

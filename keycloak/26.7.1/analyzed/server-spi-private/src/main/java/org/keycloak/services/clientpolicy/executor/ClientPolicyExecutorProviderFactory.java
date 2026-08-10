@@ -23,11 +23,15 @@ import org.keycloak.provider.ConfiguredProvider;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
-/** 
+/**
+ * 客户端策略执行器工厂：创建 {@link ClientPolicyExecutorProvider} 实例。
+ * <p>仅在启用 {@code CLIENT_POLICIES} 特性时可用。</p>
+ * 
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public interface ClientPolicyExecutorProviderFactory extends ProviderFactory<ClientPolicyExecutorProvider>, ConfiguredProvider, EnvironmentDependentProviderFactory {
 
+    /** @return 是否启用客户端策略特性 */
     @Override
     default boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.CLIENT_POLICIES);

@@ -20,6 +20,8 @@ package org.keycloak.services.managers;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link BruteForceProtector} 工厂：创建暴力破解防护提供者实例。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */

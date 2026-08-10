@@ -24,25 +24,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * CORS SPI：注册 {@link Cors} 与 {@link CorsFactory}。
+ *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public class CorsSpi implements Spi {
 
+    /** @return 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code cors} */
     @Override
     public String getName() {
         return "cors";
     }
 
+    /** @return 提供者接口 {@link Cors} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return Cors.class;
     }
 
+    /** @return 工厂接口 {@link CorsFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return CorsFactory.class;

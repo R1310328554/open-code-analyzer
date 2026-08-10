@@ -20,6 +20,8 @@ package org.keycloak.services.cors;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link Cors} 工厂：创建 CORS 提供者实例。
+ *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public interface CorsFactory extends ProviderFactory<Cors> {

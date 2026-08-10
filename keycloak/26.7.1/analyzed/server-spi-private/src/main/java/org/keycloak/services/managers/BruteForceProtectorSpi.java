@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 暴力破解防护 SPI：注册 {@link BruteForceProtector} 与 {@link BruteForceProtectorFactory}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class BruteForceProtectorSpi implements Spi {
 
+    /** @return 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code bruteForceProtector} */
     @Override
     public String getName() {
         return "bruteForceProtector";
     }
 
+    /** @return 提供者接口 {@link BruteForceProtector} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return BruteForceProtector.class;
     }
 
+    /** @return 工厂接口 {@link BruteForceProtectorFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return BruteForceProtectorFactory.class;

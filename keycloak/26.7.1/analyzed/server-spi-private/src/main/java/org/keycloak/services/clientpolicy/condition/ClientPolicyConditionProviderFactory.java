@@ -28,16 +28,21 @@ import org.keycloak.representations.idm.ClientPolicyConditionRepresentation;
 import org.keycloak.services.clientpolicy.ClientPolicyException;
 
 /**
+ * 客户端策略条件工厂：创建 {@link ClientPolicyConditionProvider} 实例。
+ * <p>仅在启用 {@code CLIENT_POLICIES} 特性时可用。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public interface ClientPolicyConditionProviderFactory extends ProviderFactory<ClientPolicyConditionProvider>, ConfiguredProvider, EnvironmentDependentProviderFactory {
 
+    /** @return 是否启用客户端策略特性 */
     @Override
     default boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.CLIENT_POLICIES);
     }
 
     /**
+     * 创建或更新客户端策略前校验条件配置。
      * Called before a Client Policy is created or updated.  Allows you to validate the configuration
      *
      * @param session

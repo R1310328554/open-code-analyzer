@@ -26,20 +26,28 @@ import org.keycloak.services.clientpolicy.ClientPolicyException;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 客户端策略条件提供者抽象基类：管理会话、配置与负向逻辑。
+ * <p>子类实现 {@link ClientPolicyConditionProvider} 的具体条件评估逻辑。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractClientPolicyConditionProvider<CONFIG extends ClientPolicyConditionConfigurationRepresentation> implements ClientPolicyConditionProvider<CONFIG> {
 
+    /** Keycloak 会话上下文。 */
     protected final KeycloakSession session;
+    /** 当前条件配置。 */
     protected CONFIG configuration;
 
+    /** @param session Keycloak 会话 */
     public AbstractClientPolicyConditionProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 设置条件配置；{@code null} 时使用默认空配置。 */
     @Override
     public void setupConfiguration(CONFIG config) {
         if (config == null) {
+            // 传入 null 配置时的回退处理
             // Fallback for the case that null configuration is passed as an argument
             this.configuration = JsonSerialization.mapper.convertValue(new ClientPolicyConditionConfigurationRepresentation(), getConditionConfigurationClass());
         } else {
@@ -47,6 +55,7 @@ public abstract class AbstractClientPolicyConditionProvider<CONFIG extends Clien
         }
     }
 
+    /** @return 是否启用负向逻辑（反转 {@link ClientPolicyConditionProvider#applyPolicy} 结果） */
     public boolean isNegativeLogic() throws ClientPolicyException {
         if (configuration == null) {
             throw new ClientPolicyException("Not allowed to call this when configuration is not set");
