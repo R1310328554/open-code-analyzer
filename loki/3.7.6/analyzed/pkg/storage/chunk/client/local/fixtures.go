@@ -1,5 +1,7 @@
 package local
 
+// fixtures 为单元测试注册 boltdb 本地存储 fixture：临时目录内同时搭建 BoltDB 索引、FS 对象存储与 TableClient，并配置 10 分钟周期的 schema。
+
 import (
 	"io"
 	"os"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/series/index"
 )
 
+// fixture 实现 testutils.Fixture 接口，Name 返回 "boltdb"。
 type fixture struct {
 	name    string
 	dirname string
@@ -22,6 +25,7 @@ func (f *fixture) Name() string {
 	return f.name
 }
 
+// Clients 在 TempDir 下创建索引/块/表三套客户端，Closer 负责 RemoveAll 清理。
 func (f *fixture) Clients() (
 	indexClient index.Client, chunkClient client.Client, tableClient index.TableClient,
 	schemaConfig config.SchemaConfig, closer io.Closer, err error,
@@ -74,8 +78,10 @@ func (f *fixture) Clients() (
 }
 
 // Fixtures for unit testing GCP storage.
+// Fixtures 导出 boltdb fixture 供跨后端一致性测试套件注册使用。
 var Fixtures = []testutils.Fixture{
 	&fixture{
 		name: "boltdb",
 	},
 }
+// chunkClient 使用 FSEncoder 编码键；IndexType 设为 boltdb 以匹配本地索引实现。

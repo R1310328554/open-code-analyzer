@@ -1,5 +1,7 @@
 package ibmcloud
 
+// 本文件实现 IBM IAM Trusted Profile 认证提供者，供 COS SDK 在容器/计算资源场景下通过 CR token 文件换取 Bearer 访问令牌。
+
 import (
 	"os"
 
@@ -19,6 +21,7 @@ const (
 )
 
 // TrustedProfileProvider implements Provider interface from https://github.com/IBM/ibm-cos-sdk-go
+// TrustedProfileProvider 封装 core.ContainerAuthenticator，实现 credentials.Provider 接口。
 type TrustedProfileProvider struct {
 	// Name of Provider
 	providerName string
@@ -34,6 +37,7 @@ type TrustedProfileProvider struct {
 }
 
 // NewTrustedProfileProvider creates custom IBM IAM Provider for Trusted Profile authentication
+// NewTrustedProfileProvider 校验 profile 名/ID 与 CR token 文件存在性后构建 authenticator。
 func NewTrustedProfileProvider(providerName string, trustedProfileName,
 	trustedProfileID, crTokenFilePath, authEndpoint string) *TrustedProfileProvider {
 	provider := new(TrustedProfileProvider)
@@ -95,6 +99,7 @@ func (p *TrustedProfileProvider) IsValid() bool {
 }
 
 // Retrieve returns the creadential values
+// Retrieve 调用 GetToken 获取或刷新 Bearer token，失败时返回 awserr 包装错误。
 func (p *TrustedProfileProvider) Retrieve() (credentials.Value, error) {
 	if p.ErrorStatus != nil {
 		level.Debug(log.Logger).Log("msg", p.ErrorStatus)
@@ -125,11 +130,13 @@ func (p *TrustedProfileProvider) Retrieve() (credentials.Value, error) {
 // but here we are skipping the expiry check since the token variable in authenticator is not an exported variable.
 // The GetToken function in Retrieve method is checking whether the token is expired
 // or not before making the call to the server.
+// IsExpired 恒返回 true，实际过期检测委托给 authenticator.GetToken 内部逻辑。
 func (p *TrustedProfileProvider) IsExpired() bool {
 	return true
 }
 
 // NewTrustedProfileCredentials a constructor for IBM IAM that uses IAM Trusted Profile credentials passed in
+// NewTrustedProfileCredentials 构造可被 COS SDK 使用的静态 Credentials 包装器。
 func NewTrustedProfileCredentials(authEndpoint, trustedProfileName,
 	trustedProfileID, crTokenFilePath string) *credentials.Credentials {
 	return credentials.NewCredentials(
@@ -139,3 +146,4 @@ func NewTrustedProfileCredentials(authEndpoint, trustedProfileName,
 		),
 	)
 }
+// profile 名称与 ID 可二选一传入，若同时提供须指向同一 trusted profile 实体。

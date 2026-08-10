@@ -1,5 +1,7 @@
 package ibmcloud
 
+// ibmcloud 包实现 IBM Cloud Object Storage（COS）后端，兼容 S3 API，支持 HMAC、IAM API Key及 Trusted Profile 多种认证方式，并可选启用 HTTP 对冲读取。
+
 import (
 	"context"
 	"flag"
@@ -63,6 +65,7 @@ func init() {
 }
 
 // COSConfig specifies config for storing chunks on IBM cos.
+// COSConfig 配置桶列表、端点、区域、凭证及 HTTP/退避参数，支持多桶哈希分片。
 type COSConfig struct {
 	ForcePathStyle     bool           `yaml:"forcepathstyle"`
 	BucketNames        string         `yaml:"bucketnames"`
@@ -117,6 +120,7 @@ func (cfg *COSConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.StringVar(&cfg.TrustedProfileID, prefix+"cos.trusted-profile-id", "", "ID of the trusted profile.")
 }
 
+// COSObjectClient 维护普通与 hedged 两套 S3 客户端，读路径优先使用对冲连接。
 type COSObjectClient struct {
 	cfg COSConfig
 
@@ -126,6 +130,7 @@ type COSObjectClient struct {
 }
 
 // NewCOSObjectClient makes a new COS backed ObjectClient.
+// NewCOSObjectClient 校验配置、解析逗号分隔桶名并分别构建读写客户端。
 func NewCOSObjectClient(cfg COSConfig, hedgingCfg hedging.Config) (*COSObjectClient, error) {
 	bucketNames, err := buckets(cfg)
 	if err != nil {
@@ -290,6 +295,7 @@ func buckets(cfg COSConfig) ([]string, error) {
 }
 
 // bucketFromKey maps a key to a bucket name
+// bucketFromKey 用 FNV-32a 哈希将 object key 均匀映射到配置的多个桶之一。
 func (c *COSObjectClient) bucketFromKey(key string) string {
 	if len(c.bucketNames) == 0 {
 		return ""
@@ -356,6 +362,7 @@ func (c *COSObjectClient) objectAttributes(ctx context.Context, objectKey, sourc
 }
 
 // GetObject returns a reader and the size for the specified object key from the configured S3 bucket.
+// GetObject 通过 hedgedCOS 拉取对象，配合 backoff 重试并记录 cos_request_duration_seconds。
 func (c *COSObjectClient) GetObject(ctx context.Context, objectKey string) (io.ReadCloser, int64, error) {
 	var resp *cos.GetObjectOutput
 
@@ -437,6 +444,7 @@ func (c *COSObjectClient) PutObject(ctx context.Context, objectKey string, objec
 }
 
 // List implements chunk.ObjectClient.
+// List 遍历所有配置桶执行 ListObjectsV2，合并对象与公共前缀并处理分页 continuation token。
 func (c *COSObjectClient) List(ctx context.Context, prefix, delimiter string) ([]client.StorageObject, []client.StorageCommonPrefix, error) {
 	var storageObjects []client.StorageObject
 	var commonPrefixes []client.StorageCommonPrefix
@@ -495,3 +503,4 @@ func (c *COSObjectClient) IsObjectNotFoundErr(err error) bool {
 
 // TODO(dannyk): implement for client
 func (c *COSObjectClient) IsRetryableErr(error) bool { return false }
+// PutObject 经 util.ReadSeeker 确保可重试上传；IsObjectNotFoundErr 识别 AWS NoSuchKey 错误类型。

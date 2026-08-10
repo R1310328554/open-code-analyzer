@@ -1,5 +1,7 @@
 package testutils
 
+// testutils 提供跨后端存储测试的公共 fixture 框架：DefaultSchemaConfig、Setup 初始化表管理器、CreateChunks 批量生成测试 chunk 及 DummyChunkFor 构造带日志行的 MemChunk。
+
 import (
 	"context"
 	"fmt"
@@ -27,12 +29,14 @@ const (
 )
 
 // Fixture type for per-backend testing.
+// Fixture 由各后端（S3、BoltDB 等）实现，Clients 返回索引/块/表客户端与 schema。
 type Fixture interface {
 	Name() string
 	Clients() (index.Client, chunkclient.Client, index.TableClient, config.SchemaConfig, io.Closer, error)
 }
 
 // CloserFunc is to io.Closer as http.HandlerFunc is to http.Handler.
+// CloserFunc 类似 http.HandlerFunc，将函数适配为 io.Closer 便于测试清理。
 type CloserFunc func() error
 
 // Close implements io.Closer.
@@ -46,6 +50,7 @@ func DefaultSchemaConfig(kind string) config.SchemaConfig {
 }
 
 // Setup a fixture with initial tables
+// Setup 创建 TableManager、SyncTables 并 CreateTable，返回可用的索引与 chunk 客户端。
 func Setup(fixture Fixture, tableName string) (index.Client, chunkclient.Client, io.Closer, error) {
 	var tbmConfig index.TableManagerConfig
 	flagext.DefaultValues(&tbmConfig)
@@ -72,6 +77,7 @@ func Setup(fixture Fixture, tableName string) (index.Client, chunkclient.Client,
 }
 
 // CreateChunks creates some chunks for testing
+// CreateChunks 生成带递增 index 标签的 batchSize 个 chunk 及其 ExternalKey 列表。
 func CreateChunks(scfg config.SchemaConfig, startIndex, batchSize int, from model.Time, through model.Time) ([]string, []chunk.Chunk, error) {
 	keys := []string{}
 	chunks := []chunk.Chunk{}
@@ -86,6 +92,7 @@ func CreateChunks(scfg config.SchemaConfig, startIndex, batchSize int, from mode
 	return keys, chunks, nil
 }
 
+// DummyChunkFor 每 15s 追加一条 log line，Encode 后返回可持久化的 chunk.Chunk。
 func DummyChunkFor(from, through model.Time, metric labels.Labels) chunk.Chunk {
 	cs := chunkenc.NewMemChunk(chunkenc.ChunkFormatV4, compression.GZIP, chunkenc.UnorderedWithStructuredMetadataHeadBlockFmt, 256*1024, 0)
 
@@ -134,3 +141,4 @@ func SchemaConfig(store, schema string, from model.Time) config.SchemaConfig {
 	}
 	return s
 }
+// SchemaConfig 默认 cortex 前缀与 7 天周期；DefaultSchemaConfig 使用 v9 schema 与 2 小时前起始时间。

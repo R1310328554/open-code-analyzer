@@ -1,5 +1,7 @@
 package local
 
+// local 包提供基于 BoltDB 的本地索引客户端，将每个索引表映射为独立 .boltdb 文件，支持批量写入、游标分页查询及后台定期检测已删除文件。
+
 import (
 	"bytes"
 	"context"
@@ -37,6 +39,7 @@ const (
 )
 
 // BoltDBConfig for a BoltDB index client.
+// BoltDBConfig 指定 boltdb.dir 目录，所有索引表文件存放于此。
 type BoltDBConfig struct {
 	Directory string `yaml:"directory"`
 }
@@ -46,6 +49,7 @@ func (cfg *BoltDBConfig) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&cfg.Directory, "boltdb.dir", "", "Location of BoltDB index files.")
 }
 
+// BoltIndexClient 缓存已打开 DB 连接，读写分离：读操作不创建缺失文件。
 type BoltIndexClient struct {
 	cfg BoltDBConfig
 
@@ -56,6 +60,7 @@ type BoltIndexClient struct {
 }
 
 // NewBoltDBIndexClient creates a new IndexClient that used BoltDB.
+// NewBoltDBIndexClient 确保目录存在并启动 dbReloadPeriod 周期的 reload 协程。
 func NewBoltDBIndexClient(cfg BoltDBConfig) (*BoltIndexClient, error) {
 	if err := util.EnsureDirectory(cfg.Directory); err != nil {
 		return nil, err
@@ -139,6 +144,7 @@ func NewWriteBatch() index.WriteBatch {
 
 // GetDB should always return a db for write operation unless an error occurs while doing so.
 // While for read operation it should throw ErrUnexistentBoltDB error if file does not exist for reading
+// GetDB 读路径遇缺失文件返回 ErrUnexistentBoltDB；写路径 lazy-open 并设 5s 文件锁超时。
 func (b *BoltIndexClient) GetDB(name string, operation int) (*bbolt.DB, error) {
 	b.dbsMtx.RLock()
 	db, ok := b.dbs[name]
@@ -175,6 +181,7 @@ func (b *BoltIndexClient) GetDB(name string, operation int) (*bbolt.DB, error) {
 	return db, nil
 }
 
+// WriteToDB 在 index bucket 内批量 Put/Delete，删除时要求 bucket 已存在。
 func WriteToDB(_ context.Context, db *bbolt.DB, bucketName []byte, writes TableWrites) error {
 	return db.Update(func(tx *bbolt.Tx) error {
 		var b *bbolt.Bucket
@@ -261,6 +268,7 @@ func QueryDB(ctx context.Context, db *bbolt.DB, bucketName []byte, query index.Q
 	})
 }
 
+// QueryWithCursor 用 sync.Pool 复用 cursorBatch，按 hashValue+分隔符前缀 Seek 扫描。
 func QueryWithCursor(_ context.Context, c *bbolt.Cursor, query index.Query, callback index.QueryPagesCallback) error {
 	batch := batchPool.Get().(*cursorBatch)
 	defer batchPool.Put(batch)
@@ -279,6 +287,7 @@ var batchPool = sync.Pool{
 	},
 }
 
+// cursorBatch 实现 ReadBatchIterator，在事务内复制 key/value 避免游标失效。
 type cursorBatch struct {
 	cursor    *bbolt.Cursor
 	query     *index.Query
@@ -403,3 +412,4 @@ func (b *BoltWriteBatch) Add(tableName, hashValue string, rangeValue []byte, val
 func OpenBoltdbFile(path string) (*bbolt.DB, error) {
 	return bbolt.Open(path, 0o666, &bbolt.Options{Timeout: 5 * time.Second})
 }
+// 键格式为 hashValue+\000+rangeValue；BatchWrite 按表名分组写入 IndexBucketName 固定 bucket。

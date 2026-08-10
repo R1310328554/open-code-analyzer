@@ -1,5 +1,7 @@
 package hedging
 
+// hedging 包实现 HTTP 请求对冲（hedged requests）：在首请求超时前发起备用请求以缩短尾延迟，并通过速率限制与 Prometheus 指标防止对冲风暴。
+
 import (
 	"errors"
 	"flag"
@@ -43,6 +45,7 @@ func initMetrics() {
 }
 
 // Config is the configuration for hedging requests.
+// Config 控制对冲时机（At）、最大并发对冲数（UpTo）及每秒对冲上限（MaxPerSecond）。
 type Config struct {
 	// At is the duration after which a second request will be issued.
 	At time.Duration `yaml:"at"`
@@ -66,6 +69,7 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 
 // ClientWithRegisterer returns a hedged http client with instrumentation registered to the provided registerer.
 // The client transport will be mutated to use the hedged roundtripper.
+// ClientWithRegisterer 在 At 非零时将 Transport 替换为带指标的对冲 RoundTripper。
 func (cfg *Config) ClientWithRegisterer(client *http.Client, reg prometheus.Registerer) (*http.Client, error) {
 	if reg == nil {
 		reg = prometheus.DefaultRegisterer
@@ -85,6 +89,7 @@ func (cfg *Config) ClientWithRegisterer(client *http.Client, reg prometheus.Regi
 }
 
 // RoundTripperWithRegisterer returns a hedged roundtripper with instrumentation registered to the provided registerer.
+// RoundTripperWithRegisterer 注册 hedged_requests_* 指标并包装 cristalhq/hedgedhttp。
 func (cfg *Config) RoundTripperWithRegisterer(next http.RoundTripper, reg prometheus.Registerer) (http.RoundTripper, error) {
 	if reg == nil {
 		reg = prometheus.DefaultRegisterer
@@ -113,6 +118,7 @@ func (cfg *Config) RoundTripper(next http.RoundTripper) (http.RoundTripper, erro
 	return cfg.RoundTripperWithRegisterer(next, prometheus.DefaultRegisterer)
 }
 
+// limitedHedgingRoundTripper 用 golang.org/x/time/rate 限制对冲请求速率，超限返回 ErrTooManyHedgeRequests。
 type limitedHedgingRoundTripper struct {
 	next    http.RoundTripper
 	limiter *rate.Limiter
@@ -138,6 +144,7 @@ func (rt *limitedHedgingRoundTripper) RoundTrip(req *http.Request) (*http.Respon
 	return rt.next.RoundTrip(req)
 }
 
+// winnerTrackingRoundTripper 统计 original/hedged 哪类请求先成功完成，用于观测对冲收益。
 type winnerTrackingRoundTripper struct {
 	next http.RoundTripper
 }
@@ -159,3 +166,4 @@ func (rt *winnerTrackingRoundTripper) RoundTrip(req *http.Request) (*http.Respon
 
 	return resp, err
 }
+// At 为 0 时对冲完全禁用，直接透传原始 Transport，避免对低延迟路径引入额外开销。

@@ -1,5 +1,7 @@
 package client
 
+// MetricsChunkClient 装饰器在 chunk.Client 读写路径上按 tenant 累计 Prometheus 指标：存储/拉取块数、字节数及解码失败次数。
+
 import (
 	"context"
 
@@ -11,6 +13,7 @@ import (
 )
 
 // takes a chunk client and exposes metrics for its operations.
+// MetricsChunkClient 包装内层 Client，Put/Get 成功后更新 CounterVec 指标。
 type MetricsChunkClient struct {
 	Client Client
 
@@ -24,6 +27,7 @@ func NewMetricsChunkClient(client Client, metrics ChunkClientMetrics) MetricsChu
 	}
 }
 
+// ChunkClientMetrics 持有 loki_chunk_store_* 命名空间下的五个 per-user 计数器。
 type ChunkClientMetrics struct {
 	chunksPutPerUser         *prometheus.CounterVec
 	chunksSizePutPerUser     *prometheus.CounterVec
@@ -32,6 +36,7 @@ type ChunkClientMetrics struct {
 	chunkDecodeFailures      *prometheus.CounterVec
 }
 
+// NewChunkClientMetrics 通过 promauto 注册 stored/fetched/decode_failures 等指标。
 func NewChunkClientMetrics(reg prometheus.Registerer) ChunkClientMetrics {
 	return ChunkClientMetrics{
 		chunksPutPerUser: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
@@ -66,6 +71,7 @@ func (c MetricsChunkClient) Stop() {
 	c.Client.Stop()
 }
 
+// PutChunks 成功后按 chunk.UserID 聚合 size 与 count 写入 metrics（不依赖 context）。
 func (c MetricsChunkClient) PutChunks(ctx context.Context, chunks []chunk.Chunk) error {
 	if err := c.Client.PutChunks(ctx, chunks); err != nil {
 		return err
@@ -88,6 +94,7 @@ func (c MetricsChunkClient) PutChunks(ctx context.Context, chunks []chunk.Chunk)
 	return nil
 }
 
+// GetChunks 失败时为所有涉及 tenant 递增 decode_failures，因并行拉取无法定位单块。
 func (c MetricsChunkClient) GetChunks(ctx context.Context, chunks []chunk.Chunk) ([]chunk.Chunk, error) {
 	chks, err := c.Client.GetChunks(ctx, chunks)
 	if err != nil {
@@ -134,3 +141,4 @@ func (c MetricsChunkClient) IsChunkNotFoundErr(err error) bool {
 func (c MetricsChunkClient) IsRetryableErr(err error) bool {
 	return c.Client.IsRetryableErr(err)
 }
+// DeleteChunk 等指标方法直接透传内层客户端，不在装饰层额外计数。

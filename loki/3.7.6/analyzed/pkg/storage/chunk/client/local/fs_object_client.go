@@ -1,5 +1,7 @@
 package local
 
+// FSObjectClient 将本地目录作为对象存储后端，object key 映射为相对路径文件，支持范围读取、前缀列举、递归删除空父目录及按修改时间批量清理。
+
 import (
 	"context"
 	"flag"
@@ -20,6 +22,7 @@ import (
 )
 
 // FSConfig is the config for a FSObjectClient.
+// FSConfig 通过 local.chunk-directory 指定 chunk 文件根目录。
 type FSConfig struct {
 	Directory string `yaml:"directory"`
 }
@@ -41,6 +44,7 @@ func (cfg *FSConfig) ToCortexLocalConfig() local.Config {
 }
 
 // FSObjectClient holds config for filesystem as object store
+// FSObjectClient 在构造时 Clean 路径并 EnsureDirectory，防止误删根目录。
 type FSObjectClient struct {
 	cfg           FSConfig
 	pathSeparator string
@@ -49,6 +53,7 @@ type FSObjectClient struct {
 var _ client.ObjectClient = (*FSObjectClient)(nil)
 
 // NewFSObjectClient makes a chunk.Client which stores chunks as files in the local filesystem.
+// NewFSObjectClient 规范化目录路径并确保根目录存在后返回客户端。
 func NewFSObjectClient(cfg FSConfig) (*FSObjectClient, error) {
 	// filepath.Clean cleans up the path by removing unwanted duplicate slashes, dots etc.
 	// This is needed because DeleteObject works on paths which are already cleaned up and it
@@ -110,6 +115,7 @@ func (l SectionReadCloser) Close() error {
 }
 
 // GetObject from the store
+// GetObjectRange 用 io.NewSectionReader 实现零拷贝范围读，SectionReadCloser 负责关闭底层文件。
 func (f *FSObjectClient) GetObjectRange(_ context.Context, objectKey string, offset, length int64) (io.ReadCloser, error) {
 	fl, err := os.Open(filepath.Join(f.cfg.Directory, filepath.FromSlash(objectKey)))
 	if err != nil {
@@ -152,6 +158,7 @@ func (f *FSObjectClient) PutObject(_ context.Context, objectKey string, object i
 
 // List implements chunk.ObjectClient.
 // FSObjectClient assumes that prefix is a directory, and only supports "" and "/" delimiters.
+// List 仅支持 "" 与 "/" 分隔符；delimiter 非空时返回非空子目录为 CommonPrefix。
 func (f *FSObjectClient) List(_ context.Context, prefix, delimiter string) ([]client.StorageObject, []client.StorageCommonPrefix, error) {
 	if delimiter != "" && delimiter != "/" {
 		return nil, nil, fmt.Errorf("unsupported delimiter: %q", delimiter)
@@ -215,6 +222,7 @@ func (f *FSObjectClient) List(_ context.Context, prefix, delimiter string) ([]cl
 	return storageObjects, commonPrefixes, err
 }
 
+// DeleteObject 自底向上删除文件并清理空父目录，直至根目录或非空目录为止。
 func (f *FSObjectClient) DeleteObject(_ context.Context, objectKey string) error {
 	// inspired from https://github.com/thanos-io/thanos/blob/55cb8ca38b3539381dc6a781e637df15c694e50a/pkg/objstore/filesystem/filesystem.go#L195
 	file := filepath.Join(f.cfg.Directory, filepath.FromSlash(objectKey))
@@ -272,3 +280,4 @@ func isDirEmpty(name string) (ok bool, err error) {
 	}
 	return false, err
 }
+// PutObject 写入后 Sync 刷盘保证持久性；DeleteChunksBefore 按 ModTime 清理过期 chunk 文件。

@@ -1,5 +1,7 @@
 package testutils
 
+// testutils 包提供内存 MockStorage 与 InMemoryObjectClient，实现 index.Client、TableClient 与 ObjectClient，供单元测试模拟完整存储栈。
+
 import (
 	"bytes"
 	"context"
@@ -32,6 +34,7 @@ const (
 )
 
 // MockStorage is a fake in-memory StorageClient.
+// MockStorage 单例聚合索引表 map 与 InMemoryObjectClient，支持读写模式切换。
 type MockStorage struct {
 	*InMemoryObjectClient
 
@@ -47,6 +50,7 @@ type MockStorage struct {
 // compiler check
 var _ client.ObjectClient = &InMemoryObjectClient{}
 
+// InMemoryObjectClient 用 map[string][]byte 存储对象，RWMutex 保证并发安全。
 type InMemoryObjectClient struct {
 	objects map[string][]byte
 	mtx     sync.RWMutex
@@ -81,6 +85,7 @@ func ResetMockStorage() {
 
 // NewMockStorage creates a mock storage singleton
 // MockStorage implements the interfaces client.ObjectClient, index.Client, index.TableClient, and storage.SchemaConfigProvider
+// NewMockStorage 懒初始化全局 singleton，内置 v11 schema 与空表 map。
 func NewMockStorage() *MockStorage {
 	if singleton == nil {
 		singleton = &MockStorage{
@@ -217,6 +222,7 @@ func (m *MockStorage) NewWriteBatch() index.WriteBatch {
 }
 
 // BatchWrite implements StorageClient.
+// BatchWrite 按 hashValue 有序插入 mockItem，同 batch 内禁止重复 range key 写入。
 func (m *MockStorage) BatchWrite(ctx context.Context, batch index.WriteBatch) error {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
@@ -315,6 +321,7 @@ func (m *MockStorage) QueryPages(ctx context.Context, queries []index.Query, cal
 	return nil
 }
 
+// query 支持 RangeValuePrefix/Start 二分定位及 ValueEqual 过滤，模拟 DynamoDB 查询语义。
 func (m *MockStorage) query(ctx context.Context, query index.Query, callback func(index.ReadBatchResult) (shouldContinue bool)) error {
 	logger := log.WithContext(ctx, log.Logger)
 	level.Debug(logger).Log("msg", "QueryPages", "query", query.HashValue)
@@ -503,6 +510,7 @@ func (m *InMemoryObjectClient) DeleteObject(_ context.Context, objectKey string)
 }
 
 // List implements chunk.ObjectClient.
+// List 按 prefix 过滤并按 delimiter 推导 CommonPrefix，结果键排序以匹配真实对象存储。
 func (m *InMemoryObjectClient) List(_ context.Context, prefix, delimiter string) ([]client.StorageObject, []client.StorageCommonPrefix, error) {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
@@ -610,3 +618,4 @@ func (b *mockReadBatchIter) RangeValue() []byte {
 func (b *mockReadBatchIter) Value() []byte {
 	return b.items[b.index].value
 }
+// MockStorageModeReadOnly/WriteOnly 可模拟权限拒绝；ResetMockStorage 清空单例供测试隔离。

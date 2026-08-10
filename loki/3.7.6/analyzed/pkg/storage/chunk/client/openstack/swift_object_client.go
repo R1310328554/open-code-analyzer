@@ -1,5 +1,7 @@
 package openstack
 
+// openstack 包实现 OpenStack Swift 对象存储客户端，基于 ncw/swift 库，支持 v2/v3 认证、TLS 自定义 CA 及可选 HTTP 对冲读取。
+
 import (
 	"bytes"
 	"context"
@@ -61,6 +63,7 @@ func defaultTransport(config HTTPConfig) (http.RoundTripper, error) {
 	}, nil
 }
 
+// SwiftObjectClient 维护普通 conn 与 hedgingConn 双连接，读用对冲、写用主连接。
 type SwiftObjectClient struct {
 	conn        *swift.Connection
 	hedgingConn *swift.Connection
@@ -68,6 +71,7 @@ type SwiftObjectClient struct {
 }
 
 // SwiftConfig is config for the Swift Chunk Client.
+// SwiftConfig 涵盖认证、项目/域、区域、容器名及连接/请求超时等 Swift 连接参数。
 type SwiftConfig struct {
 	AuthVersion       int            `yaml:"auth_version"`
 	AuthURL           string         `yaml:"auth_url"`
@@ -126,6 +130,7 @@ func (cfg *SwiftConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) 
 }
 
 // NewSwiftObjectClient makes a new chunk.Client that writes chunks to OpenStack Swift.
+// NewSwiftObjectClient 创建连接、确保容器存在并记录实验性功能警告日志。
 func NewSwiftObjectClient(cfg SwiftConfig, hedgingCfg hedging.Config) (*SwiftObjectClient, error) {
 	log.WarnExperimentalUse("OpenStack Swift Storage", log.Logger)
 
@@ -197,6 +202,7 @@ func createConnection(cfg SwiftConfig, hedgingCfg hedging.Config, hedging bool) 
 	return c, nil
 }
 
+// Stop 对两条连接执行 UnAuthenticate 释放 Swift 会话令牌。
 func (s *SwiftObjectClient) Stop() {
 	s.conn.UnAuthenticate()
 	s.hedgingConn.UnAuthenticate()
@@ -222,6 +228,7 @@ func (s *SwiftObjectClient) GetAttributes(ctx context.Context, objectKey string)
 }
 
 // GetObject returns a reader and the size for the specified object key from the configured swift container.
+// GetObject 经 hedgingConn 将对象读入内存 Buffer 后返回 NopCloser（非流式）。
 func (s *SwiftObjectClient) GetObject(ctx context.Context, objectKey string) (io.ReadCloser, int64, error) {
 	var buf bytes.Buffer
 	_, err := s.hedgingConn.ObjectGet(ctx, s.cfg.ContainerName, objectKey, &buf, false, nil)
@@ -253,6 +260,7 @@ func (s *SwiftObjectClient) PutObject(ctx context.Context, objectKey string, obj
 }
 
 // List only objects from the store non-recursively
+// List 调用 ObjectsAll，SubDir 非空时映射为 StorageCommonPrefix 伪目录。
 func (s *SwiftObjectClient) List(ctx context.Context, prefix, delimiter string) ([]client.StorageObject, []client.StorageCommonPrefix, error) {
 	if len(delimiter) > 1 {
 		return nil, nil, fmt.Errorf("delimiter must be a single character but was %s", delimiter)
@@ -306,3 +314,4 @@ func IsRetryableErr(error) bool { return false }
 func (s *SwiftObjectClient) IsRetryableErr(err error) bool {
 	return IsRetryableErr(err)
 }
+// defaultTransport 可注入自定义 Transport 或从 tls_ca_path 加载 PEM 根证书。

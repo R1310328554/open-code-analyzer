@@ -1,5 +1,7 @@
 package grpc
 
+// grpc 包提供基于 gRPC 的索引表管理客户端，将 TableClient 接口映射到远程 GrpcStore 服务，用于分布式场景下创建、列举、描述、更新与删除索引表。
+
 import (
 	"context"
 
@@ -16,6 +18,7 @@ type TableClient struct {
 }
 
 // NewTableClient returns a new TableClient.
+// NewTableClient 连接 cfg.Address 指定的 gRPC 服务端并返回可操作的表客户端。
 func NewTableClient(cfg Config) (*TableClient, error) {
 	grpcClient, conn, err := connectToGrpcServer(cfg.Address)
 	if err != nil {
@@ -28,6 +31,7 @@ func NewTableClient(cfg Config) (*TableClient, error) {
 	return client, nil
 }
 
+// ListTables 调用远程 ListTables RPC，返回当前所有索引表名称。
 func (c *TableClient) ListTables(ctx context.Context) ([]string, error) {
 	tables, err := c.client.ListTables(ctx, &empty.Empty{})
 	if err != nil {
@@ -45,6 +49,7 @@ func (c *TableClient) DeleteTable(ctx context.Context, name string) error {
 	return nil
 }
 
+// DescribeTable 获取表配置（读写容量、按需 IO、标签）及是否处于活跃状态。
 func (c *TableClient) DescribeTable(ctx context.Context, name string) (desc config.TableDesc, isActive bool, err error) {
 	tableName := &DescribeTableRequest{TableName: name}
 	tableDesc, err := c.client.DescribeTable(ctx, tableName)
@@ -59,6 +64,7 @@ func (c *TableClient) DescribeTable(ctx context.Context, name string) (desc conf
 	return desc, tableDesc.IsActive, nil
 }
 
+// UpdateTable 以乐观并发方式提交 current/expected 表描述，防止并发覆盖。
 func (c *TableClient) UpdateTable(ctx context.Context, current, expected config.TableDesc) error {
 	currentTable := &TableDesc{}
 	expectedTable := &TableDesc{}
@@ -102,6 +108,8 @@ func (c *TableClient) CreateTable(ctx context.Context, desc config.TableDesc) er
 	return nil
 }
 
+// Stop 关闭底层 gRPC 连接，释放网络资源。
 func (c *TableClient) Stop() {
 	c.conn.Close()
 }
+// 远程表操作均通过 protobuf 消息传递，错误统一经 errors.WithStack 包装便于追踪。
