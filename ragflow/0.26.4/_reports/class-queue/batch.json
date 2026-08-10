@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T16:57:10Z",
-  "files": [
-    "agent/tools/akshare.py",
-    "agent/tools/arxiv.py",
-    "agent/tools/base.py",
-    "agent/tools/bgpt.py",
-    "agent/tools/code_exec.py",
-    "agent/tools/crawler.py",
-    "agent/tools/deepl.py",
-    "agent/tools/duckduckgo.py",
-    "agent/tools/email.py",
-    "agent/tools/exesql.py",
-    "agent/tools/github.py",
-    "agent/tools/google.py",
-    "agent/tools/googlescholar.py",
-    "agent/tools/jin10.py",
-    "agent/tools/keenable.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1674,
-  "done": 75
+  "done": 90
 }
