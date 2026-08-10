@@ -1,5 +1,7 @@
 package main
 
+// querycomparator compare 子命令对两个 Loki HTTP 端点执行相同 LogQL：并行 query_range，比对 stream/matrix 结果并落盘 host-*.json。
+
 import (
 	"context"
 	"encoding/json"
@@ -21,6 +23,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// addCompareCommand 注册 bucket/org/时间窗/query 等 flag，默认 host1/host2 为本地双端口。
 // addCompareCommand adds the compare command to the application
 func addCompareCommand(app *kingpin.Application) {
 	var cfg Config
@@ -53,6 +56,7 @@ func addCompareCommand(app *kingpin.Application) {
 	})
 }
 
+// doComparison 用 errgroup 并发拉取两主机响应，ResultType 不一致则立即失败。
 // doComparison compares query resultsu from executing a loki http query against two hosts
 func doComparison(params logql.LiteralParams, host1, host2 string) error {
 	level.Info(logger).Log("msg", "executing comparison", "start", params.Start().Format(time.RFC3339), "end", params.End().Format(time.RFC3339))
@@ -101,6 +105,7 @@ func doComparison(params logql.LiteralParams, host1, host2 string) error {
 	}
 }
 
+// checkLogStreams 按标签对齐 stream，警告缺失/顺序差异并逐行比对 log 内容。
 func checkLogStreams(results []loghttp.Streams) error {
 	streamsInResponses := make([][]string, len(results))
 	chunkEntries := make(map[string][]loghttp.Entry)
@@ -197,6 +202,7 @@ func checkLogMatrix(results []loghttp.Matrix) error {
 }
 
 // doRemoteQuery executes a query against a Loki host
+// doRemoteQuery 构造 GET /loki/api/v1/query_range，X-Scope-OrgID 注入租户并 Tee 写 JSON 文件。
 func doRemoteQuery(host string, query string, start time.Time, end time.Time, limit int) (loghttp.QueryResponseData, error) {
 	if limit == 0 {
 		limit = 100
@@ -241,3 +247,4 @@ func doRemoteQuery(host string, query string, start time.Time, end time.Time, li
 	}
 	return respData.Data, nil
 }
+// Matrix 结果按索引对齐样本点，timestamp 或 value 不等时打 Warn 但不中断整个比较流程。

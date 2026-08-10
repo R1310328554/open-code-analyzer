@@ -1,3 +1,4 @@
+// stream-generator 用本包向 distributor Push 合成日志流，复用 Loki 生产级 gRPC 拦截器链。
 // Package client provides gRPC client implementation for distributor service.
 package client
 
@@ -35,12 +36,14 @@ var (
 )
 
 // Config contains the config for an ingest-limits client.
+// Config 含 distributor 地址、grpcclient 子配置及可选 unary/stream 拦截器扩展点。
 type Config struct {
 	Addr                         string                         `yaml:"addr"`
 	GRPCClientConfig             grpcclient.Config              `yaml:"grpc_client_config"`
 	GRPCUnaryClientInterceptors  []grpc.UnaryClientInterceptor  `yaml:"-"`
 	GRCPStreamClientInterceptors []grpc.StreamClientInterceptor `yaml:"-"`
 
+// Internal=true 时不注入用户 ID 头，表示机器身份调用而非模拟租户用户。
 	// Internal is used to indicate that this client communicates on behalf of
 	// a machine and not a user. When Internal = true, the client won't attempt
 	// to inject an userid into the context.
@@ -60,6 +63,7 @@ type Client struct {
 }
 
 // New returns a new Client for the specified ingest-limits.
+// New 配置 round_robin 负载均衡、keepalive 与 OTel stats handler，阻塞直至连接就绪。
 func New(cfg Config) (*Client, error) {
 	opts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(cfg.GRPCClientConfig.CallOptions()...),
@@ -99,6 +103,7 @@ func New(cfg Config) (*Client, error) {
 }
 
 // getInterceptors returns the gRPC interceptors for the given ClientConfig.
+// getGRPCInterceptors 叠加 query tags、HTTP 头透传、用户头与 Prometheus 请求耗时直方图。
 func getGRPCInterceptors(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.StreamClientInterceptor) {
 	var (
 		unaryInterceptors  []grpc.UnaryClientInterceptor
@@ -123,3 +128,4 @@ func getGRPCInterceptors(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.Str
 
 	return unaryInterceptors, streamInterceptors
 }
+// Client 嵌入 Pusher 与 gRPC health 接口，Close 关闭底层 conn 释放连接与指标注册。

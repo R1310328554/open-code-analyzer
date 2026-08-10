@@ -2,6 +2,8 @@
 
 package parse
 
+// doc-generator/parse 包 RootBlocks 登记 Loki 配置根块与 reflect 类型：init 按 Name 排序后 writer 按此顺序生成 Markdown 章节。
+
 import (
 	"reflect"
 	"slices"
@@ -50,8 +52,10 @@ import (
 )
 
 var (
+// RootBlocks 条目 Name 对应 loki.Config 顶层 YAML 块，StructType 可含多个别名类型。
 	// RootBlocks is an ordered list of root blocks with their associated descriptions.
 	// The order is the same order that will follow the markdown generation.
+// Desc 为英文块说明，markdownWriter 写入 ### 标题下段落并生成 yaml 规格示例。
 	// Root blocks map to the configuration variables defined in Config of pkg/loki/loki.go
 	RootBlocks = []RootBlock{
 		{
@@ -182,6 +186,7 @@ var (
 			Desc:       "Common configuration to be shared between multiple modules. If a more specific configuration is given in other sections, the related configuration within this section will be ignored.",
 		},
 
+// Non-root 块如 consul/etcd/memberlist 仅在父块引用时出现，不单独成顶级章节。
 		// Non-root blocks
 		// StoreConfig dskit type: https://github.com/grafana/dskit/blob/main/kv/client.go#L44-L52
 		{
@@ -305,6 +310,7 @@ Currently this is opt-in and takes effect only when ` + "`-use-thanos-objstore` 
 	}
 )
 
+// init 对 RootBlocks 按 Name 字典序排序，保证文档章节顺序稳定可 diff。
 func init() {
 	slices.SortFunc(RootBlocks, func(a, b RootBlock) int {
 		if a.Name < b.Name {
@@ -317,3 +323,4 @@ func init() {
 		return 0
 	})
 }
+// 云厂商 storage_config 同时注册底层类型与 Named* 包装，避免文档重复列出同一后端。

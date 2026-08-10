@@ -1,5 +1,7 @@
 package generator
 
+// stream-generator generator.Config 定义合成租户、分区与推送模式：可经 Kafka 或 distributor gRPC 产生压测流量，配合 ring/memberlist 注册。
+
 import (
 	"flag"
 	"fmt"
@@ -16,6 +18,7 @@ import (
 	distributor_client "github.com/grafana/loki/v3/tools/stream-generator/distributor/client"
 )
 
+// normalLogSize 与 entriesPerStream 控制单 stream 负载形状，影响 limits 与分区统计。
 // Define default sizes for generated streams
 const (
 	normalLogSize    = 100 // 100 bytes for normal log lines
@@ -28,6 +31,7 @@ const (
 	distributorRingKey  = "distributor"
 )
 
+// PushModeType 区分仅推送 stream 元数据与完整 log line 两种压测模式。
 type PushModeType string
 
 const (
@@ -79,6 +83,7 @@ func (s *streamLabelsFlag) Set(value string) error {
 	return nil
 }
 
+// RegisterFlags 绑定租户数、QPS、desired-rate 字节速率及 distributor/frontend 客户端 flag。
 func (c *Config) RegisterFlags(f *flag.FlagSet, logger log.Logger) {
 	f.IntVar(&c.NumPartitions, "partitions.total", 64, "Number of partitions to generate metadata for")
 	f.IntVar(&c.NumTenants, "tenants.total", 1, "Number of tenants to generate metadata for")
@@ -110,6 +115,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet, logger log.Logger) {
 	c.MemberlistKV.RegisterFlags(f)
 }
 
+// Validate 解析 push-mode 字符串；create-interval 为 0 时按 QPS 自动推算批次间隔。
 func (c *Config) Validate() error {
 	if c.pushModeRaw != string(PushStreamMetadataOnly) && c.pushModeRaw != string(PushStream) {
 		return fmt.Errorf("invalid push mode: %s", c.pushModeRaw)
@@ -122,3 +128,4 @@ func (c *Config) Validate() error {
 
 	return nil
 }
+// MetricsNamespace 前缀隔离 generator 自暴露指标，distributorRingName 与 ingester 环命名对齐。

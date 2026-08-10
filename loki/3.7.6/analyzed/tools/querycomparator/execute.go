@@ -1,5 +1,7 @@
 package main
 
+// querycomparator execute 在本地直连 GCS dataobj 桶执行 LogQL：engine=1 走 legacy Store+querier，engine=2 使用 pkg/engine 与 ObjectMetastore。
+
 import (
 	"context"
 	"errors"
@@ -35,6 +37,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// addExecuteCommand 要求 bucket/org/query，可选 index-storage-prefix 与 engine 版本。
 // addExecuteCommand adds the execute command to the application
 func addExecuteCommand(app *kingpin.Application) {
 	var cfg Config
@@ -84,6 +87,7 @@ func initV2Settings() {
 	}
 }
 
+// V1 路径创建只读 TSDB shipper Store 与 querier，临时 index 缓存目录 temp_index_cache。
 // doExecuteLocallyV1 executes a query using the V1 engine
 func doExecuteLocallyV1(params logql.LiteralParams, bucketName string) error {
 	if indexStoragePrefix == "" {
@@ -98,6 +102,7 @@ func doExecuteLocallyV1(params logql.LiteralParams, bucketName string) error {
 	return checkResult(result)
 }
 
+// V2 默认 index/v0 前缀，Basic executor 批量 512 从 metastore 定位 dataobj section。
 // doExecuteLocallyV2 executes a query using the V2 engine
 func doExecuteLocallyV2(params logql.LiteralParams, bucket objstore.Bucket) error {
 	initV2Settings()
@@ -293,6 +298,7 @@ func doLocalQueryWithV2EngineScheduler(params logql.LiteralParams, bucket objsto
 }
 
 // doLocalQueryWithV2EngineSchedulerRemote executes a query using the V2 engine via remote scheduler and workers so it also executes the serialization logic.
+// SchedulerRemote 变体起本地 HTTP scheduler/worker，覆盖远程调度与序列化路径。
 func doLocalQueryWithV2EngineSchedulerRemote(params logql.LiteralParams, bucket objstore.Bucket) (logqlmodel.Result, error) {
 	ctx := user.InjectOrgID(context.Background(), orgID)
 
@@ -366,6 +372,7 @@ func doLocalQueryWithV2EngineSchedulerRemote(params logql.LiteralParams, bucket 
 	return e.Execute(ctx, params)
 }
 
+// newServerService 封装 dskit server 与 BasicService 生命周期，并启用未加密 HTTP/2。
 func newServerService(name string, httpPort int, logger glog.Logger, registerer prometheus.Registerer) (*server.Server, services.Service, error) {
 	logger = glog.With(logger, "component", "server", "server", name)
 	serv, err := server.New(server.Config{
@@ -407,3 +414,4 @@ func newServerService(name string, httpPort int, logger glog.Logger, registerer 
 
 	return serv, svc, nil
 }
+// checkResult 期望 logqlmodel.Streams，逐 stream 打印首条时间戳与标签供人工 spot check。

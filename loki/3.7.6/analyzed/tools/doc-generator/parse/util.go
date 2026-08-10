@@ -5,6 +5,8 @@
 
 package parse
 
+// doc-generator/parse 包 FindFlagsPrefix 从多条 CLI flag 路径提取公共前缀：反向剥离相同后缀段，供 root block 展示 <prefix> 占位符。
+
 import (
 	"math"
 	"strings"
@@ -15,6 +17,7 @@ func FindFlagsPrefix(flags []string) []string {
 		return flags
 	}
 
+// 输入 flag 按点号拆成 token 矩阵，便于比较各路径末尾相同段。
 	// Split the input flags input tokens separated by "."
 	// because the want to find the prefix where segments
 	// are dot-separated.
@@ -31,6 +34,7 @@ func FindFlagsPrefix(flags []string) []string {
 		}
 	}
 
+// 自右向左逐段比较末 token，全部相等则从各行删除该后缀并继续迭代。
 	// We iterate backward to find common suffixes. Each time
 	// a common suffix is found, we remove it from the tokens.
 outer:
@@ -60,3 +64,4 @@ outer:
 
 	return prefixes
 }
+// 典型场景：同一 root block 绑定 distributor.* 与 querier.* 等多前缀 flag 组。

@@ -5,6 +5,8 @@
 
 package main
 
+// doc-generator writer 将 parse.ConfigBlock 树渲染为 Markdown 与内嵌 yaml 规格：specWriter 写注释化 YAML，markdownWriter 组装 ### 章节与代码块。
+
 import (
 	"fmt"
 	"sort"
@@ -42,6 +44,7 @@ func (w *specWriter) writeConfigBlock(b *parse.ConfigBlock, indent int) {
 func (w *specWriter) writeConfigEntry(e *parse.ConfigEntry, indent int) (written bool) {
 	written = true
 	if e.Kind == parse.KindBlock {
+// Root 块在 spec 中仅输出块引用 [<name>]，完整字段展开由 markdown 顶级章节负责。
 		// If the block is a root block it will have its dedicated section in the doc,
 		// so here we've just to write down the reference without re-iterating on it.
 		if e.Root {
@@ -70,6 +73,7 @@ func (w *specWriter) writeConfigEntry(e *parse.ConfigEntry, indent int) (written
 	}
 
 	if e.Kind == parse.KindField || e.Kind == parse.KindSlice || e.Kind == parse.KindMap {
+// 字段 description 以 IGNORED: 开头时跳过文档，隐藏内部或未稳定配置项。
 		if strings.HasPrefix(e.Description(), "IGNORED:") {
 			// We skip documenting any field whose description starts with "IGNORED:".
 			return false
@@ -153,6 +157,7 @@ type markdownWriter struct {
 	out strings.Builder
 }
 
+// writeConfigDoc 去重后按 parse.RootBlocks 顺序输出，保留 registry 中的块描述。
 func (w *markdownWriter) writeConfigDoc(blocks []*parse.ConfigBlock) {
 	// Deduplicate root blocks.
 	uniqueBlocks := map[string]*parse.ConfigBlock{}
@@ -243,6 +248,7 @@ func pad(length int) string {
 	return strings.Repeat(" ", length)
 }
 
+// cleanupDuration 去掉 duration 默认值末尾冗余 0s/0m 后缀，使文档更简洁。
 func cleanupDuration(value string) string {
 	// This is the list of suffixes to remove from the duration if they're not
 	// the whole duration value.
@@ -258,3 +264,4 @@ func cleanupDuration(value string) string {
 
 	return value
 }
+// markdown 列表后接代码块时插入 &nbsp; 规避网站生成器在列表与 fenced block 间的渲染 bug。

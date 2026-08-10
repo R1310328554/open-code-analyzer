@@ -1,5 +1,7 @@
 package main
 
+// querycomparator 公共 Config 承载 bucket、org-id、RFC3339 时间窗与 LogQL：parseTimeConfig 校验 start<end，全局 orgID/logger 供 storage 与 HTTP 复用。
+
 import (
 	"fmt"
 	"os"
@@ -8,6 +10,7 @@ import (
 	"github.com/go-kit/log"
 )
 
+// Config 被 compare/metastore/execute 子命令共享，Limit 控制 query_range 返回条数上限。
 // Config holds common configuration for all commands
 type Config struct {
 	Bucket string
@@ -26,6 +29,7 @@ type ParsedConfig struct {
 }
 
 // parseTimeConfig parses start and end time strings into time.Time values
+// parseTimeConfig 将 Start/End 字符串解析为 time.Time，逆序时间窗返回明确错误。
 func parseTimeConfig(cfg *Config) (*ParsedConfig, error) {
 	start, err := time.Parse(time.RFC3339, cfg.Start)
 	if err != nil {
@@ -45,6 +49,7 @@ func parseTimeConfig(cfg *Config) (*ParsedConfig, error) {
 	}, nil
 }
 
+// orgID 在子命令 Action 中赋值；indexStoragePrefix 影响 V1 索引路径与 metastore 前缀。
 // Global variables for bucket and org ID (used by storage functions)
 var (
 	orgID              string
@@ -57,3 +62,4 @@ func init() {
 	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 	logger = log.With(logger, "caller", log.DefaultCaller)
 }
+// ParsedConfig 嵌入 Config 并附加 StartTime/EndTime，避免各命令重复解析时间 flag。
