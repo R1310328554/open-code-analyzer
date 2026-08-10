@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T12:54:59Z",
   "files": [
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AbstractSamlRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AdminClientRegisterContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AdminClientRegisteredContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AdminClientUnregisterContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AdminClientUpdateContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AdminClientUpdatedContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AdminClientViewContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AuthorizationRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ClientCRUDClientAvailableContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ClientCRUDContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ClientModelContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ClientPolicyClientSessionContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ClientSecretRotationContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/DynamicClientRegisterContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/DynamicClientRegisteredContext.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/context/DynamicClientUnregisterContext.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/context/DynamicClientUpdateContext.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/context/DynamicClientUpdatedContext.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/services/clientpolicy/context/SamlLogoutRequestContext.java"
   ],
   "remaining_pending": 1138,
-  "done": 4830
+  "done": 4845
 }
