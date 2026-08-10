@@ -15,23 +15,8 @@
     "api/channels/wecom/__init__.py",
     "api/channels/wecom/channel.py",
     "api/channels/whatsapp/__init__.py",
-    "api/channels/whatsapp/channel.py",
-    "api/channels/whatsapp/gateway-node/index.js",
-    "api/channels/whatsapp/gateway.py",
-    "api/common/base64.py",
-    "api/common/check_team_permission.py",
-    "api/common/exceptions.py",
-    "api/constants.py",
-    "api/db/__init__.py",
-    "api/db/db_models.py",
-    "api/db/db_utils.py",
-    "api/db/init_data.py",
-    "api/db/joint_services/__init__.py",
-    "api/db/joint_services/memory_message_service.py",
-    "api/db/joint_services/tenant_model_service.py",
-    "api/db/joint_services/user_account_service.py",
-    "api/db/reload_config_base.py"
+    "api/channels/whatsapp/channel.py"
   ],
   "remaining_pending": 1584,
-  "done": 150
+  "done": 165
 }
