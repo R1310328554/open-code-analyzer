@@ -25,12 +25,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * {@link ServiceListRequest} 服务列表查询 RPC 参数提取器，解析命名空间、服务名与分组。
  * Param extractor for {@link ServiceListRequest}.
  *
  * @author zhuoguang
  */
 public class ServiceListRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /**
+     * 从服务列表请求中提取 namespace、serviceName、group 供参数校验。
+     *
+     * @param request RPC 请求
+     * @return 待校验参数列表
+     */
     @Override
     public List<ParamInfo> extractParam(Request request) {
         ServiceListRequest req = (ServiceListRequest) request;

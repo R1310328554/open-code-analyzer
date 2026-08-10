@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 插件元信息模型：ID、类型、启用/关键/可配置标志及配置定义。
  * Plugin information model.
  *
  * @author WangzJi
@@ -33,58 +34,80 @@ public class PluginInfo implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
+    /** 插件唯一 ID，格式 type:name。 */
     /**
      * Plugin ID, format: "{type}:{name}".
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private String pluginId;
     
+    /** 插件名称（Provider 注册名）。 */
     /**
      * Plugin name.
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private String pluginName;
     
+    /** 插件类型枚举。 */
     /**
      * Plugin type.
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private PluginType pluginType;
     
+    /** 插件实现类全限定名。 */
     /**
      * Plugin class name.
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private String className;
     
+    /** 插件描述（可选）。 */
     /**
      * Plugin description.
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private String description;
     
+    /** 当前是否启用。 */
     /**
      * Whether the plugin is enabled.
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private boolean enabled;
     
+    /** 是否为关键插件（不可禁用）。 */
     /**
      * Whether this is a critical plugin (cannot be disabled).
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private boolean critical;
     
+    /** 是否支持动态配置。 */
     /**
      * Whether the plugin supports configuration.
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private boolean configurable;
     
+    /** 插件加载时间戳（毫秒）。 */
     /**
      * Plugin load timestamp.
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private long loadTimestamp;
     
+    /** 当前运行时配置键值。 */
     /**
      * Current configuration.
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private Map<String, String> config;
     
+    /** 配置项定义列表（Schema）。 */
     /**
      * Configuration item definitions.
+      * <p>插件元信息模型；详见类级说明。</p>
      */
     private List<ConfigItemDefinition> configDefinitions;
     

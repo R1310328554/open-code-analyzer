@@ -22,13 +22,25 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
+ * Spring 条件：Nacos 以集群模式运行时匹配（非 standalone）。
+ * <p>用于仅在集群部署下注册的 Bean，如插件状态 Raft 同步组件。</p>
  * Condition that matches when Nacos is running in cluster mode.
  *
  * @author WangzJi
  * @since 3.2.0
  */
+/**
+ * 集群模式条件实现，委托 {@link EnvUtil#getStandaloneMode()} 取反判断。
+ */
 public class ConditionOnClusterMode implements Condition {
     
+    /**
+     * {@inheritDoc} — 非单机模式（集群）时返回 true。
+     *
+     * @param context Spring 条件上下文
+     * @param metadata 注解元数据
+     * @return 是否匹配集群模式
+     */
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         return !EnvUtil.getStandaloneMode();

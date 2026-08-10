@@ -22,13 +22,25 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
+ * Spring 条件：Nacos 以单机模式运行时匹配。
+ * <p>用于仅在 standalone 部署下注册的 Bean，避免集群专用逻辑在单机环境加载。</p>
  * Condition that matches when Nacos is running in standalone mode.
  *
  * @author WangzJi
  * @since 3.2.0
  */
+/**
+ * 单机模式条件实现，当 {@link EnvUtil#getStandaloneMode()} 为 true 时匹配。
+ */
 public class ConditionOnStandaloneMode implements Condition {
     
+    /**
+     * {@inheritDoc} — standalone 模式下返回 true。
+     *
+     * @param context Spring 条件上下文
+     * @param metadata 注解元数据
+     * @return 是否匹配单机模式
+     */
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         return EnvUtil.getStandaloneMode();

@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
+ * 插件状态 Raft 写操作载荷：启用/禁用或配置更新，需在集群间复制。
  * Plugin state operation for Raft consensus.
  * Represents state changes or config updates that need to be replicated across cluster.
  *
@@ -30,17 +31,23 @@ public class PluginStateOperation implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
+    /** Raft 写操作类型枚举。 */
     /**
      * Operation type enum.
+      * <p>插件状态 Raft 写操作；详见类级说明。</p>
      */
     public enum OperationType {
+        /** 变更插件启用/禁用状态。 */
         /**
          * Change plugin enabled/disabled state.
+          * <p>插件状态 Raft 写操作；详见类级说明。</p>
          */
         CHANGE_STATE,
         
+        /** 更新插件配置。 */
         /**
          * Update plugin configuration.
+          * <p>插件状态 Raft 写操作；详见类级说明。</p>
          */
         UPDATE_CONFIG
     }
@@ -88,10 +95,12 @@ public class PluginStateOperation implements Serializable {
         this.config = config;
     }
     
+    /** 创建 {@link Builder} 构建写操作。 */
     public static Builder builder() {
         return new Builder();
     }
     
+    /** {@link PluginStateOperation} 流式构建器。 */
     public static class Builder {
         
         private final PluginStateOperation operation = new PluginStateOperation();
@@ -117,7 +126,7 @@ public class PluginStateOperation implements Serializable {
         }
         
         /**
-         * Build the PluginStateOperation.
+         * 校验必填字段并构建操作对象。
          *
          * @return the built PluginStateOperation
          */

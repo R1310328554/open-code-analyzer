@@ -25,12 +25,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * {@link SubscribeServiceRequest} 服务订阅 RPC 参数提取器，解析订阅目标服务与集群。
  * Param extractor for {@link SubscribeServiceRequest}.
  *
  * @author zhuoguang
  */
 public class SubscribeServiceRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /**
+     * 从订阅请求中提取 namespace、serviceName、group 与 clusters。
+     *
+     * @param request RPC 请求
+     * @return 待校验参数列表
+     */
     @Override
     public List<ParamInfo> extractParam(Request request) {
         SubscribeServiceRequest req = (SubscribeServiceRequest) request;

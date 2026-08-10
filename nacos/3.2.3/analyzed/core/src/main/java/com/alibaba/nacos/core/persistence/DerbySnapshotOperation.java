@@ -47,6 +47,8 @@ import java.util.function.BiConsumer;
 import java.util.zip.Checksum;
 
 /**
+ * 内嵌 Derby 数据库 Raft 快照操作：备份、压缩、校验与恢复。
+ * <p>实现 {@link SnapshotOperation}，在集群模式下保证 Derby 数据与 Raft 日志一致。</p>
  * Derby Snapshot operation.
  * TODO depend on jraft strongly, Waiting for addition split.
  *
@@ -56,16 +58,21 @@ public class DerbySnapshotOperation implements SnapshotOperation {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DerbySnapshotOperation.class);
     
+    /** 快照保存计时上下文键。 */
     private static final String DERBY_SNAPSHOT_SAVE =
         DerbySnapshotOperation.class.getSimpleName() + ".SAVE";
     
+    /** 快照加载计时上下文键。 */
     private static final String DERBY_SNAPSHOT_LOAD =
         DerbySnapshotOperation.class.getSimpleName() + ".LOAD";
     
+    /** Derby 在线备份存储过程 SQL。 */
     private final String backupSql = "CALL SYSCS_UTIL.SYSCS_BACKUP_DATABASE(?)";
     
+    /** 快照解压临时目录名。 */
     private final String snapshotDir = "derby_data";
     
+    /** 快照压缩包文件名。 */
     private final String snapshotArchive = "derby_data.zip";
     
     private final String derbyBaseDir =
@@ -74,14 +81,22 @@ public class DerbySnapshotOperation implements SnapshotOperation {
     
     private final String restoreDB = "jdbc:derby:" + derbyBaseDir;
     
+    /** 快照元数据中 CRC64 校验和键名。 */
     private final String checkSumKey = "checkSum";
     
     private final ReentrantReadWriteLock.WriteLock writeLock;
     
+    /** 注入写锁，快照保存/加载期间独占 Derby 访问。 */
     public DerbySnapshotOperation(ReentrantReadWriteLock.WriteLock writeLock) {
         this.writeLock = writeLock;
     }
     
+    /**
+     * 执行 Derby 备份、压缩为 zip 并写入 Raft 快照，附带 CRC64 校验和。
+     *
+     * @param writer 快照写入器
+     * @param callFinally 完成回调
+     */
     @Override
     public void onSnapshotSave(Writer writer, BiConsumer<Boolean, Throwable> callFinally) {
         PersistenceExecutor.executeSnapshot(() -> {
@@ -118,6 +133,12 @@ public class DerbySnapshotOperation implements SnapshotOperation {
         });
     }
     
+    /**
+     * 从快照解压 Derby 数据、校验 CRC 并恢复到本地目录，发布 {@link DerbyLoadEvent}。
+     *
+     * @param reader 快照读取器
+     * @return 加载是否成功
+     */
     @Override
     public boolean onSnapshotLoad(Reader reader) {
         final String readerPath = reader.getPath();
@@ -163,6 +184,7 @@ public class DerbySnapshotOperation implements SnapshotOperation {
         }
     }
     
+    /** 调用 Derby 存储过程将数据库备份到指定目录。 */
     private void doDerbyBackup(String backupDirectory) throws Exception {
         DataSourceService sourceService = DynamicDataSource.getInstance().getDataSource();
         DataSource dataSource = sourceService.getJdbcTemplate().getDataSource();
@@ -173,6 +195,7 @@ public class DerbySnapshotOperation implements SnapshotOperation {
         }
     }
     
+    /** 关闭并重建 Derby 连接后执行恢复回调（拷贝快照数据）。 */
     private void doDerbyRestoreFromBackup(Callable<Void> callable) throws Exception {
         DataSourceService sourceService = DynamicDataSource.getInstance().getDataSource();
         LocalDataSourceServiceImpl localDataSourceService =

@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 关键插件配置：定义不可禁用的插件 ID 集合（如数据源方言）。
  * Critical plugin configuration.
  * Defines plugins that cannot be disabled.
  *
@@ -32,10 +33,13 @@ public final class CriticalPluginConfig {
     private static final Set<String> CRITICAL_PLUGINS;
     
     static {
+        // 仅数据源方言为关键插件——Nacos 至少需要一种数据库后端
         // Only datasource dialects are critical - Nacos requires at least one database
         // backend.
+        // 认证插件非关键——用户可禁用默认认证以使用自定义插件
         // Auth plugins are NOT critical - users can disable default auth to use custom
         // plugins.
+        // TODO 应从插件定义自动加载，而非硬编码
         // TODO should be auto-loaded from Plugin defined, not bind by implementation
         Set<String> plugins = new HashSet<>();
         plugins.add("datasource-dialect:mysql");
@@ -49,7 +53,7 @@ public final class CriticalPluginConfig {
     }
     
     /**
-     * Check if a plugin is critical.
+     * 判断插件是否为关键插件（不可禁用）。
      *
      * @param pluginId plugin ID in format "{type}:{name}"
      * @return true if the plugin is critical
@@ -59,7 +63,7 @@ public final class CriticalPluginConfig {
     }
     
     /**
-     * Get all critical plugins.
+     * 获取全部关键插件 ID 不可变集合。
      *
      * @return unmodifiable set of critical plugin IDs
      */

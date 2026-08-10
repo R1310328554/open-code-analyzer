@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
+ * 插件状态 Raft CP 请求处理器：复制启用/禁用与配置变更至集群各节点。
  * Plugin state processor for Raft consensus.
  * Handles plugin state changes and config updates via Raft replication.
  *
@@ -47,6 +48,7 @@ public class PluginStateProcessor extends RequestProcessor4CP {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(PluginStateProcessor.class);
     
+    /** Raft CP 分组名。 */
     private static final String GROUP = "plugin_state";
     
     private final PluginManager pluginManager;
@@ -68,6 +70,7 @@ public class PluginStateProcessor extends RequestProcessor4CP {
         this.lock = new ReentrantReadWriteLock();
         this.readLock = lock.readLock();
         
+        // 注册至 CP 协议作为 Write/Read 处理器
         // Register with Raft protocol
         protocolManager.getCpProtocol().addRequestProcessors(Collections.singletonList(this));
     }
@@ -79,6 +82,7 @@ public class PluginStateProcessor extends RequestProcessor4CP {
     
     @Override
     public Response onRequest(ReadRequest request) {
+        // 读操作当前由 PluginManager 直接处理，此处返回成功
         // Read operations can go directly to PluginManager
         return Response.newBuilder().setSuccess(true).build();
     }
@@ -140,9 +144,11 @@ public class PluginStateProcessor extends RequestProcessor4CP {
                 "Enabled state cannot be null for CHANGE_STATE operation, pluginId=" + pluginId);
         }
         
+        // 更新内存状态
         // Apply to in-memory state
         pluginManager.applyStateChange(pluginId, enabled);
         
+        // 持久化至本地存储
         // Persist to local storage
         persistence.saveState(pluginId, enabled);
         
@@ -153,6 +159,7 @@ public class PluginStateProcessor extends RequestProcessor4CP {
         String pluginId = operation.getPluginId();
         Map<String, String> config = operation.getConfig();
         
+        // 更新内存中的插件配置
         // Apply to in-memory config
         pluginManager.applyConfigChange(pluginId, config);
         

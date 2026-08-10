@@ -87,6 +87,8 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
+ * 分布式内嵌 Derby 数据库操作实现：通过 Raft CP 协议复制读写与快照。
+ * <p>在 {@link ConditionDistributedEmbedStorage} 条件下生效，将 SQL 提交至 JRaft 状态机后在各节点 Derby 执行。</p>
  * Distributed Database Operate.
  *
  * <pre>
@@ -153,30 +155,46 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
         LoggerFactory.getLogger(DistributedDatabaseOperateImpl.class);
     
     /**
+     * 数据导入写请求专用扩展键，标识批量 SQL 导入操作。
      * The data import operation is dedicated key, which ACTS as an identifier.
      */
     private static final String DATA_IMPORT_KEY = "00--0-data_import-0--00";
     
+    /** 集群成员管理器，用于生成写请求签名键。 */
     private final ServerMemberManager memberManager;
     
+    /** Raft CP 一致性协议实例。 */
     private CPProtocol protocol;
     
+    /** 本地 Derby 数据源服务。 */
     private LocalDataSourceServiceImpl dataSourceService;
     
+    /** 内嵌 Derby JDBC 模板。 */
     private JdbcTemplate jdbcTemplate;
     
+    /** 事务模板，批量写操作在事务中执行。 */
     private TransactionTemplate transactionTemplate;
     
+    /** 序列化器，用于 Raft 请求/响应与 SelectRequest 编解码。 */
     private final Serializer serializer = SerializeFactory.getDefault();
     
+    /** 读写锁，读路径与 onApply 写路径互斥。 */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
     private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
     
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
     
+    /** SQL 类型限流器，防止危险或过量查询。 */
     private final SqlLimiter sqlLimiter;
     
+    /**
+     * 构造分布式数据库操作器并初始化 Derby、Raft 处理器与事件订阅。
+     *
+     * @param memberManager 集群成员管理器
+     * @param protocolManager 一致性协议管理器
+     * @throws Exception 初始化失败
+     */
     public DistributedDatabaseOperateImpl(ServerMemberManager memberManager,
         ProtocolManager protocolManager)
         throws Exception {
@@ -186,11 +204,13 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
         this.sqlLimiter = new SqlTypeLimiter();
     }
     
+    /** 清理并重开 Derby、注册 Raft 错误/快照事件订阅、注册 CP 请求处理器。 */
     protected void init() throws Exception {
         
         this.dataSourceService =
             (LocalDataSourceServiceImpl) DynamicDataSource.getInstance().getDataSource();
         
+        // Raft + Derby 模式下数据一致性依赖 Raft 日志回放与快照，启动前需清空并重开 Derby
         // Because in Raft + Derby mode, ensuring data consistency depends on the Raft's
         // log playback and snapshot recovery capabilities, and the last data must be cleared
         this.dataSourceService.cleanAndReopenDerby();
@@ -198,8 +218,10 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
         this.jdbcTemplate = dataSourceService.getJdbcTemplate();
         this.transactionTemplate = dataSourceService.getTransactionTemplate();
         
+        // 注册 Raft 数据库错误事件，触发节点降级
         // Registers a Derby Raft state machine failure event for node degradation processing
         NotifyCenter.registerToSharePublisher(RaftDbErrorEvent.class);
+        // 注册 Derby 快照加载完成事件
         // Register the snapshot load event
         NotifyCenter.registerToSharePublisher(DerbyLoadEvent.class);
         
@@ -220,11 +242,13 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
         LOGGER.info("use DistributedTransactionServicesImpl");
     }
     
+    /** 测试用：注入 mock CP 协议。 */
     @JustForTest
     public void mockConsistencyProtocol(CPProtocol protocol) {
         this.protocol = protocol;
     }
     
+    /** 通过 Raft 读路径查询单行并反序列化为指定类型。 */
     @Override
     public <R> R queryOne(String sql, Class<R> cls) {
         try {
@@ -393,6 +417,7 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
     }
     
     /**
+     * 内部读请求：blockRead 为 true 时使用异步阻塞读直至有数据，避免业务超时。
      * In some business situations, you need to avoid the timeout issue, so blockRead is used to determine this.
      *
      * @param request   {@link ReadRequest}
@@ -407,6 +432,7 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
         return protocol.getData(request);
     }
     
+    /** 批量导入 SQL 文件：按批提交 Raft 写请求。 */
     @Override
     public CompletableFuture<RestResult<String>> dataImport(File file) {
         return CompletableFuture.supplyAsync(() -> {
@@ -446,10 +472,18 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
         });
     }
     
+    /**
+     * 提交 SQL 修改列表至 Raft；consumer 非空时异步回调结果。
+     *
+     * @param sqlContext 待执行 SQL 上下文
+     * @param consumer 可选完成回调
+     * @return 同步模式下是否成功
+     */
     @Override
     public Boolean update(List<ModifyRequest> sqlContext, BiConsumer<Boolean, Throwable> consumer) {
         try {
             
+            // SQL 参数为 Object[]，使用 Java 序列化而非 Protobuf 以保留类型信息
             // Since the SQL parameter is Object[], in order to ensure that the types of
             // array elements are not lost, the serialization here is done using the java-specific
             // serialization framework, rather than continuing with the protobuff
@@ -492,12 +526,14 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
         }
     }
     
+    /** 注册 Derby 快照操作供 Raft 状态机使用。 */
     @Override
     public List<SnapshotOperation> loadSnapshotOperate() {
         return Collections.singletonList(new DerbySnapshotOperation(writeLock));
     }
     
     @SuppressWarnings("all")
+    /** Raft 读处理器：在本地 Derby 执行 SelectRequest 并返回序列化结果。 */
     @Override
     public Response onRequest(final ReadRequest request) {
         SelectRequest selectRequest = null;
@@ -554,6 +590,7 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
         }
     }
     
+    /** Raft 写处理器：反序列化 ModifyRequest 列表并在 Derby 事务中执行或导入数据。 */
     @Override
     public Response onApply(WriteRequest log) {
         LoggerUtils.printIfDebugEnabled(LOGGER, "onApply info : log : {}", log);
@@ -571,6 +608,7 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
             } else {
                 sqlContext.sort(Comparator.comparingInt(ModifyRequest::getExecuteNo));
                 isOk = update(transactionTemplate, jdbcTemplate, sqlContext);
+                // 写成功后异步执行 EmbeddedApplyHook 后置逻辑
                 // If there is additional information, post processing
                 // Put into the asynchronous thread pool for processing to avoid blocking the
                 // normal execution of the state machine
@@ -584,6 +622,7 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
             
             return Response.newBuilder().setSuccess(isOk).build();
             
+            // SQL 语法/完整性错误仅返回失败，不停止 Raft 状态机
             // We do not believe that an error caused by a problem with an SQL error
             // should trigger the stop operation of the raft state machine
         } catch (BadSqlGrammarException | DataIntegrityViolationException e) {
@@ -598,12 +637,15 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP
         }
     }
     
+    /** Raft 状态机错误时发布 {@link RaftDbErrorEvent} 触发降级。 */
     @Override
     public void onError(Throwable throwable) {
+        // 触发节点降级策略
         // Trigger reversion strategy
         NotifyCenter.publishEvent(new RaftDbErrorEvent(throwable));
     }
     
+    /** 返回配置模块 Raft 分组名。 */
     @Override
     public String group() {
         return PersistenceConstant.CONFIG_MODEL_RAFT_GROUP;

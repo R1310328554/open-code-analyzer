@@ -26,14 +26,23 @@ import com.alibaba.nacos.core.paramcheck.AbstractRpcParamExtractor;
 import java.util.List;
 
 /**
+ * AI Prompt 查询 gRPC 请求参数提取器，从 {@link com.alibaba.nacos.api.ai.remote.request.QueryPromptRequest} 解析命名空间与 dataId。
  * Nacos prompt grpc request param extractor.
  *
  * @author nacos
  */
 public class PromptRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /** Prompt 配置在配置中心对应的 dataId 后缀。 */
     private static final String PROMPT_DATA_ID_SUFFIX = ".json";
     
+    /**
+     * 提取 Prompt 查询请求的命名空间与 dataId（promptKey + .json）。
+     *
+     * @param request RPC 请求
+     * @return 待校验参数列表
+     * @throws NacosException 提取异常
+     */
     @Override
     public List<ParamInfo> extractParam(Request request) throws NacosException {
         QueryPromptRequest promptRequest = (QueryPromptRequest) request;

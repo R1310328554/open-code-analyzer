@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
+ * 插件状态快照数据：包含全部 pluginId 的启用状态与配置 Map，供 Raft 快照序列化。
  * Plugin state snapshot for Raft recovery.
  * Contains all plugin states and configurations for snapshot save/load.
  *
@@ -30,8 +31,10 @@ public class PluginStateSnapshot implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
+    /** 插件 ID -> 是否启用。 */
     private Map<String, Boolean> states;
     
+    /** 插件 ID -> 配置键值对。 */
     private Map<String, Map<String, String>> configs;
     
     public PluginStateSnapshot() {

@@ -25,12 +25,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * {@link ServiceQueryRequest} 服务详情查询 RPC 参数提取器，含 UDP 端口与集群信息。
  * Param extractor for {@link ServiceQueryRequest}.
  *
  * @author zhuoguang
  */
 public class ServiceQueryRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /**
+     * 提取服务查询请求的 namespace、serviceName、group、port 与 clusters。
+     *
+     * @param request RPC 请求
+     * @return 待校验参数列表
+     */
     @Override
     public List<ParamInfo> extractParam(Request request) {
         ServiceQueryRequest req = (ServiceQueryRequest) request;

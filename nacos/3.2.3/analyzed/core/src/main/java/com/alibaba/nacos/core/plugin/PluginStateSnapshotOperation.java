@@ -38,6 +38,7 @@ import java.util.function.BiConsumer;
 import java.util.zip.Checksum;
 
 /**
+ * 插件状态 Raft 快照操作：保存/加载全部插件启用状态与配置，支持 CRC 校验。
  * Plugin state snapshot operation for Raft recovery.
  * Handles snapshot save and load for plugin states and configurations.
  *
@@ -49,10 +50,13 @@ public class PluginStateSnapshotOperation implements SnapshotOperation {
     private static final Logger LOGGER =
         LoggerFactory.getLogger(PluginStateSnapshotOperation.class);
     
+    /** 快照压缩包文件名。 */
     private static final String SNAPSHOT_ARCHIVE = "plugin_state.zip";
     
+    /** zip 内条目名。 */
     private static final String SNAPSHOT_CHILD_NAME = "plugin";
     
+    /** 快照元数据 CRC 键名。 */
     private static final String CHECK_SUM_KEY = "checksum";
     
     private final PluginStatePersistenceService persistence;
@@ -76,18 +80,22 @@ public class PluginStateSnapshotOperation implements SnapshotOperation {
     public void onSnapshotSave(Writer writer, BiConsumer<Boolean, Throwable> callFinally) {
         lock.writeLock().lock();
         try {
+            // 加载全部插件状态与配置
             // Load all states and configs
             Map<String, Boolean> states = persistence.loadAllStates();
             Map<String, Map<String, String>> configs = persistence.loadAllConfigs();
             
+            // 构建快照对象
             // Create snapshot
             PluginStateSnapshot snapshot = new PluginStateSnapshot();
             snapshot.setStates(states);
             snapshot.setConfigs(configs);
             
+            // 序列化为字节流
             // Serialize
             byte[] data = serializer.serialize(snapshot);
             
+            // 压缩写入并计算 CRC64
             // Write to snapshot with compression and checksum
             final String writePath = writer.getPath();
             final String outputFile = Paths.get(writePath, SNAPSHOT_ARCHIVE).toString();
@@ -120,6 +128,7 @@ public class PluginStateSnapshotOperation implements SnapshotOperation {
     public boolean onSnapshotLoad(Reader reader) {
         lock.writeLock().lock();
         try {
+            // 读取并解压快照文件
             // Read snapshot file
             final String readerPath = reader.getPath();
             final String sourceFile = Paths.get(readerPath, SNAPSHOT_ARCHIVE).toString();
@@ -127,6 +136,7 @@ public class PluginStateSnapshotOperation implements SnapshotOperation {
             
             byte[] snapshotBytes = DiskUtils.decompress(sourceFile, checksum);
             
+            // 校验 CRC 完整性
             // Verify checksum
             LocalFileMeta fileMeta = reader.getFileMeta(SNAPSHOT_ARCHIVE);
             if (fileMeta.getFileMeta().containsKey(CHECK_SUM_KEY)) {
@@ -139,10 +149,12 @@ public class PluginStateSnapshotOperation implements SnapshotOperation {
                     "[PluginStateSnapshotOperation] Snapshot has no checksum metadata, data integrity not verified");
             }
             
+            // 反序列化为 PluginStateSnapshot
             // Deserialize
             PluginStateSnapshot snapshot =
                 serializer.deserialize(snapshotBytes, PluginStateSnapshot.class);
             
+            // 恢复各插件启用状态
             // Restore states
             Map<String, Boolean> states = snapshot.getStates();
             if (states != null) {
@@ -152,6 +164,7 @@ public class PluginStateSnapshotOperation implements SnapshotOperation {
                 }
             }
             
+            // 恢复各插件配置
             // Restore configs
             Map<String, Map<String, String>> configs = snapshot.getConfigs();
             if (configs != null) {

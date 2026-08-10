@@ -50,6 +50,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 统一插件管理器：SPI 发现、状态/配置持久化与集群同步。
+ * <p>实现 {@link PluginStateChecker}、{@link PluginStateApplier}，在应用就绪后注册全部插件。</p>
  * Unified Plugin Manager.
  * Central manager for all plugin types, implementing plugin state checking and management.
  *
@@ -62,58 +64,77 @@ public class PluginManager
     
     private static final Logger LOGGER = LoggerFactory.getLogger(PluginManager.class);
     
+    /** 认证插件类型配置项键名。 */
     /**
      * Configuration property for auth plugin type.
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private static final String AUTH_TYPE_PROPERTY = "nacos.core.auth.system.type";
     
+    /** 默认认证插件类型（nacos）。 */
     /**
      * Default auth plugin type.
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private static final String AUTH_TYPE_DEFAULT = "nacos";
     
+    /** 数据源平台配置项（新键 spring.sql.init.platform）。 */
     /**
      * Configuration property for datasource platform (new).
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private static final String DATASOURCE_PLATFORM_PROPERTY = "spring.sql.init.platform";
     
     /**
      * Configuration property for datasource platform (legacy).
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private static final String DATASOURCE_PLATFORM_PROPERTY_OLD = "spring.datasource.platform";
     
     /**
      * Default datasource platform.
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private static final String DATASOURCE_PLATFORM_DEFAULT = "derby";
     
+    /** 插件注册表：pluginId -> {@link PluginInfo}。 */
     /**
      * Plugin registry: pluginId -> PluginInfo.
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private final Map<String, PluginInfo> pluginRegistry = new ConcurrentHashMap<>();
     
+    /** 插件启用状态：pluginId -> 是否启用。 */
     /**
      * Plugin states: pluginId -> enabled.
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private final Map<String, Boolean> pluginStates = new ConcurrentHashMap<>();
     
+    /** 插件运行时配置：pluginId -> 键值对。 */
     /**
      * Plugin configurations: pluginId -> config.
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private final Map<String, Map<String, String>> pluginConfigs = new ConcurrentHashMap<>();
     
+    /** 插件实例缓存：pluginId -> SPI 实例。 */
     /**
      * Plugin instances: pluginId -> instance.
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private final Map<String, Object> pluginInstances = new ConcurrentHashMap<>();
     
     private final PluginStatePersistenceService persistence;
     
+    /** 集群插件状态同步器（Raft）。 */
     /**
      * Plugin state synchronizer for cluster synchronization.
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     private final PluginStateSynchronizer synchronizer;
     
+    /** 注入持久化服务与延迟加载的状态同步器。 */
     public PluginManager(PluginStatePersistenceService persistence,
         @Lazy PluginStateSynchronizer synchronizer) {
         this.persistence = persistence;
@@ -122,12 +143,15 @@ public class PluginManager
     
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
+        // 注册到静态 Holder 供 API 层查询
         // Register to static holder
         PluginStateCheckerHolder.setInstance(this);
         
+        // SPI 发现全部 PluginProvider
         // Discover all plugins
         discoverAllPlugins();
         
+        // 加载持久化的启用状态与配置
         // Load persisted states and configs
         loadPersistedData();
         
@@ -141,7 +165,7 @@ public class PluginManager
     }
     
     /**
-     * Build plugin ID from type and name.
+     * 由类型与名称拼接插件 ID（格式 type:name）。
      *
      * @param pluginType plugin type
      * @param pluginName plugin name
@@ -157,6 +181,7 @@ public class PluginManager
      * @param pluginId plugin ID
      * @param enabled whether to enable
      * @throws NacosApiException if plugin not found or is critical
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     public void setPluginEnabled(String pluginId, boolean enabled) throws NacosApiException {
         setPluginEnabled(pluginId, enabled, false);
@@ -169,6 +194,7 @@ public class PluginManager
      * @param enabled whether to enable
      * @param localOnly if true, only update local node without Raft sync (for emergency use)
      * @throws NacosApiException if plugin not found or is critical
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     public void setPluginEnabled(String pluginId, boolean enabled, boolean localOnly)
         throws NacosApiException {
@@ -178,6 +204,7 @@ public class PluginManager
                 "Plugin not found: " + pluginId);
         }
         
+        // 关键插件不允许禁用
         // Critical plugins cannot be disabled
         if (info.isCritical() && !enabled) {
             throw new NacosApiException(NacosException.INVALID_PARAM,
@@ -185,6 +212,7 @@ public class PluginManager
                 "Cannot disable critical plugin: " + pluginId);
         }
         
+        // LocalOnly 模式：仅更新本机内存，跳过集群同步
         // LocalOnly mode: only update local memory, skip cluster sync
         if (localOnly) {
             LOGGER.warn(
@@ -194,6 +222,7 @@ public class PluginManager
             return;
         }
         
+        // 通过 Raft 同步至集群
         // Synchronize to cluster
         synchronizer.syncStateChange(pluginId, enabled);
         
@@ -207,6 +236,7 @@ public class PluginManager
      * @param pluginId plugin ID
      * @param config configuration
      * @throws NacosApiException if plugin not found or not configurable
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     public void updatePluginConfig(String pluginId, Map<String, String> config)
         throws NacosApiException {
@@ -220,6 +250,7 @@ public class PluginManager
      * @param config configuration
      * @param localOnly if true, only update local node without Raft sync (for emergency use)
      * @throws NacosApiException if plugin not found or not configurable
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     public void updatePluginConfig(String pluginId, Map<String, String> config, boolean localOnly)
         throws NacosApiException {
@@ -257,6 +288,7 @@ public class PluginManager
      * List all plugins.
      *
      * @return list of plugin info
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     public List<PluginInfo> listAllPlugins() {
         return new ArrayList<>(pluginRegistry.values());
@@ -267,6 +299,7 @@ public class PluginManager
      *
      * @param pluginId plugin ID
      * @return optional plugin info
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     public Optional<PluginInfo> getPlugin(String pluginId) {
         return Optional.ofNullable(pluginRegistry.get(pluginId));
@@ -276,12 +309,14 @@ public class PluginManager
      * Get local plugin IDs.
      *
      * @return set of plugin IDs
+      * <p>统一插件管理器；详见类级说明。</p>
      */
     public Set<String> getLocalPluginIds() {
         return new HashSet<>(pluginRegistry.keySet());
     }
     
     /**
+     * 通过 {@link PluginProvider} SPI 发现全部插件类型，无需硬编码类型列表。
      * Discover all plugins using SPI-based PluginProvider mechanism.
      * No hard-coded plugin type discovery needed.
      */
@@ -300,7 +335,7 @@ public class PluginManager
     }
     
     /**
-     * Discover plugins from a single provider.
+     * 从单个 Provider 注册其提供的全部插件实例。
      *
      * @param provider the plugin provider
      */
@@ -331,6 +366,7 @@ public class PluginManager
         boolean defaultEnabled = calculateDefaultEnabled(type, name);
         info.setEnabled(defaultEnabled);
         
+        // 若实现 PluginConfigSpec 则标记为可配置并读取定义
         // Check if plugin supports configuration
         if (instance instanceof PluginConfigSpec) {
             PluginConfigSpec configSpec = (PluginConfigSpec) instance;
@@ -399,6 +435,7 @@ public class PluginManager
     }
     
     /**
+     * 按插件类型与配置计算默认启用状态：AUTH/DATASOURCE 互斥，仅匹配配置项的插件默认启用。
      * Calculate the default enabled status for a plugin based on its type and configuration.
      * For exclusive plugins (AUTH, DATASOURCE), only the configured one is enabled by default.
      * For non-exclusive plugins, all are enabled by default.
@@ -416,13 +453,14 @@ public class PluginManager
                 String platform = getDatasourcePlatform();
                 return pluginName.equalsIgnoreCase(platform);
             default:
+                // 非互斥类型默认全部启用
                 // Non-exclusive plugins are enabled by default
                 return true;
         }
     }
     
     /**
-     * Get the configured datasource platform.
+     * 读取当前配置的数据源平台名（兼容新旧配置键）。
      *
      * @return datasource platform name
      */
@@ -435,6 +473,7 @@ public class PluginManager
     }
     
     /**
+     * 应用插件启用状态变更（同步成功后由 Processor 调用）。
      * Apply state change.
      * Called by synchronizers after successful synchronization.
      *
@@ -451,6 +490,7 @@ public class PluginManager
     }
     
     /**
+     * 应用插件配置变更并下发至插件实例。
      * Apply config change.
      * Called by synchronizers after successful synchronization.
      *
@@ -468,7 +508,7 @@ public class PluginManager
     }
     
     /**
-     * Check if plugin is available locally.
+     * 检查插件是否已在本地注册表中。
      *
      * @param pluginId plugin ID
      * @return true if plugin exists in registry
