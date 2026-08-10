@@ -2533,3 +2533,18 @@
 2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AttributeConsumingServiceType.java wave86a saml2 subject + mdui + metadata start
 2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AuthnAuthorityDescriptorType.java wave86a saml2 subject + mdui + metadata start
 2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/ContactType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/ContactTypeType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/EndpointType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/EntitiesDescriptorType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/EntityDescriptorType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/ExtensionsType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/IDPSSODescriptorType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/IndexedEndpointType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/KeyDescriptorType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/KeyTypes.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/LocalizedNameType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/LocalizedURIType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/OrganizationType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/PDPDescriptorType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/RequestedAttributeType.java wave86b saml2 metadata descriptors/endpoints
+2026-08-10T09:39:50Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/RoleDescriptorType.java wave86b saml2 metadata descriptors/endpoints
