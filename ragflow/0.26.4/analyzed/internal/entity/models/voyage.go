@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// voyage.go — Voyage AI ModelDriver：专注 Embed/Rerank 向量与重排能力，不提供 Chat 接口。
 //
 
 package models
@@ -26,12 +28,12 @@ import (
 	"strings"
 )
 
-// VoyageModel implements ModelDriver for Voyage AI.
+// VoyageModel Voyage AI 嵌入与重排 ModelDriver
 type VoyageModel struct {
 	baseModel BaseModel
 }
 
-// NewVoyageModel creates a new Voyage AI model instance.
+// NewVoyageModel 创建 Voyage 驱动实例
 func NewVoyageModel(baseURL map[string]string, urlSuffix URLSuffix) *VoyageModel {
 	return &VoyageModel{
 		baseModel: BaseModel{
@@ -42,10 +44,12 @@ func NewVoyageModel(baseURL map[string]string, urlSuffix URLSuffix) *VoyageModel
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Voyage 驱动实例
 func (v *VoyageModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewVoyageModel(baseURL, v.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "voyage"，供工厂层路由
 func (v *VoyageModel) Name() string {
 	return "voyage"
 }
@@ -62,6 +66,8 @@ type voyageEmbeddingResponse struct {
 	Model  string                `json:"model"`
 }
 
+// Embed Voyage 专用 embedding API，批量编码文本向量
+// Embed 将文本列表编码为向量嵌入
 func (v *VoyageModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := v.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -166,6 +172,8 @@ type voyageRerankResponse struct {
 	Model string `json:"model"`
 }
 
+// Rerank Voyage rerank API，返回文档相关性分数
+// Rerank 对候选文档按 query 相关性重排序
 func (v *VoyageModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := v.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -252,59 +260,75 @@ func (v *VoyageModel) Rerank(modelName *string, query string, documents []string
 	return rerankResponse, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (v *VoyageModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// CheckConnection 通过 Embed 空请求或模型列表探活
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (v *VoyageModel) CheckConnection(apiConfig *APIConfig) error {
 	return fmt.Errorf("%s, no such method", v.Name())
 }
 
 // ChatWithMessages is not exposed by the Voyage AI API.
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (v *VoyageModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (v *VoyageModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", v.Name())
 }
 
 // Balance is not exposed by the Voyage AI API.
+// Balance 查询账户余额（若上游支持）
 func (v *VoyageModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
 // TranscribeAudio / AudioSpeech / OCRFile: Voyage does not host any of
 // these surfaces.
+// TranscribeAudio 语音转文字（ASR）
 func (v *VoyageModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (v *VoyageModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", v.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (v *VoyageModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (v *VoyageModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", v.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (v *VoyageModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
 // ParseFile parse file
+// ParseFile 解析文档为结构化文本
 func (v *VoyageModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (v *VoyageModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (v *VoyageModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
+
+// Voyage 驱动仅实现 Embed/Rerank/CheckConnection；Chat/Stream/ASR/TTS/OCR/ParseFile/ListModels 返回不支持。Bearer 鉴权；Rerank 支持 top_n 参数。

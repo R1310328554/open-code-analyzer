@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// xunfei.go — 讯飞（iFlytek）ModelDriver：OpenAI 兼容 Chat 与 SSE 流式；ListModels 探活。
 //
 
 package models
@@ -26,10 +28,12 @@ import (
 	"ragflow/internal/common"
 )
 
+// XunFeiModel 讯飞星火平台 ModelDriver
 type XunFeiModel struct {
 	baseModel BaseModel
 }
 
+// NewXunFeiModel 创建讯飞驱动实例
 func NewXunFeiModel(baseURL map[string]string, urlSuffix URLSuffix) *XunFeiModel {
 	return &XunFeiModel{
 		baseModel: BaseModel{
@@ -40,14 +44,17 @@ func NewXunFeiModel(baseURL map[string]string, urlSuffix URLSuffix) *XunFeiModel
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 XunFei 驱动实例
 func (x *XunFeiModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewXunFeiModel(baseURL, x.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "xunfei"，供工厂层路由
 func (x *XunFeiModel) Name() string {
 	return "xunfei"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (x *XunFeiModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -135,7 +142,7 @@ func (x *XunFeiModel) ChatWithMessages(modelName string, messages []Message, api
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// Parse Response
+	// 解析 chat-completions 响应
 	var result map[string]interface{}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
@@ -180,6 +187,7 @@ func (x *XunFeiModel) ChatWithMessages(modelName string, messages []Message, api
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (x *XunFeiModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -272,7 +280,7 @@ func (x *XunFeiModel) ChatStreamlyWithSender(modelName string, messages []Messag
 		return fmt.Errorf("invalid status code: %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	// SSE parsing: read line by line
+	// 逐行解析 SSE data: 帧
 	if _, err := ParseSSEStream[map[string]interface{}](resp.Body, func(event map[string]interface{}) error {
 		if data, marshalErr := json.Marshal(event); marshalErr == nil {
 			common.Info(string(data))
@@ -312,7 +320,7 @@ func (x *XunFeiModel) ChatStreamlyWithSender(modelName string, messages []Messag
 		return fmt.Errorf("failed to scan response body: %w", err)
 	}
 
-	// Send [DONE] marker for OpenAI compatibility
+	// 流结束推送 [DONE] 以兼容 OpenAI 客户端
 	endOfStream := "[DONE]"
 	if err = sender(&endOfStream, nil); err != nil {
 		return err
@@ -321,38 +329,47 @@ func (x *XunFeiModel) ChatStreamlyWithSender(modelName string, messages []Messag
 	return nil
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (x *XunFeiModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (x *XunFeiModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (x *XunFeiModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (x *XunFeiModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", x.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (x *XunFeiModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (x *XunFeiModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", x.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (x *XunFeiModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (x *XunFeiModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (x *XunFeiModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -411,18 +428,24 @@ func (x *XunFeiModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, err
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (x *XunFeiModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (x *XunFeiModel) CheckConnection(apiConfig *APIConfig) error {
 	return fmt.Errorf("%s, no such method", x.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (x *XunFeiModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (x *XunFeiModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
+
+// 讯飞驱动实现 Chat/Stream/ListModels/CheckConnection；Bearer 鉴权；流式解析 delta content。Embed/Rerank/ASR/TTS/OCR/ParseFile/Balance 返回不支持。

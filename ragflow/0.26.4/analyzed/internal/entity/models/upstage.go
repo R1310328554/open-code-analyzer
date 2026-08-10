@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// upstage.go — Upstage（Solar）ModelDriver：OpenAI 兼容 Chat/Embed，支持 reasoning_effort 推理强度参数。
 //
 
 package models
@@ -26,12 +28,12 @@ import (
 	"strings"
 )
 
-// UpstageModel implements ModelDriver for Upstage (Solar models).
+// UpstageModel Upstage Solar 系列 ModelDriver
 type UpstageModel struct {
 	baseModel BaseModel
 }
 
-// NewUpstageModel creates a new Upstage model instance.
+// NewUpstageModel 创建 Upstage 驱动实例
 func NewUpstageModel(baseURL map[string]string, urlSuffix URLSuffix) *UpstageModel {
 	return &UpstageModel{
 		baseModel: BaseModel{
@@ -42,15 +44,18 @@ func NewUpstageModel(baseURL map[string]string, urlSuffix URLSuffix) *UpstageMod
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Upstage 驱动实例
 func (u *UpstageModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewUpstageModel(baseURL, u.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "upstage"，供工厂层路由
 func (u *UpstageModel) Name() string {
 	return "upstage"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response.
+// ChatWithMessages 非流式多轮对话，解析 reasoning 推理字段
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (u *UpstageModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := u.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -166,7 +171,8 @@ func (u *UpstageModel) ChatWithMessages(modelName string, messages []Message, ap
 	}, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams the response
+// ChatStreamlyWithSender SSE 流式对话，推送 reasoning 与 content delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (u *UpstageModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := u.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -310,7 +316,8 @@ type upstageEmbeddingResponse struct {
 	Object string                 `json:"object"`
 }
 
-// Embed turns a list of texts into embedding vectors
+// Embed 批量文本向量化，按 index 校验响应完整性
+// Embed 将文本列表编码为向量嵌入
 func (u *UpstageModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := u.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -396,7 +403,8 @@ func (u *UpstageModel) Embed(modelName *string, texts []string, apiConfig *APICo
 	return embeddings, nil
 }
 
-// ListModels returns the list of model ids visible to the API key.
+// ListModels 列出 API Key 可见模型
+// ListModels 列出当前 API Key 可见的模型目录
 func (u *UpstageModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := u.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -446,12 +454,14 @@ func (u *UpstageModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, er
 	return ParseListModel(modelList), nil
 }
 
-// Balance is not exposed by the Upstage API, so this returns "no such method".
+// Balance Upstage 未暴露余额 API，返回 no such method
+// Balance 查询账户余额（若上游支持）
 func (u *UpstageModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// CheckConnection runs a lightweight ListModels call to verify the API key.
+// CheckConnection 通过 ListModels 轻量探活
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (u *UpstageModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := u.ListModels(apiConfig)
 	if err != nil {
@@ -460,44 +470,55 @@ func (u *UpstageModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
-// Rerank calculates similarity scores between query and documents. Upstage
+// Rerank Upstage 未提供公开 rerank API，
 // does not expose a public rerank API, so this returns "no such method".
+// Rerank 对候选文档按 query 相关性重排序
 func (u *UpstageModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio Upstage 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (u *UpstageModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", u.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (u *UpstageModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", u.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech Upstage 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (u *UpstageModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", u.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (u *UpstageModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", u.Name())
 }
 
-// OCRFile OCR file
+// OCRFile Upstage 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (u *UpstageModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", u.Name())
 }
 
-// ParseFile parse file
+// ParseFile Upstage 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (u *UpstageModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", u.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (u *UpstageModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", u.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (u *UpstageModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", u.Name())
 }
+
+// Upstage 驱动覆盖 Chat/Embed/ListModels/CheckConnection；非流式与流式均支持 reasoning_effort。Rerank/ASR/TTS/OCR/ParseFile 返回不支持。

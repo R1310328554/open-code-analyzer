@@ -12,19 +12,21 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// skill_search.go — 技能搜索配置与结果类型：租户/空间级向量+BM25 混合检索参数与字段权重。
 //
 
 package entity
 
 import "time"
 
-// FieldWeight represents the weight configuration for a field
+// FieldWeight 单字段是否启用及 BM25/向量融合权重
 type FieldWeight struct {
 	Enabled bool    `json:"enabled"`
 	Weight  float64 `json:"weight"`
 }
 
-// FieldConfig represents the field configuration for skill indexing
+// FieldConfig 技能索引字段权重（name/tags/description/content）
 type FieldConfig struct {
 	Name        FieldWeight `json:"name"`
 	Tags        FieldWeight `json:"tags"`
@@ -32,7 +34,7 @@ type FieldConfig struct {
 	Content     FieldWeight `json:"content"`
 }
 
-// DefaultFieldConfig returns the default field configuration
+// DefaultFieldConfig 返回默认字段权重配置
 func DefaultFieldConfig() FieldConfig {
 	return FieldConfig{
 		Name:        FieldWeight{Enabled: true, Weight: 3.0},
@@ -42,14 +44,16 @@ func DefaultFieldConfig() FieldConfig {
 	}
 }
 
-// SkillSearchConfig represents the search configuration for skills
+// SkillSearchConfig 技能搜索配置 GORM 实体（表 skill_search_configs）
 type SkillSearchConfig struct {
 	ID                     string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	TenantID               string  `gorm:"column:tenant_id;size:32;not null;index" json:"tenant_id"`
 	SpaceID                string  `gorm:"column:space_id;size:128;not null;default:'default';index" json:"space_id"`
 	EmbdID                 string  `gorm:"column:embd_id;size:128;not null" json:"embd_id"`
 	Status                 string  `gorm:"column:status;size:1;default:1" json:"status"`
+	// VectorSimilarityWeight 向量相似度在混合分中的权重
 	VectorSimilarityWeight float64 `gorm:"column:vector_similarity_weight;default:0.3" json:"vector_similarity_weight"`
+	// SimilarityThreshold 最低相似度阈值
 	SimilarityThreshold    float64 `gorm:"column:similarity_threshold;default:0.2" json:"similarity_threshold"`
 	FieldConfig            JSONMap `gorm:"column:field_config;type:json" json:"field_config"`
 	RerankID               *string `gorm:"column:rerank_id;size:128" json:"rerank_id,omitempty"`
@@ -59,12 +63,12 @@ type SkillSearchConfig struct {
 	BaseModel
 }
 
-// TableName returns the table name for SkillSearchConfig model
+// TableName 返回 GORM 表名 skill_search_configs
 func (SkillSearchConfig) TableName() string {
 	return "skill_search_configs"
 }
 
-// ToMap converts SkillSearchConfig to a map for JSON response
+// ToMap 转为 API JSON 响应 map（格式化 update_time）
 func (s *SkillSearchConfig) ToMap() map[string]interface{} {
 	result := map[string]interface{}{
 		"id":                       s.ID,
@@ -95,10 +99,10 @@ func (s *SkillSearchConfig) ToMap() map[string]interface{} {
 	return result
 }
 
-// SkillSearchResult represents a skill search result
+// SkillSearchResult 单次技能检索命中结果
 type SkillSearchResult struct {
 	SkillID      string   `json:"skill_id"`
-	FolderID     string   `json:"folder_id"` // File system folder ID for retrieving files
+	FolderID     string   `json:"folder_id"` // 文件系统目录 ID，用于拉取技能文件
 	Name         string   `json:"name"`
 	Description  string   `json:"description"`
 	Tags         []string `json:"tags"`
@@ -107,5 +111,7 @@ type SkillSearchResult struct {
 	VectorScore  float64  `json:"vector_score,omitempty"`
 	IndexVersion string   `json:"index_version,omitempty"`
 	CreateTime   int64    `json:"create_time,omitempty"`
-	Version      string   `json:"version,omitempty"` // Skill version from index
+	Version      string   `json:"version,omitempty"` // 索引中的技能版本号
 }
+
+// SkillSearchConfig 按 tenant_id+space_id 隔离；field_config 存 JSONMap 字段权重；rerank_id 可选二次重排。SkillSearchResult 同时返回 BM25 与向量分项得分。

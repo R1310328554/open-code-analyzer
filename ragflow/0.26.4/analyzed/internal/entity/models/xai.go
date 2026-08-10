@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// xai.go — xAI（Grok）ModelDriver：OpenAI 兼容 Chat/ASR/TTS；reasoning_content 推理链；自定义超时配置。
 //
 
 package models
@@ -37,12 +39,12 @@ var (
 	longOpCallTimeout    = 10 * time.Minute
 )
 
-// XAIModel implements ModelDriver for xAI (Grok models)
+// XAIModel xAI Grok 系列 ModelDriver
 type XAIModel struct {
 	baseModel BaseModel
 }
 
-// NewXAIModel creates a new xAI model instance.
+// NewXAIModel 创建 xAI 驱动实例
 func NewXAIModel(baseURL map[string]string, urlSuffix URLSuffix) *XAIModel {
 	return &XAIModel{
 		baseModel: BaseModel{
@@ -53,15 +55,18 @@ func NewXAIModel(baseURL map[string]string, urlSuffix URLSuffix) *XAIModel {
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 xAI 驱动实例
 func (x *XAIModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewXAIModel(baseURL, x.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "xai"，供工厂层路由
 func (x *XAIModel) Name() string {
 	return "xai"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response
+// ChatWithMessages 非流式对话，透传 reasoning_content
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (x *XAIModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -170,7 +175,7 @@ func (x *XAIModel) ChatWithMessages(modelName string, messages []Message, apiCon
 		return nil, fmt.Errorf("invalid content format")
 	}
 
-	// xAI reasoning models (grok-3-mini and similar) return reasoning text in
+	// xAI 推理模型（如 grok-3-mini）在 reasoning_content 返回推理文本；
 	// the reasoning_content field. Pass it through when present.
 	var reasonContent string
 	if rc, ok := messageMap["reasoning_content"].(string); ok {
@@ -188,7 +193,8 @@ func (x *XAIModel) ChatWithMessages(modelName string, messages []Message, apiCon
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams the response
+// ChatStreamlyWithSender SSE 流式对话，支持多模态 content
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (x *XAIModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -323,13 +329,15 @@ func (x *XAIModel) ChatStreamlyWithSender(modelName string, messages []Message, 
 	return nil
 }
 
-// Embed embeds a list of texts into embeddings. xAI does not expose a
+// Embed xAI 尚未公开 embedding API，
 // public embedding API yet, so this is left unimplemented.
+// Embed 将文本列表编码为向量嵌入
 func (x *XAIModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-// ListModels returns the list of model ids visible to the API key.
+// ListModels 列出 API Key 可见 Grok 模型
+// ListModels 列出当前 API Key 可见的模型目录
 func (x *XAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -385,12 +393,14 @@ func (x *XAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error)
 	return ParseListModel(modelList), nil
 }
 
-// Balance is not exposed by the xAI API, so this returns "no such method".
+// Balance xAI 未暴露余额 API
+// Balance 查询账户余额（若上游支持）
 func (x *XAIModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
 // CheckConnection runs a lightweight ListModels call to verify the API key.
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (x *XAIModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := x.ListModels(apiConfig)
 	if err != nil {
@@ -399,12 +409,14 @@ func (x *XAIModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
-// Rerank calculates similarity scores between query and documents
+// Rerank xAI 暂未实现 rerank
+// Rerank 对候选文档按 query 相关性重排序
 func (x *XAIModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, Rerank not implemented", x.Name())
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio multipart 上传音频转写
+// TranscribeAudio 语音转文字（ASR）
 func (x *XAIModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -534,11 +546,13 @@ func (x *XAIModel) TranscribeAudio(modelName *string, file *string, apiConfig *A
 	return &ASRResponse{Text: result.Text}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (x *XAIModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", x.Name())
 }
 
 // AudioSpeech convert text to audio
+// AudioSpeech 文字转语音（TTS）
 func (x *XAIModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -601,24 +615,31 @@ func (x *XAIModel) AudioSpeech(modelName *string, audioContent *string, apiConfi
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (x *XAIModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", x.Name())
 }
 
 // OCRFile OCR file
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (x *XAIModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
 // ParseFile parse file
+// ParseFile 解析文档为结构化文本
 func (x *XAIModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (x *XAIModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (x *XAIModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
+
+// xAI 驱动覆盖 Chat/Stream/ASR/TTS/ListModels/CheckConnection；nonStreamCallTimeout=120s、streamCallTimeout=10min。Embed/Rerank/OCR/ParseFile/Balance 未实现或不支持。

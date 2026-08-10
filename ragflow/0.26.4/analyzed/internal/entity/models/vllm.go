@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// vllm.go — vLLM 自托管推理 ModelDriver：OpenAI 兼容 Chat/Embed/Rerank；qwen/glm 走异步 chat 端点；AllowEmptyAPIKey。
 //
 
 package models
@@ -27,12 +29,12 @@ import (
 	"strings"
 )
 
-// VllmModel implements ModelDriver for Vllm AI
+// VllmModel vLLM 自托管推理服务 ModelDriver
 type VllmModel struct {
 	baseModel BaseModel
 }
 
-// NewVllmModel creates a new Vllm AI model instance
+// NewVllmModel 创建 vLLM 驱动（允许空 API Key）
 func NewVllmModel(baseURL map[string]string, urlSuffix URLSuffix) *VllmModel {
 	return &VllmModel{
 		baseModel: BaseModel{
@@ -44,15 +46,18 @@ func NewVllmModel(baseURL map[string]string, urlSuffix URLSuffix) *VllmModel {
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 vLLM 驱动实例
 func (v *VllmModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewVllmModel(baseURL, v.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "vllm"，供工厂层路由
 func (v *VllmModel) Name() string {
 	return "vllm"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns response
+// ChatWithMessages 非流式对话；qwen/glm 前缀模型路由至 async chat
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (v *VllmModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := v.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -68,7 +73,7 @@ func (v *VllmModel) ChatWithMessages(modelName string, messages []Message, apiCo
 	}
 	url := fmt.Sprintf("%s/%s", resolvedBaseURL, v.baseModel.URLSuffix.Chat)
 
-	// For qwen/glm models, use async chat endpoint
+	// qwen/glm 模型使用 async_chat 端点
 	modelType := strings.Split(modelName, "-")[0]
 	if modelType == "qwen" || modelType == "glm" {
 		url = fmt.Sprintf("%s/%s", resolvedBaseURL, v.baseModel.URLSuffix.AsyncChat)
@@ -204,6 +209,7 @@ func (v *VllmModel) ChatWithMessages(modelName string, messages []Message, apiCo
 }
 
 // ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (v *VllmModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := v.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -360,6 +366,7 @@ type vllmEmbeddingResponse struct {
 }
 
 // Embed embeds a list of texts into embeddings
+// Embed 将文本列表编码为向量嵌入
 func (v *VllmModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := v.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -444,6 +451,7 @@ func (v *VllmModel) Embed(modelName *string, texts []string, apiConfig *APIConfi
 	return embeddings, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (v *VllmModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := v.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -511,17 +519,19 @@ func (v *VllmModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (v *VllmModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// CheckConnection verifies that the configured vLLM base URL is reachable
+// CheckConnection 通过 ListModels 验证 vLLM 端点可达
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (v *VllmModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := v.ListModels(apiConfig)
 	return err
 }
 
-// vllmRerankRequest mirrors vLLM's Jina/Cohere-compatible /v1/rerank
+// vllmRerankRequest vLLM Jina/Cohere 兼容 rerank 请求体；documents 为 flat []string
 // payload. Unlike NVIDIA NIM (which wraps each passage as {text: "..."}),
 // vLLM accepts documents as a flat []string.
 type vllmRerankRequest struct {
@@ -550,6 +560,7 @@ type vllmRerankResponse struct {
 // Authorization header is sent only when APIConfig.ApiKey is non-empty,
 // matching the existing Embed/ListModels behaviour for this local
 // driver.
+// Rerank 对候选文档按 query 相关性重排序
 func (v *VllmModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := v.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -641,37 +652,47 @@ func (v *VllmModel) Rerank(modelName *string, query string, documents []string, 
 }
 
 // TranscribeAudio transcribe audio
+// TranscribeAudio 语音转文字（ASR）
 func (v *VllmModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (v *VllmModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", v.Name())
 }
 
 // AudioSpeech convert text to audio
+// AudioSpeech 文字转语音（TTS）
 func (v *VllmModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (v *VllmModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", v.Name())
 }
 
 // OCRFile OCR file
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (v *VllmModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
 // ParseFile parse file
+// ParseFile 解析文档为结构化文本
 func (v *VllmModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (v *VllmModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (v *VllmModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", v.Name())
 }
+
+// vLLM 驱动实现 Chat/Embed/Rerank/ListModels/CheckConnection；自托管场景 AllowEmptyAPIKey=true。ASR/TTS/OCR/ParseFile/Balance 返回不支持。

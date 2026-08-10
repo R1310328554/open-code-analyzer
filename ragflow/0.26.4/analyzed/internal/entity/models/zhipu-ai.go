@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// zhipu-ai.go — 智谱 AI（GLM）ModelDriver：OpenAI 兼容 Chat/Embed/Rerank/ASR/TTS/OCR；multipart 音频上传。
 //
 
 package models
@@ -31,12 +33,12 @@ import (
 	"strings"
 )
 
-// ZhipuAIModel implements ModelDriver for Zhipu AI
+// ZhipuAIModel 智谱 AI GLM 系列 ModelDriver
 type ZhipuAIModel struct {
 	baseModel BaseModel
 }
 
-// NewZhipuAIModel creates a new Zhipu AI model instance
+// NewZhipuAIModel 创建智谱驱动实例
 func NewZhipuAIModel(baseURL map[string]string, urlSuffix URLSuffix) *ZhipuAIModel {
 	return &ZhipuAIModel{
 		baseModel: BaseModel{
@@ -47,15 +49,18 @@ func NewZhipuAIModel(baseURL map[string]string, urlSuffix URLSuffix) *ZhipuAIMod
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 ZhipuAI 驱动实例
 func (z *ZhipuAIModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewZhipuAIModel(baseURL, z.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "zhipuai"，供工厂层路由
 func (z *ZhipuAIModel) Name() string {
 	return "zhipu"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns response
+// ChatWithMessages 非流式对话，解析 reasoning_content
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (z *ZhipuAIModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -200,7 +205,8 @@ func (z *ZhipuAIModel) ChatWithMessages(modelName string, messages []Message, ap
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender SSE 流式对话，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (z *ZhipuAIModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -365,7 +371,8 @@ type zhipuUsage struct {
 	TotalTokens      int `json:"total_tokens"`
 }
 
-// Encode encodes a list of texts into embeddings
+// Embed 批量文本向量化（智谱 embedding API）
+// Embed 将文本列表编码为向量嵌入
 func (z *ZhipuAIModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -442,6 +449,7 @@ func (z *ZhipuAIModel) Embed(modelName *string, texts []string, apiConfig *APICo
 	return embeddings, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (z *ZhipuAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -489,10 +497,12 @@ func (z *ZhipuAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, er
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (z *ZhipuAIModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", z.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (z *ZhipuAIModel) CheckConnection(apiConfig *APIConfig) error {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -534,7 +544,7 @@ func (z *ZhipuAIModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
-// zhipuRerankRequest is the request body for the ZhipuAI rerank
+// zhipuRerankRequest 智谱 rerank 请求体（OpenAI/SiliconFlow 兼容形态）
 // endpoint. The shape matches the standard OpenAI-compatible rerank
 // API also used by SiliconFlow.
 type zhipuRerankRequest struct {
@@ -545,7 +555,7 @@ type zhipuRerankRequest struct {
 	ReturnDocuments bool     `json:"return_documents"`
 }
 
-// zhipuRerankResponse is the response shape for the ZhipuAI rerank
+// zhipuRerankResponse 智谱 rerank 响应结构
 // endpoint.
 type zhipuRerankResponse struct {
 	Created   int64  `json:"created"`
@@ -566,9 +576,10 @@ type zhipuOCRResponse struct {
 	MarkdownResults *string `json:"md_results"`
 }
 
-// Rerank calculates similarity scores between query and documents using
+// Rerank 调用智谱 /rerank 端点（如 glm-rerank），按输入顺序返回分数
 // the ZhipuAI /rerank endpoint (e.g. glm-rerank). The result is one
 // score per input text, in the same order the documents were given.
+// Rerank 对候选文档按 query 相关性重排序
 func (z *ZhipuAIModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -650,7 +661,8 @@ func (z *ZhipuAIModel) Rerank(modelName *string, query string, documents []strin
 	return &rerankResponse, nil
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio multipart 上传音频文件转写
+// TranscribeAudio 语音转文字（ASR）
 func (z *ZhipuAIModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -736,6 +748,7 @@ func (z *ZhipuAIModel) TranscribeAudio(modelName *string, file *string, apiConfi
 	return &ASRResponse{Text: result.Text}, nil
 }
 
+// writeZhipuASRParams 将 ASR 可选参数写入 multipart
 func writeZhipuASRParams(writer *multipart.Writer, asrConfig *ASRConfig) error {
 	if asrConfig == nil || asrConfig.Params == nil {
 		return nil
@@ -778,11 +791,12 @@ func writeZhipuASRField(writer *multipart.Writer, key string, value interface{})
 	}
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (z *ZhipuAIModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", z.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 文字转语音（TTS）
 func (z *ZhipuAIModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -825,6 +839,7 @@ func (z *ZhipuAIModel) AudioSpeech(modelName *string, audioContent *string, apiC
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (z *ZhipuAIModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -883,6 +898,7 @@ func (z *ZhipuAIModel) AudioSpeechWithSender(modelName *string, audioContent *st
 	return nil
 }
 
+// buildTTSRequest 组装 TTS 请求体与端点路径
 func (z *ZhipuAIModel) buildTTSRequest(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, stream bool) (map[string]interface{}, string, error) {
 
 	if modelName == nil || *modelName == "" {
@@ -922,7 +938,7 @@ func (z *ZhipuAIModel) buildTTSRequest(modelName *string, audioContent *string, 
 	return reqBody, url, nil
 }
 
-// OCRFile OCR file
+// OCRFile 图片/PDF OCR 识别
 func (z *ZhipuAIModel) OCRFile(modelName *string, content []byte, fileURL *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	if err := z.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -1005,15 +1021,20 @@ func (z *ZhipuAIModel) OCRFile(modelName *string, content []byte, fileURL *strin
 	return &OCRFileResponse{Text: zhipuResp.MarkdownResults}, nil
 }
 
-// ParseFile parse file
+// ParseFile 智谱暂未支持文档解析
+// ParseFile 解析文档为结构化文本
 func (z *ZhipuAIModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", z.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (z *ZhipuAIModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", z.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (z *ZhipuAIModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", z.Name())
 }
+
+// 智谱驱动覆盖 Chat/Embed/Rerank/ASR/TTS/OCR/ListModels/CheckConnection；Bearer 鉴权；ASR 使用 multipart 上传。ParseFile/ListTasks/Balance 返回不支持。

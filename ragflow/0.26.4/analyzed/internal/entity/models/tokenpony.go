@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// tokenpony.go — TokenPony 聚合网关 ModelDriver：OpenAI 兼容 Chat 与 SSE 流式；ListModels 探活。
 //
 
 package models
@@ -26,12 +28,12 @@ import (
 	"strings"
 )
 
-// TokenPonyModel implements ModelDriver for TokenPony. TokenPony is a
+// TokenPonyModel TokenPony 平台 ModelDriver；
 type TokenPonyModel struct {
 	baseModel BaseModel
 }
 
-// NewTokenPonyModel creates a new TokenPony model instance.
+// NewTokenPonyModel 创建 TokenPony 驱动实例。
 func NewTokenPonyModel(baseURL map[string]string, urlSuffix URLSuffix) *TokenPonyModel {
 	return &TokenPonyModel{
 		baseModel: BaseModel{
@@ -42,15 +44,18 @@ func NewTokenPonyModel(baseURL map[string]string, urlSuffix URLSuffix) *TokenPon
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 TokenPony 驱动实例
 func (t *TokenPonyModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewTokenPonyModel(baseURL, t.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "tokenpony"，供工厂层路由
 func (t *TokenPonyModel) Name() string {
 	return "tokenpony"
 }
 
-// ChatWithMessages sends a non-streaming chat request
+// ChatWithMessages 非流式多轮对话
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (t *TokenPonyModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -160,7 +165,8 @@ func (t *TokenPonyModel) ChatWithMessages(modelName string, messages []Message, 
 	}, nil
 }
 
-// ChatStreamlyWithSender opens the SSE chat-completions
+// ChatStreamlyWithSender 打开 SSE chat-completions 流并逐帧推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (t *TokenPonyModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -283,6 +289,7 @@ func (t *TokenPonyModel) ChatStreamlyWithSender(modelName string, messages []Mes
 	return nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (t *TokenPonyModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -318,7 +325,7 @@ func (t *TokenPonyModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, 
 		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse response
+	// 解析 OpenAI 形态 models 列表响应
 	var modelList ModelList
 	if err = json.Unmarshal(body, &modelList); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
@@ -330,52 +337,66 @@ func (t *TokenPonyModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, 
 	return ParseListModel(modelList), nil
 }
 
-// CheckConnection verifies the API key by calling ListModels.
+// CheckConnection 通过 ListModels 验证 API Key 可用性
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (t *TokenPonyModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := t.ListModels(apiConfig)
 	return err
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (t *TokenPonyModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (t *TokenPonyModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// Balance 查询账户余额（若上游支持）
 func (t *TokenPonyModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (t *TokenPonyModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (t *TokenPonyModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", t.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (t *TokenPonyModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (t *TokenPonyModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", t.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (t *TokenPonyModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (t *TokenPonyModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (t *TokenPonyModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (t *TokenPonyModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", t.Name())
 }
+
+// TokenPony 支持 Chat/Stream/ListModels/CheckConnection；流式结束需见到 finish_reason 或 [DONE] 才视为成功。Embed/Rerank/ASR/TTS/OCR/ParseFile 返回不支持。

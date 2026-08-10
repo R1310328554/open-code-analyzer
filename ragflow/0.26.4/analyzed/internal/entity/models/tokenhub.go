@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// tokenhub.go — TokenHub 聚合网关 ModelDriver：OpenAI 兼容 Chat/Embed，SSE 流式对话；ListModels 容错解析异构 data 数组。
 //
 
 package models
@@ -26,10 +28,12 @@ import (
 	"strings"
 )
 
+// TokenHubModel TokenHub 平台 ModelDriver
 type TokenHubModel struct {
 	baseModel BaseModel
 }
 
+// NewTokenHubModel 创建 TokenHub 驱动实例
 func NewTokenHubModel(baseURL map[string]string, urlSuffix URLSuffix) *TokenHubModel {
 	return &TokenHubModel{
 		baseModel: BaseModel{
@@ -40,14 +44,17 @@ func NewTokenHubModel(baseURL map[string]string, urlSuffix URLSuffix) *TokenHubM
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 TokenHub 驱动实例
 func (t *TokenHubModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewTokenHubModel(baseURL, t.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "tokenhub"，供工厂层路由
 func (t *TokenHubModel) Name() string {
 	return "tokenhub"
 }
 
+// validateTokenHubChatRequest 校验模型名非空且 messages 非空
 func validateTokenHubChatRequest(modelName string, messages []Message) error {
 	if strings.TrimSpace(modelName) == "" {
 		return fmt.Errorf("model name is required")
@@ -58,6 +65,7 @@ func validateTokenHubChatRequest(modelName string, messages []Message) error {
 	return nil
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (t *TokenHubModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -72,7 +80,7 @@ func (t *TokenHubModel) ChatWithMessages(modelName string, messages []Message, a
 	}
 	url := fmt.Sprintf("%s/%s", resolvedBaseURL, t.baseModel.URLSuffix.Chat)
 
-	// Convert messages to the format expected by API
+	// 将 Message 转为上游 API 期望的 role/content 结构
 	apiMessages := make([]map[string]interface{}, len(messages))
 	for i, msg := range messages {
 		apiMessages[i] = map[string]interface{}{
@@ -81,7 +89,7 @@ func (t *TokenHubModel) ChatWithMessages(modelName string, messages []Message, a
 		}
 	}
 
-	// Build request body
+	// 组装非流式 chat-completions 请求体
 	reqBody := map[string]interface{}{
 		"model":       modelName,
 		"messages":    apiMessages,
@@ -138,7 +146,7 @@ func (t *TokenHubModel) ChatWithMessages(modelName string, messages []Message, a
 		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse response
+	// 解析 choices[0].message，提取 content 与 reasoning_content
 	var result map[string]interface{}
 	if err = json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
@@ -183,6 +191,7 @@ func (t *TokenHubModel) ChatWithMessages(modelName string, messages []Message, a
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (t *TokenHubModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -201,7 +210,7 @@ func (t *TokenHubModel) ChatStreamlyWithSender(modelName string, messages []Mess
 	}
 	url := fmt.Sprintf("%s/%s", resolvedBaseURL, t.baseModel.URLSuffix.Chat)
 
-	// Convert messages to API format
+	// 将 Message 转为流式请求所需的 messages 数组
 	apiMessages := make([]map[string]interface{}, len(messages))
 	for i, msg := range messages {
 		apiMessages[i] = map[string]interface{}{
@@ -210,7 +219,7 @@ func (t *TokenHubModel) ChatStreamlyWithSender(modelName string, messages []Mess
 		}
 	}
 
-	// Build request body with streaming enabled
+	// 组装 stream=true 的 chat-completions 请求体
 	reqBody := map[string]interface{}{
 		"model":    modelName,
 		"messages": apiMessages,
@@ -314,6 +323,7 @@ func (t *TokenHubModel) ChatStreamlyWithSender(modelName string, messages []Mess
 	return sender(&endOfStream, nil)
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (t *TokenHubModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -394,34 +404,42 @@ func (t *TokenHubModel) Embed(modelName *string, texts []string, apiConfig *APIC
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (t *TokenHubModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s no such method", t.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (t *TokenHubModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s no such method", t.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (t *TokenHubModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s no such method", t.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (t *TokenHubModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s no such method", t.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (t *TokenHubModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s no such method", t.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (t *TokenHubModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s no such method", t.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (t *TokenHubModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s no such method", t.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (t *TokenHubModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := t.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -458,7 +476,7 @@ func (t *TokenHubModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, e
 		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse response. Tokenhub returns `data` as a heterogeneous array
+	// TokenHub 模型列表 data 为异构数组，需逐条过滤有效 id
 	// where some items omit `id` or are not objects at all. Decode into
 	// a generic envelope so a single bad row cannot fail the whole list,
 	// then keep only the entries that carry a string `id`.
@@ -489,19 +507,25 @@ func (t *TokenHubModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, e
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (t *TokenHubModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s no such method", t.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (t *TokenHubModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := t.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (t *TokenHubModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s no such method", t.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (t *TokenHubModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s no such method", t.Name())
 }
+
+// TokenHub 驱动实现 Chat/Embed/ListModels/CheckConnection；Bearer 鉴权；流式路径解析 SSE delta 并推送 [DONE]。Rerank/ASR/TTS/OCR/ParseFile 返回不支持。

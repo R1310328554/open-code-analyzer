@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// xiaomi.go — 小米大模型 ModelDriver：OpenAI 兼容 Chat；multipart ASR/TTS 与流式音频解码。
 //
 
 package models
@@ -30,10 +32,12 @@ import (
 	"strings"
 )
 
+// XiaomiModel 小米大模型平台 ModelDriver
 type XiaomiModel struct {
 	baseModel BaseModel
 }
 
+// NewXiaomiModel 创建小米驱动实例
 func NewXiaomiModel(baseURL map[string]string, urlSuffix URLSuffix) *XiaomiModel {
 	return &XiaomiModel{
 		baseModel: BaseModel{
@@ -44,14 +48,17 @@ func NewXiaomiModel(baseURL map[string]string, urlSuffix URLSuffix) *XiaomiModel
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Xiaomi 驱动实例
 func (x *XiaomiModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewXiaomiModel(baseURL, x.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "xiaomi"，供工厂层路由
 func (x *XiaomiModel) Name() string {
 	return "xiaomi"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (x *XiaomiModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -200,6 +207,7 @@ func (x *XiaomiModel) ChatWithMessages(modelName string, messages []Message, api
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (x *XiaomiModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -341,14 +349,17 @@ func (x *XiaomiModel) ChatStreamlyWithSender(modelName string, messages []Messag
 	return nil
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (x *XiaomiModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("no such method %s", x.Name())
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (x *XiaomiModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("no such method %s", x.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (x *XiaomiModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), longOpCallTimeout)
 	defer cancel()
@@ -384,6 +395,7 @@ func (x *XiaomiModel) TranscribeAudio(modelName *string, file *string, apiConfig
 	return &ASRResponse{Text: result.Choices[0].Message.Content}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (x *XiaomiModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	if sender == nil {
 		return fmt.Errorf("sender is required")
@@ -454,6 +466,7 @@ type xiaomiAudioPayload struct {
 	Data string `json:"data"`
 }
 
+// newXiaomiASRRequest 构建 multipart ASR 请求（支持流式）
 func (x *XiaomiModel) newXiaomiASRRequest(ctx context.Context, modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, stream bool) (*http.Request, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -595,6 +608,7 @@ func readXiaomiASRStream(body io.Reader, sender func(*string, *string) error) er
 	return sender(&done, nil)
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (x *XiaomiModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), longOpCallTimeout)
 	defer cancel()
@@ -621,6 +635,7 @@ func (x *XiaomiModel) AudioSpeech(modelName *string, audioContent *string, apiCo
 	return decodeXiaomiTTSResponse(body)
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (x *XiaomiModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	if sender == nil {
 		return fmt.Errorf("sender is required")
@@ -665,6 +680,7 @@ func (x *XiaomiModel) AudioSpeechWithSender(modelName *string, audioContent *str
 	return readXiaomiTTSStream(resp.Body, sender)
 }
 
+// newXiaomiTTSRequest 构建 TTS 请求（支持流式）
 func (x *XiaomiModel) newXiaomiTTSRequest(ctx context.Context, modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, stream bool) (*http.Request, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -794,22 +810,27 @@ func decodeXiaomiAudioData(data string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(data)
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (x *XiaomiModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("no such method %s", x.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (x *XiaomiModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("no such method %s", x.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (x *XiaomiModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	return nil, fmt.Errorf("no such method %s", x.Name())
 }
 
+// Balance 查询账户余额（若上游支持）
 func (x *XiaomiModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method %s", x.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (x *XiaomiModel) CheckConnection(apiConfig *APIConfig) error {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -818,10 +839,14 @@ func (x *XiaomiModel) CheckConnection(apiConfig *APIConfig) error {
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (x *XiaomiModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("no such method %s", x.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (x *XiaomiModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("no such method %s", x.Name())
 }
+
+// 小米驱动实现 Chat/Stream/ASR/TTS/CheckConnection；ASR/TTS 使用 multipart 与 base64 音频编解码。Embed/Rerank/OCR/ParseFile/ListModels 返回不支持。

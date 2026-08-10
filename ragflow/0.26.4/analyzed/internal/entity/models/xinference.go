@@ -13,6 +13,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+// xinference.go — Xinference 本地推理 ModelDriver：OpenAI 兼容 Chat/Embed/Rerank/ASR/TTS；多字段 reasoning 归一化与流空闲超时。
+
 package models
 
 import (
@@ -31,9 +33,10 @@ import (
 	"time"
 )
 
+// xinferenceStreamIdleTimeout SSE 流空闲超时（秒）
 var xinferenceStreamIdleTimeout = 60 * time.Second
 
-// XinferenceModel implements ModelDriver for Xinference chat models.
+// XinferenceModel Xinference 本地/集群推理 ModelDriver
 type XinferenceModel struct {
 	baseModel BaseModel
 }
@@ -55,7 +58,7 @@ type xinferenceModelListResponse struct {
 	Data []DSModel `json:"data"`
 }
 
-// NewXinferenceModel creates a new Xinference model instance.
+// NewXinferenceModel 创建 Xinference 驱动实例
 func NewXinferenceModel(baseURL map[string]string, urlSuffix URLSuffix) *XinferenceModel {
 	return &XinferenceModel{
 		baseModel: BaseModel{
@@ -67,14 +70,17 @@ func NewXinferenceModel(baseURL map[string]string, urlSuffix URLSuffix) *Xinfere
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Xinference 驱动实例
 func (x *XinferenceModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewXinferenceModel(baseURL, x.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "xinference"，供工厂层路由
 func (x *XinferenceModel) Name() string {
 	return "xinference"
 }
 
+// normalizeXinferenceBaseURL 规范化 BaseURL（去尾斜杠）
 func normalizeXinferenceBaseURL(base string) string {
 	trimmed := strings.TrimRight(strings.TrimSpace(base), "/")
 	if trimmed == "" {
@@ -86,6 +92,7 @@ func normalizeXinferenceBaseURL(base string) string {
 	return trimmed
 }
 
+// xinferenceReasoningFromStrings 从多字段合并推理链文本
 func xinferenceReasoningFromStrings(reasoningContent string, reasoning string, thinking string) string {
 	switch {
 	case reasoningContent != "":
@@ -108,6 +115,7 @@ func xinferenceReasoningFromMap(value map[string]interface{}) string {
 	return ""
 }
 
+// buildXinferenceChatBody 组装 chat-completions 请求体
 func buildXinferenceChatBody(modelName string, messages []Message, stream bool, chatModelConfig *ChatConfig) map[string]interface{} {
 	apiMessages := make([]map[string]interface{}, len(messages))
 	for i, msg := range messages {
@@ -141,7 +149,8 @@ func buildXinferenceChatBody(modelName string, messages []Message, stream bool, 
 	return reqBody
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response.
+// ChatWithMessages 非流式对话，归一化 reasoning/thinking 字段
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (x *XinferenceModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -211,7 +220,8 @@ func (x *XinferenceModel) ChatWithMessages(modelName string, messages []Message,
 	}, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender.
+// ChatStreamlyWithSender SSE 流式对话，空闲超时保护
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (x *XinferenceModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -332,7 +342,7 @@ func (x *XinferenceModel) ChatStreamlyWithSender(modelName string, messages []Me
 	return sender(&endOfStream, nil)
 }
 
-// Index is *int so a missing JSON field is distinguishable from index 0.
+// Index 使用 *int 以区分 JSON 缺失与 index=0；
 type xinferenceEmbeddingResponse struct {
 	Data []struct {
 		Index     *int      `json:"index"`
@@ -341,6 +351,7 @@ type xinferenceEmbeddingResponse struct {
 }
 
 // Embed POSTs the input texts to the tenant's Xinference
+// Embed 将文本列表编码为向量嵌入
 func (x *XinferenceModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -449,6 +460,7 @@ type xinferenceRerankResponse struct {
 // in the API's ranking order. Caller may sort by Index to recover
 // original input order. Xinference rerank models are launched with
 // --model-type rerank and exposed under the OpenAI-compatible base URL.
+// Rerank 对候选文档按 query 相关性重排序
 func (x *XinferenceModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -540,6 +552,7 @@ func (x *XinferenceModel) Rerank(modelName *string, query string, documents []st
 	return &rerankResponse, nil
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (x *XinferenceModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -649,10 +662,12 @@ func (x *XinferenceModel) TranscribeAudio(modelName *string, file *string, apiCo
 	}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (x *XinferenceModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", x.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (x *XinferenceModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -715,20 +730,24 @@ func (x *XinferenceModel) AudioSpeech(modelName *string, audioContent *string, a
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (x *XinferenceModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", x.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (x *XinferenceModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (x *XinferenceModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
 // ListModels returns the model IDs exposed by Xinference's OpenAI-compatible
 // /v1/models endpoint.
+// ListModels 列出当前 API Key 可见的模型目录
 func (x *XinferenceModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := x.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -776,19 +795,25 @@ func (x *XinferenceModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse,
 	return ParseListModel(ModelList{Models: result.Data}), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (x *XinferenceModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (x *XinferenceModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := x.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (x *XinferenceModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (x *XinferenceModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", x.Name())
 }
+
+// Xinference 驱动覆盖 Chat/Embed/Rerank/ASR/TTS/ListModels/CheckConnection；自托管 OpenAI 兼容端点；流式带 60s 空闲超时。OCR/ParseFile/Balance/ListTasks 返回不支持。
