@@ -23,12 +23,17 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link ImportProvider} 的 {@link ProviderFactory} 工厂接口。
+ * <p>支持通过 {@code overrides} 映射覆盖 SPI 配置属性。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ImportProviderFactory extends ProviderFactory<ImportProvider> {
 
+    /** 使用可选配置覆盖项创建导入提供者实例。 */
     ImportProvider create(KeycloakSession session, Map<String, String> overrides);
 
+    /** 无覆盖项时以空映射创建导入提供者。 */
     @Override
     default ImportProvider create(KeycloakSession session) {
         return create(session, Map.of());

@@ -19,7 +19,8 @@
 package org.keycloak.forms.login;
 
 /**
- * Enum with types of messages.
+ * 登录表单消息的展示类型枚举。
+ * <p>由 {@link LoginFormsProvider#setMessage(MessageType, String, Object...)} 指定， 影响主题模板中的 CSS 样式与图标。</p>
  *
  * @author Vlastimil Elias (velias at redhat dot com)
  */

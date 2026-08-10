@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 领域导入 SPI，注册 {@link ImportProvider} 提供者类型。
+ * <p>与 {@link ExportSpi} 配对，用于启动时或 CLI 恢复领域快照。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ImportSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code import}。 */
     @Override
     public String getName() {
         return "import";
     }
 
+    /** 导入提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ImportProvider.class;
     }
 
+    /** 导入工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ImportProviderFactory.class;

@@ -18,10 +18,15 @@
 package org.keycloak.exportimport;
 
 /**
+ * 导入时遇到已存在实体（如用户）的处理策略。
+ * <p>通过 {@code --import-realm} 或 SPI 配置指定。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public enum Strategy {
 
+    /** 跳过已存在的用户条目，保留数据库中的现有数据。 */
     IGNORE_EXISTING,         // Ignore existing user entries
+    /** 覆盖已存在的用户条目，以导入文件中的数据为准。 */
     OVERWRITE_EXISTING       // Overwrite existing user entries
 }

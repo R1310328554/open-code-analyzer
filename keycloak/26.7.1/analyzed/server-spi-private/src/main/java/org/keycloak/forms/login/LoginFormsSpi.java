@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 登录表单 SPI，注册 {@link LoginFormsProvider} 提供者类型。
+ * <p>默认实现基于 FreeMarker 主题渲染 HTML 登录/注册页面。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class LoginFormsSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code login}。 */
     @Override
     public String getName() {
         return "login";
     }
 
+    /** 登录表单提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return LoginFormsProvider.class;
     }
 
+    /** 登录表单工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return LoginFormsProviderFactory.class;

@@ -16,14 +16,22 @@
  */
 package org.keycloak.headers;
 
+/**
+ * 安全响应头配置的流式构建器。
+ * <p>由 {@link SecurityHeadersProvider#options()} 返回， 在 {@link SecurityHeadersProvider#addHeaders} 前链式调整 CSP frame-ancestors 等行为。</p>
+ */
 public interface SecurityHeadersOptions {
 
+    /** 允许指定来源嵌入 iframe（CSP {@code frame-ancestors}）。 */
     SecurityHeadersOptions allowFrameSrc(String source);
 
+    /** 允许任意来源嵌入（放宽 frame-ancestors 限制）。 */
     SecurityHeadersOptions allowAnyFrameAncestor();
 
+    /** 跳过为本响应添加安全头（如静态资源或特殊端点）。 */
     SecurityHeadersOptions skipHeaders();
 
+    /** 允许空 Content-Type，不强制设置默认类型。 */
     SecurityHeadersOptions allowEmptyContentType();
 
 }

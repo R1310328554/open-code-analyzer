@@ -20,23 +20,31 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 安全响应头 SPI，注册 {@link SecurityHeadersProvider} 提供者类型。
+ * <p>在 REST 响应写出前统一注入防 XSS、点击劫持等 HTTP 安全头。</p>
+ */
 public class SecurityHeadersSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code security-headers}。 */
     @Override
     public String getName() {
         return "security-headers";
     }
 
+    /** 安全头提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return SecurityHeadersProvider.class;
     }
 
+    /** 安全头工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return SecurityHeadersProviderFactory.class;

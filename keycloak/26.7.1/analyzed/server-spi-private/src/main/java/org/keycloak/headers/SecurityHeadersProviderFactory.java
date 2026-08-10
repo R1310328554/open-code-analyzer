@@ -20,16 +20,23 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link SecurityHeadersProvider} 的 {@link ProviderFactory} 工厂接口。
+ * <p>默认实现提供标准 OWASP 推荐安全头集合。</p>
+ */
 public interface SecurityHeadersProviderFactory extends ProviderFactory<SecurityHeadersProvider> {
 
+    /** 从 SPI 配置初始化（默认空实现）。 */
     @Override
     default void init(Config.Scope config) {
     }
 
+    /** 会话工厂就绪后回调（默认空实现）。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 关闭工厂资源（默认空实现）。 */
     @Override
     default void close() {
     }

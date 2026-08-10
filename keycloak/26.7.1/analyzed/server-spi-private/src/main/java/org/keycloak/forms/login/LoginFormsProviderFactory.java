@@ -20,6 +20,8 @@ package org.keycloak.forms.login;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link LoginFormsProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface LoginFormsProviderFactory extends ProviderFactory<LoginFormsProvider> {

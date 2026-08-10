@@ -22,13 +22,18 @@ import java.io.IOException;
 import org.keycloak.provider.Provider;
 
 /**
+ * 领域导入提供者 SPI：从导出文件恢复 Keycloak 模型数据。
+ * <p>启动时或管理 API 触发导入流程时由 {@link ImportProviderFactory} 实例化。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ImportProvider extends Provider {
 
+    /** 执行完整导入：读取导出目录并写入领域/用户等模型。 */
     void importModel() throws IOException;
 
     /**
+     * 待导入数据中是否包含先前导出的 master 领域。
      * @return true, if master realm was previously exported and is available in the data to be imported
      */
     boolean isMasterRealmExported() throws IOException;
