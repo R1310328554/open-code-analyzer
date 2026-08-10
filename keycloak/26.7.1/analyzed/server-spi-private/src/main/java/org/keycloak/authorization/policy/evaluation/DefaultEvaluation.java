@@ -45,6 +45,9 @@ import org.keycloak.models.utils.RoleUtils;
 import org.keycloak.representations.idm.authorization.Logic;
 
 /**
+ * {@link Evaluation} 默认实现：持有权限、上下文、策略与决策缓存，提供 grant/deny 及领域查询能力。
+ * <p>通过匿名 {@link Realm} 实现向策略暴露用户/组/角色信息。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class DefaultEvaluation implements Evaluation {
@@ -58,10 +61,12 @@ public class DefaultEvaluation implements Evaluation {
     private final Realm realm;
     private Effect effect;
 
+    /** 完整构造：指定父策略、决策回调与决策缓存。 */
     public DefaultEvaluation(ResourcePermission permission, EvaluationContext executionContext, Policy parentPolicy, Decision decision, AuthorizationProvider authorizationProvider, Map<Policy, Map<Object, Decision.Effect>> decisionCache) {
         this(permission, executionContext, parentPolicy, null, decision, authorizationProvider, decisionCache);
     }
 
+    /** 简化构造：无父策略与决策缓存。 */
     public DefaultEvaluation(ResourcePermission permission, EvaluationContext executionContext, Decision decision, AuthorizationProvider authorizationProvider) {
         this(permission, executionContext, null, null, decision, authorizationProvider, Collections.emptyMap());
     }
@@ -87,6 +92,7 @@ public class DefaultEvaluation implements Evaluation {
         return this.executionContext;
     }
 
+    /** 授予权限；负逻辑（{@link Logic#NEGATIVE}）策略下效果取反。 */
     @Override
     public void grant() {
         if (policy != null && Logic.NEGATIVE.equals(policy.getLogic())) {
@@ -96,6 +102,7 @@ public class DefaultEvaluation implements Evaluation {
         }
     }
 
+    /** 拒绝权限；负逻辑策略下效果取反。 */
     @Override
     public void deny() {
         if (policy != null && Logic.NEGATIVE.equals(policy.getLogic())) {
@@ -141,6 +148,7 @@ public class DefaultEvaluation implements Evaluation {
         return decisionCache;
     }
 
+    /** 若尚未设置效果则默认拒绝。 */
     @Override
     public void denyIfNoEffect() {
         if (this.effect == null) {
@@ -293,11 +301,13 @@ public class DefaultEvaluation implements Evaluation {
         };
     }
 
+    /** 切换当前正在评估的子策略并重置效果。 */
     public void setPolicy(Policy policy) {
         this.policy = policy;
         this.effect = null;
     }
 
+    /** 设置评估效果并通知 {@link Decision#onDecision}。 */
     @Override
     public void setEffect(Effect effect) {
         this.effect = effect;

@@ -26,6 +26,8 @@ import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.permission.ResourcePermission;
 
 /**
+ * 策略评估器 SPI：基于 {@link ResourcePermission} 执行授权策略评估，并通过 {@link Decision} 回调传递结果。
+ *
  * <p>A {@link PolicyEvaluator} evaluates authorization policies based on a given {@link ResourcePermission}, sending
  * the results to a {@link Decision} point through the methods defined in that interface.
  *
@@ -34,6 +36,8 @@ import org.keycloak.authorization.permission.ResourcePermission;
 public interface PolicyEvaluator {
 
     /**
+     * 启动对已配置授权策略的评估。
+     *
      * Starts the evaluation of the configured authorization policies.
      *
      * @param decision a {@link Decision} point to where notifications events will be delivered during the evaluation

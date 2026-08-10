@@ -24,29 +24,37 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 策略 SPI 描述符：注册 {@link PolicyProvider} 与 {@link PolicyProviderFactory}。
+ * <p>内部 SPI，名称 {@code policy}；仅在启用 {@link Profile.Feature#AUTHORIZATION} 时可用。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class PolicySpi implements Spi {
+    /** 内部 SPI，不对外暴露。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** 返回 SPI 名称 {@code policy}。 */
     @Override
     public String getName() {
         return "policy";
     }
 
+    /** 提供者接口类型 {@link PolicyProvider}。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return PolicyProvider.class;
     }
 
+    /** 工厂接口类型 {@link PolicyProviderFactory}。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return PolicyProviderFactory.class;
     }
 
+    /** 是否启用授权特性。 */
     @Override
     public boolean isEnabled() {
         return Profile.isFeatureEnabled(Profile.Feature.AUTHORIZATION);

@@ -21,9 +21,12 @@ import org.keycloak.authorization.policy.evaluation.Evaluation;
 import org.keycloak.provider.Provider;
 
 /**
+ * 策略提供者 SPI：各策略类型（角色、规则、聚合等）实现此接口以执行 {@link Evaluation}。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface PolicyProvider extends Provider {
 
+    /** 对给定 {@link Evaluation} 上下文执行策略逻辑并调用 grant/deny。 */
     void evaluate(Evaluation evaluation);
 }

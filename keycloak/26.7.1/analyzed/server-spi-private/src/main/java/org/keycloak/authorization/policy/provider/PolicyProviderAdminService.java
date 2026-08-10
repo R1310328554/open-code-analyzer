@@ -21,6 +21,8 @@ package org.keycloak.authorization.policy.provider;
 import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentation;
 
 /**
+ * 策略类型管理 REST 扩展标记接口：由 {@link PolicyProviderFactory#getAdminResource} 返回，供管理端暴露类型专属 API。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface PolicyProviderAdminService<R extends AbstractPolicyRepresentation> {

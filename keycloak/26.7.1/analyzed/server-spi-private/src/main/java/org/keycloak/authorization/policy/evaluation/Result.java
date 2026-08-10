@@ -28,6 +28,8 @@ import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.permission.ResourcePermission;
 
 /**
+ * 单条 {@link ResourcePermission} 的策略评估结果：聚合父策略及其关联子策略的 {@link Effect}。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class Result {
@@ -37,6 +39,7 @@ public class Result {
     private final Evaluation evaluation;
     private Effect status = Effect.DENY;
 
+    /** 绑定待评估权限与评估上下文。 */
     public Result(ResourcePermission permission, Evaluation evaluation) {
         this.permission = permission;
         this.evaluation = evaluation;
@@ -54,6 +57,7 @@ public class Result {
         return evaluation;
     }
 
+    /** 获取或创建指定父策略的 {@link PolicyResult}。 */
     public PolicyResult policy(Policy policy) {
         PolicyResult result = results.get(policy.getId());
         
@@ -65,6 +69,7 @@ public class Result {
         return result;
     }
 
+    /** 设置顶层决策效果（无父策略时使用）。 */
     public void setStatus(final Effect status) {
         this.status = status;
     }
@@ -77,6 +82,7 @@ public class Result {
         return results.get(policy.getId());
     }
 
+    /** 单个策略及其关联子策略的评估结果。 */
     public static class PolicyResult {
 
         private final Policy policy;
@@ -92,6 +98,7 @@ public class Result {
             this(policy, Effect.DENY);
         }
 
+        /** 记录关联子策略及其效果。 */
         public PolicyResult policy(Policy policy, Effect effect) {
             PolicyResult policyResult = associatedPolicies.get(policy.getId());
 

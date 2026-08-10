@@ -29,12 +29,16 @@ import org.keycloak.authorization.policy.evaluation.Result.PolicyResult;
 import org.keycloak.representations.idm.authorization.DecisionStrategy;
 
 /**
+ * 抽象决策收集器：实现 {@link Decision} 回调，按 {@link ResourcePermission} 聚合策略评估结果。
+ * <p>子类在 {@link #onComplete(Result)} 或 {@link #onComplete(Collection)} 中消费汇总后的 {@link Result}。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public abstract class AbstractDecisionCollector implements Decision<Evaluation> {
 
     protected final Map<ResourcePermission, Result> results = new LinkedHashMap<>();
 
+    /** 接收单次策略评估决策并写入 {@link #results} 映射。 */
     @Override
     public void onDecision(Evaluation evaluation) {
         Policy parentPolicy = evaluation.getParentPolicy();
@@ -74,11 +78,13 @@ public abstract class AbstractDecisionCollector implements Decision<Evaluation> 
         }
     }
 
+    /** 全部评估完成时回调所有已收集结果。 */
     @Override
     public void onComplete() {
         onComplete(results.values());
     }
 
+    /** 针对单个 {@link ResourcePermission} 的评估完成时回调。 */
     @Override
     public void onComplete(ResourcePermission permission) {
         Result result = results.get(permission);
@@ -88,14 +94,17 @@ public abstract class AbstractDecisionCollector implements Decision<Evaluation> 
         }
     }
 
+    /** 单条结果完成时的钩子，供子类重写。 */
     protected void onComplete(Result result) {
 
     }
 
+    /** 多条结果批量完成时的钩子，供子类重写。 */
     protected void onComplete(Collection<Result> permissions) {
 
     }
 
+    /** 根据父策略的 {@link DecisionStrategy}（AFFIRMATIVE/CONSENSUS/UNANIMOUS）判定是否授予。 */
     protected boolean isGranted(Result.PolicyResult policyResult) {
         Policy policy = policyResult.getPolicy();
         DecisionStrategy decisionStrategy = policy.getDecisionStrategy();
@@ -131,6 +140,7 @@ public abstract class AbstractDecisionCollector implements Decision<Evaluation> 
         }
     }
 
+    /** 检查给定作用域名称是否已被任一已处理策略关联。 */
     @Override
     public boolean isEvaluated(String scope) {
         for (Result result : results.values()) {

@@ -37,6 +37,9 @@ import org.keycloak.representations.idm.authorization.Permission;
 import org.keycloak.representations.idm.authorization.PermissionTicketToken;
 
 /**
+ * 权限票据感知的结果收集器：在 UMA 请求流程中同步更新 {@link PermissionTicketToken}，并为未授予部分创建权限票据。
+ * <p>扩展 {@link DecisionPermissionCollector}，在 {@code submitRequest} 时为资源所有者审批创建票据。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class PermissionTicketAwareDecisionResultCollector extends DecisionPermissionCollector {
@@ -47,6 +50,7 @@ public class PermissionTicketAwareDecisionResultCollector extends DecisionPermis
     private ResourceServer resourceServer;
     private final AuthorizationProvider authorization;
 
+    /** 绑定授权请求、票据令牌、请求者身份与资源服务器。 */
     public PermissionTicketAwareDecisionResultCollector(AuthorizationRequest request, PermissionTicketToken ticket, Identity identity, ResourceServer resourceServer, AuthorizationProvider authorization) {
         super(authorization, resourceServer, request);
         this.request = request;
@@ -56,6 +60,7 @@ public class PermissionTicketAwareDecisionResultCollector extends DecisionPermis
         this.authorization = authorization;
     }
 
+    /** 从票据中移除已被用户托管策略授予的权限，避免重复创建票据。 */
     @Override
     protected void onGrant(Permission grantedPermission) {
         // Removes permissions (represented by {@code ticket}) granted by any user-managed policy so we don't create unnecessary permission tickets.
@@ -82,6 +87,7 @@ public class PermissionTicketAwareDecisionResultCollector extends DecisionPermis
         }
     }
 
+    /** 评估完成后为剩余未授予权限创建 {@link PermissionTicket}。 */
     @Override
     public void onComplete() {
         super.onComplete();

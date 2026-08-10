@@ -19,6 +19,8 @@
 package org.keycloak.authorization.policy.evaluation;
 
 /**
+ * 决策结果收集器：{@link AbstractDecisionCollector} 的占位子类，供需要原始 {@link Result} 映射的场景扩展。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public abstract class DecisionResultCollector extends AbstractDecisionCollector {

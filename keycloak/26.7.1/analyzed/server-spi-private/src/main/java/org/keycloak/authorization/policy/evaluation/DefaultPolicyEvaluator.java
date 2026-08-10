@@ -38,10 +38,14 @@ import org.keycloak.authorization.store.StoreFactory;
 import org.keycloak.representations.idm.authorization.PolicyEnforcementMode;
 
 /**
+ * 默认 {@link PolicyEvaluator}：按资源、资源类型与作用域查找关联策略并委托 {@link PolicyProvider} 评估。
+ * <p>支持 DISABLED/PERMISSIVE 强制模式及已标记 granted 的权限短路。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
+    /** 主评估入口：查找并执行关联策略，或在宽松/禁用模式下直接授予。 */
     @Override
     public void evaluate(ResourcePermission permission, AuthorizationProvider authorizationProvider, EvaluationContext executionContext, Decision decision, Map<Policy, Map<Object, Decision.Effect>> decisionCache) {
         ResourceServer resourceServer = permission.getResourceServer();
@@ -82,6 +86,7 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         }
     }
 
+    /** 评估直接绑定到资源实例的策略。 */
     protected void evaluateResourcePolicies(ResourcePermission permission, AuthorizationProvider authorization, Consumer<Policy> policyConsumer) {
         StoreFactory storeFactory = authorization.getStoreFactory();
         PolicyStore policyStore = storeFactory.getPolicyStore();
@@ -90,6 +95,7 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         policyStore.findByResource(resourceServer, resource, policyConsumer);
     }
 
+    /** 评估绑定到资源类型及同类型父资源的策略。 */
     protected void evaluateResourceTypePolicies(ResourcePermission permission, AuthorizationProvider authorization, Consumer<Policy> policyConsumer) {
         Resource resource = permission.getResource();
 
@@ -110,6 +116,7 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         }
     }
 
+    /** 评估与请求作用域关联的策略。 */
     protected void evaluateScopePolicies(ResourcePermission permission, AuthorizationProvider authorization, Consumer<Policy> policyConsumer) {
         Collection<Scope> scopes = permission.getScopes();
 
@@ -129,6 +136,7 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         decision.onComplete(permission);
     }
 
+    /** 创建策略消费者：查找 {@link PolicyProvider} 并执行 {@link DefaultEvaluation}。 */
     protected Consumer<Policy> createPolicyEvaluator(ResourcePermission permission, AuthorizationProvider authorizationProvider, EvaluationContext executionContext, Decision decision, AtomicBoolean verified, Map<Policy, Map<Object, Decision.Effect>> decisionCache) {
         return parentPolicy -> {
             if (parentPolicy != null) {

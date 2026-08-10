@@ -22,6 +22,8 @@ import org.keycloak.authorization.attribute.Attributes;
 import org.keycloak.authorization.identity.Identity;
 
 /**
+ * 评估上下文桥接：连接策略评估运行时与执行环境，供策略查询身份与环境属性。
+ *
  * This interface serves as a bridge between the policy evaluation runtime and the environment in which it is running. When evaluating
  * policies, this interface can be used to query information from the execution environment/context and enrich decisions.
  *
@@ -30,6 +32,8 @@ import org.keycloak.authorization.identity.Identity;
 public interface EvaluationContext {
 
     /**
+     * 返回待授权/拒绝的 {@link Identity} 主体。
+     *
      * Returns the {@link Identity} that represents an entity (person or non-person) to which the permissions must be granted, or not.
      *
      * @return the identity to which the permissions must be granted, or not
@@ -37,6 +41,8 @@ public interface EvaluationContext {
     Identity getIdentity();
 
     /**
+     * 返回当前执行环境中的全部属性（请求头、网络信息等）。
+     *
      * Returns all attributes within the current execution and runtime environment.
      *
      * @return the attributes within the current execution and runtime environment

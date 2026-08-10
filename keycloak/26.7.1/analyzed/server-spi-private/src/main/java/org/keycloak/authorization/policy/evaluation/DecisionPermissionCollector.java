@@ -38,6 +38,9 @@ import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.Permission;
 
 /**
+ * 决策权限收集器：将策略评估 {@link Result} 转换为 UMA/授权请求所需的 {@link Permission} 集合。
+ * <p>处理资源型/作用域型权限、UMA 用户托管策略及 {@link DecisionStrategy} 下的授予/拒绝逻辑。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class DecisionPermissionCollector extends AbstractDecisionCollector {
@@ -47,12 +50,14 @@ public class DecisionPermissionCollector extends AbstractDecisionCollector {
     private final AuthorizationRequest request;
     private final Set<Permission> permissions = new LinkedHashSet<>();
 
+    /** 绑定授权提供者、资源服务器与原始授权请求。 */
     public DecisionPermissionCollector(AuthorizationProvider authorizationProvider, ResourceServer resourceServer, AuthorizationRequest request) {
         this.authorizationProvider = authorizationProvider;
         this.resourceServer = resourceServer;
         this.request = request;
     }
 
+    /** 汇总单条评估结果，计算最终授予的作用域并生成 {@link Permission}。 */
     @Override
     public void onComplete(Result result) {
         ResourcePermission permission = result.getPermission();
@@ -165,6 +170,8 @@ public class DecisionPermissionCollector extends AbstractDecisionCollector {
     }
 
     /**
+     * 判断策略是否有资格授予资源访问（作用域型权限对用户自有资源可覆盖继承策略）。
+     *
      * Checks if the given {@code policy} is eligible to grant access to a resource. Resources are only granted if policy is 
      * not a scope-permission or, if so, the resource is a user-owned resource so that permissions can be overridden when 
      * inheriting policies from a typed/parent resource.
@@ -183,15 +190,18 @@ public class DecisionPermissionCollector extends AbstractDecisionCollector {
         return resource != null && !resource.getOwner().equals(resourceServer.getClientId());
     }
 
+    /** 返回已收集的授权 {@link Permission} 集合。 */
     public Collection<Permission> results() {
         return permissions;
     }
 
+    /** 评估失败时抛出运行时异常。 */
     @Override
     public void onError(Throwable cause) {
         throw new RuntimeException("Failed to evaluate permissions", cause);
     }
 
+    /** 根据已授予作用域创建 {@link Permission} 并加入结果集。 */
     protected void grantPermission(AuthorizationProvider authorizationProvider, Set<Permission> permissions, ResourcePermission permission, Collection<Scope> grantedScopes, ResourceServer resourceServer, AuthorizationRequest request, Result result) {
         Set<String> scopeNames = grantedScopes.stream().map(Scope::getName).collect(Collectors.toSet());
         Resource resource = permission.getResource();
@@ -228,6 +238,7 @@ public class DecisionPermissionCollector extends AbstractDecisionCollector {
         return permission;
     }
 
+    /** 单条 {@link Permission} 授予时的钩子，供子类重写。 */
     protected void onGrant(Permission permission) {
 
     }
