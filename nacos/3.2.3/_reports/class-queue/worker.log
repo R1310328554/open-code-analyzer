@@ -1678,3 +1678,18 @@
 2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/repository/ExternalNamespacePersistServiceImpl.java wave55a [0:15] core topn + namespace filter/injector/model/repo
 2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/repository/NamespacePersistService.java wave55a [0:15] core topn + namespace filter/injector/model/repo
 2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/repository/NamespaceRowMapperInjector.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/PromptRequestParamExtractor.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/ServiceListRequestParamExtractor.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/ServiceQueryRequestParamExtractor.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/SubscribeServiceRequestParamExtractor.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/persistence/DerbySnapshotOperation.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/persistence/DistributedDatabaseOperateImpl.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/CriticalPluginConfig.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/PluginManager.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/PluginStateProcessor.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/PluginStateSnapshotOperation.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/condition/ConditionOnClusterMode.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/condition/ConditionOnStandaloneMode.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/PluginInfo.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/PluginStateOperation.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/PluginStateSnapshot.java wave56a [0:15] core paramcheck/persistence/plugin

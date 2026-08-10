@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:09:30Z",
   "files": [
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/PromptRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/ServiceListRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/ServiceQueryRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/SubscribeServiceRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/persistence/DerbySnapshotOperation.java",
-    "core/src/main/java/com/alibaba/nacos/core/persistence/DistributedDatabaseOperateImpl.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/CriticalPluginConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/PluginManager.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/PluginStateProcessor.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/PluginStateSnapshotOperation.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/condition/ConditionOnClusterMode.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/condition/ConditionOnStandaloneMode.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/model/PluginInfo.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/model/PluginStateOperation.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/model/PluginStateSnapshot.java",
     "core/src/main/java/com/alibaba/nacos/core/plugin/model/form/PluginConfigForm.java",
     "core/src/main/java/com/alibaba/nacos/core/plugin/model/form/PluginStatusForm.java",
     "core/src/main/java/com/alibaba/nacos/core/plugin/model/vo/PluginDetailVO.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/com/alibaba/nacos/core/remote/ClientConnectionEventListenerRegistry.java"
   ],
   "remaining_pending": 857,
-  "done": 1650
+  "done": 1665
 }
