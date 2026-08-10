@@ -16,6 +16,8 @@
 
 package service
 
+// oauth_login.go 实现第三方 OAuth 登录与回调注册流程。
+
 import (
 	"context"
 	"crypto/rand"
@@ -34,11 +36,9 @@ import (
 	"ragflow/internal/utility/oauth"
 )
 
-// Sentinel errors surfaced by the OAuth login + callback endpoints. The
-// handler maps each to one of Python's `?error=` redirect codes so the
-// frontend can show the same messages.
+// OAuth 登录/回调哨兵错误；Handler 映射为 Python 同款 ?error= 重定向码。
 var (
-	// ErrOAuthInvalidChannel mirrors Python's ValueError("Invalid channel name: ...").
+	// ErrOAuthInvalidChannel 无效 OAuth 渠道名。
 	ErrOAuthInvalidChannel = errors.New("invalid channel name")
 	// ErrOAuthInvalidState is returned when the callback's state mismatches the
 	// stored one (CSRF guard) — maps to "?error=invalid_state".
@@ -57,7 +57,7 @@ var (
 	ErrOAuthUserInactive = errors.New("user_inactive")
 )
 
-// oauthStateTTL bounds how long an in-flight OAuth state token is honored.
+// oauthStateTTL OAuth state 在 Redis 中的有效时长（5 分钟）。
 // Five minutes matches typical session-cookie flows used by the Python
 // counterpart.
 const oauthStateTTL = 5 * time.Minute
@@ -65,7 +65,7 @@ const oauthStateTTL = 5 * time.Minute
 // oauthStateKey is the Redis key prefix for an in-flight OAuth state.
 const oauthStateKey = "oauth:state:"
 
-// OAuthLoginInit prepares a redirect to the channel's authorization URL.
+// OAuthLoginInit 封装授权 URL、state 与 Cookie 有效期等发起登录所需字段。
 // The returned state must also be set as a short-lived cookie on the caller
 // so the callback can perform a CSRF check that ties the state token to the
 // browser that initiated the flow.
@@ -76,7 +76,7 @@ type OAuthLoginInit struct {
 	CookieMaxAge time.Duration
 }
 
-// OAuthLoginInitiate generates a state, persists it in Redis with a TTL,
+// OAuthLoginInitiate 生成 state 写入 Redis 并返回第三方授权跳转 URL。
 // and returns the authorization URL the browser should be redirected to.
 // Mirrors the body of Python's oauth_login.
 func (s *UserService) OAuthLoginInitiate(channel string, redis *redis.RedisClient) (*OAuthLoginInit, common.ErrorCode, error) {
@@ -111,14 +111,14 @@ func (s *UserService) OAuthLoginInitiate(channel string, redis *redis.RedisClien
 	}, common.CodeSuccess, nil
 }
 
-// OAuthCallbackResult is returned to the handler after a successful callback
+// OAuthCallbackResult 回调成功后供 Handler 签发会话的用户信息。
 // so it can mint the user-facing auth response (cookie + redirect).
 type OAuthCallbackResult struct {
 	User      *entity.User
 	IsNewUser bool
 }
 
-// OAuthCallback verifies the callback state, exchanges the code for a token,
+// OAuthCallback 校验 state、换 token、拉用户信息并登录或注册本地账号。
 // fetches the user profile, and either creates a new local user or logs an
 // existing one in. Mirrors the body of Python's oauth_callback.
 //
@@ -192,7 +192,7 @@ func (s *UserService) OAuthCallback(ctx context.Context, channel, code, callback
 	return &OAuthCallbackResult{User: created, IsNewUser: true}, common.CodeSuccess, nil
 }
 
-// registerOAuthUser provisions a new user + tenant for an OAuth identity.
+// registerOAuthUser 为 OAuth 身份创建用户、租户、成员关系与根目录。
 // Models the relevant fields the email-password Register path sets so the
 // rest of the app (kbs, files, llm config) sees a fully-shaped tenant.
 func (s *UserService) registerOAuthUser(channel string, info *oauth.UserInfo) (*entity.User, common.ErrorCode, error) {
@@ -281,7 +281,7 @@ func (s *UserService) registerOAuthUser(channel string, info *oauth.UserInfo) (*
 	return user, common.CodeSuccess, nil
 }
 
-// lookupOAuthConfig returns the configured OAuth channel by name. The lookup
+// lookupOAuthConfig 按名称（大小写不敏感）查找 yaml 中的 OAuth 配置。 The lookup
 // is case-insensitive against the keys server.GetConfig() materialises from
 // the yaml config file.
 func lookupOAuthConfig(channel string) (server.OAuthConfig, bool) {
@@ -317,7 +317,7 @@ func toOAuthClientConfig(cfg server.OAuthConfig) oauth.Config {
 	}
 }
 
-// generateOAuthState returns a cryptographically random 32-byte hex string
+// generateOAuthState 生成 256 位随机 hex state 防猜测与碰撞。
 // used as the OAuth state parameter. 256 bits keeps collisions and
 // brute-force guessing comfortably out of reach for the 5-minute TTL.
 func generateOAuthState() (string, error) {
@@ -327,3 +327,4 @@ func generateOAuthState() (string, error) {
 	}
 	return hex.EncodeToString(buf), nil
 }
+// oauth_login.go — OAuth 登录发起/回调、新用户注册与 Redis state 防 CSRF。

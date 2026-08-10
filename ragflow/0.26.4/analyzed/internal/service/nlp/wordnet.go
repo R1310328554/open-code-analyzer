@@ -14,8 +14,8 @@
 //  limitations under the License.
 //
 
-// Package wordnet provides a Go implementation of NLTK's WordNet synsets functionality.
-// This implementation reads WordNet 3.0 database files and provides synonym set lookup.
+// Package wordnet 提供 NLTK WordNet 同义词集能力的 Go 实现。
+// 读取 WordNet 3.0 数据库文件并支持按词形与词性检索 synset。
 package nlp
 
 import (
@@ -28,7 +28,7 @@ import (
 	"sync"
 )
 
-// POS constants for WordNet parts of speech
+// WordNet 词性常量：名词/动词/形容词/副词
 const (
 	NOUN = "n"
 	VERB = "v"
@@ -36,7 +36,7 @@ const (
 	ADV  = "r"
 )
 
-// Morphy substitution rules for each POS
+// 各词性的形态还原替换规则（Morphy 算法）
 var morphologicalSubstitutions = map[string][][2]string{
 	NOUN: {
 		{"s", ""},
@@ -68,7 +68,7 @@ var morphologicalSubstitutions = map[string][][2]string{
 	ADV: {},
 }
 
-// File suffix mapping for POS
+// 词性到索引/数据文件后缀的映射
 var fileMap = map[string]string{
 	NOUN: "noun",
 	VERB: "verb",
@@ -76,7 +76,7 @@ var fileMap = map[string]string{
 	ADV:  "adv",
 }
 
-// Synset represents a WordNet synset (synonym set)
+// Synset 表示 WordNet 同义词集（含义项、释义与例句）
 type Synset struct {
 	Name       string
 	POS        string
@@ -86,7 +86,7 @@ type Synset struct {
 	Examples   []string
 }
 
-// WordNet is the main struct for WordNet operations
+// WordNet 封装词库目录、索引映射与数据文件缓存
 type WordNet struct {
 	wordNetDir          string
 	lemmaPosOffsetMap   map[string]map[string][]int
@@ -96,7 +96,7 @@ type WordNet struct {
 	fileMutexes         map[string]*sync.Mutex // Mutex for each POS to ensure concurrency safety
 }
 
-// NewWordNet creates a new WordNet instance with the given WordNet directory
+// NewWordNet 加载异常表与 lemma→offset 索引，初始化 WordNet 实例
 func NewWordNet(wordNetDir string) (*WordNet, error) {
 	wn := &WordNet{
 		wordNetDir:          wordNetDir,
@@ -125,7 +125,7 @@ func NewWordNet(wordNetDir string) (*WordNet, error) {
 	return wn, nil
 }
 
-// Close closes all cached file handles
+// Close 关闭已缓存的数据文件句柄
 func (wn *WordNet) Close() {
 	for pos, f := range wn.dataFileCache {
 		if mutex, ok := wn.fileMutexes[pos]; ok {
@@ -138,7 +138,7 @@ func (wn *WordNet) Close() {
 	}
 }
 
-// loadExceptionMaps loads the .exc files for each POS
+// loadExceptionMaps 读取各词性 .exc 不规则变形表
 func (wn *WordNet) loadExceptionMaps() error {
 	for pos, suffix := range fileMap {
 		filename := filepath.Join(wn.wordNetDir, suffix+".exc")
@@ -165,7 +165,7 @@ func (wn *WordNet) loadExceptionMaps() error {
 	return nil
 }
 
-// loadLemmaPosOffsetMap loads the index files for each POS
+// loadLemmaPosOffsetMap 解析 index.* 文件构建 lemma 到 synset 偏移索引
 func (wn *WordNet) loadLemmaPosOffsetMap() error {
 	for _, suffix := range fileMap {
 		filename := filepath.Join(wn.wordNetDir, "index."+suffix)
@@ -253,7 +253,7 @@ func (wn *WordNet) loadLemmaPosOffsetMap() error {
 	return nil
 }
 
-// morphy performs morphological analysis to find base forms of a word
+// morphy 对词形做形态分析，返回 WordNet 中存在的词根候选
 func (wn *WordNet) morphy(form string, pos string, checkExceptions bool) []string {
 	form = strings.ToLower(form)
 	exceptions := wn.exceptionMap[pos]
@@ -307,7 +307,7 @@ func (wn *WordNet) morphy(form string, pos string, checkExceptions bool) []strin
 	return filterForms(append([]string{form}, forms...))
 }
 
-// getDataFile returns the data file for a given POS, with caching
+// getDataFile 按词性返回 data.* 文件（带 per-POS 互斥与缓存）
 func (wn *WordNet) getDataFile(pos string) (*os.File, *sync.Mutex, error) {
 	if pos == "s" { // Adjective satellite uses the same file as adjective
 		pos = ADJ
@@ -339,7 +339,7 @@ func (wn *WordNet) getDataFile(pos string) (*os.File, *sync.Mutex, error) {
 	return file, mutex, nil
 }
 
-// parseDataLine parses a line from a data file and returns a Synset
+// parseDataLine 解析 data 文件单行，提取 offset、lemmas 与 gloss
 func parseDataLine(line string, pos string) (*Synset, error) {
 	// Data file format:
 	// synset_offset lex_filenum ss_type w_cnt word lex_id [word lex_id...] p_cnt [ptr_symbol synset_offset pos src_trgt...] [frames...] | gloss
@@ -453,7 +453,7 @@ func regexpRemoveQuotes(s string) string {
 	return strings.TrimSpace(strings.Trim(result.String(), "; "))
 }
 
-// synsetFromPosAndOffset retrieves a synset by POS and byte offset
+// synsetFromPosAndOffset 按词性与字节偏移定位并解析 synset
 func (wn *WordNet) synsetFromPosAndOffset(pos string, offset int) (*Synset, error) {
 	file, mutex, err := wn.getDataFile(pos)
 	if err != nil {
@@ -504,7 +504,7 @@ func (wn *WordNet) synsetFromPosAndOffset(pos string, offset int) (*Synset, erro
 	return synset, nil
 }
 
-// findSenseNumber finds the sense number for a lemma in a given synset
+// findSenseNumber 在索引中查找义项序号以生成标准 synset 名称
 func (wn *WordNet) findSenseNumber(lemma string, pos string, offset int) int {
 	lemma = strings.ToLower(lemma)
 	if posMap, ok := wn.lemmaPosOffsetMap[lemma]; ok {
@@ -519,7 +519,7 @@ func (wn *WordNet) findSenseNumber(lemma string, pos string, offset int) int {
 	return 1 // Default to 1 if not found
 }
 
-// Synsets returns all synsets for a given lemma and optional POS.
+// Synsets 查询指定 lemma（可选词性）的全部 synset，等价 NLTK synsets()
 // If pos is empty, all parts of speech are searched.
 // This is the main function equivalent to NLTK's wordnet.synsets()
 func (wn *WordNet) Synsets(lemma string, pos string) []*Synset {
@@ -570,3 +570,4 @@ func (s *Synset) NameStr() string {
 func (s *Synset) String() string {
 	return fmt.Sprintf("Synset('%s')", s.Name)
 }
+// wordnet.go — 读取 WordNet 3.0 词库，提供同义词集查询与形态还原（对齐 NLTK）。

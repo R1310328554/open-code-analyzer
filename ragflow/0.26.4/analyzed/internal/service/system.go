@@ -16,6 +16,8 @@
 
 package service
 
+// system.go 提供系统级配置、健康探测与运维变量接口。
+
 import (
 	"context"
 	"encoding/json"
@@ -34,7 +36,7 @@ import (
 	"ragflow/internal/utility"
 )
 
-// SystemService system service
+// SystemService 封装系统设置 DAO 与各类健康检查逻辑。
 type SystemService struct {
 	systemSettingsDAO *dao.SystemSettingsDAO
 }
@@ -52,7 +54,7 @@ type ConfigResponse struct {
 	DisablePasswordLogin bool `json:"disablePasswordLogin"`
 }
 
-// GetConfig get system configuration
+// GetConfig 返回注册开关与是否禁用密码登录等公开配置。
 func (s *SystemService) GetConfig() (*ConfigResponse, error) {
 	cfg := server.GetConfig()
 	registerEnabled := 1
@@ -84,7 +86,7 @@ type HealthzResponse struct {
 	Meta      map[string]HealthzMeta `json:"_meta,omitempty"`
 }
 
-// GetVersion get RAGFlow version
+// GetVersion 返回当前 RAGFlow 版本号字符串。
 func (s *SystemService) GetVersion() (*VersionResponse, error) {
 	version := utility.GetRAGFlowVersion()
 	return &VersionResponse{
@@ -104,7 +106,7 @@ type StatusResponse struct {
 	TaskExecutorHeartbeats map[string][]interface{} `json:"task_executor_heartbeats"`
 }
 
-// GetStatus gets health status for core system dependencies.
+// GetStatus 汇总文档引擎、存储、数据库、Redis 与任务执行器心跳。
 func (s *SystemService) GetStatus() (*StatusResponse, error) {
 	return &StatusResponse{
 		DocEngine:              s.getDocEngineStatus(),
@@ -313,7 +315,7 @@ func timedHealthCheck(check func() error) (bool, HealthzMeta) {
 	return true, meta
 }
 
-// Healthz runs lightweight dependency checks for /api/v1/system/healthz.
+// Healthz 对 DB/Redis/DocEngine/Storage 做轻量 ping，供 K8s 探针使用。
 func (s *SystemService) Healthz(ctx context.Context) (*HealthzResponse, bool) {
 	meta := map[string]HealthzMeta{}
 
@@ -378,7 +380,7 @@ func (s *SystemService) Healthz(ctx context.Context) (*HealthzResponse, bool) {
 	return result, allOK
 }
 
-// ListAllVariables list all variables
+// ListAllVariables 列出数据库中全部系统设置项。
 // Returns all system settings from database
 func (s *SystemService) ListAllVariables() ([]map[string]interface{}, error) {
 	settings, err := s.systemSettingsDAO.GetAll()
@@ -407,7 +409,7 @@ func (s *SystemService) ShowVariable(varName string) ([]map[string]interface{}, 
 	return common.FormatSystemSettings(settings), nil
 }
 
-// SetVariable set variable
+// SetVariable 校验后创建或更新指定名称的系统设置。
 // Creates or updates a system setting
 // If the setting exists, updates it; otherwise creates a new one
 func (s *SystemService) SetVariable(varName, varValue string) error {
@@ -442,7 +444,7 @@ func (s *SystemService) SetVariable(varName, varValue string) error {
 
 // Config methods
 
-// ListAllConfigs list all configs
+// ListAllConfigs 返回配置文件中的全部服务配置快照。
 // Returns all service configurations from the config file
 func (s *SystemService) ListAllConfigs() ([]map[string]interface{}, error) {
 	result := server.GetAllConfigs()
@@ -451,7 +453,7 @@ func (s *SystemService) ListAllConfigs() ([]map[string]interface{}, error) {
 
 // Environment methods
 
-// ListEnvironments list all environments
+// ListEnvironments 列举关键环境变量及其默认值（DOC_ENGINE/DB_TYPE 等）。
 func (s *SystemService) ListEnvironments() ([]map[string]interface{}, error) {
 	result := make([]map[string]interface{}, 0)
 
@@ -507,3 +509,4 @@ func (s *SystemService) ListEnvironments() ([]map[string]interface{}, error) {
 
 	return result, nil
 }
+// system.go — 系统配置/版本/健康检查、系统变量与环境变量管理。

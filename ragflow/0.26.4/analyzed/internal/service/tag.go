@@ -16,6 +16,8 @@
 
 package service
 
+// tag.go 实现知识库文档标签统计与问题侧 rank feature 标注。
+
 import (
 	"context"
 	"encoding/json"
@@ -36,7 +38,7 @@ import (
 	"github.com/cespare/xxhash/v2"
 )
 
-// getTagsCacheKey generates a cache key from kb_ids using xxhash64
+// getTagsCacheKey 对 kb_ids 排序去重后 xxhash 生成 Redis 缓存键。
 func getTagsCacheKey(kbIDs []string) string {
 	// Normalize: unique + sorted so the key is set-stable regardless of caller order.
 	seen := make(map[string]struct{}, len(kbIDs))
@@ -54,7 +56,7 @@ func getTagsCacheKey(kbIDs []string) string {
 	return fmt.Sprintf("%x", hasher.Sum64())
 }
 
-// GetTagsFromCache retrieves cached tags for given kb_ids
+// GetTagsFromCache 从 Redis 读取标签占比缓存，未命中返回 nil。
 // Returns nil if not found (cache miss)
 func GetTagsFromCache(kbIDs []string) (map[string]float64, error) {
 	if len(kbIDs) == 0 {
@@ -83,7 +85,7 @@ func GetTagsFromCache(kbIDs []string) (map[string]float64, error) {
 	return tags, nil
 }
 
-// SetTagsToCache stores tags in cache for given kb_ids with 10 minute expiry
+// SetTagsToCache 将标签占比写入 Redis，TTL 10 分钟。
 func SetTagsToCache(kbIDs []string, tags map[string]float64) error {
 	if len(kbIDs) == 0 || tags == nil {
 		return nil
@@ -114,7 +116,7 @@ func SetTagsToCache(kbIDs []string, tags map[string]float64) error {
 // Knowledgebase type alias for entity.Knowledgebase
 type Knowledgebase = entity.Knowledgebase
 
-// GetAllTagsInPortion returns all tag_kwd values and their occurrence counts
+// GetAllTagsInPortion 聚合指定 KB 全部文档 tag_kwd 并计算占比权重。
 // for documents belonging to the given kbIDs.
 func (s *MetadataService) GetAllTagsInPortion(tenantID string, kbIDs []string) (map[string]float64, error) {
 	if len(kbIDs) == 0 {
@@ -163,7 +165,7 @@ func (s *MetadataService) GetAllTagsInPortion(tenantID string, kbIDs []string) (
 	return allTags, nil
 }
 
-// TagQuery returns weighted tag features for a question
+// TagQuery 用全文检索匹配问题相关文档，计算加权标签 rank feature。
 func (s *MetadataService) TagQuery(question string, tenantIDs []string, kbIDs []string, allTags map[string]float64, topnTags int) (map[string]float64, error) {
 	if len(kbIDs) == 0 || len(allTags) == 0 || len(tenantIDs) == 0 {
 		return make(map[string]float64), nil
@@ -253,7 +255,7 @@ func (s *MetadataService) TagQuery(question string, tenantIDs []string, kbIDs []
 	return resultTags, nil
 }
 
-// LabelQuestion returns rank features for a question based on KB's tag configuration.
+// LabelQuestion 按 KB parser_config 中的 tag_kb_ids 为问题生成标签特征。
 //
 // Flow:
 //  1. Collect tag_kb_ids from KBs' parser_config
@@ -359,3 +361,4 @@ func (s *MetadataService) LabelQuestion(question string, kbs []*Knowledgebase) m
 
 	return tagFeatures
 }
+// tag.go — 知识库标签聚合、Redis 缓存与问题标签 rank feature 计算。

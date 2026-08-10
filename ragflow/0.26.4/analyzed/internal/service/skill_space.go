@@ -16,6 +16,8 @@
 
 package service
 
+// skill_space.go 管理租户技能空间与对应文件树目录。
+
 import (
 	"context"
 	"fmt"
@@ -30,7 +32,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// SkillSpaceService handles business logic for skills space operations
+// SkillSpaceService 协调空间 DAO、文件服务与搜索配置初始化。
 type SkillSpaceService struct {
 	spaceDAO             *dao.SkillSpaceDAO
 	fileDAO              *dao.FileDAO
@@ -73,7 +75,7 @@ type UpdateSpaceRequest struct {
 	TopK        int    `json:"top_k"`
 }
 
-// getSkillsFolderID gets or creates the skills folder for a tenant
+// getSkillsFolderID 获取或创建租户根目录下 skills 文件夹（带缓存与锁）。
 // Uses tenant-scoped locking to prevent duplicate folder creation
 func (s *SkillSpaceService) getSkillsFolderID(tenantID string) (string, error) {
 	// Return cached value if available (read lock)
@@ -145,7 +147,7 @@ func (s *SkillSpaceService) getSkillsFolderID(tenantID string) (string, error) {
 	return folderID, nil
 }
 
-// CreateSpace creates a new skills space with associated folder
+// CreateSpace 创建空间记录、文件树文件夹及默认 skill 搜索配置。
 func (s *SkillSpaceService) CreateSpace(req *CreateSpaceRequest) (map[string]interface{}, common.ErrorCode, error) {
 	// Validate name
 	if req.Name == "" {
@@ -268,7 +270,7 @@ func (s *SkillSpaceService) CreateSpace(req *CreateSpaceRequest) (map[string]int
 	return space.ToMap(), common.CodeSuccess, nil
 }
 
-// ListSpaces lists all skills spaces for a tenant
+// ListSpaces 列出租户下全部有效技能空间。
 func (s *SkillSpaceService) ListSpaces(tenantID string) (map[string]interface{}, common.ErrorCode, error) {
 	spaces, err := s.spaceDAO.GetByTenantID(tenantID)
 	if err != nil {
@@ -375,7 +377,7 @@ func (s *SkillSpaceService) UpdateSpace(spaceID string, tenantID string, req *Up
 	return space.ToMap(), common.CodeSuccess, nil
 }
 
-// DeleteSpace starts asynchronous deletion of a skills space and returns immediately.
+// DeleteSpace CAS 标记 deleting 并异步删除索引、文件夹与软删记录。
 // The space status is set to "deleting" and the actual cleanup runs in a background goroutine.
 func (s *SkillSpaceService) DeleteSpace(spaceID, tenantID string, docEngine engine.DocEngine, ctx context.Context) (common.ErrorCode, error) {
 	// Get space regardless of status (could be retrying a failed delete)
@@ -419,7 +421,7 @@ func (s *SkillSpaceService) DeleteSpace(spaceID, tenantID string, docEngine engi
 	return common.CodeSuccess, nil
 }
 
-// asyncDeleteSpace performs the actual deletion work in the background.
+// asyncDeleteSpace 后台删除索引、FileService 递归删文件并 CAS 置 deleted。
 // It deletes the search index, removes files via Go FileService, and soft-deletes the space record.
 func (s *SkillSpaceService) asyncDeleteSpace(spaceID, folderID, tenantID string, docEngine engine.DocEngine, ctx context.Context) {
 	defer func() {
@@ -544,3 +546,4 @@ func (s *SkillSpaceService) GetSpaceByFolderID(folderID, tenantID string) (map[s
 
 	return space.ToMap(), common.CodeSuccess, nil
 }
+// skill_space.go — 技能空间 CRUD、文件树文件夹管理与异步删除清理。

@@ -16,6 +16,8 @@
 
 package service
 
+// related_question.go 为对话/搜索场景生成相关问题列表。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -26,7 +28,7 @@ import (
 	modelModule "ragflow/internal/entity/models"
 )
 
-// GenerateRelatedQuestions generates related search questions for chat/searchbot endpoints.
+// GenerateRelatedQuestions 加载提示词并调用 LLM 生成与关键词相关的搜索问题。
 func GenerateRelatedQuestions(tenantID, question, searchID string, searchSvc *SearchService, tenantSvc *TenantService, modelProviderSvc *ModelProviderService) ([]string, error) {
 	if modelProviderSvc == nil {
 		return nil, fmt.Errorf("model provider service not configured")
@@ -211,3 +213,4 @@ func parseRelatedQuestions(text string) []string {
 }
 
 func float64Ptr(v float64) *float64 { return &v }
+// related_question.go — 基于 LLM 生成聊天/搜索机器人的相关问题推荐。

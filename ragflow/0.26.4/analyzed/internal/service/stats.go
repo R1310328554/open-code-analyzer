@@ -16,19 +16,21 @@
 
 package service
 
+// stats.go 为 SystemService 提供租户 API 对话统计数据查询。
+
 import (
 	"errors"
 
 	"ragflow/internal/dao"
 )
 
-// ErrTenantNotFound indicates the current user has no tenant relation.
+// ErrTenantNotFound 当前用户未关联任何租户。
 var ErrTenantNotFound = errors.New("Tenant not found!")
 
-// StatPoint matches the frontend [date, value] tuple shape.
+// StatPoint 前端图表使用的 [日期, 数值] 二元组。
 type StatPoint [2]interface{}
 
-// StatsResponse matches Python GET /api/v1/system/stats response data.
+// StatsResponse 对齐 Python /system/stats 的多序列日统计响应。
 type StatsResponse struct {
 	PV      []StatPoint `json:"pv"`
 	UV      []StatPoint `json:"uv"`
@@ -38,7 +40,7 @@ type StatsResponse struct {
 	ThumbUp []StatPoint `json:"thumb_up"`
 }
 
-// GetStats returns daily API conversation statistics for the first tenant of a user.
+// GetStats 取用户首个租户的 API 对话日聚合并计算 PV/UV/速度等指标。
 func (s *SystemService) GetStats(userID, fromDate, toDate string, source *string) (*StatsResponse, error) {
 	userTenantDAO := dao.NewUserTenantDAO()
 	tenants, err := userTenantDAO.GetByUserID(userID)
@@ -71,3 +73,4 @@ func (s *SystemService) GetStats(userID, fromDate, toDate string, source *string
 
 	return response, nil
 }
+// stats.go — 租户 API 对话日统计（PV/UV/Token/轮次/点赞）聚合查询。

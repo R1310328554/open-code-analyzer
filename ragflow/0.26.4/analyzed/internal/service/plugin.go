@@ -16,12 +16,11 @@
 
 package service
 
-// PluginService exposes metadata for embedded LLM tool plugins.
+// plugin.go 暴露内置 LLM 工具插件的静态元数据。
+
+// PluginService 列出 Go 侧镜像的 embedded LLM 工具。
 //
-// The Python service discovers plugins dynamically from
-// agent/plugin/embedded_plugins/llm_tools via pluginlib. The Go server has no
-// runtime Python loader, so the embedded set is mirrored as a static table.
-// To add a plugin here, append to embeddedLLMTools below.
+// Python 通过 pluginlib 动态发现插件；Go 无运行时加载器，故维护静态表 embeddedLLMTools。
 type PluginService struct{}
 
 // NewPluginService creates a new plugin service.
@@ -29,7 +28,7 @@ func NewPluginService() *PluginService {
 	return &PluginService{}
 }
 
-// LLMToolParameter mirrors agent.plugin.llm_tool_plugin.LLMToolParameter.
+// LLMToolParameter 对齐 Python LLMToolParameter 的 JSON 结构。
 type LLMToolParameter struct {
 	Type               string `json:"type"`
 	Description        string `json:"description"`
@@ -69,7 +68,7 @@ var embeddedLLMTools = []LLMToolMetadata{
 	},
 }
 
-// ListLLMTools returns the metadata of every embedded LLM tool plugin in the
+// ListLLMTools 返回全部内置工具元数据副本，避免调用方污染全局表。
 // same order, shape and field names as the Python /plugin/tools endpoint.
 //
 // The returned slice and its nested Parameters maps are fresh copies — callers
@@ -87,3 +86,4 @@ func (s *PluginService) ListLLMTools() []LLMToolMetadata {
 	}
 	return out
 }
+// plugin.go — 静态嵌入 LLM 工具插件元数据列表，对齐 Python pluginlib 发现结果。

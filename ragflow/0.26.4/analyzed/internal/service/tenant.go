@@ -16,6 +16,8 @@
 
 package service
 
+// tenant.go 管理租户信息、默认模型、成员邀请与存储生命周期。
+
 import (
 	"context"
 	"fmt"
@@ -27,7 +29,7 @@ import (
 	"strings"
 )
 
-// TenantService tenant service
+// TenantService 聚合租户/用户/模型 DAO 与文档引擎操作。
 type TenantService struct {
 	tenantDAO            *dao.TenantDAO
 	userTenantDAO        *dao.UserTenantDAO
@@ -71,7 +73,7 @@ type TenantInfoResponse struct {
 	Role      string  `json:"role"`
 }
 
-// GetTenantInfo get tenant information for the current user (owner tenant)
+// GetTenantInfo 返回当前用户 owner 租户的模型与解析器配置摘要。
 func (s *TenantService) GetTenantInfo(userID string) (*TenantInfoResponse, error) {
 	tenantInfos, err := s.tenantDAO.GetInfoByUserID(userID)
 	if err != nil {
@@ -107,7 +109,7 @@ type TenantListItem struct {
 	DeltaSeconds float64 `json:"delta_seconds"`
 }
 
-// TenantLLMService tenant LLM service
+// TenantLLMService 处理 tenant_llm 表相关的 API Key 与模型名解析。
 // This service handles operations related to tenant-specific LLM configurations
 type TenantLLMService struct {
 	tenantLLMDAO     *dao.TenantLLMDAO
@@ -126,7 +128,7 @@ func NewTenantLLMService() *TenantLLMService {
 	}
 }
 
-// GetAPIKey retrieves the tenant LLM record by tenant ID and model name
+// GetAPIKey 按租户与 model@factory 查询 tenant_llm 记录。
 /**
  * This method splits the model name into name and factory parts using the "@" separator,
  * then queries the database for the matching tenant LLM configuration.
@@ -183,7 +185,7 @@ func (s *TenantLLMService) SplitModelNameAndFactory(modelName string) (string, s
 	return arr[0], arr[1]
 }
 
-// GetAPIKeyFromInstance returns the API key for the given composite model name
+// GetAPIKeyFromInstance 从 model@instance@provider 复合名解析实例 API Key。
 // by looking it up in the tenant_model_instance table. compositeModelName is in
 // "model@instance@provider" or "model@provider" format.
 func (s *TenantLLMService) GetAPIKeyFromInstance(tenantID, compositeModelName string) (string, error) {
@@ -226,7 +228,7 @@ func (s *TenantLLMService) GetAPIKeyFromInstance(tenantID, compositeModelName st
 	return instance.APIKey, nil
 }
 
-// EnsureTenantModelIDForParams ensures tenant model IDs are populated for LLM-related parameters
+// EnsureTenantModelIDForParams 为 llm_id/embd_id 等参数回填 tenant_* 外键 ID。
 /**
  * This method iterates through a predefined list of LLM-related parameter keys (llm_id, embd_id,
  * asr_id, img2txt_id, rerank_id, tts_id) and automatically populates the corresponding tenant_*
@@ -286,7 +288,7 @@ func (s *TenantLLMService) EnsureTenantModelIDForParams(tenantID string, params 
 	return params
 }
 
-// GetTenantList get tenant list for a user
+// GetTenantList 列出用户加入的全部租户及角色、头像等信息。
 func (s *TenantService) GetTenantList(userID string) ([]*TenantListItem, error) {
 	tenants, err := s.userTenantDAO.GetTenantsByUserID(userID)
 	if err != nil {
@@ -319,7 +321,7 @@ func (s *TenantService) GetTenantList(userID string) ([]*TenantListItem, error) 
 	return result, nil
 }
 
-// CreateMetadataStore creates the metadata store for a tenant
+// CreateMetadataStore 在文档引擎中为租户创建元数据表。
 func (s *TenantService) CreateMetadataStore(tenantID string) (common.ErrorCode, error) {
 	// Call document engine to create doc meta table
 	err := s.docEngine.CreateMetadataStore(context.Background(), tenantID)
@@ -355,7 +357,7 @@ type CreateChunkStoreResponse struct {
 	VectorSize int    `json:"vector_size"`
 }
 
-// CreateChunkStore creates a chunk store in the document engine for a knowledge base
+// CreateChunkStore 按 KB 向量维度在 DocEngine 创建分块存储表。
 func (s *TenantService) CreateChunkStore(req *CreateDatasetTableRequest) (*CreateChunkStoreResponse, common.ErrorCode, error) {
 	if req == nil {
 		return nil, common.CodeDataError, fmt.Errorf("request is required")
@@ -420,7 +422,7 @@ type ModelItem struct {
 	Enable        bool    `json:"enable"`
 }
 
-// GetDefaultModelName returns the full default model ID for a tenant and model type
+// GetDefaultModelName 读取租户某类型默认模型的完整 composite ID。
 // Format: modelName@instanceName@providerName or modelName@providerName
 // Returns empty string if no default model is set
 func (s *TenantService) GetDefaultModelName(tenantID string, modelType entity.ModelType) (string, error) {
@@ -761,7 +763,7 @@ type TenantMemberResponse struct {
 	DeltaSeconds    float64 `json:"delta_seconds"`
 }
 
-// ListMembers returns all non-owner members of tenantID.
+// ListMembers 仅 owner 可列出租户内非 owner 成员。
 // Only the tenant owner (userID == tenantID) may call this.
 func (s *TenantService) ListMembers(userID, tenantID string) ([]*TenantMemberResponse, common.ErrorCode, error) {
 	if userID != tenantID {
@@ -806,7 +808,7 @@ type AddMemberResponse struct {
 	Nickname string `json:"nickname"`
 }
 
-// AddMember invites a user (by email) to the tenant.
+// AddMember owner 按邮箱邀请用户，创建 invite 角色待接受记录。
 // Only the tenant owner (userID == tenantID) may call this.
 func (s *TenantService) AddMember(userID, tenantID string, req *AddMemberRequest) (*AddMemberResponse, common.ErrorCode, error) {
 	if userID != tenantID {
@@ -859,7 +861,7 @@ func (s *TenantService) AddMember(userID, tenantID string, req *AddMemberRequest
 	}, common.CodeSuccess, nil
 }
 
-// RemoveMember removes a user from the tenant.
+// RemoveMember owner 或成员本人可移除成员（不可移除 owner）。
 // Either the owner (userID == tenantID) or the member themselves (userID == targetUserID) may call this.
 // The tenant owner (targetUserID == tenantID) cannot be removed.
 func (s *TenantService) RemoveMember(userID, tenantID, targetUserID string) (common.ErrorCode, error) {
@@ -878,7 +880,7 @@ func (s *TenantService) RemoveMember(userID, tenantID, targetUserID string) (com
 	return common.CodeSuccess, nil
 }
 
-// AcceptInvite transitions the calling user's role from "invite" → "normal" for the given tenant.
+// AcceptInvite 被邀请用户将角色从 invite 更新为 normal 完成入组。
 func (s *TenantService) AcceptInvite(userID, tenantID string) (common.ErrorCode, error) {
 	if s.userTenantDAO == nil {
 		return common.CodeServerError, fmt.Errorf("userTenantDAO not initialized")
@@ -895,3 +897,4 @@ func (s *TenantService) AcceptInvite(userID, tenantID string) (common.ErrorCode,
 	}
 	return common.CodeSuccess, nil
 }
+// tenant.go — 租户信息/成员/默认模型、元数据与分块存储生命周期管理。

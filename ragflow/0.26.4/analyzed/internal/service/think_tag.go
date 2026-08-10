@@ -16,6 +16,8 @@
 
 package service
 
+// think_tag.go 解析流式输出中的 redacted_thinking 推理标签。
+
 import (
 	"context"
 	"ragflow/internal/tokenizer"
@@ -27,7 +29,7 @@ const thinkClose = "</think>"
 
 var stripThinkReplacer = strings.NewReplacer("<think>", "", "</think>", "")
 
-// ThinkStreamState holds accumulated state across streaming LLM chunks
+// ThinkStreamState 跨 chunk 累积状态，用于拆分推理段与可见答案。
 // so that <think>...</think> tags can be surfaced as structured markers
 type ThinkStreamState struct {
 	// fullText accumulates all text received so far.
@@ -52,7 +54,7 @@ type ThinkStreamState struct {
 	inReasoning bool
 }
 
-// EnterReasoning marks the start of a reasoning block (model-level, not tag-based).
+// EnterReasoning 标记模型级推理流开始（与 XML 标签解析独立）。
 // Returns true when this is a new transition (reasoning was not already active).
 func (s *ThinkStreamState) EnterReasoning() bool {
 	if s.inReasoning {
@@ -72,7 +74,7 @@ func (s *ThinkStreamState) ExitReasoning() bool {
 	return true
 }
 
-// ThinkDeltaKind describes the type of a think-tag delta event.
+// ThinkDeltaKind 区分文本增量与开闭标签边界事件。
 type ThinkDeltaKind int
 
 const (
@@ -150,7 +152,7 @@ func tagPrefixLen(s string) int {
 	return 0
 }
 
-// NextThinkDelta processes the next chunk of LLM output and returns any
+// NextThinkDelta 增量解析 chunk，输出可见文本或 think 开闭标记。
 // visible text or tag boundary markers that should be emitted.
 func NextThinkDelta(state *ThinkStreamState, chunk string, minTokens int) []ThinkDelta {
 	if state == nil {
@@ -277,7 +279,7 @@ func NextThinkDelta(state *ThinkStreamState, chunk string, minTokens int) []Thin
 	return deltas
 }
 
-// FlushRemaining drains all remaining buffered text and handles deferred
+// FlushRemaining 流结束后刷出缓冲区与延迟的闭合标签。
 // markers. Call this after all LLM chunks have been processed.
 func FlushRemaining(state *ThinkStreamState) []ThinkDelta {
 	if state == nil {
@@ -311,7 +313,7 @@ func FlushRemaining(state *ThinkStreamState) []ThinkDelta {
 // StreamThinkTagDelta — channel-based pipeline.
 // ---------------------------------------------------------------------------
 
-// StreamThinkTagDelta takes a channel of raw LLM text chunks and produces a
+// StreamThinkTagDelta goroutine 将原始 chunk 通道转为 ThinkDelta 通道。
 // channel of structured deltas.  When ctx is cancelled (e.g. client
 // disconnect), the goroutine drains the input channel silently and exits.
 func StreamThinkTagDelta(ctx context.Context, chunks <-chan string, minTokens int) <-chan ThinkDelta {
@@ -356,7 +358,7 @@ func StreamThinkTagDelta(ctx context.Context, chunks <-chan string, minTokens in
 	return out
 }
 
-// ExtractVisibleAnswer returns the visible answer text after the last </think>.
+// ExtractVisibleAnswer 取最后一个闭合标签之后的可见答案并剥离残留标签。
 // Stray <think>/</think> tags are stripped. If there is no </think>, all tags are stripped.
 func ExtractVisibleAnswer(raw string) string {
 	if raw == "" {
@@ -371,7 +373,7 @@ func ExtractVisibleAnswer(raw string) string {
 	return stripThinkTags(answer)
 }
 
-// BufferAnswerDelta processes an answer delta through the think-state lifecycle.
+// BufferAnswerDelta 在 closePending 等状态下将答案增量写入 answer 缓冲。
 // When closePending is true, it first flushes the deferred think buffer and </think>
 // marker, then processes pendingAfterClose + the new answer text.
 func BufferAnswerDelta(state *ThinkStreamState, text string, minTokens int) []ThinkDelta {
@@ -399,3 +401,4 @@ func BufferAnswerDelta(state *ThinkStreamState, text string, minTokens int) []Th
 	}
 	return deltas
 }
+// think_tag.go — 流式解析 redacted_thinking 标签，拆分推理与可见答案文本。

@@ -16,6 +16,8 @@
 
 package service
 
+// search.go 管理租户搜索应用（Search App）的业务逻辑。
+
 import (
 	"errors"
 	"fmt"
@@ -28,14 +30,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// SearchService search service
+// SearchService 封装搜索应用 DAO 与租户服务依赖。
 type SearchService struct {
 	searchDAO     *dao.SearchDAO
 	userTenantDAO *dao.UserTenantDAO
 	tenantService *TenantService
 }
 
-// NewSearchService create search service
+// NewSearchService 构造 SearchService 实例。
 func NewSearchService() *SearchService {
 	return &SearchService{
 		searchDAO:     dao.NewSearchDAO(),
@@ -79,7 +81,7 @@ type SearchShareDetail struct {
 	UpdateTime   *int64                 `json:"update_time,omitempty"`
 }
 
-// ListSearches list search apps with advanced filtering (equivalent to list_search_app)
+// ListSearches 分页列出搜索应用，支持 owner 过滤与关键词。
 func (s *SearchService) ListSearches(userID string, keywords string, page, pageSize int, orderby string, desc bool, ownerIDs []string) (*ListSearchAppsResponse, error) {
 	var searches []*entity.Search
 	var total int64
@@ -198,7 +200,7 @@ type CreateSearchResponse struct {
 	SearchID string `json:"search_id"` // UUID format
 }
 
-// CreateSearch creates a new search app
+// CreateSearch 创建搜索应用：去重命名、生成 UUID 并写入默认 search_config。
 // Reference: api/apps/restful_apis/search_api.py::create
 // Python implementation steps:
 // 1. Get JSON request body with name (required) and description (optional)
@@ -283,7 +285,7 @@ func (s *SearchService) GetSearchDetail(userID string, searchID string) (*entity
 	return search, nil
 }
 
-// GetSearchShareDetail returns the joined share-detail payload for public
+// GetSearchShareDetail 校验权限后返回公开搜索页所需的详情结构。
 // searchbot pages after verifying the caller can access the search app.
 func (s *SearchService) GetSearchShareDetail(userID, searchID string) (*SearchShareDetail, error) {
 	if _, err := s.GetSearchDetail(userID, searchID); err != nil {
@@ -310,7 +312,7 @@ func (s *SearchService) GetSearchShareDetail(userID, searchID string) (*SearchSh
 	}, nil
 }
 
-// DeleteSearch deletes a search app by ID
+// DeleteSearch 仅创建者可删除，调用 DAO 物理删除记录。
 func (s *SearchService) DeleteSearch(userID string, searchID string) error {
 	// Step 1: Check deletion permission (same as Python SearchService.accessible4deletion)
 	// Python: cls.model.select().where(cls.model.id == search_id, cls.model.created_by == user_id, cls.model.status == StatusEnum.VALID.value).first()
@@ -333,7 +335,7 @@ func (s *SearchService) DeleteSearch(userID string, searchID string) error {
 	return nil
 }
 
-// AccessibleForCompletion check if it is accessible
+// AccessibleForCompletion 判断用户是否可对搜索应用发起补全问答。
 func (s *SearchService) AccessibleForCompletion(userID string, searchID string) (bool, error) {
 	ok, err := s.searchDAO.Accessible4Deletion(searchID, userID)
 	if err != nil {
@@ -345,6 +347,7 @@ func (s *SearchService) AccessibleForCompletion(userID string, searchID string) 
 	return ok, nil
 }
 
+// SearchCompletionPlan 封装一次搜索补全所需的 KB、模型与 Ask 选项。
 type SearchCompletionPlan struct {
 	UserID   string
 	SearchID string
@@ -354,6 +357,7 @@ type SearchCompletionPlan struct {
 	Options  AskStreamOptions
 }
 
+// PrepareCompletion 校验权限、解析 search_config 并组装 SearchCompletionPlan。
 func (s *SearchService) PrepareCompletion(userID, searchID string, req *SearchCompletionsRequest) (*SearchCompletionPlan, common.ErrorCode, error) {
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
@@ -537,7 +541,7 @@ func floatFromSearchConfig(value interface{}) (float64, bool) {
 	}
 }
 
-// UpdateSearchRequest update search request
+// UpdateSearchRequest 更新搜索应用名称、描述与 search_config（合并式）。
 // Reference: api/apps/restful_apis/search_api.py::update
 // Required fields: name, search_config
 // Optional fields: description
@@ -625,7 +629,7 @@ func (s *SearchService) UpdateSearch(userID string, searchID string, req *Update
 	return updatedSearch, nil
 }
 
-// GetDetail gets search details by ID including search_config
+// GetDetail 按 ID 返回搜索应用详情（含 search_config 字典）。
 func (s *SearchService) GetDetail(searchID string) (map[string]interface{}, error) {
 	search, err := s.searchDAO.GetByID(searchID)
 
@@ -656,3 +660,4 @@ type SearchCompletionsRequest struct {
 	Question string   `json:"question" binding:"required"`
 	KBIDs    []string `json:"kb_ids,omitempty"`
 }
+// search.go — 搜索应用 CRUD、权限校验与问答补全计划 PrepareCompletion。

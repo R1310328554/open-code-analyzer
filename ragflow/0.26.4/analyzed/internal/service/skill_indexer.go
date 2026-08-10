@@ -16,6 +16,8 @@
 
 package service
 
+// skill_indexer.go 负责将技能文件索引到文档引擎（ES/Infinity）。
+
 import (
 	"context"
 	"encoding/json"
@@ -34,7 +36,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// SkillVersionInfo represents a skill version in the file system
+// SkillVersionInfo 描述文件系统中某一技能版本的元数据与内容。
 type SkillVersionInfo struct {
 	SkillName   string   `json:"skill_name"`
 	Version     string   `json:"version"`
@@ -43,7 +45,7 @@ type SkillVersionInfo struct {
 	Content     string   `json:"content"`
 }
 
-// FileSystemClient defines the interface for accessing skill files
+// FileSystemClient 抽象技能文件列举与内容读取（便于测试注入）。
 type FileSystemClient interface {
 	ListSkills(ctx context.Context, tenantID string) ([]SkillVersionInfo, error)
 	GetSkillContent(ctx context.Context, tenantID, skillName string) (*SkillVersionInfo, error)
@@ -52,7 +54,7 @@ type FileSystemClient interface {
 // defaultMaxLength is a safe default for embedding model max input length
 const defaultMaxLength = 8191
 
-// SkillIndexerService handles skill indexing operations
+// SkillIndexerService 协调配置、嵌入模型与文档引擎写入技能索引。
 type SkillIndexerService struct {
 	configDAO     *dao.SkillSearchConfigDAO
 	fileDAO       *dao.FileDAO
@@ -75,7 +77,7 @@ func isElasticsearch(docEngine engine.DocEngine) bool {
 	return docEngine.GetType() == "elasticsearch"
 }
 
-// IndexSkill indexes a single skill
+// IndexSkill 为单个技能生成向量/分词字段并 upsert 到索引（先删旧版）。
 // Uses skill_id as doc_id for direct mapping, with version control for incremental updates
 // For ES: xxx fields store original content, xxx_tks fields store RAG-tokenized content (space-separated)
 // For Infinity: only xxx fields with built-in rag-analyzer
@@ -200,7 +202,7 @@ func (s *SkillIndexerService) IndexSkill(ctx context.Context, tenantID, spaceID 
 	return nil
 }
 
-// BatchIndexSkills indexes multiple skills in batch
+// BatchIndexSkills 批量嵌入并索引多个技能，失败项汇总返回。
 // Optimized to use batch embedding API for better performance
 func (s *SkillIndexerService) BatchIndexSkills(ctx context.Context, tenantID, spaceID string, skills []SkillInfo, docEngine engine.DocEngine, embdID string) error {
 	spaceID = normalizeSpaceID(spaceID)
@@ -357,7 +359,7 @@ func (s *SkillIndexerService) BatchIndexSkills(ctx context.Context, tenantID, sp
 	return nil
 }
 
-// DeleteSkillIndex deletes a skill's index by skill ID
+// DeleteSkillIndex 按 skill_id 删除索引文档（不存在视为成功）。
 // Returns nil if the document doesn't exist (idempotent delete)
 func (s *SkillIndexerService) DeleteSkillIndex(ctx context.Context, tenantID, spaceID, skillID string, docEngine engine.DocEngine) error {
 	spaceID = normalizeSpaceID(spaceID)
@@ -403,7 +405,7 @@ func (s *SkillIndexerService) UpdateSkillVersion(ctx context.Context, tenantID, 
 	return s.IndexSkill(ctx, tenantID, spaceID, skill, docEngine, embdID)
 }
 
-// ReindexAll reindexes all skills for a tenant
+// ReindexAll 递增索引版本、重建表并遍历文件系统全量重索引。
 // Increments semantic version, deletes old table, and reindexes all skills from file system
 // For Infinity: if embedding model changed (different dimension), recreates the table
 // Behavior:
@@ -499,7 +501,7 @@ func (s *SkillIndexerService) ReindexAll(ctx context.Context, tenantID, spaceID 
 	return result, nil
 }
 
-// getSkillsFromFileSystem traverses the space folder and gets all skills with their latest version
+// getSkillsFromFileSystem 遍历空间下技能文件夹，取各技能最新 semver 版本内容。
 func (s *SkillIndexerService) getSkillsFromFileSystem(ctx context.Context, tenantID, spaceFolderID, spaceID string) ([]SkillInfo, error) {
 	var skills []SkillInfo
 
@@ -839,7 +841,7 @@ func (s *SkillIndexerService) cleanupOldVersions(ctx context.Context, tenantID, 
 	return nil
 }
 
-// InitializeIndex initializes the skill search index for a tenant
+// InitializeIndex 若索引不存在则按嵌入维度创建 skill 索引/表。
 func (s *SkillIndexerService) InitializeIndex(ctx context.Context, tenantID, spaceID string, docEngine engine.DocEngine, embdID string) error {
 	// Check if index exists
 	indexName := getSkillIndexName(tenantID, spaceID)
@@ -912,7 +914,7 @@ func (s *SkillIndexerService) EnsureIndex(ctx context.Context, tenantID, spaceID
 	return s.InitializeIndex(ctx, tenantID, spaceID, docEngine, embdID)
 }
 
-// generateEmbedding generates embedding for text using the specified model
+// generateEmbedding 调用租户嵌入模型对单向量文本编码（含截断）。
 func (s *SkillIndexerService) generateEmbedding(ctx context.Context, text, embdID, tenantID string) ([]float64, error) {
 	if s.modelProvider == nil {
 		return nil, fmt.Errorf("model provider not set")
@@ -1006,7 +1008,7 @@ func truncate(text string, maxLen int) string {
 	return string(runes[:maxLen])
 }
 
-// getEmbeddingDimension gets the embedding dimension by calling the embedding API with test text
+// getEmbeddingDimension 用探测文本调用嵌入 API 获取向量维度以建表。
 // This follows Python's approach: use actual embedding result to determine dimension
 // If embedding API fails, returns error (cannot create table without knowing dimension)
 func (s *SkillIndexerService) getEmbeddingDimension(ctx context.Context, tenantID, embdID string) (int, error) {
@@ -1039,3 +1041,4 @@ func (s *SkillIndexerService) getEmbeddingDimension(ctx context.Context, tenantI
 	common.Info(fmt.Sprintf("Got embedding dimension from API: %d", dimension))
 	return dimension, nil
 }
+// skill_indexer.go — 技能文档索引：嵌入向量、ES/Infinity 分词字段与全量重建。

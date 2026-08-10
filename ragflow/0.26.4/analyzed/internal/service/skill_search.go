@@ -16,6 +16,8 @@
 
 package service
 
+// skill_search.go 提供技能检索配置与混合/向量/关键词搜索。
+
 import (
 	"context"
 	"crypto/sha256"
@@ -34,7 +36,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// SkillSearchService handles business logic for skill search operations
+// SkillSearchService 读取检索配置并驱动 DocEngine 执行技能搜索。
 type SkillSearchService struct {
 	configDAO     *dao.SkillSearchConfigDAO
 	modelProvider *ModelProviderService
@@ -59,7 +61,7 @@ type GetConfigRequest struct {
 	SpaceID  string `json:"space_id"`
 }
 
-// GetConfig retrieves the search configuration for a tenant
+// GetConfig 获取租户+空间的技能搜索配置（无则返回默认值）。
 func (s *SkillSearchService) GetConfig(tenantID, spaceID, embdID string) (map[string]interface{}, common.ErrorCode, error) {
 	spaceID = normalizeSpaceID(spaceID)
 	var config *entity.SkillSearchConfig
@@ -112,7 +114,7 @@ type UpdateConfigRequest struct {
 	TopK                   int64              `json:"top_k"`
 }
 
-// UpdateConfig updates the search configuration for a tenant
+// UpdateConfig 校验权重/阈值/top_k 后 upsert 唯一活跃配置记录。
 func (s *SkillSearchService) UpdateConfig(req *UpdateConfigRequest) (map[string]interface{}, common.ErrorCode, error) {
 	req.SpaceID = normalizeSpaceID(req.SpaceID)
 	// Validate vector_similarity_weight
@@ -211,7 +213,7 @@ type SearchResponse struct {
 	SearchType string                     `json:"search_type"` // "keyword", "vector", "hybrid"
 }
 
-// Search performs skill search with the configured strategy
+// Search 按 vector_similarity_weight 选择关键词、纯向量或混合检索并分页。
 func (s *SkillSearchService) Search(ctx context.Context, req *SearchRequest, docEngine engine.DocEngine) (*SearchResponse, common.ErrorCode, error) {
 	req.SpaceID = normalizeSpaceID(req.SpaceID)
 	if req.Page <= 0 {
@@ -324,7 +326,7 @@ func (s *SkillSearchService) Search(ctx context.Context, req *SearchRequest, doc
 	}, common.CodeSuccess, nil
 }
 
-// keywordSearch performs pure keyword search using BM25
+// keywordSearch 使用 MatchTextExpr 在 name/tags/description/content 上做 BM25。
 func (s *SkillSearchService) keywordSearch(ctx context.Context, docEngine engine.DocEngine, indexName, query string, config *entity.SkillSearchConfig, threshold float64, sortBy, sortOrder string) ([]entity.SkillSearchResult, error) {
 	// Build order_by for sorting
 	orderBy := buildOrderByExpr(sortBy, sortOrder, query == "")
@@ -368,7 +370,7 @@ func (s *SkillSearchService) keywordSearch(ctx context.Context, docEngine engine
 	return s.convertChunksToResults(searchResult.Chunks, threshold), nil
 }
 
-// vectorSearch performs pure vector search
+// vectorSearch 对查询嵌入后做 dense 检索，无结果时回退关键词。
 func (s *SkillSearchService) vectorSearch(ctx context.Context, docEngine engine.DocEngine, indexName, query string, config *entity.SkillSearchConfig, tenantID string) ([]entity.SkillSearchResult, error) {
 	// Get embedding for query
 	vector, err := s.getEmbedding(ctx, query, config.EmbdID, tenantID)
@@ -439,7 +441,7 @@ func (s *SkillSearchService) vectorSearch(ctx context.Context, docEngine engine.
 	return results, nil
 }
 
-// hybridSearch performs hybrid search combining BM25 and vector search
+// hybridSearch 组合全文与向量分并通过 FusionExpr 加权融合。
 func (s *SkillSearchService) hybridSearch(ctx context.Context, docEngine engine.DocEngine, indexName, query string, config *entity.SkillSearchConfig, tenantID string) ([]entity.SkillSearchResult, error) {
 	// Analyze query first: tokenize and extract keywords
 	matchExpr := &types.MatchTextExpr{
@@ -548,7 +550,7 @@ func (s *SkillSearchService) executeKeywordSearch(ctx context.Context, docEngine
 	return results, nil
 }
 
-// convertChunksToResults converts search chunks to SkillSearchResult
+// convertChunksToResults 去重同名技能、过滤阈值并按分数降序。
 // Deduplicates by skill name, keeping only the highest scored result for each skill
 func (s *SkillSearchService) convertChunksToResults(chunks []map[string]interface{}, threshold float64) []entity.SkillSearchResult {
 	// Use a map to deduplicate by skill name, keeping the highest scored version
@@ -755,7 +757,7 @@ func CalculateContentHash(name, description string, tags []string, content strin
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// BuildVectorText builds the text for vector generation
+// BuildVectorText 按 field_config 拼接用于嵌入的 name/tags/description/content。
 func BuildVectorText(name, description string, tags []string, content string, fieldConfig entity.FieldConfig) string {
 	var parts []string
 
@@ -905,7 +907,7 @@ func (s *SkillSearchService) escapeQueryString(text string) string {
 	return result
 }
 
-// SkillInfo represents skill information for indexing
+// SkillInfo 索引/搜索流程中使用的技能摘要结构。
 type SkillInfo struct {
 	ID          string   `json:"id"`
 	FolderID    string   `json:"folder_id"` // File system folder ID for retrieving files
@@ -1030,3 +1032,4 @@ func buildOrderByExpr(sortBy, sortOrder string, isEmptyQuery bool) *types.OrderB
 		},
 	}
 }
+// skill_search.go — 技能检索配置 CRUD 与关键词/向量/混合搜索策略。

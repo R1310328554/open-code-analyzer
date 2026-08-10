@@ -16,6 +16,8 @@
 
 package service
 
+// openai_chat.go 实现 OpenAI 兼容对话补全 API 的服务层逻辑。
+
 import (
 	"context"
 	"encoding/json"
@@ -51,7 +53,7 @@ type OpenAIRequest struct {
 	GenerationConfig map[string]interface{}
 }
 
-// FormattedChunk is a normalized chunk matching Python's chunks_format output.
+// FormattedChunk 对齐 Python chunks_format 的引用块字段规范。
 type FormattedChunk struct {
 	ID               string      `json:"id"`
 	Content          string      `json:"content"`
@@ -69,7 +71,7 @@ type FormattedChunk struct {
 	DocumentMetadata interface{} `json:"document_metadata"`
 }
 
-// OpenAICompletionResponse is the non-streaming response payload.
+// OpenAICompletionResponse 非流式补全响应（含 token 用量）。
 // The reasoning_tokens quirk (openai_api.py:348-352) lives in the c.JSON call.
 type OpenAICompletionResponse struct {
 	Model            string
@@ -81,7 +83,7 @@ type OpenAICompletionResponse struct {
 	Created          int64
 }
 
-// OpenAIStreamEventKind discriminates stream events.
+// OpenAIStreamEventKind 区分内容增量、推理、最终块与错误事件。
 type OpenAIStreamEventKind int
 
 const (
@@ -103,7 +105,7 @@ type OpenAIStreamEvent struct {
 	TotalTokens      int
 }
 
-// OpenAIChatService implements the /api/v1/openai/<chat_id>/chat/completions route.
+// OpenAIChatService 编排 RAG AsyncChat 与 OpenAI 请求/响应格式转换。
 // It composes ChatPipelineService for the shared RAG pipeline (AsyncChat) while
 // keeping handler-level concerns (message filtering, generation config merge,
 // reference metadata enrichment) on the service itself.
@@ -121,7 +123,7 @@ func NewOpenAIChatService() *OpenAIChatService {
 	}
 }
 
-// OpenAIChatRequest mirrors the OpenAI Chat Completions request body.
+// OpenAIChatRequest 映射 OpenAI Chat Completions JSON 请求体。
 // `stop` and `user` are omitted intentionally — JSON unmarshal silently drops them.
 type OpenAIChatRequest struct {
 	Model     string                   `json:"model"`
@@ -491,7 +493,7 @@ func (s *OpenAIChatService) OpenAIChatCompletions(c *gin.Context, userID, chatID
 	common.Info("OpenAIChatCompletions completed", zap.String("chat_id", chatID))
 }
 
-// MergeGenerationConfig merges request config into dialog.LLMSetting (mutating).
+// MergeGenerationConfig 将请求侧 generation 参数合并进对话 LLMSetting。
 func (s *OpenAIChatService) MergeGenerationConfig(dialog *entity.Chat, config map[string]interface{}) {
 	if config == nil {
 		return
@@ -504,7 +506,7 @@ func (s *OpenAIChatService) MergeGenerationConfig(dialog *entity.Chat, config ma
 	}
 }
 
-// filterMessages drops system messages and leading assistant messages.
+// filterMessages 丢弃 system 消息及开头的 assistant 消息。
 func (s *OpenAIChatService) filterMessages(messages []map[string]interface{}) []map[string]interface{} {
 	var out []map[string]interface{}
 	for _, m := range messages {
@@ -520,7 +522,7 @@ func (s *OpenAIChatService) filterMessages(messages []map[string]interface{}) []
 	return out
 }
 
-// cleanCitationMarkers strips "##N$$" markers from the answer.
+// cleanCitationMarkers 去除答案中的 ##N$$ 引用标记。
 func cleanCitationMarkers(s string) string {
 	var citationMarkerRegex = regexp.MustCompile(`##\d+\$\$`)
 	return citationMarkerRegex.ReplaceAllString(s, "")
@@ -540,7 +542,7 @@ func isContentDelta(answer *string) bool {
 	return true
 }
 
-// extractGenerationConfig mirrors Python's extract_generation_config.
+// extractGenerationConfig 从请求体提取 temperature/top_p 等生成参数。
 func extractGenerationConfig(req *OpenAIChatRequest) map[string]interface{} {
 	cfg := make(map[string]interface{})
 	if req.Temperature != nil {
@@ -638,7 +640,7 @@ func strVal(v interface{}) string {
 	return ""
 }
 
-// formatChunks normalizes chunk fields to a canonical schema, matching Python's chunks_format.
+// formatChunks 将检索块字段规范化为前端/OpenAI 引用结构。
 func formatChunks(chunks []map[string]interface{}) []FormattedChunk {
 	out := make([]FormattedChunk, 0, len(chunks))
 	for _, chunk := range chunks {
@@ -662,7 +664,7 @@ func formatChunks(chunks []map[string]interface{}) []FormattedChunk {
 	return out
 }
 
-// enrichChunksWithDocumentMetadata enriches chunks with document metadata.
+// enrichChunksWithDocumentMetadata 按租户与 fields 配置补充文档元数据。
 // Mirrors Python's enrich_chunks_with_document_metadata() in
 // api/utils/reference_metadata_utils.py.
 // When fields is a non-nil empty slice (explicitly provided as []), enrichment
@@ -690,7 +692,7 @@ func (s *OpenAIChatService) enrichChunksWithDocumentMetadata(chunks []FormattedC
 	}
 }
 
-// streamChatCompletionSSE drains events and writes SSE chunks.
+// streamChatCompletionSSE 消费事件通道并写入 text/event-stream SSE。
 func streamChatCompletionSSE(
 	c *gin.Context,
 	events <-chan OpenAIStreamEvent,
@@ -836,3 +838,4 @@ func (s *OpenAIChatService) writeArgError(c *gin.Context, msg string) {
 func (s *OpenAIChatService) writeDataError(c *gin.Context, msg string) {
 	common.ResponseWithCodeData(c, common.CodeDataError, nil, msg)
 }
+// openai_chat.go — OpenAI 兼容 Chat Completions：RAG 流水线、引用块格式化与 SSE 流式输出。
