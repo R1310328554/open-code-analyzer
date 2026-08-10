@@ -478,3 +478,18 @@
 2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/RegexPolicyRepresentation.java wave16b idm authz permission/policy reps
 2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ResourceOwnerRepresentation.java wave16b idm authz permission/policy reps
 2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ResourcePermissionRepresentation.java wave16b idm authz permission/policy reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ResourceRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ResourceServerRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ResourceType.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/RolePolicyRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ScopePermissionRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ScopeRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/TimePolicyRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/UmaPermissionRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/UserPolicyRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/oid4vc/IssuedVerifiableCredentialRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/oid4vc/UserVerifiableCredentialRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/idm/oid4vc/VerifiableCredentialOfferActionConfig.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/info/ClientInstallationRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/info/CpuInfoRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/info/CryptoInfoRepresentation.java wave17a authz resource + oid4vc + info reps
