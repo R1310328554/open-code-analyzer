@@ -1,5 +1,7 @@
 package wire
 
+// wire_http2 通过 HTTP/2 POST 长连接承载 protobuf 帧，适用于跨进程调度器与 worker 的网络通信。
+
 import (
 	"context"
 	"crypto/tls"
@@ -16,11 +18,13 @@ import (
 	"golang.org/x/net/http2"
 )
 
+// Loki-Peer-Address 请求头携带对端可回连地址，供双向帧交换使用。
 // peerAddressHeader is the header used to advertise the address to connect back
 // to a client.
 const peerAddressHeader = "Loki-Peer-Address"
 
 // HTTP2Listener implements Listener for HTTP/2-based connections.
+// HTTP2Listener 实现 http.Handler，将入站 POST 转为 Conn 供 Accept 消费。
 type HTTP2Listener struct {
 	logger log.Logger
 	addr   net.Addr
@@ -49,6 +53,7 @@ func WithHTTP2ListenerLogger(logger log.Logger) HTTP2ListenerOptFunc {
 	}
 }
 
+// NewHTTP2Listener 创建监听器，ServeHTTP 与 Accept 通过 incoming 通道交接连接。
 // NewHTTP2Listener creates a new HTTP/2 listener on the specified address.
 func NewHTTP2Listener(addr net.Addr, optFuncs ...HTTP2ListenerOptFunc) *HTTP2Listener {
 	opts := http2ListenerOpts{
@@ -164,6 +169,7 @@ func (l *HTTP2Listener) Addr() net.Addr {
 }
 
 // http2Conn implements Conn for HTTP/2-based connections.
+// http2Conn 在请求体上读帧、经 ResponseWriter 写帧，每帧后 Flush 保证及时送达。
 type http2Conn struct {
 	ctx context.Context
 
@@ -303,6 +309,7 @@ func (c *http2Conn) RemoteAddr() net.Addr {
 	return c.remoteAddr
 }
 
+// HTTP2Dialer 复用 http2.Transport 建立 POST 长连接，Dial 时设置回连地址头。
 // HTTP2Dialer holds an http client to pool the connections.
 type HTTP2Dialer struct {
 	client *http.Client
@@ -391,6 +398,7 @@ var http2Errors = map[string]struct{}{
 	"client disconnected":                               {},
 }
 
+// isHTTP2Error 根据错误字符串判断 HTTP/2 流是否已断开，映射为 ErrConnClosed。
 // isHTTP2Error returns true if err represents one of the known http2 errors that leads to a
 // broken connection.
 func isHTTP2Error(err error) bool {
@@ -407,3 +415,4 @@ func isHTTP2Error(err error) bool {
 	_, res := http2Errors[err.Error()]
 	return res
 }
+// 客户端 Dial 通过 io.Pipe 分离读写，Close 时关闭写端并等待 readLoop 退出。

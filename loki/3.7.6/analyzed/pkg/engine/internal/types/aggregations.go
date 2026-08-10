@@ -1,5 +1,8 @@
 package types //nolint:revive
 
+// aggregations 定义 range 与 vector 两类聚合算子枚举，对应 LogQL/PromQL 的 _over_time 与 instant 向量聚合。
+
+// RangeAggregationType 表示滑动时间窗口上的 count/sum/max/min/avg/bytes 聚合。
 // RangeAggregationType represents the type of range aggregation operation
 type RangeAggregationType int
 
@@ -33,6 +36,7 @@ func (op RangeAggregationType) String() string {
 	}
 }
 
+// VectorAggregationType 表示 instant 向量上的 sum/max/topk/sort 等聚合。
 // VectorAggregationType represents the type of vector aggregation operation
 type VectorAggregationType int
 
@@ -80,3 +84,4 @@ func (op VectorAggregationType) String() string {
 		return "invalid"
 	}
 }
+// String 方法将枚举值转为小写字符串，供计划序列化与调试输出。

@@ -1,9 +1,12 @@
 package types //nolint:revive
 
+// operators 定义一元、二元与变参表达式算子枚举，覆盖比较、逻辑、算术及 LogQL 字符串/正则/模式匹配。
+
 import (
 	"fmt"
 )
 
+// UnaryOp 包含逻辑非、abs 及 string 到 float/bytes/duration 的类型转换。
 // UnaryOp denotes the kind of [UnaryOp] operation to perform.
 type UnaryOp uint32
 
@@ -37,6 +40,7 @@ func (t UnaryOp) String() string {
 	}
 }
 
+// BinaryOp 涵盖 EQ/GT/AND/OR 及 |=、|~、|> 等 LogQL 过滤匹配算子。
 // BinaryOp denotes the kind of [BinaryOp] operation to perform.
 type BinaryOp uint32
 
@@ -134,6 +138,7 @@ func (t BinaryOp) String() string {
 	}
 }
 
+// VariadicOp 表示 logfmt/json/regexp 等解析算子，将日志行展开为多列。
 // VariadicOp denotes the kind of [VariadicOp] operation to perform.
 type VariadicOp uint32
 
@@ -160,3 +165,4 @@ func (t VariadicOp) String() string {
 		panic(fmt.Sprintf("unknown variadic operator %d", t))
 	}
 }
+// String 返回大写内部名，供物理计划与 protobuf 序列化双向映射。

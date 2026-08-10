@@ -1,5 +1,7 @@
 package wire
 
+// peer 模块将底层 Conn 封装为同步的双向通信 API，调度器与 worker 通过帧协议收发消息并等待确认。
+
 import (
 	"context"
 	"errors"
@@ -14,6 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Peer 同时扮演客户端与服务端：入站消息经 Handler 处理，出站消息支持同步/异步发送。
 // Peer wraps a [Conn] into a synchronous API that acts as both a
 // server and a client.
 //
@@ -46,6 +49,7 @@ type Peer struct {
 // message will be sent to the peer.
 type Handler func(ctx context.Context, peer *Peer, message Message) error
 
+// Serve 启动 recvMessages、handleIncoming、handleOutgoing 三个 goroutine 直至 ctx 取消。
 // Serve runs the peer, blocking until the provided context is canceled.
 func (p *Peer) Serve(ctx context.Context) error {
 	p.lazyInit()
@@ -225,6 +229,7 @@ type request struct {
 	result chan error
 }
 
+// SendMessage 阻塞直到对端返回 Ack/Nack 或连接关闭，用于需要交付确认的控制消息。
 // SendMessage sends a message to the remote peer. SendMessage blocks until the
 // provided context is canceled or the remote peer positively or negatively
 // acknowledges the message.
@@ -260,6 +265,7 @@ func (p *Peer) SendMessage(ctx context.Context, message Message) error {
 	}
 }
 
+// SendMessageAsync 仅保证帧已写入出站队列，不等待对端应答，适合流式数据。
 // SendMessageAsync sends a message to the remote peer asynchronously.
 // SendMessageAsync blocks until the message has been sent over the connection
 // but does not wait for an acknowledgement or response.
@@ -291,3 +297,4 @@ func (p *Peer) LocalAddr() net.Addr { return p.Conn.LocalAddr() }
 
 // RemoteAddr returns the address of the remote peer.
 func (p *Peer) RemoteAddr() net.Addr { return p.Conn.RemoteAddr() }
+// recvMessages 根据帧类型分发 Message/Ack/Nack，慢 Handler 会对连接产生背压。

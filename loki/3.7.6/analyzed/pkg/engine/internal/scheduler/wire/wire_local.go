@@ -1,5 +1,7 @@
 package wire
 
+// wire_local 提供进程内 Local 监听器与 Dialer，通过 channel 模拟 Conn，用于单进程调度器与 worker 联调测试。
+
 import (
 	"context"
 	"fmt"
@@ -8,7 +10,8 @@ import (
 )
 
 var (
-	// LocalScheduler is the address of the local scheduler when using the
+	// LocalScheduler 与 LocalWorker 是本地传输的固定逻辑地址标识。
+// LocalScheduler is the address of the local scheduler when using the
 	// [Local] listener.
 	LocalScheduler net.Addr = localAddr("scheduler")
 
@@ -26,6 +29,7 @@ func (addr localAddr) String() string  { return string(addr) }
 
 // Local is a [Listener] that accepts connections from the local process without
 // using the network.
+// Local 监听器在 DialFrom 时创建一对 localConn，分别代表拨号端与 Accept 端。
 type Local struct {
 	// Address to broadcast when connecting to peers. Should be [LocalScheduler]
 	// for the scheduler and [LocalWorker] for the worker.
@@ -41,6 +45,7 @@ type Local struct {
 
 var _ Listener = (*Local)(nil)
 
+// DialFrom 将 remoteStream 送入 incoming，返回 caller 侧的 localStream 作为 Conn。
 // DialFrom dials the local listener, blocking until the connection is accepted
 // or the context is canceled. Returns the caller's connection.
 func (l *Local) DialFrom(ctx context.Context, from net.Addr) (Conn, error) {
@@ -124,6 +129,7 @@ func (l *Local) Close(_ context.Context) error {
 // Addr returns the listener's advertised address.
 func (l *Local) Addr() net.Addr { return l.Address }
 
+// localConn 用两个方向相反的 Frame channel 实现内存中的 Send/Recv。
 type localConn struct {
 	alive context.Context
 	close context.CancelFunc
@@ -174,6 +180,7 @@ func (c *localConn) LocalAddr() net.Addr { return c.localAddr }
 // RemoteAddr returns the address of the remote side of the connection.
 func (c *localConn) RemoteAddr() net.Addr { return c.remoteAddr }
 
+// LocalDialer 按目标地址查找已注册的 Local 监听器并调用 DialFrom。
 // LocalDialer is a [Dialer] that can open local connections to one or more
 // [Local] listeners.
 type LocalDialer struct {
@@ -201,3 +208,4 @@ func (d *LocalDialer) Dial(ctx context.Context, from, to net.Addr) (Conn, error)
 	}
 	return listener.DialFrom(ctx, from)
 }
+// listener 关闭时 cancel alive 上下文，所有关联 localConn 随即不可用。

@@ -1,5 +1,7 @@
 package types //nolint:revive
 
+// literal 实现各类常量字面量（Null/Bool/String/数值/时间/字节/字符串列表），供表达式求值与物理计划常量折叠。
+
 import (
 	"fmt"
 	"strconv"
@@ -204,6 +206,7 @@ func (l StringListLiteral) Value() []string {
 	return l
 }
 
+// Literal 接口统一常量表示，Any 返回 Go 原生值，Type 返回 Loki DataType。
 // Literal is holds a value of [any] typed as [DataType].
 type Literal interface {
 	fmt.Stringer
@@ -241,6 +244,7 @@ var (
 	_ TypedLiteral[[]string]  = (*StringListLiteral)(nil)
 )
 
+// NewLiteral 按运行时类型分派构造对应 Literal，未知类型 panic。
 func NewLiteral(value any) Literal {
 	if value == nil {
 		return NewNullLiteral()
@@ -273,3 +277,4 @@ func NewLiteral(value any) Literal {
 func NewNullLiteral() NullLiteral {
 	return NullLiteral{}
 }
+// TimestampLiteral 输出 RFC3339Nano 格式；BytesLiteral 使用 humanize 可读字节数。

@@ -1,5 +1,7 @@
 package scheduler
 
+// workerConn 封装调度器到单个 worker 的 wire.Peer，区分控制面与数据面连接并跟踪已分配任务。
+
 import (
 	"errors"
 	"fmt"
@@ -52,6 +54,7 @@ func (t connectionType) String() string {
 }
 
 // A workerConn represents a connection to a worker.
+// workerConn 内嵌 Peer，用 RWMutex 保护连接类型与 tasks 集合。
 type workerConn struct {
 	// Peer connection to the worker.
 	*wire.Peer
@@ -79,6 +82,7 @@ func (wc *workerConn) Type() connectionType {
 	return wc.ty
 }
 
+// HandleHello 仅在 initial 状态接受，成功后标记为 control-plane 连接。
 // HandleHello handles a WorkerHelloMessage. Returns an error if the worker is
 // not in a valid state for a HelloMessage, or if the message is invalid.
 //
@@ -98,6 +102,7 @@ func (wc *workerConn) HandleHello(msg wire.WorkerHelloMessage) error {
 	return nil
 }
 
+// MarkReady 确认 worker 为控制面且可接收新任务分配。
 // MarkReady marks the worker as ready to receive tasks. Returns an error if the
 // worker is not a control plane connection, or if the worker is at full
 // capacity.
@@ -111,6 +116,7 @@ func (wc *workerConn) MarkReady() error {
 	return nil
 }
 
+// MarkDataPlane 将连接标记为 data-plane；控制面连接不可再发送流数据。
 // MarkDataPlane marks the worker as a data plane connection. Returns an error
 // if the worker is not in a valid state. MarkDataPlane is a no-op if the worker
 // is already marked as a data plane connection.
@@ -137,6 +143,7 @@ func (wc *workerConn) Assigned() []*task {
 	return slices.Collect(maps.Keys(wc.tasks))
 }
 
+// Assign 将 task 登记到 worker 并设置 owner 指针，便于回收与状态查询。
 // Assign assigns a task to the worker.
 func (wc *workerConn) Assign(assigned *task) {
 	wc.mut.Lock()
@@ -157,3 +164,4 @@ func (wc *workerConn) Unassign(assigned *task) {
 
 	delete(wc.tasks, assigned)
 }
+// Unassign 从 tasks 映射移除任务，Assigned 返回当前分配任务的副本切片。

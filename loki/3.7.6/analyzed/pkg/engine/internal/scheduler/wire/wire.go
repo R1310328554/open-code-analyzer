@@ -1,3 +1,4 @@
+// wire 包定义调度器 peer 之间的线协议抽象：Listener、Dialer 与 Conn 接口。
 // Package wire provides the wire protocol for how peers scheduler peers
 // communicate.
 package wire
@@ -8,9 +9,11 @@ import (
 	"net"
 )
 
+// ErrConnClosed 表示 peer 连接已关闭，后续 Send/Recv 应返回此错误。
 // ErrConnClosed indicates a closed connection between peers.
 var ErrConnClosed = errors.New("connection closed")
 
+// Listener 监听入站连接，Accept 在 ctx 取消或 Close 时返回错误。
 // Listener waits for incoming connections from scheduler peers.
 type Listener interface {
 	// Accept waits for and returns the next connection to the listener. Accept
@@ -26,6 +29,7 @@ type Listener interface {
 	Addr() net.Addr
 }
 
+// Dialer 主动拨号建立连接，from 地址供对端回连，to 为目标 peer 地址。
 // A Dialer establishes connections to scheduler peers.
 type Dialer interface {
 	// Dial connects to the scheduler peer at the provided "to" address. The
@@ -35,6 +39,7 @@ type Dialer interface {
 	Dial(ctx context.Context, from, to net.Addr) (Conn, error)
 }
 
+// Conn 是双向帧流：Send 不等待确认，Recv 需持续调用以免阻塞对端发送。
 // Conn is a communication stream between two peers.
 type Conn interface {
 	// Send sends the provided Frame to the peer. Send blocks until the Frame
@@ -64,3 +69,4 @@ type Conn interface {
 	// RemoteAddr returns the address of the remote side of the connection.
 	RemoteAddr() net.Addr
 }
+// 线协议层与 HTTP/2、本地内存通道等具体传输实现解耦。

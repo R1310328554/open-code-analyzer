@@ -1,5 +1,7 @@
 package types //nolint:revive
 
+// types 核心文件：定义 Loki DataType 接口、基础别名及与 Arrow 类型的映射实现。
+
 import (
 	"fmt"
 
@@ -47,6 +49,7 @@ func (t Type) String() string {
 	}
 }
 
+// DataType 提供 ID、String 与 ArrowType，是 Loki 引擎的类型系统根基。
 type DataType interface {
 	fmt.Stringer
 	ID() Type
@@ -109,6 +112,7 @@ func (t tStruct) ID() Type                  { return STRUCT }
 func (t tStruct) String() string            { return "struct" }
 func (t tStruct) ArrowType() arrow.DataType { return t.arrowType }
 
+// NewStructType 包装动态 Arrow 结构类型，用于嵌套字段列。
 // NewStructType creates a DataType from an Arrow StructType
 func NewStructType(arrowType *arrow.StructType) DataType {
 	return tStruct{arrowType: arrowType}
@@ -137,6 +141,7 @@ var (
 	}
 )
 
+// FromString 按小写类型名（如 utf8、timestamp_ns）解析 DataType。
 func FromString(dt string) (DataType, error) {
 	ty, ok := names[dt]
 	if !ok {
@@ -152,3 +157,4 @@ func MustFromString(dt string) DataType {
 	}
 	return ty
 }
+// Timestamp/Duration/Bytes 为 int64 别名，Null 为 any 表示 SQL NULL。

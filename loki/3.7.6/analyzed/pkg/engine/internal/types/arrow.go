@@ -1,5 +1,7 @@
 package types //nolint:revive
 
+// 本文件定义 Loki 逻辑类型与 Apache Arrow 物理类型的全局映射表 Loki 与 Arrow。
+
 import "github.com/apache/arrow-go/v18/arrow"
 
 var (
@@ -47,3 +49,4 @@ var (
 		Bytes:     arrow.PrimitiveTypes.Int64,
 	}
 )
+// 引擎在构建 RecordBatch 时通过 DataType.ArrowType() 查表得到 Arrow 列类型。

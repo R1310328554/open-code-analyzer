@@ -1,9 +1,12 @@
 package types //nolint:revive
 
+// column 定义列类型 ColumnType、优先级规则及 ColumnRef 列引用结构。
+
 import (
 	"fmt"
 )
 
+// ColumnType 区分 builtin、label、metadata、parsed、ambiguous、generated 等来源。
 // ColumnType denotes the column type for a [ColumnRef].
 type ColumnType int
 
@@ -20,6 +23,7 @@ const (
 	ColumnTypeGenerated // ColumnTypeGenerated represents a column that is generated from an expression or computation.
 )
 
+// 歧义列解析优先级：Generated > Parsed > Metadata > Label > Builtin。
 // Column type precedence for ambiguous column resolution (highest to lowest):
 // Generated > Parsed > Metadata > Label > Builtin
 const (
@@ -81,6 +85,7 @@ func ColumnTypeFromString(ct string) ColumnType {
 	}
 }
 
+// ColumnTypePrecedence 返回数值越小优先级越高，用于合并同名歧义列。
 // ColumnTypePrecedence returns the precedence of the given [ColumnType].
 func ColumnTypePrecedence(ct ColumnType) int {
 	switch ct {
@@ -97,6 +102,7 @@ func ColumnTypePrecedence(ct ColumnType) int {
 	}
 }
 
+// ColumnRef 在关系代数中引用具名列，Type 与 Column 共同构成标识。
 // A ColumnRef referenes a column within a table relation.
 type ColumnRef struct {
 	Column string     // Name of the column being referenced.
@@ -108,3 +114,4 @@ type ColumnRef struct {
 func (c *ColumnRef) String() string {
 	return fmt.Sprintf("%s.%s", c.Type, c.Column)
 }
+// MetadataKeyColumnType 等元数据键在 Arrow schema metadata 中标注列属性。
