@@ -28,19 +28,22 @@ import java.util.List;
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Balancer.
+ * 命名服务实例负载均衡工具。
+ *
+ * <p>提供按权重随机选取健康实例的能力，供 {@link com.alibaba.nacos.client.naming.NacosNamingService} 选择调用目标。</p>
  *
  * @author xuanyin
  */
 public class Balancer {
     
+    /** 按实例权重随机选择的负载均衡策略。 */
     public static class RandomByWeight {
         
         /**
-         * Select all instance.
+         * 返回服务下全部实例列表。
          *
-         * @param serviceInfo service information
-         * @return all instance of services
+         * @param serviceInfo 服务信息
+         * @return 实例列表，无主机时抛异常
          */
         public static List<Instance> selectAll(ServiceInfo serviceInfo) {
             List<Instance> hosts = serviceInfo.getHosts();
@@ -52,10 +55,10 @@ public class Balancer {
         }
         
         /**
-         * Random select one instance from service.
+         * 从服务实例中按权重随机选取一个。
          *
-         * @param dom service
-         * @return random instance
+         * @param dom 服务信息
+         * @return 随机选中的实例
          */
         public static Instance selectHost(ServiceInfo dom) {
             return getHostByRandomWeight(selectAll(dom));
@@ -63,10 +66,10 @@ public class Balancer {
     }
     
     /**
-     * Return one host from the host list by random-weight.
+     * 从主机列表中按权重随机返回一个健康实例。
      *
-     * @param hosts The list of the host.
-     * @return The random-weight result of the host
+     * @param hosts 实例列表
+     * @return 按权重随机选中的实例，无可用实例时返回 null
      */
     protected static Instance getHostByRandomWeight(List<Instance> hosts) {
         NAMING_LOGGER.debug("entry randomWithWeight");

@@ -33,7 +33,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Naming server list manager.
+ * 命名模块服务端地址列表管理器。
+ *
+ * <p>继承 {@link AbstractServerListManager}，负责命名服务端列表的加载、轮询选取下一节点，并识别单域名配置模式。</p>
  *
  * @author xiweng.yy
  */
@@ -41,12 +43,16 @@ public class NamingServerListManager extends AbstractServerListManager {
     
     private static final Logger LOGGER = LogUtils.logger(NamingServerListManager.class);
     
+    /** 当前选中服务端的轮询索引。 */
     private final AtomicInteger currentIndex = new AtomicInteger();
     
+    /** 单域名模式下的 Nacos 域名地址。 */
     private String nacosDomain;
     
+    /** 是否配置为单域名模式（仅一个 server 地址）。 */
     private boolean isDomain;
     
+    /** 测试用构造器，从 Properties 派生客户端配置。 */
     @JustForTest
     public NamingServerListManager(Properties properties) {
         this(NacosClientProperties.PROTOTYPE.derive(properties), "");
@@ -56,6 +62,7 @@ public class NamingServerListManager extends AbstractServerListManager {
         super(properties, namespace);
     }
     
+    /** 启动时校验列表非空并随机初始化轮询起点，识别域名模式。 */
     @Override
     public void start() throws NacosException {
         super.start();
@@ -73,30 +80,36 @@ public class NamingServerListManager extends AbstractServerListManager {
         }
     }
     
+    /** 返回单域名模式下的域名地址。 */
     public String getNacosDomain() {
         return nacosDomain;
     }
     
+    /** 是否为单域名配置模式。 */
     public boolean isDomain() {
         return isDomain;
     }
     
+    /** 模块名称标识，用于地址解析 SPI。 */
     @Override
     protected String getModuleName() {
         return "Naming";
     }
     
+    /** 获取命名模块专用 HTTP 客户端。 */
     @Override
     protected NacosRestTemplate getNacosRestTemplate() {
         return NamingHttpClientManager.getInstance().getNacosRestTemplate();
     }
     
+    /** 轮询返回下一个服务端地址。 */
     @Override
     public String genNextServer() {
         int index = currentIndex.incrementAndGet() % getServerList().size();
         return getServerList().get(index);
     }
     
+    /** 返回当前索引对应的服务端地址。 */
     @Override
     public String getCurrentServer() {
         return getServerList().get(currentIndex.get() % getServerList().size());

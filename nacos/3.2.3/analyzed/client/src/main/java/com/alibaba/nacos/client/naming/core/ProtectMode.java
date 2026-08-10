@@ -17,22 +17,28 @@
 package com.alibaba.nacos.client.naming.core;
 
 /**
- * Protect mode.
+ * 服务保护模式配置。
+ *
+ * <p>表示当健康实例比例低于保护阈值时，Naming 服务端是否触发保护逻辑（返回全部实例含不健康）。</p>
  *
  * @author nkorange
  */
 public class ProtectMode {
     
+    /** 触发保护的健康实例比例阈值（默认 0.8）。 */
     private float protectThreshold;
     
+    /** 默认构造，保护阈值设为 0.8。 */
     public ProtectMode() {
         this.protectThreshold = 0.8F;
     }
     
+    /** 获取保护阈值。 */
     public float getProtectThreshold() {
         return protectThreshold;
     }
     
+    /** 设置保护阈值。 */
     public void setProtectThreshold(float protectThreshold) {
         this.protectThreshold = protectThreshold;
     }

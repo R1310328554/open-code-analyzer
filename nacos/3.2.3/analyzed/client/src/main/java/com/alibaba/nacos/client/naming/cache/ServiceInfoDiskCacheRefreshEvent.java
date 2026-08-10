@@ -19,24 +19,29 @@ package com.alibaba.nacos.client.naming.cache;
 import com.alibaba.nacos.api.naming.pojo.ServiceInfo;
 
 /**
- * Event for async service info disk cache refresh.
+ * 服务信息磁盘缓存异步刷新事件。
+ *
+ * <p>由 {@link ServiceInfoHolder} 在实例变更后发布，携带最新 {@link ServiceInfo} 快照与缓存目录，供 {@link ServiceInfoDiskCacheRefresher} 批量落盘。</p>
  *
  * @author Zhengcy05
  */
 public class ServiceInfoDiskCacheRefreshEvent {
     
+    /** 不含集群后缀的服务键（group@@service）。 */
     private final String serviceKey;
     
+    /** 待持久化的最新服务信息快照。 */
     private final ServiceInfo serviceInfo;
     
+    /** 本地磁盘缓存根目录。 */
     private final String cacheDir;
     
     /**
-     * Create a disk cache refresh event.
+     * 构造磁盘缓存刷新事件。
      *
-     * @param serviceKey service key without clusters
-     * @param serviceInfo latest service info snapshot
-     * @param cacheDir disk cache directory
+     * @param serviceKey 不含集群后缀的服务键
+     * @param serviceInfo 最新服务信息快照
+     * @param cacheDir 磁盘缓存目录
      */
     public ServiceInfoDiskCacheRefreshEvent(String serviceKey, ServiceInfo serviceInfo,
         String cacheDir) {
@@ -46,27 +51,27 @@ public class ServiceInfoDiskCacheRefreshEvent {
     }
     
     /**
-     * Get service key.
+     * 获取服务键。
      *
-     * @return service key
+     * @return 服务键
      */
     public String getServiceKey() {
         return serviceKey;
     }
     
     /**
-     * Get service info snapshot.
+     * 获取服务信息快照。
      *
-     * @return service info snapshot
+     * @return 服务信息快照
      */
     public ServiceInfo getServiceInfo() {
         return serviceInfo;
     }
     
     /**
-     * Get disk cache directory.
+     * 获取磁盘缓存目录。
      *
-     * @return disk cache directory
+     * @return 磁盘缓存目录
      */
     public String getCacheDir() {
         return cacheDir;

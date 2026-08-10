@@ -26,21 +26,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Abstract Naming client proxy.
+ * 命名客户端远程代理抽象基类。
+ *
+ * <p>封装鉴权请求头与应用名头，并订阅 {@link ServerListChangeEvent} 以响应服务端列表变更。具体 RPC 由 HTTP/gRPC 子类实现。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractNamingClientProxy extends Subscriber<ServerListChangeEvent>
     implements NamingClientProxy {
     
+    /** HTTP 头中应用名字段键。 */
     private static final String APP_FILED = "app";
     
+    /** 安全代理，提供身份上下文与重新登录。 */
     private final SecurityProxy securityProxy;
     
     protected AbstractNamingClientProxy(SecurityProxy securityProxy) {
         this.securityProxy = securityProxy;
     }
     
+    /** 构建含命名空间/分组/服务资源的鉴权头，并附加应用名。 */
     protected Map<String, String> getSecurityHeaders(String namespace, String group,
         String serviceName) {
         RequestResource resource =
@@ -51,12 +56,14 @@ public abstract class AbstractNamingClientProxy extends Subscriber<ServerListCha
         return result;
     }
     
+    /** 返回仅含客户端应用名的请求头。 */
     protected Map<String, String> getAppHeaders() {
         Map<String, String> result = new HashMap<>(1);
         result.put(APP_FILED, AppNameUtils.getAppName());
         return result;
     }
     
+    /** 触发安全代理重新登录（凭证过期时）。 */
     protected void reLogin() {
         securityProxy.reLogin();
     }

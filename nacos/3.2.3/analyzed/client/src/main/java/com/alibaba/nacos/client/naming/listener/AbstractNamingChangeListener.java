@@ -20,12 +20,15 @@ import com.alibaba.nacos.api.naming.listener.AbstractEventListener;
 import com.alibaba.nacos.api.naming.listener.Event;
 
 /**
- * Listener for NamingChangeEvent.
+ * 命名变更事件监听器抽象基类。
+ *
+ * <p>过滤 {@link NamingChangeEvent} 并回调 {@link #onChange(NamingChangeEvent)}，简化用户实现实例增删改感知逻辑。</p>
  *
  * @author lideyou
  */
 public abstract class AbstractNamingChangeListener extends AbstractEventListener {
     
+    /** 仅将 NamingChangeEvent 转发至 onChange。 */
     @Override
     public final void onEvent(Event event) {
         if (event instanceof NamingChangeEvent) {
@@ -34,9 +37,9 @@ public abstract class AbstractNamingChangeListener extends AbstractEventListener
     }
     
     /**
-     * Callback when instances have changed.
+     * 实例列表发生变更时的回调。
      *
-     * @param event NamingChangeEvent
+     * @param event 命名变更事件
      */
     public abstract void onChange(NamingChangeEvent event);
 }

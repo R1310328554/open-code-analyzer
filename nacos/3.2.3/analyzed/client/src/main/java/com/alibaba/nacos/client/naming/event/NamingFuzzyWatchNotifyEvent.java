@@ -19,22 +19,30 @@ package com.alibaba.nacos.client.naming.event;
 import com.alibaba.nacos.common.notify.Event;
 
 /**
- * Watch notify event, including service change/watch initial.
+ * 命名模糊监听变更通知事件。
+ *
+ * <p>服务端推送单条 serviceKey 的增删改或初始同步信息，由 {@link NamingFuzzyWatchServiceListHolder} 消费并更新 {@link NamingFuzzyWatchContext}。</p>
  *
  * @author tanyongquan
  */
 public class NamingFuzzyWatchNotifyEvent extends Event {
     
+    /** 事件作用域。 */
     private final String scope;
     
+    /** 目标监听器 UUID，null 表示广播全部。 */
     private String watcherUuid;
     
+    /** 变更的服务键。 */
     private String serviceKey;
     
+    /** 匹配的模糊模式。 */
     private String pattern;
     
+    /** 变更类型（如 ADD/DELETE/MODIFY）。 */
     private final String changedType;
     
+    /** 同步类型（增量或全量对账）。 */
     private final String syncType;
     
     private NamingFuzzyWatchNotifyEvent(String scope, String pattern, String serviceKey,
@@ -48,6 +56,7 @@ public class NamingFuzzyWatchNotifyEvent extends Event {
         this.watcherUuid = watcherUuid;
     }
     
+    /** 构建广播型模糊监听通知（不指定 watcherUuid）。 */
     public static NamingFuzzyWatchNotifyEvent build(String eventScope, String pattern,
         String serviceKey,
         String changedType, String syncType) {
@@ -55,6 +64,7 @@ public class NamingFuzzyWatchNotifyEvent extends Event {
             syncType, null);
     }
     
+    /** 构建可定向到单个监听器的模糊监听通知。 */
     public static NamingFuzzyWatchNotifyEvent build(String eventScope, String pattern,
         String serviceKey,
         String changedType, String syncType, String watcherUuid) {
@@ -62,31 +72,38 @@ public class NamingFuzzyWatchNotifyEvent extends Event {
             syncType, watcherUuid);
     }
     
+    /** 获取模糊匹配模式。 */
     public String getPattern() {
         return pattern;
     }
     
+    /** 获取变更类型。 */
     public String getChangedType() {
         return changedType;
     }
     
+    /** 返回事件作用域。 */
     @Override
     public String scope() {
         return this.scope;
     }
     
+    /** 获取目标监听器 UUID。 */
     public String getWatcherUuid() {
         return watcherUuid;
     }
     
+    /** 获取变更的服务键。 */
     public String getServiceKey() {
         return serviceKey;
     }
     
+    /** 获取作用域（同 scope()）。 */
     public String getScope() {
         return scope;
     }
     
+    /** 获取同步类型。 */
     public String getSyncType() {
         return syncType;
     }

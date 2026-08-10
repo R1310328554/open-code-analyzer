@@ -30,17 +30,22 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A subscriber to notify eventListener callback.
+ * 实例变更事件订阅者与监听器路由。
+ *
+ * <p>订阅 {@link InstancesChangeEvent}，按 group@@service 将事件分发给已注册的 {@link NamingSelectorWrapper} 监听器。</p>
  *
  * @author horizonzy
  * @since 1.4.1
  */
 public class InstancesChangeNotifier extends Subscriber<InstancesChangeEvent> {
     
+    /** 本 Notifier 的事件作用域。 */
     private final String eventScope;
     
+    /** 订阅 ID 到选择器包装器的管理器。 */
     private final SelectorManager<NamingSelectorWrapper> selectorManager = new SelectorManager<>();
     
+    /** 测试用构造器，随机生成 eventScope。 */
     @JustForTest
     public InstancesChangeNotifier() {
         this.eventScope = UUID.randomUUID().toString();
@@ -51,11 +56,11 @@ public class InstancesChangeNotifier extends Subscriber<InstancesChangeEvent> {
     }
     
     /**
-     * register listener.
+     * 注册服务变更监听器。
      *
-     * @param groupName   group name
-     * @param serviceName serviceName
-     * @param wrapper     selectorWrapper
+     * @param groupName   分组名
+     * @param serviceName 服务名
+     * @param wrapper     选择器包装器
      */
     public void registerListener(String groupName, String serviceName,
         NamingSelectorWrapper wrapper) {
@@ -67,11 +72,11 @@ public class InstancesChangeNotifier extends Subscriber<InstancesChangeEvent> {
     }
     
     /**
-     * deregister listener.
+     * 注销服务变更监听器。
      *
-     * @param groupName   group name
-     * @param serviceName serviceName
-     * @param wrapper     selectorWrapper
+     * @param groupName   分组名
+     * @param serviceName 服务名
+     * @param wrapper     选择器包装器
      */
     public void deregisterListener(String groupName, String serviceName,
         NamingSelectorWrapper wrapper) {
@@ -83,17 +88,18 @@ public class InstancesChangeNotifier extends Subscriber<InstancesChangeEvent> {
     }
     
     /**
-     * check serviceName,groupName is subscribed.
+     * 判断指定服务是否仍有订阅。
      *
-     * @param groupName   group name
-     * @param serviceName serviceName
-     * @return is serviceName,clusters subscribed
+     * @param groupName   分组名
+     * @param serviceName 服务名
+     * @return 已订阅返回 true
      */
     public boolean isSubscribed(String groupName, String serviceName) {
         String subId = NamingUtils.getGroupedName(serviceName, groupName);
         return selectorManager.isSubscribed(subId);
     }
     
+    /** 返回当前所有已订阅服务的 ServiceInfo 列表。 */
     public List<ServiceInfo> getSubscribeServices() {
         List<ServiceInfo> serviceInfos = new ArrayList<>();
         for (String key : selectorManager.getSubscriptions()) {
@@ -102,6 +108,7 @@ public class InstancesChangeNotifier extends Subscriber<InstancesChangeEvent> {
         return serviceInfos;
     }
     
+    /** 收到变更事件后向该服务下所有监听器分发。 */
     @Override
     public void onEvent(InstancesChangeEvent event) {
         String subId = NamingUtils.getGroupedName(event.getServiceName(), event.getGroupName());
@@ -112,11 +119,13 @@ public class InstancesChangeNotifier extends Subscriber<InstancesChangeEvent> {
         }
     }
     
+    /** 订阅事件类型为 InstancesChangeEvent。 */
     @Override
     public Class<? extends Event> subscribeType() {
         return InstancesChangeEvent.class;
     }
     
+    /** 仅处理与本 Notifier scope 匹配的事件。 */
     @Override
     public boolean scopeMatches(InstancesChangeEvent event) {
         return this.eventScope.equals(event.scope());

@@ -24,16 +24,21 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * The differences in instances compared to the last callback.
+ * 相对上次回调的实例变更差异。
+ *
+ * <p>由 {@link InstancesDiffer} 计算，包含新增、删除与修改的 {@link Instance} 列表，供变更事件与用户监听器感知具体变化。</p>
  *
  * @author lideyou
  */
 public class InstancesDiff {
     
+    /** 新增实例列表。 */
     private final List<Instance> addedInstances = new ArrayList<>();
     
+    /** 移除实例列表。 */
     private final List<Instance> removedInstances = new ArrayList<>();
     
+    /** 属性变更的实例列表。 */
     private final List<Instance> modifiedInstances = new ArrayList<>();
     
     public InstancesDiff() {
@@ -80,37 +85,39 @@ public class InstancesDiff {
     }
     
     /**
-     * Check if any instances have changed.
+     * 是否存在任意实例变更。
      *
-     * @return true if there are instances that have changed
+     * @return 有增删改任一变化时返回 true
      */
     public boolean hasDifferent() {
         return isAdded() || isRemoved() || isModified();
     }
     
     /**
-     * Check if any instances have been added.
+     * 是否存在新增实例。
      *
-     * @return true if there are instances that have been added.
+     * @return 有新增实例时返回 true
      */
     public boolean isAdded() {
         return CollectionUtils.isNotEmpty(this.addedInstances);
     }
     
     /**
-     * Check if any instances have been added.
+     * 是否存在移除实例。
      *
-     * @return true if there are instances that have been added.
+     * @return 有移除实例时返回 true
      */
+    /** 判断是否有实例被移除。 */
     public boolean isRemoved() {
         return CollectionUtils.isNotEmpty(this.removedInstances);
     }
     
     /**
-     * Check if any instances have been added.
+     * 是否存在修改过的实例。
      *
-     * @return true if there are instances that have been added.
+     * @return 有修改实例时返回 true
      */
+    /** 判断是否有实例属性变更。 */
     public boolean isModified() {
         return CollectionUtils.isNotEmpty(this.modifiedInstances);
     }

@@ -40,28 +40,39 @@ import java.util.concurrent.TimeUnit;
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Service information update service.
+ * 订阅服务的定时主动更新服务。
+ *
+ * <p>在开启异步查询订阅服务时，为每个 serviceKey 调度 {@link UpdateTask}，按 cacheMillis 倍数间隔向服务端拉取最新实例并更新 {@link ServiceInfoHolder}。</p>
  *
  * @author xiweng.yy
  */
 public class ServiceInfoUpdateService implements Closeable {
     
+    /** 首次调度延迟与失败退避基准（毫秒）。 */
     private static final long DEFAULT_DELAY = 1000L;
     
+    /** 拉取间隔 = 服务端 cacheMillis × 该倍数。 */
     private static final int DEFAULT_UPDATE_CACHE_TIME_MULTIPLE = 6;
     
+    /** 轮询线程池最小线程数。 */
     private static final int MIN_THREAD_NUM = 1;
     
+    /** serviceKey 到定时任务的映射，防止重复调度。 */
     private final Map<String, ScheduledFuture<?>> futureMap = new HashMap<>();
     
+    /** 本地服务缓存持有者。 */
     private final ServiceInfoHolder serviceInfoHolder;
     
+    /** 更新任务调度线程池。 */
     private final ScheduledExecutorService executor;
     
+    /** 命名远程代理，执行实例查询 RPC。 */
     private final NamingClientProxy namingClientProxy;
     
+    /** 变更通知器，用于判断订阅是否仍有效。 */
     private final InstancesChangeNotifier changeNotifier;
     
+    /** 是否启用订阅服务的异步主动查询。 */
     private final boolean asyncQuerySubscribeService;
     
     public ServiceInfoUpdateService(NacosClientProperties properties,
@@ -75,6 +86,7 @@ public class ServiceInfoUpdateService implements Closeable {
         this.changeNotifier = changeNotifier;
     }
     
+    /** 读取 NAMING_ASYNC_QUERY_SUBSCRIBE_SERVICE 配置。 */
     private boolean isAsyncQueryForSubscribeService(NacosClientProperties properties) {
         if (properties == null
             || !properties.containsKey(PropertyKeyConst.NAMING_ASYNC_QUERY_SUBSCRIBE_SERVICE)) {
@@ -85,6 +97,7 @@ public class ServiceInfoUpdateService implements Closeable {
             false);
     }
     
+    /** 根据 CPU 与配置初始化轮询线程数。 */
     private int initPollingThreadCount(NacosClientProperties properties) {
         int count = ThreadUtils.getSuitableThreadCount(1) > 1
             ? ThreadUtils.getSuitableThreadCount(1) / 2 : 1;
@@ -99,11 +112,11 @@ public class ServiceInfoUpdateService implements Closeable {
     }
     
     /**
-     * Schedule update if absent.
+     * 若尚未调度则为该服务创建定时更新任务。
      *
-     * @param serviceName service name
-     * @param groupName   group name
-     * @param clusters    clusters
+     * @param serviceName 服务名
+     * @param groupName   分组名
+     * @param clusters    集群列表
      */
     public void scheduleUpdateIfAbsent(String serviceName, String groupName, String clusters) {
         if (!asyncQuerySubscribeService) {
@@ -124,16 +137,17 @@ public class ServiceInfoUpdateService implements Closeable {
         }
     }
     
+    /** 提交 UpdateTask 并返回 ScheduledFuture。 */
     private synchronized ScheduledFuture<?> addTask(UpdateTask task) {
         return executor.schedule(task, DEFAULT_DELAY, TimeUnit.MILLISECONDS);
     }
     
     /**
-     * Stop to schedule update if contain task.
+     * 取消指定服务的定时更新任务（若存在）。
      *
-     * @param serviceName service name
-     * @param groupName   group name
-     * @param clusters    clusters
+     * @param serviceName 服务名
+     * @param groupName   分组名
+     * @param clusters    集群列表
      */
     public void stopUpdateIfContain(String serviceName, String groupName, String clusters) {
         String serviceKey =
@@ -157,10 +171,13 @@ public class ServiceInfoUpdateService implements Closeable {
         NAMING_LOGGER.info("{} do shutdown stop", className);
     }
     
+    /** 单服务定时拉取任务，含失败指数退避。 */
     public class UpdateTask implements Runnable {
         
+        /** 上次见到的服务端 lastRefTime，用于判断是否需要重新查询。 */
         long lastRefTime = Long.MAX_VALUE;
         
+        /** 任务是否已取消（退订后不再重调度）。 */
         private boolean isCancel;
         
         private final String serviceName;
@@ -173,8 +190,10 @@ public class ServiceInfoUpdateService implements Closeable {
         
         private final String serviceKey;
         
+        /** 连续失败次数，用于指数退避（如连不上服务端或实例为空）。 */
         /**
          * the fail situation. 1:can't connect to server 2:serviceInfo's hosts is empty
+          * <p>订阅服务定时更新；详见类级说明。</p>
          */
         private int failCount = 0;
         
@@ -204,7 +223,7 @@ public class ServiceInfoUpdateService implements Closeable {
                     serviceObj = namingClientProxy.queryInstancesOfService(serviceName, groupName,
                         clusters, false);
                     serviceInfoHolder.processServiceInfo(serviceObj);
-                    // TODO multiple time can be configured.
+                    // TODO 拉取间隔倍数可配置化
                     delayTime = serviceObj.getCacheMillis() * DEFAULT_UPDATE_CACHE_TIME_MULTIPLE;
                     lastRefTime = serviceObj.getLastRefTime();
                     return;
@@ -220,7 +239,7 @@ public class ServiceInfoUpdateService implements Closeable {
                     incFailCount();
                     return;
                 }
-                // TODO multiple time can be configured.
+                // TODO 拉取间隔倍数可配置化
                 delayTime = serviceObj.getCacheMillis() * DEFAULT_UPDATE_CACHE_TIME_MULTIPLE;
                 resetFailCount();
             } catch (NacosException e) {
@@ -235,6 +254,7 @@ public class ServiceInfoUpdateService implements Closeable {
             }
         }
         
+        /** 处理 Nacos 异常并递增失败计数。 */
         private void handleNacosException(NacosException e) {
             incFailCount();
             int errorCode = e.getErrCode();
@@ -245,12 +265,14 @@ public class ServiceInfoUpdateService implements Closeable {
                 e.getErrMsg());
         }
         
+        /** 处理未知异常并递增失败计数。 */
         private void handleUnknownException(Throwable throwable) {
             incFailCount();
             NAMING_LOGGER.warn("[NA] failed to update serviceName: {}", groupedServiceName,
                 throwable);
         }
         
+        /** 递增失败次数，上限为 6。 */
         private void incFailCount() {
             int limit = 6;
             if (failCount == limit) {
@@ -259,6 +281,7 @@ public class ServiceInfoUpdateService implements Closeable {
             failCount++;
         }
         
+        /** 成功后重置失败计数。 */
         private void resetFailCount() {
             failCount = 0;
         }

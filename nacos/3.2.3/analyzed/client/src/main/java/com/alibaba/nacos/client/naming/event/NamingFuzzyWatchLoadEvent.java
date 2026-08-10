@@ -19,31 +19,33 @@ package com.alibaba.nacos.client.naming.event;
 import com.alibaba.nacos.common.notify.Event;
 
 /**
- * Event class for fuzzy listen notifications.
+ * 命名模糊监听负载/超限通知事件。
  *
- * <p>This class represents an event used for notifying fuzzy listen changes. It extends {@link Event}, indicating
- * that it may be processed asynchronously. The event contains information about the group, dataId, type, and UUID of
- * the notification.
+ * <p>当模糊匹配模式或匹配服务数超限时，由 {@link NamingFuzzyWatchContext} 发布，通知 {@link com.alibaba.nacos.api.naming.listener.FuzzyWatchLoadWatcher} 回调。</p>
  *
  * @author shiyiyue
  * @date 2025/01/13
  */
 public class NamingFuzzyWatchLoadEvent extends Event {
     
+    /** 事件作用域。 */
     private String eventScope;
     
+    /** 触发通知的 groupKey 模糊匹配模式。 */
     /**
      * The groupKeyPattern of configuration.
+      * <p>模糊监听负载事件；详见类级说明。</p>
      */
     private String groupKeyPattern;
     
+    /** 通知类型码（如模式超限、匹配数超限）。 */
     private int code;
     
     /**
-     * Constructs a new FuzzyListenNotifyEvent with the specified group, dataId, and type.
+     * 私有构造，通过工厂方法创建。
      *
-     * @param code            The type of notification.
-     * @param groupKeyPattern The groupKeyPattern of notification.
+     * @param code            通知类型码
+     * @param groupKeyPattern groupKey 匹配模式
      */
     private NamingFuzzyWatchLoadEvent(int code, String groupKeyPattern, String eventScope) {
         this.code = code;
@@ -52,25 +54,28 @@ public class NamingFuzzyWatchLoadEvent extends Event {
     }
     
     /**
-     * Builds a new FuzzyListenNotifyEvent with the specified group, dataId, and type.
+     * 构建模糊监听负载通知事件。
      *
-     * @param groupKeyPattern The groupKey of the configuration.
-     * @return A new FuzzyListenNotifyEvent instance.
+     * @param groupKeyPattern groupKey 模式
+     * @return 新事件实例
      */
     public static NamingFuzzyWatchLoadEvent buildEvent(int code, String groupKeyPattern,
         String scope) {
         return new NamingFuzzyWatchLoadEvent(code, groupKeyPattern, scope);
     }
     
+    /** 返回事件作用域。 */
     @Override
     public String scope() {
         return eventScope;
     }
     
+    /** 获取 groupKey 匹配模式。 */
     public String getGroupKeyPattern() {
         return groupKeyPattern;
     }
     
+    /** 获取通知类型码。 */
     public int getCode() {
         return code;
     }
