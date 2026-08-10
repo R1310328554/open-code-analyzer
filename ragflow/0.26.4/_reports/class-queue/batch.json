@@ -15,23 +15,8 @@
     "web/src/pages/agent/canvas/node/use-build-switch-handle-positions.ts",
     "web/src/pages/agent/chat/use-send-agent-message.ts",
     "web/src/pages/agent/constant/chat.ts",
-    "web/src/pages/agent/context.ts",
-    "web/src/pages/agent/empty-dsl.ts",
-    "web/src/pages/agent/explore/hooks/use-explore-url-params.ts",
-    "web/src/pages/agent/explore/hooks/use-select-derived-session-list.ts",
-    "web/src/pages/agent/explore/hooks/use-send-session-message.ts",
-    "web/src/pages/agent/form-hooks.ts",
-    "web/src/pages/agent/form-sheet/single-debug-sheet/utils.test.ts",
-    "web/src/pages/agent/form-sheet/single-debug-sheet/utils.ts",
-    "web/src/pages/agent/form/agent-form/tool-popover/use-update-mcp.ts",
-    "web/src/pages/agent/form/agent-form/tool-popover/use-update-tools.ts",
-    "web/src/pages/agent/form/agent-form/use-build-prompt-options.ts",
-    "web/src/pages/agent/form/agent-form/use-get-tools.ts",
-    "web/src/pages/agent/form/agent-form/use-show-structured-output-dialog.ts",
-    "web/src/pages/agent/form/agent-form/use-values.ts",
-    "web/src/pages/agent/form/agent-form/use-watch-change.ts",
-    "web/src/pages/agent/form/begin-form/schema.ts"
+    "web/src/pages/agent/context.ts"
   ],
   "remaining_pending": 264,
-  "done": 1470
+  "done": 1485
 }
