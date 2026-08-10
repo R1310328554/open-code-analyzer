@@ -6,11 +6,23 @@ import java.util.Map;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventType;
 
+/**
+ * 将 {@link SysLog} 日志条目解析为 {@link Event} 用户事件对象。
+ * <p>
+ * 仅处理 category 为 {@code org.keycloak.events} 且消息以 {@code type=} 开头的 syslog 行。
+ */
 public class EventParser {
 
+    /** 工具类，禁止实例化。 */
     private EventParser() {
     }
 
+    /**
+     * 从 syslog 消息解析用户事件。
+     *
+     * @param sysLog 结构化 syslog 条目
+     * @return 解析成功返回 {@link Event}，非用户事件日志返回 {@code null}
+     */
     public static Event parse(SysLog sysLog) {
         if (!sysLog.getCategory().equals("org.keycloak.events")) {
             return null;

@@ -8,11 +8,23 @@ import org.keycloak.events.admin.AuthDetails;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 
+/**
+ * 将 {@link SysLog} 日志条目解析为 {@link AdminEvent} 管理事件对象。
+ * <p>
+ * 仅处理 category 为 {@code org.keycloak.events} 且消息以 {@code operationType=} 开头的 syslog 行。
+ */
 public class AdminEventsParser {
 
+    /** 工具类，禁止实例化。 */
     private AdminEventsParser() {
     }
 
+    /**
+     * 从 syslog 消息解析管理事件。
+     *
+     * @param sysLog 结构化 syslog 条目
+     * @return 解析成功返回 {@link AdminEvent}，非管理事件日志返回 {@code null}
+     */
     public static AdminEvent parse(SysLog sysLog) {
         if (!sysLog.getCategory().equals("org.keycloak.events")) {
             return null;

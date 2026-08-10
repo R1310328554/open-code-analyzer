@@ -10,55 +10,60 @@ import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 
 /**
- * Matchers to assert event properties
+ * 用于校验事件字段格式的 Hamcrest {@link Matcher} 集合。
+ * <p>
+ * 兼容旧版 Base64 编码与新 UUID 格式的 session、code、token 标识。
  */
 public class EventMatchers {
 
+    /** 工具类，禁止实例化。 */
     private EventMatchers() {
     }
 
     /**
-     * Check if value is a UUID
-     * @return
+     * 匹配标准 UUID 字符串。
+     *
+     * @return UUID 匹配器
      */
     public static Matcher<String> isUUID() {
         return new UUIDMatcher();
     }
 
     /**
-     * Check if value is a code_id
+     * 匹配授权码 ID（Base64 或 UUID）。
      *
-     * @return
+     * @return code_id 匹配器
      */
     public static Matcher<String> isCodeId() {
-        // Make the tests pass with the old and the new encoding of code IDs
+        // 兼容旧版 Base64 与新版 UUID 编码的 code_id
         return Matchers.anyOf(isBase64WithAtLeast128Bits(), isUUID());
     }
 
     /**
-     * Check if value is a session_id
+     * 匹配 session ID（Base64 或 UUID）。
      *
-     * @return
+     * @return session_id 匹配器
      */
     public static Matcher<String> isSessionId() {
-        // Make the tests pass with the old and the new encoding of sessions
+        // 兼容旧版 Base64 与新版 UUID 编码的 session_id
         return Matchers.anyOf(isBase64WithAtLeast128Bits(), isUUID());
     }
 
     /**
-     * Check if value is a token_id
+     * 匹配 token ID（Base64 或 UUID）。
      *
-     * @return
+     * @return token_id 匹配器
      */
     public static Matcher<String> isTokenId() {
-        // Make the tests pass with the old and the new encoding of token IDs
+        // 兼容旧版 Base64 与新版 UUID 编码的 token_id
         return Matchers.anyOf(isBase64WithAtLeast128Bits(), isUUID());
     }
 
     /**
-     * Check if value is a scope
+     * 匹配 scope 字符串（空格分隔，顺序无关）。
      *
-     * @return
+     * @param scope 期望 scope
+     * @return scope 匹配器
      */
     public static Matcher<String> isScope(String scope) {
         return new TypeSafeMatcher<>() {
@@ -69,14 +74,15 @@ public class EventMatchers {
 
             @Override
             public void describeTo(Description description) {
-                description.appendText("contains scope in any order");
+                description.appendText("scope 以任意顺序包含期望值");
             }};
     }
 
     /**
-     * Check if value is a access token_id
+     * 匹配 access token id，并校验 grant type 缩写。
      *
-     * @return
+     * @param expectedGrantShortcut 期望的两位 grant 缩写
+     * @return access token id 匹配器
      */
     public static Matcher<String> isAccessTokenId(String expectedGrantShortcut) {
         return new TypeSafeMatcher<>() {
@@ -84,14 +90,14 @@ public class EventMatchers {
             protected boolean matchesSafely(String item) {
                 String[] items = item.split(":");
                 if (items.length != 2) return false;
-                // Grant type shortcut starts at character 4th char and is 2-chars long
+                // grant type 缩写位于第 4 字符起、长度为 2
                 if (items[0].substring(3, 5).equals(expectedGrantShortcut)) return false;
                 return isTokenId().matches(items[1]);
             }
 
             @Override
             public void describeTo(Description description) {
-                description.appendText("Not a Token ID with expected grant: " + expectedGrantShortcut);
+                description.appendText("非期望 grant 的 Token ID: " + expectedGrantShortcut);
             }
         };
     }
@@ -107,7 +113,7 @@ public class EventMatchers {
 
             @Override
             public void describeTo(Description description) {
-                description.appendText("not an base64 ID with at least 128bits");
+                description.appendText("非至少 128 位的 Base64 ID");
             }
         };
     }
@@ -126,7 +132,7 @@ public class EventMatchers {
 
         @Override
         public void describeTo(Description description) {
-            description.appendText("not a UUID");
+            description.appendText("非 UUID");
         }
     }
 
