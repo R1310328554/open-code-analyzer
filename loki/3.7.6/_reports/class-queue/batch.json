@@ -15,23 +15,8 @@
     "pkg/util/ring_watcher.go",
     "pkg/util/sample.go",
     "pkg/util/series_volume.go",
-    "pkg/util/server/error.go",
-    "pkg/util/server/grpc_headers.go",
-    "pkg/util/server/grpc_query_tags.go",
-    "pkg/util/server/middleware.go",
-    "pkg/util/server/recovery.go",
-    "pkg/util/server/unencrypted_http2.go",
-    "pkg/util/shard.go",
-    "pkg/util/spanlogger/spanlogger.go",
-    "pkg/util/string.go",
-    "pkg/util/ticker.go",
-    "pkg/util/time.go",
-    "pkg/util/topk/topk.go",
-    "pkg/util/unmarshal/legacy/unmarshal.go",
-    "pkg/util/unmarshal/unmarshal.go",
-    "pkg/util/validation/blocked_queries.go",
-    "pkg/util/validation/limits.go"
+    "pkg/util/server/error.go"
   ],
   "remaining_pending": 52,
-  "done": 1470
+  "done": 1485
 }
