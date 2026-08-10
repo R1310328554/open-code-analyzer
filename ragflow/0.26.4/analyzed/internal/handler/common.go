@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// common.go — 处理器层公共工具：从 Gin 上下文提取已认证用户。
+
 //
 
 package handler
@@ -23,6 +26,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GetUser 从 Gin 上下文读取 middleware 注入的 *entity.User；未登录返回 CodeUnauthorized。
 func GetUser(c *gin.Context) (*entity.User, common.ErrorCode, string) {
 	userAny, exist := c.Get("user")
 	if !exist {

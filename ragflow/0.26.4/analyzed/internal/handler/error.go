@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// error.go — 全局错误与 404 处理：内部错误脱敏、NoRoute 与 Python 行为对齐。
+
 //
 
 package handler
@@ -25,7 +28,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// jsonInternalError logs the original error while returning a generic message
+// jsonInternalError 记录原始错误但向客户端返回通用消息，避免泄露实现细节。
 // to avoid exposing internal implementation details in API responses.
 func jsonInternalError(c *gin.Context, err error) {
 	common.Warn("handler internal error",
@@ -36,12 +39,12 @@ func jsonInternalError(c *gin.Context, err error) {
 	common.ResponseWithCodeData(c, common.CodeServerError, nil, common.CodeServerError.Message())
 }
 
-// HandleNoRoute handles requests to undefined routes
+// HandleNoRoute 处理未匹配路由；GET /api/v1/auth/login/ 对齐 Python MethodNotAllowed 响应。
 func HandleNoRoute(c *gin.Context) {
-	// Python parity: GET /api/v1/auth/login/ (an empty OAuth channel) resolves
+	// Python 兼容：GET /api/v1/auth/login/ 返回 HTTP 200 / code 100 MethodNotAllowed _repr
 	// to a Werkzeug MethodNotAllowed in the Python API, which
 	// server_error_response renders as HTTP 200 / code 100 with the
-	// exception's repr() as the message. gin instead falls through to
+	// Gin 默认走 NoRoute，此处显式对齐 Python 行为。
 	// NoRoute, so emit the same body here to keep the auth error paths
 	// byte-for-byte aligned.
 	if c.Request.Method == http.MethodGet && c.Request.URL.Path == "/api/v1/auth/login/" {
@@ -49,7 +52,7 @@ func HandleNoRoute(c *gin.Context) {
 		return
 	}
 
-	// Log the request details on server side
+	// 服务端记录 404 请求详情
 	common.Logger.Warn("The requested URL was not found",
 		zap.String("method", c.Request.Method),
 		zap.String("path", c.Request.URL.Path),
@@ -58,7 +61,7 @@ func HandleNoRoute(c *gin.Context) {
 		zap.String("user_agent", c.Request.UserAgent()),
 	)
 
-	// Return JSON error response
+	// 返回 JSON 404 错误体
 	c.JSON(http.StatusNotFound, gin.H{
 		"code":    404,
 		"message": "Not Found: " + c.Request.URL.Path,

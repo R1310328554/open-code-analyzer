@@ -14,9 +14,8 @@
 //  limitations under the License.
 //
 
-// Package handler contains all HTTP request handlers
-// This file implements Memory-related API endpoint handlers
-// Each method corresponds to an API endpoint in the Python memory_api.py
+// memory.go — Memory 记忆 HTTP 处理器：CRUD、消息增删改查与语义搜索。
+// 各方法与 Python memory_api.py 端点一一对应。
 package handler
 
 import (
@@ -34,55 +33,55 @@ import (
 	"ragflow/internal/service"
 )
 
-// MemoryHandler handles Memory-related HTTP requests
-// Responsible for processing all Memory-related HTTP requests
-// Each method corresponds to an API endpoint, implementing the same logic as Python memory_api.py
+// MemoryHandler Memory 记忆 HTTP 处理器
+// 处理全部 Memory 相关 HTTP 请求
+// 各方法与 Python memory_api.py 逻辑对齐
 type MemoryHandler struct {
-	memoryService *service.MemoryService // Reference to Memory business service layer
+	memoryService *service.MemoryService // 记忆业务服务层引用
 }
 
-// NewMemoryHandler creates a new MemoryHandler instance
+// NewMemoryHandler 创建 MemoryHandler 实例
 //
-// Parameters:
-//   - memoryService: Pointer to MemoryService business service layer
+// 参数：
+//   - memoryService: MemoryService 业务服务指针
 //
-// Returns:
-//   - *MemoryHandler: Initialized handler instance
+// 返回：
+//   - *MemoryHandler: 初始化后的处理器
 func NewMemoryHandler(memoryService *service.MemoryService) *MemoryHandler {
 	return &MemoryHandler{
 		memoryService: memoryService,
 	}
 }
 
-// CreateMemory handles POST request for creating Memory
-// API Path: POST /api/v1/memories
+// CreateMemory POST /api/v1/memories 创建记忆
+// 路径：POST /api/v1/memories
 //
-// Function:
-//   - Creates a new memory record
-//   - Supports automatic system_prompt generation
-//   - Supports name deduplication (if name exists, adds sequence number)
+// 功能：
+//   - 创建新记忆记录
+//   - 支持自动生成 system_prompt
+//   - 支持名称去重（重名时追加序号）
 //
-// Request Parameters (JSON Body):
-//   - name (required): Memory name, max 128 characters
-//   - memory_type (required): Memory type array, supports ["raw", "semantic", "episodic", "procedural"]
-//   - embd_id (required): Embedding model ID
-//   - llm_id (required): LLM model ID
-//   - tenant_embd_id (optional): Tenant embedding model ID
-//   - tenant_llm_id (optional): Tenant LLM model ID
+// 请求参数（JSON Body）：
+//   - name（必填）：记忆名称，最长 128 字符
+//   - memory_type（必填）：记忆类型数组 raw/semantic/episodic/procedural
+//   - embd_id（必填）：嵌入模型 ID
+//   - llm_id（必填）：LLM 模型 ID
+//   - tenant_embd_id（可选）：租户嵌入模型
+//   - tenant_llm_id（可选）：租户 LLM 模型
 //
-// Response Format:
-//   - code: Status code (0=success, other=error)
-//   - message: true on success, error message on failure
-//   - data: Memory object on success
+// 响应格式：
+//   - code: 状态码（0=成功）
+//   - message: 成功为 true，失败为错误信息
+//   - data: 成功时返回 Memory 对象
 //
-// Business Logic (matching Python create_memory):
-//  1. Validate user login status
-//  2. Parse and validate request parameters
-//  3. Call service layer to create memory
-//  4. Return creation result
+// 业务逻辑（对齐 Python create_memory）：
+//  1. 校验用户登录
+//  2. 解析并校验请求参数
+//  3. 调用服务层创建记忆
+//  4. 返回创建结果
 func (h *MemoryHandler) CreateMemory(c *gin.Context) {
-	// Check if API timing is enabled
-	// If RAGFLOW_API_TIMING environment variable is set, request processing time will be logged
+	// 检查是否启用 RAGFLOW_API_TIMING 耗时日志
+	// 设置环境变量时记录请求处理耗时
 	timingEnabled := os.Getenv("RAGFLOW_API_TIMING")
 	var tStart time.Time
 	if timingEnabled != "" {
@@ -169,14 +168,14 @@ func (h *MemoryHandler) CreateMemory(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// UpdateMemory handles PUT request for updating Memory
-// API Path: PUT /api/v1/memories/:memory_id
+// UpdateMemory PUT 更新记忆
+// 路径：PUT /api/v1/memories/:memory_id
 //
 // Function:
 //   - Updates configuration information for the specified memory
 //   - Supports partial updates: only update passed fields
 //
-// Request Parameters (JSON Body):
+// 请求体字段：
 //   - name (optional): Memory name
 //   - permissions (optional): Permission setting ["me", "team", "all"]
 //   - llm_id (optional): LLM model ID
@@ -192,7 +191,7 @@ func (h *MemoryHandler) CreateMemory(c *gin.Context) {
 //   - system_prompt (optional): System prompt
 //   - user_prompt (optional): User prompt
 //
-// Business Rules:
+// 业务规则：
 //   - name length <= 128 characters
 //   - Cannot update tenant_embd_id, embd_id, memory_type when memory_size > 0
 //   - When updating memory_type, system_prompt is automatically regenerated if it's the default
@@ -244,14 +243,14 @@ func (h *MemoryHandler) UpdateMemory(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// DeleteMemory handles DELETE request for deleting Memory
-// API Path: DELETE /api/v1/memories/:memory_id
+// DeleteMemory DELETE 删除记忆
+// 路径：DELETE /api/v1/memories/:memory_id
 //
 // Function:
 //   - Deletes the specified memory record
 //   - Also deletes associated message data
 //
-// Business Logic:
+// 业务逻辑：
 //  1. Check if memory exists
 //  2. Delete memory record
 //  3. Delete associated message index
@@ -282,15 +281,15 @@ func (h *MemoryHandler) DeleteMemory(c *gin.Context) {
 	common.SuccessNoData(c, "success")
 }
 
-// ListMemories handles GET request for listing Memories
-// API Path: GET /api/v1/memories
+// ListMemories GET 分页列出记忆
+// 路径：GET /api/v1/memories
 //
 // Function:
 //   - Lists memories accessible to the current user
 //   - Supports multiple filter conditions
 //   - Supports pagination and keyword search
 //
-// Query Parameters:
+// 查询参数：
 //   - memory_type (optional): Memory type filter, supports comma-separated multiple types
 //   - tenant_id (optional): Tenant ID filter
 //   - storage_type (optional): Storage type filter
@@ -363,8 +362,8 @@ func (h *MemoryHandler) ListMemories(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// GetMemoryConfig handles GET request for getting Memory configuration
-// API Path: GET /api/v1/memories/:memory_id/config
+// GetMemoryConfig GET 获取记忆配置
+// 路径：GET .../config
 //
 // Function:
 //   - Gets complete configuration information for the specified memory
@@ -401,8 +400,8 @@ func (h *MemoryHandler) GetMemoryConfig(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// GetMemoryMessages handles GET request for getting Memory messages
-// API Path: GET /api/v1/memories/:memory_id
+// GetMemoryMessages GET 获取记忆内消息列表
+// 路径：GET /api/v1/memories/:memory_id
 //
 // Function:
 //   - Gets message list associated with the specified memory
@@ -482,6 +481,7 @@ func (h *MemoryHandler) GetMemoryMessages(c *gin.Context) {
 
 type messageMemoryIDs []string
 
+// UnmarshalJSON 支持 memory_ids 为字符串或字符串数组。
 func (ids *messageMemoryIDs) UnmarshalJSON(data []byte) error {
 	var single string
 	if err := json.Unmarshal(data, &single); err == nil {
@@ -508,8 +508,8 @@ type AddMessageRequest struct {
 	UserID        string           `json:"user_id"`
 }
 
-// AddMessage handles POST request for adding messages
-// API Path: POST /api/v1/messages
+// AddMessage POST 向记忆添加消息
+// 路径：POST /api/v1/messages
 //
 // Function:
 //   - Adds messages to one or more memories
@@ -575,14 +575,14 @@ func (h *MemoryHandler) AddMessage(c *gin.Context) {
 	common.SuccessNoData(c, message)
 }
 
-// ForgetMessage handles DELETE request for forgetting messages.
-// API Path: DELETE /api/v1/messages/{memory_id}:{message_id}
+// ForgetMessage DELETE 删除单条消息。
+// 路径：DELETE /api/v1/messages/{memory_id}:{message_id}
 //
 // Function:
 //   - Soft-deletes the specified message (sets forget_at timestamp)
 //   - Message is not immediately deleted from database, but marked as "forgotten"
 //
-// Parameter Format:
+// 参数格式：
 //   - memory_id: Memory ID
 //   - message_id: Message ID (integer)
 func (h *MemoryHandler) ForgetMessage(c *gin.Context) {
@@ -612,11 +612,13 @@ func (h *MemoryHandler) ForgetMessage(c *gin.Context) {
 	common.SuccessNoData(c, true)
 }
 
+// isMemoryServiceNotFound 判断是否为记忆/消息未找到。
 func isMemoryServiceNotFound(err error) bool {
 	var notFoundErr *service.ResourceNotFoundError
 	return errors.As(err, &notFoundErr) && notFoundErr.Resource == "Memory"
 }
 
+// parseMemoryMessagePath 解析 memory_id:message_id 路径参数。
 func parseMemoryMessagePath(memoryMessage string) (string, int64, error) {
 	memoryMessage = strings.TrimSpace(memoryMessage)
 	if memoryMessage == "" {
@@ -645,8 +647,8 @@ func parseMemoryMessagePath(memoryMessage string) (string, int64, error) {
 	return memoryID, messageID, nil
 }
 
-// UpdateMessage handles PUT request for updating message status
-// API Path: PUT /api/v1/messages/:memory_id/:message_id
+// UpdateMessage PUT 更新消息状态
+// 路径：PUT /api/v1/messages/:memory_id/:message_id
 //
 // Function:
 //   - Updates status of the specified message
@@ -698,8 +700,8 @@ func (h *MemoryHandler) UpdateMessage(c *gin.Context) {
 	common.SuccessNoData(c, true)
 }
 
-// GetMessageContent handles GET request for getting message content
-// API Path: GET /api/v1/messages/:memory_id/:message_id/content
+// GetMessageContent GET 获取消息正文内容
+// 路径：GET .../content
 //
 // Function:
 //   - Gets complete content of the specified message
@@ -742,8 +744,8 @@ func (h *MemoryHandler) GetMessageContent(c *gin.Context) {
 	common.SuccessWithData(c, data, true)
 }
 
-// SearchMessage handles GET request for searching messages
-// API Path: GET /api/v1/messages/search
+// SearchMessage GET 跨记忆搜索消息
+// 路径：GET /api/v1/messages/search
 //
 // Function:
 //   - Searches messages across multiple memories
@@ -816,7 +818,7 @@ func (h *MemoryHandler) SearchMessage(c *gin.Context) {
 	common.SuccessWithData(c, res, true)
 }
 
-// GetMessages handles GET request for getting message list
+// GetMessages GET 获取全局消息列表
 // API Path: GET /api/v1/messages
 //
 // Function:
@@ -870,7 +872,7 @@ func (h *MemoryHandler) GetMessages(c *gin.Context) {
 	common.SuccessWithData(c, data, true)
 }
 
-// isArgumentError determines if an error message is an argument error
+// isArgumentError 判断错误消息是否为参数错误（应返回 101）
 //
 // Function:
 //   - Checks if the error message contains any argument validation-related prefixes

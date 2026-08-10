@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// document.go — 文档 HTTP 处理器：CRUD、上传/下载、元数据、摄取任务与预览等 Gin 端点。
+
 //
 
 package handler
@@ -42,7 +45,7 @@ import (
 
 var IMG_BASE64_PREFIX = "data:image/png;base64,"
 
-// documentServiceIface defines the DocumentService methods used by DocumentHandler.
+// documentServiceIface DocumentHandler 使用的 DocumentService 方法子集。
 type documentServiceIface interface {
 	CreateDocument(req *service.CreateDocumentRequest) (*entity.Document, error)
 	GetDocumentByID(id string) (*service.DocumentResponse, error)
@@ -83,13 +86,13 @@ type documentServiceIface interface {
 	BatchUpdateDocumentStatus(userID, datasetID, status string, DocumentIDs []string) (map[string]interface{}, common.ErrorCode, error)
 }
 
-// DocumentHandler document handler
+// DocumentHandler 文档 HTTP 处理器。
 type DocumentHandler struct {
 	documentService documentServiceIface
 	datasetService  *service.DatasetService
 }
 
-// NewDocumentHandler create document handler
+// NewDocumentHandler 构造 DocumentHandler。
 func NewDocumentHandler(documentService documentServiceIface, datasetService *service.DatasetService) *DocumentHandler {
 	return &DocumentHandler{
 		documentService: documentService,
@@ -97,7 +100,7 @@ func NewDocumentHandler(documentService documentServiceIface, datasetService *se
 	}
 }
 
-// CreateDocument create document
+// CreateDocument 创建文档记录。
 // @Summary Create Document
 // @Description Create new document
 // @Tags documents
@@ -132,7 +135,7 @@ func (h *DocumentHandler) CreateDocument(c *gin.Context) {
 	common.SuccessWithData(c, document, "created successfully")
 }
 
-// GetDocumentByID get document by ID
+// GetDocumentByID 按 ID 获取文档。
 // @Summary Get Document Info
 // @Description Get document details by ID
 // @Tags documents
@@ -169,7 +172,7 @@ func (h *DocumentHandler) GetDocumentByID(c *gin.Context) {
 	})
 }
 
-// GetThumbnail Get thumbnails for documents.
+// GetThumbnail 批量获取文档缩略图。
 func (h *DocumentHandler) GetThumbnail(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -212,7 +215,7 @@ func parseThumbnailDocIDs(c *gin.Context) []string {
 	return docIDs
 }
 
-// GetDocumentImage returns a document image from object storage.
+// GetDocumentImage 从对象存储返回文档内嵌图片。
 func (h *DocumentHandler) GetDocumentImage(c *gin.Context) {
 	imageID := c.Param("image_id")
 	data, err := h.documentService.GetDocumentImage(imageID)
@@ -245,6 +248,7 @@ func documentImageContentType(imageID string, data []byte) string {
 	}
 }
 
+// GetDocumentArtifact 返回文档解析产物文件。
 func (h *DocumentHandler) GetDocumentArtifact(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -276,6 +280,7 @@ func (h *DocumentHandler) GetDocumentArtifact(c *gin.Context) {
 	c.Data(http.StatusOK, artifact.ContentType, artifact.Data)
 }
 
+// GetDocumentPreview 返回文档预览内容。
 func (h *DocumentHandler) GetDocumentPreview(c *gin.Context) {
 	docID := c.Param("id")
 
@@ -291,8 +296,8 @@ func (h *DocumentHandler) GetDocumentPreview(c *gin.Context) {
 	}
 
 	ext := utility.GetFileExtension(preview.FileName)
-	// Use the shared preview-headers helper so that safe types get
-	// Content-Disposition: inline with filename, while dangerous
+	// 使用共享预览头 helper：安全类型 inline，危险类型强制 attachment+nosniff
+	// 对齐 Python apply_preview_file_response_headers
 	// types (HTML, SVG, XML) fall back to forced attachment with
 	// nosniff. Mirrors Python document_api.py:2063 which calls
 	// apply_preview_file_response_headers() with the document name.
@@ -301,7 +306,7 @@ func (h *DocumentHandler) GetDocumentPreview(c *gin.Context) {
 	c.Data(http.StatusOK, preview.ContentType, preview.Data)
 }
 
-// UpdateDocument update document
+// UpdateDocument 更新文档属性。
 // @Summary Update Document
 // @Description Update document info
 // @Tags documents
@@ -354,7 +359,7 @@ func (h *DocumentHandler) UpdateDocument(c *gin.Context) {
 	common.SuccessWithMessage(c, "updated successfully")
 }
 
-// DeleteDocument delete document
+// DeleteDocument 删除单个文档。
 // @Summary Delete Document
 // @Description Delete specified document
 // @Tags documents
@@ -400,7 +405,7 @@ func (h *DocumentHandler) DeleteDocument(c *gin.Context) {
 	})
 }
 
-// DeleteDocuments handles DELETE /api/v1/datasets/:dataset_id/documents
+// DeleteDocuments DELETE 批量删除数据集内文档。
 func (h *DocumentHandler) DeleteDocuments(c *gin.Context) {
 	_, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -448,7 +453,7 @@ func (h *DocumentHandler) DeleteDocuments(c *gin.Context) {
 	common.SuccessWithData(c, map[string]interface{}{"deleted": deleted}, "success")
 }
 
-// BatchUpdateDocumentStatus Batch update status of documents within a dataset.
+// BatchUpdateDocumentStatus 批量更新文档可用状态（0/1）。
 func (h *DocumentHandler) BatchUpdateDocumentStatus(c *gin.Context) {
 	user, code, errorMessage := GetUser(c)
 	if code != common.CodeSuccess {
@@ -514,7 +519,7 @@ func (h *DocumentHandler) BatchUpdateDocumentStatus(c *gin.Context) {
 	common.ResponseWithCodeData(c, code, result, "success")
 }
 
-// ListDocuments document list
+// ListDocuments 分页列出数据集内文档。
 func (h *DocumentHandler) ListDocuments(c *gin.Context) {
 
 	datasetID := c.Param("dataset_id")
@@ -558,7 +563,7 @@ func (h *DocumentHandler) ListDocuments(c *gin.Context) {
 		return
 	}
 
-	// Use kbID to filter documents
+	// 用 kbID 过滤文档列表
 	documents, total, err := h.documentService.ListDocumentsByDatasetIDWithOptions(opts, page, pageSize)
 	if err != nil {
 		common.ResponseWithCodeData(c, 1, map[string]interface{}{"total": 0, "docs": []interface{}{}}, "failed to get documents")
@@ -625,6 +630,7 @@ func parseDocumentListOptions(c *gin.Context, datasetID string) (dao.DocumentLis
 	return opts, ""
 }
 
+// applyDocumentMetadataFilter 应用元数据过滤到列表选项。
 func (h *DocumentHandler) applyDocumentMetadataFilter(c *gin.Context, opts dao.DocumentListOptions) (dao.DocumentListOptions, string) {
 	metadata, err := parseMetadataQuery(c.Request.URL.Query())
 	if err != nil {
@@ -829,6 +835,7 @@ func normalizeRunStatusFilter(statuses []string) []string {
 	return out
 }
 
+// UploadDocuments 上传本地/空/Web 文档入口。
 func (h *DocumentHandler) UploadDocuments(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -861,6 +868,7 @@ func (h *DocumentHandler) UploadDocuments(c *gin.Context) {
 	}
 }
 
+// uploadLocalDocuments 处理 multipart 本地上传。
 func (h *DocumentHandler) uploadLocalDocuments(c *gin.Context, kb *entity.Knowledgebase, tenantID string) {
 	form, err := c.MultipartForm()
 	if err != nil || form == nil || len(form.File["file"]) == 0 {
@@ -881,8 +889,8 @@ func (h *DocumentHandler) uploadLocalDocuments(c *gin.Context, kb *entity.Knowle
 		}
 	}
 
-	// Optional parser_config override — only the allow-listed table column keys.
-	// Python ignores malformed or non-object input here instead of failing the
+	// 可选 parser_config 覆盖（仅允许白名单表列键）
+	// Python 对畸形输入忽略而非整请求失败
 	// whole upload request.
 	var override map[string]interface{}
 	if raw := strings.TrimSpace(c.PostForm("parser_config")); raw != "" {
@@ -929,11 +937,12 @@ func (h *DocumentHandler) uploadLocalDocuments(c *gin.Context, kb *entity.Knowle
 	common.SuccessNoMessage(c, mapped)
 }
 
+// uploadEmptyDocument 创建空白占位文档。
 func (h *DocumentHandler) uploadEmptyDocument(c *gin.Context, kb *entity.Knowledgebase, tenantID string) {
 	var req struct {
 		Name string `json:"name"`
 	}
-	// An empty body is valid (falls through to the name-required check below);
+	// 空 body 合法；非空但畸形时报告语法错误
 	// a non-empty but malformed body should report the syntax error, not a
 	// misleading "File name can't be empty."
 	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
@@ -957,6 +966,7 @@ func (h *DocumentHandler) uploadEmptyDocument(c *gin.Context, kb *entity.Knowled
 	common.SuccessNoMessage(c, mapDocKeysWithRunStatus(data))
 }
 
+// uploadWebDocument 从 URL 抓取 Web 文档。
 func (h *DocumentHandler) uploadWebDocument(c *gin.Context, kb *entity.Knowledgebase, tenantID string) {
 	name := strings.TrimSpace(c.PostForm("name"))
 	rawURL := c.PostForm("url")
@@ -984,8 +994,8 @@ func (h *DocumentHandler) uploadWebDocument(c *gin.Context, kb *entity.Knowledge
 	common.SuccessNoMessage(c, mapDocKeysWithRunStatus(data))
 }
 
-// mapDocKeysWithRunStatus renames a freshly-created document's raw keys to the
-// public response shape (chunk_num→chunk_count, token_num→token_count,
+// mapDocKeysWithRunStatus 将新建文档原始键映射为公开响应形状（chunk_count 等）。
+// 对齐 Python map_doc_keys_with_run_status / map_doc_keys。
 // kb_id→dataset_id, parser_id→chunk_method) and reports run as a label.
 // Mirrors Python map_doc_keys_with_run_status / map_doc_keys.
 func mapDocKeysWithRunStatus(raw map[string]interface{}) map[string]interface{} {
@@ -1004,7 +1014,7 @@ func mapDocKeysWithRunStatus(raw map[string]interface{}) map[string]interface{} 
 	return out
 }
 
-// isValidHTTPURL mirrors Python is_valid_url: requires an http/https scheme and a host.
+// isValidHTTPURL 校验 http/https URL（对齐 Python is_valid_url）。
 func isValidHTTPURL(raw string) bool {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {
@@ -1013,6 +1023,7 @@ func isValidHTTPURL(raw string) bool {
 	return (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }
 
+// DownloadDocument 下载原始文档二进制。
 func (h *DocumentHandler) DownloadDocument(c *gin.Context) {
 	datasetID := c.Param("dataset_id")
 	docID := c.Param("document_id")
@@ -1136,7 +1147,7 @@ func stringValue(value *string) string {
 	return *value
 }
 
-// MetadataSummary handles the metadata summary request
+// MetadataSummary 获取文档元数据摘要。
 func (h *DocumentHandler) MetadataSummary(c *gin.Context) {
 	_, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -1169,13 +1180,13 @@ func (h *DocumentHandler) MetadataSummary(c *gin.Context) {
 	common.SuccessWithData(c, gin.H{"summary": summary}, "success")
 }
 
-// SetMetaRequest represents the request for setting document metadata
+// SetMetaRequest 设置文档元数据的请求体。
 type SetMetaRequest struct {
 	DocID string `json:"doc_id" binding:"required"`
 	Meta  string `json:"meta" binding:"required"`
 }
 
-// SetMeta handles the set metadata request for a document
+// SetMeta 设置/合并文档 meta_fields。
 // @Summary Set Document Metadata
 // @Description Set metadata for a specific document
 // @Tags documents
@@ -1203,7 +1214,7 @@ func (h *DocumentHandler) SetMeta(c *gin.Context) {
 		return
 	}
 
-	// Parse meta JSON string
+	// 解析 meta JSON 字符串
 	var meta map[string]interface{}
 	if err := json.Unmarshal([]byte(req.Meta), &meta); err != nil {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, 1, nil, "Json syntax error: "+err.Error())
@@ -1215,7 +1226,7 @@ func (h *DocumentHandler) SetMeta(c *gin.Context) {
 		return
 	}
 
-	// Validate meta values - must be str, int, float, or list of those
+	// 校验 meta 值类型：str/int/float 或其列表
 	for k, v := range meta {
 		switch val := v.(type) {
 		case string, int, float64:
@@ -1235,7 +1246,7 @@ func (h *DocumentHandler) SetMeta(c *gin.Context) {
 		}
 	}
 
-	// Authorization: user must be able to access the document's dataset.
+	// 授权：用户须能访问文档所属知识库
 	doc, err := h.documentService.GetDocumentByID(req.DocID)
 	if err != nil {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, 1, nil, "document not found")
@@ -1260,6 +1271,7 @@ func (h *DocumentHandler) SetMeta(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
+// Ingest 触发单文档摄取/解析。
 func (h *DocumentHandler) Ingest(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -1287,14 +1299,14 @@ func (h *DocumentHandler) Ingest(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// DeleteMetaRequest represents the request for deleting document metadata
+// DeleteMetaRequest 删除文档元数据的请求体。
 type DeleteMetaRequest struct {
 	DocID string `json:"doc_id" binding:"required"`
 	Keys  string `json:"keys"` // optional - if provided, deletes specific keys; otherwise deletes entire document metadata
 }
 
-// DeleteMeta handles the delete metadata request for a document
-// If Keys is provided, deletes specific metadata keys; otherwise deletes entire document metadata
+// DeleteMeta 删除文档全部或指定 meta 键。
+// 提供 Keys 时仅删指定键，否则清空整份 meta。
 // @Summary Delete Document Metadata
 // @Description Delete metadata keys or entire document metadata for a specific document
 // @Tags documents
@@ -1333,7 +1345,7 @@ func (h *DocumentHandler) DeleteMeta(c *gin.Context) {
 		return
 	}
 
-	// If Keys is provided, parse and delete specific keys; otherwise delete entire document metadata
+	// 有 Keys 则删指定键，否则删整份文档元数据
 	if req.Keys != "" {
 		// Parse keys JSON string - expected to be a list of key names to delete
 		var keys []string
@@ -1378,6 +1390,7 @@ type ListIngestionsRequest struct {
 	DatasetID *string `json:"dataset_id"`
 }
 
+// ListIngestionTasks 列出文档摄取任务。
 func (h *DocumentHandler) ListIngestionTasks(c *gin.Context) {
 	var req ListIngestionsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1410,6 +1423,7 @@ type StartParseDocumentsRequest struct {
 	Documents []string `json:"documents" binding:"required"`
 }
 
+// StartIngestionTask 启动摄取任务。
 func (h *DocumentHandler) StartIngestionTask(c *gin.Context) {
 	var req StartParseDocumentsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1437,6 +1451,7 @@ type StopIngestionsRequest struct {
 	Tasks []string `json:"tasks" binding:"required"`
 }
 
+// StopIngestionTasks 停止摄取任务。
 func (h *DocumentHandler) StopIngestionTasks(c *gin.Context) {
 	var req StopIngestionsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1458,6 +1473,7 @@ type RemoveIngestionsRequest struct {
 	Tasks []string `json:"tasks" binding:"required"`
 }
 
+// RemoveIngestionTasks 移除摄取任务记录。
 func (h *DocumentHandler) RemoveIngestionTasks(c *gin.Context) {
 	var req RemoveIngestionsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1484,6 +1500,7 @@ type ParseDocumentRequest struct {
 	Documents []string `json:"documents" binding:"required"`
 }
 
+// ParseDocuments 批量解析文档。
 func (h *DocumentHandler) ParseDocuments(c *gin.Context) {
 	datasetID := c.Param("dataset_id")
 
@@ -1512,6 +1529,7 @@ type StopParseDocumentRequest struct {
 	DocumentIDs []string `json:"document_ids" binding:"required"`
 }
 
+// StopParseDocuments 批量停止解析。
 func (h *DocumentHandler) StopParseDocuments(c *gin.Context) {
 	datasetID := c.Param("dataset_id")
 
@@ -1541,6 +1559,7 @@ func (h *DocumentHandler) StopParseDocuments(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
+// MetadataSummaryByDataset 按数据集汇总元数据。
 func (h *DocumentHandler) MetadataSummaryByDataset(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -1572,6 +1591,7 @@ func (h *DocumentHandler) MetadataSummaryByDataset(c *gin.Context) {
 	common.SuccessWithData(c, gin.H{"summary": summary}, "success")
 }
 
+// UpdateDatasetDocument REST 路径更新文档。
 func (h *DocumentHandler) UpdateDatasetDocument(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -1619,6 +1639,7 @@ func (h *DocumentHandler) UpdateDatasetDocument(c *gin.Context) {
 	common.SuccessNoMessage(c, data)
 }
 
+// UploadInfo 返回上传限制与配置信息。
 func (h *DocumentHandler) UploadInfo(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -1678,14 +1699,17 @@ type documentMetadataBatchRequest struct {
 	Deletes  []service.DocumentMetadataDelete  `json:"deletes"`
 }
 
+// MetadataBatchUpdate 批量更新元数据（别名入口）。
 func (h *DocumentHandler) MetadataBatchUpdate(c *gin.Context) {
 	h.handleBatchUpdateDocumentMetadatas(c)
 }
 
+// UpdateDocumentMetadatas 批量更新多文档元数据。
 func (h *DocumentHandler) UpdateDocumentMetadatas(c *gin.Context) {
 	h.handleBatchUpdateDocumentMetadatas(c)
 }
 
+// handleBatchUpdateDocumentMetadatas 批量元数据更新核心逻辑。
 func (h *DocumentHandler) handleBatchUpdateDocumentMetadatas(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {

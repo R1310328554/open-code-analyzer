@@ -12,16 +12,17 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// components.go — 组件目录端点（Phase 4）：GET /api/v1/components 按 category 列出 runtime 注册的可编排组件。
+
 //
 
-// Phase 4 of plan port-rag-flow-pipeline-to-go.md.
-//
-// Exposes GET /api/v1/components?category=ingestion,agent,shared
-// (case-insensitive, comma-separated). The data source is
-// runtime.DefaultRegistry — there is no separate catalog map (per
-// plan §4 task 2). Category values are validated against the three
-// known runtime.Category constants; an unknown value yields a
-// 400-style error envelope so the frontend can surface a useful
+// Phase 4（port-rag-flow-pipeline-to-go）：暴露 GET /api/v1/components?category=ingestion,agent,shared
+// 分类不区分大小写、逗号分隔；数据源为 runtime.DefaultRegistry，
+// 无独立 catalog 映射（见计划 §4 task 2）。未知 category 返回 400 错误信封。
+// 合法值对照 runtime.Category 三常量：agent / ingestion / shared。
+// 未知 token 由 parseCategories 报错，前端可展示明确提示。
+// 服务失败时同样走标准 {code,message,data} 信封。
 // message instead of silently dropping the request.
 package handler
 
@@ -36,12 +37,12 @@ import (
 	"ragflow/internal/service"
 )
 
-// ComponentsHandler serves the component-catalog endpoint.
+// ComponentsHandler 组件目录 HTTP 处理器。
 type ComponentsHandler struct {
 	svc *service.ComponentsService
 }
 
-// NewComponentsHandler wires the handler to a ComponentsService
+// NewComponentsHandler 绑定无状态 ComponentsService（启动时构造一次）。
 // instance. The service is stateless so the same pointer can be
 // shared across handlers; construction happens once at server
 // startup (cmd/server_main.go).
@@ -49,19 +50,19 @@ func NewComponentsHandler(svc *service.ComponentsService) *ComponentsHandler {
 	return &ComponentsHandler{svc: svc}
 }
 
-// Get handles GET /api/v1/components.
+// Get 处理 GET /api/v1/components。
 //
-// Query parameters:
-//   - category (optional, repeatable as comma-separated values).
-//     Case-insensitive. Allowed values: "agent", "ingestion",
-//     "shared". An empty / missing filter means "all categories".
+// 查询参数：
+//   - category（可选，逗号分隔）：agent / ingestion / shared；空表示全部。
+//     不区分大小写。
+//     缺省或空串表示返回所有分类。
 //
-// Response shape (success):
+// 成功响应：{ data: [ { name, category, inputs, outputs } ] }
 //
 //	{ "data": [ { "name": "...", "category": "...",
 //	              "inputs": {...}, "outputs": {...} } ] }
 //
-// On an unknown category, the response uses the standard error
+// 未知 category → HTTP 400；服务异常 → HTTP 500。
 // envelope (gin.H{code, message, data}) with HTTP 400. Service
 // failures bubble up as HTTP 500 with the same envelope shape.
 func (h *ComponentsHandler) Get(c *gin.Context) {
@@ -81,9 +82,9 @@ func (h *ComponentsHandler) Get(c *gin.Context) {
 	common.SuccessWithData(c, out, "success")
 }
 
-// parseCategories splits a comma-separated category query string into
-// a slice of runtime.Category values. The slice is empty when the
-// raw string is empty (meaning "all categories"). An unknown token
+// parseCategories 将逗号分隔的 category 字符串解析为 []runtime.Category。
+// 空输入返回 nil 切片（表示不过滤）。
+// 首个非法 token 触发 categoryError。
 // yields an error; the first invalid token wins so the message
 // identifies the offender.
 func parseCategories(raw string) ([]runtime.Category, error) {
@@ -111,8 +112,8 @@ func parseCategories(raw string) ([]runtime.Category, error) {
 	return out, nil
 }
 
-// categoryError is the error type returned by parseCategories for an
-// unrecognized category token. Its Error() message matches the
+// categoryError parseCategories 对未知 category 返回的错误类型。
+// Error() 格式：unknown category: <value>（与计划测试契约一致）。
 // expected plan test contract ("unknown category: <value>").
 type categoryError struct {
 	value string

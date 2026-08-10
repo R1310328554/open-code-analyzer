@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// connector.go — 外部数据源连接器 HTTP 处理器：CRUD、同步日志、OAuth 回调与连接测试。
+
 //
 
 package handler
@@ -30,6 +33,7 @@ import (
 	"ragflow/internal/service"
 )
 
+// connectorServiceIface 连接器服务在 Handler 层使用的接口
 type connectorServiceIface interface {
 	ListConnectors(userID string) (*service.ListConnectorsResponse, error)
 	CreateConnector(userID string, req *service.CreateConnectorRequest) (*entity.Connector, error)
@@ -47,13 +51,13 @@ type connectorServiceIface interface {
 	PollBoxWebOAuthResult(userID string, req *service.PollBoxWebOAuthResultRequest) (*service.PollBoxWebOAuthResultResponse, common.ErrorCode, error)
 }
 
-// ConnectorHandler connector handler
+// ConnectorHandler 数据连接器 HTTP 处理器。
 type ConnectorHandler struct {
 	connectorService connectorServiceIface
 	userService      *service.UserService
 }
 
-// NewConnectorHandler create connector handler
+// NewConnectorHandler 构造 ConnectorHandler。
 func NewConnectorHandler(connectorService *service.ConnectorService, userService *service.UserService) *ConnectorHandler {
 	return &ConnectorHandler{
 		connectorService: connectorService,
@@ -61,7 +65,7 @@ func NewConnectorHandler(connectorService *service.ConnectorService, userService
 	}
 }
 
-// ListConnectors list connectors
+// ListConnectors 列出当前用户的连接器。
 // @Summary List Connectors
 // @Description Get list of connectors for the current user (equivalent to Python's list_connector)
 // @Tags connector
@@ -87,8 +91,8 @@ func (h *ConnectorHandler) ListConnectors(c *gin.Context) {
 	common.SuccessWithData(c, result.Connectors, "success")
 }
 
-// connectorErrorResponse maps service sentinel errors to the response codes used
-// by the Python connector_api, and writes the JSON response. It returns true when
+// connectorErrorResponse 将服务层 sentinel 错误映射为 Python connector_api 兼容响应码。
+// 已处理时返回 true。
 // the error was handled.
 func connectorErrorResponse(c *gin.Context, err error) bool {
 	switch {
@@ -106,7 +110,7 @@ func connectorErrorResponse(c *gin.Context, err error) bool {
 	return true
 }
 
-// GetConnector get connector
+// GetConnector 获取单个连接器详情。
 // @Summary Get Connector
 // @Description Get connector details for the current user
 // @Tags connector
@@ -130,7 +134,7 @@ func (h *ConnectorHandler) GetConnector(c *gin.Context) {
 	common.SuccessWithData(c, connector, "success")
 }
 
-// UpdateConnector Update an accessible connector's polling configuration.
+// UpdateConnector 更新可访问连接器的轮询配置。
 func (h *ConnectorHandler) UpdateConnector(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -153,6 +157,7 @@ func (h *ConnectorHandler) UpdateConnector(c *gin.Context) {
 	common.SuccessWithData(c, connector, "success")
 }
 
+// decodeUpdateConnectorRequest 解析更新连接器请求体。
 func decodeUpdateConnectorRequest(c *gin.Context) (*service.UpdateConnectorRequest, error) {
 	var raw map[string]json.RawMessage
 	if err := c.ShouldBindJSON(&raw); err != nil {
@@ -180,7 +185,7 @@ func decodeUpdateConnectorRequest(c *gin.Context) (*service.UpdateConnectorReque
 	return &req, nil
 }
 
-// ListLogs list connector sync logs.
+// ListLogs 列出连接器同步日志。
 // @Summary List Connector Logs
 // @Description List sync logs for a connector the current user can access
 // @Tags connector
@@ -227,7 +232,7 @@ func (h *ConnectorHandler) ListLogs(c *gin.Context) {
 	common.SuccessWithData(c, gin.H{"total": total, "logs": logs}, "success")
 }
 
-// CreateConnector create connector
+// CreateConnector 创建新连接器。
 // @Summary create Connectors
 // @Description create a connectors for the current user
 // @Tags connector
@@ -270,7 +275,7 @@ func (h *ConnectorHandler) CreateConnector(c *gin.Context) {
 	common.SuccessWithData(c, connector, "success")
 }
 
-// TestConnector validates an accessible connector's stored credentials.
+// TestConnector 校验连接器凭据/连通性。
 // @Summary Test Connector
 // @Description Validate connector credentials / connection (equivalent to Python's test_connector)
 // @Tags connector
@@ -307,7 +312,7 @@ func (h *ConnectorHandler) TestConnector(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// DeleteConnector delete connector
+// DeleteConnector 删除连接器。
 // @Description Detele Connector
 // @Tags connector
 // @Accept json
@@ -328,7 +333,7 @@ func (h *ConnectorHandler) DeleteConnector(c *gin.Context) {
 	common.SuccessWithData(c, ok, "success")
 }
 
-// RebuildConnector rebuild connector
+// RebuildConnector 触发连接器与知识库重建。
 // @Summary Rebuild Connector
 // @Description Trigger a rebuild for an accessible connector and knowledge base
 // @Tags connector
@@ -366,6 +371,7 @@ func (h *ConnectorHandler) RebuildConnector(c *gin.Context) {
 	common.SuccessWithData(c, ok, "success")
 }
 
+// StartGoogleWebOAuth 启动 Google Web OAuth 授权流程。
 func (h *ConnectorHandler) StartGoogleWebOAuth(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -388,6 +394,7 @@ func (h *ConnectorHandler) StartGoogleWebOAuth(c *gin.Context) {
 	common.SuccessWithData(c, data, "success")
 }
 
+// PollGoogleWebOAuthResult 轮询 Google OAuth 授权结果。
 func (h *ConnectorHandler) PollGoogleWebOAuthResult(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -410,18 +417,22 @@ func (h *ConnectorHandler) PollGoogleWebOAuthResult(c *gin.Context) {
 	common.SuccessWithData(c, data, "success")
 }
 
+// GoogleWebOAuthCallback Google OAuth 回调入口。
 func (h *ConnectorHandler) GoogleWebOAuthCallback(c *gin.Context) {
 	h.googleWebOAuthCallback(c, c.Param("source"))
 }
 
+// GoogleDriveWebOAuthCallback Google Drive OAuth 回调。
 func (h *ConnectorHandler) GoogleDriveWebOAuthCallback(c *gin.Context) {
 	h.googleWebOAuthCallback(c, "google-drive")
 }
 
+// GmailWebOAuthCallback Gmail OAuth 回调。
 func (h *ConnectorHandler) GmailWebOAuthCallback(c *gin.Context) {
 	h.googleWebOAuthCallback(c, "gmail")
 }
 
+// googleWebOAuthCallback 通用 Google Web OAuth 回调处理。
 func (h *ConnectorHandler) googleWebOAuthCallback(c *gin.Context, source string) {
 	html := h.connectorService.GoogleWebOAuthCallback(
 		source,
@@ -433,6 +444,7 @@ func (h *ConnectorHandler) googleWebOAuthCallback(c *gin.Context, source string)
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }
 
+// StartBoxWebOAuth 启动 Box Web OAuth。
 func (h *ConnectorHandler) StartBoxWebOAuth(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -452,6 +464,7 @@ func (h *ConnectorHandler) StartBoxWebOAuth(c *gin.Context) {
 	common.ResponseWithCodeData(c, code, resp, "success")
 }
 
+// BoxWebOAuthCallback Box OAuth 回调。
 func (h *ConnectorHandler) BoxWebOAuthCallback(c *gin.Context) {
 	flowID := c.Query("state")
 	oauthError := c.Query("error")
@@ -463,6 +476,7 @@ func (h *ConnectorHandler) BoxWebOAuthCallback(c *gin.Context) {
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }
 
+// PollBoxWebOAuthResult 轮询 Box OAuth 结果。
 func (h *ConnectorHandler) PollBoxWebOAuthResult(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {

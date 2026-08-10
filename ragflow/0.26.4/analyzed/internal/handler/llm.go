@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// llm.go — LLM 模型配置 HTTP 处理器：租户模型列表、工厂 API Key 设置与按工厂分组列表。
+
 //
 
 package handler
@@ -23,7 +26,7 @@ import (
 	"ragflow/internal/service"
 )
 
-// FactoryResponse represents a model provider factory
+// FactoryResponse 模型提供商工厂响应结构。
 type FactoryResponse struct {
 	Name       string   `json:"name"`
 	Logo       string   `json:"logo"`
@@ -33,13 +36,13 @@ type FactoryResponse struct {
 	ModelTypes []string `json:"model_types"`
 }
 
-// LLMHandler LLM handler
+// LLMHandler LLM 配置 HTTP 处理器。
 type LLMHandler struct {
 	llmService  *service.LLMService
 	userService *service.UserService
 }
 
-// NewLLMHandler create LLM handler
+// NewLLMHandler 构造 LLMHandler。
 func NewLLMHandler(llmService *service.LLMService, userService *service.UserService) *LLMHandler {
 	return &LLMHandler{
 		llmService:  llmService,
@@ -47,7 +50,7 @@ func NewLLMHandler(llmService *service.LLMService, userService *service.UserServ
 	}
 }
 
-// GetMyLLMs get my LLMs
+// GetMyLLMs 获取当前租户的 LLM 配置列表。
 // @Summary Get My LLMs
 // @Description Get LLM list for current tenant
 // @Tags llm
@@ -77,7 +80,7 @@ func (h *LLMHandler) GetMyLLMs(c *gin.Context) {
 	common.SuccessWithData(c, llms, "success")
 }
 
-// SetAPIKey set API key for a LLM factory
+// SetAPIKey 为 LLM 工厂设置 API Key 并测试连通性。
 // @Summary Set API Key
 // @Description Set API key for a LLM factory and test connectivity
 // @Tags llm
@@ -115,7 +118,7 @@ func (h *LLMHandler) SetAPIKey(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// ListApp lists LLMs grouped by factory
+// ListApp 按工厂分组列出可用 LLM 及可用性信息。
 // @Summary List LLMs
 // @Description Get list of LLMs grouped by factory with availability info
 // @Tags llm

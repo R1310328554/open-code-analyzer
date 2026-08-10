@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// mcp_server.go — MCP JSON-RPC 协议端点：对外暴露 RAGFlow 数据集/对话/检索能力为 MCP 工具。
+
 //
 
 package handler
@@ -29,23 +32,23 @@ import (
 	"ragflow/internal/service"
 )
 
-// MCPRetrievalService abstracts the dataset retrieval operations needed
+// MCPRetrievalService 数据集检索操作抽象。
 // by the MCP server handler.
 type MCPRetrievalService interface {
 	SearchDatasets(req *service.SearchDatasetsRequest, userID string) (*service.SearchDatasetsResponse, error)
 	ListDatasets(id, name string, page, pageSize int, orderby string, desc bool, keywords string, ownerIDs []string, parserID, userID string) ([]map[string]interface{}, int64, common.ErrorCode, error)
 }
 
-// MCPServerHandler handles MCP protocol requests (JSON-RPC over HTTP).
-// It exposes RAGFlow capabilities as MCP tools to external AI clients.
+// MCPServerHandler 处理 MCP 协议请求（HTTP 上的 JSON-RPC）。
+// 将 RAGFlow 能力以 MCP 工具形式暴露给外部 AI 客户端。
 type MCPServerHandler struct {
 	listDatasetsFunc func(userID string, page, pageSize int, orderby string, desc bool) ([]map[string]interface{}, int64, error)
 	listChatsFunc    func(userID string, page, pageSize int, orderby string, desc bool) ([]map[string]interface{}, int64, error)
 	retrievalFunc    func(userID string, req mcp.RetrievalRequest) (string, error)
 }
 
-// NewMCPServerHandler creates a new MCPServerHandler.
-// The service functions are passed as closures to avoid importing the service
+// NewMCPServerHandler 构造 MCPServerHandler（服务以闭包注入）。
+// 闭包注入避免 handler 层直接 import service 包。
 // package directly from the handler layer.
 func NewMCPServerHandler(
 	listDatasetsFunc func(userID string, page, pageSize int, orderby string, desc bool) ([]map[string]interface{}, int64, error),
@@ -59,8 +62,8 @@ func NewMCPServerHandler(
 	}
 }
 
-// HandleMCP is the Gin handler for the MCP endpoint. It reads the JSON-RPC
-// request body, creates a connector for the authenticated user, and returns
+// HandleMCP MCP 端点 Gin 处理器：解析 JSON-RPC、创建 connector 并返回响应。
+// 置于 BetaAuthMiddleware 之后，用户已从 Authorization 解析。
 // the JSON-RPC response. The endpoint is placed behind BetaAuthMiddleware
 // so the user is already resolved from the Authorization header.
 //
@@ -110,7 +113,7 @@ func (h *MCPServerHandler) HandleMCP(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", respBody)
 }
 
-// MCPListDatasets wraps DatasetService.ListDatasets for the MCP tool handler,
+// MCPListDatasets 包装 ListDatasets，填充 MCP 工具未暴露参数的默认值。
 // filling in default values for parameters that the MCP tool does not expose.
 func MCPListDatasets(ds *service.DatasetService, userID string, page, pageSize int, orderby string, desc bool) ([]map[string]interface{}, int64, error) {
 	data, total, _, err := ds.ListDatasets(
@@ -120,7 +123,7 @@ func MCPListDatasets(ds *service.DatasetService, userID string, page, pageSize i
 	return data, total, err
 }
 
-// MCPListChats wraps ChatService.ListChats for the MCP tool handler,
+// MCPListChats 包装 ListChats 并转为 []map[string]interface{}。
 // converting the typed response into a generic []map[string]interface{}.
 func MCPListChats(cs *service.ChatService, userID string, page, pageSize int, orderby string, desc bool) ([]map[string]interface{}, int64, error) {
 	resp, err := cs.ListChats(userID, "1", "", page, pageSize, orderby, desc)
@@ -138,8 +141,8 @@ func MCPListChats(cs *service.ChatService, userID string, page, pageSize int, or
 	return chatList, resp.Total, nil
 }
 
-// MCPRetrieval executes a retrieval request on behalf of the MCP tool handler.
-// It translates the mcp.RetrievalRequest into a service.SearchDatasetsRequest
+// MCPRetrieval 代表 MCP 工具执行检索，结果序列化为 JSON 字符串。
+// 将 mcp.RetrievalRequest 转为 SearchDatasetsRequest。
 // and calls DatasetService.SearchDatasets. The result is serialized as JSON.
 func MCPRetrieval(ds *service.DatasetService, userID string, req mcp.RetrievalRequest) (string, error) {
 	// Resolve dataset IDs: if none provided, fetch ALL accessible datasets

@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// file_commit.go — 工作区版本提交 HTTP 处理器：commit CRUD、diff、未提交变更与文件夹快照。
+
 //
 
 package handler
@@ -26,7 +29,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// fileCommitService is the consumer-side interface for FileCommitHandler's service dependency.
+// fileCommitService FileCommitHandler 依赖的提交服务接口。
 type fileCommitService interface {
 	CreateCommit(folderID, authorID, message string, changes []entity.FileChange) (*entity.FileCommit, error)
 	ListCommits(folderID string, page, pageSize int, orderBy string, desc bool) ([]*entity.FileCommit, int64, error)
@@ -39,14 +42,14 @@ type fileCommitService interface {
 	GetFileVersionHistory(fileID string) ([]entity.VersionEntry, error)
 }
 
-// FileCommitHandler file commit handler
+// FileCommitHandler 文件版本提交 HTTP 处理器。
 type FileCommitHandler struct {
 	commitService fileCommitService
 	kbDAO         *dao.KnowledgebaseDAO
 	fileDAO       *dao.FileDAO
 }
 
-// NewFileCommitHandler create file commit handler
+// NewFileCommitHandler 构造 FileCommitHandler。
 func NewFileCommitHandler(commitService fileCommitService) *FileCommitHandler {
 	return &FileCommitHandler{
 		commitService: commitService,
@@ -55,8 +58,8 @@ func NewFileCommitHandler(commitService fileCommitService) *FileCommitHandler {
 	}
 }
 
-// ResolveFolderID resolves a resource ID (dataset/memory/skill) to its folder_id.
-// entityType is the plural resource name (e.g. "datasets", "memories", "skills").
+// ResolveFolderID 将 dataset/memory/skill 等资源 ID 解析为 folder_id。
+// entityType 为复数资源名（如 datasets、memories）。
 func (h *FileCommitHandler) ResolveFolderID(entityType, entityID string) (string, error) {
 	switch entityType {
 	case "datasets":
@@ -66,12 +69,12 @@ func (h *FileCommitHandler) ResolveFolderID(entityType, entityID string) (string
 	}
 }
 
-// CommitFolderResolver returns a Gin middleware that resolves an entity ID
+// CommitFolderResolver 返回 Gin 中间件：将 URL 中的实体 ID 解析为 folder_id 写入 Params。
 // (e.g. dataset_id, memory_id, skill_id) to a folder_id and injects it into
-// c.Params so that the standard commit handlers can read it via c.Param("folder_id").
+// 标准 commit 处理器通过 c.Param("folder_id") 读取。
 //
-// entityType must match the key used in ResolveFolderID (e.g. "datasets").
-// urlParam is the gin URL param name (e.g. "dataset_id").
+// entityType 须与 ResolveFolderID 一致。
+// urlParam 为 Gin 路径参数名（如 dataset_id）。
 func CommitFolderResolver(h *FileCommitHandler, entityType, urlParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param(urlParam)
@@ -91,6 +94,7 @@ func CommitFolderResolver(h *FileCommitHandler, entityType, urlParam string) gin
 	}
 }
 
+// resolveDatasetFolderID 将 dataset_id 解析为 folder_id。
 func (h *FileCommitHandler) resolveDatasetFolderID(datasetID string) (string, error) {
 	kb, err := h.kbDAO.GetByID(datasetID)
 	if err != nil {
@@ -105,13 +109,13 @@ func (h *FileCommitHandler) resolveDatasetFolderID(datasetID string) (string, er
 	return "", common.ErrNotFound
 }
 
-// CreateCommitRequest represents the request body for creating a commit
+// CreateCommitRequest 创建提交的请求体。
 type CreateCommitRequest struct {
 	Message string              `json:"message" binding:"required"`
 	Files   []entity.FileChange `json:"files" binding:"required"`
 }
 
-// CreateCommit creates a new commit for a workspace folder
+// CreateCommit 为工作区文件夹创建新版本提交。
 // @Summary Create Commit
 // @Description Create a new commit with file changes for a workspace folder
 // @Tags file_commit
@@ -163,7 +167,7 @@ func (h *FileCommitHandler) CreateCommit(c *gin.Context) {
 	}, common.CodeSuccess.Message())
 }
 
-// ListCommits lists commits for a workspace folder
+// ListCommits 分页列出文件夹的提交历史。
 // @Summary List Commits
 // @Description List all commits for a workspace folder with pagination
 // @Tags file_commit
@@ -243,7 +247,7 @@ func (h *FileCommitHandler) ListCommits(c *gin.Context) {
 	}, common.CodeSuccess.Message())
 }
 
-// GetCommit gets details of a single commit
+// GetCommit 获取单个提交详情。
 // @Summary Get Commit
 // @Description Get details of a single commit including file changes
 // @Tags file_commit
@@ -300,7 +304,7 @@ func (h *FileCommitHandler) GetCommit(c *gin.Context) {
 	}, common.CodeSuccess.Message())
 }
 
-// ListCommitFiles lists all file changes in a commit
+// ListCommitFiles 列出提交中的全部文件变更。
 // @Summary List Commit Files
 // @Description List all file changes in a given commit
 // @Tags file_commit
@@ -343,7 +347,7 @@ func (h *FileCommitHandler) ListCommitFiles(c *gin.Context) {
 	common.SuccessWithData(c, items, common.CodeSuccess.Message())
 }
 
-// DiffCommits compares two commits
+// DiffCommits 对比两个提交的差异。
 // @Summary Diff Commits
 // @Description Compare two commits and return the diff
 // @Tags file_commit
@@ -393,7 +397,7 @@ func (h *FileCommitHandler) DiffCommits(c *gin.Context) {
 	common.SuccessWithData(c, diff, common.CodeSuccess.Message())
 }
 
-// GetUncommittedChanges gets uncommitted changes
+// GetUncommittedChanges 获取工作区未提交变更。
 // @Summary Get Uncommitted Changes
 // @Description Get uncommitted changes for a workspace folder (like git status)
 // @Tags file_commit
@@ -424,7 +428,7 @@ func (h *FileCommitHandler) GetUncommittedChanges(c *gin.Context) {
 	common.SuccessWithData(c, changes, common.CodeSuccess.Message())
 }
 
-// GetCommitTree gets the folder tree snapshot for a commit
+// GetCommitTree 获取提交时刻的文件夹树快照。
 // @Summary Get Commit Tree
 // @Description Get the folder tree snapshot for a given commit
 // @Tags file_commit
@@ -467,7 +471,7 @@ func (h *FileCommitHandler) GetCommitTree(c *gin.Context) {
 	common.SuccessWithData(c, tree, common.CodeSuccess.Message())
 }
 
-// GetCommitFileContent gets file content as it existed in a given commit
+// GetCommitFileContent 读取某次提交中的文件内容。
 // @Summary Get Commit File Content
 // @Description Get file content as it existed in a specific commit
 // @Tags file_commit
@@ -513,7 +517,7 @@ func (h *FileCommitHandler) GetCommitFileContent(c *gin.Context) {
 	common.SuccessWithData(c, gin.H{"content": string(content)}, common.CodeSuccess.Message())
 }
 
-// GetFileVersionHistory gets version history for a specific file
+// GetFileVersionHistory 获取单文件的版本历史。
 // @Summary Get File Version History
 // @Description Get version history for a specific file across all commits
 // @Tags file_commit

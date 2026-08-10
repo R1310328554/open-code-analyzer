@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// dataset.go — 知识库（Dataset）REST HTTP 处理器：CRUD、标签、图谱、嵌入、索引任务与跨库检索。
+
 //
 
 package handler
@@ -32,7 +35,7 @@ import (
 	"ragflow/internal/service"
 )
 
-// DatasetsHandler handles the RESTful dataset endpoints.
+// DatasetsHandler 知识库 REST 端点处理器。
 type DatasetsHandler struct {
 	datasetsService       *service.DatasetService
 	metadataService       *service.MetadataService
@@ -54,7 +57,7 @@ type listDatasetsExt struct {
 	ParserID string   `json:"parser_id,omitempty"`
 }
 
-// NewDatasetsHandler creates a new datasets handler.
+// NewDatasetsHandler 构造 DatasetsHandler 并绑定 DatasetService。
 func NewDatasetsHandler(datasetsService *service.DatasetService, metadataService *service.MetadataService) *DatasetsHandler {
 	h := &DatasetsHandler{
 		datasetsService: datasetsService,
@@ -67,7 +70,7 @@ func NewDatasetsHandler(datasetsService *service.DatasetService, metadataService
 	return h
 }
 
-// ListDatasets handles GET /api/v1/datasets.
+// ListDatasets GET /api/v1/datasets 分页列表。
 func (h *DatasetsHandler) ListDatasets(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -103,7 +106,7 @@ func (h *DatasetsHandler) ListDatasets(c *gin.Context) {
 	parserID := ""
 	var ownerIDs []string
 
-	// ext keeps the same compatibility payload as the Python REST API.
+	// ext 与 Python REST API 保持相同的扩展兼容字段。
 	if extStr := c.Query("ext"); extStr != "" {
 		var ext listDatasetsExt
 		if err := json.Unmarshal([]byte(extStr), &ext); err != nil {
@@ -139,7 +142,7 @@ func (h *DatasetsHandler) ListDatasets(c *gin.Context) {
 	})
 }
 
-// CreateDataset handles POST /api/v1/datasets.
+// CreateDataset POST 创建知识库。
 func (h *DatasetsHandler) CreateDataset(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -162,7 +165,7 @@ func (h *DatasetsHandler) CreateDataset(c *gin.Context) {
 	common.SuccessNoMessage(c, result)
 }
 
-// GetDataset handles GET /api/v1/datasets/:dataset_id.
+// GetDataset GET 单个知识库详情。
 func (h *DatasetsHandler) GetDataset(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -180,7 +183,7 @@ func (h *DatasetsHandler) GetDataset(c *gin.Context) {
 	common.SuccessNoMessage(c, result)
 }
 
-// UpdateDataset Update a dataset.
+// UpdateDataset 更新知识库配置。
 func (h *DatasetsHandler) UpdateDataset(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -219,6 +222,7 @@ func (h *DatasetsHandler) UpdateDataset(c *gin.Context) {
 	common.SuccessNoMessage(c, result)
 }
 
+// GetMetadataConfig GET 知识库元数据字段配置。
 func (h *DatasetsHandler) GetMetadataConfig(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -236,6 +240,7 @@ func (h *DatasetsHandler) GetMetadataConfig(c *gin.Context) {
 	common.SuccessNoMessage(c, result)
 }
 
+// UpdateMetadataConfig 更新知识库元数据配置。
 func (h *DatasetsHandler) UpdateMetadataConfig(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -259,7 +264,7 @@ func (h *DatasetsHandler) UpdateMetadataConfig(c *gin.Context) {
 	common.SuccessNoMessage(c, result)
 }
 
-// GetIngestionSummary handles GET /api/v1/datasets/:dataset_id/ingestions/summary.
+// GetIngestionSummary GET 摄取任务汇总。
 func (h *DatasetsHandler) GetIngestionSummary(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -277,7 +282,7 @@ func (h *DatasetsHandler) GetIngestionSummary(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// ListIngestionLogs handles GET /api/v1/datasets/:dataset_id/ingestions.
+// ListIngestionLogs GET 摄取日志列表。
 func (h *DatasetsHandler) ListIngestionLogs(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -310,7 +315,7 @@ func (h *DatasetsHandler) ListIngestionLogs(c *gin.Context) {
 	}
 
 	orderby := c.DefaultQuery("orderby", "create_time")
-	// desc defaults to true and is only disabled by the literal value "false".
+	// desc 默认为 true，仅当查询值为字面量 "false" 时降序。
 	desc := strings.ToLower(c.DefaultQuery("desc", "true")) != "false"
 	operationStatus := c.QueryArray("operation_status")
 	createDateFrom := c.Query("create_date_from")
@@ -327,7 +332,7 @@ func (h *DatasetsHandler) ListIngestionLogs(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// GetIngestionLog handles GET /api/v1/datasets/:dataset_id/ingestions/:log_id.
+// GetIngestionLog GET 单条摄取日志。
 func (h *DatasetsHandler) GetIngestionLog(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -346,7 +351,7 @@ func (h *DatasetsHandler) GetIngestionLog(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// DeleteDatasets handles DELETE /api/v1/datasets.
+// DeleteDatasets DELETE 批量删除知识库。
 func (h *DatasetsHandler) DeleteDatasets(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -379,7 +384,7 @@ func (h *DatasetsHandler) DeleteDatasets(c *gin.Context) {
 	common.SuccessNoMessage(c, result)
 }
 
-// GetKnowledgeGraph handles GET /api/v1/datasets/:dataset_id/graph.
+// GetKnowledgeGraph GET 知识图谱（节点按 PageRank 排序截断）。
 func (h *DatasetsHandler) GetKnowledgeGraph(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -478,7 +483,7 @@ func (h *DatasetsHandler) GetKnowledgeGraph(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// ListTags handles GET /api/v1/datasets/:dataset_id/tags.
+// ListTags GET 知识库标签列表。
 // @Summary List dataset tags
 // @Description List tags for a dataset
 // @Tags datasets
@@ -509,6 +514,7 @@ type renameTagRequest struct {
 	ToTag   string `json:"to_tag"`
 }
 
+// RenameTag 重命名知识库内标签。
 func (h *DatasetsHandler) RenameTag(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -549,7 +555,7 @@ func (h *DatasetsHandler) RenameTag(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// DeleteKnowledgeGraph handles DELETE /api/v1/datasets/:dataset_id/graph.
+// DeleteKnowledgeGraph DELETE 删除知识图谱。
 func (h *DatasetsHandler) DeleteKnowledgeGraph(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -593,7 +599,7 @@ func (h *DatasetsHandler) DeleteKnowledgeGraph(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// RemoveTags handles DELETE /api/v1/datasets/:dataset_id/tags.
+// RemoveTags DELETE 移除标签。
 // @Summary Remove Tags
 // @Description Remove tags from a dataset
 // @Tags datasets
@@ -663,7 +669,7 @@ func (h *DatasetsHandler) RemoveTags(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// RunEmbedding Run embedding for all documents in a dataset.
+// RunEmbedding 对知识库内全部文档触发嵌入任务。
 func (h *DatasetsHandler) RunEmbedding(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -692,7 +698,7 @@ func (h *DatasetsHandler) RunEmbedding(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// CheckEmbedding Check embedding model compatibility by sampling random chunks,
+// CheckEmbedding 抽样分块重嵌入并计算余弦相似度，校验嵌入模型兼容性。
 // re-embedding them with the new model, and computing cosine similarity.
 func (h *DatasetsHandler) CheckEmbedding(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
@@ -735,7 +741,7 @@ func (h *DatasetsHandler) CheckEmbedding(c *gin.Context) {
 	common.SuccessWithData(c, data, "success")
 }
 
-// AggregateTags handles GET /api/v1/datasets/tags/aggregation.
+// AggregateTags GET 跨库标签聚合。
 // @Summary Aggregate dataset tags
 // @Description Aggregate tags across multiple datasets
 // @Tags datasets
@@ -773,7 +779,7 @@ func (h *DatasetsHandler) AggregateTags(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// RunIndex Run an indexing task (graph/raptor/mindmap) for a dataset.
+// RunIndex 启动索引任务（graph/raptor/mindmap）。
 func (h *DatasetsHandler) RunIndex(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -803,7 +809,7 @@ func (h *DatasetsHandler) RunIndex(c *gin.Context) {
 	common.SuccessWithData(c, data, "success")
 }
 
-// TraceIndex Trace an indexing task (graph/raptor/mindmap) for a dataset.
+// TraceIndex 追踪索引任务进度。
 func (h *DatasetsHandler) TraceIndex(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -837,7 +843,7 @@ func (h *DatasetsHandler) TraceIndex(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// DeleteIndex Delete an indexing task (graph/raptor/mindmap) for a dataset.
+// DeleteIndex 删除/取消索引任务。
 func (h *DatasetsHandler) DeleteIndex(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -878,7 +884,7 @@ func (h *DatasetsHandler) DeleteIndex(c *gin.Context) {
 	common.SuccessWithData(c, map[string]interface{}{}, "success")
 }
 
-// ListMetadataFlattened handles GET /api/v1/datasets/metadata/flattened.
+// ListMetadataFlattened GET 多库扁平化元数据。
 // @Summary List flattened metadata for datasets
 // @Description Get flattened metadata for multiple datasets
 // @Tags datasets
@@ -913,7 +919,7 @@ func (h *DatasetsHandler) ListMetadataFlattened(c *gin.Context) {
 		return
 	}
 
-	// Check access for each dataset
+	// 逐库校验访问权限
 	for _, datasetID := range datasetIDs {
 		if !h.datasetsService.Accessible(datasetID, user.ID) {
 			common.ResponseWithCodeData(c, common.CodeAuthenticationError, nil, "No authorization for dataset: "+datasetID)
@@ -930,6 +936,7 @@ func (h *DatasetsHandler) ListMetadataFlattened(c *gin.Context) {
 	common.SuccessWithData(c, flattenedMeta, "success")
 }
 
+// UpdateDocumentMetadataConfig 更新文档级元数据配置。
 func (h *DatasetsHandler) UpdateDocumentMetadataConfig(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -968,7 +975,7 @@ func (h *DatasetsHandler) UpdateDocumentMetadataConfig(c *gin.Context) {
 	common.ResponseWithCodeData(c, code, data, "success")
 }
 
-// SearchDatasets searches chunks across datasets based on a question
+// SearchDatasets POST 跨一个或多个知识库检索分块。
 // @Summary Search Datasets
 // @Description Search for relevant chunks across one or more datasets based on a question
 // @Tags datasets
@@ -1044,7 +1051,7 @@ func (h *DatasetsHandler) SearchDatasets(c *gin.Context) {
 	common.SuccessNoMessage(c, resp)
 }
 
-// SearchDataset searches chunks within a single dataset based on a question.
+// SearchDataset POST 在单个知识库内检索分块。
 // @Summary Search Dataset
 // @Description Search for relevant chunks within one dataset based on a question
 // @Tags datasets
@@ -1100,14 +1107,17 @@ func (h *DatasetsHandler) SearchDataset(c *gin.Context) {
 	common.SuccessNoMessage(c, resp)
 }
 
+// validateSearchDatasetsRequest 校验跨库检索请求参数。
 func validateSearchDatasetsRequest(req *service.SearchDatasetsRequest) error {
 	return validateSearchParams(req.Page, req.Size, req.TopK, req.SimilarityThreshold, req.VectorSimilarityWeight)
 }
 
+// validateSearchDatasetRequest 校验单库检索请求参数。
 func validateSearchDatasetRequest(req *service.SearchDatasetRequest) error {
 	return validateSearchParams(req.Page, req.Size, req.TopK, req.SimilarityThreshold, req.VectorSimilarityWeight)
 }
 
+// validateSearchParams 校验分页、top_k 与相似度阈值范围。
 func validateSearchParams(page, size, topK *int, similarityThreshold, vectorSimilarityWeight *float64) error {
 	if page != nil && *page < 1 {
 		return fmt.Errorf("page must be greater than or equal to 1")
@@ -1127,6 +1137,7 @@ func validateSearchParams(page, size, topK *int, similarityThreshold, vectorSimi
 	return nil
 }
 
+// firstStringValue 从多种类型中提取首个非空字符串。
 func firstStringValue(value interface{}) string {
 	switch v := value.(type) {
 	case string:
@@ -1148,6 +1159,7 @@ func firstStringValue(value interface{}) string {
 	return ""
 }
 
+// sortKnowledgeGraph 按 PageRank/weight 排序并截断图谱节点与边。
 func sortKnowledgeGraph(graphData map[string]interface{}) {
 	nodes := mapSlice(graphData["nodes"])
 	if len(nodes) > 0 {
@@ -1193,6 +1205,7 @@ func sortKnowledgeGraph(graphData map[string]interface{}) {
 	}
 }
 
+// mapSlice 将 []interface{} 转为 []map[string]interface{}。
 func mapSlice(value interface{}) []map[string]interface{} {
 	raw, ok := value.([]interface{})
 	if !ok {
@@ -1207,6 +1220,7 @@ func mapSlice(value interface{}) []map[string]interface{} {
 	return result
 }
 
+// numericValue 将 JSON 数值转为 float64。
 func numericValue(value interface{}) float64 {
 	switch v := value.(type) {
 	case float64:
@@ -1224,3 +1238,5 @@ func numericValue(value interface{}) float64 {
 		return 0
 	}
 }
+
+// SearchDatasets/SearchDataset 校验 question 非空及分页参数；sortKnowledgeGraph 限制节点≤256、边≤128。

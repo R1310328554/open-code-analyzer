@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// mcp.go — MCP 服务器管理 HTTP 处理器：CRUD、批量导入、连通性测试与工具列表探测。
+
 //
 
 package handler
@@ -40,7 +43,7 @@ const (
 	mcpServerDateFormat      = "2006-01-02T15:04:05"
 )
 
-// MCPHandler handles MCP server requests.
+// MCPHandler MCP 服务器管理 HTTP 处理器。
 type MCPHandler struct {
 	mcpService *service.MCPService
 }
@@ -60,14 +63,14 @@ type mcpServerResponse struct {
 	UpdateDate  string                 `json:"update_date"`
 }
 
-// NewMCPHandler creates an MCP handler.
+// NewMCPHandler 构造 MCPHandler。
 func NewMCPHandler(mcpService *service.MCPService) *MCPHandler {
 	return &MCPHandler{
 		mcpService: mcpService,
 	}
 }
 
-// CreateMCPServer creates an MCP server for the current user.
+// CreateMCPServer 为当前用户创建 MCP 服务器配置。
 func (h *MCPHandler) CreateMCPServer(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -90,7 +93,7 @@ func (h *MCPHandler) CreateMCPServer(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// ListMCPServers lists MCP servers for the current user.
+// ListMCPServers 分页列出用户的 MCP 服务器。
 func (h *MCPHandler) ListMCPServers(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -127,6 +130,7 @@ func (h *MCPHandler) ListMCPServers(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
+// GetMCPServer 获取单个 MCP 服务器详情。
 func (h *MCPHandler) GetMCPServer(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -153,6 +157,7 @@ func (h *MCPHandler) GetMCPServer(c *gin.Context) {
 	common.SuccessWithData(c, newMCPServerResponse(result), "success")
 }
 
+// mcpDetailError 返回带 detail 的 MCP 错误响应。
 func mcpDetailError(c *gin.Context, code common.ErrorCode, err error) {
 	if code == common.CodeDataError {
 		common.ErrorWithCode(c, int(code), err.Error())
@@ -161,7 +166,7 @@ func mcpDetailError(c *gin.Context, code common.ErrorCode, err error) {
 	common.ResponseWithCodeData(c, common.CodeExceptionError, nil, err.Error())
 }
 
-// UpdateMCPServer updates an MCP server for the current user.
+// UpdateMCPServer 更新 MCP 服务器配置。
 func (h *MCPHandler) UpdateMCPServer(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -185,7 +190,7 @@ func (h *MCPHandler) UpdateMCPServer(c *gin.Context) {
 	common.SuccessWithData(c, newMCPServerResponse(result), "success")
 }
 
-// DeleteMCPServer deletes an MCP server for the current user.
+// DeleteMCPServer 删除 MCP 服务器。
 func (h *MCPHandler) DeleteMCPServer(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -202,7 +207,7 @@ func (h *MCPHandler) DeleteMCPServer(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// mcpErrorResponse maps the import / test sentinel errors to the response
+// mcpErrorResponse 将导入/测试 sentinel 错误映射为 Python mcp_api 响应码。
 // codes Python's mcp_api emits.
 func mcpErrorResponse(c *gin.Context, err error) bool {
 	if err == nil {
@@ -220,6 +225,7 @@ func mcpErrorResponse(c *gin.Context, err error) bool {
 	return true
 }
 
+// mcpErrorMessage 生成 MCP 错误用户可见消息。
 func mcpErrorMessage(err error) string {
 	if err == nil {
 		return ""
@@ -247,8 +253,8 @@ func mcpErrorMessage(err error) string {
 	}
 }
 
-// unwrapDetail pulls the "<sentinel>: <detail>" suffix off a wrapped error
-// and returns the detail. Returns "" when the error is the bare sentinel
+// unwrapDetail 从包装错误中提取 sentinel 后的 detail 后缀。
+// 裸 sentinel 时返回空串。
 // (no wrapped message) so the caller can fall back to a default.
 func unwrapDetail(err, sentinel error) string {
 	if err == nil || sentinel == nil {
@@ -262,13 +268,13 @@ func unwrapDetail(err, sentinel error) string {
 	return strings.TrimPrefix(msg, prefix)
 }
 
-// ImportMCPRequest is the body for the bulk-import endpoint.
+// ImportMCPRequest 批量导入 MCP 配置的请求体。
 type ImportMCPRequest struct {
 	MCPServers map[string]map[string]interface{} `json:"mcpServers"`
 	Timeout    float64                           `json:"timeout,omitempty"`
 }
 
-// ImportMCPServers bulk-imports MCP servers from a JSON config
+// ImportMCPServers 从 JSON 配置批量导入 MCP 服务器。
 // @Summary Import MCP Servers
 // @Tags mcp
 // @Accept json
@@ -330,7 +336,7 @@ func (h *MCPHandler) ImportMCPServers(c *gin.Context) {
 	common.SuccessWithData(c, gin.H{"results": results}, "success")
 }
 
-// TestMCPServer opens a live MCP session and returns the tools the server advertises.
+// TestMCPServer 建立实时 MCP 会话并返回服务器 advertised 的工具列表。
 // @Summary Test MCP Server
 // @Tags mcp
 // @Accept json
@@ -376,6 +382,7 @@ func (h *MCPHandler) TestMCPServer(c *gin.Context) {
 	common.SuccessWithData(c, tools, "success")
 }
 
+// newMCPServerResponse 将实体转为 API 响应 DTO。
 func newMCPServerResponse(server *entity.MCPServer) *mcpServerResponse {
 	if server == nil {
 		return nil
@@ -397,6 +404,7 @@ func newMCPServerResponse(server *entity.MCPServer) *mcpServerResponse {
 	}
 }
 
+// formatMCPServerDate 格式化 MCP 服务器日期字段。
 func formatMCPServerDate(date *time.Time) string {
 	if date == nil {
 		return ""
@@ -404,6 +412,7 @@ func formatMCPServerDate(date *time.Time) string {
 	return date.Format(mcpServerDateFormat)
 }
 
+// parseMCPServerPage 解析分页页码。
 func parseMCPServerPage(value string) (int, error) {
 	if value == "" {
 		return defaultMCPServerPage, nil
@@ -415,6 +424,7 @@ func parseMCPServerPage(value string) (int, error) {
 	return page, nil
 }
 
+// parseMCPServerPageSize 解析分页大小。
 func parseMCPServerPageSize(value string) (int, error) {
 	if value == "" {
 		return defaultMCPServerPageSize, nil
@@ -429,6 +439,7 @@ func parseMCPServerPageSize(value string) (int, error) {
 	return pageSize, nil
 }
 
+// getMCPIDsFromQuery 从 query 读取 MCP ID 列表。
 func getMCPIDsFromQuery(c *gin.Context) []string {
 	rawValues := c.QueryArray("mcp_ids")
 	if len(rawValues) == 0 {

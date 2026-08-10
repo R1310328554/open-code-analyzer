@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// langfuse.go — Langfuse 集成 HTTP 处理器：租户级 API Key 的增删查。
+
 //
 
 package handler
@@ -24,7 +27,7 @@ import (
 	"ragflow/internal/service"
 )
 
-// LangfuseService is the behaviour the handler depends on (interface enables
+// LangfuseService Handler 依赖的行为接口（便于 mock 测试）。
 // mocking in tests).
 type LangfuseService interface {
 	SetAPIKey(tenantID, secretKey, publicKey, host string) (*entity.TenantLangfuse, common.ErrorCode, error)
@@ -32,22 +35,22 @@ type LangfuseService interface {
 	DeleteAPIKey(tenantID string) (bool, common.ErrorCode, string, error)
 }
 
-// LangfuseHandler handles /langfuse/api-key HTTP requests.
+// LangfuseHandler 处理 /langfuse/api-key 相关请求。
 type LangfuseHandler struct {
 	langfuseService LangfuseService
 }
 
-// NewLangfuseHandler creates a new Langfuse handler.
+// NewLangfuseHandler 构造 LangfuseHandler。
 func NewLangfuseHandler(langfuseService LangfuseService) *LangfuseHandler {
 	return &LangfuseHandler{langfuseService: langfuseService}
 }
 
-// NewLangfuse keeps a zero-arg constructor consistent with other handlers.
+// NewLangfuse 无参构造，与其他 Handler 风格一致。
 func NewLangfuse() *LangfuseHandler {
 	return NewLangfuseHandler(service.NewLangfuseService())
 }
 
-// SetLangfuseRequest is the POST/PUT body. Empty-value validation happens in
+// SetLangfuseRequest POST/PUT 请求体；空值校验在服务层（对齐 Python 提示）。
 // the service layer to reproduce the Python "Missing required fields" message.
 type SetLangfuseRequest struct {
 	SecretKey string `json:"secret_key"`
@@ -55,7 +58,7 @@ type SetLangfuseRequest struct {
 	Host      string `json:"host"`
 }
 
-// SetAPIKey handles POST/PUT /langfuse/api-key.
+// SetAPIKey 设置 Langfuse API Key。
 func (h *LangfuseHandler) SetAPIKey(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -84,7 +87,7 @@ func (h *LangfuseHandler) SetAPIKey(c *gin.Context) {
 	}, "success")
 }
 
-// GetAPIKey handles GET /langfuse/api-key.
+// GetAPIKey 获取 Langfuse API Key。
 func (h *LangfuseHandler) GetAPIKey(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -100,7 +103,7 @@ func (h *LangfuseHandler) GetAPIKey(c *gin.Context) {
 	common.ResponseWithCodeData(c, code, data, message)
 }
 
-// DeleteAPIKey handles DELETE /langfuse/api-key.
+// DeleteAPIKey 删除 Langfuse API Key。
 func (h *LangfuseHandler) DeleteAPIKey(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {

@@ -11,6 +11,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// chunk.go — 文档分块 HTTP 处理器：检索测试、分块 CRUD、解析/停解析、启用禁用等 Gin 端点。
+
 //
 
 package handler
@@ -30,7 +33,7 @@ import (
 	"ragflow/internal/service"
 )
 
-// chunkService is the consumer-side interface for ChunkHandler's service dependency.
+// chunkService ChunkHandler 依赖的分块服务接口（便于测试注入）。
 type chunkService interface {
 	RetrievalTest(req *service.RetrievalTestRequest, userID string) (*service.RetrievalTestResponse, error)
 	Get(req *service.GetChunkRequest, userID string) (*service.GetChunkResponse, error)
@@ -43,13 +46,13 @@ type chunkService interface {
 	StopParsing(userID, datasetID string, req service.StopParsingRequest) (*service.StopParsingResponse, common.ErrorCode, error)
 }
 
-// ChunkHandler chunk handler
+// ChunkHandler 文档分块 HTTP 处理器。
 type ChunkHandler struct {
 	chunkService chunkService
 	userService  *service.UserService
 }
 
-// NewChunkHandler create chunk handler
+// NewChunkHandler 构造 ChunkHandler。
 func NewChunkHandler(chunkService chunkService, userService *service.UserService) *ChunkHandler {
 	return &ChunkHandler{
 		chunkService: chunkService,
@@ -57,7 +60,7 @@ func NewChunkHandler(chunkService chunkService, userService *service.UserService
 	}
 }
 
-// RetrievalTest performs retrieval test for chunks
+// RetrievalTest 对指定知识库执行检索测试（POST /api/v1/datasets/search）。
 // @Summary Retrieval Test
 // @Description Test retrieval of chunks based on question and knowledge base
 // @Tags chunks
@@ -73,14 +76,14 @@ func (h *ChunkHandler) RetrievalTest(c *gin.Context) {
 		return
 	}
 
-	// Bind JSON request
+	// 绑定 JSON 请求体
 	var req service.RetrievalTestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, common.CodeBadRequest, nil, "Invalid request body: "+err.Error())
 		return
 	}
 
-	// Set default values for optional parameters
+	// 为可选参数填充默认值
 	if req.Page == nil {
 		defaultPage := 1
 		req.Page = &defaultPage
@@ -98,7 +101,7 @@ func (h *ChunkHandler) RetrievalTest(c *gin.Context) {
 		req.UseKG = &defaultUseKG
 	}
 
-	// Strip and validate question.  Matching Python chunk_api.py which returns
+	// 去除空白并校验 question；与 Python chunk_api 一致，空问题返回空结果而非报错
 	// an empty result for blank questions rather than an error.
 	if strings.TrimSpace(req.Question) == "" {
 		common.SuccessWithData(c, &service.RetrievalTestResponse{
@@ -109,7 +112,7 @@ func (h *ChunkHandler) RetrievalTest(c *gin.Context) {
 		return
 	}
 
-	// Validate required fields
+	// 校验必填字段
 	if req.Datasets == nil {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, common.CodeArgumentError, nil, "kb_id is required")
 		return
@@ -124,7 +127,7 @@ func (h *ChunkHandler) RetrievalTest(c *gin.Context) {
 		return
 	}
 
-	// Call service with user ID for permission checks
+	// 携带 userID 调用服务层做权限校验
 	resp, err := h.chunkService.RetrievalTest(&req, user.ID)
 	if err != nil {
 		common.Warn("dataset search failed", zap.String("error", err.Error()))
@@ -135,7 +138,7 @@ func (h *ChunkHandler) RetrievalTest(c *gin.Context) {
 	common.SuccessWithData(c, resp, "success")
 }
 
-// Get retrieves a chunk by ID.
+// Get 按 dataset/document/chunk ID 获取单个分块。
 // @Summary Get Chunk
 // @Description Retrieve a single chunk by its ID.
 // @Tags chunks
@@ -172,7 +175,7 @@ func (h *ChunkHandler) Get(c *gin.Context) {
 	common.SuccessWithData(c, resp.Chunk, "success")
 }
 
-// Parse reparse the datasets' files
+// Parse 触发数据集内文件的重新解析。
 func (h *ChunkHandler) Parse(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -206,7 +209,7 @@ func (h *ChunkHandler) Parse(c *gin.Context) {
 	common.ResponseWithCodeData(c, code, data, "success")
 }
 
-// ListChunks retrieves chunks for a document from path/query parameters.
+// ListChunks 从路径与查询参数分页列出文档分块。
 func (h *ChunkHandler) ListChunks(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -257,6 +260,7 @@ func (h *ChunkHandler) ListChunks(c *gin.Context) {
 	common.SuccessWithData(c, resp, "success")
 }
 
+// parsePositiveQueryInt 解析正整数查询参数，缺省返回 defaultValue。
 func parsePositiveQueryInt(c *gin.Context, name string, defaultValue int) (int, error) {
 	raw := strings.TrimSpace(c.Query(name))
 	if raw == "" {
@@ -269,6 +273,7 @@ func parsePositiveQueryInt(c *gin.Context, name string, defaultValue int) (int, 
 	return value, nil
 }
 
+// parseAvailableQuery 解析 available 查询值（0/1）。
 func parseAvailableQuery(raw string) (int, bool, error) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "":
@@ -282,6 +287,7 @@ func parseAvailableQuery(raw string) (int, bool, error) {
 	}
 }
 
+// StopParsing 停止指定文档的解析任务。
 func (h *ChunkHandler) StopParsing(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -327,7 +333,7 @@ func (h *ChunkHandler) StopParsing(c *gin.Context) {
 	common.SuccessWithData(c, data, message)
 }
 
-// List retrieves chunks for a document.
+// List 按请求体参数分页列出文档分块。
 // @Summary List Chunks
 // @Description Retrieve paginated chunks for a document with optional filtering.
 // @Tags chunks
@@ -369,7 +375,7 @@ func (h *ChunkHandler) List(c *gin.Context) {
 	common.SuccessWithData(c, resp, "success")
 }
 
-// SwitchChunks enable or disable a chunk
+// SwitchChunks 批量启用或禁用分块。
 func (h *ChunkHandler) SwitchChunks(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -383,7 +389,7 @@ func (h *ChunkHandler) SwitchChunks(c *gin.Context) {
 		return
 	}
 
-	// Get required ID
+	// 读取必填 ID 参数
 	datasetID := strings.TrimSpace(c.Param("dataset_id"))
 	if datasetID == "" {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, common.CodeArgumentError, nil, "dataset_id is required")
@@ -427,6 +433,7 @@ func (h *ChunkHandler) SwitchChunks(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
+// parseStringSlice 将 interface{} 转为 []string。
 func parseStringSlice(raw interface{}) ([]string, bool) {
 	items, ok := raw.([]interface{})
 	if !ok {
@@ -443,6 +450,7 @@ func parseStringSlice(raw interface{}) ([]string, bool) {
 	return out, true
 }
 
+// parseAvailableBody 从 JSON body 解析 available 字段。
 func parseAvailableBody(rawBody map[string]interface{}) (int, error) {
 	if raw, ok := rawBody["available_int"]; ok {
 		switch v := raw.(type) {
@@ -478,7 +486,7 @@ func parseAvailableBody(rawBody map[string]interface{}) (int, error) {
 	return 0, fmt.Errorf("`available_int` or `available` is required.")
 }
 
-// UpdateChunk updates a chunk
+// UpdateChunk 更新分块内容与元数据字段。
 // @Summary Update Chunk
 // @Description Update chunk fields
 // @Tags chunks
@@ -494,14 +502,14 @@ func (h *ChunkHandler) UpdateChunk(c *gin.Context) {
 		return
 	}
 
-	// Validate allowed update fields and get IDs from body
+	// 校验允许更新的字段并从 body 提取 ID
 	var rawBody map[string]interface{}
 	if err := json.NewDecoder(c.Request.Body).Decode(&rawBody); err != nil {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, common.CodeArgumentError, nil, "invalid JSON body: "+err.Error())
 		return
 	}
 
-	// Get required ID fields
+	// 读取必填 ID 字段
 	datasetID := strings.TrimSpace(c.Param("dataset_id"))
 	if datasetID == "" {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, common.CodeArgumentError, nil, "dataset_id is required")
@@ -514,14 +522,14 @@ func (h *ChunkHandler) UpdateChunk(c *gin.Context) {
 		return
 	}
 
-	// Get document_id from request
+	// 从请求体读取 document_id
 	documentID := strings.TrimSpace(c.Param("document_id"))
 	if documentID == "" {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, common.CodeArgumentError, nil, "document_id is required")
 		return
 	}
 
-	// Allowed fields for update (exclude ID fields)
+	// 允许更新的字段（不含 ID 类字段）
 	allowedFields := map[string]bool{
 		"content":            true,
 		"important_keywords": true,
@@ -538,7 +546,7 @@ func (h *ChunkHandler) UpdateChunk(c *gin.Context) {
 		}
 	}
 
-	// Build UpdateChunkRequest from rawBody
+	// 由 rawBody 组装 UpdateChunkRequest
 	var req service.UpdateChunkRequest
 	if content, ok := rawBody["content"].(string); ok {
 		req.Content = &content
@@ -575,7 +583,7 @@ func (h *ChunkHandler) UpdateChunk(c *gin.Context) {
 	}
 	req.TagFeas = rawBody["tag_feas"]
 
-	// Set path parameters
+	// 写入路径参数
 	req.DatasetID = datasetID
 	req.DocumentID = documentID
 	req.ChunkID = chunkID
@@ -604,7 +612,7 @@ func (h *ChunkHandler) UpdateChunk(c *gin.Context) {
 	common.SuccessWithMessage(c, "chunk updated successfully")
 }
 
-// RemoveChunks handles chunk removal requests
+// RemoveChunks 从文档中删除指定分块。
 // @Summary Remove Chunks
 // @Description Remove chunks from a document
 // @Tags chunks
@@ -620,7 +628,7 @@ func (h *ChunkHandler) RemoveChunks(c *gin.Context) {
 		return
 	}
 
-	// Get document_id from URL path
+	// 从 URL 路径读取 document_id
 	docID := c.Param("document_id")
 	if docID == "" {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, 400, nil, "document_id is required")
@@ -649,6 +657,7 @@ func (h *ChunkHandler) RemoveChunks(c *gin.Context) {
 	common.SuccessWithData(c, deletedCount, "success")
 }
 
+// addChunkStringField 从 raw JSON 读取字符串字段。
 func addChunkStringField(rawBody map[string]json.RawMessage, field string) (string, error) {
 	raw, ok := rawBody[field]
 	if !ok {
@@ -661,6 +670,7 @@ func addChunkStringField(rawBody map[string]json.RawMessage, field string) (stri
 	return value, nil
 }
 
+// addChunkStringPtrField 从 raw JSON 读取可选字符串指针。
 func addChunkStringPtrField(rawBody map[string]json.RawMessage, field string) (*string, error) {
 	raw, ok := rawBody[field]
 	if !ok {
@@ -673,6 +683,7 @@ func addChunkStringPtrField(rawBody map[string]json.RawMessage, field string) (*
 	return &value, nil
 }
 
+// addChunkStringListField 从 raw JSON 读取字符串列表。
 func addChunkStringListField(rawBody map[string]json.RawMessage, field, listMessage, elementMessage string) ([]string, error) {
 	raw, ok := rawBody[field]
 	if !ok {
@@ -693,6 +704,7 @@ func addChunkStringListField(rawBody map[string]json.RawMessage, field, listMess
 	return result, nil
 }
 
+// addChunkResponseMessage 按错误码生成 AddChunk 响应消息。
 func addChunkResponseMessage(code common.ErrorCode, err error) string {
 	if code == common.CodeServerError {
 		common.Warn("add chunk failed", zap.String("error", err.Error()))
@@ -701,6 +713,7 @@ func addChunkResponseMessage(code common.ErrorCode, err error) string {
 	return err.Error()
 }
 
+// AddChunk 向文档手动新增分块（content/keywords/questions 等）。
 func (h *ChunkHandler) AddChunk(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {

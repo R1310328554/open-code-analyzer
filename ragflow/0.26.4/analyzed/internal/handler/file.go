@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// file.go — 租户文件系统 HTTP 处理器：列表、上传、下载、移动、删除与关联知识库。
+
 //
 
 package handler
@@ -32,14 +35,14 @@ import (
 	"ragflow/internal/service"
 )
 
-// FileHandler file handler
+// FileHandler 文件管理 HTTP 处理器。
 type FileHandler struct {
 	fileService          *service.FileService
 	userService          *service.UserService
 	file2DocumentService *service.File2DocumentService
 }
 
-// NewFileHandler create file handler
+// NewFileHandler 构造 FileHandler。
 func NewFileHandler(fileService *service.FileService, userService *service.UserService) *FileHandler {
 	return &FileHandler{
 		fileService:          fileService,
@@ -48,7 +51,7 @@ func NewFileHandler(fileService *service.FileService, userService *service.UserS
 	}
 }
 
-// ListFiles list files (new endpoint at /api/v1/files matching Python /files)
+// ListFiles GET /api/v1/files 分页列出文件（对齐 Python /files）。
 // @Summary List Files
 // @Description Get list of files under a folder with filtering, pagination and sorting (matches Python /files endpoint)
 // @Tags file
@@ -115,7 +118,7 @@ func (h *FileHandler) ListFiles(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// GetRootFolder gets root folder for current user
+// GetRootFolder 获取当前用户根目录。
 // @Summary Get Root Folder
 // @Description Get or create root folder for the current user
 // @Tags file
@@ -141,7 +144,7 @@ func (h *FileHandler) GetRootFolder(c *gin.Context) {
 	common.SuccessWithData(c, gin.H{"root_folder": rootFolder}, common.CodeSuccess.Message())
 }
 
-// GetParentFolder gets parent folder of a file
+// GetParentFolder 获取文件的父文件夹。
 // @Summary Get Parent Folder
 // @Description Get parent folder of a file by file ID
 // @Tags file
@@ -175,7 +178,7 @@ func (h *FileHandler) GetParentFolder(c *gin.Context) {
 	common.SuccessWithData(c, gin.H{"parent_folder": parentFolder}, common.CodeSuccess.Message())
 }
 
-// GetAllParentFolders gets all parent folders in path
+// GetAllParentFolders 获取路径上全部父级文件夹。
 // @Summary Get All Parent Folders
 // @Description Get all parent folders in path from file to root
 // @Tags file
@@ -209,7 +212,7 @@ func (h *FileHandler) GetAllParentFolders(c *gin.Context) {
 	common.SuccessWithData(c, gin.H{"parent_folders": parentFolders}, common.CodeSuccess.Message())
 }
 
-// GetFileAncestors gets all ancestor folders of a file (matches Python /files/<file_id>/ancestors)
+// GetFileAncestors 获取文件全部祖先文件夹（对齐 Python ancestors）。
 // @Summary Get File Ancestors
 // @Description Get all ancestor folders in path from file to root
 // @Tags file
@@ -248,7 +251,7 @@ type CreateFolderRequest struct {
 	Type     string `json:"type"`
 }
 
-// UploadFile handles file upload and folder creation
+// UploadFile 上传文件或创建文件夹。
 // @Summary Upload Files or Create Folder
 // @Description Upload files or create a folder based on content type
 // @Tags file
@@ -349,7 +352,7 @@ type DeleteFileRequest struct {
 	IDs []string `json:"ids" binding:"required,min=1"`
 }
 
-// DeleteFiles deletes files
+// DeleteFiles 批量删除文件。
 // @Summary Delete Files
 // @Description Delete files by IDs
 // @Tags file
@@ -380,14 +383,14 @@ func (h *FileHandler) DeleteFiles(c *gin.Context) {
 	common.SuccessWithData(c, true, common.CodeSuccess.Message())
 }
 
-// MoveFileRequest represents the request body for move files operation
+// MoveFileRequest 移动/重命名文件的请求体。
 type MoveFileRequest struct {
 	SrcFileIDs []string `json:"src_file_ids" binding:"required,min=1"`
 	DestFileID string   `json:"dest_file_id"`
 	NewName    string   `json:"new_name" binding:"max=255"`
 }
 
-// MoveFiles moves and/or renames files
+// MoveFiles 移动并重命名文件。
 // @Summary Move Files
 // @Description Move and/or rename files. Follows Linux mv semantics:
 //   - dest_file_id only: move files to a new folder (names unchanged)
@@ -434,7 +437,7 @@ func (h *FileHandler) MoveFiles(c *gin.Context) {
 	common.SuccessWithData(c, true, common.CodeSuccess.Message())
 }
 
-// Download handles file download
+// Download 下载文件内容。
 // @Summary Download File
 // @Description Download a file by ID
 // @Tags file
@@ -514,15 +517,15 @@ func (h *FileHandler) Download(c *gin.Context) {
 		c.Header("Content-Disposition", "attachment; filename*=UTF-8''"+encodedName)
 	}
 
-	// Send file data
+	// 写入文件二进制响应
 	c.Data(http.StatusOK, contentType, blob)
 }
 
-// LinkToDatasets links files (or folder trees) to one or more datasets.
-// Mirrors Python POST /api/v1/files/link-to-datasets (convert).
+// LinkToDatasets 将文件/文件夹树关联到一个或多个知识库。
+// 对齐 Python convert 端点。
 // @Summary Link files to datasets
 // @Description Associate files with target knowledge-base datasets, re-indexing
-// as needed. Folder inputs are expanded to their innermost files.
+// 文件夹展开为最内层文件；重索引在 goroutine 异步执行。
 // The heavy DB work runs in a goroutine; the endpoint returns immediately.
 // @Tags file
 // @Accept json
@@ -538,12 +541,12 @@ func (h *FileHandler) LinkToDatasets(c *gin.Context) {
 	}
 
 	var req service.LinkToDatasetsRequest
-	// Tolerate bind errors: a malformed or empty body simply leaves the fields
+	// 容忍 bind 错误：畸形/空 body 留空字段，由下方校验报缺参（对齐 @validate_request）
 	// empty, which the validate_request-style check below reports as missing
 	// arguments — matching Python's @validate_request behaviour and code.
 	_ = c.ShouldBindJSON(&req)
 
-	// Mirror Python @validate_request("file_ids", "kb_ids"): missing arguments
+	// 缺 file_ids/kb_ids 返回 ARGUMENT_ERROR(101)
 	// return ARGUMENT_ERROR (101) with data=null and the aggregated message.
 	var missing []string
 	if len(req.FileIDs) == 0 {
@@ -565,8 +568,8 @@ func (h *FileHandler) LinkToDatasets(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// linkToDatasetsErrorCode maps File2DocumentService sentinel errors to
-// Python-compatible response codes. File/dataset-not-found and no-authorization
+// linkToDatasetsErrorCode 映射 File2Document 错误为 Python 兼容响应码。
+// 未找到/无权限 → DATA_ERROR(102)；其它 → 服务器错误。
 // use DATA_ERROR (102), matching Python's get_data_error_result in convert();
 // any other (internal) error is reported as a server error.
 func linkToDatasetsErrorCode(err error) common.ErrorCode {
