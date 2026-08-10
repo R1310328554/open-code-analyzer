@@ -1,5 +1,7 @@
 package executor
 
+// translate_errors 在 executor.EOF 与标准 io.EOF 之间转换，统一 pipeline 边界错误语义。
+
 import (
 	"context"
 	"errors"
@@ -29,6 +31,7 @@ func (p translateEOFPipeline) Read(ctx context.Context) (arrow.RecordBatch, erro
 	return rec, translateEOF(err, false)
 }
 
+// translateEOF 双向映射：toExecutor 为 true 时 io.EOF→executor.EOF，否则反向。
 func translateEOF(err error, toExecutor bool) error {
 	if toExecutor {
 		// io.EOF to executor.EOF
@@ -45,3 +48,4 @@ func translateEOF(err error, toExecutor bool) error {
 
 	return err
 }
+// translateEOFPipeline 透传 Open/Close，仅拦截 Read 返回的错误类型。

@@ -1,5 +1,7 @@
 package executor
 
+// range_aggregation 实现 LogQL 区间聚合：按时间窗口与标签分组，对样本做 sum/count/max/min/avg。
+
 import (
 	"context"
 	"errors"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// rangeAggregationOptions 绑定分组列、查询时间范围、步长、区间长度与最大序列数限制。
 type rangeAggregationOptions struct {
 	grouping physical.Grouping
 
@@ -42,6 +45,7 @@ var (
 	}
 )
 
+// window 表示半开区间 (start, end]，与 logql batchRangeVectorIterator 语义一致。
 // window is a time interval where start is exclusive and end is inclusive
 // Refer to [logql.batchRangeVectorIterator].
 type window struct {
@@ -58,6 +62,7 @@ func (w window) Contains(t time.Time) bool {
 // The list can be empty if the timestamp is out of bounds or does not match any of the range windows.
 type timestampMatchingWindowsFunc func(time.Time) []window
 
+// rangeAggregationPipeline 读入多路输入，按窗口匹配时间戳后写入 aggregator，耗尽后输出。
 // rangeAggregationPipeline is a pipeline that performs aggregations over a time window.
 //
 // 1. It reads from the input pipelines
@@ -318,6 +323,7 @@ func (r *rangeAggregationPipeline) Close() {
 	}
 }
 
+// newMatcherFactoryFromOpts 根据 step 与 interval 关系选择精确/对齐/间隙/重叠窗口匹配策略。
 func newMatcherFactoryFromOpts(opts rangeAggregationOptions) *matcherFactory {
 	return &matcherFactory{
 		start:    opts.startTs,
@@ -363,6 +369,7 @@ func (f *matcherFactory) createMatcher(windows []window) timestampMatchingWindow
 //
 //	steps         |---------x-------|
 //	interval      |---------x-------|
+// createExactMatcher 用于 instant 查询：样本在 bounds 内则落入唯一窗口。
 func (f *matcherFactory) createExactMatcher(windows []window) timestampMatchingWindowsFunc {
 	return func(t time.Time) []window {
 		if !f.bounds.Contains(t) {
@@ -439,6 +446,7 @@ func (f *matcherFactory) createGappedMatcher(windows []window) timestampMatching
 //	interval               |x-------|
 //	interval         |------x-|
 //	interval   |--------|
+// createOverlappingMatcher 在 step < interval 时一个样本可贡献多个重叠窗口。
 func (f *matcherFactory) createOverlappingMatcher(windows []window) timestampMatchingWindowsFunc {
 	return func(t time.Time) []window {
 		if !f.bounds.Contains(t) {
@@ -471,3 +479,4 @@ func (f *matcherFactory) createOverlappingMatcher(windows []window) timestampMat
 		return result
 	}
 }
+// 当前实现为逐行处理，TODO 计划改为列式访问并支持流式部分结果输出。

@@ -1,5 +1,7 @@
 package executor
 
+// topk_batch 用最小堆维护跨 RecordBatch 的 Top K 行引用，支持按 MaxUnused 触发压缩。
+
 import (
 	"fmt"
 	"slices"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/topk"
 )
 
+// topkBatch 按 Fields 字典序比较行，相等时以 append 顺序的 ID 打破平局。
 // topkBatch calculates the top K rows from a stream of [arrow.RecordBatch]s, where
 // rows are ranked by the specified Fields.
 //
@@ -55,6 +58,7 @@ type topkBatch struct {
 	usedSchemas map[*arrow.Schema]int
 }
 
+// topkReference 持有源 RecordBatch 与行号，ID 保证堆内全序比较稳定。
 // topkReference is a reference to a row in a record that is part of the
 // current set of top K rows.
 type topkReference struct {
@@ -66,6 +70,7 @@ type topkReference struct {
 	Row    int
 }
 
+// Put 逐行 Push 堆，unused 超限时自动 Compact 再 put 压缩结果以控制内存。
 // Put adds rows from rec into b. If rec contains at least one row that belongs
 // in the current top K rows, rec is retained until a compaction occurs or it
 // is pushed out of the top K.
@@ -249,6 +254,7 @@ func (b *topkBatch) Size() (rows int, unused int) {
 	return rows, unused
 }
 
+// Compact 按源 record 分组连续行切片，经 arrowagg.Records 合并为单一 batch。
 // Compact compacts all retained records into a single record containing just
 // the current top K rows.
 //
@@ -306,6 +312,7 @@ func (b *topkBatch) Reset() {
 	clear(b.usedSchemas)
 }
 
+// iterContiguousRanges 将排序行号拆成连续区间，便于 AppendSlice 批量拷贝。
 // iterContiguousRanges iterates over contiguous ranges of row indices from a sorted
 // slice. Rows must be sorted in ascending order.
 //
@@ -332,3 +339,4 @@ func iterContiguousRanges(rows []int, yield func(start, end int) bool) {
 	// Yield the final contiguous range
 	yield(startRow, rows[len(rows)-1]+1)
 }
+// 升序 Top K 使用 max-heap 语义（Less 取反）；输出行序不保证，调用方需自行再排序。

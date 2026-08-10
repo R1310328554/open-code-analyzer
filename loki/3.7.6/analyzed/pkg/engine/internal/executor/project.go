@@ -1,5 +1,7 @@
 package executor
 
+// project 实现物理 Projection 节点：按 KEEP/DROP/EXPAND 模式裁剪或扩展 Arrow 列。
+
 import (
 	"context"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// NewProjectPipeline 根据 All/Drop/Expand 组合选择直通、保留列、丢弃列或展开表达式。
 func NewProjectPipeline(input Pipeline, proj *physical.Projection, evaluator *expressionEvaluator) (Pipeline, error) {
 	// Shortcut for ALL=true DROP=false EXPAND=false
 	if proj.All && !proj.Drop && !proj.Expand {
@@ -83,6 +86,7 @@ func NewProjectPipeline(input Pipeline, proj *physical.Projection, evaluator *ex
 	return nil, errNotImplemented
 }
 
+// newKeepPipeline 逐列解析 FQN，由 keepFunc 决定保留哪些列并重建 RecordBatch schema。
 func newKeepPipeline(colRefs []types.ColumnRef, keepFunc func([]types.ColumnRef, *semconv.Identifier) bool, input Pipeline) (*GenericPipeline, error) {
 	identCache := semconv.NewIdentifierCache()
 
@@ -121,6 +125,7 @@ func newKeepPipeline(colRefs []types.ColumnRef, keepFunc func([]types.ColumnRef,
 	}, input), nil
 }
 
+// newExpandPipeline 保留除 value 外的列，求值表达式后将 Struct 字段合并或替换 value 列。
 func newExpandPipeline(expr physical.Expression, evaluator *expressionEvaluator, input Pipeline) (*GenericPipeline, error) {
 	identCache := semconv.NewIdentifierCache()
 
@@ -195,6 +200,7 @@ func newExpandPipeline(expr physical.Expression, evaluator *expressionEvaluator,
 	}, input), nil
 }
 
+// mergeColumns 逐行合并字符串列：新列非空则覆盖，否则保留旧值，用于解析器增量更新。
 // mergeColumns merges two columns by preferring non-null and non-empty values from the new column (b).
 // If b has a null or empty value at index i, keep the value from a at that index.
 // If b has a non-null and non-empty value at index i, use the value from b (overwriting a).
@@ -226,3 +232,4 @@ func mergeColumns(a, b arrow.Array) arrow.Array {
 
 	return builder.NewStringArray()
 }
+// 模糊列按短名匹配，精确列需类型一致；EXPAND 与 KEEP/DROP 当前不可同次投影。

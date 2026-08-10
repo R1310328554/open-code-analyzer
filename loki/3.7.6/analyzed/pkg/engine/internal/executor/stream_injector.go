@@ -1,5 +1,7 @@
 package executor
 
+// stream_injector 将 stream_id 列展开为各标签字符串列，供下游按标签过滤或聚合。
+
 import (
 	"cmp"
 	"context"
@@ -19,12 +21,14 @@ var (
 	streamInjectorColumnIdent = semconv.MustParseFQN(streamInjectorColumnName)
 )
 
+// streamInjector 通过 streamsView 查表，用标签列替换 int64.generated.stream_id。
 // streamInjector injects stream labels into a logs Arrow record, replacing the
 // streams ID column with columns for the labels composing those streams.
 type streamInjector struct {
 	view *streamsView
 }
 
+// newStreamInjector 不接管 view 生命周期，调用方需在 pipeline 结束后 Close view。
 // newStreamInjector creates a new streamInjector that uses the provided view
 // for determining stream ID labels.
 //
@@ -34,6 +38,7 @@ func newStreamInjector(view *streamsView) *streamInjector {
 	return &streamInjector{view: view}
 }
 
+// Inject 逐行查标签并回填 StringBuilder，标签按名称排序后与原列（除 ID）拼接。
 // Inject returns a new Arrow record where the stream ID column is replaced
 // with a set of stream label columns.
 //
@@ -139,3 +144,4 @@ func (si *streamInjector) Inject(ctx context.Context, in arrow.RecordBatch) (arr
 	schema := arrow.NewSchemaWithEndian(fields, &md, in.Schema().Endianness())
 	return array.NewRecordBatch(schema, arrs, in.NumRows()), nil
 }
+// 当前为逐行查表，TODO 可考虑向量化批量构建各标签列以提升吞吐。

@@ -1,5 +1,7 @@
 package logical
 
+// builder 提供链式 API 构造 logical Plan：Select/Limit/Parse/聚合/投影等算子组合。
+
 import (
 	"time"
 
@@ -7,6 +9,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// Builder 包装单个 Value 根节点，每次方法调用返回新 Builder 而不 mutate 原值。
 // Builder provides an ergonomic interface for constructing a [Plan].
 type Builder struct {
 	val Value
@@ -18,6 +21,7 @@ func NewBuilder(val Value) *Builder {
 	return &Builder{val: val}
 }
 
+// Select 在子树上挂 Predicate 过滤节点。
 // Select applies a [Select] operation to the Builder.
 func (b *Builder) Select(predicate Value) *Builder {
 	return &Builder{
@@ -39,6 +43,7 @@ func (b *Builder) Limit(skip uint32, fetch uint32) *Builder {
 	}
 }
 
+// Parse 对 message 列调用 VariadicOp 解析，strict/keepEmpty 控制空值与严格模式。
 // Parse applies a [Parse] operation to the Builder.
 func (b *Builder) Parse(op types.VariadicOp, strict bool, keepEmpty bool) *Builder {
 	val := &FunctionOp{
@@ -137,6 +142,7 @@ func (b *Builder) BinOpLeft(op types.BinaryOp, left Value) *Builder {
 	}
 }
 
+// RangeAggregation 绑定 LogQL 区间聚合的时间参数与 grouping。
 // RangeAggregation applies a [RangeAggregation] operation to the Builder.
 func (b *Builder) RangeAggregation(
 	grouping Grouping,
@@ -214,6 +220,7 @@ func (b *Builder) ProjectExpand(expr ...Value) *Builder {
 // values rather than a Builder.
 func (b *Builder) Value() Value { return b.val }
 
+// ToPlan 先 convertToPlan 生成 SSA 指令序列，再 buildReferrers 建立反向引用。
 // ToPlan converts the Builder to a Plan.
 func (b *Builder) ToPlan() (*Plan, error) {
 	p, err := convertToPlan(b.val)
@@ -223,3 +230,4 @@ func (b *Builder) ToPlan() (*Plan, error) {
 	buildReferrers(p.Instructions...)
 	return p, nil
 }
+// ProjectExpand/Drop/All 封装 Projection 的 All/Expand/Drop 组合语义。

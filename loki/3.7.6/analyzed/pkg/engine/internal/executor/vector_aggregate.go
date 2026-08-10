@@ -1,5 +1,7 @@
 package executor
 
+// vector_aggregate 实现 instant 向量聚合：按标签分组对 timestamp/value 列做 sum/count/avg/max/min。
+
 import (
 	"context"
 	"errors"
@@ -17,12 +19,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// vectorAggregationOptions 含 grouping、聚合算子与 maxQuerySeries 序列上限。
 type vectorAggregationOptions struct {
 	grouping       physical.Grouping
 	operation      types.VectorAggregationType
 	maxQuerySeries int // maximum number of unique series allowed (0 means no limit)
 }
 
+// vectorAggregationPipeline 结构与 range 类似但无时间窗口，读尽输入后一次性 BuildRecord。
 // vectorAggregationPipeline is a pipeline that performs vector aggregations.
 //
 // It reads from the input pipeline, groups the data by specified columns,
@@ -52,6 +56,7 @@ var (
 	}
 )
 
+// newVectorAggregationPipeline 预编译 tsEval/valueEval 闭包并绑定 aggregator 操作。
 func newVectorAggregationPipeline(inputs []Pipeline, evaluator *expressionEvaluator, opts vectorAggregationOptions) (*vectorAggregationPipeline, error) {
 	if len(inputs) == 0 {
 		return nil, fmt.Errorf("vector aggregation expects at least one input")
@@ -254,3 +259,4 @@ func (v *vectorAggregationPipeline) Close() {
 		input.Close()
 	}
 }
+// grouping Without 时排除指定标签集外所有 label/metadata/parsed 列作为分组键。

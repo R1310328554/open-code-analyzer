@@ -1,5 +1,7 @@
 package executor
 
+// util 提供列查找与聚合路径上的标签/字段缓存，减少重复 xxhash 与切片分配。
+
 import (
 	"fmt"
 
@@ -14,6 +16,7 @@ var (
 	separator = []byte{0}
 )
 
+// columnForIdent 按 FQN 在 batch 中定位唯一列，缺失或重名时返回错误与 index -1。
 // columnForIdent returns the column ([arrow.Array]) and its column index in the schema of the given input batch ([arrow.RecordBatch]).
 // It returns an optional error in case the column with the fully qualified name of the identifier could not be found,
 // or there are where multiple columns with the same name in the schema.
@@ -34,6 +37,7 @@ func columnForFQN(fqn string, batch arrow.RecordBatch) (arrow.Array, int, error)
 	return batch.Column(indices[0]), indices[0], nil
 }
 
+// labelValuesCache 对非空标签值做 xxhash 键控缓存，命中时复用 []string 切片。
 // labelValuesCache returns label values for a given row in range and vector aggregators, but cache them in order
 // to reduce object allocations for repeated label sets. It first scans the row for non-empty labels and computes xxhash.
 // In case of a cache miss it scans the row again and allocates arrays for label values.
@@ -76,6 +80,7 @@ func (c *labelValuesCache) getLabelValues(arrays []*array.String, row int) []str
 	return labelValues
 }
 
+// fieldsCache 与 labelValuesCache 对称，缓存非空标签对应的 arrow.Field 列表。
 // fieldsCache returns labels for a given row in range and vector aggregators, but cache them in order
 // to reduce object allocations for repeated label sets. It first scans the row for non-empty labels and computes xxhash.
 // In case of a cache miss it scans the row again and allocates arrays for label names.
@@ -116,3 +121,4 @@ func (c *fieldsCache) getFields(arrays []*array.String, fields []arrow.Field, ro
 
 	return labels
 }
+// separator 字节 0 用于 hash 拼接各标签，避免不同组合产生相同 digest。

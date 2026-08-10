@@ -1,5 +1,7 @@
 package executor
 
+// streams_view 封装 dataobj streams section 的只读视图，按 stream ID 查询标签集合。
+
 import (
 	"context"
 	"errors"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/streams"
 )
 
+// streamsView 懒加载 Arrow Table，维护 id→行号映射与标签结果缓存。
 // streamsView provides a view of the streams in a section, allowing for
 // querying labels of a stream.
 type streamsView struct {
@@ -31,6 +34,7 @@ type streamsView struct {
 	streamLabels map[int64][]labels.Label
 }
 
+// streamsViewOptions 可限定 stream ID 子集、标签列子集、批大小与页缓存。
 type streamsViewOptions struct {
 	// StreamIDs holds the list of stream IDs to include in the view. If this
 	// slice is empty, all streams in the section are included.
@@ -127,6 +131,7 @@ func (v *streamsView) Open(ctx context.Context) error {
 	return nil
 }
 
+// Labels 跳过空值标签以匹配经典 Loki 引擎行为，未知 ID 返回错误。
 // Labels returns all of the non-null labels of a stream with the given
 // id. If [streamsViewOptions] included a subset of labels, only those labels
 // are returned.
@@ -193,6 +198,7 @@ func (v *streamsView) Labels(ctx context.Context, id int64) ([]labels.Label, err
 	return lbs, nil
 }
 
+// lazyRead 批量 Read 后合并为 Table，扫描 stream ID 列建立 idRowMapping。
 func (v *streamsView) lazyRead(ctx context.Context) (err error) {
 	if v.streams != nil {
 		return nil
@@ -247,6 +253,7 @@ func (v *streamsView) lazyRead(ctx context.Context) (err error) {
 	return nil
 }
 
+// columnChunkedRow 在分块 Column 中定位绝对行号对应的 chunk 与相对索引。
 // columnChunkedRow finds a column-wide rows in a chunked array, returning the
 // array that the row is in and the relative row index inside that array.
 func columnChunkedRow(col *arrow.Column, absoluteRow int) (arr arrow.Array, relativeRow int) {
@@ -285,3 +292,4 @@ func (v *streamsView) Close() {
 	v.streams = nil
 	clear(v.idRowMapping)
 }
+// Open 时用 InPredicate 过滤 streamIDs；Close 释放 reader 并清空映射与缓存。

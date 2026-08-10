@@ -1,5 +1,7 @@
 package executor
 
+// topk 实现多路输入上的 SORT+LIMIT：维护堆并在仅按时间排序时可短路通知扫描层。
+
 import (
 	"context"
 	"errors"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// topkOptions 指定排序列、升降序、NULL 顺序、K 值与 MaxUnused  compaction 阈值。
 type topkOptions struct {
 	// Input pipeliens to compute top K from.
 	Inputs []Pipeline
@@ -34,6 +37,7 @@ type topkOptions struct {
 	MaxUnused int
 }
 
+// topkPipeline 读尽全部输入后通过 topkBatch 输出 compacted 的 Top K 行。
 // topkPipeline performs a topk (SORT + LIMIT) operation across several input
 // pipelines.
 type topkPipeline struct {
@@ -99,6 +103,7 @@ func exprsToFields(exprs []physical.ColumnExpression) ([]arrow.Field, error) {
 	return fields, nil
 }
 
+// guessLokiType 为排序列推断 Loki 逻辑类型，ambiguous 列暂不支持 topk。
 func guessLokiType(ref types.ColumnRef) (types.DataType, error) {
 	switch ref.Type {
 	case types.ColumnTypeBuiltin:
@@ -199,6 +204,7 @@ func (p *topkPipeline) Close() {
 	}
 }
 
+// SubscribeToTimeRangeChanges 注册回调，堆满且按时间排序时通知可跳过的扫描范围。
 // SubscribeToTimeRangeChanges implements ContributingTimeRangeChangedNotifier
 func (p *topkPipeline) SubscribeToTimeRangeChanges(callback ContributingTimeRangeChangedHandler) {
 	p.callbacks = append(p.callbacks, callback)
@@ -209,3 +215,4 @@ func (p *topkPipeline) notifyAll(ts time.Time, lessThan bool) {
 		callback(ts, lessThan)
 	}
 }
+// Read 仅产出一条结果 batch，后续 Read 返回 EOF；compute 内循环消费所有输入 pipeline。

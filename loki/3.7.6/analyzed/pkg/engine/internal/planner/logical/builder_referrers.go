@@ -1,5 +1,8 @@
 package logical
 
+// builder_referrers 遍历 Plan 指令图，为每个 Value 节点登记引用它的 Instruction 列表。
+
+// buildReferrers 供优化器通过 Value.Referrers 做替换、裁剪或投影下推时使用。
 // buildReferrers traverses instrs and stores referrers to values, such that
 // [Value.Referrers] produces the correct result.
 func buildReferrers(instrs ...Instruction) {
@@ -33,3 +36,4 @@ func buildReferrers(instrs ...Instruction) {
 		})
 	}
 }
+// walkNode 深度优先访问各 Instruction 的操作数，seen 防止同一指令重复登记引用。
