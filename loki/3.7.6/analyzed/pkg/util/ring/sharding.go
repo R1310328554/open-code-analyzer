@@ -1,5 +1,7 @@
 package ring
 
+// util/ring sharding 实现租户 shuffle sharding：按 tenantID 子环判断当前实例是否负责该租户数据。
+
 import (
 	"github.com/grafana/dskit/ring"
 )
@@ -41,6 +43,7 @@ func (s *TenantShuffleSharding) OwnsTenant(tenantID string) (ring.ReadRing, bool
 	return nil, false
 }
 
+// NoopStrategy 恒返回 nil,false，用于禁用 shuffle sharding 的占位实现。
 // NoopStrategy is an implementation of the ShardingStrategy that does not
 // shard anything.
 type NoopStrategy struct{}
@@ -49,3 +52,4 @@ type NoopStrategy struct{}
 func (s *NoopStrategy) OwnsTenant(_ string) (ring.ReadRing, bool) {
 	return nil, false
 }
+// shardSize 为 0 表示对该租户禁用 shuffle，直接返回完整环且 owned 为 true。

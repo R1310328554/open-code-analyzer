@@ -1,5 +1,7 @@
 package server
 
+// util/server error 将 Loki 内部错误映射为对客户端安全的 HTTP/gRPC 状态码：区分取消、超时、4xx 查询错误与 5xx 内部故障。
+
 import (
 	"context"
 	"errors"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// StatusClientClosedRequest 499 表示客户端主动取消，nginx 常用此非标准码。
 // StatusClientClosedRequest is the status code for when a client request cancellation of an http request
 const StatusClientClosedRequest = 499
 
@@ -27,6 +30,7 @@ const (
 	ErrDeadlineExceeded = "request timed out, decrease the duration of the request or add more label matchers (prefer exact match over regex match) to reduce the amount of data processed"
 )
 
+// UserError 标记可安全返回给用户的业务错误，映射为 400 Bad Request。
 type UserError string
 
 func (e UserError) Error() string {
@@ -42,6 +46,7 @@ func ClientGrpcStatusAndError(err error) error {
 	return httpgrpc.Errorf(status, "%s", newErr.Error())
 }
 
+// WriteError 设置 plain 响应头并按 ClientHTTPStatusAndError 写状态与正文。
 // WriteError write a go error with the correct status code.
 func WriteError(err error, w http.ResponseWriter) {
 	status, cerr := ClientHTTPStatusAndError(err)
@@ -51,6 +56,7 @@ func WriteError(err error, w http.ResponseWriter) {
 	fmt.Fprint(w, cerr.Error())
 }
 
+// ClientHTTPStatusAndError 处理 MultiError、promql、logqlmodel 与 gRPC status 等多源错误。
 // ClientHTTPStatusAndError returns error and http status that is "safe" to return to client without
 // exposing any implementation details.
 func ClientHTTPStatusAndError(err error) (int, error) {
@@ -129,6 +135,7 @@ func ClientHTTPStatusAndError(err error) (int, error) {
 	}
 }
 
+// WrapError 将 Go error 转为 rpc.Status Proto，供 gRPC 响应编码。
 // WrapError wraps an error in a protobuf status.
 func WrapError(err error) *rpc.Status {
 	if s, ok := status.FromError(err); ok {
@@ -142,3 +149,4 @@ func WrapError(err error) *rpc.Status {
 func UnwrapError(s *rpc.Status) error {
 	return status.ErrorProto(s)
 }
+// 默认分支对 httpgrpc 错误提取 Code/Body，其余未识别错误返回 500 保留细节不外泄。

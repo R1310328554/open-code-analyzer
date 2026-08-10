@@ -1,5 +1,7 @@
 package ring
 
+// util/ring RingConfig 精简 dskit Lifecycler 配置暴露项：KV 心跳、token 文件、zone 感知与实例注册地址等 distributor/compactor 所需字段。
+
 import (
 	"flag"
 	"net"
@@ -19,6 +21,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// RingConfig 隐藏过多 Lifecycler 选项，避免用户配置 compactor 环时困惑。
 // RingConfig masks the ring lifecycler config which contains
 // many options not really required by the distributors ring. This config
 // is used to strip down the config to the minimum, and avoid confusion
@@ -46,6 +49,7 @@ type RingConfig struct { // nolint:revive
 	ObservePeriod time.Duration `yaml:"-"`
 }
 
+// RegisterFlagsWithPrefix 注册 ring.* 与 instance 相关 flag，storePrefix 用于 KV 路径。
 // RegisterFlagsWithPrefix adds the flags required to config this to the given FlagSet
 // storePrefix is used to set the path in the KVStore and should end with a /
 func (cfg *RingConfig) RegisterFlagsWithPrefix(flagsPrefix, storePrefix string, fs *flag.FlagSet, skip ...string) {
@@ -76,6 +80,7 @@ func (cfg *RingConfig) RegisterFlagsWithPrefix(flagsPrefix, storePrefix string, 
 	f.BoolVar(&cfg.EnableIPv6, flagsPrefix+"ring.instance-enable-ipv6", false, "Enable using a IPv6 instance address.")
 }
 
+// ToLifecyclerConfig 解析 InstanceAddr/Port 并构造 BasicLifecyclerConfig。
 // ToLifecyclerConfig returns a LifecyclerConfig based on the compactor ring config.
 func (cfg *RingConfig) ToLifecyclerConfig(numTokens int, logger log.Logger) (ring.BasicLifecyclerConfig, error) {
 	instanceAddr, err := ring.GetInstanceAddr(cfg.InstanceAddr, cfg.InstanceInterfaceNames, logger, cfg.EnableIPv6)
@@ -119,6 +124,7 @@ func CortexLifecyclerConfigToRingConfig(cfg ring.LifecyclerConfig) RingConfig {
 	}
 }
 
+// ToRingConfig 填充 dskit ring.Config，ReplicationFactor 可由调用方覆盖。
 func (cfg *RingConfig) ToRingConfig(replicationFactor int) ring.Config {
 	rc := ring.Config{}
 	flagext.DefaultValues(&rc)
@@ -130,3 +136,4 @@ func (cfg *RingConfig) ToRingConfig(replicationFactor int) ring.Config {
 
 	return rc
 }
+// CortexLifecyclerConfigToRingConfig 便于从旧 Cortex 配置迁移至 Loki RingConfig。

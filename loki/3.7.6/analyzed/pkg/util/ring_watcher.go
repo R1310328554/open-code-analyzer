@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包 RingWatcher 周期性从哈希环读取复制集地址，对比上次快照后通过 DNSNotifications 回调增删连接。
+
 import (
 	"context"
 	"fmt"
@@ -15,6 +17,7 @@ const (
 	RingKeyOfLeader = 0
 )
 
+// ringWatcher 以 lookupPeriod 轮询 ring.Get(RingKeyOfLeader, Write) 地址列表。
 type ringWatcher struct {
 	log           log.Logger
 	ring          ring.ReadRing
@@ -23,6 +26,7 @@ type ringWatcher struct {
 	addresses     []string
 }
 
+// NewRingWatcher 包装 watchLoop 为 BasicService，无 starting/stopping 钩子。
 // NewRingWatcher creates a new Ring watcher and returns a service that is wrapping it.
 func NewRingWatcher(log log.Logger, ring ring.ReadRing, lookupPeriod time.Duration, notifications DNSNotifications) (services.Service, error) {
 	w := &ringWatcher{
@@ -34,6 +38,7 @@ func NewRingWatcher(log log.Logger, ring ring.ReadRing, lookupPeriod time.Durati
 	return services.NewBasicService(nil, w.watchLoop, nil), nil
 }
 
+// watchLoop 在 ticker 触发时调用 lookupAddresses  diff 并通知 AddressAdded/Removed。
 // watchLoop watches for changes in DNS and sends notifications.
 func (w *ringWatcher) watchLoop(servCtx context.Context) error {
 
@@ -115,3 +120,4 @@ func (w *ringWatcher) getAddresses() ([]string, error) {
 
 	return rs.GetAddresses(), nil
 }
+// getAddresses 使用 IgnoreUnhealthy 策略尽量凑满 REPLICATION_FACTOR 个健康节点。

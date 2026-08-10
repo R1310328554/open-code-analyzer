@@ -1,5 +1,7 @@
 package querylimits
 
+// querylimits 包 middleware 从 HTTP 请求头提取查询限制策略并注入 context，供下游查询路径读取 per-request 覆盖的全局限额。
+
 import (
 	"net/http"
 
@@ -14,6 +16,7 @@ type queryLimitsMiddleware struct {
 	logger log.Logger
 }
 
+// NewQueryLimitsMiddleware 返回 dskit middleware.Interface，解析失败时记录 warn 并继续。
 // NewQueryLimitsMiddleware creates a middleware that extracts the query limits
 // policy from the HTTP header and injects it into the context of the request.
 func NewQueryLimitsMiddleware(logger log.Logger) middleware.Interface {
@@ -22,6 +25,7 @@ func NewQueryLimitsMiddleware(logger log.Logger) middleware.Interface {
 	}
 }
 
+// Wrap 依次注入 QueryLimits 与 QueryLimitsContext，再调用 next 处理请求。
 // Wrap implements the middleware interface
 func (l *queryLimitsMiddleware) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -48,3 +52,4 @@ func (l *queryLimitsMiddleware) Wrap(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+// 解析错误不阻断请求，limits 为 nil 时下游使用租户默认配置。

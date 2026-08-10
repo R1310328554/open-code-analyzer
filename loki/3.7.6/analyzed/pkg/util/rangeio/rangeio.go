@@ -1,3 +1,4 @@
+// rangeio 包提供带 context 的字节区间并行读取：合并相邻 range、按 MaxParallelism 拆分并 errgroup 并发执行。
 // Package rangeio provides basic interfaces and utilities for reading ranges of
 // data.
 package rangeio
@@ -29,6 +30,7 @@ import (
 var tracer = otel.Tracer("pkg/util/rangeio")
 
 // Range represents a range of data to be read.
+// Range 指定 Offset 与预分配 Data 缓冲区，ReadRange 必须填满或返回错误。
 type Range struct {
 	// Data to read into; exactly len(Data) bytes will be read, or an error will
 	// be returned.
@@ -44,6 +46,7 @@ func (r Range) Len() int64 { return int64(len(r.Data)) }
 // Reader is the interface that wraps the basic ReadRange method. Reader is
 // similar to [io.ReaderAt], but allows providing a [context.Context] for
 // canceling the operation.
+// Reader 类似 io.ReaderAt 但接受 context，实现应支持并发 ReadRange 调用。
 type Reader interface {
 	// ReadRange reads len(r.Data) bytes into r.Data starting at r.Offset in the
 	// underlying input source.
@@ -78,6 +81,7 @@ type Reader interface {
 }
 
 // Config configures the behavior of [ReadRanges].
+// Config 控制 MaxParallelism、CoalesceSize、Max/MinRangeSize 等实验性调优参数。
 type Config struct {
 	// MaxParallelism is the maximum number of goroutines that may be used to
 	// read ranges in parallel. If MaxParallelism <= 0, [runtime.NumCPU] is
@@ -150,6 +154,7 @@ var bytesBufferPool = &sync.Pool{
 	},
 }
 
+// ReadRanges 复制并优化 ranges，并行读取后将数据拷回原始切片各区间。
 // ReadRanges reads the set of ranges from the provided Reader, populating Data
 // for each element in ranges.
 //
@@ -270,6 +275,7 @@ func ReadRanges(ctx context.Context, r Reader, ranges []Range) error {
 	return nil
 }
 
+// optimizeRanges 排序后合并间隙小于 CoalesceSize 的区间，过大则二分拆分。
 // optimizeRanges optimizes the set of ranges based on cfg. The returned slice
 // of ranges is sorted.
 //
@@ -479,3 +485,4 @@ func (tr tracedReader) ReadRange(ctx context.Context, r Range) (int, error) {
 
 	return n, err
 }
+// DefaultConfig 针对 GCS/S3 基准：并行 10、合并 1MiB、单 range 上限 8MiB。

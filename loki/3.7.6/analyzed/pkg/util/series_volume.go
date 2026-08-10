@@ -1,7 +1,10 @@
 package util //nolint:revive
 
+// util 包 PrepareLabelsAndMatchers 为 ingester/index gateway 序列量查询准备：解析 targetLabels 与 matchers，返回需聚合的标签集及是否全匹配选择器。
+
 import "github.com/prometheus/prometheus/model/labels"
 
+// PrepareLabelsAndMatchers 可选 tenantLabel 参数以从 matchers 中排除内部租户标签。
 // PrepareLabelsAndMatchers is used by the ingester and index gateway to service volume requests.
 // It returns a map of labels to aggregate into, a list of matchers to match streams against,
 // as well a boolean to indicate if a match all selector was provided.
@@ -31,6 +34,7 @@ func PrepareLabelsAndMatchers(targetLabels []string, matchers []*labels.Matcher,
 	return labelsToMatch, matchers, includeAll
 }
 
+// prepareLabelsAndMatchersWithTargets 为缺失 target 自动追加 .+ 正则 matcher。
 func prepareLabelsAndMatchersWithTargets(targetLabels []string, matchers []*labels.Matcher, tenantLabel ...string) (map[string]struct{}, []*labels.Matcher, bool) {
 	matchAllIndex := -1
 	labelsToMatch := make(map[string]struct{})
@@ -71,3 +75,4 @@ func prepareLabelsAndMatchersWithTargets(targetLabels []string, matchers []*labe
 
 	return labelsToMatch, matchers, false
 }
+// 空名 matcher 表示 match-all 选择器，includeAll 为 true 时需扫描全部 stream。

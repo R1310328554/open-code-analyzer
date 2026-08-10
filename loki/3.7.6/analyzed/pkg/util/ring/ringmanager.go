@@ -1,5 +1,7 @@
 package ring
 
+// util/ring RingManager 在 Bloom Gateway 环模式下统一创建 KV、Ring 与 Lifecycler：ClientMode 只读环，ServerMode 注册实例并经历 JOINING→ACTIVE。
+
 import (
 	"context"
 	"fmt"
@@ -20,6 +22,7 @@ const (
 	RingCheckPeriod                = 3 * time.Second
 )
 
+// ManagerMode 区分 Bloom Gateway 客户端与服务端，决定是否向环注册 token。
 // ManagerMode defines the different modes for the RingManager to execute.
 //
 // The RingManager and its modes are only relevant if the Bloom Gateway is running in ring mode.
@@ -35,6 +38,7 @@ const (
 	ServerMode
 )
 
+// RingManager 封装 subservices Manager，running 中监听子服务失败与定时环检查。
 // RingManager is a component instantiated before all the others and is responsible for the ring setup.
 //
 // All Loki components that are involved with the Bloom Gateway (including the Bloom Gateway itself) will
@@ -59,6 +63,7 @@ type RingManager struct { // nolint:revive
 	Ring           *ring.Ring
 }
 
+// NewRingManager 创建 KV 客户端、Ring 及按模式启动 Server/Client 子服务。
 // NewRingManager instantiates a new RingManager instance.
 // The other functions will assume the RingManager was instantiated through this function.
 func NewRingManager(name string, mode ManagerMode, cfg RingConfig, rf int, tokens int, logger log.Logger, registerer prometheus.Registerer) (*RingManager, error) {
@@ -158,6 +163,7 @@ func (rm *RingManager) startClientMode() error {
 	return nil
 }
 
+// starting 等待 JOINING 后 ChangeState(ACTIVE)，确保同步环拓扑前实例已就绪。
 // starting implements the Lifecycler interface and is one of the lifecycle hooks.
 func (rm *RingManager) starting(ctx context.Context) (err error) {
 	// In case this function will return error we want to unregister the instance
@@ -227,6 +233,7 @@ func (rm *RingManager) stopping(_ error) error {
 	return services.StopManagerAndAwaitStopped(context.Background(), rm.subservices)
 }
 
+// ServeHTTP 委托 Ring 暴露环成员状态页面，供运维与调试使用。
 // ServeHTTP serves the HTTP route /bloomgateway/ring.
 func (rm *RingManager) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	rm.Ring.ServeHTTP(w, req)
@@ -259,3 +266,4 @@ func (rm *RingManager) OnRingInstanceStopping(_ *ring.BasicLifecycler) {
 
 func (rm *RingManager) OnRingInstanceHeartbeat(_ *ring.BasicLifecycler, _ *ring.Desc, _ *ring.InstanceDesc) {
 }
+// OnRingInstanceRegister 新实例强制 JOINING 并补全随机 token 至 NumTokens。
