@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:45:28Z",
-  "files": [
-    "tsdb/fileutil/preallocate.go",
-    "tsdb/fileutil/preallocate_darwin.go",
-    "tsdb/fileutil/preallocate_linux.go",
-    "tsdb/fileutil/preallocate_other.go",
-    "tsdb/fileutil/sync.go",
-    "tsdb/fileutil/sync_darwin.go",
-    "tsdb/fileutil/sync_linux.go",
-    "tsdb/goversion/goversion.go",
-    "tsdb/goversion/init.go",
-    "tsdb/head.go",
-    "tsdb/head_append.go",
-    "tsdb/head_append_v2.go",
-    "tsdb/head_dedupelabels.go",
-    "tsdb/head_other.go",
-    "tsdb/head_read.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 204,
-  "done": 315
+  "done": 330
 }
