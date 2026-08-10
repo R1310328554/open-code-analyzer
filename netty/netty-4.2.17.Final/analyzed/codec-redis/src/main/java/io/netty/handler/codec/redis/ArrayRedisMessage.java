@@ -26,10 +26,14 @@ import java.util.List;
 
 /**
  * Arrays of <a href="https://redis.io/topics/protocol">RESP</a>.
+ * <p>聚合后的 RESP 数组，持有已解码的子 {@link RedisMessage} 列表。实现引用计数：
+ * {@link #release()} 时会递归释放所有子元素。多数 Redis 命令/回复以数组形式组织（如
+ * {@code *2\r\n$3\r\nSET\r\n$3\r\nfoo\r\n}）。</p>
  */
 @UnstableApi
 public class ArrayRedisMessage extends AbstractReferenceCounted implements RedisMessage {
 
+    /** 数组子元素；构造时不额外 retain，因各子消息在创建时已持有引用。 */
     private final List<RedisMessage> children;
 
     private ArrayRedisMessage() {
@@ -90,6 +94,7 @@ public class ArrayRedisMessage extends AbstractReferenceCounted implements Redis
 
     /**
      * A predefined null array instance for {@link ArrayRedisMessage}.
+     * <p>对应 RESP {@code *-1\r\n}，单例且 retain/release 均为空操作。</p>
      */
     public static final ArrayRedisMessage NULL_INSTANCE = new ArrayRedisMessage() {
         @Override
@@ -135,6 +140,7 @@ public class ArrayRedisMessage extends AbstractReferenceCounted implements Redis
 
     /**
      * A predefined empty array instance for {@link ArrayRedisMessage}.
+     * <p>对应 RESP {@code *0\r\n}，元素列表为空且不可变。</p>
      */
     public static final ArrayRedisMessage EMPTY_INSTANCE = new ArrayRedisMessage() {
 

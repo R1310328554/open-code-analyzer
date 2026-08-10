@@ -23,6 +23,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * An aggregated bulk string of <a href="https://redis.io/topics/protocol">RESP</a>.
+ * <p>经 {@link RedisBulkStringAggregator} 合并后的完整 Bulk String，同时实现
+ * {@link LastBulkStringRedisContent}。空串与 null 分别用 {@link #EMPTY_INSTANCE}、
+ * {@link #NULL_INSTANCE} 表示，避免为 flyweight 场景重复分配。</p>
  */
 @UnstableApi
 public class FullBulkStringRedisMessage extends DefaultByteBufHolder implements LastBulkStringRedisContent {
@@ -62,6 +65,7 @@ public class FullBulkStringRedisMessage extends DefaultByteBufHolder implements 
 
     /**
      * A predefined null instance of {@link FullBulkStringRedisMessage}.
+     * <p>对应 {@code $-1\r\n}；{@link #content()} 恒为 {@link Unpooled#EMPTY_BUFFER}。</p>
      */
     public static final FullBulkStringRedisMessage NULL_INSTANCE = new FullBulkStringRedisMessage() {
         @Override
@@ -127,6 +131,7 @@ public class FullBulkStringRedisMessage extends DefaultByteBufHolder implements 
 
     /**
      * A predefined empty instance of {@link FullBulkStringRedisMessage}.
+     * <p>对应 {@code $0\r\n\r\n}，正文长度为 0 但非 null。</p>
      */
     public static final FullBulkStringRedisMessage EMPTY_INSTANCE = new FullBulkStringRedisMessage() {
         @Override

@@ -19,6 +19,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Inline commands of <a href="https://redis.io/topics/protocol">RESP</a>.
+ * <p>Telnet/兼容模式下的一行命令文本（无 RESP 类型前缀），由 {@link RedisDecoder}
+ * 在 {@code decodeInlineCommands=true} 时解析。正文为整行命令，如 {@code GET foo}。</p>
  */
 @UnstableApi
 public final class InlineCommandRedisMessage extends AbstractStringRedisMessage {

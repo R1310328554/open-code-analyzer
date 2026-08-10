@@ -26,6 +26,9 @@ import io.netty.util.internal.UnstableApi;
  * {@link BulkStringHeaderRedisMessage} when the content is large or the encoding of the content is chunked.
  * If you prefer not to receive {@link BulkStringRedisContent} in your handler,
  * place {@link RedisBulkStringAggregator} after {@link RedisDecoder} in the {@link ChannelPipeline}.
+ * <p>Bulk String 正文的一个分片，继承 {@link ByteBufHolder} 以支持引用计数。
+ * 大 value 或流式传输时解码器会多次 fire 本类型；末块为 {@link LastBulkStringRedisContent}。
+ * 业务 handler 若只关心完整字符串，应在 {@link RedisDecoder} 后挂载 {@link RedisBulkStringAggregator}。</p>
  */
 @UnstableApi
 public interface BulkStringRedisContent extends RedisMessage, ByteBufHolder {

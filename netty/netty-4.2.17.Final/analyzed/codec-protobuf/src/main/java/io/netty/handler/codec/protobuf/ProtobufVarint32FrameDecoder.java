@@ -39,17 +39,22 @@ import static io.netty.util.internal.ObjectUtil.checkPositive;
  * | 0xAC02 |  (300 bytes)  |      |  (300 bytes)  |
  * +--------+---------------+      +---------------+
  * </pre>
+ * <p>按 protobuf Base-128 varint 长度前缀对 TCP 字节流做帧切分，每帧输出不含长度头的纯消息体
+ * {@link ByteBuf}。与 {@link ProtobufDecoder} 配合使用时须放在 pipeline 最靠近网络的一侧。</p>
  *
  * @see CodedInputStream
  * @see CodedInputByteBufferNano
  */
 public class ProtobufVarint32FrameDecoder extends ByteToMessageDecoder {
 
+    /** 单帧允许的最大 payload 字节数，超出则抛 {@link TooLongFrameException} 并丢弃剩余帧体。 */
     private final int maxFrameLength;
+    /** 超长帧被截断后，尚未跳过的剩余字节数（跨多次 decode 调用累积跳过）。 */
     private long bytesToDiscard;
 
     /**
      * Creates a new instance with no frame length limit.
+     * <p>无帧长上限，等价于 {@code Integer.MAX_VALUE}。</p>
      */
     public ProtobufVarint32FrameDecoder() {
         this(Integer.MAX_VALUE);
@@ -69,6 +74,7 @@ public class ProtobufVarint32FrameDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out)
             throws Exception {
+        // 上一帧因超长被判定无效，先清空缓冲区中属于该帧的残留字节
         if (bytesToDiscard > 0) {
             int localBytesToDiscard = (int) Math.min(bytesToDiscard, in.readableBytes());
             in.skipBytes(localBytesToDiscard);
@@ -79,6 +85,7 @@ public class ProtobufVarint32FrameDecoder extends ByteToMessageDecoder {
         in.markReaderIndex();
         int preIndex = in.readerIndex();
         int length = readRawVarint32(in);
+        // readerIndex 未前进说明 varint 尚未收齐，等待更多数据
         if (preIndex == in.readerIndex()) {
             return;
         }
@@ -91,6 +98,7 @@ public class ProtobufVarint32FrameDecoder extends ByteToMessageDecoder {
             if (discard <= 0) {
                 in.skipBytes(length);
             } else {
+                // 当前缓冲区装不下整帧，记录待丢弃量并在后续 decode 中继续 skip
                 bytesToDiscard = discard;
                 in.skipBytes(in.readableBytes());
             }
@@ -100,6 +108,7 @@ public class ProtobufVarint32FrameDecoder extends ByteToMessageDecoder {
         }
 
         if (in.readableBytes() < length) {
+            // payload 未收齐，回退 readerIndex 保留已读到的 varint
             in.resetReaderIndex();
         } else {
             out.add(in.readRetainedSlice(length));
@@ -110,14 +119,17 @@ public class ProtobufVarint32FrameDecoder extends ByteToMessageDecoder {
      * Reads variable length 32bit int from buffer
      *
      * @return decoded int if buffers readerIndex has been forwarded else nonsense value
+     * <p>若 varint 不完整则回退 readerIndex 并返回 0，调用方通过 index 是否变化判断是否可读。</p>
      */
     static int readRawVarint32(ByteBuf buffer) {
         if (buffer.readableBytes() < 4) {
             return readRawVarint24(buffer);
         }
         int wholeOrMore = buffer.getIntLE(buffer.readerIndex());
+        // 每个字节的最高位为 1 表示后续还有 continuation 字节
         int firstOneOnStop = ~wholeOrMore & 0x80808080;
         if (firstOneOnStop == 0) {
+            // 前 4 字节 continuation 位全为 1，需要读第 5 字节（最多 5 字节 varint32）
             return readRawVarint40(buffer, wholeOrMore);
         }
         int bitsToKeep = Integer.numberOfTrailingZeros(firstOneOnStop) + 1;
@@ -131,6 +143,7 @@ public class ProtobufVarint32FrameDecoder extends ByteToMessageDecoder {
         // it means that the first and second bytes now occupy the first 14 bits (7 bits each)
         // and the third and fourth bytes occupy the next 14 bits (7 bits each), with a gap between the 2s of 2 bytes
         // and another gap of 2 bytes after the forth and third.
+        // 按 varint 规范剥离 continuation 位并重组为 32 位整数（快速路径，一次读 4 字节）
         wholeWithContinuations = (wholeWithContinuations & 0x7F007F) | ((wholeWithContinuations & 0x7F007F00) >> 1);
         // 0x3FFF isolate the first 14 bits i.e. the first and second bytes
         // 0x3FFF0000 isolate the next 14 bits i.e. the third and forth bytes
@@ -138,6 +151,7 @@ public class ProtobufVarint32FrameDecoder extends ByteToMessageDecoder {
         return (wholeWithContinuations & 0x3FFF) | ((wholeWithContinuations & 0x3FFF0000) >> 2);
     }
 
+    /** 解析需要第 5 字节的 32 位 varint（值 ≥ 2^28）。 */
     private static int readRawVarint40(ByteBuf buffer, int wholeOrMore) {
         byte lastByte;
         if (buffer.readableBytes() == 4 || (lastByte = buffer.getByte(buffer.readerIndex() + 4)) < 0) {
@@ -152,6 +166,7 @@ public class ProtobufVarint32FrameDecoder extends ByteToMessageDecoder {
                (lastByte << 28);
     }
 
+    /** 缓冲区不足 4 字节时的逐字节 varint 解析（最多 3 个 continuation 字节）。 */
     private static int readRawVarint24(ByteBuf buffer) {
         if (!buffer.isReadable()) {
             return 0;

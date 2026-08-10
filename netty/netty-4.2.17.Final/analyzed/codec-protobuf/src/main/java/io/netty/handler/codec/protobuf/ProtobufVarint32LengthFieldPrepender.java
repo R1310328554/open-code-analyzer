@@ -33,6 +33,8 @@ import io.netty.handler.codec.MessageToByteEncoder;
  * |  (300 bytes)  |               | 0xAC02 |  (300 bytes)  |
  * +---------------+               +--------+---------------+
  * </pre> *
+ * <p>在序列化后的 protobuf 消息体前写入 Base-128 varint 长度前缀，与
+ * {@link ProtobufVarint32FrameDecoder} 成对使用。{@link Sharable} 表示无状态，可共享实例。</p>
  *
  * @see CodedOutputStream
  * @see CodedOutputByteBufferNano
@@ -58,6 +60,7 @@ public class ProtobufVarint32LengthFieldPrepender extends MessageToByteEncoder<B
      * Writes protobuf varint32 to (@link ByteBuf).
      * @param out to be written to
      * @param value to be written
+     * <p>按 7 位一组、小端序写入 varint；末字节最高位为 0，其余为 1 表示还有后续字节。</p>
      */
     static void writeRawVarint32(ByteBuf out, int value) {
         while (true) {
@@ -75,6 +78,7 @@ public class ProtobufVarint32LengthFieldPrepender extends MessageToByteEncoder<B
      * Computes size of protobuf varint32 after encoding.
      * @param value which is to be encoded.
      * @return size of value encoded as protobuf varint32.
+     * <p>编码前预计算 varint 占用的字节数（1～5），用于 {@code ensureWritable} 避免扩容。</p>
      */
     static int computeRawVarint32Size(final int value) {
         if ((value & (0xffffffff <<  7)) == 0) {

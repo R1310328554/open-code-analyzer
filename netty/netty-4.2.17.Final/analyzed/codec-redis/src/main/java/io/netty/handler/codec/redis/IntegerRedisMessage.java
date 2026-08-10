@@ -20,10 +20,13 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Integers of <a href="https://redis.io/topics/protocol">RESP</a>.
+ * <p>RESP Integer 类型（前缀 {@code :}），值为有符号 64 位整数。常用于 EXISTS 计数、
+ * INCR 结果等；[-1, 128) 内常见值可由 {@link FixedRedisMessagePool} 缓存复用。</p>
  */
 @UnstableApi
 public final class IntegerRedisMessage implements RedisMessage {
 
+    /** 解码后的整数值（已解析 ASCII 数字，非原始字节）。 */
     private final long value;
 
     /**

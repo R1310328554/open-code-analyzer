@@ -27,14 +27,19 @@ import java.util.Map;
 
 /**
  * A default fixed redis message pool.
+ * <p>预缓存高频 RESP 消息的 {@link RedisMessagePool} 实现：常见 Simple String（OK/PONG/QUEUED）、
+ * 标准 Error 文案，以及 [-1, 128) 区间内的 Integer。{@link RedisDecoder} 解码时先查池，
+ * 命中则返回 flyweight 单例，减少分配与字符串比较。</p>
  */
 @UnstableApi
 public final class FixedRedisMessagePool implements RedisMessagePool {
 
+    /** 常用 Simple String 回复的枚举键，与 Redis 协议中的固定文本对应。 */
     public enum RedisReplyKey {
         OK, PONG, QUEUED
     }
 
+    /** 常见 Error 回复的枚举键，{@link #toString()} 返回完整 ERR 行文本。 */
     public enum RedisErrorKey {
         ERR("ERR"),
         ERR_IDX("ERR index out of range"),
@@ -76,10 +81,12 @@ public final class FixedRedisMessagePool implements RedisMessagePool {
 
     /**
      * A shared object for {@link FixedRedisMessagePool}.
+     * <p>全局单例，{@link RedisDecoder} 默认构造器使用此实例。</p>
      */
     public static final FixedRedisMessagePool INSTANCE = new FixedRedisMessagePool();
 
     // internal caches.
+    /** ByteBuf 键 → Simple String，解码器按原始字节查表（identity 比较 wrapped buffer）。 */
     private final Map<ByteBuf, SimpleStringRedisMessage> byteBufToSimpleStrings;
     private final Map<String, SimpleStringRedisMessage> stringToSimpleStrings;
     private final Map<RedisReplyKey, SimpleStringRedisMessage> keyToSimpleStrings;
@@ -88,6 +95,7 @@ public final class FixedRedisMessagePool implements RedisMessagePool {
     private final Map<RedisErrorKey, ErrorRedisMessage> keyToErrors;
     private final Map<ByteBuf, IntegerRedisMessage> byteBufToIntegers;
     private final LongObjectMap<IntegerRedisMessage> longToIntegers;
+    /** 预生成的整数 ASCII 字节，编码侧可复用避免重复格式化。 */
     private final LongObjectMap<byte[]> longToByteBufs;
 
     /**
@@ -141,6 +149,7 @@ public final class FixedRedisMessagePool implements RedisMessagePool {
     /**
      * Returns {@link SimpleStringRedisMessage} for the given {@link RedisReplyKey}
      * or {@code null} if it does not exist.
+     * <p>按枚举键取预置 Simple String，编码侧生成 OK/PONG 等回复时使用。</p>
      */
     public SimpleStringRedisMessage getSimpleString(RedisReplyKey key) {
         return keyToSimpleStrings.get(key);

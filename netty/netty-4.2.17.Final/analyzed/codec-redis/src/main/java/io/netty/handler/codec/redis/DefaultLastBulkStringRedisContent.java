@@ -20,6 +20,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * A default implementation for {@link LastBulkStringRedisContent}.
+ * <p>Bulk String 的<strong>最后一个</strong>分片实现。{@link RedisBulkStringAggregator}
+ * 据此判断一条 bulk 消息是否收齐并触发聚合。</p>
  */
 @UnstableApi
 public final class DefaultLastBulkStringRedisContent extends DefaultBulkStringRedisContent

@@ -21,10 +21,13 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Abstract class for Simple Strings or Errors.
+ * <p>RESP 中以单行文本承载的消息基类，涵盖 Simple String（{@code +}）、Error（{@code -}）
+ * 以及 Telnet 风格的 Inline Command。子类通过类型前缀区分语义，正文均存于 {@link #content()}。</p>
  */
 @UnstableApi
 public abstract class AbstractStringRedisMessage implements RedisMessage {
 
+    /** 已解码的 UTF-8 文本正文（不含类型前缀与 CRLF）。 */
     private final String content;
 
     AbstractStringRedisMessage(String content) {

@@ -19,10 +19,14 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The header of Bulk Strings in <a href="https://redis.io/topics/protocol">RESP</a>.
+ * <p>Bulk String（{@code $}）的长度行：{@code $N\r\n} 之后紧跟 N 字节正文与 {@code \r\n}。
+ * 解码器先发出本对象，再按 {@link #bulkStringLength()} 输出若干
+ * {@link BulkStringRedisContent} 分块或经聚合器合并为 {@link FullBulkStringRedisMessage}。</p>
  */
 @UnstableApi
 public class BulkStringHeaderRedisMessage implements RedisMessage {
 
+    /** 后续 bulk 正文的字节数；{@link RedisConstants#NULL_VALUE} 表示 null bulk string。 */
     private final int bulkStringLength;
 
     /**
@@ -39,6 +43,7 @@ public class BulkStringHeaderRedisMessage implements RedisMessage {
 
     /**
      * Return {@code bulkStringLength} for this content.
+     * <p>返回待读取的正文字节数（不含结尾 CRLF）。</p>
      */
     public final int bulkStringLength() {
         return bulkStringLength;

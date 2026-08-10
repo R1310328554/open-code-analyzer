@@ -22,6 +22,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * A default implementation of {@link BulkStringRedisContent}.
+ * <p>{@link BulkStringRedisContent} 的默认实现，基于 {@link DefaultByteBufHolder} 持有分片
+ * {@link ByteBuf}。非末块分片；末块请使用 {@link DefaultLastBulkStringRedisContent}。</p>
  */
 @UnstableApi
 public class DefaultBulkStringRedisContent extends DefaultByteBufHolder implements BulkStringRedisContent {

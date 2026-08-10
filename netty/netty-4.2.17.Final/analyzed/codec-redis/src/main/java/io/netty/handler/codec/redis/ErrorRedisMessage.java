@@ -19,6 +19,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Errors of <a href="https://redis.io/topics/protocol">RESP</a>.
+ * <p>RESP Error 类型（前缀 {@code -}），表示命令执行失败。正文通常为 {@code ERR ...} 等人可读
+ * 字符串；常见固定文案可通过 {@link FixedRedisMessagePool#getError} 复用单例。</p>
  */
 @UnstableApi
 public final class ErrorRedisMessage extends AbstractStringRedisMessage {

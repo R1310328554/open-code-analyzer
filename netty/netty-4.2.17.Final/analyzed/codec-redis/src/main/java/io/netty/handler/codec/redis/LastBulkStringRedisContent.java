@@ -21,12 +21,16 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * A last chunk of Bulk Strings.
+ * <p>标记 Bulk String 分片序列的<strong>结束</strong>。{@link RedisBulkStringAggregator}
+ * 仅在收到 {@link LastBulkStringRedisContent} 时拼接并 upstream 完整消息。
+ * {@link #EMPTY_LAST_CONTENT} 表示零字节末块（正文已在先前分片收齐）。</p>
  */
 @UnstableApi
 public interface LastBulkStringRedisContent extends BulkStringRedisContent {
 
     /**
      * The 'end of content' marker in chunked encoding.
+     * <p>分块传输中“内容结束”占位符：{@link #content()} 为空 buffer，引用计数恒为 1。</p>
      */
     LastBulkStringRedisContent EMPTY_LAST_CONTENT = new LastBulkStringRedisContent() {
 

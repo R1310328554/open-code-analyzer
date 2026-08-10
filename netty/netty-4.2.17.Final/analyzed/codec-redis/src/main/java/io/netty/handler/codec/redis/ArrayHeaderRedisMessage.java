@@ -20,10 +20,14 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Header of Redis Array Message.
+ * <p>RESP 数组（{@code *}）的长度行解码结果。{@link RedisDecoder} 先输出本对象，
+ * 再按 {@link #length()} 逐个子元素解码；{@link RedisArrayAggregator} 可将其与后续
+ * 子消息合并为 {@link ArrayRedisMessage}。</p>
  */
 @UnstableApi
 public class ArrayHeaderRedisMessage implements RedisMessage {
 
+    /** 数组元素个数；{@link RedisConstants#NULL_VALUE}（-1）表示 RESP null 数组。 */
     private final long length;
 
     /**
@@ -38,6 +42,7 @@ public class ArrayHeaderRedisMessage implements RedisMessage {
 
     /**
      * Get length of this array object.
+     * <p>返回待解码的子元素数量，不含 null 数组本身的占位。</p>
      */
     public final long length() {
         return length;
