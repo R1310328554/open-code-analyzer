@@ -1,5 +1,7 @@
 package pointers
 
+// pointers Arrow 批读取器：列选择、谓词下推、OpenTelemetry 追踪与流标签装饰。
+
 import (
 	"context"
 	"errors"
@@ -25,6 +27,7 @@ const InternalLabelsFieldName = "__streamLabelNames__"
 
 var tracer = otel.Tracer("pkg/dataobj/sections/pointers")
 
+// ReaderOptions 指定读取列、谓词、分配器及 StreamIDToLabelNames 装饰映射。
 // ReaderOptions customizes the behavior of a [Reader].
 type ReaderOptions struct {
 	// Columns to read. Each column must belong to the same [Section].
@@ -128,6 +131,7 @@ func (opts *ReaderOptions) Validate() error {
 	return errors.Join(errs...)
 }
 
+// Reader 封装 recordBatchLabelDecorator，Open 后按批返回 Arrow RecordBatch。
 // A Reader reads batches of rows from a [Section].
 type Reader struct {
 	opts   ReaderOptions
@@ -200,6 +204,7 @@ func (r *Reader) Open(ctx context.Context) error {
 //
 // When a record is returned, it will match the schema specified by
 // [Reader.Schema]. These records must always be released after use.
+// Read 经 inner 读取 columnar 批次，转为 Arrow 记录并先处理数据再返回错误。
 func (r *Reader) Read(ctx context.Context, batchSize int) (arrow.RecordBatch, error) {
 	if !r.ready {
 		return nil, errReaderNotOpen
@@ -279,6 +284,7 @@ func (r *Reader) init(ctx context.Context) error {
 	return nil
 }
 
+// mapPredicates 将 pointers 谓词映射为 dataset 层谓词，panic 转为 error 返回。
 func mapPredicates(ps []Predicate, columnLookup map[*Column]dataset.Column) (predicates []dataset.Predicate, err error) {
 	// For simplicity, [mapPredicate] and the functions it calls panic if they
 	// encounter an unsupported conversion.
@@ -517,6 +523,7 @@ func makeColumnName(label string, name string, dty arrow.DataType) string {
 
 // recordBatchLabelDecorator decorates an inner [columnar.ReaderAdapter] with an additional column, __streamLabelNames__, based on the existing stream ID column.
 // The data to be decorated is stored in the [ReaderOptions.StreamIDToLabelNames] map. The map is indexed by each row's stream ID.
+// recordBatchLabelDecorator 在含 StreamID 列时追加 __streamLabelNames__ 内部列。
 type recordBatchLabelDecorator struct {
 	inner                *columnar.ReaderAdapter
 	streamIDToLabelNames map[int64][]string
@@ -553,6 +560,7 @@ func (d *recordBatchLabelDecorator) reset(innerOpts dataset.RowReaderOptions, op
 
 // read consumes the next batch of rows from the inner reader and decorates it with the stream label names, if required, before returning it to the caller.
 // Since this function can change the schema of the underlying record batch, it must always apply the required decoration logic.
+// read 从 inner 取批后按 streamID 查表拼接标签名字符串列。
 func (d *recordBatchLabelDecorator) read(ctx context.Context, alloc *memoryv2.Allocator, batchSize int) (*columnarv2.RecordBatch, error) {
 	rb, err := d.inner.Read(ctx, alloc, batchSize)
 	// Any error, err, is returned to the caller to handle.
@@ -598,3 +606,4 @@ func (d *recordBatchLabelDecorator) read(ctx context.Context, alloc *memoryv2.Al
 	rb = columnarv2.NewRecordBatch(schema, rb.NumRows(), arrs)
 	return rb, err
 }
+// Validate 确保谓词引用的列均在 Columns 中且标量类型受 arrowconv 支持。

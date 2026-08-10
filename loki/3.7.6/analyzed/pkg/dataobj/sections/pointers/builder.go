@@ -1,5 +1,7 @@
 package pointers
 
+// pointers 段构建器：收集流索引与列索引指针，编码为 columnar 段写入对象。
+
 import (
 	"errors"
 	"fmt"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// SectionPointer 宽行结构，同时承载流级与列级索引元数据及 Path/Section 定位。
 // A SectionPointer is a pointer to an section within another object.
 // It is a wide object containing two types of index information:
 //
@@ -76,6 +79,7 @@ type streamKey struct {
 }
 
 // Builder builds a pointers section.
+// Builder 维护 streamLookup 去重流指针，并累积待编码的 pointers 列表。
 type Builder struct {
 	metrics      *Metrics
 	pageSize     int
@@ -90,6 +94,7 @@ type Builder struct {
 	key streamKey
 }
 
+// NewBuilder 指定页大小与页最大行数，metrics 为空时使用默认 Metrics。
 // NewBuilder creates a new pointers section builder. The pageSize argument
 // specifies how large pages should be.
 func NewBuilder(metrics *Metrics, pageSize, pageRows int) *Builder {
@@ -116,6 +121,7 @@ func (b *Builder) Tenant() string { return b.tenant }
 func (b *Builder) Type() dataobj.SectionType { return sectionType }
 
 // ObserveStream observes a stream in the index by recording the start & end timestamps, line count, and uncompressed size per-section.
+// ObserveStream 按 objectPath+section+streamID 聚合时间范围、行数与未压缩大小。
 func (b *Builder) ObserveStream(path string, section int64, idInObject int64, idInIndex int64, ts time.Time, uncompressedSize int64) {
 	b.key.objectPath = path
 	b.key.section = section
@@ -150,6 +156,7 @@ func (b *Builder) ObserveStream(path string, section int64, idInObject int64, id
 	b.streamLookup[b.key] = newPointer
 }
 
+// RecordColumnIndex 追加列索引指针，携带列名、列下标与值 Bloom 过滤器。
 func (b *Builder) RecordColumnIndex(path string, section int64, columnName string, columnIndex int64, valuesBloomFilter []byte) {
 	newPointer := &SectionPointer{
 		Path:              path,
@@ -203,6 +210,7 @@ func (b *Builder) EstimatedSize() int {
 // Flush flushes the streams section to the provided writer.
 //
 // After successful encoding, b is reset to a fresh state and can be reused.
+// Flush 排序指针、encodeTo columnar 编码器并写入段，成功后 Reset 可复用 Builder。
 func (b *Builder) Flush(w dataobj.SectionWriter) (n int64, err error) {
 	timer := prometheus.NewTimer(b.metrics.encodeSeconds)
 	defer timer.ObserveDuration()
@@ -236,6 +244,7 @@ func (b *Builder) sortPointerObjects() {
 	})
 }
 
+// encodeTo 为每列创建 ColumnBuilder，按 PointerKind 分支填充流/列索引字段。
 func (b *Builder) encodeTo(enc *columnar.Encoder) error {
 	// TODO(rfratto): handle one section becoming too large. This can happen when
 	// the number of columns is very wide. There are two approaches to handle
@@ -447,3 +456,4 @@ func (b *Builder) Reset() {
 	b.metrics.minTimestamp.Set(0)
 	b.metrics.maxTimestamp.Set(0)
 }
+// EstimatedSize 用 delta 与压缩启发式估算段体积，编码前无法调用 ColumnBuilder 估算。

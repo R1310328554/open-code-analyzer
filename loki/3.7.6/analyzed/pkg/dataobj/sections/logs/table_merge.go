@@ -1,5 +1,7 @@
 package logs
 
+// 多路归并 logs 表：loser tree k-way merge，支持分批增量合并以控制内存。
+
 import (
 	"bytes"
 	"cmp"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/loser"
 )
 
+// mergeTablesIncremental 每次最多合并 maxMergeSize 张表，逐层缩减直至单表。
 // mergeTablesIncremental incrementally merges the provides sorted tables into
 // a single table. Incremental merging limits memory overhead as only mergeSize
 // tables are open at a time.
@@ -51,6 +54,7 @@ func mergeTablesIncremental(buf *tableBuffer, pageSize, pageRowCount int, compre
 	return in[0], nil
 }
 
+// mergeTables 用 loser tree 按 SortOrder 归并已排序 table 的行序列。
 // mergeTables merges the provided sorted tables into a new single sorted table
 // using k-way merge.
 func mergeTables(buf *tableBuffer, pageSize, pageRowCount int, compressionOpts *dataset.CompressionOptions, tables []*table, sort SortOrder) (*table, error) {
@@ -143,6 +147,7 @@ func mergeTables(buf *tableBuffer, pageSize, pageRowCount int, compressionOpts *
 	return buf.Flush()
 }
 
+// tableSequence 将 table 包装为 loser.Sequence，批量缓冲 dataset.Row。
 type tableSequence struct {
 	DatasetSequence
 	columns []dataset.Column
@@ -205,6 +210,7 @@ func (seq *DatasetSequence) Close() {
 }
 
 // CompareForSortOrder returns a comparison function for result rows for the given sort order.
+// CompareForSortOrder 返回与 SortOrder 一致的行比较函数供 loser tree 使用。
 func CompareForSortOrder(sort SortOrder) func(result.Result[dataset.Row], result.Result[dataset.Row]) bool {
 	switch sort {
 	case SortStreamASC:
@@ -249,6 +255,7 @@ func valuesForRows(a, b dataset.Row) (aStreamID int64, bStreamID int64, aTimesta
 
 // equalRows compares two rows for equality, column by column.
 // a row is considered equal if all the columns are equal.
+// equalRows 逐列比较物理类型与值，先比流 ID 与时间戳以快速排除不等行。
 func equalRows(a, b dataset.Row) bool {
 	if len(a.Values) != len(b.Values) {
 		return false
@@ -284,3 +291,4 @@ func equalRows(a, b dataset.Row) bool {
 
 	return true
 }
+// DatasetSequence 批量 Read 行并在 EOF 前跳过空批次。

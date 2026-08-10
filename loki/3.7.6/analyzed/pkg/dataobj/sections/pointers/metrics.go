@@ -1,5 +1,7 @@
 package pointers
 
+// pointers 段 Prometheus 指标：编码耗时、记录总数与时间戳范围 Gauge。
+
 import (
 	"context"
 	"errors"
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// Metrics 组合 columnar 通用指标与 pointers 子系统专属采集器。
 // Metrics instruments the streams section.
 type Metrics struct {
 	columnar *columnar.Metrics
@@ -20,6 +23,7 @@ type Metrics struct {
 	maxTimestamp  prometheus.Gauge
 }
 
+// NewMetrics 创建 encode_seconds 直方图与 min/max_timestamp Gauge 等。
 // NewMetrics creates a new set of metrics for the pointers section.
 func NewMetrics() *Metrics {
 	return &Metrics{
@@ -65,6 +69,7 @@ func NewMetrics() *Metrics {
 }
 
 // Register registers metrics to report to reg.
+// Register 注册 columnar 与 pointers 全部采集器，错误合并返回。
 func (m *Metrics) Register(reg prometheus.Registerer) error {
 	var errs []error
 	errs = append(errs, m.columnar.Register(reg))
@@ -86,6 +91,9 @@ func (m *Metrics) Unregister(reg prometheus.Registerer) {
 }
 
 // Observe observes section statistics for a given section.
+// Observe 委托 columnar.Metrics 观察已打开段的统计信息。
 func (m *Metrics) Observe(ctx context.Context, section *Section) error {
 	return m.columnar.Observe(ctx, section.inner)
 }
+// Builder Reset 后将 min/max_timestamp Gauge 归零。
+// Builder Reset 后将 min/max_timestamp Gauge 归零。

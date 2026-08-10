@@ -1,5 +1,7 @@
 package pointers
 
+// pointers 段迭代：遍历对象内全部 pointers 段并逐行解码 SectionPointer。
+
 import (
 	"context"
 	"errors"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// Iter 过滤 CheckSection 匹配的段，依次 Open 并 yield 各 SectionPointer。
 // Iter iterates over pointers in the provided decoder. All pointers sections are
 // iterated over in order.
 func Iter(ctx context.Context, obj *dataobj.Object) result.Seq[SectionPointer] {
@@ -38,6 +41,7 @@ func Iter(ctx context.Context, obj *dataobj.Object) result.Seq[SectionPointer] {
 	})
 }
 
+// IterSection 对单段建立 RowReader，Prefetch 读取并 decodeRow 产出指针。
 func IterSection(ctx context.Context, section *Section) result.Seq[SectionPointer] {
 	return result.Iter(func(yield func(SectionPointer) bool) error {
 		columnarSection := section.inner
@@ -87,6 +91,7 @@ func IterSection(ctx context.Context, section *Section) result.Seq[SectionPointe
 	})
 }
 
+// decodeRow 按列类型填充 pointer 字段，symbolizer 复用字符串分配。
 // decodeRow decodes a stream from a [dataset.Row], using the provided columns to
 // determine the column type. The list of columns must match the columns used
 // to create the row.
@@ -198,3 +203,4 @@ func decodeRow(columns []*Column, row dataset.Row, pointer *SectionPointer, sym 
 func unsafeString(data []byte) string {
 	return unsafe.String(unsafe.SliceData(data), len(data))
 }
+// 未知列类型静默跳过以保持前向兼容。

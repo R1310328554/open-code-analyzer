@@ -1,5 +1,7 @@
 package logs
 
+// logs 段统计：汇总段与各列、各页的压缩/未压缩大小及基数等元信息。
+
 import (
 	"context"
 	"fmt"
@@ -16,6 +18,7 @@ type (
 		Columns []ColumnStats
 	}
 
+// ColumnStats 记录单列的行数、编码、压缩方式及嵌套 PageStats。
 	// ColumnStats provides statistics about a column in a section.
 	ColumnStats struct {
 		Name             string
@@ -34,6 +37,7 @@ type (
 		Pages []PageStats
 	}
 
+// PageStats 描述列内单页的 CRC、行数与数据偏移等页级指标。
 	// PageStats provides statistics about a page in a column.
 	PageStats struct {
 		UncompressedSize uint64
@@ -47,6 +51,7 @@ type (
 	}
 )
 
+// ReadStats 遍历段元数据与全部页描述，聚合为 Stats 结构返回。
 // ReadStats returns statistics about the logs section. ReadStats returns an
 // error if the streams section couldn't be inspected or if the provided ctx is
 // canceled.
@@ -104,3 +109,4 @@ func ReadStats(ctx context.Context, section *Section) (Stats, error) {
 
 	return stats, nil
 }
+// 列基数来自 Statistics.CardinalityCount，用于查询优化与选择性估计。

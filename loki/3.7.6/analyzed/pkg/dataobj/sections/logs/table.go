@@ -1,5 +1,7 @@
 package logs
 
+// 内存 logs 表：列式 dataset.Dataset 实现与 tableBuffer 增量构建器。
+
 import (
 	"cmp"
 	"context"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/result"
 )
 
+// table 持有 StreamID、Timestamp、Metadatas 与 Message 四组列，实现 dataset.Dataset。
 // A table is a collection of columns that form a logs section.
 type table struct {
 	StreamID  *tableColumn
@@ -19,6 +22,7 @@ type table struct {
 	Message   *tableColumn
 }
 
+// tableColumn 包装 MemColumn 并标注 logs 逻辑列类型 ColumnType。
 type tableColumn struct {
 	*dataset.MemColumn
 
@@ -111,6 +115,7 @@ func (t *table) CompressedSize() int {
 
 // A tableBuffer holds a set of column builders used for constructing tables.
 // The zero value is ready for use.
+// tableBuffer 维护各 ColumnBuilder，Flush 时合成 table 并重置未使用元数据列。
 type tableBuffer struct {
 	streamID  *dataset.ColumnBuilder
 	timestamp *dataset.ColumnBuilder
@@ -185,6 +190,7 @@ func (b *tableBuffer) Timestamp(pageSize, pageRowCount int) *dataset.ColumnBuild
 
 // Metadata gets or creates a metadata column for the buffer. To remove created
 // metadata columns, call [tableBuffer.CleanupMetadatas].
+// Metadata 按标签键懒创建 ZSTD 压缩的二进制元数据列。
 func (b *tableBuffer) Metadata(key string, pageSize, pageRowCount int, compressionOpts *dataset.CompressionOptions) *dataset.ColumnBuilder {
 	if b.usedMetadatas == nil {
 		b.usedMetadatas = make(map[*dataset.ColumnBuilder]string)
@@ -308,6 +314,7 @@ func (b *tableBuffer) Reset() {
 // timestamp, or messages column was never appended to.
 //
 // Only metadata columns that were appended to since the last flush are included in the table.
+// Flush 校验必需列存在，对稀疏元数据 Backfill 后按名称排序输出 table。
 func (b *tableBuffer) Flush() (*table, error) {
 	defer b.Reset()
 
@@ -360,3 +367,4 @@ func (b *tableBuffer) Flush() (*table, error) {
 		Message:   &tableColumn{messages, ColumnTypeMessage},
 	}, nil
 }
+// Message 列 deliberately 不存储 range stats，避免长日志行占用过多元数据。

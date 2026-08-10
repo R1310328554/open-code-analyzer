@@ -1,5 +1,7 @@
 package logs
 
+// 从 Record 切片构建内存 logs 表：排序、去重后写入各 ColumnBuilder。
+
 import (
 	"bytes"
 	"cmp"
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/dataset"
 )
 
+// buildTable 先 sortRecords 再逐行 Append，跳过 equalRecords 判定的重复行。
 // buildTable builds a table from the set of provided records. The records are
 // sorted with [sortRecords] prior to building the table.
 func buildTable(buf *tableBuffer, pageSize, pageRowCount int, compressionOpts *dataset.CompressionOptions, records []Record, sortOrder SortOrder) *table {
@@ -57,6 +60,7 @@ func buildTable(buf *tableBuffer, pageSize, pageRowCount int, compressionOpts *d
 	return table
 }
 
+// sortRecords 支持按流 ID 升序+时间戳降序，或时间戳降序+流 ID 升序两种序。
 // sortRecords sorts the set of records according to the specified sort order.
 func sortRecords(records []Record, sortOrder SortOrder) {
 	slices.SortFunc(records, func(a, b Record) int {
@@ -79,6 +83,7 @@ func sortRecords(records []Record, sortOrder SortOrder) {
 	})
 }
 
+// equalRecords 比较流 ID、时间戳、标签集与日志行字节是否完全一致。
 func equalRecords(a, b Record) bool {
 	if a.StreamID != b.StreamID {
 		return false
@@ -91,3 +96,4 @@ func equalRecords(a, b Record) bool {
 	}
 	return bytes.Equal(a.Line, b.Line)
 }
+// Append 在此路径不会失败，因排序后行号严格递增。

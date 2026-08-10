@@ -1,5 +1,7 @@
 package pointers
 
+// pointers 段列级谓词：Arrow scalar 表达式，供 Reader 下推至 dataset 层过滤。
+
 import (
 	"bytes"
 
@@ -7,9 +9,11 @@ import (
 	"github.com/bits-and-blooms/bloom/v3"
 )
 
+// Predicate 标记接口，组合逻辑与比较谓词用于 pointers Reader 行过滤。
 // Predicate is an expression used to filter column values in a [Reader].
 type Predicate interface{ isPredicate() }
 
+// 支持 And/Or/Not、True/False、Equal/In、范围比较及 FuncPredicate 自定义回调。
 // Supported predicates.
 type (
 	// An AndPredicate is a [Predicate] which asserts that a row may only be
@@ -90,6 +94,7 @@ func (FuncPredicate) isPredicate()        {}
 // calling fn(p). If fn(p) returns true, walkPredicate is invoked recursively
 // with fn for each of the non-nil children of p, followed by a call of
 // fn(nil).
+// walkPredicate 深度优先遍历谓词树，Validate 与 mapPredicate 共用。
 func walkPredicate(p Predicate, fn func(Predicate) bool) {
 	if p == nil || !fn(p) {
 		return
@@ -122,6 +127,7 @@ func walkPredicate(p Predicate, fn func(Predicate) bool) {
 	fn(nil)
 }
 
+// WhereTimeRangeOverlapsWith 构造区间重叠谓词，用于按时间窗口裁剪流指针。
 func WhereTimeRangeOverlapsWith(
 	colMinTimestamp *Column,
 	colMaxTimestamp *Column,
@@ -152,6 +158,7 @@ func WhereTimeRangeOverlapsWith(
 	}
 }
 
+// WhereBloomFilterMatches 匹配列名并用 Bloom 过滤器测试列值是否存在。
 func WhereBloomFilterMatches(
 	colColumnName *Column,
 	colBloom *Column,
@@ -186,3 +193,4 @@ func WhereBloomFilterMatches(
 		},
 	}
 }
+// FuncPredicate 不参与页级裁剪，仅在缺少显式谓词实现时使用。

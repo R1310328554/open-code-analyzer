@@ -1,3 +1,4 @@
+// pointers 包定义 data object 指针段：索引其他段中流与列的位置与统计。
 // Package pointers defines types used for the data object pointers section. The
 // pointers section holds a list of pointers to sections present in the data object.
 package pointers
@@ -12,21 +13,25 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// sectionType 标识 Loki pointers 段命名空间、种类与 columnar 格式版本。
 var sectionType = dataobj.SectionType{
 	Namespace: "github.com/grafana/loki",
 	Kind:      "pointers",
 	Version:   columnar.FormatVersion,
 }
 
+// CheckSection 判断 dataobj.Section 是否为 pointers 段类型。
 // CheckSection returns true if section is a streams section.
 func CheckSection(section *dataobj.Section) bool { return sectionType.Equals(section.Type) }
 
+// Section 包装 columnar.Section 与解析后的 Column 描述列表。
 // Section represents an opened streams section.
 type Section struct {
 	inner   *columnar.Section
 	columns []*Column
 }
 
+// Open 校验段类型与版本，经 columnar 解码器打开并 init 列元数据。
 // Open opens a Section from an underlying [dataobj.Section]. Open returns an
 // error if the section metadata could not be read or if the provided ctx is
 // canceled.
@@ -94,6 +99,7 @@ type Column struct {
 	inner *columnar.Column
 }
 
+// ColumnType 枚举指针段各列语义：路径、段号、流/列索引及 Bloom 等。
 // ColumnType represents the kind of information stored in a [Column].
 type ColumnType int
 
@@ -117,6 +123,7 @@ const (
 
 // ParseColumnType parses a [ColumnType] from a string. The expected string
 // format is the same as what's returned by [ColumnType.String].
+// ParseColumnType 从逻辑类型字符串解析 ColumnType，与 String 输出对称。
 func ParseColumnType(text string) (ColumnType, error) {
 	switch text {
 	case "invalid":
@@ -179,6 +186,7 @@ func (ct ColumnType) String() string {
 	return text
 }
 
+// ColumnTypeFromField 将 Arrow 字段名映射为 ColumnType，供 RecordBatch 转换使用。
 func ColumnTypeFromField(field arrow.Field) ColumnType {
 	switch field.Name {
 	case "path.path.utf8":
@@ -207,3 +215,4 @@ func ColumnTypeFromField(field arrow.Field) ColumnType {
 		return ColumnTypeInvalid
 	}
 }
+// init 跳过无法 ParseColumnType 的列以兼容新版本段格式。

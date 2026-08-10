@@ -1,11 +1,14 @@
 package logs
 
+// 谓词排序启发式：结合选择性估计与列读取成本，优化 dataset 层行过滤顺序。
+
 import (
 	"sort"
 
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/dataset"
 )
 
+// selectivityScore 表示预计匹配行占比，数值越低过滤越强。
 // selectivityScore represents how selective a predicate is expected to be.
 // Lower scores mean more selective (fewer matching rows).
 type selectivityScore float64
@@ -15,6 +18,7 @@ const (
 	matchAllSelectivity selectivityScore = 1.0 // Matches all rows
 )
 
+// orderPredicates 按 selectivity×cost 升序排列，优先执行高选择性且低开销的谓词。
 // orderPredicates orders the predicates based on their selectivity and cost as a simple heuristic.
 // - Lower selectivity (more filtering) is better
 // - Lower cost of processing a row is better
@@ -47,6 +51,7 @@ func orderPredicates(predicates []dataset.Predicate) []dataset.Predicate {
 
 // getPredicateSelectivity returns a selectivity score representing the estimated percentage
 // of rows that will match (0.0 to 1.0). Lower scores mean more selective (fewer matching rows).
+// getPredicateSelectivity 利用列统计信息估算各谓词类型的匹配比例。
 func getPredicateSelectivity(p dataset.Predicate) selectivityScore {
 	if p == nil {
 		return matchAllSelectivity
@@ -177,6 +182,7 @@ func getPredicateSelectivity(p dataset.Predicate) selectivityScore {
 }
 
 // getBaseSelectivity returns a conservative estimate when no stats are available
+// getBaseSelectivity 在无统计信息时返回保守默认值。
 func getBaseSelectivity(p dataset.Predicate) selectivityScore {
 	switch p.(type) {
 	// equality predicates are preferred
@@ -195,6 +201,7 @@ func getBaseSelectivity(p dataset.Predicate) selectivityScore {
 }
 
 // getRowEvaluationCost measures the cost of evaluating a row using the bytes that need to be processed.
+// getRowEvaluationCost 累加谓词涉及列的去重未压缩字节数以衡量评估成本。
 func getRowEvaluationCost(p dataset.Predicate) int64 {
 	if p == nil {
 		return 0
@@ -226,3 +233,4 @@ func getRowEvaluationCost(p dataset.Predicate) int64 {
 
 	return totalSize
 }
+// NOT/AND/OR 组合谓词的选择性采用保守估计以避免相关列高估。

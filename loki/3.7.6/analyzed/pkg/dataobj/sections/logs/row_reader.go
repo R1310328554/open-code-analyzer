@@ -1,5 +1,7 @@
 package logs
 
+// logs 段行读取器：将 RowPredicate 翻译为 dataset 谓词，经 columnar 数据集批量解码 Record。
+
 import (
 	"context"
 	"errors"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// RowReader 封装 Section 的 dataset.RowReader，支持流 ID 与谓词过滤。
 // RowReader reads the set of logs from an [Object].
 type RowReader struct {
 	sec   *Section
@@ -38,6 +41,7 @@ var errRowReaderNotOpen = errors.New("row reader not opened")
 // NewRowReader creates a new RowReader that reads from the provided [Section].
 //
 // Call [RowReader.Open] before calling [RowReader.Read].
+// NewRowReader 构造读取器，调用 Open 后方可 Read。
 func NewRowReader(sec *Section) *RowReader {
 	var lr RowReader
 	lr.Reset(sec)
@@ -67,6 +71,7 @@ func (r *RowReader) Open(ctx context.Context) error {
 //
 // MatchStreams may only be called before reading begins or after a call to
 // [RowReader.Reset].
+// MatchStreams 限制只返回指定 stream ID 的日志，读取开始后不可更改。
 func (r *RowReader) MatchStreams(ids iter.Seq[int64]) error {
 	if r.ready {
 		return fmt.Errorf("cannot change matched streams after reading has started")
@@ -86,6 +91,7 @@ func (r *RowReader) MatchStreams(ids iter.Seq[int64]) error {
 //
 // Predicates may only be set before reading begins or after a call to
 // [RowReader.Reset].
+// SetPredicates 设置 RowPredicate 列表，Open 时翻译并排序后下推。
 func (r *RowReader) SetPredicates(p []RowPredicate) error {
 	if r.ready {
 		return fmt.Errorf("cannot change predicate after reading has started")
@@ -138,6 +144,7 @@ func unsafeString(data []byte) string {
 	return unsafe.String(unsafe.SliceData(data), len(data))
 }
 
+// initReader 构建 columnar 数据集、合并流 ID 与日志谓词并打开底层行读取器。
 func (r *RowReader) initReader(ctx context.Context) error {
 	dset, err := columnar.MakeDataset(r.sec.inner, r.sec.inner.Columns())
 	if err != nil {
@@ -241,6 +248,7 @@ func streamIDPredicate(ids iter.Seq[int64], columns []dataset.Column, columnDesc
 	}
 }
 
+// translateLogsPredicate 递归将 logs 层谓词映射为 dataset.Predicate。
 func translateLogsPredicate(p RowPredicate, dsetColumns []dataset.Column, actualColumns []*Column) dataset.Predicate {
 	if p == nil {
 		return nil
@@ -324,6 +332,7 @@ func translateLogsPredicate(p RowPredicate, dsetColumns []dataset.Column, actual
 	}
 }
 
+// convertLogsTimePredicate 将闭/开区间时间范围转为 GreaterThan/LessThan 组合。
 func convertLogsTimePredicate(p TimeRangeRowPredicate, column dataset.Column) dataset.Predicate {
 	var start dataset.Predicate = dataset.GreaterThanPredicate{
 		Column: column,
@@ -382,3 +391,4 @@ func valueToString(value dataset.Value) string {
 		panic(fmt.Sprintf("unsupported value type %s", value.Type()))
 	}
 }
+// DecodeRow 按列类型将 dataset.Row 解码为 logs.Record 并复用 symbolizer。
