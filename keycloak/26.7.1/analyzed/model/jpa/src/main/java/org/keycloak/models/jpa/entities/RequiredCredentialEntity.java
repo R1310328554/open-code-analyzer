@@ -29,6 +29,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
+ * Realm 必需凭证类型 JPA 实体，映射 REALM_REQUIRED_CREDENTIAL 表。
+ * <p>
+ * 复合主键为 realm + type；描述 realm 支持的凭证种类（如 password、otp）及其表单属性。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -37,18 +41,23 @@ import jakarta.persistence.Table;
 @IdClass(RequiredCredentialEntity.Key.class)
 public class RequiredCredentialEntity {
 
+    /** 所属 realm（复合主键之一）。 */
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REALM_ID")
     protected RealmEntity realm;
 
+    /** 凭证类型标识（复合主键之一，如 password）。 */
     @Id
     @Column(name = "TYPE")
     protected String type;
+    /** 登录表单是否显示输入框。 */
     @Column(name = "INPUT")
     protected boolean input;
+    /** 是否为秘密凭证（密码框）。 */
     @Column(name = "SECRET")
     protected boolean secret;
+    /** 表单标签文案。 */
     @Column(name = "FORM_LABEL")
     protected String formLabel;
 
@@ -92,6 +101,7 @@ public class RequiredCredentialEntity {
         this.formLabel = formLabel;
     }
 
+    /** 复合主键值对象。 */
     public static class Key implements Serializable {
 
         protected RealmEntity realm;

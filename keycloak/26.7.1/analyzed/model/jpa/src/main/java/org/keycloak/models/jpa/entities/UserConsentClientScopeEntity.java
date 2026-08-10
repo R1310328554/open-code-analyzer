@@ -32,6 +32,11 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 用户 consent 已授权 client scope JPA 实体，映射 USER_CONSENT_CLIENT_SCOPE 表。
+ * <p>
+ * 复合主键为 userConsent + scopeId + parameter；parameter 为可选 scope 参数，
+ * 数据库中用 {@link #NOT_AVAILABLE_PARAM} 占位 NULL。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @NamedQueries({
@@ -48,17 +53,21 @@ import jakarta.persistence.Table;
 @IdClass(UserConsentClientScopeEntity.Key.class)
 public class UserConsentClientScopeEntity {
 
+    /** 数据库中表示「无参数」的占位符（JPA 复合主键不允许 NULL）。 */
     public static String NOT_AVAILABLE_PARAM = "#N A#";
 
+    /** 所属用户 consent 记录（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "USER_CONSENT_ID")
     protected UserConsentEntity userConsent;
 
+    /** 已授权的 client scope ID（复合主键之一）。 */
     @Id
     @Column(name="SCOPE_ID")
     protected String scopeId;
 
+    /** scope 可选参数（复合主键之一；无参数时存 {@link #NOT_AVAILABLE_PARAM}）。 */
     @Id
     @Column(name="PARAMETER")
     protected String parameter;
@@ -109,6 +118,7 @@ public class UserConsentClientScopeEntity {
         return myKey.hashCode();
     }
 
+    /** 复合主键值对象。 */
     public static class Key implements Serializable {
 
         protected UserConsentEntity userConsent;

@@ -45,6 +45,11 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * Realm（租户）JPA 实体，映射 REALM 表。
+ * <p>
+ * Keycloak 多租户核心模型：name 全局唯一，聚合认证流、OTP/会话/令牌策略、
+ * SMTP、事件、组件、必需操作及 {@link RealmAttributeEntity} 扩展配置。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -57,36 +62,49 @@ import org.hibernate.annotations.Nationalized;
         @NamedQuery(name="getRealmIdsWithProviderType", query="select distinct c.realm.id from ComponentEntity c where c.providerType = :providerType"),
 })
 public class RealmEntity {
+    /** 内部 UUID 主键；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** realm 名称（全局唯一）。 */
     @Column(name="NAME", unique = true)
     protected String name;
 
+    /** 是否启用该 realm。 */
     @Column(name="ENABLED")
     protected boolean enabled;
+    /** SSL 要求级别（external、all、none）。 */
     @Column(name="SSL_REQUIRED")
     protected String sslRequired;
+    /** 是否允许自助注册。 */
     @Column(name="REGISTRATION_ALLOWED")
     protected boolean registrationAllowed;
+    /** 注册时是否以邮箱作为用户名。 */
     @Column(name = "REG_EMAIL_AS_USERNAME")
     protected boolean registrationEmailAsUsername;
+    /** 是否要求验证邮箱。 */
     @Column(name="VERIFY_EMAIL")
     protected boolean verifyEmail;
+    /** 是否允许重置密码。 */
     @Column(name="RESET_PASSWORD_ALLOWED")
     protected boolean resetPasswordAllowed;
+    /** 是否允许用邮箱登录。 */
     @Column(name="LOGIN_WITH_EMAIL_ALLOWED")
     protected boolean loginWithEmailAllowed;
+    /** 是否允许重复邮箱。 */
     @Column(name="DUPLICATE_EMAILS_ALLOWED")
     protected boolean duplicateEmailsAllowed;
+    /** 是否启用「记住我」。 */
     @Column(name="REMEMBER_ME")
     protected boolean rememberMe;
 
+    /** 密码策略字符串。 */
     @Column(name="PASSWORD_POLICY")
     protected String passwordPolicy;
 
+    /** OTP 类型（totp/hotp）。 */
     @Column(name="OTP_POLICY_TYPE")
     protected String otpPolicyType;
     @Column(name="OTP_POLICY_ALG")
@@ -101,36 +119,51 @@ public class RealmEntity {
     protected int otpPolicyPeriod;
 
 
+    /** 是否允许用户修改用户名。 */
     @Column(name="EDIT_USERNAME_ALLOWED")
     protected boolean editUsernameAllowed;
 
+    /** 是否在 logout 时撤销 refresh token。 */
     @Column(name="REVOKE_REFRESH_TOKEN")
     private boolean revokeRefreshToken;
+    /** refresh token 最大复用次数。 */
     @Column(name="REFRESH_TOKEN_MAX_REUSE")
     private int refreshTokenMaxReuse;
+    /** SSO 会话空闲超时（秒）。 */
     @Column(name="SSO_IDLE_TIMEOUT")
     private int ssoSessionIdleTimeout;
+    /** SSO 会话最大寿命（秒）。 */
     @Column(name="SSO_MAX_LIFESPAN")
     private int ssoSessionMaxLifespan;
+    /** 「记住我」SSO 空闲超时（秒）。 */
     @Column(name="SSO_IDLE_TIMEOUT_REMEMBER_ME")
     private int ssoSessionIdleTimeoutRememberMe;
+    /** 「记住我」SSO 最大寿命（秒）。 */
     @Column(name="SSO_MAX_LIFESPAN_REMEMBER_ME")
     private int ssoSessionMaxLifespanRememberMe;
+    /** 离线会话空闲超时（秒）。 */
     @Column(name="OFFLINE_SESSION_IDLE_TIMEOUT")
     private int offlineSessionIdleTimeout;
+    /** 访问令牌寿命（秒）。 */
     @Column(name="ACCESS_TOKEN_LIFESPAN")
     protected int accessTokenLifespan;
+    /** Implicit flow 访问令牌寿命（秒）。 */
     @Column(name="ACCESS_TOKEN_LIFE_IMPLICIT")
     protected int accessTokenLifespanForImplicitFlow;
+    /** 授权码寿命（秒）。 */
     @Column(name="ACCESS_CODE_LIFESPAN")
     protected int accessCodeLifespan;
+    /** 用户操作授权码寿命（秒）。 */
     @Column(name="USER_ACTION_LIFESPAN")
     protected int accessCodeLifespanUserAction;
+    /** 登录授权码寿命（秒）。 */
     @Column(name="LOGIN_LIFESPAN")
     protected int accessCodeLifespanLogin;
+    /** 令牌在此时间戳之前视为无效（秒级 epoch）。 */
     @Column(name="NOT_BEFORE")
     protected int notBefore;
 
+    /** 登录页主题。 */
     @Column(name="LOGIN_THEME")
     protected String loginTheme;
     @Column(name="ACCOUNT_THEME")
@@ -139,33 +172,41 @@ public class RealmEntity {
     protected String adminTheme;
     @Column(name="EMAIL_THEME")
     protected String emailTheme;
+    /** 展示名称（支持 Unicode）。 */
     @Nationalized
     @Column(name="DISPLAY_NAME")
     protected String displayName;
 
+    /** 扩展属性集合（EAGER 加载）。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm", fetch = FetchType.EAGER)
     Collection<RealmAttributeEntity> attributes = new LinkedList<>();
 
+    /** realm 要求的凭证类型（如 password）。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm")
     Collection<RequiredCredentialEntity> requiredCredentials = new LinkedList<>();
 
+    /** 用户联邦（LDAP 等）提供者配置。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm")
     List<UserFederationProviderEntity> userFederationProviders = new LinkedList<>();
 
+    /** 用户联邦映射器。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm")
     Collection<UserFederationMapperEntity> userFederationMappers = new LinkedList<>();
 
+    /** SMTP 服务器配置键值对。 */
     @ElementCollection
     @MapKeyColumn(name="NAME")
     @Column(name="VALUE")
     @CollectionTable(name="REALM_SMTP_CONFIG", joinColumns={ @JoinColumn(name="REALM_ID") })
     protected Map<String, String> smtpConfig;
 
+    /** 新用户默认加入的组 ID 集合。 */
     @ElementCollection
     @Column(name="GROUP_ID")
     @CollectionTable(name="REALM_DEFAULT_GROUPS", joinColumns={ @JoinColumn(name="REALM_ID") })
     protected Set<String> defaultGroupIds;
 
+    /** 是否启用用户事件。 */
     @Column(name="EVENTS_ENABLED")
     protected boolean eventsEnabled;
     @Column(name="EVENTS_EXPIRATION")
@@ -187,24 +228,31 @@ public class RealmEntity {
     @Column(name="ADMIN_EVENTS_DETAILS_ENABLED")
     protected boolean adminEventsDetailsEnabled;
 
+    /** master realm 管理客户端 ID。 */
     @Column(name="MASTER_ADMIN_CLIENT")
     protected String masterAdminClient;
 
+    /** 新用户默认角色 ID。 */
     @Column(name="DEFAULT_ROLE")
     protected String defaultRoleId;
 
+    /** 认证器配置实例。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm")
     Collection<AuthenticatorConfigEntity> authenticators = new LinkedList<>();
 
+    /** 必需操作（Required Action）提供者。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm")
     Collection<RequiredActionProviderEntity> requiredActionProviders = new LinkedList<>();
 
+    /** 认证流定义。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm")
     Collection<AuthenticationFlowEntity> authenticationFlows = new LinkedList<>();
 
+    /** SPI 组件（密钥提供者、主题等）。 */
     @OneToMany(fetch = FetchType.LAZY, cascade ={CascadeType.ALL}, orphanRemoval = true, mappedBy = "realm")
     Set<ComponentEntity> components = new HashSet<>();
 
+    /** Browser 登录认证流 ID。 */
     @Column(name="BROWSER_FLOW")
     protected String browserFlow;
 
@@ -224,20 +272,25 @@ public class RealmEntity {
     protected String dockerAuthenticationFlow;
 
 
+    /** 是否启用国际化。 */
     @Column(name="INTERNATIONALIZATION_ENABLED")
     protected boolean internationalizationEnabled;
 
+    /** 支持的语言环境列表。 */
     @ElementCollection
     @Column(name="VALUE")
     @CollectionTable(name="REALM_SUPPORTED_LOCALES", joinColumns={ @JoinColumn(name="REALM_ID") })
     protected Set<String> supportedLocales;
 
+    /** 默认语言环境。 */
     @Column(name="DEFAULT_LOCALE")
     protected String defaultLocale;
 
+    /** 是否允许用户托管访问（UMA）。 */
     @Column(name="ALLOW_USER_MANAGED_ACCESS")
     private boolean allowUserManagedAccess;
 
+    /** 按 locale 索引的 realm 本地化文案。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm")
     @MapKey(name="locale")
     Map<String, RealmLocalizationTextsEntity> realmLocalizationTexts = new HashMap<>();

@@ -35,10 +35,16 @@ import org.keycloak.models.jpa.converter.MapStringConverter;
 
 import org.hibernate.annotations.Nationalized;
 
+/**
+ * Realm 本地化文案 JPA 实体，映射 REALM_LOCALIZATIONS 表。
+ * <p>
+ * 复合主键为 realm + locale；texts 字段以 JSON 形式存储键值对文案。
+ */
 @Entity
 @IdClass(RealmLocalizationTextsEntity.RealmLocalizationTextEntityKey.class)
 @Table(name = "REALM_LOCALIZATIONS")
 public class RealmLocalizationTextsEntity {
+    /** 复合主键值对象。 */
     static public class RealmLocalizationTextEntityKey implements Serializable {
         private RealmEntity realm;
         private String locale;
@@ -74,15 +80,18 @@ public class RealmLocalizationTextsEntity {
         }
     }
 
+    /** 所属 realm（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "REALM_ID")
     private RealmEntity realm;
 
+    /** 语言环境标识（复合主键之一，如 en、zh-CN）。 */
     @Id
     @Column(name = "LOCALE")
     private String locale;
 
+    /** 本地化键值文案（MapStringConverter 序列化为 TEXTS 列）。 */
     @Nationalized
     @Column(name = "TEXTS")
     @Convert(converter = MapStringConverter.class)

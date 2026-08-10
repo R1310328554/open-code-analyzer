@@ -40,6 +40,11 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * 用户 JPA 实体，映射 USER_ENTITY 表。
+ * <p>
+ * realm 内 username 唯一；email 通过 {@link #emailConstraint} 支持动态唯一约束。
+ * 关联属性、凭证、必需操作、联邦身份及 consent 等子实体。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -63,67 +68,85 @@ import org.hibernate.annotations.Nationalized;
         @UniqueConstraint(columnNames = { "REALM_ID", "EMAIL_CONSTRAINT" })
 })
 public class UserEntity {
+    /** 内部 UUID 主键；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 用户名（realm 内唯一）。 */
     @Nationalized
     @Column(name = "USERNAME")
     protected String username;
+    /** 名。 */
     @Nationalized
     @Column(name = "FIRST_NAME")
     protected String firstName;
+    /** 创建时间戳（毫秒 epoch）。 */
     @Column(name = "CREATED_TIMESTAMP")
     protected Long createdTimestamp;
+    /** 最后修改时间戳（毫秒 epoch）。 */
     @Column(name = "LAST_MODIFIED_TIMESTAMP")
     protected Long lastModifiedTimestamp;
+    /** 姓。 */
     @Nationalized
     @Column(name = "LAST_NAME")
     protected String lastName;
+    /** 邮箱地址。 */
     @Column(name = "EMAIL")
     protected String email;
+    /** 是否启用该用户。 */
     @Column(name = "ENABLED")
     protected boolean enabled;
+    /** 邮箱是否已验证。 */
     @Column(name = "EMAIL_VERIFIED")
     protected boolean emailVerified;
 
     // This is necessary to be able to dynamically switch unique email constraints on and off in the realm settings
+    /** 邮箱唯一约束辅助列：允许重复邮箱时设为随机 ID，否则等于 email。 */
     @Column(name = "EMAIL_CONSTRAINT")
     protected String emailConstraint = KeycloakModelUtils.generateId();
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
     // Explicitly not using OrphanRemoval as we're handling the removal manually through HQL but at the same time we still
     // want to remove elements from the entity's collection in a manual way. Without this, Hibernate would do a duplicit
     // delete query.
+    /** 用户扩展属性；手动 HQL 删除，故 orphanRemoval=false。 */
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = false, mappedBy="user")
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
     protected Collection<UserAttributeEntity> attributes = new LinkedList<>();
 
+    /** 待执行的必需操作。 */
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, mappedBy="user")
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
     protected Collection<UserRequiredActionEntity> requiredActions = new LinkedList<>();
 
+    /** 用户凭证（密码、OTP 等）。 */
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, mappedBy="user")
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
     protected Collection<CredentialEntity> credentials = new LinkedList<>();
 
+    /** 联邦身份提供者关联（Social/Broker 登录）。 */
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, mappedBy="user")
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
     protected Collection<FederatedIdentityEntity> federatedIdentities = new LinkedList<>();
 
+    /** 用户联邦存储提供者链接 ID（LDAP 等）。 */
     @Column(name="FEDERATION_LINK")
     protected String federationLink;
 
+    /** 关联的 service account 客户端内部 ID。 */
     @Column(name="SERVICE_ACCOUNT_CLIENT_LINK")
     protected String serviceAccountClientLink;
 
+    /** 令牌在此时间戳之前视为无效（秒级 epoch）。 */
     @Column(name="NOT_BEFORE")
     protected int notBefore;
 

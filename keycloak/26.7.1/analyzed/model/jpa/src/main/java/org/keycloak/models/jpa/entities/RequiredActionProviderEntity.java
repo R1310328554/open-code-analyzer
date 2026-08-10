@@ -35,6 +35,11 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 必需操作（Required Action）提供者 JPA 实体，映射 REQUIRED_ACTION_PROVIDER 表。
+ * <p>
+ * 定义 realm 内可启用的登录后/注册后操作（如更新密码、配置 OTP），
+ * 含 alias、优先级及 SPI 配置。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -43,33 +48,42 @@ import jakarta.persistence.Table;
 @NamedQueries({
         @NamedQuery(name="deleteRequiredActionProviderByRealm", query="delete from RequiredActionProviderEntity action where action.realm = :realm"),})
 public class RequiredActionProviderEntity {
+    /** 内部 UUID 主键；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 操作别名（API 与 UI 引用）。 */
     @Column(name="ALIAS")
     protected String alias;
 
+    /** 展示名称。 */
     @Column(name="NAME")
     protected String name;
 
+    /** 所属 realm。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REALM_ID")
     protected RealmEntity realm;
 
+    /** Required Action SPI 提供者 ID。 */
     @Column(name="PROVIDER_ID")
     protected String providerId;
 
+    /** 是否启用。 */
     @Column(name="ENABLED")
     protected boolean enabled;
 
+    /** 是否为新用户默认必需操作。 */
     @Column(name="DEFAULT_ACTION")
     protected boolean defaultAction;
 
+    /** 执行顺序（数值越小越优先）。 */
     @Column(name="PRIORITY")
     protected int priority;
 
+    /** 提供者键值配置（REQUIRED_ACTION_CONFIG 表）。 */
     @ElementCollection
     @MapKeyColumn(name="NAME")
     @Column(name="VALUE")

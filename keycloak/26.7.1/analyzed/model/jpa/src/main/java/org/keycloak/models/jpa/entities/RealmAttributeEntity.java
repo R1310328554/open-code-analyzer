@@ -33,6 +33,10 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * Realm 扩展属性 JPA 实体，映射 REALM_ATTRIBUTE 表。
+ * <p>
+ * 复合主键为 realm + name；用于存储 {@link RealmAttributes} 中未建模为列的配置项。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -45,14 +49,17 @@ import org.hibernate.annotations.Nationalized;
 @IdClass(RealmAttributeEntity.Key.class)
 public class RealmAttributeEntity {
 
+    /** 所属 realm（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "REALM_ID")
     protected RealmEntity realm;
 
+    /** 属性名（复合主键之一）。 */
     @Id
     @Column(name = "NAME")
     protected String name;
+    /** 属性值（支持 Unicode）。 */
     @Nationalized
     @Column(name = "VALUE")
     protected String value;
@@ -81,6 +88,7 @@ public class RealmAttributeEntity {
         this.realm = realm;
     }
 
+    /** 复合主键值对象，用于 JPA {@link IdClass} 映射。 */
     public static class Key implements Serializable {
 
         protected RealmEntity realm;

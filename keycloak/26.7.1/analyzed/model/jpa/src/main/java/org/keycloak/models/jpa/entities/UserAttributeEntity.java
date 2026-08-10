@@ -34,6 +34,11 @@ import org.keycloak.storage.jpa.JpaHashUtils;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * 用户扩展属性 JPA 实体，映射 USER_ATTRIBUTE 表。
+ * <p>
+ * 超过 255 字符的值存入 LONG_VALUE 列并以哈希列支持检索；
+ * {@link #getValue()} 统一返回短值或长值。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -47,25 +52,32 @@ import org.hibernate.annotations.Nationalized;
 @Entity
 public class UserAttributeEntity {
 
+    /** 内部 UUID 主键；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 所属用户。 */
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "USER_ID")
     protected UserEntity user;
 
+    /** 属性名。 */
     @Column(name = "NAME")
     protected String name;
+    /** 短属性值（≤255 字符，支持 Unicode）。 */
     @Nationalized
     @Column(name = "VALUE")
     protected String value;
 
+    /** 长属性值哈希（用于等值查询）。 */
     @Column(name = "LONG_VALUE_HASH")
     private byte[] longValueHash;
+    /** 长属性值小写哈希（用于不区分大小写查询）。 */
     @Column(name = "LONG_VALUE_HASH_LOWER_CASE")
     private byte[] longValueHashLowerCase;
+    /** 长属性值（>255 字符，支持 Unicode）。 */
     @Nationalized
     @Column(name = "LONG_VALUE")
     private String longValue;

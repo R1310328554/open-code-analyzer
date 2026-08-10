@@ -36,6 +36,11 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 /**
+ * 用户对客户端的 OAuth consent JPA 实体，映射 USER_CONSENT 表。
+ * <p>
+ * 同一用户 + 客户端唯一；记录已授权的 client scope 及创建/更新时间。
+ * 支持外部客户端存储（clientStorageProvider + externalClientId）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Entity
@@ -55,30 +60,38 @@ import jakarta.persistence.UniqueConstraint;
 })
 public class UserConsentEntity {
 
+    /** 内部 UUID 主键；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 所属用户。 */
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="USER_ID")
     protected UserEntity user;
 
+    /** 内部客户端 ID（本地 CLIENT 表）。 */
     @Column(name="CLIENT_ID")
     protected String clientId;
 
+    /** 外部客户端存储提供者 ID（可选）。 */
     @Column(name="CLIENT_STORAGE_PROVIDER")
     protected String clientStorageProvider;
 
+    /** 外部客户端 ID（可选）。 */
     @Column(name="EXTERNAL_CLIENT_ID")
     protected String externalClientId;
 
+    /** 用户已授权的 client scope 明细。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "userConsent")
     Collection<UserConsentClientScopeEntity> grantedClientScopes = new LinkedList<>();
 
+    /** consent 创建时间（毫秒 epoch）。 */
     @Column(name = "CREATED_DATE")
     private Long createdDate;
 
+    /** consent 最后更新时间（毫秒 epoch）。 */
     @Column(name = "LAST_UPDATED_DATE")
     private Long lastUpdatedDate;
 

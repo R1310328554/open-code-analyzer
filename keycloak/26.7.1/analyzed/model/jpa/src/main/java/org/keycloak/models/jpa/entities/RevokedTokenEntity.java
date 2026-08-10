@@ -25,7 +25,9 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
- * Stores a list of revoked tokens in the database, so it is available after restarts.
+ * 已撤销令牌 JPA 实体，映射 REVOKED_TOKEN 表。
+ * <p>
+ * 在数据库中持久化撤销列表，重启后仍可校验令牌是否已撤销。
  *
  * @author Alexander Schwartz
  */
@@ -52,6 +54,7 @@ import jakarta.persistence.Table;
 @Table(name="REVOKED_TOKEN")
 @Entity
 public class RevokedTokenEntity {
+    /** 被撤销令牌的 ID（通常为 JWT jti 或 session ID）。 */
     @Id
     @Column(name="ID", length = 36)
     protected String id;
@@ -65,7 +68,7 @@ public class RevokedTokenEntity {
     }
 
     /**
-     * Expire time in seconds.
+     * 过期时间（秒级 epoch）。
      */
     @Column(name="EXPIRE")
     protected long expire;

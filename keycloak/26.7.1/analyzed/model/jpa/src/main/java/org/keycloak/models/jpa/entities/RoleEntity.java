@@ -38,6 +38,11 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * 角色 JPA 实体，映射 KEYCLOAK_ROLE 表。
+ * <p>
+ * 支持 realm 角色与 client 角色；name 在 realm 或 client 范围内唯一。
+ * 复合角色关系通过 {@code CompositeRoleEntity} 维护。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -65,35 +70,43 @@ import org.hibernate.annotations.Nationalized;
 })
 
 public class RoleEntity {
+    /** 内部 UUID 主键；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     private String id;
 
+    /** 角色名称。 */
     @Nationalized
     @Column(name = "NAME")
     private String name;
+    /** 角色描述。 */
     @Nationalized
     @Column(name = "DESCRIPTION")
     private String description;
 
     // hax! couldn't get constraint to work properly
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     private String realmId;
 
+    /** 是否为客户端角色（false 表示 realm 角色）。 */
     @Column(name="CLIENT_ROLE")
     private boolean clientRole;
 
+    /** 所属客户端 ID（client 角色时非空）。 */
     @Column(name="CLIENT")
     private String clientId;
 
     // Hack to ensure that either name+client or name+realm are unique. Needed due to MS-SQL as it don't allow multiple NULL values in the column, which is part of constraint
+    /** 唯一约束辅助列：realm 角色存 realmId，client 角色存 clientId（兼容 MS-SQL 多 NULL 限制）。 */
     @Column(name="CLIENT_REALM_CONSTRAINT", length = 36)
     private String clientRealmConstraint;
 
     // Explicitly not using OrphanRemoval as we're handling the removal manually through HQL but at the same time we still
     // want to remove elements from the entity's collection in a manual way. Without this, Hibernate would do a duplicit
     // delete query.
+    /** 角色扩展属性；手动 HQL 删除，故 orphanRemoval=false 避免重复 DELETE。 */
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = false, mappedBy="role")
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)

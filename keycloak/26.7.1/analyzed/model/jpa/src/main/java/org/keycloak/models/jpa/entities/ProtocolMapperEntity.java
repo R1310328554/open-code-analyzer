@@ -33,6 +33,11 @@ import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.Table;
 
 /**
+ * 协议映射器 JPA 实体，映射 PROTOCOL_MAPPER 表。
+ * <p>
+ * 将 OIDC/SAML 等协议的 claim/属性映射规则持久化；可挂载于客户端或 client scope，
+ * 配置项存于 PROTOCOL_MAPPER_CONFIG 关联表。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -40,29 +45,36 @@ import jakarta.persistence.Table;
 @Table(name="PROTOCOL_MAPPER")
 public class ProtocolMapperEntity {
 
+    /** 内部 UUID 主键；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 映射器展示名称。 */
     @Column(name="NAME")
     protected String name;
 
+    /** 所属协议（如 openid-connect、saml）。 */
     @Column(name = "PROTOCOL")
     protected String protocol;
+    /** 映射器 SPI 实现 ID（如 oidc-usermodel-property-mapper）。 */
     @Column(name = "PROTOCOL_MAPPER_NAME")
     protected String protocolMapper;
 
+    /** 映射器键值配置（PROTOCOL_MAPPER_CONFIG 表）。 */
     @ElementCollection
     @MapKeyColumn(name="NAME")
     @Column(name="VALUE")
     @CollectionTable(name="PROTOCOL_MAPPER_CONFIG", joinColumns={ @JoinColumn(name="PROTOCOL_MAPPER_ID") })
     private Map<String, String> config;
 
+    /** 所属客户端（与 clientScope 二选一）。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLIENT_ID")
     private ClientEntity client;
 
+    /** 所属 client scope（与 client 二选一）。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLIENT_SCOPE_ID")
     private ClientScopeEntity clientScope;

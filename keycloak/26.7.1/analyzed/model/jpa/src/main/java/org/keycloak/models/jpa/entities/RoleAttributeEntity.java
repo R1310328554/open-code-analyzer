@@ -32,6 +32,10 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * 角色扩展属性 JPA 实体，映射 ROLE_ATTRIBUTE 表。
+ * <p>
+ * 为 {@link RoleEntity} 提供 name/value 键值对属性，可用于协议映射或授权扩展。
+ *
  * @author <a href="mailto:leon.graser@bosch-si.com">Leon Graser</a>
  */
 @NamedQueries({
@@ -41,18 +45,22 @@ import org.hibernate.annotations.Nationalized;
 @Entity
 public class RoleAttributeEntity {
 
+    /** 内部 UUID 主键；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name = "ID", length = 36)
     @Access(AccessType.PROPERTY)
     protected String id;
 
+    /** 所属角色。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ROLE_ID")
     protected RoleEntity role;
 
+    /** 属性名。 */
     @Column(name = "NAME")
     protected String name;
 
+    /** 属性值（支持 Unicode）。 */
     @Nationalized
     @Column(name = "VALUE")
     protected String value;
