@@ -1,5 +1,8 @@
 package bloomgateway
 
+// Bloom Gateway 请求分区与块-任务映射工具：按日切分序列/chunk、
+// 计算时间重叠 chunk 并将 Task 按块指纹范围拆分多路复用。
+
 import (
 	"sort"
 
@@ -11,10 +14,12 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/bloomshipper"
 )
 
+// truncateDay 将时间戳截断到 UTC 日初。
 func truncateDay(ts model.Time) model.Time {
 	return model.TimeFromUnix(ts.Time().Truncate(Day).Unix())
 }
 
+// daysForRange 返回 [from, through] 闭区间内各日起始时间列表。
 // daysForRange returns a list of model.Time truncated to the start of each day
 // for the inclusive range [from, through]
 func daysForRange(from, through model.Time) []model.Time {
@@ -33,6 +38,7 @@ func daysForRange(from, through model.Time) []model.Time {
 	return days
 }
 
+// convertToChunkRefs 将 ShortRef 切片转为 v1.ChunkRefs 供 Bloom 查询使用。
 // convertToChunkRefs converts a []*logproto.ShortRef into v1.ChunkRefs
 func convertToChunkRefs(refs []*logproto.ShortRef) v1.ChunkRefs {
 	result := make(v1.ChunkRefs, 0, len(refs))
@@ -42,6 +48,7 @@ func convertToChunkRefs(refs []*logproto.ShortRef) v1.ChunkRefs {
 	return result
 }
 
+// blockWithTasks 关联单个 Bloom 块与覆盖其指纹范围的 Task 副本列表。
 type blockWithTasks struct {
 	ref   bloomshipper.BlockRef
 	tasks []Task
@@ -81,6 +88,7 @@ func partitionTasksByBlock(tasks []Task, blocks []bloomshipper.BlockRef) []block
 	return result
 }
 
+// seriesWithInterval 表示单日内的 GroupedChunkRefs 及其有效时间区间。
 type seriesWithInterval struct {
 	day      config.DayTime
 	series   []*logproto.GroupedChunkRefs
@@ -91,6 +99,7 @@ func partitionRequest(req *logproto.FilterChunkRefRequest) []seriesWithInterval 
 	return partitionSeriesByDay(req.From, req.Through, req.Refs)
 }
 
+// partitionSeriesByDay 逐日提取与时间窗口重叠的 chunk 并计算 interval。
 func partitionSeriesByDay(from, through model.Time, seriesWithChunks []*logproto.GroupedChunkRefs) []seriesWithInterval {
 	result := make([]seriesWithInterval, 0)
 
@@ -132,6 +141,7 @@ func partitionSeriesByDay(from, through model.Time, seriesWithChunks []*logproto
 	return result
 }
 
+// overlappingChunks 筛选与 [from,through] 重叠的 chunk 并更新 min/max 时间戳。
 func overlappingChunks(from, through, minTs, maxTs model.Time, chunks []*logproto.ShortRef) (model.Time, model.Time, []*logproto.ShortRef) {
 
 	// chunks are ordered first by `From`. Can disregard all chunks

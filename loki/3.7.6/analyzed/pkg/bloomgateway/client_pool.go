@@ -1,5 +1,8 @@
 package bloomgateway
 
+// JumpHash 客户端连接池：基于 DNS 地址列表维护 gRPC 连接，
+// 按块键哈希选择 Bloom Gateway 实例并缓存 per-address 客户端。
+
 import (
 	"context"
 	"flag"
@@ -14,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/jumphash"
 )
 
+// PoolConfig 控制 DNS 地址列表刷新间隔。
 // PoolConfig is config for creating a Pool.
 type PoolConfig struct {
 	CheckInterval time.Duration `yaml:"check_interval"`
@@ -37,6 +41,7 @@ func (f ClientFactory) New(addr string) (client.PoolClient, error) {
 	return f(addr)
 }
 
+// JumpHashClientPool 结合 jumphash.Selector 与 per-address gRPC 客户端缓存。
 type JumpHashClientPool struct {
 	services.Service
 	*jumphash.Selector
@@ -49,6 +54,7 @@ type JumpHashClientPool struct {
 	clientFactory ClientFactory
 }
 
+// AddressProvider 提供当前可用的 Bloom Gateway 实例地址列表。
 type AddressProvider interface {
 	Addresses() []string
 }
@@ -76,6 +82,7 @@ func (p *JumpHashClientPool) Stop() {
 	_ = services.StopAndAwaitTerminated(context.Background(), p.Service)
 }
 
+// Addr 对给定块键执行 JumpHash 选路，返回目标实例地址字符串。
 func (p *JumpHashClientPool) Addr(key string) (string, error) {
 	addr, err := p.FromString(key)
 	if err != nil {
@@ -92,6 +99,7 @@ func (p *JumpHashClientPool) updateLoop(_ context.Context) error {
 	return nil
 }
 
+// GetClientFor 返回指定地址的 gRPC 客户端，无缓存则懒创建并写入 map。
 // GetClientFor implements clientPool.
 func (p *JumpHashClientPool) GetClientFor(addr string) (client.PoolClient, error) {
 	client, ok := p.fromCache(addr)
@@ -117,6 +125,7 @@ func (p *JumpHashClientPool) GetClientFor(addr string) (client.PoolClient, error
 	return client, nil
 }
 
+// fromCache 读锁下查询已缓存的 per-address 连接客户端。
 func (p *JumpHashClientPool) fromCache(addr string) (client.PoolClient, bool) {
 	p.RLock()
 	defer p.RUnlock()

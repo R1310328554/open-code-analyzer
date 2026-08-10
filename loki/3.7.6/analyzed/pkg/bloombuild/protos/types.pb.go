@@ -3,6 +3,9 @@
 
 package protos
 
+// Bloom 构建任务相关的 protobuf 消息定义（protoc-gen-gogo 生成）。
+// 包含指纹边界、日表、序列缺口、任务与 Meta 等 wire 类型。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -27,6 +30,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// ProtoFingerprintBounds 与 v1.FingerprintBounds 布局一致，可无分配转换。
 // FPBounds is identical to the definition in `pkg/storage/bloom/v1/bounds.FingerprintBounds`
 // which ensures we can cast between them without allocations.
 // TODO(salvacorts): Reuse from `pkg/logproto/indexgateway.proto`
@@ -81,6 +85,7 @@ func (m *ProtoFingerprintBounds) GetMax() github_com_prometheus_common_model.Fin
 	return 0
 }
 
+// DayTable 标识索引日表：毫秒时间戳与前缀，对应 config.DayTable。
 type DayTable struct {
 	DayTimestampMS int64  `protobuf:"varint,1,opt,name=dayTimestampMS,proto3" json:"dayTimestampMS,omitempty"`
 	Prefix         string `protobuf:"bytes,2,opt,name=prefix,proto3" json:"prefix,omitempty"`
@@ -132,6 +137,7 @@ func (m *DayTable) GetPrefix() string {
 	return ""
 }
 
+// ProtoSeries 描述单条时序：Prometheus 指纹与关联 chunk ShortRef 列表。
 type ProtoSeries struct {
 	Fingerprint uint64               `protobuf:"varint,1,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
 	Chunks      []*logproto.ShortRef `protobuf:"bytes,2,rep,name=chunks,proto3" json:"chunks,omitempty"`
@@ -183,6 +189,7 @@ func (m *ProtoSeries) GetChunks() []*logproto.ShortRef {
 	return nil
 }
 
+// ProtoGapWithBlocks 表示指纹区间内待补 Bloom 的序列与已有块键引用。
 type ProtoGapWithBlocks struct {
 	Bounds   ProtoFingerprintBounds `protobuf:"bytes,1,opt,name=bounds,proto3" json:"bounds"`
 	Series   []*ProtoSeries         `protobuf:"bytes,2,rep,name=series,proto3" json:"series,omitempty"`
@@ -242,6 +249,7 @@ func (m *ProtoGapWithBlocks) GetBlockRef() []string {
 	return nil
 }
 
+// ProtoTask 为 Planner 下发给 Builder 的完整 Bloom 构建任务 wire 表示。
 // TODO: Define BlockRef and SingleTenantTSDBIdentifier as messages so we can use them right away
 //
 //	instead of unmarshaling them from strings or doing unsafe casts.
@@ -328,6 +336,7 @@ func (m *ProtoTask) GetGaps() []*ProtoGapWithBlocks {
 	return nil
 }
 
+// ProtoMeta 描述新创建的 Bloom Meta：MetaRef、来源 TSDB 与块键列表。
 type ProtoMeta struct {
 	MetaRef      string   `protobuf:"bytes,1,opt,name=metaRef,proto3" json:"metaRef,omitempty"`
 	SourcesTSDBs []string `protobuf:"bytes,2,rep,name=sourcesTSDBs,proto3" json:"sourcesTSDBs,omitempty"`
@@ -387,6 +396,7 @@ func (m *ProtoMeta) GetBlockRefs() []string {
 	return nil
 }
 
+// ProtoTaskResult 为 Builder 回传 Planner 的任务执行结果或错误信息。
 type ProtoTaskResult struct {
 	TaskID       string       `protobuf:"bytes,1,opt,name=taskID,proto3" json:"taskID,omitempty"`
 	Error        string       `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`

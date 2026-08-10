@@ -1,5 +1,8 @@
 package bloomgateway
 
+// Bloom Gateway gRPC 客户端：通过 JumpHash 连接池向多实例分发
+// FilterChunkRefs 与 PrefetchBloomBlocks 请求，并合并多副本响应。
+
 import (
 	"context"
 	"flag"
@@ -33,6 +36,7 @@ var (
 	groupedChunksRefPool = queue.NewSlicePool[*logproto.GroupedChunkRefs](1<<6, 1<<16, 2)
 )
 
+// GRPCPool 封装单地址 gRPC 连接及 BloomGateway 与健康检查客户端。
 // GRPCPool represents a pool of gRPC connections to different bloom gateway instances.
 // Interfaces are inlined for simplicity to automatically satisfy interface functions.
 type GRPCPool struct {
@@ -41,6 +45,7 @@ type GRPCPool struct {
 	io.Closer
 }
 
+// NewBloomGatewayGRPCPool 拨号并创建 Bloom Gateway 与健康 gRPC 客户端。
 // NewBloomGatewayGRPCPool instantiates a new pool of GRPC connections for the Bloom Gateway
 // Internally, it also instantiates a protobuf bloom gateway client and a health client.
 func NewBloomGatewayGRPCPool(address string, opts []grpc.DialOption) (*GRPCPool, error) {
@@ -57,6 +62,7 @@ func NewBloomGatewayGRPCPool(address string, opts []grpc.DialOption) (*GRPCPool,
 	}, nil
 }
 
+// ClientConfig 配置 Bloom Gateway 客户端连接池、gRPC 与 DNS 服务发现地址。
 // IndexGatewayClientConfig configures the Index Gateway client used to
 // communicate with the Index Gateway server.
 type ClientConfig struct {
@@ -99,6 +105,7 @@ func (i *ClientConfig) Validate() error {
 	return nil
 }
 
+// Client 为 Querier 使用的 Bloom Gateway 客户端抽象接口。
 type Client interface {
 	FilterChunks(ctx context.Context, tenant string, interval bloomshipper.Interval, blocks []blockWithSeries, plan plan.QueryPlan) ([]*logproto.GroupedChunkRefs, error)
 	PrefetchBloomBlocks(ctx context.Context, blocks []bloomshipper.BlockRef) error
@@ -113,6 +120,7 @@ type clientPool interface {
 	Stop()
 }
 
+// GatewayClient 通过 JumpHash 池向多个 Bloom Gateway 实例发送过滤与预取请求。
 type GatewayClient struct {
 	cfg         ClientConfig
 	logger      log.Logger
@@ -160,6 +168,7 @@ func (c *GatewayClient) Close() {
 	c.dnsProvider.Stop()
 }
 
+// PrefetchBloomBlocks 按块键 JumpHash 分组后并行向各实例发起预取。
 func (c *GatewayClient) PrefetchBloomBlocks(ctx context.Context, blocks []bloomshipper.BlockRef) error {
 	if len(blocks) == 0 {
 		return nil
@@ -201,6 +210,7 @@ func (c *GatewayClient) PrefetchBloomBlocks(ctx context.Context, blocks []blooms
 	})
 }
 
+// FilterChunks 将序列按块所在实例分组，并行 FilterChunkRefs 后合并去重。
 // FilterChunks implements Client
 func (c *GatewayClient) FilterChunks(ctx context.Context, _ string, interval bloomshipper.Interval, blocks []blockWithSeries, plan plan.QueryPlan) ([]*logproto.GroupedChunkRefs, error) {
 	// no block and therefore no series with chunks
@@ -285,6 +295,7 @@ func (c *GatewayClient) FilterChunks(ctx context.Context, _ string, interval blo
 	return mergeSeries(results, buf)
 }
 
+// mergeSeries 用堆合并多实例响应并按指纹去重 chunk ShortRef。
 // mergeSeries combines responses from multiple FilterChunkRefs calls and deduplicates
 // chunks from series that appear in multiple responses.
 // To avoid allocations, an optional slice can be passed as second argument.
@@ -332,6 +343,7 @@ func mergeSeries(input [][]*logproto.GroupedChunkRefs, buf []*logproto.GroupedCh
 }
 
 // mergeChunkSets merges and deduplicates two sorted slices of shortRefs
+// mergeChunkSets 归并两个已排序 ShortRef 切片并去除重复项。
 func mergeChunkSets(s1, s2 []*logproto.ShortRef) (result []*logproto.ShortRef) {
 	var i, j int
 	for i < len(s1) && j < len(s2) {
@@ -364,6 +376,7 @@ func mergeChunkSets(s1, s2 []*logproto.ShortRef) (result []*logproto.ShortRef) {
 	return result
 }
 
+// doForAddrs 依次尝试各地址获取客户端并执行回调，首个成功即返回。
 // doForAddrs sequetially calls the provided callback function fn for each
 // address in given slice addrs until the callback function does not return an
 // error.

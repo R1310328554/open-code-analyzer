@@ -1,5 +1,8 @@
 package bloomgateway
 
+// Bloom Gateway 内部任务多路复用数据结构：Task 入队/出队单元
+// 及将 GroupedChunkRefs 转为 v1.Request 的迭代器。
+
 import (
 	"context"
 	"sync"
@@ -18,6 +21,7 @@ const (
 	Day = 24 * time.Hour
 )
 
+// wrappedError 线程安全包装，允许多 Task 副本共享同一错误指针。
 type wrappedError struct {
 	mu  sync.Mutex
 	err error
@@ -40,6 +44,7 @@ func (e *wrappedError) Set(err error) {
 	e.mu.Unlock()
 }
 
+// Task 为内部队列元素：含租户、序列、matcher、块列表与结果通道。
 // Task is the data structure that is enqueued to the internal queue and dequeued by query workers
 type Task struct {
 	// tenant is the tenant ID
@@ -77,6 +82,7 @@ type Task struct {
 	recorder *v1.BloomRecorder
 }
 
+// newTask 构造待入队 Task，初始化 BloomRecorder 与 done/resCh 通道。
 func newTask(ctx context.Context, tenantID string, refs seriesWithInterval, matchers []v1.LabelMatcher, blocks []bloomshipper.BlockRef) Task {
 	return Task{
 		tenant:   tenantID,
@@ -93,6 +99,7 @@ func newTask(ctx context.Context, tenantID string, refs seriesWithInterval, matc
 	}
 }
 
+// Bounds 返回任务 chunk 的时间区间，供 TSDB Bounded 接口使用。
 // Bounds implements Bounded
 // see pkg/storage/stores/shipper/indexshipper/tsdb.Bounded
 func (t Task) Bounds() (model.Time, model.Time) {
@@ -118,6 +125,7 @@ func (t Task) CloseWithError(err error) {
 }
 
 // Copy returns a copy of the existing task but with a new slice of grouped chunk refs
+// Copy 复制 Task 但替换 series 切片，用于按块指纹范围拆分多路复用。
 func (t Task) Copy(series []*logproto.GroupedChunkRefs) Task {
 	return Task{
 		recorder: t.recorder,
@@ -134,6 +142,7 @@ func (t Task) Copy(series []*logproto.GroupedChunkRefs) Task {
 	}
 }
 
+// RequestIter 将 Task 序列转为 v1.Request 迭代器供块查询器 Fuse 使用。
 func (t Task) RequestIter() iter.Iterator[v1.Request] {
 	return &requestIterator{
 		recorder: t.recorder,
@@ -146,6 +155,7 @@ func (t Task) RequestIter() iter.Iterator[v1.Request] {
 
 var _ iter.Iterator[v1.Request] = &requestIterator{}
 
+// requestIterator 逐条序列产出 v1.Request，Search 由 AST matcher 转换而来。
 type requestIterator struct {
 	recorder *v1.BloomRecorder
 	series   iter.Iterator[*logproto.GroupedChunkRefs]

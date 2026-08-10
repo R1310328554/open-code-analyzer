@@ -1,5 +1,8 @@
 package protos
 
+// Bloom 构建任务 protobuf 与内部 Go 类型的互转层：
+// Gap/Task/TaskResult 在 ProtoTask 与 bloomshipper 引用之间双向映射。
+
 import (
 	"fmt"
 
@@ -14,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb"
 )
 
+// Gap 描述指纹区间内缺失 Bloom 覆盖的序列与已有块引用。
 type Gap struct {
 	Bounds v1.FingerprintBounds
 	Series []*v1.Series
@@ -30,6 +34,7 @@ type Task struct {
 	Gaps            []Gap
 }
 
+// NewTask 根据表、租户、指纹边界、TSDB 与缺口生成带唯一 ID 的任务。
 func NewTask(
 	table config.DayTable,
 	tenant string,
@@ -48,6 +53,7 @@ func NewTask(
 	}
 }
 
+// FromProtoTask 将 wire 格式 ProtoTask 解析为内部 Task，含块键与 TSDB 路径校验。
 func FromProtoTask(task *ProtoTask) (*Task, error) {
 	if task == nil {
 		return nil, nil
@@ -106,6 +112,7 @@ func FromProtoTask(task *ProtoTask) (*Task, error) {
 	}, nil
 }
 
+// ToProtoTask 将内部 Task 序列化为 gRPC 传输用的 ProtoTask 消息。
 func (t *Task) ToProtoTask() *ProtoTask {
 	if t == nil {
 		return nil
@@ -158,6 +165,7 @@ func (t *Task) ToProtoTask() *ProtoTask {
 	}
 }
 
+// GetLogger 为任务上下文注入 task/tenant/table/tsdb 结构化日志字段。
 func (t *Task) GetLogger(logger log.Logger) log.Logger {
 	return log.With(logger,
 		"task", t.ID,
@@ -173,6 +181,7 @@ type TaskResult struct {
 	CreatedMetas []bloomshipper.Meta
 }
 
+// FromProtoTaskResult 解析 Builder 回传的 ProtoTaskResult，重建 Meta 与块引用。
 func FromProtoTaskResult(result *ProtoTaskResult) (*TaskResult, error) {
 	if result == nil {
 		return nil, nil
@@ -224,6 +233,7 @@ func FromProtoTaskResult(result *ProtoTaskResult) (*TaskResult, error) {
 	}, nil
 }
 
+// ToProtoTaskResult 将 TaskResult 转为 protobuf，错误时仅填充 TaskID 与 Error 字段。
 func (r *TaskResult) ToProtoTaskResult() *ProtoTaskResult {
 	if r == nil {
 		return nil
@@ -261,6 +271,7 @@ func (r *TaskResult) ToProtoTaskResult() *ProtoTaskResult {
 	}
 }
 
+// FromProtoDayTableToDayTable 将 Proto DayTable 转为 config.DayTable 索引表标识。
 func FromProtoDayTableToDayTable(proto DayTable) config.DayTable {
 	return config.NewDayTable(config.NewDayTime(model.Time(proto.DayTimestampMS)), proto.Prefix)
 }

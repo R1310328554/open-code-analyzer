@@ -1,5 +1,8 @@
 package bloomgateway
 
+// Index Gateway 侧 Bloom 查询抽象：解析块、调用 Client 过滤 ChunkRef，
+// 并统计过滤/跳过 series 与 chunk 的 Prometheus 指标。
+
 import (
 	"context"
 	"time"
@@ -21,6 +24,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/spanlogger"
 )
 
+// querierMetrics 统计 Querier 层过滤前后与跳过的 series/chunk 数量。
 type querierMetrics struct {
 	chunksTotal    prometheus.Counter
 	chunksFiltered prometheus.Counter
@@ -71,11 +75,13 @@ func newQuerierMetrics(registerer prometheus.Registerer, namespace, subsystem st
 	}
 }
 
+// QuerierConfig 含 Bloom 构建间隔与表偏移，用于判断 chunk 是否过新。
 type QuerierConfig struct {
 	BuildInterval    time.Duration
 	BuildTableOffset int
 }
 
+// BloomQuerier 在 Client 之上封装块解析、按日分区与过滤短路逻辑。
 // BloomQuerier is a store-level abstraction on top of Client
 // It is used by the index gateway to filter ChunkRefs based on given line fiter expression.
 type BloomQuerier struct {
@@ -102,6 +108,7 @@ func convertToShortRef(ref *logproto.ChunkRef) *logproto.ShortRef {
 	return &logproto.ShortRef{From: ref.From, Through: ref.Through, Checksum: ref.Checksum}
 }
 
+// FilterChunkRefs 按租户限制与 AST matcher 决定是否调用 Bloom Gateway 过滤。
 func (bq *BloomQuerier) FilterChunkRefs(ctx context.Context, tenant string, from, through model.Time, series map[uint64]labels.Labels, chunkRefs []*logproto.ChunkRef, queryPlan plan.QueryPlan) ([]*logproto.ChunkRef, bool, error) {
 	// Shortcut that does not require any filtering
 	if !bq.limits.BloomGatewayEnabled(tenant) || len(chunkRefs) == 0 || len(v1.ExtractTestableLabelMatchers(queryPlan.AST)) == 0 {
@@ -220,6 +227,7 @@ func (bq *BloomQuerier) FilterChunkRefs(ctx context.Context, tenant string, from
 	return result, true, nil
 }
 
+// groupChunkRefs 按指纹将 ChunkRef 聚合为 GroupedChunkRefs，可复用缓冲切片。
 // groupChunkRefs takes a slice of chunk refs sorted by their fingerprint and
 // groups them by fingerprint.
 // The second argument `grouped` can be used to pass a buffer to avoid allocations.

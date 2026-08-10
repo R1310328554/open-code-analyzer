@@ -3,6 +3,9 @@
 
 package protos
 
+// Bloom 构建 Planner↔Builder 双向 gRPC 服务桩代码（protoc-gen-gogo 生成）。
+// 定义 BuilderLoop 流式任务分发与 NotifyBuilderShutdown 关闭通知 RPC。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -29,6 +32,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// BuilderToPlanner 为 Builder→Planner 流消息，携带 BuilderID 与任务执行结果。
 type BuilderToPlanner struct {
 	BuilderID string          `protobuf:"bytes,1,opt,name=builderID,proto3" json:"builderID,omitempty"`
 	Result    ProtoTaskResult `protobuf:"bytes,2,opt,name=result,proto3" json:"result"`
@@ -80,6 +84,7 @@ func (m *BuilderToPlanner) GetResult() ProtoTaskResult {
 	return ProtoTaskResult{}
 }
 
+// PlannerToBuilder 为 Planner→Builder 流消息，下发单个 ProtoTask 构建任务。
 type PlannerToBuilder struct {
 	Task *ProtoTask `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 }
@@ -123,6 +128,7 @@ func (m *PlannerToBuilder) GetTask() *ProtoTask {
 	return nil
 }
 
+// NotifyBuilderShutdownRequest 通知 Planner 某 Builder 实例即将下线。
 type NotifyBuilderShutdownRequest struct {
 	BuilderID string `protobuf:"bytes,1,opt,name=builderID,proto3" json:"builderID,omitempty"`
 }
@@ -166,6 +172,7 @@ func (m *NotifyBuilderShutdownRequest) GetBuilderID() string {
 	return ""
 }
 
+// NotifyBuilderShutdownResponse 为关闭通知的空响应占位消息。
 type NotifyBuilderShutdownResponse struct {
 }
 
@@ -397,6 +404,7 @@ const _ = grpc.SupportPackageIsVersion4
 // PlannerForBuilderClient is the client API for PlannerForBuilder service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// PlannerForBuilderClient 为 Builder 侧 gRPC 客户端接口。
 type PlannerForBuilderClient interface {
 	BuilderLoop(ctx context.Context, opts ...grpc.CallOption) (PlannerForBuilder_BuilderLoopClient, error)
 	NotifyBuilderShutdown(ctx context.Context, in *NotifyBuilderShutdownRequest, opts ...grpc.CallOption) (*NotifyBuilderShutdownResponse, error)
@@ -406,6 +414,7 @@ type plannerForBuilderClient struct {
 	cc *grpc.ClientConn
 }
 
+// NewPlannerForBuilderClient 基于已有连接创建 PlannerForBuilder 客户端。
 func NewPlannerForBuilderClient(cc *grpc.ClientConn) PlannerForBuilderClient {
 	return &plannerForBuilderClient{cc}
 }
@@ -419,6 +428,7 @@ func (c *plannerForBuilderClient) BuilderLoop(ctx context.Context, opts ...grpc.
 	return x, nil
 }
 
+// BuilderLoopClient 双向流：Send 回传结果，Recv 接收新任务。
 type PlannerForBuilder_BuilderLoopClient interface {
 	Send(*BuilderToPlanner) error
 	Recv() (*PlannerToBuilder, error)
@@ -451,6 +461,7 @@ func (c *plannerForBuilderClient) NotifyBuilderShutdown(ctx context.Context, in 
 }
 
 // PlannerForBuilderServer is the server API for PlannerForBuilder service.
+// PlannerForBuilderServer 为 Planner 侧 gRPC 服务实现接口。
 type PlannerForBuilderServer interface {
 	BuilderLoop(PlannerForBuilder_BuilderLoopServer) error
 	NotifyBuilderShutdown(context.Context, *NotifyBuilderShutdownRequest) (*NotifyBuilderShutdownResponse, error)
@@ -467,6 +478,7 @@ func (*UnimplementedPlannerForBuilderServer) NotifyBuilderShutdown(ctx context.C
 	return nil, status.Errorf(codes.Unimplemented, "method NotifyBuilderShutdown not implemented")
 }
 
+// RegisterPlannerForBuilderServer 将 PlannerForBuilder 服务注册到 gRPC Server。
 func RegisterPlannerForBuilderServer(s *grpc.Server, srv PlannerForBuilderServer) {
 	s.RegisterService(&_PlannerForBuilder_serviceDesc, srv)
 }
@@ -475,6 +487,7 @@ func _PlannerForBuilder_BuilderLoop_Handler(srv interface{}, stream grpc.ServerS
 	return srv.(PlannerForBuilderServer).BuilderLoop(&plannerForBuilderBuilderLoopServer{stream})
 }
 
+// BuilderLoopServer 服务端双向流：Send 下发任务，Recv 接收 Builder 结果。
 type PlannerForBuilder_BuilderLoopServer interface {
 	Send(*PlannerToBuilder) error
 	Recv() (*BuilderToPlanner, error)

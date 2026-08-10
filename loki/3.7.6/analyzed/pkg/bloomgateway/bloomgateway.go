@@ -1,3 +1,4 @@
+// Bloom Gateway 独立微服务：按行过滤器表达式对 ChunkRef 做 Bloom 预过滤。
 /*
 The bloom gateway is a component that can be run as a standalone microserivce
 target and provides capabilities for filtering ChunkRefs based on a given list
@@ -45,6 +46,7 @@ var (
 	responsesPool = queue.NewSlicePool[v1.Output](1<<6, 1<<16, 2)
 )
 
+// Gateway 是 Bloom Gateway 服务端核心：队列、Worker 池与 bloomshipper 存储。
 type Gateway struct {
 	services.Service
 
@@ -64,6 +66,7 @@ type Gateway struct {
 	workerConfig workerConfig
 }
 
+// fixedQueueLimits 固定 MaxConsumers；设为 0 表示任意 Worker 可处理任意租户请求。
 // fixedQueueLimits is a queue.Limits implementation that returns a fixed value for MaxConsumers.
 // Notably this lets us run with "disabled" max consumers (0) for the bloom gateway meaning it will
 // distribute any request to any receiver.
@@ -75,6 +78,7 @@ func (l *fixedQueueLimits) MaxConsumers(_ string, _ int) int {
 	return l.maxConsumers
 }
 
+// New 构造 Gateway：初始化请求队列、Worker 与 Prometheus 指标。
 // New returns a new instance of the Bloom Gateway.
 func New(cfg Config, store bloomshipper.Store, logger log.Logger, reg prometheus.Registerer) (*Gateway, error) {
 	utillog.WarnExperimentalUse("Bloom Gateway", logger)
@@ -104,6 +108,7 @@ func New(cfg Config, store bloomshipper.Store, logger log.Logger, reg prometheus
 	return g, nil
 }
 
+// initServices 创建 Worker 并发池并注册 queue/activeUsers 子服务。
 func (g *Gateway) initServices() error {
 	var err error
 	svcs := []services.Service{g.queue, g.activeUsers}
@@ -164,6 +169,7 @@ func (g *Gateway) stopping(_ error) error {
 	return services.StopManagerAndAwaitStopped(context.Background(), g.serviceMngr)
 }
 
+// PrefetchBloomBlocks 异步预取 Bloom 块到本地缓存，加速后续查询。
 func (g *Gateway) PrefetchBloomBlocks(_ context.Context, req *logproto.PrefetchBloomBlocksRequest) (*logproto.PrefetchBloomBlocksResponse, error) {
 	refs, err := decodeBlockKeys(req.Blocks)
 	if err != nil {
@@ -201,6 +207,7 @@ func (g *Gateway) PrefetchBloomBlocks(_ context.Context, req *logproto.PrefetchB
 	return &logproto.PrefetchBloomBlocksResponse{}, err
 }
 
+// FilterChunkRefs 核心 RPC：对给定块与序列按 AST 行过滤器过滤 ChunkRef。
 // FilterChunkRefs implements BloomGatewayServer
 func (g *Gateway) FilterChunkRefs(ctx context.Context, req *logproto.FilterChunkRefRequest) (*logproto.FilterChunkRefResponse, error) {
 	tenantID, err := tenant.TenantID(ctx)
@@ -353,6 +360,7 @@ func (g *Gateway) FilterChunkRefs(ctx context.Context, req *logproto.FilterChunk
 	return &logproto.FilterChunkRefResponse{ChunkRefs: filtered}, nil
 }
 
+// consumeTask 从 Worker 结果通道收集 v1.Output 并通知请求处理协程。
 // consumeTask receives v1.Output yielded from the block querier on the task's
 // result channel and stores them on the task.
 // In case the context task is done, it drains the remaining items until the
@@ -382,6 +390,7 @@ func (g *Gateway) consumeTask(ctx context.Context, task Task, tasksCh chan<- Tas
 	}
 }
 
+// filterChunkRefs 合并 Bloom 输出并按指纹去重，就地修改 req.Refs 移除被过滤块。
 // TODO(owen-d): improve perf. This can be faster with a more specialized impl
 // NB(owen-d): `req` is mutated in place for performance, but `responses` is not
 // Removals of the outputs must be sorted.
@@ -507,6 +516,7 @@ func filterChunkRefsForSeries(cur *logproto.GroupedChunkRefs, removals v1.ChunkR
 	cur.Refs = cur.Refs[:len(res)]
 }
 
+// decodeBlockKeys 将请求中的块键字符串解析为 bloomshipper.BlockRef 切片。
 func decodeBlockKeys(keys []string) ([]bloomshipper.BlockRef, error) {
 	blocks := make([]bloomshipper.BlockRef, 0, len(keys))
 	for _, key := range keys {

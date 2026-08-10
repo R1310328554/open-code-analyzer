@@ -1,5 +1,8 @@
 package bloomgateway
 
+// Bloom 块解析器：根据 Meta 搜索为序列匹配最新 Bloom 块，
+// 未匹配序列原样返回供 Querier 跳过 Bloom 过滤。
+
 import (
 	"context"
 	"slices"
@@ -15,10 +18,12 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/bloomshipper"
 )
 
+// BlockResolver 将 GroupedChunkRefs 映射到 blockWithSeries 与未分配序列。
 type BlockResolver interface {
 	Resolve(ctx context.Context, tenant string, interval bloomshipper.Interval, series []*logproto.GroupedChunkRefs) (blocks []blockWithSeries, skipped []*logproto.GroupedChunkRefs, err error)
 }
 
+// blockWithSeries 关联单个 Bloom 块与其覆盖的 GroupedChunkRefs 子集。
 type blockWithSeries struct {
 	block  bloomshipper.BlockRef
 	series []*logproto.GroupedChunkRefs
@@ -61,6 +66,7 @@ func (r *defaultBlockResolver) Resolve(ctx context.Context, tenant string, inter
 	return mapped, skipped, nil
 }
 
+// blocksMatchingSeries 为每条序列选取时间重叠且指纹匹配的最新 Bloom 块。
 func blocksMatchingSeries(metas []bloomshipper.Meta, interval bloomshipper.Interval, series []*logproto.GroupedChunkRefs) []blockWithSeries {
 	slices.SortFunc(series, func(a, b *logproto.GroupedChunkRefs) int { return int(a.Fingerprint - b.Fingerprint) })
 
@@ -118,6 +124,7 @@ func blocksMatchingSeries(metas []bloomshipper.Meta, interval bloomshipper.Inter
 	return result
 }
 
+// unassignedSeries 从全集减去已映射序列，返回无 Bloom 块覆盖的序列。
 func unassignedSeries(mapped []blockWithSeries, series []*logproto.GroupedChunkRefs) []*logproto.GroupedChunkRefs {
 	skipped := make([]*logproto.GroupedChunkRefs, len(series))
 	_ = copy(skipped, series)
@@ -143,6 +150,7 @@ func unassignedSeries(mapped []blockWithSeries, series []*logproto.GroupedChunkR
 	return skipped
 }
 
+// NewBlockResolver 构造默认 BlockResolver 实现。
 func NewBlockResolver(store bloomshipper.StoreBase, logger log.Logger) BlockResolver {
 	return &defaultBlockResolver{
 		store:  store,

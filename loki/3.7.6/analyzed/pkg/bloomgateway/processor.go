@@ -1,5 +1,8 @@
 package bloomgateway
 
+// Worker 侧任务处理器：按日表分组、批量拉取 Bloom 块并并发查询，
+// 将过滤结果通过 Task.resCh 流式回传 Gateway。
+
 import (
 	"context"
 	"time"
@@ -26,6 +29,7 @@ func newProcessor(id string, concurrency int, async bool, store bloomshipper.Sto
 	}
 }
 
+// processor 持有块查询并发度、异步下载开关与 bloomshipper Store。
 type processor struct {
 	id          string
 	concurrency int  // concurrency at which bloom blocks are processed
@@ -35,6 +39,7 @@ type processor struct {
 	metrics     *workerMetrics
 }
 
+// processTasks 按日表分组依次处理，失败时向所有 Task 写入错误并关闭。
 func (p *processor) processTasks(ctx context.Context, tasks []Task) error {
 	tenant := tasks[0].tenant
 
@@ -53,6 +58,7 @@ func (p *processor) processTasks(ctx context.Context, tasks []Task) error {
 	return nil
 }
 
+// processTasksForDay 合并块引用、FetchBlocks 后并发 processBlocks 并更新 Stats。
 func (p *processor) processTasksForDay(ctx context.Context, _ string, _ config.DayTime, tasks []Task) error {
 	var duration time.Duration
 
@@ -102,6 +108,7 @@ func (p *processor) processTasksForDay(ctx context.Context, _ string, _ config.D
 	return res
 }
 
+// processBlocks 并发处理各块；块未下载则跳过并递增 blocksNotAvailable 指标。
 func (p *processor) processBlocks(ctx context.Context, bqs []*bloomshipper.CloseableBlockQuerier, data []blockWithTasks) error {
 	// We opportunistically close blocks during iteration to allow returning memory to the pool, etc,
 	// as soon as possible, but since we exit early on error, we need to ensure we close all blocks.
@@ -142,6 +149,7 @@ func (p *processor) processBlocks(ctx context.Context, bqs []*bloomshipper.Close
 	})
 }
 
+// processBlock 要求 V3+ schema，Fuse 多 Task 迭代器后 Run 执行 Bloom 过滤。
 func (p *processor) processBlock(_ context.Context, bq *bloomshipper.CloseableBlockQuerier, tasks []Task) (err error) {
 	blockQuerier := bq.BlockQuerier
 	schema, err := blockQuerier.Schema()
@@ -193,6 +201,7 @@ func (p *processor) processBlock(_ context.Context, bq *bloomshipper.CloseableBl
 
 // getFirstLast returns the first and last item of a fingerprint slice
 // It assumes an ascending sorted list of fingerprints.
+// getFirstLast 返回已排序切片的首尾元素，空切片返回零值。
 func getFirstLast[T any](s []T) (T, T) {
 	var zero T
 	if len(s) == 0 {

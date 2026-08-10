@@ -1,5 +1,8 @@
 package bloomgateway
 
+// Bloom Gateway Worker：从 RequestQueue 批量出队 Task，
+// 交给 processor 多路复用处理并将结果写回 Task 通道。
+
 import (
 	"context"
 	"time"
@@ -19,12 +22,14 @@ const (
 	labelFailure = "failure"
 )
 
+// workerConfig 控制单次出队任务数、块查询并发与异步拉块开关。
 type workerConfig struct {
 	maxItems         int
 	queryConcurrency int
 	async            bool
 }
 
+// worker 消费队列 Task、更新 pending 计数并通过 processor 执行 Bloom 过滤。
 // worker is a datastructure that consumes tasks from the request queue,
 // processes them and returns the result/error back to the response channels of
 // the tasks.
@@ -42,6 +47,7 @@ type worker struct {
 	metrics *workerMetrics
 }
 
+// newWorker 创建具名 Worker 并注册为 BasicService 子服务。
 func newWorker(id string, cfg workerConfig, queue *queue.RequestQueue, store bloomshipper.Store, pending *atomic.Int64, logger log.Logger, metrics *workerMetrics) *worker {
 	w := &worker{
 		id:      id,
@@ -56,6 +62,7 @@ func newWorker(id string, cfg workerConfig, queue *queue.RequestQueue, store blo
 	return w
 }
 
+// starting 向队列注册 Consumer 连接标识。
 func (w *worker) starting(_ context.Context) error {
 	level.Debug(w.logger).Log("msg", "starting worker")
 	w.queue.RegisterConsumerConnection(w.id)
@@ -122,6 +129,7 @@ func (w *worker) running(_ context.Context) error {
 	return nil
 }
 
+// stopping 注销 Consumer 连接并记录停止原因。
 func (w *worker) stopping(err error) error {
 	level.Debug(w.logger).Log("msg", "stopping worker", "err", err)
 	w.queue.UnregisterConsumerConnection(w.id)

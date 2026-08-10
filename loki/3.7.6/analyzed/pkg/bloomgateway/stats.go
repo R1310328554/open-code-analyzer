@@ -1,5 +1,8 @@
 package bloomgateway
 
+// Bloom Gateway 请求级统计：通过 context 传递队列/拉块/处理耗时
+// 与过滤 series/chunk 数量，供日志与 tracing 汇总。
+
 import (
 	"context"
 	"time"
@@ -25,6 +28,7 @@ type statsKey int
 
 var ctxKey = statsKey(0)
 
+// ContextWithEmptyStats 在 context 中注入零值 Stats 并返回指针供后续更新。
 // ContextWithEmptyStats returns a context with empty stats.
 func ContextWithEmptyStats(ctx context.Context) (*Stats, context.Context) {
 	stats := &Stats{
@@ -42,6 +46,7 @@ func ContextWithEmptyStats(ctx context.Context) (*Stats, context.Context) {
 	return stats, ctx
 }
 
+// FromContext 从 context 取出 Stats，未初始化时返回 nil。
 // FromContext gets the Stats out of the Context. Returns nil if stats have not
 // been initialised in the context.
 func FromContext(ctx context.Context) *Stats {
@@ -53,6 +58,7 @@ func FromContext(ctx context.Context) *Stats {
 }
 
 // aggregates the total duration
+// Duration 累加队列、拉块、处理与后处理各阶段耗时。
 func (s *Stats) Duration() (dur time.Duration) {
 	dur += s.QueueTime.Load()
 	dur += s.BlocksFetchTime.Load()
@@ -90,6 +96,7 @@ func (s *Stats) KVArgs() []any {
 	}
 }
 
+// AddQueueTime 原子累加任务在内部队列中的等待时间。
 func (s *Stats) AddQueueTime(t time.Duration) {
 	if s == nil {
 		return
@@ -125,6 +132,7 @@ func (s *Stats) AddPostProcessingTime(t time.Duration) {
 	s.PostProcessingTime.Add(t)
 }
 
+// IncSkippedBlocks 递增因块未下载而跳过的块计数。
 func (s *Stats) IncSkippedBlocks() {
 	if s == nil {
 		return

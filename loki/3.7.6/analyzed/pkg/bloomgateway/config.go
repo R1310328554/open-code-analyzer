@@ -4,6 +4,7 @@ import (
 	"flag"
 )
 
+// Config 为 Bloom Gateway 服务端与客户端的全局配置结构。
 // Config configures the Bloom Gateway component.
 type Config struct {
 	// Enabled is the global switch to configures whether Bloom Gateways should be used to filter chunks.
@@ -36,6 +37,7 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	cfg.Client.RegisterFlags(f)
 }
 
+// Validate 在启用时校验客户端配置合法性。
 func (cfg *Config) Validate() error {
 	if !cfg.Enabled {
 		return nil

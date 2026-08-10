@@ -1,5 +1,8 @@
 package bloomgateway
 
+// Bloom Gateway Prometheus 指标定义：服务端过滤统计、Worker 队列/处理延迟
+// 及客户端请求计数与 gRPC 延迟直方图。
+
 import (
 	"time"
 
@@ -10,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// metrics 聚合 Worker 与服务端两套 Prometheus 指标。
 type metrics struct {
 	*workerMetrics
 	*serverMetrics
@@ -23,6 +27,7 @@ const (
 	routePrefectBlocks = "PrefetchBloomBlocks"
 )
 
+// clientMetrics 记录客户端 FilterChunks/Prefetch 请求数与 gRPC 延迟。
 type clientMetrics struct {
 	clientRequests *prometheus.CounterVec
 	requestLatency *prometheus.HistogramVec
@@ -46,6 +51,7 @@ func newClientMetrics(registerer prometheus.Registerer) *clientMetrics {
 	}
 }
 
+// serverMetrics 跟踪 inflight 任务、过滤前后 series/chunk 数量与预取块计数。
 type serverMetrics struct {
 	inflightRequests prometheus.Summary
 	requestedSeries  prometheus.Histogram
@@ -63,6 +69,7 @@ func newMetrics(registerer prometheus.Registerer, namespace, subsystem string) *
 	}
 }
 
+// newServerMetrics 创建 Gateway 服务端 Prometheus 指标集。
 func newServerMetrics(registerer prometheus.Registerer, namespace, subsystem string) *serverMetrics {
 	return &serverMetrics{
 		inflightRequests: promauto.With(registerer).NewSummary(prometheus.SummaryOpts{
@@ -118,6 +125,7 @@ func newServerMetrics(registerer prometheus.Registerer, namespace, subsystem str
 	}
 }
 
+// workerMetrics 按 Worker ID 记录出队/排队/处理耗时与块查询延迟。
 type workerMetrics struct {
 	dequeueDuration    *prometheus.HistogramVec
 	queueDuration      *prometheus.HistogramVec
@@ -128,6 +136,7 @@ type workerMetrics struct {
 	blockQueryLatency  *prometheus.HistogramVec
 }
 
+// newWorkerMetrics 注册 Worker 侧队列与块处理相关直方图与计数器。
 func newWorkerMetrics(registerer prometheus.Registerer, namespace, subsystem string) *workerMetrics {
 	labels := []string{"worker"}
 	r := promauto.With(registerer)
