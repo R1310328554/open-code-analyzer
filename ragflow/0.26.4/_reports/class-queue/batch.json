@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:53:28Z",
-  "files": [
-    "internal/dao/document.go",
-    "internal/dao/enterprise_data.go",
-    "internal/dao/enterprise_tasks.go",
-    "internal/dao/enterprise_user.go",
-    "internal/dao/file.go",
-    "internal/dao/file2document.go",
-    "internal/dao/file_commit.go",
-    "internal/dao/ingestion.go",
-    "internal/dao/kb.go",
-    "internal/dao/langfuse.go",
-    "internal/dao/license.go",
-    "internal/dao/llm.go",
-    "internal/dao/mcp.go",
-    "internal/dao/memory.go",
-    "internal/dao/migration.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1164,
-  "done": 585
+  "done": 600
 }
