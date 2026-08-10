@@ -25,6 +25,7 @@ import org.keycloak.dom.xmlsec.w3.xmldsig.TransformType;
 /**
  * <p>
  * Java class for TransformsType complex type.
+ * XML 加密 Transforms 容器，按顺序存放解密前需应用的 {@link TransformType} 变换。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,21 +44,27 @@ import org.keycloak.dom.xmlsec.w3.xmldsig.TransformType;
  */
 public class TransformsType {
 
+    /** 变换步骤列表。 */
     protected List<TransformType> transform = new ArrayList<>();
 
+    /** 添加一条变换。 */
     public void add(TransformType tt) {
         this.transform.add(tt);
     }
 
+    /** 批量添加变换。 */
     public void addAll(List<TransformType> ttlist) {
         this.transform.addAll(ttlist);
     }
 
+    /** 移除一条变换。 */
     public void remove(TransformType tt) {
         this.transform.remove(tt);
     }
 
     /**
+     * 获取 transform 属性列表（只读）。
+     *
      * Gets the value of the transform property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link TransformType }

@@ -22,12 +22,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 基于 URI 的 SAML、WS-* 与 XML 安全相关命名空间及标识符常量。
  * Define the constants based on URI
  *
  * @author Anil.Saldhana@redhat.com
  * @since Dec 10, 2008
  */
 public enum JBossSAMLURIConstants {
+    /** 密码保护传输认证上下文类。 */
     AC_PASSWORD_PROTECTED_TRANSPORT("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"),
     AC_PASSWORD("urn:oasis:names:tc:SAML:2.0:ac:classes:Password"),
     AC_TLS_CLIENT("urn:oasis:names:tc:SAML:2.0:ac:classes:TLSClient"),
@@ -35,6 +37,7 @@ public enum JBossSAMLURIConstants {
     AC_UNSPECIFIED("urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified"),
     AC_IP("urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocol"),
 
+    /** SAML 2.0 断言命名空间 URI。 */
     ASSERTION_NSURI("urn:oasis:names:tc:SAML:2.0:assertion"),
     ATTRIBUTE_FORMAT_BASIC("urn:oasis:names:tc:SAML:2.0:attrname-format:basic"),
     ATTRIBUTE_FORMAT_URI("urn:oasis:names:tc:SAML:2.0:attrname-format:uri"),
@@ -64,6 +67,7 @@ public enum JBossSAMLURIConstants {
 
     HOLDER_OF_KEY("urn:oasis:names:tc:SAML:2.0:cm:holder-of-key"),
 
+    /** SAML 2.0 元数据命名空间 URI。 */
     METADATA_NSURI("urn:oasis:names:tc:SAML:2.0:metadata"),
     // http://docs.oasis-open.org/security/saml/Post2.0/sstc-metadata-attr-cd-01.pdf
     METADATA_ENTITY_ATTRIBUTES_NSURI("urn:oasis:names:tc:SAML:metadata:attribute"),
@@ -79,6 +83,7 @@ public enum JBossSAMLURIConstants {
     NAMEID_FORMAT_KERBEROS("urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos"),
     NAMEID_FORMAT_ENTITY("urn:oasis:names:tc:SAML:2.0:nameid-format:entity"),
 
+    /** SAML 2.0 协议命名空间 URI。 */
     PROTOCOL_NSURI("urn:oasis:names:tc:SAML:2.0:protocol"),
     ECP_PROFILE("urn:oasis:names:tc:SAML:2.0:profiles:SSO:ecp"),
     PAOS_BINDING("urn:liberty:paos:2003-08"),
@@ -86,6 +91,7 @@ public enum JBossSAMLURIConstants {
     SIGNATURE_DSA_SHA1("http://www.w3.org/2000/09/xmldsig#dsa-sha1"),
     SIGNATURE_RSA_SHA1("http://www.w3.org/2000/09/xmldsig#rsa-sha1"),
 
+    /** HTTP-POST SAML 绑定 URI。 */
     SAML_HTTP_POST_BINDING("urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"),
     SAML_HTTP_REDIRECT_BINDING("urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"),
     SAML_SOAP_BINDING("urn:oasis:names:tc:SAML:2.0:bindings:SOAP"),
@@ -94,6 +100,7 @@ public enum JBossSAMLURIConstants {
 
     SAML_11_NS("urn:oasis:names:tc:SAML:1.0:assertion"),
 
+    /** 主体确认 bearer 方法 URI。 */
     SUBJECT_CONFIRMATION_BEARER("urn:oasis:names:tc:SAML:2.0:cm:bearer"),
 
     STATUS_AUTHNFAILED("urn:oasis:names:tc:SAML:2.0:status:AuthnFailed"),
@@ -118,6 +125,7 @@ public enum JBossSAMLURIConstants {
 
     STATUS_REQUESTOR("urn:oasis:names:tc:SAML:2.0:status:Requestor"),
     STATUS_RESPONDER("urn:oasis:names:tc:SAML:2.0:status:Responder"),
+    /** SAML 2.0 成功状态码 URI。 */
     STATUS_SUCCESS("urn:oasis:names:tc:SAML:2.0:status:Success"),
     STATUS_VERSION_MISMATCH("urn:oasis:names:tc:SAML:2.0:status:VersionMismatch"),
 
@@ -132,17 +140,21 @@ public enum JBossSAMLURIConstants {
     XACML_SAML_PROTO_NSURI("urn:oasis:xacml:2.0:saml:protocol:schema:os"),
     XML("http://www.w3.org/XML/1998/namespace"),
     XMLSCHEMA_NSURI("http://www.w3.org/2001/XMLSchema"),
+    /** XML 数字签名命名空间 URI。 */
     XMLDSIG_NSURI("http://www.w3.org/2000/09/xmldsig#"),
+    /** XML 加密命名空间 URI。 */
     XMLENC_NSURI("http://www.w3.org/2001/04/xmlenc#"),
     XMLENC11_NSURI("http://www.w3.org/2009/xmlenc11#"),
     XSI_NSURI("http://www.w3.org/2001/XMLSchema-instance"),
     ;
 
+    /** URI 字符串形式。 */
     private final String uriStr;
+    /** 解析后的 {@link URI} 实例。 */
     private final URI uri;
 
     private static class ReverseLookup {
-        // Private class to make sure JBossSAMLURIConstants is fully initialized
+        // 私有类，确保 JBossSAMLURIConstants 在构建反向查找表前已完全初始化
         private static final Map<String, JBossSAMLURIConstants> CONSTANTS;
 
         static {
@@ -167,15 +179,18 @@ public enum JBossSAMLURIConstants {
         this.uri = URI.create(uristr);
     }
 
+    /** 返回 URI 字符串。 */
     public String get() {
         return this.uriStr;
     }
 
+    /** 返回 {@link URI} 对象。 */
     public URI getUri() {
         return this.uri;
     }
 
     /**
+     * 根据 URI 字符串查找枚举；未知时返回 {@code null}。
      * Returns an enum constant based if known for the given {@code key}, or {@code null} otherwise.
      * @param key
      * @return

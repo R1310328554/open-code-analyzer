@@ -21,6 +21,7 @@ import org.keycloak.dom.xmlsec.w3.xmldsig.KeyInfoType;
 /**
  * <p>
  * Java class for EncryptedType complex type.
+ * XML 加密 EncryptedType 抽象基类，描述加密元素共有的算法、密钥信息、密文数据与属性。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -47,16 +48,26 @@ import org.keycloak.dom.xmlsec.w3.xmldsig.KeyInfoType;
  */
 public abstract class EncryptedType {
 
+    /** 加密算法及参数。 */
     protected EncryptionMethodType encryptionMethod;
+    /** 用于解密的对称密钥或密钥引用信息。 */
     protected KeyInfoType keyInfo;
+    /** 密文数据容器。 */
     protected CipherDataType cipherData;
+    /** 加密过程相关的扩展属性集合。 */
     protected EncryptionPropertiesType encryptionProperties;
+    /** 元素唯一标识。 */
     protected String id;
+    /** 被加密数据的类型 URI。 */
     protected String type;
+    /** 明文 MIME 类型。 */
     protected String mimeType;
+    /** 明文编码方式 URI。 */
     protected String encoding;
 
     /**
+     * 获取 encryptionMethod 属性值。
+     *
      * Gets the value of the encryptionMethod property.
      *
      * @return possible object is {@link EncryptionMethodType }
@@ -66,6 +77,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 设置 encryptionMethod 属性值。
+     *
      * Sets the value of the encryptionMethod property.
      *
      * @param value allowed object is {@link EncryptionMethodType }
@@ -75,6 +88,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 获取 keyInfo 属性值。
+     *
      * Gets the value of the keyInfo property.
      *
      * @return possible object is {@link KeyInfoType }
@@ -84,6 +99,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 设置 keyInfo 属性值。
+     *
      * Sets the value of the keyInfo property.
      *
      * @param value allowed object is {@link KeyInfoType }
@@ -93,6 +110,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 获取 cipherData 属性值。
+     *
      * Gets the value of the cipherData property.
      *
      * @return possible object is {@link CipherDataType }
@@ -102,6 +121,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 设置 cipherData 属性值。
+     *
      * Sets the value of the cipherData property.
      *
      * @param value allowed object is {@link CipherDataType }
@@ -111,6 +132,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 获取 encryptionProperties 属性值。
+     *
      * Gets the value of the encryptionProperties property.
      *
      * @return possible object is {@link EncryptionPropertiesType }
@@ -120,6 +143,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 设置 encryptionProperties 属性值。
+     *
      * Sets the value of the encryptionProperties property.
      *
      * @param value allowed object is {@link EncryptionPropertiesType }
@@ -129,6 +154,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 获取 id 属性值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -138,6 +165,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 设置 id 属性值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }
@@ -147,6 +176,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 获取 type 属性值。
+     *
      * Gets the value of the type property.
      *
      * @return possible object is {@link String }
@@ -156,6 +187,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 设置 type 属性值。
+     *
      * Sets the value of the type property.
      *
      * @param value allowed object is {@link String }
@@ -165,6 +198,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 获取 mimeType 属性值。
+     *
      * Gets the value of the mimeType property.
      *
      * @return possible object is {@link String }
@@ -174,6 +209,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 设置 mimeType 属性值。
+     *
      * Sets the value of the mimeType property.
      *
      * @param value allowed object is {@link String }
@@ -183,6 +220,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 获取 encoding 属性值。
+     *
      * Gets the value of the encoding property.
      *
      * @return possible object is {@link String }
@@ -192,6 +231,8 @@ public abstract class EncryptedType {
     }
 
     /**
+     * 设置 encoding 属性值。
+     *
      * Sets the value of the encoding property.
      *
      * @param value allowed object is {@link String }

@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for EncryptionPropertiesType complex type.
+ * XML 加密 EncryptionProperties 容器，可包含多条 {@link EncryptionPropertyType} 扩展属性。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -42,18 +43,24 @@ import java.util.List;
  */
 public class EncryptionPropertiesType {
 
+    /** 加密属性条目列表。 */
     protected List<EncryptionPropertyType> encryptionProperty = new ArrayList<>();
+    /** 属性集合的唯一标识。 */
     protected String id;
 
+    /** 添加一条加密属性。 */
     public void addEncryptionProperty(EncryptionPropertyType enc) {
         this.encryptionProperty.add(enc);
     }
 
+    /** 移除一条加密属性。 */
     public void removeEncryptionProperty(EncryptionPropertyType enc) {
         this.encryptionProperty.remove(enc);
     }
 
     /**
+     * 获取 encryptionProperty 属性列表（只读）。
+     *
      * Gets the value of the encryptionProperty property.
      *
      * <p>
@@ -64,6 +71,8 @@ public class EncryptionPropertiesType {
     }
 
     /**
+     * 获取 id 属性值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -73,6 +82,8 @@ public class EncryptionPropertiesType {
     }
 
     /**
+     * 设置 id 属性值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

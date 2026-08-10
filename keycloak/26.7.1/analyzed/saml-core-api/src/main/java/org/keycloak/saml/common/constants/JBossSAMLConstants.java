@@ -28,12 +28,13 @@ import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.PROTOCOL_
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.XMLDSIG_NSURI;
 
 /**
+ * SAML 2.0 元素本地名与 {@link QName} 常量枚举，覆盖协议、断言、元数据、ECP 及 XML 签名命名空间。
  * SAML Constants
  *
  * @since Dec 10, 2008
  */
 public enum JBossSAMLConstants {
-    // saml-schema-protocol-2.0.xsd
+    // saml-schema-protocol-2.0.xsd — SAML 2.0 协议消息元素
     ARTIFACT(PROTOCOL_NSURI, "Artifact"),
     ARTIFACT_RESOLVE(PROTOCOL_NSURI, "ArtifactResolve"),
     ARTIFACT_RESPONSE(PROTOCOL_NSURI, "ArtifactResponse"),
@@ -67,7 +68,7 @@ public enum JBossSAMLConstants {
     SUBJECT_QUERY(PROTOCOL_NSURI, "SubjectQuery"),
     TERMINATE(PROTOCOL_NSURI, "Terminate"),
 
-    // saml-schema-assertion-2.0.xsd
+    // saml-schema-assertion-2.0.xsd — SAML 2.0 断言元素
     ACTION(ASSERTION_NSURI, "Action"),
     ADVICE(ASSERTION_NSURI, "Advice"),
     ASSERTION(ASSERTION_NSURI, "Assertion"),
@@ -102,7 +103,7 @@ public enum JBossSAMLConstants {
     SUBJECT_LOCALITY(ASSERTION_NSURI, "SubjectLocality"),
     SUBJECT(ASSERTION_NSURI, "Subject"),
 
-    // saml-schema-metadata-2.0.xsd
+    // saml-schema-metadata-2.0.xsd — SAML 2.0 元数据元素
     ADDITIONAL_METADATA_LOCATION(METADATA_NSURI, "AdditionalMetadataLocation"),
     AFFILIATE_MEMBER(METADATA_NSURI, "AffiliateMember"),
     AFFILIATION_DESCRIPTOR(METADATA_NSURI, "AffiliationDescriptor"),
@@ -145,7 +146,7 @@ public enum JBossSAMLConstants {
     SURNAME(METADATA_NSURI, "SurName"),
     TELEPHONE_NUMBER(METADATA_NSURI, "TelephoneNumber"),
 
-    // saml-schema-ecp-2.0.xsd
+    // saml-schema-ecp-2.0.xsd — ECP（增强客户端/代理）配置文件元素
     RELAY_STATE(ECP_PROFILE, "RelayState"),
     REQUEST(ECP_PROFILE, "Request"),
     RESPONSE__ECP(ECP_PROFILE, "Response"),
@@ -158,7 +159,7 @@ public enum JBossSAMLConstants {
     X509_CERT(XMLDSIG_NSURI, "X509Certificate"),
     X509_DATA(XMLDSIG_NSURI, "X509Data"),
 
-    // Attribute names and other constants
+    // Attribute names and other constants — 通用 XML 属性名及其他常量
     ADDRESS("Address"),
     ALGORITHM("Algorithm"),
     ALLOW_CREATE("AllowCreate"),
@@ -229,19 +230,22 @@ public enum JBossSAMLConstants {
     SIGNATURE_SHA1_WITH_RSA("http://www.w3.org/2000/09/xmldsig#rsa-sha1"),
     VERSION_2_0("2.0"),
 
-    /** @deprecated Use namespace-aware variant instead */
+    /** @deprecated 请使用带命名空间的变体 */
     RESPONSE("Response"),
-    /** @deprecated Use namespace-aware variant instead */
+    /** @deprecated 请使用带命名空间的变体 */
     EXTENSIONS("Extensions"),
 
+    /** 未知或未识别的常量占位符。 */
     UNKNOWN_VALUE(null)
     ;
 
+    /** 对应的 XML {@link QName}。 */
     private final QName asQName;
+    /** 所属 SAML URI 命名空间常量。 */
     private final JBossSAMLURIConstants nsUri;
 
     private static class ReverseLookup {
-        // Private class to make sure JBossSAMLURIConstants is fully initialized
+        // 私有类，确保 JBossSAMLConstants 在构建反向查找表前已完全初始化
         private static final Map<QName, JBossSAMLConstants> QNAME_CONSTANTS;
         private static final Map<String, JBossSAMLConstants> CONSTANTS;
 
@@ -287,19 +291,23 @@ public enum JBossSAMLConstants {
         this.asQName = name == null ? null : new QName(namespaceUri.get(), name);
     }
 
+    /** 返回本地元素/属性名。 */
     public String get() {
         return this.asQName == null ? null : this.asQName.getLocalPart();
     }
 
+    /** 返回完整 {@link QName}。 */
     public QName getAsQName() {
         return asQName;
     }
 
+    /** 返回关联的命名空间 URI 常量。 */
     public JBossSAMLURIConstants getNsUri() {
         return nsUri;
     }
 
     /**
+     * 根据本地名查找枚举；未知时返回 {@code defaultValue}。
      * Returns an enum constant based if known for the given {@code key}, or the {@code defaultValue} otherwise.
      * @param key
      * @return
@@ -310,6 +318,7 @@ public enum JBossSAMLConstants {
     }
 
     /**
+     * 根据本地名查找枚举；未知时返回 {@code UNKNOWN_VALUE}。
      * Returns an enum constant based if known for the given {@code key}, or the {@code UNKNOWN_VALUE} otherwise.
      * @param key
      * @return
@@ -319,6 +328,7 @@ public enum JBossSAMLConstants {
     }
 
     /**
+     * 根据命名空间感知的 {@link QName} 查找枚举；未知时返回 {@code UNKNOWN_VALUE}。
      * Returns an enum constant based if known for the given {@code name} (namespace-aware), or the {@code UNKNOWN_VALUE} otherwise.
      * @param key
      * @return

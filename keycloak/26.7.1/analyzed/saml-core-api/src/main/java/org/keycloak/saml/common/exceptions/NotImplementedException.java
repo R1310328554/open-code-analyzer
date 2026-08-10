@@ -17,6 +17,7 @@
 package org.keycloak.saml.common.exceptions;
 
 /**
+ * <p>表示功能尚未实现或未就绪的异常，通常由未完成实现的方法抛出。</p>
  * <p>An exception that indicates that something is not ready for use. Usually, this exception is thrown from methods not
  * fully implemented or tested but available for invocation.</p>
  *
@@ -24,6 +25,11 @@ package org.keycloak.saml.common.exceptions;
  */
 public class NotImplementedException extends PicketLinkException {
 
+    /**
+     * 构造带说明消息的 NotImplementedException。
+     *
+     * @param message 异常描述
+     */
     public NotImplementedException(String message) {
         super(message);
     }

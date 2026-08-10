@@ -19,6 +19,7 @@ package org.keycloak.saml.common.exceptions;
 import java.security.GeneralSecurityException;
 
 /**
+ * 表示 SAML/PicketLink 配置错误的异常。
  * Exception indicating an issue with the configuration
  *
  * @author Anil.Saldhana@redhat.com
@@ -26,18 +27,35 @@ import java.security.GeneralSecurityException;
  */
 public class ConfigurationException extends GeneralSecurityException {
     
+    /** 构造无消息的 ConfigurationException。 */
     public ConfigurationException() {
         super();
     }
 
+    /**
+     * 构造带消息与原因的 ConfigurationException。
+     *
+     * @param message 异常描述
+     * @param cause 原始异常
+     */
     public ConfigurationException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * 构造带消息的 ConfigurationException。
+     *
+     * @param message 异常描述
+     */
     public ConfigurationException(String message) {
         super(message);
     }
 
+    /**
+     * 构造仅包装原因的 ConfigurationException。
+     *
+     * @param cause 原始异常
+     */
     public ConfigurationException(Throwable cause) {
         super(cause);
     }

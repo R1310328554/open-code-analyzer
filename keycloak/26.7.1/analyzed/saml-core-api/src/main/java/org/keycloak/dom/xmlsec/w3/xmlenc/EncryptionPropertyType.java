@@ -25,6 +25,7 @@ import javax.xml.namespace.QName;
 /**
  * <p>
  * Java class for EncryptionPropertyType complex type.
+ * XML 加密单条 EncryptionProperty，用于携带与加密过程相关的自定义元数据。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -45,11 +46,16 @@ import javax.xml.namespace.QName;
  */
 public class EncryptionPropertyType {
 
+    /** 本属性所关联的加密元素 URI。 */
     protected URI target;
+    /** 属性元素唯一标识。 */
     protected String id;
+    /** 未绑定到已知属性的其他 XML 属性。 */
     private Map<QName, String> otherAttributes = new HashMap<>();
 
     /**
+     * 获取 target 属性值。
+     *
      * Gets the value of the target property.
      *
      * @return possible object is {@link URI }
@@ -59,6 +65,8 @@ public class EncryptionPropertyType {
     }
 
     /**
+     * 设置 target 属性值。
+     *
      * Sets the value of the target property.
      *
      * @param value allowed object is {@link URI }
@@ -68,6 +76,8 @@ public class EncryptionPropertyType {
     }
 
     /**
+     * 获取 id 属性值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -77,6 +87,8 @@ public class EncryptionPropertyType {
     }
 
     /**
+     * 设置 id 属性值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }
@@ -85,19 +97,24 @@ public class EncryptionPropertyType {
         this.id = value;
     }
 
+    /** 添加一条未建模的 XML 属性。 */
     public void addOtherAttribute(QName key, String val) {
         this.otherAttributes.put(key, val);
     }
 
+    /** 批量添加未建模的 XML 属性。 */
     public void addOtherAttributes(Map<QName, String> otherMap) {
         this.otherAttributes.putAll(otherMap);
     }
 
+    /** 移除指定 QName 的未建模属性。 */
     public void removeOtherAttribute(QName key) {
         this.otherAttributes.remove(key);
     }
 
     /**
+     * 获取未绑定到本类已知属性的 XML 属性映射（只读，永不为 null）。
+     *
      * Gets a map that contains attributes that aren't bound to any typed property on this class.
      *
      * @return always non-null

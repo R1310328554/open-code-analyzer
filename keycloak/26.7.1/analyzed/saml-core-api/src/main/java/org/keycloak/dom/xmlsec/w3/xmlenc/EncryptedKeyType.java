@@ -20,6 +20,7 @@ package org.keycloak.dom.xmlsec.w3.xmlenc;
 /**
  * <p>
  * Java class for EncryptedKeyType complex type.
+ * XML 加密 EncryptedKey 元素类型，表示经加密的对称密钥，可携带引用列表、密钥名称与接收方标识。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -40,11 +41,16 @@ package org.keycloak.dom.xmlsec.w3.xmlenc;
  */
 public class EncryptedKeyType extends EncryptedType {
 
+    /** 指向被该密钥加密的数据或密钥的引用列表。 */
     protected ReferenceList referenceList;
+    /** 携带的对称密钥名称，便于在密钥仓库中查找。 */
     protected String carriedKeyName;
+    /** 密钥接收方标识，用于多接收方场景。 */
     protected String recipient;
 
     /**
+     * 获取 referenceList 属性值。
+     *
      * Gets the value of the referenceList property.
      *
      * @return possible object is {@link ReferenceList }
@@ -54,6 +60,8 @@ public class EncryptedKeyType extends EncryptedType {
     }
 
     /**
+     * 设置 referenceList 属性值。
+     *
      * Sets the value of the referenceList property.
      *
      * @param value allowed object is {@link ReferenceList }
@@ -63,6 +71,8 @@ public class EncryptedKeyType extends EncryptedType {
     }
 
     /**
+     * 获取 carriedKeyName 属性值。
+     *
      * Gets the value of the carriedKeyName property.
      *
      * @return possible object is {@link String }
@@ -72,6 +82,8 @@ public class EncryptedKeyType extends EncryptedType {
     }
 
     /**
+     * 设置 carriedKeyName 属性值。
+     *
      * Sets the value of the carriedKeyName property.
      *
      * @param value allowed object is {@link String }
@@ -81,6 +93,8 @@ public class EncryptedKeyType extends EncryptedType {
     }
 
     /**
+     * 获取 recipient 属性值。
+     *
      * Gets the value of the recipient property.
      *
      * @return possible object is {@link String }
@@ -90,6 +104,8 @@ public class EncryptedKeyType extends EncryptedType {
     }
 
     /**
+     * 设置 recipient 属性值。
+     *
      * Sets the value of the recipient property.
      *
      * @param value allowed object is {@link String }

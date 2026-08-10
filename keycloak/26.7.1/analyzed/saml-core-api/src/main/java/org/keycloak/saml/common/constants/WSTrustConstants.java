@@ -19,6 +19,7 @@ package org.keycloak.saml.common.constants;
 import javax.xml.namespace.QName;
 
 /**
+ * <p>WS-Trust 实现代码中使用的常量定义。</p>
  * <p> This class defines the constants used throughout the WS-Trust implementation code. </p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
@@ -26,11 +27,13 @@ import javax.xml.namespace.QName;
  */
 public interface WSTrustConstants {
 
+    /** WS-Trust 2005/12 规范基础命名空间。 */
     String BASE_NAMESPACE = "http://docs.oasis-open.org/ws-sx/ws-trust/200512";
 
+    /** WS-Trust 元素默认 XML 前缀。 */
     String PREFIX = "wst";
 
-    // WS-Trust request types
+    // WS-Trust request types — 令牌请求类型 URI
     String BATCH_ISSUE_REQUEST = BASE_NAMESPACE + "/BatchIssue";
 
     String ISSUE_REQUEST = BASE_NAMESPACE + "/Issue";
@@ -43,31 +46,31 @@ public interface WSTrustConstants {
 
     String BATCH_VALIDATE_REQUEST = BASE_NAMESPACE + "/BatchValidate";
 
-    // WS-Trust validation constants.
+    // WS-Trust validation constants. — 令牌校验状态常量
     String STATUS_TYPE = BASE_NAMESPACE + "/RSTR/Status";
 
     String STATUS_CODE_VALID = BASE_NAMESPACE + "/status/valid";
 
     String STATUS_CODE_INVALID = BASE_NAMESPACE + "/status/invalid";
 
-    // WS-Trust key types.
+    // WS-Trust key types. — 密钥类型 URI
     String KEY_TYPE_BEARER = BASE_NAMESPACE + "/Bearer";
 
     String KEY_TYPE_SYMMETRIC = BASE_NAMESPACE + "/SymmetricKey";
 
     String KEY_TYPE_PUBLIC = BASE_NAMESPACE + "/PublicKey";
 
-    // WS-Trust binary secret types.
+    // WS-Trust binary secret types. — 二进制密钥类型 URI
     String BS_TYPE_ASYMMETRIC = BASE_NAMESPACE + "/AsymmetricKey";
 
     String BS_TYPE_SYMMETRIC = BASE_NAMESPACE + "/SymmetricKey";
 
     String BS_TYPE_NONCE = BASE_NAMESPACE + "/Nonce";
 
-    // WS-Trust computed key types.
+    // WS-Trust computed key types. — 派生密钥算法 URI
     String CK_PSHA1 = BASE_NAMESPACE + "/CK/PSHA1";
 
-    // WSS namespaces values.
+    // WSS namespaces values. — WS-Security 相关命名空间
     String WSA_NS = "http://www.w3.org/2005/08/addressing";
 
     String WSP_NS = "http://schemas.xmlsoap.org/ws/2004/09/policy";
@@ -86,7 +89,7 @@ public interface WSTrustConstants {
 
     String SAML2_ASSERTION_NS = "urn:oasis:names:tc:SAML:2.0:assertion";
 
-    // WSS Fault codes
+    // WSS Fault codes — WS-Security 故障码 QName
     QName SECURITY_TOKEN_UNAVAILABLE = new QName(WSSE_NS, "SecurityTokenUnavailable");
 
     QName INVALID_SECURITY_TOKEN = new QName(WSSE_NS, "InvalidSecurityToken");
@@ -95,10 +98,10 @@ public interface WSTrustConstants {
 
     QName FAILED_AUTHENTICATION = new QName(WSSE_NS, "FailedAuthentication");
 
-    // Token Types
+    // Token Types — 令牌类型 URI
     String RSTR_STATUS_TOKEN_TYPE = "http://docs.oasis-open.org/ws-sx/ws-trust/200512/RSTR/Status";
 
-    // Element Names
+    // Element Names — WS-Trust / WS-Security 元素本地名
     String BINARY_SECRET = "BinarySecret";
 
     String CREATED = "Created";
@@ -161,7 +164,7 @@ public interface WSTrustConstants {
 
     String REASON = "Reason";
 
-    // Attribute Names
+    // Attribute Names — 常用 XML 属性名
     String ALLOW = "Allow";
 
     String OK = "OK";
@@ -172,6 +175,7 @@ public interface WSTrustConstants {
 
     String VALUE_TYPE = "ValueType";
 
+    /** XML 数字签名相关常量。 */
     public interface XMLDSig {
 
         String DSIG_NS = "http://www.w3.org/2000/09/xmldsig#";
@@ -202,6 +206,7 @@ public interface WSTrustConstants {
         String PGEN_COUNTER = "PgenCounter";
     }
 
+    /** XML 加密相关常量。 */
     public interface XMLEnc {
 
         String XMLENC_NS = "http://www.w3.org/2001/04/xmlenc#";
@@ -209,6 +214,7 @@ public interface WSTrustConstants {
         String ENCRYPTED_KEY = "EncryptedKey";
     }
 
+    /** WS-Security 头与令牌引用相关常量。 */
     public interface WSSE {
 
         String ID = "Id";
