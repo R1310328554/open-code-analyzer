@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T20:26:07Z",
   "files": [
-    "discovery/xds/xds.go",
-    "discovery/zookeeper/zookeeper.go",
-    "internal/tools/tools.go",
-    "model/exemplar/exemplar.go",
-    "model/histogram/convert.go",
-    "model/histogram/float_histogram.go",
-    "model/histogram/generic.go",
-    "model/histogram/histogram.go",
-    "model/labels/float.go",
-    "model/labels/labels_common.go",
-    "model/labels/labels_dedupelabels.go",
-    "model/labels/labels_slicelabels.go",
-    "model/labels/labels_stringlabels.go",
-    "model/labels/matcher.go",
-    "model/labels/regexp.go",
     "model/labels/sharding.go",
     "model/labels/sharding_dedupelabels.go",
     "model/labels/sharding_stringlabels.go",
@@ -33,5 +18,5 @@
     "model/value/value.go"
   ],
   "remaining_pending": 384,
-  "done": 120
+  "done": 135
 }
