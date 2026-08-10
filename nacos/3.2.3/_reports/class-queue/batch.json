@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T02:15:35Z",
-  "files": [
-    "ai/src/main/java/com/alibaba/nacos/ai/utils/PromptDataIdUtils.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/utils/PromptMarkdownBuilder.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/utils/PromptVersionUtils.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/utils/ResourceContentEncoder.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/utils/SkillContentDigestUtils.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/utils/SkillRequestUtil.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/utils/SkillSeedArchiveReader.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/utils/SkillZipParser.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/NacosAiRegistry.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/NacosAiRegistryStartUp.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/config/AiRegistryPackageExcludeFilter.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/config/HttpPathConfiguration.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/controller/McpRegistryController.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/controller/SkillsRegistryController.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/form/GetServerForm.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2297,
-  "done": 225
+  "done": 240
 }
