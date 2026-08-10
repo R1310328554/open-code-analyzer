@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:28:35Z",
-  "files": [
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlNamespace.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlProcessingInstruction.java",
-    "codec-xml/src/main/java/io/netty/handler/codec/xml/XmlSpace.java",
-    "common/src/main/java/io/netty/util/AbstractConstant.java",
-    "common/src/main/java/io/netty/util/AbstractReferenceCounted.java",
-    "common/src/main/java/io/netty/util/AsciiString.java",
-    "common/src/main/java/io/netty/util/AsciiStringUtil.java",
-    "common/src/main/java/io/netty/util/AsyncMapping.java",
-    "common/src/main/java/io/netty/util/Attribute.java",
-    "common/src/main/java/io/netty/util/AttributeKey.java",
-    "common/src/main/java/io/netty/util/AttributeMap.java",
-    "common/src/main/java/io/netty/util/BooleanSupplier.java",
-    "common/src/main/java/io/netty/util/ByteProcessor.java",
-    "common/src/main/java/io/netty/util/ByteProcessorUtils.java",
-    "common/src/main/java/io/netty/util/CharsetUtil.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 818,
-  "done": 1095
+  "done": 1110
 }
