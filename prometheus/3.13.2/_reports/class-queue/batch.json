@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T20:54:28Z",
   "files": [
-    "util/runutil/runutil.go",
-    "util/stats/query_stats.go",
-    "util/stats/timer.go",
-    "util/strutil/jarowinkler.go",
-    "util/strutil/quote.go",
-    "util/strutil/strconv.go",
-    "util/strutil/subsequence.go",
-    "util/testrecord/record.go",
-    "util/teststorage/appender.go",
-    "util/teststorage/storage.go",
-    "util/testutil/cmp.go",
-    "util/testutil/context.go",
-    "util/testutil/directory.go",
-    "util/testutil/port.go",
-    "util/testutil/roundtrip.go",
     "util/testutil/testing.go",
     "util/testwal/records.go",
     "util/treecache/treecache.go",
@@ -33,5 +18,5 @@
     "web/api/v1/openapi_examples.go"
   ],
   "remaining_pending": 114,
-  "done": 390
+  "done": 405
 }
