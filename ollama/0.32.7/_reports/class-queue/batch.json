@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T16:03:58Z",
   "files": [
-    "llm/llm_linux.go",
-    "llm/llm_windows.go",
-    "llm/media.go",
-    "llm/metal_retry.go",
-    "llm/rocm_default.go",
-    "llm/rocm_windows.go",
-    "llm/server.go",
-    "llm/status.go",
-    "llm/vulkan_windows.go",
-    "logutil/logutil.go",
-    "main.go",
-    "manifest/layer.go",
-    "manifest/manifest.go",
-    "manifest/paths.go",
-    "middleware/anthropic.go",
     "middleware/openai.go",
     "ml/backend.go",
     "ml/device.go",
@@ -33,5 +18,5 @@
     "model/parsers/lfm2.go"
   ],
   "remaining_pending": 193,
-  "done": 240
+  "done": 255
 }
