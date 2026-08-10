@@ -41,6 +41,7 @@ import java.util.Map;
 
 /**
  * Applies imported Skill ZIP artifacts through the current Skill upload flow.
+ * <p>Skill 资源导入操作器，解析 SKILL_ZIP/BYTES 制品并通过 {@link com.alibaba.nacos.ai.service.skills.SkillOperationService} 上传 ZIP，同步导入来源元数据。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -48,19 +49,26 @@ import java.util.Map;
 @Service
 public class SkillResourceOperator implements AiResourceOperator {
     
+    /** 冲突类型：存在编辑中/审核中的工作版本。 */
     private static final String CONFLICT_TYPE_WORKING_VERSION = "working_version";
     
+    /** 冲突类型：Skill 已存在。 */
     private static final String CONFLICT_TYPE_EXISTING = "existing";
     
+    /** 源元数据键：制品 URL。 */
     private static final String METADATA_ARTIFACT_URL = "artifactUrl";
     
+    /** 源元数据键：导入来源标识。 */
     private static final String METADATA_SOURCE = "source";
     
+    /** 存在工作版本且未开启覆盖时的跳过提示信息。 */
     private static final String WORKING_VERSION_SKIP_MESSAGE =
         "Skipped because a working version (editing/reviewing) already exists.";
     
+    /** Skill 上传与版本操作服务。 */
     private final SkillOperationService skillOperationService;
     
+    /** AI 资源元数据管理器，用于查询与同步来源。 */
     private final AiResourceManager resourceManager;
     
     public SkillResourceOperator(SkillOperationService skillOperationService,

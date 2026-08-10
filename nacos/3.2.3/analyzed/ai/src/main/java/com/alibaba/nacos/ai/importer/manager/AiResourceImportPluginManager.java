@@ -35,6 +35,7 @@ import java.util.Properties;
 
 /**
  * Loads and routes AI resource import plugins.
+ * <p>通过 SPI 加载 {@link com.alibaba.nacos.plugin.ai.importer.spi.AiResourceImportServiceBuilder}，按 pluginName 构建并路由导入插件实例。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -42,6 +43,7 @@ import java.util.Properties;
 @Service
 public class AiResourceImportPluginManager {
     
+    /** importerType -> Builder 不可变映射。 */
     private final Map<String, AiResourceImportServiceBuilder> builders;
     
     public AiResourceImportPluginManager() {
@@ -65,6 +67,7 @@ public class AiResourceImportPluginManager {
     
     /**
      * Whether the importer builder exists.
+     * <p>判断指定 importerType 的 Builder 是否已注册。</p>
      *
      * @param importerType importer type
      * @return true if the importer exists
@@ -75,6 +78,7 @@ public class AiResourceImportPluginManager {
     
     /**
      * Resolve an importer for a source and resource type.
+     * <p>为导入源构建插件实例，并校验其 supportedResourceTypes 包含目标类型。</p>
      *
      * @param source resolved source
      * @param resourceType expected resource type

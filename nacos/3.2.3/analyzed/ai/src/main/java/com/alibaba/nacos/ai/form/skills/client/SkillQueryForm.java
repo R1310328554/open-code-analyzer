@@ -22,33 +22,40 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * Skill query form for client runtime get.
+ * <p>客户端运行时 Skill 单条查询表单，支持按 name、version、label 定位；携带 md5 时可触发 304 未修改响应以复用本地缓存。</p>
  *
  * @author nacos
  */
 public class SkillQueryForm {
     
+    /** 命名空间 ID，为空时默认 public。 */
     private String namespaceId;
     
+    /** Skill 资源名称，必填。 */
     private String name;
     
+    /** 目标版本号，与 label 二选一或组合使用。 */
     private String version;
     
+    /** 语义标签（如 latest），用于解析到具体版本。 */
     private String label;
     
     /**
      * Optional content MD5 carried by skill listener. When provided and matches the published
      * content MD5, the server returns NOT_MODIFIED so the client may keep its local cache.
+     * <p>客户端监听器携带的内容 MD5；与已发布内容一致时服务端返回 NOT_MODIFIED，客户端可保留本地缓存。</p>
      */
     private String md5;
     
     /**
      * Validate and normalize query parameters.
+     * <p>校验并规范化查询参数：命名空间为空时填充 public，name 必填。</p>
      *
      * @throws NacosApiException if required parameters are missing
      */
     public void validate() throws NacosApiException {
         if (StringUtils.isBlank(namespaceId)) {
-            namespaceId = "public";
+            namespaceId = "public"; // 默认 public 命名空间
         }
         if (StringUtils.isBlank(name)) {
             throw new NacosApiException(NacosApiException.INVALID_PARAM,

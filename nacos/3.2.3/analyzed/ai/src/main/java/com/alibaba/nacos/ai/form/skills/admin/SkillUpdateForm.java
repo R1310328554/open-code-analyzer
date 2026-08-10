@@ -20,6 +20,7 @@ import java.io.Serial;
 
 /**
  * Skill update form.
+ * <p>Skill 更新表单，继承 {@link SkillDetailForm} 的 skillCard；可指定是否设为最新版本及提交说明。</p>
  *
  * @author nacos
  */
@@ -30,9 +31,11 @@ public class SkillUpdateForm extends SkillDetailForm {
     
     /**
      * Whether to set as latest version.
+     * <p>更新成功后是否将 latest 标签指向该版本。</p>
      */
     private Boolean setAsLatest;
     
+    /** 本次更新的提交说明信息。 */
     private String commitMsg;
     
     public Boolean getSetAsLatest() {

@@ -26,6 +26,7 @@ import java.io.Serial;
 
 /**
  * Form for updating skill visibility scope.
+ * <p>Skill 可见性范围更新表单，scope 仅允许 PUBLIC 或 PRIVATE，继承 {@link SkillForm} 的命名空间与 skillName 校验。</p>
  *
  * @author nacos
  */
@@ -34,11 +35,12 @@ public class SkillScopeForm extends SkillForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 可见性范围：PUBLIC（公开）或 PRIVATE（私有）。 */
     private String scope;
     
     @Override
     public void validate() throws NacosApiException {
-        super.validate();
+        super.validate(); // 先执行基类 skillName 校验
         if (StringUtils.isBlank(scope)) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Required parameter 'scope' type String is not present");

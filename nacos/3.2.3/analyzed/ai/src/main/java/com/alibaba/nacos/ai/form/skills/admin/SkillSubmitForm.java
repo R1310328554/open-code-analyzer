@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Skill submit form.
+ * <p>Skill 提交审核表单，将草稿版本提交至审核流程；version 可选，未指定时使用当前编辑中的版本。</p>
  *
  * @author nacos
  */
@@ -33,11 +34,12 @@ public class SkillSubmitForm extends SkillForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 待提交的版本号，可选。 */
     private String version;
     
     @Override
     public void validate() throws NacosApiException {
-        fillDefaultNamespaceId();
+        fillDefaultNamespaceId(); // 补全默认命名空间
         if (StringUtils.isBlank(getSkillName())) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Request parameter `skillName` should not be blank.");

@@ -20,22 +20,26 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * Skill search form for client runtime.
+ * <p>客户端运行时 Skill 搜索表单，keyword 可选用于模糊匹配 Skill 名称或描述。</p>
  *
  * @author nacos
  */
 public class SkillSearchForm {
     
+    /** 命名空间 ID，为空时默认 public。 */
     private String namespaceId;
     
+    /** 搜索关键词，可选，用于模糊匹配。 */
     private String keyword;
     
     /**
      * Validate and normalize query parameters.
+     * <p>校验并规范化查询参数，keyword 为可选字段。</p>
      */
     public void validate() {
-        // keyword is optional
+        // keyword 为可选，仅规范化命名空间
         if (StringUtils.isBlank(namespaceId)) {
-            namespaceId = "public";
+            namespaceId = "public"; // 默认 public 命名空间
         }
     }
     

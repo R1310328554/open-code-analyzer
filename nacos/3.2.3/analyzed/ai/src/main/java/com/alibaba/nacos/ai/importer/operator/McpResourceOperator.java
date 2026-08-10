@@ -42,6 +42,7 @@ import java.util.Collections;
 
 /**
  * Applies imported MCP artifacts to the current MCP server domain service.
+ * <p>MCP 资源导入操作器，解析 MCP_DETAIL/JSON 制品并委托 {@link com.alibaba.nacos.ai.service.McpServerImportService} 完成校验与写入。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -49,10 +50,13 @@ import java.util.Collections;
 @Service
 public class McpResourceOperator implements AiResourceOperator {
     
+    /** 冲突类型：与 Nacos 已有资源冲突。 */
     private static final String CONFLICT_TYPE_EXISTING = "existing";
     
+    /** 冲突类型：导入批次内重复。 */
     private static final String CONFLICT_TYPE_DUPLICATE = "duplicate";
     
+    /** MCP 服务端导入领域服务。 */
     private final McpServerImportService mcpServerImportService;
     
     public McpResourceOperator(McpServerImportService mcpServerImportService) {

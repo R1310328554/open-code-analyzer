@@ -56,6 +56,7 @@ import java.util.Map;
 
 /**
  * Orchestrates AI resource import search, validation, and execution.
+ * <p>AI 资源导入编排服务，协调导入源解析、插件调用、安全校验与资源操作器，提供 search / validate / execute 三阶段流程并记录追踪日志。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -63,12 +64,16 @@ import java.util.Map;
 @Service
 public class AiResourceImportManager {
     
+    /** 导入源解析与管理。 */
     private final AiResourceImportSourceManager sourceManager;
     
+    /** 导入插件加载与路由。 */
     private final AiResourceImportPluginManager pluginManager;
     
+    /** 资源类型操作器注册表（MCP、Skill 等）。 */
     private final AiResourceOperatorRegistry operatorRegistry;
     
+    /** 导入安全守卫（端点/制品校验）。 */
     private final AiResourceImportSecurityGuard securityGuard;
     
     public AiResourceImportManager(AiResourceImportSourceManager sourceManager,
@@ -82,6 +87,7 @@ public class AiResourceImportManager {
     
     /**
      * List enabled import sources.
+     * <p>列出已启用的导入源，可按 resourceType 过滤；返回信息不含 endpoint 等运行时敏感字段。</p>
      *
      * @param resourceType optional resource type
      * @return source info list
@@ -94,6 +100,7 @@ public class AiResourceImportManager {
     
     /**
      * Search external candidates from an operator-configured source.
+     * <p>从运维配置的导入源搜索外部候选资源，支持游标分页。</p>
      *
      * @param request search request
      * @return search response
@@ -105,7 +112,7 @@ public class AiResourceImportManager {
         AiResourceImportSource source = null;
         try {
             source = sourceManager.resolveSource(request.getSourceId(), request.getResourceType());
-            securityGuard.checkSourceEndpoint(source);
+            securityGuard.checkSourceEndpoint(source); // 校验端点是否允许访问
             AiResourceImportService importer =
                 pluginManager.resolveImporter(source, request.getResourceType());
             AiResourceImportCandidatePage page =
@@ -132,6 +139,7 @@ public class AiResourceImportManager {
     
     /**
      * Validate selected external candidates.
+     * <p>校验所选外部候选：拉取制品、安全检查并调用对应操作器验证与 Nacos 现有状态的关系。</p>
      *
      * @param request validate request
      * @return validate response
@@ -172,6 +180,7 @@ public class AiResourceImportManager {
     
     /**
      * Execute import for selected external candidates.
+     * <p>执行导入：逐条拉取制品并写入 Nacos，支持覆盖已有资源及跳过无效项。</p>
      *
      * @param request execute request
      * @return execute response
@@ -307,7 +316,7 @@ public class AiResourceImportManager {
         boolean overwriteExisting) {
         try {
             AiResourceImportArtifact artifact = importer.fetch(context, toPluginItem(item));
-            securityGuard.checkArtifact(source, context.getResourceType(), artifact);
+            securityGuard.checkArtifact(source, context.getResourceType(), artifact); // 校验制品大小与内容
             AiResourceOperator operator = operatorRegistry.getOperator(artifact.getResourceType());
             AiResourceImportValidationItem result =
                 operator.validate(context.getNamespaceId(), artifact, overwriteExisting);

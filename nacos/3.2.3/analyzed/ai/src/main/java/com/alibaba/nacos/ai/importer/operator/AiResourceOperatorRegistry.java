@@ -29,6 +29,7 @@ import java.util.Map;
 
 /**
  * Registry for AI resource import operators.
+ * <p>AI 资源导入操作器注册表，Spring 注入所有 {@link AiResourceOperator} 实现并按 resourceType 索引。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -36,6 +37,7 @@ import java.util.Map;
 @Service
 public class AiResourceOperatorRegistry {
     
+    /** resourceType -> Operator 不可变映射。 */
     private final Map<String, AiResourceOperator> operators;
     
     public AiResourceOperatorRegistry(Collection<AiResourceOperator> operators) {
@@ -55,6 +57,7 @@ public class AiResourceOperatorRegistry {
     
     /**
      * Resolve the operator for a resource type.
+     * <p>按资源类型解析操作器，未注册时抛出 NOT_FOUND。</p>
      *
      * @param resourceType resource type
      * @return resource operator
@@ -71,6 +74,7 @@ public class AiResourceOperatorRegistry {
     
     /**
      * Whether an operator exists for the resource type.
+     * <p>判断指定资源类型是否已注册操作器。</p>
      *
      * @param resourceType resource type
      * @return true if an operator exists

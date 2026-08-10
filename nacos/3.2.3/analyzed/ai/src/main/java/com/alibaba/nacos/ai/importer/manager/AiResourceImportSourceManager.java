@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 
 /**
  * Resolves operator-configured AI resource import sources.
+ * <p>解析运维配置与 SPI {@link com.alibaba.nacos.plugin.ai.importer.spi.AiResourceImportSourceProvider} 提供的导入源，校验唯一性与插件可用性。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -49,6 +50,7 @@ import java.util.function.Supplier;
 @Service
 public class AiResourceImportSourceManager {
     
+    /** 导入源默认能力列表：搜索、校验、执行。 */
     private static final List<String> DEFAULT_CAPABILITIES =
         Arrays.asList("search", "validate", "execute");
     
@@ -70,6 +72,7 @@ public class AiResourceImportSourceManager {
     
     /**
      * List enabled sources and hide runtime-only fields such as endpoint and secrets.
+     * <p>列出已启用导入源，隐藏 endpoint、密钥等运行时字段。</p>
      *
      * @param resourceType optional resource type filter
      * @return import source infos
@@ -90,6 +93,7 @@ public class AiResourceImportSourceManager {
     
     /**
      * Resolve an enabled source for request execution.
+     * <p>按 sourceId 解析已启用的运行时导入源，并校验 resourceType 兼容。</p>
      *
      * @param sourceId source id
      * @param resourceType expected resource type

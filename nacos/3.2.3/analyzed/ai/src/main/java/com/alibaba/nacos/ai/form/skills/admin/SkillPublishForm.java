@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Skill publish form.
+ * <p>Skill 版本发布表单，将指定版本发布上线；可选 {@link #updateLatestLabel} 同步更新 latest 语义标签。</p>
  *
  * @author nacos
  */
@@ -33,13 +34,15 @@ public class SkillPublishForm extends SkillForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 待发布的版本号，必填。 */
     private String version;
     
+    /** 为 true 时发布成功后自动将 latest 标签指向该版本。 */
     private Boolean updateLatestLabel;
     
     @Override
     public void validate() throws NacosApiException {
-        fillDefaultNamespaceId();
+        fillDefaultNamespaceId(); // 补全默认命名空间
         if (StringUtils.isBlank(getSkillName())) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Request parameter `skillName` should not be blank.");

@@ -23,6 +23,7 @@ import com.alibaba.nacos.plugin.ai.importer.model.AiResourceImportArtifact;
 
 /**
  * Applies import artifacts to a Nacos AI resource type.
+ * <p>AI 资源导入操作器 SPI，按资源类型（mcp、skill 等）将外部制品校验并写入 Nacos 持久层。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -31,6 +32,7 @@ public interface AiResourceOperator {
     
     /**
      * Resource type supported by this operator.
+     * <p>本操作器支持的资源类型，例如 {@code mcp} 或 {@code skill}。</p>
      *
      * @return resource type, for example {@code mcp} or {@code skill}
      */
@@ -38,6 +40,7 @@ public interface AiResourceOperator {
     
     /**
      * Validate one import artifact against current Nacos state.
+     * <p>校验单条导入制品与 Nacos 现有资源的关系（冲突、警告、无效等）。</p>
      *
      * @param namespaceId namespace id
      * @param artifact import artifact
@@ -50,6 +53,7 @@ public interface AiResourceOperator {
     
     /**
      * Import one artifact into the current resource implementation.
+     * <p>将单条制品导入 Nacos 对应资源域（MCP 服务端或 Skill ZIP 等）。</p>
      *
      * @param namespaceId namespace id
      * @param artifact import artifact

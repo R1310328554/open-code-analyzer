@@ -28,30 +28,40 @@ import java.util.Properties;
 
 /**
  * AI resource import runtime properties.
+ * <p>AI 资源导入运行时配置，从 Nacos 环境属性加载；包含全局开关、超时/分页/大小限制及 sources[n] 导入源列表。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class AiResourceImportProperties {
     
+    /** 配置键前缀：{@code nacos.ai.resource.import.}。 */
     public static final String PREFIX = "nacos.ai.resource.import.";
     
+    /** 默认连接超时（毫秒）。 */
     public static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 3000;
     
+    /** 默认读取超时（毫秒）。 */
     public static final int DEFAULT_READ_TIMEOUT_MILLIS = 10000;
     
+    /** 默认最大分页页数。 */
     public static final int DEFAULT_MAX_PAGE_COUNT = 20;
     
+    /** 默认单页最大条目数。 */
     public static final int DEFAULT_MAX_ITEM_COUNT = 500;
     
+    /** 默认单件制品最大字节数（10MB）。 */
     public static final long DEFAULT_MAX_ARTIFACT_SIZE = 10L * 1024 * 1024;
     
     private static final String SOURCES_PREFIX = PREFIX + "sources[";
     
+    /** 是否启用 AI 资源导入功能。 */
     private boolean enabled;
     
+    /** 是否启用旧版 MCP 导入 API。 */
     private boolean legacyMcpImportApiEnabled;
     
+    /** 是否允许用户自行指定导入 URL。 */
     private boolean allowUserUrl;
     
     private int defaultConnectTimeoutMillis = DEFAULT_CONNECT_TIMEOUT_MILLIS;
@@ -64,12 +74,15 @@ public class AiResourceImportProperties {
     
     private long defaultMaxArtifactSize = DEFAULT_MAX_ARTIFACT_SIZE;
     
+    /** 是否阻止访问内网/私有网络地址，默认 true。 */
     private boolean blockPrivateNetwork = true;
     
+    /** 运维配置的导入源列表。 */
     private List<AiResourceImportSourceConfig> sources = Collections.emptyList();
     
     /**
      * Load import properties from the current Nacos environment.
+     * <p>从当前 Nacos 运行环境（{@link EnvUtil}）加载导入配置。</p>
      *
      * @return loaded properties
      */
@@ -79,6 +92,7 @@ public class AiResourceImportProperties {
     
     /**
      * Load import properties from raw properties.
+     * <p>从原始 {@link Properties} 解析导入配置，支持 kebab-case 与 camelCase 键名。</p>
      *
      * @param properties raw properties
      * @return loaded properties
