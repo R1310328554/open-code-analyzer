@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:04:05Z",
-  "files": [
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/UpdatedMariaDBDatabase.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/UpdatedMySqlDatabase.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/conn/DefaultLiquibaseConnectionProvider.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/conn/KeycloakLiquibase.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/conn/LiquibaseConnectionProvider.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/conn/LiquibaseConnectionProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/conn/LiquibaseConnectionSpi.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/conn/MySQLCustomChangeLogHistoryService.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/AbstractUserFedToComponent.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/AddRealmCodeSecret.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/AuthzResourceUseMoreURIs.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/CreateTableAsSelectGuard.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/CustomCreateIndexChange.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/CustomKeycloakTask.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/ExtractRealmKeysFromRealmTable.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4378,
-  "done": 1605
+  "done": 1620
 }
