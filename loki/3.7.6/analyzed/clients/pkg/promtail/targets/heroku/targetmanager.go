@@ -1,5 +1,8 @@
 package heroku
 
+// Heroku Drain TargetManager：为含 HerokuDrainConfig 的 scrape job
+// 创建独立 HTTP drain target，pipeline 按 job 命名空间隔离。
+
 import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -11,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/target"
 )
 
+// 按 jobName 索引 Heroku drain target，Ready 任一为 true 即就绪。
 type TargetManager struct {
 	logger  log.Logger
 	targets map[string]*Target
@@ -54,6 +58,7 @@ func (hm *TargetManager) Ready() bool {
 	return false
 }
 
+// 逐个 Stop drain target，失败时记录 event 日志。
 func (hm *TargetManager) Stop() {
 	for name, t := range hm.targets {
 		if err := t.Stop(); err != nil {

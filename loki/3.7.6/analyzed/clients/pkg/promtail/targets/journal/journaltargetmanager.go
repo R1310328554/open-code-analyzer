@@ -3,6 +3,9 @@
 
 package journal
 
+// 非 Linux/无 cgo/未启用 promtail_journal 时的 journal target 桩实现：
+// NewJournalTargetManager 打 WARN 并返回空 manager，Ready 恒 false。
+
 import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -13,10 +16,12 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/target"
 )
 
+// build tag 不满足时此文件编译，journal 功能不可用。
 // JournalTargetManager manages a series of JournalTargets.
 // nolint:revive
 type JournalTargetManager struct{}
 
+// 配置 journal target 但二进制未编译 journal 支持时仅告警不报错。
 // NewJournalTargetManager returns nil as JournalTargets are not supported
 // on this platform.
 func NewJournalTargetManager(
@@ -30,6 +35,7 @@ func NewJournalTargetManager(
 	return &JournalTargetManager{}, nil
 }
 
+// 桩实现无法读取 journal，readiness 始终 false。
 // Ready always returns false for JournalTargetManager on non-Linux
 // platforms.
 func (tm *JournalTargetManager) Ready() bool {

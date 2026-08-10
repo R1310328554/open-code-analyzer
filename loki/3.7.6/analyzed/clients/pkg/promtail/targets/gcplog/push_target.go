@@ -1,5 +1,8 @@
 package gcplog
 
+// GCP Pub/Sub Push 订阅 target：独立 HTTP 服务监听 POST /gcp/api/v1/push，
+// 解析 PushMessage→translate→写入 EntryHandler channel，最小化暴露面禁用 debug/metrics。
+
 import (
 	"context"
 	"encoding/json"
@@ -22,6 +25,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Push 模式目标：dskit server 接收 Pub/Sub 推送，handler channel 异步转发 Loki。
 type pushTarget struct {
 	config         *scrapeconfig.GcplogTargetConfig
 	entries        chan<- api.Entry
@@ -33,6 +37,7 @@ type pushTarget struct {
 	server         *server.Server
 }
 
+// 合并 server 默认配置、启动 HTTP 监听并注册 push 路由。
 // newPushTarget creates a brand new GCP Push target, capable of receiving message from a GCP PubSub push subscription.
 func newPushTarget(metrics *Metrics, logger log.Logger, handler api.EntryHandler, jobName string, config *scrapeconfig.GcplogTargetConfig, relabel []*relabel.Config) (*pushTarget, error) {
 	wrappedLogger := log.With(logger, "component", "gcp_push")
@@ -88,6 +93,7 @@ func (h *pushTarget) run() error {
 	}
 	h.server = srv
 
+// 唯一对外端点：接收 GCP Pub/Sub push JSON body。
 	h.server.HTTP.Path("/gcp/api/v1/push").Methods("POST").Handler(http.HandlerFunc(h.push))
 
 	go func() {
@@ -159,6 +165,7 @@ func (h *pushTarget) push(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// 向 handler channel 发送条目，PushTimeout 超时时返回 503 供 GCP 重试。
 func (h *pushTarget) doSendEntry(ctx context.Context, entry api.Entry) error {
 	select {
 	// Timeout the api.Entry channel send operation, which is the only blocking operation in the handler

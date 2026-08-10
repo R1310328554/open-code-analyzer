@@ -3,6 +3,9 @@
 
 package journal
 
+// systemd journal target（Linux+cgo）：Follow journal 游标，formatter 提取 MESSAGE
+// 或 JSON 字段，positions 持久化 cursor；max_age 控制无游标时的回溯窗口。
+
 import (
 	"fmt"
 	"io"
@@ -28,13 +31,15 @@ import (
 )
 
 const (
-	// journalEmptyStr is represented as a single-character space because
+	// Formatter 返回空串会导致 sdjournal 立即 EOF，用空格占位避免性能问题。
+// journalEmptyStr is represented as a single-character space because
 	// returning an empty string from sdjournal.JournalReaderConfig's
 	// Formatter causes an immediate EOF and induces performance issues
 	// with how that is handled in sdjournal.
 	journalEmptyStr = " "
 
-	// journalDefaultMaxAgeTime represents the default earliest entry that
+	// 无已存 position 时默认回溯 7 小时，可被 max_age 配置覆盖。
+// journalDefaultMaxAgeTime represents the default earliest entry that
 	// will be read by the journal reader if there is no saved position
 	// newer than the "max_age" time.
 	journalDefaultMaxAgeTime = time.Hour * 7
@@ -90,6 +95,7 @@ var defaultJournalEntryFunc = func(c sdjournal.JournalReaderConfig, cursor strin
 	return journal.GetEntry()
 }
 
+// journalReader Follow 循环 + formatter 推送 api.Entry 并更新 positions。
 // JournalTarget tails systemd journal entries.
 // nolint
 type JournalTarget struct {
@@ -234,6 +240,7 @@ type journalConfigBuilder struct {
 	EntryFunc   journalEntryFunc
 }
 
+// 优先 cursor；无 position 或条目超 max_age 时改用 Since 负 duration。
 // generateJournalConfig generates a journal config by trying to intelligently
 // determine if a time offset or the cursor should be used for the starting
 // position in the reader.
@@ -385,6 +392,7 @@ func (t *JournalTarget) Stop() error {
 	return err
 }
 
+// journal 字段转 __journal_{field} 内部标签，PRIORITY 额外生成 keyword 变体。
 func makeJournalFields(fields map[string]string) map[string]string {
 	result := make(map[string]string, len(fields))
 	for k, v := range fields {

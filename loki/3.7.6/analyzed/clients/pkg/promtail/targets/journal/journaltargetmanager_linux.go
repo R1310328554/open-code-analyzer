@@ -3,6 +3,9 @@
 
 package journal
 
+// Linux+cgo journal TargetManager：为含 JournalConfig 的 scrape job
+// 创建 JournalTarget，共享 positions 与 metrics.reg 供 pipeline 注册。
+
 import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -14,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/target"
 )
 
+// cgo 且 promtail_journal_enabled 时编译此实现替代桩版本。
 // JournalTargetManager manages a series of JournalTargets.
 // nolint
 type JournalTargetManager struct {
@@ -23,6 +27,7 @@ type JournalTargetManager struct {
 	metrics *Metrics
 }
 
+// 跳过 JournalConfig 为 nil 的 scrape；journal_pipeline 包装 client。
 // NewJournalTargetManager creates a new JournalTargetManager.
 func NewJournalTargetManager(
 	metrics *Metrics,
@@ -85,6 +90,7 @@ func (tm *JournalTargetManager) Stop() {
 	}
 }
 
+// Journal target 无 deactivate，ActiveTargets 等同 AllTargets。
 // ActiveTargets returns the list of JournalTargets where journal data
 // is being read. ActiveTargets is an alias to AllTargets as
 // JournalTargets cannot be deactivated, only stopped.

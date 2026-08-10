@@ -1,5 +1,8 @@
 package gelf
 
+// GELF TargetManager：为每个含 GelfConfig 的 scrape job 创建 UDP target，
+// pipeline 包装 client；GELF target 仅可 Stop 不可 deactivate。
+
 import (
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -10,12 +13,14 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/target"
 )
 
+// 按 jobName 维护 gelf Target 映射，reg 缺省时用 DefaultRegisterer。
 // TargetManager manages a series of Gelf Targets.
 type TargetManager struct {
 	logger  log.Logger
 	targets map[string]*Target
 }
 
+// 遍历 scrapeConfigs 构建 gelf_pipeline 并 NewTarget。
 // NewTargetManager creates a new Gelf TargetManager.
 func NewTargetManager(
 	metrics *Metrics,
@@ -67,6 +72,7 @@ func (tm *TargetManager) Stop() {
 	}
 }
 
+// GELF 无动态启停，ActiveTargets 与 AllTargets 返回相同集合。
 // ActiveTargets returns the list of GelfTargets where Gelf data
 // is being read. ActiveTargets is an alias to AllTargets as
 // GelfTargets cannot be deactivated, only stopped.

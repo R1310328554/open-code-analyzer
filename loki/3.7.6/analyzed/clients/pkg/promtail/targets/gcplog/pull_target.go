@@ -1,5 +1,8 @@
 package gcplog
 
+// GCP Pub/Sub Pull 订阅 target：Receive 拉取消息→parseGCPLogsEntry→Ack 后推送 Loki。
+// 独立 goroutine 消费订阅，指数退避重试；Ready 恒 true 避免 transient 错误阻断 Pod 启动。
+
 import (
 	"context"
 	"errors"
@@ -28,11 +31,13 @@ var defaultBackoff = backoff.Config{
 	MaxRetries: 0, // Retry forever
 }
 
+// 抽象 Receive 接口，便于单元测试注入 mock 订阅。
 // pubsubSubscription allows us to mock pubsub for testing
 type pubsubSubscription interface {
 	Receive(ctx context.Context, f func(context.Context, *pubsub.Message)) error
 }
 
+// 单 GCP 项目 Pull 目标：pubsub client、消息缓冲 channel 与 backoff 生命周期管理。
 // pullTarget represents the target specific to GCP project, with a pull subscription type.
 // It collects logs from GCP and push it to Loki.
 // nolint:revive
@@ -56,6 +61,7 @@ type pullTarget struct {
 	msgs chan *pubsub.Message
 }
 
+// 创建 Pub/Sub client 与 subscriber，后台启动 run 循环消费 msgs channel。
 // newPullTarget returns the new instance of pullTarget for
 // the given `project-id`. It scraps logs from the GCP project
 // and push it Loki via given `api.EntryHandler.`
@@ -128,6 +134,7 @@ func (t *pullTarget) run() error {
 	}
 }
 
+// Receive 回调写入 msgs；失败时递增错误指标、更新 last_success 并 backoff 重试。
 func (t *pullTarget) consumeSubscription() {
 	// NOTE(kavi): `cancel` the context as exiting from this goroutine should stop main `run` loop
 	// It makesense as no more messages will be received.
@@ -152,7 +159,8 @@ func (t *pullTarget) Type() target.TargetType {
 }
 
 func (t *pullTarget) Ready() bool {
-	// Return true just like all other targets.
+	// 短暂超时不应使 readiness 失败；gcplog_target_last_success_scrape 可观测滞后。
+// Return true just like all other targets.
 	// Rationale is gcplog scraping shouldn't stop because of some transient timeout errors.
 	// This transient failure can cause promtail readyness probe to fail which may prevent pod from starting.
 	// We have metrics now to track if scraping failed (`gcplog_target_last_success_scrape`).

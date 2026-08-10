@@ -1,5 +1,8 @@
 package gcplog
 
+// GCP Push 消息格式与翻译：PushMessage 对齐 Pub/Sub push body，
+// translate 注入 __gcp_* 内部标签、Base64 解码后委托 parseGCPLogsEntry。
+
 import (
 	"encoding/base64"
 	"fmt"
@@ -15,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// 结构体映射 message_id、publish_time、attributes 与 subscription 字段。
 // PushMessage is the POST body format sent by GCP PubSub push subscriptions.
 // See https://cloud.google.com/pubsub/docs/push for details.
 type PushMessage struct {
@@ -27,6 +31,7 @@ type PushMessage struct {
 	Subscription string `json:"subscription"`
 }
 
+// 校验 push body 必填字段：data、message_id、subscription。
 func (pm PushMessage) Validate() error {
 	if pm.Message.Data == "" {
 		return fmt.Errorf("push message has no data")
@@ -40,6 +45,7 @@ func (pm PushMessage) Validate() error {
 	return nil
 }
 
+// 构建 push 专属 __gcp 标签，X-Scope-OrgID 注入租户，解码 data 后调用通用解析。
 // translate converts a GCP PushMessage into a loki api.Entry. It parses the push-specific labels, and delegates the rest to parseGCPLogsEntry.
 func translate(m PushMessage, other model.LabelSet, useIncomingTimestamp, useFullLine bool, relabelConfigs []*relabel.Config, xScopeOrgID string) (api.Entry, error) {
 	// Collect all push-specific labels. Every one of them is first configured as optional, and the user
@@ -77,6 +83,7 @@ func translate(m PushMessage, other model.LabelSet, useIncomingTimestamp, useFul
 
 var separatorCharacterReplacer = strings.NewReplacer(".", "_", "-", "_", "/", "_")
 
+// 非字母数字分隔符替换为下划线并 SnakeCase，使 GCP attribute 名符合 Loki 标签规则。
 // convertToLokiCompatibleLabel converts an incoming GCP Push message label to a loki compatible format. There are labels
 // such as `logging.googleapis.com/timestamp`, which contain non-loki-compatible characters, which is just alphanumeric
 // and _. The approach taken is to translate every non-alphanumeric separator character to an underscore.

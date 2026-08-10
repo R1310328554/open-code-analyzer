@@ -1,5 +1,8 @@
 package heroku
 
+// Heroku Log Drain target：独立 HTTP 服务 POST /heroku/api/v1/drain，
+// logplex DrainScanner 逐条解析，注入 __heroku_drain_* 标签与可选租户头。
+
 import (
 	"fmt"
 	"net/http"
@@ -24,6 +27,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Heroku drain HTTP 接收端：dskit server + logplex 编码扫描器。
 type Target struct {
 	logger         log.Logger
 	handler        api.EntryHandler
@@ -34,6 +38,7 @@ type Target struct {
 	relabelConfigs []*relabel.Config
 }
 
+// 合并 server 配置、禁用 instrumentation 并启动 drain 路由。
 // NewTarget creates a brand new Heroku Drain target, capable of receiving logs from a Heroku application through an HTTP drain.
 func NewTarget(metrics *Metrics, logger log.Logger, handler api.EntryHandler, jobName string, config *scrapeconfig.HerokuDrainTargetConfig, relabel []*relabel.Config) (*Target, error) {
 	wrappedLogger := log.With(logger, "component", "heroku_drain")
@@ -99,6 +104,7 @@ func (h *Target) run() error {
 	return nil
 }
 
+// Scan 逐条 message：构建内部标签→relabel→合并固定标签→写入 handler channel。
 func (h *Target) drain(w http.ResponseWriter, r *http.Request) {
 	entries := h.handler.Chan()
 	defer r.Body.Close()
@@ -122,6 +128,7 @@ func (h *Target) drain(w http.ResponseWriter, r *http.Request) {
 			lb.Set(fmt.Sprintf("__heroku_drain_param_%s", k), strings.Join(v, ","))
 		}
 
+// 多租户场景下 X-Scope-OrgID 经 relabel 后写入 ReservedLabelTenantID。
 		tenantIDHeaderValue := r.Header.Get("X-Scope-OrgID")
 		if tenantIDHeaderValue != "" {
 			// If present, first inject the tenant ID in, so it can be relabeled if necessary

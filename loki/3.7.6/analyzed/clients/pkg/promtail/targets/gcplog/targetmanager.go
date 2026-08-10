@@ -1,5 +1,8 @@
 package gcplog
 
+// GcplogTargetManager：遍历 scrape 配置中带 GcplogConfig 的 job，
+// 为每个 job 构建 pipeline 并创建 Pull/Push target，按 jobName 索引。
+
 import (
 	"fmt"
 
@@ -13,6 +16,7 @@ import (
 )
 
 // nolint:revive
+// 管理多个 GCP 日志 target，Ready 任一为 true 即整体就绪。
 type GcplogTargetManager struct {
 	logger  log.Logger
 	targets map[string]Target
@@ -66,7 +70,8 @@ func (tm *GcplogTargetManager) Stop() {
 }
 
 func (tm *GcplogTargetManager) ActiveTargets() map[string][]target.Target {
-	// TODO(kavi): if someway to check if specific topic is active and store the state on the target struct?
+	// ActiveTargets 当前与 AllTargets 等价，尚未区分活跃/空闲订阅。
+// TODO(kavi): if someway to check if specific topic is active and store the state on the target struct?
 	return tm.AllTargets()
 }
 

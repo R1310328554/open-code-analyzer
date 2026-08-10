@@ -1,5 +1,8 @@
 package gelf
 
+// GELF UDP target：监听 Graylog Extended Log Format 消息，解析 level/host 等
+// 为 __gelf_* 内部标签，relabel 后 JSON 序列化整行推送 Loki。
+
 import (
 	"bytes"
 	"context"
@@ -21,6 +24,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// RFC 5424 syslog 级别 0–7 映射为 emergency 至 debug 字符串。
 // SeverityLevels maps severity levels to severity string levels.
 var SeverityLevels = map[int32]string{
 	0: "emergency",
@@ -33,6 +37,7 @@ var SeverityLevels = map[int32]string{
 	7: "debug",
 }
 
+// UDP GELF reader 循环 ReadMessage，默认监听 :12201。
 // Target listens to gelf messages on udp.
 type Target struct {
 	metrics       *Metrics
@@ -48,6 +53,7 @@ type Target struct {
 	ctxCancel context.CancelFunc
 }
 
+// 创建 gelf.Reader、启动后台 goroutine 持续接收并 handleMessage。
 // NewTarget configures a new Gelf Target.
 func NewTarget(
 	metrics *Metrics,
@@ -110,6 +116,7 @@ func (t *Target) run() {
 	}()
 }
 
+// 合并配置标签与 GELF 元数据，relabel 过滤 __ 前缀后 MarshalJSON 为 log line。
 func (t *Target) handleMessage(msg *gelf.Message) {
 	lb := labels.NewBuilder(labels.EmptyLabels())
 
@@ -160,6 +167,7 @@ func (t *Target) handleMessage(msg *gelf.Message) {
 	}
 }
 
+// GELF TimeUnix 为带小数的秒级 UNIX 时间，转为 time.Time。
 func secondsToUnixTimestamp(seconds float64) time.Time {
 	return time.Unix(0, int64(seconds*float64(time.Second)))
 }
