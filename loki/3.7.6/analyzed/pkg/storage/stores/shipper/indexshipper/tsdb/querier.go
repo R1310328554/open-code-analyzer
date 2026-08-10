@@ -13,6 +13,8 @@
 
 package tsdb
 
+// querier 提供 IndexReader 查询辅助：PostingsForMatchers 将 PromQL matcher 转为 postings 交集，含 regex 集合优化与空标签 inverse 路径。
+
 import (
 	"sort"
 	"strings"
@@ -39,6 +41,7 @@ func init() {
 	}
 }
 
+// IndexReader 抽象 mmap 索引读路径，Postings 返回 series 偏移供 Series/ChunkStats 解码。
 // IndexReader provides reading access of serialized index data.
 type IndexReader interface {
 	// Bounds returns the earliest and latest samples in the index
@@ -84,6 +87,7 @@ type IndexReader interface {
 	Close() error
 }
 
+// PostingsForMatchers 按 matcher 类型选择正向或 inverse postings，最后 Intersect 再 Without。
 // PostingsForMatchers assembles a single postings iterator against the index reader
 // based on the given matchers. The resulting postings are not ordered by series.
 func PostingsForMatchers(ix IndexReader, fpFilter index.FingerprintFilter, ms ...*labels.Matcher) (index.Postings, error) {
@@ -168,6 +172,7 @@ func PostingsForMatchers(ix IndexReader, fpFilter index.FingerprintFilter, ms ..
 	return it, nil
 }
 
+// postingsForMatcher 对 MatchEqual/简单 Regexp 走快速路径，否则扫描 LabelValues 过滤。
 func postingsForMatcher(ix IndexReader, fpFilter index.FingerprintFilter, m *labels.Matcher) (index.Postings, error) {
 	// This method will not return postings for missing labels.
 
@@ -253,6 +258,7 @@ func inversePostingsForMatcher(ix IndexReader, fpFilter index.FingerprintFilter,
 	return ix.Postings(m.Name, fpFilter, res...)
 }
 
+// findSetMatches 解析 ^(?:a|b|c)$ 形式 alternation，命中则直接批量 Postings 查询。
 func findSetMatches(pattern string) []string {
 	// Return empty matches if the wrapper from Prometheus is missing.
 	if len(pattern) < 6 || pattern[:4] != "^(?:" || pattern[len(pattern)-2:] != ")$" {
@@ -349,3 +355,4 @@ func labelNamesWithMatchers(r IndexReader, matchers ...*labels.Matcher) ([]strin
 
 	return r.LabelNamesFor(postings...)
 }
+// labelValuesWithMatchers 要求 label 非空后再 PostingsForMatchers，逐 series 读 LabelValueFor 去重。

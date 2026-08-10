@@ -13,17 +13,21 @@
 
 package index
 
+// postingsstats 用固定大小 maxHeap 维护 Top-N 基数统计，供 MemPostings.Stats 输出 label/metric 高基数排行。
+
 import (
 	"math"
 	"sort"
 )
 
+// Stat 记录名称与计数，用于 CardinalityMetricsStats 等排行列表。
 // Stat holds values for a single cardinality statistic.
 type Stat struct {
 	Name  string
 	Count uint64
 }
 
+// maxHeap 维护容量为 maxLength 的最小计数堆，push 时淘汰当前最小项。
 type maxHeap struct {
 	maxLength int
 	minValue  uint64
@@ -61,9 +65,11 @@ func (m *maxHeap) push(item Stat) {
 	}
 }
 
+// get 按 Count 降序排序后返回，供 Stats API 展示 Top 10 基数项。
 func (m *maxHeap) get() []Stat {
 	sort.Slice(m.Items, func(i, j int) bool {
 		return m.Items[i].Count > m.Items[j].Count
 	})
 	return m.Items
 }
+// MemPostings.Stats 在 RLock 下遍历全部 label 对并填充四类基数统计。

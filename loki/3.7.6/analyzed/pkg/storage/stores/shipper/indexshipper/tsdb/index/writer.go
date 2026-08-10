@@ -1,5 +1,7 @@
 package index
 
+// writer 抽象 TSDB 索引构建时的底层写入：FileWriter 带 bufio 与 64GiB 上限，MemWriter 在内存 buffer 上实现相同 writer 接口。
+
 import (
 	"bufio"
 	"bytes"
@@ -10,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// writer 统一 Pos/WriteAt/AddPadding/Bytes/Load，Creator 可透明切换文件或内存后端。
 // interface used in tsdb creation -- originally extracted from
 // interacting with temporary files on the file system.
 type writer interface {
@@ -31,6 +34,7 @@ type writer interface {
 	Load() (io.ReadCloser, error)
 }
 
+// FileWriter 用 4MB bufio 缓冲顺序写，WriteAt 仅允许覆盖已写入区域。
 type FileWriter struct {
 	f        *os.File
 	fbuf     *bufio.Writer
@@ -153,6 +157,7 @@ func (fw *FileWriter) Bytes() ([]byte, error) {
 	return io.ReadAll(fw.f)
 }
 
+// MemWriter 在 bytes.Buffer 上模拟 WriteAt，Close/Remove 为 no-op 供测试与内存构建。
 type MemWriter struct {
 	buf *bytes.Buffer
 }
@@ -237,3 +242,4 @@ func (bw *MemWriter) Remove() error { return nil }
 func (bw *MemWriter) Load() (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(bw.buf.Bytes())), nil
 }
+// AddPadding 将当前位置对齐到 size 倍数，series 区段要求 16 字节对齐。

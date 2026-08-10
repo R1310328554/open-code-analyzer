@@ -1,5 +1,7 @@
 package tsdb
 
+// multi_file_index 将多个 Index 通过 IndexIter 并发查询并合并结果：GetChunkRefs/Series 去重，LabelNames/Values 做字符串并集。
+
 import (
 	"context"
 	"math"
@@ -16,12 +18,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/index"
 )
 
+// MultiIndex 默认 maxParallel=GOMAXPROCS/2，forMatchingIndices 按时间重叠过滤子索引。
 type MultiIndex struct {
 	iter        IndexIter
 	filterer    chunk.RequestChunkFilterer
 	maxParallel int
 }
 
+// IndexIter.For 可并发执行 fn，调用方须等待全部 goroutine 完成后再返回。
 type IndexIter interface {
 	// For may be executed concurrently,
 	// but all work must complete before
@@ -133,6 +137,7 @@ func (i *MultiIndex) forMatchingIndices(ctx context.Context, from, through model
 
 }
 
+// GetChunkRefs 合并各索引 chunk ref 并按 ChunkRef 排序，seen map 去除跨文件重复。
 func (i *MultiIndex) GetChunkRefs(ctx context.Context, userID string, from, through model.Time, res []logproto.ChunkRefWithSizingInfo, fpFilter index.FingerprintFilter, matchers ...*labels.Matcher) ([]logproto.ChunkRefWithSizingInfo, error) {
 	acc := newResultAccumulator(func(xs [][]logproto.ChunkRefWithSizingInfo) ([]logproto.ChunkRefWithSizingInfo, error) {
 		if res == nil {
@@ -377,3 +382,4 @@ func (i MultiIndex) ForSeries(ctx context.Context, userID string, fpFilter index
 		return idx.ForSeries(ctx, userID, fpFilter, from, through, fn, matchers...)
 	})
 }
+// Stats/Volume 直接累加到同一 accumulator，ForSeries 顺序遍历所有匹配索引文件。

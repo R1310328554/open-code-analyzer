@@ -1,5 +1,7 @@
 package index
 
+// shard 定义 TSDB fingerprint 分片：ShardAnnotation 用高位 bit 前缀划分 series，FingerprintFilter 供 postings 查询裁剪偏移范围。
+
 import (
 	"errors"
 	"fmt"
@@ -17,6 +19,7 @@ const (
 
 var errDisallowedIdentityShard = errors.New("shard with factor of 1 is explicitly disallowed. It's equivalent to no sharding")
 
+// FingerprintFilter 同时提供 Match 判定与 [from,through) fingerprint 边界。
 type FingerprintFilter interface {
 	// TODO(owen-d): Match() is redundant and can be inferred from GetFromThrough()
 	// TODO(owen-d): GetFromThrough should just return FingerprintBounds as it's a better utility struct.
@@ -25,6 +28,7 @@ type FingerprintFilter interface {
 	GetFromThrough() (model.Fingerprint, model.Fingerprint)
 }
 
+// ShardAnnotation.Of 必须为 2 的幂；Match 比较 fingerprint 与 shard 的 bit 前缀。
 // ShardAnnotation is a convenience struct which holds data from a parsed shard label
 // Of MUST be a power of 2 to ensure sharding logic works correctly.
 type ShardAnnotation struct {
@@ -82,6 +86,7 @@ func (shard ShardAnnotation) Validate() error {
 
 // GetFromThrough shows the [minimum, maximum) fingerprints. If there is no maximum
 // fingerprint (for example the last shard), math.MaxUint64 is used as the maximum.
+// GetFromThrough 计算分片负责的 fingerprint 半开区间，末分片上界为 MaxUint64。
 func (shard ShardAnnotation) GetFromThrough() (model.Fingerprint, model.Fingerprint) {
 	requiredBits := model.Fingerprint(shard.RequiredBits())
 	from := model.Fingerprint(shard.Shard) << (64 - requiredBits)
@@ -91,3 +96,4 @@ func (shard ShardAnnotation) GetFromThrough() (model.Fingerprint, model.Fingerpr
 	}
 	return from, model.Fingerprint(shard.Shard+1) << (64 - requiredBits)
 }
+// Validate 拒绝 Of=1 的恒等分片，Of=0 表示未启用分片过滤。

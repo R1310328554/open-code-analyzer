@@ -1,5 +1,7 @@
 package tsdb
 
+// multitenant 为未按租户拆分的 TSDB 注入 __loki_tenant__ matcher，查询结果剥离内部租户标签，compaction 后生成单租户索引时移除该标签。
+
 import (
 	"context"
 	"sort"
@@ -17,6 +19,7 @@ import (
 // These labels are stripped out during compaction to single-tenant TSDBs
 const TenantLabel = "__loki_tenant__"
 
+// MultiTenantIndex 在每次查询前追加 TenantLabel=userID 等值 matcher 过滤 series。
 // MultiTenantIndex will inject a tenant label to it's queries
 // This works with pre-compacted TSDBs which aren't yet per tenant.
 type MultiTenantIndex struct {
@@ -27,6 +30,7 @@ func NewMultiTenantIndex(idx Index) *MultiTenantIndex {
 	return &MultiTenantIndex{idx: idx}
 }
 
+// withTenantLabelMatcher 将租户 matcher 置于 matcher 列表首位供 postings 交集。
 func withTenantLabelMatcher(userID string, matchers []*labels.Matcher) []*labels.Matcher {
 	cpy := make([]*labels.Matcher, len(matchers)+1)
 	cpy[0] = labels.MustNewMatcher(labels.MatchEqual, TenantLabel, userID)
@@ -61,6 +65,7 @@ func (m *MultiTenantIndex) Series(ctx context.Context, userID string, from, thro
 	return xs, nil
 }
 
+// LabelNames 从结果中移除 TenantLabel，避免对外暴露内部多租户标记名。
 func (m *MultiTenantIndex) LabelNames(ctx context.Context, userID string, from, through model.Time, matchers ...*labels.Matcher) ([]string, error) {
 	res, err := m.idx.LabelNames(ctx, userID, from, through, withTenantLabelMatcher(userID, matchers)...)
 	if err != nil {
@@ -95,3 +100,4 @@ func (m *MultiTenantIndex) Volume(ctx context.Context, userID string, from, thro
 func (m *MultiTenantIndex) ForSeries(ctx context.Context, userID string, fpFilter index.FingerprintFilter, from, through model.Time, fn func(labels.Labels, model.Fingerprint, []index.ChunkMeta) (stop bool), matchers ...*labels.Matcher) error {
 	return m.idx.ForSeries(ctx, userID, fpFilter, from, through, fn, withTenantLabelMatcher(userID, matchers)...)
 }
+// LabelValues 对 TenantLabel 直接返回空，Series 返回前调用 withoutTenantLabel 清理标签。

@@ -1,5 +1,7 @@
 package tsdb
 
+// index_client 将 tsdb.Index 适配为 stores.Index：解析 __tsdb_shard__ matcher，按表 interval 拆分 Stats/Volume 并可选 Bloom 去重跨 bucket 重复 series。
+
 import (
 	"context"
 	"fmt"
@@ -32,6 +34,7 @@ import (
 var tracer = otel.Tracer("pkg/storage/stores/shipper/indexshipper/tsdb")
 
 // implements stores.Index
+// IndexClient 包装底层 Index，UseBloomFilters 控制 Stats 是否用 Bloom 跨 bucket 去重。
 type IndexClient struct {
 	idx    Index
 	opts   IndexClientOptions
@@ -99,6 +102,7 @@ func shardFromMatchers(matchers []*labels.Matcher) (cleaned []*labels.Matcher, r
 // In the future, we should use dynamic sharding in TSDB to determine the shard factors
 // and we may no longer wish to send a shard label inside the queries,
 // but rather expose it as part of the stores.Index interface
+// cleanMatchers 剥离 __name__ 与 shard 标签，空 matcher 时注入全匹配占位符。
 func cleanMatchers(matchers ...*labels.Matcher) ([]*labels.Matcher, index.FingerprintFilter, error) {
 	// first use withoutNameLabel to make a copy with the name label removed
 	matchers = withoutNameLabel(matchers)
@@ -186,6 +190,7 @@ func (c *IndexClient) LabelNamesForMetricName(ctx context.Context, userID string
 	return c.idx.LabelNames(ctx, userID, from, through, matchers...)
 }
 
+// Stats 按 ObjectStorageIndexRequiredPeriod 切分查询，利用表归属减少 chunk 重复计数。
 func (c *IndexClient) Stats(ctx context.Context, userID string, from, through model.Time, matchers ...*labels.Matcher) (*stats.Stats, error) {
 	matchers, shard, err := cleanMatchers(matchers...)
 	if err != nil {
@@ -292,6 +297,7 @@ func (c *IndexClient) Volume(ctx context.Context, userID string, from, through m
 	return acc.Volumes(), nil
 }
 
+// GetShards 扫描 ForSeries 聚合 chunk 体积，再按 targetBytesPerShard 生成分片计划。
 func (c *IndexClient) GetShards(ctx context.Context, userID string, from, through model.Time, targetBytesPerShard uint64, predicate chunk.Predicate) (*logproto.ShardsResponse, error) {
 	// TODO(owen-d): perf, this is expensive :(
 	var mtx sync.Mutex
@@ -365,3 +371,4 @@ func (c *IndexClient) HasForSeries(_, _ model.Time) (sharding.ForSeries, bool) {
 func (c *IndexClient) HasChunkSizingInfo(_, _ model.Time) bool {
 	return true
 }
+// Volume 与 Stats 类似按 interval 并行累加，aggregateBy 控制按 label 或 stream 聚合。

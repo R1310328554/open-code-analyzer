@@ -1,5 +1,7 @@
 package tsdb
 
+// lazy_index 将 Index 接口委托给延迟求值的工厂函数，首次查询时才打开 mmap 索引，避免 shipper 启动时加载全部 TSDB。
+
 import (
 	"context"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/index"
 )
 
+// LazyIndex 函数类型实现完整 Index 接口，每次方法调用可能重新执行工厂逻辑。
 // Index adapter for a function which returns an index when queried.
 type LazyIndex func() (Index, error)
 
@@ -37,6 +40,7 @@ func (f LazyIndex) Close() error {
 	return i.Close()
 }
 
+// GetChunkRefs 先 f() 获取底层 Index，错误时向上返回而不缓存实例。
 func (f LazyIndex) GetChunkRefs(ctx context.Context, userID string, from, through model.Time, res []logproto.ChunkRefWithSizingInfo, fpFilter index.FingerprintFilter, matchers ...*labels.Matcher) ([]logproto.ChunkRefWithSizingInfo, error) {
 	i, err := f()
 	if err != nil {
@@ -89,3 +93,4 @@ func (f LazyIndex) ForSeries(ctx context.Context, userID string, fpFilter index.
 	}
 	return i.ForSeries(ctx, userID, fpFilter, from, through, fn, matchers...)
 }
+// SetChunkFilterer 在工厂成功时才向下传递 chunk 过滤策略到真实索引。

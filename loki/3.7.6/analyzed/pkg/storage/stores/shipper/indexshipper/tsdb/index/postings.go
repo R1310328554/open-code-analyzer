@@ -13,6 +13,8 @@
 
 package index
 
+// postings 实现倒排 postings 列表：内存 MemPostings、磁盘 BigEndianPostings，以及 Intersect/Merge/Without 等集合运算与分片 ShardedPostings。
+
 import (
 	"container/heap"
 	"encoding/binary"
@@ -41,6 +43,7 @@ var ensureOrderBatchPool = sync.Pool{
 	},
 }
 
+// MemPostings 启动期可无序写入，EnsureOrder 后并行排序各 label 值 postings。
 // MemPostings holds postings list for series ID per label pair. They may be written
 // to out of order.
 // EnsureOrder() must be called once before any reads are done. This allows for quick
@@ -389,6 +392,7 @@ func ExpandPostings(p Postings) (res []storage.SeriesRef, err error) {
 	return res, p.Err()
 }
 
+// Postings 迭代器支持 Next/Seek/At，EmptyPostings 哨兵触发交集优化路径。
 // Postings provides iterative access over a postings list.
 type Postings interface {
 	// Next advances the iterator and returns true if another value was found.
@@ -436,6 +440,7 @@ func ErrPostings(err error) Postings {
 	return errPostings{err}
 }
 
+// Intersect 多路 Seek 对齐当前 ref，任一输入耗尽即返回空 postings。
 // Intersect returns a new postings list over the intersection of the
 // input postings.
 func Intersect(its ...Postings) Postings {
@@ -509,6 +514,7 @@ func (it *intersectPostings) Err() error {
 	return nil
 }
 
+// Merge 用小顶堆合并多路有序 postings，Seek 前须先 Next 初始化堆。
 // Merge returns a new iterator over the union of the input iterators.
 func Merge(its ...Postings) Postings {
 	if len(its) == 0 {
@@ -852,6 +858,7 @@ type ShardedPostings struct {
 // For example (below), given a shard, we'll likely return a slight superset of offsets surrounding the shard.
 // ---[shard0]--- # Shard membership
 // -[--shard0--]- # Series returned by shardedPostings
+// NewShardedPostings 用 fingerprint 采样表估算偏移上下界，可能返回略超集的 series。
 func NewShardedPostings(p Postings, fpFilter FingerprintFilter, offsets FingerprintOffsets) *ShardedPostings {
 	minVal, maxVal := offsets.Range(fpFilter)
 	return &ShardedPostings{
@@ -906,3 +913,4 @@ func (sp *ShardedPostings) At() storage.SeriesRef {
 func (sp *ShardedPostings) Err() (err error) {
 	return sp.p.Err()
 }
+// ShardedPostings 在 min/max offset 间过滤，调用方仍须校验 fingerprint 是否属于分片。

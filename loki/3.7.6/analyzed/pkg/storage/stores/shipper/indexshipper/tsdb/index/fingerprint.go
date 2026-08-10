@@ -1,13 +1,17 @@
 package index
 
+// fingerprint 维护 (SeriesRef, Fingerprint) 采样偏移表，供 ShardedPostings 按 fingerprint 分片快速定位 series 偏移范围。
+
 import (
 	"math"
 	"sort"
 )
 
+// FingerprintOffsets 每 1024 条 series 采样一次 fingerprint 与文件偏移。
 // (SeriesRef, Fingerprint) tuples
 type FingerprintOffsets [][2]uint64
 
+// Range 根据分片 fingerprint 上下界二分查找，返回需扫描的 series 偏移区间。
 func (xs FingerprintOffsets) Range(fpFilter FingerprintFilter) (minOffset, maxOffset uint64) {
 	from, through := fpFilter.GetFromThrough()
 	lower := sort.Search(len(xs), func(i int) bool {
@@ -35,3 +39,4 @@ func (xs FingerprintOffsets) Range(fpFilter FingerprintFilter) (minOffset, maxOf
 
 	return
 }
+// 采样表两端各留缓冲，避免分片边界漏查相邻 series 偏移。

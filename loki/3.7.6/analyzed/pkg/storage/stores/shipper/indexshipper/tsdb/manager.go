@@ -1,5 +1,7 @@
 package tsdb
 
+// manager 负责 TSDB 生命周期：Start 加载本地多租户索引到 shipper，BuildFromHead/WAL 将 tenantHeads 按表 period 构建并注册可上传 TSDB 文件。
+
 import (
 	"context"
 	"fmt"
@@ -23,6 +25,7 @@ import (
 )
 
 // nolint:revive
+// TSDBManager 协调 WAL/Head flush、本地 scratch 构建与 indexShipper.AddIndex 注册。
 // TSDBManager wraps the index shipper and writes/manages
 // TSDB files on  disk
 type TSDBManager interface {
@@ -157,6 +160,7 @@ type chunkInfo struct {
 	tsdbFormat int
 }
 
+// buildFromHead 为每条 series 注入 TenantLabel，chunk 跨 period 时写入多个 Builder。
 func (m *tsdbManager) buildFromHead(heads *tenantHeads, indexShipper indexshipper.IndexShipper, tableRanges []config.TableRange) (err error) {
 	periods := make(map[string]*Builder)
 
@@ -306,6 +310,7 @@ type IndexInfo struct {
 	TsdbFormat  int
 }
 
+// IndexBuckets 按 ObjectStorageIndexRequiredPeriod 枚举查询覆盖的全部表 bucket 与格式。
 func IndexBuckets(from, through model.Time, tableRanges config.TableRanges) (res []IndexInfo) {
 	start := from.Time().UnixNano() / int64(config.ObjectStorageIndexRequiredPeriod)
 	end := through.Time().UnixNano() / int64(config.ObjectStorageIndexRequiredPeriod)
@@ -325,3 +330,4 @@ func IndexBuckets(from, through model.Time, tableRanges config.TableRanges) (res
 	}
 	return
 }
+// BuildFromWAL legacy 模式使用全部 TSDB tableRanges 且不上传，仅本地恢复构建。

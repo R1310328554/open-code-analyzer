@@ -13,6 +13,8 @@
 
 package index
 
+// index 实现 Prometheus TSDB 索引文件的读写：Creator 分阶段写入 symbol/series/postings，Reader 与 Decoder 提供 mmap 查询与 chunk 分页解码。
+
 import (
 	"bytes"
 	"context"
@@ -113,6 +115,7 @@ type symbolCacheEntry struct {
 	lastValueIndex uint32
 }
 
+// Creator 使用临时 postings 文件与 TOC 元数据，支持 V1-V3 格式与多租户 fingerprint 注入。
 // Creator implements the IndexWriter interface for the standard
 // serialization format.
 type Creator struct {
@@ -404,6 +407,7 @@ func (w *Creator) writeMeta() error {
 // fingerprint differs from what labels.Hash() produces. For example,
 // multitenant TSDBs embed a tenant label, but the actual series has no such
 // label and so the derived fingerprint differs.
+// AddSeries 强制 series 按 fingerprint 与标签字典序写入，每 1024 条记录 fingerprint 采样。
 func (w *Creator) AddSeries(ref storage.SeriesRef, lset labels.Labels, fp model.Fingerprint, chunks ...ChunkMeta) error {
 	if err := w.ensureStage(idxStageSeries); err != nil {
 		return err
@@ -1198,6 +1202,7 @@ type StringIter interface {
 	Err() error
 }
 
+// Reader 加载符号表、postings 偏移采样与 fingerprint 表，供 LabelValues/Postings 查询。
 type Reader struct {
 	b   ByteSlice
 	toc *TOC
@@ -1247,6 +1252,7 @@ func (b RealByteSlice) Sub(start, end int) ByteSlice {
 	return b[start:end]
 }
 
+// NewReader 校验 MagicIndex 与版本号，解析 TOC 并构建 nameSymbols 缓存。
 // NewReader returns a new index reader on the given byte slice. It automatically
 // handles different format versions.
 func NewReader(b ByteSlice) (*Reader, error) {
@@ -1977,6 +1983,7 @@ func (c *chunkSamples) getChunkSampleForQueryStarting(ts int64) *chunkSample {
 	return &c.chunks[i]
 }
 
+// Decoder 解码 series/postings/chunk 页；V3 用 chunkPageMarker 跳过无关页。
 // Decoder provides decoding methods
 // It currently does not contain decoding methods for all entry types but can be extended
 // by them if there's demand.
@@ -2523,3 +2530,4 @@ func overlap(from, through, chkFrom, chkThrough int64) bool {
 	// sample timestamp in the chunk, whereas through is exclusive
 	return from <= chkThrough && through > chkFrom
 }
+// FormatV3 在 series 内引入 chunk 分页 marker，大 series 范围查询可跳过整页数据。

@@ -1,5 +1,7 @@
 package tsdb
 
+// index_shipper_querier 从 index shipper 并发列举 TSDB 文件，组装 MultiIndex 并自动包装 MultiTenantIndex 处理多租户索引。
+
 import (
 	"context"
 	"fmt"
@@ -22,6 +24,7 @@ type indexShipperIterator interface {
 }
 
 // indexShipperQuerier is used for querying index from the shipper.
+// indexShipperQuerier 委托 shipper.ForEachConcurrent 加载表 bucket 内索引文件。
 type indexShipperQuerier struct {
 	shipper     indexShipperIterator
 	chunkFilter chunk.RequestChunkFilterer
@@ -38,6 +41,7 @@ func (i indexIterFunc) For(_ context.Context, _ int, f func(context.Context, Ind
 	return i(f)
 }
 
+// indices 按 IndexBuckets 遍历时间范围内表前缀，多租户索引再套 MultiTenantIndex。
 func (i *indexShipperQuerier) indices(ctx context.Context, from, through model.Time, user string) (Index, error) {
 	itr := indexIterFunc(func(f func(context.Context, Index) error) error {
 		// Ensure we query both per tenant and multitenant TSDBs
@@ -144,6 +148,7 @@ func (i *indexShipperQuerier) ForSeries(ctx context.Context, userID string, fpFi
 	return idx.ForSeries(ctx, userID, fpFilter, from, through, fn, matchers...)
 }
 
+// resultAccumulator 并发收集各子索引结果，Merge 时调用 merge 函数去重合并。
 type resultAccumulator[T any] struct {
 	mtx   sync.Mutex
 	items []T
@@ -181,3 +186,4 @@ func (acc *resultAccumulator[T]) Merge() (res T, err error) {
 }
 
 var ErrEmptyAccumulator = errors.New("no items in result accumulator")
+// Bounds 返回 0..MaxInt64 强制每次查询重建索引视图，Close 由 shipper 统一管理资源。
