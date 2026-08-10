@@ -24,6 +24,7 @@ import javax.annotation.PostConstruct;
 
 /**
  * AI resource trace event initializer.
+ * <p>AI 资源审计追踪事件初始化器，注册 {@link AiResourceTraceEvent} 订阅者。</p>
  *
  * @author nacos
  */

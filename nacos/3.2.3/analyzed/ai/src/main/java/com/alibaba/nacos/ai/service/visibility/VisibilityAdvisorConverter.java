@@ -22,6 +22,7 @@ import com.alibaba.nacos.plugin.visibility.spi.QueryAdvisor;
 
 /**
  * Convert plugin-level {@link QueryAdvisor} to repository-executable condition.
+ * <p>可见性顾问转换接口：将插件层 {@link QueryAdvisor} 转为仓储查询条件。</p>
  *
  * @author nacos
  */

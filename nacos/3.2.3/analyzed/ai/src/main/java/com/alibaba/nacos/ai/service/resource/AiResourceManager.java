@@ -63,6 +63,7 @@ import java.util.function.BiConsumer;
  * <p>Centralises duplicated CAS update, query, validation, version-resolution and
  * pipeline-callback logic that was previously copy-pasted across
  * {@code SkillOperationServiceImpl} and {@code AgentSpecOperationServiceImpl}.</p>
+ * <p>AI 资源通用管理器：集中 Skill/AgentSpec 等共用的 CAS 更新、查询校验、版本解析与流水线回调逻辑。</p>
  *
  * @author nacos
  */
@@ -88,22 +89,25 @@ public class AiResourceManager {
         this.visibilityAdvisorConverter = new DefaultVisibilityAdvisorConverter();
     }
     
-    // ---- 2.1 CAS update methods ----
+    // ---- 2.1 CAS 更新方法 ----
     
-    /**
-     * Result of a CAS update loop.
-     */
+    /** CAS 重试循环的执行结果。 */
+    /** Result of a CAS update loop. */
     enum CasResult {
+        /** CAS 更新成功。 */
         /** CAS succeeded. */
         SUCCESS,
+        /** meta 行在重试中消失或 metaVersion 丢失。 */
         /** Meta row disappeared or lost its metaVersion during retry. */
         META_LOST,
+        /** 已达最大重试次数。 */
         /** All retry attempts exhausted. */
         MAX_RETRIES
     }
     
     /**
      * Generic CAS retry loop.  On conflict the {@code onConflictRefresh} callback is invoked to
+     * <p>通用 CAS 重试：冲突时通过回调刷新非目标字段，目标字段保持不变。</p>
      * refresh non-target fields from the latest meta row; target fields (the ones being updated)
      * stay unchanged.
      *
@@ -136,6 +140,7 @@ public class AiResourceManager {
     
     /**
      * Translate a non-SUCCESS CasResult into the appropriate exception for strict callers.
+     * <p>将非 SUCCESS 的 CAS 结果转为严格调用方所需的异常。</p>
      */
     private void handleStrictCasResult(CasResult result) throws NacosException {
         if (result == CasResult.META_LOST) {
@@ -150,6 +155,7 @@ public class AiResourceManager {
     
     /**
      * CAS-update the versionInfo field of a resource meta row.
+     * <p>CAS 更新 meta 行的 versionInfo 字段。</p>
      */
     public void updateVersionInfoCas(String namespaceId, AiResource meta, ResourceVersionInfo info)
         throws NacosException {
@@ -176,6 +182,7 @@ public class AiResourceManager {
     
     /**
      * CAS-update the bizTags field of a resource meta row.
+     * <p>CAS 更新 meta 行的 bizTags 字段。</p>
      */
     public void updateBizTagsCas(String namespaceId, AiResource meta, String bizTags)
         throws NacosException {
@@ -202,6 +209,7 @@ public class AiResourceManager {
     
     /**
      * CAS-update the meta status to enable or disable.
+     * <p>CAS 更新 meta 启停状态并记录审计日志。</p>
      */
     public void metaEnableDisable(String namespaceId, AiResource meta, boolean enable)
         throws NacosException {
@@ -230,6 +238,7 @@ public class AiResourceManager {
     
     /**
      * Best-effort CAS-update the description field of a resource meta row.
+     * <p>尽力更新 meta 描述字段，失败不抛异常。</p>
      */
     public void bumpMetaDescription(String namespaceId, AiResource meta, String description) {
         if (meta == null || meta.getMetaVersion() == null) {
@@ -252,6 +261,7 @@ public class AiResourceManager {
     
     /**
      * Best-effort CAS-update both description and bizTags for an imported resource meta.
+     * <p>导入后同步 meta 描述与 bizTags，空值保留原值。</p>
      */
     public void syncImportedMeta(String namespaceId, AiResource meta, String description,
         String bizTags) {
@@ -277,6 +287,7 @@ public class AiResourceManager {
     
     /**
      * Best-effort CAS-update source field for an imported resource meta.
+     * <p>导入后尽力 CAS 更新 source 字段。</p>
      */
     public void syncImportedSource(String namespaceId, AiResource meta, String source) {
         if (meta == null || meta.getMetaVersion() == null || StringUtils.isBlank(source)) {
@@ -297,10 +308,11 @@ public class AiResourceManager {
         }
     }
     
-    // ---- 2.2 Query / validation helpers ----
+    // ---- 2.2 查询与校验辅助 ----
     
     /**
      * Load meta row or throw NOT_FOUND.
+     * <p>加载 meta 行，不存在时抛 NOT_FOUND。</p>
      */
     public AiResource requireMeta(String namespaceId, String name, String type)
         throws NacosException {
@@ -314,6 +326,7 @@ public class AiResourceManager {
     
     /**
      * Find meta row by namespace/name/type.
+     * <p>按命名空间/名称/类型查询 meta 行。</p>
      */
     public AiResource findMeta(String namespaceId, String name, String type) {
         return aiResourcePersistService.find(namespaceId, name, type);
@@ -321,6 +334,7 @@ public class AiResourceManager {
     
     /**
      * Find version row by namespace/name/type/version.
+     * <p>按四元组查询版本行。</p>
      */
     public AiResourceVersion findVersion(String namespaceId, String name, String type,
         String version) {
@@ -329,6 +343,7 @@ public class AiResourceManager {
     
     /**
      * Update version row storage/description.
+     * <p>更新版本行 storage 与描述。</p>
      */
     public void updateVersionStorageAndDesc(String namespaceId, String name, String type,
         String version,
@@ -339,6 +354,7 @@ public class AiResourceManager {
     
     /**
      * Update version row storage.
+     * <p>更新版本行 storage。</p>
      */
     public void updateVersionStorage(String namespaceId, String name, String type, String version,
         String storageJson) {
@@ -348,6 +364,7 @@ public class AiResourceManager {
     
     /**
      * Update version row status.
+     * <p>更新版本行状态。</p>
      */
     public void updateVersionStatus(String namespaceId, String name, String type, String version,
         String status) {
@@ -356,6 +373,7 @@ public class AiResourceManager {
     
     /**
      * Update version row publish pipeline info.
+     * <p>更新版本行发布流水线信息。</p>
      */
     public void updateVersionPublishPipelineInfo(String namespaceId, String name, String type,
         String version,
@@ -366,6 +384,7 @@ public class AiResourceManager {
     
     /**
      * Delete one version row.
+     * <p>删除单个版本行。</p>
      */
     public void deleteVersion(String namespaceId, String name, String type, String version) {
         aiResourceVersionPersistService.delete(namespaceId, name, type, version);
@@ -373,6 +392,7 @@ public class AiResourceManager {
     
     /**
      * Delete all version rows for a resource.
+     * <p>删除资源下全部版本行。</p>
      */
     public void deleteVersionsByNameAndType(String namespaceId, String name, String type) {
         aiResourceVersionPersistService.deleteByNameAndType(namespaceId, name, type);
@@ -380,6 +400,7 @@ public class AiResourceManager {
     
     /**
      * Delete meta row by namespace/name/type.
+     * <p>按三元组删除 meta 行。</p>
      */
     public void deleteMeta(String namespaceId, String name, String type) {
         aiResourcePersistService.delete(namespaceId, name, type);
@@ -387,6 +408,7 @@ public class AiResourceManager {
     
     /**
      * Generate LIKE argument.
+     * <p>生成 SQL LIKE 参数。</p>
      */
     public String generateLikeArgument(String value) {
         return aiResourcePersistService.generateLikeArgument(value);
@@ -394,6 +416,7 @@ public class AiResourceManager {
     
     /**
      * List meta rows by basic prompt-style filtering.
+     * <p>按基础过滤条件分页列出 meta 行。</p>
      */
     public Page<AiResource> listMetaByType(String namespaceId, String type, String nameLike,
         String bizTagsLike,
@@ -404,6 +427,7 @@ public class AiResourceManager {
     
     /**
      * List meta rows by query condition.
+     * <p>按 QueryCondition 分页列出 meta 行。</p>
      */
     public Page<AiResource> listMeta(QueryCondition queryCondition, int pageNo, int pageSize) {
         return aiResourcePersistService.list(queryCondition, pageNo, pageSize);
@@ -411,6 +435,7 @@ public class AiResourceManager {
     
     /**
      * List version rows.
+     * <p>分页列出版本行。</p>
      */
     public Page<AiResourceVersion> listVersions(String namespaceId, String name, String type,
         String status,
@@ -421,6 +446,7 @@ public class AiResourceManager {
     
     /**
      * Parse and guarantee a non-null {@link ResourceVersionInfo} from the meta row.
+     * <p>解析 meta 的 versionInfo JSON，保证返回非空且 labels 已初始化。</p>
      */
     public static ResourceVersionInfo requireVersionInfo(AiResource meta) {
         ResourceVersionInfo info = parseVersionInfo(meta == null ? null : meta.getVersionInfo());
@@ -435,6 +461,7 @@ public class AiResourceManager {
     
     /**
      * Deserialise version info JSON; returns {@code null} on blank/invalid input.
+     * <p>反序列化 versionInfo JSON；空白或非法输入返回 null。</p>
      */
     public static ResourceVersionInfo parseVersionInfo(String json) {
         if (StringUtils.isBlank(json)) {
@@ -449,6 +476,7 @@ public class AiResourceManager {
     
     /**
      * Deserialise publish pipeline info JSON; returns {@code null} on blank/invalid input.
+     * <p>反序列化发布流水线 JSON；executionId 缺失时返回 null。</p>
      */
     public static PublishPipelineInfo parsePublishPipelineInfo(String json) {
         if (StringUtils.isBlank(json)) {
@@ -467,6 +495,7 @@ public class AiResourceManager {
     
     /**
      * Throw NOT_FOUND if the current user cannot read the given resource.
+     * <p>当前用户不可读时以 NOT_FOUND 隐藏资源存在性。</p>
      */
     public void ensureReadableOrNotFound(AiResource resource, String notFoundMessage)
         throws NacosException {
@@ -479,6 +508,7 @@ public class AiResourceManager {
     
     /**
      * Build a {@link QueryCondition} with visibility filtering applied.
+     * <p>构建带可见性过滤的 {@link QueryCondition}。</p>
      */
     public QueryCondition buildQueryCondition(String namespaceId, String resourceType,
         String nameLike,
@@ -505,6 +535,7 @@ public class AiResourceManager {
     
     /**
      * Create an empty page result.
+     * <p>构造空分页结果。</p>
      */
     public static <T> Page<T> buildEmptyPage(int pageNo) {
         Page<T> page = new Page<>();
@@ -517,6 +548,7 @@ public class AiResourceManager {
     
     /**
      * Resolve scope from meta, defaulting to PRIVATE when blank.
+     * <p>解析 meta scope，空白时默认 PRIVATE。</p>
      */
     public static String resolveScope(AiResource meta) {
         if (meta == null || StringUtils.isBlank(meta.getScope())) {
@@ -525,10 +557,11 @@ public class AiResourceManager {
         return meta.getScope();
     }
     
-    // ---- 2.3 Version resolution ----
+    // ---- 2.3 版本解析 ----
     
     /**
      * Resolve which version string to use given explicit version, label, and meta state.
+     * <p>解析目标版本：label &gt; explicitVersion &gt; latest 标签。</p>
      */
     public static String resolveVersion(AiResource meta, String explicitVersion, String label) {
         if (StringUtils.isNotBlank(label)) {
@@ -553,10 +586,11 @@ public class AiResourceManager {
         return null;
     }
     
-    // ---- 2.4 Pipeline callback ----
+    // ---- 2.4 流水线回调 ----
     
     /**
      * List all existing version strings for a given resource (name + type).
+     * <p>列出资源已有全部版本号。</p>
      */
     public List<String> listExistingVersions(String namespaceId, String name, String type) {
         Page<AiResourceVersion> page =
@@ -575,12 +609,12 @@ public class AiResourceManager {
     
     /**
      * Construct and insert a version row.
+     * <p>构造并插入版本行。</p>
      */
     public void insertVersionRow(String namespaceId, String name, String type, String author,
         String status,
         String version, String description, String storageJson) {
-        // Check if a version row already exists (e.g. orphaned row from a failed delete, or concurrent insert).
-        // If so, fall back to updating the existing row instead of inserting a duplicate.
+        // 版本行已存在（如删除失败残留或并发插入）则改为更新而非重复插入
         AiResourceVersion existing =
             aiResourceVersionPersistService.find(namespaceId, name, type, version);
         if (existing != null) {
@@ -600,7 +634,7 @@ public class AiResourceManager {
         try {
             aiResourceVersionPersistService.insert(row);
         } catch (DuplicateKeyException e) {
-            // Race condition: version was inserted after our check, fallback to update
+            // 并发竞态：检查后已被插入，回退为更新
             LOGGER.warn("[insertVersionRow] duplicate key for {}/{}/{}/{}, falling back to update",
                 namespaceId, name, type, version);
             updateExistingVersionRow(namespaceId, name, type, version, status, description,
@@ -618,6 +652,7 @@ public class AiResourceManager {
     
     /**
      * Find a version row and verify it is in draft status.
+     * <p>查找版本行并校验其为 draft 状态。</p>
      *
      * @throws NacosApiException if version not found or not in draft status
      */
@@ -637,6 +672,7 @@ public class AiResourceManager {
     
     /**
      * Publish a version directly (bypass pipeline). Sets version online, clears editing/reviewing pointers,
+     * <p>直接发布（跳过流水线）：置 online、清理 editing/reviewing 指针并递增 onlineCnt。</p>
      * increments onlineCnt, and optionally updates the latest label.
      */
     public void directPublishVersion(String namespaceId, AiResource meta, ResourceVersionInfo info,
@@ -664,6 +700,7 @@ public class AiResourceManager {
     
     /**
      * Create both an online version row and a meta row for bootstrap (built-in) resources.
+     * <p>引导内置资源：同时插入 online 版本行与 meta 行。</p>
      */
     public void insertBootstrapMeta(String namespaceId, String name, String type,
         String description,
@@ -694,6 +731,7 @@ public class AiResourceManager {
     
     /**
      * Resolve the target version for a submit operation (explicit version or current editing).
+     * <p>解析提交目标版本：显式 version 或当前 editingVersion。</p>
      *
      * @throws NacosApiException if no target version can be determined
      */
@@ -713,6 +751,7 @@ public class AiResourceManager {
     
     /**
      * Transition a version to reviewing status and update meta pointers accordingly.
+     * <p>将 draft 版本提交审核，更新 meta 指针并写审计日志。</p>
      *
      * <p>Only versions in {@code draft} status are allowed to enter the review stage.
      * Submitting a version in any other status (reviewing / reviewed / online / offline)
@@ -720,7 +759,7 @@ public class AiResourceManager {
      */
     public void moveToReviewing(String namespaceId, String name, String type, String version,
         AiResource meta, ResourceVersionInfo info) throws NacosException {
-        // Guard: only draft version can be submitted for review.
+        // 守卫：仅 draft 状态可提交审核
         requireDraftVersion(namespaceId, name, type, version);
         aiResourceVersionPersistService.updateStatus(namespaceId, name, type, version,
             AiResourceConstants.VERSION_STATUS_REVIEWING);
@@ -734,6 +773,7 @@ public class AiResourceManager {
     
     /**
      * Write an IN_PROGRESS pipeline info record for a version.
+     * <p>写入 IN_PROGRESS 流水线信息，供客户端查询 executionId。</p>
      */
     public void writePipelineInfoInProgress(String namespaceId, String name, String type,
         String version,
@@ -748,16 +788,18 @@ public class AiResourceManager {
     
     /**
      * Clear pipeline info for a version (edge case when pipeline becomes unavailable).
+     * <p>清除版本流水线信息（流水线不可用时的边界处理）。</p>
      */
     public void clearPipelineInfo(String namespaceId, String name, String type, String version) {
         aiResourceVersionPersistService.updatePublishPipelineInfo(namespaceId, name, type, version,
             null);
     }
     
-    // ---- 2.5 High-level domain-agnostic operations ----
+    // ---- 2.5 高层领域无关操作 ----
     
     /**
      * Core publish logic: validate pipeline result, set version online, update meta pointers.
+     * <p>核心发布逻辑：校验流水线、置 online、更新 meta 指针。</p>
      *
      * @return the version row (caller may need it for post-processing, e.g. manifest sync)
      */
@@ -834,6 +876,7 @@ public class AiResourceManager {
     
     /**
      * Core publish logic for system-triggered pipeline callbacks.
+     * <p>系统触发的流水线回调发布，跳过可见性校验。</p>
      *
      * @return the version row (caller may need it for post-processing, e.g. manifest sync)
      */
@@ -845,6 +888,7 @@ public class AiResourceManager {
     
     /**
      * Core force-publish logic: bypass pipeline validation, set version online, update meta pointers.
+     * <p>强制发布：跳过流水线校验，直接置 online。</p>
      *
      * @return the version row (caller may need it for post-processing, e.g. manifest sync)
      */
@@ -896,6 +940,7 @@ public class AiResourceManager {
     
     /**
      * Validate that labels don't reference draft/reviewing versions, then CAS-update labels.
+     * <p>校验 label 不指向 draft/reviewing 版本后 CAS 更新 labels。</p>
      */
     public void validateAndUpdateLabels(String namespaceId, String name, String type,
         Map<String, String> labels) throws NacosException {
@@ -929,6 +974,7 @@ public class AiResourceManager {
     
     /**
      * Update the scope of a resource (requireMeta + checkWritable + persist).
+     * <p>更新资源可见性 scope（需可读 meta 且可写）。</p>
      */
     public void doUpdateScope(String namespaceId, String name, String type, String scope)
         throws NacosException {
@@ -949,6 +995,7 @@ public class AiResourceManager {
     
     /**
      * Toggle a single version's online/offline status and adjust meta onlineCnt.
+     * <p>切换单版本 online/offline 并调整 meta onlineCnt。</p>
      *
      * @return the version row if a status change occurred, or {@code null} if already in the target status
      */
@@ -981,6 +1028,7 @@ public class AiResourceManager {
     
     /**
      * Create a new meta row (when {@code isNew}) or CAS-update the editing pointer on an existing one.
+     * <p>新建 meta 或 CAS 更新已有 meta 的 editing 指针。</p>
      */
     public void initOrUpdateMetaForDraft(String namespaceId, String name, String type,
         String description,
@@ -1035,6 +1083,7 @@ public class AiResourceManager {
     
     /**
      * Resolve the base version to copy from when creating a draft.
+     * <p>解析创建草稿时的基线版本：显式 basedOn → latest → 最高 semver/vN。</p>
      *
      * <p>Priority: explicit basedOnVersion → "latest" label → highest semver → highest vN.
      * Returns {@code null} if no version exists yet.</p>
@@ -1064,6 +1113,7 @@ public class AiResourceManager {
     
     /**
      * Ensure no editing or reviewing version exists; throw CONFLICT otherwise.
+     * <p>确保无 editing/reviewing 版本，否则抛 CONFLICT。</p>
      *
      * @param info   the parsed version info
      * @param action action description for error message (e.g. "upload", "create draft")
@@ -1079,6 +1129,7 @@ public class AiResourceManager {
     
     /**
      * Build a page result from items and the source meta page.
+     * <p>由条目列表与源分页构造结果页。</p>
      */
     public static <T> Page<T> buildPageResult(List<T> items, Page<?> sourcePage, int pageNo) {
         Page<T> result = new Page<>();
@@ -1091,6 +1142,7 @@ public class AiResourceManager {
     
     /**
      * Functional interface for deleting storage associated with a specific version.
+     * <p>删除指定版本关联存储的函数式接口。</p>
      */
     @FunctionalInterface
     public interface VersionStorageDeleter {
@@ -1100,6 +1152,7 @@ public class AiResourceManager {
     
     /**
      * Delete meta and all version rows for a resource, invoking the given deleter for each version's storage.
+     * <p>删除 meta 及全部版本行，并对每版本调用 storageDeleter。</p>
      */
     public void deleteResourceWithVersions(String namespaceId, String name, String type,
         VersionStorageDeleter storageDeleter) throws NacosException {
@@ -1122,6 +1175,7 @@ public class AiResourceManager {
     
     /**
      * Execute the publish pipeline for a resource version. Returns {@code true} if the pipeline is processing
+     * <p>执行发布流水线；异步处理中返回 true，同步穿透返回 false。</p>
      * asynchronously. Returns {@code false} if the pipeline fell through synchronously (caller should do direct
      * publish).
      */
@@ -1134,6 +1188,7 @@ public class AiResourceManager {
     
     /**
      * Execute the publish pipeline for a resource version with a caller-provided completion callback.
+     * <p>执行发布流水线并传入完成回调。</p>
      *
      * <p>The initial IN_PROGRESS record is still written here so the version can expose a stable executionId
      * before async execution starts.</p>
@@ -1154,6 +1209,7 @@ public class AiResourceManager {
     
     /**
      * Transition a reviewed version back to draft for re-editing.
+     * <p>将 reviewed 版本退回 draft 以便重新编辑。</p>
      *
      * <p>Only versions in {@code reviewed} status can be re-edited. The version number and content
      * are preserved; only the status changes to {@code draft} and meta pointers are updated.</p>
@@ -1184,7 +1240,7 @@ public class AiResourceManager {
         aiResourceVersionPersistService.updateStatus(namespaceId, name, type, version,
             AiResourceConstants.VERSION_STATUS_DRAFT);
         
-        // Mark pipeline info as historical so redraft history is not treated as the current review.
+        // 标记流水线信息为历史，避免 redraft 后仍视为当前审核
         if (StringUtils.isNotBlank(v.getPublishPipelineInfo())) {
             try {
                 PublishPipelineInfo pipelineInfo =
@@ -1211,6 +1267,7 @@ public class AiResourceManager {
     
     /**
      * Unified delete-draft logic for all resource types.
+     * <p>统一删除草稿逻辑：清理 meta 指针并删除版本行与存储。</p>
      *
      * <p>Resolves the target version from editingVersion (primary) or reviewingVersion (fallback
      * for reviewed/draft status), clears the corresponding meta pointer, deletes the version row,
@@ -1229,7 +1286,7 @@ public class AiResourceManager {
         String editing = info.getEditingVersion();
         
         if (StringUtils.isBlank(editing)) {
-            // Fallback: try reviewingVersion (reviewed/draft status can be deleted)
+            // 回退：尝试 reviewingVersion（reviewed/draft 可删）
             String reviewing = info.getReviewingVersion();
             if (StringUtils.isBlank(reviewing)) {
                 return;
@@ -1256,11 +1313,11 @@ public class AiResourceManager {
         AiResourceVersion v =
             aiResourceVersionPersistService.find(namespaceId, name, type, editing);
         
-        // Clear meta pointer first
+        // 先清理 meta 指针
         info.setEditingVersion(null);
         updateVersionInfoCas(namespaceId, meta, info);
         
-        // Delete version row and storage only if status is draft
+        // 仅 draft 状态才删除版本行与存储
         if (v != null && AiResourceConstants.VERSION_STATUS_DRAFT
             .equalsIgnoreCase(v.getStatus())) {
             storageDeleter.deleteStorage(v);
@@ -1273,6 +1330,7 @@ public class AiResourceManager {
     
     /**
      * Handle pipeline completion: persist pipeline info and transition version status.
+     * <p>流水线完成回调：持久化流水线信息并将版本置为 reviewed。</p>
      *
      * <p>Both approved and rejected results transition to {@code reviewed}. Users must explicitly
      * call redraft to return to draft.</p>

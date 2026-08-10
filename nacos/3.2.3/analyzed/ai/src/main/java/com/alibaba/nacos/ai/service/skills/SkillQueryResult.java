@@ -22,6 +22,7 @@ import com.alibaba.nacos.api.ai.model.skills.Skill;
  * Result wrapper returned by the skill listener path. It carries the resolved {@link Skill}, its
  * published content MD5 and the resolved version string so that the controller can populate the
  * listener-related response headers without re-parsing the manifest.
+ * <p>Skill 监听查询结果包装：携带 Skill、contentMd5 与解析版本，供控制器设置响应头。</p>
  *
  * <p>When the client-supplied MD5 matches the published one, {@link #isNotModified()} is
  * {@code true} and {@link #getSkill()} is {@code null}; the controller maps this to HTTP 304
@@ -54,6 +55,7 @@ public class SkillQueryResult {
     /**
      * Build a result that signals "client cache is fresh". The {@code skill} payload is intentionally
      * left {@code null} so the controller can short-circuit to HTTP 304 without loading content.
+     * <p>构造 notModified 结果：skill 为 null，控制器可返回 HTTP 304。</p>
      */
     public static SkillQueryResult notModified(String md5, String resolvedVersion) {
         return new SkillQueryResult(null, md5, resolvedVersion, true);

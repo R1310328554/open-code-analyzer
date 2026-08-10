@@ -26,59 +26,50 @@ import java.util.Map;
 
 /**
  * Generic query condition for repository list APIs.
+ * <p>仓储层列表查询的通用条件封装，支持命名空间、类型、模糊搜索、可见性过滤与 OR 组合。</p>
  *
  * @author nacos
  */
 public class QueryCondition {
     
-    /**
-     * Query filter for namespace.
-     */
+    /** 命名空间过滤条件。 */
+    /** Query filter for namespace. */
     private String namespaceId = Constants.DEFAULT_NAMESPACE_ID;
     
-    /**
-     * Query filter for type, e.g. skill/agentspec.
-     */
+    /** 资源类型过滤，如 skill、agentspec。 */
+    /** Query filter for type, e.g. skill/agentspec. */
     private String type;
     
-    /**
-     * Query filter for name like.
-     */
+    /** 名称模糊匹配（LIKE）。 */
+    /** Query filter for name like. */
     private String nameLike;
     
-    /**
-     * Query filter for bizTags like.
-     */
+    /** 业务标签模糊匹配。 */
+    /** Query filter for bizTags like. */
     private String bizTagsLike;
     
-    /**
-     * Query filter for scope.
-     */
+    /** 可见性 scope 过滤（PUBLIC/PRIVATE）。 */
+    /** Query filter for scope. */
     private String scope;
     
-    /**
-     * Query filter for owner.
-     */
+    /** 资源 owner 过滤。 */
+    /** Query filter for owner. */
     private String owner;
     
-    /**
-     * Query order by field.
-     */
+    /** 排序字段。 */
+    /** Query order by field. */
     private String orderBy;
     
-    /**
-     * Query filter for authorized resource names.
-     */
+    /** 授权可读的资源名白名单。 */
+    /** Query filter for authorized resource names. */
     private List<String> authorizedResourceNames = new ArrayList<>();
     
-    /**
-     * Optional OR group, field -> value. List value means IN.
-     */
+    /** 可选 OR 条件组：field→value，值为 List 时表示 IN。 */
+    /** Optional OR group, field -> value. List value means IN. */
     private Map<String, Object> orGroup = new LinkedHashMap<>();
     
-    /**
-     * Whether this query is guaranteed to return empty result.
-     */
+    /** 标记该查询恒为空结果（可见性冲突时使用）。 */
+    /** Whether this query is guaranteed to return empty result. */
     private boolean alwaysEmpty;
     
     public String getNamespaceId() {
@@ -154,9 +145,8 @@ public class QueryCondition {
         this.orGroup = orGroup;
     }
     
-    /**
-     * Put one item into OR group.
-     */
+    /** 向 OR 条件组追加一项；field 或 value 为 null 时忽略。 */
+    /** Put one item into OR group. */
     public void putOrGroup(String field, Object value) {
         if (field == null || value == null) {
             return;

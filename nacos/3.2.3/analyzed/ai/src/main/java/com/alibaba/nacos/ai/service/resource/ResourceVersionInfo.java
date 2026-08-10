@@ -23,17 +23,22 @@ import java.util.Map;
  *
  * <p>Replaces the duplicated inner classes {@code SkillVersionInfo} and {@code AgentSpecVersionInfo}
  * that were previously defined in their respective operation service implementations.</p>
+ * <p>AI 资源版本治理信息的共享结构：editing/reviewing 指针、onlineCnt 与 label 映射。</p>
  *
  * @author nacos
  */
 public class ResourceVersionInfo {
     
+    /** 当前编辑中的草稿版本号。 */
     private String editingVersion;
     
+    /** 当前审核中的版本号。 */
     private String reviewingVersion;
     
+    /** 已上线版本计数。 */
     private Integer onlineCnt;
     
+    /** label 到版本号的映射（如 latest→v1.0）。 */
     private Map<String, String> labels;
     
     public String getEditingVersion() {

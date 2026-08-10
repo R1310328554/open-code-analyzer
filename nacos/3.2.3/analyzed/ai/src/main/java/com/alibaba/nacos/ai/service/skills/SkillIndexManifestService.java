@@ -43,6 +43,7 @@ import static com.alibaba.nacos.ai.model.skills.SkillIndexManifest.LABEL_LATEST;
  *
  * <p>The manifest is stored at group={@code skill_{name}}, dataId={@code skill_index.json},
  * and serves as the single source of truth for client-side skill discovery.</p>
+ * <p>Skill 索引 manifest 的 Config 读写服务，是客户端发现 Skill 版本的权威来源。</p>
  *
  * @author nacos
  */
@@ -66,6 +67,7 @@ public class SkillIndexManifestService {
     
     /**
      * Query manifest from server-side config cache.
+     * <p>从服务端配置缓存查询 manifest；不存在返回 null。</p>
      *
      * @return manifest object, or null if config not found
      */
@@ -88,6 +90,7 @@ public class SkillIndexManifestService {
     
     /**
      * Get existing manifest or create a new empty one with initialized maps.
+     * <p>加载已有 manifest 或创建空实例并初始化 labels/versions 映射。</p>
      */
     public SkillIndexManifest loadForUpdate(String namespaceId, String skillName) {
         SkillIndexManifest manifest = query(namespaceId, skillName);
@@ -105,6 +108,7 @@ public class SkillIndexManifestService {
     
     /**
      * Write manifest to Nacos Config. Creates if not exists, updates if already exists.
+     * <p>写入 manifest 到 Config；不存在则创建，已存在则更新。</p>
      */
     public void write(String namespaceId, String skillName, SkillIndexManifest manifest)
         throws NacosException {
@@ -130,6 +134,7 @@ public class SkillIndexManifestService {
     
     /**
      * Delete manifest from Nacos Config.
+     * <p>从 Config 删除 manifest。</p>
      */
     public void delete(String namespaceId, String skillName) throws NacosException {
         configOperationService.deleteConfig(SkillUtils.SKILL_INDEX_DATA_ID,
@@ -138,6 +143,7 @@ public class SkillIndexManifestService {
     
     /**
      * Resolve version from manifest: explicit version > label lookup > latest label.
+     * <p>从 manifest 解析版本：显式 version &gt; label &gt; latest。</p>
      *
      * @param manifest the manifest to resolve from
      * @param version  explicit version (may be blank)

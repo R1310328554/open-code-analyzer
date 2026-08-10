@@ -18,6 +18,7 @@ package com.alibaba.nacos.ai.service.skills;
 
 /**
  * Request for uploading a skill package.
+ * <p>Skill ZIP 上传请求：命名空间、字节流、是否覆盖、目标版本与提交说明。</p>
  *
  * @author nacos
  */
@@ -57,9 +58,8 @@ public class SkillUploadRequest {
         return commitMsg;
     }
     
-    /**
-     * Builder for {@link SkillUploadRequest}.
-     */
+    /** {@link SkillUploadRequest} 的构建器。 */
+    /** Builder for {@link SkillUploadRequest}. */
     public static class Builder {
         
         private final SkillUploadRequest request = new SkillUploadRequest();

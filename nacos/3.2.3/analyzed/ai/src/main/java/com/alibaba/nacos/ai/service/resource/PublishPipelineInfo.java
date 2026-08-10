@@ -27,6 +27,7 @@ import java.util.List;
  * <p>Replaces the duplicated inner classes {@code SkillPublishPipelineInfo} and
  * {@code AgentSpecPublishPipelineInfo} that were previously defined in their respective
  * operation service implementations.</p>
+ * <p>AI 资源发布流水线信息的共享结构，替代各 OperationService 内重复的内部类。</p>
  *
  * @author nacos
  */
@@ -42,6 +43,7 @@ public class PublishPipelineInfo {
      * Indicates this pipeline info is from a previous review cycle (e.g. after redraft).
      * When {@code true}, the pipeline result should not be used for force-publish eligibility
      * on draft versions. Null or false means the pipeline info is current.
+     * <p>标记为历史审核周期（如 redraft 后）；true 时不应用于 draft 的强制发布资格判断。</p>
      */
     private Boolean historical;
     

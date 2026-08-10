@@ -90,6 +90,7 @@ import static com.alibaba.nacos.ai.constant.Constants.Skills;
  *
  * <p>Version lifecycle: Draft -> (Submit) -> Reviewing -> (Pipeline approved) -> Reviewed -> (Publish) -> Online.
  * Pipeline rejected returns to Draft. When no pipeline is configured, submit publishes directly to Online.</p>
+ * <p>Skill 全生命周期实现：上传、引导、草稿/审核/发布、查询与删除；版本流转 Draft→Reviewing→Reviewed→Online。</p>
  *
  * @author nacos
  */
@@ -100,6 +101,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Default storage provider for skills when system config is not specified.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static final String STORAGE_PROVIDER_NACOS_CONFIG = "nacos_config";
     
@@ -108,6 +110,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      *
      * <p>Similar to Nacos datasource type selection, this allows choosing
      * different storage providers via service-level configuration.</p>
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static final String SKILL_STORAGE_PROVIDER_CONFIG_KEY =
         "nacos.ai.skill.storage.provider";
@@ -156,6 +159,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      * <p>Flow: parse ZIP -> validate name -> resolve version -> check existing meta.
      * If overwrite=true, replaces the current editing draft or creates a new one.
      * If overwrite=false, fails when a working version (editing/reviewing) already exists.</p>
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public String uploadSkillFromZip(SkillUploadRequest request) throws NacosException {
@@ -173,6 +177,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Batch upload multiple skills from a single zip archive using best-effort strategy.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public BatchUploadResult batchUploadSkillsFromZip(String namespaceId, byte[] zipBytes,
@@ -207,6 +212,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Core logic for uploading a single skill: validate, check meta, create/overwrite draft, log.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String doUploadSingleSkill(String namespaceId, Skill skill, String uploadVersion,
         boolean overwrite, String commitMsg) throws NacosException {
@@ -239,6 +245,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Bootstrap a built-in skill from a ZIP archive (delegates to the overload with null source).
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void bootstrapSkillFromZip(String namespaceId, byte[] zipBytes) throws NacosException {
@@ -250,6 +257,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      *
      * <p>Unlike upload, this directly writes storage and creates a published meta + version
      * in one step (no draft/review workflow), and also initializes the index manifest.</p>
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void bootstrapSkillFromZip(String namespaceId, byte[] zipBytes, String from)
@@ -296,6 +304,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Handle overwrite upload: if an editing draft exists, overwrite it in-place;
      * otherwise create a new draft with a bumped version.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String overwriteUploadedSkill(String namespaceId, Skill skill, String uploadVersion,
         AiResource meta, String commitMsg)
@@ -326,6 +335,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      * Resolve the upload version.
      * Priority: SKILL.md YAML front-matter (version / metadata.version) -> meta.json in ZIP -> user-specified targetVersion -> default "0.0.1".
      * Rejects non-{@code x.y.z}/{@code vN} versions from any source so invalid values cannot reach storage.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String resolveUploadVersion(String skillMd, byte[] zipBytes, String targetVersion)
         throws NacosApiException {
@@ -356,6 +366,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Extract version string from SKILL.md YAML front-matter ("version" or "metadata.version" key).
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static String resolveVersionFromSkillMd(String skillMd) {
         if (StringUtils.isBlank(skillMd)) {
@@ -375,6 +386,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Ensure the candidate version doesn't collide with existing versions.
      * If collision occurs, bump to next patch version based on the max existing semver.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String resolveFinalUploadVersion(String namespaceId, String skillName,
         String candidateVersion) throws NacosException {
@@ -399,6 +411,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Resolve the next draft version number. Tries semver patch bump first, falls back to legacy vN format.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String resolveNextDraftVersion(String namespaceId, String skillName)
         throws NacosException {
@@ -419,6 +432,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      * Resolve a user-specified target version for draft creation.
      * Validates format, checks for conflicts with existing versions, and ensures it's greater than the base version.
      * Falls back to {@link #resolveNextDraftVersion} if targetVersion is blank.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private String resolveSpecifiedDraftVersion(String namespaceId, String skillName,
         String targetVersion,
@@ -453,6 +467,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Overwrite an existing editing draft's storage content and update meta description.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private void overwriteEditingDraft(String namespaceId, Skill skill, AiResource meta,
         String editing, String commitMsg)
@@ -476,6 +491,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Get skill detail metadata including all version summaries, labels, and online count.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public SkillMeta getSkillDetail(String namespaceId, String skillName) throws NacosException {
@@ -534,6 +550,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Get the full content of a specific skill version by reading its files from storage.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public Skill getSkillVersionDetail(String namespaceId, String skillName, String version)
@@ -559,6 +576,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Download a specific skill version (same as getVersionDetail but also publishes a download event for metrics).
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public Skill downloadSkillVersion(String namespaceId, String skillName, String version)
@@ -572,6 +590,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Delete a skill entirely. Order: index manifest -> meta + all version rows -> storage files.
      * Deleting index manifest first cuts off client discovery immediately.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void deleteSkill(String namespaceId, String skillName) throws NacosException {
@@ -608,6 +627,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * List skills with optional name filter, ordering, owner/scope/bizTag filter, and pagination.
      * Supports both accurate and fuzzy name matching.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public Page<SkillSummary> listSkills(String namespaceId, String skillName, String search,
@@ -688,6 +708,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      * otherwise resolves the latest/base version to fork from. Ensures no other working version exists.</p>
      *
      * @return the newly created draft version string
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public String createDraft(String namespaceId, String name, String basedOnVersion,
@@ -777,6 +798,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Update the content of an existing editing draft. Validates required fields,
      * writes updated files to storage, and bumps the meta description.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void updateDraft(String namespaceId, Skill draftSkill, String commitMsg)
@@ -827,6 +849,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Delete the current editing draft. Clears the editingVersion pointer in meta first,
      * then removes the version row and its storage files.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void deleteDraft(String namespaceId, String name) throws NacosException {
@@ -841,6 +864,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      * <p>Flow: resolve target version -> move status to "reviewing" ->
      * check if a publish pipeline is available. If pipeline is available, run it asynchronously;
      * otherwise publish directly.</p>
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public String submit(String namespaceId, String name, String version) throws NacosException {
@@ -924,6 +948,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Publish a version: update version status to online and write the version into the index manifest.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void publish(String namespaceId, String name, String version, boolean updateLatestLabel)
@@ -944,6 +969,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Force-publish a draft, reviewing, or reviewed version. Same manifest update as {@link #publish}.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void forcePublish(String namespaceId, String name, String version,
@@ -967,6 +993,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Update version labels (e.g., "latest") for a skill. Syncs both meta versionInfo and index manifest.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void updateLabels(String namespaceId, String name, Map<String, String> labels)
@@ -982,6 +1009,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Update business tags on the skill meta.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void updateBizTags(String namespaceId, String name, String bizTags)
@@ -1001,6 +1029,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      * <p>Skill-scope online: rebuilds the index manifest from all online versions.
      * Skill-scope offline: deletes the index manifest entirely.
      * Version-scope: adds/removes the specific version entry from the manifest.</p>
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void changeOnlineStatus(String namespaceId, String name, String scope, String version,
@@ -1052,6 +1081,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Update the visibility scope of a skill.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public void updateScope(String namespaceId, String name, String scope) throws NacosException {
@@ -1060,6 +1090,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Search skills by keyword (fuzzy name match). Only returns enabled skills with at least one online version.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public Page<SkillBasicInfo> searchSkills(String namespaceId, String keyword, int pageNo,
@@ -1103,6 +1134,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Query a skill for client consumption. Resolves the target version via explicit version, label, or manifest,
      * loads the skill content from the index manifest's file list, and publishes a download event.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @Override
     public Skill querySkill(String namespaceId, String name, String version, String label)
@@ -1149,6 +1181,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      * Core draft creation logic shared by upload, overwrite, and createDraft flows.
      * Steps: 1) write all resource files to storage, 2) insert a draft version row,
      * 3) create or update the meta row with editingVersion pointer.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private void createDraftWithSkill(String namespaceId, Skill skill, String version,
         AiResource existedMeta,
@@ -1183,6 +1216,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Resolve the storage provider from system config. Defaults to "nacos_config".
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static String resolveSkillStorageProvider() {
         String provider =
@@ -1195,6 +1229,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      *
      * @param contentMd5 published content MD5; may be {@code null} or blank when the caller does not
      *                   yet need to persist the listener-related fingerprint
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static String buildStorageJson(String namespaceId, String skillName, String version,
         List<String> files, String contentMd5) {
@@ -1211,6 +1246,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Parse the file path list from storage JSON.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     @SuppressWarnings("unchecked")
     private static List<String> parseStorageFiles(String storageJson) {
@@ -1232,6 +1268,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      * Refresh skill index manifest from current DB state (used when skill is re-enabled).
      * Rebuilds manifest with all online versions and labels from meta.
      * Best-effort: failures are logged but not propagated.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private void refreshSkillIndexManifest(String namespaceId, String name) {
         try {
@@ -1274,6 +1311,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Validate skill name using the configured parameter checker (e.g., character set, length).
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private void validateSkillNameByParamChecker(String skillName) throws NacosApiException {
         ParamInfo paramInfo = new ParamInfo();
@@ -1294,6 +1332,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
      * Write all skill files to storage as raw file contents (no JSON envelope).
      *
      * @return list of stored file paths (for use in buildStorageJson)
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private List<String> writeSkillToStorage(String namespaceId, Skill skill, String version)
         throws NacosException {
@@ -1361,6 +1400,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Build pipeline file representations from a Skill for use by the publish pipeline executor.
      * Includes SKILL.md and all resource files.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static List<ResourceFileContent> buildPipelineFiles(Skill skill) {
         List<ResourceFileContent> files = new ArrayList<>();
@@ -1393,6 +1433,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Load skill from storage by reading all resource files listed in storageJson.
      * SKILL.md content provides name/description and markdown body; others populate the resource map.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private Skill loadSkillFromStorage(String namespaceId, String skillName, String version,
         String storageJson)
@@ -1408,6 +1449,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Load skill from storage by reading all files from the given file list.
      * SKILL.md content provides name/description and markdown body; others populate the resource map.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private Skill loadSkillFromFiles(String namespaceId, String skillName, String version,
         List<String> files)
@@ -1446,6 +1488,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Build a storage-relative file path for a resource: "{type}/{name}" or just "{name}" if type is blank.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static String buildResourceFilePath(SkillResource resource) {
         String type = resource.getType();
@@ -1458,6 +1501,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     /**
      * Reconstruct a SkillResource from a stored file path and its raw content.
      * Splits the path into type/name and detects binary encoding.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static SkillResource buildResourceFromStoredFile(String filePath, String content) {
         SkillResource resource = new SkillResource();
@@ -1481,6 +1525,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Extract name and description from SKILL.md YAML front-matter and populate the Skill object.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static void parseSkillBaseInfoFromSkillMd(String markdown, Skill skill) {
         if (StringUtils.isBlank(markdown) || skill == null) {
@@ -1497,6 +1542,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
     
     /**
      * Delete all storage files for a given skill version using the file list from storageJson.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private void deleteSkillStorageForVersion(String namespaceId, String skillName, String version,
         String storageJson)

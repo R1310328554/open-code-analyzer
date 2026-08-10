@@ -29,6 +29,7 @@ import java.util.Map;
 
 /**
  * Default converter from advisor to table query condition.
+ * <p>将可见性插件 {@link QueryAdvisor} 转换为仓储可执行的 {@link QueryCondition}。</p>
  *
  * @author nacos
  */
@@ -57,7 +58,7 @@ public class DefaultVisibilityAdvisorConverter implements VisibilityAdvisorConve
                 applyPublicAndOwner(result, identity);
                 break;
         }
-        // TODO: stage-2 authorized resources integration.
+        // TODO: 阶段二接入授权资源列表
         List<String> authorized =
             advisor.getAuthorizedPredicate() == null ? null : advisor.getAuthorizedPredicate()
                 .getResources();
@@ -106,8 +107,7 @@ public class DefaultVisibilityAdvisorConverter implements VisibilityAdvisorConve
         if (scopeIsPublic || ownerIsIdentity) {
             return;
         }
-        // this condition means scope != public and owner != identity.
-        // it conflicts with visibility `public or owner is identity`, so it must be always empty
+        // scope 非 public 且 owner 非当前用户，与「public 或 owner 为自己」冲突，结果必为空
         if (hasScope && hasOwner) {
             condition.setAlwaysEmpty(true);
             return;

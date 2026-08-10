@@ -28,15 +28,17 @@ import java.util.Map;
 
 /**
  * Skill operation service.
+ * <p>Skill 资源操作接口：管理端 CRUD、客户端查询、草稿/发布流水线及可见性 scope。</p>
  *
  * @author nacos
  */
 public interface SkillOperationService {
     
-    // ========== Admin APIs ==========
+    // ========== 管理端 API ==========
     
     /**
      * Upload skill from zip file.
+     * <p>从 ZIP 上传 Skill。</p>
      *
      * @param request upload request
      * @return skill name
@@ -46,6 +48,7 @@ public interface SkillOperationService {
     
     /**
      * Batch upload multiple skills from a single zip archive. The zip must contain one-level subdirectories,
+     * <p>从单个 ZIP 批量上传多个 Skill（一级子目录各含 SKILL.md），尽力处理并返回成功/失败列表。</p>
      * each with its own SKILL.md. Uses best-effort strategy: processes all skills individually, returning
      * succeeded and failed lists.
      *
@@ -61,6 +64,7 @@ public interface SkillOperationService {
     
     /**
      * Bootstrap skill from zip file as an online skill.
+     * <p>从 ZIP 引导内置 Skill 为在线状态，跳过草稿/流水线。</p>
      *
      * <p>This is intended for server-side built-in data initialization and bypasses draft/pipeline flow.</p>
      *
@@ -77,6 +81,7 @@ public interface SkillOperationService {
      * @param zipBytes zip file bytes
      * @param from source identifier, e.g. github.com/nacos
      * @throws NacosException if bootstrap failed
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     default void bootstrapSkillFromZip(String namespaceId, byte[] zipBytes, String from)
         throws NacosException {
@@ -85,6 +90,7 @@ public interface SkillOperationService {
     
     /**
      * Get skill detail for admin usage. Returns version governance metadata and all version summaries.
+     * <p>管理端获取 Skill 治理元数据与各版本摘要。</p>
      *
      * @param namespaceId namespace ID
      * @param skillName skill name
@@ -95,6 +101,7 @@ public interface SkillOperationService {
     
     /**
      * Get skill version detail for admin usage. Returns full skill content for a specific version, used for viewing or editing.
+     * <p>管理端获取指定版本的完整 Skill 内容。</p>
      *
      * @param namespaceId namespace ID
      * @param skillName skill name
@@ -107,6 +114,7 @@ public interface SkillOperationService {
     
     /**
      * Download skill version. Semantically identical to {@link #getSkillVersionDetail} but provides a separate
+     * <p>下载指定版本 Skill，语义同 getSkillVersionDetail，独立入口便于统计下载次数。</p>
      * entry point so that download events can be tracked independently (e.g. download count statistics).
      *
      * @param namespaceId namespace ID
@@ -120,6 +128,7 @@ public interface SkillOperationService {
     
     /**
      * Delete skill.
+     * <p>删除整个 Skill 资源。</p>
      *
      * @param namespaceId namespace ID
      * @param skillName skill name
@@ -129,6 +138,7 @@ public interface SkillOperationService {
     
     /**
      * List skills with pagination for admin usage. Returns full governance metadata.
+     * <p>管理端分页列出 Skill，含完整治理元数据。</p>
      *
      * @param namespaceId namespace ID
      * @param skillName skill name (for search)
@@ -143,6 +153,7 @@ public interface SkillOperationService {
     
     /**
      * List skills with pagination and optional ordering for admin usage.
+     * <p>管理端分页列表，支持 orderBy 排序。</p>
      *
      * @param namespaceId namespace ID
      * @param skillName skill name (for search)
@@ -159,6 +170,7 @@ public interface SkillOperationService {
     
     /**
      * List skills with pagination, optional ordering, and additional filter criteria for admin usage.
+     * <p>扩展分页列表：支持 owner、scope 过滤。</p>
      *
      * <p>Backward-compatible: when {@code owner} and {@code scope} are both {@code null}/empty,
      * the behaviour is identical to
@@ -184,6 +196,7 @@ public interface SkillOperationService {
     
     /**
      * List skills with pagination, optional ordering, and additional filter criteria including bizTag for admin usage.
+     * <p>扩展分页列表：额外支持 bizTag 模糊过滤。</p>
      *
      * <p>Backward-compatible: when {@code owner}, {@code scope} and {@code bizTag} are all {@code null}/empty,
      * the behaviour is identical to
@@ -207,6 +220,7 @@ public interface SkillOperationService {
     
     /**
      * Create a new draft version.
+     * <p>创建新草稿版本；全新 Skill 或无基线时需 initialContent。</p>
      * <p>
      * {@code initialContent} is required for a brand-new skill or when no published version exists to fork from.
      * When forking from an existing version, {@code initialContent} must be null and content is copied from the base
@@ -228,6 +242,7 @@ public interface SkillOperationService {
     
     /**
      * Update existing draft content.
+     * <p>更新当前草稿版本的完整 Skill 内容。</p>
      *
      * @param namespaceId namespace ID
      * @param draftSkill full skill content to write into draft
@@ -237,11 +252,13 @@ public interface SkillOperationService {
     
     /**
      * Delete current draft and release working pointer.
+     * <p>删除当前草稿并释放 working 指针。</p>
      */
     void deleteDraft(String namespaceId, String name) throws NacosException;
     
     /**
      * Submit a draft version for publish. If no pipeline plugins configured, will directly publish.
+     * <p>提交草稿进入发布流程；无流水线插件时直接发布。</p>
      *
      * @return submit result identifier or current version
      */
@@ -249,12 +266,14 @@ public interface SkillOperationService {
     
     /**
      * Publish a reviewing version. Must have pipeline all passed when pipeline exists.
+     * <p>发布审核中版本；存在流水线时需全部节点通过。</p>
      */
     void publish(String namespaceId, String name, String version, boolean updateLatestLabel)
         throws NacosException;
     
     /**
      * Force-publish a skill version, bypassing pipeline validation.
+     * <p>强制发布指定版本，跳过流水线校验；仅管理员可用。</p>
      * Accepts draft, reviewing, and reviewed versions.
      * Should only be invoked by admin users.
      *
@@ -268,6 +287,7 @@ public interface SkillOperationService {
     
     /**
      * Re-edit a reviewed version, transitioning it back to draft.
+     * <p>将已审核版本退回草稿状态以便重新编辑。</p>
      *
      * @param namespaceId namespace
      * @param name        skill name
@@ -277,17 +297,20 @@ public interface SkillOperationService {
     
     /**
      * Update labels mapping (label -> version) without changing any version status.
+     * <p>更新 label→version 映射，不改变各版本状态。</p>
      */
     void updateLabels(String namespaceId, String name, Map<String, String> labels)
         throws NacosException;
     
     /**
      * Update skill biz tags JSON.
+     * <p>更新 Skill 业务标签 JSON。</p>
      */
     void updateBizTags(String namespaceId, String name, String bizTags) throws NacosException;
     
     /**
      * Online/offline operation.
+     * <p>上线/下线：scope 为 skill 时全局启停，否则针对指定版本。</p>
      *
      * @param scope "skill" for global enable/disable, otherwise version scope
      * @param version version to operate when scope is version-level
@@ -298,6 +321,7 @@ public interface SkillOperationService {
     
     /**
      * Update skill visibility scope (PUBLIC or PRIVATE). Only the owner or users with explicit write permission can
+     * <p>更新可见性 scope（PUBLIC/PRIVATE）；仅 owner 或有写权限用户可操作。</p>
      * change the scope.
      *
      * @param namespaceId namespace ID
@@ -307,10 +331,11 @@ public interface SkillOperationService {
      */
     void updateScope(String namespaceId, String name, String scope) throws NacosException;
     
-    // ========== Client APIs ==========
+    // ========== 客户端 API ==========
     
     /**
      * Search skills for runtime client usage. Only returns enabled skills that have at least one online version.
+     * <p>客户端运行时搜索：仅返回已启用且至少有一个在线版本的 Skill 摘要。</p>
      * Returns only name and description for client consumption.
      *
      * @param namespaceId namespace ID
@@ -323,6 +348,7 @@ public interface SkillOperationService {
     
     /**
      * Query skill for runtime client usage. Priority: label > version > latest(label).
+     * <p>客户端查询 Skill，解析优先级：label &gt; version &gt; latest(label)。</p>
      *
      * @param namespaceId namespace ID
      * @param name skill name

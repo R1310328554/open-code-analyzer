@@ -46,7 +46,8 @@ import java.util.Map;
  *
  * <p>Defensive null-fallback: if the MD5 is missing or the back-fill fails for any reason, this
  * service responds with HTTP 200 and the freshly computed MD5 instead of HTTP 304, so the client
- * is guaranteed to refresh its local cache at least once after the feature ships.
+ * is guaranteed to refresh its local cache at least once after the feature ships.</p>
+ * <p>Skill 客户端监听查询实现：发布时持久化 contentMd5，历史版本首次查询时同步回填（Path A）；MD5 缺失时防御性返回 200 而非 304。</p>
  *
  * @author nacos
  * @since 3.2.0
@@ -79,29 +80,22 @@ public class SkillClientOperationServiceImpl implements SkillClientOperationServ
                 "Required parameter `name` not present");
         }
         
-        // Step 1: Resolve target version up-front so we can short-circuit on MD5 match without
-        // loading the full skill bytes. Manifest absence here is treated as not-found and falls
-        // through to skillOperationService.querySkill which raises a consistent error message.
+        // 步骤 1：先解析目标版本以便 MD5 匹配时短路，无需加载完整 Skill 字节
         String resolvedVersion = resolveVersionFromManifest(namespaceId, name, version, label);
         
-        // Step 2: Read the published content MD5 directly from the version row's storage JSON.
+        // 步骤 2：从版本行 storage JSON 读取已发布的 contentMd5
         String storedMd5 = readStoredContentMd5(namespaceId, name, resolvedVersion);
         
-        // Step 3: Fast path — client cache is fresh, no need to load skill bytes.
+        // 步骤 3：快路径——客户端缓存有效，无需加载 Skill 内容
         if (StringUtils.isNotBlank(storedMd5) && StringUtils.isNotBlank(clientMd5)
             && storedMd5.equals(clientMd5)) {
             return SkillQueryResult.notModified(storedMd5, resolvedVersion);
         }
         
-        // Step 4: Load the skill via the regular query path. This also validates meta visibility
-        // and produces the canonical NOT_FOUND error when the resource has been deleted in flight.
+        // 步骤 4：走常规查询路径加载 Skill，同时校验可见性
         Skill skill = skillOperationService.querySkill(namespaceId, name, version, label);
         
-        // Step 5: Decide effective MD5. When the version row is missing the field (legacy publish
-        // before the listener feature shipped), compute it from the loaded skill and back-fill the
-        // storage column synchronously (Path A). The defensive null-fallback ensures we always
-        // return a fresh payload in this branch — never not-modified — even if the freshly
-        // computed MD5 happens to coincide with the client-supplied one.
+        // 步骤 5：决定有效 MD5；缺失时从已加载 Skill 计算并回填（Path A）
         String effectiveMd5 = storedMd5;
         if (StringUtils.isBlank(effectiveMd5)) {
             effectiveMd5 = backfillContentMd5(namespaceId, name, resolvedVersion, skill);
@@ -111,6 +105,7 @@ public class SkillClientOperationServiceImpl implements SkillClientOperationServ
     
     /**
      * Resolve the target version string from the skill index manifest. Returns {@code null} when
+     * <p>从 Skill 索引 manifest 解析目标版本；manifest 缺失时返回 null。</p>
      * the manifest is missing or the {@code version}/{@code label} cannot be resolved; callers
      * should treat a {@code null} return as "let the regular query path produce NOT_FOUND".
      */
@@ -125,6 +120,7 @@ public class SkillClientOperationServiceImpl implements SkillClientOperationServ
     
     /**
      * Read the persisted {@code contentMd5} from the version row's {@code storage} JSON column.
+     * <p>从版本行 storage JSON 读取 contentMd5。</p>
      * Returns {@code null} when the row is missing, the storage payload is blank, the JSON is
      * unparseable, or the {@code contentMd5} key is absent.
      */
@@ -154,6 +150,7 @@ public class SkillClientOperationServiceImpl implements SkillClientOperationServ
     
     /**
      * Path-A back-fill: compute the content MD5 from the loaded skill and persist it into the
+     * <p>Path-A 回填：从 Skill 计算 MD5 并写入 storage；持久化失败仍返回计算值。</p>
      * version row's storage column. Persistence failure is swallowed and logged; the freshly
      * computed MD5 is still returned so the response carries an authoritative fingerprint.
      */

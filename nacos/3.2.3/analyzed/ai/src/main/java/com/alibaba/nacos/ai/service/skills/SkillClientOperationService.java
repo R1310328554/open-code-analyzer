@@ -20,6 +20,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 
 /**
  * Client runtime entry-point for skill listener queries.
+ * <p>Skill 客户端运行时监听查询入口，支持 MD5 条件请求（304）。</p>
  *
  * <p>The implementation is responsible for resolving the requested version, comparing the
  * client-supplied content MD5 against the published one, lazily back-filling the MD5 for
@@ -33,6 +34,7 @@ public interface SkillClientOperationService {
     
     /**
      * Query a skill from the client runtime path with optional MD5-based not-modified semantics.
+     * <p>客户端路径查询 Skill；clientMd5 与发布 MD5 一致时返回 notModified。</p>
      *
      * <p>When {@code clientMd5} is non-blank and equals the published content MD5 of the resolved
      * version, this method returns a result whose {@link SkillQueryResult#isNotModified()} is
