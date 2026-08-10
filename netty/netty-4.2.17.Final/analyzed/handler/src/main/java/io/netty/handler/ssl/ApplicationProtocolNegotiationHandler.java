@@ -55,7 +55,7 @@ import javax.net.ssl.SSLException;
  *     protected void configurePipeline({@link ChannelHandlerContext} ctx, String protocol) {
  *         if ({@link ApplicationProtocolNames}.HTTP_2.equals(protocol) {
  *             configureHttp2(ctx);
- *         } else if ({@link ApplicationProtocolNames}.HTTP_1_1.equals(protocol)) {
+ *         } else if ({@link ApplicationProtocolNames}.HTTP_1_1.equals(protocol) {
  *             configureHttp1(ctx);
  *         } else {
  *             throw new IllegalStateException("unknown protocol: " + protocol);
@@ -63,15 +63,21 @@ import javax.net.ssl.SSLException;
  *     }
  * }
  * </pre>
+ *
+ * <p>ALPN/NPN 协商完成后按协议名动态装配 pipeline（如 HTTP/2 与 HTTP/1.1）。握手完成前缓冲入站数据，
+ * 避免在 codec 未就绪时丢失字节。</p>
  */
 public abstract class ApplicationProtocolNegotiationHandler extends ChannelInboundHandlerAdapter {
 
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(ApplicationProtocolNegotiationHandler.class);
 
+    /** 协商失败或客户端不支持 ALPN/NPN 时使用的默认协议名。 */
     private final String fallbackProtocol;
+    /** 握手完成前暂存的入站消息。 */
     private final RecyclableArrayList bufferedMessages = RecyclableArrayList.newInstance();
     private ChannelHandlerContext ctx;
+    /** 是否已检查 pipeline 中存在 {@link SslHandler}。 */
     private boolean sslHandlerChecked;
 
     /**
@@ -79,6 +85,8 @@ public abstract class ApplicationProtocolNegotiationHandler extends ChannelInbou
      *
      * @param fallbackProtocol the name of the protocol to use when
      *                         ALPN/NPN negotiation fails or the client does not support ALPN/NPN
+     *
+     * <p>fallback 通常为 {@link ApplicationProtocolNames#HTTP_1_1}。</p>
      */
     protected ApplicationProtocolNegotiationHandler(String fallbackProtocol) {
         this.fallbackProtocol = ObjectUtil.checkNotNull(fallbackProtocol, "fallbackProtocol");
@@ -97,15 +105,20 @@ public abstract class ApplicationProtocolNegotiationHandler extends ChannelInbou
         super.handlerRemoved(ctx);
     }
 
+    /**
+     * 在 TLS 握手与 pipeline 重配完成前，将所有 {@link #channelRead} 消息放入缓冲队列。
+     */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         // Let's buffer all data until this handler will be removed from the pipeline.
+        // 握手完成并移除本 handler 前，先缓冲所有入站数据
         bufferedMessages.add(msg);
         if (!sslHandlerChecked) {
             sslHandlerChecked = true;
             if (ctx.pipeline().get(SslHandler.class) == null) {
                 // Just remove ourself if there is no SslHandler in the pipeline and so we would otherwise
                 // buffer forever.
+                // 无 SslHandler 则无法完成 ALPN，直接移除以免永久缓冲
                 removeSelfIfPresent(ctx);
             }
         }
@@ -113,6 +126,8 @@ public abstract class ApplicationProtocolNegotiationHandler extends ChannelInbou
 
     /**
      * Process all backlog into pipeline from List.
+     *
+     * <p>将缓冲的消息依次 {@code fireChannelRead} 并触发 {@code fireChannelReadComplete}。</p>
      */
     private void fireBufferedMessages() {
         if (!bufferedMessages.isEmpty()) {
@@ -124,6 +139,10 @@ public abstract class ApplicationProtocolNegotiationHandler extends ChannelInbou
         }
     }
 
+    /**
+     * 监听 {@link SslHandshakeCompletionEvent}：成功则从 {@link SslHandler#applicationProtocol()} 取协议并
+     * 调用 {@link #configurePipeline}，然后从 pipeline 移除自身并释放缓冲。
+     */
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof SslHandshakeCompletionEvent) {
@@ -143,6 +162,7 @@ public abstract class ApplicationProtocolNegotiationHandler extends ChannelInbou
                     // control over which exception we propagate down the ChannelPipeline.
                     //
                     // See https://github.com/netty/netty/issues/10342
+                    // 握手失败时不在此处理，由 exceptionCaught 统一传播异常
                 }
             } catch (Throwable cause) {
                 exceptionCaught(ctx, cause);
@@ -167,6 +187,7 @@ public abstract class ApplicationProtocolNegotiationHandler extends ChannelInbou
         super.channelInactive(ctx);
     }
 
+    /** 从 pipeline 安全移除当前 handler。 */
     private void removeSelfIfPresent(ChannelHandlerContext ctx) {
         ChannelPipeline pipeline = ctx.pipeline();
         if (!ctx.isRemoved()) {
@@ -181,11 +202,15 @@ public abstract class ApplicationProtocolNegotiationHandler extends ChannelInbou
      * @param protocol the name of the negotiated application-level protocol, or
      *                 the fallback protocol name specified in the constructor call if negotiation failed or the client
      *                 isn't aware of ALPN/NPN extension
+     *
+     * <p>子类在此添加 HTTP/2、HTTP/1.1 等 codec 与业务 handler。</p>
      */
     protected abstract void configurePipeline(ChannelHandlerContext ctx, String protocol) throws Exception;
 
     /**
      * Invoked on failed initial SSL/TLS handshake.
+     *
+     * <p>默认记录警告并关闭连接；子类可覆盖。</p>
      */
     protected void handshakeFailure(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         logger.warn("{} TLS handshake failed:", ctx.channel(), cause);

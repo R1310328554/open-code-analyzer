@@ -40,6 +40,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.PrivateKey;
 
+/**
+ * 使用 Bouncy Castle PKIX 解析 PEM 格式 PKCS#1/PKCS#8 私钥（明文或口令加密）。
+ *
+ * <p>供 {@link SslContextBuilder} 等在 OpenSSL 风格 PEM 密钥不可用 JDK 默认 Provider 解析时的后备路径；
+ * BC 不可用时方法返回 {@code null} 并记录 debug 日志。</p>
+ */
 final class BouncyCastlePemReader {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(BouncyCastlePemReader.class);
 
@@ -50,6 +56,8 @@ final class BouncyCastlePemReader {
      * @param keyPassword the password of the {@code keyFile}.
      *                    {@code null} if it's not password-protected.
      * @return generated {@link PrivateKey}.
+     *
+     * <p>从输入流读取 PEM 私钥；失败或 BC 不可用返回 {@code null}。</p>
      */
     public static PrivateKey getPrivateKey(InputStream keyInputStream, String keyPassword) {
         if (!BouncyCastleUtil.isBcPkixAvailable()) {
@@ -74,6 +82,8 @@ final class BouncyCastlePemReader {
      * @param keyPassword the password of the {@code keyFile}.
      *                    {@code null} if it's not pa ssword-protected.
      * @return generated {@link PrivateKey}.
+     *
+     * <p>从文件读取 PEM 私钥。</p>
      */
     public static PrivateKey getPrivateKey(File keyFile, String keyPassword) {
         if (!BouncyCastleUtil.isBcPkixAvailable()) {
@@ -91,10 +101,17 @@ final class BouncyCastlePemReader {
         }
     }
 
+    /** 使用 BC JCE Provider 的 PEM 密钥转换器。 */
     private static JcaPEMKeyConverter newConverter() {
         return new JcaPEMKeyConverter().setProvider(BouncyCastleUtil.getBcProviderJce());
     }
 
+    /**
+     * 顺序读取 PEM 中多个对象，直到解析出 {@link PrivateKey} 或 EOF。
+     *
+     * <p>支持：明文 {@link PrivateKeyInfo}/{@link PEMKeyPair}；加密 {@link PEMEncryptedKeyPair}、
+     * {@link PKCS8EncryptedPrivateKeyInfo}（需 keyPassword）。</p>
+     */
     private static PrivateKey getPrivateKey(PEMParser pemParser, String keyPassword) throws IOException,
             PKCSException, OperatorCreationException {
         try {
@@ -110,6 +127,7 @@ final class BouncyCastlePemReader {
 
                 if (keyPassword == null) {
                     // assume private key is not encrypted
+                    // 无口令：按明文 PKCS#8 或传统 PEMKeyPair 处理
                     if (object instanceof PrivateKeyInfo) {
                         pk = converter.getPrivateKey((PrivateKeyInfo) object);
                     } else if (object instanceof PEMKeyPair) {
@@ -120,6 +138,7 @@ final class BouncyCastlePemReader {
                     }
                 } else {
                     // assume private key is encrypted
+                    // 有口令：解密 PEMEncryptedKeyPair 或 PKCS#8 加密块
                     if (object instanceof PEMEncryptedKeyPair) {
                         PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder()
                                 .setProvider(BouncyCastleUtil.getBcProviderJce())
@@ -138,6 +157,7 @@ final class BouncyCastlePemReader {
                 }
 
                 // Try reading next entry in the pem file if private key is not yet found
+                // 当前对象不是私钥则继续读下一段 PEM
                 if (pk == null) {
                     object = pemParser.readObject();
                 }

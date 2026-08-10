@@ -27,11 +27,15 @@ import java.util.List;
  * </ul>
  *
  * @deprecated use {@link ApplicationProtocolConfig}
+ *
+ * <p>旧版应用层协议协商接口，列出本端支持的协议（优先级顺序）。已由 {@link ApplicationProtocolConfig} 取代。</p>
  */
 @SuppressWarnings("deprecation")
 public interface ApplicationProtocolNegotiator {
     /**
      * Get the collection of application protocols supported by this application (in preference order).
+     *
+     * <p>返回本应用支持的协议名列表，顺序即 ALPN/NPN 优先级。</p>
      */
     List<String> protocols();
 }

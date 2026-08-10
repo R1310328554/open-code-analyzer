@@ -17,26 +17,36 @@ package io.netty.handler.pcap;
 
 /**
  * The state of the {@link PcapWriteHandler}.
+ *
+ * <p>{@link PcapWriteHandler} 的生命周期状态，控制是否向 PCAP 流写入数据。</p>
  */
 enum State {
 
     /**
      * The handler is not active.
+     *
+     * <p>初始状态，尚未开始捕获写入。</p>
      */
     INIT,
 
     /**
      * The handler is active and actively writing Pcap data.
+     *
+     * <p>正在写入 PCAP 数据包。</p>
      */
     WRITING,
 
     /**
      * The handler is paused. No Pcap data will be written.
+     *
+     * <p>已暂停，暂时不向 PCAP 写入任何数据。</p>
      */
     PAUSED,
 
     /**
      * The handler is closed.
+     *
+     * <p>已关闭，后续写入请求将被忽略。</p>
      */
     CLOSED
 }

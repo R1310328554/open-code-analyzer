@@ -23,17 +23,27 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * 将 PCAP 数据包写入 {@link OutputStream} 的底层写入器，由 {@link PcapWriteHandler} 持有并调用。
+ *
+ * <p>负责 PCAP 全局头（非共享流时）、逐包记录头与帧体的序列化；共享 {@link OutputStream} 时用该流对象作互斥锁。</p>
+ */
 final class PcapWriter implements Closeable {
 
     /**
      * Logger
+     *
+     * <p>调试日志记录器。</p>
      */
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(PcapWriter.class);
 
+    /** 关联的 PCAP 写入处理器，提供状态与配置。 */
     private final PcapWriteHandler pcapWriteHandler;
 
     /**
      * Reference declared so that we can use this as mutex in clean way.
+     *
+     * <p>底层输出流；共享模式下作为同步锁对象。</p>
      */
     private final OutputStream outputStream;
 
@@ -41,12 +51,15 @@ final class PcapWriter implements Closeable {
      * This uses {@link OutputStream} for writing Pcap data.
      *
      * @throws IOException If {@link OutputStream#write(byte[])} throws an exception
+     *
+     * <p>构造时若非共享流且需写全局头，则先写入 PCAP 文件头。</p>
      */
     PcapWriter(PcapWriteHandler pcapWriteHandler) throws IOException {
         this.pcapWriteHandler = pcapWriteHandler;
         outputStream = pcapWriteHandler.outputStream();
 
         // If OutputStream is not shared then we have to write Global Header.
+        // 非共享 OutputStream 时必须先写入 PCAP 全局文件头
         if (pcapWriteHandler.writePcapGlobalHeader() && !pcapWriteHandler.sharedOutputStream()) {
             PcapHeaders.writeGlobalHeader(pcapWriteHandler.outputStream());
         }
@@ -58,6 +71,8 @@ final class PcapWriter implements Closeable {
      * @param packetHeaderBuf Packer Header {@link ByteBuf}
      * @param packet          Packet
      * @throws IOException If {@link OutputStream#write(byte[])} throws an exception
+     *
+     * <p>按当前毫秒时间戳写 PCAP 记录头，再写以太网/IP/TCP(UDP) 帧体；共享流时加锁写入。</p>
      */
     void writePacket(ByteBuf packetHeaderBuf, ByteBuf packet) throws IOException {
         if (pcapWriteHandler.state() == State.CLOSED) {
@@ -66,6 +81,7 @@ final class PcapWriter implements Closeable {
 
         long timestamp = System.currentTimeMillis();
 
+        // 秒 + 微秒组成 PCAP 包时间戳
         PcapHeaders.writePacketHeader(
                 packetHeaderBuf,
                 (int) (timestamp / 1000L),
@@ -92,6 +108,9 @@ final class PcapWriter implements Closeable {
                 '}';
     }
 
+    /**
+     * 关闭写入器：共享流仅 flush，独占流 flush 并 close，并标记 handler 为 {@link State#CLOSED}。
+     */
     @Override
     public void close() throws IOException {
         if (pcapWriteHandler.state() == State.CLOSED) {

@@ -15,6 +15,16 @@
  */
 package io.netty.handler.ssl;
 
+/**
+ * 支持异步执行并在完成后回调的 {@link Runnable} 扩展。
+ *
+ * <p>SSL 握手等场景在 EventLoop 外执行耗时任务时，通过 {@code completionCallback} 通知完成。</p>
+ */
 interface AsyncRunnable extends Runnable {
+    /**
+     * 执行任务，完成后调用 {@code completionCallback}。
+     *
+     * @param completionCallback 任务结束（成功或失败）后在原线程或指定线程执行的回调
+     */
     void run(Runnable completionCallback);
 }

@@ -18,6 +18,9 @@ package io.netty.handler.ssl;
 
 /**
  * Provides a way to get the application-level protocol name from ALPN or NPN.
+ *
+ * <p>从 ALPN/NPN 协商结果读取应用层协议名（如 {@code h2}、{@code http/1.1}）的统一访问接口，
+ * 由 {@link JdkAlpnSslEngine} 等 {@link SSLEngine} 包装类实现。</p>
  */
 interface ApplicationProtocolAccessor {
     /**
@@ -25,6 +28,8 @@ interface ApplicationProtocolAccessor {
      *
      * @return the application-level protocol name or
      *         {@code null} if the negotiation failed or the client does not have ALPN/NPN extension
+     *
+     * <p>返回协商后的协议名；未协商或客户端不支持扩展时为 {@code null}。</p>
      */
     String getNegotiatedApplicationProtocol();
 }

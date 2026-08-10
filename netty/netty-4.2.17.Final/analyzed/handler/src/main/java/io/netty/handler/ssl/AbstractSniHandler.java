@@ -32,9 +32,19 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
  * support SNI, the server could have multiple host name bound on a single IP.
  * The client will send host name in the handshake data so server could decide
  * which certificate to choose for the host name.</p>
+ *
+ * <p>服务端 SNI 抽象处理器：在 TLS ClientHello 到达后解析扩展中的主机名，异步 {@link #lookup} 选择
+ * {@link SslContext}/{@link SslHandler}，再完成握手。流程：接收 ClientHello → 提取 hostname →
+ * 查找配置 → {@link #onLookupComplete} 替换 pipeline 中的 SSL 组件。</p>
  */
 public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
 
+    /**
+     * 从 ClientHello 原始字节中解析 SNI 主机名（RFC 6066 Server Name 扩展，type=0 host_name）。
+     *
+     * <p>按 TLS 记录内 ClientHello 布局跳过固定字段与可变 session/cipher/compression，遍历 extensions；
+     * 找到 extension_type=0 且 name_type=0 时返回 ASCII 主机名（小写）。解析失败返回 {@code null}。</p>
+     */
     private static String extractSniHostname(ByteBuf in) {
         // See https://tools.ietf.org/html/rfc5246#section-7.4.1.2
         //
@@ -56,6 +66,7 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
         //
 
         // We have to skip bytes until SessionID (which sum to 34 bytes in this case).
+        // 跳过 client_version(2) + random(32) 共 34 字节至 SessionID
         int offset = in.readerIndex();
         int endOffset = in.writerIndex();
         offset += 34;
@@ -75,6 +86,7 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
             final int extensionsLimit = offset + extensionsLength;
 
             // Extensions should never exceed the record boundary.
+            // 扩展区不得超出当前 TLS 记录边界
             if (extensionsLimit <= endOffset) {
                 while (extensionsLimit - offset >= 4) {
                     final int extensionType = in.getUnsignedShort(offset);
@@ -89,8 +101,9 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
 
                     // SNI
                     // See https://tools.ietf.org/html/rfc6066#page-6
+                    // extension_type == 0 表示 server_name 扩展
                     if (extensionType == 0) {
-                        offset += 2;
+                        offset += 2; // ServerNameList 长度字段
                         if (extensionsLimit - offset < 3) {
                             break;
                         }
@@ -99,6 +112,7 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
                         offset++;
 
                         if (serverNameType == 0) {
+                            // host_name 类型
                             final int serverNameLength = in.getUnsignedShort(offset);
                             offset += 2;
 
@@ -110,6 +124,7 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
                             return hostname.toLowerCase(Locale.US);
                         } else {
                             // invalid enum value
+                            // 非 host_name 类型，停止解析
                             break;
                         }
                     }
@@ -121,13 +136,19 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
         return null;
     }
 
+    /** 默认握手超时：10 秒。 */
     static final long DEFAULT_HANDSHAKE_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(10);
+    /** 握手超时毫秒数，{@code 0} 表示不启用超时。 */
     protected final long handshakeTimeoutMillis;
+    /** 握手超时定时任务。 */
     private ScheduledFuture<?> timeoutFuture;
+    /** 最近一次从 ClientHello 解析出的 SNI 主机名。 */
     private String hostname;
 
     /**
      * @param handshakeTimeoutMillis    the handshake timeout in milliseconds
+     *
+     * <p>使用默认 ClientHello 最大长度与指定握手超时。</p>
      */
     protected AbstractSniHandler(long handshakeTimeoutMillis) {
         this(DEFAULT_MAX_CLIENT_HELLO_LENGTH, handshakeTimeoutMillis);
@@ -136,12 +157,15 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
     /**
      * @param maxClientHelloLength     the maximum length of the client hello message.
      * @param handshakeTimeoutMillis    the handshake timeout in milliseconds
+     *
+     * <p>限制 ClientHello 缓冲大小并设置握手超时。</p>
      */
     protected AbstractSniHandler(int maxClientHelloLength, long handshakeTimeoutMillis) {
         super(maxClientHelloLength);
         this.handshakeTimeoutMillis = checkPositiveOrZero(handshakeTimeoutMillis, "handshakeTimeoutMillis");
     }
 
+    /** 默认 10 秒握手超时。 */
     public AbstractSniHandler() {
         this(DEFAULT_MAX_CLIENT_HELLO_LENGTH, DEFAULT_HANDSHAKE_TIMEOUT_MILLIS);
     }
@@ -159,6 +183,9 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
         checkStartTimeout(ctx);
     }
 
+    /**
+     * 若配置了超时且尚未调度，则在 EventLoop 上安排握手超时关闭与 {@link SniCompletionEvent}。
+     */
     private void checkStartTimeout(final ChannelHandlerContext ctx) {
         if (handshakeTimeoutMillis <= 0 || timeoutFuture != null) {
             return;
@@ -176,6 +203,9 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
         }, handshakeTimeoutMillis, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * 父类回调：解析 ClientHello 中的 SNI，再委托 {@link #lookup(ChannelHandlerContext, String)}。
+     */
     @Override
     protected Future<T> lookup(ChannelHandlerContext ctx, ByteBuf clientHello) throws Exception {
         hostname = clientHello == null ? null : extractSniHostname(clientHello);
@@ -183,6 +213,9 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
         return lookup(ctx, hostname);
     }
 
+    /**
+     * 查找完成后取消超时，调用子类 {@link #onLookupComplete}，并触发 SNI 完成事件。
+     */
     @Override
     protected void onLookupComplete(ChannelHandlerContext ctx, Future<T> future) throws Exception {
         if (timeoutFuture != null) {
@@ -200,6 +233,8 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
      * notify the {@link #onLookupComplete(ChannelHandlerContext, String, Future)} on completion.
      *
      * @see #onLookupComplete(ChannelHandlerContext, String, Future)
+     *
+     * <p>子类实现：根据 hostname 异步查找 SSL 上下文或处理器配置（如虚拟主机映射）。</p>
      */
     protected abstract Future<T> lookup(ChannelHandlerContext ctx, String hostname) throws Exception;
 
@@ -207,10 +242,13 @@ public abstract class AbstractSniHandler<T> extends SslClientHelloHandler<T> {
      * Called upon completion of the {@link #lookup(ChannelHandlerContext, String)} {@link Future}.
      *
      * @see #lookup(ChannelHandlerContext, String)
+     *
+     * <p>子类实现：lookup 成功后替换 pipeline、安装 {@link SslHandler} 等。</p>
      */
     protected abstract void onLookupComplete(ChannelHandlerContext ctx,
                                              String hostname, Future<T> future) throws Exception;
 
+    /** 向 pipeline 发送 {@link SniCompletionEvent}，携带 hostname 与 lookup 成败。 */
     private static void fireSniCompletionEvent(ChannelHandlerContext ctx, String hostname, Future<?> future) {
         Throwable cause = future.cause();
         if (cause == null) {

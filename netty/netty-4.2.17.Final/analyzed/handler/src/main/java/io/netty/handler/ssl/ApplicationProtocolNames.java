@@ -22,21 +22,29 @@ package io.netty.handler.ssl;
  * @see <a href="https://tools.ietf.org/html/rfc7540#section-11.1">RFC7540 (HTTP/2)</a>
  * @see <a href="https://tools.ietf.org/html/rfc7301#section-6">RFC7301 (TLS ALPN Extension)</a>
  * @see <a href="https://tools.ietf.org/html/draft-agl-tls-nextprotoneg-04#section-7">TLS NPN Extension Draft</a>
+ *
+ * <p>ALPN/NPN 握手中常用的应用层协议标识常量，避免硬编码字符串。</p>
  */
 public final class ApplicationProtocolNames {
 
     /**
      * {@code "h2"}: HTTP version 2
+     *
+     * <p>HTTP/2 协议标识。</p>
      */
     public static final String HTTP_2 = "h2";
 
     /**
      * {@code "http/1.1"}: HTTP version 1.1
+     *
+     * <p>HTTP/1.1 协议标识，常作 ALPN fallback。</p>
      */
     public static final String HTTP_1_1 = "http/1.1";
 
     /**
      * {@code "spdy/3.1"}: SPDY version 3.1
+     *
+     * <p>SPDY 3.1（HTTP/2 前身）。</p>
      */
     public static final String SPDY_3_1 = "spdy/3.1";
 

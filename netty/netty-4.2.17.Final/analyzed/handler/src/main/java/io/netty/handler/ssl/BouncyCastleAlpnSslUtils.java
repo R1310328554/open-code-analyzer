@@ -35,15 +35,30 @@ import javax.net.ssl.SSLParameters;
 
 import static io.netty.handler.ssl.SslUtils.getSSLContext;
 
+/**
+ * 通过反射调用 Bouncy Castle JSSE 的 ALPN 扩展 API（{@code setApplicationProtocols}、
+ * {@code getApplicationProtocol}、{@code BCApplicationProtocolSelector} 等）。
+ *
+ * <p>静态块探测 BC TLS 是否可用并缓存 {@link Method}；不可用时 {@link #isAlpnSupported()} 为 false。
+ * Java 9+ 在 BC 设置后还会同步调用 {@link JdkAlpnSslUtils} 以兼容双栈行为。</p>
+ */
 final class BouncyCastleAlpnSslUtils {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(BouncyCastleAlpnSslUtils.class);
+    /** SSLParameters.setApplicationProtocols(String[]) */
     private static final Method SET_APPLICATION_PROTOCOLS;
+    /** SSLEngine.getApplicationProtocol() */
     private static final Method GET_APPLICATION_PROTOCOL;
+    /** SSLEngine.getHandshakeApplicationProtocol() */
     private static final Method GET_HANDSHAKE_APPLICATION_PROTOCOL;
+    /** SSLEngine.setBCHandshakeApplicationProtocolSelector(BCApplicationProtocolSelector) */
     private static final Method SET_HANDSHAKE_APPLICATION_PROTOCOL_SELECTOR;
+    /** SSLEngine.getBCHandshakeApplicationProtocolSelector() */
     private static final Method GET_HANDSHAKE_APPLICATION_PROTOCOL_SELECTOR;
+    /** org.bouncycastle.jsse.BCApplicationProtocolSelector 接口类 */
     private static final Class<?> BC_APPLICATION_PROTOCOL_SELECTOR;
+    /** BCApplicationProtocolSelector.select(Object, List) */
     private static final Method BC_APPLICATION_PROTOCOL_SELECTOR_SELECT;
+    /** 静态初始化是否成功探测到 BC ALPN API */
     private static final boolean SUPPORTED;
 
     static {
@@ -67,6 +82,7 @@ final class BouncyCastleAlpnSslUtils {
             // returned by createSSLEngine might be package-private and so would not allow us to access the methods
             // even thought the interface itself that it implements is public and so the methods are public.
             // See https://github.com/netty/netty/issues/15627
+            // 使用 BouncyCastleUtil 返回的公开引擎类解析方法，避免 package-private 实现类无法反射
             final Class<? extends SSLEngine> bcEngineClass = BouncyCastleUtil.getBcSSLEngineClass();
             if (bcEngineClass == null || !bcEngineClass.isAssignableFrom(engineClass)) {
                 throw new IllegalStateException("Unexpected engine class: " + engineClass);
@@ -152,6 +168,7 @@ final class BouncyCastleAlpnSslUtils {
     private BouncyCastleAlpnSslUtils() {
     }
 
+    /** 读取已协商的应用层协议名。 */
     static String getApplicationProtocol(SSLEngine sslEngine) {
         try {
             return (String) GET_APPLICATION_PROTOCOL.invoke(sslEngine);
@@ -162,6 +179,9 @@ final class BouncyCastleAlpnSslUtils {
         }
     }
 
+    /**
+     * 设置客户端 advertised 协议列表（写入 BC SSLParameters，Java 9+ 同步 JDK ALPN）。
+     */
     static void setApplicationProtocols(SSLEngine engine, List<String> supportedProtocols) {
         String[] protocolArray = supportedProtocols.toArray(EmptyArrays.EMPTY_STRINGS);
         try {
@@ -178,6 +198,7 @@ final class BouncyCastleAlpnSslUtils {
         }
     }
 
+    /** 读取握手阶段选定的协议（握手完成前）。 */
     static String getHandshakeApplicationProtocol(SSLEngine sslEngine) {
         try {
             return (String) GET_HANDSHAKE_APPLICATION_PROTOCOL.invoke(sslEngine);
@@ -188,6 +209,9 @@ final class BouncyCastleAlpnSslUtils {
         }
     }
 
+    /**
+     * 将 Netty {@link BiFunction} 选择器适配为 BC {@link BC_APPLICATION_PROTOCOL_SELECTOR} 动态代理并注册到引擎。
+     */
     static void setHandshakeApplicationProtocolSelector(
             SSLEngine engine, final BiFunction<SSLEngine, List<String>, String> selector) {
         try {
@@ -219,6 +243,7 @@ final class BouncyCastleAlpnSslUtils {
         }
     }
 
+    /** 读取 BC 选择器并包装为 Netty {@link BiFunction}。 */
     static BiFunction<SSLEngine, List<String>, String> getHandshakeApplicationProtocolSelector(SSLEngine engine) {
         try {
             final Object selector = GET_HANDSHAKE_APPLICATION_PROTOCOL_SELECTOR.invoke(engine);
@@ -236,6 +261,7 @@ final class BouncyCastleAlpnSslUtils {
         }
     }
 
+    /** 当前 JVM 上 BC ALPN 反射初始化是否成功。 */
     static boolean isAlpnSupported() {
         return SUPPORTED;
     }
