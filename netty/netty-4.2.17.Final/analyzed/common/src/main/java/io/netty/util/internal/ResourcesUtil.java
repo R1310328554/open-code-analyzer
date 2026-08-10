@@ -21,6 +21,8 @@ import java.net.URLDecoder;
 /**
  * A utility class that provides various common operations and constants
  * related to loading resources
+ *
+ * <p>资源加载工具：将 classpath 资源路径解析为 {@link File}。</p>
  */
 public final class ResourcesUtil {
 
@@ -30,6 +32,8 @@ public final class ResourcesUtil {
      * @param resourceClass The associated class
      * @param fileName The file name
      * @return The file named {@code fileName} associated with {@link Class} {@code resourceClass} .
+     *
+     * <p>通过 {@link Class#getResource} 定位文件并对 URL 编码路径解码。</p>
      */
     public static File getFile(Class resourceClass, String fileName) {
         try {

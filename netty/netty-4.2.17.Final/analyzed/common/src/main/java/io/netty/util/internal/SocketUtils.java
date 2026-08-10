@@ -40,9 +40,12 @@ import java.util.Enumeration;
  * {@link SecurityManager} to restrict {@link SocketPermission} to their application. By asserting that these
  * operations are privileged, the operations can proceed even if some code in the calling chain lacks the appropriate
  * {@link SocketPermission}.
+ *
+ * <p>在 {@link AccessController#doPrivileged} 中执行 Socket/NIO 操作，绕过调用链中缺失的 {@link SocketPermission}。</p>
  */
 public final class SocketUtils {
 
+    /** 空枚举单例，Android 等平台 getInetAddresses 可能返回 null 时使用。 */
     private static final Enumeration<Object> EMPTY = Collections.enumeration(Collections.emptyList());
 
     private SocketUtils() {
@@ -53,6 +56,7 @@ public final class SocketUtils {
         return (Enumeration<T>) EMPTY;
     }
 
+    /** 特权 connect，带超时。 */
     public static void connect(final Socket socket, final SocketAddress remoteAddress, final int timeout)
             throws IOException {
         try {
@@ -68,6 +72,7 @@ public final class SocketUtils {
         }
     }
 
+    /** 特权 bind Socket。 */
     public static void bind(final Socket socket, final SocketAddress bindpoint) throws IOException {
         try {
             AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
@@ -82,6 +87,7 @@ public final class SocketUtils {
         }
     }
 
+    /** 特权 connect {@link SocketChannel}。 */
     public static boolean connect(final SocketChannel socketChannel, final SocketAddress remoteAddress)
             throws IOException {
         try {
@@ -96,6 +102,7 @@ public final class SocketUtils {
         }
     }
 
+    /** 特权 bind {@link SocketChannel}。 */
     public static void bind(final SocketChannel socketChannel, final SocketAddress address) throws IOException {
         try {
             AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
@@ -110,6 +117,7 @@ public final class SocketUtils {
         }
     }
 
+    /** 特权 accept 新连接。 */
     public static SocketChannel accept(final ServerSocketChannel serverSocketChannel) throws IOException {
         try {
             return AccessController.doPrivileged(new PrivilegedExceptionAction<SocketChannel>() {
@@ -123,6 +131,7 @@ public final class SocketUtils {
         }
     }
 
+    /** 特权 bind {@link DatagramChannel}。 */
     public static void bind(final DatagramChannel networkChannel, final SocketAddress address) throws IOException {
         try {
             AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
@@ -137,6 +146,7 @@ public final class SocketUtils {
         }
     }
 
+    /** 特权获取 ServerSocket 本地地址。 */
     public static SocketAddress localSocketAddress(final ServerSocket socket) {
         return AccessController.doPrivileged(new PrivilegedAction<SocketAddress>() {
             @Override
@@ -146,6 +156,7 @@ public final class SocketUtils {
         });
     }
 
+    /** 特权 {@link InetAddress#getByName}。 */
     public static InetAddress addressByName(final String hostname) throws UnknownHostException {
         try {
             return AccessController.doPrivileged(new PrivilegedExceptionAction<InetAddress>() {
@@ -159,6 +170,7 @@ public final class SocketUtils {
         }
     }
 
+    /** 特权 {@link InetAddress#getAllByName}。 */
     public static InetAddress[] allAddressesByName(final String hostname) throws UnknownHostException {
         try {
             return AccessController.doPrivileged(new PrivilegedExceptionAction<InetAddress[]>() {
@@ -172,6 +184,7 @@ public final class SocketUtils {
         }
     }
 
+    /** 特权构造 {@link InetSocketAddress}。 */
     public static InetSocketAddress socketAddress(final String hostname, final int port) {
         return AccessController.doPrivileged(new PrivilegedAction<InetSocketAddress>() {
             @Override
@@ -189,7 +202,7 @@ public final class SocketUtils {
                 return intf.getInetAddresses();
             }
         });
-        // Android seems to sometimes return null even if this is not a valid return value by the api docs.
+        // Android 上 getInetAddresses 有时返回 null（见 netty#10045），此处回退空枚举
         // Just return an empty Enumeration in this case.
         // See https://github.com/netty/netty/issues/10045
         if (addresses == null) {
@@ -198,6 +211,7 @@ public final class SocketUtils {
         return addresses;
     }
 
+    /** 特权获取回环地址 {@link InetAddress#getLoopbackAddress}。 */
     public static InetAddress loopbackAddress() {
         return AccessController.doPrivileged(new PrivilegedAction<InetAddress>() {
             @Override
@@ -207,6 +221,7 @@ public final class SocketUtils {
         });
     }
 
+    /** 特权读取网卡 MAC 硬件地址。 */
     public static byte[] hardwareAddressFromNetworkInterface(final NetworkInterface intf) throws SocketException {
         try {
             return AccessController.doPrivileged(new PrivilegedExceptionAction<byte[]>() {

@@ -26,13 +26,17 @@ import java.util.RandomAccess;
 
 /**
  * A simple list which is recyclable. This implementation does not allow {@code null} elements to be added.
+ *
+ * <p>基于 {@link Recycler} 的可复用 {@link ArrayList}，禁止 null 元素，用于 Handler 临时收集。</p>
  */
 public final class RecyclableArrayList extends ArrayList<Object> {
 
     private static final long serialVersionUID = -8605125654176467947L;
 
+    /** 默认初始容量。 */
     private static final int DEFAULT_INITIAL_CAPACITY = 8;
 
+    /** 对象池，复用 RecyclableArrayList 实例。 */
     private static final Recycler<RecyclableArrayList> RECYCLER =
             new Recycler<RecyclableArrayList>() {
                 @Override
@@ -41,10 +45,13 @@ public final class RecyclableArrayList extends ArrayList<Object> {
                 }
             };
 
+    /** 自上次回收以来是否插入/修改过元素。 */
     private boolean insertSinceRecycled;
 
     /**
      * Create a new empty {@link RecyclableArrayList} instance
+     *
+     * <p>从池中获取默认容量实例。</p>
      */
     public static RecyclableArrayList newInstance() {
         return newInstance(DEFAULT_INITIAL_CAPACITY);
@@ -52,6 +59,8 @@ public final class RecyclableArrayList extends ArrayList<Object> {
 
     /**
      * Create a new empty {@link RecyclableArrayList} instance with the given capacity.
+     *
+     * <p>从池中获取并 {@link #ensureCapacity} 至 minCapacity。</p>
      */
     public static RecyclableArrayList newInstance(int minCapacity) {
         RecyclableArrayList ret = RECYCLER.get();
@@ -59,6 +68,7 @@ public final class RecyclableArrayList extends ArrayList<Object> {
         return ret;
     }
 
+    /** Recycler 句柄。 */
     private final Handle<RecyclableArrayList> handle;
 
     private RecyclableArrayList(Handle<RecyclableArrayList> handle) {
@@ -92,7 +102,7 @@ public final class RecyclableArrayList extends ArrayList<Object> {
 
     private static void checkNullElements(Collection<?> c) {
         if (c instanceof RandomAccess && c instanceof List) {
-            // produce less garbage
+            // RandomAccess List 用索引遍历，减少迭代器分配
             List<?> list = (List<?>) c;
             int size = list.size();
             for (int i = 0; i  < size; i++) {
@@ -133,6 +143,8 @@ public final class RecyclableArrayList extends ArrayList<Object> {
 
     /**
      * Returns {@code true} if any elements where added or set. This will be reset once {@link #recycle()} was called.
+     *
+     * <p>回收后重置；用于判断本次借用是否实际写入数据。</p>
      */
     public boolean insertSinceRecycled() {
         return insertSinceRecycled;
@@ -140,6 +152,8 @@ public final class RecyclableArrayList extends ArrayList<Object> {
 
     /**
      * Clear and recycle this instance.
+     *
+     * <p>清空列表、重置标志并归还对象池。</p>
      */
     public boolean recycle() {
         clear();

@@ -85,6 +85,11 @@ import static java.lang.invoke.MethodType.methodType;
  * You can disable the use of {@code sun.misc.Unsafe} if you specify
  * the system property <strong>io.netty.noUnsafe</strong>.
  */
+/**
+ * 平台相关工具类：探测 JVM/OS 能力（Unsafe、直接内存、字节序、队列实现等），
+ * 为 Netty 全栈提供统一的平台抽象入口。
+ * <p>可通过 {@code -Dio.netty.noUnsafe} 禁用 Unsafe；{@code -Dio.netty.maxDirectMemory} 限制直接内存。</p>
+ */
 public final class PlatformDependent {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(PlatformDependent.class);
@@ -133,6 +138,7 @@ public final class PlatformDependent {
     private static final boolean JFR;
     private static final boolean VAR_HANDLE;
 
+    /** 无 Cleaner 时的空实现：直接 {@link ByteBuffer#allocateDirect}，释放依赖 GC。 */
     private static final Cleaner NOOP = new Cleaner() {
         @Override
         public CleanableDirectBuffer allocate(int capacity) {
@@ -173,6 +179,8 @@ public final class PlatformDependent {
     };
 
     static {
+        // io.netty.maxDirectMemory 语义：
+        // <0 不用 Cleaner 且继承 JVM 上限；==0 用 Cleaner 不强制 Netty 限额；>0 不用 Cleaner 且 Netty 强制限额
         // Here is how the system property is used:
         //
         // * <  0  - Don't use cleaner, and inherit max direct memory from java. In this case the
@@ -182,7 +190,7 @@ public final class PlatformDependent {
         //           (note: that JDK's direct memory limit is independent of this).
         long maxDirectMemory = SystemPropertyUtil.getLong("io.netty.maxDirectMemory", -1);
 
-        // Initialize the direct memory counter independently of Unsafe availability,
+        // 即使无 Unsafe（如 Java 25+）也初始化直接内存计数器以强制执行 io.netty.maxDirectMemory
         // so that io.netty.maxDirectMemory is enforced even when Unsafe is not available (e.g. Java 25+).
         if (maxDirectMemory == 0) {
             DIRECT_MEMORY_COUNTER = null;
@@ -203,20 +211,20 @@ public final class PlatformDependent {
         MAYBE_SUPER_USER = maybeSuperUser0();
 
         if (!isAndroid()) {
-            // only direct to method if we are not running on android.
+            // 非 Android 才尝试 Java9/24/25/6 等 Cleaner 实现（见 netty#2604）
             // See https://github.com/netty/netty/issues/2604
             if (javaVersion() >= 9) {
-                // Try Java 9 cleaner first, because it's based on Unsafe and can skip a few steps.
+                // 优先 Java9 Cleaner（基于 Unsafe，步骤更少）
                 if (CleanerJava9.isSupported()) {
                     LEGACY_CLEANER = new CleanerJava9();
                 } else if (CleanerJava24Linker.isSupported()) {
-                    // On Java 24+ we'd like to not use Unsafe because it produces warnings. We have MemorySegment,
+                    // Java24+ 避免 Unsafe 警告：可用 CleanerJava24Linker 直连 libc malloc/free
                     // but we cannot use "shared" arenas due to JDK bugs.
                     // If the "linker" implementation is supported, then we have native access permissions
                     // in the "io.netty.common" module, and we can link directly to malloc() and free() from libc.
                     LEGACY_CLEANER = new CleanerJava24Linker();
                 } else if (CleanerJava25.isSupported()) {
-                    // On Java 25+ we can't use Unsafe, but we have functioning MemorySegment support.
+                    // Java25+ 无 Unsafe 时使用 MemorySegment 共享 arena
                     // We don't have native access permissions to link malloc() and free() directly, but we can
                     // use shared memory segment instances.
                     LEGACY_CLEANER = new CleanerJava25();
@@ -229,6 +237,7 @@ public final class PlatformDependent {
         } else {
             LEGACY_CLEANER = NOOP;
         }
+        // 有 Unsafe 且无内存上限 0 时用 DirectCleaner（无 Cleaner 构造直接缓冲）
         if (maxDirectMemory != 0 && hasUnsafe() && PlatformDependent0.hasDirectBufferNoCleanerConstructor()) {
             CLEANER = new DirectCleaner();
         } else {
@@ -281,6 +290,7 @@ public final class PlatformDependent {
         VAR_HANDLE = initializeVarHandle();
     }
 
+    /** 非对齐平台或 Java9+ 非 native-image 时尝试启用 VarHandle 多字节访问。 */
     private static boolean initializeVarHandle() {
         if (isUnaligned() || javaVersion() < 9 ||
                 PlatformDependent0.isNativeImage()) {
@@ -311,7 +321,7 @@ public final class PlatformDependent {
         return varHandleEnabled;
     }
 
-    // For specifications, see https://www.freedesktop.org/software/systemd/man/os-release.html
+    // Linux 发行版分类：解析 /etc/os-release（systemd 规范）
     static void addFilesystemOsClassifiers(final Set<String> availableClassifiers) {
         if (processOsReleaseFile("/etc/os-release", availableClassifiers)) {
             return;
@@ -384,6 +394,7 @@ public final class PlatformDependent {
         return true;
     }
 
+    /** byte[] 首元素相对对象头的 Unsafe 偏移。 */
     public static long byteArrayBaseOffset() {
         return BYTE_ARRAY_BASE_OFFSET;
     }
@@ -398,6 +409,8 @@ public final class PlatformDependent {
 
     /**
      * Returns {@code true} if and only if the current platform is Android
+     *
+     * <p>当前是否为 Android（Dalvik/ART）运行时。</p>
      */
     public static boolean isAndroid() {
         return PlatformDependent0.isAndroid();
@@ -405,6 +418,8 @@ public final class PlatformDependent {
 
     /**
      * Return {@code true} if the JVM is running on Windows
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static boolean isWindows() {
         return IS_WINDOWS;
@@ -412,6 +427,8 @@ public final class PlatformDependent {
 
     /**
      * Return {@code true} if the JVM is running on OSX / MacOS
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static boolean isOsx() {
         return IS_OSX;
@@ -420,6 +437,8 @@ public final class PlatformDependent {
     /**
      * Return {@code true} if the current user may be a super-user. Be aware that this is just an hint and so it may
      * return false-positives.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static boolean maybeSuperUser() {
         return MAYBE_SUPER_USER;
@@ -427,6 +446,8 @@ public final class PlatformDependent {
 
     /**
      * Return the version of Java under which this library is used.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static int javaVersion() {
         return PlatformDependent0.javaVersion();
@@ -435,6 +456,8 @@ public final class PlatformDependent {
     /**
      * @param thread The thread to be checked.
      * @return {@code true} if this {@link Thread} is a virtual thread, {@code false} otherwise.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static boolean isVirtualThread(Thread thread) {
         return PlatformDependent0.isVirtualThread(thread);
@@ -442,6 +465,8 @@ public final class PlatformDependent {
 
     /**
      * Returns {@code true} if and only if it is fine to enable TCP_NODELAY socket option by default.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static boolean canEnableTcpNoDelayByDefault() {
         return CAN_ENABLE_TCP_NODELAY_BY_DEFAULT;
@@ -450,6 +475,8 @@ public final class PlatformDependent {
     /**
      * Return {@code true} if {@code sun.misc.Unsafe} was found on the classpath and can be used for accelerated
      * direct memory access.
+     *
+     * <p>Unsafe 是否可用（Android/Java25+ 默认禁用等情况下为 false）。</p>
      */
     public static boolean hasUnsafe() {
         return UNSAFE_UNAVAILABILITY_CAUSE == null;
@@ -457,6 +484,8 @@ public final class PlatformDependent {
 
     /**
      * Return the reason (if any) why {@code sun.misc.Unsafe} was not available.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static Throwable getUnsafeUnavailabilityCause() {
         return UNSAFE_UNAVAILABILITY_CAUSE;
@@ -466,6 +495,8 @@ public final class PlatformDependent {
      * {@code true} if and only if the platform supports unaligned access.
      *
      * @see <a href="https://en.wikipedia.org/wiki/Segmentation_fault#Bus_error">Wikipedia on segfault</a>
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static boolean isUnaligned() {
         return PlatformDependent0.isUnaligned();
@@ -474,6 +505,8 @@ public final class PlatformDependent {
     /**
      * Returns {@code true} if the platform has reliable low-level direct buffer access API and a user has not specified
      * {@code -Dio.netty.noPreferDirect} option.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static boolean directBufferPreferred() {
         return DIRECT_BUFFER_PREFERRED;
@@ -482,6 +515,8 @@ public final class PlatformDependent {
     /**
      * Returns {@code true} if user has specified
      * {@code -Dio.netty.noPreferDirect=true} option.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static boolean isExplicitNoPreferDirect() {
         return EXPLICIT_NO_PREFER_DIRECT;
@@ -491,6 +526,8 @@ public final class PlatformDependent {
      * Return {@code true} if the selected cleaner can free direct buffers in a controlled way. This guarantee only
      * applies for buffers allocated via {@link #allocateDirect(int)} and when using the {@code clean} method of the
      * returned {@link CleanableDirectBuffer}.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static boolean canReliabilyFreeDirectBuffers() {
         return CLEANER != NOOP;
@@ -498,6 +535,8 @@ public final class PlatformDependent {
 
     /**
      * Returns the maximum memory reserved for direct buffer allocation.
+     *
+     * <p>Netty 允许分配的直接内存上限（字节）。</p>
      */
     public static long maxDirectMemory() {
         return DIRECT_MEMORY_LIMIT;
@@ -508,6 +547,8 @@ public final class PlatformDependent {
      * This method returns -1 in case that a value is not available.
      *
      * @see #maxDirectMemory()
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static long usedDirectMemory() {
         return DIRECT_MEMORY_COUNTER != null ? DIRECT_MEMORY_COUNTER.get() : -1;
@@ -515,6 +556,8 @@ public final class PlatformDependent {
 
     /**
      * Returns the temporary directory.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static File tmpdir() {
         return TMPDIR;
@@ -522,6 +565,8 @@ public final class PlatformDependent {
 
     /**
      * Returns the bit mode of the current VM (usually 32 or 64.)
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static int bitMode() {
         return BIT_MODE;
@@ -530,6 +575,8 @@ public final class PlatformDependent {
     /**
      * Return the address size of the OS.
      * 4 (for 32 bits systems ) and 8 (for 64 bits systems).
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static int addressSize() {
         return ADDRESS_SIZE;
@@ -549,6 +596,8 @@ public final class PlatformDependent {
 
     /**
      * Raises an exception bypassing compiler checks for checked exceptions.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static void throwException(Throwable t) {
         PlatformDependent0.throwException(t);
@@ -557,6 +606,8 @@ public final class PlatformDependent {
     /**
      * Creates a new fastest {@link ConcurrentMap} implementation for the current platform.
      * @deprecated please use new ConcurrentHashMap<K, V>() directly.
+     *
+     * <p>已弃用 API，保留兼容。</p>
      */
     @Deprecated
     public static <K, V> ConcurrentMap<K, V> newConcurrentHashMap() {
@@ -566,6 +617,8 @@ public final class PlatformDependent {
     /**
      * Creates a new fastest {@link LongCounter} implementation for the current platform.
      * @deprecated please use {@link java.util.concurrent.atomic.LongAdder} instead.
+     *
+     * <p>已弃用 API，保留兼容。</p>
      */
     @Deprecated
     public static LongCounter newLongCounter() {
@@ -575,6 +628,8 @@ public final class PlatformDependent {
     /**
      * Creates a new fastest {@link ConcurrentMap} implementation for the current platform.
      * @deprecated please use new ConcurrentHashMap<K, V>() directly.
+     *
+     * <p>已弃用 API，保留兼容。</p>
      */
     @Deprecated
     public static <K, V> ConcurrentMap<K, V> newConcurrentHashMap(int initialCapacity) {
@@ -584,6 +639,8 @@ public final class PlatformDependent {
     /**
      * Creates a new fastest {@link ConcurrentMap} implementation for the current platform.
      * @deprecated please use new ConcurrentHashMap<K, V>() directly.
+     *
+     * <p>已弃用 API，保留兼容。</p>
      */
     @Deprecated
     public static <K, V> ConcurrentMap<K, V> newConcurrentHashMap(int initialCapacity, float loadFactor) {
@@ -593,6 +650,8 @@ public final class PlatformDependent {
     /**
      * Creates a new fastest {@link ConcurrentMap} implementation for the current platform.
      * @deprecated please use new ConcurrentHashMap<K, V>() directly.
+     *
+     * <p>已弃用 API，保留兼容。</p>
      */
     @Deprecated
     public static <K, V> ConcurrentMap<K, V> newConcurrentHashMap(
@@ -603,6 +662,8 @@ public final class PlatformDependent {
     /**
      * Creates a new fastest {@link ConcurrentMap} implementation for the current platform.
      * @deprecated please use new ConcurrentHashMap<K, V>() directly.
+     *
+     * <p>已弃用 API，保留兼容。</p>
      */
     @Deprecated
     public static <K, V> ConcurrentMap<K, V> newConcurrentHashMap(Map<? extends K, ? extends V> map) {
@@ -613,6 +674,8 @@ public final class PlatformDependent {
      * Allocate a direct {@link ByteBuffer} of the given capacity, and return it alongside its deallocation mechanism.
      * @param capacity The desired capacity of the direct byte buffer.
      * @return The {@link CleanableDirectBuffer} instance that contain the buffer and its deallocation mechanism.
+     *
+     * <p>分配可显式 clean 的直接缓冲；受 maxDirectMemory 计数限制。</p>
      */
     public static CleanableDirectBuffer allocateDirect(int capacity) {
         return allocateDirect(capacity, false);
@@ -622,7 +685,7 @@ public final class PlatformDependent {
      * Allocate a direct {@link ByteBuffer} of the given capacity, and return it alongside its deallocation mechanism.
      * @param capacity The desired capacity of the direct byte buffer.
      * @param permitExpensiveClean Whether to allow expensive clean operations or not. If expensive clean operations
-     * are not permitted ({@code false}), then the buffer cleaning may instead be delegated to the GC and reference
+     * permitExpensiveClean=false 时可能走 NOOP Cleaner，释放交给 GC（非池化场景）
      * processing. Pooling allocators would typically permit expensive clean operations, while unpooled buffers
      * would not.
      * @return The {@link CleanableDirectBuffer} instance that contain the buffer and its deallocation mechanism.
@@ -641,6 +704,8 @@ public final class PlatformDependent {
      * @param buffer The old buffer to reallocate.
      * @param newCapacity The desired new capacity.
      * @return The new {@link CleanableDirectBuffer} with the given capacity.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static CleanableDirectBuffer reallocateDirect(CleanableDirectBuffer buffer, int newCapacity) {
         return CLEANER.reallocate(buffer, newCapacity);
@@ -651,6 +716,8 @@ public final class PlatformDependent {
      * the current platform does not support this operation or the specified buffer is not a direct buffer.
      *
      * @deprecated Use the {@link CleanableDirectBuffer#clean()} from {@link #allocateDirect(int)} instead.
+     *
+     * <p>已弃用 API，保留兼容。</p>
      */
     @Deprecated
     public static void freeDirectBuffer(ByteBuffer buffer) {
@@ -662,6 +729,8 @@ public final class PlatformDependent {
      * @param buffer The specific buffer instance to check for.
      * @return {@code true} if {@link #directBufferAddress(ByteBuffer)} can be called on the given buffer,
      * otherwise {@code false}.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static boolean hasDirectByteBufferAddress(ByteBuffer buffer) {
         return PlatformDependent0.hasDirectByteBufferAddress(buffer);
@@ -671,6 +740,8 @@ public final class PlatformDependent {
      * Obtain the native memory address of the given direct byte buffer, or throw an exception if it's not possible.
      * @param buffer The buffer to get the native memory address for.
      * @return The native memory address of the give buffer.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static long directBufferAddress(ByteBuffer buffer) {
         return PlatformDependent0.directBufferAddress(buffer);
@@ -691,7 +762,7 @@ public final class PlatformDependent {
     /**
      * {@code true} if {@code VarHandle} should be used for multi-byte access.
      *
-     * The multi-byte access strategy is determined as follows:
+     * 多字节访问策略：1) 原生非对齐+Unsafe 最快；2) 否则 VarHandle；3) 否则逐字节
      * 1) If the platform supports unaligned access natively, use {@code Unsafe} as the fastest option.
      * 2) Otherwise, if {@code VarHandle} is available, use it as a fallback.
      * 3) Otherwise, fall back to manual byte-by-byte access.
@@ -703,11 +774,14 @@ public final class PlatformDependent {
     /**
      * {@code true} if multi-byte access at arbitrary offsets is possible, either natively through {@code Unsafe}
      * or via {@code VarHandle} where the JVM handles alignment and byte ordering internally.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static boolean canUnalignedAccess() {
         return isUnaligned() || VAR_HANDLE;
     }
 
+    /** 查找 int 字段 VarHandle（需 io.netty.varHandle.enabled）。 */
     public static VarHandle findVarHandleOfIntField(MethodHandles.Lookup lookup, Class<?> type, String fieldName) {
         if (VAR_HANDLE) {
             return VarHandleFactory.privateFindVarHandle(lookup, type, fieldName, int.class);
@@ -799,6 +873,7 @@ public final class PlatformDependent {
         return null;
     }
 
+    // ---------- Unsafe 对象/堆外字段访问 ----------
     public static Object getObject(Object object, long fieldOffset) {
         return PlatformDependent0.getObject(object, fieldOffset);
     }
@@ -827,6 +902,7 @@ public final class PlatformDependent {
         PlatformDependent0.safeConstructPutInt(object, fieldOffset, value);
     }
 
+    // ---------- 堆外绝对地址读写 ----------
     public static byte getByte(long address) {
         return PlatformDependent0.getByte(address);
     }
@@ -843,6 +919,7 @@ public final class PlatformDependent {
         return PlatformDependent0.getLong(address);
     }
 
+    // ---------- byte[]/数组元素访问（无 Unsafe 时回退 JVM 语义） ----------
     public static byte getByte(byte[] data, int index) {
         return hasUnsafe() ? PlatformDependent0.getByte(data, index) : data[index];
     }
@@ -918,6 +995,8 @@ public final class PlatformDependent {
 
     /**
      * Identical to {@link PlatformDependent0#hashCodeAsciiCompute(long, int)} but for {@link CharSequence}.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     private static int hashCodeAsciiCompute(CharSequence value, int offset, int hash) {
         if (BIG_ENDIAN_NATIVE_ORDER) {
@@ -936,6 +1015,8 @@ public final class PlatformDependent {
 
     /**
      * Identical to {@link PlatformDependent0#hashCodeAsciiSanitize(int)} but for {@link CharSequence}.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     private static int hashCodeAsciiSanitizeInt(CharSequence value, int offset) {
         if (BIG_ENDIAN_NATIVE_ORDER) {
@@ -953,6 +1034,8 @@ public final class PlatformDependent {
 
     /**
      * Identical to {@link PlatformDependent0#hashCodeAsciiSanitize(short)} but for {@link CharSequence}.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     private static int hashCodeAsciiSanitizeShort(CharSequence value, int offset) {
         if (BIG_ENDIAN_NATIVE_ORDER) {
@@ -966,6 +1049,8 @@ public final class PlatformDependent {
 
     /**
      * Identical to {@link PlatformDependent0#hashCodeAsciiSanitize(byte)} but for {@link CharSequence}.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     private static int hashCodeAsciiSanitizeByte(char value) {
         return value & 0x1f;
@@ -1015,6 +1100,7 @@ public final class PlatformDependent {
         return PlatformDependent0.objectFieldOffset(field);
     }
 
+    /** 堆外到堆外内存拷贝。 */
     public static void copyMemory(long srcAddr, long dstAddr, long length) {
         PlatformDependent0.copyMemory(srcAddr, dstAddr, length);
     }
@@ -1040,6 +1126,7 @@ public final class PlatformDependent {
         PlatformDependent0.setMemory(address, bytes, value);
     }
 
+    /** 是否支持 direct ByteBuffer 对齐切片。 */
     public static boolean hasAlignDirectByteBuffer() {
         return hasUnsafe() || PlatformDependent0.hasAlignSliceMethod();
     }
@@ -1057,7 +1144,7 @@ public final class PlatformDependent {
             buffer.position((int) (aligned - address));
             return buffer.slice();
         }
-        // We don't have enough information to be able to align any buffers.
+        // 既无 Unsafe 也无 ByteBuffer.alignSlice 时无法对齐
         throw new UnsupportedOperationException("Cannot align direct buffer. " +
                 "Needs either Unsafe or ByteBuffer.alignSlice method available.");
     }
@@ -1095,6 +1182,7 @@ public final class PlatformDependent {
         }
     }
 
+    /** 分配前累加直接内存用量，超限抛 {@link OutOfDirectMemoryError}。 */
     static void incrementMemoryCounter(int capacity) {
         if (DIRECT_MEMORY_COUNTER != null) {
             long newUsedMemory = DIRECT_MEMORY_COUNTER.addAndGet(capacity);
@@ -1128,6 +1216,8 @@ public final class PlatformDependent {
      * @param startPos2 the position (inclusive) to start comparing in {@code bytes2}.
      * @param length the amount of bytes to compare. This is assumed to be validated as not going out of bounds
      * by the caller.
+     *
+     * <p>高性能字节区间相等比较；Java9+ 全数组且 offset 为 0 时用 Arrays.equals。</p>
      */
     public static boolean equals(byte[] bytes1, int startPos1, byte[] bytes2, int startPos2, int length) {
         if (javaVersion() > 8 && (startPos2 | startPos1 | (bytes1.length - length) | bytes2.length - length) == 0) {
@@ -1144,6 +1234,8 @@ public final class PlatformDependent {
      * @param startPos The starting index (inclusive) in {@code bytes}.
      * @param length The amount of bytes to check for zero.
      * @return {@code false} if {@code bytes[startPos:startsPos+length)} contains a value other than zero.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static boolean isZero(byte[] bytes, int startPos, int length) {
         return !hasUnsafe() || !unalignedAccess() ?
@@ -1171,6 +1263,8 @@ public final class PlatformDependent {
      * @param length the amount of bytes to compare. This is assumed to be validated as not going out of bounds
      * by the caller.
      * @return {@code 0} if not equal. {@code 1} if equal.
+     *
+     * <p>常数时间比较，防时序侧信道；返回值可位与级联。</p>
      */
     public static int equalsConstantTime(byte[] bytes1, int startPos1, byte[] bytes2, int startPos2, int length) {
         return !hasUnsafe() || !unalignedAccess() ?
@@ -1186,6 +1280,8 @@ public final class PlatformDependent {
      * @param length The amount of bytes that should be accounted for in the computation.
      * @return The hash code of {@code bytes} assuming ASCII character encoding.
      * The resulting hash code will be case insensitive.
+     *
+     * <p>ASCII 不区分大小写哈希（Murmur3 风格 SWAR）；有 Unsafe 且小端非对齐时用 PlatformDependent0。</p>
      */
     public static int hashCodeAscii(byte[] bytes, int startPos, int length) {
         return !hasUnsafe() || !unalignedAccess() || BIG_ENDIAN_NATIVE_ORDER ?
@@ -1202,12 +1298,14 @@ public final class PlatformDependent {
      * @param bytes The array which contains the data to hash (assumed to be equivalent to a {@code byte[]}).
      * @return The hash code of {@code bytes} assuming ASCII character encoding.
      * The resulting hash code will be case insensitive.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static int hashCodeAscii(CharSequence bytes) {
         final int length = bytes.length();
         final int remainingBytes = length & 7;
         int hash = HASH_CODE_ASCII_SEED;
-        // Benchmarking shows that by just naively looping for inputs 8~31 bytes long we incur a relatively large
+        // 8~31 字节 CharSequence 哈希：展开循环避免朴素逐 char 的性能损失
         // performance penalty (only achieve about 60% performance of loop which iterates over each char). So because
         // of this we take special provisions to unroll the looping for these conditions.
         if (length >= 32) {
@@ -1243,6 +1341,7 @@ public final class PlatformDependent {
         return hash;
     }
 
+    /** JCTools MPSC 队列工厂：有 Unsafe 时用原生队列，否则 atomic 变体。 */
     private static final class Mpsc {
         private static final boolean USE_MPSC_CHUNKED_ARRAY_QUEUE;
 
@@ -1255,7 +1354,7 @@ public final class PlatformDependent {
                 unsafe = AccessController.doPrivileged(new PrivilegedAction<Object>() {
                     @Override
                     public Object run() {
-                        // force JCTools to initialize unsafe
+                        // 特权块内触发 JCTools Unsafe 初始化
                         return UnsafeAccess.UNSAFE;
                     }
                 });
@@ -1293,6 +1392,8 @@ public final class PlatformDependent {
      * Create a new {@link Queue} which is safe to use for multiple producers (different threads) and a single
      * consumer (one thread!).
      * @return A MPSC queue which may be unbounded.
+     *
+     * <p>多生产者单消费者无界队列（EventLoop 任务常用）。</p>
      */
     public static <T> Queue<T> newMpscQueue() {
         return Mpsc.newMpscQueue();
@@ -1301,6 +1402,8 @@ public final class PlatformDependent {
     /**
      * Create a new {@link Queue} which is safe to use for multiple producers (different threads) and a single
      * consumer (one thread!).
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static <T> Queue<T> newMpscQueue(final int maxCapacity) {
         return Mpsc.newMpscQueue(maxCapacity);
@@ -1310,6 +1413,8 @@ public final class PlatformDependent {
      * Create a new {@link Queue} which is safe to use for multiple producers (different threads) and a single
      * consumer (one thread!).
      * The queue will grow and shrink its capacity in units of the given chunk size.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static <T> Queue<T> newMpscQueue(final int chunkSize, final int maxCapacity) {
         return Mpsc.newChunkedMpscQueue(chunkSize, maxCapacity);
@@ -1318,6 +1423,8 @@ public final class PlatformDependent {
     /**
      * Create a new {@link Queue} which is safe to use for single producer (one thread!) and a single
      * consumer (one thread!).
+     *
+     * <p>单生产者单消费者链表队列。</p>
      */
     public static <T> Queue<T> newSpscQueue() {
         return hasUnsafe() ? new SpscLinkedQueue<T>() : new SpscLinkedAtomicQueue<T>();
@@ -1326,6 +1433,8 @@ public final class PlatformDependent {
     /**
      * Create a new {@link Queue} which is safe to use for multiple producers (different threads) and a single
      * consumer (one thread!) with the given fixes {@code capacity}.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static <T> Queue<T> newFixedMpscQueue(int capacity) {
         return hasUnsafe() ? new MpscArrayQueue<T>(capacity) : new MpscAtomicArrayQueue<T>(capacity);
@@ -1335,6 +1444,8 @@ public final class PlatformDependent {
      * Create a new un-padded {@link Queue} which is safe to use for multiple producers (different threads) and a single
      * consumer (one thread!) with the given fixes {@code capacity}.<br>
      * This should be preferred to {@link #newFixedMpscQueue(int)} when the queue is not to be heavily contended.
+     *
+     * <p>无 padding 的固定容量 MPSC，低竞争场景更省内存。</p>
      */
     public static <T> Queue<T> newFixedMpscUnpaddedQueue(int capacity) {
         return hasUnsafe() ? new MpscUnpaddedArrayQueue<T>(capacity) : new MpscAtomicUnpaddedArrayQueue<T>(capacity);
@@ -1343,6 +1454,8 @@ public final class PlatformDependent {
     /**
      * Create a new {@link Queue} which is safe to use for multiple producers (different threads) and multiple
      * consumers with the given fixes {@code capacity}.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     public static <T> Queue<T> newFixedMpmcQueue(int capacity) {
         return hasUnsafe() ? new MpmcArrayQueue<T>(capacity) : new MpmcAtomicArrayQueue<T>(capacity);
@@ -1350,6 +1463,8 @@ public final class PlatformDependent {
 
     /**
      * Return the {@link ClassLoader} for the given {@link Class}.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static ClassLoader getClassLoader(final Class<?> clazz) {
         return PlatformDependent0.getClassLoader(clazz);
@@ -1357,6 +1472,8 @@ public final class PlatformDependent {
 
     /**
      * Return the context {@link ClassLoader} for the current {@link Thread}.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static ClassLoader getContextClassLoader() {
         return PlatformDependent0.getContextClassLoader();
@@ -1364,6 +1481,8 @@ public final class PlatformDependent {
 
     /**
      * Return the system {@link ClassLoader}.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static ClassLoader getSystemClassLoader() {
         return PlatformDependent0.getSystemClassLoader();
@@ -1371,6 +1490,8 @@ public final class PlatformDependent {
 
     /**
      * Returns a new concurrent {@link Deque}.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static <C> Deque<C> newConcurrentDeque() {
         return new ConcurrentLinkedDeque<C>();
@@ -1379,6 +1500,8 @@ public final class PlatformDependent {
     /**
      * Return a {@link Random} which is not-threadsafe and so can only be used from the same thread.
      * @deprecated Use ThreadLocalRandom.current() instead.
+     *
+     * <p>已弃用 API，保留兼容。</p>
      */
     @Deprecated
     public static Random threadLocalRandom() {
@@ -1464,6 +1587,8 @@ public final class PlatformDependent {
     /**
      * Returns {@code true} if the running JVM is either <a href="https://developer.ibm.com/javasdk/">IBM J9</a> or
      * <a href="https://www.eclipse.org/openj9/">Eclipse OpenJ9</a>, {@code false} otherwise.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static boolean isJ9Jvm() {
         return IS_J9_JVM;
@@ -1476,6 +1601,8 @@ public final class PlatformDependent {
 
     /**
      * Returns {@code true} if the running JVM is <a href="https://www.ikvm.net">IKVM.NET</a>, {@code false} otherwise.
+     *
+     * <p>平台相关能力查询或操作，委托 {@link PlatformDependent0} 或 JCTools。</p>
      */
     public static boolean isIkvmDotNet() {
         return IS_IVKVM_DOT_NET;
@@ -1504,6 +1631,8 @@ public final class PlatformDependent {
      * This will produce debug log output when called.
      *
      * @return The estimated max direct memory, in bytes.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     @SuppressWarnings("unchecked")
     public static long estimateMaxDirectMemory() {
@@ -1724,6 +1853,8 @@ public final class PlatformDependent {
 
     /**
      * Package private for testing purposes only!
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     static int hashCodeAsciiSafe(byte[] bytes, int startPos, int length) {
         int hash = HASH_CODE_ASCII_SEED;
@@ -1757,10 +1888,12 @@ public final class PlatformDependent {
         }
     }
 
+    /** 规范化 CPU 架构字符串（x86_64、aarch_64 等）。 */
     public static String normalizedArch() {
         return NORMALIZED_ARCH;
     }
 
+    /** 规范化操作系统名（linux、osx、windows 等）。 */
     public static String normalizedOs() {
         return NORMALIZED_OS;
     }
@@ -1781,6 +1914,8 @@ public final class PlatformDependent {
      *
      * @param dest             destination set
      * @param maybeClassifiers potential classifiers to add
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     private static void addClassifier(Set<String> dest, String... maybeClassifiers) {
         for (String id : maybeClassifiers) {
@@ -1933,6 +2068,8 @@ public final class PlatformDependent {
 
     /**
      * Check if JFR events are supported on this platform.
+     *
+     * <p>是否启用 Netty JFR 事件（{@code io.netty.jfr.enabled}）。</p>
      */
     public static boolean isJfrEnabled() {
         return JFR;

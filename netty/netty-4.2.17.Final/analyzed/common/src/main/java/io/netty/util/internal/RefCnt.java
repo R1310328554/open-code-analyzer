@@ -27,12 +27,18 @@ import static io.netty.util.internal.ObjectUtil.checkPositive;
  * Monomorphic reference counter implementation that always use the most efficient available atomic updater.
  * This implementation is easier for the JIT compiler to optimize,
  * compared to when {@link ReferenceCountUpdater} is used.
+ *
+ * <p>单态引用计数器：运行时选择 Unsafe / VarHandle / Atomic 最优路径，便于 JIT 内联优化。
+ * 编码规则同 {@link ReferenceCountUpdater}（偶数=存活计数，奇数=已释放）。</p>
  */
 @SuppressWarnings("deprecation")
 public final class RefCnt {
 
+    /** Unsafe 实现分支标识。 */
     private static final int UNSAFE = 0;
+    /** VarHandle 实现分支标识。 */
     private static final int VAR_HANDLE = 1;
+    /** AtomicIntegerFieldUpdater 回退分支。 */
     private static final int ATOMIC_UPDATER = 2;
     private static final int REF_CNT_IMPL;
 
@@ -47,16 +53,13 @@ public final class RefCnt {
     }
 
     /*
-     * Implementation notes:
-     *
-     * For the updated int field:
-     *   Even => "real" refcount is (refCnt >>> 1)
-     *   Odd  => "real" refcount is 0
-     *
-     * This field is package-private so that the AtomicRefCnt implementation can reach it, even on native-image.
+     * 实现说明：value 偶数表示真实引用数 (>>>1)，奇数表示已释放。
+     * package-private 以便 AtomicRefCnt 在 native-image 下直接访问。
      */
+    /** 编码后的引用计数字段。 */
     volatile int value;
 
+    /** 按平台选择 Unsafe/VarHandle/Atomic 实现并初始化为引用计数 1。 */
     public RefCnt() {
         switch (REF_CNT_IMPL) {
         case UNSAFE:
@@ -77,6 +80,8 @@ public final class RefCnt {
      *
      * @param ref the target RefCnt instance
      * @return the reference count
+     *
+     * <p>带 acquire 语义读取引用计数。</p>
      */
     public static int refCnt(RefCnt ref) {
         switch (REF_CNT_IMPL) {
@@ -94,6 +99,8 @@ public final class RefCnt {
      * Increases the reference count of the given {@code RefCnt} instance by 1.
      *
      * @param ref the target RefCnt instance
+     *
+     * <p>引用计数 +1。</p>
      */
     public static void retain(RefCnt ref) {
         switch (REF_CNT_IMPL) {
@@ -137,6 +144,8 @@ public final class RefCnt {
      *
      * @param ref the target RefCnt instance
      * @return true if the reference count became 0 and the object should be deallocated
+     *
+     * <p>引用计数 -1；返回 true 表示计数归零应释放资源。</p>
      */
     public static boolean release(RefCnt ref) {
         switch (REF_CNT_IMPL) {
@@ -176,6 +185,8 @@ public final class RefCnt {
      *
      * @param ref the target RefCnt instance
      * @return {@code true} if alive
+     *
+     * <p>非 volatile 快速存活检测，避免完整读计数开销。</p>
      */
     public static boolean isLiveNonVolatile(RefCnt ref) {
         switch (REF_CNT_IMPL) {
@@ -192,6 +203,8 @@ public final class RefCnt {
     /**
      * <strong>WARNING:</strong>
      * An unsafe operation that sets the reference count of the given {@code RefCnt} instance directly.
+     *
+     * <p>不安全：直接设置引用计数。</p>
      *
      * @param ref    the target RefCnt instance
      * @param refCnt new reference count
@@ -218,6 +231,8 @@ public final class RefCnt {
      * immediately visible to other threads. It should only be used in quiescent states where no other
      * threads are accessing the reference count.
      *
+     * <p>重置为 1，使用 release 语义；仅适用于静默期。</p>
+     *
      * @param ref the target RefCnt instance
      */
     public static void resetRefCnt(RefCnt ref) {
@@ -239,6 +254,7 @@ public final class RefCnt {
         throw new IllegalReferenceCountException(curr >>> 1, -(decrement >>> 1));
     }
 
+    /** 基于 {@link AtomicIntegerFieldUpdater} 的回退实现。 */
     private static final class AtomicRefCnt {
         private static final AtomicIntegerFieldUpdater<RefCnt> UPDATER =
                 AtomicIntegerFieldUpdater.newUpdater(RefCnt.class, "value");
@@ -312,6 +328,7 @@ public final class RefCnt {
         }
     }
 
+    /** 基于 {@link VarHandle} 的实现（无 Unsafe 时）。 */
     private static final class VarHandleRefCnt {
 
         private static final VarHandle VH;
@@ -390,6 +407,7 @@ public final class RefCnt {
         }
     }
 
+    /** 基于 {@link PlatformDependent} Unsafe 原语的最快路径。 */
     private static final class UnsafeRefCnt {
 
         private static final long VALUE_OFFSET = getUnsafeOffset(RefCnt.class, "value");

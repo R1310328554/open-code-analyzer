@@ -22,6 +22,10 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 
+/**
+ * 反射工具：安全 setAccessible、解析泛型父类类型参数。
+ * 兼容 JDK9+ {@code InaccessibleObjectException} 弱类型检测。
+ */
 public final class ReflectionUtil {
 
     private ReflectionUtil() { }
@@ -30,9 +34,11 @@ public final class ReflectionUtil {
      * Try to call {@link AccessibleObject#setAccessible(boolean)} but will catch any {@link SecurityException} and
      * {@link java.lang.reflect.InaccessibleObjectException} and return it.
      * The caller must check if it returns {@code null} and if not handle the returned exception.
+     *
+     * <p>尝试 {@link AccessibleObject#setAccessible(true)}；失败返回异常供调用方处理。</p>
      */
     public static Throwable trySetAccessible(AccessibleObject object, boolean checkAccessible) {
-        if (checkAccessible && !PlatformDependent0.isExplicitTryReflectionSetAccessible()) {
+        // io.netty.tryReflectionSetAccessible=false 时直接拒绝反射突破模块限制
             return new UnsupportedOperationException("Reflective setAccessible(true) disabled");
         }
         try {
@@ -46,7 +52,7 @@ public final class ReflectionUtil {
     }
 
     private static RuntimeException handleInaccessibleObjectException(RuntimeException e) {
-        // JDK 9 can throw an inaccessible object exception here; since Netty compiles
+        // JDK9+ InaccessibleObjectException：Netty 编译目标 JDK7 故用类名弱检测
         // against JDK 7 and this exception was only added in JDK 9, we have to weakly
         // check the type
         if ("java.lang.reflect.InaccessibleObjectException".equals(e.getClass().getName())) {
@@ -67,6 +73,8 @@ public final class ReflectionUtil {
      * @param typeParamName The name of the type parameter to resolve
      * @return The resolved type parameter
      * @throws IllegalStateException if the type parameter could not be resolved
+     *
+     * <p>沿继承链解析参数化父类上的泛型类型实参（Handler 类型匹配常用）。</p>
      * */
     public static Class<?> resolveTypeParameter(final Object object,
                                                 Class<?> parametrizedSuperclass,
@@ -112,7 +120,7 @@ public final class ReflectionUtil {
                         return Array.newInstance((Class<?>) componentType, 0).getClass();
                     }
                 }
-                if (actualTypeParam instanceof TypeVariable) {
+                    // 类型参数仍指向另一层 TypeVariable，沿声明类继续解析
                     // Resolved type parameter points to another type parameter.
                     TypeVariable<?> v = (TypeVariable<?>) actualTypeParam;
                     if (!(v.getGenericDeclaration() instanceof Class)) {

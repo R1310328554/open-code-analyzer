@@ -37,6 +37,9 @@ import static java.lang.invoke.MethodType.methodType;
 
 /**
  * The {@link PlatformDependent} operations which requires access to {@code sun.misc.*}.
+ *
+ * <p>依赖 {@code sun.misc.Unsafe} 及 JDK 内部 API 的平台操作实现，由 {@link PlatformDependent} 委托调用。
+ * 负责 Unsafe 初始化、堆外内存、DirectByteBuffer 构造、常数时间比较与 ASCII 哈希等。</p>
  */
 final class PlatformDependent0 {
 
@@ -61,7 +64,7 @@ final class PlatformDependent0 {
 
     private static final Throwable UNSAFE_UNAVAILABILITY_CAUSE;
 
-    // See https://github.com/oracle/graal/blob/master/sdk/src/org.graalvm.nativeimage/src/org/graalvm/nativeimage/
+    // Graal native-image 检测：org.graalvm.nativeimage.imagecode 属性
     // ImageInfo.java
     private static final boolean RUNNING_IN_NATIVE_IMAGE = SystemPropertyUtil.contains(
             "org.graalvm.nativeimage.imagecode");
@@ -71,6 +74,7 @@ final class PlatformDependent0 {
     // Package-private for testing.
     static final MethodHandle IS_VIRTUAL_THREAD_METHOD_HANDLE = getIsVirtualThreadMethodHandle();
 
+    /** 全局 Unsafe 实例，不可用则为 null（静态块内初始化）。 */
     static final Unsafe UNSAFE;
 
     // constants borrowed from murmur3
@@ -81,6 +85,8 @@ final class PlatformDependent0 {
     /**
      * Limits the number of bytes to copy per {@link Unsafe#copyMemory(long, long, long)} to allow safepoint polling
      * during a large copy.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     private static final long UNSAFE_COPY_THRESHOLD = 1024L * 1024L;
 
@@ -89,6 +95,7 @@ final class PlatformDependent0 {
     private static final long BITS_MAX_DIRECT_MEMORY;
 
     static {
+        // ---------- Unsafe 与 DirectByteBuffer 能力探测（privileged 反射） ----------
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         final ByteBuffer direct;
         Field addressField = null;
@@ -102,13 +109,13 @@ final class PlatformDependent0 {
         } else {
             direct = ByteBuffer.allocateDirect(1);
 
-            // attempt to access field Unsafe#theUnsafe
+            // 通过反射读取 Unsafe#theUnsafe 单例
             final Object maybeUnsafe = AccessController.doPrivileged(new PrivilegedAction<Object>() {
                 @Override
                 public Object run() {
                     try {
                         final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-                        // We always want to try using Unsafe as the access still works on java9 as well and
+                        // 仍尝试 Unsafe：Java9+ 原生传输与大量优化依赖它
                         // we need it for out native-transports and many optimizations.
                         Throwable cause = ReflectionUtil.trySetAccessible(unsafeField, false);
                         if (cause != null) {
@@ -143,7 +150,7 @@ final class PlatformDependent0 {
                 logger.debug("sun.misc.Unsafe.theUnsafe: available");
             }
 
-            // ensure the unsafe supports all necessary methods to work around the mistake in the latest OpenJDK,
+            // 验证 Unsafe 方法集完整（OpenJDK/JEP471 可能移除部分方法）
             // or that they haven't been removed by JEP 471.
             // https://github.com/netty/netty/issues/1061
             // https://www.mail-archive.com/jdk6-dev@openjdk.java.net/msg00698.html
@@ -185,7 +192,7 @@ final class PlatformDependent0 {
                                 cls.getDeclaredMethod("addressSize");
                             }
                             if (javaVersion() >= 23) {
-                                // The following tests the methods are usable.
+                                // Java23+ 实际 allocate/put/free 探测内存访问是否被 JVM 禁止
                                 // Will throw UnsupportedOperationException if unsafe memory access is denied:
                                 long address = finalUnsafe.allocateMemory(8);
                                 finalUnsafe.putLong(address, 42);
@@ -608,7 +615,10 @@ final class PlatformDependent0 {
     /**
      * @param thread The thread to be checked.
      * @return {@code true} if this {@link Thread} is a virtual thread, {@code false} otherwise.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
+    /** Java21+ 虚拟线程检测（MethodHandle 调用 Thread.isVirtual）。 */
     static boolean isVirtualThread(Thread thread) {
         if (thread == null || IS_VIRTUAL_THREAD_METHOD_HANDLE == null) {
             return false;
@@ -637,7 +647,7 @@ final class PlatformDependent0 {
         boolean noUnsafe = SystemPropertyUtil.getBoolean("io.netty.noUnsafe", false);
         logger.debug("-Dio.netty.noUnsafe: {}", noUnsafe);
 
-        // See JDK 23 JEP 471 https://openjdk.org/jeps/471 and sun.misc.Unsafe.beforeMemoryAccess() on JDK 23+.
+        // Java25+ 默认禁用 Unsafe；--sun-misc-unsafe-memory-access 与 io.netty.noUnsafe 控制
         // And JDK 24 JEP 498 https://openjdk.org/jeps/498, that enable warnings by default.
         // Due to JDK bugs, we only actually disable Unsafe by default on Java 25+, where we have memory segment APIs
         // available, and working.
@@ -681,11 +691,14 @@ final class PlatformDependent0 {
 
     /**
      * Any value >= 0 should be considered as a valid max direct memory value.
+     *
+     * <p>平台底层内存/缓冲/队列相关工具方法。</p>
      */
     static long bitsMaxDirectMemory() {
         return BITS_MAX_DIRECT_MEMORY;
     }
 
+    /** Unsafe 是否成功初始化。 */
     static boolean hasUnsafe() {
         return UNSAFE != null;
     }
@@ -727,8 +740,9 @@ final class PlatformDependent0 {
         return newDirectBuffer(UNSAFE.reallocateMemory(directBufferAddress(buffer), capacity), capacity);
     }
 
+    /** Unsafe.allocateMemory + 无 Cleaner 的 DirectByteBuffer 包装。 */
     static ByteBuffer allocateDirectNoCleaner(int capacity) {
-        // Calling malloc with capacity of 0 may return a null ptr or a memory address that can be used.
+        // malloc(0) 行为未定义，至少分配 1 字节
         // Just use 1 to make it safe to use in all cases:
         // See: https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html
         return newDirectBuffer(UNSAFE.allocateMemory(Math.max(1, capacity)), capacity);
@@ -823,6 +837,7 @@ final class PlatformDependent0 {
         return buffer.isDirect() && (hasUnsafe() || hasMemorySegmentAddressOfBuffer());
     }
 
+    /** 读取 DirectByteBuffer 堆外地址（Unsafe 或 MemorySegment API）。 */
     static long directBufferAddress(ByteBuffer buffer) {
         if (hasUnsafe()) {
             return getLong(buffer, ADDRESS_FIELD_OFFSET);
@@ -971,6 +986,7 @@ final class PlatformDependent0 {
         UNSAFE.putObject(o, offset, x);
     }
 
+    /** 堆外拷贝；大块分片以允许 safepoint（UNSAFE_COPY_THRESHOLD）。 */
     static void copyMemory(long srcAddr, long dstAddr, long length) {
         // Manual safe-point polling is only needed prior Java9:
         // See https://bugs.openjdk.java.net/browse/JDK-8149596
@@ -981,6 +997,7 @@ final class PlatformDependent0 {
         }
     }
 
+    /** 超过 1MB 时分块 copyMemory，避免长时间阻塞 GC safepoint。 */
     private static void copyMemoryWithSafePointPolling(long srcAddr, long dstAddr, long length) {
         while (length > 0) {
             long size = Math.min(length, UNSAFE_COPY_THRESHOLD);
@@ -1020,6 +1037,7 @@ final class PlatformDependent0 {
         UNSAFE.setMemory(o, offset, bytes, value);
     }
 
+    /** Unsafe 快速字节比较（long 字对齐读取）。 */
     static boolean equals(byte[] bytes1, int startPos1, byte[] bytes2, int startPos2, int length) {
         int remainingBytes = length & 7;
         final long baseOffset1 = BYTE_ARRAY_BASE_OFFSET + startPos1;
@@ -1049,6 +1067,7 @@ final class PlatformDependent0 {
                 UNSAFE.getByte(bytes1, baseOffset1) == UNSAFE.getByte(bytes2, baseOffset2);
     }
 
+    /** 常数时间字节相等比较（XOR 累加）。 */
     static int equalsConstantTime(byte[] bytes1, int startPos1, byte[] bytes2, int startPos2, int length) {
         long result = 0;
         long remainingBytes = length & 7;
@@ -1100,6 +1119,7 @@ final class PlatformDependent0 {
         return bytes[startPos] == 0;
     }
 
+    /** ASCII 不区分大小写哈希（Unsafe getLong 批量读取）。 */
     static int hashCodeAscii(byte[] bytes, int startPos, int length) {
         int hash = HASH_CODE_ASCII_SEED;
         long baseOffset = BYTE_ARRAY_BASE_OFFSET + startPos;
@@ -1129,7 +1149,7 @@ final class PlatformDependent0 {
     }
 
     static int hashCodeAsciiCompute(long value, int hash) {
-        // masking with 0x1f reduces the number of overall bits that impact the hash code but makes the hash
+        // 0x1f 掩码使哈希不区分 ASCII 大小写
         // code the same regardless of character case (upper case or lower case hash is the same).
         return hash * HASH_CODE_C1 +
                 // Low order int
@@ -1150,6 +1170,7 @@ final class PlatformDependent0 {
         return value & 0x1f;
     }
 
+    /** 有 SecurityManager 时特权获取类 ClassLoader。 */
     static ClassLoader getClassLoader(final Class<?> clazz) {
         if (System.getSecurityManager() == null) {
             return clazz.getClassLoader();
@@ -1209,6 +1230,7 @@ final class PlatformDependent0 {
         return IS_ANDROID;
     }
 
+    /** 通过 java.vm.name==Dalvik 判断 Android。 */
     private static boolean isAndroid0() {
         // Idea: Sometimes java binaries include Android classes on the classpath, even if it isn't actually Android.
         // Rather than check if certain classes are present, just check the VM, which is tied to the JDK.
@@ -1239,6 +1261,7 @@ final class PlatformDependent0 {
         return JAVA_VERSION;
     }
 
+    /** 解析主版本号；Android 假定为 6。 */
     private static int javaVersion0() {
         final int majorVersion;
 

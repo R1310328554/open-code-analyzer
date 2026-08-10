@@ -17,11 +17,15 @@ package io.netty.util.internal;
 
 /**
  * Utility class for SWAR (SIMD within a register) operations.
+ *
+ * <p>SWAR（寄存器内 SIMD）位运算工具：在单个 long/int 字内并行处理多个 ASCII 字节。</p>
  */
 public final class SWARUtil {
 
     /**
      * Compiles given byte into a long pattern suitable for SWAR operations.
+     *
+     * <p>将单字节扩展为 8 字节重复模式，供 SWAR 比较使用。</p>
      */
     public static long compilePattern(byte byteToFind) {
         return (byteToFind & 0xFFL) * 0x101010101010101L;
@@ -34,6 +38,8 @@ public final class SWARUtil {
      * @param word    the word to apply the pattern to
      * @param pattern the pattern to apply
      * @return a word where each byte that matches the pattern has the highest bit set
+     *
+     * <p>对 word 应用模式，匹配字节最高位置 1（Haswell 风格 SWAR 查找）。</p>
      */
     public static long applyPattern(final long word, final long pattern) {
         long input = word ^ pattern;
@@ -44,6 +50,8 @@ public final class SWARUtil {
     /**
      * Returns the index of the first occurrence of byte that specificied in the pattern.
      * If no pattern is found, returns 8.
+     *
+     * <p>根据 applyPattern 结果计算首匹配字节索引；未找到返回 8。</p>
      *
      * @param word     the return value of {@link #applyPattern(long, long)}
      * @param isBigEndian if true, if given word is big endian
@@ -111,6 +119,8 @@ public final class SWARUtil {
 
     /**
      * Returns true if the given word contains at least one ASCII uppercase byte.
+     *
+     * <p>检测 8 字节字中是否含大写 ASCII 字母。</p>
      */
     public static boolean containsUpperCase(final long word) {
         return applyUpperCasePattern(word) != 0;
@@ -125,6 +135,8 @@ public final class SWARUtil {
 
     /**
      * Returns true if the given word contains at least one ASCII lowercase byte.
+     *
+     * <p>检测 8 字节字中是否含小写 ASCII 字母。</p>
      */
     public static boolean containsLowerCase(final long word) {
         return applyLowerCasePattern(word) != 0;
@@ -139,6 +151,8 @@ public final class SWARUtil {
 
     /**
      * Returns a word with all bytes converted to lowercase ASCII.
+     *
+     * <p>将字内 ASCII 大写字节转为小写（SWAR 位掩码）。</p>
      */
     public static long toLowerCase(final long word) {
         final long mask = applyUpperCasePattern(word) >>> 2;
@@ -155,6 +169,8 @@ public final class SWARUtil {
 
     /**
      * Returns a word with all bytes converted to uppercase ASCII.
+     *
+     * <p>将字内 ASCII 小写字节转为大写。</p>
      */
     public static long toUpperCase(final long word) {
         final long mask = applyLowerCasePattern(word) >>> 2;

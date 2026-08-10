@@ -17,20 +17,30 @@ package io.netty.util.internal;
 
 import java.util.Queue;
 
+/**
+ * 扩展 {@link Queue} 的优先队列接口，支持优先级变更与类型安全节点操作。
+ * 典型实现见 {@link DefaultPriorityQueue}。
+ */
 public interface PriorityQueue<T> extends Queue<T> {
     /**
      * Same as {@link #remove(Object)} but typed using generics.
+     *
+     * <p>泛型版 {@link #remove(Object)}，避免强制类型转换。</p>
      */
     boolean removeTyped(T node);
 
     /**
      * Same as {@link #contains(Object)} but typed using generics.
+     *
+     * <p>泛型版 {@link #contains(Object)}。</p>
      */
     boolean containsTyped(T node);
 
     /**
      * Notify the queue that the priority for {@code node} has changed. The queue will adjust to ensure the priority
      * queue properties are maintained.
+     *
+     * <p>节点优先级变化时通知队列重新调整堆序（如定时任务 deadline 更新）。</p>
      * @param node An object which is in this queue and the priority may have changed.
      */
     void priorityChanged(T node);
@@ -41,6 +51,8 @@ public interface PriorityQueue<T> extends Queue<T> {
      * allow them to be garbage collected. This should only be used when it is certain that the nodes will not be
      * re-inserted into this or any other {@link PriorityQueue} and it is known that the {@link PriorityQueue} itself
      * will be garbage collected after this call.
+     *
+     * <p>清空队列但不更新节点 {@link PriorityQueueNode} 索引，仅用于队列即将被 GC 的场景。</p>
      */
     void clearIgnoringIndexes();
 }

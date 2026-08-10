@@ -20,6 +20,8 @@ import io.netty.util.internal.logging.InternalLogger;
 
 /**
  * Internal utilities to notify {@link Promise}s.
+ *
+ * <p>内部工具：安全地取消/完成 {@link Promise}，失败时可选记录日志。</p>
  */
 public final class PromiseNotificationUtil {
 
@@ -27,6 +29,8 @@ public final class PromiseNotificationUtil {
 
     /**
      * Try to cancel the {@link Promise} and log if {@code logger} is not {@code null} in case this fails.
+     *
+     * <p>尝试取消 Promise；若已完成/失败且 logger 非空则记录警告。</p>
      */
     public static void tryCancel(Promise<?> p, InternalLogger logger) {
         if (!p.cancel(false) && logger != null) {
@@ -43,6 +47,8 @@ public final class PromiseNotificationUtil {
 
     /**
      * Try to mark the {@link Promise} as success and log if {@code logger} is not {@code null} in case this fails.
+     *
+     * <p>尝试 {@link Promise#trySuccess}，状态冲突时记录日志。</p>
      */
     public static <V> void trySuccess(Promise<? super V> p, V result, InternalLogger logger) {
         if (!p.trySuccess(result) && logger != null) {
@@ -59,6 +65,8 @@ public final class PromiseNotificationUtil {
 
     /**
      * Try to mark the {@link Promise} as failure and log if {@code logger} is not {@code null} in case this fails.
+     *
+     * <p>尝试 {@link Promise#tryFailure}，状态冲突时记录日志。</p>
      */
     public static void tryFailure(Promise<?> p, Throwable cause, InternalLogger logger) {
         if (!p.tryFailure(cause) && logger != null) {

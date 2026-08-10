@@ -20,10 +20,13 @@ import java.nio.ByteBuffer;
 /**
  * {@link OutOfMemoryError} that is throws if {@link PlatformDependent#allocateDirect(int)} can not allocate
  * a new {@link ByteBuffer} due memory restrictions.
+ *
+ * <p>当 {@link PlatformDependent#allocateDirect(int)} 因直接内存配额不足无法分配 {@link ByteBuffer} 时抛出。</p>
  */
 public final class OutOfDirectMemoryError extends OutOfMemoryError {
     private static final long serialVersionUID = 4228264016184011555L;
 
+    /** 包内构造，携带描述直接内存耗尽原因的消息。 */
     OutOfDirectMemoryError(String s) {
         super(s);
     }

@@ -18,23 +18,31 @@ package io.netty.util.internal;
 
 import java.util.Iterator;
 
+/**
+ * 只读 {@link Iterator} 包装器，{@link #remove} 恒抛 {@link UnsupportedOperationException}。
+ */
 public final class ReadOnlyIterator<T> implements Iterator<T> {
+    /** 被包装的底层迭代器。 */
     private final Iterator<? extends T> iterator;
 
+    /** 构造只读视图，iterator 不可为 null。 */
     public ReadOnlyIterator(Iterator<? extends T> iterator) {
         this.iterator = ObjectUtil.checkNotNull(iterator, "iterator");
     }
 
+    /** 委托底层迭代器。 */
     @Override
     public boolean hasNext() {
         return iterator.hasNext();
     }
 
+    /** 委托底层迭代器返回下一元素。 */
     @Override
     public T next() {
         return iterator.next();
     }
 
+    /** 只读迭代器禁止删除。 */
     @Override
     public void remove() {
         throw new UnsupportedOperationException("read-only");

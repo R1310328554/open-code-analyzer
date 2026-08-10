@@ -24,15 +24,15 @@ import io.netty.util.ReferenceCounted;
  * Common logic for {@link ReferenceCounted} implementations
  * @deprecated Instead of extending this class, prefer instead to include a {@link RefCnt} field and delegate to that.
  * This approach has better compatibility with Graal Native Image.
+ *
+ * <p>{@link ReferenceCounted} 引用计数通用逻辑：偶数 raw 值表示存活引用数，奇数表示已释放。
+ * 推荐改用组合 {@link RefCnt} 字段以更好支持 Graal Native Image。</p>
  */
 @Deprecated
 public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
     /*
-     * Implementation notes:
-     *
-     * For the updated int field:
-     *   Even => "real" refcount is (refCnt >>> 1)
-     *   Odd  => "real" refcount is 0
+     * 实现说明：
+     * int 字段编码：偶数 => 真实引用计数为 (refCnt >>> 1)；奇数 => 已释放（计数 0）。
      */
 
     protected ReferenceCountUpdater() {
@@ -50,10 +50,12 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
 
     protected abstract boolean casRawRefCnt(T refCnt, int expected, int value);
 
+    /** 初始 raw 值 2，对应引用计数 1。 */
     public final int initialValue() {
         return 2;
     }
 
+    /** 构造后安全初始化引用计数字段。 */
     public final void setInitialValue(T instance) {
         safeInitializeRawRefCnt(instance, initialValue());
     }
@@ -62,10 +64,12 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
         return rawCnt >>> 1;
     }
 
+    /** 带 acquire 语义读取当前引用计数。 */
     public final int refCnt(T instance) {
         return realRefCnt(getAcquireRawRefCnt(instance));
     }
 
+    /** 非 volatile 快速判断是否仍存活（raw==2 或偶数）。 */
     public final boolean isLiveNonVolatile(T instance) {
         final int rawCnt = getRawRefCnt(instance);
         if (rawCnt == 2) {
@@ -76,6 +80,8 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
 
     /**
      * An unsafe operation that sets the reference count directly
+     *
+     * <p>直接设置引用计数，仅供内部/测试使用。</p>
      */
     public final void setRefCnt(T instance, int refCnt) {
         int rawRefCnt = refCnt > 0 ? refCnt << 1 : 1; // overflow OK here
@@ -84,6 +90,8 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
 
     /**
      * Resets the reference count to 1
+     *
+     * <p>重置为 1；须在无并发访问的静默状态调用。</p>
      */
     public final void resetRefCnt(T instance) {
         // no need of a volatile set, it should happen in a quiescent state
@@ -100,7 +108,7 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
 
     private T retain0(T instance, int increment) {
         int oldRef = getAndAddRawRefCnt(instance, increment);
-        // oldRef & 0x80000001 stands for oldRef < 0 || oldRef is odd
+        // oldRef & 0x80000001 表示已释放（奇数）或溢出
         // NOTE: we're optimizing for inlined and constant folded increment here -> which will make
         // Integer.MAX_VALUE - increment to be computed at compile time
         if ((oldRef & 0x80000001) != 0 || oldRef > Integer.MAX_VALUE - increment) {
@@ -138,12 +146,17 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
         throw new IllegalReferenceCountException(curr >>> 1, -(decrement >>> 1));
     }
 
+    /** 引用计数底层原子更新实现类型。 */
     public enum UpdaterType {
+        /** sun.misc.Unsafe 字段偏移 + CAS。 */
         Unsafe,
+        /** Java 9+ VarHandle。 */
         VarHandle,
+        /** AtomicIntegerFieldUpdater 回退。 */
         Atomic
     }
 
+    /** 根据 Unsafe 偏移与 VarHandle 可用性选择 Updater 类型。 */
     public static <T extends ReferenceCounted> UpdaterType updaterTypeOf(Class<T> clz, String fieldName) {
         long fieldOffset = getUnsafeOffset(clz, fieldName);
         if (fieldOffset >= 0) {
@@ -155,6 +168,7 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
         return UpdaterType.Atomic;
     }
 
+    /** 获取 refCnt 字段的 Unsafe 偏移，不可用时返回 -1。 */
     public static long getUnsafeOffset(Class<? extends ReferenceCounted> clz, String fieldName) {
         try {
             if (PlatformDependent.hasUnsafe()) {
