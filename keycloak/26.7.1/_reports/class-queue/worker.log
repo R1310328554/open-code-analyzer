@@ -1213,3 +1213,18 @@
 2026-08-10T07:29:02Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/InfinispanCacheStoreFactoryProviderFactory.java wave42b realm/user cache + authz adapters
 2026-08-10T07:29:02Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/PermissionTicketAdapter.java wave42b realm/user cache + authz adapters
 2026-08-10T07:29:02Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/PolicyAdapter.java wave42b realm/user cache + authz adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/keys/infinispan/InfinispanPublicKeyStorageProviderFactory.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/keys/infinispan/PublicKeyStorageInvalidationEvent.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/keys/infinispan/PublicKeysEntry.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/marshalling/KeycloakIndexSchemaUtil.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/marshalling/KeycloakModelSchema.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/marshalling/Marshalling.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/CacheManager.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/CachedCount.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/CachedExists.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/ClearCacheEvent.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/ClientAdapter.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/ClientScopeAdapter.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/DefaultLazyLoader.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/GroupAdapter.java wave42a public-key + cache adapters
+2026-08-10T07:30:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/InfinispanCacheRealmProviderFactory.java wave42a public-key + cache adapters
