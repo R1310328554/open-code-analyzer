@@ -16,7 +16,12 @@
  */
 package org.keycloak.protocol.util;
 
+/**
+ * 客户端 CLI 安装配置工具类。
+ * <p>提供命令行/适配器配置字符串的转义与引号包装。</p>
+ */
 public class ClientCliInstallationUtil {
+    /** 为配置值添加双引号并转义反斜杠与引号 @param value 原始字符串 @return 可嵌入 CLI 配置的带引号字符串 */
     public static String quote(String value) {
         return "\"" + value.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"";
     }

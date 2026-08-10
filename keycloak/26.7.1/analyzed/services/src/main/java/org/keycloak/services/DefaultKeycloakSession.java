@@ -70,24 +70,37 @@ import org.keycloak.vault.VaultTranscriber;
 import org.jboss.logging.Logger;
 
 /**
+ * {@link KeycloakSession} 默认抽象实现。
+ * <p>管理 Provider 懒加载与缓存、事务、会话属性、组件 Provider 及各类 datastore 门面；关闭时提交/回滚事务并关闭已注册 Provider。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public abstract class DefaultKeycloakSession implements KeycloakSession {
 
+    /** 所属会话工厂 */
     private final DefaultKeycloakSessionFactory factory;
+    /** 会话内 Provider 实例缓存（键含类型与 ID/组件信息） */
     private final Map<List<String>, Provider> providers = new HashMap<>();
+    /** 需在会话关闭时显式关闭的 Provider 列表 */
     private final List<Provider> closable = new LinkedList<>();
+    /** 会话事务管理器 */
     private final DefaultKeycloakTransactionManager transactionManager;
+    /** 会话级属性存储 */
     private final Map<String, Object> attributes = new HashMap<>();
+    /** 关闭时需向工厂传播的失效事件 */
     private final Map<InvalidableObjectType, Set<Object>> invalidationMap = new HashMap<>();
+    /** 懒加载的数据存储 Provider */
     private DatastoreProvider datastoreProvider;
+    /** 请求上下文 */
     private final KeycloakContext context;
     private KeyManager keyManager;
     private TokenManager tokenManager;
     private VaultTranscriber vaultTranscriber;
     private ClientPolicyManager clientPolicyManager;
+    /** 会话是否已关闭 */
     private boolean closed = false;
 
+    /** @param factory Keycloak 会话工厂 */
     public DefaultKeycloakSession(DefaultKeycloakSessionFactory factory) {
         this.factory = factory;
         this.transactionManager = new DefaultKeycloakTransactionManager(this);
@@ -95,11 +108,13 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
         LOG.tracef("Created %s%s", this, StackUtil.getShortStackTrace());
     }
 
+    /** @return 请求上下文 */
     @Override
     public KeycloakContext getContext() {
         return context;
     }
 
+    /** 懒加载 DatastoreProvider @return 数据存储 Provider */
     private DatastoreProvider getDatastoreProvider() {
         if (this.datastoreProvider == null) {
             this.datastoreProvider = getProvider(DatastoreProvider.class);
@@ -107,6 +122,7 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
         return this.datastoreProvider;
     }
 
+    /** 失效工厂缓存并在关闭时重放 PROVIDER_FACTORY 失效 @param type 失效类型 @param ids 对象 ID */
     @Override
     public void invalidate(InvalidableObjectType type, Object... ids) {
         factory.invalidate(this, type, ids);
@@ -115,10 +131,11 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
         }
     }
 
+    /** 注册需在会话关闭时关闭的 Provider（去重） @param provider Provider 实例 */
     @Override
     public void enlistForClose(Provider provider) {
         for (Provider p : closable) {
-            if (p == provider) {    // Do not add the same provider twice
+            if (p == provider) {    // 同一 Provider 不重复添加
                 return;
             }
         }
@@ -167,6 +184,7 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
         return getDatastoreProvider().users();
     }
 
+    /** 获取默认 Provider 实例 @param clazz Provider 类型 @return Provider 或 null */
     @Override
     public <T extends Provider> T getProvider(Class<T> clazz) {
         List<String> key = List.of(clazz.getName());
@@ -176,8 +194,8 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
     private <T extends Provider> T getOrCreateProvider(List<String> key, Supplier<ProviderFactory<T>> supplier) {
         @SuppressWarnings("unchecked")
         T provider = (T) providers.get(key);
-        // KEYCLOAK-11890 - Avoid using HashMap.computeIfAbsent() to implement logic in outer if() block below,
-        // since per JDK-8071667 the remapping function should not modify the map during computation. While
+        // KEYCLOAK-11890：避免在 computeIfAbsent 重映射函数中修改 Map
+        // 按 JDK-8071667，重映射期间不应修改 Map；JDK 9+ 会抛 ConcurrentModificationException
         // allowed on JDK 1.8, attempt of such a modification throws ConcurrentModificationException with JDK 9+
         if (provider == null) {
             ProviderFactory<T> providerFactory = supplier.get();
@@ -189,12 +207,14 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
         return provider;
     }
 
+    /** 按 ID 获取 Provider @param id 工厂标识 @return Provider 或 null */
     @Override
     public <T extends Provider> T getProvider(Class<T> clazz, String id) {
         List<String> key = List.of(clazz.getName(), id);
         return getOrCreateProvider(key, () -> factory.getProviderFactory(clazz, id));
     }
 
+    /** 从当前 realm 配置加载组件 Provider @param componentId 组件 ID @return Provider 实例 */
     @Override
     public <T extends Provider> T getComponentProvider(Class<T> clazz, String componentId) {
         final RealmModel realm = getContext().getRealm();
@@ -202,7 +222,7 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
             throw new IllegalArgumentException("Realm not set in the context.");
         }
 
-        // Loads componentModel from the realm
+        // 从 realm 配置加载 ComponentModel
         return this.getComponentProvider(clazz, componentId, KeycloakModelUtils.componentModelGetter(realm.getId(), componentId));
     }
 
@@ -213,6 +233,7 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
         return getOrCreateProvider(key, () -> factory.getProviderFactory(clazz, Optional.ofNullable(realm).map(RealmModel::getId).orElse(null), componentId, modelGetter));
     }
 
+    /** 按 ComponentModel 创建并缓存组件 Provider @param componentModel 组件模型 @return Provider 实例 */
     @Override
     public <T extends Provider> T getProvider(Class<T> clazz, ComponentModel componentModel) {
         String modelId = componentModel.getId();
@@ -347,6 +368,7 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
 
     private static final Logger LOG = Logger.getLogger(DefaultKeycloakSession.class);
 
+    /** 提交或回滚事务，关闭所有 Provider 并标记会话已关闭 @throws IllegalStateException 重复关闭时 */
     @Override
     public void close() {
         if (LOG.isTraceEnabled()) {
@@ -385,6 +407,7 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
         }
     }
 
+    /** 关闭活跃事务：回滚或提交 @return 提交/回滚时的 RuntimeException 或 null */
     protected RuntimeException closeTransactionManager() {
         if (! this.transactionManager.isActive()) {
             return null;
@@ -408,8 +431,10 @@ public abstract class DefaultKeycloakSession implements KeycloakSession {
         return String.format("session @ %08x", System.identityHashCode(this));
     }
 
+    /** 创建运行时特定的 KeycloakContext @param session 当前会话 @return DefaultKeycloakContext 子类 */
     protected abstract DefaultKeycloakContext createKeycloakContext(KeycloakSession session);
 
+    /** @return 会话是否已关闭 */
     public boolean isClosed() {
         return closed;
     }

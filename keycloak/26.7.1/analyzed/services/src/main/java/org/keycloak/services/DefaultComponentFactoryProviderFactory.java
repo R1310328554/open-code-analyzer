@@ -45,31 +45,42 @@ import org.keycloak.provider.ProviderFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认组件工厂提供者工厂。
+ * <p>按 realm/组件 ID 缓存并初始化 {@link ProviderFactory}，支持集群失效传播；实现 {@link ComponentFactoryProviderFactory} 与 {@link InvalidationHandler}。</p>
+ *
  * @author hmlnarik
  */
 public class DefaultComponentFactoryProviderFactory implements ComponentFactoryProviderFactory {
 
+    /** 日志记录器 */
     private static final Logger LOG = Logger.getLogger(DefaultComponentFactoryProviderFactory.class);
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "default";
 
+    /** 组件 ID → 已初始化 ProviderFactory 缓存 */
     private final AtomicReference<ConcurrentMap<String, ProviderFactory>> componentsMap = new AtomicReference<>(new ConcurrentHashMap<>());
 
-    /**
-     * Should an ID in the key be invalidated, it would invalidate also all the IDs in the values
-     */
+    /** 依赖失效映射：键（realm/工厂类）失效时，值中组件 ID 一并失效。 */
+    /** 失效键到依赖组件 ID 集合的映射 */
     private final ConcurrentMap<Object, Set<String>> dependentInvalidations = new ConcurrentHashMap<>();
 
+    /** Keycloak 会话工厂 */
     private KeycloakSessionFactory factory;
+    /** 组件工厂缓存是否可用（需集群 Provider 或强制开启） */
     private boolean componentCachingAvailable;
+    /** 配置是否启用组件缓存 */
     private boolean componentCachingEnabled;
+    /** 是否强制启用缓存（单节点部署） */
     private Boolean componentCachingForced;
 
+    /** 读取 cachingEnabled/cachingForced 配置 @param config 配置作用域 */
     @Override
     public void init(Scope config) {
         this.componentCachingEnabled = config.getBoolean("cachingEnabled", true);
         this.componentCachingForced = config.getBoolean("cachingForced", false);
     }
 
+    /** 检测集群 Provider 并决定是否启用组件缓存 @param factory 会话工厂 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         this.factory = factory;
@@ -86,16 +97,21 @@ public class DefaultComponentFactoryProviderFactory implements ComponentFactoryP
         }
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T extends Provider> ProviderFactory<T> getProviderFactory(Class<T> clazz, String realmId, String componentId, Function<KeycloakSessionFactory, ComponentModel> modelGetter) {
+    /**
+     * 获取或创建组件对应的 ProviderFactory。
+     * @param clazz Provider 类型
+     * @param realmId 领域 ID
+     * @param componentId 组件 ID
+     * @param modelGetter 可选的组件模型获取函数
+     * @return 已初始化的工厂，未找到时 null
+     */
         ProviderFactory res = componentsMap.get().get(componentId);
         if (res != null) {
             LOG.tracef("Found cached ProviderFactory for %s in (%s, %s)", clazz, realmId, componentId);
             return res;
         }
 
-        // Apply the expensive operation before putting it into the cache
+        // 在写入缓存前完成昂贵的初始化操作
         final ComponentModel cm;
         if (modelGetter == null) {
             LOG.debugf("Getting component configuration for component (%s, %s) from realm configuration", clazz, realmId, componentId);
@@ -139,6 +155,7 @@ public class DefaultComponentFactoryProviderFactory implements ComponentFactoryP
         return providerFactory;
     }
 
+    /** 初始化工厂并注册依赖失效关系 @param newFactory 新工厂实例 @param configScope 组件配置作用域 @return 初始化后的工厂 */
     @SuppressWarnings("unchecked")
     protected <T extends Provider> ProviderFactory<T> initializeFactory(Class<T> clazz, String realmId, String componentId, final ProviderFactory newFactory, ComponentModelScope configScope) {
         LOG.debugf("Initializing ProviderFactory for %s in (%s, %s)", clazz, realmId, componentId);
@@ -157,6 +174,7 @@ public class DefaultComponentFactoryProviderFactory implements ComponentFactoryP
         return newFactory;
     }
 
+    /** 按类型失效组件工厂缓存并传播给 InvalidationHandler @param type 失效对象类型 @param ids 失效对象 ID */
     @Override
     public void invalidate(KeycloakSession session, InvalidableObjectType type, Object... ids) {
         if (LOG.isDebugEnabled()) {
@@ -185,6 +203,7 @@ public class DefaultComponentFactoryProviderFactory implements ComponentFactoryP
         }
     }
 
+    /** 向已缓存工厂中的 InvalidationHandler 传播失效事件 */
     private void propagateInvalidation(KeycloakSession session, ConcurrentMap<String, ProviderFactory> componentsMap, InvalidableObjectType type, Object[] ids) {
         componentsMap.values()
           .stream()
@@ -193,11 +212,13 @@ public class DefaultComponentFactoryProviderFactory implements ComponentFactoryP
           .forEach(ih -> ih.invalidate(session, type, ids));
     }
 
+    /** @return 提供方标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 关闭所有已缓存的 ProviderFactory */
     @Override
     public void close() {
         componentsMap.get().values().forEach(ProviderFactory::close);

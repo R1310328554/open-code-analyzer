@@ -29,25 +29,29 @@ import org.keycloak.services.ServicesLogger;
 import org.jboss.logging.Logger;
 
 /**
- * A {@link ScriptingProvider} that uses a {@link ScriptEngineManager} to evaluate scripts with a {@link ScriptEngine}.
+ * 默认脚本提供者实现。
+ * <p>基于 {@link ScriptEngineManager} 按 MIME 类型获取 {@link ScriptEngine}，支持编译缓存与可调用/可求值脚本适配器。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public class DefaultScriptingProvider implements ScriptingProvider {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(DefaultScriptingProvider.class);
 
+    /** 所属工厂（提供引擎缓存配置） */
     private final DefaultScriptingProviderFactory factory;
 
+    /** @param factory 脚本提供者工厂 */
     DefaultScriptingProvider(DefaultScriptingProviderFactory factory) {
         this.factory = factory;
     }
 
     /**
-     * Wraps the provided {@link ScriptModel} in a {@link javax.script.Invocable} instance with bindings configured through the {@link ScriptBindingsConfigurer}.
-     *
+     * 将 {@link ScriptModel} 包装为可调用脚本适配器。
      * @param scriptModel        must not be {@literal null}
      * @param bindingsConfigurer must not be {@literal null}
+     * @return {@link InvocableScriptAdapter} 实例
      */
     @Override
     public InvocableScriptAdapter prepareInvocableScript(ScriptModel scriptModel, ScriptBindingsConfigurer bindingsConfigurer) {
@@ -56,9 +60,9 @@ public class DefaultScriptingProvider implements ScriptingProvider {
     }
 
     /**
-     * Wraps the provided {@link ScriptModel} in a {@link javax.script.Invocable} instance with bindings configured through the {@link ScriptBindingsConfigurer}.
-     *
+     * 将 {@link ScriptModel} 包装为可求值脚本适配器（优先编译）。
      * @param scriptModel must not be {@literal null}
+     * @return {@link AbstractEvaluatableScriptAdapter} 实例
      */
     @Override
     public AbstractEvaluatableScriptAdapter prepareEvaluatableScript(ScriptModel scriptModel) {
@@ -79,6 +83,7 @@ public class DefaultScriptingProvider implements ScriptingProvider {
         return new UncompiledEvaluatableScriptAdapter(scriptModel, engine);
     }
 
+    /** 尝试编译脚本，失败时抛出 {@link ScriptCompilationException} @param scriptModel 脚本模型 @param engine 可编译引擎 */
     private CompiledScript tryCompile(ScriptModel scriptModel, Compilable engine) {
         try {
             return engine.compile(scriptModel.getCode());
@@ -87,21 +92,21 @@ public class DefaultScriptingProvider implements ScriptingProvider {
         }
     }
 
+    /** 创建内存 {@link Script} 模型 @param realmId 领域 ID @param mimeType MIME 类型 @return 新 ScriptModel */
     @Override
     public ScriptModel createScript(String realmId, String mimeType, String scriptName, String scriptCode, String scriptDescription) {
         return new Script(null /* scriptId */, realmId, scriptName, mimeType, scriptCode, scriptDescription);
     }
 
+    /** 关闭资源（无操作） */
     @Override
     public void close() {
-        //NOOP
+        // 无操作
     }
 
-    /**
-     * Looks-up a {@link ScriptEngine} with prepared {@link Bindings} for the given {@link ScriptModel Script}.
-     */
+    /** 为脚本查找或缓存 {@link ScriptEngine}（按 MIME 类型）。 */
     private ScriptEngine getPreparedScriptEngine(ScriptModel script) {
-        // Try to lookup shared engine in the cache first
+        // 优先从工厂缓存按 MIME 类型获取共享引擎
         if (factory.isEnableScriptEngineCache()) {
             ScriptEngine scriptEngine = factory.getScriptEngineCache().get(script.getMimeType());
             if (scriptEngine != null) return scriptEngine;
@@ -115,7 +120,7 @@ public class DefaultScriptingProvider implements ScriptingProvider {
 
         ServicesLogger.LOGGER.scriptEngineCreated(scriptEngine.getFactory().getEngineName(), scriptEngine.getFactory().getEngineVersion(), script.getMimeType());
 
-        // Nashorn scriptEngine is ok to cache and share across multiple threads
+        // Nashorn 引擎可跨线程共享并缓存
         if (factory.isEnableScriptEngineCache()) {
             factory.getScriptEngineCache().put(script.getMimeType(), scriptEngine);
         }
@@ -123,9 +128,7 @@ public class DefaultScriptingProvider implements ScriptingProvider {
         return scriptEngine;
     }
 
-    /**
-     * Looks-up a {@link ScriptEngine} based on the MIME-type provided by the given {@link Script}.
-     */
+    /** 根据脚本 MIME 类型通过 {@link ScriptEngineManager} 查找引擎 @param script 脚本模型 @return 脚本引擎或 null */
     private ScriptEngine lookupScriptEngineFor(ScriptModel script) {
         return new ScriptEngineManager().getEngineByMimeType(script.getMimeType());
     }

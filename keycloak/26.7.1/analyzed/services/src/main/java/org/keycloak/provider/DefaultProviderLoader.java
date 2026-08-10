@@ -28,18 +28,25 @@ import org.keycloak.theme.ThemeResourceSpi;
 import org.keycloak.theme.ThemeSpi;
 
 /**
+ * 默认 SPI 提供者加载器。
+ * <p>通过 {@link ServiceLoader} 从类路径加载 {@link Spi} 与 {@link ProviderFactory}；并在部署信息包含主题资源时注入 classpath 主题工厂。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultProviderLoader implements ProviderLoader {
 
+    /** Keycloak 部署元信息（是否含 services/themes 等） */
     private KeycloakDeploymentInfo info;
+    /** 用于 {@link ServiceLoader} 的类加载器 */
     private ClassLoader classLoader;
 
+    /** @param info 部署信息 @param classLoader SPI 扫描类加载器 */
     public DefaultProviderLoader(KeycloakDeploymentInfo info, ClassLoader classLoader) {
         this.info = info;
         this.classLoader = classLoader;
     }
 
+    /** 加载所有 SPI 定义；无 services 时返回空列表 @return SPI 列表 */
     @Override
     public List<Spi> loadSpis() {
         if (info.hasServices()) {
@@ -53,6 +60,7 @@ public class DefaultProviderLoader implements ProviderLoader {
         }
     }
 
+    /** 加载指定 SPI 的 {@link ProviderFactory}，含主题相关内置工厂 @param spi 目标 SPI @return 工厂列表 */
     @Override
     public List<ProviderFactory> load(Spi spi) {
         List<ProviderFactory> list = new LinkedList<>();

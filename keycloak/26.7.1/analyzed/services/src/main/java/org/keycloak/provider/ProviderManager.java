@@ -30,17 +30,30 @@ import org.keycloak.services.DefaultKeycloakSessionFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * Keycloak SPI 提供者管理器。
+ * <p>协调多个 {@link ProviderLoader}（默认 classpath、部署内嵌及扩展 classpath），去重加载 {@link Spi} 与 {@link ProviderFactory}，并按 order/内外部优先级解析冲突。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ProviderManager {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(ProviderManager.class);
 
+    /** 当前部署信息 */
     private final KeycloakDeploymentInfo info;
+    /** 已注册的提供者加载器链 */
     private List<ProviderLoader> loaders = new LinkedList<ProviderLoader>();
+    /** 按 Provider 类型缓存已加载的工厂 */
     private MultivaluedHashMap<Class<? extends Provider>, ProviderFactory> cache = new MultivaluedHashMap<>();
 
 
+    /**
+     * 构造管理器并解析扩展 classpath 资源。
+     * @param info 部署信息
+     * @param baseClassLoader 基类加载器
+     * @param resources 形如 {@code classpath:/path} 的额外加载器配置
+     */
     public ProviderManager(KeycloakDeploymentInfo info, ClassLoader baseClassLoader, String... resources) {
         this.info = info;
         List<ProviderLoaderFactory> factories = new LinkedList<ProviderLoaderFactory>();
@@ -73,6 +86,7 @@ public class ProviderManager {
         }
     }
 
+    /** 构造管理器并附加自定义加载器 @param additionalProviderLoaders 额外 ProviderLoader 集合 */
     public ProviderManager(KeycloakDeploymentInfo info, ClassLoader baseClassLoader, Collection<ProviderLoader> additionalProviderLoaders) {
         this.info = info;
         addDefaultLoaders(baseClassLoader);
@@ -81,13 +95,15 @@ public class ProviderManager {
         }
     }
 
+    /** 注册默认 classpath 与部署内嵌加载器 @param baseClassLoader 基类加载器 */
     private void addDefaultLoaders(ClassLoader baseClassLoader) {
         loaders.add(new DefaultProviderLoader(info, baseClassLoader));
         loaders.add(new DeploymentProviderLoader(info));
     }
 
+    /** 从所有加载器合并 SPI 并按名称去重 @return SPI 列表 */
     public synchronized List<Spi> loadSpis() {
-        // Use a map to prevent duplicates, since the loaders may have overlapping classpaths.
+        // 使用 Map 去重，各加载器类路径可能重叠
         Map<String, Spi> spiMap = new HashMap<>();
         for (ProviderLoader loader : loaders) {
             List<Spi> spis = loader.loadSpis();
@@ -100,6 +116,7 @@ public class ProviderManager {
         return new LinkedList<>(spiMap.values());
     }
 
+    /** 加载并缓存指定 SPI 的全部 ProviderFactory @param spi 目标 SPI @return 工厂列表 */
     public synchronized List<ProviderFactory> load(Spi spi) {
         if (!cache.containsKey(spi.getProviderClass())) {
 
@@ -131,11 +148,12 @@ public class ProviderManager {
         return rtn == null ? Collections.EMPTY_LIST : rtn;
     }
 
-    // Compare provider factories of same providerId. Just one of them needs to be chosen to be used in Keycloak
+    // 同 providerId 的工厂仅保留一个供 Keycloak 使用
+    /** 比较同 ID 的两个工厂：优先 order 高者，其次非内部工厂 @return 应采用的工厂 */
     public ProviderFactory compareFactories(ProviderFactory p1, ProviderFactory p2) {
         if (p1.order() != p2.order()) return (p1.order() > p2.order()) ? p1 : p2;
 
-        // Internal factory is supposed to be overriden by custom factory
+        // 内部工厂应被自定义工厂覆盖
         if (DefaultKeycloakSessionFactory.isInternal(p1) ^ DefaultKeycloakSessionFactory.isInternal(p2)) {
             return DefaultKeycloakSessionFactory.isInternal(p1) ? p2 : p1;
         }
@@ -143,17 +161,16 @@ public class ProviderManager {
         return p1;
     }
 
-    /**
-     * returns a copy of internal factories.
-     *
-     * @return
-     */
+    /** @return 已加载工厂缓存的副本 */
+
+    /** @return 已加载 ProviderFactory 缓存副本 */
     public synchronized MultivaluedHashMap<Class<? extends Provider>, ProviderFactory> getLoadedFactories() {
         MultivaluedHashMap<Class<? extends Provider>, ProviderFactory> copy = new MultivaluedHashMap<>();
         copy.addAll(cache);
         return copy;
     }
 
+    /** 按 SPI 与 providerId 查找单个工厂 @param providerId 工厂标识 @return 匹配的工厂或 null */
     public synchronized ProviderFactory load(Spi spi, String providerId) {
         for (ProviderFactory f : load(spi)) {
             if (f.getId().equals(providerId)) {
@@ -163,6 +180,7 @@ public class ProviderManager {
         return null;
     }
 
+    /** @return 部署信息 */
     public synchronized KeycloakDeploymentInfo getInfo() {
         return  info;
     }

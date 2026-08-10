@@ -26,22 +26,29 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 /**
+ * 文件系统 classpath 提供者加载器工厂。
+ * <p>支持 {@code classpath} 类型资源描述，从 JAR 文件或目录构建 {@link URLClassLoader} 并创建 {@link DefaultProviderLoader}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FileSystemProviderLoaderFactory implements ProviderLoaderFactory {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(FileSystemProviderLoaderFactory.class);
 
+    /** 是否支持 classpath 资源类型 @param type 资源类型字符串 @return type 为 classpath 时 true */
     @Override
     public boolean supports(String type) {
         return "classpath".equals(type);
     }
 
+    /** 根据分号分隔的路径/JAR 列表创建加载器 @param resource classpath 资源描述 @return 提供者加载器 */
     @Override
     public ProviderLoader create(KeycloakDeploymentInfo info, ClassLoader baseClassLoader, String resource) {
         return new DefaultProviderLoader(info, createClassLoader(baseClassLoader, resource.split(";")));
     }
 
+    /** 将路径或目录下 JAR 转为 URL 并构建类加载器 @param parent 父类加载器 @param files 路径数组 @return URLClassLoader */
     private static URLClassLoader createClassLoader(ClassLoader parent, String... files) {
         try {
             List<URL> urls = new LinkedList<URL>();
@@ -67,8 +74,10 @@ public class FileSystemProviderLoaderFactory implements ProviderLoaderFactory {
         }
     }
 
+    /** 目录扫描时仅接受 .jar 文件 */
     private static class JarFilter implements FilenameFilter {
 
+        /** @param dir 目录 @param name 文件名 @return 扩展名为 .jar 时 true */
         @Override
         public boolean accept(File dir, String name) {
             return name.toLowerCase().endsWith(".jar");

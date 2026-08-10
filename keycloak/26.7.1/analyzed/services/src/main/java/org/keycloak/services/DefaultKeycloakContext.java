@@ -53,42 +53,61 @@ import org.keycloak.urls.UrlType;
 import io.opentelemetry.api.trace.Span;
 
 /**
+ * {@link KeycloakContext} 默认抽象实现。
+ * <p>维护请求级 realm/client/会话/HTTP 上下文、URI 解析、Locale 与分布式追踪属性；子类实现 HTTP 请求/响应的创建方式（Quarkus/Undertow 等）。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public abstract class DefaultKeycloakContext implements KeycloakContext {
+    /** 当前请求关联的领域 */
     private RealmModel realm;
 
+    /** 当前客户端（可来自认证会话） */
     private ClientModel client;
 
+    /** 当前组织上下文 */
     private OrganizationModel organization;
 
+    /** 所属 Keycloak 会话 */
     protected KeycloakSession session;
 
+    /** 按 URL 类型缓存的 URI 信息 */
     private Map<UrlType, KeycloakUriInfo> uriInfo;
 
+    /** 当前认证会话 */
     private AuthenticationSessionModel authenticationSession;
+    /** 当前用户会话 */
     private UserSessionModel userSession;
+    /** 当前 HTTP 请求 */
     private HttpRequest request;
+    /** 当前 HTTP 响应 */
     private HttpResponse response;
+    /** 客户端连接信息 */
     private ClientConnection clientConnection;
+    /** Bearer 令牌（用于从 JWT 解析用户） */
     private Token bearerToken;
+    /** 权限检查门面 */
     private final Permissions permissions;
 
+    /** @param session Keycloak 会话 */
     public DefaultKeycloakContext(KeycloakSession session) {
         this.session = session;
         this.permissions = new DefaultPermissions(session, this);
     }
 
+    /** @return 认证服务器前端基 URI */
     @Override
     public URI getAuthServerUrl() {
         return getUri(UrlType.FRONTEND).getBaseUri();
     }
 
+    /** @return 前端 URL 上下文路径 */
     @Override
     public String getContextPath() {
         return getUri(UrlType.FRONTEND).getBaseUri().getPath();
     }
 
+    /** 按 URL 类型获取 Keycloak URI 信息 @param type FRONTEND/BACKEND 等 @return KeycloakUriInfo */
     @Override
     public KeycloakUriInfo getUri(UrlType type) {
         if (uriInfo == null || !uriInfo.containsKey(type)) {
@@ -100,7 +119,7 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
                 info = getHttpRequest().getUri();
             } catch (ContextNotActiveException e) {
                 info = (UriInfo) Proxy.newProxyInstance(UriInfo.class.getClassLoader(), new Class[] { UriInfo.class }, (proxy, method, args) -> {
-                    throw new ContextNotActiveException(e); // see the javadoc on UriInfo / KeycloakUriInfo, but we are throwing ContextNotActiveException, rather than IllegalStateException.
+                    throw new ContextNotActiveException(e); // 无活动 CDI 上下文时抛出 ContextNotActiveException（见 UriInfo/KeycloakUriInfo 文档）
                 });
             }
             uriInfo.put(type, new KeycloakUriInfo(session, type, info));
@@ -108,21 +127,25 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
         return uriInfo.get(type);
     }
 
+    /** @return 前端 KeycloakUriInfo */
     @Override
     public KeycloakUriInfo getUri() {
         return getUri(UrlType.FRONTEND);
     }
 
+    /** @return 当前 HTTP 请求头 */
     @Override
     public HttpHeaders getRequestHeaders() {
         return getHttpRequest().getHttpHeaders();
     }
 
+    /** @return 当前领域 */
     @Override
     public RealmModel getRealm() {
         return realm;
     }
 
+    /** 设置当前领域并清除 URI 缓存 @param realm 领域模型 */
     @Override
     public void setRealm(RealmModel realm) {
         this.realm = realm;
@@ -131,6 +154,7 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
         mdc().update(this, realm);
     }
 
+    /** @return 当前客户端，未设置时尝试从认证会话获取 */
     @Override
     public ClientModel getClient() {
         if (client == null) {
@@ -141,6 +165,7 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
         return client;
     }
 
+    /** 设置当前客户端 @param client 客户端模型 */
     @Override
     public void setClient(ClientModel client) {
         this.client = client;
@@ -148,17 +173,20 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
         mdc().update(this, client);
     }
 
+    /** @return 当前组织 */
     @Override
     public OrganizationModel getOrganization() {
         return organization;
     }
 
+    /** 设置当前组织 @param organization 组织模型 */
     @Override
     public void setOrganization(OrganizationModel organization) {
         this.organization = organization;
         mdc().update(this, organization);
     }
 
+    /** @return 客户端连接，未设置时创建空实现或子类提供 */
     @Override
     public ClientConnection getConnection() {
         if (clientConnection == null) {
@@ -168,11 +196,13 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
         return clientConnection;
     }
 
+    /** 解析用户 Locale @param user 用户模型 @return 区域设置 */
     @Override
     public Locale resolveLocale(UserModel user) {
         return session.getProvider(LocaleSelectorProvider.class).resolveLocale(getRealm(), user);
     }
 
+    /** 解析用户 Locale，可选忽略 Accept-Language @param ignoreAcceptLanguageHeader 是否忽略请求头 @return 区域设置 */
     @Override
     public Locale resolveLocale(UserModel user, boolean ignoreAcceptLanguageHeader) {
         return session.getProvider(LocaleSelectorProvider.class).resolveLocale(getRealm(), user, ignoreAcceptLanguageHeader);
@@ -208,14 +238,18 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
         return response;
     }
 
+    /** 子类可覆盖以提供真实连接信息 @return 客户端连接 Optional */
     protected Optional<ClientConnection> createClientConnection() {
         return Optional.empty();
     }
 
+    /** 创建 HTTP 请求（由运行时子类实现） @return HttpRequest Optional */
     protected abstract Optional<HttpRequest> createHttpRequest();
 
+    /** 创建 HTTP 响应（由运行时子类实现） @return HttpResponse Optional */
     protected abstract Optional<HttpResponse> createHttpResponse();
 
+    /** @return 所属 Keycloak 会话 */
     protected KeycloakSession getSession() {
         return session;
     }
@@ -247,7 +281,7 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
         mdc().update(this, userSession);
     }
 
-    // Tracing
+    // 分布式追踪
     private Span getCurrentSpan() {
         return session.getProvider(TracingProvider.class).getCurrentSpan();
     }
@@ -303,6 +337,7 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
         return bearerToken;
     }
 
+    /** 从 Bearer JWT 或用户会话解析当前用户 @return 用户模型或 null */
     @Override
     public UserModel getUser() {
         UserModel user = null;
@@ -329,6 +364,7 @@ public abstract class DefaultKeycloakContext implements KeycloakContext {
         return MappedDiagnosticContextUtil.getMappedDiagnosticContextProvider(session);
     }
 
+    /** @return 权限检查门面 */
     @Override
     public Permissions getPermissions() {
         return permissions;
