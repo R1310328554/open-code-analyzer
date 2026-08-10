@@ -15,23 +15,8 @@
     "plugins/plugin_digitalocean.go",
     "plugins/plugin_dns.go",
     "plugins/plugin_eureka.go",
-    "plugins/plugin_gce.go",
-    "plugins/plugin_hetzner.go",
-    "plugins/plugin_ionos.go",
-    "plugins/plugin_kubernetes.go",
-    "plugins/plugin_linode.go",
-    "plugins/plugin_marathon.go",
-    "plugins/plugin_moby.go",
-    "plugins/plugin_nomad.go",
-    "plugins/plugin_openstack.go",
-    "plugins/plugin_outscale.go",
-    "plugins/plugin_ovhcloud.go",
-    "plugins/plugin_puppetdb.go",
-    "plugins/plugin_scaleway.go",
-    "plugins/plugin_stackit.go",
-    "plugins/plugin_triton.go",
-    "plugins/plugin_uyuni.go"
+    "plugins/plugin_gce.go"
   ],
   "remaining_pending": 354,
-  "done": 150
+  "done": 165
 }
