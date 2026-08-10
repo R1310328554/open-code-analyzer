@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T18:04:31Z",
-  "files": [
-    "internal/deepdoc/parser/pdf/tool/similarity.go",
-    "internal/deepdoc/parser/pdf/tool/types.go",
-    "internal/deepdoc/parser/pdf/type/types.go",
-    "internal/deepdoc/parser/pdf/util/crop.go",
-    "internal/deepdoc/parser/pdf/util/eng_detect.go",
-    "internal/deepdoc/parser/pdf/util/garbled.go",
-    "internal/deepdoc/parser/pdf/util/geometry.go",
-    "internal/deepdoc/parser/pdf/util/image_utils.go",
-    "internal/deepdoc/parser/pdf/util/kmeans.go",
-    "internal/deepdoc/parser/pdf/util/position.go",
-    "internal/deepdoc/parser/type/types.go",
-    "internal/deepdoc/tsr.go",
-    "internal/engine/elasticsearch/chunk.go",
-    "internal/engine/elasticsearch/client.go",
-    "internal/engine/elasticsearch/common.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1074,
-  "done": 675
+  "done": 690
 }
