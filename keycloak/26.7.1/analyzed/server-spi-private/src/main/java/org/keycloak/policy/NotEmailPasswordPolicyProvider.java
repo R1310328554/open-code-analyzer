@@ -22,7 +22,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
- * A {@link PasswordPolicyProvider} which does not allow to use the current email as password.
+ * 密码不得等于邮箱策略提供者：禁止将用户当前邮箱（忽略大小写）作为密码。
+ * <p>A {@link PasswordPolicyProvider} which does not allow to use the current email as password.</p>
  *
  * @author <a href="mailto:thomas.darimont@googlemail.com">Thomas Darimont</a>
  */
@@ -33,10 +34,17 @@ public class NotEmailPasswordPolicyProvider implements PasswordPolicyProvider {
 
     private KeycloakContext context;
 
+    /** @param context Keycloak 上下文 */
     public NotEmailPasswordPolicyProvider(KeycloakContext context) {
         this.context = context;
     }
 
+    /**
+     * 校验密码是否与邮箱相同（大小写不敏感）。
+     * @param email 用户邮箱
+     * @param password 待校验密码
+     * @return 与邮箱相同时返回 {@link PolicyError}，否则 {@code null}
+     */
     @Override
     public PolicyError validate(String email, String password) {
         if (email == null) {
@@ -57,7 +65,7 @@ public class NotEmailPasswordPolicyProvider implements PasswordPolicyProvider {
 
     @Override
     public void close() {
-        // NOOP
+        // 无资源需释放
     }
 
 }

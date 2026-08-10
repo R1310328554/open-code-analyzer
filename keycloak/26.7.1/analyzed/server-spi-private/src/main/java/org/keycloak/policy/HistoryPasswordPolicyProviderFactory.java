@@ -23,17 +23,22 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.PasswordPolicy;
 
 /**
+ * {@link HistoryPasswordPolicyProvider} 的工厂：注册“近期未使用”密码历史策略。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class HistoryPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 默认禁止重复使用的历史密码条数：3。 */
     public static final Integer DEFAULT_VALUE = 3;
 
+    /** @return 策略 ID {@link PasswordPolicy#PASSWORD_HISTORY_ID} */
     @Override
     public String getId() {
         return PasswordPolicy.PASSWORD_HISTORY_ID;
     }
 
+    /** 创建 {@link HistoryPasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new HistoryPasswordPolicyProvider(session);
@@ -47,6 +52,7 @@ public class HistoryPasswordPolicyProviderFactory implements PasswordPolicyProvi
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayName() {
         return "Not Recently Used";

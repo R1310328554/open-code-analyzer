@@ -26,10 +26,13 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
- * Specifies the maximum age of an authentication with which a password may be changed without re-authentication.
+ * 最大认证年龄策略工厂：指定修改密码时允许的上次认证最大间隔（秒）。
+ * <p>超过该间隔须重新认证后方可改密；同时实现工厂与提供者，校验阶段不拦截密码内容。</p>
+ * <p>Specifies the maximum age of an authentication with which a password may be changed without re-authentication.</p>
  */
 public class MaxAuthAgePasswordPolicyProviderFactory implements PasswordPolicyProvider, PasswordPolicyProviderFactory {
 
+    /** 默认最大认证年龄（秒），取自 {@link Constants#KC_ACTION_MAX_AGE}。 */
     public static final int DEFAULT_MAX_AUTH_AGE = Constants.KC_ACTION_MAX_AGE;
 
     @Override
@@ -45,6 +48,7 @@ public class MaxAuthAgePasswordPolicyProviderFactory implements PasswordPolicyPr
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 策略 ID {@link PasswordPolicy#MAX_AUTH_AGE_ID} */
     @Override
     public String getId() {
         return PasswordPolicy.MAX_AUTH_AGE_ID;
@@ -60,11 +64,13 @@ public class MaxAuthAgePasswordPolicyProviderFactory implements PasswordPolicyPr
         return null;
     }
 
+    /** 将配置解析为整数秒数，无效时使用 {@code -1}。 */
     @Override
     public Object parseConfig(String value) {
         return parseInteger(value, -1);
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayName() {
         return "Maximum Authentication Age";

@@ -22,12 +22,16 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link LowerCasePasswordPolicyProvider} 的工厂：注册“小写字母”密码策略。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class LowerCasePasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 策略 ID：{@code lowerCase}。 */
     public static final String ID = "lowerCase";
 
+    /** 创建 {@link LowerCasePasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new LowerCasePasswordPolicyProvider(session.getContext());
@@ -41,6 +45,7 @@ public class LowerCasePasswordPolicyProviderFactory implements PasswordPolicyPro
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayName() {
         return "Lowercase Characters";

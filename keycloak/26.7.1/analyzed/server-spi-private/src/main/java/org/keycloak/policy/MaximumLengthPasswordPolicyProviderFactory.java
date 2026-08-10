@@ -21,12 +21,16 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link MaximumLengthPasswordPolicyProvider} 的工厂：注册“最大长度”密码策略。
+ *
  * @author rmartinc
  */
 public class MaximumLengthPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 策略 ID：{@code maxLength}。 */
     public static final String ID = "maxLength";
 
+    /** 默认最大密码长度：64。 */
     public static final int DEFAULT_MAX_LENGTH = 64;
 
     @Override
@@ -34,6 +38,7 @@ public class MaximumLengthPasswordPolicyProviderFactory implements PasswordPolic
         return ID;
     }
 
+    /** 创建 {@link MaximumLengthPasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new MaximumLengthPasswordPolicyProvider(session.getContext());
@@ -47,6 +52,7 @@ public class MaximumLengthPasswordPolicyProviderFactory implements PasswordPolic
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayName() {
         return "Maximum Length";

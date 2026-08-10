@@ -30,6 +30,9 @@ import org.keycloak.models.credential.PasswordCredentialModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 密码历史策略提供者：禁止重复使用最近 N 次密码。
+ * <p>校验当前密码及 {@link PasswordCredentialModel#PASSWORD_HISTORY} 中的历史凭证。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class HistoryPasswordPolicyProvider implements PasswordPolicyProvider {
@@ -39,15 +42,24 @@ public class HistoryPasswordPolicyProvider implements PasswordPolicyProvider {
 
     private KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public HistoryPasswordPolicyProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 无 realm/用户上下文时不执行校验。 */
     @Override
     public PolicyError validate(String username, String password) {
         return null;
     }
 
+    /**
+     * 校验新密码是否与当前或历史密码相同。
+     * @param realm realm 模型
+     * @param user 用户模型
+     * @param password 待校验的新密码
+     * @return 与历史密码重复时返回 {@link PolicyError}，否则 {@code null}
+     */
     @Override
     public PolicyError validate(RealmModel realm, UserModel user, String password) {
         PasswordPolicy policy = session.getContext().getRealm().getPasswordPolicy();
@@ -79,12 +91,14 @@ public class HistoryPasswordPolicyProvider implements PasswordPolicyProvider {
         return null;
     }
 
+    /** 按创建时间降序取最近 {@code limit} 条历史密码凭证。 */
     private Stream<CredentialModel> getRecent(Stream<CredentialModel> passwordHistory, int limit) {
         return passwordHistory
                 .sorted(CredentialModel.comparingByStartDateDesc())
                 .limit(limit);
     }
 
+    /** 将策略配置解析为整数历史条数，无效时使用工厂默认值。 */
     @Override
     public Object parseConfig(String value) {
         return parseInteger(value, HistoryPasswordPolicyProviderFactory.DEFAULT_VALUE);

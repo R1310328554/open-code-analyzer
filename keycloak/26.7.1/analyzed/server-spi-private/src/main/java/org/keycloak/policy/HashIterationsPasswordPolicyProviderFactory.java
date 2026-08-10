@@ -25,6 +25,9 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 密码哈希迭代次数策略工厂：配置 {@link PasswordHashProvider} 使用的迭代次数。
+ * <p>同时实现工厂与提供者接口，校验阶段不拦截密码。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class HashIterationsPasswordPolicyProviderFactory implements PasswordPolicyProvider, PasswordPolicyProviderFactory {
@@ -43,6 +46,7 @@ public class HashIterationsPasswordPolicyProviderFactory implements PasswordPoli
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 策略 ID {@link PasswordPolicy#HASH_ITERATIONS_ID} */
     @Override
     public String getId() {
         return PasswordPolicy.HASH_ITERATIONS_ID;
@@ -58,11 +62,13 @@ public class HashIterationsPasswordPolicyProviderFactory implements PasswordPoli
         return null;
     }
 
+    /** 将配置解析为整数迭代次数，无效时使用 {@code -1}。 */
     @Override
     public Object parseConfig(String value) {
         return parseInteger(value, -1);
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayName() {
         return "Hashing Iterations";

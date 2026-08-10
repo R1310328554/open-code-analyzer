@@ -21,8 +21,12 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
+/**
+ * {@link NotContainsUsernamePasswordPolicyProvider} 的工厂：注册“不得包含用户名”密码策略。
+ */
 public class NotContainsUsernamePasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 策略 ID：{@code notContainsUsername}。 */
     public static final String ID = "notContainsUsername";
 
     @Override
@@ -30,6 +34,7 @@ public class NotContainsUsernamePasswordPolicyProviderFactory implements Passwor
         return ID;
     }
 
+    /** 创建 {@link NotContainsUsernamePasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new NotContainsUsernamePasswordPolicyProvider(session.getContext());
@@ -43,6 +48,7 @@ public class NotContainsUsernamePasswordPolicyProviderFactory implements Passwor
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayName() {
         return "Not Contains Username";

@@ -22,10 +22,13 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link NotEmailPasswordPolicyProvider} 的工厂：注册“不得等于邮箱”密码策略。
+ *
  * @author <a href="mailto:thomas.darimont@googlemail.com">Thomas Darimont</a>
  */
 public class NotEmailPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 策略 ID：{@code notEmail}。 */
     public static final String ID = "notEmail";
 
     @Override
@@ -33,6 +36,7 @@ public class NotEmailPasswordPolicyProviderFactory implements PasswordPolicyProv
         return ID;
     }
 
+    /** 创建 {@link NotEmailPasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new NotEmailPasswordPolicyProvider(session.getContext());
@@ -46,6 +50,7 @@ public class NotEmailPasswordPolicyProviderFactory implements PasswordPolicyProv
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayName() {
         return "Not Email";
