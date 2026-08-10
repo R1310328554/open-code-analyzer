@@ -35,6 +35,8 @@ import java.net.SocketAddress;
 
 /**
  * {@link DomainSocketChannel} implementation that uses linux io_uring
+ * <p>基于 Linux io_uring 的 Unix 域套接字通道。</p>
+ * <p>支持字节模式与 SCM_RIGHTS 文件描述符传递模式。</p>
  */
 public final class IoUringDomainSocketChannel extends AbstractIoUringStreamChannel implements DomainSocketChannel {
 
@@ -76,6 +78,7 @@ public final class IoUringDomainSocketChannel extends AbstractIoUringStreamChann
 
     /**
      * Returns the unix credentials (uid, gid, pid) of the peer
+     * <p>返回对端 Unix 凭证（uid、gid、pid）。</p>
      * <a href=https://man7.org/linux/man-pages/man7/socket.7.html>SO_PEERCRED</a>
      */
     public PeerCredentials peerCredentials() throws IOException {
@@ -97,8 +100,7 @@ public final class IoUringDomainSocketChannel extends AbstractIoUringStreamChann
 
     @Override
     protected boolean allowMultiShotPollIn() {
-        // UNIX domain sockets do not support IORING_CQE_F_SOCK_NONEMPTY and POLL_ADD_MULTI is edge-triggered
-        // so we should disable it
+        // UDS 不支持 SOCK_NONEMPTY 且 POLL_ADD_MULTI 为边沿触发，禁用 multi-shot poll-in
         return false;
     }
 
@@ -112,10 +114,7 @@ public final class IoUringDomainSocketChannel extends AbstractIoUringStreamChann
         if (IoUring.isUnixDomainSocketInqSupported()) {
             return socketIsEmpty(flags);
         }
-        // Older kernels cannot report IORING_CQE_F_SOCK_NONEMPTY for UDS, so the read-loop boundary cannot be
-        // determined reliably.
-        // Multishot recv does not produce an EAGAIN completion while it remains armed, so
-        // complete the read loop for each multishot completion. A one-shot recv can continue until EAGAIN.
+        // 旧内核 UDS 无 SOCK_NONEMPTY；multishot 每次完成即结束读循环
         return multishot;
     }
 
@@ -127,8 +126,7 @@ public final class IoUringDomainSocketChannel extends AbstractIoUringStreamChann
         @Override
         protected int scheduleWriteSingle(Object msg) {
             if (msg instanceof FileDescriptor) {
-                // we can reuse the same memory for any fd
-                // because we never have more than a single outstanding write.
+                // 仅一个未完成写，可复用 sendmsg msghdr 内存
                 if (writeMsgHdrMemory == null) {
                     writeMsgHdrMemory = new MsgHdrMemory();
                 }
@@ -189,8 +187,7 @@ public final class IoUringDomainSocketChannel extends AbstractIoUringStreamChann
         }
 
         private int scheduleRecvReadFd() {
-            // we can reuse the same memory for any fd
-            // because we only submit one outstanding read
+            // 仅一个未完成读，可复用 recvmsg msghdr 内存
             if (readMsgHdrMemory == null) {
                 readMsgHdrMemory = new MsgHdrMemory();
             }
@@ -237,7 +234,7 @@ public final class IoUringDomainSocketChannel extends AbstractIoUringStreamChann
 
         @Override
         public void connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
-            // Make sure to assign local/remote first before triggering the callback, to prevent potential NPE issues.
+            // 先赋值 local/remote 再回调，避免 NPE
             ChannelPromise channelPromise = newPromise().addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {

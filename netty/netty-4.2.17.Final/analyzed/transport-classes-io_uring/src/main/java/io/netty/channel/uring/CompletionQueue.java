@@ -23,19 +23,19 @@ import java.util.StringJoiner;
 
 /**
  * Completion queue implementation for io_uring.
+ * <p>io_uring 完成队列（CQ）实现：通过 VarHandle 读写内核共享的 head/tail，逐条消费 CQE。</p>
+ * <p>支持 CQE32/混合模式下的扩展 CQE 数据切片。</p>
  */
 final class CompletionQueue {
     private static final VarHandle INT_HANDLE =
             MethodHandles.byteBufferViewVarHandle(int[].class, ByteOrder.nativeOrder());
 
-    //these offsets are used to access specific properties
-    //CQE (https://github.com/axboe/liburing/blob/master/src/include/liburing/io_uring.h#L162)
+    // 访问 CQE 各字段的偏移（参见 liburing io_uring.h）
     private static final int CQE_USER_DATA_FIELD = 0;
     private static final int CQE_RES_FIELD = 8;
     private static final int CQE_FLAGS_FIELD = 12;
 
-    //these unsigned integer pointers(shared with the kernel) will be changed by the kernel and us
-    // using a VarHandle.
+    // 与内核共享的无符号整数指针，通过 VarHandle 读写
     private final ByteBuffer khead;
     private final ByteBuffer ktail;
     private final ByteBuffer kflags;
@@ -70,9 +70,7 @@ final class CompletionQueue {
         ringHead = (int) INT_HANDLE.getVolatile(kHead, 0);
 
         if (extraCqeDataNeeded) {
-            // Let's create the slices up front to reduce GC-pressure and also ensure that the user
-            // can not escape the memory range.
-            // We slice every Native.CQE_SIZE to support IORING_SETUP_CQE32 and IORING_SETUP_CQE_MIXED.
+            // 预先切片以降低 GC 压力并限制用户无法逃逸内存范围；支持 CQE32/混合模式
             this.extraCqeData = new ByteBuffer[ringEntries];
             for (int i = 0; i < ringEntries; i++) {
                 int position = i * cqeLength;
@@ -93,12 +91,13 @@ final class CompletionQueue {
         if (closed) {
             return 0;
         }
-        // we only need memory_order_relaxed
+        // 读取 flags 仅需 memory_order_relaxed
         return (int) INT_HANDLE.getOpaque(kflags, 0);
     }
 
     /**
      * Returns {@code true} if any completion event is ready to be processed by
+     * <p>是否有可处理的完成事件。</p>
      * {@link #process(CompletionCallback)}, {@code false} otherwise.
      */
     boolean hasCompletions() {
@@ -114,10 +113,10 @@ final class CompletionQueue {
 
     /**
      * Process the completion events in the {@link CompletionQueue} and return the number of processed
+     * <p>处理完成队列中的事件并返回已处理数量。</p>
      * events.
      */
-    // Returns packed long: total completions in upper 32 bits, real I/O completions in lower 32 bits.
-    // Unpack: total = (int)(result >>> 32), realIo = (int) result.
+    // 返回值打包：高 32 位为总完成数，低 32 位为真实 I/O 完成数
     long process(CompletionCallback callback) {
         if (closed) {
             return 0;
@@ -138,14 +137,14 @@ final class CompletionQueue {
                 final ByteBuffer extraCqeData;
                 if ((flags & Native.IORING_CQE_F_32) != 0) {
                     extraCqeData = extraCqeData(cqeIdx + 1);
-                    // We used mixed mode and this was a 32 byte CQE, let's increment the head once more.
+                    // 混合模式下 32 字节 CQE，head 需再递增一次
                     ringHead++;
                 } else if (cqeLength == Native.CQE32_SIZE) {
                     extraCqeData = extraCqeData(cqeIdx + 1);
                 } else {
                     extraCqeData = null;
                 }
-                // Check if we should just skip it.
+                // 检查是否应跳过（IORING_CQE_F_SKIP）
                 if ((flags & Native.IORING_CQE_F_SKIP) == 0) {
                     total++;
                     if (callback.handle(res, flags, udata, extraCqeData)) {
@@ -154,15 +153,13 @@ final class CompletionQueue {
                 }
 
                 if (ringHead == tail) {
-                    // Let's fetch the tail one more time as it might have changed because a completion might have
-                    // triggered a submission (io_uring_enter). This can happen as we automatically submit once we
-                    // run out of space in the submission queue.
+                    // 完成可能触发提交导致 tail 变化，需重新读取
                     tail = (int) INT_HANDLE.getVolatile(ktail, 0);
                 }
             }
             return ((long) total << 32) | (realIo & 0xFFFFFFFFL);
         } finally {
-            // Ensure that the kernel only sees the new value of the head index after the CQEs have been read.
+            // 确保内核在 CQE 读取完毕后才看到新的 head（setRelease）
             INT_HANDLE.setRelease(khead, 0, ringHead);
         }
     }

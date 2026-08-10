@@ -35,6 +35,10 @@ import static io.netty.channel.ChannelOption.SO_RCVBUF;
 import static io.netty.channel.ChannelOption.SO_SNDBUF;
 import static io.netty.channel.unix.UnixChannelOption.DOMAIN_SOCKET_READ_MODE;
 
+/**
+ * {@link IoUringDomainSocketChannel} 配置：读模式（字节/文件描述符）、半关闭等。
+ * <p>切换 {@link DomainSocketReadMode} 时会取消当前读操作。</p>
+ */
 final class IoUringDomainSocketChannelConfig extends IoUringStreamChannelConfig
         implements DomainSocketChannelConfig, DuplexChannelConfig {
     @SuppressWarnings("checkstyle:LineLength") //Avoid Checkstyle thinking this is too long
@@ -131,7 +135,7 @@ final class IoUringDomainSocketChannelConfig extends IoUringStreamChannelConfig
         boolean change = MODE_UPDATER.compareAndSet(this, expectedMode, mode);
         if (change) {
             if (channel.isRegistered()) {
-                // cancel current Read
+                // 已注册时切换读模式需取消当前读
                 ((IoUringDomainSocketChannel) channel).autoReadCleared();
             }
         }

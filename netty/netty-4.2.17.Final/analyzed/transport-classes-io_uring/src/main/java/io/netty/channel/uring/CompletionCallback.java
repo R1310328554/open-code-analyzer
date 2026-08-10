@@ -17,6 +17,10 @@ package io.netty.channel.uring;
 
 import java.nio.ByteBuffer;
 
+/**
+ * io_uring 完成队列（CQE）事件回调接口。
+ * <p>由 {@link CompletionQueue#process(CompletionCallback)} 逐条调用。</p>
+ */
 interface CompletionCallback {
     /**
      * Called for a completion event that was put into the {@link CompletionQueue}.
@@ -27,8 +31,10 @@ interface CompletionCallback {
      * @param extraCqeData  the extra data for the CQE. This will only be non-null of the ring was setup with
      *                      {@code IORING_SETUP_CQE32} or {@code IORING_SETUP_CQE_MIXED} and {@code IORING_CQE_F_32} is
      *                      set in {@code flags}.
+     * <p>扩展 CQE 数据；仅当 ring 启用 CQE32/混合模式且 flags 含 IORING_CQE_F_32 时非 null。</p>
      * @return              {@code true} if this completion represents a real I/O event that should be counted,
      *                      {@code false} for internal completions (e.g. eventfd, ring fd).
+     * <p>返回 {@code true} 表示真实 I/O 完成应计入统计；{@code false} 为内部完成（如 eventfd、ring fd）。</p>
      */
     boolean handle(int res, int flags, long udata, ByteBuffer extraCqeData);
 }

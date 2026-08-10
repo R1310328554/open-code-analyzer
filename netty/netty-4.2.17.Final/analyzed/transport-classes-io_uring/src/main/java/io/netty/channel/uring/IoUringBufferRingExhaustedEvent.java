@@ -17,6 +17,8 @@ package io.netty.channel.uring;
 
 /**
  * Event that is fired when a read failed because the buffer ring was exhausted for now.
+ * <p>buffer ring 暂时耗尽导致读失败时触发的事件。</p>
+ * <p>可通过 {@link #bufferGroupId()} 识别是哪个 buffer group。</p>
  */
 public final class IoUringBufferRingExhaustedEvent {
     private final short bufferGroupId;
@@ -27,6 +29,7 @@ public final class IoUringBufferRingExhaustedEvent {
 
     /**
      * Returns the buffer group id of the buffer ring that caused this event.
+     * <p>触发此事件的 buffer ring 的 group id。</p>
      *
      * @return  the id.
      */

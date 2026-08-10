@@ -21,11 +21,16 @@ import io.netty.util.internal.AdaptiveCalculator;
 /**
  * {@link IoUringBufferRingAllocator} implementation which uses an adaptive strategy to allocate buffers, which
  * will decrease / increase the buffer size depending on if the allocated buffers were completely used or not before.
+ * <p>自适应 buffer ring 分配器：根据读满与否动态增减下次 buffer 大小。</p>
+ * <p>读满时通过 {@link AdaptiveCalculator} 快速放大，减少回 selector 等待的延迟。</p>
  */
 public final class IoUringAdaptiveBufferRingAllocator extends AbstractIoUringBufferRingAllocator {
 
+    /** 默认最小 buffer 大小（字节） */
     public static final int DEFAULT_MINIMUM = 1024;
+    /** 默认初始 buffer 大小（字节） */
     public static final int DEFAULT_INITIAL = 4096;
+    /** 默认最大 buffer 大小（字节） */
     public static final int DEFAULT_MAXIMUM = 65536;
 
     private final AdaptiveCalculator calculator;
@@ -36,6 +41,7 @@ public final class IoUringAdaptiveBufferRingAllocator extends AbstractIoUringBuf
 
     /**
      * Creates new instance.
+     * <p>创建新实例。</p>
      *
      * @param allocator the {@link ByteBufAllocator} to use.
      */
@@ -45,6 +51,7 @@ public final class IoUringAdaptiveBufferRingAllocator extends AbstractIoUringBuf
 
     /**
      * Creates new instance.
+     * <p>创建新实例。</p>
      *
      * @param allocator the {@link ByteBufAllocator} to use for the allocations
      * @param minimum   the inclusive lower bound of the expected buffer size
@@ -57,6 +64,7 @@ public final class IoUringAdaptiveBufferRingAllocator extends AbstractIoUringBuf
 
     /**
      * Creates new instance.
+     * <p>创建新实例。</p>
      *
      * @param allocator         the {@link ByteBufAllocator} to use for the allocations
      * @param minimum           the inclusive lower bound of the expected buffer size
@@ -79,10 +87,7 @@ public final class IoUringAdaptiveBufferRingAllocator extends AbstractIoUringBuf
 
     @Override
     public void lastBytesRead(int attempted, int actual) {
-        // If we read as much as we asked for we should check if we need to ramp up the size of our next guess.
-        // This helps adjust more quickly when large amounts of data is pending and can avoid going back to
-        // the selector to check for more data. Going back to the selector can add significant latency for large
-        // data transfers.
+        // 读满时放大下次猜测；大数据传输时避免频繁回 selector 检查
         if (attempted == actual) {
             calculator.record(actual);
         }

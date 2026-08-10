@@ -25,6 +25,11 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+/**
+ * io_uring 提供的 buffer ring 管理：预分配 direct {@link ByteBuf} 并注册到内核。
+ * <p>支持批量/逐 buffer 分配、增量消费与懒扩展。</p>
+ * <p>耗尽时通过 {@link IoUringBufferRingExhaustedEvent} 通知上层。</p>
+ */
 final class IoUringBufferRing {
     private static final VarHandle SHORT_HANDLE =
             MethodHandles.byteBufferViewVarHandle(short[].class, ByteOrder.nativeOrder());
@@ -73,7 +78,7 @@ final class IoUringBufferRing {
     }
 
     void initialize() {
-        // We already validated that batchSize is <= ring length.
+        // batchSize 已校验不超过 ring 长度
         fill((short) 0, batchSize);
         allocatedBuffers = batchSize;
     }
@@ -85,11 +90,10 @@ final class IoUringBufferRing {
         private short oldTail;
 
         short fill(short startBid, int numBuffers) {
-            // Fetch the tail once before allocate the batch.
+            // 批量分配前先读取 tail
             oldTail = (short) SHORT_HANDLE.get(ioUringBufRing, tailFieldPosition);
 
-            // At the moment we always start with bid 0 and so num and bid is the same. As this is more of an
-            // implementation detail it is better to still keep both separated.
+            // 当前从 bid 0 开始；num 与 bid 实现上相同但语义分离
             this.num = 0;
             this.bid = startBid;
             this.expectedBuffers = numBuffers;
@@ -112,7 +116,7 @@ final class IoUringBufferRing {
                 }
                 throw t;
             }
-            // Now advanced the tail by the number of buffers that we just added.
+            // 按新增 buffer 数量推进 tail
             SHORT_HANDLE.setRelease(ioUringBufRing, tailFieldPosition, (short) (oldTail + num));
 
             return (short) (bid - 1);
@@ -121,7 +125,7 @@ final class IoUringBufferRing {
         void fill(short bid) {
             short tail = (short) SHORT_HANDLE.get(ioUringBufRing, tailFieldPosition);
             add(tail, bid, 0, allocator.allocate());
-            // Now advanced the tail by one
+            // tail 推进 1
             SHORT_HANDLE.setRelease(ioUringBufRing, tailFieldPosition, (short) (tail + 1));
         }
 
@@ -145,9 +149,7 @@ final class IoUringBufferRing {
             long memoryAddress = IoUring.memoryAddress(byteBuf) + byteBuf.writerIndex();
             int writable = byteBuf.writableBytes();
 
-            //  see:
-            //  https://github.com/axboe/liburing/
-            //      blob/19134a8fffd406b22595a5813a3e319c19630ac9/src/include/liburing.h#L1561
+            // 参见 liburing io_uring_buf 结构布局
             int position = Native.SIZEOF_IOURING_BUF * ringIndex;
             ioUringBufRing.putLong(position + Native.IOURING_BUFFER_OFFSETOF_ADDR, memoryAddress);
             ioUringBufRing.putInt(position + Native.IOURING_BUFFER_OFFSETOF_LEN, writable);
@@ -159,6 +161,7 @@ final class IoUringBufferRing {
 
     /**
      * Try to expand by adding more buffers to the ring if there is any space left, this will be done lazy.
+     * <p>懒扩展：若 ring 尚有空间则标记需要增加 buffer。</p>
      *
      * @return {@code true} if we can expand the number of buffers in the ring, {@code false} otherwise.
      */
@@ -187,6 +190,7 @@ final class IoUringBufferRing {
     /**
      * @return the {@link IoUringBufferRingExhaustedEvent} that should be used to signal that there were no buffers
      * left for this buffer ring.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     IoUringBufferRingExhaustedEvent getExhaustedEvent() {
         return exhaustedEvent;
@@ -194,6 +198,7 @@ final class IoUringBufferRing {
 
     /**
      * Return the amount of bytes that we attempted to read for the given id.
+     * <p>返回指定 bid 的尝试读取字节数。</p>
      * This method must be called before {@link #useBuffer(short, int, boolean)}.
      *
      * @param bid   the id of the buffer.
@@ -209,6 +214,7 @@ final class IoUringBufferRing {
 
     /**
      * Use the buffer for the given buffer id. The returned {@link ByteBuf} must be released once not used anymore.
+     * <p>使用指定 bid 的 buffer；返回的 {@link ByteBuf} 用毕须 release。</p>
      *
      * @param bid           the id of the buffer
      * @param read          the number of bytes that could be read. This value might be larger then what a single
@@ -222,23 +228,22 @@ final class IoUringBufferRing {
         ByteBuf byteBuf = buffers[bid];
 
         allocator.lastBytesRead(byteBuf.writableBytes(), read);
-        // We always slice so the user will not mess up things later.
+        // 始终 slice 返回，避免用户修改原 buffer 状态
         ByteBuf buffer = byteBuf.retainedSlice(byteBuf.writerIndex(), read);
         byteBuf.writerIndex(byteBuf.writerIndex() + read);
 
         if (incremental && more && byteBuf.isWritable()) {
-            // The buffer will be used later again, just slice out what we did read so far.
+            // 增量模式且仍有数据：仅 slice 已读部分，buffer 稍后复用
             return buffer;
         }
 
-        // The buffer is considered to be used, null out the slot.
+        // buffer 已用尽，清空槽位并 release
         buffers[bid] = null;
         byteBuf.release();
         if (--usableBuffers == 0) {
             int numBuffers = allocatedBuffers;
             if (needExpand) {
-                // We did get a signal that our buffer ring did not have enough buffers, let's see if we
-                // can grow it.
+                // 收到扩展信号，尝试增长 ring
                 needExpand = false;
                 numBuffers += calculateNextBufferBatch();
             }
@@ -246,14 +251,11 @@ final class IoUringBufferRing {
             allocatedBuffers = numBuffers;
             assert allocatedBuffers % 2 == 0;
         } else if (!batchAllocation) {
-            // If we don'T do bulk allocations to refill the buffer ring we need to fill in the just used bid again
-            // if we didn't get a signal that we need expansion.
+            // 非批量分配时，用完后立即补回该 bid
             fill(bid);
 
             if (needExpand && lastGeneratedBid == bid) {
-                // We did get a signal that our buffer ring did not have enough buffers and we just did add the last
-                // generated bid at the tail of the ring. Now its safe to grow the buffer ring and still guarantee
-                // sequential ordering which is needed for our RECVSEND_BUNDLE implementation.
+                // 扩展信号且刚补回 last bid，可安全增长并保证 RECVSEND_BUNDLE 顺序
                 needExpand = false;
                 int numBuffers = calculateNextBufferBatch();
                 fill((short) (bid + 1), numBuffers);
@@ -270,6 +272,7 @@ final class IoUringBufferRing {
 
     /**
      * The group id that is assigned to this buffer ring.
+     * <p>此 buffer ring 的 group id。</p>
      *
      * @return group id.
      */
@@ -279,6 +282,7 @@ final class IoUringBufferRing {
 
     /**
      * Close this {@link IoUringBufferRing}, using it after this method is called will lead to undefined behaviour.
+     * <p>关闭 buffer ring；之后使用行为未定义。</p>
      */
     void close() {
         if (closed) {

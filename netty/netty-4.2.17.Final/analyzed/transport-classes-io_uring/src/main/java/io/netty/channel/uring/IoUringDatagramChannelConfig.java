@@ -31,6 +31,10 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Map;
 
+/**
+ * {@link IoUringDatagramChannel} 的 UDP 配置：组播、SO_REUSEPORT、IP 透明/自由绑定等。
+ * <p>含 max datagram payload 以启用 recvmmsg 批量读。</p>
+ */
 final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements DatagramChannelConfig {
     private static final RecvByteBufAllocator DEFAULT_RCVBUF_ALLOCATOR = new FixedRecvByteBufAllocator(2048);
     private boolean activeOnOpen;
@@ -401,6 +405,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
 
     /**
      * Returns {@code true} if the SO_REUSEPORT option is set.
+     * <p>是否已设置 SO_REUSEPORT。</p>
      */
     public boolean isReusePort() {
         try {
@@ -417,6 +422,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
      * Be aware this method needs be called before
      * {@link io.netty.channel.socket.DatagramChannel#bind(java.net.SocketAddress)} to have
      * any affect.
+     * <p>启用 SO_REUSEPORT，多线程绑定同端口；须在 bind 前设置。</p>
      */
     public IoUringDatagramChannelConfig setReusePort(boolean reusePort) {
         try {
@@ -429,6 +435,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>是否启用 IP_TRANSPARENT。</p>
      * {@code false} otherwise.
      */
     public boolean isIpTransparent() {
@@ -441,6 +448,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>启用或禁用 IP_TRANSPARENT。</p>
      * {@code false} for disable it. Default is disabled.
      */
     public IoUringDatagramChannelConfig setIpTransparent(boolean ipTransparent) {
@@ -454,6 +462,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_FREEBIND</a> is enabled,
+     * <p>是否启用 IP_FREEBIND。</p>
      * {@code false} otherwise.
      */
     public boolean isFreeBind() {
@@ -466,6 +475,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_FREEBIND</a> is enabled,
+     * <p>启用或禁用 IP_FREEBIND。</p>
      * {@code false} for disable it. Default is disabled.
      */
     public IoUringDatagramChannelConfig setFreeBind(boolean freeBind) {
@@ -485,6 +495,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
      * greatly improve the performance. This number will be used to slice {@link ByteBuf}s returned by the used
      * {@link RecvByteBufAllocator}. You can use {@code 0} to disable the usage of batching, any other bigger value
      * will enable it.
+     * <p>设置最大数据报大小；非 0 时启用 recvmmsg 批量读以提升性能。</p>
      */
     public IoUringDatagramChannelConfig setMaxDatagramPayloadSize(int maxDatagramSize) {
         this.maxDatagramSize = ObjectUtil.checkPositiveOrZero(maxDatagramSize, "maxDatagramSize");
@@ -493,6 +504,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
 
     /**
      * Get the maximum {@link io.netty.channel.socket.DatagramPacket} size.
+     * <p>获取最大 DatagramPacket 大小。</p>
      */
     public int getMaxDatagramPayloadSize() {
         return maxDatagramSize;
@@ -500,6 +512,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_MULTICAST_ALL</a> is
+     * <p>启用或禁用 IP_MULTICAST_ALL。</p>
      * enabled (or IPV6_MULTICAST_ALL for IPV6), {@code false} for disable it. Default is enabled.
      */
     public IoUringDatagramChannelConfig setIpMulticastAll(boolean multicastAll) {
@@ -513,6 +526,7 @@ final class IoUringDatagramChannelConfig extends IoUringChannelConfig implements
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_MULTICAST_ALL</a> (or
+     * <p>是否启用 IP_MULTICAST_ALL。</p>
      * IPV6_MULTICAST_ALL for IPV6) is enabled, {@code false} otherwise.
      */
     public boolean isIpMulticastAll() {

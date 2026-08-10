@@ -18,10 +18,15 @@ package io.netty.channel.uring;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.unix.UnixChannelOption;
 
+/**
+ * io_uring 传输特有的 {@link ChannelOption} 定义。
+ * <p>含 Linux TCP/IP 选项、buffer group、零拷贝写阈值等。</p>
+ */
 public final class IoUringChannelOption<T> extends UnixChannelOption<T> {
 
     private IoUringChannelOption() { }
 
+    /** TCP_CORK：延迟小包发送直至取消或缓冲区满 */
     public static final ChannelOption<Boolean> TCP_CORK = valueOf(IoUringChannelOption.class, "TCP_CORK");
     public static final ChannelOption<Long> TCP_NOTSENT_LOWAT =
             valueOf(IoUringChannelOption.class, "TCP_NOTSENT_LOWAT");
@@ -34,6 +39,7 @@ public final class IoUringChannelOption<T> extends UnixChannelOption<T> {
     public static final ChannelOption<Boolean> IP_TRANSPARENT = valueOf("IP_TRANSPARENT");
     /**
      * @deprecated Use {@link ChannelOption#TCP_FASTOPEN} instead.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public static final ChannelOption<Integer> TCP_FASTOPEN = ChannelOption.TCP_FASTOPEN;
 
@@ -47,6 +53,7 @@ public final class IoUringChannelOption<T> extends UnixChannelOption<T> {
      * If {@param positive} try to use a buffer ring when submitting recv / read / readv {@link IoUringIoOps}.
      * If it is set to {@code -1}, no buffer ring will be used. Be aware that you can only change the group
      * before the channel is registered.
+     * <p>正数时在 recv/read/readv 提交中使用 buffer ring；{@code -1} 禁用。须在 register 前设置。</p>
      * <p>
      * Check
      * <a href="https://man7.org/linux/man-pages/man3/io_uring_setup_buf_ring.3.html"> man io_uring_setup_buf_ring</a>
@@ -58,6 +65,7 @@ public final class IoUringChannelOption<T> extends UnixChannelOption<T> {
     /**
      * The threshold for zero-copy write (send_zc and sendmsg_zc).
      * If it is set to {@code -1}, then this function will be disabled.
+     * <p>零拷贝写（send_zc/sendmsg_zc）阈值；{@code -1} 禁用。锁内存不足时可能 -ENOMEM。</p>
      * <p>
      * If the locked memory limit is too low you will observe
      * <a href="https://github.com/axboe/liburing/commit/e951bf0c08c81a2ea0c4b7bca7e4494f2043d367">-ENOMEM</a> and

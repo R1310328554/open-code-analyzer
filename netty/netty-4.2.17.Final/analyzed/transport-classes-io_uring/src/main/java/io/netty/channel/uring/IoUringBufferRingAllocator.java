@@ -21,16 +21,20 @@ import java.util.function.Consumer;
 
 /**
  * Allocator that is responsible to allocate buffers for a buffer ring.
+ * <p>为 buffer ring 分配接收用 direct {@link ByteBuf} 的分配器接口。</p>
+ * <p>{@link #lastBytesRead(int, int)} 供自适应策略反馈读满情况。</p>
  */
 public interface IoUringBufferRingAllocator {
 
     /**
      * Creates a new receive buffer to use by the buffer ring. The returned {@link ByteBuf} must be direct.
+     * <p>创建供 buffer ring 使用的接收 buffer，必须为 direct。</p>
      */
     ByteBuf allocate();
 
     /**
      * Set the bytes that have been read for the last read operation that was full-filled out of the buffer ring.
+     * <p>反馈 buffer ring 上次读操作的尝试/实际字节数。</p>
      *
      * @param attempted  the attempted bytes to read.
      * @param actual     the number of bytes that could be read.
@@ -40,6 +44,7 @@ public interface IoUringBufferRingAllocator {
     /**
      * Fill in {@code num} of {@link ByteBuf}s.
      * <strong>Important:</strong> The {@link Consumer} MUST not escape this method.
+     * <p>Consumer 不得逃逸出本方法。</p>
      *
      * @param consumer  the {@link Consumer} that will consume the buffers.
      * @param num       the number of buffers that are passed to {@link Consumer#accept(Object)}.

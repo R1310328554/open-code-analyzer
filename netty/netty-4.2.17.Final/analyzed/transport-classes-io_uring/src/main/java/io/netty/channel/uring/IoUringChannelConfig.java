@@ -28,6 +28,11 @@ import io.netty.channel.unix.RawUnixChannelOption;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * io_uring 通道通用配置基类。
+ * <p>扩展 {@link DefaultChannelConfig}，支持 {@link IntegerUnixChannelOption} 与
+ * {@link RawUnixChannelOption} 等 Unix 原生 socket 选项读写。</p>
+ */
 abstract class IoUringChannelConfig extends DefaultChannelConfig {
     IoUringChannelConfig(AbstractIoUringChannel channel) {
         super(channel);
@@ -41,11 +46,13 @@ abstract class IoUringChannelConfig extends DefaultChannelConfig {
     @Override
     public <T> T getOption(ChannelOption<T> option) {
         try {
+            // 整型 Unix socket 选项：通过 level/optname 读写
             if (option instanceof IntegerUnixChannelOption) {
                 IntegerUnixChannelOption opt = (IntegerUnixChannelOption) option;
                 return (T) Integer.valueOf(((AbstractIoUringChannel) channel).socket.getIntOpt(
                         opt.level(), opt.optname()));
             }
+            // 原始字节 Unix socket 选项
             if (option instanceof RawUnixChannelOption) {
                 RawUnixChannelOption opt = (RawUnixChannelOption) option;
                 ByteBuffer out = ByteBuffer.allocate(opt.length());
@@ -150,6 +157,7 @@ abstract class IoUringChannelConfig extends DefaultChannelConfig {
     }
 
     @Override
+    /** autoRead 关闭时通知 io_uring 通道取消读 */
     protected void autoReadCleared() {
         ((AbstractIoUringChannel) channel).autoReadCleared();
     }

@@ -27,6 +27,11 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.nio.ByteBuffer;
 
+/**
+ * io_uring 原生传输可用性与特性探测入口。
+ * <p>静态初始化时创建探测 ring、检测内核版本与各 IORING 特性标志。</p>
+ * <p>通过系统属性可配置 ring 大小、multi-shot、零拷贝阈值等。</p>
+ */
 public final class IoUring {
 
     private static final Throwable UNAVAILABILITY_CAUSE;
@@ -102,11 +107,10 @@ public final class IoUring {
                     try {
                         ringBuffer = Native.createRingBuffer(1, 0);
                         if ((ringBuffer.features() & Native.IORING_FEAT_SUBMIT_STABLE) == 0) {
-                            // This should only happen on kernels < 5.4 which we don't support anyway.
+                            // 仅在不支持的 <5.4 内核上出现
                             throw new UnsupportedOperationException("IORING_FEAT_SUBMIT_STABLE not supported!");
                         }
-                        // IOV_MAX should be 1024 and an IOV is 16 bytes which means that by default we reserve around
-                        // 160kb.
+                        // IOV_MAX 默认约 1024，每 IOV 16 字节，默认预留约 160KB
                         numElementsIoVec = SystemPropertyUtil.getInt(
                                 "io.netty.iouring.numElementsIoVec", 10 * Limits.IOV_MAX);
                         Native.IoUringProbe ioUringProbe = Native.ioUringProbe(ringBuffer.fd());
@@ -118,7 +122,7 @@ public final class IoUring {
                         enterNoIoWaitSupported = (ringBuffer.features() & Native.IORING_FEAT_NO_IOWAIT) != 0;
                         sendZcSupported = Native.isSendZcSupported(ioUringProbe);
                         sendmsgZcSupported =  Native.isSendmsgZcSupported(ioUringProbe);
-                        // IORING_FEAT_RECVSEND_BUNDLE was added in the same release.
+                        // IORING_FEAT_RECVSEND_BUNDLE 与 accept no-wait 同版本引入
                         acceptSupportNoWait = recvsendBundleSupported;
 
                         acceptMultishotSupported = Native.isAcceptMultishotSupported(ioUringProbe);
@@ -129,8 +133,7 @@ public final class IoUring {
                         cqeMixedSupported = Native.ioUringSetupSupportsFlags(Native.IORING_SETUP_CQE_MIXED);
                         setUpCqSizeSupported = Native.ioUringSetupSupportsFlags(Native.IORING_SETUP_CQSIZE);
                         singleIssuerSupported = Native.ioUringSetupSupportsFlags(Native.IORING_SETUP_SINGLE_ISSUER);
-                        // IORING_SETUP_DEFER_TASKRUN requires to also set IORING_SETUP_SINGLE_ISSUER.
-                        // See https://manpages.debian.org/unstable/liburing-dev/io_uring_setup.2.en.html
+                        // DEFER_TASKRUN 须同时设置 SINGLE_ISSUER（见 man io_uring_setup）
                         deferTaskrunSupported = Native.ioUringSetupSupportsFlags(
                                 Native.IORING_SETUP_SINGLE_ISSUER | Native.IORING_SETUP_DEFER_TASKRUN);
                         noSqarraySupported = Native.ioUringSetupSupportsFlags(Native.IORING_SETUP_NO_SQARRAY);
@@ -153,7 +156,7 @@ public final class IoUring {
         } catch (Throwable t) {
             cause = t;
         }
-        // Assign static finals first so printFeatures() (no-arg) can read them.
+        // 先赋值 static final，以便 printFeatures() 可读
         UNAVAILABILITY_CAUSE = cause;
         IORING_CQE_F_SOCK_NONEMPTY_SUPPORTED = socketNonEmptySupported;
         UNIX_DOMAIN_SOCKET_INQ_SUPPORTED = unixDomainSocketInqSupported;
@@ -180,9 +183,7 @@ public final class IoUring {
                 "io.netty.iouring.acceptMultiShotEnabled", true);
         IORING_RECV_MULTISHOT_ENABLED = IORING_RECV_MULTISHOT_SUPPORTED && SystemPropertyUtil.getBoolean(
                 "io.netty.iouring.recvMultiShotEnabled", true);
-        // Explicit disable RECVSEND_BUNDLE as there is a know kernel bug that will be fixed in the future:
-        // See https://lore.kernel.org/io-uring/364679fa-8fc3-4bcb-8296-0877f39d6f2c@gmail.com/
-        //      T/#ma949ad361d376247a16db73e741cb1043e56e6a4
+        // 默认禁用 RECVSEND_BUNDLE（已知内核 bug，待修复）
         IORING_RECVSEND_BUNDLE_ENABLED = IORING_RECVSEND_BUNDLE_SUPPORTED && SystemPropertyUtil.getBoolean(
                 "io.netty.iouring.recvsendBundleEnabled", false);
         IORING_POLL_ADD_MULTISHOT_ENABLED = IORING_POLL_ADD_MULTISHOT_SUPPORTED && SystemPropertyUtil.getBoolean(
@@ -212,7 +213,7 @@ public final class IoUring {
         } else {
             DEFAULT_CQ_SIZE = DISABLE_SETUP_CQ_SIZE;
         }
-        // Now that all static fields are assigned, emit the debug log using the shared printFeatures()
+        // 静态字段赋值完毕后输出 debug 日志
         if (cause != null) {
             if (logger.isTraceEnabled()) {
                 logger.debug("IoUring support is not available using kernel {}", kernelVersion, cause);
@@ -232,6 +233,7 @@ public final class IoUring {
 
     /**
      * Returns {@code true} if the io_uring native transport is both {@linkplain #isAvailable() available} and supports
+     * <p>io_uring 传输是否可用且支持对应 TCP FastOpen 选项。</p>
      * {@linkplain ChannelOption#TCP_FASTOPEN_CONNECT client-side TCP FastOpen}.
      *
      * @return {@code true} if it's possible to use client-side TCP FastOpen via io_uring, otherwise {@code false}.
@@ -242,6 +244,7 @@ public final class IoUring {
 
     /**
      * Returns {@code true} if the io_uring native transport is both {@linkplain #isAvailable() available} and supports
+     * <p>io_uring 传输是否可用且支持对应 TCP FastOpen 选项。</p>
      * {@linkplain ChannelOption#TCP_FASTOPEN server-side TCP FastOpen}.
      *
      * @return {@code true} if it's possible to use server-side TCP FastOpen via io_uring, otherwise {@code false}.
@@ -260,6 +263,7 @@ public final class IoUring {
 
     /**
      * Returns if SPLICE is supported or not.
+     * <p>是否支持 SPLICE 操作。</p>
      *
      * @return {@code true} if supported, {@code false} otherwise.
      */
@@ -269,6 +273,7 @@ public final class IoUring {
 
     /**
      * Returns if {@code IORING_OP_SEND_ZC} is supported.
+     * <p>是否支持 IORING_OP_SEND_ZC。</p>
      *
      * @return {@code true} if {@code IORING_OP_SEND_ZC} is supported, {@code false} otherwise.
      */
@@ -278,6 +283,7 @@ public final class IoUring {
 
     /**
      * Returns if {@code IORING_OP_SENDMSG_ZC} is supported.
+     * <p>是否支持 IORING_OP_SENDMSG_ZC。</p>
      *
      * @return {@code true} if {@code IORING_OP_SENDMSG_ZC} is supported, {@code false} otherwise.
      */
@@ -334,6 +340,7 @@ public final class IoUring {
     }
     /**
      * Returns if it is supported to use a buffer ring.
+     * <p>是否支持 buffer ring。</p>
      *
      * @return {@code true} if supported, {@code false} otherwise.
      */
@@ -343,6 +350,7 @@ public final class IoUring {
 
     /**
      * Returns if it is supported to use an incremental buffer ring.
+     * <p>是否支持增量 buffer ring。</p>
      *
      * @return {@code true} if supported, {@code false} otherwise.
      */
@@ -356,6 +364,7 @@ public final class IoUring {
 
     /**
      * Returns if {@code IORING_ENTER_NO_IOWAIT} is used or not. When enabled (and supported by the kernel),
+     * <p>是否启用 IORING_ENTER_NO_IOWAIT（空闲 enter 不计入 iowait）。</p>
      * idle io_uring_enter(2) waits are not accounted as iowait, which makes server-side CPU metrics more
      * accurate but also suppresses the cpufreq governor's iowait boost.
      *
@@ -367,6 +376,7 @@ public final class IoUring {
 
     /**
      * Returns if multi-shot ACCEPT is used or not.
+     * <p>是否启用 multi-shot ACCEPT。</p>
      *
      * @return {@code true} if enabled, {@code false} otherwise.
      */
@@ -376,6 +386,7 @@ public final class IoUring {
 
     /**
      * Returns if multi-shot RECV is used or not.
+     * <p>是否启用 multi-shot RECV。</p>
      *
      * @return {@code true} if enabled, {@code false} otherwise.
      */
@@ -385,6 +396,7 @@ public final class IoUring {
 
     /**
      * Returns if RECVSEND bundles are used or not.
+     * <p>是否启用 RECVSEND bundle。</p>
      *
      * @return {@code true} if enabled, {@code false} otherwise.
      */
@@ -394,6 +406,7 @@ public final class IoUring {
 
     /**
      * Returns if multi-shot POLL_ADD is used or not.
+     * <p>是否启用 multi-shot POLL_ADD。</p>
      *
      * @return {@code true} if enabled, {@code false} otherwise.
      */
@@ -412,9 +425,7 @@ public final class IoUring {
         if (buffer.hasMemoryAddress()) {
             return buffer.memoryAddress();
         }
-        // Use internalNioBuffer to reduce object creation.
-        // It is important to add the position as the returned ByteBuffer might be shared by multiple ByteBuf
-        // instances and so has an address that starts before the start of the ByteBuf itself.
+        // 使用 internalNioBuffer 减少对象创建；须加上 position 因 ByteBuffer 可能被多个 ByteBuf 共享
         ByteBuffer byteBuffer = buffer.internalNioBuffer(0, buffer.capacity());
         return Buffer.memoryAddress(byteBuffer) + byteBuffer.position();
     }
@@ -451,6 +462,7 @@ public final class IoUring {
 
     /**
      * Returns a string representation of the io_uring support and feature set. This mirrors the
+     * <p>返回 io_uring 支持与特性集的字符串表示。</p>
      * debug logging output that reports each individual feature's availability.
      */
     public static String featureString() {

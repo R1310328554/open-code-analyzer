@@ -24,10 +24,17 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 
+/**
+ * 通过 io_uring SPLICE 将文件发送到套接字的 {@link FileRegion} 包装。
+ * <p>两阶段：文件→pipe（SPLICE_TO_PIPE），pipe→socket（SPLICE_TO_SOCKET）。</p>
+ * <p>委托 {@link DefaultFileRegion} 管理文件引用计数。</p>
+ */
 final class IoUringFileRegion implements FileRegion {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(IoUringFileRegion.class);
 
+    /** splice 阶段：文件→pipe */
     private static final short SPLICE_TO_PIPE = 1;
+    /** splice 阶段：pipe→socket */
     private static final short SPLICE_TO_SOCKET = 2;
 
     final DefaultFileRegion fileRegion;
@@ -72,6 +79,7 @@ final class IoUringFileRegion implements FileRegion {
 
     /**
      * Handle splice result
+     * <p>处理 splice 完成结果。</p>
      *
      * @param result    the result
      * @param data      the data that was submitted as part of the SPLICE.
@@ -80,18 +88,18 @@ final class IoUringFileRegion implements FileRegion {
     int handleResult(int result, short data) {
         assert result >= 0;
         if (data == SPLICE_TO_PIPE) {
-            // This is the result for spliceToPipe
+            // spliceToPipe 完成：累计 transferred，记录 pipeLen
             transferred += result;
             pipeLen = result;
             return 0;
         }
         if (data == SPLICE_TO_SOCKET) {
-            // This is the result for spliceToSocket
+            // spliceToSocket 完成：递减 pipeLen，全部传完返回 -1
             pipeLen -= result;
             assert pipeLen >= 0;
             if (pipeLen == 0) {
                 if (transferred() >= count()) {
-                    // We transferred the whole file
+                    // 整个文件已传完
                     return -1;
                 }
                 pipeLen = -1;

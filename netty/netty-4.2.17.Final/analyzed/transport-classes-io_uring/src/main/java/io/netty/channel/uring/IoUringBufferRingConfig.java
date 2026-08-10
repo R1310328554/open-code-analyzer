@@ -24,6 +24,8 @@ import java.util.Objects;
 /**
  * Configuration class for an {@link IoUringBufferRing}.
  * It will configure the buffer ring size, buffer group id and the chunk size.
+ * <p>{@link IoUringBufferRing} 配置：buffer group id、ring 大小、批量扩展与增量模式。</p>
+ * <p>推荐使用 {@link Builder} 构建。</p>
  */
 public final class IoUringBufferRingConfig {
     private final short bgId;
@@ -40,6 +42,7 @@ public final class IoUringBufferRingConfig {
      * @param bgId                  the buffer group id to use (must be non-negative).
      * @param bufferRingSize        the size of the ring
      * @param maxUnreleasedBuffers  this parameter is ignored by the buffer ring.
+     * <p>maxUnreleasedBuffers 已被忽略，无实际效果。</p>
      * @param allocator             the {@link IoUringBufferRingAllocator} to use to allocate
      *                              {@link io.netty.buffer.ByteBuf}s.
      * @deprecated                  use {@link Builder}.
@@ -63,6 +66,7 @@ public final class IoUringBufferRingConfig {
      * @param allocator             the {@link IoUringBufferRingAllocator} to use to allocate
      *                              {@link io.netty.buffer.ByteBuf}s.
      * @deprecated                  use {@link Builder}.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public IoUringBufferRingConfig(short bgId, short bufferRingSize, int batchSize, int maxUnreleasedBuffers,
@@ -88,6 +92,7 @@ public final class IoUringBufferRingConfig {
 
     /**
      * Returns the buffer group id to use.
+     * <p>返回 buffer group id。</p>
      *
      * @return the buffer group id to use.
      */
@@ -97,6 +102,7 @@ public final class IoUringBufferRingConfig {
 
     /**
      * Returns the size of the ring.
+     * <p>返回 ring 大小。</p>
      *
      * @return the size of the ring.
      */
@@ -106,6 +112,7 @@ public final class IoUringBufferRingConfig {
 
     /**
      * Returns the size of the batch on how many buffers are added everytime we need to expand the buffer ring.
+     * <p>每次扩展 buffer ring 时批量添加的 buffer 数量。</p>
      *
      * @return batch size.
      */
@@ -119,6 +126,7 @@ public final class IoUringBufferRingConfig {
      *
      * @return the max unreleased buffers.
      * @deprecated will be removed as it as no effect.
+     * <p>已废弃，无实际效果，将移除。</p>
      */
     @Deprecated
     public int maxUnreleasedBuffers() {
@@ -127,6 +135,7 @@ public final class IoUringBufferRingConfig {
 
     /**
      * Returns the {@link IoUringBufferRingAllocator} to use to allocate {@link io.netty.buffer.ByteBuf}s.
+     * <p>返回用于分配 ByteBuf 的分配器。</p>
      *
      * @return  the allocator.
      */
@@ -136,6 +145,7 @@ public final class IoUringBufferRingConfig {
 
     /**
      * Returns {@code true} if the ring should always be filled via a batch allocation or
+     * <p>是否始终通过批量分配填充 ring。</p>
      * {@code false} if we will try to allocate a new {@link ByteBuf} as we used a buffer from the ring.
      * @return {@code true} if the ring should always be filled via a batch allocation.
      */
@@ -145,6 +155,7 @@ public final class IoUringBufferRingConfig {
 
     /**
      * Returns true if <a href="https://github.com/axboe/liburing/wiki/
+     * <p>是否对 buffer ring 使用增量消费模式。</p>
      * What's-new-with-io_uring-in-6.11-and-6.12#incremental-provided-buffer-consumption">incremental mode</a>
      * should be used for the buffer ring.
      *
@@ -197,6 +208,7 @@ public final class IoUringBufferRingConfig {
          *
          * @param bgId  The buffer group id to use.
          * @return      This builder.
+          * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
          */
         public Builder bufferGroupId(short bgId) {
             this.bgId = bgId;
@@ -208,6 +220,7 @@ public final class IoUringBufferRingConfig {
          *
          * @param bufferRingSize    The size of the ring.
          * @return                  This builder.
+          * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
          */
         public Builder bufferRingSize(short bufferRingSize) {
             this.bufferRingSize = bufferRingSize;
@@ -219,6 +232,7 @@ public final class IoUringBufferRingConfig {
          *
          * @param batchSize The batch size.
          * @return          This builder.
+          * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
          */
         public Builder batchSize(int batchSize) {
             this.batchSize = batchSize;
@@ -229,6 +243,7 @@ public final class IoUringBufferRingConfig {
          * Set the {@link IoUringBufferRingAllocator} to use to allocate {@link ByteBuf}s.
          *
          * @param allocator         The allocator.
+          * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
          */
         public Builder allocator(IoUringBufferRingAllocator allocator) {
             this.allocator = allocator;
@@ -242,6 +257,7 @@ public final class IoUringBufferRingConfig {
          *                          {@code false} if we will try to allocate a new {@link ByteBuf} as soon
          *                          as we used a buffer from the ring.
          * @return                  This builder.
+          * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
          */
         public Builder batchAllocation(boolean batchAllocation) {
             this.batchAllocation = batchAllocation;
@@ -255,6 +271,7 @@ public final class IoUringBufferRingConfig {
          *
          * @param incremental   {@code true} if incremental mode is used, {@code false} otherwise.
          * @return              This builder.
+          * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
          */
         public Builder incremental(boolean incremental) {
             this.incremental = incremental;
@@ -265,6 +282,7 @@ public final class IoUringBufferRingConfig {
          * Create a new {@link IoUringBufferRingConfig}.
          *
          * @return a new config.
+          * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
          */
         public IoUringBufferRingConfig build() {
             return new IoUringBufferRingConfig(

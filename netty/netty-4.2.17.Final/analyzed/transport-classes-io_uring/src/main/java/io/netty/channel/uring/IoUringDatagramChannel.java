@@ -51,6 +51,10 @@ import java.nio.channels.UnresolvedAddressException;
 
 import static io.netty.channel.unix.Errors.ioResult;
 
+/**
+ * 基于 io_uring 的 UDP {@link DatagramChannel} 实现。
+ * <p>支持 sendmsg/recvmsg 批量、组播、分段数据报与 buffer ring 接收。</p>
+ */
 public final class IoUringDatagramChannel extends AbstractIoUringChannel implements DatagramChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(IoUringDatagramChannel.class);
     private static final boolean IP_MULTICAST_ALL =
@@ -72,18 +76,14 @@ public final class IoUringDatagramChannel extends AbstractIoUringChannel impleme
         }
     }
 
-    // These buffers are used for msghdr, iov, sockaddr_in / sockaddr_in6 when doing recvmsg / sendmsg
-    //
-    // TODO: Alternative we could also allocate these everytime from the ByteBufAllocator or we could use
-    //       some sort of other pool. Let's keep it simple for now.
-    //
-    // Consider exposing some configuration for that.
+    // recvmsg/sendmsg 用的 msghdr、iov、sockaddr 堆外数组（当前固定容量 256）
     private final MsgHdrMemoryArray recvmsgHdrs = new MsgHdrMemoryArray((short) 256);
     private final MsgHdrMemoryArray sendmsgHdrs = new MsgHdrMemoryArray((short) 256);
     private final int[] sendmsgResArray = new int[sendmsgHdrs.capacity()];
 
     /**
      * Create a new instance which selects the {@link SocketProtocolFamily} to use depending
+     * <p>创建实例，按操作系统默认选择协议族。</p>
      * on the Operation Systems default which will be chosen.
      */
     public IoUringDatagramChannel() {
@@ -92,6 +92,7 @@ public final class IoUringDatagramChannel extends AbstractIoUringChannel impleme
 
     /**
      * Create a new instance using the given {@link SocketProtocolFamily}. If {@code null} is used it will depend
+     * <p>使用指定协议族创建实例；null 时使用系统默认。</p>
      * on the Operation Systems default which will be chosen.
      */
     public IoUringDatagramChannel(SocketProtocolFamily family) {
@@ -107,6 +108,7 @@ public final class IoUringDatagramChannel extends AbstractIoUringChannel impleme
 
     /**
      * Create a new instance which selects the {@link SocketProtocolFamily} to use depending
+     * <p>创建实例，按操作系统默认选择协议族。</p>
      * on the Operation Systems default which will be chosen.
      */
     public IoUringDatagramChannel(int fd) {
@@ -114,10 +116,10 @@ public final class IoUringDatagramChannel extends AbstractIoUringChannel impleme
     }
 
     private IoUringDatagramChannel(LinuxSocket fd, boolean active) {
-        // Always use a blocking fd and so make use of fast-poll.
+        // 使用阻塞 fd 以配合 fast-poll
         super(null, fd, active);
 
-        // Configure IP_MULTICAST_ALL - disable by default to match the behaviour of NIO.
+        // 默认关闭 IP_MULTICAST_ALL，与 NIO 行为一致
         try {
             fd.setIpMulticastAll(IP_MULTICAST_ALL);
         } catch (IOException | ChannelException e) {
@@ -366,7 +368,7 @@ public final class IoUringDatagramChannel extends AbstractIoUringChannel impleme
 
     @Override
     protected void doDisconnect() throws Exception {
-        // TODO: use io_uring for this too...
+        // TODO: disconnect 尚未走 io_uring
         socket.disconnect();
         connected = active = false;
 
@@ -666,6 +668,7 @@ public final class IoUringDatagramChannel extends AbstractIoUringChannel impleme
      * Returns {@code true} if the usage of {@link io.netty.channel.unix.SegmentedDatagramPacket} is supported.
      *
      * @return {@code true} if supported, {@code false} otherwise.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public static boolean isSegmentedDatagramPacketSupported() {
         return IoUring.isAvailable();
