@@ -1,9 +1,12 @@
+// empty-dsl.ts — Dataflow 空白画布种子 DSL，与 React 解耦供纯函数/测试引用。
+
 import { FileId, initialParserValues } from '@/pages/agent/constant/pipeline';
 
+// 起始 File 节点在 DSL 中的组件名
 const FILE_OPERATOR = 'File';
 
-// Dataflow seed DSL. Kept separate from UI hooks so pure DSL helpers
-// can import it without pulling React modules into tests/runtime.
+// Dataflow 种子 DSL：独立于 UI Hook，避免测试/运行时引入 React 依赖。
+/** 默认 Dataflow 图：File 起始节点 → Parser 节点及空 components/retrieval 等。 */
 export const DataflowEmptyDsl = {
   graph: {
     nodes: [

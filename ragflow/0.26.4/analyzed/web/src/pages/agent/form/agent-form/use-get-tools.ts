@@ -1,13 +1,17 @@
+// use-get-tools.ts — 读取 Agent 节点已绑定的 tools 与 MCP id 列表。
+
 import { IAgentForm } from '@/interfaces/database/agent';
 import { get } from 'lodash';
 import { useContext, useMemo } from 'react';
 import { AgentFormContext } from '../../context';
 
+/** 返回当前节点 form.tools（默认空数组）。 */
 export function useGetNodeTools() {
   const node = useContext(AgentFormContext);
   return get(node, 'data.form.tools', []) as IAgentForm['tools'];
 }
 
+/** 提取 tools 的 component_name 列表供 UI 展示/校验。 */
 export function useGetAgentToolNames() {
   const node = useContext(AgentFormContext);
 
@@ -19,6 +23,7 @@ export function useGetAgentToolNames() {
   return { toolNames };
 }
 
+/** 提取 mcp 条目的 mcp_id 列表。 */
 export function useGetAgentMCPIds() {
   const node = useContext(AgentFormContext);
 

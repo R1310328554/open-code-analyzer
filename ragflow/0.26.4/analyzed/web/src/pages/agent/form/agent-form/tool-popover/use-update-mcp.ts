@@ -1,3 +1,5 @@
+// use-update-mcp.ts — Agent 节点 MCP 绑定：读取、更新与删除。
+
 import { useListMcpServer } from '@/hooks/use-mcp-request';
 import { IAgentForm } from '@/interfaces/database/agent';
 import { AgentFormContext } from '@/pages/agent/context';
@@ -5,6 +7,7 @@ import useGraphStore from '@/pages/agent/store';
 import { get } from 'lodash';
 import { useCallback, useContext, useMemo } from 'react';
 
+/** 从 AgentFormContext 读取当前节点 form.mcp 配置。 */
 export function useGetNodeMCP() {
   const node = useContext(AgentFormContext);
 
@@ -14,6 +17,7 @@ export function useGetNodeMCP() {
   }, [node]);
 }
 
+/** 按选中 mcp_id 列表更新节点 MCP，保留已有项或初始化 tools。 */
 export function useUpdateAgentNodeMCP() {
   const { updateNodeForm } = useGraphStore((state) => state);
   const node = useContext(AgentFormContext);
@@ -21,6 +25,7 @@ export function useUpdateAgentNodeMCP() {
   const { data } = useListMcpServer();
   const mcpServers = data.mcp_servers;
 
+  /** 根据 MCP 服务器 id 查找其 tools 定义。 */
   const findMcpTools = useCallback(
     (mcpId: string) => {
       const mcp = mcpServers.find((x) => x.id === mcpId);
@@ -29,6 +34,7 @@ export function useUpdateAgentNodeMCP() {
     [mcpServers],
   );
 
+  /** 合并/新建 mcp 条目并写回画布节点 form.mcp。 */
   const updateNodeMCP = useCallback(
     (value: string[]) => {
       if (node?.id) {
@@ -55,6 +61,7 @@ export function useUpdateAgentNodeMCP() {
   return { updateNodeMCP };
 }
 
+/** 按 mcp_id 从节点移除一条 MCP 绑定。 */
 export function useDeleteAgentNodeMCP() {
   const { updateNodeForm } = useGraphStore((state) => state);
   const mcpList = useGetNodeMCP();

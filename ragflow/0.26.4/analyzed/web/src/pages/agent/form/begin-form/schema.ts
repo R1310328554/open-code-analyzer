@@ -1,6 +1,9 @@
+// schema.ts — Begin 节点表单 Zod 校验：开场白、Webhook 安全与请求/响应 schema。
+
 import { WebhookJWTAlgorithmList } from '@/constants/agent';
 import { z } from 'zod';
 
+/** Begin 节点完整表单 schema：prologue、inputs、methods、security、schema、response 等。 */
 export const BeginFormSchema = z.object({
   enablePrologue: z.boolean().optional(),
   prologue: z.string().trim().optional(),
@@ -87,4 +90,5 @@ export const BeginFormSchema = z.object({
   execution_mode: z.string().optional(),
 });
 
+/** BeginFormSchema 推导出的 TypeScript 类型。 */
 export type BeginFormSchemaType = z.infer<typeof BeginFormSchema>;

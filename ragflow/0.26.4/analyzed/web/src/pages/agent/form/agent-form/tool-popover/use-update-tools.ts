@@ -1,3 +1,5 @@
+// use-update-tools.ts — Agent 节点内置工具：读取、追加/切换与删除。
+
 import { IAgentForm } from '@/interfaces/database/agent';
 import { Operator } from '@/pages/agent/constant';
 import { AgentFormContext } from '@/pages/agent/context';
@@ -6,6 +8,7 @@ import useGraphStore from '@/pages/agent/store';
 import { get } from 'lodash';
 import { useCallback, useContext, useMemo } from 'react';
 
+/** 从 AgentFormContext 读取当前节点 form.tools 数组。 */
 export function useGetNodeTools() {
   const node = useContext(AgentFormContext);
 
@@ -15,6 +18,7 @@ export function useGetNodeTools() {
   }, [node]);
 }
 
+/** 追加 Retrieval 或切换其他工具开关，并生成 id/name/params。 */
 export function useUpdateAgentNodeTools() {
   const { generateAgentToolName, generateAgentToolId, updateNodeForm } =
     useGraphStore((state) => state);
@@ -26,7 +30,7 @@ export function useUpdateAgentNodeTools() {
     (value: string) => {
       if (!node?.id) return;
 
-      // Append
+      // Retrieval 允许多实例：直接追加
       if (value === Operator.Retrieval) {
         updateNodeForm(
           node.id,
@@ -42,7 +46,7 @@ export function useUpdateAgentNodeTools() {
           ['tools'],
         );
       }
-      // Toggle
+      // 其他工具：已存在则移除，否则追加
       else {
         updateNodeForm(
           node.id,
@@ -74,6 +78,7 @@ export function useUpdateAgentNodeTools() {
   return { updateNodeTools };
 }
 
+/** 按 tool id 从节点 tools 列表删除一项。 */
 export function useDeleteAgentNodeTools() {
   const { updateNodeForm } = useGraphStore((state) => state);
   const tools = useGetNodeTools();
