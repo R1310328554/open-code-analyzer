@@ -20,35 +20,34 @@ package org.keycloak.util;
 import java.util.Arrays;
 
 /**
- * Base58 is a way to encode Bitcoin addresses (or arbitrary data) as alphanumeric strings.
+ * Base58 编码工具，将字节序列或比特币地址等数据编码为字母数字字符串。
  * <p>
- * Note that this is not the same base58 as used by Flickr, which you may find referenced around the Internet.
+ * 注意：此实现与 Flickr 等平台使用的 base58 不同，请勿混淆。
  * <p>
- * You may want to consider working with {@code org.bitcoinj.core.EncodedPrivateKey} instead, which
- * adds support for testing the prefix and suffix bytes commonly found in addresses.
+ * 也可考虑使用 {@code org.bitcoinj.core.EncodedPrivateKey}，
+ * 它支持地址中常见的前缀与后缀字节校验。
  * <p>
- * Satoshi explains: why base-58 instead of standard base-64 encoding?
+ * Satoshi 选择 base-58 而非标准 base-64 的原因：
  * <ul>
- * <li>Don't want 0OIl characters that look the same in some fonts and
- *     could be used to create visually identical looking account numbers.</li>
- * <li>A string with non-alphanumeric characters is not as easily accepted as an account number.</li>
- * <li>E-mail usually won't line-break if there's no punctuation to break at.</li>
- * <li>Doubleclicking selects the whole number as one word if it's all alphanumeric.</li>
+ * <li>避免 0、O、I、l 等在某些字体中外观相同的字符，防止账户号视觉混淆。</li>
+ * <li>含非字母数字字符的字符串不易被接受为账户号。</li>
+ * <li>纯字母数字串在邮件中通常不会因缺少标点而无法自动换行。</li>
+ * <li>双击可选中整个账户号（全为字母数字时视为一个单词）。</li>
  * </ul>
  * <p>
- * However, note that the encoding/decoding runs in O(n&sup2;) time, so it is not useful for large data.
+ * 编解码时间复杂度为 O(n&sup2;)，不适合大数据量。
  * <p>
- * The basic idea of the encoding is to treat the data bytes as a large number represented using
- * base-256 digits, convert the number to be represented using base-58 digits, preserve the exact
- * number of leading zeros (which are otherwise lost during the mathematical operations on the
- * numbers), and finally represent the resulting base-58 digits as alphanumeric ASCII characters.
+ * 编码思路：将数据字节视为 base-256 大整数，转换为 base-58 数字，
+ * 保留前导零个数（数学运算中会丢失），最后映射为字母数字 ASCII 字符。
  * <p>
- * Replaced bitcoinj AddressFormatException with IllegalArgumentException
- * Remove Bitcoin Address functionality i.e. encodeChecked, decodeChecked
+ * 已将 bitcoinj 的 AddressFormatException 替换为 IllegalArgumentException；
+ * 移除了比特币地址专用的 encodeChecked、decodeChecked 功能。
  */
 public class Base58 {
+    /** Base58 字母表（不含 0、O、I、l）。 */
     public static final char[] ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".toCharArray();
     private static final char ENCODED_ZERO = ALPHABET[0];
+    /** 字符到 Base58 数字的反向索引表。 */
     private static final int[] INDEXES = new int[128];
     static {
         Arrays.fill(INDEXES, -1);
@@ -58,53 +57,53 @@ public class Base58 {
     }
 
     /**
-     * Encodes the given bytes as a base58 string (no checksum is appended).
+     * 将字节数组编码为 Base58 字符串（不附加校验和）。
      *
-     * @param input the bytes to encode
-     * @return the base58-encoded string
+     * @param input 待编码的字节数组
+     * @return Base58 编码字符串
      */
     public static String encode(byte[] input) {
         if (input.length == 0) {
             return "";
         }
-        // Count leading zeros.
+        // 统计前导零字节
         int zeros = 0;
         while (zeros < input.length && input[zeros] == 0) {
             ++zeros;
         }
-        // Convert base-256 digits to base-58 digits (plus conversion to ASCII characters)
-        input = Arrays.copyOf(input, input.length); // since we modify it in-place
-        char[] encoded = new char[input.length * 2]; // upper bound
+        // 将 base-256 数字转换为 base-58 数字（并映射为 ASCII 字符）
+        input = Arrays.copyOf(input, input.length); // 原地修改需要副本
+        char[] encoded = new char[input.length * 2]; // 上界估计
         int outputStart = encoded.length;
         for (int inputStart = zeros; inputStart < input.length; ) {
             encoded[--outputStart] = ALPHABET[divmod(input, inputStart, 256, 58)];
             if (input[inputStart] == 0) {
-                ++inputStart; // optimization - skip leading zeros
+                ++inputStart; // 优化：跳过前导零
             }
         }
-        // Preserve exactly as many leading encoded zeros in output as there were leading zeros in input.
+        // 保留与输入相同数量的前导编码零
         while (outputStart < encoded.length && encoded[outputStart] == ENCODED_ZERO) {
             ++outputStart;
         }
         while (--zeros >= 0) {
             encoded[--outputStart] = ENCODED_ZERO;
         }
-        // Return encoded string (including encoded leading zeros).
+        // 返回编码字符串（含前导零）
         return new String(encoded, outputStart, encoded.length - outputStart);
     }
 
     /**
-     * Decodes the given base58 string into the original data bytes.
+     * 将 Base58 字符串解码为原始字节数组。
      *
-     * @param input the base58-encoded string to decode
-     * @return the decoded data bytes
-     * @throws AddressFormatException if the given string is not a valid base58 string
+     * @param input Base58 编码字符串
+     * @return 解码后的字节数组
+     * @throws AddressFormatException 若输入不是合法的 Base58 字符串
      */
     public static byte[] decode(String input) {
         if (input.isEmpty()) {
             return new byte[0];
         }
-        // Convert the base58-encoded ASCII chars to a base58 byte sequence (base58 digits).
+        // 将 Base58 ASCII 字符转换为 base-58 字节序列
         byte[] input58 = new byte[input.length()];
         for (int i = 0; i < input.length(); ++i) {
             char c = input.charAt(i);
@@ -114,42 +113,39 @@ public class Base58 {
             }
             input58[i] = (byte) digit;
         }
-        // Count leading zeros.
+        // 统计前导零
         int zeros = 0;
         while (zeros < input58.length && input58[zeros] == 0) {
             ++zeros;
         }
-        // Convert base-58 digits to base-256 digits.
+        // 将 base-58 数字转换为 base-256 数字
         byte[] decoded = new byte[input.length()];
         int outputStart = decoded.length;
         for (int inputStart = zeros; inputStart < input58.length; ) {
             decoded[--outputStart] = divmod(input58, inputStart, 58, 256);
             if (input58[inputStart] == 0) {
-                ++inputStart; // optimization - skip leading zeros
+                ++inputStart; // 优化：跳过前导零
             }
         }
-        // Ignore extra leading zeroes that were added during the calculation.
+        // 忽略计算过程中额外添加的前导零
         while (outputStart < decoded.length && decoded[outputStart] == 0) {
             ++outputStart;
         }
-        // Return decoded data (including original number of leading zeros).
+        // 返回解码数据（含原始前导零数量）
         return Arrays.copyOfRange(decoded, outputStart - zeros, decoded.length);
     }
 
     /**
-     * Divides a number, represented as an array of bytes each containing a single digit
-     * in the specified base, by the given divisor. The given number is modified in-place
-     * to contain the quotient, and the return value is the remainder.
+     * 对以指定进制表示的字节数组做除法，商写回原数组，返回余数。
      *
-     * @param number the number to divide
-     * @param firstDigit the index within the array of the first non-zero digit
-     *        (this is used for optimization by skipping the leading zeros)
-     * @param base the base in which the number's digits are represented (up to 256)
-     * @param divisor the number to divide by (up to 256)
-     * @return the remainder of the division operation
+     * @param number 被除数（字节数组，每位为一个数字）
+     * @param firstDigit 数组中第一个非零数字的索引（用于跳过前导零优化）
+     * @param base 数字的进制（最大 256）
+     * @param divisor 除数（最大 256）
+     * @return 除法余数
      */
     private static byte divmod(byte[] number, int firstDigit, int base, int divisor) {
-        // this is just long division which accounts for the base of the input digits
+        // 按指定进制的长除法
         int remainder = 0;
         for (int i = firstDigit; i < number.length; i++) {
             int digit = (int) number[i] & 0xFF;

@@ -32,15 +32,22 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
- * Utility class to handle simple JSON serializable for Keycloak.
+ * Keycloak 通用 JSON 序列化/反序列化工具类。
+ *
+ * <p>
+ * 提供预配置的 {@link ObjectMapper} 实例及常用的读写便捷方法。
+ * </p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class JsonSerialization {
+    /** 默认 ObjectMapper（含 Jdk8、JavaTime 模块，忽略 null 属性）。 */
     public static final ObjectMapper mapper = createObjectMapperWithDefaults();
+    /** 带缩进输出的 ObjectMapper。 */
     public static final ObjectMapper prettyMapper = createPrettyObjectMapperWithDefaults();
 
+    /** 创建带默认配置的 ObjectMapper。 */
     public static ObjectMapper createObjectMapperWithDefaults() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new Jdk8Module());
@@ -50,6 +57,7 @@ public class JsonSerialization {
         return mapper;
     }
 
+    /** 创建带缩进输出配置的 ObjectMapper。 */
     public static ObjectMapper createPrettyObjectMapperWithDefaults() {
         ObjectMapper prettyMapper = new ObjectMapper();
         prettyMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
@@ -58,6 +66,7 @@ public class JsonSerialization {
         return prettyMapper;
     }
 
+    /** 将对象序列化为 JSON 字符串；失败时包装为 IllegalArgumentException。 */
     public static String valueAsString(Object obj) {
         try {
             return mapper.writeValueAsString(obj);
@@ -66,6 +75,7 @@ public class JsonSerialization {
         }
     }
 
+    /** 将对象序列化为带缩进的 JSON 字符串。 */
     public static String valueAsPrettyString(Object obj) {
         try {
             return prettyMapper.writeValueAsString(obj);
@@ -74,6 +84,7 @@ public class JsonSerialization {
         }
     }
 
+    /** 从 JSON 字符串反序列化为指定类型。 */
     public static <T> T valueFromString(String string, Class<T> type) {
         try {
             return mapper.readValue(string, type);
@@ -82,10 +93,12 @@ public class JsonSerialization {
         }
     }
 
+    /** 将对象写入输出流。 */
     public static void writeValueToStream(OutputStream os, Object obj) throws IOException {
         mapper.writeValue(os, obj);
     }
 
+    /** 以缩进格式将对象写入输出流。 */
     public static void writeValuePrettyToStream(OutputStream os, Object obj) throws IOException {
         prettyMapper.writeValue(os, obj);
     }
@@ -101,6 +114,7 @@ public class JsonSerialization {
         return mapper.writeValueAsBytes(obj);
     }
 
+    /** 将对象转换为 {@link JsonNode} 树结构。 */
     public static JsonNode writeValueAsNode(Object obj) {
         return mapper.valueToTree(obj);
     }
@@ -130,11 +144,11 @@ public class JsonSerialization {
     }
 
     /**
-     * Creates an {@link ObjectNode} based on the given {@code pojo}, copying all its properties to the resulting {@link ObjectNode}.
+     * 根据给定 POJO 创建 {@link ObjectNode}，将其全部属性复制到新节点。
      *
-     * @param pojo a pojo which properties will be populates into the resulting a {@link ObjectNode}
-     * @return a {@link ObjectNode} with all the properties from the given pojo
-     * @throws IOException if the resulting a {@link ObjectNode} can not be created
+     * @param pojo 属性将被复制到结果 {@link ObjectNode} 的 POJO 对象
+     * @return 包含 POJO 全部属性的 {@link ObjectNode}
+     * @throws IOException 若无法创建结果节点
      */
     public static ObjectNode createObjectNode(Object pojo) throws IOException {
         if (pojo == null) {
@@ -156,6 +170,7 @@ public class JsonSerialization {
         return objectNode;
     }
 
+    /** 创建空的 {@link ObjectNode}。 */
     public static ObjectNode createObjectNode() {
         return mapper.createObjectNode();
     }

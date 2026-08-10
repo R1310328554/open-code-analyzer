@@ -38,7 +38,11 @@ import static org.keycloak.OAuth2Constants.DPOP_DEFAULT_ALGORITHM;
 import static org.keycloak.OAuth2Constants.DPOP_JWT_HEADER_TYPE;
 
 /**
- * Utility for generating signed DPoP proofs
+ * DPoP（Demonstrating Proof of Possession）证明生成工具。
+ *
+ * <p>
+ * 用于构造并签名符合 RFC 9449 的 DPoP JWT，证明客户端持有访问令牌对应的私钥。
+ * </p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc9449">OAuth 2.0 Demonstrating Proof of Possession (DPoP) specification</a>
@@ -46,7 +50,16 @@ import static org.keycloak.OAuth2Constants.DPOP_JWT_HEADER_TYPE;
  */
 public class DPoPGenerator {
 
-    // TODO: Similar for EC and EdDSA
+    // TODO: 补充 EC 与 EdDSA 的类似便捷方法
+    /**
+     * 使用 RSA 密钥对生成已签名的 DPoP 证明。
+     *
+     * @param rsaKeyPair RSA 密钥对
+     * @param httpMethod HTTP 方法（htm）
+     * @param endpointURL 请求 URI（htu）
+     * @param accessToken 可选的访问令牌（用于计算 ath 哈希）
+     * @return 紧凑序列化的 DPoP JWT 字符串
+     */
     public static String generateRsaSignedDPoPProof(KeyPair rsaKeyPair, String httpMethod, String endpointURL, String accessToken) {
         JWK jwkRsa = createRsaJwk(rsaKeyPair.getPublic());
         JWSHeader jwsRsaHeader = new JWSHeader(DPOP_DEFAULT_ALGORITHM, DPOP_JWT_HEADER_TYPE, jwkRsa.getKeyId(), jwkRsa);
@@ -55,19 +68,36 @@ public class DPoPGenerator {
     }
 
 
+    /** 从 RSA 公钥创建用于 DPoP 的 JWK。 */
     public static JWK createRsaJwk(Key publicKey) {
         return JWKBuilder.create().rsa(publicKey, KeyUse.SIG);
     }
 
+    /** 从 EC 公钥创建用于 DPoP 的 JWK。 */
     public static JWK createEcJwk(Key publicKey) {
         return JWKBuilder.create().ec(publicKey);
     }
 
+    /**
+     * 构建 DPoP 载荷并签名，返回紧凑 JWT 字符串。
+     *
+     * @param jti JWT ID
+     * @param htm HTTP 方法
+     * @param htu HTTP URI
+     * @param iat 签发时间戳
+     * @param jwsHeader JWS 头部（含 jwk）
+     * @param keyWrapper 含私钥的密钥包装器
+     * @param accessToken 可选访问令牌
+     * @return 已签名的 DPoP JWT
+     */
     public static String generateSignedDPoPProof(String jti, String htm, String htu, Long iat, JWSHeader jwsHeader, KeyWrapper keyWrapper, String accessToken) {
         DPoP dpop = generateDPoP(jti, htm, htu, iat, accessToken);
         return sign(jwsHeader, dpop, keyWrapper);
     }
 
+    /**
+     * 使用 {@link PrivateKey} 构建并签名 DPoP 证明。
+     */
     public String generateSignedDPoPProof(String jti, String htm, String htu, Long iat, JWSHeader jwsHeader, PrivateKey privateKey, String accessToken) {
         KeyWrapper keyWrapper = getKeyWrapper(jwsHeader, privateKey);
         return generateSignedDPoPProof(jti, htm, htu, iat, jwsHeader, keyWrapper, accessToken);
@@ -85,6 +115,9 @@ public class DPoPGenerator {
         return dpop;
     }
 
+    /**
+     * 从 JWS 头部的 jwk 声明与私钥构造 {@link KeyWrapper}。
+     */
     protected KeyWrapper getKeyWrapper(JWSHeader jwsHeader, PrivateKey privateKey) {
         JWK jwkKey = jwsHeader.getKey();
         if (jwkKey == null) {

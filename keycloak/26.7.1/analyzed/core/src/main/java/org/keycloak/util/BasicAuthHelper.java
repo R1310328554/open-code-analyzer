@@ -25,16 +25,31 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 /**
- * The default implementation is compliant with <a href="https://datatracker.ietf.org/doc/html/rfc2617">RFC 2617</a>
+ * HTTP Basic 认证辅助工具，默认实现符合
+ * <a href="https://datatracker.ietf.org/doc/html/rfc2617">RFC 2617</a>。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class BasicAuthHelper {
+
+    /**
+     * 根据用户名与密码生成 Basic 认证请求头值。
+     *
+     * @param username 用户名
+     * @param password 密码
+     * @return {@code Basic <Base64(username:password)>} 格式的头值
+     */
     public static String createHeader(String username, String password) {
         return "Basic " + Base64.getEncoder().encodeToString((username + ':' + password).getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * 从 Authorization 头解析用户名与密码。
+     *
+     * @param header Authorization 头的完整值
+     * @return 长度为 2 的数组 [username, password]，解析失败返回 null
+     */
     public static String[] parseHeader(String header) {
         if (header.length() < 6) return null;
 
@@ -59,10 +74,12 @@ public class BasicAuthHelper {
     }
 
     /**
-     * compliant with <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1">RFC 6749</a>
+     * 符合 <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1">RFC 6749</a>
+     * 的 Basic 认证实现，对用户名与密码做 URL 编码/解码。
      */
     public static abstract class RFC6749 {
 
+        /** 生成经 URL 编码的 Basic 认证头。 */
         public static String createHeader(String username, String password) {
             try {
                 return BasicAuthHelper.createHeader(
@@ -74,6 +91,7 @@ public class BasicAuthHelper {
             }
         }
 
+        /** 解析 Basic 认证头并对用户名、密码做 URL 解码。 */
         public static String[] parseHeader(String header) {
             String[] val = BasicAuthHelper.parseHeader(header);
             if (null == val) {

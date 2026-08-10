@@ -27,17 +27,17 @@ import org.keycloak.common.VerificationException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * A simple presentation definition of the kind of credential expected.
+ * 简单的凭证展示定义，用于描述期望接收的凭证类型与必填声明。
  *
  * <p>
- * The credential's type and required claims are configured using regex patterns.
- * The values of these fields are JSON-ified prior to matching the regex pattern.
+ * 凭证类型与必填声明通过正则表达式配置；匹配前会将字段值序列化为 JSON 字符串。
  * </p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class SimplePresentationDefinition implements PresentationRequirements {
 
+    /** 字段名到正则模式的映射，定义各必填声明的匹配规则。 */
     private final Map<String, Pattern> requirements;
 
     public SimplePresentationDefinition(Map<String, Pattern> requirements) {
@@ -45,16 +45,15 @@ public class SimplePresentationDefinition implements PresentationRequirements {
     }
 
     /**
-     * Checks if the provided JSON payload satisfies all required field patterns.
+     * 校验给定 JSON 载荷是否满足全部必填字段的正则约束。
      *
      * <p>
-     * For each required field, the corresponding JSON field value in the disclosed Issuer-signed JWT's payload
-     * is matched against the associated regex pattern. If any required field is missing or does not match the
-     * pattern, a {@link VerificationException} is thrown.
+     * 对每个必填字段，从已完全披露的签发者签名 JWT 载荷中取出对应值，
+     * 与配置的正则模式进行匹配；若字段缺失或匹配失败，则抛出 {@link VerificationException}。
      * </p>
      *
-     * @param disclosedPayload The fully disclosed Issuer-signed JWT of the presented token.
-     * @throws VerificationException If any required field is missing or fails the pattern check.
+     * @param disclosedPayload 已完全披露的签发者签名 JWT 载荷。
+     * @throws VerificationException 若任一必填字段缺失或未通过模式校验。
      */
     @Override
     public void checkIfSatisfiedBy(JsonNode disclosedPayload) throws VerificationException {
@@ -62,20 +61,20 @@ public class SimplePresentationDefinition implements PresentationRequirements {
             String field = requirement.getKey();
             Pattern pattern = requirement.getValue();
 
-            // Retrieve the value of the required field from the payload
+            // 从载荷中读取必填字段的值
             JsonNode presented = disclosedPayload.get(field);
 
-            // Check if the required field is present in the payload
+            // 检查必填字段是否存在于载荷中
             if (presented == null || presented.isNull()) {
                 throw new VerificationException(
                         String.format("A required field was not presented: `%s`", field)
                 );
             }
 
-            // Extract the JSON representation of the field's value
+            // 提取字段值的 JSON 表示
             String json = presented.toString();
 
-            // Match the field value against the configured regex pattern
+            // 将字段值与配置的正则模式进行匹配
             Matcher matcher = pattern.matcher(json);
             if (!matcher.matches()) {
                 throw new VerificationException(String.format(
@@ -90,9 +89,17 @@ public class SimplePresentationDefinition implements PresentationRequirements {
         return new Builder();
     }
 
+    /** 用于逐步构建 {@link SimplePresentationDefinition} 的建造者。 */
     public static class Builder {
         private final Map<String, Pattern> requirements = new HashMap<>();
 
+        /**
+         * 添加一条声明约束：指定字段名及其正则模式。
+         *
+         * @param field 声明字段名
+         * @param regexPattern 匹配该字段 JSON 值的正则表达式
+         * @return 当前建造者实例，支持链式调用
+         */
         public Builder addClaimRequirement(String field, String regexPattern) {
             this.requirements.put(field, Pattern.compile(regexPattern));
             return this;

@@ -48,19 +48,35 @@ import static org.keycloak.OID4VCConstants.SDJWT_DELIMITER;
 import static org.keycloak.OID4VCConstants.SD_HASH;
 
 /**
+ * SD-JWT 可验证展示（Verifiable Presentation）的解析、构建与验证入口。
+ *
+ * <p>
+ * 从紧凑序列化字符串解析签发者 JWT、披露项与可选的密钥绑定 JWT，
+ * 并支持按需选择披露声明生成新的展示。
+ * </p>
+ *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class SdJwtVP {
+    /** 不含密钥绑定部分的 SD-JWT VP 紧凑字符串。 */
     private final String sdJwtVpString;
+    /** 签发者签名的 JWT。 */
     private final IssuerSignedJWT issuerSignedJWT;
 
+    /** 披露摘要到披露数据的映射。 */
     private final Map<String, ArrayNode> claims;
+    /** 披露摘要到原始披露字符串的映射。 */
     private final Map<String, String> disclosures;
+    /** 嵌套在其他披露中的递归摘要映射。 */
     private final Map<String, String> recursiveDigests;
+    /** 在签发者载荷中找不到对应节点的幽灵摘要列表。 */
     private final List<String> ghostDigests;
+    /** 哈希算法名称。 */
     private final String hashAlgorithm;
 
+    /** 可选的密钥绑定 JWT。 */
     private final Optional<KeyBindingJWT> keyBindingJWT;
+    /** 用于验证的上下文对象。 */
     private final SdJwtVerificationContext sdJwtVerificationContext;
 
     public Map<String, ArrayNode> getClaims() {
@@ -107,7 +123,7 @@ public class SdJwtVP {
         this.ghostDigests = Collections.unmodifiableList(ghostDigests);
         this.keyBindingJWT = keyBindingJWT;
 
-        // Instantiate context for verification
+        // 实例化验证上下文
         this.sdJwtVerificationContext = new SdJwtVerificationContext(
                 this.sdJwtVpString,
                 this.issuerSignedJWT,
@@ -116,6 +132,13 @@ public class SdJwtVP {
         );
     }
 
+    /**
+     * 从 SD-JWT 紧凑序列化字符串解析 {@link SdJwtVP}。
+     *
+     * @param sdJwtString SD-JWT 紧凑序列化字符串
+     * @return 解析后的 VP 对象
+     * @throws IllegalArgumentException 若格式不合法或披露数据无效
+     */
     public static SdJwtVP of(String sdJwtString) {
         int disclosureStart = sdJwtString.indexOf(SDJWT_DELIMITER);
         int disclosureEnd = sdJwtString.lastIndexOf(SDJWT_DELIMITER);
@@ -174,7 +197,7 @@ public class SdJwtVP {
             keyBindingJWT = Optional.of(new KeyBindingJWT(keyBindingJWTString));
         }
 
-        // Drop the key binding String if any. As it is held by the keyBindingJwtObject
+        // 截断密钥绑定部分；该部分已由 keyBindingJWT 对象持有
         String sdJWtVPString = sdJwtString.substring(0, disclosureEnd + 1);
 
         return new SdJwtVP(sdJWtVPString, hashAlgorithm, issuerSignedJWT, claims, disclosures, recursiveDigests,
@@ -186,7 +209,7 @@ public class SdJwtVP {
             Map<String, ArrayNode> claims,
             Map<String, String> recursiveDigests,
             List<String> ghostDigests) {
-        if (node == null) { // digest is nested in another disclosure
+        if (node == null) { // 摘要嵌套在另一项披露中
             Set<Entry<String, ArrayNode>> entrySet = claims.entrySet();
             for (Entry<String, ArrayNode> entry : entrySet) {
                 if (entry.getKey().equals(disclosureDigest)) {
@@ -199,25 +222,26 @@ public class SdJwtVP {
                 }
             }
         }
-        if (node == null) { // No digest found for disclosure.
+        if (node == null) { // 未找到与披露对应的摘要节点
             ghostDigests.add(disclosureDigest);
         }
         return node;
     }
 
+    /** 返回签发者 JWT 中的 cnf（确认密钥）声明。 */
     public JsonNode getCnfClaim() {
         return issuerSignedJWT.getCnfClaim().orElse(null);
     }
 
     /**
-     * Create new Sd-JWT presentation from this Sd-JWT
+     * 基于当前 SD-JWT 生成新的可验证展示。
      *
-     * @param disclosureDigests Disclosure digests (hashes) of the claims to disclose.
-     * @param discloseAllClaims When the parameter is true, then disclosureDigests parameter is ignored and everything is presented. When false, then only claims specified
-     *                         by disclosureDigests are presented
-     * @param keyBindingClaims Key binding claims. When omitted, created presentation may not contain key-binding
-     * @param holdSignatureSignerContext Useful for signing the key-binding JWT
-     * @return String with new Sd-JWT presentation with added key-binding and selected disclosed claims
+     * @param disclosureDigests 要披露的声明摘要（哈希）列表。
+     * @param discloseAllClaims 为 true 时忽略 disclosureDigests 并披露全部声明；
+     *                         为 false 时仅披露指定摘要对应的声明
+     * @param keyBindingClaims 密钥绑定声明；省略则生成的展示可能不含密钥绑定
+     * @param holdSignatureSignerContext 用于签名密钥绑定 JWT 的签名上下文
+     * @return 含所选披露声明与可选密钥绑定的新 SD-JWT 展示字符串
      */
     public String present(List<String> disclosureDigests,
                           boolean discloseAllClaims,
@@ -225,7 +249,7 @@ public class SdJwtVP {
                           SignatureSignerContext holdSignatureSignerContext) {
         StringBuilder sb = new StringBuilder();
         if (discloseAllClaims) {
-            // disclose everything
+            // 披露全部声明
             sb.append(sdJwtVpString);
         } else {
             sb.append(issuerSignedJWT.getJws());
@@ -253,15 +277,15 @@ public class SdJwtVP {
 
 
     /**
-     * Create new Sd-JWT presentation from this Sd-JWT. It works same like {@link #present(List, boolean, ObjectNode, SignatureSignerContext)} but it allows
-     * to specify the names of the claims to present (EG. given_name, family_name) instead of specifying disclosureDigests
+     * 基于当前 SD-JWT 生成新的可验证展示，与 {@link #present(List, boolean, ObjectNode, SignatureSignerContext)} 功能相同，
+     * 但允许按声明名称（如 given_name、family_name）而非披露摘要指定要展示的声明。
      *
-     * @param claimsToDisclose Names of the claims to disclose (EG. given_name, family_name)
-     * @param discloseAllClaims Used in case that claimsToDisclose is empty or null. In case this is true, all the claims from this SdJWT will be disclosed.
-     *                          If it is false, then only claims specified by claimsToDisclose parameter would be disclosed
-     * @param keyBindingClaims Key binding claims. When omitted, created presentation may not contain key-binding
-     * @param holdSignatureSignerContext Useful for signing the key-binding JWT
-     * @return String with new Sd-JWT presentation with added key-binding and selected disclosed claims
+     * @param claimsToDisclose 要披露的声明名称列表（如 given_name、family_name）
+     * @param discloseAllClaims 当 claimsToDisclose 为空或 null 时使用：为 true 则披露全部声明，
+     *                          为 false 则仅披露 claimsToDisclose 指定的声明
+     * @param keyBindingClaims 密钥绑定声明；省略则生成的展示可能不含密钥绑定
+     * @param holdSignatureSignerContext 用于签名密钥绑定 JWT 的签名上下文
+     * @return 含所选披露声明与可选密钥绑定的新 SD-JWT 展示字符串
      */
     public String presentWithSpecifiedClaims(List<String> claimsToDisclose,
                                              boolean discloseAllClaims,
@@ -288,16 +312,12 @@ public class SdJwtVP {
     }
 
     /**
-     * Verifies SD-JWT presentation.
+     * 验证 SD-JWT 展示。
      *
-     * @param issuerVerifyingKeys             Verifying keys for validating the Issuer-signed JWT. The caller
-     *                                        is responsible for establishing trust in that the keys belong
-     *                                        to the intended issuer.
-     * @param issuerSignedJwtVerificationOpts Options to parameterize the Issuer-Signed JWT verification.
-     * @param keyBindingJwtVerificationOpts   Options to parameterize the Key Binding JWT verification.
-     *                                        Must, among others, specify the Verifier's policy whether
-     *                                        to check Key Binding.
-     * @throws VerificationException if verification failed
+     * @param issuerVerifyingKeys             用于验证签发者签名 JWT 的公钥；调用方须自行确认密钥属于预期签发者
+     * @param issuerSignedJwtVerificationOpts 签发者签名 JWT 验证参数
+     * @param keyBindingJwtVerificationOpts   密钥绑定 JWT 验证参数，须包含是否校验密钥绑定的策略
+     * @throws VerificationException 验证失败时抛出
      */
     public void verify(List<SignatureVerifierContext> issuerVerifyingKeys,
                        IssuerSignedJwtVerificationOpts issuerSignedJwtVerificationOpts,
@@ -313,14 +333,13 @@ public class SdJwtVP {
     }
 
     /**
-     * Retrieve verification context for advanced scenarios.
+     * 获取验证上下文，供高级验证场景使用。
      */
     public SdJwtVerificationContext getSdJwtVerificationContext() {
         return sdJwtVerificationContext;
     }
 
-    // Recursively searches the node with the given value.
-    // Returns the node if found, null otherwise.
+    // 递归搜索包含给定值的节点；找到则返回该节点，否则返回 null
     private static JsonNode findNode(JsonNode node, String value) {
         if (node == null) {
             return null;
@@ -348,6 +367,7 @@ public class SdJwtVP {
         return sdJwtVpString;
     }
 
+    /** 返回包含签发者 JWT、披露项与密钥绑定详情的可读调试字符串。 */
     public String verbose() {
         StringBuilder sb = new StringBuilder();
         sb.append("Issuer Signed JWT: ");

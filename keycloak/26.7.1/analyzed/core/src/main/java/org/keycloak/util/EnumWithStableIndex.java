@@ -22,21 +22,25 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Classes implementing this interface guarantee that for each instance of this class,
- * there exists an mutually unique integer which is stable in time, and identifies
- * always the same instance of this class.
- * The index might be used for persistence, hence the index of a particular item
- * cannot be changed.
- * This is mostly usable for @{code enum}s.
+ * 实现此接口的类型保证：每个实例对应一个随时间稳定、互不重复的整数索引，
+ * 且该索引始终标识同一逻辑实例。
+ * 索引可用于持久化，因此特定条目的索引不可变更。
+ * 主要用于 {@code enum} 类型。
  */
 public interface EnumWithStableIndex {
     /**
-     * @return Unique numeric index which is stable in time and identifies an instance.
-     *   Reusing the same index for two distinct entries of the same class is forbidden even
-     *   if they cannot exist at the same time (e.g. one is deleted before other is introduced).
+     * @return 随时间稳定、用于标识实例的唯一数字索引。
+     *   同一类中不得为两个不同条目复用同一索引，
+     *   即使它们不能同时存在（例如一个删除后才引入另一个）。
      */
     public int getStableIndex();   
 
+    /**
+     * 根据稳定索引构建反向查找映射（索引 → 枚举实例）。
+     *
+     * @param values 枚举常量数组
+     * @return 索引到实例的不可变映射视图
+     */
     public static <E extends EnumWithStableIndex> Map<Integer, E> getReverseIndex(E[] values) {
         return Stream.of(values).collect(Collectors.toMap(EnumWithStableIndex::getStableIndex, Function.identity()));
     }

@@ -28,14 +28,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Utility methods for DID encoding/decoding, specifically did:key for P-256 (ES256).
+ * DID 编解码工具类，主要支持 P-256（ES256）的 did:key 格式。
  * <p>
- * Provides:
- * - EC → did:key:z... encoding (multibase + multicodec + base58btc)
- * - did:key → EC public key decoding
- * - multicodec varint encode/decode
- * - EC point normalization
- * <p>
+ * 提供：
+ * <ul>
+ * <li>EC 公钥 → did:key:z... 编码（multibase + multicodec + base58btc）</li>
+ * <li>did:key → EC 公钥解码</li>
+ * <li>multicodec 变长整数编解码</li>
+ * <li>EC 点坐标归一化</li>
+ * </ul>
  *
  * @author <a href="mailto:tdiesler@ibm.com">Thomas Diesler</a>
  */
@@ -45,23 +46,29 @@ public final class DIDUtils {
     }
 
     /**
-     * Multicodec identifier for P-256 public keys.
-     * See: https://github.com/multiformats/multicodec/
+     * P-256 公钥的 multicodec 标识符。
+     * 参见：https://github.com/multiformats/multicodec/
      * <p>
-     * Codec name: "p256-pub"
-     * Code: 0x1200 (varint-encoded into bytes: 0x80 0x24)
+     * 编解码器名称："p256-pub"
+     * 代码：0x1200（varint 编码为字节：0x80 0x24）
      */
     public static final int MULTICODEC_P256_PUB = 0x1200;
+    /** P-384 公钥 multicodec 标识符。 */
     public static final int MULTICODEC_P384_PUB = 0x1201;
+    /** P-521 公钥 multicodec 标识符。 */
     public static final int MULTICODEC_P521_PUB = 0x1202;
+    /** JWK JCS 公钥 multicodec 标识符。 */
     public static final int MULTICODEC_JWK_JCS_PUB = 0xEB51;
 
     // ---------------------------------------------------------------------
-    // Public API – did:key encoding / decoding
+    // 公开 API — did:key 编解码
     // ---------------------------------------------------------------------
 
     /**
-     * Encode a ECPublicKey (P-256) into a did:key representation.
+     * 将 P-256 {@link ECPublicKey} 编码为 did:key 字符串。
+     *
+     * @param pub EC 公钥
+     * @return did:key 表示
      */
     public static String encodeDidKey(ECPublicKey pub) {
         try {
@@ -72,7 +79,10 @@ public final class DIDUtils {
     }
 
     /**
-     * Decode a did:key (P-256) into an ECPublicKey.
+     * 将 did:key（P-256）解码为 {@link ECPublicKey}。
+     *
+     * @param did did:key 字符串
+     * @return 解码后的 EC 公钥
      */
     public static ECPublicKey decodeDidKey(String did) {
         try {
@@ -83,15 +93,21 @@ public final class DIDUtils {
         }
     }
 
+    /**
+     * 从 did:key 字符串读取 multicodec 类型码。
+     *
+     * @param did did:key 字符串
+     * @return multicodec 代码；无法识别时返回 0
+     */
     public static int getDidKeyCodec(String did) {
         if (did == null || !did.startsWith("did:key:z"))
             return 0;
 
-        // Strip "did:key:z" (z = multibase base58btc)
+        // 去掉 "did:key:z" 前缀（z 表示 multibase base58btc）
         String base58 = did.substring("did:key:z".length());
         byte[] decoded = Base58.decode(base58);
 
-        // Read multicodec varint (LEB128)
+        // 读取 multicodec varint（LEB128）
         int codec = 0;
         int shift = 0;
 
@@ -126,7 +142,7 @@ public final class DIDUtils {
         ECParameterSpec params = pub.getParams();
         int fieldSize = params.getCurve().getField().getFieldSize();
 
-        // Verify P-256 => secp256r1
+        // 验证为 P-256（secp256r1）
         if (fieldSize != 256) {
             throw new IllegalArgumentException("Expected secp256r1, but key uses: " + params);
         }
@@ -139,7 +155,7 @@ public final class DIDUtils {
         if (useJwkJcsPub) {
             writeVarint(MULTICODEC_JWK_JCS_PUB, baos);
 
-            // Minimal EC JWK (public) - order is fine if we don't strictly require JCS canonicalization
+            // 最小 EC JWK（公钥）；若不严格要求 JCS 规范化，字段顺序可灵活
             Map<String, Object> jwk = new LinkedHashMap<>();
             jwk.put("crv", "P-256");
             jwk.put("kty", "EC");
@@ -152,7 +168,7 @@ public final class DIDUtils {
         } else {
             writeVarint(MULTICODEC_P256_PUB, baos);
 
-            // EC uncompressed point format: 0x04 || X || Y
+            // EC 未压缩点格式：0x04 || X || Y
             baos.write(0x04);
             baos.write(x);
             baos.write(y);
@@ -170,14 +186,14 @@ public final class DIDUtils {
         String b58 = did.substring("did:key:z".length());
         InputStream in = new ByteArrayInputStream(Base58.decode(b58));
 
-        // Read the multicodec varint
+        // 读取 multicodec varint
         int codec = readVarint(in);
 
         byte[] x, y;
         switch (codec) {
             case MULTICODEC_P256_PUB: {
 
-                // Expect 0x04 indicating an uncompressed EC point
+                // 期望 0x04 表示未压缩 EC 点
                 int tag = in.read();
                 if (tag != 0x04) {
                     throw new IllegalArgumentException("Invalid EC point tag: " + tag);
@@ -188,7 +204,7 @@ public final class DIDUtils {
                 break;
             }
             case MULTICODEC_JWK_JCS_PUB: {
-                // Remaining bytes are a UTF-8 encoded JWK JSON object (JCS-canonicalized)
+                // 剩余字节为 UTF-8 编码的 JWK JSON（JCS 规范化）
                 String jwkJson = StreamUtil.readString(in, UTF_8);
 
                 JsonNode jwk = new ObjectMapper().readTree(jwkJson);
@@ -227,12 +243,12 @@ public final class DIDUtils {
     }
 
     // ---------------------------------------------------------------------
-    // Multicodec varint (LEB128) encoding / decoding
+    // Multicodec varint（LEB128）编解码
     // ---------------------------------------------------------------------
 
     private static void writeVarint(int value, OutputStream out) throws IOException {
         while ((value & ~0x7F) != 0) {
-            out.write((value & 0x7F) | 0x80); // continuation bit
+            out.write((value & 0x7F) | 0x80); // 续位标志
             value >>>= 7;
         }
         out.write(value);
@@ -251,7 +267,7 @@ public final class DIDUtils {
             value |= (b & 0x7F) << shift;
 
             if ((b & 0x80) == 0) {
-                break; // final byte
+                break; // 最后一字节
             }
 
             shift += 7;
@@ -264,10 +280,10 @@ public final class DIDUtils {
     }
 
     // ---------------------------------------------------------------------
-    // EC utility helpers
+    // EC 辅助方法
     // ---------------------------------------------------------------------
 
-    // Read exactly n bytes from the given InputStream
+    // 从 InputStream 精确读取 n 字节
     //
     private static byte[] readNBytes(InputStream in, int n) throws IOException {
         int read = 0;
@@ -281,17 +297,16 @@ public final class DIDUtils {
         return bytes;
     }
 
-    // Convert a signed BigInteger byte array into a fixed 32-byte unsigned array.
-    // Removes sign byte or pads with zeros as needed.
+    // 将有符号 BigInteger 字节数组转为固定 32 字节无符号数组；按需去符号位或补零
     private static byte[] toUnsigned32(byte[] in) {
         if (in.length == 32) {
             return in;
         }
         if (in.length > 32) {
-            // strip sign byte
+            // 去掉符号字节
             return Arrays.copyOfRange(in, in.length - 32, in.length);
         }
-        // pad to 32 bytes
+        // 左侧补零至 32 字节
         byte[] out = new byte[32];
         System.arraycopy(in, 0, out, 32 - in.length, in.length);
         return out;

@@ -23,12 +23,17 @@ import org.keycloak.crypto.SignatureVerifierContext;
 import org.keycloak.sdjwt.IssuerSignedJWT;
 
 /**
- * A trusted Issuer for running SD-JWT VP verification.
+ * 静态配置的受信任 SD-JWT 签发者，用于 SD-JWT VP 验证场景。
+ *
+ * <p>
+ * 无论传入的签发者签名 JWT 为何，均返回构造时预先配置的验签密钥列表。
+ * </p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class StaticTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
 
+    /** 预配置的签名验证上下文列表。 */
     private final List<SignatureVerifierContext> signatureVerifierContexts;
 
     public StaticTrustedSdJwtIssuer(List<SignatureVerifierContext> signatureVerifierContexts) {

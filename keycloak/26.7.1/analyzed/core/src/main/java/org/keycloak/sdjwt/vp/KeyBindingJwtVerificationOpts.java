@@ -28,19 +28,19 @@ import org.keycloak.sdjwt.IssuerSignedJwtVerificationOpts;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Options for Key Binding JWT verification.
+ * 密钥绑定 JWT 验证选项，扩展签发者签名 JWT 的验证配置。
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class KeyBindingJwtVerificationOpts extends IssuerSignedJwtVerificationOpts {
 
     /**
-     * Specifies the Verifier's policy whether to check Key Binding
+     * 验证方策略：是否要求校验密钥绑定 JWT。
      */
     private final boolean keyBindingRequired;
 
     /**
-     * Specifies the maximum age (in seconds) of an issued Key Binding
+     * 密钥绑定 JWT 允许的最大存活时间（秒）。
      */
     private final int allowedMaxAge;
 
@@ -53,10 +53,12 @@ public class KeyBindingJwtVerificationOpts extends IssuerSignedJwtVerificationOp
         this.allowedMaxAge = allowedMaxAge;
     }
 
+    /** 是否要求校验密钥绑定 JWT。 */
     public boolean isKeyBindingRequired() {
         return keyBindingRequired;
     }
 
+    /** 返回允许的最大存活时间（秒）。 */
     public int getAllowedMaxAge() {
         return allowedMaxAge;
     }
@@ -69,7 +71,9 @@ public class KeyBindingJwtVerificationOpts extends IssuerSignedJwtVerificationOp
         return new KeyBindingJwtVerificationOpts.Builder(clockSkew);
     }
 
+    /** 用于构建 {@link KeyBindingJwtVerificationOpts} 的建造者。 */
     public static class Builder extends IssuerSignedJwtVerificationOpts.Builder {
+        /** 默认要求校验密钥绑定。 */
         private boolean keyBindingRequired = true;
 
         public Builder() {
@@ -80,11 +84,13 @@ public class KeyBindingJwtVerificationOpts extends IssuerSignedJwtVerificationOp
             super(clockSkew);
         }
 
+        /** 设置是否要求校验密钥绑定 JWT。 */
         public Builder withKeyBindingRequired(boolean keyBindingRequired) {
             this.keyBindingRequired = keyBindingRequired;
             return this;
         }
 
+        /** 添加 nonce 声明校验，用于防重放攻击。 */
         public KeyBindingJwtVerificationOpts.Builder withNonceCheck(String expectedNonce) {
             return withClaimCheck(IDToken.NONCE, expectedNonce, true);
         }
@@ -165,6 +171,7 @@ public class KeyBindingJwtVerificationOpts extends IssuerSignedJwtVerificationOp
                     && Optional.ofNullable(((ClaimCheck) verifier).getExpectedClaimValue()).map(s -> !s.isEmpty())
                                .orElse(false);
             });
+            // 启用密钥绑定时必须配置 nonce 与 aud 校验以实现防重放
             if (keyBindingRequired && (!isAudCheckPresent || !isNonceCheckPresent)) {
                 throw new IllegalArgumentException("Missing `nonce` and `aud` claims for replay protection");
             }
