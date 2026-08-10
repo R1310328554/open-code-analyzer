@@ -15,23 +15,8 @@
     "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate24_0_2_FederatedTermsAndConditionsRequiredAction.java",
     "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate25_0_0_ConsentConstraints.java",
     "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate25_0_0_MySQL_ConsentConstraints.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_0_0_IdentityProviderAttributesMigration.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_0_0_OrganizationGroupType.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_2_6_RemoveDuplicateMigrationModelTime.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_2_6_RemoveDuplicateMigrationModelVersion.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_4_0_SamlEncryptionAttributes.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_5_0_OrgTablesSetDefaultCharsetAndCollation.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_6_0_OfflineClientSessionRealm.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_7_0_RealmDisplayName.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate4_0_0_DefaultClientScopes.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate4_7_0_OfflineSessionsTimestamps.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdateAuthz_3_4_0_CR1.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/MigrateUserFedToComponent.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/PortLdapUserFedToComponentModel.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/RemoveDuplicateOfflineSessions.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/CustomInitializeDatabaseChangeLogLockTableStatement.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/CustomInsertLockRecordGenerator.java"
+    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_0_0_IdentityProviderAttributesMigration.java"
   ],
   "remaining_pending": 4348,
-  "done": 1620
+  "done": 1635
 }
