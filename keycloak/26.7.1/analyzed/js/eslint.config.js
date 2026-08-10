@@ -1,4 +1,5 @@
 // @ts-check
+/** Keycloak JS monorepo 的 ESLint 扁平配置：TypeScript 严格检查、React/Playwright 与团队风格规则。 */
 import { fixupPluginRules } from "@eslint/compat";
 import { FlatCompat } from "@eslint/eslintrc";
 import eslint from "@eslint/js";
@@ -10,6 +11,7 @@ import reactJsxRuntime from "eslint-plugin-react/configs/jsx-runtime.js";
 import reactRecommended from "eslint-plugin-react/configs/recommended.js";
 import tseslint from "typescript-eslint";
 
+/** 兼容旧 eslintrc 插件（如 lodash）的适配层 */
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
 });
@@ -50,7 +52,7 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-compiler/react-compiler": "warn",
-      // ## Rules overwriting config, disabled for now, but will have to be evaluated. ##
+      // ## 覆盖默认配置的规则（暂关闭，后续需逐项评估） ##
       "no-undef": "off",
       "no-unused-private-class-members": "off",
       "@typescript-eslint/array-type": "off",
@@ -98,9 +100,8 @@ export default tseslint.config(
       "@typescript-eslint/restrict-template-expressions": "off",
       "@typescript-eslint/unbound-method": "off",
       "@typescript-eslint/use-unknown-in-catch-callback-variable": "off",
-      // ## Rules that are customized because of team preferences or other issues ##
-      // Prevent default imports from React, named imports should be used instead.
-      // This is a team preference, but also helps us enforce consistent imports.
+      // ## 按团队偏好或已知问题定制的规则 ##
+      // 禁止 React 默认导入，统一使用命名导入以保持风格一致
       "no-restricted-imports": [
         "error",
         {
@@ -112,7 +113,7 @@ export default tseslint.config(
           ],
         },
       ],
-      // Prefer using the `#private` syntax for private class members, we want to keep this consistent and use the same syntax.
+      // 私有成员须使用 #private 语法，禁止 accessibility="private"
       "no-restricted-syntax": [
         "error",
         {
@@ -121,18 +122,17 @@ export default tseslint.config(
           message: "Use #private instead",
         },
       ],
-      // Require using arrow functions for callbacks, the team prefers this style over inconsistent function declarations.
+      // 回调优先使用箭头函数
       "prefer-arrow-callback": "error",
-      // `react/prop-types` cannot handle generic props, so we need to disable it.
+      // react/prop-types 无法处理泛型 props，故关闭
       // https://github.com/yannickcr/eslint-plugin-react/issues/2777#issuecomment-814968432
       "react/prop-types": "off",
-      // Prevent fragments from being added that have only a single child.
+      // 单子元素时禁止多余 Fragment
       "react/jsx-no-useless-fragment": "error",
-      // Ban nesting components, as this will cause unintended re-mounting of components.
+      // 禁止在组件内嵌套定义子组件，避免非预期 remount
       // See: https://react.dev/learn/your-first-component#nesting-and-organizing-components
       "react/no-unstable-nested-components": ["error", { allowAsProps: true }],
-      // Prefer a specific import scope (e.g. `lodash/map` vs `lodash`).
-      // Allows for more efficient tree-shaking and better code splitting.
+      // lodash 须按成员路径导入（如 lodash/map），利于 tree-shaking
       "lodash/import-scope": ["error", "member"],
     },
   },
@@ -149,6 +149,7 @@ export default tseslint.config(
   {
     files: ["libs/keycloak-admin-client/src/**"],
     rules: {
+      // Admin Client 类型定义中常见空对象接口
       "@typescript-eslint/no-empty-object-type": "off",
     },
   },

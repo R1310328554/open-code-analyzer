@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/** Keycloak 主题脚手架 CLI：从 quickstart 克隆模板并渲染 Mustache 生成 account/admin 扩展项目。 */
+
 import chalk from "chalk";
 import { Command, InvalidArgumentError } from "commander";
 import fs from "fs-extra";
@@ -17,6 +19,7 @@ const packageJson = JSON.parse(
   ),
 );
 
+/** 解析命令行参数并触发项目创建流程。 */
 function main() {
   new Command(packageJson.name)
     .version(packageJson.version)
@@ -27,6 +30,7 @@ function main() {
       "-t, --type <name>",
       "the type of ui to be created either `account` or `admin` ",
       (value) => {
+        // 仅允许 account 或 admin 两种 UI 类型
         if (value !== "account" && value !== "admin") {
           throw new InvalidArgumentError(
             "It should be either account or admin",
@@ -58,6 +62,7 @@ function main() {
     .parse(process.argv);
 }
 
+/** 克隆 keycloak-quickstarts 仓库并返回对应类型的扩展模板目录路径。 */
 function cloneQuickstart(type) {
   return new Promise((resolve, reject) => {
     mkdtemp(join(tmpdir(), "template-"), async (err, dir) => {
@@ -74,6 +79,7 @@ function cloneQuickstart(type) {
   });
 }
 
+/** 复制 quickstart 模板到目标目录，并用 Mustache 渲染 .mu 模板文件。 */
 async function createProject(name, type) {
   const templateProjectDir = await cloneQuickstart(type);
   const projectDir = join(resolve(), name);
@@ -95,6 +101,7 @@ async function createProject(name, type) {
   });
 }
 
+/** 递归搜索目录下以指定后缀结尾的文件（用于收集 Mustache 模板）。 */
 async function searchFile(dir, fileName) {
   const result = [];
   const files = await fs.readdir(dir);
@@ -112,6 +119,7 @@ async function searchFile(dir, fileName) {
   return result;
 }
 
+/** 创建成功后打印后续开发命令提示（启动 Keycloak、dev 模式、打包部署等）。 */
 function done(appName) {
   console.log();
   console.log(`Success! Created ${appName} at ./${appName}`);

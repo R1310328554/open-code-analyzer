@@ -1,8 +1,8 @@
 /**
- * Generates JS examples for Admin API v2 documentation.
+ * 为 Admin API v2 文档生成 JavaScript 调用示例。
  *
- * Walks Kiota-generated NavigationMetadata to discover operations,
- * matches them with operationIds from openapi.json, and produces:
+ * 遍历 Kiota 生成的 NavigationMetadata 发现各端点操作，
+ * 与 openapi.json 中的 operationId 匹配，产出：
  *   - src/generated/doc-examples/admin-v2-js-examples.json
  *   - src/generated/doc-examples/admin-v2-doc-examples-check.ts
  *   - src/generated/doc-examples/tsconfig.doc-check.json
@@ -17,11 +17,15 @@ import { AdminClientNavigationMetadata } from "../src/generated/adminClient.js";
 const projectDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outputDir = join(projectDir, "src", "generated", "doc-examples");
 
+/** Kiota URI 模板中的 baseurl 占位前缀 */
 const BASEURL_PREFIX = "{+baseurl}";
+/** 类型检查占位：声明变量但不引入真实值 */
 const VERIFY_ARG = "undefined as any";
 
-// Maps the Kiota navigation chain to the user-facing wrapper API.
-// When new v2 resources are added, add entries here.
+/**
+ * Kiota 导航链与用户面向封装 API 的映射。
+ * 新增 v2 资源时需在此追加条目。
+ */
 const WRAPPERS = [
   {
     prefix: "kcAdminClient.clients.v2()",
@@ -32,6 +36,7 @@ const WRAPPERS = [
 const spec = JSON.parse(
   readFileSync(join(projectDir, "openapi.json"), "utf-8"),
 );
+/** HTTP 方法 + 路径 → operationId 索引 */
 const operationIds = new Map<string, string>();
 for (const [path, methods] of Object.entries(spec.paths || {})) {
   for (const [method, operation] of Object.entries(
@@ -47,8 +52,12 @@ for (const [path, methods] of Object.entries(spec.paths || {})) {
 }
 
 const examples: Record<string, { example: string }> = {};
+/** 导航链中出现的全部路径/请求体参数名 */
 const navParamNames = new Set<string>();
 
+/**
+ * 递归遍历 Kiota 导航元数据，为每个请求生成示例调用语句。
+ */
 function collectEndpointExamples(
   navEntries: Record<string, NavigationMetadata>,
   chain: string,
@@ -79,6 +88,7 @@ function collectEndpointExamples(
         } else {
           uriTemplate = currentPath;
         }
+        // 去除可选查询串占位，便于与 OpenAPI 路径键对齐
         uriTemplate = uriTemplate.replace(/\{[?&][^}]*\}/g, "");
         const operationId = operationIds.get(
           `${method.toUpperCase()}:${uriTemplate}`,
@@ -102,8 +112,7 @@ function collectEndpointExamples(
         const contentType = reqMeta.requestBodyContentType as
           | string
           | undefined;
-        // Kiota metadata does not expose method parameter count;
-        // if a method ever has more than one argument, this needs updating
+        // Kiota 元数据未暴露方法参数个数；若某方法参数超过一个需手动调整
         const bodyArg = contentType ? "requestBody" : "";
 
         const call = `${wrapper.prefix}${remainder}.${method}(${bodyArg});`;
@@ -148,6 +157,7 @@ const paramDeclarations = [...navParamNames]
   .map((p) => `const ${p} = ${VERIFY_ARG};`)
   .join("\n");
 
+/** 生成 TypeScript 校验文件：声明占位变量并串联全部示例调用 */
 const verifyContent =
   `import type { KeycloakAdminClient } from "../../client.js";\n` +
   `declare const kcAdminClient: KeycloakAdminClient;\n` +
