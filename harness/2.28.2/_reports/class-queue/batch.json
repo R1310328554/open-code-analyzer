@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:19:59Z",
-  "files": [
-    "pubsub/sub.go",
-    "scheduler/queue/canceller.go",
-    "scheduler/queue/canceller_redis.go",
-    "scheduler/queue/queue.go",
-    "scheduler/queue/scheduler.go",
-    "scheduler/queue/scheduler_non_oss.go",
-    "scheduler/queue/scheduler_oss.go",
-    "scheduler/queue/scheduler_redis.go",
-    "scheduler/scheduler.go",
-    "server/server.go",
-    "service/canceler/canceler.go",
-    "service/canceler/match.go",
-    "service/canceler/reaper/reaper.go",
-    "service/canceler/reaper/util.go",
-    "service/commit/commit.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 88,
-  "done": 285
+  "done": 300
 }
