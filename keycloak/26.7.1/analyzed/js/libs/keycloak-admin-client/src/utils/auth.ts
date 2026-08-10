@@ -5,8 +5,10 @@ import { fetchWithError } from "./fetchWithError.js";
 import { joinPath } from "./joinPath.js";
 import { stringifyQueryParams } from "./stringifyQueryParams.js";
 
+/** OAuth2 / OpenID Connect 支持的授权类型 */
 export type GrantTypes = "client_credentials" | "password" | "refresh_token";
 
+/** 向 Token 端点发起请求时使用的客户端凭据与授权参数 */
 export interface Credentials {
   username?: string;
   password?: string;
@@ -19,6 +21,7 @@ export interface Credentials {
   scopes?: string[];
 }
 
+/** Admin Client 认证配置：Realm、Base URL 及凭据 */
 export interface Settings {
   realmName?: string;
   baseUrl?: string;
@@ -27,6 +30,7 @@ export interface Settings {
   requestOptions?: RequestInit;
 }
 
+/** Keycloak Token 端点原始 JSON 响应（蛇形命名） */
 export interface TokenResponseRaw {
   access_token: string;
   expires_in: number;
@@ -39,6 +43,7 @@ export interface TokenResponseRaw {
   id_token?: string;
 }
 
+/** 经 camelize 转换后的 Token 响应（驼峰命名） */
 export interface TokenResponse {
   accessToken: string;
   expiresIn: number;
@@ -52,12 +57,15 @@ export interface TokenResponse {
 }
 
 // See: https://developer.mozilla.org/en-US/docs/Glossary/Base64
+/** 将字节数组编码为 Base64 字符串 */
 const bytesToBase64 = (bytes: Uint8Array) =>
   btoa(Array.from(bytes, (byte) => String.fromCodePoint(byte)).join(""));
+/** 将 UTF-8 字符串编码为 Base64 */
 const toBase64 = (input: string) =>
   bytesToBase64(new TextEncoder().encode(input));
 
 // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent#encoding_for_rfc3986
+/** 按 RFC 3986 规则编码 URI 组件（保留 RFC 6749 要求的字符集） */
 const encodeRFC3986URIComponent = (input: string) =>
   encodeURIComponent(input).replace(
     /[!'()*]/g,
@@ -66,9 +74,14 @@ const encodeRFC3986URIComponent = (input: string) =>
 
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
 // Specifically, the section on encoding `application/x-www-form-urlencoded`.
+/** 表单-urlencoded 编码：空格转为 `+` 而非 `%20` */
 const encodeFormURIComponent = (data: string) =>
   encodeRFC3986URIComponent(data).replaceAll("%20", "+");
 
+/**
+ * 向 OpenID Connect Token 端点请求访问令牌。
+ * 支持 client_credentials、password、refresh_token 等 grant type。
+ */
 export const getToken = async (settings: Settings): Promise<TokenResponse> => {
   const url = new URL(settings.baseUrl ?? defaultBaseUrl);
   const pathTemplate = parseTemplate(
@@ -86,6 +99,7 @@ export const getToken = async (settings: Settings): Promise<TokenResponse> => {
   // ref: http://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- credentials may be undefined at runtime despite the type
   const credentials = settings.credentials ?? ({} as Credentials);
+  // 组装 x-www-form-urlencoded 请求体
   const payload = stringifyQueryParams({
     username: credentials.username,
     password: credentials.password,
@@ -107,6 +121,7 @@ export const getToken = async (settings: Settings): Promise<TokenResponse> => {
 
   if (credentials.clientSecret) {
     // See: https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+    // 机密客户端：使用 HTTP Basic 认证传递 client_id:client_secret
     const username = encodeFormURIComponent(credentials.clientId);
     const password = encodeFormURIComponent(credentials.clientSecret);
 
@@ -127,5 +142,6 @@ export const getToken = async (settings: Settings): Promise<TokenResponse> => {
   });
 
   const data = (await response.json()) as TokenResponseRaw;
+  // 将蛇形字段名转为驼峰，便于 TypeScript 消费
   return camelize(data);
 };

@@ -1,3 +1,7 @@
+/**
+ * ui-shared 库公共导出入口。
+ * 聚合 Admin / Account Console 共用的 React 组件、Context、工具函数与用户资料表单辅助模块。
+ */
 export {
   AlertProvider,
   useAlerts,
