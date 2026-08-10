@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:32:27Z",
-  "files": [
-    "plugins/plugin_vultr.go",
-    "plugins/plugin_xds.go",
-    "plugins/plugin_zookeeper.go",
-    "prompb/codec.go",
-    "prompb/custom.go",
-    "prompb/io/prometheus/client/decoder.go",
-    "prompb/io/prometheus/client/metrics.pb.go",
-    "prompb/io/prometheus/write/v2/codec.go",
-    "prompb/io/prometheus/write/v2/custom.go",
-    "prompb/io/prometheus/write/v2/symbols.go",
-    "prompb/io/prometheus/write/v2/types.pb.go",
-    "prompb/remote.pb.go",
-    "prompb/types.pb.go",
-    "promql/durations.go",
-    "promql/engine.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 324,
-  "done": 195
+  "done": 210
 }
