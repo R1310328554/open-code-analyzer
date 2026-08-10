@@ -2083,3 +2083,18 @@
 2026-08-10T09:00:34Z DONE operator/src/main/java/org/keycloak/operator/update/impl/ExplicitUpdateLogic.java wave71a realmimport CRDs + update logic
 2026-08-10T09:00:34Z DONE operator/src/main/java/org/keycloak/operator/update/impl/RecreateOnImageChangeUpdateLogic.java wave71a realmimport CRDs + update logic
 2026-08-10T09:00:34Z DONE quarkus/config-api/src/main/java/org/keycloak/config/BootstrapAdminOptions.java wave71a realmimport CRDs + update logic
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/CachingOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/ConfigKeystoreOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/ConfigSupportLevel.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/DatabaseOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/DeprecatedMetadata.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/EventOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/ExportOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/FeatureOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/HealthOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/HostnameV2Options.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/HttpAccessLogOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/HttpOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/ImportOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/LoggingOptions.java wave71b quarkus config-api options
+2026-08-10T09:00:54Z DONE quarkus/config-api/src/main/java/org/keycloak/config/ManagementOptions.java wave71b quarkus config-api options

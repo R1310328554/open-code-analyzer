@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:58:31Z",
-  "files": [
-    "quarkus/config-api/src/main/java/org/keycloak/config/CachingOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/ConfigKeystoreOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/ConfigSupportLevel.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/DatabaseOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/DeprecatedMetadata.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/EventOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/ExportOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/FeatureOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/HealthOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/HostnameV2Options.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/HttpAccessLogOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/HttpOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/ImportOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/LoggingOptions.java",
-    "quarkus/config-api/src/main/java/org/keycloak/config/ManagementOptions.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3868,
-  "done": 2115
+  "done": 2130
 }
