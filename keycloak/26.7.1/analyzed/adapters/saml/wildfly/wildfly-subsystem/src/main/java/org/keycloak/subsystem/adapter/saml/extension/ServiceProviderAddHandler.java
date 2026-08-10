@@ -22,10 +22,15 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
 
 /**
+ * {@code service-provider} 资源的添加操作处理器。
+ *
+ * <p>添加 SP 配置时更新 {@link Configuration}，并标记为服务提供者层级节点。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 class ServiceProviderAddHandler extends AbstractAddStepHandler {
 
+    /** 单例添加处理器。 */
     static final ServiceProviderAddHandler INSTANCE = new ServiceProviderAddHandler();
 
     ServiceProviderAddHandler() {

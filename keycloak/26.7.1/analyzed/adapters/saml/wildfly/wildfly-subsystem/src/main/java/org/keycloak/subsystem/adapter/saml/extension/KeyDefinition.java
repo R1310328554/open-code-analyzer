@@ -32,45 +32,60 @@ import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.dmr.ModelType;
 
 /**
+ * SAML 密钥（{@code key}）资源定义。
+ *
+ * <p>在 WildFly 管理模型中描述单个密钥条目，支持签名/加密用途、PEM 内联材料
+ * 以及嵌套的 {@link KeyStoreDefinition} 配置。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class KeyDefinition extends SimpleResourceDefinition {
 
+    /** 是否用于 SAML 签名。 */
     static final SimpleAttributeDefinition SIGNING =
             new SimpleAttributeDefinitionBuilder(Constants.Model.SIGNING, ModelType.BOOLEAN, true)
                     .setXmlName(Constants.XML.SIGNING)
                     .build();
 
+    /** 是否用于 SAML 加密。 */
     static final SimpleAttributeDefinition ENCRYPTION =
             new SimpleAttributeDefinitionBuilder(Constants.Model.ENCRYPTION, ModelType.BOOLEAN, true)
                     .setXmlName(Constants.XML.ENCRYPTION)
                     .build();
 
+    /** PEM 编码的私钥内容（XML 子元素）。 */
     static final SimpleAttributeDefinition PRIVATE_KEY_PEM =
             new SimpleAttributeDefinitionBuilder(Constants.Model.PRIVATE_KEY_PEM, ModelType.STRING, true)
                     .setXmlName(Constants.XML.PRIVATE_KEY_PEM)
                     .build();
 
+    /** PEM 编码的公钥内容（XML 子元素）。 */
     static final SimpleAttributeDefinition PUBLIC_KEY_PEM =
             new SimpleAttributeDefinitionBuilder(Constants.Model.PUBLIC_KEY_PEM, ModelType.STRING, true)
                     .setXmlName(Constants.XML.PUBLIC_KEY_PEM)
                     .build();
 
+    /** PEM 编码的证书内容（XML 子元素）。 */
     static final SimpleAttributeDefinition CERTIFICATE_PEM =
             new SimpleAttributeDefinitionBuilder(Constants.Model.CERTIFICATE_PEM, ModelType.STRING, true)
                     .setXmlName(Constants.XML.CERTIFICATE_PEM)
                     .build();
 
+    /** 嵌套密钥库对象类型属性。 */
     static final ObjectTypeAttributeDefinition KEY_STORE =
             ObjectTypeAttributeDefinition.Builder.of(Constants.Model.KEY_STORE,
                     KeyStoreDefinition.ALL_ATTRIBUTES)
                     .setRequired(false)
                     .build();
 
+    /** XML 属性级字段集合。 */
     static final SimpleAttributeDefinition[] ATTRIBUTES = {SIGNING, ENCRYPTION};
+    /** XML 子元素级字段集合。 */
     static final SimpleAttributeDefinition[] ELEMENTS = {PRIVATE_KEY_PEM, PUBLIC_KEY_PEM, CERTIFICATE_PEM};
+    /** 全部可读写字段（属性 + 元素 + 密钥库）。 */
     static final AttributeDefinition[] ALL_ATTRIBUTES = {SIGNING, ENCRYPTION, PRIVATE_KEY_PEM, PUBLIC_KEY_PEM, CERTIFICATE_PEM, KEY_STORE};
 
+    /** XML 属性名到定义对象的查找表。 */
     static final HashMap<String, SimpleAttributeDefinition> ATTRIBUTE_MAP = new HashMap<>();
 
     static {
@@ -79,6 +94,7 @@ public class KeyDefinition extends SimpleResourceDefinition {
         }
     }
 
+    /** XML 子元素名到定义对象的查找表。 */
     static final HashMap<String, SimpleAttributeDefinition> ELEMENT_MAP = new HashMap<>();
 
     static {
@@ -87,6 +103,7 @@ public class KeyDefinition extends SimpleResourceDefinition {
         }
     }
 
+    /** 单例资源定义实例。 */
     static final KeyDefinition INSTANCE = new KeyDefinition();
 
     private KeyDefinition() {
@@ -112,10 +129,12 @@ public class KeyDefinition extends SimpleResourceDefinition {
         }
     }
 
+    /** 按 XML 属性名查找字段定义。 */
     static SimpleAttributeDefinition lookup(String xmlName) {
         return ATTRIBUTE_MAP.get(xmlName);
     }
 
+    /** 按 XML 子元素名查找字段定义。 */
     static SimpleAttributeDefinition lookupElement(String xmlName) {
         return ELEMENT_MAP.get(xmlName);
     }

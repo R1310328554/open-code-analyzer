@@ -44,7 +44,11 @@ import org.jboss.staxmapper.XMLExtendedStreamWriter;
 import static org.keycloak.subsystem.adapter.saml.extension.Elytron.isElytronEnabled;
 
 /**
- * Pass authentication data (keycloak.json) as a servlet context param so it can be read by the KeycloakServletExtension.
+ * 将子系统模型中的 SAML 适配器配置序列化为 XML，并注入 WAR 部署元数据。
+ *
+ * <p>认证数据以 Servlet 上下文参数 {@link AdapterConstants#AUTH_DATA_PARAM_NAME} 传递，
+ * 供 {@code KeycloakServletExtension} 读取；同时设置 {@code KEYCLOAK-SAML} 认证方式，
+ * 并在启用 Elytron 时注册 {@link KeycloakConfigurationServletListener}。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2014 Red Hat Inc.
  */
@@ -58,9 +62,11 @@ public class KeycloakAdapterConfigDeploymentProcessor implements DeploymentUnitP
             addKeycloakSamlAuthData(phaseContext);
         }
 
+        // 无论是否配置 secure-deployment，均尝试为 Elytron 部署注册配置监听器
         addConfigurationListener(phaseContext);
     }
 
+    /** 为受保护部署写入 SAML 配置 XML、登录方式及上下文参数。 */
     private void addKeycloakSamlAuthData(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         WarMetaData warMetaData = deploymentUnit.getAttachment(WarMetaData.ATTACHMENT_KEY);
@@ -89,6 +95,7 @@ public class KeycloakAdapterConfigDeploymentProcessor implements DeploymentUnitP
         KeycloakLogger.ROOT_LOGGER.deploymentSecured(deploymentUnit.getName());
     }
 
+    /** 将子系统 {@link ModelNode} 序列化为 {@code keycloak-saml-adapter} XML 片段。 */
     private String getXML(DeploymentUnit deploymentUnit) throws XMLStreamException {
         ModelNode node = Configuration.INSTANCE.getSecureDeployment(deploymentUnit);
         if (node != null) {
@@ -107,6 +114,7 @@ public class KeycloakAdapterConfigDeploymentProcessor implements DeploymentUnitP
         return null;
     }
 
+    /** 将序列化后的适配器 XML 写入 WAR 上下文参数列表。 */
     private void addXMLData(String xml, WarMetaData warMetaData) {
         JBossWebMetaData webMetaData = warMetaData.getMergedJBossWebMetaData();
         if (webMetaData == null) {
@@ -132,6 +140,7 @@ public class KeycloakAdapterConfigDeploymentProcessor implements DeploymentUnitP
 
     }
 
+    /** 对使用 KEYCLOAK-SAML 且启用 Elytron 的部署注册配置 Servlet 监听器。 */
     private void addConfigurationListener(DeploymentPhaseContext phaseContext) {
         DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         WarMetaData warMetaData = deploymentUnit.getAttachment(WarMetaData.ATTACHMENT_KEY);

@@ -21,15 +21,21 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.dmr.ModelType;
 
 /**
+ * 密钥库内证书条目的属性定义。
+ *
+ * <p>描述从 Java KeyStore 中按别名加载证书时所需的 {@code certificate-alias} 配置。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class KeyStoreCertificateDefinition {
 
+    /** 证书在密钥库中的别名。 */
     static final SimpleAttributeDefinition CERTIFICATE_ALIAS =
             new SimpleAttributeDefinitionBuilder(Constants.Model.CERTIFICATE_ALIAS, ModelType.STRING, true)
                     .setXmlName(Constants.XML.CERTIFICATE_ALIAS)
                     .build();
 
+    /** 按 XML 元素/属性名解析证书相关字段。 */
     static SimpleAttributeDefinition lookup(String xmlName) {
         return Constants.XML.CERTIFICATE_ALIAS.equals(xmlName) ? CERTIFICATE_ALIAS : null;
     }

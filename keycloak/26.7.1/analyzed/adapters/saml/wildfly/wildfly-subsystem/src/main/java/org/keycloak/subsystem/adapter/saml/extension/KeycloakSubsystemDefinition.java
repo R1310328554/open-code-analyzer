@@ -25,12 +25,16 @@ import org.jboss.as.controller.registry.RuntimePackageDependency;
 import static org.keycloak.subsystem.adapter.saml.extension.KeycloakDependencyProcessor.KEYCLOAK_JBOSS_CORE_ADAPTER;
 
 /**
- * Definition of subsystem=keycloak-saml.
+ * {@code subsystem=keycloak-saml} 根资源定义。
+ *
+ * <p>注册子系统级 describe 操作，并声明部署运行时所需的
+ * {@link KeycloakDependencyProcessor#KEYCLOAK_JBOSS_CORE_ADAPTER} 附加模块包依赖。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2013 Red Hat Inc.
  */
 public class KeycloakSubsystemDefinition extends SimpleResourceDefinition {
 
+    /** 单例子系统资源定义。 */
     static final KeycloakSubsystemDefinition INSTANCE = new KeycloakSubsystemDefinition();
 
     private KeycloakSubsystemDefinition() {
@@ -49,7 +53,7 @@ public class KeycloakSubsystemDefinition extends SimpleResourceDefinition {
 
     @Override
     public void registerAdditionalRuntimePackages(ManagementResourceRegistration resourceRegistration) {
-        // This module is required by deployment but not referenced by JBoss modules
+        // 部署单元需要此模块，但 JBoss Modules 依赖链中未显式引用
         resourceRegistration.registerAdditionalRuntimePackages(
                 RuntimePackageDependency.required(KEYCLOAK_JBOSS_CORE_ADAPTER));
     }

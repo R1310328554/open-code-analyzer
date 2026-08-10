@@ -22,10 +22,15 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
 
 /**
+ * {@code secure-deployment} 资源的添加操作处理器。
+ *
+ * <p>将 CLI/XML 添加操作同步到 {@link Configuration} 单例，供部署处理器查询。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 class SecureDeploymentAddHandler extends AbstractAddStepHandler {
 
+    /** 单例添加处理器。 */
     static SecureDeploymentAddHandler INSTANCE = new SecureDeploymentAddHandler();
 
     private SecureDeploymentAddHandler() {

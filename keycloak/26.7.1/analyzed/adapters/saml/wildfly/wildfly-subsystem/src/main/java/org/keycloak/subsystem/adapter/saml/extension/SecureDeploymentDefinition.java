@@ -23,10 +23,14 @@ import org.jboss.as.controller.operations.common.GenericSubsystemDescribeHandler
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 
 /**
- * Defines attributes and operations for a secure-deployment.
+ * {@code secure-deployment} 管理资源定义。
+ *
+ * <p>将 WAR 部署单元名称映射为受 SAML 保护的部署配置节点，
+ * 其下可挂载 {@link ServiceProviderDefinition} 等服务提供者子资源。</p>
  */
 public class SecureDeploymentDefinition extends SimpleResourceDefinition {
 
+    /** 单例资源定义实例。 */
     static final SecureDeploymentDefinition INSTANCE = new SecureDeploymentDefinition();
 
     private SecureDeploymentDefinition() {

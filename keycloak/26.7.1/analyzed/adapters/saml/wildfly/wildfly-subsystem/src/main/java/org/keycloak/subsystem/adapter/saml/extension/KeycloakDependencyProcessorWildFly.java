@@ -26,12 +26,16 @@ import org.jboss.modules.ModuleLoader;
 import static org.keycloak.subsystem.adapter.saml.extension.Elytron.isElytronEnabled;
 
 /**
- * Add platform-specific modules for WildFly.
+ * WildFly 平台的 Keycloak SAML 模块依赖处理器。
+ *
+ * <p>在核心 SAML 模块之外，根据 Elytron 是否启用注入
+ * {@code org.keycloak.keycloak-saml-wildfly-elytron-adapter}；旧版 PicketBox 安全层已不再支持。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2014 Red Hat Inc.
  */
 public class KeycloakDependencyProcessorWildFly extends KeycloakDependencyProcessor {
 
+    /** WildFly Elytron SAML 适配器模块标识。 */
     private static final String KEYCLOAK_ELYTRON_ADAPTER = "org.keycloak.keycloak-saml-wildfly-elytron-adapter";
 
     @Override
@@ -42,12 +46,14 @@ public class KeycloakDependencyProcessorWildFly extends KeycloakDependencyProces
     @Override
     protected void addPlatformSpecificModules(DeploymentPhaseContext phaseContext, ModuleSpecification moduleSpecification, ModuleLoader moduleLoader) {
         if (isElytronEnabled(phaseContext)) {
+            // Elytron 模式下可选依赖 Elytron 适配器模块
             moduleSpecification.addSystemDependency(new ModuleDependency(moduleLoader, KEYCLOAK_ELYTRON_ADAPTER, true, false, false, false));
         } else {
             throw new RuntimeException("Legacy WildFly security layer is no longer supported by the Keycloak WildFly adapter");
         }
     }
 
+    /** 通过模块类加载器名称判断是否运行在 Jakarta EE 命名空间。 */
     private boolean isJakarta() {
         ClassLoader classLoader = getClass().getClassLoader();
         String classLoaderName = (classLoader instanceof ModuleClassLoader ? ((ModuleClassLoader) classLoader).getName() : "");
