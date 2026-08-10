@@ -1,3 +1,5 @@
+// zh.ts — 简体中文（zh）界面文案字典；键对齐 translation 结构，值为简体用户可见字符串。
+
 export default {
   translation: {
     common: {

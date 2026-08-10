@@ -1,3 +1,5 @@
+// pt-br.ts — 巴西葡萄牙语（pt-BR）界面文案字典；键对齐 translation 结构，值为葡语用户可见字符串。
+
 export default {
   translation: {
     common: {

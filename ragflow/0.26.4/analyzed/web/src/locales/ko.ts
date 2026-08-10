@@ -1,3 +1,5 @@
+// ko.ts — 韩语（ko）界面文案字典；键对齐 translation 结构，值为韩语用户可见字符串。
+
 export default {
   translation: {
     common: {

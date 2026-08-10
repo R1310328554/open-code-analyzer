@@ -1,3 +1,5 @@
+// tr.ts — 土耳其语（tr）界面文案字典；键对齐 translation 结构，值为土语用户可见字符串。
+
 export default {
   translation: {
     common: {

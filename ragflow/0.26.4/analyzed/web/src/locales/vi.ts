@@ -1,3 +1,5 @@
+// vi.ts — 越南语（vi）界面文案字典；键对齐 translation 结构，值为越南语用户可见字符串。
+
 export default {
   translation: {
     common: {

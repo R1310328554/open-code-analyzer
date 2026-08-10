@@ -1,3 +1,5 @@
+// use-send-agent-message.ts — Agent 聊天 SSE 发送：消息拼装、会话/附件与流式回复落库。
+
 import sonnerMessage from '@/components/ui/message';
 import { MessageType } from '@/constants/chat';
 import {
@@ -42,6 +44,7 @@ import useGraphStore from '../store';
 import { receiveMessageError } from '../utils';
 import { shouldSplitMessage } from '../utils/chat';
 
+/** 从 SSE 事件列表拼接 assistant 正文、思考标签、附件与 downloads。 */
 export function findMessageFromList(eventList: IEventList) {
   const messageEventList = eventList.filter(
     (x) => x.event === MessageEventType.Message,
@@ -75,7 +78,7 @@ export function findMessageFromList(eventList: IEventList) {
 
   const currentIdx = messageEventList.length - 1;
 
-  // Make sure that after start_to_think === true and before end_to_think === true, add a </think> tag at the end.
+  // 思考块未闭合时在末尾补 </think>
   if (startIndex >= 0 && startIndex <= currentIdx && endIndex === -1) {
     nextContent += '</think>';
   }
@@ -92,6 +95,7 @@ export function findMessageFromList(eventList: IEventList) {
   };
 }
 
+/** 提取 UserInputs 事件中的表单输入 payload。 */
 export function findInputFromList(eventList: IEventList) {
   const inputEvent = eventList.find(
     (x) => x.event === MessageEventType.UserInputs,
@@ -107,6 +111,7 @@ export function findInputFromList(eventList: IEventList) {
   };
 }
 
+/** 从事件流末尾读取 _ERROR 或非零 code 的错误信息。 */
 export function getLatestError(eventList: IEventList) {
   const latest = eventList.at(-1) as
     | { code?: number; message?: string }
@@ -117,6 +122,7 @@ export function getLatestError(eventList: IEventList) {
   );
 }
 
+/** 读取 Begin 节点 enablePrologue 时的开场白文案。 */
 export const useGetBeginNodePrologue = () => {
   const getNode = useGraphStore((state) => state.getNode);
   const formData = get(getNode(BeginId), 'data.form', {});
@@ -128,6 +134,7 @@ export const useGetBeginNodePrologue = () => {
   }, [formData?.enablePrologue, formData?.prologue]);
 };
 
+/** 缓存 MessageEnd 事件，按 messageId 查询引用片段。 */
 export function useFindMessageReference(answerList: IEventList) {
   const [messageEndEventList, setMessageEndEventList] = useState<
     IMessageEndEvent[]
@@ -176,6 +183,7 @@ interface UploadResponseDataType {
   size: number;
 }
 
+/** 维护聊天附件上传响应与本地 File 列表的增删清。 */
 export function useSetUploadResponseData() {
   const [uploadResponseList, setUploadResponseList] = useState<
     UploadResponseDataType[]
@@ -209,6 +217,7 @@ export function useSetUploadResponseData() {
   };
 }
 
+/** 构造用户消息体：uuid id、trim 后 content 与 User 角色。 */
 export const buildRequestBody = (value: string = '') => {
   const id = uuid();
   const msgBody = {
@@ -220,6 +229,7 @@ export const buildRequestBody = (value: string = '') => {
   return msgBody;
 };
 
+/** Agent 聊天核心 Hook：SSE 发送、会话态、开场白、任务模式与消息列表联动。 */
 export const useSendAgentMessage = ({
   url,
   addEventList,
@@ -316,11 +326,11 @@ export const useSendAgentMessage = ({
         // params.message_id = message.id;
         params.inputs = transferInputsArrayToObject(
           beginInputs || beginParams || query,
-        ); // begin operator inputs
+        ); // Begin 算子入参对象
 
         params.files = uploadResponseList;
 
-        // Prefer the session selected by the outer page state.
+        // 优先使用外层页面传入的 sessionId，避免 Hook 内缓存滞后
         // The hook keeps its own session cache for streamed replies, but that cache
         // can lag behind when the user switches sessions in Explore.
         params.session_id = exploreSessionId || sessionId;
@@ -395,7 +405,7 @@ export const useSendAgentMessage = ({
     ],
   );
 
-  // reset session
+  // 重置会话：停止输出、清空 answerList 并按模式清理消息列表
   const resetSession = useCallback(() => {
     stopConversation();
     resetAnswerList();
@@ -467,6 +477,7 @@ export const useSendAgentMessage = ({
     if (answerList.length > 0) {
       const shouldSplit = shouldSplitMessage(answerList, content);
 
+      // 需拆分：先写入 assistant 回复，再插入带 -wait 后缀的占位输入消息
       if (shouldSplit) {
         addNewestOneAnswer({
           answer: answer ?? '',

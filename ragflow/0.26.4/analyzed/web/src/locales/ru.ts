@@ -1,3 +1,5 @@
+// ru.ts — 俄语（ru）界面文案字典；键对齐 translation 结构，值为俄语用户可见字符串。
+
 export default {
   translation: {
     common: {
