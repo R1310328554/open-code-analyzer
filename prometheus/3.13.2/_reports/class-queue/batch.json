@@ -15,23 +15,8 @@
     "tsdb/repair.go",
     "tsdb/testutil.go",
     "tsdb/tombstones/tombstones.go",
-    "tsdb/tsdbblockutil.go",
-    "tsdb/tsdbutil/dir_locker.go",
-    "tsdb/tsdbutil/dir_locker_testutil.go",
-    "tsdb/tsdbutil/histogram.go",
-    "tsdb/tsdbutil/remove_tmp_dirs.go",
-    "tsdb/wlog/checkpoint.go",
-    "tsdb/wlog/live_reader.go",
-    "tsdb/wlog/reader.go",
-    "tsdb/wlog/watcher.go",
-    "tsdb/wlog/wlog.go",
-    "util/almost/almost.go",
-    "util/annotations/annotations.go",
-    "util/compression/buffers.go",
-    "util/compression/compression.go",
-    "util/convertnhcb/convertnhcb.go",
-    "util/documentcli/documentcli.go"
+    "tsdb/tsdbblockutil.go"
   ],
   "remaining_pending": 174,
-  "done": 330
+  "done": 345
 }
