@@ -15,23 +15,8 @@
     "transport-sctp/src/main/java/io/netty/channel/sctp/SctpServerChannelConfig.java",
     "transport-sctp/src/main/java/io/netty/channel/sctp/nio/NioSctpChannel.java",
     "transport-sctp/src/main/java/io/netty/channel/sctp/nio/NioSctpServerChannel.java",
-    "transport-sctp/src/main/java/io/netty/channel/sctp/oio/OioSctpChannel.java",
-    "transport-sctp/src/main/java/io/netty/channel/sctp/oio/OioSctpServerChannel.java",
-    "transport-sctp/src/main/java/io/netty/handler/codec/sctp/SctpInboundByteStreamHandler.java",
-    "transport-sctp/src/main/java/io/netty/handler/codec/sctp/SctpMessageCompletionHandler.java",
-    "transport-sctp/src/main/java/io/netty/handler/codec/sctp/SctpMessageToMessageDecoder.java",
-    "transport-sctp/src/main/java/io/netty/handler/codec/sctp/SctpOutboundByteStreamHandler.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/DefaultUdtChannelConfig.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/DefaultUdtServerChannelConfig.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/UdtChannel.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/UdtChannelConfig.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/UdtChannelOption.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/UdtMessage.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/UdtServerChannel.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/UdtServerChannelConfig.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtAcceptorChannel.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtByteAcceptorChannel.java"
+    "transport-sctp/src/main/java/io/netty/channel/sctp/oio/OioSctpChannel.java"
   ],
   "remaining_pending": 8,
-  "done": 1890
+  "done": 1905
 }
