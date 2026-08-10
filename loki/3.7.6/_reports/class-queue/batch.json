@@ -15,23 +15,8 @@
     "pkg/iter/entry_iterator.go",
     "pkg/iter/iterator.go",
     "pkg/iter/sample_iterator.go",
-    "pkg/iter/v2/dedupe.go",
-    "pkg/iter/v2/interface.go",
-    "pkg/iter/v2/iter.go",
-    "pkg/iter/v2/ordering.go",
-    "pkg/kafka/client/logger.go",
-    "pkg/kafka/client/reader_client.go",
-    "pkg/kafka/client/writer_client.go",
-    "pkg/kafka/config.go",
-    "pkg/kafka/encoding.go",
-    "pkg/kafka/partition/committer.go",
-    "pkg/kafka/partition/kafkautil.go",
-    "pkg/kafka/partition/offset_manager.go",
-    "pkg/kafka/partition/reader.go",
-    "pkg/kafka/partition/reader_service.go",
-    "pkg/kafka/partitionring/partition_ring.go",
-    "pkg/kafka/testkafka/cluster.go"
+    "pkg/iter/v2/dedupe.go"
   ],
   "remaining_pending": 832,
-  "done": 690
+  "done": 705
 }
