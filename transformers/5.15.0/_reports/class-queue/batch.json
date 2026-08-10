@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:54:08Z",
   "files": [
-    "src/transformers/distributed/utils.py",
-    "src/transformers/dynamic_module_utils.py",
-    "src/transformers/exporters/__init__.py",
-    "src/transformers/exporters/auto.py",
-    "src/transformers/exporters/base.py",
-    "src/transformers/exporters/configs.py",
-    "src/transformers/exporters/exporter_dynamo.py",
-    "src/transformers/exporters/exporter_executorch.py",
-    "src/transformers/exporters/exporter_onnx.py",
-    "src/transformers/exporters/utils.py",
-    "src/transformers/feature_extraction_sequence_utils.py",
-    "src/transformers/feature_extraction_utils.py",
-    "src/transformers/file_utils.py",
-    "src/transformers/fusion_mapping.py",
-    "src/transformers/generation/__init__.py",
     "src/transformers/generation/candidate_generator.py",
     "src/transformers/generation/configuration_utils.py",
     "src/transformers/generation/continuous_batching/__init__.py",
@@ -33,5 +18,5 @@
     "src/transformers/generation/continuous_batching/utils.py"
   ],
   "remaining_pending": 2589,
-  "done": 60
+  "done": 75
 }
