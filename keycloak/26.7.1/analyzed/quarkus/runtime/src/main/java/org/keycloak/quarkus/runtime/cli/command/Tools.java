@@ -19,11 +19,17 @@ package org.keycloak.quarkus.runtime.cli.command;
 
 import picocli.CommandLine.Command;
 
+/**
+ * {@code tools} 命令组：提供与 Keycloak 服务器交互的实用工具子命令。
+ * <p>
+ * 包含 shell 补全、Windows 服务管理、密码黑名单构建等辅助功能。
+ */
 @Command(name = Tools.NAME,
         description = "Utilities for use and interaction with the server.",
         subcommands = {Completion.class, WindowsService.class, BuildPasswordDenylist.class})
 public class Tools {
 
+    /** 子命令组名称。 */
     public static final String NAME = "tools";
 
 }

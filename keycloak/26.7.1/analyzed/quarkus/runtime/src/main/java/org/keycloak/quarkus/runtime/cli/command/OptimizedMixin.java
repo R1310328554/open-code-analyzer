@@ -22,8 +22,14 @@ import picocli.CommandLine;
 import static org.keycloak.quarkus.runtime.cli.Picocli.NO_PARAM_LABEL;
 import static org.keycloak.quarkus.runtime.cli.command.AbstractAutoBuildCommand.OPTIMIZED_BUILD_OPTION_LONG;
 
+/**
+ * Picocli Mixin：提供 {@code --optimized} 选项，用于基于已构建镜像快速启动服务器。
+ * <p>
+ * 若此前已通过 {@link Build} 命令生成优化镜像，启用此选项可跳过启动前的自动构建，缩短启动时间。
+ */
 public final class OptimizedMixin {
 
+    /** 是否使用已优化的构建产物启动（对应 {@link AbstractAutoBuildCommand#OPTIMIZED_BUILD_OPTION_LONG}）。 */
     @CommandLine.Option(names = {OPTIMIZED_BUILD_OPTION_LONG},
             description = "Use this option to achieve an optimal startup time if you have previously built a server image using the 'build' command.",
             paramLabel = NO_PARAM_LABEL,

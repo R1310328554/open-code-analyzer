@@ -29,19 +29,29 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import picocli.CommandLine;
 
+/**
+ * {@code update-compatibility metadata} 子命令：导出当前配置的兼容性元数据。
+ * <p>
+ * 收集各 {@link CompatibilityMetadataProvider} 的元数据，输出到控制台并可选择写入 JSON 文件，
+ * 供后续 {@link UpdateCompatibilityCheck} 进行滚动升级兼容性校验。
+ */
 @CommandLine.Command(
         name = UpdateCompatibilityMetadata.NAME,
         description = "Stores the metadata necessary to determine if a configuration is compatible."
 )
 public class UpdateCompatibilityMetadata extends AbstractUpdatesCommand {
 
+    /** 子命令名称。 */
     public static final String NAME = "metadata";
+    /** 元数据输出文件路径选项。 */
     public static final String OUTPUT_OPTION_NAME = "--file";
 
+    /** 元数据 JSON 输出文件路径（可选）。 */
     @CommandLine.Option(names = {OUTPUT_OPTION_NAME}, paramLabel = "FILE",
             description = "The file path to store the metadata. It is stored in the JSON format.")
     String outputFile;
 
+    /** 聚合各 provider 元数据并输出到控制台与文件。 */
     @Override
     int executeAction() {
         var metadata = loadAllProviders()
@@ -66,6 +76,7 @@ public class UpdateCompatibilityMetadata extends AbstractUpdatesCommand {
         validateFileParameter();
     }
 
+    /** 校验输出路径的父目录可创建，且目标不是目录。 */
     private void validateFileParameter() {
         if (noOutputFileSet()) {
             return;
@@ -77,6 +88,7 @@ public class UpdateCompatibilityMetadata extends AbstractUpdatesCommand {
         validateFileIsNotDirectory(file, OUTPUT_OPTION_NAME);
     }
 
+    /** 将元数据以格式化 JSON 打印到标准输出。 */
     private void printToConsole(Map<String, Map<String, String>> metadata) {
         try {
             var json = JsonSerialization.mapper.writerWithDefaultPrettyPrinter().writeValueAsString(metadata);
@@ -86,6 +98,7 @@ public class UpdateCompatibilityMetadata extends AbstractUpdatesCommand {
         }
     }
 
+    /** 若指定了输出文件，将元数据写入 JSON 文件。 */
     private void writeToFile(Map<String, Map<String, String>> metadata) {
         if (noOutputFileSet()) {
             return;
@@ -98,16 +111,19 @@ public class UpdateCompatibilityMetadata extends AbstractUpdatesCommand {
         }
     }
 
+    /** 是否未设置输出文件路径。 */
     private boolean noOutputFileSet() {
         return outputFile == null || outputFile.isBlank();
     }
 
+    /** provider 元数据条目：id 与键值对映射。 */
     private record Entry(String id, Map<String, String> metadata) {
 
         Entry(CompatibilityMetadataProvider provider) {
             this(provider.getId(), provider.metadata());
         }
 
+        /** 元数据非空时参与导出。 */
         boolean hasMetadata() {
             return !metadata().isEmpty();
         }

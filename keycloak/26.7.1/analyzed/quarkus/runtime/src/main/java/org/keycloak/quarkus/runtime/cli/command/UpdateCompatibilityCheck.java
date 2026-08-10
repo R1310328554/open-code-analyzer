@@ -29,22 +29,32 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.core.type.TypeReference;
 import picocli.CommandLine;
 
+/**
+ * {@code update-compatibility check} 子命令：校验外部元数据与当前配置是否兼容。
+ * <p>
+ * 退出码为 0 表示可在旧元数据与当前配置之间执行滚动升级；否则需重建或调整配置。
+ */
 @CommandLine.Command(
         name = UpdateCompatibilityCheck.NAME,
         description = "Checks if the metadata is compatible with the current configuration. A zero exit code means a rolling update is possible between old and the current metadata."
 )
 public class UpdateCompatibilityCheck extends AbstractUpdatesCommand {
 
+    /** 子命令名称。 */
     public static final String NAME = "check";
+    /** 输入元数据文件路径选项。 */
     public static final String INPUT_OPTION_NAME = "--file";
+    /** 元数据 JSON 反序列化类型：providerId → 属性键值对。 */
     public static final TypeReference<Map<String, Map<String, String>>> METADATA_TYPE_REF = new TypeReference<>() {
     };
 
 
+    /** 待校验的元数据文件路径。 */
     @CommandLine.Option(names = {INPUT_OPTION_NAME}, paramLabel = "FILE",
             description = "The file path to read the metadata.")
     String inputFile;
 
+    /** 逐 provider 比对元数据与当前配置，返回兼容性退出码。 */
     @Override
     int executeAction() {
         var info = readServerInfo();
@@ -85,6 +95,7 @@ public class UpdateCompatibilityCheck extends AbstractUpdatesCommand {
         validateFileParameter();
     }
 
+    /** 校验 {@code --file} 参数已提供且指向可读文件。 */
     private void validateFileParameter() {
         if (inputFile == null || inputFile.isBlank()) {
             throw new PropertyException("Missing required argument: " + INPUT_OPTION_NAME);
@@ -96,6 +107,7 @@ public class UpdateCompatibilityCheck extends AbstractUpdatesCommand {
         validateFileIsNotDirectory(file, INPUT_OPTION_NAME);
     }
 
+    /** 从 JSON 文件读取服务器兼容性元数据。 */
     private Map<String, Map<String, String>> readServerInfo() {
         var file = new File(inputFile);
         try {

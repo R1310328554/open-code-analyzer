@@ -19,11 +19,17 @@ package org.keycloak.quarkus.runtime.cli.command;
 
 import picocli.CommandLine.Command;
 
+/**
+ * {@code tools windows-service} 命令组：在 Windows 上将 Keycloak 注册为系统服务。
+ * <p>
+ * 基于 Apache Commons Daemon（Procrun）实现服务的安装与卸载。
+ */
 @Command(name = WindowsService.NAME,
         description = "Manage Keycloak as a Windows service.",
         subcommands = {WindowsServiceInstall.class, WindowsServiceUninstall.class})
 public class WindowsService {
 
+    /** 子命令组名称。 */
     public static final String NAME = "windows-service";
 
 }

@@ -19,6 +19,11 @@ package org.keycloak.quarkus.runtime.cli.command;
 
 import picocli.CommandLine;
 
+/**
+ * [预览] 配置兼容性工具命令组：用于滚动升级前检查配置是否兼容。
+ * <p>
+ * 子命令包括导出元数据（{@link UpdateCompatibilityMetadata}）与兼容性校验（{@link UpdateCompatibilityCheck}）。
+ */
 @CommandLine.Command(
         name = UpdateCompatibility.NAME,
         description = "[Preview] Tool for configuration compatibility.",
@@ -28,5 +33,6 @@ import picocli.CommandLine;
         })
 public final class UpdateCompatibility {
 
+    /** 子命令组名称。 */
     public static final String NAME = "update-compatibility";
 }

@@ -32,6 +32,12 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+/**
+ * {@code tools windows-service install} 子命令：将 Keycloak 安装为 Windows 系统服务。
+ * <p>
+ * 使用 Apache Commons Daemon（Procrun）以 exe 模式调用 {@code kc.bat start} 作为服务进程，
+ * 保留环境变量与配置文件的全部语义。
+ */
 @Command(name = WindowsServiceInstall.NAME,
         header = "Install Keycloak as a Windows service.",
         description = {
@@ -55,12 +61,17 @@ import picocli.CommandLine.Option;
                 + "      $ ${PARENT-COMMAND-FULL-NAME:-$PARENTCOMMAND} ${COMMAND-NAME} --depends-on=\"postgresql-x64-15;Tcpip\"%n"})
 public class WindowsServiceInstall extends AbstractCommand {
 
+    /** 子命令名称。 */
     public static final String NAME = "install";
 
+    /** 服务账户密码环境变量名（命令行未指定时从此读取）。 */
     public static final String SERVICE_PASSWORD_ENV = "KC_SERVICE_PASSWORD";
 
+    /** 默认 Windows 服务内部名称。 */
     private static final String DEFAULT_SERVICE_NAME = "keycloak";
+    /** 默认服务显示名称。 */
     private static final String DEFAULT_DISPLAY_NAME = "Keycloak Server";
+    /** 默认服务描述。 */
     private static final String DEFAULT_DESCRIPTION = "Keycloak Identity and Access Management";
 
     @Option(names = "--name",
@@ -116,13 +127,13 @@ public class WindowsServiceInstall extends AbstractCommand {
             executionError(spec.commandLine(), "Windows service management is only available on Windows.");
         }
 
-        // Check for password from environment variable if not provided via command line
+        // 命令行未提供密码时，从环境变量读取
         if (servicePassword == null || servicePassword.isEmpty()) {
             servicePassword = System.getenv(SERVICE_PASSWORD_ENV);
         }
 
-        Path homePath = Environment.getHomePath().orElseThrow(() -> 
-            new CommandLine.ExecutionException(spec.commandLine(), 
+        Path homePath = Environment.getHomePath().orElseThrow(() ->
+            new CommandLine.ExecutionException(spec.commandLine(),
                 "Could not determine Keycloak home directory"));
 
         Path prunsrvPath = homePath.resolve("bin").resolve("prunsrv.exe");
@@ -137,7 +148,7 @@ public class WindowsServiceInstall extends AbstractCommand {
             executionError(spec.commandLine(), "kc.bat not found at " + kcBatPath);
         }
 
-        // If a custom log file location is set, the service wrapper logs are stored in the same directory
+        // 若配置了自定义日志文件，服务包装器日志写入同目录；否则使用 data/log
         Path logPath;
         Optional<String> logFileOption = Configuration.getOptionalKcValue(LoggingOptions.LOG_FILE);
         if (logFileOption.isPresent()) {
@@ -176,7 +187,7 @@ public class WindowsServiceInstall extends AbstractCommand {
                 picocli.println("To start the service, run as Administrator:");
                 picocli.println("   net start " + serviceName);
             } else {
-                executionError(spec.commandLine(), 
+                executionError(spec.commandLine(),
                     "Failed to install service '" + serviceName + "'. Exit code: " + exitCode);
             }
         } catch (IOException | InterruptedException e) {
@@ -184,6 +195,7 @@ public class WindowsServiceInstall extends AbstractCommand {
         }
     }
 
+    /** 组装 prunsrv install 命令行参数（启动/停止 exe、依赖、日志与运行账户）。 */
     private List<String> buildPrunsrvCommand(Path prunsrvPath, Path homePath, Path kcBatPath, Path logPath) {
         List<String> cmd = new ArrayList<>();
         cmd.add(prunsrvPath.toString());
@@ -193,7 +205,7 @@ public class WindowsServiceInstall extends AbstractCommand {
         cmd.add("--Description=" + description);
         cmd.add("--Startup=" + startupMode);
 
-        // Use exe mode to run kc.bat directly
+        // exe 模式：直接执行 kc.bat start
         cmd.add("--StartMode=exe");
         cmd.add("--StartPath=" + homePath);
         cmd.add("--StartImage=" + kcBatPath);
@@ -205,7 +217,7 @@ public class WindowsServiceInstall extends AbstractCommand {
         cmd.add("--StopParams=stop");
         cmd.add("--StopTimeout=" + stopTimeout);
 
-        // Add service dependencies if specified
+        // 配置服务启动依赖
         if (dependsOn != null && !dependsOn.isEmpty()) {
             cmd.add("++DependsOn=" + dependsOn);
         }
@@ -213,7 +225,7 @@ public class WindowsServiceInstall extends AbstractCommand {
         cmd.add("--LogPath=" + logPath);
         cmd.add("--LogLevel=Info");
 
-        // Configure service account
+        // 配置服务运行账户
         if (serviceUser != null && !serviceUser.isEmpty()) {
             picocli.println("Configuring service to run as user: " + serviceUser);
             cmd.add("--ServiceUser=" + serviceUser);

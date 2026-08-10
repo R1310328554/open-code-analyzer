@@ -38,19 +38,23 @@ import static org.keycloak.quarkus.runtime.cli.Picocli.ARG_PREFIX;
 import static org.keycloak.quarkus.runtime.cli.Picocli.ARG_SHORT_PREFIX;
 
 /**
- * <p>A configuration source for mapping configuration arguments to their corresponding properties so that they can be recognized
- * when building and running the server.
- *
- * <p>Each argument is going to be mapped to its corresponding configuration property by prefixing the key with the {@link MicroProfileConfigProvider#NS_KEYCLOAK} namespace.
+ * CLI 参数配置源：将命令行参数映射为对应的配置属性，供构建与运行阶段识别。
+ * <p>
+ * 每个参数通过 {@link MicroProfileConfigProvider#NS_KEYCLOAK} 命名空间前缀转换为标准配置键。
  */
 public class ConfigArgsConfigSource extends PropertiesConfigSource {
 
+    /** SPI 相关 CLI 选项前缀。 */
     public static final String SPI_OPTION_PREFIX = "--spi";
 
+    /** 接受带值参数的短选项集合（如 Profile、配置文件路径）。 */
     public static final Set<String> SHORT_OPTIONS_ACCEPTING_VALUE = Set.of(Main.PROFILE_SHORT_NAME, Main.CONFIG_FILE_SHORT_NAME);
 
+    /** 保存原始 CLI 参数的系统属性键。 */
     private static final String CLI_ARGS = "kc.config.args";
+    /** 本配置源在 MicroProfile 中的名称。 */
     public static final String NAME = "CliConfigSource";
+    /** 键值对 CLI 参数的分隔正则（{@code =}）。 */
     private static final Pattern ARG_KEY_VALUE_SPLIT = Pattern.compile("=");
 
     protected ConfigArgsConfigSource() {
@@ -58,7 +62,11 @@ public class ConfigArgsConfigSource extends PropertiesConfigSource {
     }
 
     /**
-     * Should only be called with sanitized args --property=value
+     * 设置已净化的 CLI 参数（格式为 {@code --property=value}）。
+     * <p>
+     * 参数序列化写入系统属性，供后续解析与内部命令转发时引用原始调用。
+     *
+     * @param args 命令行参数字符串数组
      */
     public static void setCliArgs(String... args) {
         System.setProperty(CLI_ARGS,
@@ -66,11 +74,11 @@ public class ConfigArgsConfigSource extends PropertiesConfigSource {
     }
 
     /**
-     * Reads the previously set system property for the originally command.
-     * Use the System variable, when you trigger other command executions internally, but need a reference to the
-     * actually invoked command.
+     * 读取先前保存的原始 CLI 参数列表。
+     * <p>
+     * 在内部触发其他命令执行时，可通过系统属性获取用户实际调用的命令行。
      *
-     * @return the invoked command from the CLI, or empty List if not set.
+     * @return 实际调用的 CLI 参数列表；未设置时返回空列表
      */
     public static List<String> getAllCliArgs() {
         String args = System.getProperty(CLI_ARGS);
@@ -105,6 +113,7 @@ public class ConfigArgsConfigSource extends PropertiesConfigSource {
         return result;
     }
 
+    /** 解析 CLI 参数为 Keycloak 配置键值映射。 */
     private static Map<String, String> parseArguments() {
         final Map<String, String> properties = new HashMap<>();
 
@@ -115,6 +124,13 @@ public class ConfigArgsConfigSource extends PropertiesConfigSource {
         return properties;
     }
 
+    /**
+     * 通用 CLI 参数解析：区分键值对与一元参数。
+     *
+     * @param args 待解析参数列表
+     * @param valueArgConsumer 键值对参数消费者
+     * @param unaryConsumer 无值参数消费者
+     */
     public static void parseConfigArgs(List<String> args, BiConsumer<String, String> valueArgConsumer, Consumer<String> unaryConsumer) {
         for (int i = 0; i < args.size(); i++) {
             String arg = args.get(i);
@@ -135,14 +151,14 @@ public class ConfigArgsConfigSource extends PropertiesConfigSource {
                     continue;
                 }
                 if (arg.startsWith(ARG_PREFIX)) {
-                    i++; // consume next as a value to the key
+                    i++; // 长选项：下一 token 作为值消费
                     value = args.get(i);
                 } else {
                     unaryConsumer.accept(arg);
                     continue;
                 }
             } else {
-                // the argument has a simple value. Eg.: key=pair
+                // 内联值形式，例如 --key=value
                 value = keyValue[1];
             }
 

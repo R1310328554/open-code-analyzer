@@ -26,6 +26,12 @@ import picocli.CommandLine.Command;
 
 import static org.keycloak.quarkus.runtime.cli.command.AbstractAutoBuildCommand.OPTIMIZED_BUILD_OPTION_LONG;
 
+/**
+ * {@code start} 命令：在生产模式下启动 Keycloak 服务器。
+ * <p>
+ * 默认在启动前根据当前配置自动运行 {@link Build}；使用 {@link OptimizedMixin} 提供的
+ * {@code --optimized} 选项可跳过自动构建，基于先前手动构建的镜像快速启动。
+ */
 @Command(name = Start.NAME,
         header = "Start the server.",
         description = {
@@ -36,14 +42,18 @@ import static org.keycloak.quarkus.runtime.cli.command.AbstractAutoBuildCommand.
                 + "By doing that, the server should start faster based on any previous configuration you have set when manually running the '" + Build.NAME + "' command.")
 public final class Start extends AbstractAutoBuildCommand {
 
+    /** 子命令名称。 */
     public static final String NAME = "start";
 
+    /** 优化启动选项 Mixin。 */
     @CommandLine.Mixin
     OptimizedMixin optimizedMixin = new OptimizedMixin();
 
+    /** 启动时导入 Realm 的 Mixin。 */
     @CommandLine.Mixin
     ImportRealmMixin importRealmMixin;
 
+    /** 禁止在 dev Profile 下使用生产启动命令。 */
     @Override
     protected void doBeforeRun() {
         if (Environment.isDevProfile()) {
@@ -56,6 +66,7 @@ public final class Start extends AbstractAutoBuildCommand {
         return NAME;
     }
 
+    /** 本命令会启动 HTTP 服务。 */
     @Override
     public boolean isServing() {
         return true;

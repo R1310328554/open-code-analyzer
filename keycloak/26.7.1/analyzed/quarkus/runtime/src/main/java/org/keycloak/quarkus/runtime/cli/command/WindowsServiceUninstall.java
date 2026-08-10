@@ -29,6 +29,11 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+/**
+ * {@code tools windows-service uninstall} 子命令：卸载已安装的 Keycloak Windows 服务。
+ * <p>
+ * 调用 Procrun 的 {@code delete} 操作移除指定名称的服务注册项。
+ */
 @Command(name = WindowsServiceUninstall.NAME,
         header = "Uninstall Keycloak Windows service.",
         description = {
@@ -43,10 +48,13 @@ import picocli.CommandLine.Option;
                 + "      $ ${PARENT-COMMAND-FULL-NAME:-$PARENTCOMMAND} ${COMMAND-NAME} --name=my-keycloak%n"})
 public class WindowsServiceUninstall extends AbstractCommand {
 
+    /** 子命令名称。 */
     public static final String NAME = "uninstall";
 
+    /** 默认待卸载的服务内部名称。 */
     private static final String DEFAULT_SERVICE_NAME = "keycloak";
 
+    /** 要卸载的 Windows 服务名称。 */
     @Option(names = "--name",
             description = "The name of the Windows service to uninstall.",
             defaultValue = DEFAULT_SERVICE_NAME)

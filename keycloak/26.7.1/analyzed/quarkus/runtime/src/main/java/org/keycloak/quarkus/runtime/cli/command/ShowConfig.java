@@ -38,21 +38,32 @@ import static org.keycloak.quarkus.runtime.configuration.Configuration.getConfig
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getPropertyNames;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers.maskValue;
 
+/**
+ * {@code show-config} 命令：打印当前有效配置及其来源。
+ * <p>
+ * 遍历 MicroProfile 配置属性，展示 Keycloak（及可选 Quarkus）命名空间下的键值对，
+ * 并对敏感值进行脱敏处理。
+ */
 @Command(name = "show-config",
         header = "Print out the current configuration.",
         description = "%nPrint out the current configuration.")
 public final class ShowConfig extends AbstractCommand {
 
+    /** 子命令名称。 */
     public static final String NAME = "show-config";
+
+    /** 允许在输出中展示的系统属性白名单。 */
     private static final List<String> allowedSystemPropertyKeys = List.of(
             "kc.version");
 
+    /** 过滤参数：{@code all} 时额外输出 Quarkus 配置项。 */
     @Parameters(
             paramLabel = "filter",
             defaultValue = "none",
             description = "Show all configuration options. Use 'all' to show all options.")
     String filter;
 
+    /** show-config 不绑定特定 Profile。 */
     @Override
     public String getDefaultProfile() {
         return null;
@@ -81,6 +92,7 @@ public final class ShowConfig extends AbstractCommand {
 
             PropertyMapper<?> mapper = PropertyMappers.getMapper(property);
 
+            // 多数系统属性为内部使用，show-config 中不展示（白名单除外）
             if (mapper == null && configValue.getSourceName().equals("SysPropConfigSource") && !allowedSystemPropertyKeys.contains(property)) {
                 return; // most system properties are internally used, and not relevant during show-config
             }
@@ -88,7 +100,7 @@ public final class ShowConfig extends AbstractCommand {
             if (mapper != null) {
                 String from = mapper.forKey(property).getFrom();
 
-                // only report from when it exists
+                // 存在映射源属性时，优先展示源属性的值
                 if (!property.equals(from)) {
                     ConfigValue value = getConfigValue(from);
                     if (value.getValue() != null) {
@@ -120,6 +132,7 @@ public final class ShowConfig extends AbstractCommand {
         Quarkus.asyncExit(0);
     }
 
+    /** 格式化输出单个配置项：属性名、脱敏后的值及配置源显示名。 */
     private void printProperty(String property, PropertyMapper<?> mapper, ConfigValue configValue) {
         String sourceName = configValue.getConfigSourceName();
         String value = configValue.getValue();

@@ -33,12 +33,15 @@ import static org.keycloak.quarkus.runtime.cli.Picocli.ARG_PREFIX;
 import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX;
 
 /**
- * The entry point for accessing the server configuration
+ * 服务器配置访问入口：封装 SmallRye/MicroProfile 配置的读取、转换与持久化状态查询。
  */
 public final class Configuration {
 
+    /** 选项名分段分隔符字符（用于 kebab-case 转换）。 */
     public static final char OPTION_PART_SEPARATOR_CHAR = '-';
+    /** 选项名分段分隔符字符串。 */
     public static final String OPTION_PART_SEPARATOR = String.valueOf(OPTION_PART_SEPARATOR_CHAR);
+    /** 标记服务器已优化构建的持久化属性键。 */
     public static final String KC_OPTIMIZED = NS_KEYCLOAK_PREFIX + "optimized";
 
     private static SmallRyeConfig config;
@@ -47,22 +50,27 @@ public final class Configuration {
 
     }
 
+    /** 判断指定布尔选项是否为 true（默认 false）。 */
     public static boolean isTrue(Option<Boolean> option) {
         return getOptionalBooleanValue(NS_KEYCLOAK_PREFIX + option.getKey()).orElse(false);
     }
 
     /**
-     * Return true if the value is not derived (meaning that the config source name is set)
-     * and the config source is something that a user can change the values in
+     * 判断配置值是否由用户可修改的来源提供（非派生且非纯默认值）。
+     *
+     * @param configValue 待检查的配置值
+     * @return 若配置源存在且非默认 ordinal 则为 true
      */
     public static boolean isUserModifiable(ConfigValue configValue) {
         return configValue.getConfigSourceName() != null && !isDefault(configValue);
     }
 
+    /** 判断配置值是否来自默认 ordinal 及以下的配置源。 */
     public static boolean isDefault(ConfigValue configValue) {
         return configValue.getConfigSourceOrdinal() <= PropertyMapper.DEFAULT_VALUE_ORDINAL;
     }
 
+    /** 判断用户是否显式设置了该选项（非默认值）。 */
     public static boolean isSet(Option<?> option) {
         return Optional.ofNullable(getKcConfigValue(option.getKey()))
                 .filter(Configuration::isUserModifiable)
@@ -77,6 +85,7 @@ public final class Configuration {
         return getOptionalBooleanKcValue(propertyName).orElse(false);
     }
 
+    /** 判断 Keycloak 选项值是否为空或空白。 */
     public static boolean isBlank(Option<?> option) {
         return getOptionalKcValue(option.getKey())
                 .map(StringUtil::isBlank)
@@ -95,10 +104,12 @@ public final class Configuration {
                 .isPresent();
     }
 
+    /** 全局配置实例是否已初始化。 */
     public static boolean isInitialized() {
         return config != null;
     }
 
+    /** 懒加载并返回 SmallRye 配置实例（含 Keycloak 定制拦截器）。 */
     public static synchronized SmallRyeConfig getConfig() {
         if (config == null) {
             config = ConfigUtils.emptyConfigBuilder().addDiscoveredSources().withCustomizers(new ConfigBuilderCustomizer()).build();
@@ -106,18 +117,23 @@ public final class Configuration {
         return config;
     }
 
+    /** 重置配置缓存并重新加载配置源（Profile 切换等场景）。 */
     public static void resetConfig() {
         config = null;
         KeycloakConfigSourceProvider.reload();
     }
 
     /**
-     * Raw persisted keycloak properties will match the resolved value of what was originally specified by the user
+     * 获取持久化属性中与用户原始输入一致的原始值。
+     *
+     * @param name 持久化属性名
+     * @return 原始持久化值（若存在）
      */
     public static Optional<String> getRawPersistedProperty(String name) {
         return Optional.ofNullable(PersistedConfigSource.getInstance().getValue(name));
     }
 
+    /** 返回全部原始持久化属性映射。 */
     public static Map<String, String> getRawPersistedProperties() {
         return PersistedConfigSource.getInstance().getProperties();
     }
@@ -126,6 +142,11 @@ public final class Configuration {
         return getPropertyNames(false);
     }
 
+    /**
+     * 枚举配置属性名。
+     *
+     * @param onlyPersisted 为 true 时仅返回持久化配置源中的属性
+     */
     public static Iterable<String> getPropertyNames(boolean onlyPersisted) {
         if (onlyPersisted) {
             return PersistedConfigSource.getInstance().getPropertyNames();
@@ -142,6 +163,7 @@ public final class Configuration {
         return getConfig().getConfigValue(propertyName);
     }
 
+    /** 按 Keycloak 选项键（不含 {@code kc.} 前缀）获取配置值。 */
     public static ConfigValue getKcConfigValue(String propertyName) {
         return getConfigValue(NS_KEYCLOAK_PREFIX.concat(propertyName));
     }
@@ -174,14 +196,17 @@ public final class Configuration {
         return getConfig().getOptionalValue(NS_KEYCLOAK_PREFIX.concat(propertyName), Integer.class);
     }
 
+    /** 将配置键转换为环境变量格式（大写、非字母数字替换为下划线）。 */
     public static String toEnvVarFormat(String key) {
         return replaceNonAlphanumericByUnderscores(key).toUpperCase();
     }
 
+    /** 将配置键转换为 CLI 长选项格式（{@code --} 前缀）。 */
     public static String toCliFormat(String key) {
         return ARG_PREFIX + key;
     }
 
+    /** 将点分或 camelCase 键转换为 kebab-case CLI 键名。 */
     public static String toDashCase(String key) {
         if (key == null) {
             return null;
@@ -207,6 +232,7 @@ public final class Configuration {
         return sb.toString();
     }
 
+    /** 将名称中的非字母数字字符替换为下划线。 */
     public static String replaceNonAlphanumericByUnderscores(String name) {
         int length = name.length();
         StringBuilder sb = new StringBuilder(length);
@@ -223,14 +249,17 @@ public final class Configuration {
         return sb.toString();
     }
 
+    /** 当前服务器是否已通过 build 标记为优化镜像。 */
     public static boolean isOptimized() {
         return Configuration.getRawPersistedProperty(KC_OPTIMIZED).isPresent();
     }
 
+    /** 在持久化属性中写入优化构建标记。 */
     public static void markAsOptimized(Properties properties) {
         properties.put(Configuration.KC_OPTIMIZED, Boolean.TRUE.toString());
     }
 
+    /** 在禁用持久化配置源的情况下解析配置值（用于构建时校验）。 */
     public static ConfigValue getNonPersistedConfigValue(String name) {
         return PersistedConfigSource.getInstance().runWithDisabled(() -> getConfigValue(name));
     }
