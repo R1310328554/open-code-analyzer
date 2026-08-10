@@ -1,5 +1,7 @@
 package logproto
 
+// compat 提供 logproto 与 Prometheus 标签/指标模型之间的转换，并实现多种查询请求的 definitions.Request 接口以支持缓存与分片。
+
 import (
 	"encoding/binary"
 	stdjson "encoding/json"
@@ -27,6 +29,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/labelpool"
 )
 
+// ToWriteRequest 将标签、样本与元数据切片组装为 WriteRequest；时序对象来自对象池，用完后需 ReuseSlice。
 // ToWriteRequest converts matched slices of Labels, Samples and Metadata into a WriteRequest proto.
 // It gets timeseries from the pool, so ReuseSlice() should be called when done.
 func ToWriteRequest(lbls []labels.Labels, samples []LegacySample, metadata []*MetricMetadata, source WriteRequest_SourceEnum) *WriteRequest {
@@ -52,6 +55,7 @@ func ToWriteRequest(lbls []labels.Labels, samples []LegacySample, metadata []*Me
 // length and capacity of zero.
 var labelsZeroValue labels.Labels
 
+// FromLabelAdaptersToLabels 将 LabelAdapter 切片转为 Prometheus labels.Labels，结果始终排序。
 // FromLabelAdaptersToLabels converts a slice of [LabelAdapter] to
 // [labels.Labels].
 //
@@ -85,12 +89,14 @@ func FromLabelAdaptersToLabels(ls []LabelAdapter) labels.Labels {
 	return builder.Labels()
 }
 
+// FromLabelsToLabelAdapters 将 labels.Labels 转为 LabelAdapter 切片，标签按名称排序。
 // FromLabelsToLabelAdapters casts labels.Labels to a slice of [LabelAdapter].
 // The resulting labels are always sorted.
 func FromLabelsToLabelAdapters(ls labels.Labels) []LabelAdapter {
 	return CopyToLabelAdapters(nil, ls)
 }
 
+// CopyToLabelAdapters 复制 labels 到 dst；若 dst 容量足够则零分配。
 // CopyToLabelAdapters copies the set of [labels.Labels] to the slice of
 // [LabelAdapter]. This function is allocation-free if the dst slice has
 // sufficient capacity.
@@ -112,6 +118,7 @@ func EmptyLabelAdapters() []LabelAdapter {
 	return FromLabelsToLabelAdapters(labels.EmptyLabels())
 }
 
+// FromLabelAdaptersToMetric 将 LabelAdapter 转为 Prometheus model.Metric，勿用于热路径。
 // FromLabelAdaptersToMetric converts []LabelAdapter to a model.Metric.
 // Don't do this on any performance sensitive paths.
 func FromLabelAdaptersToMetric(ls []LabelAdapter) model.Metric {
@@ -143,6 +150,7 @@ func (s byLabel) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 // both when using jsonitor or standard json package.
 var isTesting = false
 
+// LegacySample 的 JSON 序列化为 [时间戳, 值] 数组，与 Prometheus 样本格式一致。
 // MarshalJSON implements json.Marshaler.
 func (s LegacySample) MarshalJSON() ([]byte, error) {
 	if isTesting && math.IsNaN(s.Value) {
@@ -233,6 +241,7 @@ func init() {
 	jsoniter.RegisterTypeDecoderFunc("logproto.LegacySample", SampleJsoniterDecode)
 }
 
+// MergeLabelResponses 合并多个 LabelResponse 的去重标签值并排序返回。
 // Combine unique values from multiple LabelResponses into a single, sorted LabelResponse.
 func MergeLabelResponses(responses []*LabelResponse) (*LabelResponse, error) {
 	if len(responses) == 0 {
@@ -265,6 +274,7 @@ func MergeLabelResponses(responses []*LabelResponse) (*LabelResponse, error) {
 	return result, nil
 }
 
+// MergeSeriesResponses 合并多个 SeriesResponse 的序列标识符列表。
 // Combine unique label sets from multiple SeriesResponse and return a single SeriesResponse.
 func MergeSeriesResponses(responses []*SeriesResponse) (*SeriesResponse, error) {
 	if len(responses) == 0 {
@@ -286,6 +296,7 @@ func MergeSeriesResponses(responses []*SeriesResponse) (*SeriesResponse, error) 
 
 // Satisfy definitions.Request
 
+// IndexStatsRequest 实现 definitions.Request，供查询范围中间件与结果缓存使用。
 // GetStart returns the start timestamp of the request in milliseconds.
 func (m *IndexStatsRequest) GetStart() time.Time {
 	return time.Unix(0, m.From.UnixNano())
@@ -343,6 +354,7 @@ func (i *IndexStatsResponse) GetHeaders() []*definitions.PrometheusResponseHeade
 // Satisfy definitions.Request for Volume
 
 // GetStart returns the start timestamp of the request in milliseconds.
+// VolumeRequest 实现 definitions.Request，用于按时间范围统计日志体积。
 func (m *VolumeRequest) GetStart() time.Time {
 	return time.UnixMilli(int64(m.From))
 }
@@ -390,6 +402,7 @@ func (m *VolumeRequest) LogToSpan(sp trace.Span) {
 // Satisfy definitions.Request for FilterChunkRefRequest
 
 // GetStart returns the start timestamp of the request in milliseconds.
+// FilterChunkRefRequest 按 chunk 引用过滤；GetQuery 返回 refs 哈希与计划哈希的组合键。
 func (m *FilterChunkRefRequest) GetStart() time.Time {
 	return time.UnixMilli(int64(m.From))
 }
@@ -429,6 +442,7 @@ func (m *FilterChunkRefRequest) GetCachingOptions() (res resultscache.CachingOpt
 
 // WithStartEndForCache implements resultscache.Request.
 func (m *FilterChunkRefRequest) WithStartEndForCache(start, end time.Time) resultscache.Request {
+// WithStartEndForCache 裁剪不在新时间窗口内的 ShortRef，供分片缓存键复用。
 	// We Remove the chunks that are not within the given time range.
 	chunkRefs := make([]*GroupedChunkRefs, 0, len(m.Refs))
 	for _, chunkRef := range m.Refs {
@@ -480,6 +494,7 @@ func (a *GroupedChunkRefs) Less(b *GroupedChunkRefs) bool {
 	return a.Fingerprint < b.Fingerprint
 }
 
+// ShortRef 按 From、Through、Checksum 三元组排序，用于 chunk 去重与合并。
 // Cmp returns a positive number when a > b, a negative number when a < b, and 0 when a == b
 func (a *ShortRef) Cmp(b *ShortRef) int {
 	if b == nil {
@@ -516,6 +531,7 @@ func (a *ShortRef) Less(b *ShortRef) bool {
 	return a.Checksum < b.Checksum
 }
 
+// ShardsRequest 描述分片查询的时间范围、LogQL 与每分片目标字节数。
 func (m *ShardsRequest) GetCachingOptions() (res definitions.CachingOptions) { return }
 
 func (m *ShardsRequest) GetStart() time.Time {
@@ -554,6 +570,7 @@ func (m *ShardsRequest) LogToSpan(sp trace.Span) {
 	)
 }
 
+// DetectedFieldsRequest 用于自动发现日志字段类型与出现频率。
 func (m *DetectedFieldsRequest) GetCachingOptions() (res definitions.CachingOptions) { return }
 
 func (m *DetectedFieldsRequest) WithStartEnd(start, end time.Time) definitions.Request {
@@ -580,6 +597,7 @@ func (m *DetectedFieldsRequest) LogToSpan(sp trace.Span) {
 	)
 }
 
+// QueryPatternsRequest 查询日志模式（pattern）在时间轴上的分布。
 func (m *QueryPatternsRequest) GetCachingOptions() (res definitions.CachingOptions) { return }
 
 func (m *QueryPatternsRequest) WithStartEnd(start, end time.Time) definitions.Request {
@@ -608,6 +626,7 @@ func (m *QueryPatternsRequest) LogToSpan(sp trace.Span) {
 	)
 }
 
+// DetectedLabelsRequest 检测查询范围内出现的标签键，步长固定为 0。
 func (m *DetectedLabelsRequest) GetStep() int64 { return 0 }
 
 func (m *DetectedLabelsRequest) GetCachingOptions() (res definitions.CachingOptions) { return }
@@ -636,3 +655,4 @@ func (m *DetectedLabelsRequest) LogToSpan(sp trace.Span) {
 		attribute.String("end", m.End.String()),
 	)
 }
+// 各请求类型的 LogToSpan 将 query、起止时间等写入 OpenTelemetry span 便于链路追踪。

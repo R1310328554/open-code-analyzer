@@ -1,5 +1,7 @@
 package views
 
+// ListView 实现基准测试多选列表：过滤、空格切换选中、Enter 进入运行视图。
+
 import (
 	"fmt"
 	"io"
@@ -10,6 +12,7 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
+// benchmarkItem 实现 bubbles list.Item，Title 为 BenchmarkLogQL 全名。
 // benchmarkItem represents a benchmark in the list
 type benchmarkItem struct {
 	name string
@@ -19,6 +22,7 @@ func (i benchmarkItem) Title() string       { return i.name }
 func (i benchmarkItem) Description() string { return "" }
 func (i benchmarkItem) FilterValue() string { return i.name }
 
+// selectionDelegate 在列表项前渲染 ✓ 标记已选基准。
 // selectionDelegate implements a custom delegate for the list
 type selectionDelegate struct {
 	list.DefaultDelegate
@@ -40,6 +44,7 @@ func newSelectionDelegate(selected map[string]struct{}) selectionDelegate {
 	return d
 }
 
+// Height/Spacing 设为单行零间距，使长列表在终端中更紧凑。
 // Height returns the height of a list item
 func (d selectionDelegate) Height() int {
 	return 1 // Single line height
@@ -69,12 +74,14 @@ func (d selectionDelegate) Render(w io.Writer, m list.Model, index int, item lis
 	fmt.Fprint(w, title)
 }
 
+// ListView 封装 bubbles list.Model 与 selected map，跟踪多选状态。
 // ListView represents the benchmark selection view
 type ListView struct {
 	list     list.Model
 	selected map[string]struct{}
 }
 
+// NewListView 配置快捷键帮助、过滤样式与标题栏。
 // NewListView creates a new ListView
 func NewListView(items []string) *ListView {
 	selected := make(map[string]struct{})
@@ -164,6 +171,7 @@ func (m *ListView) FilterState() list.FilterState {
 	return m.list.FilterState()
 }
 
+// Update 处理 space 切换选中、左右键全选/清空、Enter 发送 SwitchViewMsg。
 func (m *ListView) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -230,6 +238,7 @@ func (m *ListView) View() string {
 	return m.list.View()
 }
 
+// GetSelectedTests 返回当前选中基准名切片，供 RunView 构造 -test.bench 正则。
 // GetSelectedTests returns the list of selected benchmark tests
 func (m *ListView) GetSelectedTests() []string {
 	var selected []string
@@ -238,3 +247,4 @@ func (m *ListView) GetSelectedTests() []string {
 	}
 	return selected
 }
+// 过滤模式下 esc 清除过滤器；q/ctrl+c 在非过滤状态退出程序。

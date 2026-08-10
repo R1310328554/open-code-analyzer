@@ -1,5 +1,7 @@
 package views
 
+// RunView 执行 go test -bench 基准、实时滚动输出、benchstat 对比与 pprof/trace 快捷开关。
+
 import (
 	"bufio"
 	"fmt"
@@ -22,6 +24,7 @@ const (
 	storageTypeBoth    = "both"
 )
 
+// RunView 含双 viewport：主输出与 benchstat diff，以及 CPU/MEM/trace 剖析端口状态。
 // RunView represents the benchmark run view
 type RunView struct {
 	RunConfig         RunConfig
@@ -50,6 +53,7 @@ type RunView struct {
 	spinner spinner.Model
 }
 
+// NewRunView 初始化 spinner、默认 both 存储与 pprof HTTP 端口 6060 起。
 // NewRunView creates a new RunView
 func NewRunView(config RunConfig) *RunView {
 	sp := spinner.New()
@@ -404,6 +408,7 @@ func (m *RunView) footerView() string {
 	)
 }
 
+// startBenchmark 轮转 result.new/old.txt，启动 go test 并通过 channel 流式推送输出。
 // startBenchmark starts the benchmark execution
 func (m *RunView) startBenchmark() tea.Cmd {
 	return func() tea.Msg {
@@ -523,6 +528,7 @@ func (m *RunView) startBenchmark() tea.Cmd {
 	}
 }
 
+// buildTestRegex 转义 LogQL 特殊字符并拼接 -test.bench 精确匹配正则。
 func buildTestRegex(tests []string, storageType string) string {
 	if len(tests) == 0 {
 		// If no tests are selected, match all tests
@@ -643,6 +649,7 @@ func (m *RunView) stopTraceProfile() tea.Cmd {
 	}
 }
 
+// StopAllProfiling 退出前停止所有 pprof/trace 子进程，避免端口泄漏。
 // StopAllProfiling stops all active profiling tools
 func (m *RunView) StopAllProfiling() tea.Cmd {
 	return func() tea.Msg {
@@ -653,6 +660,7 @@ func (m *RunView) StopAllProfiling() tea.Cmd {
 	}
 }
 
+// updateViewportDimensions 在 diff 模式下半分高度分配给两个 viewport。
 func (m *RunView) updateViewportDimensions() {
 	height := m.height - m.verticalMarginHeight
 	if m.showDiff {
@@ -664,3 +672,4 @@ func (m *RunView) updateViewportDimensions() {
 	m.Viewport.SetHeight(height)
 	m.DiffViewport.SetHeight(height)
 }
+// BenchmarkFinishedMsg 触发 benchstat 对比 result.old.txt 与 result.new.txt 并展示差异。

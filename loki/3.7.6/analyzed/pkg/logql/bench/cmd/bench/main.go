@@ -1,5 +1,7 @@
 package main
 
+// bench 主程序：基于 Bubble Tea 的 LogQL 基准测试 TUI，支持 list/run 子命令与 suite 选择。
+
 import (
 	"flag"
 	"fmt"
@@ -18,6 +20,7 @@ var (
 	suiteFlag = flag.String("suite", "fast", "benchmark suite to run: fast, regression, or exhaustive")
 )
 
+// parseSuiteFlag 解析 -suite：fast、regression 或 exhaustive 决定加载哪些查询集。
 // parseSuiteFlag parses the suite flag and returns the appropriate Suite values to load
 func parseSuiteFlag() []bench.Suite {
 	switch *suiteFlag {
@@ -34,6 +37,7 @@ func parseSuiteFlag() []bench.Suite {
 	}
 }
 
+// mainModel 在 ListView 与 RunView 之间切换，并转发窗口尺寸与按键事件。
 // mainModel represents the overall application state
 type mainModel struct {
 	currentView views.ViewID
@@ -56,6 +60,7 @@ func initialModel() mainModel {
 	}
 }
 
+// Init 满足 tea.Model 接口，本应用无需启动异步命令。
 // Init is required by the tea.Model interface but doesn't need to do anything
 func (m mainModel) Init() tea.Cmd {
 	return nil
@@ -150,6 +155,7 @@ func (m mainModel) View() tea.View {
 	return v
 }
 
+// loadBenchmarks 从 queries 目录加载注册表、展开变量并收集基准名称列表。
 // loadBenchmarks loads available benchmarks
 func loadBenchmarks() []string {
 	queriesDir := "./queries"
@@ -189,6 +195,7 @@ func loadBenchmarks() []string {
 	return names
 }
 
+// main 解析 flag 与 list|run 子命令；run 启动全屏 TUI 并注册全局 Program 引用。
 func main() {
 	// Parse flags before processing commands
 	flag.Parse()
@@ -230,6 +237,7 @@ func main() {
 	}
 }
 
+// listBenchmarks 非交互模式，向 stdout 打印 go test -bench 可用的 BenchmarkLogQL 名称。
 func listBenchmarks() {
 	queriesDir := "./queries"
 	registry := bench.NewQueryRegistry(queriesDir)
@@ -265,3 +273,4 @@ func listBenchmarks() {
 		}
 	}
 }
+// DEBUG 环境变量非空时将 Bubble Tea 日志写入 debug.log 便于排查 UI 问题。

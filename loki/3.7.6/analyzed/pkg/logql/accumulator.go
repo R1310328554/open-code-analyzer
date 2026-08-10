@@ -1,5 +1,7 @@
 package logql
 
+// accumulator 实现分片 LogQL 查询结果的增量合并：缓冲向量/矩阵、概率 sketch 与限流日志流的堆式 Top-N 聚合。
+
 import (
 	"container/heap"
 	"context"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/querier/queryrange/queryrangebase/definitions"
 )
 
+// NewBufferedAccumulator 按分片索引缓冲固定长度结果切片，适合体量较小的指标查询。
 // NewBufferedAccumulator returns an accumulator which aggregates all query
 // results in a slice. This is useful for metric queries, which are generally
 // small payloads and the memory overhead for buffering is negligible.
@@ -25,6 +28,7 @@ func NewBufferedAccumulator(n int) *BufferedAccumulator {
 	}
 }
 
+// BufferedAccumulator 将各分片 logqlmodel.Result 写入预分配切片对应槽位。
 type BufferedAccumulator struct {
 	results []logqlmodel.Result
 }
@@ -38,6 +42,7 @@ func (a *BufferedAccumulator) Result() []logqlmodel.Result {
 	return a.results
 }
 
+// QuantileSketchAccumulator 合并分片 ProbabilisticQuantileMatrix 并汇总统计与告警头。
 type QuantileSketchAccumulator struct {
 	matrix ProbabilisticQuantileMatrix
 
@@ -46,6 +51,7 @@ type QuantileSketchAccumulator struct {
 	warnings map[string]struct{} // for accumulating warnings from downstream requests}
 }
 
+// newQuantileSketchAccumulator 用于分位数 sketch 查询的流式合并。
 // newQuantileSketchAccumulator returns an accumulator for sharded
 // probabilistic quantile queries that merges results as they come in.
 func newQuantileSketchAccumulator() *QuantileSketchAccumulator {
@@ -113,6 +119,7 @@ func (a *QuantileSketchAccumulator) Result() []logqlmodel.Result {
 	}
 }
 
+// CountMinSketchAccumulator 合并 CountMinSketchVector 分片结果。
 type CountMinSketchAccumulator struct {
 	vec *CountMinSketchVector
 
@@ -188,6 +195,7 @@ func (a *CountMinSketchAccumulator) Result() []logqlmodel.Result {
 	}
 }
 
+// AccumulatedStreams 用最小/最大堆维护跨流 Top-N 日志行，控制分片查询内存上限。
 // heap impl for keeping only the top n results across m streams
 // importantly, AccumulatedStreams is _bounded_, so it will only
 // store the top `limit` results across all streams.
@@ -214,6 +222,7 @@ type AccumulatedStreams struct {
 	warnings map[string]struct{} // for accumulating warnings from downstream requests
 }
 
+// NewStreamAccumulator 根据查询方向反转堆比较器，以便 O(log n) 淘汰最差条目。
 // NewStreamAccumulator returns an accumulator for limited log queries.
 // Log queries, sharded thousands of times and each returning <limit>
 // results, can be _considerably_ larger. In this case, we eagerly
@@ -239,6 +248,7 @@ func NewStreamAccumulator(params Params) *AccumulatedStreams {
 }
 
 // returns the top priority
+// top 返回堆顶流最后一条日志时间戳，代表当前最差候选。
 func (acc *AccumulatedStreams) top() (time.Time, bool) {
 	if len(acc.streams) > 0 && len(acc.streams[0].Entries) > 0 {
 		return acc.streams[0].Entries[len(acc.streams[0].Entries)-1].Timestamp, true
@@ -320,6 +330,7 @@ func (acc *AccumulatedStreams) Push(x any) {
 // (i.e. the max value for FORWARD, the min value for BACKWARD),
 // we test if the new entry is better than the worst entry,
 // swapping them if so.
+// push 在容量不足时逐条与堆顶比较，仅保留优于 worst 的日志条目。
 func (acc *AccumulatedStreams) push(s *logproto.Stream) {
 	worst, ok := acc.top()
 	room := min(acc.limit-acc.count, len(s.Entries))
@@ -439,6 +450,7 @@ func (acc *AccumulatedStreams) Pop() any {
 	return &cpy
 }
 
+// Result 按标签排序各流并恢复用户期望的时间方向，仅能调用一次。
 // Note: can only be called once as it will alter stream ordreing.
 func (acc *AccumulatedStreams) Result() []logqlmodel.Result {
 	// sort streams by label
@@ -503,3 +515,4 @@ func (acc *AccumulatedStreams) Accumulate(_ context.Context, x logqlmodel.Result
 	}
 	return nil
 }
+// Accumulate 合并下游 Statistics、Headers 与 Warnings，Shards 为 0 时默认记为 1。

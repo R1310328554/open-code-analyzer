@@ -3,6 +3,8 @@
 
 package logproto
 
+// sketch.pb.go 定义概率 sketch 数据结构：分位数 TDigest/DDSketch、CountMinSketch、TopK 矩阵等，供 LogQL 近似聚合与分片合并使用。
+
 import (
 	bytes "bytes"
 	encoding_binary "encoding/binary"
@@ -26,6 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// QuantileSketchMatrix 按标签分组的分位数 sketch 矩阵，类似 Prometheus 矩阵类型。
 type QuantileSketchMatrix struct {
 	Values []*QuantileSketchVector `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
 }
@@ -69,6 +72,7 @@ func (m *QuantileSketchMatrix) GetValues() []*QuantileSketchVector {
 	return nil
 }
 
+// QuantileSketchVector 单标签组下的分位数 sketch 样本序列。
 type QuantileSketchVector struct {
 	Samples []*QuantileSketchSample `protobuf:"bytes,1,rep,name=samples,proto3" json:"samples,omitempty"`
 }
@@ -171,6 +175,7 @@ func (m *QuantileSketchSample) GetMetric() []*LabelPair {
 	return nil
 }
 
+// QuantileSketch 为 oneof 容器，可持有 TDigest 或 DDSketch 实现。
 type QuantileSketch struct {
 	// Types that are valid to be assigned to Sketch:
 	//	*QuantileSketch_Tdigest
@@ -257,6 +262,7 @@ func (*QuantileSketch) XXX_OneofWrappers() []interface{} {
 }
 
 // "Large" bytes format from https://github.com/tdunning/t-digest
+// TDigest 存储质心列表与压缩参数，用于近似分位数估计。
 type TDigest struct {
 	Min         float64             `protobuf:"fixed64,1,opt,name=min,proto3" json:"min,omitempty"`
 	Max         float64             `protobuf:"fixed64,2,opt,name=max,proto3" json:"max,omitempty"`
@@ -375,6 +381,7 @@ func (m *TDigest_Centroid) GetWeight() float64 {
 	return 0
 }
 
+// CountMinSketch 概率计数 sketch，支持高频元素近似计数与合并。
 type CountMinSketch struct {
 	Depth uint32 `protobuf:"varint,1,opt,name=depth,proto3" json:"depth,omitempty"`
 	Width uint32 `protobuf:"varint,2,opt,name=width,proto3" json:"width,omitempty"`
@@ -545,6 +552,7 @@ func (m *Labels) GetMetric() []*LabelPair {
 	return nil
 }
 
+// TopK 维护近似 Top-K 键值对，用于日志字段高频值分析。
 type TopK struct {
 	Cms         *CountMinSketch `protobuf:"bytes,1,opt,name=cms,proto3" json:"cms,omitempty"`
 	List        []*TopK_Pair    `protobuf:"bytes,2,rep,name=list,proto3" json:"list,omitempty"`
@@ -655,6 +663,7 @@ func (m *TopK_Pair) GetCount() float64 {
 	return 0
 }
 
+// TopKMatrix 将 TopK 向量组织为时间序列矩阵供查询结果返回。
 type TopKMatrix struct {
 	Values []*TopKMatrix_Vector `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
 }
@@ -4144,3 +4153,4 @@ var (
 	ErrInvalidLengthSketch = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowSketch   = fmt.Errorf("proto: integer overflow")
 )
+// sketch 消息的二进制序列化由 gogo protobuf 生成，合并逻辑见 pkg/logql sketch 包。

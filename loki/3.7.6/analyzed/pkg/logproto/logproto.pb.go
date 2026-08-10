@@ -3,6 +3,8 @@
 
 package logproto
 
+// logproto.pb.go 是 Loki 核心 RPC 与消息定义：日志查询、标签/序列 API、索引统计、chunk 引用及 Querier/StreamData 等服务接口（protoc-gen-gogo 生成）。
+
 import (
 	bytes "bytes"
 	context "context"
@@ -44,6 +46,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Direction 枚举日志扫描方向：FORWARD 从旧到新，BACKWARD 从新到旧。
 type Direction int32
 
 const (
@@ -65,6 +68,7 @@ func (Direction) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_c28a5f14f1f4c79a, []int{0}
 }
 
+// LabelToValuesResponse 映射标签名到唯一值集合，用于批量标签值查询。
 type LabelToValuesResponse struct {
 	Labels map[string]*UniqueLabelValues `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
@@ -304,6 +308,7 @@ func (m *StreamRate) GetPushes() uint32 {
 	return 0
 }
 
+// QueryRequest 描述 LogQL 日志查询的选择器、时间范围、方向与条数限制。
 type QueryRequest struct {
 	Selector  string                                                 `protobuf:"bytes,1,opt,name=selector,proto3" json:"selector,omitempty"` // Deprecated: Do not use.
 	Limit     uint32                                                 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -407,6 +412,7 @@ func (m *QueryRequest) GetStoreChunks() *ChunkRefGroup {
 	return nil
 }
 
+// SampleQueryRequest 用于指标式 LogQL 采样查询，含 step 与 shard 参数。
 type SampleQueryRequest struct {
 	Selector string                                                 `protobuf:"bytes,1,opt,name=selector,proto3" json:"selector,omitempty"` // Deprecated: Do not use.
 	Start    time.Time                                              `protobuf:"bytes,2,opt,name=start,proto3,stdtime" json:"start"`
@@ -597,6 +603,7 @@ func (m *Delete) GetEnd() int64 {
 	return 0
 }
 
+// QueryResponse 返回匹配的 Stream 列表及查询执行统计。
 type QueryResponse struct {
 	Streams  []github_com_grafana_loki_pkg_push.Stream `protobuf:"bytes,1,rep,name=streams,proto3,customtype=github.com/grafana/loki/pkg/push.Stream" json:"streams,omitempty"`
 	Stats    stats.Ingester                            `protobuf:"bytes,2,opt,name=stats,proto3" json:"stats"`
@@ -989,6 +996,7 @@ func (m *Series) GetStreamHash() uint64 {
 	return 0
 }
 
+// TailRequest 启动实时 tail 流，持续推送匹配新日志。
 type TailRequest struct {
 	Query    string                                                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"` // Deprecated: Do not use.
 	DelayFor uint32                                                 `protobuf:"varint,3,opt,name=delayFor,proto3" json:"delayFor,omitempty"`
@@ -2404,6 +2412,7 @@ func (m *IndexQuery) GetValueEqual() []byte {
 	return nil
 }
 
+// IndexStatsRequest 请求索引侧统计：流数、chunk 数、字节与条目估算。
 type IndexStatsRequest struct {
 	From     github_com_prometheus_common_model.Time `protobuf:"varint,1,opt,name=from,proto3,customtype=github.com/prometheus/common/model.Time" json:"from"`
 	Through  github_com_prometheus_common_model.Time `protobuf:"varint,2,opt,name=through,proto3,customtype=github.com/prometheus/common/model.Time" json:"through"`
@@ -2516,6 +2525,7 @@ func (m *IndexStatsResponse) GetEntries() uint64 {
 	return 0
 }
 
+// VolumeRequest 按时间步长统计匹配流的日志体积分布。
 type VolumeRequest struct {
 	From           github_com_prometheus_common_model.Time `protobuf:"varint,1,opt,name=from,proto3,customtype=github.com/prometheus/common/model.Time" json:"from"`
 	Through        github_com_prometheus_common_model.Time `protobuf:"varint,2,opt,name=through,proto3,customtype=github.com/prometheus/common/model.Time" json:"through"`
@@ -2703,6 +2713,7 @@ func (m *Volume) GetVolume() uint64 {
 	return 0
 }
 
+// DetectedFieldsRequest 自动检测 JSON/logfmt 等结构化字段及其类型。
 type DetectedFieldsRequest struct {
 	Start     time.Time `protobuf:"bytes,1,opt,name=start,proto3,stdtime" json:"start"`
 	End       time.Time `protobuf:"bytes,2,opt,name=end,proto3,stdtime" json:"end"`
@@ -5905,6 +5916,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// QuerierClient 提供 Query、QuerySample、Tail 等流式 RPC，是 querier 对外主接口。
 // QuerierClient is the client API for Querier service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -6102,6 +6114,7 @@ func (c *querierClient) GetDetectedLabels(ctx context.Context, in *DetectedLabel
 	return out, nil
 }
 
+// QuerierServer 由 querier 进程实现，协调 ingester 与 store 完成分布式查询。
 // QuerierServer is the server API for Querier service.
 type QuerierServer interface {
 	Query(*QueryRequest, Querier_QueryServer) error
@@ -6427,6 +6440,7 @@ var _Querier_serviceDesc = grpc.ServiceDesc{
 	Metadata: "pkg/logproto/logproto.proto",
 }
 
+// StreamDataClient 用于流式传输大块日志数据，减轻单次 RPC 消息体积限制。
 // StreamDataClient is the client API for StreamData service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -18499,3 +18513,4 @@ var (
 	ErrInvalidLengthLogproto = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowLogproto   = fmt.Errorf("proto: integer overflow")
 )
+// 本文件体量较大，其余消息类型与 Marshal/Unmarshal 均为 proto 生成代码，勿手动编辑。

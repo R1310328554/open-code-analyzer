@@ -3,6 +3,8 @@
 
 package logproto
 
+// ingester-rf1.pb.go 定义 RF1（Replication Factor 1）写入路径的 PusherRF1 gRPC 服务，复用 push.PushRequest 作为日志推送载荷。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -57,6 +59,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// PusherRF1Client 向 ingester 推送日志流，适用于单副本或 RF1 部署模式。
 // PusherRF1Client is the client API for PusherRF1 service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -81,6 +84,7 @@ func (c *pusherRF1Client) Push(ctx context.Context, in *push.PushRequest, opts .
 	return out, nil
 }
 
+// PusherRF1Server 由 ingester 实现 Push 方法接收 distributor 转发的写入。
 // PusherRF1Server is the server API for PusherRF1 service.
 type PusherRF1Server interface {
 	Push(context.Context, *push.PushRequest) (*push.PushResponse, error)
@@ -128,3 +132,4 @@ var _PusherRF1_serviceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "pkg/logproto/ingester-rf1.proto",
 }
+// RegisterPusherRF1Server 注册 RF1 推送服务到 gRPC，路径为 /logproto.PusherRF1/Push。

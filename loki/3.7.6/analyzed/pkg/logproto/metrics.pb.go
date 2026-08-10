@@ -3,6 +3,8 @@
 
 package logproto
 
+// metrics.pb.go 定义 Loki 内置指标写入的 protobuf 消息：WriteRequest、TimeSeries、MetricMetadata 及 Prometheus 兼容的样本结构。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -26,6 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// WriteRequest_SourceEnum 标识写入来源：API 直写或 recording rule 产生。
 type WriteRequest_SourceEnum int32
 
 const (
@@ -47,6 +50,7 @@ func (WriteRequest_SourceEnum) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d2388e514bd0aa0e, []int{0, 0}
 }
 
+// MetricMetadata_MetricType 对齐 Prometheus 指标类型枚举（counter、gauge、histogram 等）。
 type MetricMetadata_MetricType int32
 
 const (
@@ -86,6 +90,7 @@ func (MetricMetadata_MetricType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d2388e514bd0aa0e, []int{3, 0}
 }
 
+// WriteRequest 批量携带 PreallocTimeseries 与可选 MetricMetadata，供 ingester 指标路径消费。
 type WriteRequest struct {
 	Timeseries              []PreallocTimeseries    `protobuf:"bytes,1,rep,name=timeseries,proto3,customtype=PreallocTimeseries" json:"timeseries"`
 	Source                  WriteRequest_SourceEnum `protobuf:"varint,2,opt,name=Source,proto3,enum=logproto.WriteRequest_SourceEnum" json:"Source,omitempty"`
@@ -181,6 +186,7 @@ func (m *WriteResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WriteResponse proto.InternalMessageInfo
 
+// TimeSeries 表示单条时序：LabelAdapter 标签集与 LegacySample 样本点。
 type TimeSeries struct {
 	Labels []LabelAdapter `protobuf:"bytes,1,rep,name=labels,proto3,customtype=LabelAdapter" json:"labels"`
 	// Sorted by time, oldest sample first.
@@ -226,6 +232,7 @@ func (m *TimeSeries) GetSamples() []LegacySample {
 	return nil
 }
 
+// MetricMetadata 描述指标 HELP/TYPE 等元信息，类似 Prometheus text exposition。
 type MetricMetadata struct {
 	Type             MetricMetadata_MetricType `protobuf:"varint,1,opt,name=type,proto3,enum=logproto.MetricMetadata_MetricType" json:"type,omitempty"`
 	MetricFamilyName string                    `protobuf:"bytes,2,opt,name=metric_family_name,json=metricFamilyName,proto3" json:"metric_family_name,omitempty"`
@@ -1748,3 +1755,4 @@ var (
 	ErrInvalidLengthMetrics = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowMetrics   = fmt.Errorf("proto: integer overflow")
 )
+// WriteResponse 为空响应体，表示指标写入 RPC 成功完成且无附加载荷。

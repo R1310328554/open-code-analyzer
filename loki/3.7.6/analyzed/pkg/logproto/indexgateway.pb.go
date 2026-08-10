@@ -3,6 +3,8 @@
 
 package logproto
 
+// indexgateway.pb.go 由 indexgateway.proto 生成，定义 IndexGateway gRPC 服务：索引查询、分片规划及 chunk 引用分组消息。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -31,6 +33,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// ShardsRequest 携带时间范围、LogQL 与每分片目标字节数，请求 querier 计算分片方案。
 type ShardsRequest struct {
 	From                github_com_prometheus_common_model.Time `protobuf:"varint,1,opt,name=from,proto3,customtype=github.com/prometheus/common/model.Time" json:"from"`
 	Through             github_com_prometheus_common_model.Time `protobuf:"varint,2,opt,name=through,proto3,customtype=github.com/prometheus/common/model.Time" json:"through"`
@@ -84,10 +87,12 @@ func (m *ShardsRequest) GetTargetBytesPerShard() uint64 {
 	return 0
 }
 
+// ShardsResponse 返回分片列表、查询统计及可选的 ChunkRefGroup 分组。
 type ShardsResponse struct {
 	Shards     []Shard      `protobuf:"bytes,1,rep,name=shards,proto3" json:"shards"`
 	Statistics stats.Result `protobuf:"bytes,2,opt,name=statistics,proto3" json:"statistics"`
-	// If present, includes the chunk refs for each shard,
+	// ChunkGroups 与 shards 等长时，为每个分片附带需扫描的 chunk 引用。
+// If present, includes the chunk refs for each shard,
 	// therefore the length will be equal to the length of the `shards` field.
 	ChunkGroups []ChunkRefGroup `protobuf:"bytes,3,rep,name=chunkGroups,proto3" json:"chunkGroups"`
 }
@@ -514,6 +519,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// IndexGatewayClient 提供 QueryIndex 流式 RPC 与 GetShards 一元 RPC 的客户端接口。
 // IndexGatewayClient is the client API for IndexGateway service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -663,6 +669,7 @@ func (x *indexGatewayGetShardsClient) Recv() (*ShardsResponse, error) {
 	return m, nil
 }
 
+// IndexGatewayServer 由索引网关实现，供 querier 远程查询 TSDB 索引与分片边界。
 // IndexGatewayServer is the server API for IndexGateway service.
 type IndexGatewayServer interface {
 	/// QueryIndex reads the indexes required for given query & sends back the batch of rows
@@ -1871,3 +1878,4 @@ var (
 	ErrInvalidLengthIndexgateway = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowIndexgateway   = fmt.Errorf("proto: integer overflow")
 )
+// RegisterIndexGatewayServer 将服务实现注册到 gRPC Server，供分布式查询拓扑调用。

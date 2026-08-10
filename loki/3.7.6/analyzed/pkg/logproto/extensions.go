@@ -1,5 +1,7 @@
 package logproto
 
+// extensions 为 logproto 生成的消息类型补充排序、哈希、JSON 适配与 LogQL 辅助逻辑。
+
 import (
 	"fmt"
 	"slices"
@@ -19,9 +21,11 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// seps 为 Prometheus Labels.Hash 使用的分隔字节，与上游哈希算法保持一致。
 // This is the separator define in the Prometheus Labels.Hash function.
 var seps = []byte{'\xff'}
 
+// SeriesIdentifier.Hash 按 Prometheus 规则对标签键值对排序后 xxhash，b 可复用以减少分配。
 // Hash returns hash of the labels according to Prometheus' Labels.Hash function.
 // `b` is a buffer that should be reused to avoid allocations.
 func (id SeriesIdentifier) Hash(b []byte) uint64 {
@@ -55,6 +59,7 @@ func (id SeriesIdentifier) Hash(b []byte) uint64 {
 	return xxhash.Sum64(b)
 }
 
+// Get 按标签名查找值，不存在时返回空字符串。
 func (id SeriesIdentifier) Get(key string) string {
 	for _, entry := range id.Labels {
 		if entry.Key == key {
@@ -75,6 +80,7 @@ func SeriesIdentifierFromMap(in map[string]string) SeriesIdentifier {
 	return id
 }
 
+// SeriesIdentifierFromLabels 从 Prometheus labels 构造 SeriesIdentifier。
 func SeriesIdentifierFromLabels(in labels.Labels) SeriesIdentifier {
 	id := SeriesIdentifier{
 		Labels: make([]SeriesIdentifier_LabelsEntry, 0, in.Len()),
@@ -85,6 +91,7 @@ func SeriesIdentifierFromLabels(in labels.Labels) SeriesIdentifier {
 	return id
 }
 
+// MustNewSeriesEntries 接受成对 key/value 参数，奇数个标签时 panic。
 func MustNewSeriesEntries(labels ...string) []SeriesIdentifier_LabelsEntry {
 	if len(labels)%2 != 0 {
 		panic("invalid number of labels")
@@ -100,6 +107,7 @@ func (id SeriesIdentifier) Len() int           { return len(id.Labels) }
 func (id SeriesIdentifier) Swap(i, j int)      { id.Labels[i], id.Labels[j] = id.Labels[j], id.Labels[i] }
 func (id SeriesIdentifier) Less(i, j int) bool { return id.Labels[i].Key < id.Labels[j].Key }
 
+// Streams 实现 sort.Interface，按 Stream.Labels 字符串字典序排序。
 type Streams []Stream
 
 func (xs Streams) Len() int           { return len(xs) }
@@ -110,6 +118,7 @@ func (s Series) Len() int           { return len(s.Samples) }
 func (s Series) Swap(i, j int)      { s.Samples[i], s.Samples[j] = s.Samples[j], s.Samples[i] }
 func (s Series) Less(i, j int) bool { return s.Samples[i].Timestamp < s.Samples[j].Timestamp }
 
+// IndexStatsResponse.AddStream 原子递增流计数，供并行索引统计聚合。
 // Safe for concurrent use
 func (m *IndexStatsResponse) AddStream(_ model.Fingerprint) {
 	atomic.AddUint64(&m.Streams, 1)
@@ -122,6 +131,7 @@ func (m *IndexStatsResponse) AddChunkStats(s index.ChunkStats) {
 	atomic.AddUint64(&m.Entries, s.Entries)
 }
 
+// Stats 返回结构体副本，避免并发修改底层 atomic 字段。
 func (m *IndexStatsResponse) Stats() IndexStatsResponse {
 	return *m
 }
@@ -140,6 +150,7 @@ func (m *IndexStatsResponse) LoggingKeyValues() []interface{} {
 	}
 }
 
+// SpaceFor 判断将 stats 并入当前分片后是否更接近 targetShardBytes 目标。
 func (m *Shard) SpaceFor(stats *IndexStatsResponse, targetShardBytes uint64) bool {
 	curDelta := max(m.Stats.Bytes, targetShardBytes) - min(m.Stats.Bytes, targetShardBytes)
 	updated := m.Stats.Bytes + stats.Bytes
@@ -147,6 +158,7 @@ func (m *Shard) SpaceFor(stats *IndexStatsResponse, targetShardBytes uint64) boo
 	return newDelta <= curDelta
 }
 
+// DetectedFieldType 枚举检测到的字段类型：string、int、float、boolean 等。
 type DetectedFieldType string
 
 const (
@@ -158,6 +170,7 @@ const (
 	DetectedFieldBytes    DetectedFieldType = "bytes"
 )
 
+// QueryPatternsResponse 的 JSON 与 proto 布局不同，此处手动解析 status/data 数组。
 // UnmarshalJSON implements the json.Unmarshaler interface.
 // QueryPatternsResponse json representation is different from the proto
 //
@@ -189,12 +202,14 @@ func (d DetectedFieldType) String() string {
 	return string(d)
 }
 
+// ShardsResponse.Merge 合并分片列表、chunk 分组与查询统计。
 func (m *ShardsResponse) Merge(other *ShardsResponse) {
 	m.Shards = append(m.Shards, other.Shards...)
 	m.ChunkGroups = append(m.ChunkGroups, other.ChunkGroups...)
 	m.Statistics.Merge(other.Statistics)
 }
 
+// GetSampleQuery 从 LogQL 提取 matcher 并构造用于持久化 pattern 的聚合查询。
 func (m *QueryPatternsRequest) GetSampleQuery() (string, error) {
 	expr, err := syntax.ParseExpr(m.Query)
 	if err != nil {
@@ -236,6 +251,7 @@ func (m *QueryPatternsRequest) GetSampleQuery() (string, error) {
 	return logqlQuery, nil
 }
 
+// buildPatternLogQLQuery 组合 service_name 与标签 matcher，生成 sum_over_time pattern 查询。
 func buildPatternLogQLQuery(serviceName string, serviceMatcher labels.MatchType, matchers []*labels.Matcher, step int64) string {
 	// Use step duration for sum_over_time window
 	stepDuration := max(time.Duration(step)*time.Millisecond, 10*time.Second)
@@ -274,3 +290,4 @@ func buildPatterLogQLQueryString(serviceName, serviceMatcher, matchers, step str
 		step,
 	)
 }
+// buildPatterLogQLQueryString 拼接 __pattern__ 流选择与 urldecode 解码的 label_format 管道。

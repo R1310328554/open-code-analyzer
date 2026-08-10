@@ -3,6 +3,8 @@
 
 package logproto
 
+// pattern.pb.go 定义日志模式（pattern）查询 RPC：QueryPatternsRequest/Response、PatternSeries 及 Pattern gRPC 服务。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -35,6 +37,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// QueryPatternsRequest 指定 LogQL、起止时间与 step，请求模式时间序列。
 type QueryPatternsRequest struct {
 	Query string    `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
 	Start time.Time `protobuf:"bytes,2,opt,name=start,proto3,stdtime" json:"start"`
@@ -102,6 +105,7 @@ func (m *QueryPatternsRequest) GetStep() int64 {
 	return 0
 }
 
+// QueryPatternsResponse 返回多条 PatternSeries，每条含模式字符串与采样点。
 type QueryPatternsResponse struct {
 	Series []*PatternSeries `protobuf:"bytes,1,rep,name=series,proto3" json:"series,omitempty"`
 }
@@ -483,6 +487,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// PatternClient 调用 Pattern.Query 流式 RPC 获取模式匹配统计。
 // PatternClient is the client API for Pattern service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -540,6 +545,7 @@ func (x *patternQueryClient) Recv() (*QueryPatternsResponse, error) {
 	return m, nil
 }
 
+// PatternServer 由 pattern ingester/querier 组件实现模式聚合查询。
 // PatternServer is the server API for Pattern service.
 type PatternServer interface {
 	Push(context.Context, *push.PushRequest) (*push.PushResponse, error)
@@ -1554,3 +1560,4 @@ var (
 	ErrInvalidLengthPattern = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowPattern   = fmt.Errorf("proto: integer overflow")
 )
+// Pattern_Query 为服务端流式 RPC，按 chunk 边界增量返回 PatternSeries 数据。
