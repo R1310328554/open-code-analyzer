@@ -1,5 +1,8 @@
 package core
 
+// model_chain.go — 模型包装链：事件发送、重试、故障转移、用户中间件与回调注入。
+
+
 import (
 	"context"
 	"io"
@@ -7,7 +10,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ---- EventSenderModelWrapper ----
+// ---- 事件发送模型包装器 ----
 
 type eventSenderModelWrapper[M MessageType] struct {
 	inner   Model[M]
@@ -70,7 +73,7 @@ func (w *eventSenderModelWrapper[M]) BindTools(tools []*schema.ToolInfo) error {
 	return w.inner.BindTools(tools)
 }
 
-// ---- CallbackInjectionModelWrapper (for tracing/monitoring) ----
+// ---- 回调注入模型包装器（追踪/监控）----
 
 type callbackModelWrapper[M MessageType] struct {
 	inner Model[M]
@@ -193,34 +196,35 @@ func (w *callbackModelWrapper[M]) BindTools(tools []*schema.ToolInfo) error {
 	return w.inner.BindTools(tools)
 }
 
-// ---- Model Wrapper Chain Builder ----
+// ---- 模型包装链构建器 ----
 
-// BuildModelWrapperChain builds the complete wrapper chain:
+// BuildModelWrapperChain 自内向外组装完整 Model 包装链：
 //
-//	base → failover → retry → eventSender → user wrappers → callback
+//	base → failover → retry → eventSender → 用户中间件 → callback
 //
-// The chain is built from innermost (closest to model) to outermost.
-// allToolInfos contains the merged tool infos from config.Tools + ToolContributor middlewares.
+// 自最内层（贴近 base Model）向外层依次包装。
+// allToolInfos 合并 config.Tools 与各中间件 ContributeToolInfos。
+// BuildModelWrapperChain 按固定顺序组装 Model 装饰器链。
 func BuildModelWrapperChain[M MessageType](base Model[M], ec *reActExecCtx, cfg *ReActConfig[M], allToolInfos []*schema.ToolInfo) Model[M] {
 	model := base
 
-	// 1. Event sender (skip if user middlewares provide their own to avoid duplicates)
+	// 1. 事件发送（用户中间件已有 EventSender 时跳过，避免重复）
 	if !HasUserEventSenderModelWrapper(cfg.Middlewares) {
 		model = wrapModelWithEventSender(model, ec)
 	}
 
-	// 2. Retry (wraps event sender so retries replay the entire inner chain)
+	// 2. 重试（包裹 event sender，重试时重放整条内链）
 	if cfg.RetryConfig != nil {
 		model = newTypedRetryModelWrapper(model, cfg.RetryConfig)
 	}
 
-	// 3. Failover (wraps retry so each failover attempt gets retry behavior)
+	// 3. 故障转移（每次 failover 尝试仍享有 retry 行为）
 	if cfg.FailoverConfig != nil && len(cfg.FailoverConfig.Models) > 0 {
 		allModels := append([]Model[M]{base}, cfg.FailoverConfig.Models...)
 		model = newFailoverModel(allModels, cfg.FailoverConfig)
 	}
 
-	// 4. User middleware wrappers (outermost)
+	// 4. 用户中间件 WrapModel（如 telemetry）
 	for _, mw := range cfg.Middlewares {
 		if mw == nil {
 			continue
@@ -236,21 +240,21 @@ func BuildModelWrapperChain[M MessageType](base Model[M], ec *reActExecCtx, cfg 
 		}
 	}
 
-	// 5. State wrapper: message deep copy + ID injection + cancel check (guards against middleware side-effects)
+	// 5. 状态包装：深拷贝消息、注入 ID、检查 cancel（防中间件副作用）
 	var cancelCtx *cancelContext
 	if ec != nil {
 		cancelCtx = ec.cancelCtx
 	}
 	model = newTypedStateModelWrapper(model, cancelCtx)
 
-	// 6. Callback injection (outermost — wraps everything)
+	// 6. 回调注入（最外层，onStart/onEnd/onError）
 	model = &callbackModelWrapper[M]{inner: model}
 
 	return model
 }
 
-// injectMessageID assigns a unique message ID to each message if not already present.
-// Operates on copies to avoid data races when messages are shared across parallel goroutines.
+// injectMessageID 为无 ID 消息深拷贝并写入唯一 message ID。
+// 在副本上操作，避免并行 goroutine 共享消息时的数据竞争。
 func injectMessageID[M MessageType](msgs []M) []M {
 	for i, msg := range msgs {
 		switch v := any(msg).(type) {
@@ -269,3 +273,5 @@ func injectMessageID[M MessageType](msgs []M) []M {
 	}
 	return msgs
 }
+
+// Stream 路径合并 chunks 后发送单次 model output 事件；suppressEventSend 可抑制。

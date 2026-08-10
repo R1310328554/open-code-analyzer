@@ -1,12 +1,15 @@
 package core
 
+// options.go — Agent Run 函数式选项：session、checkpoint、回调、取消与历史修饰。
+
+
 import (
 	"context"
 
 	"ragflow/internal/harness/core/internal"
 )
 
-// RunOption configures an agent run.
+// RunOption 配置单次 Agent 运行行为。
 type RunOption interface{ apply(*runOptions) }
 
 type runOptions struct {
@@ -32,6 +35,7 @@ func WrapImplSpecificOptFn(fn func(*runOptions)) RunOption {
 	return runOptFn(fn)
 }
 
+// getCommonOptions 合并多个 RunOption 到 runOptions。
 func getCommonOptions(o *runOptions, opts ...RunOption) *runOptions {
 	if o == nil {
 		o = &runOptions{}
@@ -44,50 +48,50 @@ func getCommonOptions(o *runOptions, opts ...RunOption) *runOptions {
 	return o
 }
 
-// WithSessionValues injects session-scoped key-value pairs into the run context.
+// WithSessionValues 向运行上下文注入 session 级键值。
 func WithSessionValues(vals map[string]any) RunOption {
 	return runOptFn(func(o *runOptions) { o.sessionValues = vals })
 }
 
-// WithCheckPointID sets the checkpoint ID for this run, enabling interrupt/resume.
+// WithCheckPointID 设置 checkpoint ID，支持中断/恢复。
 func WithCheckPointID(id string) RunOption {
 	return runOptFn(func(o *runOptions) { o.checkPointID = &id })
 }
 
-// WithSkipTransferMessages prevents the agent from receiving messages forwarded
+// WithSkipTransferMessages 阻止接收父 Agent 转发的消息。
 // from parent agents during a transfer.
 func WithSkipTransferMessages() RunOption {
 	return runOptFn(func(o *runOptions) { o.skipTransferMessages = true })
 }
 
-// WithCallbacks registers agent lifecycle callbacks (onStart/onEnd/onError/onInterrupt).
+// WithCallbacks 注册 Agent 生命周期回调。
 func WithCallbacks(cbs ...any) RunOption {
 	return runOptFn(func(o *runOptions) { o.callbacks = cbs })
 }
 
-// WithAgentNames scopes the associated options to specific agent names.
+// WithAgentNames 将选项限定到指定 Agent 名称。
 func WithAgentNames(names ...string) RunOption {
 	return runOptFn(func(o *runOptions) { o.agentNames = names })
 }
 
-// WithSharedParentSession gives sub-agents access to the parent's session values.
+// WithSharedParentSession 子 Agent 可访问父 session 值。
 func WithSharedParentSession() RunOption {
 	return runOptFn(func(o *runOptions) { o.sharedParentSession = true })
 }
 
-// ---- Model-agent-specific options ----
+// ---- 模型 Agent 专用选项 ----
 
-// WithChatModelOptions passes model-level options (e.g., temperature, retry) to the underlying Model.
+// WithChatModelOptions 传递 temperature 等 Model 级选项。
 func WithChatModelOptions(opts []ModelOption) RunOption {
 	return WrapImplSpecificOptFn(func(o *runOptions) { o.chatModelOptions = opts })
 }
 
-// WithToolOptions passes tool-level options to tool invocations during this run.
+// WithToolOptions 传递本次运行的工具调用选项。
 func WithToolOptions(opts []ToolOption) RunOption {
 	return WrapImplSpecificOptFn(func(o *runOptions) { o.toolOptions = opts })
 }
 
-// WithAgentToolOptions passes agent-level options to a specific sub-agent identified by name.
+// WithAgentToolOptions 为指定名称的子 Agent 传递 RunOption。
 func WithAgentToolOptions(agentName string, opts []RunOption) RunOption {
 	return WrapImplSpecificOptFn(func(o *runOptions) {
 		if o.agentToolOptions == nil {
@@ -97,23 +101,23 @@ func WithAgentToolOptions(agentName string, opts []RunOption) RunOption {
 	})
 }
 
-// WithHistoryModifier sets a function that can trim or transform message history before
+// WithHistoryModifier 在每次 Model 调用前裁剪或变换消息历史。
 // each model call. Useful for context-window management.
 func WithHistoryModifier(fn func(context.Context, []Message) []Message) RunOption {
 	return WrapImplSpecificOptFn(func(o *runOptions) { o.historyModifier = fn })
 }
 
-// WithAfterToolCallsHook registers a per-run hook that fires synchronously after
+// WithAfterToolCallsHook 在本轮全部 tool 调用完成后、下次 Model 调用前同步执行。
 // all tool calls in a react iteration complete, before the next Model call.
-// This is suitable for AgentLoop Push+Preempt patterns where the pushed item
+// 适用于 AgentLoop Push+Preempt：推送项需在下一轮 GenInput 可见。
 // must be visible to the next turn's GenInput.
 func WithAfterToolCallsHook(fn func(ctx context.Context) error) RunOption {
 	return runOptFn(func(o *runOptions) { o.afterToolCallsHook = fn })
 }
 
-// ---- Agent callbacks (scoped per agent name) ----
+// ---- Agent 回调（可按名称限定）----
 
-// WithAgentErrorCallback registers an error callback for the agent run.
+// WithAgentErrorCallback 注册不可恢复错误时的回调。
 // It fires when an agent encounters a non-recoverable error during execution.
 func WithAgentErrorCallback(fn func(ctx context.Context, err error)) RunOption {
 	return WrapImplSpecificOptFn(func(o *runOptions) {
@@ -121,7 +125,7 @@ func WithAgentErrorCallback(fn func(ctx context.Context, err error)) RunOption {
 	})
 }
 
-// WithAgentInterruptCallback registers an interrupt callback for the agent run.
+// WithAgentInterruptCallback 注册中断（如 human-in-the-loop）回调。
 // It fires when the agent execution is interrupted (e.g., for human-in-the-loop).
 func WithAgentInterruptCallback(fn func(ctx context.Context, info *InterruptInfo)) RunOption {
 	return WrapImplSpecificOptFn(func(o *runOptions) {
@@ -129,20 +133,23 @@ func WithAgentInterruptCallback(fn func(ctx context.Context, info *InterruptInfo
 	})
 }
 
-// ---- Cancel option ----
+// ---- 取消选项 ----
 
+// WithCancel 返回 RunOption 与 AgentCancelFunc，配合 cancelContext 状态机。
 func WithCancel() (RunOption, AgentCancelFunc) {
 	cc := newCancelContext()
 	opt := WrapImplSpecificOptFn(func(o *runOptions) { o.cancelCtx = cc })
 	return opt, cc.buildCancelFunc()
 }
 
-// ---- Configuration ----
+// ---- 全局配置 ----
 
-// SetLanguage sets the language for agent prompts.
+// SetLanguage 设置 Agent prompt 语言（English/Chinese）。
 func SetLanguage(lang internal.Language) { internal.SetLanguage(lang) }
 
 const (
 	LanguageEnglish = internal.LanguageEnglish
 	LanguageChinese = internal.LanguageChinese
 )
+
+// WrapImplSpecificOptFn 供 ReAct/Graph 等实现注入私有 runOptions 字段。

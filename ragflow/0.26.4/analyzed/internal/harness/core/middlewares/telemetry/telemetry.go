@@ -1,4 +1,6 @@
-// Package telemetry provides an OpenTelemetry ReAct middleware for harness-go.
+// telemetry.go — OpenTelemetry 追踪中间件：为模型调用与工具执行创建 span。
+
+// Package telemetry 为 harness-go ReAct Agent 提供 OpenTelemetry 追踪中间件。
 //
 // Usage:
 //
@@ -11,8 +13,8 @@
 //
 //	mw := telemetrymw.New(telemetrymw.WithTracing(false))
 //
-// The middleware uses RAGFlow's global TracerProvider (configured in
-// internal/observability/otel). Tracing is only active when the provider
+// 使用 RAGFlow 全局 TracerProvider（见 internal/observability/otel）。
+// 仅当 OTLP 端点已配置时 tracing 生效。
 // has been initialized with an OTLP collector endpoint.
 package telemetry
 
@@ -28,15 +30,15 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// Config holds configuration for the telemetry middleware.
+// Config 配置 telemetry 中间件。
 type Config struct {
 	EnableTracing bool
 }
 
-// Option configures the telemetry middleware.
+// Option 函数式配置选项。
 type Option func(*Config)
 
-// WithTracing enables or disables distributed tracing.
+// WithTracing 开关分布式追踪。
 func WithTracing(enabled bool) Option {
 	return func(c *Config) { c.EnableTracing = enabled }
 }
@@ -47,14 +49,14 @@ func defaultConfig() *Config {
 
 const tracerName = "ragflow/internal/harness/core/middlewares/telemetry"
 
-// Middleware is a ReAct middleware that instruments agent execution with
+// Middleware 用 OpenTelemetry span 包装 Agent 执行路径。
 // OpenTelemetry tracing spans. It wraps model calls and tool invocations.
 //
-// NOTE: Metrics are not yet supported — RAGFlow currently only configures
+// 注意：当前仅 TracerProvider，Metrics 待 MeterProvider 接入后恢复。
 // a TracerProvider (see internal/observability/otel). Once a MeterProvider
 // is added, metrics recording can be restored here.
 //
-// TODO: Make this generic (Middleware[M]) to support AgenticMessage alongside
+// TODO：泛型化以同时支持 AgenticMessage 与 *schema.Message。
 // *schema.Message. Currently hardcoded to *schema.Message, unlike other
 // middlewares that use BaseMiddleware[M].
 type Middleware struct {
@@ -63,7 +65,7 @@ type Middleware struct {
 	tracer trace.Tracer
 }
 
-// New creates a new telemetry middleware with default settings.
+// New 创建 telemetry 中间件，默认启用 tracing。
 func New(opts ...Option) *Middleware {
 	cfg := defaultConfig()
 	for _, opt := range opts {
@@ -76,7 +78,7 @@ func New(opts ...Option) *Middleware {
 	return m
 }
 
-// recordSpanError sets span status and records the error.
+// recordSpanError 将 span 标为 Error 并记录 err。
 func recordSpanError(span trace.Span, err error) {
 	if span == nil || err == nil {
 		return
@@ -85,7 +87,7 @@ func recordSpanError(span trace.Span, err error) {
 	span.RecordError(err)
 }
 
-// WrapModel wraps the model call with a tracing span.
+// WrapModel 包装 Model 为 tracedModel，Generate/Stream 各建 span。
 func (m *Middleware) WrapModel(ctx context.Context, model core.Model[*schema.Message], mc *core.ModelContext) (core.Model[*schema.Message], error) {
 	if m.tracer == nil {
 		return model, nil
@@ -97,7 +99,7 @@ func (m *Middleware) WrapModel(ctx context.Context, model core.Model[*schema.Mes
 	}, nil
 }
 
-// WrapToolInvoke wraps a synchronous tool call with a span.
+// WrapToolInvoke 为同步工具调用创建 internal span。
 func (m *Middleware) WrapToolInvoke(ctx context.Context, ep core.InvokableToolEndpoint, tc *core.ToolContext) (core.InvokableToolEndpoint, error) {
 	if m.tracer == nil {
 		return ep, nil
@@ -126,7 +128,7 @@ func (m *Middleware) WrapToolInvoke(ctx context.Context, ep core.InvokableToolEn
 	}, nil
 }
 
-// WrapToolStream wraps a streaming tool call with a span.
+// WrapToolStream 为流式工具调用创建 span。
 func (m *Middleware) WrapToolStream(ctx context.Context, ep core.StreamableToolEndpoint, tc *core.ToolContext) (core.StreamableToolEndpoint, error) {
 	if m.tracer == nil {
 		return ep, nil
@@ -155,7 +157,7 @@ func (m *Middleware) WrapToolStream(ctx context.Context, ep core.StreamableToolE
 	}, nil
 }
 
-// WrapEnhancedInvokableToolCall wraps an enhanced tool call with a span.
+// WrapEnhancedInvokableToolCall 包装增强型同步工具调用。
 func (m *Middleware) WrapEnhancedInvokableToolCall(ctx context.Context, ep core.EnhancedInvokableToolEndpoint, tc *core.ToolContext) (core.EnhancedInvokableToolEndpoint, error) {
 	if m.tracer == nil {
 		return ep, nil
@@ -181,7 +183,7 @@ func (m *Middleware) WrapEnhancedInvokableToolCall(ctx context.Context, ep core.
 	}, nil
 }
 
-// WrapEnhancedStreamableToolCall wraps an enhanced streaming tool call.
+// WrapEnhancedStreamableToolCall 包装增强型流式工具调用。
 func (m *Middleware) WrapEnhancedStreamableToolCall(ctx context.Context, ep core.EnhancedStreamableToolEndpoint, tc *core.ToolContext) (core.EnhancedStreamableToolEndpoint, error) {
 	if m.tracer == nil {
 		return ep, nil
@@ -210,7 +212,7 @@ func (m *Middleware) WrapEnhancedStreamableToolCall(ctx context.Context, ep core
 	}, nil
 }
 
-// tracedModel wraps a Model with OpenTelemetry tracing.
+// tracedModel 在 Generate/Stream 边界记录 messages/tools 属性。
 type tracedModel struct {
 	inner   core.Model[*schema.Message]
 	mw      *Middleware
@@ -270,5 +272,7 @@ func (m *tracedModel) BindTools(tools []*schema.ToolInfo) error {
 	return m.inner.BindTools(tools)
 }
 
-// Ensure Middleware implements the core middleware interface.
+// 编译期断言 Middleware 实现 ReActMiddleware。
 var _ core.ReActMiddleware = (*Middleware)(nil)
+
+// tracer 为 nil 或 EnableTracing 关闭时各 Wrap* 直接透传原始 endpoint。

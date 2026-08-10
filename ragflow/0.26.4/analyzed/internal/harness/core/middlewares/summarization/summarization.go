@@ -1,5 +1,7 @@
-// Package summarization provides a middleware that automatically summarizes
-// conversation history when token/message thresholds are exceeded.
+// summarization.go — 会话摘要中间件：超 token/消息阈值时压缩历史，可选 supersede 与优先级摘要压缩。
+
+// Package summarization 在超阈值时自动摘要对话历史。
+// 使用 Compactor 安全切分、Supersede 移除陈旧文件操作。
 // Uses Compactor for safe message splitting, Supersede for removing stale
 // file operations, and priority-based summary compression.
 package summarization
@@ -14,13 +16,13 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// TriggerCondition defines when summarization activates.
+// TriggerCondition 定义摘要触发条件（token 或消息数）。
 type TriggerCondition struct {
 	MaxTokens   int // Trigger when estimated tokens exceed this
 	MaxMessages int // Trigger when message count exceeds this (0 = no limit)
 }
 
-// TypedConfig configures the summarization middleware.
+// TypedConfig 配置摘要中间件与 Compactor/压缩预算。
 type TypedConfig[M core.MessageType] struct {
 	Model              core.Model[M]
 	Trigger            *TriggerCondition
@@ -33,9 +35,9 @@ type TypedConfig[M core.MessageType] struct {
 	MaxRetries         int
 	MaxTokens          int
 	SummaryLang        string
-	// EnableSupersede enables Trident-like stale file operation removal.
+	// EnableSupersede 启用陈旧文件读操作的 supersede 移除。
 	EnableSupersede bool
-	// EnableCompression enables priority-based summary compression.
+	// EnableCompression 启用基于优先级的摘要行压缩。
 	EnableCompression bool
 	// CompactionCfg configures the Compactor (token threshold, preserve count).
 	CompactionCfg *CompactionConfig
@@ -51,6 +53,7 @@ type middleware[M core.MessageType] struct {
 	compactor *Compactor
 }
 
+// NewTyped 创建摘要中间件并填充默认 Trigger 与 Compactor 配置。
 func NewTyped[M core.MessageType](cfg *TypedConfig[M]) core.TypedReActMiddleware[M] {
 	if cfg == nil {
 		cfg = &TypedConfig[M]{MaxTokens: 160000}
@@ -80,15 +83,16 @@ func New(cfg *Config) core.TypedReActMiddleware[*schema.Message] {
 	return NewTyped[*schema.Message](cfg)
 }
 
+// BeforeModelRewrite 执行 supersede → 阈值判断 → 压缩 → 可选压缩摘要。
 func (m *middleware[M]) BeforeModelRewrite(ctx context.Context, state *core.TypedReActAgentState[M], mc *core.TypedModelContext[M]) (context.Context, *core.TypedReActAgentState[M], error) {
-	// Phase 1: Supersede — remove stale file operations before checking thresholds.
+	// 阶段 1：Supersede — 阈值检查前移除 superseded 文件操作。
 	if m.cfg.EnableSupersede {
 		msgs := typedToSchemaMessages(state.Messages)
 		filtered := ApplySupersede(msgs)
 		state.Messages = schemaMessagesToTyped[M](filtered)
 	}
 
-	// Phase 2: Check if compaction is needed.
+	// 阶段 2：判断是否需要压缩。
 	if !m.shouldCompact(ctx, state) {
 		return ctx, state, nil
 	}
@@ -101,7 +105,7 @@ func (m *middleware[M]) BeforeModelRewrite(ctx context.Context, state *core.Type
 		_ = core.TypedSendEvent(ctx, ev)
 	}
 
-	// Phase 3: Compact using Compactor.
+	// 阶段 3：调用 Compactor 生成摘要消息。
 	msgs := typedToSchemaMessages(state.Messages)
 	compactCfg := m.cfg.CompactionCfg
 	summarizer := func(ctx context.Context, msgs []*schema.Message) (string, error) {
@@ -113,7 +117,7 @@ func (m *middleware[M]) BeforeModelRewrite(ctx context.Context, state *core.Type
 		return ctx, state, nil
 	}
 
-	// Phase 4: Compress the summary message if enabled.
+	// 阶段 4：可选对 <summary> 内容做优先级压缩。
 	if m.cfg.EnableCompression && len(compacted) > 0 && compacted[0].Role == schema.RoleSystem &&
 		strings.Contains(compacted[0].Content, "<summary>") {
 		compacted[0].Content = compressSummaryContent(compacted[0].Content, m.cfg.SummaryBudget)
@@ -154,6 +158,7 @@ func (m *middleware[M]) shouldCompact(ctx context.Context, state *core.TypedReAc
 	return false
 }
 
+// generateSummary 调用 Model 生成摘要，含重试与内部事件。
 func (m *middleware[M]) generateSummary(ctx context.Context, msgs []M) (string, error) {
 	if m.cfg.Model == nil {
 		return fmt.Sprintf("(%d messages)", len(msgs)), nil
@@ -222,7 +227,7 @@ func compressSummaryContent(content string, budget *SummaryBudget) string {
 	return content[:start+9] + "\n" + compressed + "\n" + content[end:]
 }
 
-// ---- Helper functions ----
+// ---- 辅助函数 ----
 
 func typedToSchemaMessages[M core.MessageType](msgs []M) []*schema.Message {
 	result := make([]*schema.Message, 0, len(msgs))
@@ -275,7 +280,7 @@ func truncateText(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
 	}
-	// Slice on a rune boundary; [:maxLen] indexes bytes and can split a
+	// 按 rune 边界截断对话片段，避免摘要 prompt 中出现乱码。
 	// multi-byte UTF-8 character, producing invalid output in the summary.
 	runes := []rune(s)
 	if maxLen > len(runes) {
@@ -303,13 +308,13 @@ func defaultTokenCounter[M core.MessageType](ctx context.Context, msgs []M) (int
 	return total, nil
 }
 
-// FinalizerBuilder builds a Finalize function for summarization.
+// FinalizerBuilder 构建保留最近 N 条消息的 Finalize 函数。
 type FinalizerBuilder struct {
 	Lang       string
 	KeepLatest int
 }
 
-// Build creates a Finalize function that preserves the most recent messages.
+// Build 返回 Finalize：摘要消息 + 原始列表尾部 keep 条。
 func (b *FinalizerBuilder) Build() func(ctx context.Context, original, summary []*schema.Message) ([]*schema.Message, error) {
 	keep := b.KeepLatest
 	if keep <= 0 {
@@ -325,3 +330,5 @@ func (b *FinalizerBuilder) Build() func(ctx context.Context, original, summary [
 		return result, nil
 	}
 }
+
+// SummaryLang 为 zh 时使用中文摘要指令；Callback 可观测压缩前后状态。

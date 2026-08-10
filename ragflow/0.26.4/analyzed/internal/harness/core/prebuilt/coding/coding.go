@@ -1,7 +1,9 @@
-// Package coding provides a ready-to-use coding agent built on top of agentcore's
+// coding.go — 开箱即用编码 Agent：文件系统、Shell 白名单、Git 安全规则与可选子 Agent。
+
+// Package coding 基于 agentcore ReAct 与 profile 提供生产级编码助手。
 // ReAct agent, middleware stack, and profile system.
 //
-// It is the agentcore equivalent of deepagents-code — a production-grade coding
+// 等价于 deepagents-code：文件操作、Shell 安全、Git 防护与可选子 Agent。
 // assistant with file operations, shell security, Git safety, and optional sub-agents.
 //
 // Quick start:
@@ -35,24 +37,24 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// Config configures the coding agent.
+// Config 配置编码 Agent。
 type Config struct {
-	// Name of the agent. Default: "coding_agent".
+	// Name Agent 名称，默认 coding_agent。
 	Name string
 
-	// Model is the chat model. Required (unless using profile system).
+	// Model 聊天模型（使用 profile 时可省略）。
 	Model core.Model[*schema.Message]
 
-	// Tools are additional tools to register beyond the built-in coding tools.
+	// Tools 除内置编码工具外额外注册的工具。
 	Tools []core.Tool
 
-	// Instruction overrides the default coding system prompt.
+	// Instruction 覆盖默认编码系统 prompt。
 	Instruction string
 
-	// MaxIterations limits the ReAct loop. Default: 30.
+	// MaxIterations ReAct 循环上限，默认 30。
 	MaxIterations int
 
-	// EnableShell when true adds shell execution capability via a local backend.
+	// EnableShell 为 true 时启用本地 Shell 执行（默认只读文件操作）。
 	// Default: false (read-only file operations).
 	EnableShell bool
 
@@ -70,18 +72,18 @@ type Config struct {
 	// Use a LocalFilesystemBackend for real file system access.
 	FilesystemBackend filesystem.Backend
 
-	// SubAgentSpecs declares sub-agents for task delegation.
+	// SubAgentSpecs 声明用于任务委托的子 Agent。
 	SubAgentSpecs []subagent.SubAgentSpec
 
 	// SubAgentConfig configures the SubAgentMiddleware (recursion depth, events).
 	SubAgentConfig *subagent.Config
 
-	// RegisterHarness when true also registers the "coding-agent" harness profile.
+	// RegisterHarness 为 true 时同时注册 coding-agent harness profile。
 	// Default: false.
 	RegisterHarness bool
 }
 
-// DefaultConfig returns a Config with sensible defaults.
+// DefaultConfig 返回带合理默认值的 Config。
 func DefaultConfig() *Config {
 	return &Config{
 		Name:          "coding_agent",
@@ -90,14 +92,15 @@ func DefaultConfig() *Config {
 	}
 }
 
-// New creates a fully-configured coding ReActAgent.
+// New 组装文件系统、Shell 白名单、SubAgent 中间件并创建 ReActAgent。
 //
-// The agent includes:
-//   - Coding-optimized system prompt (with Git safety rules)
-//   - Filesystem middleware (read/write/edit/ls/glob/grep)
-//   - Shell allow-list middleware (when EnableShell is true)
-//   - SubAgentMiddleware (when SubAgentSpecs is non-empty)
+// 默认栈包含：
+//   - 编码优化系统 prompt（含 Git 安全规则）
+//   - 文件系统中间件（read/write/edit/ls/glob/grep）
+//   - Shell 命令白名单中间件（EnableShell 时）
+//   - SubAgentMiddleware（SubAgentSpecs 非空时）
 //   - Optional "coding-agent" harness profile registration
+// New 按 Config 构建中间件栈并返回 ReActAgent。
 func New(cfg *Config) *core.ReActAgent[*schema.Message] {
 	if cfg == nil {
 		cfg = DefaultConfig()
@@ -116,7 +119,7 @@ func New(cfg *Config) *core.ReActAgent[*schema.Message] {
 	// Build middleware stack.
 	var middlewares []core.ReActMiddleware
 
-	// 1. Shell allow-list middleware (applied BEFORE filesystem to intercept execute calls).
+	// 1. Shell 白名单（先于 filesystem，拦截 execute 调用）。
 	if cfg.EnableShell {
 		shellCfg := cfg.ShellAllowList
 		if shellCfg == nil {
@@ -128,7 +131,7 @@ func New(cfg *Config) *core.ReActAgent[*schema.Message] {
 		middlewares = append(middlewares, NewShellAllowList(shellCfg))
 	}
 
-	// 2. Filesystem middleware (provides read/write/edit/ls/glob/grep/execute).
+	// 2. 文件系统中间件（提供读写与 execute）。
 	fsCfg := &filesystem.Config{
 		Backend: cfg.FilesystemBackend,
 	}
@@ -140,7 +143,7 @@ func New(cfg *Config) *core.ReActAgent[*schema.Message] {
 	}
 	middlewares = append(middlewares, filesystem.New(fsCfg))
 
-	// 3. SubAgentMiddleware (when sub-agents are declared).
+	// 3. SubAgentMiddleware（声明子 Agent 时 Init 并注入工具）。
 	if len(cfg.SubAgentSpecs) > 0 {
 		saCfg := cfg.SubAgentConfig
 		if saCfg == nil {
@@ -181,9 +184,9 @@ func New(cfg *Config) *core.ReActAgent[*schema.Message] {
 	return core.NewReActAgent(reactCfg)
 }
 
-// ---- Local shell backend ----
+// ---- 本地 Shell 后端 ----
 
-// localShellBackend implements filesystem.Backend with local shell execution.
+// localShellBackend 用本地 OS 实现 filesystem.Backend 与 Shell 执行。
 type localShellBackend struct{}
 
 func (b *localShellBackend) Read(path string) (string, error) {
@@ -256,7 +259,7 @@ func (b *localShellBackend) Execute(command string) (string, error) {
 	return string(out), nil
 }
 
-// ---- Dummy tool to bootstrap ReAct loop ----
+// ---- 引导 ReAct 循环的占位工具 ----
 
 type execTool struct{}
 
@@ -269,9 +272,9 @@ func (t *execTool) Stream(ctx context.Context, args string, opts ...core.ToolOpt
 	return schema.StreamReaderFromArray([]string{""}), nil
 }
 
-// ---- Harness profile registration ----
+// ---- Harness profile 注册 ----
 
-// HarnessProfile returns a pre-configured HarnessProfile for coding agents.
+// HarnessProfile 返回 coding-agent 预配置 HarnessProfile。
 // It registers the standard coding agent middleware stack.
 func HarnessProfile() *profile.HarnessProfile {
 	return &profile.HarnessProfile{
@@ -282,7 +285,7 @@ func HarnessProfile() *profile.HarnessProfile {
 	}
 }
 
-// RegisterHarnessProfile registers the "coding-agent" harness profile globally.
+// RegisterHarnessProfile 全局注册 coding-agent profile。
 // After calling this, users can create coding agents via profile.NewAgent:
 //
 //	agent, _ := profile.NewAgent(ctx, &profile.AgentConfig{
@@ -297,3 +300,5 @@ func RegisterHarnessProfile() {
 }
 
 func strPtr(s string) *string { return &s }
+
+// 无子 Agent 且启用 Shell/文件系统时注入 _bootstrap_tool 以触发 ReAct 循环。

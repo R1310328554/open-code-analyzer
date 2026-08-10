@@ -1,5 +1,7 @@
-// Package reduction provides tool output reduction middleware.
-// Two-phase design: Truncation (immediate) -> Clear (before model rewrite).
+// reduction.go — 工具输出缩减中间件：BeforeModelRewrite 分两阶段截断过长输出并清理陈旧 tool 调用。
+
+// Package reduction 提供工具输出缩减中间件。
+// 两阶段设计：即时截断 → 模型重写前清理。
 package reduction
 
 import (
@@ -10,25 +12,25 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// Backend persists overflow content.
+// Backend 持久化溢出内容的后端接口。
 type Backend interface {
 	Store(key string, content string) error
 	Load(key string) (string, error)
 }
 
-// ToolConfig provides per-tool reduction configuration.
+// ToolConfig 单工具缩减策略。
 type ToolConfig struct {
 	SkipTruncation bool
 	SkipClear      bool
 }
 
-// TypedConfig configures the reduction middleware.
+// TypedConfig 配置缩减中间件。
 type TypedConfig[M core.MessageType] struct {
 	Backend           Backend
-	MaxToolOutputLen  int // Truncate tool output beyond this (0 = no truncation)
-	MaxToolCalls      int // Clear tool calls beyond this (0 = no clear)
-	MaxTokensForClear int // Trigger clear when total tokens exceed this
-	ClearAtLeast      int // Ensure at least this many tokens are freed per clear
+	MaxToolOutputLen  int // 超出此长度截断 tool 输出（0 表示不截断）
+	MaxToolCalls      int // 超出此数量清理 tool 调用（0 表示不清理）
+	MaxTokensForClear int // 总 token 超过此值触发清理
+	ClearAtLeast      int // 每次清理至少释放的 token 数
 	ToolConfigs       map[string]*ToolConfig
 	ExcludeTools      map[string]bool
 }
@@ -42,6 +44,7 @@ type middleware[M core.MessageType] struct {
 	keyCounter int
 }
 
+// NewTyped 创建泛型 reduction 中间件并填充默认阈值。
 func NewTyped[M core.MessageType](cfg *TypedConfig[M]) core.TypedReActMiddleware[M] {
 	if cfg == nil {
 		cfg = &TypedConfig[M]{}
@@ -62,13 +65,14 @@ func New(cfg *Config) core.TypedReActMiddleware[*schema.Message] {
 	return NewTyped[*schema.Message](cfg)
 }
 
-// ---- Clear Phase (BeforeModelRewrite) ----
+// ---- 清理阶段（BeforeModelRewrite）----
 
+// BeforeModelRewrite 截断输出并按 token 预算清理旧 tool 消息。
 func (mw *middleware[M]) BeforeModelRewrite(ctx context.Context, state *core.TypedReActAgentState[M], mc *core.TypedModelContext[M]) (context.Context, *core.TypedReActAgentState[M], error) {
-	// Phase 1: Truncate oversized outputs
+	// 阶段 1：截断过长 tool 输出
 	mw.truncateToolOutputs(state)
 
-	// Phase 2: Clear old tool calls if total tokens exceed threshold
+	// 阶段 2：token 超阈值时清理旧 tool 调用
 	if mw.cfg.MaxTokensForClear > 0 {
 		totalTokens := mw.estimateTokens(state.Messages)
 		if totalTokens > mw.cfg.MaxTokensForClear {
@@ -79,6 +83,7 @@ func (mw *middleware[M]) BeforeModelRewrite(ctx context.Context, state *core.Typ
 	return ctx, state, nil
 }
 
+// truncateToolOutputs 遍历 tool 消息，超长度或超数量则截断/占位。
 func (mw *middleware[M]) truncateToolOutputs(state *core.TypedReActAgentState[M]) {
 	toolCount := 0
 	for i, msg := range state.Messages {
@@ -102,6 +107,7 @@ func (mw *middleware[M]) truncateToolOutputs(state *core.TypedReActAgentState[M]
 	}
 }
 
+// clearOldToolCalls 从最早 tool 消息起释放 token 直至达标。
 func (mw *middleware[M]) clearOldToolCalls(state *core.TypedReActAgentState[M], totalTokens int) {
 	if mw.cfg.ClearAtLeast <= 0 {
 		return
@@ -131,6 +137,7 @@ func (mw *middleware[M]) clearOldToolCalls(state *core.TypedReActAgentState[M], 
 	}
 }
 
+// estimateTokens 启发式估算消息列表 token 数。
 func (mw *middleware[M]) estimateTokens(msgs []M) int {
 	total := 0
 	for _, msg := range msgs {
@@ -165,11 +172,13 @@ func truncateText(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
 	}
-	// Slice on a rune boundary; [:maxLen] indexes bytes and can split a
-	// multi-byte UTF-8 character, same as TruncateToolResult guards against.
+	// 按 rune 边界截断；[:maxLen] 按字节索引可能切断 UTF-8 多字节字符，
+	// 与 TruncateToolResult 的防护逻辑一致。
 	runes := []rune(s)
 	if maxLen > len(runes) {
 		return s
 	}
 	return string(runes[:maxLen])
 }
+
+// ExcludeTools 中的工具跳过截断；Backend 可用于将溢出内容外存。

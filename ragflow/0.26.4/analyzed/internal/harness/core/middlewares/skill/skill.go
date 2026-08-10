@@ -1,5 +1,7 @@
-// Package skill provides skill loading and execution middleware.
-// Skills are defined in SKILL.md files with YAML frontmatter.
+// skill.go — 技能中间件：Inline 注入指令，Fork/ForkWithContext 注册为工具。
+
+// Package skill 提供技能加载与执行中间件。
+// 技能定义在带 YAML frontmatter 的 SKILL.md 中。
 package skill
 
 import (
@@ -11,32 +13,32 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ExecMode defines how a skill is executed.
+// ExecMode 定义技能执行方式。
 type ExecMode int
 
 const (
-	ModeInline          ExecMode = iota // Skill content injected into instruction
-	ModeFork                            // Skill loaded via a tool
-	ModeForkWithContext                 // Skill loaded via a tool with parent context
+	ModeInline          ExecMode = iota // 技能内容注入系统指令
+	ModeFork                            // 通过工具调用加载技能
+	ModeForkWithContext                 // 带父上下文通过工具加载
 )
 
-// FileSystemBackend reads skill definitions from a file system.
+// FileSystemBackend 从文件系统读取技能定义。
 type FileSystemBackend interface {
 	Read(path string) (string, error)
 	List() ([]string, error)
 }
 
-// Config defines a single skill.
+// Config 描述单个技能。
 type Config struct {
 	Name          string
 	Description   string
 	Content       string
 	ExecutionMode ExecMode
-	Model         string // Model name for fork modes
-	Agent         string // Agent name for fork modes
+	Model         string // Fork 模式使用的模型名
+	Agent         string // Fork 模式使用的 Agent 名
 }
 
-// TypedConfig configures the skill middleware.
+// TypedConfig 配置技能中间件。
 type TypedConfig[M core.MessageType] struct {
 	Skills             []Config
 	Backend            FileSystemBackend
@@ -52,6 +54,7 @@ type middleware[M core.MessageType] struct {
 	cfg *TypedConfig[M]
 }
 
+// NewTyped 创建技能中间件。
 func NewTyped[M core.MessageType](cfg *TypedConfig[M]) core.TypedReActMiddleware[M] {
 	return &middleware[M]{cfg: cfg}
 }
@@ -60,6 +63,7 @@ func New(cfg *TypedConfig[*schema.Message]) core.TypedReActMiddleware[*schema.Me
 	return NewTyped[*schema.Message](cfg)
 }
 
+// ContributeTools 为 Fork 模式技能注册 skill_* 工具。
 func (m *middleware[M]) ContributeTools(ctx context.Context) []core.Tool {
 	if m.cfg == nil {
 		return nil
@@ -77,6 +81,7 @@ func (m *middleware[M]) ContributeTools(ctx context.Context) []core.Tool {
 func (m *middleware[M]) ContributeToolInfos(ctx context.Context) []*schema.ToolInfo   { return nil }
 func (m *middleware[M]) ContributeReturnDirectly(ctx context.Context) map[string]bool { return nil }
 
+// BeforeAgent 将 Inline 技能追加到系统指令。
 func (m *middleware[M]) BeforeAgent(ctx context.Context, rc *core.ReActAgentContext) (context.Context, *core.ReActAgentContext, error) {
 	if m.cfg == nil {
 		return ctx, rc, nil
@@ -89,7 +94,7 @@ func (m *middleware[M]) BeforeAgent(ctx context.Context, rc *core.ReActAgentCont
 	return ctx, rc, nil
 }
 
-// loadSkills returns all skills from config and backend.
+// loadSkills 合并配置与后端扫描的技能列表。
 func (m *middleware[M]) loadSkills() []Config {
 	if m.cfg == nil {
 		return nil
@@ -148,13 +153,14 @@ func (m *middleware[M]) newSkillTool(s Config) core.Tool {
 		})
 }
 
-// ---- Helpers ----
+// ---- 辅助函数 ----
 
+// parseSkill 解析 frontmatter 与正文为 Config。
 func parseSkill(content string) *Config {
 	cfg := &Config{ExecutionMode: ModeInline}
 	content = strings.TrimSpace(content)
 
-	// Parse YAML-like frontmatter
+	// 解析 YAML 风格 frontmatter
 	if strings.HasPrefix(content, "---") {
 		parts := strings.SplitN(content[3:], "---", 2)
 		if len(parts) == 2 {
@@ -174,7 +180,7 @@ func parseSkill(content string) *Config {
 			return cfg
 		}
 	}
-	// No frontmatter: use full content
+	// 无 frontmatter 时全文作为技能内容
 	cfg.Content = content
 	return cfg
 }
@@ -192,3 +198,5 @@ func truncate(s string, n int) string {
 	}
 	return s[:n] + "\n...(truncated)"
 }
+
+// BuildContent/BuildForkMessages/FormatForkResult 可定制 Fork 执行与结果格式化。

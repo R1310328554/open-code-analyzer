@@ -1,5 +1,7 @@
-// Package subagent provides a middleware that injects sub-agent tools into a
-// parent ReAct agent, with support for declarative agent config, middleware
+// subagent.go — 子 Agent 中间件：将子 Agent 注入父 ReAct 的工具列表，支持声明式配置、中间件继承与递归深度限制。
+
+// Package subagent 将子 Agent 作为动态工具注入父 ReAct Agent。
+// 支持声明式 AgentConfig、中间件继承与 MaxDepth 递归保护。
 // inheritance, and recursion depth protection.
 //
 // Quick Start:
@@ -26,10 +28,10 @@
 //	mw.BindToConfig(ctx, cfg)  // injects sub-agent tools + forces inline dispatch
 //	agent := core.NewReActAgent(cfg)
 //
-// The sub-agent automatically inherits the parent's non-subagent middlewares
+// InheritParentMiddlewares 为 true 时自动继承父 Agent 非 subagent 中间件。
 // (e.g. filesystem) when InheritParentMiddlewares is true on the spec.
 //
-// MaxDepth limits nested sub-agent call depth. When exceeded, the sub-agent
+// MaxDepth 限制嵌套深度；超限时通过 context 传播返回错误。
 // returns an error (checked via context.Context value propagation across
 // AgentTool invocations).
 package subagent
@@ -43,31 +45,31 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ---- Marker interface for middleware inheritance filtering ----
+// ---- 中间件继承过滤标记接口 ----
 
 type subAgentMarker interface{ isSubAgentMiddleware() }
 
-// ---- Configuration types ----
+// ---- 配置类型 ----
 
-// SubAgentSpec declares a sub-agent that can be invoked by the parent agent's
+// SubAgentSpec 声明可由父 Agent LLM 通过工具调用的子 Agent。
 // LLM via a tool call.
 //
-// At least one of Agent or AgentConfig must be set:
+// Agent 与 AgentConfig 至少设置其一；两者皆空则跳过该 spec。
 //   - Agent: a pre-built core.Agent instance.
 //   - AgentConfig: declarative config from which the Agent is built on BindToConfig.
 //
 // When both are nil, the spec is silently skipped.
 type SubAgentSpec struct {
-	// Name is the tool name the LLM uses to invoke this sub-agent.
+	// Name 为 LLM 调用子 Agent 的工具名。
 	Name string
-	// Description is the tool description shown to the LLM.
+	// Description 展示给 LLM 的工具描述。
 	Description string
 
 	// Agent is a pre-built Agent instance. Mutually exclusive with AgentConfig
 	// (AgentConfig takes precedence when both are set).
 	Agent core.Agent
 
-	// AgentConfig declaratively describes the sub-agent. The Agent is built
+	// AgentConfig 声明式描述子 Agent，BindToConfig/Init 时构建。
 	// from this config when BindToConfig is called. Overrides Agent when both set.
 	AgentConfig *AgentConfig
 
@@ -110,28 +112,28 @@ type AgentConfig struct {
 	Middlewares []core.ReActMiddleware
 }
 
-// Config configures the SubAgentMiddleware behaviour.
+// Config 配置 SubAgentMiddleware 行为。
 type Config struct {
-	// EmitInternalEvents forwards the sub-agent's internal events to the
+	// EmitInternalEvents 将子 Agent 内部事件转发到父事件流。
 	// parent agent's event stream.
 	EmitInternalEvents bool
 
-	// MaxDepth limits sub-agent recursion depth. 0 = unlimited.
+	// MaxDepth 限制子 Agent 递归深度，0 表示不限。
 	// A depth of 1 allows one level of sub-agent nesting (parent → sub).
 	// Each nested AgentTool call increments the depth via context.Context.
 	MaxDepth int
 }
 
-// ---- Middleware ----
+// ---- 中间件实现 ----
 
-// SubAgentMiddleware injects sub-agents as dynamic tools into a parent ReAct agent.
+// SubAgentMiddleware 将子 Agent 包装为 AgentTool 注入父 Agent。
 //
-// Tool contribution is now handled via the ToolContributor interface (ContributeTools).
+// 工具贡献经 ToolContributor；需继承时调用 Init 传入父 ReActConfig。
 // This eliminates the need to call BindToConfig in most cases. For specs that need
 // middleware inheritance (InheritParentMiddlewares), call Init(ctx, parentConfig)
 // after adding the middleware to the config's Middlewares slice.
 //
-// Deprecated: BindToConfig is retained for backward compatibility. Prefer using
+// BindToConfig 已弃用，优先 Init 或 ToolContributor 自动收集。
 // Init or the ToolContributor interface directly.
 type SubAgentMiddleware struct {
 	core.BaseMiddleware[*schema.Message]
@@ -146,7 +148,7 @@ type SubAgentMiddleware struct {
 	parentCfg  *core.ReActConfig[*schema.Message] // stored by Init for middleware inheritance
 }
 
-// New creates a SubAgentMiddleware. Pass nil for cfg to use defaults.
+// New 创建中间件；cfg 为 nil 时使用默认配置。
 //
 // specs are validated immediately; AgentTool wrappers are created lazily in
 // BindToConfig (where the parent's ReActConfig is available for middleware
@@ -170,9 +172,9 @@ func New(specs []SubAgentSpec, cfg *Config) *SubAgentMiddleware {
 	}
 }
 
-// ---- ToolContributor interface ----
+// ---- ToolContributor 接口 ----
 //
-// ContributeTools returns AgentTool wrappers for all specs that can be built
+// ContributeTools 返回可构建 spec 的 AgentTool 包装器。
 // without middleware inheritance. For specs needing InheritParentMiddlewares,
 // call Init(ctx, parentConfig) before the agent is built.
 func (m *SubAgentMiddleware) ContributeTools(ctx context.Context) []core.Tool {
@@ -208,7 +210,7 @@ func (m *SubAgentMiddleware) ContributeReturnDirectly(ctx context.Context) map[s
 	return nil
 }
 
-// ensureBuiltSimple builds all specs without middleware inheritance.
+// ensureBuiltSimple 无父配置时构建全部 spec（无中间件继承）。
 func (m *SubAgentMiddleware) ensureBuiltSimple(ctx context.Context) {
 	m.mu.Lock()
 	if m.built {
@@ -240,7 +242,7 @@ func (m *SubAgentMiddleware) ensureBuiltSimple(ctx context.Context) {
 	}
 }
 
-// Init initializes the middleware with the parent agent config, enabling
+// Init 绑定父 ReActConfig，启用 InheritParentMiddlewares 的中间件继承。
 // middleware inheritance for SubAgentSpecs with InheritParentMiddlewares.
 // Call this after adding the middleware to config.Middlewares, but before
 // calling NewReActAgent.
@@ -256,7 +258,7 @@ func (m *SubAgentMiddleware) Init(ctx context.Context, config *core.ReActConfig[
 	// ensureBuilt is deferred to ContributeTools (called during agent build).
 }
 
-// BindToConfig adds sub-agent tools to the parent agent config.
+// BindToConfig 将子 Agent 工具追加到 config.Tools（向后兼容）。
 //
 // Deprecated: Prefer using Init(ctx, config) or relying on the ToolContributor
 // interface (which is automatically collected during agent build). BindToConfig
@@ -286,6 +288,7 @@ func (m *SubAgentMiddleware) BindToConfig(ctx context.Context, config *core.ReAc
 	config.ToolsConfig = nil
 }
 
+// ensureBuilt 带父配置构建全部 spec 并创建 AgentTool。
 func (m *SubAgentMiddleware) ensureBuilt(ctx context.Context, config *core.ReActConfig[*schema.Message]) {
 	for _, spec := range m.specs {
 		agent := m.resolveAgent(ctx, spec, config)
@@ -311,7 +314,7 @@ func (m *SubAgentMiddleware) ensureBuilt(ctx context.Context, config *core.ReAct
 	}
 }
 
-// resolveAgent returns a built Agent for the spec, applying middleware
+// resolveAgent 解析 spec 得到 Agent；AgentConfig 优先于预构建 Agent。
 // inheritance when requested.
 //
 // When both AgentConfig and Agent are set, AgentConfig takes precedence.
@@ -345,7 +348,7 @@ func (m *SubAgentMiddleware) resolveAgent(ctx context.Context, spec SubAgentSpec
 	return nil
 }
 
-// buildConfig creates a ReActConfig from an AgentConfig, applying middleware
+// buildConfig 从 AgentConfig 构建 ReActConfig 并合并继承中间件。
 // inheritance when InheritParentMiddlewares is true and parentCfg is non-nil.
 func (m *SubAgentMiddleware) buildConfig(spec SubAgentSpec, parentCfg *core.ReActConfig[*schema.Message]) *core.ReActConfig[*schema.Message] {
 	cfg := spec.AgentConfig
@@ -366,7 +369,7 @@ func (m *SubAgentMiddleware) buildConfig(spec SubAgentSpec, parentCfg *core.ReAc
 	return subCfg
 }
 
-// inheritedMiddlewares returns parent middlewares excluding:
+// inheritedMiddlewares 返回父中间件副本，排除 SubAgentMiddleware 自身。
 //   - The SubAgentMiddleware itself (always excluded, prevents infinite recursion).
 //   - Any middleware whose type name matches an entry in excludedNames.
 //
@@ -398,7 +401,7 @@ func (m *SubAgentMiddleware) inheritedMiddlewares(parentCfg *core.ReActConfig[*s
 	return inherited
 }
 
-// BeforeModelRewrite injects sub-agent ToolInfo entries into state.ToolInfos
+// BeforeModelRewrite 将已成功构建的子 Agent 工具信息注入 state.ToolInfos。
 // so the LLM sees the sub-agents as available tools. Only tools that were
 // successfully built in ensureBuilt are advertised.
 func (m *SubAgentMiddleware) BeforeModelRewrite(ctx context.Context, state *core.ReActAgentState, mc *core.ModelContext) (context.Context, *core.ReActAgentState, error) {
@@ -406,10 +409,12 @@ func (m *SubAgentMiddleware) BeforeModelRewrite(ctx context.Context, state *core
 	return ctx, state, nil
 }
 
-// isSubAgentMarker implements the subAgentMarker interface for self-identification
+// isSubAgentMiddleware 标记自身以便继承过滤时排除。
 // during middleware inheritance filtering.
 func (m *SubAgentMiddleware) isSubAgentMiddleware() {}
 
-// ---- Compile-time interface checks ----
+// ---- 编译期接口检查 ----
 
 var _ core.ReActMiddleware = (*SubAgentMiddleware)(nil)
+
+// 预构建 Agent 无法动态继承中间件；需继承时请用 AgentConfig。

@@ -1,5 +1,8 @@
 package summarization
 
+// compactor.go — 会话压缩：安全切分消息、优先级摘要压缩与文件操作 supersede 分析。
+
+
 import (
 	"context"
 	"fmt"
@@ -10,13 +13,13 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// ---- Session Compactor ----
+// ---- 会话压缩器 ----
 
-// CompactionConfig configures session compaction behavior.
+// CompactionConfig 配置触发 token 阈值与保留最近消息数。
 type CompactionConfig struct {
-	// TriggerTokens is the estimated token count that triggers compaction.
+	// TriggerTokens 估算 token 达到此值触发压缩。
 	TriggerTokens int
-	// PreserveRecent is the number of recent messages to keep uncompacted.
+	// PreserveRecent 保留最近 N 条消息不参与压缩。
 	PreserveRecent int
 	// TokenEstimator estimates token count for messages. If nil, uses simple heuristic.
 	TokenEstimator func(msgs []*schema.Message) int
@@ -42,12 +45,12 @@ func defaultTokenEstimate(msgs []*schema.Message) int {
 	return total
 }
 
-// Compactor manages session compaction with structured summaries.
+// Compactor 管理带 <summary> 标签的结构化会话压缩。
 type Compactor struct {
 	mu sync.Mutex
 }
 
-// ShouldCompact checks whether the message list exceeds the budget.
+// ShouldCompact 判断消息列表是否超出 token 预算。
 func (c *Compactor) ShouldCompact(msgs []*schema.Message, cfg *CompactionConfig) bool {
 	cfg.defaults()
 	if len(msgs) <= cfg.PreserveRecent {
@@ -57,7 +60,8 @@ func (c *Compactor) ShouldCompact(msgs []*schema.Message, cfg *CompactionConfig)
 	return tokens >= cfg.TriggerTokens
 }
 
-// Compact compacts the message list: summarizes old messages, preserves recent ones.
+// Compact 摘要旧消息、保留最近消息，输出 system 摘要 + 保留段。
+// Compact 调用 summarizer 生成摘要并与已有 summary 合并。
 func (c *Compactor) Compact(msgs []*schema.Message, cfg *CompactionConfig, summarizer func(context.Context, []*schema.Message) (string, error)) ([]*schema.Message, error) {
 	cfg.defaults()
 	if len(msgs) <= cfg.PreserveRecent+1 {
@@ -90,7 +94,7 @@ func (c *Compactor) Compact(msgs []*schema.Message, cfg *CompactionConfig, summa
 	return result, nil
 }
 
-// findSafeSplit finds a split index that doesn't break ToolUse/ToolResult pairs.
+// findSafeSplit 寻找不切断 ToolUse/ToolResult 配对的安全切分点。
 func findSafeSplit(msgs []*schema.Message, desired int) int {
 	if desired >= len(msgs) {
 		return len(msgs)
@@ -125,9 +129,9 @@ func mergeSummaries(existing, newSummary string) string {
 	return fmt.Sprintf("Previous summary:\n%s\n\nNewly compacted context:\n%s", existing, newSummary)
 }
 
-// ---- Priority-based Summary Compression ----
+// ---- 基于优先级的摘要压缩 ----
 
-// SummaryBudget defines the budget for compressed summaries.
+// SummaryBudget 限制压缩后摘要的字符数、行数与单行长度。
 type SummaryBudget struct {
 	MaxChars   int
 	MaxLines   int
@@ -146,13 +150,13 @@ func (b *SummaryBudget) defaults() {
 	}
 }
 
-// SummaryLine carries a parsed line and its priority.
+// SummaryLine 携带摘要行文本与优先级。
 type SummaryLine struct {
 	Text     string
 	Priority int
 }
 
-// CompressSummary compresses a summary text within the given budget.
+// CompressSummary 按优先级保留高价值行直至预算用尽。
 func CompressSummary(text string, budget *SummaryBudget) string {
 	budget.defaults()
 	lines := strings.Split(text, "\n")
@@ -217,15 +221,15 @@ func trimAtWord(s string) string {
 	return s
 }
 
-// ---- Supersede ----
+// ---- 文件操作 supersede ----
 
-// SupersedeResult contains the result of Supersede analysis.
+// SupersedeResult 记录应移除的 superseded 文件读操作索引。
 type SupersedeResult struct {
 	RemoveIndices []int
 	RemovedCount  int
 }
 
-// AnalyzeFileOps tracks file operations and finds read ops superseded by later writes.
+// AnalyzeFileOps 追踪文件读写，标记被后续写覆盖的读操作。
 func AnalyzeFileOps(msgs []*schema.Message) *SupersedeResult {
 	type fileOp struct {
 		path   string
@@ -275,7 +279,7 @@ func AnalyzeFileOps(msgs []*schema.Message) *SupersedeResult {
 	return &SupersedeResult{RemoveIndices: remove, RemovedCount: len(remove)}
 }
 
-// ApplySupersede removes superseded file operations from the message list.
+// ApplySupersede 从消息列表移除已被 supersede 的 tool 消息。
 func ApplySupersede(msgs []*schema.Message) []*schema.Message {
 	result := AnalyzeFileOps(msgs)
 	if result.RemovedCount == 0 {
@@ -327,3 +331,5 @@ func classifyOpType(content, toolName string) string {
 	}
 	return "read"
 }
+
+// classifyLinePriority 将 scope/key files 等核心行排在压缩前列。

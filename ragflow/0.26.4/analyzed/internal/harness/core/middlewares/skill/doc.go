@@ -1,11 +1,13 @@
-// Package skill provides a middleware for dynamic skill loading.
+// Package skill 提供动态技能加载中间件。
 //
-// A skill is a reusable capability that can be loaded in three modes:
-//   - Inline: skill content is injected as instruction text
-//   - Fork: skill tools are loaded as available tools
-//   - ForkWithContext: skill tools are loaded with context injection
+// 技能是可复用能力，支持三种加载模式：
+//   - Inline：将技能内容注入系统指令
+//   - Fork：以独立工具形式暴露技能
+//   - ForkWithContext：带父上下文注入的 Fork 模式
 //
-// Skills can be loaded from:
-//   - FileSystemBackend: read skill definitions from markdown files
-//   - Embedded content: inline skill definitions
+// 技能来源：
+//   - FileSystemBackend：从 Markdown 文件读取技能定义
+//   - Embedded content：内嵌技能定义
 package skill
+
+// doc.go 为 skill 包概览；实现见 skill.go 与 filesystem_backend.go。
