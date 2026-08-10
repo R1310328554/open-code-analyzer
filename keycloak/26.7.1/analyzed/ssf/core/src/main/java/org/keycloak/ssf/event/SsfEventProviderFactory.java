@@ -11,70 +11,42 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * Factory contract for {@link SsfEventProvider} implementations.
- *
- * <p>Each registered factory contributes a map of event-type-URI to
- * {@link SsfEvent} factory via {@link #getContributedEventFactories()}. At
- * startup, the contributions of every registered factory are merged into a
- * single {@link SsfEventRegistry}, which is then exposed through
- * {@link SsfEventProvider#getRegistry()}.
- *
- * <p>To register custom events, drop a factory that implements this interface
- * into {@code META-INF/services/org.keycloak.protocol.ssf.event.SsfEventProviderFactory}
- * and return your additional events from {@link #getContributedEventFactories()}.
+ * {@link SsfEventProvider} 实现的工厂契约。
+ * <p>每个已注册工厂通过 {@link #getContributedEventFactories()} 贡献
+ * 事件类型 URI 到 {@link SsfEvent} 工厂的映射；启动时合并为单一 {@link SsfEventRegistry}，
+ * 经 {@link SsfEventProvider#getRegistry()} 暴露。</p>
+ * <p>注册自定义事件：将实现本接口的工厂放入
+ * {@code META-INF/services/org.keycloak.protocol.ssf.event.SsfEventProviderFactory}
+ * 并在 {@link #getContributedEventFactories()} 中返回额外事件。</p>
  */
 public interface SsfEventProviderFactory extends ProviderFactory<SsfEventProvider> {
 
     /**
-     * Returns the map of event-type URI to factory for the {@link SsfEvent}
-     * instances this provider contributes to the global event registry.
-     * Called once at startup, after
-     * {@link ProviderFactory#init(org.keycloak.Config.Scope)} but before
-     * {@link ProviderFactory#postInit(KeycloakSessionFactory)}.
-     *
-     * <p>The factory (typically a {@code SomeEvent::new} method reference)
-     * lets the registry mint fresh instances at runtime without reflection —
-     * used by the synthetic event emitter when the caller doesn't supply an
-     * event body. Keying by URI lets the registry skip a probing
-     * instantiation just to learn the event type.
-     *
-     * <p>The default implementation returns an empty map.
+     * 返回本 Provider 贡献给全局事件注册表的事件类型 URI 到 {@link SsfEvent} 工厂的映射。
+     * 启动时调用一次，在 {@link ProviderFactory#init(org.keycloak.Config.Scope)} 之后、
+     * {@link ProviderFactory#postInit(KeycloakSessionFactory)} 之前。
+     * <p>工厂（通常为 {@code SomeEvent::new} 方法引用）使注册表可无反射地在运行时创建新实例。</p>
+     * <p>默认返回空映射。</p>
      */
     default Map<String, Supplier<? extends SsfEvent>> getContributedEventFactories() {
         return Map.of();
     }
 
     /**
-     * Returns the subset of {@link #getContributedEventFactories()} that the
-     * transmitter can actually ship out — either because a Keycloak listener
-     * / transmitter-side trigger produces them automatically, or because they
-     * can be raised on demand via the admin emit API. Combined, the
-     * contributions of every registered factory drive both the default
-     * {@code events_supported} set advertised to receiver clients and the
-     * whitelist of types the emit API will accept.
-     *
-     * <p>Events contributed purely for inbound parsing on the receiver
-     * side MUST NOT be returned here. Advertising an event the transmitter
-     * cannot ship would mislead receivers.
-     *
-     * <p>The default implementation returns an empty set.
+     * 返回 {@link #getContributedEventFactories()} 中发射端可实际发送的事件子集。
+     * 聚合所有工厂的贡献，驱动向接收端通告的 {@code events_supported} 及 emit API 白名单。
+     * <p>仅用于接收端入站解析的事件不得在此返回。</p>
+     * <p>默认返回空集合。</p>
      */
     default Set<String> getEmittableEventTypes() {
         return Set.of();
     }
 
     /**
-     * Returns the further subset of {@link #getEmittableEventTypes()} that the
-     * transmitter emits natively — i.e. driven by Keycloak listener / trigger
-     * logic rather than only by an explicit admin-API call. The admin UI
-     * surfaces this set as the "built-in" badge on event entries: events the
-     * operator does not have to script anything to receive.
-     *
-     * <p>Events that are emittable but only via the admin emit API
-     * (no listener wiring on the transmitter side) MUST NOT be returned here.
-     *
-     * <p>The default implementation falls back to {@link #getEmittableEventTypes()}
-     * so existing factories that don't distinguish keep their previous behaviour.
+     * 返回 {@link #getEmittableEventTypes()} 中由 Keycloak 监听器/触发器
+     * 原生发射（非仅依赖管理员 API）的进一步子集；管理 UI 以「内置」标记展示。
+     * <p>仅可通过 admin emit API 发送的事件不得在此返回。</p>
+     * <p>默认回退为 {@link #getEmittableEventTypes()}。</p>
      */
     default Set<String> getNativelyEmittedEventTypes() {
         return getEmittableEventTypes();
@@ -91,18 +63,11 @@ public interface SsfEventProviderFactory extends ProviderFactory<SsfEventProvide
     }
 
     /**
-     * Most factories registered through this SPI exist only to contribute
-     * events to the shared {@link SsfEventRegistry} via
-     * {@link #getContributedEventFactories()} — they don't supply a per-
-     * session {@link SsfEventProvider} instance because callers resolve
-     * {@code SsfEventProvider} through the configured default factory
-     * (id {@code "default"}, shipped as {@code DefaultSsfEventProviderFactory}).
-     *
-     * <p>The default implementation returns {@code null} so contribution-
-     * only extensions can keep their factory class to {@code getId()} +
-     * {@code isSupported()} + the {@code getContributedEventFactories()}
-     * map. Override only when your factory is intended to replace the
-     * default provider entirely.
+     * 多数通过本 SPI 注册的工厂仅向共享 {@link SsfEventRegistry} 贡献事件，
+     * 不提供 per-session {@link SsfEventProvider}（调用方使用 id 为 {@code "default"} 的默认工厂）。
+     * <p>默认返回 {@code null}，仅贡献事件的扩展只需实现 {@code getId()}、
+     * {@code isSupported()} 与 {@code getContributedEventFactories()}。
+     * 仅在完全替换默认 Provider 时覆盖。</p>
      */
     @Override
     default SsfEventProvider create(KeycloakSession session) {
@@ -110,9 +75,7 @@ public interface SsfEventProviderFactory extends ProviderFactory<SsfEventProvide
     }
 
     /**
-     * Aggregates the events contributed by all registered
-     * {@link SsfEventProviderFactory} instances into a single immutable
-     * {@link SsfEventRegistry}.
+     * 将所有已注册 {@link SsfEventProviderFactory} 的贡献聚合为单一不可变 {@link SsfEventRegistry}。
      */
     static SsfEventRegistry buildRegistry(KeycloakSessionFactory sessionFactory) {
         Collection<? extends SsfEventProviderFactory> factories = sessionFactory

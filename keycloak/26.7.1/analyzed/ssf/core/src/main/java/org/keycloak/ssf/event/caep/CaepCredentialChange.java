@@ -8,65 +8,40 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
- * The Credential Change event signals that a credential was created, changed, revoked or deleted.
+ * 凭证变更（Credential Change）事件，表示凭证被创建、变更、撤销或删除。
  */
 public class CaepCredentialChange extends CaepEvent {
 
-    /**
-     * See: https://openid.github.io/sharedsignals/openid-caep-1_0.html#name-credential-change
-     */
+    /** 事件类型 URI，参见 https://openid.github.io/sharedsignals/openid-caep-1_0.html#name-credential-change */
     public static final String TYPE = "https://schemas.openid.net/secevent/caep/event-type/credential-change";
 
 
     /**
-     * This MUST be one of the following strings, or any other credential type supported mutually by the Transmitter and the Receiver.
-     * password
-     * pin
-     * x509
-     * fido2-platform
-     * fido2-roaming
-     * fido-u2f
-     * verifiable-credential
-     * phone-voice
-     * phone-sms
-     * app
+     * 凭证类型，须为下列字符串之一，或发射端与接收端共同支持的其他类型：
+     * password、pin、x509、fido2-platform、fido2-roaming、fido-u2f、
+     * verifiable-credential、phone-voice、phone-sms、app
      */
     @JsonProperty("credential_type")
     protected String credentialType;
 
-    /**
-     * This MUST be one of the following strings:
-     *
-     * create
-     * revoke
-     * update
-     * delete
-     */
+    /** 变更类型，须为 create、revoke、update、delete 之一。 */
     @JsonProperty("change_type")
     @JsonDeserialize(using = CaepCredentialChangeChangeTypeDeserializer.class)
     protected ChangeType changeType;
 
-    /**
-     * credential friendly name
-     */
+    /** 凭证友好名称。 */
     @JsonProperty("friendly_name")
     protected String friendlyName;
 
-    /**
-     * issuer of the X.509 certificate as defined in [RFC5280]
-     */
+    /** X.509 证书颁发者（RFC 5280）。 */
     @JsonProperty("x509_issuer")
     protected String x509Issuer;
 
-    /**
-     * serial number of the X.509 certificate as defined in [RFC5280]
-     */
+    /** X.509 证书序列号（RFC 5280）。 */
     @JsonProperty("x509_serial")
     protected String x509Serial;
 
-    /**
-     * FIDO2 Authenticator Attestation GUID as defined in [WebAuthn]
-     */
+    /** FIDO2 认证器证明 GUID（WebAuthn）。 */
     @JsonProperty("fido2_aaguid")
     protected String fido2Aaguid;
 
@@ -75,12 +50,8 @@ public class CaepCredentialChange extends CaepEvent {
     }
 
     /**
-     * CAEP Interop §3.3.1: both {@code credential_type} and
-     * {@code change_type} are REQUIRED. We don't enforce the spec's
-     * enumerated value list ({@code password}, {@code pin}, …) — the
-     * spec also allows "any other credential type supported mutually
-     * by the Transmitter and the Receiver", so a runtime gate would
-     * reject legitimate extensions.
+     * CAEP 互操作 §3.3.1：{@code credential_type} 与 {@code change_type} 均为 REQUIRED。
+     * 不强制规范枚举值列表，因规范允许双方共同支持的其他凭证类型。
      */
     @Override
     public void validate() {
@@ -140,9 +111,7 @@ public class CaepCredentialChange extends CaepEvent {
         this.fido2Aaguid = fido2Aaguid;
     }
 
-    /**
-     * See: https://openid.net/specs/openid-caep-specification-1_0.html#rfc.section.3.3.1
-     */
+    /** CAEP 凭证类型枚举，参见 https://openid.net/specs/openid-caep-specification-1_0.html#rfc.section.3.3.1 */
     public enum CaepCredentialType {
 
         PASSWORD("password"),
@@ -182,9 +151,7 @@ public class CaepCredentialChange extends CaepEvent {
         }
     }
 
-    /**
-     * See: https://openid.net/specs/openid-caep-specification-1_0.html#rfc.section.3.3.1
-     */
+    /** 变更类型枚举，参见 https://openid.net/specs/openid-caep-specification-1_0.html#rfc.section.3.3.1 */
     public enum ChangeType {
 
         CREATE("create"),

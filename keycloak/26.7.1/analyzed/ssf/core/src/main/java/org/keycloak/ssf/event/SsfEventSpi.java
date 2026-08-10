@@ -5,10 +5,8 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
- * SPI that allows extensions to contribute additional SSF event types to the
- * shared {@link SsfEventRegistry}. Multiple factories can be registered and
- * each factory's {@link SsfEventProviderFactory#getContributedEventFactories()} is
- * aggregated at startup.
+ * 允许扩展向共享 {@link SsfEventRegistry} 贡献额外 SSF 事件类型的 SPI。
+ * <p>可注册多个工厂，启动时聚合各工厂的 {@link SsfEventProviderFactory#getContributedEventFactories()}。</p>
  */
 public class SsfEventSpi implements Spi {
 

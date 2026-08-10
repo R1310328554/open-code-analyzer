@@ -1,7 +1,7 @@
 package org.keycloak.ssf.event;
 
 /**
- * Fallback {@link SsfEvent} if we encounter an unknown SsfEvent type.
+ * 遇到未知 SSF 事件类型时使用的兜底 {@link SsfEvent} 实现。
  */
 public class GenericSsfEvent extends SsfEvent {
 

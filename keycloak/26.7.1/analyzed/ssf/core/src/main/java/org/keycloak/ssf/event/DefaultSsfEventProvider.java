@@ -1,8 +1,7 @@
 package org.keycloak.ssf.event;
 
 /**
- * Default {@link SsfEventProvider} implementation that simply exposes the
- * pre-built {@link SsfEventRegistry}.
+ * {@link SsfEventProvider} 的默认实现，直接暴露预构建的 {@link SsfEventRegistry}。
  */
 public class DefaultSsfEventProvider implements SsfEventProvider {
 

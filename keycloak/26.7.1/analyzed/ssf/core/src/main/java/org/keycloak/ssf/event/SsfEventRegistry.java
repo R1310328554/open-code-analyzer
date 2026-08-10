@@ -16,11 +16,9 @@ import org.keycloak.ssf.event.stream.SsfStreamUpdatedEvent;
 import org.keycloak.ssf.event.stream.SsfStreamVerificationEvent;
 
 /**
- * Immutable registry of all known SSF event types and their aliases.
- *
- * <p>The registry is built once at server startup by aggregating the events
- * contributed by every registered {@link SsfEventProviderFactory} and is then
- * exposed through {@link SsfEventProvider#getRegistry()}.
+ * 所有已知 SSF 事件类型及其别名的不可变注册表。
+ * <p>服务器启动时由所有 {@link SsfEventProviderFactory} 的贡献聚合构建一次，
+ * 经 {@link SsfEventProvider#getRegistry()} 暴露。</p>
  */
 public final class SsfEventRegistry {
 
@@ -55,10 +53,7 @@ public final class SsfEventRegistry {
         this.nativelyEmittedEventTypes = Collections.unmodifiableSet(nativelyEmittedEventTypes);
     }
 
-    /**
-     * Builds an aggregated registry from the contributions of the given
-     * factories. Used by {@link SsfEventProviderFactory#buildRegistry}.
-     */
+    /** 从给定工厂的贡献构建聚合注册表，供 {@link SsfEventProviderFactory#buildRegistry} 使用。 */
     static SsfEventRegistry from(Collection<? extends SsfEventProviderFactory> factories) {
 
         Map<String, Class<? extends SsfEvent>> classByEventType = new HashMap<>();
@@ -102,28 +97,22 @@ public final class SsfEventRegistry {
     }
 
     /**
-     * Returns the {@link SsfEvent} class for the given full event type URI,
-     * or an empty {@link Optional} if the event type is not registered.
+     * 返回给定完整事件类型 URI 对应的 {@link SsfEvent} 类；
+     * 未注册时返回空 {@link Optional}。
      */
     public Optional<Class<? extends SsfEvent>> getEventClassByType(String eventType) {
         return Optional.ofNullable(classByEventType.get(eventType));
     }
 
     /**
-     * Returns the factory for creating fresh {@link SsfEvent} instances of
-     * the given event type URI. Used by callers like the synthetic event
-     * emitter to build a default event body without reaching for
-     * reflection. Returns an empty {@link Optional} if the event type is
-     * not registered.
+     * 返回给定事件类型 URI 的 {@link SsfEvent} 实例工厂，供合成事件发射器等无反射创建默认事件体。
+     * 未注册时返回空 {@link Optional}。
      */
     public Optional<Supplier<? extends SsfEvent>> getEventFactoryByType(String eventType) {
         return Optional.ofNullable(factoryByEventType.get(eventType));
     }
 
-    /**
-     * Resolves the {@link SsfEvent} class for the given alias or full event
-     * type URI. Returns {@code null} if neither matches a known event.
-     */
+    /** 按别名或完整事件类型 URI 解析 {@link SsfEvent} 类；均无匹配时返回 {@code null}。 */
     public Class<? extends SsfEvent> resolveEventClass(String aliasOrEventType) {
         Class<? extends SsfEvent> eventClass = classByAlias.get(aliasOrEventType);
         if (eventClass != null) {
@@ -132,59 +121,39 @@ public final class SsfEventRegistry {
         return classByEventType.get(aliasOrEventType);
     }
 
-    /**
-     * Resolves the alias (e.g. {@code CaepCredentialChange}) for the given
-     * full event type URI, or {@code null} if the event type is not registered.
-     */
+    /** 解析给定完整事件类型 URI 的别名（如 {@code CaepCredentialChange}）；未注册时返回 {@code null}。 */
     public String resolveAliasForEventType(String eventType) {
         return aliasByEventType.get(eventType);
     }
 
-    /**
-     * Resolves the full event type URI for the given alias, or {@code null}
-     * if the alias is not registered.
-     */
+    /** 解析给定别名对应的完整事件类型 URI；未注册时返回 {@code null}。 */
     public String resolveEventTypeForAlias(String alias) {
         return eventTypeByAlias.get(alias);
     }
 
-    /**
-     * @return the full set of known event aliases (sorted).
-     */
+    /** @return 所有已知事件别名（已排序） */
     public Set<String> getKnownAliases() {
         return Collections.unmodifiableSet(new TreeSet<>(eventTypeByAlias.keySet()));
     }
 
-    /**
-     * @return the full set of known event type URIs.
-     */
+    /** @return 所有已知事件类型 URI */
     public Set<String> getKnownEventTypes() {
         return Collections.unmodifiableSet(classByEventType.keySet());
     }
 
     /**
-     * Stream-internal lifecycle event types (verification SET, stream-updated SET).
-     * The transmitter owns these end-to-end and external callers
-     * (synthetic emit, admin UI) are intentionally not allowed to
-     * forge them — letting an external caller fire a stream-updated
-     * SET would let it spoof transmitter behaviour towards the
-     * receiver. Both the synthetic emit gate and the admin UI's
-     * "available supported events" list filter these out.
+     * 流内部生命周期事件类型（verification SET、stream-updated SET）。
+     * 由发射端端到端拥有；外部调用方（合成 emit、管理 UI）不得伪造，
+     * 否则可冒充发射端行为。合成 emit 门禁与管理 UI 的可用事件列表均过滤此类事件。
      */
     public static final Set<String> STREAM_LIFECYCLE_EVENT_TYPES = Set.of(
             SsfStreamVerificationEvent.TYPE,
             SsfStreamUpdatedEvent.TYPE);
 
     /**
-     * Event types a receiver can legitimately request via
-     * {@code events_requested} on stream-create / -update — i.e. the
-     * full registry minus the {@link #STREAM_LIFECYCLE_EVENT_TYPES
-     * protocol-internal lifecycle events} that only the transmitter
-     * may produce. Drives the admin UI's "available supported events"
-     * multi-select so operators can configure receivers to receive
-     * <em>any</em> deliverable type — even events Keycloak doesn't
-     * fire from native event listeners but that an external system
-     * may produce via the synthetic emit endpoint.
+     * 接收端可在 stream-create/update 的 {@code events_requested} 中合法请求的事件类型，
+     * 即全注册表减去仅发射端可产生的 {@link #STREAM_LIFECYCLE_EVENT_TYPES}。
+     * 驱动管理 UI「可用支持事件」多选，使操作员可配置接收任意可投递类型。
      */
     public Set<String> getReceiverRequestableEventTypes() {
         Set<String> known = classByEventType.keySet();
@@ -201,28 +170,18 @@ public final class SsfEventRegistry {
     }
 
     /**
-     * Returns the subset of {@link #getReceiverRequestableEventTypes()}
-     * the transmitter can ship out — either via a Keycloak listener / trigger
-     * or via the admin emit API. Aggregates contributions from every
-     * registered {@link SsfEventProviderFactory#getEmittableEventTypes()}.
-     *
-     * <p>Drives the default {@code events_supported} set advertised to receiver
-     * clients and the whitelist of types the admin emit API will accept.
+     * 返回 {@link #getReceiverRequestableEventTypes()} 中发射端可发送的子集，
+     * 聚合各 {@link SsfEventProviderFactory#getEmittableEventTypes()}。
+     * <p>驱动向接收端通告的默认 {@code events_supported} 及 emit API 白名单。</p>
      */
     public Set<String> getEmittableEventTypes() {
         return emittableEventTypes;
     }
 
     /**
-     * Returns the subset of {@link #getEmittableEventTypes()} that the
-     * transmitter emits natively via Keycloak listener / trigger logic, as
-     * declared by every registered
-     * {@link SsfEventProviderFactory#getNativelyEmittedEventTypes()}.
-     *
-     * <p><b>Not an enforcement gate.</b> Purely informational — the admin UI
-     * uses it to surface the "built-in" badge on event entries so operators
-     * see which event types fire automatically from Keycloak vs which only
-     * ship when something explicitly invokes the emit API.
+     * 返回 {@link #getEmittableEventTypes()} 中由 Keycloak 监听器/触发器
+     * 原生发射的子集，由各 {@link SsfEventProviderFactory#getNativelyEmittedEventTypes()} 声明。
+     * <p><b>非强制门禁</b>，仅供管理 UI 展示「内置」标记，区分自动触发与仅 emit API 可发送的事件。</p>
      */
     public Set<String> getNativelyEmittedEventTypes() {
         return nativelyEmittedEventTypes;

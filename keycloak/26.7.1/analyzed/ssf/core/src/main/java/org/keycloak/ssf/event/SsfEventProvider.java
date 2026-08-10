@@ -3,11 +3,9 @@ package org.keycloak.ssf.event;
 import org.keycloak.provider.Provider;
 
 /**
- * Per-session provider that exposes the global {@link SsfEventRegistry}.
- *
- * <p>The registry itself is built once at server startup by aggregating the
- * events contributed by every registered {@link SsfEventProviderFactory}, so
- * lookups are cheap and stateless.
+ * 按会话暴露全局 {@link SsfEventRegistry} 的 Provider。
+ * <p>注册表在服务器启动时由所有 {@link SsfEventProviderFactory} 的贡献聚合构建一次，
+ * 查找开销低且无状态。</p>
  */
 public interface SsfEventProvider extends Provider {
 
@@ -16,7 +14,7 @@ public interface SsfEventProvider extends Provider {
     }
 
     /**
-     * @return the global, immutable registry of known SSF events
+     * @return 全局不可变的已知 SSF 事件注册表
      */
     SsfEventRegistry getRegistry();
 }

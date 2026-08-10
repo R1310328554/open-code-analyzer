@@ -9,8 +9,9 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 /**
- * The official change types are create, revoke, update, deleted, but some legacy implementations use created etc.
- * See: https://openid.net/specs/openid-caep-specification-1_0.html#rfc.section.3.3.1
+ * {@link CaepCredentialChange.ChangeType} 的 JSON 反序列化器。
+ * <p>官方变更类型为 create、revoke、update、delete，部分旧实现使用 created 等非标准形式。</p>
+ * <p>参见 https://openid.net/specs/openid-caep-specification-1_0.html#rfc.section.3.3.1</p>
  */
 public class CaepCredentialChangeChangeTypeDeserializer extends JsonDeserializer<CaepCredentialChange.ChangeType> {
 

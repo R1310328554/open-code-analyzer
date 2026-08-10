@@ -16,26 +16,18 @@ import org.keycloak.ssf.event.stream.SsfStreamUpdatedEvent;
 import org.keycloak.ssf.event.stream.SsfStreamVerificationEvent;
 
 /**
- * Default {@link SsfEventProviderFactory} that contributes the built-in set
- * of standard SSF / CAEP events.
- *
- * <p>This factory is also responsible for assembling the global
- * {@link SsfEventRegistry} from the contributions of every registered
- * factory in {@link #postInit(KeycloakSessionFactory)}.
+ * 默认 {@link SsfEventProviderFactory}，贡献内置的标准 SSF / CAEP 事件集。
+ * <p>该工厂还负责在 {@link #postInit(KeycloakSessionFactory)} 中
+ * 将所有已注册工厂的贡献合并为全局 {@link SsfEventRegistry}。</p>
  */
 public class DefaultSsfEventProviderFactory implements SsfEventProviderFactory, EnvironmentDependentProviderFactory {
 
     public static final String PROVIDER_ID = "default";
 
     /**
-     * Standard event contributions keyed by event type URI. The value is a
-     * {@code ::new} method reference so the registry can instantiate fresh
-     * instances at runtime (e.g. for the synthetic event emitter) without
-     * reflection.
-     *
-     * <p>{@link LinkedHashMap} to preserve insertion order for predictable
-     * iteration when introspecting the registry (e.g. in the admin UI's
-     * supported-events list).
+     * 标准事件贡献映射，键为事件类型 URI，值为 {@code ::new} 方法引用，
+     * 使注册表可在运行时（如合成事件发射器）无反射地实例化新对象。
+     * <p>使用 {@link LinkedHashMap} 保持插入顺序，便于管理 UI 等场景按序遍历。</p>
      */
     private static final Map<String, Supplier<? extends SsfEvent>> STANDARD_EVENT_FACTORIES;
 
@@ -54,17 +46,12 @@ public class DefaultSsfEventProviderFactory implements SsfEventProviderFactory, 
     }
 
     /**
-     * Subset of {@link #STANDARD_EVENT_FACTORIES} the transmitter can ship out.
-     * Either {@code SecurityEventTokenMapper} produces them from Keycloak
-     * events, or operators can raise them on demand via the admin emit API.
-     * Every other built-in event in the map is contributed to the registry
-     * only so the receiver-side parser can decode incoming SETs of that type.
-     *
-     * <p>The two types here are use-cases enumerated by the OpenID CAEP
-     * Interoperability Profile 1.0: {@code session-revoked} and
-     * {@code credential-change}. The profile is opt-in per use-case
-     * ("Implementations MAY choose to support one or more …"), so supporting
-     * any one of them is enough to count as interoperable.
+     * {@link #STANDARD_EVENT_FACTORIES} 中发射端可实际发送的事件子集。
+     * 可由 {@code SecurityEventTokenMapper} 从 Keycloak 事件生成，
+     * 或由管理员通过 emit API 按需触发。
+     * 映射中其余内置事件仅注册供接收端解析对应类型的 SET。
+     * <p>此处两种类型对应 OpenID CAEP 互操作配置文件 1.0 的用例：
+     * {@code session-revoked} 与 {@code credential-change}。</p>
      *
      * @see <a href="https://openid.github.io/sharedsignals/openid-caep-interoperability-profile-1_0.html">OpenID CAEP Interoperability Profile 1.0</a>
      */
@@ -73,9 +60,8 @@ public class DefaultSsfEventProviderFactory implements SsfEventProviderFactory, 
             CaepSessionRevoked.TYPE);
 
     /**
-     * Subset of {@link #EMITTABLE_EVENT_TYPES} that {@code SecurityEventTokenMapper}
-     * actually produces natively from Keycloak listener events. Drives the
-     * "natively emitted" badge in the admin UI.
+     * {@link #EMITTABLE_EVENT_TYPES} 中 {@code SecurityEventTokenMapper}
+     * 从 Keycloak 监听器事件原生生成的事件子集，驱动管理 UI 的「原生发射」标记。
      */
     public static final Set<String> NATIVELY_EMITTED_EVENT_TYPES = Set.of(
             CaepCredentialChange.TYPE,

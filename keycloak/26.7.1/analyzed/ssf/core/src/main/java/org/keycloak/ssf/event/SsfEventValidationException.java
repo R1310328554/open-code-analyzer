@@ -3,37 +3,17 @@ package org.keycloak.ssf.event;
 import org.keycloak.ssf.SsfException;
 
 /**
- * Thrown by {@link SsfEvent#validate()} when an event instance is
- * missing a field the SSF / CAEP / RISC spec marks as REQUIRED — or
- * a custom event implementation enforces its own invariants.
- *
- * <p>Carries a stable {@link #MESSAGE_KEY} ({@code invalid_event_data})
- * plus structured {@code eventAlias} and {@code field} fields so
- * callers (REST emit response, admin UI) can compose a localised
- * message from the pieces instead of parsing an English string. The
- * inherited {@link #getMessage()} returns a mechanical
- * {@code "<key>: <alias>.<field>"} composition for log lines and
- * non-localised callers.
- *
- * <p>Caught by the synthetic-emit pipeline and surfaced to the caller
- * as an {@code invalid_event_payload} response so an operator pushing
- * a hand-rolled JSON event sees exactly which field is missing
- * instead of a half-populated SET landing at the receiver.
- *
- * <p>Native event production never throws this — the SSF event listener
- * builds events from typed Keycloak event details that always supply
- * the spec-required fields. The exception type lives on this layer
- * (rather than under {@code transmitter}) so {@link SsfEvent} subclasses
- * can throw it from their {@link SsfEvent#validate()} override without
- * pulling a transmitter-layer dependency into {@code ssf/core}.
+ * {@link SsfEvent#validate()} 在事件实例缺少 SSF / CAEP / RISC 规范 REQUIRED 字段
+ * 或自定义事件违反不变量时抛出。
+ * <p>携带稳定 {@link #MESSAGE_KEY}（{@code invalid_event_data}）及结构化
+ * {@code eventAlias}、{@code field}，供 REST emit 响应与管理 UI 本地化消息。</p>
+ * <p>合成 emit 管道捕获后以 {@code invalid_event_payload} 返回，便于操作员定位缺失字段。</p>
+ * <p>原生事件生产不会抛出；异常位于本层以便 {@link SsfEvent} 子类在 validate 中使用，
+ * 无需依赖 transmitter 模块。</p>
  */
 public class SsfEventValidationException extends SsfException {
 
-    /**
-     * Stable, i18n-friendly message key for every validation failure.
-     * Callers that localise messages key off this plus the
-     * {@link #getEventAlias()} / {@link #getField()} structured fields.
-     */
+    /** 所有验证失败的稳定、可 i18n 的消息键；配合 {@link #getEventAlias()} / {@link #getField()} 本地化。 */
     public static final String MESSAGE_KEY = "invalid_event_data";
 
     private final String eventAlias;
@@ -49,21 +29,12 @@ public class SsfEventValidationException extends SsfException {
         return MESSAGE_KEY;
     }
 
-    /**
-     * Alias of the event that failed validation
-     * (e.g. {@code CaepCredentialChange}). Sourced from
-     * {@link SsfEvent#getAlias()} at the throw site.
-     */
+    /** 验证失败的事件别名（如 {@code CaepCredentialChange}），来自抛出点的 {@link SsfEvent#getAlias()}。 */
     public String getEventAlias() {
         return eventAlias;
     }
 
-    /**
-     * Wire-name of the field that failed validation
-     * (e.g. {@code change_type}). Use the {@code @JsonProperty} value,
-     * not the Java field name, so the operator sees the same identifier
-     * they used in the JSON body.
-     */
+    /** 验证失败的字段 wire 名（如 {@code change_type}），使用 {@code @JsonProperty} 值而非 Java 字段名。 */
     public String getField() {
         return field;
     }

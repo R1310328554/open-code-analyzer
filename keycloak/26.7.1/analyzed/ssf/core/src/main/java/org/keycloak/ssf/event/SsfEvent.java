@@ -19,16 +19,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
- * Represents a generic SSF event.
- *
- * See: https://datatracker.ietf.org/doc/html/rfc8417
+ * 通用 SSF（Security Event Token）事件抽象基类。
+ * <p>参见 RFC 8417：https://datatracker.ietf.org/doc/html/rfc8417</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class SsfEvent {
 
-    /**
-     * Internal (shorter) alias for the event type.
-     */
+    /** 事件类型的内部（较短）别名。 */
     @JsonIgnore
     protected String alias;
 
@@ -40,33 +37,22 @@ public abstract class SsfEvent {
     protected String eventType;
 
     /**
-     * The time of the event (UNIX timestamp). Nullable so events that do
-     * not carry a timestamp — e.g. {@code ssf/event-type/verification}
-     * (SSF §8.1.4 carries only {@code state}) and other stream-management
-     * events — are omitted from the wire JSON instead of being serialized
-     * as {@code "event_timestamp": 0} (the default value of a primitive
-     * {@code long}, which Jackson always emits).
+     * 事件发生时间（UNIX 时间戳）。可为 null，以便不含时间戳的事件
+     * （如 {@code ssf/event-type/verification} 及流管理事件）
+     * 在 JSON 中省略该字段，而非序列化为 {@code "event_timestamp": 0}。
      */
     @JsonProperty("event_timestamp")
     protected Long eventTimestamp;
 
-    /**
-     * The entity that initiated the event
-     */
+    /** 发起该事件的实体。 */
     @JsonProperty("initiating_entity")
     protected InitiatingEntity initiatingEntity;
 
-    /**
-     * A localized administrative message intended for logging and auditing.
-     * key is language code, value is message.
-     */
+    /** 面向日志与审计的本地化管理员消息，键为语言代码，值为消息文本。 */
     @JsonProperty("reason_admin")
     protected Map<String, String> reasonAdmin;
 
-    /**
-     * A localized message intended for the end user.
-     * key is language code, value is message.
-     */
+    /** 面向终端用户的本地化消息，键为语言代码，值为消息文本。 */
     @JsonProperty("reason_user")
     protected Map<String, String> reasonUser;
 
@@ -121,11 +107,9 @@ public abstract class SsfEvent {
     }
 
     /**
-     * Exposes {@link #attributes} as a Jackson "any-getter" so each entry is
-     * rendered as a top-level JSON field on the event object (flattened
-     * alongside the declared {@code @JsonProperty} fields), matching the
-     * SSF §4.2.3 extension-field placement rather than nesting them under
-     * an {@code "attributes"} key.
+     * 将 {@link #attributes} 作为 Jackson any-getter 暴露，
+     * 使各条目作为事件对象的顶层 JSON 字段（与 {@code @JsonProperty} 字段平铺），
+     * 符合 SSF §4.2.3 扩展字段布局，而非嵌套在 {@code "attributes"} 下。
      */
     @JsonAnyGetter
     public Map<String, Object> getAttributes() {
@@ -180,24 +164,12 @@ public abstract class SsfEvent {
     }
 
     /**
-     * Verify that this event instance carries the fields the SSF /
-     * CAEP / RISC spec marks as REQUIRED. Called by the synthetic-emit
-     * pipeline after Jackson has materialised the event from the
-     * caller-supplied JSON, so a missing-field mistake is rejected
-     * with a clear error before the SET is signed and dispatched.
-     *
-     * <p>Default implementation is a no-op — most CAEP/RISC events have
-     * no strictly-required fields beyond the subject, which the
-     * pipeline validates separately. Subclasses with mandatory fields
-     * (e.g. {@code CaepCredentialChange.change_type}) override this
-     * to throw {@link SsfEventValidationException} with a message
-     * naming the missing field.
-     *
-     * <p>Native event production (the SSF event listener) builds
-     * instances from typed Keycloak event details that always supply
-     * the required fields, so the hook only matters on the
-     * synthetic-emit path. Custom extension events use this same hook
-     * to enforce their own invariants.
+     * 校验本事件实例是否包含 SSF / CAEP / RISC 规范标记为 REQUIRED 的字段。
+     * 合成发射管道在 Jackson 从调用方 JSON 实例化事件后调用，
+     * 以便在 SET 签名与分发前以明确错误拒绝缺失字段。
+     * <p>默认实现为空操作；含必填字段的子类（如 {@code CaepCredentialChange.change_type}）
+     * 应覆盖并抛出 {@link SsfEventValidationException}。</p>
+     * <p>原生事件生产路径始终提供必填字段；该钩子主要作用于合成发射与自定义扩展事件。</p>
      */
     public void validate() {
         // no-op — overridden by event subclasses that have spec-required fields
