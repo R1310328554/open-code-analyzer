@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:20:55Z",
-  "files": [
-    "server-spi/src/main/java/org/keycloak/userprofile/UserProfileAttributeValidationContext.java",
-    "server-spi/src/main/java/org/keycloak/userprofile/UserProfileConstants.java",
-    "server-spi/src/main/java/org/keycloak/userprofile/UserProfileContext.java",
-    "server-spi/src/main/java/org/keycloak/userprofile/UserProfileDecorator.java",
-    "server-spi/src/main/java/org/keycloak/userprofile/UserProfileMetadata.java",
-    "server-spi/src/main/java/org/keycloak/utils/KeycloakSessionUtil.java",
-    "server-spi/src/main/java/org/keycloak/utils/StringUtil.java",
-    "server-spi/src/main/java/org/keycloak/validate/AbstractSimpleValidator.java",
-    "server-spi/src/main/java/org/keycloak/validate/AbstractStringValidator.java",
-    "server-spi/src/main/java/org/keycloak/validate/SimpleValidator.java",
-    "server-spi/src/main/java/org/keycloak/validate/ValidationContext.java",
-    "server-spi/src/main/java/org/keycloak/validate/ValidationError.java",
-    "server-spi/src/main/java/org/keycloak/validate/ValidationResult.java",
-    "server-spi/src/main/java/org/keycloak/validate/Validator.java",
-    "server-spi/src/main/java/org/keycloak/validate/ValidatorConfig.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2248,
-  "done": 3735
+  "done": 3750
 }
