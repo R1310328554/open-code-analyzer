@@ -133,3 +133,18 @@
 2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/ScopePolicyProviderFactory.java wave5b authz policy providers
 2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/UMAPolicyProvider.java wave5b authz policy providers
 2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/UMAPolicyProviderFactory.java wave5b authz policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/Http.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/HttpMethod.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/HttpMethodAuthenticator.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/HttpMethodResponse.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/HttpResponseException.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/HttpResponseProcessor.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/Throwables.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/TokenCallable.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/crypto/ASN1Decoder.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/crypto/ASN1Encoder.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/client/src/main/java/org/keycloak/authorization/client/util/crypto/AuthzClientCryptoProvider.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/aggregated/AggregatePolicyProvider.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/aggregated/AggregatePolicyProviderFactory.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/client/ClientPolicyProvider.java wave5a authz client util + policy providers
+2026-08-10T05:42:30Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/client/ClientPolicyProviderFactory.java wave5a authz client util + policy providers
