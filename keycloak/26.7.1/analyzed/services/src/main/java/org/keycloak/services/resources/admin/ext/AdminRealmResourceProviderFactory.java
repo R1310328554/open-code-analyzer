@@ -21,7 +21,8 @@ package org.keycloak.services.resources.admin.ext;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * <p>A factory that creates {@link AdminRealmResourceProvider} instances.
+ * 创建 {@link AdminRealmResourceProvider} 实例的工厂接口。
+ * <p>标准 Keycloak SPI {@link org.keycloak.provider.ProviderFactory} 实现入口。</p>
  */
 public interface AdminRealmResourceProviderFactory extends ProviderFactory<AdminRealmResourceProvider> {
 

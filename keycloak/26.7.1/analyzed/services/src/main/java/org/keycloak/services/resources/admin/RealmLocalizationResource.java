@@ -59,12 +59,20 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
+/**
+ * 领域本地化文本管理 REST 资源。
+ * <p>支持按语言区域增删改查 UI 消息键值，以及 JSON/文件批量导入。</p>
+ */
 public class RealmLocalizationResource {
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 构造领域本地化资源。 */
     public RealmLocalizationResource(KeycloakSession session, AdminPermissionEvaluator auth) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -81,6 +89,7 @@ public class RealmLocalizationResource {
         @APIResponse(responseCode = "400", description = "Bad Request"),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 保存或更新指定语言区域下单条本地化文本。 */
     public void saveRealmLocalizationText(@PathParam("locale") String locale, @PathParam("key") String key,
             String text) {
         this.auth.realm().requireManageRealm();
@@ -95,7 +104,7 @@ public class RealmLocalizationResource {
 
 
     /**
-     * Import localization from uploaded JSON file
+     * 从上传的 JSON 文件导入本地化文本。
      */
     @POST
     @Path("{locale}")
@@ -133,6 +142,7 @@ public class RealmLocalizationResource {
         @APIResponse(responseCode = "204", description = "No Content"),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 批量创建或更新指定语言区域的本地化键值对。 */
     public void createOrUpdateRealmLocalizationTexts(@PathParam("locale") String locale,
             Map<String, String> localizationTexts) {
         this.auth.realm().requireManageRealm();
@@ -148,6 +158,7 @@ public class RealmLocalizationResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 删除指定语言区域的全部本地化文本。 */
     public void deleteRealmLocalizationTexts(@PathParam("locale") String locale) {
         this.auth.realm().requireManageRealm();
         if(!realm.removeRealmLocalizationTexts(locale)) {
@@ -164,6 +175,7 @@ public class RealmLocalizationResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 删除指定语言区域下的单条本地化文本。 */
     public void deleteRealmLocalizationText(@PathParam("locale") String locale, @PathParam("key") String key) {
         this.auth.realm().requireManageRealm();
         if (!session.realms().deleteLocalizationText(realm, locale, key)) {
@@ -179,6 +191,7 @@ public class RealmLocalizationResource {
         @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = String.class, type = SchemaType.ARRAY))),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 返回领域已配置本地化文本的所有语言区域代码。 */
     public Stream<String> getRealmLocalizationLocales() {
         auth.requireAnyAdminRole();
 
@@ -194,13 +207,14 @@ public class RealmLocalizationResource {
         @APIResponse(responseCode = "200", description = "OK"),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 获取指定语言区域的全部本地化键值对（可选默认语言回退）。 */
     public Map<String, String> getRealmLocalizationTexts(@PathParam("locale") String locale,
             @Deprecated @QueryParam("useRealmDefaultLocaleFallback") Boolean useFallback) {
         if (!AdminPermissions.realms(session, auth.adminAuth()).isAdmin()) {
             throw new ForbiddenException();
         }
 
-        // this fallback is no longer needed since the fix for #15845, don't forget to remove it from the API
+        // 此回退逻辑自 #15845 修复后已不再需要，后续应从 API 移除
         if (useFallback != null && useFallback) {
             Map<String, String> realmLocalizationTexts = new HashMap<>();
             if (StringUtil.isNotBlank(realm.getDefaultLocale())) {
@@ -225,6 +239,7 @@ public class RealmLocalizationResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 获取指定语言区域下单条本地化文本（纯文本）。 */
     public String getRealmLocalizationText(@PathParam("locale") String locale, @PathParam("key") String key) {
         auth.requireAnyAdminRole();
 

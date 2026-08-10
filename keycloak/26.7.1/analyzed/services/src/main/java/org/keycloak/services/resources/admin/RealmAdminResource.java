@@ -131,7 +131,8 @@ import org.jboss.resteasy.reactive.NoCache;
 import static org.keycloak.util.JsonSerialization.readValue;
 
 /**
- * Base resource class for the admin REST api of one realm
+ * 单个领域的管理 REST API 根资源。
+ * <p>提供领域配置、用户、客户端、角色、事件、组、密钥及导入导出等子资源入口。</p>
  *
  * @resource Realms Admin
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -139,18 +140,26 @@ import static org.keycloak.util.JsonSerialization.readValue;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class RealmAdminResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(RealmAdminResource.class);
 
+    /** 细粒度权限评估器 */
     protected final AdminPermissionEvaluator auth;
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 客户端连接信息 */
     protected final ClientConnection connection;
 
+    /** HTTP 请求头 */
     protected final HttpHeaders headers;
 
+    /** 构造单个领域的管理 REST 根资源。 */
     public RealmAdminResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -161,9 +170,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Base path for importing clients under this realm.
+     * 将客户端描述（JSON/XML/文本）转换为内部 {@link ClientRepresentation}。
      *
-     * @return
+     * @return 客户端表示
      */
     @Path("client-description-converter")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN })
@@ -192,9 +201,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Base path for managing attack detection.
+     * 暴力破解检测管理子资源路径。
      *
-     * @return
+     * @return {@link AttackDetectionResource}
      */
     @Path("attack-detection")
     public AttackDetectionResource getAttackDetection() {
@@ -202,9 +211,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Base path for managing clients under this realm.
+     * 领域内客户端管理子资源路径。
      *
-     * @return
+     * @return {@link ClientsResource}
      */
     @Path("clients")
     public ClientsResource getClients() {
@@ -212,9 +221,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * This endpoint is deprecated. It's here just because of backwards compatibility. Use {@link #getClientScopes()} instead
+     * 已弃用：客户端模板端点，请使用 {@link #getClientScopes()}。
      *
-     * @return
+     * @return {@link ClientScopesResource}
      */
     @Deprecated
     @Path("client-templates")
@@ -223,9 +232,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Base path for managing client scopes under this realm.
+     * 客户端范围（Client Scopes）管理子资源路径。
      *
-     * @return
+     * @return {@link ClientScopesResource}
      */
     @Path("client-scopes")
     public ClientScopesResource getClientScopes() {
@@ -233,7 +242,7 @@ public class RealmAdminResource {
     }
 
     /**
-     * Base path for managing localization under this realm.
+     * 领域本地化文本管理子资源路径。
      */
     @Path("localization")
     public RealmLocalizationResource getLocalization() {
@@ -241,9 +250,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Get realm default client scopes.  Only name and ids are returned.
+     * 获取领域默认客户端范围（仅名称与 ID）。
      *
-     * @return
+     * @return 客户端范围表示流
      */
     @GET
     @NoCache
@@ -259,6 +268,7 @@ public class RealmAdminResource {
         return getDefaultClientScopes(true);
     }
 
+    /** 获取默认或可选客户端范围流。 */
     private Stream<ClientScopeRepresentation> getDefaultClientScopes(boolean defaultScope) {
         auth.clients().requireViewClientScopes();
 
@@ -281,10 +291,12 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 将客户端范围加入领域默认范围列表。 */
     public void addDefaultDefaultClientScope(@PathParam("clientScopeId") String clientScopeId) {
         addDefaultClientScope(clientScopeId,true);
     }
 
+    /** 添加默认或可选客户端范围（校验参数化 scope 限制）。 */
     private void addDefaultClientScope(String clientScopeId, boolean defaultScope) {
         auth.clients().requireManageClientScopes();
 
@@ -293,8 +305,7 @@ public class RealmAdminResource {
             throw new NotFoundException("Client scope not found");
         }
 
-        // Parameterized scopes currently require the caller to explicitly provide the scope parameter (e.g. "scope_name:value"),
-        // so they cannot be included automatically as default scopes. This restriction may be lifted in the future.
+        // 参数化 scope 需调用方显式提供参数，暂不能作为默认 scope 自动包含
         if (defaultScope && clientScope.isParameterizedScope()) {
             throw ErrorResponse.error("Can't assign a Parameterized Scope as a Default Scope", Status.BAD_REQUEST);
         }
@@ -316,6 +327,7 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 从默认客户端范围列表中移除指定范围。 */
     public void removeDefaultDefaultClientScope(@PathParam("clientScopeId") String clientScopeId) {
         auth.clients().requireManageClientScopes();
 
@@ -329,9 +341,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Get realm optional client scopes.  Only name and ids are returned.
+     * 获取领域可选客户端范围（仅名称与 ID）。
      *
-     * @return
+     * @return 客户端范围表示流
      */
     @GET
     @NoCache
@@ -357,6 +369,7 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 将客户端范围加入可选范围列表。 */
     public void addDefaultOptionalClientScope(@PathParam("clientScopeId") String clientScopeId) {
         addDefaultClientScope(clientScopeId, false);
     }
@@ -371,29 +384,31 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 从可选客户端范围列表中移除指定范围。 */
     public void removeDefaultOptionalClientScope(@PathParam("clientScopeId") String clientScopeId) {
         removeDefaultDefaultClientScope(clientScopeId);
     }
 
     /**
-     * Base path for managing client initial access tokens
+     * 客户端初始访问令牌管理子资源路径。
      *
-     * @return
+     * @return {@link ClientInitialAccessResource}
      */
     @Path("clients-initial-access")
     public ClientInitialAccessResource getClientInitialAccess() {
         return new ClientInitialAccessResource(session, auth, adminEvent);
     }
 
+    /** 客户端注册策略管理子资源。 */
     @Path("client-registration-policy")
     public ClientRegistrationPolicyResource getClientRegistrationPolicy() {
         return new ClientRegistrationPolicyResource(session, auth, adminEvent);
     }
 
     /**
-     * Base path for managing components under this realm.
+     * 领域组件（SPI Provider）管理子资源路径。
      *
-     * @return
+     * @return {@link ComponentResource}
      */
     @Path("components")
     public ComponentResource getComponents() {
@@ -401,9 +416,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * base path for managing realm-level roles of this realm
+     * 领域级角色管理子资源路径。
      *
-     * @return
+     * @return {@link RoleContainerResource}
      */
     @Path("roles")
     public RoleContainerResource getRoleContainerResource() {
@@ -411,11 +426,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Get the top-level representation of the realm
+     * 获取领域顶层表示（不含用户/客户端等嵌套详情）。
      *
-     * It will not include nested information like User and Client representations.
-     *
-     * @return
+     * @return {@link RealmRepresentation}
      */
     @GET
     @NoCache
@@ -450,13 +463,11 @@ public class RealmAdminResource {
     }
 
     /**
-     * Update the top-level information of the realm
+     * 更新领域顶层配置。
+     * <p>表示中的用户、角色、客户端信息将被忽略，仅更新领域顶层属性。</p>
      *
-     * Any user, roles or client information in the representation
-     * will be ignored.  This will only update top-level attributes of the realm.
-     *
-     * @param rep
-     * @return
+     * @param rep 领域表示
+     * @return 204 无内容
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
@@ -524,10 +535,10 @@ public class RealmAdminResource {
 
             RepresentationToModel.updateRealm(rep, realm, session);
 
-            // Refresh periodic sync tasks for configured federationProviders
+            // 刷新联合存储 Provider 的周期性同步任务
             StoreSyncEvent.fire(session, realm, false);
 
-            // This populates the map in DefaultKeycloakContext to be used when treating the event
+            // 填充 DefaultKeycloakContext 中的映射供事件处理使用
             session.getContext().getUri();
 
             adminEvent.operation(OperationType.UPDATE).representation(rep).success();
@@ -549,8 +560,7 @@ public class RealmAdminResource {
     }
 
     /**
-     * Delete the realm
-     *
+     * 删除当前领域（master 领域不可删除）。
      */
     @DELETE
     @Tag(name = KeycloakOpenAPI.Admin.Tags.REALMS_ADMIN)
@@ -572,17 +582,16 @@ public class RealmAdminResource {
             throw new NotFoundException("Realm doesn't exist");
         }
 
-        // The delete event is associated with the realm of the user executing the operation,
-        // instead of the realm being deleted.
+        // 删除事件关联执行操作的用户的领域，而非被删除的领域
         AdminEventBuilder deleteAdminEvent = new AdminEventBuilder(auth.adminAuth().getRealm(), auth.adminAuth(), session, connection);
         deleteAdminEvent.operation(OperationType.DELETE).resource(ResourceType.REALM)
                 .realm(auth.adminAuth().getRealm()).resourcePath(realm.getName()).success();
     }
 
     /**
-     * Base path for managing users in this realm.
+     * 领域内用户管理子资源路径。
      *
-     * @return
+     * @return {@link UsersResource}
      */
     @Path("users")
     public UsersResource users() {
@@ -599,6 +608,7 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = ManagementPermissionReference.class))),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 获取用户细粒度管理权限配置引用。 */
     public ManagementPermissionReference getUserMgmtPermissions() {
         ProfileHelper.requireFeature(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ);
         auth.realm().requireViewRealm();
@@ -622,6 +632,7 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = ManagementPermissionReference.class))),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 启用或禁用用户细粒度管理权限。 */
     public ManagementPermissionReference setUsersManagementPermissionsEnabled(ManagementPermissionReference ref) {
         ProfileHelper.requireFeature(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ);
         auth.realm().requireManageRealm();
@@ -635,6 +646,7 @@ public class RealmAdminResource {
         }
     }
 
+    /** 构建用户管理权限引用对象。 */
     private ManagementPermissionReference toUsersMgmtRef(AdminPermissionManagement permissions) {
         ManagementPermissionReference ref = new ManagementPermissionReference();
         ref.setEnabled(true);
@@ -644,16 +656,19 @@ public class RealmAdminResource {
         return ref;
     }
 
+    /** 组织管理子资源（需启用 Organizations 特性）。 */
     @Path("organizations")
     public OrganizationsResource organizations() {
         return new OrganizationsResource(session, auth, adminEvent);
     }
 
+    /** 工作流管理子资源。 */
     @Path("workflows")
     public WorkflowsResource workflows() {
         return new WorkflowsResource(session, auth);
     }
 
+    /** SPI 扩展子路径，由 {@link AdminRealmResourceProvider} 提供实现。 */
     @Path("{extension}")
     public Object extension(@PathParam("extension") String extension) {
         AdminRealmResourceProvider provider = session.getProvider(AdminRealmResourceProvider.class, extension);
@@ -667,6 +682,7 @@ public class RealmAdminResource {
         throw new NotFoundException();
     }
 
+    /** 认证流与 Required Actions 管理子资源。 */
     @Path("authentication")
     public AuthenticationManagementResource flows() {
         return new AuthenticationManagementResource(session, auth, adminEvent);
@@ -674,9 +690,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Path for managing all realm-level or client-level roles defined in this realm by its id.
+     * 按 ID 管理领域内所有角色的子资源路径。
      *
-     * @return
+     * @return {@link RoleByIdResource}
      */
     @Path("roles-by-id")
     public RoleByIdResource rolesById() {
@@ -684,8 +700,7 @@ public class RealmAdminResource {
     }
 
     /**
-     * Push the realm's revocation policy to any client that has an admin url associated with it.
-     *
+     * 向配置了 admin URL 的客户端推送领域撤销策略。
      */
     @Path("push-revocation")
     @Produces(MediaType.APPLICATION_JSON)
@@ -705,9 +720,7 @@ public class RealmAdminResource {
     }
 
     /**
-     * Removes all user sessions. Any client that has an admin url will also be told to invalidate any sessions
-     * they have.
-     *
+     * 注销所有用户会话，并通知配置了 admin URL 的客户端失效会话。
      */
     @Path("logout-all")
     @POST
@@ -728,10 +741,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Remove a specific user session. Any client that has an admin url will also be told to invalidate this
-     * particular session.
+     * 删除指定用户会话，并通知相关客户端失效该会话。
      *
-     * @param sessionId
+     * @param sessionId 会话 ID
      */
     @Path("sessions/{session}")
     @DELETE
@@ -758,12 +770,10 @@ public class RealmAdminResource {
     }
 
     /**
-     * Get client session stats
+     * 获取各客户端活跃/离线会话统计。
+     * <p>返回 JSON 映射：键为 clientId，值为当前活跃会话数。</p>
      *
-     * Returns a JSON map.  The key is the client id, the value is the number of sessions that currently are active
-     * with that client.  Only clients that actually have a session associated with them will be in this map.
-     *
-     * @return
+     * @return 统计信息流
      */
     @Path("client-session-stats")
     @GET
@@ -816,11 +826,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Get the events provider configuration
+     * 获取事件 Provider 配置。
      *
-     * Returns JSON object with events provider configuration
-     *
-     * @return
+     * @return {@link RealmEventsConfigRepresentation}
      */
     @GET
     @NoCache
@@ -847,11 +855,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Update the events provider
+     * 更新事件 Provider 及其配置。
      *
-     * Change the events provider and/or its configuration
-     *
-     * @param rep
+     * @param rep 事件配置表示
      */
     @PUT
     @Path("events/config")
@@ -875,11 +881,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Get events
+     * 查询用户事件，支持按类型、客户端、用户、IP、时间等过滤。
      *
-     * Returns all events, or filters them based on URL query parameters listed here
-     *
-     * @param types The types of events to return
+     * @param types 事件类型列表
      * @param client App or oauth client name
      * @param user User id
      * @param ipAddress IP address
@@ -974,11 +978,9 @@ public class RealmAdminResource {
     }
 
     /**
-     * Get admin events
+     * 查询管理事件，支持按操作类型、认证主体、资源路径等过滤。
      *
-     * Returns all admin events, or filters events based on URL query parameters listed here
-     *
-     * @param operationTypes
+     * @param operationTypes 操作类型列表
      * @param authRealm
      * @param authClient
      * @param authUser user id
@@ -1092,8 +1094,7 @@ public class RealmAdminResource {
     }
 
     /**
-     * Delete all events
-     *
+     * 清空全部用户事件。
      */
     @Path("events")
     @DELETE
@@ -1111,8 +1112,7 @@ public class RealmAdminResource {
     }
 
     /**
-     * Delete all admin events
-     *
+     * 清空全部管理事件。
      */
     @Path("admin-events")
     @DELETE
@@ -1130,11 +1130,11 @@ public class RealmAdminResource {
     }
 
     /**
-     * Test SMTP connection with current logged in user
+     * 使用当前登录用户邮箱测试 SMTP 连接（表单参数，已弃用）。
      *
-     * @param config SMTP server configuration
-     * @return
-     * @throws Exception
+     * @param config SMTP 服务器配置 JSON
+     * @return 204 无内容
+     * @throws Exception 发送失败时
      */
     @Path("testSMTPConnection")
     @POST
@@ -1163,6 +1163,7 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "204", description = "No Content"),
         @APIResponse(responseCode = "500", description = "Internal Server Error")
     })
+    /** 使用 JSON 配置测试 SMTP 并向当前管理员发送测试邮件。 */
     public Response testSMTPConnection(Map<String, String> settings) throws Exception {
         auth.realm().requireManageRealm();
         try {
@@ -1187,8 +1188,9 @@ public class RealmAdminResource {
         return Response.noContent().build();
     }
 
+    /** 当测试配置与已保存 SMTP 认证一致时复用已配置的密钥。 */
     private boolean reuseConfiguredAuthenticationForSmtp(Map<String, String> settings, EmailAuthenticator.AuthenticatorType type) {
-        // just reuse the configured authentication if the same authenticator, host, port and user are passed
+        // 认证类型、主机、端口与用户一致时复用已配置认证
         return Boolean.parseBoolean(settings.get("auth")) && Boolean.parseBoolean(realm.getSmtpConfig().get("auth"))
                 && Optional.ofNullable(settings.get("authType")).orElse(EmailAuthenticator.AuthenticatorType.BASIC.name()).equalsIgnoreCase(type.name())
                 && realm.getSmtpConfig().getOrDefault("authType", EmailAuthenticator.AuthenticatorType.BASIC.name()).equalsIgnoreCase(type.name())
@@ -1197,15 +1199,16 @@ public class RealmAdminResource {
                 && Objects.equals(Optional.ofNullable(settings.get("user")).orElse(""), realm.getSmtpConfig().getOrDefault("user", ""));
     }
 
+    /** 身份提供方管理子资源。 */
     @Path("identity-provider")
     public IdentityProvidersResource getIdentityProviderResource() {
         return new IdentityProvidersResource(realm, session, this.auth, adminEvent);
     }
 
     /**
-     * Get group hierarchy.  Only name and ids are returned.
+     * 获取领域默认组（仅名称与 ID）。
      *
-     * @return
+     * @return 组表示流
      */
     @GET
     @NoCache
@@ -1233,6 +1236,7 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 将组加入领域默认组列表。 */
     public void addDefaultGroup(@PathParam("groupId") String groupId) {
         auth.realm().requireManageRealm();
 
@@ -1256,6 +1260,7 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 从默认组列表中移除指定组。 */
     public void removeDefaultGroup(@PathParam("groupId") String groupId) {
         auth.realm().requireManageRealm();
 
@@ -1269,6 +1274,7 @@ public class RealmAdminResource {
         adminEvent.operation(OperationType.DELETE).resource(ResourceType.GROUP).resourcePath(session.getContext().getUri()).success();
     }
 
+    /** 组层级管理子资源。 */
     @Path("groups")
     public GroupsResource getGroups() {
         return  new GroupsResource(realm, session, this.auth, adminEvent);
@@ -1285,6 +1291,7 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 按路径查找组并返回表示（含子组计数）。 */
     public GroupRepresentation getGroupByPath(@PathParam("path") String path) {
         GroupModel found = KeycloakModelUtils.findGroupByPath(session, realm, path);
         if (found == null) {
@@ -1297,8 +1304,7 @@ public class RealmAdminResource {
     }
 
     /**
-     * Partial import from a JSON file to an existing realm.
-     *
+     * 向现有领域执行部分导入（JSON）。
      */
     @Path("partialImport")
     @POST
@@ -1327,6 +1333,7 @@ public class RealmAdminResource {
         }
     }
 
+    /** 在独立事务中执行部分导入并触发管理事件。 */
     private static PartialImportResults getPartialImportResults(InputStream requestBody, KeycloakSession kcSession, RealmModel kcRealm, AdminEventBuilder adminEventClone) {
         ExportImportManager exportProvider = kcSession.getProvider(DatastoreProvider.class).getExportImportManager();
         PartialImportResults results = exportProvider.partialImportRealm(kcRealm, requestBody);
@@ -1339,6 +1346,7 @@ public class RealmAdminResource {
         return results;
     }
 
+    /** 记录部分导入创建事件。 */
     private static void fireCreatedEvent(PartialImportResult result, AdminEventBuilder adminEvent) {
         adminEvent.operation(OperationType.CREATE)
                 .resourcePath(result.getResourceType().getPath(), result.getId())
@@ -1346,6 +1354,7 @@ public class RealmAdminResource {
                 .success();
     };
 
+    /** 记录部分导入覆盖更新事件。 */
     private static void fireUpdateEvent(PartialImportResult result, AdminEventBuilder adminEvent) {
         adminEvent.operation(OperationType.UPDATE)
                 .resourcePath(result.getResourceType().getPath(), result.getId())
@@ -1354,11 +1363,11 @@ public class RealmAdminResource {
     }
 
     /**
-     * Partial export of existing realm into a JSON file.
+     * 部分导出领域为 JSON。
      *
-     * @param exportGroupsAndRoles
-     * @param exportClients
-     * @return
+     * @param exportGroupsAndRoles 是否导出组与角色
+     * @param exportClients 是否导出客户端
+     * @return 领域 JSON 流式响应
      */
     @Path("partial-export")
     @Produces(MediaType.APPLICATION_JSON)
@@ -1383,7 +1392,7 @@ public class RealmAdminResource {
             auth.clients().requireView();
         }
 
-        // service accounts are exported if the clients are exported
+        // 导出客户端时一并导出服务账户
         // this means that if clients is true but groups/roles is false the service account is exported without roles
         // the other option is just include service accounts if clientsExported && groupsAndRolesExported
         ExportOptions options = new ExportOptions(false, clientsExported, groupsAndRolesExported, clientsExported, true);
@@ -1405,6 +1414,7 @@ public class RealmAdminResource {
         return response.build();
     }
 
+    /** 领域密钥与证书管理子资源。 */
     @Path("keys")
     public KeyResource keys() {
         return new KeyResource(realm, session, this.auth);
@@ -1420,6 +1430,7 @@ public class RealmAdminResource {
         @APIResponse(responseCode = "200", description = "OK"),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 返回已启用的凭证注册 Required Action Provider ID 列表。 */
     public Stream<String> getCredentialRegistrators(){
         auth.realm().requireViewRealm();
         return session.getContext().getRealm().getRequiredActionProvidersStream()
@@ -1428,18 +1439,21 @@ public class RealmAdminResource {
                 .filter(providerId ->  session.getProvider(RequiredActionProvider.class, providerId) instanceof CredentialRegistrator);
     }
 
+    /** 客户端策略（Policies）管理子资源。 */
     @Path("client-policies/policies")
     public ClientPoliciesResource getClientPoliciesResource() {
         ProfileHelper.requireFeature(Profile.Feature.CLIENT_POLICIES);
         return new ClientPoliciesResource(session, auth);
     }
 
+    /** 客户端 Profile 管理子资源。 */
     @Path("client-policies/profiles")
     public ClientProfilesResource getClientProfilesResource() {
         ProfileHelper.requireFeature(Profile.Feature.CLIENT_POLICIES);
         return new ClientProfilesResource(session, auth);
     }
 
+    /** 客户端类型管理子资源。 */
     @Path("client-types")
     public ClientTypesResource getClientTypesResource() {
         ProfileHelper.requireFeature(Profile.Feature.CLIENT_TYPES);

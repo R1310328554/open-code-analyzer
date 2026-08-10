@@ -25,15 +25,15 @@ import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
 /**
- * <p>A {@link AdminRealmResourceProvider} creates JAX-RS <emphasis>sub-resource</emphasis> instances for paths relative
- * to Realm's RESTful Admin API that could not be resolved by the server.
+ * {@link AdminRealmResourceProvider} 为 Realm 管理 REST API 中无法由服务器解析的路径创建 JAX-RS 子资源实例。
+ * <p>通过 SPI 扩展领域管理 API，支持插件化自定义子路径。</p>
  */
 public interface AdminRealmResourceProvider extends Provider {
 
     /**
-     * <p>Returns a JAX-RS resource instance.
+     * 返回 JAX-RS 子资源实例。
      *
-     * @return a JAX-RS sub-resource instance
+     * @return JAX-RS 子资源对象
      */
     Object getResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth,
             AdminEventBuilder adminEvent);

@@ -55,21 +55,33 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 客户端级 scope 映射 REST 资源。
+ * <p>管理 scope 容器与特定客户端角色之间的映射关系。</p>
+ *
  * @resource Scope Mappings
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ScopeMappedClientResource {
+    /** 当前领域 */
     protected RealmModel realm;
+    /** 细粒度权限评估器 */
     protected AdminPermissionEvaluator auth;
+    /** 管理权限检查回调 */
     protected AdminPermissionEvaluator.RequirePermissionCheck managePermission;
+    /** 查看权限检查回调 */
     protected AdminPermissionEvaluator.RequirePermissionCheck viewPermission;
+    /** 范围容器 */
     protected ScopeContainerModel scopeContainer;
+    /** Keycloak 会话 */
     protected KeycloakSession session;
+    /** 被映射 scope 的客户端 */
     protected ClientModel scopedClient;
+    /** 管理事件构建器 */
     protected AdminEventBuilder adminEvent;
     
+    /** 构造客户端 scope 映射资源。 */
     public ScopeMappedClientResource(RealmModel realm, AdminPermissionEvaluator auth, ScopeContainerModel scopeContainer, KeycloakSession session, ClientModel scopedClient, AdminEventBuilder adminEvent,
                                      AdminPermissionEvaluator.RequirePermissionCheck managePermission,
                                      AdminPermissionEvaluator.RequirePermissionCheck viewPermission) {
@@ -84,11 +96,9 @@ public class ScopeMappedClientResource {
     }
 
     /**
-     * Get the roles associated with a client's scope
+     * 获取与客户端 scope 关联的角色。
      *
-     * Returns roles for the client.
-     *
-     * @return
+     * @return 角色表示流
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -103,11 +113,9 @@ public class ScopeMappedClientResource {
     }
 
     /**
-     * The available client-level roles
+     * 获取可关联到 scope 的客户端级角色。
      *
-     * Returns the roles for the client that can be associated with the client's scope
-     *
-     * @return
+     * @return 可用角色流
      */
     @Path("available")
     @GET
@@ -125,13 +133,10 @@ public class ScopeMappedClientResource {
     }
 
     /**
-     * Get effective client roles
+     * 获取与 scope 关联的有效客户端角色（递归展开复合角色）。
      *
-     * Returns the roles for the client that are associated with the client's scope.
-     *
-     * @param briefRepresentation if false, return roles with their attributes
-     * 
-     * @return
+     * @param briefRepresentation 为 false 时返回含属性的完整表示
+     * @return 角色表示流
      */
     @Path("composite")
     @GET
@@ -150,9 +155,9 @@ public class ScopeMappedClientResource {
     }
 
     /**
-     * Add client-level roles to the client's scope
+     * 向 scope 添加客户端级角色。
      *
-     * @param roles
+     * @param roles 角色列表
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -175,9 +180,9 @@ public class ScopeMappedClientResource {
     }
 
     /**
-     * Remove client-level roles from the client's scope.
+     * 从 scope 移除客户端级角色。
      *
-     * @param roles
+     * @param roles 角色列表；为 null 时移除全部
      */
     @DELETE
     @Consumes(MediaType.APPLICATION_JSON)

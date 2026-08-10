@@ -89,7 +89,8 @@ import static org.keycloak.models.utils.KeycloakModelUtils.findGroupByPath;
 import static org.keycloak.userprofile.UserProfileContext.USER_API;
 
 /**
- * Base resource for managing users
+ * 领域内用户管理 REST 资源。
+ * <p>支持创建、搜索、计数用户，并路由到 {@link UserResource} 与 {@link UserProfileResource}。</p>
  *
  * @resource Users
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -98,20 +99,28 @@ import static org.keycloak.userprofile.UserProfileContext.USER_API;
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class UsersResource {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(UsersResource.class);
 
+    /** 当前领域 */
     protected final RealmModel realm;
 
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
 
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** 客户端连接信息 */
     protected final ClientConnection clientConnection;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** HTTP 请求头 */
     protected final HttpHeaders headers;
 
+    /** 构造用户管理资源。 */
     public UsersResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -122,12 +131,10 @@ public class UsersResource {
     }
 
     /**
-     * Create a new user
+     * 创建新用户（用户名须唯一）。
      *
-     * Username must be unique.
-     *
-     * @param rep
-     * @return
+     * @param rep 用户表示
+     * @return 201 Created 及用户 URI
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -141,7 +148,7 @@ public class UsersResource {
     @Tag(name = KeycloakOpenAPI.Admin.Tags.USERS)
     @Operation(summary = "Create a new user Username must be unique.")
     public Response createUser(final UserRepresentation rep) {
-        // first check if user has manage rights
+        // 首先检查用户是否具备管理权限
         try {
             auth.users().requireManage();
         } catch (ForbiddenException exception) {
@@ -192,6 +199,7 @@ public class UsersResource {
         }
     }
 
+    /** 检查是否可通过组细粒度权限创建用户（组成员管理）。 */
     private boolean canCreateGroupMembers(UserRepresentation rep) {
         if (!Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ) && !Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ_V2)) {
             return false;
@@ -207,7 +215,7 @@ public class UsersResource {
             return false;
         }
 
-        // if groups is part of the user rep, check if admin has manage_members and manage_membership on each group
+        // 若表示含组路径，校验管理员对各组的 manage_members 与 manage_membership 权限
         // an exception is thrown in case the current user does not have permissions to manage any of the groups
         for (GroupModel group : groups) {
             auth.groups().requireManageMembers(group);
@@ -218,10 +226,10 @@ public class UsersResource {
     }
 
     /**
-     * Get representation of the user
+     * 按 ID 获取单个用户的子资源。
      *
-     * @param id User id
-     * @return
+     * @param id 用户 ID
+     * @return {@link UserResource}
      */
     @Path("{user-id}")
     public UserResource user(final @PathParam("user-id") String id) {
@@ -236,7 +244,7 @@ public class UsersResource {
         }
 
         if (user == null) {
-            // we do this to make sure somebody can't phish ids
+            // 防止通过 ID 探测用户是否存在
             if (auth.users().canQuery()) throw new NotFoundException("User not found");
             else throw new ForbiddenException();
         }
@@ -245,11 +253,9 @@ public class UsersResource {
     }
 
     /**
-     * Get users
+     * 查询用户列表，支持多种过滤条件。
      *
-     * Returns a stream of users, filtered according to query parameters.
-     *
-     * @param search A String contained in username, first or last name, or email. Default search behavior is prefix-based (e.g., <code>foo</code> or <code>foo*</code>). Use <code>*foo*</code> for infix search and <code>"foo"</code> for exact search.
+     * @param search 用户名/姓名/邮箱搜索串（前缀、中缀 *foo* 或精确 "foo"）
      * @param last A String contained in lastName, or the complete lastName, if param "exact" is true
      * @param first A String contained in firstName, or the complete firstName, if param "exact" is true
      * @param email A String contained in email, or the complete email, if param "exact" is true
@@ -373,21 +379,10 @@ public class UsersResource {
     }
 
     /**
-     * Returns the number of users that match the given criteria.
-     * It can be called in three different ways.
-     * 1. Don't specify any criteria and pass {@code null}. The number of all
-     * users within that realm will be returned.
-     * <p>
-     * 2. If {@code search} is specified other criteria such as {@code last} will
-     * be ignored even though you set them. The {@code search} string will be
-     * matched against the first and last name, the username and the email of a
-     * user.
-     * <p>
-     * 3. If {@code search} is unspecified but any of {@code last}, {@code first},
-     * {@code email} or {@code username} those criteria are matched against their
-     * respective fields on a user entity. Combined with a logical and.
+     * 返回符合查询条件的用户数量。
+     * <p>三种调用方式：无参数返回全部；指定 search 时忽略其他字段；否则 last/first/email/username 逻辑与组合。</p>
      *
-     * @param search A String contained in username, first or last name, or email. Default search behavior is prefix-based (e.g., <code>foo</code> or <code>foo*</code>). Use <code>*foo*</code> for infix search and <code>"foo"</code> for exact search.
+     * @param search 综合搜索串
      * @param last A String contained in lastName, or the complete lastName, if param "exact" is true
      * @param first A String contained in firstName, or the complete firstName, if param "exact" is true
      * @param email A String contained in email, or the complete email, if param "exact" is true
@@ -455,7 +450,7 @@ public class UsersResource {
                 parameters.put(UserModel.EMAIL_VERIFIED, emailVerified.toString());
             }
             addCreatedTimestampConditions(parameters, createdAfter, createdBefore);
-            // search /users equivalent to this doesn't include service-accounts so counting shouldn't as well
+            // 与 /users 搜索一致，计数不包含服务账户
             parameters.put(UserModel.INCLUDE_SERVICE_ACCOUNT, "false");
             if (userPermissionEvaluator.canView()) {
                 return session.users().getUsersCount(realm, parameters);
@@ -527,16 +522,17 @@ public class UsersResource {
     }
 
     /**
-     * Get representation of the user
+     * 用户 Profile 配置子资源。
      *
-     * @param id User id
-     * @return
+     * @return {@link UserProfileResource}
      */
     @Path("profile")
+    /** 返回用户 Profile 管理子资源。 */
     public UserProfileResource userProfile() {
         return new UserProfileResource(session, auth, adminEvent);
     }
 
+    /** 向搜索属性添加创建时间范围条件。 */
     private static void addCreatedTimestampConditions(Map<String, String> attributes, String createdAfter, String createdBefore) {
         if (createdAfter != null) {
             try {
@@ -554,6 +550,7 @@ public class UsersResource {
         }
     }
 
+    /** 按属性搜索用户并应用权限过滤。 */
     private Stream<UserRepresentation> searchForUser(Map<String, String> attributes, RealmModel realm, UserPermissionEvaluator usersEvaluator, Boolean briefRepresentation, Integer firstResult, Integer maxResults, Boolean includeServiceAccounts) {
         attributes.put(UserModel.INCLUDE_SERVICE_ACCOUNT, includeServiceAccounts.toString());
 
@@ -567,6 +564,7 @@ public class UsersResource {
         return toRepresentation(realm, usersEvaluator, briefRepresentation, session.users().searchForUserStream(realm, attributes, firstResult, maxResults));
     }
 
+    /** 将用户模型流转为表示流并过滤无查看权限的用户。 */
     private Stream<UserRepresentation> toRepresentation(RealmModel realm, UserPermissionEvaluator usersEvaluator, Boolean briefRepresentation, Stream<UserModel> userModels) {
         boolean briefRep = Boolean.TRUE.equals(briefRepresentation);
 

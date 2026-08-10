@@ -73,7 +73,8 @@ import org.jboss.resteasy.reactive.NoCache;
 import static org.keycloak.utils.StreamsUtil.throwIfEmpty;
 
 /**
- * Top level resource for Admin REST API
+ * 管理 REST API 顶层资源：领域列表与导入。
+ * <p>列出调用者可访问的领域，导入新领域，并按名称路由到 {@link RealmAdminResource}。</p>
  *
  * @resource Realms Admin
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -81,14 +82,20 @@ import static org.keycloak.utils.StreamsUtil.throwIfEmpty;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class RealmsAdminResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(RealmsAdminResource.class);
+    /** 管理 API 认证上下文 */
     protected final AdminAuth auth;
+    /** OIDC 令牌管理器 */
     protected final TokenManager tokenManager;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 客户端连接信息 */
     protected final ClientConnection clientConnection;
 
+    /** 构造 Realms 管理顶层资源。 */
     public RealmsAdminResource(KeycloakSession session, AdminAuth auth, TokenManager tokenManager) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -96,6 +103,7 @@ public class RealmsAdminResource {
         this.tokenManager = tokenManager;
     }
 
+    /** 禁用缓存的 Cache-Control 常量 */
     public static final CacheControl noCache = new CacheControl();
 
     static {
@@ -103,11 +111,10 @@ public class RealmsAdminResource {
     }
 
     /**
-     * Get accessible realms
+     * 获取可访问的领域列表。
+     * <p>根据调用者权限过滤，无权限时返回 403。</p>
      *
-     * Returns a list of accessible realms. The list is filtered based on what realms the caller is allowed to view.
-     *
-     * @return
+     * @return 领域表示流
      */
     @GET
     @NoCache
@@ -125,6 +132,7 @@ public class RealmsAdminResource {
         return throwIfEmpty(realms, new ForbiddenException());
     }
 
+    /** 将 {@link RealmModel} 转为表示，按权限决定完整或简略视图。 */
     protected RealmRepresentation toRealmRep(RealmModel realm, boolean briefRep) {
         if (AdminPermissions.realms(session, auth).canView(realm)) {
             return briefRep ? ModelToRepresentation.toBriefRepresentation(realm) : ModelToRepresentation.toRepresentation(session, realm, false);
@@ -137,10 +145,8 @@ public class RealmsAdminResource {
     }
 
     /**
-     * Import a realm.
-     * <p>
-     * Imports a realm from a full representation of that realm.  Realm name must be unique.
-     *
+     * 导入领域。
+     * <p>从完整 {@link RealmRepresentation} 导入，领域名称必须唯一。</p>
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -189,6 +195,7 @@ public class RealmsAdminResource {
         }
     }
 
+    /** 为非 admin 创建者授予新领域的 realm 管理角色。 */
     private void grantPermissionsToRealmCreator(RealmModel realm) {
         if (auth.hasRealmRole(AdminRoles.ADMIN)) {
             return;
@@ -201,9 +208,9 @@ public class RealmsAdminResource {
     }
 
     /**
-     * Base path for the admin REST API for one particular realm.
+     * 单个领域的管理 REST API 根路径。
      *
-     * @param name realm name (not id!)
+     * @param name 领域名称（非 ID）
      */
     @Path("{realm}")
     public RealmAdminResource getRealmAdmin(@PathParam("realm") @Parameter(description = "realm name (not id!)") final String name) {

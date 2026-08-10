@@ -74,7 +74,8 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Base resource for managing users
+ * 角色映射 REST 资源基类。
+ * <p>管理用户或组等领域/客户端角色分配，供 {@link UserResource} 等调用。</p>
  *
  * @resource Role Mapper
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -84,24 +85,35 @@ import org.jboss.resteasy.reactive.NoCache;
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class RoleMapperResource {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(RoleMapperResource.class);
 
+    /** 当前领域 */
     protected final RealmModel realm;
 
+    /** 角色映射目标（用户/组等） */
     private final RoleMapperModel roleMapper;
 
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** 管理权限检查回调 */
     protected final AdminPermissionEvaluator.RequirePermissionCheck managePermission;
+    /** 查看权限检查回调 */
     protected final AdminPermissionEvaluator.RequirePermissionCheck viewPermission;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
 
+    /** 客户端连接信息 */
     protected final ClientConnection clientConnection;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** HTTP 请求头 */
     protected final HttpHeaders headers;
 
+    /** 构造角色映射资源。 */
     public RoleMapperResource(KeycloakSession session,
                               AdminPermissionEvaluator auth,
                               RoleMapperModel roleMapper,
@@ -121,9 +133,9 @@ public class RoleMapperResource {
     }
 
     /**
-     * Get role mappings
+     * 获取全部角色映射（领域级与按客户端分组）。
      *
-     * @return
+     * @return 映射表示
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -168,9 +180,9 @@ public class RoleMapperResource {
     }
 
     /**
-     * Get realm-level role mappings
+     * 获取领域级角色映射。
      *
-     * @return
+     * @return 角色表示流
      */
     @Path("realm")
     @GET
@@ -189,13 +201,11 @@ public class RoleMapperResource {
     }
 
     /**
-     * Get effective realm-level role mappings
+     * 获取有效领域级角色映射（递归展开复合角色）。
      *
-     * This will recurse all composite roles to get the result.
+     * @param briefRepresentation 为 false 时返回含属性的完整表示
      *
-     * @param briefRepresentation if false, return roles with their attributes
-     *
-     * @return
+     * @return 角色表示流
      */
     @Path("realm/composite")
     @GET
@@ -218,9 +228,9 @@ public class RoleMapperResource {
     }
 
     /**
-     * Get realm-level roles that can be mapped
+     * 获取可映射的领域级角色（尚未直接分配）。
      *
-     * @return
+     * @return 可用角色流
      */
     @Path("realm/available")
     @GET
@@ -242,9 +252,9 @@ public class RoleMapperResource {
     }
 
     /**
-     * Add realm-level role mappings to the user
+     * 为用户添加领域级角色映射。
      *
-     * @param roles Roles to add
+     * @param roles 待添加的角色列表
      */
     @Path("realm")
     @POST
@@ -286,9 +296,9 @@ public class RoleMapperResource {
     }
 
     /**
-     * Delete realm-level role mappings
+     * 删除领域级角色映射。
      *
-     * @param roles
+     * @param roles 待删除角色；为 null 时删除全部
      */
     @Path("realm")
     @DELETE
@@ -339,10 +349,12 @@ public class RoleMapperResource {
 
     }
 
+    /** 检查当前管理员是否可映射指定角色。 */
     private boolean canMapRole(RoleModel roleModel) {
         return auth.roles().canMapRole(roleModel);
     }
 
+    /** 获取指定客户端的角色映射子资源。 */
     @Path("clients/{client-id}")
     public ClientRoleMappingsResource getUserClientRoleMappingsResource(@PathParam("client-id") @Parameter(description = "client id (not clientId!)") String client) {
         ClientModel clientModel = realm.getClientById(client);

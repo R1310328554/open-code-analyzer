@@ -26,19 +26,27 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.services.cors.Cors;
 
+/**
+ * Realms 管理 API 的 CORS 预检处理器。
+ * <p>继承 {@link RealmsAdminResource}，对所有子路径响应 OPTIONS 预检请求。</p>
+ */
 public class RealmsAdminResourcePreflight extends RealmsAdminResource {
 
+    /** 当前 HTTP 请求（用于 CORS 预检） */
     private HttpRequest request;
 
+    /** 构造预检资源（无显式 HttpRequest）。 */
     public RealmsAdminResourcePreflight(KeycloakSession session, AdminAuth auth, TokenManager tokenManager) {
         super(session, auth, tokenManager);
     }
 
+    /** 构造预检资源并保存 HTTP 请求引用。 */
     public RealmsAdminResourcePreflight(KeycloakSession session, AdminAuth auth, TokenManager tokenManager, HttpRequest request) {
         super(session, auth, tokenManager);
         this.request = request;
     }
 
+    /** 对所有子路径返回 CORS 预检响应，允许 GET/PUT/POST/DELETE。 */
     @Path("{any:.*}")
     @OPTIONS
     public Response preFlight() {

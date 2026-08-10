@@ -62,7 +62,8 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Sometimes its easier to just interact with roles by their ID instead of container/role-name
+ * 按角色 ID 管理角色的 REST 资源。
+ * <p>相比容器/角色名路径，直接通过 UUID 操作角色更便捷。</p>
  *
  * @resource Roles (by ID)
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -70,13 +71,19 @@ import org.jboss.resteasy.reactive.NoCache;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class RoleByIdResource extends RoleResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(RoleByIdResource.class);
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
+    /** 构造按 ID 操作角色的资源。 */
     public RoleByIdResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         super(session.getContext().getRealm());
         this.session = session;
@@ -86,10 +93,10 @@ public class RoleByIdResource extends RoleResource {
     }
 
     /**
-     * Get a specific role's representation
+     * 获取指定角色的表示。
      *
-     * @param id id of role
-     * @return
+     * @param id 角色 ID
+     * @return 角色表示
      */
     @Path("{role-id}")
     @GET
@@ -107,6 +114,7 @@ public class RoleByIdResource extends RoleResource {
         return getRole(roleModel);
     }
 
+    /** 按 ID 查找角色，不存在则抛出 404。 */
     protected RoleModel getRoleModel(String id) {
         RoleModel roleModel = realm.getRoleById(id);
         if (roleModel == null) {
@@ -116,9 +124,9 @@ public class RoleByIdResource extends RoleResource {
     }
 
     /**
-     * Delete the role
+     * 删除指定角色。
      *
-     * @param id id of role
+     * @param id 角色 ID
      */
     @Path("{role-id}")
     @DELETE
@@ -152,10 +160,10 @@ public class RoleByIdResource extends RoleResource {
     }
 
     /**
-     * Update the role
+     * 更新指定角色。
      *
-     * @param id id of role
-     * @param rep
+     * @param id 角色 ID
+     * @param rep 角色表示
      */
     @Path("{role-id}")
     @PUT
@@ -182,10 +190,10 @@ public class RoleByIdResource extends RoleResource {
     }
 
     /**
-     * Make the role a composite role by associating some child roles
+     * 通过关联子角色将角色设为复合角色。
      *
-     * @param id
-     * @param roles
+     * @param id 角色 ID
+     * @param roles 待添加的子角色列表
      */
     @Path("{role-id}/composites")
     @POST
@@ -203,12 +211,11 @@ public class RoleByIdResource extends RoleResource {
     }
 
     /**
-     * Get role's children
+     * 获取角色的复合子角色。
+     * <p>仅当角色为复合角色时返回子角色集合。</p>
      *
-     * Returns a set of role's children provided the role is a composite.
-     *
-     * @param id
-     * @return
+     * @param id 角色 ID
+     * @return 子角色表示流
      */
     @Path("{role-id}/composites")
     @GET
@@ -238,10 +245,10 @@ public class RoleByIdResource extends RoleResource {
     }
 
     /**
-     * Get realm-level roles that are in the role's composite
+     * 获取角色复合中的领域级子角色。
      *
-     * @param id
-     * @return
+     * @param id 角色 ID
+     * @return 领域级子角色流
      */
     @Path("{role-id}/composites/realm")
     @GET
@@ -260,11 +267,11 @@ public class RoleByIdResource extends RoleResource {
     }
 
     /**
-     * Get client-level roles for the client that are in the role's composite
+     * 获取角色复合中属于指定客户端的子角色。
      *
-     * @param id
-     * @param clientUuid
-     * @return
+     * @param id 角色 ID
+     * @param clientUuid 客户端 UUID
+     * @return 客户端级子角色流
      */
     @Path("{role-id}/composites/clients/{clientUuid}")
     @GET
@@ -290,10 +297,10 @@ public class RoleByIdResource extends RoleResource {
     }
 
     /**
-     * Remove a set of roles from the role's composite
+     * 从角色复合中移除一组子角色。
      *
-     * @param id Role id
-     * @param roles A set of roles to be removed
+     * @param id 角色 ID
+     * @param roles 待移除的角色列表
      */
     @Path("{role-id}/composites")
     @DELETE
@@ -312,11 +319,10 @@ public class RoleByIdResource extends RoleResource {
     }
 
     /**
-     * Return object stating whether role Authorization permissions have been initialized or not and a reference
+     * 返回角色授权权限是否已初始化及资源引用。
      *
-     *
-     * @param id
-     * @return
+     * @param id 角色 ID
+     * @return 管理权限引用
      */
     @Path("{role-id}/management/permissions")
     @GET
@@ -340,6 +346,7 @@ public class RoleByIdResource extends RoleResource {
         return toMgmtRef(role, permissions);
     }
 
+    /** 构建角色的细粒度管理权限引用。 */
     public static ManagementPermissionReference toMgmtRef(RoleModel role, AdminPermissionManagement permissions) {
         ManagementPermissionReference ref = new ManagementPermissionReference();
         ref.setEnabled(true);
@@ -352,8 +359,8 @@ public class RoleByIdResource extends RoleResource {
      * Return object stating whether role Authorization permissions have been initialized or not and a reference
      *
      *
-     * @param id
-     * @return initialized manage permissions reference
+     * @param id 角色 ID
+     * @return 初始化后的管理权限引用
      */
     @Path("{role-id}/management/permissions")
     @PUT

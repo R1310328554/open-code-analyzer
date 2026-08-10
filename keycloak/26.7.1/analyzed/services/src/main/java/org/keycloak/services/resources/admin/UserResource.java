@@ -143,7 +143,8 @@ import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_USERNAME
 import static org.keycloak.userprofile.UserProfileContext.USER_API;
 
 /**
- * Base resource for managing users
+ * 单个用户管理 REST 资源。
+ * <p>更新/查询用户、会话、联合身份、凭证、角色映射、组归属及邮件操作等。</p>
  *
  * @resource Users
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -151,21 +152,30 @@ import static org.keycloak.userprofile.UserProfileContext.USER_API;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class UserResource {
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(UserResource.class);
 
+    /** 当前领域 */
     protected final RealmModel realm;
 
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
 
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
+    /** 目标用户 */
     private final UserModel user;
 
+    /** 客户端连接信息 */
     protected final ClientConnection clientConnection;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** HTTP 请求头 */
     protected final HttpHeaders headers;
 
+    /** 构造单用户管理资源。 */
     public UserResource(KeycloakSession session, UserModel user, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -177,10 +187,10 @@ public class UserResource {
     }
 
     /**
-     * Update the user
+     * 更新用户信息（含 Profile 校验与凭证同步）。
      *
-     * @param rep
-     * @return
+     * @param rep 用户表示
+     * @return 204 无内容或错误响应
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
@@ -216,7 +226,7 @@ public class UserResource {
             Map<String, List<String>> attributes = new HashMap<>(rep.getRawAttributes());
 
             if (rep.getAttributes() == null) {
-                // include existing attributes in case no attributes are set so that validation takes into account the existing
+                // 未传 attributes 时合并现有属性以供 Profile 校验
                 // attributes associated with the user
                 for (Map.Entry<String, List<String>> entry : user.getAttributes().entrySet()) {
                     attributes.putIfAbsent(entry.getKey(), entry.getValue());
@@ -233,7 +243,7 @@ public class UserResource {
             updateUserFromRep(profile, user, rep, session, true);
             RepresentationToModel.createCredentials(rep, session, realm, user, true);
 
-            // we need to do it here as the attributes would be overwritten by what is in the rep
+            // 须在 rep 应用后处理永久锁定清理，否则属性会被覆盖
             if (wasPermanentlyLockedOut) {
                 session.getProvider(BruteForceProtector.class).cleanUpPermanentLockout(session, realm, user);
             }
@@ -273,13 +283,14 @@ public class UserResource {
         }
     }
 
+    /** 校验用户 Profile，失败时返回含 {@link ErrorRepresentation} 的响应。 */
     public static Response validateUserProfile(UserProfile profile, KeycloakSession session, AdminAuth adminAuth) {
         try {
             profile.validate();
         } catch (ValidationException pve) {
             List<ErrorRepresentation> errors = new ArrayList<>();
             for (ValidationException.Error error : pve.getErrors()) {
-                // some messages are managed directly as before
+                // 部分错误消息仍直接映射为 HTTP 错误
                 switch (error.getMessage()) {
                     case Messages.MISSING_USERNAME -> throw ErrorResponse.error("User name is missing", Response.Status.BAD_REQUEST);
                     case Messages.USERNAME_EXISTS -> throw ErrorResponse.exists("User exists with same username");
@@ -295,6 +306,7 @@ public class UserResource {
         return null;
     }
 
+    /** 从表示同步启用状态、必需操作与临时密码标记到用户模型。 */
     public static void updateUserFromRep(UserProfile profile, UserModel user, UserRepresentation rep, KeycloakSession session, boolean isUpdateExistingUser) {
         boolean removeMissingRequiredActions = isUpdateExistingUser;
 
@@ -333,9 +345,9 @@ public class UserResource {
     }
 
     /**
-     * Get representation of the user
+     * 获取用户表示。
      *
-     * @return
+     * @return {@link UserRepresentation}
      */
     @GET
     @NoCache
@@ -370,9 +382,9 @@ public class UserResource {
     }
 
     /**
-     * Impersonate the user
+     * 模拟（impersonate）目标用户并返回令牌信息。
      *
-     * @return
+     * @return 含 access/refresh token 的映射
      */
     @Path("impersonation")
     @POST
@@ -435,9 +447,9 @@ public class UserResource {
 
 
     /**
-     * Get sessions associated with the user
+     * 获取用户在线会话列表。
      *
-     * @return
+     * @return 会话表示流
      */
     @Path("sessions")
     @GET
@@ -455,9 +467,9 @@ public class UserResource {
     }
 
     /**
-     * Get offline sessions associated with the user and client
+     * 获取用户在指定客户端的离线会话。
      *
-     * @return
+     * @return 离线会话表示流
      */
     @Path("offline-sessions/{clientUuid}")
     @GET
@@ -482,9 +494,9 @@ public class UserResource {
     }
 
     /**
-     * Get social logins associated with the user
+     * 获取用户关联的社交/联合登录身份。
      *
-     * @return a non-null {@code Stream} of social logins (federated identities).
+     * @return 联合身份表示流（非 null）
      */
     @Path("federated-identity")
     @GET
@@ -501,6 +513,7 @@ public class UserResource {
         return getFederatedIdentities(user);
     }
 
+    /** 将用户联合身份转为表示流。 */
     private Stream<FederatedIdentityRepresentation> getFederatedIdentities(UserModel user) {
         return session.users().getFederatedIdentitiesStream(realm, user)
                 .filter(identity -> session.identityProviders().getByAlias(identity.getIdentityProvider()) != null)
@@ -508,11 +521,11 @@ public class UserResource {
     }
 
     /**
-     * Add a social login provider to the user
+     * 为用户添加联合登录身份。
      *
-     * @param provider Social login provider id
-     * @param rep
-     * @return
+     * @param provider IdP 别名
+     * @param rep 联合身份表示
+     * @return 201 Created
      */
     @Path("federated-identity/{provider}")
     @POST
@@ -542,9 +555,9 @@ public class UserResource {
     }
 
     /**
-     * Remove a social login provider from user
+     * 移除用户的联合登录身份。
      *
-     * @param provider Social login provider id
+     * @param provider IdP 别名
      */
     @Path("federated-identity/{provider}")
     @DELETE
@@ -565,9 +578,9 @@ public class UserResource {
     }
 
     /**
-     * Get consents granted by the user
+     * 获取用户已授予的 OAuth 同意记录。
      *
-     * @return
+     * @return 同意信息映射流
      */
     @Path("consents")
     @GET
@@ -599,6 +612,7 @@ public class UserResource {
         );
     }
 
+    /** 将仅有离线令牌无显式同意的客户端转为同意映射。 */
     private Map<String, Object> toConsent(ClientModel client) {
         Map<String, Object> currentRep = new HashMap<>();
         currentRep.put("clientId", client.getClientId());
@@ -617,6 +631,7 @@ public class UserResource {
         return currentRep;
     }
 
+    /** 将 {@link UserConsentModel} 转为 API 同意映射。 */
     private Map<String, Object> toConsent(UserConsentModel consent, Set<ClientModel> offlineClients) {
 
         UserConsentRepresentation rep = ModelToRepresentation.toRepresentation(consent);
@@ -640,9 +655,9 @@ public class UserResource {
 
 
     /**
-     * Revoke consent and offline tokens for particular client from user
+     * 撤销用户对指定客户端的同意及离线令牌。
      *
-     * @param clientId Client id
+     * @param clientId 客户端 clientId
      */
     @Path("consents/{client}")
     @DELETE
@@ -669,16 +684,14 @@ public class UserResource {
         adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
     }
 
+    /** 用户可验证凭证（VC）管理子资源。 */
     @Path("vc")
     public UserVerifiableCredentialResource verifiableCredentials() {
         return new UserVerifiableCredentialResource(session, realm, user, auth, adminEvent);
     }
 
     /**
-     * Remove all user sessions associated with the user
-     *
-     * Also send notification to all clients that have an admin URL to invalidate the sessions for the particular user.
-     *
+     * 注销用户全部会话，并通知配置了 admin URL 的客户端。
      */
     @Path("logout")
     @POST
@@ -696,14 +709,14 @@ public class UserResource {
         }
 
         session.sessions().getUserSessionsStream(realm, user)
-                .collect(Collectors.toList()) // collect to avoid concurrent modification as backchannelLogout removes the user sessions.
+                .collect(Collectors.toList()) // 收集为列表避免 backchannelLogout 并发修改会话
                 .forEach(userSession -> AuthenticationManager.backchannelLogout(session, realm, userSession,
                         session.getContext().getUri(), clientConnection, headers, true));
         adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
     }
 
     /**
-     * Delete the user
+     * 删除用户。
      */
     @DELETE
     @NoCache
@@ -730,6 +743,7 @@ public class UserResource {
         }
     }
 
+    /** 用户角色映射子资源。 */
     @Path("role-mappings")
     public RoleMapperResource getRoleMappings() {
         AdminPermissionEvaluator.RequirePermissionCheck manageCheck = () -> auth.users().requireMapRoles(user);
@@ -738,9 +752,9 @@ public class UserResource {
     }
 
     /**
-     * Disable all credentials for a user of a specific type
+     * 禁用用户指定类型的全部凭证。
      *
-     * @param credentialTypes
+     * @param credentialTypes 凭证类型列表
      */
     @Path("disable-credential-types")
     @PUT
@@ -761,9 +775,9 @@ public class UserResource {
     }
 
     /**
-     * Set up a new password for the user.
+     * 为用户设置新密码。
      *
-     * @param cred The representation must contain a rawPassword with the plain-text password
+     * @param cred 须含 rawPassword 明文密码的凭证表示
      */
     @Path("reset-password")
     @PUT
@@ -812,7 +826,7 @@ public class UserResource {
         if (cred.isTemporary() != null && cred.isTemporary()) {
             user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
         } else {
-            // Remove a potentially existing UPDATE_PASSWORD action when explicitly assigning a non-temporary password.
+            // 显式设置非临时密码时移除 UPDATE_PASSWORD 必需操作
             user.removeRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
         }
 
@@ -829,6 +843,7 @@ public class UserResource {
         @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = CredentialRepresentation.class, type = SchemaType.ARRAY))),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 列出用户凭证（不含 secretData）。 */
     public Stream<CredentialRepresentation> credentials() {
         auth.users().requireView(user);
 
@@ -838,6 +853,7 @@ public class UserResource {
                 .peek(credentialRepresentation -> credentialRepresentation.setSecretData(null));
     }
 
+    /** 按 Authenticator 格式化凭证供 API 展示。 */
     private CredentialModel decorateCredentialForPresentation(CredentialModel credential) {
         return AuthenticatorUtil.getCredentialProviders(session)
                 .filter(p -> p.supportsCredentialType(credential.getType()))
@@ -847,10 +863,9 @@ public class UserResource {
     }
 
     /**
-     * Return credential types, which are provided by the user storage where user is stored. Returned values can contain for example "password", "otp" etc.
-     * This will always return empty list for "local" users, which are not backed by any user storage
+     * 返回用户所在 User Storage 提供的凭证类型（本地用户通常为空）。
      *
-     * @return
+     * @return 凭证类型流
      */
     @GET
     @Path("configured-user-storage-credential-types")
@@ -863,15 +878,14 @@ public class UserResource {
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
     public Stream<String> getConfiguredUserStorageCredentialTypes() {
-        // changed to "requireView" as per issue #20783
+        // 按 #20783 改为 requireView
         auth.users().requireView(user);
         return user.credentialManager().getConfiguredUserStorageCredentialTypesStream();
     }
 
 
     /**
-     * Remove a credential for a user
-     *
+     * 删除用户指定凭证。
      */
     @Path("credentials/{credentialId}")
     @DELETE
@@ -887,7 +901,7 @@ public class UserResource {
         auth.users().requireManage(user);
         CredentialModel credential = user.credentialManager().getStoredCredentialById(credentialId);
         if (credential == null) {
-            // we do this to make sure somebody can't phish ids
+            // 防止通过 ID 探测凭证是否存在
             if (auth.users().canQuery()) throw new NotFoundException("Credential not found");
             else throw new ForbiddenException();
         }
@@ -900,7 +914,7 @@ public class UserResource {
     }
 
     /**
-     * Update a credential label for a user
+     * 更新用户凭证的用户标签。
      */
     @PUT
     @Consumes(MediaType.TEXT_PLAIN)
@@ -930,8 +944,8 @@ public class UserResource {
     }
 
     /**
-     * Move a credential to a first position in the credentials list of the user
-     * @param credentialId The credential to move
+     * 将凭证移至列表首位。
+     * @param credentialId 待移动凭证 ID
      */
     @Path("credentials/{credentialId}/moveToFirst")
     @POST
@@ -947,9 +961,9 @@ public class UserResource {
     }
 
     /**
-     * Move a credential to a position behind another credential
-     * @param credentialId The credential to move
-     * @param newPreviousCredentialId The credential that will be the previous element in the list. If set to null, the moved credential will be the first element in the list.
+     * 将凭证移动到另一凭证之后。
+     * @param credentialId 待移动凭证 ID
+     * @param newPreviousCredentialId 前一个凭证 ID；null 表示移到首位
      */
     @Path("credentials/{credentialId}/moveAfter/{newPreviousCredentialId}")
     @POST
@@ -973,16 +987,11 @@ public class UserResource {
     }
 
     /**
-     * Send an email to the user with a link they can click to reset their password.
-     * The redirectUri and clientId parameters are optional. The default for the
-     * redirect is the account client.
+     * 发送重置密码邮件（已弃用，请用 execute-actions-email）。
      *
-     * This endpoint has been deprecated.  Please use the execute-actions-email passing a list with
-     * UPDATE_PASSWORD within it.
-     *
-     * @param redirectUri redirect uri
-     * @param clientId client id
-     * @return
+     * @param redirectUri 重定向 URI
+     * @param clientId 客户端 ID
+     * @return 204 无内容
      */
     @Deprecated
     @Path("reset-password-email")
@@ -1009,18 +1018,14 @@ public class UserResource {
 
 
     /**
-     * Send an email to the user with a link they can click to execute particular actions.
+     * 发送含必需操作链接的邮件。
+     * <p>redirectUri/clientId 可选；无 redirect 时完成后无返回链接。</p>
      *
-     * An email contains a link the user can click to perform a set of required actions.
-     * The redirectUri and clientId parameters are optional. If no redirect is given, then there will
-     * be no link back to click after actions have completed.  Redirect uri must be a valid uri for the
-     * particular clientId.
-     *
-     * @param redirectUri Redirect uri
-     * @param clientId Client id
-     * @param lifespan Number of seconds after which the generated token expires
-     * @param actions Required actions the user needs to complete
-     * @return
+     * @param redirectUri 重定向 URI
+     * @param clientId 客户端 ID
+     * @param lifespan 令牌有效期（秒）
+     * @param actions 用户需完成的必需操作
+     * @return 204 无内容
      */
     @Path("execute-actions-email")
     @PUT
@@ -1077,16 +1082,12 @@ public class UserResource {
     }
 
     /**
-     * Send an email-verification email to the user
+     * 发送邮箱验证邮件。
      *
-     * An email contains a link the user can click to verify their email address.
-     * The redirectUri and clientId parameters are optional. The default for the
-     * redirect is the account client.
-     *
-     * @param redirectUri Redirect uri
-     * @param clientId Client id
-     * @param lifespan Number of seconds after which the generated token expires
-     * @return
+     * @param redirectUri 重定向 URI
+     * @param clientId 客户端 ID
+     * @param lifespan 令牌有效期（秒）
+     * @return 204 无内容
      */
     @Path("send-verify-email")
     @PUT
@@ -1144,6 +1145,7 @@ public class UserResource {
         @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = GroupRepresentation.class, type = SchemaType.ARRAY))),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 获取用户所属组列表（支持搜索与分页）。 */
     public Stream<GroupRepresentation> groupMembership(@QueryParam("search") String search,
                                                        @QueryParam("first") Integer firstResult,
                                                        @QueryParam("max") Integer maxResults,
@@ -1162,6 +1164,7 @@ public class UserResource {
         @APIResponse(responseCode = "200", description = "OK"),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 返回用户所属组数量。 */
     public Map<String, Long> getGroupMembershipCount(@QueryParam("search") String search) {
         auth.users().requireView(user);
         Long results;
@@ -1188,6 +1191,7 @@ public class UserResource {
         @APIResponse(responseCode = "404", description = "Not Found"),
         @APIResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = ErrorRepresentation.class)))
     })
+    /** 将用户移出指定组。 */
     public void removeMembership(@PathParam("groupId") String groupId) {
         auth.users().requireManageGroupMembership(user);
 
@@ -1231,6 +1235,7 @@ public class UserResource {
         @APIResponse(responseCode = "403", description = "Forbidden"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 将用户加入指定组。 */
     public void joinGroup(@PathParam("groupId") String groupId) {
         auth.users().requireManageGroupMembership(user);
         GroupModel group = session.groups().getGroupById(realm, groupId);
@@ -1264,6 +1269,7 @@ public class UserResource {
         @APIResponse(responseCode = "200", description = "OK"),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 获取用户 Profile 中未托管的属性键值。 */
     public Map<String, List<String>> getUnmanagedAttributes() {
         auth.users().requireView(user);
         UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
@@ -1275,16 +1281,15 @@ public class UserResource {
     }
 
     /**
-     * Converts the specified {@link UserSessionModel} into a {@link UserSessionRepresentation}.
+     * 将 {@link UserSessionModel} 转为 {@link UserSessionRepresentation}。
      *
-     * @param userSession the model to be converted.
-     * @param clientUuid the client's UUID.
-     * @return a reference to the constructed representation or {@code null} if the session is not associated with the specified
-     * client.
+     * @param userSession 待转换会话
+     * @param clientUuid 客户端 UUID
+     * @return 会话表示；若会话未关联该客户端则返回 null
      */
     private UserSessionRepresentation toUserSessionRepresentation(final UserSessionModel userSession, final String clientUuid) {
         UserSessionRepresentation rep = ModelToRepresentation.toRepresentation(userSession);
-        // Update lastSessionRefresh with the timestamp from clientSession
+        // 使用 clientSession 时间戳更新 lastAccess
         AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(clientUuid);
         if (clientSession == null) {
             return null;
@@ -1293,10 +1298,12 @@ public class UserResource {
         return rep;
     }
 
+    /** 校验发送邮件参数（实例方法）。 */
     private SendEmailParams verifySendEmailParams(String redirectUri, String clientId, Integer lifespan) {
         return verifySendEmailParams(session, realm, user, redirectUri, clientId, lifespan);
     }
 
+    /** 校验并重定向 URI、客户端与令牌 lifespan。 */
     public static SendEmailParams verifySendEmailParams(KeycloakSession session, RealmModel realm, UserModel user,
                                                         String redirectUri, String clientId, Integer lifespan) {
         if (user.getEmail() == null) {
@@ -1336,25 +1343,33 @@ public class UserResource {
         return new SendEmailParams(redirectUri, client.getClientId(), lifespan);
     }
 
+    /** 发送操作邮件的参数封装。 */
     public static class SendEmailParams {
+        /** 重定向 URI */
         private final String redirectUri;
+        /** 客户端 ID */
         private final String clientId;
+        /** 令牌有效期（秒） */
         private final int lifespan;
 
+        /** 构造邮件参数。 */
         public SendEmailParams(String redirectUri, String clientId, Integer lifespan) {
             this.redirectUri = redirectUri;
             this.clientId = clientId;
             this.lifespan = lifespan;
         }
 
+        /** @return 重定向 URI */
         public String getRedirectUri() {
             return redirectUri;
         }
 
+        /** @return 客户端 ID */
         public String getClientId() {
             return clientId;
         }
 
+        /** @return 令牌有效期（秒） */
         public int getLifespan() {
             return lifespan;
         }

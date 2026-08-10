@@ -76,20 +76,30 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 角色容器 REST 资源（领域或客户端角色）。
+ * <p>按角色名称管理 CRUD、复合角色、成员查询及细粒度权限。</p>
+ *
  * @resource Roles
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class RoleContainerResource extends RoleResource {
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 细粒度权限评估器 */
     protected AdminPermissionEvaluator auth;
 
+    /** 角色容器（领域或客户端） */
     protected RoleContainerModel roleContainer;
+    /** 管理事件构建器 */
     private AdminEventBuilder adminEvent;
+    /** 当前请求 URI 信息 */
     private UriInfo uriInfo;
+    /** Keycloak 会话 */
     private KeycloakSession session;
 
+    /** 构造带角色容器的资源。 */
     public RoleContainerResource(KeycloakSession session, UriInfo uriInfo, RealmModel realm,
                                  AdminPermissionEvaluator auth, RoleContainerModel roleContainer, AdminEventBuilder adminEvent) {
         super(realm);
@@ -101,19 +111,21 @@ public class RoleContainerResource extends RoleResource {
         this.session = session;
     }
 
+    /** 构造资源（角色容器稍后通过 {@link #setRoleContainer} 设置）。 */
     public RoleContainerResource(KeycloakSession session, UriInfo uriInfo, RealmModel realm,
                                  AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this(session, uriInfo, realm, auth, null, adminEvent);
     }
 
+    /** 设置当前操作的角色容器。 */
     public void setRoleContainer(RoleContainerModel roleContainer) {
         this.roleContainer = roleContainer;
     }
 
     /**
-     * Get all roles for the realm or client
+     * 获取领域或客户端的全部角色（支持搜索与分页）。
      *
-     * @return
+     * @return 角色表示流
      */
     @GET
     @NoCache
@@ -147,10 +159,10 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Create a new role for the realm or client
+     * 在领域或客户端中创建新角色。
      *
-     * @param rep
-     * @return
+     * @param rep 角色表示
+     * @return 201 Created
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -190,7 +202,7 @@ public class RoleContainerResource extends RoleResource {
                 adminEvent.resource(ResourceType.REALM_ROLE);
             }
 
-            // Handling of nested composite roles for KEYCLOAK-12754
+            // KEYCLOAK-12754：创建时处理嵌套复合角色
             if (rep.isComposite() && rep.getComposites() != null) {
                 RoleRepresentation.Composites composites = rep.getComposites();
 
@@ -239,10 +251,10 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Get a role by name
+     * 按名称获取角色。
      *
-     * @param roleName role's name (not id!)
-     * @return
+     * @param roleName 角色名称（非 ID）
+     * @return 角色表示
      */
     @Path("{role-name}")
     @GET
@@ -267,9 +279,9 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Delete a role by name
+     * 按名称删除角色。
      *
-     * @param roleName role's name (not id!)
+     * @param roleName 角色名称（非 ID）
      */
     @Path("{role-name}")
     @DELETE
@@ -309,11 +321,11 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Update a role by name
+     * 按名称更新角色。
      *
-     * @param roleName role's name (not id!)
-     * @param rep
-     * @return
+     * @param roleName 角色名称（非 ID）
+     * @param rep 角色表示
+     * @return 204 无内容
      */
     @Path("{role-name}")
     @PUT
@@ -352,10 +364,10 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Add a composite to the role
+     * 为角色添加复合子角色。
      *
-     * @param roleName role's name (not id!)
-     * @param roles
+     * @param roleName 角色名称（非 ID）
+     * @param roles 子角色列表
      */
     @Path("{role-name}/composites")
     @POST
@@ -377,10 +389,10 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Get composites of the role
+     * 获取角色的复合子角色。
      *
-     * @param roleName role's name (not id!)
-     * @return
+     * @param roleName 角色名称（非 ID）
+     * @return 子角色流
      */
     @Path("{role-name}/composites")
     @GET
@@ -403,10 +415,10 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Get realm-level roles of the role's composite
+     * 获取角色复合中的领域级子角色。
      *
-     * @param roleName role's name (not id!)
-     * @return
+     * @param roleName 角色名称（非 ID）
+     * @return 领域级子角色流
      */
     @Path("{role-name}/composites/realm")
     @GET
@@ -429,11 +441,11 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Get client-level roles for the client that are in the role's composite
+     * 获取角色复合中属于指定客户端的子角色。
      *
-     * @param roleName role's name (not id!)
-     * @param clientUuid
-     * @return
+     * @param roleName 角色名称（非 ID）
+     * @param clientUuid 客户端 UUID
+     * @return 客户端级子角色流
      */
     @Path("{role-name}/composites/clients/{targetClientUuid}")
     @GET
@@ -463,10 +475,10 @@ public class RoleContainerResource extends RoleResource {
 
 
     /**
-     * Remove roles from the role's composite
+     * 从角色复合中移除子角色。
      *
-     * @param roleName role's name (not id!)
-     * @param roles roles to remove
+     * @param roleName 角色名称（非 ID）
+     * @param roles 待移除角色列表
      */
     @Path("{role-name}/composites")
     @DELETE
@@ -491,11 +503,10 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Return object stating whether role Authorization permissions have been initialized or not and a reference
+     * 返回角色授权权限是否已初始化及资源引用。
      *
-     *
-     * @param roleName
-     * @return
+     * @param roleName 角色名称
+     * @return 管理权限引用
      */
     @Path("{role-name}/management/permissions")
     @GET
@@ -527,8 +538,8 @@ public class RoleContainerResource extends RoleResource {
      * Return object stating whether role Authorization permissions have been initialized or not and a reference
      *
      *
-     * @param roleName
-     * @return initialized manage permissions reference
+     * @param roleName 角色名称
+     * @return 初始化后的管理权限引用
      */
     @Path("{role-name}/management/permissions")
     @PUT
@@ -560,10 +571,9 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Returns a stream of users that have the specified role name.
+     * 返回拥有指定角色的用户流。
      *
-     *
-     * @param roleName the role name.
+     * @param roleName 角色名称
      * @param firstResult first result to return. Ignored if negative or {@code null}.
      * @param maxResults maximum number of results to return. Unbounded if negative.
      * @param briefRepresentation Boolean which defines whether brief representations are returned (default: false)
@@ -603,10 +613,9 @@ public class RoleContainerResource extends RoleResource {
     }
 
     /**
-     * Returns a stream of groups that have the specified role name
+     * 返回拥有指定角色的组流。
      *
-     *
-     * @param roleName the role name.
+     * @param roleName 角色名称
      * @param firstResult first result to return. Ignored if negative or {@code null}.
      * @param maxResults maximum number of results to return. Unbounded if negative.
      * @param briefRepresentation if false, return a full representation of the {@code GroupRepresentation} objects.

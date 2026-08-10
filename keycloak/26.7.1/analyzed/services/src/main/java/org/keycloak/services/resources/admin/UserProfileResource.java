@@ -52,16 +52,24 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import static org.keycloak.userprofile.UserProfileUtil.createUserProfileMetadata;
 
 /**
+ * 用户 Profile 配置管理 REST 资源。
+ * <p>读取/更新 {@link UPConfig} 及 {@link UserProfileMetadata}。</p>
+ *
  * @author Vlastimil Elias <velias@redhat.com>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class UserProfileResource {
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 管理事件构建器 */
     protected final AdminEventBuilder adminEvent;
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
 
+    /** 构造用户 Profile 资源。 */
     public UserProfileResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -77,6 +85,7 @@ public class UserProfileResource {
         @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = UPConfig.class))),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 获取用户 Profile 配置。 */
     public UPConfig getConfiguration() {
         if (auth.realm().canViewRealm() || auth.users().canQuery()) {
             return session.getProvider(UserProfileProvider.class).getConfiguration();
@@ -94,6 +103,7 @@ public class UserProfileResource {
         @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = UserProfileMetadata.class))),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 从配置生成 {@link UserProfileMetadata}。 */
     public UserProfileMetadata getMetadata() {
         if (auth.realm().canViewRealm() || auth.users().canQuery()) {
             UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfileContext.USER_API, Collections.emptyMap());
@@ -112,11 +122,13 @@ public class UserProfileResource {
         @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = UPConfig.class))),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 更新用户 Profile 配置。 */
     public Response update(UPConfig config) {
         auth.realm().requireManageRealm();
         return Response.ok(setAndGetConfiguration(config)).type(MediaType.APPLICATION_JSON).build();
     }
 
+    /** 设置配置并返回最新值（含校验与事件记录）。 */
     public UPConfig setAndGetConfiguration(UPConfig config) {
         UserProfileProvider provider = session.getProvider(UserProfileProvider.class);
 
@@ -127,7 +139,7 @@ public class UserProfileResource {
         try {
             provider.setConfiguration(config);
         } catch (ComponentValidationException e) {
-            //show validation result containing details about error
+            // 展示含错误详情的校验结果
             throw ErrorResponse.error(e.getMessage(), Response.Status.BAD_REQUEST);
         }
 

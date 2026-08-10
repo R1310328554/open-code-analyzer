@@ -60,7 +60,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Base class for managing the scope mappings of a specific client.
+ * 客户端范围映射管理基类。
+ * <p>管理客户端或客户端范围与领域/客户端角色的 scope 关联。</p>
  *
  * @resource Scope Mappings
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -68,15 +69,23 @@ import org.jboss.resteasy.reactive.NoCache;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ScopeMappedResource {
+    /** 当前领域 */
     protected RealmModel realm;
+    /** 细粒度权限评估器 */
     protected AdminPermissionEvaluator auth;
+    /** 管理权限检查回调 */
     protected AdminPermissionEvaluator.RequirePermissionCheck managePermission;
+    /** 查看权限检查回调 */
     protected AdminPermissionEvaluator.RequirePermissionCheck viewPermission;
 
+    /** 范围容器（客户端或客户端范围） */
     protected ScopeContainerModel scopeContainer;
+    /** Keycloak 会话 */
     protected KeycloakSession session;
+    /** 管理事件构建器 */
     protected AdminEventBuilder adminEvent;
 
+    /** 构造范围映射资源。 */
     public ScopeMappedResource(RealmModel realm, AdminPermissionEvaluator auth, ScopeContainerModel scopeContainer,
                                KeycloakSession session, AdminEventBuilder adminEvent,
                                AdminPermissionEvaluator.RequirePermissionCheck managePermission,
@@ -91,10 +100,10 @@ public class ScopeMappedResource {
     }
 
     /**
-     * Get all scope mappings for the client
+     * 获取客户端的全部 scope 映射（已弃用）。
      *
-     * @return
-     * @deprecated the method is not used neither from admin console or from admin client. It may be removed in future releases.
+     * @return 映射表示
+     * @deprecated 管理控制台与 Admin Client 均未使用，未来版本可能移除
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -130,9 +139,9 @@ public class ScopeMappedResource {
     }
 
     /**
-     * Get realm-level roles associated with the client's scope
+     * 获取与客户端 scope 关联的领域级角色。
      *
-     * @return
+     * @return 角色表示流
      */
     @Path("realm")
     @GET
@@ -152,9 +161,9 @@ public class ScopeMappedResource {
     }
 
     /**
-     * Get realm-level roles that are available to attach to this client's scope
+     * 获取可附加到客户端 scope 的领域级角色。
      *
-     * @return
+     * @return 可用角色流
      */
     @Path("realm/available")
     @GET
@@ -176,15 +185,11 @@ public class ScopeMappedResource {
     }
 
     /**
-     * Get effective realm-level roles associated with the client's scope
+     * 获取与客户端 scope 关联的有效领域级角色（递归展开复合角色）。
+     * <p>展示客户端 scope 关联的领域角色的完整视图。</p>
      *
-     * What this does is recurse
-     * any composite roles associated with the client's scope and adds the roles to this lists.  The method is really
-     * to show a comprehensive total view of realm-level roles associated with the client.
-     *
-     * @param briefRepresentation if false, return roles with their attributes
-     * 
-     * @return
+     * @param briefRepresentation 为 false 时返回含属性的完整表示
+     * @return 角色表示流
      */
     @Path("realm/composite")
     @GET
@@ -208,9 +213,9 @@ public class ScopeMappedResource {
     }
 
     /**
-     * Add a set of realm-level roles to the client's scope
+     * 向客户端 scope 添加一组领域级角色。
      *
-     * @param roles
+     * @param roles 角色列表
      */
     @Path("realm")
     @POST
@@ -238,9 +243,9 @@ public class ScopeMappedResource {
     }
 
     /**
-     * Remove a set of realm-level roles from the client's scope
+     * 从客户端 scope 移除一组领域级角色。
      *
-     * @param roles
+     * @param roles 角色列表；为 null 时移除全部
      */
     @Path("realm")
     @DELETE
@@ -275,6 +280,7 @@ public class ScopeMappedResource {
 
     }
 
+    /** 获取指定客户端的 scope 映射子资源。 */
     @Path("clients/{client}")
     public ScopeMappedClientResource getClientByIdScopeMappings(@PathParam("client") String client) {
         ClientModel clientModel = realm.getClientById(client);
