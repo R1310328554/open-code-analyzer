@@ -26,12 +26,14 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * {@link AuthoritativeDnsServerCache} implementation which delegates all operations to a wrapped {@link DnsCache}.
- * This implementation is only present to preserve a upgrade story.
+ * 将 {@link AuthoritativeDnsServerCache} 的全部操作委托给底层 {@link DnsCache} 的适配器实现。
+ * <p>该实现仅用于在 API 演进过程中保持向后兼容的升级路径。</p>
  */
 final class AuthoritativeDnsServerCacheAdapter implements AuthoritativeDnsServerCache {
 
+    /** 查询权威服务器缓存时不附带额外 DNS 记录。 */
     private static final DnsRecord[] EMPTY = new DnsRecord[0];
+    /** 被包装的通用 DNS 解析结果缓存。 */
     private final DnsCache cache;
 
     AuthoritativeDnsServerCacheAdapter(DnsCache cache) {
@@ -44,6 +46,7 @@ final class AuthoritativeDnsServerCacheAdapter implements AuthoritativeDnsServer
         if (entries == null || entries.isEmpty()) {
             return null;
         }
+        // 负缓存（失败原因）不映射为名称服务器流。
         if (entries.get(0).cause() != null) {
             return null;
         }
@@ -60,7 +63,7 @@ final class AuthoritativeDnsServerCacheAdapter implements AuthoritativeDnsServer
 
     @Override
     public void cache(String hostname, InetSocketAddress address, long originalTtl, EventLoop loop) {
-        // We only cache resolved addresses.
+        // 仅缓存已解析的地址，未解析条目无法写入 DnsCache。
         if (!address.isUnresolved()) {
             cache.cache(hostname, EMPTY, address.getAddress(), originalTtl, loop);
         }

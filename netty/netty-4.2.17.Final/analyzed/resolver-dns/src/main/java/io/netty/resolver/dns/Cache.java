@@ -34,14 +34,17 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import static java.util.Collections.singletonList;
 
 /**
- * Abstract cache that automatically removes entries for a hostname once the TTL for an entry is reached.
+ * 抽象 DNS 缓存：条目在 TTL 到期后由 {@link EventLoop} 定时任务自动移除。
+ * <p>同一主机名下的多条记录共享一个过期定时器；任一记录 TTL 到期会清除该主机名的全部条目，
+ * 以避免 A/AAAA 记录 TTL 不一致时返回不一致的地址族组合。</p>
  *
- * @param <E>
+ * @param <E> 缓存值类型（如 {@link InetAddress}、CNAME 字符串等）
  */
 abstract class Cache<E> {
     private static final AtomicReferenceFieldUpdater<Cache.Entries, ScheduledFuture> FUTURE_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(Cache.Entries.class, ScheduledFuture.class, "expirationFuture");
 
+    /** 已取消的占位定时任务，使 {@link Delayed#getDelay} 返回最小值以便比较。 */
     private static final ScheduledFuture<?> CANCELLED = new ScheduledFuture<Object>() {
 
         @Override
@@ -51,8 +54,7 @@ abstract class Cache<E> {
 
         @Override
         public long getDelay(TimeUnit unit) {
-            // We ignore unit and always return the minimum value to ensure the TTL of the cancelled marker is
-            // the smallest.
+            // 忽略 unit，始终返回最小值，确保已取消标记的 TTL 为最小。
             return Long.MIN_VALUE;
         }
 
@@ -82,14 +84,15 @@ abstract class Cache<E> {
         }
     };
 
-    // Two years are supported by all our EventLoop implementations and so safe to use as maximum.
-    // See also: https://github.com/netty/netty/commit/b47fb817991b42ec8808c7d26538f3f2464e1fa6
+    // 所有 EventLoop 实现均支持最长约两年延迟，作为 TTL 上限是安全的。
+    // 参见: https://github.com/netty/netty/commit/b47fb817991b42ec8808c7d26538f3f2464e1fa6
     static final int MAX_SUPPORTED_TTL_SECS = (int) TimeUnit.DAYS.toSeconds(365 * 2);
 
+    /** 主机名到条目列表的并发映射。 */
     private final ConcurrentMap<String, Entries> resolveCache = new ConcurrentHashMap<>();
 
     /**
-     * Remove everything from the cache.
+     * 清空整个缓存并取消所有挂起的过期任务。
      */
     final void clear() {
         while (!resolveCache.isEmpty()) {
@@ -103,7 +106,7 @@ abstract class Cache<E> {
     }
 
     /**
-     * Clear all entries (if anything exists) for the given hostname and return {@code true} if anything was removed.
+     * 清除指定主机名的全部条目；若存在条目则返回 {@code true}。
      */
     final boolean clear(String hostname) {
         Entries entries = resolveCache.remove(hostname);
@@ -111,7 +114,7 @@ abstract class Cache<E> {
     }
 
     /**
-     * Returns all caches entries for the given hostname.
+     * 返回给定主机名的全部缓存条目，无缓存时返回 {@code null}。
      */
     final List<? extends E> get(String hostname) {
         Entries entries = resolveCache.get(hostname);
@@ -119,7 +122,7 @@ abstract class Cache<E> {
     }
 
     /**
-     * Cache a value for the given hostname that will automatically expire once the TTL is reached.
+     * 为给定主机名写入条目，并在 TTL 秒后由 {@link EventLoop} 调度过期。
      */
     final void cache(String hostname, E value, int ttl, EventLoop loop) {
         Entries entries = resolveCache.get(hostname);
@@ -134,35 +137,38 @@ abstract class Cache<E> {
     }
 
     /**
-     * Return the number of hostnames for which we have cached something.
+     * 返回当前已缓存至少一条记录的主机名数量。
      */
     final int size() {
         return resolveCache.size();
     }
 
     /**
-     * Returns {@code true} if this entry should replace all other entries that are already cached for the hostname.
+     * 若返回 {@code true}，新条目应替换该主机名下所有已有条目（如负缓存）。
      */
     protected abstract boolean shouldReplaceAll(E entry);
 
     /**
-     * Sort the {@link List} for a {@code hostname} before caching these.
+     * 在写入缓存前对 {@code hostname} 对应的条目列表排序（子类可覆盖）。
      */
     protected void sortEntries(
             @SuppressWarnings("unused") String hostname, @SuppressWarnings("unused") List<E> entries) {
-        // NOOP.
+        // 默认不排序。
     }
 
     /**
-     * Returns {@code true} if both entries are equal.
+     * 判断两条缓存条目是否表示同一逻辑值（用于去重与更新）。
      */
     protected abstract boolean equals(E entry, E otherEntry);
 
-    // Directly extend AtomicReference for intrinsics and also to keep memory overhead low.
+    /**
+     * 单个主机名下的条目集合，继承 {@link AtomicReference} 以支持无锁 CAS 更新列表。
+     */
     private final class Entries extends AtomicReference<List<E>> implements Runnable {
 
+        /** 所属主机名，过期回调时用于从 map 中移除。 */
         private final String hostname;
-        // Needs to be package-private to be able to access it via the AtomicReferenceFieldUpdater
+        // 需为包级可见，以便 AtomicReferenceFieldUpdater 访问
         volatile ScheduledFuture<?> expirationFuture;
 
         Entries(String hostname) {
@@ -183,20 +189,18 @@ abstract class Cache<E> {
                                 scheduleCacheExpirationIfNeeded(ttl, loop);
                                 return;
                             } else {
-                                // Need to try again as CAS failed
+                                // CAS 失败，重试。
                                 continue;
                             }
                         }
 
-                        // Create a new List for COW semantics
+                        // 写时复制，保证并发读者看到一致快照。
                         List<E> newEntries = new ArrayList<E>(entries.size() + 1);
                         int i = 0;
                         E replacedEntry = null;
                         do {
                             E entry = entries.get(i);
-                            // Only add old entry if the address is not the same as the one we try to add as well.
-                            // In this case we will skip it and just add the new entry as this may have
-                            // more up-to-date data and cancel the old after we were able to update the cache.
+                            // 与待添加条目逻辑相等则替换该条，保留其余条目顺序。
                             if (!Cache.this.equals(e, entry)) {
                                 newEntries.add(entry);
                             } else {
@@ -232,25 +236,20 @@ abstract class Cache<E> {
 
         private void scheduleCacheExpirationIfNeeded(int ttl, EventLoop loop) {
             for (;;) {
-                // We currently don't calculate a new TTL when we need to retry the CAS as we don't expect this to
-                // be invoked very concurrently and also we use SECONDS anyway. If this ever becomes a problem
-                // we can reconsider.
+                // 高并发下 CAS 重试时不重新计算 TTL；当前以秒为单位调度，影响通常可忽略。
                 ScheduledFuture<?> oldFuture = FUTURE_UPDATER.get(this);
                 if (oldFuture == null || oldFuture.getDelay(TimeUnit.SECONDS) > ttl) {
                     ScheduledFuture<?> newFuture = loop.schedule(this, ttl, TimeUnit.SECONDS);
-                    // It is possible that
-                    // 1. task will fire in between this line, or
-                    // 2. multiple timers may be set if there is concurrency
-                    // (1) Shouldn't be a problem because we will fail the CAS and then the next loop will see CANCELLED
-                    //     so the ttl will not be less, and we will bail out of the loop.
-                    // (2) This is a trade-off to avoid concurrency resulting in contention on a synchronized block.
+                    // 可能出现：(1) 定时任务在本行与 CAS 之间触发；(2) 并发设置多个定时器。
+                    // (1) CAS 失败后会看到 CANCELLED，TTL 不会更短，循环会退出。
+                    // (2) 为避免 synchronized 争用，允许短暂存在多个定时器，旧任务会被 cancel。
                     if (FUTURE_UPDATER.compareAndSet(this, oldFuture, newFuture)) {
                         if (oldFuture != null) {
                             oldFuture.cancel(true);
                         }
                         break;
                     } else {
-                        // There was something else scheduled in the meantime... Cancel and try again.
+                        // 期间已有其他调度，取消本次新建并重试。
                         newFuture.cancel(true);
                     }
                 } else {
@@ -275,15 +274,12 @@ abstract class Cache<E> {
 
         @Override
         public void run() {
-            // We always remove all entries for a hostname once one entry expire. This is not the
-            // most efficient to do but this way we can guarantee that if a DnsResolver
-            // be configured to prefer one ip family over the other we will not return unexpected
-            // results to the enduser if one of the A or AAAA records has different TTL settings.
+            // 任一记录 TTL 到期即移除该主机名的全部条目。虽非最细粒度失效策略，
+            // 但可保证解析器在偏好某一地址族时，不会因 A/AAAA TTL 不同返回意外组合。
             //
-            // As a TTL is just a hint of the maximum time a cache is allowed to cache stuff it's
-            // completely fine to remove the entry even if the TTL is not reached yet.
+            // TTL 只是“最长可缓存时间”的提示，提前整组清除完全合规。
             //
-            // See https://github.com/netty/netty/issues/7329
+            // 参见 https://github.com/netty/netty/issues/7329
             resolveCache.remove(hostname, this);
 
             clearAndCancel();

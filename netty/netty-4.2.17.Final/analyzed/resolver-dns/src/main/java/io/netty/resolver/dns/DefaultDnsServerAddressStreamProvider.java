@@ -32,34 +32,38 @@ import java.util.List;
 import static io.netty.resolver.dns.DnsServerAddresses.sequential;
 
 /**
- * A {@link DnsServerAddressStreamProvider} which will use predefined default DNS servers to use for DNS resolution.
- * These defaults do not respect your host's machines defaults.
- * <p>
- * This may use the JDK's blocking DNS resolution to bootstrap the default DNS server addresses.
+ * 使用预置默认 DNS 服务器进行解析的 {@link DnsServerAddressStreamProvider}。
+ * <p>这些默认值<strong>不</strong>保证与操作系统解析配置一致；初始化时可能通过 JDK 阻塞式
+ * DNS/JNDI 引导服务器列表。</p>
  */
 public final class DefaultDnsServerAddressStreamProvider implements DnsServerAddressStreamProvider {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(DefaultDnsServerAddressStreamProvider.class);
+    /** 系统属性：逗号分隔的备用名称服务器 IP 列表。 */
     private static final String DEFAULT_FALLBACK_SERVER_PROPERTY = "io.netty.resolver.dns.defaultNameServerFallback";
+    /** 单例实例，供 {@link DnsNameResolverBuilder} 等默认引用。 */
     public static final DefaultDnsServerAddressStreamProvider INSTANCE = new DefaultDnsServerAddressStreamProvider();
 
+    /** 不可变的默认名称服务器地址列表。 */
     private static final List<InetSocketAddress> DEFAULT_NAME_SERVER_LIST;
+    /** 按顺序轮询上述列表的 {@link DnsServerAddresses}。 */
     private static final DnsServerAddresses DEFAULT_NAME_SERVERS;
+    /** 标准 DNS 端口。 */
     static final int DNS_PORT = 53;
 
     static {
         final List<InetSocketAddress> defaultNameServers = new ArrayList<InetSocketAddress>(2);
         if (!PlatformDependent.isAndroid()) {
-            // Skip this on Android; it has neither /etc/resolv.conf nor JNDI classes.
-            // See https://github.com/netty/netty/issues/8654
+            // Android 无 /etc/resolv.conf 且无 JNDI，跳过系统探测。
+            // 参见 https://github.com/netty/netty/issues/8654
             if (!PlatformDependent.isWindows()) {
-                // Try reading /etc/resolv.conf. It's usually found on Linux or macOS, but can also be missing.
+                // 尝试读取 /etc/resolv.conf（Linux/macOS 常见，也可能缺失）。
                 try {
                     defaultNameServers.addAll(ResolvConf.system().getNameservers());
                 } catch (IllegalStateException e) {
                     String fallbackMessage = "Failed to get name servers from /etc/resolv.conf; will fall back to JNDI";
                     if (logger.isDebugEnabled()) {
-                        // Always log at INFO, but only include stack trace if DEBUG is enabled.
+                        // 始终 INFO 记录；仅 DEBUG 时附带栈。
                         logger.info(fallbackMessage, e);
                     } else {
                         logger.info(fallbackMessage);
@@ -71,8 +75,7 @@ public final class DefaultDnsServerAddressStreamProvider implements DnsServerAdd
             }
         }
 
-        // Only try when using on Java8 and lower as otherwise it will produce:
-        // WARNING: Illegal reflective access by io.netty.resolver.dns.DefaultDnsServerAddressStreamProvider
+        // 仅在 Java 8 及以下尝试反射，避免 Java 9+ 非法反射访问警告。
         if (PlatformDependent.javaVersion() < 9 && defaultNameServers.isEmpty()) {
             try {
                 Class<?> configClass = Class.forName("sun.net.dns.ResolverConfiguration");
@@ -88,8 +91,7 @@ public final class DefaultDnsServerAddressStreamProvider implements DnsServerAdd
                     }
                 }
             } catch (Exception ignore) {
-                // Failed to get the system name server list via reflection.
-                // Will add the default name servers afterwards.
+                // 反射获取系统 DNS 列表失败，后续使用属性或公共 DNS 兜底。
             }
         }
 
@@ -120,7 +122,7 @@ public final class DefaultDnsServerAddressStreamProvider implements DnsServerAdd
                             defaultNameServers, DEFAULT_FALLBACK_SERVER_PROPERTY);
                 }
             } else {
-                // Depending if IPv6 or IPv4 is used choose the correct DNS servers provided by google:
+                // 根据 IPv6/IPv4 偏好选择 Google Public DNS 作为最终兜底。
                 // https://developers.google.com/speed/public-dns/docs/using
                 // https://docs.oracle.com/javase/7/docs/api/java/net/doc-files/net-properties.html
                 if (NetUtil.isIpV6AddressesPreferred() ||
@@ -152,24 +154,23 @@ public final class DefaultDnsServerAddressStreamProvider implements DnsServerAdd
 
     @Override
     public DnsServerAddressStream nameServerAddressStream(String hostname) {
+        // 默认提供者不区分查询名，始终返回同一顺序流。
         return DEFAULT_NAME_SERVERS.stream();
     }
 
     /**
-     * Returns the list of the system DNS server addresses. If it failed to retrieve the list of the system DNS server
-     * addresses from the environment, it will return {@code "8.8.8.8"} and {@code "8.8.4.4"}, the addresses of the
-     * Google public DNS servers.
+     * 返回系统 DNS 服务器地址列表。若无法从环境读取，则返回 Google 公共 DNS
+     * {@code 8.8.8.8} 与 {@code 8.8.4.4}（或 IPv6 等价地址）。
      */
     public static List<InetSocketAddress> defaultAddressList() {
         return DEFAULT_NAME_SERVER_LIST;
     }
 
     /**
-     * Returns the {@link DnsServerAddresses} that yields the system DNS server addresses sequentially. If it failed to
-     * retrieve the list of the system DNS server addresses from the environment, it will use {@code "8.8.8.8"} and
-     * {@code "8.8.4.4"}, the addresses of the Google public DNS servers.
+     * 返回按顺序轮询系统 DNS 地址的 {@link DnsServerAddresses}。环境探测失败时使用
+     * Google 公共 DNS 作为兜底。
      * <p>
-     * This method has the same effect with the following code:
+     * 等价于：
      * <pre>
      * DnsServerAddresses.sequential(DnsServerAddresses.defaultAddressList());
      * </pre>

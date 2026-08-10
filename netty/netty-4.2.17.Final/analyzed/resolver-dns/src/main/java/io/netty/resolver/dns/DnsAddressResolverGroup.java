@@ -34,13 +34,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * A {@link AddressResolverGroup} of {@link DnsNameResolver}s.
+ * 基于 {@link DnsNameResolver} 的 {@link AddressResolverGroup}{@code <InetSocketAddress>}。
+ * <p>组内各 {@link EventLoop} 共享同一套 DNS 解析/CNAME/权威服务器缓存，并对进行中的
+ * resolve/resolveAll 请求去重（{@link InflightNameResolver}）。</p>
  */
 public class DnsAddressResolverGroup extends AddressResolverGroup<InetSocketAddress> {
 
+    /** 构建 {@link DnsNameResolver} 的配置模板（含共享缓存）。 */
     private final DnsNameResolverBuilder dnsResolverBuilder;
 
+    /** 按主机名合并进行中的单次 resolve。 */
     private final ConcurrentMap<String, Promise<InetAddress>> resolvesInProgress = new ConcurrentHashMap<>();
+    /** 按主机名合并进行中的 resolveAll。 */
     private final ConcurrentMap<String, Promise<List<InetAddress>>> resolveAllsInProgress = new ConcurrentHashMap<>();
 
     public DnsAddressResolverGroup(DnsNameResolverBuilder dnsResolverBuilder) {
@@ -61,9 +66,10 @@ public class DnsAddressResolverGroup extends AddressResolverGroup<InetSocketAddr
         dnsResolverBuilder.datagramChannelFactory(channelFactory).nameServerProvider(nameServerProvider);
     }
 
+    /**
+     * 确保组内成员共享同一套缓存实例，避免每个 EventLoop 独立缓存导致命中率下降。
+     */
     private static DnsNameResolverBuilder withSharedCaches(DnsNameResolverBuilder dnsResolverBuilder) {
-        /// To avoid each member of the group having its own cache we either use the configured cache
-        // or create a new one to share among the entire group.
         return dnsResolverBuilder.resolveCache(dnsResolverBuilder.getOrNewCache())
                 .cnameCache(dnsResolverBuilder.getOrNewCnameCache())
                 .authoritativeDnsServerCache(dnsResolverBuilder.getOrNewAuthoritativeDnsServerCache());
@@ -78,8 +84,7 @@ public class DnsAddressResolverGroup extends AddressResolverGroup<InetSocketAddr
                     " (expected: " + StringUtil.simpleClassName(EventLoop.class));
         }
 
-        // we don't really need to pass channelFactory and nameServerProvider separately,
-        // but still keep this to ensure backward compatibility with (potentially) override methods
+        // 为兼容可能被覆写的 deprecated 方法，仍分别传递 factory 与 nameServerProvider。
         EventLoop loop = dnsResolverBuilder.eventLoop;
         return newResolver(loop == null ? (EventLoop) executor : loop,
                 dnsResolverBuilder.datagramChannelFactory(),
@@ -104,8 +109,7 @@ public class DnsAddressResolverGroup extends AddressResolverGroup<InetSocketAddr
     }
 
     /**
-     * Creates a new {@link NameResolver}. Override this method to create an alternative {@link NameResolver}
-     * implementation or override the default configuration.
+     * 创建 {@link NameResolver}。子类可覆盖以替换实现或调整默认配置。
      */
     protected NameResolver<InetAddress> newNameResolver(EventLoop eventLoop,
                                                         ChannelFactory<? extends DatagramChannel> channelFactory,
@@ -113,8 +117,7 @@ public class DnsAddressResolverGroup extends AddressResolverGroup<InetSocketAddr
             throws Exception {
         DnsNameResolverBuilder builder = dnsResolverBuilder.copy();
 
-        // once again, channelFactory and nameServerProvider are most probably set in builder already,
-        // but I do reassign them again to avoid corner cases with override methods
+        // builder 中通常已设置 channelFactory 与 nameServerProvider，再次赋值以防子类覆写遗漏。
         return builder.eventLoop(eventLoop)
                 .datagramChannelFactory(channelFactory)
                 .nameServerProvider(nameServerProvider)
@@ -122,8 +125,7 @@ public class DnsAddressResolverGroup extends AddressResolverGroup<InetSocketAddr
     }
 
     /**
-     * Creates a new {@link AddressResolver}. Override this method to create an alternative {@link AddressResolver}
-     * implementation or override the default configuration.
+     * 创建 {@link AddressResolver}。子类可覆盖以替换实现或调整默认配置。
      */
     protected AddressResolver<InetSocketAddress> newAddressResolver(EventLoop eventLoop,
                                                                     NameResolver<InetAddress> resolver)

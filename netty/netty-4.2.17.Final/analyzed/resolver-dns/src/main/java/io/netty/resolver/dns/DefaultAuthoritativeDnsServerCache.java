@@ -28,13 +28,17 @@ import static io.netty.util.internal.ObjectUtil.checkPositive;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * Default implementation of {@link AuthoritativeDnsServerCache}, backed by a {@link ConcurrentMap}.
+ * {@link AuthoritativeDnsServerCache} 的默认实现，底层使用 {@link ConcurrentMap} 与 {@link Cache} 管理 TTL。
  */
 public class DefaultAuthoritativeDnsServerCache implements AuthoritativeDnsServerCache {
 
+    /** 缓存条目允许的最小 TTL（秒）。 */
     private final int minTtl;
+    /** 缓存条目允许的最大 TTL（秒）。 */
     private final int maxTtl;
+    /** 同一主机名下多个名称服务器地址的排序比较器，可为 {@code null} 表示保持插入顺序。 */
     private final Comparator<InetSocketAddress> comparator;
+    /** 按主机名索引的权威名称服务器地址缓存。 */
     private final Cache<InetSocketAddress> resolveCache = new Cache<InetSocketAddress>() {
         @Override
         protected boolean shouldReplaceAll(InetSocketAddress entry) {
@@ -55,14 +59,14 @@ public class DefaultAuthoritativeDnsServerCache implements AuthoritativeDnsServe
     };
 
     /**
-     * Create a cache that respects the TTL returned by the DNS server.
+     * 创建尊重 DNS 服务器返回 TTL 的缓存。
      */
     public DefaultAuthoritativeDnsServerCache() {
         this(0, Cache.MAX_SUPPORTED_TTL_SECS, null);
     }
 
     /**
-     * Create a cache.
+     * 创建可配置 TTL 边界与地址排序的缓存。
      *
      * @param minTtl the minimum TTL
      * @param maxTtl the maximum TTL
@@ -98,8 +102,7 @@ public class DefaultAuthoritativeDnsServerCache implements AuthoritativeDnsServe
         checkNotNull(loop, "loop");
 
         if (address.getHostString() == null) {
-            // We only cache addresses that have also a host string as we will need it later when trying to replace
-            // unresolved entries in the cache.
+            // 必须能提取主机名字符串，以便后续替换缓存中的未解析条目。
             return;
         }
 
@@ -122,12 +125,12 @@ public class DefaultAuthoritativeDnsServerCache implements AuthoritativeDnsServe
                 resolveCache.size() + ')';
     }
 
-    // Package visibility for testing purposes
+    // 包级可见，供单元测试读取 minTtl。
     int minTtl() {
         return minTtl;
     }
 
-    // Package visibility for testing purposes
+    // 包级可见，供单元测试读取 maxTtl。
     int maxTtl() {
         return maxTtl;
     }

@@ -23,16 +23,20 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * Default implementation of a {@link DnsCnameCache}.
+ * {@link DnsCnameCache} 的默认实现，基于 {@link Cache} 存储 CNAME 别名映射。
+ * <p>按 RFC 约定，每个查询名最多保留一条 CNAME 映射，新记录会替换旧条目。</p>
  */
 public final class DefaultDnsCnameCache implements DnsCnameCache {
+    /** 缓存条目允许的最小 TTL（秒）。 */
     private final int minTtl;
+    /** 缓存条目允许的最大 TTL（秒）。 */
     private final int maxTtl;
 
+    /** 主机名到 CNAME 目标名的缓存。 */
     private final Cache<String> cache = new Cache<String>() {
         @Override
         protected boolean shouldReplaceAll(String entry) {
-            // Only one 1:1 mapping is supported as specified in the RFC.
+            // RFC 规定 CNAME 与查询名为 1:1 映射，新值应替换全部旧条目。
             return true;
         }
 
@@ -43,14 +47,14 @@ public final class DefaultDnsCnameCache implements DnsCnameCache {
     };
 
     /**
-     * Create a cache that respects the TTL returned by the DNS server.
+     * 创建尊重 DNS 服务器返回 TTL 的 CNAME 缓存。
      */
     public DefaultDnsCnameCache() {
         this(0, Cache.MAX_SUPPORTED_TTL_SECS);
     }
 
     /**
-     * Create a cache.
+     * 创建可配置 TTL 边界的 CNAME 缓存。
      *
      * @param minTtl the minimum TTL
      * @param maxTtl the maximum TTL
@@ -71,7 +75,7 @@ public final class DefaultDnsCnameCache implements DnsCnameCache {
         if (cached == null || cached.isEmpty()) {
             return null;
         }
-        // We can never have more then one record.
+        // 实现上同一主机名不会缓存多条 CNAME。
         return cached.get(0);
     }
 
@@ -93,12 +97,12 @@ public final class DefaultDnsCnameCache implements DnsCnameCache {
         return cache.clear(checkNotNull(hostname, "hostname"));
     }
 
-    // Package visibility for testing purposes
+    // 包级可见，供单元测试读取 minTtl。
     int minTtl() {
         return minTtl;
     }
 
-    // Package visibility for testing purposes
+    // 包级可见，供单元测试读取 maxTtl。
     int maxTtl() {
         return maxTtl;
     }

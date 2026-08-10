@@ -25,15 +25,17 @@ import io.netty.handler.codec.dns.DnsRawRecord;
 import io.netty.handler.codec.dns.DnsRecord;
 
 /**
- * Decodes an {@link InetAddress} from an A or AAAA {@link DnsRawRecord}.
+ * 从 A 或 AAAA {@link DnsRawRecord} 的 RDATA 中解码 {@link InetAddress} 的工具类。
  */
 final class DnsAddressDecoder {
 
+    /** IPv4 地址字节长度。 */
     private static final int INADDRSZ4 = 4;
+    /** IPv6 地址字节长度。 */
     private static final int INADDRSZ6 = 16;
 
     /**
-     * Decodes an {@link InetAddress} from an A or AAAA {@link DnsRawRecord}.
+     * 从 A/AAAA 记录解码 IP 地址。
      *
      * @param record the {@link DnsRecord}, most likely a {@link DnsRawRecord}
      * @param name the host name of the decoded address
@@ -58,7 +60,7 @@ final class DnsAddressDecoder {
         try {
             return InetAddress.getByAddress(decodeIdn ? IDN.toUnicode(name) : name, addrBytes);
         } catch (UnknownHostException e) {
-            // Should never reach here.
+            // 合法长度的地址字节不应触发此异常。
             throw new Error("Failed to decode address \"" + name + '"', e);
         }
     }

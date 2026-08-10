@@ -25,14 +25,17 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Combines two {@link DnsQueryLifecycleObserver} into a single {@link DnsQueryLifecycleObserver}.
+ * 将两个 {@link DnsQueryLifecycleObserver} 组合为单一观察者，事件会依次通知两者。
+ * <p>典型用途是同时启用日志记录与自定义指标采集，而无需修改解析器核心逻辑。</p>
  */
 public final class BiDnsQueryLifecycleObserver implements DnsQueryLifecycleObserver {
+    /** 优先接收生命周期事件的观察者。 */
     private final DnsQueryLifecycleObserver a;
+    /** 在 {@link #a} 之后接收相同事件的观察者。 */
     private final DnsQueryLifecycleObserver b;
 
     /**
-     * Create a new instance.
+     * 创建组合观察者实例。
      * @param a The {@link DnsQueryLifecycleObserver} that will receive events first.
      * @param b The {@link DnsQueryLifecycleObserver} that will receive events second.
      */

@@ -28,10 +28,17 @@ import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.handler.codec.dns.DnsRecordType;
 import io.netty.util.concurrent.Promise;
 
+/**
+ * 将 DNS A/AAAA 记录解析为 {@link InetAddress} 的 {@link DnsResolveContext} 实现。
+ * <p>负责地址解码、结果排序、解析缓存与权威服务器缓存的写入，以及搜索域查询前的缓存短路。</p>
+ */
 final class DnsAddressResolveContext extends DnsResolveContext<InetAddress> {
 
+    /** 成功/失败解析结果缓存。 */
     private final DnsCache resolveCache;
+    /** 权威名称服务器地址缓存。 */
     private final AuthoritativeDnsServerCache authoritativeDnsServerCache;
+    /** 是否在获得首选地址族的首个结果后立即完成 Promise。 */
     private final boolean completeEarlyIfPossible;
 
     DnsAddressResolveContext(DnsNameResolver parent, Channel channel,
@@ -76,7 +83,7 @@ final class DnsAddressResolveContext extends DnsResolveContext<InetAddress> {
 
     @Override
     boolean isDuplicateAllowed() {
-        // We don't want include duplicates to mimic JDK behaviour.
+        // 不包含重复地址，与 JDK 解析行为一致。
         return false;
     }
 
@@ -94,7 +101,7 @@ final class DnsAddressResolveContext extends DnsResolveContext<InetAddress> {
 
     @Override
     void doSearchDomainQuery(String hostname, Promise<List<InetAddress>> nextPromise) {
-        // Query the cache for the hostname first and only do a query if we could not find it in the cache.
+        // 先查缓存，未命中再走父类搜索域逻辑。
         if (!DnsNameResolver.doResolveAllCached(hostname, additionals, nextPromise, resolveCache,
                 parent.searchDomains(), parent.ndots(), parent.resolvedInternetProtocolFamiliesUnsafe())) {
             super.doSearchDomainQuery(hostname, nextPromise);

@@ -20,14 +20,16 @@ import io.netty.channel.EventLoop;
 import java.net.InetSocketAddress;
 
 /**
- * Cache which stores the nameservers that should be used to resolve a specific hostname.
+ * 缓存用于解析特定主机名时应使用的权威名称服务器（nameserver）。
+ * <p>DNS 解析过程中，NS 记录或委派链可能指示某域名应使用特定权威服务器；
+ * 本接口负责存储并在 TTL 到期前复用这些服务器地址，避免重复查询委派信息。</p>
  */
 public interface AuthoritativeDnsServerCache {
 
     /**
-     * Returns the cached nameservers that should be used to resolve the given hostname. The returned
-     * {@link DnsServerAddressStream} may contain unresolved {@link InetSocketAddress}es that will be resolved
-     * when needed while resolving other domain names.
+     * 返回缓存中用于解析给定主机名的名称服务器流。
+     * <p>返回的 {@link DnsServerAddressStream} 可能包含尚未解析的 {@link InetSocketAddress}，
+     * 在后续解析其他域名时再按需解析。</p>
      *
      * @param hostname the hostname
      * @return the cached entries or an {@code null} if none.
@@ -35,7 +37,7 @@ public interface AuthoritativeDnsServerCache {
     DnsServerAddressStream get(String hostname);
 
     /**
-     * Caches a nameserver that should be used to resolve the given hostname.
+     * 缓存用于解析给定主机名的名称服务器地址。
      *
      * @param hostname the hostname
      * @param address the nameserver address (which may be unresolved).
@@ -45,14 +47,14 @@ public interface AuthoritativeDnsServerCache {
     void cache(String hostname, InetSocketAddress address, long originalTtl, EventLoop loop);
 
     /**
-     * Clears all cached nameservers.
+     * 清除所有已缓存的名称服务器条目。
      *
      * @see #clear(String)
      */
     void clear();
 
     /**
-     * Clears the cached nameservers for the specified hostname.
+     * 清除指定主机名对应的已缓存名称服务器。
      *
      * @return {@code true} if and only if there was an entry for the specified host name in the cache and
      *         it has been removed by this method

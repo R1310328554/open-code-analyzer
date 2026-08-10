@@ -20,14 +20,17 @@ import io.netty.handler.codec.dns.DnsQuestion;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Combines two {@link DnsQueryLifecycleObserverFactory} into a single {@link DnsQueryLifecycleObserverFactory}.
+ * 将两个 {@link DnsQueryLifecycleObserverFactory} 组合为单一工厂。
+ * <p>每次 DNS 查询会为两个子工厂各创建观察者，并包装为 {@link BiDnsQueryLifecycleObserver}。</p>
  */
 public final class BiDnsQueryLifecycleObserverFactory implements DnsQueryLifecycleObserverFactory {
+    /** 优先创建观察者的工厂。 */
     private final DnsQueryLifecycleObserverFactory a;
+    /** 第二个观察者对应的工厂。 */
     private final DnsQueryLifecycleObserverFactory b;
 
     /**
-     * Create a new instance.
+     * 创建组合工厂实例。
      * @param a The {@link DnsQueryLifecycleObserverFactory} that will receive events first.
      * @param b The {@link DnsQueryLifecycleObserverFactory} that will receive events second.
      */

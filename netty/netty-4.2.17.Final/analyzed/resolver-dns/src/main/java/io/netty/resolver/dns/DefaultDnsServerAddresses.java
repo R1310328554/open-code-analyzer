@@ -19,9 +19,14 @@ package io.netty.resolver.dns;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+/**
+ * {@link DnsServerAddresses} 的抽象基类，预计算 {@link #toString()} 表示并持有地址列表。
+ */
 abstract class DefaultDnsServerAddresses extends DnsServerAddresses {
 
+    /** 本策略使用的 DNS 服务器地址列表（通常不可变）。 */
     protected final List<InetSocketAddress> addresses;
+    /** 构造时生成的可读字符串，避免重复拼接。 */
     private final String strVal;
 
     DefaultDnsServerAddresses(String type, List<InetSocketAddress> addresses) {

@@ -28,16 +28,25 @@ import java.net.URISyntaxException;
 import java.util.Hashtable;
 import java.util.List;
 
+/**
+ * 通过 JNDI {@link DirContext} 从运行环境读取系统 DNS 名称服务器地址的工具类。
+ */
 final class DirContextUtils {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(DirContextUtils.class);
 
     private DirContextUtils() { }
 
+    /**
+     * 使用 jndi-dns 将检测到的默认名称服务器追加到 {@code defaultNameServers}。
+     *
+     * @param defaultNameServers 待填充的列表
+     * @param defaultPort  URI 未指定端口时使用的 DNS 端口
+     */
     static void addNameServers(List<InetSocketAddress> defaultNameServers, int defaultPort) {
-        // Using jndi-dns to obtain the default name servers.
+        // 使用 jndi-dns 获取默认名称服务器。
         //
-        // See:
+        // 参考:
         // - https://docs.oracle.com/javase/8/docs/technotes/guides/jndi/jndi-dns.html
         // - https://mail.openjdk.java.net/pipermail/net-dev/2017-March/010695.html
         Hashtable<String, String> env = new Hashtable<String, String>();
@@ -47,7 +56,7 @@ final class DirContextUtils {
         try {
             DirContext ctx = new InitialDirContext(env);
             String dnsUrls = (String) ctx.getEnvironment().get("java.naming.provider.url");
-            // Only try if not empty as otherwise we will produce an exception
+            // URL 为空时跳过，否则会触发异常。
             if (dnsUrls != null && !dnsUrls.isEmpty()) {
                 String[] servers = dnsUrls.split(" ");
                 for (String server : servers) {
@@ -57,7 +66,7 @@ final class DirContextUtils {
                         if (host == null || host.isEmpty()) {
                             logger.debug(
                                     "Skipping a nameserver URI as host portion could not be extracted: {}", server);
-                            // If the host portion can not be parsed we should just skip this entry.
+                            // 无法解析主机部分则跳过该条目。
                             continue;
                         }
                         int port  = uri.getPort();
@@ -69,7 +78,7 @@ final class DirContextUtils {
                 }
             }
         } catch (Exception ex) {
-            // Will try reflection if this fails.
+            // 失败时上层会尝试反射等其他引导方式。
             logger.debug("Unable to obtain nameservers via InitialDirContext", ex);
         }
     }

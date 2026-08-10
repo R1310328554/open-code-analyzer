@@ -35,15 +35,17 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * Default implementation of {@link DnsCache}, backed by a {@link ConcurrentMap}.
- * If any additional {@link DnsRecord} is used, no caching takes place.
+ * {@link DnsCache} 的默认实现，底层使用 {@link ConcurrentMap} 与 {@link Cache}。
+ * <p>若查询附带额外 {@link DnsRecord}（非空 additionals），则不进行任何缓存读写。</p>
  */
 public class DefaultDnsCache implements DnsCache {
 
+    /** 主机名到解析条目（地址或失败原因）的缓存。 */
     private final Cache<DefaultDnsCacheEntry> resolveCache = new Cache<DefaultDnsCacheEntry>() {
 
         @Override
         protected boolean shouldReplaceAll(DefaultDnsCacheEntry entry) {
+            // 负缓存条目应替换同主机名下的全部成功记录。
             return entry.cause() != null;
         }
 
@@ -59,20 +61,22 @@ public class DefaultDnsCache implements DnsCache {
         }
     };
 
+    /** 成功记录的最小 TTL（秒）。 */
     private final int minTtl;
+    /** 成功记录的最大 TTL（秒）。 */
     private final int maxTtl;
+    /** 失败查询（负缓存）的 TTL（秒）；为 0 表示不缓存失败。 */
     private final int negativeTtl;
 
     /**
-     * Create a cache that respects the TTL returned by the DNS server
-     * and doesn't cache negative responses.
+     * 创建尊重 DNS 服务器 TTL、且不缓存负响应的解析缓存。
      */
     public DefaultDnsCache() {
         this(0, Cache.MAX_SUPPORTED_TTL_SECS, 0);
     }
 
     /**
-     * Create a cache.
+     * 创建可配置 TTL 边界的解析缓存。
      * @param minTtl the minimum TTL
      * @param maxTtl the maximum TTL
      * @param negativeTtl the TTL for failed queries
@@ -88,7 +92,7 @@ public class DefaultDnsCache implements DnsCache {
     }
 
     /**
-     * Returns the minimum TTL of the cached DNS resource records (in seconds).
+     * 返回成功解析记录的最小缓存 TTL（秒）。
      *
      * @see #maxTtl()
      */
@@ -97,7 +101,7 @@ public class DefaultDnsCache implements DnsCache {
     }
 
     /**
-     * Returns the maximum TTL of the cached DNS resource records (in seconds).
+     * 返回成功解析记录的最大缓存 TTL（秒）。
      *
      * @see #minTtl()
      */
@@ -106,8 +110,7 @@ public class DefaultDnsCache implements DnsCache {
     }
 
     /**
-     * Returns the TTL of the cache for the failed DNS queries (in seconds). The default value is {@code 0}, which
-     * disables the cache for negative results.
+     * 返回失败 DNS 查询的缓存 TTL（秒）。默认 {@code 0} 表示不缓存负结果。
      */
     public int negativeTtl() {
         return negativeTtl;
@@ -182,6 +185,7 @@ public class DefaultDnsCache implements DnsCache {
                 .toString();
     }
 
+    /** 单条 DNS 缓存条目，可为成功地址或失败 Throwable。 */
     private static final class DefaultDnsCacheEntry implements DnsCacheEntry {
         private final String hostname;
         private final InetAddress address;
@@ -247,6 +251,7 @@ public class DefaultDnsCache implements DnsCache {
             return (obj instanceof DefaultDnsCacheEntry) && ((DefaultDnsCacheEntry) obj).hash == hash;
         }
 
+        /** 负缓存条目返回副本，避免调用方持有带完整栈的异常直至 TTL 过期。 */
         DnsCacheEntry copyIfNeeded() {
             if (cause == null) {
                 return this;
@@ -255,17 +260,18 @@ public class DefaultDnsCache implements DnsCache {
         }
     }
 
+    /** 与 {@link DnsCache} 查询键一致：FQDN 以 trailing dot 结尾。 */
     private static String appendDot(String hostname) {
         return StringUtil.endsWith(hostname, '.') ? hostname : hostname + '.';
     }
 
     private static Throwable copyThrowable(Throwable error) {
         if (error.getClass() == UnknownHostException.class) {
-            // Fast-path as this is the only type of Throwable that our implementation ever add to the cache.
+            // 快速路径：本实现仅将 UnknownHostException 写入负缓存。
             UnknownHostException copy = new UnknownHostException(error.getMessage()) {
                 @Override
                 public Throwable fillInStackTrace() {
-                    // noop.
+                    // 不填充栈，减小副本开销。
                     return this;
                 }
             };
@@ -275,7 +281,7 @@ public class DefaultDnsCache implements DnsCache {
         }
 
         try {
-            // Throwable is Serializable so lets just do a deep copy.
+            // Throwable 可序列化，通过深拷贝复制任意异常类型。
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
                 oos.writeObject(error);
@@ -290,6 +296,9 @@ public class DefaultDnsCache implements DnsCache {
         }
     }
 
+    /**
+     * 对外暴露的条目列表视图：读取负缓存时按需复制异常，防止内存长期占用。
+     */
     private static final class DnsCacheEntryList extends AbstractList<DnsCacheEntry> {
         private final List<? extends DnsCacheEntry> entries;
 
@@ -300,9 +309,7 @@ public class DefaultDnsCache implements DnsCache {
         @Override
         public DnsCacheEntry get(int index) {
             DefaultDnsCacheEntry entry = (DefaultDnsCacheEntry) entries.get(index);
-            // As we dont know what exactly the user is doing with the returned exception (for example
-            // using addSuppressed(...) and so hold up a lot of memory until the entry expires) we do
-            // create a copy.
+            // 调用方可能对返回的异常调用 addSuppressed 等，复制可避免持有大栈直至过期。
             return entry.copyIfNeeded();
         }
 
@@ -313,14 +320,14 @@ public class DefaultDnsCache implements DnsCache {
 
         @Override
         public int hashCode() {
-            // Just delegate to super to make checkstyle happy
+            // 委托 super 以满足 checkstyle
             return super.hashCode();
         }
 
         @Override
         public boolean equals(Object o) {
             if (o instanceof DnsCacheEntryList) {
-                // Fast-path.
+                // 快速路径：比较底层列表。
                 return entries.equals(((DnsCacheEntryList) o).entries);
             }
             return super.equals(o);

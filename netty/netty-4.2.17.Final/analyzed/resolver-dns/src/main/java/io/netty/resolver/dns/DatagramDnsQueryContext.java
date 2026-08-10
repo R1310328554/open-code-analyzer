@@ -29,6 +29,9 @@ import io.netty.util.concurrent.Promise;
 
 import java.net.InetSocketAddress;
 
+/**
+ * 基于 UDP 数据报的 DNS 查询上下文，负责构造 {@link DatagramDnsQuery} 并标识协议为 {@code UDP}。
+ */
 final class DatagramDnsQueryContext extends DnsQueryContext {
 
     DatagramDnsQueryContext(Channel channel,
@@ -46,6 +49,7 @@ final class DatagramDnsQueryContext extends DnsQueryContext {
 
     @Override
     protected DnsQuery newQuery(int id, InetSocketAddress nameServerAddr) {
+        // 目标地址由 envelope 携带，query 本身 channel 为 null。
         return new DatagramDnsQuery(null, nameServerAddr, id);
     }
 
