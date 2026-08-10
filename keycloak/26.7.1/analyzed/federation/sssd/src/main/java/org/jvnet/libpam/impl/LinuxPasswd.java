@@ -31,7 +31,7 @@ import java.util.List;
 import org.jvnet.libpam.impl.CLibrary.passwd;
 
 /**
- * Linux passwd
+ * Linux 平台的 passwd 结构映射。
  * <p>
  * ?struct passwd
  * {
@@ -47,13 +47,13 @@ import org.jvnet.libpam.impl.CLibrary.passwd;
  * @author Sebastian Sdorra
  */
 public class LinuxPasswd extends passwd {
-    /* Honeywell login info */
+    /** GECOS 全名/备注信息 */
     public String pw_gecos;
 
-    /* home directory */
+    /** 主目录路径 */
     public String pw_dir;
 
-    /* default shell */
+    /** 默认 shell */
     public String pw_shell;
 
 

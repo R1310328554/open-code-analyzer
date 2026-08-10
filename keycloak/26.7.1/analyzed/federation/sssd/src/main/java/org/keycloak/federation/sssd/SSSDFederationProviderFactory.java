@@ -33,6 +33,9 @@ import org.freedesktop.dbus.exceptions.DBusException;
 import org.jboss.logging.Logger;
 
 /**
+ * SSSD 用户联邦工厂：在 Linux 且 SSSD/PAM 可用时注册 {@link SSSDFederationProvider}，
+ * 并维护系统 D-Bus 连接供 InfoPipe 查询。
+ *
  * @author <a href="mailto:bruno@abstractj.org">Bruno Oliveira</a>
  * @version $Revision: 1 $
  */
@@ -41,6 +44,7 @@ public class SSSDFederationProviderFactory implements UserStorageProviderFactory
     private static final String PROVIDER_NAME = "sssd";
     private static final Logger logger = Logger.getLogger(SSSDFederationProvider.class);
 
+    /** 懒初始化的系统 D-Bus 连接 */
     private volatile DBusConnection dbusConnection;
 
     @Override
@@ -71,14 +75,22 @@ public class SSSDFederationProviderFactory implements UserStorageProviderFactory
         }
     }
 
+    /**
+     * 创建 PAM 认证器（可被子类覆盖以便测试）。
+     *
+     * @param username 用户名
+     * @param factors 认证因子（通常为密码）
+     */
     protected PAMAuthenticator createPAMAuthenticator(String username, String... factors) {
         return new PAMAuthenticator(username, factors);
     }
 
+    /** 返回 InfoPipe 使用的系统 D-Bus 连接 */
     protected DBusConnection getDbusConnection() {
         return dbusConnection;
     }
 
+    /** 双重检查锁定，按需建立系统总线 D-Bus 连接 */
     private void lazyInit() {
         if (dbusConnection == null) {
             synchronized (this) {

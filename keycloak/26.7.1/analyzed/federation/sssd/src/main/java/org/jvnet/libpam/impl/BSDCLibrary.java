@@ -25,10 +25,18 @@
 package org.jvnet.libpam.impl;
 
 /**
+ * BSD 系（macOS、OpenBSD 等）C 标准库 JNA 绑定，扩展 {@link CLibrary} 以返回 {@link BSDPasswd}。
+ *
  * @author Sebastian Sdorra
  */
 public interface BSDCLibrary extends CLibrary {
 
+    /**
+     * 按用户名查询 passwd 结构。
+     *
+     * @param username 用户名
+     * @return 对应 passwd 记录，不存在时返回 null
+     */
     BSDPasswd getpwnam(String username);
 
 }

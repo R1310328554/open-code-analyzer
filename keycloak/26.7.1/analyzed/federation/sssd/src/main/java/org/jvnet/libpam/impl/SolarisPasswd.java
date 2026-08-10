@@ -32,7 +32,7 @@ import java.util.List;
 import org.jvnet.libpam.impl.CLibrary.passwd;
 
 /**
- * Solaris passwd
+ * Solaris 平台的 passwd 结构映射。
  * <p>
  * struct passwd {
  * char    *pw_name;
@@ -49,14 +49,19 @@ import org.jvnet.libpam.impl.CLibrary.passwd;
  * @author Sebastian Sdorra
  */
 public class SolarisPasswd extends passwd {
+    /** 密码老化信息 */
     public String pw_age;
 
+    /** 账户注释 */
     public String pw_comment;
 
+    /** GECOS 全名/备注信息 */
     public String pw_gecos;
 
+    /** 主目录路径 */
     public String pw_dir;
 
+    /** 默认 shell */
     public String pw_shell;
 
 

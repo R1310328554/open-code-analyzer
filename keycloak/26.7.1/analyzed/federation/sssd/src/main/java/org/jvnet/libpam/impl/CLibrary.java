@@ -36,28 +36,36 @@ import com.sun.jna.ptr.IntByReference;
 import org.jvnet.libpam.PAMException;
 
 /**
+ * C 标准库（libc）JNA 绑定，提供 passwd/group 查询及内存分配等底层调用。
+ * <p>
+ * 按运行平台自动加载对应实现（{@link BSDCLibrary}、{@link LinuxCLibrary} 等）。
+ *
  * @author Kohsuke Kawaguchi
  */
 public interface CLibrary extends Library {
     /**
-     * Comparing http://linux.die.net/man/3/getpwnam
-     * and my Mac OS X reveals that the structure of this field isn't very portable.
-     * In particular, we cannot read the real name reliably.
+     * passwd 结构基类。对比 http://linux.die.net/man/3/getpwnam 与 macOS 实现可见字段布局跨平台差异较大，
+     * 因此无法在所有平台上可靠读取真实姓名等扩展字段。
      */
     public class passwd extends Structure {
-        /**
-         * User name.
-         */
+        /** 用户名 */
         public String pw_name;
-        /**
-         * Encrypted password.
-         */
+        /** 加密后的密码 */
         public String pw_passwd;
+        /** 用户 ID */
         public int pw_uid;
+        /** 主组 ID */
         public int pw_gid;
 
-        // ... there are a lot more fields
+        // ... 各平台还有大量额外字段，由子类扩展
 
+        /**
+         * 加载指定用户的 passwd 记录。
+         *
+         * @param userName 用户名
+         * @return passwd 结构
+         * @throws PAMException 无可用用户信息时抛出
+         */
         public static passwd loadPasswd(String userName) throws PAMException {
             passwd pwd = libc.getpwnam(userName);
             if (pwd == null) {
@@ -99,43 +107,52 @@ public interface CLibrary extends Library {
         }
     }
 
+    /** group 结构，仅映射组名等必要字段 */
     public class group extends Structure {
+        /** 组名 */
         public String gr_name;
-        // ... the rest of the field is not interesting for us
+        // ... 其余字段对本库无实际用途
 
         protected List getFieldOrder() {
             return Arrays.asList("gr_name");
         }
     }
 
+    /** 分配并清零 count * size 字节内存 */
     Pointer calloc(int count, int size);
 
+    /** 复制字符串到堆内存（需调用方释放） */
     Pointer strdup(String s);
 
+    /** 按用户名查询 passwd 结构 */
     passwd getpwnam(String username);
 
     /**
-     * Lists up group IDs of the given user. On Linux and most BSDs, but not on Solaris.
-     * See http://www.gnu.org/software/hello/manual/gnulib/getgrouplist.html
+     * 列出用户所属 supplementary 组 ID。Linux 与多数 BSD 支持，Solaris 不支持。
+     * 参见 http://www.gnu.org/software/hello/manual/gnulib/getgrouplist.html
      */
     int getgrouplist(String user, int/*gid_t*/ group, Memory groups, IntByReference ngroups);
 
     /**
-     * getgrouplist equivalent on Solaris.
-     * See http://mail.opensolaris.org/pipermail/sparks-discuss/2008-September/000528.html
+     * Solaris 上等效的 getgrouplist 替代实现。
+     * 参见 http://mail.opensolaris.org/pipermail/sparks-discuss/2008-September/000528.html
      */
     int _getgroupsbymember(String user, Memory groups, int maxgids, int numgids);
 
+    /** 按 GID 查询 group 结构 */
     group getgrgid(int/*gid_t*/ gid);
 
+    /** 按组名查询 group 结构 */
     group getgrnam(String name);
 
-    // other user/group related functions that are likely useful
-    // see http://www.gnu.org/software/libc/manual/html_node/Users-and-Groups.html#Users-and-Groups
+    // 其他用户/组相关函数可能也有用
+    // 参见 http://www.gnu.org/software/libc/manual/html_node/Users-and-Groups.html#Users-and-Groups
 
 
+    /** 按当前平台自动选择的 libc 单例 */
     public static final CLibrary libc = Instance.init();
 
+    /** 延迟按平台加载对应 CLibrary 实现 */
     static class Instance {
         private static CLibrary init() {
             if (Platform.isMac() || Platform.isOpenBSD()) {

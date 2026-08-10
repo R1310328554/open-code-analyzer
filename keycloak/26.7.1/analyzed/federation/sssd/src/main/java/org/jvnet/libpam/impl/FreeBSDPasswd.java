@@ -31,7 +31,7 @@ import java.util.List;
 import org.jvnet.libpam.impl.CLibrary.passwd;
 
 /**
- * FreeeBSD
+ * FreeBSD 平台的 passwd 结构映射。
  * <p>
  * struct passwd {
  * char	*pw_name;
@@ -51,25 +51,25 @@ import org.jvnet.libpam.impl.CLibrary.passwd;
  */
 
 public class FreeBSDPasswd extends passwd {
-    /* password change time */
+    /** 密码变更时间 */
     public long pw_change;
 
-    /* user access class */
+    /** 用户访问类别 */
     public String pw_class;
 
-    /* Honeywell login info */
+    /** GECOS 全名/备注信息 */
     public String pw_gecos;
 
-    /* home directory */
+    /** 主目录路径 */
     public String pw_dir;
 
-    /* default shell */
+    /** 默认 shell */
     public String pw_shell;
 
-    /* account expiration */
+    /** 账户过期时间 */
     public long pw_expire;
 
-    /* internal on FreeBSD? */
+    /** FreeBSD 内部字段掩码 */
     public int pw_fields;
 
     @Override

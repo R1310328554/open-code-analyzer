@@ -52,8 +52,7 @@ import org.keycloak.userprofile.UserProfileUtil;
 import org.jboss.logging.Logger;
 
 /**
- * SPI provider implementation to retrieve data from SSSD and authenticate
- * against PAM
+ * SSSD 用户存储 SPI 实现：通过 InfoPipe 同步用户属性，通过 PAM 校验密码。
  *
  * @author <a href="mailto:bruno@abstractj.org">Bruno Oliveira</a>
  * @version $Revision: 1 $
@@ -72,6 +71,11 @@ public class SSSDFederationProvider implements UserStorageProvider,
     protected KeycloakSession session;
     protected UserStorageProviderModel model;
 
+    /**
+     * @param session Keycloak 会话
+     * @param model 用户存储组件配置
+     * @param sssdFederationProviderFactory 工厂实例（提供 D-Bus 与 PAM 认证器）
+     */
     public SSSDFederationProvider(KeycloakSession session, UserStorageProviderModel model, SSSDFederationProviderFactory sssdFederationProviderFactory) {
         this.session = session;
         this.model = model;
@@ -94,11 +98,11 @@ public class SSSDFederationProvider implements UserStorageProvider,
     }
 
         /**
-         * Called after successful authentication
+         * 认证成功后调用：查找或创建本地联邦用户。
          *
-         * @param realm    realm
-         * @param username username without realm prefix
-         * @return user if found or successfully created. Null if user with same username already exists, but is not linked to this provider
+         * @param realm    领域
+         * @param username 不含 realm 前缀的用户名
+         * @return 找到或新建的用户；若同名用户已存在但未关联本提供者则返回 null
          */
     protected UserModel findOrCreateAuthenticatedUser(RealmModel realm, String username) {
         UserModel user = UserStoragePrivateUtil.userLocalStorage(session).getUserByUsername(realm, username);
@@ -125,6 +129,7 @@ public class SSSDFederationProvider implements UserStorageProvider,
         return importUserToKeycloak(realm, username);
     }
 
+    /** 从 SSSD 拉取属性并导入到 Keycloak 本地存储，同时同步组 membership */
     protected UserModel importUserToKeycloak(RealmModel realm, String username) {
         Sssd sssd = new Sssd(username, factory.getDbusConnection());
         User sssdUser = sssd.getUser();
@@ -176,6 +181,7 @@ public class SSSDFederationProvider implements UserStorageProvider,
 
     }
 
+    /** 校验本地用户与 SSSD 源数据是否仍一致 */
     public boolean isValid(RealmModel realm, UserModel local) {
         User user = new Sssd(local.getUsername(), factory.getDbusConnection()).getUser();
         return user != null && user.equals(local);
@@ -200,6 +206,7 @@ public class SSSDFederationProvider implements UserStorageProvider,
         return (pam.authenticate() != null);
     }
 
+    /** 校验通过后返回只读代理用户 */
     public UserModel validateAndProxy(RealmModel realm, UserModel local) {
         if (isValid(realm, local)) {
             return new ReadonlySSSDUserModelDelegate(local, this);

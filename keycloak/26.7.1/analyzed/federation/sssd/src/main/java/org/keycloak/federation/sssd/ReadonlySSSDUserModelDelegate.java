@@ -24,7 +24,7 @@ import org.keycloak.models.utils.UserModelDelegate;
 import org.keycloak.storage.ReadOnlyException;
 
 /**
- * Readonly proxy for a SSSD UserModel that prevents attributes from being updated.
+ * SSSD 联邦用户的只读代理，阻止对核心属性（用户名、姓名、邮箱等）的本地修改。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author <a href="mailto:bruno@abstractj.org">Bruno Oliveira</a>
@@ -34,6 +34,10 @@ public class ReadonlySSSDUserModelDelegate extends UserModelDelegate implements 
 
     private final SSSDFederationProvider provider;
 
+    /**
+     * @param delegate 被代理的本地用户
+     * @param provider 所属 SSSD 联邦提供者
+     */
     public ReadonlySSSDUserModelDelegate(UserModel delegate, SSSDFederationProvider provider) {
         super(delegate);
         this.provider = provider;
@@ -66,6 +70,7 @@ public class ReadonlySSSDUserModelDelegate extends UserModelDelegate implements 
         super.setAttribute(name, value);
     }
 
+    /** 对姓名、邮箱、用户名等联邦同步字段拒绝写入 */
     private void setSpecialAttributesToReadonly(String name) {
         if (UserModel.FIRST_NAME.equals(name) || UserModel.LAST_NAME.equals(name) || UserModel.EMAIL.equals(name) || USERNAME.equals(name)) {
             throw new ReadOnlyException("Federated storage is not writable");

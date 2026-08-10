@@ -30,6 +30,8 @@ import org.freedesktop.sssd.infopipe.InfoPipe;
 import org.jboss.logging.Logger;
 
 /**
+ * 通过 SSSD InfoPipe D-Bus 接口查询 Unix 用户属性与组 membership 的客户端。
+ *
  * @author <a href="mailto:bruno@abstractj.org">Bruno Oliveira</a>
  * @version $Revision: 1 $
  */
@@ -39,11 +41,24 @@ public class Sssd {
     private final String username;
     private static final Logger logger = Logger.getLogger(Sssd.class);
 
+    /**
+     * 创建 SSSD 客户端。
+     *
+     * @param username 要查询的 Unix 用户名
+     * @param dbusConnection 系统 D-Bus 连接
+     * @throws SSSDException 连接或初始化失败时抛出
+     */
     public Sssd(String username, DBusConnection dbusConnection) throws SSSDException {
         this.username = username;
         this.dBusConnection = dbusConnection;
     }
 
+    /**
+     * 从 D-Bus {@link Variant} 中提取首个字符串属性值。
+     *
+     * @param variant D-Bus 变体（通常为字符串列表）
+     * @return 首个元素字符串，无法解析时返回 null
+     */
     public static String getRawAttribute(Variant variant) {
         if (variant != null && variant.getType() instanceof DBusListType) {
             List<?> value = (List) variant.getValue();
@@ -54,6 +69,12 @@ public class Sssd {
         return null;
     }
 
+    /**
+     * 查询用户所属组列表。
+     *
+     * @return 组名列表
+     * @throws SSSDException SSSD 服务不可用或 D-Bus 调用失败时抛出
+     */
     public List<String> getGroups() {
         List<String> userGroups;
         try {
@@ -65,6 +86,11 @@ public class Sssd {
         return userGroups;
     }
 
+    /**
+     * 从 SSSD 拉取用户邮件、姓名等属性。
+     *
+     * @return 用户属性对象，查询失败时返回 null
+     */
     public User getUser() {
         String[] attr = {"mail", "givenname", "sn", "telephoneNumber"};
         User user = null;
@@ -77,12 +103,18 @@ public class Sssd {
         return user;
     }
 
+    /** SSSD 返回的用户属性快照，用于与 {@link UserModel} 比对 */
     public class User {
 
         private final String email;
         private final String firstName;
         private final String lastName;
 
+        /**
+         * 从 InfoPipe 返回的属性映射构造用户对象。
+         *
+         * @param userAttributes 属性名到 D-Bus Variant 的映射
+         */
         public User(Map<String, Variant> userAttributes) {
             this.email = getRawAttribute(userAttributes.get("mail"));
             this.firstName = getRawAttribute(userAttributes.get("givenname"));
@@ -90,18 +122,24 @@ public class Sssd {
 
         }
 
+        /** 邮箱地址 */
         public String getEmail() {
             return email;
         }
 
+        /** 名 */
         public String getFirstName() {
             return firstName;
         }
 
+        /** 姓 */
         public String getLastName() {
             return lastName;
         }
 
+        /**
+         * 与 {@link UserModel} 比较姓名与邮箱是否一致（用于联邦用户校验）。
+         */
         @Override
         public boolean equals(Object o) {
             if (o == null) return false;

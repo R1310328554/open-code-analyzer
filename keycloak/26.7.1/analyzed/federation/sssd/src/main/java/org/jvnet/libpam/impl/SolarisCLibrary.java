@@ -26,10 +26,18 @@
 package org.jvnet.libpam.impl;
 
 /**
+ * Solaris 平台 C 标准库 JNA 绑定，扩展 {@link CLibrary} 以返回 {@link SolarisPasswd}。
+ *
  * @author Sebastian Sdorra
  */
 public interface SolarisCLibrary extends CLibrary {
 
+    /**
+     * 按用户名查询 passwd 结构。
+     *
+     * @param username 用户名
+     * @return 对应 passwd 记录，不存在时返回 null
+     */
     SolarisPasswd getpwnam(String username);
 
 }
