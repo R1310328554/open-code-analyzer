@@ -1,5 +1,7 @@
 package generator
 
+// stream-generator metrics 包：注册 streams_created/keep_alive 计数器及 Kafka 写入延迟直方图与字节总量 counter，按 tenant 标签区分。
+
 import (
 	"time"
 
@@ -14,6 +16,7 @@ type metrics struct {
 	kafkaWriteBytesTotal  prometheus.Counter
 }
 
+// newMetrics 使用 promauto 注册 native histogram 与 DefBuckets 的 kafka_write_latency。
 func newMetrics(reg prometheus.Registerer) *metrics {
 	return &metrics{
 		streamsCreatedTotal: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
@@ -38,3 +41,4 @@ func newMetrics(reg prometheus.Registerer) *metrics {
 		}),
 	}
 }
+// streamsKeepAliveTotal 记录 keepAlive 循环重推活跃 stream 的次数。

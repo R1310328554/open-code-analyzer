@@ -1,5 +1,7 @@
 package generator
 
+// stream-generator Kafka 路径：先经 ingest limits frontend 校验 stream 元数据，通过后按 HashKeyNoShard 分区写入 Kafka topic 供下游消费。
+
 import (
 	"context"
 	"fmt"
@@ -20,6 +22,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
+// sendStreamMetadata 在 PushStreamMetadataOnly 模式下走 limits 检查再写 Kafka。
 func (s *Generator) sendStreamMetadata(ctx context.Context, tenant string, batch []distributor.KeyedStream, errCh chan<- error) {
 	batchSize := len(batch)
 
@@ -81,6 +84,7 @@ func (s *Generator) sendStreamMetadata(ctx context.Context, tenant string, batch
 	s.sendStreamsToKafka(ctx, batch, tenant, errCh)
 }
 
+// sendStreamsToKafka 为每条 stream 启动 goroutine，ProduceSync 写入 metadata 记录。
 func (s *Generator) sendStreamsToKafka(ctx context.Context, streams []distributor.KeyedStream, tenant string, errCh chan<- error) {
 	for _, stream := range streams {
 		go func(stream distributor.KeyedStream) {
@@ -142,6 +146,7 @@ func successfulProduceRecordsStats(results kgo.ProduceResults) (count, sizeBytes
 
 var frontendReadOp = ring.NewOp([]ring.InstanceState{ring.ACTIVE}, nil)
 
+// getFrontendClient 从 frontend ring 随机选取健康实例并复用连接池客户端。
 func (s *Generator) getFrontendClient() (*frontend_client.Client, error) {
 	instances, err := s.frontendRing.GetAllHealthy(frontendReadOp)
 	if err != nil {
@@ -160,6 +165,7 @@ func (s *Generator) getFrontendClient() (*frontend_client.Client, error) {
 	return client.(*frontend_client.Client), nil
 }
 
+// newKafkaWriter 创建与 distributor 相同 max inflight 的 Kafka writer 与 100MB 缓冲 producer。
 func newKafkaWriter(cfg kafka.Config, logger log.Logger, reg prometheus.Registerer) (*client.Producer, error) {
 	// Create a new Kafka client with writer configuration
 	// Using same settings as distributor for max inflight requests
@@ -175,3 +181,4 @@ func newKafkaWriter(cfg kafka.Config, logger log.Logger, reg prometheus.Register
 	producer := client.NewProducer("stream-generator", kafkaClient, cfg.ProducerMaxBufferedBytes, reg)
 	return producer, nil
 }
+// successfulProduceRecordsStats 统计成功 produce 条数与字节数以更新延迟/吞吐指标。

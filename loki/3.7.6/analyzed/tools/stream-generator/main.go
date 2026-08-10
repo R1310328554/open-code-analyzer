@@ -1,5 +1,7 @@
 package main
 
+// stream-generator 命令行入口：解析 Config、启动 Generator 服务，暴露 /metrics 及 Kafka 模式下的 memberlist 与 ingest-limit-frontend ring 调试端点。
+
 import (
 	"context"
 	"flag"
@@ -20,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/tools/stream-generator/generator"
 )
 
+// main 注册 flag、校验配置、启动 generator 与 HTTP metrics 服务，SIGTERM 时优雅关闭。
 func main() {
 	logger := log.NewLogfmtLogger(os.Stdout)
 
@@ -44,7 +47,8 @@ func main() {
 	reg := prometheus.WrapRegistererWithPrefix(generator.MetricsNamespace, promReg)
 
 	// Create and start the stream metadata generator service
-	gen, err := generator.New(cfg, logger, reg)
+	// New 返回的 Generator 实现 dskit Service，需 StartAndAwaitRunning 后再对外服务。
+gen, err := generator.New(cfg, logger, reg)
 	if err != nil {
 		level.Error(logger).Log("msg", "Error creating stream generator", "err", err)
 		os.Exit(1)
@@ -100,3 +104,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+// PushStreamMetadataOnly 模式下 mux 额外挂载 memberlist 与 frontend ring 状态页。

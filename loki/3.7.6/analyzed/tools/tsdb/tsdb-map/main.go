@@ -1,5 +1,7 @@
 package main
 
+// tsdb-map 开发工具：读取 boltdb-shipper 索引文件，迭代 series 与 chunk 元数据并写入本地 TSDB builder 输出目录。
+
 import (
 	"bytes"
 	"context"
@@ -23,7 +25,8 @@ import (
 var (
 	source = flag.String("source", "", "the source boltdb file")
 	dest   = flag.String("dest", "", "the dest tsdb dir")
-	// Hardcode a periodconfig for convenience as the boltdb iterator needs one
+	// periodConfig 硬编码 schema 供 boltdb ForEachSeries 解析 chunk 时间范围。
+// Hardcode a periodconfig for convenience as the boltdb iterator needs one
 	// NB: must match the index file you're reading from
 	periodConfig = func() config.PeriodConfig {
 		input := `
@@ -52,6 +55,7 @@ func extractChecksumFromChunkID(b []byte) uint32 {
 	return uint32(x)
 }
 
+// main 要求 -source boltdb 与 -dest 目录，SafeOpenBoltdbFile 只读遍历 index bucket。
 func main() {
 	flag.Parse()
 
@@ -90,7 +94,8 @@ func main() {
 					Entries:  10000,                  // guess: 10k entries
 				})
 			}
-			builder.AddSeries(s.Labels(), model.Fingerprint(labels.StableHash(s.Labels())), chunkMetas)
+			// AddSeries 使用 StableHash fingerprint；chunk KB/Entries 为估算占位值。
+builder.AddSeries(s.Labels(), model.Fingerprint(labels.StableHash(s.Labels())), chunkMetas)
 			return nil
 		})
 	}); err != nil {
@@ -104,3 +109,4 @@ func main() {
 		panic(err)
 	}
 }
+// Build 阶段 identifier 回调当前 panic(todo)，工具仅用于离线索引格式转换实验。

@@ -1,5 +1,7 @@
 package generator
 
+// stream-generator Generator 服务：按租户预生成 KeyedStream，create/keepAlive 双 goroutine 以可配置 QPS 推送，支持 distributor 或 Kafka 两种模式。
+
 import (
 	"context"
 	"fmt"
@@ -31,6 +33,7 @@ import (
 	distributor_client "github.com/grafana/loki/v3/tools/stream-generator/distributor/client"
 )
 
+// Generator 嵌入 dskit Service，持有 streams 缓存、ring/Kafka/distributor 客户端与子服务管理器。
 type Generator struct {
 	services.Service
 
@@ -65,6 +68,7 @@ type Generator struct {
 	cancel context.CancelFunc
 }
 
+// New 按 PushMode 初始化 memberlist、frontend ring 或 distributor client 并组装 subservices。
 func New(cfg Config, logger log.Logger, reg prometheus.Registerer) (*Generator, error) {
 	s := &Generator{
 		cfg:     cfg,
@@ -207,6 +211,7 @@ func (s *Generator) GetFrontendRing() *ring.Ring {
 	return s.frontendRing
 }
 
+// create 按 CreateNewStreamsInterval 分批激活新 stream 直至达到 StreamsPerTenant 上限。
 func (s *Generator) create(ctx context.Context, tenant string, streams []distributor.KeyedStream, errCh chan<- error) {
 	s.wg.Add(1)
 	defer s.wg.Done()
@@ -243,6 +248,7 @@ func (s *Generator) create(ctx context.Context, tenant string, streams []distrib
 	}
 }
 
+// keepAlive 以 QPSPerTenant 频率重推已激活 stream（除最后一条）维持后端活跃状态。
 func (s *Generator) keepAlive(ctx context.Context, tenant string, streams []distributor.KeyedStream, errCh chan<- error) {
 	s.wg.Add(1)
 	defer s.wg.Done()
@@ -310,6 +316,7 @@ func calculateOptimalQPS(desiredRate, batchSize int, logger log.Logger) int {
 	return optimalQPS
 }
 
+// generateStreamsForTenant 构造固定标签、StableHash 与 entriesPerStream 条目的测试 stream。
 func generateStreamsForTenant(tenantID string, streamsPerTenant int, streamLabels []string) []distributor.KeyedStream {
 	streams := make([]distributor.KeyedStream, streamsPerTenant)
 
@@ -372,3 +379,4 @@ func generateLogLine(streamIdx, entryIdx, size int) string {
 	padding := strings.Repeat("x", size-len(base))
 	return base + padding
 }
+// calculateOptimalQPS 根据 desiredRate 与 normalLogSize 反推每租户 keepAlive 频率。

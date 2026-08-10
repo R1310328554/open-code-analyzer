@@ -1,5 +1,7 @@
 package main
 
+// index-analyzer analytics：遍历 TSDB 索引文件统计 series/chunk 数量、每 series 最大 chunk 数及超过 1000 chunk 的 series 计数。
+
 import (
 	"context"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	tsdb_index "github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/index"
 )
 
+// analyze 对每个租户 ForEach 索引，跳过 multi-tenant 文件并聚合全局指标。
 func analyze(indexShipper indexshipper.IndexShipper, tableName string, tenants []string) error {
 
 	var (
@@ -69,7 +72,8 @@ func analyze(indexShipper indexshipper.IndexShipper, tableName string, tenants [
 
 				chunks += len(chunkRes)
 
-				err = casted.Index.(*tsdb.TSDBIndex).ForSeries(
+				// ForSeries 回调统计单 series chunk 分布，用于发现热点 stream 与 compaction 压力。
+err = casted.Index.(*tsdb.TSDBIndex).ForSeries(
 					context.Background(),
 					"", nil,
 					model.Earliest,
@@ -103,3 +107,4 @@ func analyze(indexShipper indexshipper.IndexShipper, tableName string, tenants [
 
 	return nil
 }
+// 最终 stdout 打印 series/chunk 总数、均值、max chunks/series 与超 1k chunk 的 series 数。

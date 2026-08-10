@@ -1,5 +1,7 @@
 package main
 
+// index-analyzer 命令行入口：加载 Loki 配置与 object client，构建只读 IndexShipper 后解析租户并调用 analyze 输出索引统计。
+
 import (
 	"flag"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/tools/tsdb/helpers"
 )
 
+// 示例：BUCKET 为表号后缀，DIR 为本地 tsdb-active/cache 目录。
 // go build ./tools/tsdb/index-analyzer && BUCKET=19453 DIR=/tmp/loki-index-analysis ./index-analyzer --config.file=/tmp/loki-config.yaml
 func main() {
 	conf, _, bucket, err := helpers.Setup()
@@ -46,3 +49,4 @@ func main() {
 	err = analyze(shipper, tableName, tenants)
 	helpers.ExitErr("analyzing", err)
 }
+// shipper 使用 tsdb.OpenShippableTSDB 与 tableRange 限制扫描范围。

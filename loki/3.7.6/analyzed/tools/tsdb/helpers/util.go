@@ -1,5 +1,7 @@
 package helpers
 
+// tsdb helpers util：表名解析、period 匹配与 object store 租户枚举，供 index-analyzer 等离线工具定位 TSDB 索引表与租户列表。
+
 import (
 	"context"
 	"fmt"
@@ -21,6 +23,7 @@ const (
 	daySeconds = int64(24 * time.Hour / time.Second)
 )
 
+// extractTableNumberRegex 匹配表名末尾数字作为日级 bucket 编号。
 // regexp for finding the trailing index bucket number at the end of table name
 var extractTableNumberRegex = regexp.MustCompile(`[0-9]+$`)
 
@@ -48,6 +51,7 @@ func getTableNumberForTime(t model.Time) int64 {
 	return t.Unix() / daySeconds
 }
 
+// GetPeriodConfigForTableNumber 在 schema configs 中查找 TSDB period 与完整表名。
 func GetPeriodConfigForTableNumber(table string, periodicConfigs []config.PeriodConfig) (config.PeriodConfig, config.TableRange, string, error) {
 	tableNo, err := extractTableNumberFromName(table)
 	if err != nil {
@@ -75,6 +79,7 @@ func GetPeriodConfigForTableNumber(table string, periodicConfigs []config.Period
 	return config.PeriodConfig{}, config.TableRange{}, "", fmt.Errorf("table does not belong to any period")
 }
 
+// ResolveTenants 列出 object store 前缀下 object key 首段作为租户 ID。
 func ResolveTenants(objectClient client.ObjectClient, pathPrefix, tableName string) ([]string, error) {
 	prefix := filepath.Join(pathPrefix, tableName)
 	indices, _, err := objectClient.List(context.Background(), prefix, "")
@@ -96,3 +101,4 @@ func ResolveTenants(objectClient client.ObjectClient, pathPrefix, tableName stri
 
 	return result, nil
 }
+// getTableNumberForTime 将 Unix 秒除以 daySeconds 得到与 Loki 一致的日表编号。

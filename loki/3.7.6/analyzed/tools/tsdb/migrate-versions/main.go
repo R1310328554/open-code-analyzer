@@ -1,5 +1,7 @@
 package main
 
+// tsdb migrate-versions 运维工具：将 object store 中 TSDB 索引文件重建为指定 Format 版本，支持 TABLE_NUM_MIN/MAX 过滤与 NEW_TABLE_PREFIX 写入新表。
+
 import (
 	"context"
 	"flag"
@@ -47,6 +49,7 @@ func exit(code int) {
 	os.Exit(code)
 }
 
+// 环境变量 TSDB_VERSION 指定目标 index format；未压缩文件存在时跳过该表/租户。
 // Ussage: TSDB_VERSION=3 TABLE_NUM_MIN=19464 TABLE_NUM_MAX=19465 NEW_TABLE_PREFIX=tsdb_v3_ go run tools/tsdb/migrate-versions/main.go --config.file /tmp/loki-config.yaml
 func main() {
 	lokiCfg := setup()
@@ -143,6 +146,7 @@ func migrateTables(pCfg config.PeriodConfig, storageCfg storage.Config, clientMe
 	return nil
 }
 
+// migrateTable 下载租户索引、RebuildWithVersion 后 gzip 上传，同表模式删除旧文件。
 func migrateTable(tableName string, indexStorageClient shipperstorage.Client) error {
 	tempDir := os.TempDir()
 
@@ -235,6 +239,7 @@ func migrateTable(tableName string, indexStorageClient shipperstorage.Client) er
 	return nil
 }
 
+// uploadFile 经 GZIP 压缩后 PutUserFile 到 object store，临时文件写入后 sync 并清理。
 func uploadFile(idx shipperindex.Index, indexStorageClient shipperstorage.Client, tableName, tenant string) error {
 	fileName := idx.Name()
 	level.Debug(util_log.Logger).Log("msg", fmt.Sprintf("uploading index %s", fileName))
@@ -310,3 +315,4 @@ func setup() loki.Config {
 
 	return c.Config
 }
+// ErrAlreadyOnDesiredVersion 时跳过该租户，避免重复迁移已升级索引。

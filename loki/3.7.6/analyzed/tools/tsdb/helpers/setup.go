@@ -1,5 +1,7 @@
 package helpers
 
+// tsdb helpers Setup：解析 Loki 配置并初始化 TSDB shipper 只读模式，要求环境变量 BUCKET（表号）与 DIR（本地缓存目录）。
+
 import (
 	"flag"
 	"fmt"
@@ -22,6 +24,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// Setup 设置 ActiveIndexDirectory/CacheLocation 并返回 moduleManager HTTP 服务。
 func Setup() (loki.Config, services.Service, string, error) {
 	var c loki.ConfigWrapper
 	if err := cfg.DynamicUnmarshal(&c, os.Args[1:], flag.CommandLine); err != nil {
@@ -58,6 +61,7 @@ func Setup() (loki.Config, services.Service, string, error) {
 	return c.Config, svc, bucket, nil
 }
 
+// moduleManager 注册 version/go runtime 指标并启动 dskit server 包装 Loki 空模块。
 func moduleManager(cfg *server.Config) (services.Service, error) {
 	prometheus.MustRegister(version.NewCollector("loki"))
 	// unregister default go collector
@@ -81,6 +85,7 @@ func moduleManager(cfg *server.Config) (services.Service, error) {
 	return s, nil
 }
 
+// DefaultConfigs 为 index-analyzer 等工具提供默认 chunk store 与 limits overrides。
 func DefaultConfigs() (config.ChunkStoreConfig, *validation.Overrides, storage.ClientMetrics) {
 	var (
 		chunkStoreConfig config.ChunkStoreConfig
@@ -100,3 +105,4 @@ func ExitErr(during string, err error) {
 	}
 
 }
+// ExitErr 在 CLI 工具中统一打印 during 阶段错误并以 exit 1 终止进程。
