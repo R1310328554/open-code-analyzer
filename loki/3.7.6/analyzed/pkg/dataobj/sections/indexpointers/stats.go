@@ -1,5 +1,7 @@
 package indexpointers
 
+// stats 提供 indexpointers 区段的压缩、时间范围与列/页级统计信息。
+
 import (
 	"context"
 	"fmt"
@@ -10,6 +12,7 @@ import (
 )
 
 type (
+// Stats 汇总区段未压缩/压缩字节数、时间戳范围及按小时分布。
 	// Stats provides statistics about a indexpointers section.
 	Stats struct {
 		UncompressedSize uint64
@@ -22,6 +25,7 @@ type (
 		Columns []ColumnStats
 	}
 
+// ColumnStats 描述单列的行数、压缩方式、基数与各页明细。
 	// ColumnStats provides statistics about a column in a section.
 	ColumnStats struct {
 		Name             string
@@ -39,6 +43,7 @@ type (
 		Pages []PageStats
 	}
 
+// PageStats 记录单页的编码、CRC、偏移与行/值计数。
 	// PageStats provides statistics about a page in a column.
 	PageStats struct {
 		UncompressedSize uint64
@@ -52,6 +57,7 @@ type (
 	}
 )
 
+// ReadStats 遍历列元数据与页描述，聚合出完整的区段统计快照。
 // ReadStats returns statistics about the indexpointers section. ReadStats returns an
 // error if the indexpointers section couldn't be inspected or if the provided ctx is
 // canceled.
@@ -124,3 +130,4 @@ func ReadStats(ctx context.Context, section *Section) (Stats, error) {
 
 	return stats, nil
 }
+// 时间戳统计从 min/max 列的 Statistics 字段反序列化得到。

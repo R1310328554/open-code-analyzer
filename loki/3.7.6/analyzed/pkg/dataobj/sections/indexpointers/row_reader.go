@@ -1,5 +1,7 @@
 package indexpointers
 
+// RowReader 顺序读取 indexpointers 区段中的索引指针行，支持谓词下推过滤。
+
 import (
 	"context"
 	"errors"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// RowReader 封装底层 dataset 行读取器，将行解码为 IndexPointer 结构。
 // RowReader is a reader for index pointers in a data object.
 type RowReader struct {
 	sec   *Section
@@ -29,6 +32,7 @@ type RowReader struct {
 
 var errRowReaderNotOpen = errors.New("row reader not opened")
 
+// NewRowReader 绑定区段并初始化内部状态，使用前须调用 Open。
 // NewRowReader creates a new RowReader for the given section.
 //
 // Call [RowReader.Open] before calling [RowReader.Read].
@@ -38,6 +42,7 @@ func NewRowReader(sec *Section) *RowReader {
 	return &r
 }
 
+// Open 构建 columnar 数据集与 dataset.RowReader，并初始化符号化器。
 // Open initializes RowReader resources.
 //
 // Open must be called before [RowReader.Read]. Open is safe to call multiple
@@ -54,6 +59,7 @@ func (r *RowReader) Open(ctx context.Context) error {
 	return nil
 }
 
+// SetPredicate 设置行过滤谓词，仅在 Open 之前或 Reset 之后可修改。
 // SetPredicate sets the predicate to use for filtering indexpointers. [RowReader.Read]
 // will only return indexpointers for which the predicate passes.
 //
@@ -71,6 +77,7 @@ func (r *RowReader) SetPredicate(p RowPredicate) error {
 	return nil
 }
 
+// Read 批量读取索引指针到 s，区段末尾返回 io.EOF。
 // Read reads up to the next len(s) indexpointers from the reader and stores them
 // into s. It returns the number of indexpointers read and any error encountered. At
 // the end of the indexpointers section, Read returns 0, io.EOF.
@@ -140,6 +147,7 @@ func (r *RowReader) initReader(ctx context.Context) error {
 	return nil
 }
 
+// Reset 切换新区段并清空谓词与就绪状态，可复用同一 Reader 实例。
 // Reset resets the RowReader with a new decoder to read from. Reset allows
 // reusing a RowReader without allocating a new one.
 //
@@ -158,6 +166,7 @@ func (r *RowReader) Reset(sec *Section) {
 	}
 }
 
+// Close 释放底层 dataset 行读取器占用的资源。
 // Close closes the RowReader and releases any resources it holds. Closed
 // RowReaders can be reused by calling [RowReader.Reset].
 func (r *RowReader) Close() error {
@@ -167,6 +176,7 @@ func (r *RowReader) Close() error {
 	return nil
 }
 
+// translateIndexPointersPredicate 将 indexpointers 谓词翻译为 dataset 层谓词。
 func translateIndexPointersPredicate(p RowPredicate, columns []dataset.Column) dataset.Predicate {
 	if p == nil {
 		return nil
@@ -192,6 +202,7 @@ func translateIndexPointersPredicate(p RowPredicate, columns []dataset.Column) d
 	}
 }
 
+// convertTimeRangePredicate 用 min/max 时间戳列构造区间重叠判断的 And 谓词。
 func convertTimeRangePredicate(p TimeRangeRowPredicate, minTimestampColumn, maxTimestampColumn dataset.Column) dataset.Predicate {
 	return dataset.AndPredicate{
 		Left: dataset.GreaterThanPredicate{
@@ -204,3 +215,4 @@ func convertTimeRangePredicate(p TimeRangeRowPredicate, minTimestampColumn, maxT
 		},
 	}
 }
+// 谓词翻译依赖列 tag 为 min_timestamp 与 max_timestamp 的元数据列。

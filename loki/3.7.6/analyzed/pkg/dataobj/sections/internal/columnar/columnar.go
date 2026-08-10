@@ -1,3 +1,4 @@
+// columnar 包为基于 dataset 的列式区段提供通用的打开、列描述与排序元数据访问。
 // Package columnar provides a base implementation for sections which store
 // columnar data using
 // [github.com/grafana/loki/v3/pkg/dataobj/internal/dataset].
@@ -11,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/metadata/datasetmd"
 )
 
+// Section 表示已打开的列式区段，持有解码器、列列表与排序信息。
 // Section represents an opened dataset-based section.
 type Section struct {
 	tenant  string
@@ -20,6 +22,7 @@ type Section struct {
 	sortInfo *datasetmd.SortInfo
 }
 
+// Open 从 Decoder 读取区段元数据并构建 Column 描述列表。
 // Open opens a [Section] from an underlying [Decoder].
 //
 // Open returns an error if the section metadata couldn't be read.
@@ -67,6 +70,7 @@ func (s *Section) Tenant() string { return s.tenant }
 // sections must not be mutated.
 func (s *Section) Columns() []*Column { return s.columns }
 
+// PrimarySortOrder 返回主排序列的类型与方向，缺失时返回错误。
 // PrimarySortOrder returns the primary sort order information of the section
 // as a tuple of [ColumnType] and [SortDirection].
 func (s *Section) PrimarySortOrder() (dataset.ColumnType, datasetmd.SortDirection, error) {
@@ -83,6 +87,7 @@ func (s *Section) PrimarySortOrder() (dataset.ColumnType, datasetmd.SortDirectio
 	return s.columns[idx].Type, si.Direction, nil
 }
 
+// Column 封装单列的类型、标签与 protobuf 列描述，供 Reader 解码使用。
 // A Column represents one of the columns in the section. Valid columns can only
 // be retrieved by calling [Section.Columns].
 //
@@ -97,3 +102,4 @@ type Column struct {
 
 // Metadata returns the protobuf metadata of the column.
 func (c *Column) Metadata() *datasetmd.ColumnDesc { return c.desc }
+// 各具体区段类型（logs、indexpointers 等）均复用此 columnar 基础设施。

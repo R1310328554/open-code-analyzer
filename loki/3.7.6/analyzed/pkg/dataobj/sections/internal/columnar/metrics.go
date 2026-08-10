@@ -1,5 +1,7 @@
 package columnar
 
+// metrics 为列式区段编码过程暴露 Prometheus 直方图，按列类型与页粒度观测。
+
 import (
 	"context"
 	"errors"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/result"
 )
 
+// Metrics 持有列/页级压缩比、行数、值数等原生直方图指标。
 // Metrics instruments the a columnar section. Metrics are only updated when
 // calling [Metrics.Observe].
 type Metrics struct {
@@ -36,6 +39,7 @@ type Metrics struct {
 	pageValues            *prometheus.HistogramVec
 }
 
+// NewMetrics 按 SectionType 命名空间与 kind 构造带 section 标签的指标组。
 // NewMetrics creates a new set of metrics for the streams section. Call
 // [Metrics.Observe] to update the metrics for a given section.
 func NewMetrics(sectionType dataobj.SectionType) *Metrics {
@@ -144,6 +148,7 @@ func NewMetrics(sectionType dataobj.SectionType) *Metrics {
 	}
 }
 
+// Register 将全部直方图注册到给定 Registerer，冲突时聚合错误返回。
 // Register registers metrics to report to reg.
 func (m *Metrics) Register(reg prometheus.Registerer) error {
 	var errs []error
@@ -182,6 +187,7 @@ func (m *Metrics) Unregister(reg prometheus.Registerer) {
 	reg.Unregister(m.pageValues)
 }
 
+// Observe 读取区段元数据与页列表，逐列逐页写入观测值。
 // Observe observes section statistics for a given section.
 func (m *Metrics) Observe(ctx context.Context, section *Section) error {
 	dec := section.Decoder()
@@ -271,3 +277,4 @@ func newNativeHistogramVec(opts prometheus.HistogramOpts, labels []string) *prom
 
 	return prometheus.NewHistogramVec(opts, labels)
 }
+// 未启用压缩时不记录 compression_ratio，避免除零或无意义比值。

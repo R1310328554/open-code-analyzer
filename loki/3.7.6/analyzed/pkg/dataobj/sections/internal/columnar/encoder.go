@@ -1,5 +1,7 @@
 package columnar
 
+// Encoder 将内存中的列页编码为 dataobj 列式区段，支持字典压缩与排序元数据。
+
 import (
 	"bytes"
 	"errors"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/util/protocodec"
 )
 
+// FormatVersion 为 2，统一各旧版区段实现中重复的 v1 编码逻辑。
 // FormatVersion is the current version the encoding format for dataset-derived
 // sections.
 //
@@ -32,6 +35,7 @@ var (
 	errClosed         = errors.New("element is closed")
 )
 
+// Encoder 维护数据/元数据缓冲、字符串字典与已提交列列表。
 // Encoder encodes an individual dataset-based section in a data object.
 //
 // The zero value of Encoder is ready for use.
@@ -49,6 +53,7 @@ type Encoder struct {
 	curColumn *datasetmd.ColumnDesc
 }
 
+// SetTenant 设置租户 ID，Flush 后随 Reset 一并清空。
 // SetTenant sets the tenant ID for the section. This must be called before
 // calling [Encoder.Flush]. The set tenant is reset after flushing or calling
 // [Encoder.Reset].
@@ -62,6 +67,7 @@ func (enc *Encoder) SetSortInfo(info *datasetmd.SortInfo) { enc.sortInfo = info 
 // NumColumns returns the number of columns committed to the section.
 func (enc *Encoder) NumColumns() int { return len(enc.columns) }
 
+// OpenColumn 开启新列编码，同时仅允许一列处于打开状态。
 // OpenColumn opens a new column in the section. OpenColumn fails if there is
 // another open column.
 func (enc *Encoder) OpenColumn(desc *dataset.ColumnDesc) (*ColumnEncoder, error) {
@@ -183,6 +189,7 @@ func (enc *Encoder) initBuffers() {
 	_ = streamio.WriteUvarint(enc.metadata, FormatVersion) // [bytes.Buffer.WriteByte] never returns an error.
 }
 
+// Flush 写入 SectionMetadata 与列数据，成功后重置编码器供复用。
 // Flush writes the section to the given [dataobj.SectionWriter]. Flush returns
 // an error if there is a currently open column.
 //
@@ -253,6 +260,7 @@ func (enc *Encoder) Reset() {
 	enc.curColumn = nil
 }
 
+// ColumnEncoder 逐页 AppendPage，Commit 时合并页数据并写入父 Encoder。
 // The ColumnEncoder encodes data for a single column in a section.
 // ColumnEncoders must be created by an [Encoder].
 type ColumnEncoder struct {
@@ -274,6 +282,7 @@ func newColumnEncoder(parent *Encoder, dataOffset int) *ColumnEncoder {
 	}
 }
 
+// AppendPage 记录页描述与偏移，页数据在 Commit 时顺序写入列缓冲。
 // AppendPage appends a new page to enc. The page must not be modified after
 // passing to AppendPage.
 //
@@ -304,6 +313,7 @@ func (enc *ColumnEncoder) AppendPage(page *dataset.MemPage) error {
 	return nil
 }
 
+// Commit 序列化列元数据并通知父 Encoder 追加该列；无页时写入空列。
 // Commit completes the column, appending it to the section. After Commit is
 // called, enc can no longer be used.
 //
@@ -348,3 +358,4 @@ func (enc *ColumnEncoder) Discard() error {
 func (enc *ColumnEncoder) buildMetadata() proto.Message {
 	return &datasetmd.ColumnMetadata{Pages: enc.pageDescs}
 }
+// 字符串字典索引 0 保留为空串，逻辑类型与 tag 均通过字典引用存储。

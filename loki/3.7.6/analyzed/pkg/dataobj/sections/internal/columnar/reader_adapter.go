@@ -1,5 +1,7 @@
 package columnar
 
+// ReaderAdapter 将 dataset.RowReader 的行读取结果转换为 columnar.RecordBatch。
+
 import (
 	"context"
 	"fmt"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// ReaderAdapter 是过渡适配层，按物理类型构建 Builder 并填充 RecordBatch。
 // ReaderAdapter is a temporary translation layer that allows the caller to read
 // [columnar.RecordBatch] values from a reader that only supports reads through
 // a slice of [dataset.Row].
@@ -21,6 +24,7 @@ type ReaderAdapter struct {
 	buf []dataset.Row
 }
 
+// NewReaderAdapter 创建内部 RowReader 并根据列物理类型初始化 colTypes。
 // NewReaderAdapter creates a ReaderAdapter with the provided dataset reader options.
 func NewReaderAdapter(innerOpts dataset.RowReaderOptions) *ReaderAdapter {
 	r := &ReaderAdapter{inner: dataset.NewRowReader(innerOpts)}
@@ -49,6 +53,7 @@ func (r *ReaderAdapter) Close() error {
 	return r.inner.Close()
 }
 
+// Read 批量读行后按 int64/uint64/binary 类型追加到对应 Builder 并 BuildArray。
 // Read reads up to batchSize rows from the underlying dataset reader and
 // returns them as a [columnar.RecordBatch].
 func (r *ReaderAdapter) Read(ctx context.Context, alloc *memory.Allocator, batchSize int) (*columnar.RecordBatch, error) {
@@ -114,3 +119,4 @@ func (r *ReaderAdapter) Read(ctx context.Context, alloc *memory.Allocator, batch
 	// while also getting an error such as io.EOF.
 	return columnar.NewRecordBatch(nil, int64(n), arrs), readErr
 }
+// 读出错时仍先处理已读行数 n，再返回 readErr（含 io.EOF）以保持语义一致。

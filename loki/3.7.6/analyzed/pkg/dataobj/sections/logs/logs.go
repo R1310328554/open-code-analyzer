@@ -1,3 +1,4 @@
+// logs 包定义 data object 日志区段的类型、列枚举与打开/排序元数据访问。
 // Package logs defines types used for the data object logs section. The logs
 // section holds a list of log records across multiple streams.
 package logs
@@ -17,15 +18,18 @@ var sectionType = dataobj.SectionType{
 	Version:   columnar.FormatVersion,
 }
 
+// CheckSection 通过 SectionType 命名空间与 kind 判断是否为 logs 区段。
 // CheckSection returns true if section is a logs section.
 func CheckSection(section *dataobj.Section) bool { return sectionType.Equals(section.Type) }
 
+// Section 包装 columnar.Section，并将逻辑列类型映射为 logs.Column。
 // Section represents an opened logs section.
 type Section struct {
 	inner   *columnar.Section
 	columns []*Column
 }
 
+// Open 校验类型与版本、创建 Decoder 并初始化可识别的列列表。
 // Open opens a Section from an underlying [dataobj.Section]. Open returns an
 // error if the section metadata could not be read or if the provided ctx is
 // canceled.
@@ -113,6 +117,7 @@ type Column struct {
 	inner *columnar.Column
 }
 
+// ColumnType 枚举 stream_id、timestamp、metadata、message 等逻辑列种类。
 // ColumnType represents the kind of information stored in a [Column].
 type ColumnType int
 
@@ -138,6 +143,7 @@ var columnTypeNames = map[ColumnType]string{
 	ColumnTypeMessage:   "message",
 }
 
+// ParseColumnType 从逻辑类型字符串反解析 ColumnType 枚举值。
 // ParseColumnType parses a [ColumnType] from a string. The expected string
 // format is the same as the return value of [ColumnType.String].
 func ParseColumnType(text string) (ColumnType, error) {
@@ -187,3 +193,4 @@ func convertSortDirection(protoDirection datasetmd_v2.SortDirection) (SortDirect
 
 	return SortDirectionUnspecified, false
 }
+// 无法识别的列类型在 init 时跳过，便于旧代码读取新版区段。

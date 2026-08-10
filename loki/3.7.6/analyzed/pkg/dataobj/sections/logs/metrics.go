@@ -1,5 +1,7 @@
 package logs
 
+// logs 区段专用 Prometheus 指标：编码耗时、追加计数与缓冲记录数。
+
 import (
 	"context"
 	"errors"
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// Metrics 组合 columnar.Metrics 与 logs 特有的 encode/appends/records 指标。
 // Metrics instruments the logs section.
 type Metrics struct {
 	columnar *columnar.Metrics
@@ -19,6 +22,7 @@ type Metrics struct {
 	recordCount   prometheus.Gauge
 }
 
+// NewMetrics 初始化 columnar 子指标与 encode_seconds 等直方图/计数器。
 // NewMetrics creates a new set of metrics for the logs section.
 func NewMetrics() *Metrics {
 	return &Metrics{
@@ -74,7 +78,9 @@ func (m *Metrics) Unregister(reg prometheus.Registerer) {
 	reg.Unregister(m.recordCount)
 }
 
+// Observe 委托 inner columnar.Metrics 观测已打开区段的列页统计。
 // Observe observes section statistics for a given section.
 func (m *Metrics) Observe(ctx context.Context, section *Section) error {
 	return m.columnar.Observe(ctx, section.inner)
 }
+// recordCount 在每次 Encode 后 Reset 归零，反映当前缓冲中的记录数量。

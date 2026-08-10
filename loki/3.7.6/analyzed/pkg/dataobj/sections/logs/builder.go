@@ -1,5 +1,7 @@
 package logs
 
+// Builder 累积日志 Record，经 stripe 缓冲、排序合并后编码为 logs 列式区段。
+
 import (
 	"context"
 	"errors"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// Record 表示单条日志：流 ID、时间戳、结构化元数据标签与日志行内容。
 // A Record is an individual log record within the logs section.
 type Record struct {
 	StreamID  int64
@@ -39,6 +42,7 @@ const (
 	SortTimestampDESC
 )
 
+// BuilderOptions 控制页大小、缓冲、stripe 合并策略、追加顺序与排序键。
 // BuilderOptions configures the behavior of the logs section.
 type BuilderOptions struct {
 	// PageSizeHint is the size of pages to use when encoding the logs section.
@@ -68,6 +72,7 @@ type BuilderOptions struct {
 	SortOrder SortOrder
 }
 
+// Builder 分三级缓冲：内存 records → stripes 中间表 → 最终 section 表。
 // Builder accumulate a set of [Record]s within a data object.
 type Builder struct {
 	metrics *Metrics
@@ -103,6 +108,7 @@ type Builder struct {
 	sectionBuffer tableBuffer
 }
 
+// NewBuilder 创建构建器，metrics 为 nil 时使用默认 Metrics。
 // Nwe creates a new logs section. The pageSize argument specifies how large
 // pages should be.
 func NewBuilder(metrics *Metrics, opts BuilderOptions) *Builder {
@@ -126,6 +132,7 @@ func (b *Builder) SetTenant(tenant string) { b.tenant = tenant }
 // Type returns the [dataobj.SectionType] of the logs builder.
 func (b *Builder) Type() dataobj.SectionType { return sectionType }
 
+// Append 追加记录并在 BufferSize 满时 flush 到 stripe；有序模式可跳过 stripe。
 // Append adds a new entry to b.
 func (b *Builder) Append(entry Record) {
 	b.metrics.appendsTotal.Inc()
@@ -243,6 +250,7 @@ func (b *Builder) EstimatedSize() int {
 	return size
 }
 
+// Flush 合并 stripes、columnar 编码各列并写入 SectionWriter，成功后 Reset。
 // Flush flushes b to the provided writer.
 //
 // After successful encoding, the b is reset and can be reused.
@@ -368,6 +376,7 @@ func encodeColumn(enc *columnar.Encoder, columnType ColumnType, column *tableCol
 	return columnEnc.Commit()
 }
 
+// Reset 清空记录、stripe 与 section 缓冲，重置 recordCount 等指标。
 // Reset resets all state, allowing b to be reused.
 func (b *Builder) Reset() {
 	b.metrics.recordCount.Set(0)
@@ -384,3 +393,4 @@ func (b *Builder) Reset() {
 
 	b.sectionBuffer.Reset()
 }
+// AppendOrdered 策略单次 flush 全量记录，适合上游已按排序键写入的场景。

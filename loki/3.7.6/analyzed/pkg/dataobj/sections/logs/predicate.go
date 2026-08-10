@@ -1,16 +1,20 @@
 package logs
 
+// predicate 定义 logs Reader 的行过滤表达式及组合逻辑（与/或/非等）。
+
 import (
 	"fmt"
 
 	"github.com/apache/arrow-go/v18/arrow/scalar"
 )
 
+// Predicate 接口由多种比较与逻辑谓词实现，用于 Reader 读时行级过滤。
 // Predicate is an expression used to filter column values in a [Reader].
 type Predicate interface{ isPredicate() }
 
 // Supported predicates.
 type (
+// AndPredicate 要求左右子谓词同时为真才保留该行。
 	// An AndPredicate is a [Predicate] which asserts that a row may only be
 	// included if both the Left and Right Predicate are true.
 	AndPredicate struct{ Left, Right Predicate }
@@ -29,6 +33,7 @@ type (
 	// FalsePredicate is a [Predicate] which always returns false.
 	FalsePredicate struct{}
 
+// EqualPredicate 判断指定列值是否等于给定 Arrow scalar。
 	// An EqualPredicate is a [Predicate] which asserts that a row may only be
 	// included if the Value of the Column is equal to the Value.
 	EqualPredicate struct {
@@ -57,6 +62,7 @@ type (
 		Value  scalar.Scalar // Value for which rows in Column must be less than.
 	}
 
+// FuncPredicate 通过自定义 Keep 函数过滤，无法做页级剪枝。
 	// FuncPredicate is a [Predicate] which asserts that a row may only be
 	// included if the Value of the Column passes the Keep function.
 	//
@@ -89,6 +95,7 @@ func (FuncPredicate) isPredicate()        {}
 // calling fn(p). If fn(p) returns true, walkPredicate is invoked recursively
 // with fn for each of the non-nil children of p, followed by a call of
 // fn(nil).
+// walkPredicate 深度优先遍历谓词树，fn 返回 false 时停止向下递归。
 func walkPredicate(p Predicate, fn func(Predicate) bool) {
 	if p == nil || !fn(p) {
 		return
@@ -123,6 +130,7 @@ func walkPredicate(p Predicate, fn func(Predicate) bool) {
 
 // predicateColumns returns a slice of all columns referenced in the given predicates.
 // It ensures that each column is only included once, even if it appears in multiple predicates.
+// predicateColumns 收集谓词引用的列并去重，供 Reader 投影扩展使用。
 func predicateColumns(predicates []Predicate) []*Column {
 	exists := make(map[*Column]struct{})
 	columns := make([]*Column, 0, len(predicates))
@@ -169,3 +177,4 @@ func predicateColumns(predicates []Predicate) []*Column {
 
 	return columns
 }
+// InPredicate 与比较谓词均基于 Apache Arrow scalar 表示常量值。

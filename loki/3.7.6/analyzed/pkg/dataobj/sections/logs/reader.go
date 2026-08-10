@@ -1,5 +1,7 @@
 package logs
 
+// Reader 从 logs Section 按投影列与谓词读取 Arrow RecordBatch 批次。
+
 import (
 	"context"
 	"errors"
@@ -23,6 +25,7 @@ import (
 
 var tracer = otel.Tracer("pkg/dataobj/sections/logs")
 
+// ReaderOptions 指定投影列、过滤谓词与 Arrow 内存分配器。
 // ReaderOptions customizes the behavior of a [Reader].
 type ReaderOptions struct {
 	// Columns to read. Each column must belong to the same [Section].
@@ -37,6 +40,7 @@ type ReaderOptions struct {
 	Allocator memory.Allocator
 }
 
+// Validate 确保列同属一区段且谓词 scalar 类型受 arrowconv 支持。
 // Validate returns an error if the opts is not valid. ReaderOptions are only
 // valid when:
 //
@@ -113,6 +117,7 @@ func (opts *ReaderOptions) Validate() error {
 	return errors.Join(errs...)
 }
 
+// Reader 经 ReaderAdapter 读 columnar 批次再转为 Arrow RecordBatch。
 // A Reader reads batches of rows from a [Section].
 type Reader struct {
 	opts   ReaderOptions
@@ -131,6 +136,7 @@ type Reader struct {
 
 var errReaderNotOpen = errors.New("reader not opened")
 
+// NewReader 保存选项并构建 schema，Open 时才校验选项合法性。
 // NewReader creates a new Reader from the provided options. Options are not
 // validated until the first call to [Reader.Open].
 func NewReader(opts ReaderOptions) *Reader {
@@ -165,6 +171,7 @@ func (r *Reader) Open(ctx context.Context) error {
 	return nil
 }
 
+// Read 应用谓词过滤后返回 Arrow 记录；末尾返回 io.EOF，记录须 Release。
 // Read reads the batch of rows from the section, returning them as an Arrow
 // record.
 //
@@ -277,6 +284,7 @@ func (r *Reader) init(ctx context.Context) error {
 	return nil
 }
 
+// mapPredicates 将 logs 谓词树映射为 dataset.Predicate，panic 时转为 error。
 func mapPredicates(ps []Predicate, columnLookup map[*Column]dataset.Column) (predicates []dataset.Predicate, err error) {
 	// For simplicity, [mapPredicate] and the functions it calls panic if they
 	// encounter an unsupported conversion.
@@ -411,6 +419,7 @@ func mustConvertType(dtype arrow.DataType) datasetmd.PhysicalType {
 	return toType
 }
 
+// Reset 更换选项与 schema，关闭 inner 读取器以便下次 Open 重建。
 // Reset discards any state and resets r with a new set of optiosn. This
 // permits reusing a Reader rather than allocating a new one.
 func (r *Reader) Reset(opts ReaderOptions) {
@@ -508,3 +517,4 @@ func makeColumnName(label string, name string, dty arrow.DataType) string {
 		return label + "." + name + "." + dty.Name()
 	}
 }
+// 非投影列追加在列列表末尾，便于 Read 后按索引截断仅返回投影字段。

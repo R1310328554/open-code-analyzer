@@ -1,5 +1,7 @@
 package columnar
 
+// Decoder 从 dataobj SectionReader 读取列式区段的元数据、列页描述与页数据。
+
 import (
 	"bytes"
 	"context"
@@ -17,11 +19,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// Decoder 封装 SectionReader，负责 protobuf 元数据与范围 IO 解码。
 // A Decoder allows reading an encoded dataset-based section.
 type Decoder struct {
 	sr dataobj.SectionReader
 }
 
+// NewDecoder 校验格式版本（须为 FormatVersion）后创建解码器。
 // NewDecoder creates a new [Decoder] for the given [dataobj.SectionReader]. The
 // formatVersion argument must denote the format version of the data being
 // decoded.
@@ -35,6 +39,7 @@ func NewDecoder(reader dataobj.SectionReader, formatVersion uint32) (*Decoder, e
 	return &Decoder{sr: reader}, nil
 }
 
+// SectionMetadata 从 extension_data 定位偏移并解码 SectionMetadata 消息。
 // SectionMetadata returns the metadata for the section.
 func (dec *Decoder) SectionMetadata(ctx context.Context) (*datasetmd.SectionMetadata, error) {
 	info, err := dec.getSectionInfo()
@@ -71,6 +76,7 @@ func (dec *Decoder) getSectionInfo() (*datasetmd.SectionInfoExtension, error) {
 	return &ext, nil
 }
 
+// Pages 批量读取各列 ColumnMetadata 并依次 yield 页描述列表。
 // Pages returns the set of pages for the provided columns. The order of slices
 // of pages emitted by the iterator matches the order of the columns slice: the
 // first slice corresponds to the first column, and so on.
@@ -127,6 +133,7 @@ func (rr metadataRangeReader) ReadRange(ctx context.Context, r rangeio.Range) (i
 	return io.ReadFull(rc, r.Data)
 }
 
+// ReadPages 按页描述并行发起 DataRange 读取并返回原始页字节。
 // ReadPages reads the provided set of pages, iterating over their data matching
 // the argument order. If an error is encountered while retrieving pages, an
 // error is emitted from the sequence and iteration stops.
@@ -177,3 +184,4 @@ func (rr dataRangeReader) ReadRange(ctx context.Context, r rangeio.Range) (int, 
 
 	return io.ReadFull(rc, r.Data)
 }
+// metadataRangeReader 与 dataRangeReader 分别对接元数据区与数据区的范围读。

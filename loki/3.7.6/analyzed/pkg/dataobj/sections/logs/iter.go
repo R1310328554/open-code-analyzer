@@ -1,5 +1,7 @@
 package logs
 
+// iter 提供跨 dataobj 或单 logs 区段顺序遍历 Record 的迭代器。
+
 import (
 	"context"
 	"errors"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/labelpool"
 )
 
+// Iter 过滤 logs 区段并依次 Open、IterSection，yield 的 Record 可能被复用。
 // Iter iterates over records in the provided decoder. All logs sections are
 // iterated over in order.
 // Results objects returned to yield may be reused and must be copied for further use via DeepCopy().
@@ -39,6 +42,7 @@ func Iter(ctx context.Context, obj *dataobj.Object) result.Seq[Record] {
 	})
 }
 
+// IterSection 对单个 Section 构建 RowReader 逐行 DecodeRow 产出 Record。
 func IterSection(ctx context.Context, section *Section) result.Seq[Record] {
 	return result.Iter(func(yield func(Record) bool) error {
 		dset, err := MakeColumnarDataset(section)
@@ -82,6 +86,7 @@ func IterSection(ctx context.Context, section *Section) result.Seq[Record] {
 	})
 }
 
+// ColumnarDataset 是对外暴露的 columnar.Dataset 类型别名。
 // ColumnarDataset is the exported type alias of the internal [columnar.Dataset].
 type ColumnarDataset = columnar.Dataset
 
@@ -92,6 +97,7 @@ func MakeColumnarDataset(section *Section) (*ColumnarDataset, error) {
 	return columnar.MakeDataset(columnarSection, columnarSection.Columns())
 }
 
+// DecodeRow 按列类型解析 stream_id、timestamp、metadata 与 message 字段。
 // DecodeRow decodes a record from a [dataset.Row], using the provided columns
 // to determine the column type. The list of columns must match the columns
 // used to create the row.
@@ -146,3 +152,4 @@ func DecodeRow(columns []*Column, row dataset.Row, record *Record, sym *symboliz
 	record.Metadata = labelBuilder.Labels()
 	return nil
 }
+// symbolizer 可复用 metadata 字符串，减少重复分配；nil 时每次新建字符串。

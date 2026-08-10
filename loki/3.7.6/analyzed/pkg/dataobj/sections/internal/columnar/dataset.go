@@ -1,5 +1,7 @@
 package columnar
 
+// dataset 子模块将 columnar Section/Column 适配为 dataset.Dataset 接口实现。
+
 import (
 	"context"
 	"fmt"
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/result"
 )
 
+// Dataset 通过 Decoder 批量列举页并读取页数据，供 RowReader 消费。
 // Dataset is a [dataset.Dataset] implementation that reads from a slice of
 // [Column].
 type Dataset struct {
@@ -18,6 +21,7 @@ type Dataset struct {
 
 var _ dataset.Dataset = (*Dataset)(nil)
 
+// MakeDataset 校验列同属一区段后包装为 DatasetColumn 切片。
 // MakeDataset returns a [Dataset] from a section and a set of columns.
 // MakeDataset returns an error if not all columns are from the provided
 // section.
@@ -57,6 +61,7 @@ func (ds *Dataset) ListColumns(_ context.Context) result.Seq[dataset.Column] {
 	})
 }
 
+// ListPages 一次性向 Decoder 请求多列页描述，便于批量 IO 优化。
 // ListPages returns an iterator over the pages in the dataset.
 func (ds *Dataset) ListPages(ctx context.Context, columns []dataset.Column) result.Seq[dataset.Pages] {
 	// We want to make a single request to the decoder here to allow it to
@@ -88,6 +93,7 @@ func (ds *Dataset) ListPages(ctx context.Context, columns []dataset.Column) resu
 	})
 }
 
+// ReadPages 批量读取页原始字节并作为 dataset.PageData 产出。
 // ReadPages returns an iterator over page data for the given pages.
 func (ds *Dataset) ReadPages(ctx context.Context, pages []dataset.Page) result.Seq[dataset.PageData] {
 	// Like with [DatasetColumn.ListPages], we unwrap pages so we can pass them
@@ -113,6 +119,7 @@ func (ds *Dataset) ReadPages(ctx context.Context, pages []dataset.Page) result.S
 	})
 }
 
+// DatasetColumn 将 columnar.Column 映射为 dataset.ColumnDesc 供上层查询。
 // DatasetColumn is a [dataset.Column] implementation that reads from a
 // [Column]. It is automatically created when using [MakeDataset].
 type DatasetColumn struct {
@@ -173,6 +180,7 @@ func (ds *DatasetColumn) ListPages(ctx context.Context) result.Seq[dataset.Page]
 	})
 }
 
+// DatasetPage 表示列内单页，ReadPage 委托 Decoder 读取该页数据。
 // DatasetPage is a [dataset.Page] implementation that reads from an individual
 // page within a column.
 type DatasetPage struct {
@@ -216,3 +224,4 @@ func (p *DatasetPage) ReadPage(ctx context.Context) (dataset.PageData, error) {
 
 	return pages[0], nil
 }
+// DatasetColumn 与 DatasetPage 是 columnar 与 dataset 抽象之间的桥接类型。
