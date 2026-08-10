@@ -658,3 +658,33 @@
 2026-08-10T06:30:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/query/internal/SubstringCondition.java wave22b ldap query conditions + store
 2026-08-10T06:30:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/IdentityStore.java wave22b ldap query conditions + store
 2026-08-10T06:30:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/BERDecoder.java wave22b ldap query conditions + store
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/LDAPContextManager.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/LDAPIdentityStore.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/LDAPOperationManager.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/LDAPUtil.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/SessionBoundInitialLdapContext.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/control/PasswordPolicyControl.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/control/PasswordPolicyControlFactory.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/control/PasswordPolicyPasswordChangeException.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/store/ldap/extended/PasswordModifyRequest.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/kerberos/LDAPProviderKerberosConfig.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/AbstractLDAPStorageMapper.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/AbstractLDAPStorageMapperFactory.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/CertificateLDAPStorageMapper.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/CertificateLDAPStorageMapperFactory.java wave23a ldap store + mappers
+2026-08-10T06:33:39Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/FullNameLDAPStorageMapper.java wave23a ldap store + mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/FullNameLDAPStorageMapperFactory.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/HardcodedAttributeMapper.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/HardcodedAttributeMapperFactory.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/HardcodedLDAPAttributeMapper.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/HardcodedLDAPAttributeMapperFactory.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/HardcodedLDAPGroupStorageMapper.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/HardcodedLDAPGroupStorageMapperFactory.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/HardcodedLDAPRoleStorageMapper.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/HardcodedLDAPRoleStorageMapperFactory.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/KerberosPrincipalAttributeMapper.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/KerberosPrincipalAttributeMapperFactory.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPConfigDecorator.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPMappersComparator.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPOperationDecorator.java wave23b ldap hardcoded mappers
+2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPStorageMapper.java wave23b ldap hardcoded mappers
