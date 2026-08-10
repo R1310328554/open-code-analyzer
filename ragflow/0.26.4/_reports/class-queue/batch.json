@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:49:10Z",
-  "files": [
-    "web/src/pages/agent/form/components/prompt-editor/utils.ts",
-    "web/src/pages/agent/form/components/prompt-editor/variable-path-transform.ts",
-    "web/src/pages/agent/form/doc-generator-form/use-values.ts",
-    "web/src/pages/agent/form/doc-generator-form/use-watch-form-change.ts",
-    "web/src/pages/agent/form/exesql-form/use-submit-form.ts",
-    "web/src/pages/agent/form/extractor-form/use-switch-prompt.ts",
-    "web/src/pages/agent/form/invoke-form/hooks.ts",
-    "web/src/pages/agent/form/invoke-form/schema.ts",
-    "web/src/pages/agent/form/invoke-form/use-edit-variable.ts",
-    "web/src/pages/agent/form/iteration-form/interface.ts",
-    "web/src/pages/agent/form/iteration-form/use-build-logical-options.ts",
-    "web/src/pages/agent/form/iteration-form/use-values.ts",
-    "web/src/pages/agent/form/iteration-form/use-watch-form-change.ts",
-    "web/src/pages/agent/form/loop-form/schema.ts",
-    "web/src/pages/agent/form/loop-form/use-build-logical-options.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 234,
-  "done": 1515
+  "done": 1530
 }
