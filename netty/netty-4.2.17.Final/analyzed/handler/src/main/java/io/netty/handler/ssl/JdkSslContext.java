@@ -56,11 +56,15 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
  * An {@link SslContext} which uses JDK's SSL/TLS implementation.
+ *
+ * <p>JDK 提供程序的 {@link SslContext} 基类：静态探测默认协议/密码套件，创建并配置 {@link SSLEngine}，
+ * 将 {@link ApplicationProtocolConfig} 转为 {@link JdkApplicationProtocolNegotiator}。</p>
  */
 public class JdkSslContext extends SslContext {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(JdkSslContext.class);
 
+    /** {@link SSLContext#getInstance(String)} 使用的协议名 */
     static final String PROTOCOL = "TLS";
     private static final String[] DEFAULT_PROTOCOLS;
     private static final List<String> DEFAULT_CIPHERS;
@@ -69,6 +73,7 @@ public class JdkSslContext extends SslContext {
     private static final Set<String> SUPPORTED_CIPHERS_NON_TLSV13;
     private static final Provider DEFAULT_PROVIDER;
 
+    /** 类加载时探测 JDK 默认 Provider 的协议、密码套件等 */
     static {
         Defaults defaults = new Defaults();
         defaults.init();
@@ -122,7 +127,7 @@ public class JdkSslContext extends SslContext {
     }
 
     private static String[] defaultProtocols(SSLContext context, SSLEngine engine) {
-        // Choose the sensible default list of protocols that respects JDK flags, eg. jdk.tls.client.protocols
+        // 尊重 jdk.tls.client.protocols 等系统属性，优先 TLS 1.3/1.2
         final String[] supportedProtocols = context.getDefaultSSLParameters().getProtocols();
         Set<String> supportedProtocolsSet = new HashSet<String>(supportedProtocols.length);
         Collections.addAll(supportedProtocolsSet, supportedProtocols);
@@ -139,7 +144,7 @@ public class JdkSslContext extends SslContext {
     }
 
     private static Set<String> supportedCiphers(SSLEngine engine) {
-        // Choose the sensible default list of cipher suites.
+        // 收集支持的密码套件；IBM J9 的 SSL_ 前缀需映射为 TLS_ 前缀
         final String[] supportedCiphers = engine.getSupportedCipherSuites();
         Set<String> supportedCiphersSet = new LinkedHashSet<String>(supportedCiphers.length);
         for (int i = 0; i < supportedCiphers.length; ++i) {
@@ -160,7 +165,7 @@ public class JdkSslContext extends SslContext {
                     engine.setEnabledCipherSuites(new String[]{tlsPrefixedCipherName});
                     supportedCiphersSet.add(tlsPrefixedCipherName);
                 } catch (IllegalArgumentException ignored) {
-                    // The cipher is not supported ... move on to the next cipher.
+                    // 该 TLS_ 变体在此引擎上不可用，跳过
                 }
             }
         }
@@ -290,9 +295,7 @@ public class JdkSslContext extends SslContext {
                 defaultCiphers = DEFAULT_CIPHERS_NON_TLSV13;
             }
         } else {
-            // This is a different Provider then the one used by the JDK by default so we can not just assume
-            // the same protocols and ciphers are supported. For example even if Java11+ is used Conscrypt will
-            // not support TLSv1.3 and the TLSv1.3 ciphersuites.
+            // 非 JDK 默认 Provider（如 Conscrypt）需重新探测协议与套件，不能复用静态缓存
             SSLEngine engine = sslContext.createSSLEngine();
             try {
                 if (protocols == null) {
@@ -303,7 +306,7 @@ public class JdkSslContext extends SslContext {
                 supportedCiphers = supportedCiphers(engine);
                 defaultCiphers = defaultCiphers(engine, supportedCiphers);
                 if (!isTlsV13Supported(this.protocols)) {
-                    // TLSv1.3 is not supported, ensure we do not include any TLSv1.3 ciphersuite.
+                    // 未启用 TLS 1.3 时从集合中剔除 1.3 套件
                     for (String cipher: SslUtils.DEFAULT_TLSV13_CIPHER_SUITES) {
                         supportedCiphers.remove(cipher);
                         defaultCiphers.remove(cipher);
@@ -362,6 +365,7 @@ public class JdkSslContext extends SslContext {
 
     @SuppressWarnings("deprecation")
     private SSLEngine configureAndWrapEngine(SSLEngine engine, ByteBufAllocator alloc) {
+        // 启用密码套件、协议、客户端/服务端模式及双向认证
         engine.setEnabledCipherSuites(cipherSuites);
         engine.setEnabledProtocols(protocols);
         engine.setUseClientMode(isClient());
@@ -389,6 +393,7 @@ public class JdkSslContext extends SslContext {
     }
 
     private void configureSSLParameters(SSLEngine engine) {
+        // 主机名校验（客户端）与 SNI 服务器名
         SSLParameters params = engine.getSSLParameters();
         params.setEndpointIdentificationAlgorithm(endpointIdentificationAlgorithm);
         if (serverNames != null && !serverNames.isEmpty()) {
@@ -407,6 +412,8 @@ public class JdkSslContext extends SslContext {
      * @param config The configuration which defines the translation
      * @param isServer {@code true} if a server {@code false} otherwise.
      * @return The results of the translation
+     *
+     * <p>将 {@link ApplicationProtocolConfig} 映射为 JDK ALPN 协商器；JDK 仅支持 ALPN 协议类型。</p>
      */
     @SuppressWarnings("deprecation")
     static JdkApplicationProtocolNegotiator toNegotiator(ApplicationProtocolConfig config, boolean isServer) {

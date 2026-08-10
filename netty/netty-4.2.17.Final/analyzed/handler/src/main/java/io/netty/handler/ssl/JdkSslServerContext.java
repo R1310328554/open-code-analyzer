@@ -49,12 +49,15 @@ import static io.netty.handler.ssl.SslUtils.PROBING_KEY;
 /**
  * A server-side {@link SslContext} which uses JDK's SSL/TLS implementation.
  *
+ * <p>基于 JDK 的服务端 {@link SslContext}；可选包装 {@link X509ExtendedTrustManager} 以改善主机名校验错误信息。</p>
+ *
  * @deprecated Use {@link SslContextBuilder} to create {@link JdkSslContext} instances and only
  * use {@link JdkSslContext} in your code.
  */
 @Deprecated
 public final class JdkSslServerContext extends JdkSslContext {
 
+    /** 当前 JVM/FIPS 环境是否支持 TrustManager 包装探测 */
     private static final boolean WRAP_TRUST_MANAGER;
     static {
         boolean wrapTrustManager = false;
@@ -62,12 +65,12 @@ public final class JdkSslServerContext extends JdkSslContext {
             checkIfWrappingTrustManagerIsSupported();
             wrapTrustManager = true;
         } catch (Throwable ignore) {
-            // Just don't wrap as we might not be able to do so because of FIPS:
-            // See https://github.com/netty/netty/issues/13840
+            // FIPS 等环境可能无法完成探测包装，见 issue #13840
         }
         WRAP_TRUST_MANAGER = wrapTrustManager;
     }
 
+    /** 用探针证书/密钥验证 SSLContext.init 与 TrustManager 包装是否可用 */
     // Package-private for testing.
     static void checkIfWrappingTrustManagerIsSupported() throws CertificateException,
             InvalidAlgorithmParameterException, NoSuchPaddingException, NoSuchAlgorithmException,
@@ -317,7 +320,7 @@ public final class JdkSslServerContext extends JdkSslContext {
             if (trustCertCollection != null) {
                 trustManagerFactory = buildTrustManagerFactory(trustCertCollection, trustManagerFactory, keyStore);
             } else if (trustManagerFactory == null) {
-                // Mimic the way SSLContext.getInstance(KeyManager[], null, null) works
+                // 与 SSLContext.getInstance(...).init(km, null, null) 行为一致：使用默认 TrustManagerFactory
                 trustManagerFactory = TrustManagerFactory.getInstance(
                         TrustManagerFactory.getDefaultAlgorithm());
                 trustManagerFactory.init((KeyStore) null);
@@ -351,6 +354,7 @@ public final class JdkSslServerContext extends JdkSslContext {
         }
     }
 
+    /** 包装 TrustManager 以提供更清晰的主机名校验失败信息，并应用 ResumptionController */
     private static TrustManager[] wrapTrustManagerIfNeeded(
             TrustManager[] trustManagers, ResumptionController resumptionController) {
 
@@ -364,8 +368,7 @@ public final class JdkSslServerContext extends JdkSslContext {
                     tm = resumptionController.wrapIfNeeded(tm);
                 }
                 if (tm instanceof X509ExtendedTrustManager) {
-                    // Wrap the TrustManager to provide a better exception message for users to debug hostname
-                    // validation failures.
+                    // 增强 hostname 校验失败时的异常信息
                     trustManagers[i] = new EnhancingX509ExtendedTrustManager((X509ExtendedTrustManager) tm);
                 }
             }

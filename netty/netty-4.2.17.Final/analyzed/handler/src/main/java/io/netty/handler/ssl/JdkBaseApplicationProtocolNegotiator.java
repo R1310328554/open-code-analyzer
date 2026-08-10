@@ -27,8 +27,11 @@ import javax.net.ssl.SSLHandshakeException;
 
 /**
  * Common base class for {@link JdkApplicationProtocolNegotiator} classes to inherit from.
+ *
+ * <p>封装协议列表、包装工厂及选择/监听工厂；内置 Fail/NoFail 两种握手失败策略实现。</p>
  */
 class JdkBaseApplicationProtocolNegotiator implements JdkApplicationProtocolNegotiator {
+    /** 按优先级排序的 ALPN 协议名列表（不可变） */
     private final List<String> protocols;
     private final ProtocolSelectorFactory selectorFactory;
     private final ProtocolSelectionListenerFactory listenerFactory;
@@ -96,6 +99,7 @@ class JdkBaseApplicationProtocolNegotiator implements JdkApplicationProtocolNego
         return wrapperFactory;
     }
 
+    /** 无匹配协议时抛出 {@link SSLHandshakeException} 的选择器工厂 */
     static final ProtocolSelectorFactory FAIL_SELECTOR_FACTORY = new ProtocolSelectorFactory() {
         @Override
         public ProtocolSelector newSelector(SSLEngine engine, Set<String> supportedProtocols) {
@@ -103,6 +107,7 @@ class JdkBaseApplicationProtocolNegotiator implements JdkApplicationProtocolNego
         }
     };
 
+    /** 无匹配协议时返回 null、不强制失败握手的选择器工厂 */
     static final ProtocolSelectorFactory NO_FAIL_SELECTOR_FACTORY = new ProtocolSelectorFactory() {
         @Override
         public ProtocolSelector newSelector(SSLEngine engine, Set<String> supportedProtocols) {
@@ -128,6 +133,7 @@ class JdkBaseApplicationProtocolNegotiator implements JdkApplicationProtocolNego
 
     static class NoFailProtocolSelector implements ProtocolSelector {
         private final JdkSslEngine engineWrapper;
+        /** 本地支持的协议集合，按配置优先级遍历 */
         private final Set<String> supportedProtocols;
 
         NoFailProtocolSelector(JdkSslEngine engineWrapper, Set<String> supportedProtocols) {
@@ -137,11 +143,13 @@ class JdkBaseApplicationProtocolNegotiator implements JdkApplicationProtocolNego
 
         @Override
         public void unsupported() {
+            // 对端不支持 ALPN/NPN 时清空协商结果
             engineWrapper.setNegotiatedApplicationProtocol(null);
         }
 
         @Override
         public String select(List<String> protocols) throws Exception {
+            // 按本地优先级在 advertised 列表中找第一个交集
             for (String p : supportedProtocols) {
                 if (protocols.contains(p)) {
                     engineWrapper.setNegotiatedApplicationProtocol(p);
@@ -192,7 +200,7 @@ class JdkBaseApplicationProtocolNegotiator implements JdkApplicationProtocolNego
         }
 
         protected void noSelectedMatchFound(String protocol) throws Exception {
-            // Will never be called.
+            // NoFail 子类默认忽略对端选了本地不支持的协议
         }
     }
 

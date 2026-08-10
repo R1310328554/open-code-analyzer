@@ -30,12 +30,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * detects the dead reference count and the read falls back to a cache miss.
  * Mutations (insert, evict, destroy) use {@link ConcurrentHashMap#compute} /
  * {@link ConcurrentHashMap#computeIfPresent} for atomicity.
+ *
+ * <p>按证书别名缓存已解析的 {@link OpenSslKeyMaterial}，减少 SNI/客户端证书切换时的 PEM 解析开销。</p>
  */
 final class OpenSslCachingKeyMaterialProvider extends OpenSslKeyMaterialProvider {
 
+    /** 缓存条目上限；超出时先驱逐 KeyManager 中已不存在的 alias */
     private final int maxCachedEntries;
+    /** alias -> 引用计数的 OpenSslKeyMaterial */
     private final ConcurrentHashMap<String, OpenSslKeyMaterial> cache =
             new ConcurrentHashMap<String, OpenSslKeyMaterial>();
+    /** destroy 后置 true，防止 destroy 后仍插入新条目 */
     private volatile boolean destroyed;
 
     OpenSslCachingKeyMaterialProvider(X509KeyManager keyManager, String password, int maxEntries) {
@@ -47,6 +52,8 @@ final class OpenSslCachingKeyMaterialProvider extends OpenSslKeyMaterialProvider
      * Lock-free cache lookup. If a concurrent eviction releases the material between
      * {@code get} and {@code retain}, the dead reference count is detected and treated
      * as a cache miss.
+     *
+     * <p>无锁读缓存；并发驱逐导致 refCnt 为 0 时视为未命中。</p>
      */
     private OpenSslKeyMaterial getAndRetain(String alias) {
         OpenSslKeyMaterial m = cache.get(alias);
@@ -85,6 +92,7 @@ final class OpenSslCachingKeyMaterialProvider extends OpenSslKeyMaterialProvider
     }
 
     private void evictStaleEntries() {
+        // 移除 KeyManager 已不再提供的 alias 对应缓存
         for (String alias : cache.keySet()) {
             if (keyManager().getCertificateChain(alias) == null) {
                 removeAndRelease(alias);
@@ -107,13 +115,13 @@ final class OpenSslCachingKeyMaterialProvider extends OpenSslKeyMaterialProvider
                     return material;
                 }
             }
-            // Returns the newly created material, or an existing entry if another thread inserted first.
+            // 返回新创建的 material，或另一线程先插入时 retain 已有条目
             OpenSslKeyMaterial old = putIfAbsentAndRetain(alias, material);
             if (old != material) {
                 material.release();
                 material = old;
             } else if (destroyed) {
-                // We may have inserted an entry after the provider has been destroyed. Help with the cleanup.
+                // destroy 与 insert 竞态：帮助清理刚插入的条目
                 removeAndReleaseAllEntries();
             }
         }

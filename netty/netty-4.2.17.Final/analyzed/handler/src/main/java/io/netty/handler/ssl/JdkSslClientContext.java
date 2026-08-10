@@ -35,6 +35,8 @@ import java.util.List;
 /**
  * A client-side {@link SslContext} which uses JDK's SSL/TLS implementation.
  *
+ * <p>基于 JDK {@link SSLContext} 的客户端 {@link SslContext} 实现；推荐改用 {@link SslContextBuilder}。</p>
+ *
  * @deprecated Use {@link SslContextBuilder} to create {@link JdkSslContext} instances and only
  * use {@link JdkSslContext} in your code.
  */
@@ -281,6 +283,7 @@ public final class JdkSslClientContext extends JdkSslContext {
                 endpointIdentificationAlgorithm, serverNames, resumptionController);
     }
 
+    /** 构建并初始化客户端 SSLContext，配置会话缓存与 TrustManager 包装。 */
     private static SSLContext newSSLContext(Provider sslContextProvider,
                                             X509Certificate[] trustCertCollection,
                                             TrustManagerFactory trustManagerFactory, X509Certificate[] keyCertChain,
@@ -305,9 +308,11 @@ public final class JdkSslClientContext extends JdkSslContext {
 
             SSLSessionContext sessCtx = ctx.getClientSessionContext();
             if (sessionCacheSize > 0) {
+                // 限制客户端会话缓存条目数
                 sessCtx.setSessionCacheSize((int) Math.min(sessionCacheSize, Integer.MAX_VALUE));
             }
             if (sessionTimeout > 0) {
+                // 会话在缓存中的超时时间（秒）
                 sessCtx.setSessionTimeout((int) Math.min(sessionTimeout, Integer.MAX_VALUE));
             }
             return ctx;
@@ -319,6 +324,7 @@ public final class JdkSslClientContext extends JdkSslContext {
         }
     }
 
+    /** 若配置了 {@link ResumptionController}，包装 TrustManager 以支持会话恢复策略 */
     private static TrustManager[] wrapIfNeeded(TrustManager[] tms, ResumptionController resumptionController) {
         if (tms == null || resumptionController == null) {
             return tms;

@@ -27,11 +27,16 @@ import io.netty.util.IllegalReferenceCountException;
  * when its reference count reaches zero, as the lifetime is managed externally.
  *
  * <p>This is a BoringSSL-specific feature.
+ *
+ * <p>非持有型 {@link OpenSslCredential} 包装：底层 SSL_CREDENTIAL 由 OpenSSL/BoringSSL 管理生命周期，
+ * {@link #deallocate()} 仅标记 released，不调用 native free。</p>
  */
 final class NonOwnedOpenSslCredential extends AbstractReferenceCounted implements OpenSslCredentialPointer {
 
+    /** 原生 SSL_CREDENTIAL 指针（非 0） */
     private final long credential;
     private final CredentialType type;
+    /** deallocate 后为 true，后续访问 credentialAddress 抛异常 */
     private volatile boolean released;
 
     /**
@@ -83,6 +88,7 @@ final class NonOwnedOpenSslCredential extends AbstractReferenceCounted implement
 
     @Override
     protected void deallocate() {
+        // 不释放 native 凭证，仅标记本地已释放
         released = true;
     }
 }

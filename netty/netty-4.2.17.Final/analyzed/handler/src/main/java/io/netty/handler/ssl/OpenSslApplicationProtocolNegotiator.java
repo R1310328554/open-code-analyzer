@@ -18,6 +18,8 @@ package io.netty.handler.ssl;
 /**
  * OpenSSL version of {@link ApplicationProtocolNegotiator}.
  *
+ * <p>OpenSSL 侧 ALPN/NPN 协商配置：暴露协议类型及选择/监听失败时的行为策略。</p>
+ *
  * @deprecated use {@link ApplicationProtocolConfig}
  */
 @Deprecated

@@ -23,7 +23,7 @@ import javax.net.ssl.SSLException;
  * this {@link NotSslRecordException} and so detect if one peer tries to
  * use secure and the other plain connection.
  *
- *
+ * <p>收到的字节不像 TLS 记录头时抛出，用于检测一端 TLS、一端明文的不匹配连接。</p>
  */
 public class NotSslRecordException extends SSLException {
 

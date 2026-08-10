@@ -23,8 +23,16 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSession;
 
+/**
+ * 包装 JDK {@link SSLEngine}，额外维护 Netty 侧协商的应用层协议名。
+ *
+ * <p>ALPN/NPN 协商结果通过 {@link #setNegotiatedApplicationProtocol} 写入；
+ * 其余方法均委托给底层引擎。</p>
+ */
 class JdkSslEngine extends SSLEngine implements ApplicationProtocolAccessor {
+    /** 被包装的 JDK SSLEngine */
     private final SSLEngine engine;
+    /** ALPN/NPN 协商出的应用层协议，可能为 null */
     private volatile String applicationProtocol;
 
     JdkSslEngine(SSLEngine engine) {
@@ -36,6 +44,7 @@ class JdkSslEngine extends SSLEngine implements ApplicationProtocolAccessor {
         return applicationProtocol;
     }
 
+    /** 由 ALPN 选择器/监听器在握手阶段写入协商协议。 */
     void setNegotiatedApplicationProtocol(String applicationProtocol) {
         this.applicationProtocol = applicationProtocol;
     }

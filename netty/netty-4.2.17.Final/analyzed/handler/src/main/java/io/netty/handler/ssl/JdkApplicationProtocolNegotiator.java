@@ -23,12 +23,16 @@ import java.util.Set;
 /**
  * JDK extension methods to support {@link ApplicationProtocolNegotiator}
  *
+ * <p>JDK 侧 NPN/ALPN 应用层协议协商扩展接口，定义 SSLEngine 包装、协议选择器与监听器的工厂。</p>
+ *
  * @deprecated use {@link ApplicationProtocolConfig}
  */
 @Deprecated
 public interface JdkApplicationProtocolNegotiator extends ApplicationProtocolNegotiator {
     /**
      * Abstract factory pattern for wrapping an {@link SSLEngine} object. This is useful for NPN/APLN JDK support.
+     *
+     * <p>将底层 {@link SSLEngine} 包装为支持 ALPN/NPN 的引擎；可能直接返回原引擎。</p>
      */
     interface SslEngineWrapperFactory {
         /**
@@ -48,6 +52,7 @@ public interface JdkApplicationProtocolNegotiator extends ApplicationProtocolNeg
 
     abstract class AllocatorAwareSslEngineWrapperFactory implements SslEngineWrapperFactory {
 
+        /** 默认使用 {@link ByteBufAllocator#DEFAULT} 委托到带分配器的 wrap 方法。 */
         @Override
         public final SSLEngine wrapSslEngine(SSLEngine engine,
                                        JdkApplicationProtocolNegotiator applicationNegotiator, boolean isServer) {
@@ -74,6 +79,8 @@ public interface JdkApplicationProtocolNegotiator extends ApplicationProtocolNeg
      * Interface to define the role of an application protocol selector in the SSL handshake process. Either
      * {@link ProtocolSelector#unsupported()} OR {@link ProtocolSelector#select(List)} will be called for each SSL
      * handshake.
+     *
+     * <p>服务端（或主动选择方）在握手中从对端 advertised 列表里挑选应用层协议。</p>
      */
     interface ProtocolSelector {
         /**
@@ -98,6 +105,8 @@ public interface JdkApplicationProtocolNegotiator extends ApplicationProtocolNeg
      * A listener to be notified by which protocol was select by its peer. Either the
      * {@link ProtocolSelectionListener#unsupported()} OR the {@link ProtocolSelectionListener#selected(String)} method
      * will be called for each SSL handshake.
+     *
+     * <p>客户端（或被动通知方）接收对端选定协议后的回调。</p>
      */
     interface ProtocolSelectionListener {
         /**

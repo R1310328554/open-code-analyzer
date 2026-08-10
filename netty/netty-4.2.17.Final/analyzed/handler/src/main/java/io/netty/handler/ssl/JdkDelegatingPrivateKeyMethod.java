@@ -39,37 +39,42 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Implementation of {@link OpenSslAsyncPrivateKeyMethod} that delegates cryptographic operations
  * to JDK signature providers for keys that cannot be accessed directly by OpenSSL.
+ *
+ * <p>当私钥无法直接交给 OpenSSL（如 HSM、自定义 {@link PrivateKey}）时，通过 JDK {@link Signature}
+ * 完成握手签名；按算法与密钥类型缓存兼容的 JCE Provider。</p>
  */
 final class JdkDelegatingPrivateKeyMethod implements SSLPrivateKeyMethod {
 
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(JdkDelegatingPrivateKeyMethod.class);
 
+    /** OpenSSL 签名算法常量到 JDK {@link Signature} 算法名的映射 */
     private static final IntObjectMap<String> SSL_TO_JDK_SIGNATURE_ALGORITHM;
+    /** (JDK算法, 密钥类型) -> Provider 名称，避免每次握手遍历 Security.getProviders() */
     private static final ConcurrentMap<CacheKey, String> PROVIDER_CACHE = new ConcurrentHashMap<>();
 
     static {
         IntObjectMap<String> algorithmMap = new IntObjectHashMap<>();
 
-        // RSA PKCS#1 signatures
+        // RSA PKCS#1 签名算法
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA1, "SHA1withRSA");
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA256, "SHA256withRSA");
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA384, "SHA384withRSA");
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA512, "SHA512withRSA");
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_MD5_SHA1, "MD5andSHA1withRSA");
 
-        // ECDSA signatures
+        // ECDSA 签名算法
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_ECDSA_SHA1, "SHA1withECDSA");
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_ECDSA_SECP256R1_SHA256, "SHA256withECDSA");
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_ECDSA_SECP384R1_SHA384, "SHA384withECDSA");
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_ECDSA_SECP521R1_SHA512, "SHA512withECDSA");
 
-        // RSA-PSS signatures
+        // RSA-PSS 签名（需额外配置 PSSParameterSpec）
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_RSA_PSS_RSAE_SHA256, "RSASSA-PSS");
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_RSA_PSS_RSAE_SHA384, "RSASSA-PSS");
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_RSA_PSS_RSAE_SHA512, "RSASSA-PSS");
 
-        // EdDSA signatures
+        // EdDSA 签名
         algorithmMap.put(OpenSslAsyncPrivateKeyMethod.SSL_SIGN_ED25519, "EdDSA");
 
         SSL_TO_JDK_SIGNATURE_ALGORITHM = IntCollections.unmodifiableMap(algorithmMap);
@@ -102,11 +107,11 @@ final class JdkDelegatingPrivateKeyMethod implements SSLPrivateKeyMethod {
 
     @Override
     public byte[] decrypt(long ssl, byte[] input) {
-        // Modern handshake techniques don't use the private key to decrypt, only to sign in order to verify
-        // identity. As such, we don't currently support decrypting using the private key.
+        // 现代 TLS 握手不用私钥解密，仅用于身份签名验证
         throw new UnsupportedOperationException("Direct decryption is not supported");
     }
 
+    /** 获取已配置好算法参数并完成 initSign 的 {@link Signature} 实例。 */
     private Signature createSignature(int opensslAlgorithm)
             throws NoSuchAlgorithmException {
         String jdkAlgorithm = SSL_TO_JDK_SIGNATURE_ALGORITHM.get(opensslAlgorithm);
@@ -117,7 +122,7 @@ final class JdkDelegatingPrivateKeyMethod implements SSLPrivateKeyMethod {
 
         CacheKey cacheKey = new CacheKey(jdkAlgorithm, privateKeyTypeName);
 
-        // Try cached provider first
+        // 优先使用缓存的 Provider；initSign 失败则清除缓存并重新发现
         String cachedProviderName = PROVIDER_CACHE.get(cacheKey);
         if (cachedProviderName != null) {
             try {
@@ -130,7 +135,7 @@ final class JdkDelegatingPrivateKeyMethod implements SSLPrivateKeyMethod {
                 }
                 return signature;
             } catch (Exception e) {
-                // Cache is stale, remove it and try full discovery
+                // 缓存失效：移除后走完整 Provider 扫描
                 PROVIDER_CACHE.remove(cacheKey);
                 if (logger.isDebugEnabled()) {
                     logger.debug("Cached provider {} failed for key type {}, removing from cache: {}",
@@ -154,7 +159,7 @@ final class JdkDelegatingPrivateKeyMethod implements SSLPrivateKeyMethod {
     private Signature findCompatibleSignature(int opensslAlgorithm,
                                               String jdkAlgorithm) throws NoSuchAlgorithmException {
 
-        // 1. Try default provider first (optimization)
+        // 1. 先尝试默认 Provider（常见路径最快）
         try {
             Signature signature = Signature.getInstance(jdkAlgorithm);
             configureOpenSslAlgorithmParameters(signature, opensslAlgorithm);
@@ -166,7 +171,7 @@ final class JdkDelegatingPrivateKeyMethod implements SSLPrivateKeyMethod {
             }
             return signature; // Success!
         } catch (InvalidKeyException e) {
-            // Default provider can't handle this key type, continue with full search
+            // 默认 Provider 无法处理该密钥类型，继续扫描
             if (logger.isDebugEnabled()) {
                 logger.debug("Default provider cannot handle key type {} for OpenSSL algorithm {} ({}): {}",
                         privateKey.getClass().getName(), opensslAlgorithm, jdkAlgorithm, e.getMessage());
@@ -179,7 +184,7 @@ final class JdkDelegatingPrivateKeyMethod implements SSLPrivateKeyMethod {
             }
         }
 
-        // 2. Iterate through all providers. Note this iteration goes in order of priority.
+        // 2. 按 Security 优先级遍历所有 Provider
         Provider[] providers = Security.getProviders();
         for (Provider provider : providers) {
             try {
@@ -213,7 +218,7 @@ final class JdkDelegatingPrivateKeyMethod implements SSLPrivateKeyMethod {
 
     private static void configureOpenSslAlgorithmParameters(Signature signature, int opensslAlgorithm)
             throws InvalidAlgorithmParameterException {
-        // Use the OpenSSL algorithm constants for precise parameter configuration
+        // 按 OpenSSL 算法常量精确配置 PSS 等参数
         if (opensslAlgorithm == OpenSslAsyncPrivateKeyMethod.SSL_SIGN_RSA_PSS_RSAE_SHA256) {
             // SHA-256 based PSS with MGF1-SHA256, salt length 32
             configurePssParameters(signature, MGF1ParameterSpec.SHA256, 32);
@@ -246,6 +251,7 @@ final class JdkDelegatingPrivateKeyMethod implements SSLPrivateKeyMethod {
         }
     }
 
+    /** Provider 缓存键：JDK 算法名 + 私钥实现类名 */
     private static final class CacheKey {
         private final String jdkAlgorithm;
         private final String keyTypeName;

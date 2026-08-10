@@ -61,10 +61,14 @@ import static io.netty.handler.ssl.SslUtils.useFallbackCiphersIfDefaultIsEmpty;
 /**
  * Tells if <a href="https://netty.io/wiki/forked-tomcat-native.html">{@code netty-tcnative}</a> and its OpenSSL support
  * are available.
+ *
+ * <p>检测并初始化 netty-tcnative/OpenSSL：加载 native 库、枚举密码套件与协议、
+ * 探测 KeyManagerFactory/TLS1.3/BoringSSL 特性；不可用时 {@link #isAvailable()} 为 false。</p>
  */
 public final class OpenSsl {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(OpenSsl.class);
+    /** 初始化失败原因；null 表示 OpenSSL 可用 */
     private static final Throwable UNAVAILABILITY_CAUSE;
     static final List<String> DEFAULT_CIPHERS;
     static final Set<String> AVAILABLE_CIPHER_SUITES;
@@ -103,6 +107,7 @@ public final class OpenSsl {
         Throwable cause = null;
 
         if (SystemPropertyUtil.getBoolean("io.netty.handler.ssl.noOpenSsl", false)) {
+            // 显式禁用 OpenSSL 后端
             cause = new UnsupportedOperationException(
                     "OpenSSL was explicit disabled with -Dio.netty.handler.ssl.noOpenSsl=true");
 
@@ -110,6 +115,7 @@ public final class OpenSsl {
                     "netty-tcnative explicit disabled; " +
                             OpenSslEngine.class.getSimpleName() + " will be unavailable.", cause);
         } else {
+            // 先确认 tcnative 类在 classpath，再 load native 并 Library.initialize
             // Test if netty-tcnative is in the classpath first.
             try {
                 Class.forName("io.netty.internal.tcnative.SSLContext", false,
@@ -180,10 +186,7 @@ public final class OpenSsl {
 
             Set<String> defaultConvertedNamedGroups = new LinkedHashSet<>(namedGroups.length);
             if (IS_BORINGSSL || IS_AWSLC) {
-                // BoringSSL and AWS-LC both support the hybrid-post-quantum X25519MLKEM768 key exchange.
-                // When we enable this at the first preference *in addition to* all the other existing groups,
-                // then it will be used by default when the peer supports it, without compromising compatibility
-                // for peers that don't support it.
+                // BoringSSL/AWS-LC 默认优先混合后量子组 X25519MLKEM768（对端支持时启用）
                 defaultConvertedNamedGroups.add("X25519MLKEM768");
             }
             for (String group : namedGroups) {
@@ -269,8 +272,7 @@ public final class OpenSsl {
                             availableOpenSslCipherSuites.add(c);
                         }
                         if (IS_BORINGSSL) {
-                            // Currently BoringSSL does not include these when calling SSL.getCiphers() even when these
-                            // are supported.
+                            // BoringSSL 的 SSL.getCiphers 可能遗漏部分 TLS1.3 与 AEAD 套件，手动补全
                             Collections.addAll(availableOpenSslCipherSuites, EXTRA_SUPPORTED_TLS_1_3_CIPHERS);
                             Collections.addAll(availableOpenSslCipherSuites,
                                                "AEAD-AES128-GCM-SHA256",
@@ -442,6 +444,7 @@ public final class OpenSsl {
             USE_KEYMANAGER_FACTORY = useKeyManagerFactory;
 
             // Seems like there is no way to explicitly disable SSLv2Hello in openssl so it is always enabled
+            // OpenSSL 无法关闭 SSLv2Hello 兼容记录，故始终标记为支持
             int supportedProtocolsPackedTemp = 0;
             supportedProtocolsPackedTemp |= SSL_V2_HELLO;
             if (doesSupportProtocol(SSL.SSL_PROTOCOL_SSLV2, SSL.SSL_OP_NO_SSLv2)) {
@@ -476,9 +479,7 @@ public final class OpenSsl {
                 logger.debug("Default cipher suites (OpenSSL): {}", DEFAULT_CIPHERS);
             }
 
-            // Check if we can create a javax.security.cert.X509Certificate from our cert. This might fail on
-            // JDK17 and above. In this case we will later throw an UnsupportedOperationException if someone
-            // tries to access these via SSLSession. See https://github.com/netty/netty/issues/13560.
+            // JDK17+ 可能无法构造 javax.security.cert.X509Certificate，影响 SSLSession 旧 API
             boolean javaxCertificateCreationSupported;
             try {
                 javax.security.cert.X509Certificate.getInstance(PROBING_CERT.getBytes(CharsetUtil.US_ASCII));
@@ -506,6 +507,7 @@ public final class OpenSsl {
         }
     }
 
+    /** BoringSSL 不允许单独开关 TLS1.3 套件，配置不一致时回退到固定列表 */
     static String checkTls13Ciphers(InternalLogger logger, String ciphers) {
         if (IS_BORINGSSL && !ciphers.isEmpty()) {
             assert EXTRA_SUPPORTED_TLS_1_3_CIPHERS.length > 0;
@@ -627,6 +629,8 @@ public final class OpenSsl {
      * Some implementations, such as BoringSSL and AWS-LC, intentionally do not support renegotiation.
      *
      * @return {@code true} if renegotiation is supported, otherwise {@code false}.
+     *
+     * <p>BoringSSL 与 AWS-LC  intentionally 不支持重协商。</p>
      */
     public static boolean isRenegotiationSupported() {
         return !IS_BORINGSSL && !IS_AWSLC;
@@ -729,20 +733,21 @@ public final class OpenSsl {
         return USE_KEYMANAGER_FACTORY;
     }
 
+    /** 返回 direct {@link ByteBuf} 的 native 地址（含 position 偏移） */
     static long memoryAddress(ByteBuf buf) {
         assert buf.isDirect();
         if (buf.hasMemoryAddress()) {
             return buf.memoryAddress();
         }
+        // 共享 NIO ByteBuffer 时需加上 position
         // Use internalNioBuffer to reduce object creation.
-        // It is important to add the position as the returned ByteBuffer might be shared by multiple ByteBuf
-        // instances and so has an address that starts before the start of the ByteBuf itself.
         ByteBuffer byteBuffer = buf.internalNioBuffer(0, buf.readableBytes());
         return Buffer.address(byteBuffer) + byteBuffer.position();
     }
 
     private OpenSsl() { }
 
+    /** 按平台/架构尝试加载 netty_tcnative 共享库 */
     private static void loadTcNative() throws Exception {
         String os = PlatformDependent.normalizedOs();
         String arch = PlatformDependent.normalizedArch();
@@ -821,6 +826,7 @@ public final class OpenSsl {
         return protocols;
     }
 
+    /** 解析 jdk.tls.client.protocols / server.protocols 并与 OpenSSL 能力求交 */
     static String[] defaultProtocols(boolean isClient) {
         final Collection<String> defaultProtocols = isClient ? CLIENT_DEFAULT_PROTOCOLS : SERVER_DEFAULT_PROTOCOLS;
         assert defaultProtocols != null;

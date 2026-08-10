@@ -20,6 +20,12 @@ import io.netty.util.concurrent.Future;
 
 import javax.net.ssl.SSLEngine;
 
+/**
+ * BoringSSL/AWS-LC 异步私钥回调接口：签名/解密在 Netty EventLoop 上异步完成。
+ *
+ * <p>常量与 {@link io.netty.internal.tcnative.SSLPrivateKeyMethod} 对齐，供
+ * {@link JdkDelegatingPrivateKeyMethod} 等实现委托 JDK 签名。</p>
+ */
 public interface OpenSslAsyncPrivateKeyMethod {
     int SSL_SIGN_RSA_PKCS1_SHA1 = SSLPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA1;
     int SSL_SIGN_RSA_PKCS1_SHA256 = SSLPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA256;

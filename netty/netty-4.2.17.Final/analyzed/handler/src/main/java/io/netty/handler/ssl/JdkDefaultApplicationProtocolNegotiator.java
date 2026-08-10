@@ -23,10 +23,13 @@ import javax.net.ssl.SSLEngine;
 /**
  * The {@link JdkApplicationProtocolNegotiator} to use if you do not care about NPN or ALPN and are using
  * {@link SslProvider#JDK}.
+ *
+ * <p>不启用应用层协议协商时的 JDK 占位实现：不包装 SSLEngine，访问选择/监听工厂会抛异常。</p>
  */
 final class JdkDefaultApplicationProtocolNegotiator implements JdkApplicationProtocolNegotiator {
     public static final JdkDefaultApplicationProtocolNegotiator INSTANCE =
             new JdkDefaultApplicationProtocolNegotiator();
+    /** 透传底层引擎，不做 ALPN 包装 */
     private static final SslEngineWrapperFactory DEFAULT_SSL_ENGINE_WRAPPER_FACTORY = new SslEngineWrapperFactory() {
         @Override
         public SSLEngine wrapSslEngine(SSLEngine engine,

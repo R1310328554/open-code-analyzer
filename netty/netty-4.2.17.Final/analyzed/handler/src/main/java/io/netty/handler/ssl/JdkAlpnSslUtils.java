@@ -29,15 +29,27 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
+/**
+ * 通过反射调用 JDK 9+ {@link SSLEngine}/{@link SSLParameters} 的 ALPN 扩展 API。
+ *
+ * <p>静态块探测 {@code getApplicationProtocol}、{@code setApplicationProtocols}、
+ * 握手协议选择器等方法是否可用；Java 8 上缺失属预期，Java 9+ 失败会记录 error。</p>
+ */
 final class JdkAlpnSslUtils {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(JdkAlpnSslUtils.class);
+    /** {@link SSLParameters#setApplicationProtocols(String[])} 反射句柄 */
     private static final Method SET_APPLICATION_PROTOCOLS;
+    /** {@link SSLEngine#getApplicationProtocol()} 反射句柄 */
     private static final Method GET_APPLICATION_PROTOCOL;
+    /** {@link SSLEngine#getHandshakeApplicationProtocol()} 反射句柄 */
     private static final Method GET_HANDSHAKE_APPLICATION_PROTOCOL;
+    /** 注册握手期协议选择器的反射句柄 */
     private static final Method SET_HANDSHAKE_APPLICATION_PROTOCOL_SELECTOR;
+    /** 读取握手期协议选择器的反射句柄 */
     private static final Method GET_HANDSHAKE_APPLICATION_PROTOCOL_SELECTOR;
 
     static {
+        // 创建临时 SSLEngine 并实际 invoke 各方法，确保当前 JVM 真正支持 ALPN
         Method getHandshakeApplicationProtocol;
         Method getApplicationProtocol;
         Method setApplicationProtocols;
@@ -96,7 +108,7 @@ final class JdkAlpnSslUtils {
         } catch (Throwable t) {
             int version = PlatformDependent.javaVersion();
             if (version >= 9) {
-                // We only log when run on java9+ as this is expected on some earlier java8 versions
+                // Java 9+ 上 ALPN 初始化失败才打 error；Java 8 缺少 API 属正常
                 logger.error("Unable to initialize JdkAlpnSslUtils, but the detected java version was: {}", version, t);
             }
             getHandshakeApplicationProtocol = null;
@@ -115,10 +127,12 @@ final class JdkAlpnSslUtils {
     private JdkAlpnSslUtils() {
     }
 
+    /** 当前 JVM 是否已通过反射成功初始化 JDK ALPN 工具。 */
     static boolean supportsAlpn() {
         return GET_APPLICATION_PROTOCOL != null;
     }
 
+    /** 读取握手完成后协商的应用层协议名。 */
     static String getApplicationProtocol(SSLEngine sslEngine) {
         try {
             return (String) GET_APPLICATION_PROTOCOL.invoke(sslEngine);
@@ -129,6 +143,7 @@ final class JdkAlpnSslUtils {
         }
     }
 
+    /** 读取握手进行中的应用层协议（握手完成前）。 */
     static String getHandshakeApplicationProtocol(SSLEngine sslEngine) {
         try {
             return (String) GET_HANDSHAKE_APPLICATION_PROTOCOL.invoke(sslEngine);
@@ -139,6 +154,7 @@ final class JdkAlpnSslUtils {
         }
     }
 
+    /** 设置客户端 advertised 或服务器可接受的 ALPN 协议列表。 */
     static void setApplicationProtocols(SSLEngine engine, List<String> supportedProtocols) {
         SSLParameters parameters = engine.getSSLParameters();
 
@@ -153,6 +169,7 @@ final class JdkAlpnSslUtils {
         engine.setSSLParameters(parameters);
     }
 
+    /** 为服务端注册握手期 ALPN 选择器（JDK {@link BiFunction} 形式）。 */
     static void setHandshakeApplicationProtocolSelector(
             SSLEngine engine, BiFunction<SSLEngine, List<String>, String> selector) {
         try {
@@ -164,6 +181,7 @@ final class JdkAlpnSslUtils {
         }
     }
 
+    /** 读取当前引擎上注册的握手期 ALPN 选择器。 */
     @SuppressWarnings("unchecked")
     static BiFunction<SSLEngine, List<String>, String> getHandshakeApplicationProtocolSelector(SSLEngine engine) {
         try {
