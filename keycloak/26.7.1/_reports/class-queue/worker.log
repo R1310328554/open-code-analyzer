@@ -898,3 +898,18 @@
 2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/ConfigTruststoreCmd.java wave31a registration-cli
 2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/CreateCmd.java wave31a registration-cli
 2026-08-10T06:55:01Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/DeleteCmd.java wave31a registration-cli
+2026-08-10T06:55:40Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/GetCmd.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/HelpCmd.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/KcRegCmd.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/UpdateCmd.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/registration/cli/commands/UpdateTokenCmd.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-registration/src/main/java/org/keycloak/client/registration/Auth.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-registration/src/main/java/org/keycloak/client/registration/ClientRegistration.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-registration/src/main/java/org/keycloak/client/registration/ClientRegistrationException.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-registration/src/main/java/org/keycloak/client/registration/ClientRepresentationMixIn.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-registration/src/main/java/org/keycloak/client/registration/HttpErrorException.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-registration/src/main/java/org/keycloak/client/registration/HttpUtil.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE integration/client-registration/src/main/java/org/keycloak/client/registration/OIDCClientRepresentationMixIn.java wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE js/apps/account-ui/playwright.config.ts wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE js/apps/account-ui/src/api.ts wave31b registration + account-ui
+2026-08-10T06:55:40Z DONE js/apps/account-ui/src/api/constants.ts wave31b registration + account-ui
