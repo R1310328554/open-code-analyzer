@@ -15,23 +15,8 @@
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigInfoMapperByMySql.java",
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigInfoTagMapperByMySql.java",
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigMigrateMapperByMysql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigTagsRelationMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/GroupCapacityMapperByMysql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/HistoryConfigInfoMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/TenantCapacityMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/TenantInfoMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/dialect/OracleDatabaseDialect.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/enums/oracle/TrustedOracleFunctionEnum.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/oracle/AbstractMapperByOracle.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/oracle/AiResourceMapperByOracle.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/oracle/AiResourceVersionMapperByOracle.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/oracle/ConfigInfoBetaMapperByOracle.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/oracle/ConfigInfoGrayMapperByOracle.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/oracle/ConfigInfoMapperByOracle.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/oracle/ConfigInfoTagMapperByOracle.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/oracle/ConfigMigrateMapperByOracle.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-oracle/src/main/java/com/alibaba/nacos/plugin/datasource/impl/oracle/ConfigTagsRelationMapperByOracle.java"
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigTagsRelationMapperByMySql.java"
   ],
   "remaining_pending": 197,
-  "done": 2310
+  "done": 2325
 }
