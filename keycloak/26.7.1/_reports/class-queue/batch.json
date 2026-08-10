@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:17:47Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/resources/admin/RealmAdminResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/RealmLocalizationResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/RealmsAdminResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/RealmsAdminResourcePreflight.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/RoleByIdResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/RoleContainerResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/RoleMapperResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/RoleResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ScopeMappedClientResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ScopeMappedResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/UserProfileResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/UserResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/UsersResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ext/AdminRealmResourceProvider.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ext/AdminRealmResourceProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 898,
-  "done": 5085
+  "done": 5100
 }
