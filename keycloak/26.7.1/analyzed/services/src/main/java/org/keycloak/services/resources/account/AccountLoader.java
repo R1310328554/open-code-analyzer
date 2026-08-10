@@ -52,6 +52,7 @@ import org.keycloak.theme.Theme;
 import org.jboss.logging.Logger;
 
 /**
+ * 账户服务入口加载器：根据 Accept/Content-Type 路由至 REST API 或控制台 HTML。
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AccountLoader {
@@ -62,8 +63,10 @@ public class AccountLoader {
     private final HttpRequest request;
     private final HttpResponse response;
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(AccountLoader.class);
 
+    /** 构造账户加载器 */
     public AccountLoader(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.event = event;
@@ -72,6 +75,10 @@ public class AccountLoader {
     }
 
     @Path("/")
+    /**
+     * 根路径分发：OPTIONS 预检、JSON 请求走 REST，否则走控制台提供者。
+     * @return REST 服务、控制台资源或 CORS 预检服务
+     */
     public Object getAccountService() {
         RealmModel realm = session.getContext().getRealm();
         ClientModel client = getAccountManagementClient(realm);
@@ -99,6 +106,7 @@ public class AccountLoader {
 
     @Path("{version : v\\d[0-9a-zA-Z_\\-]*}")
     @Produces(MediaType.APPLICATION_JSON)
+    /** 版本化账户 REST API 入口（如 {@code v1}） */
     public Object getVersionedAccountRestService(final @PathParam("version") String version) {
         if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
             return new CorsPreflightService();
@@ -106,6 +114,7 @@ public class AccountLoader {
         return getAccountRestService(getAccountManagementClient(session.getContext().getRealm()), version);
     }
 
+    /** 加载账户主题 */
     private Theme getTheme(KeycloakSession session) {
         try {
             return session.theme().getTheme(Theme.Type.ACCOUNT);
@@ -114,6 +123,7 @@ public class AccountLoader {
         }
     }
 
+    /** 校验 Bearer 令牌并构造 {@link AccountRestService} */
     private AccountRestService getAccountRestService(ClientModel client, String versionStr) {
         AccountRestService.checkAccountApiEnabled();
 
@@ -126,7 +136,7 @@ public class AccountLoader {
         AccessToken accessToken = authResult.token();
 
         if (accessToken.getAudience() == null || accessToken.getResourceAccess(client.getClientId()) == null) {
-            // transform for introspection to get the required claims
+            // 通过 introspection 转换令牌以获取 audience 等必需声明
             AccessTokenIntrospectionProvider provider = (AccessTokenIntrospectionProvider) session.getProvider(TokenIntrospectionProvider.class,
                     AccessTokenIntrospectionProviderFactory.ACCESS_TOKEN_TYPE);
             accessToken = provider.transformAccessToken(accessToken, authResult.session());
@@ -158,6 +168,7 @@ public class AccountLoader {
         return new AccountRestService(session, auth, event, version);
     }
 
+    /** 获取已启用的 account 管理客户端 */
     private ClientModel getAccountManagementClient(RealmModel realm) {
         ClientModel client = realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
         if (client == null || !client.isEnabled()) {
@@ -167,6 +178,7 @@ public class AccountLoader {
         return client;
     }
 
+    /** 从主题配置或 SPI 解析 {@link AccountResourceProvider} */
     private AccountResourceProvider getAccountResourceProvider(Theme theme) {
         try {
             if (theme != null && theme.getProperties().containsKey(Theme.ACCOUNT_RESOURCE_PROVIDER_KEY)) {

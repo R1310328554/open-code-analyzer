@@ -63,21 +63,36 @@ import org.keycloak.utils.SecureContextResolver;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Created by st on 29/03/17.
+ * 账户控制台 HTML 页面资源提供者。
+ * <p>通过 FreeMarker 渲染账户管理 SPA 入口页，注入主题、国际化、功能开关及 Vite 构建产物等上下文变量。</p>
+ * <p>Created by st on 29/03/17.</p>
  */
 public class AccountConsole implements AccountResourceProvider {
 
+    /** 匹配 Java 资源束占位符 {@code {0}} 的正则 */
     private final Pattern bundleParamPattern = Pattern.compile("(\\{\\s*(\\d+)\\s*\\})");
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 应用认证管理器，用于 identity cookie 认证 */
     private final AppAuthManager authManager;
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 账户管理客户端（{@code account}） */
     private final ClientModel client;
+    /** 账户主题 */
     private final Theme theme;
 
+    /** 当前用户认证上下文（可能为 null） */
     private Auth auth;
 
+    /**
+     * 构造账户控制台实例。
+     * @param session Keycloak 会话
+     * @param client 账户管理客户端
+     * @param theme 账户主题
+     */
     public AccountConsole(KeycloakSession session, ClientModel client, Theme theme) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -87,6 +102,7 @@ public class AccountConsole implements AccountResourceProvider {
         init();
     }
 
+    /** 尝试通过 identity cookie 初始化 {@link #auth} */
     public void init() {
         AuthenticationManager.AuthResult authResult = authManager.authenticateIdentityCookie(session, realm);
         if (authResult != null) {
@@ -94,11 +110,13 @@ public class AccountConsole implements AccountResourceProvider {
         }
     }
 
+    /** {@inheritDoc} 返回自身作为 JAX-RS 资源 */
     @Override
     public Object getResource() {
         return this;
     }
 
+    /** {@inheritDoc} 无资源需释放 */
     @Override
     public void close() {
     }
@@ -106,15 +124,24 @@ public class AccountConsole implements AccountResourceProvider {
     @GET
     @NoCache
     @Path("{path:.*}")
+    /**
+     * 捕获所有子路径 GET 请求，渲染账户控制台主页。
+     * @param path 请求路径（通配）
+     * @return HTML 响应
+     */
     public Response getMainPage(@PathParam("path") String path) throws IOException, FreeMarkerException {
 
         return renderAccountConsole();
     }
 
+    /**
+     * 组装模板变量并渲染账户控制台 HTML。
+     * @return HTML 响应
+     */
     protected Response renderAccountConsole() throws IOException, FreeMarkerException {
         final var serverUriInfo = session.getContext().getUri(UrlType.FRONTEND);
         final var serverBaseUri = serverUriInfo.getBaseUri();
-        // Strip any trailing slashes from the URL.
+        // 去除 URL 末尾斜杠
         final var serverBaseUrl = serverBaseUri.toString().replaceFirst("/+$", "");
 
         final var map = new HashMap<String, Object>();
@@ -129,10 +156,10 @@ public class AccountConsole implements AccountResourceProvider {
 
         map.put("isSecureContext", isSecureContext);
         map.put("serverBaseUrl", serverBaseUrl);
-        // TODO: Some variables are deprecated and only exist to provide backwards compatibility for older themes, they should be removed in a future version.
+        // TODO：部分变量仅为旧主题向后兼容保留，后续版本应移除
         // Note that these should be removed from the template of the Account Console as well.
-        map.put("authUrl", serverBaseUrl + "/"); // Superseded by 'serverBaseUrl', remove in the future.
-        map.put("authServerUrl", serverBaseUrl + "/"); // Superseded by 'serverBaseUrl', remove in the future.
+        map.put("authUrl", serverBaseUrl + "/"); // 已由 serverBaseUrl 取代，后续移除
+        map.put("authServerUrl", serverBaseUrl + "/"); // 已由 serverBaseUrl 取代，后续移除
         map.put("baseUrl", accountBaseUrl.getPath().endsWith("/") ? accountBaseUrl : accountBaseUrl + "/");
         map.put("realm", realm);
         map.put("clientId", Constants.ACCOUNT_CONSOLE_CLIENT_ID);
@@ -189,7 +216,7 @@ public class AccountConsole implements AccountResourceProvider {
         boolean isOid4VciEnabled = false;
         if (user != null) {
             AccountRoleChecker roleChecker = new AccountRoleChecker(session, realm, user);
-            // the 'manage-account' role works on the API level (for the 'account' client) as some kind of composite role
+            // manage-account 角色在 account 客户端 API 层相当于复合角色
             deleteAccountAllowed = roleChecker.hasOneOfRole(AccountRoles.MANAGE_ACCOUNT, AccountRoles.DELETE_ACCOUNT) && realm.getRequiredActionProviderByAlias(DeleteAccount.PROVIDER_ID).isEnabled();
             isViewGroupsEnabled = roleChecker.hasOneOfRole(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_GROUPS)
                     && user.getGroupsCount() > 0;
@@ -233,15 +260,18 @@ public class AccountConsole implements AccountResourceProvider {
         return builder.build();
     }
 
+    /** 使用 FreeMarker 处理 {@code index.ftl} 模板 */
     protected String renderAccountConsole(FreeMarkerProvider freeMarkerUtil, Map<String, Object> map) throws FreeMarkerException {
         return freeMarkerUtil.processTemplate(map, "index.ftl", theme);
     }
 
+    /** 返回领域支持的语言及其显示名映射 */
     protected Map<String, String> supportedLocales(Properties messages) {
         return realm.getSupportedLocalesStream()
                 .collect(Collectors.toMap(Function.identity(), l -> messages.getProperty("locale_" + l, l)));
     }
 
+    /** 将主题消息属性序列化为 JSON 供前端 ngx-translate 使用 */
     protected String messagesToJsonString(Properties props) {
         if (props == null) return "";
         Properties newProps = new Properties();
@@ -255,8 +285,9 @@ public class AccountConsole implements AccountResourceProvider {
         }
     }
 
+    /** 转换资源束值为 ngx-translate 兼容格式 */
     private String convertPropValue(String propertyValue) {
-        // this mimics the behavior of java.text.MessageFormat used for the freemarker templates:
+        // 模拟 FreeMarker 模板中 java.text.MessageFormat 的行为：
         // To print a single quote one needs to write two single quotes.
         // Single quotes will be stripped.
         // Usually single quotes would escape parameters, but this not implemented here.
@@ -266,7 +297,7 @@ public class AccountConsole implements AccountResourceProvider {
         return propertyValue;
     }
 
-    // Put java resource bundle params in ngx-translate format
+    // 将 Java 资源束占位符转为 ngx-translate 格式
     // Do you like {0} and {1} ?
     //    becomes
     // Do you like {{param_0}} and {{param_1}} ?
@@ -281,10 +312,12 @@ public class AccountConsole implements AccountResourceProvider {
 
     @GET
     @Path("index.html")
+    /** 将 index.html 请求重定向到上级路径 */
     public Response getIndexHtmlRedirect() {
         return Response.status(302).location(session.getContext().getUri().getRequestUriBuilder().path("../").build()).build();
     }
 
+    /** 解析并校验 referrer 查询参数，返回 [clientId, displayName, uri] */
     private String[] getReferrer() {
         String referrer = session.getContext().getUri().getQueryParameters().getFirst("referrer");
 
@@ -319,6 +352,7 @@ public class AccountConsole implements AccountResourceProvider {
         return new String[]{referrer, referrerName, referrerUri};
     }
 
+    /** 判断是否启用关联账户功能（存在可用 IdP 或用户已关联 IdP） */
     protected boolean isLinkedAccountsEnabled(UserModel user) {
         if (user == null) {
             return false;
@@ -337,24 +371,29 @@ public class AccountConsole implements AccountResourceProvider {
     }
 
     /**
-     * Checks whether a user has account roles that will be present in the access token issued for the {@code account-console} client.
+     * 检查用户是否拥有将出现在 {@code account-console} 客户端访问令牌中的账户角色。
      */
     static class AccountRoleChecker {
 
+        /** 账户管理客户端 */
         private final ClientModel accountClient;
+        /** 按请求 scope 解析后的角色集合 */
         private final Set<RoleModel> scopeResolvedRoles;
 
+        /** 根据 account-console 客户端 scope 解析用户角色 */
         AccountRoleChecker(KeycloakSession session, RealmModel realm, UserModel user) {
             this.accountClient = realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
             ClientModel accountConsoleClient = realm.getClientByClientId(Constants.ACCOUNT_CONSOLE_CLIENT_ID);
             this.scopeResolvedRoles = TokenManager.getAccess(user, accountConsoleClient, TokenManager.getRequestedClientScopes(session, null, accountConsoleClient, user));
         }
 
+        /** 检查用户是否拥有指定账户角色 */
         boolean hasRole(String roleName) {
             RoleModel role = accountClient.getRole(roleName);
             return role != null && scopeResolvedRoles.contains(role);
         }
 
+        /** 检查用户是否拥有任一指定账户角色 */
         boolean hasOneOfRole(String... roleNames) {
             for (String roleName : roleNames) {
                 if (hasRole(roleName)) {

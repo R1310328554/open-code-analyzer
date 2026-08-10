@@ -62,20 +62,33 @@ import org.jboss.resteasy.reactive.NoCache;
 import static org.keycloak.models.AuthenticationExecutionModel.Requirement.DISABLED;
 import static org.keycloak.utils.CredentialHelper.createUserStorageCredentialRepresentation;
 
+/**
+ * 账户 REST API 凭证管理子资源。
+ * <p>列出可用凭证类型、删除凭证及更新用户标签。</p>
+ */
 public class AccountCredentialResource {
 
+    /** 查询参数：按凭证类型过滤 */
     public static final String TYPE = "type";
+    /** 查询参数：是否返回用户已有凭证 */
     public static final String USER_CREDENTIALS = "user-credentials";
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(AccountCredentialResource.class);
 
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 当前登录用户 */
     private final UserModel user;
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 认证上下文 */
     private Auth auth;
+    /** 事件构建器 */
     private final EventBuilder event;
 
+    /** 构造凭证资源 */
     public AccountCredentialResource(KeycloakSession session, UserModel user, Auth auth, EventBuilder event) {
         this.session = session;
         this.user = user;
@@ -85,8 +98,9 @@ public class AccountCredentialResource {
     }
 
 
+    /** 凭证类型及其元数据与用户凭证列表的容器 */
     public static class CredentialContainer {
-        // ** category, displayName and helptext attributes can be ordinary UI text or a key into
+        // ** category、displayName、helptext 可为普通 UI 文本或本地化消息键
         //    a localized message bundle.  Typically, it will be a key, but
         //    the UI will work just fine if you don't care about localization
         //    and you want to just send UI text.
@@ -163,13 +177,12 @@ public class AccountCredentialResource {
 
 
     /**
-     * Retrieve the stream of credentials available to the current logged in user. It will return only credentials of enabled types,
-     * which user can use to authenticate in some authentication flow.
+     * 获取当前用户可用的凭证类型流。
+     * <p>仅返回认证流中已启用且用户可用于登录的凭证类型。</p>
      *
-     * @param type Allows to filter just single credential type, which will be specified as this parameter. If null, it will return all credential types
-     * @param userCredentials specifies if user credentials should be returned. If true, they will be returned in the "userCredentials" attribute of
-     *                        particular credential. Defaults to true.
-     * @return
+     * @param type 按凭证类型过滤；为 null 时返回全部类型
+     * @param userCredentials 是否在各类型的 userCredentialMetadatas 中返回用户凭证；默认 true
+     * @return 凭证容器流
      */
     @GET
     @NoCache
@@ -207,13 +220,13 @@ public class AccountCredentialResource {
                             );
                         }).collect(Collectors.toList());
 
-                // Don't return secrets from REST endpoint
+                // REST 端点不返回密钥数据
                 credentialMetadataList.stream().forEach(md -> md.getCredentialModel().setSecretData(null));
                 userCredentialMetadataModels = credentialMetadataList.stream().map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
 
                 if (userCredentialMetadataModels.isEmpty() &&
                         user.credentialManager().isConfiguredFor(credentialProvider.getType())) {
-                    // In case user is federated in the userStorage, he may have credential configured on the userStorage side. We're
+                    // 联邦用户在 userStorage 侧可能已配置凭证，此处创建占位表示
                     // creating "dummy" credential representing the credential provided by userStorage
                     CredentialMetadataRepresentation metadataRepresentation = new CredentialMetadataRepresentation();
                     CredentialRepresentation credential = createUserStorageCredentialRepresentation(credentialProvider.getType());
@@ -221,8 +234,8 @@ public class AccountCredentialResource {
                     userCredentialMetadataModels = Collections.singletonList(metadataRepresentation);
                 }
 
-                // In case that there are no userCredentials AND there are not required actions for setup new credential,
-                // we won't include credentialType as user won't be able to do anything with it
+                // 无用户凭证且无创建/更新必需动作时，
+                // 不包含该凭证类型（用户无法操作）
                 if (userCredentialMetadataModels.isEmpty() && metadata.getCreateAction() == null && metadata.getUpdateAction() == null) {
                     return null;
                 }
@@ -239,7 +252,7 @@ public class AccountCredentialResource {
                 .sorted(Comparator.comparing(CredentialContainer::getMetadata));
     }
 
-    // Going through all authentication flows and their authentication executions to see if there is any authenticator of the corresponding
+    // 遍历认证流及执行项，收集对应凭证类型的已启用认证器
     // credential type.
     private Set<String> getEnabledCredentialTypes() {
         return realm.getAuthenticationFlowsStream()
@@ -255,7 +268,8 @@ public class AccountCredentialResource {
                 ).collect(Collectors.toSet());
     }
 
-    // Returns true if flow is effectively disabled - either it's execution or some parent execution is disabled
+    /** 判断认证流是否因自身或父执行项被禁用而 effectively 不可用 */
+    // Returns true if flow is effectively disabled
     private boolean isFlowEffectivelyDisabled(AuthenticationFlowModel flow) {
         while (!flow.isTopLevel()) {
             AuthenticationExecutionModel flowExecution = realm.getAuthenticationExecutionByFlowId(flow.getId());
@@ -271,6 +285,7 @@ public class AccountCredentialResource {
         return false;
     }
 
+    /** 从令牌 acr 解析当前 LoA 等级，用于删除凭证时的权限校验 */
     private Integer getCurrentAuthenticatedLevel() {
         ClientModel client = realm.getClientByClientId(auth.getToken().getIssuedFor());
         Map<String, Integer> acrLoaMap = AcrUtils.getAcrLoaMap(client);
@@ -294,11 +309,10 @@ public class AccountCredentialResource {
     }
 
     /**
-     * Remove a credential of current user
+     * 删除当前用户的指定凭证。
      *
-     * @param credentialId ID of the credential, which will be removed
-     * @deprecated It is recommended to delete credentials with the use of "delete_credential" kc_action.
-     * Action can be used for instance by adding parameter like "kc_action=delete_credential:123" to the login URL where 123 is ID of the credential to delete.
+     * @param credentialId 待删除凭证 ID
+     * @deprecated 建议使用 {@code delete_credential} kc_action，例如在登录 URL 添加 {@code kc_action=delete_credential:123}
      */
     @Path("{credentialId}")
     @DELETE
@@ -325,10 +339,10 @@ public class AccountCredentialResource {
 
 
     /**
-     * Update a user label of specified credential of current user
+     * 更新当前用户指定凭证的用户标签。
      *
-     * @param credentialId ID of the credential, which will be updated
-     * @param userLabel new user label as JSON string
+     * @param credentialId 待更新凭证 ID
+     * @param userLabel 新标签（JSON 字符串）
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
@@ -349,7 +363,7 @@ public class AccountCredentialResource {
         }
     }
 
-    // TODO: This is kept here for now and commented.
+    // TODO：凭证排序 API 暂保留注释
 //    /**
 //     * Move a credential to a position behind another credential
 //     * @param credentialId The credential to move

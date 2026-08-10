@@ -43,11 +43,14 @@ import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.keycloak.services.managers.Auth;
 
 /**
+ * UMA 账户资源服务抽象基类：封装授权存储与 REST DTO 嵌套类型。
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public abstract class AbstractResourceService {
 
+    /** 资源所有者（当前用户） */
     protected final UserModel user;
+    /** 授权服务提供者 */
     protected final AuthorizationProvider provider;
     protected final PermissionTicketStore ticketStore;
     protected final ResourceStore resourceStore;
@@ -67,8 +70,10 @@ public abstract class AbstractResourceService {
         uriInfo = session.getContext().getUri();
     }
 
+    /** 带客户端信息的授权资源 DTO */
     public static class Resource extends ResourceRepresentation {
 
+        /** 资源所属客户端 */
         private Client client;
 
         public Resource() {
@@ -96,8 +101,10 @@ public abstract class AbstractResourceService {
         }
     }
 
+    /** 资源及其授予/请求的权限映射 */
     public static class ResourcePermission extends Resource {
 
+        /** 请求者用户名 → 权限 */
         private Map<String, Permission> permissions;
 
         public ResourcePermission() {
@@ -142,8 +149,10 @@ public abstract class AbstractResourceService {
         }
     }
 
+    /** 被授予或请求访问的用户及其 scope 列表 */
     public static class Permission extends UserRepresentation {
 
+        /** 授权 scope 名称列表 */
         private List<String> scopes;
 
         public Permission() {
@@ -182,6 +191,7 @@ public abstract class AbstractResourceService {
         }
     }
 
+    /** 授权 scope DTO */
     public static class Scope extends ScopeRepresentation {
 
         public Scope() {
@@ -195,6 +205,7 @@ public abstract class AbstractResourceService {
         }
     }
 
+    /** 精简客户端 DTO */
     public static class Client extends ClientRepresentation {
 
         public Client() {

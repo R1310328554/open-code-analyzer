@@ -91,6 +91,8 @@ import freemarker.template.TemplateModelException;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 账户管理 REST API 主服务。
+ * <p>提供用户资料、会话、凭证、应用同意、关联账户、组织及可验证凭证等子资源。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AccountRestService {
@@ -110,6 +112,7 @@ public class AccountRestService {
     private final Locale locale;
     private final AccountRestApiVersion version;
 
+    /** 构造账户 REST 服务 */
     public AccountRestService(KeycloakSession session, Auth auth, EventBuilder event, AccountRestApiVersion version) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -125,9 +128,9 @@ public class AccountRestService {
     }
 
     /**
-     * Get account information.
+     * 获取当前用户账户信息。
      *
-     * @return
+     * @return 用户表示
      */
     @Path("/")
     @GET
@@ -153,6 +156,7 @@ public class AccountRestService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @NoCache
+    /** 更新当前用户账户资料（User Profile） */
     public Response updateAccount(UserRepresentation rep) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
@@ -186,7 +190,7 @@ public class AccountRestService {
         int i = 0;
         for(Object p: messageParameters) {
             if(p != null) {
-                //first parameter is user profile attribute name, we have to take Display Name for it
+                // 首参数为用户配置属性名，需转换为其显示名
                 if(i==0) {
                     AttributeMetadata am = userProfileAttributes.getMetadata(p.toString());
                     if(am != null)
@@ -204,9 +208,9 @@ public class AccountRestService {
     }
 
     /**
-     * Get session information.
+     * 会话管理子资源。
      *
-     * @return
+     * @return {@link SessionResource}
      */
     @Path("/sessions")
     public SessionResource sessions() {
@@ -216,12 +220,14 @@ public class AccountRestService {
     }
 
     @Path("/credentials")
+    /** 凭证管理子资源 */
     public AccountCredentialResource credentials() {
         checkAccountApiEnabled();
         return new AccountCredentialResource(session, user, auth, event);
     }
 
     @Path("/resources")
+    /** UMA 资源管理子资源（需启用用户托管访问） */
     public ResourcesService resources() {
         checkAccountApiEnabled();
         if (!realm.isUserManagedAccessAllowed()) {
@@ -234,11 +240,13 @@ public class AccountRestService {
     @Path("supportedLocales")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    /** 返回领域支持的语言列表 */
     public List<String> supportedLocales() {
         return auth.getRealm().getSupportedLocalesStream().collect(Collectors.toList());
     }
 
     @Path("/organizations")
+    /** 组织成员关系子资源 */
     public OrganizationsResource organizations() {
         checkAccountApiEnabled();
         if (!Organizations.isEnabled(session)) {
@@ -249,12 +257,14 @@ public class AccountRestService {
     }
 
     @Path("/verifiable-credentials")
+    /** 可验证凭证（VC scope）子资源 */
     public AccountVerifiableCredentialResource verifiableCredentials() {
         checkAccountApiEnabled();
         return new AccountVerifiableCredentialResource(session, auth, user);
     }
 
     @Path("/issued-verifiable-credentials")
+    /** 已签发可验证凭证子资源 */
     public AccountIssuedVerifiableCredentialResource issuedVerifiableCredentials() {
         checkAccountApiEnabled();
         return new AccountIssuedVerifiableCredentialResource(session, auth, user);
@@ -338,10 +348,10 @@ public class AccountRestService {
     }
 
     /**
-     * Returns the consent for the client with the given client id.
+     * 获取指定客户端的用户同意记录。
      *
-     * @param clientId client id to return the consent for
-     * @return consent of the client
+     * @param clientId 客户端 ID
+     * @return 同意表示或 204
      */
     @Path("/applications/{clientId}/consent")
     @GET
@@ -365,10 +375,10 @@ public class AccountRestService {
     }
 
     /**
-     * Deletes the consent for the client with the given client id.
+     * 撤销指定客户端的用户同意。
      *
-     * @param clientId client id to delete a consent for
-     * @return returns 202 if deleted
+     * @param clientId 客户端 ID
+     * @return 204 无内容
      */
     @Path("/applications/{clientId}/consent")
     @DELETE
@@ -392,12 +402,11 @@ public class AccountRestService {
     }
 
     /**
-     * Creates or updates the consent of the given, requested consent for
-     * the client with the given client id. Returns the appropriate REST response.
+     * 创建或更新指定客户端的用户同意（POST）。
      *
-     * @param clientId client id to set a consent for
-     * @param consent  requested consent for the client
-     * @return the created or updated consent
+     * @param clientId 客户端 ID
+     * @param consent 请求的同意范围
+     * @return 创建或更新后的同意
      */
     @Path("/applications/{clientId}/consent")
     @POST
@@ -419,6 +428,7 @@ public class AccountRestService {
     @Path("/applications/{clientId}/consent")
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
+    /** 更新指定客户端的用户同意（PUT） */
     public Response updateConsent(final @PathParam("clientId") String clientId,
                                   final ConsentRepresentation consent) {
         event.event(EventType.UPDATE_CONSENT);
@@ -426,12 +436,11 @@ public class AccountRestService {
     }
 
     /**
-     * Creates or updates the consent of the given, requested consent for
-     * the client with the given client id. Returns the appropriate REST response.
+     * 创建或更新用户同意的内部实现。
      *
-     * @param clientId client id to set a consent for
-     * @param consent  requested consent for the client
-     * @return response to return to the caller
+     * @param clientId 客户端 ID
+     * @param consent 请求的同意
+     * @return REST 响应
      */
     private Response upsert(String clientId, ConsentRepresentation consent) {
         checkAccountApiEnabled();
@@ -465,13 +474,12 @@ public class AccountRestService {
     }
 
     /**
-     * Create a new consent model object from the requested consent object
-     * for the given client model.
+     * 根据请求表示为客户端构建 {@link UserConsentModel}。
      *
-     * @param client    client to create a consent for
-     * @param requested list of client scopes that the new consent should contain
-     * @return newly created consent model
-     * @throws IllegalArgumentException throws an exception if the scope id is not available
+     * @param client 目标客户端
+     * @param requested 请求的同意范围
+     * @return 新同意模型
+     * @throws IllegalArgumentException scope 无效时
      */
     private UserConsentModel createConsent(ClientModel client, ConsentRepresentation requested) throws IllegalArgumentException {
         UserConsentModel consent = new UserConsentModel(client);
@@ -502,6 +510,7 @@ public class AccountRestService {
     }
 
     @Path("/linked-accounts")
+    /** 关联社交/联邦账户子资源 */
     public LinkedAccountsResource linkedAccounts() {
         return new LinkedAccountsResource(session, request, auth, event, user);
     }
@@ -510,7 +519,7 @@ public class AccountRestService {
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
-    //TODO GROUPS this isn't paginated
+    // TODO：群组列表尚未分页
     public Stream<GroupRepresentation> groupMemberships(@QueryParam("briefRepresentation") @DefaultValue("true") boolean briefRepresentation) {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_GROUPS);
         return user.getGroupsStream().map(g -> ModelToRepresentation.toRepresentation(g, !briefRepresentation));
@@ -520,6 +529,7 @@ public class AccountRestService {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @NoCache
+    /** 列出用户相关的客户端应用（会话、离线、同意、控制台展示） */
     public Stream<ClientRepresentation> applications(@QueryParam("name") String name) {
         checkAccountApiEnabled();
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_APPLICATIONS);
@@ -561,8 +571,9 @@ public class AccountRestService {
             return client.getName().toLowerCase().contains(name.toLowerCase());
     }
 
-    // TODO Logs
+    // TODO：账户活动日志 API
 
+    /** 校验 ACCOUNT_API 特性是否启用，未启用则 404 */
     public static void checkAccountApiEnabled() {
         if (!Profile.isFeatureEnabled(Profile.Feature.ACCOUNT_API)) {
             throw new NotFoundException();

@@ -70,11 +70,12 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.Constants.ACCOUNT_CONSOLE_CLIENT_ID;
 
 /**
- * API for linking/unlinking social login accounts
+ * 关联/解除关联社交与联邦登录账户的 REST API。
  *
  * @author Stan Silvert
  */
 public class LinkedAccountsResource {
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(LinkedAccountsResource.class);
 
     private final KeycloakSession session;
@@ -102,19 +103,14 @@ public class LinkedAccountsResource {
     }
 
     /**
-     * Returns the enabled identity providers the user is currently linked to, or those available for the user to link their
-     * account to.When the {@code linked} param is {@code true}, all providers currently linked to the user are returned in
-     * the form of {@link LinkedAccountRepresentation} objects, including those associated with organizations.
-     * </p>
-     * When the {@code linked} param is {@code false}, only the identity providers not linked to organizations (i.e. realm
-     * level providers) will be returned and be made available for linking.
+     * 返回用户已关联的 IdP，或可供关联的领域级 IdP 列表。
+     * <p>{@code linked=true} 时返回已关联提供者（含组织绑定）；{@code linked=false} 时返回未关联且非组织绑定的可关联 IdP。</p>
      *
-     * @param linked a {@link Boolean} indicating whether to return only the linked providers ({@code true}) or only the
-     *               providers available for linking ({@code false}).
-     * @param search Filter to search specific providers by name. Search can be prefixed (name*), contains (*name*) or exact (\"name\"). Default prefixed.
-     * @param firstResult Pagination offset.
-     * @param maxResults Maximum results size.
-     * @return a set of {@link LinkedAccountRepresentation} sorted by the {code guiOrder}.
+     * @param linked true 仅已关联，false 仅可关联
+     * @param search 名称过滤：前缀 name*、包含 *name*、精确 "name"
+     * @param firstResult 分页偏移
+     * @param maxResults 最大条数
+     * @return 按 guiOrder 排序的 {@link LinkedAccountRepresentation} 列表
      */
     @GET
     @Path("/")
@@ -127,7 +123,7 @@ public class LinkedAccountsResource {
     ) {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
 
-        // TODO: remove this statement once the console and the LinkedAccountsRestServiceTest are updated - this is only here for backwards compatibility
+        // TODO：控制台与测试更新后移除此向后兼容分支
         if (linked == null) {
             List<LinkedAccountRepresentation> linkedAccounts = getLinkedAccounts(this.session, this.realm, this.user);
             return Cors.builder().auth().checkAllowedOrigins(auth.getToken()).add(Response.ok(linkedAccounts));
@@ -135,7 +131,7 @@ public class LinkedAccountsResource {
 
         List<LinkedAccountRepresentation> linkedAccounts;
         if (linked) {
-            // we want only linked accounts, fetch those from the federated identities.
+            // linked=true：从联邦身份获取已关联账户
 			Set<IdentityProviderShowInAccountConsole> includedShowInAccountConsoleValues = Set.of(IdentityProviderShowInAccountConsole.ALWAYS, IdentityProviderShowInAccountConsole.WHEN_LINKED);
             linkedAccounts = StreamsUtil.paginatedStream(session.users().getFederatedIdentitiesStream(realm, user)
                     .map(fedIdentity -> this.toLinkedAccount(session.identityProviders().getByAlias(fedIdentity.getIdentityProvider()), fedIdentity.getUserName(), includedShowInAccountConsoleValues))
@@ -144,7 +140,7 @@ public class LinkedAccountsResource {
                     .toList();
         } else {
             if (Organizations.resolveHomeBroker(session, user).isEmpty()) {
-                // we want all enabled, realm-level identity providers available (i.e. not already linked) for the user to link their accounts to.
+                // linked=false：返回领域级、已启用且尚未关联的 IdP
                 String fedAliasesToExclude = session.users().getFederatedIdentitiesStream(realm, user).map(FederatedIdentityModel::getIdentityProvider)
                         .collect(Collectors.joining(","));
 
@@ -247,10 +243,10 @@ public class LinkedAccountsResource {
     }
 
     /**
-     * Creating URL, which can be used to redirect to link identity provider with currently authenticated user
+     * 生成用于关联 IdP 的重定向 URL（已废弃）。
      *
-     * @deprecated It is recommended to trigger linking identity provider account with the use of "idp_link" kc_action.
-     * @return response
+     * @deprecated 建议使用 {@code idp_link} kc_action
+     * @return 含关联 URI 的响应
      */
     @GET
     @Path("/{providerAlias}")
@@ -291,6 +287,7 @@ public class LinkedAccountsResource {
     @DELETE
     @Path("/{providerAlias}")
     @Produces(MediaType.APPLICATION_JSON)
+    /** 解除与指定 IdP 的联邦关联 */
     public Response removeLinkedAccount(@PathParam("providerAlias") String providerAlias) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
@@ -312,7 +309,7 @@ public class LinkedAccountsResource {
             }
         }
 
-        // Removing last social provider is not possible if you don't have other possibility to authenticate
+        // 若无密码或其他 IdP，不允许移除最后一个社交提供者
         if (!(session.users().getFederatedIdentitiesStream(realm, user).count() > 1 || user.isFederated() || isPasswordSet())) {
             throw ErrorResponse.error(translateErrorMessage(Messages.FEDERATED_IDENTITY_REMOVING_LAST_PROVIDER), Response.Status.BAD_REQUEST);
         }
@@ -330,6 +327,7 @@ public class LinkedAccountsResource {
         return Cors.builder().auth().checkAllowedOrigins(auth.getToken()).add(Response.noContent());
     }
 
+    /** 校验 provider 别名、存在性及用户启用状态 */
     private String checkCommonPreconditions(String providerAlias) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
@@ -348,6 +346,7 @@ public class LinkedAccountsResource {
         return null;
     }
 
+    /** 从账户主题消息束本地化错误码 */
     private String translateErrorMessage(String errorCode, Object... params) {
         try {
             Locale locale = session.getContext().resolveLocale(user);
@@ -358,10 +357,12 @@ public class LinkedAccountsResource {
         }
     }
 
+    /** 用户是否已配置密码凭证 */
     private boolean isPasswordSet() {
         return user.credentialManager().isConfiguredFor(PasswordCredentialModel.TYPE);
     }
 
+    /** IdP 别名是否在领域中存在 */
     private boolean isValidProvider(String providerAlias) {
         return session.identityProviders().getByAlias(providerAlias) != null;
     }

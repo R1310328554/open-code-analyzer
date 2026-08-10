@@ -16,16 +16,17 @@ import org.keycloak.services.resource.AccountResourceProviderFactory;
 import org.keycloak.theme.Theme;
 
 /**
- * Provides the {@code default} {@link AccountConsole} implementation backed by the
- * {@code account} management client.
+ * 提供基于 {@code account} 管理客户端的 {@code default} {@link AccountConsole} 实现。
  */
 public class AccountConsoleFactory implements AccountResourceProviderFactory {
 
+  /** {@inheritDoc} 返回 {@code default} */
   @Override
   public String getId() {
     return "default";
   }
 
+  /** {@inheritDoc} 创建 {@link AccountConsole} 实例 */
   @Override
   public AccountResourceProvider create(KeycloakSession session) {
     RealmModel realm = session.getContext().getRealm();
@@ -34,6 +35,7 @@ public class AccountConsoleFactory implements AccountResourceProviderFactory {
     return createAccountConsole(session, client, theme);
   }
 
+  /** 工厂方法，子类可覆盖以提供自定义控制台实现 */
   protected AccountConsole createAccountConsole(KeycloakSession session, ClientModel client, Theme theme) {
     return new AccountConsole(session, client, theme);
   }
@@ -47,6 +49,7 @@ public class AccountConsoleFactory implements AccountResourceProviderFactory {
   @Override
   public void close() {}
 
+  /** 加载账户主题，失败时抛出 500 */
   protected Theme getTheme(KeycloakSession session) {
     try {
       return session.theme().getTheme(Theme.Type.ACCOUNT);
@@ -55,6 +58,7 @@ public class AccountConsoleFactory implements AccountResourceProviderFactory {
     }
   }
 
+  /** 获取已启用的账户管理客户端，未配置时抛出 404 */
   protected  ClientModel getAccountManagementClient(RealmModel realm) {
     ClientModel client = realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
     if (client == null || !client.isEnabled()) {

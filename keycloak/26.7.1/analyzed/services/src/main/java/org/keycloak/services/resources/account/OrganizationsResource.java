@@ -34,12 +34,16 @@ import org.keycloak.representations.account.OrganizationRepresentation;
 import org.keycloak.services.cors.Cors;
 import org.keycloak.services.managers.Auth;
 
+/**
+ * 账户 REST API：当前用户所属组织列表。
+ */
 public class OrganizationsResource {
 
     private final KeycloakSession session;
     private final UserModel user;
     private final Auth auth;
 
+    /** 构造组织资源 */
     public OrganizationsResource(KeycloakSession session,
                                  Auth auth,
                                  UserModel user) {
@@ -51,6 +55,7 @@ public class OrganizationsResource {
     @GET
     @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
+    /** 返回当前用户作为成员的所有组织 */
     public Response getOrganizations() {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
         return Cors.builder().auth()
@@ -61,6 +66,7 @@ public class OrganizationsResource {
                 );
     }
 
+    /** 将 {@link OrganizationModel} 转为 REST 表示 */
     private OrganizationRepresentation toRepresentation(OrganizationModel model) {
         OrganizationRepresentation rep = new OrganizationRepresentation();
 

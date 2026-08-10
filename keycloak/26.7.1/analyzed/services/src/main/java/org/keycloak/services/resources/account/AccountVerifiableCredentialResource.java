@@ -43,6 +43,10 @@ import org.keycloak.services.managers.Auth;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
+/**
+ * 账户 REST API：可验证凭证（VC client scope）管理。
+ * <p>列出与撤销用户关联的可验证凭证 scope。</p>
+ */
 public class AccountVerifiableCredentialResource {
 
     private static final Logger logger = Logger.getLogger(AccountVerifiableCredentialResource.class);
@@ -60,9 +64,9 @@ public class AccountVerifiableCredentialResource {
     }
 
     /**
-     * Get list of verifiable credentials for the authenticated user
+     * 获取已认证用户的可验证凭证列表。
      *
-     * @return list of user's verifiable credentials
+     * @return 用户 VC 列表
      */
     @GET
     @Path("/")
@@ -75,7 +79,7 @@ public class AccountVerifiableCredentialResource {
         List<UserVerifiableCredentialRepresentation> credentials = session.users()
                 .getVerifiableCredentialsByUser(user.getId())
                 .map(model -> ModelToRepresentation.toRepresentation(model, realm))
-                .peek(rep -> rep.setUserAttributes(null))  // Do not expose attributes snapshot to users
+                .peek(rep -> rep.setUserAttributes(null))  // 不向用户暴露属性快照
                 .toList();
 
         return Cors.builder()
@@ -85,10 +89,10 @@ public class AccountVerifiableCredentialResource {
     }
 
     /**
-     * Revoke a specific verifiable credential for the authenticated user
+     * 撤销已认证用户的指定可验证凭证。
      *
-     * @param credentialScopeName the credential scope name to revoke
-     * @return 204 No Content on success
+     * @param credentialScopeName 凭证 scope 名称
+     * @return 成功时 204 No Content
      */
     @DELETE
     @Path("/{credentialScopeName}")
@@ -96,7 +100,7 @@ public class AccountVerifiableCredentialResource {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.MANAGE_VERIFIABLE_CREDENTIALS);
         checkOid4VCIEnabled();
 
-        // Resolve name to ID
+        // 将 scope 名称解析为 ID
         ClientScopeModel clientScope = KeycloakModelUtils.getClientScopeByName(realm, credentialScopeName);
         if (clientScope == null) {
             throw new NotFoundException("Client scope not found: " + credentialScopeName);
@@ -112,6 +116,7 @@ public class AccountVerifiableCredentialResource {
         return Cors.builder().auth().checkAllowedOrigins(auth.getToken()).add(Response.noContent());
     }
 
+    /** 校验 OID4VC VCI 与领域 VC 是否启用 */
     private void checkOid4VCIEnabled() {
         if (!Profile.isFeatureEnabled(Profile.Feature.OID4VC_VCI)) {
             throw ErrorResponse.error("Feature " + Profile.Feature.OID4VC_VCI.getKey() + " not enabled", Response.Status.BAD_REQUEST);

@@ -47,6 +47,7 @@ import org.keycloak.services.managers.Auth;
 import org.keycloak.utils.MediaType;
 
 /**
+ * 单条 UMA 资源的权限管理：查询/授予/撤销及待审批请求。
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ResourceService extends AbstractResourceService {
@@ -62,9 +63,9 @@ public class ResourceService extends AbstractResourceService {
     }
 
     /**
-     * Returns a {@link Resource} where the {@link #user} is the resource owner.
+     * 返回 {@link #user} 作为所有者的 {@link Resource} 表示。
      * 
-     * @return the resource
+     * @return 资源 DTO
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -73,9 +74,9 @@ public class ResourceService extends AbstractResourceService {
     }
 
     /**
-     * Returns a list of {@link Permission} containing the users to which the {@link #user} granted access to a resource.
+     * 返回 {@link #user} 已授予访问权限的用户列表。
      * 
-     * @return the users with access to a resource
+     * @return 已授权用户权限集合
      */
     @GET
     @Path("permissions")
@@ -100,6 +101,7 @@ public class ResourceService extends AbstractResourceService {
     @GET
     @Path("user")
     @Produces(MediaType.APPLICATION_JSON)
+    /** 按用户名或邮箱查询用户（需为本人或存在权限请求关系） */
     public Response user(@QueryParam("value") String value) {
         try {
             final UserModel queriedUser = getUser(value);
@@ -132,10 +134,10 @@ public class ResourceService extends AbstractResourceService {
     }
 
     /**
-     * Updates the permission set for a resource based on the given {@code permissions}.
+     * 根据给定权限列表更新资源的授权集合（授予或撤销 scope）。
      *
-     * @param permissions the permissions that should be updated
-     * @return if successful, a {@link Response.Status#NO_CONTENT} response
+     * @param permissions 待更新的权限
+     * @return 成功时 204 No Content
      */
     @PUT
     @Path("permissions")
@@ -160,7 +162,7 @@ public class ResourceService extends AbstractResourceService {
 
             List<PermissionTicket> tickets = ticketStore.find(resourceServer, filters, null, null);
 
-            // grants all requested permissions
+            // 无现有 ticket 时授予全部请求 scope
             if (tickets.isEmpty()) {
                 for (String scope : permission.getScopes()) {
                     grantPermission(user, scope);
@@ -179,20 +181,20 @@ public class ResourceService extends AbstractResourceService {
                             if (!ticket.isGranted()) {
                                 ticket.setGrantedTimestamp(System.currentTimeMillis());
                             }
-                            // permission exists, remove from the list to avoid deletion
+                            // 已存在授权，从待删列表移除
                             ticketIterator.remove();
-                            // scope already granted, remove from the list to avoid creating it again
+                            // scope 已授予，避免重复创建
                             scopesIterator.remove();
                         }
                     }
                 }
 
-                // only create permissions for the scopes that don't have a tocket
+                // 仅为尚无 ticket 的 scope 创建权限
                 for (String scope : permission.getScopes()) {
                     grantPermission(user, scope);
                 }
                 
-                // remove all tickets that are not within the requested permissions
+                // 删除不在请求权限内的 ticket
                 for (PermissionTicket ticket : tickets) {
                     ticketStore.delete(ticket.getId());
                 }                
@@ -203,9 +205,9 @@ public class ResourceService extends AbstractResourceService {
     }
 
     /**
-     * Returns a list of {@link Permission} requests waiting for the {@link #user} approval.
+     * 返回待 {@link #user} 审批的权限请求列表。
      *
-     * @return the permission requests waiting for the user approval
+     * @return 待审批权限请求
      */
     @GET
     @Path("permissions/requests")
@@ -226,12 +228,14 @@ public class ResourceService extends AbstractResourceService {
         return requests.values();
     }
 
+    /** 为用户授予指定 scope 的 permission ticket */
     private void grantPermission(UserModel user, String scopeId) {
         org.keycloak.authorization.model.Scope scope = getScope(scopeId, resourceServer);
         PermissionTicket ticket = ticketStore.create(resourceServer, resource, scope, user.getId());
         ticket.setGrantedTimestamp(Calendar.getInstance().getTimeInMillis());
     }
 
+    /** 按名称或 ID 解析 scope */
     private org.keycloak.authorization.model.Scope getScope(String scopeId, ResourceServer resourceServer) {
         org.keycloak.authorization.model.Scope scope = scopeStore.findByName(resourceServer, scopeId);
 
@@ -242,6 +246,7 @@ public class ResourceService extends AbstractResourceService {
         return scope;
     }
 
+    /** 按用户名或邮箱解析用户，歧义或不存在时抛异常 */
     private UserModel getUser(String requester) {
         UserProvider users = provider.getKeycloakSession().users();
         UserModel userByUsername = users.getUserByUsername(provider.getRealm(), requester);

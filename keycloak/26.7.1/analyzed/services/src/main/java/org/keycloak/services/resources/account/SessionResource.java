@@ -53,6 +53,7 @@ import org.keycloak.services.managers.AuthenticationManager;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 账户 REST API：用户会话与设备活动管理。
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class SessionResource {
@@ -63,6 +64,7 @@ public class SessionResource {
     private final UserModel user;
     private final EventBuilder event;
 
+    /** 构造会话资源 */
     public SessionResource(KeycloakSession session, Auth auth, EventBuilder event) {
         this.session = session;
         this.auth = auth;
@@ -72,9 +74,9 @@ public class SessionResource {
     }
 
     /**
-     * Get session information.
+     * 列出用户所有在线会话。
      *
-     * @return
+     * @return 会话表示流
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -84,9 +86,9 @@ public class SessionResource {
     }
 
     /**
-     * Get device activity information based on the active sessions.
+     * 按设备聚合活跃会话信息。
      *
-     * @return
+     * @return 设备活动表示集合
      */
     @Path("devices")
     @GET
@@ -95,8 +97,8 @@ public class SessionResource {
     public Collection<DeviceRepresentation> devices() {
         Map<String, DeviceRepresentation> reps = new HashMap<>();
 
-        // While we avoid it, there can be both an online and an offline session with the same ID.
-        // The user wouldn't know the difference between online and offline sessions, so we don't differentiate between them
+        // 在线与离线会话可能共享相同 ID，UI 不区分
+        // 用户无法区分在线/离线，故合并展示
         // in the UI.
 
         Stream.concat(
@@ -132,10 +134,10 @@ public class SessionResource {
     }
 
     /**
-     * Remove sessions
+     * 批量注销会话。
      *
-     * @param removeCurrent remove current session (default is false)
-     * @return
+     * @param removeCurrent 是否包含当前会话（默认 false）
+     * @return 204 无内容
      */
     @DELETE
     @Produces(MediaType.APPLICATION_JSON)
@@ -146,7 +148,7 @@ public class SessionResource {
                 session.sessions().getUserSessionsStream(realm, user),
                 session.sessions().getOfflineUserSessionsStream(realm, user))
             .filter(s -> removeCurrent || !isCurrentSession(s))
-            .collect(Collectors.toList()) // collect to avoid concurrent modification as backchannelLogout removes the user sessions.
+            .collect(Collectors.toList()) // 先收集避免 backchannelLogout 并发修改
             .forEach(s -> {
                 AuthenticationManager.backchannelLogout(session, s, true);
                 event.clone()
@@ -159,10 +161,10 @@ public class SessionResource {
     }
 
     /**
-     * Remove a specific session
+     * 注销指定会话（含同 ID 的在线/离线会话）。
      *
-     * @param id a specific session to remove
-     * @return
+     * @param id 会话 ID
+     * @return 204 无内容
      */
     @Path("/{id}")
     @DELETE
@@ -171,8 +173,7 @@ public class SessionResource {
     public Response logout(@PathParam("id") String id) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        // While we avoid it, there can be both an online and an offline session with the same ID.
-        // As those have been created from the same device, it is OK to log out both of them.
+        // 同 ID 的在线/离线会话来自同一设备，可同时注销
         Stream.concat(
                         Stream.ofNullable(session.sessions().getUserSession(realm, id)),
                         Stream.ofNullable(session.sessions().getOfflineUserSession(realm, id))).
@@ -201,7 +202,7 @@ public class SessionResource {
                         TimeUnit.SECONDS.toMillis(s.getStarted()),
                         realm);
         if (expires == -1) {
-            // Offline sessions can have no expiry time. If that is the case, use the idle timestamp instead
+            // 离线会话可能无过期时间，此时使用 idle 时间戳
             expires = SessionExpirationUtils.calculateUserSessionIdleTimestamp(
                     s.isOffline(),
                     s.isRememberMe(),
@@ -229,6 +230,7 @@ public class SessionResource {
         return sessionRep;
     }
 
+    /** 从会话解析设备信息，未知时使用占位 */
     private DeviceRepresentation getAttachedDevice(UserSessionModel s) {
         DeviceRepresentation device = DeviceActivityManager.getCurrentDevice(s);
 
@@ -240,6 +242,7 @@ public class SessionResource {
         return device;
     }
 
+    /** 判断是否为当前认证会话（含 offline 标志匹配） */
     private boolean isCurrentSession(UserSessionModel session) {
         if (auth.getSession() == null) return false;
         return session.getId().equals(auth.getSession().getId()) && Objects.equals(session.isOffline(), auth.getSession().isOffline());

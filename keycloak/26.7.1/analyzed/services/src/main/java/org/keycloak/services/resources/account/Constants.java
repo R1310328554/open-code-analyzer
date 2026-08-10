@@ -23,15 +23,18 @@ import org.keycloak.events.Details;
 import org.keycloak.events.EventType;
 
 /**
+ * 账户 REST API 常量：暴露给用户的事件类型与详情字段。
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class Constants {
 
+    /** 账户 API 向用户暴露的审计事件类型 */
     public static final EventType[] EXPOSED_LOG_EVENTS = {
             EventType.LOGIN, EventType.LOGOUT, EventType.REGISTER, EventType.REMOVE_FEDERATED_IDENTITY, EventType.REMOVE_TOTP, EventType.SEND_RESET_PASSWORD,
             EventType.SEND_VERIFY_EMAIL, EventType.FEDERATED_IDENTITY_LINK, EventType.UPDATE_EMAIL, EventType.UPDATE_CREDENTIAL, EventType.REMOVE_CREDENTIAL, EventType.UPDATE_PROFILE, EventType.UPDATE_PASSWORD, EventType.UPDATE_PROFILE, EventType.UPDATE_TOTP, EventType.VERIFY_EMAIL
     };
 
+    /** 账户 API 向用户暴露的事件详情字段名 */
     public static final Set<String> EXPOSED_LOG_DETAILS = new HashSet<>();
 
     static {

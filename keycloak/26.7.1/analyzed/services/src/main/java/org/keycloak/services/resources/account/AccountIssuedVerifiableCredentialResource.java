@@ -43,8 +43,13 @@ import org.keycloak.services.util.ResolveRelative;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
+/**
+ * 账户 REST API：已签发可验证凭证（Issued VC）管理。
+ * <p>列出与撤销用户已签发的 OID4VCI 凭证。</p>
+ */
 public class AccountIssuedVerifiableCredentialResource {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(AccountIssuedVerifiableCredentialResource.class);
 
     private final KeycloakSession session;
@@ -52,6 +57,7 @@ public class AccountIssuedVerifiableCredentialResource {
     private final UserModel user;
     private final RealmModel realm;
 
+    /** 构造已签发 VC 资源 */
     public AccountIssuedVerifiableCredentialResource(KeycloakSession session, Auth auth, UserModel user) {
         this.session = session;
         this.auth = auth;
@@ -60,9 +66,9 @@ public class AccountIssuedVerifiableCredentialResource {
     }
 
     /**
-     * Get list of issued credentials for the authenticated user
+     * 获取已认证用户的已签发凭证列表。
      *
-     * @return list of user's issued credentials
+     * @return 用户已签发凭证列表
      */
     @GET
     @Path("/")
@@ -85,10 +91,10 @@ public class AccountIssuedVerifiableCredentialResource {
     }
 
     /**
-     * Revoke a specific issued credential for the authenticated user
+     * 撤销已认证用户的指定已签发凭证。
      *
-     * @param credentialId the issued credential ID to revoke
-     * @return 204 No Content on success
+     * @param credentialId 待撤销的已签发凭证 ID
+     * @return 成功时 204 No Content
      */
     @DELETE
     @Path("/{credentialId}")
@@ -105,6 +111,7 @@ public class AccountIssuedVerifiableCredentialResource {
         return Cors.builder().auth().checkAllowedOrigins(auth.getToken()).add(Response.noContent());
     }
 
+    /** 校验 OID4VC VCI 特性与领域可验证凭证是否启用 */
     private void checkOid4VCIEnabled() {
         if (!Profile.isFeatureEnabled(Profile.Feature.OID4VC_VCI)) {
             throw ErrorResponse.error("Feature " + Profile.Feature.OID4VC_VCI.getKey() + " not enabled", Response.Status.BAD_REQUEST);
@@ -114,9 +121,8 @@ public class AccountIssuedVerifiableCredentialResource {
         }
     }
 
-    /**
-     * Enriches the issued credential representation with client name and base URL
-     */
+    /** 为已签发凭证表示补充客户端名称与 base URL */
+
     private IssuedVerifiableCredentialRepresentation enrichWithClientInfo(IssuedVerifiableCredentialRepresentation rep, KeycloakSession session, RealmModel realm) {
         if (rep.getClientId() == null) {
             return rep;
