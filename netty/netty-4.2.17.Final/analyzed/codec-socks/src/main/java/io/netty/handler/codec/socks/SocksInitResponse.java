@@ -21,6 +21,10 @@ import io.netty.util.internal.ObjectUtil;
 /**
  * An socks init response.
  *
+ * <p>服务器对 {@link SocksInitRequest} 的应答（RFC 1928 §3）：VER + 选定的单一
+ * {@link SocksAuthScheme}。若为 {@link SocksAuthScheme#NO_AUTH} 则直接进入命令阶段；
+ * 若为 {@link SocksAuthScheme#AUTH_PASSWORD} 则后续进行 RFC 1929 子协商。</p>
+ *
  * @see SocksInitRequest
  * @see SocksInitResponseDecoder
  */

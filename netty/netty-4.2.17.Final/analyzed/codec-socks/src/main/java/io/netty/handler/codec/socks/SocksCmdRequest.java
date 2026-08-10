@@ -26,6 +26,10 @@ import java.net.IDN;
 /**
  * An socks cmd request.
  *
+ * <p>SOCKS5 命令请求（RFC 1928 §4）：在认证完成后，客户端告知代理要执行的
+ * {@link SocksCmdType} 以及目标 {@link #host()} / {@link #port()}。
+ * 构造时对 IP/域名/端口做校验；域名经 {@link IDN#toASCII} 转为 Punycode 再编码。</p>
+ *
  * @see SocksCmdResponse
  * @see SocksCmdRequestDecoder
  */
@@ -41,6 +45,7 @@ public final class SocksCmdRequest extends SocksRequest {
         ObjectUtil.checkNotNull(addressType, "addressType");
         ObjectUtil.checkNotNull(host, "host");
 
+        // 按 ATYP 校验 DST.ADDR 形态，DOMAIN 时限制 Punycode 长度 ≤255
         switch (addressType) {
             case IPv4:
                 if (!NetUtil.isValidIpV4Address(host)) {
@@ -62,6 +67,7 @@ public final class SocksCmdRequest extends SocksRequest {
             case UNKNOWN:
                 break;
         }
+        // SOCKS 端口为 16 位无符号，有效范围 1–65535
         if (port <= 0 || port >= 65536) {
             throw new IllegalArgumentException(port + " is not in bounds 0 < x < 65536");
         }
@@ -92,6 +98,8 @@ public final class SocksCmdRequest extends SocksRequest {
     /**
      * Returns host that is used as a parameter in {@link SocksCmdType}
      *
+     * <p>DOMAIN 类型对外返回 Unicode 形式（{@link IDN#toUnicode}），便于展示国际化域名。</p>
+     *
      * @return host that is used as a parameter in {@link SocksCmdType}
      */
     public String host() {
@@ -111,7 +119,7 @@ public final class SocksCmdRequest extends SocksRequest {
     public void encodeAsByteBuf(ByteBuf byteBuf) {
         byteBuf.writeByte(protocolVersion().byteValue());
         byteBuf.writeByte(cmdType.byteValue());
-        byteBuf.writeByte(0x00);
+        byteBuf.writeByte(0x00); // RSV 保留字节，必须为 0
         byteBuf.writeByte(addressType.byteValue());
         switch (addressType) {
             case IPv4: {
@@ -121,7 +129,7 @@ public final class SocksCmdRequest extends SocksRequest {
             }
 
             case DOMAIN: {
-                byteBuf.writeByte(host.length());
+                byteBuf.writeByte(host.length()); // 域名长度前缀（单字节，故 ≤255）
                 byteBuf.writeCharSequence(host, CharsetUtil.US_ASCII);
                 ByteBufUtil.writeShortBE(byteBuf, port);
                 break;

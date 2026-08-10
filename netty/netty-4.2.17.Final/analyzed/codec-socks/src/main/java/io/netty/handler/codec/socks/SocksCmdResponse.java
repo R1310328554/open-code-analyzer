@@ -26,6 +26,10 @@ import java.net.IDN;
 /**
  * A socks cmd response.
  *
+ * <p>SOCKS5 命令应答（RFC 1928 §6）：携带 {@link SocksCmdStatus}（REP）、
+ * 代理侧绑定地址 BND.ADDR/BND.PORT（可能与客户端连接代理的地址不同）。
+ * {@code host} 为 {@code null} 时编码为对应 ATYP 的全零占位。</p>
+ *
  * @see SocksCmdRequest
  * @see SocksCmdResponseDecoder
  */
@@ -37,8 +41,11 @@ public final class SocksCmdResponse extends SocksResponse {
     private final int port;
 
     // All arrays are initialized on construction time to 0/false/null remove array Initialization
+    /** DOMAIN 且 host 为 null 时写入的单字节 0x00。 */
     private static final byte[] DOMAIN_ZEROED = {0x00};
+    /** IPv4 且 host 为 null 时的 4 字节零地址。 */
     private static final byte[] IPv4_HOSTNAME_ZEROED = {0x00, 0x00, 0x00, 0x00};
+    /** IPv6 且 host 为 null 时的 16 字节零地址。 */
     private static final byte[] IPv6_HOSTNAME_ZEROED = {0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
@@ -88,6 +95,7 @@ public final class SocksCmdResponse extends SocksResponse {
                     break;
             }
         }
+        // 应答端口允许 0（表示未指定），与请求的 (0,65536) 开区间不同
         if (port < 0 || port > 65535) {
             throw new IllegalArgumentException(port + " is not in bounds 0 <= x <= 65535");
         }
@@ -156,6 +164,7 @@ public final class SocksCmdResponse extends SocksResponse {
                     byteBuf.writeByte(host.length());
                     byteBuf.writeCharSequence(host, CharsetUtil.US_ASCII);
                 } else {
+                    // 长度 1 的零域名字节，符合 RFC 占位语义
                     byteBuf.writeByte(DOMAIN_ZEROED.length);
                     byteBuf.writeBytes(DOMAIN_ZEROED);
                 }

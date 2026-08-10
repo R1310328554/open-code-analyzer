@@ -25,6 +25,10 @@ import io.netty.handler.codec.MessageToByteEncoder;
  * {@link MessageToByteEncoder} implementation.
  * Use this with {@link SocksInitRequest}, {@link SocksInitResponse}, {@link SocksAuthRequest},
  * {@link SocksAuthResponse}, {@link SocksCmdRequest} and {@link SocksCmdResponse}
+ *
+ * <p>可共享（{@link ChannelHandler.Sharable}）的出站编码器：将任意 {@link SocksMessage}
+ * 子类委托给各自的 {@link SocksMessage#encodeAsByteBuf}，统一写入 pipeline 的 {@link ByteBuf}。
+ * 通常与一次性 {@link ReplayingDecoder} 配对，完成 SOCKS 握手各阶段。</p>
  */
 @ChannelHandler.Sharable
 public class SocksMessageEncoder extends MessageToByteEncoder<SocksMessage> {
@@ -35,6 +39,7 @@ public class SocksMessageEncoder extends MessageToByteEncoder<SocksMessage> {
     @Override
     @SuppressWarnings("deprecation")
     protected void encode(ChannelHandlerContext ctx, SocksMessage msg, ByteBuf out) throws Exception {
+        // 各消息子类自行拼装 VER/CMD/ATYP 等字段
         msg.encodeAsByteBuf(out);
     }
 }

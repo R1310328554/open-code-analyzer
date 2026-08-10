@@ -29,6 +29,9 @@ import java.util.List;
 /**
  * Decodes {@link ByteBuf}s into {@link SocksCmdResponse}.
  * Before returning SocksResponse decoder removes itself from pipeline.
+ *
+ * <p>与 {@link SocksCmdRequestDecoder} 对称：解析 VER、REP、RSV、ATYP 及 BND.ADDR/BND.PORT。
+ * 非 SOCKS5 或未知 ATYP 时产出 {@link SocksCommonUtils#UNKNOWN_SOCKS_RESPONSE}。</p>
  */
 public class SocksCmdResponseDecoder extends ReplayingDecoder<State> {
 

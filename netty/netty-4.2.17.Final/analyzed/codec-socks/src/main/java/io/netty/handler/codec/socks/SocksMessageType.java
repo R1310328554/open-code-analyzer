@@ -16,8 +16,16 @@
 
 package io.netty.handler.codec.socks;
 
+/**
+ * {@link SocksMessage} 在协议方向上的粗粒度分类。
+ * <p>用于 {@link SocksMessage#type()} 区分客户端 {@link SocksRequest} 与服务器
+ * {@link SocksResponse}；解码失败时可能得到 {@link #UNKNOWN} 占位消息。</p>
+ */
 public enum SocksMessageType {
+    /** 客户端发往代理的请求消息。 */
     REQUEST,
+    /** 代理返回的应答消息。 */
     RESPONSE,
+    /** 无法解析或协议版本不匹配时的占位类型。 */
     UNKNOWN
 }

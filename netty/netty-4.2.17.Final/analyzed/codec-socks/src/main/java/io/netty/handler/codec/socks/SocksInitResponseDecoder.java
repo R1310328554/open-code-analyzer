@@ -26,6 +26,9 @@ import java.util.List;
 /**
  * Decodes {@link ByteBuf}s into {@link SocksInitResponse}.
  * Before returning SocksResponse decoder removes itself from pipeline.
+ *
+ * <p>客户端侧解析服务器方法选择：VER 必须为 0x05，随后单字节 METHOD。
+ * 固定 2 字节报文，解码完成后自 pipeline 移除。</p>
  */
 public class SocksInitResponseDecoder extends ReplayingDecoder<State> {
 

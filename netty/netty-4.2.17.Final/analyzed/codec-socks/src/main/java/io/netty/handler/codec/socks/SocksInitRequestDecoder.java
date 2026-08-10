@@ -28,6 +28,9 @@ import java.util.List;
 /**
  * Decodes {@link ByteBuf}s into {@link SocksInitRequest}.
  * Before returning SocksRequest decoder removes itself from pipeline.
+ *
+ * <p>两态解码：校验 VER=0x05，再读 NMETHODS 及对应数量的 METHOD 字节。
+ * {@code authSchemeNum == 0} 时允许空方法列表（协议上少见但合法）。</p>
  */
 public class SocksInitRequestDecoder extends ReplayingDecoder<State> {
 

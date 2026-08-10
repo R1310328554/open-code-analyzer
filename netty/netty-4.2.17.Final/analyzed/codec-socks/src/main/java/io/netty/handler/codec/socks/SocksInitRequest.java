@@ -24,6 +24,9 @@ import java.util.List;
 /**
  * An socks init request.
  *
+ * <p>SOCKS5 握手第一步（RFC 1928 §3）：客户端列出支持的 {@link SocksAuthScheme}，
+ * 供服务器在 {@link SocksInitResponse} 中择一。线格式：VER | NMETHODS | METHODS[1..n]。</p>
+ *
  * @see SocksInitResponse
  * @see SocksInitRequestDecoder
  */

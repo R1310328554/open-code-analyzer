@@ -29,6 +29,10 @@ import java.util.List;
 /**
  * Decodes {@link ByteBuf}s into {@link SocksCmdRequest}.
  * Before returning SocksRequest decoder removes itself from pipeline.
+ *
+ * <p>三态 {@link ReplayingDecoder}：校验 VER → 读 CMD/RSV/ATYP → 按地址类型读 DST.ADDR 与 DST.PORT。
+ * 版本非 0x05 或 ATYP 未知时输出 {@link SocksCommonUtils#UNKNOWN_SOCKS_REQUEST}；
+ * 成功解码后从 pipeline 移除自身（一次性解码器）。</p>
  */
 public class SocksCmdRequestDecoder extends ReplayingDecoder<State> {
 
@@ -92,9 +96,11 @@ public class SocksCmdRequestDecoder extends ReplayingDecoder<State> {
                 throw new Error("Unexpected request decoder type: " + state());
             }
         }
+        // 无论成功或 UNKNOWN，本阶段解码结束即卸除 handler
         ctx.pipeline().remove(this);
     }
 
+    /** 命令请求解码状态机：版本 → 头 → 变长地址体。 */
     @UnstableApi
     public enum State {
         CHECK_PROTOCOL_VERSION,
