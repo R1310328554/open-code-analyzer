@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Sanitized import source information returned to clients.
+ * 返回给客户端的脱敏导入源信息。
+ *
+ * <p>不含敏感连接凭证，仅暴露展示名、插件名、支持的资源类型与能力列表，
+ * 供控制台渲染可选导入源下拉与说明文案。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -43,6 +46,7 @@ public class AiResourceImportSourceInfo implements Serializable {
     
     private List<String> capabilities;
     
+    /** 返回导入源唯一 ID。 */
     public String getSourceId() {
         return sourceId;
     }
@@ -51,6 +55,7 @@ public class AiResourceImportSourceInfo implements Serializable {
         this.sourceId = sourceId;
     }
     
+    /** 返回控制台展示名称。 */
     public String getDisplayName() {
         return displayName;
     }
@@ -59,6 +64,7 @@ public class AiResourceImportSourceInfo implements Serializable {
         this.displayName = displayName;
     }
     
+    /** 返回导入源描述。 */
     public String getDescription() {
         return description;
     }
@@ -67,6 +73,7 @@ public class AiResourceImportSourceInfo implements Serializable {
         this.description = description;
     }
     
+    /** 返回底层 SPI 插件名称。 */
     public String getPluginName() {
         return pluginName;
     }
@@ -75,6 +82,7 @@ public class AiResourceImportSourceInfo implements Serializable {
         this.pluginName = pluginName;
     }
     
+    /** 返回该源支持的 AI 资源类型列表。 */
     public List<String> getResourceTypes() {
         return resourceTypes;
     }
@@ -83,6 +91,7 @@ public class AiResourceImportSourceInfo implements Serializable {
         this.resourceTypes = resourceTypes;
     }
     
+    /** 导入源是否已启用。 */
     public boolean isEnabled() {
         return enabled;
     }
@@ -91,6 +100,7 @@ public class AiResourceImportSourceInfo implements Serializable {
         this.enabled = enabled;
     }
     
+    /** 返回插件能力标识列表（如搜索、校验、批量导入等）。 */
     public List<String> getCapabilities() {
         return capabilities;
     }

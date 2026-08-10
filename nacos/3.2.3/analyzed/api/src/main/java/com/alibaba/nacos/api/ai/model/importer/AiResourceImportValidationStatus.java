@@ -17,30 +17,22 @@
 package com.alibaba.nacos.api.ai.model.importer;
 
 /**
- * Validation status for one AI resource import item.
+ * 单条 AI 资源导入校验状态枚举。
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public enum AiResourceImportValidationStatus {
     
-    /**
-     * The item can be imported.
-     */
+    /** 条目可正常导入。 */
     VALID,
     
-    /**
-     * The item can be imported with warnings.
-     */
+    /** 条目可导入但存在警告。 */
     WARNING,
     
-    /**
-     * The item cannot be imported.
-     */
+    /** 条目不可导入。 */
     INVALID,
     
-    /**
-     * The item conflicts with an existing resource.
-     */
+    /** 条目与已有资源冲突。 */
     CONFLICT
 }

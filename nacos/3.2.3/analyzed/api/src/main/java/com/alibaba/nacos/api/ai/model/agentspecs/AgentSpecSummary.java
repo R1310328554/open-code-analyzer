@@ -19,8 +19,10 @@ package com.alibaba.nacos.api.ai.model.agentspecs;
 import java.util.Map;
 
 /**
- * AgentSpec summary for admin list response.
- * Contains agentspec basic info plus governance metadata.
+ * 管理端 AgentSpec 列表项摘要，继承 {@link AgentSpecBasicInfo} 并扩展治理元数据。
+ *
+ * <p>除名称、描述等基础字段外，还携带启用状态、业务标签、来源、作用域、标签、
+ * 编辑/审核中版本号、在线版本数与下载次数等运营指标，供控制台分页展示与筛选。</p>
  *
  * @author nacos
  */
@@ -44,6 +46,7 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
     
     private Long downloadCount;
     
+    /** 是否启用该 AgentSpec。 */
     public boolean isEnable() {
         return enable;
     }
@@ -52,6 +55,7 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
         this.enable = enable;
     }
     
+    /** 返回业务标签（逗号分隔或 JSON 字符串，依服务端约定）。 */
     public String getBizTags() {
         return bizTags;
     }
@@ -60,6 +64,7 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
         this.bizTags = bizTags;
     }
     
+    /** 返回 AgentSpec 来源标识（如上传、内置、导入等）。 */
     public String getFrom() {
         return from;
     }
@@ -68,6 +73,7 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
         this.from = from;
     }
     
+    /** 返回作用域（命名空间或租户级可见范围）。 */
     public String getScope() {
         return scope;
     }
@@ -76,6 +82,7 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
         this.scope = scope;
     }
     
+    /** 返回自定义标签键值对。 */
     public Map<String, String> getLabels() {
         return labels;
     }
@@ -84,6 +91,7 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
         this.labels = labels;
     }
     
+    /** 返回当前处于编辑中的版本号。 */
     public String getEditingVersion() {
         return editingVersion;
     }
@@ -92,6 +100,7 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
         this.editingVersion = editingVersion;
     }
     
+    /** 返回当前处于审核中的版本号。 */
     public String getReviewingVersion() {
         return reviewingVersion;
     }
@@ -100,6 +109,7 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
         this.reviewingVersion = reviewingVersion;
     }
     
+    /** 返回已上线版本数量。 */
     public Integer getOnlineCnt() {
         return onlineCnt;
     }
@@ -108,6 +118,7 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
         this.onlineCnt = onlineCnt;
     }
     
+    /** 返回累计下载次数。 */
     public Long getDownloadCount() {
         return downloadCount;
     }

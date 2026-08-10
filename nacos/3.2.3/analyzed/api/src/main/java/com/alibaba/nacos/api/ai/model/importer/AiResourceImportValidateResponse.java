@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Response for AI resource import validation.
+ * AI 资源导入校验响应。
+ *
+ * <p>为每条选中资源返回 {@link AiResourceImportValidationItem}，并颁发
+ * {@link #validationToken} 供后续 {@link AiResourceImportExecuteRequest} 绑定同一会话。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -37,6 +40,7 @@ public class AiResourceImportValidateResponse implements Serializable {
     
     private List<AiResourceImportValidationItem> items;
     
+    /** 返回导入源 ID。 */
     public String getSourceId() {
         return sourceId;
     }
@@ -45,6 +49,7 @@ public class AiResourceImportValidateResponse implements Serializable {
         this.sourceId = sourceId;
     }
     
+    /** 返回资源类型。 */
     public String getResourceType() {
         return resourceType;
     }
@@ -53,6 +58,7 @@ public class AiResourceImportValidateResponse implements Serializable {
         this.resourceType = resourceType;
     }
     
+    /** 返回校验令牌，执行导入时需回传。 */
     public String getValidationToken() {
         return validationToken;
     }
@@ -61,6 +67,7 @@ public class AiResourceImportValidateResponse implements Serializable {
         this.validationToken = validationToken;
     }
     
+    /** 返回逐条校验结果。 */
     public List<AiResourceImportValidationItem> getItems() {
         return items;
     }

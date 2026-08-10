@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Validation result for one selected AI resource import item.
+ * 单条外部 AI 资源的导入校验结果。
+ *
+ * <p>标明 {@link AiResourceImportValidationStatus}、是否已存在、冲突类型及
+ * 警告/错误明细，帮助用户在执行前修正选择。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -45,6 +48,7 @@ public class AiResourceImportValidationItem implements Serializable {
     
     private List<String> errors;
     
+    /** 返回外部资源 ID。 */
     public String getExternalId() {
         return externalId;
     }
@@ -53,6 +57,7 @@ public class AiResourceImportValidationItem implements Serializable {
         this.externalId = externalId;
     }
     
+    /** 返回资源名称。 */
     public String getName() {
         return name;
     }
@@ -61,6 +66,7 @@ public class AiResourceImportValidationItem implements Serializable {
         this.name = name;
     }
     
+    /** 返回资源版本。 */
     public String getVersion() {
         return version;
     }
@@ -69,6 +75,7 @@ public class AiResourceImportValidationItem implements Serializable {
         this.version = version;
     }
     
+    /** 返回校验结论状态。 */
     public AiResourceImportValidationStatus getStatus() {
         return status;
     }
@@ -77,6 +84,7 @@ public class AiResourceImportValidationItem implements Serializable {
         this.status = status;
     }
     
+    /** Nacos 中是否已存在同名/同键资源。 */
     public boolean isExists() {
         return exists;
     }
@@ -85,6 +93,7 @@ public class AiResourceImportValidationItem implements Serializable {
         this.exists = exists;
     }
     
+    /** 冲突类型描述（如有）。 */
     public String getConflictType() {
         return conflictType;
     }
@@ -93,6 +102,7 @@ public class AiResourceImportValidationItem implements Serializable {
         this.conflictType = conflictType;
     }
     
+    /** 返回警告信息列表。 */
     public List<String> getWarnings() {
         return warnings;
     }
@@ -101,6 +111,7 @@ public class AiResourceImportValidationItem implements Serializable {
         this.warnings = warnings;
     }
     
+    /** 返回阻止导入的错误列表。 */
     public List<String> getErrors() {
         return errors;
     }

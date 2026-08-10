@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * Request for searching external AI resource candidates from a configured source.
+ * 从已配置导入源搜索外部 AI 资源候选的请求体。
+ *
+ * <p>支持关键字 {@link #query}、游标 {@link #cursor} 分页与 {@link #limit} 限流，
+ * 用于控制台“从外部导入”向导的第一步资源发现。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -43,6 +46,7 @@ public class AiResourceImportSearchRequest implements Serializable {
     
     private Map<String, String> options;
     
+    /** 返回目标命名空间 ID。 */
     public String getNamespaceId() {
         return namespaceId;
     }
@@ -51,6 +55,7 @@ public class AiResourceImportSearchRequest implements Serializable {
         this.namespaceId = namespaceId;
     }
     
+    /** 返回要搜索的 AI 资源类型。 */
     public String getResourceType() {
         return resourceType;
     }
@@ -59,6 +64,7 @@ public class AiResourceImportSearchRequest implements Serializable {
         this.resourceType = resourceType;
     }
     
+    /** 返回导入源 ID。 */
     public String getSourceId() {
         return sourceId;
     }
@@ -67,6 +73,7 @@ public class AiResourceImportSearchRequest implements Serializable {
         this.sourceId = sourceId;
     }
     
+    /** 返回搜索关键字。 */
     public String getQuery() {
         return query;
     }
@@ -75,6 +82,7 @@ public class AiResourceImportSearchRequest implements Serializable {
         this.query = query;
     }
     
+    /** 返回分页游标（首页可为 null）。 */
     public String getCursor() {
         return cursor;
     }
@@ -83,6 +91,7 @@ public class AiResourceImportSearchRequest implements Serializable {
         this.cursor = cursor;
     }
     
+    /** 返回单页最大返回条数。 */
     public Integer getLimit() {
         return limit;
     }
@@ -91,6 +100,7 @@ public class AiResourceImportSearchRequest implements Serializable {
         this.limit = limit;
     }
     
+    /** 返回搜索扩展选项。 */
     public Map<String, String> getOptions() {
         return options;
     }

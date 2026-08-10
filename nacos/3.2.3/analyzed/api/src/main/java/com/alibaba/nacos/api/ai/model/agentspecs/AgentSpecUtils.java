@@ -20,46 +20,38 @@ import com.alibaba.nacos.api.ai.model.NacosAiConfigKeyCodec;
 import com.alibaba.nacos.api.utils.StringUtils;
 
 /**
- * Utility class for AgentSpec operations.
- * Mirrors {@link com.alibaba.nacos.api.ai.model.skills.SkillUtils} patterns with AgentSpec-specific constants.
+ * AgentSpec 配置键与 Nacos Config dataId/group 构建工具类。
+ *
+ * <p>设计模式对标 {@link com.alibaba.nacos.api.ai.model.skills.SkillUtils}，
+ * 提供 manifest、资源文件、版本化 group 等常量及编解码辅助方法。</p>
  *
  * @author nacos
  */
 public class AgentSpecUtils {
     
-    /**
-     * Main config dataId for AgentSpec (manifest.json).
-     */
+    /** AgentSpec 主配置 dataId（manifest.json）。 */
     public static final String AGENTSPEC_MAIN_DATA_ID = "manifest.json";
     
-    /**
-     * Resource config dataId prefix.
-     */
+    /** 资源子配置 dataId 前缀。 */
     public static final String RESOURCE_DATA_ID_PREFIX = "resource_";
     
-    /**
-     * Resource config dataId suffix.
-     */
+    /** 资源子配置 dataId 后缀。 */
     public static final String RESOURCE_DATA_ID_SUFFIX = ".json";
     
     /**
-     * AgentSpec index config dataId for client-side config caching.
-     * Server writes a manifest config with this dataId at group {@code agentspec__{name}}
-     * containing the current online version and file list.
+     * 客户端缓存用的 AgentSpec 索引配置 dataId。
+     * <p>服务端在 group {@code agentspec__{name}} 下写入该 dataId，
+     * 内容包含当前在线版本与文件清单。</p>
      */
     public static final String AGENTSPEC_INDEX_DATA_ID = "agentspec_index.json";
     
-    /**
-     * AgentSpec group prefix.
-     */
+    /** AgentSpec 配置 group 前缀。 */
     public static final String AGENTSPEC_GROUP_PREFIX = "agentspec__";
     
     private static final String DOUBLE_UNDERSCORE = "__";
     private static final String FILE_EXTENSION_PATTERN = ".*\\.[a-zA-Z0-9]+$";
     
-    /**
-     * Configuration info containing dataId and group.
-     */
+    /** 封装 Nacos Config 的 dataId 与 group。 */
     public static class ConfigInfo {
         
         private final String dataId;
@@ -71,20 +63,21 @@ public class AgentSpecUtils {
             this.group = group;
         }
         
+        /** 返回配置 dataId。 */
         public String getDataId() {
             return dataId;
         }
         
+        /** 返回配置 group。 */
         public String getGroup() {
             return group;
         }
     }
     
     /**
-     * Generate resource ID from resource type and name.
-     * Format: {type}_{resourcename}
-     * If resourcename ends with .xx, convert the last . to __
-     * Slashes in type are encoded as dots so that dataId (resource_{resourceId}.json) is valid in Nacos.
+     * 根据资源类型与名称生成资源 ID。
+     * <p>格式为 {@code {type}_{resourcename}}；若名称以 {@code .xx} 结尾则将最后一个 {@code .} 转为 {@code __}；
+     * 类型中的 {@code /} 编码为 {@code .}，以保证 dataId {@code resource_{resourceId}.json} 合法。</p>
      *
      * @param type resource type (can be null or empty; may contain / for multi-level paths)
      * @param resourceName resource name
@@ -95,7 +88,7 @@ public class AgentSpecUtils {
             return "";
         }
         
-        // If resourcename ends with .xx, convert the last . to __
+        // 若资源名以 .xx 结尾，将最后一个 . 替换为 __
         String processedName = resourceName;
         if (resourceName.matches(FILE_EXTENSION_PATTERN)) {
             int lastDotIndex = resourceName.lastIndexOf('.');
@@ -114,7 +107,7 @@ public class AgentSpecUtils {
     }
     
     /**
-     * Build AgentSpec main config info (dataId and group).
+     * 构建 AgentSpec 主配置（manifest）的 dataId 与 group。
      *
      * @param agentSpecName name of AgentSpec
      * @return ConfigInfo containing dataId and group
@@ -128,7 +121,7 @@ public class AgentSpecUtils {
     }
     
     /**
-     * Build the Nacos Config group for an AgentSpec (no version suffix).
+     * 构建 AgentSpec 的无版本后缀 Nacos Config group。
      *
      * @param agentSpecName name of AgentSpec
      * @return config group string, e.g. "agentspec__myworker"
@@ -143,7 +136,7 @@ public class AgentSpecUtils {
     }
     
     /**
-     * Build the Nacos Config group for a specific AgentSpec version.
+     * 构建指定 AgentSpec 版本的 Nacos Config group。
      *
      * @param agentSpecName name of AgentSpec
      * @param version       version string, e.g. "v1"
@@ -163,7 +156,7 @@ public class AgentSpecUtils {
     }
     
     /**
-     * Build AgentSpec resource config info (dataId and group).
+     * 构建 AgentSpec 资源子配置的 dataId 与 group。
      *
      * @param agentSpecName name of AgentSpec
      * @param type resource type (can be null or empty)
@@ -189,7 +182,7 @@ public class AgentSpecUtils {
     }
     
     /**
-     * Decode an AgentSpec Nacos Config {@code group} (as stored) into logical name and optional version.
+     * 将存储的 AgentSpec Nacos Config {@code group} 解码为逻辑名称与可选版本。
      *
      * @param group physical group, e.g. {@code agentspec__myagent} or {@code agentspec__name__v1}
      * @return array of length 2: {@code [agentSpecName, version]}; {@code version} is {@code null} when not versioned

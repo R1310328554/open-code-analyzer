@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * Selected external item for AI resource import validation or execution.
+ * 校验或执行阶段选中的外部 AI 资源条目。
+ *
+ * <p>比 {@link AiResourceImportCandidateItem} 精简，仅保留导入所需的外部 ID、
+ * 名称、版本与元数据，用于批量校验与执行请求体。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -37,6 +40,7 @@ public class AiResourceImportItem implements Serializable {
     
     private Map<String, String> metadata;
     
+    /** 返回外部资源唯一标识。 */
     public String getExternalId() {
         return externalId;
     }
@@ -45,6 +49,7 @@ public class AiResourceImportItem implements Serializable {
         this.externalId = externalId;
     }
     
+    /** 返回资源名称。 */
     public String getName() {
         return name;
     }
@@ -53,6 +58,7 @@ public class AiResourceImportItem implements Serializable {
         this.name = name;
     }
     
+    /** 返回资源版本。 */
     public String getVersion() {
         return version;
     }
@@ -61,6 +67,7 @@ public class AiResourceImportItem implements Serializable {
         this.version = version;
     }
     
+    /** 返回扩展元数据。 */
     public Map<String, String> getMetadata() {
         return metadata;
     }

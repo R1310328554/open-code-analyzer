@@ -21,7 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Request for executing AI resource import.
+ * 执行 AI 资源导入的请求体。
+ *
+ * <p>在校验通过后携带 {@link #validationToken} 与待导入条目列表，
+ * 并可通过 {@link #overwriteExisting}、{@link #skipInvalid} 控制冲突覆盖与无效项跳过策略。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -46,6 +49,7 @@ public class AiResourceImportExecuteRequest implements Serializable {
     
     private Map<String, String> options;
     
+    /** 返回目标命名空间 ID。 */
     public String getNamespaceId() {
         return namespaceId;
     }
@@ -54,6 +58,7 @@ public class AiResourceImportExecuteRequest implements Serializable {
         this.namespaceId = namespaceId;
     }
     
+    /** 返回 AI 资源类型（如 MCP、Prompt 等）。 */
     public String getResourceType() {
         return resourceType;
     }
@@ -62,6 +67,7 @@ public class AiResourceImportExecuteRequest implements Serializable {
         this.resourceType = resourceType;
     }
     
+    /** 返回导入源 ID。 */
     public String getSourceId() {
         return sourceId;
     }
@@ -70,6 +76,7 @@ public class AiResourceImportExecuteRequest implements Serializable {
         this.sourceId = sourceId;
     }
     
+    /** 返回待导入的外部资源条目列表。 */
     public List<AiResourceImportItem> getSelectedItems() {
         return selectedItems;
     }
@@ -78,6 +85,7 @@ public class AiResourceImportExecuteRequest implements Serializable {
         this.selectedItems = selectedItems;
     }
     
+    /** 是否与已有资源冲突时覆盖。 */
     public boolean isOverwriteExisting() {
         return overwriteExisting;
     }
@@ -86,6 +94,7 @@ public class AiResourceImportExecuteRequest implements Serializable {
         this.overwriteExisting = overwriteExisting;
     }
     
+    /** 是否跳过校验未通过的条目继续导入其余项。 */
     public boolean isSkipInvalid() {
         return skipInvalid;
     }
@@ -94,6 +103,7 @@ public class AiResourceImportExecuteRequest implements Serializable {
         this.skipInvalid = skipInvalid;
     }
     
+    /** 返回校验阶段颁发的令牌，用于绑定本次导入会话。 */
     public String getValidationToken() {
         return validationToken;
     }
@@ -102,6 +112,7 @@ public class AiResourceImportExecuteRequest implements Serializable {
         this.validationToken = validationToken;
     }
     
+    /** 返回导入扩展选项。 */
     public Map<String, String> getOptions() {
         return options;
     }

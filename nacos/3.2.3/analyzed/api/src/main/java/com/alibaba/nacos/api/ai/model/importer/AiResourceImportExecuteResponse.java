@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Response for AI resource import execution.
+ * AI 资源导入执行结果响应。
+ *
+ * <p>汇总成功/失败/跳过数量，并逐条返回 {@link AiResourceImportResultItem} 明细，
+ * 便于控制台展示导入报告与错误定位。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -41,6 +44,7 @@ public class AiResourceImportExecuteResponse implements Serializable {
     
     private List<AiResourceImportResultItem> results;
     
+    /** 整体导入是否视为成功（通常无致命失败时为 true）。 */
     public boolean isSuccess() {
         return success;
     }
@@ -49,6 +53,7 @@ public class AiResourceImportExecuteResponse implements Serializable {
         this.success = success;
     }
     
+    /** 返回参与导入的总条目数。 */
     public int getTotalCount() {
         return totalCount;
     }
@@ -57,6 +62,7 @@ public class AiResourceImportExecuteResponse implements Serializable {
         this.totalCount = totalCount;
     }
     
+    /** 返回成功导入条目数。 */
     public int getSuccessCount() {
         return successCount;
     }
@@ -65,6 +71,7 @@ public class AiResourceImportExecuteResponse implements Serializable {
         this.successCount = successCount;
     }
     
+    /** 返回失败条目数。 */
     public int getFailedCount() {
         return failedCount;
     }
@@ -73,6 +80,7 @@ public class AiResourceImportExecuteResponse implements Serializable {
         this.failedCount = failedCount;
     }
     
+    /** 返回被策略跳过的条目数。 */
     public int getSkippedCount() {
         return skippedCount;
     }
@@ -81,6 +89,7 @@ public class AiResourceImportExecuteResponse implements Serializable {
         this.skippedCount = skippedCount;
     }
     
+    /** 返回逐条导入结果列表。 */
     public List<AiResourceImportResultItem> getResults() {
         return results;
     }

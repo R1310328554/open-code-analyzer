@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * External AI resource candidate returned by search.
+ * 外部 AI 资源搜索返回的候选条目。
+ *
+ * <p>描述导入源中可被选中并导入 Nacos 的外部资源，含外部 ID、名称、版本、
+ * 描述及扩展元数据，供控制台展示与勾选。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -39,6 +42,7 @@ public class AiResourceImportCandidateItem implements Serializable {
     
     private Map<String, String> metadata;
     
+    /** 返回外部资源唯一标识。 */
     public String getExternalId() {
         return externalId;
     }
@@ -47,6 +51,7 @@ public class AiResourceImportCandidateItem implements Serializable {
         this.externalId = externalId;
     }
     
+    /** 返回资源显示名称。 */
     public String getName() {
         return name;
     }
@@ -55,6 +60,7 @@ public class AiResourceImportCandidateItem implements Serializable {
         this.name = name;
     }
     
+    /** 返回资源版本号。 */
     public String getVersion() {
         return version;
     }
@@ -63,6 +69,7 @@ public class AiResourceImportCandidateItem implements Serializable {
         this.version = version;
     }
     
+    /** 返回资源描述文本。 */
     public String getDescription() {
         return description;
     }
@@ -71,6 +78,7 @@ public class AiResourceImportCandidateItem implements Serializable {
         this.description = description;
     }
     
+    /** 返回扩展元数据键值对。 */
     public Map<String, String> getMetadata() {
         return metadata;
     }

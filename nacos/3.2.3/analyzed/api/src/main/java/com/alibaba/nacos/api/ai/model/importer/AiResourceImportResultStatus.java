@@ -17,25 +17,19 @@
 package com.alibaba.nacos.api.ai.model.importer;
 
 /**
- * Execution result status for one AI resource import item.
+ * 单条 AI 资源导入执行结果状态枚举。
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public enum AiResourceImportResultStatus {
     
-    /**
-     * The item was imported successfully.
-     */
+    /** 条目已成功导入。 */
     SUCCESS,
     
-    /**
-     * The item failed to import.
-     */
+    /** 条目导入失败。 */
     FAILED,
     
-    /**
-     * The item was skipped by policy.
-     */
+    /** 条目因策略被跳过。 */
     SKIPPED
 }

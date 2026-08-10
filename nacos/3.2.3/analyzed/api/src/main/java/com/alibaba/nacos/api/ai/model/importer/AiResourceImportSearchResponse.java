@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Response for AI resource import search.
+ * 外部 AI 资源搜索响应。
+ *
+ * <p>携带导入源与资源类型上下文、下一页游标及 {@link AiResourceImportCandidateItem} 列表，
+ * 通过 {@link #hasMore} 指示是否还有更多结果。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -39,6 +42,7 @@ public class AiResourceImportSearchResponse implements Serializable {
     
     private List<AiResourceImportCandidateItem> items;
     
+    /** 返回导入源 ID。 */
     public String getSourceId() {
         return sourceId;
     }
@@ -47,6 +51,7 @@ public class AiResourceImportSearchResponse implements Serializable {
         this.sourceId = sourceId;
     }
     
+    /** 返回资源类型。 */
     public String getResourceType() {
         return resourceType;
     }
@@ -55,6 +60,7 @@ public class AiResourceImportSearchResponse implements Serializable {
         this.resourceType = resourceType;
     }
     
+    /** 返回下一页游标；无更多数据时为 null。 */
     public String getNextCursor() {
         return nextCursor;
     }
@@ -63,6 +69,7 @@ public class AiResourceImportSearchResponse implements Serializable {
         this.nextCursor = nextCursor;
     }
     
+    /** 是否还有更多候选条目。 */
     public boolean isHasMore() {
         return hasMore;
     }
@@ -71,6 +78,7 @@ public class AiResourceImportSearchResponse implements Serializable {
         this.hasMore = hasMore;
     }
     
+    /** 返回本页候选资源列表。 */
     public List<AiResourceImportCandidateItem> getItems() {
         return items;
     }

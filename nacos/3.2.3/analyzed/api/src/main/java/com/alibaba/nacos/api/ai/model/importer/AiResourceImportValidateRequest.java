@@ -21,7 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Request for validating selected AI resource import candidates.
+ * 校验选中外部 AI 资源能否导入的请求体。
+ *
+ * <p>在执行真正导入前预检命名冲突、格式合法性与覆盖策略，
+ * 结果用于生成 {@link AiResourceImportValidateResponse#validationToken}。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -42,6 +45,7 @@ public class AiResourceImportValidateRequest implements Serializable {
     
     private Map<String, String> options;
     
+    /** 返回目标命名空间 ID。 */
     public String getNamespaceId() {
         return namespaceId;
     }
@@ -50,6 +54,7 @@ public class AiResourceImportValidateRequest implements Serializable {
         this.namespaceId = namespaceId;
     }
     
+    /** 返回 AI 资源类型。 */
     public String getResourceType() {
         return resourceType;
     }
@@ -58,6 +63,7 @@ public class AiResourceImportValidateRequest implements Serializable {
         this.resourceType = resourceType;
     }
     
+    /** 返回导入源 ID。 */
     public String getSourceId() {
         return sourceId;
     }
@@ -66,6 +72,7 @@ public class AiResourceImportValidateRequest implements Serializable {
         this.sourceId = sourceId;
     }
     
+    /** 返回待校验的外部资源条目。 */
     public List<AiResourceImportItem> getSelectedItems() {
         return selectedItems;
     }
@@ -74,6 +81,7 @@ public class AiResourceImportValidateRequest implements Serializable {
         this.selectedItems = selectedItems;
     }
     
+    /** 冲突时是否允许覆盖已有资源。 */
     public boolean isOverwriteExisting() {
         return overwriteExisting;
     }
@@ -82,6 +90,7 @@ public class AiResourceImportValidateRequest implements Serializable {
         this.overwriteExisting = overwriteExisting;
     }
     
+    /** 返回校验扩展选项。 */
     public Map<String, String> getOptions() {
         return options;
     }
