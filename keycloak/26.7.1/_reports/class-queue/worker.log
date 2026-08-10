@@ -628,3 +628,18 @@
 2026-08-10T06:27:45Z DONE federation/ipatuura/src/main/java/org/keycloak/ipatuura_user_spi/authenticator/IpatuuraAuthenticator.java wave21a fips + ipatuura federation
 2026-08-10T06:27:45Z DONE federation/ipatuura/src/main/java/org/keycloak/ipatuura_user_spi/schemas/SCIMError.java wave21a fips + ipatuura federation
 2026-08-10T06:27:45Z DONE federation/ipatuura/src/main/java/org/keycloak/ipatuura_user_spi/schemas/SCIMSearchRequest.java wave21a fips + ipatuura federation
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/LDAPConfig.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/LDAPIdentityStoreRegistry.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/LDAPStorageProvider.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/LDAPStorageProviderFactory.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/LDAPStorageUserManager.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/LDAPUtils.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/LDAPWritesOnlyUserModelDelegate.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/ObjectFactoryBuilder.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/ReadonlyLDAPUserModelDelegate.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/model/LDAPDn.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/model/LDAPObject.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/query/Condition.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/query/EscapeStrategy.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/query/Sort.java wave22a ldap storage provider + idm
+2026-08-10T06:30:06Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/idm/query/internal/AndCondition.java wave22a ldap storage provider + idm
