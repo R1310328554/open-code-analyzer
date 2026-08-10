@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * nacos lock manager.
+ * Nacos 分布式锁管理器实现：SPI 加载 {@link LockFactory}，按 lockType 创建并缓存 {@link AtomicLockService}。
  *
  * @author 985492783@qq.com
  * @date 2023/8/22 21:01
@@ -37,11 +37,14 @@ import java.util.stream.Collectors;
 @Service
 public class NacosLockManager implements LockManager {
     
+    /** lockType → {@link LockFactory} SPI 工厂映射。 */
     private final Map<String, LockFactory> factoryMap;
     
+    /** 已创建的锁实例缓存：lockKey → {@link AtomicLockService}。 */
     private final ConcurrentHashMap<LockKey, AtomicLockService> atomicLockMap =
         new ConcurrentHashMap<>();
     
+    /** 通过 {@link NacosServiceLoader} 加载全部 {@link LockFactory} 实现。 */
     public NacosLockManager() {
         Collection<LockFactory> factories = NacosServiceLoader.load(LockFactory.class);
         factoryMap = factories.stream()
@@ -49,6 +52,7 @@ public class NacosLockManager implements LockManager {
                 Collectors.toConcurrentMap(LockFactory::getLockType, lockFactory -> lockFactory));
     }
     
+    /** 校验 lockKey 后按类型创建或返回已缓存的互斥锁。 */
     @Override
     public AtomicLockService getMutexLock(LockKey lockKey) {
         if (lockKey == null || lockKey.getLockType() == null || lockKey.getKey() == null) {
@@ -63,11 +67,13 @@ public class NacosLockManager implements LockManager {
         });
     }
     
+    /** 返回当前全部锁实例映射（供快照导出）。 */
     @Override
     public ConcurrentHashMap<LockKey, AtomicLockService> showLocks() {
         return atomicLockMap;
     }
     
+    /** 校验后从缓存移除并返回互斥锁实例。 */
     @Override
     public AtomicLockService removeMutexLock(LockKey lockKey) {
         if (lockKey == null || lockKey.getLockType() == null || lockKey.getKey() == null) {

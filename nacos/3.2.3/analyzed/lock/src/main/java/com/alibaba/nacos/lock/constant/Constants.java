@@ -17,12 +17,14 @@
 package com.alibaba.nacos.lock.constant;
 
 /**
- * constants.
+ * 分布式锁模块常量定义。
+ *
  * @author 985492783@qq.com
  * @description Constants
  * @date 2023/7/10 15:54
  */
 public class Constants {
     
+    /** V2 加锁服务分组标识，用于 RPC 路由与持久化分组。 */
     public static final String LOCK_ACQUIRE_SERVICE_GROUP_V2 = "lock_acquire_service_v2";
 }

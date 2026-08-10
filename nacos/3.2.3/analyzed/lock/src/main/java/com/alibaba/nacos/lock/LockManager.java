@@ -22,7 +22,9 @@ import com.alibaba.nacos.lock.model.LockKey;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * lock manager.
+ * 分布式锁管理器接口：按 {@link LockKey} 获取/移除互斥锁并导出快照。
+ *
+ * <p>由 {@link NacosLockManager} 实现，供远程 RPC 与持久化模块使用。</p>
  *
  * @author 985492783@qq.com
  * @description LockManager
@@ -31,25 +33,25 @@ import java.util.concurrent.ConcurrentHashMap;
 public interface LockManager {
     
     /**
-     * get mutex lock.
+     * 获取或创建指定键的可重入互斥锁。
      *
-     * @param lockKey lock key
-     * @return AbstractAtomicLock
+     * @param lockKey 锁键（含类型与资源键）
+     * @return {@link AtomicLockService} 实例
      */
     AtomicLockService getMutexLock(LockKey lockKey);
     
     /**
-     * show all atomicLock entity to snapshot save.
+     * 返回全部活跃锁实例映射，供快照持久化。
      *
-     * @return Map
+     * @return lockKey → {@link AtomicLockService} 映射
      */
     ConcurrentHashMap<LockKey, AtomicLockService> showLocks();
     
     /**
-     * remove mutex lock.
+     * 从管理器中移除并返回指定互斥锁。
      *
-     * @param lockKey lock key
-     * @return AbstractAtomicLock
+     * @param lockKey 锁键
+     * @return 被移除的 {@link AtomicLockService}，不存在时返回 {@code null}
      */
     AtomicLockService removeMutexLock(LockKey lockKey);
 }

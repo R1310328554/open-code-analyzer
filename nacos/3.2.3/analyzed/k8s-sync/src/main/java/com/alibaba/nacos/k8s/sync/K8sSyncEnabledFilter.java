@@ -28,7 +28,9 @@ import static com.alibaba.nacos.sys.env.EnvUtil.FUNCTION_MODE_NAMING;
 import static com.alibaba.nacos.sys.env.EnvUtil.FUNCTION_MODE_MICROSERVICE;
 
 /**
- * K8s Sync module enabled filter by spring packages scan.
+ * K8s 同步模块 Spring 包扫描排除过滤器：按功能模式与配置开关决定是否加载本模块。
+ *
+ * <p>依赖 naming 模块；{@code nacos.k8s.sync.enabled=false} 时排除 {@code com.alibaba.nacos.k8s.sync} 包。</p>
  *
  * @author xiweng.yy
  */
@@ -36,17 +38,20 @@ public class K8sSyncEnabledFilter implements NacosPackageExcludeFilter {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(K8sSyncEnabledFilter.class);
     
+    /** 启用开关对应的配置键。 */
     private static final String K8S_SYNC_ENABLED_KEY = "nacos.k8s.sync.enabled";
     
+    /** 返回本过滤器负责的包前缀。 */
     @Override
     public String getResponsiblePackagePrefix() {
         return K8sSyncEnabledFilter.class.getPackage().getName();
     }
     
+    /** 判断是否排除 K8s 同步包下的类加载。 */
     @Override
     public boolean isExcluded(String className, Set<String> annotationNames) {
         String functionMode = EnvUtil.getFunctionMode();
-        // When not specified naming mode or specified all mode, the naming module not start and load.
+        // 非 naming/microservice 功能模式下 naming 未启动，K8s 同步一并禁用
         if (isNamingDisabled(functionMode)) {
             LOGGER.warn(
                 "K8s Sync module disabled because function mode is {}, and K8s Sync depend naming module",
@@ -60,6 +65,7 @@ public class K8sSyncEnabledFilter implements NacosPackageExcludeFilter {
         return k8sSyncDisabled;
     }
     
+    /** 当前功能模式是否未启用 naming 模块。 */
     private boolean isNamingDisabled(String functionMode) {
         if (StringUtils.isEmpty(functionMode)) {
             return false;

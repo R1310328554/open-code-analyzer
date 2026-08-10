@@ -37,14 +37,21 @@ import static com.alibaba.nacos.istio.util.IstioCrdUtil.buildServiceEntry;
 import static com.alibaba.nacos.istio.util.IstioCrdUtil.parseServiceEntryNameToServiceName;
 
 /**
+ * XDS 通道下的 ServiceEntry 生成器：将 Nacos 服务注册信息转换为 Istio ServiceEntry MCP 资源。
+ *
+ * <p>全量模式封装为 MCP Resource；增量模式直接输出 XDS {@link io.envoyproxy.envoy.service.discovery.v3.Resource}。</p>
+ *
  * @author special.fy
  */
 public final class ServiceEntryXdsGenerator implements ApiGenerator<Any> {
     
+    /** 单例实例。 */
     private static volatile ServiceEntryXdsGenerator singleton = null;
     
+    /** 本次生成周期内缓存的 ServiceEntry 包装列表。 */
     private List<ServiceEntryWrapper> serviceEntries;
     
+    /** 获取 ServiceEntry XDS 生成器单例。 */
     public static ServiceEntryXdsGenerator getInstance() {
         if (singleton == null) {
             synchronized (ServiceEntryXdsGenerator.class) {
@@ -56,6 +63,7 @@ public final class ServiceEntryXdsGenerator implements ApiGenerator<Any> {
         return singleton;
     }
     
+    /** 全量生成 MCP 格式的 ServiceEntry 资源列表。 */
     @Override
     public List<Any> generate(PushRequest pushRequest) {
         List<Resource> resources = new ArrayList<>();
@@ -92,6 +100,7 @@ public final class ServiceEntryXdsGenerator implements ApiGenerator<Any> {
         return result;
     }
     
+    /** 增量生成 ServiceEntry；全量模式返回 {@code null}。 */
     @Override
     public List<io.envoyproxy.envoy.service.discovery.v3.Resource> deltaGenerate(
         PushRequest pushRequest) {

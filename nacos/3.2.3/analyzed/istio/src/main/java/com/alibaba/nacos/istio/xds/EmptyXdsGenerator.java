@@ -25,12 +25,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 空 XDS 生成器：对未知或未支持的 typeUrl 返回空资源列表。
+ *
+ * <p>由 {@link com.alibaba.nacos.istio.api.ApiGeneratorFactory} 在无法匹配具体生成器时使用。</p>
+ *
  * @author special.fy
  */
 public class EmptyXdsGenerator implements ApiGenerator<Any> {
     
+    /** 单例实例。 */
     private static volatile EmptyXdsGenerator singleton = null;
     
+    /** 获取空 XDS 生成器单例。 */
     public static EmptyXdsGenerator getInstance() {
         if (singleton == null) {
             synchronized (EmptyXdsGenerator.class) {
@@ -42,11 +48,13 @@ public class EmptyXdsGenerator implements ApiGenerator<Any> {
         return singleton;
     }
     
+    /** 全量推送时返回空列表。 */
     @Override
     public List<Any> generate(PushRequest pushRequest) {
         return new ArrayList<>();
     }
     
+    /** 增量推送时返回空列表。 */
     @Override
     public List<Resource> deltaGenerate(PushRequest pushRequest) {
         return new ArrayList<>();

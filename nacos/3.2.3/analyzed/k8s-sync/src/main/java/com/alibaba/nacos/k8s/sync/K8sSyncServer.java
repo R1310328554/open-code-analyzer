@@ -56,13 +56,16 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Start and stop k8s-sync.
+ * K8s 同步服务：监听集群 Service/Endpoints 变更并同步到 Nacos 命名服务。
+ *
+ * <p>使用 SharedIndexInformer  watch 全命名空间资源，在应用就绪后启动，关闭时停止 Informer。</p>
  *
  * @author EmanuelGi
  */
 @Component
 public class K8sSyncServer {
     
+    /** K8s 同步配置。 */
     @Autowired
     private K8sSyncConfig k8sSyncConfig;
     
@@ -72,12 +75,13 @@ public class K8sSyncServer {
     @Autowired
     private InstanceOperatorClientImpl instanceOperatorClient;
     
+    /** Kubernetes 共享 Informer 工厂。 */
     private SharedInformerFactory factory;
     
     /**
-     * start.
+     * 应用就绪后启动 K8s Informer 并注册关闭钩子。
      *
-     * @throws IOException io exception
+     * @throws IOException 集群外 kubeconfig 加载失败时抛出
      */
     @EventListener(ApplicationReadyEvent.class)
     public void start() throws IOException {
@@ -99,9 +103,9 @@ public class K8sSyncServer {
     }
     
     /**
-     * start informer.
+     * 创建 ApiClient、注册 Service/Endpoints 事件处理器并等待 Informer 缓存同步。
      *
-     * @throws IOException io exception
+     * @throws IOException API 客户端初始化失败时抛出
      */
     public void startInformer() throws IOException {
         ApiClient apiClient;
@@ -112,7 +116,7 @@ public class K8sSyncServer {
         } else {
             apiClient = ClientBuilder.cluster().build();
         }
-        // set the global default api-client
+        // 设置全局默认 Kubernetes API 客户端
         Configuration.setDefaultApiClient(apiClient);
         coreV1Api = new CoreV1Api();
         
@@ -280,8 +284,8 @@ public class K8sSyncServer {
             }
         });
         
-        // Wait until the cache of each informer has been fully synced before proceeding.
-        // This ensures that the local cache contains the latest and complete resource data.
+        // 等待各 Informer 本地缓存同步完成后再继续
+        // 确保本地缓存已包含最新完整的 K8s 资源数据
         long timeout = 30000L;
         long startTime = System.currentTimeMillis();
         serviceInformer.run();
@@ -302,13 +306,13 @@ public class K8sSyncServer {
     }
     
     /**
-     * create instance.
+     * 根据 K8s Endpoints 信息构造 Nacos {@link Instance}（持久实例）。
      *
-     * @param ip instance ip
-     * @param targetPort instance port
-     * @param serviceName service name
-     * @param port service port
-     * @return instance
+     * @param ip 实例 IP
+     * @param targetPort Pod 目标端口
+     * @param serviceName 服务名（作 clusterName）
+     * @param port Service 端口
+     * @return 待注册的 Nacos 实例
      */
     public Instance createInstance(String ip, int targetPort, String serviceName, int port) {
         Instance instance = new Instance();
@@ -322,18 +326,18 @@ public class K8sSyncServer {
     }
     
     /**
-     * register service.
+     * 注册或更新 Nacos 服务，并 reconcile Endpoints 与现有实例差异。
      *
-     * @param namespace service namespace
-     * @param serviceName service name
-     * @param servicePorts service ports
-     * @param portChanged port is changed or not
-     * @throws NacosException nacos exception during registering
+     * @param namespace K8s 命名空间（对应 Nacos namespace）
+     * @param serviceName 服务名
+     * @param servicePorts Service 端口列表
+     * @param portChanged 端口是否变更（变更时全量重注册实例）
+     * @throws NacosException 注册失败时抛出
      */
     public void registerService(String namespace, String serviceName,
         List<V1ServicePort> servicePorts, boolean portChanged,
         SharedIndexInformer<V1Endpoints> endpointInformer) throws NacosException {
-        //TODO defaultnamespace 常量
+        // TODO 提取 default namespace 常量
         
         Service service =
             Service.newService(namespace, Constants.DEFAULT_GROUP, serviceName, false);
@@ -352,12 +356,12 @@ public class K8sSyncServer {
         V1Endpoints endpoints = endpointLister.get(serviceName);
         Set<String> newIpSet = getIpFromEndpoints(endpoints);
         
-        //unregister deleted instance
+        // 注销已从 Endpoints 消失的实例
         Set<String> deleteIpSet = new HashSet<>();
         deleteIpSet.addAll(oldIpSet);
         deleteIpSet.removeAll(newIpSet);
         unregisterInstances(deleteIpSet, namespace, serviceName, oldInstanceList);
-        //register added instance
+        // 注册 Endpoints 中新增的实例
         Set<String> addIpSet = new HashSet<>();
         addIpSet.addAll(newIpSet);
         if (!portChanged) {
@@ -367,11 +371,11 @@ public class K8sSyncServer {
     }
     
     /**
-     * unregister service.
+     * 删除 Nacos 服务及其全部实例。
      *
-     * @param namespace service namespace
-     * @param serviceName service name
-     * @throws NacosException nacos exception during unregistering
+     * @param namespace K8s 命名空间
+     * @param serviceName 服务名
+     * @throws NacosException 注销失败时抛出
      */
     public void unregisterService(String namespace, String serviceName) throws NacosException {
         List<? extends Instance> instancelist =
@@ -383,13 +387,13 @@ public class K8sSyncServer {
     }
     
     /**
-     * register instances.
+     * 批量注册新增 IP 对应的 Nacos 实例（按 Service 端口展开）。
      *
-     * @param addIpSet add ip set
-     * @param namespace service namespace
-     * @param serviceName service name
-     * @param servicePorts servie ports
-     * @throws NacosException nacos exception during registering instances
+     * @param addIpSet 待新增 IP 集合
+     * @param namespace K8s 命名空间
+     * @param serviceName 服务名
+     * @param servicePorts Service 端口列表
+     * @throws NacosException 注册失败时抛出
      */
     public void registerInstances(Set<String> addIpSet, String namespace, String serviceName,
         List<V1ServicePort> servicePorts) throws NacosException {
@@ -404,16 +408,16 @@ public class K8sSyncServer {
                 instanceOperatorClient.registerInstance(namespace, serviceName, instance);
             }
         }
-        //TODO：register instance后是否需要发布事件
+        // TODO：注册实例后是否需发布 naming 事件
     }
     
     /**
-     * unregister instances.
+     * 按 IP 集合从 Nacos 服务中移除实例。
      *
-     * @param deleteIpSet delete ip set
-     * @param namespace service namespace
-     * @param serviceName service name
-     * @param oldInstanceList old instance list from nacos service
+     * @param deleteIpSet 待删除 IP 集合
+     * @param namespace K8s 命名空间
+     * @param serviceName 服务名
+     * @param oldInstanceList 当前 Nacos 上的实例列表
      */
     public void unregisterInstances(Set<String> deleteIpSet, String namespace, String serviceName,
         List<? extends Instance> oldInstanceList) throws NacosException {
@@ -424,6 +428,7 @@ public class K8sSyncServer {
         }
     }
     
+    /** 从 V1Endpoints 提取全部就绪 IP 地址。 */
     public Set<String> getIpFromEndpoints(V1Endpoints endpoints) {
         Set<String> ipSet = new HashSet<>();
         List<V1EndpointSubset> endpointSubsetList = endpoints.getSubsets();
@@ -436,10 +441,11 @@ public class K8sSyncServer {
     }
     
     /**
-     * compare oldServicePorts and newServicePorts.
+     * 比较 Service 端口列表是否发生变化。
      *
-     * @param oldServicePorts old service ports list
-     * @param newServicePorts new service ports list
+     * @param oldServicePorts 变更前端口列表
+     * @param newServicePorts 变更后端口列表
+     * @return 端口集合是否相同
      */
     public boolean compareServicePorts(List<V1ServicePort> oldServicePorts,
         List<V1ServicePort> newServicePorts) {
@@ -451,25 +457,24 @@ public class K8sSyncServer {
     }
     
     /**
-     * use the Java API from an application outside a kubernetes cluster.
-     * you should load a kubeConfig to generate apiClient instead of getting it from coreV1api.
+     * 集群外模式：从 kubeconfig 文件加载配置并构建 {@link ApiClient}。
      */
     public ApiClient getOutsideApiClient() throws IOException {
         String kubeConfigPath = k8sSyncConfig.getKubeConfig();
         
-        // loading the out-of-cluster config, a kubeconfig from file-system
+        // 从文件系统加载集群外 kubeconfig
         ApiClient apiClient = ClientBuilder
             .kubeconfig(KubeConfig.loadKubeConfig(
                 Files.newBufferedReader(Paths.get(kubeConfigPath), StandardCharsets.UTF_8)))
             .build();
         
-        // set the global default api-client to the in-cluster one from above
+        // 将上述客户端设为全局默认 ApiClient
         Configuration.setDefaultApiClient(apiClient);
         return apiClient;
     }
     
     /**
-     * stop.
+     * 停止所有已注册的 Informer。
      */
     public void stop() {
         if (factory != null) {

@@ -42,14 +42,18 @@ import static com.alibaba.nacos.istio.api.ApiConstants.ROUTE_TYPE;
 import static com.alibaba.nacos.istio.util.IstioCrdUtil.buildClusterName;
 
 /**
- * Rds of Xds Generator.
+ * XDS RDS（Route Discovery Service）生成器：将 VirtualService 或默认规则转换为 {@link RouteConfiguration}。
+ *
+ * <p>支持默认路由、Istio 配置驱动的 VirtualService 解析及前缀/精确/正则 URI 匹配。</p>
  *
  * @author PoisonGravity
  */
 public class RdsGenerator implements ApiGenerator<Any> {
     
+    /** 默认路由配置名称。 */
     public static final String DEFAULT_ROUTE_CONFIGURATION = "default_route_configuration";
     
+    /** 推送 reason 标识：来自 Istio 配置变更。 */
     public static final String CONFIG_REASON = "config";
     
     public static final String DOMAIN_SUFFIX = ".nacos";
@@ -60,8 +64,10 @@ public class RdsGenerator implements ApiGenerator<Any> {
     
     private final Yaml yaml = new Yaml();
     
+    /** 单例实例。 */
     private static volatile RdsGenerator singleton = null;
     
+    /** 获取 RDS 生成器单例。 */
     public static RdsGenerator getInstance() {
         if (singleton == null) {
             synchronized (RdsGenerator.class) {
@@ -73,6 +79,7 @@ public class RdsGenerator implements ApiGenerator<Any> {
         return singleton;
     }
     
+    /** 按 reason 类型生成 RDS 资源（默认路由或 VirtualService）。 */
     @Override
     public List<Any> generate(PushRequest pushRequest) {
         
@@ -102,6 +109,7 @@ public class RdsGenerator implements ApiGenerator<Any> {
         return null;
     }
     
+    /** 构建指向 nacos_xds 上游集群的默认路由配置。 */
     private static Any buildDefaultRouteConfiguration(String routeConfigurationName) {
         if (routeConfigurationName == null) {
             throw new IllegalArgumentException("routeConfigurationName cannot be null");
@@ -128,10 +136,10 @@ public class RdsGenerator implements ApiGenerator<Any> {
     }
     
     /***
-     * <p> generate Rds From VirtualService.</p>
-     * @param virtualService VirtualService Parsed
-     * @param pushRequest PushRequest
-     * @return
+     * 从 VirtualService 生成 RDS {@link RouteConfiguration}。
+     * @param virtualService 已解析的 VirtualService
+     * @param pushRequest 推送上下文
+     * @return 封装为 {@link Any} 的路由配置
      */
     public static Any generateRdsFromVirtualService(VirtualService virtualService,
         PushRequest pushRequest) {
@@ -192,6 +200,7 @@ public class RdsGenerator implements ApiGenerator<Any> {
         return hostnames;
     }
     
+    /** 将 VirtualService HTTP 路由规则转换为 Envoy {@link Route}。 */
     private static void processHttpRoute(VirtualService.Spec.Http httpRoute,
         VirtualHost.Builder virtualHostBuilder,
         PushRequest pushRequest) {
@@ -224,6 +233,7 @@ public class RdsGenerator implements ApiGenerator<Any> {
         virtualHostBuilder.addRoutes(routeBuilder);
     }
     
+    /** 设置路由动作：目标集群与 URI 重写。 */
     private static void setRouteAction(VirtualService.Spec.Http httpRoute,
         Route.Builder routeBuilder,
         PushRequest pushRequest) {
@@ -247,6 +257,7 @@ public class RdsGenerator implements ApiGenerator<Any> {
         routeBuilder.setRoute(routeActionBuilder.setCluster(destName));
     }
     
+    /** 设置 HTTP 重定向动作。 */
     private static void setRedirectAction(VirtualService.Spec.Http.Redirect redirect,
         Route.Builder routeBuilder) {
         RedirectAction.Builder redirectBuilder = RedirectAction.newBuilder();

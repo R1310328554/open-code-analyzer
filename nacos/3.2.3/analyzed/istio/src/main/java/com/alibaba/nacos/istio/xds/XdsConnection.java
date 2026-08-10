@@ -23,14 +23,18 @@ import io.envoyproxy.envoy.service.discovery.v3.DiscoveryResponse;
 import io.grpc.stub.StreamObserver;
 
 /**
+ * SotW XDS gRPC 连接实现：向 Envoy 客户端推送 {@link DiscoveryResponse} 并更新 {@link WatchedStatus}。
+ *
  * @author special.fy
  */
 public class XdsConnection extends AbstractConnection<DiscoveryResponse> {
     
+    /** 绑定 DiscoveryResponse 输出流。 */
     public XdsConnection(StreamObserver<DiscoveryResponse> streamObserver) {
         super(streamObserver);
     }
     
+    /** 向客户端写入 DiscoveryResponse 并记录推送版本信息。 */
     @Override
     public synchronized void push(DiscoveryResponse response, WatchedStatus watchedStatus) {
         if (Loggers.MAIN.isDebugEnabled()) {
@@ -39,7 +43,7 @@ public class XdsConnection extends AbstractConnection<DiscoveryResponse> {
         
         this.streamObserver.onNext(response);
         
-        // Update watched status
+        // 推送后更新最新 version 与 nonce
         watchedStatus.setLatestVersion(response.getVersionInfo());
         watchedStatus.setLatestNonce(response.getNonce());
         

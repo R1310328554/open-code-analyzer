@@ -49,12 +49,15 @@ import static com.alibaba.nacos.istio.api.ApiConstants.LISTENER_TYPE;
 import static io.envoyproxy.envoy.config.core.v3.ApiVersion.V2_VALUE;
 
 /**
- * LDS of XDS protocol generator.
+ * XDS LDS（Listener Discovery Service）生成器：构建 Envoy {@link Listener} 与 HTTP 连接管理配置。
+ *
+ * <p>包含 bootstrap 监听器与各 Istio 服务对应的动态监听器，配合 RDS 完成路由发现。</p>
  *
  * @author PoisonGravity
  */
 public class LdsGenerator implements ApiGenerator<Any> {
     
+    /** 启动阶段 bootstrap 监听器逻辑名称。 */
     public static final String INIT_LISTENER = "bootstrap_listener";
     
     private static final String INIT_LISTENER_NAME = "listener_0";
@@ -83,8 +86,10 @@ public class LdsGenerator implements ApiGenerator<Any> {
     
     public static final String DEFAULT_HTTP_ROUTER_TYPE = "envoy.filters.http.router";
     
+    /** 单例实例。 */
     private static volatile LdsGenerator singleton = null;
     
+    /** 获取 LDS 生成器单例。 */
     public static LdsGenerator getInstance() {
         if (singleton == null) {
             synchronized (LdsGenerator.class) {
@@ -96,6 +101,7 @@ public class LdsGenerator implements ApiGenerator<Any> {
         return singleton;
     }
     
+    /** 全量生成 LDS：bootstrap 监听器 + 各服务动态监听器。 */
     @Override
     public List<Any> generate(PushRequest pushRequest) {
         if (!pushRequest.isFull()) {
@@ -123,14 +129,14 @@ public class LdsGenerator implements ApiGenerator<Any> {
         return result;
     }
     
+    /** LDS 暂不支持增量推送，返回 {@code null}。 */
     @Override
     public List<Resource> deltaGenerate(PushRequest pushRequest) {
         return null;
     }
     
     /**
-     * Constructs a default Envoy listener configuration with specified parameters.
-     * This method prepares the necessary configurations for both bootstrap and non-bootstrap scenarios.
+     * 构建默认 Envoy 监听器配置，兼容 bootstrap 与非 bootstrap 场景。
      */
     private static Any buildDefaultListener(String listenerName, String listenerAddress,
         int listenerPort,
@@ -179,17 +185,16 @@ public class LdsGenerator implements ApiGenerator<Any> {
     }
     
     /**
-     * Creates the initial bootstrap listener configuration.
-     * This is used during the startup phase of the Envoy server to construct the base configuration.
+     * 创建 Envoy 启动阶段的 bootstrap 监听器基础配置。
      */
+    /** 封装 bootstrap 监听器生成逻辑。 */
     private static Any buildBootstrapListener() {
         return buildDefaultListener(INIT_LISTENER_NAME, INIT_LISTENER_ADDRESS, INIT_LISTENER_PORT,
             null, true);
     }
     
     /**
-     * Constructs a default listener configuration for static environments.
-     * This method is designed to provide configurations for scenarios where dynamic discovery services might not be used.
+     * 构建静态环境下的默认监听器配置（不依赖动态服务发现）。
      */
     private static Any buildDefaultStaticListener(String listenerName, String listenerAddress,
         int listenerPort,
@@ -201,9 +206,9 @@ public class LdsGenerator implements ApiGenerator<Any> {
     }
     
     /**
-     * Constructs a listener configuration for environments using dynamic service discovery.
-     * This method prepares the listener to utilize dynamic routing and service discovery services with rds.
+     * 构建动态服务发现环境下的监听器，通过 RDS 获取路由配置。
      */
+    /** 为指定服务构建带 RDS 的动态监听器。 */
     private static Any buildDynamicListener(String listenerName, String listenerAddress,
         int listenerPort,
         String rdsName) {
@@ -241,6 +246,7 @@ public class LdsGenerator implements ApiGenerator<Any> {
         
     }
     
+    /** 构建标准输出访问日志配置。 */
     private static AccessLog buildAccessLog() {
         return AccessLog.newBuilder().setName(ACCESS_LOGGER_NAME)
             .setTypedConfig(Any.newBuilder().setTypeUrl(TYPE_URL_ACCESS_LOG)
@@ -248,16 +254,19 @@ public class LdsGenerator implements ApiGenerator<Any> {
             .build();
     }
     
+    /** 创建 ADS 聚合配置源。 */
     private static ConfigSource createConfigSource() {
         return ConfigSource.newBuilder().setAds(AggregatedConfigSource.newBuilder())
             .setResourceApiVersionValue(V2_VALUE).build();
     }
     
+    /** 创建 HTTP Router 过滤器。 */
     private static HttpFilter createHttpFilter() {
         return HttpFilter.newBuilder().setName(DEFAULT_HTTP_ROUTER_TYPE)
             .setTypedConfig(Any.pack(Router.newBuilder().build())).build();
     }
     
+    /** 将 HTTP 连接管理器封装为 FilterChain。 */
     private static FilterChain createFilterChain(HttpConnectionManager httpConnectionManager) {
         return FilterChain.newBuilder().setName(DEFAULT_FILTER_CHAIN_NAME).addFilters(
             Filter.newBuilder().setName(DEFAULT_FILTER_TYPE)

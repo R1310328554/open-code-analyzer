@@ -28,7 +28,10 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.TimeUnit;
 
 /**
- * RequestLockAspect.
+ * 分布式锁远程请求切面：拦截 {@link com.alibaba.nacos.lock.remote.rpc.handler.LockRequestHandler} 统计 QPS 与耗时。
+ *
+ * <p>通过 {@link LockMetricsMonitor} 记录总量、成功数及处理时延。</p>
+ *
  * @author goumang.zh@alibaba-inc.com
  */
 @Aspect
@@ -36,12 +39,20 @@ import java.util.concurrent.TimeUnit;
 public class RequestLockAspect {
     
     /**
-     * count metrics and get handler time.
+     * 环绕锁 RPC 处理：计数并记录 handler 耗时。
      */
     @SuppressWarnings("checkstyle:linelength")
     @Around(
         value = "execution(* com.alibaba.nacos.core.remote.RequestHandler.handleRequest(..)) && target(com.alibaba.nacos.lock.remote.rpc.handler.LockRequestHandler) && args(request, meta)",
         argNames = "pjp,request,meta")
+    /**
+     * 锁操作指标采集切点。
+     *
+     * @param pjp 连接点
+     * @param request 锁操作请求
+     * @param meta 请求元数据
+     * @return 原 handler 返回值
+     */
     public Object lockMeterPoint(ProceedingJoinPoint pjp, LockOperationRequest request,
         RequestMeta meta)
         throws Throwable {

@@ -51,18 +51,25 @@ import static com.alibaba.nacos.istio.xds.LdsGenerator.INIT_LISTENER;
 import static com.alibaba.nacos.istio.xds.RdsGenerator.DEFAULT_ROUTE_CONFIGURATION;
 
 /**
+ * Nacos XDS gRPC 服务：实现 Envoy ADS 聚合发现，管理 SotW 与 Delta 两类长连接。
+ *
+ * <p>处理客户端订阅/ACK，协调 CDS/EDS/LDS/RDS 及 ServiceEntry 资源推送；与 {@link NacosResourceManager}、{@link ApiGeneratorFactory} 协作。</p>
+ *
  * @author special.fy
  */
 @Service
 public class NacosXdsService
     extends AggregatedDiscoveryServiceGrpc.AggregatedDiscoveryServiceImplBase {
     
+    /** SotW（State-of-the-World）XDS 连接表：connectionId → 连接。 */
     private final Map<String, AbstractConnection<DiscoveryResponse>> connections =
         new ConcurrentHashMap<>(16);
     
+    /** Delta XDS 连接表：connectionId → 增量连接。 */
     private final Map<String, AbstractConnection<DeltaDiscoveryResponse>> deltaConnections =
         new ConcurrentHashMap<>(16);
     
+    /** 是否存在至少一个 XDS 客户端连接（SotW 或 Delta）。 */
     public boolean hasClientConnection() {
         return connections.size() != 0 || deltaConnections.size() != 0;
     }
@@ -76,9 +83,9 @@ public class NacosXdsService
     @Override
     public StreamObserver<DiscoveryRequest> streamAggregatedResources(
         StreamObserver<DiscoveryResponse> responseObserver) {
-        // TODO add authN
+        // TODO 增加 XDS 连接鉴权
         
-        // Init snapshot of nacos service info.
+        // 建立流时初始化 Nacos 服务资源快照
         resourceManager.initResourceSnapshot();
         AbstractConnection<DiscoveryResponse> newConnection = new XdsConnection(responseObserver);
         
@@ -88,7 +95,7 @@ public class NacosXdsService
             
             @Override
             public void onNext(DiscoveryRequest discoveryRequest) {
-                // init connection
+                // 首包：登记 connectionId 并写入连接表
                 if (initRequest) {
                     newConnection.setConnectionId(discoveryRequest.getNode().getId());
                     connections.put(newConnection.getConnectionId(), newConnection);
@@ -118,6 +125,7 @@ public class NacosXdsService
         };
     }
     
+    /** 处理 SotW DiscoveryRequest：解析 reason 并构建 DiscoveryResponse 推送。 */
     public void process(DiscoveryRequest discoveryRequest,
         AbstractConnection<DiscoveryResponse> connection) {
         if (!shouldPush(discoveryRequest, connection)) {
@@ -161,7 +169,7 @@ public class NacosXdsService
         String type = discoveryRequest.getTypeUrl();
         String connectionId = connection.getConnectionId();
         
-        // Suitable for bug of istio
+        // 兼容 Istio 已知问题：忽略 MeshConfig 类型
         // See https://github.com/istio/istio/pull/34633
         if (type.equals(MESH_CONFIG_PROTO_PACKAGE)) {
             Loggers.MAIN.info("xds: type {} should be ignored.", type);
@@ -216,7 +224,7 @@ public class NacosXdsService
             return false;
         }
         
-        // This request is ack, we should record version and nonce.
+        // 客户端 ACK：记录 version/nonce，本次不再推送
         watchedStatus.setAckedVersion(discoveryRequest.getVersionInfo());
         watchedStatus.setAckedNonce(discoveryRequest.getResponseNonce());
         Loggers.MAIN.info("xds: ack, type {}, connection-id {}, version {}, nonce {}", type,
@@ -225,13 +233,14 @@ public class NacosXdsService
         return false;
     }
     
+    /** 服务实例变更事件：向所有连接推送 MCP/CDS/EDS/LDS 资源。 */
     public void handleEvent(PushRequest pushRequest) {
         if (connections.size() == 0) {
             return;
         }
         
         for (AbstractConnection<DiscoveryResponse> connection : connections.values()) {
-            //mcp
+            // MCP ServiceEntry 资源推送
             WatchedStatus watchedStatus =
                 connection.getWatchedStatusByType(SERVICE_ENTRY_PROTO_PACKAGE);
             if (watchedStatus != null) {
@@ -239,7 +248,7 @@ public class NacosXdsService
                     buildDiscoveryResponse(SERVICE_ENTRY_PROTO_PACKAGE, pushRequest);
                 connection.push(serviceEntryResponse, watchedStatus);
             }
-            //CDS
+            // CDS 集群资源推送
             WatchedStatus cdsWatchedStatus = connection.getWatchedStatusByType(CLUSTER_TYPE);
             if (cdsWatchedStatus != null) {
                 DiscoveryResponse cdsResponse = buildDiscoveryResponse(CLUSTER_TYPE, pushRequest);
@@ -247,13 +256,13 @@ public class NacosXdsService
                     connection.push(cdsResponse, cdsWatchedStatus);
                 }
             }
-            //EDS
+            // EDS 端点资源推送
             WatchedStatus edsWatchedStatus = connection.getWatchedStatusByType(ENDPOINT_TYPE);
             if (edsWatchedStatus != null) {
                 DiscoveryResponse edsResponse = buildDiscoveryResponse(ENDPOINT_TYPE, pushRequest);
                 connection.push(edsResponse, edsWatchedStatus);
             }
-            //LDS
+            // LDS 监听器资源推送
             WatchedStatus ldsWatchedStatus = connection.getWatchedStatusByType(LISTENER_TYPE);
             if (ldsWatchedStatus != null) {
                 DiscoveryResponse ldsResponse = buildDiscoveryResponse(LISTENER_TYPE, pushRequest);
@@ -264,16 +273,17 @@ public class NacosXdsService
     }
     
     /**
-     * Handles events from Istio configuration changes and propagates updates to all connected clients.
-     * @param pushRequest pushRequest
+     * Istio 配置变更事件：向所有已订阅 RDS 的连接推送路由更新。
+     * @param pushRequest 推送上下文
      */
+    /** Istio 配置变更事件：向所有连接推送 RDS 路由资源。 */
     public void handleConfigEvent(PushRequest pushRequest) {
         if (connections.size() == 0) {
             return;
         }
         
         for (AbstractConnection<DiscoveryResponse> connection : connections.values()) {
-            //RDS
+            // RDS 路由配置推送
             WatchedStatus watchedStatus;
             watchedStatus = connection.getWatchedStatusByType(ROUTE_TYPE);
             if (watchedStatus == null) {
@@ -349,6 +359,7 @@ public class NacosXdsService
         };
     }
     
+    /** 处理 Delta DiscoveryRequest 并构建增量响应。 */
     public void deltaProcess(DeltaDiscoveryRequest deltaDiscoveryRequest,
         AbstractConnection<DeltaDiscoveryResponse> connection) {
         if (!deltaShouldPush(deltaDiscoveryRequest, connection)) {
@@ -420,7 +431,7 @@ public class NacosXdsService
         }
         
         // This request is ack, we should record version and nonce.
-        //TODO: setAckedVersion
+        // TODO: 记录 Delta ACK 对应 version
         watchedStatus.setAckedNonce(deltaDiscoveryRequest.getResponseNonce());
         watchedStatus.setLastSubscribe(
             new HashSet<>(deltaDiscoveryRequest.getResourceNamesSubscribeList()));
@@ -429,6 +440,7 @@ public class NacosXdsService
         return false;
     }
     
+    /** 增量模式下的服务变更事件推送（ServiceEntry/EDS）。 */
     public void handleDeltaEvent(PushRequest pushRequest) {
         if (deltaConnections.size() == 0) {
             return;

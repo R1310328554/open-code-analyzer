@@ -40,14 +40,20 @@ import static com.alibaba.nacos.istio.api.ApiConstants.ENDPOINT_TYPE;
 import static com.alibaba.nacos.istio.util.IstioCrdUtil.buildClusterName;
 import static com.alibaba.nacos.istio.util.IstioCrdUtil.parseClusterNameToServiceName;
 
-/**.
+/**
+ * XDS EDS（Endpoint Discovery Service）生成器：将 Nacos 服务实例转换为 Envoy {@link ClusterLoadAssignment}。
+ *
+ * <p>实现 {@link com.alibaba.nacos.istio.api.ApiGenerator}，支持全量 {@link #generate} 与增量 {@link #deltaGenerate} 推送。</p>
+ *
  * @author RocketEngine26
  * @date 2022/7/24 15:28
  */
 public final class EdsGenerator implements ApiGenerator<Any> {
     
+    /** 单例实例（双重检查锁）。 */
     private static volatile EdsGenerator singleton = null;
     
+    /** 获取 EDS 生成器单例。 */
     public static EdsGenerator getInstance() {
         if (singleton == null) {
             synchronized (EdsGenerator.class) {
@@ -59,6 +65,7 @@ public final class EdsGenerator implements ApiGenerator<Any> {
         return singleton;
     }
     
+    /** 全量生成 EDS 资源：按 reason 过滤或遍历全部 Istio 服务。 */
     @Override
     public List<Any> generate(PushRequest pushRequest) {
         List<Any> result = new ArrayList<>();
@@ -89,6 +96,7 @@ public final class EdsGenerator implements ApiGenerator<Any> {
         return result;
     }
     
+    /** 增量生成 EDS 资源；全量推送时返回 {@code null}。 */
     @Override
     public List<Resource> deltaGenerate(PushRequest pushRequest) {
         if (pushRequest.isFull()) {
@@ -138,6 +146,7 @@ public final class EdsGenerator implements ApiGenerator<Any> {
         return result;
     }
     
+    /** 为指定集群名构建 {@link ClusterLoadAssignment} 并封装为 {@link Any}。 */
     private static Any buildEndpoint(String name, IstioService istioService) {
         if (istioService.getHosts().isEmpty()) {
             return null;

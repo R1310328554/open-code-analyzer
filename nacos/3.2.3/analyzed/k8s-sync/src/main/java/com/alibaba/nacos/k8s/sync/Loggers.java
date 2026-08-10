@@ -20,11 +20,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Loggers Holder.
+ * K8s 同步模块日志持有者：提供统一命名的 SLF4J {@link Logger}。
  *
  * @author EmanuelGi
  */
 public class Loggers {
     
+    /** K8s 同步主流程日志（logger 名 {@code com.alibaba.nacos.k8s.sync.main}）。 */
     public static final Logger MAIN = LoggerFactory.getLogger("com.alibaba.nacos.k8s.sync.main");
 }
