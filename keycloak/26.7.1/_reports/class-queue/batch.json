@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T06:50:53Z",
-  "files": [
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/ConfigUtil.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/FilterUtil.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/Header.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/Headers.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/HeadersBody.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/HeadersBodyStatus.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/HttpDelete.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/HttpResponseException.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/HttpUtil.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/IoUtil.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/OsArch.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/OsUtil.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/OutputFormat.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/OutputUtil.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/ParseUtil.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5098,
-  "done": 885
+  "done": 900
 }
