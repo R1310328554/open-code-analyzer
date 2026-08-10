@@ -20,24 +20,35 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 可本地化消息的 JSON 表示：消息键与可选占位参数，由前端或主题 bundle 解析为最终文本。
  *
  * @author rmartinc
  */
 public class LocalizedMessage {
 
+    /** 消息资源 bundle 中的键名。 */
     private final String key;
+    /** 消息格式化占位参数；空数组时存储为 null。 */
     private final String[] parameters;
 
+    /**
+     * Jackson 反序列化构造器。
+     *
+     * @param key 消息键
+     * @param parameters 格式化参数（可变参数）
+     */
     @JsonCreator
     public LocalizedMessage(@JsonProperty("key") String key, @JsonProperty("parameters") String... parameters) {
         this.key = key;
         this.parameters = parameters == null || parameters.length == 0? null : parameters;
     }
 
+    /** @return 消息键 */
     public String getKey() {
         return key;
     }
 
+    /** @return 格式化参数数组，可能为 null */
     public String[] getParameters() {
         return parameters;
     }

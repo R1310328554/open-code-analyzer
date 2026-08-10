@@ -19,34 +19,44 @@ package org.keycloak.representations.account;
 import java.net.URI;
 
 /**
+ * 账户控制台中发起身份提供者账户关联时返回的链接 URI 表示，包含防重放 nonce 与完整性校验 hash。
  *
  * @author Stan Silvert
  */
 public class AccountLinkUriRepresentation {
+    /** 用户应访问以完成账户关联的 URI。 */
     private URI accountLinkUri;
+    /** 一次性随机数，用于防止 CSRF 与重放攻击。 */
     private String nonce;
+    /** 对上述字段计算的完整性哈希值。 */
     private String hash;
 
+    /** @return 账户关联跳转 URI */
     public URI getAccountLinkUri() {
         return accountLinkUri;
     }
 
+    /** @param accountLinkUri 账户关联跳转 URI */
     public void setAccountLinkUri(URI accountLinkUri) {
         this.accountLinkUri = accountLinkUri;
     }
 
+    /** @return 防重放 nonce */
     public String getNonce() {
         return nonce;
     }
 
+    /** @param nonce 防重放 nonce */
     public void setNonce(String nonce) {
         this.nonce = nonce;
     }
 
+    /** @return 完整性校验 hash */
     public String getHash() {
         return hash;
     }
 
+    /** @param hash 完整性校验 hash */
     public void setHash(String hash) {
         this.hash = hash;
     }

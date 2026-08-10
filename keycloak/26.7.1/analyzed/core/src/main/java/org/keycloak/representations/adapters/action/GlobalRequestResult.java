@@ -21,15 +21,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Result of the "global" request (like push notBefore or logoutAll), which is send to all cluster nodes
+ * 全局管理请求（如 pushNotBefore、logoutAll）向集群各节点广播后的聚合结果。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class GlobalRequestResult {
 
+    /** 成功响应的节点请求 URI 列表。 */
     private List<String> successRequests;
+    /** 失败响应的节点请求 URI 列表。 */
     private List<String> failedRequests;
 
+    /** 追加一条成功请求 URI。 */
     public void addSuccessRequest(String reqUri) {
         if (successRequests == null) {
             successRequests = new ArrayList<>();
@@ -37,6 +40,7 @@ public class GlobalRequestResult {
         successRequests.add(reqUri);
     }
 
+    /** 追加一条失败请求 URI。 */
     public void addFailedRequest(String reqUri) {
         if (failedRequests == null) {
             failedRequests = new ArrayList<>();
@@ -44,6 +48,7 @@ public class GlobalRequestResult {
         failedRequests.add(reqUri);
     }
 
+    /** 批量追加成功请求 URI。 */
     public void addAllSuccessRequests(List<String> reqUris) {
         if (successRequests == null) {
             successRequests = new ArrayList<>();
@@ -51,6 +56,7 @@ public class GlobalRequestResult {
         successRequests.addAll(reqUris);
     }
 
+    /** 批量追加失败请求 URI。 */
     public void addAllFailedRequests(List<String> reqUris) {
         if (failedRequests == null) {
             failedRequests = new ArrayList<>();
@@ -58,6 +64,7 @@ public class GlobalRequestResult {
         failedRequests.addAll(reqUris);
     }
 
+    /** 合并另一 {@link GlobalRequestResult} 的成功与失败列表。 */
     public void addAll(GlobalRequestResult merged) {
         if (merged.getSuccessRequests() != null && merged.getSuccessRequests().size() > 0) {
             addAllSuccessRequests(merged.getSuccessRequests());
@@ -67,10 +74,12 @@ public class GlobalRequestResult {
         }
     }
 
+    /** @return 成功请求 URI 列表 */
     public List<String> getSuccessRequests() {
         return successRequests;
     }
 
+    /** @return 失败请求 URI 列表 */
     public List<String> getFailedRequests() {
         return failedRequests;
     }

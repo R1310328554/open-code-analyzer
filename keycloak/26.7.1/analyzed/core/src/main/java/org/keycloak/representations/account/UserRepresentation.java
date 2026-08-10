@@ -20,6 +20,8 @@ package org.keycloak.representations.account;
 import org.keycloak.representations.idm.AbstractUserRepresentation;
 
 /**
+ * 账户控制台 API 返回的用户信息表示，继承 {@link AbstractUserRepresentation} 的全部 profile 字段。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UserRepresentation extends AbstractUserRepresentation {
