@@ -17,19 +17,31 @@
 package com.alibaba.nacos.api.config.remote.request;
 
 /**
- * request to remove a config .
+ * 删除配置的远程请求。
+ *
+ * <p>客户端请求 Nacos 服务端移除指定 dataId、group、tenant 下的配置项。</p>
  *
  * @author liuzunfei
  * @version $Id: ConfigRemoveRequest.java, v 0.1 2020年07月16日 4:31 PM liuzunfei Exp $
  */
 public class ConfigRemoveRequest extends AbstractConfigRequest {
     
+    /** 配置标签，用于灰度或特殊版本标识。 */
     String tag;
     
+    /** 无参构造，供序列化或框架实例化使用。 */
     public ConfigRemoveRequest() {
         
     }
     
+    /**
+     * 构造带完整定位信息的删除请求。
+     *
+     * @param dataId 配置 Data ID
+     * @param group  配置分组
+     * @param tenant 命名空间（tenant）
+     * @param tag    配置标签
+     */
     public ConfigRemoveRequest(String dataId, String group, String tenant, String tag) {
         super.setDataId(dataId);
         super.setGroup(group);
@@ -38,18 +50,18 @@ public class ConfigRemoveRequest extends AbstractConfigRequest {
     }
     
     /**
-     * Getter method for property <tt>tag</tt>.
+     * 获取配置标签。
      *
-     * @return property value of tag
+     * @return 标签值
      */
     public String getTag() {
         return tag;
     }
     
     /**
-     * Setter method for property <tt>tag</tt>.
+     * 设置配置标签。
      *
-     * @param tag value to be assigned to property tag
+     * @param tag 标签值
      */
     public void setTag(String tag) {
         this.tag = tag;

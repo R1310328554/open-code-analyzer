@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.config.remote.response.cluster;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * config change sync response on clusters.
+ * 集群间配置变更同步响应。
+ *
+ * <p>集群节点完成配置变更同步后，通过本响应确认同步结果。</p>
  *
  * @author liuzunfei
  * @version $Id: ConfigChangeClusterSyncResponse.java, v 0.1 2020年08月11日 4:32 PM liuzunfei Exp $

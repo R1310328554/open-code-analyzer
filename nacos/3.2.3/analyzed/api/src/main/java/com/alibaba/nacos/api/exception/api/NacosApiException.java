@@ -21,34 +21,43 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.model.v2.ErrorCode;
 import com.alibaba.nacos.api.utils.StringUtils;
 
-/** Exception for open API. <BR/>
- * errCode          ->  HTTP status code        inherited from {@link NacosException} <BR/>
- * errMsg           ->  detail error message    inherited from {@link NacosException} <BR/>
- * detailErrCode    ->  error code for api v2.0 <BR/>
- * errAbstract      ->  abstract error message for api v2.0
+/**
+ * 开放 API（v2.0）专用异常。
+ *
+ * <p>字段映射关系：</p>
+ * <ul>
+ *   <li>{@code errCode} — HTTP 状态码，继承自 {@link NacosException}</li>
+ *   <li>{@code errMsg} — 详细错误消息，继承自 {@link NacosException}</li>
+ *   <li>{@code detailErrCode} — API v2.0 业务错误码</li>
+ *   <li>{@code errAbstract} — API v2.0 错误摘要</li>
+ * </ul>
+ *
  * @author dongyafei
  * @date 2022/7/22
  */
 public class NacosApiException extends NacosException {
     
-    /**
-     * serialVersionUID.
-     */
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 2245627968556056573L;
     
-    /**
-     * error code for api v2.0.
-     */
+    /** API v2.0 业务错误码。 */
     private int detailErrCode;
     
-    /**
-     * abstract error description for api v2.0.
-     */
+    /** API v2.0 错误摘要描述。 */
     private String errAbstract;
     
+    /** 无参构造。 */
     public NacosApiException() {
     }
     
+    /**
+     * 构造带 HTTP 状态码、ErrorCode 与根因的 API 异常。
+     *
+     * @param statusCode HTTP 状态码
+     * @param errorCode  API v2.0 错误码枚举
+     * @param throwable  根因异常
+     * @param message    详细错误消息
+     */
     public NacosApiException(int statusCode, ErrorCode errorCode, Throwable throwable,
         String message) {
         super(statusCode, message, throwable);
@@ -56,16 +65,25 @@ public class NacosApiException extends NacosException {
         this.errAbstract = errorCode.getMsg();
     }
     
+    /**
+     * 构造带 HTTP 状态码与 ErrorCode 的 API 异常。
+     *
+     * @param statusCode HTTP 状态码
+     * @param errorCode  API v2.0 错误码枚举
+     * @param message    详细错误消息
+     */
     public NacosApiException(int statusCode, ErrorCode errorCode, String message) {
         super(statusCode, message);
         this.detailErrCode = errorCode.getCode();
         this.errAbstract = errorCode.getMsg();
     }
     
+    /** 获取 API v2.0 业务错误码。 */
     public int getDetailErrCode() {
         return detailErrCode;
     }
     
+    /** 获取 API v2.0 错误摘要（为空时返回 {@link Constants#NULL}）。 */
     public String getErrAbstract() {
         if (!StringUtils.isBlank(this.errAbstract)) {
             return this.errAbstract;

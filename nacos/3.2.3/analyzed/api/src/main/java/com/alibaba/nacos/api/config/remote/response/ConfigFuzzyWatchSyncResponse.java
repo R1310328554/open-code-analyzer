@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.config.remote.response;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * FuzzyListenNotifyChangeResponse.
+ * 模糊监听配置同步响应。
+ *
+ * <p>客户端与服务端同步模糊订阅状态时，通过本响应返回当前匹配的配置键集合。</p>
  *
  * @author stone-98
  * @date 2024/3/18

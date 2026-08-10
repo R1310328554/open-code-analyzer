@@ -20,30 +20,34 @@ import com.alibaba.nacos.api.remote.response.Response;
 import com.alibaba.nacos.api.remote.response.ResponseCode;
 
 /**
- * ConfigRemoveResponse.
+ * 配置删除响应。
+ *
+ * <p>服务端处理配置删除请求后返回操作结果。</p>
  *
  * @author liuzunfei
  * @version $Id: ConfigRemoveResponse.java, v 0.1 2020年07月16日 4:59 PM liuzunfei Exp $
  */
 public class ConfigRemoveResponse extends Response {
     
+    /** 无参构造，默认表示删除成功。 */
     public ConfigRemoveResponse() {
         super();
     }
     
     /**
-     * Build success response.
+     * 构建删除成功响应。
      *
-     * @return response.
+     * @return 成功响应实例
      */
     public static ConfigRemoveResponse buildSuccessResponse() {
         return new ConfigRemoveResponse();
     }
     
     /**
-     * Build fail response.
+     * 构建删除失败响应。
      *
-     * @return response.
+     * @param errorMsg 错误描述信息
+     * @return 失败响应实例
      */
     public static ConfigRemoveResponse buildFailResponse(String errorMsg) {
         ConfigRemoveResponse removeResponse = new ConfigRemoveResponse();

@@ -20,38 +20,61 @@ import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.utils.StringUtils;
 
 /**
- * Nacos Exception.
+ * Nacos 统一异常类。
+ *
+ * <p>封装错误码（{@link #errCode}）与错误消息，客户端与服务端交互时统一抛出本异常。</p>
  *
  * @author Nacos
  */
 public class NacosException extends Exception {
     
-    /**
-     * serialVersionUID.
-     */
+    /** 序列化版本号。 */
     private static final long serialVersionUID = -3913902031489277776L;
     
+    /** 错误码。 */
     private int errCode;
     
+    /** 错误消息。 */
     private String errMsg;
     
+    /** 根因异常。 */
     private Throwable causeThrowable;
     
+    /** 无参构造。 */
     public NacosException() {
     }
     
+    /**
+     * 构造带错误码与消息的异常。
+     *
+     * @param errCode 错误码
+     * @param errMsg  错误消息
+     */
     public NacosException(final int errCode, final String errMsg) {
         super(errMsg);
         this.errCode = errCode;
         this.errMsg = errMsg;
     }
     
+    /**
+     * 构造带错误码与根因的异常。
+     *
+     * @param errCode   错误码
+     * @param throwable 根因异常
+     */
     public NacosException(final int errCode, final Throwable throwable) {
         super(throwable);
         this.errCode = errCode;
         this.setCauseThrowable(throwable);
     }
     
+    /**
+     * 构造带错误码、消息与根因的异常。
+     *
+     * @param errCode   错误码
+     * @param errMsg    错误消息
+     * @param throwable 根因异常
+     */
     public NacosException(final int errCode, final String errMsg, final Throwable throwable) {
         super(errMsg, throwable);
         this.errCode = errCode;
@@ -59,10 +82,12 @@ public class NacosException extends Exception {
         this.setCauseThrowable(throwable);
     }
     
+    /** 获取错误码。 */
     public int getErrCode() {
         return this.errCode;
     }
     
+    /** 获取错误消息（优先返回 errMsg，否则取根因消息）。 */
     public String getErrMsg() {
         if (!StringUtils.isBlank(this.errMsg)) {
             return this.errMsg;
@@ -73,18 +98,22 @@ public class NacosException extends Exception {
         return Constants.NULL;
     }
     
+    /** 设置错误码。 */
     public void setErrCode(final int errCode) {
         this.errCode = errCode;
     }
     
+    /** 设置错误消息。 */
     public void setErrMsg(final String errMsg) {
         this.errMsg = errMsg;
     }
     
+    /** 设置根因异常（递归取最内层 cause）。 */
     public void setCauseThrowable(final Throwable throwable) {
         this.causeThrowable = this.getCauseThrowable(throwable);
     }
     
+    /** 递归获取最内层根因异常。 */
     private Throwable getCauseThrowable(final Throwable t) {
         if (t.getCause() == null) {
             return t;
@@ -92,113 +121,71 @@ public class NacosException extends Exception {
         return this.getCauseThrowable(t.getCause());
     }
     
+    /** 返回包含错误码与错误消息的字符串表示。 */
     @Override
     public String toString() {
         return "ErrCode:" + getErrCode() + ", ErrMsg:" + getErrMsg();
     }
     
-    /*
-     * client error code.
-     * -400 -503 throw exception to user.
-     */
+    /* 客户端错误码：-400、-503 等直接抛给用户。 */
     
-    /**
-     * invalid param（参数错误）.
-     */
+    /** 客户端参数无效（参数错误）。 */
     public static final int CLIENT_INVALID_PARAM = -400;
     
-    /**
-     * client disconnect.
-     */
+    /** 客户端连接断开。 */
     public static final int CLIENT_DISCONNECT = -401;
     
-    /**
-     * over client threshold（超过client端的限流阈值）.
-     */
+    /** 超过客户端限流阈值。 */
     public static final int CLIENT_OVER_THRESHOLD = -503;
     
-    /*
-     * server error code.
-     * 400 403 throw exception to user
-     * 500 502 503 change ip and retry
-     */
+    /* 服务端错误码：400/403 直接抛给用户；500/502/503 建议切换 IP 重试。 */
     
-    /**
-     * invalid param（参数错误）.
-     */
+    /** 服务端参数无效（参数错误）。 */
     public static final int INVALID_PARAM = 400;
     
-    /**
-     * no right（鉴权失败）.
-     */
+    /** 无访问权限（鉴权失败）。 */
     public static final int NO_RIGHT = 403;
     
-    /**
-     * not found.
-     */
+    /** 资源不存在。 */
     public static final int NOT_FOUND = 404;
     
-    /**
-     * not modified.
-     */
+    /** 资源未修改（HTTP 304）。 */
     public static final int NOT_MODIFIED = 304;
     
-    /**
-     * conflict（写并发冲突）.
-     */
+    /** 写并发冲突。 */
     public static final int CONFLICT = 409;
     
-    /**
-     * config already exists（配置已存在）.
-     */
+    /** 配置已存在。 */
     public static final int CONFIG_ALREADY_EXISTS = 410;
     
-    /**
-     * server error（server异常，如超时）.
-     */
+    /** 服务端内部错误（如超时）。 */
     public static final int SERVER_ERROR = 500;
     
-    /**
-     * server not implemented（server不支持该请求，可能该版本未实现功能，或请求了错误的API）.
-     */
+    /** 服务端未实现该请求（版本不支持或 API 错误）。 */
     public static final int SERVER_NOT_IMPLEMENTED = 501;
     
-    /**
-     * client error（client异常，返回给服务端）.
-     */
+    /** 客户端异常（返回给服务端）。 */
     public static final int CLIENT_ERROR = -500;
     
-    /**
-     * bad gateway（路由异常，如nginx后面的Server挂掉）.
-     */
+    /** 网关异常（如 Nginx 后端 Server 不可用）。 */
     public static final int BAD_GATEWAY = 502;
     
-    /**
-     * over threshold（超过server端的限流阈值）.
-     */
+    /** 超过服务端限流阈值。 */
     public static final int OVER_THRESHOLD = 503;
     
-    /**
-     * Server is not started.
-     */
+    /** 服务端尚未启动。 */
     public static final int INVALID_SERVER_STATUS = 300;
     
-    /**
-     * Connection is not registered.
-     */
+    /** 连接未注册。 */
     public static final int UN_REGISTER = 301;
     
-    /**
-     * No Handler Found.
-     */
+    /** 未找到请求处理器。 */
     public static final int NO_HANDLER = 302;
     
+    /** 资源未找到（客户端侧错误码）。 */
     public static final int RESOURCE_NOT_FOUND = -404;
     
-    /**
-     * http client error code, ome exceptions that occurred when there use the Nacos RestTemplate and Nacos
-     * AsyncRestTemplate.
-     */
+    /** HTTP 客户端错误码，使用 Nacos RestTemplate 或 AsyncRestTemplate 时可能抛出。 */
     public static final int HTTP_CLIENT_ERROR_CODE = -500;
     
 }

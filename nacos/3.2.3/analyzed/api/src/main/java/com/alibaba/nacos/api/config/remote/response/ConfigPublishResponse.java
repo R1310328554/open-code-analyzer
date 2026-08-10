@@ -20,30 +20,35 @@ import com.alibaba.nacos.api.remote.response.Response;
 import com.alibaba.nacos.api.remote.response.ResponseCode;
 
 /**
- * ConfigPublishResponse.
+ * 配置发布响应。
+ *
+ * <p>服务端处理 {@link com.alibaba.nacos.api.config.remote.request.ConfigPublishRequest} 后返回发布结果。</p>
  *
  * @author liuzunfei
  * @version $Id: ConfigPublishResponse.java, v 0.1 2020年07月16日 4:59 PM liuzunfei Exp $
  */
 public class ConfigPublishResponse extends Response {
     
+    /** 无参构造，默认表示发布成功。 */
     public ConfigPublishResponse() {
         super();
     }
     
     /**
-     * Build success response.
+     * 构建发布成功响应。
      *
-     * @return response.
+     * @return 成功响应实例
      */
     public static ConfigPublishResponse buildSuccessResponse() {
         return new ConfigPublishResponse();
     }
     
     /**
-     * Build fail response.
+     * 构建发布失败响应。
      *
-     * @return response.
+     * @param errorCode 业务错误码
+     * @param errorMsg  错误描述信息
+     * @return 失败响应实例
      */
     public static ConfigPublishResponse buildFailResponse(int errorCode, String errorMsg) {
         ConfigPublishResponse configPublishResponse = new ConfigPublishResponse();

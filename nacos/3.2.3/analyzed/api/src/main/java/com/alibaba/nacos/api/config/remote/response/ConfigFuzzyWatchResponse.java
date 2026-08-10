@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.config.remote.response;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * ConfigBatchFuzzyListenResponse.
+ * 模糊配置批量监听响应。
+ *
+ * <p>服务端响应客户端模糊订阅请求，返回匹配模式下的配置变更或初始快照。</p>
  *
  * @author stone-98
  * @date 2024/3/4

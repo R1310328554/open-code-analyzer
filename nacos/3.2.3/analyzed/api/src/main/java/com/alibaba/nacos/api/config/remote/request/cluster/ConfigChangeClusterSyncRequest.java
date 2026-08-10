@@ -19,70 +19,82 @@ package com.alibaba.nacos.api.config.remote.request.cluster;
 import com.alibaba.nacos.api.config.remote.request.AbstractConfigRequest;
 
 /**
- * config change sync request on clusters.
+ * 集群间配置变更同步请求。
+ *
+ * <p>用于 Nacos 集群节点间传播配置变更事件，携带最后修改时间、灰度名称等元信息。</p>
  *
  * @author liuzunfei
  * @version $Id: ConfigChangeClusterSyncRequest.java, v 0.1 2020年08月11日 4:30 PM liuzunfei Exp $
  */
 public class ConfigChangeClusterSyncRequest extends AbstractConfigRequest {
     
+    /** 配置最后修改时间戳（毫秒）。 */
     long lastModified;
     
+    /** 灰度发布名称。 */
     String grayName;
     
+    /** @deprecated 已废弃，请使用 grayName。 */
     @Deprecated
     boolean isBeta;
     
+    /** @deprecated 已废弃，请使用 grayName。 */
     @Deprecated
     String tag;
     
+    /** @deprecated 是否为 Beta 配置，已废弃。 */
     public boolean isBeta() {
         return isBeta;
     }
     
+    /** @deprecated 设置 Beta 标记，已废弃。 */
     public void setBeta(boolean beta) {
         isBeta = beta;
     }
     
     /**
-     * Getter method for property <tt>tag</tt>.
+     * 获取配置标签（已废弃）。
      *
-     * @return property value of tag
+     * @return 标签值
+     * @deprecated 请使用 {@link #getGrayName()}
      */
     public String getTag() {
         return tag;
     }
     
     /**
-     * Setter method for property <tt>tag</tt>.
+     * 设置配置标签（已废弃）。
      *
-     * @param tag value to be assigned to property tag
+     * @param tag 标签值
+     * @deprecated 请使用 {@link #setGrayName(String)}
      */
     public void setTag(String tag) {
         this.tag = tag;
     }
     
+    /** 获取灰度发布名称。 */
     public String getGrayName() {
         return grayName;
     }
     
+    /** 设置灰度发布名称。 */
     public void setGrayName(String grayName) {
         this.grayName = grayName;
     }
     
     /**
-     * Getter method for property <tt>lastModified</tt>.
+     * 获取配置最后修改时间戳。
      *
-     * @return property value of lastModified
+     * @return 毫秒时间戳
      */
     public long getLastModified() {
         return lastModified;
     }
     
     /**
-     * Setter method for property <tt>lastModified</tt>.
+     * 设置配置最后修改时间戳。
      *
-     * @param lastModified value to be assigned to property lastModified
+     * @param lastModified 毫秒时间戳
      */
     public void setLastModified(long lastModified) {
         this.lastModified = lastModified;

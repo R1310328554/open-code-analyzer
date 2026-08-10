@@ -19,22 +19,25 @@ package com.alibaba.nacos.api.config.remote.request;
 import com.alibaba.nacos.api.common.Constants;
 
 /**
- * request to query config content.
+ * 查询配置内容的远程请求。
+ *
+ * <p>客户端向 Nacos 服务端拉取指定 dataId、group、tenant 下的配置正文及元数据。</p>
  *
  * @author liuzunfei
  * @version $Id: ConfigQueryRequest.java, v 0.1 2020年07月13日 9:06 PM liuzunfei Exp $
  */
 public class ConfigQueryRequest extends AbstractConfigRequest {
     
+    /** 配置标签，用于灰度或特殊版本标识。 */
     private String tag;
     
     /**
-     * request builder.
+     * 构建配置查询请求。
      *
-     * @param dataId dataId
-     * @param group  group
-     * @param tenant tenant
-     * @return ConfigQueryRequest instance.
+     * @param dataId 配置 Data ID
+     * @param group  配置分组
+     * @param tenant 命名空间（tenant）
+     * @return 配置查询请求实例
      */
     public static ConfigQueryRequest build(String dataId, String group, String tenant) {
         ConfigQueryRequest request = new ConfigQueryRequest();
@@ -45,23 +48,24 @@ public class ConfigQueryRequest extends AbstractConfigRequest {
     }
     
     /**
-     * Getter method for property <tt>tag</tt>.
+     * 获取配置标签。
      *
-     * @return property value of tag
+     * @return 标签值
      */
     public String getTag() {
         return tag;
     }
     
     /**
-     * Setter method for property <tt>tag</tt>.
+     * 设置配置标签。
      *
-     * @param tag value to be assigned to property tag
+     * @param tag 标签值
      */
     public void setTag(String tag) {
         this.tag = tag;
     }
     
+    /** 请求头是否标记为通知型查询（而非主动拉取）。 */
     public boolean isNotify() {
         String notify = getHeader(Constants.Config.NOTIFY_HEADER, Boolean.FALSE.toString());
         return Boolean.parseBoolean(notify);
