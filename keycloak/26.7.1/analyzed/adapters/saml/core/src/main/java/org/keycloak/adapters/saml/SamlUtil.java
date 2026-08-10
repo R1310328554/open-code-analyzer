@@ -32,13 +32,26 @@ import org.jboss.logging.Logger;
 import org.w3c.dom.Document;
 
 /**
+ * SAML 适配器通用工具：发送 SAML 绑定消息、解析重定向目标、校验会话有效性。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SamlUtil {
 
+    /** 本类日志记录器。 */
     protected static Logger log = Logger.getLogger(SamlUtil.class);
 
+    /**
+     * 按 POST 或 Redirect 绑定将 SAML 请求/响应发送至 IdP 或浏览器。
+     *
+     * @param asRequest {@code true} 表示 AuthnRequest，{@code false} 表示 Response
+     * @param httpFacade HTTP 门面
+     * @param actionUrl 目标 URL
+     * @param binding SAML 绑定构建器
+     * @param document SAML XML 文档
+     * @param samlBinding POST 或 REDIRECT 绑定类型
+     */
     public static void sendSaml(boolean asRequest, HttpFacade httpFacade, String actionUrl,
                             BaseSAML2BindingBuilder binding, Document document,
                             SamlDeployment.Binding samlBinding) throws ProcessingException, ConfigurationException, IOException {
@@ -59,13 +72,12 @@ public class SamlUtil {
     }
 
     /**
-     * Gets a url to redirect to if there is an IDP initiated login.  Looks for a redirectTo query param first, then looks
-     * in RelayState, if not in either defaults to context path.
+     * 解析 IdP 发起登录后的重定向目标：优先 {@code redirectTo} 查询参数，其次 RelayState，否则回退至上下文根路径。
      *
-     * @param facade
-     * @param contextPath
-     * @param baseUri
-     * @return
+     * @param facade HTTP 门面
+     * @param contextPath 应用上下文路径
+     * @param baseUri 基础 URI
+     * @return 拼接后的重定向 URL
      */
     public static String getRedirectTo(HttpFacade facade, String contextPath, String baseUri) {
         String redirectTo = facade.getRequest().getQueryParamValue("redirectTo");
@@ -89,6 +101,7 @@ public class SamlUtil {
         }
     }
 
+    /** 将相对 redirectTo 与 baseUri 拼接为绝对路径。 */
     private static String buildRedirectTo(String baseUri, String redirectTo) {
         if (redirectTo.startsWith("/")) redirectTo = redirectTo.substring(1);
         if (baseUri.endsWith("/")) baseUri = baseUri.substring(0, baseUri.length() - 1);
@@ -96,6 +109,13 @@ public class SamlUtil {
         return redirectTo;
     }
 
+    /**
+     * 校验会话对象类型与 {@code SessionNotOnOrAfter}（含时钟偏移），无效或过期返回 {@code null}。
+     *
+     * @param potentialSamlSession 会话中存储的对象
+     * @param deployment 部署配置（含 IdP 时钟偏移）
+     * @return 有效的 {@link SamlSession}，否则 {@code null}
+     */
     public static SamlSession validateSamlSession(Object potentialSamlSession, SamlDeployment deployment) {
         if (potentialSamlSession == null) {
             log.debug("SamlSession was not found in the session");
@@ -113,7 +133,7 @@ public class SamlUtil {
         if (sessionNotOnOrAfter != null) {
             XMLGregorianCalendar now = XMLTimeUtil.getIssueInstant();
 
-            XMLTimeUtil.add(sessionNotOnOrAfter, deployment.getIDP().getAllowedClockSkew()); // add clockSkew
+            XMLTimeUtil.add(sessionNotOnOrAfter, deployment.getIDP().getAllowedClockSkew()); // 叠加时钟偏移容忍度
 
             if (now.compare(sessionNotOnOrAfter) != DatatypeConstants.LESSER) {
                 return null;

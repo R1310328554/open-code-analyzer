@@ -42,10 +42,13 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jboss.logging.Logger;
 
 /**
- * Fork of the PemUtils from common module to avoid dependency on keycloak-crypto-default
+ * common 模块 {@code PemUtils} 的分叉副本，避免依赖 {@code keycloak-crypto-default}。
+ *
+ * <p>提供 PEM 格式 X.509 证书与 RSA 公/私钥的解码，内部使用 BouncyCastle 提供者。</p>
  */
 public class PemUtils {
 
+    /** 本类日志记录器。 */
     private static final Logger log = Logger.getLogger(PemUtils.class);
 
     static {
@@ -61,11 +64,10 @@ public class PemUtils {
     }
 
     /**
-     * Decode a X509 Certificate from a PEM string
+     * 从 PEM 字符串解码 X.509 证书。
      *
-     * @param cert
-     * @return
-     * @throws Exception
+     * @param cert PEM 编码证书文本
+     * @return 解码后的证书，输入为 {@code null} 时返回 {@code null}
      */
     public static X509Certificate decodeCertificate(String cert) {
         if (cert == null) {
@@ -83,11 +85,10 @@ public class PemUtils {
 
 
     /**
-     * Decode a Public Key from a PEM string
+     * 从 PEM 字符串解码 RSA 公钥。
      *
-     * @param pem
-     * @return
-     * @throws Exception
+     * @param pem PEM 编码公钥文本
+     * @return 公钥对象，输入为 {@code null} 时返回 {@code null}
      */
     public static PublicKey decodePublicKey(String pem) {
         if (pem == null) {
@@ -103,11 +104,10 @@ public class PemUtils {
     }
 
     /**
-     * Decode a Private Key from a PEM string
+     * 从 PEM 字符串解码 RSA 私钥。
      *
-     * @param pem
-     * @return
-     * @throws Exception
+     * @param pem PEM 编码私钥文本
+     * @return 私钥对象，输入为 {@code null} 时返回 {@code null}
      */
     public static PrivateKey decodePrivateKey(String pem){
         if (pem == null) {
@@ -122,6 +122,7 @@ public class PemUtils {
         }
     }
 
+    /** 剥离 PEM 头尾并 Base64 解码为 DER 字节。 */
     private static byte[] pemToDer(String pem) {
         try {
             pem = removeBeginEnd(pem);

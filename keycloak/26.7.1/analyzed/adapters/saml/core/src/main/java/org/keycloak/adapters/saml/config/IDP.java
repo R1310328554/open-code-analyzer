@@ -24,18 +24,31 @@ import java.util.concurrent.TimeUnit;
 import org.keycloak.adapters.cloned.AdapterHttpClientConfig;
 
 /**
+ * {@code keycloak-saml.xml} 中 IdP 段的配置模型（可序列化 POJO）。
+ *
+ * <p>包含 SSO/SLO 端点、签名策略、密钥列表、元数据 URL、时钟偏移及 HTTP 客户端设置。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class IDP implements Serializable {
+    /** IdP 单点登录服务 XML 配置。 */
     public static class SingleSignOnService implements Serializable {
+        /** 是否对 AuthnRequest 签名（可覆盖全局 signaturesRequired）。 */
         private Boolean signRequest;
+        /** 是否校验 IdP 响应整体签名。 */
         private Boolean validateResponseSignature;
+        /** 出站请求绑定（POST/REDIRECT）。 */
         private String requestBinding;
+        /** 期望的响应绑定类型。 */
         private String responseBinding;
+        /** SSO 端点 URL。 */
         private String bindingUrl;
+        /** 指定的断言消费者服务 URL。 */
         private String assertionConsumerServiceUrl;
+        /** 是否校验断言级签名。 */
         private Boolean validateAssertionSignature;
+        /** 全局是否要求签名（各布尔项未显式设置时的默认值）。 */
         private boolean signaturesRequired = false;
 
         public boolean isSignRequest() {
@@ -99,6 +112,7 @@ public class IDP implements Serializable {
         }
     }
 
+    /** IdP 单点登出服务 XML 配置。 */
     public static class SingleLogoutService implements Serializable {
         private Boolean signRequest;
         private Boolean signResponse;
@@ -106,7 +120,9 @@ public class IDP implements Serializable {
         private Boolean validateResponseSignature;
         private String requestBinding;
         private String responseBinding;
+        /** POST 绑定 SLO URL。 */
         private String postBindingUrl;
+        /** Redirect 绑定 SLO URL。 */
         private String redirectBindingUrl;
         private boolean signaturesRequired = false;
 
@@ -179,13 +195,16 @@ public class IDP implements Serializable {
         }
     }
 
+    /** 与 IdP 通信的 HTTP 客户端配置（信任库、连接池、代理、超时等）。 */
     public static class HttpClientConfig implements AdapterHttpClientConfig {
 
         private String truststore;
         private String truststorePassword;
         private String clientKeystore;
         private String clientKeystorePassword;
+        /** 是否允许任意主机名（跳过主机名校验）。 */
         private boolean allowAnyHostname;
+        /** 是否禁用信任管理器（仅测试环境）。 */
         private boolean disableTrustManager;
         private int connectionPoolSize;
         private String proxyUrl;
@@ -293,16 +312,24 @@ public class IDP implements Serializable {
         }
     }
 
+    /** IdP 实体标识符。 */
     private String entityID;
+    /** 签名算法名称（如 RSA_SHA256）。 */
     private String signatureAlgorithm;
+    /** 签名规范化方法 URI。 */
     private String signatureCanonicalizationMethod;
     private SingleSignOnService singleSignOnService;
     private SingleLogoutService singleLogoutService;
+    /** IdP 验签/加密相关密钥列表。 */
     private List<Key> keys;
     private AdapterHttpClientConfig httpClientConfig = new HttpClientConfig();
+    /** 是否全局要求 SAML 消息签名。 */
     private boolean signaturesRequired = false;
+    /** IdP SAML 元数据描述符 URL（用于密钥轮询）。 */
     private String metadataUrl;
+    /** 允许的 IdP/SP 时钟偏差数值。 */
     private Integer allowedClockSkew;
+    /** 时钟偏差的时间单位。 */
     private TimeUnit allowedClockSkewUnit;
 
     public String getEntityID() {

@@ -20,19 +20,27 @@ package org.keycloak.adapters.saml.config;
 import java.io.Serializable;
 
 /**
+ * SAML 密钥配置：支持 PEM 内联或 KeyStore 引用，可标记为签名或加密用途。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class Key implements Serializable {
 
+    /** KeyStore 文件或 classpath 资源及别名配置。 */
     public static class KeyStoreConfig implements Serializable {
+        /** 文件系统路径。 */
         private String file;
+        /** classpath 资源路径。 */
         private String resource;
         private String password;
+        /** KeyStore 类型，默认 JKS。 */
         private String type;
         private String alias;
+        /** 私钥条目别名。 */
         private String privateKeyAlias;
         private String privateKeyPassword;
+        /** 证书条目别名。 */
         private String certificateAlias;
 
 
@@ -102,9 +110,12 @@ public class Key implements Serializable {
     }
 
 
+    /** 是否用作 SP/IdP 出站消息签名。 */
     private boolean signing;
+    /** 是否用作断言解密。 */
     private boolean encryption;
     private KeyStoreConfig keystore;
+    /** PEM 编码私钥（与 keystore 二选一）。 */
     private String privateKeyPem;
     private String publicKeyPem;
     private String certificatePem;

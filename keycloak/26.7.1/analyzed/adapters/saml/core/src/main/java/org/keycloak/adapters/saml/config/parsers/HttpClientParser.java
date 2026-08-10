@@ -25,21 +25,26 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 {@code <HttpClient>} 元素，填充 IdP HTTP 客户端 TLS 与连接参数。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class HttpClientParser extends AbstractKeycloakSamlAdapterV1Parser<HttpClientConfig> {
 
+    /** 单例解析器实例。 */
     private static final HttpClientParser INSTANCE = new HttpClientParser();
 
     private HttpClientParser() {
         super(KeycloakSamlAdapterV1QNames.HTTP_CLIENT);
     }
 
+    /** @return 共享的 {@link HttpClientParser} 实例 */
     public static HttpClientParser getInstance() {
         return INSTANCE;
     }
 
+    /** 从起始元素属性读取 HTTP 客户端配置（超时、信任库、代理等）。 */
     @Override
     protected HttpClientConfig instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final HttpClientConfig config = new HttpClientConfig();
@@ -66,6 +71,7 @@ public class HttpClientParser extends AbstractKeycloakSamlAdapterV1Parser<HttpCl
         return config;
     }
 
+    /** {@code HttpClient} 元素无子节点，空实现。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, HttpClientConfig target, KeycloakSamlAdapterV1QNames element, StartElement elementDetail) throws ParsingException {
     }

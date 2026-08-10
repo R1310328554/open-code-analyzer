@@ -50,13 +50,26 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.jboss.logging.Logger;
 
 /**
+ * 将 {@code keycloak-saml.xml} 解析结果组装为运行时 {@link SamlDeployment}。
+ *
+ * <p>负责加载 SP/IdP 密钥（PEM 或 KeyStore）、SSO/SLO 绑定、角色映射提供者及 HTTP 客户端等配置。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class DeploymentBuilder {
 
+    /** 本类日志记录器。 */
     protected static Logger log = Logger.getLogger(DeploymentBuilder.class);
 
+    /**
+     * 从 XML 输入流构建完整 SAML 部署对象。
+     *
+     * @param xml {@code keycloak-saml.xml} 输入流
+     * @param resourceLoader 用于加载 KeyStore 等 classpath 资源
+     * @return 可立即用于适配器的 {@link SamlDeployment}
+     * @throws ParsingException XML 解析失败
+     */
     public SamlDeployment build(InputStream xml, ResourceLoader resourceLoader) throws ParsingException {
         DefaultSamlDeployment deployment = new DefaultSamlDeployment();
         DefaultSamlDeployment.DefaultIDP defaultIDP = new DefaultSamlDeployment.DefaultIDP();
@@ -215,13 +228,14 @@ public class DeploymentBuilder {
         defaultIDP.setClient(new HttpClientBuilder().build(idp.getHttpClientConfig()));
         defaultIDP.refreshKeyLocatorConfiguration();
 
-        // set the role mappings provider.
+        // 配置角色映射提供者
         deployment.setRoleMappingsProvider(RoleMappingsProviderUtils.bootstrapRoleMappingsProvider(deployment, resourceLoader,
                 sp.getRoleMappingsProviderConfig()));
 
         return deployment;
     }
 
+    /** 将配置的时钟偏移量转换为毫秒。 */
     private int convertClockSkewInMillis(int duration, TimeUnit unit) {
         int durationMillis = (int) unit.toMillis(duration);
         switch (unit) {
@@ -234,6 +248,7 @@ public class DeploymentBuilder {
         return durationMillis;
     }
 
+    /** 从 KeyStore 或 PEM 加载 IdP 验签公钥并注册到部署 IdP。 */
     private void processSigningKey(DefaultSamlDeployment.DefaultIDP idp, Key key, ResourceLoader resourceLoader) throws RuntimeException {
         PublicKey publicKey;
         if (key.getKeystore() != null) {
@@ -260,6 +275,7 @@ public class DeploymentBuilder {
         idp.addSignatureValidationKey(publicKey);
     }
 
+    /** 从 PEM 公钥或证书中提取 {@link PublicKey}。 */
     protected static PublicKey getPublicKeyFromPem(Key key) {
         PublicKey publicKey;
         if (key.getPublicKeyPem() != null) {
@@ -276,6 +292,7 @@ public class DeploymentBuilder {
         return publicKey;
     }
 
+    /** 从文件系统或 classpath 加载 KeyStore 并解锁。 */
     protected static KeyStore loadKeystore(ResourceLoader resourceLoader, Key key) {
         String type = key.getKeystore().getType();
         if (type == null) type = "JKS";

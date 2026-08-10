@@ -24,18 +24,35 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import org.keycloak.adapters.spi.KeycloakAccount;
 
 /**
+ * SAML 认证会话，封装主体、角色、会话索引及过期时间。
+ *
+ * <p>实现 {@link KeycloakAccount} 与 {@link Serializable}，可存入 HTTP 会话或适配器会话存储。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SamlSession implements Serializable, KeycloakAccount {
+    /** SAML 主体（含断言属性）。 */
     private SamlPrincipal principal;
+    /** 映射后的应用角色集合。 */
     private Set<String> roles;
+    /** IdP 分配的会话索引，用于单点登出。 */
     private String sessionIndex;
+    /** 会话不得晚于此时间失效（SAML SessionNotOnOrAfter）。 */
     private XMLGregorianCalendar sessionNotOnOrAfter;
 
+    /** 无参构造，供序列化框架使用。 */
     public SamlSession() {
     }
 
+    /**
+     * 创建完整 SAML 会话。
+     *
+     * @param principal SAML 主体
+     * @param roles 角色集合
+     * @param sessionIndex IdP 会话索引
+     * @param sessionNotOnOrAfter 会话最晚有效时间
+     */
     public SamlSession(SamlPrincipal principal, Set<String> roles, String sessionIndex, XMLGregorianCalendar sessionNotOnOrAfter) {
         this.principal = principal;
         this.roles = roles;
@@ -43,22 +60,27 @@ public class SamlSession implements Serializable, KeycloakAccount {
         this.sessionNotOnOrAfter = sessionNotOnOrAfter;
     }
 
+    /** @return SAML 主体 */
     public SamlPrincipal getPrincipal() {
         return principal;
     }
 
+    /** @return 应用角色集合 */
     public Set<String> getRoles() {
         return roles;
     }
 
+    /** @return IdP 会话索引 */
     public String getSessionIndex() {
         return sessionIndex;
     }
 
+    /** @return 会话最晚有效时间 */
     public XMLGregorianCalendar getSessionNotOnOrAfter() {
         return sessionNotOnOrAfter;
     }
 
+    /** 基于主体、角色与会话索引判断相等性（不含过期时间）。 */
     @Override
     public boolean equals(Object other) {
         if (this == other)

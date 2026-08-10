@@ -23,12 +23,17 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
+ * 服务提供方（SP）配置模型，对应 {@code keycloak-saml.xml} 中单个 {@code <SP>} 元素。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SP implements Serializable {
+    /** 主体名称映射策略（NameID 或断言属性）。 */
     public static class PrincipalNameMapping implements Serializable {
+        /** 策略名，对应 {@link org.keycloak.adapters.saml.SamlDeployment.PrincipalNamePolicy}。 */
         private String policy;
+        /** FROM_ATTRIBUTE 策略下的属性名。 */
         private String attributeName;
 
         public String getPolicy() {
@@ -49,11 +54,14 @@ public class SP implements Serializable {
     }
 
     /**
-     * Holds the configuration of the {@code RoleMappingsProvider}. Contains the provider's id and a {@link Properties}
-     * object that holds the provider's configuration options.
+     * {@link org.keycloak.adapters.saml.RoleMappingsProvider} 的配置容器。
+     *
+     * <p>包含提供者 ID 及 {@link Properties} 形式的扩展选项。</p>
      */
     public static class RoleMappingsProviderConfig implements Serializable {
+        /** SPI 提供者标识。 */
         private String id;
+        /** 提供者专属配置项。 */
         private Properties configuration;
 
         public String getId() {
@@ -77,19 +85,24 @@ public class SP implements Serializable {
         }
     }
 
+    /** SP 实体标识符（建议为 URI 格式）。 */
     private String entityID;
+    /** SSL 策略（如 EXTERNAL、ALL）。 */
     private String sslPolicy;
     private boolean forceAuthentication;
     private boolean isPassive;
     private boolean turnOffChangeSessionIdOnLogin;
     private String logoutPage;
+    /** SP 签名/加密密钥列表。 */
     private List<Key> keys;
     private String nameIDPolicyFormat;
     private PrincipalNameMapping principalNameMapping;
+    /** 用于提取角色的断言属性名集合。 */
     private Set<String> roleAttributes;
     private RoleMappingsProviderConfig roleMappingsProviderConfig;
     private IDP idp;
     private boolean autodetectBearerOnly;
+    /** 是否在会话中保留断言 DOM。 */
     private boolean keepDOMAssertion;
 
     public String getEntityID() {

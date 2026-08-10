@@ -19,21 +19,22 @@ package org.keycloak.adapters.saml;
 import org.keycloak.adapters.spi.HttpFacade.Request;
 
 /**
- * On multi-tenant scenarios, Keycloak will defer the resolution of a
- * SamlDeployment to the target application at the request-phase.
+ * 多租户场景下，在请求阶段由应用解析 {@link SamlDeployment} 的解析器接口。
  *
- * A Request object is passed to the resolver and callers expect a complete
- * SamlDeployment. Based on this SamlDeployment, Keycloak will resume
- * authenticating and authorizing the request.
- *
- * The easiest way to build a SamlDeployment is to use
- * DeploymentBuilder , passing the InputStream of an existing
- * keycloak-saml.xml to the build() method.
+ * <p>Keycloak 将 {@link Request} 传入解析器，调用方需返回完整的部署配置，
+ * 随后适配器据此继续认证与授权。可使用 {@link org.keycloak.adapters.saml.config.parsers.DeploymentBuilder}
+ * 读取 {@code keycloak-saml.xml} 的 {@code InputStream} 并调用 {@code build()} 构建部署对象。</p>
  *
  * @author Juraci Paixão Kröhling <juraci at kroehling.de>
  */
 public interface SamlConfigResolver {
 
+    /**
+     * 根据当前 HTTP 请求解析并返回 SAML 部署配置。
+     *
+     * @param facade 当前请求门面
+     * @return 与租户/上下文匹配的 {@link SamlDeployment}
+     */
     public SamlDeployment resolve(Request facade);
 
 }
