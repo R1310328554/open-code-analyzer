@@ -34,36 +34,54 @@ import org.keycloak.services.cors.Cors;
 import org.keycloak.util.TokenUtil;
 
 /**
+ * 基于 HTTP 的 CIBA 认证通道 Provider：向外部 URI POST JSON 认证请求。
+ * <p>使用 Bearer 令牌认证，成功时期望 HTTP 201 Created。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class HttpAuthenticationChannelProvider implements AuthenticationChannelProvider{
 
+    /** 认证通道 ID 参数/声明名 */
     public static final String AUTHENTICATION_CHANNEL_ID = "authentication_channel_id";
 
+    /** 当前 Keycloak 会话 */
     protected KeycloakSession session;
+    /** 表单参数（子类/扩展用） */
     protected MultivaluedMap<String, String> formParams;
+    /** 当前领域 */
     protected RealmModel realm;
+    /** 客户端认证属性 */
     protected Map<String, String> clientAuthAttributes;
+    /** CORS 处理器 */
     protected Cors cors;
+    /** 认证通道 HTTP(S) 目标 URI */
     protected final String httpAuthenticationChannelUri;
 
-    public HttpAuthenticationChannelProvider(KeycloakSession session, String httpAuthenticationRequestUri) {
+    /**
+     * @param session Keycloak 会话
+     * @param httpAuthenticationRequestUri 认证通道请求 URI
+     */
         this.session = session;
         this.realm = session.getContext().getRealm();
         this.httpAuthenticationChannelUri = httpAuthenticationRequestUri;
     }
 
-    @Override
-    public boolean requestAuthentication(CIBAAuthenticationRequest request, String infoUsedByAuthenticator) {
-        // Creates JWT formatted/JWS signed/JWE encrypted Authentication Channel ID by the same manner in creating auth_req_id.
-        // Authentication Channel ID binds Backchannel Authentication Request with Authentication by Authentication Device (AD).
-        // JWE serialized Authentication Channel ID works as a bearer token. It includes client_id 
-        // that can be used on Authentication Channel Callback Endpoint to recognize the Consumption Device (CD)
+    /**
+     * 向认证通道 URI 发送后台认证请求。
+     * <p>构造 {@link AuthenticationChannelRequest} 并以 Bearer 令牌 POST；返回 HTTP 201 时视为成功。</p>
+     * @param request 已解析的 CIBA 认证请求
+     * @param infoUsedByAuthenticator 供认证器使用的登录提示信息
+     * @return 通道接受请求时为 true
+     */
+        // 以与 auth_req_id 相同方式构造 JWS 签名/JWE 加密的认证通道 ID
+        // 认证通道 ID 将后台认证请求与 AD 上的用户认证绑定
+        // JWE 序列化的通道 ID 作为 Bearer 令牌，内含 client_id
+        // 供通道回调端点识别发起请求的消费设备（CD）
         // that sent Backchannel Authentication Request.
 
-        // The following scopes should be displayed on AD:
-        // 1. scopes specified explicitly as query parameter in the authorization request
-        // 2. scopes specified implicitly as default client scope in keycloak
+        // AD 上应展示的作用域来源：
+        // 1. 授权请求中显式指定的 scope 参数
+        // 2. Keycloak 客户端默认作用域
 
         checkAuthenticationChannel();
 
@@ -96,6 +114,7 @@ public class HttpAuthenticationChannelProvider implements AuthenticationChannelP
         return false;
     }
 
+    /** 为通道 POST 构造短期 Bearer 访问令牌 */
     private String createBearerToken(CIBAAuthenticationRequest request, ClientModel client) {
         AccessToken bearerToken = new AccessToken();
 
@@ -111,6 +130,7 @@ public class HttpAuthenticationChannelProvider implements AuthenticationChannelP
         return session.tokens().encode(bearerToken);
     }
 
+    /** 校验认证通道 URI 已配置且为 http(s) 协议 */
     protected void checkAuthenticationChannel() {
         if (httpAuthenticationChannelUri == null) {
             throw new RuntimeException("Authentication Channel Request URI not set properly.");
@@ -121,12 +141,16 @@ public class HttpAuthenticationChannelProvider implements AuthenticationChannelP
     }
 
     /**
-     * Extension point to allow subclass to override this method in order to add data to post to decoupled server.
+     * 扩展点：子类可覆盖以向解耦认证服务器追加 POST 数据。
+     * @param simpleHttp 已配置的 HTTP 请求
+     * @param channelRequest 认证通道请求体
+     * @return 完善后的 HTTP 请求
      */
     protected SimpleHttpRequest completeDecoupledAuthnRequest(SimpleHttpRequest simpleHttp, AuthenticationChannelRequest channelRequest) {
         return simpleHttp;
     }
 
+    /** Provider 关闭钩子（无资源释放） */
     @Override
     public void close() {
 

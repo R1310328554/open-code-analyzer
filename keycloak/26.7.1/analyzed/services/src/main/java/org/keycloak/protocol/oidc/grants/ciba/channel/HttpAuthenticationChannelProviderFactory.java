@@ -26,37 +26,47 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * HTTP 认证通道 Provider 工厂：注册 {@link HttpAuthenticationChannelProvider} 并暴露 URI 配置项。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class HttpAuthenticationChannelProviderFactory implements AuthenticationChannelProviderFactory {
 
+    /** Provider 标识符 */
     public static final String PROVIDER_ID = "ciba-http-auth-channel";
 
+    /** 配置的认证通道 URI */
     protected String httpAuthenticationChannelUri;
 
+    /** 创建 HTTP 认证通道 Provider 实例 */
     @Override
     public AuthenticationChannelProvider create(KeycloakSession session) {
         return new HttpAuthenticationChannelProvider(session, httpAuthenticationChannelUri);
     }
 
+    /** 从服务器配置读取 httpAuthenticationChannelUri */
     @Override
     public void init(Scope config) {
         httpAuthenticationChannelUri = config.get("httpAuthenticationChannelUri");
     }
 
+    /** 会话工厂初始化后回调（无额外逻辑） */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 工厂关闭钩子 */
     @Override
     public void close() {
     }
 
+    /** @return Provider ID */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台可配置的 URI 属性 */
     @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         return ProviderConfigurationBuilder.create()

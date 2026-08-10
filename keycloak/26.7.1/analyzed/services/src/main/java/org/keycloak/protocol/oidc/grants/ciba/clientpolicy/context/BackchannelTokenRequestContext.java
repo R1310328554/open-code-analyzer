@@ -23,29 +23,38 @@ import org.keycloak.protocol.oidc.grants.ciba.channel.CIBAAuthenticationRequest;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 /**
+ * 客户端策略上下文：CIBA 后台令牌端点收到令牌请求时触发。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class BackchannelTokenRequestContext implements CIBAContext {
 
+    /** 与 auth_req_id 关联的已解析认证请求 */
     private final CIBAAuthenticationRequest parsedRequest;
+    /** 令牌请求参数 */
     private final MultivaluedMap<String, String> requestParameters;
 
-    public BackchannelTokenRequestContext(CIBAAuthenticationRequest parsedRequest,
-            MultivaluedMap<String, String> requestParameters) {
+    /**
+     * @param parsedRequest 解析后的 CIBA 认证请求
+     * @param requestParameters 令牌端点请求参数
+     */
         this.parsedRequest = parsedRequest;
         this.requestParameters = requestParameters;
     }
 
+    /** @return {@link ClientPolicyEvent#BACKCHANNEL_TOKEN_REQUEST} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.BACKCHANNEL_TOKEN_REQUEST;
     }
 
+    /** @return 解析后的认证请求 */
     @Override
     public CIBAAuthenticationRequest getParsedRequest() {
         return parsedRequest;
     }
 
+    /** @return 请求参数 */
     public MultivaluedMap<String, String> getRequestParameters() {
         return requestParameters;
     }

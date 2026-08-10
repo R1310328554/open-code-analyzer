@@ -31,23 +31,31 @@ import org.keycloak.services.clientpolicy.executor.ClientPolicyExecutorProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * CIBA 客户端策略 Executor：强制后台认证请求包含 {@code binding_message} 参数。
+ * <p>用于区分并发 CIBA 流程中用户正在响应哪一次认证。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureCibaSessionEnforceExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(SecureCibaSessionEnforceExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public SecureCibaSessionEnforceExecutor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** @return Executor Provider ID */
     @Override
     public String getProviderId() {
         return SecureCibaSessionEnforceExecutorFactory.PROVIDER_ID;
     }
 
+    /** 在后台认证请求事件中校验 binding_message */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -61,6 +69,7 @@ public class SecureCibaSessionEnforceExecutor implements ClientPolicyExecutorPro
         }
     }
 
+    /** 校验请求必须携带 binding_message 参数 */
     private void executeOnBackchannelAuthenticationRequest(
             BackchannelAuthenticationEndpointRequest request,
             MultivaluedMap<String, String> requestParameters) throws ClientPolicyException {

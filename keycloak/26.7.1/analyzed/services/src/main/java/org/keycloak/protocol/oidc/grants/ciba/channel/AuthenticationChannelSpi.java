@@ -21,25 +21,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * CIBA 认证通道 SPI：定义如何将后台认证请求投递至外部认证设备。
+ * <p>内置 HTTP 实现见 {@link HttpAuthenticationChannelProviderFactory}。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class AuthenticationChannelSpi implements Spi {
 
+    /** @return 是否为内部 SPI（不对外暴露） */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code ciba-auth-channel} */
     @Override
     public String getName() {
         return "ciba-auth-channel";
     }
 
+    /** @return 认证通道 Provider 接口类型 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return AuthenticationChannelProvider.class;
     }
 
+    /** @return 认证通道 Provider 工厂类型 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return AuthenticationChannelProviderFactory.class;

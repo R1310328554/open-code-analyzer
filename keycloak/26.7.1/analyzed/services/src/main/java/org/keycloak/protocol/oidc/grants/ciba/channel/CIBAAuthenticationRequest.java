@@ -43,22 +43,20 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * <p>Represents an authentication request sent by a consumption device (CD).
+ * CIBA 认证请求：由消费设备（CD）发起，可序列化为 JWE 与认证设备（AD）交换。
+ * <p>作为 {@code auth_req_id} 的载荷，绑定后台认证流程与用户会话。</p>
  *
- * <p>A authentication request can be serialized to a JWE so that it can be exchanged with authentication devices (AD)
- * to communicate and authorize the authentication request made by consumption devices (CDs).
- * 
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class CIBAAuthenticationRequest extends JsonWebToken {
 
     /**
-     * Deserialize the given {@code jwe} to a {@link CIBAAuthenticationRequest} instance.
+     * 将 JWE 格式的 {@code auth_req_id} 反序列化为 {@link CIBAAuthenticationRequest}。
      *
-     * @param session the session
-     * @param jwe the authentication request in JWE format.
-     * @return the authentication request instance
-     * @throws Exception
+     * @param session Keycloak 会话
+     * @param jwe JWE 编码的认证请求
+     * @return 解析后的认证请求实例
+     * @throws Exception 解密或解码失败时
      */
     public static CIBAAuthenticationRequest deserialize(KeycloakSession session, String jwe) {
         SecretKey aesKey = session.keys().getActiveKey(session.getContext().getRealm(), KeyUse.ENC, Algorithm.AES).getSecretKey();
@@ -74,35 +72,50 @@ public class CIBAAuthenticationRequest extends JsonWebToken {
         return session.tokens().decode(jwe, CIBAAuthenticationRequest.class);
     }
 
+    /** 会话状态声明名（与 ID Token 一致） */
     public static final String SESSION_STATE = IDToken.SESSION_STATE;
+    /** 认证结果标识声明名 */
     public static final String AUTH_RESULT_ID = "auth_result_id";
 
+    /** 请求的作用域 */
     @JsonProperty(OAuth2Constants.SCOPE)
     protected String scope;
 
+    /** 认证结果 ID，用于关联通道回调 */
     @JsonProperty(AUTH_RESULT_ID)
     protected String authResultId;
 
+    /** 绑定消息 */
     @JsonProperty(CibaGrantType.BINDING_MESSAGE)
     protected String bindingMessage;
 
+    /** ACR 值 */
     @JsonProperty(OAuth2Constants.ACR_VALUES)
     protected String acrValues;
 
+    /** 发起请求的客户端（不序列化到 JWT） */
     @JsonIgnore
     protected ClientModel client;
 
+    /** 客户端通知令牌（不序列化） */
     @JsonIgnore
     protected String clientNotificationToken;
 
+    /** 目标用户（不序列化） */
     @JsonIgnore
     protected UserModel user;
 
+    /** 无参构造，供反射/Jackson 使用 */
     public CIBAAuthenticationRequest() {
         // for reflection
     }
 
-    public CIBAAuthenticationRequest(KeycloakSession session, UserModel user, ClientModel client) {
+    /**
+     * 为指定用户与客户端构造新的 CIBA 认证请求并填充标准 JWT 声明。
+     * @param session Keycloak 会话
+     * @param user 目标用户
+     * @param client OAuth 客户端
+     */
         id(KeycloakModelUtils.generateId());
         issuedNow();
         RealmModel realm = session.getContext().getRealm();
@@ -115,43 +128,51 @@ public class CIBAAuthenticationRequest extends JsonWebToken {
         setUser(user);
     }
 
+    /** @return 作用域 */
     public String getScope() {
         return scope;
     }
 
+    /** 设置作用域 */
     public void setScope(String scope) {
         this.scope = scope;
     }
 
+    /** @return 认证结果 ID */
     public String getAuthResultId() {
         return authResultId;
     }
 
+    /** 设置认证结果 ID */
     public void setAuthResultId(String authResultId) {
         this.authResultId = authResultId;
     }
 
+    /** @return 绑定消息 */
     public String getBindingMessage() {
         return bindingMessage;
     }
 
+    /** 设置绑定消息 */
     public void setBindingMessage(String binding_message) {
         this.bindingMessage = binding_message;
     }
 
+    /** @return ACR 值 */
     public String getAcrValues() {
         return acrValues;
     }
 
+    /** 设置 ACR 值 */
     public void setAcrValues(String acrValues) {
         this.acrValues = acrValues;
     }
 
     /**
-     * Serializes this instance to a JWE.
+     * 将本实例序列化为 JWE（JWS 签名后再 JWE 加密）。
      *
-     * @param session the session
-     * @return the JWE
+     * @param session Keycloak 会话
+     * @return JWE 字符串，用作 auth_req_id
      */
     public String serialize(KeycloakSession session) {
         try {
@@ -167,26 +188,32 @@ public class CIBAAuthenticationRequest extends JsonWebToken {
         }
     }
 
+    /** 设置关联客户端 */
     public void setClient(ClientModel client) {
         this.client = client;
     }
 
+    /** @return 关联客户端 */
     public ClientModel getClient() {
         return client;
     }
 
+    /** @return 客户端通知令牌 */
     public String getClientNotificationToken() {
         return clientNotificationToken;
     }
 
+    /** 设置客户端通知令牌 */
     public void setClientNotificationToken(String clientNotificationToken) {
         this.clientNotificationToken = clientNotificationToken;
     }
 
+    /** 设置目标用户 */
     public void setUser(UserModel user) {
         this.user = user;
     }
 
+    /** @return 目标用户 */
     public UserModel getUser() {
         return user;
     }
