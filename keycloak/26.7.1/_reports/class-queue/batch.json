@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T07:52:45Z",
   "files": [
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/entities/SessionEntity.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/entities/SingleUseObjectValueEntity.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/entities/UserSessionEntity.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/AbstractAuthSessionClusterListener.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/AbstractUserSessionClusterListener.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/RealmRemovedSessionEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/RemoveAllUserLoginFailuresEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/RemoveUserSessionsEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/SessionClusterEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/SessionEventsSenderTransaction.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/BaseExpirationTask.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/ConsistentHash.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/DistributionAwareExpirationTask.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/ExpirationTask.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/ExpirationTaskFactory.java",
     "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/LocalExpirationTask.java",
     "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/RemoteExpirationTask.java",
     "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/listeners/BaseUserSessionExpirationListener.java",
@@ -33,5 +18,5 @@
     "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteUserLoginFailureProvider.java"
   ],
   "remaining_pending": 4498,
-  "done": 1470
+  "done": 1485
 }

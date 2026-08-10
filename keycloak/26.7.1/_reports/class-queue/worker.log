@@ -1438,3 +1438,18 @@
 2026-08-10T07:51:39Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/loginfailures/LoginFailuresUpdater.java wave49a remote removers + session updaters
 2026-08-10T07:51:39Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/user/AuthenticatedClientSessionMapping.java wave49a remote removers + session updaters
 2026-08-10T07:51:39Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/user/UserSessionUpdater.java wave49a remote removers + session updaters
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/entities/SessionEntity.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/entities/SingleUseObjectValueEntity.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/entities/UserSessionEntity.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/AbstractAuthSessionClusterListener.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/AbstractUserSessionClusterListener.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/RealmRemovedSessionEvent.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/RemoveAllUserLoginFailuresEvent.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/RemoveUserSessionsEvent.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/SessionClusterEvent.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/events/SessionEventsSenderTransaction.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/BaseExpirationTask.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/ConsistentHash.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/DistributionAwareExpirationTask.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/ExpirationTask.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/ExpirationTaskFactory.java wave50a session entities + cluster events + expiration
