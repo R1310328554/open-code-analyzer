@@ -21,6 +21,7 @@ import org.keycloak.dom.saml.common.CommonStatusDetailType;
 /**
  * <p>
  * Java class for StatusDetailType complex type.
+ * SAML 2.0 状态详情，承载与响应状态相关的扩展信息（任意元素）。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

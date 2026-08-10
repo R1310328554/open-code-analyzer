@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for ExtensionsType complex type.
+ * SAML 2.0 扩展元素容器，用于在协议消息中承载任意自定义扩展内容。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -41,9 +42,12 @@ import java.util.List;
  */
 public class ExtensionsType {
 
+    /** 扩展元素列表，可包含任意类型的扩展对象。 */
     protected List<Object> any = new ArrayList<>();
 
     /**
+     * 添加扩展元素。
+     *
      * Add an extension
      *
      * @param extension
@@ -53,6 +57,8 @@ public class ExtensionsType {
     }
 
     /**
+     * 移除扩展元素。
+     *
      * Remove an extension
      *
      * @param extension
@@ -62,6 +68,8 @@ public class ExtensionsType {
     }
 
     /**
+     * 获取扩展元素列表（只读视图）。
+     *
      * Gets the value of the any property.
      */
     public List<Object> getAny() {

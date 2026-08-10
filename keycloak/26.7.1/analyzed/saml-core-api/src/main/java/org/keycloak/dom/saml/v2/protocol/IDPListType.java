@@ -24,6 +24,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for IDPListType complex type.
+ * SAML 2.0 IdP 列表，供 {@link ScopingType} 指定可咨询或代理的身份提供者集合。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,10 +44,14 @@ import java.util.List;
  */
 public class IDPListType {
 
+    /** IdP 条目列表。 */
     protected List<IDPEntryType> idpEntry = new ArrayList<>();
+    /** 获取完整 IdP 列表的 URI（GetComplete）。 */
     protected URI getComplete;
 
     /**
+     * 添加 IdP 条目。
+     *
      * Add an idp entry
      *
      * @param entry
@@ -56,6 +61,8 @@ public class IDPListType {
     }
 
     /**
+     * 移除 IdP 条目。
+     *
      * Remove an idp entry
      *
      * @param entry
@@ -65,6 +72,8 @@ public class IDPListType {
     }
 
     /**
+     * 获取 IdP 条目列表（只读视图）。
+     *
      * Gets the value of the idpEntry property.
      */
     public List<IDPEntryType> getIDPEntry() {
@@ -72,6 +81,8 @@ public class IDPListType {
     }
 
     /**
+     * 获取 GetComplete URI 属性的值。
+     *
      * Gets the value of the getComplete property.
      *
      * @return possible object is {@link String }
@@ -81,6 +92,8 @@ public class IDPListType {
     }
 
     /**
+     * 设置 GetComplete URI 属性的值。
+     *
      * Sets the value of the getComplete property.
      *
      * @param value allowed object is {@link String }

@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for RequestedAuthnContextType complex type.
+ * SAML 2.0 请求的认证上下文，指定服务提供者期望的认证方式及比较规则。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,11 +44,16 @@ import java.util.List;
  */
 public class RequestedAuthnContextType {
 
+    /** 认证上下文类引用列表（AuthnContextClassRef）。 */
     protected List<String> authnContextClassRef = new ArrayList<>();
+    /** 认证上下文声明引用列表（AuthnContextDeclRef）。 */
     protected List<String> authnContextDeclRef = new ArrayList<>();
+    /** 认证上下文比较方式（Comparison）。 */
     protected AuthnContextComparisonType comparison;
 
     /**
+     * 添加认证上下文类引用。
+     *
      * Add an authn Context class ref
      *
      * @param str
@@ -57,6 +63,8 @@ public class RequestedAuthnContextType {
     }
 
     /**
+     * 添加认证上下文声明引用。
+     *
      * Add authn context decl ref
      *
      * @param str
@@ -66,6 +74,8 @@ public class RequestedAuthnContextType {
     }
 
     /**
+     * 移除认证上下文类引用。
+     *
      * Remove an authn Context class ref
      *
      * @param str
@@ -75,6 +85,8 @@ public class RequestedAuthnContextType {
     }
 
     /**
+     * 移除认证上下文声明引用。
+     *
      * remove authn context decl ref
      *
      * @param str
@@ -84,6 +96,8 @@ public class RequestedAuthnContextType {
     }
 
     /**
+     * 获取 AuthnContextClassRef 列表（只读视图）。
+     *
      * Gets the value of the authnContextClassRef property.
      */
     public List<String> getAuthnContextClassRef() {
@@ -91,11 +105,12 @@ public class RequestedAuthnContextType {
     }
 
     /**
+     * 获取 AuthnContextDeclRef 列表（只读视图）。
+     *
      * Gets the value of the authnContextDeclRef property.
      *
      * <p>
-     * This accessor method returns a reference to the live list, not a snapshot. Therefore any modification you make to
-     * the
+     * This accessor method returns a reference to the live list, not a snapshot. Therefore any modification you make to the
      * returned list will be present inside the JAXB object. This is why there is not a <CODE>set</CODE> method for the
      * authnContextDeclRef property.
      *
@@ -115,6 +130,8 @@ public class RequestedAuthnContextType {
     }
 
     /**
+     * 获取 Comparison 比较方式属性的值。
+     *
      * Gets the value of the comparison property.
      *
      * @return possible object is {@link AuthnContextComparisonType }
@@ -124,6 +141,8 @@ public class RequestedAuthnContextType {
     }
 
     /**
+     * 设置 Comparison 比较方式属性的值。
+     *
      * Sets the value of the comparison property.
      *
      * @param value allowed object is {@link AuthnContextComparisonType }

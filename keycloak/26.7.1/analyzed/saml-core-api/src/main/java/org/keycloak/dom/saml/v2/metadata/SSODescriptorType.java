@@ -23,7 +23,6 @@ import java.util.List;
 /**
  * <p>
  * Java class for SSODescriptorType complex type.
- * SAML 2.0 SSO 描述符抽象基类：工件解析、单点登出、NameID 管理及格式端点。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -56,14 +55,11 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
 
     protected List<String> nameIDFormat = new ArrayList<>();
 
-    /** 以协议支持列表构造 SSO 描述符。 */
     public SSODescriptorType(List<String> protocolSupport) {
         super(protocolSupport);
     }
 
     /**
-     * 添加单点登出服务端点。
-     *
      * Add SLO Service
      *
      * @param endpt
@@ -73,8 +69,6 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 添加工件解析服务端点。
-     *
      * Add atrifact resolution service
      *
      * @param i
@@ -84,8 +78,6 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 添加 NameID 管理服务端点。
-     *
      * Add manage name id service
      *
      * @param end
@@ -95,8 +87,6 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 添加 NameID 格式 URI。
-     *
      * Add Name ID Format
      *
      * @param s
@@ -106,8 +96,6 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 移除单点登出服务端点。
-     *
      * remove SLO Service
      *
      * @param endpt
@@ -117,8 +105,6 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 移除工件解析服务端点。
-     *
      * remove atrifact resolution service
      *
      * @param i
@@ -128,8 +114,6 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 移除 NameID 管理服务端点。
-     *
      * remove manage name id service
      *
      * @param end
@@ -139,8 +123,6 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 移除 NameID 格式 URI。
-     *
      * remove Name ID Format
      *
      * @param s
@@ -150,7 +132,7 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 获取 artifactResolutionService 属性的值。
+     * Gets the value of the artifactResolutionService property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link IndexedEndpointType }
      */
@@ -159,7 +141,7 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 获取 singleLogoutService 属性的值。
+     * Gets the value of the singleLogoutService property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EndpointType }
      */
@@ -168,7 +150,7 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 获取 manageNameIDService 属性的值。
+     * Gets the value of the manageNameIDService property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EndpointType }
      */
@@ -177,7 +159,7 @@ public abstract class SSODescriptorType extends RoleDescriptorType {
     }
 
     /**
-     * 获取 nameIDFormat 属性的值。
+     * Gets the value of the nameIDFormat property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link String }
      */

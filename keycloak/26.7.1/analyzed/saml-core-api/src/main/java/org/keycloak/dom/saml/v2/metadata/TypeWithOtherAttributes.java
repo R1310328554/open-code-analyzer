@@ -22,8 +22,6 @@ import java.util.Map;
 import javax.xml.namespace.QName;
 
 /**
- * 可携带额外 XML 属性的类型抽象基类。
- *
  * Abstract base class for types that can have extra attributes
  *
  * @author Anil.Saldhana@redhat.com
@@ -31,12 +29,9 @@ import javax.xml.namespace.QName;
  */
 public abstract class TypeWithOtherAttributes {
 
-    /** 未绑定到强类型属性的扩展属性映射。 */
     protected Map<QName, String> otherAttributes = new HashMap<>();
 
     /**
-     * 添加扩展属性。
-     *
      * Add other attribute
      *
      * @param qame
@@ -47,8 +42,6 @@ public abstract class TypeWithOtherAttributes {
     }
 
     /**
-     * 移除扩展属性。
-     *
      * Remove other attribute
      *
      * @param qame
@@ -59,8 +52,6 @@ public abstract class TypeWithOtherAttributes {
     }
 
     /**
-     * 获取未绑定到本类强类型属性的扩展属性映射。
-     *
      * Gets a map that contains attributes that aren't bound to any typed property on this class.
      *
      * @return always non-null

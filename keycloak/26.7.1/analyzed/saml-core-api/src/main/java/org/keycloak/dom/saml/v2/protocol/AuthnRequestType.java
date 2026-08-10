@@ -26,7 +26,6 @@ import org.keycloak.dom.saml.v2.assertion.SubjectType;
 /**
  * <p>
  * Java class for AuthnRequestType complex type.
- * SAML 2.0 认证请求：SP 向 IdP 发起的 SSO 登录请求，含主体、NameID 策略及消费端点。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -56,50 +55,35 @@ import org.keycloak.dom.saml.v2.assertion.SubjectType;
  */
 public class AuthnRequestType extends RequestAbstractType {
 
-    /** 可选的请求主体。 */
     protected SubjectType subject;
 
-    /** 可选的 NameID 策略。 */
     protected NameIDPolicyType nameIDPolicy;
 
-    /** 可选的断言条件。 */
     protected ConditionsType conditions;
 
-    /** 可选的期望认证上下文。 */
     protected RequestedAuthnContextType requestedAuthnContext;
 
-    /** 可选的 IdP 范围限定。 */
     protected ScopingType scoping;
 
-    /** 是否强制重新认证。 */
     protected Boolean forceAuthn = Boolean.FALSE;
 
-    /** 是否为被动（不交互）认证。 */
     protected Boolean isPassive = Boolean.FALSE;
 
-    /** 协议绑定 URI。 */
     protected URI protocolBinding;
 
-    /** 断言消费服务索引。 */
     protected Integer assertionConsumerServiceIndex;
 
-    /** 断言消费服务 URL。 */
     protected URI assertionConsumerServiceURL;
 
-    /** 属性消费服务索引。 */
     protected Integer attributeConsumingServiceIndex;
 
-    /** 服务提供者名称。 */
     protected String providerName;
 
-    /** 构造认证请求。 */
     public AuthnRequestType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
     /**
-     * 获取 subject 属性的值。
-     *
      * Gets the value of the subject property.
      *
      * @return possible object is {@link SubjectType }
@@ -109,8 +93,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 subject 属性的值。
-     *
      * Sets the value of the subject property.
      *
      * @param value allowed object is {@link SubjectType }
@@ -120,8 +102,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 nameIDPolicy 属性的值。
-     *
      * Gets the value of the nameIDPolicy property.
      *
      * @return possible object is {@link NameIDPolicyType }
@@ -131,8 +111,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 nameIDPolicy 属性的值。
-     *
      * Sets the value of the nameIDPolicy property.
      *
      * @param value allowed object is {@link NameIDPolicyType }
@@ -142,8 +120,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 conditions 属性的值。
-     *
      * Gets the value of the conditions property.
      *
      * @return possible object is {@link ConditionsType }
@@ -153,8 +129,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 conditions 属性的值。
-     *
      * Sets the value of the conditions property.
      *
      * @param value allowed object is {@link ConditionsType }
@@ -164,8 +138,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 requestedAuthnContext 属性的值。
-     *
      * Gets the value of the requestedAuthnContext property.
      *
      * @return possible object is {@link RequestedAuthnContextType }
@@ -175,8 +147,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 requestedAuthnContext 属性的值。
-     *
      * Sets the value of the requestedAuthnContext property.
      *
      * @param value allowed object is {@link RequestedAuthnContextType }
@@ -186,8 +156,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 scoping 属性的值。
-     *
      * Gets the value of the scoping property.
      *
      * @return possible object is {@link ScopingType }
@@ -197,8 +165,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 scoping 属性的值。
-     *
      * Sets the value of the scoping property.
      *
      * @param value allowed object is {@link ScopingType }
@@ -208,8 +174,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 forceAuthn 属性的值。
-     *
      * Gets the value of the forceAuthn property.
      *
      * @return possible object is {@link Boolean }
@@ -219,8 +183,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 forceAuthn 属性的值。
-     *
      * Sets the value of the forceAuthn property.
      *
      * @param value allowed object is {@link Boolean }
@@ -230,8 +192,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 isPassive 属性的值。
-     *
      * Gets the value of the isPassive property.
      *
      * @return possible object is {@link Boolean }
@@ -241,8 +201,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 isPassive 属性的值。
-     *
      * Sets the value of the isPassive property.
      *
      * @param value allowed object is {@link Boolean }
@@ -252,8 +210,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 protocolBinding 属性的值。
-     *
      * Gets the value of the protocolBinding property.
      *
      * @return possible object is {@link String }
@@ -263,8 +219,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 protocolBinding 属性的值。
-     *
      * Sets the value of the protocolBinding property.
      *
      * @param value allowed object is {@link String }
@@ -274,8 +228,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 assertionConsumerServiceIndex 属性的值。
-     *
      * Gets the value of the assertionConsumerServiceIndex property.
      *
      * @return possible object is {@link Integer }
@@ -285,8 +237,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 assertionConsumerServiceIndex 属性的值。
-     *
      * Sets the value of the assertionConsumerServiceIndex property.
      *
      * @param value allowed object is {@link Integer }
@@ -296,8 +246,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 assertionConsumerServiceURL 属性的值。
-     *
      * Gets the value of the assertionConsumerServiceURL property.
      *
      * @return possible object is {@link String }
@@ -307,8 +255,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 assertionConsumerServiceURL 属性的值。
-     *
      * Sets the value of the assertionConsumerServiceURL property.
      *
      * @param value allowed object is {@link String }
@@ -318,8 +264,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 attributeConsumingServiceIndex 属性的值。
-     *
      * Gets the value of the attributeConsumingServiceIndex property.
      *
      * @return possible object is {@link Integer }
@@ -329,8 +273,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 attributeConsumingServiceIndex 属性的值。
-     *
      * Sets the value of the attributeConsumingServiceIndex property.
      *
      * @param value allowed object is {@link Integer }
@@ -340,8 +282,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 providerName 属性的值。
-     *
      * Gets the value of the providerName property.
      *
      * @return possible object is {@link String }
@@ -351,8 +291,6 @@ public class AuthnRequestType extends RequestAbstractType {
     }
 
     /**
-     * 设置 providerName 属性的值。
-     *
      * Sets the value of the providerName property.
      *
      * @param value allowed object is {@link String }
@@ -361,11 +299,6 @@ public class AuthnRequestType extends RequestAbstractType {
         this.providerName = value;
     }
 
-    /**
-     * 解析发送方 URL：优先使用 AssertionConsumerServiceURL，否则使用 Issuer 值。
-     *
-     * Resolve sender URL, preferring AssertionConsumerServiceURL over Issuer.
-     */
     public URI getSenderURL() {
         URI assertionConsumerServiceURL = getAssertionConsumerServiceURL();
 

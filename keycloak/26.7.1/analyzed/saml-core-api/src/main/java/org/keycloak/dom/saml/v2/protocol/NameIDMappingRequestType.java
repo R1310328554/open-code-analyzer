@@ -25,6 +25,7 @@ import org.keycloak.dom.saml.v2.assertion.NameIDType;
 /**
  * <p>
  * Java class for NameIDMappingRequestType complex type.
+ * SAML 2.0 NameID 映射请求，请求将主体标识映射为 {@link NameIDPolicyType} 指定的格式。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -48,19 +49,31 @@ import org.keycloak.dom.saml.v2.assertion.NameIDType;
  */
 public class NameIDMappingRequestType extends RequestAbstractType {
 
+    /** 主体的 BaseID 标识。 */
     protected BaseIDAbstractType baseID;
 
+    /** 主体的 NameID 标识。 */
     protected NameIDType nameID;
 
+    /** 加密的主体标识。 */
     protected EncryptedElementType encryptedID;
 
+    /** 期望映射结果的 NameID 策略。 */
     protected NameIDPolicyType nameIDPolicy;
 
+    /**
+     * 构造 NameID 映射请求。
+     *
+     * @param id 请求标识符
+     * @param instant 签发时间
+     */
     public NameIDMappingRequestType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
     /**
+     * 获取 BaseID 属性的值。
+     *
      * Gets the value of the baseID property.
      *
      * @return possible object is {@link BaseIDAbstractType }
@@ -70,6 +83,8 @@ public class NameIDMappingRequestType extends RequestAbstractType {
     }
 
     /**
+     * 设置 BaseID 属性的值。
+     *
      * Sets the value of the baseID property.
      *
      * @param value allowed object is {@link BaseIDAbstractType }
@@ -79,6 +94,8 @@ public class NameIDMappingRequestType extends RequestAbstractType {
     }
 
     /**
+     * 获取 NameID 属性的值。
+     *
      * Gets the value of the nameID property.
      *
      * @return possible object is {@link NameIDType }
@@ -88,6 +105,8 @@ public class NameIDMappingRequestType extends RequestAbstractType {
     }
 
     /**
+     * 设置 NameID 属性的值。
+     *
      * Sets the value of the nameID property.
      *
      * @param value allowed object is {@link NameIDType }
@@ -97,6 +116,8 @@ public class NameIDMappingRequestType extends RequestAbstractType {
     }
 
     /**
+     * 获取 EncryptedID 属性的值。
+     *
      * Gets the value of the encryptedID property.
      *
      * @return possible object is {@link EncryptedElementType }
@@ -106,6 +127,8 @@ public class NameIDMappingRequestType extends RequestAbstractType {
     }
 
     /**
+     * 设置 EncryptedID 属性的值。
+     *
      * Sets the value of the encryptedID property.
      *
      * @param value allowed object is {@link EncryptedElementType }
@@ -115,6 +138,8 @@ public class NameIDMappingRequestType extends RequestAbstractType {
     }
 
     /**
+     * 获取 NameIDPolicy 策略属性的值。
+     *
      * Gets the value of the nameIDPolicy property.
      *
      * @return possible object is {@link NameIDPolicyType }
@@ -124,6 +149,8 @@ public class NameIDMappingRequestType extends RequestAbstractType {
     }
 
     /**
+     * 设置 NameIDPolicy 策略属性的值。
+     *
      * Sets the value of the nameIDPolicy property.
      *
      * @param value allowed object is {@link NameIDPolicyType }

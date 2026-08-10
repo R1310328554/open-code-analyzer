@@ -25,6 +25,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for ScopingType complex type.
+ * SAML 2.0 作用域元素，限制身份代理链路与可咨询的 IdP 列表。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -45,12 +46,17 @@ import java.util.List;
  */
 public class ScopingType {
 
+    /** 可咨询的 IdP 列表。 */
     protected IDPListType idpList;
+    /** 请求者标识 URI 列表。 */
     protected List<URI> requesterID = new ArrayList<>();
 
+    /** 允许的最大代理跳数（ProxyCount）。 */
     protected BigInteger proxyCount;
 
     /**
+     * 获取 IDPList 属性的值。
+     *
      * Gets the value of the idpList property.
      *
      * @return possible object is {@link IDPListType }
@@ -60,6 +66,8 @@ public class ScopingType {
     }
 
     /**
+     * 设置 IDPList 属性的值。
+     *
      * Sets the value of the idpList property.
      *
      * @param value allowed object is {@link IDPListType }
@@ -69,6 +77,8 @@ public class ScopingType {
     }
 
     /**
+     * 获取 RequesterID 列表（只读视图）。
+     *
      * Gets the value of the requesterID property.
      * <p>
      * For example, to add a new item, do as follows:
@@ -86,6 +96,8 @@ public class ScopingType {
     }
 
     /**
+     * 添加请求者标识 URI。
+     *
      * Add requester id
      *
      * @param uri
@@ -95,6 +107,8 @@ public class ScopingType {
     }
 
     /**
+     * 移除请求者标识 URI。
+     *
      * Remove requester id
      *
      * @param uri
@@ -104,6 +118,8 @@ public class ScopingType {
     }
 
     /**
+     * 获取 ProxyCount 最大代理跳数属性的值。
+     *
      * Gets the value of the proxyCount property.
      *
      * @return possible object is {@link BigInteger }
@@ -113,6 +129,8 @@ public class ScopingType {
     }
 
     /**
+     * 设置 ProxyCount 最大代理跳数属性的值。
+     *
      * Sets the value of the proxyCount property.
      *
      * @param value allowed object is {@link BigInteger }

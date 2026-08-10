@@ -24,7 +24,6 @@ import javax.xml.datatype.XMLGregorianCalendar;
 /**
  * <p>
  * Java class for AssertionIDRequestType complex type.
- * SAML 2.0 断言 ID 请求：按断言 ID 引用批量查询断言。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,17 +42,13 @@ import javax.xml.datatype.XMLGregorianCalendar;
  */
 public class AssertionIDRequestType extends RequestAbstractType {
 
-    /** 待查询的断言 ID 引用列表。 */
     protected List<String> assertionIDRef = new ArrayList<>();
 
-    /** 构造断言 ID 请求。 */
     public AssertionIDRequestType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
     /**
-     * 添加断言 ID 引用。
-     *
      * Add assertion id reference
      *
      * @param id
@@ -63,8 +58,6 @@ public class AssertionIDRequestType extends RequestAbstractType {
     }
 
     /**
-     * 移除断言 ID 引用。
-     *
      * remove assertion id reference
      *
      * @param id
@@ -74,8 +67,6 @@ public class AssertionIDRequestType extends RequestAbstractType {
     }
 
     /**
-     * 获取 assertionIDRef 属性的值。
-     *
      * Gets the value of the assertionIDRef property.
      */
     public List<String> getAssertionIDRef() {

@@ -24,6 +24,7 @@ import org.keycloak.dom.saml.v2.assertion.NameIDType;
 /**
  * <p>
  * Java class for NameIDMappingResponseType complex type.
+ * SAML 2.0 NameID 映射响应，返回映射后的主体标识（明文或加密形式）。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,15 +44,25 @@ import org.keycloak.dom.saml.v2.assertion.NameIDType;
  */
 public class NameIDMappingResponseType extends StatusResponseType {
 
+    /** 映射后的 NameID 标识。 */
     protected NameIDType nameID;
 
+    /** 映射后的加密 NameID 标识。 */
     protected EncryptedElementType encryptedID;
 
+    /**
+     * 构造 NameID 映射响应。
+     *
+     * @param id 响应标识符
+     * @param issueInstant 签发时间
+     */
     public NameIDMappingResponseType(String id, XMLGregorianCalendar issueInstant) {
         super(id, issueInstant);
     }
 
     /**
+     * 获取 NameID 属性的值。
+     *
      * Gets the value of the nameID property.
      *
      * @return possible object is {@link NameIDType }
@@ -61,6 +72,8 @@ public class NameIDMappingResponseType extends StatusResponseType {
     }
 
     /**
+     * 设置 NameID 属性的值。
+     *
      * Sets the value of the nameID property.
      *
      * @param value allowed object is {@link NameIDType }
@@ -70,6 +83,8 @@ public class NameIDMappingResponseType extends StatusResponseType {
     }
 
     /**
+     * 获取 EncryptedID 属性的值。
+     *
      * Gets the value of the encryptedID property.
      *
      * @return possible object is {@link EncryptedElementType }
@@ -79,6 +94,8 @@ public class NameIDMappingResponseType extends StatusResponseType {
     }
 
     /**
+     * 设置 EncryptedID 属性的值。
+     *
      * Sets the value of the encryptedID property.
      *
      * @param value allowed object is {@link EncryptedElementType }

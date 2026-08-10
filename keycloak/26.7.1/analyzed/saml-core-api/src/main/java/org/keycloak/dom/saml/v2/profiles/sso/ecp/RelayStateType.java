@@ -20,7 +20,6 @@ package org.keycloak.dom.saml.v2.profiles.sso.ecp;
 /**
  * <p>
  * Java class for RelayStateType complex type.
- * ECP SSO RelayState 类型：SOAP 头中的中继状态字符串及 actor/mustUnderstand 属性。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -38,16 +37,11 @@ package org.keycloak.dom.saml.v2.profiles.sso.ecp;
  */
 public class RelayStateType {
 
-    /** 中继状态字符串值。 */
     protected String value;
-    /** SOAP mustUnderstand 标志。 */
     protected Boolean mustUnderstand = Boolean.FALSE;
-    /** SOAP actor URI。 */
     protected String actor;
 
     /**
-     * 获取 value 属性的值。
-     *
      * Gets the value of the value property.
      *
      * @return possible object is {@link String }
@@ -57,8 +51,6 @@ public class RelayStateType {
     }
 
     /**
-     * 设置 value 属性的值。
-     *
      * Sets the value of the value property.
      *
      * @param value allowed object is {@link String }
@@ -68,8 +60,6 @@ public class RelayStateType {
     }
 
     /**
-     * 获取 mustUnderstand 属性的值。
-     *
      * Gets the value of the mustUnderstand property.
      *
      * @return possible object is {@link String }
@@ -79,8 +69,6 @@ public class RelayStateType {
     }
 
     /**
-     * 设置 mustUnderstand 属性的值。
-     *
      * Sets the value of the mustUnderstand property.
      *
      * @param value allowed object is {@link String }
@@ -90,8 +78,6 @@ public class RelayStateType {
     }
 
     /**
-     * 获取 actor 属性的值。
-     *
      * Gets the value of the actor property.
      *
      * @return possible object is {@link String }
@@ -101,8 +87,6 @@ public class RelayStateType {
     }
 
     /**
-     * 设置 actor 属性的值。
-     *
      * Sets the value of the actor property.
      *
      * @param value allowed object is {@link String }

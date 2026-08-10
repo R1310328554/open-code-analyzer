@@ -27,6 +27,7 @@ import org.keycloak.dom.saml.v2.assertion.EncryptedAssertionType;
 /**
  * <p>
  * Java class for ResponseType complex type.
+ * SAML 2.0 响应消息，在 {@link StatusResponseType} 基础上携带一个或多个断言。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -46,17 +47,31 @@ import org.keycloak.dom.saml.v2.assertion.EncryptedAssertionType;
  */
 public class ResponseType extends StatusResponseType {
 
+    /** 断言列表（明文或加密断言的二选一封装）。 */
     protected List<RTChoiceType> assertions = new ArrayList<>();
 
+    /**
+     * 构造 SAML 响应。
+     *
+     * @param id 响应标识符
+     * @param issueInstant 签发时间
+     */
     public ResponseType(String id, XMLGregorianCalendar issueInstant) {
         super(id, issueInstant);
     }
 
+    /**
+     * 从已有状态响应复制构造。
+     *
+     * @param srt 源状态响应
+     */
     public ResponseType(StatusResponseType srt) {
         super(srt);
     }
 
     /**
+     * 添加断言。
+     *
      * Add an assertion
      *
      * @param choice
@@ -66,6 +81,8 @@ public class ResponseType extends StatusResponseType {
     }
 
     /**
+     * 移除断言。
+     *
      * Remove an assertion
      *
      * @param choice
@@ -75,6 +92,8 @@ public class ResponseType extends StatusResponseType {
     }
 
     /**
+     * 按 ID 替换第一个匹配的断言。
+     *
      * Replace the first assertion with the passed assertion
      *
      * @param id id of the old assertion
@@ -95,38 +114,59 @@ public class ResponseType extends StatusResponseType {
     }
 
     /**
+     * 获取断言只读列表。
+     *
      * Gets a read only list of assertions
      */
     public List<RTChoiceType> getAssertions() {
         return Collections.unmodifiableList(assertions);
     }
 
+    /**
+     * 断言选择封装：明文 {@link AssertionType} 或 {@link EncryptedAssertionType} 二选一。
+     */
     public static class RTChoiceType {
 
+        /** 明文断言。 */
         private AssertionType assertion;
 
+        /** 加密断言。 */
         private EncryptedAssertionType encryptedAssertion;
 
+        /** 断言标识符。 */
         private String id;
 
+        /**
+         * 以明文断言构造选择项。
+         *
+         * @param assertion 断言对象
+         */
         public RTChoiceType(AssertionType assertion) {
             this.assertion = assertion;
             this.id = assertion.getID();
         }
 
+        /**
+         * 以加密断言构造选择项。
+         *
+         * @param encryptedAssertion 加密断言对象
+         */
         public RTChoiceType(EncryptedAssertionType encryptedAssertion) {
             this.encryptedAssertion = encryptedAssertion;
 
         }
 
+        /** 获取明文断言。 */
         public AssertionType getAssertion() {
             return assertion;
         }
 
+        /** 获取加密断言。 */
         public EncryptedAssertionType getEncryptedAssertion() {
             return encryptedAssertion;
         }
 
+        /** 获取断言 ID。 */
         public String getID() {
             return id;
         }

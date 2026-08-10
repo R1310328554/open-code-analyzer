@@ -22,6 +22,7 @@ import java.net.URI;
 /**
  * <p>
  * Java class for StatusCodeType complex type.
+ * SAML 2.0 状态码，以 URI 形式表示响应处理结果，支持嵌套子状态码。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -41,10 +42,14 @@ import java.net.URI;
  */
 public class StatusCodeType implements Serializable {
 
+    /** 嵌套的子状态码。 */
     protected StatusCodeType statusCode;
+    /** 状态码 URI 值（Value）。 */
     protected URI value;
 
     /**
+     * 获取嵌套 StatusCode 属性的值。
+     *
      * Gets the value of the statusCode property.
      *
      * @return possible object is {@link StatusCodeType }
@@ -54,6 +59,8 @@ public class StatusCodeType implements Serializable {
     }
 
     /**
+     * 设置嵌套 StatusCode 属性的值。
+     *
      * Sets the value of the statusCode property.
      *
      * @param value allowed object is {@link StatusCodeType }
@@ -63,6 +70,8 @@ public class StatusCodeType implements Serializable {
     }
 
     /**
+     * 获取 Value 状态码 URI 属性的值。
+     *
      * Gets the value of the value property.
      *
      * @return possible object is {@link String }
@@ -72,6 +81,8 @@ public class StatusCodeType implements Serializable {
     }
 
     /**
+     * 设置 Value 状态码 URI 属性的值。
+     *
      * Sets the value of the value property.
      *
      * @param value allowed object is {@link String }
@@ -80,6 +91,7 @@ public class StatusCodeType implements Serializable {
         this.value = value;
     }
 
+    /** 返回状态码的可读字符串表示。 */
     @Override
     public String toString() {
         return "StatusCodeType [value=" + value + ", statusCode=" + statusCode + "]";

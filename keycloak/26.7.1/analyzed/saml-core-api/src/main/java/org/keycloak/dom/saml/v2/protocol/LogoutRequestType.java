@@ -28,6 +28,7 @@ import org.keycloak.dom.saml.v2.assertion.NameIDType;
 /**
  * <p>
  * Java class for LogoutRequestType complex type.
+ * SAML 2.0 登出请求，用于终止指定主体的一个或多个 SSO 会话。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -53,23 +54,37 @@ import org.keycloak.dom.saml.v2.assertion.NameIDType;
  */
 public class LogoutRequestType extends RequestAbstractType {
 
+    /** 主体的 BaseID 标识（与 NameID、EncryptedID 三选一）。 */
     protected BaseIDAbstractType baseID;
 
+    /** 主体的 NameID 标识。 */
     protected NameIDType nameID;
 
+    /** 加密的主体标识。 */
     protected EncryptedElementType encryptedID;
 
+    /** 待终止的会话索引列表。 */
     protected List<String> sessionIndex = new ArrayList<>();
 
+    /** 登出原因说明。 */
     protected String reason;
 
+    /** 登出请求的有效截止时间（NotOnOrAfter）。 */
     protected XMLGregorianCalendar notOnOrAfter;
 
+    /**
+     * 构造登出请求。
+     *
+     * @param id 请求标识符
+     * @param instant 签发时间
+     */
     public LogoutRequestType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
     /**
+     * 获取 BaseID 属性的值。
+     *
      * Gets the value of the baseID property.
      *
      * @return possible object is {@link BaseIDAbstractType }
@@ -79,6 +94,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 设置 BaseID 属性的值。
+     *
      * Sets the value of the baseID property.
      *
      * @param value allowed object is {@link BaseIDAbstractType }
@@ -88,6 +105,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 获取 NameID 属性的值。
+     *
      * Gets the value of the nameID property.
      *
      * @return possible object is {@link NameIDType }
@@ -97,6 +116,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 设置 NameID 属性的值。
+     *
      * Sets the value of the nameID property.
      *
      * @param value allowed object is {@link NameIDType }
@@ -106,6 +127,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 获取 EncryptedID 属性的值。
+     *
      * Gets the value of the encryptedID property.
      *
      * @return possible object is {@link EncryptedElementType }
@@ -115,6 +138,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 设置 EncryptedID 属性的值。
+     *
      * Sets the value of the encryptedID property.
      *
      * @param value allowed object is {@link EncryptedElementType }
@@ -124,6 +149,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 添加会话索引。
+     *
      * Add session index
      *
      * @param index
@@ -133,6 +160,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 移除会话索引。
+     *
      * Remove session index
      *
      * @param index
@@ -142,6 +171,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 获取会话索引列表（只读视图）。
+     *
      * Gets the value of the sessionIndex property.
      */
     public List<String> getSessionIndex() {
@@ -149,6 +180,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 获取 Reason 登出原因属性的值。
+     *
      * Gets the value of the reason property.
      *
      * @return possible object is {@link String }
@@ -158,6 +191,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 设置 Reason 登出原因属性的值。
+     *
      * Sets the value of the reason property.
      *
      * @param value allowed object is {@link String }
@@ -167,6 +202,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 获取 NotOnOrAfter 有效截止时间属性的值。
+     *
      * Gets the value of the notOnOrAfter property.
      *
      * @return possible object is {@link XMLGregorianCalendar }
@@ -176,6 +213,8 @@ public class LogoutRequestType extends RequestAbstractType {
     }
 
     /**
+     * 设置 NotOnOrAfter 有效截止时间属性的值。
+     *
      * Sets the value of the notOnOrAfter property.
      *
      * @param value allowed object is {@link XMLGregorianCalendar }

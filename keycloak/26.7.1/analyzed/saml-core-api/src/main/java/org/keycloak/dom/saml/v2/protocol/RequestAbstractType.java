@@ -26,6 +26,7 @@ import org.keycloak.dom.saml.v2.assertion.NameIDType;
 /**
  * <p>
  * Java class for RequestAbstractType complex type.
+ * SAML 2.0 请求抽象基类，定义所有 SAML 协议请求的公共结构与属性。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -51,21 +52,34 @@ import org.keycloak.dom.saml.v2.assertion.NameIDType;
  */
 public abstract class RequestAbstractType extends CommonRequestAbstractType implements SAML2Object {
 
+    /** 请求签发者（Issuer）。 */
     protected NameIDType issuer;
 
+    /** 协议扩展元素。 */
     protected ExtensionsType extensions;
 
+    /** SAML 协议版本，默认为 "2.0"。 */
     protected String version = "2.0";
 
+    /** 请求的目标 URI（Destination）。 */
     protected URI destination;
 
+    /** 用户同意声明 URI（Consent）。 */
     protected String consent;
 
+    /**
+     * 构造 SAML 请求。
+     *
+     * @param id 请求标识符
+     * @param instant 签发时间
+     */
     public RequestAbstractType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
     /**
+     * 获取 Issuer 签发者属性的值。
+     *
      * Gets the value of the issuer property.
      *
      * @return possible object is {@link NameIDType }
@@ -75,6 +89,8 @@ public abstract class RequestAbstractType extends CommonRequestAbstractType impl
     }
 
     /**
+     * 设置 Issuer 签发者属性的值。
+     *
      * Sets the value of the issuer property.
      *
      * @param value allowed object is {@link NameIDType }
@@ -84,6 +100,8 @@ public abstract class RequestAbstractType extends CommonRequestAbstractType impl
     }
 
     /**
+     * 获取 Extensions 扩展属性的值。
+     *
      * Gets the value of the extensions property.
      *
      * @return possible object is {@link ExtensionsType }
@@ -93,6 +111,8 @@ public abstract class RequestAbstractType extends CommonRequestAbstractType impl
     }
 
     /**
+     * 设置 Extensions 扩展属性的值。
+     *
      * Sets the value of the extensions property.
      *
      * @param value allowed object is {@link ExtensionsType }
@@ -102,6 +122,8 @@ public abstract class RequestAbstractType extends CommonRequestAbstractType impl
     }
 
     /**
+     * 获取 Version 版本属性的值。
+     *
      * Gets the value of the version property.
      *
      * @return possible object is {@link String }
@@ -111,6 +133,8 @@ public abstract class RequestAbstractType extends CommonRequestAbstractType impl
     }
 
     /**
+     * 获取 Destination 目标 URI 属性的值。
+     *
      * Gets the value of the destination property.
      *
      * @return possible object is {@link String }
@@ -120,6 +144,8 @@ public abstract class RequestAbstractType extends CommonRequestAbstractType impl
     }
 
     /**
+     * 设置 Destination 目标 URI 属性的值。
+     *
      * Sets the value of the destination property.
      *
      * @param value allowed object is {@link String }
@@ -129,6 +155,8 @@ public abstract class RequestAbstractType extends CommonRequestAbstractType impl
     }
 
     /**
+     * 获取 Consent 同意声明属性的值。
+     *
      * Gets the value of the consent property.
      *
      * @return possible object is {@link String }
@@ -138,6 +166,8 @@ public abstract class RequestAbstractType extends CommonRequestAbstractType impl
     }
 
     /**
+     * 设置 Consent 同意声明属性的值。
+     *
      * Sets the value of the consent property.
      *
      * @param value allowed object is {@link String }

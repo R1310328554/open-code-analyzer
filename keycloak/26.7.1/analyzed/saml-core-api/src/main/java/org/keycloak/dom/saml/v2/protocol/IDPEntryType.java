@@ -21,6 +21,7 @@ import java.net.URI;
 /**
  * <p>
  * Java class for IDPEntryType complex type.
+ * SAML 2.0 IdP 列表条目，描述单个身份提供者的标识符、名称与位置。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -39,11 +40,16 @@ import java.net.URI;
  */
 public class IDPEntryType {
 
+    /** 身份提供者的唯一标识 URI（ProviderID）。 */
     protected URI providerID;
+    /** IdP 的可读名称。 */
     protected String name;
+    /** IdP 的位置 URI（Loc）。 */
     protected String loc;
 
     /**
+     * 获取 ProviderID 属性的值。
+     *
      * Gets the value of the providerID property.
      *
      * @return possible object is {@link String }
@@ -53,6 +59,8 @@ public class IDPEntryType {
     }
 
     /**
+     * 设置 ProviderID 属性的值。
+     *
      * Sets the value of the providerID property.
      *
      * @param value allowed object is {@link String }
@@ -62,6 +70,8 @@ public class IDPEntryType {
     }
 
     /**
+     * 获取 Name 名称属性的值。
+     *
      * Gets the value of the name property.
      *
      * @return possible object is {@link String }
@@ -71,6 +81,8 @@ public class IDPEntryType {
     }
 
     /**
+     * 设置 Name 名称属性的值。
+     *
      * Sets the value of the name property.
      *
      * @param value allowed object is {@link String }
@@ -80,6 +92,8 @@ public class IDPEntryType {
     }
 
     /**
+     * 获取 Loc 位置属性的值。
+     *
      * Gets the value of the loc property.
      *
      * @return possible object is {@link String }
@@ -89,6 +103,8 @@ public class IDPEntryType {
     }
 
     /**
+     * 设置 Loc 位置属性的值。
+     *
      * Sets the value of the loc property.
      *
      * @param value allowed object is {@link String }

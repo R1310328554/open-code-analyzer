@@ -20,7 +20,6 @@ package org.keycloak.dom.saml.v2.profiles.attribute.dce;
 /**
  * <p>
  * Java class for DCEValueType complex type.
- * SAML 2.0 DCE 属性值类型：含 Realm 与 FriendlyName 的 URI 值。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -38,16 +37,11 @@ package org.keycloak.dom.saml.v2.profiles.attribute.dce;
  */
 public class DCEValueType {
 
-    /** 属性值 URI。 */
     protected String value;
-    /** DCE 域（Realm）。 */
     protected String realm;
-    /** 友好名称。 */
     protected String friendlyName;
 
     /**
-     * 获取 value 属性的值。
-     *
      * Gets the value of the value property.
      *
      * @return possible object is {@link String }
@@ -57,8 +51,6 @@ public class DCEValueType {
     }
 
     /**
-     * 设置 value 属性的值。
-     *
      * Sets the value of the value property.
      *
      * @param value allowed object is {@link String }
@@ -68,8 +60,6 @@ public class DCEValueType {
     }
 
     /**
-     * 获取 realm 属性的值。
-     *
      * Gets the value of the realm property.
      *
      * @return possible object is {@link String }
@@ -79,8 +69,6 @@ public class DCEValueType {
     }
 
     /**
-     * 设置 realm 属性的值。
-     *
      * Sets the value of the realm property.
      *
      * @param value allowed object is {@link String }
@@ -90,8 +78,6 @@ public class DCEValueType {
     }
 
     /**
-     * 获取 friendlyName 属性的值。
-     *
      * Gets the value of the friendlyName property.
      *
      * @return possible object is {@link String }
@@ -101,8 +87,6 @@ public class DCEValueType {
     }
 
     /**
-     * 设置 friendlyName 属性的值。
-     *
      * Sets the value of the friendlyName property.
      *
      * @param value allowed object is {@link String }

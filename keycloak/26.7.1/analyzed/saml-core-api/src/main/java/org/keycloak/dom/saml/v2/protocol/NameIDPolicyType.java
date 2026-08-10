@@ -21,6 +21,7 @@ import java.net.URI;
 /**
  * <p>
  * Java class for NameIDPolicyType complex type.
+ * SAML 2.0 NameID 策略，指定服务提供者对主体标识格式与创建行为的要求。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -39,11 +40,16 @@ import java.net.URI;
  */
 public class NameIDPolicyType {
 
+    /** NameID 格式 URI（Format）。 */
     protected URI format;
+    /** 服务提供者名称限定符（SPNameQualifier）。 */
     protected String spNameQualifier;
+    /** 是否允许 IdP 创建新的 NameID，默认为 false。 */
     protected Boolean allowCreate = Boolean.FALSE;
 
     /**
+     * 获取 Format 格式属性的值。
+     *
      * Gets the value of the format property.
      *
      * @return possible object is {@link String }
@@ -53,6 +59,8 @@ public class NameIDPolicyType {
     }
 
     /**
+     * 设置 Format 格式属性的值。
+     *
      * Sets the value of the format property.
      *
      * @param value allowed object is {@link String }
@@ -62,6 +70,8 @@ public class NameIDPolicyType {
     }
 
     /**
+     * 获取 SPNameQualifier 属性的值。
+     *
      * Gets the value of the spNameQualifier property.
      *
      * @return possible object is {@link String }
@@ -71,6 +81,8 @@ public class NameIDPolicyType {
     }
 
     /**
+     * 设置 SPNameQualifier 属性的值。
+     *
      * Sets the value of the spNameQualifier property.
      *
      * @param value allowed object is {@link String }
@@ -80,6 +92,8 @@ public class NameIDPolicyType {
     }
 
     /**
+     * 获取 AllowCreate 是否允许创建属性的值。
+     *
      * Gets the value of the allowCreate property.
      *
      * @return possible object is {@link Boolean }
@@ -89,6 +103,8 @@ public class NameIDPolicyType {
     }
 
     /**
+     * 设置 AllowCreate 是否允许创建属性的值。
+     *
      * Sets the value of the allowCreate property.
      *
      * @param value allowed object is {@link Boolean }
