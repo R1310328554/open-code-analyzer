@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// AppenderV2 接口与 AppendV2Options：统一浮点/直方图/exemplar/metadata/ST的单次 Append 路径，并定义部分写入的 AppendPartialError。
+
 package storage
 
 import (
@@ -23,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/model/metadata"
 )
 
+// AppendableV2 由 Storage 实现，用于创建新版统一 Appender。
 // AppendableV2 allows creating AppenderV2.
 type AppendableV2 interface {
 	// AppenderV2 returns a new appender for the storage.
@@ -36,6 +39,7 @@ type AppendableV2 interface {
 // NOTE: AppendOption is used already.
 type AOptions = AppendV2Options
 
+// AppendV2Options 携带 metric family 名、metadata、exemplars 及 RejectOutOfOrder 等选项。
 // AppendV2Options provides optional, auxiliary data and configuration for AppenderV2.Append.
 type AppendV2Options struct {
 	// MetricFamilyName (optional) provides metric family name for the appended sample's
@@ -78,6 +82,7 @@ type AppendV2Options struct {
 	RejectOutOfOrder bool
 }
 
+// AppendPartialError 表示主样本已写入但 exemplar 等辅助数据部分失败。
 // AppendPartialError represents an AppenderV2.Append error that tells
 // callers sample was written but some auxiliary optional data (e.g. exemplars)
 // was not (or partially written)
@@ -145,6 +150,7 @@ func (e *AppendPartialError) Handle(err error) (*AppendPartialError, error) {
 
 var _ error = &AppendPartialError{}
 
+// AppenderV2.Append 一次调用写入样本及关联 metadata/exemplar/ST，可用 errors.As 检测部分错误。
 // AppenderV2 provides appends against a storage for all types of samples.
 // It must be completed with a call to Commit or Rollback and must not be reused afterwards.
 //
@@ -214,6 +220,7 @@ type LimitedAppenderV1 interface {
 
 // AppenderV2AsLimitedV1 returns appender that exposes AppenderV2 as LimitedAppenderV1
 // TODO(bwplotka): Remove once migration to AppenderV2 is fully complete.
+// AppenderV2AsLimitedV1 在迁移期将 AppenderV2 暴露为仅浮点/直方图的 LimitedAppenderV1。
 func AppenderV2AsLimitedV1(app AppenderV2) LimitedAppenderV1 {
 	return &limitedAppenderV1{AppenderV2: app}
 }

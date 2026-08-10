@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// MemoizedSeriesIterator 在迭代时缓存上一个样本，供 rate/delta 等算子在 delta 窗口内 PeekPrev 前一个点。
+
 package storage
 
 import (
@@ -20,6 +22,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 )
 
+// MemoizedSeriesIterator 记住 prev 样本；Seek 超出 delta 时会清空 prev 缓存。
 // MemoizedSeriesIterator wraps an iterator with a buffer to look back the previous element.
 //
 // This iterator regards integer histograms as float histograms; calls to Seek() will never return chunkenc.Histogram.
@@ -42,6 +45,7 @@ func NewMemoizedEmptyIterator(delta int64) *MemoizedSeriesIterator {
 	return NewMemoizedIterator(chunkenc.NewNopIterator(), delta)
 }
 
+// NewMemoizedIterator 绑定底层 Iterator 并设置 look-back 的 delta 毫秒窗口。
 // NewMemoizedIterator returns a new iterator that buffers the values within the
 // time range of the current element and the duration of delta before.
 func NewMemoizedIterator(it chunkenc.Iterator, delta int64) *MemoizedSeriesIterator {
@@ -64,6 +68,7 @@ func (b *MemoizedSeriesIterator) Reset(it chunkenc.Iterator) {
 
 // PeekPrev returns the previous element of the iterator. If there is none buffered,
 // ok is false.
+// PeekPrev 返回上一个已访问样本的时间戳与值（直方图以 FloatHistogram 形式）。
 func (b *MemoizedSeriesIterator) PeekPrev() (t int64, v float64, fh *histogram.FloatHistogram, ok bool) {
 	if b.prevTime == math.MinInt64 {
 		return 0, 0, nil, false
@@ -72,6 +77,7 @@ func (b *MemoizedSeriesIterator) PeekPrev() (t int64, v float64, fh *histogram.F
 }
 
 // Seek advances the iterator to the element at time t or greater.
+// Seek 定位到 >=t 的样本；若跳跃超过 delta 则丢弃 prev 并委托底层 Seek。
 func (b *MemoizedSeriesIterator) Seek(t int64) chunkenc.ValueType {
 	t0 := t - b.delta
 

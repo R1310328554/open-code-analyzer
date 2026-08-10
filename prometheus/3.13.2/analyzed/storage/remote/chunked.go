@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Remote Read 分帧流协议：ChunkedWriter/ChunkedReader 用 uvarint 长度 +Castagnoli CRC32 校验封装 protobuf 帧，支持 HTTP 流式 flush。
+
 package remote
 
 import (
@@ -35,6 +37,7 @@ func init() {
 	castagnoliTable = crc32.MakeTable(crc32.Castagnoli)
 }
 
+// ChunkedWriter 每帧写入 uvarint 长度、CRC32 与 payload，并立即 Flush。
 // ChunkedWriter is an io.Writer wrapper that allows streaming by adding uvarint delimiter before each write in a form
 // of length of the corresponded byte array.
 type ChunkedWriter struct {
@@ -57,6 +60,7 @@ func NewChunkedWriter(w io.Writer, f http.Flusher) *ChunkedWriter {
 // 3. the bytes of the given data.
 //
 // Write returns number of sent bytes for a given buffer. The number does not include delimiter and checksum bytes.
+// Write 发送单帧数据；返回值为 payload 字节数，不含长度前缀与校验和。
 func (w *ChunkedWriter) Write(b []byte) (int, error) {
 	if len(b) == 0 {
 		return 0, nil
@@ -86,6 +90,7 @@ func (w *ChunkedWriter) Write(b []byte) (int, error) {
 	return n, nil
 }
 
+// ChunkedReader 按帧读取并校验 CRC，超过 sizeLimit 的帧返回错误。
 // ChunkedReader is a buffered reader that expects uvarint delimiter and checksum before each message.
 // It will allocate as much as the biggest frame defined by delimiter (on top of bufio.Reader allocations).
 type ChunkedReader struct {
@@ -109,6 +114,7 @@ func NewChunkedReader(r io.Reader, sizeLimit uint64, data []byte) *ChunkedReader
 //
 // NOTE: The slice returned is valid only until a subsequent call to Next. It's a caller's responsibility to copy the
 // returned slice if needed.
+// Next 读取下一长度分隔记录并验证 Castagnoli CRC-32，切片仅在下次 Next 前有效。
 func (r *ChunkedReader) Next() ([]byte, error) {
 	size, err := binary.ReadUvarint(r.b)
 	if err != nil {
@@ -143,6 +149,7 @@ func (r *ChunkedReader) Next() ([]byte, error) {
 
 // NextProto consumes the next available record by calling r.Next, and decodes
 // it into the protobuf with proto.Unmarshal.
+// NextProto 读取一帧并 proto.Unmarshal 到给定消息。
 func (r *ChunkedReader) NextProto(pb proto.Message) error {
 	rec, err := r.Next()
 	if err != nil {

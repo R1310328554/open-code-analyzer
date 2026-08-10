@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus storage 核心接口定义：Storage/Querier/Appender、SeriesSet/ChunkSeries 及标签搜索 Searcher 等读写契约。
+
 package storage
 
 import (
@@ -27,6 +29,7 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
+// 包级错误变量：乱序、越界、重复时间戳、exemplar/直方图/ST 等相关失败原因。
 // The errors exposed.
 var (
 	ErrNotFound = errors.New("not found")
@@ -77,6 +80,7 @@ type SampleAndChunkQueryable interface {
 	ChunkQueryable
 }
 
+// Storage 组合 Queryable、ChunkQueryable 与 Appendable(V2)，是 TSDB/remote 的统一入口。
 // Storage ingests and manages samples, along with various indexes. All methods
 // are goroutine-safe.
 type Storage interface {
@@ -119,6 +123,7 @@ func (q *MockQueryable) Querier(int64, int64) (Querier, error) {
 	return q.MockQuerier, nil
 }
 
+// Querier 在 [mint,maxt] 时间窗内提供 Select 与 Label* 查询能力。
 // Querier provides querying access over time series data of a fixed time range.
 type Querier interface {
 	LabelQuerier
@@ -200,6 +205,7 @@ type ExemplarQuerier interface {
 	Select(start, end int64, matchers ...[]*labels.Matcher) ([]exemplar.QueryResult, error)
 }
 
+// SelectHints 向底层传递 PromQL 侧的选择提示（步长、分片、投影标签等）。
 // SelectHints specifies hints passed for data selections.
 // This is used only as an option for implementation to use.
 type SelectHints struct {
@@ -356,6 +362,7 @@ type SearchResult struct {
 	Score float64
 }
 
+// Searcher 为自动补全/搜索 UI 提供带相关性得分的标签名/值迭代接口。
 // Searcher provides search capabilities with relevance scoring.
 // This interface is designed for autocomplete and search UIs that need
 // to rank results by relevance rather than just filter them.
@@ -395,6 +402,7 @@ type AppendOptions struct {
 	DiscardOutOfOrder bool
 }
 
+// Appender（v1）批量写入样本/exemplar/直方图/ST，须 Commit 或 Rollback 结束事务。
 // Appender provides batched appends against a storage.
 // It must be completed with a call to Commit or Rollback and must not be reused afterwards.
 //
@@ -528,6 +536,7 @@ type StartTimestampAppender interface {
 	AppendSTZeroSample(ref SeriesRef, l labels.Labels, t, st int64) (SeriesRef, error)
 }
 
+// SeriesSet 迭代匹配 Select 的时间序列集合，并携带 warnings 与 Err。
 // SeriesSet contains a set of series.
 type SeriesSet interface {
 	Next() bool

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Fanout Storage 将读写代理到主/次多个底层存储：主存储查询失败则整体失败，次存储错误降级为 warning。
+
 package storage
 
 import (
@@ -33,6 +35,7 @@ type fanout struct {
 	secondaries []Storage
 }
 
+// NewFanout 构造 fanout：primary 负责强一致读，secondaries 为 best-effort 远程存储。
 // NewFanout returns a new fanout Storage, which proxies reads and writes
 // through to multiple underlying storages.
 //
@@ -71,6 +74,7 @@ func (f *fanout) StartTime() (int64, error) {
 	return firstTime, nil
 }
 
+// Querier 打开 primary 与各 secondary Querier，并用 MergeQuerier 合并 Select 结果。
 func (f *fanout) Querier(mint, maxt int64) (Querier, error) {
 	primary, err := f.primary.Querier(mint, maxt)
 	if err != nil {
@@ -123,6 +127,7 @@ func (f *fanout) ChunkQuerier(mint, maxt int64) (ChunkQuerier, error) {
 	return NewMergeChunkQuerier([]ChunkQuerier{primary}, secondaries, NewCompactingChunkSeriesMerger(ChainedSeriesMerge)), nil
 }
 
+// Appender 向 primary 与所有 secondaries 同时追加，Commit 时 primary 失败则回滚其余。
 func (f *fanout) Appender(ctx context.Context) Appender {
 	primary := f.primary.Appender(ctx)
 	secondaries := make([]Appender, 0, len(f.secondaries))
@@ -160,6 +165,7 @@ func (f *fanout) Close() error {
 	return errors.Join(errs...)
 }
 
+// fanoutAppender 将 Append/Commit/Rollback 广播到 primary 与 secondary appenders。
 // fanoutAppender implements Appender.
 type fanoutAppender struct {
 	logger *slog.Logger
@@ -292,6 +298,7 @@ func (f *fanoutAppender) Rollback() (err error) {
 	return err
 }
 
+// fanoutAppenderV2 为 AppenderV2 的多路写入包装，聚合 AppendPartialError。
 type fanoutAppenderV2 struct {
 	logger *slog.Logger
 

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Azure AD OAuth 认证 RoundTripper：支持托管身份、Workload Identity、OAuth/证书/SDK 等多种凭据，为 remote write/read HTTP 客户端注入 Bearer token。
+
 package azuread
 
 import (
@@ -31,6 +33,7 @@ import (
 	config_util "github.com/prometheus/common/config"
 )
 
+// Cloud 常量标识 Azure 公有云/政府/中国区，决定 token audience 与云配置。
 // Clouds.
 const (
 	AzureChina      = "AzureChina"
@@ -113,6 +116,7 @@ type CertificateConfig struct {
 	SendCertificateChain bool `yaml:"send_certificate_chain,omitempty"`
 }
 
+// AzureADConfig 聚合多种认证方式配置及 cloud/scope 等 remote storage 选项。
 // AzureADConfig is used to store the config values.
 type AzureADConfig struct { //nolint:revive // exported.
 	// ManagedIdentity is the managed identity that is being used to authenticate.
@@ -157,6 +161,7 @@ type tokenProvider struct {
 }
 
 // Validate validates config values provided.
+// Validate 确保恰好启用一种认证方式且必填字段（client/tenant 等）完整。
 func (c *AzureADConfig) Validate() error {
 	if c.Cloud == "" {
 		c.Cloud = AzurePublic
@@ -285,6 +290,7 @@ func (c *AzureADConfig) UnmarshalYAML(unmarshal func(any) error) error {
 }
 
 // NewAzureADRoundTripper creates round tripper adding Azure AD authorization to calls.
+// NewAzureADRoundTripper 构造带 token 刷新的 RoundTripper 包装 next 传输层。
 func NewAzureADRoundTripper(cfg *AzureADConfig, next http.RoundTripper) (http.RoundTripper, error) {
 	if next == nil {
 		next = http.DefaultTransport
@@ -308,6 +314,7 @@ func NewAzureADRoundTripper(cfg *AzureADConfig, next http.RoundTripper) (http.Ro
 }
 
 // RoundTrip sets Authorization header for requests.
+// RoundTrip 在请求头注入 Authorization: Bearer，token 过期时由 provider 刷新。
 func (rt *azureADRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	accessToken, err := rt.tokenProvider.getAccessToken(req.Context())
 	if err != nil {
@@ -474,6 +481,7 @@ func newCertificateTokenCredential(clientOpts *azcore.ClientOptions, certConfig 
 
 // newTokenProvider helps to fetch accessToken for different types of credential. This also takes care of
 // refreshing the accessToken before expiry. This accessToken is attached to the Authorization header while making requests.
+// newTokenProvider 根据 cloud 解析 audience 并创建带 TTL 缓存的 token 提供者。
 func newTokenProvider(cfg *AzureADConfig, cred azcore.TokenCredential) (*tokenProvider, error) {
 	var scopes []string
 

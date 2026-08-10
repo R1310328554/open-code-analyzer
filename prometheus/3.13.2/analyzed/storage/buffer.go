@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// BufferedSeriesIterator 在底层 chunk 迭代器外维护 look-back 环形缓冲，供 PromQL 区间查询在 delta 窗口内回溯历史样本。
+
 package storage
 
 import (
@@ -22,6 +24,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunks"
 )
 
+// BufferedSeriesIterator 包装 Iterator，缓存当前点及 delta 之前的样本环。
 // BufferedSeriesIterator wraps an iterator with a look-back buffer.
 type BufferedSeriesIterator struct {
 	hReader  histogram.Histogram
@@ -35,6 +38,7 @@ type BufferedSeriesIterator struct {
 	valueType chunkenc.ValueType
 }
 
+// NewBuffer 创建空 Nop 迭代器上的缓冲包装，需 Reset 绑定真实序列。
 // NewBuffer returns a new iterator that buffers the values within the time range
 // of the current element and the duration of delta before, initialized with an
 // empty iterator. Use Reset() to set an actual iterator to be buffered.
@@ -56,6 +60,7 @@ func NewBufferIterator(it chunkenc.Iterator, delta int64) *BufferedSeriesIterato
 
 // Reset re-uses the buffer with a new iterator, resetting the buffered time
 // delta to its original value.
+// Reset 复用缓冲结构并绑定新底层迭代器，重置 delta 与类型状态。
 func (b *BufferedSeriesIterator) Reset(it chunkenc.Iterator) {
 	b.it = it
 	b.lastTime = math.MinInt64
@@ -71,12 +76,14 @@ func (b *BufferedSeriesIterator) ReduceDelta(delta int64) bool {
 
 // PeekBack returns the nth previous element of the iterator. If there is none buffered,
 // ok is false.
+// PeekBack 读取环中第 n 个历史样本，无缓冲时 ok 为 false。
 func (b *BufferedSeriesIterator) PeekBack(n int) (sample chunks.Sample, ok bool) {
 	return b.buf.nthLast(n)
 }
 
 // Buffer returns an iterator over the buffered data. Invalidates previously
 // returned iterators.
+// Buffer 返回缓冲区内样本的只读迭代器，会失效此前返回的迭代器。
 func (b *BufferedSeriesIterator) Buffer() *SampleRingIterator {
 	return b.buf.iterator()
 }

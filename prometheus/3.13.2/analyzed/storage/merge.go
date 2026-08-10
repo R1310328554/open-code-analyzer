@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 多 Querier 垂直合并实现：k 路归并 SeriesSet/ChunkSeriesSet，ChainedSeriesMerge 链接同标签序列，CompactingChunkSeriesMerger 合并重叠 chunk。
+
 package storage
 
 import (
@@ -29,6 +31,7 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
+// mergeGenericQuerier 持有多个 genericQuerier 及同标签序列的 merge 回调。
 type mergeGenericQuerier struct {
 	queriers []genericQuerier
 
@@ -39,6 +42,7 @@ type mergeGenericQuerier struct {
 	concurrentSelect bool
 }
 
+// NewMergeQuerier 合并 primary/secondary Select；同标签序列由 mergeFn 纵向拼接。
 // NewMergeQuerier returns a new Querier that merges results of given primary and secondary queriers.
 // See NewFanout commentary to learn more about primary vs secondary differences.
 //
@@ -88,6 +92,7 @@ func filterQueriers(qs []Querier) []Querier {
 //
 // In case of overlaps between the data given by primaries' and secondaries' Selects, merge function will be used.
 // TODO(bwplotka): Currently merge will compact overlapping chunks with bigger chunk, without limit. Split it: https://github.com/prometheus/tsdb/issues/670
+// NewMergeChunkQuerier 为 chunk 查询路径提供与样本路径对称的 merge querier。
 func NewMergeChunkQuerier(primaries, secondaries []ChunkQuerier, mergeFn VerticalChunkSeriesMergeFunc) ChunkQuerier {
 	primaries = filterChunkQueriers(primaries)
 	secondaries = filterChunkQueriers(secondaries)
@@ -129,6 +134,7 @@ func filterChunkQueriers(qs []ChunkQuerier) []ChunkQuerier {
 }
 
 // Select returns a set of series that matches the given label matchers.
+// Select 并行或串行打开子 querier，用堆归并各 SeriesSet 并按标签 merge。
 func (q *mergeGenericQuerier) Select(ctx context.Context, _ bool, hints *SelectHints, matchers ...*labels.Matcher) genericSeriesSet {
 	seriesSets := make([]genericSeriesSet, 0, len(q.queriers))
 	var limit int
@@ -291,6 +297,7 @@ type VerticalSeriesMergeFunc func(...Series) Series
 
 // NewMergeSeriesSet returns a new SeriesSet that merges many SeriesSets together.
 // If limit is set, the SeriesSet will be limited up-to the limit. 0 means disabled.
+// NewMergeSeriesSet 对多个已打开 SeriesSet 做 k 路归并，可选 series 数量上限。
 func NewMergeSeriesSet(sets []SeriesSet, limit int, mergeFunc VerticalSeriesMergeFunc) SeriesSet {
 	genericSets := make([]genericSeriesSet, 0, len(sets))
 	for _, s := range sets {
@@ -458,6 +465,7 @@ func (h *genericSeriesSetHeap) Pop() any {
 // this never happens.
 //
 // It's optimized for non-overlap cases as well.
+// ChainedSeriesMerge 将同标签多条 Series 的样本按时间链接为单条 Series。
 func ChainedSeriesMerge(series ...Series) Series {
 	if len(series) == 0 {
 		return nil
@@ -473,6 +481,7 @@ func ChainedSeriesMerge(series ...Series) Series {
 // chainSampleIterator is responsible to iterate over samples from different iterators of the same time series in timestamps
 // order. If one or more samples overlap, one sample from random overlapped ones is kept and all others with the same
 // timestamp are dropped. It's optimized for non-overlap cases as well.
+// chainSampleIterator 用最小堆合并多条序列的样本迭代器，Seek/Next 按时间序推进。
 type chainSampleIterator struct {
 	iterators []chunkenc.Iterator
 	h         samplesIteratorHeap
@@ -721,6 +730,7 @@ func (h *samplesIteratorHeap) Pop() any {
 //
 // NOTE: Use the returned merge function only when you see potentially overlapping series, as this introduces small a overhead
 // to handle overlaps between series.
+// NewCompactingChunkSeriesMerger 合并重叠 chunk 并在边界处拼接样本迭代器。
 func NewCompactingChunkSeriesMerger(mergeFunc VerticalSeriesMergeFunc) VerticalChunkSeriesMergeFunc {
 	return func(series ...ChunkSeries) ChunkSeries {
 		if len(series) == 0 {

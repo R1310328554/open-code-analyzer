@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Remote Storage HTTP 客户端：封装 remote read/write 请求、Snappy 压缩、认证 RoundTripper 及流式 XOR chunk 响应解析。
+
 package remote
 
 import (
@@ -105,6 +107,7 @@ func init() {
 	prometheus.MustRegister(remoteReadQueriesTotal, remoteReadQueries, remoteReadQueryDuration)
 }
 
+// Client 持有 HTTP 客户端、超时、重试策略及 remote read 指标计数器。
 // Client allows reading and writing from/to a remote HTTP endpoint.
 type Client struct {
 	remoteName string // Used to differentiate clients in metrics.
@@ -125,6 +128,7 @@ type Client struct {
 }
 
 // ClientConfig configures a client.
+// ClientConfig 描述 remote URL、TLS、SigV4/Azure/GCP IAM 等认证与读写选项。
 type ClientConfig struct {
 	URL                   *config_util.URL
 	Timeout               model.Duration
@@ -148,6 +152,7 @@ type ReadClient interface {
 }
 
 // NewReadClient creates a new client for remote read.
+// NewReadClient 构建带 OTel 追踪与自定义 RoundTripper 链的只读客户端。
 func NewReadClient(name string, conf *ClientConfig, optFuncs ...config_util.HTTPClientOption) (ReadClient, error) {
 	httpClient, err := config_util.NewClientFromConfig(conf.HTTPClientConfig, "remote_storage_read_client", optFuncs...)
 	if err != nil {
@@ -180,6 +185,7 @@ func NewReadClient(name string, conf *ClientConfig, optFuncs ...config_util.HTTP
 }
 
 // NewWriteClient creates a new client for remote write.
+// NewWriteClient 创建 remote write 客户端，配置压缩与 PRW 1.0/2.0 内容类型头。
 func NewWriteClient(name string, conf *ClientConfig) (WriteClient, error) {
 	var httpOpts []config_util.HTTPClientOption
 	if conf.RoundRobinDNS {
@@ -260,6 +266,7 @@ type RecoverableError struct {
 	retryAfter model.Duration
 }
 
+// Store POST 编码后的 WriteRequest；5xx/429 包装为 RecoverableError 供上层重试。
 // Store sends a batch of samples to the HTTP endpoint, the request is the proto marshalled
 // and encoded bytes from codec.go.
 func (c *Client) Store(ctx context.Context, req []byte, attempt int) (WriteResponseStats, error) {
@@ -353,6 +360,7 @@ func (c *Client) Endpoint() string {
 
 // Read reads from a remote endpoint. The sortSeries parameter is only respected in the case of a samples response;
 // chunked responses arrive already sorted by the server.
+// Read 执行单条 remote read 查询并解析 SAMPLE 或 STREAMED_XOR_CHUNKS 响应。
 func (c *Client) Read(ctx context.Context, query *prompb.Query, sortSeries bool) (storage.SeriesSet, error) {
 	return c.ReadMultiple(ctx, []*prompb.Query{query}, sortSeries)
 }
@@ -379,6 +387,7 @@ func (c *Client) ReadMultiple(ctx context.Context, queries []*prompb.Query, sort
 }
 
 // executeReadRequest creates and executes an HTTP request for reading data.
+// executeReadRequest 构造 POST、注册指标并返回可取消的 HTTP 响应。
 func (c *Client) executeReadRequest(ctx context.Context, req *prompb.ReadRequest) (*http.Response, context.CancelFunc, time.Time, error) {
 	data, err := proto.Marshal(req)
 	if err != nil {
@@ -524,6 +533,7 @@ func combineQueryResults(results []*prompb.QueryResult, sortSeries bool) (storag
 }
 
 // handleChunkedResponseImpl handles chunked responses for both single and multiple queries.
+// handleChunkedResponseImpl 逐帧解析 XOR chunk 流并组装为 storage.SeriesSet。
 func (*Client) handleChunkedResponseImpl(s *ChunkedReader, httpResp *http.Response, queries []*prompb.Query, onClose func(error)) storage.SeriesSet {
 	// For multiple queries in chunked response, we'll still use the existing infrastructure
 	// but we need to provide the timestamp range that covers all queries

@@ -11,12 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 抓取路径 Start Time（ST）合成逻辑：为 Counter/Summary/Histogram 等累积型指标推断起始时间戳，并在 counter reset 时调整样本值。
+
 package scrape
 
 import (
 	"github.com/prometheus/prometheus/model/histogram"
 )
 
+// stCache 缓存参考点与上一采样，用于为累积型指标合成 ST 并做 reset 感知调整。
 // stCache contains the reference point and previous value
 // information needed to synthesize start times for cumulative metrics
 // (Counters, Summaries, Histograms).
@@ -42,6 +45,7 @@ type floatSynthesis struct {
 	starting float64
 }
 
+// histogramSynthesis 统一处理整数与浮点直方图，借助 FloatHistogram 的 DetectReset/Sub。
 // histogramSynthesis handles both Native integer Histograms and FloatHistograms.
 // It works by caching the incoming histogram perfectly as a FloatHistogram
 // to leverage native DetectReset and Sub methods.
@@ -51,6 +55,7 @@ type histogramSynthesis struct {
 }
 
 // synthesizeFloat updates the synthesis cache for a float and returns the adjusted value, synthesized start time, and whether to skip append (for first sample).
+// synthesizeFloat 更新浮点序列合成状态；首样本丢弃并返回 skip=true。
 func (c *stCache) synthesizeFloat(v float64, t int64) (float64, int64, bool) {
 	if c.f == nil {
 		c.f = &floatSynthesis{}
@@ -80,6 +85,7 @@ func (c *stCache) synthesizeFloat(v float64, t int64) (float64, int64, bool) {
 }
 
 // synthesizeHistogram updates the synthesis state for a classic/native Integer Histogram and returns the adjusted histogram, synthesized start time, and whether to skip append (for first sample).
+// synthesizeHistogram 对整数直方图做 ST 合成，必要时经 FloatHistogram 相减再转回整数桶。
 func (c *stCache) synthesizeHistogram(h *histogram.Histogram, t int64) (*histogram.Histogram, int64, bool) {
 	if c.h == nil {
 		c.h = &histogramSynthesis{}
@@ -165,6 +171,7 @@ func (c *stCache) synthesizeHistogram(h *histogram.Histogram, t int64) (*histogr
 }
 
 // synthesizeFloatHistogram updates the synthesis state for a FloatHistogram and returns the adjusted histogram, synthesized start time, and whether to skip append (for first sample).
+// synthesizeFloatHistogram 对浮点直方图执行 reset 检测与相对起始锚点的减法调整。
 func (c *stCache) synthesizeFloatHistogram(fh *histogram.FloatHistogram, t int64) (*histogram.FloatHistogram, int64, bool) {
 	if c.h == nil {
 		c.h = &histogramSynthesis{}

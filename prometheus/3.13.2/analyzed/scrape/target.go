@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 抓取 Target 模型与辅助 Appender：表示单个 HTTP/HTTPS 端点，维护健康/元数据状态，并在写入 TSDB 前施加样本/桶/时间/schema 限制。
+
 package scrape
 
 import (
@@ -48,6 +50,7 @@ const alwaysScrapeClassicHistogramsLabel = "__always_scrape_classic_histograms__
 // scrape native histograms when scraping a target.
 const scrapeNativeHistogramsLabel = "__scrape_native_histograms__"
 
+// TargetHealth 描述 target 最近一次抓取后的健康状态（unknown/up/down）。
 // TargetHealth describes the health state of a target.
 type TargetHealth string
 
@@ -58,6 +61,7 @@ const (
 	HealthBad     TargetHealth = "down"
 )
 
+// Target 封装可抓取端点：标签、scrape 配置、最近错误/耗时与健康度。
 // Target refers to a singular HTTP or HTTPS endpoint.
 type Target struct {
 	// Any labels that are added to this target and its metrics.
@@ -76,6 +80,7 @@ type Target struct {
 }
 
 // NewTarget creates a reasonably configured target for querying.
+// NewTarget 用目标与组标签及 ScrapeConfig 构造可查询的 Target 实例。
 func NewTarget(labels labels.Labels, scrapeConfig *config.ScrapeConfig, tLabels, tgLabels model.LabelSet) *Target {
 	return &Target{
 		labels:       labels,
@@ -91,6 +96,7 @@ func (t *Target) String() string {
 }
 
 // MetricMetadataStore represents a storage for metadata.
+// MetricMetadataStore 为 target 提供指标元数据（类型/Help/Unit）的读写接口。
 type MetricMetadataStore interface {
 	ListMetadata() []MetricMetadata
 	GetMetadata(mfName string) (MetricMetadata, bool)
@@ -254,6 +260,7 @@ func (t *Target) URL() *url.URL {
 }
 
 // Report sets target data about the last scrape.
+// Report 在每次抓取结束后更新 lastScrape、耗时、错误与健康状态。
 func (t *Target) Report(start time.Time, dur time.Duration, err error) {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
@@ -303,6 +310,7 @@ func (t *Target) Health() TargetHealth {
 
 // intervalAndTimeout returns the interval and timeout derived from
 // the targets labels.
+// intervalAndTimeout 解析 __scrape_interval__/__scrape_timeout__ 等标签覆盖默认间隔。
 func (t *Target) intervalAndTimeout(defaultInterval, defaultDuration time.Duration) (time.Duration, time.Duration, error) {
 	t.mtx.RLock()
 	defer t.mtx.RUnlock()
@@ -355,6 +363,7 @@ var (
 	errBucketLimit = errors.New("histogram bucket limit exceeded")
 )
 
+// limitAppender 包装 Appender，在单批写入中强制执行 sample_limit。
 // limitAppender limits the number of total appended samples in a batch.
 type limitAppender struct {
 	storage.Appender
@@ -395,6 +404,7 @@ func (app *limitAppender) AppendHistogram(ref storage.SeriesRef, lset labels.Lab
 	return ref, nil
 }
 
+// timeLimitAppender 丢弃早于 scrape 窗口起点的样本，防止写入过期数据。
 type timeLimitAppender struct {
 	storage.Appender
 
@@ -414,6 +424,7 @@ func (app *timeLimitAppender) Append(ref storage.SeriesRef, lset labels.Labels, 
 }
 
 // bucketLimitAppender limits the number of total appended samples in a batch.
+// bucketLimitAppender 限制直方图桶数量，超出 sample_limit_buckets 时拒绝写入。
 type bucketLimitAppender struct {
 	storage.Appender
 
@@ -458,6 +469,7 @@ func (app *bucketLimitAppender) AppendHistogram(ref storage.SeriesRef, lset labe
 	return ref, nil
 }
 
+// maxSchemaAppender 校验原生直方图 schema 不超过配置上限。
 type maxSchemaAppender struct {
 	storage.Appender
 
@@ -586,6 +598,7 @@ func (app *maxSchemaAppenderV2) Append(ref storage.SeriesRef, ls labels.Labels, 
 }
 
 // PopulateDiscoveredLabels sets base labels on lb from target and group labels and scrape configuration, before relabeling.
+// PopulateDiscoveredLabels 合并 target/targetgroup 标签并应用 relabel 发现规则。
 func PopulateDiscoveredLabels(lb *labels.Builder, cfg *config.ScrapeConfig, tLabels, tgLabels model.LabelSet) {
 	lb.Reset(labels.EmptyLabels())
 
@@ -626,6 +639,7 @@ func PopulateDiscoveredLabels(lb *labels.Builder, cfg *config.ScrapeConfig, tLab
 // PopulateLabels builds labels from target and group labels and scrape configuration,
 // performs defined relabeling, checks validity, and adds Prometheus standard labels such as 'instance'.
 // A return of empty labels and nil error means the target was dropped by relabeling.
+// PopulateLabels 在发现标签基础上应用 metric relabel，生成最终抓取标签集。
 func PopulateLabels(lb *labels.Builder, cfg *config.ScrapeConfig, tLabels, tgLabels model.LabelSet) (res labels.Labels, err error) {
 	PopulateDiscoveredLabels(lb, cfg, tLabels, tgLabels)
 	keep := relabel.ProcessBuilder(lb, cfg.RelabelConfigs...)
@@ -706,6 +720,7 @@ func PopulateLabels(lb *labels.Builder, cfg *config.ScrapeConfig, tLabels, tgLab
 }
 
 // TargetsFromGroup builds targets based on the given TargetGroup and config.
+// TargetsFromGroup 将 discovery 返回的 Group 展开为 Target 列表并收集标签错误。
 func TargetsFromGroup(tg *targetgroup.Group, cfg *config.ScrapeConfig, targets []*Target, lb *labels.Builder) ([]*Target, []error) {
 	targets = targets[:0]
 	failures := []error{}

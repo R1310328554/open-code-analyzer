@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// storage 泛型合并适配层：为 SeriesSet/ChunkSeriesSet 提供统一的genericQuerier 抽象，并实现标签搜索 hints 的过滤/排序/Top-K 合并。
+
+// 本文件提供泛型适配器，使 MergeQuerier/MergeSeriesSet 对样本与 chunk 路径共用一套实现。
 // This file holds boilerplate adapters for generic MergeSeriesSet and MergeQuerier functions, so we can have one optimized
 // solution that works for both ChunkSeriesSet as well as SeriesSet.
 
@@ -29,6 +32,7 @@ import (
 // querierAdapter must implement the Searcher interface.
 var _ Searcher = &querierAdapter{}
 
+// genericQuerier 抽象 LabelQuerier 与 Select，供 merge 树统一调度。
 type genericQuerier interface {
 	LabelQuerier
 	Select(context.Context, bool, *SelectHints, ...*labels.Matcher) genericSeriesSet
@@ -249,6 +253,7 @@ const minLinearAllocCap = 256
 //     sort over the matched set.
 //   - Other combinations fall back to filter-then-reorder-then-slice, with the upfront
 //     capacity capped by min(len(values), max(2*Limit, minLinearAllocCap)).
+// ApplySearchHints 按 Filter/OrderBy/Limit 对字符串切片做过滤、排序与限量打分。
 func ApplySearchHints(values []string, hints *SearchHints) []SearchResult {
 	if hints == nil {
 		hints = &SearchHints{}
@@ -499,6 +504,7 @@ func compareSearchResults(o Ordering) func(a, b SearchResult) int {
 // pairwise k-way merge. Each searcher is required to emit results in the order
 // requested by hints.OrderBy; the merge deduplicates by value so that a value
 // appearing in several sources is emitted once, carrying its highest score.
+// mergeSearchSets 对多个 Searcher 的 SearchLabel* 结果做惰性 k 路归并。
 func mergeSearchSets(hints *SearchHints, fn func(Searcher) SearchResultSet, searchers []Searcher) SearchResultSet {
 	if len(searchers) == 0 {
 		return EmptySearchResultSet()
@@ -545,6 +551,7 @@ func mergeSearchSets(hints *SearchHints, fn func(Searcher) SearchResultSet, sear
 // to defer SearchLabel* calls until the result is actually consumed should
 // wrap each input in their own lazy SearchResultSet (the storage package
 // uses an internal lazy wrapper for that path).
+// MergeSearchResultSets 归并已排序 SearchResultSet，去重并保留最高 score。
 func MergeSearchResultSets(sets []SearchResultSet, hints *SearchHints) SearchResultSet {
 	var (
 		order Ordering
@@ -670,6 +677,7 @@ func (s *limitSearchResultSet) Close() error                      { return s.rs.
 // preservation of buffered results from the surviving side, which is the
 // behaviour expected by callers that fan out queries across heterogeneous
 // backends.
+// mergingSearchResultSet 双流式归并 SearchResult，一侧出错仍继续排空另一侧。
 type mergingSearchResultSet struct {
 	a, b         SearchResultSet
 	cmpFn        func(a, b SearchResult) int
@@ -797,6 +805,7 @@ func (s *mergingSearchResultSet) Close() error {
 
 // SearchLabelNames implements Searcher by merging results from all underlying queriers
 // that support the Searcher interface.
+// SearchLabelNames 从底层 querier 树收集 Searcher 并合并标签名搜索结果。
 func (q *querierAdapter) SearchLabelNames(ctx context.Context, hints *SearchHints, matchers ...*labels.Matcher) SearchResultSet {
 	return mergeSearchSets(hints, func(s Searcher) SearchResultSet {
 		return s.SearchLabelNames(ctx, hints, matchers...)

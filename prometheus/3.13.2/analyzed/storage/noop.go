@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// storage 空实现（noop）Querier/SeriesSet：用于 fanout 过滤无效 secondary或测试占位，Select 恒为空且不产生错误。
+
 package storage
 
 import (
@@ -22,6 +24,7 @@ import (
 
 type noopQuerier struct{}
 
+// NoopQuerier 返回空 SeriesSet，Label* 为空列表，Close 无操作。
 // NoopQuerier is a Querier that does nothing.
 func NoopQuerier() Querier {
 	return noopQuerier{}
@@ -55,6 +58,7 @@ var _ Searcher = noopQuerier{}
 
 type noopChunkQuerier struct{}
 
+// NoopChunkedQuerier 为 chunk 查询路径的空实现，供 merge/fanout 跳过。
 // NoopChunkedQuerier is a ChunkQuerier that does nothing.
 func NoopChunkedQuerier() ChunkQuerier {
 	return noopChunkQuerier{}
@@ -78,6 +82,7 @@ func (noopChunkQuerier) Close() error {
 
 type noopSeriesSet struct{}
 
+// NoopSeriesSet 永不 Next，At 返回 nil，用于表示无匹配序列。
 // NoopSeriesSet is a SeriesSet that does nothing.
 func NoopSeriesSet() SeriesSet {
 	return noopSeriesSet{}
@@ -93,6 +98,7 @@ func (noopSeriesSet) Warnings() annotations.Annotations { return nil }
 
 type noopChunkedSeriesSet struct{}
 
+// NoopChunkedSeriesSet 为空的 ChunkSeriesSet，与 NoopSeriesSet 语义对称。
 // NoopChunkedSeriesSet is a ChunkSeriesSet that does nothing.
 func NoopChunkedSeriesSet() ChunkSeriesSet {
 	return noopChunkedSeriesSet{}
