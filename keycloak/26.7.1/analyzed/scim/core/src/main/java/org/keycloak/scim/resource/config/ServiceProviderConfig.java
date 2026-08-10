@@ -8,19 +8,28 @@ import org.keycloak.scim.resource.ResourceTypeRepresentation;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * SCIM ServiceProviderConfig 资源，描述服务端支持的能力与限制。
+ * <p>客户端通过此资源发现 PATCH、Bulk、Filter 等功能是否可用。</p>
+ */
 public class ServiceProviderConfig extends ResourceTypeRepresentation {
 
+    /** ServiceProviderConfig 核心 schema URN。 */
     public static final String SCHEMA = "urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig";
 
+    /** 服务端文档 URI。 */
     @JsonProperty("documentationUri")
     private String documentationUri;
 
+    /** PATCH 操作支持情况。 */
     @JsonProperty("patch")
     private Supported patch;
 
+    /** 批量操作支持及限制。 */
     @JsonProperty("bulk")
     private BulkSupport bulk;
 
+    /** 过滤器支持及最大结果数。 */
     @JsonProperty("filter")
     private FilterSupport filter;
 
@@ -33,6 +42,7 @@ public class ServiceProviderConfig extends ResourceTypeRepresentation {
     @JsonProperty("etag")
     private Supported etag;
 
+    /** 支持的认证方案列表。 */
     @JsonProperty("authenticationSchemes")
     private List<AuthenticationScheme> authenticationSchemes;
 
@@ -106,7 +116,7 @@ public class ServiceProviderConfig extends ResourceTypeRepresentation {
     }
 
     /**
-     * Generic supported feature indicator
+     * 通用功能支持指示器，表示某项 SCIM 能力是否可用。
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Supported {
@@ -135,7 +145,7 @@ public class ServiceProviderConfig extends ResourceTypeRepresentation {
     }
 
     /**
-     * Bulk operation support configuration
+     * 批量（Bulk）操作支持配置，包含单次最大操作数与载荷大小限制。
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class BulkSupport extends Supported {
@@ -163,7 +173,7 @@ public class ServiceProviderConfig extends ResourceTypeRepresentation {
     }
 
     /**
-     * Filter support configuration
+     * 过滤器（Filter）支持配置，包含最大返回结果数。
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class FilterSupport extends Supported {
@@ -180,7 +190,7 @@ public class ServiceProviderConfig extends ResourceTypeRepresentation {
     }
 
     /**
-     * Authentication scheme details
+     * 认证方案详情，描述类型、名称及规范文档链接。
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class AuthenticationScheme {

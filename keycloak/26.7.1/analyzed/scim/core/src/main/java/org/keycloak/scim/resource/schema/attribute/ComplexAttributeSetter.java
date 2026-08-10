@@ -11,16 +11,27 @@ import org.keycloak.models.Model;
 import org.keycloak.scim.resource.ResourceTypeRepresentation;
 import org.keycloak.scim.resource.common.MultiValuedAttribute;
 
+/**
+ * 复合 SCIM 属性的表示层 setter，通过反射调用 getter/setter 写入嵌套字段。
+ * <p>支持多值 {@link MultiValuedAttribute} 及一级子属性路径。</p>
+ * @param <M> Keycloak 领域模型类型
+ * @param <R> SCIM 资源表示类型
+ */
 public class ComplexAttributeSetter<M extends Model, R extends ResourceTypeRepresentation> implements TriConsumer<Attribute<M, R>, R, String> {
 
+    /** 复合属性在表示类上的字段名。 */
     private final String name;
+    /** 子属性名（可为点分隔路径）。 */
     private final String subName;
+    /** 复合 Java 类型。 */
     private final Class<?> complexType;
 
+    /** 构造根复合属性的 setter。 */
     public ComplexAttributeSetter(String name, Class<?> complexType) {
         this(name, null, complexType);
     }
 
+    /** 构造带子属性路径的复合属性 setter。 */
     public ComplexAttributeSetter(String name, String subName, Class<?> complexType) {
         Objects.requireNonNull(name);
         this.name = name;
@@ -28,6 +39,7 @@ public class ComplexAttributeSetter<M extends Model, R extends ResourceTypeRepre
         this.complexType = complexType;
     }
 
+    /** 通过反射在表示对象上设置复合或子属性值。 */
     @Override
     public void accept(Attribute<M, R> attribute, R representation, String newValue) {
         try {
@@ -37,9 +49,9 @@ public class ComplexAttributeSetter<M extends Model, R extends ResourceTypeRepre
             Method setter = representation.getClass().getMethod("set" + Character.toUpperCase(name.charAt(0)) + name.substring(1), returnType);
 
             if (value == null) {
-                // no value yet, need to create it
+                // 尚无实例，需先创建
                 if (Collection.class.isAssignableFrom(returnType)) {
-                    // if the return type is a collection, we need to create a new collection and add the new value to it
+                    // 返回类型为集合时，创建集合并添加新项
                     Collection<Object> values = new ArrayList<>();
 
                     setter.invoke(representation, values);
@@ -58,7 +70,7 @@ public class ComplexAttributeSetter<M extends Model, R extends ResourceTypeRepre
                         item.getClass().getMethod("setValue", String.class).invoke(item, newValue);
                     }
 
-                    // Currently only multivalued attributes are supported for complex attributes
+                    // 当前复合属性仅支持多值场景
                     return;
                 } else if (complexType != null) {
                     // not multivalued, but still a complex type, so we need to create a new instance of the complex type and set it on the representation

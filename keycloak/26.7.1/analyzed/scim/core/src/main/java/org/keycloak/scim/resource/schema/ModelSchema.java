@@ -14,98 +14,98 @@ import com.fasterxml.jackson.databind.JsonNode;
 import static java.util.Optional.ofNullable;
 
 /**
- * <p>An interface that represents a schema for a resource type.
+ * <p>表示 SCIM 资源类型 schema 的接口。</p>
  *
- * <p>A schema is a set of metadata that basically describes the attributes of a resource type. It is used to validate
- * the representation of a resource type and to validate and map the attributes from the schema from a {@link ResourceTypeRepresentation}, usually an
- * object from the RESTful layer, to a {@link Model} and vice versa.
+ * <p>Schema 是一组描述资源属性的元数据，用于校验 {@link ResourceTypeRepresentation} 并在 REST 层对象与 {@link Model} 之间双向映射属性。</p>
+ * @param <M> Keycloak 领域模型类型
+ * @param <R> SCIM 资源表示类型
  */
 public interface ModelSchema<M extends Model, R extends ResourceTypeRepresentation> {
 
     /**
-     * The id of the schema. It is used to identify the schema and to associate it with a resource type.
+     * Schema 的 URN 标识，用于关联资源类型。
      *
-     * @return the id of the schema
+     * @return schema URN
      */
     String getId();
 
+    /** 返回 schema 的可读名称。 */
     String getName();
 
+    /** 返回 schema 描述。 */
     String getDescription();
 
     /**
-     * Returns the attributes defined by this schema. The key of the map is the name of the attribute and the value is
-     * the {@link Attribute} that describes the attribute.
+     * 返回本 schema 定义的属性映射，键为属性名，值为 {@link Attribute} 描述。
      *
-     * @return the attributes of the schema
+     * @return 属性映射
      */
     Map<String, Attribute<M, R>> getAttributes();
 
     /**
-     * Populates the given {@code model} with the attributes from the given {@code representation}.
+     * 从 SCIM 表示填充 Keycloak 模型。
      *
-     * @param model the model to be populated
-     * @param representation the representation to populate from
+     * @param model 待填充模型
+     * @param representation 源 SCIM 表示
      */
     void populate(M model, R representation);
 
     /**
-     * Populates the given {@code representation} with the attributes from the given {@code model}.
+     * 从 Keycloak 模型填充 SCIM 表示。
      *
-     * @param model the model to be populated
-     * @param representation the representation to populate from
+     * @param model 源模型
+     * @param representation 待填充的 SCIM 表示
      */
     void populate(R representation, M model);
 
     /**
-     * Populates the given {@code representation} with the attributes from the given {@code model},
-     * filtering based on the {@code attributes} and {@code excludedAttributes} parameters.
+     * 按 attributes/excludedAttributes 过滤后，从模型填充 SCIM 表示。
      *
-     * @param representation the representation to populate
-     * @param model the model to populate from
-     * @param attributes the list of attributes to include (may be null for no inclusion filter)
-     * @param excludedAttributes the list of attributes to exclude (may be null for no exclusion filter)
+     * @param representation 待填充表示
+     * @param model 源模型
+     * @param attributes 包含属性列表（null 表示不过滤）
+     * @param excludedAttributes 排除属性列表（null 表示不排除）
      */
     default void populate(R representation, M model, List<String> attributes, List<String> excludedAttributes) {
         populate(representation, model);
     }
 
     /**
-     * Validates the given {@code representation} against the schema. It should throw an exception if the representation is not valid.
+     * 校验 SCIM 表示是否符合 schema，无效时抛出异常。
      *
-     * @param representation the representation to be validated
-     * @throws ModelValidationException if the representation is not valid against the schema
+     * @param representation 待校验表示
+     * @throws ModelValidationException 校验失败
      */
     void validate(R representation) throws ModelValidationException;
 
     /**
-     * Performs a PATCH {@code add} operation on the given {@code model} for the attribute defined by the given {@code path} and the given {@code value}.
+     * 对模型执行 PATCH add 操作。
      *
-     * @param model the model to perform the operation on
-     * @param path the path of the attribute to perform the operation on. It can be null if the operation is performed on the whole resource.
-     * @param value the value
+     * @param model 目标模型
+     * @param path 属性路径（可为 null 表示整资源）
+     * @param value 追加值
      */
     default void add(M model, String path, JsonNode value) {
         throw new UnsupportedOperationException("Add operation is not supported for this schema");
     }
 
     /**
-     * Performs a PATCH {@code remove} operation on the given {@code model} for the attribute defined by the given {@code path}.
+     * 对模型执行 PATCH remove 操作。
      *
-     * @param resource the resource to perform the operation on
-     * @param model the model to perform the operation on
-     * @param path the path of the attribute to perform the operation on
+     * @param resource SCIM 资源表示
+     * @param model 目标模型
+     * @param path 属性路径
      */
     default void remove(R resource, M model, String path) {
         throw new UnsupportedOperationException("Add operation is not supported for this schema");
     }
 
     /**
-     * Performs a PATCH {@code replace} operation on the given {@code model} for the attribute defined by the given {@code path}.
+     * 对模型执行 PATCH replace 操作（先 remove 再 add）。
      *
-     * @param resource the resource to perform the operation on
-     * @param model the model to perform the operation on
-     * @param path the path of the attribute to perform the operation on
+     * @param resource SCIM 资源表示
+     * @param model 目标模型
+     * @param path 属性路径
      */
     default void replace(R resource, M model, String path, JsonNode value) {
         if (path != null) {
@@ -115,38 +115,36 @@ public interface ModelSchema<M extends Model, R extends ResourceTypeRepresentati
     }
 
     /**
-     * Returns {@code true} if this schema is a core schema.
+     * 是否为核心 schema（默认 true）。
      *
-     * @return {@code true} if this schema is a core schema, {@code false} otherwise
+     * @return 核心 schema 返回 true
      */
     default boolean isCore() {
         return true;
     }
 
     /**
-     * Returns an {@link Attribute} defined by this schema for the given {@code path}.
-     * The path can be {@code null} if the attribute is the whole resource.
-     * It can also be a dot-separated path to a sub-attribute, e.g. "name.familyName".
+     * 按路径返回 {@link Attribute}，路径可为 null 或点分隔子属性（如 name.familyName）。
      *
-     * @param path the path
-     * @return the attribute for the given path, or {@code null} if no attribute is defined for the given path
+     * @param path SCIM 属性路径
+     * @return 匹配的 Attribute，无匹配返回 null
      */
     Attribute<M, R> getAttributeByPath(String path);
 
     /**
-     * Returns {@code true} if this schema is an internal schema, not exposed from the schema endpoint.
+     * 是否为内部 schema（不通过 /Schemas 端点暴露）。
      *
-     * @return {@code true} if this schema is an internal schema, {@code false} otherwise
+     * @return 内部 schema 返回 true
      */
     default boolean isInternal() {
         return false;
     }
 
     /**
-     * Returns {@code true} if this schema supports any of the given {@code schemas}
+     * 判断请求的 schema 集合是否包含本 schema（核心 schema 始终支持）。
      *
-     * @param schemas the schemas
-     * @return {@code true} if this schema supports any of the given {@code schemas}. Otherwise, {@code false}
+     * @param schemas 请求的 schema URN 集合
+     * @return 支持返回 true
      */
     default boolean supports(Set<String> schemas) {
         return isCore() || ofNullable(schemas).orElse(Set.of()).contains(getId());

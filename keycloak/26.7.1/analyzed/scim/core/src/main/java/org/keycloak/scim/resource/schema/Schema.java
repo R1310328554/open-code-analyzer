@@ -8,16 +8,24 @@ import org.keycloak.scim.resource.ResourceTypeRepresentation;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * SCIM Schema 资源表示，描述一种资源类型的属性定义集合。
+ * <p>Discovery /Schemas 端点返回此类型，供客户端了解可读写字段及约束。</p>
+ */
 public class Schema extends ResourceTypeRepresentation {
 
+    /** Schema 资源自身的核心 schema URN。 */
     public static final String SCHEMA = "urn:ietf:params:scim:schemas:core:2.0:Schema";
 
+    /** Schema 可读名称。 */
     @JsonProperty("name")
     private String name;
 
+    /** Schema 描述。 */
     @JsonProperty("description")
     private String description;
 
+    /** 属性定义列表。 */
     @JsonProperty("attributes")
     private List<Attribute> attributes;
 
@@ -51,7 +59,7 @@ public class Schema extends ResourceTypeRepresentation {
     }
 
     /**
-     * Represents a schema attribute definition
+     * Schema 中的单个属性定义，含类型、多值、可变性等元数据。
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Attribute {

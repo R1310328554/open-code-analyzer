@@ -33,15 +33,25 @@ import static org.keycloak.scim.resource.schema.AbstractModelSchema.Operation.SE
 import static org.keycloak.utils.JsonUtils.getJsonValue;
 import static org.keycloak.utils.StringUtil.isBlank;
 
+/**
+ * {@link ModelSchema} 的抽象实现，负责 SCIM 表示与 Keycloak {@link Model} 之间的双向映射。
+ * <p>支持 populate、PATCH add/remove 及按路径解析 {@link Attribute}。</p>
+ * @param <M> Keycloak 领域模型类型
+ * @param <R> SCIM 资源表示类型
+ */
 public abstract class AbstractModelSchema<M extends Model, R extends ResourceTypeRepresentation> implements ModelSchema<M, R> {
 
+    /** PATCH 操作类型：设置、追加、移除。 */
     enum Operation {
         SET, ADD, REMOVE
     }
 
+    /** Schema URN 标识。 */
     private final String id;
+    /** 属性名到 {@link Attribute} 映射器的缓存。 */
     private Map<String, Attribute<M, R>> attributes;
 
+    /** 以 schema URN 构造抽象 schema。 */
     protected AbstractModelSchema(String id) {
         this.id = id;
     }
@@ -60,6 +70,7 @@ public abstract class AbstractModelSchema<M extends Model, R extends ResourceTyp
     }
 
     @Override
+    /** 从 SCIM 表示填充 Keycloak 模型（创建/更新场景）。 */
     public void populate(M model, R representation) {
         validate(representation);
         populateModel(model, representation);
@@ -67,6 +78,7 @@ public abstract class AbstractModelSchema<M extends Model, R extends ResourceTyp
     }
 
     @Override
+    /** 从 Keycloak 模型填充 SCIM 表示（读取场景）。 */
     public void populate(R resource, M model) {
         populateResourceType(resource, model, null, null);
         resource.setId(model.getId());
@@ -80,10 +92,11 @@ public abstract class AbstractModelSchema<M extends Model, R extends ResourceTyp
 
     @Override
     public void validate(R representation) throws ModelValidationException {
-        // validate here the schema
+        // 在此校验表示是否符合 schema
     }
 
     @Override
+    /** 执行 PATCH add 操作，向指定路径追加属性值。 */
     public void add(M model, String rawPath, JsonNode value) {
         Objects.requireNonNull(model, "model cannot be null");
         Objects.requireNonNull(value, "value cannot be null");
@@ -96,6 +109,7 @@ public abstract class AbstractModelSchema<M extends Model, R extends ResourceTyp
     }
 
     @Override
+    /** 执行 PATCH remove 操作，移除指定路径的属性值。 */
     public void remove(R resource, M model, String rawPath) {
         Objects.requireNonNull(model, "model cannot be null");
 
@@ -111,6 +125,7 @@ public abstract class AbstractModelSchema<M extends Model, R extends ResourceTyp
     }
 
     @Override
+    /** 按 SCIM 路径解析唯一 {@link Attribute}，多匹配时抛出异常。 */
     public Attribute<M, R> getAttributeByPath(String path) {
         Map<Attribute<M, R>, JsonNode> attributes = resolveAttributes(path, NullNode.getInstance());
 
@@ -126,27 +141,27 @@ public abstract class AbstractModelSchema<M extends Model, R extends ResourceTyp
     }
 
     /**
-     * Returns the names of the attributes from the given {@code model}, if provided. The {@code model} provides
-     * additional context when resolving model attributes, in case attributes depend on the current model being processed.
+     * 返回模型中可映射的属性名称集合。
+     * <p>模型上下文可用于解析依赖当前实例的动态属性。</p>
      *
-     * @return the names of the attributes defined in the model
+     * @return 模型定义的属性名集合
      */
     protected abstract Set<String> getModelAttributeNames();
 
     /**
-     * Returns the value of the attribute with the given {@code name} from the given {@code model}.
+     * 从模型读取指定属性的值。
      *
-     * @param model the model to get the attribute value from
-     * @param name the name of the attribute to get the value from
-     * @return the value of the attribute with the given name from the model
+     * @param model 源模型
+     * @param name 模型属性名
+     * @return 属性值
      */
     protected abstract Object getAttributeValue(M model, String name);
 
     /**
-     * Returns the name of the attribute in the schema for the attribute with the given {@code name} from the given {@code model}.
+     * 将模型属性名映射为 SCIM schema 中的属性名。
      *
-     * @param name the name of the attribute to get the schema name from
-     * @return the name of the attribute in the schema for the attribute with the given name from the model
+     * @param name 模型属性名
+     * @return 对应的 SCIM 属性名
      */
     protected abstract String getAttributeSchemaName(String name);
 
@@ -307,6 +322,7 @@ public abstract class AbstractModelSchema<M extends Model, R extends ResourceTyp
         return attributes;
     }
 
+    /** 判断给定属性是否匹配 SCIM 路径（含扩展与别名变体）。 */
     protected boolean hasPath(Attribute<M, R> attribute, String path) {
         if (attribute == null || path == null) {
             return false;

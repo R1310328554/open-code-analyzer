@@ -18,18 +18,24 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 /**
- * Represents an attribute from a {@link ModelSchema}, its metadata and the mapper
- * that is used to map the attribute from a {@link ResourceTypeRepresentation} to a {@link Model} and vice versa.
- *
+ * {@link ModelSchema} 中的 SCIM 属性定义，包含元数据及双向映射器。
+ * <p>通过 {@link AttributeMapper} 在 {@link ResourceTypeRepresentation} 与 {@link Model} 之间转换值。</p>
+ * @param <M> Keycloak 领域模型类型
+ * @param <R> SCIM 资源表示类型
  * @see ModelSchema
  */
 public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
 
+    /** returned 特性：始终返回。 */
     public static final String RETURNED_ALWAYS = "always";
+    /** returned 特性：默认返回。 */
     public static final String RETURNED_DEFAULT = "default";
+    /** returned 特性：仅当请求 attributes 时返回。 */
     public static final String RETURNED_REQUEST = "request";
+    /** returned 特性：永不返回。 */
     public static final String RETURNED_NEVER = "never";
 
+    /** 从带 URN 前缀的属性名提取 schema URN。 */
     public static String getSchema(String name) {
         requireNonNull(name, "name is required");
         int schemaSeparator = name.lastIndexOf(':');
@@ -41,6 +47,7 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
         return name.substring(0, schemaSeparator);
     }
 
+    /** 从属性 URN 解析资源类型段（如 User）。 */
     public static String getResourceType(String name) {
         requireNonNull(name, "name is required");
         String schema = getSchema(name);
@@ -58,6 +65,7 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
         return schema.substring(resourceTypeSeparator + 1);
     }
 
+    /** 返回去掉 schema 前缀后的简单属性名。 */
     public static String getSimpleName(String name) {
         String schema = getSchema(name);
 
@@ -69,23 +77,21 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
     }
 
     /**
-     * Creates a simple attribute with the given {@code name}.
+     * 创建简单（非复合）属性的构建器。
      *
-     * @param name the name of the attribute from the {@link R} representation. It should be a simple attribute, meaning that it is not a complex attribute and does not have sub-attributes.
-     * @return the builder
+     * @param name {@link R} 表示中的属性名
+     * @return 属性构建器
      */
     public static <M extends Model, R extends ResourceTypeRepresentation> Builder<M, R> simple(String name) {
         return (Builder<M, R>) new Builder<>(name, null).string();
     }
 
     /**
-     * <p>Creates a complex attribute with the given {@code name} and {@code complexType}.
-     * <p>The {@code complexType} is used to determine the type of the complex attribute and to create the corresponding setter
-     * for the representation.
+     * 创建复合属性构建器，{@code complexType} 决定表示层 setter 类型。
      *
-     * @param name the name of the attribute from the {@link R} representation. It should be a complex attribute, meaning that it has sub-attributes.
-     * @param complexType the type of the complex attribute.
-     * @return the builder
+     * @param name 复合属性名
+     * @param complexType 复合 Java 类型
+     * @return 属性构建器
      */
     public static <M extends Model, R extends ResourceTypeRepresentation> Builder<M, R> complex(String name, Class<?> complexType) {
         Builder<M, R> builder = new Builder<>(name, complexType);
@@ -116,9 +122,9 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
     }
 
     /**
-     * The name of the attribute from the {@link R} representation.
+     * {@link R} 表示中的 SCIM 属性全名。
      *
-     * @return the name of the attribute
+     * @return 属性名
      */
     public String getName() {
         return name;
@@ -129,18 +135,18 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
     }
 
     /**
-     * Returns the name of the parent attribute if this attribute is a sub-attribute. Otherwise, returns {@code null}.
+     * 子属性时返回父属性名，否则为 null。
      *
-     * @return the name of the parent attribute or {@code null} if this attribute is not a sub-attribute
+     * @return 父属性名或 null
      */
     public String getParentName() {
         return parentName;
     }
 
     /**
-     * Returns the name of the attribute from the {@link Model} associated with this attribute.
+     * 关联的 {@link Model} 侧属性名。
      *
-     * @return the name of the attribute from the {@link Model} associated with this attribute or {@code null} if there is no mapping to this attribute
+     * @return 模型属性名，无映射时 null
      */
     public String getModelAttributeName() {
         if (modelAttributeResolver != null) {
@@ -257,25 +263,28 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
         return Objects.hash(name, parentName);
     }
 
+    /** 将 JSON 值写入模型（PATCH set）。 */
     public void set(M model, JsonNode value) {
         mapper.setValue(model, value);
     }
 
+    /** 将模型值写入 SCIM 表示（读取/序列化）。 */
     public void set(R resource, Object value) {
         mapper.setValue(resource, value);
     }
 
+    /** 向模型追加多值属性项（PATCH add）。 */
     public void add(M model, JsonNode value) {
         mapper.addValue(model, value);
     }
 
+    /** 从模型移除多值属性项（PATCH remove）。 */
     public void remove(M model, JsonNode value) {
         mapper.removeValue(model, value);
     }
 
     /**
-     * Determines whether the given attribute should be skipped during population based on
-     * the {@code returned} characteristic and the requested attribute filters.
+     * 根据 returned 特性及 attributes/excludedAttributes 过滤，判断是否跳过该属性。
      */
     public boolean isExcluded(ModelSchema<M, R> schema, List<String> requestedAttributes, List<String> excludedAttributes) {
         String returned = getReturned();
@@ -328,6 +337,7 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
         return getName().contains(":");
     }
 
+    /** 流式构建 {@link Attribute} 及其子属性的构建器。 */
     public static class Builder<M extends Model, R extends ResourceTypeRepresentation> {
 
         private final Class<?> complexType;
@@ -335,7 +345,7 @@ public class Attribute<M extends Model, R extends ResourceTypeRepresentation> {
         private TriConsumer<M, String, ?> modelSetter;
         private TriConsumer<Attribute<M, R>, R, ?> representationSetter;
         List<Attribute<M, R>> attributes = new ArrayList<>();
-        // by default, resolve model attribute name as the same as the scim attribute name
+        // 默认将模型属性名解析为与 SCIM 属性名相同
         private Function<Attribute<M, R>, String> modelAttributeResolver = Attribute::getName;
         private String type;
         private String mutability;

@@ -6,22 +6,32 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * SCIM ResourceType 资源，描述一种 SCIM 资源类型的元信息与关联 schema。
+ * <p>Discovery 端点返回此类型列表，供客户端了解可用端点与 schema。</p>
+ */
 public class ResourceType extends org.keycloak.scim.resource.ResourceTypeRepresentation {
 
+    /** ResourceType 核心 schema URN。 */
     public static final String SCHEMA = "urn:ietf:params:scim:schemas:core:2.0:ResourceType";
 
+    /** 资源类型名称（如 User、Group）。 */
     @JsonProperty("name")
     private String name;
 
+    /** 资源类型描述。 */
     @JsonProperty("description")
     private String description;
 
+    /** 该资源类型的 REST 端点相对路径。 */
     @JsonProperty("endpoint")
     private String endpoint;
 
+    /** 主 schema URN。 */
     @JsonProperty("schema")
     private String schema;
 
+    /** 可选 schema 扩展列表。 */
     @JsonProperty("schemaExtensions")
     private List<SchemaExtension> schemaExtensions;
 
@@ -71,7 +81,7 @@ public class ResourceType extends org.keycloak.scim.resource.ResourceTypeReprese
     }
 
     /**
-     * Represents a schema extension for a resource type
+     * 资源类型的 schema 扩展定义，标明扩展 URN 及是否必需。
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class SchemaExtension {

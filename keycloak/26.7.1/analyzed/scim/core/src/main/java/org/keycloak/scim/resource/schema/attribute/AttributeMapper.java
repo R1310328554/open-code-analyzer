@@ -13,13 +13,17 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * <p>An attribute mapper defines how to set an attribute to a {@link Model} and its corresponding {@link ResourceTypeRepresentation}.
- *
+ * <p>属性映射器，定义如何在 {@link Model} 与 {@link ResourceTypeRepresentation} 之间读写属性值。</p>
+ * <p>支持 set/add/remove 及多值、复合类型的 JSON 转换。</p>
+ * @param <M> Keycloak 领域模型类型
+ * @param <R> SCIM 资源表示类型
  * @see Attribute
  */
 public class AttributeMapper<M extends Model, R extends ResourceTypeRepresentation> {
 
+    /** 关联的 {@link Attribute} 元数据。 */
     private Attribute<M, R> attribute;
+    /** 模型侧 setter 回调。 */
     private final TriConsumer<M, String, ?> modelSetter;
     private TriConsumer<M, String, ?> modelRemover;
     private TriConsumer<M, String, ?> modelAdder;
@@ -36,16 +40,19 @@ public class AttributeMapper<M extends Model, R extends ResourceTypeRepresentati
         this.modelAdder = modelAdder;
     }
 
+    /** 将值写入 SCIM 表示（模型 → 表示）。 */
     public void setValue(R representation, Object value) {
         if (representationSetter != null) {
             ((TriConsumer<Attribute<M, R>, R, Object>) representationSetter).accept(attribute, representation, value);
         }
     }
 
+    /** 将 JSON 值写入模型（表示 → 模型，set 操作）。 */
     public void setValue(M model, JsonNode value) {
         setValue(model, value, (TriConsumer<M, String, Object>) modelSetter);
     }
 
+    /** 向模型追加值；无 adder 时退化为 set。 */
     public void addValue(M model, JsonNode value) {
         if (modelAdder == null) {
             setValue(model, value);
@@ -54,6 +61,7 @@ public class AttributeMapper<M extends Model, R extends ResourceTypeRepresentati
         }
     }
 
+    /** 从模型移除值；无 remover 时写入 null。 */
     public void removeValue(M model, JsonNode value) {
         if  (modelRemover == null) {
             setValue(model, null);
