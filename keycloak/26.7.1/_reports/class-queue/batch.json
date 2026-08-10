@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T09:37:32Z",
   "files": [
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/SubjectConfirmationDataType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/SubjectConfirmationType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/SubjectLocalityType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/SubjectType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/URIType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/mdattr/EntityAttributes.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/mdui/KeywordsType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/mdui/LogoType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/mdui/UIInfoType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AdditionalMetadataLocationType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AffiliationDescriptorType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AttributeAuthorityDescriptorType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AttributeConsumingServiceType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AuthnAuthorityDescriptorType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/ContactType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/ContactTypeType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/EndpointType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/EntitiesDescriptorType.java",
@@ -33,5 +18,5 @@
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/RoleDescriptorType.java"
   ],
   "remaining_pending": 3418,
-  "done": 2550
+  "done": 2565
 }

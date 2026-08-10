@@ -2518,3 +2518,18 @@
 2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/OneTimeUseType.java wave85b saml2 assertion authn/conditions/evidence
 2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/ProxyRestrictionType.java wave85b saml2 assertion authn/conditions/evidence
 2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/StatementAbstractType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/SubjectConfirmationDataType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/SubjectConfirmationType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/SubjectLocalityType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/SubjectType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/URIType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/mdattr/EntityAttributes.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/mdui/KeywordsType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/mdui/LogoType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/mdui/UIInfoType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AdditionalMetadataLocationType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AffiliationDescriptorType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AttributeAuthorityDescriptorType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AttributeConsumingServiceType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/AuthnAuthorityDescriptorType.java wave86a saml2 subject + mdui + metadata start
+2026-08-10T09:39:38Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/metadata/ContactType.java wave86a saml2 subject + mdui + metadata start
