@@ -1,4 +1,5 @@
 """
+Firecrawl 集成配置：API 密钥、重试/超时/限流参数及 env/dict 加载。
 Configuration management for Firecrawl integration with RAGFlow.
 """
 
@@ -10,6 +11,7 @@ import json
 
 @dataclass
 class FirecrawlConfig:
+    # 不可变配置 dataclass，__post_init__ 校验 fc- 前缀等
     """Configuration class for Firecrawl integration."""
 
     api_key: str
@@ -38,6 +40,7 @@ class FirecrawlConfig:
 
     @classmethod
     def from_env(cls) -> "FirecrawlConfig":
+        # 从 FIRECRAWL_* 环境变量构建配置
         """Create configuration from environment variables."""
         api_key = os.getenv("FIRECRAWL_API_KEY")
         if not api_key:

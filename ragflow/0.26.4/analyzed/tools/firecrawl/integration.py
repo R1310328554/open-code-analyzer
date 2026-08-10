@@ -1,4 +1,5 @@
 """
+Firecrawl RAGFlow 插件入口：实现 RAGFlow 期望的 plugin/integration 接口。
 RAGFlow Integration Entry Point for Firecrawl
 
 This file provides the main entry point for the Firecrawl integration with RAGFlow.
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class FirecrawlRAGFlowPlugin:
+    # 插件元数据与 config/ui schema、连接测试、集成工厂
     """
     Main plugin class for Firecrawl integration with RAGFlow.
     This class provides the interface that RAGFlow expects from integrations.
@@ -34,6 +36,7 @@ class FirecrawlRAGFlowPlugin:
         logger.info(f"Initialized {self.display_name} plugin v{self.version}")
 
     def get_plugin_info(self) -> Dict[str, Any]:
+        # 返回 name/version/supported_formats 等
         """Get plugin information for RAGFlow."""
         return {
             "name": self.name,
@@ -91,6 +94,7 @@ class FirecrawlRAGFlowPlugin:
 
 # RAGFlow integration entry points
 def get_plugin() -> FirecrawlRAGFlowPlugin:
+    # RAGFlow 插件发现入口
     """Get the plugin instance for RAGFlow."""
     return FirecrawlRAGFlowPlugin()
 

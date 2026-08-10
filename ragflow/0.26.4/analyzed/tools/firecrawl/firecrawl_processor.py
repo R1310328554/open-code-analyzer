@@ -1,4 +1,5 @@
 """
+Firecrawl 内容处理器：清洗 markdown/HTML、生成 RAGFlowDocument 与分块。
 Content processor for converting Firecrawl output to RAGFlow document format.
 """
 
@@ -14,6 +15,7 @@ from firecrawl_connector import ScrapedContent
 
 @dataclass
 class RAGFlowDocument:
+    # RAGFlow 文档模型：id/title/content/metadata/chunk 参数
     """Represents a document in RAGFlow format."""
 
     id: str
@@ -30,6 +32,7 @@ class RAGFlowDocument:
 
 
 class FirecrawlProcessor:
+    # ScrapedContent→RAGFlowDocument 转换与 chunk_content 切分
     """Processes Firecrawl content for RAGFlow integration."""
 
     def __init__(self):
@@ -43,6 +46,7 @@ class FirecrawlProcessor:
         return f"firecrawl_{content_hash}"
 
     def clean_content(self, content: str) -> str:
+        # 去 HTML 标签、压缩空白与特殊字符
         """Clean and normalize content."""
         if not content:
             return ""
@@ -153,6 +157,7 @@ class FirecrawlProcessor:
             return ""
 
     def process_content(self, content: ScrapedContent) -> RAGFlowDocument:
+        # 主转换流程：取 markdown/html、提取标题与语言
         """Process scraped content into RAGFlow document format."""
         if content.error:
             raise ValueError(f"Content has error: {content.error}")
@@ -203,6 +208,7 @@ class FirecrawlProcessor:
         return documents
 
     def chunk_content(self, document: RAGFlowDocument, chunk_size: int = 1000, chunk_overlap: int = 200) -> List[Dict[str, Any]]:
+        # 按句边界滑动窗口分块，附带 chunk 元数据
         """Chunk document content for RAG processing."""
         content = document.content
         chunks = []

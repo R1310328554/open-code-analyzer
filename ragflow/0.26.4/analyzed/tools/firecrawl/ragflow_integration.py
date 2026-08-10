@@ -1,4 +1,5 @@
 """
+Firecrawl 与 RAGFlow 桥接层：scrape/crawl 导入、配置校验与连接测试。
 Main integration file for Firecrawl with RAGFlow.
 This file provides the interface between RAGFlow and the Firecrawl plugin.
 """
@@ -13,6 +14,7 @@ from firecrawl_ui import FirecrawlUIBuilder
 
 
 class RAGFlowFirecrawlIntegration:
+    # 组合 Connector+Processor，提供 scrape_and_import/crawl_and_import
     """Main integration class for Firecrawl with RAGFlow."""
 
     def __init__(self, config: FirecrawlConfig):
@@ -23,6 +25,7 @@ class RAGFlowFirecrawlIntegration:
         self.logger = logging.getLogger(__name__)
 
     async def scrape_and_import(self, urls: List[str], formats: List[str] = None, extract_options: Dict[str, Any] = None) -> List[RAGFlowDocument]:
+        # batch_scrape 后 process_batch 转为 RAGFlowDocument 列表
         """Scrape URLs and convert to RAGFlow documents."""
         if formats is None:
             formats = ["markdown", "html"]
@@ -37,6 +40,7 @@ class RAGFlowFirecrawlIntegration:
             return documents
 
     async def crawl_and_import(self, start_url: str, limit: int = 100, scrape_options: Dict[str, Any] = None) -> List[RAGFlowDocument]:
+        # 启动爬取任务并 wait_for_crawl_completion
         """Crawl a website and convert to RAGFlow documents."""
         if scrape_options is None:
             scrape_options = {"formats": ["markdown", "html"]}
@@ -64,6 +68,7 @@ class RAGFlowFirecrawlIntegration:
         return FirecrawlUIBuilder.create_ui_schema()
 
     def validate_config(self, config_dict: Dict[str, Any]) -> Dict[str, Any]:
+        # 校验 api_key/api_url/数值范围，返回 field→error 映射
         """Validate configuration and return any errors."""
         errors = {}
 
@@ -147,6 +152,7 @@ class RAGFlowFirecrawlIntegration:
 
 # Factory function for creating integration instance
 def create_firecrawl_integration(config_dict: Dict[str, Any]) -> RAGFlowFirecrawlIntegration:
+    # 工厂函数：dict→FirecrawlConfig→Integration 实例
     """Create a Firecrawl integration instance from configuration."""
     config = FirecrawlConfig.from_dict(config_dict)
     return RAGFlowFirecrawlIntegration(config)

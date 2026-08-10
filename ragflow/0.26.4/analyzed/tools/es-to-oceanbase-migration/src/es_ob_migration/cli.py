@@ -1,4 +1,5 @@
 """
+RAGFlow ES 到 OceanBase 迁移工具 CLI 入口：migrate/schema/verify 等子命令。
 CLI entry point for RAGFlow ES to OceanBase migration tool.
 """
 
@@ -20,6 +21,7 @@ console = Console()
 
 
 def setup_logging(verbose: bool = False):
+    # 配置 Rich 日志输出，verbose 时 DEBUG 级别
     """Setup logging configuration."""
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
@@ -34,6 +36,7 @@ def setup_logging(verbose: bool = False):
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging")
 @click.pass_context
 def main(ctx, verbose):
+    # Click 根命令组：初始化 verbose 并设置日志
     """RAGFlow ES to OceanBase Migration Tool.
 
     Migrate RAGFlow data from Elasticsearch 8+ to OceanBase with schema conversion,
@@ -65,6 +68,8 @@ def main(ctx, verbose):
 @click.option("--progress-dir", default=".migration_progress", help="Progress file directory")
 @click.pass_context
 def migrate(
+    # 执行 ES→OB 迁移：可单索引或自动发现 ragflow_* 索引
+
     ctx,
     es_host,
     es_port,
@@ -91,7 +96,7 @@ def migrate(
     console.print("[bold]RAGFlow ES to OceanBase Migration[/]")
 
     try:
-        # Initialize ES client first to discover indices if needed
+        # 先初始化 ES 客户端，必要时自动发现 ragflow_* 索引
         es_client = ESClient(
             host=es_host,
             port=es_port,
@@ -108,7 +113,7 @@ def migrate(
             database=ob_database,
         )
 
-        # Determine indices to migrate
+        # 确定待迁移索引列表（单索引或批量）
         if index:
             # Single index specified
             indices_to_migrate = [(index, table if table else index)]
@@ -142,7 +147,7 @@ def migrate(
         total_failed = 0
         results = []
 
-        # Migrate each index
+        # 逐索引调用 migrator.migrate 并汇总结果
         for es_index, ob_table in indices_to_migrate:
             console.print(f"\n[bold blue]{'=' * 60}[/]")
             console.print(f"[bold]Migrating: {es_index} -> {ob_database}.{ob_table}[/]")
@@ -202,6 +207,7 @@ def migrate(
 @click.option("--output", "-o", default=None, help="Output file (JSON)")
 @click.pass_context
 def schema(ctx, es_host, es_port, es_user, es_password, index, output):
+    # 预览 ES mapping 经 RAGFlowSchemaConverter 分析后的 OB 列定义
     """Preview RAGFlow schema analysis from ES mapping."""
     try:
         es_client = ESClient(
@@ -309,6 +315,8 @@ def schema(ctx, es_host, es_port, es_user, es_password, index, output):
 @click.option("--sample-size", default=100, type=int, help="Sample size for verification")
 @click.pass_context
 def verify(
+    # 独立校验命令：对比 ES 与 OB 文档数量及抽样一致性
+
     ctx,
     es_host,
     es_port,
@@ -362,6 +370,7 @@ def verify(
 @click.option("--es-password", default=None, help="Elasticsearch password")
 @click.pass_context
 def list_indices(ctx, es_host, es_port, es_user, es_password):
+    # 列出所有 ragflow_* 索引及文档数、类型
     """List all RAGFlow indices (ragflow_*) in Elasticsearch."""
     try:
         es_client = ESClient(
@@ -422,6 +431,7 @@ def list_indices(ctx, es_host, es_port, es_user, es_password):
 @click.option("--index", "-i", required=True, help="ES index name")
 @click.pass_context
 def list_kb(ctx, es_host, es_port, es_user, es_password, index):
+    # 按 kb_id 聚合统计知识库文档数
     """List all knowledge bases in an ES index."""
     try:
         es_client = ESClient(
@@ -478,6 +488,7 @@ def list_kb(ctx, es_host, es_port, es_user, es_password, index):
 @click.option("--ob-password", default="", help="OceanBase password")
 @click.pass_context
 def status(ctx, es_host, es_port, ob_host, ob_port, ob_user, ob_password):
+    # 探测 ES 集群与 OceanBase 连通性
     """Check connection status to ES and OceanBase."""
     console.print("[bold]Connection Status[/]\n")
 
@@ -529,6 +540,7 @@ def status(ctx, es_host, es_port, ob_host, ob_port, ob_user, ob_password):
 @click.option("--size", "-n", default=5, type=int, help="Number of samples")
 @click.pass_context
 def sample(ctx, es_host, es_port, index, size):
+    # 打印 ES 索引样例文档（含向量字段维度预览）
     """Show sample documents from ES index."""
     try:
         es_client = ESClient(host=es_host, port=es_port)

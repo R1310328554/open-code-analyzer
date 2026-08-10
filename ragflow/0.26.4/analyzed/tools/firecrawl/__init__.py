@@ -1,4 +1,5 @@
 """
+Firecrawl 插件包入口：导出 FirecrawlConnector 与 FirecrawlConfig。
 Firecrawl Plugin for RAGFlow
 
 This plugin integrates Firecrawl's web scraping capabilities into RAGFlow,

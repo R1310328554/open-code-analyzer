@@ -1,4 +1,5 @@
 """
+Firecrawl HTTP 连接器：aiohttp 异步 scrape/crawl/batch 及限流重试。
 Main connector class for integrating Firecrawl with RAGFlow.
 """
 
@@ -14,6 +15,7 @@ from firecrawl_config import FirecrawlConfig
 
 @dataclass
 class ScrapedContent:
+    # 单页抓取结果：markdown/html/metadata
     """Represents scraped content from Firecrawl."""
 
     url: str
@@ -28,6 +30,7 @@ class ScrapedContent:
 
 @dataclass
 class CrawlJob:
+    # 爬取任务状态与结果列表
     """Represents a crawl job from Firecrawl."""
 
     job_id: str
@@ -39,6 +42,7 @@ class CrawlJob:
 
 
 class FirecrawlConnector:
+    # Firecrawl v2 API 客户端：Bearer 鉴权 + 信号量并发控制
     """Main connector class for Firecrawl integration with RAGFlow."""
 
     def __init__(self, config: FirecrawlConfig):
@@ -70,6 +74,7 @@ class FirecrawlConnector:
             await self.session.close()
 
     async def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
+        # 限流 sleep + 429 指数退避重试
         """Make HTTP request with rate limiting and retry logic."""
         async with self._rate_limit_semaphore:
             # Rate limiting
@@ -98,6 +103,7 @@ class FirecrawlConnector:
             raise Exception("Max retries exceeded")
 
     async def scrape_url(self, url: str, formats: List[str] = None, extract_options: Dict[str, Any] = None) -> ScrapedContent:
+        # POST /v2/scrape 单页抓取
         """Scrape a single URL."""
         if formats is None:
             formats = ["markdown", "html"]
@@ -185,6 +191,7 @@ class FirecrawlConnector:
             return CrawlJob(job_id=job_id, status="failed", error=str(e))
 
     async def wait_for_crawl_completion(self, job_id: str, poll_interval: int = 30) -> CrawlJob:
+        # 轮询直到 completed/failed/cancelled
         """Wait for a crawl job to complete."""
         while True:
             job = await self.get_crawl_status(job_id)

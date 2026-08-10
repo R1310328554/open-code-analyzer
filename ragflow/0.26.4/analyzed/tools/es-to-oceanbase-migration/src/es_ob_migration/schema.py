@@ -1,4 +1,5 @@
 """
+RAGFlow 固定 schema 转换：ES mapping 分析、列定义与文档行格式映射。
 RAGFlow-specific schema conversion from Elasticsearch to OceanBase.
 
 This module handles the fixed RAGFlow table structure migration.
@@ -13,7 +14,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-# RAGFlow fixed column definitions (from rag/utils/ob_conn.py)
+# RAGFlow 固定列定义（源自 rag/utils/ob_conn.py）
 # These are the actual columns used by RAGFlow
 RAGFLOW_COLUMNS = {
     # Primary identifiers
@@ -82,11 +83,12 @@ JSON_COLUMNS = ["tag_feas", "metadata", "extra"]
 FTS_COLUMNS_ORIGIN = ["docnm_kwd", "content_with_weight", "important_tks", "question_tks"]
 FTS_COLUMNS_TKS = ["title_tks", "title_sm_tks", "important_tks", "question_tks", "content_ltks", "content_sm_ltks"]
 
-# Vector field pattern: q_{vector_size}_vec
+# 向量字段命名模式：q_{vector_size}_vec
 VECTOR_FIELD_PATTERN = re.compile(r"q_(?P<vector_size>\d+)_vec")
 
 
 class RAGFlowSchemaConverter:
+    # 分析 ES mapping：识别已知列、向量维度和未知字段
     """
     Convert RAGFlow Elasticsearch documents to OceanBase format.
 
@@ -99,6 +101,7 @@ class RAGFlowSchemaConverter:
         self.detected_vector_size: int | None = None
 
     def analyze_es_mapping(self, es_mapping: dict[str, Any]) -> dict[str, Any]:
+        # 区分 RAGFLOW_COLUMNS、q_*_vec 与 extra 未知字段
         """
         Analyze ES mapping to extract vector field dimensions.
 
@@ -147,6 +150,7 @@ class RAGFlowSchemaConverter:
         return result
 
     def get_column_definitions(self) -> list[dict[str, Any]]:
+        # 返回 OB 建表用列定义（含检测到的 VECTOR 列）
         """
         Get RAGFlow column definitions for OceanBase table creation.
 
@@ -189,6 +193,7 @@ class RAGFlowSchemaConverter:
 
 
 class RAGFlowDataConverter:
+    # ES 文档→OB 行：类型转换、数组/JSON 序列化、未知字段入 extra
     """
     Convert RAGFlow ES documents to OceanBase row format.
 
@@ -207,6 +212,7 @@ class RAGFlowDataConverter:
                 self.vector_fields.add(key)
 
     def convert_document(self, es_doc: dict[str, Any]) -> dict[str, Any]:
+        # 单文档转换：_id→id，按列定义逐字段转换
         """
         Convert an ES document to OceanBase row format.
 
@@ -311,6 +317,7 @@ class RAGFlowDataConverter:
         return str(value) if value is not None else None
 
     def _convert_array_value(self, value: Any) -> str | None:
+        # 数组字段序列化为 JSON 字符串供 OB ARRAY 存储
         """Convert array value to JSON string for OceanBase."""
         if value is None:
             return None
@@ -427,6 +434,6 @@ class RAGFlowDataConverter:
         return [self.convert_document(doc) for doc in es_docs]
 
 
-# Backwards compatibility aliases
+# 向后兼容别名
 SchemaConverter = RAGFlowSchemaConverter
 DataConverter = RAGFlowDataConverter

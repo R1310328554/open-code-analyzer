@@ -1,4 +1,5 @@
 """
+Elasticsearch 8+ 客户端封装：索引列举、scroll/search_after 批量读取与聚合。
 Elasticsearch 8+ Client for RAGFlow data migration.
 """
 
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class ESClient:
+    # RAGFlow 迁移用 ES 客户端：连接、健康检查、文档遍历
     """Elasticsearch client wrapper for RAGFlow migration operations."""
 
     def __init__(
@@ -70,6 +72,7 @@ class ESClient:
         return list(response.keys())
 
     def list_ragflow_indices(self) -> list[str]:
+        # 列举 ragflow_* 与 ragflow_doc_meta_* 索引
         """
         List all RAGFlow-related indices.
 
@@ -112,6 +115,7 @@ class ESClient:
         return response["count"]
 
     def count_documents_with_filter(self, index_name: str, filters: dict[str, Any]) -> int:
+        # bool must term/terms 条件计数
         """
         Count documents with filter conditions.
 
@@ -136,6 +140,8 @@ class ESClient:
         return response["count"]
 
     def aggregate_field(
+        # terms 聚合获取字段唯一值（如 kb_id 列表）
+
         self,
         index_name: str,
         field: str,
@@ -167,6 +173,8 @@ class ESClient:
         return response["aggregations"]["field_values"]
 
     def scroll_documents(
+        # ES 8+ 推荐 search_after 深分页，逐批 yield 文档
+
         self,
         index_name: str,
         batch_size: int = 1000,

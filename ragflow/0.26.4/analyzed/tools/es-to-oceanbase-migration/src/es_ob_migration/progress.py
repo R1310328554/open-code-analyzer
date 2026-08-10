@@ -1,4 +1,5 @@
 """
+迁移进度持久化：JSON 文件记录已迁移数、断点状态与 schema 阶段标记。
 Progress tracking and resume capability for migration.
 """
 
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MigrationProgress:
+    # 单次迁移进度快照：计数器、search_after 位点、状态机
     """Migration progress state."""
 
     # Basic info
@@ -47,6 +49,7 @@ class MigrationProgress:
 
 
 class ProgressManager:
+    # 进度文件读写：{es_index}_to_{ob_table}.json
     """Manage migration progress persistence."""
 
     def __init__(self, progress_dir: str = ".migration_progress"):
@@ -141,6 +144,8 @@ class ProgressManager:
         return progress
 
     def update_progress(
+        # 每批完成后累加 migrated_documents 并持久化
+
         self,
         progress: MigrationProgress,
         migrated_count: int,
@@ -188,6 +193,7 @@ class ProgressManager:
         logger.info(f"Migration paused at {progress.migrated_documents}/{progress.total_documents}")
 
     def can_resume(self, es_index: str, ob_table: str) -> bool:
+        # 状态为 running/paused/failed 时可续传
         """Check if migration can be resumed."""
         progress = self.load_progress(es_index, ob_table)
         if not progress:

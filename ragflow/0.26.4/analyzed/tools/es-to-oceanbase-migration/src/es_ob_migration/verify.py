@@ -1,4 +1,5 @@
 """
+迁移数据校验：文档总数对比、抽样字段匹配与容忍度判定。
 Data verification for RAGFlow migration.
 """
 
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class VerificationResult:
+    # 校验结果：计数差异、抽样匹配率、缺失 ID 列表
     """Migration verification result."""
 
     es_index: str
@@ -43,9 +45,11 @@ class VerificationResult:
 
 
 class MigrationVerifier:
+    # ES/OB 双端对比：count + 抽样 VERIFY_FIELDS
     """Verify RAGFlow migration data consistency."""
 
     # Fields to compare for verification
+    # 默认抽样比对字段
     VERIFY_FIELDS = [
         "id",
         "kb_id",
@@ -100,7 +104,7 @@ class MigrationVerifier:
         if verify_fields is None:
             verify_fields = self.VERIFY_FIELDS
 
-        # Step 1: Verify document counts
+        # 步骤 1：对比 ES count 与 OB row count
         logger.info("Verifying document counts...")
 
         result.es_count = self.es_client.count_documents(es_index)
@@ -111,7 +115,7 @@ class MigrationVerifier:
 
         logger.info(f"Document counts - ES: {result.es_count}, OB: {result.ob_count}, Diff: {result.count_diff}")
 
-        # Step 2: Sample verification
+        # 步骤 2：随机抽样逐字段比较
         result.sample_size = min(sample_size, result.es_count)
 
         if result.sample_size > 0:
@@ -203,6 +207,7 @@ class MigrationVerifier:
         return len(differences) == 0, differences
 
     def _values_equal(self, field_name: str, es_value: Any, ob_value: Any) -> bool:
+        # 数组/JSON/kb_id 列表等特殊类型感知比较
         """Compare two values with type-aware logic."""
         if es_value is None and ob_value is None:
             return True
@@ -253,6 +258,7 @@ class MigrationVerifier:
         return str(es_value) == str(ob_value)
 
     def _determine_result(self, result: VerificationResult):
+        # 1% 计数容差 + 95%/99% 抽样匹配率判定 pass
         """Determine overall verification result."""
         # Allow small count differences (e.g., documents added during migration)
         count_tolerance = 0.01  # 1% tolerance

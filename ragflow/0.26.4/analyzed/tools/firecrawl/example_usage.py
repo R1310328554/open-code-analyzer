@@ -1,4 +1,5 @@
 """
+Firecrawl 与 RAGFlow 集成示例：单 URL 抓取、整站爬取、批处理与分块。
 Example usage of the Firecrawl integration with RAGFlow.
 """
 
@@ -10,6 +11,7 @@ from .firecrawl_config import FirecrawlConfig
 
 
 async def example_single_url_scraping():
+    # 单 URL scrape_and_import 示例
     """Example of scraping a single URL."""
     print("=== Single URL Scraping Example ===")
 
@@ -47,6 +49,7 @@ async def example_single_url_scraping():
 
 
 async def example_website_crawling():
+    # crawl_and_import 整站爬取示例
     """Example of crawling an entire website."""
     print("=== Website Crawling Example ===")
 
@@ -80,6 +83,7 @@ async def example_website_crawling():
 
 
 async def example_batch_processing():
+    # 多 URL 批量抓取并 chunk_content 分块
     """Example of batch processing multiple URLs."""
     print("=== Batch Processing Example ===")
 
@@ -174,6 +178,7 @@ async def example_error_handling():
 
 
 async def example_configuration_validation():
+    # validate_config 校验多种配置组合
     """Example of configuration validation."""
     print("=== Configuration Validation Example ===")
 

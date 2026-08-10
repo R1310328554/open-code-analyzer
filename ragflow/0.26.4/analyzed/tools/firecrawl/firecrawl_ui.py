@@ -1,4 +1,5 @@
 """
+Firecrawl RAGFlow UI  schema：数据源配置、抓取表单、进度与结果组件。
 UI components for Firecrawl integration in RAGFlow.
 """
 
@@ -16,10 +17,12 @@ class FirecrawlUIComponent:
 
 
 class FirecrawlUIBuilder:
+    # 静态方法构建 JSON Schema 式 UI 配置
     """Builder for Firecrawl UI components in RAGFlow."""
 
     @staticmethod
     def create_data_source_config() -> Dict[str, Any]:
+        # 插件注册信息 + api_key 等 config_schema
         """Create configuration for Firecrawl data source."""
         return {
             "name": "firecrawl",
@@ -44,6 +47,7 @@ class FirecrawlUIBuilder:
 
     @staticmethod
     def create_scraping_form() -> Dict[str, Any]:
+        # 单页/爬取/批量 URL 与 formats 表单字段
         """Create form for scraping configuration."""
         return {
             "type": "form",
@@ -160,6 +164,7 @@ class FirecrawlUIBuilder:
 
     @staticmethod
     def create_ui_schema() -> Dict[str, Any]:
+        # 聚合全部 UI 组件、校验规则与工作流步骤
         """Create complete UI schema for Firecrawl integration."""
         return {
             "version": "1.0.0",

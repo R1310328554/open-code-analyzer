@@ -1,4 +1,5 @@
 """
+RAGFlow 专用 ES→OceanBase 迁移编排器：建表、分批导入、断点续传与校验。
 RAGFlow-specific migration orchestrator from Elasticsearch to OceanBase.
 """
 
@@ -27,6 +28,7 @@ console = Console()
 
 
 class ESToOceanBaseMigrator:
+    # 迁移主流程：分析 mapping、创建 OB 表、scroll 批量写入
     """
     RAGFlow-specific migration orchestrator.
 
@@ -54,6 +56,8 @@ class ESToOceanBaseMigrator:
         self.schema_converter = RAGFlowSchemaConverter()
 
     def migrate(
+        # 完整迁移流水线：连接检查→分析→建表→导入→可选校验
+
         self,
         es_index: str,
         ob_table: str,
@@ -92,11 +96,11 @@ class ESToOceanBaseMigrator:
         progress: MigrationProgress | None = None
 
         try:
-            # Step 1: Check connections
+            # 步骤 1：检查 ES 集群与 OB 连接
             console.print("[bold blue]Step 1: Checking connections...[/]")
             self._check_connections()
 
-            # Step 2: Analyze ES index
+            # 步骤 2：分析 ES mapping，自动检测向量维度
             console.print("\n[bold blue]Step 2: Analyzing ES index...[/]")
             analysis = self._analyze_es_index(es_index)
 
@@ -122,7 +126,7 @@ class ESToOceanBaseMigrator:
                 result["success"] = True
                 return result
 
-            # Step 4: Handle resume or fresh start
+            # 步骤 4：断点续传或全新迁移（已存在表则拒绝）
             if resume and self.progress_manager.can_resume(es_index, ob_table):
                 console.print("\n[bold yellow]Resuming from previous progress...[/]")
                 progress = self.progress_manager.load_progress(es_index, ob_table)
@@ -134,7 +138,7 @@ class ESToOceanBaseMigrator:
 
                 progress = self.progress_manager.create_progress(es_index, ob_table, total_docs)
 
-            # Step 5: Create table if needed
+            # 步骤 5：按 RAGFlow 固定 schema 创建 OB 表与索引
             if not progress.table_created:
                 console.print("\n[bold blue]Step 3: Creating OceanBase table...[/]")
                 if not self.ob_client.table_exists(ob_table):
@@ -155,7 +159,7 @@ class ESToOceanBaseMigrator:
                 progress.schema_converted = True
                 self.progress_manager.save_progress(progress)
 
-            # Step 6: Migrate data
+            # 步骤 6：scroll 批量转换并 upsert 写入 OB
             console.print("\n[bold blue]Step 4: Migrating data...[/]")
             data_converter = RAGFlowDataConverter()
 
@@ -235,6 +239,8 @@ class ESToOceanBaseMigrator:
         return self.schema_converter.analyze_es_mapping(es_mapping)
 
     def _migrate_data(
+        # Rich 进度条 + scroll 批次转换/插入，失败批次计入 failed_documents
+
         self,
         es_index: str,
         ob_table: str,
@@ -300,6 +306,7 @@ class ESToOceanBaseMigrator:
         return migrated
 
     def get_schema_preview(self, es_index: str) -> dict[str, Any]:
+        # 不执行迁移，仅返回 schema 分析预览
         """
         Get a preview of schema analysis without executing migration.
 

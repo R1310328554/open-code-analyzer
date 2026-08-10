@@ -1,4 +1,5 @@
 """
+OceanBase 客户端：基于 pyobvector 创建 RAGFlow 兼容表、索引与批量 upsert。
 OceanBase Client for RAGFlow data migration.
 
 This client is specifically designed for RAGFlow's data structure.
@@ -16,7 +17,7 @@ from .schema import RAGFLOW_COLUMNS, FTS_COLUMNS_TKS
 logger = logging.getLogger(__name__)
 
 
-# Index naming templates (from RAGFlow ob_conn.py)
+# 索引命名模板（与 RAGFlow ob_conn.py 一致）
 INDEX_NAME_TEMPLATE = "ix_%s_%s"
 FULLTEXT_INDEX_NAME_TEMPLATE = "fts_idx_%s"
 VECTOR_INDEX_NAME_TEMPLATE = "%s_idx"
@@ -33,6 +34,7 @@ INDEX_COLUMNS = [
 
 
 class OBClient:
+    # OB 迁移客户端：建表、向量/全文/普通索引、批量写入
     """OceanBase client wrapper for RAGFlow migration operations."""
 
     def __init__(
@@ -102,6 +104,8 @@ class OBClient:
             return False
 
     def create_ragflow_table(
+        # 按 RAGFLOW_COLUMNS 建表并创建 FTS/向量/HNSW 索引
+
         self,
         table_name: str,
         vector_size: int = 768,
@@ -157,6 +161,7 @@ class OBClient:
         self.client.refresh_metadata([table_name])
 
     def _build_ragflow_columns(self) -> list[Column]:
+        # 将 RAGFLOW_COLUMNS 映射为 SQLAlchemy Column
         """Build SQLAlchemy Column objects for RAGFlow schema."""
         columns = []
 
@@ -227,6 +232,7 @@ class OBClient:
         return Column(name, String(256), nullable=nullable)
 
     def _create_regular_indexes(self, table_name: str):
+        # 为 kb_id/doc_id 等字段创建 B-tree 索引
         """Create regular indexes for indexed columns."""
         for col_name in INDEX_COLUMNS:
             index_name = INDEX_NAME_TEMPLATE % (table_name, col_name)
@@ -245,6 +251,7 @@ class OBClient:
                     logger.warning(f"Failed to create index {index_name}: {e}")
 
     def _create_fulltext_indexes(self, table_name: str):
+        # IK 分词全文索引（title/content 等 tks 列）
         """Create fulltext indexes for text columns."""
         for fts_column in FTS_COLUMNS_TKS:
             col_name = fts_column.split("^")[0]  # Remove weight suffix
@@ -266,6 +273,7 @@ class OBClient:
                     logger.warning(f"Failed to create fulltext index {index_name}: {e}")
 
     def _create_vector_index(self, table_name: str, vector_column_name: str):
+        # cosine HNSW 向量索引（vsag）
         """Create vector index for embedding column."""
         index_name = VECTOR_INDEX_NAME_TEMPLATE % vector_column_name
         try:
@@ -284,6 +292,7 @@ class OBClient:
                 logger.warning(f"Failed to create vector index {index_name}: {e}")
 
     def add_vector_column(self, table_name: str, vector_size: int):
+        # 表已存在时补加 q_{size}_vec 列及向量索引
         """Add a vector column to an existing table."""
         vector_column_name = f"q_{vector_size}_vec"
 
@@ -328,6 +337,8 @@ class OBClient:
             return False
 
     def insert_batch(
+        # upsert 批量写入，返回成功条数
+
         self,
         table_name: str,
         documents: list[dict[str, Any]],
