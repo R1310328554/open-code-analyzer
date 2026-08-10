@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T19:57:48Z",
   "files": [
-    "web/src/pages/agent/hooks/use-watch-form-change.ts",
-    "web/src/pages/agent/interface.ts",
-    "web/src/pages/agent/options.ts",
-    "web/src/pages/agent/store.test.ts",
-    "web/src/pages/agent/store.ts",
-    "web/src/pages/agent/use-agent-history-manager.ts",
-    "web/src/pages/agent/utils.ts",
-    "web/src/pages/agent/utils/build-output-list.ts",
-    "web/src/pages/agent/utils/chat.ts",
-    "web/src/pages/agent/utils/delete-node.ts",
-    "web/src/pages/agent/utils/dsl-bridge.ts",
-    "web/src/pages/agent/utils/filter-agent-structured-output.ts",
-    "web/src/pages/agent/utils/filter-downstream-nodes.ts",
-    "web/src/pages/agents/constant.ts",
-    "web/src/pages/agents/hooks/use-create-agent.ts",
     "web/src/pages/agents/hooks/use-export-agent-log.ts",
     "web/src/pages/agents/hooks/use-select-filters.ts",
     "web/src/pages/agents/use-import-json.ts",
@@ -33,5 +18,5 @@
     "web/src/pages/dataset/components/metedata/constant.ts"
   ],
   "remaining_pending": 144,
-  "done": 1590
+  "done": 1605
 }
