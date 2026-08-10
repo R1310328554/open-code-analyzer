@@ -1,3 +1,7 @@
+/**
+ * Keycloak 用户/客户端事件类型字面量联合。
+ * 每个成功事件通常有对应的 *_ERROR 变体，用于记录同类操作的失败情况。
+ */
 type EventType =
   | "LOGIN"
   | "LOGIN_ERROR"
