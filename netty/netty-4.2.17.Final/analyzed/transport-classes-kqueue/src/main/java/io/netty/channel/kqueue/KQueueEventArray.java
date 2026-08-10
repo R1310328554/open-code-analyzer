@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 /**
  * Represents an array of kevent structures, backed by offheap memory.
+ * <p>堆外 {@code kevent} 数组，供 {@code kevent(2)} changelist/eventlist 使用； 容量不足时按策略扩容。</p>
  *
  * <pre>
  * struct kevent {
@@ -44,9 +45,11 @@ final class KQueueEventArray {
     private static final int KQUEUE_DATA_OFFSET = Native.offsetofKeventData();
     private static final int KQUEUE_UDATA_OFFSET = Native.offsetofKeventUdata();
 
+    /** 堆外 kevent 缓冲及其清理句柄 */
     private CleanableDirectBuffer memoryCleanable;
     private ByteBuffer memory;
     private long memoryAddress;
+    /** 当前已写入的 kevent 条目数 */
     private int size;
     private int capacity;
 
@@ -62,6 +65,7 @@ final class KQueueEventArray {
 
     /**
      * Return the {@code memoryAddress} which points to the start of this {@link KQueueEventArray}.
+     * <p>返回 kevent 数组堆外起始地址。</p>
      */
     long memoryAddress() {
         return memoryAddress;
@@ -69,6 +73,7 @@ final class KQueueEventArray {
 
     /**
      * Return the capacity of the {@link KQueueEventArray} which represent the maximum number of {@code kevent}s
+     * <p>返回数组可容纳的最大 kevent 条数。</p>
      * that can be stored in it.
      */
     int capacity() {
@@ -83,6 +88,7 @@ final class KQueueEventArray {
         size = 0;
     }
 
+    /** 追加一条 kevent 到 changelist（必要时扩容） */
     void evSet(int ident, short filter, short flags, int fflags, long data, long udata) {
         reallocIfNeeded();
         evSet(getKEventOffset(size++) + memoryAddress, ident, filter, flags, fflags, data, udata);
@@ -96,16 +102,16 @@ final class KQueueEventArray {
 
     /**
      * Increase the storage of this {@link KQueueEventArray}.
+     * <p>扩容 kevent 堆外数组。</p>
      */
     void realloc(boolean throwIfFail) {
-        // Double the capacity while it is "sufficiently small", and otherwise increase by 50%.
+        // 容量较小时翻倍，较大时按 50% 增量扩容
         int newLength = capacity <= 65536 ? capacity << 1 : capacity + (capacity >> 1);
 
         try {
             int newCapacity = calculateBufferCapacity(newLength);
             CleanableDirectBuffer buffer = Buffer.allocateDirectBufferWithNativeOrder(newCapacity);
-            // Copy over the old content of the memory and reset the position as we always act on the buffer as if
-            // the position was never increased.
+            // 拷贝旧 kevent 内容；始终按 position=0 使用缓冲
             memory.position(0).limit(size);
             buffer.buffer().put(memory);
             buffer.buffer().position(0);
@@ -126,6 +132,7 @@ final class KQueueEventArray {
 
     /**
      * Free this {@link KQueueEventArray}. Any usage after calling this method may segfault the JVM!
+     * <p>释放堆外内存；之后访问可能导致 JVM 段错误。</p>
      */
     void free() {
         memoryCleanable.clean();
@@ -147,6 +154,7 @@ final class KQueueEventArray {
         return memory.getShort(getKEventOffset(index) + offset);
     }
 
+    /** 读取第 index 条 kevent 的 flags 字段 */
     short flags(int index) {
         return getShort(index, KQUEUE_FLAGS_OFFSET);
     }
@@ -159,6 +167,7 @@ final class KQueueEventArray {
         return getShort(index, KQUEUE_FFLAGS_OFFSET);
     }
 
+    /** 读取 ident（通常为 fd 或 user 标识） */
     int ident(int index) {
         if (PlatformDependent.hasUnsafe()) {
             return PlatformDependent.getInt(getKEventOffsetAddress(index) + KQUEUE_IDENT_OFFSET);
@@ -170,6 +179,7 @@ final class KQueueEventArray {
         return getLong(index, KQUEUE_DATA_OFFSET);
     }
 
+    /** 读取 udata（Netty 用于关联 IoRegistration） */
     long udata(int index) {
         return getLong(index, KQUEUE_UDATA_OFFSET);
     }

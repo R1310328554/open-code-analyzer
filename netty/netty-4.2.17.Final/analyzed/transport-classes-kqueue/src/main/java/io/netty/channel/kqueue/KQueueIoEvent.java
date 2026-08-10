@@ -19,9 +19,12 @@ import io.netty.channel.IoEvent;
 
 /**
  * {@link IoEvent} to use with {@link KQueueIoHandler}.
+ * <p>{@code kevent(2)} 完成事件的 Java 表示：ident、filter、flags、fflags、data 与 udata。</p>
  */
 public final class KQueueIoEvent implements IoEvent {
+    /** 事件标识（通常为文件描述符） */
     private int ident;
+    /** kevent 过滤器（如 EVFILT_READ/EVFILT_WRITE） */
     private short filter;
     private short flags;
     private int fflags;
@@ -37,6 +40,7 @@ public final class KQueueIoEvent implements IoEvent {
      * @param fflags    filter-specific flags.
      * @return          {@link KQueueIoEvent}.
      * @deprecated use {@link #newEvent(int, short, short, int, long, long)}
+      * <p>Netty KQueue 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public static KQueueIoEvent newEvent(int ident, short filter, short flags, int fflags) {
@@ -53,6 +57,7 @@ public final class KQueueIoEvent implements IoEvent {
      * @param data      the data
      * @param udata     the user defined data that is passed through.
      * @return          {@link KQueueIoEvent}.
+      * <p>Netty KQueue 传输 API；详见上方英文说明。</p>
      */
     public static KQueueIoEvent newEvent(int ident, short filter, short flags, int fflags, long data, long udata) {
         return new KQueueIoEvent(ident, filter, flags, fflags, data, udata);
@@ -71,7 +76,7 @@ public final class KQueueIoEvent implements IoEvent {
         this(0, (short) 0, (short) 0, 0, 0, 0);
     }
 
-    // Only used internally for re-use.
+    // 内部复用同一实例，减少 kevent 处理时的对象分配
     void update(int ident, short filter, short flags, int fflags, long data, long udata) {
         this.ident = ident;
         this.filter = filter;
@@ -83,6 +88,7 @@ public final class KQueueIoEvent implements IoEvent {
 
     /**
      * Returns the identifier for this event.
+     * <p>返回 kevent.ident（通常为 fd）。</p>
      *
      * @return  ident.
      */
@@ -92,6 +98,7 @@ public final class KQueueIoEvent implements IoEvent {
 
     /**
      * Returns the filter for this event.
+     * <p>返回 kevent 过滤器类型。</p>
      *
      * @return filter.
      */
@@ -101,6 +108,7 @@ public final class KQueueIoEvent implements IoEvent {
 
     /**
      * Returns the general flags.
+     * <p>返回 kevent 通用 flags。</p>
      *
      * @return flags.
      */
@@ -110,6 +118,7 @@ public final class KQueueIoEvent implements IoEvent {
 
     /**
      * Returns filter-specific flags.
+     * <p>返回过滤器相关 fflags。</p>
      *
      * @return fflags.
      */
@@ -119,6 +128,7 @@ public final class KQueueIoEvent implements IoEvent {
 
     /**
      * Returns filter-specific data.
+     * <p>过滤器相关 data 字段（如可读字节数）。</p>
      *
      * @return data.
      */
@@ -128,6 +138,7 @@ public final class KQueueIoEvent implements IoEvent {
 
     /**
      * Returns user specified data.
+     * <p>提交 changelist 时附带的 udata（关联 IoRegistration）。</p>
      *
      * @return udata.
      */

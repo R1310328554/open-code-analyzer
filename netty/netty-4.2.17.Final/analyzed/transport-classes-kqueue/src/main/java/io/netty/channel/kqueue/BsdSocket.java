@@ -36,29 +36,35 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
  * A socket which provides access BSD native methods.
+ * <p>封装 BSD/macOS 原生 socket：accept 过滤器、TCP_NOPUSH、SO_SNDLOWAT、 TCP FastOpen、sendfile 与 {@code connectx(2)} 等。</p>
  */
 final class BsdSocket extends Socket {
 
-    // These limits are just based on observations. I couldn't find anything in header files which formally
-    // define these limits.
+    // SO_SNDLOWAT 上限：基于实测，Apple 与 FreeBSD 取较小值
+    /** macOS 上 SO_SNDLOWAT 观测上限 */
     private static final int APPLE_SND_LOW_AT_MAX = 1 << 17;
     private static final int FREEBSD_SND_LOW_AT_MAX = 1 << 15;
+    /** 跨 BSD 平台 SO_SNDLOWAT 安全上限 */
     static final int BSD_SND_LOW_AT_MAX = Math.min(APPLE_SND_LOW_AT_MAX, FREEBSD_SND_LOW_AT_MAX);
     /**
      * The `endpoints` structure passed to `connectx(2)` has an optional "source interface" field,
      * which is the index of the network interface to use.
      * According to `if_nametoindex(3)`, the value 0 is used when no interface is specified.
+      * <p>Netty KQueue 传输 API；详见上方英文说明。</p>
      */
+    /** connectx 未指定源网卡时使用 0（见 if_nametoindex(3)） */
     private static final int UNSPECIFIED_SOURCE_INTERFACE = 0;
 
     BsdSocket(int fd) {
         super(fd);
     }
 
+    /** 在监听套接字上设置 SO_ACCEPTFILTER */
     void setAcceptFilter(AcceptFilter acceptFilter) throws IOException {
         setAcceptFilter(intValue(), acceptFilter.filterName(), acceptFilter.filterArgs());
     }
 
+    /** 设置 TCP_NOPUSH（类似 Linux TCP_CORK，延迟小包发送） */
     void setTcpNoPush(boolean tcpNoPush) throws IOException {
         setTcpNoPush(intValue(), tcpNoPush ? 1 : 0);
     }
@@ -67,6 +73,7 @@ final class BsdSocket extends Socket {
         setSndLowAt(intValue(), lowAt);
     }
 
+    /** 启用或禁用 TCP FastOpen 套接字选项 */
     public void setTcpFastOpen(boolean enableTcpFastOpen) throws IOException {
         setTcpFastOpen(intValue(), enableTcpFastOpen ? 1 : 0);
     }
@@ -79,6 +86,7 @@ final class BsdSocket extends Socket {
         return getSndLowAt(intValue());
     }
 
+    /** 读取当前 SO_ACCEPTFILTER；不支持时返回 {@link AcceptFilter#PLATFORM_UNSUPPORTED} */
     AcceptFilter getAcceptFilter() throws IOException {
         String[] result = getAcceptFilter(intValue());
         return result == null ? PLATFORM_UNSUPPORTED : new AcceptFilter(result[0], result[1]);
@@ -88,13 +96,13 @@ final class BsdSocket extends Socket {
         return isTcpFastOpen(intValue()) != 0;
     }
 
+    /** 读取对端 Unix 凭证（uid/gid/pid，SO_PEERCRED） */
     PeerCredentials getPeerCredentials() throws IOException {
         return getPeerCredentials(intValue());
     }
 
     long sendFile(DefaultFileRegion src, long baseOffset, long offset, long length) throws IOException {
-        // Open the file-region as it may be created via the lazy constructor. This is needed as we directly access
-        // the FileChannel field via JNI.
+        // 惰性构造的 FileRegion 需先 open，JNI 直接访问 FileChannel
         src.open();
 
         long res = sendFile(intValue(), src, baseOffset, offset, length);
@@ -108,6 +116,7 @@ final class BsdSocket extends Socket {
      * Establish a connection to the given destination address, and send the given data to it.
      *
      * <strong>Note:</strong> This method relies on the {@code connectx(2)} system call, which is MacOS specific.
+     * <p>macOS 专用 {@code connectx(2)}：建立连接并可附带首包数据；支持 TCP FastOpen 标志。</p>
      *
      * @param source      the source address we are connecting from.
      * @param destination the destination address we are connecting to.
@@ -140,7 +149,7 @@ final class BsdSocket extends Socket {
                 sourceAddress = sourceInetAddress.getAddress();
                 sourceScopeId = ((Inet6Address) sourceInetAddress).getScopeId();
             } else {
-                // convert to ipv4 mapped ipv6 address;
+                // IPv4 地址转为 IPv4-mapped IPv6 以匹配 connectx 端点格式
                 sourceScopeId = 0;
                 sourceAddress = ipv4MappedIpv6Address(sourceInetAddress.getAddress());
             }
@@ -183,9 +192,8 @@ final class BsdSocket extends Socket {
                 destinationIPv6, destinationAddress, destinationScopeId, destinationPort,
                 flags, iovAddress, iovCount, iovDataLength);
         if (result == ERRNO_EINPROGRESS_NEGATIVE) {
-            // This is normal for non-blocking sockets.
-            // We'll know the connection has been established when the socket is selectable for writing.
-            // Tell the channel the data was written, so the outbound buffer can update its position.
+            // 非阻塞 EINPROGRESS 为正常路径；可写事件表示连接完成
+            // 告知 channel 内核已拷贝的数据量，以便更新 outbound 缓冲位置
             return -iovDataLength;
         }
         if (result < 0) {
@@ -194,12 +202,14 @@ final class BsdSocket extends Socket {
         return result;
     }
 
+    /** 创建 TCP 流式套接字（默认协议族） */
     public static BsdSocket newSocketStream() {
         return new BsdSocket(newSocketStream0());
     }
 
     /**
      * @deprecated use {@link #newSocketStream(SocketProtocolFamily)}
+      * <p>Netty KQueue 传输 API；详见上方英文说明。</p>
      */
     public static BsdSocket newSocketStream(InternetProtocolFamily protocol) {
         return new BsdSocket(newSocketStream0(protocol));
@@ -215,6 +225,7 @@ final class BsdSocket extends Socket {
 
     /**
      * @deprecated use {@link #newSocketDgram(SocketProtocolFamily)}
+      * <p>Netty KQueue 传输 API；详见上方英文说明。</p>
      */
     public static BsdSocket newSocketDgram(InternetProtocolFamily protocol) {
         return new BsdSocket(newSocketDgram0(protocol));
@@ -224,10 +235,12 @@ final class BsdSocket extends Socket {
         return new BsdSocket(newSocketDgram0(protocol));
     }
 
+    /** 创建 Unix 域流式套接字 */
     public static BsdSocket newSocketDomain() {
         return new BsdSocket(newSocketDomain0());
     }
 
+    /** 创建 Unix 域数据报套接字 */
     public static BsdSocket newSocketDomainDgram() {
         return new BsdSocket(newSocketDomainDgram0());
     }
@@ -237,6 +250,7 @@ final class BsdSocket extends Socket {
 
     /**
      * @return If successful, zero or positive number of bytes transfered, otherwise negative errno.
+     * <p>成功返回传输字节数，失败返回负 errno。</p>
      */
     private static native int connectx(
             int socketFd,

@@ -47,6 +47,10 @@ import java.nio.channels.UnresolvedAddressException;
 
 import static io.netty.channel.kqueue.BsdSocket.newSocketDgram;
 
+/**
+ * 基于 KQueue 的 IPv4/IPv6 UDP {@link DatagramChannel}。
+ * <p>支持 connected/unconnected 模式、writev/sendTo 与 BSD 原生 recvFrom；不支持组播。</p>
+ */
 public final class KQueueDatagramChannel extends AbstractKQueueDatagramChannel implements DatagramChannel {
     private static final String EXPECTED_TYPES =
             " (expected: " + StringUtil.simpleClassName(DatagramPacket.class) + ", " +
@@ -55,6 +59,7 @@ public final class KQueueDatagramChannel extends AbstractKQueueDatagramChannel i
                     StringUtil.simpleClassName(InetSocketAddress.class) + ">, " +
                     StringUtil.simpleClassName(ByteBuf.class) + ')';
 
+    /** 是否处于 UDP connect 后的 connected 模式 */
     private volatile boolean connected;
     private final KQueueDatagramChannelConfig config;
 
@@ -65,6 +70,7 @@ public final class KQueueDatagramChannel extends AbstractKQueueDatagramChannel i
 
     /**
      * @deprecated use {@link KQueueDatagramChannel#KQueueDatagramChannel(SocketProtocolFamily)}
+      * <p>Netty KQueue 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public KQueueDatagramChannel(InternetProtocolFamily protocol) {
@@ -153,7 +159,7 @@ public final class KQueueDatagramChannel extends AbstractKQueueDatagramChannel i
         ObjectUtil.checkNotNull(multicastAddress, "multicastAddress");
         ObjectUtil.checkNotNull(networkInterface, "networkInterface");
 
-        promise.setFailure(new UnsupportedOperationException("Multicast not supported"));
+        // BSD kqueue 实现暂不支持 IP 组播 join/leave
         return promise;
     }
 
@@ -311,7 +317,7 @@ public final class KQueueDatagramChannel extends AbstractKQueueDatagramChannel i
     }
 
     private static IOException translateForConnected(Errors.NativeIoException e) {
-        // We need to correctly translate connect errors to match NIO behaviour.
+        // 将 ECONNREFUSED 转为 PortUnreachableException 以匹配 NIO 语义
         if (e.expectedErr() == Errors.ERROR_ECONNREFUSED_NEGATIVE) {
             PortUnreachableException error = new PortUnreachableException(e.getMessage());
             error.initCause(e);
@@ -435,7 +441,7 @@ public final class KQueueDatagramChannel extends AbstractKQueueDatagramChannel i
                         } else {
                             final DatagramSocketAddress remoteAddress;
                             if (byteBuf.hasMemoryAddress()) {
-                                // has a memory address so use optimized call
+                                // 有堆外地址时使用 recvFromAddress 零拷贝路径
                                 remoteAddress = socket.recvFromAddress(byteBuf.memoryAddress(), byteBuf.writerIndex(),
                                         byteBuf.capacity());
                             } else {
@@ -467,8 +473,7 @@ public final class KQueueDatagramChannel extends AbstractKQueueDatagramChannel i
 
                         byteBuf = null;
 
-                    // We use the TRUE_SUPPLIER as it is also ok to read less then what we did try to read (as long
-                    // as we read anything).
+                    // 使用 TRUE_SUPPLIER：只要读到数据即可继续，不必读满 attemptedBytes
                     } while (allocHandle.continueReading(UncheckedBooleanSupplier.TRUE_SUPPLIER));
                 } catch (Throwable t) {
                     if (byteBuf != null) {

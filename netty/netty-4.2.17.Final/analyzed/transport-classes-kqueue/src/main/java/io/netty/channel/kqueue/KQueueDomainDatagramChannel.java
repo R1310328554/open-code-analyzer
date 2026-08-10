@@ -38,6 +38,10 @@ import java.nio.ByteBuffer;
 
 import static io.netty.channel.kqueue.BsdSocket.newSocketDomainDgram;
 
+/**
+ * Unix 域数据报 {@link DomainDatagramChannel} 的 KQueue 实现。
+ * <p>支持路径寻址的 sendTo/recvFrom 与 connected 模式；可查询 {@link #peerCredentials()}。</p>
+ */
 public final class KQueueDomainDatagramChannel extends AbstractKQueueDatagramChannel implements DomainDatagramChannel {
 
     private static final String EXPECTED_TYPES =
@@ -49,7 +53,9 @@ public final class KQueueDomainDatagramChannel extends AbstractKQueueDatagramCha
                     StringUtil.simpleClassName(ByteBuf.class) + ')';
 
     private volatile boolean connected;
+    /** 绑定后的本地 Unix 域地址缓存 */
     private volatile DomainSocketAddress local;
+    /** connect 后的对端 Unix 域地址缓存 */
     private volatile DomainSocketAddress remote;
 
     private final KQueueDomainDatagramChannelConfig config;
@@ -221,6 +227,7 @@ public final class KQueueDomainDatagramChannel extends AbstractKQueueDatagramCha
     /**
      * Returns the unix credentials (uid, gid, pid) of the peer
      * <a href=https://man7.org/linux/man-pages/man7/socket.7.html>SO_PEERCRED</a>
+     * <p>读取对端进程凭证（uid/gid/pid）。</p>
      */
     public PeerCredentials peerCredentials() throws IOException {
         return socket.getPeerCredentials();
@@ -272,7 +279,7 @@ public final class KQueueDomainDatagramChannel extends AbstractKQueueDatagramCha
                         } else {
                             final DomainDatagramSocketAddress remoteAddress;
                             if (byteBuf.hasMemoryAddress()) {
-                                // has a memory address so use optimized call
+                                // 堆外缓冲时使用 recvFromAddressDomainSocket 优化路径
                                 remoteAddress = socket.recvFromAddressDomainSocket(byteBuf.memoryAddress(),
                                         byteBuf.writerIndex(), byteBuf.capacity());
                             } else {
@@ -304,8 +311,7 @@ public final class KQueueDomainDatagramChannel extends AbstractKQueueDatagramCha
 
                         byteBuf = null;
 
-                        // We use the TRUE_SUPPLIER as it is also ok to read less then what we did try to read (as long
-                        // as we read anything).
+                        // 读到任意数据即可继续循环读取
                     } while (allocHandle.continueReading(UncheckedBooleanSupplier.TRUE_SUPPLIER));
                 } catch (Throwable t) {
                     if (byteBuf != null) {

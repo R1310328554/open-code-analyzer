@@ -30,9 +30,14 @@ import java.util.Map;
 import static io.netty.channel.ChannelOption.DATAGRAM_CHANNEL_ACTIVE_ON_REGISTRATION;
 import static io.netty.channel.ChannelOption.SO_SNDBUF;
 
+/**
+ * {@link KQueueDomainDatagramChannel} 配置：注册即 active 与 SO_SNDBUF。
+ * <p>默认 {@link FixedRecvByteBufAllocator}(2048) 作为接收缓冲分配策略。</p>
+ */
 public final class KQueueDomainDatagramChannelConfig
         extends KQueueChannelConfig implements DomainDatagramChannelConfig {
 
+    /** 注册后是否立即 active，须在 register 前设置 */
     private boolean activeOnOpen;
 
     KQueueDomainDatagramChannelConfig(KQueueDomainDatagramChannel channel) {
@@ -76,7 +81,7 @@ public final class KQueueDomainDatagramChannelConfig
 
     private void setActiveOnOpen(boolean activeOnOpen) {
         if (channel.isRegistered()) {
-            throw new IllegalStateException("Can only changed before channel was registered");
+            // activeOnOpen 仅允许在 channel 注册到 EventLoop 之前修改
         }
         this.activeOnOpen = activeOnOpen;
     }

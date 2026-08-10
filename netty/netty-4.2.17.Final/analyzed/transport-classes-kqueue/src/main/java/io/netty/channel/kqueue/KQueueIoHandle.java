@@ -19,11 +19,13 @@ import io.netty.channel.IoHandle;
 
 /**
  * {@link IoHandle} implementation that can be used with the {@link KQueueIoHandler}.
+ * <p>KQueue 传输的 {@link IoHandle} 扩展：提供 {@link #ident()} 作为 kevent 注册标识。</p>
  */
 public interface KQueueIoHandle extends IoHandle  {
 
     /**
      * Return the ident of the {@link IoHandle}.
+     * <p>返回注册到 kqueue 的 ident（通常为通道 fd）。</p>
      *
      * @return ident.
      */

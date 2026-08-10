@@ -34,9 +34,15 @@ import static io.netty.channel.ChannelOption.SO_RCVBUF;
 import static io.netty.channel.ChannelOption.SO_SNDBUF;
 import static io.netty.channel.unix.UnixChannelOption.DOMAIN_SOCKET_READ_MODE;
 
+/**
+ * {@link KQueueDomainSocketChannel} 配置：读模式、半关闭与 SO_RCVBUF/SO_SNDBUF。
+ * <p>{@link DomainSocketReadMode} 可在字节流与 fd 传递模式间切换。</p>
+ */
 public final class KQueueDomainSocketChannelConfig extends KQueueChannelConfig
         implements DomainSocketChannelConfig, DuplexChannelConfig {
+    /** Unix 域读模式：字节或文件描述符（SCM_RIGHTS） */
     private volatile DomainSocketReadMode mode = DomainSocketReadMode.BYTES;
+    /** 是否允许 shutdownInput/Output 独立半关闭 */
     private volatile boolean allowHalfClosure;
 
     KQueueDomainSocketChannelConfig(AbstractKQueueChannel channel) {

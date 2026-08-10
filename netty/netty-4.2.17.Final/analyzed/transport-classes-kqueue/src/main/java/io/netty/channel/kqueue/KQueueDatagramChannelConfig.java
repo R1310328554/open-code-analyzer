@@ -41,7 +41,12 @@ import static io.netty.channel.ChannelOption.SO_REUSEADDR;
 import static io.netty.channel.ChannelOption.SO_SNDBUF;
 import static io.netty.channel.unix.UnixChannelOption.SO_REUSEPORT;
 
+/**
+ * {@link KQueueDatagramChannel} 配置：标准 UDP 选项与 SO_REUSEPORT。
+ * <p>组播相关选项在 kqueue 上不支持，调用将抛出 {@link UnsupportedOperationException}。</p>
+ */
 public final class KQueueDatagramChannelConfig extends KQueueChannelConfig implements DatagramChannelConfig {
+    /** 注册到 EventLoop 后是否立即视为 active（DATAGRAM_CHANNEL_ACTIVE_ON_REGISTRATION） */
     private boolean activeOnOpen;
 
     KQueueDatagramChannelConfig(KQueueDatagramChannel channel) {
@@ -144,6 +149,7 @@ public final class KQueueDatagramChannelConfig extends KQueueChannelConfig imple
 
     /**
      * Returns {@code true} if the SO_REUSEPORT option is set.
+     * <p>是否已设置 SO_REUSEPORT（多线程/多进程同端口绑定）。</p>
      */
     public boolean isReusePort() {
         try {
@@ -159,6 +165,7 @@ public final class KQueueDatagramChannelConfig extends KQueueChannelConfig imple
      *
      * Be aware this method needs be called before {@link KQueueDatagramChannel#bind(java.net.SocketAddress)} to have
      * any affect.
+     * <p>启用 SO_REUSEPORT；须在 bind 之前设置才生效。</p>
      */
     public KQueueDatagramChannelConfig setReusePort(boolean reusePort) {
         try {
@@ -346,7 +353,7 @@ public final class KQueueDatagramChannelConfig extends KQueueChannelConfig imple
 
     @Override
     public DatagramChannelConfig setLoopbackModeDisabled(boolean loopbackModeDisabled) {
-        throw new UnsupportedOperationException("Multicast not supported");
+        // kqueue UDP 不支持组播 loop/TTL/接口等选项
     }
 
     @Override

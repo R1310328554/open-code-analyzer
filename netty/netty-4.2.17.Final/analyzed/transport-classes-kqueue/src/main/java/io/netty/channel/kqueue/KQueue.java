@@ -23,8 +23,10 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
  * If KQueue is available the JNI resources will be loaded when this class loads.
+ * <p>KQueue 原生传输可用性探测：类加载时尝试创建 kqueue fd 并加载 JNI； 可通过 {@code -Dio.netty.transport.noNative=true} 禁用。</p>
  */
 public final class KQueue {
+    /** 不可用时的根因；{@code null} 表示 KQueue 可用 */
     private static final Throwable UNAVAILABILITY_CAUSE;
 
     static {
@@ -62,6 +64,7 @@ public final class KQueue {
     /**
      * Returns {@code true} if and only if the <a href="https://netty.io/wiki/native-transports.html">{@code
      * netty-transport-native-kqueue}</a> is available.
+     * <p>原生 kqueue 模块与 JNI 是否已成功加载。</p>
      */
     public static boolean isAvailable() {
         return UNAVAILABILITY_CAUSE == null;
@@ -70,6 +73,7 @@ public final class KQueue {
     /**
      * Ensure that <a href="https://netty.io/wiki/native-transports.html">{@code netty-transport-native-kqueue}</a> is
      * available.
+     * <p>强制校验可用性，不可用时抛出 {@link UnsatisfiedLinkError}。</p>
      *
      * @throws UnsatisfiedLinkError if unavailable
      */
@@ -83,6 +87,7 @@ public final class KQueue {
     /**
      * Returns the cause of unavailability of <a href="https://netty.io/wiki/native-transports.html">{@code
      * netty-transport-native-kqueue}</a>.
+     * <p>返回不可用原因；可用时为 {@code null}。</p>
      *
      * @return the cause if unavailable. {@code null} if available.
      */
@@ -93,6 +98,7 @@ public final class KQueue {
     /**
      * Returns {@code true} if the kqueue native transport is both {@linkplain #isAvailable() available} and supports
      * {@linkplain ChannelOption#TCP_FASTOPEN_CONNECT client-side TCP FastOpen}.
+     * <p>客户端 TCP FastOpen（connectx）是否可用。</p>
      *
      * @return {@code true} if it's possible to use client-side TCP FastOpen via kqueue, otherwise {@code false}.
      */
@@ -103,6 +109,7 @@ public final class KQueue {
     /**
      * Returns {@code true} if the kqueue native transport is both {@linkplain #isAvailable() available} and supports
      * {@linkplain ChannelOption#TCP_FASTOPEN server-side TCP FastOpen}.
+     * <p>服务端 TCP FastOpen 是否可用。</p>
      *
      * @return {@code true} if it's possible to use server-side TCP FastOpen via kqueue, otherwise {@code false}.
      */

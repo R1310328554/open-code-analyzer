@@ -18,21 +18,31 @@ package io.netty.channel.kqueue;
 import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.UnstableApi;
 
+/**
+ * BSD/macOS 监听套接字的 accept 过滤器（SO_ACCEPTFILTER）。
+ * <p>将内核层 HTTP 解析等过滤器名称与参数封装为不可变值对象； {@link #PLATFORM_UNSUPPORTED} 表示当前平台不支持。</p>
+ */
 @UnstableApi
 public final class AcceptFilter {
+    /** 平台不支持 accept 过滤器时的占位实例（空名称与空参数） */
     static final AcceptFilter PLATFORM_UNSUPPORTED = new AcceptFilter("", "");
+    /** 内核 accept 过滤器名称（如 {@code httpready}） */
     private final String filterName;
+    /** 过滤器参数字符串 */
     private final String filterArgs;
 
+    /** 构造 accept 过滤器描述 */
     public AcceptFilter(String filterName, String filterArgs) {
         this.filterName = ObjectUtil.checkNotNull(filterName, "filterName");
         this.filterArgs = ObjectUtil.checkNotNull(filterArgs, "filterArgs");
     }
 
+    /** 返回过滤器名称 */
     public String filterName() {
         return filterName;
     }
 
+    /** 返回过滤器参数字符串 */
     public String filterArgs() {
         return filterArgs;
     }

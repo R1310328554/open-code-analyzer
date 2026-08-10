@@ -30,6 +30,10 @@ import java.net.SocketAddress;
 
 import static io.netty.channel.kqueue.BsdSocket.newSocketDomain;
 
+/**
+ * Unix 域流式 {@link DomainSocketChannel} 的 KQueue 实现。
+ * <p>支持字节模式与 {@link DomainSocketReadMode#FILE_DESCRIPTORS} 下通过 SCM_RIGHTS 传递 fd。</p>
+ */
 public final class KQueueDomainSocketChannel extends AbstractKQueueStreamChannel implements DomainSocketChannel {
     private final KQueueDomainSocketChannelConfig config = new KQueueDomainSocketChannelConfig(this);
 
@@ -99,8 +103,8 @@ public final class KQueueDomainSocketChannel extends AbstractKQueueStreamChannel
     @Override
     protected int doWriteSingle(ChannelOutboundBuffer in) throws Exception {
         Object msg = in.current();
-        if (msg instanceof FileDescriptor && socket.sendFd(((FileDescriptor) msg).intValue()) > 0) {
-            // File descriptor was written, so remove it.
+            // SCM_RIGHTS：通过 Unix 域套接字传递文件描述符
+            // fd 已成功发送，从 outbound 队列移除
             in.remove();
             return 1;
         }
@@ -118,6 +122,7 @@ public final class KQueueDomainSocketChannel extends AbstractKQueueStreamChannel
     /**
      * Returns the unix credentials (uid, gid, pid) of the peer
      * <a href=https://man7.org/linux/man-pages/man7/socket.7.html>SO_PEERCRED</a>
+     * <p>返回对端 Unix 凭证（uid、gid、pid）。</p>
      */
     @UnstableApi
     public PeerCredentials peerCredentials() throws IOException {
@@ -152,9 +157,7 @@ public final class KQueueDomainSocketChannel extends AbstractKQueueStreamChannel
 
             try {
                 readLoop: do {
-                    // lastBytesRead represents the fd. We use lastBytesRead because it must be set so that the
-                    // KQueueRecvByteAllocatorHandle knows if it should try to read again or not when autoRead is
-                    // enabled.
+                    // lastBytesRead 在此表示是否读到 fd，供 autoRead 下分配器决定是否继续读
                     int recvFd = socket.recvFd();
                     switch(recvFd) {
                         case 0:

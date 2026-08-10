@@ -33,8 +33,14 @@ import static io.netty.channel.kqueue.KQueueChannelOption.RCV_ALLOC_TRANSPORT_PR
 import static io.netty.channel.unix.Limits.SSIZE_MAX;
 import static java.lang.Math.min;
 
+/**
+ * KQueue 通道通用配置：Unix 整数/原始 socket 选项与聚集写上限。
+ * <p>支持 {@link IntegerUnixChannelOption}、{@link RawUnixChannelOption} 及 kqueue 特有选项。</p>
+ */
 public class KQueueChannelConfig extends DefaultChannelConfig {
+    /** 已废弃：是否由传输层覆盖 RecvByteBufAllocator 的 guess */
     private volatile boolean transportProvidesGuess;
+    /** 单次 writev 聚集写最大字节数（不超过 SSIZE_MAX） */
     private volatile long maxBytesPerGatheringWrite = SSIZE_MAX;
 
     KQueueChannelConfig(AbstractKQueueChannel channel) {
@@ -104,6 +110,7 @@ public class KQueueChannelConfig extends DefaultChannelConfig {
     /**
      * If this is {@code true} then the {@link RecvByteBufAllocator.Handle#guess()} will be overridden to always attempt
      * to read as many bytes as kqueue says are available.
+     * <p>已废弃且被忽略：曾用于让分配器按 kqueue 可读字节数猜测缓冲大小。</p>
      *
      * @deprecated will be removed and is ignored.
      */
@@ -118,6 +125,7 @@ public class KQueueChannelConfig extends DefaultChannelConfig {
      * to read as many bytes as kqueue says are available.
      *
      * @deprecated will be removed and is ignored.
+      * <p>Netty KQueue 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public boolean getRcvAllocTransportProvidesGuess() {
@@ -151,7 +159,7 @@ public class KQueueChannelConfig extends DefaultChannelConfig {
 
     @Override
     public KQueueChannelConfig setRecvByteBufAllocator(RecvByteBufAllocator allocator) {
-        if (!(allocator.newHandle() instanceof RecvByteBufAllocator.ExtendedHandle)) {
+        // KQueue 接收路径需要 ExtendedHandle（lastBytesRead 等扩展语义）
             throw new IllegalArgumentException("allocator.newHandle() must return an object of type: " +
                     RecvByteBufAllocator.ExtendedHandle.class);
         }
@@ -192,10 +200,12 @@ public class KQueueChannelConfig extends DefaultChannelConfig {
     }
 
     @Override
+    /** autoRead 关闭时清除 EVFILT_READ 监听 */
     protected final void autoReadCleared() {
         ((AbstractKQueueChannel) channel).clearReadFilter();
     }
 
+    /** 设置聚集写上限（内部由通道根据 SO_SNDBUF 调整） */
     final void setMaxBytesPerGatheringWrite(long maxBytesPerGatheringWrite) {
         this.maxBytesPerGatheringWrite = min(SSIZE_MAX, maxBytesPerGatheringWrite);
     }

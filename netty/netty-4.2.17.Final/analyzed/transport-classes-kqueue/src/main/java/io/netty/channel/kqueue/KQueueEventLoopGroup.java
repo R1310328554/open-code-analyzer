@@ -40,12 +40,12 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * @deprecated Use {@link MultiThreadIoEventLoopGroup} with {@link KQueueIoHandler#newFactory()}.
+ * <p>基于 KQueue 的多线程 {@link IoEventLoopGroup} 遗留实现； 新代码请使用 {@link MultiThreadIoEventLoopGroup} + {@link KQueueIoHandler#newFactory()}。</p>
  */
 @Deprecated
 public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
-    // This does not use static by design to ensure the class can be loaded and only do the check when its actually
-    // instanced.
+    // 实例化时再调用 KQueue.ensureAvailability()，避免类加载阶段即失败
     {
         // Ensure JNI is initialized by the time this class is loaded by this time!
         KQueue.ensureAvailability();
@@ -55,6 +55,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the default number of threads and the default {@link ThreadFactory}.
+     * <p>使用默认线程数（通常为 CPU×2）与默认 {@link ThreadFactory}。</p>
      */
     public KQueueEventLoopGroup() {
         this(0);
@@ -62,6 +63,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads and the default {@link ThreadFactory}.
+     * <p>创建新实例。</p>
      */
     public KQueueEventLoopGroup(int nThreads) {
         this(nThreads, (ThreadFactory) null);
@@ -69,6 +71,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the default number of threads and the given {@link ThreadFactory}.
+     * <p>创建新实例。</p>
      */
     @SuppressWarnings("deprecation")
     public KQueueEventLoopGroup(ThreadFactory threadFactory) {
@@ -77,6 +80,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads and the default {@link ThreadFactory}.
+     * <p>创建新实例。</p>
      */
     @SuppressWarnings("deprecation")
     public KQueueEventLoopGroup(int nThreads, SelectStrategyFactory selectStrategyFactory) {
@@ -85,6 +89,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads and the given {@link ThreadFactory}.
+     * <p>创建新实例。</p>
      */
     @SuppressWarnings("deprecation")
     public KQueueEventLoopGroup(int nThreads, ThreadFactory threadFactory) {
@@ -97,6 +102,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads and the given {@link ThreadFactory}.
+     * <p>创建新实例。</p>
      */
     @SuppressWarnings("deprecation")
     public KQueueEventLoopGroup(int nThreads, ThreadFactory threadFactory,
@@ -107,6 +113,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
     /**
      * Create a new instance using the specified number of threads, the given {@link ThreadFactory} and the given
      * maximal amount of epoll events to handle per epollWait(...).
+     * <p>每次 kqueue wait 处理的最大事件数（参数名沿用 epoll 历史命名）。</p>
      *
      * @deprecated  Use {@link #KQueueEventLoopGroup(int)} or {@link #KQueueEventLoopGroup(int, ThreadFactory)}
      */
@@ -117,6 +124,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads, the given {@link ThreadFactory} and the given
+     * <p>创建新实例。</p>
      * maximal amount of epoll events to handle per epollWait(...).
      *
      * @deprecated  Use {@link #KQueueEventLoopGroup(int)}, {@link #KQueueEventLoopGroup(int, ThreadFactory)}, or
@@ -167,6 +175,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
      * @param tailTaskQueueFactory the {@link EventLoopTaskQueueFactory} to use for
      *                             {@link SingleThreadEventLoop#executeAfterEventLoopIteration(Runnable)},
      *                             or {@code null} if default one should be used.
+      * <p>Netty KQueue 传输 API；详见上方英文说明。</p>
      */
     public KQueueEventLoopGroup(int nThreads, Executor executor, EventExecutorChooserFactory chooserFactory,
                                SelectStrategyFactory selectStrategyFactory,
@@ -179,12 +188,13 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * This method is a no-op.
+     * <p>ioRatio 逻辑已移除，调用仅为兼容旧 API。</p>
      *
      * @deprecated
      */
     @Deprecated
     public void setIoRatio(int ioRatio) {
-        LOGGER.debug("EpollEventLoopGroup.setIoRatio(int) logic was removed, this is a no-op");
+        // 日志文案沿用 Epoll 命名，实际为 KQueueEventLoopGroup 空操作
     }
 
     @Override
@@ -208,6 +218,7 @@ public final class KQueueEventLoopGroup extends MultiThreadIoEventLoopGroup {
                 rejectedExecutionHandler);
     }
 
+    /** 单线程 KQueue {@link IoEventLoop}，委托 {@link KQueueIoHandler} 处理 I/O */
     private static final class KQueueEventLoop extends SingleThreadIoEventLoop {
         KQueueEventLoop(IoEventLoopGroup parent, Executor executor, IoHandlerFactory ioHandlerFactory,
                         Queue<Runnable> taskQueue, Queue<Runnable> tailTaskQueue,
