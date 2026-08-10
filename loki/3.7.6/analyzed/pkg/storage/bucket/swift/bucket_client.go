@@ -1,5 +1,7 @@
 package swift
 
+// swift 包封装 OpenStack Swift 容器客户端：将 Loki swift.Config 映射到 Thanos objstore Swift provider 并创建 Bucket。
+
 import (
 	"net/http"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/thanos-io/objstore/providers/swift"
 )
 
+// NewBucketClient 填充认证、项目域、区域、容器名及 HTTP 配置，调用 NewContainerFromConfig。
 // NewBucketClient creates a new Swift bucket client
 func NewBucketClient(cfg Config, _ string, logger log.Logger, wrapper func(http.RoundTripper) http.RoundTripper) (objstore.Bucket, error) {
 	bucketConfig := swift.Config{
@@ -52,6 +55,7 @@ func NewBucketClient(cfg Config, _ string, logger log.Logger, wrapper func(http.
 			},
 		},
 
+// ChunkSize 与 UseDynamicLargeObjects 使用 Thanos 默认分块大小，DLO 在此禁用。
 		// Hard-coded defaults.
 		ChunkSize:              swift.DefaultConfig.ChunkSize,
 		UseDynamicLargeObjects: false,
@@ -59,3 +63,4 @@ func NewBucketClient(cfg Config, _ string, logger log.Logger, wrapper func(http.
 
 	return swift.NewContainerFromConfig(logger, &bucketConfig, false, wrapper)
 }
+// ConnectTimeout 与 RequestTimeout 转为 model.Duration 传入 Thanos Swift HTTP 配置。

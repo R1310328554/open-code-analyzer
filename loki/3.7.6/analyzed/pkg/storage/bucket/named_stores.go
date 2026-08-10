@@ -1,5 +1,7 @@
 package bucket
 
+// named_stores 支持在同一 Loki 进程中配置多套命名对象存储：按名称引用 S3/GCS/Azure/Swift/Filesystem 后端，供多租户或冷热分层使用。
+
 import (
 	"fmt"
 	"slices"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/dskit/flagext"
 )
 
+// NamedStores 以 map 形式持有各 provider 的命名配置，storeType 缓存名称到后端类型映射。
 // NamedStores helps configure additional object stores from a given storage provider
 type NamedStores struct {
 	Azure      map[string]NamedAzureStorageConfig      `yaml:"azure"`
@@ -21,6 +24,7 @@ type NamedStores struct {
 	S3         map[string]NamedS3StorageConfig         `yaml:"s3"`
 	Swift      map[string]NamedSwiftStorageConfig      `yaml:"swift"`
 
+// storeType 在 Validate/populateStoreType 后填充，供 LookupStoreType 与 Exists 查询。
 	// contains mapping from named store reference name to store type
 	storeType map[string]string `yaml:"-"`
 }
@@ -35,6 +39,7 @@ func (ns *NamedStores) Validate() error {
 	return ns.populateStoreType()
 }
 
+// populateStoreType 遍历五类 map，禁止名称与 SupportedBackends 常量重复或跨类型重名。
 func (ns *NamedStores) populateStoreType() error {
 	ns.storeType = make(map[string]string)
 
@@ -88,6 +93,7 @@ func (ns *NamedStores) populateStoreType() error {
 	return nil
 }
 
+// LookupStoreType 返回命名存储对应的后端类型字符串（如 s3、gcs）。
 func (ns *NamedStores) LookupStoreType(name string) (string, bool) {
 	st, ok := ns.storeType[name]
 	return st, ok
@@ -98,6 +104,7 @@ func (ns *NamedStores) Exists(name string) bool {
 	return ok
 }
 
+// OverrideConfig 将命名存储的配置覆盖到主 Config 的对应字段，供 NewClient 使用。
 // OverrideConfig overrides the store config with the named store config
 func (ns *NamedStores) OverrideConfig(storeCfg *Config, namedStore string) error {
 	storeType, ok := ns.LookupStoreType(namedStore)
@@ -148,6 +155,7 @@ func (ns *NamedStores) OverrideConfig(storeCfg *Config, namedStore string) error
 	return nil
 }
 
+// 命名存储不走 RegisterFlags，故通过 Named*StorageConfig.UnmarshalYAML 先 DefaultValues 再解析。
 // Storage configs defined as Named stores don't get any defaults as they do not
 // register flags. To get around this we implement Unmarshaler interface that
 // assigns the defaults before calling unmarshal.
@@ -159,6 +167,7 @@ func (ns *NamedStores) OverrideConfig(storeCfg *Config, namedStore string) error
 // Implementing the Unmarshaler for Named*StorageConfig types is fine as
 // we do not apply any dynamic config on them.
 
+// NamedS3StorageConfig 为 s3.Config 类型别名，实现独立 UnmarshalYAML 以注入默认值。
 type NamedS3StorageConfig s3.Config
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -171,6 +180,7 @@ func (cfg *NamedS3StorageConfig) Validate() error {
 	return (*s3.Config)(cfg).Validate()
 }
 
+// NamedGCSStorageConfig 同理，避免与 ApplyDynamicConfig 冲突的双重 Unmarshal。
 type NamedGCSStorageConfig gcs.Config
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -179,6 +189,7 @@ func (cfg *NamedGCSStorageConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 	return unmarshal((*gcs.Config)(cfg))
 }
 
+// NamedAzureStorageConfig 封装 Azure 命名存储的 YAML 解析与默认填充。
 type NamedAzureStorageConfig azure.Config
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -187,6 +198,7 @@ func (cfg *NamedAzureStorageConfig) UnmarshalYAML(unmarshal func(interface{}) er
 	return unmarshal((*azure.Config)(cfg))
 }
 
+// NamedSwiftStorageConfig 封装 OpenStack Swift 命名存储配置。
 type NamedSwiftStorageConfig swift.Config
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -195,6 +207,7 @@ func (cfg *NamedSwiftStorageConfig) UnmarshalYAML(unmarshal func(interface{}) er
 	return unmarshal((*swift.Config)(cfg))
 }
 
+// NamedFilesystemStorageConfig 为本地目录型命名存储提供默认值注入。
 type NamedFilesystemStorageConfig filesystem.Config
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -202,3 +215,4 @@ func (cfg *NamedFilesystemStorageConfig) UnmarshalYAML(unmarshal func(interface{
 	flagext.DefaultValues((*filesystem.Config)(cfg))
 	return unmarshal((*filesystem.Config)(cfg))
 }
+// 命名存储名称不得与 filesystem/s3 等预定义后端字符串相同，否则 Validate 报错。

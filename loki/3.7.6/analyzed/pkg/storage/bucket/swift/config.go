@@ -1,5 +1,7 @@
 package swift
 
+// swift 包定义 OpenStack Swift 对象存储配置：支持 v2/v3 认证、应用凭证、项目域与 HTTP 子配置。
+
 import (
 	"flag"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/bucket/http"
 )
 
+// Config 聚合 Keystone 认证字段、容器名、重试与连接/请求超时及嵌套 http.Config。
 // Config holds the config options for Swift backend
 type Config struct {
 	ApplicationCredentialID     string         `yaml:"application_credential_id"`
@@ -35,11 +38,13 @@ type Config struct {
 	HTTP                        http.Config    `yaml:"http"`
 }
 
+// RegisterFlags 注册无前缀 swift.* CLI 参数。
 // RegisterFlags registers the flags for Swift storage
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix("", f)
 }
 
+// RegisterFlagsWithPrefix 绑定 auth-url、username、password、container-name 等 OpenStack 字段。
 // RegisterFlagsWithPrefix registers the flags for Swift storage with the provided prefix
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.StringVar(&cfg.ApplicationCredentialID, prefix+"swift.application-credential-id", "", "OpenStack Swift application credential id")
@@ -65,3 +70,4 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.DurationVar(&cfg.RequestTimeout, prefix+"swift.request-timeout", 5*time.Second, "Time after which an idle request is aborted. The timeout watchdog is reset each time some data is received, so the timeout triggers after X time no data is received on a request.")
 	cfg.HTTP.RegisterFlagsWithPrefix(prefix+"swift.", f)
 }
+// ApplicationCredential* 字段支持无密码的应用凭证认证；AuthVersion 为 0 时自动检测 API 版本。

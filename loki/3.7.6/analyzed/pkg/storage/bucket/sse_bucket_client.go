@@ -1,5 +1,7 @@
 package bucket
 
+// sse_bucket_client 按租户为 S3 上传注入服务端加密配置：通过 SSEConfigProvider 读取 per-user SSE 类型与 KMS 参数并写入请求 context。
+
 import (
 	"context"
 	"io"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/bucket/s3"
 )
 
+// SSEConfigProvider 抽象多租户 S3 SSE 策略：类型、KMS 密钥 ID 与加密上下文。
 // SSEConfigProvider defines a per-tenant SSE config provider.
 type SSEConfigProvider interface {
 	// S3SSEType returns the per-tenant S3 SSE type.
@@ -24,6 +27,7 @@ type SSEConfigProvider interface {
 	S3SSEKMSEncryptionContext(userID string) string
 }
 
+// SSEBucketClient 装饰 objstore.Bucket，仅在 Upload 路径注入自定义 SSE。
 // SSEBucketClient is a wrapper around a objstore.BucketReader that configures the object
 // storage server-side encryption (SSE) for a given user.
 type SSEBucketClient struct {
@@ -32,6 +36,7 @@ type SSEBucketClient struct {
 	cfgProvider SSEConfigProvider
 }
 
+// NewSSEBucketClient 绑定 userID 与可选 cfgProvider；nil 时 Upload 不修改 SSE。
 // NewSSEBucketClient makes a new SSEBucketClient. The cfgProvider can be nil.
 func NewSSEBucketClient(userID string, bucket objstore.Bucket, cfgProvider SSEConfigProvider) *SSEBucketClient {
 	return &SSEBucketClient{
@@ -46,6 +51,7 @@ func (b *SSEBucketClient) Close() error {
 	return b.bucket.Close()
 }
 
+// Upload 若 cfgProvider 返回 SSE 配置则经 ContextWithSSEConfig 注入，非 S3 后端忽略。
 // Upload the contents of the reader as an object into the bucket.
 func (b *SSEBucketClient) Upload(ctx context.Context, name string, r io.Reader) error {
 	if sse, err := b.getCustomS3SSEConfig(); err != nil {
@@ -73,6 +79,7 @@ func (b *SSEBucketClient) Name() string {
 	return b.bucket.Name()
 }
 
+// getCustomS3SSEConfig 从 provider 组装 s3.SSEConfig 并调用 BuildMinioConfig 产出 encrypt.ServerSide。
 func (b *SSEBucketClient) getCustomS3SSEConfig() (encrypt.ServerSide, error) {
 	if b.cfgProvider == nil {
 		return nil, nil
@@ -169,3 +176,4 @@ func (b *SSEBucketClient) WithExpectedErrs(fn objstore.IsOpFailureExpectedFunc) 
 
 	return b
 }
+// WithExpectedErrs 递归包装 InstrumentedBucket 时保留 userID 与 cfgProvider 引用。

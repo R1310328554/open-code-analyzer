@@ -1,5 +1,7 @@
 package s3
 
+// s3 包定义 AWS S3 及兼容后端完整配置：凭证、端点、SSE 加密、HTTP 传输、存储类与 bucket 查找风格等，并提供 Validate 与 CLI 注册。
+
 import (
 	"encoding/json"
 	"flag"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// SSEKMS 与 SSES3 为服务端加密类型常量，对应 AWS KMS 与 AES-256 托管密钥。
 const (
 	// SSEKMS config type constant to configure S3 server side encryption using KMS
 	// https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html
@@ -27,12 +30,14 @@ const (
 	SSES3 = "SSE-S3"
 )
 
+// supportedSSETypes 等切片约束 CLI help 与 Validate 允许的枚举值。
 var (
 	supportedSSETypes          = []string{SSEKMS, SSES3}
 	supportedStorageClasses    = s3_types.ObjectStorageClassStandard.Values()
 	supportedBucketLookupTypes = thanosS3BucketLookupTypesValues()
 )
 
+// supportedBucketLookupTypesToString 将 AWS SDK 枚举转为字符串供错误信息与 help 使用。
 func supportedBucketLookupTypesToString(in []s3_types.ObjectStorageClass) []string {
 	var out []string
 	for _, o := range in {
@@ -49,6 +54,7 @@ var (
 	errInvalidSTSEndpoint      = errors.New("sts-endpoint must be a valid url")
 )
 
+// thanosS3BucketLookupTypes 映射 auto/virtual-host/path 三种桶 URL 解析风格。
 var thanosS3BucketLookupTypes = map[string]s3.BucketLookupType{
 	s3.AutoLookup.String():        s3.AutoLookup,
 	s3.VirtualHostLookup.String(): s3.VirtualHostLookup,
@@ -64,6 +70,7 @@ func thanosS3BucketLookupTypesValues() (list []string) {
 	return list
 }
 
+// Config 聚合 S3 连接、SSE、HTTP 子配置及实验性选项如 part_size、send_content_md5。
 // Config holds the config options for an S3 backend
 type Config struct {
 	Endpoint             string              `yaml:"endpoint"`
@@ -88,11 +95,13 @@ type Config struct {
 	TraceConfig TraceConfig `yaml:"trace"`
 }
 
+// RegisterFlags 注册无前缀 s3.* 标志并委托 SSE/HTTP/Trace 子配置。
 // RegisterFlags registers the flags for s3 storage with the provided prefix
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix("", f)
 }
 
+// RegisterFlagsWithPrefix 绑定 endpoint、region、credentials 及 bucket-lookup-type 等参数。
 // RegisterFlagsWithPrefix registers the flags for s3 storage with the provided prefix
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.StringVar(&cfg.AccessKeyID, prefix+"s3.access-key-id", "", "S3 access key ID")
@@ -116,6 +125,7 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	cfg.TraceConfig.RegisterFlagsWithPrefix(prefix+"s3.trace.", f)
 }
 
+// Validate 检查 endpoint 不含 bucket 前缀、STS URL 合法、存储类与 SSE 配置有效。
 // Validate config and returns error on failure
 func (cfg *Config) Validate() error {
 	if cfg.Endpoint != "" {
@@ -134,6 +144,7 @@ func (cfg *Config) Validate() error {
 	return cfg.SSE.Validate()
 }
 
+// SSEConfig 描述 SSE-KMS 或 SSE-S3 类型及 KMS 密钥与加密上下文 JSON。
 // SSEConfig configures S3 server side encryption
 // struct that is going to receive user input (through config file or CLI)
 type SSEConfig struct {
@@ -146,6 +157,7 @@ func (cfg *SSEConfig) RegisterFlags(f *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix("", f)
 }
 
+// SSEConfig.RegisterFlagsWithPrefix 注册 sse.type、kms-key-id 与 kms-encryption-context。
 // RegisterFlagsWithPrefix adds the flags required to config this to the given FlagSet
 func (cfg *SSEConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.StringVar(&cfg.Type, prefix+"type", "", fmt.Sprintf("Enable AWS Server Side Encryption. Supported values: %s.", strings.Join(supportedSSETypes, ", ")))
@@ -165,6 +177,7 @@ func (cfg *SSEConfig) Validate() error {
 	return nil
 }
 
+// BuildThanosConfig 产出 Thanos objstore 使用的 s3.SSEConfig 结构。
 // BuildThanosConfig builds the SSE config expected by the Thanos client.
 func (cfg *SSEConfig) BuildThanosConfig() (s3.SSEConfig, error) {
 	switch cfg.Type {
@@ -190,6 +203,7 @@ func (cfg *SSEConfig) BuildThanosConfig() (s3.SSEConfig, error) {
 	}
 }
 
+// BuildMinioConfig 产出 Minio encrypt.ServerSide，供 SSEBucketClient 按租户注入上传加密。
 // BuildMinioConfig builds the SSE config expected by the Minio client.
 func (cfg *SSEConfig) BuildMinioConfig() (encrypt.ServerSide, error) {
 	switch cfg.Type {
@@ -213,6 +227,7 @@ func (cfg *SSEConfig) BuildMinioConfig() (encrypt.ServerSide, error) {
 	}
 }
 
+// parseKMSEncryptionContext 解析 KMS 加密上下文字符串为 map，空串返回 nil。
 func parseKMSEncryptionContext(data string) (map[string]string, error) {
 	if data == "" {
 		return nil, nil
@@ -223,6 +238,7 @@ func parseKMSEncryptionContext(data string) (map[string]string, error) {
 	return decoded, err
 }
 
+// TraceConfig 控制是否以 debug 级别记录底层 S3 HTTP 请求细节。
 type TraceConfig struct {
 	Enabled bool `yaml:"enabled" category:"advanced"`
 }
@@ -231,6 +247,7 @@ func (cfg *TraceConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) 
 	f.BoolVar(&cfg.Enabled, prefix+"enabled", false, "When enabled, low-level S3 HTTP operation information is logged at the debug level.")
 }
 
+// bucketLookupTypeValue 实现 flag.Value，供 bucket-lookup-type CLI 解析与 String 输出。
 // bucketLookupTypeValue is an adapter between s3.BucketLookupType and flag.Value.
 type bucketLookupTypeValue s3.BucketLookupType
 
@@ -254,3 +271,4 @@ func (v *bucketLookupTypeValue) Set(s string) error {
 	*v = bucketLookupTypeValue(t)
 	return nil
 }
+// errInvalidEndpointPrefix 防止 endpoint 以 bucket 名开头导致虚拟主机风格 URL 错误。
