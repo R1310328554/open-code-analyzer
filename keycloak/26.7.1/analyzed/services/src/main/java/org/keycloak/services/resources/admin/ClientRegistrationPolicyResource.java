@@ -43,18 +43,26 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 客户端注册策略 REST 资源。
+ * <p>列出可用的 {@link ClientRegistrationPolicy} SPI 提供者及其配置属性。</p>
+ *
  * @resource Client Registration Policy
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientRegistrationPolicyResource {
 
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 构造客户端注册策略资源。 */
     public ClientRegistrationPolicyResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -65,9 +73,9 @@ public class ClientRegistrationPolicyResource {
 
 
     /**
-     * Base path for retrieve providers with the configProperties properly filled
+     * 获取所有客户端注册策略提供者及其配置属性描述。
      *
-     * @return
+     * @return {@link ComponentTypeRepresentation} 流
      */
     @Path("providers")
     @GET

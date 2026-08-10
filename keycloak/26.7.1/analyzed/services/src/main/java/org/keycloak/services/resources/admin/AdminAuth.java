@@ -24,15 +24,23 @@ import org.keycloak.models.UserModel;
 import org.keycloak.representations.AccessToken;
 
 /**
+ * 管理 REST API 认证上下文。
+ * <p>封装 Bearer 令牌解析后的领域、用户、客户端及角色检查逻辑。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AdminAuth {
 
+    /** 当前领域 */
     private final RealmModel realm;
+    /** Bearer 访问令牌 */
     private final AccessToken token;
+    /** 已认证管理员用户 */
     private final UserModel user;
+    /** 发起请求的客户端（admin-cli 等） */
     private final ClientModel client;
 
+    /** 构造管理 API 认证上下文。 */
     public AdminAuth(RealmModel realm, AccessToken token, UserModel user, ClientModel client) {
         this.token = token;
         this.realm = realm;
@@ -41,23 +49,28 @@ public class AdminAuth {
         this.client = client;
     }
 
+    /** @return 当前领域 */
     public RealmModel getRealm() {
         return realm;
     }
 
+    /** @return 已认证用户 */
     public UserModel getUser() {
         return user;
     }
 
+    /** @return 请求客户端 */
     public ClientModel getClient() {
         return client;
     }
 
+    /** @return Bearer 访问令牌 */
     public AccessToken getToken() {
         return token;
     }
 
 
+    /** 检查用户是否具备指定领域角色（含 client scope 校验）。 */
     public boolean hasRealmRole(String role) {
         if (client instanceof ClientModel) {
             RoleModel roleModel = realm.getRole(role);
@@ -69,6 +82,7 @@ public class AdminAuth {
         }
     }
 
+    /** 检查用户是否具备任一指定领域角色。 */
     public boolean hasOneOfRealmRole(String... roles) {
         for (String r : roles) {
             if (hasRealmRole(r)) {
@@ -78,6 +92,7 @@ public class AdminAuth {
         return false;
     }
 
+    /** 检查用户是否具备指定客户端应用角色。 */
     public boolean hasAppRole(ClientModel app, String role) {
         if (client instanceof ClientModel) {
             RoleModel roleModel = app.getRole(role);
@@ -89,6 +104,7 @@ public class AdminAuth {
         }
     }
 
+    /** 检查用户是否具备指定客户端的任一应用角色。 */
     public boolean hasOneOfAppRole(ClientModel app, String... roles) {
         for (String r : roles) {
             if (hasAppRole(app, r)) {
@@ -98,6 +114,7 @@ public class AdminAuth {
         return false;
     }
 
+    /** 管理 API 资源类型枚举，用于权限评估。 */
     public enum Resource {
         CLIENT, USER, REALM, EVENTS, IDENTITY_PROVIDER, IMPERSONATION, AUTHORIZATION
     }

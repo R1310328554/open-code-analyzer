@@ -97,19 +97,28 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 认证管理 REST 资源。
+ * <p>管理认证流、执行步骤、认证器/表单/客户端认证器提供者、必需操作（Required Actions）及其配置。</p>
+ *
  * @resource Authentication Management
  * @author Bill Burke
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class AuthenticationManagementResource {
 
+    /** 当前领域 */
     private final RealmModel realm;
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(AuthenticationManagementResource.class);
 
+    /** 构造认证管理资源并绑定 AUTH_FLOW 事件类型。 */
     public AuthenticationManagementResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -118,10 +127,8 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get form providers
-     *
-     * Returns a stream of form providers.
-     * @return
+     * 获取表单认证器（Form Authenticator）提供者列表。
+     * @return 提供者元数据流
      */
     @Path("/form-providers")
     @GET
@@ -136,10 +143,8 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get authenticator providers
-     *
-     * Returns a stream of authenticator providers.
-     * @return
+     * 获取认证器（Authenticator）提供者列表。
+     * @return 提供者元数据流
      */
     @Path("/authenticator-providers")
     @GET
@@ -154,10 +159,8 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get client authenticator providers
-     *
-     * Returns a stream of client authenticator providers.
-     * @return
+     * 获取客户端认证器提供者列表（含 supportsSecret 标志）。
+     * @return 提供者元数据流
      */
     @Path("/client-authenticator-providers")
     @GET
@@ -177,6 +180,7 @@ public class AuthenticationManagementResource {
         });
     }
 
+    /** 填充提供者 ID、描述与显示名称。 */
     private void buildProviderMetadataHelper(Map<String, Object> data, ProviderFactory factory) {
         data.put("id", factory.getId());
         ConfigurableAuthenticatorFactory configured = (ConfigurableAuthenticatorFactory) factory;
@@ -184,6 +188,7 @@ public class AuthenticationManagementResource {
         data.put("displayName", configured.getDisplayType());
     }
 
+    /** 将 ProviderFactory 流转换为 Admin UI 元数据 Map 流。 */
     public Stream<Map<String, Object>> buildProviderMetadata(Stream<ProviderFactory> factories) {
         return factories.map(factory -> {
             Map<String, Object> data = new HashMap<>();
@@ -193,10 +198,8 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get form action providers
-     *
-     * Returns a stream of form action providers.
-     * @return
+     * 获取表单动作（Form Action）提供者列表。
+     * @return 提供者元数据流
      */
     @Path("/form-action-providers")
     @GET
@@ -213,10 +216,8 @@ public class AuthenticationManagementResource {
 
 
     /**
-     * Get authentication flows
-     *
-     * Returns a stream of authentication flows.
-     * @return
+     * 获取顶级认证流列表（排除 SAML ECP 内置流）。
+     * @return 认证流表示流
      */
     @Path("/flows")
     @GET
@@ -233,10 +234,10 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Create a new authentication flow
+     * 创建新认证流。
      *
-     * @param flow Authentication flow representation
-     * @return
+     * @param flow 认证流表示
+     * @return 201 Created，Location 指向新流
      */
     @Path("/flows")
     @POST
@@ -259,7 +260,7 @@ public class AuthenticationManagementResource {
             throw ErrorResponse.exists("Flow " + flow.getAlias() + " already exists");
         }
 
-        //adding an empty string to avoid NPE
+        // 空描述时用空字符串避免 NPE
         if(Objects.isNull(flow.getDescription())) {
             flow.setDescription("");
         }
@@ -274,10 +275,10 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get authentication flow for id
+     * 按 ID 获取认证流。
      *
-     * @param id Flow id
-     * @return
+     * @param id 流 ID
+     * @return 认证流表示
      */
     @Path("/flows/{id}")
     @GET
@@ -296,11 +297,10 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Update an authentication flow
+     * 更新认证流别名与描述。
      *
-     * @param id The flow id
-     * @param flow Authentication flow representation
-     * @return
+     * @param id 流 ID
+     * @param flow 认证流表示
      */
     @Path("/flows/{id}")
     @PUT
@@ -324,42 +324,42 @@ public class AuthenticationManagementResource {
 
         ReservedCharValidator.validate(flow.getAlias());
 
-        //check if updating a correct flow
+        // 校验目标流存在
         AuthenticationFlowModel checkFlow = realm.getAuthenticationFlowById(id);
         if (checkFlow == null) {
             session.getTransactionManager().setRollbackOnly();
             throw new NotFoundException("Illegal execution");
         }
 
-        //if a different flow with the same name does already exist, throw an exception
+        // 别名冲突时抛出 409
         if (realm.getFlowByAlias(flow.getAlias()) != null && !checkFlow.getAlias().equals(flow.getAlias())) {
             throw ErrorResponse.exists("Flow alias name already exists");
         }
 
-        //if the name changed
+        // 别名变更时更新模型
         if (checkFlow.getAlias() != null && !checkFlow.getAlias().equals(flow.getAlias())) {
             checkFlow.setAlias(flow.getAlias());
         } else if (checkFlow.getAlias() == null && flow.getAlias() != null) {
             checkFlow.setAlias(flow.getAlias());
 	}
 
-        //check if the description changed
+        // 描述变更时更新模型
         if (checkFlow.getDescription() != null && !checkFlow.getDescription().equals(flow.getDescription())) {
             checkFlow.setDescription(flow.getDescription());
         } else if (checkFlow.getDescription() == null && flow.getDescription() != null) {
             checkFlow.setDescription(flow.getDescription());
 	}
 
-        //update the flow
+        // 持久化认证流更新
         flow.setId(existingFlow.getId());
         realm.updateAuthenticationFlow(RepresentationToModel.toModel(flow));
         adminEvent.operation(OperationType.UPDATE).resourcePath(session.getContext().getUri()).representation(flow).success();
     }
 
     /**
-     * Delete an authentication flow
+     * 删除认证流（含子流与执行步骤）。
      *
-     * @param id Flow id
+     * @param id 流 ID
      */
     @Path("/flows/{id}")
     @DELETE
@@ -376,25 +376,23 @@ public class AuthenticationManagementResource {
         }
 
         KeycloakModelUtils.deepDeleteAuthenticationFlow(session, realm, flow,
-                () -> {}, // allow deleting even with missing references
+                () -> {}, // 允许删除即使存在缺失引用
                 () -> {
                     throw new BadRequestException("Can't delete built in flow");
                 },
                 flow.isBuiltIn()
         );
 
-        // Use just one event for top-level flow. Using separate events won't work properly for flows of depth 2 or bigger
+        // 顶层流仅记录一条删除事件（深度 ≥2 时分开记录会有问题）
         adminEvent.operation(OperationType.DELETE).resourcePath(session.getContext().getUri()).success();
     }
 
     /**
-     * Copy existing authentication flow under a new name
+     * 复制现有认证流并重命名。
      *
-     * The new name is given as 'newName' attribute of the passed JSON object
-     *
-     * @param flowAlias Name of the existing authentication flow
-     * @param data JSON containing 'newName' attribute
-     * @return
+     * @param flowAlias 源流别名
+     * @param data JSON，须含 {@code newName} 属性
+     * @return 201 Created，Location 指向新流
      */
     @Path("/flows/{flowAlias}/copy")
     @POST
@@ -429,6 +427,7 @@ public class AuthenticationManagementResource {
         return Response.created(session.getContext().getUri().getAbsolutePathBuilder().path(copy.getId()).build()).build();
     }
 
+    /** 深拷贝认证流及其全部执行步骤与配置。 */
     public static AuthenticationFlowModel copyFlow(KeycloakSession session, RealmModel realm, AuthenticationFlowModel flow, String newName) {
         AuthenticationFlowModel copy = new AuthenticationFlowModel();
         copy.setAlias(newName);
@@ -441,6 +440,7 @@ public class AuthenticationManagementResource {
         return copy;
     }
 
+    /** 递归复制源流下的执行步骤、子流与认证器配置。 */
     public static void copy(KeycloakSession session, RealmModel realm, String newName, AuthenticationFlowModel from, AuthenticationFlowModel to) {
         realm.getAuthenticationExecutionsStream(from.getId()).forEachOrdered(execution -> {
             if (execution.isAuthenticatorFlow()) {
@@ -466,7 +466,7 @@ public class AuthenticationManagementResource {
                 }
 
                 if (configManager.getDeployedAuthenticatorConfig(execution.getAuthenticatorConfig()) != null) {
-                    // Shared configuration of deployed provider
+                    // 已部署提供者的共享配置直接复用 ID
                     execution.setAuthenticatorConfig(config.getId());
                 } else {
                     config.setId(null);
@@ -492,15 +492,12 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Add new flow with new execution to existing flow.
+     * 向现有流添加子流及绑定执行步骤。
+     * <p>同时创建子认证流实体与父流下的 execution 实体；Location 头指向新子流（非 execution）。</p>
      *
-     * This method creates two entities under the covers. Firstly the new authentication flow entity, which will be a subflow of existing parent flow, which was referenced by the path of this endpoint.
-     * Secondly the authentication execution entity, which will be added under the parent flow. This execution entity provides the binding between the parent flow and the new subflow. The new execution
-     * contains the "parentFlow" with the ID of the parent flow and the "flowId" with the ID of the newly created flow
-     *
-     * @param flowAlias Alias of parent authentication flow
-     * @param data New authentication flow / execution JSON data containing 'alias', 'type', 'provider', 'priority', and 'description' attributes
-     * @return The response with the "Location" header pointing to the newly created flow (not the newly created execution!)
+     * @param flowAlias 父流别名
+     * @param data JSON，含 alias、type、provider、priority、description
+     * @return 201 Created，Location 指向新子流
      */
     @Path("/flows/{flowAlias}/executions/flow")
     @POST
@@ -527,7 +524,7 @@ public class AuthenticationManagementResource {
         String provider = (String) data.get("provider");
         int priority = data.containsKey("priority") ? (Integer) data.get("priority") : getNextPriority(parentFlow);
 
-        //Make sure that the description to avoid NullPointerException
+        // 描述为 null 时用空字符串避免 NPE
         String description = Objects.isNull(data.get("description")) ? "" : (String) data.get("description");
 
 
@@ -558,6 +555,7 @@ public class AuthenticationManagementResource {
         return Response.created(session.getContext().getUri().getBaseUriBuilder().path(session.getContext().getUri().getPath().replace(addExecutionPathSegment, "")).path("flows").path(newFlow.getId()).build()).build();
     }
 
+    /** 计算父流下新 execution 的下一个 priority 值。 */
     private int getNextPriority(AuthenticationFlowModel parentFlow) {
         List<AuthenticationExecutionModel> executions = realm.getAuthenticationExecutionsStream(parentFlow.getId())
                 .collect(Collectors.toList());
@@ -565,11 +563,11 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Add new authentication execution to a flow
+     * 向认证流添加新的认证器 execution。
      *
-     * @param flowAlias Alias of parent flow
-     * @param data New execution JSON data containing 'provider' and 'priority' (optional) attribute
-     * @return
+     * @param flowAlias 父流别名
+     * @param data JSON，含 provider 与可选 priority
+     * @return 201 Created，Location 指向新 execution
      */
     @Path("/flows/{flowAlias}/executions/execution")
     @POST
@@ -591,7 +589,7 @@ public class AuthenticationManagementResource {
         String provider = (String) data.get("provider");
         int priority = data.containsKey("priority") ? (Integer) data.get("priority") : getNextPriority(parentFlow);
 
-        // make sure provider is one of the registered providers
+        // 校验 provider 为已注册的认证器工厂
         ProviderFactory f = getProviderFactory( parentFlow, provider);
 
         AuthenticationExecutionModel execution = new AuthenticationExecutionModel();
@@ -618,6 +616,7 @@ public class AuthenticationManagementResource {
         return Response.created(session.getContext().getUri().getBaseUriBuilder().path(session.getContext().getUri().getPath().replace(addExecutionPathSegment, "")).path("executions").path(execution.getId()).build()).build();
     }
 
+    /** 按父流类型解析 Authenticator/FormAction/ClientAuthenticator 工厂。 */
     private ProviderFactory getProviderFactory(AuthenticationFlowModel parentFlow, String provider) {
         ProviderFactory f = null;
         if (parentFlow.getProviderId().equals(AuthenticationFlow.CLIENT_FLOW)) {
@@ -634,15 +633,16 @@ public class AuthenticationManagementResource {
     }
 
 
+    /** 若已部署提供者带有默认配置则自动绑定 execution 配置 ID。 */
     private void checkConfigForDeployedProvider(ProviderFactory f, AuthenticationExecutionModel execution) {
         if (f instanceof ConfiguredProvider) {
             ConfiguredProvider internalProviderFactory = (ConfiguredProvider) f;
             AuthenticatorConfigModel config = internalProviderFactory.getConfig();
 
             if (config != null) {
-                // use a default configuration if the factory defines one
-                // Assumption is that this is registered in DeployedConfigurationsProvider
-                // useful for internal providers that already provide a built-in configuration
+                // 工厂定义默认配置时自动关联
+                // 假定配置已在 DeployedConfigurationsProvider 中注册
+                // 适用于内置已部署配置的内部提供者
                 logger.tracef("Updating execution of provider '%s' with shared configuration.", execution.getAuthenticator());
                 execution.setAuthenticatorConfig(config.getId());
                 realm.updateAuthenticatorExecution(execution);
@@ -651,10 +651,10 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get authentication executions for a flow
+     * 获取认证流下全部 execution（含嵌套子流，递归展开）。
      *
-     * @param flowAlias Flow alias
-     * @return The list of executions
+     * @param flowAlias 流别名
+     * @return execution 信息列表
      */
     @Path("/flows/{flowAlias}/executions")
     @GET
@@ -678,6 +678,7 @@ public class AuthenticationManagementResource {
         return result;
     }
 
+    /** 解析 execution 关联的认证器配置 ID（缺失时记录警告）。 */
     private String getAuthenticationConfig(String flowAlias, AuthenticationExecutionModel model) {
         if (model.getAuthenticatorConfig() == null) {
             return null;
@@ -691,6 +692,7 @@ public class AuthenticationManagementResource {
         return config.getId();
     }
 
+    /** 递归遍历流及其子流，构建带层级 index 的 execution 信息列表。 */
     public void recurseExecutions(AuthenticationFlowModel flow, List<AuthenticationExecutionInfoRepresentation> result, int level) {
         AtomicInteger index = new AtomicInteger(0);
         realm.getAuthenticationExecutionsStream(flow.getId()).forEachOrdered(execution -> {
@@ -754,7 +756,7 @@ public class AuthenticationManagementResource {
 
                 providerId = execution.getAuthenticator();
 
-                // encode the provider id in case the provider is a script deployed to the server to make sure it can be used as path parameters without break the URL syntax
+                // script- 前缀提供者 ID 需 Base32 编码以便作为 URL 路径参数
                 if (providerId.startsWith("script-")) {
                     providerId = Base32.encode(providerId.getBytes());
                 }
@@ -767,10 +769,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Update authentication executions of a Flow
-     * @param flowAlias Flow alias
-     * @param rep AuthenticationExecutionInfoRepresentation
-     * @return
+     * 更新流的 execution 优先级、requirement 或子流别名/描述。
+     * @param flowAlias 流别名
+     * @param rep execution 信息表示
      */
     @Path("/flows/{flowAlias}/executions")
     @PUT
@@ -813,12 +814,12 @@ public class AuthenticationManagementResource {
             return;
         }
 
-        //executions can't have name and description updated
+        // 非子流 execution 不能更新名称与描述
         if (rep.getAuthenticationFlow() == null) {
             return;
         }
 
-        //check if updating a correct flow
+        // 校验子流存在
         AuthenticationFlowModel checkFlow = realm.getAuthenticationFlowById(rep.getFlowId());
         if (checkFlow == null) {
             session.getTransactionManager().setRollbackOnly();
@@ -835,25 +836,25 @@ public class AuthenticationManagementResource {
             checkFlow.setAlias(rep.getDisplayName());
         }
 
-        // check if description is null and set an empty String to avoid NPE
+        // 描述为 null 时设为空字符串
         if (Objects.isNull(checkFlow.getDescription())) {
             checkFlow.setDescription("");
         }
 
-        // check if the description changed
+        // 描述变更时更新子流
         if (!checkFlow.getDescription().equals(rep.getDescription())) {
             checkFlow.setDescription(rep.getDescription());
         }
 
-        //update the flow
+        // 持久化子流更新
         realm.updateAuthenticationFlow(checkFlow);
         adminEvent.operation(OperationType.UPDATE).resource(ResourceType.AUTH_EXECUTION).resourcePath(session.getContext().getUri()).representation(rep).success();
     }
 
     /**
-     * Get Single Execution
-     * @param executionId The execution id
-     * @return
+     * 按 ID 获取单个 authentication execution。
+     * @param executionId execution ID
+     * @return execution 表示
      */
     @Path("/executions/{executionId}")
     @GET
@@ -875,10 +876,10 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Add new authentication execution
+     * 添加新的 authentication execution（通用 POST 入口）。
      *
-     * @param execution JSON model describing authentication execution
-     * @return
+     * @param execution execution JSON 模型
+     * @return 201 Created
      */
     @Path("/executions")
     @POST
@@ -908,6 +909,7 @@ public class AuthenticationManagementResource {
         return Response.created(session.getContext().getUri().getAbsolutePathBuilder().path(model.getId()).build()).build();
     }
 
+    /** 解析 execution 的父认证流，缺失时抛出 BadRequestException。 */
     public AuthenticationFlowModel getParentFlow(AuthenticationExecutionModel model) {
         if (model.getParentFlow() == null) {
             throw new BadRequestException("parent flow not set on new execution");
@@ -922,9 +924,9 @@ public class AuthenticationManagementResource {
 
 
     /**
-     * Raise execution's priority
+     * 提高 execution 优先级（与前一 execution 交换）。
      *
-     * @param execution Execution id
+     * @param execution execution ID
      */
     @Path("/executions/{executionId}/raise-priority")
     @POST
@@ -965,9 +967,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Lower execution's priority
+     * 降低 execution 优先级（与后一 execution 交换）。
      *
-     * @param execution Execution id
+     * @param execution execution ID
      */
     @Path("/executions/{executionId}/lower-priority")
     @POST
@@ -1008,9 +1010,9 @@ public class AuthenticationManagementResource {
 
 
     /**
-     * Delete execution
+     * 删除 authentication execution。
      *
-     * @param execution Execution id
+     * @param execution execution ID
      */
     @Path("/executions/{executionId}")
     @DELETE
@@ -1045,11 +1047,11 @@ public class AuthenticationManagementResource {
 
 
     /**
-     * Update execution with new configuration
+     * 为 execution 创建或替换认证器配置。
      *
-     * @param execution Execution id
-     * @param json JSON with new configuration
-     * @return
+     * @param execution execution ID
+     * @param json 新配置 JSON
+     * @return 201 Created，Location 指向配置
      */
     @Path("/executions/{executionId}/config")
     @POST
@@ -1076,7 +1078,7 @@ public class AuthenticationManagementResource {
             throw new NotFoundException("Illegal execution");
         }
 
-        // retrieve the previous configuration if assigned
+        // 读取 execution 上已有的配置
         AuthenticatorConfigModel prevConfig = null;
         if (model.getAuthenticatorConfig() != null) {
             prevConfig = realm.getAuthenticatorConfigById(model.getAuthenticatorConfig());
@@ -1087,7 +1089,7 @@ public class AuthenticationManagementResource {
             throw ErrorResponse.exists("Authentication execution configuration " + json.getAlias() + " already exists");
         }
 
-        // remove the previous config
+        // 移除旧配置后写入新配置
         if (prevConfig != null) {
             realm.removeAuthenticatorConfig(prevConfig);
         }
@@ -1103,12 +1105,12 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get execution's configuration
+     * 获取 execution 关联的认证器配置（已弃用）。
      *
-     * @param execution Execution id
-     * @param id Configuration id
-     * @return
-     * @deprecated Use rather {@link #getAuthenticatorConfig(String)}
+     * @param execution execution ID
+     * @param id 配置 ID
+     * @return 配置表示
+     * @deprecated 请改用 {@link #getAuthenticatorConfig(String)}
      */
     @Path("/executions/{executionId}/config/{id}")
     @GET
@@ -1129,10 +1131,8 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get unregistered required actions
-     *
-     * Returns a stream of unregistered required actions.
-     * @return
+     * 获取尚未在领域中注册的 Required Action 提供者。
+     * @return 未注册提供者信息流
      */
     @Path("unregistered-required-actions")
     @GET
@@ -1158,9 +1158,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Register a new required actions
+     * 注册新的 Required Action 到当前领域。
      *
-     * @param data JSON containing 'providerId', and 'name' attributes.
+     * @param data JSON，含 providerId 与 name
      */
     @Path("register-required-action")
     @POST
@@ -1192,6 +1192,7 @@ public class AuthenticationManagementResource {
         adminEvent.operation(OperationType.CREATE).resource(ResourceType.REQUIRED_ACTION).resourcePath(session.getContext().getUri()).representation(data).success();
     }
 
+    /** 计算新 Required Action 的下一个 priority。 */
     private int getNextRequiredActionPriority() {
         List<RequiredActionProviderModel> actions = realm.getRequiredActionProvidersStream().collect(Collectors.toList());
         return actions.isEmpty() ? 0 : actions.get(actions.size() - 1).getPriority() + 1;
@@ -1199,10 +1200,8 @@ public class AuthenticationManagementResource {
 
 
     /**
-     * Get required actions
-     *
-     * Returns a stream of required actions.
-     * @return
+     * 获取已注册的 Required Action 列表。
+     * @return Required Action 表示流
      */
     @Path("required-actions")
     @GET
@@ -1216,6 +1215,7 @@ public class AuthenticationManagementResource {
         return realm.getRequiredActionProvidersStream().map(AuthenticationManagementResource::toRepresentation);
     }
 
+    /** 将 {@link RequiredActionProviderModel} 转换为 REST 表示。 */
     public static RequiredActionProviderRepresentation toRepresentation(RequiredActionProviderModel model) {
         RequiredActionProviderRepresentation rep = new RequiredActionProviderRepresentation();
         rep.setAlias(model.getAlias());
@@ -1229,9 +1229,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get required action for alias
-     * @param alias Alias of required action
-     * @return The required action representation
+     * 按别名获取 Required Action。
+     * @param alias Required Action 别名
+     * @return Required Action 表示
      */
     @Path("required-actions/{alias}")
     @GET
@@ -1251,10 +1251,10 @@ public class AuthenticationManagementResource {
 
 
     /**
-     * Update required action
+     * 更新 Required Action 配置（名称、默认、优先级、启用状态等）。
      *
-     * @param alias Alias of required action
-     * @param rep JSON describing new state of required action
+     * @param alias Required Action 别名
+     * @param rep 新状态 JSON
      */
     @Path("required-actions/{alias}")
     @PUT
@@ -1284,8 +1284,8 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Delete required action
-     * @param alias Alias of required action
+     * 从领域删除 Required Action。
+     * @param alias Required Action 别名
      */
     @Path("required-actions/{alias}")
     @DELETE
@@ -1305,9 +1305,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Raise required action's priority
+     * 提高 Required Action 优先级。
      *
-     * @param alias Alias of required action
+     * @param alias Required Action 别名
      */
     @Path("required-actions/{alias}/raise-priority")
     @POST
@@ -1341,9 +1341,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Lower required action's priority
+     * 降低 Required Action 优先级。
      *
-     * @param alias Alias of required action
+     * @param alias Required Action 别名
      */
     @Path("/required-actions/{alias}/lower-priority")
     @POST
@@ -1378,9 +1378,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get required actions provider's configuration description
-     * @param alias The alias of the required action
-     * @return The required action configuration representation
+     * 获取 Required Action 提供者的配置项描述（元数据）。
+     * @param alias Required Action 别名
+     * @return 配置描述表示
      */
     @Path("required-actions/{alias}/config-description")
     @GET
@@ -1407,9 +1407,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get the configuration of the RequiredAction provider in the current Realm.
-     * @param alias Provider id
-     * @return The required action configuration representation
+     * 获取当前领域中 Required Action 的实际配置值。
+     * @param alias Required Action 别名
+     * @return 配置表示
      */
     @Path("required-actions/{alias}/config")
     @GET
@@ -1434,8 +1434,8 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Remove the configuration from the RequiredAction provider in the current Realm.
-     * @param alias Provider id
+     * 删除 Required Action 在领域中的配置。
+     * @param alias Required Action 别名
      */
     @Path("required-actions/{alias}/config")
     @DELETE
@@ -1464,9 +1464,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Update the configuration of the RequiredAction provider in the current Realm.
-     * @param alias provider id
-     * @param rep JSON describing new state of RequiredAction configuration
+     * 更新 Required Action 配置（含 User Profile 校验）。
+     * @param alias Required Action 别名
+     * @param rep 新配置 JSON
      */
     @Path("required-actions/{alias}/config")
     @PUT
@@ -1503,9 +1503,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get authenticator provider's configuration description
-     * @param providerId The authenticator provider id
-     * @return The authenticator configuration representation
+     * 获取认证器提供者的配置项描述。
+     * @param providerId 认证器 provider ID（script 提供者可为 Base32 编码）
+     * @return 配置描述表示
      */
     @Path("config-description/{providerId}")
     @GET
@@ -1540,13 +1540,14 @@ public class AuthenticationManagementResource {
         return rep;
     }
 
+    /** 将 {@link ProviderConfigProperty} 转换为 REST 表示。 */
     private ConfigPropertyRepresentation getConfigPropertyRep(ProviderConfigProperty prop) {
         return ModelToRepresentation.toRepresentation(prop);
     }
 
     /**
-     * Get configuration descriptions for all clients
-     * @return
+     * 获取所有客户端认证器的 per-client 配置项描述。
+     * @return providerId → 配置属性列表
      */
     @Path("per-client-config-description")
     @GET
@@ -1569,10 +1570,10 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Create new authenticator configuration
-     * @param rep JSON describing new authenticator configuration
-     * @return
-     * @deprecated Use {@link #newExecutionConfig(String, AuthenticatorConfigRepresentation)} instead
+     * 创建独立认证器配置（已弃用）。
+     * @param rep 配置 JSON
+     * @return 201 Created
+     * @deprecated 请改用 {@link #newExecutionConfig(String, AuthenticatorConfigRepresentation)}
      */
     @Path("config")
     @POST
@@ -1604,9 +1605,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Get authenticator configuration
-     * @param id Configuration id
-     * @return The authenticator configuration representation
+     * 按 ID 获取认证器配置。
+     * @param id 配置 ID
+     * @return 配置表示
      */
     @Path("config/{id}")
     @GET
@@ -1626,8 +1627,8 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Delete authenticator configuration
-     * @param id Configuration id
+     * 删除认证器配置并解除所有 execution 引用。
+     * @param id 配置 ID
      */
     @Path("config/{id}")
     @DELETE
@@ -1656,9 +1657,9 @@ public class AuthenticationManagementResource {
     }
 
     /**
-     * Update authenticator configuration
-     * @param id Configuration id
-     * @param rep JSON describing new state of authenticator configuration
+     * 更新认证器配置别名与键值（已部署只读配置不可修改）。
+     * @param id 配置 ID
+     * @param rep 新配置 JSON
      */
     @Path("config/{id}")
     @PUT

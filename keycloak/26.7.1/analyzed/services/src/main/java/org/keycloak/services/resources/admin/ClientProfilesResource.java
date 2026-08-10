@@ -41,19 +41,30 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
+/**
+ * 客户端配置档案（Client Profiles）管理 REST 资源。
+ * <p>读取与更新领域级客户端 Profile 配置，支持合并全局 Profile。</p>
+ */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientProfilesResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ClientProfilesResource.class);
 
+    /** HTTP 请求 */
     protected final HttpRequest request;
 
+    /** HTTP 响应 */
     protected final HttpResponse response;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
 
+    /** 构造客户端 Profile 资源。 */
     public ClientProfilesResource(KeycloakSession session, AdminPermissionEvaluator auth) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -62,6 +73,11 @@ public class ClientProfilesResource {
         this.response = session.getContext().getHttpResponse();
     }
 
+    /**
+     * 获取领域客户端 Profile。
+     * @param includeGlobalProfiles 是否合并全局 Profile
+     * @return 客户端 Profile 表示
+     */
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
@@ -77,6 +93,7 @@ public class ClientProfilesResource {
         }
     }
 
+    /** 更新领域客户端 Profile 配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Tag(name = KeycloakOpenAPI.Admin.Tags.REALMS_ADMIN)

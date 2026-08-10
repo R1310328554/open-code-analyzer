@@ -59,7 +59,8 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.jboss.logging.Logger;
 
 /**
- * Root resource for admin console and admin REST API
+ * 管理控制台与管理 REST API 根资源（{@code /admin}）。
+ * <p>提供控制台 UI 入口、领域管理 API、服务器信息及 CORS 预检。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -67,30 +68,36 @@ import org.jboss.logging.Logger;
 @Provider
 @Path("/admin")
 public class AdminRoot {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(AdminRoot.class);
 
+    /** OIDC 令牌管理器 */
     protected TokenManager tokenManager;
 
+    /** 注入的 Keycloak 会话 */
     @Context
     protected KeycloakSession session;
 
+    /** 默认构造器，初始化 {@link TokenManager}。 */
     public AdminRoot() {
         this.tokenManager = new TokenManager();
     }
 
+    /** 构建 {@code /admin} 基础 URL（UriInfo 版本）。 */
     public static UriBuilder adminBaseUrl(UriInfo uriInfo) {
         return adminBaseUrl(uriInfo.getBaseUriBuilder());
     }
 
+    /** 构建 {@code /admin} 基础 URL（UriBuilder 版本）。 */
     public static UriBuilder adminBaseUrl(UriBuilder base) {
         return base.path(AdminRoot.class);
     }
 
     /**
-     * Convenience path to master realm admin console
+     * 便捷路径：重定向至 master 领域管理控制台。
      *
      * @exclude
-     * @return
+     * @return 302 重定向或 404
      */
     @GET
     @Operation(hidden = true)
@@ -105,6 +112,7 @@ public class AdminRoot {
         return Response.status(Response.Status.NOT_FOUND).build();
     }
 
+    /** 判断是否安全地将根路径重定向到 master 控制台（防信息泄露）。 */
     boolean shouldRedirect(KeycloakUriInfo adminUriInfo) {
         if (!isAdminConsoleEnabled()) {
             return false;
@@ -114,11 +122,11 @@ public class AdminRoot {
         String adminUrl = adminUriInfo.getBaseUri().toString();
 
         if (adminUrl.equals(frontEndUrl)) {
-            return true; // admin is the same as front-end, we're not leaking information
+            return true; // 管理 URL 与前端 URL 相同，重定向不会泄露信息
         }
         String requestUrl = frontEndUriInfo.getRequestUri().toString();
 
-        // if we're using the admin url or are local, it's also safe to redirect
+        // 使用 admin URL 或本地访问时也允许重定向
         return requestUrl.startsWith(adminUrl) || WelcomeResource.isLocal(session);
     }
 
@@ -140,6 +148,7 @@ public class AdminRoot {
         return masterRealmAdminConsoleRedirect();
     }
 
+    /** 按名称解析领域并写入会话上下文。 */
     protected void resolveRealmAndUpdateSession(String name, KeycloakSession session) {
         RealmManager realmManager = new RealmManager(session);
         RealmModel realm = realmManager.getRealmByName(name);
@@ -150,20 +159,22 @@ public class AdminRoot {
     }
 
 
+    /** 构建管理控制台 URL（UriInfo 版本）。 */
     public static UriBuilder adminConsoleUrl(UriInfo uriInfo) {
         return adminConsoleUrl(uriInfo.getBaseUriBuilder());
     }
 
+    /** 构建管理控制台 URL（UriBuilder 版本）。 */
     public static UriBuilder adminConsoleUrl(UriBuilder base) {
         return adminBaseUrl(base).path(AdminRoot.class, "getAdminConsole");
     }
 
     /**
-     * path to realm admin console ui
+     * 指定领域的管理控制台 UI 子资源。
      *
      * @exclude
-     * @param name Realm name (not id!)
-     * @return
+     * @param name 领域名称（非 ID）
+     * @return {@link AdminConsole} 实例
      */
     @Path("{realm}/console")
     @Operation(hidden = true)
@@ -179,6 +190,7 @@ public class AdminRoot {
     }
 
 
+    /** 解析 Bearer 令牌并返回 {@link AdminAuth}（管理 REST API 入口认证）。 */
     public static AdminAuth authenticateRealmAdminRequest(KeycloakSession session) {
         HttpHeaders headers = session.getContext().getRequestHeaders();
 
@@ -215,19 +227,21 @@ public class AdminRoot {
         return new AdminAuth(realm, authResult.token(), authResult.user(), authResult.client());
     }
 
+    /** 构建 {@code /admin/realms} URL（UriInfo 版本）。 */
     public static UriBuilder realmsUrl(UriInfo uriInfo) {
         return realmsUrl(uriInfo.getBaseUriBuilder());
     }
 
+    /** 构建 {@code /admin/realms} URL（UriBuilder 版本）。 */
     public static UriBuilder realmsUrl(UriBuilder base) {
         return adminBaseUrl(base).path(AdminRoot.class, "getRealmsAdmin");
     }
 
     /**
-     * Base Path to realm admin REST interface
+     * 领域管理 REST API 根路径（{@code /admin/realms}）。
      *
-     * @param headers
-     * @return
+     * @param headers HTTP 头（由框架注入）
+     * @return {@link RealmsAdminResource} 或预检资源
      */
     @Path("realms")
     public RealmsAdminResource getRealmsAdmin() {
@@ -253,6 +267,7 @@ public class AdminRoot {
         return new RealmsAdminResource(session, auth, tokenManager);
     }
 
+    /** 管理 API 全局 CORS 预检端点。 */
     @Path("{any:.*}")
     @OPTIONS
     @Operation(hidden = true)
@@ -265,10 +280,10 @@ public class AdminRoot {
     }
 
     /**
-     * General information about the server
+     * 服务器通用信息（{@code /admin/serverinfo}，需 admin 权限）。
      *
-     * @param headers
-     * @return
+     * @param headers HTTP 头
+     * @return {@link ServerInfoAdminResource}
      */
     @Path("serverinfo")
     public Object getServerInfo() {
@@ -297,14 +312,17 @@ public class AdminRoot {
         return new ServerInfoAdminResource(session, auth);
     }
 
+    /** @return 当前 HTTP 请求 */
     private HttpRequest getHttpRequest() {
         return session.getContext().getHttpRequest();
     }
 
+    /** 加载 ADMIN 类型主题。 */
     public static Theme getTheme(KeycloakSession session, RealmModel realm) throws IOException {
         return session.theme().getTheme(Theme.Type.ADMIN);
     }
 
+    /** 加载管理控制台默认消息 bundle。 */
     public static Properties getMessages(KeycloakSession session, RealmModel realm, String lang) {
         try {
             Theme theme = getTheme(session, realm);
@@ -316,6 +334,7 @@ public class AdminRoot {
         }
     }
 
+    /** 合并多个消息 bundle 属性。 */
     public static Properties getMessages(KeycloakSession session, RealmModel realm, String lang, String... bundles) {
         Properties compound = new Properties();
         for (String bundle : bundles) {
@@ -325,6 +344,7 @@ public class AdminRoot {
         return compound;
     }
 
+    /** 加载指定 bundle 的本地化消息。 */
     private static Properties getMessages(KeycloakSession session, RealmModel realm, String lang, String bundle) {
         try {
             Theme theme = getTheme(session, realm);
@@ -336,10 +356,12 @@ public class AdminRoot {
         }
     }
 
+    /** @return 是否启用 ADMIN_API 特性 */
     private static boolean isAdminApiEnabled() {
         return Profile.isFeatureEnabled(Profile.Feature.ADMIN_API);
     }
 
+    /** @return 是否启用 ADMIN_V2 管理控制台 */
     private static boolean isAdminConsoleEnabled() {
         return Profile.isFeatureEnabled(Profile.Feature.ADMIN_V2);
     }

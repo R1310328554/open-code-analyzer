@@ -62,6 +62,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 客户端属性证书管理 REST 资源。
+ * <p>管理客户端 OIDC/SAML 签名密钥与证书：查询、生成、上传及 Keystore 下载。</p>
+ *
  * @resource Client Attribute Certificate
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -69,13 +72,20 @@ import org.jboss.resteasy.reactive.NoCache;
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientAttributeCertificateResource {
 
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 目标客户端 */
     protected final ClientModel client;
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 管理事件构建器 */
     protected final AdminEventBuilder adminEvent;
+    /** 客户端属性前缀（区分 signing/encryption 等） */
     protected final String attributePrefix;
 
+    /** 构造客户端证书资源。 */
     public ClientAttributeCertificateResource(AdminPermissionEvaluator auth, ClientModel client, KeycloakSession session, String attributePrefix, AdminEventBuilder adminEvent) {
         this.realm = session.getContext().getRealm();
         this.auth = auth;
@@ -86,9 +96,9 @@ public class ClientAttributeCertificateResource {
     }
 
     /**
-     * Get key info
+     * 获取客户端当前密钥/证书信息。
      *
-     * @return
+     * @return 证书表示
      */
     @GET
     @NoCache
@@ -103,9 +113,9 @@ public class ClientAttributeCertificateResource {
     }
 
     /**
-     * Generate a new certificate with new key pair
+     * 生成新密钥对及自签名证书并保存公钥部分。
      *
-     * @return
+     * @return 证书表示
      */
     @POST
     @NoCache
@@ -126,10 +136,10 @@ public class ClientAttributeCertificateResource {
     }
 
     /**
-     * Upload certificate and eventually private key
+     * 上传 JKS/PEM 证书及可选私钥（multipart）。
      *
-     * @return
-     * @throws IOException
+     * @return 证书表示
+     * @throws IOException 读取上传流失败
      */
     @POST
     @Path("upload")
@@ -149,10 +159,10 @@ public class ClientAttributeCertificateResource {
     }
 
     /**
-     * Upload only certificate, not private key
+     * 仅上传公钥证书（不含私钥）。
      *
-     * @return information extracted from uploaded certificate - not necessarily the new state of certificate on the server
-     * @throws IOException
+     * @return 从上传文件提取的信息
+     * @throws IOException 读取上传流失败
      */
     @POST
     @Path("upload-certificate")
@@ -171,6 +181,7 @@ public class ClientAttributeCertificateResource {
         }
     }
 
+    /** 根据上传内容更新客户端证书或 JWKS 属性并记录事件。 */
     private void updateCertFromRequest(CertificateRepresentation info) {
         if (OIDCLoginProtocol.LOGIN_PROTOCOL.equals(client.getProtocol()) && info.getJwks() != null) {
             CertificateInfoHelper.updateClientModelJwksString(client, attributePrefix, info.getJwks());
@@ -181,10 +192,10 @@ public class ClientAttributeCertificateResource {
     }
 
     /**
-     * Get a keystore file for the client, containing private key and public certificate
+     * 下载含私钥与公钥证书的 Keystore 文件。
      *
-     * @param config Keystore configuration as JSON
-     * @return
+     * @param config Keystore 配置 JSON
+     * @return Keystore 字节数组
      */
     @POST
     @NoCache
@@ -217,13 +228,10 @@ public class ClientAttributeCertificateResource {
     }
 
     /**
-     * Generate a new keypair and certificate, and get the private key file
+     * 生成新密钥对，仅将公钥证书存入数据库，私钥通过 Keystore 下载返回。
      *
-     * Generates a keypair and certificate and serves the private key in a specified keystore format.
-     * Only generated public certificate is saved in Keycloak DB - the private key is not.
-     *
-     * @param config Keystore configuration as JSON
-     * @return
+     * @param config Keystore 配置 JSON
+     * @return Keystore 字节数组（含私钥）
      */
     @POST
     @NoCache
@@ -266,6 +274,7 @@ public class ClientAttributeCertificateResource {
         return rtn;
     }
 
+    /** 构建含客户端密钥/证书及可选领域 RSA 证书的 Keystore。 */
     private byte[] getKeystore(KeyStoreConfig config, String privatePem, String certPem) {
         try {
             String format = config.getFormat();
@@ -307,6 +316,7 @@ public class ClientAttributeCertificateResource {
         }
     }
 
+    /** 校验请求的 Keystore 格式是否受当前 Crypto 提供者支持。 */
     private void checkKeystoreFormat(KeyStoreConfig config) throws NotAcceptableException {
         if (config.getFormat() != null) {
             Set<KeystoreFormat> supportedKeystoreFormats = CryptoIntegration.getProvider().getSupportedKeyStoreTypes()

@@ -45,6 +45,9 @@ import org.keycloak.services.managers.Auth;
 import org.keycloak.utils.MediaType;
 
 /**
+ * 账户控制台授权资源 REST 服务。
+ * <p>提供当前用户拥有的资源、共享资源及待处理权限请求的查询与分页。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ResourcesService extends AbstractResourceService {
@@ -54,11 +57,11 @@ public class ResourcesService extends AbstractResourceService {
     }
 
     /**
-     * Returns a list of {@link Resource} where the {@link #user} is the resource owner.
+     * 返回当前 {@link #user} 作为资源所有者的 {@link Resource} 列表。
      *
-     * @param first the first result
-     * @param max   the max result
-     * @return a list of {@link Resource} where the {@link #user} is the resource owner
+     * @param first 分页起始索引
+     * @param max   分页最大条数
+     * @return 用户拥有的资源列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -79,11 +82,11 @@ public class ResourcesService extends AbstractResourceService {
     }
 
     /**
-     * Returns a list of {@link Resource} shared with the {@link #user}
+     * 返回与 {@link #user} 共享的 {@link Resource} 列表。
      *
-     * @param first the first result
-     * @param max the max result
-     * @return a list of {@link Resource} shared with the {@link #user}
+     * @param first 分页起始索引
+     * @param max 分页最大条数
+     * @return 共享给当前用户的资源列表
      */
     @GET
     @Path("shared-with-me")
@@ -96,13 +99,11 @@ public class ResourcesService extends AbstractResourceService {
     }
 
     /**
-     * Returns a list of {@link Resource} where the {@link #user} is the resource owner and the resource is 
-     * shared with other users.
+     * 返回当前用户拥有且已共享给其他用户的 {@link Resource} 列表。
      *
-     * @param first the first result
-     * @param max the max result
-     * @return a list of {@link Resource} where the {@link #user} is the resource owner and the resource is 
-     *      * shared with other users
+     * @param first 分页起始索引
+     * @param max 分页最大条数
+     * @return 用户拥有并已共享的资源列表
      */
     @GET
     @Path("shared-with-others")
@@ -113,8 +114,7 @@ public class ResourcesService extends AbstractResourceService {
                         .stream(), first, max);
     }
 
-    /**
-     */
+    /** 返回当前用户待处理的权限请求列表。 */
     @GET
     @Path("pending-requests")
     @Produces(MediaType.APPLICATION_JSON)
@@ -137,6 +137,7 @@ public class ResourcesService extends AbstractResourceService {
                 (f, m) -> resourceList.stream(), -1, resourceList.size());
     }
 
+    /** 按 ID 获取单个资源的子服务端点（需为资源所有者）。 */
     @Path("{id}")
     public Object getResource(@PathParam("id") String id) {
         org.keycloak.authorization.model.Resource resource = resourceStore.findById(null, id);
@@ -152,6 +153,7 @@ public class ResourcesService extends AbstractResourceService {
         return new ResourceService(resource, provider.getKeycloakSession(), user, auth, request);
     }
 
+    /** 将授权资源列表转换为 {@link ResourcePermission} 集合并附加权限票据信息。 */
     private Collection<ResourcePermission> toPermissions(List<org.keycloak.authorization.model.Resource> resources, boolean withRequesters) {
         Collection<ResourcePermission> permissions = new ArrayList<>();
         PermissionTicketStore ticketStore = provider.getStoreFactory().getPermissionTicketStore();
@@ -196,6 +198,7 @@ public class ResourcesService extends AbstractResourceService {
         return permissions;
     }
     
+    /** 执行分页查询并构建带 next/prev 链接的 JSON 响应。 */
     private Response queryResponse(BiFunction<Integer, Integer, Stream<?>> query, Integer first, Integer max) {
         if (first != null && max != null) {
             List result = query.apply(first, max + 1).collect(Collectors.toList());
@@ -211,6 +214,7 @@ public class ResourcesService extends AbstractResourceService {
         return Response.ok().entity(query.apply(-1, -1).collect(Collectors.toList())).build();
     }
 
+    /** 根据分页参数生成分页导航 Link 数组。 */
     private Link[] createPageLinks(Integer first, Integer max, int resultSize) {
         if (resultSize == 0 || (first == 0 && resultSize <= max)) {
             return new Link[] {};

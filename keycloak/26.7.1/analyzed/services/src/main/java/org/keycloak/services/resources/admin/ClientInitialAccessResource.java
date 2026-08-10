@@ -49,18 +49,26 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /**
+ * 客户端初始访问令牌 REST 资源。
+ * <p>管理动态客户端注册用的 Initial Access Token（创建、列表、撤销）。</p>
+ *
  * @resource Client Initial Access
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientInitialAccessResource {
 
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** Keycloak 会话 */
     protected KeycloakSession session;
 
+    /** 构造客户端初始访问资源。 */
     public ClientInitialAccessResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -70,10 +78,10 @@ public class ClientInitialAccessResource {
     }
 
     /**
-     * Create a new initial access token.
+     * 创建新的 Initial Access Token。
      *
-     * @param config
-     * @return
+     * @param config 过期时间与可用次数配置
+     * @return 201 Created，含 token 字符串
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -110,6 +118,7 @@ public class ClientInitialAccessResource {
                 .build();
     }
     
+    /** 列出领域内所有 Initial Access 记录（不含 token 明文）。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Tag(name = KeycloakOpenAPI.Admin.Tags.CLIENT_INITIAL_ACCESS)
@@ -120,6 +129,7 @@ public class ClientInitialAccessResource {
         return session.realms().listClientInitialAccessStream(realm).map(this::wrap);
     }
 
+    /** 撤销指定 Initial Access 记录。 */
     @DELETE
     @Path("{id}")
     @Tag(name = KeycloakOpenAPI.Admin.Tags.CLIENT_INITIAL_ACCESS)
@@ -131,6 +141,7 @@ public class ClientInitialAccessResource {
         adminEvent.operation(OperationType.DELETE).resourcePath(session.getContext().getUri()).success();
     }
 
+    /** 将领域模型转换为 REST 表示（不含 token）。 */
     private ClientInitialAccessPresentation wrap(ClientInitialAccessModel model) {
         ClientInitialAccessPresentation rep = new ClientInitialAccessPresentation();
         rep.setId(model.getId());

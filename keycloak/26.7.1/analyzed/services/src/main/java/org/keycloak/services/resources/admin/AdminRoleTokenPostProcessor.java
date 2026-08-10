@@ -18,17 +18,20 @@ import org.keycloak.util.TokenUtil;
 import static org.keycloak.models.utils.KeycloakModelUtils.removeTransientAdminRoles;
 
 /**
- * A {@link TokenPostProcessor} that removes from access tokens any admin role not explicitly granted to the
- * subject.
+ * 管理角色令牌后处理器。
+ * <p>从访问令牌中移除用户未显式授予的临时管理角色（realm 与 resource access）。</p>
  */
 public class AdminRoleTokenPostProcessor implements TokenPostProcessor {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public AdminRoleTokenPostProcessor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** {@inheritDoc} 清理 realmAccess 与各 resourceAccess 中的临时管理角色。 */
     @Override
     public void process(TokenPostProcessorContext context) {
         ClientSessionContext clientSessionCtx = context.clientSessionCtx();

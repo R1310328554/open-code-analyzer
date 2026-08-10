@@ -46,7 +46,8 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Base resource class for the admin REST api of one realm
+ * 攻击检测管理 REST 资源。
+ * <p>查询与清除用户暴力破解（Brute Force）登录失败记录。</p>
  *
  * @resource Attack Detection
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -54,17 +55,25 @@ import org.jboss.resteasy.reactive.NoCache;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class AttackDetectionResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(AttackDetectionResource.class);
+    /** 细粒度权限评估器 */
     protected final AdminPermissionEvaluator auth;
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 客户端连接 */
     protected final ClientConnection connection;
 
+    /** HTTP 请求头 */
     protected final HttpHeaders headers;
 
+    /** 构造攻击检测资源并初始化 USER_LOGIN_FAILURE 事件上下文。 */
     public AttackDetectionResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -75,10 +84,10 @@ public class AttackDetectionResource {
     }
 
     /**
-     * Get status of a username in brute force detection
+     * 获取指定用户在暴力破解检测中的状态。
      *
-     * @param userId
-     * @return
+     * @param userId 用户 ID
+     * @return 失败次数、锁定状态等信息的 Map
      */
     @GET
     @Path("brute-force/users/{userId}")
@@ -126,6 +135,7 @@ public class AttackDetectionResource {
         return data;
     }
 
+    /** 判断用户是否因暴力破解被临时或永久禁用。 */
     private boolean isUserDisabled(UserLoginFailureModel model, UserModel user) {
         if(user == null) {
             return Time.currentTime() < model.getFailedLoginNotBefore();
@@ -134,17 +144,16 @@ public class AttackDetectionResource {
         return isUserDisabledOrLockedByBruteForce(session, realm, user);
     }
 
+    /** 检查用户是否被 {@link BruteForceProtector} 永久或临时锁定。 */
     private boolean isUserDisabledOrLockedByBruteForce(KeycloakSession session, RealmModel realm, UserModel user) {
         return session.getProvider(BruteForceProtector.class).isPermanentlyLockedOut(session, realm, user) 
         || session.getProvider(BruteForceProtector.class).isTemporarilyDisabled(session, realm, user);
     }
 
     /**
-     * Clear any user login failures for the user
+     * 清除指定用户的登录失败记录（可解除临时锁定）。
      *
-     * This can release temporary disabled user
-     *
-     * @param userId
+     * @param userId 用户 ID
      */
     @Path("brute-force/users/{userId}")
     @DELETE
@@ -165,10 +174,7 @@ public class AttackDetectionResource {
     }
 
     /**
-     * Clear any user login failures for all users
-     *
-     * This can release temporary disabled users
-     *
+     * 清除领域内所有用户的登录失败记录（可批量解除临时锁定）。
      */
     @Path("brute-force/users")
     @DELETE
