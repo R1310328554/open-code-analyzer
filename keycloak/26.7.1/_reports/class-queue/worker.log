@@ -1993,3 +1993,18 @@
 2026-08-10T08:50:27Z DONE model/storage/src/main/java/org/keycloak/storage/federated/UserFederatedStorageProvider.java wave68a user-storage adapters + federated APIs
 2026-08-10T08:50:27Z DONE model/storage/src/main/java/org/keycloak/storage/federated/UserFederatedStorageProviderFactory.java wave68a user-storage adapters + federated APIs
 2026-08-10T08:50:27Z DONE model/storage/src/main/java/org/keycloak/storage/federated/UserFederatedStorageProviderSpi.java wave68a user-storage adapters + federated APIs
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/federated/UserFederatedUserCredentialStore.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/federated/UserGroupMembershipFederatedStorage.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/federated/UserNotBeforeFederatedStorage.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/federated/UserRequiredActionsFederatedStorage.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/federated/UserRoleMappingsFederatedStorage.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/federated/UserVerifiableCredentialFederatedStorage.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/group/GroupStorageProvider.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/group/GroupStorageProviderModel.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/role/RoleStorageProviderModel.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/user/ImportSynchronization.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/storage/user/ImportedUserValidation.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE model/storage/src/main/java/org/keycloak/utils/ServicesUtils.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE operator/src/main/java/org/keycloak/operator/Config.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE operator/src/main/java/org/keycloak/operator/Constants.java wave68b federated storage + group/role + operator
+2026-08-10T08:50:34Z DONE operator/src/main/java/org/keycloak/operator/ContextUtils.java wave68b federated storage + group/role + operator
