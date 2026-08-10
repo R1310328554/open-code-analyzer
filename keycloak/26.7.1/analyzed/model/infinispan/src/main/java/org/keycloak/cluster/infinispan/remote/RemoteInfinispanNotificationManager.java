@@ -50,16 +50,28 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.cluster.infinispan.InfinispanClusterProvider.TASK_KEY_PREFIX;
 
+/**
+ * 远程 Infinispan 集群事件通知管理器。
+ * <p>
+ * 通过 Hot Rod {@link ClientListener} 订阅 work 缓存的创建/修改/移除事件，
+ * 反序列化 {@link WrapperClusterEvent} 后分发给已注册 listener，并在锁条目移除时通知 {@link TaskCallback}。
+ */
 @ClientListener(converterFactoryName = "___eager-key-value-version-converter", useRawData = true)
 public class RemoteInfinispanNotificationManager {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 异步任务的完成回调映射。 */
     private final ConcurrentMap<String, TaskCallback> taskCallbacks = new ConcurrentHashMap<>();
+    /** 按 taskKey 注册的集群事件监听器。 */
     private final ConcurrentMultivaluedHashMap<String, ClusterListener> listeners = new ConcurrentMultivaluedHashMap<>();
+    /** 事件处理线程池（避免阻塞 Hot Rod 回调线程）。 */
     private final Executor executor;
+    /** 远端 work 缓存。 */
     private final RemoteCache<String, Object> workCache;
+    /** 本节点与站点元数据。 */
     private final NodeInfo nodeInfo;
+    /** Hot Rod 容器共享的序列化器。 */
     private final Marshaller marshaller;
 
     public RemoteInfinispanNotificationManager(Executor executor, RemoteCache<String, Object> workCache, NodeInfo nodeInfo) {
@@ -69,12 +81,13 @@ public class RemoteInfinispanNotificationManager {
         this.marshaller = workCache.getRemoteCacheContainer().getMarshaller();
     }
 
+    /** 注册 Hot Rod 客户端监听器。 */
     public void addClientListener() {
         workCache.addClientListener(this);
     }
 
     public void removeClientListener() {
-        // workaround because providers are independent and close() can be invoked in any order.
+        // 各 Provider 独立关闭，close() 调用顺序不确定，需检查容器是否仍存活
         if (workCache.getRemoteCacheContainer().isStarted()) {
             workCache.removeClientListener(this);
         }
@@ -89,6 +102,7 @@ public class RemoteInfinispanNotificationManager {
         return existing != null ? existing : callback;
     }
 
+    /** 将包装事件写入远端 work 缓存，带退避重试。 */
     public void notify(String taskKey, Collection<? extends ClusterEvent> events, boolean ignoreSender, DCNotify dcNotify) {
         if (events == null || events.isEmpty()) {
             return;
@@ -110,7 +124,7 @@ public class RemoteInfinispanNotificationManager {
                             workCache.getName(), eventKey, iteration);
                 }
 
-                // Rethrow the exception. Retry will take care of handle the exception and eventually retry the operation.
+                // 重新抛出，由 Retry 处理并重试
                 throw re;
             }
 
@@ -118,10 +132,12 @@ public class RemoteInfinispanNotificationManager {
 
     }
 
+    /** 返回本节点名称，用于 LockEntry 与事件过滤。 */
     public String getMyNodeName() {
         return nodeInfo.nodeName();
     }
 
+    /** 处理缓存条目创建/修改事件：反序列化后在 executor 中分发。 */
     @ClientCacheEntryCreated
     @ClientCacheEntryModified
     public void onEntryUpdated(ClientCacheEntryCustomEvent<byte[]> event) {
@@ -130,13 +146,13 @@ public class RemoteInfinispanNotificationManager {
             ByteBuffer buffer = ByteBuffer.wrap(data);
             int length = UnsignedNumeric.readUnsignedInt(buffer);
 
-            // unmarshall the key
+            // 反序列化键
             String key = (String) marshaller.objectFromByteBuffer(data, buffer.position(), length);
 
             buffer.position(buffer.position() + length);
             length = UnsignedNumeric.readUnsignedInt(buffer);
 
-            // unmarshall the value
+            // 反序列化值
             Object value = marshaller.objectFromByteBuffer(data, buffer.position(), length);
             executor.execute(() -> eventReceived(key, value));
         } catch (IOException | ClassNotFoundException e) {
@@ -144,6 +160,7 @@ public class RemoteInfinispanNotificationManager {
         }
     }
 
+    /** 处理缓存条目移除事件：通知 TaskCallback 任务完成。 */
     @ClientCacheEntryRemoved
     public void onEntryRemoved(ClientCacheEntryCustomEvent<byte[]> event) {
         try {
@@ -151,17 +168,17 @@ public class RemoteInfinispanNotificationManager {
             ByteBuffer buffer = ByteBuffer.wrap(data);
             int length = UnsignedNumeric.readUnsignedInt(buffer);
 
-            // unmarshall the key
+            // 反序列化被移除的键
             taskFinished((String) marshaller.objectFromByteBuffer(data, buffer.position(), length));
         } catch (IOException | ClassNotFoundException e) {
             logger.error("Unexpected error handling a remove event from Infinispan cluster", e);
         }
     }
 
+    /** 过滤并分发收到的集群事件给已注册 listener。 */
     private void eventReceived(String key, Object obj) {
         if (!(obj instanceof WrapperClusterEvent event)) {
-            // Items with the TASK_KEY_PREFIX might be gone fast once the locking is complete, therefore, don't log them.
-            // It is still good to have the warning in case of real events return null because they have been, for example, expired
+            // TASK_KEY_PREFIX 条目在锁释放后很快消失，不必记录
             if (obj == null && !key.startsWith(TASK_KEY_PREFIX)) {
                 logger.warnf("Event object wasn't available in remote cache after event was received. Event key: %s", key);
             }
@@ -186,6 +203,7 @@ public class RemoteInfinispanNotificationManager {
         }
     }
 
+    /** 锁条目移除时通知 TaskCallback。 */
     private void taskFinished(String taskKey) {
         TaskCallback callback = taskCallbacks.remove(taskKey);
         if (callback == null) {

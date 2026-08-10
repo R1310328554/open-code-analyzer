@@ -95,20 +95,34 @@ import static org.keycloak.models.cache.infinispan.InfinispanCacheRealmProviderF
 import static org.keycloak.models.cache.infinispan.InfinispanCacheRealmProviderFactory.REALM_INVALIDATION_EVENTS;
 
 /**
+ * Infinispan 连接提供者的默认工厂实现。
+ * <p>
+ * 负责创建嵌入式 {@link EmbeddedCacheManager} 与可选的 {@link RemoteCacheManager}，
+ * 根据部署模式返回 {@link DefaultInfinispanConnectionProvider} 或 {@link RemoteInfinispanConnectionProvider}，
+ * 并管理集群健康检查、优雅关闭与系统级集群事件监听。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultInfinispanConnectionProviderFactory implements InfinispanConnectionProviderFactory, ProviderEventListener, ServerInfoAwareProviderFactory {
 
+    /** 保护 CacheManager 生命周期操作的读写锁（防止关闭时死锁，见 KEYCLOAK-9871）。 */
     private static final ReadWriteLock READ_WRITE_LOCK = new ReentrantReadWriteLock();
     private static final Logger logger = Logger.getLogger(DefaultInfinispanConnectionProviderFactory.class);
+    /** 关闭超时配置键。 */
     private static final String SHUTDOWN_TIMEOUT = "shutdownTimeout";
 
+    /** SPI 配置作用域。 */
     private Config.Scope config;
 
+    /** 嵌入式 Infinispan 缓存管理器。 */
     private volatile EmbeddedCacheManager cacheManager;
+    /** Hot Rod 远程缓存管理器（可选）。 */
     private volatile RemoteCacheManager remoteCacheManager;
+    /** 懒初始化的连接提供者实例。 */
     private volatile InfinispanConnectionProvider connectionProvider;
+    /** 集群健康检查组件。 */
     private volatile ClusterHealth clusterHealth;
+    /** 优雅关闭管理器。 */
     private volatile ShutdownManager shutdownManager;
 
     @Override
@@ -117,11 +131,12 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
     }
 
     /*
-        Workaround for Infinispan 12.1.7.Final and tested until 14.0.19.Final to prevent a deadlock while
-        DefaultInfinispanConnectionProviderFactory is shutting down. Kept as a permanent solution and considered
-        good enough after a lot of analysis went into this difficult to reproduce problem.
-        See https://github.com/keycloak/keycloak/issues/9871 for the discussion.
+        Infinispan 12.1.7.Final 至 14.0.19.Final 的 workaround，防止
+        DefaultInfinispanConnectionProviderFactory 关闭时发生死锁。
+        经大量分析后作为永久方案保留。
+        详见 https://github.com/keycloak/keycloak/issues/9871
     */
+    /** 在 CacheManager 读锁保护下执行任务。 */
     public static void runWithReadLockOnCacheManager(Runnable task) {
         Lock lock = DefaultInfinispanConnectionProviderFactory.READ_WRITE_LOCK.readLock();
         lock.lock();
@@ -132,6 +147,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         }
     }
 
+    /** 在 CacheManager 写锁保护下执行任务（用于 stop 等写操作）。 */
     public static void runWithWriteLockOnCacheManager(Runnable task) {
         Lock lock = DefaultInfinispanConnectionProviderFactory.READ_WRITE_LOCK.writeLock();
         lock.lock();
@@ -176,6 +192,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         factory.register(this);
     }
 
+    /** 懒初始化嵌入式/远程 CacheManager 并创建 ConnectionProvider。 */
     protected InfinispanConnectionProvider lazyInit(KeycloakSession keycloakSession) {
         if (connectionProvider != null) {
             return connectionProvider;
@@ -203,6 +220,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         }
     }
 
+    /** 为分布式缓存注册拓扑变更关闭监听器，防止状态转移期间数据丢失。 */
     private void addShutdownListeners() {
         var sm = new ShutdownManager(getShutdownDelay().toMillis(), getShutdownTimeout().toMillis());
         for (var name : CLUSTERED_CACHE_NAMES) {
@@ -217,12 +235,12 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
             }
             var cacheConfig = cache.getCacheConfiguration();
             if (!cacheConfig.clustering().cacheMode().isClustered() || cacheConfig.clustering().cacheMode().isReplicated() || cacheConfig.clustering().cacheMode().isInvalidation()) {
-                // local or replicated caches, we don't need to care about the state transfer.
+                // 本地或复制缓存无数据丢失风险，跳过关闭监听器
                 logger.debugf("Cache '%s' uses mode '%s' and no data loss risk exists; skipping the shutdown listener", name, cacheConfig.clustering().cacheMode());
                 continue;
             }
             if (!cacheConfig.clustering().stateTransfer().fetchInMemoryState()) {
-                // state transfer disabled, we can skip this cache
+                // 状态转移已禁用，可跳过
                 logger.debugf("Cache '%s' has state transfer disabled; skipping the shutdown listener", name);
                 continue;
             }
@@ -248,10 +266,14 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         return duration;
     }
 
+    /**
+     * 创建嵌入式 CacheManager：从 {@link CacheEmbeddedConfigProvider} 读取配置，
+     * stateless 模式下移除集群缓存（保留 work 缓存）。
+     */
     protected EmbeddedCacheManager createEmbeddedCacheManager(KeycloakSession session) {
         var holder = session.getProvider(CacheEmbeddedConfigProvider.class).configuration();
 
-        // remove clustered caches
+        // stateless 模式下移除集群缓存
         if (Profile.isFeatureEnabled(Profile.Feature.STATELESS)) {
             Arrays.stream(CLUSTERED_CACHE_NAMES)
                     .filter(Predicate.not(WORK_CACHE_NAME::equals))
@@ -271,8 +293,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         if (cm.getCacheManagerConfiguration().metrics().enabled()) {
             var transport = GlobalComponentRegistry.componentOf(cm, Transport.class);
             if (transport != null) {
-                // we miss some messages stats (aka state transfer) by enabling this late.
-                // but here works for all stacks, including custom ones by users.
+                // 此处启用会遗漏部分消息统计（如 state transfer），但适用于所有协议栈（含用户自定义）
                 ((JGroupsTransport) transport).getChannel().getProtocolStack().getTransport().enableStats(true);
             }
         }
@@ -283,8 +304,9 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         return cm;
     }
 
+    /** 创建 DefaultCacheManager，挂起 JTA 事务以避免 JDBC_PING2 操作绑定到当前事务。 */
     private static DefaultCacheManager getDefaultCacheManager(KeycloakSession session, ConfigurationBuilderHolder holder) {
-        // This disables the JTA transaction context to avoid binding all JDBC_PING2 interactions to the current transaction
+        // 禁用 JTA 事务上下文，避免 JDBC_PING2 交互绑定到当前事务
         DefaultCacheManager[] _cm = new DefaultCacheManager[1];
         //noinspection resource
         KeycloakModelUtils.suspendJtaTransaction(session.getKeycloakSessionFactory(), () ->
@@ -292,6 +314,10 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         return _cm[0];
     }
 
+    /**
+     * 创建 Hot Rod RemoteCacheManager 并上传 ProtoStream 索引 schema。
+     * 远程缓存功能未启用时返回 null。
+     */
     protected RemoteCacheManager createRemoteCacheManager(KeycloakSession session) {
         var remoteConfig = session.getProvider(CacheRemoteConfigProvider.class).configuration();
         if (remoteConfig.isEmpty()) {
@@ -301,8 +327,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         logger.debug("Remote Cache feature is enabled");
         var rcm = new RemoteCacheManager(remoteConfig.get());
 
-        // upload the schema before trying to access the caches
-        // not caching the list; it is only used during startup
+        // 在访问缓存前先上传 schema；列表仅启动时使用，不做缓存
         var entities = List.of(
                 new KeycloakIndexSchemaUtil.IndexedEntity(RemoteUserLoginFailureProviderFactory.PROTO_ENTITY, LOGIN_FAILURE_CACHE_NAME),
                 new KeycloakIndexSchemaUtil.IndexedEntity(RemoteInfinispanAuthenticationSessionProviderFactory.PROTO_ENTITY, AUTHENTICATION_SESSIONS_CACHE_NAME),
@@ -348,6 +373,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         return CacheConfigurator.getCrlCacheConfig().build();
     }
 
+    /** 注册系统级集群事件监听器（Realm 缓存失效等）。 */
     private void registerSystemWideListeners(KeycloakSession session) {
         KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
         ClusterProvider cluster = session.getProvider(ClusterProvider.class);
@@ -365,6 +391,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         });
     }
 
+    /** 可选注入 Keycloak 时间服务到 Infinispan（用于测试或特殊部署）。 */
     private void injectKeycloakTimeService(EmbeddedCacheManager cacheManager) {
         if (config.getBoolean("useKeycloakTimeService", Boolean.FALSE)) {
             setTimeServiceToKeycloakTime(cacheManager);
@@ -398,6 +425,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         return info;
     }
 
+    /** 触发集群健康检查并返回结果。 */
     @Override
     public boolean isClusterHealthy() {
         clusterHealth.triggerClusterHealthCheck();
@@ -409,6 +437,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         return clusterHealth.isSupported();
     }
 
+    /** 嵌入式模式下返回 JGroups 协调者状态。 */
     @Override
     public boolean isCoordinator() {
         return cacheManager.isCoordinator();
@@ -419,6 +448,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         return true;
     }
 
+    /** 收集嵌入式 Infinispan 运维信息（集群规模、各缓存健康状态）。 */
     private void addEmbeddedOperationalInfo(Map<String, String> info) {
         var cacheManagerInfo = cacheManager.getCacheManagerInfo();
         info.put("clusterSize", Integer.toString(cacheManagerInfo.getClusterSize()));
@@ -430,6 +460,7 @@ public class DefaultInfinispanConnectionProviderFactory implements InfinispanCon
         }
     }
 
+    /** 收集远程 Infinispan 运维信息（Hot Rod 连接数）。 */
     private void addRemoteOperationalInfo(Map<String, String> info) {
         info.put("connectionCount", Integer.toString(remoteCacheManager.getConnectionCount()));
     }

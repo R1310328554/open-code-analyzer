@@ -34,56 +34,77 @@ import org.infinispan.commons.marshall.Marshaller;
 import org.infinispan.util.concurrent.BlockingManager;
 
 /**
+ * Infinispan 连接提供者 SPI 接口。
+ * <p>
+ * 定义 Keycloak 使用的全部缓存名称、容量默认值及缓存访问、远程缓存、
+ * 节点信息、ProtoStream 迁移、阻塞/调度执行器等核心能力。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface InfinispanConnectionProvider extends Provider {
 
+    /** Realm 元数据本地缓存名。 */
     String REALM_CACHE_NAME = "realms";
+    /** Realm 修订版本本地缓存名。 */
     String REALM_REVISIONS_CACHE_NAME = "realmRevisions";
     int REALM_REVISIONS_CACHE_DEFAULT_MAX = 20000;
 
+    /** 用户元数据本地缓存名。 */
     String USER_CACHE_NAME = "users";
+    /** 用户修订版本本地缓存名。 */
     String USER_REVISIONS_CACHE_NAME = "userRevisions";
     int USER_REVISIONS_CACHE_DEFAULT_MAX = 100000;
 
+    /** 在线用户会话分布式缓存名。 */
     String USER_SESSION_CACHE_NAME = "sessions";
+    /** 在线客户端会话分布式缓存名。 */
     String CLIENT_SESSION_CACHE_NAME = "clientSessions";
+    /** 离线用户会话分布式缓存名。 */
     String OFFLINE_USER_SESSION_CACHE_NAME = "offlineSessions";
+    /** 离线客户端会话分布式缓存名。 */
     String OFFLINE_CLIENT_SESSION_CACHE_NAME = "offlineClientSessions";
+    /** 登录失败记录分布式缓存名。 */
     String LOGIN_FAILURE_CACHE_NAME = "loginFailures";
+    /** 认证会话分布式缓存名。 */
     String AUTHENTICATION_SESSIONS_CACHE_NAME = "authenticationSessions";
+    /** 集群锁与事件传递的 work 缓存名。 */
     String WORK_CACHE_NAME = "work";
+    /** 授权策略本地缓存名。 */
     String AUTHORIZATION_CACHE_NAME = "authorization";
+    /** 授权修订版本本地缓存名。 */
     String AUTHORIZATION_REVISIONS_CACHE_NAME = "authorizationRevisions";
     int AUTHORIZATION_REVISIONS_CACHE_DEFAULT_MAX = 20000;
     int SESSIONS_CACHE_DEFAULT_MAX = 10000;
 
+    /** Action Token 分布式缓存名。 */
     String ACTION_TOKEN_CACHE = "actionTokens";
     int ACTION_TOKEN_CACHE_DEFAULT_MAX = -1;
     int ACTION_TOKEN_MAX_IDLE_SECONDS = -1;
     long ACTION_TOKEN_WAKE_UP_INTERVAL_SECONDS = 5 * 60 * 1000L;
 
+    /** 密钥本地缓存名。 */
     String KEYS_CACHE_NAME = "keys";
     int KEYS_CACHE_DEFAULT_MAX = 1000;
     int KEYS_CACHE_MAX_IDLE_SECONDS = 3600;
 
+    /** CRL 证书吊销列表本地缓存名。 */
     String CRL_CACHE_NAME = "crl";
     int CRL_CACHE_DEFAULT_MAX = 1000;
 
-    // System property used on Wildfly to identify distributedCache address and sticky session route
+    // Wildfly 上用于标识分布式缓存地址与会话粘滞路由的系统属性
     String JBOSS_NODE_NAME = "jboss.node.name";
     String JGROUPS_UDP_MCAST_ADDR = "jgroups.mcast_addr";
     String JGROUPS_BIND_ADDR = "jgroups.bind.address";
 
-    // TODO This property is not in Wildfly. Check if corresponding property in Wildfly exists
+    // TODO Wildfly 中无此属性，需确认对应属性是否存在
     String JBOSS_SITE_NAME = "jboss.site.name";
 
     String JMX_DOMAIN = "jboss.datagrid-infinispan";
 
-    // Constant used as the prefix of the current node if "jboss.node.name" is not configured
+    /** 未配置 jboss.node.name 时节点名前缀。 */
     String NODE_PREFIX = "node_";
 
-    // list of cache name for local caches (not replicated)
+    /** 本地（非复制）缓存名称列表。 */
     String[] LOCAL_CACHE_NAMES = {
             REALM_CACHE_NAME,
             REALM_REVISIONS_CACHE_NAME,
@@ -95,7 +116,7 @@ public interface InfinispanConnectionProvider extends Provider {
             CRL_CACHE_NAME,
     };
 
-    // list of cache name for user and client session caches, both offline and online
+    /** 用户与客户端会话缓存名称（在线 + 离线）。 */
     String[] USER_AND_CLIENT_SESSION_CACHES = {
             USER_SESSION_CACHE_NAME,
             CLIENT_SESSION_CACHE_NAME,
@@ -103,7 +124,7 @@ public interface InfinispanConnectionProvider extends Provider {
             OFFLINE_CLIENT_SESSION_CACHE_NAME,
     };
 
-    // list of cache name which could be defined as distributed or replicated
+    /** 可配置为分布式或复制模式的集群缓存名称。 */
     String[] CLUSTERED_CACHE_NAMES = {
             USER_SESSION_CACHE_NAME,
             CLIENT_SESSION_CACHE_NAME,
@@ -117,6 +138,7 @@ public interface InfinispanConnectionProvider extends Provider {
 
     String[] ALL_CACHES_NAME = Stream.concat(Arrays.stream(LOCAL_CACHE_NAMES), Arrays.stream(CLUSTERED_CACHE_NAMES)).toArray(String[]::new);
 
+    /** 支持 max-count 配置的本地缓存。 */
     String[] LOCAL_MAX_COUNT_CACHES = new String[]{
             AUTHORIZATION_CACHE_NAME,
             CRL_CACHE_NAME,
@@ -125,6 +147,7 @@ public interface InfinispanConnectionProvider extends Provider {
             USER_CACHE_NAME
     };
 
+    /** 支持 max-count 配置的集群缓存。 */
     String[] CLUSTERED_MAX_COUNT_CACHES = new String[]{
             CLIENT_SESSION_CACHE_NAME,
             OFFLINE_USER_SESSION_CACHE_NAME,
@@ -132,7 +155,7 @@ public interface InfinispanConnectionProvider extends Provider {
             USER_SESSION_CACHE_NAME
     };
 
-    // caches that allow numOwner attribute to be configurable using options.
+    /** 支持 numOwners 配置项的集群缓存。 */
     String[] CLUSTERED_CACHE_NUM_OWNERS = new String[]{
             USER_SESSION_CACHE_NAME,
             CLIENT_SESSION_CACHE_NAME,
@@ -142,70 +165,67 @@ public interface InfinispanConnectionProvider extends Provider {
     };
 
     /**
-     *
-     * Effectively the same as {@link InfinispanConnectionProvider#getCache(String, boolean)} with createIfAbsent set to {@code true}
-     *
+     * 等价于 {@link InfinispanConnectionProvider#getCache(String, boolean)} 且 createIfAbsent 为 {@code true}。
      */
     default <K, V> Cache<K, V> getCache(String name) {
         return getCache(name, true);
     }
 
     /**
-     * Provides an instance if Infinispan cache by name
+     * 按名称获取 Infinispan 缓存实例。
      *
-     * @param name name of the requested cache
-     * @param createIfAbsent if true the connection provider will create the requested cache on method call if it does not exist
-     * @return return a cache instance
-     * @param <K> key type
-     * @param <V> value type
+     * @param name           缓存名称
+     * @param createIfAbsent 若缓存不存在是否自动创建
+     * @return 缓存实例
+     * @param <K> 键类型
+     * @param <V> 值类型
      */
     <K, V> Cache<K, V> getCache(String name, boolean createIfAbsent);
 
     /**
-     * Get remote cache of given name. Could just retrieve the remote cache from the remoteStore configured in given infinispan cache and/or
-     * alternatively return the secured remoteCache (remoteCache corresponding to secured hotrod endpoint)
+     * 获取指定名称的 Hot Rod 远程缓存。
+     * 可从嵌入式缓存的 remoteStore 配置获取，或返回安全 Hot Rod 端点对应的缓存。
      */
     <K, V> RemoteCache<K, V> getRemoteCache(String name);
 
     /**
-     * @return Information about cluster topology
-     * @deprecated The logic in {@link TopologyInfo} is not used anymore in Keycloak. To get the node or site name, use {@link #getNodeInfo()}.
+     * @return 集群拓扑信息
+     * @deprecated {@link TopologyInfo} 中的逻辑已不再使用，请改用 {@link #getNodeInfo()}。
      */
     @Deprecated(since = "26.5", forRemoval = true)
     TopologyInfo getTopologyInfo();
 
     /**
-     * @return The information about the local node.
+     * @return 本节点信息（节点名、站点名等）
      */
     NodeInfo getNodeInfo();
 
     /**
-     * Migrates the JBoss Marshalling encoding to Infinispan ProtoStream
+     * 将 JBoss Marshalling 编码迁移至 Infinispan ProtoStream。
      *
-     * @return A {@link CompletionStage} to signal when the operator is completed.
+     * @return 迁移完成的 {@link CompletionStage}
      */
     CompletionStage<Void> migrateToProtoStream();
 
     /**
-     * Returns an executor that will run the given tasks on a blocking thread as required.
+     * 返回用于执行阻塞 I/O 任务的执行器。
      * <p>
-     * The Infinispan block {@link Executor} is used to execute blocking operation, like I/O.
-     * If Virtual Threads are enabled, this will be an executor with Virtual Threads.
+     * 使用 Infinispan {@link BlockingManager} 的阻塞线程池；启用虚拟线程时为虚拟线程执行器。
      *
-     * @param name The name for trace logging purpose.
-     * @return The Infinispan blocking {@link Executor}.
+     * @param name 用于跟踪日志的执行器名称
+     * @return Infinispan 阻塞 {@link Executor}
      */
     default Executor getExecutor(String name) {
         return getBlockingManager().asExecutor(name);
     }
 
     /**
-     * @return The Infinispan {@link ScheduledExecutorService}. Long or blocking operations must not be executed directly.
+     * @return Infinispan {@link ScheduledExecutorService}，不可直接执行长时或阻塞操作。
      */
     ScheduledExecutorService getScheduledExecutor();
 
     /**
-     * Syntactic sugar to get a {@link RemoteCache}.
+     * 语法糖：通过 SessionFactory 获取 {@link RemoteCache}。
      *
      * @see InfinispanConnectionProvider#getRemoteCache(String)
      */
@@ -216,20 +236,21 @@ public interface InfinispanConnectionProvider extends Provider {
     }
 
     /**
-     * Returns the Infinispan {@link BlockingManager}.
-     * <p>
-     * The {@link BlockingManager} should be used to execute blocking operation like disk I/O. It offloads the task to
-     * the Infinispan blocking thread pool.
+     * 返回 Infinispan {@link BlockingManager}，用于 offload 磁盘 I/O 等阻塞操作。
      *
-     * @return The Infinispan {@link BlockingManager}.
+     * @return Infinispan {@link BlockingManager}
      */
     BlockingManager getBlockingManager();
 
+    /**
+     * 启用 persistent-user-sessions 时跳过外部 Infinispan 的会话缓存。
+     * 持久化会话模式下无需外部会话缓存。
+     */
     static Stream<String> skipSessionsCacheIfRequired(Stream<String> caches) {
         if (!MultiSiteUtils.isPersistentSessionsEnabled()) {
             return caches;
         }
-        // persistent-user-sessions enabled, we do not need the sessions caches from external Infinispan.
+        // 启用 persistent-user-sessions 后，外部 Infinispan 不再需要会话缓存
         return caches
                 .filter(Predicate.isEqual(USER_SESSION_CACHE_NAME).negate())
                 .filter(Predicate.isEqual(OFFLINE_USER_SESSION_CACHE_NAME).negate())
@@ -237,5 +258,6 @@ public interface InfinispanConnectionProvider extends Provider {
                 .filter(Predicate.isEqual(OFFLINE_CLIENT_SESSION_CACHE_NAME).negate());
     }
 
+    /** 返回用户自定义的 ProtoStream 序列化器。 */
     Marshaller getMarshaller();
 }

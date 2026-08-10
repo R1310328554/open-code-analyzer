@@ -30,11 +30,16 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 判断 work 缓存条目是否由已离群节点持有的分布式锁。
+ * <p>
+ * 在 JGroups 视图变更时，由协调者节点用于清理失效节点遗留的 {@link LockEntry}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.LOCK_ENTRY_PREDICATE)
 public class LockEntryPredicate implements Predicate<Map.Entry<String, Object>> {
 
+    /** 已从集群视图中移除的节点地址集合。 */
     private final Set<String> removedNodesAddresses;
 
     @ProtoFactory
@@ -47,6 +52,7 @@ public class LockEntryPredicate implements Predicate<Map.Entry<String, Object>> 
         return removedNodesAddresses;
     }
 
+    /** 若条目值为 {@link LockEntry} 且持有节点已离群，则返回 true（应被移除）。 */
     @Override
     public boolean test(Map.Entry<String, Object> entry) {
         return entry.getValue() instanceof LockEntry lock &&

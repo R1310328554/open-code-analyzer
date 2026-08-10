@@ -51,7 +51,10 @@ import org.jboss.logging.Logger;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.WORK_CACHE_NAME;
 
 /**
- * This impl is aware of Cross-Data-Center scenario too
+ * 嵌入式 Infinispan 集群提供者工厂，支持跨数据中心（Cross-DC）场景。
+ * <p>
+ * 懒初始化 work 缓存与 {@link InfinispanClusterProvider}，注册缓存条目监听器与
+ * JGroups 视图变更监听器，在脑裂恢复和节点离群时清理失效锁条目与本地缓存。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -59,15 +62,19 @@ public class InfinispanClusterProviderFactory implements ClusterProviderFactory,
 
     protected static final Logger logger = Logger.getLogger(InfinispanClusterProviderFactory.class);
 
+    /** 懒初始化的 work 缓存引用。 */
     private volatile Cache<String, Object> workCache;
+    /** 单例 ClusterProvider 实例（工厂级共享）。 */
     private volatile ClusterProvider clusterProvider;
 
+    /** 本地线程池，用于视图变更回调与缓存清理，避免阻塞 JGroups 线程。 */
     private final ExecutorService localExecutor = Executors.newCachedThreadPool(r -> {
         Thread thread = Executors.defaultThreadFactory().newThread(r);
         thread.setName(this.getClass().getName() + "-" + thread.getName());
         return thread;
     });
 
+    /** JGroups 视图/合并事件监听器。 */
     private ViewChangeListener workCacheListener;
 
     @Override
@@ -75,6 +82,7 @@ public class InfinispanClusterProviderFactory implements ClusterProviderFactory,
         return lazyInit(session);
     }
 
+    /** 懒初始化并返回共享的 ClusterProvider 实例。 */
     private ClusterProvider lazyInit(KeycloakSession session) {
         if (clusterProvider != null)
             return clusterProvider;
@@ -91,7 +99,7 @@ public class InfinispanClusterProviderFactory implements ClusterProviderFactory,
             var clusterStartupTime = initClusterStartupTime(session);
             var cp = new InfinispanClusterProvider(clusterStartupTime, ispnConnections.getNodeInfo(), workCache, localExecutor);
 
-            // We need CacheEntryListener for communication within current DC
+            // 注册 CacheEntryListener 以接收当前 DC 内的集群事件
             workCache.addListener(cp.new CacheEntryListener());
             logger.debugf("Added listener for infinispan cache: %s", workCache.getName());
 
@@ -100,6 +108,9 @@ public class InfinispanClusterProviderFactory implements ClusterProviderFactory,
         }
     }
 
+    /**
+     * 初始化或读取集群启动时间：通过 work 缓存 putIfAbsent 保证全局唯一值。
+     */
     protected int initClusterStartupTime(KeycloakSession session) {
         Integer existingClusterStartTime = (Integer) workCache.get(InfinispanClusterProvider.CLUSTER_STARTUP_TIME_KEY);
         if (existingClusterStartTime != null) {
@@ -108,7 +119,7 @@ public class InfinispanClusterProviderFactory implements ClusterProviderFactory,
             }
             return existingClusterStartTime;
         } else {
-            // clusterStartTime not yet initialized. Let's try to put our startupTime
+            // 尚未初始化，尝试写入本节点启动时间
             int serverStartTime = (int) (session.getKeycloakSessionFactory().getServerStartupTimestamp() / 1000);
 
             existingClusterStartTime = (Integer) workCache.putIfAbsent(InfinispanClusterProvider.CLUSTER_STARTUP_TIME_KEY, serverStartTime);
@@ -151,20 +162,24 @@ public class InfinispanClusterProviderFactory implements ClusterProviderFactory,
         return InfinispanUtils.EMBEDDED_PROVIDER_ID;
     }
 
+    /** 仅在嵌入式 Infinispan 且非 stateless 模式下启用。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return InfinispanUtils.isEmbeddedInfinispan() &&
                 !Profile.isFeatureEnabled(Profile.Feature.STATELESS);
     }
 
+    /**
+     * JGroups 视图变更与脑裂合并监听器：清理失效锁与本地缓存。
+     */
     @Listener
     public class ViewChangeListener {
 
+        /** 脑裂合并后清空本地缓存，强制后续请求从 DB 读取最新数据。 */
         @Merged
         public void mergeEvent(MergeEvent event) {
-            // During split-brain only Keycloak instances contained within the same partition will receive updates via
-            // the work cache. On split-brain healing, it's necessary for us to clear all local caches so that potentially
-            // stale values are invalidated and subsequent requests are forced to read from the DB.
+            // 脑裂期间仅同一分区内的 Keycloak 实例能通过 work 缓存通信；合并后需清空本地缓存
+            // 以失效可能过期的值，迫使后续请求从 DB 读取
             localExecutor.execute(() ->
                     Arrays.stream(InfinispanConnectionProvider.LOCAL_CACHE_NAMES)
                             .map(name -> workCache.getCacheManager().getCache(name))
@@ -173,8 +188,8 @@ public class InfinispanClusterProviderFactory implements ClusterProviderFactory,
             );
 
             if (Profile.isFeatureEnabled(Profile.Feature.PERSISTENT_USER_SESSIONS)) {
-                // If persistent user sessions are enabled, the reasoning from above is true for the user and client sessions as well.
-                // As the session caches are distributed caches and as this runs on every node, run it locally on each node.
+                // 启用持久化用户会话时，用户/客户端会话缓存同样需本地清理
+                // 会话缓存为分布式模式，此逻辑在各节点本地执行
                 localExecutor.execute(() ->
                         Arrays.stream(InfinispanConnectionProvider.USER_AND_CLIENT_SESSION_CACHES)
                                 .map(name -> workCache.getCacheManager().getCache(name).getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL))
@@ -183,15 +198,16 @@ public class InfinispanClusterProviderFactory implements ClusterProviderFactory,
             }
         }
 
+        /** 节点离群时由协调者清理失效节点持有的分布式锁条目。 */
         @ViewChanged
         public void viewChanged(ViewChangedEvent event) {
             Set<String> removedNodesAddresses = convertAddresses(event.getOldMembers());
             Set<String> newAddresses = convertAddresses(event.getNewMembers());
 
-            // Use separate thread to avoid potential deadlock
+            // 独立线程执行，避免潜在死锁
             localExecutor.execute(() -> {
                 try {
-                    // Coordinator makes sure that entries for outdated nodes are cleaned up
+                    // 协调者负责清理离群节点遗留的锁条目
                     if (workCache.getCacheManager().isCoordinator()) {
 
                         removedNodesAddresses.removeAll(newAddresses);

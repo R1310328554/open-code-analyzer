@@ -41,19 +41,29 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.WORK_CACHE_NAME;
 
+/**
+ * 远程 Infinispan 集群提供者工厂。
+ * <p>
+ * 在 Hot Rod 模式下懒初始化远端 work 缓存、集群启动时间与 {@link RemoteInfinispanNotificationManager}，
+ * 并实现 {@link RemoteInfinispanClusterProvider.SharedData} 供 Provider 共享状态。
+ */
 public class RemoteInfinispanClusterProviderFactory implements ClusterProviderFactory, RemoteInfinispanClusterProvider.SharedData, EnvironmentDependentProviderFactory {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 远端 work 缓存（Hot Rod）。 */
     private volatile RemoteCache<String, LockEntry> workCache;
+    /** 集群启动时间（秒）。 */
     private volatile int clusterStartupTime;
+    /** 客户端事件监听器管理器。 */
     private volatile RemoteInfinispanNotificationManager notificationManager;
+    /** Infinispan 提供的阻塞执行器。 */
     private volatile Executor executor;
 
     @Override
     public ClusterProvider create(KeycloakSession session) {
         if (workCache == null) {
-            // Keycloak does not ensure postInit() is invoked before create()
+            // Keycloak 不保证 postInit() 在 create() 之前调用
             lazyInit(session);
         }
         assert workCache != null;
@@ -81,7 +91,7 @@ public class RemoteInfinispanClusterProviderFactory implements ClusterProviderFa
             notificationManager.removeClientListener();
             notificationManager = null;
         }
-        // executor is managed by Infinispan, do not shutdown.
+        // executor 由 Infinispan 管理，不在此 shutdown
         executor = null;
         workCache = null;
     }
@@ -91,11 +101,13 @@ public class RemoteInfinispanClusterProviderFactory implements ClusterProviderFa
         return InfinispanUtils.REMOTE_PROVIDER_ID;
     }
 
+    /** 仅在远程 Infinispan 模式下启用。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return InfinispanUtils.isRemoteInfinispan();
     }
 
+    /** 懒初始化 Hot Rod 缓存、通知管理器与集群启动时间。 */
     private synchronized void lazyInit(KeycloakSession session) {
         if (workCache != null) {
             return;
@@ -110,11 +122,17 @@ public class RemoteInfinispanClusterProviderFactory implements ClusterProviderFa
         logger.debugf("Provider initialized. Cluster startup time: %s", Time.toDate(clusterStartupTime));
     }
 
+    /** 初始化集群启动时间：putIfAbsent 保证全局唯一值。 */
     private static int initClusterStartupTime(RemoteCache<String, Integer> cache, int serverStartupTime) {
         Integer clusterStartupTime = putIfAbsentWithRetries(cache, InfinispanClusterProvider.CLUSTER_STARTUP_TIME_KEY, serverStartupTime, -1);
         return clusterStartupTime == null ? serverStartupTime : clusterStartupTime;
     }
 
+    /**
+     * 带退避重试的 Hot Rod putIfAbsent，应对 transient HotRodClientException。
+     *
+     * @param taskTimeoutInSeconds 条目 TTL（秒），≤0 表示无过期
+     */
     static <V> V putIfAbsentWithRetries(RemoteCache<String, V> workCache, String key, V value, int taskTimeoutInSeconds) {
         ByRef<V> ref = new ByRef<>(null);
 
@@ -128,7 +146,7 @@ public class RemoteInfinispanClusterProviderFactory implements ClusterProviderFa
             } catch (HotRodClientException re) {
                 logger.warnf(re, "Failed to write key '%s' and value '%s' in iteration '%d' . Retrying", key, value, iteration);
 
-                // Rethrow the exception. Retry will take care of handle the exception and eventually retry the operation.
+                // 重新抛出，由 Retry 处理并重试
                 throw re;
             }
 

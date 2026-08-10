@@ -39,20 +39,31 @@ import org.jboss.logging.Logger;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.WORK_CACHE_NAME;
 
 /**
- * Polls the CLUSTER_EVENT database table for events addressed to this cluster,
- * replays them into the local Infinispan work cache, and deletes the consumed rows.
+ * 定时轮询 CLUSTER_EVENT 数据库表，拉取发往本集群的跨数据中心事件，
+ * 将其重放到本地 Infinispan work 缓存，并删除已消费的数据库行。
+ * <p>
+ * 与 {@link DatabaseAwareClusterProviderFactory} 配合，实现基于数据库表的中继式集群通信。
  */
 public class DatabaseClusterEventPollerTask implements ScheduledTask {
 
     private static final Logger logger = Logger.getLogger(DatabaseClusterEventPollerTask.class);
 
+    /** 单次从数据库读取的事件批次大小。 */
     private static final int BATCH_SIZE = 100;
+    /** 过期事件保留时长，超过此时间的未消费事件将被清理。 */
     private static final long STALE_EVENT_RETENTION_MS = TimeUnit.MINUTES.toMillis(5);
 
+    /** 本集群名称，用于过滤 CLUSTER_EVENT 表中的目标集群。 */
     private final String clusterName;
+    /** ProtoStream 序列化器，用于反序列化事件载荷。 */
     private final Marshaller marshaller;
+    /** 下次执行过期事件清理的时间戳（毫秒）。 */
     private long staleEventHorizon;
 
+    /**
+     * @param clusterName 本集群标识
+     * @param marshaller  事件序列化器
+     */
     public DatabaseClusterEventPollerTask(String clusterName, Marshaller marshaller) {
         Objects.requireNonNull(clusterName);
         Objects.requireNonNull(marshaller);
@@ -60,6 +71,7 @@ public class DatabaseClusterEventPollerTask implements ScheduledTask {
         this.marshaller = marshaller;
     }
 
+    /** 定时任务入口：处理新事件并清理过期事件。 */
     @Override
     public void run(KeycloakSession session) {
         JpaClusterEventStoreProvider store = new JpaClusterEventStoreProvider(session);
@@ -67,6 +79,9 @@ public class DatabaseClusterEventPollerTask implements ScheduledTask {
         cleanupStaleEvents(session, store);
     }
 
+    /**
+     * 从数据库批量读取事件，反序列化后写入本地 work 缓存，并删除已处理的行。
+     */
     static void processEvents(KeycloakSession session, JpaClusterEventStoreProvider store, String clusterName, Marshaller marshaller) {
         if (!shouldProcessEvents(session)) return;
 
@@ -108,18 +123,22 @@ public class DatabaseClusterEventPollerTask implements ScheduledTask {
         }
     }
 
+    /** 定期删除超过保留期的陈旧事件，频率低于事件处理本身。 */
     private void cleanupStaleEvents(KeycloakSession session, JpaClusterEventStoreProvider store) {
         if (staleEventHorizon < Time.currentTimeMillis()) {
             if (!shouldProcessEvents(session)) return;
             store.deleteEventsOlderThan(Time.currentTimeMillis() - STALE_EVENT_RETENTION_MS);
-            // Stale event deletion should run less frequently than the processing of events
+            // 过期事件清理频率应低于事件处理频率
             staleEventHorizon = Time.currentTimeMillis() + STALE_EVENT_RETENTION_MS;
         }
     }
 
+    /**
+     * 判断是否应由本节点执行轮询：仅在协调者节点运行，避免多节点重复消费。
+     */
     private static boolean shouldProcessEvents(KeycloakSession session) {
         InfinispanConnectionProviderFactory providerFactory = (InfinispanConnectionProviderFactory) session.getKeycloakSessionFactory().getProviderFactory(InfinispanConnectionProvider.class);
-        // It is sufficient to run this on the coordinator only, let's save the bandwidth on the other nodes
+        // 协调者节点执行即可，节省其他节点的带宽
         return !providerFactory.isCoordinatorSupported() || providerFactory.isCoordinator();
     }
 }

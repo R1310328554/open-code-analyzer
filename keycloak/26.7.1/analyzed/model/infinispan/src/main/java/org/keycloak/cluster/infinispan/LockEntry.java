@@ -23,6 +23,11 @@ import org.infinispan.protostream.annotations.Proto;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 分布式任务锁条目：记录持有锁的集群节点名称。
+ * <p>
+ * 通过 Infinispan work 缓存的 {@code putIfAbsent} 实现集群级互斥，
+ * 供 {@link InfinispanClusterProvider} 与 {@link RemoteInfinispanClusterProvider} 使用。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.LOCK_ENTRY)

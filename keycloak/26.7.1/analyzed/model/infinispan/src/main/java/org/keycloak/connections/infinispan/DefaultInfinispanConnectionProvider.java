@@ -34,6 +34,11 @@ import org.infinispan.persistence.manager.PersistenceManager;
 import org.infinispan.util.concurrent.BlockingManager;
 
 /**
+ * 嵌入式 Infinispan 连接提供者的默认实现。
+ * <p>
+ * 封装 {@link EmbeddedCacheManager}、拓扑/节点信息，并提供缓存访问、
+ * ProtoStream 迁移、调度执行器与序列化器等基础设施能力。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public record DefaultInfinispanConnectionProvider(EmbeddedCacheManager cacheManager,
@@ -47,10 +52,12 @@ public record DefaultInfinispanConnectionProvider(EmbeddedCacheManager cacheMana
         Objects.requireNonNull(nodeInfo);
     }
 
+    /** 获取缓存的 PersistenceManager 组件。 */
     private static PersistenceManager persistenceManager(Cache<?, ?> cache) {
         return ComponentRegistry.componentOf(cache, PersistenceManager.class);
     }
 
+    /** 清空持久化存储（CacheStore）中的全部数据。 */
     private static CompletionStage<Void> clearPersistenceManager(PersistenceManager persistenceManager) {
         return persistenceManager.clearAllStores(PersistenceManager.AccessMode.BOTH);
     }
@@ -60,6 +67,7 @@ public record DefaultInfinispanConnectionProvider(EmbeddedCacheManager cacheMana
         return cacheManager.getCache(name, createIfAbsent);
     }
 
+    /** 嵌入式模式下不支持 Hot Rod 远程缓存。 */
     @Override
     public <K, V> RemoteCache<K, V> getRemoteCache(String cacheName) {
         throw new IllegalStateException("Remote stores cannot be used with Embedded Infinispan.");
@@ -75,10 +83,16 @@ public record DefaultInfinispanConnectionProvider(EmbeddedCacheManager cacheMana
         return nodeInfo;
     }
 
+    /**
+     * 将 JBoss Marshalling 编码迁移至 Infinispan ProtoStream。
+     * <p>
+     * 仅 CacheStore（持久化层）以二进制格式存储数据，需清空后重建。
+     * 假设 KC 25 与 KC 26 不会在同一集群中共存（无滚动升级）。
+     */
     @Override
     public CompletionStage<Void> migrateToProtoStream() {
-        // Only the CacheStore (persistence) stores data in binary format and needs to be deleted.
-        // We assume rolling-upgrade between KC 25 and KC 26 is not available, in other words, KC 25 and KC 26 servers are not present in the same cluster.
+        // 仅 CacheStore（持久化）以二进制格式存储，需要删除
+        // 假设 KC 25 与 KC 26 之间不支持滚动升级，即不会同集群共存
         var stage = CompletionStages.aggregateCompletionStage();
         Arrays.stream(CLUSTERED_CACHE_NAMES)
                 .map(cacheName -> cacheManager.getCache(cacheName, false))

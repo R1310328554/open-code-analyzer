@@ -42,9 +42,16 @@ import org.jboss.logging.Logger;
 import static org.keycloak.cluster.infinispan.InfinispanClusterProvider.TASK_KEY_PREFIX;
 import static org.keycloak.cluster.infinispan.remote.RemoteInfinispanClusterProviderFactory.putIfAbsentWithRetries;
 
+/**
+ * 基于远程 Infinispan（Hot Rod）的集群提供者实现。
+ * <p>
+ * 与嵌入式 {@link InfinispanClusterProvider} 语义相同，但通过 Hot Rod 客户端访问远端 work 缓存，
+ * 事件通知委托给 {@link RemoteInfinispanNotificationManager} 处理。
+ */
 public class RemoteInfinispanClusterProvider implements ClusterProvider {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** 工厂级共享数据（缓存、通知管理器、执行器等）。 */
     private final SharedData data;
 
     public RemoteInfinispanClusterProvider(SharedData data) {
@@ -56,6 +63,7 @@ public class RemoteInfinispanClusterProvider implements ClusterProvider {
         return data.clusterStartupTime();
     }
 
+    /** 集群级互斥执行（Hot Rod putIfAbsent 实现分布式锁）。 */
     @Override
     public <T> ExecutionResult<T> executeIfNotExecuted(String taskKey, int taskTimeoutInSeconds, Callable<T> task) {
         String cacheKey = TASK_KEY_PREFIX + taskKey;
@@ -78,12 +86,13 @@ public class RemoteInfinispanClusterProvider implements ClusterProvider {
         }
     }
 
+    /** 异步版集群互斥，通过 NotificationManager 协调 TaskCallback。 */
     @Override
     public Future<Boolean> executeIfNotExecutedAsync(String taskKey, int taskTimeoutInSeconds, Callable task) {
         TaskCallback newCallback = new TaskCallback();
         TaskCallback callback = data.notificationManager().registerTaskCallback(TASK_KEY_PREFIX + taskKey, newCallback);
 
-        // We successfully submitted our task
+        // 成功提交任务
         if (newCallback == callback) {
             Supplier<Boolean> wrappedTask = () -> {
                 boolean executed = executeIfNotExecuted(taskKey, taskTimeoutInSeconds, task).isExecuted();
@@ -123,6 +132,7 @@ public class RemoteInfinispanClusterProvider implements ClusterProvider {
         data.notificationManager().notify(taskKey, events, ignoreSender, DCNotify.ALL_DCS);
     }
 
+    /** 集群事件通知委托给 NotificationManager。 */
     @Override
     public void notify(String taskKey, Collection<? extends ClusterEvent> events, boolean ignoreSender, DCNotify dcNotify) {
         data.notificationManager().notify(taskKey, events, ignoreSender, dcNotify);
@@ -133,6 +143,7 @@ public class RemoteInfinispanClusterProvider implements ClusterProvider {
 
     }
 
+    /** 通过 Hot Rod putIfAbsent 尝试获取分布式锁。 */
     private boolean tryLock(String cacheKey, int taskTimeoutInSeconds) {
         LockEntry myLock = createLockEntry();
 
@@ -150,12 +161,14 @@ public class RemoteInfinispanClusterProvider implements ClusterProvider {
         }
     }
 
+    /** 创建包含本节点名称的 LockEntry。 */
     private LockEntry createLockEntry() {
         return new LockEntry(data.notificationManager().getMyNodeName());
     }
 
+    /** 带退避重试地从远端缓存移除锁条目。 */
     private void removeFromCache(String cacheKey) {
-        // More attempts to send the message (it may fail if some node fails in the meantime)
+        // 多次尝试移除（期间可能有节点故障）
         Retry.executeWithBackoff((int iteration) -> {
             data.cache().remove(cacheKey);
             if (logger.isTraceEnabled()) {
@@ -164,10 +177,15 @@ public class RemoteInfinispanClusterProvider implements ClusterProvider {
         }, 10, 10);
     }
 
+    /** 工厂与 Provider 共享的运行时数据接口。 */
     public interface SharedData {
+        /** 集群启动时间（秒）。 */
         int clusterStartupTime();
+        /** 用于分布式锁的 Hot Rod 缓存。 */
         RemoteCache<String, LockEntry> cache();
+        /** 集群事件通知管理器。 */
         RemoteInfinispanNotificationManager notificationManager();
+        /** 异步任务执行器。 */
         Executor executor();
     }
 }
