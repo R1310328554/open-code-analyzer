@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:46:50Z",
-  "files": [
-    "ssf/services/src/main/java/org/keycloak/ssf/services/SsfBootstrap.java",
-    "ssf/services/src/main/java/org/keycloak/ssf/services/SsfRealmResourceProvider.java",
-    "ssf/services/src/main/java/org/keycloak/ssf/services/SsfRealmResourceProviderFactory.java",
-    "ssf/services/src/main/java/org/keycloak/ssf/services/admin/SsfAdminRealmResourceProvider.java",
-    "ssf/services/src/main/java/org/keycloak/ssf/services/admin/SsfAdminRealmResourceProviderFactory.java",
-    "ssf/services/src/main/java/org/keycloak/ssf/services/admin/SsfAdminResource.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/DefaultSsfTransmitterProvider.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/DefaultSsfTransmitterProviderFactory.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/SsfScopes.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/SsfTransmitter.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/SsfTransmitterConfig.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/SsfTransmitterContext.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/SsfTransmitterProvider.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/SsfTransmitterProviderFactory.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/SsfTransmitterServiceBuilder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 598,
-  "done": 5385
+  "done": 5400
 }
