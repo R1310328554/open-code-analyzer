@@ -27,7 +27,9 @@ import static com.alibaba.nacos.api.ai.constant.AiConstants.A2a.A2A_ENDPOINT_TYP
 import static com.alibaba.nacos.api.ai.constant.AiConstants.A2a.A2A_ENDPOINT_TYPE_URL;
 
 /**
- * Agent Card Form request.
+ * Agent Card 注册/创建请求表单。
+ *
+ * <p>校验 {@code agentCard} 必填及 {@code registrationType} 为 URL 或 SERVICE。</p>
  *
  * @author xiweng.yy
  */
@@ -36,6 +38,7 @@ public class AgentCardForm extends AgentForm {
     @Serial
     private static final long serialVersionUID = 8361628138801381818L;
     
+    /** Agent Card JSON 内容 */
     private String agentCard;
     
     @Override
@@ -50,6 +53,7 @@ public class AgentCardForm extends AgentForm {
         
     }
     
+    /** 校验注册类型为 URL 或 SERVICE */
     protected void validateRegistrationType() throws NacosApiException {
         if (!A2A_ENDPOINT_TYPE_URL.equals(getRegistrationType())
             && !A2A_ENDPOINT_TYPE_SERVICE.equals(
@@ -62,6 +66,7 @@ public class AgentCardForm extends AgentForm {
         }
     }
     
+    /** 未指定时默认 registrationType 为 URL */
     protected void fillDefaultRegistrationType() {
         if (StringUtils.isEmpty(getRegistrationType())) {
             setRegistrationType(A2A_ENDPOINT_TYPE_URL);

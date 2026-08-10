@@ -66,7 +66,9 @@ import static com.alibaba.nacos.ai.constant.Constants.Skills.ADMIN_PATH;
 import static com.alibaba.nacos.plugin.auth.constant.Constants.Tag.ALLOW_ANONYMOUS;
 
 /**
- * Skill admin controller.
+ * Skill 管理端控制器，提供 Skill 全生命周期治理 API。
+ *
+ * <p>涵盖详情查询、版本管理、草稿编辑、提审发布、上下线、标签与可见性等操作；上传接口支持单 Skill ZIP 与批量导入。</p>
  *
  * @author nacos
  */
@@ -76,6 +78,7 @@ import static com.alibaba.nacos.plugin.auth.constant.Constants.Tag.ALLOW_ANONYMO
 @ExtractorManager.Extractor(httpExtractor = SkillHttpParamExtractor.class)
 public class SkillAdminController {
     
+    /** Skill 写操作与治理服务 */
     private final SkillOperationService skillOperationService;
     
     public SkillAdminController(SkillOperationService skillOperationService) {
@@ -83,7 +86,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Get skill detail for admin (includes version governance info and all version summaries).
+     * 管理端获取 Skill 详情（含版本治理信息与全部版本摘要）。
      *
      * @param form the skill form to get
      * @return result of the get operation
@@ -99,7 +102,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Get specific version detail of a skill for viewing or editing.
+     * 获取指定 Skill 版本的完整内容，供查看或编辑。
      *
      * @param form the skill form containing skillName and version
      * @return full skill content for the specified version
@@ -116,7 +119,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Download a specific version of a skill as ZIP file.
+     * 下载指定 Skill 版本为 ZIP 包。
      *
      * @param form the skill form containing skillName and version
      * @return ZIP file as ResponseEntity
@@ -134,7 +137,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Delete skill.
+     * 删除 Skill 及其全部版本数据。
      *
      * @param form the skill form to delete
      * @return result of the deletion operation
@@ -150,7 +153,7 @@ public class SkillAdminController {
     }
     
     /**
-     * List skills for admin (includes governance metadata: status, tags, labels, etc.).
+     * 管理端分页列出 Skill（含状态、标签、labels 等治理元数据）。
      *
      * @param skillListForm the skill list form to list
      * @param pageForm      the page form to list
@@ -175,7 +178,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Upload skill from zip file.
+     * 从 ZIP 文件上传 Skill。
      *
      * @param request     HTTP servlet request
      * @param namespaceId namespace ID
@@ -209,8 +212,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Batch upload multiple skills from a single zip file. The zip must contain one-level subdirectories,
-     * each with its own SKILL.md. Uses best-effort strategy.
+     * 从单个 ZIP 批量上传多个 Skill（一级子目录各含 SKILL.md），尽力而为策略。
      *
      * @param request     HTTP servlet request
      * @param namespaceId namespace ID
@@ -236,7 +238,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Create draft: {@code skillCard} required unless {@code basedOnVersion} is set (fork from existing version).
+     * 创建草稿：未指定 {@code basedOnVersion} 时必须提供 {@code skillCard}；可基于已有版本 fork。
      */
     @Since("3.2.0")
     @PostMapping("/draft")
@@ -250,7 +252,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Update current draft content.
+     * 更新当前草稿版本内容。
      */
     @Since("3.2.0")
     @PutMapping("/draft")
@@ -263,7 +265,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Delete current draft version.
+     * 删除当前草稿版本。
      */
     @Since("3.2.0")
     @DeleteMapping("/draft")
@@ -275,7 +277,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Submit a version for pipeline review.
+     * 提交版本进入流水线审核。
      */
     @Since("3.2.0")
     @PostMapping("/submit")
@@ -288,7 +290,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Publish an approved reviewing version.
+     * 发布已通过审核的版本。
      */
     @Since("3.2.0")
     @PostMapping("/publish")
@@ -302,8 +304,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Force-publish a skill version, bypassing pipeline validation. Accepts draft, reviewing, and reviewed versions.
-     * Only admin users can call this endpoint.
+     * 强制发布 Skill 版本，跳过流水线校验；仅管理员可调用。
      */
     @Since("3.2.1")
     @PostMapping("/force-publish")
@@ -319,7 +320,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Re-edit a reviewed version, transitioning it back to draft for modification.
+     * 将已审核版本退回草稿以便重新编辑。
      */
     @Since("3.2.2")
     @PostMapping("/redraft")
@@ -332,7 +333,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Update runtime route labels without changing version status.
+     * 更新运行时路由 labels，不改变版本状态。
      */
     @Since("3.2.0")
     @PutMapping("/labels")
@@ -345,7 +346,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Update skill biz tags without changing version status.
+     * 更新 Skill 业务标签，不改变版本状态。
      */
     @Since("3.2.0")
     @PutMapping("/biz-tags")
@@ -358,7 +359,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Online operation (version-level or skill-level by scope).
+     * 上线操作（按 scope 支持版本级或 Skill 级）。
      */
     @Since("3.2.0")
     @PostMapping("/online")
@@ -372,7 +373,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Update skill visibility scope (PUBLIC or PRIVATE).
+     * 更新 Skill 可见性范围（PUBLIC 或 PRIVATE）。
      *
      * @param form the scope update form
      * @return result of the update operation
@@ -389,7 +390,7 @@ public class SkillAdminController {
     }
     
     /**
-     * Offline operation (version-level or skill-level by scope).
+     * 下线操作（按 scope 支持版本级或 Skill 级）。
      */
     @Since("3.2.0")
     @PostMapping("/offline")

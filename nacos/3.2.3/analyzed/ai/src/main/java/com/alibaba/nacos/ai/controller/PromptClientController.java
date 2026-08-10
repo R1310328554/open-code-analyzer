@@ -38,7 +38,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Prompt client controller for prompt runtime read query.
+ * Prompt 客户端控制器，供运行时只读查询 Prompt 内容。
+ *
+ * <p>支持按 version / label / latest 优先级解析版本；客户端可携带 md5 实现 304 未修改响应。</p>
  *
  * @author nacos
  */
@@ -48,6 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 @ExtractorManager.Extractor(httpExtractor = PromptHttpParamExtractor.class)
 public class PromptClientController {
     
+    /** Prompt 客户端读操作服务 */
     private final PromptClientOperationService promptOperationService;
     
     public PromptClientController(PromptClientOperationService promptOperationService) {
@@ -55,7 +58,8 @@ public class PromptClientController {
     }
     
     /**
-     * Query prompt by version/label/latest with priority version > label > latest.
+     * 按 version &gt; label &gt; latest 优先级查询 Prompt。
+     * <p>校验表单后委托 {@link PromptClientOperationService}；若客户端 md5 与发布内容一致则返回 HTTP 304。</p>
      */
     @Since("3.2.0")
     @GetMapping
@@ -69,6 +73,7 @@ public class PromptClientController {
                     form.getVersion(), form.getLabel(), form.getMd5());
             return Result.success(PromptConvertUtils.toClientPrompt(result));
         } catch (NacosException ex) {
+            // 内容未变更：设置 304 状态并返回空结果
             if (ex.getErrCode() == NacosException.NOT_MODIFIED) {
                 response.setStatus(NacosException.NOT_MODIFIED);
                 return Result.success(null);

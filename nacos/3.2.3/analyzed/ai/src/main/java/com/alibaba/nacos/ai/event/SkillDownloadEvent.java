@@ -21,8 +21,9 @@ import com.alibaba.nacos.common.notify.SlowEvent;
 import java.io.Serial;
 
 /**
- * Event published when a skill version is downloaded. Consumed by {@code SkillDownloadCountManager} to accumulate
- * download counts in memory and flush to DB periodically.
+ * Skill 版本被下载时发布的慢事件。
+ *
+ * <p>由 {@code SkillDownloadCountManager} 消费，在内存中累加下载次数并定期刷入 DB。</p>
  *
  * @author nacos
  * @since 3.2.0
@@ -32,12 +33,16 @@ public class SkillDownloadEvent extends SlowEvent {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 命名空间 ID */
     private final String namespaceId;
     
+    /** Skill 名称 */
     private final String name;
     
+    /** Skill 类型 */
     private final String type;
     
+    /** 被下载的版本号 */
     private final String version;
     
     public SkillDownloadEvent(String namespaceId, String name, String type, String version) {

@@ -24,7 +24,9 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import java.io.Serial;
 
 /**
- * AgentSpec detail form (for create and detail).
+ * AgentSpec 详情/创建表单。
+ *
+ * <p>{@code agentSpecCard} 必填，包含完整 AgentSpec 信息；agentSpecName 可省略（从 card 中解析）。</p>
  *
  * @author nacos
  */
@@ -34,15 +36,15 @@ public class AgentSpecDetailForm extends AgentSpecForm {
     private static final long serialVersionUID = 1L;
     
     /**
-     * AgentSpec card JSON string, contains complete AgentSpec information.
+     * AgentSpec Card JSON 字符串，包含完整 AgentSpec 信息。
      */
     private String agentSpecCard;
     
     @Override
     public void validate() throws NacosApiException {
         fillDefaultNamespaceId();
-        // For create/detail, agentSpecName is optional (can be in agentSpecCard)
-        // Only agentSpecCard is required
+        // 创建/详情场景 agentSpecName 可选（可含于 agentSpecCard）
+        // 仅 agentSpecCard 必填
         if (StringUtils.isEmpty(agentSpecCard)) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Request parameter `agentSpecCard` should not be `null` or empty.");

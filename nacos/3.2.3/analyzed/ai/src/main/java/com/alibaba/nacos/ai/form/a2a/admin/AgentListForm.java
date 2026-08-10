@@ -24,7 +24,9 @@ import com.alibaba.nacos.api.model.v2.ErrorCode;
 import java.io.Serial;
 
 /**
- * Agent list form.
+ * A2A Agent 列表查询表单。
+ *
+ * <p>{@code search} 须为 {@code accurate} 或 {@code blur}，控制精确/模糊搜索模式。</p>
  *
  * @author KiteSoar
  */
@@ -33,6 +35,7 @@ public class AgentListForm extends AgentForm {
     @Serial
     private static final long serialVersionUID = 4706219418699928980L;
     
+    /** 搜索模式：accurate 或 blur */
     private String search;
     
     @Override

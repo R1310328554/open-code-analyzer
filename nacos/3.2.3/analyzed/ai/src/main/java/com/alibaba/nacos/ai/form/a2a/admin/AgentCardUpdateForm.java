@@ -22,7 +22,9 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import java.io.Serial;
 
 /**
- * Agent Card Update Form.
+ * Agent Card 更新请求表单。
+ *
+ * <p>支持 {@code setAsLatest} 标记；更新场景下 registrationType 可选。</p>
  *
  * @author xiweng.yy
  */
@@ -31,6 +33,7 @@ public class AgentCardUpdateForm extends AgentCardForm {
     @Serial
     private static final long serialVersionUID = 353698557363707304L;
     
+    /** 是否将本次更新设为 latest 版本 */
     private boolean setAsLatest;
     
     public boolean getSetAsLatest() {
@@ -43,12 +46,12 @@ public class AgentCardUpdateForm extends AgentCardForm {
     
     @Override
     protected void fillDefaultRegistrationType() {
-        // Update does not need to fill registration type
+        // 更新请求无需填充默认 registrationType
     }
     
     @Override
     protected void validateRegistrationType() throws NacosApiException {
-        // Update request if no set registration type, means not change the registration type
+        // 未传 registrationType 表示不修改注册类型
         if (StringUtils.isEmpty(getRegistrationType())) {
             return;
         }

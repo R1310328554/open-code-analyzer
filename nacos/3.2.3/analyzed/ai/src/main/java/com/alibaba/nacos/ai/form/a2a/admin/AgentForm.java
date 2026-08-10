@@ -28,7 +28,9 @@ import java.io.Serial;
 import static com.alibaba.nacos.api.ai.constant.AiConstants.A2a.A2A_DEFAULT_NAMESPACE;
 
 /**
- * Agent form.
+ * A2A Agent 基础请求表单。
+ *
+ * <p>包含 namespaceId、agentName、version、registrationType；namespaceId 缺省时使用 A2A 默认命名空间。</p>
  *
  * @author KiteSoar
  **/
@@ -37,12 +39,16 @@ public class AgentForm implements NacosForm {
     @Serial
     private static final long serialVersionUID = -73912927386186928L;
     
+    /** 命名空间 ID */
     private String namespaceId;
     
+    /** Agent 名称 */
     private String agentName;
     
+    /** Agent 版本号 */
     private String version;
     
+    /** 注册类型（URL 或 SERVICE） */
     private String registrationType;
     
     @Override
@@ -54,6 +60,7 @@ public class AgentForm implements NacosForm {
         }
     }
     
+    /** 空 namespaceId 时填充 A2A 默认命名空间 */
     protected void fillDefaultNamespaceId() {
         if (StringUtils.isEmpty(namespaceId)) {
             namespaceId = A2A_DEFAULT_NAMESPACE;

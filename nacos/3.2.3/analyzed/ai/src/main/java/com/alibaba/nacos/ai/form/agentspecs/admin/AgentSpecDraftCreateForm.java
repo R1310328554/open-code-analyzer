@@ -24,7 +24,9 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import java.io.Serial;
 
 /**
- * AgentSpec draft create form.
+ * AgentSpec 草稿创建表单。
+ *
+ * <p>支持 {@code basedOnVersion} 基于已有版本 fork，以及 {@code targetVersion} 指定目标草稿版本号。</p>
  *
  * @author nacos
  */
@@ -33,8 +35,10 @@ public class AgentSpecDraftCreateForm extends AgentSpecForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 基于的源版本号（fork 时使用） */
     private String basedOnVersion;
     
+    /** 目标草稿版本号 */
     private String targetVersion;
     
     @Override

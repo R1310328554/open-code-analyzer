@@ -38,7 +38,9 @@ import org.springframework.web.bind.annotation.RestController;
 import static com.alibaba.nacos.plugin.auth.constant.Constants.Tag.ALLOW_ANONYMOUS;
 
 /**
- * Skill client controller for runtime read query.
+ * Skill 客户端控制器，供运行时只读下载 Skill ZIP。
+ *
+ * <p>支持 label / version / latest 解析；客户端可携带 md5 实现监听器式 304 轮询。</p>
  *
  * @author nacos
  */
@@ -48,6 +50,7 @@ import static com.alibaba.nacos.plugin.auth.constant.Constants.Tag.ALLOW_ANONYMO
 @ExtractorManager.Extractor(httpExtractor = SkillHttpParamExtractor.class)
 public class SkillClientController {
     
+    /** Skill 客户端读操作服务 */
     private final SkillClientOperationService skillClientOperationService;
     
     public SkillClientController(SkillClientOperationService skillClientOperationService) {
@@ -55,11 +58,10 @@ public class SkillClientController {
     }
     
     /**
-     * Download an online skill version as ZIP file by label/version/latest.
+     * 按 label / version / latest 下载已上线 Skill 版本为 ZIP。
      *
-     * <p>Supports listener-style polling: when the {@code md5} query parameter matches the
-     * server-side published content MD5, the server returns HTTP 304 with the listener headers
-     * ({@code ETag}/{@code X-Nacos-Skill-Md5}) so the client can keep using its local cache.
+     * <p>支持监听器式轮询：{@code md5} 与发布内容一致时返回 HTTP 304 及
+     * {@code ETag}/{@code X-Nacos-Skill-Md5} 头，客户端可继续使用本地缓存。</p>
      */
     @Since("3.2.0")
     @GetMapping
@@ -70,7 +72,7 @@ public class SkillClientController {
         SkillQueryResult result = skillClientOperationService.querySkill(form.getNamespaceId(),
             form.getName(), form.getVersion(), form.getLabel(), form.getMd5());
         if (result.isNotModified()) {
-            // Client-supplied MD5 equals the published one; echo it back as the ETag without
+            // 客户端 md5 与发布内容一致：回显 ETag，无需重新加载 Skill 字节
             // re-loading the skill bytes.
             return SkillRequestUtil.buildSkillNotModifiedResponse(result.getMd5(),
                 result.getResolvedVersion());

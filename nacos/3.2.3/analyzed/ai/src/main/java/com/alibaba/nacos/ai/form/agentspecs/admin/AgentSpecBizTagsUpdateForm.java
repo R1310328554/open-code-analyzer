@@ -24,7 +24,9 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import java.io.Serial;
 
 /**
- * AgentSpec biz tags update form.
+ * AgentSpec 业务标签更新表单。
+ *
+ * <p>{@code bizTags} 为 JSON 数组字符串，如 {@code ["tag1","tag2"]}。</p>
  *
  * @author nacos
  */
@@ -34,7 +36,7 @@ public class AgentSpecBizTagsUpdateForm extends AgentSpecForm {
     private static final long serialVersionUID = 1L;
     
     /**
-     * JSON string: ["tag1","tag2"].
+     * 业务标签 JSON 数组字符串，如 ["tag1","tag2"]。
      */
     private String bizTags;
     

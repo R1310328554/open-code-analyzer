@@ -17,26 +17,29 @@
 package com.alibaba.nacos.ai.enums;
 
 /**
- * McpImportResultStatusEnum.
+ * MCP 批量导入结果状态枚举。
+ *
+ * <p>标识单条 MCP Server 导入记录的最终状态：跳过、失败或成功。</p>
  * @author xinluo
  */
 public enum McpImportResultStatusEnum {
     
     /**
-     * SKIPPED.
+     * 已跳过（如重复或不符合导入条件）。
      */
     SKIPPED("skipped"),
     
     /**
-     * FAILED.
+     * 导入失败。
      */
     FAILED("failed"),
     
     /**
-     * SUCCESS.
+     * 导入成功。
      */
     SUCCESS("success");
     
+    /** 状态字符串值 */
     private final String name;
     
     McpImportResultStatusEnum(String name) {

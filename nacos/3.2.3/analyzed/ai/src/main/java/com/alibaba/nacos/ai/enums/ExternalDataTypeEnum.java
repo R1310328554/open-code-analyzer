@@ -19,38 +19,30 @@ package com.alibaba.nacos.ai.enums;
 import com.alibaba.nacos.api.utils.StringUtils;
 
 /**
- * External data type enum. User can import external
- * mcp server data to nacos, the data type is defined
- * by this enum.
+ * 外部 MCP 数据类型枚举。
+ *
+ * <p>用户可将外部 MCP Server 数据导入 Nacos，本枚举定义支持的导入来源类型。</p>
  * @author xinluo
  */
 public enum ExternalDataTypeEnum {
     
     /**
-     * MCP Server json text, the json text should follow the
-     * MCP Server json format as defined in
-     * <a href="https://github.com/modelcontextprotocol/registry/blob/main/docs/
-     * reference/server-json/server.schema.json">MCP Server</a>.
+     * MCP Server JSON 文本，须符合 MCP Server JSON Schema 格式。
      */
     JSON("json"),
     
     /**
-     * MCP registry url, the url should be a valid MCP registry url
-     * and the api should follow the MCP registry api as defined in
-     * <a href="https://github.com/modelcontextprotocol/registry/blob/main/docs/
-     * reference/api/openapi.yaml">openapi.yaml</a>.
+     * MCP Registry URL，须为合法 Registry 地址且 API 符合 OpenAPI 规范。
      */
     URL("url"),
     
     /**
-     * MCP registry seed file
-     * <a href="https://github.com/modelcontextprotocol/registry/blob/main/data
-     * /seed.json">seed.json</a>.
+     * MCP Registry 种子文件（seed.json）。
      */
     FILE("file");
     
     /**
-     * The name of the external data type.
+     * 外部数据类型的字符串标识。
      */
     private final String name;
     
@@ -63,7 +55,7 @@ public enum ExternalDataTypeEnum {
     }
     
     /**
-     * Parse the external data type from the given value.
+     * 从字符串解析外部数据类型。
      * @param value the value to parse.
      * @return the external data type.
      */
