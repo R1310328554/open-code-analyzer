@@ -15,23 +15,8 @@
     "server-spi/src/main/java/org/keycloak/credential/UserCredentialStore.java",
     "server-spi/src/main/java/org/keycloak/credential/hash/PasswordHashProvider.java",
     "server-spi/src/main/java/org/keycloak/http/FormPartValue.java",
-    "server-spi/src/main/java/org/keycloak/http/HttpRequest.java",
-    "server-spi/src/main/java/org/keycloak/http/HttpResponse.java",
-    "server-spi/src/main/java/org/keycloak/keys/KeyMetadata.java",
-    "server-spi/src/main/java/org/keycloak/keys/RsaKeyMetadata.java",
-    "server-spi/src/main/java/org/keycloak/keys/SecretKeyMetadata.java",
-    "server-spi/src/main/java/org/keycloak/locale/LocaleSelectorProvider.java",
-    "server-spi/src/main/java/org/keycloak/locale/LocaleSelectorProviderFactory.java",
-    "server-spi/src/main/java/org/keycloak/locale/LocaleSelectorSPI.java",
-    "server-spi/src/main/java/org/keycloak/locale/LocaleUpdaterProvider.java",
-    "server-spi/src/main/java/org/keycloak/locale/LocaleUpdaterProviderFactory.java",
-    "server-spi/src/main/java/org/keycloak/locale/LocaleUpdaterSPI.java",
-    "server-spi/src/main/java/org/keycloak/migration/MigrationModel.java",
-    "server-spi/src/main/java/org/keycloak/models/AbstractConfig.java",
-    "server-spi/src/main/java/org/keycloak/models/AbstractKeycloakTransaction.java",
-    "server-spi/src/main/java/org/keycloak/models/AuthenticatedClientSessionModel.java",
-    "server-spi/src/main/java/org/keycloak/models/AuthenticationExecutionModel.java"
+    "server-spi/src/main/java/org/keycloak/http/HttpRequest.java"
   ],
   "remaining_pending": 2428,
-  "done": 3540
+  "done": 3555
 }
