@@ -2083,3 +2083,18 @@
 2026-08-10T04:42:06Z DONE naming/src/main/java/com/alibaba/nacos/naming/pojo/instance/InstanceExtensionHandler.java wave69a [0:15] naming paramcheck/pojo/instance
 2026-08-10T04:42:06Z DONE naming/src/main/java/com/alibaba/nacos/naming/pojo/instance/InstanceIdGeneratorManager.java wave69a [0:15] naming paramcheck/pojo/instance
 2026-08-10T04:42:06Z DONE naming/src/main/java/com/alibaba/nacos/naming/pojo/instance/SnowFlakeInstanceIdGenerator.java wave69a [0:15] naming paramcheck/pojo/instance
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/ClientInfo.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/NamingFuzzyWatchChangeNotifier.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/NamingFuzzyWatchSyncNotifier.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/NamingSubscriberService.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/NamingSubscriberServiceAggregationImpl.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/NamingSubscriberServiceLocalImpl.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/NamingSubscriberServiceV2Impl.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/NoRequiredRetryException.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/PushConfig.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/PushDataWrapper.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/executor/PushExecutor.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/executor/PushExecutorDelegate.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/executor/PushExecutorRpcImpl.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/executor/SpiImplPushExecutorHolder.java wave69b [15:30] naming push/subscriber/v2 executor
+2026-08-10T04:42:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/executor/SpiPushExecutor.java wave69b [15:30] naming push/subscriber/v2 executor
