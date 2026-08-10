@@ -14,13 +14,13 @@
 //  limitations under the License.
 //
 
-// Internal chunk execution entrypoint used by production callers.
+// 内部 chunk 执行入口，供生产调用方通过 typed ChunkOptions 驱动流水线。
 package chunk
 
 import "fmt"
 
-// Run executes the internal chunk steps against `text` using typed
-// options. The sequence is preprocess -> split -> postprocess.
+// Run 对 text 执行 preprocess→split→postprocess 序列；
+// 各阶段按配置条件插入，未启用后处理时回退 SplitChunks 为 ResultChunks。
 func Run(text string, opts ChunkOptions) (*ChunkContext, error) {
 	if err := opts.validate(); err != nil {
 		return nil, err
@@ -93,3 +93,5 @@ func Run(text string, opts ChunkOptions) (*ChunkContext, error) {
 	}
 	return ctx, nil
 }
+
+// Run 为 ingestion TokenChunker 等组件调用的轻量分块引擎入口；阶段名用于错误包装便于定位失败算子。

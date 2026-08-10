@@ -39,11 +39,11 @@ func NewDOCXParser(libType string) (*DOCXParser, error) {
 	}
 }
 
-// ParseWithResult captures the office_oxide ToMarkdown output
-// instead of discarding it. Returns OutputFormat="markdown" with
+// ParseWithResult 调用 office_oxide ToMarkdown 产出 DOCX Markdown。
+// 返回 OutputFormat=markdown，镜像 Python Docx 分支 wire 形状。
 // the rendered Markdown on the matching key. Mirrors the python
 // parser.py:Docx branch which uses rag.app.naive.Docx to render
-// markdown; the Go side delegates to office_oxide for now and
+// Go 侧暂委托 office_oxide，后续可换原生 Markdown 渲染器。
 // will switch to a native Markdown renderer in a follow-up.
 func (p *DOCXParser) ParseWithResult(filename string, data []byte) ParseResult {
 	doc, err := officeOxide.OpenFromBytes(data, "docx")
@@ -67,3 +67,5 @@ func (p *DOCXParser) ParseWithResult(filename string, data []byte) ParseResult {
 func (p *DOCXParser) String() string {
 	return "DOCXParser"
 }
+
+// DOCXParser 与 DOCParser 同属 Office 家族，共享 OfficeOxide lib_type 标识。

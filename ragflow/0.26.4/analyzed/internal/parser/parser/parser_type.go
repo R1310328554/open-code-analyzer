@@ -16,11 +16,15 @@
 
 package parser
 
+// parser_type.go — 解析器工厂：按 utility.FileType 与 lib_type 分发具体 parser。
+
+
 import (
 	"fmt"
 	"ragflow/internal/utility"
 )
 
+// GetParser 根据文件类型与 config.lib_type 构造 ParseResultProducer 实例。
 func GetParser(fileType utility.FileType, config map[string]string) (ParseResultProducer, error) {
 	libType, ok := config["lib_type"]
 	if !ok {
@@ -51,3 +55,5 @@ func GetParser(fileType utility.FileType, config map[string]string) (ParseResult
 		return nil, fmt.Errorf("unsupported file type: %s", fileType)
 	}
 }
+
+// GetParser 覆盖 Office/PDF/HTML/Markdown/TXT 等家族；HTML 固定 Official、Markdown 固定 GoMarkdown。

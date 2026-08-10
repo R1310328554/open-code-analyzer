@@ -16,6 +16,9 @@
 
 package parser
 
+// html_parser.go — HTML 解析：块级元素遍历，产出 JSON item 列表。
+
+
 import (
 	"bytes"
 	"fmt"
@@ -47,16 +50,16 @@ func (p *HTMLParser) String() string {
 	return "HTMLParser"
 }
 
-// ParseWithResult emits one item per block-level HTML element
-// (headings, paragraphs, lists, pre blocks). The walker is a
+// ParseWithResult 每个块级 HTML 元素产出一条 {text, doc_type_kwd, ck_type} item。
+// 纯 Go html.Parse 遍历替代原 debug 输出；
 // pure-Go replacement for the previous `fmt.Printf` debug output:
 // it descends the html.Parse tree, joins the leaf text of each
 // block-level element, and emits the python-compatible
 // `{text, doc_type_kwd:"text"}` shape.
 //
-// Phase 2.5 (Slice 1) of port-rag-flow-pipeline-to-go.md makes
+// Phase 2.5 Slice 1 将 HTMLParser 提升为 ParseResultProducer。
 // HTMLParser a ParseResultProducer so the dispatch seam routes
-// the html family through the structured path. Inline formatting
+// 行内格式（粗体/链接/图片）折叠进父块 text，不单独 ck_type。
 // (bold / links / images) is intentionally NOT surfaced as a
 // separate ck_type — the python HtmlParser collapses inline
 // formatting into the parent block's text.
@@ -83,7 +86,7 @@ func (p *HTMLParser) ParseWithResult(filename string, data []byte) ParseResult {
 	}
 }
 
-// walkHTMLBlocks emits one normalized item per block-level
+// walkHTMLBlocks 遍历块级后代；script/style/noscript 整段跳过。
 // descendant of root. Inline elements (b, i, a, span, …) are
 // collapsed into the parent's text via leafText. <script> and
 // <style> blocks are skipped entirely so they don't pollute the
@@ -115,9 +118,9 @@ func walkHTMLBlocks(root *html.Node, out *[]map[string]any) {
 	}
 }
 
-// htmlTagToCkType maps HTML block tags to the python `ck_type`
+// htmlTagToCkType 将 HTML 标签映射为 Python ck_type 词汇表。
 // vocabulary used downstream by TitleChunker and similar
-// components. Tags not in the map fall back to "text".
+// 未映射标签回退 text。
 func htmlTagToCkType(tag string) string {
 	switch tag {
 	case "h1", "h2", "h3", "h4", "h5", "h6":
@@ -138,7 +141,7 @@ func htmlTagToCkType(tag string) string {
 	return "text"
 }
 
-// htmlLeafText joins the visible text of an HTML node and its
+// htmlLeafText 递归拼接可见文本，块级子节点间插入换行。
 // descendants. <script>/<style> subtrees are skipped (mirrors
 // the python html.parser behaviour). The output preserves
 // whitespace runs so headings like "<h1>Hello   world</h1>"
@@ -183,3 +186,5 @@ func isBlockTag(tag string) bool {
 	}
 	return false
 }
+
+// HTMLParser lib_type=official；OutputFormat=json，供 TitleChunker 等下游消费。

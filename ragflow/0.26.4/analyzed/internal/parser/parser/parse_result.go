@@ -14,8 +14,8 @@
 //  limitations under the License.
 //
 
-// ParseResult is the structured output contract for the Go parser
-// library. Port-rag-flow-pipeline-to-go.md §6.5 mandates that
+// ParseResult 为 Go parser 库的结构化输出契约（port-rag-flow-pipeline §6.5）。
+// 要求 parsers 产出足够数据以重建 Python 兼容的阶段边界载荷。
 // parsers surface enough data to reconstruct a Python-compatible
 // stage-boundary payload:
 //
@@ -24,16 +24,16 @@
 //	exactly one payload family populated (matching output_format)
 //	err
 //
-// Go parser callers now consume only the structured ParseResult
+// Go 调用方仅消费 ParseResult；旧 Parse(filename,[]byte) error 接口已移除。
 // contract. The legacy `Parse(filename, []byte) error` interface has
 // been removed so parser dispatch, ingestion, and service paths all
 // share the same typed payload contract.
 
 package parser
 
-// ParseResult is the structured return value of a successful parse.
+// ParseResult 成功时恰好填充一种 payload 族（JSON/Markdown/Text/HTML）。
 // Exactly one of the payload fields (JSON / Markdown / Text / HTML)
-// is populated on success, matching the Python contract — see
+// 失败时 Err 非 nil，各 payload 字段均为零值。
 // port-rag-flow-pipeline-to-go.md §4.2:
 //
 //   - OutputFormat = "json"     → JSON populated
@@ -44,19 +44,19 @@ package parser
 // On failure (Err != nil), all payload fields are zero values and
 // OutputFormat is empty.
 type ParseResult struct {
-	// OutputFormat is the wire-compatible format the parser
+	// OutputFormat 为 parser 选择的 wire 格式；Err 非 nil 时为空。
 	// chose. Empty when Err is non-nil.
 	OutputFormat string
 
-	// File is the enriched file metadata the parser emits. In
+	// File 为 parser 富化的文件元数据（如 outline、page_count 等）。
 	// Python this is the dict form of the original `file`
 	// descriptor, augmented with format-specific keys (e.g.
 	// `outline` on the PDF path, `page_count` for paginated
 	// formats). Nil when the parser did not enrich.
 	File map[string]any
 
-	// JSON is the structured payload when OutputFormat == "json".
-	// Shape depends on the parser family: PDF emits
+	// JSON 在 OutputFormat=json 时填充；形状因 parser 家族而异。
+	// PDF 产出带 text/doc_type_kwd 的 []map；markdown/html 产出规范化 item。
 	// `[]map[string]any` with `text` + `doc_type_kwd` keys (and
 	// optional `image` / `layout` / `positions` fields);
 	// markdown / html / text emit normalized
@@ -64,25 +64,27 @@ type ParseResult struct {
 	// items. Exactly one payload family is populated on success.
 	JSON []map[string]any
 
-	// Markdown is the string payload when OutputFormat ==
+	// Markdown 在 OutputFormat=markdown 时填充字符串载荷。
 	// "markdown". Empty otherwise.
 	Markdown string
 
-	// Text is the string payload when OutputFormat == "text".
+	// Text 在 OutputFormat=text 时填充纯文本载荷。
 	// Empty otherwise.
 	Text string
 
-	// HTML is the string payload when OutputFormat == "html".
+	// HTML 在 OutputFormat=html 时填充 HTML 字符串载荷。
 	// Empty otherwise.
 	HTML string
 
-	// Err is the failure reason. On non-nil Err, all payload
+	// Err 为失败原因；非 nil 时所有 payload 字段为零值。
 	// fields are zero values.
 	Err error
 }
 
-// ParseResultProducer is the parser package's single structured-output
+// ParseResultProducer 为 parser 包唯一结构化输出接口；GetParser 返回值须实现之。
 // contract. Every parser returned by GetParser must implement it.
 type ParseResultProducer interface {
 	ParseWithResult(filename string, data []byte) ParseResult
 }
+
+// ParseResult 统一 dispatch、ingestion 与 service 路径的类型化载荷契约。

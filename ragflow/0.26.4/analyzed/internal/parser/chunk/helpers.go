@@ -16,10 +16,13 @@
 
 package chunk
 
+// helpers.go — 分块辅助函数：CJK 语言检测与 rune 计数。
+
+
 import "unicode"
 
-// DetectLanguage returns a best-effort language code based on the
-// proportion of CJK characters.
+// DetectLanguage 按 CJK 字符占字母比例启发式返回 zh 或 en。
+// 阈值 0.3 以上判定为中文，写入 chunk metadata.language。
 func DetectLanguage(text string) string {
 	cjk := 0
 	total := 0
@@ -37,7 +40,9 @@ func DetectLanguage(text string) string {
 	return "en"
 }
 
-// RuneCount returns the number of runes in text.
+// RuneCount 返回文本 rune 数（非字节长度），供长度策略与过滤使用。
 func RuneCount(text string) int {
 	return len([]rune(text))
 }
+
+// 语言检测为 best-effort 启发式，不替代正式 NLP 语种识别。

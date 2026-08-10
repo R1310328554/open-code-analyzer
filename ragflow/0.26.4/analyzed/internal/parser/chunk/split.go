@@ -16,6 +16,9 @@
 
 package chunk
 
+// split.go — 切分算子：sentence/char/paragraph/length 四种策略。
+
+
 import (
 	"fmt"
 	"strings"
@@ -30,7 +33,7 @@ type SplitOperator struct {
 	overlap        int
 }
 
-// defaultLengthChunkSize is the window size (in runes) used by the "length"
+// defaultLengthChunkSize 为 length 策略默认窗口大小（256 rune）。
 // strategy when no positive chunk_size is configured.
 const defaultLengthChunkSize = 256
 
@@ -71,7 +74,7 @@ func NewSplitOperator(config map[string]interface{}) (*SplitOperator, error) {
 	return op, nil
 }
 
-// toInt coerces a DSL numeric value (float64 from JSON, or a native integer)
+// toInt 将 JSON float64 或整型 DSL 数值转为 int，其他类型返回 0。
 // to int. Any other type yields 0.
 func toInt(v interface{}) int {
 	switch n := v.(type) {
@@ -131,9 +134,10 @@ func (o *SplitOperator) String() string {
 	return buf.String()
 }
 
+// sentenceBoundaries 为中英混合句界符，首匹配优先。
 var sentenceBoundaries = []string{"。", "！", "？", ".", "!", "?", ";", "\n"}
 
-// splitSentences splits text at the built-in sentence boundaries.
+// splitSentences 在句界符处切分，每块附带 DetectLanguage metadata。
 func (o *SplitOperator) splitSentences(text string) []ChunkData {
 	var chunks []ChunkData
 	var buf strings.Builder
@@ -202,12 +206,12 @@ func (o *SplitOperator) splitByChar(text string) []ChunkData {
 	return chunks
 }
 
-// splitByLength splits text into fixed-size, rune-aware windows of chunkSize
+// splitByLength 按 rune 窗口切分，支持 overlap 保留跨边界上下文。
 // runes, carrying overlap runes from the end of each window into the start of
 // the next. This is the canonical fixed-size-with-overlap chunking used by RAG
 // pipelines to bound chunk length while preserving cross-boundary context.
 //
-// chunkSize defaults to defaultLengthChunkSize when not positive. overlap is
+// overlap 钳制在 [0, chunkSize-1]，保证窗口至少前进 1 rune。
 // clamped to [0, chunkSize-1] so the window always advances by at least one
 // rune and the function terminates. Sizing is by rune count (not bytes), so
 // multi-byte (e.g. CJK) text is windowed by character.
@@ -272,3 +276,5 @@ func (o *SplitOperator) splitByParagraph(text string) []ChunkData {
 	}
 	return chunks
 }
+
+// SplitOperator 默认 strategy=sentence；char 逐 rune 切分，paragraph 按 \n 分段。

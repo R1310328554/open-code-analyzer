@@ -16,6 +16,9 @@
 
 package chunk
 
+// postprocess.go — 后处理算子：greedy 合并与长度/空/重复过滤。
+
+
 import (
 	"fmt"
 	"strings"
@@ -27,12 +30,12 @@ type mergeConfig struct {
 
 type filterConfig struct {
 	MinLength      int  `json:"min_length"`
-	DropEmpty      bool `json:"drop_empty"`      // drop chunks that are empty or whitespace-only
-	DropDuplicates bool `json:"drop_duplicates"` // drop chunks whose content already appeared
+	DropEmpty      bool `json:"drop_empty"`      // 丢弃空或仅空白 chunk
+	DropDuplicates bool `json:"drop_duplicates"` // 丢弃内容完全重复的 chunk（保留首次出现）
 }
 
 // ---------------------------------------------------------------------------
-// PostprocessOperator
+// PostprocessOperator — 流水线后处理阶段，消费 SplitChunks 产出 ResultChunks。
 // ---------------------------------------------------------------------------
 
 type PostprocessOperator struct {
@@ -124,7 +127,7 @@ func (o *PostprocessOperator) String() string {
 	return buf.String()
 }
 
-// mergeChunks greedily merges small chunks into larger ones up to target_size.
+// mergeChunks 贪心合并小 chunk 直至 target_size（rune 计数），单块超限则独立保留。
 func (o *PostprocessOperator) mergeChunks(chunks []ChunkData) []ChunkData {
 	target := o.merge.TargetSize
 	if target <= 0 {
@@ -196,7 +199,7 @@ func (o *PostprocessOperator) mergeChunks(chunks []ChunkData) []ChunkData {
 	return merged
 }
 
-// filterChunks removes chunks outside the length bounds and, when configured,
+// filterChunks 按 min_length 过滤，可选丢弃空块与精确重复内容。
 // drops empty/whitespace-only chunks and exact-duplicate chunks. Duplicate
 // detection is order-preserving: the first occurrence is kept and later chunks
 // with identical content are dropped.
@@ -225,3 +228,5 @@ func (o *PostprocessOperator) filterChunks(chunks []ChunkData) []ChunkData {
 	}
 	return filtered
 }
+
+// 后处理顺序固定为 merge→filter→重编 index/size；merge 默认 target_size=500。

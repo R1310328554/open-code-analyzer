@@ -16,19 +16,22 @@
 
 package chunk
 
-// Operator defines the interface for all chunking pipeline stages.
+// chenk_type.go — 分块流水线核心类型：Operator 接口、ChunkData 与 ChunkContext。
+
+
+// Operator 定义分块流水线各阶段的统一接口（Prepare/Execute/Finish）。
 type Operator interface {
-	// Prepare configures the operator from a DSL stage config map.
+	// Prepare 从 DSL 阶段配置映射初始化算子状态。
 	Prepare(ctx *ChunkContext) error
-	// Execute runs the operator on the shared context.
+	// Execute 在共享 ChunkContext 上执行本阶段变换。
 	Execute(ctx *ChunkContext) error
-	// Finish performs any cleanup.
+	// Finish 执行收尾清理（当前各算子多为空实现）。
 	Finish(ctx *ChunkContext) error
 
 	String() string
 }
 
-// ChunkData represents a single chunk produced by the pipeline.
+// ChunkData 表示流水线产出的单个文本块（含 content/size/index/metadata）。
 type ChunkData struct {
 	Content  string                 `json:"content"`
 	Size     int                    `json:"size"`
@@ -43,13 +46,15 @@ func (c *ChunkData) GetContent() string {
 	return c.Content
 }
 
-// ChunkContext flows through the pipeline, carrying text and chunks.
+// ChunkContext 在流水线各阶段间传递原文、预处理后文本与中间/最终 chunk。
 type ChunkContext struct {
-	Origin string // raw text
+	Origin string // 原始输入文本
 
-	TextAfterPreprocess string // text after preprocess operator
+	TextAfterPreprocess string // 预处理算子输出文本
 
-	SplitChunks []ChunkData // chunks after split operator
+	SplitChunks []ChunkData // 切分算子产出的 chunk 列表
 
-	ResultChunks []ChunkData // final or intermediate chunks
+	ResultChunks []ChunkData // 后处理后的最终（或中间）chunk 列表
 }
+
+// 文件名保留历史拼写 chenk_type；ChunkContext 为 preprocess→split→postprocess 三阶段共享载体。

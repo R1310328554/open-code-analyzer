@@ -1,3 +1,5 @@
+// office_parsers_no_cgo.go — 非 CGO 构建：Office 家族 stub 与 ErrOfficeCGORequired。
+
 //go:build !cgo
 
 package parser
@@ -10,15 +12,15 @@ import (
 // OfficeOxide is the lib_type identifier for office_oxide backend.
 const OfficeOxide = "office_oxide"
 
-// ErrOfficeCGORequired is returned by ParseWithResult on every
-// office-parser family (DOC / DOCX / PPT / PPTX / XLS / XLSX)
-// when the build is not CGO-enabled. The CGO build's
+// ErrOfficeCGORequired 在非 CGO 构建下由 Office 家族 ParseWithResult 统一返回。
+// 覆盖 DOC/DOCX/PPT/PPTX/XLS/XLSX 六种格式。
+// CGO 构建的实际实现在 docx_parser.go 等 //go:build cgo 文件中。
 // implementation captures the office_oxide PlainText / ToMarkdown
-// output; this stub mirrors that surface so the package compiles
+// stub 保持类型与接口面一致，使 !cgo 包可编译且测试通过。
 // and existing tests pass.
 var ErrOfficeCGORequired = errors.New("parser: office family requires CGO (office_oxide)")
 
-// docxParseWithResultNoCGO is the no-CGO stub for the DOCX
+// docxParseWithResultNoCGO 为 DOCX 非 CGO stub（方法挂载在 DOCXParser 上）。
 // family. The CGO build's implementation lives in docx_parser.go
 // under //go:build cgo.
 func (p *DOCXParser) ParseWithResult(filename string, _ []byte) ParseResult {
@@ -134,3 +136,5 @@ func NewPPTXParser(libType string) (*PPTXParser, error) {
 func (p *PPTXParser) String() string {
 	return "PPTXParser(no-cgo)"
 }
+
+// New*Parser 在非 CGO 构建直接返回错误；ParseWithResult 带格式后缀包装 ErrOfficeCGORequired。

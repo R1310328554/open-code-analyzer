@@ -16,6 +16,9 @@
 
 package chunk
 
+// preprocess.go — 预处理算子：换行归一、空白裁剪、空行删除与软换行合并。
+
+
 import (
 	"fmt"
 	"regexp"
@@ -26,7 +29,7 @@ type PreprocessOperator struct {
 	normalizeNewlines    bool
 	stripWhitespace      bool
 	removeEmptyLines     bool
-	softLineBreakMerging bool
+	softLineBreakMerging bool // 软换行合并：非句末行与下一行拼成一段
 }
 
 func NewPreprocessOperator(config map[string]interface{}) (*PreprocessOperator, error) {
@@ -66,16 +69,16 @@ func (o *PreprocessOperator) Execute(chunkCtx *ChunkContext) error {
 	text := chunkCtx.Origin
 
 	if o.normalizeNewlines {
-		// \r\n → \n, \r → \n
+		// \r\n→\n、\r→\n 归一化
 		text = strings.ReplaceAll(text, "\r\n", "\n")
 		text = strings.ReplaceAll(text, "\r", "\n")
-		// Collapse multiple \n into one
+		// 连续多个 \n 折叠为单个换行
 		re := regexp.MustCompile(`\n{2,}`)
 		text = re.ReplaceAllString(text, "\n")
 	}
 
 	if o.stripWhitespace {
-		// Trim leading/trailing whitespace on each line
+		// 逐行 TrimSpace 去除首尾空白
 		lines := strings.Split(text, "\n")
 		for i, line := range lines {
 			lines[i] = strings.TrimSpace(line)
@@ -99,6 +102,7 @@ func (o *PreprocessOperator) Execute(chunkCtx *ChunkContext) error {
 		var merged []string
 		var current strings.Builder
 
+		// 句末标点正则，用于 soft_line_break_merging 判断段落边界
 		sentenceEnd := regexp.MustCompile(`[.!?][\s]*$`)
 
 		for i, line := range lines {
@@ -131,3 +135,5 @@ func (o *PreprocessOperator) String() string {
 	fmt.Fprintf(&buf, "  remove_empty_lines: %t\n", o.removeEmptyLines)
 	return buf.String()
 }
+
+// 预处理各开关独立可组合；soft_line_break_merging 默认关闭，适用于 PDF 提取的多行段落修复。

@@ -43,10 +43,10 @@ func (p *DOCParser) String() string {
 	return "DOCParser"
 }
 
-// ParseWithResult captures the office_oxide PlainText output for
-// the DOC family. Python parser.py routes .doc through tika;
+// ParseWithResult 调用 office_oxide PlainText 提取 legacy DOC 纯文本。
+// Python 侧 .doc 经 tika；Go 侧用 office_oxide 直接 PlainText。
 // the Go side uses office_oxide which supports DOC via PlainText.
-// OutputFormat="text" — the python side falls back to text for
+// OutputFormat=text：legacy DOC 结构化不可靠，与 Python 回退策略一致。
 // legacy DOC files since structured extraction is unreliable.
 func (p *DOCParser) ParseWithResult(filename string, data []byte) ParseResult {
 	doc, err := officeOxide.OpenFromBytes(data, "doc")
@@ -66,3 +66,5 @@ func (p *DOCParser) ParseWithResult(filename string, data []byte) ParseResult {
 		Text:         text,
 	}
 }
+
+// DOCParser 仅支持 lib_type=office_oxide；需 CGO 构建。

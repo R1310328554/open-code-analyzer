@@ -16,6 +16,9 @@
 
 package parser
 
+// markdown_parser.go — Markdown 解析：gomarkdown AST 块级遍历。
+
+
 import (
 	"bytes"
 	"fmt"
@@ -44,10 +47,10 @@ func NewMarkdownParser(libType string) (*MarkdownParser, error) {
 	}
 }
 
-// ParseWithResult implements ParseResultProducer (plan §6.5) and
-// returns a structured markdown payload that mirrors the Python
-// parser's `output_format == "json"` shape. Each top-level block
-// emits one item with `text` + `doc_type_kwd: "text"`. The legacy
+// ParseWithResult 实现 ParseResultProducer（计划 §6.5），
+// 产出与 Python output_format=json 对齐的结构化 item 列表。
+// 每个顶层块一条 {text, doc_type_kwd, ck_type}。
+// 已移除 debug-print 路径，调用方直接消费 ParseResult。
 // debug-print path has been removed; callers consume ParseResult directly.
 func (p *MarkdownParser) ParseWithResult(filename string, data []byte) ParseResult {
 	if p.libType != GoMarkdown {
@@ -76,17 +79,17 @@ func (p *MarkdownParser) String() string {
 	return "MarkdownParser"
 }
 
-// markdownNew is a thin constructor so the extension set is owned
+// markdownNew 集中定义 gomarkdown 扩展集（CommonExtensions 等）。
 // in one place (both Parse and ParseWithResult consume it).
 func markdownNew() *parser.Parser {
 	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
 	return parser.NewWithExtensions(extensions)
 }
 
-// walkMarkdownBlocks emits one normalized item per top-level block.
-// Headings (LeafBlock / H*) are emitted with the heading text so a
+// walkMarkdownBlocks 遍历顶层块：Heading/Paragraph/List/CodeBlock 等。
+// 标题带 ck_type=heading 供下游 title chunker 识别。
 // downstream title chunker can find them; paragraphs (Paragraph)
-// emit the leaf-node text. The walker is intentionally a
+// 遍历为 best-effort；完整 TOC/大纲待 deepdoc/parser 移植。
 // best-effort pass — full TOC / outline handling lands with the
 // deepdoc/parser port — but it satisfies the per-block "emit
 // text+doc_type_kwd" contract enough for a Phase-1a migration
@@ -134,7 +137,7 @@ func walkMarkdownBlocks(doc ast.Node, out *[]map[string]any) {
 	}
 }
 
-// headingText returns the inline-text of a heading node by
+// headingText 拼接 Heading 内联 Text 子节点为标题字符串。
 // concatenating every Leaf / Text child. Empty headings emit "".
 func headingText(h *ast.Heading) string {
 	var buf bytes.Buffer
@@ -144,7 +147,7 @@ func headingText(h *ast.Heading) string {
 	return strings.TrimSpace(buf.String())
 }
 
-// leafText mirrors gomarkdown's leaf walker: walks every descendant
+// leafText 递归收集 Text/Code 字面量，TrimSpace 后返回。
 // leaf (Text or Inline content) and returns the concatenated UTF-8.
 // Non-text containers that have no leaf descendants return "".
 func leafText(n ast.Node) string {
@@ -165,3 +168,5 @@ func walkLeaf(n ast.Node, buf *bytes.Buffer) {
 		}
 	}
 }
+
+// MarkdownParser lib_type=go_markdown；空文档仍产出单条空 item 满足 Python 契约。

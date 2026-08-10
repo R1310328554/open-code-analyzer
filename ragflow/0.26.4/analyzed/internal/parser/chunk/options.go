@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// Typed options for the internal chunk execution path.
+// 内部 chunk 执行路径的类型化选项，映射生产调用点的常用配置子集。
 
 package chunk
 
@@ -22,30 +22,30 @@ import (
 	"fmt"
 )
 
-// ChunkOptions is the typed configuration for production callers.
-// It intentionally models only the option subset used by the current
-// production call sites.
+// ChunkOptions 为生产调用方提供的类型化配置结构体。
+// 仅建模当前生产调用点实际使用的选项子集，
+// 复杂 DSL 映射仍由各 Operator 的 map 配置路径承担。
 type ChunkOptions struct {
-	// Preprocess flags. Any combination of the three is honoured; all
+	// 预处理标志：三者为 true 的组合均可；全 false 则跳过 preprocess 阶段。
 	// false means "no preprocess stage" (the engine skips the stage
 	// rather than running an identity preprocess).
 	NormalizeNewlines bool
 	StripWhitespace   bool
 	RemoveEmptyLines  bool
 
-	// Split configuration. Callers must select a strategy; an unset
+	// 切分配置：strategy 未设时算子内部降级为 sentence。
 	// strategy degrades to "sentence" inside the operator.
 	SplitStrategy string
 
-	// Postprocess configuration. Zero values mean "do not run that
+	// 后处理配置：零值表示不启用对应步骤（merge/filter）。
 	// step"; non-zero values enable it.
 	MergeTargetSize int
 
-	// FilterMinLength > 0 drops chunks shorter than that (rune count).
+	// FilterMinLength>0 按 rune 数丢弃过短 chunk。
 	FilterMinLength int
 }
 
-// validate ensures the typed option set is internally consistent.
+// validate 校验 MergeTargetSize/FilterMinLength 非负，失败则 Run 提前返回。
 // The check is cheap; an option set that fails validation will not
 // produce meaningful results at run time.
 func (o ChunkOptions) validate() error {
@@ -57,3 +57,5 @@ func (o ChunkOptions) validate() error {
 	}
 	return nil
 }
+
+// ChunkOptions 与 Run 配合，将 typed 配置转为各 Operator 的 map 构造参数。
