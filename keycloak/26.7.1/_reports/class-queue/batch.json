@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:27:28Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/cookie/CookiePath.java",
-    "server-spi-private/src/main/java/org/keycloak/cookie/CookieProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/cookie/CookieProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/cookie/CookieScope.java",
-    "server-spi-private/src/main/java/org/keycloak/cookie/CookieSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/cookie/CookieType.java",
-    "server-spi-private/src/main/java/org/keycloak/credential/CredentialProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/credential/CredentialSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/credential/hash/AbstractPbkdf2PasswordHashProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/credential/hash/PasswordHashProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/credential/hash/PasswordHashSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/credential/hash/Pbkdf2PasswordHashProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/credential/hash/Pbkdf2PasswordHashProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/credential/hash/Pbkdf2Sha256PasswordHashProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/credential/hash/Pbkdf2Sha512PasswordHashProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2908,
-  "done": 3075
+  "done": 3090
 }
