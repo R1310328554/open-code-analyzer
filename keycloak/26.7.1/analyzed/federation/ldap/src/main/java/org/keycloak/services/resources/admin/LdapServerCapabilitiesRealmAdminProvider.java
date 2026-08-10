@@ -25,6 +25,9 @@ import org.keycloak.services.resources.admin.ext.AdminRealmResourceProvider;
 import org.keycloak.services.resources.admin.ext.AdminRealmResourceProviderFactory;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
+/**
+ * LDAP 服务端能力查询的管理 REST 扩展工厂与提供器（ID：{@value #getId}）。
+ */
 public class LdapServerCapabilitiesRealmAdminProvider implements AdminRealmResourceProviderFactory, AdminRealmResourceProvider {
 
     @Override
@@ -44,11 +47,13 @@ public class LdapServerCapabilitiesRealmAdminProvider implements AdminRealmResou
     public void close() {
     }
 
+    /** {@inheritDoc} 返回扩展标识 {@code ldap-server-capabilities}。 */
     @Override
     public String getId() {
         return "ldap-server-capabilities";
     }
 
+    /** {@inheritDoc} 暴露 {@link LdapServerCapabilitiesResource} 子资源。 */
     @Override
     public Object getResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         return new LdapServerCapabilitiesResource(session, auth, adminEvent);

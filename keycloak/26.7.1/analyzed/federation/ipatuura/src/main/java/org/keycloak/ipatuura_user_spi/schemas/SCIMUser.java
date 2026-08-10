@@ -31,9 +31,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "Resources", "itemsPerPage", "schemas", "startIndex", "totalResults" })
+/**
+ * SCIM 用户列表查询响应的 JSON 数据模型，由 jsonschema2pojo 生成。
+ * <p>
+ * 映射 SCIM ListResponse 结构，包含分页信息与 {@link Resource} 用户资源列表。
+ */
 @Generated("jsonschema2pojo")
 public class SCIMUser {
 
+    /** SCIM 用户资源列表。 */
     @JsonProperty("Resources")
     private List<Resource> resources = null;
     @JsonProperty("itemsPerPage")
@@ -109,6 +115,9 @@ public class SCIMUser {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonPropertyOrder({ "active", "emails", "groups", "id", "meta", "name", "schemas", "userName" })
+    /**
+     * 单个 SCIM 用户资源，包含用户名、邮箱、组与元数据等属性。
+     */
     @Generated("jsonschema2pojo")
     public static class Resource {
 
@@ -223,6 +232,7 @@ public class SCIMUser {
 
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonPropertyOrder({ "familyName", "givenName", "middleName" })
+        /** SCIM 用户姓名结构（名、姓、中间名）。 */
         @Generated("jsonschema2pojo")
         public static class Name {
 
@@ -279,6 +289,7 @@ public class SCIMUser {
 
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonPropertyOrder({ "location", "resourceType" })
+        /** SCIM 资源元数据（位置与资源类型）。 */
         @Generated("jsonschema2pojo")
         public static class Meta {
 
@@ -322,6 +333,7 @@ public class SCIMUser {
 
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonPropertyOrder({ "primary", "type", "value" })
+        /** SCIM 邮箱条目（类型、值与是否主邮箱）。 */
         @Generated("jsonschema2pojo")
         public static class Email {
 
@@ -377,6 +389,7 @@ public class SCIMUser {
 
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonPropertyOrder({ "$ref", "display", "value" })
+        /** SCIM 组成员引用（显示名、值与 $ref）。 */
         @Generated("jsonschema2pojo")
         public static class Group {
 

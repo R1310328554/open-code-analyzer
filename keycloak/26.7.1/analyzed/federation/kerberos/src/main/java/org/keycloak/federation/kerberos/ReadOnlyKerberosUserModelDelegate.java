@@ -21,12 +21,19 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.UserModelDelegate;
 
 /**
+ * 只读模式下的 Kerberos 用户模型委托，禁止通过 Keycloak 修改联邦用户属性。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ReadOnlyKerberosUserModelDelegate extends UserModelDelegate {
 
+    /** 关联的 Kerberos 联邦提供器。 */
     protected KerberosFederationProvider provider;
 
+    /**
+     * @param delegate 被委托的本地用户模型
+     * @param provider Kerberos 联邦提供器
+     */
     public ReadOnlyKerberosUserModelDelegate(UserModel delegate, KerberosFederationProvider provider) {
         super(delegate);
         this.provider = provider;

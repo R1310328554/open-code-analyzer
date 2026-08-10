@@ -44,8 +44,9 @@ import org.keycloak.utils.CredentialHelper;
 import org.jboss.logging.Logger;
 
 /**
- * Factory for standalone Kerberos federation provider. Standalone means that it's not backed by LDAP. For Kerberos backed by LDAP (like MS AD or ApacheDS environment)
- * you should rather use LDAP Federation Provider.
+ * 独立 Kerberos 联邦提供器工厂（不依赖 LDAP 后端）。
+ * <p>
+ * 若 Kerberos 与 LDAP 集成（如 MS AD、ApacheDS），应使用 LDAP 联邦提供器。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -54,6 +55,7 @@ public class KerberosFederationProviderFactory implements UserStorageProviderFac
     private static final Logger logger = Logger.getLogger(KerberosFederationProviderFactory.class);
     public static final String PROVIDER_NAME = "kerberos";
 
+    /** {@inheritDoc} 创建 {@link KerberosFederationProvider} 实例。 */
     @Override
     public KerberosFederationProvider create(KeycloakSession session, ComponentModel model) {
         return new KerberosFederationProvider(session, new UserStorageProviderModel(model), this);
@@ -64,6 +66,7 @@ public class KerberosFederationProviderFactory implements UserStorageProviderFac
         return PROVIDER_NAME;
     }
 
+    /** {@inheritDoc} 需启用 KERBEROS 特性。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.KERBEROS);
@@ -140,6 +143,7 @@ public class KerberosFederationProviderFactory implements UserStorageProviderFac
 
     }
 
+    /** 创建 SPNEGO 认证器，封装服务端 Subject 与客户端 token。 */
     protected SPNEGOAuthenticator createSPNEGOAuthenticator(String spnegoToken, CommonKerberosConfig kerberosConfig) {
         KerberosServerSubjectAuthenticator kerberosAuth = createKerberosSubjectAuthenticator(kerberosConfig);
         return new SPNEGOAuthenticator(kerberosConfig, kerberosAuth, spnegoToken);
@@ -171,9 +175,10 @@ public class KerberosFederationProviderFactory implements UserStorageProviderFac
                 AuthenticationExecutionModel.Requirement.DISABLED, null);
     }
 
+    /** {@inheritDoc} 校验并修剪字符串配置项首尾空白。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
-        // Trim whitespace from string configuration values
+        // 修剪字符串配置值的首尾空白
         trimConfigValue(config, KerberosConstants.SERVER_PRINCIPAL);
         trimConfigValue(config, KerberosConstants.KERBEROS_REALM);
         trimConfigValue(config, KerberosConstants.KEYTAB);
