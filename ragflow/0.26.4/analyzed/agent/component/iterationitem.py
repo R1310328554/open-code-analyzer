@@ -19,15 +19,17 @@ from agent.component.base import ComponentBase, ComponentParamBase
 
 
 class IterationItemParam(ComponentParamBase):
-    """
-    Define the IterationItem component parameters.
-    """
+    """IterationItem 无业务参数，索引由运行时维护。"""
 
     def check(self):
         return True
 
 
 class IterationItem(ComponentBase, ABC):
+    """
+    迭代循环体入口：推进索引、输出当前 item，并在回合结束时 collation。
+    """
+
     component_name = "IterationItem"
 
     def __init__(self, canvas, id, param: ComponentParamBase):
@@ -66,6 +68,8 @@ class IterationItem(ComponentBase, ABC):
         self._idx += 1
 
     def output_collation(self):
+        # 将本轮子图各组件带 ref 的输出追加汇总到父组件数组
+        # 将本轮子图各组件带 ref 的输出追加汇总到父组件数组
         pid = self.get_parent()._id
         for cid in self._canvas.components.keys():
             obj = self._canvas.get_component_obj(cid)

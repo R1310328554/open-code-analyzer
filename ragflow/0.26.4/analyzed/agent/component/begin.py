@@ -18,7 +18,7 @@ from agent.component.fillup import UserFillUpParam, UserFillUp
 
 class BeginParam(UserFillUpParam):
     """
-    Define the Begin component parameters.
+    Begin 节点参数：运行模式、开场白与输入表单定义。
     """
 
     def __init__(self):
@@ -34,6 +34,8 @@ class BeginParam(UserFillUpParam):
 
 
 class Begin(UserFillUp):
+    """工作流起始节点，将运行时 inputs 解析后写入各输出槽。"""
+
     component_name = "Begin"
 
     def _invoke(self, **kwargs):

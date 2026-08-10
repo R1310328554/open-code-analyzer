@@ -48,6 +48,11 @@ _logger = logging.getLogger(__name__)
 
 class Graph:
     """
+    Agent 工作流 DSL 图的基础容器。
+
+    负责加载组件节点、解析 `{组件ID@变量}` 模板引用，以及维护
+    全局变量与执行路径。子类 Canvas 在此基础上实现完整运行循环。
+
     dsl = {
         "components": {
             "begin": {
@@ -88,6 +93,8 @@ class Graph:
     """
 
     def __init__(self, dsl: str, tenant_id=None, task_id=None, custom_header=None):
+        # 从 JSON DSL 构建内存图，并规范化旧版 chunker 配置
+        # 从 JSON DSL 构建内存图，并规范化旧版 chunker 配置
         self.path = []
         self.components = {}
         self.error = ""
@@ -100,6 +107,7 @@ class Graph:
         self.load()
 
     def load(self):
+        # 实例化各组件 Param/Obj，并完成参数校验
         self.components = self.dsl["components"]
         cpn_nms = set([])
         for k, cpn in self.components.items():
@@ -200,6 +208,8 @@ class Graph:
         return self._tenant_id
 
     def get_value_with_variable(self, value: str) -> Any:
+        # 将字符串中的 {组件@变量} 占位符替换为画布上的实际值
+        # 将字符串中的 {组件@变量} 占位符替换为画布上的实际值
         pat = re.compile(r"\{* *\{([a-zA-Z:0-9]+@[A-Za-z0-9_.-]+|sys\.[A-Za-z0-9_.]+|env\.[A-Za-z0-9_.]+)\} *\}*")
         out_parts = []
         last = 0
@@ -326,6 +336,10 @@ class Graph:
 
 
 class Canvas(Graph):
+    """
+    可执行的 Agent 画布：驱动节点批次调度、流式消息与用户补全暂停。
+    """
+
     def __init__(self, dsl: str, tenant_id=None, task_id=None, canvas_id=None, custom_header=None):
         self.globals = {
             "sys.query": "",
@@ -425,6 +439,8 @@ class Canvas(Graph):
                     self.globals[k] = ""
 
     async def run(self, **kwargs):
+        # 每次运行安装独立的 Token 统计与 Langfuse/LLM 请求上下文
+        # 每次运行安装独立的 Token 统计与 Langfuse/LLM 请求上下文
         # Install a fresh per-run token usage sink and Langfuse correlation context,
         # and guarantee both are torn down when the run ends (even on early return or
         # exception) so later LLM calls in the same task never inherit a previous
@@ -466,6 +482,8 @@ class Canvas(Graph):
             reset_llm_request_context(_req_ctx_token)
 
     async def _run_impl(self, **kwargs):
+        # 工作流主循环：按 path 批次并发 invoke，并产出 SSE 风格事件
+        # 工作流主循环：按 path 批次并发 invoke，并产出 SSE 风格事件
         self.globals["sys.date"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         st = time.perf_counter()
         self._loop = asyncio.get_running_loop()
@@ -940,6 +958,8 @@ class Canvas(Graph):
             logging.exception(e)
 
     def add_reference(self, chunks: list[object], doc_infos: list[object]):
+        # 将检索到的 chunk 与文档聚合信息写入当前轮的 retrieval 快照
+        # 将检索到的 chunk 与文档聚合信息写入当前轮的 retrieval 快照
         if not self.retrieval:
             self.retrieval = [{"chunks": {}, "doc_aggs": {}}]
 

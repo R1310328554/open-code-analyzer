@@ -15,10 +15,10 @@
 #
 
 """
-ExcelProcessor Component
+ExcelProcessor 组件
 
-A component for reading, processing, and generating Excel files in RAGFlow agents.
-Supports multiple Excel file inputs, data transformation, and Excel output generation.
+在 RAGFlow Agent 中读取、合并、变换与导出 Excel/CSV 文件。
+支持多文件输入、按 sheet 解析及生成带 doc_id 的附件输出。
 """
 
 import logging
@@ -37,7 +37,7 @@ from common.misc_utils import get_uuid
 
 class ExcelProcessorParam(ComponentParamBase):
     """
-    Define the ExcelProcessor component parameters.
+    Excel 处理器参数：输入文件引用、operation 与输出格式。
     """
 
     def __init__(self):
@@ -70,13 +70,10 @@ class ExcelProcessorParam(ComponentParamBase):
 
 class ExcelProcessor(ComponentBase, ABC):
     """
-    Excel processing component for RAGFlow agents.
+    Excel 数据处理组件。
 
-    Operations:
-    - read: Parse Excel files into structured data
-    - merge: Combine multiple Excel files
-    - transform: Apply data transformations based on instructions
-    - output: Generate Excel file output
+    支持 read（读取）、merge（合并）、transform（整理展示）、
+    output（写回 xlsx/csv 并上传存储）。
     """
 
     component_name = "ExcelProcessor"

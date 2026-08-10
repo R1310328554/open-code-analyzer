@@ -24,6 +24,8 @@ __all_classes: Dict[str, Type] = {}
 
 
 def _import_submodules() -> None:
+    # 遍历包内 .py 文件（跳过 base 与 __ 前缀）并导入组件类
+    # 遍历包内 .py 文件（跳过 base 与 __ 前缀）并导入组件类
     for filename in os.listdir(_package_path):  # noqa: F821
         if filename.startswith("__") or not filename.endswith(".py") or filename.startswith("base"):
             continue
@@ -51,6 +53,8 @@ del _package_path, _import_submodules, _extract_classes_from_module
 
 
 def component_class(class_name):
+    """按类名在已知模块中查找组件或 Param 类。"""
+    """按类名在已知模块中查找组件或 Param 类。"""
     for module_name in ["agent.component", "agent.tools", "rag.flow"]:
         try:
             return getattr(importlib.import_module(module_name), class_name)

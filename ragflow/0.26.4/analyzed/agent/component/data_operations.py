@@ -22,7 +22,7 @@ from api.utils.api_utils import timeout
 
 class DataOperationsParam(ComponentParamBase):
     """
-    Define the Data Operations component parameters.
+    数据操作参数：operation 类型及各类操作专用字段。
     """
 
     def __init__(self):
@@ -41,6 +41,10 @@ class DataOperationsParam(ComponentParamBase):
 
 
 class DataOperations(ComponentBase, ABC):
+    """
+    在 Agent 流程中对 JSON 对象列表执行声明式数据变换。
+    """
+
     component_name = "DataOperations"
 
     def get_input_form(self) -> dict[str, dict]:

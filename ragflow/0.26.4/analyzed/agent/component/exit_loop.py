@@ -18,11 +18,17 @@ from agent.component.base import ComponentBase, ComponentParamBase
 
 
 class ExitLoopParam(ComponentParamBase, ABC):
+    """ExitLoop 无额外参数，仅作控制流标记。"""
+    """ExitLoop 无额外参数，仅作控制流标记。"""
     def check(self):
         return True
 
 
 class ExitLoop(ComponentBase, ABC):
+    """
+    空操作节点：invoke 不产出数据，由画布逻辑识别并跳出循环。
+    """
+
     component_name = "ExitLoop"
 
     def _invoke(self, **kwargs):

@@ -27,7 +27,7 @@ class VariableModel(BaseModel):
 
 class IterationParam(ComponentParamBase):
     """
-    Define the Iteration component parameters.
+    迭代参数：items_ref 变量引用及循环内局部变量定义。
     """
 
     def __init__(self):
@@ -43,6 +43,10 @@ class IterationParam(ComponentParamBase):
 
 
 class Iteration(ComponentBase, ABC):
+    """
+    迭代父节点：定位首个 IterationItem 子节点作为循环入口。
+    """
+
     component_name = "Iteration"
 
     def get_start(self):

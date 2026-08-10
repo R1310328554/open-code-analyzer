@@ -25,6 +25,8 @@ _INITIAL_USER_INPUT_CONSUMED_KEY = "sys.__initial_user_input_consumed__"
 
 
 class UserFillUpParam(ComponentParamBase):
+    """用户补全表单参数：提示文案与版面识别选项。"""
+    """用户补全表单参数：提示文案与版面识别选项。"""
     def __init__(self):
         super().__init__()
         self.enable_tips = True
@@ -36,9 +38,15 @@ class UserFillUpParam(ComponentParamBase):
 
 
 class UserFillUp(ComponentBase):
+    """
+    解析用户提交的 inputs，支持文件字段与 sys.query 自动映射。
+    """
+
     component_name = "UserFillUp"
 
     def _merge_runtime_inputs(self, runtime_inputs):
+        # 无显式 inputs 时，尝试用 sys.query 填充单字段或字典字段
+        # 无显式 inputs 时，尝试用 sys.query 填充单字段或字典字段
         if runtime_inputs:
             return runtime_inputs
 

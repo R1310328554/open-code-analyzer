@@ -29,7 +29,7 @@ from rag.llm.chat_model import ERROR_PREFIX
 
 class CategorizeParam(LLMParam):
     """
-    Define the categorize component parameters.
+    分类组件参数：类别定义、示例与系统提示词模板。
     """
 
     def __init__(self):
@@ -88,6 +88,10 @@ Here's description of each category:
 
 
 class Categorize(LLM, ABC):
+    """
+    调用聊天模型将输入归入预设类别，并决定工作流分支。
+    """
+
     component_name = "Categorize"
 
     def get_input_elements(self) -> dict[str, dict]:

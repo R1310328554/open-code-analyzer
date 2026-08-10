@@ -41,6 +41,12 @@ _IS_RAW_CONF = "_is_raw_conf"
 
 
 class ComponentParamBase(ABC):
+    """
+    组件配置参数的抽象基类，支持嵌套 update 与 JSON 校验规则。
+    """
+    """
+    组件配置参数的抽象基类，支持嵌套 update 与 JSON 校验规则。
+    """
     def __init__(self):
         self.message_history_window_size = 13
         self.inputs = {}
@@ -349,6 +355,12 @@ class ComponentParamBase(ABC):
 
 
 class ComponentBase(ABC):
+    """
+    所有 Agent 组件的运行时基类：输入解析、输出写入与取消检测。
+    """
+    """
+    所有 Agent 组件的运行时基类：输入解析、输出写入与取消检测。
+    """
     component_name: str
     thread_limiter = asyncio.Semaphore(int(os.environ.get("MAX_CONCURRENT_CHATS", 10)))
     variable_ref_patt = r"\{* *\{([a-zA-Z:0-9]+@[A-Za-z0-9_.-]+|sys\.[A-Za-z0-9_.]+|env\.[A-Za-z0-9_.]+)\} *\}*"
@@ -390,6 +402,8 @@ class ComponentBase(ABC):
         return False
 
     def invoke(self, **kwargs) -> dict[str, Any]:
+        # 同步入口：记录耗时并在异常时写入 _ERROR 或默认值
+        # 同步入口：记录耗时并在异常时写入 _ERROR 或默认值
         self.set_output("_created_time", time.perf_counter())
         try:
             self._invoke(**kwargs)
@@ -404,6 +418,8 @@ class ComponentBase(ABC):
         return self.output()
 
     async def invoke_async(self, **kwargs) -> dict[str, Any]:
+        # 异步入口：优先调用 _invoke_async，否则在线程池执行 _invoke
+        # 异步入口：优先调用 _invoke_async，否则在线程池执行 _invoke
         """
         Async wrapper for component invocation.
         Prefers coroutine `_invoke_async` if present; otherwise falls back to `_invoke`.
@@ -461,6 +477,8 @@ class ComponentBase(ABC):
         self._param.debug_inputs = {}
 
     def get_input(self, key: str = None) -> Union[Any, dict[str, Any]]:
+        # 解析输入字段：支持画布变量引用与文本内嵌占位符
+        # 解析输入字段：支持画布变量引用与文本内嵌占位符
         if key:
             return self._param.inputs.get(key, {}).get("value")
 

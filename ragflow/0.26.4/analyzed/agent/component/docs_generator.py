@@ -1,3 +1,10 @@
+"""
+Markdown 文档生成组件。
+
+将画布变量解析后的内容转换为 PDF/DOCX/TXT/Markdown/HTML，
+上传对象存储并返回下载元数据。
+"""
+
 import base64
 import logging
 import json
@@ -20,6 +27,7 @@ from .message import Message
 
 
 def sanitize_filename(name: str, extension: str) -> str:
+    """清理用户文件名，移除非法字符并限制长度。"""
     if not name:
         return f"file.{extension}"
 
@@ -37,7 +45,7 @@ def sanitize_filename(name: str, extension: str) -> str:
 
 class DocGeneratorParam(ComponentParamBase):
     """
-    Define the Docs Generator component parameters.
+    文档生成参数：输出格式、页眉页脚、水印与字体等。
     """
 
     def __init__(self):
@@ -73,6 +81,10 @@ class DocGeneratorParam(ComponentParamBase):
 
 
 class DocGenerator(Message, ABC):
+    """
+    基于 Pandoc/ReportLab 的多格式文档导出节点。
+    """
+
     component_name = "DocGenerator"
     _default_output_directory = os.path.join(tempfile.gettempdir(), "doc_outputs")
     _overlay_margin = 36

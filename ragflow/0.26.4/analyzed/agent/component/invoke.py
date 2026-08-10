@@ -32,7 +32,7 @@ from deepdoc.parser import HtmlParser
 
 class InvokeParam(ComponentParamBase):
     """
-    Define the Invoke component parameters.
+    HTTP 请求参数：URL、方法、超时、代理与变量映射表。
     """
 
     def __init__(self):
@@ -55,6 +55,10 @@ class InvokeParam(ComponentParamBase):
 
 
 class Invoke(ComponentBase, ABC):
+    """
+    向外部 REST 端点发起请求，并将响应文本写入 result 输出。
+    """
+
     component_name = "Invoke"
     header_variable_ref_patt = r"\{([a-zA-Z_][a-zA-Z0-9_.@-]*)\}"
 
@@ -242,6 +246,8 @@ class Invoke(ComponentBase, ABC):
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 3)))
     def _invoke(self, **kwargs):
+        # 构建 URL/headers/body 后在 SSRF 校验与 DNS pin 保护下重试发送
+        # 构建 URL/headers/body 后在 SSRF 校验与 DNS pin 保护下重试发送
         if self.check_if_canceled("Invoke processing"):
             return
 

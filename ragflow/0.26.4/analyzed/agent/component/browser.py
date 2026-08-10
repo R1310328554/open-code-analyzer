@@ -45,7 +45,7 @@ from rag.llm import FACTORY_DEFAULT_BASE_URL
 
 class BrowserParam(LLMParam):
     """
-    Parameters for Browser node.
+    Browser 节点参数：步数上限、无头模式、会话持久化与上传源。
     """
 
     def __init__(self):
@@ -81,6 +81,10 @@ class BrowserParam(LLMParam):
 
 
 class Browser(ComponentBase, ABC):
+    """
+    使用 LLM 规划并执行浏览器任务的 Agent 组件。
+    """
+
     component_name = "Browser"
 
     def _prepare_input_values(self):
@@ -672,6 +676,8 @@ class Browser(ComponentBase, ABC):
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 20 * 60)))
     def _invoke(self, **kwargs):
+        # 准备上传文件、运行 browser-use Agent，并将下载物存入租户根目录
+        # 准备上传文件、运行 browser-use Agent，并将下载物存入租户根目录
         profile_dir = None
         persist_session = self._should_persist_session()
         try:

@@ -39,7 +39,7 @@ _logger = logging.getLogger(__name__)
 
 class AgentParam(LLMParam, ToolParamBase):
     """
-    Define the Agent component parameters.
+    Agent 组件参数：工具列表、MCP 配置与多轮推理上限。
     """
 
     def __init__(self):
@@ -72,6 +72,10 @@ class AgentParam(LLMParam, ToolParamBase):
 
 
 class Agent(LLM, ToolBase):
+    """
+    可调用嵌套工具与 MCP 的智能体节点，对外暴露 ToolBase 元数据。
+    """
+
     component_name = "Agent"
 
     def __init__(self, canvas, id, param: LLMParam):
@@ -193,6 +197,8 @@ class Agent(LLM, ToolBase):
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 20 * 60)))
     async def _invoke_async(self, **kwargs):
+        # 无工具时退化为普通 LLM；有 Message 下游时启用流式 partial 输出
+        # 无工具时退化为普通 LLM；有 Message 下游时启用流式 partial 输出
         if self.check_if_canceled("Agent processing"):
             return
 
@@ -286,6 +292,8 @@ class Agent(LLM, ToolBase):
         return ans
 
     async def stream_output_with_tools_async(self, prompt, msg, user_defined_prompt={}):
+        # 多轮对话压缩、可选引用标注，并合并工具产出的 Markdown 附件
+        # 多轮对话压缩、可选引用标注，并合并工具产出的 Markdown 附件
         if len(msg) > 3:
             st = timer()
             user_request = await full_question(messages=msg, chat_mdl=self.chat_mdl)
