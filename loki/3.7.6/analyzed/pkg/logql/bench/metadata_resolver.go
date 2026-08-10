@@ -1,5 +1,7 @@
 package bench
 
+// metadata_resolver 基于 DatasetMetadata 解析查询模板中的占位变量，通过多维过滤确保所选流与查询需求兼容。
+
 import (
 	"fmt"
 	"math/rand"
@@ -21,6 +23,7 @@ const (
 
 // MetadataVariableResolver resolves variables based on dataset metadata
 // It uses multi-dimensional filtering to ensure queries match compatible streams
+// MetadataVariableResolver 持有元数据与可复现随机源，用于变量替换。
 type MetadataVariableResolver struct {
 	metadata *DatasetMetadata
 	rnd      *rand.Rand
@@ -37,6 +40,7 @@ func NewMetadataVariableResolver(metadata *DatasetMetadata, seed int64) *Metadat
 // ResolveQuery resolves variables in a query based on requirements
 // Supports: ${SELECTOR}, ${LABEL_NAME}, ${LABEL_VALUE}, ${RANGE}
 // The isInstant parameter determines whether to use MinInstantRange (true) or MinRange (false) for ${RANGE}
+// ResolveQuery 依次解析 SELECTOR、标签对与 RANGE，isInstant 决定窗口类型。
 func (r *MetadataVariableResolver) ResolveQuery(query string, requirements QueryRequirements, isInstant bool) (string, error) {
 	result := query
 	var selector string
@@ -89,6 +93,7 @@ func (r *MetadataVariableResolver) ResolveQuery(query string, requirements Query
 // When needsRange is true, candidates are additionally filtered to streams that
 // have valid range metadata (MinRange > 0 for range queries, MinInstantRange > 0
 // for instant queries).
+// resolveLabelSelector 按 Requires 各维度求交集后随机选取一条 selector。
 func (r *MetadataVariableResolver) resolveLabelSelector(req QueryRequirements, needsRange bool, isInstant bool) (string, error) {
 	candidates := r.metadata.AllSelectors
 
@@ -211,6 +216,7 @@ func (r *MetadataVariableResolver) extractLabelFromSelector(selector string, req
 }
 
 // GetTimeRange returns the start and end time for a query based on the metadata time range
+// GetTimeRange 在数据集时间范围内随机选取长度为 length 的查询窗口。
 func (r *MetadataVariableResolver) GetTimeRange(length time.Duration) (start, end time.Time, err error) {
 	datasetStart := r.metadata.TimeRange.Start
 	datasetEnd := r.metadata.TimeRange.End
@@ -283,6 +289,7 @@ func formatDuration(d time.Duration) string {
 
 // intersect returns the intersection of two sorted string slices
 // Both input slices must be sorted for this to work correctly
+// intersect 对两个已排序 slice 求交集，供多维候选流过滤使用。
 func intersect(a, b []string) []string {
 	if len(a) == 0 || len(b) == 0 {
 		return []string{}
@@ -313,3 +320,4 @@ func minInt(a, b int) int {
 	}
 	return b
 }
+// formatDuration 清理 Go Duration 字符串尾部冗余零，输出 LogQL 可读范围。

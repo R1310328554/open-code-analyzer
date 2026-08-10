@@ -1,5 +1,7 @@
 package logql
 
+// first_last_over_time 实现带时间戳的 first/last over time 范围聚合迭代器，以及多分片结果的 mergeOverTime 逐步合并求值器。
+
 import (
 	"math"
 	"time"
@@ -12,6 +14,7 @@ import (
 
 // newFirstWithTimestampIterator returns an iterator the returns the first value
 // of a windowed aggregation.
+// newFirstWithTimestampIterator 构造窗口内取首样本（含时间戳）的 RangeVectorIterator。
 func newFirstWithTimestampIterator(
 	it iter.PeekingSampleIterator,
 	selRange, step, start, end, offset int64,
@@ -48,6 +51,7 @@ type firstWithTimestampBatchRangeVectorIterator struct {
 
 // At aggregates the underlying window by picking the first sample with its
 // timestamp.
+// At 将各序列窗口内第一个 FPoint 转为 SampleVector，时间戳转毫秒对齐 step。
 func (r *firstWithTimestampBatchRangeVectorIterator) At() (int64, StepResult) {
 	if r.at == nil {
 		r.at = make([]promql.Sample, 0, len(r.window))
@@ -75,6 +79,7 @@ func (r *firstWithTimestampBatchRangeVectorIterator) agg(samples []promql.FPoint
 	return samples[0]
 }
 
+// newLastWithTimestampIterator 构造窗口内取末样本的 batch 范围向量迭代器。
 func newLastWithTimestampIterator(
 	it iter.PeekingSampleIterator,
 	selRange, step, start, end, offset int64,
@@ -140,6 +145,7 @@ func (r *lastWithTimestampBatchRangeVectorIterator) agg(samples []promql.FPoint)
 	return samples[len(samples)-1]
 }
 
+// mergeOverTimeStepEvaluator 按 step 遍历多个 promql.Matrix，合并 first/last 结果。
 type mergeOverTimeStepEvaluator struct {
 	start, end, ts time.Time
 	step           time.Duration
@@ -188,6 +194,7 @@ func (e *mergeOverTimeStepEvaluator) pop(r, s int) {
 }
 
 // inRange returns true if t is in step range of ts.
+// inRange 判断样本时间 t 是否落在当前 step 窗口内，需扣除 offset 偏移。
 func (e *mergeOverTimeStepEvaluator) inRange(t, ts int64) bool {
 	// The time stamp needs to be adjusted because the original datapoint at t is
 	// from a shifted query.
@@ -204,6 +211,7 @@ func (*mergeOverTimeStepEvaluator) Close() error { return nil }
 
 func (*mergeOverTimeStepEvaluator) Error() error { return nil }
 
+// NewMergeFirstOverTimeStepEvaluator 合并多分片 first_over_time 矩阵为逐步向量。
 func NewMergeFirstOverTimeStepEvaluator(params Params, m []promql.Matrix, offset time.Duration) StepEvaluator {
 	if len(m) == 0 {
 		return EmptyEvaluator[SampleVector]{}
@@ -227,6 +235,7 @@ func NewMergeFirstOverTimeStepEvaluator(params Params, m []promql.Matrix, offset
 }
 
 // mergeFirstOverTime selects the first sample by timestamp of each series.
+// mergeFirstOverTime 在同 metric 位置保留时间戳更早的样本。
 func mergeFirstOverTime(vec promql.Vector, pos int, nSeries int, series promql.Series) promql.Vector {
 	if len(vec) < nSeries {
 		return append(vec, promql.Sample{
@@ -279,3 +288,4 @@ func mergeLastOverTime(vec promql.Vector, pos int, nSeries int, series promql.Se
 
 	return vec
 }
+// mergeLastOverTime 逻辑对称，在同位置保留时间戳更晚的末样本。

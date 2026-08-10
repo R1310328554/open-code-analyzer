@@ -1,5 +1,7 @@
 package bench
 
+// store_dataobj_v2_engine 搭建 Loki v2 dataobj 查询引擎（scheduler/worker），从本地 filesystem bucket 读取列式 dataobj 供基准测试查询。
+
 import (
 	"bytes"
 	"context"
@@ -29,12 +31,14 @@ import (
 	serverutil "github.com/grafana/loki/v3/pkg/util/server"
 )
 
+// engine-logs、remote-transport、storage-latency 为基准测试 CLI flag。
 var (
 	engineLogs      = flag.Bool("engine-logs", false, "include engine logs in verbose output")
 	remoteTransport = flag.Bool("remote-transport", false, "run engine with remote transport over loopback interface")
 	storageLatency  = flag.Duration("storage-latency", 0*time.Millisecond, "simulated per-request object storage latency (e.g. 10ms)")
 )
 
+// DataObjV2EngineStore 封装新 engine 与 tenantID，供 bench 侧构造 Querier。
 // DataObjV2EngineStore uses the new engine for querying. It assumes the engine
 // can read the "new dataobj format" (e.g. columnar data) from the provided
 // dataDir via a filesystem objstore.Bucket.
@@ -56,6 +60,7 @@ func NewDataObjV2EngineStore(dir string, tenantID string) (*DataObjV2EngineStore
 	})
 }
 
+// dataobjV2StoreWithOpts 启动 scheduler/worker 服务并组装 engine.Params。
 func dataobjV2StoreWithOpts(dataDir string, tenantID string, cfg engine.ExecutorConfig, metastoreCfg metastore.Config) (*DataObjV2EngineStore, error) {
 	ctx := context.Background()
 	logger := log.NewNopLogger()
@@ -138,6 +143,7 @@ func dataobjV2StoreWithOpts(dataDir string, tenantID string, cfg engine.Executor
 		Config: engine.WorkerConfig{
 			SchedulerLookupAddress:  schedLookupAddr,
 			SchedulerLookupInterval: time.Minute,
+// WorkerThreads 至少 8 线程，避免父任务未调度导致子任务无法推进的死锁。
 			// Try to create one thread per host CPU core. However, we always
 			// create at least 8 threads. This prevents situations where
 			// no task can make progress because a parent task hasn't been
@@ -227,6 +233,7 @@ func newServerService(name string, logger log.Logger, registerer prometheus.Regi
 	return serv, svc, nil
 }
 
+// engineAdapter 将 pkg/engine.Engine 适配为 logql.Engine 接口。
 type engineAdapter engine.Engine
 
 var _ logql.Engine = (*engineAdapter)(nil)
@@ -244,6 +251,7 @@ func (a *queryAdapter) Exec(ctx context.Context) (logqlmodel.Result, error) {
 	return a.engine.Execute(ctx, a.params)
 }
 
+// unescapeWriter 将日志中的 \n 转为真实换行，便于阅读 engine 执行计划。
 // unescapeWriter is a writer that unescapes newline characters in messages with
 // actual newlines.
 //
@@ -268,6 +276,7 @@ func (uw *unescapeWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// latencyBucket 模拟对象存储读延迟，与 chunk store 的 latencyObjectClient 对应。
 // latencyBucket wraps an objstore.Bucket and injects a configurable delay
 // before each read operation to simulate object storage latency (e.g. S3/GCS).
 type latencyBucket struct {
@@ -312,3 +321,4 @@ func (b *latencyBucket) IterWithAttributes(ctx context.Context, dir string, f fu
 	b.delay()
 	return b.Bucket.IterWithAttributes(ctx, dir, f, options...)
 }
+// remote-transport 模式下 scheduler/worker 经 loopback HTTP/2 通信，贴近分布式部署。

@@ -1,5 +1,8 @@
 package logql
 
+// explain 为各类 StepEvaluator 实现 Explain 方法，构建可读查询计划树；MaxChildrenDisplay 限制子节点展示数量以防输出爆炸。
+
+// MaxChildrenDisplay 控制 explain 树最多展示的直接子节点数，超出则折叠为 ...。
 // MaxChildrenDisplay defines the maximum number of children that should be
 // shown by explain.
 const MaxChildrenDisplay = 3
@@ -27,6 +30,7 @@ func (e *VectorStepEvaluator) Explain(parent Node) {
 	parent.Child("VectorStep")
 }
 
+// ConcatStepEvaluator 在子求值器过多时仅展示首尾与省略号。
 func (e *ConcatStepEvaluator) Explain(parent Node) {
 	b := parent.Child("Concat")
 	if len(e.evaluators) < MaxChildrenDisplay {
@@ -48,6 +52,7 @@ func (e *AbsentRangeVectorEvaluator) Explain(parent Node) {
 	parent.Child("Absent RangeVectorAgg")
 }
 
+// BinOpStepEvaluator 为二元运算节点分别 explain 左右子表达式。
 func (e *BinOpStepEvaluator) Explain(parent Node) {
 	b := parent.Childf("%s BinOp", e.expr.Op)
 	e.lse.Explain(b)
@@ -67,6 +72,7 @@ func (e *mergeOverTimeStepEvaluator) Explain(parent Node) {
 	parent.Child("MergeFirstOverTime")
 }
 
+// CountMinSketchVectorStepEvaluator 在计划树中标记 CMS 向量求值步骤。
 func (e *CountMinSketchVectorStepEvaluator) Explain(parent Node) {
 	parent.Child("CountMinSketchVector")
 }
@@ -74,3 +80,4 @@ func (e *CountMinSketchVectorStepEvaluator) Explain(parent Node) {
 func (EmptyEvaluator[SampleVector]) Explain(parent Node) {
 	parent.Child("Empty")
 }
+// 各 Explain 实现递归向下遍历子 Evaluator，形成与执行顺序一致的 DAG 视图。

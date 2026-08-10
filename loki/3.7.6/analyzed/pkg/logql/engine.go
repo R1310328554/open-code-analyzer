@@ -1,5 +1,7 @@
 package logql
 
+// engine 是 LogQL 查询引擎核心：参数类型、Querier 接口、QueryEngine 执行路径、租户限流/拦截、指标记录与 sample/log/variants 三类表达式求值。
+
 import (
 	"context"
 	"errors"
@@ -64,6 +66,7 @@ var (
 	lastEntryMinTime = time.Unix(-100, 0)
 )
 
+// QueryParams 抽象日志选择器与时间/shard/delete 等查询边界参数。
 type QueryParams interface {
 	LogSelector() (syntax.LogSelectorExpr, error)
 	GetStart() time.Time
@@ -139,6 +142,7 @@ func (s SelectSampleParams) LogSelector() (syntax.LogSelectorExpr, error) {
 
 // Querier allows a LogQL expression to fetch an EntryIterator for a
 // set of matchers and filters
+// Querier 为 Evaluator 提供 SelectLogs/SelectSamples 底层数据迭代能力。
 type Querier interface {
 	SelectLogs(context.Context, SelectLogParams) (iter.EntryIterator, error)
 	SelectSamples(context.Context, SelectSampleParams) (iter.SampleIterator, error)
@@ -149,6 +153,7 @@ type Engine interface {
 }
 
 // EngineOpts is the list of options to use with the LogQL query engine.
+// EngineOpts 配置 instant 日志回溯窗口、执行日志开关及 CMS heap 上限。
 type EngineOpts struct {
 	// MaxLookBackPeriod is the maximum amount of time to look back for log lines.
 	// only used for instant log queries.
@@ -177,6 +182,7 @@ func (opts *EngineOpts) applyDefault() {
 }
 
 // QueryEngine is the LogQL engine.
+// QueryEngine 持有 EvaluatorFactory 与 Limits，是标准 LogQL 引擎实现。
 type QueryEngine struct {
 	logger           log.Logger
 	evaluatorFactory EvaluatorFactory
@@ -242,6 +248,7 @@ func (q *query) resultLength(res promql_parser.Value) int {
 }
 
 // Exec Implements `Query`. It handles instrumentation & defers to Eval.
+// Exec 负责 tracing、计时、统计收集并委托 Eval 求值，返回 logqlmodel.Result。
 func (q *query) Exec(ctx context.Context) (logqlmodel.Result, error) {
 	ctx, sp := tracer.Start(ctx, "query.Exec")
 	defer sp.End()
@@ -306,6 +313,7 @@ func (q *query) Exec(ctx context.Context) (logqlmodel.Result, error) {
 	}, err
 }
 
+// Eval 按表达式类型分派：VariantsExpr、SampleExpr 或 LogSelectorExpr。
 func (q *query) Eval(ctx context.Context) (promql_parser.Value, error) {
 	tenants, _ := tenant.TenantIDs(ctx)
 	timeoutCapture := func(id string) time.Duration { return q.limits.QueryTimeout(ctx, id) }
@@ -372,6 +380,7 @@ func (q *query) checkBlocked(ctx context.Context, tenants []string) bool {
 }
 
 // evalSample evaluate a sampleExpr
+// evalSample 优化表达式后创建 StepEvaluator，按结果类型 Join 为 Vector/Matrix 等。
 func (q *query) evalSample(ctx context.Context, expr syntax.SampleExpr) (promql_parser.Value, error) {
 	if lit, ok := expr.(*syntax.LiteralExpr); ok {
 		return q.evalLiteral(ctx, lit)
@@ -861,3 +870,4 @@ func (q *query) evalVariants(
 	}
 	return nil, errors.New("unexpected empty result")
 }
+// checkBlocked 遍历所有租户 ID，任一命中 BlockedQueries 即返回 ErrBlocked。

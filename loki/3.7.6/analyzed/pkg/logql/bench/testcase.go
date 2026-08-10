@@ -1,5 +1,7 @@
 package bench
 
+// testcase 表示一条已解析的 LogQL 基准用例：查询串、时间窗口、方向、步长及 YAML 来源等元数据。
+
 import (
 	"fmt"
 	"slices"
@@ -16,6 +18,7 @@ const (
 )
 
 // TestCase represents a LogQL test case for benchmarking and testing
+// TestCase 由 QueryRegistry.ExpandQuery 生成，供 bench/k6 运行器消费。
 type TestCase struct {
 	Query     string
 	Start     time.Time
@@ -28,6 +31,7 @@ type TestCase struct {
 }
 
 // Equal returns true if two TestCases represent the same query execution.
+// Equal 比较查询、时间与方向等字段，忽略 QueryDesc 等展示性元数据。
 func (c TestCase) Equal(other TestCase) bool {
 	return c.Query == other.Query &&
 		c.Start.Equal(other.Start) &&
@@ -40,6 +44,7 @@ func (c TestCase) Equal(other TestCase) bool {
 // Name returns a descriptive name for the test case.
 // For log queries, it includes the direction.
 // For metric queries (rate, sum), it returns the query with step size.
+// Name 为日志类查询附加方向后缀，metric 类仅返回查询表达式本身。
 func (c TestCase) Name() string {
 	expr, err := syntax.ParseExpr(c.Query)
 	if err != nil {
@@ -52,6 +57,7 @@ func (c TestCase) Name() string {
 }
 
 // Kind returns the kind of the test case based on the query type.
+// Kind 通过语法树判断为 log 或 metric，解析失败返回 invalid。
 func (c TestCase) Kind() string {
 	expr, err := syntax.ParseExpr(c.Query)
 	if err != nil {
@@ -77,3 +83,4 @@ func (c TestCase) Description() string {
 	fmt.Fprintf(&b, "Direction: %v", c.Direction)
 	return b.String()
 }
+// Description 格式化输出 Source、时间范围、Step 与 Direction 供调试与报告。

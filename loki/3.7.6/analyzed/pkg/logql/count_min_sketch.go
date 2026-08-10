@@ -1,5 +1,7 @@
 package logql
 
+// count_min_sketch 实现 Count-Min Sketch 向量类型及堆顶 k 近似聚合，用于分片 probabilistic topk 查询的内存有界统计与 protobuf 序列化。
+
 import (
 	"bytes"
 	"container/heap"
@@ -26,6 +28,7 @@ const (
 	delta = 0.01
 )
 
+// CountMinSketchVector 用 CMS+HLL 近似记录各标签组合的计数/求和，存储受 epsilon/delta 约束。
 // CountMinSketchVector tracks the count or sum of values of a metric, ie list of label value pairs. It's storage for
 // the values is upper bound bu delta and epsilon. To limit the storage for labels see HeapCountMinSketchVector.
 // The main use case is for a topk approximation.
@@ -48,6 +51,7 @@ func (v CountMinSketchVector) CountMinSketchVec() CountMinSketchVector {
 	return v
 }
 
+// Merge 合并底层 sketch 并去重合并 Metrics 标签列表。
 func (v *CountMinSketchVector) Merge(right *CountMinSketchVector) (*CountMinSketchVector, error) {
 	// The underlying CMS implementation already merges the HLL sketches that are part of that structure.
 	err := v.F.Merge(right.F)
@@ -156,6 +160,7 @@ func CountMinSketchVectorFromProto(p *logproto.CountMinSketchVector) (CountMinSk
 	return vec, nil
 }
 
+// HeapCountMinSketchVector 用最小堆限制标签基数，控制 topk 近似内存上限。
 // HeapCountMinSketchVector is a CountMinSketchVector that keeps the number of metrics to a defined maximum.
 type HeapCountMinSketchVector struct {
 	CountMinSketchVector
@@ -189,6 +194,7 @@ func NewHeapCountMinSketchVector(ts int64, metricsLength, maxLabels int) HeapCou
 	}
 }
 
+// Add 更新 CMS 计数，新标签入堆；超 maxLabels 时弹出估计值最小的序列。
 func (v *HeapCountMinSketchVector) Add(metric labels.Labels, value float64) {
 	// Needed? slices.SortFunc(metric, func(a, b labels.Label) int { return strings.Compare(a.Name, b.Name) })
 	v.buffer = stableBytes(v.buffer, metric)
@@ -220,6 +226,7 @@ func (v *HeapCountMinSketchVector) Add(metric labels.Labels, value float64) {
 
 // stableBytes returns the stable byte serialization of ls. stableBytes returns
 // consistent results regardless of the internal layout of ls.
+// stableBytes 生成与标签内部布局无关的稳定字节序列，供哈希与 CMS 键使用。
 func stableBytes(buf []byte, ls labels.Labels) []byte {
 	// Copied from the slicelabels implementation of [labels.Labels.Bytes].
 	const (
@@ -302,6 +309,7 @@ func newCountMinSketchVectorAggEvaluator(nextEvaluator StepEvaluator, expr *synt
 	}, nil
 }
 
+// countMinSketchVectorAggEvaluator 将每步 SampleVector 聚合进 HeapCountMinSketchVector。
 // countMinSketchVectorAggEvaluator processes sample vectors and aggregates them in a count min sketch with a heap.
 type countMinSketchVectorAggEvaluator struct {
 	nextEvaluator StepEvaluator
@@ -388,6 +396,7 @@ func (*CountMinSketchVectorStepEvaluator) Error() error { return nil }
 
 var _ StepEvaluator = (*CountMinSketchEvalStepEvaluator)(nil)
 
+// CountMinSketchEvalStepEvaluator 将下游 CMS 表达式求值并转为 promql.Vector。
 // CountMinSketchEvalStepEvaluator transforms a CountMinSketchEvalExpr into a CountMinSketchVector.
 type CountMinSketchEvalStepEvaluator struct {
 	ctx           context.Context
@@ -427,3 +436,4 @@ func (*CountMinSketchEvalStepEvaluator) Close() error { return nil }
 func (*CountMinSketchEvalStepEvaluator) Error() error { return nil }
 
 func (e *CountMinSketchEvalStepEvaluator) Explain(_ Node) {}
+// JoinCountMinSketchVector 仅支持 instant 查询，range 类型返回错误。

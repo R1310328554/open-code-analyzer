@@ -1,5 +1,7 @@
 package logql
 
+// downstream 实现分片感知的 DownstreamEngine：将查询拆为 per-shard 子查询并行执行后重聚合，支持 concat、quantile sketch 等内部 AST 节点。
+
 import (
 	"context"
 	"errors"
@@ -21,6 +23,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// 下游引擎并行执行带 shard 标注的子查询；schema 10+ 索引分片使查询可 remap 为可并行形式。
 /*
 The downstream engine is responsible for executing multiple downstream computations in parallel.
 Each downstream computation includes an Expr and an optional sharding representation based on backend shard factors.
@@ -43,6 +46,7 @@ operand expression can take advantage of the parallel execution model:
 
 // DownstreamEngine is an Engine implementation that can split queries into more parallelizable forms via
 // querying the underlying backend shards individually and re-aggregating them.
+// DownstreamEngine 包装 Downstreamable 与 limits，构造带 DownstreamEvaluator 的 Query。
 type DownstreamEngine struct {
 	logger         log.Logger
 	opts           EngineOpts
@@ -74,6 +78,7 @@ func (ng *DownstreamEngine) Query(ctx context.Context, p Params) Query {
 }
 
 // DownstreamSampleExpr is a SampleExpr which signals downstream computation
+// DownstreamSampleExpr 标记需在指定 shard 上执行的 SampleExpr 子树。
 type DownstreamSampleExpr struct {
 	shard *ShardWithChunkRefs
 	syntax.SampleExpr
@@ -153,6 +158,7 @@ var defaultMaxDepth = 4
 // ConcatSampleExpr is an expr for concatenating multiple SampleExpr
 // Contract: The embedded SampleExprs within a linked list of ConcatSampleExprs must be of the
 // same structure. This makes special implementations of SampleExpr.Associative() unnecessary.
+// ConcatSampleExpr 以链表串联多个 DownstreamSampleExpr，String 限制展示深度。
 type ConcatSampleExpr struct {
 	DownstreamSampleExpr
 	next *ConcatSampleExpr
@@ -448,6 +454,7 @@ type Resp struct {
 
 // Downstreamer is an interface for deferring responsibility for query execution.
 // It is decoupled from but consumed by a downStreamEvaluator to dispatch ASTs.
+// Downstreamer 负责实际分发 DownstreamQuery 并经由 Accumulator 收集结果。
 type Downstreamer interface {
 	Downstream(context.Context, []DownstreamQuery, Accumulator) ([]logqlmodel.Result, error)
 }
@@ -459,6 +466,7 @@ type Accumulator interface {
 }
 
 // DownstreamEvaluator is an evaluator which handles shard aware AST nodes
+// DownstreamEvaluator 处理 AST 中的 shard 节点，委托 Downstreamer 执行子查询。
 type DownstreamEvaluator struct {
 	Downstreamer
 	defaultEvaluator EvaluatorFactory
@@ -864,3 +872,4 @@ func ResultIterator(res logqlmodel.Result, direction logproto.Direction) (iter.E
 	}
 	return iter.NewStreamsIterator(streams, direction), nil
 }
+// Downstream 完成后补全 Shards 统计并合并 warnings/headers 到 context。

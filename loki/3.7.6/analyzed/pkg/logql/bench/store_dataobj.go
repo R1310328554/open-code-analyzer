@@ -1,5 +1,7 @@
 package bench
 
+// store_dataobj 以 Loki dataobj 列式格式写入基准日志，上传对象后更新 metastore TOC，Close 时批量构建二级索引。
+
 import (
 	"bytes"
 	"context"
@@ -24,6 +26,7 @@ import (
 )
 
 // DataObjStore implements Store using the dataobj format
+// DataObjStore 管理 logsobj.Builder、uploader 及日志/索引双 metastore 写入器。
 type DataObjStore struct {
 	path             string
 	tenant           string
@@ -42,6 +45,7 @@ type DataObjStore struct {
 }
 
 // NewDataObjStore creates a new DataObjStore
+// NewDataObjStore 创建本地 filesystem bucket 与 dataobj 目录布局。
 func NewDataObjStore(dir, tenant string) (*DataObjStore, error) {
 	storageDir := filepath.Join(dir, storageDir)
 
@@ -109,6 +113,7 @@ func NewDataObjStore(dir, tenant string) (*DataObjStore, error) {
 }
 
 // Write implements Store
+// Write 追加流到 builder，满则 flush 上传并重试 Append。
 func (s *DataObjStore) Write(_ context.Context, streams []logproto.Stream) error {
 	for _, stream := range streams {
 		if err := s.builder.Append(s.tenant, stream); errors.Is(err, logsobj.ErrBuilderFull) {
@@ -127,6 +132,7 @@ func (s *DataObjStore) Write(_ context.Context, streams []logproto.Stream) error
 	return nil
 }
 
+// flush 将 builder 输出经 uploader 上传并写入 logs metastore TOC 条目。
 func (s *DataObjStore) flush() error {
 	// Reset the buffer
 	s.buf.Reset()
@@ -172,6 +178,7 @@ func (s *DataObjStore) Close() error {
 	return nil
 }
 
+// buildIndex 遍历 objects 目录，每 16 个对象 flush 一次索引 calculator。
 func (s *DataObjStore) buildIndex() error {
 	flushAndUpload := func(calculator *index.Calculator) error {
 		timeRanges := calculator.TimeRanges()
@@ -254,3 +261,4 @@ func (s *DataObjStore) buildIndex() error {
 	}
 	return nil
 }
+// 索引与日志对象使用独立 PrefixedBucket 与 TOC，路径前缀为 index/v0。

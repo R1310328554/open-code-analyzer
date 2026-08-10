@@ -1,5 +1,7 @@
 package bench
 
+// metadata 定义基准测试数据集元数据：有界集合常量、JSON 序列化结构、最小查询窗口推导及生成/加载 dataset_metadata.json 的辅助函数。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -14,7 +16,8 @@ import (
 
 const (
 	metadataFileName = "dataset_metadata.json"
-	// MetadataVersion is the current version of the dataset metadata format.
+	// MetadataVersion 为 dataset_metadata.json 格式版本，供 discover 等外部包校验。
+// MetadataVersion is the current version of the dataset metadata format.
 	// It is exported so that callers outside the bench package (e.g. the
 	// discover pipeline) can validate or set the version field without
 	// needing a separate accessor function.
@@ -25,12 +28,14 @@ const (
 	appLoki     = "loki"
 )
 
+// 有界集合定义各数据集共有的查询维度，驱动 discover 工具按维度探测流。
 // Bounded sets: characteristics common to all datasets
 // These define the set of possible queries and drive targeted series API queries
 // during stream discovery. Each exported variable corresponds to a discovery
 // query dimension used by the discover CLI.
 var (
-	// UnwrappableFields are numeric fields that can be used with | unwrap in
+	// UnwrappableFields 为 metric 查询中可用 | unwrap 的数值字段列表。
+// UnwrappableFields are numeric fields that can be used with | unwrap in
 	// metric queries. The discover tool issues series queries for each field to
 	// find streams that expose these values.
 	UnwrappableFields = []string{
@@ -47,7 +52,8 @@ var (
 		"ttl",
 	}
 
-	// FilterableKeywords are literal strings commonly appearing in log content.
+	// FilterableKeywords 为行过滤查询（|=、|~）常用的日志内容关键字。
+// FilterableKeywords are literal strings commonly appearing in log content.
 	// Used for line filter queries like |= "level" or |~ "error". The discover
 	// tool tests keyword presence per stream to populate ByKeyword in the output
 	// metadata.
@@ -60,7 +66,8 @@ var (
 		"refused",
 	}
 
-	// StructuredMetadataKeys are keys that appear as structured metadata
+	// StructuredMetadataKeys 为条目级结构化元数据键，非流标签索引。
+// StructuredMetadataKeys are keys that appear as structured metadata
 	// attached to log entries (not as stream labels). The discover tool uses
 	// detected_fields responses to find streams that carry these keys.
 	// Note: detected_level lives here (not in LabelKeys) because it is
@@ -70,7 +77,8 @@ var (
 		"pod",
 	}
 
-	// LabelKeys are indexed stream labels used for selectors and grouping
+	// LabelKeys 为可用于 selector 与 by/without 分组的流标签键。
+// LabelKeys are indexed stream labels used for selectors and grouping
 	// (by/without). The discover tool issues one series query per key with
 	// matcher {key=~".+"} to enumerate streams.
 	LabelKeys = []string{
@@ -85,6 +93,7 @@ var (
 
 // SerializableStreamMetadata contains only the fields needed for query resolution
 // This is a subset of StreamMetadata that can be safely serialized to JSON
+// SerializableStreamMetadata 仅含 JSON 可序列化的最小/即时查询窗口字段。
 type SerializableStreamMetadata struct {
 	MinRange        time.Duration `json:"min_range"`
 	MinInstantRange time.Duration `json:"min_instant_range"`
@@ -92,6 +101,7 @@ type SerializableStreamMetadata struct {
 
 // DatasetMetadata contains queryable information about a generated dataset
 // It maps query properties to stream/label patterns
+// DatasetMetadata 将查询属性映射到 selector 列表及多维倒排索引。
 type DatasetMetadata struct {
 	AllSelectors  []string               `json:"all_selectors"`
 	ByFormat      map[LogFormat][]string `json:"by_format"`
@@ -137,6 +147,7 @@ type DatasetStatistics struct {
 // - baseEntries: 10-100 entries per stream (average ~55)
 // - timeSpread: configured time span over which logs are distributed
 // - logRate: baseEntries / timeSpread (logs per second)
+// CalculateMinRanges 根据合成数据的日志生成速率估算 range/instant 最小窗口。
 func CalculateMinRanges(config *GeneratorConfig) (minRange, minInstantRange time.Duration) {
 	// Calculate average log generation rate
 	// baseEntries averages to ~55 logs per stream over the timeSpread
@@ -180,6 +191,7 @@ func CalculateMinRanges(config *GeneratorConfig) (minRange, minInstantRange time
 // NOTE: Currently uses helper functions (getUnwrappableFields, etc.) that hardcode
 // application knowledge. This is a temporary approach for synthetic datasets.
 // See TODO comments on helper functions for refactoring plan to support real datasets.
+// BuildMetadata 在数据生成阶段从 StreamMetadata 构建完整 DatasetMetadata。
 func BuildMetadata(config *GeneratorConfig, streamsMeta []StreamMetadata) *DatasetMetadata {
 	metadata := &DatasetMetadata{
 		AllSelectors:  make([]string, 0, len(streamsMeta)),
@@ -416,6 +428,7 @@ func getContentKeywords(appName string) []string {
 }
 
 // SaveMetadata writes metadata to a JSON file in the specified directory
+// SaveMetadata 将元数据写入 dataDir 下 dataset_metadata.json。
 func SaveMetadata(dataDir string, metadata *DatasetMetadata) error {
 	metadataPath := filepath.Join(dataDir, metadataFileName)
 	data, err := json.MarshalIndent(metadata, "", "  ")
@@ -431,6 +444,7 @@ func SaveMetadata(dataDir string, metadata *DatasetMetadata) error {
 }
 
 // LoadMetadata reads metadata from a JSON file in the specified directory
+// LoadMetadata 读取并校验版本号后反序列化 dataset_metadata.json。
 func LoadMetadata(dataDir string) (*DatasetMetadata, error) {
 	metadataPath := filepath.Join(dataDir, metadataFileName)
 	data, err := os.ReadFile(metadataPath)
@@ -465,3 +479,4 @@ func GenerateInMemoryMetadata(config *GeneratorConfig) *DatasetMetadata {
 	gen.generateStreamMetadata() // Generate stream metadata in memory
 	return BuildMetadata(config, gen.StreamsMeta)
 }
+// 所有 selector 数组经排序以保证跨运行结果确定性与 golden diff 对齐。

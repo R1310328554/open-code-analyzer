@@ -1,5 +1,7 @@
 package logql
 
+// evaluator 定义 LogQL 求值参数、DefaultEvaluator 工厂及各类 StepEvaluator，将 AST 节点逐步转化为 SampleVector、Matrix 或 sketch 中间结果。
+
 import (
 	"container/heap"
 	"context"
@@ -27,6 +29,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// QueryRangeType 区分 instant（起止相同且 step=0）与 range 查询。
 type QueryRangeType string
 
 const trueString = "true"
@@ -37,6 +40,7 @@ var (
 )
 
 // Params details the parameters associated with a loki request
+// Params 封装查询字符串、时间边界、shard、缓存选项及已解析 syntax.Expr。
 type Params interface {
 	QueryString() string
 	Start() time.Time
@@ -176,6 +180,7 @@ func (p LiteralParams) CachingOptions() resultscache.CachingOptions {
 }
 
 // GetRangeType returns whether a query is an instant query or range query
+// GetRangeType 根据 Start/End/Step 判断 instant 或 range 查询类型。
 func GetRangeType(q Params) QueryRangeType {
 	if q.Start().Equal(q.End()) && q.Step() == 0 {
 		return InstantType
@@ -260,6 +265,7 @@ func Sortable(q Params) (bool, error) {
 }
 
 // EvaluatorFactory is an interface for iterating over data at different nodes in the AST
+// EvaluatorFactory 统一 Sample、Entry 与 Variant 三类求值器创建入口。
 type EvaluatorFactory interface {
 	SampleEvaluatorFactory
 	EntryEvaluatorFactory
@@ -288,6 +294,7 @@ func EvaluatorUnsupportedType(expr syntax.Expr, ev EvaluatorFactory) error {
 	return errors.Errorf("unexpected expr type (%T) for Evaluator type (%T) ", expr, ev)
 }
 
+// DefaultEvaluator 基于 Querier 实现默认 StepEvaluator 与 EntryIterator 构造。
 type DefaultEvaluator struct {
 	maxLookBackPeriod         time.Duration
 	maxCountMinSketchHeapSize int
@@ -326,6 +333,7 @@ func (ev *DefaultEvaluator) NewIterator(ctx context.Context, expr syntax.LogSele
 	return ev.querier.SelectLogs(ctx, params)
 }
 
+// NewStepEvaluator 按 AST 节点类型分派到 vector/range/binop/label_replace 等求值器。
 func (ev *DefaultEvaluator) NewStepEvaluator(
 	ctx context.Context,
 	nextEvFactory SampleEvaluatorFactory,
@@ -425,6 +433,7 @@ func newVectorAggEvaluator(
 	}, nil
 }
 
+// VectorAggEvaluator 对每步 SampleVector 按 grouping 执行 sum/avg/topk 等向量聚合。
 type VectorAggEvaluator struct {
 	nextEvaluator StepEvaluator
 	expr          *syntax.VectorAggregationExpr
@@ -1628,3 +1637,4 @@ func (it *VariantsEvaluator) Close() error {
 	}
 	return nil
 }
+// ParamOverridesFromShard 将分片与可选 ChunkRef 注入 Params，供下游子查询使用。

@@ -1,5 +1,7 @@
 package bench
 
+// store 定义基准测试存储后端接口与 Builder，协调 Generator 批量写入并在完成后生成 dataset_metadata.json。
+
 import (
 	"context"
 	"fmt"
@@ -13,6 +15,7 @@ var (
 )
 
 // Store represents a storage backend for log data
+// Store 抽象日志写入、命名与关闭刷盘，支持 chunk/dataobj 等多种实现。
 type Store interface {
 	// Write writes a batch of streams to the store
 	Write(ctx context.Context, streams []logproto.Stream) error
@@ -23,6 +26,7 @@ type Store interface {
 }
 
 // Builder helps construct test datasets using multiple stores
+// Builder 绑定 Generator 与一个或多个 Store，在指定目录生成基准数据集。
 type Builder struct {
 	stores []Store
 	gen    *Generator
@@ -39,6 +43,7 @@ func NewBuilder(dir string, opt Opt, stores ...Store) *Builder {
 }
 
 // Generate generates and stores the specified amount of data across all stores
+// Generate 迭代 batch 直至达到 targetSize，写入各 store 并保存元数据。
 func (b *Builder) Generate(ctx context.Context, targetSize int64) error {
 	fmt.Printf("Generating %s of data\n", formatBytes(targetSize))
 	// Save the generator config once at the root directory
@@ -105,3 +110,4 @@ func formatBytes(bytes int64) string {
 	}
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
+// 每 5% 进度打印一次生成状态，Close 确保所有 store 刷盘后再写 metadata。

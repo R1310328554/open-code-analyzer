@@ -1,5 +1,7 @@
 package bench
 
+// query_registry 从 YAML 目录加载 LogQL 基准查询定义，校验有界集合约束，并借助 VariableResolver 展开为可执行的 TestCase 列表。
+
 import (
 	"fmt"
 	"os"
@@ -14,6 +16,7 @@ import (
 )
 
 // QueryDirection specifies which direction(s) to run a log query
+// QueryDirection 指定日志查询扫描方向：forward、backward 或 both。
 type QueryDirection string
 
 const (
@@ -44,6 +47,7 @@ func (t *TimeRangeConfig) ParseStep() (time.Duration, error) {
 }
 
 // QueryRequirements specifies what characteristics a stream must have for a query to work
+// QueryRequirements 描述流必须满足的标签、字段、格式等特征约束。
 type QueryRequirements struct {
 	LogFormat          string   `yaml:"log_format,omitempty"`          // "json", "logfmt", or "unstructured"
 	UnwrappableFields  []string `yaml:"unwrappable_fields,omitempty"`  // Numeric fields needed for | unwrap
@@ -54,6 +58,7 @@ type QueryRequirements struct {
 }
 
 // QueryDefinition represents a single query definition from the registry
+// QueryDefinition 对应 YAML 中单条查询：模板、时间范围、Requires 与元信息。
 type QueryDefinition struct {
 	Description string            `yaml:"description"`
 	Query       string            `yaml:"query"`
@@ -82,6 +87,7 @@ const (
 )
 
 // QueryRegistry manages loading and accessing query definitions
+// QueryRegistry 按 suite（fast/regression/exhaustive）组织已加载的查询定义。
 type QueryRegistry struct {
 	baseDir string
 	queries map[Suite][]QueryDefinition
@@ -137,6 +143,7 @@ func (r *QueryRegistry) Load(suites ...Suite) error {
 }
 
 // validateRequirements validates query requirements against bounded sets defined in metadata.go
+// validateRequirements 校验 Requires 字段值均在 metadata.go 有界集合内。
 func validateRequirements(req QueryRequirements, queryDesc string) error {
 	// Validate unwrappable fields
 	for _, field := range req.UnwrappableFields {
@@ -301,6 +308,7 @@ func (r *QueryRegistry) GetQueries(includeSkipped bool, suites ...Suite) []Query
 
 // ExpandQuery expands a query definition into one or more TestCase instances
 // by resolving variables and creating cases for each direction
+// ExpandQuery 解析变量并按 kind/direction 展开为一条或多条 TestCase。
 func (r *QueryRegistry) ExpandQuery(def QueryDefinition, resolver VariableResolver, isInstant bool) ([]TestCase, error) {
 	resolvedQuery, err := resolver.ResolveQuery(def.Query, def.Requires, isInstant)
 	if err != nil {
@@ -389,6 +397,7 @@ func (r *QueryRegistry) ExpandQuery(def QueryDefinition, resolver VariableResolv
 }
 
 // VariableResolver is responsible for resolving query variables
+// VariableResolver 抽象占位符解析与时间窗口选取，便于测试注入 mock。
 type VariableResolver interface {
 	// ResolveQuery resolves variables in a query based on requirements
 	// The isInstant parameter determines whether to use MinInstantRange (true) or MinRange (false) for ${RANGE}
@@ -397,3 +406,4 @@ type VariableResolver interface {
 	// GetTimeRange returns the start and end time for a query based on its time range config
 	GetTimeRange(length time.Duration) (start, end time.Time, err error)
 }
+// loadFile 解析 YAML 时记录 Source 行号，便于基准失败时定位原始定义。

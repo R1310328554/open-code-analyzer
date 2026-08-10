@@ -1,5 +1,7 @@
 package bench
 
+// store_chunk 实现基于 Loki TSDB chunk 存储的 Store，在本地文件系统上模拟生产 schema v13 索引与 chunk 写入路径。
+
 import (
 	"context"
 	"fmt"
@@ -30,6 +32,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// targetChunkSize 与 blockSize 控制 MemChunk 切块与压缩块大小。
 const (
 	targetChunkSize = 1572864
 	blockSize       = 256 * 1024
@@ -47,6 +50,7 @@ func NewChunkStore(dir, tenantID string) (*ChunkStore, error) {
 	return NewChunkStoreWithRegisterer(dir, tenantID, prometheus.DefaultRegisterer)
 }
 
+// NewChunkStoreWithRegisterer 初始化 TSDB shipper、本地 FS 与 schema v13 配置。
 func NewChunkStoreWithRegisterer(dir, tenantID string, reg prometheus.Registerer) (*ChunkStore, error) {
 	storageDir := filepath.Join(dir, storageDir)
 	workingDir := filepath.Join(dir, workingDir)
@@ -114,6 +118,7 @@ func NewChunkStoreWithRegisterer(dir, tenantID string, reg prometheus.Registerer
 	}, nil
 }
 
+// Write 按流标签聚合条目，空间不足时 flush 旧 chunk 再续写。
 func (s *ChunkStore) Write(ctx context.Context, streams []logproto.Stream) error {
 	for _, stream := range streams {
 		chunkEnc, ok := s.chunks[stream.Labels]
@@ -142,6 +147,7 @@ func newMemChunk() *chunkenc.MemChunk {
 	return chunkenc.NewMemChunk(chunkenc.ChunkFormatV4, compression.Snappy, chunkenc.UnorderedWithStructuredMetadataHeadBlockFmt, blockSize, targetChunkSize)
 }
 
+// flushChunk 关闭 MemChunk、编码 fingerprint 后通过 LokiStore.Put 持久化。
 func (s *ChunkStore) flushChunk(ctx context.Context, memChunk *chunkenc.MemChunk, labelsString string) error {
 	if err := memChunk.Close(); err != nil {
 		return err
@@ -188,6 +194,7 @@ func (s *ChunkStore) Close() error {
 	return nil
 }
 
+// latencyObjectClient 在每次读操作前 sleep，模拟 S3/GCS 对象存储延迟。
 // latencyObjectClient wraps an ObjectClient and injects a configurable delay
 // before each read operation to simulate object storage latency (e.g. S3/GCS).
 type latencyObjectClient struct {
@@ -227,3 +234,4 @@ func (c *latencyObjectClient) List(ctx context.Context, prefix string, delimiter
 	c.delay()
 	return c.ObjectClient.List(ctx, prefix, delimiter)
 }
+// Close 刷尽内存 chunk 并 Stop store，Unregister 指标避免测试间 prometheus 冲突。

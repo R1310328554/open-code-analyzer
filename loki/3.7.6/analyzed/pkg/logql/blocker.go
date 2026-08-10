@@ -1,5 +1,7 @@
 package logql
 
+// blocker 实现 per-tenant 查询拦截策略：按哈希、精确匹配或正则匹配查询，并可进一步按查询类型与 context 标签过滤是否真正阻断。
+
 import (
 	"context"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// queryBlocker 绑定 query 上下文与租户 limits，供 Exec 前检查 BlockedQueries。
 type queryBlocker struct {
 	ctx    context.Context
 	q      *query
@@ -28,6 +31,7 @@ func newQueryBlocker(ctx context.Context, q *query) *queryBlocker {
 	}
 }
 
+// isBlocked 遍历拦截规则：优先哈希命中，其次精确/正则模式匹配。
 func (qb *queryBlocker) isBlocked(ctx context.Context, tenant string) bool {
 	blocks := qb.q.limits.BlockedQueries(ctx, tenant)
 	if len(blocks) <= 0 {
@@ -54,6 +58,7 @@ func (qb *queryBlocker) isBlocked(ctx context.Context, tenant string) bool {
 			continue
 		}
 
+// Pattern 为空时默认为 .* 正则，表示匹配全部查询字符串。
 		// if no pattern is given, assume we want to match all queries
 		if b.Pattern == "" {
 			b.Pattern = ".*"
@@ -84,6 +89,7 @@ func (qb *queryBlocker) isBlocked(ctx context.Context, tenant string) bool {
 	return false
 }
 
+// block 在模式命中后校验 Types 与 Tags，三者均满足才返回 blocked=true。
 func (qb *queryBlocker) block(ctx context.Context, q *validation.BlockedQuery, typ string, logger log.Logger) (bool, bool, bool) {
 	// returns: (typesMatched, tagsMatched, blocked)
 	// no specific types to validate against, so only tags (if any) need to match
@@ -111,6 +117,7 @@ func (qb *queryBlocker) block(ctx context.Context, q *validation.BlockedQuery, t
 	return true, tagsMatched, tagsMatched
 }
 
+// tagsMatch 要求 context 中查询标签与规则 Tags 全部键值对匹配（忽略大小写）。
 func (qb *queryBlocker) tagsMatch(ctx context.Context, q *validation.BlockedQuery, logger log.Logger) bool {
 	// if no tags are expected, we treat all queries as matching
 	if len(q.Tags) == 0 {
@@ -155,3 +162,4 @@ func (qb *queryBlocker) tagsMatch(ctx context.Context, q *validation.BlockedQuer
 	}
 	return false
 }
+// 仅当所有预期标签均匹配时才阻断，部分匹配仅记录 debug 日志不拦截。
