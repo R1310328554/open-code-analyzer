@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// handler.go — Admin 模块 HTTP 处理器：登录鉴权、用户/服务/变量管理、消息队列、沙箱配置与采集任务等 Gin 端点。
+
 //
 
 package admin
@@ -33,13 +35,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Handler admin handler
+// Handler Admin HTTP 处理器，封装 Service 与 UserService。
 type Handler struct {
 	service     *Service
 	userService *service.UserService
 }
 
-// NewHandler create admin handler
+// NewHandler 构造 Admin 处理器实例。
 func NewHandler(svc *Service) *Handler {
 	return &Handler{
 		service:     svc,
@@ -53,7 +55,7 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-// Health check
+// Health 健康检查端点，返回 status=ok。
 func (h *Handler) Health(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "ok"})
 }
@@ -63,7 +65,7 @@ func (h *Handler) Ping(c *gin.Context) {
 	common.SuccessNoData(c, "pong")
 }
 
-// Login handle admin login
+// Login 管理员邮箱登录，仅 superuser 可成功。
 // @Summary Admin Login
 // @Description Admin login verification using email, only superuser can login
 // @Tags admin
@@ -149,6 +151,7 @@ type ListUsersRequest struct {
 }
 
 // ListUsers handle list users
+// ListUsers 分页列出全部用户。
 func (h *Handler) ListUsers(c *gin.Context) {
 
 	var err error
@@ -472,6 +475,7 @@ func (h *Handler) DeleteUserAPIToken(c *gin.Context) {
 }
 
 // GetServices handle get all services
+// GetServices 列出全局 ServerStore 中注册的服务实例。
 func (h *Handler) GetServices(c *gin.Context) {
 	services, err := h.service.ListServices()
 	if err != nil {
@@ -849,6 +853,7 @@ func (h *Handler) TestSandboxConnection(c *gin.Context) {
 
 // AuthMiddleware JWT auth middleware
 // Validates that the user is authenticated and is a superuser (admin)
+// AuthMiddleware 校验 Bearer Token 并将用户写入上下文。
 func (h *Handler) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
@@ -1110,6 +1115,7 @@ type ListIngestionTasksRequest struct {
 }
 
 // ListIngestionTasks
+// ListIngestionTasks 列出采集任务及状态。
 func (h *Handler) ListIngestionTasks(c *gin.Context) {
 	var err error
 	var tasks []map[string]interface{}

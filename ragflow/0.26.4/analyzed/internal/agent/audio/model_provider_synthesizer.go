@@ -29,7 +29,7 @@
 // in at boot. The audio package stays decoupled from internal/service
 // to avoid the import cycle.
 //
-// Cache layer mirrors `rag/utils/tts_cache.py:synthesize_with_cache`:
+// 缓存层对齐 Python rag/utils/tts_cache.py:synthesize_with_cache：
 // SHA-256 of (text + voice + lang) under `tts:cache:<tenant>:<digest>`,
 // TTL 7 days (env override `RAGFLOW_TTS_CACHE_TTL_SECONDS`).
 
@@ -48,7 +48,7 @@ import (
 	"ragflow/internal/engine/redis"
 )
 
-// ModelProviderFunc is the contract the audio package uses to
+// ModelProviderFunc 是 audio 包向模型提供商服务发起 TTS 调用的回调契约。
 // dispatch a TTS request to the project's model provider service.
 // The callback receives the tenant id (resolved from canvas state)
 // and the model identifier (the request Engine field, treated as
@@ -59,7 +59,7 @@ import (
 // real implementation at boot.
 type ModelProviderFunc func(ctx context.Context, req ModelProviderRequest) (*SynthesizeResponse, error)
 
-// ModelProviderRequest is what the audio package hands to the
+// ModelProviderRequest 传递给模型提供商回调的请求参数。
 // model-provider callback. TenantID is resolved from the canvas
 // state when empty; ModelName is the model identifier (if empty,
 // the tenant's default TTS model is used).
@@ -71,7 +71,7 @@ type ModelProviderRequest struct {
 	Lang      string
 }
 
-// SetModelProviderSynthesizer installs a real synthesizer backed
+// SetModelProviderSynthesizer 安装基于模型提供商的真实合成器；
 // by the project's model provider service. Passing nil reverts to
 // the default stub. The audio package keeps only the interface;
 // the model-provider callback is plugged in at boot.
@@ -85,11 +85,13 @@ func SetModelProviderSynthesizer(fn ModelProviderFunc) {
 	SetSynthesizer(s)
 }
 
+// modelProviderSynthesizer 通过 ModelProviderFunc 与 Redis 缓存实现 TTS。
 type modelProviderSynthesizer struct {
 	fn    ModelProviderFunc
 	redis *redis.RedisClient
 }
 
+// Synthesize 先查 Redis 缓存，未命中则调用模型提供商并回写缓存。
 func (m *modelProviderSynthesizer) Synthesize(ctx context.Context, req SynthesizeRequest) (*SynthesizeResponse, error) {
 	if m.fn == nil {
 		return nil, ErrTTSEngineNotConfigured
@@ -145,7 +147,7 @@ func (m *modelProviderSynthesizer) Synthesize(ctx context.Context, req Synthesiz
 	return resp, nil
 }
 
-// buildTTSCacheKey mirrors `_build_key` in rag/utils/tts_cache.py:
+// buildTTSCacheKey 生成 TTS 缓存键，对齐 Python _build_key：
 // hash tenant + voice + lang + text, prefix `tts:cache:`.
 // Returns empty string when text or tenant is empty (no cache
 // for anonymous calls).
@@ -164,7 +166,7 @@ func buildTTSCacheKey(tenantID string, req SynthesizeRequest) string {
 	return "tts:cache:" + tenantID + ":" + hex.EncodeToString(h.Sum(nil))
 }
 
-// ttsCacheTTL reads RAGFLOW_TTS_CACHE_TTL_SECONDS; default 7 days.
+// ttsCacheTTL 读取环境变量 RAGFLOW_TTS_CACHE_TTL_SECONDS，默认 7 天。
 // Matches the Python `_ttl_seconds` default of 7 * 24 * 60 * 60.
 func ttsCacheTTL() time.Duration {
 	raw := os.Getenv("RAGFLOW_TTS_CACHE_TTL_SECONDS")

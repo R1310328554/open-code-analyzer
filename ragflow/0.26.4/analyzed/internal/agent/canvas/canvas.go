@@ -1,4 +1,4 @@
-// Package canvas implements the RAGFlow agent canvas Go port.
+// Package canvas 实现 RAGFlow Agent Canvas 的 Go 移植层。
 //
 // Shared runtime contracts (CanvasState, Component, ComponentFactory,
 // state context plumbing, template helpers) live in
@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// legacyNoOpNames is the set of component names that the Go port
+// legacyNoOpNames DSL v1 兼容的遗留组件名，编译时映射为 no-op。
 // recognises for DSL v1 compatibility but does not ship a real
 // implementation for. Encountering one of these in a DSL is mapped to
 // the same no-op echo lambda used for placeholder bodies by the
@@ -42,7 +42,7 @@ func NewCanvasState(runID, taskID string) *CanvasState {
 	return runtime.NewCanvasState(runID, taskID)
 }
 
-// Canvas is the in-memory DSL representation loaded from a user_canvas row.
+// Canvas 内存中的 Canvas DSL，由 user_canvas 行解码，供 compile.go 编译。
 // It is the input to compile.go which builds the eino Workflow.
 type Canvas struct {
 	Components map[string]CanvasComponent `json:"components"`
@@ -58,7 +58,7 @@ type Canvas struct {
 	NodeParents map[string]string `json:"-"`
 }
 
-// CanvasComponent is the in-memory DSL node. The Obj.ComponentName
+// CanvasComponent DSL 节点，Obj.ComponentName 对应 Python 组件类名。
 // matches agent/component/<name>.py's class name (case-insensitive,
 // per Python v1 DSL semantics).
 type CanvasComponent struct {
@@ -72,7 +72,7 @@ type CanvasComponentObj struct {
 	Params        map[string]any `json:"params"`
 }
 
-// Close releases resources held by components referenced in the canvas
+// Close 释放 DSL 中组件持有的资源（MCP 会话、HTTP 连接等）。
 // DSL. It walks every component's params map and calls Close() on any
 // value that implements a Close() method (MCPToolAdapters, HTTP
 // clients, etc.). Mirrors Python's Graph.close() in agent/canvas.py.
@@ -130,7 +130,7 @@ func safeClose(closer interface{ Close() }) {
 	closer.Close()
 }
 
-// Component is an alias for runtime.Component — the minimal runtime
+// Component 别名 runtime.Component，供 BuildWorkflow 构建子图时使用。
 // surface BuildWorkflow needs at sub-graph build time. The canonical
 // definition (and the SetDefaultFactory / DefaultFactory plumbing)
 // lives in internal/agent/runtime/component.go.

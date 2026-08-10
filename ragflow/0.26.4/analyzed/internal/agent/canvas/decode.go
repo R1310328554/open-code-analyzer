@@ -12,13 +12,15 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// decode.go — Canvas DSL 解码：将前端/存储的 JSON map 转为内存 Canvas 结构。
+
 //
 
 package canvas
 
 import "fmt"
 
-// DecodeFromDSL converts a canonical canvas DSL map into a Canvas.
+// DecodeFromDSL 将标准 Canvas DSL map 解码为 Canvas 对象。
 // It accepts both canonical IMPORT shape (`obj.component_name`) and the
 // normalized flat shape (`name`/`params`) that NormalizeForCanvas emits.
 func DecodeFromDSL(dsl map[string]any) (*Canvas, error) {
@@ -83,6 +85,7 @@ func DecodeFromDSL(dsl map[string]any) (*Canvas, error) {
 	return c, nil
 }
 
+// decodeComponentFields 解析组件的 name/params/downstream/upstream 字段。
 func decodeComponentFields(comp map[string]any) (name string, params map[string]any, downstream []string, upstream []string) {
 	if obj, ok := comp["obj"].(map[string]any); ok {
 		name, _ = obj["component_name"].(string)
@@ -118,6 +121,7 @@ func decodeComponentFields(comp map[string]any) (name string, params map[string]
 	return
 }
 
+// decodeStringSlice 将 []any 安全转为 []string。
 func decodeStringSlice(in []any) []string {
 	if len(in) == 0 {
 		return nil

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// service.go — Admin 业务层：用户 CRUD、许可证、采集任务、系统配置及多 DAO 聚合操作。
+
 //
 
 package admin
@@ -41,7 +43,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Service admin service layer
+// Service Admin 业务层，聚合各 DAO 与引擎客户端。
 type Service struct {
 	userDAO             *dao.UserDAO
 	licenseDAO          *dao.LicenseDAO
@@ -64,7 +66,7 @@ type Service struct {
 	ingestionTaskLogDao *dao.IngestionTaskLogDAO
 }
 
-// NewService create admin service
+// NewService 初始化全部 DAO 依赖。
 func NewService() *Service {
 	return &Service{
 		userDAO:             dao.NewUserDAO(),
@@ -89,7 +91,7 @@ func NewService() *Service {
 	}
 }
 
-// Logout user logout
+// Logout 使 access_token 失效（前缀 INVALID_）。
 func (s *Service) Logout(user interface{}) error {
 	// Invalidate token by setting it to INVALID_ prefix
 	if u, ok := user.(*entity.User); ok {
@@ -189,7 +191,7 @@ func (s *Service) StopIngestionTasks(tasks []string) ([]*entity.IngestionTask, e
 	return taskResponses, nil
 }
 
-// GetUserByToken get user by access token
+// GetUserByToken 按 access_token 查找用户。
 func (s *Service) GetUserByToken(token string) (*entity.User, error) {
 	user, err := s.userDAO.GetByAccessToken(token)
 	if err != nil {
@@ -234,7 +236,7 @@ func (s *Service) ListUsers(page, pageSize int) ([]map[string]interface{}, error
 	return result, nil
 }
 
-// CreateUser create a new user
+// CreateUser 创建用户并初始化租户与默认 LLM 配置。
 // Parameters:
 //   - username: email address of the user
 //   - password: encrypted password (base64 encoded RSA encrypted)
@@ -405,7 +407,7 @@ func (s *Service) CreateUser(username, password, role string) (map[string]interf
 }
 
 // getInitTenantLLM gets initial tenant LLM configurations
-// This matches Python's get_init_tenant_llm function
+// getInitTenantLLM 为新租户初始化默认 LLM 列表（对齐 Python get_init_tenant_llm）。
 func (s *Service) getInitTenantLLM(userID string) ([]*entity.TenantLLM, error) {
 	cfg := server.GetConfig()
 	if cfg == nil {
@@ -560,7 +562,7 @@ type DeleteUserResult struct {
 	DeletedDetails  []string `json:"deleted_details"`
 }
 
-// DeleteUser delete user with cascade delete of all related data
+// DeleteUser 级联删除用户及其租户、文档、会话等关联数据。
 // Parameters:
 //   - username: email address of the user to delete
 //

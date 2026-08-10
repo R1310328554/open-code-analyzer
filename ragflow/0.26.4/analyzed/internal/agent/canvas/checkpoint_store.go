@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// checkpoint_store.go implements the eino CheckPointStore / CheckPointDeleter
+// checkpoint_store.go 基于 Redis 实现 eino CheckPointStore / CheckPointDeleter。
 // interfaces backed by Redis. See plan §2.6 (Redis-backed CheckPointStore).
 //
 // The store holds raw eino-serialized checkpoint bytes keyed by
@@ -31,11 +31,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// checkpointKeyPrefix is the Redis key namespace for checkpoint payloads.
+// checkpointKeyPrefix Redis 检查点键前缀 agent:cp:。
 // The full key is "agent:cp:{id}".
 const checkpointKeyPrefix = "agent:cp:"
 
-// RedisCheckPointStore is a Redis-backed eino CheckPointStore /
+// RedisCheckPointStore Redis 后端检查点存储，值为 eino 序列化字节。
 // CheckPointDeleter. Values are stored as raw bytes — the eino Serializer
 // has already marshaled the structured payload, so we do not re-encode.
 type RedisCheckPointStore struct {
@@ -43,7 +43,7 @@ type RedisCheckPointStore struct {
 	ttl    time.Duration
 }
 
-// NewRedisCheckPointStore returns a store wired to the global Redis client
+// NewRedisCheckPointStore 使用全局 Redis 客户端构造存储。
 // from internal/cache. Returns a non-nil store even when the cache is
 // uninitialized (client is nil); Get/Set/Delete will return an error in that
 // case rather than nil-deref, but the type stays usable for tests that
@@ -65,7 +65,7 @@ func NewRedisCheckPointStoreWithClient(client *redis.Client, ttl time.Duration) 
 	return &RedisCheckPointStore{client: client, ttl: ttl}
 }
 
-// Get implements eino's CheckPointStore.Get. Returns (nil, false, nil) when
+// Get 实现 eino CheckPointStore.Get；键不存在时返回 (nil, false, nil)。
 // the key does not exist (redis.Nil) so callers can distinguish "missing"
 // from "present-but-error".
 func (s *RedisCheckPointStore) Get(ctx context.Context, id string) ([]byte, bool, error) {
@@ -82,7 +82,7 @@ func (s *RedisCheckPointStore) Get(ctx context.Context, id string) ([]byte, bool
 	return data, true, nil
 }
 
-// Set implements eino's CheckPointStore.Set. The TTL is applied on every
+// Set 写入检查点并在每次更新时刷新 TTL。
 // call so a frequently-updated checkpoint does not expire mid-run.
 func (s *RedisCheckPointStore) Set(ctx context.Context, id string, payload []byte) error {
 	if s == nil || s.client == nil {

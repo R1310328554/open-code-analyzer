@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// router.go — Admin 模块路由注册：/api/v1/admin 下公开/受保护端点及企业版扩展路由。
+
 //
 
 package admin
@@ -20,7 +22,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Router admin router
+// Router Admin 路由组，持有 Handler 引用。
 type Router struct {
 	handler *Handler
 }
@@ -32,15 +34,15 @@ func NewRouter(handler *Handler) *Router {
 	}
 }
 
-// Setup setup routes
+// Setup 在 Gin Engine 上注册全部 Admin 路由。
 func (r *Router) Setup(engine *gin.Engine) {
-	// Health check
+	// 健康检查（无需鉴权）
 	engine.GET("/health", r.handler.Health)
 
 	// Admin API routes with prefix /api/v1/admin
 	admin := engine.Group("/api/v1/admin")
 	{
-		// Public routes
+		// 公开路由：ping、login
 		admin.GET("/ping", r.handler.Ping)
 		admin.POST("/login", r.handler.Login)
 
@@ -50,7 +52,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 		//admin.DELETE("/ingestion", r.handler.CancelIngestionTask) // cancel ingestion
 		//admin.GET("/ingestion/tasks", r.handler.ListIngestionTasks)
 
-		// Protected routes
+		// 受保护路由：需 AuthMiddleware
 		protected := admin.Group("")
 		protected.Use(r.handler.AuthMiddleware())
 		{
@@ -112,7 +114,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 			protected.POST("/sandbox/config", r.handler.SetSandboxConfig)
 			protected.POST("/sandbox/test", r.handler.TestSandboxConnection)
 
-			// For enterprise edition
+			// 企业版扩展：用户运营、角色、模型提供商等
 			protected.GET("/users/:username/activity", r.handler.ShowUserActivity)
 			protected.GET("/users/:username/dataset", r.handler.ShowUserDatasetSummary)
 			protected.GET("/users/:username/summary", r.handler.ShowUserSummary)

@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// tts_dispatch.go — TTS dispatcher interface for the audio package.
+// tts_dispatch.go — audio 包的 TTS 分发器接口，便于单元测试解耦 internal/service。
 //
 // The audio package's ModelProviderFunc contract (see
 // model_provider_synthesizer.go) is a function-typed seam that the
@@ -48,7 +48,7 @@ import (
 	modelModule "ragflow/internal/entity/models"
 )
 
-// TTSDispatcher is the minimum interface the audio package needs
+// TTSDispatcher audio 包所需的最小模型提供商接口，对齐 AudioSpeech 签名。
 // from the project's model provider service. It mirrors the
 // *service.ModelProviderService.AudioSpeech method shape so the
 // production wiring is a one-line cast. Tests can substitute a
@@ -69,7 +69,7 @@ type TTSDispatcher interface {
 	) (*modelModule.TTSResponse, common.ErrorCode, error)
 }
 
-// NewTTSDispatchFunc returns an audio.ModelProviderFunc that
+// NewTTSDispatchFunc 将 TTSDispatcher 适配为 ModelProviderFunc 回调。
 // dispatches a SynthesizeRequest to the supplied TTSDispatcher.
 //
 // Field mapping (audio.SynthesizeRequest → model dispatch):

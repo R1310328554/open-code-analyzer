@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// enterprise_handler.go — 企业版 Admin HTTP 处理器：角色/权限、模型提供商、许可证与用户运营指标等 Gin 路由实现。
+
 //
 
 package admin
@@ -27,7 +29,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ListRoles handle list roles
+// ListRoles 列出全部角色。
 func (h *Handler) ListRoles(c *gin.Context) {
 	roles, err := h.service.ListRoles()
 	if err != nil {
@@ -42,13 +44,13 @@ func (h *Handler) ListRoles(c *gin.Context) {
 	common.SuccessWithData(c, roles, "")
 }
 
-// CreateRoleHTTPRequest create role request
+// CreateRoleHTTPRequest 创建角色的 JSON 请求体。
 type CreateRoleHTTPRequest struct {
 	RoleName    string `json:"role_name" binding:"required"`
 	Description string `json:"description"`
 }
 
-// CreateRole handle create role
+// CreateRole 创建新角色。
 func (h *Handler) CreateRole(c *gin.Context) {
 	var req CreateRoleHTTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -282,6 +284,7 @@ func (h *Handler) ResetRoleDefaultModel(c *gin.Context) {
 	common.SuccessWithData(c, result, "Role default model set successfully")
 }
 
+// ListModelProviders 列出已注册的模型提供商。
 func (h *Handler) ListModelProviders(c *gin.Context) {
 
 	keywords := ""
@@ -632,6 +635,7 @@ type EnableOrDisableModelRequest struct {
 	Status  string `json:"status"`
 }
 
+// EnableOrDisableModel 启用或禁用提供商实例下的某个模型。
 func (h *Handler) EnableOrDisableModel(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -740,6 +744,7 @@ func (h *Handler) DeleteModels(c *gin.Context) {
 }
 
 // GetSystemFingerprint handle get system fingerprint
+// GetSystemFingerprint 返回系统硬件指纹，用于许可证绑定。
 func (h *Handler) GetSystemFingerprint(c *gin.Context) {
 	fingerprint, err := h.service.GetSystemFingerprint()
 	if err != nil {
@@ -817,6 +822,7 @@ type ShowUserActivityRequest struct {
 }
 
 // ShowUserActivity handle show user activity
+// ShowUserActivity 查询指定用户在近 N 天的活动统计。
 func (h *Handler) ShowUserActivity(c *gin.Context) {
 	var req ShowUserActivityRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -984,6 +990,7 @@ type UpdateUserRoleHTTPRequest struct {
 }
 
 // UpdateUserRole handle update user role
+// UpdateUserRole 更新用户所属角色。
 func (h *Handler) UpdateUserRole(c *gin.Context) {
 	encodedUsername := c.Param("username")
 	username, err := common.DecodeFromBase64(encodedUsername)

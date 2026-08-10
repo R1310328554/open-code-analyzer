@@ -1,4 +1,4 @@
-// Package canvas — compile entry.
+// Package canvas — Canvas DSL 编译入口。
 //
 // Compile turns a Canvas (DSL) into a CompiledCanvas: a compiled
 // compose.Runnable plus the CheckPointID used at this compile. The
@@ -19,7 +19,7 @@ import (
 	"ragflow/internal/common"
 )
 
-// CheckPointStore is the minimal interface Compile needs at compile time.
+// CheckPointStore Compile 编译期所需的最小检查点存储接口。
 // RedisCheckPointStore satisfies this; tests can pass any in-memory
 // implementation. Matches eino's compose.CheckPointStore (an alias for
 // core.CheckPointStore) and adds a Delete method.
@@ -37,7 +37,7 @@ type StateSerializer interface {
 	Unmarshal(data []byte, v any) error
 }
 
-// CompiledCanvas is the compiled runtime representation of a Canvas DSL.
+// CompiledCanvas 编译后的 Canvas 运行时表示，含 eino Runnable。
 // Workflow is the eino Runnable; CheckPointID is the eino checkpoint
 // identifier for this compile.
 type CompiledCanvas struct {
@@ -79,7 +79,7 @@ func WithInterruptAfter(nodes []string) CompileOption {
 	return func(o *CompileOptions) { o.InterruptAfter = nodes }
 }
 
-// Compile builds the eino Workflow from the Canvas and returns the
+// Compile 将 Canvas 构建为 eino Workflow 并返回 CompiledCanvas。
 // compiled Runnable. State pre/post handlers are wired inside BuildWorkflow
 // (see scheduler.go). Checkpoint store + serializer are wired here as
 // compile-time options (compose.GraphCompileOption).
@@ -151,7 +151,7 @@ func Compile(ctx context.Context, c *Canvas, opts ...CompileOption) (*CompiledCa
 	return &CompiledCanvas{Workflow: runnable}, nil
 }
 
-// checkPointAdapter drops the Delete method that compose.CheckPointStore
+// checkPointAdapter 适配 CheckPointStore，丢弃 eino 不需要的 Delete 方法。
 // does not declare. The RedisCheckPointStore in this package has
 // Delete; eino
 // doesn't, so the adapter is a thin passthrough.

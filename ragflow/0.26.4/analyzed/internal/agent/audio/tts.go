@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// Package audio holds the TTS Synthesizer interface and its
+// Package audio 定义 TTS Synthesizer 接口及其模型提供商实现。
 // model-provider-backed implementation. The Python Message
 // component's `auto_play` field selects between `gtts` and
 // `edge-tts`; neither has a pure-Go high-quality option. The
@@ -35,7 +35,7 @@ import (
 	"sync"
 )
 
-// Engine is the TTS engine identifier. Mirrors the Python
+// Engine TTS 引擎标识，对应 Python auto_play 取值。
 // `auto_play` values: "gtts" / "edge-tts" / empty (no TTS).
 type Engine string
 
@@ -46,7 +46,7 @@ const (
 	EngineCustom Engine = "custom"
 )
 
-// ErrTTSEngineNotConfigured is returned by the default synthesizer
+// ErrTTSEngineNotConfigured 未注册合成器时由默认 stub 返回。
 // when no engine has been registered. Callers detect the deferred
 // state via errors.Is(err, ErrTTSEngineNotConfigured).
 var ErrTTSEngineNotConfigured = errors.New(
@@ -66,7 +66,7 @@ var ErrTTSUnsupportedEngine = errors.New("audio: unsupported TTS engine")
 // separately.
 var ErrSynthesizeEmpty = errors.New("audio: TTS model-provider returned empty audio")
 
-// SynthesizeRequest is the input shape for TTS. The Voice field
+// SynthesizeRequest TTS 合成请求：引擎、文本、音色与语言标签。
 // is engine-specific (gtts: ignored, edge-tts: voice short-name).
 type SynthesizeRequest struct {
 	Engine Engine
@@ -85,7 +85,7 @@ type SynthesizeResponse struct {
 	MediaType string // "audio/mpeg" (gtts / edge-tts / most HTTP providers)
 }
 
-// Synthesizer is the abstract TTS interface. The default
+// Synthesizer 抽象 TTS 接口；生产环境通过 SetSynthesizer 替换。
 // implementation is a no-op stub that returns
 // ErrTTSEngineNotConfigured. Production wiring replaces it via
 // SetSynthesizer.
@@ -98,7 +98,7 @@ var (
 	synthImpl Synthesizer = stubSynthesizer{}
 )
 
-// SetSynthesizer installs a custom synthesizer. Passing nil
+// SetSynthesizer 注册自定义合成器；传 nil 恢复默认 stub。
 // reverts to the default stub.
 func SetSynthesizer(s Synthesizer) {
 	synthMu.Lock()
@@ -117,7 +117,7 @@ func GetSynthesizer() Synthesizer {
 	return synthImpl
 }
 
-// stubSynthesizer is the default no-op implementation. It returns
+// stubSynthesizer 默认空实现，返回 ErrTTSEngineNotConfigured。
 // ErrTTSEngineNotConfigured so callers can detect the deferred
 // state. Once SetSynthesizer is called with a real impl, the call
 // routes through.

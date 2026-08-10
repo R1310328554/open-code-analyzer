@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// state.go — Admin 全局服务状态存储：线程安全的 ServerStore，跟踪 API/Ingestion/FileSyncer 等进程心跳。
+
 //
 
 package admin
@@ -22,20 +24,20 @@ import (
 	"time"
 )
 
-// API server state
+// API 服务进程状态
 
-// ServerStore is a thread-safe global server status storage
+// ServerStore 线程安全的全局服务状态存储
 type ServerStore struct {
 	mu      sync.RWMutex
 	servers map[string]*common.BaseMessage // key: server_id
 }
 
-// GlobalServerStore is the global instance
+// GlobalServerStore 全局单例实例。
 var GlobalServerStore = &ServerStore{
 	servers: make(map[string]*common.BaseMessage),
 }
 
-// UpdateServerInfo updates or adds a server status
+// UpdateServerInfo 更新或新增指定服务的上报状态。
 func (s *ServerStore) UpdateServerInfo(serverName string, status *common.BaseMessage) {
 
 	//switch serviceType {
@@ -100,7 +102,7 @@ func (s *ServerStore) RemoveStatus(serverID string) {
 	delete(s.servers, serverID)
 }
 
-// CleanupStaleStatuses cleans up servers that haven't reported for a specified duration
+// CleanupStaleStatuses 清理超过 maxAge 未上报的过期服务记录。
 func (s *ServerStore) CleanupStaleStatuses(maxAge time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

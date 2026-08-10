@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// cancel.go implements the cross-process cancel signal. See plan §4.9 —
+// cancel.go 实现跨进程取消信号；Go 协程轮询 Redis {taskID}-cancel 键。
 // a Go canvas run goroutine polls Redis for "{taskID}-cancel"; when the
 // HTTP handler sets the key, the watcher fires onCancel. The Redis key
 // naming is deliberately identical to the Python task_service.py
@@ -31,10 +31,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// cancelKeySuffix is appended to the task id to form the Redis key.
+// cancelKeySuffix 追加到 taskID 形成 Redis 取消键后缀。
 const cancelKeySuffix = "-cancel"
 
-// cancelPollInterval is the gap between Redis Get polls. 500ms keeps
+// cancelPollInterval Redis 轮询间隔，默认 500ms 平衡延迟与开销。
 // cancel latency p99 ≤ 500ms while staying cheap (one GET every half-
 // second per active run). Tunable later if a tenant needs lower latency.
 const cancelPollInterval = 500 * time.Millisecond
@@ -59,7 +59,7 @@ var cancelClientFn = func() (*redis.Client, error) {
 	return c, nil
 }
 
-// WatchCancel blocks until either ctx is cancelled or the Redis
+// WatchCancel 阻塞直到 ctx 取消或检测到 Redis 取消标志，触发 onCancel 一次。
 // "{taskID}-cancel" key is set to a non-empty value. When fired, it
 // calls onCancel exactly once and returns. Polling interval is fixed
 // at 500ms (see plan §4.9 — revised 2026-06-03 from 1s to 500ms).
@@ -107,7 +107,7 @@ func WatchCancel(ctx context.Context, taskID string, onCancel func()) {
 	}
 }
 
-// RequestCancel publishes a cancel signal for the given task. The
+// RequestCancel 向 Redis 写入取消标志，TTL 24 小时对齐 Python 协议。
 // 24h TTL matches the Python task_service.py protocol so a flag set
 // during one run is still observable by a resume that arrives hours
 // later (e.g. after a long client-side wait).

@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// interrupt_resume.go — eino v0.9.8 interrupt/resume wrappers for the
+// interrupt_resume.go — canvas 层对 eino v0.9.8 中断/恢复 API 的封装。
 // canvas layer.
 //
 // Background (plan §3): the previous "wait for user" mechanism was a
@@ -55,7 +55,7 @@ import (
 	"github.com/cloudwego/eino/compose"
 )
 
-// BuildInputSpec turns the DSL's UserFillUp params into the user-visible
+// BuildInputSpec 将 UserFillUp DSL 参数转为前端可见的表单 schema。
 // info payload that travels with the interrupt signal. The orchestrator
 // Driver reads this from InterruptCtx.Info on the SSE side and ships it
 // to the front-end so the form renderer knows what fields to render.
@@ -84,7 +84,7 @@ func BuildInputSpec(params map[string]any) map[string]any {
 	return spec
 }
 
-// UserFillUpNodeBody returns an eino node function implementing
+// UserFillUpNodeBody 返回「等待用户输入」语义的 eino 节点函数。
 // "wait for user input" semantics.
 //
 // Flow:
@@ -201,7 +201,7 @@ func initialUserFillUpData(ctx context.Context, inputSpec map[string]any) (any, 
 	return text, true
 }
 
-// IsInterruptError reports whether err carries an eino interrupt signal.
+// IsInterruptError 判断 error 是否携带 eino 中断信号。
 //
 // Used by the orchestrator Driver to distinguish wait-for-user from
 // genuine run failures. context.Canceled / context.DeadlineExceeded
@@ -231,7 +231,7 @@ func IsInterruptError(err error) bool {
 	return false
 }
 
-// ExtractInterruptContexts walks the error chain and returns every
+// ExtractInterruptContexts 遍历 error 链提取全部 InterruptCtx。
 // InterruptCtx the engine surfaced. Returns nil if err is not an
 // interrupt error.
 //
@@ -381,7 +381,7 @@ func formatInterruptContexts(ctxs []*compose.InterruptCtx) string {
 	return "[" + strings.Join(parts, ", ") + "]"
 }
 
-// AutoDiscoverUserFillUpIDs returns the cpnIDs of every component whose
+// AutoDiscoverUserFillUpIDs 自动发现 Canvas 中全部 UserFillUp 组件 ID。
 // name (case-insensitive) is UserFillUp. The compiler option
 // compose.WithInterruptBeforeNodes needs a []string; we compute it
 // here so callers don't have to walk the Canvas twice.

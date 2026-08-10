@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// enterprise_service.go — 企业版 Admin 业务层：角色、模型提供商、许可证与用户资源汇总等服务方法（部分能力为占位 stub）。
+
 //
 
 package admin
@@ -24,9 +26,9 @@ import (
 	"ragflow/internal/entity"
 )
 
-// Role management methods
+// 角色管理相关方法
 
-// ListRoles list all roles
+// ListRoles 列出全部角色（当前为不支持占位）。
 func (s *Service) ListRoles() ([]map[string]interface{}, error) {
 	result := []map[string]interface{}{
 		{
@@ -38,7 +40,7 @@ func (s *Service) ListRoles() ([]map[string]interface{}, error) {
 	return result, nil
 }
 
-// CreateRole create a new role
+// CreateRole 创建新角色。
 func (s *Service) CreateRole(roleName, description string) (map[string]interface{}, error) {
 	result := map[string]interface{}{
 		"command":     "create_role",
@@ -164,6 +166,7 @@ func (s *Service) ResetRoleDefaultModel(roleName, modelType string) (map[string]
 }
 
 // ListModelProviders list model providers
+// ListModelProviders 列出模型提供商配置。
 func (s *Service) ListModelProviders() ([]map[string]interface{}, error) {
 	return []map[string]interface{}{
 		{
@@ -343,6 +346,7 @@ func (s *Service) DeleteModels(userID, providerName, instanceName string, models
 	}, nil
 }
 
+// GetSystemFingerprint 生成系统指纹供许可证校验。
 func (s *Service) GetSystemFingerprint() (map[string]interface{}, error) {
 	result := map[string]interface{}{
 		"command": "get_system_fingerprint",
@@ -386,6 +390,7 @@ func (s *Service) UpdateSystemLicenseConfig(timeRecordSaveInterval, timeRecordTa
 }
 
 // ShowUserActivity show user activity for enterprise edition
+// ShowUserActivity 汇总用户在指定天数内的活动指标。
 func (s *Service) ShowUserActivity(email string, days int) (map[string]interface{}, error) {
 	// Query user by email
 	var user entity.User
@@ -748,6 +753,7 @@ func (s *Service) ListUserDefaultModels(email string) ([]map[string]interface{},
 }
 
 // ShowUsersSummary show users summary for enterprise edition
+// ShowUsersSummary 返回全站用户汇总统计。
 func (s *Service) ShowUsersSummary() (map[string]interface{}, error) {
 	result := map[string]interface{}{
 		"command": "show_users_summary",
