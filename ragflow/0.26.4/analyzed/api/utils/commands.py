@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Quart CLI 管理命令：重置用户密码与邮箱（运维/Recovery 场景）。
+"""
+
 #
 
 import base64
@@ -24,11 +28,12 @@ from werkzeug.security import generate_password_hash
 from api.db.services import UserService
 
 
-@click.command("reset-password", help="Reset the account password.")
+@click.command("reset-password", help="Reset the account password.")  # 交互式重置密码
 @click.option("--email", prompt=True, help="The email address of the account whose password you need to reset")
 @click.option("--new-password", prompt=True, help="the new password.")
 @click.option("--password-confirm", prompt=True, help="the new password confirm.")
 def reset_password(email, new_password, password_confirm):
+    # 校验两次密码一致后 base64+werkzeug 哈希写入
     if str(new_password).strip() != str(password_confirm).strip():
         click.echo(click.style("sorry. The two passwords do not match.", fg="red"))
         return
@@ -43,11 +48,12 @@ def reset_password(email, new_password, password_confirm):
     click.echo(click.style("Congratulations! Password has been reset.", fg="green"))
 
 
-@click.command("reset-email", help="Reset the account email.")
+@click.command("reset-email", help="Reset the account email.")  # 交互式修改登录邮箱
 @click.option("--email", prompt=True, help="The old email address of the account whose email you need to reset")
 @click.option("--new-email", prompt=True, help="the new email.")
 @click.option("--email-confirm", prompt=True, help="the new email confirm.")
 def reset_email(email, new_email, email_confirm):
+    # 校验格式、唯一性后更新 User.email
     if str(new_email).strip() != str(email_confirm).strip():
         click.echo(click.style("Sorry, new email and confirm email do not match.", fg="red"))
         return
@@ -71,5 +77,6 @@ def reset_email(email, new_email, email_confirm):
 
 
 def register_commands(app: Quart):
+    # 将 reset-password / reset-email 注册到 app.cli
     app.cli.add_command(reset_password)
     app.cli.add_command(reset_email)

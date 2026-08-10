@@ -12,4 +12,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+API 层 settings 占位模块。
+
+实际运行时配置由 ``common.settings`` 与 ``api.db.runtime_config`` 提供；本文件保留包结构与许可证头。
+"""
 #

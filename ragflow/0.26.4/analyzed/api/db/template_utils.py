@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+画布模板工具：合并 canvas_type / canvas_types 并去重，保证模板分类字段一致。
+"""
+
 #
 
 import logging
@@ -21,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def _collect_canvas_types(canvas_type: Any, canvas_types: Any) -> list[str]:
+    # 从单值与列表收集分类字符串并保序去重
     categories: list[str] = []
 
     if isinstance(canvas_type, str):
@@ -56,6 +61,7 @@ def _collect_canvas_types(canvas_type: Any, canvas_types: Any) -> list[str]:
 
 
 def normalize_canvas_template_categories(template: dict[str, Any]) -> dict[str, Any]:
+    # 规范化模板 dict：canvas_types 为主，canvas_type 取首项
     normalized = dict(template)
     raw_canvas_type = normalized.get("canvas_type")
     raw_canvas_types = normalized.get("canvas_types")

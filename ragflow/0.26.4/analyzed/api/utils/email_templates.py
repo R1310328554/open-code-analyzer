@@ -15,10 +15,10 @@
 #
 
 """
-Reusable HTML email templates and registry.
+可复用邮件模板与注册表：团队邀请与密码重置验证码。
 """
 
-# Invitation email template
+# 团队邀请邮件模板（Jinja 占位：email/inviter/tenant_id/invite_url）
 INVITE_EMAIL_TMPL = """
 Hi {{email}},
 {{inviter}} has invited you to join their team (ID: {{tenant_id}}).
@@ -27,14 +27,14 @@ Click the link below to complete your registration:
 If you did not request this, please ignore this email.
 """
 
-# Password reset code template
+# 密码重置验证码邮件模板
 RESET_CODE_EMAIL_TMPL = """
 Hello,
 Your password reset code is: {{ code }}
 This code will expire in {{ ttl_min }} minutes.
 """
 
-# Template registry
+# 模板名 → 正文注册表
 EMAIL_TEMPLATES = {
     "invite": INVITE_EMAIL_TMPL,
     "reset_code": RESET_CODE_EMAIL_TMPL,

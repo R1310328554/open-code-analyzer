@@ -12,8 +12,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+RAGFlow API 进程入口：初始化 DB/配置、后台进度线程、聊天通道与 Quart HTTP 服务。
+"""
+
 #
 
+# 尽早打印启动日志（import 链较长）
 print("Start RAGFlow server...")
 
 import time
@@ -22,8 +27,8 @@ start_ts = time.time()
 
 import os
 
-# LiteLLM fetches a model cost map from GitHub during import unless this is set.
-# The API server should not block startup on external network access.
+# LiteLLM 导入时会拉 GitHub 价目表；API 进程应避免阻塞外网
+# 通过环境变量强制使用本地 cost map
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 
 import logging
@@ -53,6 +58,7 @@ RAGFLOW_DEBUGPY_LISTEN = int(os.environ.get("RAGFLOW_DEBUGPY_LISTEN", "0"))
 
 
 def update_progress():
+    # 分布式锁下周期性刷新 Document 解析进度
     lock_value = str(uuid.uuid4())
     redis_lock = RedisDistributedLock("update_progress", lock_value=lock_value, timeout=60)
     logging.info(f"update_progress lock_value: {lock_value}")
@@ -72,6 +78,7 @@ def update_progress():
 
 
 def signal_handler(sig, frame):
+    # SIGINT/SIGTERM：关闭 MCP 会话并优雅退出
     logging.info("Received interrupt signal, shutting down...")
     shutdown_all_mcp_sessions()
     stop_event.set()
@@ -102,10 +109,10 @@ if __name__ == "__main__":
 
         debugpy.listen(("0.0.0.0", RAGFLOW_DEBUGPY_LISTEN))
 
-    # init db
+    # 初始化 Web DB 表结构与种子数据
     init_web_db()
     init_web_data()
-    # init runtime config
+    # 解析 CLI 参数并写入 RuntimeConfig
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -132,11 +139,13 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
 
     def delayed_start_update_progress():
+        # 延迟 1s 启动，避免与 Flask reloader 双进程重复
         logging.info("Starting update_progress thread (delayed)")
         t = threading.Thread(target=update_progress, daemon=True)
         t.start()
 
     def start_chat_channels():
+        # 启动 Slack/Teams 等聊天通道监听线程
         try:
             from api.channels.bootstrap import start_channel_server
 
@@ -159,7 +168,7 @@ if __name__ == "__main__":
         threading.Timer(1.0, delayed_start_update_progress).start()
         start_chat_channels()
 
-    # start http server
+    # 启动 Quart/Flask HTTP 服务；DEBUG 模式启用 reloader
     try:
         logging.info(f"RAGFlow server is ready after {time.time() - start_ts}s initialization.")
         app.run(host=settings.HOST_IP, port=settings.HOST_PORT, use_reloader=RuntimeConfig.DEBUG, debug=False)

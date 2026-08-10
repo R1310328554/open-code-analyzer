@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+RSA 加解密：前端/cli 密码传输与 conf/public.pem、private.pem 密钥对。
+"""
+
 #
 
 import base64
@@ -23,9 +27,9 @@ from Cryptodome.Cipher import PKCS1_v1_5 as Cipher_pkcs1_v1_5
 from common.file_utils import get_project_base_directory
 
 
-def crypt(line):
+    """RSA 公钥加密：plaintext → base64(plaintext) → PKCS1 密文 → base64。"""
     """
-    decrypt(crypt(input_string)) == base64(input_string), which frontend and ragflow_cli use.
+    与 decrypt 配对；前端/ragflow_cli 传输密码时使用。
     """
     file_path = os.path.join(get_project_base_directory(), "conf", "public.pem")
     rsa_key = RSA.importKey(Path(file_path).read_text(), "Welcome")
@@ -36,6 +40,7 @@ def crypt(line):
 
 
 def decrypt(line):
+    # 私钥解密 Cryptodome 格式密文，得到 base64 编码的明文
     file_path = os.path.join(get_project_base_directory(), "conf", "private.pem")
     rsa_key = RSA.importKey(Path(file_path).read_text(), "Welcome")
     cipher = Cipher_pkcs1_v1_5.new(rsa_key)
@@ -43,6 +48,7 @@ def decrypt(line):
 
 
 def decrypt2(crypt_text):
+    # 兼容 127 字节密文与 PyCrypto 的另一套解密路径
     from base64 import b64decode, b16decode
     from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
     from Crypto.PublicKey import RSA

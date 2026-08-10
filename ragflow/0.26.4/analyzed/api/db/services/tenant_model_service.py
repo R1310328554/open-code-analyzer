@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户模型服务：Provider 实例下的模型清单、状态批量更新与 model_type 增删同步。
+"""
+
 #
 from common.constants import ActiveStatusEnum
 from api.db.db_models import DB, TenantModel
@@ -19,11 +23,13 @@ from api.db.services.common_service import CommonService
 
 
 class TenantModelService(CommonService):
+    # 租户可用 LLM/Embedding 等模型条目（按 provider+instance 维度）
     model = TenantModel
 
     @classmethod
     @DB.connection_context()
     def get_by_provider_id_and_instance_id_and_model_name(cls, provider_id, instance_id, model_name):
+        # 同一模型名可能对应多条 model_type 记录
         return list(cls.model.select().where(cls.model.provider_id == provider_id, cls.model.instance_id == instance_id, cls.model.model_name == model_name))
 
     @classmethod
@@ -39,6 +45,7 @@ class TenantModelService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_models_by_instance_id(cls, instance_id):
+        # 列出某 Provider 实例下的全部模型
         return list(cls.model.select().where(cls.model.instance_id == instance_id))
 
     @classmethod
@@ -49,11 +56,13 @@ class TenantModelService(CommonService):
     @classmethod
     @DB.connection_context()
     def batch_update_model_status(cls, model_ids, status):
+        # 批量更新模型启用/禁用状态
         return cls.model.update(status=status).where(cls.model.id.in_(model_ids)).execute()
 
     @classmethod
     @DB.connection_context()
     def upsert_model_type(cls, provider_id: str, instance_id: str, model_name: str, operation: dict):
+        # 按 operation["add"/"delete"] 同步 model_type；无记录时插入占位 UNSUPPORTED 行
         model_type_records = cls.model.select().where(cls.model.provider_id == provider_id, cls.model.instance_id == instance_id, cls.model.model_name == model_name)
         if not model_type_records:
             for _type in operation.get("add", []):
@@ -89,4 +98,5 @@ class TenantModelService(CommonService):
     @classmethod
     @DB.connection_context()
     def delete_by_instance_ids(cls, instance_ids):
+        # 删除多个 Provider 实例下的全部模型行
         return cls.model.delete().where(cls.model.instance_id.in_(instance_ids)).execute()

@@ -12,11 +12,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+API 工具包：提供 dict 反序列化 hook，支持跨模块延迟实例化。
+"""
+
 #
 import importlib
 
 
 def from_dict_hook(in_dict: dict):
+    # JSON 解码 hook：含 module+type 时动态 import 并构造对象
     if "type" in in_dict and "data" in in_dict:
         if in_dict["module"] is None:
             return in_dict["data"]

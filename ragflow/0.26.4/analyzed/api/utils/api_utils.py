@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+API 通用工具：请求解析、统一 JSON 响应、装饰器鉴权、解析器配置合并与 MCP 工具拉取。
+"""
+
 #
 
 import asyncio
@@ -53,13 +57,14 @@ requests.models.complexjson.dumps = functools.partial(json.dumps, cls=CustomJSON
 
 
 def _safe_jsonify(payload: dict):
+    # 无 app context 时直接返回 dict（测试/脚本场景）
     if has_app_context():
         return jsonify(payload)
     return payload
 
 
 async def _coerce_request_data() -> dict:
-    """Fetch JSON body with sane defaults; fallback to form data."""
+    """读取请求体：优先 JSON，否则 form；结果缓存在 request._cached_payload。"""
     if hasattr(request, "_cached_payload"):
         return request._cached_payload
     payload: Any = None
@@ -93,7 +98,7 @@ async def get_request_json():
     return await _coerce_request_data()
 
 
-def serialize_for_json(obj):
+    """递归序列化对象，处理 ModelMetaclass 等不可 JSON 化类型。"""
     """
     Recursively serialize objects to make them JSON serializable.
     Handles ModelMetaclass and other non-serializable objects.
@@ -119,6 +124,7 @@ def serialize_for_json(obj):
 
 
 def get_data_error_result(code=RetCode.DATA_ERROR, message="Sorry! Data missing!"):
+    # 数据缺失/异常的标准错误 JSON
     if sys.exc_info()[0] is not None:
         logging.exception(message)
     else:
@@ -134,6 +140,7 @@ def get_data_error_result(code=RetCode.DATA_ERROR, message="Sorry! Data missing!
 
 
 def server_error_response(e):
+    # 全局未捕获异常 → JSON；401/index_not_found 等特判
     # Quart invokes this handler outside the original except block, so we must pass exc_info manually.
     logging.error("Unhandled exception during request", exc_info=(type(e), e, e.__traceback__))
     try:
@@ -155,6 +162,7 @@ def server_error_response(e):
 
 
 def validate_request(*args, **kwargs):
+    # 装饰器：校验 JSON 体必填字段及枚举取值
     def process_args(input_arguments):
         no_arguments = []
         error_arguments = []
@@ -205,6 +213,7 @@ def validate_request(*args, **kwargs):
 
 
 def not_allowed_parameters(*params):
+    # 装饰器：禁止客户端传入指定参数名
     def decorator(func):
         async def wrapper(*args, **kwargs):
             input_arguments = await _coerce_request_data()
@@ -221,6 +230,7 @@ def not_allowed_parameters(*params):
 
 
 def active_required(func):
+    # 装饰器：要求 current_user 已激活
     @wraps(func)
     async def wrapper(*args, **kwargs):
         from api.db.services import UserService
@@ -239,6 +249,7 @@ def active_required(func):
 
 
 def add_tenant_id_to_kwargs(func):
+    # 装饰器：将 current_user.id 注入 kwargs.tenant_id
     @wraps(func)
     async def wrapper(**kwargs):
         from api.apps import current_user
@@ -252,6 +263,7 @@ def add_tenant_id_to_kwargs(func):
 
 
 def get_json_result(code: RetCode = RetCode.SUCCESS, message="success", data=None):
+    # 标准 {code, message, data} 响应
     response = {"code": code, "message": message, "data": data}
     return _safe_jsonify(response)
 
@@ -270,7 +282,7 @@ def construct_json_result(code: RetCode = RetCode.SUCCESS, message="success", da
     return _safe_jsonify({"code": code, "message": message, "data": data})
 
 
-def get_result(code=RetCode.SUCCESS, message="", data=None, total=None):
+    """统一 API 响应：成功带 data/total，失败带 message。"""
     """
     Standard API response format:
     {
@@ -320,16 +332,18 @@ def get_error_operating_result(message="Operating error"):
 
 
 def generate_confirmation_token():
+    # 生成 ragflow- 前缀的 URL-safe 确认令牌
     import secrets
 
     return "ragflow-" + secrets.token_urlsafe(32)
 
 
 def get_parser_config(chunk_method, parser_config):
+    # 按分块策略合并默认 raptor/graphrag/parent_child 配置
     if not chunk_method:
         chunk_method = "naive"
 
-    # Define default configurations for each chunking method
+    # 各 chunk_method 的默认解析/GraphRAG/Raptor 参数表
     base_defaults = {
         "table_context_size": 0,
         "image_context_size": 0,
@@ -414,7 +428,7 @@ def get_parser_config(chunk_method, parser_config):
         merged_config = deep_merge(base_defaults, default_config)
         merged_config = deep_merge(merged_config, parser_config)
 
-    # Flatten parent_child config into children_delimiter for the execution layer
+    # 将 parent_child 嵌套配置展平为顶层 children_delimiter
     pc = merged_config.get("parent_child", {})
     if pc.get("use_parent_child"):
         merged_config["children_delimiter"] = pc.get("children_delimiter", "\n")
@@ -425,6 +439,7 @@ def get_parser_config(chunk_method, parser_config):
 
 
 def get_data_openai(id=None, created=None, model=None, prompt_tokens=0, completion_tokens=0, content=None, finish_reason=None, object="chat.completion", param=None, stream=False):
+    # 构造 OpenAI Chat Completions 兼容 JSON（含 stream chunk）
     total_tokens = prompt_tokens + completion_tokens
 
     if stream:
@@ -468,7 +483,7 @@ def get_data_openai(id=None, created=None, model=None, prompt_tokens=0, completi
     }
 
 
-def check_duplicate_ids(ids, id_type="item"):
+    """检测 ID 列表重复项，返回去重列表与错误消息。"""
     """
     Check for duplicate IDs in a list and return unique IDs and error messages.
 
@@ -497,7 +512,7 @@ def check_duplicate_ids(ids, id_type="item"):
     return list(set(ids)), duplicate_messages
 
 
-def verify_embedding_availability(embd_id: str, tenant_id: str) -> tuple[bool, str | None]:
+    """校验租户是否可用指定 embedding 模型（model@factory 格式）。"""
     from api.db.joint_services.tenant_model_service import get_model_config_from_provider_instance
 
     """
@@ -547,7 +562,7 @@ def verify_embedding_availability(embd_id: str, tenant_id: str) -> tuple[bool, s
     return True, None
 
 
-def deep_merge(default: dict, custom: dict) -> dict:
+    """深度合并字典，custom 值优先（栈实现非递归）。"""
     """
     Recursively merges two dictionaries with priority given to `custom` values.
 
@@ -594,7 +609,7 @@ def deep_merge(default: dict, custom: dict) -> dict:
     return merged
 
 
-def remap_dictionary_keys(source_data: dict, key_aliases: dict = None) -> dict:
+    """按别名表重命名 dict 键（API 字段兼容旧命名）。"""
     """
     Transform dictionary keys using a configurable mapping schema.
 
@@ -630,6 +645,7 @@ def remap_dictionary_keys(source_data: dict, key_aliases: dict = None) -> dict:
 
 
 def group_by(list_of_dict, key):
+    # 将 dict 列表按指定键分组为 {key: [items]}
     res = {}
     for item in list_of_dict:
         if item[key] in res.keys():
@@ -640,6 +656,7 @@ def group_by(list_of_dict, key):
 
 
 def get_mcp_tools(mcp_servers: list, timeout: float | int = 10) -> tuple[dict, str]:
+    # 拉取各 MCP 服务工具列表并合并缓存 enabled 状态
     results = {}
     tool_call_sessions = []
     try:
@@ -673,6 +690,7 @@ def get_mcp_tools(mcp_servers: list, timeout: float | int = 10) -> tuple[dict, s
 
 
 async def is_strong_enough(chat_model, embedding_model):
+    # GraphRAG 压测：并发探测 chat/embedding 模型可用性
     count = settings.STRONG_TEST_COUNT
     if not chat_model or not embedding_model:
         return
@@ -690,7 +708,7 @@ async def is_strong_enough(chat_model, embedding_model):
             if "**ERROR**" in res:
                 raise Exception(res)
 
-    # Pressure test for GraphRAG task
+    # 按 STRONG_TEST_COUNT 并发发起 encode/chat 探测
     tasks = [asyncio.create_task(_is_strong_enough()) for _ in range(count)]
     try:
         await asyncio.gather(*tasks, return_exceptions=False)
@@ -703,6 +721,7 @@ async def is_strong_enough(chat_model, embedding_model):
 
 
 def get_allowed_llm_factories() -> list:
+    # 返回允许的 LLM 厂商列表（可被 ALLOWED_LLM_FACTORIES 白名单过滤）
     factories = list(LLMFactoriesService.get_all(reverse=True, order_by="rank"))
     if settings.ALLOWED_LLM_FACTORIES is None:
         return factories

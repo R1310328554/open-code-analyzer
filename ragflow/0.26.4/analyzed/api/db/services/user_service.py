@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+用户/租户/成员关系服务：认证、CRUD、租户模型网关与成员列表。
+"""
+
 #
 import hashlib
 from datetime import datetime
@@ -31,7 +35,7 @@ from common import settings
 
 
 class UserService(CommonService):
-    """Service class for managing user-related database operations.
+    """用户数据库服务：认证、创建/更新/删除及 access_token 查询防护。
 
     This class extends CommonService to provide specialized functionality for user management,
     including authentication, user creation, updates, and deletions.
@@ -48,17 +52,17 @@ class UserService(CommonService):
         if "access_token" in kwargs:
             access_token = kwargs["access_token"]
 
-            # Reject empty, None, or whitespace-only access tokens
+            # 拒绝空/仅空白 access_token，避免全表扫描
             if not access_token or not str(access_token).strip():
                 logging.warning("UserService.query: Rejecting empty access_token query")
                 return cls.model.select().where(cls.model.id == "INVALID_EMPTY_TOKEN")  # Returns empty result
 
-            # Reject tokens that are too short (should be UUID, 32+ chars)
+            # 拒绝过短 token（正常 UUID 至少 32 字符）
             if len(str(access_token).strip()) < 32:
                 logging.warning(f"UserService.query: Rejecting short access_token query: {len(str(access_token))} chars")
                 return cls.model.select().where(cls.model.id == "INVALID_SHORT_TOKEN")  # Returns empty result
 
-            # Reject tokens that start with "INVALID_" (from logout)
+            # 拒绝登出后前缀为 INVALID_ 的失效 token
             if str(access_token).startswith("INVALID_"):
                 logging.warning("UserService.query: Rejecting invalidated access_token")
                 return cls.model.select().where(cls.model.id == "INVALID_LOGOUT_TOKEN")  # Returns empty result
@@ -69,7 +73,7 @@ class UserService(CommonService):
     @classmethod
     @DB.connection_context()
     def filter_by_id(cls, user_id):
-        """Retrieve a user by their ID.
+        """按主键查询用户。
 
         Args:
             user_id: The unique identifier of the user.
@@ -86,7 +90,7 @@ class UserService(CommonService):
     @classmethod
     @DB.connection_context()
     def query_user(cls, email, password):
-        """Authenticate a user with email and password.
+        """邮箱 + 明文密码登录校验。
 
         Args:
             email: User's email address.
@@ -110,6 +114,7 @@ class UserService(CommonService):
     @classmethod
     @DB.connection_context()
     def save(cls, **kwargs):
+        # 新建用户：生成 id、哈希密码并写入时间戳
         if "id" not in kwargs:
             kwargs["id"] = get_uuid()
         if "password" in kwargs:
@@ -128,6 +133,7 @@ class UserService(CommonService):
     @classmethod
     @DB.connection_context()
     def delete_user(cls, user_ids, update_user_dict):
+        # 软删除：将 status 置 0
         with DB.atomic():
             cls.model.update({"status": 0}).where(cls.model.id.in_(user_ids)).execute()
 
@@ -150,6 +156,7 @@ class UserService(CommonService):
     @classmethod
     @DB.connection_context()
     def is_admin(cls, user_id):
+        # 判断是否超级管理员
         return cls.model.select().where(cls.model.id == user_id, cls.model.is_superuser == 1).count() > 0
 
     @classmethod
@@ -160,7 +167,7 @@ class UserService(CommonService):
 
 
 class TenantService(CommonService):
-    """Service class for managing tenant-related database operations.
+    """租户服务：所有者租户信息、积分扣减与 MinIO 网关分片。
 
     This class extends CommonService to provide functionality for tenant management,
     including tenant information retrieval and credit management.
@@ -174,6 +181,7 @@ class TenantService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_info_by(cls, user_id):
+        # 返回用户作为 OWNER 的租户及默认模型 id 配置
         fields = [
             cls.model.id.alias("tenant_id"),
             cls.model.name,
@@ -197,6 +205,7 @@ class TenantService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_joined_tenants_by_user_id(cls, user_id):
+        # 返回用户以 NORMAL 成员身份加入的租户列表
         fields = [cls.model.id.alias("tenant_id"), cls.model.name, cls.model.llm_id, cls.model.embd_id, cls.model.asr_id, cls.model.img2txt_id, UserTenant.role]
         return list(
             cls.model.select(*fields)
@@ -210,6 +219,7 @@ class TenantService(CommonService):
     @classmethod
     @DB.connection_context()
     def decrease(cls, user_id, num):
+        # 扣减租户 credit；未命中行时抛 LookupError
         num = cls.model.update(credit=cls.model.credit - num).where(cls.model.id == user_id).execute()
         if num == 0:
             raise LookupError("Tenant not found which is supposed to be there")
@@ -217,12 +227,14 @@ class TenantService(CommonService):
     @classmethod
     @DB.connection_context()
     def user_gateway(cls, tenant_id):
+        # 按 tenant_id 哈希选择 MinIO 网关索引
         hash_obj = hashlib.sha256(tenant_id.encode("utf-8"))
         return int(hash_obj.hexdigest(), 16) % len(settings.MINIO)
 
     @classmethod
     @DB.connection_context()
     def get_null_tenant_model_id_rows(cls):
+        # 扫描 tenant_*_id 字段为空的租户（迁移/回填用）
         objs = cls.model.select().orwhere(
             cls.model.tenant_llm_id.is_null(),
             cls.model.tenant_embd_id.is_null(),
@@ -235,7 +247,7 @@ class TenantService(CommonService):
 
 
 class UserTenantService(CommonService):
-    """Service class for managing user-tenant relationship operations.
+    """用户-租户成员关系：邀请成员、角色与租户内用户列表。
 
     This class extends CommonService to handle the many-to-many relationship
     between users and tenants, managing user roles and tenant memberships.
@@ -266,6 +278,7 @@ class UserTenantService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_by_tenant_id(cls, tenant_id):
+        # 租户内非 OWNER 成员及 User 资料联表
         fields = [
             cls.model.id,
             cls.model.user_id,
@@ -291,6 +304,7 @@ class UserTenantService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_tenants_by_user_id(cls, user_id):
+        # 用户所属租户列表（join User 表）
         fields = [cls.model.tenant_id, cls.model.role, User.nickname, User.email, User.avatar, User.update_date]
         return list(
             cls.model.select(*fields)
@@ -308,12 +322,14 @@ class UserTenantService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_num_members(cls, user_id: str):
+        # 统计租户成员数（tenant_id 参数实为 tenant 主键）
         cnt_members = cls.model.select(peewee.fn.COUNT(cls.model.id)).where(cls.model.tenant_id == user_id).scalar()
         return cnt_members
 
     @classmethod
     @DB.connection_context()
     def filter_by_tenant_and_user_id(cls, tenant_id, user_id):
+        # 查单条有效成员关系
         try:
             user_tenant = cls.model.select().where((cls.model.tenant_id == tenant_id) & (cls.model.status == StatusEnum.VALID.value) & (cls.model.user_id == user_id)).first()
             return user_tenant

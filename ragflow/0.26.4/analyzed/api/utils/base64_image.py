@@ -12,4 +12,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Base64 图片工具占位模块。
+
+图片编解码逻辑分布在 common 与 rag 层；本文件保留包结构占位。
+"""
 #
