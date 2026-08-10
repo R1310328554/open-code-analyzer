@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:27:22Z",
-  "files": [
-    "pkg/storage/stores/shipper/indexshipper/tsdb/sharding/for_series.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/sharding/power.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/sharding/sharding.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/single_file_index.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/store.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/testutil/objstore.go",
-    "pkg/storage/stores/shipper/indexshipper/uploads/index_set.go",
-    "pkg/storage/stores/shipper/indexshipper/uploads/metrics.go",
-    "pkg/storage/stores/shipper/indexshipper/uploads/table.go",
-    "pkg/storage/stores/shipper/indexshipper/uploads/table_manager.go",
-    "pkg/storage/stores/shipper/indexshipper/uploads/testutil.go",
-    "pkg/storage/stores/shipper/indexshipper/util/queries.go",
-    "pkg/storage/stores/shipper/indexshipper/util/util.go",
-    "pkg/storage/types/types.go",
-    "pkg/tool/audit/audit.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 172,
-  "done": 1365
+  "done": 1380
 }
