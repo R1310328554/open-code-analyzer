@@ -23,6 +23,10 @@ import java.net.UnknownHostException;
 
 import static io.netty.channel.unix.Limits.IOV_MAX;
 
+/**
+ * Unix 原生通道工具方法：写路径缓冲拷贝判定与远程地址合并。
+ * <p>供 epoll/kqueue 等在 JNI 写之前判断是否需要聚合/复制 {@link ByteBuf}。</p>
+ */
 public final class UnixChannelUtil {
 
     private UnixChannelUtil() {
@@ -31,26 +35,27 @@ public final class UnixChannelUtil {
     /**
      * Checks if the specified buffer has memory address or is composed of n(n <= IOV_MAX) NIO direct buffers.
      * (We check this because otherwise we need to make it a new direct buffer.)
+     * <p>若无法直接 writev（无 memoryAddress、非 direct 或 nioBufferCount &gt; IOV_MAX）， 写路径需拷贝为 direct 缓冲。</p>
      */
     public static boolean isBufferCopyNeededForWrite(ByteBuf byteBuf) {
         return isBufferCopyNeededForWrite(byteBuf, IOV_MAX);
     }
 
+    /** 内部重载：可指定 iov 上限 */
     static boolean isBufferCopyNeededForWrite(ByteBuf byteBuf, int iovMax) {
         return !byteBuf.hasMemoryAddress() && (!byteBuf.isDirect() || byteBuf.nioBufferCount() > iovMax);
     }
 
+    /** 合并用户配置的 remote 与内核 getpeername 结果，保留 hostname 语义 */
     public static InetSocketAddress computeRemoteAddr(InetSocketAddress remoteAddr, InetSocketAddress osRemoteAddr) {
         if (osRemoteAddr != null) {
             try {
-                // Only try to construct a new InetSocketAddress if we using java >= 7 as getHostString() does not
-                // exists in earlier releases and so the retrieval of the hostname could block the EventLoop if a
-                // reverse lookup would be needed.
+                // Java 7+ 才用 getHostString 合并 hostname，避免 EventLoop 上触发 DNS 反查
                 return new InetSocketAddress(InetAddress.getByAddress(remoteAddr.getHostString(),
                         osRemoteAddr.getAddress().getAddress()),
                         osRemoteAddr.getPort());
             } catch (UnknownHostException ignore) {
-                // Should never happen but fallback to osRemoteAddr anyway.
+                // 不应发生；回退使用 OS 返回的地址
             }
             return osRemoteAddr;
         }

@@ -36,20 +36,27 @@ import static io.netty.channel.rxtx.RxtxChannelOption.WAIT_TIME;
 
 /**
  * A channel to a serial device using the RXTX library.
+ * <p>基于 RXTX（gnu.io）的串口 OIO 通道：阻塞读写映射为 {@link OioByteStreamChannel}； 远程地址为设备路径（如 {@code /dev/ttyUSB0}）。</p>
  *
  * @deprecated this transport will be removed in the next major version.
  */
 @Deprecated
 public class RxtxChannel extends OioByteStreamChannel {
 
+    /** 本地地址占位（串口无真实 bind 概念） */
     private static final RxtxDeviceAddress LOCAL_ADDRESS = new RxtxDeviceAddress("localhost");
 
+    /** 串口专用配置 */
     private final RxtxChannelConfig config;
 
+    /** 通道是否仍打开 */
     private boolean open = true;
+    /** 已连接的设备路径地址 */
     private RxtxDeviceAddress deviceAddress;
+    /** RXTX {@link SerialPort} 实例 */
     private SerialPort serialPort;
 
+    /** 构造未绑定的 RXTX 串口通道 */
     public RxtxChannel() {
         super(null);
 
@@ -72,6 +79,7 @@ public class RxtxChannel extends OioByteStreamChannel {
     }
 
     @Override
+    /** 打开串口设备并设置读超时 */
     protected void doConnect(SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
         RxtxDeviceAddress remote = (RxtxDeviceAddress) remoteAddress;
         final CommPortIdentifier cpi = CommPortIdentifier.getPortIdentifier(remote.value());
@@ -82,6 +90,7 @@ public class RxtxChannel extends OioByteStreamChannel {
         serialPort = (SerialPort) commPort;
     }
 
+    /** 应用波特率/数据位/停止位/校验及 DTR/RTS，并激活 I/O 流 */
     protected void doInit() throws Exception {
         serialPort.setSerialPortParams(
             config().getOption(BAUD_RATE),
@@ -116,6 +125,7 @@ public class RxtxChannel extends OioByteStreamChannel {
     }
 
     @Override
+    /** 串口不支持 bind，始终抛出异常 */
     protected void doBind(SocketAddress localAddress) throws Exception {
         throw new UnsupportedOperationException();
     }
@@ -126,6 +136,7 @@ public class RxtxChannel extends OioByteStreamChannel {
     }
 
     @Override
+    /** 关闭 I/O 流并释放 SerialPort */
     protected void doClose() throws Exception {
         open = false;
         try {
@@ -149,6 +160,7 @@ public class RxtxChannel extends OioByteStreamChannel {
         return newFailedFuture(new UnsupportedOperationException("shutdownInput"));
     }
 
+    /** 异步 connect：可选 WAIT_TIME 延迟后再 doInit */
     private final class RxtxUnsafe extends AbstractUnsafe {
         @Override
         public void connect(

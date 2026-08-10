@@ -19,10 +19,12 @@ import io.netty.channel.Channel;
 
 /**
  * {@link Channel} that expose operations that are only present on {@code UNIX} like systems.
+ * <p>Unix 原生通道标记接口：暴露底层 {@link FileDescriptor}， 供 epoll/kqueue/io_uring 等传输共享 Unix 特有操作。</p>
  */
 public interface UnixChannel extends Channel {
     /**
      * Returns the {@link FileDescriptor} that is used by this {@link Channel}.
+     * <p>返回通道绑定的 POSIX 文件描述符封装。</p>
      */
     FileDescriptor fd();
 }

@@ -20,11 +20,14 @@ import io.netty.channel.ServerChannel;
 /**
  * {@link ServerChannel} that accepts {@link DomainSocketChannel}'s via
  * <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Socket</a>.
+ * <p>Unix 域监听服务端通道：{@code accept} 返回流式 {@link DomainSocketChannel}； 本地/远程地址均为 {@link DomainSocketAddress}。</p>
  */
 public interface ServerDomainSocketChannel extends ServerChannel, UnixChannel {
+    /** 已接受连接的对端 Unix 域路径 */
     @Override
     DomainSocketAddress remoteAddress();
 
+    /** 监听绑定的 Unix 域路径 */
     @Override
     DomainSocketAddress localAddress();
 }

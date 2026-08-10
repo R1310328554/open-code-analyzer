@@ -22,17 +22,24 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 
+/**
+ * 基于 {@link FileDescriptor} 的 {@link WritableByteChannel} 适配器： 将 NIO 写操作桥接到 Unix 原生 write。
+ * <p>非 direct {@link ByteBuffer} 会临时复制到 direct 缓冲以减少 JNI 拷贝。</p>
+ */
 public abstract class SocketWritableByteChannel implements WritableByteChannel {
+    /** 底层 Unix 文件描述符 */
     protected final FileDescriptor fd;
 
     protected SocketWritableByteChannel(FileDescriptor fd) {
         this.fd = ObjectUtil.checkNotNull(fd, "fd");
     }
 
+    /** 子类可覆盖的实际写实现（默认委托 {@link FileDescriptor#write}） */
     protected int write(ByteBuffer buf, int pos, int limit) throws IOException {
         return fd.write(buf, pos, limit);
     }
 
+    /** 写入 ByteBuffer；非 direct 时经临时 direct 缓冲 */
     @Override
     public final int write(java.nio.ByteBuffer src) throws java.io.IOException {
         final int written;
@@ -72,15 +79,18 @@ public abstract class SocketWritableByteChannel implements WritableByteChannel {
         return written;
     }
 
+    /** 委托 {@link FileDescriptor#isOpen()} */
     @Override
     public final boolean isOpen() {
         return fd.isOpen();
     }
 
+    /** 关闭底层 fd */
     @Override
     public final void close() throws java.io.IOException {
         fd.close();
     }
 
+    /** 非 direct 写路径使用的 {@link ByteBufAllocator} */
     protected abstract ByteBufAllocator alloc();
 }

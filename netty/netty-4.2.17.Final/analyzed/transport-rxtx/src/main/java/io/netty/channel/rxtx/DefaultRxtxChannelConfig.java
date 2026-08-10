@@ -37,21 +37,31 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
  * Default configuration class for RXTX device connections.
+ * <p>RXTX 串口通道默认配置：波特率、数据位、停止位、校验、DTR/RTS 及读写超时等； 默认使用 {@link PreferHeapByteBufAllocator} 分配堆缓冲。</p>
  *
  * @deprecated this transport will be removed in the next major version.
  */
 @Deprecated
 final class DefaultRxtxChannelConfig extends DefaultChannelConfig implements RxtxChannelConfig {
 
+    /** 串口波特率（默认 115200） */
     private volatile int baudrate = 115200;
+    /** DTR（数据终端就绪）线路状态 */
     private volatile boolean dtr;
+    /** RTS（请求发送）线路状态 */
     private volatile boolean rts;
+    /** 停止位配置 */
     private volatile Stopbits stopbits = Stopbits.STOPBITS_1;
+    /** 数据位配置（默认 8 位） */
     private volatile Databits databits = Databits.DATABITS_8;
+    /** 校验位配置（默认无校验） */
     private volatile Paritybit paritybit = Paritybit.NONE;
+    /** connect 成功后延迟多少毫秒再打开串口参数（设备就绪等待） */
     private volatile int waitTime;
+    /** 串口读超时（毫秒） */
     private volatile int readTimeout = 1000;
 
+    /** 包内构造：绑定通道并切换为堆缓冲分配器 */
     DefaultRxtxChannelConfig(RxtxChannel channel) {
         super(channel);
         setAllocator(new PreferHeapByteBufAllocator(getAllocator()));
@@ -118,6 +128,7 @@ final class DefaultRxtxChannelConfig extends DefaultChannelConfig implements Rxt
         return true;
     }
 
+    /** 设置波特率 */
     @Override
     public RxtxChannelConfig setBaudrate(final int baudrate) {
         this.baudrate = baudrate;
@@ -142,6 +153,7 @@ final class DefaultRxtxChannelConfig extends DefaultChannelConfig implements Rxt
         return  this;
     }
 
+    /** 返回当前波特率 */
     @Override
     public int getBaudrate() {
         return baudrate;
@@ -195,6 +207,7 @@ final class DefaultRxtxChannelConfig extends DefaultChannelConfig implements Rxt
         return this;
     }
 
+    /** 设置读超时（毫秒） */
     @Override
     public RxtxChannelConfig setReadTimeout(int readTimeout) {
         this.readTimeout = checkPositiveOrZero(readTimeout, "readTimeout");

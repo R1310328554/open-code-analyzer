@@ -44,22 +44,28 @@ import static io.netty.util.internal.StringUtil.className;
 /**
  * Provides a JNI bridge to native socket operations.
  * <strong>Internal usage only!</strong>
+ * <p>Unix 原生套接字 JNI 桥：继承 {@link FileDescriptor}，封装 TCP/UDP/Unix 域的  connect/bind/send/recv 及 sockopt；负返回值映射为 {@link Errors} 异常。</p>
  */
 public class Socket extends FileDescriptor {
 
+    /** 全局 IPv6 优先标志（{@link #initialize()} 时设置） */
     private static volatile boolean isIpv6Preferred;
 
+    /** 已废弃：路径长度请通过 JNI {@code udsSunPathSize()} 获取 */
     @Deprecated
     public static final int UDS_SUN_PATH_SIZE = 100;
 
+    /** 本 fd 是否为 IPv6 套接字（影响 bind/connect 地址族） */
     protected final boolean ipv6;
 
+    /** 包装已有原生 fd 并探测 IPv6 属性 */
     public Socket(int fd) {
         super(fd);
         ipv6 = isIPv6(fd);
     }
     /**
      * Returns {@code true} if we should use IPv6 internally, {@code false} otherwise.
+     * <p>根据套接字类型与目标地址判断是否走 IPv6 原生路径。</p>
      */
     private boolean useIpv6(InetAddress address) {
         return useIpv6(this, address);
@@ -68,21 +74,20 @@ public class Socket extends FileDescriptor {
     /**
      * Returns {@code true} if the given socket and address combination should use IPv6 internally,
      * {@code false} otherwise.
+     * <p>套接字为 IPv6 或目标为 {@link Inet6Address} 时使用 IPv6。</p>
      */
     protected static boolean useIpv6(Socket socket, InetAddress address) {
         return socket.ipv6 || address instanceof Inet6Address;
     }
 
+    /** 双向 shutdown（读+写） */
     public final void shutdown() throws IOException {
         shutdown(true, true);
     }
 
     public final void shutdown(boolean read, boolean write) throws IOException {
         for (;;) {
-            // We need to only shutdown what has not been shutdown yet, and if there is no change we should not
-            // shutdown anything. This is because if the underlying FD is reused and we still have an object which
-            // represents the previous incarnation of the FD we need to be sure we don't inadvertently shutdown the
-            // "new" FD without explicitly having a change.
+            // 仅 shutdown 尚未关闭的方向；无状态变化则跳过，避免 fd 复用后误关新 fd
             final int oldState = state;
             if (isClosed(oldState)) {
                 throw new ClosedChannelException();
@@ -95,7 +100,7 @@ public class Socket extends FileDescriptor {
                 newState = outputShutdown(newState);
             }
 
-            // If there is no change in state, then we should not take any action.
+            // 状态位未变则无需调用原生 shutdown
             if (newState == oldState) {
                 return;
             }
@@ -128,15 +133,14 @@ public class Socket extends FileDescriptor {
 
     public final int sendTo(ByteBuffer buf, int pos, int limit, InetAddress addr, int port, boolean fastOpen)
             throws IOException {
-        // just duplicate the toNativeInetAddress code here to minimize object creation as this method is expected
-        // to be called frequently
+        // 内联地址转换以减少热路径对象分配
         byte[] address;
         int scopeId;
         if (addr instanceof Inet6Address) {
             address = addr.getAddress();
             scopeId = ((Inet6Address) addr).getScopeId();
         } else {
-            // convert to ipv4 mapped ipv6 address;
+            // IPv4 映射为 IPv4-mapped IPv6
             scopeId = 0;
             address = ipv4MappedIpv6Address(addr.getAddress());
         }
@@ -146,9 +150,7 @@ public class Socket extends FileDescriptor {
             return res;
         }
         if (res == ERRNO_EINPROGRESS_NEGATIVE && fastOpen) {
-            // This happens when we (as a client) have no pre-existing cookie for doing a fast-open connection.
-            // In this case, our TCP connection will be established normally, but no data was transmitted at this time.
-            // We'll just transmit the data with normal writes later.
+            // TCP Fast Open 无 cookie 时连接仍建立但本次未发数据，后续普通 write 发送
             return 0;
         }
         if (res == ERROR_ECONNREFUSED_NEGATIVE) {
@@ -308,6 +310,7 @@ public class Socket extends FileDescriptor {
         return ioResult("sendAddress", res);
     }
 
+    /** 经 SCM_RIGHTS 接收对端传递的文件描述符 */
     public final int recvFd() throws IOException {
         int res = recvFd(fd);
         if (res > 0) {
@@ -318,24 +321,26 @@ public class Socket extends FileDescriptor {
         }
 
         if (res == ERRNO_EAGAIN_NEGATIVE || res == ERRNO_EWOULDBLOCK_NEGATIVE) {
-            // Everything consumed so just return -1 here.
+            // 非阻塞下暂无 ancillary FD，返回 0
             return 0;
         }
         throw newIOException("recvFd", res);
     }
 
+    /** 经 SCM_RIGHTS 向对端传递文件描述符 */
     public final int sendFd(int fdToSend) throws IOException {
         int res = sendFd(fd, fdToSend);
         if (res >= 0) {
             return res;
         }
         if (res == ERRNO_EAGAIN_NEGATIVE || res == ERRNO_EWOULDBLOCK_NEGATIVE) {
-            // Everything consumed so just return -1 here.
+            // 发送队列满，返回 -1 供上层稍后重试
             return -1;
         }
         throw newIOException("sendFd", res);
     }
 
+    /** 连接 Inet 或 Unix 域地址；非阻塞时可能返回 false 表示进行中 */
     public final boolean connect(SocketAddress socketAddress) throws IOException {
         int res;
         if (socketAddress instanceof InetSocketAddress) {
@@ -370,6 +375,7 @@ public class Socket extends FileDescriptor {
         }
     }
 
+    /** 绑定 Inet 或 Unix 域本地地址 */
     public final void bind(SocketAddress socketAddress) throws IOException {
         if (socketAddress instanceof InetSocketAddress) {
             InetSocketAddress addr = (InetSocketAddress) socketAddress;
@@ -397,6 +403,7 @@ public class Socket extends FileDescriptor {
         }
     }
 
+    /** 接受连接；EAGAIN 时返回 -1 */
     public final int accept(byte[] addr) throws IOException {
         int res = accept(fd, addr);
         if (res >= 0) {
@@ -411,8 +418,7 @@ public class Socket extends FileDescriptor {
 
     public final InetSocketAddress remoteAddress() {
         byte[] addr = remoteAddress(fd);
-        // addr may be null if getpeername failed.
-        // See https://github.com/netty/netty/issues/3328
+        // getpeername 失败时 addr 为 null（见 netty#3328）
         return addr == null ? null : address(addr, 0, addr.length);
     }
 
@@ -513,6 +519,7 @@ public class Socket extends FileDescriptor {
         setIntOpt(fd, level, optname, optvalue);
     }
 
+    /** 设置原始 sockopt（支持 direct/heap/array 三种 ByteBuffer） */
     public void setRawOpt(int level, int optname, ByteBuffer optvalue) throws IOException {
         int limit = optvalue.limit();
         if (optvalue.isDirect()) {
@@ -533,6 +540,7 @@ public class Socket extends FileDescriptor {
         return getIntOpt(fd, level, optname);
     }
 
+    /** 读取原始 sockopt 到 ByteBuffer */
     public void getRawOpt(int level, int optname, ByteBuffer out) throws IOException {
         if (out.isDirect()) {
             getRawOptAddress(fd, level, optname, Buffer.memoryAddress(out) + out.position() , out.remaining());
@@ -546,12 +554,14 @@ public class Socket extends FileDescriptor {
         out.position(out.limit());
     }
 
+    /** 是否全局优先使用 IPv6 套接字 */
     public static boolean isIPv6Preferred() {
         return isIpv6Preferred;
     }
 
     /**
      * @deprecated use {{@link #shouldUseIpv6(SocketProtocolFamily)}}
+      * <p>Netty Unix/RXTX 原生传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public static boolean shouldUseIpv6(InternetProtocolFamily family) {
@@ -575,22 +585,27 @@ public class Socket extends FileDescriptor {
                 '}';
     }
 
+    /** 创建 TCP 流式套接字（AF_INET/AF_INET6） */
     public static Socket newSocketStream() {
         return new Socket(newSocketStream0());
     }
 
+    /** 创建 UDP 数据报套接字 */
     public static Socket newSocketDgram() {
         return new Socket(newSocketDgram0());
     }
 
+    /** 创建 Unix 域流式套接字（AF_UNIX SOCK_STREAM） */
     public static Socket newSocketDomain() {
         return new Socket(newSocketDomain0());
     }
 
+    /** 创建 Unix 域数据报套接字（AF_UNIX SOCK_DGRAM） */
     public static Socket newSocketDomainDgram() {
         return new Socket(newSocketDomainDgram0());
     }
 
+    /** 初始化 IPv6 偏好（JNI 加载后调用一次） */
     public static void initialize() {
         isIpv6Preferred = isIPv6Preferred0(NetUtil.isIpV4StackPreferred());
     }
@@ -603,6 +618,7 @@ public class Socket extends FileDescriptor {
      * @deprecated use {@link #newSocketStream0(SocketProtocolFamily)}
      * @param protocol
      * @return
+      * <p>Netty Unix/RXTX 原生传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     protected static int newSocketStream0(InternetProtocolFamily protocol) {
@@ -627,6 +643,7 @@ public class Socket extends FileDescriptor {
 
     /**
      * @deprecated use {@link #newSocketDgram0(SocketProtocolFamily)}
+      * <p>Netty Unix/RXTX 原生传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     protected static int newSocketDgram0(InternetProtocolFamily family) {

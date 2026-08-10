@@ -22,19 +22,24 @@ import java.net.UnknownHostException;
 
 /**
  * <strong>Internal usage only!</strong>
+ * <p>JNI 侧 Inet 地址封装：统一 IPv4/IPv6 为 16 字节布局，附带 scopeId； 供 {@link Socket} 与 {@link DatagramSocketAddress} 解析/构造套接字地址。</p>
  */
 public final class NativeInetAddress {
+    /** IPv4-mapped IPv6 前缀：{@code ::ffff:0:0/96} */
     private static final byte[] IPV4_MAPPED_IPV6_PREFIX = {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0xff, (byte) 0xff };
+    /** 16 字节地址（IPv4 时为 mapped IPv6 布局） */
     final byte[] address;
+    /** IPv6 链路/站点 scope 标识 */
     final int scopeId;
 
+    /** 从 {@link InetAddress} 构造 JNI 可用地址（IPv4 自动映射） */
     public static NativeInetAddress newInstance(InetAddress addr) {
         byte[] bytes = addr.getAddress();
         if (addr instanceof Inet6Address) {
             return new NativeInetAddress(bytes, ((Inet6Address) addr).getScopeId());
         } else {
-            // convert to ipv4 mapped ipv6 address;
+            // IPv4 转为 IPv4-mapped IPv6 布局
             return new NativeInetAddress(ipv4MappedIpv6Address(bytes));
         }
     }
@@ -48,50 +53,48 @@ public final class NativeInetAddress {
         this(address, 0);
     }
 
+    /** 返回底层 16 字节地址数组 */
     public byte[] address() {
         return address;
     }
 
+    /** 返回 IPv6 scopeId（IPv4 时为 0） */
     public int scopeId() {
         return scopeId;
     }
 
+    /** 分配并填充 IPv4-mapped IPv6 地址 */
     public static byte[] ipv4MappedIpv6Address(byte[] ipv4) {
         byte[] address = new byte[16];
         copyIpv4MappedIpv6Address(ipv4, address);
         return address;
     }
 
+    /** 将 4 字节 IPv4 写入目标数组的 mapped IPv6 布局 */
     public static void copyIpv4MappedIpv6Address(byte[] ipv4, byte[] ipv6) {
         System.arraycopy(IPV4_MAPPED_IPV6_PREFIX, 0, ipv6, 0, IPV4_MAPPED_IPV6_PREFIX.length);
         System.arraycopy(ipv4, 0, ipv6, 12, ipv4.length);
     }
 
     public static InetSocketAddress address(byte[] addr, int offset, int len) {
-        // The last 4 bytes are always the port
+        // 末尾 4 字节始终为网络序端口号
         final int port = decodeInt(addr, offset + len - 4);
         final InetAddress address;
         try {
             switch (len) {
-                // 8 bytes:
-                // - 4  == ipaddress
-                // - 4  == port
+                // 8 字节：4 字节 IPv4 + 4 字节端口
                 case 8:
                     byte[] ipv4 = new byte[4];
                     System.arraycopy(addr, offset, ipv4, 0, 4);
                     address = InetAddress.getByAddress(ipv4);
                     break;
 
-                // 24 bytes:
-                // - 16  == ipaddress
-                // - 4   == scopeId
-                // - 4   == port
+                // 24 字节：16 字节 IPv6 + 4 字节 scopeId + 4 字节端口
                 case 24:
                     byte[] ipv6 = new byte[16];
                     System.arraycopy(addr, offset, ipv6, 0, 16);
                     int scopeId = decodeInt(addr, offset + len  - 8);
-                    // Only include the scopeId if its either non 0 or if this is a link-local address
-                    // as scopeId is only supported with it:
+                    // scopeId 非 0 或为链路本地地址时才传入 Inet6Address
                     // See also https://man7.org/linux/man-pages/man7/ipv6.7.html
                     if (scopeId != 0 || (ipv6[0] == (byte) 0xfe && ipv6[1] == (byte) 0x80)) {
                         address = Inet6Address.getByAddress(null, ipv6, scopeId);
@@ -108,6 +111,7 @@ public final class NativeInetAddress {
         }
     }
 
+    /** 从大端字节数组解码 32 位整数（端口/scopeId） */
     static int decodeInt(byte[] addr, int index) {
         return  (addr[index]     & 0xff) << 24 |
                 (addr[index + 1] & 0xff) << 16 |

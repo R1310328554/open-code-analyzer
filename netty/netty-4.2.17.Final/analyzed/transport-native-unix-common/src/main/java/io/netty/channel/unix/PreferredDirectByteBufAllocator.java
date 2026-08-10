@@ -20,14 +20,21 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.util.internal.UnstableApi;
 
+/**
+ * 委托型 {@link ByteBufAllocator}：I/O 路径优先分配 direct {@link ByteBuf}， 减少 JNI 写路径上的堆到堆外拷贝。
+ * <p>底层分配器可通过 {@link #updateAllocator(ByteBufAllocator)} 热替换。</p>
+ */
 @UnstableApi
 public final class PreferredDirectByteBufAllocator implements ByteBufAllocator {
+    /** 实际委托的分配器（可由 epoll/kqueue 事件循环更新） */
     private ByteBufAllocator allocator;
 
+    /** 替换底层分配器（通常在注册 EventLoop 时调用） */
     public void updateAllocator(ByteBufAllocator allocator) {
         this.allocator = allocator;
     }
 
+    /** 分配默认可扩容 direct 缓冲区 */
     @Override
     public ByteBuf buffer() {
         return allocator.directBuffer();
@@ -43,6 +50,7 @@ public final class PreferredDirectByteBufAllocator implements ByteBufAllocator {
         return allocator.directBuffer(initialCapacity, maxCapacity);
     }
 
+    /** I/O 专用 direct 缓冲区 */
     @Override
     public ByteBuf ioBuffer() {
         return allocator.directBuffer();
@@ -58,6 +66,7 @@ public final class PreferredDirectByteBufAllocator implements ByteBufAllocator {
         return allocator.directBuffer(initialCapacity, maxCapacity);
     }
 
+    /** 堆缓冲区仍委托给底层分配器 */
     @Override
     public ByteBuf heapBuffer() {
         return allocator.heapBuffer();
@@ -88,6 +97,7 @@ public final class PreferredDirectByteBufAllocator implements ByteBufAllocator {
         return allocator.directBuffer(initialCapacity, maxCapacity);
     }
 
+    /** 组合 direct 缓冲区（scatter/gather 友好） */
     @Override
     public CompositeByteBuf compositeBuffer() {
         return allocator.compositeDirectBuffer();
@@ -118,6 +128,7 @@ public final class PreferredDirectByteBufAllocator implements ByteBufAllocator {
         return allocator.compositeDirectBuffer(maxNumComponents);
     }
 
+    /** 是否使用池化 direct 缓冲 */
     @Override
     public boolean isDirectBufferPooled() {
         return allocator.isDirectBufferPooled();

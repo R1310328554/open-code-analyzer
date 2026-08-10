@@ -17,8 +17,14 @@ package io.netty.channel.unix;
 
 import io.netty.channel.ChannelOption;
 
+/**
+ * Unix 原生传输专用 {@link ChannelOption} 定义。
+ * <p>扩展标准 Channel 选项，暴露 Linux/BSD 特有的套接字行为。</p>
+ */
 public class UnixChannelOption<T> extends ChannelOption<T> {
+    /** {@code SO_REUSEPORT}：允许多套接字绑定同一端口（需内核支持） */
     public static final ChannelOption<Boolean> SO_REUSEPORT = valueOf(UnixChannelOption.class, "SO_REUSEPORT");
+    /** Unix 域通道读取模式：字节流或 FD 传递 */
     public static final ChannelOption<DomainSocketReadMode> DOMAIN_SOCKET_READ_MODE =
             ChannelOption.valueOf(UnixChannelOption.class, "DOMAIN_SOCKET_READ_MODE");
 

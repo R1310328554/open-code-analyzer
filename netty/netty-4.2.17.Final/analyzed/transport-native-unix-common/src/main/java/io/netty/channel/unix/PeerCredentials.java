@@ -26,14 +26,18 @@ import static io.netty.util.internal.EmptyArrays.EMPTY_INTS;
  * The PID, UID and GID of the user connected on the other side of the unix domain socket
  * For details see:
  * <a href=https://man7.org/linux/man-pages/man7/socket.7.html>SO_PEERCRED</a>
+ * <p>Unix 域套接字对端进程凭证：经 {@code SO_PEERCRED} 获取 PID/UID/GID； MacOS/BSD 上 PID 可能为 0。</p>
  */
 @UnstableApi
 public final class PeerCredentials {
+    /** 对端进程 ID（Linux 上有效） */
     private final int pid;
+    /** 对端有效用户 ID */
     private final int uid;
+    /** 对端补充组 ID 列表 */
     private final int[] gids;
 
-    // These values are set by JNI via Socket.peerCredentials()
+    // 由 JNI {@link Socket#peerCredentials()} 填充
     PeerCredentials(int p, int u, int... gids) {
         pid = p;
         uid = u;
@@ -45,15 +49,18 @@ public final class PeerCredentials {
      * <p>
      * This is currently not populated on MacOS and BSD based systems.
      * @return The PID of the peer process.
+     * <p>返回对端进程 PID；macOS/BSD 上常为 0。</p>
      */
     public int pid() {
         return pid;
     }
 
+    /** 返回对端 UID */
     public int uid() {
         return uid;
     }
 
+    /** 返回对端 GID 数组的防御性拷贝 */
     public int[] gids() {
         return gids.clone();
     }
