@@ -30,11 +30,13 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Contains utility methods that help to bootstrap server / clients with HTTP3 support.
+ * <p>封装 ALPN 协议名、QUIC 传输参数下限、请求流创建及连接级属性（控制流、QPACK 状态）的读写。
  */
 public final class Http3 {
 
     private Http3() {  }
 
+    /** 按优先级排列的 HTTP/3 ALPN 标识符（draft 版本与最终 h3）。 */
     private static final String[] H3_PROTOS = new String[] {
             "h3-29",
             "h3-30",
@@ -43,9 +45,11 @@ public final class Http3 {
             "h3"
     };
 
+    /** 本端发起的 HTTP/3 控制流，挂载在 {@link QuicChannel} 的 Channel 属性上。 */
     private static final AttributeKey<QuicStreamChannel> HTTP3_CONTROL_STREAM_KEY =
             AttributeKey.valueOf(Http3.class, "HTTP3ControlStream");
 
+    /** 连接级 QPACK 编解码共享状态（动态表、阻塞流计数等）。 */
     private static final AttributeKey<QpackAttributes> QPACK_ATTRIBUTES_KEY =
             AttributeKey.valueOf(Http3.class, "QpackAttributes");
 
@@ -133,7 +137,7 @@ public final class Http3 {
      * <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-6.2">
      *     Minimum number max unidirectional streams</a>.
      */
-    // control-stream, qpack decoder stream, qpack encoder stream
+    // 至少需预留：控制流、QPACK 解码流、QPACK 编码流
     public static final int MIN_INITIAL_MAX_STREAMS_UNIDIRECTIONAL = 3;
 
     /**
@@ -160,11 +164,13 @@ public final class Http3 {
         return configure(new QuicClientCodecBuilder());
     }
 
+    /** 注入 HTTP/3 规范要求的最小单向流数量与流数据上限。 */
     private static <T extends QuicCodecBuilder<T>> T configure(T builder) {
         return builder.initialMaxStreamsUnidirectional(MIN_INITIAL_MAX_STREAMS_UNIDIRECTIONAL)
                 .initialMaxStreamDataUnidirectional(MIN_INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
     }
 
+    /** 若 handler 已是 Initializer 则直接复用，否则包装为在 initRequestStream 末尾追加 handler。 */
     private static Http3RequestStreamInitializer requestStreamInitializer(ChannelHandler handler) {
         if (handler instanceof Http3RequestStreamInitializer) {
             return (Http3RequestStreamInitializer) handler;

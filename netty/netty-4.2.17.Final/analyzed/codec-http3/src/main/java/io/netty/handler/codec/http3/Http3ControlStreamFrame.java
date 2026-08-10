@@ -18,6 +18,7 @@ package io.netty.handler.codec.http3;
 /**
  * Marker interface for frames that can be sent and received on a
  * <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7">HTTP3 control stream</a>.
+ * <p>控制流承载 SETTINGS、GOAWAY、MAX_PUSH_ID、CANCEL_PUSH 等连接级信令，不携带请求/响应体。
  */
 public interface Http3ControlStreamFrame extends Http3Frame {
 }

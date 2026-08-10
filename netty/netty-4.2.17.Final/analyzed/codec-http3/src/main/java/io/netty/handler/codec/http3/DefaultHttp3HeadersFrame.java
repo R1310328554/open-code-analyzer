@@ -20,10 +20,15 @@ import io.netty.util.internal.StringUtil;
 
 import java.util.Objects;
 
+/**
+ * HTTP/3 HEADERS 帧的默认实现，封装经 QPACK 编解码后的头部块。
+ */
 public final class DefaultHttp3HeadersFrame implements Http3HeadersFrame {
 
+    /** QPACK 解压后的完整头部集合（含伪头部 :method、:path 等）。 */
     private final Http3Headers headers;
 
+    /** 使用空的 {@link DefaultHttp3Headers} 构造，便于逐步填充。 */
     public DefaultHttp3HeadersFrame() {
         this(new DefaultHttp3Headers());
     }

@@ -32,13 +32,16 @@ import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static io.netty.handler.codec.http3.Http3ErrorCode.H3_INTERNAL_ERROR;
 import static io.netty.handler.codec.quic.QuicStreamType.UNIDIRECTIONAL;
 
+/**
+ * HTTP/3 编解码与连接管理的内部工具类：帧类型常量、QUIC 变长整数、连接/流级错误处理。
+ */
 final class Http3CodecUtils {
 
-    // See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7.2.8
+    // RFC 9114 §7.2.8：保留帧类型公式 0x21 + 31×N
     static final long MIN_RESERVED_FRAME_TYPE = 0x1f * 1 + 0x21;
     static final long MAX_RESERVED_FRAME_TYPE = 0x1f * (long) Integer.MAX_VALUE + 0x21;
 
-    // See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7.2
+    // RFC 9114 §7.2 标准帧类型
     static final int HTTP3_DATA_FRAME_TYPE = 0x0;
     static final int HTTP3_HEADERS_FRAME_TYPE = 0x1;
     static final int HTTP3_CANCEL_PUSH_FRAME_TYPE = 0x3;
@@ -47,11 +50,13 @@ final class Http3CodecUtils {
     static final int HTTP3_GO_AWAY_FRAME_TYPE = 0x7;
     static final int HTTP3_MAX_PUSH_ID_FRAME_TYPE = 0xd;
 
+    /** 各固定长度控制帧的最大载荷字节数（push ID / stream ID 等）。 */
     static final int HTTP3_CANCEL_PUSH_FRAME_MAX_LEN = 8;
     static final int HTTP3_SETTINGS_FRAME_MAX_LEN = 256;
     static final int HTTP3_GO_AWAY_FRAME_MAX_LEN = 8;
     static final int HTTP3_MAX_PUSH_ID_FRAME_MAX_LEN = 8;
 
+    /** 单向流首字节：流类型标识（控制 / push / QPACK 编码 / QPACK 解码）。 */
     static final int HTTP3_CONTROL_STREAM_TYPE = 0x00;
     static final int HTTP3_PUSH_STREAM_TYPE = 0x01;
     static final int HTTP3_QPACK_ENCODER_STREAM_TYPE = 0x02;
@@ -63,7 +68,7 @@ final class Http3CodecUtils {
      */
     static final long DEFAULT_MAX_FIELD_SECTION_SIZE = 8192;
 
-    // Let's use 32kb as max
+    // RFC 未设上限，实现侧默认限制未知帧载荷为 32KB 以防 DoS
     static final int DEFAULT_MAX_UNKNOWN_FRAME_PAYLOAD_LENGTH = 32 * 1024;
 
     private Http3CodecUtils() { }
@@ -83,14 +88,14 @@ final class Http3CodecUtils {
      * @return {@code true} if the passed {@link QuicStreamChannel} is a server initiated stream.
      */
     static boolean isServerInitiatedQuicStream(QuicStreamChannel channel) {
-        // Server streams have odd stream id
+        // QUIC：服务端发起流 ID 为奇数（RFC 9000 §2.1）
         // https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier
         return channel.streamId() % 2 != 0;
     }
 
     static boolean isReservedHttp2FrameType(long type) {
         switch ((int) type) {
-            // Reserved types that were used in HTTP/2
+            // HTTP/2 遗留保留类型，HTTP/3 中不得使用
             // https://tools.ietf.org/html/draft-ietf-quic-http-32#section-11.2.1
             case 0x2:
             case 0x6:
@@ -103,7 +108,7 @@ final class Http3CodecUtils {
     }
 
     static boolean isReservedHttp2Setting(long key) {
-        // Reserved types that were used in HTTP/2
+        // HTTP/2 遗留 SETTINGS 键区间，HTTP/3 中无效
         // https://tools.ietf.org/html/draft-ietf-quic-http-32#section-11.2.2
         return 0x2L <= key && key <= 0x5L;
     }
@@ -170,6 +175,7 @@ final class Http3CodecUtils {
         }
     }
 
+    /** 将长度前缀的高 2 位写入已分配字节的最高位（QUIC 变长整数编码）。 */
     private static void encodeLengthIntoBuffer(ByteBuf out, int index, byte b) {
         out.setByte(index, out.getByte(index) | b);
     }
@@ -215,6 +221,7 @@ final class Http3CodecUtils {
         return 1;
     }
 
+    /** 关键流（控制流、QPACK 流）在父连接仍活跃时意外关闭，触发 H3_CLOSED_CRITICAL_STREAM。 */
     static void criticalStreamClosed(ChannelHandlerContext ctx) {
         if (ctx.channel().parent().isActive()) {
             // Stream was closed while the parent channel is still active
@@ -282,7 +289,7 @@ final class Http3CodecUtils {
         }
         final ByteBuf buffer;
         if (msg != null) {
-            // As we call an operation on the parent we should also use the parents allocator to allocate the buffer.
+            // 在父 QuicChannel 上关闭连接，缓冲区须用父 Channel 的分配器
             buffer = quicChannel.alloc().buffer();
             buffer.writeCharSequence(msg, CharsetUtil.US_ASCII);
         } else {
@@ -291,10 +298,12 @@ final class Http3CodecUtils {
         quicChannel.close(true, errorCode.code, buffer);
     }
 
+    /** 流级错误：仅关闭当前 QUIC 流出站方向并携带 HTTP/3 错误码。 */
     static void streamError(ChannelHandlerContext ctx, Http3ErrorCode errorCode) {
         ((QuicStreamChannel) ctx.channel()).shutdownOutput(errorCode.code);
     }
 
+    /** 非 autoRead 模式下主动触发 read，避免帧滞留。 */
     static void readIfNoAutoRead(ChannelHandlerContext ctx) {
         if (!ctx.channel().config().isAutoRead()) {
             ctx.read();

@@ -21,7 +21,13 @@ import io.netty.util.internal.StringUtil;
 
 import java.util.Objects;
 
+/**
+ * 保留帧类型（0x21 + 31×N）的默认实现，用于扩展或实验性 HTTP/3 帧。
+ * <p>类型必须在 {@link Http3CodecUtils#MIN_RESERVED_FRAME_TYPE} 与
+ * {@link Http3CodecUtils#MAX_RESERVED_FRAME_TYPE} 范围内。
+ */
 public final class DefaultHttp3UnknownFrame extends DefaultByteBufHolder implements Http3UnknownFrame {
+    /** RFC 9114 定义的保留帧类型值。 */
     private final long type;
 
     public DefaultHttp3UnknownFrame(long type, ByteBuf payload) {

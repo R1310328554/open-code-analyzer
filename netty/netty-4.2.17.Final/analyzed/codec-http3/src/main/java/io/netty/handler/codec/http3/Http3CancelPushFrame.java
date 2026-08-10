@@ -17,6 +17,7 @@ package io.netty.handler.codec.http3;
 
 /**
  * See <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7.2.3">CANCEL_PUSH</a>.
+ * <p>控制流帧：客户端声明不再接收指定 push ID 对应的 server push 资源。
  */
 public interface Http3CancelPushFrame extends Http3ControlStreamFrame {
 

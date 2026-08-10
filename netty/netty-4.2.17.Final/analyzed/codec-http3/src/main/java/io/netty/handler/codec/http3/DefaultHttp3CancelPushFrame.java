@@ -20,7 +20,11 @@ import io.netty.util.internal.StringUtil;
 
 import java.util.Objects;
 
+/**
+ * {@link Http3CancelPushFrame} 的默认实现：客户端通过控制流发送 CANCEL_PUSH，撤销尚未消费的 server push。
+ */
 public final class DefaultHttp3CancelPushFrame implements Http3CancelPushFrame {
+    /** 被取消的 push ID，与 {@link Http3PushPromiseFrame#id()} 对应。 */
     private final long id;
 
     public DefaultHttp3CancelPushFrame(long id) {

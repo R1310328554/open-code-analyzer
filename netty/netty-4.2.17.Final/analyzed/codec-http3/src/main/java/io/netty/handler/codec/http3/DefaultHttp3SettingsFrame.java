@@ -24,10 +24,12 @@ import java.util.Map;
 
 /**
  * Default implementation of {@link Http3SettingsFrame}.
+ * <p>HTTP/3 连接建立时双方通过控制流交换 SETTINGS 帧，协商 QPACK 表容量、最大头部块等参数。
  *
  */
 public final class DefaultHttp3SettingsFrame implements Http3SettingsFrame {
 
+    /** 键值对形式的 SETTINGS 载荷，键为 {@link Http3SettingIdentifier} 的 id。 */
     private final Http3Settings settings;
 
     public DefaultHttp3SettingsFrame(Http3Settings settings) {
@@ -54,7 +56,7 @@ public final class DefaultHttp3SettingsFrame implements Http3SettingsFrame {
     @Deprecated
     @Nullable
     public Long get(long key) {
-        // Legacy behavior: direct map access.
+        // 遗留 API：直接访问底层 map，新代码应通过 settings() 操作。
         return settings.get(key);
     }
 

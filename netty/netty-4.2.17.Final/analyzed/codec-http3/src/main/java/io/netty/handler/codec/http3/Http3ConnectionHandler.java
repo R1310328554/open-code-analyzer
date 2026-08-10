@@ -31,19 +31,25 @@ import static java.lang.Math.toIntExact;
 
 /**
  * Handler that handles <a href="https://datatracker.ietf.org/doc/html/rfc9114">HTTP3</a> connections.
+ * <p>挂载于 {@link QuicChannel} pipeline，负责创建本端控制流、初始化 QPACK、
+ * 并将远端打开的双向/单向流分派给子类实现的 {@code init*Stream}。
  */
 public abstract class Http3ConnectionHandler extends ChannelInboundHandlerAdapter {
 
     final Http3FrameCodecFactory codecFactory;
     final LongFunction<ChannelHandler> unknownInboundStreamHandlerFactory;
     final boolean disableQpackDynamicTable;
+    /** 处理对端经控制流发来的 SETTINGS / GOAWAY / MAX_PUSH_ID 等。 */
     final Http3ControlStreamInboundHandler localControlStreamHandler;
+    /** 在本端控制流上发送 SETTINGS 并维护出站控制帧状态。 */
     final Http3ControlStreamOutboundHandler remoteControlStreamHandler;
     final QpackDecoder qpackDecoder;
     final QpackEncoder qpackEncoder;
     final Http3Settings.NonStandardHttp3SettingsValidator nonStandardSettingsValidator;
+    /** 防止并发重复创建本端控制流。 */
     private boolean controlStreamCreationInProgress;
 
+    /** 来自 SETTINGS 的 QPACK 动态表容量上限。 */
     final long maxTableCapacity;
 
     /**
@@ -116,6 +122,7 @@ public abstract class Http3ConnectionHandler extends ChannelInboundHandlerAdapte
                 qpackEncoder, remoteControlStreamHandler);
     }
 
+    /** 连接激活后按需创建本端单向控制流，首帧必须是 SETTINGS。 */
     private void createControlStreamIfNeeded(ChannelHandlerContext ctx) {
         if (!controlStreamCreationInProgress && Http3.getLocalControlStream(ctx.channel()) == null) {
             controlStreamCreationInProgress = true;
@@ -155,6 +162,7 @@ public abstract class Http3ConnectionHandler extends ChannelInboundHandlerAdapte
                 Http3RequestStreamFrameTypeValidator.INSTANCE, encodeState, decodeState, nonStandardSettingsValidator);
     }
 
+    /** 为请求流创建 QPACK 状态校验 handler（服务端/客户端策略不同）。 */
     final ChannelHandler newRequestStreamValidationHandler(
             QuicStreamChannel forStream, Http3RequestStreamCodecState encodeState,
             Http3RequestStreamCodecState decodeState) {
@@ -168,6 +176,7 @@ public abstract class Http3ConnectionHandler extends ChannelInboundHandlerAdapte
                 qpackAttributes, qpackDecoder, encodeState, decodeState);
     }
 
+    /** 为 push 流创建校验 handler；客户端需校验 push ID 与 QPACK 上下文。 */
     final ChannelHandler newPushStreamValidationHandler(QuicStreamChannel forStream,
                                                         Http3RequestStreamCodecState decodeState) {
         if (localControlStreamHandler.isServer()) {
@@ -198,6 +207,7 @@ public abstract class Http3ConnectionHandler extends ChannelInboundHandlerAdapte
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof QuicStreamChannel) {
             QuicStreamChannel channel = (QuicStreamChannel) msg;
+            // 远端新打开的 QUIC 流：按双向/单向分派给子类挂载 pipeline
             switch (channel.type()) {
                 case BIDIRECTIONAL:
                     initBidirectionalStream(ctx, channel);

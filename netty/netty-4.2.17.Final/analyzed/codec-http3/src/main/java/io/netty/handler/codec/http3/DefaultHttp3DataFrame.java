@@ -19,6 +19,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.util.internal.StringUtil;
 
+/**
+ * HTTP/3 DATA 帧的默认实现，承载请求/响应体字节流。
+ * <p>继承 {@link DefaultByteBufHolder}，复用 Netty 引用计数与 {@link ByteBuf} 生命周期管理。
+ */
 public final class DefaultHttp3DataFrame extends DefaultByteBufHolder implements Http3DataFrame {
 
     public DefaultHttp3DataFrame(ByteBuf data) {

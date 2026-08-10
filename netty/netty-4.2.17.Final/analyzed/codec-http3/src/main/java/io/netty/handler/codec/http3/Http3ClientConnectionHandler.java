@@ -22,8 +22,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.function.LongFunction;
 
+/**
+ * HTTP/3 客户端连接处理器：拒绝服务端发起的双向流，并为 push/单向流挂载客户端侧 pipeline。
+ */
 public class Http3ClientConnectionHandler extends Http3ConnectionHandler {
 
+    /** 按 push ID 为 server push 流创建自定义 {@link ChannelHandler}，{@code null} 表示默认处理。 */
     private final LongFunction<ChannelHandler> pushStreamHandlerFactory;
 
     /**
@@ -126,6 +130,7 @@ public class Http3ClientConnectionHandler extends Http3ConnectionHandler {
 
     @Override
     protected void initBidirectionalStream(ChannelHandlerContext ctx, QuicStreamChannel channel) {
+        // RFC 9114：客户端不得接受服务端发起的双向流，否则触发 H3_STREAM_CREATION_ERROR
         // See https://datatracker.ietf.org/doc/html/rfc9114#name-bidirectional-streams
         // https://datatracker.ietf.org/doc/html/rfc9114#section-6.1-3
         Http3CodecUtils.connectionError(ctx, Http3ErrorCode.H3_STREAM_CREATION_ERROR,
@@ -135,6 +140,7 @@ public class Http3ClientConnectionHandler extends Http3ConnectionHandler {
     @Override
     protected void initUnidirectionalStream(ChannelHandlerContext ctx, QuicStreamChannel streamChannel) {
         final long maxTableCapacity = maxTableCapacity();
+        // 客户端单向流入站：区分控制流、push 流、QPACK 流及未知类型
         streamChannel.pipeline().addLast(
                 new Http3UnidirectionalStreamInboundClientHandler(codecFactory, nonStandardSettingsValidator,
                         localControlStreamHandler, remoteControlStreamHandler,

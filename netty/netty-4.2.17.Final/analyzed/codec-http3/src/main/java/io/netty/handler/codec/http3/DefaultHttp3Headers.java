@@ -26,14 +26,20 @@ import static io.netty.util.AsciiString.CASE_INSENSITIVE_HASHER;
 import static io.netty.util.AsciiString.CASE_SENSITIVE_HASHER;
 import static io.netty.util.AsciiString.isUpperCase;
 
+/**
+ * {@link Http3Headers} 的默认实现，基于 {@link DefaultHeaders} 并满足 HTTP/3 头部约束。
+ * <p>伪头部（{@code :method}、{@code :path} 等）在迭代顺序上始终位于普通头部之前，与 RFC 9114 一致。
+ */
 public final class DefaultHttp3Headers
         extends DefaultHeaders<CharSequence, CharSequence, Http3Headers> implements Http3Headers {
+    /** 逐字节扫描头部名，拒绝 HTTP/2 风格的大写字母（HTTP/3 要求小写）。 */
     private static final ByteProcessor HTTP3_NAME_VALIDATOR_PROCESSOR = new ByteProcessor() {
         @Override
         public boolean process(byte value) {
             return !isUpperCase(value);
         }
     };
+    /** HTTP/3 头部名校验器：非空且不得含大写 ASCII。 */
     static final NameValidator<CharSequence> HTTP3_NAME_VALIDATOR = new NameValidator<CharSequence>() {
         @Override
         public void validateName(@Nullable CharSequence name) {
@@ -64,6 +70,7 @@ public final class DefaultHttp3Headers
         }
     };
 
+    /** 双向链表中第一个非伪头部节点，用于维持伪头部优先的迭代顺序。 */
     private HeaderEntry<CharSequence, CharSequence> firstNonPseudo = head;
 
     /**
@@ -71,6 +78,7 @@ public final class DefaultHttp3Headers
      * <p>
      * Header names will be validated according to
      * <a href="https://tools.ietf.org/html/rfc7540">rfc7540</a>.
+     * <p>默认开启 RFC 7540 风格的头部名校验（HTTP/3 沿用相同小写规则）。
      */
     public DefaultHttp3Headers() {
         this(true);
@@ -83,8 +91,7 @@ public final class DefaultHttp3Headers
      */
     @SuppressWarnings("unchecked")
     public DefaultHttp3Headers(boolean validate) {
-        // Case sensitive compare is used because it is cheaper, and header validation can be used to catch invalid
-        // headers.
+        // 大小写敏感哈希更廉价；非法头部由 HTTP3_NAME_VALIDATOR 在写入时拦截。
         super(CASE_SENSITIVE_HASHER,
               CharSequenceValueConverter.INSTANCE,
               validate ? HTTP3_NAME_VALIDATOR : NameValidator.NOT_NULL);
@@ -99,8 +106,7 @@ public final class DefaultHttp3Headers
      */
     @SuppressWarnings("unchecked")
     public DefaultHttp3Headers(boolean validate, int arraySizeHint) {
-        // Case sensitive compare is used because it is cheaper, and header validation can be used to catch invalid
-        // headers.
+        // 大小写敏感哈希更廉价；非法头部由 HTTP3_NAME_VALIDATOR 在写入时拦截。
         super(CASE_SENSITIVE_HASHER,
               CharSequenceValueConverter.INSTANCE,
               validate ? HTTP3_NAME_VALIDATOR : NameValidator.NOT_NULL,
@@ -194,6 +200,7 @@ public final class DefaultHttp3Headers
         return new Http3HeaderEntry(h, name, value, next);
     }
 
+    /** 自定义链表节点：插入时将伪头部排在普通头部之前。 */
     private final class Http3HeaderEntry extends HeaderEntry<CharSequence, CharSequence> {
         protected Http3HeaderEntry(int hash, CharSequence key, CharSequence value,
                 HeaderEntry<CharSequence, CharSequence> next) {
@@ -201,7 +208,7 @@ public final class DefaultHttp3Headers
             this.value = value;
             this.next = next;
 
-            // Make sure the pseudo headers fields are first in iteration order
+            // 伪头部插入 firstNonPseudo 之前，保证迭代时 :method 等始终在前
             if (hasPseudoHeaderFormat(key)) {
                 after = firstNonPseudo;
                 before = firstNonPseudo.before();

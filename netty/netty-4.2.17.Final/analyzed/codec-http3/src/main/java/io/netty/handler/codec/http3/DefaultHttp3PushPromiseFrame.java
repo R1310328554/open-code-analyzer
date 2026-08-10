@@ -20,9 +20,15 @@ import io.netty.util.internal.StringUtil;
 
 import java.util.Objects;
 
+/**
+ * {@link Http3PushPromiseFrame} 的默认实现：服务端在请求流上预告即将推送的资源。
+ * <p>包含 push ID 与预推送资源的伪头部/常规头部，后续由独立 push 流承载响应体。
+ */
 public final class DefaultHttp3PushPromiseFrame implements Http3PushPromiseFrame {
 
+    /** 本次 server push 的唯一标识，客户端可用 {@link Http3CancelPushFrame} 撤销。 */
     private final long id;
+    /** 预推送响应的头部（:method、:path、:authority 等）。 */
     private final Http3Headers headers;
 
     public DefaultHttp3PushPromiseFrame(long id) {

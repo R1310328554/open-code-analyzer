@@ -20,7 +20,12 @@ import io.netty.util.internal.StringUtil;
 
 import java.util.Objects;
 
+/**
+ * {@link Http3MaxPushIdFrame} 的默认实现：服务端通过控制流告知客户端允许的最大 push ID。
+ * <p>客户端据此限制可接受的 {@link Http3PushPromiseFrame} 数量。
+ */
 public final class DefaultHttp3MaxPushIdFrame implements Http3MaxPushIdFrame {
+    /** 当前连接上服务端可能使用的最大 push ID。 */
     private final long id;
 
     public DefaultHttp3MaxPushIdFrame(long id) {
