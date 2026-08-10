@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:12:28Z",
   "files": [
-    "pkg/storage/chunk/client/congestion/hedge.go",
-    "pkg/storage/chunk/client/congestion/interfaces.go",
-    "pkg/storage/chunk/client/congestion/metrics.go",
-    "pkg/storage/chunk/client/congestion/retry.go",
-    "pkg/storage/chunk/client/gcp/bigtable_index_client.go",
-    "pkg/storage/chunk/client/gcp/bigtable_object_client.go",
-    "pkg/storage/chunk/client/gcp/fixtures.go",
-    "pkg/storage/chunk/client/gcp/fnv.go",
-    "pkg/storage/chunk/client/gcp/gcs_object_client.go",
-    "pkg/storage/chunk/client/gcp/instrumentation.go",
-    "pkg/storage/chunk/client/gcp/table_client.go",
-    "pkg/storage/chunk/client/grpc/grpc.pb.go",
-    "pkg/storage/chunk/client/grpc/grpc_client.go",
-    "pkg/storage/chunk/client/grpc/index_client.go",
-    "pkg/storage/chunk/client/grpc/storage_client.go",
     "pkg/storage/chunk/client/grpc/table_client.go",
     "pkg/storage/chunk/client/hedging/hedging.go",
     "pkg/storage/chunk/client/ibmcloud/cos_object_client.go",
@@ -33,5 +18,5 @@
     "pkg/storage/chunk/client/testutils/testutils.go"
   ],
   "remaining_pending": 292,
-  "done": 1230
+  "done": 1245
 }
