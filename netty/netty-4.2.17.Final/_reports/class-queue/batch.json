@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:22:04Z",
-  "files": [
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v4/Socks4ClientDecoder.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v4/Socks4ClientEncoder.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v4/Socks4CommandRequest.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v4/Socks4CommandResponse.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v4/Socks4CommandStatus.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v4/Socks4CommandType.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v4/Socks4Message.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v4/Socks4ServerDecoder.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v4/Socks4ServerEncoder.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v5/AbstractSocks5Message.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v5/DefaultSocks5CommandRequest.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v5/DefaultSocks5CommandResponse.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v5/DefaultSocks5InitialRequest.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v5/DefaultSocks5InitialResponse.java",
-    "codec-socks/src/main/java/io/netty/handler/codec/socksx/v5/DefaultSocks5PasswordAuthRequest.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 908,
-  "done": 1005
+  "done": 1020
 }
