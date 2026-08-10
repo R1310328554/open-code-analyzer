@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:20:19Z",
   "files": [
-    "pkg/storage/chunk/client/util/parallel_chunk_fetch.go",
-    "pkg/storage/chunk/client/util/reader.go",
-    "pkg/storage/chunk/client/util/util.go",
-    "pkg/storage/chunk/dummy.go",
-    "pkg/storage/chunk/factory.go",
-    "pkg/storage/chunk/fetcher/fetcher.go",
-    "pkg/storage/chunk/interface.go",
-    "pkg/storage/chunk/json_helpers.go",
-    "pkg/storage/chunk/predicate.go",
-    "pkg/storage/common/aws/storage_class.go",
-    "pkg/storage/config/schema_config.go",
-    "pkg/storage/config/store.go",
-    "pkg/storage/config/table_provisioning.go",
-    "pkg/storage/config/tags.go",
-    "pkg/storage/detected/fields.go",
     "pkg/storage/detected/labels.go",
     "pkg/storage/errors/errors.go",
     "pkg/storage/factory.go",
@@ -33,5 +18,5 @@
     "pkg/storage/stores/series/index/caching_index_client.pb.go"
   ],
   "remaining_pending": 262,
-  "done": 1260
+  "done": 1275
 }
