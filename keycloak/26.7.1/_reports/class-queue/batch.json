@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:49:16Z",
-  "files": [
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/remover/query/ByRealmIdQueryConditionalRemover.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/remover/query/ClientSessionQueryConditionalRemover.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/remover/query/MultipleConditionQueryRemover.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/remover/query/QueryBasedConditionalRemover.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/remover/query/UserSessionQueryConditionalRemover.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/BaseUpdater.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/Expiration.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/Updater.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/UpdaterFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/authsession/RootAuthenticationSessionUpdater.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/client/AuthenticatedClientSessionUpdater.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/helper/MapUpdater.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/loginfailures/LoginFailuresUpdater.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/user/AuthenticatedClientSessionMapping.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/updater/user/UserSessionUpdater.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4528,
-  "done": 1455
+  "done": 1470
 }
