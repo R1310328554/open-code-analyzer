@@ -73,3 +73,18 @@
 2026-08-10T05:37:02Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/IdentityProviderAddHandler.java wave3a saml elytron + wildfly subsystem start
 2026-08-10T05:37:02Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/IdentityProviderDefinition.java wave3a saml elytron + wildfly subsystem start
 2026-08-10T05:37:02Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeyAddHandler.java wave3a saml elytron + wildfly subsystem start
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeyDefinition.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeyStoreCertificateDefinition.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeyStoreDefinition.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeyStorePrivateKeyDefinition.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeycloakAdapterConfigDeploymentProcessor.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeycloakClusteredSsoDeploymentProcessor.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeycloakDependencyProcessor.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeycloakDependencyProcessorWildFly.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeycloakSamlExtension.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeycloakSubsystemAdd.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeycloakSubsystemDefinition.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/KeycloakSubsystemParser.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/SecureDeploymentAddHandler.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/SecureDeploymentDefinition.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/ServiceProviderAddHandler.java wave3b saml wildfly subsystem definitions
