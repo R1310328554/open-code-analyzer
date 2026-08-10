@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T03:49:30Z",
-  "files": [
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/noop/ai/McpNoopHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/noop/ai/PipelineNoopHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/noop/ai/PromptNoopHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/noop/ai/SkillNoopHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/noop/config/ConfigNoopHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/noop/config/HistoryNoopHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/noop/naming/InstanceNoopHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/noop/naming/ServiceNoopHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/ConsoleMaintainerClientAuthPlugin.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/EnabledRemoteHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/HealthRemoteHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/NacosMaintainerClientHolder.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/RemoteServerConnector.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/ServerStateRemoteHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/ai/A2aRemoteHandler.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1127,
-  "done": 1395
+  "done": 1410
 }
