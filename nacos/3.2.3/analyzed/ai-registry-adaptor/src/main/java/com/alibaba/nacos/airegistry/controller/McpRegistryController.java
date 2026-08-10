@@ -42,6 +42,7 @@ import java.util.Objects;
 
 /**
  * McpRegistryController.
+ * <p>官方 MCP Registry v0 API 控制器：列出/查询 MCP 服务及版本，需开启 {@code nacos.ai.mcp.registry.enabled=true}。</p>
  * 
  * @author xinluo
  */
@@ -60,6 +61,7 @@ public class McpRegistryController {
     /**
      * List mcp servers.
      * All server info is related to the latest version of the server.
+     * <p>分页列出 MCP 服务（默认返回各服务最新版本信息），支持模糊/精确搜索。</p>
      *
      * @param form list mcp servers request form
      *             Support blur and accurate search
@@ -77,14 +79,14 @@ public class McpRegistryController {
         int offset = form.resolveOffset();
         int limit = form.getLimit();
         String namespaceId = form.getNamespaceId();
-        // reuse internal service with converted form
+        // 转换为内部 ListServerForm 复用已有服务
         ListServerForm internal = new ListServerForm();
         internal.setOffset(offset);
         internal.setLimit(limit);
         internal.setNamespaceId(namespaceId);
         internal.setServerName(form.getSearch());
         McpRegistryServerList internalList = nacosMcpRegistryService.listMcpServers(internal);
-        // Null-safe server list handling; service has enriched items already
+        // 空安全处理服务列表；条目已由 service 层 enrich
         List<ServerResponse> details = internalList.getServers();
         if (details == null) {
             details = Collections.emptyList();
@@ -101,6 +103,7 @@ public class McpRegistryController {
      * Get mcp server details.
      * If version is not provided, this api will return the latest version of the
      * server.
+     * <p>查询指定 MCP 服务的全部版本列表；未找到时返回 404 JSON 错误。</p>
      * 
      * @param name     server name
      * @param form     get server request form
@@ -129,6 +132,7 @@ public class McpRegistryController {
      * Get specific MCP server version.
      * Returns detailed information about a specific version of an MCP server.
      * Use the special version `latest` to get the latest version.
+     * <p>获取 MCP 服务某一版本详情；version 可为 latest；未找到返回 404。</p>
      * 
      * @param serverName URL-encoded server name (e.g., "com.example%2Fmy-server")
      * @param version    URL-encoded version to retrieve (e.g., "1.0.0" or

@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
 
 /**
  * Skill request util.
+ * <p>Skill 请求工具：解析/校验表单、frontmatter 归一化、ZIP 上传校验、构建带监听器头（ETag、MD5、resolvedVersion）的 HTTP 响应。</p>
  *
  * @author nacos
  */
@@ -54,6 +55,7 @@ public class SkillRequestUtil {
      * Build a ZIP download {@link ResponseEntity} from a {@link Skill} object.
      *
      * <p>Shared by all controllers that need to export a skill as ZIP.</p>
+     * <p>将 Skill 序列化为 ZIP 并返回 application/zip 下载响应。</p>
      *
      * @param skill the Skill object
      * @return ResponseEntity containing ZIP bytes with proper headers
@@ -75,6 +77,7 @@ public class SkillRequestUtil {
     /**
      * Build a ZIP download {@link ResponseEntity} together with the listener-related headers
      * ({@code ETag}, {@code X-Nacos-Skill-Md5} and {@code X-Nacos-Skill-Resolved-Version}).
+     * <p>构建 ZIP 下载响应并附加监听器相关 HTTP 头；md5 与 resolvedVersion 为空时不写入。</p>
      *
      * <p>{@code md5} and {@code resolvedVersion} may be blank; only non-blank values are emitted as
      * headers so legacy paths that do not yet carry MD5 keep their existing response shape.
@@ -103,6 +106,7 @@ public class SkillRequestUtil {
     /**
      * Build an HTTP 304 Not Modified response carrying the listener-related headers so the client
      * can refresh its local cache metadata even when the body is empty.
+     * <p>返回 304 Not Modified，仍携带 MD5 与 resolvedVersion 供客户端刷新本地缓存元数据。</p>
      *
      * @param md5             published content MD5
      * @param resolvedVersion resolved version, may be {@code null}
@@ -128,6 +132,7 @@ public class SkillRequestUtil {
     
     /**
      * Parse Skill request form to {@link Skill}.
+     * <p>将 skillCard JSON 反序列化为 {@link Skill} 并执行合法性校验。</p>
      *
      * @param skillDetailForm skill detail form.
      * @return skill
@@ -152,6 +157,7 @@ public class SkillRequestUtil {
     
     /**
      * Validate skill is legal.
+     * <p>校验 name、description 及 SKILL.md 正文非空。</p>
      *
      * @param skill skill
      * @throws NacosApiException if skill is illegal.
@@ -166,6 +172,7 @@ public class SkillRequestUtil {
      * Normalize the YAML frontmatter inside {@code skill.getSkillMd()} so that name, description, and version
      * are consistent with the authoritative values. This method modifies the skill in-place.
      *
+     * <p>归一化 skillMd 中 YAML frontmatter，使 name/description/version 与权威值一致（#14949 规则）。</p>
      * <p>Rules (per KomachiSion's proposal on #14949):
      * <ul>
      *   <li><b>name</b>: always overwritten with {@code authoritativeName} (nacos-side truth)</li>
@@ -187,17 +194,17 @@ public class SkillRequestUtil {
             return;
         }
         
-        // 1. name: on first create, frontmatter wins if present; on edit, authoritative name wins
+        // 1. name：首次创建 frontmatter 优先；编辑时以 Nacos 权威 name 为准
         String fmName = parseFrontmatterField(md, "name");
         if (isFirstCreate && StringUtils.isNotBlank(fmName)) {
-            // First create: use frontmatter name as the source of truth
+            // 首次创建：frontmatter 中的 name 作为真值
             skill.setName(fmName);
             authoritativeName = fmName;
         }
         md = updateFrontmatterField(md, "name", authoritativeName);
         skill.setName(authoritativeName);
         
-        // 2. description: frontmatter wins if present (both create and edit); otherwise use skill object value
+        // 2. description：frontmatter 有值则同步到 skill；否则回写 skill 已有描述
         String fmDescription = parseFrontmatterField(md, "description");
         if (StringUtils.isNotBlank(fmDescription)) {
             skill.setDescription(fmDescription);
@@ -205,7 +212,7 @@ public class SkillRequestUtil {
             md = updateFrontmatterField(md, "description", skill.getDescription());
         }
         
-        // 3. version: always sync to resolved version
+        // 3. version：始终同步为服务层解析的版本号
         if (StringUtils.isNotBlank(resolvedVersion)) {
             md = updateFrontmatterField(md, "version", resolvedVersion);
         }
@@ -216,6 +223,7 @@ public class SkillRequestUtil {
     /**
      * Update (or insert) a field in the YAML frontmatter of a markdown string. If no frontmatter block exists,
      * one is created at the beginning.
+     * <p>更新或插入 frontmatter 字段；无 frontmatter 块时在文首创建。</p>
      *
      * @param md    markdown content
      * @param field field name
@@ -250,10 +258,10 @@ public class SkillRequestUtil {
             sb.append('\n');
         }
         if (!found) {
-            // Insert at the beginning of frontmatter so name always appears first
+            // 插入 frontmatter 开头，保证 name 排在最前
             sb.insert(0, field + ": " + value + "\n");
         }
-        // Remove trailing newline before closing ---
+        // 闭合 --- 前去掉多余换行
         String updatedBlock = sb.toString();
         if (updatedBlock.endsWith("\n")) {
             updatedBlock = updatedBlock.substring(0, updatedBlock.length() - 1);
@@ -264,6 +272,7 @@ public class SkillRequestUtil {
     
     /**
      * Parse a single field value from YAML frontmatter in a markdown string.
+     * <p>从 Markdown YAML frontmatter 提取单个字段值。</p>
      *
      * @param md    markdown content
      * @param field field name to extract
@@ -284,7 +293,7 @@ public class SkillRequestUtil {
                 String key = line.substring(0, colonIdx).trim();
                 if (field.equals(key)) {
                     String value = line.substring(colonIdx + 1).trim();
-                    // Strip surrounding quotes
+                    // 去掉首尾引号
                     if (value.length() >= 2 && ((value.startsWith("\"") && value.endsWith("\""))
                         || (value.startsWith("'") && value.endsWith("'")))) {
                         value = value.substring(1, value.length() - 1);
@@ -307,6 +316,7 @@ public class SkillRequestUtil {
     
     /**
      * Validate markdown content is present and has non-empty body after removing frontmatter.
+     * <p>校验 Markdown 存在且去除 frontmatter 后正文非空。</p>
      *
      * @param fieldPath field path used in error message
      * @param markdown markdown content to validate
@@ -328,6 +338,7 @@ public class SkillRequestUtil {
     
     /**
      * Check if markdown has non-empty body after removing YAML frontmatter.
+     * <p>判断去除 YAML frontmatter 后是否仍有非空正文。</p>
      *
      * @param markdown markdown content
      * @return true if body has non-blank content
@@ -344,6 +355,7 @@ public class SkillRequestUtil {
     /**
      * Validates parsed draft-create skill against request namespace and resolved skill name, then sets
      * {@link Skill#setNamespaceId(String)}. Call after {@link #parseSkill(SkillDetailForm)} when handling POST draft.
+     * <p>草稿创建时校验 namespace/name 与请求一致并写入 namespaceId。</p>
      *
      * @param skill         non-null skill from skillCard
      * @param namespaceId   request namespace
@@ -375,6 +387,7 @@ public class SkillRequestUtil {
      *
      * <p>Validates the file is not null/empty, checks file size against the maximum limit,
      * and extracts the file bytes. This method is shared by both admin and console upload endpoints.</p>
+     * <p>校验上传 ZIP 非空、未超限后读取字节，admin 与 console 上传端点共用。</p>
      *
      * @param file the uploaded multipart file
      * @return the file bytes

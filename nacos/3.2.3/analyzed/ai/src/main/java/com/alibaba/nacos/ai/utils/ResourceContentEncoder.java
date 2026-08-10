@@ -28,6 +28,7 @@ import java.util.Set;
 
 /**
  * Resource content encoder shared by Skill and AgentSpec zip parsers.
+ * <p>Skill/AgentSpec ZIP 解析共用的资源内容编码器：白名单内按 UTF-8 明文存储，其余 Base64 编码并写入 metadata.encoding=base64。</p>
  *
  * <p>Decision policy: a file is treated as plain text only when its name (or extension)
  * matches the text whitelist; everything else is encoded as Base64 with metadata
@@ -39,50 +40,50 @@ import java.util.Set;
  */
 public final class ResourceContentEncoder {
     
-    /** Metadata key indicating the resource content encoding. */
+    /** 元数据键：标记资源内容编码方式。 */
     public static final String METADATA_ENCODING = "encoding";
     
-    /** Metadata value meaning the content is Base64-encoded binary data. */
+    /** 元数据值：内容为 Base64 编码的二进制。 */
     public static final String METADATA_ENCODING_BASE64 = "base64";
     
-    /** File extensions whose content is safe to store as UTF-8 text. */
+    /** 可安全按 UTF-8 文本存储的扩展名白名单。 */
     private static final Set<String> TEXT_EXTENSIONS;
     
-    /** Lower-cased file names (no extension or with leading dot) that are always text. */
+    /** 无扩展名或点文件名的文本白名单（小写匹配）。 */
     private static final Set<String> TEXT_FILE_NAMES;
     
     static {
         Set<String> exts = new HashSet<>();
         Collections.addAll(exts,
-            // Markup / docs
+            // 标记/文档类
             "md", "markdown", "mdx", "txt", "rst", "adoc", "asciidoc",
-            // Structured data / config
+            // 结构化数据/配置
             "json", "json5", "yaml", "yml", "xml", "html", "htm", "css", "scss", "sass", "less",
             "properties", "conf", "cfg", "ini", "toml", "env", "tpl", "tmpl", "j2", "mustache",
             "hbs",
-            // Common script / source code
+            // 常见脚本/源码
             "js", "mjs", "cjs", "ts", "tsx", "jsx", "vue", "svelte",
             "py", "java", "kt", "kts", "scala", "groovy", "go", "rs", "rb", "php",
             "swift", "m", "mm", "c", "h", "cpp", "cc", "cxx", "hpp", "hh", "hxx",
             "cs", "fs", "fsx", "vb", "lua", "r", "pl", "pm", "ex", "exs", "erl",
             "dart", "zig", "nim", "jl", "clj", "cljs", "edn", "elm",
-            // Shell / build
+            // Shell/构建脚本
             "sh", "bash", "zsh", "fish", "ps1", "psm1", "bat", "cmd",
             "gradle", "sbt", "make", "mk",
-            // Data / log
+            // 数据/日志
             "sql", "graphql", "gql", "csv", "tsv", "log", "diff", "patch",
-            // Misc text
+            // 其他文本
             "proto", "thrift", "ipynb");
         TEXT_EXTENSIONS = Collections.unmodifiableSet(exts);
         
         Set<String> names = new HashSet<>();
         Collections.addAll(names,
-            // Common no-extension text files (case-insensitive match)
+            // 常见无扩展名文本文件
             "dockerfile", "containerfile", "makefile", "rakefile", "gemfile", "gemfile.lock",
             "jenkinsfile", "vagrantfile", "procfile", "brewfile",
             "license", "license.txt", "notice", "readme", "changelog", "authors",
             "contributors", "maintainers", "codeowners", "version", "manifest",
-            // Dotfiles
+            // 点文件
             ".gitignore", ".gitattributes", ".gitmodules", ".gitkeep",
             ".dockerignore", ".editorconfig", ".env", ".envrc",
             ".npmrc", ".nvmrc", ".yarnrc", ".prettierrc", ".eslintrc",
@@ -95,6 +96,7 @@ public final class ResourceContentEncoder {
     
     /**
      * Decide whether the given file should be persisted as UTF-8 text.
+     * <p>按文件名与扩展名白名单判定是否按 UTF-8 文本持久化。</p>
      * Text whitelist matches by exact filename (for files with no extension or leading dot)
      * and by lower-cased extension. Anything not matched is treated as binary.
      *
@@ -114,7 +116,7 @@ public final class ResourceContentEncoder {
             return true;
         }
         int dot = lower.lastIndexOf('.');
-        // No extension, or trailing dot: rely solely on the filename whitelist above.
+        // 无扩展名或尾随点：仅依赖上方文件名白名单
         if (dot <= 0 || dot == lower.length() - 1) {
             return false;
         }
@@ -124,6 +126,7 @@ public final class ResourceContentEncoder {
     
     /**
      * Convenience inverse of {@link #isText(String)}.
+     * <p>{@link #isText(String)} 的逆判断，即是否为二进制资源。</p>
      *
      * @param fileName file name including extension
      * @return {@code true} when the file is not in the text whitelist
@@ -134,6 +137,7 @@ public final class ResourceContentEncoder {
     
     /**
      * Encode raw resource bytes for storage.
+     * <p>编码原始字节：文本直接 UTF-8 字符串；二进制 Base64 并附带 encoding 元数据。</p>
      * Text files are stored as UTF-8 strings with no encoding metadata; binary files are
      * stored as Base64 strings with {@code metadata.encoding=base64} so download paths
      * can restore the original bytes via {@code SkillUtils.resolveResourceBytes}.
@@ -156,6 +160,7 @@ public final class ResourceContentEncoder {
     
     /**
      * Build a metadata map flagging Base64 encoding. Used by storage-side reconstruction
+     * <p>构造仅含 Base64 编码标记的可变 metadata，供存储侧重建路径使用。</p>
      * paths that already hold a content string and only need to attach the encoding hint.
      *
      * @return mutable metadata map containing only the Base64 encoding flag
@@ -177,6 +182,7 @@ public final class ResourceContentEncoder {
     
     /**
      * Immutable holder describing an encoded resource: the textual content and optional metadata.
+     * <p>编码结果不可变容器：content 与可选 metadata；纯文本时 metadata 为 null。</p>
      * Metadata is {@code null} when no special encoding hint is needed (plain text).
      */
     public static final class EncodedContent {

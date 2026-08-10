@@ -32,6 +32,7 @@ import java.util.Map;
 
 /**
  * Utility for computing the canonical content MD5 of a published {@link Skill}.
+ * <p>计算已发布 {@link Skill} 的规范内容 MD5，发布时写入 ai_resource_version.storage.contentMd5，监听器路径无需运行时重算。哈希输入覆盖 SKILL.md 及按 resourceIdentifier 升序排列的资源，字段间以 0x00 分隔。</p>
  *
  * <p>The MD5 is computed once at publish time and persisted into the {@code storage.contentMd5}
  * field of the corresponding {@code ai_resource_version} row, so the listener path never recomputes
@@ -65,6 +66,7 @@ public final class SkillContentDigestUtils {
     
     /**
      * Compute the canonical content MD5 for a skill.
+     * <p>按规范格式拼接 skillMd 与资源内容后计算 MD5 十六进制字符串。</p>
      *
      * @param skill the skill object; must not be {@code null}
      * @return lowercase hex MD5 string
@@ -103,7 +105,7 @@ public final class SkillContentDigestUtils {
             }
             return MD5Utils.md5Hex(buffer.toByteArray());
         } catch (IOException e) {
-            // ByteArrayOutputStream never throws; keep checked-style for completeness.
+            // ByteArrayOutputStream 不会抛 IO 异常；保留 checked 风格以完整
             throw new IllegalStateException("Failed to assemble skill content for MD5", e);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("MD5 algorithm not available in current JVM", e);

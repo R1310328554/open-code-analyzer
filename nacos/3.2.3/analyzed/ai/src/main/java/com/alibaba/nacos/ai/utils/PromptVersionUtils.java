@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 
 /**
  * Utility class for prompt version validation and comparison.
+ * <p>Prompt 语义化版本校验与比较工具，格式 major.minor.patch（如 1.0.0）。</p>
  *
  * <p>Version format: major.minor.patch (e.g., "1.0.0", "2.1.3")</p>
  *
@@ -29,19 +30,16 @@ import java.util.regex.Pattern;
  */
 public class PromptVersionUtils {
     
-    /**
-     * Version pattern: a.b.c where a, b, c are non-negative integers.
-     */
+    /** 版本正则：a.b.c，a/b/c 均为非负整数。 */
+    /** Version pattern: a.b.c where a, b, c are non-negative integers. */
     private static final Pattern VERSION_PATTERN = Pattern.compile("^\\d+\\.\\d+\\.\\d+$");
     
-    /**
-     * Number of parts in semantic version (major.minor.patch).
-     */
+    /** 语义化版本段数（major.minor.patch）。 */
+    /** Number of parts in semantic version (major.minor.patch). */
     private static final int VERSION_PARTS_COUNT = 3;
     
-    /**
-     * JSON file extension suffix.
-     */
+    /** JSON 文件后缀，用于 legacy dataId 规则。 */
+    /** JSON file extension suffix. */
     private static final String JSON_SUFFIX = ".json";
     
     private PromptVersionUtils() {
@@ -49,6 +47,7 @@ public class PromptVersionUtils {
     
     /**
      * Validate version format.
+     * <p>校验版本字符串是否符合 a.b.c 格式。</p>
      *
      * @param version version string
      * @return true if version is valid (a.b.c format)
@@ -62,6 +61,7 @@ public class PromptVersionUtils {
     
     /**
      * Compare two versions.
+     * <p>逐段比较 major/minor/patch，返回差值符号。</p>
      *
      * @param version1 first version
      * @param version2 second version
@@ -91,6 +91,7 @@ public class PromptVersionUtils {
     
     /**
      * Check if newVersion is greater than currentVersion.
+     * <p>发布前校验：新版本须严格大于当前版本；首次发布或当前版本非法时放行。</p>
      *
      * @param newVersion     new version to publish
      * @param currentVersion current version (can be null or empty for first publish)
@@ -101,11 +102,11 @@ public class PromptVersionUtils {
             return false;
         }
         if (StringUtils.isBlank(currentVersion)) {
-            // First publish, any valid version is allowed
+            // 首次发布：任意合法版本均可
             return true;
         }
         if (!isValidVersion(currentVersion)) {
-            // Current version is invalid, allow override
+            // 当前版本非法：允许覆盖
             return true;
         }
         return compareVersion(newVersion, currentVersion) > 0;
@@ -113,6 +114,7 @@ public class PromptVersionUtils {
     
     /**
      * Build dataId from promptKey.
+     * <p>legacy 规则：promptKey + .json。</p>
      *
      * @param promptKey prompt key
      * @return dataId (promptKey.json)
@@ -123,6 +125,7 @@ public class PromptVersionUtils {
     
     /**
      * Extract promptKey from dataId.
+     * <p>从 dataId 去掉 .json 后缀得到 promptKey。</p>
      *
      * @param dataId dataId
      * @return promptKey

@@ -42,6 +42,7 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * Read a bundled skills archive and convert each skill directory into a standalone skill zip.
+ * <p>读取内置 Skill 种子压缩包，将含 SKILL.md 的每个目录拆分为独立 ZIP 包，供启动引导批量导入。</p>
  *
  * @author nacos
  */
@@ -62,6 +63,7 @@ public final class SkillSeedArchiveReader {
     
     /**
      * Read bundled seed archive and return standalone skill packages.
+     * <p>解析种子归档，按 SKILL.md frontmatter 中 name 去重后返回 SkillPackage 列表。</p>
      *
      * @param inputStream archive input stream
      * @return skill packages
@@ -224,6 +226,7 @@ public final class SkillSeedArchiveReader {
     
     /**
      * Standalone skill package built from the seed archive.
+     * <p>从种子归档拆出的独立 Skill 包：含 skillName、来源路径与 ZIP 字节。</p>
      */
     public static final class SkillPackage {
         

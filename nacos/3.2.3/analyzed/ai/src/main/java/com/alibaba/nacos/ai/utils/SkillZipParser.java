@@ -47,6 +47,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 /**
  * Skill zip parser utility. Supports both text and binary resources:
  * text files are stored as UTF-8; binary files (e.g. .ttf, .png) are stored as Base64 with metadata encoding=base64.
+ * <p>Skill ZIP 解析工具：以 SKILL.md 为主元数据，其余条目转为 {@link SkillResource}；文本 UTF-8 存储，二进制 Base64 编码；内置 Zip Bomb 与路径遍历防护。</p>
  *
  * @author nacos
  */
@@ -55,9 +56,9 @@ public class SkillZipParser {
     private static final Logger LOGGER = LoggerFactory.getLogger(SkillZipParser.class);
     
     private static final String SKILL_MD_FILE = "SKILL.md";
-    /** UTF-8 BOM character that some editors prepend to files. Must be stripped before parsing. */
+    /** 部分编辑器写入的 UTF-8 BOM，解析前须剥离。 */
     private static final char UTF8_BOM = '\uFEFF';
-    /** macOS AppleDouble/resource fork metadata file prefix (e.g. ._LICENSE.txt). Should be excluded from skill zip. */
+    /** macOS AppleDouble/资源分叉元数据前缀（如 ._LICENSE.txt），解析时忽略。 */
     private static final String MACOS_METADATA_PREFIX = "._";
     private static final String MACOS_DS_STORE_FILE = ".DS_Store";
     private static final String MACOSX_DIRECTORY = "__MACOSX";
@@ -70,6 +71,7 @@ public class SkillZipParser {
     private static final String SLASH = "/";
     /**
      * Metadata key for binary resources: value "base64" means content is Base64-encoded.
+     * <p>向后兼容常量，规范定义见 {@link ResourceContentEncoder}。</p>
      * Kept as constants on this class for backward compatibility with existing callers
      * (e.g. {@code SkillOperationServiceImpl}); the canonical definition lives on
      * {@link ResourceContentEncoder}.
@@ -82,6 +84,7 @@ public class SkillZipParser {
     /**
      * Default maximum compressed (upload) size in MB for a skill ZIP. Derived from the historical
      * {@link Constants.Skills#MAX_UPLOAD_ZIP_BYTES} so the public constant remains the single
+     * <p>Skill ZIP 默认最大上传体积（MB），运行时以 {@link #resolveMaxUploadBytes()} 为准。</p>
      * source of truth; runtime callers should consult {@link #resolveMaxUploadBytes()} which
      * honors the {@value #CONFIG_MAX_UPLOAD_SIZE_MB} override.
      */
@@ -90,6 +93,7 @@ public class SkillZipParser {
     
     /**
      * Default maximum number of entries allowed in a skill ZIP. Overridable via the
+     * <p>ZIP 条目数上限默认值，可通过 {@value #CONFIG_MAX_ZIP_ENTRIES} 覆盖。</p>
      * {@value #CONFIG_MAX_ZIP_ENTRIES} property when users legitimately upload larger skills.
      */
     static final int DEFAULT_MAX_ZIP_ENTRIES = 500;
@@ -97,6 +101,7 @@ public class SkillZipParser {
     /**
      * Default maximum total decompressed size (in MB) for a skill ZIP. Prevents Zip Bomb attacks
      * while still permitting legitimate uploads. Overridable via the
+     * <p>解压后总大小上限（MB），防 Zip Bomb，可通过配置覆盖。</p>
      * {@value #CONFIG_MAX_UNCOMPRESSED_SIZE_MB} property.
      */
     static final int DEFAULT_MAX_UNCOMPRESSED_SIZE_MB = 50;
@@ -104,17 +109,20 @@ public class SkillZipParser {
     /**
      * Property key for overriding {@link #DEFAULT_MAX_UPLOAD_SIZE_MB}. The value is in megabytes
      * and applies to the raw compressed skill ZIP before parsing. Non-positive values are ignored.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     static final String CONFIG_MAX_UPLOAD_SIZE_MB = "nacos.ai.skill.zip.max-upload-size-mb";
     
     /**
      * Property key for overriding {@link #DEFAULT_MAX_ZIP_ENTRIES}. Non-positive values are ignored.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     static final String CONFIG_MAX_ZIP_ENTRIES = "nacos.ai.skill.zip.max-entries";
     
     /**
      * Property key for overriding {@link #DEFAULT_MAX_UNCOMPRESSED_SIZE_MB}. The value is in megabytes.
      * Non-positive values are ignored.
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     static final String CONFIG_MAX_UNCOMPRESSED_SIZE_MB =
         "nacos.ai.skill.zip.max-uncompressed-size-mb";
@@ -124,6 +132,7 @@ public class SkillZipParser {
     
     /**
      * Parse YAML front matter map from full SKILL.md content.
+     * <p>从完整 SKILL.md 解析 YAML frontmatter 为键值 Map。</p>
      *
      * @param markdownContent full SKILL.md content
      * @return parsed front matter map, empty when no valid front matter exists
@@ -143,6 +152,7 @@ public class SkillZipParser {
     /**
      * Resolve version using SKILL.md sibling _meta.json as compensation.
      *
+     * <p>版本解析优先级：SKILL.md frontmatter version → 同目录 _meta.json version。</p>
      * <p>Priority:
      * <ol>
      *   <li>frontmatter {@code version} in SKILL.md</li>
@@ -193,7 +203,9 @@ public class SkillZipParser {
     }
     
     /**
-     * Parse skill from zip file bytes. Zip size must not exceed the limit returned by
+     * Parse skill from zip file bytes.
+     * <p>从 ZIP 字节解析单个 Skill：定位 SKILL.md、解析资源并校验上传/解压限制。</p>
+     * Zip size must not exceed the limit returned by
      * {@link #resolveMaxUploadBytes()} (configurable via {@value #CONFIG_MAX_UPLOAD_SIZE_MB}).
      * Text files are decoded as UTF-8; binary files (by extension) are stored as Base64 with metadata encoding=base64.
      *
@@ -252,6 +264,7 @@ public class SkillZipParser {
     
     /**
      * Parse multiple skills from a single zip archive. Supports zip files containing multiple skill subdirectories,
+     * <p>从含多个 Skill 子目录的 ZIP 批量解析；根级 SKILL.md 时退化为单 Skill 行为。</p>
      * each with its own SKILL.md. If only one SKILL.md is found, returns a list with a single element.
      *
      * <p>Expected zip structure for multi-skill:
@@ -288,7 +301,7 @@ public class SkillZipParser {
         try {
             List<ZipEntryData> entries = unzipToEntries(zipBytes);
             
-            // Find all SKILL.md entries and group by their parent directory
+            // 收集全部 SKILL.md 并按父目录分组
             List<ZipEntryData> allSkillMdEntries = new ArrayList<>();
             for (ZipEntryData entry : entries) {
                 String name = entry.name;
@@ -308,21 +321,20 @@ public class SkillZipParser {
             List<ZipEntryData> skillMdEntries =
                 filterNestedSkillMdEntries(allSkillMdEntries);
             
-            // A root SKILL.md means the archive is one nested Skill package; nested SKILL.md files
-            // are ordinary resources. Preserve the existing single-skill behavior for one package.
+            // 根级 SKILL.md 表示单包结构；嵌套 SKILL.md 视为普通资源，保持单 Skill 兼容
             if (containsRootSkillMdEntry(skillMdEntries) || allSkillMdEntries.size() == 1) {
                 MultiSkillParseResult result = new MultiSkillParseResult();
                 result.addSkill(parseSkillFromZip(zipBytes, namespaceId));
                 return result;
             }
             
-            // Collect directories that have SKILL.md and determine their nesting depth
+            // 统计含 SKILL.md 的目录及其嵌套深度
             Set<String> skillPrefixes = new HashSet<>();
             for (ZipEntryData skillMdEntry : skillMdEntries) {
                 skillPrefixes.add(getSkillPrefix(skillMdEntry.name));
             }
             
-            // Determine the depth of skill directories (number of '/' segments in prefix)
+            // 确定 Skill 目录深度（前缀中 '/' 段数）
             int skillDepth = 0;
             for (String prefix : skillPrefixes) {
                 if (!prefix.isEmpty()) {
@@ -331,7 +343,7 @@ public class SkillZipParser {
                 }
             }
             
-            // Detect directories at the same depth that have files but no SKILL.md
+            // 检测同深度有文件但无 SKILL.md 的目录（记录为失败）
             Set<String> nonSkillDirs = new HashSet<>();
             for (ZipEntryData entry : entries) {
                 String name = entry.name;
@@ -348,10 +360,10 @@ public class SkillZipParser {
                 nonSkillDirs.add(peerDir);
             }
             
-            // Multiple SKILL.md files: parse each skill with its scoped entries
+            // 多 Skill：按目录范围分别解析
             MultiSkillParseResult parseResult = new MultiSkillParseResult();
             
-            // Record warnings for directories without SKILL.md
+            // 无 SKILL.md 的目录写入 failures 警告
             for (String dir : nonSkillDirs) {
                 parseResult.addFailure(extractFolderName(dir),
                     "SKILL.md not found in this folder, skipped");
@@ -401,6 +413,7 @@ public class SkillZipParser {
     
     /**
      * Get the directory prefix for a SKILL.md path. For "skill-a/SKILL.md" returns "skill-a/".
+     * <p>提取 SKILL.md 所在目录前缀；根级返回空串。</p>
      * For root-level "SKILL.md" returns empty string.
      */
     private static String getSkillPrefix(String skillMdPath) {
@@ -447,6 +460,7 @@ public class SkillZipParser {
     
     /**
      * Filter entries by directory prefix and strip the prefix from entry names.
+     * <p>按目录前缀过滤 ZIP 条目并去掉前缀，供 parseResources 使用相对路径。</p>
      */
     private static List<ZipEntryData> filterEntriesByPrefix(List<ZipEntryData> entries,
         String prefix) {
@@ -471,6 +485,7 @@ public class SkillZipParser {
      * Uses Apache Commons Compress to support zip files with STORED entries that have data descriptor
      * (e.g. created on macOS or by some tools), which JDK ZipInputStream rejects.
      *
+     * <p>解压安全加固：拒绝路径遍历、限制条目数与解压总大小。</p>
      * <p>Security hardening:
      * <ul>
      *   <li>Rejects entries with path traversal sequences (..) or absolute paths</li>
@@ -501,7 +516,7 @@ public class SkillZipParser {
                     continue;
                 }
                 String name = entry.getName();
-                // Security: reject path traversal and absolute paths
+                // 安全：拒绝路径遍历与绝对路径
                 SkillUtils.validatePathSafety(name);
                 if (isIgnoredZipMetadataEntry(name)) {
                     continue;
@@ -533,6 +548,7 @@ public class SkillZipParser {
      * {@value #CONFIG_MAX_UPLOAD_SIZE_MB} override (interpreted in megabytes) when present and
      * positive. Returns {@link #DEFAULT_MAX_UPLOAD_SIZE_MB} MB otherwise. Keep this in sync with
      * the Spring multipart cap ({@code spring.servlet.multipart.max-file-size}); the multipart
+     * <p>解析最大上传字节数，需与 Spring multipart 上限保持一致。</p>
      * filter rejects oversize uploads first, but operators raising the multipart cap also need
      * to raise this property for the change to take effect on the skill upload pipeline.
      */
@@ -545,6 +561,7 @@ public class SkillZipParser {
      * Resolve the maximum number of ZIP entries allowed, honoring the
      * {@value #CONFIG_MAX_ZIP_ENTRIES} override when present and positive.
      * Returns {@link #DEFAULT_MAX_ZIP_ENTRIES} when no override is configured or when the
+     * <p>解析最大 ZIP 条目数；环境未初始化时（如单测）返回默认值。</p>
      * Nacos environment has not been initialized (e.g. in unit tests that bypass Spring boot-up).
      */
     static int resolveMaxZipEntries() {
@@ -554,6 +571,7 @@ public class SkillZipParser {
     /**
      * Resolve the maximum total decompressed size in bytes, honoring the
      * {@value #CONFIG_MAX_UNCOMPRESSED_SIZE_MB} override (interpreted in megabytes) when present
+     * <p>解析最大解压总字节数（MB 配置项）。</p>
      * and positive. Returns {@link #DEFAULT_MAX_UNCOMPRESSED_SIZE_MB} MB otherwise.
      */
     static long resolveMaxUncompressedBytes() {
@@ -566,6 +584,7 @@ public class SkillZipParser {
      * Read an int-valued property from {@link EnvUtil}, returning {@code defaultValue} whenever
      * the override is missing, non-positive, or the environment has not yet been initialized.
      * Non-positive overrides are deliberately rejected so misconfiguration cannot silently
+     * <p>读取正整数配置；缺失、非正或环境未就绪时返回默认值，避免误关安全限制。</p>
      * disable the underlying security guards.
      */
     private static int resolvePositiveIntProperty(String key, int defaultValue) {
@@ -636,6 +655,7 @@ public class SkillZipParser {
     
     /**
      * Parse resources from zip entries. Text files use UTF-8 content; binary (by extension) use Base64 content and metadata encoding=base64.
+     * <p>将 ZIP 条目转为 SkillResource Map，跳过 SKILL.md 与 macOS 元数据。</p>
      */
     private static Map<String, SkillResource> parseResources(List<ZipEntryData> entries,
         String skillName, String descriptorPath) {
@@ -654,14 +674,14 @@ public class SkillZipParser {
             String type;
             String resourceName;
             if (parts.length == 1) {
-                // Root-level file (no subdirectory), e.g. "CONTRIBUTING.md"
+                // 根级文件（无子目录），如 CONTRIBUTING.md
                 type = "";
                 resourceName = parts[0];
             } else if (parts.length == 2 && parts[0].equals(skillName)) {
                 type = "";
                 resourceName = parts[1];
             } else if (parts.length >= 3 && parts[0].equals(skillName)) {
-                // Preserve full path as type so multi-level folders (e.g. folder1/folder2) are kept
+                // 保留完整路径作为 type，支持多级子目录
                 StringBuilder typeSb = new StringBuilder();
                 for (int i = 1; i < parts.length - 1; i++) {
                     if (typeSb.length() > 0) {
@@ -693,7 +713,7 @@ public class SkillZipParser {
             resource.setType(type);
             resource.setContent(encoded.getContent());
             resource.setMetadata(encoded.getMetadata());
-            // Use same key as getSkillDetail so resource map is consistent when skill is read back
+            // 与 getSkillDetail 相同键规则，保证读回时 resource map 一致
             String key = SkillUtils.generateResourceId(type, resourceName);
             resources.put(key, resource);
         }
@@ -704,6 +724,7 @@ public class SkillZipParser {
     /**
      * Check whether a resource should be persisted as Base64-encoded binary content.
      * Backward-compatible facade over {@link ResourceContentEncoder#isBinary(String)}.
+     * <p>判断资源是否应按二进制 Base64 存储（委托 {@link ResourceContentEncoder}）。</p>
      *
      * @param fileName resource file name (with extension)
      * @return {@code true} when the file is not in the text whitelist
@@ -725,6 +746,7 @@ public class SkillZipParser {
     
     /**
      * Parse skill from SKILL.md markdown content.
+     * <p>从 SKILL.md 解析 Skill：要求 YAML frontmatter 含 name/description 且正文非空。</p>
      */
     private static Skill parseSkillMarkdown(String markdownContent, String namespaceId)
         throws NacosApiException {
@@ -783,7 +805,7 @@ public class SkillZipParser {
             if (Character.isWhitespace(line.charAt(0)) && currentKey != null) {
                 String nestedLine = line.trim();
                 int nestedColonIndex = nestedLine.indexOf(':');
-                // Support one-level nested keys like:
+                // 支持一层嵌套键，如 metadata.version
                 // metadata:
                 //   version: 1.0.0
                 if (nestedColonIndex > 0) {
@@ -840,6 +862,7 @@ public class SkillZipParser {
     
     /**
      * Minimal unescape for double-quoted YAML scalar values.
+     * <p>双引号 YAML 标量最小反转义（\\ 与 \"）。</p>
      * Only revert the escape sequences that are emitted by SKILL.md exporters:
      * - \\\\ -> \
      * - \\\" -> "
@@ -873,11 +896,12 @@ public class SkillZipParser {
     
     /**
      * Check if a top-level directory is a well-known non-skill directory that should be silently
+     * <p>判断是否为可静默忽略的非 Skill 目录（点前缀、__MACOSX、node_modules 等）。</p>
      * ignored without producing a warning.
      */
     private static boolean isIgnorableDirectory(String dirName) {
         String name = dirName.endsWith("/") ? dirName.substring(0, dirName.length() - 1) : dirName;
-        // Check the last segment for dot-prefixed or known non-skill directories
+        // 检查末段是否为点前缀或已知非 Skill 目录
         int lastSlash = name.lastIndexOf('/');
         String leaf = lastSlash >= 0 ? name.substring(lastSlash + 1) : name;
         return leaf.startsWith(".") || MACOSX_DIRECTORY.equals(leaf)
@@ -889,6 +913,7 @@ public class SkillZipParser {
      * Returns null if the path does not have enough segments.
      *
      * <p>Example: extractPrefixAtDepth("a/b/c/file.txt", 2) -> "a/b/"</p>
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static String extractPrefixAtDepth(String path, int depth) {
         if (depth <= 0 || path == null) {
@@ -909,6 +934,7 @@ public class SkillZipParser {
     /**
      * Extract the last directory name from a prefix path.
      * For example: "parent/random-lib/" -> "random-lib", "skill-a/" -> "skill-a".
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static String extractFolderName(String prefix) {
         if (StringUtils.isBlank(prefix)) {
@@ -924,6 +950,7 @@ public class SkillZipParser {
      *
      * @param content the string to strip BOM from
      * @return the string without leading BOM
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     private static String stripBom(String content) {
         if (content != null && !content.isEmpty() && content.charAt(0) == UTF8_BOM) {
@@ -934,6 +961,7 @@ public class SkillZipParser {
     
     /**
      * Result of parsing a multi-skill zip archive. Contains both successfully parsed skills and
+     * <p>多 Skill ZIP 解析结果：成功列表与按目录记录的失败原因。</p>
      * failures (folder name + error message) for folders that could not be parsed.
      */
     public static class MultiSkillParseResult {
@@ -966,6 +994,7 @@ public class SkillZipParser {
     
     /**
      * Represents a skill folder that failed to parse.
+     * <p>单个 Skill 目录解析失败的 folder 与 reason。</p>
      */
     public static class ParseFailure {
         

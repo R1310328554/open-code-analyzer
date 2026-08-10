@@ -39,6 +39,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * Skills CLI compatible registry endpoints hosted by the MCP registry adaptor.
+ * <p>Skills CLI 兼容注册端点：well-known index、搜索、SKILL.md/zip 与资源文件导出，需开启 {@code nacos.ai.skill.registry.enabled=true}。</p>
  *
  * @author nacos
  */
@@ -66,6 +67,7 @@ public class SkillsRegistryController {
     
     /**
      * Expose well-known index.json for the skills CLI.
+     * <p>暴露 v0.2 agent-skills well-known index.json。</p>
      *
      * @param namespaceId namespace to query
      * @return well-known index payload
@@ -81,6 +83,7 @@ public class SkillsRegistryController {
     
     /**
      * Expose legacy well-known index.json for v0.1-compatible clients.
+     * <p>暴露 v0.1 兼容的 legacy skills well-known index.json。</p>
      *
      * @param namespaceId namespace to query
      * @return legacy well-known index payload
@@ -96,6 +99,7 @@ public class SkillsRegistryController {
     
     /**
      * Expose CLI-compatible search results under the adaptor endpoint.
+     * <p>CLI 兼容的技能搜索 API，返回带来源 baseUrl 的结果。</p>
      *
      * @param namespaceId namespace to query
      * @param form search query form
@@ -118,6 +122,7 @@ public class SkillsRegistryController {
     
     /**
      * Return the exported SKILL.md for a namespace skill.
+     * <p>导出命名空间下指定 Skill 的 SKILL.md 纯文本。</p>
      *
      * @param namespaceId namespace to query
      * @param skillName skill name
@@ -145,6 +150,7 @@ public class SkillsRegistryController {
     
     /**
      * Return an exported skill archive for v0.2 well-known discovery.
+     * <p>导出 Skill ZIP 归档，供 well-known 发现协议下载。</p>
      *
      * @param namespaceId namespace to query
      * @param skillName skill name
@@ -171,6 +177,7 @@ public class SkillsRegistryController {
     
     /**
      * Return an exported text resource for a namespace skill.
+     * <p>通过通配路径导出 Skill 内任意文本资源文件。</p>
      *
      * @param namespaceId namespace to query
      * @param skillName skill name

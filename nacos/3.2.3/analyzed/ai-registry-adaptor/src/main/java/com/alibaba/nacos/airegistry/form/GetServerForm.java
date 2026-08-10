@@ -21,22 +21,27 @@ import com.alibaba.nacos.api.model.NacosForm;
 
 /**
  * Get mcp server form.
+ * <p>查询 MCP 服务详情的请求表单，携带 namespaceId 等查询参数；用于 {@link com.alibaba.nacos.airegistry.controller.McpRegistryController} 版本查询接口。</p>
  * @author xinluo
  */
 public class GetServerForm implements NacosForm {
     
+    /** 目标命名空间 ID。 */
     private String namespaceId;
     
+    /** 返回 namespaceId。 */
     public String getNamespaceId() {
         return namespaceId;
     }
     
+    /** 设置 namespaceId。 */
     public void setNamespaceId(String namespaceId) {
         this.namespaceId = namespaceId;
     }
     
     /**
      * check form parameters while valid.
+     * <p>校验表单参数；当前无额外必填项，预留扩展点。</p>
      *
      * @throws NacosApiException when form parameters is invalid.
      */

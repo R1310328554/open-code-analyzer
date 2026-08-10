@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 
 /**
  * NacosAiRegistryStartUp.
+ * <p>AI Registry 模块启动阶段监听器，在 Nacos 启动信息中输出 AI Registry 阶段名与完成日志。</p>
  * @author xinluo
  */
 public class NacosAiRegistryStartUp extends AbstractNacosStartUp {
@@ -32,6 +33,7 @@ public class NacosAiRegistryStartUp extends AbstractNacosStartUp {
     
     /**
      * Get phase name in starting info.
+     * <p>返回启动进度条中的阶段显示名称。</p>
      *
      * @return phase name
      */
@@ -42,6 +44,7 @@ public class NacosAiRegistryStartUp extends AbstractNacosStartUp {
     
     /**
      * Log started info for current Nacos Server.
+     * <p>AI Registry 启动完成后打印日志。</p>
      *
      * @param logger logger for print info
      */

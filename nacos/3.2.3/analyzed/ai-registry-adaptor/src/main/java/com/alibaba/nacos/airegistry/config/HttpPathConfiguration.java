@@ -27,18 +27,21 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
  * In the MCP community API definition, the MCP server name is passed as a path parameter.
  * Because the server name can contain '/', we need to configure Tomcat and WebSecurity
  * to allow '/' in the path.
+ * <p>MCP 服务名可含 '/'，需配置 Tomcat 编码斜杠透传与 Spring Security 防火墙允许 URL 编码斜杠/百分号。</p>
  *
  * @author xinluo
  */
 @Configuration
 public class HttpPathConfiguration {
     
+    /** 允许 Tomcat 对路径中编码斜杠透传处理。 */
     @Bean
     public TomcatConnectorCustomizer connectorCustomizer() {
         return (connector) -> connector
             .setEncodedSolidusHandling(EncodedSolidusHandling.PASS_THROUGH.getValue());
     }
     
+    /** 放宽 Spring Security 防火墙以接受含编码斜杠的 MCP 服务名路径。 */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         StrictHttpFirewall firewall = new StrictHttpFirewall();

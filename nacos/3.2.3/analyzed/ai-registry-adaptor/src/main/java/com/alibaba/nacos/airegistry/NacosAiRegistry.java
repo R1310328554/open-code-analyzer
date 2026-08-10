@@ -24,12 +24,14 @@ import org.springframework.context.annotation.PropertySource;
 /**
  * Nacos Mcp Registry.
  * This server implement the official mcp registry api.
+ * <p>Nacos AI Registry 独立 Spring Boot 入口，实现官方 MCP Registry API 与 Skills CLI 兼容端点；加载 nacos-ai-registry.properties 并排除 LDAP 自动配置。</p>
  * @author xinluo
  */
 @SpringBootApplication(exclude = LdapAutoConfiguration.class)
 @PropertySource("classpath:nacos-ai-registry.properties")
 public class NacosAiRegistry {
     
+    /** 启动 AI Registry 独立进程。 */
     public static void main(String[] args) {
         SpringApplication.run(NacosAiRegistry.class, args);
     }

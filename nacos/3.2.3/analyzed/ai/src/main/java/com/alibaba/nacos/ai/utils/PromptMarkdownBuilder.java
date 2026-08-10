@@ -29,6 +29,7 @@ import java.util.List;
 
 /**
  * Utility to export a prompt version as a Markdown document.
+ * <p>将 {@link com.alibaba.nacos.api.ai.model.prompt.PromptVersionInfo} 导出为 Markdown：YAML frontmatter 承载身份与治理字段，正文含变量表与模板代码块，占位符原样保留。</p>
  *
  * <p>Output layout: a YAML frontmatter with identity and governance fields, followed by a
  * human-readable description section and the raw template body enclosed in a fenced code block
@@ -49,6 +50,7 @@ public final class PromptMarkdownBuilder {
     
     /**
      * Render a {@link PromptVersionInfo} into a Markdown document string.
+     * <p>渲染完整 Markdown 字符串，含 frontmatter、标题、commit 引用、变量表与模板围栏块。</p>
      *
      * @param info prompt version detail, must not be {@code null}
      * @return Markdown content
@@ -59,7 +61,7 @@ public final class PromptMarkdownBuilder {
         }
         StringBuilder sb = new StringBuilder(512);
         
-        // YAML frontmatter
+        // YAML 元数据头
         sb.append(YAML_DELIMITER).append(NEW_LINE);
         appendYamlScalar(sb, "promptKey", info.getPromptKey());
         appendYamlScalar(sb, "version", info.getVersion());
@@ -72,20 +74,20 @@ public final class PromptMarkdownBuilder {
         appendVariablesYaml(sb, info.getVariables());
         sb.append(YAML_DELIMITER).append(NEW_LINE).append(NEW_LINE);
         
-        // Title
+        // 标题行
         sb.append("# ").append(safe(info.getPromptKey()));
         if (StringUtils.isNotBlank(info.getVersion())) {
             sb.append(" @ ").append(info.getVersion());
         }
         sb.append(NEW_LINE).append(NEW_LINE);
         
-        // Commit message
+        // 提交说明引用块
         if (StringUtils.isNotBlank(info.getCommitMsg())) {
             sb.append("> ").append(info.getCommitMsg().replace(NEW_LINE, " ")).append(NEW_LINE)
                 .append(NEW_LINE);
         }
         
-        // Variables section (human readable)
+        // 变量说明表格
         if (info.getVariables() != null && !info.getVariables().isEmpty()) {
             sb.append("## Variables").append(NEW_LINE).append(NEW_LINE);
             sb.append("| Name | Default | Description |").append(NEW_LINE);
@@ -99,7 +101,7 @@ public final class PromptMarkdownBuilder {
             sb.append(NEW_LINE);
         }
         
-        // Template body
+        // 模板正文围栏
         sb.append("## Template").append(NEW_LINE).append(NEW_LINE);
         sb.append(FENCE).append(NEW_LINE);
         sb.append(info.getTemplate() == null ? "" : info.getTemplate());
@@ -113,6 +115,7 @@ public final class PromptMarkdownBuilder {
     
     /**
      * Build a safe filename for the exported Markdown document.
+     * <p>生成安全的 .md 下载文件名，非法字符替换为下划线。</p>
      *
      * @param promptKey prompt key
      * @param version   version string
@@ -128,6 +131,7 @@ public final class PromptMarkdownBuilder {
      * Build a Markdown download {@link ResponseEntity} from a {@link PromptVersionInfo} object.
      *
      * <p>Shared by all controllers that need to export a prompt version as Markdown.</p>
+     * <p>构建带 Content-Disposition 附件头的 Markdown 下载响应，供各 Controller 复用。</p>
      *
      * @param info prompt version detail, must not be {@code null}
      * @return ResponseEntity containing Markdown bytes with proper headers
