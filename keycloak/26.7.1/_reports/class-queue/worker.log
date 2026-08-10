@@ -1708,3 +1708,18 @@
 2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientScopeRoleMappingEntity.java wave58a Role/User adapters + auth/client/component entities
 2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ComponentConfigEntity.java wave58a Role/User adapters + auth/client/component entities
 2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ComponentEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserFederationMapperEntity.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserFederationProviderEntity.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserGroupMembershipEntity.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserRequiredActionEntity.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserRoleMappingEntity.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserVerifiableCredentialEntity.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/ClientSessionLoader.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/ImmutablePersistentClientSessionEntity.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/ImmutablePersistentUserSessionEntity.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaRevokedTokensPersisterProvider.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaRevokedTokensPersisterProviderFactory.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaSessionUtil.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaUserSessionPersisterProvider.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaUserSessionPersisterProviderFactory.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/PersistentClientSessionEntity.java wave59b user fed entities + JPA session persisters

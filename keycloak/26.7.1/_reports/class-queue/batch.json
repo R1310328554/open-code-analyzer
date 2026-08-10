@@ -15,23 +15,8 @@
     "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserAttributeEntity.java",
     "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserConsentClientScopeEntity.java",
     "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserConsentEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserFederationMapperEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserFederationProviderEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserGroupMembershipEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserRequiredActionEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserRoleMappingEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserVerifiableCredentialEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/session/ClientSessionLoader.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/session/ImmutablePersistentClientSessionEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/session/ImmutablePersistentUserSessionEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaRevokedTokensPersisterProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaRevokedTokensPersisterProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaSessionUtil.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaUserSessionPersisterProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaUserSessionPersisterProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/session/PersistentClientSessionEntity.java"
+    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserEntity.java"
   ],
   "remaining_pending": 4228,
-  "done": 1740
+  "done": 1755
 }
