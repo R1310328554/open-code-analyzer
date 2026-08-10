@@ -2218,3 +2218,18 @@
 2026-08-10T04:52:03Z DONE sys/src/main/java/com/alibaba/nacos/sys/filter/NacosPackageExcludeFilter.java wave73a [0:15] sys env/file/filter/module
 2026-08-10T04:52:03Z DONE sys/src/main/java/com/alibaba/nacos/sys/filter/NacosTypeExcludeFilter.java wave73a [0:15] sys env/file/filter/module
 2026-08-10T04:52:03Z DONE sys/src/main/java/com/alibaba/nacos/sys/module/AbstractConsoleModuleStateBuilder.java wave73a [0:15] sys env/file/filter/module
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/module/AbstractServerModuleStateBuilder.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/module/ModuleState.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/module/ModuleStateBuilder.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/module/ModuleStateHolder.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/utils/ApplicationUtils.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/utils/DiskUtils.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/utils/InetUtils.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/utils/MethodUtil.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/utils/PropertiesUtil.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE sys/src/main/java/com/alibaba/nacos/sys/utils/TimerContext.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE logger-adapter-impl/log4j2-adapter/src/main/java/com/alibaba/nacos/logger/adapter/log4j2/Log4J2NacosLoggingAdapter.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE logger-adapter-impl/log4j2-adapter/src/main/java/com/alibaba/nacos/logger/adapter/log4j2/Log4j2NacosLoggingAdapterBuilder.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE logger-adapter-impl/log4j2-adapter/src/main/java/com/alibaba/nacos/logger/adapter/log4j2/Log4j2NacosLoggingPropertiesHolder.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE logger-adapter-impl/log4j2-adapter/src/main/java/com/alibaba/nacos/logger/adapter/log4j2/NacosClientPropertiesLookup.java wave73b [15:30] sys module/utils + log4j2 adapter
+2026-08-10T04:52:41Z DONE logger-adapter-impl/log4j2-adapter/src/main/java/com/alibaba/nacos/logger/adapter/log4j2/NacosLog4j2Configurator.java wave73b [15:30] sys module/utils + log4j2 adapter
