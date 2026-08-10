@@ -19,6 +19,7 @@ package com.alibaba.nacos.config.server.service.dump.task;
 import com.alibaba.nacos.common.task.AbstractDelayTask;
 
 /**
+ * 全量灰度配置 dump 延迟任务，由 {@link DumpAllGrayProcessor} 处理。
  * Dump all gray task.
  *
  * @author Nacos
@@ -26,6 +27,7 @@ import com.alibaba.nacos.common.task.AbstractDelayTask;
  */
 public class DumpAllGrayTask extends AbstractDelayTask {
     
+    /** 全量灰度任务合并策略：空实现，不做任务合并 */
     @Override
     public void merge(AbstractDelayTask task) {
     }

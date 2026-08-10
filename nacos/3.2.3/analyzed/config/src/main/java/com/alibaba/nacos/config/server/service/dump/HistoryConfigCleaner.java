@@ -17,17 +17,20 @@
 package com.alibaba.nacos.config.server.service.dump;
 
 /**
+ * 历史配置清理 SPI 接口：由 {@link HistoryConfigCleanerManager} 按名称加载实现。
  * The interface History config cleaner.
  * @author Sunrisea
  */
 public interface HistoryConfigCleaner {
     
     /**
+     * 执行历史配置清理逻辑（过期记录删除等）。
      * Clean history config.
      */
     public void cleanHistoryConfig();
     
     /**
+     * 返回清理器唯一名称，用于配置项 {@code nacos.config.history.clear.name} 匹配。
      * Gets name.
      *
      * @return the name

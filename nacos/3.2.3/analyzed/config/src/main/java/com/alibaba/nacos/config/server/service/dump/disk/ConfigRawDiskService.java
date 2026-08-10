@@ -34,23 +34,29 @@ import java.io.IOException;
 import static com.alibaba.nacos.config.server.constant.Constants.ENCODE_UTF8;
 
 /**
+ * 基于目录结构的配置磁盘实现：按 dataId/group/tenant/grayName 映射文件路径。
+ * <p>路径经 {@link PathEncoderManager} 编码，防止特殊字符导致目录遍历问题。</p>
  * config raw disk service.
  *
  * @author zunfei.lzf
  */
 public class ConfigRawDiskService implements ConfigDiskService {
     
+    /** 默认命名空间正式配置根目录（相对 Nacos Home） */
     private static final String BASE_DIR = File.separator + "data" + File.separator + "config-data";
     
+    /** 多租户正式配置根目录 */
     private static final String TENANT_BASE_DIR =
         File.separator + "data" + File.separator + "tenant-config-data";
     
+    /** 默认命名空间灰度配置根目录 */
     private static final String GRAY_DIR = File.separator + "data" + File.separator + "gray-data";
     
     private static final String TENANT_GRAY_DIR =
         File.separator + "data" + File.separator + "tenant-gray-data";
     
     /**
+     * 将正式配置写入 targetFile 对应路径。
      * Save configuration information to disk.
      */
     public void saveToDisk(String dataId, String group, String tenant, String content)
@@ -60,6 +66,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
     }
     
     /**
+     * 计算正式配置磁盘文件路径（含参数校验与路径编码）。
      * Returns the path of the server cache file.
      */
     static File targetFile(String dataId, String group, String tenant) {
@@ -69,7 +76,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
             throw new NacosRuntimeException(NacosException.CLIENT_INVALID_PARAM,
                 "parameter is invalid.");
         }
-        // fix https://github.com/alibaba/nacos/issues/10067
+        // 对 dataId/group/tenant 做路径编码，修复特殊字符目录问题
         dataId = PathEncoderManager.getInstance().encode(dataId);
         group = PathEncoderManager.getInstance().encode(group);
         tenant = PathEncoderManager.getInstance().encode(tenant);
@@ -86,6 +93,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
     }
     
     /**
+     * 计算灰度配置磁盘文件路径（含 grayName 子目录）。
      * Returns the path of the gray cache file in server.
      */
     private static File targetGrayFile(String dataId, String group, String tenant,
@@ -117,6 +125,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
     
     /**
      * Returns the path of the gray content cache file in server.
+      * <p>原始文件磁盘实现；详见类级说明。</p>
      */
     private static File targetGrayContentFile(String dataId, String group, String tenant,
         String grayName) {
@@ -125,6 +134,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
     
     /**
      * Save gray information to disk.
+      * <p>原始文件磁盘实现；详见类级说明。</p>
      */
     public void saveGrayToDisk(String dataId, String group, String tenant, String grayName,
         String content)
@@ -135,6 +145,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
     
     /**
      * Deletes configuration files on disk.
+      * <p>原始文件磁盘实现；详见类级说明。</p>
      */
     public void removeConfigInfo(String dataId, String group, String tenant) {
         FileUtils.deleteQuietly(targetFile(dataId, group, tenant));
@@ -142,6 +153,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
     
     /**
      * Deletes gray configuration files on disk.
+      * <p>原始文件磁盘实现；详见类级说明。</p>
      */
     public void removeConfigInfo4Gray(String dataId, String group, String tenant, String grayName) {
         FileUtils.deleteQuietly(targetGrayContentFile(dataId, group, tenant, grayName));
@@ -156,6 +168,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
     
     /**
      * Returns the content of the gray cache file in server.
+      * <p>原始文件磁盘实现；详见类级说明。</p>
      */
     public String getGrayContent(String dataId, String group, String tenant, String grayName)
         throws IOException {
@@ -180,6 +193,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
     }
     
     /**
+     * 删除 config-data 与 tenant-config-data 目录下全部正式配置。
      * Clear all config file.
      */
     public void clearAll() {
@@ -198,6 +212,7 @@ public class ConfigRawDiskService implements ConfigDiskService {
     }
     
     /**
+     * 删除 gray-data 与 tenant-gray-data 目录下全部灰度配置。
      * Clear all gray config file.
      */
     public void clearAllGray() {

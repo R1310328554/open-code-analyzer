@@ -36,6 +36,8 @@ import static com.alibaba.nacos.config.server.constant.Constants.ENCODE_UTF8;
 import static com.alibaba.nacos.config.server.constant.Constants.NULL;
 
 /**
+ * 基于 RocksDB 的配置磁盘实现：以编码后的复合键存储正式/灰度配置内容。
+ * <p>按目录分库（config-data / gray-data），针对正式库动态调整 WriteBuffer 与 compaction 策略。</p>
  * config rocks db disk service.
  *
  * @author shiyiyue
@@ -51,6 +53,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     
     private static final long DEFAULT_WRITE_BUFFER_MB = 32;
     
+    /** 目录路径 → RocksDB 实例缓存（懒加载打开） */
     Map<String, RocksDB> rocksDbMap = new HashMap<>();
     
     private void createDirIfNotExist(String dir) {
@@ -103,6 +106,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     }
     
     /**
+     * URL 风格键编码：{@code +} → {@code %2B}，{@code %} → {@code %25}。
      * + -> %2B % -> %25.
      */
     private static void urlEncode(String str, StringBuilder sb) {
@@ -119,6 +123,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     }
     
     /**
+     * 内部写入：按 type 选择 DB 并以复合键 put 配置内容。
      * save config to disk.
      */
     public void saveToDiskInner(String type, String dataId, String group, String tenant, String tag,
@@ -134,6 +139,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     
     /**
      * save config to disk.
+      * <p>RocksDB 磁盘实现；详见类级说明。</p>
      */
     public void saveToDiskInner(String type, String dataId, String group, String tenant,
         String content)
@@ -143,6 +149,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     
     /**
      * save config to disk.
+      * <p>RocksDB 磁盘实现；详见类级说明。</p>
      */
     public void saveGrayToDiskInner(String type, String dataId, String group, String tenant,
         String grayName,
@@ -157,6 +164,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     
     /**
      * Save configuration information to disk.
+      * <p>RocksDB 磁盘实现；详见类级说明。</p>
      */
     public void saveToDisk(String dataId, String group, String tenant, String content)
         throws IOException {
@@ -164,6 +172,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     }
     
     /**
+     * 将灰度配置写入 GRAY_DIR 对应 RocksDB。
      * Save tag information to disk.
      */
     public void saveGrayToDisk(String dataId, String group, String tenant, String grayName,
@@ -175,6 +184,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     
     /**
      * Deletes configuration files on disk.
+      * <p>RocksDB 磁盘实现；详见类级说明。</p>
      */
     public void removeConfigInfo(String dataId, String group, String tenant) {
         removeContentInner(BASE_DIR, dataId, group, tenant, null);
@@ -182,6 +192,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     
     /**
      * Deletes gray configuration files on disk.
+      * <p>RocksDB 磁盘实现；详见类级说明。</p>
      */
     public void removeConfigInfo4Gray(String dataId, String group, String tenant, String grayName) {
         removeGrayInner(GRAY_DIR, dataId, group, tenant, grayName);
@@ -266,6 +277,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     
     /**
      * Returns the path of the gray content cache file in server.
+      * <p>RocksDB 磁盘实现；详见类级说明。</p>
      */
     public String getGrayContent(String dataId, String group, String tenant, String grayName)
         throws IOException {
@@ -293,14 +305,15 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
         ColumnFamilyOptions columnFamilyOptions = new ColumnFamilyOptions();
         BlockBasedTableConfig tableFormatConfig = new BlockBasedTableConfig();
         columnFamilyOptions.setTableFormatConfig(tableFormatConfig);
-        //set more write buffer size to formal config-data, reduce flush to sst file frequency.
+        // 正式库增大 WriteBuffer，降低 flush 频率
         columnFamilyOptions.setWriteBufferSize(getSuitFormalCacheSizeMB(dir) * 1024 * 1024);
-        //once a stt file is flushed, compact it immediately to avoid too many sst file which will result in read latency.
+        // Level0 文件数达 1 即触发 compaction，避免 SST 过多导致读延迟
         columnFamilyOptions.setLevel0FileNumCompactionTrigger(1);
         return columnFamilyOptions;
     }
     
     /**
+     * 按 JVM 堆大小为正式库选择合适的 WriteBuffer（MB）。
      * get suit formal buffer size.
      *
      * @return
@@ -334,6 +347,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     }
     
     /**
+     * 关闭并销毁正式配置 RocksDB，删除 rocksdata/config-data 目录。
      * Clear all config file.
      */
     public void clearAll() {
@@ -350,6 +364,7 @@ public class ConfigRocksDbDiskService implements ConfigDiskService {
     }
     
     /**
+     * 关闭并销毁灰度 RocksDB，删除 rocksdata/gray-data 目录。
      * Clear all gray config file.
      */
     public void clearAllGray() {

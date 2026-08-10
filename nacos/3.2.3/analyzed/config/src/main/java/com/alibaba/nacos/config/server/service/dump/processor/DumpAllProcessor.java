@@ -40,6 +40,8 @@ import static com.alibaba.nacos.config.server.constant.Constants.ENCODE_UTF8;
 import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
 
 /**
+ * 全量正式配置 dump 处理器：按 ID 片段分页扫描 DB，对比 MD5/时间戳后异步写入缓存与磁盘。
+ * <p>启动模式使用多线程池加速；非启动模式单线程且按需拉取变更内容。特殊 dataId（白名单、开关）会同步加载到内存。</p>
  * Dump all processor.
  *
  * @author Nacos
@@ -93,13 +95,13 @@ public class DumpAllProcessor implements NacosTaskProcessor {
                 if (StringUtils.isBlank(cf.getTenant())) {
                     continue;
                 }
-                //if not start up, page query will not return content, check md5 and lastModified first ,if changed ,get single content info to dump.
+                // 非启动全量：分页不含 content，先比对 MD5/时间戳，有变更再单条查询内容
                 if (!dumpAllTask.isStartUp()) {
                     final String groupKey =
                         GroupKey2.getKey(cf.getDataId(), cf.getGroup(), cf.getTenant());
                     boolean newLastModified =
                         cf.getLastModified() > ConfigCacheService.getLastModifiedTs(groupKey);
-                    //check md5 & update local disk cache.
+                    // 校验 MD5 与 lastModified，决定是否重新 dump 到本地磁盘缓存
                     String localContentMd5 = ConfigCacheService.getContentMd5(groupKey);
                     boolean md5Update = !localContentMd5.equals(cf.getMd5());
                     if (newLastModified || md5Update) {
@@ -157,7 +159,7 @@ public class DumpAllProcessor implements NacosTaskProcessor {
                 (dbTimeStamp - start), (diskStamp - dbTimeStamp));
         }
         
-        //wait all task are finished and then shutdown executor.
+        // 等待线程池中 dump 任务全部完成后关闭 executor
         try {
             int unfinishedTaskCount = 0;
             while ((unfinishedTaskCount =
@@ -175,5 +177,6 @@ public class DumpAllProcessor implements NacosTaskProcessor {
         return true;
     }
     
+    /** 正式配置持久化服务 */
     final ConfigInfoPersistService configInfoPersistService;
 }

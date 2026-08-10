@@ -21,6 +21,7 @@ import com.alibaba.nacos.core.config.AbstractDynamicConfig;
 import com.alibaba.nacos.sys.env.EnvUtil;
 
 /**
+ * 历史配置清理器动态配置：从环境变量读取当前启用的清理器名称。
  * The type History config cleaner config.
  * @author Sunrisea
  */
@@ -30,6 +31,7 @@ public class HistoryConfigCleanerConfig extends AbstractDynamicConfig {
     
     private static final HistoryConfigCleanerConfig INSTANCE = new HistoryConfigCleanerConfig();
     
+    /** 当前激活的历史清理器名称，默认 nacos 内置实现 */
     private String activeHistoryConfigCleaner = "nacos";
     
     private HistoryConfigCleanerConfig() {
@@ -38,6 +40,7 @@ public class HistoryConfigCleanerConfig extends AbstractDynamicConfig {
     }
     
     /**
+     * 获取单例配置实例。
      * Gets instance.
      *
      * @return the instance
@@ -56,6 +59,7 @@ public class HistoryConfigCleanerConfig extends AbstractDynamicConfig {
     }
     
     /**
+     * 获取当前启用的历史清理器名称。
      * Gets active history config cleaner.
      *
      * @return the active history config cleaner
@@ -65,6 +69,7 @@ public class HistoryConfigCleanerConfig extends AbstractDynamicConfig {
     }
     
     /**
+     * 动态设置历史清理器名称（运行时配置变更）。
      * Sets active history config cleaner.
      *
      * @param activeHistoryConfigCleaner the active history config cleaner

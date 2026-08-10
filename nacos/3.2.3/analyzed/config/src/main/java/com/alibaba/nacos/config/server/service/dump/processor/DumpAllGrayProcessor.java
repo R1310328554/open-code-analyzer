@@ -31,6 +31,8 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
 import static com.alibaba.nacos.config.server.utils.PropertyUtil.getAllDumpPageSize;
 
 /**
+ * 全量灰度配置 dump 处理器：分页扫描持久层灰度配置并调用 {@link ConfigCacheService#dumpGray}。
+ * <p>跳过 tenant 为空的记录；用于启动时与定时全量灰度同步。</p>
  * Dump all gray processor.
  *
  * @author Nacos
@@ -80,7 +82,9 @@ public class DumpAllGrayProcessor implements NacosTaskProcessor {
         return true;
     }
     
+    /** 全量 dump 分页大小（来自 {@link PropertyUtil#getAllDumpPageSize}） */
     static final int PAGE_SIZE = getAllDumpPageSize();
     
+    /** 灰度配置持久化服务 */
     final ConfigInfoGrayPersistService configInfoGrayPersistService;
 }

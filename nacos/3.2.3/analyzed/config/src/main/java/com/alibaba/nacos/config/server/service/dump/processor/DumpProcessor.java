@@ -32,6 +32,8 @@ import com.alibaba.nacos.config.server.utils.LogUtil;
 import java.util.Objects;
 
 /**
+ * 增量 dump 处理器：解析 {@link DumpTask} 的 groupKey，从 DB 拉取最新配置并委托 {@link DumpConfigHandler} 落盘。
+ * <p>支持正式与灰度两条路径；DB 无记录时标记 remove。</p>
  * dump processor.
  *
  * @author Nacos
@@ -39,8 +41,10 @@ import java.util.Objects;
  */
 public class DumpProcessor implements NacosTaskProcessor {
     
+    /** 正式配置持久化服务 */
     final ConfigInfoPersistService configInfoPersistService;
     
+    /** 灰度配置持久化服务 */
     final ConfigInfoGrayPersistService configInfoGrayPersistService;
     
     public DumpProcessor(ConfigInfoPersistService configInfoPersistService,
@@ -63,6 +67,7 @@ public class DumpProcessor implements NacosTaskProcessor {
         ConfigDumpEvent.ConfigDumpEventBuilder build =
             ConfigDumpEvent.builder().namespaceId(tenant).dataId(dataId)
                 .group(group).grayName(grayName).handleIp(handleIp);
+        // 日志类型标识：灰度任务使用 grayName，否则为 formal
         String type = "formal";
         if (StringUtils.isNotBlank(grayName)) {
             type = grayName;

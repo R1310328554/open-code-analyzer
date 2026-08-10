@@ -30,6 +30,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 
 /**
+ * 外部存储（MySQL 等）场景下的 Dump 服务实现。
+ * <p>启动后直接 {@link #dumpOperate()}；仅集群首个 IP 节点执行 dump 与历史清理，避免多节点重复全量任务。</p>
  * External dump service.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -40,6 +42,7 @@ import javax.annotation.PostConstruct;
 public class ExternalDumpService extends DumpService {
     
     /**
+     * 构造注入依赖并委托父类完成处理器与事件订阅初始化。
      * Here you inject the dependent objects constructively, ensuring that some of the dependent functionality is
      * initialized ahead of time.
      *

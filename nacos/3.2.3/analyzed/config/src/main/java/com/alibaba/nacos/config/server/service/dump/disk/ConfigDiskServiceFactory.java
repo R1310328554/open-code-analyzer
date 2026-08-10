@@ -17,19 +17,24 @@
 package com.alibaba.nacos.config.server.service.dump.disk;
 
 /**
+ * 配置磁盘服务工厂：按系统属性 {@code config_disk_type} 选择 Raw 文件或 RocksDB 实现。
  * config disk serve factory.
  *
  * @author zunfei.lzf
  */
 public class ConfigDiskServiceFactory {
     
+    /** 单例磁盘服务实例（双重检查锁懒加载） */
     static ConfigDiskService configDiskService;
     
+    /** 原始文件目录存储类型标识 */
     private static final String TYPE_RAW_DISK = "rawdisk";
     
+    /** RocksDB KV 存储类型标识 */
     private static final String TYPE_ROCKSDB = "rocksdb";
     
     /**
+     * 获取磁盘服务单例，默认 rawdisk，可配置为 rocksdb。
      * get disk service.
      *
      * @return

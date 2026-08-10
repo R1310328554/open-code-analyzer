@@ -54,6 +54,8 @@ import java.util.concurrent.TimeUnit;
 import static com.alibaba.nacos.config.server.utils.LogUtil.DUMP_LOG;
 
 /**
+ * 配置 Dump 核心抽象服务：将持久层配置同步至内存缓存与本地磁盘。
+ * <p>负责监听 {@link ConfigDataChangeEvent} 触发增量 dump、调度全量 dump、灰度全量 dump 及历史配置清理；嵌入式与外部存储由子类实现启动与执行权限控制。</p>
  * Dump data service.
  *
  * @author Nacos
@@ -62,10 +64,13 @@ public abstract class DumpService {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DumpService.class);
     
+    /** 增量 dump 任务处理器（正式/灰度单条配置） */
     protected DumpProcessor processor;
     
+    /** 全量正式配置 dump 处理器 */
     protected DumpAllProcessor dumpAllProcessor;
     
+    /** 全量灰度配置 dump 处理器 */
     protected DumpAllGrayProcessor dumpAllGrayProcessor;
     
     protected ConfigInfoPersistService configInfoPersistService;
@@ -81,17 +86,21 @@ public abstract class DumpService {
     protected final ServerMemberManager memberManager;
     
     /**
+     * 全量 dump 定时任务间隔（分钟）。
      * full dump interval.
      */
     static final int DUMP_ALL_INTERVAL_IN_MINUTE = 6 * 60;
     
     /**
+     * 全量 dump 首次调度随机延迟上限（分钟）。
      * full dump delay.
      */
     static final int INITIAL_DELAY_IN_MINUTE = 6 * 60;
     
+    /** 增量 dump 任务队列管理器 */
     private TaskManager dumpTaskMgr;
     
+    /** 全量 dump 任务队列管理器（含正式与灰度处理器路由） */
     private TaskManager dumpAllTaskMgr;
     
     static final int INIT_THREAD_COUNT = 10;
@@ -99,6 +108,7 @@ public abstract class DumpService {
     int total = 0;
     
     /**
+     * 构造注入持久化、迁移、集群等依赖，并提前初始化 dump 处理器与事件订阅。
      * Here you inject the dependent objects constructively, ensuring that some of the dependent functionality is
      * initialized ahead of time.
      *
@@ -145,7 +155,7 @@ public abstract class DumpService {
     }
     
     void handleConfigDataChange(Event event) {
-        // Generate ConfigDataChangeEvent concurrently
+        // 并发场景下收到配置变更事件，构造 DumpRequest 并入队
         if (event instanceof ConfigDataChangeEvent) {
             ConfigDataChangeEvent evt = (ConfigDataChangeEvent) event;
             DumpRequest dumpRequest =
@@ -157,6 +167,7 @@ public abstract class DumpService {
     }
     
     /**
+     * 子类实现的 dump 启动入口（嵌入式需等待 Raft 选主，外部存储直接 dump）。
      * initialize.
      *
      * @throws Throwable throws Exception when actually operate.
@@ -164,6 +175,7 @@ public abstract class DumpService {
     protected abstract void init() throws Throwable;
     
     /**
+     * 历史配置清理定时任务：按 {@link #canExecute()} 权限调用 {@link HistoryConfigCleaner}。
      * config history clear.
      */
     class ConfigHistoryClear implements Runnable {
@@ -193,6 +205,7 @@ public abstract class DumpService {
     }
     
     /**
+     * 全量正式配置 dump 调度 Runner：向 dumpAllTaskMgr 提交 {@link DumpAllTask}。
      * config history clear.
      */
     class DumpAllProcessorRunner implements Runnable {
@@ -204,6 +217,7 @@ public abstract class DumpService {
     }
     
     /**
+     * 全量灰度配置 dump 调度 Runner：向 dumpAllTaskMgr 提交 {@link DumpAllGrayTask}。
      * dump all gray processor runner.
      */
     class DumpAllGrayProcessorRunner implements Runnable {
@@ -218,6 +232,7 @@ public abstract class DumpService {
         String dumpFileContext = "CONFIG_DUMP_TO_FILE";
         TimerContext.start(dumpFileContext);
         try {
+            // dump 主流程开始：启动时全量 + 集群模式下定时任务注册
             LogUtil.DEFAULT_LOG.warn("DumpService start");
             
             Timestamp currentTime = new Timestamp(System.currentTimeMillis());
@@ -234,6 +249,7 @@ public abstract class DumpService {
                         + e.getMessage(),
                     e);
             }
+            // 非单机模式：注册全量 dump、变更 worker 与历史清理定时任务
             if (!EnvUtil.getStandaloneMode()) {
                 
                 long initialDelay =
@@ -275,6 +291,7 @@ public abstract class DumpService {
     private void dumpAllConfigInfoOnStartup(DumpAllProcessor dumpAllProcessor) {
         
         try {
+            // 启动时清空磁盘缓存后执行全量 dump
             LogUtil.DEFAULT_LOG.info("start clear all config-info.");
             ConfigDiskServiceFactory.getInstance().clearAll();
             dumpAllProcessor.process(new DumpAllTask(true));
@@ -286,6 +303,7 @@ public abstract class DumpService {
     
     private void dumpAllGrayConfigInfoOnStartup(DumpAllGrayProcessor dumpAllGrayProcessor) {
         try {
+            // 启动时清空灰度磁盘缓存后执行灰度全量 dump
             LogUtil.DEFAULT_LOG.info("start to clear all gray-config-info on startup.");
             ConfigDiskServiceFactory.getInstance().clearAllGray();
             dumpAllGrayProcessor.process(new DumpAllGrayTask());
@@ -297,6 +315,7 @@ public abstract class DumpService {
     }
     
     /**
+     * 对外 dump 入口：按 grayName 分流至正式或灰度增量任务。
      * dump operation.
      *
      * @param dumpRequest dumpRequest.
@@ -313,6 +332,7 @@ public abstract class DumpService {
     }
     
     /**
+     * 增量 dump 正式配置：以 groupKey 为 taskKey 入队 {@link DumpTask}。
      * dump formal config.
      *
      * @param dataId       dataId.
@@ -331,6 +351,7 @@ public abstract class DumpService {
     }
     
     /**
+     * 增量 dump 灰度配置：taskKey 附加 grayName 后缀以区分并发任务。
      * dump gray.
      *
      * @param dataId       dataId.
@@ -355,6 +376,7 @@ public abstract class DumpService {
     }
     
     /**
+     * 判断当前节点是否可执行全量 dump 与历史清理（嵌入式仅 Leader，外部存储仅首 IP）。
      * Used to determine whether the aggregation task, configuration history cleanup task can be performed.
      *
      * @return {@link Boolean}

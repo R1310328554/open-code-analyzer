@@ -19,6 +19,8 @@ package com.alibaba.nacos.config.server.service.dump.task;
 import com.alibaba.nacos.common.task.AbstractDelayTask;
 
 /**
+ * 全量 Beta 配置 dump 延迟任务占位类（TASK_ID 供任务管理器路由）。
+ * <p>merge 为空实现，Beta 全量逻辑已迁移至 Gray 体系。</p>
  * Dump all beta task.
  *
  * @author Nacos
@@ -30,5 +32,6 @@ public class DumpAllBetaTask extends AbstractDelayTask {
     public void merge(AbstractDelayTask task) {
     }
     
+    /** 全量 Beta dump 任务唯一标识 */
     public static final String TASK_ID = "dumpAllBetaConfigTask";
 }

@@ -21,12 +21,14 @@ import com.alibaba.nacos.common.spi.NacosServiceLoader;
 import java.util.HashMap;
 
 /**
+ * 历史配置清理器管理器：通过 SPI 加载实现并注册默认 {@code nacos} 清理器。
  * The type History config cleaner manager.
  *
  * @author Sunrisea
  */
 public class HistoryConfigCleanerManager {
     
+    /** 清理器名称 → 实例映射表 */
     private static HashMap<String, HistoryConfigCleaner> historyConfigCleanerMap =
         new HashMap<String, HistoryConfigCleaner>();
     
@@ -38,6 +40,7 @@ public class HistoryConfigCleanerManager {
     }
     
     /**
+     * 按名称获取清理器，未命中时回退至默认 nacos 实现。
      * Gets history config cleaner.
      *
      * @param name the name
