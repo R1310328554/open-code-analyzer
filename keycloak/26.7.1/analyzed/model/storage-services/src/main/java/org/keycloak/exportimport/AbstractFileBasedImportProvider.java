@@ -28,8 +28,12 @@ import org.keycloak.common.util.StringPropertyReplacer;
 
 import static org.keycloak.common.util.StringPropertyReplacer.replaceProperties;
 
+/**
+ * 基于文件的导入 Provider 抽象基类：解析导入文件并在启用占位符替换时展开环境变量。
+ */
 public abstract class AbstractFileBasedImportProvider implements ImportProvider {
 
+    /** 使用 {@link System#getenv} 解析 {@code ${VAR}} 形式占位符的属性解析器。 */
     private static final StringPropertyReplacer.PropertyResolver ENV_VAR_PROPERTY_RESOLVER = new StringPropertyReplacer.PropertyResolver() {
         @Override
         public String resolve(String property) {
@@ -37,6 +41,12 @@ public abstract class AbstractFileBasedImportProvider implements ImportProvider 
         }
     };
 
+    /**
+     * 打开导入文件：若 {@link ExportImportConfig#isReplacePlaceholders()} 为 true，则替换环境变量占位符。
+     *
+     * @param importFile 待导入文件
+     * @return 文件输入流
+     */
     protected InputStream parseFile(File importFile) throws IOException {
         if (ExportImportConfig.isReplacePlaceholders()) {
             return replaceProperties(new BufferedInputStream(new FileInputStream(importFile)), ENV_VAR_PROPERTY_RESOLVER);

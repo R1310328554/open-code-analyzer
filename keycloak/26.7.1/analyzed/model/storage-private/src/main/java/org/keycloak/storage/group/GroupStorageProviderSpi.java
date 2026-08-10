@@ -26,13 +26,18 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 组存储 SPI 定义：注册 {@link GroupStorageProvider} 及其工厂到 Keycloak Provider 体系。
+ */
 public class GroupStorageProviderSpi implements Spi {
 
+    /** 内部 SPI，不对外暴露给第三方扩展列表。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称，对应组件类型标识 {@code group-storage}。 */
     @Override
     public String getName() {
         return "group-storage";
@@ -51,7 +56,7 @@ public class GroupStorageProviderSpi implements Spi {
     private static final List<ProviderConfigProperty> commonConfig;
 
     static {
-        //corresponds to properties defined in CacheableStorageProviderModel and PrioritizedComponentModel
+        // 与 CacheableStorageProviderModel、PrioritizedComponentModel 中定义的属性对应
         List<ProviderConfigProperty> config = ProviderConfigurationBuilder.create()
                 .property()
                 .name("enabled").type(ProviderConfigProperty.BOOLEAN_TYPE).add()
@@ -73,6 +78,7 @@ public class GroupStorageProviderSpi implements Spi {
         commonConfig = Collections.unmodifiableList(config);
     }
 
+    /** 返回所有组存储 Provider 共享的配置属性模板。 */
     public static List<ProviderConfigProperty> commonConfig() {
         return commonConfig;
     }

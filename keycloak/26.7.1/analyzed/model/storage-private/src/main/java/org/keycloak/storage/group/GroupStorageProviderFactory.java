@@ -31,23 +31,28 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * 组存储 Provider 工厂接口：按 realm 组件模型创建 {@link GroupStorageProvider} 实例。
+ * <p>
+ * 继承 {@link ComponentFactory}，支持管理控制台组件化配置及 SPI 通用缓存/优先级属性。
+ */
 public interface GroupStorageProviderFactory<T extends GroupStorageProvider> extends ComponentFactory<T, GroupStorageProvider> {
 
 
     /**
-     * called per Keycloak transaction.
+     * 每个 Keycloak 事务调用一次，创建 Provider 实例。
      *
-     * @param session
-     * @param model
-     * @return
+     * @param session 当前 {@link KeycloakSession}
+     * @param model 组件配置模型
+     * @return 新建的 Provider 实例
      */
     @Override
     T create(KeycloakSession session, ComponentModel model);
 
     /**
-     * This is the name of the provider.
+     * Provider 唯一标识，亦作为管理控制台中的选项名称。
      *
-     * @return
+     * @return Provider ID
      */
     @Override
     String getId();
@@ -79,21 +84,20 @@ public interface GroupStorageProviderFactory<T extends GroupStorageProvider> ext
     }
 
     /**
-     * Called when GroupStorageProviderModel is created.  This allows you to do initialization of any additional configuration
-     * you need to add.
+     * 创建 {@link GroupStorageProvider} 组件时回调，可用于初始化额外配置。
      *
-     * @param session
-     * @param realm
-     * @param model
+     * @param session 当前会话
+     * @param realm 所属 realm
+     * @param model 组件模型
      */
     @Override
     default void onCreate(KeycloakSession session, RealmModel realm, ComponentModel model) {
     }
 
     /**
-     * configuration properties that are common across all GroupStorageProvider implementations
+     * 所有 {@link GroupStorageProvider} 实现共享的通用配置属性（启用、优先级、缓存策略等）。
      *
-     * @return
+     * @return 通用 {@link ProviderConfigProperty} 列表
      */
     @Override
     default

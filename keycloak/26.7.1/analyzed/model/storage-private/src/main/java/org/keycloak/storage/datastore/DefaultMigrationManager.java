@@ -83,13 +83,16 @@ import org.keycloak.storage.MigrationManager;
 import org.jboss.logging.Logger;
 
 /**
- * This wraps the functionality for migrations of the storage.
+ * 默认迁移管理器：按版本顺序执行数据库 schema 迁移与 realm JSON 表示升级。
+ * <p>
+ * 防止 snapshot 开发版误迁移生产库，并支持 RH-SSO 版本号到 Keycloak {@link ModelVersion} 的映射。
  *
  * @author Alexander Schwartz
  */
 public class DefaultMigrationManager implements MigrationManager {
     private static final Logger logger = Logger.getLogger(DefaultMigrationManager.class);
 
+    /** 按发布顺序排列的全部 {@link Migration} 实现。 */
     private static final Migration[] migrations = {
             new MigrateTo1_2_0(),
             new MigrateTo1_3_0(),
@@ -143,11 +146,13 @@ public class DefaultMigrationManager implements MigrationManager {
     private final KeycloakSession session;
     private final boolean allowMigrateExistingDatabaseToSnapshot;
 
+    /** 构造迁移管理器；{@code allowMigrateExistingDatabaseToSnapshot} 控制 snapshot 版能否迁移旧库。 */
     public DefaultMigrationManager(KeycloakSession session, boolean allowMigrateExistingDatabaseToSnapshot) {
         this.session = session;
         this.allowMigrateExistingDatabaseToSnapshot = allowMigrateExistingDatabaseToSnapshot;
     }
 
+    /** 执行全局数据库迁移：依次运行未应用的 {@link Migration} 并更新存储版本号。 */
     @Override
     public void migrate() {
         session.setAttribute(Constants.STORAGE_BATCH_ENABLED, Boolean.getBoolean("keycloak.migration.batch-enabled"));
@@ -189,13 +194,16 @@ public class DefaultMigrationManager implements MigrationManager {
         Version.RESOURCES_VERSION = model.getResourcesTag();
     }
 
+    /** RH-SSO 7.0 GA 版本串对应的 Keycloak 模型版本。 */
     public static final ModelVersion RHSSO_VERSION_7_0_KEYCLOAK_VERSION = new ModelVersion("1.9.8");
     public static final ModelVersion RHSSO_VERSION_7_1_KEYCLOAK_VERSION = new ModelVersion("2.5.5");
     public static final ModelVersion RHSSO_VERSION_7_2_KEYCLOAK_VERSION = new ModelVersion("3.4.3");
     public static final ModelVersion RHSSO_VERSION_7_3_KEYCLOAK_VERSION = new ModelVersion("4.8.3");
     public static final ModelVersion RHSSO_VERSION_7_4_KEYCLOAK_VERSION = new ModelVersion("9.0.3");
+    /** Snapshot（nightly）版本的 {@link ModelVersion} 常量。 */
     public static final ModelVersion SNAPSHOT_VERSION = new ModelVersion(Constants.SNAPSHOT_VERSION);
 
+    /** RH-SSO GA 版本号正则到 Keycloak 版本的映射表。 */
     private static final Map<Pattern, ModelVersion> PATTERN_MATCHER = new LinkedHashMap<>();
     static {
         PATTERN_MATCHER.put(Pattern.compile("^7\\.0\\.\\d+\\.GA$"), RHSSO_VERSION_7_0_KEYCLOAK_VERSION);
@@ -205,6 +213,7 @@ public class DefaultMigrationManager implements MigrationManager {
         PATTERN_MATCHER.put(Pattern.compile("^7\\.4\\.\\d+\\.GA$"), RHSSO_VERSION_7_4_KEYCLOAK_VERSION);
     }
 
+    /** 对单个 realm 的 JSON 表示执行版本链迁移（导入场景）。 */
     @Override
     public void migrate(RealmModel realm, RealmRepresentation rep, boolean skipUserDependent) {
         ModelVersion stored = getModelVersionFromRep(rep);
@@ -232,20 +241,22 @@ public class DefaultMigrationManager implements MigrationManager {
         }
     }
 
+    /** 将 RH-SSO 版本字符串转换为等效的 Keycloak {@link ModelVersion}；无法识别时返回 null。 */
     public static ModelVersion convertRHSSOVersionToKeycloakVersion(String version) {
-        // look for the keycloakVersion pattern to identify it as RH SSO
+        // 匹配 RH SSO 的 keycloakVersion 字段格式
         for (var entry : PATTERN_MATCHER.entrySet()) {
             if (entry.getKey().matcher(version).find()) {
                 return entry.getValue();
             }
         }
-        // chceck if the version is in format for CD releases, e.g.: "keycloakVersion": "6"
+        // 兼容 CD 发行格式，例如 "keycloakVersion": "6"
         if (Pattern.compile("^[0-9]*$").matcher(version).find()) {
             return new ModelVersion(Integer.parseInt(version), 0, 0);
         }
         return null;
     }
 
+    /** 从 {@link RealmRepresentation#getKeycloakVersion()} 解析导出时的模型版本。 */
     public static ModelVersion getModelVersionFromRep(RealmRepresentation rep) {
         ModelVersion version = null;
         if (rep.getKeycloakVersion() != null) {

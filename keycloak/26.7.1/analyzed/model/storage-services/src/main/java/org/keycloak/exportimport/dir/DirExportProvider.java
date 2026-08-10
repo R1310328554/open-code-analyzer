@@ -33,19 +33,26 @@ import org.keycloak.services.resources.KeycloakApplication;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 目录导出 Provider：将 realm 与用户分文件写入指定目录（多步导出流程）。
+ * <p>
+ * 默认导出到平台临时目录下的 {@code keycloak-export}，亦可通过 {@link #withDir(String)} 指定目标路径。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DirExportProvider extends MultipleStepsExportProvider<DirExportProvider> {
     
+    /** 用户配置的导出根目录路径。 */
     private String dir; 
     
+    /** 解析后的导出根目录 {@link File}。 */
     private File rootDirectory;
 
+    /** 使用会话工厂初始化多步导出基类。 */
     public DirExportProvider(KeycloakSessionFactory sessionFactory) {
-        // Determine platform tmp directory
         super(sessionFactory);
     }
     
+    /** 懒加载并创建导出根目录。 */
     private File getRootDirectory() {
         if (rootDirectory == null) {
             if (dir == null) {
@@ -59,6 +66,7 @@ public class DirExportProvider extends MultipleStepsExportProvider<DirExportProv
         return rootDirectory;
     }
 
+    /** 递归删除目录及其内容。 */
     public static boolean recursiveDeleteDir(File dirPath) {
         if (dirPath.exists()) {
             File[] files = dirPath.listFiles();
@@ -76,6 +84,7 @@ public class DirExportProvider extends MultipleStepsExportProvider<DirExportProv
             return true;
     }
 
+    /** 将 realm JSON 表示写入目录下的指定文件名。 */
     @Override
     public void writeRealm(String fileName, RealmRepresentation rep) throws IOException {
         File file = new File(getRootDirectory(), fileName);
@@ -84,6 +93,7 @@ public class DirExportProvider extends MultipleStepsExportProvider<DirExportProv
         }
     }
 
+    /** 将用户批次导出为单独的 JSON 文件。 */
     @Override
     protected void writeUsers(String fileName, KeycloakSession session, RealmModel realm, List<UserModel> users) throws IOException {
         File file = new File(getRootDirectory(), fileName);
@@ -91,6 +101,7 @@ public class DirExportProvider extends MultipleStepsExportProvider<DirExportProv
         ExportUtils.exportUsersToStream(session, realm, users, JsonSerialization.prettyMapper, os);
     }
 
+    /** 将联邦用户 ID 批次导出为单独的 JSON 文件。 */
     @Override
     protected void writeFederatedUsers(String fileName, KeycloakSession session, RealmModel realm, List<String> users) throws IOException {
         File file = new File(getRootDirectory(), fileName);
@@ -102,6 +113,7 @@ public class DirExportProvider extends MultipleStepsExportProvider<DirExportProv
     public void close() {
     }
 
+    /** 设置导出目标目录并返回 {@code this} 以支持链式配置。 */
     public DirExportProvider withDir(String dir) {
         this.dir = dir;
         return this;

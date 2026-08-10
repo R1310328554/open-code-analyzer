@@ -44,17 +44,24 @@ import org.keycloak.utils.KeycloakSessionUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * 目录导入 Provider：从包含 {@code *-realm.json} 与分片用户文件的目录导入 realm。
+ * <p>
+ * 先导入 realm 定义，再按批处理导入本地与联邦用户；支持单 realm 或全模型导入策略。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DirImportProvider extends AbstractFileBasedImportProvider {
 
+    /** 导入冲突处理策略（OVERWRITE、IGNORE 等）。 */
     private final Strategy strategy;
     private final KeycloakSessionFactory factory;
 
     private static final Logger logger = Logger.getLogger(DirImportProvider.class);
 
+    /** 导入源目录；未指定时使用临时目录下的 {@code keycloak-export}。 */
     private File rootDirectory;
 
+    /** 仅导入指定 realm 时使用的 realm 名称；为 null 表示导入目录内全部 realm。 */
     private String realmName;
 
     public DirImportProvider(KeycloakSessionFactory factory, Strategy strategy) {
@@ -62,6 +69,7 @@ public class DirImportProvider extends AbstractFileBasedImportProvider {
         this.strategy = strategy;
     }
 
+    /** 设置导入源目录；目录必须已存在。 */
     public DirImportProvider withDir(String dir) {
         this.rootDirectory = new File(dir);
 
@@ -73,6 +81,7 @@ public class DirImportProvider extends AbstractFileBasedImportProvider {
         return this;
     }
 
+    /** 限制仅导入指定名称的 realm。 */
     public DirImportProvider withRealmName(String realmName) {
         this.realmName = realmName;
         return this;
@@ -90,6 +99,7 @@ public class DirImportProvider extends AbstractFileBasedImportProvider {
         return rootDirectory;
     }
 
+    /** 执行目录导入：单 realm 或扫描全部 {@code *-realm.json} 文件。 */
     @Override
     public void importModel() throws IOException {
         if (realmName != null) {
@@ -108,22 +118,24 @@ public class DirImportProvider extends AbstractFileBasedImportProvider {
         ServicesLogger.LOGGER.importSuccess();
     }
 
+    /** 判断待导入 realm 列表是否包含 master realm。 */
     @Override
     public boolean isMasterRealmExported() {
         List<String> realmNames = getRealmsToImport();
         return realmNames.contains(Config.getAdminRealm());
     }
 
+    /** 扫描目录中 {@code *-realm.json} 文件并解析 realm 名称；master realm 排在首位。 */
     private List<String> getRealmsToImport() {
         File[] realmFiles = getRootDirectory().listFiles((dir, name) -> (name.endsWith("-realm.json")));
         Objects.requireNonNull(realmFiles, "Directory not found: " + getRootDirectory().getName());
         List<String> realmNames = new ArrayList<>();
         for (File file : realmFiles) {
             String fileName = file.getName();
-            // Parse "foo" from "foo-realm.json"
+            // 从 "foo-realm.json" 解析出 "foo"
             String realmName = fileName.substring(0, fileName.length() - 11);
 
-            // Ensure that master realm is imported first
+            // 确保 master realm 最先导入
             if (Config.getAdminRealm().equals(realmName)) {
                 realmNames.add(0, realmName);
             } else {
@@ -133,6 +145,7 @@ public class DirImportProvider extends AbstractFileBasedImportProvider {
         return realmNames;
     }
 
+    /** 导入单个 realm：先读 realm JSON，再通过批处理任务导入用户与联邦用户分片文件。 */
     public void importRealm(final String realmName, final Strategy strategy) throws IOException {
         File realmFile = new File(getRootDirectory() + File.separator + realmName + "-realm.json");
         File[] userFiles = getRootDirectory().listFiles((dir, name) -> name.matches(realmName + "-users-[0-9]+\\.json"));
@@ -140,7 +153,7 @@ public class DirImportProvider extends AbstractFileBasedImportProvider {
         File[] federatedUserFiles = getRootDirectory().listFiles((dir, name) -> name.matches(realmName + "-federated-users-[0-9]+\\.json"));
         Objects.requireNonNull(federatedUserFiles, "directory not found: " + getRootDirectory().getName());
 
-        // Import realm first
+        // 先导入 realm 主体配置
         InputStream is = parseFile(realmFile);
         final RealmRepresentation realmRep = JsonSerialization.readValue(is, RealmRepresentation.class);
         if (!realmRep.getRealm().equals(realmName)) {
@@ -160,6 +173,7 @@ public class DirImportProvider extends AbstractFileBasedImportProvider {
         }.runTask(factory);
     }
 
+    /** 从匹配的用户分片文件批量导入本地或联邦用户。 */
     private void importUsers(final String realmName, File[] userFiles, boolean federated) {
         for (final File userFile : userFiles) {
             try (InputStream fis = parseFile(userFile)) {

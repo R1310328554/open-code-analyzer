@@ -33,20 +33,27 @@ import static org.keycloak.exportimport.ExportImportConfig.DEFAULT_USERS_EXPORT_
 import static org.keycloak.exportimport.ExportImportConfig.DEFAULT_USERS_PER_FILE;
 
 /**
- * Construct a {@link DirExportProviderFactory} to be used to export one or more realms.
- * For the sake of testing in the legacy testing setup, configurations can be overwritten via system properties.
+ * 目录导出 Provider 工厂（ID {@code dir}）：从配置或系统属性创建 {@link DirExportProvider}。
+ * <p>
+ * 为兼容旧测试框架，可通过系统属性覆盖 SPI 配置项。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DirExportProviderFactory implements ExportProviderFactory {
 
+    /** Provider 标识符。 */
     public static final String PROVIDER_ID = "dir";
+    /** 导出目录配置键。 */
     public static final String DIR = "dir";
+    /** 指定导出单个 realm 的名称配置键。 */
     public static final String REALM_NAME = "realmName";
+    /** 用户导出策略配置键。 */
     public static final String USERS_EXPORT_STRATEGY = "usersExportStrategy";
+    /** 每个用户文件包含的用户数配置键。 */
     public static final String USERS_PER_FILE = "usersPerFile";
     private Config.Scope config;
 
+    /** 创建配置好目录、realm 与用户导出策略的 {@link DirExportProvider}。 */
     @Override
     public ExportProvider create(KeycloakSession session) {
         String dir = System.getProperty(ExportImportConfig.DIR, config.get(DIR));

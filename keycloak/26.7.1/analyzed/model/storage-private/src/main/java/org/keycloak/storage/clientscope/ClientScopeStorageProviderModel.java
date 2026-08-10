@@ -20,26 +20,31 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.storage.CacheableStorageProviderModel;
 
 /**
- * Stored configuration of a Client scope Storage provider instance.
+ * 客户端作用域存储 Provider 实例的配置模型：封装组件属性并继承 {@link CacheableStorageProviderModel} 的缓存策略。
  */
 public class ClientScopeStorageProviderModel extends CacheableStorageProviderModel {
 
+    /** 默认构造：将 Provider 类型设为 {@link ClientScopeStorageProvider}。 */
     public ClientScopeStorageProviderModel() {
         setProviderType(ClientScopeStorageProvider.class.getName());
     }
 
+    /** 从已有 {@link ComponentModel} 复制构造。 */
     public ClientScopeStorageProviderModel(ComponentModel copy) {
         super(copy);
     }
 
+    /** 启用状态缓存，避免重复解析配置。 */
     private transient Boolean enabled;
 
+    /** 设置 Provider 是否启用，并同步写入组件配置。 */
     @Override
     public void setEnabled(boolean flag) {
         enabled = flag;
         getConfig().putSingle(ENABLED, Boolean.toString(flag));
     }
 
+    /** 读取启用状态；配置缺失时默认为启用。 */
     @Override
     public boolean isEnabled() {
         if (enabled == null) {

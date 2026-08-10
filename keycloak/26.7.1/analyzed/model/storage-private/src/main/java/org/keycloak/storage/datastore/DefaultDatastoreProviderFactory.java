@@ -46,10 +46,17 @@ import org.keycloak.timer.TimerProvider;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 默认数据存储 Provider 工厂（ID {@code legacy}）：创建 {@link DefaultDatastoreProvider} 并协调迁移后定时任务。
+ * <p>
+ * 监听 {@link PostMigrationEvent} 注册集群定时清理任务，监听 {@link StoreMigrateRepresentationEvent} 执行 realm 导入迁移。
+ */
 public class DefaultDatastoreProviderFactory implements DatastoreProviderFactory, ProviderEventListener {
 
+    /** Provider 标识符。 */
     private static final String PROVIDER_ID = "legacy";
 
+    /** 是否允许将已迁移的生产库用于 snapshot/开发版服务器的配置项名。 */
     public static final String ALLOW_MIGRATE_EXISTING_DB_TO_SNAPSHOT_OPTION = "allowMigrateExistingDatabaseToSnapshot";
 
     private static final Logger logger = Logger.getLogger(DefaultDatastoreProviderFactory.class);
@@ -64,6 +71,7 @@ public class DefaultDatastoreProviderFactory implements DatastoreProviderFactory
         return new DefaultDatastoreProvider(this, session);
     }
 
+    /** 从配置读取客户端/角色存储超时及 snapshot 迁移开关。 */
     @Override
     public void init(Scope config) {
         clientStorageProviderTimeout = Config.scope("client").getLong("storageProviderTimeout", 3000L);
@@ -71,6 +79,7 @@ public class DefaultDatastoreProviderFactory implements DatastoreProviderFactory
         allowMigrateExistingDatabaseToSnapshot = config.getBoolean(ALLOW_MIGRATE_EXISTING_DB_TO_SNAPSHOT_OPTION, false);
     }
 
+    /** 注册 Provider 事件监听与用户存储事件监听器。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         factory.register(this);
@@ -120,6 +129,7 @@ public class DefaultDatastoreProviderFactory implements DatastoreProviderFactory
         return allowMigrateExistingDatabaseToSnapshot;
     }
 
+    /** 处理迁移完成与 realm 表示导入迁移事件。 */
     @Override
     public void onEvent(ProviderEvent event) {
         if (event instanceof PostMigrationEvent) {
@@ -130,6 +140,7 @@ public class DefaultDatastoreProviderFactory implements DatastoreProviderFactory
         }
     }
 
+    /** 迁移完成后注册过期事件、会话等集群定时清理任务。 */
     public static void setupScheduledTasks(final KeycloakSessionFactory sessionFactory) {
         try (KeycloakSession session = sessionFactory.create()) {
             TimerProvider timer = session.getProvider(TimerProvider.class);
@@ -145,6 +156,7 @@ public class DefaultDatastoreProviderFactory implements DatastoreProviderFactory
         }
     }
 
+    /** 返回需周期性执行的清理任务列表。 */
     protected static List<ScheduledTask> getScheduledTasks() {
         return Arrays.asList(new ClearExpiredEvents(), new ClearExpiredAdminEvents(), new ClearExpiredClientInitialAccessTokens(), new ClearExpiredUserSessions(), new ClearExpiredIssuedVerifiableCredentials());
     }
@@ -154,6 +166,7 @@ public class DefaultDatastoreProviderFactory implements DatastoreProviderFactory
         logger.debugf("Scheduled cluster task %s with interval %s ms", task.getTaskName(), interval);
     }
 
+    /** 单独注册过期撤销令牌清理任务（在相关 Provider 就绪后调用）。 */
     public static void setupClearExpiredRevokedTokensScheduledTask(KeycloakSessionFactory sessionFactory) {
         try (KeycloakSession session = sessionFactory.create()) {
             TimerProvider timer = session.getProvider(TimerProvider.class);
@@ -163,6 +176,7 @@ public class DefaultDatastoreProviderFactory implements DatastoreProviderFactory
         }
     }
 
+    /** 读取 {@code scheduled.interval} 配置（秒），转换为毫秒作为任务间隔。 */
     public static long getScheduledInterval() {
         return Config.scope("scheduled").getLong("interval", 900L) * 1000;
     }

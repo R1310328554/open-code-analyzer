@@ -18,5 +18,9 @@ package org.keycloak.storage.clientscope;
 
 import org.keycloak.provider.Provider;
 
+/**
+ * 客户端作用域存储 Provider 标记接口：组合 {@link Provider} 与 {@link ClientScopeLookupProvider}，
+ * 供外部/联邦客户端作用域存储实现注册到 {@link ClientScopeStorageProviderSpi}。
+ */
 public interface ClientScopeStorageProvider extends Provider, ClientScopeLookupProvider {
 }

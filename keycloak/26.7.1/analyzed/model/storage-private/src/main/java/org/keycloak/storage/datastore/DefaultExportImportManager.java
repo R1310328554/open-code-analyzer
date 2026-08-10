@@ -154,7 +154,9 @@ import static org.keycloak.models.utils.RepresentationToModel.importRoles;
 import static org.keycloak.models.utils.StripSecretsUtils.stripSecrets;
 
 /**
- * This wraps the functionality about export/import for the storage.
+ * 默认导出/导入管理器：封装存储层的 realm 导出、全量/部分导入与用户批量写入逻辑。
+ * <p>
+ * 将 {@link RealmRepresentation} 映射为模型对象，处理弃用字段兼容、认证流与组织导入等。
  *
  * @author Alexander Schwartz
  */
@@ -162,25 +164,25 @@ public class DefaultExportImportManager implements ExportImportManager {
     private final KeycloakSession session;
     private static final Logger logger = Logger.getLogger(DefaultExportImportManager.class);
 
+    /** 导入用户时的批处理刷新器：每处理固定数量用户后 flush 持久化上下文。 */
     public static class Batcher implements Consumer<KeycloakSession> {
         private int count;
 
         @Override
         public void accept(KeycloakSession session) {
-            // TODO: determine what a good number is here
-            // There actually doesn't seem to be much difference with setting this
-            // higher - the important part is to clear the contexts - which could be even more optimal
-            // as detaching just users and their children
+            // TODO: 确定合适的批大小；关键是定期清空上下文，理想情况仅 detach 用户及其子实体
             if (++count % 64 == 0) {
                 EntityManagers.flush(session, true);
             }
         };
     }
 
+    /** 绑定当前 {@link KeycloakSession}。 */
     public DefaultExportImportManager(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 将 realm 序列化为 JSON 并通过 {@link ExportAdapter} 写出（导出前剥离密钥）。 */
     @Override
     public void exportRealm(RealmModel realm, ExportOptions options, ExportAdapter callback) {
         callback.setType(MediaType.APPLICATION_JSON);
@@ -192,6 +194,7 @@ public class DefaultExportImportManager implements ExportImportManager {
         });
     }
 
+    /** 从输入流读取 JSON 并触发 {@link ImportRealmFromRepresentationEvent} 导入 realm。 */
     @Override
     public RealmModel importRealm(InputStream requestBody) {
         RealmRepresentation rep;
@@ -204,6 +207,13 @@ public class DefaultExportImportManager implements ExportImportManager {
         return ImportRealmFromRepresentationEvent.fire(session, rep);
     }
 
+    /**
+     * 将 {@link RealmRepresentation} 写入已有 {@link RealmModel}：应用 realm 设置、客户端、角色、用户等全量配置。
+     *
+     * @param rep 导入表示
+     * @param newRealm 目标 realm
+     * @param userImport 用户导入完成后的回调（如授权设置）
+     */
     @Override
     public void importRealm(RealmRepresentation rep, RealmModel newRealm, Runnable userImport) {
         ModelVersion version = DefaultMigrationManager.getModelVersionFromRep(rep);
@@ -266,7 +276,7 @@ public class DefaultExportImportManager implements ExportImportManager {
             newRealm.setOfflineSessionIdleTimeout(rep.getOfflineSessionIdleTimeout());
         else newRealm.setOfflineSessionIdleTimeout(Constants.DEFAULT_OFFLINE_SESSION_IDLE_TIMEOUT);
 
-        // KEYCLOAK-7688 Offline Session Max for Offline Token
+        // KEYCLOAK-7688 离线 Token 的离线会话最大寿命
         if (rep.getOfflineSessionMaxLifespanEnabled() != null) newRealm.setOfflineSessionMaxLifespanEnabled(rep.getOfflineSessionMaxLifespanEnabled());
         else newRealm.setOfflineSessionMaxLifespanEnabled(false);
 
@@ -334,7 +344,7 @@ public class DefaultExportImportManager implements ExportImportManager {
             }
         }
 
-        // todo remove this stuff as its all deprecated
+        // todo 移除已弃用的 requiredCredentials 配置
         if (rep.getRequiredCredentials() != null) {
             for (String requiredCred : rep.getRequiredCredentials()) {
                 newRealm.addRequiredCredential(requiredCred);
@@ -473,12 +483,10 @@ public class DefaultExportImportManager implements ExportImportManager {
 
 
 
-        // create users and their role mappings and social mappings
-
+        // 创建用户及其角色映射、社交/联邦映射
         if (Optional.ofNullable(rep.getUsers()).filter(l -> !l.isEmpty()).isPresent() ||
                 Optional.ofNullable(rep.getFederatedUsers()).filter(l -> !l.isEmpty()).isPresent()) {
-            // run in a batch to mimic the behavior of directory based import
-            // this is using nested entity managers to keep the parent context clean
+            // 批处理导入用户，行为与目录导入一致；使用嵌套 EntityManager 保持父上下文干净
             EntityManagers.runInBatch(session, () -> {
                 Batcher onUserAdded = new Batcher();
                 if (rep.getUsers() != null) {
@@ -526,6 +534,7 @@ public class DefaultExportImportManager implements ExportImportManager {
         importOrganizations(rep, newRealm);
     }
 
+    /** 从输入流读取部分导入表示并触发 {@link PartialImportRealmFromRepresentationEvent}。 */
     @Override
     public PartialImportResults partialImportRealm(RealmModel realm, InputStream requestBody) {
         PartialImportRepresentation rep;
@@ -1287,6 +1296,7 @@ public class DefaultExportImportManager implements ExportImportManager {
         }
     }
 
+    /** 批量导入 realm 下的组层次结构。 */
     public void importGroups(RealmModel realm, RealmRepresentation rep) {
         List<GroupRepresentation> groups = rep.getGroups();
         if (groups == null) return;
