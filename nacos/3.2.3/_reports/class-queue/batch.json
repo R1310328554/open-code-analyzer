@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T02:24:56Z",
-  "files": [
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/prompt/PromptVariable.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/prompt/PromptVersionInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/prompt/PromptVersionSummary.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/skills/BatchUploadResult.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/skills/Skill.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/skills/SkillBase.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/skills/SkillBasicInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/skills/SkillMeta.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/skills/SkillResource.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/skills/SkillSummary.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/skills/SkillUtils.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/AiRemoteConstants.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/AbstractAgentRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/AbstractMcpRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/AbstractPromptRequest.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2177,
-  "done": 345
+  "done": 360
 }
