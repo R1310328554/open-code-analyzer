@@ -748,3 +748,18 @@
 2026-08-10T06:40:14Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/AuthorizationResource.java wave25b sssd impl + admin-client
 2026-08-10T06:40:14Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/BasicAuthFilter.java wave25b sssd impl + admin-client
 2026-08-10T06:40:14Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/BearerAuthFilter.java wave25b sssd impl + admin-client
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientAttributeCertificateResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientInitialAccessResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientPoliciesPoliciesResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientPoliciesProfilesResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientPoliciesResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientPolicyResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientRegistrationPolicyResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientScopeEvaluateResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientScopePoliciesResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientScopeResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientScopesResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientTypesResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ClientsResource.java wave26a admin-client client resources
+2026-08-10T06:43:12Z DONE integration/admin-client/src/main/java/org/keycloak/admin/client/resource/ComponentResource.java wave26a admin-client client resources
