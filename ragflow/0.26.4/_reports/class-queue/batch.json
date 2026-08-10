@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:42:33Z",
-  "files": [
-    "internal/agent/sandbox/self_managed.go",
-    "internal/agent/sandbox/ssh.go",
-    "internal/agent/tool/akshare.go",
-    "internal/agent/tool/arxiv.go",
-    "internal/agent/tool/bgpt.go",
-    "internal/agent/tool/code_exec.go",
-    "internal/agent/tool/code_exec_client.go",
-    "internal/agent/tool/code_exec_contract.go",
-    "internal/agent/tool/crawler.go",
-    "internal/agent/tool/deepl.go",
-    "internal/agent/tool/duckduckgo.go",
-    "internal/agent/tool/email.go",
-    "internal/agent/tool/exesql.go",
-    "internal/agent/tool/exesql_trino_stub.go",
-    "internal/agent/tool/github.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1254,
-  "done": 495
+  "done": 510
 }
