@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:59:25Z",
-  "files": [
-    "web/ui/mantine-ui/src/pages/query/colorPool.ts",
-    "web/ui/mantine-ui/src/pages/query/uPlotChartHelpers.ts",
-    "web/ui/mantine-ui/src/pages/query/uPlotStackHelpers.ts",
-    "web/ui/mantine-ui/src/pages/query/urlStateEncoding.test.ts",
-    "web/ui/mantine-ui/src/pages/query/urlStateEncoding.ts",
-    "web/ui/mantine-ui/src/promql/ast.ts",
-    "web/ui/mantine-ui/src/promql/binOp.test.ts",
-    "web/ui/mantine-ui/src/promql/binOp.ts",
-    "web/ui/mantine-ui/src/promql/functionMeta.ts",
-    "web/ui/mantine-ui/src/promql/functionSignatures.ts",
-    "web/ui/mantine-ui/src/promql/serialize.ts",
-    "web/ui/mantine-ui/src/promql/serializeAndFormat.test.ts",
-    "web/ui/mantine-ui/src/promql/tools/gen_functions_docs/main.go",
-    "web/ui/mantine-ui/src/promql/tools/gen_functions_list/main.go",
-    "web/ui/mantine-ui/src/promql/utils.test.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 54,
-  "done": 465
+  "done": 480
 }
