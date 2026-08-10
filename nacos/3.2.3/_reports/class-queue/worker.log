@@ -2428,3 +2428,18 @@
 2026-08-10T05:11:08Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/importer/spi/AiResourceImportSourceProvider.java wave80b [15:30] oidc tokens + ai importer/pipeline
 2026-08-10T05:11:08Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/model/AgentSpecPipelineContext.java wave80b [15:30] oidc tokens + ai importer/pipeline
 2026-08-10T05:11:08Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/model/Checkpoint.java wave80b [15:30] oidc tokens + ai importer/pipeline
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/IdentityProvider.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/OidcAuthPluginService.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/OidcAuthorityProvider.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/OidcIdentityProvider.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/authenticate/AuthorizationCodeHandler.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/authenticate/OidcAuthenticationManager.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/authorization/AuthorizationClient.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/authorization/AuthorizationRequest.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/authorization/AuthorizationResponse.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/config/OidcAuthConfig.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/config/OidcPluginAutoConfiguration.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/config/OidcWebSecurityConfig.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/constant/OidcConstants.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/controller/OidcLoginController.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/identity/OidcUserMapper.java wave80a [0:15] oidc auth providers/config/controllers
