@@ -22,17 +22,24 @@ import org.jboss.arquillian.container.spi.ConfigurationException;
 import org.jboss.logging.Logger;
 
 /**
+ * 简单 Undertow 负载均衡器容器配置：定义后端节点列表及 HTTP/HTTPS 端口偏移。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SimpleUndertowLoadBalancerConfiguration extends UndertowContainerConfiguration {
 
+    /** 默认 HTTPS 端口，从系统属性读取。 */
     public static final int DEFAULT_HTTPS_PORT = Integer.valueOf(System.getProperty("auth.server.https.port", "8543"));
 
     protected static final Logger log = Logger.getLogger(SimpleUndertowLoadBalancerConfiguration.class);
 
+    /** 后端节点配置字符串。 */
     private String nodes = SimpleUndertowLoadBalancer.DEFAULT_NODES_HTTP;
+    /** HTTP 绑定端口偏移量。 */
     private int bindHttpPortOffset = 0;
+    /** HTTPS 绑定端口偏移量。 */
     private int bindHttpsPortOffset = 0;
+    /** HTTPS 绑定端口。 */
     private int bindHttpsPort = DEFAULT_HTTPS_PORT;
 
     public String getNodes() {
@@ -67,6 +74,7 @@ public class SimpleUndertowLoadBalancerConfiguration extends UndertowContainerCo
         this.bindHttpsPort = bindHttpsPort;
     }
 
+    /** 校验节点配置格式并应用端口偏移。 */
     @Override
     public void validate() throws ConfigurationException {
         super.validate();

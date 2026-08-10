@@ -71,21 +71,30 @@ import org.xnio.SslClientAuthMode;
 
 import static org.keycloak.testsuite.KeycloakServer.registerScriptProviders;
 
+/**
+ * 基于 Undertow 的 Keycloak 认证服务器 Arquillian 可部署容器：
+ * 在嵌入式 Undertow 上启动/停止 Keycloak，并管理 WAR 归档的部署与卸载。
+ */
 public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUndertowConfiguration> {
 
     protected final Logger log = Logger.getLogger(this.getClass());
 
+    /** 嵌入式 Undertow JAX-RS 服务器实例。 */
     private KeycloakUndertowJaxrsServer undertow;
+    /** 容器配置。 */
     private KeycloakOnUndertowConfiguration configuration;
+    /** Keycloak 会话工厂。 */
     private DefaultKeycloakSessionFactory sessionFactory;
 
+    /** 已部署归档名称到上下文路径的映射。 */
     Map<String, String> deployedArchivesToContextPath = new ConcurrentHashMap<>();
 
+    /** 创建认证服务器的 Undertow 部署描述符。 */
     private DeploymentInfo createAuthServerDeploymentInfo() {
         ResteasyDeployment deployment = new ResteasyDeploymentImpl();
         deployment.setApplicationClass(ResteasyKeycloakApplication.class.getName());
 
-        // RESTEASY-2034
+        // RESTEASY-2034：禁用 HTML 清理器
         deployment.setProperty(ResteasyContextParameters.RESTEASY_DISABLE_HTML_SANITIZER, true);
 
         DeploymentInfo di = undertow.undertowDeployment(deployment);
@@ -96,9 +105,8 @@ public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUnderto
         di.setDefaultServletConfig(new DefaultServletConfig(true));
         di.addWelcomePage("theme/keycloak/welcome/resources/index.html");
 
-        // This is needed as in case of clustered undertow, several undertow instances share the same JVM, hence the default
-        // way accessing the factory in the UndertowRequestFilter via static reference to KeycloakApplication does not work:
-        // There are several KeycloakApplication instances in the JVM with no classloader separation as in a full-blown server.
+        // 集群 Undertow 场景下多个实例共享同一 JVM，无法通过 KeycloakApplication 静态引用访问工厂，
+        // 因此为每个实例注入独立的 UndertowRequestFilter 并绑定对应的 sessionFactory
         InstanceHandle<Filter> filterInstance = new InstanceHandle<Filter>() {
             @Override
             public Filter getInstance() {
@@ -117,6 +125,7 @@ public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUnderto
         return di;
     }
 
+    /** 从 ShrinkWrap 归档提取 Undertow 部署描述符。 */
     public DeploymentInfo getDeplotymentInfoFromArchive(Archive<?> archive) {
         if (archive instanceof UndertowWebArchive) {
             return ((UndertowWebArchive) archive).getDeploymentInfo();
@@ -127,6 +136,7 @@ public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUnderto
         }
     }
 
+    /** 为部署描述符构建 Arquillian HTTP 上下文元数据。 */
     private HTTPContext createHttpContextForDeploymentInfo(DeploymentInfo deploymentInfo) {
         HTTPContext httpContext = new HTTPContext(configuration.getBindAddress(), configuration.getBindHttpPort());
         final Map<String, ServletInfo> servlets = deploymentInfo.getServlets();
@@ -222,6 +232,7 @@ public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUnderto
         log.infof("Auth server started in %dms on http://%s:%d/auth", (System.currentTimeMillis() - start), configuration.getBindAddress(), configuration.getBindHttpPort());
     }
 
+    /** 开发模式下自动创建 master 域 admin 用户（若尚不存在）。 */
     protected void setupDevConfig() {
         try (KeycloakSession session = sessionFactory.create()) {
             session.getTransactionManager().begin();
@@ -250,6 +261,7 @@ public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUnderto
         undertow = null;
     }
 
+    /** 判断是否为远程模式（跳过本地 Undertow 生命周期管理）。 */
     private boolean isRemoteMode() {
         //return true;
         return configuration.isRemoteMode();
@@ -297,14 +309,14 @@ public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUnderto
     }
 
 
+    /** 扩展 UndertowJaxrsServer，在根处理器外包装 ProxyPeerAddressHandler 以正确识别代理后的协议。 */
     private static class KeycloakUndertowJaxrsServer extends UndertowJaxrsServer {
 
         @Override
         public KeycloakUndertowJaxrsServer start(Undertow.Builder builder) {
             try {
-                // Need to wrap the original handler with ProxyPeerAddressHandler. Thanks to that, if undertow is behind proxy and the proxy
-                // forwards "https" request to undertow as "http" request, undertow will be able to establish protocol correctly on the request
-                // based on the X-Proto headers
+                // 将原始处理器包装为 ProxyPeerAddressHandler：当 Undertow 位于反向代理之后且
+                // 代理以 HTTP 转发 HTTPS 请求时，可根据 X-Forwarded-Proto 头正确识别协议
                 Field f = UndertowJaxrsServer.class.getDeclaredField("root");
                 f.setAccessible(true);
                 HttpHandler origRootHandler = (HttpHandler) f.get(this);

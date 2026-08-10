@@ -26,6 +26,9 @@ import org.keycloak.protocol.oidc.representations.MTLSEndpointAliases;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 
 /**
+ * 自定义 OIDC Well-Known 提供者：在标准配置基础上注入测试用额外声明，
+ * 并覆盖 mTLS 注册端点 URL 以供集成测试断言。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CustomOIDCWellKnownProvider extends OIDCWellKnownProvider {
@@ -34,6 +37,7 @@ public class CustomOIDCWellKnownProvider extends OIDCWellKnownProvider {
         super(session, openidConfigOverride, includeClientScopes);
     }
 
+    /** 在标准 OIDC 配置中追加测试用 {@code foo=bar} 额外声明。 */
     @Override
     public Object getConfig() {
         OIDCConfigurationRepresentation config = (OIDCConfigurationRepresentation) super.getConfig();
@@ -41,6 +45,7 @@ public class CustomOIDCWellKnownProvider extends OIDCWellKnownProvider {
         return config;
     }
 
+    /** 覆盖 mTLS 注册端点为测试占位 URL。 */
     @Override
     protected MTLSEndpointAliases getMtlsEndpointAliases(OIDCConfigurationRepresentation config) {
         MTLSEndpointAliases mtlsEndpointAliases = super.getMtlsEndpointAliases(config);

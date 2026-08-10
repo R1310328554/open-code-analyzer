@@ -41,14 +41,17 @@ import org.keycloak.services.resources.KeycloakApplication;
 import org.jboss.logging.Logger;
 
 /**
- * Used to dynamically reload EnvironmentDependentProviderFactories after some feature is enabled/disabled
+ * 特性部署工具：在特性开关变更后动态重新加载 {@link EnvironmentDependentProviderFactory} 实例。
+ * 用于集成测试中启用/禁用 Profile 特性时热部署或卸载相关提供者工厂。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class FeatureDeployerUtil {
 
+    /** 特性变更前已启用的工厂快照，按特性索引。 */
     private final static Map<Profile.Feature, Map<ProviderFactory, Spi>> initializer = new ConcurrentHashMap<>();
 
+    /** 按特性缓存的 ProviderManager 部署器。 */
     private final static Map<Profile.Feature, ProviderManager> deployersCache = new ConcurrentHashMap<>();
 
     private static final Logger logger = Logger.getLogger(FeatureDeployerUtil.class);
@@ -58,7 +61,7 @@ public class FeatureDeployerUtil {
             return;
         }
 
-        // Compute which provider factories are enabled before feature is enabled (disabled)
+        // 计算特性变更前已启用的提供者工厂
         Map<ProviderFactory, Spi>  factoriesBefore = loadEnabledEnvironmentFactories();
         initializer.put(feature, factoriesBefore);
     }
@@ -66,7 +69,7 @@ public class FeatureDeployerUtil {
     public static void deployFactoriesAfterFeatureEnabled(Profile.Feature feature) {
         ProviderManager manager = deployersCache.get(feature);
         if (manager == null) {
-            // Need to figure which provider factories were enabled after feature was enabled. Create deployer based on it and save it to the cache
+            // 确定特性启用后新增的工厂，创建部署器并缓存
             Map<ProviderFactory, Spi> factoriesBeforeEnable = initializer.remove(feature);
             Map<ProviderFactory, Spi> factoriesAfterEnable = loadEnabledEnvironmentFactories();
             Map<ProviderFactory, Spi>  factories = getFactoriesDependentOnFeature(factoriesBeforeEnable, factoriesAfterEnable);
@@ -84,8 +87,7 @@ public class FeatureDeployerUtil {
     public static void undeployFactoriesAfterFeatureDisabled(Profile.Feature feature) {
         ProviderManager manager = deployersCache.get(feature);
         if (manager == null) {
-            // This is used if some feature is enabled by default and then disabled
-            // Need to figure which provider factories were enabled after feature was enabled. Create deployer based on it and save it to the cache
+            // 用于默认启用的特性被禁用的场景：确定需卸载的工厂并创建部署器
             Map<ProviderFactory, Spi> factoriesBeforeDisable = initializer.remove(feature);
             Map<ProviderFactory, Spi> factoriesAfterDisable = loadEnabledEnvironmentFactories();
             Map<ProviderFactory, Spi>  factories = getFactoriesDependentOnFeature(factoriesAfterDisable, factoriesBeforeDisable);

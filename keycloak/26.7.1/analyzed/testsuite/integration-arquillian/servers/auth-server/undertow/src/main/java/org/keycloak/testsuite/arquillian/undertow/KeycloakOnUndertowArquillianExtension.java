@@ -6,6 +6,8 @@ import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
 import org.jboss.arquillian.core.spi.LoadableExtension;
 
 /**
+ * Keycloak Undertow Arquillian 扩展：注册 {@link KeycloakOnUndertow} 与
+ * {@link SimpleUndertowLoadBalancerContainer} 两个可部署容器实现。
  *
  * @author tkyjovsk
  */

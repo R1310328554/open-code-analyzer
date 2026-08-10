@@ -29,18 +29,21 @@ import org.keycloak.provider.ProviderLoader;
 import org.keycloak.provider.Spi;
 
 /**
- * Loads additional SPIs from provided KeycloakDeploymentInfo
+ * 测试套件提供者加载器：从给定的 {@link KeycloakDeploymentInfo} 加载额外 SPI 定义，
+ * 供 {@link FeatureDeployerUtil} 在特性变更后动态部署工厂。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 class TestsuiteProviderLoader implements ProviderLoader {
 
+    /** 部署信息，包含待加载的 SPI 类。 */
     private final KeycloakDeploymentInfo info;
 
     TestsuiteProviderLoader(KeycloakDeploymentInfo info) {
         this.info = info;
     }
 
+    /** 实例化部署信息中注册的所有 SPI 类。 */
     @Override
     public List<Spi> loadSpis() {
         return info.getProviders().keySet()
@@ -49,6 +52,7 @@ class TestsuiteProviderLoader implements ProviderLoader {
                 .collect(Collectors.toList());
     }
 
+    /** 通过反射实例化 SPI 类。 */
     private Spi instantiateSpi(Class<? extends Spi> clazz) {
         try {
             return clazz.getDeclaredConstructor().newInstance();
@@ -58,6 +62,7 @@ class TestsuiteProviderLoader implements ProviderLoader {
     }
 
 
+    /** 此加载器不直接提供工厂实例，返回空列表。 */
     @Override
     public List<ProviderFactory> load(Spi spi) {
         return List.of();

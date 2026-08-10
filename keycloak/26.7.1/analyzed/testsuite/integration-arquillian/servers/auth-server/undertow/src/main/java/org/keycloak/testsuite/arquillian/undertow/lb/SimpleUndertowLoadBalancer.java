@@ -52,10 +52,10 @@ import org.jboss.logging.Logger;
 import org.xnio.OptionMap;
 
 /**
- * Loadbalancer on embedded undertow. Supports sticky session over "AUTH_SESSION_ID" cookie and failover to different node when sticky node not available.
- * Status 503 is returned just if all backend nodes are unavailable.
+ * 嵌入式 Undertow 负载均衡器：支持基于 {@code AUTH_SESSION_ID} Cookie 的会话粘性，
+ * 并在粘性节点不可用时故障转移到其他后端节点。仅当所有后端节点均不可用时才返回 503。
  *
- * To configure backend nodes, you can use system property like : -Dkeycloak.nodes="node1=http://localhost:8181,node2=http://localhost:8182"
+ * 后端节点通过系统属性配置，例如：{@code -Dkeycloak.nodes="node1=http://localhost:8181,node2=http://localhost:8182"}
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -63,13 +63,20 @@ public class SimpleUndertowLoadBalancer {
 
     private static final Logger log = Logger.getLogger(SimpleUndertowLoadBalancer.class);
 
+    /** 默认后端节点配置字符串。 */
     static final String DEFAULT_NODES_HTTP = "node1=http://localhost:8181,node2=http://localhost:8182";
 
+    /** 监听主机名。 */
     private final String host;
+    /** HTTP 监听端口。 */
     private final int httpPort;
+    /** HTTPS 监听端口。 */
     private final int httpsPort;
+    /** 后端节点映射（路由名 → URI）。 */
     private final Map<String, URI> backendNodes;
+    /** Undertow 服务器实例。 */
     private Undertow undertow;
+    /** 负载均衡代理客户端。 */
     private LoadBalancingProxyClient lb;
 
 
@@ -157,6 +164,7 @@ public class SimpleUndertowLoadBalancer {
         log.infof("Load balancer: disabled node '%s', All enabled nodes: %s", nodeName, lb.toString());
     }
 
+    /** 解析节点配置字符串为路由名到 URI 的映射。 */
     static Map<String, URI> parseNodes(String nodes) {
         StringTokenizer st = new StringTokenizer(nodes, ",");
         Map<String, URI> result = new LinkedHashMap<>();
@@ -173,11 +181,11 @@ public class SimpleUndertowLoadBalancer {
 
     private HttpHandler createHandler() throws Exception {
 
-        // TODO: configurable options if needed
+        // TODO：按需使选项可配置
         String[] sessionIds = {CookieType.AUTH_SESSION_ID.getName()};
         int connectionsPerThread = 20;
-        int problemServerRetry = 5; // In case of unavailable node, we will try to ping him every 5 seconds to check if it's back
-        int maxTime = 3600000; // 1 hour for proxy request timeout, so we can debug the backend keycloak servers
+        int problemServerRetry = 5; // 节点不可用时每 5 秒重试一次以检测是否恢复
+        int maxTime = 3600000; // 代理请求超时 1 小时，便于调试后端 Keycloak 服务器
         int requestQueueSize = 10;
         int cachedConnectionsPerThread = 10;
         int connectionIdleTimeout = 60;
@@ -197,6 +205,7 @@ public class SimpleUndertowLoadBalancer {
     }
 
 
+    /** 自定义负载均衡客户端：支持重试、粘性会话故障转移及防重复添加主机。 */
     private class CustomLoadBalancingClient extends LoadBalancingProxyClient {
 
         private final int maxRetryAttempts;
@@ -222,7 +231,7 @@ public class SimpleUndertowLoadBalancer {
         }
 
         private Host getRoute(String routeId) {
-            // There's no way to get the route from the super class, we have to use reflection
+            // 父类未暴露按路由 ID 获取 Host 的方法，需通过反射访问
             Field f = Reflections.findDeclaredField(LoadBalancingProxyClient.class, "routes");
             f.setAccessible(true);
             Map<String, Host> routes = Reflections.getFieldValue(f, this, Map.class);
@@ -255,7 +264,7 @@ public class SimpleUndertowLoadBalancer {
         }
 
 
-        // For now, overriden just this "addHost" method to avoid adding duplicates
+        // 当前仅覆盖 addHost 方法以避免重复添加
         @Override
         public synchronized LoadBalancingProxyClient addHost(URI host, String jvmRoute) {
             List<String> current = getCurrentHostRoutes();
@@ -312,6 +321,7 @@ public class SimpleUndertowLoadBalancer {
     private static final AttachmentKey<Integer> REMAINING_RETRY_ATTEMPTS = AttachmentKey.create(Integer.class);
 
 
+    /** 代理回调委托：在请求失败时执行重试，并在主机恢复后清除错误状态。 */
     private static class ProxyCallbackDelegate implements ProxyCallback<ProxyConnection> {
 
         private final ProxyClient proxyClient;
@@ -332,10 +342,10 @@ public class SimpleUndertowLoadBalancer {
         public void completed(HttpServerExchange exchange, ProxyConnection result) {
             LoadBalancingProxyClient.Host host = exchange.getAttachment(SELECTED_HOST);
             if (host == null) {
-                // shouldn't happen
+                // 不应发生
                 log.error("Host is null!!!");
             } else {
-                // Host was restored
+                // 主机已恢复可用
                 if (!host.isAvailable()) {
                     log.infof("Host %s available again after failover", host.getUri());
                     host.clearError();
@@ -369,7 +379,7 @@ public class SimpleUndertowLoadBalancer {
                         final long remaining = timeoutMs > 0 ? timeoutMs - time : -1;
                         proxyClient.getConnection(target, exchange, this, remaining, TimeUnit.MILLISECONDS);
                     } else {
-                        couldNotResolveBackend(exchange); // The context was registered when we started, so return 503
+                        couldNotResolveBackend(exchange); // 启动时已注册上下文，返回 503
                     }
                 }
             } else {

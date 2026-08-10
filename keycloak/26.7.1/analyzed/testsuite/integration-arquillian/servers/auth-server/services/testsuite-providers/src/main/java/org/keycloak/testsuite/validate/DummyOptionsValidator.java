@@ -26,10 +26,11 @@ import org.keycloak.validate.ValidationContext;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Dummy Options validator for User Profile configuration tests.
+ * 虚拟选项校验器：用于用户配置集成测试，始终通过校验且不修改上下文。
  */
 public class DummyOptionsValidator implements SimpleValidator, ConfiguredProvider {
 
+    /** 校验器在 SPI 中的标识符。 */
     public static final String ID = "dummyOptions";
 
     @Override
@@ -37,6 +38,7 @@ public class DummyOptionsValidator implements SimpleValidator, ConfiguredProvide
         return ID;
     }
 
+    /** 直接返回未修改的校验上下文（不做实际校验）。 */
     @Override
     public ValidationContext validate(Object input, String inputHint, ValidationContext context, ValidatorConfig config) {
     	
