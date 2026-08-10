@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:30:53Z",
-  "files": [
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/RestrictedPasswordType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/SecretKeyProtectionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/SecurityAuditType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/SharedSecretChallengeResponseType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/TechnicalProtectionBaseType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/TimeSyncTokenType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/TokenType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationLimitDurationType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationLimitSessionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationLimitType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationLimitUsagesType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationPinType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AlphabetType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AuthenticatorBaseType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AuthenticatorTransportProtocolType.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3508,
-  "done": 2475
+  "done": 2490
 }

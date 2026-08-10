@@ -2443,3 +2443,18 @@
 2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PrivateKeyProtectionType.java wave83a saml2 ac key/password/protection types
 2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PublicKeyType.java wave83a saml2 ac key/password/protection types
 2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/RestrictedLengthType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/RestrictedPasswordType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/SecretKeyProtectionType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/SecurityAuditType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/SharedSecretChallengeResponseType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/TechnicalProtectionBaseType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/TimeSyncTokenType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/TokenType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationLimitDurationType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationLimitSessionType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationLimitType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationLimitUsagesType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ActivationPinType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AlphabetType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AuthenticatorBaseType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AuthenticatorTransportProtocolType.java wave83b saml2 ac remaining + classes batch1
