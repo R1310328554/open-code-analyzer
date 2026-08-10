@@ -30,10 +30,9 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
- * A {@link Function} to be used by {@link CacheStream} to extract the client's ID from the client sessions associated
- * to a {@link UserSessionEntity}.
+ * {@link CacheStream} 映射函数：从 {@link UserSessionEntity} 关联的客户端会话中提取客户端 ID 集合。
  * <p>
- * This function is marshaled with ProtoStream.
+ * 通过 ProtoStream 序列化，供分布式流处理使用。
  */
 @ProtoTypeId(Marshalling.AUTHENTICATION_CLIENT_SESSION_KEY_SET_MAPPER)
 public class AuthClientSessionSetMapper implements Function<Map.Entry<String, SessionEntityWrapper<UserSessionEntity>>, Set<String>> {
@@ -43,11 +42,13 @@ public class AuthClientSessionSetMapper implements Function<Map.Entry<String, Se
     private AuthClientSessionSetMapper() {
     }
 
+    /** ProtoStream 工厂方法，返回单例。 */
     @ProtoFactory
     public static AuthClientSessionSetMapper getInstance() {
         return INSTANCE;
     }
 
+    /** 返回用户会话实体中记录的客户端 ID 集合。 */
     @Override
     public Set<String> apply(Map.Entry<String, SessionEntityWrapper<UserSessionEntity>> entry) {
         return entry.getValue().getEntity().getClientSessions();

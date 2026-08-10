@@ -23,8 +23,14 @@ import java.util.function.Predicate;
 
 import org.infinispan.protostream.annotations.ProtoField;
 
+/**
+ * 按 realm 过滤缓存条目的谓词基类。
+ * <p>
+ * 子类实现 {@link #realmIdFrom(Object)} 从值中提取 realm 标识并与构造时指定的 realm 比较。
+ */
 abstract class BaseRealmPredicate<K, V> implements Predicate<Map.Entry<K, V>> {
 
+    /** 目标 realm 标识。 */
     @ProtoField(1)
     final String realmId;
 
@@ -32,10 +38,12 @@ abstract class BaseRealmPredicate<K, V> implements Predicate<Map.Entry<K, V>> {
         this.realmId = Objects.requireNonNull(realmId);
     }
 
+    /** 判断缓存条目的 realm 是否匹配。 */
     @Override
     public boolean test(Map.Entry<K, V> entry) {
         return realmId.equals(realmIdFrom(entry.getValue()));
     }
 
+    /** 从缓存值中提取 realm 标识。 */
     abstract String realmIdFrom(V value);
 }

@@ -52,12 +52,22 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.LOGIN_FAILURE_CACHE_NAME;
 
+/**
+ * 远程 Infinispan 登录失败记录的 {@link UserLoginFailureProviderFactory} 实现。
+ * <p>
+ * 工厂同时充当 {@link UpdaterFactory} 与 {@link RemoteChangeLogTransaction.SharedState}，
+ * 在 {@link #postInit} 中绑定远程缓存、注册用户删除事件监听，并为每次请求创建
+ * {@link LoginFailureChangeLogTransaction}。
+ */
 public class RemoteUserLoginFailureProviderFactory implements UserLoginFailureProviderFactory<RemoteUserLoginFailureProvider>, UpdaterFactory<LoginFailureKey, LoginFailureEntity, LoginFailuresUpdater>, EnvironmentDependentProviderFactory, RemoteChangeLogTransaction.SharedState<LoginFailureKey, LoginFailureEntity>, ServerInfoAwareProviderFactory {
 
     private static final Logger log = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** ProtoStream 实体类型标识，供按 realm 条件删除查询使用。 */
     public static final String PROTO_ENTITY = Marshalling.protoEntity(LoginFailureEntity.class);
 
+    /** 登录失败远程缓存。 */
     private volatile RemoteCache<LoginFailureKey, LoginFailureEntity> cache;
+    /** 阻塞调度器，用于缓存操作重试退避。 */
     private volatile BlockingManager blockingManager;
     private volatile int maxRetries = InfinispanUtils.DEFAULT_MAX_RETRIES;
     private volatile int backOffBaseTimeMillis = InfinispanUtils.DEFAULT_RETRIES_BASE_TIME_MILLIS;
@@ -73,6 +83,7 @@ public class RemoteUserLoginFailureProviderFactory implements UserLoginFailurePr
         backOffBaseTimeMillis = InfinispanUtils.getRetryBaseTimeMillis(config);
     }
 
+    /** 初始化远程缓存；用户删除时级联清除其登录失败记录。 */
     @Override
     public void postInit(final KeycloakSessionFactory factory) {
         try (var session = factory.create()) {
@@ -104,6 +115,7 @@ public class RemoteUserLoginFailureProviderFactory implements UserLoginFailurePr
         return InfinispanUtils.PROVIDER_ORDER;
     }
 
+    /** 非无状态模式且启用远程 Infinispan 时生效。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return !Profile.isFeatureEnabled(Profile.Feature.STATELESS) && InfinispanUtils.isRemoteInfinispan();
@@ -169,6 +181,7 @@ public class RemoteUserLoginFailureProviderFactory implements UserLoginFailurePr
         this.maxRetries = Math.max(0, maxRetries);
     }
 
+    /** 创建并登记登录失败变更日志事务。 */
     private LoginFailureChangeLogTransaction createAndEnlistTransaction(KeycloakSession session) {
         var provider = session.getProvider(InfinispanTransactionProvider.class);
         var tx = new LoginFailureChangeLogTransaction(this, this, new ByRealmIdQueryConditionalRemover<>(PROTO_ENTITY));

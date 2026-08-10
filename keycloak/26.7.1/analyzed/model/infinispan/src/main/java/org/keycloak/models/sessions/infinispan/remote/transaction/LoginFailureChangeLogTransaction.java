@@ -24,7 +24,9 @@ import org.keycloak.models.sessions.infinispan.entities.LoginFailureEntity;
 import org.keycloak.models.sessions.infinispan.entities.LoginFailureKey;
 
 /**
- * Syntactic sugar for
+ * 登录失败记录变更日志事务的语法糖封装。
+ * <p>
+ * 等价于
  * {@code RemoteChangeLogTransaction<LoginFailureKey, LoginFailureEntity, LoginFailuresUpdater,
  * ByRealmIdConditionalRemover<LoginFailureKey, LoginFailureEntity>>}
  */
@@ -34,6 +36,7 @@ public class LoginFailureChangeLogTransaction extends RemoteChangeLogTransaction
         super(factory, sharedState, conditionalRemover);
     }
 
+    /** 按 realm 标识批量删除登录失败记录。 */
     public void removeByRealmId(String realmId) {
         getConditionalRemover().removeByRealmId(realmId);
     }

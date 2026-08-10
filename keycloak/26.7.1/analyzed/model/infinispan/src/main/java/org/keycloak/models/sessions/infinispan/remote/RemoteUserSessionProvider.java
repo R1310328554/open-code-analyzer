@@ -72,15 +72,21 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 
 /**
- * An {@link UserSessionProvider} implementation that uses only {@link RemoteCache} as storage.
+ * 仅使用 {@link RemoteCache} 存储的 {@link UserSessionProvider} 实现。
+ * <p>
+ * 在线/离线用户会话与客户端会话经 {@link UserSessionTransaction} 统一管理；
+ * 查询走 Ickle/Remote Query，批量迁移自 {@link UserSessionPersisterProvider}。
  */
 public class RemoteUserSessionProvider implements UserSessionProvider {
 
     private static final Logger log = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** 并发远程 get 请求上限。 */
     private static final int MAX_CONCURRENT_REQUESTS = 16;
 
     private final KeycloakSession session;
+    /** 聚合四套会话变更日志事务。 */
     private final UserSessionTransaction transaction;
+    /** 流式查询每批拉取条数。 */
     private final int batchSize;
 
     public RemoteUserSessionProvider(KeycloakSession session, UserSessionTransaction transaction, int batchSize) {
@@ -192,6 +198,7 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
         transaction.removeAllSessionsByRealmId(realm.getId());
     }
 
+    /** realm 删除时清除远程缓存并通知持久化层。 */
     @Override
     public void onRealmRemoved(RealmModel realm) {
         transaction.removeAllSessionsByRealmId(realm.getId());
@@ -273,6 +280,7 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
 
     }
 
+    /** 25.0.0 模型升级：将数据库中的在线/离线会话批量迁入远程缓存。 */
     @Override
     public void migrate(String modelVersion) {
         if ("25.0.0".equals(modelVersion)) {
@@ -302,11 +310,12 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
         return readOnlyStream(realm, client, false, skip, maxResults);
     }
 
+    /** 只读遍历 realm 下全部会话（效率较低，逐条复制为不可变视图）。 */
     private Stream<UserSessionModel> readOnlyStream(RealmModel realm, boolean offline) {
         var expiration = new SessionExpirationPredicates(realm, offline, Time.currentTime());
         var query = UserSessionQueries.searchByRealm(getUserSessionTransaction(offline).getCache(), realm.getId());
         var clientSessionCache = getClientSessionTransaction(offline).getCache();
-        //not very efficient at all.
+        // 效率不高：先查全部用户会话再逐条组装客户端会话。
         return Flowable.fromStream(QueryHelper.streamAll(query, batchSize, Function.identity()))
                 .buffer(128)
                 .blockingStream()
@@ -348,6 +357,7 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
         log.info("All sessions migrated.");
     }
 
+    /** 从数据库分批迁移会话到远程缓存，成功后从 DB 删除。 */
     private boolean migrateUserSessionBatch(KeycloakSessionFactory factory, boolean offline, List<String> userSessionBuffer, List<Map.Entry<String, String>> clientSessionBuffer) {
         var userSessionCache = getUserSessionTransaction(offline).getCache();
         var clientSessionCache = getClientSessionTransaction(offline).getCache();
@@ -429,17 +439,18 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
         return initUserSessionUpdater(updater, UserSessionModel.SessionPersistenceState.PERSISTENT, realm, user, offline);
     }
 
+    /** 加载并初始化用户会话；用户不存在时视为孤儿会话并删除。 */
     private UserSessionUpdater initUserSessionUpdater(UserSessionUpdater updater, UserSessionModel.SessionPersistenceState persistenceState, RealmModel realm, UserModel user, boolean offline) {
         if (user instanceof LightweightUserAdapter) {
             updater.initialize(persistenceState, realm, user, new ClientSessionMapping(updater));
             return checkExpiration(updater);
         }
-        // copied from org.keycloak.models.sessions.infinispan.InfinispanUserSessionProvider
+        // 逻辑自 org.keycloak.models.sessions.infinispan.InfinispanUserSessionProvider 复制
         if (Profile.isFeatureEnabled(Profile.Feature.TRANSIENT_USERS) && updater.getNotes().containsKey(SESSION_NOTE_LIGHTWEIGHT_USER)) {
             LightweightUserAdapter lua = LightweightUserAdapter.fromString(session, realm, updater.getNotes().get(SESSION_NOTE_LIGHTWEIGHT_USER));
             updater.initialize(persistenceState, realm, lua, new ClientSessionMapping(updater));
             lua.setUpdateHandler(lua1 -> {
-                if (lua == lua1) {  // Ensure there is no conflicting user model, only the latest lightweight user can be used
+                if (lua == lua1) {  // 避免冲突：仅最新轻量用户模型可写回 note
                     updater.setNote(SESSION_NOTE_LIGHTWEIGHT_USER, lua1.serialize());
                 }
             });
@@ -447,7 +458,7 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
         }
 
         if (user == null) {
-            // remove orphaned user session from the cache
+            // 用户已不存在，从缓存移除孤儿会话
             internalRemoveUserSession(updater, offline);
             return null;
         }
@@ -509,6 +520,7 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
                 .map(UserSessionModel.class::cast);
     }
 
+    /** 过期则标记并丢弃，否则返回 updater。 */
     private static <K, V, T extends BaseUpdater<K, V>> T checkExpiration(T updater) {
         var expiration = updater.computeExpiration();
         if (expiration.isExpired()) {
@@ -518,9 +530,13 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
         return updater;
     }
 
+    /**
+     * 用户会话下的客户端会话映射：懒加载远程客户端会话并缓存在当前事务中。
+     */
     private class ClientSessionMapping extends AbstractMap<String, AuthenticatedClientSessionModel> implements Consumer<RemoteAuthenticatedClientSessionEntity>, AuthenticatedClientSessionMapping {
 
         private final UserSessionUpdater userSession;
+        /** 尚未从远程缓存批量拉取客户端会话时为 true。 */
         private boolean coldCache = true;
 
         ClientSessionMapping(UserSessionUpdater userSession) {
@@ -551,7 +567,7 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
                 fetchAndCacheClientSessions();
                 coldCache = false;
             }
-            // iterate from the locally cached data.
+            // 优先遍历事务内已缓存的客户端会话。
             return getTransaction().getClientSessions()
                     .filter(this::isFromUserSession)
                     .map(this::initialize)
@@ -599,10 +615,11 @@ public class RemoteUserSessionProvider implements UserSessionProvider {
             return initClientSessionUpdater(updater, userSession);
         }
 
+        /** 用户会话重启时删除其下全部客户端会话（冷缓存则先查 ID 再删）。 */
         @Override
         public void onUserSessionRestart() {
             if (coldCache) {
-                // not all sessions cached in the transaction, we fetch the client ID and mark all them as deleted.
+                // 事务内未缓存全部会话：先查客户端 ID 再逐条标记删除。
                 var query = ClientSessionQueries.fetchClientSessionsIds(getTransaction().getCache(), getUserSessionId());
                 QueryHelper.streamAll(query, batchSize, this::keyForClientId)
                         .forEach(getTransaction()::remove);

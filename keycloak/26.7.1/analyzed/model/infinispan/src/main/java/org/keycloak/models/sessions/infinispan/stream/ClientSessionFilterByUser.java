@@ -30,16 +30,17 @@ import org.infinispan.protostream.annotations.ProtoTypeId;
 import static org.keycloak.marshalling.Marshalling.CLIENT_SESSION_USER_FILTER;
 
 /**
- * A {@link Predicate} to filter {@link AuthenticatedClientSessionEntity} values based on the Realm ID and the User ID.
+ * 按 realm 与用户 ID 过滤 {@link AuthenticatedClientSessionEntity} 的 {@link Predicate}。
  *
- * @param realmId The Realm ID.
- * @param userId  The User ID.
+ * @param realmId 目标 realm 标识。
+ * @param userId  目标用户标识。
  */
 @ProtoTypeId(CLIENT_SESSION_USER_FILTER)
 @Proto
 public record ClientSessionFilterByUser(String realmId,
                                         String userId) implements Predicate<Map.Entry<?, SessionEntityWrapper<AuthenticatedClientSessionEntity>>> {
 
+    /** 同时匹配 realm 与用户 ID。 */
     @Override
     public boolean test(Map.Entry<?, SessionEntityWrapper<AuthenticatedClientSessionEntity>> entry) {
         var entity = entry.getValue().getEntity();

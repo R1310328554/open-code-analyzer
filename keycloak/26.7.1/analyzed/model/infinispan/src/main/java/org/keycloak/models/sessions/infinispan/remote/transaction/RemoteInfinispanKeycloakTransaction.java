@@ -35,10 +35,17 @@ import org.infinispan.commons.util.concurrent.AggregateCompletionStage;
 import org.infinispan.commons.util.concurrent.CompletableFutures;
 import org.jboss.logging.Logger;
 
+/**
+ * 基于操作队列的远程 Infinispan {@link KeycloakTransaction}（较 {@link RemoteChangeLogTransaction} 更轻量）。
+ * <p>
+ * 在单次请求内按 key 合并 put/replace/remove 操作，提交时异步执行；
+ * 条件删除器可在提交前过滤待写入条目。
+ */
 class RemoteInfinispanKeycloakTransaction<K, V, R extends ConditionalRemover<K, V>> implements NonBlockingTransaction {
 
     private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 按插入顺序保存的待提交操作。 */
     private final Map<K, Operation<K, V>> tasks = new LinkedHashMap<>();
     private final RemoteCache<K, V> cache;
     private final R conditionalRemover;
@@ -62,6 +69,7 @@ class RemoteInfinispanKeycloakTransaction<K, V, R extends ConditionalRemover<K, 
         tasks.clear();
     }
 
+    /** 登记 put 操作；同一 key 已有进行中任务则抛异常。 */
     public void put(K key, V value, long lifespan, TimeUnit timeUnit) {
         logger.tracef("Adding %s.put(%S)", cache.getName(), key);
 
@@ -80,7 +88,7 @@ class RemoteInfinispanKeycloakTransaction<K, V, R extends ConditionalRemover<K, 
             if (existing.hasValue()) {
                 tasks.put(key, existing.update(value, lifespan, timeUnit));
             } else if (!(existing == TOMBSTONE || existing instanceof RemoveOperation<K, V>)) {
-                // A previous delete operation will take precedence over any new replace
+                // 已有删除操作优先，不允许再 replace
                 throw new IllegalStateException("Can't replace entry: task " + existing + " in progress for session");
             }
             return;
@@ -109,7 +117,7 @@ class RemoteInfinispanKeycloakTransaction<K, V, R extends ConditionalRemover<K, 
             return existing.getValue();
         }
 
-        // Should we have per-transaction cache for lookups?
+        // 是否应为每个事务维护独立读缓存？
         return cache.get(key);
     }
 
@@ -121,11 +129,12 @@ class RemoteInfinispanKeycloakTransaction<K, V, R extends ConditionalRemover<K, 
         return conditionalRemover;
     }
 
+    /** 满足以下任一条件则提交：删除操作；无条件删除器；或值不匹配删除谓词。 */
     private boolean shouldCommitOperation(Operation<K, V> operation) {
-        // Commit if any:
-        // 1. it is a removal operation (no value to test the predicate).
-        // 2. remove predicate is not present.
-        // 3. value does not match the remove predicate.
+        // 提交条件：
+        // 1. 删除操作（无值可测谓词）
+        // 2. 未配置删除谓词
+        // 3. 值不匹配删除谓词
         return !operation.hasValue() || !conditionalRemover.willRemove(operation.getCacheKey(), operation.getValue());
     }
 
@@ -141,21 +150,21 @@ class RemoteInfinispanKeycloakTransaction<K, V, R extends ConditionalRemover<K, 
         CompletionStage<?> execute(RemoteCache<K, V> cache);
 
         /**
-         * Updates the operation with a new value and lifespan only if {@link #hasValue()} returns {@code true}.
+         * 仅当 {@link #hasValue()} 为 true 时，用新值与 TTL 更新操作。
          */
         default Operation<K, V> update(V newValue, int newLifespan, TimeUnit newTimeUnit) {
             return null;
         }
 
         /**
-         * @return {@code true} if the operation can be removed from the tasks map. It will skip the {@link RemoteCache} removal.
+         * @return 为 true 时可从 tasks 映射中移除，跳过 {@link RemoteCache} 删除调用。
          */
         default boolean canRemove() {
             return false;
         }
 
         /**
-         * @return {@code true} if the operation has a value associated
+         * @return 为 true 表示操作关联了缓存值。
          */
         default boolean hasValue() {
             return false;
@@ -182,7 +191,7 @@ class RemoteInfinispanKeycloakTransaction<K, V, R extends ConditionalRemover<K, 
 
         @Override
         public boolean canRemove() {
-            // since it is new entry in the cache, it can be removed form the tasks map.
+            // 新建条目尚未写入远程缓存，可直接从 tasks 移除。
             return true;
         }
 
@@ -243,6 +252,7 @@ class RemoteInfinispanKeycloakTransaction<K, V, R extends ConditionalRemover<K, 
         }
     }
 
+    /** 占位符：表示 put 后又被 remove，提交时无需访问远程缓存。 */
     private static final Operation<?, ?> TOMBSTONE = new Operation<>() {
 
         @Override

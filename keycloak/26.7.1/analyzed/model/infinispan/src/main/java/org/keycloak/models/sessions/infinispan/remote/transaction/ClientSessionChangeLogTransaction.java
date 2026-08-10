@@ -28,7 +28,9 @@ import org.keycloak.models.sessions.infinispan.entities.ClientSessionKey;
 import org.keycloak.models.sessions.infinispan.entities.RemoteAuthenticatedClientSessionEntity;
 
 /**
- * Syntactic sugar for
+ * 已认证客户端会话变更日志事务的语法糖封装。
+ * <p>
+ * 等价于
  * {@code RemoteChangeLogTransaction<SessionKey, AuthenticatedClientSessionEntity, AuthenticatedClientSessionUpdater,
  * UserAndClientSessionConditionalRemover<AuthenticatedClientSessionEntity>>}
  */
@@ -39,25 +41,25 @@ public class ClientSessionChangeLogTransaction extends RemoteChangeLogTransactio
     }
 
     /**
-     * Wraps a Query project results, where the first argument is the entity, and the second the version.
+     * 包装 Query 投影结果（首参为实体，次参为版本；此处无版本信息）。
      */
     public void wrapFromProjection(RemoteAuthenticatedClientSessionEntity entity) {
         wrap(entity.createCacheKey(), entity, Updater.NO_VERSION);
     }
 
     /**
-     * Remove all client sessions belonging to the user session.
+     * 删除指定用户会话下的全部客户端会话。
      */
     public void removeByUserSessionId(String userSessionId) {
         getConditionalRemover().removeByUserSessionId(userSessionId);
-        // make cached entities as deleted too
+        // 同时将事务内已缓存的匹配实体标记为已删除
         getClientSessions()
                 .filter(getConditionalRemover()::willRemove)
                 .forEach(BaseUpdater::markDeleted);
     }
 
     /**
-     * @return A stream with all currently cached {@link AuthenticatedClientSessionUpdater} in this transaction.
+     * @return 当前事务中已缓存的全部 {@link AuthenticatedClientSessionUpdater} 流。
      */
     public Stream<AuthenticatedClientSessionUpdater> getClientSessions() {
         return getCachedEntities().values().stream();

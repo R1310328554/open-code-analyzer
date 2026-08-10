@@ -41,20 +41,25 @@ import org.infinispan.commons.util.concurrent.CompletableFutures;
 import org.infinispan.util.concurrent.BlockingManager;
 
 /**
- * A {@link KeycloakTransaction} implementation that keeps track of changes made to entities stored in a Infinispan
- * cache.
+ * 跟踪 Infinispan 远程缓存实体变更的 {@link KeycloakTransaction} 实现。
+ * <p>
+ * 事务内缓存 {@link Updater} 副本，提交时按创建/替换/删除/过期等状态异步写入远程缓存，
+ * 并支持指数退避重试；条件删除由 {@link ConditionalRemover} 在提交阶段执行。
  *
- * @param <K> The type of the Infinispan cache key.
- * @param <V> The type of the Infinispan cache value.
- * @param <T> The type of the {@link Updater} implementation.
+ * @param <K> Infinispan 缓存键类型。
+ * @param <V> Infinispan 缓存值类型。
+ * @param <T> {@link Updater} 实现类型。
  */
 public class RemoteChangeLogTransaction<K, V, T extends Updater<K, V>, R extends ConditionalRemover<K, V>> implements NonBlockingTransaction {
 
     private static final RetryOperationSuccess<?, ?, ?> TO_NULL = (ignored1, ignored2, ignored3) -> CompletableFutures.completedNull();
 
+    /** 本事务内键到 updater 的变更映射。 */
     private final Map<K, T> entityChanges;
     private final UpdaterFactory<K, V, T> factory;
+    /** 批量条件删除器（如按 realm/user 删除）。 */
     private final R conditionalRemover;
+    /** 共享的远程缓存与重试配置。 */
     private final SharedState<K, V> sharedState;
 
     RemoteChangeLogTransaction(UpdaterFactory<K, V, T> factory, SharedState<K, V> sharedState, R conditionalRemover) {
@@ -64,6 +69,7 @@ public class RemoteChangeLogTransaction<K, V, T extends Updater<K, V>, R extends
         entityChanges = new ConcurrentHashMap<>(8);
     }
 
+    /** 异步提交：先执行条件删除，再逐条提交实体变更。 */
     @Override
     public void asyncCommit(AggregateCompletionStage<Void> stage, Consumer<DatabaseUpdate> databaseUpdates) {
         conditionalRemover.executeRemovals(getCache(), stage);
@@ -80,7 +86,7 @@ public class RemoteChangeLogTransaction<K, V, T extends Updater<K, V>, R extends
             var expiration = updater.computeExpiration();
 
             if (expiration.isExpired()) {
-                // We need the cache entry expired events from the server, do nothing here.
+                // 依赖服务端缓存过期事件，此处不写缓存。
                 continue;
             }
 
@@ -105,19 +111,17 @@ public class RemoteChangeLogTransaction<K, V, T extends Updater<K, V>, R extends
 
 
     /**
-     * @return The {@link RemoteCache} tracked by the transaction.
+     * @return 本事务跟踪的 {@link RemoteCache}。
      */
     public RemoteCache<K, V> getCache() {
         return sharedState.cache();
     }
 
     /**
-     * Fetches the value associated to the {@code key}.
-     * <p>
-     * It fetches the value from the {@link RemoteCache} if a copy does not exist in the transaction.
+     * 按 key 获取实体 updater；事务内无副本时从 {@link RemoteCache} 加载。
      *
-     * @param key The Infinispan cache key to fetch.
-     * @return The {@link Updater} to track further changes of the Infinispan cache value.
+     * @param key 要读取的 Infinispan 缓存键。
+     * @return 用于跟踪后续变更的 {@link Updater}。
      */
     public T get(K key) {
         var updater = entityChanges.get(key);
@@ -128,10 +132,10 @@ public class RemoteChangeLogTransaction<K, V, T extends Updater<K, V>, R extends
     }
 
     /**
-     * Nonblocking alternative of {@link #get(Object)}
+     * {@link #get(Object)} 的非阻塞版本。
      *
-     * @param key The Infinispan cache key to fetch.
-     * @return The {@link Updater} to track further changes of the Infinispan cache value.
+     * @param key 要读取的 Infinispan 缓存键。
+     * @return 用于跟踪后续变更的 {@link Updater}。
      */
     public CompletionStage<T> getAsync(K key) {
         var updater = entityChanges.get(key);
@@ -142,11 +146,11 @@ public class RemoteChangeLogTransaction<K, V, T extends Updater<K, V>, R extends
     }
 
     /**
-     * Tracks a new value to be created in the Infinispan cache.
+     * 登记将在远程缓存中创建的新实体。
      *
-     * @param key    The Infinispan cache key to be associated to the value.
-     * @param entity The Infinispan cache value.
-     * @return The {@link Updater} to track further changes of the Infinispan cache value.
+     * @param key    关联的 Infinispan 缓存键。
+     * @param entity 缓存值。
+     * @return 用于跟踪后续变更的 {@link Updater}。
      */
     public T create(K key, V entity) {
         var updater = factory.create(key, entity);
@@ -155,9 +159,9 @@ public class RemoteChangeLogTransaction<K, V, T extends Updater<K, V>, R extends
     }
 
     /**
-     * Removes the {@code key} from the {@link RemoteCache}.
+     * 从 {@link RemoteCache} 删除指定键。
      *
-     * @param key The Infinispan cache key to remove.
+     * @param key 要删除的 Infinispan 缓存键。
      */
     public void remove(K key) {
         var updater = entityChanges.get(key);
@@ -267,7 +271,7 @@ public class RemoteChangeLogTransaction<K, V, T extends Updater<K, V>, R extends
         CompletionStage<Void> onSuccess(R result, Updater<K, V> updater, Expiration expiration);
     }
 
-    // Attempt to minimize class size. Each request creates a new instance of this class, and the shared state can be shared among those instances.
+    // 尽量缩小类体积：每次请求新建实例，共享状态可在多实例间复用。
     public interface SharedState<K, V> {
         RemoteCache<K, V> cache();
 

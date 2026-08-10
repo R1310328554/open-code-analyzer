@@ -28,14 +28,12 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
- * A {@link Function} that converts the {@link Collection} to a {@link Stream}.
+ * 将 {@link Collection} 转为 {@link Stream} 的 {@link Function}。
  * <p>
- * Same as {@code Collection::stream}.
- * <p>
- * Infinispan can marshall lambdas, by using {@link SerializedLambda} but it is not as efficient and ProtoStream
- * marshaller.
+ * 等价于 {@code Collection::stream}，但以 ProtoStream 序列化，
+ * 比 Infinispan 基于 {@link SerializedLambda} 的 lambda 编组更高效。
  *
- * @param <T> The type of the collection elements.
+ * @param <T> 集合元素类型。
  */
 @ProtoTypeId(Marshalling.COLLECTION_TO_STREAM_MAPPER)
 public class CollectionToStreamMapper<T> implements Function<Collection<T>, Stream<T>> {
@@ -45,12 +43,14 @@ public class CollectionToStreamMapper<T> implements Function<Collection<T>, Stre
     private CollectionToStreamMapper() {
     }
 
+    /** ProtoStream 工厂方法，返回泛型单例。 */
     @ProtoFactory
     @SuppressWarnings("unchecked")
     public static <T1> CollectionToStreamMapper<T1> getInstance() {
         return (CollectionToStreamMapper<T1>) INSTANCE;
     }
 
+    /** 对集合调用 {@link Collection#stream()}。 */
     @Override
     public Stream<T> apply(Collection<T> collection) {
         return collection.stream();

@@ -42,20 +42,31 @@ import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.O
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.OFFLINE_USER_SESSION_CACHE_NAME;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.USER_SESSION_CACHE_NAME;
 
+/**
+ * 远程 Infinispan 用户会话 {@link UserSessionProviderFactory}。
+ * <p>
+ * 管理在线/离线用户会话与客户端会话四套远程缓存，创建 {@link UserSessionTransaction}
+ * 并在会话过期时通过 {@link RemoteUserSessionExpirationListener} 清理关联客户端会话。
+ */
 public class RemoteUserSessionProviderFactory implements UserSessionProviderFactory<RemoteUserSessionProvider>, EnvironmentDependentProviderFactory, ProviderEventListener, ServerInfoAwareProviderFactory {
 
-    // Sessions are close to 1KB of data. Fetch 1MB per batch request (can be configured)
+    // 单条会话约 1KB；默认每批拉取约 1MB（可通过 batchSize 配置）
     private static final int DEFAULT_BATCH_SIZE = 1024;
     private static final String CONFIG_MAX_BATCH_SIZE = "batchSize";
 
+    /** 在线用户会话共享状态。 */
     private volatile SharedStateImpl<String, RemoteUserSessionEntity> userSessionState;
+    /** 离线用户会话共享状态。 */
     private volatile SharedStateImpl<String, RemoteUserSessionEntity> offlineUserSessionState;
+    /** 在线客户端会话共享状态。 */
     private volatile SharedStateImpl<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> clientSessionState;
+    /** 离线客户端会话共享状态。 */
     private volatile SharedStateImpl<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> offlineClientSessionState;
     private volatile BlockingManager blockingManager;
     private volatile int batchSize = DEFAULT_BATCH_SIZE;
     private volatile int maxRetries = InfinispanUtils.DEFAULT_MAX_RETRIES;
     private volatile int backOffBaseTimeMillis = InfinispanUtils.DEFAULT_RETRIES_BASE_TIME_MILLIS;
+    /** 用户会话过期监听器，用于级联删除客户端会话。 */
     private volatile RemoteUserSessionExpirationListener expirationListener;
 
     @Override
@@ -100,6 +111,7 @@ public class RemoteUserSessionProviderFactory implements UserSessionProviderFact
         return InfinispanUtils.REMOTE_PROVIDER_ID;
     }
 
+    /** 启用远程 Infinispan 且未开启持久化会话模式时生效。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return InfinispanUtils.isRemoteInfinispan() && !MultiSiteUtils.isPersistentSessionsEnabled();
@@ -142,11 +154,13 @@ public class RemoteUserSessionProviderFactory implements UserSessionProviderFact
         return Set.of(InfinispanTransactionProvider.class, InfinispanConnectionProvider.class);
     }
 
+    /** 用户删除时清除其在线/离线会话及持久化层记录。 */
     private void onUserRemoved(UserModel.UserRemovedEvent event) {
         event.getKeycloakSession().getProvider(UserSessionProvider.class, getId()).removeUserSessions(event.getRealm(), event.getUser());
         event.getKeycloakSession().getProvider(UserSessionPersisterProvider.class).onUserRemoved(event.getRealm(), event.getUser());
     }
 
+    /** 延迟初始化四套远程缓存与过期监听器。 */
     private void lazyInit(KeycloakSession session) {
         if (blockingManager != null) {
             return;
@@ -162,6 +176,7 @@ public class RemoteUserSessionProviderFactory implements UserSessionProviderFact
         offlineUserSessionState.cache().addClientListener(expirationListener);
     }
 
+    /** 组装在线/离线用户与会话四套变更日志事务。 */
     private UserSessionTransaction createTransaction(KeycloakSession session) {
         lazyInit(session);
         return new UserSessionTransaction(
@@ -172,6 +187,7 @@ public class RemoteUserSessionProviderFactory implements UserSessionProviderFact
         );
     }
 
+    /** {@link RemoteChangeLogTransaction.SharedState} 的具体实现，封装缓存与重试参数。 */
     private class SharedStateImpl<K, V> implements RemoteChangeLogTransaction.SharedState<K, V> {
 
         private final RemoteCache<K, V> cache;

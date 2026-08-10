@@ -24,7 +24,9 @@ import org.keycloak.models.sessions.infinispan.entities.SingleUseObjectValueEnti
 import org.infinispan.client.hotrod.RemoteCache;
 
 /**
- * Syntactic sugar for
+ * 单次使用对象事务的语法糖封装。
+ * <p>
+ * 等价于
  * {@code RemoteInfinispanKeycloakTransaction<String, SingleUseObjectValueEntity, ConditionalRemover<String,
  * SingleUseObjectValueEntity>>}
  */

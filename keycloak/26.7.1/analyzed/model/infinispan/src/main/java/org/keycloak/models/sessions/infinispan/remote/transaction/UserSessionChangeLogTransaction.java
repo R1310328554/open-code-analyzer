@@ -26,7 +26,9 @@ import org.keycloak.models.sessions.infinispan.entities.RemoteUserSessionEntity;
 import io.reactivex.rxjava3.core.Maybe;
 
 /**
- * Syntactic sugar for
+ * 用户会话变更日志事务的语法糖封装。
+ * <p>
+ * 等价于
  * {@code RemoteChangeLogTransaction<SessionKey, UserSessionEntity, UserSessionUpdater,
  * UserAndClientSessionConditionalRemover<UserSessionEntity>>}
  */
@@ -36,10 +38,12 @@ public class UserSessionChangeLogTransaction extends RemoteChangeLogTransaction<
         super(factory, sharedState, new UserSessionQueryConditionalRemover());
     }
 
+    /** 将 Query 投影实体包装为事务内 updater（无版本号）。 */
     public UserSessionUpdater wrapFromProjection(RemoteUserSessionEntity entity) {
         return wrap(entity.getUserSessionId(), entity, Updater.NO_VERSION);
     }
 
+    /** 非阻塞获取用户会话 updater，包装为 RxJava {@link Maybe}。 */
     public Maybe<UserSessionUpdater> maybeGet(String userSessionId) {
         return Maybe.fromCompletionStage(getAsync(userSessionId));
     }

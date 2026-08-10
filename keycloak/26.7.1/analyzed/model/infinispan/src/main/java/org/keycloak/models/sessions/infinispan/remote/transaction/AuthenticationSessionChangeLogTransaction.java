@@ -23,9 +23,11 @@ import org.keycloak.models.sessions.infinispan.changes.remote.updater.authsessio
 import org.keycloak.models.sessions.infinispan.entities.RootAuthenticationSessionEntity;
 
 /**
- * Syntactic sugar for
+ * 认证根会话变更日志事务的语法糖封装。
+ * <p>
+ * 等价于
  * {@code RemoteInfinispanKeycloakTransaction<String, RootAuthenticationSessionEntity,
- * ByRealmIdQueryConditionalRemover<String, RootAuthenticationSessionEntity>>
+ * ByRealmIdQueryConditionalRemover<String, RootAuthenticationSessionEntity>>}
  */
 public class AuthenticationSessionChangeLogTransaction extends RemoteChangeLogTransaction<String, RootAuthenticationSessionEntity, RootAuthenticationSessionUpdater, ByRealmIdQueryConditionalRemover<String, RootAuthenticationSessionEntity>> {
 
@@ -33,6 +35,7 @@ public class AuthenticationSessionChangeLogTransaction extends RemoteChangeLogTr
         super(factory, sharedState, conditionalRemover);
     }
 
+    /** 按 realm 标识批量删除认证根会话。 */
     public void removeByRealmId(String realmId) {
         getConditionalRemover().removeByRealmId(realmId);
     }

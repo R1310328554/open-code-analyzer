@@ -26,16 +26,19 @@ import org.keycloak.models.sessions.infinispan.transaction.NonBlockingTransactio
 import org.infinispan.commons.util.concurrent.AggregateCompletionStage;
 
 /**
- * A {@link KeycloakTransaction} implementation that wraps all the user and client session transactions.
+ * 聚合在线/离线用户会话与客户端会话四套变更日志事务的 {@link KeycloakTransaction}。
  * <p>
- * This implementation commits all modifications asynchronously and concurrently in both user and client sessions
- * transactions. Waits for all them to complete. This is an optimization to reduce the response time.
+ * 提交时异步并发执行四套事务的 {@link #asyncCommit}，缩短响应时间。
  */
 public class UserSessionTransaction implements NonBlockingTransaction {
 
+    /** 在线用户会话事务。 */
     private final UserSessionChangeLogTransaction userSessions;
+    /** 在线客户端会话事务。 */
     private final ClientSessionChangeLogTransaction clientSessions;
+    /** 离线用户会话事务。 */
     private final UserSessionChangeLogTransaction offlineUserSessions;
+    /** 离线客户端会话事务。 */
     private final ClientSessionChangeLogTransaction offlineClientSessions;
 
     public UserSessionTransaction(UserSessionChangeLogTransaction userSessions, UserSessionChangeLogTransaction offlineUserSessions, ClientSessionChangeLogTransaction clientSessions, ClientSessionChangeLogTransaction offlineClientSessions) {
@@ -69,6 +72,7 @@ public class UserSessionTransaction implements NonBlockingTransaction {
         return offline ? offlineUserSessions : userSessions;
     }
 
+    /** 删除 realm 下在线与离线全部用户及客户端会话。 */
     public void removeAllSessionsByRealmId(String realmId) {
         clientSessions.getConditionalRemover().removeByRealmId(realmId);
         userSessions.getConditionalRemover().removeByRealmId(realmId);
@@ -76,16 +80,19 @@ public class UserSessionTransaction implements NonBlockingTransaction {
         offlineUserSessions.getConditionalRemover().removeByRealmId(realmId);
     }
 
+    /** 仅删除 realm 下在线用户及客户端会话。 */
     public void removeOnlineSessionsByRealmId(String realmId) {
         clientSessions.getConditionalRemover().removeByRealmId(realmId);
         userSessions.getConditionalRemover().removeByRealmId(realmId);
     }
 
+    /** 删除指定用户在 realm 下的在线用户及客户端会话。 */
     public void removeAllSessionByUserId(String realmId, String userId) {
         userSessions.getConditionalRemover().removeByUserId(realmId, userId);
         clientSessions.getConditionalRemover().removeByUserId(realmId, userId);
     }
 
+    /** 按 ID 删除用户会话及其下全部客户端会话。 */
     public void removeUserSessionById(String userSessionId, boolean offline) {
         getUserSessions(offline).remove(userSessionId);
         getClientSessions(offline).removeByUserSessionId(userSessionId);
