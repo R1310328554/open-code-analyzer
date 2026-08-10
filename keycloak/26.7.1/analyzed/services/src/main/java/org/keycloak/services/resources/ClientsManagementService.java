@@ -46,14 +46,18 @@ import org.keycloak.representations.idm.OAuth2ErrorRepresentation;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端集群节点管理服务。
+ * <p>供适配器在加入/离开集群时注册或注销 {@code client_cluster_host}，用于 management URL 多节点路由。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientsManagementService {
 
     private static final Logger logger = Logger.getLogger(ClientsManagementService.class);
 
+    /** 当前领域 */
     private final RealmModel realm;
 
+    /** 审计事件构建器 */
     private final EventBuilder event;
 
     private final HttpRequest request;
@@ -64,6 +68,7 @@ public class ClientsManagementService {
 
     protected final KeycloakSession session;
 
+    /** @param session Keycloak 会话 @param event 事件构建器 */
     public ClientsManagementService(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -73,6 +78,10 @@ public class ClientsManagementService {
         this.headers = session.getContext().getRequestHeaders();
     }
 
+    /** 构建客户端管理 REST 基础 URI。
+     * @param baseUriBuilder 根 URI 构建器
+     * @return 带 RealmsResource 路径的构建器
+     */
     public static UriBuilder clientsManagementBaseUrl(UriBuilder baseUriBuilder) {
         return baseUriBuilder.path(RealmsResource.class).path(RealmsResource.class, "getClientsManagementService");
     }
@@ -91,6 +100,10 @@ public class ClientsManagementService {
      * URL invoked by adapter to register new client cluster node. Each application cluster node will invoke this URL once it joins cluster
      *
      * @return
+     */
+    /**
+     * 适配器注册集群节点：应用节点加入集群时调用。
+     * @return 204 无内容
      */
     @Path("register-node")
     @POST
@@ -133,6 +146,10 @@ public class ClientsManagementService {
      *
      * @return
      */
+    /**
+     * 适配器注销集群节点：应用节点离开集群时调用。
+     * @return 204 无内容
+     */
     @Path("unregister-node")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
@@ -162,6 +179,9 @@ public class ClientsManagementService {
         return Response.noContent().build();
     }
 
+    /** 校验机密客户端凭证，拒绝 public 客户端。
+     * @return 已授权的客户端模型
+     */
     protected ClientModel authorizeClient() {
         ClientModel client = AuthorizeClientUtil.authorizeClient(session, event, null).getClient();
 
@@ -174,6 +194,10 @@ public class ClientsManagementService {
         return client;
     }
 
+    /** 从表单读取 {@link AdapterConstants#CLIENT_CLUSTER_HOST}。
+     * @param formData 解码后的表单参数
+     * @return 集群 host
+     */
     protected String getClientClusterHost(MultivaluedMap<String, String> formData) {
         String clientClusterHost = formData.getFirst(AdapterConstants.CLIENT_CLUSTER_HOST);
         if (clientClusterHost == null || clientClusterHost.length() == 0) {
@@ -187,6 +211,9 @@ public class ClientsManagementService {
 
 
 
+    /** 校验当前请求是否满足领域 SSL 要求。
+     * @return 是否允许继续处理
+     */
     private boolean checkSsl() {
         if (session.getContext().getUri().getBaseUri().getScheme().equals("https")) {
             return true;

@@ -24,24 +24,29 @@ import org.keycloak.models.UserSessionProvider;
 import org.keycloak.services.util.UserSessionUtil;
 
 /**
+ * 跨数据中心用户会话管理器（已废弃）。
+ * <p>原用于从远程缓存拉取用户会话；请改用各方法 JavaDoc 中的替代 API。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  *
- * @deprecated To be removed without replacement. Check the methods documentation for alternatives.
+ * @deprecated 将移除且无替代类，请参阅各方法的替代方案。
  */
 @Deprecated(since = "26", forRemoval = true)
 public class UserSessionCrossDCManager {
 
+    /** Keycloak 会话 */
     private final KeycloakSession kcSession;
 
+    /** @param session Keycloak 会话 */
     public UserSessionCrossDCManager(KeycloakSession session) {
         this.kcSession = session;
     }
 
 
-    // get userSession if it has "authenticatedClientSession" of specified client attached to it. Otherwise download it from remoteCache
+    // 若用户会话已挂载指定客户端的 authenticatedClientSession 则直接返回，否则从 remoteCache 拉取（已废弃逻辑）
 
     /**
-     * @deprecated To be removed in Keycloak 27+. Use
+     * 获取挂载指定客户端会话的用户会话（含 offline 标志）。
+     * @deprecated Keycloak 27+ 将移除，请使用
      * {@link UserSessionProvider#getUserSessionIfClientExists(RealmModel, String, boolean, String)}
      */
     @Deprecated(since = "26", forRemoval = true)
@@ -50,7 +55,8 @@ public class UserSessionCrossDCManager {
     }
 
     /**
-     * @deprecated To be removed in Keycloak 27+. Use
+     * 获取含模拟客户端会话的用户会话。
+     * @deprecated Keycloak 27+ 将移除，请使用
      * {@link UserSessionUtil#getUserSessionWithImpersonatorClient(KeycloakSession, RealmModel, String, boolean, String)}
      */
     @Deprecated(since = "26", forRemoval = true)
@@ -58,10 +64,10 @@ public class UserSessionCrossDCManager {
         return UserSessionUtil.getUserSessionWithImpersonatorClient(kcSession, realm, id, offline, clientUUID);
     }
 
-    // get userSession if it has "authenticatedClientSession" of specified client attached to it. Otherwise download it from remoteCache
-    // TODO Probably remove this method once AuthenticatedClientSession.getAction is removed and information is moved to OAuth code JWT instead
+    // 在线用户会话重载（无 offline 参数）；TODO：OAuth code JWT 迁移后可能移除
     /**
-     * @deprecated To be removed in Keycloak 27+. Use
+     * 获取挂载指定客户端会话的在线用户会话（默认非 offline）。
+     * @deprecated Keycloak 27+ 将移除，请使用
      * {@link UserSessionProvider#getUserSessionIfClientExists(RealmModel, String, boolean, String)}
      */
     @Deprecated(since = "26", forRemoval = true)
@@ -69,9 +75,10 @@ public class UserSessionCrossDCManager {
         return getUserSessionWithClient(realm, id, false, clientUUID);
     }
 
-    // Just check if userSession also exists on remoteCache. It can happen that logout happened on 2nd DC and userSession is already removed on remoteCache and this DC wasn't yet notified
+    // 检查用户会话在远程缓存是否仍存在（跨 DC 登出通知延迟场景）
     /**
-     * @deprecated To be removed in Keycloak 27+. Use
+     * 从认证 Cookie 获取远程仍存在的用户会话。
+     * @deprecated Keycloak 27+ 将移除，请使用
      * {@link AuthenticationSessionManager#getUserSessionFromAuthenticationCookie(RealmModel)}
      */
     @Deprecated(since = "26", forRemoval = true)

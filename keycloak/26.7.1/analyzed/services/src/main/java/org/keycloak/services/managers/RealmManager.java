@@ -83,45 +83,74 @@ import static org.keycloak.constants.OID4VCIConstants.CREDENTIAL_OFFER_CREATE;
 import static org.keycloak.models.Constants.CREATE_DEFAULT_CLIENT_SCOPES;
 
 /**
- * Per request object
+ * 领域（Realm）管理器，按请求创建。
+ * <p>负责领域创建/导入/删除、默认客户端与角色、管理控制台与账户应用、认证流与 Required Action、离线令牌及客户端策略等初始化。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RealmManager {
 
+    /** 当前 Keycloak 会话 */
     protected KeycloakSession session;
+    /** 领域持久化 Provider */
     protected RealmProvider model;
 
+    /** 构造领域管理器。
+     * @param session Keycloak 会话
+     */
     public RealmManager(KeycloakSession session) {
         this.session = session;
         this.model = session.realms();
     }
 
+    /** @return 当前 Keycloak 会话 */
     public KeycloakSession getSession() {
         return session;
     }
 
+    /** @return master 管理领域 */
     public RealmModel getKeycloakAdministrationRealm() {
         return getRealmByName(Config.getAdminRealm());
     }
 
+    /** 判断是否为 master 管理领域。
+     * @param realm 领域模型
+     * @return 是否为管理领域
+     */
     public static boolean isAdministrationRealm(RealmModel realm) {
         return realm.getName().equals(Config.getAdminRealm());
     }
 
+    /** 按 ID 获取领域。
+     * @param id 领域 ID
+     * @return 领域模型
+     */
     public RealmModel getRealm(String id) {
         return model.getRealm(id);
     }
 
+    /** 按名称获取领域。
+     * @param name 领域名称
+     * @return 领域模型
+     */
     public RealmModel getRealmByName(String name) {
         return model.getRealmByName(name);
     }
 
+    /** 创建新领域（自动生成 ID）。
+     * @param name 领域名称
+     * @return 新创建的领域
+     */
     public RealmModel createRealm(String name) {
         return createRealm(null, name);
     }
 
+    /** 创建新领域并初始化默认配置。
+     * @param id 领域 ID（可为 null，则自动生成）
+     * @param name 领域名称
+     * @return 新创建的领域
+     */
     public RealmModel createRealm(String id, String name) {
         if (id == null || id.trim().isEmpty()) {
             id = KeycloakModelUtils.generateId();
@@ -133,7 +162,7 @@ public class RealmManager {
         RealmModel realm = model.createRealm(id, name);
         realm.setName(name);
 
-        // setup defaults
+        // 初始化领域默认配置
         setupRealmDefaults(realm);
 
         KeycloakModelUtils.setupDefaultRole(realm, Constants.DEFAULT_ROLES_ROLE_PREFIX + "-" + name.toLowerCase());
@@ -158,10 +187,12 @@ public class RealmManager {
         return realm;
     }
 
+    /** 若领域尚无认证流，添加默认认证流 */
     protected void setupAuthenticationFlows(RealmModel realm) {
         if (realm.getAuthenticationFlowsStream().count() == 0) DefaultAuthenticationFlows.addFlows(realm);
     }
 
+    /** 若领域尚无 Required Action，添加默认 Required Action */
     protected void setupRequiredActions(RealmModel realm) {
         if (realm.getRequiredActionProvidersStream().count() == 0) DefaultRequiredActions.addActions(realm);
     }
@@ -224,6 +255,7 @@ public class RealmManager {
         }
     }
 
+    /** 确保领域存在 admin-cli 公共客户端 */
     public void setupAdminCli(RealmModel realm) {
         ClientModel adminCli = realm.getClientByClientId(Constants.ADMIN_CLI_CLIENT_ID);
         if (adminCli == null) {
@@ -254,6 +286,7 @@ public class RealmManager {
         viewOrganizations.addCompositeRole(queryOrganizations);
     }
 
+    /** @return 领域管理客户端 ID */
     public String getRealmAdminClientId(RealmModel realm) {
         return Constants.REALM_MANAGEMENT_CLIENT_ID;
     }
@@ -266,10 +299,14 @@ public class RealmManager {
         setupRealmDefaults(realm, null);
     }
 
+    /** 设置领域默认值（暴力破解、SSL、OTP、事件监听等）。
+     * @param realm 领域模型
+     * @param realmRep 导入表示（可为 null）
+     */
     protected void setupRealmDefaults(RealmModel realm, RealmRepresentation realmRep) {
         realm.setBrowserSecurityHeaders(BrowserSecurityHeaders.realmDefaultHeaders);
 
-        // brute force
+        // 暴力破解保护默认关闭
         realm.setBruteForceProtected(false); // default settings off for now todo set it on
         realm.setPermanentLockout(false);
         realm.setMaxTemporaryLockouts(0);
@@ -298,6 +335,10 @@ public class RealmManager {
         realm.setEventsListeners(Collections.singleton("jboss-logging"));
     }
 
+    /** 删除领域并清理关联会话与存储同步任务。
+     * @param realm 待删除领域
+     * @return 是否成功删除
+     */
     public boolean removeRealm(RealmModel realm) {
 
         ClientModel masterAdminClient = realm.getMasterAdminClient();
@@ -321,7 +362,7 @@ public class RealmManager {
             session.getTransactionManager().enlistAfterCompletion(new AbstractKeycloakTransaction() {
                 @Override
                 protected void commitImpl() {
-                    // Refresh periodic sync tasks for configured storageProviders
+                    // 刷新已配置存储 Provider 的周期性同步任务
                     sessionFactory.publish(new StoreSyncEvent(session, realm, true));
                 }
 
@@ -334,6 +375,10 @@ public class RealmManager {
         return removed;
     }
 
+    /** 更新领域事件监听与存储配置。
+     * @param rep 事件配置表示
+     * @param realm 目标领域
+     */
     public void updateRealmEventsConfig(RealmEventsConfigRepresentation rep, RealmModel realm) {
         realm.setEventsEnabled(rep.isEventsEnabled());
         realm.setEventsExpiration(rep.getEventsExpiration() != null ? rep.getEventsExpiration() : 0);
@@ -361,8 +406,9 @@ public class RealmManager {
     }
 
 
+    /** 在 master 领域为当前领域配置 master 管理客户端 */
     public void setupMasterAdminManagement(RealmModel realm) {
-        // Need to refresh masterApp for current realm
+        // 为当前领域刷新 master 管理应用引用
         String adminRealmName = Config.getAdminRealm();
         RealmModel adminRealm = model.getRealmByName(adminRealmName);
         ClientModel masterApp = adminRealm.getClientByClientId(KeycloakModelUtils.getMasterRealmAdminManagementClientId(realm.getName()));
@@ -573,14 +619,18 @@ public class RealmManager {
         }
     }
 
+    /** 从 {@link RealmRepresentation} 导入领域。
+     * @param rep 领域表示
+     * @return 导入后的领域模型
+     */
     public RealmModel importRealm(RealmRepresentation rep) {
         return importRealm(rep, () -> {});
     }
 
 
     /**
-     * if "skipUserDependent" is true, then import of any models, which needs users already imported in DB, will be skipped. For example authorization
-     * @deprecated use {@link #importRealm(RealmRepresentation, Runnable)}
+     * 若 {@code skipUserDependent} 为 true，则跳过依赖已导入用户的模型（如授权服务）。
+     * @deprecated 请使用 {@link #importRealm(RealmRepresentation, Runnable)}
      */
     @Deprecated
     public RealmModel importRealm(RealmRepresentation rep, boolean skipUserDependent) {
@@ -588,7 +638,10 @@ public class RealmManager {
     }
 
     /**
-     * @param userImport if null, then import of any models, which needs users already imported in DB, will be skipped. For example authorization
+     * 从表示导入领域；{@code userImport} 为 null 时跳过依赖用户的模型导入。
+     * @param rep 领域表示
+     * @param userImport 用户导入完成后的回调（可为 null）
+     * @return 导入后的领域模型
      */
     public RealmModel importRealm(RealmRepresentation rep, Runnable userImport) {
         boolean skipUserDependent = userImport == null;
@@ -795,7 +848,7 @@ public class RealmManager {
             }
         }
 
-        // TODO: Just for compatibility with old versions. Should be removed later...
+        // TODO：兼容旧版表示格式，后续可移除
         if (rep.getApplications() != null) {
             for (ApplicationRepresentation clientRep : rep.getApplications()) {
                 if (clientRep.getName().equals(clientId)) {
@@ -900,6 +953,9 @@ public class RealmManager {
         }
     }
 
+    /** 为新创建领域设置全部默认配置（流、客户端、密钥等）。
+     * @param realm 新领域
+     */
     public void setDefaultsForNewRealm(RealmModel realm) {
         // setup defaults
         setupRealmDefaults(realm);

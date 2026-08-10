@@ -27,40 +27,50 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * 默认暴力破解保护器工厂。
+ * <p>根据 {@code allowConcurrentRequests} 配置创建 {@link DefaultBruteForceProtector} 或 {@link DefaultBlockingBruteForceProtector}。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class DefaultBruteForceProtectorFactory implements BruteForceProtectorFactory {
+    /** 单例暴力破解保护器实例（postInit 后可用） */
     DefaultBruteForceProtector protector;
 
+    /** 是否允许同一用户并发登录请求（默认 false，使用阻塞式保护器） */
     private boolean allowConcurrentRequests;
 
+    /** {@inheritDoc} 返回已初始化的保护器单例 */
     @Override
     public BruteForceProtector create(KeycloakSession session) {
         return protector;
     }
 
+    /** {@inheritDoc} 读取 {@code allowConcurrentRequests} 配置 */
     @Override
     public void init(Config.Scope config) {
-        // this can be a brute force setting?
+        // 是否允许并发请求（暴力破解相关配置）
         this.allowConcurrentRequests = config.getBoolean("allowConcurrentRequests", Boolean.FALSE);
     }
 
+    /** {@inheritDoc} 按配置实例化默认或阻塞式保护器 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         protector = allowConcurrentRequests ? new DefaultBruteForceProtector(factory) : new DefaultBlockingBruteForceProtector(factory);
     }
 
+    /** {@inheritDoc} 关闭保护器 executor */
     @Override
     public void close() {
         Optional.ofNullable(protector).ifPresent(DefaultBruteForceProtector::shutdown);
     }
 
+    /** {@inheritDoc} 返回 {@code default-brute-force-detector} */
     @Override
     public String getId() {
         return "default-brute-force-detector";
     }
 
+    /** {@inheritDoc} 返回 {@code allowConcurrentRequests} 配置元数据 */
     @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         return ProviderConfigurationBuilder.create()

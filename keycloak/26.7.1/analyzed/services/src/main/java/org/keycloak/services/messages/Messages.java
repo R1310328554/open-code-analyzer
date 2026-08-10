@@ -17,16 +17,22 @@
 package org.keycloak.services.messages;
 
 /**
+ * 登录、账户与 OAuth 流程的国际化消息键常量。
+ * <p>各常量值为 {@code messages_xx.properties} 中的键名，由主题与表单 Provider 解析为本地化文案。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class Messages {
 
+    // —— 登录与认证 ——
+    /** 不支持的 display 参数 */
     public static final String DISPLAY_UNSUPPORTED = "displayUnsupported";
     public static final String LOGIN_TIMEOUT = "loginTimeout";
 
     public static final String REAUTHENTICATE = "reauthenticate";
     public static final String AUTHENTICATE_STRONG = "authenticateStrong";
 
+    // —— 用户与凭证校验 ——
+    /** 无效用户 */
     public static final String INVALID_USER = "invalidUserMessage";
 
     public static final String INVALID_USERNAME = "invalidUsernameMessage";
@@ -100,6 +106,8 @@ public class Messages {
     public static final String DID_EXISTS = "didExistsMessage";
     public static final String EMAIL_VERIFICATION_PENDING = "emailVerificationPending";
 
+    // —— 联合身份与 IdP ——
+    /** 联合身份已存在 */
     public static final String FEDERATED_IDENTITY_EXISTS = "federatedIdentityExistsMessage";
 
     public static final String FEDERATED_IDENTITY_UNAVAILABLE = "federatedIdentityUnavailableMessage";
@@ -148,6 +156,8 @@ public class Messages {
 
     public static final String ACCOUNT_PASSWORD_UPDATED = "accountPasswordUpdatedMessage";
 
+    // —— 访问与 OAuth 客户端 ——
+    /** 无访问权限 */
     public static final String NO_ACCESS = "noAccessMessage";
 
     public static final String FAILED_TO_PROCESS_RESPONSE = "failedToProcessResponseMessage";
@@ -261,6 +271,8 @@ public class Messages {
 
     public static final String SUCCESS_TOTP_REMOVED = "successTotpRemovedMessage";
 
+    // —— 成功与提示 ——
+    /** TOTP 配置成功 */
     public static final String SUCCESS_TOTP = "successTotpMessage";
 
     public static final String SUCCESS_GRANT_REVOKED = "successGrantRevokedMessage";
@@ -323,12 +335,12 @@ public class Messages {
     public static final String ARTIFACT_RESOLUTION_SERVICE_ERROR = "artifactResolutionServiceError";
     public static final String ARTIFACT_RESOLUTION_SERVICE_INVALID_RESPONSE = "saml.artifactResolutionServiceInvalidResponse";
 
-    // WebAuthn
+    // —— WebAuthn ——
     public static final String WEBAUTHN_REGISTER_TITLE = "webauthn-registration-title";
     public static final String WEBAUTHN_LOGIN_TITLE = "webauthn-login-title";
     public static final String WEBAUTHN_ERROR_TITLE = "webauthn-error-title";
 
-    // WebAuthn Error
+    // WebAuthn 错误
     public static final String WEBAUTHN_ERROR_REGISTRATION = "webauthn-error-registration";
     public static final String WEBAUTHN_ERROR_API_GET = "webauthn-error-api-get";
     public static final String WEBAUTHN_ERROR_DIFFERENT_USER = "webauthn-error-different-user";
@@ -336,7 +348,7 @@ public class Messages {
     public static final String WEBAUTHN_ERROR_REGISTER_VERIFICATION = "webauthn-error-register-verification";
     public static final String WEBAUTHN_ERROR_USER_NOT_FOUND = "webauthn-error-user-not-found";
 
-    // Conditions in Conditional Flow
+    // 条件流中的拒绝条件
     public static final String ACCESS_DENIED = "access-denied";
 
     public static final String ACCESS_DENIED_WHEN_IDP_AUTH = "access-denied-when-idp-auth";
@@ -344,7 +356,7 @@ public class Messages {
     public static final String DELETE_ACCOUNT_LACK_PRIVILEDGES = "deletingAccountForbidden";
     public static final String DELETE_ACCOUNT_ERROR = "errorDeletingAccount";
 
-    // OAuth 2.0 Device Authorization Grant
+    // OAuth 2.0 设备授权码
     public static final String OAUTH2_DEVICE_AUTHORIZATION_GRANT_DISABLED = "oauth2DeviceAuthorizationGrantDisabledMessage";
     public static final String OAUTH2_DEVICE_INVALID_USER_CODE = "oauth2DeviceInvalidUserCodeMessage";
     public static final String OAUTH2_DEVICE_EXPIRED_USER_CODE = "oauth2DeviceExpiredUserCodeMessage";
@@ -358,7 +370,7 @@ public class Messages {
     public static final String CONFIRM_ORGANIZATION_MEMBERSHIP_TITLE = "organization.confirm-membership.title";
     public static final String REGISTER_ORGANIZATION_MEMBER = "organization.member.register.title";
 
-   // Client sessions
+    // 客户端会话超时
     public static final String CLIENT_IDLE_REMEMBERME = "clientIdleExceedsRealmRememberMeIdle";
     public static final String CLIENT_IDLE = "clientSessionIdleTimeoutExceedsRealm";
     public static final String CLIENT_MAXLIFE_SPAN = "clientSessionMaxLifespanExceedsRealm";

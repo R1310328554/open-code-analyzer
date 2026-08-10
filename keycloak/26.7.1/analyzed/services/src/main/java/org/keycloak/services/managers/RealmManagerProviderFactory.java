@@ -30,13 +30,14 @@ import org.keycloak.storage.PartialImportRealmFromRepresentationEvent;
 import org.keycloak.storage.SetDefaultsForNewRealm;
 
 /**
- * Provider to listen for {@link ImportRealmFromRepresentationEvent} events.
- * If that is no longer needed after further steps around the legacy storage migration, it can be removed.
+ * 领域管理 Provider 工厂，监听 {@link ImportRealmFromRepresentationEvent} 等领域相关事件。
+ * <p>在旧版存储迁移完成后若不再需要可移除。</p>
  *
  * @author Alexander Schwartz
  */
 @Deprecated
 public class RealmManagerProviderFactory implements ProviderFactory<RealmManagerProviderFactory>, Provider {
+    /** {@inheritDoc} 本工厂仅监听事件，不应被实例化 */
     @Override
     public RealmManagerProviderFactory create(KeycloakSession session) {
         throw new ModelException("This shouldn't be instantiated, this should only listen to events");
@@ -46,6 +47,7 @@ public class RealmManagerProviderFactory implements ProviderFactory<RealmManager
     public void init(Config.Scope config) {
     }
 
+    /** {@inheritDoc} 注册领域导入、部分导入及新领域默认值事件处理器 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         factory.register(event -> {

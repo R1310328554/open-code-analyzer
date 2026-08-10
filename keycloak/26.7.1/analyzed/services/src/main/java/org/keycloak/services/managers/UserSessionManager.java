@@ -40,32 +40,40 @@ import org.jboss.logging.Logger;
 
 
 /**
- *
+ * 用户会话管理器。
+ * <p>管理在线/离线用户会话的创建、离线令牌生命周期及 offline_access 角色校验。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UserSessionManager {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(UserSessionManager.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession kcSession;
 
+    /** @param session Keycloak 会话 */
     public UserSessionManager(KeycloakSession session) {
         this.kcSession = session;
     }
 
+    /** 创建或更新离线用户会话及关联的离线客户端会话。
+     * @param clientSession 在线客户端会话
+     * @param userSession 在线用户会话
+     */
     public void createOrUpdateOfflineSession(AuthenticatedClientSessionModel clientSession, UserSessionModel userSession) {
         UserModel user = userSession.getUser();
 
-        // Create and persist offline userSession if we don't have one
+        // 若无离线用户会话则创建并持久化
         UserSessionModel offlineUserSession = kcSession.sessions().getOfflineUserSession(clientSession.getRealm(), userSession.getId());
         if (offlineUserSession == null) {
             offlineUserSession = createOfflineUserSession(user, userSession);
         } else {
-            // update lastSessionRefresh but don't need to persist
+            // 更新 lastSessionRefresh，无需额外持久化
             offlineUserSession.setLastSessionRefresh(Time.currentTime());
         }
 
-        // Create and persist clientSession
+        // 创建并持久化离线客户端会话
         AuthenticatedClientSessionModel offlineClientSession = offlineUserSession.getAuthenticatedClientSessionByClient(clientSession.getClient().getId());
         if (offlineClientSession == null) {
             offlineClientSession = createOfflineClientSession(user, clientSession, offlineUserSession);
@@ -94,6 +102,11 @@ public class UserSessionManager {
         return kcSession.sessions().getOfflineUserSessionsStream(realm, user);
     }
 
+    /** 撤销用户对指定客户端的全部离线令牌。
+     * @param user 用户
+     * @param client 客户端
+     * @return 是否移除了至少一个离线客户端会话
+     */
     public boolean revokeOfflineToken(UserModel user, ClientModel client) {
         RealmModel realm = client.getRealm();
 
@@ -131,6 +144,10 @@ public class UserSessionManager {
         kcSession.sessions().removeOfflineUserSession(userSession.getRealm(), userSession);
     }
 
+    /** 校验客户端会话上下文是否包含 {@code offline_access} 角色（含复合角色）。
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 是否允许离线令牌
+     */
     public boolean isOfflineTokenAllowed(ClientSessionContext clientSessionCtx) {
         RoleModel offlineAccessRole = clientSessionCtx.getClientSession().getRealm().getRole(Constants.OFFLINE_ACCESS_ROLE);
         if (offlineAccessRole == null) {
@@ -138,7 +155,7 @@ public class UserSessionManager {
             return false;
         }
 
-        // Check if offline_access is allowed here. Even through composite roles
+        // 检查是否授予 offline_access（含复合角色展开）
         return clientSessionCtx.getRolesStream().collect(Collectors.toSet()).contains(offlineAccessRole);
     }
 
@@ -160,9 +177,9 @@ public class UserSessionManager {
         return kcSession.sessions().createOfflineClientSession(clientSession, offlineUserSession);
     }
 
-    // Check if userSession has any offline clientSessions attached to it. Remove userSession if not
+    // 若无任何离线客户端会话挂载则移除离线用户会话
     private void checkOfflineUserSessionHasClientSessions(RealmModel realm, UserModel user, UserSessionModel userSession) {
-        // TODO: Might need optimization to prevent loading client sessions from cache
+        // TODO：可优化以避免从缓存加载客户端会话
         if (! userSession.getAuthenticatedClientSessions().isEmpty()) {
             return;
         }
@@ -173,6 +190,17 @@ public class UserSessionManager {
         kcSession.sessions().removeOfflineUserSession(realm, userSession);
     }
 
+    /** 创建持久化在线用户会话并附加设备信息。
+     * @param realm 领域
+     * @param user 用户
+     * @param loginUsername 登录用户名
+     * @param ipAddress 客户端 IP
+     * @param authMethod 认证方式
+     * @param rememberMe 是否记住登录
+     * @param brokerSessionId IdP 会话 ID
+     * @param brokerUserId IdP 用户 ID
+     * @return 新用户会话
+     */
     public UserSessionModel createUserSession(RealmModel realm, UserModel user, String loginUsername, String ipAddress,
                                               String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId) {
         return createUserSession(null, realm, user, loginUsername, ipAddress, authMethod, rememberMe, brokerSessionId, brokerUserId, UserSessionModel.SessionPersistenceState.PERSISTENT);
@@ -181,10 +209,10 @@ public class UserSessionManager {
     public UserSessionModel createUserSession(String id, RealmModel realm, UserModel user, String loginUsername, String ipAddress,
                                               String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId,
                                               UserSessionModel.SessionPersistenceState persistenceState) {
-        // Create user session in store
+        // 在存储中创建用户会话
         UserSessionModel userSession = kcSession.sessions().createUserSession(id, realm, user, loginUsername, ipAddress, authMethod, rememberMe, brokerSessionId, brokerUserId, persistenceState);
 
-        // Attach device info into user session notes
+        // 将设备信息写入用户会话 note
         if (userSession != null) {
             DeviceActivityManager.attachDevice(userSession, kcSession);
         }

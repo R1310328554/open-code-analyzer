@@ -65,24 +65,40 @@ import org.apache.http.util.EntityUtils;
 import org.jboss.logging.Logger;
 
 /**
+ * 资源（适配器）管理器。
+ * <p>通过客户端 management URL 向应用适配器发送登出、吊销策略推送及节点可用性探测等管理请求；支持集群环境下按节点 host 分别通知。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ResourceAdminManager {
     private static final Logger logger = Logger.getLogger(ResourceAdminManager.class);
+    /** management URL 中的会话 host 占位符 */
     public static final String CLIENT_SESSION_HOST_PROPERTY = "${application.session.host}";
 
+    /** Keycloak 会话 */
     private KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public ResourceAdminManager(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 解析相对 URI。
+     * @param session Keycloak 会话
+     * @param rootUrl 根 URL
+     * @param uri 相对或绝对 URI
+     * @return 解析后的 URI 字符串
+     */
     public static String resolveUri(KeycloakSession session, String rootUrl, String uri) {
         return ResolveRelative.resolveRelativeUri(session, rootUrl, uri);
 
    }
 
+    /** 获取客户端 management URL（相对 rootUrl 解析）。
+     * @param session Keycloak 会话
+     * @param client 客户端模型
+     * @return management URL，未配置时返回 null
+     */
     public static String getManagementUrl(KeycloakSession session, ClientModel client) {
         String mgmtUrl = client.getManagementUrl();
         if (mgmtUrl == null || mgmtUrl.equals("")) {
@@ -92,8 +108,7 @@ public class ResourceAdminManager {
         return ResolveRelative.resolveRelativeUri(session, client.getRootUrl(), mgmtUrl);
     }
 
-    // For non-cluster setup, return just single configured managementUrls
-    // For cluster setup, return the management Urls corresponding to all registered cluster nodes
+    // 非集群：返回单个 management URL；集群：为每个已注册节点 host 生成 URL
     private List<String> getAllManagementUrls(ClientModel client) {
         String baseMgmtUrl = getManagementUrl(session, client);
         if (baseMgmtUrl == null) {
@@ -102,7 +117,7 @@ public class ResourceAdminManager {
 
         Set<String> registeredNodesHosts = new ClientManager().validateRegisteredNodes(client);
 
-        // No-cluster setup
+        // 非集群部署
         if (registeredNodesHosts.isEmpty()) {
             return Arrays.asList(baseMgmtUrl);
         }
@@ -117,6 +132,12 @@ public class ResourceAdminManager {
         return result;
     }
 
+    /** 向适配器发送单客户端会话登出请求。
+     * @param realm 领域
+     * @param resource 客户端
+     * @param clientSession 已认证客户端会话
+     * @return HTTP 响应，无 management URL 时返回 null
+     */
     public Response logoutClientSession(RealmModel realm, ClientModel resource, AuthenticatedClientSessionModel clientSession) {
         return logoutClientSessions(realm, resource, Arrays.asList(clientSession));
     }
@@ -125,7 +146,7 @@ public class ResourceAdminManager {
         String managementUrl = getManagementUrl(session, resource);
         if (managementUrl != null) {
 
-            // Key is host, value is list of http sessions for this host
+            // 键为 host，值为该 host 上的适配器会话 ID 列表
             MultivaluedHashMap<String, String> adapterSessionIds = null;
             List<String> userSessions = new LinkedList<>();
             if (clientSessions != null && clientSessions.size() > 0) {
@@ -146,7 +167,7 @@ public class ResourceAdminManager {
             }
 
             if (managementUrl.contains(CLIENT_SESSION_HOST_PROPERTY)) {
-                // Send logout separately to each host (needed for single-sign-out in cluster for non-distributable apps - KEYCLOAK-748)
+                // 按 host 分别发送登出（集群非 distributable 应用单点登出所需，KEYCLOAK-748）
                 for (Map.Entry<String, List<String>> entry : adapterSessionIds.entrySet()) {
                     String host = entry.getKey();
                     List<String> sessionIds = entry.getValue();
@@ -156,7 +177,7 @@ public class ResourceAdminManager {
                 return Response.ok().build();
 
             } else {
-                // Send single logout request
+                // 发送单次登出请求
                 List<String> allSessionIds = new ArrayList<String>();
                 for (List<String> currentIds : adapterSessionIds.values()) {
                     allSessionIds.addAll(currentIds);
@@ -178,13 +199,11 @@ public class ResourceAdminManager {
             return null;
         }
 
-        // Send logout separately to each host (needed for single-sign-out in cluster for non-distributable apps -
-        // KEYCLOAK-748)
+        // 按 host 分别发送 backchannel 登出（集群非 distributable 应用，KEYCLOAK-748）
         if (backchannelLogoutUrl.contains(CLIENT_SESSION_HOST_PROPERTY)) {
             String host = clientSession.getNote(AdapterConstants.CLIENT_SESSION_HOST);
             if (StringUtil.isNullOrEmpty(host)) {
-                // Host placeholder in backchannel logout URL cannot be resolved. Usually the client did not send
-                // both 'client_session_host' and 'client_session_state' on its token request.
+                // backchannel 登出 URL 中的 host 占位符无法解析，通常因令牌请求未携带 client_session_host/state
                 String adapterSessionId = clientSession.getNote(AdapterConstants.CLIENT_SESSION_STATE);
                 throw new IllegalStateException(String.format(
                         "Cannot resolve '%s' for backchannel-logout. " +
@@ -214,6 +233,11 @@ public class ResourceAdminManager {
         }
     }
 
+    /** 获取并解析客户端 backchannel 登出 URL。
+     * @param session Keycloak 会话
+     * @param client 客户端模型
+     * @return backchannel 登出 URL，未配置时返回 null
+     */
     public static String getBackchannelLogoutUrl(KeycloakSession session, ClientModel client) {
         String backchannelLogoutUrl = OIDCAdvancedConfigWrapper.fromClientModel(client).getBackchannelLogoutUrl();
         if (backchannelLogoutUrl == null || backchannelLogoutUrl.equals("")) {
@@ -273,8 +297,12 @@ public class ResourceAdminManager {
         }
     }
 
-    // Methods for logout all
+    // —— 全量登出 ——
 
+    /** 对领域内所有客户端执行全量登出并更新 notBefore。
+     * @param realm 领域
+     * @return 各 management URL 的成功/失败汇总
+     */
     public GlobalRequestResult logoutAll(RealmModel realm) {
         realm.setNotBefore(Time.currentTime());
 
@@ -286,7 +314,7 @@ public class ResourceAdminManager {
                 GlobalRequestResult currentResult = logoutClient(realm, c, realm.getNotBefore());
                 finalResult.addAll(currentResult);
             } catch (ModelIllegalStateException ex) {
-                // currently, GlobalRequestResult doesn't allow for information about clients that we were unable to retrieve.
+                // GlobalRequestResult 暂不支持记录无法获取的客户端详情
                 logger.warn("unable to retrieve client information for logout, skipping resource", ex);
             }
         });
@@ -315,7 +343,7 @@ public class ResourceAdminManager {
 
         if (logger.isDebugEnabled()) logger.debug("Send logoutClient for URLs: " + mgmtUrls);
 
-        // Propagate this to all hosts
+        // 向所有集群节点 management URL 传播
         GlobalRequestResult result = new GlobalRequestResult();
         for (String mgmtUrl : mgmtUrls) {
             if (sendLogoutRequest(realm, resource, null, null, notBefore, mgmtUrl) != null) {
@@ -343,6 +371,10 @@ public class ResourceAdminManager {
         }
     }
 
+    /** 向领域内所有客户端推送吊销策略（notBefore）。
+     * @param realm 领域
+     * @return 推送结果汇总
+     */
     public GlobalRequestResult pushRealmRevocationPolicy(RealmModel realm) {
         GlobalRequestResult finalResult = new GlobalRequestResult();
         realm.getClientsStream().forEach(c -> {
@@ -389,6 +421,11 @@ public class ResourceAdminManager {
           : loginProtocol.sendPushRevocationPolicyRequest(realm, resource, notBefore, managementUrl);
     }
 
+    /** 测试客户端各集群节点 management URL 是否可达。
+     * @param realm 领域
+     * @param client 客户端
+     * @return 各 URL 探测结果
+     */
     public GlobalRequestResult testNodesAvailability(RealmModel realm, ClientModel client) {
         List<String> mgmtUrls = getAllManagementUrls(client);
         if (mgmtUrls.isEmpty()) {

@@ -33,17 +33,19 @@ import org.keycloak.protocol.LoginProtocolFactory;
 import static org.keycloak.models.light.LightweightUserAdapter.isLightweightUser;
 
 /**
+ * 用户同意（Consent）管理工具。
+ * <p>统一处理持久化用户与 {@link LightweightUserAdapter} 轻量用户的 consent CRUD 及撤销逻辑。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UserConsentManager {
 
     /**
-     * Revoke consent of given user to given client
+     * 撤销用户对指定客户端的同意，并尝试撤销离线令牌。
      *
-     * @param session
-     * @param client
-     * @param user
-     * @return true if either consent or offlineToken was revoked
+     * @param session Keycloak 会话
+     * @param client 客户端
+     * @param user 用户
+     * @return 是否撤销了 consent 或 offline token
      */
     public static boolean revokeConsentToClient(KeycloakSession session, ClientModel client, UserModel user) {
         RealmModel realm = session.getContext().getRealm();
@@ -51,10 +53,10 @@ public class UserConsentManager {
         boolean revokedOfflineToken = new UserSessionManager(session).revokeOfflineToken(user, client);
 
         if (revokedConsent) {
-            // Logout clientSessions for this user and client
+            // 对该用户与该客户端执行 backchannel 登出
             AuthenticationManager.backchannelLogoutUserFromClient(session, realm, user, client, session.getContext().getUri(), session.getContext().getRequestHeaders());
 
-            // Callback to login protocol factories
+            // 通知各登录协议工厂 consent 已撤销
             session.getKeycloakSessionFactory().getProviderFactoriesStream(LoginProtocol.class)
                     .map(LoginProtocolFactory.class::cast)
                     .forEach(loginProtocolFactory -> loginProtocolFactory.onConsentRevoked(session, client, user));
@@ -64,13 +66,13 @@ public class UserConsentManager {
     }
 
     /**
-     * Add user consent for the user.
+     * 为用户添加 consent 记录。
      *
-     * @param realm a reference to the realm
-     * @param user user. Must not be {@code null}
-     * @param consent all details corresponding to the granted consent
-     *
-     * @throws ModelException If there is no user with userId
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param user 用户，不可为 {@code null}
+     * @param consent 同意详情
+     * @throws ModelException 用户不存在
      */
     public static void addConsent(KeycloakSession session, RealmModel realm, UserModel user, UserConsentModel consent) {
         if (isLightweightUser(user)) {
@@ -82,14 +84,14 @@ public class UserConsentManager {
     }
 
     /**
-     * Returns UserConsentModel given by a user for the client with clientInternalId
+     * 获取用户对指定客户端的内部 ID 所授予的 consent。
      *
-     * @param realm a reference to the realm
-     * @param user user. Must not be {@code null}
-     * @param clientInternalId id of the client
-     * @return consent given by the user to the client or {@code null} if no consent or user exists
-     *
-     * @throws ModelException when there are more consents fulfilling specified parameters
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param user 用户，不可为 {@code null}
+     * @param clientInternalId 客户端内部 ID
+     * @return 用户 consent，不存在时返回 {@code null}
+     * @throws ModelException 存在多条匹配 consent
      */
     public static UserConsentModel getConsentByClient(KeycloakSession session, RealmModel realm, UserModel user, String clientInternalId) {
         if (isLightweightUser(user)) {
@@ -101,11 +103,12 @@ public class UserConsentManager {
     }
 
     /**
-     * Obtains the consents associated with the user
+     * 获取用户全部 consent 流。
      *
-     * @param realm a reference to the realm.
-     * @param user user. Must not be {@code null}
-     * @return a non-null {@link Stream} of consents associated with the user.
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param user 用户，不可为 {@code null}
+     * @return 非 null 的 consent {@link Stream}
      */
     public static Stream<UserConsentModel> getConsentsStream(KeycloakSession session, RealmModel realm, UserModel user) {
         if (isLightweightUser(user)) {
@@ -117,13 +120,13 @@ public class UserConsentManager {
     }
 
     /**
-     * Update client scopes in the stored user consent
+     * 更新已存储的用户 consent（含 client scope）。
      *
-     * @param realm a reference to the realm
-     * @param user user. Must not be {@code null}
-     * @param consent new details of the user consent
-     *
-     * @throws ModelException when consent doesn't exist for the userId
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param user 用户，不可为 {@code null}
+     * @param consent 新的 consent 详情
+     * @throws ModelException 该用户无对应 consent
      */
     public static void updateConsent(KeycloakSession session, RealmModel realm, UserModel user, UserConsentModel consent) {
         if (isLightweightUser(user)) {
@@ -135,14 +138,15 @@ public class UserConsentManager {
     }
 
     /**
-     * Remove a user consent given by the user and client id
+     * 按客户端内部 ID 移除用户 consent。
      *
-     * @param realm a reference to the realm
-     * @param user user. Must not be {@code null}
-     * @param clientInternalId id of the client
-     * @return {@code true} if the consent was removed, {@code false} otherwise
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param user 用户，不可为 {@code null}
+     * @param clientInternalId 客户端内部 ID
+     * @return 是否成功移除
      *
-     * TODO: Make this method return Boolean so that store can return "I don't know" answer, this can be used for example in async stores
+     * TODO: 可改为返回 Boolean 以支持异步存储的「未知」结果
      */
     public static boolean revokeConsentForClient(KeycloakSession session, RealmModel realm, UserModel user, String clientInternalId) {
         if (isLightweightUser(user)) {

@@ -19,8 +19,14 @@ package org.keycloak.services.managers;
 import org.keycloak.TokenCategory;
 import org.keycloak.representations.AccessToken;
 
+/**
+ * 身份 Cookie 令牌。
+ * <p>继承 {@link AccessToken}，类别为 {@link TokenCategory#INTERNAL}，用于内部身份 Cookie 场景。</p>
+ */
 public class IdentityCookieToken extends AccessToken {
 
+    /** {@inheritDoc} 返回内部令牌类别 */
+    /** {@inheritDoc} 返回内部令牌类别 */
     @Override
     public TokenCategory getCategory() {
         return TokenCategory.INTERNAL;

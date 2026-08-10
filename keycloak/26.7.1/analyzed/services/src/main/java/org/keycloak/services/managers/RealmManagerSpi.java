@@ -23,18 +23,20 @@ import org.keycloak.provider.Spi;
 import org.keycloak.storage.ImportRealmFromRepresentationEvent;
 
 /**
- * Provider to listen for {@link ImportRealmFromRepresentationEvent} events.
- * If that is no longer needed after further steps around the legacy storage migration, it can be removed.
+ * 领域管理 SPI，注册 {@link RealmManagerProviderFactory}。
+ * <p>用于监听 {@link ImportRealmFromRepresentationEvent} 等领域事件；迁移完成后可移除。</p>
  *
  * @author Alexander Schwartz
  */
 @Deprecated
 public class RealmManagerSpi implements Spi {
+    /** {@inheritDoc} 内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** {@inheritDoc} 返回 {@code realm-manager} */
     @Override
     public String getName() {
         return "realm-manager";

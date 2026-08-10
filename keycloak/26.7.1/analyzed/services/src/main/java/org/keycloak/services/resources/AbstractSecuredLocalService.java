@@ -48,27 +48,33 @@ import org.keycloak.util.TokenUtil;
 import org.jboss.logging.Logger;
 
 /**
- * Helper class for securing local services.  Provides login basics as well as CSRF check basics
- *
+ * 本地受保护服务的抽象基类。
+ * <p>提供 OAuth 登录重定向、state Cookie 及 CSRF 校验等基础能力，供账户管理等本地 UI 服务继承。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public abstract class AbstractSecuredLocalService {
     private static final Logger logger = Logger.getLogger(AbstractSecuredLocalService.class);
 
+    /** 当前 OAuth 客户端 */
     protected final ClientModel client;
+    /** 当前领域 */
     protected final RealmModel realm;
 
     protected final HttpHeaders headers;
 
     protected final ClientConnection clientConnection;
+    /** CSRF state 校验值 */
     protected String stateChecker;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
     protected final HttpRequest request;
+    /** 当前认证上下文 */
     protected Auth auth;
 
+    /** @param session Keycloak 会话 @param client OAuth 客户端 */
     public AbstractSecuredLocalService(KeycloakSession session, ClientModel client) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -78,6 +84,14 @@ public abstract class AbstractSecuredLocalService {
         this.headers = session.getContext().getRequestHeaders();
     }
 
+    /** OAuth 授权码回调：校验 state/code 后重定向至本地服务路径。
+     * @param code 授权码
+     * @param state CSRF state
+     * @param error OAuth 错误码
+     * @param path 本地服务子路径
+     * @param referrer 来源 referrer
+     * @return 302 重定向或错误页
+     */
     @Path("login-redirect")
     @GET
     public Response loginRedirect(@QueryParam("code") String code,
@@ -88,7 +102,7 @@ public abstract class AbstractSecuredLocalService {
         try {
             if (error != null) {
                 if (OAuthErrorException.ACCESS_DENIED.equals(error)) {
-                    // cased by CANCELLED_BY_USER or CONSENT_DENIED
+                    // 用户取消或拒绝 consent
                     session.getContext().setClient(client);
                     return session.getProvider(LoginFormsProvider.class).setError(Messages.NO_ACCESS).createErrorPage(Response.Status.FORBIDDEN);
                 } else {
@@ -128,10 +142,16 @@ public abstract class AbstractSecuredLocalService {
         }
     }
 
+    /** @return 允许重定向的本地路径白名单 */
     protected abstract Set<String> getValidPaths();
 
+    /** @return 本地服务基础重定向 URI */
     protected abstract URI getBaseRedirectUri();
 
+    /** 发起 OAuth 授权码登录并重定向。
+     * @param path 授权完成后的本地路径
+     * @return 302 至 IdP 授权端点
+     */
     protected Response login(String path) {
         OAuthRedirect oauth = new OAuthRedirect();
         String authUrl = OIDCLoginProtocolService.authUrl(session.getContext().getUri()).build(realm.getName()).toString();
@@ -165,12 +185,15 @@ public abstract class AbstractSecuredLocalService {
 
     static class OAuthRedirect extends AbstractOAuthClient {
 
-        /**
-         * closes client
-         */
+        /** 关闭 OAuth 客户端（空实现） */
         public void stop() {
         }
 
+        /** 构造授权 URL、设置 state Cookie 并 302 重定向。
+         * @param uriInfo 当前 URI 信息
+         * @param redirectUri OAuth redirect_uri
+         * @return 302 响应
+         */
         public Response redirect(UriInfo uriInfo, String redirectUri) {
             String state = getStateCode();
             String scopeParam = TokenUtil.attachOIDCScope(scope);
