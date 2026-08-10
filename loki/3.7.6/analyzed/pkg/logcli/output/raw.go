@@ -1,5 +1,7 @@
 package output
 
+// RawOutput 仅输出日志正文，不包含时间戳或标签等元数据。
+
 import (
 	"fmt"
 	"io"
@@ -8,6 +10,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/loghttp"
 )
 
+// RawOutput 适用于只需原始日志行的管道场景。
 // RawOutput prints logs in their original form, without any metadata
 type RawOutput struct {
 	w       io.Writer
@@ -21,6 +24,7 @@ func NewRaw(writer io.Writer, options *LogOutputOptions) LogOutput {
 	}
 }
 
+// FormatAndPrintln 去掉行尾换行符后原样写入，避免双重换行。
 // Format a log entry as is
 func (o *RawOutput) FormatAndPrintln(_ time.Time, _ loghttp.LabelSet, _ int, line string) {
 	if len(line) > 0 && line[len(line)-1] == '\n' {
@@ -36,3 +40,4 @@ func (o RawOutput) WithWriter(w io.Writer) LogOutput {
 		options: o.options,
 	}
 }
+// WithWriter 返回绑定新 Writer 的 RawOutput 副本。

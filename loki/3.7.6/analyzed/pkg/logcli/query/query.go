@@ -1,5 +1,7 @@
 package query
 
+// query 包实现 logcli 的即时/范围查询、本地存储查询、并行分片下载与 tail 逻辑。
+
 import (
 	"context"
 	stdErrors "errors"
@@ -36,6 +38,7 @@ import (
 
 const schemaConfigFilename = "schemaconfig"
 
+// Query 聚合 LogQL 字符串、时间范围、分批参数、标签过滤与并行下载选项。
 // Query contains all necessary fields to execute instant and range queries and print the results.
 type Query struct {
 	QueryString            string
@@ -83,6 +86,7 @@ type Query struct {
 	KeepParts bool
 }
 
+// DoQuery 走远程 API 或 LocalConfig 本地引擎，支持分片写入 PartFile。
 // DoQuery executes the query and prints out the results
 func (q *Query) DoQuery(c client.Client, out output.LogOutput, statistics bool) {
 	if q.LocalConfig != "" {
@@ -147,7 +151,8 @@ func (q *Query) DoQuery(c client.Client, out output.LogOutput, statistics bool) 
 			// of items needed to reach the limit is less than the batch size
 			// unless the query has no limit, ie limit==0.
 			if q.Limit-total < q.BatchSize && !unlimited {
-				// Truncated batchsize is q.Limit - total, however we add to this
+	// 范围查询分批时调整 batchSize，并计入上一批重叠条目数以满足 limit。
+			// Truncated batchsize is q.Limit - total, however we add to this
 				// the length of the overlap from the last query to make sure we get the
 				// correct amount of new logs knowing there will be some overlapping logs returned.
 				bs = q.Limit - total + len(lastEntry)
@@ -182,6 +187,7 @@ func (q *Query) DoQuery(c client.Client, out output.LogOutput, statistics bool) 
 					"for overlapping entryes\n", q.BatchSize, len(lastEntry), len(lastEntry)+1)
 			}
 
+// 下一批以 lastEntry 时间戳为起点（或终点），并打印时剔除重复行。
 			// Batching works by taking the timestamp of the last query and using it in the next query,
 			// because Loki supports multiple entries with the same timestamp it's possible for a batch to have
 			// fallen in the middle of a list of entries for the same time, so to make sure we get all entries
@@ -220,6 +226,7 @@ func (q *Query) outputFilename() string {
 
 // createPartFile returns a PartFile.
 // The bool value shows if the part file already exists, and this range should be skipped.
+// createPartFile 若分片已存在且未设 OverwriteCompleted 则返回 shouldSkip=true。
 func (q *Query) createPartFile() (*PartFile, bool) {
 	partFile := NewPartFile(q.outputFilename())
 
@@ -244,6 +251,7 @@ func (q *Query) createPartFile() (*PartFile, bool) {
 }
 
 // rounds up duration d by the multiple m, and then divides by m.
+// ceilingDivision 对时间区间按 ParallelDuration 向上取整计算并行任务数。
 func ceilingDivision(d, m time.Duration) int64 {
 	return int64((d + m - 1) / m)
 }
@@ -299,6 +307,7 @@ func (q *Query) parallelJobs() []*parallelJob {
 }
 
 // Waits for each job to finish in order, reads the part file and copies it to stdout
+// mergeJobs 按任务顺序等待完成，将各 .part 文件内容复制到 stdout 并可删除。
 func (q *Query) mergeJobs(jobs []*parallelJob) error {
 	if !q.MergeParts {
 		return nil
@@ -366,6 +375,7 @@ func (q *Query) startWorkers(
 	return &wg
 }
 
+// DoQueryParallel 将时间范围切分为多个子 Query 并由 worker 池并发下载。
 func (q *Query) DoQueryParallel(c client.Client, out output.LogOutput, statistics bool) {
 	if q.ParallelDuration < 1 {
 		log.Fatalf("Parallel duration has to be a positive value\n")
@@ -431,6 +441,7 @@ func getLatestConfig(client chunk.ObjectClient, orgID string) (*config.SchemaCon
 	return nil, errors.Wrap(err, "could not find a schema config file matching any of the known patterns. First verify --org-id is correct. Then check the root of the bucket for a file with `schemaconfig` in the name. If no such file exists it may need to be created or re-synced from the source.")
 }
 
+// DoLocalQuery 加载 YAML 配置、可选远程 schema，在本地只读 store 上执行 LogQL。
 // DoLocalQuery executes the query against the local store using a Loki configuration file.
 func (q *Query) DoLocalQuery(out output.LogOutput, statistics bool, orgID string, useRemoteSchema bool) error {
 	var conf loki.Config
@@ -468,6 +479,7 @@ func (q *Query) DoLocalQuery(out output.LogOutput, statistics bool, orgID string
 	if err != nil {
 		return err
 	}
+// 本地查询强制 index shipper 只读并禁用 Index Gateway 客户端。
 	conf.StorageConfig.BoltDBShipperConfig.Mode = indexshipper.ModeReadOnly
 	conf.StorageConfig.BoltDBShipperConfig.IndexGatewayClientConfig.Disabled = true
 	conf.StorageConfig.TSDBShipperConfig.Mode = indexshipper.ModeReadOnly
@@ -548,6 +560,7 @@ type schemaConfigSection struct {
 	config.SchemaConfig `yaml:"schema_config"`
 }
 
+// LoadSchemaUsingObjectClient 从对象存储读取 schemaconfig YAML 并严格解码。
 // LoadSchemaUsingObjectClient returns the loaded schema from the object with the given name
 func LoadSchemaUsingObjectClient(oc chunk.ObjectClient, name string) (*config.SchemaConfig, error) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(1*time.Minute))
@@ -578,6 +591,7 @@ func LoadSchemaUsingObjectClient(oc chunk.ObjectClient, name string) (*config.Sc
 	return &section.SchemaConfig, nil
 }
 
+// SetInstant 将 Start 与 End 设为同一时刻，Step 为 0 即视为即时查询。
 // SetInstant makes the Query an instant type
 func (q *Query) SetInstant(time time.Time) {
 	q.Start = time
@@ -594,3 +608,4 @@ func (q *Query) resultsDirection() logproto.Direction {
 	}
 	return logproto.BACKWARD
 }
+// resultsDirection 根据 Forward 标志返回 logproto.FORWARD 或 BACKWARD。

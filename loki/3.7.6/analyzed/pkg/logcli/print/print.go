@@ -1,5 +1,7 @@
 package print
 
+// print 包负责将 loghttp 查询结果（流/矩阵/向量/标量）格式化为终端或 LogOutput 输出。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -18,6 +20,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logqlmodel/stats"
 )
 
+// QueryResultPrinter 配置标签过滤、排序方向、静默模式与标签列宽。
 type QueryResultPrinter struct {
 	ShowLabelsKey       []string
 	IgnoreLabelsKey     []string
@@ -38,6 +41,7 @@ func NewQueryResultPrinter(showLabelsKey []string, ignoreLabelsKey []string, qui
 	}
 }
 
+// streamEntryPair 将单条 Entry 与其展示用 LabelSet 绑定，便于跨流排序。
 type streamEntryPair struct {
 	entry  loghttp.Entry
 	labels loghttp.LabelSet
@@ -62,6 +66,7 @@ func (r *QueryResultPrinter) PrintResult(value loghttp.ResultValue, out output.L
 }
 
 func (r *QueryResultPrinter) printStream(streams loghttp.Streams, out output.LogOutput, lastEntry []*loghttp.Entry) (int, []*loghttp.Entry) {
+// commonLabels 计算所有流共有的标签，默认从各行输出中剔除以节省宽度。
 	common := commonLabels(streams)
 
 	// Remove the labels we want to show from common
@@ -134,6 +139,7 @@ func (r *QueryResultPrinter) printStream(streams loghttp.Streams, out output.Log
 
 	printed := 0
 	for _, e := range allEntries {
+// 分批查询时上一批最后一条会重复出现在下一批，此处跳过已打印的重叠条目。
 		// Skip the last entry if it overlaps, this happens because batching includes the last entry from the last batch
 		if len(lastEntry) > 0 && e.entry.Timestamp.Equal(lastEntry[0].Timestamp) {
 			skip := false
@@ -153,6 +159,7 @@ func (r *QueryResultPrinter) printStream(streams loghttp.Streams, out output.Log
 		printed++
 	}
 
+// 同一纳秒时间戳可能有多条日志，需记录 lastEntry 供下一批去重。
 	// Loki allows multiple entries at the same timestamp, this is a bit of a mess if a batch ends
 	// with an entry that shared multiple timestamps, so we need to keep a list of all these entries
 	// because the next query is going to contain them too and we want to not duplicate anything already
@@ -170,6 +177,7 @@ func (r *QueryResultPrinter) printStream(streams loghttp.Streams, out output.Log
 	return printed, lel
 }
 
+// printMatrix 将矩阵结果 JSON 缩进打印，预留未来图像等输出格式扩展。
 func printMatrix(matrix loghttp.Matrix) {
 	// yes we are effectively unmarshalling and then immediately marshalling this object back to json.  we are doing this b/c
 	// it gives us more flexibility with regard to output types in the future.  initially we are supporting just formatted json but eventually
@@ -200,6 +208,7 @@ func printScalar(scalar loghttp.Scalar) {
 	fmt.Print(string(bytes))
 }
 
+// kvLogger 适配 stats.Log，以 tabwriter 在 stderr 打印查询统计键值对。
 type kvLogger struct {
 	*tabwriter.Writer
 }
@@ -222,6 +231,7 @@ func matchLabels(on bool, l loghttp.LabelSet, names []string) loghttp.LabelSet {
 }
 
 // return commonLabels labels between given labels set
+// commonLabels 对流标签集逐对求交集，得到各流共享的标签子集。
 func commonLabels(streams loghttp.Streams) loghttp.LabelSet {
 	if len(streams) == 0 {
 		return nil
@@ -235,6 +245,7 @@ func commonLabels(streams loghttp.Streams) loghttp.LabelSet {
 }
 
 // intersect two labels set
+// intersect 返回键值完全相同的标签交集。
 func intersect(a, b loghttp.LabelSet) loghttp.LabelSet {
 	set := loghttp.LabelSet{}
 
@@ -249,6 +260,7 @@ func intersect(a, b loghttp.LabelSet) loghttp.LabelSet {
 }
 
 // subtract labels set b from labels set a
+// subtract 从 a 中移除与 b 键值相同的标签，用于隐藏公共标签。
 func subtract(a, b loghttp.LabelSet) loghttp.LabelSet {
 	set := loghttp.LabelSet{}
 
@@ -262,3 +274,4 @@ func subtract(a, b loghttp.LabelSet) loghttp.LabelSet {
 	}
 	return set
 }
+// Forward 控制条目按时间升序或降序排列后再输出。

@@ -1,5 +1,7 @@
 package query
 
+// PartFile 封装并行/分片下载时的临时文件生命周期：先写 .tmp，Finalize 时重命名为最终 .part 文件。
+
 import (
 	"errors"
 	"fmt"
@@ -7,6 +9,7 @@ import (
 	"sync"
 )
 
+// PartFile 表示尚未完成下载的中间文件，配合 Finalize 原子替换。
 // PartFile partially complete file.
 // Expected usage:
 //  1. Create the temp file: CreateTemp
@@ -28,6 +31,7 @@ func NewPartFile(filename string) *PartFile {
 	}
 }
 
+// Exists 检查 finalName 对应的目标文件是否已存在（非 .tmp）。
 // Exists checks if the completed file exists.
 func (f *PartFile) Exists() (bool, error) {
 	if _, err := os.Stat(f.finalName); err == nil {
@@ -42,6 +46,7 @@ func (f *PartFile) Exists() (bool, error) {
 	}
 }
 
+// CreateTempFile 在 finalName 旁创建 .tmp 文件并打开写入句柄。
 // CreateTempFile creates the temp file to store the data before Finalize is called.
 func (f *PartFile) CreateTempFile() error {
 	f.lock.Lock()
@@ -70,6 +75,7 @@ func (f *PartFile) Close() error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
+// Close 通过 fd==nil 防止重复关闭，允许 defer 与 Finalize 各调用一次。
 	// Prevent double close
 	if f.fd == nil {
 		return nil
@@ -89,6 +95,7 @@ func (f *PartFile) Close() error {
 	return nil
 }
 
+// Finalize 先 Sync/Close 临时文件，再 os.Rename 为最终分片文件名。
 // Finalize closes the temporary file, and renames it to the final file name.
 func (f *PartFile) Finalize() error {
 	tmpFileName := f.fd.Name()
@@ -106,3 +113,4 @@ func (f *PartFile) Finalize() error {
 
 	return nil
 }
+// mutex 保护 fd 的创建与关闭，避免并发 Write 与 Close 竞态。

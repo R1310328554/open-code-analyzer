@@ -1,5 +1,7 @@
 package loghttp
 
+// Entry 表示单条日志：时间戳、正文、结构化元数据与 parser 解析出的标签。
+
 import (
 	"fmt"
 	"strconv"
@@ -12,10 +14,12 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// init 注册 jsoniter 扩展，使 []Entry 与 Entry 使用紧凑数组 JSON 格式。
 func init() {
 	jsoniter.RegisterExtension(&jsonExtension{})
 }
 
+// Entry 是 loghttp 流式结果中最小日志单元，支持自定义 JSON 编解码。
 // Entry represents a log entry.  It includes a log message and the time it occurred at.
 type Entry struct {
 	Timestamp          time.Time
@@ -60,6 +64,7 @@ func (e *Entry) UnmarshalJSON(data []byte) error {
 				return
 			}
 
+// UnmarshalJSON 兼容 push 三元素数组与 query 响应中带 structuredMetadata/parsed 的对象。
 			// Here we deserialize entries for both query responses and push requests.
 			//
 			// For push requests, we accept structured metadata as the third object in the entry array. E.g.:
@@ -68,6 +73,7 @@ func (e *Entry) UnmarshalJSON(data []byte) error {
 			// For query responses, we accept structured metadata and parsed labels in the third object in the entry array. E.g.:
 			// [ "<ts>", "<log line>", { "structuredMetadata": {"trace_id": "0242ac120002", "user_id": "superUser123"}, "parsed": {"msg": "text"}}]
 			//
+// 第三元素若为嵌套对象则分别解析 structuredMetadata 与 parsed 子对象。
 			// Therefore, we need to check if the third object contains the "structuredMetadata" or "parsed" fields. If it does,
 			// we deserialize the inner objects into the structured metadata and parsed labels respectively.
 			// If it doesn't, we deserialize the object into the structured metadata labels.
@@ -123,6 +129,7 @@ func (e *Entry) UnmarshalJSON(data []byte) error {
 	return err
 }
 
+// parseLabels 将 JSON 对象解码为 Prometheus labels.Labels 并排序。
 func parseLabels(data []byte) (labels.Labels, error) {
 	labelsBuilder := labels.NewScratchBuilder(0)
 
@@ -148,6 +155,7 @@ type jsonExtension struct {
 	jsoniter.DummyExtension
 }
 
+// sliceEntryDecoder 为 jsoniter 提供 []Entry 的流式数组解码，避免中间 DOM。
 type sliceEntryDecoder struct{}
 
 func (sliceEntryDecoder) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
@@ -215,6 +223,7 @@ func readTimestamp(iter *jsoniter.Iterator) (time.Time, bool) {
 	return time.Unix(0, t), true
 }
 
+// EntryEncoder 将 Entry 编码为 ["纳秒时间戳","日志行",{元数据}] 数组形式。
 type EntryEncoder struct{}
 
 func (EntryEncoder) IsEmpty(_ unsafe.Pointer) bool {
@@ -249,6 +258,7 @@ func (EntryEncoder) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	stream.WriteArrayEnd()
 }
 
+// CreateDecoder 仅为 []Entry 类型注册 sliceEntryDecoder。
 func (e *jsonExtension) CreateDecoder(typ reflect2.Type) jsoniter.ValDecoder {
 	if typ == reflect2.TypeOf([]Entry{}) {
 		return sliceEntryDecoder{}
@@ -262,3 +272,4 @@ func (e *jsonExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
 	}
 	return nil
 }
+// readTimestamp 从 JSON 字符串解析纳秒 Unix 时间戳供 jsoniter 解码路径使用。

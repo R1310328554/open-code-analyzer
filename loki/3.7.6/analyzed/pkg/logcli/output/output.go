@@ -1,5 +1,7 @@
 package output
 
+// output 包定义 LogOutput 接口、选项结构体与工厂函数，统一 default/jsonl/raw 三种输出模式的创建入口。
+
 import (
 	"fmt"
 	"hash/fnv"
@@ -26,12 +28,14 @@ var colorList = []*color.Color{
 	color.New(color.FgRed),
 }
 
+// LogOutput 接口要求实现格式化单行输出及 WithWriter 克隆方法。
 // LogOutput is the interface any output mode must implement
 type LogOutput interface {
 	FormatAndPrintln(ts time.Time, lbls loghttp.LabelSet, maxLabelsLen int, line string)
 	WithWriter(w io.Writer) LogOutput
 }
 
+// LogOutputOptions 控制时区、标签显示、彩色输出与时间戳格式。
 // LogOutputOptions defines options supported by LogOutput
 // TimestampFormat can be one of RFC3339 (default), RFC3339Nano, RFC822Z, RFC1123Z, StampMilli, StampMicro, StampNano, UnixDate
 type LogOutputOptions struct {
@@ -41,6 +45,7 @@ type LogOutputOptions struct {
 	TimestampFormat string
 }
 
+// NewLogOutput 根据 mode 字符串实例化 DefaultOutput、JSONLOutput 或 RawOutput。
 // NewLogOutput creates a log output based on the input mode and options
 func NewLogOutput(w io.Writer, mode string, options *LogOutputOptions) (LogOutput, error) {
 	if options.Timezone == nil {
@@ -72,6 +77,7 @@ func NewLogOutput(w io.Writer, mode string, options *LogOutputOptions) (LogOutpu
 	}
 }
 
+// getColor 对标签字符串做 FNV 哈希，从 colorList 中稳定选取一种前景色。
 func getColor(labels string) *color.Color {
 	hash := fnv.New32()
 	_, _ = hash.Write([]byte(labels))
@@ -79,3 +85,4 @@ func getColor(labels string) *color.Color {
 	color := colorList[id]
 	return color
 }
+// 未知 mode 返回错误；Timezone 与 TimestampFormat 未设置时使用本地时区与 RFC3339。

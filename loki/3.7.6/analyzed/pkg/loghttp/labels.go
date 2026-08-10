@@ -1,5 +1,7 @@
 package loghttp
 
+// labels 相关 HTTP 类型与 LabelSet 工具：JSON  unmarshaling、排序字符串化及请求解析。
+
 import (
 	"errors"
 	"net/http"
@@ -13,12 +15,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// LabelResponse 包装 labels API 的 status 与字符串列表 data。
 // LabelResponse represents the http json response to a label query
 type LabelResponse struct {
 	Status string   `json:"status"`
 	Data   []string `json:"data,omitempty"`
 }
 
+// LabelSet 是 map[string]string 别名，表示 Prometheus 风格标签集合。
 // LabelSet is a key/value pair mapping of labels
 type LabelSet map[string]string
 
@@ -46,6 +50,7 @@ func (l LabelSet) Map() map[string]string {
 }
 
 // String implements the Stringer interface.  It returns a formatted/sorted set of label key/value pairs.
+// String 按键名字典序输出 {k="v", ...} 格式，供 logcli 终端对齐显示。
 func (l LabelSet) String() string {
 	var b strings.Builder
 
@@ -69,6 +74,7 @@ func (l LabelSet) String() string {
 	return b.String()
 }
 
+// ParseLabelQuery 从 mux 路径与 query 参数构造 logproto.LabelRequest。
 // ParseLabelQuery parses a LabelRequest request from an http request.
 func ParseLabelQuery(r *http.Request) (*logproto.LabelRequest, error) {
 	name, ok := mux.Vars(r)["name"]
@@ -88,6 +94,7 @@ func ParseLabelQuery(r *http.Request) (*logproto.LabelRequest, error) {
 	return req, nil
 }
 
+// ParseDetectedLabelsQuery 解析 detected labels 端点的时间边界与 query 参数。
 func ParseDetectedLabelsQuery(r *http.Request) (*logproto.DetectedLabelsRequest, error) {
 	var err error
 
@@ -106,3 +113,4 @@ func ParseDetectedLabelsQuery(r *http.Request) (*logproto.DetectedLabelsRequest,
 		Query: query(r),
 	}, nil
 }
+// Map 方法便于与期望 map[string]string 的适配器类型互操作。
