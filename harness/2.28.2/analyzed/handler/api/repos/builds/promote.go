@@ -17,8 +17,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandlePromote returns an http.HandlerFunc that processes http
-// requests to promote and re-execute a build.
+// HandlePromote 返回 HTTP 处理器，将指定构建提升到目标部署环境并重新触发执行。
 func HandlePromote(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -51,6 +50,7 @@ func HandlePromote(
 			return
 		}
 
+		// 基于原构建元数据构造 promote 事件的 Hook，并指定目标部署环境。
 		hook := &core.Hook{
 			Parent:       prev.Number,
 			Trigger:      user.Login,
@@ -76,10 +76,12 @@ func HandlePromote(
 			Params:       map[string]string{},
 		}
 
+		// 继承原构建的自定义参数。
 		for k, v := range prev.Params {
 			hook.Params[k] = v
 		}
 
+		// 将 URL 查询参数（除 access_token 与 target 外）合并进 Hook 参数表。
 		for key, value := range r.URL.Query() {
 			if key == "access_token" {
 				continue

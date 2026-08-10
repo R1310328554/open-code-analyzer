@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// stages 包提供构建阶段审批、拒绝等人工审核相关的 HTTP API 处理器。
 package stages
 
 import (
@@ -25,10 +26,10 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// noContext 供调度器使用，避免请求上下文取消影响后台调度。
 var noContext = context.Background()
 
-// HandleApprove returns an http.HandlerFunc that processes http
-// requests to approve a blocked build that is pending review.
+// HandleApprove 返回 HTTP 处理器，批准处于 blocked 状态、等待人工审核的阶段并提交调度。
 func HandleApprove(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -69,6 +70,7 @@ func HandleApprove(
 			render.BadRequestf(w, "Cannot approve a Pipeline with Status %q", stage.Status)
 			return
 		}
+		// 存在上游依赖时先进入 waiting，否则直接进入 pending 等待调度。
 		if len(stage.DependsOn) > 0 {
 			stage.Status = core.StatusWaiting
 		} else {

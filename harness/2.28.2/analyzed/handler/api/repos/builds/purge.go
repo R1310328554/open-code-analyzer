@@ -16,8 +16,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandlePurge returns an http.HandlerFunc that purges the
-// build history. If successful a 204 status code is returned.
+// HandlePurge 返回 HTTP 处理器，按 before 参数指定的构建编号清理更早的构建历史；成功返回 204。
 func HandlePurge(repos core.RepositoryStore, builds core.BuildStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (

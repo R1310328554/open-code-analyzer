@@ -23,11 +23,12 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
+// notImplemented 是 OSS 版中未实现 API 的统一占位响应。
 var notImplemented = func(w http.ResponseWriter, r *http.Request) {
 	render.NotImplemented(w, render.ErrNotImplemented)
 }
 
-// HandlePromote returns a non-op http.HandlerFunc.
+// HandlePromote 返回空操作 HTTP 处理器；OSS 版不支持构建提升。
 func HandlePromote(
 	core.RepositoryStore,
 	core.BuildStore,

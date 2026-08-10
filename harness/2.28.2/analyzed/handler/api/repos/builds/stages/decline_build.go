@@ -25,6 +25,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// HandleDeclineBuild 返回 HTTP 处理器，拒绝整次构建中所有处于 blocked 状态的阶段。
 func HandleDeclineBuild(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -58,6 +59,7 @@ func HandleDeclineBuild(
 			return
 		}
 
+		// 任一阶段非 blocked 则拒绝整次 decline 操作。
 		for _, stage := range stageList {
 			if stage.Status != core.StatusBlocked {
 				err := fmt.Errorf("Cannot decline build with status %q", stage.Status)
@@ -79,9 +81,9 @@ func HandleDeclineBuild(
 			render.InternalError(w, err)
 			return
 		}
-		// TODO delete any pending stages from the build queue
-		// TODO update any pending stages to skipped in the database
-		// TODO update the build status to error in the source code management system
+		// TODO: 从构建队列中删除所有 pending 阶段
+		// TODO: 将数据库中 pending 阶段更新为 skipped
+		// TODO: 在源码管理系统中将构建状态更新为 error
 		w.WriteHeader(http.StatusNoContent)
 	}
 }

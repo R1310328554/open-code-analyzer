@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// logs 包提供构建步骤日志查询相关的 HTTP API 处理器。
 package logs
 
 import (
@@ -25,8 +26,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleFind returns an http.HandlerFunc that writes the
-// json-encoded logs to the response body.
+// HandleFind 返回 HTTP 处理器，按仓库、构建、阶段与步骤编号查询并流式返回 JSON 格式日志。
 func HandleFind(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -83,8 +83,7 @@ func HandleFind(
 		io.Copy(w, rc)
 		rc.Close()
 
-		// TODO: logs are stored in jsonl format and therefore
-		// need to be converted to valid json.
+		// TODO: 日志以 jsonl 格式存储，需转换为合法 JSON 数组后再返回。
 		// ELSE: JSON.parse('['+x.split('\n').join(',')+']')
 	}
 }

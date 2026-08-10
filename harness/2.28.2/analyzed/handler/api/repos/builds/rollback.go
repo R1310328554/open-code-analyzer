@@ -17,8 +17,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleRollback returns an http.HandlerFunc that processes http
-// requests to rollback and re-execute a build.
+// HandleRollback 返回 HTTP 处理器，将指定构建回滚到目标部署环境并重新触发执行。
 func HandleRollback(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -51,6 +50,7 @@ func HandleRollback(
 			return
 		}
 
+		// 基于原构建元数据构造 rollback 事件的 Hook，并指定回滚目标环境。
 		hook := &core.Hook{
 			Parent:       prev.Number,
 			Trigger:      user.Login,

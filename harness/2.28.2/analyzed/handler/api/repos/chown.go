@@ -25,8 +25,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleChown returns an http.HandlerFunc that processes http
-// requests to chown the repository to the currently authenticated user.
+// HandleChown 返回 HTTP 处理器，将仓库所有权转移给当前已认证用户。
 func HandleChown(repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (

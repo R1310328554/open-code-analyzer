@@ -25,8 +25,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDecline returns an http.HandlerFunc that processes http
-// requests to decline a blocked build that is pending review.
+// HandleDecline 返回 HTTP 处理器，拒绝处于 blocked 状态、等待人工审核的单个阶段。
 func HandleDecline(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -73,6 +72,7 @@ func HandleDecline(
 			render.InternalError(w, err)
 			return
 		}
+		// 同步将整次构建标记为 declined。
 		build.Status = core.StatusDeclined
 		err = builds.Update(r.Context(), build)
 		if err != nil {
@@ -80,9 +80,9 @@ func HandleDecline(
 			return
 		}
 
-		// TODO delete any pending stages from the build queue
-		// TODO update any pending stages to skipped in the database
-		// TODO update the build status to error in the source code management system
+		// TODO: 从构建队列中删除所有 pending 阶段
+		// TODO: 将数据库中 pending 阶段更新为 skipped
+		// TODO: 在源码管理系统中将构建状态更新为 error
 
 		w.WriteHeader(http.StatusNoContent)
 	}

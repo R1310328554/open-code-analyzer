@@ -24,8 +24,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDelete returns an http.HandlerFunc that handles an
-// http.Request to delete a branch entry from the datastore.
+// HandleDelete 返回 HTTP 处理器，从数据存储中删除指定 PR 编号的构建历史记录。
 func HandleDelete(
 	repos core.RepositoryStore,
 	builds core.BuildStore,

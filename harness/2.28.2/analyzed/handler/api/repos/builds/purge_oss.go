@@ -22,7 +22,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// HandlePurge returns a non-op http.HandlerFunc.
+// HandlePurge 返回空操作 HTTP 处理器；OSS 版不支持构建历史清理。
 func HandlePurge(core.RepositoryStore, core.BuildStore) http.HandlerFunc {
 	return notImplemented
 }

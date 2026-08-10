@@ -23,11 +23,12 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
+// rollbackNotImplemented 是 OSS 版回滚 API 的未实现占位响应。
 var rollbackNotImplemented = func(w http.ResponseWriter, r *http.Request) {
 	render.NotImplemented(w, render.ErrNotImplemented)
 }
 
-// HandleRollback returns a non-op http.HandlerFunc.
+// HandleRollback 返回空操作 HTTP 处理器；OSS 版不支持构建回滚。
 func HandleRollback(
 	core.RepositoryStore,
 	core.BuildStore,

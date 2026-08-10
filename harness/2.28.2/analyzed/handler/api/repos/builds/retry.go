@@ -25,8 +25,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleRetry returns an http.HandlerFunc that processes http
-// requests to retry and re-execute a build.
+// HandleRetry 返回 HTTP 处理器，基于原构建重新触发一次构建（重试）。
 func HandleRetry(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -54,6 +53,7 @@ func HandleRetry(
 			return
 		}
 
+		// 被阻塞或已拒绝的构建不允许重试。
 		switch prev.Status {
 		case core.StatusBlocked:
 			render.BadRequestf(w, "cannot start a blocked build")
@@ -63,6 +63,7 @@ func HandleRetry(
 			return
 		}
 
+		// 复制原构建上下文构造 Hook，保留事件类型与部署信息。
 		hook := &core.Hook{
 			Parent:       prev.Number,
 			Trigger:      user.Login,
@@ -90,6 +91,7 @@ func HandleRetry(
 			Params:       map[string]string{},
 		}
 
+		// 将 URL 查询参数（除 access_token 与 debug 外）写入 Hook 参数表。
 		for key, value := range r.URL.Query() {
 			if key == "access_token" {
 				continue
@@ -102,6 +104,7 @@ func HandleRetry(
 			}
 			hook.Params[key] = value[0]
 		}
+		// 再合并原构建遗留的自定义参数。
 		for key, value := range prev.Params {
 			hook.Params[key] = value
 		}

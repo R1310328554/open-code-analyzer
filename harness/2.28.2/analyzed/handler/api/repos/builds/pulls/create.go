@@ -12,4 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// pulls 包定义 Pull Request 构建历史相关的 HTTP API 处理器。
 package pulls
