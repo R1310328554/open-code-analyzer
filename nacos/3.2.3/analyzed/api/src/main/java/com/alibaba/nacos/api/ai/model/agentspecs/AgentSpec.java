@@ -19,41 +19,37 @@ package com.alibaba.nacos.api.ai.model.agentspecs;
 import java.util.Map;
 
 /**
- * AgentSpec entity for HiClaw Worker package management.
- * Mirrors the Skill structure with manifest.json as the main content.
+ * HiClaw Worker 包管理的 AgentSpec 实体，结构与 Skill 类似，以 manifest.json 为主内容。
+ *
+ * <p>包含命名空间、名称、描述、业务标签、manifest 原文及资源文件映射，
+ * 供 Nacos AI 模块发布与订阅 Agent 工作包。</p>
  *
  * @author nacos
  */
 public class AgentSpec {
     
-    /**
-     * Namespace ID (Nacos management field).
-     */
+    /** Nacos 命名空间 ID（治理字段）。 */
+    
     private String namespaceId;
     
-    /**
-     * AgentSpec name (from manifest.json worker.suggested_name).
-     */
+    /** AgentSpec 名称（取自 manifest.json 的 worker.suggested_name）。 */
+    
     private String name;
     
-    /**
-     * AgentSpec description.
-     */
+    /** AgentSpec 描述信息。 */
+    
     private String description;
     
-    /**
-     * AgentSpec biz tags, stored as JSON array string.
-     */
+    /** 业务标签，以 JSON 数组字符串存储。 */
+    
     private String bizTags;
     
-    /**
-     * manifest.json raw JSON string content.
-     */
+    /** manifest.json 原始 JSON 字符串内容。 */
+    
     private String content;
     
-    /**
-     * Resource map (key is resource name, e.g., config/SOUL.md).
-     */
+    /** 资源文件映射（键为资源路径，如 config/SOUL.md）。 */
+    
     private Map<String, AgentSpecResource> resource;
     
     public String getNamespaceId() {

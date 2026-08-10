@@ -20,18 +20,25 @@ package com.alibaba.nacos.api.ai.model.a2a;
 import java.util.Objects;
 
 /**
- * AgentVersionDetail.
+ * Agent 单个版本的明细记录，含版本号、创建/更新时间以及是否为最新标记。
+ *
+ * <p>作为 {@link AgentCardVersionInfo#getVersionDetails()} 的元素，
+ * 用于版本列表展示与订阅选择。</p>
  *
  * @author KiteSoar
  */
 public class AgentVersionDetail {
     
+    /** 版本号字符串。 */
     private String version;
     
+    /** 版本创建时间（ISO 格式字符串）。 */
     private String createdAt;
     
+    /** 版本最近更新时间。 */
     private String updatedAt;
     
+    /** 是否为当前最新版本。 */
     private boolean isLatest;
     
     public String getVersion() {

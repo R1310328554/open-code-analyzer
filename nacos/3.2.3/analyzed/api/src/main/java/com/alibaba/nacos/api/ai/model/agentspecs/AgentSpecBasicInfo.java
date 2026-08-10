@@ -19,12 +19,16 @@ package com.alibaba.nacos.api.ai.model.agentspecs;
 import java.util.Objects;
 
 /**
- * AgentSpec basic info for list response.
+ * AgentSpec 列表接口返回的基础信息，含最近更新时间。
+ *
+ * <p>继承 {@link AgentSpecBase}，用于管理端或客户端列举 AgentSpec 时
+ * 展示轻量级摘要，不含 manifest 正文与资源详情。</p>
  *
  * @author nacos
  */
 public class AgentSpecBasicInfo extends AgentSpecBase {
     
+    /** 最近更新时间戳（毫秒）。 */
     private Long updateTime;
     
     public Long getUpdateTime() {

@@ -20,22 +20,24 @@ package com.alibaba.nacos.api.ai.model.a2a;
 import java.util.Objects;
 
 /**
- * AgentInterface.
+ * A2A Agent 接口描述，定义 Agent 对外暴露的访问 URL 与协议绑定信息。
+ *
+ * <p>A2A 1.0.0 起以 {@link #protocolBinding} 替代旧版 {@link #transport} 字段；
+ * 可出现在 {@link AgentCard#getSupportedInterfaces()} 列表中。</p>
  *
  * @author KiteSoar
  */
 public class AgentInterface {
     
     /**
-     * For A2A 1.0.0.
+     * Agent 接口完整 URL（A2A 1.0.0 新增）。
      *
      * @since 3.2.1
      */
     private String url;
     
     /**
-     * Legacy field for old A2A protocol compatibility, may be removed in future versions.
-     * Use {@link #protocolBinding} for A2A 1.0.0.
+     * 旧版传输协议字段，A2A 1.0.0 请改用 {@link #protocolBinding}。
      *
      * @deprecated For old A2A protocol compatibility only.
      */
@@ -43,21 +45,21 @@ public class AgentInterface {
     private String transport;
     
     /**
-     * For A2A 1.0.0.
+     * 协议绑定标识，如 JSONRPC、HTTP 等（A2A 1.0.0 新增）。
      *
      * @since 3.2.1
      */
     private String protocolBinding;
     
     /**
-     * For A2A 1.0.0.
+     * A2A 协议版本号（1.0.0 新增）。
      *
      * @since 3.2.1
      */
     private String protocolVersion;
     
     /**
-     * For A2A 1.0.0.
+     * 租户标识（A2A 1.0.0 新增）。
      *
      * @since 3.2.1
      */

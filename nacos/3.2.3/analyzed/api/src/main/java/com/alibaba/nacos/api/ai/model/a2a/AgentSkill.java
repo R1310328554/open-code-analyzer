@@ -21,24 +21,34 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * AgentSkill.
+ * Agent 技能描述模型，声明 Agent 可执行的单一能力及其输入输出模式。
+ *
+ * <p>出现在 {@link AgentCardBasicInfo#getSkills()} 列表中，
+ * 供客户端展示技能目录并选择合适的交互模式。</p>
  *
  * @author KiteSoar
  */
 public class AgentSkill {
     
+    /** 技能唯一标识。 */
     private String id;
     
+    /** 技能显示名称。 */
     private String name;
     
+    /** 技能功能描述。 */
     private String description;
     
+    /** 技能分类标签列表。 */
     private List<String> tags;
     
+    /** 技能使用示例短语列表。 */
     private List<String> examples;
     
+    /** 支持的输入模式（如 text、file 等）。 */
     private List<String> inputModes;
     
+    /** 支持的输出模式。 */
     private List<String> outputModes;
     
     public String getId() {

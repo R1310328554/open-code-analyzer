@@ -21,18 +21,25 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * AgentExtension.
+ * Agent 扩展声明模型，描述 Agent 支持的自定义扩展 URI 及其参数。
+ *
+ * <p>用于 A2A Agent Card 中声明可选或必需的扩展能力，
+ * 客户端可据此发现额外协议或插件接口。</p>
  *
  * @author KiteSoar
  */
 public class AgentExtension {
     
+    /** 扩展 URI 标识。 */
     private String uri;
     
+    /** 扩展功能描述。 */
     private String description;
     
+    /** 客户端是否必须支持该扩展。 */
     private Boolean required;
     
+    /** 扩展附加参数键值对。 */
     private Map<String, Object> params;
     
     public String getUri() {

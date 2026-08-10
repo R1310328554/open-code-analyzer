@@ -19,13 +19,16 @@ package com.alibaba.nacos.api.ai.model.agentspecs;
 import java.util.List;
 
 /**
- * AgentSpec metadata for admin API response.
- * Contains governance metadata and all version summaries.
+ * 管理端 API 返回的 AgentSpec 元数据，含治理信息与全部版本摘要。
+ *
+ * <p>继承 {@link AgentSpecSummary}，附加 {@link #versions} 列表，
+ * 便于控制台展示版本状态、作者与下载量等统计。</p>
  *
  * @author nacos
  */
 public class AgentSpecMeta extends AgentSpecSummary {
     
+    /** 该 AgentSpec 下所有版本的摘要列表。 */
     private List<AgentSpecVersionSummary> versions;
     
     public List<AgentSpecVersionSummary> getVersions() {
@@ -36,25 +39,32 @@ public class AgentSpecMeta extends AgentSpecSummary {
         this.versions = versions;
     }
     
-    /**
-     * Summary of a single agentspec version for admin display.
-     */
+    /** 单个 AgentSpec 版本的摘要，供管理端展示。 */
+    
     public static class AgentSpecVersionSummary {
         
+        /** 版本号。 */
         private String version;
         
+        /** 版本状态（如草稿、已发布等）。 */
         private String status;
         
+        /** 版本作者。 */
         private String author;
         
+        /** 版本描述。 */
         private String description;
         
+        /** 版本创建时间戳。 */
         private Long createTime;
         
+        /** 版本最近更新时间戳。 */
         private Long updateTime;
         
+        /** 发布流水线信息（JSON 或文本）。 */
         private String publishPipelineInfo;
         
+        /** 版本累计下载次数。 */
         private Long downloadCount;
         
         public String getVersion() {

@@ -17,16 +17,21 @@
 package com.alibaba.nacos.api.ai.model.agentspecs;
 
 /**
- * Base class for AgentSpec model objects. Contains common basic info fields shared across AgentSpec-related models.
+ * AgentSpec 相关模型的基类，封装命名空间、名称与描述等公共基础字段。
+ *
+ * <p>被 {@link AgentSpecBasicInfo} 等子类继承，避免重复定义治理元数据。</p>
  *
  * @author nacos
  */
 public class AgentSpecBase {
     
+    /** Nacos 命名空间 ID。 */
     private String namespaceId;
     
+    /** AgentSpec 名称。 */
     private String name;
     
+    /** AgentSpec 描述。 */
     private String description;
     
     public String getNamespaceId() {

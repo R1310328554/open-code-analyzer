@@ -20,7 +20,10 @@ package com.alibaba.nacos.api.ai.model.a2a;
 import java.util.HashMap;
 
 /**
- * SecurityScheme.
+ * A2A 安全方案定义，以键值 Map 形式承载 OpenAPI 风格的安全方案属性。
+ *
+ * <p>出现在 {@link AgentCard#getSecuritySchemes()} 映射中，
+ * 键为方案名称，值为类型、位置、格式等字段集合。</p>
  *
  * @author KiteSoar
  */
@@ -28,6 +31,7 @@ public class SecurityScheme extends HashMap<String, Object> {
     
     private static final long serialVersionUID = -708604225878249736L;
     
+    /** 构造空安全方案，初始容量为 4。 */
     public SecurityScheme() {
         super(4);
     }

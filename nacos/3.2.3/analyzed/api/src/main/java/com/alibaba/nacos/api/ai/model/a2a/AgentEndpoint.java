@@ -22,60 +22,62 @@ import com.alibaba.nacos.api.utils.StringUtils;
 import java.util.Objects;
 
 /**
- * Agent endpoint for A2A protocol.
+ * A2A 协议 Agent 端点模型，将 URL 拆分为地址、端口、路径等独立字段。
  *
- * <p>
- *     Details split version of {@link AgentInterface}.
- * </p>
+ * <p>是 {@link AgentInterface} 的细粒度版本，便于 Nacos 按字段存储与校验
+ * 端点配置，再组装为完整访问 URL。</p>
  *
  * @author xiweng.yy
  */
 public class AgentEndpoint {
     
     /**
-     * Same with {@link AgentInterface#transport}, Default `JSONRPC`.
+     * 传输层协议，与 {@link AgentInterface#transport} 含义相同，默认 `JSONRPC`。
      */
     private String transport = AiConstants.A2a.A2A_ENDPOINT_DEFAULT_TRANSPORT;
     
     /**
-     * Will be joined with {@link #port}, {@link #path}, {@link #protocol}. Such as `<a href="protocol://address:port/path?query">...</a>`
+     * 主机地址（IP 或域名），与 {@link #port}、{@link #path}、{@link #protocol} 拼接成完整 URL。
      */
     private String address;
     
+    /** 监听端口。 */
     private int port;
     
+    /** URL 路径，默认为空字符串。 */
     private String path = StringUtils.EMPTY;
     
     /**
-     * If {@code true}, the target {@link AgentInterface} should be `https`, otherwise should be `http`. Default {@code false}.
+     * 是否启用 TLS；为 {@code true} 时对应 {@link AgentInterface} 应使用 `https`，否则为 `http`，默认 {@code false}。
      */
     private boolean supportTls;
     
+    /** Agent 端点关联的版本号。 */
     private String version;
     
     /**
-     * For A2A 1.0.0.
+     * A2A 协议版本号（1.0.0 新增）。
      *
      * @since 3.2.1
      */
     private String protocolVersion;
     
     /**
-     * For A2A 1.0.0.
+     * 租户标识（A2A 1.0.0 新增）。
      *
      * @since 3.2.1
      */
     private String tenant;
     
     /**
-     * Custom Protocol for A2A transport. Default `HTTP`.
+     * A2A 传输层自定义协议，默认 `HTTP`。
      *
      * @since 3.1.1
      */
     private String protocol = AiConstants.A2a.A2A_ENDPOINT_DEFAULT_PROTOCOL;
     
     /**
-     * Custom query for A2A url.
+     * URL 查询参数字符串（A2A 自定义扩展）。
      *
      * @since 3.1.1
      */
@@ -162,7 +164,7 @@ public class AgentEndpoint {
     }
     
     /**
-     * Only simple check address(IP or domain) and port.
+     * 仅比较地址与端口是否相同（忽略路径、TLS 等其它字段）。
      *
      * @param endpoint target endpoint
      * @return {@code true} if is equal, otherwise {@code false}

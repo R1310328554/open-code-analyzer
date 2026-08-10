@@ -19,14 +19,19 @@ package com.alibaba.nacos.api.ai.model.a2a;
 import com.alibaba.nacos.api.ai.constant.AiConstants;
 
 /**
- * Agent Card detail info with Nacos extension field.
+ * 带 Nacos 扩展字段的 Agent Card 详情模型。
+ *
+ * <p>继承完整 {@link AgentCard}，额外包含注册类型与是否为最新版本等
+ * Nacos 服务端治理字段，常用于 {@link com.alibaba.nacos.api.ai.listener.NacosAgentCardEvent} 推送。</p>
  *
  * @author xiweng.yy
  */
 public class AgentCardDetailInfo extends AgentCard {
     
+    /** Agent 注册类型，默认 URL 端点注册（{@link com.alibaba.nacos.api.ai.constant.AiConstants.A2a#A2A_ENDPOINT_TYPE_URL}）。 */
     private String registrationType = AiConstants.A2a.A2A_ENDPOINT_TYPE_URL;
     
+    /** 当前卡片是否为该 Agent 的最新发布版本。 */
     private Boolean latestVersion;
     
     public String getRegistrationType() {

@@ -20,31 +20,39 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Basic info of agent card.
+ * Agent Card 基础信息模型，承载 A2A Agent 的名称、版本、能力与技能列表等核心元数据。
+ *
+ * <p>作为 {@link AgentCard}、{@link AgentCardVersionInfo} 等模型的父类，
+ * 仅包含卡片级公共字段，不含端点 URL 与安全方案等扩展属性。</p>
  *
  * @author xiweng.yy
  */
 public class AgentCardBasicInfo {
     
     /**
-     * Legacy field for old A2A protocol compatibility, may be removed in future versions.
-     * Use {@link AgentCard#getSupportedInterfaces()} for A2A 1.0.0.
+     * 旧版 A2A 协议兼容字段，后续版本可能移除；A2A 1.0.0 请改用 {@link AgentCard#getSupportedInterfaces()}。
      *
      * @deprecated For old A2A protocol compatibility only.
      */
     @Deprecated
     private String protocolVersion;
     
+    /** Agent 显示名称。 */
     private String name;
     
+    /** Agent 功能描述。 */
     private String description;
     
+    /** Agent 版本号。 */
     private String version;
     
+    /** Agent 图标 URL。 */
     private String iconUrl;
     
+    /** Agent 能力声明（流式、推送、扩展卡片等）。 */
     private AgentCapabilities capabilities;
     
+    /** Agent 暴露的技能列表。 */
     private List<AgentSkill> skills;
     
     public String getProtocolVersion() {

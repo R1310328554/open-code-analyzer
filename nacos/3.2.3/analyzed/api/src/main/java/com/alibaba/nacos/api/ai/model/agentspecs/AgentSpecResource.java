@@ -19,37 +19,33 @@ package com.alibaba.nacos.api.ai.model.agentspecs;
 import java.util.Map;
 
 /**
- * AgentSpec resource structure for files within the worker package.
- * Each zip entry (except manifest.json) corresponds to an AgentSpecResource.
+ * Worker 包内单个资源文件的结构，ZIP 中除 manifest.json 外的每个条目对应一项。
+ *
+ * <p>包含资源路径、类型、内容及可选元数据，二进制文件以 Base64 编码存储。</p>
  *
  * @author nacos
  */
 public class AgentSpecResource {
     
-    /**
-     * Resource name (includes file path, e.g., config/SOUL.md).
-     */
+    /** 资源名称（含路径，如 config/SOUL.md）。 */
+    
     private String name;
     
-    /**
-     * Resource type: config, skill, cron, dockerfile, other.
-     */
+    /** 资源类型：config、skill、cron、dockerfile、other 等。 */
+    
     private String type;
     
-    /**
-     * Resource content (string format, binary files Base64 encoded).
-     */
+    /** 资源内容（文本直接存储，二进制文件 Base64 编码）。 */
+    
     private String content;
     
-    /**
-     * Resource metadata (optional).
-     */
+    /** 可选的资源元数据键值对。 */
+    
     private Map<String, Object> metadata;
     
     /**
-     * Get resource unique identifier.
-     * Format: "type::name" if type is not blank, otherwise "name".
-     * The separator "::" is used because it's not in the allowed character set for type and name.
+     * 获取资源唯一标识：type 非空时为 "type::name"，否则为 "name"。
+     * 分隔符 "::" 不在 type/name 允许字符集中，可避免歧义。
      *
      * @return resource unique identifier
      */

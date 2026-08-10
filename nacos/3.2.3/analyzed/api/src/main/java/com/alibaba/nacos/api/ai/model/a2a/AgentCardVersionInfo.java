@@ -21,16 +21,22 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * AgentCardVersionInfo.
+ * Agent Card 版本汇总信息，用于列举 Agent 各历史版本及最新发布版本。
+ *
+ * <p>继承 {@link AgentCardBasicInfo} 的基础字段，并附加版本明细列表与注册类型，
+ * 便于客户端选择特定版本订阅或展示版本时间线。</p>
  *
  * @author KiteSoar
  */
 public class AgentCardVersionInfo extends AgentCardBasicInfo {
     
+    /** 最新已发布版本号。 */
     private String latestPublishedVersion;
     
+    /** 各历史版本的明细列表。 */
     private List<AgentVersionDetail> versionDetails;
     
+    /** Agent 注册类型（URL 或端点拆分等形式）。 */
     private String registrationType;
     
     public String getLatestPublishedVersion() {

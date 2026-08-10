@@ -20,14 +20,18 @@ package com.alibaba.nacos.api.ai.model.a2a;
 import java.util.Objects;
 
 /**
- * AgentInterface.
+ * Agent 提供方信息，标识 Agent 的所属组织与官网链接。
+ *
+ * <p>嵌入 {@link AgentCard} 中，帮助客户端识别 Agent 来源与信任边界。</p>
  *
  * @author KiteSoar
  */
 public class AgentProvider {
     
+    /** 提供方组织名称。 */
     private String organization;
     
+    /** 提供方官网或联系 URL。 */
     private String url;
     
     public String getOrganization() {
