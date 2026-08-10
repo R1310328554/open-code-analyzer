@@ -32,6 +32,7 @@ import org.keycloak.models.IdentityProviderSyncMode;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * Claim 到角色映射器：单个 claim 值匹配时授予 Keycloak 角色。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -65,6 +66,7 @@ public class ClaimToRoleMapper extends AbstractClaimToRoleMapper {
         configProperties.add(property);
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "oidc-role-idp-mapper";
 
     @Override
@@ -92,16 +94,19 @@ public class ClaimToRoleMapper extends AbstractClaimToRoleMapper {
         return "Role Importer";
     }
 
+    /** @return 控制台显示类型 Claim to Role */
     @Override
     public String getDisplayType() {
         return "Claim to Role";
     }
 
+    /** 委托基类校验 claim 值是否匹配。 */
     @Override
     protected boolean applies(IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         return super.hasClaimValue(mapperModel, context);
     }
 
+    /** @return claim 存在时授予指定 realm 或 client 角色 */
     @Override
     public String getHelpText() {
         return "If a claim exists, grant the user the specified realm or client role.";

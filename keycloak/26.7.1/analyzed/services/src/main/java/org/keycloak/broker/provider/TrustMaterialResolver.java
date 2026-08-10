@@ -30,8 +30,18 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.resources.IdentityBrokerService;
 import org.keycloak.util.Strings;
 
+/**
+ * 信任材料解析器：按别名聚合多个 {@link TrustMaterialIdentityProvider} 的 JWK 公钥。
+ * <p>用于客户端证明、OID4VCI 密钥证明等需复用 IdP 信任材料的场景。</p>
+ */
 public class TrustMaterialResolver {
 
+    /**
+     * 解析逗号分隔别名列表对应的 JWK 流。
+     * @param session Keycloak 会话
+     * @param aliases 逗号分隔的 IdP 别名
+     * @param request 信任材料查询条件
+     */
     public Stream<JWK> resolveKeys(KeycloakSession session, String aliases, TrustMaterialRequest request) {
         if (Strings.isEmpty(aliases)) {
             return Stream.empty();
@@ -39,6 +49,7 @@ public class TrustMaterialResolver {
         return resolveKeys(session, splitAliases(aliases), request);
     }
 
+    /** 解析别名集合对应的 JWK 流；跳过未启用或无法解析的 IdP。 */
     public Stream<JWK> resolveKeys(KeycloakSession session, Collection<String> aliases, TrustMaterialRequest request) {
         if (aliases == null || aliases.isEmpty()) {
             return Stream.empty();
@@ -53,10 +64,12 @@ public class TrustMaterialResolver {
                 .flatMap(provider -> provider.resolveKeys(request));
     }
 
+    /** 返回首个匹配的 JWK，无匹配时为空。 */
     public Optional<JWK> resolveKey(KeycloakSession session, String aliases, TrustMaterialRequest request) {
         return resolveKeys(session, aliases, request).findFirst();
     }
 
+    /** 按别名查找已启用的 {@link TrustMaterialIdentityProvider}。 */
     private Optional<TrustMaterialIdentityProvider<?>> resolveProvider(KeycloakSession session, String alias) {
         IdentityProviderModel model = session.identityProviders().getByAlias(alias);
         if (model == null || !model.isEnabled()) {
@@ -67,6 +80,7 @@ public class TrustMaterialResolver {
         return Optional.ofNullable(provider);
     }
 
+    /** 将逗号分隔别名字符串拆分为去空白列表。 */
     private List<String> splitAliases(String aliases) {
         return Arrays.stream(aliases.split(","))
                 .filter(Objects::nonNull)

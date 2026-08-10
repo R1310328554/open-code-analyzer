@@ -113,22 +113,30 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 /**
+ * SAML 2.0 身份代理实现：发起 AuthnRequest、处理断言并完成 SP 元数据导出。
  * @author Pedro Igor
  */
 public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityProviderConfig> {
+    /** 日志记录器。 */
     protected static final Logger logger = Logger.getLogger(SAMLIdentityProvider.class);
 
+    /** SAML Destination 校验器。 */
     private final DestinationValidator destinationValidator;
+    /** @param session Keycloak 会话
+     * @param config SAML IdP 配置
+     * @param destinationValidator Destination 校验器 */
     public SAMLIdentityProvider(KeycloakSession session, SAMLIdentityProviderConfig config, DestinationValidator destinationValidator) {
         super(session, config);
         this.destinationValidator = destinationValidator;
     }
 
+    /** 返回 {@link SAMLEndpoint} 作为 SAML 回调 JAX-RS 资源。 */
     @Override
     public Object callback(RealmModel realm, AuthenticationCallback callback, EventBuilder event) {
         return new SAMLEndpoint(session, this, getConfig(), callback, destinationValidator);
     }
 
+    /** 构建并签名 AuthnRequest，经 Redirect 或 POST 绑定发送至 IdP SSO URL。 */
     @Override
     public Response performLogin(AuthenticationRequest request) {
         try {
@@ -210,7 +218,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
                 destinationUrl = authnRequest.getDestination().toString();
             }
 
-            // Save the current RequestID in the Auth Session as we need to verify it against the ID returned from the IdP
+            // 将 RequestID 存入认证会话，供响应 InResponseTo 校验
             request.getAuthenticationSession().setClientNote(SamlProtocol.SAML_REQUEST_ID_BROKER, authnRequest.getID());
 
             if (postBinding) {
@@ -223,6 +231,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         }
     }
 
+    /** 返回 SP Entity ID（配置值或 realm 默认 URL）。 */
     private String getEntityId(UriInfo uriInfo, RealmModel realm) {
         String configEntityId = getConfig().getEntityId();
 
@@ -258,6 +267,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         }
     }
 
+    /** 登录完成后将 NameID、SessionIndex 与联邦令牌写入用户会话 note。 */
     @Override
     public void authenticationFinished(AuthenticationSessionModel authSession, BrokeredIdentityContext context)  {
         AssertionType assertion = (AssertionType)context.getContextData().get(SAMLEndpoint.SAML_ASSERTION);
@@ -277,11 +287,13 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         }
     }
 
+    /** 返回存储的 SAML 断言令牌（纯文本）。 */
     @Override
     public Response retrieveToken(KeycloakSession session, FederatedIdentityModel identity) {
         return Response.ok(identity.getToken()).type(MediaType.TEXT_PLAIN_TYPE).build();
     }
 
+    /** 从会话或联邦身份记录获取 SAML 令牌并包装为 {@link AccessTokenResponse}。 */
     @Override
     public Response retrieveToken(KeycloakSession session, FederatedIdentityModel identity, UserSessionModel userSession, UserModel user) {
         String token = null;
@@ -303,6 +315,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         return Response.ok(tokenResponse).type(MediaType.APPLICATION_JSON_TYPE).build();
     }
 
+    /** 向后端 SLO URL 发送 LogoutRequest（HTTP POST）。 */
     @Override
     public void backchannelLogout(KeycloakSession session, UserSessionModel userSession, UriInfo uriInfo, RealmModel realm) {
         String singleLogoutServiceUrl = getConfig().getSingleLogoutServiceUrl();
@@ -326,6 +339,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
 
     }
 
+    /** Keycloak 发起的浏览器 SLO：后端或前端绑定 LogoutRequest。 */
     @Override
     public Response keycloakInitiatedBrowserLogout(KeycloakSession session, UserSessionModel userSession, UriInfo uriInfo, RealmModel realm) {
         String singleLogoutServiceUrl = getConfig().getSingleLogoutServiceUrl();
@@ -352,6 +366,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         }
     }
 
+    /** 构建带 SessionIndex/NameID 的 SAML LogoutRequest。 */
     protected LogoutRequestType buildLogoutRequest(UserSessionModel userSession, UriInfo uriInfo, RealmModel realm, String singleLogoutServiceUrl, NodeGenerator... extensions) throws ConfigurationException {
         SAML2LogoutRequestBuilder logoutBuilder = new SAML2LogoutRequestBuilder()
                 .assertionExpiration(realm.getAccessCodeLifespan())
@@ -382,6 +397,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         return binding;
     }
 
+    /** 组装 SP EntityDescriptor，含 ACS/SLO 端点、签名/加密密钥与属性消费服务。 */
     protected EntityDescriptorType getEntityDescriptor(UriInfo uriInfo, RealmModel realm, String format) {
         URI endpoint = uriInfo.getBaseUriBuilder()
                 .path("realms").path(realm.getName())
@@ -410,7 +426,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         String entityId = getEntityId(uriInfo, realm);
         String nameIDPolicyFormat = getConfig().getNameIDPolicyFormat();
 
-        // We export all keys for algorithm RS256, both active and passive so IDP is able to verify signature even
+        // 导出 RS256 全部 SIG 密钥（含 passive），便于 IdP 在密钥轮换后仍能验签
         //  if a key rotation happens in the meantime
         List<KeyDescriptorType> signingKeys = session.keys().getKeysStream(realm, KeyUse.SIG, Algorithm.RS256)
                 .filter(key -> key.getCertificate() != null)
@@ -426,7 +442,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
                 .map(key -> SPMetadataDescriptor.buildKeyDescriptorType(key, KeyTypes.SIGNING, null))
                 .collect(Collectors.toList());
 
-        // We export only active ENC keys so IDP uses different key as soon as possible if a key rotation happens
+        // 仅导出 active ENC 密钥，促使 IdP 在轮换后尽快切换加密密钥
         String encAlg = getConfig().getEncryptionAlgorithm();
         List<KeyDescriptorType> encryptionKeys = session.keys().getKeysStream(realm)
                 .filter(key -> key.getStatus().isActive() && KeyUse.ENC.equals(key.getUse())
@@ -452,7 +468,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
             wantAuthnRequestsSigned, wantAssertionsSigned, wantAssertionsEncrypted,
             entityId, nameIDPolicyFormat, signingKeys, encryptionKeys, getConfig().getDescriptorCacheSeconds());
 
-        // Create the AttributeConsumingService if at least one attribute importer mapper exists
+        // 存在属性导入映射器时创建 AttributeConsumingService
         List<Entry<IdentityProviderMapperModel, SamlMetadataDescriptorUpdater>> metadataAttrProviders = new ArrayList<>();
         session.identityProviders().getMappersByAliasStream(getConfig().getAlias())
             .forEach(mapper -> {
@@ -464,7 +480,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         if (!metadataAttrProviders.isEmpty()) {
             int attributeConsumingServiceIndex = getConfig().getAttributeConsumingServiceIndex() != null ? getConfig().getAttributeConsumingServiceIndex() : 1;
             String attributeConsumingServiceName = getConfig().getAttributeConsumingServiceName();
-            //default value for attributeConsumingServiceName
+            // attributeConsumingServiceName 默认值
             if (attributeConsumingServiceName == null)
                 attributeConsumingServiceName = realm.getDisplayName() != null ? realm.getDisplayName() : realm.getName() ;
             AttributeConsumingServiceType attributeConsumingService = new AttributeConsumingServiceType(attributeConsumingServiceIndex);
@@ -475,7 +491,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
             attributeConsumingServiceNameElement.setValue(attributeConsumingServiceName);
             attributeConsumingService.addServiceName(attributeConsumingServiceNameElement);
 
-            // Look for the SP descriptor and add the attribute consuming service
+            // 向 SP 描述符添加 AttributeConsumingService
             for (EntityDescriptorType.EDTChoiceType choiceType : entityDescriptor.getChoiceType()) {
                 List<EntityDescriptorType.EDTDescriptorChoiceType> descriptors = choiceType.getDescriptors();
                 for (EntityDescriptorType.EDTDescriptorChoiceType descriptor : descriptors) {
@@ -483,7 +499,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
                 }
             }
 
-            // Add the attribute mappers
+            // 由映射器填充请求属性
             metadataAttrProviders.forEach(mapper -> {
                 SamlMetadataDescriptorUpdater metadataAttrProvider = mapper.getValue();
                 metadataAttrProvider.updateMetadata(mapper.getKey(), entityDescriptor);
@@ -493,6 +509,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         return entityDescriptor;
     }
 
+    /** 导出 SAML SP 元数据 XML，可选签名。 */
     @Override
     public Response export(UriInfo uriInfo, RealmModel realm, String format) {
         try
@@ -501,7 +518,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
 
             String descriptor;
 
-            // Metadata signing
+            // 可选对 SP 元数据签名
             if (getConfig().isSignSpMetadata()) {
                 KeyWrapper keyWrapper = session.keys().getActiveKey(realm, KeyUse.SIG, Algorithm.RS256);
                 X509Certificate certificate = keyWrapper.getCertificate();
@@ -520,6 +537,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         }
     }
 
+    /** 返回配置的 XML 签名算法，默认 RSA_SHA256。 */
     public SignatureAlgorithm getSignatureAlgorithm() {
         String alg = getConfig().getSignatureAlgorithm();
         if (alg != null) {
@@ -529,11 +547,13 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         return SignatureAlgorithm.RSA_SHA256;
     }
 
+    /** @return {@link SAMLDataMarshaller} 用于联邦会话数据序列化 */
     @Override
     public IdentityProviderDataMarshaller getMarshaller() {
         return new SAMLDataMarshaller();
     }
 
+    /** 启用元数据 URL 时从 IdP 元数据重新加载签名公钥。 */
     @Override
     public boolean reloadKeys() {
         if (getConfig().isEnabled() && getConfig().isUseMetadataDescriptorUrl()) {
@@ -544,20 +564,22 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         return false;
     }
 
+    /** SAML RelayState 规范限制约 80 字节，不支持长 state。 */
     @Override
     public boolean supportsLongStateParameter() {
-        // SAML RelayState parameter has limits of 80 bytes per SAML specification
+        // SAML 规范限制 RelayState 约 80 字节
         return false;
     }
 
+    /** 通过 SOAP ArtifactResolve 将 SAML Artifact 解析为 ArtifactResponse。 */
     public SAMLDocumentHolder resolveArtifact(KeycloakSession session, UriInfo uriInfo, RealmModel realm, String relayState, String samlArt) {
-        //get the URL of the artifact resolution service provided by the Identity Provider
+        // 读取 IdP 配置的 Artifact Resolution Service URL
         String artifactResolutionServiceUrl = getConfig().getArtifactResolutionServiceUrl();
         if (artifactResolutionServiceUrl == null || artifactResolutionServiceUrl.trim().isEmpty()) {
             throw new RuntimeException("Artifact Resolution Service URL is not configured for the Identity Provider.");
         }
         try {
-            // create the SAML Request object to resolve an artifact
+            // 构建 ArtifactResolve 请求
             ArtifactResolveType artifactResolveRequest = buildArtifactResolveRequest(uriInfo, realm, artifactResolutionServiceUrl, samlArt);
             if (artifactResolveRequest.getDestination() != null) {
                 artifactResolutionServiceUrl = artifactResolveRequest.getDestination().toString();
@@ -587,6 +609,7 @@ public class SAMLIdentityProvider extends AbstractIdentityProvider<SAMLIdentityP
         }
     }
 
+    /** 构建 ArtifactResolve 请求对象。 */
     protected ArtifactResolveType buildArtifactResolveRequest(UriInfo uriInfo, RealmModel realm, String artifactServiceUrl, String artifact, NodeGenerator... extensions) throws ConfigurationException {
         SAML2ArtifactResolveRequestBuilder artifactResolveRequestBuilder = new SAML2ArtifactResolveRequestBuilder()
                 .issuer(getEntityId(uriInfo, realm))

@@ -37,6 +37,7 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.JsonWebToken;
 
 /**
+ * 外部 Keycloak 角色到本地角色映射器：从上游 Keycloak 访问令牌解析角色并授予本地角色。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -45,6 +46,7 @@ public class ExternalKeycloakRoleToRoleMapper extends AbstractClaimToRoleMapper 
     public static final String[] COMPATIBLE_PROVIDERS = {KeycloakOIDCIdentityProviderFactory.PROVIDER_ID};
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
+    /** 配置键：上游 Keycloak 中待检查的外部角色名。 */
     private static final String EXTERNAL_ROLE = "external.role";
     private static final Set<IdentityProviderSyncMode> IDENTITY_PROVIDER_SYNC_MODES = new HashSet<>(Arrays.asList(IdentityProviderSyncMode.values()));
 
@@ -65,6 +67,7 @@ public class ExternalKeycloakRoleToRoleMapper extends AbstractClaimToRoleMapper 
         configProperties.add(property);
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "keycloak-oidc-role-to-role-idp-mapper";
 
     @Override
@@ -92,11 +95,13 @@ public class ExternalKeycloakRoleToRoleMapper extends AbstractClaimToRoleMapper 
         return "Role Importer";
     }
 
+    /** @return 控制台显示类型 External Role to Role */
     @Override
     public String getDisplayType() {
         return "External Role to Role";
     }
 
+    /** 从已验证访问令牌中查找外部角色 claim 并比对配置值。 */
     @Override
     protected boolean applies(IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         JsonWebToken token = (JsonWebToken)context.getContextData().get(KeycloakOIDCIdentityProvider.VALIDATED_ACCESS_TOKEN);
@@ -107,11 +112,13 @@ public class ExternalKeycloakRoleToRoleMapper extends AbstractClaimToRoleMapper 
         return valueEquals(externalRoleName, claim);
     }
 
+    /** 旧版同步：历史实现为空操作。 */
     @Override
     public void updateBrokeredUserLegacy(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
-        // The legacy mapper actually did nothing although it pretended to do something
+        // 旧版映射器实际未执行任何同步逻辑
     }
 
+    /** @return 上游 Keycloak 令牌含指定角色时授予本地角色 */
     @Override
     public String getHelpText() {
         return "Looks for an external role in a keycloak access token.  If external role exists, grant the user the specified realm or client role.";

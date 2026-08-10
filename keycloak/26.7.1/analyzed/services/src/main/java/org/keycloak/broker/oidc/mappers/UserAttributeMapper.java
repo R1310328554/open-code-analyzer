@@ -40,6 +40,7 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.saml.common.util.StringUtil;
 
 /**
+ * 用户属性映射器：将 ID/访问令牌或 UserInfo 中的 claim 导入 Keycloak 用户属性或预定义字段。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -49,7 +50,9 @@ public class UserAttributeMapper extends AbstractClaimMapper {
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
+    /** 配置键：目标用户属性名（email/firstName/lastName 或自定义属性）。 */
     public static final String USER_ATTRIBUTE = "user.attribute";
+    /** 配置键：claim 为空时是否将属性设为 null。 */
     public static final String ALLOW_NULLABLE = "allow.nullable.property";
     public static final String EMAIL = "email";
     public static final String FIRST_NAME = "firstName";
@@ -81,6 +84,7 @@ public class UserAttributeMapper extends AbstractClaimMapper {
         configProperties.add(allowNullableProperty); 
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "oidc-user-attribute-idp-mapper";
 
     @Override
@@ -108,11 +112,13 @@ public class UserAttributeMapper extends AbstractClaimMapper {
         return "Attribute Importer";
     }
 
+    /** @return 控制台显示类型 Attribute Importer */
     @Override
     public String getDisplayType() {
         return "Attribute Importer";
     }
 
+    /** 预处理：将 claim 值写入联邦身份上下文（email/姓名或自定义属性）。 */
     @Override
     public void preprocessFederatedIdentity(KeycloakSession session, RealmModel realm, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String attribute = mapperModel.getConfig().get(USER_ATTRIBUTE);
@@ -138,16 +144,19 @@ public class UserAttributeMapper extends AbstractClaimMapper {
         }
     }
 
+    /** 值非空时调用 setter。 */
     private void setIfNotEmpty(Consumer<String> consumer, List<String> values) {
         if (values != null && !values.isEmpty()) {
             consumer.accept(values.get(0));
         }
     }
 
+    /** 允许将属性设为 null（空 claim 时）。 */
     private void setNullable(Consumer<String> consumer, List<String> values) {
         consumer.accept(values == null || values.isEmpty() ? null : values.get(0));
     }
 
+    /** 将 claim 值规范化为字符串列表。 */
     private List<String> toList(Object value) {
         List<Object> values = (value instanceof List)
                 ? (List) value
@@ -158,6 +167,7 @@ public class UserAttributeMapper extends AbstractClaimMapper {
                 .collect(Collectors.toList());
     }
 
+    /** 同步更新用户属性；值未变时跳过，空值时可选移除属性。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String attribute = mapperModel.getConfig().get(USER_ATTRIBUTE);
@@ -196,6 +206,7 @@ public class UserAttributeMapper extends AbstractClaimMapper {
         }
     }
 
+    /** @return 从令牌或 UserInfo 导入 claim 到用户属性 */
     @Override
     public String getHelpText() {
         return "Import declared claim if it exists in ID, access token or the claim set returned by the user profile endpoint into the specified user property or attribute.";

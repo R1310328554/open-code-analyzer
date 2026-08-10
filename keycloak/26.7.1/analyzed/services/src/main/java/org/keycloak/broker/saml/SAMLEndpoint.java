@@ -131,19 +131,26 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 /**
+ * SAML 身份代理 REST 端点：处理 Redirect/POST/Artifact 绑定下的 SSO、SLO 与 IdP 发起登录。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SAMLEndpoint {
+    /** 日志记录器。 */
     protected static final Logger logger = Logger.getLogger(SAMLEndpoint.class);
+    /** 用户会话 note：上游 IdP 的 SessionIndex。 */
     public static final String SAML_FEDERATED_SESSION_INDEX = "SAML_FEDERATED_SESSION_INDEX";
-    @Deprecated // in favor of SAML_FEDERATED_SUBJECT_NAMEID
+    /** @deprecated 请使用 {@link #SAML_FEDERATED_SUBJECT_NAMEID} */
     public static final String SAML_FEDERATED_SUBJECT = "SAML_FEDERATED_SUBJECT";
     @Deprecated // in favor of SAML_FEDERATED_SUBJECT_NAMEID
     public static final String SAML_FEDERATED_SUBJECT_NAMEFORMAT = "SAML_FEDERATED_SUBJECT_NAMEFORMAT";
+    /** 用户会话 note：序列化的 NameID。 */
     public static final String SAML_FEDERATED_SUBJECT_NAMEID = "SAML_FEDERATED_SUBJECT_NAME_ID";
+    /** 上下文键：SAML 登录 Response DOM。 */
     public static final String SAML_LOGIN_RESPONSE = "SAML_LOGIN_RESPONSE";
+    /** 上下文键：解析后的 Assertion。 */
     public static final String SAML_ASSERTION = "SAML_ASSERTION";
+    /** 上下文键：AuthnStatement（含 SessionIndex）。 */
     public static final String SAML_AUTHN_STATEMENT = "SAML_AUTHN_STATEMENT";
     protected final RealmModel realm;
     protected EventBuilder event;
@@ -157,6 +164,7 @@ public class SAMLEndpoint {
     protected final long maxInflatingSize;
 
 
+    /** 构造 SAML broker 端点并读取 SAML 协议最大膨胀尺寸配置。 */
     public SAMLEndpoint(KeycloakSession session, SAMLIdentityProvider provider, SAMLIdentityProviderConfig config, UserAuthenticationIdentityProvider.AuthenticationCallback callback, DestinationValidator destinationValidator) {
         this.realm = session.getContext().getRealm();
         this.config = config;
@@ -170,6 +178,7 @@ public class SAMLEndpoint {
         this.maxInflatingSize = factory.getMaxInflatingSize();
     }
 
+    /** 导出 SP 元数据描述符。 */
     @GET
     @NoCache
     @Path("descriptor")
@@ -177,6 +186,7 @@ public class SAMLEndpoint {
         return provider.export(session.getContext().getUri(), realm, null);
     }
 
+    /** HTTP-Redirect 绑定入口：处理 SAMLRequest/Response/Artifact。 */
     @GET
     public Response redirectBinding(@QueryParam(GeneralConstants.SAML_REQUEST_KEY) String samlRequest,
                                     @QueryParam(GeneralConstants.SAML_RESPONSE_KEY) String samlResponse,
@@ -191,6 +201,7 @@ public class SAMLEndpoint {
 
     /**
      */
+    /** HTTP-POST 绑定入口。 */
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response postBinding(@FormParam(GeneralConstants.SAML_REQUEST_KEY) String samlRequest,
@@ -225,7 +236,9 @@ public class SAMLEndpoint {
         return new PostBinding().execute(samlRequest, samlResponse, null, relayState, clientId);
     }
 
+    /** SAML 绑定处理抽象基类：校验 SSL、签名与 Destination 后分发请求/响应/Artifact。 */
     protected abstract class Binding {
+        /** 校验 HTTPS 或 realm SSL 策略是否满足。 */
         private boolean checkSsl() {
             if (session.getContext().getUri().getBaseUri().getScheme().equals("https")) {
                 return true;
@@ -234,6 +247,7 @@ public class SAMLEndpoint {
             }
         }
 
+        /** 基础校验：SSL、realm 启用状态及参数非空。 */
         protected Response basicChecks(String samlRequest, String samlResponse, String samlArt) {
             if (!checkSsl()) {
                 event.event(EventType.LOGIN);
@@ -266,6 +280,7 @@ public class SAMLEndpoint {
             return true;
         }
 
+        /** 获取 IdP 签名验证密钥：优先元数据 URL，否则使用配置的证书。 */
         protected KeyLocator getIDPKeyLocator() {
             if (StringUtil.isNotBlank(config.getMetadataDescriptorUrl()) && config.isUseMetadataDescriptorUrl()) {
                 String modelKey = PublicKeyStorageUtils.getIdpModelCacheKey(realm.getId(), config.getInternalId());
@@ -291,6 +306,7 @@ public class SAMLEndpoint {
             return new HardcodedKeyLocator(keys);
         }
 
+        /** 绑定入口：按参数类型分发 SAML 请求、Artifact 或登录响应。 */
         public Response execute(String samlRequest, String samlResponse, String samlArt, String relayState, String clientId) {
             event = new EventBuilder(realm, session, clientConnection);
             Response response = basicChecks(samlRequest, samlResponse, samlArt);
@@ -300,6 +316,7 @@ public class SAMLEndpoint {
             else return handleSamlResponse(samlResponse, relayState, clientId);
         }
 
+        /** 处理 IdP 发起的 LogoutRequest 等 SAML 请求。 */
         protected Response handleSamlRequest(String samlRequest, String relayState) {
             SAMLDocumentHolder holder = extractRequestDocument(samlRequest);
             if (holder == null) {
@@ -309,7 +326,7 @@ public class SAMLEndpoint {
                 return ErrorPage.error(session, null, Response.Status.BAD_REQUEST, Messages.INVALID_REQUEST);
             }
             RequestAbstractType requestAbstractType = (RequestAbstractType) holder.getSamlObject();
-            // validate destination
+            // 校验 Destination 属性
             if (isDestinationRequired() &&
                     requestAbstractType.getDestination() == null && containsUnencryptedSignature(holder)) {
                 event.event(EventType.IDENTITY_PROVIDER_RESPONSE);
@@ -347,6 +364,7 @@ public class SAMLEndpoint {
             }
         }
 
+        /** 处理 IdP 单点登出请求并返回 LogoutResponse。 */
         protected Response logoutRequest(LogoutRequestType request, String relayState) {
             if (request.getNameID() == null && request.getBaseID() == null && request.getEncryptedID() == null){
                 logger.error("SAML IdP Logout request must contain at least one of BaseID, NameID and EncryptedID");
@@ -356,7 +374,7 @@ public class SAMLEndpoint {
 
             if (request.getSessionIndex() == null || request.getSessionIndex().isEmpty()) {
                 if (request.getNameID() == null){
-                    //TODO this need to be implemented
+                    // TODO：BaseID/EncryptedID 无 SessionIndex 的场景待实现
                     logger.error("SAML IdP Logout request contains BaseID or EncryptedID without Session Index");
                     event.error(Errors.INVALID_SAML_LOGOUT_REQUEST);
                     return ErrorPage.error(session, null, Response.Status.NOT_IMPLEMENTED, Messages.IDENTITY_PROVIDER_LOGOUT_FAILURE);
@@ -366,7 +384,7 @@ public class SAMLEndpoint {
                 session.sessions().getUserSessionByBrokerUserIdStream(realm, brokerUserId)
                         .filter(userSession -> userSession.getState() != UserSessionModel.State.LOGGING_OUT &&
                                 userSession.getState() != UserSessionModel.State.LOGGED_OUT)
-                        .collect(Collectors.toList()) // collect to avoid concurrent modification as backchannelLogout removes the user sessions.
+                        .collect(Collectors.toList()) // 先收集列表，避免 backchannelLogout 并发修改会话
                         .forEach(processLogout(ref));
                 request = ref.get();
 
@@ -426,9 +444,10 @@ public class SAMLEndpoint {
 
         }
 
+        /** Artifact 绑定：解析 ArtifactResponse 并继续 POST 响应处理。 */
         protected Response handleSamlArt(String samlArt, String relayState, String clientId) {
             try {
-                // execute the Resolve Artifact request
+                // 向 IdP 发送 ArtifactResolve 请求
                 SAMLDocumentHolder samlDocumentHolder = provider.resolveArtifact(session, session.getContext().getUri(), realm, relayState, samlArt);
 
                 // validate the type of the SAML object
@@ -528,6 +547,7 @@ public class SAMLEndpoint {
                 return configEntityId;
         }
 
+        /** 验证并处理 SAML 登录 Response：解密断言、校验 Issuer/InResponseTo 并完成联邦登录。 */
         protected Response handleLoginResponse(String samlResponse, SAMLDocumentHolder holder, ResponseType responseType, String relayState, String clientId) {
 
             try {
@@ -576,12 +596,11 @@ public class SAMLEndpoint {
                         throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
                     }
                 } else {
-                    /* We verify the assertion using original document to handle cases where the IdP
-                    includes whitespace and/or newlines inside tags. */
+                    /* 使用原始文档验证断言，兼容 IdP 在标签内插入空白/换行 */
                     assertionElement = AssertionUtil.getAssertionElement(holder);
                 }
 
-                // Validate the response Issuer
+                // 校验 Response Issuer 与配置的 IdP Entity ID
                 final String responseIssuer = responseType.getIssuer() != null ? responseType.getIssuer().getValue(): null;
                 final boolean responseIssuerValidationSuccess = config.getIdpEntityId() == null ||
                     (responseIssuer != null && responseIssuer.equals(config.getIdpEntityId()));
@@ -592,7 +611,7 @@ public class SAMLEndpoint {
                     return ErrorPage.error(session, authSession, Response.Status.BAD_REQUEST, Messages.INVALID_REQUESTER);
                 }
 
-                // Validate InResponseTo attribute: must match the generated request ID
+                // 校验 InResponseTo 与发出的 AuthnRequest ID 一致
                 String expectedRequestId = authSession.getClientNote(SamlProtocol.SAML_REQUEST_ID_BROKER);
                 if (!validateInResponseToAttribute(responseType, expectedRequestId)
                         || !validateSubjectConfirmationData(responseType, expectedRequestId)) {

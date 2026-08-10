@@ -31,11 +31,14 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 硬编码用户会话属性映射器：为联邦用户会话 note 写入固定键值。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class HardcodedUserSessionAttributeMapper extends AbstractIdentityProviderMapper {
+    /** 配置键：会话 note 属性名。 */
     public static final String ATTRIBUTE = "attribute";
+    /** 配置键：硬编码会话属性值。 */
     public static final String ATTRIBUTE_VALUE = "attribute.value";
     protected static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
     private static final Set<IdentityProviderSyncMode> IDENTITY_PROVIDER_SYNC_MODES = new HashSet<>(Arrays.asList(IdentityProviderSyncMode.values()));
@@ -79,6 +82,7 @@ public class HardcodedUserSessionAttributeMapper extends AbstractIdentityProvide
     public static final String[] COMPATIBLE_PROVIDERS = {ANY_PROVIDER};
 
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "hardcoded-user-session-attribute-idp-mapper";
 
     @Override
@@ -91,6 +95,7 @@ public class HardcodedUserSessionAttributeMapper extends AbstractIdentityProvide
         return COMPATIBLE_PROVIDERS;
     }
 
+    /** 预处理：写入硬编码会话 note。 */
     @Override
     public void preprocessFederatedIdentity(KeycloakSession session, RealmModel realm, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         setHardcodedUserSessionAttribute(mapperModel, context);
@@ -106,11 +111,13 @@ public class HardcodedUserSessionAttributeMapper extends AbstractIdentityProvide
         setHardcodedUserSessionAttribute(mapperModel, context);
     }
 
+    /** @return 导入用户时为会话 note 写入固定值 */
     @Override
     public String getHelpText() {
         return "When user is imported from provider, hardcode a value to a specific user session attribute.";
     }
 
+    /** 将配置的键值对写入 {@link BrokeredIdentityContext#setSessionNote}。 */
     private void setHardcodedUserSessionAttribute(IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String attribute = mapperModel.getConfig().get(ATTRIBUTE);
         String attributeValue = mapperModel.getConfig().get(ATTRIBUTE_VALUE);

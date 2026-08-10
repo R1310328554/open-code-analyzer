@@ -35,12 +35,14 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 硬编码角色映射器：联邦用户导入/同步时授予配置的 Keycloak 角色。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class HardcodedRoleMapper extends AbstractIdentityProviderMapper {
     protected static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
+    /** 日志记录器。 */
     private static final Logger LOG = Logger.getLogger(HardcodedRoleMapper.class);
 
     private static final Set<IdentityProviderSyncMode> IDENTITY_PROVIDER_SYNC_MODES =
@@ -74,6 +76,7 @@ public class HardcodedRoleMapper extends AbstractIdentityProviderMapper {
     public static final String[] COMPATIBLE_PROVIDERS = {ANY_PROVIDER};
 
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "oidc-hardcoded-role-idp-mapper";
 
     @Override
@@ -91,11 +94,13 @@ public class HardcodedRoleMapper extends AbstractIdentityProviderMapper {
         return COMPATIBLE_PROVIDERS;
     }
 
+    /** 新用户导入时授予配置角色。 */
     @Override
     public void importNewUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         grantUserRole(session, realm, user, mapperModel);
     }
 
+    /** 解析并授予映射器配置的角色。 */
     private void grantUserRole(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel) {
         RoleModel role = getRole(session, realm, mapperModel);
         if (role != null) {
@@ -103,6 +108,7 @@ public class HardcodedRoleMapper extends AbstractIdentityProviderMapper {
         }
     }
 
+    /** 按配置角色名查找 {@link RoleModel}；未找到时记录警告。 */
     private RoleModel getRole(KeycloakSession session, final RealmModel realm, final IdentityProviderMapperModel mapperModel) {
         String roleName = mapperModel.getConfig().get(ConfigConstants.ROLE);
         RoleModel role = KeycloakModelUtils.getRoleFromString(session, realm, roleName);
@@ -115,6 +121,7 @@ public class HardcodedRoleMapper extends AbstractIdentityProviderMapper {
         return role;
     }
 
+    /** 同步更新时再次授予配置角色。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         grantUserRole(session, realm, user, mapperModel);
@@ -124,6 +131,7 @@ public class HardcodedRoleMapper extends AbstractIdentityProviderMapper {
     public void updateBrokeredUserLegacy(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
     }
 
+    /** @return 导入用户时硬编码授予指定角色 */
     @Override
     public String getHelpText() {
         return "When user is imported from provider, hardcode a role mapping for it.";

@@ -31,11 +31,14 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 硬编码用户属性映射器：联邦用户导入/同步时写入固定属性值。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class HardcodedAttributeMapper extends AbstractIdentityProviderMapper {
+    /** 配置键：目标用户属性名。 */
     public static final String ATTRIBUTE = "attribute";
+    /** 配置键：硬编码属性值。 */
     public static final String ATTRIBUTE_VALUE = "attribute.value";
     protected static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
     private static final Set<IdentityProviderSyncMode> IDENTITY_PROVIDER_SYNC_MODES = new HashSet<>(Arrays.asList(IdentityProviderSyncMode.values()));
@@ -79,6 +82,7 @@ public class HardcodedAttributeMapper extends AbstractIdentityProviderMapper {
     public static final String[] COMPATIBLE_PROVIDERS = {ANY_PROVIDER};
 
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "hardcoded-attribute-idp-mapper";
 
     @Override
@@ -91,6 +95,7 @@ public class HardcodedAttributeMapper extends AbstractIdentityProviderMapper {
         return COMPATIBLE_PROVIDERS;
     }
 
+    /** 预处理：将硬编码值写入联邦身份用户属性。 */
     @Override
     public void preprocessFederatedIdentity(KeycloakSession session, RealmModel realm, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String attribute = mapperModel.getConfig().get(ATTRIBUTE);
@@ -98,6 +103,7 @@ public class HardcodedAttributeMapper extends AbstractIdentityProviderMapper {
         context.setUserAttribute(attribute, attributeValue);
     }
 
+    /** 同步更新：将硬编码值写入用户单值属性。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String attribute = mapperModel.getConfig().get(ATTRIBUTE);
@@ -105,6 +111,7 @@ public class HardcodedAttributeMapper extends AbstractIdentityProviderMapper {
         user.setSingleAttribute(attribute, attributeValue);
     }
 
+    /** @return 导入用户时为指定属性写入固定值 */
     @Override
     public String getHelpText() {
         return "When user is imported from provider, hardcode a value to a specific user attribute.";

@@ -55,19 +55,25 @@ import org.jboss.logging.Logger;
 import static org.keycloak.services.resources.IdentityBrokerService.LINKING_IDENTITY_PROVIDER;
 
 /**
+ * 身份提供方链接必需操作：客户端发起的账户 IdP 关联流程。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpLinkAction implements RequiredActionProvider, RequiredActionFactory {
 
+    /** 日志记录器。 */
     protected static final Logger logger = Logger.getLogger(IdpLinkAction.class);
 
+    /** 必需操作 provider id。 */
     public static final String PROVIDER_ID = "idp_link";
 
-    // Authentication session note indicating that client-initiated account linking was triggered from this action
+    /** 认证会话 note：标记由本操作触发的客户端发起 IdP 关联。 */
+    /** 认证会话 note 键：客户端发起 IdP 关联标记。 */
     public static final String KC_ACTION_LINKING_IDENTITY_PROVIDER = "kc_action_linking_identity_provider";
 
-    // Authentication session notes with the status of IDP linking and with the error from IDP linking (idp_link_error filled just in case that status is "error")
+    /** 认证会话 note：IdP 关联状态与错误信息（error 时填充 idp_link_error）。 */
+    /** 认证会话 note 键：IdP 关联结果状态。 */
     public static final String IDP_LINK_STATUS = "idp_link_status";
+    /** 认证会话 note 键：关联失败时的序列化错误。 */
     public static final String IDP_LINK_ERROR = "idp_link_error";
 
     @Override
@@ -75,6 +81,7 @@ public class IdpLinkAction implements RequiredActionProvider, RequiredActionFact
         return this;
     }
 
+    /** 支持客户端发起的 kc_action 流程。 */
     @Override
     public InitiatedActionSupport initiatedActionSupport() {
         return InitiatedActionSupport.SUPPORTED;
@@ -101,6 +108,7 @@ public class IdpLinkAction implements RequiredActionProvider, RequiredActionFact
 
     }
 
+    /** 展示 IdP 关联确认页；校验 manage-account 或 manage-account-links 权限。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
@@ -125,7 +133,7 @@ public class IdpLinkAction implements RequiredActionProvider, RequiredActionFact
             return;
         }
 
-        // Check role
+        // 校验账户管理或账户链接管理角色
         ClientModel accountService = realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
         RoleModel manageAccountRole = accountService.getRole(AccountRoles.MANAGE_ACCOUNT);
         if (!user.hasRole(manageAccountRole) || !client.hasScope(manageAccountRole)) {
@@ -144,6 +152,7 @@ public class IdpLinkAction implements RequiredActionProvider, RequiredActionFact
         context.challenge(challenge);
     }
 
+    /** 确认后重定向至 IdP 完成关联，或根据回调状态结束必需操作。 */
     @Override
     public void processAction(RequiredActionContext context) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
@@ -152,7 +161,7 @@ public class IdpLinkAction implements RequiredActionProvider, RequiredActionFact
         ClientModel client = authSession.getClient();
 
         if (!Boolean.parseBoolean(authSession.getAuthNote(IdpLinkAction.KC_ACTION_LINKING_IDENTITY_PROVIDER))) {
-            // User confirmed IDP linking. We can redirect to IDP
+            // 用户确认关联，重定向至 IdP 完成联邦登录
             String identityProviderAlias = authSession.getClientNote(Constants.KC_ACTION_PARAMETER);
 
             ClientSessionCode<AuthenticationSessionModel> clientSessionCode = new ClientSessionCode<>(session, realm, authSession);
@@ -165,11 +174,11 @@ public class IdpLinkAction implements RequiredActionProvider, RequiredActionFact
             Response response = brokerService.performClientInitiatedAccountLogin(identityProviderAlias, clientSessionCode);
             context.challenge(response);
         } else {
-            // User already authenticated with IDP
+            // 用户已在 IdP 完成认证，处理关联结果
             EventBuilder event = context.getEvent();
             event.event(EventType.FEDERATED_IDENTITY_LINK);
 
-            // Status is supposed to be set by IdentityBrokerService
+            // 状态由 IdentityBrokerService 写入认证会话 note
             String statusNote = authSession.getAuthNote(IdpLinkAction.IDP_LINK_STATUS);
             if (statusNote == null) {
                 removeAuthNotes(authSession);
@@ -196,12 +205,14 @@ public class IdpLinkAction implements RequiredActionProvider, RequiredActionFact
         }
     }
 
+    /** 清理 IdP 关联流程相关的认证会话 note。 */
     private void removeAuthNotes(AuthenticationSessionModel authSession) {
         authSession.removeAuthNote(IdpLinkAction.KC_ACTION_LINKING_IDENTITY_PROVIDER);
         authSession.removeAuthNote(IdpLinkAction.IDP_LINK_STATUS);
         authSession.removeAuthNote(IdpLinkAction.IDP_LINK_ERROR);
     }
 
+    /** 反序列化错误并展示错误页。 */
     private void errorPage(RequiredActionContext context, String serializedError) {
         FormMessage formMessage;
         try {
@@ -218,6 +229,7 @@ public class IdpLinkAction implements RequiredActionProvider, RequiredActionFact
         context.challenge(response);
     }
 
+    /** @return 管理控制台显示文本 */
     @Override
     public String getDisplayText() {
         return "Linking Identity Provider";

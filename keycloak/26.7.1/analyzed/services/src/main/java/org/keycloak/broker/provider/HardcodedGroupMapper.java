@@ -27,6 +27,7 @@ import org.keycloak.models.IdentityProviderSyncMode;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 硬编码组映射器：无条件将联邦用户加入配置的 Keycloak 组。
  * @author <a href="mailto:dmartino@redhat.com">Daniele Martinoli</a>
  * @version $Revision: 1 $
  */
@@ -54,6 +55,7 @@ public class HardcodedGroupMapper extends AbstractClaimToGroupMapper {
         return "Hardcoded Group";
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "oidc-hardcoded-group-idp-mapper";
 
     @Override
@@ -71,11 +73,13 @@ public class HardcodedGroupMapper extends AbstractClaimToGroupMapper {
         return new String[] {ANY_PROVIDER};
     }
 
+    /** @return 将用户分配到指定组 */
     @Override
     public String getHelpText() {
         return "Assign the user to the specified group.";
     }
 
+    /** 始终返回 true，对所有联邦用户生效。 */
     @Override
     protected boolean applies(IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         return true;

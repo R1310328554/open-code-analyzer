@@ -35,14 +35,16 @@ import org.keycloak.saml.processing.core.saml.v2.writers.SAMLAssertionWriter;
 import org.keycloak.saml.processing.core.saml.v2.writers.SAMLResponseWriter;
 
 /**
+ * SAML 联邦数据序列化器：在认证流程中序列化/反序列化 SAML DOM 对象。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SAMLDataMarshaller extends DefaultDataMarshaller {
 
+    /** 将 SAML Response/Assertion 等 DOM 对象序列化为 XML 字符串。 */
     @Override
     public String serialize(Object obj) {
 
-        // Lame impl, but hopefully sufficient for now. See if something better is needed...
+        // 简易实现，满足当前联邦会话存储需求
         if (obj.getClass().getName().startsWith("org.keycloak.dom.saml")) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
@@ -76,6 +78,7 @@ public class SAMLDataMarshaller extends DefaultDataMarshaller {
         }
     }
 
+    /** 将 XML 字符串反序列化为指定 SAML DOM 类型。 */
     @Override
     public <T> T deserialize(String serialized, Class<T> clazz) {
         if (clazz.getName().startsWith("org.keycloak.dom.saml")) {

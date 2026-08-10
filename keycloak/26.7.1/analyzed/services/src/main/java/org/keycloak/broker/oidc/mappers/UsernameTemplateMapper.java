@@ -60,11 +60,14 @@ import static org.keycloak.broker.saml.mappers.UsernameTemplateMapper.TRANSFORME
 import static org.keycloak.broker.saml.mappers.UsernameTemplateMapper.getTarget;
 
 /**
+ * 用户名模板映射器：用 ${ALIAS}、${CLAIM.*} 等占位符格式化导入用户名。
+ * <p>支持 LOCAL/BROKER_ID/BROKER_USERNAME 三种写入目标。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UsernameTemplateMapper extends AbstractClaimMapper {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(UsernameTemplateMapper.class);
 
     public static final String[] COMPATIBLE_PROVIDERS = {
@@ -87,6 +90,7 @@ public class UsernameTemplateMapper extends AbstractClaimMapper {
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
     private static final Set<IdentityProviderSyncMode> IDENTITY_PROVIDER_SYNC_MODES = new HashSet<>(Arrays.asList(IdentityProviderSyncMode.values()));
 
+    /** 配置键：用户名模板字符串。 */
     public static final String TEMPLATE = "template";
 
     static {
@@ -110,6 +114,7 @@ public class UsernameTemplateMapper extends AbstractClaimMapper {
         configProperties.add(property);
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "oidc-username-idp-mapper";
 
     @Override
@@ -137,31 +142,37 @@ public class UsernameTemplateMapper extends AbstractClaimMapper {
         return "Preprocessor";
     }
 
+    /** @return 控制台显示类型 Username Template Importer */
     @Override
     public String getDisplayType() {
         return "Username Template Importer";
     }
 
+    /** 旧版同步：无操作。 */
     @Override
     public void updateBrokeredUserLegacy(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
     }
 
+    /** 目标为 LOCAL 且未启用邮箱作用户名时，将格式化用户名写入本地用户。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
-        // preprocessFederatedIdentity gets called anyways, so we only need to set the username if necessary.
-        // However, we don't want to set the username when the email is used as username
+        // preprocessFederatedIdentity 已处理模板，此处仅在需要时更新本地用户名
+        // 启用“邮箱作用户名”时不覆盖 username
         if (getTarget(mapperModel.getConfig().get(TARGET)) == Target.LOCAL && !realm.isRegistrationEmailAsUsername()) {
             user.setUsername(context.getModelUsername());
         }
     }
 
+    /** 模板占位符正则：${VAR} 或 ${VAR | uppercase/lowercase}。 */
     private static final Pattern SUBSTITUTION = Pattern.compile("\\$\\{([^}]+?)(?:\\s*\\|\\s*(\\S+)\\s*)?\\}");
 
+    /** 预处理：按模板解析并设置用户名。 */
     @Override
     public void preprocessFederatedIdentity(KeycloakSession session, RealmModel realm, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         setUserNameFromTemplate(mapperModel, context);
     }
 
+    /** 解析模板占位符并写入 {@link Target} 指定字段。 */
     private void setUserNameFromTemplate(IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         String template = mapperModel.getConfig().get(TEMPLATE);
         Matcher m = SUBSTITUTION.matcher(template);
@@ -183,7 +194,7 @@ public class UsernameTemplateMapper extends AbstractClaimMapper {
                     m.appendReplacement(sb, "");
                 } else {
                     if (value instanceof Collection && ((Collection<?>) value).size() == 1) {
-                        // In case the value is list with single value, it might be preferred to avoid converting whole collection toString, but rather use value like "foo" instead of "[foo]"
+                        // 单元素集合取首项，避免 toString 产生 "[foo]" 形式
                         value = ((Collection<?>) value).iterator().next();
                     }
                     m.appendReplacement(sb, transformer.apply(value.toString()));
@@ -204,6 +215,7 @@ public class UsernameTemplateMapper extends AbstractClaimMapper {
         t.set(context, hasUnresolvedVariable ? "" : sb.toString());
     }
 
+    /** @return 按模板格式化待导入用户名 */
     @Override
     public String getHelpText() {
         return "Format the username to import.";

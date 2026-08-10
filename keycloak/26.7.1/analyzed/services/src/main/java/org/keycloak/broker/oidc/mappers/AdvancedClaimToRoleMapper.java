@@ -35,12 +35,16 @@ import org.keycloak.provider.ProviderConfigProperty;
 import static org.keycloak.utils.RegexUtils.valueMatchesRegex;
 
 /**
+ * 高级 Claim 到角色映射器：要求全部配置的 claim 均匹配（支持正则值）。
+ * <p>兼容 keycloak-oidc 与 oidc 身份代理。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke, Benjamin Weimer</a>
  * @version $Revision: 1 $
  */
 public class AdvancedClaimToRoleMapper extends AbstractClaimToRoleMapper {
 
+    /** 配置键：claim 名称到期望值的映射。 */
     public static final String CLAIM_PROPERTY_NAME = "claims";
+    /** 配置键：claim 值是否按正则解释。 */
     public static final String ARE_CLAIM_VALUES_REGEX_PROPERTY_NAME = "are.claim.values.regex";
 
     public static final String[] COMPATIBLE_PROVIDERS = {KeycloakOIDCIdentityProviderFactory.PROVIDER_ID, OIDCIdentityProviderFactory.PROVIDER_ID};
@@ -69,6 +73,7 @@ public class AdvancedClaimToRoleMapper extends AbstractClaimToRoleMapper {
         configProperties.add(roleProperty);
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "oidc-advanced-role-idp-mapper";
 
     @Override
@@ -96,16 +101,19 @@ public class AdvancedClaimToRoleMapper extends AbstractClaimToRoleMapper {
         return "Role Importer";
     }
 
+    /** @return 控制台显示类型 Advanced Claim to Role */
     @Override
     public String getDisplayType() {
         return "Advanced Claim to Role";
     }
 
+    /** @return 全部 claim 存在且匹配时授予指定 realm 或 client 角色 */
     @Override
     public String getHelpText() {
         return "If all claims exists, grant the user the specified realm or client role.";
     }
 
+    /** 校验所有配置的 claim 均匹配（可选正则模式）。 */
     @Override
     protected boolean applies(IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         Map<String, List<String>> claims = mapperModel.getConfigMap(CLAIM_PROPERTY_NAME);
