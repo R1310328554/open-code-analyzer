@@ -42,16 +42,27 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 领域密钥元数据 REST 资源。
+ * <p>返回领域签名/加密密钥列表及当前活跃密钥标识（kid）。</p>
+ *
  * @resource Key
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class KeyResource {
 
+    /** 当前领域 */
     private RealmModel realm;
+    /** Keycloak 会话 */
     private KeycloakSession session;
+    /** 细粒度权限评估器 */
     private AdminPermissionEvaluator auth;
 
+    /** 构造密钥资源。
+     * @param realm 当前领域
+     * @param session Keycloak 会话
+     * @param auth 权限评估器
+     */
     public KeyResource(RealmModel realm, KeycloakSession session, AdminPermissionEvaluator auth) {
         this.realm = realm;
         this.session = session;
@@ -63,6 +74,9 @@ public class KeyResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Tag(name = KeycloakOpenAPI.Admin.Tags.KEY)
     @Operation()
+    /** 获取领域密钥元数据（活跃 kid 映射及全部密钥详情）。
+     * @return 密钥元数据表示
+     */
     public KeysMetadataRepresentation getKeyMetadata() {
         auth.realm().requireViewRealm();
 
@@ -84,6 +98,7 @@ public class KeyResource {
         return keys;
     }
 
+    /** 将 {@link KeyWrapper} 转换为 API 密钥元数据表示 */
     private KeysMetadataRepresentation.KeyMetadataRepresentation toKeyMetadataRepresentation(KeyWrapper key) {
         KeysMetadataRepresentation.KeyMetadataRepresentation r = new KeysMetadataRepresentation.KeyMetadataRepresentation();
         r.setProviderId(key.getProviderId());

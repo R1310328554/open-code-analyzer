@@ -104,7 +104,8 @@ import org.jboss.resteasy.reactive.NoCache;
 
 
 /**
- * Base resource class for managing one particular client of a realm.
+ * 单个客户端 REST 资源。
+ * <p>管理客户端 CRUD、密钥/证书、客户端范围、会话、集群节点、授权服务及细粒度权限。</p>
  *
  * @resource Clients
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -112,15 +113,29 @@ import org.jboss.resteasy.reactive.NoCache;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ClientResource.class);
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
+    /** 目标客户端 */
     protected final ClientModel client;
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 客户端连接信息 */
     protected final ClientConnection clientConnection;
 
+    /** 构造单个客户端资源。
+     * @param realm 当前领域
+     * @param auth 权限评估器
+     * @param clientModel 目标客户端
+     * @param session Keycloak 会话
+     * @param adminEvent 管理事件构建器
+     */
     public ClientResource(RealmModel realm, AdminPermissionEvaluator auth, ClientModel clientModel, KeycloakSession session, AdminEventBuilder adminEvent) {
         this.realm = realm;
         this.auth = auth;
@@ -130,6 +145,7 @@ public class ClientResource {
         this.clientConnection = session.getContext().getConnection();
     }
 
+    /** 协议映射器子资源 */
     @Path("protocol-mappers")
     public ProtocolMappersResource getProtocolMappers() {
         AdminPermissionEvaluator.RequirePermissionCheck manageCheck = () -> auth.clients().requireManage(client);
@@ -138,9 +154,9 @@ public class ClientResource {
     }
 
     /**
-     * Update the client
-     * @param rep
-     * @return
+     * 更新客户端配置（触发客户端策略与校验）。
+     * @param rep 客户端表示
+     * @return 204 No Content
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
@@ -190,9 +206,8 @@ public class ClientResource {
     }
 
     /**
-     * Get representation of the client
-     *
-     * @return
+     * 获取客户端表示（含 access 与客户端范围）。
+     * @return 客户端表示
      */
     @GET
     @NoCache
@@ -214,6 +229,7 @@ public class ClientResource {
         return representation;
     }
 
+    /** 校验查看权限并触发 AdminClientView 客户端策略事件 */
     public ClientModel viewClientModel() {
         auth.clients().requireView(client);
 
@@ -227,16 +243,16 @@ public class ClientResource {
     }
 
     /**
-     * Get representation of certificate resource
-     *
-     * @param attributePrefix
-     * @return
+     * 客户端属性证书子资源（签名/加密等）。
+     * @param attributePrefix 属性前缀
+     * @return {@link ClientAttributeCertificateResource}
      */
     @Path("certificates/{attr}")
     public ClientAttributeCertificateResource getCertficateResource(@PathParam("attr") String attributePrefix) {
         return new ClientAttributeCertificateResource(auth, client, session, attributePrefix, adminEvent);
     }
 
+    /** 按安装提供者 ID 生成客户端适配器安装配置 */
     @GET
     @NoCache
     @Path("installation/providers/{providerId}")
@@ -250,10 +266,7 @@ public class ClientResource {
         return provider.generateInstallation(session, realm, client, session.getContext().getUri().getBaseUri());
     }
 
-    /**
-     * Delete the client
-     *
-     */
+    /** 删除客户端（触发 AdminClientUnregister 策略） */
     @DELETE
     @NoCache
     @Tag(name = KeycloakOpenAPI.Admin.Tags.CLIENTS)
@@ -286,9 +299,8 @@ public class ClientResource {
 
 
     /**
-     * Generate a new secret for the client
-     *
-     * @return
+     * 重新生成客户端密钥。
+     * @return 密钥凭证表示
      */
     @Path("client-secret")
     @POST
@@ -331,9 +343,8 @@ public class ClientResource {
     }
 
     /**
-     * Generate a new registration access token for the client
-     *
-     * @return
+     * 重新生成客户端注册访问令牌。
+     * @return 含 registrationAccessToken 的客户端表示
      */
     @Path("registration-access-token")
     @POST
@@ -354,9 +365,8 @@ public class ClientResource {
     }
 
     /**
-     * Get the client secret
-     *
-     * @return
+     * 获取当前客户端密钥。
+     * @return 密钥凭证表示
      */
     @Path("client-secret")
     @GET
@@ -372,10 +382,8 @@ public class ClientResource {
         return ModelToRepresentation.toRepresentation(model);
     }
 
-    /**
-     * Base path for managing the scope mappings for the client
-     *
-     * @return
+    /** 客户端作用域映射（角色→客户端）子资源。
+     * @return {@link ScopeMappedResource}
      */
     @Path("scope-mappings")
     public ScopeMappedResource getScopeMappedResource() {
@@ -384,16 +392,15 @@ public class ClientResource {
         return new ScopeMappedResource(realm, auth, client, session, adminEvent, manageCheck, viewCheck);
     }
 
+    /** 客户端角色容器子资源 */
     @Path("roles")
     public RoleContainerResource getRoleContainerResource() {
         return new RoleContainerResource(session, session.getContext().getUri(), realm, auth, client, adminEvent);
     }
 
 
-    /**
-     * Get default client scopes.  Only name and ids are returned.
-     *
-     * @return
+    /** 获取默认客户端范围（仅 id 与 name）。
+     * @return 范围表示流
      */
     @GET
     @NoCache
@@ -405,6 +412,7 @@ public class ClientResource {
         return getDefaultClientScopes(true);
     }
 
+    /** 内部：获取默认或可选客户端范围流 */
     private Stream<ClientScopeRepresentation> getDefaultClientScopes(boolean defaultScope) {
         auth.clients().requireView(client);
 
@@ -416,6 +424,7 @@ public class ClientResource {
     }
 
 
+    /** 将客户端范围添加为默认范围 */
     @PUT
     @NoCache
     @Path("default-client-scopes/{clientScopeId}")
@@ -435,7 +444,7 @@ public class ClientResource {
         
         auth.clients().requireManage(clientScope);
         
-        // Parameterized scopes currently require the caller to explicitly provide the scope parameter (e.g. "scope_name:value"),
+        // 参数化范围须调用方显式传参（如 scope_name:value），不可作为默认范围自动包含
         // so they cannot be included automatically as default scopes. This restriction may be lifted in the future.
         if (defaultScope && clientScope.isParameterizedScope()) {
             throw new ErrorResponseException("invalid_request", "Can't assign a Parameterized Scope to a Client as a Default Scope", Response.Status.BAD_REQUEST);
@@ -449,6 +458,7 @@ public class ClientResource {
     }
 
 
+    /** 移除默认客户端范围 */
     @DELETE
     @NoCache
     @Path("default-client-scopes/{clientScopeId}")
@@ -470,10 +480,8 @@ public class ClientResource {
     }
 
 
-    /**
-     * Get optional client scopes.  Only name and ids are returned.
-     *
-     * @return
+    /** 获取可选客户端范围（仅 id 与 name）。
+     * @return 范围表示流
      */
     @GET
     @NoCache
@@ -485,6 +493,7 @@ public class ClientResource {
         return getDefaultClientScopes(false);
     }
 
+    /** 添加可选客户端范围 */
     @PUT
     @NoCache
     @Path("optional-client-scopes/{clientScopeId}")
@@ -494,6 +503,7 @@ public class ClientResource {
         addDefaultClientScope(clientScopeId, false);
     }
 
+    /** 移除可选客户端范围 */
     @DELETE
     @NoCache
     @Path("optional-client-scopes/{clientScopeId}")
@@ -503,15 +513,15 @@ public class ClientResource {
         removeDefaultClientScope(clientScopeId);
     }
 
+    /** 客户端范围/token 评估子资源 */
     @Path("evaluate-scopes")
     public ClientScopeEvaluateResource clientScopeEvaluateResource() {
         return new ClientScopeEvaluateResource(session, session.getContext().getUri(), realm, auth, client, clientConnection);
     }
 
     /**
-     * Get a user dedicated to the service account
-     *
-     * @return
+     * 获取客户端服务账号对应用户。
+     * @return 用户表示
      */
     @Path("service-account-user")
     @GET
@@ -528,11 +538,7 @@ public class ClientResource {
         return ModelToRepresentation.toRepresentation(session, realm, user);
     }
 
-    /**
-     * Push the client's revocation policy to its admin URL
-     *
-     * If the client has an admin URL, push revocation policy to it.
-     */
+    /** 向客户端 admin URL 推送吊销策略 */
     @Path("push-revocation")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
@@ -547,15 +553,8 @@ public class ClientResource {
     }
 
     /**
-     * Get application session count
-     *
-     * Returns a number of user sessions associated with this client
-     *
-     * {
-     *     "count": number
-     * }
-     *
-     * @return
+     * 获取客户端活跃用户会话数量。
+     * @return {"count": number}
      */
     @Path("session-count")
     @GET
@@ -572,13 +571,10 @@ public class ClientResource {
     }
 
     /**
-     * Get user sessions for client
-     *
-     * Returns a list of user sessions associated with this client
-     *
-     * @param firstResult Paging offset
-     * @param maxResults Maximum results size (defaults to 100)
-     * @return
+     * 分页获取客户端关联的在线用户会话。
+     * @param firstResult 分页偏移
+     * @param maxResults 最大条数
+     * @return 用户会话表示流
      */
     @Path("user-sessions")
     @GET
@@ -594,15 +590,8 @@ public class ClientResource {
     }
 
     /**
-     * Get application offline session count
-     *
-     * Returns a number of offline user sessions associated with this client
-     *
-     * {
-     *     "count": number
-     * }
-     *
-     * @return
+     * 获取客户端离线会话数量。
+     * @return {"count": number}
      */
     @Path("offline-session-count")
     @GET
@@ -619,13 +608,10 @@ public class ClientResource {
     }
 
     /**
-     * Get offline sessions for client
-     *
-     * Returns a list of offline user sessions associated with this client
-     *
-     * @param firstResult Paging offset
-     * @param maxResults Maximum results size (defaults to 100)
-     * @return
+     * 分页获取客户端离线用户会话。
+     * @param firstResult 分页偏移
+     * @param maxResults 最大条数
+     * @return 用户会话表示流
      */
     @Path("offline-sessions")
     @GET
@@ -641,12 +627,8 @@ public class ClientResource {
     }
 
     /**
-     * Register a cluster node with the client
-     *
-     * Manually register cluster node to this client - usually it's not needed to call this directly as adapter should handle
-     * by sending registration request to Keycloak
-     *
-     * @param formParams
+     * 手动注册客户端集群节点（通常由适配器自动注册）。
+     * @param formParams 含 node 字段的表单
      */
     @Path("nodes")
     @POST
@@ -670,9 +652,8 @@ public class ClientResource {
     }
 
     /**
-     * Unregister a cluster node from the client
-     *
-     * @param node
+     * 注销客户端集群节点。
+     * @param node 节点标识
      */
     @Path("nodes/{node}")
     @DELETE
@@ -693,11 +674,8 @@ public class ClientResource {
     }
 
     /**
-     * Test if registered cluster nodes are available
-     *
-     * Tests availability by sending 'ping' request to all cluster nodes.
-     *
-     * @return
+     * 向所有已注册节点发送 ping 测试可用性。
+     * @return 全局请求结果
      */
     @Path("test-nodes-available")
     @GET
@@ -714,6 +692,7 @@ public class ClientResource {
         return result;
     }
 
+    /** 客户端授权服务子资源（需 AUTHORIZATION 特性） */
     @Path("/authz")
     public AuthorizationService authorization() {
         ProfileHelper.requireFeature(Profile.Feature.AUTHORIZATION);
@@ -725,6 +704,9 @@ public class ClientResource {
      * Return object stating whether client Authorization permissions have been initialized or not and a reference
      *
      * @return
+     */
+    /** 获取客户端细粒度管理权限状态。
+     * @return 管理权限引用
      */
     @Path("management/permissions")
     @GET
@@ -743,6 +725,7 @@ public class ClientResource {
         return toMgmtRef(client, permissions);
     }
 
+    /** 构建已启用的客户端管理权限引用 */
     private ManagementPermissionReference toMgmtRef(ClientModel client, AdminPermissionManagement permissions) {
         ManagementPermissionReference ref = new ManagementPermissionReference();
         ref.setEnabled(true);
@@ -757,6 +740,10 @@ public class ClientResource {
      *
      *
      * @return initialized manage permissions reference
+     */
+    /** 启用或禁用客户端细粒度管理权限。
+     * @param ref 管理权限引用
+     * @return 更新后的权限引用
      */
     @Path("management/permissions")
     @PUT
@@ -778,9 +765,8 @@ public class ClientResource {
     }
 
     /**
-     * Invalidate the rotated secret for the client
-     *
-     * @return
+     * 作废客户端轮换中的旧密钥。
+     * @return 204 No Content
      */
     @Path("client-secret/rotated")
     @DELETE
@@ -812,9 +798,8 @@ public class ClientResource {
     }
 
     /**
-     * Get the rotated client secret
-     *
-     * @return
+     * 获取轮换中的客户端密钥。
+     * @return 密钥凭证表示
      */
     @Path("client-secret/rotated")
     @GET
@@ -835,6 +820,7 @@ public class ClientResource {
         }
     }
 
+    /** 将客户端表示同步到模型（含服务账号、clientId 变更、授权设置） */
     private void updateClientFromRep(ClientRepresentation rep, ClientModel client, KeycloakSession session) throws ModelDuplicateException {
         updateClientServiceAccount(session, client, rep.isServiceAccountsEnabled());
 
@@ -856,12 +842,11 @@ public class ClientResource {
     }
 
     /**
-     * Validates client scope assignment using protocol-specific validation if available.
-     *
-     * @param session      the Keycloak session
-     * @param clientScope  the client scope to be assigned
-     * @param defaultScope true if assigning as Default scope, false if Optional
-     * @param realm        the realm where the assignment is happening
+     * 校验客户端范围分配（委托登录协议工厂）。
+     * @param session Keycloak 会话
+     * @param clientScope 待分配范围
+     * @param defaultScope 是否为默认范围
+     * @param realm 当前领域
      */
     public static void validateClientScopeAssignment(KeycloakSession session, ClientScopeModel clientScope,
                                                      boolean defaultScope, RealmModel realm) {
@@ -872,10 +857,12 @@ public class ClientResource {
         }
     }
 
+    /** 更新客户端服务账号启用状态 */
     public static void updateClientServiceAccount(KeycloakSession session, ClientModel client, Boolean isServiceAccountEnabled) {
         ClientManager.updateClientServiceAccount(session, client, isServiceAccountEnabled);
     }
 
+    /** 根据表示启用或禁用客户端授权服务 */
     private void updateAuthorizationSettings(ClientRepresentation rep) {
         if (Profile.isFeatureEnabled(Profile.Feature.AUTHORIZATION)) {
             if (Boolean.TRUE.equals(rep.getAuthorizationServicesEnabled())) {
@@ -887,15 +874,14 @@ public class ClientResource {
     }
 
     /**
-     * Converts the specified {@link UserSessionModel} into a {@link UserSessionRepresentation}.
-     *
-     * @param userSession the model to be converted.
-     * @return a reference to the constructed representation.
+     * 将 {@link UserSessionModel} 转为表示，并用客户端会话时间戳更新 lastAccess。
+     * @param userSession 用户会话模型
+     * @return 用户会话表示
      */
     private UserSessionRepresentation toUserSessionRepresentation(final UserSessionModel userSession) {
         UserSessionRepresentation rep = ModelToRepresentation.toRepresentation(userSession);
 
-        // Update lastSessionRefresh with the timestamp from clientSession
+        // 用客户端会话时间戳更新 lastSessionRefresh
         var clientSession = userSession.getAuthenticatedClientSessionByClient(client.getClientId());
         if (clientSession != null) {
             rep.setLastAccess(Time.toMillis(clientSession.getTimestamp()));
@@ -903,6 +889,7 @@ public class ClientResource {
         return rep;
     }
 
+    /** 客户端范围简要表示（仅 id/name） */
     private static ClientScopeRepresentation toRepresentation(ClientScopeModel clientScopeModel) {
         ClientScopeRepresentation rep = new ClientScopeRepresentation();
         rep.setId(clientScopeModel.getId());
@@ -910,10 +897,12 @@ public class ClientResource {
         return rep;
     }
 
+    /** 计算分页起始索引 */
     private static int computeFirstResult(Integer firstResult) {
         return Objects.requireNonNullElse(firstResult, -1);
     }
 
+    /** 计算分页最大条数 */
     private static int computeMaxResults(Integer maxResults) {
         return Objects.requireNonNullElse(maxResults, Constants.DEFAULT_MAX_RESULTS);
     }

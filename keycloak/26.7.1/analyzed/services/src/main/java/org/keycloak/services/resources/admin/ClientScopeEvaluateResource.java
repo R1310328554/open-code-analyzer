@@ -92,21 +92,39 @@ import org.w3c.dom.Document;
 import static org.keycloak.protocol.ProtocolMapperUtils.isEnabled;
 
 /**
+ * 客户端范围评估 REST 资源。
+ * <p>模拟令牌签发：预览协议映射器、生成示例 UserInfo/ID Token/Access Token/SAML 响应。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientScopeEvaluateResource {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ClientScopeEvaluateResource.class);
 
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 被评估的客户端 */
     private final ClientModel client;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
 
+    /** 请求 URI 信息 */
     private final UriInfo uriInfo;
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 客户端连接信息 */
     private final ClientConnection clientConnection;
 
+    /** 构造客户端范围评估资源。
+     * @param session Keycloak 会话
+     * @param uriInfo URI 信息
+     * @param realm 当前领域
+     * @param auth 权限评估器
+     * @param client 被评估客户端
+     * @param clientConnection 客户端连接
+     */
     public ClientScopeEvaluateResource(KeycloakSession session, UriInfo uriInfo, RealmModel realm, AdminPermissionEvaluator auth,
                                        ClientModel client, ClientConnection clientConnection) {
         this.uriInfo = uriInfo;
@@ -118,10 +136,10 @@ public class ClientScopeEvaluateResource {
     }
 
     /**
-     *
-     * @param scopeParam
-     * @param roleContainerId either realm name OR client UUID
-     * @return
+     * 作用域映射评估子资源。
+     * @param scopeParam OIDC scope 参数
+     * @param roleContainerId 领域名称或客户端 UUID
+     * @return {@link ClientScopeEvaluateScopeMappingsResource}
      */
     @Path("scope-mappings/{roleContainerId}")
     public ClientScopeEvaluateScopeMappingsResource scopeMappings(@QueryParam("scope") String scopeParam, @Parameter(description = "either realm name OR client UUID") @PathParam("roleContainerId") String roleContainerId) {
@@ -140,10 +158,8 @@ public class ClientScopeEvaluateResource {
     }
 
     /**
-     * Return list of all protocol mappers, which will be used when generating tokens issued for particular client. This means
-     * protocol mappers assigned to this client directly and protocol mappers assigned to all client scopes of this client.
-     *
-     * @return
+     * 列出签发令牌时将生效的全部协议映射器（客户端直接 + 关联客户端范围）。
+     * @return 映射器评估表示流
      */
     @GET
     @Path("protocol-mappers")
@@ -165,6 +181,7 @@ public class ClientScopeEvaluateResource {
                         .map(current -> toProtocolMapperEvaluationRepresentation(current, mapperContainer)));
     }
 
+    /** 构建协议映射器评估表示（标注来源容器类型） */
     private ProtocolMapperEvaluationRepresentation toProtocolMapperEvaluationRepresentation(ProtocolMapperModel mapper,
                                                                                             ClientScopeModel mapperContainer) {
         ProtocolMapperEvaluationRepresentation rep = new ProtocolMapperEvaluationRepresentation();
@@ -173,7 +190,7 @@ public class ClientScopeEvaluateResource {
         rep.setProtocolMapper(mapper.getProtocolMapper());
 
         if (mapperContainer.getId().equals(client.getId())) {
-            // Must be this client
+            // 映射器直接挂在客户端上
             rep.setContainerId(client.getId());
             rep.setContainerName("");
             rep.setContainerType("client");
@@ -187,9 +204,10 @@ public class ClientScopeEvaluateResource {
     }
 
     /**
-     * Create JSON with payload of example user info
-     *
-     * @return
+     * 生成示例 UserInfo JSON 载荷。
+     * @param scopeParam scope 参数
+     * @param userId 用户 ID
+     * @return UserInfo 声明映射
      */
     @GET
     @Path("generate-example-userinfo")
@@ -218,9 +236,11 @@ public class ClientScopeEvaluateResource {
     }
 
     /**
-     * Create JSON with payload of example id token
-     *
-     * @return
+     * 生成示例 ID Token。
+     * @param scopeParam scope 参数
+     * @param userId 用户 ID
+     * @param audience 目标受众客户端 ID
+     * @return ID Token
      */
     @GET
     @Path("generate-example-id-token")
@@ -247,7 +267,7 @@ public class ClientScopeEvaluateResource {
                     .generateAccessToken().generateIDToken();
             IDToken idToken = response.getIdToken();
 
-            // Retrieve accessToken just to check the audience
+            // 取 access token 校验 audience
             AccessToken accessToken = response.getAccessToken();
             validateAudience(accessToken, audienceClients);
 
@@ -256,9 +276,11 @@ public class ClientScopeEvaluateResource {
     }
 
     /**
-     * Create JSON with payload of example access token
-     *
-     * @return
+     * 生成示例 Access Token。
+     * @param scopeParam scope 参数
+     * @param userId 用户 ID
+     * @param audience 目标受众
+     * @return Access Token
      */
     @GET
     @Path("generate-example-access-token")
@@ -289,9 +311,11 @@ public class ClientScopeEvaluateResource {
     }
 
     /**
-     * Create SAMLResponse for the given user and the current client.
-     *
-     * @return
+     * 为指定用户与当前客户端生成示例 SAML 响应（格式化 XML）。
+     * @param scopeParam scope 参数
+     * @param userId 用户 ID
+     * @param audience 受众客户端 ID
+     * @return SAML 示例响应
      */
     @GET
     @Path("generate-example-saml-response")
@@ -307,13 +331,13 @@ public class ClientScopeEvaluateResource {
         logger.debugf("generateExampleSamlResponse invoked. User: %s, Scope param: %s", user.getUsername(), scopeParam);
 
         if (audience == null) {
-            // if no audience is given, fallback to current client
+            // 未指定 audience 时使用当前客户端
             audience = client.getClientId();
         }
 
         return sessionAware(SamlProtocol.LOGIN_PROTOCOL, user, scopeParam, audience, (userSession, clientSessionCtx, audienceClients, authSession) ->
         {
-            // Capture the SAML response document right before it gets encoded into a (redirect/POST) binding,
+            // 在绑定编码前捕获 SAML 文档，避免 deflate/base64 往返并兼容各绑定/签名配置
             // so we avoid the deflate/base64/URL round-trip and work regardless of the client's binding or signing config.
             AtomicReference<Document> capturedDocument = new AtomicReference<>();
 
@@ -322,7 +346,7 @@ public class ClientScopeEvaluateResource {
                 protected Response buildAuthenticatedResponse(AuthenticatedClientSessionModel clientSession, String redirectUri,
                                                               Document samlDocument, JaxrsSAML2BindingBuilder bindingBuilder) {
                     capturedDocument.set(samlDocument);
-                    return Response.ok().build(); // discarded; we only want the document
+                    return Response.ok().build(); // 丢弃响应，仅需文档
                 }
             };
             samlProtocol.setSession(session);
@@ -335,7 +359,7 @@ public class ClientScopeEvaluateResource {
             try (Response ignored = samlProtocol.authenticated(authSession, userSession, clientSessionCtx)) {
                 Document samlDocument = capturedDocument.get();
                 if (samlDocument == null) {
-                    // e.g. NameID could not be resolved or a mapper failed -> authenticated() returned an error page
+                    // 例如 NameID 无法解析或映射器失败
                     throw new NotFoundException("Could not generate a SAML response for the given user and client");
                 }
                 return new SamlExampleResponse(prettyPrintSamlResponseDocument(samlDocument));
@@ -343,6 +367,7 @@ public class ClientScopeEvaluateResource {
         });
     }
 
+    /** 格式化 SAML 响应 XML 文档 */
     private static String prettyPrintSamlResponseDocument(Document document) {
         try {
             Transformer transformer = TransformerUtil.getTransformer();
@@ -356,6 +381,7 @@ public class ClientScopeEvaluateResource {
         }
     }
 
+    /** 创建临时认证/用户会话并执行协议响应生成器 */
     private<R> R sessionAware(String protocol, UserModel user, String scopeParam, String audienceParam, ProtocolResponseGenerator<R> function) {
         AuthenticationSessionModel authSession = null;
         UserSessionModel userSession = null;
@@ -393,6 +419,7 @@ public class ClientScopeEvaluateResource {
         }
     }
 
+    /** 解析空格分隔的客户端 ID 列表为客户端模型数组 */
     private ClientModel[] getClients(String clientsStr) {
         List<ClientModel> clients = new ArrayList<>();
         if(clientsStr != null && !clientsStr.isEmpty()) {
@@ -406,6 +433,7 @@ public class ClientScopeEvaluateResource {
         return clients.toArray(ClientModel[]::new);
     }
 
+    /** 校验 access token 是否包含请求的 audience */
     private void validateAudience(AccessToken accessToken, ClientModel[] requestedAudience) {
         List<String> requestedAudienceClientIds = Stream.of(requestedAudience)
                 .map(ClientModel::getClientId)
@@ -417,6 +445,7 @@ public class ClientScopeEvaluateResource {
         }
     }
 
+    /** 按 ID 获取用户并校验查看权限 */
     private UserModel getUserModel(String userId) {
         if (userId == null) {
             throw new NotFoundException("No userId provided");
@@ -437,23 +466,30 @@ public class ClientScopeEvaluateResource {
         return user;
     }
 
+    /** 协议映射器评估结果 DTO */
     public static class ProtocolMapperEvaluationRepresentation {
 
+        /** 映射器 ID */
         @JsonProperty("mapperId")
         private String mapperId;
 
+        /** 映射器名称 */
         @JsonProperty("mapperName")
         private String mapperName;
 
+        /** 来源容器 ID */
         @JsonProperty("containerId")
         private String containerId;
 
+        /** 来源容器名称 */
         @JsonProperty("containerName")
         private String containerName;
 
+        /** 来源容器类型（client / client-scope） */
         @JsonProperty("containerType")
         private String containerType;
 
+        /** 映射器提供者 ID */
         @JsonProperty("protocolMapper")
         private String protocolMapper;
 
@@ -506,6 +542,7 @@ public class ClientScopeEvaluateResource {
         }
     }
 
+    /** SAML 示例响应包装（JSON 值为 XML 字符串） */
     public static class SamlExampleResponse {
 
         private final String samlResponse;
@@ -520,6 +557,7 @@ public class ClientScopeEvaluateResource {
         }
     }
 
+    /** 在模拟会话上下文中生成协议响应的回调 */
     interface ProtocolResponseGenerator<T> {
 
         T generateProtocolResponse(UserSessionModel userSessionModel, ClientSessionContext clientSessionContext, ClientModel[] audienceClients, AuthenticationSessionModel authSession);

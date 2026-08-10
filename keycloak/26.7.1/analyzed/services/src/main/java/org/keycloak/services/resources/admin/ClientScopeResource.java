@@ -66,7 +66,8 @@ import org.jboss.resteasy.reactive.NoCache;
 
 
 /**
- * Base resource class for managing one particular client of a realm.
+ * 单个客户端范围 REST 资源。
+ * <p>管理协议映射器、作用域映射、参数化范围校验及 CRUD。</p>
  *
  * @resource Client Scopes
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -74,14 +75,28 @@ import org.jboss.resteasy.reactive.NoCache;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientScopeResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ClientScopeResource.class);
+    /** 当前领域 */
     protected RealmModel realm;
+    /** 细粒度权限评估器 */
     private AdminPermissionEvaluator auth;
+    /** 管理事件构建器 */
     private AdminEventBuilder adminEvent;
+    /** 目标客户端范围 */
     protected ClientScopeModel clientScope;
+    /** Keycloak 会话 */
     protected KeycloakSession session;
+    /** 客户端范围名称合法字符正则 */
     protected final static Pattern scopeNamePattern = Pattern.compile("[\\x21\\x23-\\x5B\\x5D-\\x7E]+");
 
+    /** 构造单个客户端范围资源。
+     * @param realm 当前领域
+     * @param auth 权限评估器
+     * @param clientScope 目标范围
+     * @param session Keycloak 会话
+     * @param adminEvent 管理事件构建器
+     */
     public ClientScopeResource(RealmModel realm, AdminPermissionEvaluator auth, ClientScopeModel clientScope, KeycloakSession session, AdminEventBuilder adminEvent) {
         this.realm = realm;
         this.auth = auth;
@@ -90,6 +105,7 @@ public class ClientScopeResource {
         this.adminEvent = adminEvent.resource(ResourceType.CLIENT_SCOPE);
     }
 
+    /** 协议映射器子资源 */
     @Path("protocol-mappers")
     public ProtocolMappersResource getProtocolMappers() {
         AdminPermissionEvaluator.RequirePermissionCheck manageCheck = () -> auth.clients().requireManage(clientScope);
@@ -97,10 +113,8 @@ public class ClientScopeResource {
         return new ProtocolMappersResource(session, clientScope, auth, adminEvent, manageCheck, viewCheck);
     }
 
-    /**
-     * Base path for managing the role scope mappings for the client scope
-     *
-     * @return
+    /** 作用域映射（角色→范围）子资源。
+     * @return {@link ScopeMappedResource}
      */
     @Path("scope-mappings")
     public ScopeMappedResource getScopeMappedResource() {
@@ -110,9 +124,9 @@ public class ClientScopeResource {
     }
 
     /**
-     * Update the client scope
-     * @param rep
-     * @return
+     * 更新客户端范围。
+     * @param rep 新配置
+     * @return 204 No Content
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
@@ -146,9 +160,8 @@ public class ClientScopeResource {
     }
 
     /**
-     * Get representation of the client scope
-     *
-     * @return
+     * 获取客户端范围表示。
+     * @return 客户端范围表示
      */
     @GET
     @NoCache
@@ -165,9 +178,7 @@ public class ClientScopeResource {
         return ModelToRepresentation.toRepresentation(clientScope);
     }
 
-    /**
-     * Delete the client scope
-     */
+    /** 删除客户端范围（至少保留一个范围）。 */
     @DELETE
     @NoCache
     @Tag(name = KeycloakOpenAPI.Admin.Tags.CLIENT_SCOPES)
@@ -198,10 +209,9 @@ public class ClientScopeResource {
     }
 
     /**
-     * Performs some validation based on attributes combinations and format.
-     * Validations differ based on whether the PARAMETERIZED_SCOPES feature is enabled or not
-     * @param clientScope
-     * @throws ErrorResponseException
+     * 校验参数化客户端范围属性组合与格式。
+     * @param clientScope 待校验表示
+     * @throws ErrorResponseException 校验失败
      */
     public static void validateParameterizedClientScope(KeycloakSession session, ClientScopeRepresentation clientScope) throws ErrorResponseException {
         if (clientScope.getAttributes() == null) {
@@ -230,6 +240,7 @@ public class ClientScopeResource {
         }
     }
 
+    /** 校验客户端范围名称格式 */
     public static void validateClientScopeName(String name) throws ErrorResponseException {
         if (!scopeNamePattern.matcher(name).matches()) {
             String message = String.format("Unexpected name \"%s\" for ClientScope", name);
@@ -237,6 +248,7 @@ public class ClientScopeResource {
         }
     }
 
+    /** 校验协议是否为已注册的登录协议 */
     public static void validateClientScopeProtocol(KeycloakSession session, String protocol)
             throws ErrorResponseException {
         KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
@@ -251,11 +263,10 @@ public class ClientScopeResource {
     }
 
     /**
-     * Validates client scope during creation or update
-     *
-     * @param session  the Keycloak session
-     * @param clientScope clientScope to validate
-     * @throws ErrorResponseException if error happens during client-scope validation
+     * 创建/更新时调用协议工厂校验客户端范围。
+     * @param session Keycloak 会话
+     * @param clientScope 待校验表示
+     * @throws ErrorResponseException 校验失败
      */
     public static void validateClientScope(KeycloakSession session, ClientScopeRepresentation clientScope)
             throws ErrorResponseException {
@@ -266,14 +277,13 @@ public class ClientScopeResource {
     }
 
     /**
-     * Makes sure that an update that makes a Client Scope Parameterized is rejected if the Client Scope is assigned
-     * as a default scope — either to a client or as a realm-level default.
-     * @param rep the {@link ClientScopeRepresentation} with the changes from the frontend.
+     * 若范围已作为客户端或领域默认范围，则拒绝将其改为参数化范围。
+     * @param rep 前端提交的变更表示
      */
     public void validateParameterizedScopeUpdate(ClientScopeRepresentation rep) {
         validateClientScopeName(rep.getName());
 
-        // Only check this if the representation has been sent to make it dynamic
+        // 仅当前端提交了 attributes 时才检查参数化转换
         if (rep.getAttributes() != null
                 && rep.getAttributes().getOrDefault(ClientScopeModel.IS_PARAMETERIZED_SCOPE, "false").equalsIgnoreCase("true")
                 && !clientScope.isParameterizedScope()) {
@@ -282,13 +292,13 @@ public class ClientScopeResource {
                     .map(ClientScopeModel::getId)
                     .filter(scopeId -> scopeId.equalsIgnoreCase(this.clientScope.getId()))
                     .findAny();
-            // if it's present, it means that a client has this scope assigned as a default scope, so this scope can't be made parameterized
+            // 已作为客户端默认范围则不可改为参数化
             if (scopeModelOpt.isPresent()) {
                 throw ErrorResponse.error("This Client Scope can't be made parameterized as it's assigned to a Client as a Default Scope",
                         Response.Status.BAD_REQUEST);
             }
 
-            // Also check realm-level default scopes — a scope that is a realm default would be automatically
+            // 同时检查领域级默认范围——领域默认会自动赋给新客户端
             // assigned to new clients as a default scope, which is incompatible with parameterized scopes.
             boolean isRealmDefault = realm.getDefaultClientScopesStream(true)
                     .map(ClientScopeModel::getId)
@@ -298,7 +308,7 @@ public class ClientScopeResource {
                         Response.Status.BAD_REQUEST);
             }
         }
-        // after the previous validation, run the usual Parameterized Scope validations.
+        // 通过上述检查后执行常规参数化范围校验
         validateParameterizedClientScope(session, rep);
     }
 }

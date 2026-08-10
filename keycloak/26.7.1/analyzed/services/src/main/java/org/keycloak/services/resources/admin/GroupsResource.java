@@ -61,17 +61,30 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 领域组层级 REST 资源。
+ * <p>查询组树、计数、创建顶级组，并路由到单个组子资源。</p>
+ *
  * @resource Groups
  * @author Bill Burke
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class GroupsResource {
 
+    /** 当前领域 */
     private final RealmModel realm;
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** 构造组集合资源。
+     * @param realm 当前领域
+     * @param session Keycloak 会话
+     * @param auth 权限评估器
+     * @param adminEvent 管理事件构建器
+     */
     public GroupsResource(RealmModel realm, KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.realm = realm;
         this.session = session;
@@ -81,9 +94,8 @@ public class GroupsResource {
     }
 
     /**
-     * Get group hierarchy.  Only {@code name} and {@code id} are returned.  {@code subGroups} are only returned when using the {@code search} or {@code q} parameter.
-     * If none of these parameters is provided, the top-level groups are returned without `{@code subGroups} being filled.
-     * @return
+     * 获取组层级；默认仅顶级组且不含 subGroups，search/q 时填充子组。
+     * @return 组表示流
      */
     @GET
     @NoCache
@@ -131,10 +143,9 @@ public class GroupsResource {
     }
 
     /**
-     * Does not expand hierarchy.  Subgroups will not be set.
-     *
-     * @param id
-     * @return
+     * 按 ID 获取单个组子资源（不展开层级）。
+     * @param id 组 ID
+     * @return {@link GroupResource}
      */
     @Path("{group-id}")
     @Operation( summary = "Get group details. Does not expand hierarchy.  Subgroups will not be set.")
@@ -153,9 +164,8 @@ public class GroupsResource {
     }
 
     /**
-     * Returns the groups counts.
-     *
-     * @return
+     * 返回组数量统计。
+     * @return {"count": number}
      */
     @GET
     @NoCache
@@ -179,10 +189,8 @@ public class GroupsResource {
     }
 
     /**
-     * create or add a top level realm groupSet or create child.  This will update the group and set the parent if it exists.  Create it and set the parent
-     * if the group doesn't exist.
-     *
-     * @param rep
+     * 创建或移动顶级组。
+     * @param rep 组表示
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)

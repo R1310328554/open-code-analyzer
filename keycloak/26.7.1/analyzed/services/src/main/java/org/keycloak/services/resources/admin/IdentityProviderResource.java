@@ -76,20 +76,36 @@ import org.jboss.resteasy.reactive.NoCache;
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 
 /**
+ * 单个身份提供者 REST 资源。
+ * <p>管理 IdP CRUD、导出配置、映射器及细粒度管理权限。</p>
+ *
  * @resource Identity Providers
  * @author Pedro Igor
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class IdentityProviderResource {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(IdentityProviderResource.class);
 
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 当前领域 */
     private final RealmModel realm;
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 目标身份提供者模型 */
     private final IdentityProviderModel identityProviderModel;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** 构造单个 IdP 资源。
+     * @param auth 权限评估器
+     * @param realm 当前领域
+     * @param session Keycloak 会话
+     * @param identityProviderModel IdP 模型
+     * @param adminEvent 管理事件构建器
+     */
     public IdentityProviderResource(AdminPermissionEvaluator auth, RealmModel realm, KeycloakSession session, IdentityProviderModel identityProviderModel, AdminEventBuilder adminEvent) {
         this.realm = realm;
         this.session = session;
@@ -98,10 +114,8 @@ public class IdentityProviderResource {
         this.adminEvent = adminEvent.resource(ResourceType.IDENTITY_PROVIDER);
     }
 
-    /**
-     * Get the identity provider
-     *
-     * @return
+    /** 获取身份提供者表示（脱敏密钥）。
+     * @return IdP 表示
      */
     @GET
     @NoCache
@@ -118,10 +132,8 @@ public class IdentityProviderResource {
         return StripSecretsUtils.stripSecrets(session, ModelToRepresentation.toRepresentation(session, realm, this.identityProviderModel));
     }
 
-    /**
-     * Delete the identity provider
-     *
-     * @return
+    /** 删除身份提供者及其映射器。
+     * @return 204 No Content
      */
     @DELETE
     @NoCache
@@ -147,10 +159,9 @@ public class IdentityProviderResource {
     }
 
     /**
-     * Update the identity provider
-     *
-     * @param providerRep
-     * @return
+     * 更新身份提供者（别名不可变更）。
+     * @param providerRep IdP 表示
+     * @return 204 No Content
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
@@ -188,6 +199,7 @@ public class IdentityProviderResource {
         }
     }
 
+    /** 将表示同步到 IdP 模型，保留未变更的 clientSecret */
     private void updateIdpFromRep(IdentityProviderRepresentation providerRep, RealmModel realm, KeycloakSession session) {
 
         if (!identityProviderModel.getInternalId().equals(providerRep.getInternalId())) {
@@ -206,11 +218,12 @@ public class IdentityProviderResource {
         }
 
         session.identityProviders().update(updated);
-        // update in case of legacy hide on login attr was used.
+        // 同步 legacy hideOnLogin 属性
         providerRep.setHideOnLogin(updated.isHideOnLogin());
     }
 
 
+    /** 获取当前 IdP 对应的提供者工厂 */
     private IdentityProviderFactory<?> getIdentityProviderFactory() {
         String providerId = identityProviderModel.getProviderId();
         return Stream.concat(session.getKeycloakSessionFactory().getProviderFactoriesStream(IdentityProvider.class),
@@ -222,10 +235,9 @@ public class IdentityProviderResource {
     }
 
     /**
-     * Export public broker configuration for identity provider
-     *
-     * @param format Format to use
-     * @return
+     * 导出 IdP 公开代理配置（如 SAML 元数据）。
+     * @param format 导出格式
+     * @return 导出响应
      */
     @GET
     @Path("export")
@@ -246,14 +258,13 @@ public class IdentityProviderResource {
         }
     }
 
+    /** 实例化身份提供者 */
     private IdentityProvider<?> createIdentityProviderInstance() {
         IdentityProviderFactory<?> factory = getIdentityProviderFactory();
         return factory.create(session, identityProviderModel);
     }
 
-    /**
-     * Get mapper types for identity provider
-     */
+    /** 获取当前 IdP 支持的映射器类型及配置属性 */
     @GET
     @Path("mapper-types")
     @NoCache
@@ -285,9 +296,7 @@ public class IdentityProviderResource {
                 .collect(Collectors.toMap(IdentityProviderMapperTypeRepresentation::getId, Function.identity()));
     }
 
-    /**
-     * Get mappers for identity provider
-     */
+    /** 列出 IdP 全部映射器 */
     @GET
     @Path("mappers")
     @Produces(MediaType.APPLICATION_JSON)
@@ -306,10 +315,9 @@ public class IdentityProviderResource {
     }
 
     /**
-     * Add a mapper to identity provider
-     *
-     * @param mapper
-     * @return
+     * 为 IdP 添加映射器。
+     * @param mapper 映射器表示
+     * @return 201 Created
      */
     @POST
     @Path("mappers")
@@ -340,10 +348,9 @@ public class IdentityProviderResource {
     }
 
     /**
-     * Get mapper by id for the identity provider
-     *
-     * @param id
-     * @return
+     * 按 ID 获取 IdP 映射器。
+     * @param id 映射器 ID
+     * @return 映射器表示
      */
     @GET
     @NoCache
@@ -364,10 +371,9 @@ public class IdentityProviderResource {
     }
 
     /**
-     * Update a mapper for the identity provider
-     *
-     * @param id Mapper id
-     * @param rep
+     * 更新 IdP 映射器。
+     * @param id 映射器 ID
+     * @param rep 新配置
      */
     @PUT
     @NoCache
@@ -392,9 +398,8 @@ public class IdentityProviderResource {
     }
 
     /**
-     * Delete a mapper for the identity provider
-     *
-     * @param id Mapper id
+     * 删除 IdP 映射器。
+     * @param id 映射器 ID
      */
     @DELETE
     @NoCache
@@ -420,6 +425,9 @@ public class IdentityProviderResource {
      *
      * @return
      */
+    /** 获取 IdP 细粒度管理权限状态。
+     * @return 管理权限引用
+     */
     @Path("management/permissions")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -441,6 +449,7 @@ public class IdentityProviderResource {
         return toMgmtRef(identityProviderModel, permissions);
     }
 
+    /** 构建已启用的 IdP 管理权限引用 */
     private ManagementPermissionReference toMgmtRef(IdentityProviderModel model, AdminPermissionManagement permissions) {
         ManagementPermissionReference ref = new ManagementPermissionReference();
         ref.setEnabled(true);
@@ -455,6 +464,10 @@ public class IdentityProviderResource {
      *
      *
      * @return initialized manage permissions reference
+     */
+    /** 启用或禁用 IdP 细粒度管理权限。
+     * @param ref 管理权限引用
+     * @return 更新后的权限引用
      */
     @Path("management/permissions")
     @PUT
@@ -480,6 +493,9 @@ public class IdentityProviderResource {
         }
     }
 
+    /** 若提供者支持则重新加载 IdP 密钥。
+     * @return 是否执行了重载
+     */
     @GET
     @Path("reload-keys")
     @Produces(MediaType.APPLICATION_JSON)

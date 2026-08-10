@@ -63,7 +63,8 @@ import org.jboss.resteasy.reactive.NoCache;
 import static org.keycloak.protocol.ProtocolMapperUtils.isEnabled;
 
 /**
- * Base resource for managing users
+ * 协议映射器（Protocol Mapper）管理 REST 资源基类。
+ * <p>管理客户端或客户端范围上的 OIDC/SAML 协议映射器 CRUD。</p>
  *
  * @resource Protocol Mappers
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -71,20 +72,36 @@ import static org.keycloak.protocol.ProtocolMapperUtils.isEnabled;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ProtocolMappersResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ProtocolMappersResource.class);
 
+    /** 当前领域 */
     protected final RealmModel realm;
 
+    /** 协议映射器容器（客户端或客户端范围） */
     protected final ProtocolMapperContainerModel client;
 
+    /** 细粒度权限评估器 */
     protected final AdminPermissionEvaluator auth;
+    /** 管理权限检查回调 */
     protected final AdminPermissionEvaluator.RequirePermissionCheck managePermission;
+    /** 查看权限检查回调 */
     protected final AdminPermissionEvaluator.RequirePermissionCheck viewPermission;
 
+    /** 管理事件构建器 */
     protected final AdminEventBuilder adminEvent;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 构造协议映射器资源。
+     * @param session Keycloak 会话
+     * @param client 映射器容器
+     * @param auth 权限评估器
+     * @param adminEvent 管理事件构建器
+     * @param managePermission 管理权限检查
+     * @param viewPermission 查看权限检查
+     */
     public ProtocolMappersResource(KeycloakSession session, ProtocolMapperContainerModel client, AdminPermissionEvaluator auth,
                                    AdminEventBuilder adminEvent,
                                    AdminPermissionEvaluator.RequirePermissionCheck managePermission,
@@ -100,10 +117,9 @@ public class ProtocolMappersResource {
     }
 
     /**
-     * Get mappers by name for a specific protocol
-     *
-     * @param protocol
-     * @return
+     * 按协议类型获取启用的协议映射器列表。
+     * @param protocol 协议名称
+     * @return 映射器表示流
      */
     @GET
     @NoCache
@@ -120,9 +136,8 @@ public class ProtocolMappersResource {
     }
 
     /**
-     * Create a mapper
-     *
-     * @param rep
+     * 创建单个协议映射器。
+     * @param rep 映射器表示
      */
     @Path("models")
     @POST
@@ -150,10 +165,8 @@ public class ProtocolMappersResource {
 
         return Response.created(session.getContext().getUri().getAbsolutePathBuilder().path(model.getId()).build()).build();
     }
+    /** 批量创建协议映射器 */
     /**
-     * Create multiple mappers
-     *
-     */
     @Path("add-models")
     @POST
     @NoCache
@@ -174,9 +187,8 @@ public class ProtocolMappersResource {
     }
 
     /**
-     * Get mappers
-     *
-     * @return
+     * 获取所有启用的协议映射器。
+     * @return 映射器表示流
      */
     @GET
     @NoCache
@@ -193,10 +205,9 @@ public class ProtocolMappersResource {
     }
 
     /**
-     * Get mapper by id
-     *
-     * @param id Mapper id
-     * @return
+     * 按 ID 获取协议映射器（含有效配置）。
+     * @param id 映射器 ID
+     * @return 映射器表示
      */
     @GET
     @NoCache
@@ -212,6 +223,7 @@ public class ProtocolMappersResource {
         return toEffectiveProtocolMapperRep(model);
     }
 
+    /** 解析映射器提供者并返回有效表示 */
     private ProtocolMapperRepresentation toEffectiveProtocolMapperRep(ProtocolMapperModel model) {
         ProtocolMapper mapper = (ProtocolMapper) session.getKeycloakSessionFactory().getProviderFactory(ProtocolMapper.class, model.getProtocolMapper());
         if (mapper == null) {
@@ -224,10 +236,9 @@ public class ProtocolMappersResource {
     }
 
     /**
-     * Update the mapper
-     *
-     * @param id Mapper id
-     * @param rep
+     * 更新协议映射器。
+     * @param id 映射器 ID
+     * @param rep 新配置
      */
     @PUT
     @NoCache
@@ -249,9 +260,8 @@ public class ProtocolMappersResource {
     }
 
     /**
-     * Delete the mapper
-     *
-     * @param id Mapper id
+     * 删除协议映射器。
+     * @param id 映射器 ID
      */
     @DELETE
     @NoCache
@@ -268,6 +278,7 @@ public class ProtocolMappersResource {
 
     }
 
+    /** 调用映射器提供者校验配置 */
     private void validateModel(ProtocolMapperModel model) {
         try {
             ProtocolMapper mapper = (ProtocolMapper)session.getKeycloakSessionFactory().getProviderFactory(ProtocolMapper.class, model.getProtocolMapper());

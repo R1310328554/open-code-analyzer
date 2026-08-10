@@ -42,17 +42,29 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 客户端类型（Client Types）管理 REST 资源。
+ * <p>列出并更新领域级客户端类型及其默认属性。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientTypesResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ClientTypesResource.class);
 
+    /** 客户端类型管理器 */
     protected final ClientTypeManager manager;
+    /** 当前领域 */
     protected final RealmModel realm;
 
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
 
+    /** 构造客户端类型资源。
+     * @param manager 客户端类型管理器
+     * @param realm 当前领域
+     * @param auth 权限评估器
+     */
     public ClientTypesResource(ClientTypeManager manager, RealmModel realm, AdminPermissionEvaluator auth) {
         this.manager = manager;
         this.auth = auth;
@@ -66,6 +78,9 @@ public class ClientTypesResource {
     @Operation(summary = "List all client types available in the current realm",
             description = "This endpoint returns a list of both global and realm level client types and the attributes they set"
     )
+    /** 列出当前领域可用的全局与领域级客户端类型。
+     * @return 客户端类型表示
+     */
     public ClientTypesRepresentation getClientTypes() {
         auth.realm().requireViewRealm();
 
@@ -84,6 +99,10 @@ public class ClientTypesResource {
             description = "This endpoint allows you to update a realm level client type"
     )
     @APIResponse(responseCode = "204", description = "No Content")
+    /** 更新领域级客户端类型配置。
+     * @param clientTypes 客户端类型表示
+     * @return 204 No Content
+     */
     public Response updateClientTypes(final ClientTypesRepresentation clientTypes) {
         auth.realm().requireManageRealm();
 

@@ -72,18 +72,33 @@ import static org.keycloak.utils.StreamsUtil.paginatedStream;
 import static org.keycloak.utils.StringUtil.isBlank;
 
 /**
+ * 单个组 REST 资源。
+ * <p>管理组 CRUD、子组、成员、角色映射及细粒度管理权限。</p>
+ *
  * @resource Groups
  * @author Bill Burke
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class GroupResource {
 
+    /** 当前领域 */
     private final RealmModel realm;
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
+    /** 目标组 */
     private final GroupModel group;
 
+    /** 构造单个组资源。
+     * @param realm 当前领域
+     * @param group 目标组
+     * @param session Keycloak 会话
+     * @param auth 权限评估器
+     * @param adminEvent 管理事件构建器
+     */
     public GroupResource(RealmModel realm, GroupModel group, KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.realm = realm;
         this.session = session;
@@ -92,10 +107,8 @@ public class GroupResource {
         this.group = group;
     }
 
-     /**
-     *
-     *
-     * @return
+    /** 获取组详情（含 access 与子组计数）。
+     * @return 组表示
      */
     @GET
     @NoCache
@@ -113,9 +126,8 @@ public class GroupResource {
     }
 
     /**
-     * Update group, ignores subgroups.
-     *
-     * @param rep
+     * 更新组（不处理子组）。
+     * @param rep 组表示
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
@@ -153,6 +165,7 @@ public class GroupResource {
         return Response.noContent().build();
     }
 
+    /** 获取同级组流（顶级或同一父组下） */
     private Stream<GroupModel> siblings() {
         if (group.getParentId() == null) {
             return session.groups().getTopLevelGroupsStream(realm);
@@ -161,6 +174,7 @@ public class GroupResource {
         }
     }
 
+    /** 删除组 */
     @DELETE
     @Tag(name = KeycloakOpenAPI.Admin.Tags.GROUPS)
     @Operation()
@@ -174,6 +188,16 @@ public class GroupResource {
         adminEvent.operation(OperationType.DELETE).representation(groupRepresentation).resourcePath(session.getContext().getUri()).success();
     }
 
+    /**
+     * 分页返回该组的直接子组。
+     * @param search 名称搜索
+     * @param exact 是否精确匹配
+     * @param first 分页偏移
+     * @param max 最大条数
+     * @param briefRepresentation 是否简要表示
+     * @param subGroupsCount 是否填充子组计数
+     * @return 子组表示流
+     */
     @GET
     @Path("children")
     @NoCache
@@ -209,10 +233,8 @@ public class GroupResource {
     }
 
     /**
-     * Set or create child.  This will just set the parent if it exists.  Create it and set the parent
-     * if the group doesn't exist.
-     *
-     * @param rep
+     * 设置或创建子组（已存在则移动父级）。
+     * @param rep 子组表示
      */
     @POST
     @Path("children")
@@ -272,6 +294,7 @@ public class GroupResource {
         }
     }
 
+    /** 将组表示同步到模型（名称、属性、描述），名称变更时触发路径变更事件 */
     public static void updateGroup(GroupRepresentation rep, GroupModel model, RealmModel realm, KeycloakSession session) {
         String newName = rep.getName();
         if (newName != null) {
@@ -302,6 +325,7 @@ public class GroupResource {
         model.setDescription(rep.getDescription());
     }
 
+    /** 组角色映射子资源 */
     @Path("role-mappings")
     public RoleMapperResource getRoleMappings() {
         AdminPermissionEvaluator.RequirePermissionCheck manageCheck = () -> auth.groups().requireManage(group);
@@ -311,16 +335,11 @@ public class GroupResource {
     }
 
     /**
-     * Get users
-     *
-     * Returns a stream of users, filtered according to query parameters
-     *
-     * @param firstResult Pagination offset
-     * @param maxResults Maximum results size (defaults to 100)
-     * @param briefRepresentation Only return basic information (only guaranteed to return id, username, created, first and last name,
-     *  email, enabled state, email verification state, federation link, and access.
-     *  Note that it means that namely user attributes, required actions, and not before are not returned.)
-     * @return a non-null {@code Stream} of users
+     * 获取组成员用户流。
+     * @param firstResult 分页偏移
+     * @param maxResults 最大条数（默认 100）
+     * @param briefRepresentation 是否仅返回基本信息
+     * @return 用户表示流
      */
     @GET
     @NoCache
@@ -343,9 +362,8 @@ public class GroupResource {
     }
 
     /**
-     * Return object stating whether client Authorization permissions have been initialized or not and a reference
-     *
-     * @return
+     * 获取组细粒度管理权限初始化状态与引用。
+     * @return 管理权限引用
      */
     @Path("management/permissions")
     @GET
@@ -364,6 +382,7 @@ public class GroupResource {
         return toMgmtRef(group, permissions);
     }
 
+    /** 构建已启用的组管理权限引用 */
     private ManagementPermissionReference toMgmtRef(GroupModel group, AdminPermissionManagement permissions) {
         ManagementPermissionReference ref = new ManagementPermissionReference();
         ref.setEnabled(true);
@@ -374,10 +393,9 @@ public class GroupResource {
 
 
     /**
-     * Return object stating whether client Authorization permissions have been initialized or not and a reference
-     *
-     *
-     * @return initialized manage permissions reference
+     * 启用或禁用组细粒度管理权限。
+     * @param ref 管理权限引用
+     * @return 更新后的权限引用
      */
     @Path("management/permissions")
     @PUT

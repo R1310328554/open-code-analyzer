@@ -79,17 +79,30 @@ import org.jboss.resteasy.reactive.NoCache;
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 
 /**
+ * 身份提供者（Identity Provider）集合 REST 资源。
+ * <p>导入配置、上传证书、列出/创建 IdP 实例，并路由到单个 IdP 子资源。</p>
+ *
  * @resource Identity Providers
  * @author Pedro Igor
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class IdentityProvidersResource {
 
+    /** 当前领域 */
     private final RealmModel realm;
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** 构造身份提供者集合资源。
+     * @param realm 当前领域
+     * @param session Keycloak 会话
+     * @param auth 权限评估器
+     * @param adminEvent 管理事件构建器
+     */
     public IdentityProvidersResource(RealmModel realm, KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.realm = realm;
         this.session = session;
@@ -98,10 +111,9 @@ public class IdentityProvidersResource {
     }
 
     /**
-     * Get the identity provider factory for a provider id.
-     *
-     * @param providerId Provider id
-     * @return
+     * 按 provider ID 获取身份提供者工厂。
+     * @param providerId 提供者 ID
+     * @return 工厂实例
      */
     @Path("/providers/{provider_id}")
     @GET
@@ -118,9 +130,7 @@ public class IdentityProvidersResource {
         throw new BadRequestException();
     }
 
-    /**
-     * Import identity provider from uploaded JSON file
-     */
+    /** 从上传的 JSON 文件导入身份提供者配置 */
     @POST
     @Path("import-config")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -139,6 +149,10 @@ public class IdentityProvidersResource {
         return providerFactory.parseConfig(session, config);
     }
 
+    /**
+     * 上传证书/JWKS/公钥并返回证书表示。
+     * @return 证书表示
+     */
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
@@ -150,10 +164,10 @@ public class IdentityProvidersResource {
         try {
             CertificateRepresentation info = CertificateInfoHelper.getCertificateFromRequest(session);
             if (info.getJwks() != null || info.getPublicKey() != null) {
-                // uploaded a jwks or a publick key
+                // 上传的是 JWKS 或公钥
                 return info;
             } else if (info.getCertificate() != null) {
-                // get the key from the certificate file
+                // 从证书文件提取公钥
                 X509Certificate certificate = KeycloakModelUtils.getCertificate(info.getCertificate());
                 String pubKeyPem = PemUtils.encodeKey(certificate.getPublicKey());
                 info.setPublicKey(pubKeyPem);
@@ -167,11 +181,10 @@ public class IdentityProvidersResource {
     }
 
     /**
-     * Import identity provider from JSON body
-     *
-     * @param data JSON body
-     * @return
-     * @throws IOException
+     * 从远程 URL 拉取元数据并解析 IdP 配置。
+     * @param data 含 providerId 与 fromUrl 的 JSON
+     * @return 解析后的配置映射
+     * @throws IOException 网络或解析失败
      */
     @POST
     @Path("import-config")
@@ -192,19 +205,18 @@ public class IdentityProvidersResource {
         String file = session.getProvider(HttpClientProvider.class).getString(from);
         IdentityProviderFactory providerFactory = getProviderFactoryById(providerId);
         Map<String, String> config = providerFactory.parseConfig(session, file);
-        // add the URL just if needed by the identity provider
+        // 按需写入元数据描述符 URL
         config.put(IdentityProviderModel.METADATA_DESCRIPTOR_URL, from);
         return config;
     }
 
     /**
-     * List identity providers.
-     *
-     * @param search Filter to search specific providers by name. Search can be prefixed (name*), contains (*name*) or exact (\"name\"). Default prefixed.
-     * @param briefRepresentation Boolean which defines whether brief representations are returned (default: false)
-     * @param firstResult Pagination offset
-     * @param maxResults Maximum results size (defaults to 100)
-     * @return The list of providers.
+     * 分页列出身份提供者实例（支持类型/能力/名称/仅领域级过滤）。
+     * @param search 名称搜索（前缀/包含/精确）
+     * @param briefRepresentation 是否简要表示
+     * @param firstResult 分页偏移
+     * @param maxResults 最大条数
+     * @return IdP 表示流
      */
     @GET
     @Path("instances")
@@ -223,7 +235,7 @@ public class IdentityProvidersResource {
         this.auth.realm().requireViewIdentityProviders();
 
         if (maxResults == null) {
-            maxResults = 100; // always set a maximum of 100 by default
+            maxResults = 100; // 默认最多 100 条
         }
 
         Function<IdentityProviderModel, IdentityProviderRepresentation> toRepresentation = Optional.ofNullable(briefRepresentation).orElse(false)
@@ -252,10 +264,9 @@ public class IdentityProvidersResource {
     }
 
     /**
-     * Create a new identity provider
-     *
-     * @param representation JSON body
-     * @return
+     * 创建新身份提供者。
+     * @param representation IdP 表示
+     * @return 201 Created
      */
     @POST
     @Path("instances")
@@ -295,6 +306,10 @@ public class IdentityProvidersResource {
         }
     }
 
+    /** 按别名获取单个 IdP 子资源。
+     * @param alias IdP 别名
+     * @return {@link IdentityProviderResource}
+     */
     @Path("instances/{alias}")
     public IdentityProviderResource getIdentityProvider(@PathParam("alias") String alias) {
         this.auth.realm().requireViewIdentityProviders();
@@ -303,6 +318,7 @@ public class IdentityProvidersResource {
         return new IdentityProviderResource(this.auth, realm, session, identityProviderModel, adminEvent);
     }
 
+    /** 按 ID 查找身份提供者工厂 */
     private IdentityProviderFactory<?> getProviderFactoryById(String providerId) {
         return getProviderFactories()
                 .filter(providerFactory -> Objects.equals(providerId, providerFactory.getId()))
@@ -311,6 +327,7 @@ public class IdentityProvidersResource {
                 .orElse(null);
     }
 
+    /** 合并标准与社会化 IdP 提供者工厂流 */
     private Stream<ProviderFactory> getProviderFactories() {
         return Stream.concat(session.getKeycloakSessionFactory().getProviderFactoriesStream(IdentityProvider.class),
                 session.getKeycloakSessionFactory().getProviderFactoriesStream(SocialIdentityProvider.class));

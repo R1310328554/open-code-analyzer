@@ -49,17 +49,32 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 客户端范围评估——作用域映射子资源。
+ * <p>评估指定客户端在给定 scope 参数下对角色容器已授予/未授予的作用域映射。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientScopeEvaluateScopeMappingsResource {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 角色容器（领域或客户端） */
     private final RoleContainerModel roleContainer;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 被评估的客户端 */
     private final ClientModel client;
+    /** OIDC scope 参数字符串 */
     private final String scopeParam;
 
+    /** 构造作用域映射评估资源。
+     * @param session Keycloak 会话
+     * @param roleContainer 角色容器
+     * @param auth 权限评估器
+     * @param client 被评估客户端
+     * @param scopeParam scope 参数
+     */
     public ClientScopeEvaluateScopeMappingsResource(KeycloakSession session, RoleContainerModel roleContainer, AdminPermissionEvaluator auth, ClientModel client,
                                                     String scopeParam) {
         this.session = session;
@@ -70,12 +85,9 @@ public class ClientScopeEvaluateScopeMappingsResource {
     }
 
     /**
-     * Get effective scope mapping of all roles of particular role container, which this client is defacto allowed to have in the accessToken issued for him.
-     *
-     * This contains scope mappings, which this client has directly, as well as scope mappings, which are granted to all client scopes,
-     * which are linked with this client.
-     *
-     * @return
+     * 获取客户端在 access token 中实际可包含的角色（已授予作用域映射）。
+     * <p>含客户端直接映射及关联客户端范围上的映射。</p>
+     * @return 已授予角色表示流
      */
     @Path("/granted")
     @GET
@@ -93,10 +105,9 @@ public class ClientScopeEvaluateScopeMappingsResource {
     }
 
     /**
-     * Get roles, which this client doesn't have scope for and can't have them in the accessToken issued for him. Defacto all the
-     * other roles of particular role container, which are not in {@link #getGrantedScopeMappings()}
-     *
-     * @return
+     * 获取客户端在 access token 中不可包含的角色（未授予作用域映射）。
+     * <p>即角色容器中除 {@link #getGrantedScopeMappings()} 外的其余角色。</p>
+     * @return 未授予角色表示流
      */
     @Path("/not-granted")
     @GET
@@ -116,6 +127,7 @@ public class ClientScopeEvaluateScopeMappingsResource {
                 .map(ModelToRepresentation::toBriefRepresentation);
     }
 
+    /** 计算已授予角色流（考虑 full scope allowed 与客户端范围） */
     private Stream<RoleModel> getGrantedRoles(KeycloakSession session) {
         if (client.isFullScopeAllowed()) {
             return roleContainer.getRolesStream();

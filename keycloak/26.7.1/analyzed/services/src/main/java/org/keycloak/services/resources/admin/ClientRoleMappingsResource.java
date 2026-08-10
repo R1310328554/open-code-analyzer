@@ -62,25 +62,49 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 客户端级角色映射 REST 资源。
+ * <p>管理用户或组在特定客户端上的直接/复合/可用角色映射。</p>
+ *
  * @resource Client Role Mappings
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientRoleMappingsResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ClientRoleMappingsResource.class);
 
+    /** Keycloak 会话 */
     protected KeycloakSession session;
+    /** 当前领域 */
     protected RealmModel realm;
+    /** 细粒度权限评估器 */
     protected AdminPermissionEvaluator auth;
+    /** 角色映射主体（用户或组） */
     protected RoleMapperModel user;
+    /** 目标客户端 */
     protected ClientModel client;
+    /** 管理事件构建器 */
     protected AdminEventBuilder adminEvent;
+    /** 请求 URI 信息 */
     private UriInfo uriInfo;
+    /** 管理权限检查回调 */
     protected AdminPermissionEvaluator.RequirePermissionCheck managePermission;
+    /** 查看权限检查回调 */
     protected AdminPermissionEvaluator.RequirePermissionCheck viewPermission;
 
 
+    /** 构造客户端角色映射资源。
+     * @param uriInfo URI 信息
+     * @param session Keycloak 会话
+     * @param realm 当前领域
+     * @param auth 权限评估器
+     * @param user 角色映射主体
+     * @param client 目标客户端
+     * @param adminEvent 管理事件构建器
+     * @param manageCheck 管理权限检查
+     * @param viewCheck 查看权限检查
+     */
     public ClientRoleMappingsResource(UriInfo uriInfo, KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth,
                                       RoleMapperModel user, ClientModel client, AdminEventBuilder adminEvent,
                                       AdminPermissionEvaluator.RequirePermissionCheck manageCheck, AdminPermissionEvaluator.RequirePermissionCheck viewCheck ) {
@@ -96,9 +120,8 @@ public class ClientRoleMappingsResource {
     }
 
     /**
-     * Get client-level role mappings for the user, and the app
-     *
-     * @return
+     * 获取用户/组在该客户端上的直接角色映射。
+     * @return 角色简要表示流
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -112,13 +135,9 @@ public class ClientRoleMappingsResource {
     }
 
     /**
-     * Get effective client-level role mappings
-     *
-     * This recurses any composite roles
-     *
-     * @param briefRepresentation if false, return roles with their attributes
-     *
-     * @return
+     * 获取有效客户端级角色映射（递归展开复合角色）。
+     * @param briefRepresentation 为 false 时返回含属性的完整表示
+     * @return 角色表示流
      */
     @Path("composite")
     @GET
@@ -132,7 +151,7 @@ public class ClientRoleMappingsResource {
         Function<RoleModel, RoleRepresentation> toBriefRepresentation = briefRepresentation
                 ? ModelToRepresentation::toBriefRepresentation : ModelToRepresentation::toRepresentation;
 
-        // Pre-compute the full effective role set once (direct + group-inherited
+        // 预先计算完整有效角色集（直接 + 组继承），再按客户端过滤，避免 O(C*M*D) 的 hasRole 递归开销
         // roles for users, direct only for groups), then filter by client.
         // This avoids the O(C*M*D) cost of calling user.hasRole() per client
         // role, which recursively expands composites without memoization.
@@ -142,9 +161,8 @@ public class ClientRoleMappingsResource {
     }
 
     /**
-     * Get available client-level roles that can be mapped to the user or group
-     *
-     * @return
+     * 获取可映射但尚未分配的角色列表。
+     * @return 可用角色表示流
      */
     @Path("available")
     @GET
@@ -162,9 +180,8 @@ public class ClientRoleMappingsResource {
     }
 
     /**
-     * Add client-level roles to the user or group role mapping
-     *
-     * @param roles
+     * 为用户/组添加客户端级角色映射。
+     * @param roles 待添加角色列表
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -198,9 +215,8 @@ public class ClientRoleMappingsResource {
     }
 
     /**
-     * Delete client-level roles from user or group role mapping
-     *
-     * @param roles
+     * 删除用户/组的客户端级角色映射；roles 为 null 时删除全部。
+     * @param roles 待删除角色列表
      */
     @DELETE
     @Consumes(MediaType.APPLICATION_JSON)

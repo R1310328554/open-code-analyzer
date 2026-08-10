@@ -68,26 +68,41 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 领域组件（Component）管理 REST 资源。
+ * <p>管理用户联邦、密钥提供者等 SPI 组件的 CRUD 及子组件类型查询。</p>
+ *
  * @resource Component
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ComponentResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ComponentResource.class);
 
+    /** 当前领域 */
     protected final RealmModel realm;
 
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
 
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** 客户端连接信息 */
     protected final ClientConnection clientConnection;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** HTTP 请求头 */
     protected final HttpHeaders headers;
 
+    /** 构造组件资源。
+     * @param session Keycloak 会话
+     * @param auth 权限评估器
+     * @param adminEvent 管理事件构建器
+     */
     public ComponentResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -102,6 +117,14 @@ public class ComponentResource {
     @NoCache
     @Tag(name = KeycloakOpenAPI.Admin.Tags.COMPONENT)
     @Operation()
+    /**
+     * 按父 ID、类型、名称或 providerId 过滤列出组件。
+     * @param parent 父组件 ID
+     * @param type 提供者类型
+     * @param name 组件名称
+     * @param providerId 提供者 ID
+     * @return 组件表示流
+     */
     public Stream<ComponentRepresentation> getComponents(@QueryParam("parent") String parent,
                                                        @QueryParam("type") String type,
                                                        @QueryParam("name") String name,
@@ -137,6 +160,10 @@ public class ComponentResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Tag(name = KeycloakOpenAPI.Admin.Tags.COMPONENT)
     @Operation()
+    /** 创建新组件。
+     * @param rep 组件表示
+     * @return 201 Created
+     */
     public Response create(ComponentRepresentation rep) {
         auth.realm().requireManageRealm();
         try {
@@ -161,6 +188,10 @@ public class ComponentResource {
     @NoCache
     @Tag(name = KeycloakOpenAPI.Admin.Tags.COMPONENT)
     @Operation()
+    /** 按 ID 获取组件详情。
+     * @param id 组件 ID
+     * @return 组件表示
+     */
     public ComponentRepresentation getComponent(@PathParam("id") String id) {
         auth.realm().requireViewRealm();
         ComponentModel model = realm.getComponent(id);
@@ -176,6 +207,11 @@ public class ComponentResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Tag(name = KeycloakOpenAPI.Admin.Tags.COMPONENT)
     @Operation()
+    /** 更新组件配置。
+     * @param id 组件 ID
+     * @param rep 新配置
+     * @return 204 No Content
+     */
     public Response updateComponent(@PathParam("id") String id, ComponentRepresentation rep) {
         auth.realm().requireManageRealm();
         try {
@@ -198,6 +234,9 @@ public class ComponentResource {
     @Path("{id}")
     @Tag(name = KeycloakOpenAPI.Admin.Tags.COMPONENT)
     @Operation()
+    /** 删除组件。
+     * @param id 组件 ID
+     */
     public void removeComponent(@PathParam("id") String id) {
         auth.realm().requireManageRealm();
         ComponentModel model = realm.getComponent(id);
@@ -209,6 +248,7 @@ public class ComponentResource {
         realm.removeComponent(model);
     }
 
+    /** 将组件校验异常本地化为 BAD_REQUEST 错误响应 */
     private Response localizedErrorResponse(ComponentValidationException cve) {
         Properties messages = AdminRoot.getMessages(session, realm, auth.adminAuth().getToken().getLocale(), "admin-messages", "messages");
 
@@ -228,11 +268,10 @@ public class ComponentResource {
     }
 
     /**
-     * List of subcomponent types that are available to configure for a particular parent component.
-     *
-     * @param parentId
-     * @param subtype
-     * @return
+     * 列出指定父组件下可配置的子组件类型。
+     * @param parentId 父组件 ID
+     * @param subtype 子组件提供者类名
+     * @return 组件类型表示流
      */
     @GET
     @Path("{id}/sub-component-types")
@@ -262,6 +301,7 @@ public class ComponentResource {
             .map(factory -> toComponentTypeRepresentation(factory, parent));
     }
 
+    /** 判断组件是否由内部 API 管理（不可通过此端点操作） */
     private boolean isInternalComponent(String providerType, String providerId) {
         try {
             Class<? extends Provider> providerClass = session.getProviderClass(providerType);
@@ -273,12 +313,14 @@ public class ComponentResource {
         }
     }
 
+    /** 拒绝操作内部组件 */
     private void rejectInternalComponent(String providerType, String providerId) {
         if (isInternalComponent(providerType, providerId)) {
             throw new ForbiddenException("Components managed through internal APIs cannot be managed through the component endpoint");
         }
     }
 
+    /** 将提供者工厂转换为组件类型表示（含配置属性） */
     private ComponentTypeRepresentation toComponentTypeRepresentation(ProviderFactory factory, ComponentModel parent) {
         ComponentTypeRepresentation rep = new ComponentTypeRepresentation();
         rep.setId(factory.getId());

@@ -74,7 +74,8 @@ import static java.lang.Boolean.TRUE;
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
 /**
- * Base resource class for managing a realm's clients.
+ * 领域客户端集合 REST 资源。
+ * <p>列出、搜索、创建客户端，并路由到单个客户端子资源。</p>
  *
  * @resource Clients
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -82,13 +83,23 @@ import static org.keycloak.utils.StreamsUtil.paginatedStream;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientsResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ClientsResource.class);
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 构造客户端集合资源。
+     * @param session Keycloak 会话
+     * @param auth 权限评估器
+     * @param adminEvent 管理事件构建器
+     */
     public ClientsResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -98,17 +109,12 @@ public class ClientsResource {
     }
 
     /**
-     * Get clients belonging to the realm.
-     *
-     * If a client can't be retrieved from the storage due to a problem with the underlying storage,
-     * it is silently removed from the returned list.
-     * This ensures that concurrent modifications to the list don't prevent callers from retrieving this list.
-     *
-     * @param clientId filter by clientId
-     * @param viewableOnly filter clients that cannot be viewed in full by admin
-     * @param search whether this is a search query or a getClientById query
-     * @param firstResult the first result
-     * @param maxResults the max results to return
+     * 获取领域客户端列表（存储异常客户端静默过滤）。
+     * @param clientId 按 clientId 过滤
+     * @param viewableOnly 仅返回管理员可完整查看的客户端
+     * @param search 是否为搜索模式
+     * @param firstResult 分页偏移
+     * @param maxResults 最大返回数
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -130,6 +136,7 @@ public class ClientsResource {
                 });
     }
 
+    /** 内部：按条件查询客户端模型流 */
     public Stream<ClientModel> getClientModels(String clientId,
             boolean viewableOnly,
             boolean search,
@@ -178,17 +185,15 @@ public class ClientsResource {
         return s;
     }
 
+    /** 获取客户端授权服务子资源 */
     private AuthorizationService getAuthorizationService(ClientModel clientModel) {
         return new AuthorizationService(session, clientModel, auth, adminEvent);
     }
 
     /**
-     * Create a new client
-     *
-     * Client's client_id must be unique!
-     *
-     * @param rep
-     * @return
+     * 创建新客户端（client_id 须唯一）。
+     * @param rep 客户端表示
+     * @return 201 Created
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -203,6 +208,10 @@ public class ClientsResource {
         return Response.created(session.getContext().getUri().getAbsolutePathBuilder().path(created.getId()).build()).build();
     }
 
+    /** 创建客户端模型（含服务账号、授权服务、客户端策略与校验）。
+     * @param rep 客户端表示
+     * @return 已创建客户端模型
+     */
     public ClientModel createClientModel(final ClientRepresentation rep) {
         auth.clients().requireManage();
 
@@ -254,17 +263,16 @@ public class ClientsResource {
     }
 
     /**
-     * Base path for managing a specific client.
-     *
-     * @param id id of client (not client-id)
-     * @return
+     * 获取单个客户端子资源。
+     * @param id 客户端 UUID（非 client-id）
+     * @return {@link ClientResource}
      */
     @Path("{client-uuid}")
     public ClientResource getClient(final @PathParam("client-uuid") @Parameter(description = "id of client (not client-id!)") String id) {
 
         ClientModel clientModel = realm.getClientById(id);
         if (clientModel == null) {
-            // we do this to make sure somebody can't phish ids
+            // 防止通过 ID 探测客户端是否存在
             if (auth.clients().canList()) throw new NotFoundException("Could not find client");
             else throw new ForbiddenException();
         }

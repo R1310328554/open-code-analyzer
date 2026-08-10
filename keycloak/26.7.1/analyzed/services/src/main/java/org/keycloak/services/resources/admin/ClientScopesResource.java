@@ -56,7 +56,8 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Base resource class for managing a realm's client scopes.
+ * 领域客户端范围（Client Scopes）集合 REST 资源。
+ * <p>列出、创建客户端范围，并路由到单个范围子资源。</p>
  *
  * @resource Client Scopes
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -64,13 +65,23 @@ import org.jboss.resteasy.reactive.NoCache;
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class ClientScopesResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ClientScopesResource.class);
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 细粒度权限评估器 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器 */
     private final AdminEventBuilder adminEvent;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 构造客户端范围集合资源。
+     * @param session Keycloak 会话
+     * @param auth 权限评估器
+     * @param adminEvent 管理事件构建器
+     */
     public ClientScopesResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -78,11 +89,7 @@ public class ClientScopesResource {
         this.adminEvent = adminEvent.resource(ResourceType.CLIENT_SCOPE);
     }
 
-    /**
-     * Get client scopes belonging to the realm
-     *
-     * Returns a list of client scopes belonging to the realm
-     */
+    /** 获取领域下所有客户端范围列表。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @NoCache
@@ -101,12 +108,9 @@ public class ClientScopesResource {
     }
 
     /**
-     * Create a new client scope
-     *
-     * Client Scope's name must be unique!
-     *
-     * @param rep
-     * @return
+     * 创建新客户端范围（名称须唯一）。
+     * @param rep 客户端范围表示
+     * @return 201 Created
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -140,10 +144,9 @@ public class ClientScopesResource {
     }
 
     /**
-     * Base path for managing a specific client scope.
-     *
-     * @param id id of client scope (not name)
-     * @return
+     * 获取单个客户端范围子资源。
+     * @param id 客户端范围 ID（非名称）
+     * @return {@link ClientScopeResource}
      */
     @Path("{client-scope-id}")
     @NoCache
