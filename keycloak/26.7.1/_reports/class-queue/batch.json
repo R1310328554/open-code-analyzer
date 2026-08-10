@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:41:57Z",
-  "files": [
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/AdvancedClaimToRoleMapper.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/ClaimToRoleMapper.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/ClaimToUserSessionNoteMapper.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/ExternalKeycloakRoleToRoleMapper.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/UserAttributeMapper.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/UsernameTemplateMapper.java",
-    "services/src/main/java/org/keycloak/broker/provider/HardcodedAttributeMapper.java",
-    "services/src/main/java/org/keycloak/broker/provider/HardcodedGroupMapper.java",
-    "services/src/main/java/org/keycloak/broker/provider/HardcodedRoleMapper.java",
-    "services/src/main/java/org/keycloak/broker/provider/HardcodedUserSessionAttributeMapper.java",
-    "services/src/main/java/org/keycloak/broker/provider/IdpLinkAction.java",
-    "services/src/main/java/org/keycloak/broker/provider/TrustMaterialResolver.java",
-    "services/src/main/java/org/keycloak/broker/saml/SAMLDataMarshaller.java",
-    "services/src/main/java/org/keycloak/broker/saml/SAMLEndpoint.java",
-    "services/src/main/java/org/keycloak/broker/saml/SAMLIdentityProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1978,
-  "done": 4005
+  "done": 4020
 }
