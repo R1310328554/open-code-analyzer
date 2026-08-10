@@ -20,6 +20,7 @@ package org.keycloak.quarkus.deployment;
 import io.quarkus.builder.item.EmptyBuildItem;
 
 /**
+ * {@link org.keycloak.quarkus.runtime.integration.QuarkusKeycloakSessionFactory} 预初始化完成后的符号构建项，供其他构建步骤消费。
  * A symbolic build item that can be consumed by other build steps when the {@link org.keycloak.quarkus.runtime.integration.QuarkusKeycloakSessionFactory}
  * is pre-initialized.
  */

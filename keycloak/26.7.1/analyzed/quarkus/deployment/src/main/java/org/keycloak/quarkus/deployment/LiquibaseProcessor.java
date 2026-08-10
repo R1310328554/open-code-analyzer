@@ -29,10 +29,19 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+
+/**
+ * Liquibase 服务实现类索引与运行时配置的 Quarkus 构建处理器。
+ */
 import static org.keycloak.quarkus.deployment.KeycloakProcessor.getDefaultDataSource;
 
+
+/**
+ * Liquibase 服务实现类索引与运行时配置的 Quarkus 构建处理器。
+ */
 class LiquibaseProcessor {
 
+    /** 扫描 Jandex 索引并配置 Liquibase 服务实现列表。 */
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void configure(KeycloakRecorder recorder, List<JdbcDataSourceBuildItem> jdbcDataSources, CombinedIndexBuildItem indexBuildItem) {
@@ -81,9 +90,11 @@ class LiquibaseProcessor {
         recorder.configureLiquibase(services);
     }
 
+    /** 按当前数据库类型过滤 Liquibase Database 实现类。 */
+    /** 按当前数据库类型过滤 Liquibase Database 实现类。 */
     private void filterImplementations(Class<?> types, String dbKind, Set<ClassInfo> classes) {
         if (Database.class.equals(types)) {
-            // removes unsupported databases
+            // 移除当前数据库类型不支持的 Liquibase Database 实现
             classes.removeIf(classInfo -> !org.keycloak.config.database.Database.isLiquibaseDatabaseSupported(classInfo.name().toString(), dbKind));
         }
     }

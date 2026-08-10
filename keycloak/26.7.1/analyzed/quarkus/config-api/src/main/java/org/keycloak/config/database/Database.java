@@ -34,10 +34,20 @@ import org.keycloak.config.Option;
 
 import io.quarkus.runtime.util.StringUtil;
 
+
+/**
+ * Keycloak 支持的数据库厂商元数据：驱动、方言、默认 JDBC URL 与 Liquibase 类型映射。
+ */
 import static java.util.Arrays.asList;
 
+
+/**
+ * Keycloak 支持的数据库厂商元数据：驱动、方言、默认 JDBC URL 与 Liquibase 类型映射。
+ */
 public final class Database {
     
+    /** 数据库别名到 {@link Vendor} 的查找表。 */
+    /** 数据库别名到 {@link Vendor} 的查找表。 */
     private static final Map<String, Vendor> DATABASES = new HashMap<>();
 
     static {
@@ -48,6 +58,8 @@ public final class Database {
         }
     }
 
+    /** 判断给定 Liquibase 数据库类型是否与当前 db-kind 兼容。 */
+    /** 判断给定 Liquibase 数据库类型是否与当前 db-kind 兼容。 */
     public static boolean isLiquibaseDatabaseSupported(String databaseType, String dbKind) {
         for (Vendor vendor : DATABASES.values()) {
             if (vendor.liquibaseType.equals(databaseType) && vendor.isOfKind(dbKind)) {
@@ -58,37 +70,53 @@ public final class Database {
         return false;
     }
 
+    /** 按厂商名或别名解析 {@link Vendor}。 */
+    /** 按厂商名或别名解析 {@link Vendor}。 */
     public static Optional<Vendor> getVendor(String vendor) {
         return Arrays.stream(Vendor.values())
                 .filter(v -> v.isOfKind(vendor) || asList(v.aliases).contains(vendor))
                 .findAny();
     }
 
+    /** 返回别名对应的 Quarkus db-kind 字符串。 */
+    /** 返回别名对应的 Quarkus db-kind 字符串。 */
     public static Optional<String> getDatabaseKind(String alias) {
         return mapValue(alias, vendor -> vendor.databaseKind);
     }
 
     /**
      * The {@param namedProperty} represents name of the named datasource if we need to set the URL for additional datasource
+ * 其中 {@param namedProperty} 表示命名数据源名称，用于为附加数据源生成 JDBC URL。
+
      */
+    /** 按配置选项与别名生成默认 JDBC URL。 */
+    /** 按配置选项与别名生成默认 JDBC URL。 */
     public static Optional<String> getDefaultUrl(Function<Option<?>, String> getter, String namedProperty, String alias) {
         return getVendor(alias).map(f -> f.defaultUrl.apply(getter, namedProperty, alias));
     }
 
+    /** 返回 XA 或非 XA JDBC 驱动类名。 */
+    /** 返回 XA 或非 XA JDBC 驱动类名。 */
     public static Optional<String> getDriver(String alias, boolean isXaEnabled) {
         return mapValue(alias, vendor -> isXaEnabled ? vendor.xaDriver : vendor.nonXaDriver);
     }
 
+    /** 返回 Hibernate 方言类名。 */
+    /** 返回 Hibernate 方言类名。 */
     public static Optional<String> getDialect(String alias) {
         return mapValue(alias, vendor -> vendor.dialect.apply(alias));
     }
 
+    /** 解析别名后对 Vendor 应用映射函数。 */
+    /** 解析别名后对 Vendor 应用映射函数。 */
     private static <T> Optional<T> mapValue(String alias, Function<Vendor, T> mapper) {
         return getVendor(alias).map(mapper);
     }
 
     /**
      * @return List of aliases of databases
+ * @return 所有已注册数据库别名列表
+
      */
     public static List<String> getDatabaseAliases() {
         return DATABASES.keySet()
@@ -97,6 +125,8 @@ public final class Database {
                 .collect(Collectors.toList());
     }
 
+    /** 支持的数据库厂商枚举，含驱动、方言、默认 URL 与 Liquibase 类型。 */
+    /** 支持的数据库厂商枚举，含驱动、方言、默认 URL 与 Liquibase 类型。 */
     public enum Vendor {
         H2("h2",
                 "org.h2.jdbcx.JdbcDataSource",
@@ -138,7 +168,7 @@ public final class Database {
 
                     private String escapeReplacements(String snippet) {
                         if (File.separator.equals("\\")) {
-                            // SmallRye will do replacements of "${...}", but a "\" must not escape such an expression.
+                            // SmallRye 会替换 "${...}"，反斜杠不得转义该表达式；Windows 下将 \ 替换为 /
                             // As we nest multiple expressions, and each nested expression must re-escape the backslashes,
                             // the simplest way is to replace a backslash with a slash, as those are processed nicely on Windows.
                             return snippet.replace("\\", "/");
@@ -252,6 +282,8 @@ public final class Database {
             this.aliases = aliases.length == 0 ? new String[]{databaseKind} : aliases;
         }
 
+        /** 判断是否与给定 Quarkus db-kind 匹配。 */
+        /** 判断是否与给定 Quarkus db-kind 匹配。 */
         public boolean isOfKind(String dbKind) {
             return databaseKind.equals(dbKind);
         }
@@ -264,6 +296,8 @@ public final class Database {
             return Optional.ofNullable(getter.apply(option)).orElse(defaultValue);
         }
 
+        /** @return Liquibase Database 实现类全限定名 */
+        /** @return Liquibase Database 实现类全限定名 */
         public String getLiquibaseType() {
             return liquibaseType;
         }
@@ -275,6 +309,8 @@ public final class Database {
         
         /**
          * Starting with H2 version 2.x, marking "VALUE" as a non-keyword is necessary as some columns are named "VALUE" in the Keycloak schema.
+ * 自 H2 2.x 起，须将 VALUE 标记为非关键字，因 Keycloak 模式中部分列名为 VALUE。
+
          * <p />
          * Alternatives considered and rejected:
          * <ul>
@@ -293,6 +329,8 @@ public final class Database {
         
         /**
          * Required so that the H2 db instance is closed only when the Agroal connection pool is closed during
+ * 确保 H2 实例仅在 Keycloak 关闭且 Agroal 连接池关闭后才关闭，
+
          * Keycloak shutdown. We cannot rely on the default H2 ShutdownHook as this can result in the DB being
          * closed before dependent resources, e.g. JDBC_PING2, are shutdown gracefully. This solution also
          * requires the Agroal min-pool connection size to be at least 1.

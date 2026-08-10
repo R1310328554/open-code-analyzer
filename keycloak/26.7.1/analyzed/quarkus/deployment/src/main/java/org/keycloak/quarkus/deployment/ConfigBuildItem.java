@@ -20,6 +20,7 @@ package org.keycloak.quarkus.deployment;
 import io.quarkus.builder.item.EmptyBuildItem;
 
 /**
+ * Keycloak 配置初始化完成后的屏障构建项，供其他构建步骤消费以确定执行顺序。
  * A barrier build item that can be consumed by other build steps when Keycloak configurations is initialized
  */
 public final class ConfigBuildItem extends EmptyBuildItem {

@@ -20,6 +20,7 @@ package org.keycloak.quarkus.deployment;
 import io.quarkus.builder.item.EmptyBuildItem;
 
 /**
+ * JDBC 驱动校验完成后的屏障构建项，供其他构建步骤消费以确定执行顺序。
  * A barrier build item that can be consumed by other build steps when JDBC Driver is checked
  */
 public class CheckJdbcBuildStep extends EmptyBuildItem {

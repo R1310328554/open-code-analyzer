@@ -17,9 +17,17 @@
 
 package org.keycloak.quarkus.deployment;
 
+
+/**
+ * 多数据源 XA 事务配置校验完成后的屏障构建项。
+ *
+ * @author Vaclav Muzikar <vmuzikar@redhat.com>
+ */
 import io.quarkus.builder.item.EmptyBuildItem;
 
 /**
+ * 多数据源 XA 事务配置校验完成后的屏障构建项。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class CheckMultipleDatasourcesBuildStep extends EmptyBuildItem {}

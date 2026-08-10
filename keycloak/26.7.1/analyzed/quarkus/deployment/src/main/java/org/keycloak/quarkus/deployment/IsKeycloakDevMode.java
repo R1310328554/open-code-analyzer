@@ -19,10 +19,19 @@ package org.keycloak.quarkus.deployment;
 
 import java.util.function.BooleanSupplier;
 
+
+/**
+ * Quarkus 构建条件：当前是否处于 Keycloak 开发模式。
+ */
 import org.keycloak.quarkus.runtime.Environment;
 
+
+/**
+ * Quarkus 构建条件：当前是否处于 Keycloak 开发模式。
+ */
 public class IsKeycloakDevMode implements BooleanSupplier {
 
+    /** {@inheritDoc} 委托 {@link Environment#isDevMode()} 判断。 */
     @Override
     public boolean getAsBoolean() {
         return Environment.isDevMode();
