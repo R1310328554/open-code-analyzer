@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Sts credential holder.
+ * <p>STS 临时凭证单例持有者：按 {@link StsConfig} 决定是否缓存、何时刷新，从静态 JSON 或元数据 HTTP 拉取并反序列化为 {@link StsCredential}。</p>
  *
  * @author xiweng.yy
  */
@@ -36,8 +37,10 @@ public class StsCredentialHolder {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(StsCredentialHolder.class);
     
+    /** 全局单例实例 */
     private static final StsCredentialHolder INSTANCE = new StsCredentialHolder();
     
+    /** 内存缓存的 STS 凭证（启用缓存时复用） */
     private StsCredential stsCredential;
     
     private StsCredentialHolder() {
@@ -49,6 +52,7 @@ public class StsCredentialHolder {
     
     /**
      * Get Sts Credential.
+     * <p>获取有效 STS 凭证：缓存命中且未临近过期则直接返回，否则拉取最新响应并更新缓存。</p>
      *
      * @return StsCredential
      */
@@ -73,6 +77,7 @@ public class StsCredentialHolder {
         return stsCredential;
     }
     
+    /** 从静态配置或元数据 URL 获取 STS JSON 原始响应 */
     private static String getStsResponse() {
         String securityCredentials = StsConfig.getInstance().getSecurityCredentials();
         if (securityCredentials != null) {

@@ -22,6 +22,7 @@ import com.alibaba.nacos.plugin.auth.api.RequestResource;
 
 /**
  * Abstract aliyun RAM resource injector.
+ * <p>阿里云 RAM 资源注入器抽象基类：各模块（配置/命名/锁/AI）子类在 {@link #doInject} 中将 AK/SK、签名头或 STS Token 写入 {@link LoginIdentityContext}。</p>
  *
  * @author xiweng.yy
  */
@@ -29,6 +30,7 @@ public abstract class AbstractResourceInjector {
     
     /**
      * Generate and inject resource into context. Default impl will do nothing.
+     * <p>根据请求资源与 RAM 上下文生成鉴权参数并注入结果上下文；基类默认空实现。</p>
      *
      * @param resource request resource
      * @param context  ram context

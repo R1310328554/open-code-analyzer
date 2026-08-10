@@ -29,21 +29,28 @@ import java.util.Map;
 
 /**
  * adapt spas interface.
+ * <p>SPAS 签名适配器：根据资源串（tenant+group 等）与时间戳生成 Timestamp/Spas-Signature 请求头，并从 {@link com.alibaba.nacos.client.auth.ram.identify.CredentialService} 读取本地 AK/SK。</p>
  *
  * @author Nacos
  */
 public class SpasAdapter {
     
+    /** Spas 签名时间戳请求头名 */
     private static final String TIMESTAMP_HEADER = "Timestamp";
     
+    /** Spas HMAC 签名请求头名 */
     private static final String SIGNATURE_HEADER = "Spas-Signature";
     
+    /** 参数 Map 中 group 键名 */
     private static final String GROUP_KEY = "group";
     
+    /** 参数 Map 中 tenant 键名 */
     public static final String TENANT_KEY = "tenant";
     
+    /** HMAC-SHA1 算法标识 */
     private static final String SHA_ENCRYPT = "HmacSHA1";
     
+    /** 按资源串与密钥生成 Timestamp + Spas-Signature 头；resource 为空时仅签时间戳 */
     public static Map<String, String> getSignHeaders(String resource, String secretKey) {
         Map<String, String> header = new HashMap<>(2);
         String timeStamp = String.valueOf(System.currentTimeMillis());
@@ -60,6 +67,7 @@ public class SpasAdapter {
         return header;
     }
     
+    /** 按 group/tenant 组合资源串后生成签名头；两者皆空返回 null */
     public static Map<String, String> getSignHeaders(String groupKey, String tenant,
         String secretKey) {
         if (StringUtils.isBlank(groupKey) && StringUtils.isBlank(tenant)) {
@@ -77,6 +85,7 @@ public class SpasAdapter {
         return getSignHeaders(resource, secretKey);
     }
     
+    /** 从参数 Map 提取 tenant/group 构造资源串并生成签名头 */
     public static Map<String, String> getSignHeaders(Map<String, String> paramValues,
         String secretKey) {
         if (null == paramValues) {
@@ -94,20 +103,24 @@ public class SpasAdapter {
         return getSignHeaders(resource, secretKey);
     }
     
+    /** 从 CredentialService 获取 SecretKey */
     public static String getSk() {
         return CredentialService.getInstance().getCredential().getSecretKey();
     }
     
+    /** 从 CredentialService 获取 AccessKey */
     public static String getAk() {
         return CredentialService.getInstance().getCredential().getAccessKey();
     }
     
+    /** 释放 CredentialService 单例，便于测试或热更新凭证 */
     public static void freeCredentialInstance() {
         CredentialService.freeInstance();
     }
     
     /**
      * Sign with hmac SHA1 encrtpt.
+     * <p>使用 HmacSHA1 对明文签名并 Base64 编码。</p>
      *
      * @param encryptText encrypt text
      * @param encryptKey  encrypt key
@@ -116,15 +129,15 @@ public class SpasAdapter {
     public static String signWithHmacSha1Encrypt(String encryptText, String encryptKey) {
         try {
             byte[] data = encryptKey.getBytes(Constants.ENCODE);
-            // Construct a key according to the given byte array, and the second parameter specifies the name of a key algorithm
+            // 根据密钥字节与算法名构造 SecretKeySpec
             SecretKey secretKey = new SecretKeySpec(data, SHA_ENCRYPT);
-            // Generate a Mac object specifying Mac algorithm
+            // 获取指定 HMAC 算法的 Mac 实例
             Mac mac = Mac.getInstance(SHA_ENCRYPT);
-            // Initialize the Mac object with the given key
+            // 使用密钥初始化 Mac
             mac.init(secretKey);
             byte[] text = encryptText.getBytes(Constants.ENCODE);
             byte[] textFinal = mac.doFinal(text);
-            // Complete Mac operation, base64 encoding, convert byte array to string
+            // 完成 HMAC 计算并 Base64 编码为字符串
             return new String(Base64.encodeBase64(textFinal), Constants.ENCODE);
         } catch (Exception e) {
             throw new RuntimeException("signWithhmacSHA1Encrypt fail", e);

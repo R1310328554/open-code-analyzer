@@ -18,6 +18,7 @@ package com.alibaba.nacos.client.auth.ram.identify;
 
 /**
  * Spas Credential Loader.
+ * <p>SPAS 凭证加载器 SPI：从本地文件、环境变量或自定义来源解析 {@link SpasCredential}，由 {@link CredentialService} 统一调度。</p>
  *
  * @author Nacos
  */
@@ -25,6 +26,7 @@ public interface SpasCredentialLoader {
     
     /**
      * get Credential.
+     * <p>加载并返回当前可用的 SPAS 凭证实例。</p>
      *
      * @return Credential
      */

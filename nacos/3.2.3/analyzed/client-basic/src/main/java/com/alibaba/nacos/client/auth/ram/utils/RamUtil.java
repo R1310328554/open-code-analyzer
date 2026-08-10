@@ -25,11 +25,13 @@ import java.util.Properties;
 
 /**
  * Util to get ram info, such as AK, SK and RAM role.
+ * <p>RAM 凭证读取工具：优先从 {@link java.util.Properties} 取 AK/SK；开启 RAM 信息解析且属性为空时回退 {@link SpasAdapter} 本地凭证。</p>
  *
  * @author xiweng.yy
  */
 public class RamUtil {
     
+    /** 从属性或 SPAS 解析 AccessKey */
     public static String getAccessKey(Properties properties) {
         boolean isUseRamInfoParsing = Boolean.parseBoolean(properties
             .getProperty(PropertyKeyConst.IS_USE_RAM_INFO_PARSING,
@@ -43,6 +45,7 @@ public class RamUtil {
         return result;
     }
     
+    /** 从属性或 SPAS 解析 SecretKey */
     public static String getSecretKey(Properties properties) {
         boolean isUseRamInfoParsing = Boolean.parseBoolean(properties
             .getProperty(PropertyKeyConst.IS_USE_RAM_INFO_PARSING,

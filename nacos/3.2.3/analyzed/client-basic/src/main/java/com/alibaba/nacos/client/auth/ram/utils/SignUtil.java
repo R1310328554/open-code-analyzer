@@ -25,16 +25,19 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Sign util.
+ * <p>HMAC 签名工具：对字符串或字节数组使用 HmacSHA1 计算摘要并 Base64 编码，供 Naming 模块 RAM 鉴权等场景使用。</p>
  *
  * @author pbting
  * @date 2019-01-22 10:20 PM
  */
 public class SignUtil {
     
+    /** 签名计算默认字符集 UTF-8 */
     private static final Charset UTF8 = StandardCharsets.UTF_8;
     
     /**
      * Sign.
+     * <p>使用 HmacSHA1 对 data 签名，返回 Base64 字符串。</p>
      *
      * @param data data
      * @param key  key
@@ -51,6 +54,7 @@ public class SignUtil {
         }
     }
     
+    /** 底层 HMAC 字节签名 */
     static byte[] sign(byte[] data, byte[] key, SignUtil.SigningAlgorithm algorithm)
         throws Exception {
         try {
@@ -64,7 +68,7 @@ public class SignUtil {
     
     public enum SigningAlgorithm {
         
-        // Hmac SHA1 algorithm
+        /** HmacSHA1 算法枚举值 */
         HmacSHA1;
         
         SigningAlgorithm() {

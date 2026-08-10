@@ -32,15 +32,19 @@ import java.util.Map;
 
 /**
  * Resource Injector for naming module.
+ * <p>配置中心模块 RAM 资源注入器：注入 AccessKey、STS Token、V4 签名版本及 Spas 签名头；资源串按 tenant/group 组合规则构造。</p>
  *
  * @author xiweng.yy
  */
 public class ConfigResourceInjector extends AbstractResourceInjector {
     
+    /** 请求头：Spas AccessKey 字段名 */
     private static final String ACCESS_KEY_HEADER = "Spas-AccessKey";
     
+    /** tenant 与 group 均为空时的默认资源串 */
     private static final String DEFAULT_RESOURCE = "";
     
+    /** 注入配置模块 RAM 鉴权参数；AK/SK 均非空时才写入 AccessKey 头 */
     @Override
     public void doInject(RequestResource resource, RamContext context,
         LoginIdentityContext result) {
@@ -70,6 +74,7 @@ public class ConfigResourceInjector extends AbstractResourceInjector {
         result.setParameters(signHeaders);
     }
     
+    /** 按 tenant/group 组合规则生成 Spas 资源标识 */
     private String getResource(String tenant, String group) {
         if (StringUtils.isBlank(tenant)) {
             if (StringUtils.isBlank(group)) {

@@ -27,14 +27,17 @@ import com.alibaba.nacos.plugin.auth.api.RequestResource;
 
 /**
  * lock resource injector.
+ * <p>分布式锁模块 RAM 资源注入器：仅注入 AccessKey（ak 字段）与 STS SecurityToken，不生成 Spas 签名头，适用于锁服务轻量鉴权场景。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/9/17 1:10
  */
 public class LockResourceInjector extends AbstractResourceInjector {
     
+    /** 登录上下文中 AccessKey 参数字段名 */
     private static final String AK_FIELD = "ak";
     
+    /** 注入锁模块 AK 与 STS Token；AK/SK 均有效时才写入 ak 参数 */
     @Override
     public void doInject(RequestResource resource, RamContext context,
         LoginIdentityContext result) {

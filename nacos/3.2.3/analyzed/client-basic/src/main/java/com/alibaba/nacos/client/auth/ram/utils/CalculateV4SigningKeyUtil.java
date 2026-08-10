@@ -30,20 +30,26 @@ import java.util.Base64;
 
 /**
  * CalculateV4SigningKeyUtil.
+ * <p>阿里云 V4 签名派生密钥工具：按 aliyun_v4 规范对 Secret 做多轮 HMAC-SHA256 派生，输出 Base64 编码的最终签名密钥，供 MSE/Nacos RAM V4 鉴权使用。</p>
  *
  * @author xiweng.yy
  */
 public class CalculateV4SigningKeyUtil {
     
+    /** V4 签名密钥派生前缀 */
     private static final String PREFIX = "aliyun_v4";
     
+    /** V4 派生链最后一轮 HMAC 的固定 payload */
     private static final String CONSTANT = "aliyun_v4_request";
     
+    /** UTC 日期格式化器，格式 yyyyMMdd */
     private static final DateTimeFormatter V4_SIGN_DATE_FORMATTER =
         DateTimeFormatter.ofPattern("yyyyMMdd");
     
+    /** V4 签名使用的 UTC 时区 */
     private static final ZoneId UTC_0 = ZoneId.of("GMT+00:00");
     
+    /** 第一轮派生：HMAC(PREFIX+secret, date) */
     private static byte[] firstSigningKey(String secret, String date, String signMethod)
         throws NoSuchAlgorithmException, InvalidKeyException {
         Mac mac = Mac.getInstance(signMethod);
@@ -51,6 +57,7 @@ public class CalculateV4SigningKeyUtil {
         return mac.doFinal(date.getBytes(StandardCharsets.UTF_8));
     }
     
+    /** 第二轮派生：HMAC(firstKey, region) */
     private static byte[] regionSigningKey(String secret, String date, String region,
         String signMethod)
         throws NoSuchAlgorithmException, InvalidKeyException {
@@ -60,6 +67,7 @@ public class CalculateV4SigningKeyUtil {
         return mac.doFinal(region.getBytes(StandardCharsets.UTF_8));
     }
     
+    /** 第三、四轮派生：经 productCode 与 aliyun_v4_request 得到最终签名密钥字节 */
     private static byte[] finalSigningKey(String secret, String date, String region,
         String productCode,
         String signMethod) {
@@ -81,6 +89,7 @@ public class CalculateV4SigningKeyUtil {
     
     /**
      * Return V4 signature key with base64 encode.
+     * <p>按完整参数派生 V4 签名密钥并 Base64 编码返回。</p>
      *
      * @param secret      secret key
      * @param date        date  with utc format, like 20211222
@@ -98,6 +107,7 @@ public class CalculateV4SigningKeyUtil {
     
     /**
      * Return V4 signature key with base64 encode for some default information.
+     * <p>使用当前 UTC 日期、产品码 mse 与 HMAC-SHA256 的便捷派生入口。</p>
      *
      * <li>
      *     <ul>date = current date</ul>

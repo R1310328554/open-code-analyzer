@@ -32,13 +32,16 @@ import java.util.Map;
 
 /**
  * AI module aliyun ram reousce injector.
+ * <p>AI 模块 RAM 资源注入器：校验 {@link RamContext} 后注入 AccessKey、STS Token、V4 签名版本及 {@link SpasAdapter} 生成的 Spas 签名头；资源串为 namespace+group。</p>
  *
  * @author xiweng.yy
  */
 public class AiResourceInjector extends AbstractResourceInjector {
     
+    /** 请求头：Spas AccessKey 字段名 */
     private static final String ACCESS_KEY_HEADER = "Spas-AccessKey";
     
+    /** 注入 AI 模块 RAM 鉴权参数：STS 优先、可选 V4 派生密钥、Spas 签名头 */
     @Override
     public void doInject(RequestResource resource, RamContext context,
         LoginIdentityContext result) {
@@ -66,6 +69,7 @@ public class AiResourceInjector extends AbstractResourceInjector {
         result.setParameters(signHeaders);
     }
     
+    /** 构造 AI 模块 Spas 资源串：tenant+"+"+group */
     private String buildResourceString(RequestResource resource) {
         return resource.getNamespace() + "+" + resource.getGroup();
     }

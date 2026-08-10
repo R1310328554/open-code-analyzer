@@ -18,6 +18,7 @@ package com.alibaba.nacos.client.auth.ram.identify;
 
 /**
  * Spas Credential Interface.
+ * <p>SPAS（Security Product Access Service）凭证接口：抽象 AccessKey 与 SecretKey 的读取，供 {@link SpasCredentialLoader} 加载后用于 RAM 签名鉴权。</p>
  *
  * @author Nacos
  */
@@ -25,6 +26,7 @@ public interface SpasCredential {
     
     /**
      * get AccessKey.
+     * <p>返回阿里云 RAM AccessKey ID。</p>
      *
      * @return AccessKey
      */
@@ -32,6 +34,7 @@ public interface SpasCredential {
     
     /**
      * get SecretKey.
+     * <p>返回与 AccessKey 配对的 SecretKey，用于 HMAC 签名。</p>
      *
      * @return SecretKey
      */
