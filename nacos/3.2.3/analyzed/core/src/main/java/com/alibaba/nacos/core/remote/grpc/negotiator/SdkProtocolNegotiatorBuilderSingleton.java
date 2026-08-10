@@ -20,6 +20,7 @@ import com.alibaba.nacos.common.utils.Pair;
 import com.alibaba.nacos.core.remote.grpc.negotiator.tls.SdkDefaultTlsProtocolNegotiatorBuilder;
 
 /**
+ * SDK 与 Nacos 服务端 RPC 协议协商器 Builder 单例，默认 TLS，可通过属性覆盖。
  * Manages ProtocolNegotiatorBuilders for the interaction between Nacos and SDK. Provides a singleton instance of
  * ProtocolNegotiatorBuilder configured for this interaction. Defaults to TLS protocol negotiation but can be overridden
  * via system properties.
@@ -33,27 +34,24 @@ import com.alibaba.nacos.core.remote.grpc.negotiator.tls.SdkDefaultTlsProtocolNe
 public class SdkProtocolNegotiatorBuilderSingleton
     extends AbstractProtocolNegotiatorBuilderSingleton {
     
-    /**
-     * Property key to retrieve the type of ProtocolNegotiatorBuilder.
-     */
+    /** SDK RPC 协商器类型的配置属性键。 */
+
     public static final String TYPE_PROPERTY_KEY =
         "nacos.remote.server.rpc.protocol.negotiator.type";
     
-    /**
-     * Singleton instance of SdkProtocolNegotiatorBuilderSingleton.
-     */
+    /** SDK 协商器 Builder 单例实例。 */
+
     private static final SdkProtocolNegotiatorBuilderSingleton SINGLETON =
         new SdkProtocolNegotiatorBuilderSingleton();
     
-    /**
-     * Constructs a new instance of SdkProtocolNegotiatorBuilderSingleton. Sets up the type property key for
-     * ProtocolNegotiatorBuilder.
-     */
+    /** 私有构造：绑定 SDK 协商器类型属性键。 */
+
     public SdkProtocolNegotiatorBuilderSingleton() {
         super(TYPE_PROPERTY_KEY);
     }
     
     /**
+     * 获取 SDK 协商器 Builder 单例。
      * Retrieves the singleton instance of SdkProtocolNegotiatorBuilderSingleton.
      *
      * @return the singleton instance
@@ -63,6 +61,7 @@ public class SdkProtocolNegotiatorBuilderSingleton
     }
     
     /**
+     * 默认使用 {@link SdkDefaultTlsProtocolNegotiatorBuilder}。
      * Provides the default ProtocolNegotiatorBuilder pair.
      *
      * @return a Pair containing the default type and builder instance
@@ -73,6 +72,7 @@ public class SdkProtocolNegotiatorBuilderSingleton
     }
     
     /**
+     * 返回当前 SDK 协商器类型标识。
      * Retrieves the type of ProtocolNegotiatorBuilder configured for the SDK.
      *
      * @return the type of ProtocolNegotiatorBuilder

@@ -19,6 +19,8 @@ package com.alibaba.nacos.core.remote.grpc.negotiator;
 import io.grpc.netty.shaded.io.grpc.netty.InternalProtocolNegotiator;
 
 /**
+ * Nacos gRPC 协议协商器扩展接口：在 Netty {@link InternalProtocolNegotiator.ProtocolNegotiator}
+ * 基础上增加热重载能力。
  * Nacos Grpc protocol negotiator.
  *
  * @author xiweng.yy
@@ -26,6 +28,7 @@ import io.grpc.netty.shaded.io.grpc.netty.InternalProtocolNegotiator;
 public interface NacosGrpcProtocolNegotiator extends InternalProtocolNegotiator.ProtocolNegotiator {
     
     /**
+     * 热重载协商器（如 TLS 配置/证书变更后刷新 SslContext）。
      * Reload this negotiator, such as config, tls context and so on if necessary.
      */
     void reloadNegotiator();

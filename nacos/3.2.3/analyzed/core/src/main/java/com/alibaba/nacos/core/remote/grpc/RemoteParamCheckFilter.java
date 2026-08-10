@@ -34,6 +34,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
+ * 远程 RPC 请求参数校验过滤器：在 {@link AbstractRequestFilter} 链中拦截请求，
+ * 通过 {@link ExtractorManager} 提取参数并由 {@link ParamCheckerManager} 执行校验。
  * The type Remote param check filter.
  *
  * @author zhuoguang
@@ -41,14 +43,17 @@ import java.util.List;
 @Component
 public class RemoteParamCheckFilter extends AbstractRequestFilter {
     
+    /** 执行参数校验；未启用校验或无 Extractor 注解时返回 null 放行。 */
     @Override
     protected Response filter(Request request, RequestMeta meta, Class handlerClazz)
         throws NacosException {
+        // 读取服务端是否开启参数校验开关
         boolean paramCheckEnabled = ServerParamCheckConfig.getInstance().isParamCheckEnabled();
         if (!paramCheckEnabled) {
             return null;
         }
         try {
+            // 优先从处理方法获取 @Extractor 注解
             ExtractorManager.Extractor extractor =
                 getHandleMethod(handlerClazz).getAnnotation(ExtractorManager.Extractor.class);
             if (extractor == null) {
@@ -58,11 +63,13 @@ public class RemoteParamCheckFilter extends AbstractRequestFilter {
                     return null;
                 }
             }
+            // 根据注解获取对应 RPC 参数提取器
             AbstractRpcParamExtractor paramExtractor = ExtractorManager.getRpcExtractor(extractor);
             List<ParamInfo> paramInfoList = paramExtractor.extractParam(request);
             ParamCheckerManager paramCheckerManager = ParamCheckerManager.getInstance();
             AbstractParamChecker paramChecker = paramCheckerManager.getParamChecker(
                 ServerParamCheckConfig.getInstance().getActiveParamChecker());
+            // 调用活跃校验器检查参数列表
             ParamCheckResponse checkResponse = paramChecker.checkParamInfoList(paramInfoList);
             if (!checkResponse.isSuccess()) {
                 return generateFailResponse(request, checkResponse.getMessage(), handlerClazz);
@@ -73,6 +80,7 @@ public class RemoteParamCheckFilter extends AbstractRequestFilter {
         return null;
     }
     
+    /** 构造校验失败响应并记录 CONTROL 日志。 */
     private Response generateFailResponse(Request request, String message, Class handlerClazz) {
         Response response;
         try {

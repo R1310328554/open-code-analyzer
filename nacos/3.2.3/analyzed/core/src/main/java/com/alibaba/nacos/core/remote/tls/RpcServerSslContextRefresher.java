@@ -19,6 +19,7 @@ package com.alibaba.nacos.core.remote.tls;
 import com.alibaba.nacos.core.remote.BaseRpcServer;
 
 /**
+ * RPC 服务端 SSL 上下文刷新 SPI：监听 {@link BaseRpcServer} 并在证书/配置变更时触发协商器重载。
  * ssl context refresher spi holder.
  *
  * @author liuzunfei
@@ -27,17 +28,19 @@ import com.alibaba.nacos.core.remote.BaseRpcServer;
 public interface RpcServerSslContextRefresher {
     
     /**
+     * 注册对 RPC 服务的 SSL 上下文变更监听并返回感知回调。
      * listener current rpc server and do something on ssl context change.
      *
      * @param baseRpcServer rpc server.
-     * @return
+     * @return SSL 上下文变更感知器
      */
     SslContextChangeAware refresh(BaseRpcServer baseRpcServer);
     
     /**
+     * 返回刷新器名称，用于 SPI 区分 SDK/Cluster 等实现。
      * refresher name.
      *
-     * @return
+     * @return 刷新器名称
      */
     String getName();
 }

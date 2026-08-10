@@ -19,17 +19,21 @@ package com.alibaba.nacos.core.remote.grpc.filter;
 import io.grpc.ServerTransportFilter;
 
 /**
+ * Nacos gRPC 服务端传输层过滤器抽象基类，区分 SDK 与 CLUSTER 两种通道类型。
  * Nacos grpc server transport filter.
  *
  * @author xiweng.yy
  */
 public abstract class NacosGrpcServerTransportFilter extends ServerTransportFilter {
     
+    /** SDK 客户端通道类型标识。 */
     public static final String SDK_FILTER = "SDK";
     
+    /** 集群节点间通道类型标识。 */
     public static final String CLUSTER_FILTER = "CLUSTER";
     
     /**
+     * 返回过滤器所属通道类型。
      * Get the type of Interceptor.
      *
      * @return should be `CLUSTER` or `SDK`

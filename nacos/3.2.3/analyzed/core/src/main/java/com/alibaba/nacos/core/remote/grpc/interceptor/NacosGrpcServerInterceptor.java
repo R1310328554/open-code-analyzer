@@ -19,17 +19,21 @@ package com.alibaba.nacos.core.remote.grpc.interceptor;
 import io.grpc.ServerInterceptor;
 
 /**
+ * Nacos gRPC 服务端拦截器 SPI 接口，扩展 {@link ServerInterceptor} 并声明 SDK/CLUSTER 类型。
  * Nacos grpc server interceptor.
  *
  * @author xiweng.yy
  */
 public interface NacosGrpcServerInterceptor extends ServerInterceptor {
     
+    /** SDK 通道拦截器类型常量。 */
     String SDK_INTERCEPTOR = "SDK";
     
+    /** 集群通道拦截器类型常量。 */
     String CLUSTER_INTERCEPTOR = "CLUSTER";
     
     /**
+     * 返回拦截器所属通道类型。
      * Get the type of Interceptor.
      *
      * @return should be `CLUSTER` or `SDK`

@@ -37,6 +37,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 
 /**
+ * 可选 TLS 协议协商器：同一端口同时支持 TLS 与明文，通过首字节探测选择处理器链。
  * support the tls and plain protocol one the same port.
  *
  * @author githubcheng2978.
@@ -46,29 +47,37 @@ public class OptionalTlsProtocolNegotiator implements NacosGrpcProtocolNegotiato
     private static final Logger LOGGER =
         LoggerFactory.getLogger(OptionalTlsProtocolNegotiator.class);
     
+    /** 探测 TLS/明文所需的最小可读字节数。 */
     private static final int MAGIC_VALUE = 5;
     
+    /** 是否允许兼容模式下的明文连接。 */
     private final boolean supportPlainText;
     
+    /** TLS 配置，用于热重载 SslContext。 */
     private final RpcServerTlsConfig config;
     
+    /** 当前 TLS 上下文，可在 reload 时更新。 */
     private SslContext sslContext;
     
+    /** 构造协商器；compatibility 配置决定是否支持明文。 */
     public OptionalTlsProtocolNegotiator(SslContext sslContext, RpcServerTlsConfig config) {
         this.sslContext = sslContext;
         this.config = config;
         this.supportPlainText = config.getCompatibility();
     }
     
+    /** 包内更新 SslContext（供测试或刷新使用）。 */
     void setSslContext(SslContext sslContext) {
         this.sslContext = sslContext;
     }
     
+    /** TLS 连接使用 https scheme。 */
     @Override
     public AsciiString scheme() {
         return AsciiString.of("https");
     }
     
+    /** 创建端口统一处理器，内部按探测结果挂载 TLS 或明文 handler。 */
     @Override
     public ChannelHandler newHandler(GrpcHttp2ConnectionHandler grpcHttp2ConnectionHandler) {
         ChannelHandler plaintext =
@@ -83,6 +92,7 @@ public class OptionalTlsProtocolNegotiator implements NacosGrpcProtocolNegotiato
         
     }
     
+    /** TLS 仍启用时重新构建 SslContext。 */
     @Override
     public void reloadNegotiator() {
         if (config.getEnableTls()) {
@@ -90,6 +100,7 @@ public class OptionalTlsProtocolNegotiator implements NacosGrpcProtocolNegotiato
         }
     }
     
+    /** 反射获取 ProtocolNegotiationEvent.DEFAULT 供 pipeline 触发。 */
     private ProtocolNegotiationEvent getDefPne() {
         try {
             Field aDefault = ProtocolNegotiationEvent.class.getDeclaredField("DEFAULT");
@@ -102,6 +113,7 @@ public class OptionalTlsProtocolNegotiator implements NacosGrpcProtocolNegotiato
         return null;
     }
     
+    /** 端口统一解码器：根据首包判断 TLS 并切换 pipeline。 */
     public class PortUnificationServerHandler extends ByteToMessageDecoder {
         
         private final ProtocolNegotiationEvent pne;
@@ -116,10 +128,12 @@ public class OptionalTlsProtocolNegotiator implements NacosGrpcProtocolNegotiato
             this.pne = getDefPne();
         }
         
+        /** 判断缓冲区是否为 TLS 加密流量。 */
         private boolean isSsl(ByteBuf buf) {
             return SslHandler.isEncrypted(buf);
         }
         
+        /** 读取足够字节后选择 SSL 或明文 handler 并移除自身。 */
         @Override
         protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out)
             throws Exception {

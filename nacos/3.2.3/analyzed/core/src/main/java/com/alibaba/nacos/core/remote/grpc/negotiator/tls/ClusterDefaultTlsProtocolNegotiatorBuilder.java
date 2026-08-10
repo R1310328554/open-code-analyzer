@@ -26,6 +26,8 @@ import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
 import java.util.Properties;
 
 /**
+ * 集群间 TLS 协议协商器 Builder：实现 {@link ProtocolNegotiatorBuilder}，
+ * 为 cluster-to-cluster 通信构建带 TLS 的 {@link NacosGrpcProtocolNegotiator}。
  * The {@code ClusterDefaultTlsProtocolNegotiatorBuilder} class is an implementation of the
  * {@link ProtocolNegotiatorBuilder} interface for constructing a ProtocolNegotiator specifically for cluster-to-cluster
  * communication with TLS encryption.
@@ -59,12 +61,12 @@ import java.util.Properties;
  */
 public class ClusterDefaultTlsProtocolNegotiatorBuilder implements ProtocolNegotiatorBuilder {
     
-    /**
-     * The unique identifier for this negotiator builder.
-     */
+    /** 集群默认 TLS 协商器类型标识 {@code CLUSTER_DEFAULT_TLS}。 */
+
     public static final String CLUSTER_TYPE_DEFAULT_TLS = "CLUSTER_DEFAULT_TLS";
     
     /**
+     * 读取集群 TLS 配置，启用时构建 {@link OptionalTlsProtocolNegotiator}。
      * Constructs and returns a ProtocolNegotiator for cluster-to-cluster communication with TLS encryption.
      *
      * @return ProtocolNegotiator, or null if TLS is not enabled.
@@ -72,6 +74,7 @@ public class ClusterDefaultTlsProtocolNegotiatorBuilder implements ProtocolNegot
     @Override
     public NacosGrpcProtocolNegotiator build() {
         Properties properties = EnvUtil.getProperties();
+        // 从环境属性创建集群 TLS 配置
         RpcServerTlsConfig config =
             RpcServerTlsConfigFactory.getInstance().createClusterConfig(properties);
         if (config.getEnableTls()) {
@@ -82,6 +85,7 @@ public class ClusterDefaultTlsProtocolNegotiatorBuilder implements ProtocolNegot
     }
     
     /**
+     * 返回类型标识 {@link #CLUSTER_TYPE_DEFAULT_TLS}。
      * Returns the unique identifier {@code CLUSTER_TYPE_DEFAULT_TLS} for this negotiator builder.
      *
      * @return The type identifier.

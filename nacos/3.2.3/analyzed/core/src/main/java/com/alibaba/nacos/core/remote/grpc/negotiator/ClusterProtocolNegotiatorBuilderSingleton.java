@@ -20,6 +20,7 @@ import com.alibaba.nacos.common.utils.Pair;
 import com.alibaba.nacos.core.remote.grpc.negotiator.tls.ClusterDefaultTlsProtocolNegotiatorBuilder;
 
 /**
+ * 集群间 RPC 协议协商器 Builder 单例：默认 TLS 协商，可通过系统属性切换实现。
  * Manages ProtocolNegotiatorBuilders for cluster communication. Provides a singleton instance of
  * ProtocolNegotiatorBuilder configured for this purpose. Defaults to TLS protocol negotiation but can be overridden via
  * system properties.
@@ -33,27 +34,24 @@ import com.alibaba.nacos.core.remote.grpc.negotiator.tls.ClusterDefaultTlsProtoc
 public class ClusterProtocolNegotiatorBuilderSingleton
     extends AbstractProtocolNegotiatorBuilderSingleton {
     
-    /**
-     * Property key for configuring the ProtocolNegotiator type for cluster communication.
-     */
+    /** 集群 RPC 协商器类型的配置属性键。 */
+
     public static final String TYPE_PROPERTY_KEY =
         "nacos.remote.cluster.server.rpc.protocol.negotiator.type";
     
-    /**
-     * Singleton instance of ClusterProtocolNegotiatorBuilderSingleton.
-     */
+    /** 集群协商器 Builder 单例实例。 */
+
     private static final ClusterProtocolNegotiatorBuilderSingleton SINGLETON =
         new ClusterProtocolNegotiatorBuilderSingleton();
     
-    /**
-     * Constructs a new instance of ClusterProtocolNegotiatorBuilderSingleton. Sets up the type property key for
-     * ProtocolNegotiatorBuilder.
-     */
+    /** 私有构造：绑定集群协商器类型属性键。 */
+
     public ClusterProtocolNegotiatorBuilderSingleton() {
         super(TYPE_PROPERTY_KEY);
     }
     
     /**
+     * 获取集群协商器 Builder 单例。
      * Retrieves the singleton instance of ClusterProtocolNegotiatorBuilderSingleton.
      *
      * @return the singleton instance
@@ -63,6 +61,7 @@ public class ClusterProtocolNegotiatorBuilderSingleton
     }
     
     /**
+     * 默认使用 {@link ClusterDefaultTlsProtocolNegotiatorBuilder}。
      * Provides the default ProtocolNegotiatorBuilder pair.
      *
      * @return a Pair containing the default type and builder instance
@@ -73,6 +72,7 @@ public class ClusterProtocolNegotiatorBuilderSingleton
     }
     
     /**
+     * 返回当前集群协商器类型标识。
      * Retrieves the type of ProtocolNegotiatorBuilder configured for cluster communication.
      *
      * @return the type of ProtocolNegotiatorBuilder

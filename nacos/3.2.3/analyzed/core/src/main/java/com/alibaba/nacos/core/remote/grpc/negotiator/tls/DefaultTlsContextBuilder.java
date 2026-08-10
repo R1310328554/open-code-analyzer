@@ -38,14 +38,17 @@ import java.io.InputStream;
 import java.util.Arrays;
 
 /**
+ * RPC 服务端 TLS {@link SslContext} 构建工具：加载证书链、私钥并配置双向认证与协议/密码套件。
  * Ssl context builder.
  *
  * @author xiweng.yy
  */
 public class DefaultTlsContextBuilder {
     
+    /** 证书/密钥文件资源加载器。 */
     private static final ResourceLoader RESOURCE_LOADER = new DefaultResourceLoader();
     
+    /** 根据 {@link RpcServerTlsConfig} 构建 gRPC 服务端 SslContext。 */
     static SslContext getSslContext(RpcServerTlsConfig rpcServerTlsConfig) {
         try {
             if (StringUtils.isBlank(rpcServerTlsConfig.getCertChainFile()) || StringUtils
@@ -69,8 +72,9 @@ public class DefaultTlsContextBuilder {
                 sslClientContextBuilder
                     .ciphers(Arrays.asList(rpcServerTlsConfig.getCiphers().split(",")));
             }
+            // 开启双向 TLS 时配置 trustManager 与 ClientAuth.REQUIRE
             if (rpcServerTlsConfig.getMutualAuthEnable()) {
-                // trust all certificate
+                // 信任所有客户端证书（仅测试/特殊场景）
                 if (rpcServerTlsConfig.getTrustAll()) {
                     sslClientContextBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE);
                 } else {
@@ -96,6 +100,7 @@ public class DefaultTlsContextBuilder {
         }
     }
     
+    /** 从 classpath 或文件路径加载证书/密钥输入流。 */
     private static InputStream getInputStream(String path, String config) {
         try {
             Resource resource = RESOURCE_LOADER.getResource(path);

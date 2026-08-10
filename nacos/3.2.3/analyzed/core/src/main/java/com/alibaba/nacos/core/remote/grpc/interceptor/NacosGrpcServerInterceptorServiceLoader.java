@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * {@link NacosGrpcServerInterceptor} SPI 加载器：按类型收集服务端拦截器实现。
  * Service Loader for nacos grpc interceptor.
  *
  * @author xiweng.yy
@@ -30,6 +31,7 @@ import java.util.List;
 public class NacosGrpcServerInterceptorServiceLoader {
     
     /**
+     * 按通道类型加载 gRPC 服务端拦截器。
      * Load Server Interceptors by type.
      *
      * @param type should be `CLUSTER` or `SDK`
@@ -37,6 +39,7 @@ public class NacosGrpcServerInterceptorServiceLoader {
      */
     public static List<NacosGrpcServerInterceptor> loadServerInterceptors(String type) {
         List<NacosGrpcServerInterceptor> result = new LinkedList<>();
+        // 遍历 SPI 拦截器实现并按 type() 过滤
         for (NacosGrpcServerInterceptor each : NacosServiceLoader
             .load(NacosGrpcServerInterceptor.class)) {
             if (StringUtils.equals(type, each.type())) {

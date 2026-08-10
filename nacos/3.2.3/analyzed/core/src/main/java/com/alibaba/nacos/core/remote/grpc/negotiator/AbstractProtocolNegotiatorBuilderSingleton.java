@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * {@link ProtocolNegotiatorBuilder} 单例抽象基类：通过 SPI 加载各类型 Builder，
+ * 并根据系统属性选择实际实现构建 {@link NacosGrpcProtocolNegotiator}。
  * Abstract base class for ProtocolNegotiatorBuilder singletons. This class provides a common implementation for
  * building ProtocolNegotiator instances based on a given type. Subclasses should provide implementations for loading
  * ProtocolNegotiatorBuilder instances via SPI and defining default builders.
@@ -35,12 +37,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractProtocolNegotiatorBuilderSingleton
     implements ProtocolNegotiatorBuilder {
     
-    /**
-     * Map to store ProtocolNegotiatorBuilders based on their types.
-     */
+    /** 按 type() 索引的 ProtocolNegotiatorBuilder 注册表（SPI 加载）。 */
+
     protected static final Map<String, ProtocolNegotiatorBuilder> BUILDER_MAP =
         new ConcurrentHashMap<>();
     
+    /** 静态块：扫描 SPI 并注册所有 ProtocolNegotiatorBuilder。 */
     static {
         try {
             for (ProtocolNegotiatorBuilder each : NacosServiceLoader
@@ -55,17 +57,16 @@ public abstract class AbstractProtocolNegotiatorBuilderSingleton
         }
     }
     
-    /**
-     * The property key to retrieve the actual type of ProtocolNegotiatorBuilder.
-     */
+    /** 读取实际协商器类型的系统属性键。 */
+
     protected final String typePropertyKey;
     
-    /**
-     * The actual type of ProtocolNegotiatorBuilder, retrieved from system properties.
-     */
+    /** 从系统属性解析出的实际协商器类型。 */
+
     protected String actualType;
     
     /**
+     * 指定类型属性键并初始化 actualType。
      * Constructs an instance of AbstractProtocolNegotiatorBuilderSingleton with the specified type property key.
      *
      * @param typePropertyKey the property key to retrieve the actual type
@@ -76,6 +77,7 @@ public abstract class AbstractProtocolNegotiatorBuilderSingleton
     }
     
     /**
+     * 按 actualType 查找 Builder 并构建协商器；未找到则回退默认 Builder。
      * Builds a ProtocolNegotiator instance based on the actual type.
      *
      * @return a ProtocolNegotiator instance
@@ -94,6 +96,7 @@ public abstract class AbstractProtocolNegotiatorBuilderSingleton
     }
     
     /**
+     * 声明 SPI 加载失败或未配置时的默认 Builder 对。
      * Declare default ProtocolNegotiatorBuilders in case loading from SPI fails.
      *
      * @return a Pair of String and ProtocolNegotiatorBuilder representing the default builder

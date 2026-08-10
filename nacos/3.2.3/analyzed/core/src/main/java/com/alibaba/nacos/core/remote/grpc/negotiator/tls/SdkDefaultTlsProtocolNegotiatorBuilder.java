@@ -26,6 +26,8 @@ import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
 import java.util.Properties;
 
 /**
+ * SDK 与 Server 间 TLS 协商器 Builder：实现 {@link ProtocolNegotiatorBuilder}，
+ * 为 SDK 通道构建可选 TLS 的 {@link NacosGrpcProtocolNegotiator}。
  * The {@code SdkDefaultTlsProtocolNegotiatorBuilder} class is an implementation of the
  * {@link ProtocolNegotiatorBuilder} interface for constructing a ProtocolNegotiator specifically for SDK-to-Server
  * communication with optional TLS encryption.
@@ -58,12 +60,12 @@ import java.util.Properties;
  */
 public class SdkDefaultTlsProtocolNegotiatorBuilder implements ProtocolNegotiatorBuilder {
     
-    /**
-     * The unique identifier for this negotiator builder.
-     */
+    /** SDK 默认 TLS 协商器类型标识 {@code DEFAULT_TLS}。 */
+
     public static final String TYPE_DEFAULT_TLS = "DEFAULT_TLS";
     
     /**
+     * 读取 SDK TLS 配置，启用时构建 {@link OptionalTlsProtocolNegotiator}。
      * Constructs and returns a ProtocolNegotiator for SDK-to-Server communication with optional TLS encryption.
      *
      * @return ProtocolNegotiator, or null if TLS is not enabled.
@@ -71,6 +73,7 @@ public class SdkDefaultTlsProtocolNegotiatorBuilder implements ProtocolNegotiato
     @Override
     public NacosGrpcProtocolNegotiator build() {
         Properties properties = EnvUtil.getProperties();
+        // 从环境属性创建 SDK TLS 配置
         RpcServerTlsConfig config =
             RpcServerTlsConfigFactory.getInstance().createSdkConfig(properties);
         if (config.getEnableTls()) {
@@ -81,6 +84,7 @@ public class SdkDefaultTlsProtocolNegotiatorBuilder implements ProtocolNegotiato
     }
     
     /**
+     * 返回类型标识 {@link #TYPE_DEFAULT_TLS}。
      * Returns the unique identifier {@code SDK_TYPE_DEFAULT_TLS} for this negotiator builder.
      *
      * @return The type identifier.

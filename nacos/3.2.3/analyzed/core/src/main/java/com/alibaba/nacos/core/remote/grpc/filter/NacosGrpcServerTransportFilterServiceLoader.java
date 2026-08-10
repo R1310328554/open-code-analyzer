@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * {@link NacosGrpcServerTransportFilter} SPI 加载器：按类型筛选已注册的传输过滤器。
  * Service Loader for nacos grpc server transport filter.
  *
  * @author xiweng.yy
@@ -30,6 +31,7 @@ import java.util.List;
 public class NacosGrpcServerTransportFilterServiceLoader {
     
     /**
+     * 按通道类型加载传输过滤器列表。
      * Load Server Interceptors by type.
      *
      * @param type should be `CLUSTER` or `SDK`
@@ -37,6 +39,7 @@ public class NacosGrpcServerTransportFilterServiceLoader {
      */
     public static List<NacosGrpcServerTransportFilter> loadServerTransportFilters(String type) {
         List<NacosGrpcServerTransportFilter> result = new LinkedList<>();
+        // 遍历 SPI 注册的传输过滤器并按 type() 匹配
         for (NacosGrpcServerTransportFilter each : NacosServiceLoader
             .load(NacosGrpcServerTransportFilter.class)) {
             if (StringUtils.equals(type, each.type())) {

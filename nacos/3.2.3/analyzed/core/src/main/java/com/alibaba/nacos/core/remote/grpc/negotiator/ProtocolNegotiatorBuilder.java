@@ -17,6 +17,7 @@
 package com.alibaba.nacos.core.remote.grpc.negotiator;
 
 /**
+ * 协议协商器构建 SPI：按 type() 标识创建 {@link NacosGrpcProtocolNegotiator} 实例。
  * Protocol negotiator builder.
  *
  * @author xiweng.yy
@@ -24,6 +25,7 @@ package com.alibaba.nacos.core.remote.grpc.negotiator;
 public interface ProtocolNegotiatorBuilder {
     
     /**
+     * 构建新的协议协商器实例（TLS 未启用时可能为 null）。
      * Build new ProtocolNegotiator.
      *
      * @return ProtocolNegotiator, Nullable.
@@ -31,6 +33,7 @@ public interface ProtocolNegotiatorBuilder {
     NacosGrpcProtocolNegotiator build();
     
     /**
+     * 返回 Builder 类型标识，供 SPI 注册与属性选择。
      * Builder type of ProtocolNegotiator.
      *
      * @return type
