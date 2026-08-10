@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// client exposition protobuf 流式解码器：逐 MetricFamily/Metric 迭代解析，复用内存并暴露 unsafe 字符串视图以零拷贝。
+
 package io_prometheus_client //nolint:revive
 
 import (
@@ -25,6 +27,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// MetricStreamingDecoder 嵌入 MetricFamily/Metric，按字节偏移懒解析标签与样本。
 type MetricStreamingDecoder struct {
 	in    []byte
 	inPos int
@@ -42,6 +45,7 @@ type MetricStreamingDecoder struct {
 	labels []pos
 }
 
+// NewMetricStreamingDecoder 构造迭代器；勿在迭代间修改解码器状态。
 // NewMetricStreamingDecoder returns a Go iterator that unmarshals given protobuf bytes one
 // metric family and metric at the time, allowing efficient streaming.
 //
@@ -62,6 +66,7 @@ func NewMetricStreamingDecoder(data []byte) *MetricStreamingDecoder {
 
 var errInvalidVarint = errors.New("clientpb: invalid varint encountered")
 
+// NextMetricFamily 解析下一个 MF 的 name/help/unit，指标体留待 NextMetric。
 // NextMetricFamily decodes the next metric family from the input without metrics.
 // Use NextMetric() to decode metrics. The MetricFamily fields Name, Help and Unit
 // are only valid until NextMetricFamily is called again.
@@ -85,6 +90,7 @@ func (m *MetricStreamingDecoder) NextMetricFamily() error {
 	return m.unmarshalWithoutMetrics(m, m.mfData)
 }
 
+// resetMetricFamily 清空 MF 状态但保留 metrics 切片底层数组。
 // resetMetricFamily resets all the fields in m to equal the zero value, but re-using slice memory.
 func (m *MetricStreamingDecoder) resetMetricFamily() {
 	m.metrics = m.metrics[:0]
@@ -106,6 +112,7 @@ func (m *MetricStreamingDecoder) NextMetric() error {
 	return nil
 }
 
+// resetMetric 重置各 metric 子结构并截断 labels 索引。
 // resetMetric resets all the fields in m to equal the zero value, but re-using slices memory.
 func (m *MetricStreamingDecoder) resetMetric() {
 	m.labels = m.labels[:0]
@@ -154,6 +161,7 @@ func (*MetricStreamingDecoder) GetLabel() {
 	panic("don't use GetLabel, use Label instead")
 }
 
+// unsafeLabelAdder 接收可能跨迭代失效的字符串，需配合 SetUnsafeAdd。
 // unsafeLabelAdder adds labels for a single metric.
 // The "unsafe" word highlights that some strings must not be retained on a
 // caller side. When used with labels.ScratchBuilder ensure it's used
@@ -162,6 +170,7 @@ type unsafeLabelAdder interface {
 	Add(name, value string)
 }
 
+// Label 遍历预索引的标签块；指标名需从 MetricFamily.Name 推断。
 // Label parses labels into unsafeLabelAdder. Metric name is missing
 // given the protobuf metric model and has to be deduced from the metric family name.
 //
@@ -181,6 +190,7 @@ func (m *MetricStreamingDecoder) Label(b unsafeLabelAdder) error {
 }
 
 // parseLabel is essentially LabelPair.Unmarshal but directly adding into unsafeLabelAdder.
+// parseLabel 手写 LabelPair 字段解析，校验 UTF-8 与 label name 规则。
 func parseLabel(dAtA []byte, b unsafeLabelAdder) error {
 	var unsafeName, unsafeValue string
 	l := len(dAtA)
@@ -303,6 +313,7 @@ func parseLabel(dAtA []byte, b unsafeLabelAdder) error {
 	return nil
 }
 
+// yoloString 用 unsafe.String 零拷贝引用输入缓冲中的字节串。
 func yoloString(b []byte) string {
 	return unsafe.String(unsafe.SliceData(b), len(b))
 }
@@ -593,6 +604,7 @@ func (m *Metric) unmarshalWithoutLabels(p *MetricStreamingDecoder, dAtA []byte) 
 	return nil
 }
 
+// unmarshalWithoutMetrics 解析 MF 元数据并记录各 metric 子消息在 mfData 中的位置。
 func (m *MetricFamily) unmarshalWithoutMetrics(buf *MetricStreamingDecoder, dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0

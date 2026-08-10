@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ChunkedReadResponse 的 sync.Pool 友好序列化：复用缓冲避免远程读 chunked 响应时的重复分配。
+
 package prompb
 
 import (

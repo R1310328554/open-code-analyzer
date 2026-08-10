@@ -3,6 +3,8 @@
 
 package prompb
 
+// 本文件为 Prometheus remote 公共类型（types.proto）的 gogo 生成代码。定义 Sample、Histogram、TimeSeries、Label、Chunk 等 v1 远程读写核心消息。codec.go 与 storage 远程层均依赖这些结构。由 protoc 生成，请勿修改生成代码。
+
 import (
 	encoding_binary "encoding/binary"
 	fmt "fmt"
@@ -25,6 +27,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// MetricMetadata_MetricType 远程元数据中的指标类型枚举。
 type MetricMetadata_MetricType int32
 
 const (
@@ -235,6 +238,7 @@ func (m *MetricMetadata) GetUnit() string {
 	return ""
 }
 
+// Sample 表示单个 float 样本点（value + timestamp_ms）。
 type Sample struct {
 	Value float64 `protobuf:"fixed64,1,opt,name=value,proto3" json:"value,omitempty"`
 	// timestamp is in ms format, see model/timestamp/timestamp.go for
@@ -364,6 +368,7 @@ func (m *Exemplar) GetTimestamp() int64 {
 // The appendix of this design doc also explains the concept of float
 // histograms. This Histogram message can represent both, the usual
 // integer histogram as well as a float histogram.
+// Histogram 承载 native histogram 的 schema、桶 span 与 count/sum。
 type Histogram struct {
 	// Types that are valid to be assigned to Count:
 	//
@@ -669,6 +674,7 @@ func (m *BucketSpan) GetLength() uint32 {
 }
 
 // TimeSeries represents samples and labels for a single time series.
+// TimeSeries 为远程写入的基本单元：标签 + samples/histograms/exemplars。
 type TimeSeries struct {
 	// For a timeseries to be valid, and for the samples and exemplars
 	// to be ingested by the remote system properly, the labels field is required.
@@ -1077,6 +1083,7 @@ func (m *Chunk) GetData() []byte {
 }
 
 // ChunkedSeries represents single, encoded time series.
+// ChunkedSeries 用于 chunked read 响应中的单序列 XOR/HIST 块列表。
 type ChunkedSeries struct {
 	// Labels should be sorted.
 	Labels []Label `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels"`

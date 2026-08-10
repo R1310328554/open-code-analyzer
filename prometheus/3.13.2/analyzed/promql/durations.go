@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 查询 AST 中 duration 表达式的静态求值：将 offset/range/step 等 DurationExpr 折叠为具体 time.Duration。
+
 package promql
 
 import (
@@ -21,6 +23,7 @@ import (
 	"github.com/prometheus/prometheus/promql/parser"
 )
 
+// durationVisitor 遍历 AST，把 OriginalOffsetExpr/RangeExpr 等解析为纳秒 duration。
 // durationVisitor is a visitor that calculates the actual value of
 // duration expressions in AST nodes. For example the query
 // "http_requests_total offset (1h / 2)" is represented in the AST
@@ -32,6 +35,7 @@ type durationVisitor struct {
 	queryRange time.Duration
 }
 
+// Visit 处理 VectorSelector/MatrixSelector/SubqueryExpr 中的 duration 子表达式。
 // Visit finds any duration expressions in AST Nodes and modifies the Node to
 // store the concrete value. Note that parser.Walk does NOT traverse the
 // duration expressions such as OriginalOffsetExpr so we make our own recursive
@@ -80,6 +84,7 @@ func (v *durationVisitor) Visit(node parser.Node, _ []parser.Node) (parser.Visit
 	return v, nil
 }
 
+// calculateDuration 求值后校验 NaN/无穷、正负约束与 int64 纳秒范围。
 // calculateDuration returns the float value of a duration expression as
 // time.Duration or an error if the duration is invalid.
 func (v *durationVisitor) calculateDuration(expr parser.Expr, allowedNegative bool) (time.Duration, error) {
@@ -107,6 +112,7 @@ func (v *durationVisitor) calculateDuration(expr parser.Expr, allowedNegative bo
 	return time.Duration(duration*1000) * time.Millisecond, nil
 }
 
+// evaluateDurationExpr 支持 STEP/RANGE 伪常量及四则/min/max/mod/pow 运算。
 // evaluateDurationExpr recursively evaluates a duration expression to a float64 value.
 func (v *durationVisitor) evaluateDurationExpr(expr parser.Expr) (float64, error) {
 	switch n := expr.(type) {
@@ -131,6 +137,7 @@ func (v *durationVisitor) evaluateDurationExpr(expr parser.Expr) (float64, error
 		}
 
 		switch n.Op {
+// STEP 替换为当前 range query 的 evaluation step 秒数。
 		case parser.STEP:
 			return float64(v.step.Seconds()), nil
 		case parser.RANGE:

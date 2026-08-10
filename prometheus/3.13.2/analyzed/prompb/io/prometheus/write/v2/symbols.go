@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// remote write v2 符号表：将重复字符串 intern 为 uint32 引用，供 LabelsRefs 与 metadata 的 help/unit 引用压缩 payload。
+
 package writev2
 
 import (
@@ -19,12 +21,14 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// SymbolsTable 维护 strings 切片与 string→ref 双向映射。
 // SymbolsTable implements table for easy symbol use.
 type SymbolsTable struct {
 	strings    []string
 	symbolsMap map[string]uint32
 }
 
+// NewSymbolTable 初始化空串占位（ref 0）与空映射。
 // NewSymbolTable returns a symbol table.
 func NewSymbolTable() SymbolsTable {
 	return SymbolsTable{
@@ -34,6 +38,7 @@ func NewSymbolTable() SymbolsTable {
 	}
 }
 
+// Symbolize 去重追加字符串并返回稳定 ref。
 // Symbolize adds (if not added before) a string to the symbols table,
 // while returning its reference number.
 func (t *SymbolsTable) Symbolize(str string) uint32 {
@@ -46,6 +51,7 @@ func (t *SymbolsTable) Symbolize(str string) uint32 {
 	return ref
 }
 
+// SymbolizeLabels 按 name/value 交替写入 label ref 序列。
 // SymbolizeLabels symbolize Prometheus labels.
 func (t *SymbolsTable) SymbolizeLabels(lbls labels.Labels, buf []uint32) []uint32 {
 	result := buf[:0]
@@ -58,12 +64,14 @@ func (t *SymbolsTable) SymbolizeLabels(lbls labels.Labels, buf []uint32) []uint3
 	return result
 }
 
+// Symbols 返回完整字符串表供 Request.Symbols 字段使用。
 // Symbols returns computes symbols table to put in e.g. Request.Symbols.
 // As per spec, order does not matter.
 func (t *SymbolsTable) Symbols() []string {
 	return t.strings
 }
 
+// Reset 保留 ref 0 空串，清空其余 intern 条目。
 // Reset clears symbols table.
 func (t *SymbolsTable) Reset() {
 	// NOTE: Make sure to keep empty symbol.
@@ -76,6 +84,7 @@ func (t *SymbolsTable) Reset() {
 	}
 }
 
+// desymbolizeLabels 校验偶数长度 ref 列表并还原排序后的 labels.Labels。
 // desymbolizeLabels decodes label references, with given symbols to labels.
 // This function requires labelRefs to have an even number of elements (name-value pairs) and
 // all references must be valid indices within the symbols table. It will return an error if

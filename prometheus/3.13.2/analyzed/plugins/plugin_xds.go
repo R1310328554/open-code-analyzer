@@ -13,8 +13,11 @@
 
 //go:build !remove_all_sd || enable_xds_sd
 
+// xDS（Envoy/Kuma 等）服务发现插件注册桩。enable_xds_sd 时链接基于 xDS 协议的目标发现。
+
 package plugins
 
 import (
+// blank import 注册 xDS SD，供 xds_sd_configs 在运行时解析 MADS 等资源。
 	_ "github.com/prometheus/prometheus/discovery/xds" // Register xds plugin.
 )

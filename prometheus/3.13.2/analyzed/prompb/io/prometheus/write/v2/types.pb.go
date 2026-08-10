@@ -3,6 +3,8 @@
 
 package writev2
 
+// 本文件为 Prometheus remote write v2（types.proto）的 gogo 生成代码。Request 含 symbols 表与 TimeSeries 列表；标签以 LabelsRefs 索引符号。codec.go/symbols.go 在此类型之上实现编解码。由 protoc 生成，请勿修改生成结构与枚举映射表。
+
 import (
 	encoding_binary "encoding/binary"
 	fmt "fmt"
@@ -25,6 +27,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Metadata_MetricType 定义 v2 元数据中的指标类型枚举。
 type Metadata_MetricType int32
 
 const (
@@ -111,6 +114,7 @@ func (Histogram_ResetHint) EnumDescriptor() ([]byte, []int) {
 // NOTE: gogoproto options might change in future for this file, they
 // are not part of the spec proto (they only modify the generated Go code, not
 // the serialized message). See: https://github.com/prometheus/prometheus/issues/11908
+// Request 为单次 remote write 批次：symbols + 多条 TimeSeries。
 type Request struct {
 	// symbols contains a de-duplicated array of string elements used for various
 	// items in a Request message, like labels and metadata items. For the sender's convenience
@@ -176,6 +180,7 @@ func (m *Request) GetTimeseries() []TimeSeries {
 }
 
 // TimeSeries represents a single series.
+// TimeSeries 以符号引用携带标签、样本、直方图、exemplar 与 metadata。
 type TimeSeries struct {
 	// labels_refs is a list of label name-value pair references, encoded
 	// as indices to the Request.symbols array. This list's length is always
@@ -434,6 +439,7 @@ func (m *Sample) GetStartTimestamp() int64 {
 }
 
 // Metadata represents the metadata associated with the given series' samples.
+// Metadata 通过 help_ref/unit_ref 指向 Request.Symbols 中的字符串。
 type Metadata struct {
 	Type Metadata_MetricType `protobuf:"varint,1,opt,name=type,proto3,enum=io.prometheus.write.v2.Metadata_MetricType" json:"type,omitempty"`
 	// help_ref is a reference to the Request.symbols array representing help
@@ -508,6 +514,7 @@ func (m *Metadata) GetUnitRef() uint32 {
 // * float or integer histograms.
 //
 // See the full spec: https://prometheus.io/docs/specs/native_histograms/
+// Histogram 兼容整型 delta 与浮点 count 两种 native histogram 编码。
 type Histogram struct {
 	// Types that are valid to be assigned to Count:
 	//

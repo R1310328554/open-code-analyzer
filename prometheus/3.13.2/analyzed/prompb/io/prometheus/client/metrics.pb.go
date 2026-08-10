@@ -3,6 +3,8 @@
 
 package io_prometheus_client
 
+// 本文件为 Prometheus client exposition（metrics.proto）的 gogo 生成代码，定义 MetricFamily/Metric 及 Gauge/Counter/Histogram/Summary 等消息。textparse 与 decoder.go 流式解析均依赖这些类型。由 protoc 生成，请勿手工修改消息结构与 marshal 表。
+
 import (
 	encoding_binary "encoding/binary"
 	fmt "fmt"
@@ -26,6 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// MetricType 枚举 exposition 中指标族类型（COUNTER/GAUGE/HISTOGRAM 等）。
 type MetricType int32
 
 const (
@@ -69,6 +72,7 @@ func (MetricType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d1e5ddb18987a258, []int{0}
 }
 
+// LabelPair 表示单个 name/value 标签对。
 type LabelPair struct {
 	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
@@ -787,6 +791,7 @@ func (m *Exemplar) GetTimestamp() *types.Timestamp {
 	return nil
 }
 
+// Metric 承载一种样本类型及标签、可选 timestamp_ms。
 type Metric struct {
 	Label                []LabelPair `protobuf:"bytes,1,rep,name=label,proto3" json:"label"`
 	Gauge                *Gauge      `protobuf:"bytes,2,opt,name=gauge,proto3" json:"gauge,omitempty"`
@@ -882,6 +887,7 @@ func (m *Metric) GetTimestampMs() int64 {
 	return 0
 }
 
+// MetricFamily 为一组同类型 Metric 的容器，含 name/help/unit。
 type MetricFamily struct {
 	Name                 string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Help                 string     `protobuf:"bytes,2,opt,name=help,proto3" json:"help,omitempty"`

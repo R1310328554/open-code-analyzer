@@ -13,8 +13,11 @@
 
 //go:build !remove_all_sd || enable_zookeeper_sd
 
+// Apache Zookeeper 服务发现插件注册桩。enable_zookeeper_sd 时纳入 ZK 节点路径目标拉取。
+
 package plugins
 
 import (
+// blank import 注册 Zookeeper SD，解析 zookeeper_sd_configs 配置块。
 	_ "github.com/prometheus/prometheus/discovery/zookeeper" // Register zookeeper plugin.
 )

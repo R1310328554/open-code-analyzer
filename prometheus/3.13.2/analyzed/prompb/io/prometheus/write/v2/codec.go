@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus remote write v2 protobuf 与内存模型的转换：符号表驱动的标签/元数据解码，以及直方图与 exemplar 映射。
+
 package writev2
 
 import (
@@ -24,13 +26,16 @@ import (
 	"github.com/prometheus/prometheus/model/metadata"
 )
 
+// v2 编解码与 v1 共用 rwcommon 测试套件验证。
 // NOTE(bwplotka): This file's code is tested in /prompb/rwcommon.
 
+// ToLabels 通过 LabelsRefs 与 symbols 表反符号化为 labels.Labels。
 // ToLabels return model labels.Labels from timeseries' remote labels.
 func (m TimeSeries) ToLabels(b *labels.ScratchBuilder, symbols []string) (labels.Labels, error) {
 	return desymbolizeLabels(b, m.GetLabelsRefs(), symbols)
 }
 
+// ToMetadata 解析 type/unit/help 符号引用为 metadata.Metadata。
 // ToMetadata returns model metadata from timeseries' remote metadata.
 func (m TimeSeries) ToMetadata(symbols []string) (metadata.Metadata, error) {
 	typ := model.MetricTypeUnknown
@@ -63,6 +68,7 @@ func (m TimeSeries) ToMetadata(symbols []string) (metadata.Metadata, error) {
 	}, nil
 }
 
+// FromMetadataType 将 model.MetricType 映射为 write v2 Metadata 枚举。
 // FromMetadataType transforms a Prometheus metricType into writev2 metricType.
 // Since the former is a string we need to transform it to an enum.
 func FromMetadataType(t model.MetricType) Metadata_MetricType {
@@ -86,12 +92,14 @@ func FromMetadataType(t model.MetricType) Metadata_MetricType {
 	}
 }
 
+// IsFloatHistogram 判断 Histogram oneof Count 是否为浮点分支。
 // IsFloatHistogram returns true if the histogram is float.
 func (h Histogram) IsFloatHistogram() bool {
 	_, ok := h.GetCount().(*Histogram_CountFloat)
 	return ok
 }
 
+// ToIntHistogram 从 v2 远程直方图还原整型 histogram.Histogram。
 // ToIntHistogram returns integer Prometheus histogram from the remote implementation
 // of integer histogram. If it's a float histogram, the method returns nil.
 func (h Histogram) ToIntHistogram() *histogram.Histogram {
@@ -113,6 +121,7 @@ func (h Histogram) ToIntHistogram() *histogram.Histogram {
 	}
 }
 
+// ToFloatHistogram 还原 FloatHistogram，必要时从整型转换。
 // ToFloatHistogram returns float Prometheus histogram from the remote implementation
 // of float histogram. If the underlying implementation is an integer histogram, a
 // conversion is performed.
@@ -167,6 +176,7 @@ func deltasToCounts(deltas []int64) []float64 {
 	return counts
 }
 
+// FromIntHistogram 编码整型直方图为 write v2 Histogram 消息。
 // FromIntHistogram returns remote Histogram from the integer Histogram.
 func FromIntHistogram(timestamp int64, h *histogram.Histogram) Histogram {
 	return Histogram{
@@ -185,6 +195,7 @@ func FromIntHistogram(timestamp int64, h *histogram.Histogram) Histogram {
 	}
 }
 
+// FromFloatHistogram 编码浮点直方图供远程写入。
 // FromFloatHistogram returns remote Histogram from the float Histogram.
 func FromFloatHistogram(timestamp int64, fh *histogram.FloatHistogram) Histogram {
 	return Histogram{
@@ -215,6 +226,7 @@ func spansToSpansProto(s []histogram.Span) []BucketSpan {
 	return spans
 }
 
+// ToExemplar 反符号化 exemplar 标签并填充值与时间戳。
 func (m Exemplar) ToExemplar(b *labels.ScratchBuilder, symbols []string) (exemplar.Exemplar, error) {
 	timestamp := m.Timestamp
 

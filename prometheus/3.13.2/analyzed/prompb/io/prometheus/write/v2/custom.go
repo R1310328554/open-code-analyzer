@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// remote write v2 Request/TimeSeries 的优化序列化路径：就地编码 LabelsRefs varint 并减少中间分配。
+
 package writev2
 
 import (
@@ -32,6 +34,7 @@ func (m *Request) OptimizedMarshal(dst []byte) ([]byte, error) {
 	return dst[:n], nil
 }
 
+// Request 级优化 marshal：逆序写入 symbols 与 timeseries 子消息。
 // OptimizedMarshalToSizedBuffer is mostly a copy of the generated MarshalToSizedBuffer,
 // but calls OptimizedMarshalToSizedBuffer on the timeseries.
 func (m *Request) OptimizedMarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -69,6 +72,7 @@ func (m *Request) OptimizedMarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+// TimeSeries 优化路径：LabelsRefs 就地 varint 编码再整体反转字节段。
 // OptimizedMarshalToSizedBuffer is mostly a copy of the generated MarshalToSizedBuffer,
 // but marshals m.LabelsRefs in place without extra allocations.
 func (m *TimeSeries) OptimizedMarshalToSizedBuffer(dAtA []byte) (int, error) {

@@ -13,8 +13,11 @@
 
 //go:build !remove_all_sd || enable_vultr_sd
 
+// Vultr 云实例服务发现插件注册桩。enable_vultr_sd 或未 strip 全部 SD 时编译进二进制。
+
 package plugins
 
 import (
+// blank import 触发 discovery/vultr init 向 SD 注册表登记 Vultr 发现器。
 	_ "github.com/prometheus/prometheus/discovery/vultr" // Register vultr plugin.
 )

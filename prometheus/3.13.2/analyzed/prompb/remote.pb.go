@@ -3,6 +3,8 @@
 
 package prompb
 
+// 本文件为 Prometheus remote read/write（remote.proto）的 gogo 生成代码。定义 WriteRequest/ReadRequest/ChunkedReadResponse 等远程存储 RPC 消息。remote 存储适配器与 codec.go 在此类型上序列化样本与 chunked 读取。由 protoc 生成，请勿手工修改。
+
 import (
 	fmt "fmt"
 	io "io"
@@ -27,6 +29,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type ReadRequest_ResponseType int32
 
 const (
+// SAMPLES 模式：单次 ReadResponse 返回原始 sample 列表（不推荐大规模读取）。
 	// Server will return a single ReadResponse message with matched series that includes list of raw samples.
 	// It's recommended to use streamed response types instead.
 	//
@@ -34,6 +37,7 @@ const (
 	// Content-Type: "application/x-protobuf"
 	// Content-Encoding: "snappy"
 	ReadRequest_SAMPLES ReadRequest_ResponseType = 0
+// STREAMED_XOR_CHUNKS：流式返回 XOR/HISTOGRAM 编码 chunk。
 	// Server will stream a delimited ChunkedReadResponse message that
 	// contains XOR or HISTOGRAM(!) encoded chunks for a single series.
 	// Each message is following varint size and fixed size bigendian
@@ -63,6 +67,7 @@ func (ReadRequest_ResponseType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_eefc82927d57d89b, []int{1, 0}
 }
 
+// WriteRequest 批量推送 TimeSeries 与 MetricMetadata。
 type WriteRequest struct {
 	Timeseries           []TimeSeries     `protobuf:"bytes,1,rep,name=timeseries,proto3" json:"timeseries"`
 	Metadata             []MetricMetadata `protobuf:"bytes,3,rep,name=metadata,proto3" json:"metadata"`
@@ -119,6 +124,7 @@ func (m *WriteRequest) GetMetadata() []MetricMetadata {
 }
 
 // ReadRequest represents a remote read request.
+// ReadRequest 指定查询、时间范围与响应类型（samples 或 streamed chunks）。
 type ReadRequest struct {
 	Queries []*Query `protobuf:"bytes,1,rep,name=queries,proto3" json:"queries,omitempty"`
 	// accepted_response_types allows negotiating the content type of the response.
@@ -351,6 +357,7 @@ func (m *QueryResult) GetTimeseries() []*TimeSeries {
 // We strictly stream full series after series, optionally split by time. This means that a single frame can contain
 // partition of the single series, but once a new series is started to be streamed it means that no more chunks will
 // be sent for previous one. Series are returned sorted in the same way TSDB block are internally.
+// ChunkedReadResponse 流式读路径下单条 series 的 chunked 编码块。
 type ChunkedReadResponse struct {
 	ChunkedSeries []*ChunkedSeries `protobuf:"bytes,1,rep,name=chunked_series,json=chunkedSeries,proto3" json:"chunked_series,omitempty"`
 	// query_index represents an index of the query from ReadRequest.queries these chunks relates to.

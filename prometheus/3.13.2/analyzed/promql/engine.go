@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 查询引擎核心：解析、计划、从 storage 拉取序列并在时间轴上求值。Engine 管理并发/超时/样本上限；evaluator 递归执行 AST。
+
 package promql
 
 import (
@@ -56,6 +58,7 @@ import (
 	"github.com/prometheus/prometheus/util/zeropool"
 )
 
+// 引擎常量：metrics 命名空间、默认 lookback、点切片池上限等。
 const (
 	namespace            = "prometheus"
 	subsystem            = "engine"
@@ -77,6 +80,7 @@ const (
 	matrixSelectorSliceSize = 16
 )
 
+// engineMetrics 注册 prometheus_engine_* 查询耗时与样本计数指标。
 type engineMetrics struct {
 	currentQueries            prometheus.Gauge
 	maxConcurrentQueries      prometheus.Gauge
@@ -95,6 +99,7 @@ type engineMetrics struct {
 }
 
 type (
+// ErrQueryTimeout/ErrQueryCanceled/ErrTooManySamples 为可识别查询失败类型。
 	// ErrQueryTimeout is returned if a query timed out during processing.
 	ErrQueryTimeout string
 	// ErrQueryCanceled is returned if a query was canceled during processing.
@@ -122,6 +127,7 @@ func (e ErrStorage) Error() string {
 	return e.Err.Error()
 }
 
+// QueryEngine 抽象即时/区间查询构造，便于测试与嵌入。
 // QueryEngine defines the interface for the *promql.Engine, so it can be replaced, wrapped or mocked.
 type QueryEngine interface {
 	NewInstantQuery(ctx context.Context, q storage.Queryable, opts QueryOpts, qs string, ts time.Time) (Query, error)
@@ -130,6 +136,7 @@ type QueryEngine interface {
 
 var _ QueryLogger = (*logging.JSONFileLogger)(nil)
 
+// QueryLogger 可选 JSON 结构化查询审计日志。
 // QueryLogger is an interface that can be used to log all the queries logged
 // by the engine.
 // logging.JSONFileLogger implements this interface, downstream users may use
@@ -139,6 +146,7 @@ type QueryLogger interface {
 	io.Closer
 }
 
+// Query 表示单次可 Exec 的已解析查询实例。
 // A Query is derived from a raw query string and can be run against an engine
 // it is associated with.
 type Query interface {
@@ -156,6 +164,7 @@ type Query interface {
 	String() string
 }
 
+// PrometheusQueryOpts 携带 per-step stats 与 lookback delta 等运行时选项。
 type PrometheusQueryOpts struct {
 	// Enables recording per-step statistics if the engine has it enabled as well. Disabled by default.
 	enablePerStepStats bool
@@ -187,6 +196,7 @@ type QueryOpts interface {
 	LookbackDelta() time.Duration
 }
 
+// query 持有 EvalStmt、统计与 cancel 函数，由 Engine 驱动执行。
 // query implements the Query interface.
 type query struct {
 	// Underlying data provider.
@@ -246,6 +256,7 @@ func (q *query) Close() {
 }
 
 // Exec implements the Query interface.
+// Exec 触发 ng.exec，将结果或错误封装为 Result。
 func (q *query) Exec(ctx context.Context) *Result {
 	if span := trace.SpanFromContext(ctx); span != nil {
 		span.SetAttributes(attribute.String(queryTag, q.stmt.String()))
@@ -275,6 +286,7 @@ func contextErr(err error, env string) error {
 	}
 }
 
+// QueryTracker 限制并发查询数并在崩溃后记录未完成查询。
 // QueryTracker provides access to two features:
 //
 // 1) Tracking of active query. If PromQL engine crashes while executing any query, such query should be present
@@ -296,6 +308,7 @@ type QueryTracker interface {
 	Delete(insertIndex int)
 }
 
+// EngineOpts 配置超时、MaxSamples、@ 修饰符、延迟 __name__ 移除等特性开关。
 // EngineOpts contains configuration options used when creating a new Engine.
 type EngineOpts struct {
 	Logger             *slog.Logger
@@ -344,6 +357,7 @@ type EngineOpts struct {
 	Parser parser.Parser
 }
 
+// Engine 连接 Queryable，负责 parse→populateSeries→eval 全流程。
 // Engine handles the lifetime of queries from beginning to end.
 // It is connected to a querier.
 type Engine struct {
@@ -365,6 +379,7 @@ type Engine struct {
 	parser                   parser.Parser
 }
 
+// NewEngine 注册内部 metrics 并应用 EngineOpts 默认值。
 // NewEngine returns a new engine.
 func NewEngine(opts EngineOpts) *Engine {
 	if opts.Logger == nil {
@@ -541,6 +556,7 @@ func (ng *Engine) SetQueryLogger(l QueryLogger) {
 }
 
 // NewInstantQuery returns an evaluation query for the given expression at the given time.
+// NewInstantQuery 在单时间戳构造 EvalStmt 并返回 query。
 func (ng *Engine) NewInstantQuery(ctx context.Context, q storage.Queryable, opts QueryOpts, qs string, ts time.Time) (Query, error) {
 	pExpr, qry := ng.newQuery(q, qs, opts, ts, ts, 0*time.Second)
 	finishQueue, err := ng.queueActive(ctx, qry)
@@ -562,6 +578,7 @@ func (ng *Engine) NewInstantQuery(ctx context.Context, q storage.Queryable, opts
 
 // NewRangeQuery returns an evaluation query for the given time range and with
 // the resolution set by the interval.
+// NewRangeQuery 设置 start/end/step 构造区间查询。
 func (ng *Engine) NewRangeQuery(ctx context.Context, q storage.Queryable, opts QueryOpts, qs string, start, end time.Time, interval time.Duration) (Query, error) {
 	pExpr, qry := ng.newQuery(q, qs, opts, start, end, interval)
 	finishQueue, err := ng.queueActive(ctx, qry)
@@ -616,6 +633,7 @@ var (
 	ErrValidationNegativeOffsetDisabled = errors.New("negative offset is disabled")
 )
 
+// validateOpts 检查 @ 修饰符与负 offset 等特性是否在 Engine 中启用。
 func (ng *Engine) validateOpts(expr parser.Expr) error {
 	if ng.enableAtModifier && ng.enableNegativeOffset {
 		return nil
@@ -679,6 +697,7 @@ func (ng *Engine) NewTestQuery(f func(context.Context) error) Query {
 	return qry
 }
 
+// exec 设置超时、排队、记录 query log，并 dispatch 到 execEvalStmt。
 // exec executes the query.
 //
 // At this point per query only one EvalStmt is evaluated. Alert and record
@@ -765,6 +784,7 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, ws annota
 
 // Log query in active log. The active log guarantees that we don't run over
 // MaxConcurrent queries.
+// queueActive 通过 QueryTracker 插入活跃查询，返回结束时 Delete 的回调。
 func (ng *Engine) queueActive(ctx context.Context, q *query) (func(), error) {
 	if ng.activeQueryTracker == nil {
 		return func() {}, nil
@@ -784,6 +804,7 @@ func durationMilliseconds(d time.Duration) int64 {
 }
 
 // execEvalStmt evaluates the expression of an evaluation statement for the given time range.
+// execEvalStmt 创建 querier/evaluator，populateSeries 后 Eval 根表达式。
 func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.EvalStmt) (parser.Value, annotations.Annotations, error) {
 	prepareSpanTimer, ctxPrepare := query.stats.GetSpanTimer(ctx, stats.QueryPreparationTime, ng.metrics.queryPrepareTime, ng.metrics.queryPrepareTimeHistogram)
 	mint, maxt := FindMinMaxTime(s)
@@ -942,6 +963,7 @@ func subqueryTimes(path []parser.Node) (time.Duration, time.Duration, *int64) {
 // FindMinMaxTime returns the time in milliseconds of the earliest and latest point in time the statement will try to process.
 // This takes into account offsets, @ modifiers, and range selectors.
 // If the statement does not select series, then FindMinMaxTime returns (0, 0).
+// FindMinMaxTime 扫描 AST 推导存储查询所需最小/最大时间毫秒。
 func FindMinMaxTime(s *parser.EvalStmt) (int64, int64) {
 	var minTimestamp, maxTimestamp int64 = math.MaxInt64, math.MinInt64
 	// Whenever a MatrixSelector is evaluated, evalRange is set to the corresponding range.
@@ -1042,6 +1064,7 @@ func (ng *Engine) getLastSubqueryInterval(path []parser.Node) time.Duration {
 	return interval
 }
 
+// populateSeries 为 Vector/Matrix selector 批量 Select 并注入 SeriesSet。
 func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s *parser.EvalStmt) {
 	// Whenever a MatrixSelector is evaluated, evalRange is set to the corresponding range.
 	// The evaluation of the VectorSelector inside then evaluates the given range and unsets
@@ -1147,10 +1170,12 @@ type errWithWarnings struct {
 
 func (e errWithWarnings) Error() string { return e.err.Error() }
 
+// evaluator 通过 panic+recover 统一错误路径并累计样本数。
 // An evaluator evaluates the given expressions over the given fixed
 // timestamps. It is attached to an engine through which it connects to a
 // querier and reports errors. On timeout or cancellation of its context it
 // terminates.
+// evaluator 在固定 start/end/step 上递归求值 AST，连接 storage.Querier。
 type evaluator struct {
 	startTimestamp int64 // Start time in milliseconds.
 	endTimestamp   int64 // End time in milliseconds.
@@ -1203,6 +1228,7 @@ func (ev *evaluator) recover(expr parser.Expr, ws *annotations.Annotations, errp
 	}
 }
 
+// Eval 为对外入口，内部调用 eval 并 recover panic 为 error。
 func (ev *evaluator) Eval(ctx context.Context, expr parser.Expr) (v parser.Value, ws annotations.Annotations, err error) {
 	defer ev.recover(expr, &ws, &err)
 
@@ -1225,6 +1251,7 @@ type EvalSeriesHelper struct {
 }
 
 // EvalNodeHelper stores extra information and caches for evaluating a single node across steps.
+// EvalNodeHelper 复用向量输出缓冲、标签 builder 与聚合中间状态。
 type EvalNodeHelper struct {
 	// Evaluation timestamp.
 	Ts int64
@@ -1407,6 +1434,7 @@ func (enh *EvalNodeHelper) getOrCreateLblsWithQuantile(lbls labels.Labels, quant
 // function call results.
 // The matching (if provided) can be used to prepare the helper
 // for each series, then passed to each call funcCall.
+// rangeEval 对多个区间向量入参逐步对齐时间步并调用函数实现（如 rate）。
 func (ev *evaluator) rangeEval(ctx context.Context, matching *parser.VectorMatching, funcCall func([]Vector, Matrix, [][]EvalSeriesHelper, *EvalNodeHelper) (Vector, annotations.Annotations), exprs ...parser.Expr) (Matrix, annotations.Annotations) {
 	numSteps := int((ev.endTimestamp-ev.startTimestamp)/ev.interval) + 1
 	matrixes := make([]Matrix, len(exprs))
@@ -1586,6 +1614,7 @@ func (ev *evaluator) rangeEval(ctx context.Context, matching *parser.VectorMatch
 	return mat, warnings
 }
 
+// rangeEvalAgg 在区间上执行 *_over_time 类聚合。
 func (ev *evaluator) rangeEvalAgg(ctx context.Context, aggExpr *parser.AggregateExpr, sortedGrouping []string, inputMatrix Matrix, params *fParams) (Matrix, annotations.Annotations) {
 	// Keep a copy of the original point slice so that it can be returned to the pool.
 	origMatrix := slices.Clone(inputMatrix)
@@ -1842,6 +1871,7 @@ func (ev *evaluator) smoothSeries(series []storage.Series, offset time.Duration,
 // For every storage.Series iterator in series, the method iterates in ev.interval sized steps from ev.startTimestamp until and including ev.endTimestamp,
 // collecting every corresponding sample (obtained via ev.vectorSelectorSingle) into a Series.
 // All of the generated Series are collected into a Matrix, that gets returned.
+// evalSeries 将 storage.Series 展开为按步长的 Matrix。
 func (ev *evaluator) evalSeries(ctx context.Context, series []storage.Series, offset time.Duration, recordOrigT bool) Matrix {
 	numSteps := int((ev.endTimestamp-ev.startTimestamp)/ev.interval) + 1
 
@@ -1928,6 +1958,7 @@ func (ev *evaluator) numSteps() int {
 // into the parent: peak and samples-read are always safe to absorb, while
 // TotalSamples should only be absorbed when the caller does not later
 // re-count the materialized matrix (e.g. evalSubquery does not absorb it).
+// runSubquery 递归构造子引擎执行子查询并返回 Matrix 样本统计。
 func (ev *evaluator) runSubquery(ctx context.Context, e *parser.SubqueryExpr) (parser.Value, *stats.QuerySamples, annotations.Annotations) {
 	offsetMillis := durationMilliseconds(e.Offset)
 	rangeMillis := durationMilliseconds(e.Range)
@@ -2047,6 +2078,7 @@ func (ev *evaluator) evalSubquery(ctx context.Context, subq *parser.SubqueryExpr
 }
 
 // eval evaluates the given expression as the given AST expression node requires.
+// eval 为 AST 分派核心：字面量、selector、二元/聚合/函数/子查询等。
 func (ev *evaluator) eval(ctx context.Context, expr parser.Expr) (parser.Value, annotations.Annotations) {
 	// This is the top-level evaluation method.
 	// Thus, we check for timeout/cancellation here.
@@ -2803,6 +2835,7 @@ func putMatrixSelectorHPointSlice(p []HPoint) {
 }
 
 // matrixSelector evaluates a *parser.MatrixSelector expression.
+// matrixSelector 读取区间向量并在各步长填充 Matrix 行。
 func (ev *evaluator) matrixSelector(ctx context.Context, node *parser.MatrixSelector) (Matrix, annotations.Annotations) {
 	var (
 		vs = node.VectorSelector.(*parser.VectorSelector)
@@ -3160,6 +3193,7 @@ func (*evaluator) VectorUnless(lhs, rhs Vector, matching *parser.VectorMatching,
 }
 
 // VectorBinop evaluates a binary operation between two Vectors, excluding set operators.
+// VectorBinop 实现 one-to-one/one-to-many/many-to-many 向量二元运算。
 func (ev *evaluator) VectorBinop(op parser.ItemType, lhs, rhs Vector, matching *parser.VectorMatching, returnBool bool, lhsh, rhsh []EvalSeriesHelper, enh *EvalNodeHelper, pos posrange.PositionRange) (Vector, error) {
 	if matching.Card == parser.CardManyToMany {
 		panic("many-to-many only allowed for set operators")
@@ -3373,6 +3407,7 @@ func resultMetric(lhs, rhs labels.Labels, op parser.ItemType, matching *parser.V
 }
 
 // VectorscalarBinop evaluates a binary operation between a Vector and a Scalar.
+// VectorscalarBinop 向量与标量的算术/比较运算。
 func (ev *evaluator) VectorscalarBinop(op parser.ItemType, lhs Vector, rhs Scalar, swap, returnBool bool, enh *EvalNodeHelper, pos posrange.PositionRange) (Vector, error) {
 	var lastErr error
 	for _, lhsSample := range lhs {
@@ -3556,6 +3591,7 @@ func vectorElemBinop(op parser.ItemType, lhs, rhs float64, hlhs, hrhs *histogram
 	panic(fmt.Errorf("operator %q not allowed for operations between Vectors", op))
 }
 
+// groupedAggregation 聚合分组累加器：sum/count/min/max 等中间态。
 type groupedAggregation struct {
 	floatValue      float64
 	floatMean       float64
@@ -3583,6 +3619,7 @@ type groupedAggregation struct {
 // These functions produce one output series for each group specified in the expression, with just the labels from `by(...)`.
 // outputMatrix should be already populated with grouping labels; groups is one-to-one with outputMatrix.
 // seriesToResult maps inputMatrix indexes to outputMatrix indexes.
+// aggregation 对 Matrix 按 grouping 执行 sum/avg/count 等聚合算子。
 func (ev *evaluator) aggregation(e *parser.AggregateExpr, q float64, inputMatrix, outputMatrix Matrix, seriesToResult []int, groups []groupedAggregation, enh *EvalNodeHelper) annotations.Annotations {
 	op := e.Op
 	var annos annotations.Annotations
@@ -4221,6 +4258,7 @@ func (*evaluator) aggregationCountValues(e *parser.AggregateExpr, grouping []str
 	return enh.Out, nil
 }
 
+// cleanupMetricLabels 在结果上移除或保留 __name__ 等内部标签。
 func (ev *evaluator) cleanupMetricLabels(v parser.Value) parser.Value {
 	if v.Type() == parser.ValueTypeMatrix {
 		mat := v.(Matrix)
@@ -4250,6 +4288,7 @@ func (ev *evaluator) cleanupMetricLabels(v parser.Value) parser.Value {
 // operations like OR combine series that originally had different names but end up
 // with the same labelset after dropping the name. If series with the same labelset
 // have overlapping timestamps, an error is returned.
+// mergeSeriesWithSameLabelset 合并标签集相同的多条序列（如子查询输出）。
 func (ev *evaluator) mergeSeriesWithSameLabelset(mat Matrix) Matrix {
 	if len(mat) <= 1 {
 		return mat
@@ -4701,6 +4740,7 @@ func makeInt64Pointer(val int64) *int64 {
 	return valp
 }
 
+// RatioSampler 为 limit_ratio 聚合提供确定性采样偏移。
 // RatioSampler allows unit-testing (previously: Randomizer).
 type RatioSampler interface {
 	// SampleOffset returns this sample "offset" between [0.0, 1.0].
@@ -4711,6 +4751,7 @@ type RatioSampler interface {
 	AddRatioSampleWithOffset(ratioLimit, sampleOffset float64) bool
 }
 
+// HashRatioSampler 用标签哈希归一化到 [0,1) 作为稳定采样阈值。
 // HashRatioSampler uses Hash(labels.String()) / maxUint64 as a "deterministic"
 // value in [0.0, 1.0].
 // It is a utility used for limit_ratio aggregations.
@@ -4782,6 +4823,7 @@ func (*HashRatioSampler) AddRatioSampleWithOffset(ratioLimit, sampleOffset float
 		(ratioLimit < 0 && sampleOffset >= (1.0+ratioLimit))
 }
 
+// histogramStatsSeries 包装序列仅暴露直方图 sum/count 统计视图。
 type histogramStatsSeries struct {
 	storage.Series
 }
@@ -4804,6 +4846,7 @@ func (s histogramStatsSeries) Iterator(it chunkenc.Iterator) chunkenc.Iterator {
 // output is used as a buffer.
 // If bufHelpers and seriesHelpers are provided, seriesHelpers[i] is appended to bufHelpers for every input index i.
 // The gathered Vector and bufHelper are returned.
+// gatherVector 在指定时间戳从 Matrix 提取即时 Vector 并维护 series helper。
 func (ev *evaluator) gatherVector(ts int64, input Matrix, output Vector, bufHelpers, seriesHelpers []EvalSeriesHelper) (Vector, []EvalSeriesHelper) {
 	output = output[:0]
 	for i, series := range input {
