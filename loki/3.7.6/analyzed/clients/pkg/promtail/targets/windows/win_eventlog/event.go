@@ -28,6 +28,10 @@
 //revive:disable-next-line:var-naming
 package win_eventlog
 
+// Windows 事件 XML 结构体定义：映射 System/UserData/EventData 等节点，
+// 供 xml.Unmarshal 与 EvtRender 输出解析；源自 InfluxData Telegraf 插件。
+
+// 核心 Event 结构：Provider、Level、Correlation、RenderingInfo 等字段。
 // Event is the event entry representation
 // Only the most common elements are processed, human-readable data is rendered in Message
 // More info on schema, if there will be need to add more:
@@ -56,6 +60,7 @@ type Event struct {
 	OpcodeText    string
 }
 
+// WEC 转发事件携带预渲染 Message/Level/Task，避免本地 EvtFormatMessage。
 // RenderingInfo is provided for events forwarded by Windows Event Collector
 // see https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtformatmessage#parameters
 type RenderingInfo struct {
@@ -69,6 +74,7 @@ type RenderingInfo struct {
 }
 
 // UserData Application-provided XML data
+// UserData 节点原始 InnerXML，供 UnrollXMLFields 展开为键值字段。
 type UserData struct {
 	InnerXML []byte `xml:",innerxml"`
 }

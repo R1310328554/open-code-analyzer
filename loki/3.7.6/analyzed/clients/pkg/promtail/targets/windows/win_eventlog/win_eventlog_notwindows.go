@@ -26,3 +26,6 @@
 //
 //revive:disable-next-line:var-naming
 package win_eventlog
+
+// 非 Windows 平台的 win_eventlog 包占位：仅保留 package 声明以满足
+// 跨平台编译；实际采集逻辑在 win_eventlog.go（windows build tag）中。

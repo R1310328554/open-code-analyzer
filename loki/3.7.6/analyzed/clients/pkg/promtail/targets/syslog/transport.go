@@ -1,5 +1,8 @@
 package syslog
 
+// Syslog 传输层：抽象 TCP/UDP 监听、TLS 终止、连接空闲超时与
+// 按源 IP 附加 __syslog_connection_* 标签后调用 syslogparser 解析。
+
 import (
 	"bytes"
 	"context"
@@ -30,6 +33,7 @@ var (
 	protocolTCP = "tcp"
 )
 
+// Transport 定义 Run/Addr/Ready/Close/Wait 五元生命周期接口。
 type Transport interface {
 	Run() error
 	Addr() net.Addr
@@ -116,6 +120,7 @@ func newBaseTransport(config *scrapeconfig.SyslogTargetConfig, handleMessage han
 	}
 }
 
+// 包装 net.Conn，每次 Read/Write 刷新 idle 超时 deadline。
 type idleTimeoutConn struct {
 	net.Conn
 	idleTimeout time.Duration
@@ -135,6 +140,7 @@ func (c *idleTimeoutConn) setDeadline() {
 	_ = c.SetDeadline(time.Now().Add(c.idleTimeout))
 }
 
+// UDP 按源地址复用的 io.Pipe，模拟面向连接的 syslog 流。
 type ConnPipe struct {
 	addr net.Addr
 	*io.PipeReader
@@ -165,6 +171,7 @@ func NewSyslogTCPTransport(config *scrapeconfig.SyslogTargetConfig, handleMessag
 	}
 }
 
+// TCP：Listen + 可选 TLS，acceptConnections 为每个连接启动 handleConnection。
 // Run implements SyslogTransport
 func (t *TCPTransport) Run() error {
 	l, err := net.Listen(protocolTCP, t.config.ListenAddress)
@@ -258,6 +265,7 @@ func (t *TCPTransport) acceptConnections() {
 
 }
 
+// 对单连接调用 ParseStream，解析成功后 invoke handleMessage 回调。
 func (t *TCPTransport) handleConnection(cn net.Conn) {
 	defer t.openConnections.Done()
 
@@ -337,6 +345,7 @@ func (t *UDPTransport) Close() error {
 	return t.udpConn.Close()
 }
 
+// UDP 读包写入对应 ConnPipe，新源地址时 spawn handleRcv goroutine。
 func (t *UDPTransport) acceptPackets() {
 	defer t.openConnections.Done()
 

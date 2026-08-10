@@ -3,6 +3,9 @@
 
 package windows
 
+// Windows 平台 target 管理器：为每个 scrape job 构建 pipeline 与
+// Windows Target，提供 Ready/Stop/ActiveTargets 聚合视图。
+
 import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -14,12 +17,14 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/target"
 )
 
+// 按 JobName 映射 *Target，ActiveTargets 仅返回 Ready 的实例。
 // TargetManager manages a series of windows event targets.
 type TargetManager struct {
 	logger  log.Logger
 	targets map[string]*Target
 }
 
+// 遍历 scrapeConfigs，stages.NewPipeline Wrap client 后调用 New 创建 target。
 // NewTargetManager creates a new Windows managers.
 func NewTargetManager(
 	reg prometheus.Registerer,
@@ -68,6 +73,7 @@ func (tm *TargetManager) Stop() {
 	}
 }
 
+// 仅当 target.Ready() 为 true 时才纳入 ActiveTargets 结果。
 // ActiveTargets returns the list of active Windows targets.
 func (tm *TargetManager) ActiveTargets() map[string][]target.Target {
 	result := make(map[string][]target.Target, len(tm.targets))

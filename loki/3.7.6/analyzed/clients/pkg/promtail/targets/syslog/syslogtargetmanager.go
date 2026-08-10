@@ -1,5 +1,8 @@
 package syslog
 
+// Syslog target 管理器：为每个 scrape job 创建 SyslogTarget 与 pipeline，
+// 统一 Ready/Stop/ActiveTargets 生命周期接口。
+
 import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -11,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/target"
 )
 
+// 按 JobName 索引各 SyslogTarget，不可单独停用只能整体 Stop。
 // SyslogTargetManager manages a series of SyslogTargets.
 // nolint:revive
 type SyslogTargetManager struct {
@@ -18,6 +22,7 @@ type SyslogTargetManager struct {
 	targets map[string]*SyslogTarget
 }
 
+// 遍历 scrapeConfigs 构建 stages.Pipeline 并 Wrap client 后实例化 target。
 // NewSyslogTargetManager creates a new SyslogTargetManager.
 func NewSyslogTargetManager(
 	metrics *Metrics,
@@ -71,6 +76,7 @@ func (tm *SyslogTargetManager) Stop() {
 	}
 }
 
+// ActiveTargets 与 AllTargets 等价，syslog target 无 inactive 状态。
 // ActiveTargets returns the list of SyslogTargets where syslog data
 // is being read. ActiveTargets is an alias to AllTargets as
 // SyslogTargets cannot be deactivated, only stopped.

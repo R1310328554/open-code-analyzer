@@ -3,6 +3,9 @@
 
 package windows
 
+// Windows 事件日志书签（bookmark）持久化：记录已读位置，
+// Promtail 重启后从上次事件继续订阅，避免重复采集。
+
 import (
 	"io"
 	"os"
@@ -20,6 +23,7 @@ type bookMark struct {
 	buf []byte
 }
 
+// 路径不存在则创建新书签；否则从文件内容恢复 EvtSubscribe 起始点。
 // newBookMark creates a new windows event bookmark.
 // The bookmark will be saved at the given path. Use save to save the current position for a given event.
 func newBookMark(path string) (*bookMark, error) {
@@ -70,6 +74,7 @@ func newBookMark(path string) (*bookMark, error) {
 	}, nil
 }
 
+// UpdateBookmark 后 Truncate 文件并写入 XML 书签字符串。
 // save Saves the bookmark at the current event position.
 func (b *bookMark) save(event win_eventlog.EvtHandle) error {
 	newBookmark, err := win_eventlog.UpdateBookmark(b.handle, event, b.buf)

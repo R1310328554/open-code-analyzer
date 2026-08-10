@@ -3,6 +3,9 @@
 
 package windows
 
+// Windows 事件 JSON 序列化：将 win_eventlog.Event 映射为 Loki 日志行，
+// 可选排除 EventData/UserData/Message 并按配置解析 SID 与进程名。
+
 import (
 	"fmt"
 	"syscall"
@@ -13,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/windows/win_eventlog"
 )
 
+// 面向 Loki 的结构化事件 JSON 模型，字段与 Windows Event Schema 对应。
 type Event struct {
 	Source   string `json:"source,omitempty"`
 	Channel  string `json:"channel,omitempty"`
@@ -56,6 +60,7 @@ type Correlation struct {
 	RelatedActivityID string `json:"relatedActivityID,omitempty"`
 }
 
+// 按 Exclude* 配置填充字段，LookupAccount 解析用户名，jsoniter 输出单行 JSON。
 // formatLine format a Loki log line from a windows event.
 func formatLine(cfg *scrapeconfig.WindowsEventsTargetConfig, event win_eventlog.Event) (string, error) {
 	structuredEvent := Event{

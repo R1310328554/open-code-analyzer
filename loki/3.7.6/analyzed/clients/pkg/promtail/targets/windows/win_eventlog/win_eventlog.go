@@ -27,6 +27,9 @@
 //revive:disable-next-line:var-naming
 package win_eventlog
 
+// Windows 事件日志采集核心：EvtSubscribe/EvtNext/EvtRender 封装，
+// EventFetcher 批量拉取并渲染 XML，兼容 WEC 转发与本地 EvtFormatMessage。
+
 import (
 	"bytes"
 	"encoding/xml"
@@ -121,6 +124,7 @@ var sampleConfig = `
 `
 
 // WinEventLog config
+// Telegraf Input 插件配置：XPath 查询、locale、字段过滤与订阅句柄。
 type WinEventLog struct {
 	Locale                 uint32   `yaml:"locale"`
 	EventlogName           string   `yaml:"eventlog_name"`
@@ -344,6 +348,7 @@ func (w *WinEventLog) shouldExcludeEmptyField(field string, fieldType string, fi
 	return false
 }
 
+// 从当前时刻起订阅指定通道与 XPath 查询的未来事件。
 func EvtSubscribe(logName, xquery string) (EvtHandle, error) {
 	var logNamePtr, xqueryPtr *uint16
 
@@ -373,6 +378,7 @@ func EvtSubscribe(logName, xquery string) (EvtHandle, error) {
 	return subsHandle, nil
 }
 
+// 携带书签句柄，从上次保存位置之后继续订阅。
 func EvtSubscribeWithBookmark(logName, xquery string, bookMark EvtHandle) (EvtHandle, error) {
 	var logNamePtr, xqueryPtr *uint16
 
@@ -421,6 +427,7 @@ func fetchEventHandles(subsHandle EvtHandle) ([]EvtHandle, error) {
 	return eventHandles[:evtReturned], nil
 }
 
+// Promtail 使用的轻量 fetcher，复用 16KB buf 调用 renderEvent。
 type EventFetcher struct {
 	buf []byte
 }
@@ -462,6 +469,7 @@ func Close(handles []EvtHandle) error {
 	return nil
 }
 
+// EvtRender 得 XML 后 Unmarshal；有 RenderingInfo 则走远程消息路径。
 func (w *EventFetcher) renderEvent(eventHandle EvtHandle, lang uint32) (Event, error) {
 	var bufferUsed, propertyCount uint32
 
@@ -515,6 +523,7 @@ func (w *EventFetcher) renderRemoteMessage(event Event) (Event, error) {
 	return event, nil
 }
 
+// 打开 PublisherMetadata，EvtFormatMessage 填充 Message/Level/Task 等可读文本。
 func (w *EventFetcher) renderLocalMessage(event Event, eventHandle EvtHandle, lang uint32) (Event, error) {
 	publisherHandle, err := openPublisherMetadata(0, event.Source.Name, lang)
 	if err != nil {

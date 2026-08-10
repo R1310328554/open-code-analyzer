@@ -3,6 +3,9 @@
 
 package windows
 
+// Windows 事件日志 target：EvtSubscribe 订阅通道，轮询 FetchEvents，
+// renderEntries 后写入 Loki 并更新 bookmark 断点。
+
 import (
 	"fmt"
 	"strings"
@@ -26,6 +29,7 @@ import (
 
 var fs = afero.NewOsFs()
 
+// subscription 句柄、bookmark、EventFetcher 与 poll 循环控制字段。
 type Target struct {
 	subscription  win_eventlog.EvtHandle
 	handler       api.EntryHandler
@@ -42,6 +46,7 @@ type Target struct {
 	err   error
 }
 
+// 新建或恢复 bookmark，EvtSubscribe/WithBookmark 后启动 loop goroutine。
 // New create a new windows targets, that will fetch windows event logs and send them to Loki.
 func New(
 	logger log.Logger,
@@ -93,6 +98,7 @@ func New(
 	return t, nil
 }
 
+// 内层循环批量拉取事件，外层 ticker 等待下一 PollInterval。
 // loop fetches new events and send them to via the Loki client.
 func (t *Target) loop() {
 	t.ready = true
@@ -138,6 +144,7 @@ func (t *Target) loop() {
 	}
 }
 
+// 合并静态/discovery 标签、relabel、formatLine JSON 后构造 api.Entry。
 // renderEntries renders Loki entries from windows event logs
 func (t *Target) renderEntries(events []win_eventlog.Event) []api.Entry {
 	res := make([]api.Entry, 0, len(events))
@@ -224,6 +231,7 @@ func (t *Target) Details() interface{} {
 	return map[string]string{}
 }
 
+// 关闭 done、等待 wg、停止 handler 并关闭 bookmark 文件。
 func (t *Target) Stop() error {
 	close(t.done)
 	t.wg.Wait()

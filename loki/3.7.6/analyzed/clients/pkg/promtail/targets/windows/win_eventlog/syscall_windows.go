@@ -27,6 +27,9 @@
 //revive:disable-next-line:var-naming
 package win_eventlog
 
+// Windows 事件 API 常量：EvtSubscribe/EvtRender 标志与常见 Win32 错误码，
+// 供 win_eventlog 包调用 wevtapi.dll 底层绑定时使用。
+
 import (
 	"syscall"
 )
@@ -36,12 +39,14 @@ import (
 const (
 	//revive:disable:var-naming
 	ERROR_INSUFFICIENT_BUFFER syscall.Errno = 122
+// EvtNext 无更多待处理事件时返回，订阅循环据此退出内层 fetch。
 	ERROR_NO_MORE_ITEMS       syscall.Errno = 259
 	ERROR_INVALID_OPERATION   syscall.Errno = 4317
 	//revive:enable:var-naming
 )
 
 // EvtSubscribeFlag defines the possible values that specify when to start subscribing to events.
+// 订阅标志：EvtSubscribeToFutureEvents 仅新事件，StartAfterBookmark 从书签续读。
 type EvtSubscribeFlag uint32
 
 // EVT_SUBSCRIBE_FLAGS enumeration
@@ -52,6 +57,7 @@ const (
 )
 
 // EvtRenderFlag uint32
+// EvtRenderEventXml 输出 XML 字符串；EvtRenderBookmark 渲染书签 XML。
 type EvtRenderFlag uint32
 
 // EVT_RENDER_FLAGS enumeration

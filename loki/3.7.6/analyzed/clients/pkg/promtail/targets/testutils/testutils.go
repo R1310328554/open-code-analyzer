@@ -1,5 +1,7 @@
 package testutils
 
+// Promtail targets 测试辅助：随机名称生成与 relabel 配置校验封装。
+
 import (
 	"math/rand"
 	"testing"
@@ -12,6 +14,7 @@ import (
 
 var randomGenerator *rand.Rand
 
+// 初始化全局 rand.Rand，供 RandName 生成唯一测试标识符。
 func InitRandom() {
 	randomGenerator = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
@@ -26,6 +29,7 @@ func RandName() string {
 	return string(b)
 }
 
+// 对每个 relabel.Config 调用 Validate(UTF8Validation) 并 require 无错误。
 func ValidateRelabelConfig(t *testing.T, configs []*relabel.Config) []*relabel.Config {
 	t.Helper()
 

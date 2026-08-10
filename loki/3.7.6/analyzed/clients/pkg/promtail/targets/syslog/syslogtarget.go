@@ -1,5 +1,8 @@
 package syslog
 
+// Promtail Syslog target：监听 TCP/UDP syslog 流，解析 RFC3164/RFC5424 消息，
+// 提取结构化标签后经 relabel 写入 Loki pipeline。
+
 import (
 	"errors"
 	"fmt"
@@ -29,6 +32,7 @@ var (
 	defaultProtocol         = protocolTCP
 )
 
+// 持有 Transport、消息 channel 与 relabel 配置，异步转发到 EntryHandler。
 // SyslogTarget listens to syslog messages.
 // nolint:revive
 type SyslogTarget struct {
@@ -44,12 +48,14 @@ type SyslogTarget struct {
 	messagesDone chan struct{}
 }
 
+// 内部消息缓冲：标签集、日志行文本与时间戳。
 type message struct {
 	labels    model.LabelSet
 	message   string
 	timestamp time.Time
 }
 
+// 按 ListenProtocol 创建 TCP/UDP Transport 并启动 messageSender goroutine。
 // NewSyslogTarget configures a new SyslogTarget.
 func NewSyslogTarget(
 	metrics *Metrics,
@@ -111,6 +117,7 @@ func (t *SyslogTarget) handleMessageError(err error) {
 	t.metrics.syslogParsingErrors.Inc()
 }
 
+// RFC5424：填充 severity/facility/hostname 等 __syslog_message_* 内部标签。
 func (t *SyslogTarget) handleMessageRFC5424(connLabels labels.Labels, msg syslog.Message) {
 	rfc5424Msg := msg.(*rfc5424.SyslogMessage)
 
@@ -183,6 +190,7 @@ func (t *SyslogTarget) handleMessageRFC5424(connLabels labels.Labels, msg syslog
 	t.messages <- message{filtered, m, timestamp}
 }
 
+// RFC3164：字段映射与 5424 类似，但不处理 StructuredData。
 func (t *SyslogTarget) handleMessageRFC3164(connLabels labels.Labels, msg syslog.Message) {
 	rfc3164Msg := msg.(*rfc3164.SyslogMessage)
 
@@ -246,6 +254,7 @@ func (t *SyslogTarget) handleMessage(connLabels labels.Labels, msg syslog.Messag
 	}
 }
 
+// 从 messages channel 读取并写入 handler channel，递增 syslogEntries 指标。
 func (t *SyslogTarget) messageSender(entries chan<- api.Entry) {
 	for msg := range t.messages {
 		entries <- api.Entry{
@@ -287,6 +296,7 @@ func (t *SyslogTarget) Details() interface{} {
 	return map[string]string{}
 }
 
+// 关闭 Transport、排空 messages 后停止 handler。
 // Stop shuts down the SyslogTarget.
 func (t *SyslogTarget) Stop() error {
 	err := t.transport.Close()

@@ -27,6 +27,9 @@
 //revive:disable-next-line:var-naming
 package win_eventlog
 
+// Windows 事件辅助工具：UTF-16 转 UTF-8、进程快照查询与 EventData XML
+// 递归展开为 EventField 列表，支持重复字段名去重编号。
+
 import (
 	"bytes"
 	"encoding/xml"
@@ -40,6 +43,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// 将 Windows API 返回的 UTF-16LE 字节切片解码为 UTF-8。
 // DecodeUTF16 to UTF8 bytes
 func DecodeUTF16(b []byte) ([]byte, error) {
 
@@ -64,6 +68,7 @@ func DecodeUTF16(b []byte) ([]byte, error) {
 	return ret.Bytes(), nil
 }
 
+// CreateToolhelp32Snapshot 遍历进程表，按 PID 返回父进程、线程数与可执行文件名。
 // GetFromSnapProcess finds information about process by the given pid
 // Returns process parent pid, threads info handle and process name
 func GetFromSnapProcess(pid uint32) (uint32, uint32, string, error) {
@@ -111,6 +116,7 @@ func (n *xmlnode) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return d.DecodeElement((*node)(n), &start)
 }
 
+// walkXML 递归遍历 XML 节点，以 separator 拼接路径作为字段名。
 // UnrollXMLFields extracts fields from xml data
 func UnrollXMLFields(data []byte, fieldsUsage map[string]int, separator string) ([]EventField, map[string]int) {
 	buf := bytes.NewBuffer(data)
@@ -158,6 +164,7 @@ func walkXML(nodes []xmlnode, parents []string, separator string, f func(xmlnode
 	}
 }
 
+// 同名字段出现多次时追加 _2、_3 等后缀保证唯一性。
 // UniqueFieldNames forms unique field names
 // by adding _<num> if there are several of them
 func UniqueFieldNames(fields []EventField, fieldsUsage map[string]int, separator string) []EventField {
