@@ -1,5 +1,7 @@
 package ui
 
+// ui.cluster 通过 ring 发现 Loki 集群成员，并发拉取各节点 config/services/build/ready 状态，组装 Cluster 与 NodeDetails 供实验性 Web UI 展示。
+
 import (
 	"context"
 	"encoding/json"
@@ -18,11 +20,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/analytics"
 )
 
+// Cluster 以 instance ID 为键保存 Member 快照，反映 ring 中健康副本的聚合视图。
 // Cluster represents a collection of cluster members.
 type Cluster struct {
 	Members map[string]Member `json:"members"`
 }
 
+// Member 包含 HTTP 地址、target 模式、服务状态、构建信息与就绪探针结果。
 // Member represents a node in the cluster with its current state and capabilities.
 type Member struct {
 	Addr     string         `json:"addr"`
@@ -51,6 +55,7 @@ type BuildInfo struct {
 	GoVersion string `json:"goVersion"`
 }
 
+// fetchClusterMembers 用 errgroup 限流 16 路并发 fetchMemberState，mutex 保护 map 写入。
 // fetchClusterMembers retrieves the state of all members in the cluster.
 // It uses an errgroup to fetch member states concurrently with a limit of 16 concurrent operations.
 func (s *Service) fetchClusterMembers(ctx context.Context) (Cluster, error) {
@@ -91,6 +96,7 @@ func (s *Service) fetchClusterMembers(ctx context.Context) (Cluster, error) {
 }
 
 // discoverInstances queries the ring and returns a map of instance ID to HTTP address.
+// discoverInstances 调用 ring.GetAllHealthy(Read) 收集 Id→Addr 映射供下游 HTTP 探测。
 func (s *Service) discoverInstances() map[string]string {
 	instances := make(map[string]string)
 
@@ -167,6 +173,7 @@ func readResponseError(resp *http.Response, operation string) error {
 	return nil
 }
 
+// NodeDetails 在 Member 基础上附加完整 config 文本、analytics 指标与集群/OS/版本元数据。
 // NodeDetails contains the details of a node in the cluster.
 // It adds on top of Member the config, build, clusterID, clusterSeededAt, os, arch, edition and registered analytics metrics.
 type NodeDetails struct {
@@ -303,6 +310,7 @@ func (s *Service) fetchBuild(ctx context.Context, addr string) (BuildInfo, error
 	return build, nil
 }
 
+// ReadyResponse 封装 /ready 探针：StatusOK 且 body 为 ready 时 IsReady 为 true。
 type ReadyResponse struct {
 	IsReady bool   `json:"isReady"`
 	Message string `json:"message"`
@@ -360,3 +368,4 @@ func parseServices(body string) ([]ServiceState, error) {
 	}
 	return services, nil
 }
+// parseServices 解析 services 端点返回的 service => status 行格式为 ServiceState 列表。

@@ -1,5 +1,7 @@
 package rules
 
+// rules.parser 从磁盘 YAML 加载 Prometheus/Loki 规则文件：支持多文档流式解码、namespace 默认取文件名及 Loki ruler 校验路径。
+
 import (
 	"bytes"
 	"errors"
@@ -23,6 +25,7 @@ var (
 	errFileReadError = errors.New("file read error")
 )
 
+// ParseFiles 遍历文件列表，默认 ParseLoki 解析并保证 namespace 唯一不重复。
 // ParseFiles returns a formatted set of prometheus rule groups
 func ParseFiles(files []string) (map[string]RuleNamespace, error) {
 	ruleSet := map[string]RuleNamespace{}
@@ -60,6 +63,7 @@ func ParseFiles(files []string) (map[string]RuleNamespace, error) {
 	return ruleSet, nil
 }
 
+// Parse 读取单文件字节后调用 ParseBytes，KnownFields 严格拒绝未知 YAML 键。
 // Parse parses and validates a set of rules.
 func Parse(f string) ([]RuleNamespace, []error) {
 	content, err := loadFile(f)
@@ -95,6 +99,7 @@ func ParseBytes(content []byte) ([]RuleNamespace, []error) {
 	return nss, nil
 }
 
+// ParseLoki 提取 rulefmt.RuleGroup 后调用 ruler.ValidateGroups 做 Loki 侧校验。
 func ParseLoki(f string) ([]RuleNamespace, []error) {
 	content, err := loadFile(f)
 	if err != nil {
@@ -133,6 +138,7 @@ func ParseLoki(f string) ([]RuleNamespace, []error) {
 	return nss, nil
 }
 
+// loadFile 一次性读取整个规则文件到内存 buffer，供 decoder 解析。
 func loadFile(filename string) ([]byte, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -155,3 +161,4 @@ func loadFile(filename string) ([]byte, error) {
 
 	return buffer, nil
 }
+// 未显式指定 namespace 时用文件名（去扩展名）作为 ruler 中的逻辑 namespace。

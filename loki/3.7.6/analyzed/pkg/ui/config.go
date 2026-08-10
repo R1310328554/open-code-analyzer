@@ -1,5 +1,7 @@
 package ui
 
+// ui.config 定义实验性 Loki UI 开关、Goldfish 查询对比与 ring 发现配置：支持 CloudSQL/RDS 元数据存储及 GCS/S3 结果桶访问。
+
 import (
 	"flag"
 
@@ -22,6 +24,7 @@ type GoldfishConfig struct {
 	ResultsBucket  bucket.Config `yaml:"results_bucket"`  // Bucket configuration for accessing stored results
 }
 
+// StorageConfig 支持 cloudsql/rds 或空类型，数据库密码经 GOLDFISH_DB_PASSWORD 环境变量注入。
 // StorageConfig defines storage backend configuration
 type StorageConfig struct {
 	Type string `yaml:"type"` // "cloudsql", "rds", or empty string for no storage
@@ -44,6 +47,7 @@ type StorageConfig struct {
 	MaxIdleTime    int `yaml:"max_idle_time_seconds"`
 }
 
+// Config 顶层聚合 UI 启用、Debug、Goldfish 与 collectors ring 成员发现参数。
 type Config struct {
 	Enabled  bool                `yaml:"enabled"` // Whether to enable the UI.
 	Debug    bool                `yaml:"debug"`
@@ -51,6 +55,7 @@ type Config struct {
 	Ring     lokiring.RingConfig `yaml:"ring"`     // UI ring configuration for cluster member discovery
 }
 
+// RegisterFlags 注册 ui.enabled、goldfish 存储/Explore 相关 flag 及 ring 前缀配置。
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.BoolVar(&cfg.Enabled, "ui.enabled", false, "Enable the experimental Loki UI.")
 	f.BoolVar(&cfg.Debug, "ui.debug", false, "Enable debug logging for the UI.")
@@ -87,3 +92,4 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&cfg.Goldfish.ResultsBackend, "ui.goldfish.results-backend", "", "Results storage backend (gcs, s3) for fetching stored query results.")
 	cfg.Goldfish.ResultsBucket.RegisterFlagsWithPrefix("ui.goldfish.results.", f)
 }
+// ResultsBackend/ResultsBucket 用于从对象存储读取 Goldfish 持久化的原始查询结果。

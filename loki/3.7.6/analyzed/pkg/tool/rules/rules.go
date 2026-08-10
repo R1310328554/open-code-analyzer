@@ -1,5 +1,7 @@
 package rules
 
+// rules 包定义 RuleNamespace 及 lint/prepare/validate 工具：对 LogQL 表达式格式化、聚合标签注入、录制规则命名与 rulefmt 校验。
+
 import (
 	"fmt"
 	"strings"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/tool/rules/rwrulefmt"
 )
 
+// RuleNamespace 扩展 Prometheus 规则文件格式，可选 namespace 字段与 RWConfigs 组。
 // RuleNamespace is used to parse a slightly modified prometheus
 // rule file format, if no namespace is set, the default namespace
 // is used. Namespace is functionally the same as a file name.
@@ -26,6 +29,7 @@ type RuleNamespace struct {
 	Groups []rwrulefmt.RuleGroup `yaml:"groups"`
 }
 
+// LintExpressions 用 LogQL 解析器规范化 expr 字符串，统计检查与修改条数。
 // LintExpressions runs the `expr` from a rule through the PromQL or LogQL parser and
 // compares its output. If it differs from the parser, it uses the parser's instead.
 func (r RuleNamespace) LintExpressions() (int, int, error) {
@@ -64,6 +68,7 @@ func (r RuleNamespace) LintExpressions() (int, int, error) {
 	return count, mod, nil
 }
 
+// CheckRecordingRules 按 level:metric:operation 惯例检查录制规则名中冒号段数。
 // CheckRecordingRules checks that recording rules have at least one colon in their name, this is based
 // on the recording rules best practices here: https://prometheus.io/docs/practices/rules/
 // Returns the number of rules that don't match the requirements.
@@ -97,6 +102,7 @@ func (r RuleNamespace) CheckRecordingRules(strict bool) int {
 	return count
 }
 
+// AggregateBy 遍历 PromQL AST，向聚合与 binary on() 匹配标签注入 cluster 等标签。
 // AggregateBy modifies the aggregation rules in groups to include a given Label.
 // If the applyTo function is provided, the aggregation is applied only to rules
 // for which the applyTo function returns true.
@@ -149,6 +155,7 @@ func (r RuleNamespace) AggregateBy(label string, applyTo func(group rwrulefmt.Ru
 
 // exprNodeInspectorFunc returns a PromQL inspector.
 // It modifies most PromQL expressions to include a given label.
+// exprNodeInspectorFunc 返回 Inspect 回调，处理 AggregateExpr 与 BinaryExpr 节点。
 func exprNodeInspectorFunc(rule rulefmt.Rule, label string) func(node parser.Node, path []parser.Node) error {
 	return func(node parser.Node, _ []parser.Node) error {
 		var err error
@@ -272,3 +279,4 @@ func getRuleName(r rulefmt.Rule) string {
 
 	return r.Alert
 }
+// ValidateRuleGroup 将每条 rule 转为 rulefmt.RuleNode 后调用 upstream Validate 收集错误。

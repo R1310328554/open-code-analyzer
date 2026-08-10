@@ -1,5 +1,7 @@
 package commands
 
+// commands.audit 注册 lokitool audit 子命令：校验给定 index 文件引用的 chunk 是否在对象存储中完整存在。
+
 import (
 	"context"
 	"flag"
@@ -14,6 +16,7 @@ import (
 	util_cfg "github.com/grafana/loki/v3/pkg/util/cfg"
 )
 
+// AuditCommand 封装 index 路径、配置文件与额外 flag 参数，驱动 audit.Run 执行检查。
 // AuditIndexCommand validates an index by checking existing chunks.
 type AuditCommand struct {
 	path string
@@ -49,6 +52,7 @@ func (a *AuditCommand) auditIndex(_ *kingpin.ParseContext) error {
 	return nil
 }
 
+// Register 挂载 audit index 子命令及 config.file、index.file 等必填 flag。
 func (a *AuditCommand) Register(app *kingpin.Application) {
 	auditCmd := app.Command("audit", "Audit Loki state.")
 
@@ -61,3 +65,4 @@ func (a *AuditCommand) Register(app *kingpin.Application) {
 	auditIndexCmd.Flag("index.file", "Index to be audited").Required().StringVar(&a.path)
 	auditIndexCmd.Arg("args", "").StringsVar(&a.extraArgs)
 }
+// missing>0 时记录 error 日志提示索引缺块，否则 info 报告索引健康。

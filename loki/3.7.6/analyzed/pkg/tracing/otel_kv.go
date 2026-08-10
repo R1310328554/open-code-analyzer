@@ -1,5 +1,7 @@
 package tracing
 
+// otel_kv 将 go-kit 风格交替 key/value 参数转换为 OpenTelemetry attribute.KeyValue 切片，便于 Loki 内部 span 标注与 dskit tracing 互操作。
+
 import (
 	"fmt"
 
@@ -20,3 +22,4 @@ func KeyValuesToOTelAttributes(kvps ...any) []attribute.KeyValue {
 	}
 	return attrs
 }
+// 非 string 键会格式化为 not_string_key:%v，value 仍经 tracing.KeyValueToOTelAttribute 类型推断。

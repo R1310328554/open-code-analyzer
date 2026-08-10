@@ -1,5 +1,7 @@
 package printer
 
+// printer 为 lokitool 提供终端友好输出：YAML/JSON 语法高亮、彩色 diff 符号及 table/json/yaml 格式的规则列表。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -17,12 +19,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/tool/rules/rwrulefmt"
 )
 
+// Printer 封装 colorstring 与 disableColor，统一 Println/Printf 着色行为。
 // Printer is  used for printing formatted output from the lokitool
 type Printer struct {
 	disableColor bool
 	colorizer    colorstring.Colorize
 }
 
+// New 根据 disableColor 初始化 chroma 高亮与终端 ANSI 配色。
 // New returns a Printer struct
 func New(color bool) *Printer {
 	return &Printer{
@@ -110,6 +114,7 @@ func (p *Printer) PrintRuleGroup(rule rwrulefmt.RuleGroup) error {
 	return nil
 }
 
+// PrintComparisonResult 以 +/-/~ 彩色符号展示 namespace 级 create/update/delete 变更摘要。
 // PrintComparisonResult prints the differences between the staged rules namespace
 // and active rules namespace
 func (p *Printer) PrintComparisonResult(results []rules.NamespaceChange, verbose bool) error {
@@ -182,6 +187,7 @@ func (p *Printer) PrintComparisonResult(results []rules.NamespaceChange, verbose
 	return nil
 }
 
+// PrintRuleSet 按 namespace 排序输出规则组清单，支持 json/yaml/table 三种格式。
 func (p *Printer) PrintRuleSet(rules map[string][]rwrulefmt.RuleGroup, format string, writer io.Writer) error {
 	nsKeys := make([]string, 0, len(rules))
 	for k := range rules {
@@ -242,3 +248,4 @@ func (p *Printer) PrintRuleSet(rules map[string][]rwrulefmt.RuleGroup, format st
 
 	return nil
 }
+// PrintAlertmanagerConfig 对主配置与模板分别做 yaml/go-text-template 语法高亮输出。

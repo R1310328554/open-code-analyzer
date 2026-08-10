@@ -1,5 +1,7 @@
 package client
 
+// client 包 alerts 子模块封装 Loki Alertmanager 配置 REST API：创建、删除与读取租户级 alertmanager 主配置及模板文件。
+
 import (
 	"context"
 	"io"
@@ -16,6 +18,7 @@ type configCompat struct {
 	AlertmanagerConfig string            `yaml:"alertmanager_config"`
 }
 
+// CreateAlertmanagerConfig 以 YAML 封装主配置与模板，POST 到 /api/v1/alerts。
 // CreateAlertmanagerConfig creates a new alertmanager config
 func (r *LokiClient) CreateAlertmanagerConfig(ctx context.Context, cfg string, templates map[string]string) error {
 	payload, err := yaml.Marshal(&configCompat{
@@ -36,6 +39,7 @@ func (r *LokiClient) CreateAlertmanagerConfig(ctx context.Context, cfg string, t
 	return nil
 }
 
+// DeleteAlermanagerConfig 对当前租户发起 DELETE，清空远端 Alertmanager 配置。
 // DeleteAlermanagerConfig deletes the users alertmanagerconfig
 func (r *LokiClient) DeleteAlermanagerConfig(ctx context.Context) error {
 	res, err := r.doRequest(ctx, alertmanagerAPIPath, "DELETE", nil)
@@ -48,6 +52,7 @@ func (r *LokiClient) DeleteAlermanagerConfig(ctx context.Context) error {
 	return nil
 }
 
+// GetAlertmanagerConfig GET 拉取配置体与模板 map，反序列化失败时记录 debug 日志。
 // GetAlertmanagerConfig retrieves a rule group
 func (r *LokiClient) GetAlertmanagerConfig(ctx context.Context) (string, map[string]string, error) {
 	res, err := r.doRequest(ctx, alertmanagerAPIPath, "GET", nil)
@@ -74,3 +79,4 @@ func (r *LokiClient) GetAlertmanagerConfig(ctx context.Context) (string, map[str
 
 	return compat.AlertmanagerConfig, compat.TemplateFiles, nil
 }
+// alertmanagerAPIPath 固定为 /api/v1/alerts，与 ruler 规则 API 路径相互独立。

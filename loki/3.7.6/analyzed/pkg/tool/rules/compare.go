@@ -1,5 +1,7 @@
 package rules
 
+// rules.compare 比较本地 staged 与远端 active 规则 namespace：产出 Created/Updated/Deleted 状态及组级增删改明细，供 diff/sync 使用。
+
 import (
 	"errors"
 	"fmt"
@@ -20,6 +22,7 @@ var (
 	errDiffRWConfigs = errors.New("rule groups has different remote write configs")
 )
 
+// NamespaceState 枚举 namespace 相对远端的未变、新建、更新或删除四种差异态。
 // NamespaceState is used to denote the difference between the staged namespace
 // and active namespace for the Loki tenant
 type NamespaceState int
@@ -35,6 +38,7 @@ const (
 	Deleted
 )
 
+// NamespaceChange 记录单个 namespace 的状态及创建/更新/删除的规则组集合。
 // NamespaceChange stores the various changes between a staged set of changes
 // and the active rules configs.
 type NamespaceChange struct {
@@ -45,6 +49,7 @@ type NamespaceChange struct {
 	GroupsDeleted []rwrulefmt.RuleGroup
 }
 
+// SummarizeChanges 统计变更列表中新建、更新、删除的规则组数量。
 // SummarizeChanges returns the number of each type of change in a set of changes
 func SummarizeChanges(changes []NamespaceChange) (created, updated, deleted int) {
 	// Cycle through the results to determine which types of changes have been made
@@ -68,6 +73,7 @@ type UpdatedRuleGroup struct {
 	Original rwrulefmt.RuleGroup
 }
 
+// CompareGroups 逐字段比较组名、interval、RWConfigs 与各条 rule 是否 DeepEqual。
 // CompareGroups differentiates between two rule groups
 func CompareGroups(groupOne, groupTwo rwrulefmt.RuleGroup) error {
 	if groupOne.Name != groupTwo.Name {
@@ -129,6 +135,7 @@ func rulesEqual(a, b *rulefmt.Rule) bool {
 	return true
 }
 
+// CompareNamespaces 以组名为键做 map diff，填充 GroupsCreated/Updated/Deleted。
 // CompareNamespaces returns the differences between the two provided
 // namespaces
 func CompareNamespaces(original, newNamespace RuleNamespace) NamespaceChange {
@@ -242,3 +249,4 @@ func PrintComparisonResult(results []NamespaceChange, verbose bool) error {
 	fmt.Printf("Diff Summary: %v Groups Created, %v Groups Updated, %v Groups Deleted\n", created, updated, deleted)
 	return nil
 }
+// rulesEqual 比较 alert/record/expr/for 与 annotations/labels，任一不等即视为规则变更。

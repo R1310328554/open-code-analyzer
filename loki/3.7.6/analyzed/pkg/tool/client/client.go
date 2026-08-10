@@ -1,5 +1,7 @@
 package client
 
+// client 提供连接 Loki Ruler 与 Alertmanager 的 HTTP 客户端：支持 TLS、Basic Auth、Bearer Token 及 X-Scope-OrgID 多租户头。
+
 import (
 	"bufio"
 	"bytes"
@@ -26,6 +28,7 @@ var (
 	ErrResourceNotFound = errors.New("requested resource not found")
 )
 
+// Config 描述 API 地址、租户 ID、认证凭据及是否走 legacy /api/prom 路由。
 // Config is used to configure a Ruler Client
 type Config struct {
 	User            string `yaml:"user"`
@@ -37,6 +40,7 @@ type Config struct {
 	AuthToken       string `yaml:"auth_token"`
 }
 
+// LokiClient 持有 endpoint、http.Client 与 apiPath，统一 doRequest 发送 ruler 请求。
 // LokiClient is used to get and load rules into a Loki ruler
 type LokiClient struct {
 	user      string
@@ -48,6 +52,7 @@ type LokiClient struct {
 	authToken string
 }
 
+// New 解析地址、可选 TLS Transport，并按 UseLegacyRoutes 选择 ruler API 前缀。
 // New returns a new Client
 func New(cfg Config) (*LokiClient, error) {
 	endpoint, err := url.Parse(cfg.Address)
@@ -97,6 +102,7 @@ func New(cfg Config) (*LokiClient, error) {
 	}, nil
 }
 
+// Query 对 /api/prom/api/v1/query 发起即时 PromQL 查询，附带当前 Unix 时间戳。
 // Query executes a PromQL query against the Cortex cluster.
 func (r *LokiClient) Query(ctx context.Context, query string) (*http.Response, error) {
 
@@ -111,6 +117,7 @@ func (r *LokiClient) Query(ctx context.Context, query string) (*http.Response, e
 	return res, nil
 }
 
+// doRequest 构建请求、注入认证与 OrgID 头，并经由 checkResponse 校验 HTTP 状态。
 func (r *LokiClient) doRequest(ctx context.Context, path, method string, payload []byte) (*http.Response, error) {
 	req, err := buildRequest(ctx, path, method, *r.endpoint, payload)
 	if err != nil {
@@ -162,6 +169,7 @@ func (r *LokiClient) doRequest(ctx context.Context, path, method string, payload
 	return resp, nil
 }
 
+// checkResponse 将 2xx 视为成功；404 映射 ErrResourceNotFound，其余读取 body 报错。
 // checkResponse checks the API response for errors
 func checkResponse(r *http.Response) error {
 	log.WithFields(log.Fields{
@@ -219,3 +227,4 @@ func buildRequest(ctx context.Context, p, m string, endpoint url.URL, payload []
 	endpoint.Path = joinPath(endpoint.Path, pURL.Path)
 	return http.NewRequestWithContext(ctx, m, endpoint.String(), bytes.NewBuffer(payload))
 }
+// buildRequest 合并 endpoint 与 path 的 EscapedPath/Path，支持已转义 URL 片段拼接。

@@ -1,5 +1,7 @@
 package commands
 
+// commands.rules 实现 lokitool rules 全套 CLI：list/print/get/delete/load/diff/sync/prepare/lint/check，对接 ruler API 与本地规则文件的解析、对比与同步。
+
 import (
 	"context"
 	"fmt"
@@ -41,6 +43,7 @@ var (
 	formats = []string{"json", "yaml", "table"} // list of supported formats for the list command
 )
 
+// RuleCommand 聚合客户端配置、namespace 过滤、文件列表及 lint/prepare 等行为开关。
 // RuleCommand configures and executes rule related Loki operations
 type RuleCommand struct {
 	ClientConfig client.Config
@@ -89,6 +92,7 @@ type RuleCommand struct {
 }
 
 // Register rule related commands and flags with the kingpin application
+// Register 为各子命令绑定 LOKI_* 环境变量、TLS 与 namespace 正则过滤 flag。
 func (r *RuleCommand) Register(app *kingpin.Application) {
 	rulesCmd := app.Command("rules", "View & edit rules stored in loki.").PreAction(r.setup)
 	rulesCmd.Flag("authToken", "Authentication token for bearer token or JWT auth, alternatively set LOKI_AUTH_TOKEN.").Default("").Envar("LOKI_AUTH_TOKEN").StringVar(&r.ClientConfig.AuthToken)
@@ -239,6 +243,7 @@ func (r *RuleCommand) Register(app *kingpin.Application) {
 	listCmd.Flag("disable-color", "disable colored output").BoolVar(&r.DisableColor)
 }
 
+// setup 注册 Prometheus 规则加载指标 gauge，并按 Backend 决定是否启用 legacy 路由。
 func (r *RuleCommand) setup(_ *kingpin.ParseContext) error {
 	prometheus.MustRegister(
 		ruleLoadTimestamp,
@@ -428,6 +433,7 @@ func (r *RuleCommand) loadRules(_ *kingpin.ParseContext) error {
 	return nil
 }
 
+// shouldCheckNamespace 在 diff/sync 中按 allow/ignore 列表或正则决定是否纳入 namespace。
 // shouldCheckNamespace returns whether the namespace should be checked according to the allowed and ignored namespaces
 func (r *RuleCommand) shouldCheckNamespace(namespace string) bool {
 	if r.NamespacesRegex != nil {
@@ -510,6 +516,7 @@ func (r *RuleCommand) diffRules(_ *kingpin.ParseContext) error {
 	return p.PrintComparisonResult(changes, r.Verbose)
 }
 
+// syncRules 对比本地与远端规则集后调用 executeChanges 创建/更新/删除规则组。
 func (r *RuleCommand) syncRules(_ *kingpin.ParseContext) error {
 	err := r.setupFiles()
 	if err != nil {
@@ -795,3 +802,4 @@ func save(nss map[string]rules.RuleNamespace, i bool) error {
 
 	return nil
 }
+// save 将 RuleNamespace 序列化写回源文件或 .result 后缀，供 prepare/lint 就地修改。
