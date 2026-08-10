@@ -20,6 +20,9 @@ import io.netty.buffer.ByteBuf;
 /**
  * An unknown socks response.
  *
+ * <p>解码器在无法识别响应类型或解析失败时返回的占位对象（{@link SocksResponseType#UNKNOWN}）。
+ * 与 {@link UnknownSocksRequest} 对称，{@link #encodeAsByteBuf} 不写入任何字节。</p>
+ *
  * @see SocksInitResponseDecoder
  * @see SocksAuthResponseDecoder
  * @see SocksCmdResponseDecoder
@@ -32,6 +35,6 @@ public final class UnknownSocksResponse extends SocksResponse {
 
     @Override
     public void encodeAsByteBuf(ByteBuf byteBuf) {
-        // NOOP
+        // 占位响应无合法线格式，编码器不应调用
     }
 }

@@ -20,6 +20,10 @@ import io.netty.buffer.ByteBuf;
 /**
  * An unknown socks request.
  *
+ * <p>解码器在无法识别请求类型或解析失败时返回的占位对象（{@link SocksRequestType#UNKNOWN}）。
+ * 不可重新编码为有效线格式——{@link #encodeAsByteBuf} 为空操作；
+ * 上层应记录错误并关闭连接，而非尝试回写此消息。</p>
+ *
  * @see SocksInitRequestDecoder
  * @see SocksAuthRequestDecoder
  * @see SocksCmdRequestDecoder
@@ -32,6 +36,6 @@ public final class UnknownSocksRequest extends SocksRequest {
 
     @Override
     public void encodeAsByteBuf(ByteBuf byteBuf) {
-        // NOOP
+        // 占位请求无合法线格式，编码器不应调用
     }
 }

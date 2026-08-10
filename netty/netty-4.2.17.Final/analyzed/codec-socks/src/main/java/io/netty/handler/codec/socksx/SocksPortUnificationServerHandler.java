@@ -34,12 +34,17 @@ import java.util.List;
 /**
  * Detects the version of the current SOCKS connection and initializes the pipeline with
  * {@link Socks4ServerDecoder} or {@link Socks5InitialRequestDecoder}.
+ *
+ * <p>SOCKS 服务端"端口统一"入口 handler：仅读取首字节 VER 即可判定协议版本，
+ * 动态向 pipeline 注入对应版本的编解码器，然后移除自身（一次性探测）。
+ * 未知版本则丢弃剩余可读字节并关闭连接。</p>
  */
 public class SocksPortUnificationServerHandler extends ByteToMessageDecoder {
 
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(SocksPortUnificationServerHandler.class);
 
+    /** SOCKS5 侧出站编码器；可通过构造器注入自定义 {@link Socks5AddressEncoder}。 */
     private final Socks5ServerEncoder socks5encoder;
 
     /**
@@ -60,17 +65,20 @@ public class SocksPortUnificationServerHandler extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         final int readerIndex = in.readerIndex();
+        // 无可用字节时等待更多数据，不推进 readerIndex
         if (in.writerIndex() == readerIndex) {
             return;
         }
 
         ChannelPipeline p = ctx.pipeline();
+        // 仅 peek 首字节，不消费；具体版本 decoder 会重新读取完整报文
         final byte versionVal = in.getByte(readerIndex);
         SocksVersion version = SocksVersion.valueOf(versionVal);
 
         switch (version) {
         case SOCKS4a:
             logKnownVersion(ctx, version);
+            // 编码器在前、解码器在后，均插入在本 handler 之后
             p.addAfter(ctx.name(), null, Socks4ServerEncoder.INSTANCE);
             p.addAfter(ctx.name(), null, new Socks4ServerDecoder());
             break;
@@ -80,12 +88,14 @@ public class SocksPortUnificationServerHandler extends ByteToMessageDecoder {
             p.addAfter(ctx.name(), null, new Socks5InitialRequestDecoder());
             break;
         default:
+            // 非 SOCKS 客户端：清空缓冲并关闭，避免半开连接占用资源
             logUnknownVersion(ctx, versionVal);
             in.skipBytes(in.readableBytes());
             ctx.close();
             return;
         }
 
+        // 版本专用 handler 已就位，移除一次性探测 handler
         p.remove(this);
     }
 

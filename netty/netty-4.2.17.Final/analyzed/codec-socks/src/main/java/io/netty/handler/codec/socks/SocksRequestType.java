@@ -18,10 +18,17 @@ package io.netty.handler.codec.socks;
 
 /**
  * Type of socks request
+ *
+ * <p>标记 {@link SocksRequest} 在 SOCKS5 客户端状态机中的阶段。
+ * 正常流程为 INIT →（可选 AUTH）→ CMD；解码失败时落入 {@link #UNKNOWN}。</p>
  */
 public enum SocksRequestType {
+    /** 方法协商请求（{@link SocksInitRequest}，RFC 1928 握手第一步）。 */
     INIT,
+    /** 用户名/密码子协商请求（{@link SocksAuthRequest}，RFC 1929）。 */
     AUTH,
+    /** 连接/绑定等命令请求（{@link SocksCmdRequest}，RFC 1928 命令阶段）。 */
     CMD,
+    /** 无法识别或解析失败的请求占位类型（{@link UnknownSocksRequest}）。 */
     UNKNOWN
 }

@@ -21,6 +21,9 @@ import io.netty.handler.codec.socksx.SocksVersion;
 
 /**
  * An abstract {@link Socks4Message}.
+ *
+ * <p>SOCKS4/4a 消息的抽象基类。{@link #version()} 恒返回 {@link SocksVersion#SOCKS4a}，
+ * 子类无需再声明协议版本，编解码器可依赖此不变量。</p>
  */
 public abstract class AbstractSocks4Message extends AbstractSocksMessage implements Socks4Message {
     @Override

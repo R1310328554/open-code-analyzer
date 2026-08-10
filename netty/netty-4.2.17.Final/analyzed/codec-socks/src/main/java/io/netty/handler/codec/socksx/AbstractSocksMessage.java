@@ -21,9 +21,13 @@ import io.netty.util.internal.ObjectUtil;
 
 /**
  * An abstract {@link SocksMessage}.
+ *
+ * <p>{@code socksx} 包中所有 SOCKS 消息的公共基类，实现 {@link DecoderResultProvider} 契约。
+ * 解码器可将部分解析失败的结果写入 {@link #decoderResult}，供业务层在消息仍可读字段时做降级处理。</p>
  */
 public abstract class AbstractSocksMessage implements SocksMessage {
 
+    /** 默认表示解码完全成功；失败时由解码器调用 {@link #setDecoderResult} 覆盖。 */
     private DecoderResult decoderResult = DecoderResult.SUCCESS;
 
     @Override

@@ -21,12 +21,16 @@ import io.netty.util.internal.ObjectUtil;
  * An abstract class that defines a SocksResponse, providing common properties for
  * {@link SocksInitResponse}, {@link SocksAuthResponse}, {@link SocksCmdResponse} and {@link UnknownSocksResponse}.
  *
+ * <p>SOCKS5 服务端出站响应的抽象基类。构造时固定 {@link SocksMessageType#RESPONSE}，
+ * 并通过 {@link SocksResponseType} 与对应 {@link SocksRequestType} 阶段配对。</p>
+ *
  * @see SocksInitResponse
  * @see SocksAuthResponse
  * @see SocksCmdResponse
  * @see UnknownSocksResponse
  */
 public abstract class SocksResponse extends SocksMessage {
+    /** 响应对应的 SOCKS5 协商/命令阶段。 */
     private final SocksResponseType responseType;
 
     protected SocksResponse(SocksResponseType responseType) {

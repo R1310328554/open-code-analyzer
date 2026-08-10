@@ -18,10 +18,17 @@ package io.netty.handler.codec.socks;
 
 /**
  * Type of socks response
+ *
+ * <p>标记 {@link SocksResponse} 在 SOCKS5 服务端状态机中的阶段，
+ * 与 {@link SocksRequestType} 一一对应，便于编解码器按阶段切换 pipeline handler。</p>
  */
 public enum SocksResponseType {
+    /** 方法协商响应（{@link SocksInitResponse}）。 */
     INIT,
+    /** 用户名/密码子协商响应（{@link SocksAuthResponse}）。 */
     AUTH,
+    /** 命令执行结果响应（{@link SocksCmdResponse}）。 */
     CMD,
+    /** 无法识别或解析失败的响应占位类型（{@link UnknownSocksResponse}）。 */
     UNKNOWN
 }

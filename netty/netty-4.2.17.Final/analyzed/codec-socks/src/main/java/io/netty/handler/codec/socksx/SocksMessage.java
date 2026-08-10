@@ -19,11 +19,17 @@ import io.netty.handler.codec.DecoderResultProvider;
 
 /**
  * An interface that all SOCKS protocol messages implement.
+ *
+ * <p>{@code socksx} 模块的统一消息根接口，覆盖 SOCKS4/4a 与 SOCKS5 各阶段报文。
+ * 继承 {@link DecoderResultProvider} 以支持"尽力解析"语义；
+ * {@link #version()} 返回报文所属协议版本，便于多版本 pipeline 路由。</p>
  */
 public interface SocksMessage extends DecoderResultProvider {
 
     /**
      * Returns the protocol version of this message.
+     *
+     * <p>对应线格式首字节 VER 字段的语义化枚举（{@link SocksVersion}）。</p>
      */
     SocksVersion version();
 }

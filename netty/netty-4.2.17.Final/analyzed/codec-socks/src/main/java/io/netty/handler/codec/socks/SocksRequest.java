@@ -21,12 +21,17 @@ import io.netty.util.internal.ObjectUtil;
  * An abstract class that defines a SocksRequest, providing common properties for
  * {@link SocksInitRequest}, {@link SocksAuthRequest}, {@link SocksCmdRequest} and {@link UnknownSocksRequest}.
  *
+ * <p>SOCKS5 客户端出站消息的抽象基类。构造时固定 {@link SocksMessageType#REQUEST}，
+ * 并通过 {@link SocksRequestType} 区分握手、认证、命令三个阶段。
+ * 子类实现 {@link SocksMessage#encodeAsByteBuf} 完成 RFC 1928/1929 线格式序列化。</p>
+ *
  * @see SocksInitRequest
  * @see SocksAuthRequest
  * @see SocksCmdRequest
  * @see UnknownSocksRequest
  */
 public abstract class SocksRequest extends SocksMessage {
+    /** 请求所处 SOCKS5 状态机阶段（INIT / AUTH / CMD / UNKNOWN）。 */
     private final SocksRequestType requestType;
 
     protected SocksRequest(SocksRequestType requestType) {

@@ -18,18 +18,27 @@ package io.netty.handler.codec.socksx;
 
 /**
  * The version of SOCKS protocol.
+ *
+ * <p>{@code socksx} 模块使用的 SOCKS 协议版本枚举，对应各报文首字节 VER 字段。
+ * {@link SocksPortUnificationServerHandler} 据此在 SOCKS4/5 pipeline 间分流。</p>
  */
 public enum SocksVersion {
     /**
      * SOCKS protocol version 4a (or 4)
+     *
+     * <p>线格式 VER = 0x04；SOCKS4 与 SOCKS4a 共用此值。</p>
      */
     SOCKS4a((byte) 0x04),
     /**
      * SOCKS protocol version 5
+     *
+     * <p>线格式 VER = 0x05；支持多种认证与地址类型。</p>
      */
     SOCKS5((byte) 0x05),
     /**
      * Unknown protocol version
+     *
+     * <p>内部占位，非 RFC 定义的有效 VER 值。</p>
      */
     UNKNOWN((byte) 0xff);
 
@@ -38,6 +47,8 @@ public enum SocksVersion {
      * as defined in the protocol specification.
      *
      * @return {@link #UNKNOWN} if the specified value does not represent a known SOCKS protocol version
+     *
+     * <p>仅识别 0x04 与 0x05；其他字节（含 SOCKS4 纯 0x04 以外的探测值）均归为 {@link #UNKNOWN}。</p>
      */
     public static SocksVersion valueOf(byte b) {
         if (b == SOCKS4a.byteValue()) {
@@ -49,6 +60,7 @@ public enum SocksVersion {
         return UNKNOWN;
     }
 
+    /** 线格式 VER 单字节值。 */
     private final byte b;
 
     SocksVersion(byte b) {

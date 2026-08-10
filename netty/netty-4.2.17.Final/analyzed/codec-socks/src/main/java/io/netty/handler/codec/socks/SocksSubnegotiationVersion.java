@@ -16,10 +16,19 @@
 
 package io.netty.handler.codec.socks;
 
+/**
+ * SOCKS5 子协商（subnegotiation）协议版本。
+ * <p>当主握手选中 {@link SocksAuthScheme#AUTH_PASSWORD} 后，
+ * {@link SocksAuthRequest}/{@link SocksAuthResponse} 报文首字节 VER 固定为 {@link #AUTH_PASSWORD}（0x01，RFC 1929）。
+ * 与主协议 {@link SocksProtocolVersion#SOCKS5} 相互独立。</p>
+ */
 public enum SocksSubnegotiationVersion {
+    /** RFC 1929 用户名/密码认证子协议版本（0x01）。 */
     AUTH_PASSWORD((byte) 0x01),
+    /** 未知子协商版本；解码器容错时的兜底值。 */
     UNKNOWN((byte) 0xff);
 
+    /** 子协商报文线格式中的 VER 字节。 */
     private final byte b;
 
     SocksSubnegotiationVersion(byte b) {
@@ -34,6 +43,7 @@ public enum SocksSubnegotiationVersion {
         return valueOf(b);
     }
 
+    /** 线性扫描已知子协商版本；无匹配返回 {@link #UNKNOWN}。 */
     public static SocksSubnegotiationVersion valueOf(byte b) {
         for (SocksSubnegotiationVersion code : values()) {
             if (code.b == b) {
