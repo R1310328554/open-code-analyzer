@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:17:48Z",
-  "files": [
-    "plugin/converter/template_oss.go",
-    "plugin/registry/auths/auth.go",
-    "plugin/registry/combine.go",
-    "plugin/registry/encrypted.go",
-    "plugin/registry/endpoint.go",
-    "plugin/registry/endpoint_oss.go",
-    "plugin/registry/external.go",
-    "plugin/registry/external_oss.go",
-    "plugin/registry/file.go",
-    "plugin/registry/file_oss.go",
-    "plugin/registry/noop.go",
-    "plugin/registry/static.go",
-    "plugin/secret/combine.go",
-    "plugin/secret/encrypted.go",
-    "plugin/secret/external.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 118,
-  "done": 255
+  "done": 270
 }
