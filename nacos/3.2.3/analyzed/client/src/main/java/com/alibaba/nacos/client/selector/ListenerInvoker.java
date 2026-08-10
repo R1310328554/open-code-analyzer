@@ -18,6 +18,7 @@ package com.alibaba.nacos.client.selector;
 
 /**
  * Listener invoker.
+ * <p>监听器调用器接口：封装对内部 {@link com.alibaba.nacos.api.selector.listener.AbstractSelectorListener} 的回调触发，并跟踪是否至少执行过一次 {@link #invoke(Object)}。</p>
  *
  * @param <E> the type of event received by the listener
  * @author lideyou
@@ -26,6 +27,7 @@ public interface ListenerInvoker<E> {
     
     /**
      * Invoke inner listener.
+     * <p>将事件分发给内部监听器执行；实现类应在此方法首次成功调用后将 {@link #isInvoked()} 置为 true。</p>
      *
      * @param event event
      */
@@ -33,6 +35,7 @@ public interface ListenerInvoker<E> {
     
     /**
      * Mark the listener whether invoked once. It should return {@code true} after {@link #invoke(E)} called at lease once.
+     * <p>标识监听器是否已被调用过至少一次，用于避免重复通知或统计首次触发。</p>
      *
      * @return {@code true} if this listener has invoked at least once, {@code false} otherwise
      */

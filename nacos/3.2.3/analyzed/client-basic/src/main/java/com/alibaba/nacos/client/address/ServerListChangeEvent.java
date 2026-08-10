@@ -20,10 +20,12 @@ import com.alibaba.nacos.common.notify.SlowEvent;
 
 /**
  * Server List Change Event.
+ * <p>服务端地址列表变更慢事件：由 {@link EndpointServerListProvider} 在 endpoint 拉取结果变化时通过 {@link com.alibaba.nacos.common.notify.NotifyCenter} 发布，供客户端重连或刷新路由。</p>
  *
  * @author zongtanghu
  */
 public class ServerListChangeEvent extends SlowEvent {
     
+    /** 序列化版本号 */
     private static final long serialVersionUID = -1655577508567092395L;
 }

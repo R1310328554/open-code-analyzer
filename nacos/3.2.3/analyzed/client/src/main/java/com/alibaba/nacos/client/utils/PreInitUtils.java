@@ -21,6 +21,7 @@ import com.alibaba.nacos.common.utils.JacksonUtils;
 
 /**
  * Async do pre init to load some cost component.
+ * <p>异步预初始化工具：在后台线程预热 Jackson {@code ObjectMapper} 与 RAM {@link SpasAdapter} 凭证读取，缩短首次 RPC/鉴权请求的冷启动延迟。</p>
  *
  * <ul>
  *     <li>JacksonUtil</li>
@@ -33,12 +34,13 @@ public class PreInitUtils {
     
     /**
      * Async pre load cost component.
+     * <p>启动守护线程执行 {@link JacksonUtils#createEmptyJsonNode()} 与 {@link SpasAdapter#getAk()}，不阻塞主线程。</p>
      */
     public static void asyncPreLoadCostComponent() {
         Thread preLoadThread = new Thread(() -> {
-            // Jackson util will init static {@code ObjectMapper}, which will cost hundreds milliseconds.
+            // 触发 Jackson 静态 ObjectMapper 初始化（通常耗时数百毫秒）
             JacksonUtils.createEmptyJsonNode();
-            // Ram auth plugin will try to get credential from env and system when leak input identity by properties.
+            // 预热 RAM 插件从环境/系统读取 AK 的路径，避免首次鉴权卡顿
             SpasAdapter.getAk();
         });
         preLoadThread.start();

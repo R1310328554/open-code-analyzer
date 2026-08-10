@@ -27,13 +27,16 @@ import java.util.List;
 
 /**
  * Address server list provider.
+ * <p>服务端地址列表提供者抽象基类：在 {@link #init} 中解析 context path 与 namespace，子类实现具体地址来源（properties 固定列表或 endpoint 动态刷新）。</p>
  * 
  * @author totalo
  */
 public abstract class AbstractServerListProvider implements ServerListProvider {
     
+    /** 请求 Nacos Server 的 context path，默认来自 ClientBasicParamUtil */
     protected String contextPath = ClientBasicParamUtil.getDefaultContextPath();
     
+    /** 命名空间，空串表示 public */
     protected String namespace = "";
     
     @Override
@@ -48,6 +51,7 @@ public abstract class AbstractServerListProvider implements ServerListProvider {
     
     /**
      * Get server list.
+     * <p>返回当前可用的 Nacos Server 地址列表（ip:port 或完整 URL）。</p>
      * @return server list
      */
     @Override
@@ -55,6 +59,7 @@ public abstract class AbstractServerListProvider implements ServerListProvider {
     
     /**
      * Get server name.
+     * <p>生成用于缓存/日志的服务端标识字符串。</p>
      * @return server name
      */
     @Override
@@ -62,19 +67,23 @@ public abstract class AbstractServerListProvider implements ServerListProvider {
     
     /**
      * Get order.
+     * <p>SPI 匹配优先级，数值越大越先尝试 {@link #match}。</p>
      * @return order
      */
     @Override
     public abstract int getOrder();
     
+    /** 返回已解析的 context path */
     public String getContextPath() {
         return contextPath;
     }
     
+    /** 返回已解析的 namespace */
     public String getNamespace() {
         return namespace;
     }
     
+    /** 属性非空时覆盖默认 context path */
     private void initContextPath(NacosClientProperties properties) {
         String contentPathTmp = properties.getProperty(PropertyKeyConst.CONTEXT_PATH);
         if (!StringUtils.isBlank(contentPathTmp)) {
@@ -82,6 +91,7 @@ public abstract class AbstractServerListProvider implements ServerListProvider {
         }
     }
     
+    /** 属性非空时设置 namespace */
     private void initNameSpace(NacosClientProperties properties) {
         String namespace = properties.getProperty(PropertyKeyConst.NAMESPACE);
         if (StringUtils.isNotBlank(namespace)) {

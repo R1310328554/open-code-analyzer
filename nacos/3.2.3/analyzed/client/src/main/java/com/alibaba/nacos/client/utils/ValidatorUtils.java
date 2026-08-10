@@ -25,19 +25,23 @@ import java.util.regex.Pattern;
 
 /**
  * All parameter validation tools.
+ * <p>客户端启动参数校验工具：检查 {@link NacosClientProperties} 中的 context path 等配置，防止非法 URL 片段导致请求拼接异常。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public final class ValidatorUtils {
     
+    /** 匹配连续斜杠的 context path 非法模式 */
     private static final Pattern CONTEXT_PATH_MATCH = Pattern.compile("(\\/)\\1+");
     
+    /** 校验客户端初始化属性（当前含 context path） */
     public static void checkInitParam(NacosClientProperties properties) throws NacosException {
         checkContextPath(properties.getProperty(PropertyKeyConst.CONTEXT_PATH));
     }
     
     /**
      * Check context path.
+     * <p>null 合法；若存在连续 {@code //} 则抛 {@link IllegalArgumentException}。</p>
      *
      * @param contextPath context path
      */

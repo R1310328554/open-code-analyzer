@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 /**
  * Server list Manager.
+ * <p>Nacos 服务端地址列表管理抽象基类：实现 {@link ServerListFactory}，通过 SPI 选择 {@link ServerListProvider}、初始化并暴露 server 列表及命名空间等元数据。</p>
  *
  * @author totalo
  */
@@ -42,16 +43,19 @@ public abstract class AbstractServerListManager implements ServerListFactory, Cl
     
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServerListManager.class);
     
+    /** 当前匹配到的地址列表提供者 */
     protected ServerListProvider serverListProvider;
     
+    /** 派生后的客户端属性（含模块类型与可选 namespace） */
     protected NacosClientProperties properties;
     
+    /** 使用默认 namespace 构造管理器 */
     public AbstractServerListManager(NacosClientProperties properties) {
         this(properties, null);
     }
     
     public AbstractServerListManager(NacosClientProperties properties, String namespace) {
-        // To avoid set operation affect the original properties.
+        // 派生副本，避免 setProperty 污染调用方传入的 properties
         NacosClientProperties tmpProperties = properties.derive();
         if (StringUtils.isNotBlank(namespace)) {
             tmpProperties.setProperty(PropertyKeyConst.NAMESPACE, namespace);
@@ -78,6 +82,7 @@ public abstract class AbstractServerListManager implements ServerListFactory, Cl
     
     /**
      * Start server list manager.
+     * <p>SPI 加载全部 {@link ServerListProvider}，按 {@link ServerListProvider#getOrder()} 降序匹配并初始化首个成功者。</p>
      *
      * @throws NacosException during start and initialize.
      */
@@ -106,28 +111,34 @@ public abstract class AbstractServerListManager implements ServerListFactory, Cl
         this.serverListProvider.init(properties, getNacosRestTemplate());
     }
     
+    /** 模块名与 provider 服务名组合的唯一标识 */
     public String getServerName() {
         return getModuleName() + "-" + serverListProvider.getServerName();
     }
     
+    /** 委托 provider 返回 context path */
     public String getContextPath() {
         return serverListProvider.getContextPath();
     }
     
+    /** 委托 provider 返回 namespace */
     public String getNamespace() {
         return serverListProvider.getNamespace();
     }
     
+    /** 委托 provider 返回地址来源描述（如 endpoint URL） */
     public String getAddressSource() {
         return serverListProvider.getAddressSource();
     }
     
+    /** 服务端列表是否为固定配置（非动态 endpoint 刷新） */
     public boolean isFixed() {
         return serverListProvider.isFixed();
     }
     
     /**
      * get module name.
+     * <p>子类返回 config/naming 等模块标识，写入 {@link Constants#CLIENT_MODULE_TYPE}。</p>
      *
      * @return module name
      */
@@ -135,11 +146,13 @@ public abstract class AbstractServerListManager implements ServerListFactory, Cl
     
     /**
      * get nacos rest template.
+     * <p>子类提供 HTTP 客户端，供 endpoint 型 provider 拉取地址列表。</p>
      *
      * @return nacos rest template
      */
     protected abstract NacosRestTemplate getNacosRestTemplate();
     
+    /** 测试用：返回内部 properties 副本 */
     @JustForTest
     NacosClientProperties getProperties() {
         return properties;

@@ -34,13 +34,16 @@ import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 
 /**
  * Properties server list provider.
+ * <p>基于 {@link PropertyKeyConst#SERVER_ADDR} 的固定服务端列表提供者：解析逗号/分号分隔的地址，补全缺省端口，{@link #isFixed()} 恒为 true。</p>
  * 
  * @author totalo
  */
 public class PropertiesListProvider extends AbstractServerListProvider {
     
+    /** {@link #getServerName()} 前缀，表示静态配置的 server 列表 */
     private static final String FIXED_NAME = "fixed";
     
+    /** 初始化后不变的 server 地址列表 */
     private List<String> serverList;
     
     @Override
@@ -67,11 +70,13 @@ public class PropertiesListProvider extends AbstractServerListProvider {
         }
     }
     
+    /** 返回 properties 解析得到的固定列表 */
     @Override
     public List<String> getServerList() {
         return serverList;
     }
     
+    /** 由 fixed 前缀、namespace 与 IP 后缀组成唯一服务名 */
     @Override
     public String getServerName() {
         return FIXED_NAME + "-"
@@ -80,21 +85,25 @@ public class PropertiesListProvider extends AbstractServerListProvider {
             + ClientBasicParamUtil.getNameSuffixByServerIps(serverList.toArray(new String[0]));
     }
     
+    /** 优先级低于 endpoint provider，作为兜底固定地址源 */
     @Override
     public int getOrder() {
         return Address.ADDRESS_SERVER_LIST_PROVIDER_ORDER;
     }
     
+    /** 配置了非空 SERVER_ADDR 时匹配 */
     @Override
     public boolean match(final NacosClientProperties properties) {
         return StringUtils.isNotBlank(properties.getProperty(PropertyKeyConst.SERVER_ADDR));
     }
     
+    /** 属性配置的地址列表不会后台自动刷新 */
     @Override
     public boolean isFixed() {
         return true;
     }
     
+    /** 固定列表无需释放资源，空实现 */
     @Override
     public void shutdown() throws NacosException {
     }

@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Endpoint server list provider.
+ * <p>基于 Address Server / Endpoint 的动态服务端列表提供者：周期性 HTTP 拉取集群节点，变更时发布 {@link ServerListChangeEvent}，适用于云上 endpoint 寻址场景。</p>
  *
  * @author totalo
  */
@@ -54,14 +55,18 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(EndpointServerListProvider.class);
     
+    /** 未配置时默认启用 endpoint 解析规则（如占位符替换） */
     private static final boolean USE_ENDPOINT_PARSING_RULE_DEFAULT_VALUE = true;
     
     private NacosRestTemplate nacosRestTemplate;
     
+    /** {@link #getServerName()} 前缀，标识 endpoint 自定义寻址 */
     private static final String CUSTOM_NAME = "custom";
     
+    /** 两次刷新之间的最小间隔（毫秒），防止过于频繁请求 */
     private final long refreshServerListInternal = TimeUnit.SECONDS.toMillis(30);
     
+    /** 启动阶段拉取地址列表的最大重试轮数 */
     private final int initServerListRetryTimes = 5;
     
     private long lastServerListRefreshTime = 0L;
@@ -76,6 +81,7 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
     
     private String serverListName = ClientBasicParamUtil.getDefaultNodesPath();
     
+    /** 自 endpoint 解析得到的当前 server 地址列表（volatile 保证可见性） */
     private volatile List<String> serversFromEndpoint = new ArrayList<>();
     
     private String addressServerUrl;
@@ -143,6 +149,7 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
     
     /**
      * Start refresh server list task.
+     * <p>启动前同步重试直至列表非空，再调度定时任务按 {@link PropertyKeyConst#ENDPOINT_REFRESH_INTERVAL_SECONDS} 刷新。</p>
      *
      * @throws NacosException nacos exception
      */
@@ -169,7 +176,7 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
         refreshServerListExecutor = new ScheduledThreadPoolExecutor(1,
             new NameThreadFactory(
                 "com.alibaba.nacos.client.address.EndpointServerListProvider.refreshServerList"));
-        // executor schedules the timer task
+        // 定时任务按配置间隔刷新 endpoint 地址列表
         long refreshInterval = Long.parseLong(
             properties.getProperty(PropertyKeyConst.ENDPOINT_REFRESH_INTERVAL_SECONDS, "30"));
         refreshServerListExecutor.scheduleWithFixedDelay(this::refreshServerListIfNeed, 0L,
@@ -177,6 +184,7 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
             TimeUnit.SECONDS);
     }
     
+    /** 节流后拉取 endpoint 列表，有变更则更新缓存并发布 ServerListChangeEvent */
     private void refreshServerListIfNeed() {
         try {
             if (System.currentTimeMillis()
@@ -199,6 +207,7 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
         }
     }
     
+    /** HTTP GET addressServerUrl，解析每行 ip[:port] 并补默认端口 */
     private List<String> getServerListFromEndpoint() {
         try {
             HttpRestResult<String> httpResult = nacosRestTemplate.get(addressServerUrl,
@@ -229,11 +238,13 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
         }
     }
     
+    /** 解析并保存 endpoint 主机名（可经 parsing 规则处理） */
     private void initEndpoint(NacosClientProperties properties) {
-        // Endpoint should not be null or empty, because the match has return `true`.
+        // match 已通过，endpoint 必非空
         this.endpoint = getEndPointTmp(properties);
     }
     
+    /** 优先环境变量 ALIBABA_ALIWARE_ENDPOINT_PORT，否则读 ENDPOINT_PORT */
     private void initEndpointPort(NacosClientProperties properties) {
         String endpointPortTmp = TemplateUtils.stringEmptyAndThenExecute(
             properties.getProperty(PropertyKeyConst.SystemEnv.ALIBABA_ALIWARE_ENDPOINT_PORT),
@@ -243,6 +254,7 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
         }
     }
     
+    /** 初始化 endpoint 专用 context path（可与 Nacos Server path 不同） */
     private void initEndpointContextPath(NacosClientProperties properties) {
         String endpointContextPathTmp = TemplateUtils.stringEmptyAndThenExecute(
             properties.getProperty(
@@ -253,6 +265,7 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
         }
     }
     
+    /** 设置拉取路径中的 serverList 名称（集群名/ENDPOINT_CLUSTER_NAME） */
     private void initServerListName(NacosClientProperties properties) {
         String serverListNameTmp = properties.getProperty(PropertyKeyConst.ENDPOINT_CLUSTER_NAME);
         boolean isUseClusterName = Boolean.parseBoolean(
@@ -265,6 +278,7 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
         }
     }
     
+    /** 拼装完整 address server HTTP URL（含 namespace 与 query 参数） */
     private void initAddressServerUrl(NacosClientProperties properties) {
         String contextPathTmp = StringUtils.isNotBlank(this.endpointContextPath)
             ? ContextPathUtil.normalizeContextPath(
@@ -287,6 +301,7 @@ public class EndpointServerListProvider extends AbstractServerListProvider {
         LOGGER.info("address server url = {}", this.addressServerUrl);
     }
     
+    /** 设置 HTTP 请求头中的客户端模块类型 */
     private void initModuleName(NacosClientProperties properties) {
         String moduleNameTmp = properties.getProperty(Constants.CLIENT_MODULE_TYPE);
         if (StringUtils.isNotBlank(moduleNameTmp)) {

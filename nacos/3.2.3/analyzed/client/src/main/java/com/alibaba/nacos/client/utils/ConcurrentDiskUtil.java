@@ -32,6 +32,7 @@ import java.nio.charset.CharsetDecoder;
 
 /**
  * Concurrent Disk util.
+ * <p>并发磁盘读写工具：通过 {@link java.nio.channels.FileLock} 在多读单写场景下安全访问本地文件，锁冲突时按指数退避重试，供客户端缓存快照等持久化场景使用。</p>
  *
  * @author nkorange
  */
@@ -39,16 +40,21 @@ public class ConcurrentDiskUtil {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrentDiskUtil.class);
     
+    /** RandomAccessFile 只读模式 */
     private static final String READ_ONLY = "r";
     
+    /** RandomAccessFile 读写模式 */
     private static final String READ_WRITE = "rw";
     
+    /** 获取文件锁最大重试次数 */
     private static final int RETRY_COUNT = 10;
     
+    /** 锁冲突重试基础休眠毫秒数（实际为 base * 重试序号） */
     private static final int SLEEP_BASETIME = 10;
     
     /**
      * get file content.
+     * <p>以共享读锁读取指定路径文件全文并解码为字符串。</p>
      *
      * @param path        file path
      * @param charsetName charsetName
@@ -67,6 +73,7 @@ public class ConcurrentDiskUtil {
      * @param charsetName charsetName
      * @return content
      * @throws IOException IOException
+      * <p>并发磁盘读写；详见类级说明。</p>
      */
     public static String getFileContent(File file, String charsetName) throws IOException {
         try (RandomAccessFile fis = new RandomAccessFile(file, READ_ONLY);
@@ -82,6 +89,7 @@ public class ConcurrentDiskUtil {
     
     /**
      * write file content.
+     * <p>以独占写锁写入内容并截断至新长度；文件不存在时尝试创建。</p>
      *
      * @param path        file path
      * @param content     content
@@ -103,6 +111,7 @@ public class ConcurrentDiskUtil {
      * @param charsetName charsetName
      * @return whether write ok
      * @throws IOException IOException
+      * <p>并发磁盘读写；详见类级说明。</p>
      */
     public static Boolean writeFileContent(File file, String content, String charsetName)
         throws IOException {
@@ -127,6 +136,7 @@ public class ConcurrentDiskUtil {
     
     /**
      * transfer ByteBuffer to String.
+     * <p>按指定字符集将 {@link ByteBuffer} 解码为字符串。</p>
      *
      * @param buffer      buffer
      * @param charsetName charsetName
@@ -141,6 +151,7 @@ public class ConcurrentDiskUtil {
         return charBuffer.toString();
     }
     
+    /** 锁重试间隔休眠，中断时恢复线程中断标志 */
     private static void sleep(int time) {
         try {
             Thread.sleep(time);
@@ -151,6 +162,7 @@ public class ConcurrentDiskUtil {
         }
     }
     
+    /** 非阻塞尝试获取文件锁，失败则退避重试直至成功或超过 {@link #RETRY_COUNT} */
     private static FileLock tryLock(File file, FileChannel channel, boolean shared)
         throws IOException {
         FileLock result = null;
