@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:47:02Z",
-  "files": [
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/EncryptedKeyType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/EncryptedType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/EncryptionMethodType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/EncryptionPropertiesType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/EncryptionPropertyType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/ReferenceList.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/ReferenceType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/TransformsType.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/constants/GeneralConstants.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/constants/JBossSAMLConstants.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/constants/JBossSAMLURIConstants.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/constants/WSTrustConstants.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/ConfigurationException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/NotImplementedException.java",
-    "saml-core-api/src/main/java/org/keycloak/saml/common/exceptions/ParsingException.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3328,
-  "done": 2655
+  "done": 2670
 }
