@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.utils;
 
 /**
+ * 配置中心通配符正则工具：将 {@code *}、{@code ?} 等简写转换为标准 Java 正则，供 dataId 模糊匹配。
  * Generic classes for wildcard characters, decisions, and standard canonical transformations that can be supported by
  * ConfigCenter.
  *
@@ -24,9 +25,11 @@ package com.alibaba.nacos.config.server.utils;
  */
 public class RegexParser {
     
+    /** 通配符 ? 字符常量 */
     private static final char QUESTION_MARK = '?';
     
     /**
+     * 将通配表达式转为锚定正则：* → .*，连续 ? → .{n}，其余非字母数字前加反斜杠转义，首尾加 ^$。
      * Replace input string non-regular special characters with standard regular expression strings; Replace '*' with
      * '.* '? 'is replaced by '{n}', n is the number of consecutive ?; Other special characters that are not alphabetic
      * or numeric are preceded by '\'.
@@ -67,22 +70,27 @@ public class RegexParser {
         return result.toString();
     }
     
+    /** 判断表达式是否含 ? 或 * 通配符 */
     public static boolean containsWildcard(String regex) {
         return (regex.contains("?") || regex.contains("*"));
     }
     
+    /** 是否为 ASCII 字母或数字 */
     private static Boolean isAsciiAlphanumeric(final char ch) {
         return isAsciiAlphaUpper(ch) || isAsciiAlphaLower(ch) || isAsciiNumeric(ch);
     }
     
+    /** 是否为 ASCII 数字 0-9 */
     private static Boolean isAsciiNumeric(final char ch) {
         return ch >= '0' && ch <= '9';
     }
     
+    /** 是否为大写 ASCII 字母 A-Z */
     private static Boolean isAsciiAlphaUpper(final char ch) {
         return ch >= 'A' && ch <= 'Z';
     }
     
+    /** 是否为小写 ASCII 字母 a-z */
     private static Boolean isAsciiAlphaLower(final char ch) {
         return ch >= 'a' && ch <= 'z';
     }

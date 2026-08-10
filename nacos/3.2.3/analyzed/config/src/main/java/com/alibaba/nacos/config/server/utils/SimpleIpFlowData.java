@@ -26,22 +26,28 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 按 IP 哈希分槽的流量统计：单 IP 与全 IP 请求量滑动窗口计数，供 IP 级限流决策。
  * According to IP flow control, control the number of individual IP and IP total.
  *
  * @author leiwen.zh
  */
 public class SimpleIpFlowData {
     
+    /** IP 哈希映射后的各槽计数器 */
     private AtomicInteger[] data;
     
+    /** 槽位数，≤0 时强制为 1 */
     private int slotCount;
     
+    /** 各槽平均计数（轮转后更新） */
     private int averageCount;
     
+    /** IP 流量轮转定时器 */
     private ScheduledExecutorService timer = ExecutorFactory.Managed
         .newSingleScheduledExecutorService(ClassUtils.getCanonicalName(Config.class),
             new NameThreadFactory("com.alibaba.nacos.config.flow.control.ip"));
     
+    /** 初始化槽数组，按 interval 毫秒周期清零并更新平均值 */
     public SimpleIpFlowData(int slotCount, int interval) {
         if (slotCount <= 0) {
             this.slotCount = 1;
@@ -56,6 +62,7 @@ public class SimpleIpFlowData {
     }
     
     /**
+     * 按 IP hashCode 取模定位槽位，原子自增并返回新值。
      * Atomically increments by one the current value.
      */
     public int incrementAndGet(String ip) {
@@ -70,6 +77,7 @@ public class SimpleIpFlowData {
     }
     
     /**
+     * 汇总各槽计数求平均后清零所有槽。
      * Rotate the slot.
      */
     public void rotateSlot() {
@@ -81,6 +89,7 @@ public class SimpleIpFlowData {
         this.averageCount = totalCount / this.slotCount;
     }
     
+    /** 查询指定 IP 对应槽的当前计数 */
     public int getCurrentCount(String ip) {
         int index = 0;
         if (ip != null) {
@@ -92,6 +101,7 @@ public class SimpleIpFlowData {
         return data[index].get();
     }
     
+    /** 最近一次轮转后的各槽平均计数 */
     public int getAverageCount() {
         return this.averageCount;
     }

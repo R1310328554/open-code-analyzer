@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**
+ * MD5 比对 SPI 接口：长轮询场景下比较客户端上报 MD5 与服务端缓存是否一致，返回发生变更的配置键集合。
  * The interface Md5 comparator.
  *
  * @author Sunrisea
@@ -30,6 +31,7 @@ import java.util.Map;
 public interface Md5Comparator {
     
     /**
+     * 返回比对器实现名称，与 {@code nacos.config.cache.type} 配置项匹配。
      * Gets md 5 comparator name.
      *
      * @return the md 5 comparator name
@@ -37,6 +39,7 @@ public interface Md5Comparator {
     public String getName();
     
     /**
+     * 遍历客户端 MD5 映射，筛出服务端已变更的 GroupKey 及其监听状态。
      * Compare md 5 list.
      *
      * @param request      the request

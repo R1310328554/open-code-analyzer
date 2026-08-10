@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.utils;
 
 /**
+ * 协议版本工具：将 major.minor.patch 形式版本号压缩为可比较的整型值。
  * Used to handle protocol-related operations.
  *
  * @author zhidao
@@ -25,6 +26,8 @@ package com.alibaba.nacos.config.server.utils;
 public class Protocol {
     
     /**
+     * 按段逐位累乘 10 并加段值，如 2.0.4 → 204；null 返回 -1，非数字段忽略。
+     * 用于客户端与服务端协议版本号的大小比较。
      * fix the version number like 2.0.4(fix the version template like major.minor.bug-fix)
      *
      * @param version version

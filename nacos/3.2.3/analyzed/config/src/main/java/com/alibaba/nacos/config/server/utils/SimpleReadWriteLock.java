@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.utils;
 
 /**
+ * 最简读写锁：0 无锁，负数写锁，正数读锁计数；加锁与解锁须成对调用。
  * Simplest read-write lock implementation. Requires locking and unlocking must be called in pairs.
  *
  * @author Nacos
@@ -24,12 +25,14 @@ package com.alibaba.nacos.config.server.utils;
 public class SimpleReadWriteLock {
     
     /**
+     * 锁状态：0 空闲；负数为写锁；正数为读锁持有数。
      * Zero means no lock; Negative Numbers mean write locks; Positive Numbers mean read locks, and the numeric value
      * represents the number of read locks.
      */
     private int status = 0;
     
     /**
+     * 尝试获取读锁：写锁占用时失败，否则 status++。
      * Try read lock.
      */
     public synchronized boolean tryReadLock() {
@@ -42,6 +45,7 @@ public class SimpleReadWriteLock {
     }
     
     /**
+     * 释放读锁，status 已为 0 时不递减。
      * Release the read lock.
      */
     public synchronized void releaseReadLock() {
@@ -53,6 +57,7 @@ public class SimpleReadWriteLock {
     }
     
     /**
+     * 尝试获取写锁：仅 status==0 时成功并置 -1。
      * Try write lock.
      */
     public synchronized boolean tryWriteLock() {
@@ -64,14 +69,17 @@ public class SimpleReadWriteLock {
         }
     }
     
+    /** 释放写锁，恢复为 0 */
     public synchronized void releaseWriteLock() {
         status = 0;
     }
     
+    /** 是否处于写锁状态 */
     private boolean isWriteLocked() {
         return status < 0;
     }
     
+    /** 是否无任何锁 */
     private boolean isFree() {
         return status == 0;
     }

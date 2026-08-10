@@ -25,15 +25,18 @@ import com.alibaba.nacos.plugin.auth.api.IdentityContext;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
+ * HTTP 请求上下文工具：从 RequestContext 或 Servlet 请求中提取客户端 IP、应用名与用户名。
  * Request util.
  *
  * @author Nacos
  */
 public class RequestUtil {
     
+    /** 客户端上报应用名的 HTTP 头 */
     public static final String CLIENT_APPNAME_HEADER = "Client-AppName";
     
     /**
+     * 优先从 RequestContext 取 sourceIp/remoteIp，均为空时回退 {@link WebUtils#getRemoteIp}。
      * Get real client ip from context first, if no value, use
      * {@link com.alibaba.nacos.core.utils.WebUtils#getRemoteIp(HttpServletRequest)}.
      *
@@ -54,6 +57,7 @@ public class RequestUtil {
     }
     
     /**
+     * 获取客户端应用名：优先 RequestContext，未知时读 Client-AppName 头。
      * Gets the name of the client application in the header.
      *
      * @param request {@link HttpServletRequest}
@@ -64,11 +68,13 @@ public class RequestUtil {
         return isUnknownApp(result) ? request.getHeader(CLIENT_APPNAME_HEADER) : result;
     }
     
+    /** 应用名为空或 unknown 时视为未知 */
     private static boolean isUnknownApp(String appName) {
         return StringUtils.isBlank(appName) || StringUtils.equalsIgnoreCase("unknown", appName);
     }
     
     /**
+     * 获取请求来源用户名：优先认证 IdentityContext，未启用鉴权时读 username 参数。
      * Gets the username of the client application in the Attribute.
      *
      * @param request {@link HttpServletRequest}

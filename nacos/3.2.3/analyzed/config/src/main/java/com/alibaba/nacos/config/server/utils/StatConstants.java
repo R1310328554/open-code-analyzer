@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.utils;
 
 /**
+ * 配置模块监控统计指标名常量。
  * Stat constant.
  *
  * @author Nacos
@@ -26,14 +27,19 @@ public class StatConstants {
     private StatConstants() {
     }
     
+    /** 监控上报应用名 */
     public static final String APP_NAME = "nacos";
     
+    /** HTTP GET 200 平均耗时指标名 */
     public static final String STAT_AVERAGE_HTTP_GET_OK = "AverageHttpGet_OK";
     
+    /** HTTP GET 304 Not Modified 平均耗时指标名 */
     public static final String STAT_AVERAGE_HTTP_GET_NOT_MODIFIED = "AverageHttpGet_Not_Modified";
     
+    /** HTTP GET 其他状态码平均耗时指标名 */
     public static final String STAT_AVERAGE_HTTP_GET_OTHER = "AverageHttpGet_Other_Status";
     
+    /** HTTP POST 长轮询 Check 平均耗时指标名 */
     public static final String STAT_AVERAGE_HTTP_POST_CHECK = "AverageHttpPost_Check";
     
 }

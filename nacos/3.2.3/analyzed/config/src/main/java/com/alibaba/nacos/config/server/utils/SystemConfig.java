@@ -26,16 +26,19 @@ import java.net.NetworkInterface;
 import java.util.Enumeration;
 
 /**
+ * 系统级配置：启动时解析本机对外 IPv4 地址，供集群内节点标识与通信。
  * System config.
  *
  * @author Nacos
  */
 public class SystemConfig {
     
+    /** 本机 IP，优先 nacos.server.ip 系统属性，否则扫描网卡取首个非回环 IPv4 */
     public static final String LOCAL_IP = getHostAddress();
     
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemConfig.class);
     
+    /** 解析本机可用 IPv4 地址 */
     private static String getHostAddress() {
         String address = System.getProperty("nacos.server.ip");
         if (StringUtils.isNotEmpty(address)) {

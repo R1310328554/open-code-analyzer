@@ -27,17 +27,22 @@ import java.util.Map;
 import static com.alibaba.nacos.api.common.Constants.VIPSERVER_TAG;
 
 /**
+ * Nacos 默认 MD5 比对器：逐条调用 {@link ConfigCacheService#isUptodate} 判断客户端 MD5 是否过期，支持 VIP 标签路由。
  * The type Nacos md5 comparator.
  *
  * @author Sunrisea
  */
 public class NacosMd5Comparator implements Md5Comparator {
     
+    /** SPI 注册名，对应 nacos.config.cache.type=nacos */
     @Override
     public String getName() {
         return "nacos";
     }
     
+    /**
+     * 遍历 clientMd5Map，将服务端 MD5 与客户端不一致的 GroupKey 放入变更集合返回。
+     */
     @Override
     public Map<String, ConfigListenState> compareMd5(HttpServletRequest request,
         HttpServletResponse response,

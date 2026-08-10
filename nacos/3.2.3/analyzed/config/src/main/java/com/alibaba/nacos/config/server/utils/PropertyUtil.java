@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.alibaba.nacos.config.server.utils.LogUtil.FATAL_LOG;
 
 /**
+ * 配置模块运行时属性门面：Spring 启动时从 EnvUtil 加载通知超时、容量配额、dump 分页等可调参数。
  * Properties util.
  *
  * @author Nacos
@@ -41,89 +42,110 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
     
     private static final Logger LOGGER = LogUtil.DEFAULT_LOG;
     
+    /** 配置变更通知连接超时（毫秒） */
     private static int notifyConnectTimeout = 100;
     
+    /** 配置变更通知 Socket 读超时（毫秒） */
     private static int notifySocketTimeout = 200;
     
+    /** 健康检查连续失败次数上限，超过则标记节点不可用 */
     private static int maxHealthCheckFailCount = 12;
     
+    /** 是否启用配置客户端健康检查 */
     private static boolean isHealthCheck = true;
     
+    /** 单条配置内容最大字节数（HTTP 发布上限） */
     private static int maxContent = 10 * 1024 * 1024;
     
     /**
+     * 是否启用容量管理功能。
      * Whether to enable capacity management.
      */
     private static boolean isManageCapacity = true;
     
     /**
+     * 灰度兼容模式：是否将 beta/tag 持久化到旧模型。
      * gray compatible model.
      */
     private static boolean grayCompatibleModel = true;
     
+    /** 灰度迁移过程线程局部标记 */
     public static final ThreadLocal<Boolean> GRAY_MIGRATE_FLAG =
         ThreadLocal.withInitial(() -> false);
     
     // CONFIG_MIGRATE_FLAG has been replaced by {@link ConfigPersistContext}.
     
     /**
+     * 是否启用容量上限校验（配置条数、内容大小等）。
      * Whether to enable the limit check function of capacity management, including the upper limit of configuration
      * number, configuration content size limit, etc.
      */
     private static boolean isCapacityLimitCheck = false;
     
     /**
+     * 集群级默认配置条数配额。
      * The default cluster capacity limit.
      */
     private static int defaultClusterQuota = 100000;
     
     /**
+     * 单 Group 默认配置条数配额。
      * the default capacity limit per Group.
      */
     private static int defaultGroupQuota = 200;
     
     /**
+     * 单 Tenant 默认配置条数配额。
      * The default capacity limit per Tenant.
      */
     private static int defaultTenantQuota = 200;
     
     /**
+     * 单条配置内容默认最大字节数。
      * The maximum size of the content in the configuration of a single, unit for bytes.
      */
     private static int defaultMaxSize = 100 * 1024;
     
     /**
+     * 聚合配置默认最大子项数。
      * The default Maximum number of aggregated data.
      */
     private static int defaultMaxAggrCount = 10000;
     
     /**
+     * 聚合配置单个子项内容默认最大字节数。
      * The maximum size of content in a single subconfiguration of aggregated data.
      */
     private static int defaultMaxAggrSize = 1024;
     
     /**
+     * 容量达限时初始扩容百分比。
      * Initialize the expansion percentage of capacity has reached the limit.
      */
     private static int initialExpansionPercent = 100;
     
     /**
+     * 容量 usage 表校正间隔（秒）。
      * Fixed capacity information table usage (usage) time interval, the unit is in seconds.
      */
     private static int correctUsageDelay = 10 * 60;
     
+    /** 是否启用 dumpChange 增量同步 */
     private static boolean dumpChangeOn = true;
     
     /**
+     * 配置历史保留天数，默认 30 天。
      * The number of days to retain the configuration history, the default is 30 days.
      */
     private static int configRententionDays = 30;
     
     /**
+     * dumpChangeWorker 执行间隔，默认 30 秒。
      * dumpChangeWorkerInterval, default 30 seconds.
      */
     private static long dumpChangeWorkerInterval = 30 * 1000L;
     
+    /** 是否开启 dumpChange 增量 dump */
     public static boolean isDumpChangeOn() {
         return dumpChangeOn;
     }
@@ -132,6 +154,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.dumpChangeOn = dumpChangeOn;
     }
     
+    /** dumpChangeWorker 调度间隔（毫秒） */
     public static long getDumpChangeWorkerInterval() {
         return dumpChangeWorkerInterval;
     }
@@ -140,6 +163,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.dumpChangeWorkerInterval = dumpChangeWorkerInterval;
     }
     
+    /** 通知连接超时（毫秒） */
     public static int getNotifyConnectTimeout() {
         return notifyConnectTimeout;
     }
@@ -148,6 +172,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.notifyConnectTimeout = notifyConnectTimeout;
     }
     
+    /** 通知 Socket 超时（毫秒） */
     public static int getNotifySocketTimeout() {
         return notifySocketTimeout;
     }
@@ -156,6 +181,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.notifySocketTimeout = notifySocketTimeout;
     }
     
+    /** 健康检查最大连续失败次数 */
     public static int getMaxHealthCheckFailCount() {
         return maxHealthCheckFailCount;
     }
@@ -164,6 +190,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.maxHealthCheckFailCount = maxHealthCheckFailCount;
     }
     
+    /** 是否启用健康检查 */
     public static boolean isHealthCheck() {
         return isHealthCheck;
     }
@@ -172,6 +199,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.isHealthCheck = isHealthCheck;
     }
     
+    /** HTTP 发布内容最大字节数 */
     public static int getMaxContent() {
         return maxContent;
     }
@@ -180,6 +208,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.maxContent = maxContent;
     }
     
+    /** 是否启用容量管理 */
     public static boolean isManageCapacity() {
         return isManageCapacity;
     }
@@ -188,6 +217,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.isManageCapacity = isManageCapacity;
     }
     
+    /** 集群默认配置条数配额 */
     public static int getDefaultClusterQuota() {
         return defaultClusterQuota;
     }
@@ -196,6 +226,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.defaultClusterQuota = defaultClusterQuota;
     }
     
+    /** 是否启用容量上限校验 */
     public static boolean isCapacityLimitCheck() {
         return isCapacityLimitCheck;
     }
@@ -204,6 +235,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.isCapacityLimitCheck = isCapacityLimitCheck;
     }
     
+    /** 单 Group 默认配额 */
     public static int getDefaultGroupQuota() {
         return defaultGroupQuota;
     }
@@ -212,6 +244,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.defaultGroupQuota = defaultGroupQuota;
     }
     
+    /** 单 Tenant 默认配额 */
     public static int getDefaultTenantQuota() {
         return defaultTenantQuota;
     }
@@ -220,6 +253,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.defaultTenantQuota = defaultTenantQuota;
     }
     
+    /** 容量达限初始扩容百分比 */
     public static int getInitialExpansionPercent() {
         return initialExpansionPercent;
     }
@@ -228,6 +262,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.initialExpansionPercent = initialExpansionPercent;
     }
     
+    /** 单条配置默认最大字节数 */
     public static int getDefaultMaxSize() {
         return defaultMaxSize;
     }
@@ -236,6 +271,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.defaultMaxSize = defaultMaxSize;
     }
     
+    /** 聚合配置默认最大子项数 */
     public static int getDefaultMaxAggrCount() {
         return defaultMaxAggrCount;
     }
@@ -245,6 +281,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
     }
     
     /**
+     * 是否启用灰度兼容模式（beta/tag 写旧模型）。
      * control whether persist beta and tag to old model.
      *
      * @return
@@ -257,6 +294,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.grayCompatibleModel = grayCompatibleModel;
     }
     
+    /** 聚合单子项默认最大字节数 */
     public static int getDefaultMaxAggrSize() {
         return defaultMaxAggrSize;
     }
@@ -265,6 +303,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.defaultMaxAggrSize = defaultMaxAggrSize;
     }
     
+    /** 容量 usage 校正间隔（秒） */
     public static int getCorrectUsageDelay() {
         return correctUsageDelay;
     }
@@ -273,10 +312,12 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         PropertyUtil.correctUsageDelay = correctUsageDelay;
     }
     
+    /** 配置历史保留天数 */
     public static int getConfigRententionDays() {
         return configRententionDays;
     }
     
+    /** 从配置读取并设置历史保留天数 */
     private void setConfigRententionDays() {
         String val = getProperty(PropertiesConstant.CONFIG_RENTENTION_DAYS);
         if (null != val) {
@@ -292,10 +333,12 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         }
     }
     
+    /** 是否为单机模式 */
     public static boolean isStandaloneMode() {
         return EnvUtil.getStandaloneMode();
     }
     
+    /** 从 EnvUtil 批量加载全部可调属性 */
     private void loadSetting() {
         try {
             setNotifyConnectTimeout(
@@ -348,18 +391,22 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         }
     }
     
+    /** 读取布尔型配置 */
     private boolean getBoolean(String key, boolean defaultValue) {
         return Boolean.parseBoolean(getString(key, String.valueOf(defaultValue)));
     }
     
+    /** 读取整型配置 */
     private int getInt(String key, int defaultValue) {
         return Integer.parseInt(getString(key, String.valueOf(defaultValue)));
     }
     
+    /** 读取长整型配置 */
     private long getLong(String key, long defaultValue) {
         return Long.parseLong(getString(key, String.valueOf(defaultValue)));
     }
     
+    /** 读取字符串配置，缺失时用默认值 */
     private String getString(String key, String defaultValue) {
         String value = getProperty(key);
         if (value == null) {
@@ -369,27 +416,37 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         return value;
     }
     
+    /** 从 EnvUtil 读取属性 */
     public String getProperty(String key) {
         return EnvUtil.getProperty(key);
     }
     
+    /** 从 EnvUtil 读取属性，带默认值 */
     public String getProperty(String key, String defaultValue) {
         return EnvUtil.getProperty(key, defaultValue);
     }
     
+    /** Spring 容器初始化回调，触发 loadSetting */
     @Override
     public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
         loadSetting();
     }
     
+    /** 全量 dump 分页大小上限 */
     private static final int MAX_DUMP_PAGE = 1000;
     
+    /** 全量 dump 分页大小下限 */
     private static final int MIN_DUMP_PAGE = 50;
     
+    /** 每 512MB 内存对应的分页增量 */
     private static final int PAGE_MEMORY_DIVIDE_MB = 512;
     
+    /** 懒加载的全量 dump 分页大小 */
     private static AtomicInteger allDumpPageSize;
     
+    /**
+     * 按容器/JVM 内存限制计算全量 dump 每页条数，512MB→50 条线性缩放，限制在 [50,1000]。
+     */
     public static int getAllDumpPageSize() {
         if (allDumpPageSize == null) {
             allDumpPageSize = new AtomicInteger(initAllDumpPageSize());
@@ -397,6 +454,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         return allDumpPageSize.get();
     }
     
+    /** 根据内存上限初始化 dump 分页大小 */
     static int initAllDumpPageSize() {
         long memLimitMb = getMemLimitMb();
         
@@ -409,6 +467,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         return pageSize;
     }
     
+    /** 获取内存上限（MB）：优先 cgroup 文件，否则 JVM maxHeap */
     public static long getMemLimitMb() {
         Optional<Long> memoryLimit = findMemoryLimitFromFile();
         if (memoryLimit.isPresent()) {
@@ -418,8 +477,10 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         return memoryLimit.get();
     }
     
+    /** cgroup memory.limit_in_bytes 文件路径 */
     private static String limitMemoryFile;
     
+    /** 从 cgroup 内存限制文件读取上限并转为 MB */
     private static Optional<Long> findMemoryLimitFromFile() {
         if (limitMemoryFile == null) {
             limitMemoryFile = EnvUtil.getProperty("memory_limit_file_path",
@@ -435,6 +496,7 @@ public class PropertyUtil implements ApplicationContextInitializer<ConfigurableA
         }
     }
     
+    /** 回退使用 JVM maxMemory 作为内存上限（MB） */
     private static Optional<Long> findMemoryLimitFromSystem() {
         long maxHeapSizeMb = Runtime.getRuntime().maxMemory() / 1024L / 1024L;
         return Optional.of(maxHeapSizeMb);

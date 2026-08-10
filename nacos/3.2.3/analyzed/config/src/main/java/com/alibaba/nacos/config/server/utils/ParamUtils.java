@@ -25,33 +25,45 @@ import org.springframework.http.HttpStatus;
 import java.util.Map;
 
 /**
+ * 配置 API 参数校验工具：白名单字符规则、dataId/group/tenant/tag 长度与格式约束，v1/v2 双版本入口。
  * Parameter validity check util.
  *
  * @author Nacos
  */
 public class ParamUtils {
     
+    /** 除字母数字外允许的参数字符：_ - . : */
     private static char[] validChars = new char[] {'_', '-', '.', ':'};
     
+    /** tag 最大长度（v1/v2 单 tag） */
     private static final int TAG_MAX_LEN = 16;
     
+    /** tenant/namespaceId 最大长度 */
     private static final int TENANT_MAX_LEN = 128;
     
+    /** 高级配置字段名：config_tags */
     private static final String CONFIG_TAGS = "config_tags";
     
+    /** 高级配置字段名：desc */
     private static final String DESC = "desc";
     
+    /** 高级配置字段名：use */
     private static final String USE = "use";
     
+    /** 高级配置字段名：effect */
     private static final String EFFECT = "effect";
     
+    /** 高级配置字段名：type */
     private static final String TYPE = "type";
     
+    /** 高级配置字段名：schema */
     private static final String SCHEMA = "schema";
     
+    /** 高级配置字段名：encryptedDataKey（不做格式校验） */
     private static final String ENCRYPTED_DATA_KEY = "encryptedDataKey";
     
     /**
+     * 白名单校验：仅允许字母、数字及 validChars 中字符，且非空。
      * Whitelist checks that valid parameters can only contain letters, Numbers, and characters in validChars, and
      * cannot be empty.
      */
@@ -69,6 +81,7 @@ public class ParamUtils {
         return true;
     }
     
+    /** 判断字符是否在 validChars 白名单内 */
     private static boolean isValidChar(char ch) {
         for (char c : validChars) {
             if (c == ch) {
@@ -79,6 +92,7 @@ public class ParamUtils {
     }
     
     /**
+     * v1/v2 聚合发布参数校验：dataId、group、datumId、content 格式与 content 长度上限。
      * Check the parameter for [v1] and [v2].
      */
     public static void checkParam(String dataId, String group, String datumId, String content)
@@ -107,6 +121,7 @@ public class ParamUtils {
     }
     
     /**
+     * 基础三元组校验：dataId、group、namespaceId。
      * Check Config basic Parameters.
      *
      * @param dataId data Id
@@ -129,6 +144,7 @@ public class ParamUtils {
     }
     
     /**
+     * v1 tag 校验：非空时须合法且长度 ≤16。
      * Check the tag for [v1].
      */
     public static void checkParam(String tag) {
@@ -143,6 +159,7 @@ public class ParamUtils {
     }
     
     /**
+     * 高级配置扩展字段校验：config_tags/desc/use/effect/type/schema 长度与枚举约束。
      * Check the config info for [v1] and [v2].
      */
     public static void checkParam(Map<String, Object> configAdvanceInfo) throws NacosException {
@@ -208,6 +225,7 @@ public class ParamUtils {
     }
     
     /**
+     * v2 tag 校验，非法时抛 NacosApiException。
      * Check the tag for [v2].
      */
     public static void checkParamV2(String tag) throws NacosApiException {
@@ -226,6 +244,7 @@ public class ParamUtils {
     }
     
     /**
+     * v1 tenant 校验，非法时抛 IllegalArgumentException。
      * Check the tenant for [v1].
      */
     public static void checkTenant(String tenant) {
@@ -240,6 +259,7 @@ public class ParamUtils {
     }
     
     /**
+     * v2 namespaceId 校验。
      * Check the namespaceId for [v2].
      */
     public static void checkTenantV2(String namespaceId) throws NacosApiException {

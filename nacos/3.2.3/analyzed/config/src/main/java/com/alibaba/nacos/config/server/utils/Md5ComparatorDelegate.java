@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
+ * MD5 比对器委托单例：通过 SPI 加载 {@link Md5Comparator} 实现，按 {@code nacos.config.cache.type} 选择，未匹配时回退 {@link NacosMd5Comparator}。
  * The type Md5 comparator delegate.
  *
  * @author Sunrisea
@@ -37,12 +38,16 @@ public class Md5ComparatorDelegate {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(Md5ComparatorDelegate.class);
     
+    /** 全局单例 */
     private static final Md5ComparatorDelegate INSTANCE = new Md5ComparatorDelegate();
     
+    /** 配置项 nacos.config.cache.type 指定的比对器类型，默认 nacos */
     private String md5ComparatorType = EnvUtil.getProperty("nacos.config.cache.type", "nacos");
     
+    /** 当前生效的 MD5 比对器实现 */
     private Md5Comparator md5Comparator;
     
+    /** 构造时 SPI 扫描并绑定匹配的 Md5Comparator */
     private Md5ComparatorDelegate() {
         Collection<Md5Comparator> md5Comparators = NacosServiceLoader.load(Md5Comparator.class);
         for (Md5Comparator each : md5Comparators) {
@@ -69,10 +74,12 @@ public class Md5ComparatorDelegate {
         }
     }
     
+    /** 获取委托单例 */
     public static Md5ComparatorDelegate getInstance() {
         return INSTANCE;
     }
     
+    /** 委托当前比对器执行 MD5 差异检测 */
     public Map<String, ConfigListenState> compareMd5(HttpServletRequest request,
         HttpServletResponse response,
         Map<String, ConfigListenState> clientMd5Map) {

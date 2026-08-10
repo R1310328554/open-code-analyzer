@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
+ * 带 TTL 的简单内存缓存：过期条目不主动清理，get 时按 expireTime 判定失效。
  * A simple Cache with TTL, not cleared for expired entry.
  *
  * @param <E> the cache type
@@ -27,8 +28,10 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class SimpleCache<E> {
     
+    /** 键 → 带过期时间的缓存条目 */
     final ConcurrentMap<String, CacheEntry<E>> cache = new ConcurrentHashMap<>();
     
+    /** 缓存条目：值与绝对过期时间戳（毫秒） */
     private static class CacheEntry<E> {
         
         final long expireTime;
@@ -42,6 +45,7 @@ public class SimpleCache<E> {
     }
     
     /**
+     * 写入缓存，ttlMs 为相对当前时间的存活毫秒数；key 或 value 为 null 时忽略。
      * Put data.
      */
     public void put(String key, E e, long ttlMs) {
@@ -53,6 +57,7 @@ public class SimpleCache<E> {
     }
     
     /**
+     * 读取未过期值，过期或不存在返回 null。
      * Get data.
      */
     public E get(String key) {
