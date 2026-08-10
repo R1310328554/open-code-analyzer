@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:11:37Z",
   "files": [
-    "core/src/main/java/com/alibaba/nacos/core/remote/Connection.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/ConnectionManager.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/ConnectionMeta.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/HealthCheckRequestHandler.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/LongConnectionMetricsCollector.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/NacosRuntimeConnectionEjector.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/RequestFilters.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/RequestHandler.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/RequestHandlerRegistry.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/RpcAckCallbackSynchronizer.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/RpcPushService.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/RuntimeConnectionEjector.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/core/RpcAckCallbackInitorOrCleaner.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/core/ServerLoaderInfoRequestHandler.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/core/ServerReloaderRequestHandler.java",
     "core/src/main/java/com/alibaba/nacos/core/remote/event/RemotingHeartBeatEvent.java",
     "core/src/main/java/com/alibaba/nacos/core/remote/grpc/AddressTransportFilter.java",
     "core/src/main/java/com/alibaba/nacos/core/remote/grpc/BaseGrpcServer.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/com/alibaba/nacos/core/remote/grpc/PushAckIdGenerator.java"
   ],
   "remaining_pending": 827,
-  "done": 1680
+  "done": 1695
 }
