@@ -30,12 +30,19 @@ import org.keycloak.authorization.policy.provider.PolicyProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * 权限类策略的抽象基类：依次评估关联策略，并利用决策缓存避免重复计算。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public abstract class AbstractPermissionProvider implements PolicyProvider {
 
     private static final Logger logger = Logger.getLogger(AbstractPermissionProvider.class);
 
+    /**
+     * 遍历权限策略的关联策略，复用缓存中的决策或调用对应 {@link PolicyProvider} 评估。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         AuthorizationProvider authorization = evaluation.getAuthorizationProvider();

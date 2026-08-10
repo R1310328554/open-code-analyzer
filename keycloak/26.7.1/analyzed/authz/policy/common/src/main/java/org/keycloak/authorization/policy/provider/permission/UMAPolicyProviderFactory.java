@@ -47,10 +47,13 @@ import org.keycloak.representations.idm.authorization.UmaPermissionRepresentatio
 import org.keycloak.representations.idm.authorization.UserPolicyRepresentation;
 
 /**
+ * UMA 权限策略 SPI 工厂：创建/更新 UMA 权限时自动挂载角色、组、客户端、用户及 JS 条件等关联策略。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UMAPolicyProviderFactory implements PolicyProviderFactory<UmaPermissionRepresentation> {
 
+    /** 共享的 UMA 权限策略提供者 */
     private UMAPolicyProvider provider = new UMAPolicyProvider();
 
     @Override
@@ -78,6 +81,7 @@ public class UMAPolicyProviderFactory implements PolicyProviderFactory<UmaPermis
         return provider;
     }
 
+    /** 创建 UMA 权限并为其生成角色/组/客户端/用户/JS 等关联策略 */
     @Override
     public void onCreate(Policy policy, UmaPermissionRepresentation representation, AuthorizationProvider authorization) {
         policy.setOwner(representation.getOwner());
@@ -121,6 +125,7 @@ public class UMAPolicyProviderFactory implements PolicyProviderFactory<UmaPermis
         }
     }
 
+    /** 同步更新 UMA 权限的关联策略（增删改角色、组、客户端、用户与 JS 条件） */
     @Override
     public void onUpdate(Policy policy, UmaPermissionRepresentation representation, AuthorizationProvider authorization) {
         PolicyStore policyStore = authorization.getStoreFactory().getPolicyStore();
@@ -361,6 +366,7 @@ public class UMAPolicyProviderFactory implements PolicyProviderFactory<UmaPermis
         return UmaPermissionRepresentation.class;
     }
 
+    /** 删除 UMA 权限时级联删除所有关联策略 */
     @Override
     public void onRemove(Policy policy, AuthorizationProvider authorization) {
         PolicyStore policyStore = authorization.getStoreFactory().getPolicyStore();
@@ -390,6 +396,7 @@ public class UMAPolicyProviderFactory implements PolicyProviderFactory<UmaPermis
         return "uma";
     }
 
+    /** 创建 JS 条件关联策略（类型为已部署脚本 ID） */
     private void createJSPolicy(Policy policy, PolicyStore policyStore, String condition, String owner) {
         JSPolicyRepresentation rep = new JSPolicyRepresentation();
 
@@ -403,6 +410,7 @@ public class UMAPolicyProviderFactory implements PolicyProviderFactory<UmaPermis
         policy.addAssociatedPolicy(associatedPolicy);
     }
 
+    /** 创建客户端关联策略 */
     private void createClientPolicy(Policy policy, PolicyStore policyStore, String client, String owner) {
         ClientPolicyRepresentation rep = new ClientPolicyRepresentation();
 
@@ -416,6 +424,7 @@ public class UMAPolicyProviderFactory implements PolicyProviderFactory<UmaPermis
         policy.addAssociatedPolicy(associatedPolicy);
     }
 
+    /** 创建用户组关联策略 */
     private void createGroupPolicy(Policy policy, PolicyStore policyStore, String group, String owner) {
         GroupPolicyRepresentation rep = new GroupPolicyRepresentation();
 
@@ -429,6 +438,7 @@ public class UMAPolicyProviderFactory implements PolicyProviderFactory<UmaPermis
         policy.addAssociatedPolicy(associatedPolicy);
     }
 
+    /** 创建角色关联策略 */
     private void createRolePolicy(Policy policy, PolicyStore policyStore, String role, String owner) {
         RolePolicyRepresentation rep = new RolePolicyRepresentation();
 
@@ -442,6 +452,7 @@ public class UMAPolicyProviderFactory implements PolicyProviderFactory<UmaPermis
         policy.addAssociatedPolicy(associatedPolicy);
     }
 
+    /** 创建用户关联策略 */
     private void createUserPolicy(Policy policy, PolicyStore policyStore, String user, String owner) {
         UserPolicyRepresentation rep = new UserPolicyRepresentation();
 

@@ -19,11 +19,17 @@ import org.keycloak.scripting.EvaluatableScriptAdapter;
 import org.keycloak.scripting.ScriptingProvider;
 
 /**
+ * JavaScript 策略 SPI 工厂：管理脚本编译缓存，并在 SCRIPTS 特性启用时注册策略类型。
+ * <p>
+ * 非部署脚本默认禁止上传/创建，需会话属性 {@code ALLOW_CREATE_POLICY} 或部署态工厂。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class JSPolicyProviderFactory implements PolicyProviderFactory<JSPolicyRepresentation>, EnvironmentDependentProviderFactory {
 
+    /** 共享的 JS 策略提供者 */
     private final JSPolicyProvider provider = new JSPolicyProvider(this::getEvaluatableScript);
+    /** 已编译脚本适配器缓存 */
     private ScriptCache scriptCache;
 
     @Override
@@ -80,6 +86,7 @@ public class JSPolicyProviderFactory implements PolicyProviderFactory<JSPolicyRe
         scriptCache.remove(policy.getId());
     }
 
+    /** 从配置读取缓存容量与条目 TTL，初始化 {@link ScriptCache} */
     @Override
     public void init(Config.Scope config) {
         int maxEntries = Integer.parseInt(config.get("cache-max-entries", "100"));
@@ -107,6 +114,7 @@ public class JSPolicyProviderFactory implements PolicyProviderFactory<JSPolicyRe
         return true;
     }
 
+    /** 按策略 ID 缓存已编译脚本，避免重复编译 */
     private EvaluatableScriptAdapter getEvaluatableScript(final AuthorizationProvider authz, final Policy policy) {
         return scriptCache.computeIfAbsent(policy.getId(), id -> {
             final ScriptingProvider scripting = authz.getKeycloakSession().getProvider(ScriptingProvider.class);
@@ -120,14 +128,16 @@ public class JSPolicyProviderFactory implements PolicyProviderFactory<JSPolicyRe
         String scriptCode = policy.getConfig().get("code");
         String scriptDescription = policy.getDescription();
 
-        //TODO lookup script by scriptId instead of creating it every time
+        // TODO 按 scriptId 查找脚本，而非每次从配置创建
         return scripting.createScript(realm.getId(), ScriptModel.TEXT_JAVASCRIPT, scriptName, scriptCode, scriptDescription);
     }
 
+    /** 子类可覆盖：部署脚本工厂返回 {@code true} */
     protected boolean isDeployed() {
         return false;
     }
 
+    /** 未显式允许且非部署脚本时，禁止创建/导入含自定义代码的策略 */
     private void throwCanNotUpdatePolicy(AuthorizationProvider authorization) {
         if (!authorization.getKeycloakSession().getAttributeOrDefault("ALLOW_CREATE_POLICY", false) && !isDeployed()) {
             throw new RuntimeException("Script upload is disabled");

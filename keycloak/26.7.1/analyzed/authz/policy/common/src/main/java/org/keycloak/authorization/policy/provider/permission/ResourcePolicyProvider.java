@@ -28,12 +28,19 @@ import org.keycloak.authorization.policy.evaluation.Evaluation;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于资源的权限策略：按资源粒度缓存关联策略的评估结果。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ResourcePolicyProvider extends AbstractPermissionProvider {
 
     private static final Logger logger = Logger.getLogger(ResourcePolicyProvider.class);
 
+    /**
+     * 若同一资源已评估过则直接复用缓存；否则委托父类评估并按资源写入缓存。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         logger.debugf("Resource policy %s evaluating using parent class", evaluation.getPolicy().getName());

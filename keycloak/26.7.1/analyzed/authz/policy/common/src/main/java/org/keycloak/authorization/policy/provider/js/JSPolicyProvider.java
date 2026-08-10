@@ -30,18 +30,29 @@ import org.keycloak.scripting.EvaluatableScriptAdapter;
 import org.jboss.logging.Logger;
 
 /**
+ * JavaScript 策略提供者：在脚本上下文中注入 {@code $evaluation} 并执行脚本以决定授权效果。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 class JSPolicyProvider implements PolicyProvider {
 
     private static final Logger logger = Logger.getLogger(JSPolicyProvider.class);
 
+    /** 根据策略获取可执行脚本适配器的函数 */
     private final BiFunction<AuthorizationProvider, Policy, EvaluatableScriptAdapter> evaluatableScript;
 
+    /**
+     * @param evaluatableScript 脚本适配器供应函数
+     */
     JSPolicyProvider(final BiFunction<AuthorizationProvider, Policy, EvaluatableScriptAdapter> evaluatableScript) {
         this.evaluatableScript = evaluatableScript;
     }
 
+    /**
+     * 执行 JS 脚本；脚本通过 {@code $evaluation} 调用 grant/deny。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         Policy policy = evaluation.getPolicy();
@@ -51,6 +62,7 @@ class JSPolicyProvider implements PolicyProvider {
         try {
             SimpleScriptContext context = new SimpleScriptContext();
 
+            // 将评估对象暴露给脚本，脚本内可调用 grant()/deny()
             context.setAttribute("$evaluation", evaluation, ScriptContext.ENGINE_SCOPE);
 
             adapter.eval(context);

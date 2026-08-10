@@ -32,13 +32,19 @@ import org.keycloak.representations.idm.authorization.ClientScopePolicyRepresent
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端作用域（Client Scope）策略提供者：根据身份令牌中的 scope 声明判定是否满足策略配置。
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 public class ClientScopePolicyProvider implements PolicyProvider {
 
     private static final Logger logger = Logger.getLogger(ClientScopePolicyProvider.class);
+    /** 将 {@link Policy} 转为 {@link ClientScopePolicyRepresentation} 的函数 */
     private final BiFunction<Policy, AuthorizationProvider, ClientScopePolicyRepresentation> representationFunction;
 
+    /**
+     * @param representationFunction 策略表示转换函数
+     */
     public ClientScopePolicyProvider(
         BiFunction<Policy, AuthorizationProvider, ClientScopePolicyRepresentation> representationFunction) {
         this.representationFunction = representationFunction;
@@ -48,6 +54,11 @@ public class ClientScopePolicyProvider implements PolicyProvider {
     public void close() {
     }
 
+    /**
+     * 遍历策略配置的客户端作用域：必需项缺失则拒绝，匹配则授予。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         Policy policy = evaluation.getPolicy();
@@ -74,6 +85,13 @@ public class ClientScopePolicyProvider implements PolicyProvider {
         logger.debugf("Client Scope Policy %s evaluated to %s", policy.getName(), evaluation.getEffect());
     }
 
+    /**
+     * 检查身份属性中的 scope 是否包含指定客户端作用域名称。
+     *
+     * @param identity 请求主体身份
+     * @param clientScope 待匹配的客户端作用域
+     * @return 若 scope 声明中包含该作用域则返回 {@code true}
+     */
     private boolean hasClientScope(Identity identity, ClientScopeModel clientScope) {
         String clientScopeName = clientScope.getName();
         String[] clientScopes = identity.getAttributes().getValue("scope").asString(0).split(" ");

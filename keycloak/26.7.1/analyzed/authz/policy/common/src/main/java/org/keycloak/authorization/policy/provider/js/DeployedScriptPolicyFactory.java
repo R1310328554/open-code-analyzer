@@ -27,16 +27,24 @@ import org.keycloak.representations.provider.ScriptProviderMetadata;
 import org.keycloak.scripting.ScriptingProvider;
 
 /**
+ * 已部署脚本策略工厂：基于 {@link ScriptProviderMetadata} 创建预置 JavaScript 策略，
+ * 脚本代码在部署时固定，运行时不可修改。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public final class DeployedScriptPolicyFactory extends JSPolicyProviderFactory {
 
+    /** 部署脚本元数据（ID、名称、代码等） */
     private ScriptProviderMetadata metadata;
 
+    /**
+     * @param metadata 脚本提供者元数据
+     */
     public DeployedScriptPolicyFactory(ScriptProviderMetadata metadata) {
         this.metadata = metadata;
     }
 
+    /** 供反射实例化使用 */
     public DeployedScriptPolicyFactory() {
         // for reflection
     }
@@ -51,6 +59,7 @@ public final class DeployedScriptPolicyFactory extends JSPolicyProviderFactory {
         return metadata.getName();
     }
 
+    /** 已部署脚本始终视为部署态，允许创建策略 */
     @Override
     protected boolean isDeployed() {
         return true;
@@ -86,6 +95,7 @@ public final class DeployedScriptPolicyFactory extends JSPolicyProviderFactory {
         return representation;
     }
 
+    /** 从元数据创建脚本模型，而非从策略配置读取代码 */
     @Override
     protected ScriptModel getScriptModel(Policy policy, RealmModel realm, ScriptingProvider scripting) {
         return scripting.createScript(realm.getId(), ScriptModel.TEXT_JAVASCRIPT, metadata.getName(), metadata.getCode(),

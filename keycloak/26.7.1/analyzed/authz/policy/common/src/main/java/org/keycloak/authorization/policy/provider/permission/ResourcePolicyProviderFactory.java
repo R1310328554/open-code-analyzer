@@ -29,10 +29,13 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.representations.idm.authorization.ResourcePermissionRepresentation;
 
 /**
+ * 基于资源的权限策略 SPI 工厂。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ResourcePolicyProviderFactory implements PolicyProviderFactory<ResourcePermissionRepresentation> {
 
+    /** 共享的资源权限策略提供者 */
     private ResourcePolicyProvider provider = new ResourcePolicyProvider();
 
     @Override
@@ -77,6 +80,7 @@ public class ResourcePolicyProviderFactory implements PolicyProviderFactory<Reso
         updateResourceType(policy, representation);
     }
 
+    /** 更新策略配置中的默认资源类型 */
     private void updateResourceType(Policy policy, ResourcePermissionRepresentation representation) {
         if (representation != null) {
             Map<String, String> config = new HashMap(policy.getConfig());

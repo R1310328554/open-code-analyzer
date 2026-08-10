@@ -26,35 +26,40 @@ import java.util.function.Function;
 import org.keycloak.scripting.EvaluatableScriptAdapter;
 
 /**
+ * JavaScript 策略脚本的 LRU 缓存，支持条目过期与并发写入互斥。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ScriptCache {
 
     /**
-     * The load factor.
+     * 哈希表负载因子。
      */
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
+    /** 底层 LRU 缓存（按访问顺序淘汰最久未用条目） */
     private final Map<String, CacheEntry> cache;
 
+    /** 写入互斥标志，避免并发修改缓存结构 */
     private final AtomicBoolean writing = new AtomicBoolean(false);
 
+    /** 条目最大存活时间（毫秒）；{@code -1} 表示永不过期 */
     private final long maxAge;
 
     /**
-     * Creates a new instance.
+     * 创建缓存实例（条目永不过期）。
      *
-     * @param maxEntries the maximum number of entries to keep in the cache
+     * @param maxEntries 缓存最大条目数
      */
     public ScriptCache(int maxEntries) {
         this(maxEntries, -1);
     }
 
     /**
-     * Creates a new instance.
+     * 创建缓存实例。
      *
-     * @param maxEntries the maximum number of entries to keep in the cache
-     * @param maxAge the time in milliseconds that an entry can stay in the cache. If {@code -1}, entries never expire
+     * @param maxEntries 缓存最大条目数
+     * @param maxAge 条目最大存活时间（毫秒）；{@code -1} 表示永不过期
      */
     public ScriptCache(final int maxEntries, long maxAge) {
         cache = Collections.synchronizedMap(new LinkedHashMap<String, CacheEntry>(16, DEFAULT_LOAD_FACTOR, true) {
@@ -66,6 +71,13 @@ public class ScriptCache {
         this.maxAge = maxAge;
     }
 
+    /**
+     * 获取或计算脚本适配器；过期条目会被移除并重新加载。
+     *
+     * @param id 缓存键（通常为策略 ID）
+     * @param function 缓存未命中时的加载函数
+     * @return 可执行脚本适配器
+     */
     public EvaluatableScriptAdapter computeIfAbsent(String id, Function<String, EvaluatableScriptAdapter> function) {
         try {
             EvaluatableScriptAdapter adapter = removeIfExpired(cache.get(id));
@@ -90,6 +102,11 @@ public class ScriptCache {
         }
     }
 
+    /**
+     * 从缓存中移除指定键（如策略删除时调用）。
+     *
+     * @param key 缓存键
+     */
     public void remove(String key) {
         try {
             if (parkForWriteAndCheckInterrupt()) {
@@ -102,6 +119,7 @@ public class ScriptCache {
         }
     }
 
+    /** 若条目已过期则删除并返回 {@code null} */
     private EvaluatableScriptAdapter removeIfExpired(CacheEntry cached) {
         if (cached == null) {
             return null;
@@ -115,6 +133,7 @@ public class ScriptCache {
         return cached.value();
     }
 
+    /** 自旋等待写入锁；若线程被中断则放弃写入 */
     private boolean parkForWriteAndCheckInterrupt() {
         while (!writing.compareAndSet(false, true)) {
             LockSupport.parkNanos(1L);
@@ -125,6 +144,7 @@ public class ScriptCache {
         return false;
     }
 
+    /** 缓存条目：持有脚本适配器与过期时间戳 */
     private static final class CacheEntry {
 
         final String key;

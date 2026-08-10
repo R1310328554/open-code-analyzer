@@ -45,12 +45,16 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 用户组策略 SPI 工厂：管理组策略的创建、导入/导出及配置序列化。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class GroupPolicyProviderFactory implements PolicyProviderFactory<GroupPolicyRepresentation> {
 
+    /** 策略类型标识符 */
     public static final String ID = "group";
 
+    /** 共享的组策略提供者实例 */
     private GroupPolicyProvider provider = new GroupPolicyProvider(this::toRepresentation);
 
     @Override
@@ -162,6 +166,7 @@ public class GroupPolicyProviderFactory implements PolicyProviderFactory<GroupPo
 
     }
 
+    /** 将组 ID/路径解析为领域组并更新策略配置 */
     private void updatePolicy(Policy policy, String groupsClaim, Set<GroupPolicyRepresentation.GroupDefinition> groups, AuthorizationProvider authorization) {
         if (groups == null) {
             throw new RuntimeException("You must provide at least one group");
@@ -193,6 +198,13 @@ public class GroupPolicyProviderFactory implements PolicyProviderFactory<GroupPo
         policy.setConfig(config);
     }
 
+    /**
+     * 按 ID 或路径查找领域组；组织组不可用于授权策略。
+     *
+     * @param authorization 授权提供者
+     * @param definition 组定义（含 ID 或 path）
+     * @return 匹配的 {@link GroupModel}，未找到则返回 {@code null}
+     */
     private GroupModel getGroup(AuthorizationProvider authorization, GroupDefinition definition) {
         RealmModel realm = authorization.getRealm();
         KeycloakSession session = authorization.getKeycloakSession();
@@ -201,7 +213,7 @@ public class GroupPolicyProviderFactory implements PolicyProviderFactory<GroupPo
         if (definition.getId() != null) {
             GroupModel group = realm.getGroupById(definition.getId());
 
-            // Validate that only REALM groups can be used in authorization policies
+            // 校验：授权策略仅允许使用领域组，不允许组织组
             if (group != null && GroupModel.Type.ORGANIZATION.equals(group.getType())) {
                 throw new BadRequestException("Organization groups cannot be used. Only realm groups are allowed.");
             }
@@ -240,6 +252,7 @@ public class GroupPolicyProviderFactory implements PolicyProviderFactory<GroupPo
         return group;
     }
 
+    /** 从配置 JSON 反序列化组定义，并过滤掉领域中不存在的组 */
     private Set<GroupPolicyRepresentation.GroupDefinition> getGroupsDefinition(Map<String, String> config, AuthorizationProvider authorization) throws IOException {
         String groups = config.get("groups");
 

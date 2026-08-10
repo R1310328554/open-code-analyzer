@@ -28,12 +28,19 @@ import org.keycloak.authorization.policy.evaluation.Evaluation;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于作用域的权限策略：按 {@link ResourcePermission} 粒度缓存评估结果。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ScopePolicyProvider extends AbstractPermissionProvider {
 
     private static final Logger logger = Logger.getLogger(ScopePolicyProvider.class);
 
+    /**
+     * 优先复用权限级决策缓存；尚无决策时委托父类评估并写入缓存。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         logger.debugf("Scope policy %s evaluating using parent class", evaluation.getPolicy().getName());

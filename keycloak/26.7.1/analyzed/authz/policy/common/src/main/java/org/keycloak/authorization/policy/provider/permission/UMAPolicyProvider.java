@@ -24,12 +24,19 @@ import org.keycloak.authorization.policy.evaluation.Evaluation;
 import org.jboss.logging.Logger;
 
 /**
+ * UMA 权限策略提供者：资源属主访问自身资源时直接授予，否则评估关联策略。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UMAPolicyProvider extends AbstractPermissionProvider {
 
     private static final Logger logger = Logger.getLogger(UMAPolicyProvider.class);
 
+    /**
+     * 若请求主体为资源所有者则跳过 UMA 评估并授予；否则委托父类处理关联策略。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         logger.debugf("UMA policy %s evaluating using parent class", evaluation.getPolicy().getName());
@@ -39,7 +46,7 @@ public class UMAPolicyProvider extends AbstractPermissionProvider {
         if (resource != null) {
             Identity identity = evaluation.getContext().getIdentity();
 
-            // no need to evaluate UMA permissions to resource owner resources
+            // 资源属主访问自己的资源时无需走 UMA 权限评估
             if (resource.getOwner().equals(identity.getId())) {
                 logger.debugv("UMA resource is owned by the current user, bypassing evaluation");
                 evaluation.grant();

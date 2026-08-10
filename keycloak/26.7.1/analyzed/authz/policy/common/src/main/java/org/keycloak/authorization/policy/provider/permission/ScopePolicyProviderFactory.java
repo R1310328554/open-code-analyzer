@@ -30,11 +30,15 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.representations.idm.authorization.ScopePermissionRepresentation;
 
 /**
+ * 基于作用域的权限策略 SPI 工厂；删除时清理 FGAP 孤儿资源。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ScopePolicyProviderFactory implements PolicyProviderFactory<ScopePermissionRepresentation> {
 
+    /** 策略类型标识符 */
     public static final String ID = "scope";
+    /** 共享的作用域权限策略提供者 */
     private final ScopePolicyProvider provider = new ScopePolicyProvider();
 
     @Override
@@ -79,11 +83,13 @@ public class ScopePolicyProviderFactory implements PolicyProviderFactory<ScopePe
         updateResourceType(policy, representation);
     }
 
+    /** 删除策略时移除不再被引用的管理权限资源 */
     @Override
     public void onRemove(Policy policy, AuthorizationProvider authorization) {
         AdminPermissionsSchema.SCHEMA.removeOrphanResources(policy, authorization);
     }
 
+    /** 更新策略配置中的默认资源类型 */
     private void updateResourceType(Policy policy, ScopePermissionRepresentation representation) {
         if (representation != null) {
             Map<String, String> config = new HashMap<>(policy.getConfig());

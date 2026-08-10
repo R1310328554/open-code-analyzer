@@ -45,10 +45,13 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 客户端作用域策略的 SPI 工厂：负责创建提供者、序列化配置，并在作用域删除时同步策略。
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 public class ClientScopePolicyProviderFactory implements PolicyProviderFactory<ClientScopePolicyRepresentation> {
 
+    /** 共享的策略提供者实例 */
     private ClientScopePolicyProvider provider = new ClientScopePolicyProvider(this::toRepresentation);
 
     @Override
@@ -60,6 +63,7 @@ public class ClientScopePolicyProviderFactory implements PolicyProviderFactory<C
     public void init(Scope config) {
     }
 
+    /** 注册监听器：客户端作用域被删除时清理或更新引用该作用域的策略配置 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         factory.register(event -> {
@@ -108,6 +112,7 @@ public class ClientScopePolicyProviderFactory implements PolicyProviderFactory<C
         });
     }
 
+    /** 从策略配置 JSON 中解析客户端作用域列表 */
     private Map<String, Object>[] getClientScopes(Policy policy) {
         String clientScopes = policy.getConfig().get("clientScopes");
 
@@ -219,6 +224,7 @@ public class ClientScopePolicyProviderFactory implements PolicyProviderFactory<C
         updateClientScopes(policy, authorization, representation.getClientScopes());
     }
 
+    /** 将作用域名称解析为领域 ID 并写回策略配置 */
     private void updateClientScopes(Policy policy, AuthorizationProvider authorization,
         Set<ClientScopeDefinition> clientScopes) {
         RealmModel realm = authorization.getRealm();
