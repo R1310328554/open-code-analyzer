@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kuma MADS 服务发现：通过 xDS HTTP 拉取 MonitoringAssignment 资源，将 mesh/service/dataplane 与用户 label 转为 Prometheus 抓取 target。
+
+// Kuma MADS 服务发现：通过 xDS HTTP 拉取 MonitoringAssignment 资源，将 mesh/service/dataplane 与用户 label 转为 Prometheus 抓取 target。
+
 package xds
 
 import (
@@ -31,6 +35,7 @@ import (
 	"github.com/prometheus/prometheus/util/strutil"
 )
 
+// Kuma MADS SD 默认配置（15s 刷新、2 分钟 fetch 超时）。
 // DefaultKumaSDConfig is the default Kuma MADS SD configuration.
 var DefaultKumaSDConfig = KumaSDConfig{
 	HTTPClientConfig: config.DefaultHTTPClientConfig,
@@ -38,6 +43,7 @@ var DefaultKumaSDConfig = KumaSDConfig{
 	FetchTimeout:     model.Duration(2 * time.Minute),
 }
 
+// Kuma meta 标签前缀与 MADS v1 资源 type URL 常量。
 const (
 	// kumaMetaLabelPrefix is the meta prefix used for all kuma meta labels.
 	kumaMetaLabelPrefix = model.MetaLabelPrefix + "kuma_"
@@ -106,6 +112,7 @@ func (c *KumaSDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discover
 	return NewKumaHTTPDiscovery(c, logger, opts.Metrics)
 }
 
+// 将单个 MonitoringAssignment 展开为多个 target LabelSet。
 func convertKumaV1MonitoringAssignment(assignment *MonitoringAssignment) []model.LabelSet {
 	commonLabels := convertKumaUserLabels(assignment.Labels)
 
@@ -139,6 +146,7 @@ func convertKumaUserLabels(labels map[string]string) model.LabelSet {
 }
 
 // kumaMadsV1ResourceParser is an xds.resourceParser.
+// xDS 资源解析器：反序列化 Any 为 MonitoringAssignment 并转换标签。
 func kumaMadsV1ResourceParser(resources []*anypb.Any, typeURL string) ([]model.LabelSet, error) {
 	if typeURL != KumaMadsV1ResourceTypeURL {
 		return nil, fmt.Errorf("received invalid typeURL for Kuma MADS v1 Resource: %s", typeURL)
@@ -159,6 +167,7 @@ func kumaMadsV1ResourceParser(resources []*anypb.Any, typeURL string) ([]model.L
 	return targets, nil
 }
 
+// 构造 Kuma fetchDiscovery：配置 MADS HTTP 客户端与资源解析回调。
 func NewKumaHTTPDiscovery(conf *KumaSDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (discovery.Discoverer, error) {
 	m, ok := metrics.(*xdsMetrics)
 	if !ok {
@@ -172,7 +181,8 @@ func NewKumaHTTPDiscovery(conf *KumaSDConfig, logger *slog.Logger, metrics disco
 		clientID, err = osutil.GetFQDN()
 		if err != nil {
 			logger.Debug("error getting FQDN", "err", err)
-			clientID = "prometheus"
+	// 无法获取 FQDN 时回退 clientID 为 prometheus。
+		clientID = "prometheus"
 		}
 	}
 

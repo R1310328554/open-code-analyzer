@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Triton 服务发现指标占位：实现 DiscovererMetrics 接口，刷新耗时等通用指标由 refresh 机制统一提供。
+
 package triton
 
 import (
@@ -23,10 +25,12 @@ type tritonMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 }
 
+// 注册指标（Triton 发现器当前无需额外指标）。
 // Register implements discovery.DiscovererMetrics.
 func (*tritonMetrics) Register() error {
 	return nil
 }
 
+// 注销指标（空实现）。
 // Unregister implements discovery.DiscovererMetrics.
 func (*tritonMetrics) Unregister() {}

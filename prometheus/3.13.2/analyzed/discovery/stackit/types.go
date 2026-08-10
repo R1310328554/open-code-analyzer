@@ -11,14 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// STACKIT IAAS API 响应类型定义：映射 ListServersInProject 返回的服务器列表、网卡与标签 JSON 结构。
+
+// STACKIT IAAS API 响应类型定义：映射 ListServersInProject 返回的服务器列表、网卡与标签 JSON 结构。
+
 package stackit
 
+// ServerListResponse 为项目服务器列表 API 的顶层响应体。
 // ServerListResponse Response object for server list request.
 // https://docs.api.eu01.stackit.cloud/documentation/iaas/version/v1#tag/Servers/operation/v1ListServersInProject
 type ServerListResponse struct {
 	Items *[]Server `json:"items"`
 }
 
+// Server 表示一台 IAAS 虚拟机及其元数据与网卡列表。
 type Server struct {
 	AvailabilityZone string          `json:"availabilityZone"`
 	ID               string          `json:"id"`
@@ -30,6 +36,7 @@ type Server struct {
 	Status           string          `json:"status"`
 }
 
+// ServerNetwork 描述服务器与网络的绑定关系及 IPv4/公网地址。
 // ServerNetwork Describes the object that matches servers to its networks.
 type ServerNetwork struct {
 	NetworkName string  `json:"networkName"`

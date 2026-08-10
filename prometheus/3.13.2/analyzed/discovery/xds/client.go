@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// xDS REST/JSON 轮询客户端：实现 ResourceClient 接口，向 Envoy xDS 管理服务器 POST DiscoveryRequest 并缓存 version/nonce。
+
+// xDS REST/JSON 轮询客户端：实现 ResourceClient 接口，向 Envoy xDS 管理服务器 POST DiscoveryRequest 并缓存 version/nonce。
+
 package xds
 
 import (
@@ -32,6 +36,7 @@ import (
 
 var userAgent = version.PrometheusUserAgent()
 
+// ResourceClient 暴露单一资源类型的 xDS 协议（Fetch/Close/ID 等）。
 // ResourceClient exposes the xDS protocol for a single resource type.
 // See https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#rest-json-polling-subscriptions .
 type ResourceClient interface {
@@ -52,6 +57,7 @@ type ResourceClient interface {
 	Close()
 }
 
+// HTTPResourceClient 基于 HTTP 的 xDS v3 资源拉取实现。
 type HTTPResourceClient struct {
 	client *http.Client
 	config *HTTPResourceClientConfig
@@ -88,6 +94,7 @@ type HTTPResourceClientConfig struct {
 	ClientID string
 }
 
+// 构造 HTTP 客户端：校验 v3 协议、拼接 discovery:{type} 端点 URL。
 func NewHTTPResourceClient(conf *HTTPResourceClientConfig, protocolVersion ProtocolVersion) (*HTTPResourceClient, error) {
 	if protocolVersion != ProtocolV3 {
 		return nil, errors.New("only the v3 protocol is supported")
@@ -163,6 +170,7 @@ func (rc *HTTPResourceClient) Close() {
 
 // Fetch requests the latest state of the resources from the xDS server and cache the version.
 // Returns a nil response if the current local version is up to date.
+// POST JSON DiscoveryRequest；304 表示本地版本已最新，返回 nil。
 func (rc *HTTPResourceClient) Fetch(ctx context.Context) (*v3.DiscoveryResponse, error) {
 	discoveryReq := &v3.DiscoveryRequest{
 		VersionInfo:   rc.latestVersion,
@@ -198,6 +206,7 @@ func (rc *HTTPResourceClient) Fetch(ctx context.Context) (*v3.DiscoveryResponse,
 		resp.Body.Close()
 	}()
 
+// 无变更响应：调用方可跳过 target 更新。
 	if resp.StatusCode == http.StatusNotModified {
 		// Empty response, already have the latest.
 		return nil, nil

@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// targetgroup 包定义服务发现输出的目标组结构：同一 Source 下共享标签的一组 LabelSet target，支持 YAML/JSON 序列化。
+
+// targetgroup 包定义服务发现输出的目标组结构：同一 Source 下共享标签的一组 LabelSet target，支持 YAML/JSON 序列化。
+
 package targetgroup
 
 import (
@@ -20,15 +24,19 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// Group 表示具有共同标签集合的一组抓取 target（如 prod/test 环境）。
 // Group is a set of targets with a common label set(production , test, staging etc.).
 type Group struct {
 	// Targets is a list of targets identified by a label set. Each target is
 	// uniquely identifiable in the group by its address label.
+	// Targets 为带完整标签集的 target 列表，__address__ 唯一标识组内成员。
 	Targets []model.LabelSet
 	// Labels is a set of labels that is common across all targets in the group.
+	// Labels 为该组所有 target 共享的公共标签。
 	Labels model.LabelSet
 
 	// Source is an identifier that describes a group of targets.
+	// Source 标识该 target 组的来源（如 SD 机制名或 API 端点）。
 	Source string
 }
 
@@ -36,6 +44,7 @@ func (tg Group) String() string {
 	return tg.Source
 }
 
+// YAML 反序列化：将 targets 字符串列表转为 __address__ LabelSet。
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (tg *Group) UnmarshalYAML(unmarshal func(any) error) error {
 	g := struct {
@@ -55,6 +64,7 @@ func (tg *Group) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// YAML 序列化：从 LabelSet 提取 __address__ 写入 targets 数组。
 // MarshalYAML implements the yaml.Marshaler interface.
 func (tg Group) MarshalYAML() (any, error) {
 	g := &struct {

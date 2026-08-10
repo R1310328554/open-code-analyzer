@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// STACKIT IAAS 虚拟机服务发现实现：调用 STACKIT Cloud API 列出项目内服务器，将网卡公网/私网 IP、可用区与自定义 label 映射为 Prometheus 抓取 target。
+
+// STACKIT IAAS 虚拟机服务发现实现：调用 STACKIT Cloud API 列出项目内服务器，将网卡公网/私网 IP、可用区与自定义 label 映射为 Prometheus 抓取 target。
+
 package stackit
 
 import (
@@ -35,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/util/strutil"
 )
 
+// STACKIT meta 标签常量（private_ipv4/type/label 等前缀）。
 const (
 	stackitAPIEndpoint = "https://iaas.api.%s.stackit.cloud"
 
@@ -44,6 +49,7 @@ const (
 	stackitLabelLabelPresent = stackitLabelPrefix + "labelpresent_"
 )
 
+// iaasDiscovery 周期性请求 STACKIT IAAS API 刷新 target。
 // Discovery periodically performs STACKIT Cloud requests.
 // It implements the Discoverer interface.
 type iaasDiscovery struct {
@@ -56,6 +62,7 @@ type iaasDiscovery struct {
 }
 
 // newServerDiscovery returns a new iaasDiscovery, which periodically refreshes its targets.
+// 构造 iaasDiscovery：配置 HTTP 客户端、SDK 认证与 API 端点。
 func newServerDiscovery(conf *SDConfig, logger *slog.Logger) (*iaasDiscovery, error) {
 	d := &iaasDiscovery{
 		project:     conf.Project,
@@ -111,6 +118,7 @@ func newServerDiscovery(conf *SDConfig, logger *slog.Logger) (*iaasDiscovery, er
 	return d, nil
 }
 
+// GET /v1/projects/{project}/servers?details=true，解析每台 VM 的 NIC 生成标签。
 func (i *iaasDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	apiURL, err := url.Parse(i.apiEndpoint)
 	if err != nil {
@@ -158,6 +166,7 @@ func (i *iaasDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, erro
 
 	targets := make([]model.LabelSet, 0, len(*serversResponse.Items))
 	for _, server := range *serversResponse.Items {
+// 无网卡的服务器跳过，无法确定抓取地址。
 		if server.Nics == nil {
 			i.logger.Debug("server has no network interfaces. Skipping", slog.String("server_id", server.ID))
 			continue
@@ -179,6 +188,7 @@ func (i *iaasDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, erro
 		)
 
 		for _, nic := range server.Nics {
+// 优先记录首个公网 IP 作为 __address__ 候选。
 			if nic.PublicIP != nil && *nic.PublicIP != "" && serverPublicIP == "" {
 				serverPublicIP = *nic.PublicIP
 				addressLabel = serverPublicIP
@@ -187,7 +197,8 @@ func (i *iaasDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, erro
 			if nic.IPv4 != nil && *nic.IPv4 != "" {
 				networkLabel := model.LabelName(stackitLabelPrivateIPv4 + strutil.SanitizeLabelName(nic.NetworkName))
 				labels[networkLabel] = model.LabelValue(*nic.IPv4)
-				if addressLabel == "" {
+		// 既无公网也无私网 IP 的服务器不生成 target。
+		if addressLabel == "" {
 					addressLabel = *nic.IPv4
 				}
 			}

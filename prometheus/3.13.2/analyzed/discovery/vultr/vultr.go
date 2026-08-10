@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Vultr 云实例服务发现：通过 govultr API 分页列出全部实例，以 main_ip 与配置 port 作为抓取地址并附加 vultr_instance_* 元数据标签。
+
 package vultr
 
 import (
@@ -34,6 +36,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// Vultr 实例 meta 标签前缀（id/region/plan/features/tags 等）。
 const (
 	vultrInstanceLabel             = model.MetaLabelPrefix + "vultr_instance_"
 	vultrInstanceLabelID           = vultrInstanceLabel + "id"
@@ -56,6 +59,7 @@ const (
 	separator                      = ","
 )
 
+// Vultr SD 默认配置（80 端口、60s 刷新）。
 // DefaultSDConfig is the default Vultr SD configuration.
 var DefaultSDConfig = SDConfig{
 	Port:             80,
@@ -149,6 +153,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery,
 	return d, nil
 }
 
+// 遍历实例列表，用 MainIP:port 填充 __address__ 及规格/区域标签。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	tg := &targetgroup.Group{
 		Source: "Vultr",
@@ -183,6 +188,7 @@ func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 
 		// We surround the separated list with the separator as well. This way regular expressions
 		// in relabeling rules don't have to consider feature positions.
+// features/tags 用分隔符包裹，便于 relabel 正则匹配任意位置。
 		if len(instance.Features) > 0 {
 			features := separator + strings.Join(instance.Features, separator) + separator
 			labels[vultrInstanceLabelFeatures] = model.LabelValue(features)
@@ -199,6 +205,7 @@ func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	return []*targetgroup.Group{tg}, nil
 }
 
+// 分页调用 Instance.List（每页 100），直到 meta.Links.Next 为空。
 func (d *Discovery) listInstances(ctx context.Context) ([]govultr.Instance, error) {
 	var instances []govultr.Instance
 

@@ -21,6 +21,8 @@
 
 package xds
 
+// 本文件为 Kuma MADS（Monitoring Assignment Discovery Service）protobuf 生成代码，定义 observability/v1 的 MonitoringAssignment 消息类型。MADS 通过 xDS 协议向 Prometheus 等观测组件推送监控分配：每条 MonitoringAssignment 描述某 mesh 上某 service 的一组待监控 dataplane target，包含抓取地址、scheme、metrics_path 及用户自定义 labels。Prometheus Kuma SD 在 kuma.go 中解析这些 Any 资源并转换为 model.LabelSet。此文件由 protoc 生成，请勿手工修改消息结构。
+
 import (
 	context "context"
 	reflect "reflect"
@@ -40,6 +42,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// MonitoringAssignment 为 MADS 核心资源：同一 service 下需监控的 target 集合。
 // MADS resource type.
 //
 // Describes a group of targets on a single service that need to be monitored.
@@ -125,6 +128,7 @@ func (x *MonitoringAssignment) GetLabels() map[string]string {
 }
 
 // Describes a single target that needs to be monitored.
+// Target 描述单个 dataplane 的抓取地址、scheme 与 metrics 路径。
 type MonitoringAssignment_Target struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

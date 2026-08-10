@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// SUSE Uyuni 服务发现：通过 XML-RPC API 列出具备 monitoring entitlement 的系统及其监控端点，映射 hostname/port/path/scheme 为抓取 target。
+
+// SUSE Uyuni 服务发现：通过 XML-RPC API 列出具备 monitoring entitlement 的系统及其监控端点，映射 hostname/port/path/scheme 为抓取 target。
+
 package uyuni
 
 import (
@@ -35,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// Uyuni meta 标签常量与 XML-RPC 路径、token 有效期配置。
 const (
 	uyuniXMLRPCAPIPath = "/rpc/api"
 
@@ -52,6 +57,7 @@ const (
 	tokenDuration = 10 * time.Minute
 )
 
+// Uyuni SD 默认配置（monitoring_entitled、1 分钟刷新）。
 // DefaultSDConfig is the default Uyuni SD configuration.
 var DefaultSDConfig = SDConfig{
 	Entitlement:      "monitoring_entitled",
@@ -64,6 +70,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Uyuni SD 配置：server、username/password、entitlement 与 HTTP 客户端。
 // SDConfig is the configuration for Uyuni based service discovery.
 type SDConfig struct {
 	Server           string                  `yaml:"server"`
@@ -254,6 +261,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery,
 	return d, nil
 }
 
+// 将 endpoint 与系统组、网络信息合并为 __address__ 及 uyuni meta 标签。
 func (d *Discovery) getEndpointLabels(
 	endpoint endpointInfo,
 	systemGroupIDs []systemGroupID,
@@ -331,6 +339,7 @@ func (d *Discovery) getTargetsForSystems(
 	return result, nil
 }
 
+// 登录 XML-RPC 后拉取系统组/网络/端点信息，组装 uyuni_* 标签 target。
 func (d *Discovery) refresh(context.Context) ([]*targetgroup.Group, error) {
 	rpcClient, err := xmlrpc.NewClient(d.apiURL.String(), d.roundTripper)
 	if err != nil {
@@ -338,6 +347,7 @@ func (d *Discovery) refresh(context.Context) ([]*targetgroup.Group, error) {
 	}
 	defer rpcClient.Close()
 
+// token 过期时重新 auth.login，有效期设为 tokenDuration 的一半以便提前续期。
 	if time.Now().After(d.tokenExpiration) {
 		// Uyuni API takes duration in seconds.
 		d.token, err = login(rpcClient, d.username, d.password, int(tokenDuration.Seconds()))
@@ -345,6 +355,7 @@ func (d *Discovery) refresh(context.Context) ([]*targetgroup.Group, error) {
 			return nil, fmt.Errorf("unable to login to Uyuni API: %w", err)
 		}
 		// Login again at half the token lifetime.
+// 刷新失败时强制下次重新登录，避免 stale token 持续报错。
 		d.tokenExpiration = time.Now().Add(tokenDuration / 2)
 	}
 

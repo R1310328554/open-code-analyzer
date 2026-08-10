@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Joyent Triton 服务发现：通过 triton-cmon HTTP 端点发现容器 VM 或计算节点，按 DNS suffix 构造抓取地址并附加 triton_* meta 标签。
+
+// Joyent Triton 服务发现：通过 triton-cmon HTTP 端点发现容器 VM 或计算节点，按 DNS suffix 构造抓取地址并附加 triton_* meta 标签。
+
 package triton
 
 import (
@@ -34,6 +38,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// Triton meta 标签常量（machine_id/alias/groups 等）。
 const (
 	tritonLabel             = model.MetaLabelPrefix + "triton_"
 	tritonLabelGroups       = tritonLabel + "groups"
@@ -44,6 +49,7 @@ const (
 	tritonLabelServerID     = tritonLabel + "server_id"
 )
 
+// Triton SD 默认配置（container 角色、9163 端口、60s 刷新）。
 // DefaultSDConfig is the default Triton SD configuration.
 var DefaultSDConfig = SDConfig{
 	Role:            "container",
@@ -56,6 +62,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Triton SD 配置：account、endpoint、dns_suffix、role 与 TLS。
 // SDConfig is the configuration for Triton based service discovery.
 type SDConfig struct {
 	Account         string           `yaml:"account"`
@@ -195,6 +202,7 @@ func New(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 // As triton is not internally consistent in using these names,
 // the terms as used in triton-cmon are used here.
 
+// 按 role 选择 /discover 或 /gz/discover 端点，可选 groups 查询参数过滤。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	var endpointFormat string
 	switch d.sdConfig.Role {
@@ -242,6 +250,7 @@ func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	}
 }
 
+// 解析容器 JSON：以 {vm_uuid}.{dns_suffix}:{port} 作为 __address__。
 func (d *Discovery) processContainerResponse(data []byte, endpoint string) ([]*targetgroup.Group, error) {
 	tg := &targetgroup.Group{
 		Source: endpoint,
@@ -275,6 +284,7 @@ func (d *Discovery) processContainerResponse(data []byte, endpoint string) ([]*t
 	return []*targetgroup.Group{tg}, nil
 }
 
+// 解析计算节点 JSON：以 {server_uuid}.{dns_suffix}:{port} 作为抓取地址。
 func (d *Discovery) processComputeNodeResponse(data []byte, endpoint string) ([]*targetgroup.Group, error) {
 	tg := &targetgroup.Group{
 		Source: endpoint,

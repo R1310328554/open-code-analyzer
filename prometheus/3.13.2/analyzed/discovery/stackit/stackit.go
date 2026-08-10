@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// STACKIT 云 SD 入口：注册 SDConfig、构造 refresh.Discovery，委托 server 角色发现器周期性刷新 IAAS 虚拟机 target。
+
 package stackit
 
 import (
@@ -31,6 +33,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// STACKIT 通用 meta 标签前缀与 project/id/name 等字段名。
 const (
 	stackitLabelPrefix           = model.MetaLabelPrefix + "stackit_"
 	stackitLabelProject          = stackitLabelPrefix + "project"
@@ -44,6 +47,7 @@ const (
 
 var userAgent = version.PrometheusUserAgent()
 
+// STACKIT SD 默认配置（eu01 区域、80 端口、60s 刷新）。
 // DefaultSDConfig is the default STACKIT SD configuration.
 var DefaultSDConfig = SDConfig{
 	Region:           "eu01",
@@ -56,6 +60,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// STACKIT SD 配置：project、region/endpoint、服务账号密钥与 HTTP 客户端。
 // SDConfig is the configuration for STACKIT based service discovery.
 type SDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
@@ -103,6 +108,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		return err
 	}
 
+// endpoint 与 region 至少需配置其一以确定 API 地址。
 	if c.Endpoint == "" && c.Region == "" {
 		return errors.New("stackit_sd: endpoint and region missing")
 	}
@@ -126,6 +132,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new Discovery which periodically refreshes its targets.
+// 构造 STACKIT refresh.Discovery 并绑定 server 刷新回调。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*refresh.Discovery, error) {
 	m, ok := opts.Metrics.(*stackitMetrics)
 	if !ok {

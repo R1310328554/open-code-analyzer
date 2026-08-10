@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// xDS/Kuma 服务发现指标：注册 fetch 耗时、跳过更新与失败计数，通过 MetricRegisterer 管理 Collector 生命周期。
+
+// xDS/Kuma 服务发现指标：注册 fetch 耗时、跳过更新与失败计数，通过 MetricRegisterer 管理 Collector 生命周期。
+
 package xds
 
 import (
@@ -22,8 +26,11 @@ import (
 var _ discovery.DiscovererMetrics = (*xdsMetrics)(nil)
 
 type xdsMetrics struct {
+	// fetchDuration 记录单次 MADS fetch 调用耗时分布。
 	fetchDuration        prometheus.Summary
+	// fetchSkipUpdateCount 在 304/无变更响应时递增。
 	fetchSkipUpdateCount prometheus.Counter
+	// fetchFailuresCount 在 fetch 失败时递增。
 	fetchFailuresCount   prometheus.Counter
 
 	metricRegisterer discovery.MetricRegisterer

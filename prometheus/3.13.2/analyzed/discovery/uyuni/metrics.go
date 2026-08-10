@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Uyuni 服务发现指标占位：实现 DiscovererMetrics，刷新类指标由通用 refresh 框架注入。
+
 package uyuni
 
 import (
@@ -23,10 +25,12 @@ type uyuniMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 }
 
+// 注册指标（Uyuni 发现器无额外计数器）。
 // Register implements discovery.DiscovererMetrics.
 func (*uyuniMetrics) Register() error {
 	return nil
 }
 
+// 注销指标（空实现）。
 // Unregister implements discovery.DiscovererMetrics.
 func (*uyuniMetrics) Unregister() {}
