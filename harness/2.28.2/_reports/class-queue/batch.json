@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:04:07Z",
-  "files": [
-    "handler/api/repos/builds/logs/find.go",
-    "handler/api/repos/builds/promote.go",
-    "handler/api/repos/builds/promote_oss.go",
-    "handler/api/repos/builds/pulls/create.go",
-    "handler/api/repos/builds/pulls/delete.go",
-    "handler/api/repos/builds/pulls/list.go",
-    "handler/api/repos/builds/purge.go",
-    "handler/api/repos/builds/purge_oss.go",
-    "handler/api/repos/builds/retry.go",
-    "handler/api/repos/builds/rollback.go",
-    "handler/api/repos/builds/rollback_oss.go",
-    "handler/api/repos/builds/stages/approve.go",
-    "handler/api/repos/builds/stages/decline.go",
-    "handler/api/repos/builds/stages/decline_build.go",
-    "handler/api/repos/chown.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 268,
-  "done": 105
+  "done": 120
 }
