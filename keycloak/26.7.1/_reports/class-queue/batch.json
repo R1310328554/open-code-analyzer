@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T10:41:27Z",
   "files": [
-    "server-spi-private/src/main/java/org/keycloak/models/cache/authorization/CachedStoreFactoryProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/models/cache/authorization/CachedStoreFactorySpi.java",
-    "server-spi-private/src/main/java/org/keycloak/models/cache/authorization/CachedStoreProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/models/delegate/ClientModelLazyDelegate.java",
-    "server-spi-private/src/main/java/org/keycloak/models/light/EmptyCredentialManager.java",
-    "server-spi-private/src/main/java/org/keycloak/models/light/LightweightConsentEntity.java",
-    "server-spi-private/src/main/java/org/keycloak/models/light/LightweightUserAdapter.java",
-    "server-spi-private/src/main/java/org/keycloak/models/oid4vci/CredentialScopeModel.java",
-    "server-spi-private/src/main/java/org/keycloak/models/oid4vci/Oid4vcProtocolMapperModel.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/AuthenticationFlowResolver.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/ComponentUtil.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/CredentialValidation.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/DefaultAuthenticationFlows.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/DefaultClientScopes.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/DefaultKeyProviders.java",
     "server-spi-private/src/main/java/org/keycloak/models/utils/DefaultRequiredActions.java",
     "server-spi-private/src/main/java/org/keycloak/models/utils/FormMessage.java",
     "server-spi-private/src/main/java/org/keycloak/models/utils/KeycloakModelUtils.java",
@@ -33,5 +18,5 @@
     "server-spi-private/src/main/java/org/keycloak/models/utils/StorageUnavailableUserModelDelegate.java"
   ],
   "remaining_pending": 2728,
-  "done": 3240
+  "done": 3255
 }
