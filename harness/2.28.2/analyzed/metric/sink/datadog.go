@@ -25,10 +25,12 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// payload 是 Datadog API 请求体，包含一组时序指标序列。
 type payload struct {
 	Series []series `json:"series"`
 }
 
+// series 描述单条 Datadog 时序数据点及其标签。
 type series struct {
 	Metric string    `json:"metric"`
 	Points [][]int64 `json:"points"`
@@ -37,7 +39,7 @@ type series struct {
 	Tags   []string  `json:"tags,omitempty"`
 }
 
-// Datadog defines a no-op sink to datadog.
+// Datadog 实现向 Datadog 上报用户、仓库与构建数量的定时指标 sink。
 type Datadog struct {
 	users  core.UserStore
 	repos  core.RepositoryStore
@@ -47,7 +49,7 @@ type Datadog struct {
 	client *http.Client
 }
 
-// New returns a Datadog sink.
+// New 构造 Datadog sink，注入各数据存储与上报配置。
 func New(
 	users core.UserStore,
 	repos core.RepositoryStore,
@@ -64,7 +66,7 @@ func New(
 	}
 }
 
-// Start starts the sink.
+// Start 启动后台循环，每日午夜触发一次指标采集与上报。
 func (d *Datadog) Start(ctx context.Context) error {
 	for {
 		diff := midnightDiff()
@@ -77,6 +79,7 @@ func (d *Datadog) Start(ctx context.Context) error {
 	}
 }
 
+// do 采集当前用户/仓库/构建计数并 POST 至 Datadog API。
 func (d *Datadog) do(ctx context.Context, unix int64) error {
 	users, err := d.users.Count(ctx)
 	if err != nil {
@@ -144,8 +147,7 @@ func (d *Datadog) do(ctx context.Context, unix int64) error {
 	return nil
 }
 
-// Client returns the http client. If no custom
-// client is provided, the default client is used.
+// Client 返回用于 HTTP 上报的客户端；未自定义时使用带超时的默认客户端。
 func (d *Datadog) Client() *http.Client {
 	if d.client == nil {
 		return httpClient
@@ -153,15 +155,14 @@ func (d *Datadog) Client() *http.Client {
 	return d.client
 }
 
-// calculate the differences between now and midnight.
+// midnightDiff 计算当前时刻到下一 UTC 本地午夜的时间间隔。
 func midnightDiff() time.Duration {
 	a := time.Now()
 	b := time.Date(a.Year(), a.Month(), a.Day()+1, 0, 0, 0, 0, a.Location())
 	return b.Sub(a)
 }
 
-// httpClient should be used for HTTP requests. It
-// is configured with a timeout for reliability.
+// httpClient 是全局 HTTP 客户端，配置超时与 TLS 握手限制以提高上报可靠性。
 var httpClient = &http.Client{
 	Transport: &http.Transport{
 		Proxy:               http.ProxyFromEnvironment,

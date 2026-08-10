@@ -12,7 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// RepoCount registers the repository metrics.
+// RepoCount 注册 drone_repo_count Gauge，反映已注册仓库总数。
 func RepoCount(repos core.RepositoryStore) {
 	prometheus.MustRegister(
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{

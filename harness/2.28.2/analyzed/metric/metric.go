@@ -4,4 +4,5 @@
 
 // +build !oss
 
+// metric 包聚合 Drone 企业版 Prometheus 指标注册逻辑（构建、阶段、用户、仓库等）。
 package metric

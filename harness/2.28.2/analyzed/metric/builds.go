@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// metric 包（非 OSS 构建）向 Prometheus 注册 Drone 运行时 Gauge 指标。
 package metric
 
 import (
@@ -12,7 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// BuildCount provides metrics for build counts.
+// BuildCount 注册 drone_build_count Gauge，实时反映系统中构建总数。
 func BuildCount(builds core.BuildStore) {
 	prometheus.MustRegister(
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -25,7 +26,7 @@ func BuildCount(builds core.BuildStore) {
 	)
 }
 
-// PendingBuildCount provides metrics for pending build counts.
+// PendingBuildCount 注册 drone_pending_builds Gauge，反映排队等待执行的构建数量。
 func PendingBuildCount(builds core.BuildStore) {
 	prometheus.MustRegister(
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -38,7 +39,7 @@ func PendingBuildCount(builds core.BuildStore) {
 	)
 }
 
-// RunningBuildCount provides metrics for running build counts.
+// RunningBuildCount 注册 drone_running_builds Gauge，反映当前正在执行的构建数量。
 func RunningBuildCount(builds core.BuildStore) {
 	prometheus.MustRegister(
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{

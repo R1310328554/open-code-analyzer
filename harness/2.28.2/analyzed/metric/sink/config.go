@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// sink 包将 Drone 使用统计周期性上报至 Datadog 等外部指标后端。
 package sink
 
-// Config configures a Datadog sink.
+// Config 配置 Datadog 指标上报端点、认证令牌及安装环境标签。
 type Config struct {
 	Endpoint string
 	Token    string

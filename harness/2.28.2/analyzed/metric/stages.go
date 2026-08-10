@@ -12,7 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// RunningJobCount provides metrics for running job counts.
+// RunningJobCount 注册 drone_running_jobs Gauge，反映当前运行中的阶段/作业数量。
 func RunningJobCount(stages core.StageStore) {
 	prometheus.MustRegister(
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -25,7 +25,7 @@ func RunningJobCount(stages core.StageStore) {
 	)
 }
 
-// PendingJobCount provides metrics for pending job counts.
+// PendingJobCount 注册 drone_pending_jobs Gauge，反映排队等待执行的阶段/作业数量。
 func PendingJobCount(stages core.StageStore) {
 	prometheus.MustRegister(
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{

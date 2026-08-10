@@ -15,21 +15,20 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// errInvalidToken is returned when the prometheus token is invalid.
+// errInvalidToken 在 Prometheus 访问令牌缺失或无效时返回。
 var errInvalidToken = errors.New("Invalid or missing prometheus token")
 
-// errAccessDenied is returned when the authorized user does not
-// have access to the metrics endpoint.
+// errAccessDenied 在已认证用户无权访问指标端点时返回。
 var errAccessDenied = errors.New("Access denied")
 
-// Server is an http Metrics server.
+// Server 是暴露 Prometheus 指标的 HTTP 服务处理器。
 type Server struct {
 	metrics   http.Handler
 	session   core.Session
 	anonymous bool
 }
 
-// NewServer returns a new metrics server.
+// NewServer 创建指标 HTTP 服务；anonymous 为 true 时跳过身份校验。
 func NewServer(session core.Session, anonymous bool) *Server {
 	return &Server{
 		metrics:   promhttp.Handler(),
@@ -38,8 +37,7 @@ func NewServer(session core.Session, anonymous bool) *Server {
 	}
 }
 
-// ServeHTTP responds to an http.Request and writes system
-// metrics to the response body in plain text format.
+// ServeHTTP 处理指标请求：校验会话权限后以纯文本格式输出 Prometheus 指标。
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	user, _ := s.session.Get(r)
 	switch {

@@ -14,9 +14,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// noContext 是指标采集回调使用的背景 context，不携带取消或超时。
 var noContext = context.Background()
 
-// UserCount provides metrics for registered users.
+// UserCount 注册 drone_user_count Gauge，反映系统中活跃用户总数。
 func UserCount(users core.UserStore) {
 	prometheus.MustRegister(
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{

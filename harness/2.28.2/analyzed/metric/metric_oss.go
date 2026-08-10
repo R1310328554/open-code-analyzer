@@ -14,14 +14,28 @@
 
 // +build oss
 
+// metric 包（OSS 构建）提供指标注册函数的空实现，编译时不链接 Prometheus。
 package metric
 
 import "github.com/drone/drone/core"
 
-func BuildCount(core.BuildStore)        {}
+// BuildCount OSS 空实现，不注册构建总数指标。
+func BuildCount(core.BuildStore) {}
+
+// PendingBuildCount OSS 空实现，不注册待执行构建指标。
 func PendingBuildCount(core.BuildStore) {}
+
+// RunningBuildCount OSS 空实现，不注册运行中构建指标。
 func RunningBuildCount(core.BuildStore) {}
-func RunningJobCount(core.StageStore)   {}
-func PendingJobCount(core.StageStore)   {}
-func RepoCount(core.RepositoryStore)    {}
-func UserCount(core.UserStore)          {}
+
+// RunningJobCount OSS 空实现，不注册运行中作业指标。
+func RunningJobCount(core.StageStore) {}
+
+// PendingJobCount OSS 空实现，不注册待执行作业指标。
+func PendingJobCount(core.StageStore) {}
+
+// RepoCount OSS 空实现，不注册仓库总数指标。
+func RepoCount(core.RepositoryStore) {}
+
+// UserCount OSS 空实现，不注册用户总数指标。
+func UserCount(core.UserStore) {}

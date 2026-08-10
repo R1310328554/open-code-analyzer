@@ -22,6 +22,7 @@ import (
 	"github.com/drone/drone/version"
 )
 
+// createTags 根据配置生成 Datadog 指标标签（版本、远程 SCM、调度器、许可证等）。
 func createTags(config Config) []string {
 	tags := []string{
 		fmt.Sprintf("version:%s", version.Version),
@@ -75,6 +76,7 @@ func createTags(config Config) []string {
 	return tags
 }
 
+// createInstallerTags 从用户列表提取首个非机器账户的安装者邮箱与安装时间标签。
 func createInstallerTags(users []*core.User) []string {
 	var tags []string
 	for _, user := range users {

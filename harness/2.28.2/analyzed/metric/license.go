@@ -8,7 +8,7 @@ package metric
 
 import "github.com/drone/drone/core"
 
-// License registers the license metrics.
+// License 注册许可证相关 Prometheus 指标（到期天数、用户/仓库上限等）。
 func License(license core.LicenseService) {
 	// track days until expires
 	// track user limit

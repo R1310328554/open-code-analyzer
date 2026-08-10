@@ -22,14 +22,14 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Server is a no-op http Metrics server.
+// Server 是 OSS 构建中的空操作指标 HTTP 服务，不暴露任何 Prometheus 数据。
 type Server struct {
 }
 
-// NewServer returns a new metrics server.
+// NewServer 返回空操作指标服务实例，保留与非 OSS 版本相同的构造签名。
 func NewServer(session core.Session, anonymous bool) *Server {
 	return new(Server)
 }
 
-// ServeHTTP is a no-op http handler.
+// ServeHTTP 为空操作处理器，OSS 构建不对外提供指标端点。
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {}

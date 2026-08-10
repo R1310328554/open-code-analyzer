@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// logger 包提供基于 context 的 logrus 日志器注入与提取，便于在 HTTP 请求链路中传递结构化日志。
 package logger
 
 import (
@@ -22,19 +23,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// loggerKey 是 context 中存放 *logrus.Entry 的私有键类型。
 type loggerKey struct{}
 
-// L is an alias for the the standard logger.
+// L 是标准 logrus 日志器的便捷入口别名。
 var L = logrus.NewEntry(logrus.StandardLogger())
 
-// WithContext returns a new context with the provided logger. Use in
-// combination with logger.WithField(s) for great effect.
+// WithContext 将 logger 绑定到 context，可与 WithField(s) 配合在调用链中附加字段。
 func WithContext(ctx context.Context, logger *logrus.Entry) context.Context {
 	return context.WithValue(ctx, loggerKey{}, logger)
 }
 
-// FromContext retrieves the current logger from the context. If no
-// logger is available, the default logger is returned.
+// FromContext 从 context 取出绑定的 logger；未绑定时返回默认 logger L。
 func FromContext(ctx context.Context) *logrus.Entry {
 	logger := ctx.Value(loggerKey{})
 	if logger == nil {
@@ -43,8 +43,7 @@ func FromContext(ctx context.Context) *logrus.Entry {
 	return logger.(*logrus.Entry)
 }
 
-// FromRequest retrieves the current logger from the request. If no
-// logger is available, the default logger is returned.
+// FromRequest 从 HTTP 请求的 context 中提取 logger，等价于 FromContext(r.Context())。
 func FromRequest(r *http.Request) *logrus.Entry {
 	return FromContext(r.Context())
 }
