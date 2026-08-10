@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T17:56:37Z",
   "files": [
-    "internal/dao/pipeline_operation_log.go",
-    "internal/dao/search.go",
-    "internal/dao/skill_search_config.go",
-    "internal/dao/skill_space.go",
-    "internal/dao/system_settings.go",
-    "internal/dao/task.go",
-    "internal/dao/tenant.go",
-    "internal/dao/tenant_llm.go",
-    "internal/dao/tenant_model.go",
-    "internal/dao/tenant_model_group.go",
-    "internal/dao/tenant_model_group_mapping.go",
-    "internal/dao/tenant_model_instance.go",
-    "internal/dao/tenant_model_provider.go",
-    "internal/dao/time_record.go",
-    "internal/dao/user.go",
     "internal/dao/user_canvas.go",
     "internal/dao/user_canvas_version.go",
     "internal/dao/user_tenant.go",
@@ -33,5 +18,5 @@
     "internal/deepdoc/parser/pdf/mock_doc_analyzer.go"
   ],
   "remaining_pending": 1134,
-  "done": 600
+  "done": 615
 }
