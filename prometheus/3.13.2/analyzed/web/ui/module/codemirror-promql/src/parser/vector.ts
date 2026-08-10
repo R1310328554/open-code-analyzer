@@ -1,3 +1,5 @@
+// 二元表达式向量匹配解析：从 ON/IGNORING、GROUP 与 FILL 修饰符构建 VectorMatching。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +35,7 @@ import {
 import { VectorMatchCardinality, VectorMatching } from '../types';
 import { containsAtLeastOneChild } from './path-finder';
 
+// buildVectorMatching 解析 MatchingModifierClause 与 FillModifier，集合运算默认为 many-to-many。
 export function buildVectorMatching(state: EditorState, binaryNode: SyntaxNode): VectorMatching | null {
   if (!binaryNode || binaryNode.type.id !== BinaryExpr) {
     return null;
@@ -75,6 +78,7 @@ export function buildVectorMatching(state: EditorState, binaryNode: SyntaxNode):
     const fillLeft = fillModifier.getChild(FillLeftClause);
     const fillRight = fillModifier.getChild(FillRightClause);
 
+// getFillValue 从 FILL 子句读取数值字面量，用于缺失样本填充配置。
     const getFillValue = (node: SyntaxNode) => {
       const valueNode = node.getChild(NumberDurationLiteral);
       return valueNode ? parseFloat(state.sliceDoc(valueNode.from, valueNode.to)) : null;
@@ -101,3 +105,4 @@ export function buildVectorMatching(state: EditorState, binaryNode: SyntaxNode):
   }
   return result;
 }
+// 向量匹配结构体描述 PromQL 二元运算的标签对齐与基数规则。

@@ -1,3 +1,5 @@
+// path-finder 单元测试：验证 walkBackward、containsChild 与 containsAtLeastOneChild 行为。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +35,7 @@ import { containsAtLeastOneChild, containsChild, walkBackward } from './path-fin
 import { SyntaxNode } from '@lezer/common';
 import { syntaxTree } from '@codemirror/language';
 
+// containsAtLeastOneChild 测试比较/算术运算符子节点存在性检测。
 describe('containsAtLeastOneChild test', () => {
   const testCases = [
     {
@@ -72,6 +75,7 @@ describe('containsAtLeastOneChild test', () => {
   });
 });
 
+// containsChild 测试按序匹配 FunctionCallBody 内多个 Expr 子节点。
 describe('containsChild test', () => {
   const testCases = [
     {
@@ -106,6 +110,7 @@ describe('containsChild test', () => {
   });
 });
 
+// walkBackward 测试从光标位置向上找到 VectorSelector 祖先节点。
 describe('walkbackward test', () => {
   const testCases = [
     {
@@ -124,3 +129,4 @@ describe('walkbackward test', () => {
     });
   });
 });
+// 路径查找测试确保语法树遍历工具与 Lezer 节点一致。

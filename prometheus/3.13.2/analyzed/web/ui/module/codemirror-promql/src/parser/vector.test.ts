@@ -1,3 +1,5 @@
+// buildVectorMatching 单元测试：覆盖默认一对一、集合运算与 ON/GROUP/FILL 修饰符组合。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +21,7 @@ import { VectorMatchCardinality, VectorMatching } from '../types';
 
 const noFill = { fill: { lhs: null, rhs: null } };
 
+// 表驱动断言各二元表达式解析出的 card、matchingLabels 与 fill 字段。
 describe('buildVectorMatching test', () => {
   const testCases: { binaryExpr: string; expectedVectorMatching: VectorMatching }[] = [
     {
@@ -72,6 +75,7 @@ describe('buildVectorMatching test', () => {
       },
     },
     {
+// 测试 and/or 优先级：仅取最外层 BinaryExpr 的向量匹配结果。
       // Test and/or precedence and reassigning of operands.
       // Here it will test only the first VectorMatching so (a + b) or (c and d) ==> ManyToMany
       binaryExpr: 'foo + bar or bla and blub',
@@ -277,3 +281,4 @@ describe('buildVectorMatching test', () => {
     });
   });
 });
+// 向量匹配测试验证 PromQL 二元修饰符解析与预期结构一致。

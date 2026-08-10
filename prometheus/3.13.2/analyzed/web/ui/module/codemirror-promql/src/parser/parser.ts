@@ -1,3 +1,5 @@
+// PromQL 语义分析器：遍历 Lezer 语法树，校验表达式类型、二元运算与向量匹配规则。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,6 +66,7 @@ import { syntaxTree } from '@codemirror/language';
 import { getFunction, Matcher, ValueType, VectorMatchCardinality } from '../types';
 import { buildVectorMatching } from './vector';
 
+// Parser 基于 CodeMirror 语法树收集 lint 诊断，逻辑对齐 Prometheus promql/parser。
 export class Parser {
   private readonly tree: Tree;
   private readonly state: EditorState;
@@ -82,6 +85,7 @@ export class Parser {
   }
 
   analyze(): void {
+// 语法树根节点无名，需取 firstChild 才能从 PromQL 表达式节点开始遍历。
     // when you are at the root of the tree, the first node is not `Expr` but a node with no name.
     // So to be able to iterate other the node relative to the promql node, we have to get the first child at the beginning
     this.checkAST(this.tree.topNode.firstChild);
@@ -91,6 +95,7 @@ export class Parser {
   private diagnoseAllErrorNodes() {
     const cursor = this.tree.cursor();
     while (cursor.next()) {
+// 输入未完成时末尾常有 error 节点，仅报告非树尾部的意外表达式。
       // usually there is an error node at the end of the expression when user is typing
       // so it's not really a useful information to say the expression is wrong.
       // Hopefully if there is an error node at the end of the tree, checkAST should yell more precisely
@@ -106,6 +111,7 @@ export class Parser {
     }
   }
 
+// checkAST 递归推断并校验各 AST 节点类型，对应 Go 版 parse.go 中的同名方法。
   // checkAST is inspired of the same named method from prometheus/prometheus:
   // https://github.com/prometheus/prometheus/blob/3470ee1fbf9d424784eb2613bab5ab0f14b4d222/promql/parser/parse.go#L433
   checkAST(node: SyntaxNode | null): ValueType {
@@ -173,6 +179,7 @@ export class Parser {
     return getType(node);
   }
 
+// checkAggregationExpr 校验聚合算子参数个数与 instant vector 类型要求。
   private checkAggregationExpr(node: SyntaxNode): void {
     // according to https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L26
     // the name of the aggregator function is stored in the first child
@@ -203,6 +210,7 @@ export class Parser {
     }
   }
 
+// checkBinaryExpr 校验 BOOL 修饰符、标量比较、向量匹配与集合运算符约束。
   private checkBinaryExpr(node: SyntaxNode): void {
     // Following the definition of the BinaryExpr, the left and the right
     // expression are respectively the first and last child
@@ -275,6 +283,7 @@ export class Parser {
     }
   }
 
+// checkCallFunction 按函数签名表校验参数数量与各参数 ValueType。
   private checkCallFunction(node: SyntaxNode): void {
     const funcID = node.firstChild?.firstChild;
     if (!funcID) {
@@ -325,6 +334,7 @@ export class Parser {
     }
   }
 
+// checkAnchoredSmoothedExpr 限制 smoothed/anchored 修饰符仅用于指定内建函数。
   private checkAnchoredSmoothedExpr(node: SyntaxNode, allowedFunctions: number[]): void {
     // A smoothed/anchored expression is supposed to work with range vectors or instant vectors.
     // So first thing to do is to check the type of the child.
@@ -350,6 +360,7 @@ export class Parser {
     }
   }
 
+// checkVectorSelector 解析标签匹配器，禁止重复 __name__ 且要求至少一个非空匹配。
   private checkVectorSelector(node: SyntaxNode): void {
     const matchList = node.getChild(LabelMatchers);
     const labelMatcherOpts = [QuotedLabelName, QuotedLabelMatcher, UnquotedLabelMatcher];
@@ -393,6 +404,7 @@ export class Parser {
     }
   }
 
+// expectType 在指定上下文中断言子表达式类型，不符则追加诊断。
   private expectType(node: SyntaxNode, want: ValueType, context: string): void {
     const t = this.checkAST(node);
     if (t !== want) {
@@ -409,3 +421,4 @@ export class Parser {
     });
   }
 }
+// PromQL 解析器模块注释结束，覆盖 AST 类型与 lint 校验逻辑。

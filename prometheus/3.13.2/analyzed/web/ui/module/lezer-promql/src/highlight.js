@@ -1,3 +1,5 @@
+// PromQL Lezer 语法高亮标签映射：将 grammar 节点名绑定到 @lezer/highlight 样式类。
+
 // Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +15,7 @@
 
 import {styleTags, tags} from "@lezer/highlight";
 
+// promQLHighLight 定义注释、标签、函数、运算符与括号等 token 的 highlight 分组。
 export const promQLHighLight = styleTags({
     LineComment: tags.comment,
     LabelName: tags.labelName,
@@ -32,3 +35,4 @@ export const promQLHighLight = styleTags({
     '{ }': tags.brace,
     '⚠': tags.invalid,
 })
+// 高亮配置供 CodeMirror 主题渲染 PromQL 查询编辑器着色。

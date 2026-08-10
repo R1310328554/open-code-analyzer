@@ -1,3 +1,5 @@
+// PromQLExtension 生命周期测试：destroy 可重复调用且委托 complete 策略清理资源。
+
 // Copyright 2025 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +17,7 @@ import { PromQLExtension } from './promql';
 import { CompleteStrategy } from './complete';
 import { CompletionResult } from '@codemirror/autocomplete';
 
+// 验证 destroy 幂等，并在 completeStrategy 提供 destroy 时正确调用。
 describe('PromQLExtension destroy', () => {
   it('should be safe to call destroy multiple times', () => {
     const extension = new PromQLExtension();
@@ -56,3 +59,4 @@ describe('PromQLExtension destroy', () => {
     expect(() => extension.destroy()).not.toThrow();
   });
 });
+// 扩展销毁测试防止重复释放与缺失 destroy 实现导致异常。

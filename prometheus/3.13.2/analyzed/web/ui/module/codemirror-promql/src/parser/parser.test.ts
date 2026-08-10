@@ -1,3 +1,5 @@
+// Parser 单元测试：覆盖标量/向量运算、聚合、函数调用与向量选择器各类诊断场景。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +19,7 @@ import { createEditorState } from '../test/utils-test';
 import { syntaxTree } from '@codemirror/language';
 import { ValueType } from '../types';
 
+// promql operations 用表驱动方式断言 checkAST 推断类型与 getDiagnostics 输出。
 describe('promql operations', () => {
   const testCases = [
     {
@@ -1010,3 +1013,4 @@ describe('promql operations', () => {
     });
   });
 });
+// 解析器测试套件覆盖 PromQL 语法边界与错误消息断言。

@@ -1,3 +1,5 @@
+// PromQL 内建函数签名表：Lezer 节点 id 映射到参数类型、可变参数与返回类型。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -101,6 +103,7 @@ import {
   Year,
 } from '@prometheus-io/lezer-promql';
 
+// ValueType 表示 PromQL 静态类型：none、vector、scalar、matrix、string。
 export enum ValueType {
   none = 'none',
   vector = 'vector',
@@ -116,6 +119,7 @@ export interface PromQLFunction {
   returnType: ValueType;
 }
 
+// promqlFunctions 键为 lezer-promql 函数 token id，值对齐 functions.go 签名定义。
 // promqlFunctions is a list of all functions supported by PromQL, including their types.
 // Based on https://github.com/prometheus/prometheus/blob/master/promql/parser/functions.go#L26
 const promqlFunctions: { [key: number]: PromQLFunction } = {
@@ -643,6 +647,7 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
   },
 };
 
+// getFunction 供解析器与补全查询指定 id 的函数元数据，未知 id 返回 undefined。
 export function getFunction(id: number): PromQLFunction {
   return promqlFunctions[id];
 }

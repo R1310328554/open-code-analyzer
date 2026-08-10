@@ -1,3 +1,5 @@
+// PromQL 表达式静态类型推断：根据 Lezer 节点 id 映射到 ValueType 枚举。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +32,7 @@ import {
 } from '@prometheus-io/lezer-promql';
 import { getFunction, ValueType } from '../types';
 
+// getType 实现与 Prometheus ast.go 中 Expr.Type 推断规则保持一致。
 // Based on https://github.com/prometheus/prometheus/blob/d668a7efe3107dbdcc67bf4e9f12430ed8e2b396/promql/parser/ast.go#L191
 export function getType(node: SyntaxNode | null): ValueType {
   if (!node) {
@@ -79,3 +82,4 @@ export function getType(node: SyntaxNode | null): ValueType {
       return ValueType.none;
   }
 }
+// 类型推断模块为解析器 lint 与补全提供 ValueType 基础。

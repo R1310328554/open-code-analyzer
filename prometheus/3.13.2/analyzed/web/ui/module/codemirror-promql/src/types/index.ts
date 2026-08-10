@@ -1,3 +1,5 @@
+// codemirror-promql 公共类型 barrel：统一导出 ValueType、Matcher 与 VectorMatching。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,3 +16,4 @@
 export { ValueType, PromQLFunction, getFunction } from './function';
 export { Matcher } from './matcher';
 export { VectorMatchCardinality, VectorMatching } from './vector';
+// 类型索引模块集中 re-export 解析器与 lint 共用的数据结构。

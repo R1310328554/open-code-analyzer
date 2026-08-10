@@ -1,3 +1,5 @@
+// 语法树路径工具：自叶向根回溯，以及检测子节点是否包含指定 Lezer 节点类型。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +15,7 @@
 
 import { SyntaxNode } from '@lezer/common';
 
+// walkBackward 沿 parent 链向上查找指定 type.id，未找到则返回 null。
 // walkBackward will iterate other the tree from the leaf to the root until it founds the given `exit` node.
 // It returns null if the exit is not found.
 export function walkBackward(node: SyntaxNode | null, exit: number): SyntaxNode | null {
@@ -25,6 +28,7 @@ export function walkBackward(node: SyntaxNode | null, exit: number): SyntaxNode 
   return null;
 }
 
+// containsAtLeastOneChild 判断直接兄弟子节点中是否存在任一匹配类型或名称。
 export function containsAtLeastOneChild(node: SyntaxNode, ...child: (number | string)[]): boolean {
   const cursor = node.cursor();
   if (!cursor.next()) {
@@ -39,6 +43,7 @@ export function containsAtLeastOneChild(node: SyntaxNode, ...child: (number | st
   return result;
 }
 
+// containsChild 按顺序检查兄弟子节点是否依次匹配 child 列表（用于 Expr 序列）。
 export function containsChild(node: SyntaxNode, ...child: (number | string)[]): boolean {
   const cursor = node.cursor();
   if (!cursor.next()) {
@@ -56,3 +61,4 @@ export function containsChild(node: SyntaxNode, ...child: (number | string)[]): 
 
   return i >= child.length;
 }
+// 路径查找辅助函数供二元表达式与修饰符解析复用。

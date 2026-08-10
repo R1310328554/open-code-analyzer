@@ -1,3 +1,5 @@
+// CodeMirror PromQL 语言扩展入口：定义 LRLanguage、补全与 lint 策略热插拔。
+
 // Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +20,7 @@ import { LintStrategy, newLintStrategy, promQLLinter } from './lint';
 import { CompletionContext } from '@codemirror/autocomplete';
 import { LRLanguage } from '@codemirror/language';
 
+// LanguageType 切换 Lezer 顶层规则，支持完整 PromQL 或仅指标名补全模式。
 export enum LanguageType {
   PromQL = 'PromQL',
   MetricName = 'MetricName',
@@ -35,6 +38,7 @@ export function promQLLanguage(top: LanguageType): LRLanguage {
   });
 }
 
+// PromQLExtension 封装补全与 lint 策略，asExtension 组装 CodeMirror Extension 数组。
 /**
  * This class holds the state of the completion extension for CodeMirror and allow hot-swapping the complete strategy.
  */
@@ -83,6 +87,7 @@ export class PromQLExtension {
     this.complete.destroy?.();
   }
 
+// asExtension 按开关组合语言、自动补全与 promQLLinter 诊断扩展。
   asExtension(languageType = LanguageType.PromQL): Extension {
     const language = promQLLanguage(languageType);
     let extension: Extension = [language];
@@ -100,3 +105,4 @@ export class PromQLExtension {
     return extension;
   }
 }
+// PromQL 扩展模块为 Prometheus UI 编辑器提供语法高亮与智能提示。
