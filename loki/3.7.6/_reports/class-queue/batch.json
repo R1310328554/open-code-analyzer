@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:24:37Z",
-  "files": [
-    "clients/pkg/promtail/targets/windows/win_eventlog/zsyscall_windows.go",
-    "clients/pkg/promtail/utils/entries.go",
-    "clients/pkg/promtail/utils/remotewrite_server.go",
-    "clients/pkg/promtail/wal/config.go",
-    "clients/pkg/promtail/wal/reader.go",
-    "clients/pkg/promtail/wal/timer.go",
-    "clients/pkg/promtail/wal/wal.go",
-    "clients/pkg/promtail/wal/watcher.go",
-    "clients/pkg/promtail/wal/watcher_metrics.go",
-    "clients/pkg/promtail/wal/writer.go",
-    "cmd/chunks-inspect/header.go",
-    "cmd/chunks-inspect/labels.go",
-    "cmd/chunks-inspect/loki.go",
-    "cmd/chunks-inspect/main.go",
-    "cmd/chunks-inspect/time.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1402,
-  "done": 135
+  "done": 150
 }
