@@ -25,9 +25,15 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link UseLightweightAccessTokenExecutor} 的 Provider 工厂。
+ * <p>无额外配置项；在客户端策略匹配时启用轻量级访问令牌。</p>
+ */
 public class UseLightweightAccessTokenExecutorFactory implements ClientPolicyExecutorProviderFactory {
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "use-lightweight-access-token";
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "Use lightweight access token";
@@ -38,6 +44,7 @@ public class UseLightweightAccessTokenExecutorFactory implements ClientPolicyExe
         return Collections.emptyList();
     }
 
+    /** {@inheritDoc} 创建执行器实例 */
     @Override
     public ClientPolicyExecutorProvider create(KeycloakSession session) {
         return new UseLightweightAccessTokenExecutor(session);
@@ -58,11 +65,13 @@ public class UseLightweightAccessTokenExecutorFactory implements ClientPolicyExe
 
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 始终支持 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return true;

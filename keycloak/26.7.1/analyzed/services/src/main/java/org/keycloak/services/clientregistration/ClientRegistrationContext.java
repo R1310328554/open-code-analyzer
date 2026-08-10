@@ -21,14 +21,19 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.representations.idm.ClientRepresentation;
 
 /**
+ * 动态客户端注册操作上下文接口。
+ * <p>向策略与提供者传递会话、客户端表示及注册提供者引用。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientRegistrationContext {
 
+    /** @return 当前操作的客户端表示 */
     ClientRepresentation getClient();
 
+    /** @return Keycloak 会话 */
     KeycloakSession getSession();
 
+    /** @return 执行注册的提供者实例 */
     ClientRegistrationProvider getProvider();
 
 }

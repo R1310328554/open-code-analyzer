@@ -25,13 +25,18 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * {@link TlsClientAuthCASubjectDNExecutor} 的 Provider 工厂。
+ * <p>在客户端注册服务中为 X509 认证客户端设置默认 CA 主题 DN，并可强制拒绝非预期 CA 名称。</p>
  *
  * @author rmartinc
  */
 public class TlsClientAuthCASubjectDNExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "tls-client-auth-ca-subject-dn";
+    /** 配置键：CA 主题 DN */
     public static final String CA_SUBJECT_DN = "ca-subject-dn";
+    /** 配置键：是否强制 CA 主题 DN */
     public static final String ENFORCED = "enforced";
 
     @Override
@@ -46,11 +51,13 @@ public class TlsClientAuthCASubjectDNExecutorFactory implements ClientPolicyExec
     public void close() {
     }
 
+    /** {@inheritDoc} 创建执行器实例 */
     @Override
     public ClientPolicyExecutorProvider create(KeycloakSession session) {
         return new TlsClientAuthCASubjectDNExecutor();
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return """
@@ -59,6 +66,7 @@ public class TlsClientAuthCASubjectDNExecutorFactory implements ClientPolicyExec
                """;
     }
 
+    /** {@inheritDoc} 返回 CA 主题 DN 与强制开关配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()
@@ -90,6 +98,7 @@ public class TlsClientAuthCASubjectDNExecutorFactory implements ClientPolicyExec
                 .build();
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;

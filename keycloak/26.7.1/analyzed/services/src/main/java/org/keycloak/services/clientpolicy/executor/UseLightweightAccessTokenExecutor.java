@@ -23,18 +23,26 @@ import org.keycloak.representations.idm.ClientPolicyExecutorConfigurationReprese
 import org.keycloak.services.clientpolicy.ClientPolicyContext;
 import org.keycloak.services.clientpolicy.ClientPolicyException;
 
+/**
+ * 轻量级访问令牌执行器。
+ * <p>在各类令牌请求事件中，于会话上设置 {@link Constants#USE_LIGHTWEIGHT_ACCESS_TOKEN_ENABLED}，使后续令牌签发使用轻量级访问令牌格式。</p>
+ */
 public class UseLightweightAccessTokenExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
+    /** Keycloak 会话，用于设置轻量级令牌属性 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public UseLightweightAccessTokenExecutor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** {@inheritDoc} 返回执行器 Provider ID */
     @Override
     public String getProviderId() {
         return UseLightweightAccessTokenExecutorFactory.PROVIDER_ID;
     }
 
+    /** 在令牌请求/刷新等事件中启用轻量级访问令牌 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {

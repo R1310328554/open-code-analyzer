@@ -20,6 +20,7 @@ package org.keycloak.services.clientregistration;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link ClientRegistrationProvider} 的 SPI 工厂接口。
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ClientRegistrationProviderFactory extends ProviderFactory<ClientRegistrationProvider> {

@@ -60,22 +60,40 @@ import org.keycloak.util.TokenUtil;
 import static org.keycloak.models.utils.KeycloakModelUtils.removeTransientAdminRoles;
 
 /**
+ * 动态客户端注册端点的认证与授权处理。
+ * <p>支持 Bearer 管理令牌、初始访问令牌、注册访问令牌及公开客户端凭据认证，并在各 CRUD 操作前触发客户端策略与注册策略。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ClientRegistrationAuth {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 当前注册提供者 */
     private final ClientRegistrationProvider provider;
+    /** 事件构建器 */
     private final EventBuilder event;
 
+    /** 当前领域 */
     private RealmModel realm;
+    /** 解析后的访问令牌 JWT */
     private AccessToken jwt;
+    /** 初始访问令牌对应的模型（若适用） */
     private ClientInitialAccessModel initialAccessModel;
+    /** JWT 签名密钥 ID */
     private String kid;
+    /** 原始 Bearer 令牌字符串 */
     private String token;
+    /** 注册端点协议标识（如 openid-connect） */
     private String endpoint;
+    /** 是否已完成 init 解析 */
     private boolean initialized;
 
+    /**
+     * @param session Keycloak 会话
+     * @param provider 注册提供者
+     * @param event 事件构建器
+     * @param endpoint 端点协议标识
+     */
     public ClientRegistrationAuth(KeycloakSession session, ClientRegistrationProvider provider, EventBuilder event, String endpoint) {
         this.session = session;
         this.provider = provider;
@@ -83,6 +101,7 @@ public class ClientRegistrationAuth {
         this.endpoint = endpoint;
     }
 
+    /** 懒加载：从 Authorization 头解析并校验 Bearer 令牌 */
     void init() {
         if (initialized) {
             return;
@@ -129,30 +148,41 @@ public class ClientRegistrationAuth {
         }
     }
 
+    /** @return 原始令牌字符串 */
     public String getToken() {
         return token;
     }
 
+    /** @return JWT 签名密钥 ID */
     public String getKid() {
         return kid;
     }
 
+    /** @return 解析后的访问令牌 */
     public AccessToken getJwt() {
         return jwt;
     }
 
+    /** @return 是否为 Bearer 类型管理令牌 */
     private boolean isBearerToken() {
         return jwt != null && TokenUtil.TOKEN_TYPE_BEARER.equals(jwt.getType());
     }
 
+    /** @return 是否为初始访问令牌 */
     public boolean isInitialAccessToken() {
         return jwt != null && ClientRegistrationTokenUtils.TYPE_INITIAL_ACCESS_TOKEN.equals(jwt.getType());
     }
 
+    /** @return 是否为注册访问令牌 */
     public boolean isRegistrationAccessToken() {
         return jwt != null && ClientRegistrationTokenUtils.TYPE_REGISTRATION_ACCESS_TOKEN.equals(jwt.getType());
     }
 
+    /**
+     * 校验创建客户端权限并触发注册前策略。
+     * @param context 注册上下文
+     * @return 解析得到的注册认证级别
+     */
     public RegistrationAuth requireCreate(ClientRegistrationContext context) {
         init();
 
@@ -193,10 +223,16 @@ public class ClientRegistrationAuth {
         return registrationAuth;
     }
 
+    /** 校验查看客户端权限（不允许公开客户端凭据） */
     public void requireView(ClientModel client) {
         requireView(client, false);
     }
 
+    /**
+     * 校验查看客户端权限。
+     * @param client 目标客户端
+     * @param allowPublicClient 是否允许公开客户端凭据认证
+     */
     public void requireView(ClientModel client, boolean allowPublicClient) {
         RegistrationAuth authType = null;
         boolean authenticated = false;
@@ -247,11 +283,13 @@ public class ClientRegistrationAuth {
         }
     }
 
+    /** @return 注册访问令牌中记录的认证级别 */
     public RegistrationAuth getRegistrationAuth() {
         String str = (String) jwt.getOtherClaims().get(RegistrationAccessToken.REGISTRATION_AUTH);
         return RegistrationAuth.fromString(str);
     }
 
+    /** @return 当前请求的有效注册认证级别 */
     public RegistrationAuth resolveRegistrationAuth() {
         init();
         if (jwt == null) {
@@ -263,6 +301,12 @@ public class ClientRegistrationAuth {
         return RegistrationAuth.AUTHENTICATED;
     }
 
+    /**
+     * 校验更新客户端权限并触发更新前策略。
+     * @param context 注册上下文
+     * @param client 目标客户端
+     * @return 注册认证级别
+     */
     public RegistrationAuth requireUpdate(ClientRegistrationContext context, ClientModel client) {
         RegistrationAuth regAuth = requireUpdateAuth(client);
 
@@ -282,6 +326,7 @@ public class ClientRegistrationAuth {
         return regAuth;
     }
 
+    /** 校验删除客户端权限并触发注销前策略 */
     public void requireDelete(ClientModel client) {
         RegistrationAuth chainType = requireUpdateAuth(client);
 
@@ -299,12 +344,14 @@ public class ClientRegistrationAuth {
         }
     }
 
+    /** 校验 Bearer 令牌签发客户端的协议与端点一致 */
     private void checkClientProtocol() {
         ClientModel client = session.getContext().getRealm().getClientByClientId(jwt.getIssuedFor());
 
         checkClientProtocol(client);
     }
 
+    /** @param client 待校验的客户端 */
     private void checkClientProtocol(ClientModel client) {
         if (endpoint.equals("openid-connect") || endpoint.equals("saml2-entity-descriptor")) {
             if (client != null && !endpoint.contains(client.getProtocol())) {
@@ -313,6 +360,7 @@ public class ClientRegistrationAuth {
         }
     }
 
+    /** 校验更新/删除操作的认证凭据 */
     private RegistrationAuth requireUpdateAuth(ClientModel client) {
         init();
 
@@ -337,16 +385,18 @@ public class ClientRegistrationAuth {
         throw unauthorized("Not authorized to update client. Maybe missing token or bad token type.");
     }
 
+    /** @return 初始访问令牌模型 */
     public ClientInitialAccessModel getInitialAccessModel() {
         return initialAccessModel;
     }
 
+    /** 校验 JWT 是否包含指定管理角色（含轻量级令牌路径） */
     private boolean hasRole(String... roles) {
         try {
             boolean lightweight = AuthenticationManager.resolveLightweightAccessTokenRoles(session, jwt, session.getContext().getRealm());
 
             if (!lightweight) {
-                // For lightweight access token, the roles are already considered just for those, which are present on UserModel
+                // 轻量级访问令牌：角色已在 UserModel 上解析，无需额外处理
                 if (isBearerToken()) {
                     String clientId = getMgmtClientId();
                     AccessToken.Access mgmtClientAccess = jwt.getResourceAccess(clientId);
@@ -367,6 +417,7 @@ public class ClientRegistrationAuth {
         }
     }
 
+    /** 检查 JWT resource_access 中是否含指定角色 */
     private boolean hasRoleInToken(String[] role) {
         Map<String, AccessToken.Access> resourceAccess = jwt.getResourceAccess();
         if (resourceAccess == null) {
@@ -382,12 +433,14 @@ public class ClientRegistrationAuth {
         return Arrays.stream(role).anyMatch(roles::contains);
     }
 
+    /** @return 领域管理客户端 ID（master 或 realm-management） */
     private String getMgmtClientId() {
         return realm.getName().equals(Config.getAdminRealm())
                 ? realm.getMasterAdminClient().getClientId()
                 : Constants.REALM_MANAGEMENT_CLIENT_ID;
     }
 
+    /** 通过客户端凭据认证公开或机密客户端 */
     private boolean authenticatePublicClient(ClientModel client) {
         if (client == null) {
             return false;
@@ -421,20 +474,24 @@ public class ClientRegistrationAuth {
         return true;
     }
 
+    /** 构造 401 未授权响应并记录事件 */
     private WebApplicationException unauthorized(String errorDescription) {
         event.detail(Details.REASON, errorDescription).error(Errors.INVALID_TOKEN);
         throw new ErrorResponseException(OAuthErrorException.INVALID_TOKEN, errorDescription, Response.Status.UNAUTHORIZED);
     }
 
+    /** 构造 403 禁止访问响应（默认消息） */
     private WebApplicationException forbidden() {
         return forbidden("Forbidden");
     }
 
+    /** 构造 403 禁止访问响应 */
     private WebApplicationException forbidden(String errorDescription) {
         event.error(Errors.NOT_ALLOWED);
         throw new ErrorResponseException(OAuthErrorException.INSUFFICIENT_SCOPE, errorDescription, Response.Status.FORBIDDEN);
     }
 
+    /** 构造 404 客户端未找到响应 */
     private WebApplicationException notFound() {
         event.error(Errors.CLIENT_NOT_FOUND);
         throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Client not found", Response.Status.NOT_FOUND);

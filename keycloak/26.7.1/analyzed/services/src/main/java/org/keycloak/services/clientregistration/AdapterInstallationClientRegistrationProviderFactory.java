@@ -22,10 +22,12 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link AdapterInstallationClientRegistrationProvider} 的 SPI 工厂。
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AdapterInstallationClientRegistrationProviderFactory implements ClientRegistrationProviderFactory {
 
+    /** {@inheritDoc} 创建适配器安装注册提供者实例 */
     @Override
     public ClientRegistrationProvider create(KeycloakSession session) {
         return new AdapterInstallationClientRegistrationProvider(session);
@@ -43,6 +45,7 @@ public class AdapterInstallationClientRegistrationProviderFactory implements Cli
     public void close() {
     }
 
+    /** {@inheritDoc} 返回 Provider ID：{@code install} */
     @Override
     public String getId() {
         return "install";

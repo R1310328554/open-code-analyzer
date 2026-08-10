@@ -21,30 +21,42 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.representations.idm.ClientRepresentation;
 
 /**
+ * 客户端注册上下文的抽象基类，封装会话、客户端表示与注册提供者。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractClientRegistrationContext implements ClientRegistrationContext {
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 待注册/更新的客户端表示 */
     protected final ClientRepresentation client;
+    /** 当前注册提供者实例 */
     protected final ClientRegistrationProvider provider;
 
+    /**
+     * @param session Keycloak 会话
+     * @param client 客户端表示
+     * @param provider 注册提供者
+     */
     public AbstractClientRegistrationContext(KeycloakSession session, ClientRepresentation client, ClientRegistrationProvider provider) {
         this.session = session;
         this.client = client;
         this.provider = provider;
     }
 
+    /** {@inheritDoc} 返回客户端表示 */
     @Override
     public ClientRepresentation getClient() {
         return client;
     }
 
+    /** {@inheritDoc} 返回 Keycloak 会话 */
     @Override
     public KeycloakSession getSession() {
         return session;
     }
 
+    /** {@inheritDoc} 返回注册提供者 */
     @Override
     public ClientRegistrationProvider getProvider() {
         return provider;

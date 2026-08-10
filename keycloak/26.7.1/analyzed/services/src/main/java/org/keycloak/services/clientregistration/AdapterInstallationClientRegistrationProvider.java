@@ -32,18 +32,29 @@ import org.keycloak.services.managers.ClientManager;
 import org.keycloak.services.managers.RealmManager;
 
 /**
+ * 适配器安装客户端注册提供者。
+ * <p>提供 GET 端点，返回指定客户端的适配器安装配置 JSON（如 keycloak.json）。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AdapterInstallationClientRegistrationProvider implements ClientRegistrationProvider {
 
+    /** Keycloak 会话 */
     private KeycloakSession session;
+    /** 事件构建器 */
     private EventBuilder event;
+    /** 注册端点认证上下文 */
     private ClientRegistrationAuth auth;
 
+    /** @param session Keycloak 会话 */
     public AdapterInstallationClientRegistrationProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /**
+     * 获取客户端适配器安装配置。
+     * @param clientId 客户端标识符
+     * @return 安装配置 JSON
+     */
     @GET
     @Path("{clientId}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -60,21 +71,25 @@ public class AdapterInstallationClientRegistrationProvider implements ClientRegi
         return Response.ok(rep).build();
     }
 
+    /** {@inheritDoc} 注入认证上下文 */
     @Override
     public void setAuth(ClientRegistrationAuth auth) {
         this.auth = auth;
     }
 
+    /** {@inheritDoc} 返回认证上下文 */
     @Override
     public ClientRegistrationAuth getAuth() {
         return auth;
     }
 
+    /** {@inheritDoc} 注入事件构建器 */
     @Override
     public void setEvent(EventBuilder event) {
         this.event = event;
     }
 
+    /** {@inheritDoc} 返回事件构建器 */
     @Override
     public EventBuilder getEvent() {
         return event;

@@ -59,18 +59,29 @@ import org.keycloak.services.resources.admin.ClientResource;
 import org.keycloak.validation.ValidationUtil;
 
 /**
+ * 动态客户端注册提供者的抽象基类。
+ * <p>实现创建、查询、更新、删除客户端的通用流程，并集成客户端策略与注册策略。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public abstract class AbstractClientRegistrationProvider implements ClientRegistrationProvider {
 
+    /** Keycloak 会话 */
     protected KeycloakSession session;
+    /** 事件构建器，用于审计日志 */
     protected EventBuilder event;
+    /** 注册端点认证上下文 */
     protected ClientRegistrationAuth auth;
 
+    /** @param session Keycloak 会话 */
     public AbstractClientRegistrationProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /**
+     * 创建新客户端：校验权限、持久化、触发策略并返回含注册访问令牌的表示。
+     * @param context 注册上下文
+     * @return 创建后的客户端表示
+     */
     public ClientRepresentation create(ClientRegistrationContext context) {
         ClientRepresentation client = context.getClient();
         if(client.getOptionalClientScopes() != null && client.getDefaultClientScopes() == null) {
@@ -135,6 +146,11 @@ public abstract class AbstractClientRegistrationProvider implements ClientRegist
         }
     }
 
+    /**
+     * 查询客户端详情（含密钥与注册访问令牌）。
+     * @param client 客户端模型
+     * @return 客户端表示
+     */
     public ClientRepresentation get(ClientModel client) {
         event.event(EventType.CLIENT_INFO);
 
@@ -159,6 +175,12 @@ public abstract class AbstractClientRegistrationProvider implements ClientRegist
         return rep;
     }
 
+    /**
+     * 更新已有客户端配置并轮换注册访问令牌（若启用）。
+     * @param clientId 客户端标识符
+     * @param context 注册上下文
+     * @return 更新后的客户端表示
+     */
     public ClientRepresentation update(String clientId, ClientRegistrationContext context) {
         ClientRepresentation rep = context.getClient();
 
@@ -218,6 +240,10 @@ public abstract class AbstractClientRegistrationProvider implements ClientRegist
     }
 
 
+    /**
+     * 删除指定客户端。
+     * @param clientId 客户端标识符
+     */
     public void delete(String clientId) {
         event.event(EventType.CLIENT_DELETE).client(clientId);
 
@@ -231,6 +257,12 @@ public abstract class AbstractClientRegistrationProvider implements ClientRegist
         }
     }
 
+    /**
+     * 校验客户端元数据（含 OIDC 扩展）。
+     * @param clientModel 客户端模型
+     * @param oidcClient OIDC 客户端表示，可为 null
+     * @param create 是否为创建操作
+     */
     public void validateClient(ClientModel clientModel, OIDCClientRepresentation oidcClient, boolean create) {
         ValidationUtil.validateClient(session, clientModel, oidcClient, create, r -> {
             session.getTransactionManager().setRollbackOnly();
@@ -239,25 +271,34 @@ public abstract class AbstractClientRegistrationProvider implements ClientRegist
         });
     }
 
+    /**
+     * 按客户端表示校验元数据。
+     * @param clientRep 客户端表示
+     * @param create 是否为创建操作
+     */
     public void validateClient(ClientRepresentation clientRep, boolean create) {
         validateClient(session.getContext().getRealm().getClientByClientId(clientRep.getClientId()), null, create);
     }
 
+    /** {@inheritDoc} 注入认证上下文 */
     @Override
     public void setAuth(ClientRegistrationAuth auth) {
         this.auth = auth;
     }
 
+    /** {@inheritDoc} 返回认证上下文 */
     @Override
     public ClientRegistrationAuth getAuth() {
         return this.auth;
     }
 
+    /** {@inheritDoc} 注入事件构建器 */
     @Override
     public void setEvent(EventBuilder event) {
         this.event = event;
     }
 
+    /** {@inheritDoc} 返回事件构建器 */
     @Override
     public EventBuilder getEvent() {
         return event;
@@ -267,7 +308,7 @@ public abstract class AbstractClientRegistrationProvider implements ClientRegist
     public void close() {
     }
 
-    /* ===========  default roles =========== */
+    /* ===========  默认角色管理 =========== */
 
     private void addDefaultRole(ClientModel client, String name) {
         client.getRealm().getDefaultRole().addCompositeRole(getOrAddRoleId(client, name));
@@ -314,6 +355,7 @@ public abstract class AbstractClientRegistrationProvider implements ClientRegist
         }
     }
 
+    /** 收集 JWT 与注册策略允许的 CORS 来源 */
     protected List<String> getAllowedOrigins() {
         auth.init();
         List<String> allowedOrigins = new LinkedList<>();

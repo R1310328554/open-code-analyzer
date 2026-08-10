@@ -30,52 +30,66 @@ import org.keycloak.services.clientpolicy.context.ClientCRUDContext;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * TLS 客户端证书认证 CA 主题 DN 执行器。
+ * <p>在客户端注册/更新时，为使用 X509（{@code tls_client_auth}）认证的客户端设置默认证书颁发机构（CA）主题 DN，并可强制拒绝与配置不符的 CA 名称。</p>
  *
  * @author rmartinc
  */
 public class TlsClientAuthCASubjectDNExecutor implements ClientPolicyExecutorProvider<TlsClientAuthCASubjectDNExecutor.Configuration> {
 
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
+    /** TLS CA 主题 DN 执行器配置 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
 
+        /** 是否强制 CA 主题 DN 必须与配置一致 */
         @JsonProperty(TlsClientAuthCASubjectDNExecutorFactory.ENFORCED)
         protected Boolean enforced;
+        /** 默认 CA 主题 DN（RFC4514 或 RFC1779 格式） */
         @JsonProperty(TlsClientAuthCASubjectDNExecutorFactory.CA_SUBJECT_DN)
         protected String caSubjectDn;
 
+        /** @return 是否启用强制校验 */
         public Boolean isEnforced() {
             return enforced;
         }
 
+        /** @param enforced 是否启用强制校验 */
         public void setEnforced(Boolean enforced) {
             this.enforced = enforced;
         }
 
+        /** @return 配置的 CA 主题 DN */
         public String getCaSubjectDn() {
             return caSubjectDn;
         }
 
+        /** @param caSubjectDn CA 主题 DN */
         public void setCaSubjectDn(String caSubjectDn) {
             this.caSubjectDn = caSubjectDn;
         }
     }
 
+    /** {@inheritDoc} 返回执行器 Provider ID */
     @Override
     public String getProviderId() {
         return TlsClientAuthCASubjectDNExecutorFactory.PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 保存运行时配置 */
     @Override
     public void setupConfiguration(Configuration config) {
         this.configuration = config;
     }
 
+    /** {@inheritDoc} 返回配置类类型 */
     @Override
     public Class<Configuration> getExecutorConfigurationClass() {
         return Configuration.class;
     }
 
+    /** 在客户端注册/更新事件中校验或设置 CA 主题 DN */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -83,6 +97,7 @@ public class TlsClientAuthCASubjectDNExecutor implements ClientPolicyExecutorPro
         }
     }
 
+    /** 校验 X509 客户端的 CA 主题 DN，未设置时写入默认值 */
     private void check(ClientModel clientModel) throws ClientPolicyException {
         OIDCAdvancedConfigWrapper oidcClient = OIDCAdvancedConfigWrapper.fromClientModel(clientModel);
         if (X509ClientAuthenticator.PROVIDER_ID.equals(clientModel.getClientAuthenticatorType())) {

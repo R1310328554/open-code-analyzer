@@ -18,22 +18,27 @@
 package org.keycloak.services.clientregistration;
 
 /**
+ * 客户端注册过程中抛出的运行时异常。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientRegistrationException extends RuntimeException {
 
+    /** 无参构造 */
     public ClientRegistrationException() {
         super();
     }
 
+    /** @param message 异常消息 */
     public ClientRegistrationException(String message) {
         super(message);
     }
 
+    /** @param throwable 原因异常 */
     public ClientRegistrationException(Throwable throwable) {
         super(throwable);
     }
 
+    /** @param message 异常消息；@param throwable 原因异常 */
     public ClientRegistrationException(String message, Throwable throwable) {
         super(message, throwable);
     }

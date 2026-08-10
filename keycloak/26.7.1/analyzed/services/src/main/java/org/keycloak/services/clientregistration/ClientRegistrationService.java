@@ -27,19 +27,32 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.ErrorResponseException;
 
 /**
+ * 动态客户端注册 REST 服务入口。
+ * <p>按 Provider ID 路由至对应 {@link ClientRegistrationProvider}，并注入认证与事件上下文。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ClientRegistrationService {
 
+    /** 事件构建器 */
     private final EventBuilder event;
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
+    /**
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     */
     public ClientRegistrationService(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.event = event;
     }
 
+    /**
+     * 解析并返回指定 Provider 的注册端点资源。
+     * @param providerId 注册 Provider ID（如 openid-connect、install）
+     * @return Provider 实例（JAX-RS 子资源）
+     */
     @Path("{provider}")
     public Object provider(@PathParam("provider") String providerId) {
         checkSsl();
@@ -55,6 +68,7 @@ public class ClientRegistrationService {
         return provider;
     }
 
+    /** 若领域要求 SSL，则非 HTTPS 请求抛出 403 */
     private void checkSsl() {
         if (!session.getContext().getUri().getBaseUri().getScheme().equals("https")) {
             if (session.getContext().getRealm().getSslRequired().isRequired(session.getContext().getConnection())) {

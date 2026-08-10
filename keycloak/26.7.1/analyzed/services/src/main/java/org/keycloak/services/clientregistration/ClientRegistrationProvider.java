@@ -21,16 +21,22 @@ import org.keycloak.events.EventBuilder;
 import org.keycloak.provider.Provider;
 
 /**
+ * 动态客户端注册 Provider SPI 接口。
+ * <p>各协议/格式（OIDC、SAML、安装配置等）实现此接口以提供注册端点。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ClientRegistrationProvider extends Provider {
 
+    /** 注入注册端点认证上下文 */
     void setAuth(ClientRegistrationAuth auth);
 
+    /** @return 当前认证上下文 */
     ClientRegistrationAuth getAuth();
 
+    /** 注入事件构建器 */
     void setEvent(EventBuilder event);
 
+    /** @return 事件构建器 */
     EventBuilder getEvent();
 
 }
