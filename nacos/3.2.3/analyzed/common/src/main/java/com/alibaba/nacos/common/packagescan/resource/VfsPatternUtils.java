@@ -23,6 +23,7 @@ import java.net.URL;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * VFS 模式扫描内部工具：包级可见，封装 {@link VfsUtils} 供 {@link PathMatchingResourcePatternResolver} 使用。
  * Artificial class used for accessing the {@link VfsUtils} methods
  * without exposing them to the entire world.
  *
@@ -31,19 +32,23 @@ import java.net.URL;
  */
 abstract class VfsPatternUtils extends VfsUtils {
 
+    /** 获取 VFS 递归访问属性（VisitorAttributes.RECURSE） */
     static Object getVisitorAttributes() {
         return doGetVisitorAttributes();
     }
 
+    /** 读取 VirtualFile 的路径名，null 时返回空串 */
     static String getPath(Object resource) {
         String path = doGetPath(resource);
         return (path != null ? path : "");
     }
 
+    /** 由 URL 解析 VFS 根 VirtualFile */
     static Object findRoot(URL url) throws IOException {
         return getRoot(url);
     }
 
+    /** 以动态代理访问者递归遍历 VirtualFile 树 */
     static void visit(Object resource, InvocationHandler visitor) throws IOException {
         Object visitorProxy = Proxy.newProxyInstance(
                 VIRTUAL_FILE_VISITOR_INTERFACE.getClassLoader(),

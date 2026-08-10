@@ -27,6 +27,7 @@ import java.net.URL;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * JBoss VFS {@link Resource}：包装 {@code org.jboss.vfs.VirtualFile}，兼容 AS7/WildFly。
  * JBoss VFS based {@link Resource} implementation.
  *
  * <p>As of Spring 4.0, this class supports VFS 3.x on JBoss AS 6+
@@ -42,6 +43,7 @@ import java.net.URL;
  */
 public class VfsResource extends AbstractResource {
 
+    /** 底层 VirtualFile 实例（Object 避免编译期依赖 VFS） */
     private final Object resource;
 
     /**
@@ -49,6 +51,7 @@ public class VfsResource extends AbstractResource {
      *
      * @param resource a {@code org.jboss.vfs.VirtualFile} instance
      *                 (untyped in order to avoid a static dependency on the VFS API)
+      * <p>JBoss VFS 资源；详见类级说明。</p>
      */
     public VfsResource(Object resource) {
         AbstractAssert.notNull(resource, "VirtualFile must not be null");
@@ -109,6 +112,7 @@ public class VfsResource extends AbstractResource {
             try {
                 return new VfsResource(VfsUtils.getChild(this.resource, relativePath));
             } catch (IOException ex) {
+                // getChild 失败时退化为 URL 相对路径解析
                 // fall back to getRelative
             }
         }

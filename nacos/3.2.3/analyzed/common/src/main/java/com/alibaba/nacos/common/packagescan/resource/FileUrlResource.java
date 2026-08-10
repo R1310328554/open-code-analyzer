@@ -30,6 +30,7 @@ import java.nio.file.StandardOpenOption;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * file: 协议 {@link UrlResource} 子类：实现 {@link WritableResource}，并缓存 {@link File} 句柄。
  * Subclass of {@link UrlResource} which assumes file resolution, to the degree
  * of implementing the {@link WritableResource} interface for it. This resource
  * variant also caches resolved {@link File} handles from {@link #getFile()}.
@@ -45,6 +46,7 @@ import java.nio.file.StandardOpenOption;
  */
 public class FileUrlResource extends UrlResource implements WritableResource {
 
+    /** 懒解析并缓存的底层 File 引用 */
     private volatile File file;
 
     /**
@@ -56,6 +58,7 @@ public class FileUrlResource extends UrlResource implements WritableResource {
      * @param url a URL
      * @see ResourceUtils#isFileUrl(URL)
      * @see #getFile()
+      * <p>file URL 可写资源；详见类级说明。</p>
      */
     public FileUrlResource(URL url) {
         super(url);
@@ -71,6 +74,7 @@ public class FileUrlResource extends UrlResource implements WritableResource {
      * @throws MalformedURLException if the given URL specification is not valid
      * @see UrlResource#UrlResource(String, String)
      * @see ResourceUtils#URL_PROTOCOL_FILE
+      * <p>file URL 可写资源；详见类级说明。</p>
      */
     public FileUrlResource(String location) throws MalformedURLException {
         super(ResourceUtils.URL_PROTOCOL_FILE, location);

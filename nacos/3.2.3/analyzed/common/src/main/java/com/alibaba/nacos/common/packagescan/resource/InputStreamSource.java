@@ -21,6 +21,7 @@ import java.io.InputStream;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 输入流来源接口：{@link Resource} 的基接口，每次 {@link #getInputStream()} 应返回新流。
  * Simple interface for objects that are sources for an {@link InputStream}.
  *
  * <p>This is the base interface for Spring's more extensive {@link Resource} interface.
@@ -55,6 +56,7 @@ public interface InputStreamSource {
      * @throws java.io.FileNotFoundException if the underlying resource does not exist
      * @throws IOException                   if the content stream could not be opened
      * @see Resource#isReadable()
+      * <p>输入流来源接口；详见类级说明。</p>
      */
     InputStream getInputStream() throws IOException;
 

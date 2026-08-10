@@ -29,6 +29,7 @@ import java.net.URL;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * JBoss VFS 反射工具：运行时加载 org.jboss.vfs API，供 VFS 资源与模式扫描使用。
  * Utility for detecting and accessing JBoss VFS in the classpath.
  *
  * <p>As of Spring 4.0, this class supports VFS 3.x on JBoss AS 6+
@@ -44,8 +45,10 @@ import java.net.URL;
  */
 public abstract class VfsUtils {
 
+    /** JBoss VFS 3.x 包前缀 */
     private static final String VFS3_PKG = "org.jboss.vfs.";
 
+    /** VFS 入口类名 */
     private static final String VFS_NAME = "VFS";
 
     private static final Method VFS_METHOD_GET_ROOT_URL;
@@ -107,6 +110,7 @@ public abstract class VfsUtils {
         }
     }
 
+    /** 统一反射调用 VFS 方法，IOException 原样抛出 */
     protected static Object invokeVfsMethod(Method method, Object target, Object... args) throws IOException {
         try {
             return method.invoke(target, args);
@@ -123,6 +127,7 @@ public abstract class VfsUtils {
         throw new IllegalStateException("Invalid code path reached");
     }
 
+    /** 判断 VirtualFile 是否存在 */
     static boolean exists(Object vfsResource) {
         try {
             return (Boolean) invokeVfsMethod(VIRTUAL_FILE_METHOD_EXISTS, vfsResource);
@@ -131,6 +136,7 @@ public abstract class VfsUtils {
         }
     }
 
+    /** 可读性：文件大小大于 0 */
     static boolean isReadable(Object vfsResource) {
         try {
             return (Long) invokeVfsMethod(VIRTUAL_FILE_METHOD_GET_SIZE, vfsResource) > 0;
@@ -167,14 +173,17 @@ public abstract class VfsUtils {
         }
     }
 
+    /** 由 URL 获取相对 VirtualFile 根节点 */
     static Object getRelative(URL url) throws IOException {
         return invokeVfsMethod(VFS_METHOD_GET_ROOT_URL, null, url);
     }
 
+    /** 按子路径获取 VirtualFile 子节点 */
     static Object getChild(Object vfsResource, String path) throws IOException {
         return invokeVfsMethod(VIRTUAL_FILE_METHOD_GET_CHILD, vfsResource, path);
     }
 
+    /** 解析为物理 File（解压后的临时文件） */
     static File getFile(Object vfsResource) throws IOException {
         return (File) invokeVfsMethod(VIRTUAL_FILE_METHOD_GET_PHYSICAL_FILE, vfsResource);
     }
@@ -183,6 +192,7 @@ public abstract class VfsUtils {
         return invokeVfsMethod(VFS_METHOD_GET_ROOT_URI, null, url);
     }
 
+    // 以下 protected 方法供 VfsPatternUtils 等同包类调用
     // protected methods used by the support sub-package
 
     protected static Object getRoot(URL url) throws IOException {

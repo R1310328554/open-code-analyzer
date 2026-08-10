@@ -26,6 +26,7 @@ import java.nio.channels.ReadableByteChannel;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 资源描述符接口：抽象底层资源类型（文件、类路径等），供包扫描与配置加载统一访问。
  * Interface for a resource descriptor that abstracts from the actual
  * type of underlying resource, such as a file or class path resource.
  *
@@ -56,6 +57,7 @@ public interface Resource extends InputStreamSource {
      * <p>This method performs a definitive existence check, whereas the
      * existence of a {@code Resource} handle only guarantees a valid
      * descriptor handle.
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     boolean exists();
 
@@ -71,7 +73,9 @@ public interface Resource extends InputStreamSource {
      *
      * @see #getInputStream()
      * @see #exists()
+      * <p>资源描述符接口；详见类级说明。</p>
      */
+    /** 默认可读性与 {@link #exists()} 一致（自 5.1 起） */
     default boolean isReadable() {
         return exists();
     }
@@ -82,6 +86,7 @@ public interface Resource extends InputStreamSource {
      * and must be read and closed to avoid resource leaks.
      *
      * <p>Will be {@code false} for typical resource descriptors.
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     default boolean isOpen() {
         return false;
@@ -96,6 +101,7 @@ public interface Resource extends InputStreamSource {
      *
      * @see #getFile()
      * @since 5.0
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     default boolean isFile() {
         return false;
@@ -106,6 +112,7 @@ public interface Resource extends InputStreamSource {
      *
      * @throws IOException if the resource cannot be resolved as URL,
      *                     i.e. if the resource is not available as descriptor
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     URL getUrl() throws IOException;
 
@@ -115,6 +122,7 @@ public interface Resource extends InputStreamSource {
      * @throws IOException if the resource cannot be resolved as URI,
      *                     i.e. if the resource is not available as descriptor
      * @since 2.5
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     URI getUri() throws IOException;
 
@@ -125,6 +133,7 @@ public interface Resource extends InputStreamSource {
      *                                       absolute file path, i.e. if the resource is not available in a file system
      * @throws IOException                   in case of general resolution/reading failures
      * @see #getInputStream()
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     File getFile() throws IOException;
 
@@ -141,7 +150,9 @@ public interface Resource extends InputStreamSource {
      * @throws IOException                   if the content channel could not be opened
      * @see #getInputStream()
      * @since 5.0
+      * <p>资源描述符接口；详见类级说明。</p>
      */
+    /** 基于 {@link #getInputStream()} 包装为 NIO 可读通道 */
     default ReadableByteChannel readableChannel() throws IOException {
         return Channels.newChannel(getInputStream());
     }
@@ -151,6 +162,7 @@ public interface Resource extends InputStreamSource {
      *
      * @throws IOException if the resource cannot be resolved
      *                     (in the file system or as some other known physical resource type)
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     long contentLength() throws IOException;
 
@@ -159,6 +171,7 @@ public interface Resource extends InputStreamSource {
      *
      * @throws IOException if the resource cannot be resolved
      *                     (in the file system or as some other known physical resource type)
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     long lastModified() throws IOException;
 
@@ -168,6 +181,7 @@ public interface Resource extends InputStreamSource {
      * @param relativePath the relative path (relative to this resource)
      * @return the resource handle for the relative resource
      * @throws IOException if the relative resource cannot be determined
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     Resource createRelative(String relativePath) throws IOException;
 
@@ -177,6 +191,7 @@ public interface Resource extends InputStreamSource {
      *
      * <p>Returns {@code null} if this type of resource does not
      * have a filename.
+      * <p>资源描述符接口；详见类级说明。</p>
      */
 
     String getFilename();
@@ -189,6 +204,7 @@ public interface Resource extends InputStreamSource {
      * from their {@code toString} method.
      *
      * @see Object#toString()
+      * <p>资源描述符接口；详见类级说明。</p>
      */
     String getDescription();
 

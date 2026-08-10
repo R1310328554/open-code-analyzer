@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * {@link ResourceLoader} 默认实现：按 URL / classpath: / 相对路径解析资源，可独立使用。
  * Default implementation of the {@link ResourceLoader} interface.
  * Can also be used standalone.
  *
@@ -43,10 +44,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DefaultResourceLoader implements ResourceLoader {
 
+    /** 显式指定的类加载器；为 null 时使用 {@link ClassUtils#getDefaultClassLoader()} */
     private ClassLoader classLoader;
 
+    /** 已注册的自定义协议解析器，优先于标准解析规则 */
     private final Set<ProtocolResolver> protocolResolvers = new LinkedHashSet<>(4);
 
+    /** 按值类型分组的资源解析缓存（如 ASM MetadataReader） */
     private final Map<Class<?>, Map<Resource, ?>> resourceCaches = new ConcurrentHashMap<>(4);
 
     /**
@@ -57,6 +61,7 @@ public class DefaultResourceLoader implements ResourceLoader {
      * a specific ClassLoader to {@link #DefaultResourceLoader(ClassLoader)}.
      *
      * @see Thread#getContextClassLoader()
+      * <p>默认资源加载器；详见类级说明。</p>
      */
     public DefaultResourceLoader() {
     }
@@ -66,6 +71,7 @@ public class DefaultResourceLoader implements ResourceLoader {
      *
      * @param classLoader the ClassLoader to load class path resources with, or {@code null}
      *                    for using the thread context class loader at the time of actual resource access
+      * <p>默认资源加载器；详见类级说明。</p>
      */
     public DefaultResourceLoader(ClassLoader classLoader) {
         this.classLoader = classLoader;
@@ -77,6 +83,7 @@ public class DefaultResourceLoader implements ResourceLoader {
      *
      * <p>The default is that ClassLoader access will happen using the thread context
      * class loader at the time of actual resource access (since 5.3).
+      * <p>默认资源加载器；详见类级说明。</p>
      */
     public void setClassLoader(ClassLoader classLoader) {
         this.classLoader = classLoader;
@@ -89,6 +96,7 @@ public class DefaultResourceLoader implements ResourceLoader {
      * ClassPathResource objects created by this resource loader.
      *
      * @see ClassPathResource
+      * <p>默认资源加载器；详见类级说明。</p>
      */
     @Override
 
@@ -105,6 +113,7 @@ public class DefaultResourceLoader implements ResourceLoader {
      *
      * @see #getProtocolResolvers()
      * @since 4.3
+      * <p>默认资源加载器；详见类级说明。</p>
      */
     public void addProtocolResolver(ProtocolResolver resolver) {
         AbstractAssert.notNull(resolver, "ProtocolResolver must not be null");
@@ -116,6 +125,7 @@ public class DefaultResourceLoader implements ResourceLoader {
      * allowing for introspection as well as modification.
      *
      * @since 4.3
+      * <p>默认资源加载器；详见类级说明。</p>
      */
     public Collection<ProtocolResolver> getProtocolResolvers() {
         return this.protocolResolvers;
@@ -127,6 +137,7 @@ public class DefaultResourceLoader implements ResourceLoader {
      * @param valueType the value type, e.g. an ASM {@code MetadataReader}
      * @return the cache {@link Map}, shared at the {@code ResourceLoader} level
      * @since 5.0
+      * <p>默认资源加载器；详见类级说明。</p>
      */
     @SuppressWarnings("unchecked")
     public <T> Map<Resource, T> getResourceCache(Class<T> valueType) {
@@ -138,6 +149,7 @@ public class DefaultResourceLoader implements ResourceLoader {
      *
      * @see #getResourceCache
      * @since 5.0
+      * <p>默认资源加载器；详见类级说明。</p>
      */
     public void clearResourceCaches() {
         this.resourceCaches.clear();
@@ -147,6 +159,7 @@ public class DefaultResourceLoader implements ResourceLoader {
     public Resource getResource(String location) {
         AbstractAssert.notNull(location, "Location must not be null");
 
+        // 先尝试 SPI 协议解析器
         for (ProtocolResolver protocolResolver : getProtocolResolvers()) {
             Resource resource = protocolResolver.resolve(location, this);
             if (resource != null) {
@@ -160,10 +173,12 @@ public class DefaultResourceLoader implements ResourceLoader {
             return new ClassPathResource(location.substring(CLASSPATH_URL_PREFIX.length()), getClassLoader());
         } else {
             try {
+                // 尝试按 URL 解析；失败则退化为类路径相对路径
                 // Try to parse the location as a URL...
                 URL url = new URL(location);
                 return (ResourceUtils.isFileUrl(url) ? new FileUrlResource(url) : new UrlResource(url));
             } catch (MalformedURLException ex) {
+                // 非 URL 格式：按类路径资源路径处理
                 // No URL -> resolve as resource path.
                 return getResourceByPath(location);
             }
@@ -180,6 +195,7 @@ public class DefaultResourceLoader implements ResourceLoader {
      * @param path the path to the resource
      * @return the corresponding Resource handle
      * @see ClassPathResource
+      * <p>默认资源加载器；详见类级说明。</p>
      */
     protected Resource getResourceByPath(String path) {
         return new ClassPathContextResource(path, getClassLoader());
@@ -188,7 +204,9 @@ public class DefaultResourceLoader implements ResourceLoader {
     /**
      * ClassPathResource that explicitly expresses a context-relative path
      * through implementing the ContextResource interface.
+      * <p>默认资源加载器；详见类级说明。</p>
      */
+    /** 实现 {@link ContextResource} 的类路径资源，表达上下文相对路径 */
     protected static class ClassPathContextResource extends ClassPathResource implements ContextResource {
 
         public ClassPathContextResource(String path, ClassLoader classLoader) {

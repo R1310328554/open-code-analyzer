@@ -32,6 +32,7 @@ import java.net.URLConnection;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * URL 资源实现：基于 {@link java.net.URL}，file: 协议时可解析为 {@link File}。
  * {@link Resource} implementation for {@code java.net.URL} locators.
  * Supports resolution as a {@code URL} and also as a {@code File} in
  * case of the {@code "file:"} protocol.
@@ -44,19 +45,25 @@ public class UrlResource extends AbstractFileResolvingResource {
 
     /**
      * Original URI, if available; used for URI and File access.
+      * <p>URL 资源实现；详见类级说明。</p>
      */
 
+    /** 原始 URI（若可用），用于 URI/File 访问 */
     private final URI uri;
 
     /**
      * Original URL, used for actual access.
+      * <p>URL 资源实现；详见类级说明。</p>
      */
+    /** 实际访问用的 URL */
     private final URL url;
 
     /**
      * Cleaned URL (with normalized path), used for comparisons.
+      * <p>URL 资源实现；详见类级说明。</p>
      */
 
+    /** 规范化路径后的 URL，用于 equals/hashCode */
     private volatile URL cleanedUrl;
 
     /**
@@ -65,6 +72,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      * @param uri a URI
      * @throws MalformedURLException if the given URL path is not valid
      * @since 2.5
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     public UrlResource(URI uri) throws MalformedURLException {
         AbstractAssert.notNull(uri, "URI must not be null");
@@ -76,6 +84,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      * Create a new {@code UrlResource} based on the given URL object.
      *
      * @param url a URL
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     public UrlResource(URL url) {
         AbstractAssert.notNull(url, "URL must not be null");
@@ -91,6 +100,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      * @param path a URL path
      * @throws MalformedURLException if the given URL path is not valid
      * @see URL#URL(String)
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     public UrlResource(String path) throws MalformedURLException {
         AbstractAssert.notNull(path, "Path must not be null");
@@ -110,6 +120,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      *                 also known as "scheme-specific part"
      * @throws MalformedURLException if the given URL specification is not valid
      * @see URI#URI(String, String, String)
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     public UrlResource(String protocol, String location) throws MalformedURLException {
         this(protocol, location, null);
@@ -128,6 +139,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      *                 as following after a "#" separator)
      * @throws MalformedURLException if the given URL specification is not valid
      * @see URI#URI(String, String, String)
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     public UrlResource(String protocol, String location, String fragment) throws MalformedURLException {
         try {
@@ -147,6 +159,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      * @param originalPath the original URL path
      * @return the cleaned URL (possibly the original URL as-is)
      * @see StringUtils#cleanPath
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     private static URL getCleanedUrl(URL originalUrl, String originalPath) {
         String cleanedPath = StringUtils.cleanPath(originalPath);
@@ -164,6 +177,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      * Lazily determine a cleaned URL for the given original URL.
      *
      * @see #getCleanedUrl(URL, String)
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     private URL getCleanedUrl() {
         URL cleanedUrl = this.cleanedUrl;
@@ -185,6 +199,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      * @see URL#openConnection()
      * @see URLConnection#setUseCaches(boolean)
      * @see URLConnection#getInputStream()
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     @Override
     public InputStream getInputStream() throws IOException {
@@ -193,6 +208,7 @@ public class UrlResource extends AbstractFileResolvingResource {
         try {
             return con.getInputStream();
         } catch (IOException ex) {
+            // HTTP 连接失败时断开，避免连接泄漏
             // Close the HTTP connection (if applicable).
             if (con instanceof HttpURLConnection) {
                 ((HttpURLConnection) con).disconnect();
@@ -203,6 +219,7 @@ public class UrlResource extends AbstractFileResolvingResource {
 
     /**
      * This implementation returns the underlying URL reference.
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     @Override
     public URL getUrl() {
@@ -212,6 +229,7 @@ public class UrlResource extends AbstractFileResolvingResource {
     /**
      * This implementation returns the underlying URI directly,
      * if possible.
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     @Override
     public URI getUri() throws IOException {
@@ -236,6 +254,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      * provided that it refers to a file in the file system.
      *
      * @see ResourceUtils#getFile(URL, String)
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     @Override
     public File getFile() throws IOException {
@@ -251,6 +270,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      * {@link #createRelativeUrl(String)} for adapting the relative path.
      *
      * @see #createRelativeUrl(String)
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     @Override
     public Resource createRelative(String relativePath) throws MalformedURLException {
@@ -264,11 +284,13 @@ public class UrlResource extends AbstractFileResolvingResource {
      *
      * @see #createRelative(String)
      * @since 5.2
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     protected URL createRelativeUrl(String relativePath) throws MalformedURLException {
         if (relativePath.startsWith("/")) {
             relativePath = relativePath.substring(1);
         }
+        // 文件名中的 # 需编码，避免被 URL 当作 fragment
         // # can appear in filenames, java.net.URL should not treat it as a fragment
         relativePath = StringUtils.replace(relativePath, "#", "%23");
         // Use the URL constructor for applying the relative path as a URL spec
@@ -279,6 +301,7 @@ public class UrlResource extends AbstractFileResolvingResource {
      * This implementation returns the name of the file that this URL refers to.
      *
      * @see URL#getPath()
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     @Override
     public String getFilename() {
@@ -287,6 +310,7 @@ public class UrlResource extends AbstractFileResolvingResource {
 
     /**
      * This implementation returns a description that includes the URL.
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     @Override
     public String getDescription() {
@@ -296,6 +320,7 @@ public class UrlResource extends AbstractFileResolvingResource {
 
     /**
      * This implementation compares the underlying URL references.
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     @Override
     public boolean equals(Object other) {
@@ -305,6 +330,7 @@ public class UrlResource extends AbstractFileResolvingResource {
 
     /**
      * This implementation returns the hash code of the underlying URL reference.
+      * <p>URL 资源实现；详见类级说明。</p>
      */
     @Override
     public int hashCode() {

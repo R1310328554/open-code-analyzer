@@ -48,6 +48,7 @@ import java.util.zip.ZipException;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 路径模式资源解析器：支持 {@code classpath*:} 前缀与 Ant 通配符，遍历文件系统/JAR/VFS。
  * A {@link ResourcePatternResolver} implementation that is able to resolve a
  * specified resource location path into one or more matching Resources.
  * The source path may be a simple path which has a one-to-one mapping to a
@@ -174,12 +175,15 @@ import java.util.zip.ZipException;
  */
 public class PathMatchingResourcePatternResolver implements ResourcePatternResolver {
 
+    /** 模式解析过程日志 */
     private static final Logger LOGGER = LoggerFactory.getLogger(PathMatchingResourcePatternResolver.class);
 
+    /** Equinox OSGi FileLocator.resolve，用于 WebSphere 等环境 */
     private static Method equinoxResolveMethod;
 
     static {
         try {
+            // 探测 Equinox OSGi（如 WebSphere 6.1）以解析 bundle URL
             // Detect Equinox OSGi (e.g. on WebSphere 6.1)
             Class<?> fileLocatorClass = ClassUtils.forName("org.eclipse.core.runtime.FileLocator",
                     PathMatchingResourcePatternResolver.class.getClassLoader());
@@ -190,8 +194,10 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
         }
     }
 
+    /** 委托的单资源加载器 */
     private final ResourceLoader resourceLoader;
 
+    /** Ant 风格路径匹配器，默认可替换 */
     private PathMatcher pathMatcher = new AntPathMatcher();
 
     /**
@@ -200,6 +206,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * <p>ClassLoader access will happen via the thread context class loader.
      *
      * @see DefaultResourceLoader
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     public PathMatchingResourcePatternResolver() {
         this.resourceLoader = new DefaultResourceLoader();
@@ -212,6 +219,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      *
      * @param resourceLoader the ResourceLoader to load root directories and
      *                       actual resources with
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     public PathMatchingResourcePatternResolver(ResourceLoader resourceLoader) {
         AbstractAssert.notNull(resourceLoader, "ResourceLoader must not be null");
@@ -225,6 +233,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      *                    or {@code null} for using the thread context class loader
      *                    at the time of actual resource access
      * @see DefaultResourceLoader
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     public PathMatchingResourcePatternResolver(ClassLoader classLoader) {
         this.resourceLoader = new DefaultResourceLoader(classLoader);
@@ -232,6 +241,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
     /**
      * Return the ResourceLoader that this pattern resolver works with.
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     public ResourceLoader getResourceLoader() {
         return this.resourceLoader;
@@ -248,6 +258,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * resource pattern resolver. Default is AntPathMatcher.
      *
      * @see AntPathMatcher
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     public void setPathMatcher(PathMatcher pathMatcher) {
         AbstractAssert.notNull(pathMatcher, "PathMatcher must not be null");
@@ -256,6 +267,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
     /**
      * Return the PathMatcher that this resource pattern resolver uses.
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     public PathMatcher getPathMatcher() {
         return this.pathMatcher;
@@ -302,6 +314,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @throws IOException in case of I/O errors
      * @see ClassLoader#getResources
      * @see #convertClassLoaderUrl
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected Resource[] findAllClassPathResources(String location) throws IOException {
         String path = location;
@@ -322,6 +335,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @param path the absolute path within the classpath (never a leading slash)
      * @return a mutable Set of matching Resource instances
      * @since 4.1.1
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected Set<Resource> doFindAllClassPathResources(String path) throws IOException {
         Set<Resource> result = new LinkedHashSet<>(16);
@@ -348,6 +362,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @return the corresponding Resource object
      * @see ClassLoader#getResources
      * @see Resource
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected Resource convertClassLoaderUrl(URL url) {
         return new UrlResource(url);
@@ -360,6 +375,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @param classLoader the ClassLoader to search (including its ancestors)
      * @param result      the set of resources to add jar roots to
      * @since 4.1.1
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected void addAllClassLoaderJarRoots(ClassLoader classLoader, Set<Resource> result) {
         if (classLoader instanceof URLClassLoader) {
@@ -411,6 +427,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      *
      * @param result the set of resources to add jar roots to
      * @since 4.3
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected void addClassPathManifestEntries(Set<Resource> result) {
         try {
@@ -455,6 +472,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @param result   the current result
      * @return {@code true} if there is a duplicate (i.e. to ignore the given file path),
      * {@code false} to proceed with adding a corresponding resource to the current result
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     private boolean hasDuplicate(String filePath, Set<Resource> result) {
         if (result.isEmpty()) {
@@ -481,6 +499,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @see #doFindPathMatchingJarResources
      * @see #doFindPathMatchingFileResources
      * @see PathMatcher
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected Resource[] findPathMatchingResources(String locationPattern) throws IOException {
         String rootDirPath = determineRootDir(locationPattern);
@@ -525,6 +544,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @param location the location to check
      * @return the part of the location that denotes the root directory
      * @see #retrieveMatchingFiles
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected String determineRootDir(String location) {
         int prefixEnd = location.indexOf(':') + 1;
@@ -549,6 +569,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @param original the resource to resolve
      * @return the resolved resource (may be identical to the passed-in resource)
      * @throws IOException in case of resolution failure
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected Resource resolveRootDirResource(Resource original) throws IOException {
         return original;
@@ -567,6 +588,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      *                 (usually the root directory to start path matching from)
      * @see #doFindPathMatchingJarResources
      * @see ResourceUtils#isJarUrl
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected boolean isJarResource(Resource resource) throws IOException {
         return false;
@@ -583,6 +605,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @throws IOException in case of I/O errors
      * @see PathMatcher
      * @since 4.3
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected Set<Resource> doFindPathMatchingJarResources(Resource rootDirResource, URL rootDirUrl, String subPattern)
             throws IOException {
@@ -661,6 +684,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
     /**
      * Resolve the given jar file URL into a JarFile object.
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected JarFile getJarFile(String jarFileUrl) throws IOException {
         if (jarFileUrl.startsWith(ResourceUtils.FILE_URL_PREFIX)) {
@@ -685,6 +709,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @throws IOException in case of I/O errors
      * @see #retrieveMatchingFiles
      * @see PathMatcher
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected Set<Resource> doFindPathMatchingFileResources(Resource rootDirResource, String subPattern)
             throws IOException {
@@ -717,6 +742,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @throws IOException in case of I/O errors
      * @see #retrieveMatchingFiles
      * @see PathMatcher
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected Set<Resource> doFindMatchingFileSystemResources(File rootDir, String subPattern) throws IOException {
         if (LOGGER.isTraceEnabled()) {
@@ -739,6 +765,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      *                relative to the root directory
      * @return a mutable Set of matching Resource instances
      * @throws IOException if directory contents could not be retrieved
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected Set<File> retrieveMatchingFiles(File rootDir, String pattern) throws IOException {
         if (!rootDir.exists()) {
@@ -781,6 +808,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @param dir         the current directory
      * @param result      the Set of matching File instances to add to
      * @throws IOException if directory contents could not be retrieved
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected void doRetrieveMatchingFiles(String fullPattern, File dir, Set<File> result) throws IOException {
         if (LOGGER.isTraceEnabled()) {
@@ -812,6 +840,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
      * @return the sorted list of files (by default in alphabetical order)
      * @see File#listFiles()
      * @since 5.1
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     protected File[] listDirectory(File dir) {
         File[] files = dir.listFiles();
@@ -827,6 +856,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
     /**
      * Inner delegate class, avoiding a hard JBoss VFS API dependency at runtime.
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     private static class VfsResourceMatchingDelegate {
 
@@ -844,6 +874,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
     /**
      * VFS visitor for path matching purposes.
+      * <p>Ant 模式资源解析器；详见类级说明。</p>
      */
     @SuppressWarnings("unused")
     private static class PatternVirtualFileVisitor implements InvocationHandler {

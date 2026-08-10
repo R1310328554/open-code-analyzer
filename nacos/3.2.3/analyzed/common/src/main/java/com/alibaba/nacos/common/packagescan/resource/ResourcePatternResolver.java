@@ -20,6 +20,7 @@ import java.io.IOException;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 资源模式解析接口：将 Ant 风格路径模式解析为 {@link Resource} 数组，扩展 {@link ResourceLoader}。
  * Strategy interface for resolving a location pattern (for example,
  * an Ant-style path pattern) into {@link Resource} objects.
  *
@@ -56,7 +57,9 @@ public interface ResourcePatternResolver extends ResourceLoader {
      * for example in the root of all deployed JAR files.
      *
      * @see ResourceLoader#CLASSPATH_URL_PREFIX
+      * <p>资源模式解析接口；详见类级说明。</p>
      */
+    /** 匹配所有同名类路径资源的前缀：{@code classpath*:} */
     String CLASSPATH_ALL_URL_PREFIX = "classpath*:";
 
     /**
@@ -69,6 +72,7 @@ public interface ResourcePatternResolver extends ResourceLoader {
      * @param locationPattern the location pattern to resolve
      * @return the corresponding {@code Resource} objects
      * @throws IOException in case of I/O errors
+      * <p>资源模式解析接口；详见类级说明。</p>
      */
     Resource[] getResources(String locationPattern) throws IOException;
 

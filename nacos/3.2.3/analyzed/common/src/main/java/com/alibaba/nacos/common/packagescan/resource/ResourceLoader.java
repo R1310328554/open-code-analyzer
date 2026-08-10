@@ -20,6 +20,7 @@ import com.alibaba.nacos.common.packagescan.util.ResourceUtils;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 资源加载策略接口：按 location 字符串解析为 {@link Resource}，支持 classpath: 伪 URL 与绝对 URL。
  * Strategy interface for loading resources (e.g., class path or file system
  * resources).
  *
@@ -38,7 +39,9 @@ public interface ResourceLoader {
 
     /**
      * Pseudo URL prefix for loading from the class path: "classpath:".
+      * <p>资源加载策略接口；详见类级说明。</p>
      */
+    /** 类路径伪 URL 前缀：{@code classpath:} */
     String CLASSPATH_URL_PREFIX = ResourceUtils.CLASSPATH_URL_PREFIX;
 
 
@@ -64,6 +67,7 @@ public interface ResourceLoader {
      * @see #CLASSPATH_URL_PREFIX
      * @see Resource#exists()
      * @see Resource#getInputStream()
+      * <p>资源加载策略接口；详见类级说明。</p>
      */
     Resource getResource(String location);
 
@@ -76,6 +80,7 @@ public interface ResourceLoader {
      *
      * @return the {@code ClassLoader}
      * (only {@code null} if even the system {@code ClassLoader} isn't accessible)
+      * <p>资源加载策略接口；详见类级说明。</p>
      */
 
     ClassLoader getClassLoader();

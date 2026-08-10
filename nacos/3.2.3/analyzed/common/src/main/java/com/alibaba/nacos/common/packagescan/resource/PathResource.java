@@ -37,6 +37,7 @@ import java.nio.file.StandardOpenOption;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 纯 NIO {@link Path} 资源：全部操作经 {@link Files} API；{@link #createRelative} 在根下嵌套。
  * {@link Resource} implementation for {@link Path} handles,
  * performing all operations and transformations via the {@code Path} API.
  * Supports resolution as a {@link File} and also as a {@link URL}.
@@ -58,6 +59,7 @@ import java.nio.file.StandardOpenOption;
  */
 public class PathResource extends AbstractResource implements WritableResource {
 
+    /** 规范化后的 NIO 路径 */
     private final Path path;
 
     /**
@@ -68,6 +70,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      * the given root: e.g. Paths.get("C:/dir1/"), relative path "dir2" &rarr; "C:/dir1/dir2"!
      *
      * @param path a Path handle
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     public PathResource(Path path) {
         AbstractAssert.notNull(path, "Path must not be null");
@@ -83,6 +86,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      *
      * @param path a path
      * @see Paths#get(String, String...)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     public PathResource(String path) {
         AbstractAssert.notNull(path, "Path must not be null");
@@ -98,6 +102,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      *
      * @param uri a path URI
      * @see Paths#get(URI)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     public PathResource(URI uri) {
         AbstractAssert.notNull(uri, "URI must not be null");
@@ -106,6 +111,7 @@ public class PathResource extends AbstractResource implements WritableResource {
 
     /**
      * Return the file path for this resource.
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     public final String getPath() {
         return this.path.toString();
@@ -115,6 +121,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      * This implementation returns whether the underlying file exists.
      *
      * @see Files#exists(Path, LinkOption...)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public boolean exists() {
@@ -127,6 +134,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      *
      * @see Files#isReadable(Path)
      * @see Files#isDirectory(Path, LinkOption...)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public boolean isReadable() {
@@ -137,6 +145,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      * This implementation opens a InputStream for the underlying file.
      *
      * @see java.nio.file.spi.FileSystemProvider#newInputStream(Path, OpenOption...)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public InputStream getInputStream() throws IOException {
@@ -155,6 +164,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      *
      * @see Files#isWritable(Path)
      * @see Files#isDirectory(Path, LinkOption...)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public boolean isWritable() {
@@ -165,6 +175,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      * This implementation opens a OutputStream for the underlying file.
      *
      * @see java.nio.file.spi.FileSystemProvider#newOutputStream(Path, OpenOption...)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public OutputStream getOutputStream() throws IOException {
@@ -179,6 +190,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      *
      * @see Path#toUri()
      * @see URI#toURL()
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public URL getUrl() throws IOException {
@@ -189,6 +201,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      * This implementation returns a URI for the underlying file.
      *
      * @see Path#toUri()
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public URI getUri() throws IOException {
@@ -197,6 +210,7 @@ public class PathResource extends AbstractResource implements WritableResource {
 
     /**
      * This implementation always indicates a file.
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public boolean isFile() {
@@ -205,12 +219,14 @@ public class PathResource extends AbstractResource implements WritableResource {
 
     /**
      * This implementation returns the underlying File reference.
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public File getFile() throws IOException {
         try {
             return this.path.toFile();
         } catch (UnsupportedOperationException ex) {
+            // 仅默认文件系统的 Path 可转为 File
             // Only paths on the default file system can be converted to a File:
             // Do exception translation for cases where conversion is not possible.
             throw new FileNotFoundException(this.path + " cannot be resolved to absolute file path");
@@ -221,6 +237,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      * This implementation opens a Channel for the underlying file.
      *
      * @see Files#newByteChannel(Path, OpenOption...)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public ReadableByteChannel readableChannel() throws IOException {
@@ -235,6 +252,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      * This implementation opens a Channel for the underlying file.
      *
      * @see Files#newByteChannel(Path, OpenOption...)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public WritableByteChannel writableChannel() throws IOException {
@@ -243,6 +261,7 @@ public class PathResource extends AbstractResource implements WritableResource {
 
     /**
      * This implementation returns the underlying file's length.
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public long contentLength() throws IOException {
@@ -253,9 +272,11 @@ public class PathResource extends AbstractResource implements WritableResource {
      * This implementation returns the underlying File's timestamp.
      *
      * @see Files#getLastModifiedTime(Path, LinkOption...)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public long lastModified() throws IOException {
+        // 不能走父类实现（依赖 File 转换），直接读 Path 时间戳
         // We can not use the superclass method since it uses conversion to a File and
         // only a Path on the default file system can be converted to a File...
         return Files.getLastModifiedTime(this.path).toMillis();
@@ -266,6 +287,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      * relative to the path of the underlying file of this resource descriptor.
      *
      * @see Path#resolve(String)
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public Resource createRelative(String relativePath) {
@@ -276,6 +298,7 @@ public class PathResource extends AbstractResource implements WritableResource {
      * This implementation returns the name of the file.
      *
      * @see Path#getFileName()
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public String getFilename() {
@@ -290,6 +313,7 @@ public class PathResource extends AbstractResource implements WritableResource {
 
     /**
      * This implementation compares the underlying Path references.
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public boolean equals(Object other) {
@@ -299,6 +323,7 @@ public class PathResource extends AbstractResource implements WritableResource {
 
     /**
      * This implementation returns the hash code of the underlying Path reference.
+      * <p>NIO Path 资源；详见类级说明。</p>
      */
     @Override
     public int hashCode() {

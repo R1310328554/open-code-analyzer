@@ -23,6 +23,7 @@ import java.io.InputStream;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 已打开 {@link InputStream} 的 {@link Resource}：单次读取，{@link #isOpen()} 恒为 true。
  * {@link Resource} implementation for a given {@link InputStream}.
  *
  * <p>Should only be used if no other specific {@code Resource} implementation
@@ -45,16 +46,19 @@ import java.io.InputStream;
  */
 public class InputStreamResource extends AbstractResource {
 
+    /** 底层输入流（不可重复读取） */
     private final InputStream inputStream;
 
     private final String description;
 
+    /** 是否已调用过 {@link #getInputStream()} */
     private boolean read = false;
 
     /**
      * Create a new InputStreamResource.
      *
      * @param inputStream the InputStream to use
+      * <p>输入流资源；详见类级说明。</p>
      */
     public InputStreamResource(InputStream inputStream) {
         this(inputStream, "resource loaded through InputStream");
@@ -65,6 +69,7 @@ public class InputStreamResource extends AbstractResource {
      *
      * @param inputStream the InputStream to use
      * @param description where the InputStream comes from
+      * <p>输入流资源；详见类级说明。</p>
      */
     public InputStreamResource(InputStream inputStream, String description) {
         AbstractAssert.notNull(inputStream, "InputStream must not be null");
@@ -75,6 +80,7 @@ public class InputStreamResource extends AbstractResource {
 
     /**
      * This implementation always returns {@code true}.
+      * <p>输入流资源；详见类级说明。</p>
      */
     @Override
     public boolean exists() {
@@ -83,6 +89,7 @@ public class InputStreamResource extends AbstractResource {
 
     /**
      * This implementation always returns {@code true}.
+      * <p>输入流资源；详见类级说明。</p>
      */
     @Override
     public boolean isOpen() {
@@ -92,6 +99,7 @@ public class InputStreamResource extends AbstractResource {
     /**
      * This implementation throws IllegalStateException if attempting to
      * read the underlying stream multiple times.
+      * <p>输入流资源；详见类级说明。</p>
      */
     @Override
     public InputStream getInputStream() throws IOException, IllegalStateException {
@@ -106,6 +114,7 @@ public class InputStreamResource extends AbstractResource {
     /**
      * This implementation returns a description that includes the passed-in
      * description, if any.
+      * <p>输入流资源；详见类级说明。</p>
      */
     @Override
     public String getDescription() {
@@ -115,6 +124,7 @@ public class InputStreamResource extends AbstractResource {
 
     /**
      * This implementation compares the underlying InputStream.
+      * <p>输入流资源；详见类级说明。</p>
      */
     @Override
     public boolean equals(Object other) {
@@ -124,6 +134,7 @@ public class InputStreamResource extends AbstractResource {
 
     /**
      * This implementation returns the hash code of the underlying InputStream.
+      * <p>输入流资源；详见类级说明。</p>
      */
     @Override
     public int hashCode() {

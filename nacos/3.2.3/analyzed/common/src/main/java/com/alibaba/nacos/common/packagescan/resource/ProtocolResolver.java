@@ -19,6 +19,7 @@ package com.alibaba.nacos.common.packagescan.resource;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 协议解析 SPI：为自定义 URL 协议提供 {@link Resource} 解析，注册于 {@link DefaultResourceLoader}。
  * A resolution strategy for protocol-specific resource handles.
  *
  * <p>Used as an SPI for {@link DefaultResourceLoader}, allowing for
@@ -40,6 +41,7 @@ public interface ProtocolResolver {
      * @param resourceLoader the associated resource loader
      * @return a corresponding {@code Resource} handle if the given location
      * matches this resolver's protocol, or {@code null} otherwise
+      * <p>协议解析 SPI；详见类级说明。</p>
      */
 
     Resource resolve(String location, ResourceLoader resourceLoader);
