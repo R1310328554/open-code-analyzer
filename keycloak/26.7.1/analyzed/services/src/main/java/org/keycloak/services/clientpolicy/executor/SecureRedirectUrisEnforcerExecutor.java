@@ -46,28 +46,42 @@ import org.keycloak.services.clientpolicy.executor.SecureRedirectUrisEnforcerExe
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
+/**
+ * 安全重定向 URI 强制执行器。
+ * <p>在客户端注册/更新、预授权与授权请求阶段校验 {@code redirect_uri} 及登出后重定向 URI，支持 OAuth 2.0/2.1 合规模式、回环地址、私有 URI 方案及域名白名单等策略。</p>
+ */
 public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorProvider<SecureRedirectUrisEnforcerExecutor.Configuration> {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(SecureRedirectUrisEnforcerExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
+    /** 通用重定向 URI 无效错误消息 */
     public static final String ERR_GENERAL = "Invalid Redirect Uri: invalid uri";
 
+    /** 回环地址无效错误消息 */
     public static final String ERR_LOOPBACK = "Invalid Redirect Uri: invalid loopback address";
+    /** 私有 URI 方案无效错误消息 */
     public static final String ERR_PRIVATESCHEME = "Invalid Redirect Uri: invalid private use scheme";
+    /** 普通 URI 无效错误消息 */
     public static final String ERR_NORMALURI = "Invalid Redirect Uri: invalid uri";
 
+    /** @param session Keycloak 会话 */
     public SecureRedirectUrisEnforcerExecutor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** @return 执行器 Provider 标识符 */
     @Override
     public String getProviderId() {
         return SecureRedirectUrisEnforcerExecutorFactory.PROVIDER_ID;
     }
 
+    /** @param config 重定向 URI 校验策略配置 */
     @Override
     public void setupConfiguration(Configuration config) {
         this.configuration = config;
@@ -78,7 +92,9 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         return Configuration.class;
     }
 
+    /** 重定向 URI 校验策略配置项 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 是否允许私有用途 URI 方案（自定义 URL scheme） */
         @JsonProperty(SecureRedirectUrisEnforcerExecutorFactory.ALLOW_PRIVATE_USE_URI_SCHEME)
         protected boolean allowPrivateUseUriScheme;
         @JsonProperty(SecureRedirectUrisEnforcerExecutorFactory.ALLOW_IPV4_LOOPBACK_ADDRESS)
@@ -93,8 +109,10 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         protected List<String> allowPermittedDomains = Collections.emptyList();
         @JsonProperty(SecureRedirectUrisEnforcerExecutorFactory.OAUTH_2_0_COMPLIANT)
         protected boolean oauth2_0compliant;
+        /** 是否启用 OAuth 2.1 重定向 URI 规则 */
         @JsonProperty(SecureRedirectUrisEnforcerExecutorFactory.OAUTH_2_1_COMPLIANT)
         protected boolean oauth2_1compliant;
+        /** 是否允许开放重定向（跳过全部校验，不安全） */
         @JsonProperty(SecureRedirectUrisEnforcerExecutorFactory.ALLOW_OPEN_REDIRECT)
         protected boolean allowOpenRedirect;
 
@@ -171,12 +189,15 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         }
     }
 
+    /** @return 当前生效的配置 */
     public Configuration getConfiguration() {
         return configuration;
     }
 
+    /** 按客户端策略事件触发校验逻辑 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
+        // 按事件类型校验客户端元数据或请求中的 redirect_uri
         switch (context.getEvent()) {
             case REGISTER:
             case UPDATE:
@@ -214,6 +235,7 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         }
     }
 
+    /** 校验客户端注册/更新时的重定向 URI 列表 */
     private void verifyRedirectUris(ClientCRUDContext context) throws ClientPolicyException {
         ClientRepresentation client = context.getProposedClientRepresentation();
         if (isAuthFlowWithRedirectEnabled(client)) {
@@ -226,6 +248,7 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         }
     }
 
+    /** 判断客户端是否启用了带重定向的标准或隐式流 */
     private static boolean isAuthFlowWithRedirectEnabled(ClientModel client) {
         return client.isStandardFlowEnabled() || client.isImplicitFlowEnabled();
     }
@@ -234,6 +257,7 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         return (client.isStandardFlowEnabled() == null || client.isStandardFlowEnabled() == Boolean.TRUE) || client.isImplicitFlowEnabled() == Boolean.TRUE;
     }
 
+    /** 校验登出后重定向 URI 更新 */
     private void verifyPostLogoutRedirectUriUpdate(ClientRepresentation client) throws ClientPolicyException {
         List<String> postLogoutRedirectUris = OIDCAdvancedConfigWrapper.fromClientRepresentation(client).getPostLogoutRedirectUris();
         if (postLogoutRedirectUris == null || postLogoutRedirectUris.isEmpty()) {
@@ -243,8 +267,9 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         verifyRedirectUris(client.getRootUrl(), postLogoutRedirectUris);
     }
 
+    /** 批量校验已解析的重定向 URI */
     void verifyRedirectUris(String rootUri, List<String> redirectUris) throws ClientPolicyException {
-        // open redirect allows any value for redirect uri
+        // 开放重定向模式下跳过全部 URI 校验
         if (configuration.isAllowOpenRedirect()) {
             return;
         }
@@ -254,6 +279,9 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         }
     }
 
+    /** 校验单个重定向 URI
+     * @param redirectUri 待校验 URI
+     * @param isRedirectUriParam 是否来自授权请求 redirect_uri 参数 */
     void verifyRedirectUri(String redirectUri, boolean isRedirectUriParam) throws ClientPolicyException {
         UriValidation validation;
 
@@ -267,9 +295,13 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         validation.validate();
     }
 
+    /** 单条 URI 的类型识别与合规性校验 */
     public static class UriValidation {
+        /** 已解析的 URI 对象 */
         public final URI uri;
+        /** 是否来自授权请求 redirect_uri 参数（影响端口校验规则） */
         public final boolean isRedirectUriParameter;
+        /** 校验策略配置 */
         public final Configuration config;
 
         public UriValidation(String uriString, boolean isRedirectUriParameter, Configuration config) throws URISyntaxException {
@@ -278,6 +310,7 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
             this.config = config;
         }
 
+        /** 按 URI 类型执行对应校验规则 */
         public void validate() throws ClientPolicyException {
             switch (identifyUriType()) {
                 case IPV4_LOOPBACK_ADDRESS:
@@ -306,8 +339,9 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
             }
         }
 
+        /** @return 识别出的 URI 类型 */
         UriType identifyUriType() {
-            // NOTE: the order of evaluation methods is important.
+            // 注意：类型判定方法的调用顺序不可更改
             if (isIPv4LoopbackAddress()) {
                 return UriType.IPV4_LOOPBACK_ADDRESS;
             } else if (isIPv6LoopbackAddress()) {
@@ -350,8 +384,9 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
             return true;
         }
 
+        /** 是否为私有用途 URI 方案（非 http/https 的绝对 URI） */
         boolean isPrivateUseScheme() {
-            // NOTE: this method assumes that the uri is not loopback address
+            // 前提：URI 不是回环地址
             return uri.isAbsolute() && !isHttp() && !isHttps();
         }
 
@@ -366,7 +401,7 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
 
         boolean isValidIPv6LoopbackAddress() {
             return isValidLoopbackAddress(i->{
-                if (!"[::1]".equals(i.getHost())) { // [::1] is only allowed.
+                if (!"[::1]".equals(i.getHost())) { // OAuth 2.1 仅允许 [::1] 形式的 IPv6 回环
                     logger.debugv("Invalid IPv6LoopbackAddress: unacceptable form - OAuth 2.1 compliant - input = {0}", uri.toString());
                     return false;
                 } else {
@@ -375,8 +410,9 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
             });
         }
 
+        /** 校验回环地址是否符合配置与 OAuth 合规要求 */
         boolean isValidLoopbackAddress(Predicate<URI> p)  {
-            // valid addresses depend on configurations
+            // 有效地址规则取决于执行器配置
 
             if (!config.isAllowHttpScheme() && isHttp()) {
                 logger.debugv("Invalid LoopbackAddress: HTTP not allowed - input = {0}", uri.toString());
@@ -467,6 +503,7 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
             return true;
         }
 
+        /** 校验普通 http/https URI 是否符合策略 */
         boolean isValidNormalUri() {
             // valid addresses depend on configurations
 
@@ -545,7 +582,7 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
         }
 
         boolean isIncludeInvalidWildcard() {
-            // NOTE: this method assumes that the uri includes at least one wildcard.
+            // 前提：URI 中至少包含一个通配符
             if (!isWildcardContextPath()) {
                 return false;
             }
@@ -554,6 +591,7 @@ public class SecureRedirectUrisEnforcerExecutor implements ClientPolicyExecutorP
 
     }
 
+    /** 构造 invalid_request 类型的客户端策略异常 */
     private static ClientPolicyException invalidRedirectUri(String errorDetail) {
         return new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, errorDetail);
     }

@@ -38,15 +38,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 安全响应类型（response_type）执行器。
+ * <p>限制授权请求仅使用混合流 {@code code id_token} 或（可选）{@code code id_token token}，或 {@code code}+{@code response_mode=jwt}；注册时可自动启用 ID Token 分离签名。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureResponseTypeExecutor implements ClientPolicyExecutorProvider<SecureResponseTypeExecutor.Configuration> {
 
     private static final Logger logger = Logger.getLogger(SecureResponseTypeExecutor.class);
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
+    /** @param session Keycloak 会话 */
     public SecureResponseTypeExecutor(KeycloakSession session) {
         this.session = session;
     }
@@ -61,10 +67,13 @@ public class SecureResponseTypeExecutor implements ClientPolicyExecutorProvider<
         return Configuration.class;
     }
 
+    /** 响应类型策略配置项 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 注册/更新时是否自动配置 ID Token 分离签名 */
         @JsonProperty("auto-configure")
         protected Boolean autoConfigure;
 
+        /** 是否允许混合流返回 access token（code id_token token） */
         @JsonProperty("allow-token-response-type")
         protected Boolean allowTokenResponseType;
 
@@ -85,11 +94,13 @@ public class SecureResponseTypeExecutor implements ClientPolicyExecutorProvider<
         }
     }
 
+    /** @return 执行器 Provider 标识符 */
     @Override
     public String getProviderId() {
         return SecureResponseTypeExecutorFactory.PROVIDER_ID;
     }
 
+    /** 按客户端策略事件触发校验逻辑 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -110,7 +121,8 @@ public class SecureResponseTypeExecutor implements ClientPolicyExecutorProvider<
         return;
     }
 
-    // on Authorization Endpoint access for authorization request
+    /** 授权端点访问时校验 response_type */
+    // 授权端点收到授权请求时触发
     public void executeOnAuthorizationRequest(
             OIDCResponseType parsedResponseType,
             AuthorizationEndpointRequest request,
@@ -142,6 +154,7 @@ public class SecureResponseTypeExecutor implements ClientPolicyExecutorProvider<
         throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "invalid response_type");
     }
 
+    /** 判断是否为 code+id_token 混合流 */
     private boolean isHybridFlow(OIDCResponseType parsedResponseType) {
         return parsedResponseType.hasResponseType(OIDCResponseType.CODE) && parsedResponseType.hasResponseType(OIDCResponseType.ID_TOKEN);
     }
@@ -150,6 +163,7 @@ public class SecureResponseTypeExecutor implements ClientPolicyExecutorProvider<
         return configuration != null && Optional.ofNullable(configuration.isAllowTokenResponseType()).orElse(Boolean.FALSE).booleanValue();
     }
 
+    /** 按配置自动写入 ID Token 分离签名客户端属性 */
     private void autoConfigure(ClientRepresentation rep) {
         if (isAutoConfigure()) {
             Map<String, String> attributes = Optional.ofNullable(rep.getAttributes()).orElse(new HashMap<>());
@@ -162,6 +176,7 @@ public class SecureResponseTypeExecutor implements ClientPolicyExecutorProvider<
         return configuration != null && Optional.ofNullable(configuration.isAutoConfigure()).orElse(Boolean.FALSE).booleanValue();
     }
 
+    /** 校验客户端已启用 ID Token 分离签名 */
     private void validate(ClientRepresentation rep) throws ClientPolicyException {
         if (!isIdTokenAsDetachedSignature(rep)) {
             throw new ClientPolicyException(OAuthErrorException.INVALID_CLIENT_METADATA, "Invalid client metadata: ID Token as detached signature in disabled");

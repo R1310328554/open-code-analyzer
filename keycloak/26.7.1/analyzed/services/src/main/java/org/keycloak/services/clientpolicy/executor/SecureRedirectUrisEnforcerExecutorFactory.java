@@ -25,22 +25,37 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
+/**
+ * {@link SecureRedirectUrisEnforcerExecutor} 的 Provider 工厂。
+ * <p>暴露重定向 URI 校验相关的布尔开关、域名白名单及 OAuth 2.0/2.1 合规选项。</p>
+ */
 public class SecureRedirectUrisEnforcerExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "secure-redirect-uris-enforcer";
 
+    /** 配置键：是否允许 IPv4 回环地址 */
     public static final String ALLOW_IPV4_LOOPBACK_ADDRESS = "allow-ipv4-loopback-address";
+    /** 配置键：是否允许 IPv6 回环地址 */
     public static final String ALLOW_IPV6_LOOPBACK_ADDRESS = "allow-ipv6-loopback-address";
+    /** 配置键：是否允许私有用途 URI 方案 */
     public static final String ALLOW_PRIVATE_USE_URI_SCHEME = "allow-private-use-uri-scheme";
 
+    /** 配置键：是否允许 http 方案 */
     public static final String ALLOW_HTTP_SCHEME = "allow-http-scheme";
+    /** 配置键：是否允许 context-path 通配符 */
     public static final String ALLOW_WILDCARD_CONTEXT_PATH = "allow-wildcard-context-path";
+    /** 配置键：允许的主机名正则白名单 */
     public static final String ALLOW_PERMITTED_DOMAINS = "allow-permitted-domains";
+    /** 配置键：OAuth 2.0 合规模式 */
     public static final String OAUTH_2_0_COMPLIANT = "oauth-2-0-compliant";
+    /** 配置键：OAuth 2.1 合规模式 */
     public static final String OAUTH_2_1_COMPLIANT = "oauth-2-1-compliant";
 
+    /** 配置键：是否允许开放重定向（不安全） */
     public static final String ALLOW_OPEN_REDIRECT = "allow-open-redirect";
 
+    /** 重定向 URI 分类类型 */
     public enum UriType {
         NORMAL_URI,
         IPV4_LOOPBACK_ADDRESS,
@@ -49,38 +64,46 @@ public class SecureRedirectUrisEnforcerExecutorFactory implements ClientPolicyEx
         INVALID_URI
     }
 
+    /** @param session Keycloak 会话 @return 新的执行器实例 */
     @Override
     public ClientPolicyExecutorProvider create(KeycloakSession session) {
         return new SecureRedirectUrisEnforcerExecutor(session);
     }
 
+    /** 工厂初始化（无全局配置） */
     @Override
     public void init(Scope config) {
     }
 
+    /** 会话工厂就绪回调 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 工厂关闭钩子 */
     @Override
     public void close() {
     }
 
+    /** @return 执行器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "On registering and updating a client, this executor only allows a valid redirect uri. On receiving an authorization request, this executor checks whether a redirect uri parameter matches registered redirect uris in the way that depends on the executor's setting.";
     }
 
+    /** @return 可配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return CONFIG_PROPERTIES;
     }
 
+    /** 管理控制台可配置属性列表（静态初始化） */
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES;
 
     static {

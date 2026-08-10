@@ -30,23 +30,30 @@ import org.keycloak.util.TokenUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * 安全会话参数执行器。
+ * <p>为防范 CSRF：OIDC 流要求 {@code nonce}，纯 OAuth2 流要求 {@code state}。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureSessionEnforceExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
     private static final Logger logger = Logger.getLogger(SecureSessionEnforceExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public SecureSessionEnforceExecutor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** @return 执行器 Provider 标识符 */
     @Override
     public String getProviderId() {
         return SecureSessionEnforceExecutorFactory.PROVIDER_ID;
     }
 
+    /** 按客户端策略事件触发校验逻辑 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -61,6 +68,7 @@ public class SecureSessionEnforceExecutor implements ClientPolicyExecutorProvide
         }
     }
 
+    /** 授权请求阶段校验 nonce 或 state 参数 */
     private void executeOnAuthorizationRequest(
             OIDCResponseType parsedResponseType,
             AuthorizationEndpointRequest request,

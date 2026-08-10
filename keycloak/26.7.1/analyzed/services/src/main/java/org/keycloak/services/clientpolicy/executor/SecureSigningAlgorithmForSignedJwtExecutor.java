@@ -33,13 +33,20 @@ import org.keycloak.services.clientpolicy.ClientPolicyException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
+/**
+ * 已签名 JWT 的安全签名算法执行器。
+ * <p>在令牌/登出等端点校验 {@code client_assertion} JWT 的 JWS 算法是否为 FAPI 允许值；可按配置强制要求 client_assertion 存在。</p>
+ */
 public class SecureSigningAlgorithmForSignedJwtExecutor implements ClientPolicyExecutorProvider<SecureSigningAlgorithmForSignedJwtExecutor.Configuration> {
 
     private static final Logger logger = Logger.getLogger(SecureSigningAlgorithmForSignedJwtExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
+    /** @param session Keycloak 会话 */
     public SecureSigningAlgorithmForSignedJwtExecutor(KeycloakSession session) {
         this.session = session;
     }
@@ -54,12 +61,15 @@ public class SecureSigningAlgorithmForSignedJwtExecutor implements ClientPolicyE
         return Configuration.class;
     }
 
+    /** @return 执行器 Provider 标识符 */
     @Override
     public String getProviderId() {
         return SecureSigningAlgorithmForSignedJwtExecutorFactory.PROVIDER_ID;
     }
 
+    /** client_assertion 校验策略配置 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 是否强制要求请求携带 client_assertion 参数 */
         @JsonProperty("require-client-assertion")
         protected Boolean requireClientAssertion;
 
@@ -72,6 +82,7 @@ public class SecureSigningAlgorithmForSignedJwtExecutor implements ClientPolicyE
         }
     }
 
+    /** 按客户端策略事件触发校验逻辑 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -101,6 +112,7 @@ public class SecureSigningAlgorithmForSignedJwtExecutor implements ClientPolicyE
         }
     }
 
+    /** 校验 JWS 算法是否在 FAPI 允许列表中 */
     private void verifySecureSigningAlgorithm(String signatureAlgorithm) throws ClientPolicyException {
         if (FapiConstant.ALLOWED_ALGORITHMS.contains(signatureAlgorithm)) {
             logger.tracev("Passed. signatureAlgorithm = {0}", signatureAlgorithm);

@@ -27,44 +27,56 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link SuppressRefreshTokenRotationExecutor} 的 Provider 工厂。
+ * <p>注册抑制 refresh token 轮换的执行器，无额外配置项。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SuppressRefreshTokenRotationExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "suppress-refresh-token-rotation";
 
+    /** @param session Keycloak 会话 @return 新的执行器实例 */
     @Override
     public ClientPolicyExecutorProvider create(KeycloakSession session) {
         return new SuppressRefreshTokenRotationExecutor(session);
     }
 
+    /** 工厂初始化（无全局配置） */
     @Override
     public void init(Scope config) {
     }
 
+    /** 会话工厂就绪回调 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 工厂关闭钩子 */
     @Override
     public void close() {
     }
 
+    /** @return 执行器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "When token refresh, it does not return a refreshed refresh token to a client.";
     }
 
+    /** @return 可配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.emptyList();
     }
 
+    /** @return 该执行器在当前环境中始终受支持 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return true;

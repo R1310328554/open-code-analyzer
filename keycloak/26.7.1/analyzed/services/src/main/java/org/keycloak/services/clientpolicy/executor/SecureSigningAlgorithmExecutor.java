@@ -40,30 +40,39 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 安全签名算法执行器。
+ * <p>在客户端注册/更新时校验并强制 OIDC 签名算法属性为 FAPI 允许列表中的值，未指定时写入配置的默认算法（默认 PS256）。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureSigningAlgorithmExecutor implements ClientPolicyExecutorProvider<SecureSigningAlgorithmExecutor.Configuration> {
 
     private static final Logger logger = Logger.getLogger(SecureSigningAlgorithmExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
+    /** 需校验的 OIDC 签名算法客户端属性键 */
     private static final List<String> sigTargets = Arrays.asList(
             OIDCConfigAttributes.USER_INFO_RESPONSE_SIGNATURE_ALG,
             OIDCConfigAttributes.REQUEST_OBJECT_SIGNATURE_ALG,
             OIDCConfigAttributes.ID_TOKEN_SIGNED_RESPONSE_ALG,
             OIDCConfigAttributes.TOKEN_ENDPOINT_AUTH_SIGNING_ALG);
 
+    /** 仅管理 REST API 可用的签名算法属性键（RFC 7591 无对应元数据） */
     private static final List<String> sigTargetsAdminRestApiOnly = Arrays.asList(
             OIDCConfigAttributes.ACCESS_TOKEN_SIGNED_RESPONSE_ALG);
 
+    /** 未指定或不安全时的回退默认算法 */
     private static final String DEFAULT_ALGORITHM_VALUE = Algorithm.PS256;
 
     public SecureSigningAlgorithmExecutor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** @return 执行器 Provider 标识符 */
     @Override
     public String getProviderId() {
         return SecureSigningAlgorithmExecutorFactory.PROVIDER_ID;
@@ -80,7 +89,9 @@ public class SecureSigningAlgorithmExecutor implements ClientPolicyExecutorProvi
         return Configuration.class;
     }
 
+    /** 默认签名算法配置项 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 客户端未指定算法时使用的默认签名算法 */
         @JsonProperty("default-algorithm")
         protected String defaultAlgorithm;
 
@@ -98,6 +109,7 @@ public class SecureSigningAlgorithmExecutor implements ClientPolicyExecutorProvi
         }
     }
 
+    /** 按客户端策略事件触发校验逻辑 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -135,7 +147,7 @@ public class SecureSigningAlgorithmExecutor implements ClientPolicyExecutorProvi
             verifyAndEnforceSecureSigningAlgorithm(sigTarget, clientRep);
         }
 
-        // no client metadata found in RFC 7591 OAuth Dynamic Client Registration Metadata
+        // RFC 7591 动态注册元数据中无 access token 签名算法字段，仅管理 API 校验
         if (byAdminRestApi) {
             for (String sigTarget : sigTargetsAdminRestApiOnly) {
                 verifyAndEnforceSecureSigningAlgorithm(sigTarget, clientRep);
@@ -143,6 +155,7 @@ public class SecureSigningAlgorithmExecutor implements ClientPolicyExecutorProvi
         }
     }
 
+    /** 校验单个签名目标属性，缺失则写入默认算法，不安全则拒绝 */
     private void verifyAndEnforceSecureSigningAlgorithm(String sigTarget, ClientRepresentation clientRep) throws ClientPolicyException {
         Map<String, String> attributes = Optional.ofNullable(clientRep.getAttributes()).orElse(new HashMap<>());
         String sigAlg = attributes.get(sigTarget);
@@ -162,6 +175,7 @@ public class SecureSigningAlgorithmExecutor implements ClientPolicyExecutorProvi
         throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "not allowed signature algorithm.");
     }
 
+    /** 判断算法是否在 {@link FapiConstant#ALLOWED_ALGORITHMS} 允许列表中 */
     private static boolean isSecureAlgorithm(String sigAlg) {
         return FapiConstant.ALLOWED_ALGORITHMS.contains(sigAlg);
     }

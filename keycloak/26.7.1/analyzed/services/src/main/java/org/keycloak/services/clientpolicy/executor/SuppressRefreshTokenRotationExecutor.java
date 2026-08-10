@@ -28,23 +28,30 @@ import org.keycloak.services.clientpolicy.context.TokenRefreshResponseContext;
 import org.jboss.logging.Logger;
 
 /**
+ * 抑制刷新令牌轮换执行器。
+ * <p>在令牌刷新响应阶段移除轮换后的新 refresh token，使客户端仅保留原 refresh token。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SuppressRefreshTokenRotationExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
     private static final Logger logger = Logger.getLogger(SuppressRefreshTokenRotationExecutor.class);
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public SuppressRefreshTokenRotationExecutor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** @return 执行器 Provider 标识符 */
     @Override
     public String getProviderId() {
         return SuppressRefreshTokenRotationExecutorFactory.PROVIDER_ID;
     }
 
+    /** 按客户端策略事件触发校验逻辑 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         ClientPolicyEvent event = context.getEvent();
@@ -53,7 +60,7 @@ public class SuppressRefreshTokenRotationExecutor implements ClientPolicyExecuto
             case TOKEN_REFRESH_RESPONSE:
                 TokenRefreshResponseContext tokenRefreshResponseContext = (TokenRefreshResponseContext)context;
                 TokenManager.AccessTokenResponseBuilder builder = tokenRefreshResponseContext.getAccessTokenResponseBuilder();
-                builder.removeRefreshToken(); // drop rotated refresh token before building a response of a token refresh request
+                builder.removeRefreshToken(); // 构建刷新响应前丢弃轮换后的 refresh token
                 logger.trace("A rorated refresh token was suppressed.");
                 break;
             default :

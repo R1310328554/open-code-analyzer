@@ -41,22 +41,31 @@ import org.jboss.logging.Logger;
 import static org.keycloak.OAuthErrorException.INVALID_REQUEST_OBJECT;
 
 /**
+ * 安全请求对象（Request Object）执行器。
+ * <p>在授权请求阶段校验 OIDC {@code request}/{@code request_uri} 对象：校验 exp/nbf/aud/scope 等声明、可用期、时钟偏差及查询参数与请求对象的一致性。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureRequestObjectExecutor implements ClientPolicyExecutorProvider<SecureRequestObjectExecutor.Configuration> {
 
     private static final Logger logger = Logger.getLogger(SecureRequestObjectExecutor.class);
 
+    /** 默认可用期（秒），源自 FAPI 1.0 Advanced 要求 */
     public static final Integer DEFAULT_AVAILABLE_PERIOD = 3600; // (sec) from FAPI 1.0 Advanced requirement
+    /** 默认允许时钟偏差（秒），源自 FAPI 2.0 要求 */
     public static final Integer DEFAULT_ALLOWED_CLOCK_SKEW = 15; // (sec) from FAPI 2.0 requirement
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
+    /** @param session Keycloak 会话 */
     public SecureRequestObjectExecutor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 初始化配置并为空值填充 FAPI 默认值 */
     @Override
     public void setupConfiguration(SecureRequestObjectExecutor.Configuration config) {
         if (config == null) {
@@ -87,11 +96,14 @@ public class SecureRequestObjectExecutor implements ClientPolicyExecutorProvider
         return Configuration.class;
     }
 
+    /** 请求对象校验配置项 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
         @JsonProperty(SecureRequestObjectExecutorFactory.AVAILABLE_PERIOD)
         protected Integer availablePeriod;
+        /** 是否校验 nbf（Not Before）声明 */
         @JsonProperty(SecureRequestObjectExecutorFactory.VERIFY_NBF)
         protected Boolean verifyNbf;
+        /** 是否要求请求对象加密 */
         @JsonProperty(SecureRequestObjectExecutorFactory.ENCRYPTION_REQUIRED)
         private Boolean encryptionRequired;
         @JsonProperty(SecureRequestObjectExecutorFactory.ALLOWED_CLOCK_SKEW)
@@ -130,11 +142,13 @@ public class SecureRequestObjectExecutor implements ClientPolicyExecutorProvider
         }
     }
 
+    /** @return 执行器 Provider 标识符 */
     @Override
     public String getProviderId() {
         return SecureRequestObjectExecutorFactory.PROVIDER_ID;
     }
 
+    /** 按客户端策略事件触发校验逻辑 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -147,6 +161,7 @@ public class SecureRequestObjectExecutor implements ClientPolicyExecutorProvider
         }
     }
 
+    /** 在授权端点校验 request 对象内容与参数一致性 */
     private void executeOnAuthorizationRequest(AuthorizationRequestContext context) throws ClientPolicyException {
         logger.trace("Authz Endpoint - authz request");
 
@@ -160,7 +175,7 @@ public class SecureRequestObjectExecutor implements ClientPolicyExecutorProvider
         String requestParam = params.getFirst(OIDCLoginProtocol.REQUEST_PARAM);
         String requestUriParam = params.getFirst(OIDCLoginProtocol.REQUEST_URI_PARAM);
 
-        // check whether whether request object exists
+        // 校验 request 或 request_uri 参数至少存在一个
         if (requestParam == null && requestUriParam == null) {
             logger.trace("request object not exist.");
             throwClientPolicyException(OAuthErrorException.INVALID_REQUEST, "Missing parameter: 'request' or 'request_uri'",
@@ -176,27 +191,27 @@ public class SecureRequestObjectExecutor implements ClientPolicyExecutorProvider
                     context);
         }
 
-        // check whether scope exists in both query parameter and request object
+        // 校验 scope 存在于查询参数或 request 对象中
         if (params.getFirst(OIDCLoginProtocol.SCOPE_PARAM) == null && requestObject.get(OIDCLoginProtocol.SCOPE_PARAM) == null) {
             logger.trace("scope object not exist.");
             throwClientPolicyException(OAuthErrorException.INVALID_REQUEST, "Parameter 'scope' missing in the request parameters or in 'request' object",
                     context);
         }
 
-        // check whether "exp" claim exists
+        // 校验 exp 声明存在
         if (requestObject.get("exp") == null) {
             logger.trace("exp claim not incuded.");
             throwClientPolicyException(INVALID_REQUEST_OBJECT, "Missing parameter in the 'request' object: exp", context);
         }
 
-        // check whether request object not expired
+        // 校验 request 对象未过期
         long exp = requestObject.get("exp").asLong();
         if (Time.currentTime() > exp) { // TODO: Time.currentTime() is int while exp is long...
             logger.trace("request object expired.");
             throw new ClientPolicyException(INVALID_REQUEST_OBJECT, "Request Expired");
         }
 
-        // "nbf" check is not needed for FAPI-RW ID2 security profile
+        // FAPI-RW ID2 无需 nbf；FAPI 1.0 Advanced 与 FAPI 2.0 需要
         // while needed for FAPI 1.0 Advanced security profile
         // "nbf" check with clock skew is needed for FAPI 2.0
         if (Optional.ofNullable(configuration.isVerifyNbf()).orElse(Boolean.FALSE).booleanValue()) {
@@ -221,7 +236,7 @@ public class SecureRequestObjectExecutor implements ClientPolicyExecutorProvider
             }
         }
 
-        // check "iat" with clock skew
+        // 结合时钟偏差校验 iat
         if (requestObject.get("iat") != null) {
             long iat = requestObject.get("iat").asLong();
             if (Time.currentTime() < iat - configuration.getAllowedClockSkew().intValue()) { // TODO: Time.currentTime() is int while nbf is long...
@@ -247,14 +262,14 @@ public class SecureRequestObjectExecutor implements ClientPolicyExecutorProvider
             throwClientPolicyException(INVALID_REQUEST_OBJECT, "Missing parameter value in the 'request' object: aud", context);
         }
 
-        // check whether "aud" claim points to this keycloak as authz server
+        // 校验 aud 指向当前 realm 授权服务器
         String iss = Urls.realmIssuer(session.getContext().getUri().getBaseUri(), session.getContext().getRealm().getName());
         if (!aud.contains(iss)) {
             logger.trace("aud not points to the intended realm.");
             throwClientPolicyException(INVALID_REQUEST_OBJECT, "Invalid parameter in the 'request' object: aud", context);
         }
 
-        // confirm whether all parameters in query string are included in the request object, and have the same values
+        // 确认查询参数均包含于 request 对象且值一致
         // argument "request" are parameters overridden by parameters in request object
         Optional<String> incorrectParam = AuthzEndpointRequestParser.KNOWN_REQ_PARAMS.stream()
                 .filter(param -> params.containsKey(param))
@@ -275,12 +290,14 @@ public class SecureRequestObjectExecutor implements ClientPolicyExecutorProvider
         logger.trace("Passed.");
     }
 
+    /** 判断查询参数值是否与 request 对象中对应字段一致 */
     private boolean isSameParameterIncluded(String param, String value, JsonNode requestObject) {
         if (param.equals(OIDCLoginProtocol.REQUEST_PARAM) || param.equals(OIDCLoginProtocol.REQUEST_URI_PARAM)) return true;
         if (requestObject.hasNonNull(param)) return requestObject.get(param).asText().equals(value);
         return false;
     }
 
+    /** PAR 场景下将 invalid_request_object 映射为 invalid_request_uri */
     private void throwClientPolicyException(String error, String message,
             AuthorizationRequestContext context) throws ClientPolicyException {
         if (context.isParRequest() && INVALID_REQUEST_OBJECT.equals(error)) {
