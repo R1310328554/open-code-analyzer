@@ -28,7 +28,10 @@ import org.keycloak.adapters.saml.config.parsers.ResourceLoader;
 import org.jboss.logging.Logger;
 
 /**
- * Utility class that allows for the instantiation and configuration of role mappings providers.
+ * 角色映射提供者的实例化与配置工具类。
+ *
+ * <p>通过 Java {@link ServiceLoader} 发现 {@link RoleMappingsProvider} 实现，
+ * 按 {@code keycloak-saml.xml} 中配置的 id 选择并初始化。</p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
@@ -37,18 +40,15 @@ public class RoleMappingsProviderUtils {
     private static final Logger logger = Logger.getLogger(RoleMappingsProviderUtils.class);
 
     /**
-     * Loads the available implementations of {@link RoleMappingsProvider} and selects the provider that matches the id
-     * that was configured in {@code keycloak-saml.xml}. The selected provider is then initialized with the specified
-     * {@link SamlDeployment}, {@link ResourceLoader} and configuration as specified in {@code keycloak-saml.xml}. If no
-     * provider was configured for the SP then {@code null} is returned.
+     * 加载可用的 {@link RoleMappingsProvider} 实现，选择 id 与
+     * {@code keycloak-saml.xml} 配置匹配的提供者并完成初始化。
      *
-     * @param deployment a reference to the {@link SamlDeployment} that is being built.
-     * @param loader a reference to the {@link ResourceLoader} that allows the provider implementation to load additional
-     *               resources from the SP application WAR.
-     * @param providerConfig the provider configuration properties as configured in {@code keycloak-saml.xml}. Can contain
- *                   an empty properties object if no configuration properties were specified for the provider.
-     * @return the instantiated and initialized {@link RoleMappingsProvider} or {@code null} if no provider was configured
-     *               for the SP.
+     * <p>若 SP 未配置角色映射提供者则返回 {@code null}。</p>
+     *
+     * @param deployment 正在构建的 {@link SamlDeployment} 引用
+     * @param loader 允许从 SP 应用 WAR 加载资源的 {@link ResourceLoader}
+     * @param providerConfig {@code keycloak-saml.xml} 中的提供者配置；无配置属性时可为空 Properties
+     * @return 已实例化并初始化的 {@link RoleMappingsProvider}，未配置时返回 {@code null}
      */
     public static RoleMappingsProvider bootstrapRoleMappingsProvider(final SamlDeployment deployment, final ResourceLoader loader, final SP.RoleMappingsProviderConfig providerConfig) {
         String providerId;
@@ -58,7 +58,7 @@ public class RoleMappingsProviderUtils {
             providerId = providerConfig.getId();
         }
 
-        // load the available role mappings providers and check if one corresponds to the specified id.
+        // 加载所有角色映射提供者，查找与配置 id 匹配的实现
         Map<String, RoleMappingsProvider> roleMappingsProviders = new HashMap<>();
         loadProviders(roleMappingsProviders, RoleMappingsProviderUtils.class.getClassLoader());
         loadProviders(roleMappingsProviders, Thread.currentThread().getContextClassLoader());
@@ -74,10 +74,10 @@ public class RoleMappingsProviderUtils {
     }
 
     /**
-     * Loads the {@code RoleMappingsProvider} implementations using the specified {@code ClassLoader}.
+     * 使用指定 {@link ClassLoader} 通过 ServiceLoader 加载 {@link RoleMappingsProvider} 实现。
      *
-     * @param providers the {@code Map} used to store the loaded providers by id.
-     * @param classLoader the {@code ClassLoader} that is to be used to load to provider implementations.
+     * @param providers 按 id 存储已加载提供者的映射
+     * @param classLoader 用于加载实现类的类加载器
      */
     private static void loadProviders(Map<String, RoleMappingsProvider> providers, ClassLoader classLoader) {
         for (RoleMappingsProvider provider : ServiceLoader.load(RoleMappingsProvider.class, classLoader)) {

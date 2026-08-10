@@ -35,11 +35,19 @@ import org.keycloak.saml.SignatureAlgorithm;
 import org.apache.http.client.HttpClient;
 
 /**
+ * {@link SamlDeployment} 的默认实现，承载 SP 与 IdP 的完整部署配置。
+ *
+ * <p>包含 IdP 元数据、SSO/SLO 服务配置、签名/解密密钥、角色映射提供者及
+ * 主体命名策略等运行时参数。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class DefaultSamlDeployment implements SamlDeployment {
 
+    /**
+     * IdP 单点登录（SSO）服务的默认实现。
+     */
     public static class DefaultSingleSignOnService implements IDP.SingleSignOnService {
         private boolean signRequest;
         private boolean validateResponseSignature;
@@ -113,6 +121,9 @@ public class DefaultSamlDeployment implements SamlDeployment {
         }
     }
 
+    /**
+     * IdP 单点登出（SLO）服务的默认实现。
+     */
     public static class DefaultSingleLogoutService implements IDP.SingleLogoutService {
         private boolean validateRequestSignature;
         private boolean validateResponseSignature;
@@ -196,8 +207,15 @@ public class DefaultSamlDeployment implements SamlDeployment {
         }
     }
 
+    /**
+     * 身份提供者（IdP）配置的默认实现。
+     *
+     * <p>管理 IdP EntityID、SSO/SLO 端点、签名验证密钥定位器及
+     * SAML 元数据获取相关参数。</p>
+     */
     public static class DefaultIDP implements IDP {
 
+        /** 描述符公钥缓存默认 TTL：24 小时（秒） */
         private static final int DEFAULT_CACHE_TTL = 24 * 60 * 60;
 
         private String entityID;
@@ -255,10 +273,15 @@ public class DefaultSamlDeployment implements SamlDeployment {
             this.singleLogoutService = singleLogoutService;
         }
 
+        /**
+         * 刷新签名验证密钥定位器配置。
+         *
+         * <p>若配置了硬编码公钥则优先使用；否则从 IdP SAML 元数据动态获取。</p>
+         */
         public void refreshKeyLocatorConfiguration() {
             this.signatureValidationKeyLocator.clear();
 
-            // When key is set, use that (and only that), otherwise configure dynamic key locator
+            // 配置了硬编码密钥时仅使用该密钥，否则配置动态密钥定位器
             if (! this.signatureValidationKeys.isEmpty()) {
                 this.signatureValidationKeyLocator.add(new HardcodedKeyLocator(this.signatureValidationKeys));
             } else if (this.singleSignOnService != null) {
@@ -279,6 +302,9 @@ public class DefaultSamlDeployment implements SamlDeployment {
             this.client = client;
         }
 
+        /**
+         * 获取 IdP SAML 元数据 URL；未显式配置时默认为 SSO 请求 URL + "/descriptor"。
+         */
         public String getMetadataUrl() {
             return metadataUrl == null ? singleSignOnService.getRequestBindingUrl() + "/descriptor" : metadataUrl;
         }
@@ -298,24 +324,43 @@ public class DefaultSamlDeployment implements SamlDeployment {
         }
     }
 
+    /** IdP 配置 */
     private IDP idp;
+    /** 适配器是否已完成配置 */
     private boolean configured;
+    /** SSL 要求级别 */
     private SslRequired sslRequired = SslRequired.EXTERNAL;
+    /** SP Entity ID */
     private String entityID;
+    /** NameID 策略格式 URI */
     private String nameIDPolicyFormat;
+    /** 是否强制重新认证（ForceAuthn） */
     private boolean forceAuthentication;
+    /** 是否被动认证（IsPassive） */
     private boolean isPassive;
+    /** 登录时是否禁止更换 HTTP Session ID */
     private boolean turnOffChangeSessionIdOnLogin;
+    /** SAML 断言解密私钥 */
     private PrivateKey decryptionKey;
+    /** AuthnRequest 签名密钥对 */
     private KeyPair signingKeyPair;
+    /** 角色属性名集合 */
     private Set<String> roleAttributeNames;
+    /** 角色映射 SPI 提供者 */
     private RoleMappingsProvider roleMappingsProvider;
+    /** 主体名称提取策略 */
     private PrincipalNamePolicy principalNamePolicy = PrincipalNamePolicy.FROM_NAME_ID;
+    /** 从属性提取主体名时使用的属性名 */
     private String principalAttributeName;
+    /** 自定义登出页面 URL */
     private String logoutPage;
+    /** 签名算法 */
     private SignatureAlgorithm signatureAlgorithm;
+    /** 签名规范化方法 URI */
     private String signatureCanonicalizationMethod;
+    /** 是否自动检测 Bearer-Only 请求 */
     private boolean autodetectBearerOnly;
+    /** 是否保留断言的 DOM 形式 */
     private boolean keepDOMAssertion;
 
     @Override

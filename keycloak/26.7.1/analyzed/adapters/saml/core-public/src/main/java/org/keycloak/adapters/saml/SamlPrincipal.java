@@ -32,19 +32,32 @@ import org.keycloak.dom.saml.v2.assertion.NameIDType;
 import org.w3c.dom.Document;
 
 /**
+ * SAML 认证成功后代表当前用户的主体（Principal）。
+ *
+ * <p>封装 SAML 断言中的 NameID、属性集及完整断言对象，供容器安全上下文与
+ * 应用层读取用户身份与角色信息。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SamlPrincipal implements Serializable, Principal {
 
+    /** 默认角色属性名 */
     public static final String DEFAULT_ROLE_ATTRIBUTE_NAME = "Roles";
 
+    /** 按属性名索引的多值属性映射 */
     private MultivaluedHashMap<String, String> attributes = new MultivaluedHashMap<>();
+    /** 按友好名（FriendlyName）索引的多值属性映射 */
     private MultivaluedHashMap<String, String> friendlyAttributes = new MultivaluedHashMap<>();
+    /** 主体显示名称 */
     private String name;
+    /** SAML Subject 标识符 */
     private String samlSubject;
+    /** NameID 格式 URI */
     private String nameIDFormat;
+    /** 解析后的 SAML 断言对象 */
     private AssertionType assertion;
+    /** 保留原始语法的断言 DOM 文档（可选） */
     private Document assertionDocument;
 
     public SamlPrincipal(AssertionType assertion, String name, String samlSubject, String nameIDFormat, MultivaluedHashMap<String, String> attributes, MultivaluedHashMap<String, String> friendlyAttributes) {
@@ -65,36 +78,39 @@ public class SamlPrincipal implements Serializable, Principal {
     }
 
     /**
-     * Get full saml assertion
+     * 获取完整的 SAML 断言对象。
      *
-     * @return
+     * @return 断言对象
      */
     public AssertionType getAssertion() {
         return assertion;
     }
 
     /**
-     * Get SAML subject sent in assertion
+     * 获取断言中 SAML Subject 的标识符。
      *
-     * @return
+     * @return Subject 字符串
      */
     public String getSamlSubject() {
         return samlSubject;
     }
 
     /**
-     * Subject nameID format
+     * 获取 Subject NameID 的格式 URI。
      *
-     * @return
+     * @return NameID 格式
      */
     public String getNameIDFormat() {
         return nameIDFormat;
     }
 
     /**
-     * Subject nameID format
+     * 获取 Subject 的 {@link NameIDType} 对象。
      *
-     * @return
+     * <p>若断言中已包含 NameID 则直接返回；否则根据 {@link #samlSubject}
+     * 与 {@link #nameIDFormat} 构造合成 NameID。</p>
+     *
+     * @return NameID 对象
      */
     public NameIDType getNameID() {
         if (assertion != null
@@ -112,11 +128,12 @@ public class SamlPrincipal implements Serializable, Principal {
         return res;
     }
 
-    /*
-     * The assertion element in DOM format, to respect the original syntax.
-     * It's only available if option <em>keepDOMAssertion</em> is set to true.
+    /**
+     * 以 DOM 格式获取断言元素，保留原始 XML 语法。
      *
-     * @return The document assertion or null
+     * <p>仅当配置项 <em>keepDOMAssertion</em> 为 true 时可用。</p>
+     *
+     * @return 断言 DOM 文档，未保留时为 null
      */
     public Document getAssertionDocument() {
         return assertionDocument;
@@ -128,10 +145,10 @@ public class SamlPrincipal implements Serializable, Principal {
     }
 
     /**
-     * Convenience function that gets Attribute value by attribute name
+     * 按属性名获取属性值列表。
      *
-     * @param name
-     * @return
+     * @param name 属性名
+     * @return 属性值列表（不可变，不存在时返回空列表）
      */
     public List<String> getAttributes(String name) {
         List<String> list = attributes.get(name);
@@ -144,19 +161,19 @@ public class SamlPrincipal implements Serializable, Principal {
     }
 
     /**
-     * Convenience function that gets the attributes associated with this principal
+     * 获取本主体关联的全部属性映射。
      *
-     * @return attributes associated with this principal
+     * @return 属性名到值列表的不可变映射
      */
     public Map<String, List<String>> getAttributes() {
         return Collections.unmodifiableMap(attributes);
     }
 
     /**
-     * Convenience function that gets Attribute value by attribute friendly name
+     * 按友好名（FriendlyName）获取属性值列表。
      *
-     * @param friendlyName
-     * @return
+     * @param friendlyName 属性友好名
+     * @return 属性值列表（不可变，不存在时返回空列表）
      */
     public List<String> getFriendlyAttributes(String friendlyName) {
         List<String> list = friendlyAttributes.get(friendlyName);
@@ -169,30 +186,29 @@ public class SamlPrincipal implements Serializable, Principal {
     }
 
     /**
-     * Convenience function that gets first  value of an attribute by attribute name
+     * 按属性名获取第一个属性值。
      *
-     * @param name
-     * @return
+     * @param name 属性名
+     * @return 第一个属性值，不存在时为 null
      */
     public String getAttribute(String name) {
         return attributes.getFirst(name);
     }
 
     /**
-     * Convenience function that gets first  value of an attribute by attribute name
+     * 按友好名获取第一个属性值。
      *
-     *
-     * @param friendlyName
-     * @return
+     * @param friendlyName 属性友好名
+     * @return 第一个属性值，不存在时为 null
      */
     public String getFriendlyAttribute(String friendlyName) {
         return friendlyAttributes.getFirst(friendlyName);
     }
 
     /**
-     * Get set of all assertion attribute names
+     * 获取断言中所有属性名集合。
      *
-     * @return
+     * @return 不可变的属性名集合
      */
     public Set<String> getAttributeNames() {
         return Collections.unmodifiableSet(attributes.keySet());
@@ -200,9 +216,9 @@ public class SamlPrincipal implements Serializable, Principal {
     }
 
     /**
-     * Get set of all assertion friendly attribute names
+     * 获取断言中所有友好属性名集合。
      *
-     * @return
+     * @return 不可变的友好名集合
      */
     public Set<String> getFriendlyNames() {
         return Collections.unmodifiableSet(friendlyAttributes.keySet());

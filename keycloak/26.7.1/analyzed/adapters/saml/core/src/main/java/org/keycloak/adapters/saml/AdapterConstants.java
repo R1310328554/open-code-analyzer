@@ -18,12 +18,18 @@
 package org.keycloak.adapters.saml;
 
 /**
+ * SAML 适配器内部使用的常量定义。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class AdapterConstants {
+    /** Servlet 上下文参数名：内嵌 XML 适配器配置 */
     public static final String AUTH_DATA_PARAM_NAME="org.keycloak.saml.xml.adapterConfig";
+    /** Servlet 上下文参数名：集群复制容器标识 */
     public static final String REPLICATION_CONFIG_CONTAINER_PARAM_NAME = "org.keycloak.saml.replication.container";
+    /** Servlet 上下文参数名：SSO 会话复制缓存标识 */
     public static final String REPLICATION_CONFIG_SSO_CACHE_PARAM_NAME = "org.keycloak.saml.replication.cache.sso";
+    /** 认证过期时的错误消息键 */
     public static final String AUTHENTICATION_EXPIRED_MESSAGE = "authentication_expired";
 }

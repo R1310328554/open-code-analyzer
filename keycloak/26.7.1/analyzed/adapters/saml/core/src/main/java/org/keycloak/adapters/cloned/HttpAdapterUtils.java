@@ -33,10 +33,22 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 
 /**
+ * SAML 适配器 HTTP 工具类。
+ *
+ * <p>提供从 IdP SAML 元数据描述符下载并提取公钥等能力。</p>
+ *
  * @author <a href="mailto:hmlnarik@redhat.com">Hynek Mlnařík</a>
  */
 public class HttpAdapterUtils {
 
+    /**
+     * 通过 HTTP GET 下载 SAML 描述符并提取其中的密钥信息。
+     *
+     * @param client HTTP 客户端
+     * @param descriptorUrl 描述符 URL
+     * @return 按用途索引的 KeyInfo 映射
+     * @throws HttpClientAdapterException 请求失败或解析出错时抛出
+     */
     public static MultivaluedHashMap<String, KeyInfo> downloadKeysFromSamlDescriptor(HttpClient client, String descriptorUrl) throws HttpClientAdapterException {
         try {
             HttpGet httpRequest = new HttpGet(descriptorUrl);
@@ -66,10 +78,11 @@ public class HttpAdapterUtils {
     }
 
     /**
-     * Parses SAML descriptor and extracts keys from it.
-     * @param xmlStream
-     * @return List of KeyInfo objects containing keys from the descriptor.
-     * @throws IOException
+     * 解析 SAML 描述符 XML 并提取其中的密钥。
+     *
+     * @param xmlStream 描述符 XML 输入流
+     * @return 包含描述符中密钥的 KeyInfo 映射
+     * @throws ParsingException XML 解析失败时抛出
      */
     public static MultivaluedHashMap<String, KeyInfo> extractKeysFromSamlDescriptor(InputStream xmlStream) throws ParsingException {
         Object res = new SamlDescriptorIDPKeysExtractor().parse(xmlStream);

@@ -61,29 +61,37 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 
 /**
- * Abstraction for creating HttpClients. Allows SSL configuration.
+ * 创建 {@link HttpClient} 的构建器抽象，支持 SSL/TLS 与连接池配置。
+ *
+ * <p>供 SAML 适配器与 IdP 建立 HTTPS 通信时使用，可配置信任库、客户端证书、
+ * 主机名校验策略、代理及超时等参数。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class HttpClientBuilder {
+    /**
+     * TLS 主机名校验策略。
+     */
     public static enum HostnameVerificationPolicy {
         /**
-         * Hostname verification is not done on the server's certificate
+         * 不校验服务端证书中的主机名
          */
         ANY,
         /**
-         * Allows wildcards in subdomain names i.e. *.foo.com
+         * 允许子域名通配符，例如 *.foo.com
          */
         WILDCARD,
         /**
-         * CN must match hostname connecting to
+         * 证书的 CN 必须与连接目标主机名完全匹配
          */
         STRICT
     }
 
 
     /**
+     * 透传式信任管理器：接受所有服务端证书（禁用校验时使用）。
+     *
      * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
      * @version $Revision: 1 $
      */
@@ -121,11 +129,11 @@ public class HttpClientBuilder {
 
 
     /**
-     * Socket inactivity timeout
+     * 设置套接字无数据可读时的超时时间。
      *
-     * @param timeout
-     * @param unit
-     * @return
+     * @param timeout 超时数值
+     * @param unit 时间单位
+     * @return 当前构建器（链式调用）
      */
     public HttpClientBuilder socketTimeout(long timeout, TimeUnit unit) {
         this.socketTimeout = timeout;
@@ -134,11 +142,11 @@ public class HttpClientBuilder {
     }
 
     /**
-     * When trying to make an initial socket connection, what is the timeout?
+     * 设置首次建立 TCP 连接的超时时间。
      *
-     * @param timeout
-     * @param unit
-     * @return
+     * @param timeout 超时数值
+     * @param unit 时间单位
+     * @return 当前构建器（链式调用）
      */
     public HttpClientBuilder establishConnectionTimeout(long timeout, TimeUnit unit) {
         this.establishConnectionTimeout = timeout;
@@ -146,42 +154,68 @@ public class HttpClientBuilder {
         return this;
     }
 
+    /**
+     * 设置连接在连接池中的存活时间（TTL）。
+     *
+     * @param ttl 存活时间数值
+     * @param unit 时间单位
+     * @return 当前构建器（链式调用）
+     */
     public HttpClientBuilder connectionTTL(long ttl, TimeUnit unit) {
         this.connectionTTL = ttl;
         this.connectionTTLUnit = unit;
         return this;
     }
 
+    /**
+     * 设置每个路由（目标主机）的最大并发连接数。
+     *
+     * @param maxPooledPerRoute 每路由最大连接数
+     * @return 当前构建器（链式调用）
+     */
     public HttpClientBuilder maxPooledPerRoute(int maxPooledPerRoute) {
         this.maxPooledPerRoute = maxPooledPerRoute;
         return this;
     }
 
+    /**
+     * 设置连接池总容量。
+     *
+     * @param connectionPoolSize 连接池大小；0 表示不使用连接池
+     * @return 当前构建器（链式调用）
+     */
     public HttpClientBuilder connectionPoolSize(int connectionPoolSize) {
         this.connectionPoolSize = connectionPoolSize;
         return this;
     }
 
     /**
-     * Disable trust management and hostname verification. <i>NOTE</i> this is a security
-     * hole, so only set this option if you cannot or do not want to verify the identity of the
-     * host you are communicating with.
+     * 禁用信任管理器与主机名校验。
+     *
+     * <p><i>注意</i>：此选项存在安全风险，仅在无法或不需要验证通信对端身份时使用。</p>
+     *
+     * @return 当前构建器（链式调用）
      */
     public HttpClientBuilder disableTrustManager() {
         this.disableTrustManager = true;
         return this;
     }
 
+    /**
+     * 禁用 HTTP Cookie 缓存（负载均衡场景下避免会话粘连）。
+     *
+     * @return 当前构建器（链式调用）
+     */
     public HttpClientBuilder disableCookieCache() {
         this.disableCookieCache = true;
         return this;
     }
 
     /**
-     * SSL policy used to verify hostnames
+     * 设置 SSL 主机名校验策略。
      *
-     * @param policy
-     * @return
+     * @param policy 校验策略
+     * @return 当前构建器（链式调用）
      */
     public HttpClientBuilder hostnameVerification(HostnameVerificationPolicy policy) {
         this.policy = policy;
@@ -189,22 +223,48 @@ public class HttpClientBuilder {
     }
 
 
+    /**
+     * 设置自定义 {@link SSLContext}。
+     *
+     * @param sslContext SSL 上下文
+     * @return 当前构建器（链式调用）
+     */
     public HttpClientBuilder sslContext(SSLContext sslContext) {
         this.sslContext = sslContext;
         return this;
     }
 
+    /**
+     * 设置服务端证书信任库。
+     *
+     * @param truststore 信任库
+     * @return 当前构建器（链式调用）
+     */
     public HttpClientBuilder trustStore(KeyStore truststore) {
         this.truststore = truststore;
         return this;
     }
 
+    /**
+     * 设置客户端双向 TLS 密钥库及密码。
+     *
+     * @param keyStore 客户端密钥库
+     * @param password 密钥库密码
+     * @return 当前构建器（链式调用）
+     */
     public HttpClientBuilder keyStore(KeyStore keyStore, String password) {
         this.clientKeyStore = keyStore;
         this.clientPrivateKeyPassword = password;
         return this;
     }
 
+    /**
+     * 设置客户端双向 TLS 密钥库及密码（字符数组形式）。
+     *
+     * @param keyStore 客户端密钥库
+     * @param password 密钥库密码
+     * @return 当前构建器（链式调用）
+     */
     public HttpClientBuilder keyStore(KeyStore keyStore, char[] password) {
         this.clientKeyStore = keyStore;
         this.clientPrivateKeyPassword = new String(password);
@@ -240,6 +300,11 @@ public class HttpClientBuilder {
         }
     }
 
+    /**
+     * 根据当前配置构建 {@link HttpClient} 实例。
+     *
+     * @return 配置完成的 HTTP 客户端
+     */
     public HttpClient build() {
         X509HostnameVerifier verifier = null;
         if (this.verifier != null) verifier = new VerifierWrapper(this.verifier);
@@ -336,8 +401,17 @@ public class HttpClientBuilder {
         }
     }
 
+    /**
+     * 根据 {@link AdapterHttpClientConfig} 配置构建 HTTP 客户端。
+     *
+     * <p>自动加载信任库/密钥库、应用超时与代理设置，并禁用 Cookie 缓存
+     * 以避免负载均衡下的会话粘连。</p>
+     *
+     * @param adapterConfig 适配器 HTTP 客户端配置
+     * @return 配置完成的 HTTP 客户端
+     */
     public HttpClient build(AdapterHttpClientConfig adapterConfig) {
-        disableCookieCache(); // disable cookie cache as we don't want sticky sessions for load balancing
+        disableCookieCache(); // 禁用 Cookie 缓存，负载均衡下避免会话粘连
 
         String truststorePath = adapterConfig.getTruststore();
         if (truststorePath != null) {
@@ -390,13 +464,12 @@ public class HttpClientBuilder {
     }
 
     /**
-     * Configures a the proxy to use for auth-server requests if provided.
+     * 若配置中提供了 {@code proxy-url}，则为认证服务器请求设置 HTTP 代理。
      * <p>
-     * If the given {@link AdapterHttpClientConfig} contains the attribute {@code proxy-url} we use the
-     * given URL as a proxy server, otherwise the proxy configuration is ignored.
+     * 若 {@link AdapterHttpClientConfig} 未包含有效代理 URL，则忽略代理配置。
      * </p>
      *
-     * @param adapterConfig
+     * @param adapterConfig 适配器 HTTP 客户端配置
      */
     private void configureProxyForAuthServerIfProvided(AdapterHttpClientConfig adapterConfig) {
 

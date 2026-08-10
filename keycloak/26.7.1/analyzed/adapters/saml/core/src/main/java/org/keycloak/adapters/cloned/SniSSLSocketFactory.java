@@ -47,10 +47,10 @@ import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.protocol.HttpContext;
 
 /**
- * SSLSocketFactory that uses Server Name Indication (SNI) TLS extension.
+ * 支持 SNI（Server Name Indication）TLS 扩展的 {@link SSLSocketFactory}。
  *
- * <p>
- * Originally copied from <b>keycloak-adapter-core</b> project.
+ * <p>在建立 HTTPS 连接时为 SSLSocket 设置目标主机名，使 IdP 能正确选择
+ * 虚拟主机证书。最初从 <b>keycloak-adapter-core</b> 项目复制而来。</p>
  *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  * @author <a href="mailto:hmlnarik@redhat.com">Hynek Mlnařík</a>
@@ -58,6 +58,7 @@ import org.apache.http.protocol.HttpContext;
 public class SniSSLSocketFactory extends SSLSocketFactory {
 
     private static final Logger LOG = Logger.getLogger(SniSSLSocketFactory.class.getName());
+    /** 当 JDK 缺少 setHost() 方法时跳过后续 SNI 应用尝试 */
     private static final AtomicBoolean skipSNIApplication = new AtomicBoolean(false);
 
     public SniSSLSocketFactory(String algorithm, KeyStore keystore, String keyPassword, KeyStore truststore, SecureRandom random, HostNameResolver nameResolver) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, UnrecoverableKeyException {
@@ -116,16 +117,32 @@ public class SniSSLSocketFactory extends SSLSocketFactory {
         super(socketfactory, supportedProtocols, supportedCipherSuites, hostnameVerifier);
     }
 
+    /**
+     * 在连接套接字上应用 SNI 主机名后发起连接。
+     */
     @Override
     public Socket connectSocket(int connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context) throws IOException {
         return super.connectSocket(connectTimeout, applySNI(socket, host.getHostName()), host, remoteAddress, localAddress, context);
     }
 
+    /**
+     * 在分层套接字（TLS 握手）上应用 SNI 主机名。
+     */
     @Override
     public Socket createLayeredSocket(Socket socket, String target, int port, HttpContext context) throws IOException {
         return super.createLayeredSocket(applySNI(socket, target), target, port, context);
     }
 
+    /**
+     * 通过反射调用 SSLSocket 的 {@code setHost} 方法设置 SNI 主机名。
+     *
+     * <p>IBM JDK 无 {@code setHost} 但会自动处理 SNI；其他 JDK 缺失该方法时
+     * 记录警告并跳过后续 SNI 应用（参见 KEYCLOAK-6817）。</p>
+     *
+     * @param socket 待设置的套接字
+     * @param hostname 目标主机名
+     * @return 原套接字（可能已应用 SNI）
+     */
     private Socket applySNI(final Socket socket, String hostname) {
         if (skipSNIApplication.get()) {
             LOG.log(Level.FINE, "Skipping application of SNI because JDK is missing setHost() method.");
@@ -145,9 +162,8 @@ public class SniSSLSocketFactory extends SSLSocketFactory {
                 LOG.log(Level.FINE, "Applied SNI to socket for host {0}", hostname);
             } catch (PrivilegedActionException e) {
                 if (e.getCause() instanceof NoSuchMethodException) {
-                    // For IBM java there is no method with name setHost(), however we don't need to applySNI
-                    // because IBM java is doing it automatically, so we can set lower level of this message
-                    // See: KEYCLOAK-6817
+                    // IBM Java 无 setHost() 方法，但会自动应用 SNI，因此降低日志级别
+                    // 参见：KEYCLOAK-6817
                     Level logLevel = Environment.IS_IBM_JAVA ? Level.FINE : Level.WARNING;
                     LOG.log(logLevel, "Failed to apply SNI to SSLSocket", e);
                     skipSNIApplication.set(true);

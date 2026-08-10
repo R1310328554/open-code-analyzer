@@ -29,59 +29,32 @@ import org.keycloak.adapters.saml.config.parsers.ResourceLoader;
 import org.jboss.logging.Logger;
 
 /**
- * A {@link RoleMappingsProvider} implementation that uses a {@code properties} file to determine the mappings that should be applied
- * to the SAML principal and roles. It is always identified by the id {@code properties-based-role-mapper} in {@code keycloak-saml.xml}.
+ * 基于 {@code properties} 文件的角色映射 {@link RoleMappingsProvider} 实现。
+ *
+ * <p>在 {@code keycloak-saml.xml} 中通过 id {@code properties-based-role-mapper} 引用。
+ * 支持 SAML 角色到应用角色的映射，以及按主体名追加额外角色。</p>
  * <p/>
- * This provider relies on two configuration properties that can be used to specify the location of the {@code properties} file
- * that will be used. First, it checks if the {@code properties.file.location} property has been specified, using the configured
- * value to locate the {@code properties} file in the filesystem. If the configured file is not located, the provider throws a
- * {@link RuntimeException}. The following snippet shows an example of provider using the {@code properties.file.configuration}
- * option to load the {@code roles.properties} file from the {@code /opt/mappers/} directory in the filesystem:
+ * 加载顺序：优先 {@code properties.file.location}（文件系统），其次
+ * {@code properties.resource.location}（WAR 资源），最后默认
+ * {@code /WEB-INF/role-mappings.properties}。
+ * <p/>
+ * properties 文件中键可为角色名或主体名，值为逗号分隔的目标角色列表。
+ * 映射为空字符串的角色将被丢弃；无映射的角色原样保留。
+ * <p/>
+ * 示例 properties 文件：
  *
  * <pre>
- *     <RoleMappingsProvider id="properties-based-role-mapper">
- *         <Property name="properties.file.location" value="/opt/mappers/roles.properties"/>
- *     </RoleMappingsProvider>
- * </pre>
- *
- * If the {@code properties.file.location} configuration property is not present, the provider checks the {@code properties.resource.location}
- * property, using the configured value to load the {@code properties} file from the WAR resource. If no value is found, it
- * finally attempts to load a file named {@code role-mappings.properties} from the {@code WEB-INF} directory of the application.
- * Failure to load the file from the resource will result in the provider throwing a {@link RuntimeException}. The following
- * snippet shows an example of provider using the {@code properties.resource.location} to load the {@code roles.properties}
- * file from the application's {@code /WEB-INF/conf/} directory:
- *
- * <pre>
- *     <RoleMappingsProvider id="properties-based-role-mapper">
- *         <Property name="properties.resource.location" value="/WEB-INF/conf/roles.properties"/>
- *     </RoleMappingsProvider>
- * </pre>
- *
- * The {@code properties} file can contain both roles and principals as keys, and a list of zero or more roles separated by comma
- * as values. When the {@code {@link #map(String, Set)}} method is called, the implementation iterates through the set of roles
- * that were extracted from the assertion and checks, for eache role, if a mapping exists. If the role maps to an empty role,
- * it is discarded. If it maps to a set of one or more different roles, then these roles are set in the result set. If no
- * mapping is found for the role then it is included as is in the result set.
- *
- * Once the roles have been processed, the implementation checks if the principal extracted from the assertion contains an entry
- * in the {@code properties} file. If a mapping for the principal exists, any roles listed as value are added to the result set. This
- * allows the assignment of extra roles to a principal.
- *
- * For example, consider the following {@code properties} file:
- *
- * <pre>
- *     # role to roles mappings
+ *     # 角色到角色的映射
  *     samlRoleA=jeeRoleX,jeeRoleY
  *     samlRoleB=
  *
- *     # principal to roles mappings
+ *     # 主体到角色的映射
  *     kc-user=jeeRoleZ
  * </pre>
  *
- * If the {@code {@link #map(String, Set)}} method is called with {@code kc-user} as principal and a set containing roles
- * {@code samlRoleA,samlRoleB,samlRoleC}, the result set will be formed by the roles {@code jeeRoleX,jeeRoleY,samlRoleC,jeeRoleZ}.
- * In this case, {@code samlRoleA} is mapped to two roles ({@code jeeRoleX,jeeRoleY}), {@code samlRoleB} is discarded as it is
- * mapped to an empty role, {@code samlRoleC} is used as is and the principal is also assigned {@code jeeRoleZ}.
+ * 若 {@link #map(String, Set)} 以 {@code kc-user} 为主体、角色集
+ * {@code samlRoleA,samlRoleB,samlRoleC} 调用，结果集为
+ * {@code jeeRoleX,jeeRoleY,samlRoleC,jeeRoleZ}。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
@@ -89,14 +62,19 @@ public class PropertiesBasedRoleMapper implements RoleMappingsProvider {
 
     private static final Logger logger = Logger.getLogger(PropertiesBasedRoleMapper.class);
 
+    /** 提供者在 keycloak-saml.xml 中的 id */
     public static final String PROVIDER_ID = "properties-based-role-mapper";
 
+    /** 文件系统 properties 路径配置键 */
     private static final String PROPERTIES_FILE_LOCATION = "properties.file.location";
 
+    /** WAR 资源 properties 路径配置键 */
     private static final String PROPERTIES_RESOURCE_LOCATION = "properties.resource.location";
 
+    /** 默认资源路径 */
     private static final String DEFAULT_RESOURCE_LOCATION = "/WEB-INF/role-mappings.properties";
 
+    /** 已加载的角色映射 properties */
     private Properties roleMappings;
 
     @Override
@@ -104,11 +82,18 @@ public class PropertiesBasedRoleMapper implements RoleMappingsProvider {
         return PROVIDER_ID;
     }
 
+    /**
+     * 从文件系统或 WAR 资源加载 properties 映射文件。
+     *
+     * @param deployment SAML 部署配置
+     * @param loader WAR 资源加载器
+     * @param config 来自 keycloak-saml.xml 的提供者配置
+     */
     @Override
     public void init(final SamlDeployment deployment, final ResourceLoader loader, final Properties config) {
 
         this.roleMappings = new Properties();
-        // try to load the properties from the filesystem first.
+        // 优先从文件系统加载 properties
         String path = config.getProperty(PROPERTIES_FILE_LOCATION);
         if (path != null) {
             File file = new File(path);
@@ -123,7 +108,7 @@ public class PropertiesBasedRoleMapper implements RoleMappingsProvider {
                 throw new RuntimeException("Unable to load role mappings from " + path + ": file does not exist in filesystem");
             }
         } else {
-            // try to load the properties from the resource (WAR).
+            // 从 WAR 资源加载 properties
             path = config.getProperty(PROPERTIES_RESOURCE_LOCATION, DEFAULT_RESOURCE_LOCATION);
             InputStream is = loader.getResourceAsStream(path);
             if (is != null) {
@@ -139,24 +124,31 @@ public class PropertiesBasedRoleMapper implements RoleMappingsProvider {
         }
     }
 
+    /**
+     * 将 SAML 断言中的角色映射为应用最终角色集。
+     *
+     * @param principalName 断言中的主体名
+     * @param roles 从断言提取的原始角色集
+     * @return 映射后的最终角色集
+     */
     @Override
     public Set<String> map(final String principalName, final Set<String> roles) {
         if (this.roleMappings == null || this.roleMappings.isEmpty())
             return roles;
 
         Set<String> resolvedRoles = new HashSet<>();
-        // first check if we have role -> role(s) mappings.
+        // 先处理角色 -> 角色(s) 映射
         for (String role : roles) {
             if (this.roleMappings.containsKey(role)) {
-                // role that was mapped to empty string is not considered (it is discarded from the set of specified roles).
+                // 映射为空字符串的角色从结果集中丢弃
                 this.extractRolesIntoSet(role, resolvedRoles);
             } else {
-                // no mapping found for role - add it as is.
+                // 无映射的角色原样保留
                 resolvedRoles.add(role);
             }
         }
 
-        // now check if we have a principal -> role(s) mapping with additional roles to be added.
+        // 再检查主体 -> 角色(s) 映射，追加额外角色
         if (this.roleMappings.containsKey(principalName)) {
             this.extractRolesIntoSet(principalName, resolvedRoles);
         }
@@ -164,11 +156,10 @@ public class PropertiesBasedRoleMapper implements RoleMappingsProvider {
     }
 
     /**
-     * Obtains the list of comma separated roles associated with the specified entry, trims any whitespaces from said roles
-     * and adds them to the specified set.
+     * 从 properties 条目中提取逗号分隔的角色列表，去空白后写入目标集合。
      *
-     * @param entry the entry in the properties file.
-     * @param roles the {@link Set<String>} into which the extracted roles are to be added.
+     * @param entry properties 文件中的键
+     * @param roles 目标角色集合
      */
     private void extractRolesIntoSet(final String entry, final Set<String> roles) {
         String value = this.roleMappings.getProperty(entry);

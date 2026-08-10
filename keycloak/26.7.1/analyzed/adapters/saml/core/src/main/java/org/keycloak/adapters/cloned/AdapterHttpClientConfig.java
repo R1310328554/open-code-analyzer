@@ -18,73 +18,75 @@
 package org.keycloak.adapters.cloned;
 
 /**
- * Configuration options relevant for configuring http client that can be used by adapter.
+ * 适配器 HTTP 客户端相关配置选项。
  *
- * NOTE: keep in sync with core/src/main/java/org/keycloak/representations/adapters/config/AdapterHttpClientConfig.java until unified.
+ * <p>供 SAML 适配器构建与 IdP 通信的 {@code HttpClient} 时使用。</p>
+ *
+ * <p>NOTE: 在统一前需与 core/src/main/java/org/keycloak/representations/adapters/config/AdapterHttpClientConfig.java 保持同步。</p>
  *
  * @author hmlnarik
  */
 public interface AdapterHttpClientConfig {
 
     /**
-     * Returns truststore filename.
+     * 返回信任库（truststore）文件路径。
      */
     String getTruststore();
 
     /**
-     * Returns truststore password.
+     * 返回信任库密码。
      */
     String getTruststorePassword();
 
     /**
-     * Returns keystore with client keys.
+     * 返回客户端密钥库（keystore）路径。
      */
     String getClientKeystore();
 
     /**
-     * Returns keystore password.
+     * 返回客户端密钥库密码。
      */
     String getClientKeystorePassword();
 
     /**
-     * Returns boolean flag whether any hostname verification is done on the server's
-     * certificate, {@code true} means that verification is not done.
+     * 返回是否跳过服务端证书的主机名校验。
      *
-     * @return
+     * <p>{@code true} 表示不校验主机名。</p>
+     *
+     * @return 是否允许任意主机名
      */
     boolean isAllowAnyHostname();
 
     /**
-     * Returns boolean flag whether any trust management and hostname verification is done.
+     * 返回是否禁用信任管理器及主机名校验。
      * <p>
-     * <i>NOTE</i> Disabling trust manager is a security hole, so only set this option
-     * if you cannot or do not want to verify the identity of the
-     * host you are communicating with.
+     * <i>注意</i>：禁用信任管理器存在安全风险，仅在无法或不需要验证
+     * 通信对端身份时使用。
      */
     boolean isDisableTrustManager();
 
     /**
-     * Returns size of connection pool.
+     * 返回 HTTP 连接池大小。
      */
     int getConnectionPoolSize();
 
     /**
-     * Returns URL of HTTP proxy.
+     * 返回 HTTP 代理 URL。
      */
     String getProxyUrl();
 
     /**
-     * Returns timeout for socket waiting for data in milliseconds.
+     * 返回套接字等待数据的超时时间（毫秒）。
      */
     long getSocketTimeout();
 
     /**
-     * Returns timeout for establishing the connection with the remote host in milliseconds.
+     * 返回与远程主机建立连接的超时时间（毫秒）。
      */
     long getConnectionTimeout();
 
     /**
-     * Returns the connection time-to-live
+     * 返回连接存活时间（TTL，毫秒）。
      */
     long getConnectionTTL();
 }

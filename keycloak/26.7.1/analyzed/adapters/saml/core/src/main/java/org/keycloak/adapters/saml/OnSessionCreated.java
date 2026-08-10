@@ -18,9 +18,19 @@
 package org.keycloak.adapters.saml;
 
 /**
+ * SAML 会话创建后的回调接口。
+ *
+ * <p>应用可实现此接口，在适配器成功建立 SAML 会话后执行自定义逻辑
+ *（例如审计、会话属性初始化等）。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface OnSessionCreated {
 
+    /**
+     * SAML 会话创建完成时调用。
+     *
+     * @param samlSession 新创建的 SAML 会话
+     */
     void onSessionCreated(SamlSession samlSession);
 }
