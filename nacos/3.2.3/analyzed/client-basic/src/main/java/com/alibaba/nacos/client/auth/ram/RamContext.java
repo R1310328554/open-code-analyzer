@@ -20,47 +20,60 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * Aliyun RAM context.
+ * <p>RAM 鉴权运行时上下文：持有 AccessKey、SecretKey、RAM 角色名与签名 region，供各 ResourceInjector 生成请求签名。</p>
  *
  * @author xiweng.yy
  */
 public class RamContext {
     
+    /** 阿里云 AccessKey ID */
     private String accessKey;
     
+    /** 阿里云 AccessKey Secret */
     private String secretKey;
     
+    /** 可选 RAM 角色名，走 STS 临时凭证时使用 */
     private String ramRoleName;
     
+    /** V4 签名 region 标识 */
     private String regionId;
     
+    /** @return AccessKey ID */
     public String getAccessKey() {
         return accessKey;
     }
     
+    /** @param accessKey AccessKey ID */
     public void setAccessKey(String accessKey) {
         this.accessKey = accessKey;
     }
     
+    /** @return AccessKey Secret */
     public String getSecretKey() {
         return secretKey;
     }
     
+    /** @param secretKey AccessKey Secret */
     public void setSecretKey(String secretKey) {
         this.secretKey = secretKey;
     }
     
+    /** @return RAM 角色名，可为 null */
     public String getRamRoleName() {
         return ramRoleName;
     }
     
+    /** @param ramRoleName RAM 角色名 */
     public void setRamRoleName(String ramRoleName) {
         this.ramRoleName = ramRoleName;
     }
     
+    /** @return 签名 regionId */
     public String getRegionId() {
         return regionId;
     }
     
+    /** @param regionId 签名 regionId */
     public void setRegionId(String regionId) {
         this.regionId = regionId;
     }
@@ -69,6 +82,7 @@ public class RamContext {
      * Validate the RAM context.
      *
      * @return true if the context is valid
+     *         配置了 RAM 角色名，或 AK/SK 均非空时为 true
      */
     public boolean validate() {
         return StringUtils.isNotBlank(ramRoleName)

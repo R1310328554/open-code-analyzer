@@ -33,6 +33,7 @@ import java.util.Properties;
 
 /**
  * OIDC client context that holds configuration and performs OIDC Discovery.
+ * <p>从 {@link Properties} 读取 issuer、client 凭证与 scope，必要时通过 Issuer 的 {@code .well-known/openid-configuration} 解析 token_endpoint。</p>
  *
  * <p>Reads OIDC configuration from {@link Properties} and optionally performs
  * OIDC Discovery to resolve the token endpoint from the issuer's
@@ -46,16 +47,22 @@ public class OidcClientContext {
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
+    /** OIDC Issuer 地址 */
     private String issuerUri;
     
+    /** OAuth2 客户端 ID */
     private String clientId;
     
+    /** OAuth2 客户端密钥 */
     private String clientSecret;
     
+    /** 请求的 OAuth2 scope */
     private String scope;
     
+    /** 令牌端点 URL（Discovery 或直配） */
     private volatile String tokenEndpoint;
     
+    /** 是否已完成 Discovery 或直配 token 端点 */
     private volatile boolean discovered;
     
     /**
@@ -63,6 +70,7 @@ public class OidcClientContext {
      *
      * @param properties the client properties
      * @return true if OIDC is configured (client-id and client-secret are present)
+     *         当 client-id、client-secret 及 issuer 或 token-endpoint 齐备时为 true
      */
     public boolean init(Properties properties) {
         this.issuerUri = properties.getProperty(OidcClientConstants.PROP_ISSUER_URI);
@@ -71,7 +79,7 @@ public class OidcClientContext {
         this.scope = properties.getProperty(OidcClientConstants.PROP_SCOPE,
             OidcClientConstants.DEFAULT_SCOPE);
         
-        // Allow direct token endpoint override, skipping discovery
+        // 允许直配 token 端点以跳过 Discovery
         String directTokenEndpoint =
             properties.getProperty(OidcClientConstants.PROP_TOKEN_ENDPOINT);
         if (StringUtils.isNotBlank(directTokenEndpoint)) {
@@ -86,6 +94,7 @@ public class OidcClientContext {
      * Check if OIDC is configured with sufficient credentials.
      *
      * @return true if client-id, client-secret and (issuer-uri or token-endpoint) are present
+     *         凭证与端点信息足够发起 Client Credentials 时为 true
      */
     public boolean isConfigured() {
         return StringUtils.isNotBlank(clientId) && StringUtils.isNotBlank(clientSecret)
@@ -99,6 +108,7 @@ public class OidcClientContext {
      * extracts the {@code token_endpoint} field.
      *
      * @return true if discovery succeeds
+     *         HTTP 200 且响应含 token_endpoint 时为 true
      */
     public boolean discover() {
         if (discovered) {
@@ -160,32 +170,39 @@ public class OidcClientContext {
         }
     }
     
+    /** @return Issuer URI */
     public String getIssuerUri() {
         return issuerUri;
     }
     
+    /** @return OAuth2 client-id */
     public String getClientId() {
         return clientId;
     }
     
+    /** @return OAuth2 client-secret */
     public String getClientSecret() {
         return clientSecret;
     }
     
+    /** @return 授权 scope 字符串 */
     public String getScope() {
         return scope;
     }
     
+    /** @return 令牌端点 URL，Discovery 前可能为 null */
     public String getTokenEndpoint() {
         return tokenEndpoint;
     }
     
+    /** @return 是否已解析出可用 token 端点 */
     public boolean isDiscovered() {
         return discovered;
     }
     
     /**
      * Read an InputStream fully into a String (Java 8 compatible).
+     * <p>将 HTTP 响应体完整读入 UTF-8 字符串（兼容 Java 8，无 readAllBytes）。</p>
      *
      * @param inputStream the input stream to read
      * @return the string content

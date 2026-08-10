@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Credential Watcher.
+ * <p>凭证文件与环境变量监视器：启动时加载一次，之后每 {@link #REFRESH_INTERVAL} 检测文件 mtime 或路径变化并热更新 {@link CredentialService}。</p>
  *
  * @author Nacos
  */
@@ -43,18 +44,25 @@ public class CredentialWatcher {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(CredentialWatcher.class);
     
+    /** 轮询间隔（毫秒） */
     private static final long REFRESH_INTERVAL = 10 * 1000L;
     
+    /** 所属凭证服务，用于回写新 Credentials */
     private final CredentialService serviceInstance;
     
+    /** 应用名，参与凭证路径解析与日志 */
     private final String appName;
     
+    /** 当前使用的凭证文件绝对路径，null 表示走环境变量 */
     private String propertyPath;
     
+    /** 是否已停止定时任务 */
     private boolean stopped;
     
+    /** 单线程调度器，执行周期性 reload */
     private final ScheduledExecutorService executor;
     
+    /** 构造并立即加载凭证，随后启动固定延迟轮询任务。 */
     public CredentialWatcher(String appName, CredentialService serviceInstance) {
         this.appName = appName;
         this.serviceInstance = serviceInstance;
@@ -65,6 +73,7 @@ public class CredentialWatcher {
         
         executor.scheduleWithFixedDelay(new Runnable() {
             
+            /** 上次见到的文件 lastModified，用于检测变更 */
             private long modified = 0;
             
             @Override
@@ -94,6 +103,7 @@ public class CredentialWatcher {
     
     /**
      * Stop watcher.
+     * <p>关闭调度线程并标记 stopped，重复调用安全。</p>
      */
     public void stop() {
         if (stopped) {
@@ -108,6 +118,7 @@ public class CredentialWatcher {
         LOGGER.info("[{}] {} is stopped", appName, this.getClass().getSimpleName());
     }
     
+    /** 解析凭证路径并从文件或环境加载，校验后写入 serviceInstance。 */
     private void loadCredential(boolean init) {
         loadPropertyPath(init);
         InputStream propertiesIs = loadPropertyPathToStream();
@@ -124,11 +135,12 @@ public class CredentialWatcher {
                     appName,
                     IdentifyConstants.ACCESS_KEY, IdentifyConstants.SECRET_KEY);
             propertyPath = null;
-            // return;
+            // 凭证无效时仍写入空 Credentials，便于上层感知
         }
         serviceInstance.setCredential(credentials);
     }
     
+    /** 从 Properties 文件流解析 accessKey/secretKey/tenantId（含 Docker 专用键名）。 */
     private boolean loadCredentialFromProperties(InputStream propertiesIs, boolean init,
         Credentials credentials) {
         Properties properties = new Properties();
@@ -185,6 +197,7 @@ public class CredentialWatcher {
         return true;
     }
     
+    /** 从环境变量 {@link IdentifyConstants#ENV_ACCESS_KEY} 等加载凭证。 */
     private boolean loadCredentialFromEnv(boolean init, Credentials credentials) {
         propertyPath = null;
         String accessKey =
@@ -202,6 +215,7 @@ public class CredentialWatcher {
         return true;
     }
     
+    /** 按 classpath、-Dspas.identity、默认 ~/.spas_key/{appName} 顺序解析凭证路径。 */
     private void loadPropertyPath(boolean init) {
         if (propertyPath == null) {
             URL url = ClassLoader.getSystemResource(IdentifyConstants.PROPERTIES_FILENAME);
@@ -234,6 +248,7 @@ public class CredentialWatcher {
         }
     }
     
+    /** 打开凭证文件；失败时回退 default 与 Docker 路径。 */
     private InputStream loadPropertyPathToStream() {
         InputStream propertiesIs = null;
         do {
@@ -257,18 +272,21 @@ public class CredentialWatcher {
         return propertiesIs;
     }
     
+    /** 非 null 时 trim 后写入 accessKey。 */
     private void setAccessKey(Credentials credentials, String accessKey) {
         if (!Objects.isNull(accessKey)) {
             credentials.setAccessKey(accessKey.trim());
         }
     }
     
+    /** 非 null 时 trim 后写入 secretKey。 */
     private void setSecretKey(Credentials credentials, String secretKey) {
         if (!Objects.isNull(secretKey)) {
             credentials.setSecretKey(secretKey.trim());
         }
     }
     
+    /** 非 null 时 trim 后写入 tenantId。 */
     private void setTenantId(Credentials credentials, String tenantId) {
         if (!Objects.isNull(tenantId)) {
             credentials.setTenantId(tenantId.trim());

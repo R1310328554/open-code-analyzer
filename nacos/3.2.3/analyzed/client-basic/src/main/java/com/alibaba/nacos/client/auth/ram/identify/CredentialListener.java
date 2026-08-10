@@ -18,6 +18,7 @@ package com.alibaba.nacos.client.auth.ram.identify;
 
 /**
  * Credential Listener.
+ * <p>凭证变更监听器：当 {@link CredentialService} 检测到 AccessKey/SecretKey 更新时回调。</p>
  *
  * @author Nacos
  */
@@ -25,6 +26,7 @@ public interface CredentialListener {
     
     /**
      * update Credential.
+     * <p>凭证文件或环境变量刷新后触发，实现方应重新加载 RAM 签名上下文。</p>
      */
     void onUpdateCredential();
 }

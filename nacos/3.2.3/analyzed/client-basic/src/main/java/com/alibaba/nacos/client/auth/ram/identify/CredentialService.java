@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Credential Service.
+ * <p>按应用名隔离的 SPAS/RAM 凭证服务：后台 {@link CredentialWatcher} 轮询凭证文件或环境变量，变更时通知 {@link CredentialListener}。</p>
  *
  * @author Nacos
  */
@@ -32,15 +33,20 @@ public final class CredentialService implements SpasCredentialLoader {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(CredentialService.class);
     
+    /** appName 键到单例服务的映射（空串表示默认应用） */
     private static final ConcurrentHashMap<String, CredentialService> INSTANCES =
         new ConcurrentHashMap<>();
     
+    /** 逻辑应用名，用于凭证文件路径与日志 */
     private final String appName;
     
+    /** 当前持有的凭证快照 */
     private Credentials credentials = new Credentials();
     
+    /** 定时检测凭证文件变更的监视器 */
     private final CredentialWatcher watcher;
     
+    /** 可选的凭证更新回调 */
     private CredentialListener listener;
     
     private CredentialService(String appName) {
@@ -55,10 +61,12 @@ public final class CredentialService implements SpasCredentialLoader {
         watcher = new CredentialWatcher(appName, this);
     }
     
+    /** @return 默认应用名的凭证服务单例 */
     public static CredentialService getInstance() {
         return getInstance(null);
     }
     
+    /** @param appName 应用名；null 时使用 {@link IdentifyConstants#NO_APP_NAME} 键 */
     public static CredentialService getInstance(String appName) {
         String key = appName != null ? appName : IdentifyConstants.NO_APP_NAME;
         return INSTANCES.computeIfAbsent(key, k -> new CredentialService(appName));
@@ -73,6 +81,7 @@ public final class CredentialService implements SpasCredentialLoader {
      *
      * @param appName app name
      * @return {@link CredentialService}
+     *         被移除的实例，不存在时为 null
      */
     public static CredentialService freeInstance(String appName) {
         String key = appName != null ? appName : IdentifyConstants.NO_APP_NAME;
@@ -85,6 +94,7 @@ public final class CredentialService implements SpasCredentialLoader {
     
     /**
      * Free service.
+     * <p>停止 Watcher 并记录释放日志。</p>
      */
     public void free() {
         if (watcher != null) {
@@ -98,6 +108,7 @@ public final class CredentialService implements SpasCredentialLoader {
         return credentials;
     }
     
+    /** 更新凭证并在内容变化时通知 listener。 */
     public void setCredential(Credentials credential) {
         boolean changed = !(credentials == credential
             || (credentials != null && credentials.identical(credential)));
@@ -107,6 +118,7 @@ public final class CredentialService implements SpasCredentialLoader {
         }
     }
     
+    /** 设置静态凭证并停止文件监视（不再热更新）。 */
     public void setStaticCredential(Credentials credential) {
         if (watcher != null) {
             watcher.stop();
@@ -114,6 +126,7 @@ public final class CredentialService implements SpasCredentialLoader {
         setCredential(credential);
     }
     
+    /** 注册凭证变更监听器（覆盖式单 listener）。 */
     public void registerCredentialListener(CredentialListener listener) {
         this.listener = listener;
     }

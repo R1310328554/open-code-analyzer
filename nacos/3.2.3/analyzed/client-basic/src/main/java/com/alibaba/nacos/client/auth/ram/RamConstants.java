@@ -18,17 +18,22 @@ package com.alibaba.nacos.client.auth.ram;
 
 /**
  * Ram auth plugin constants.
+ * <p>RAM 鉴权插件 V4 签名相关常量：版本号、HMAC 算法与产品标识等。</p>
  *
  * @author xiweng.yy
  */
 public class RamConstants {
     
+    /** 请求参数/头中的签名版本字段名 */
     public static final String SIGNATURE_VERSION = "signatureVersion";
     
+    /** 签名版本 V4 取值 */
     public static final String V4 = "v4";
     
+    /** V4 签名使用的 HMAC 算法名 */
     public static final String SIGNATURE_V4_METHOD = "HmacSHA256";
     
+    /** V4 签名 product 标识（MSE Nacos） */
     public static final String SIGNATURE_V4_PRODUCE = "mse-nacos";
     
 }

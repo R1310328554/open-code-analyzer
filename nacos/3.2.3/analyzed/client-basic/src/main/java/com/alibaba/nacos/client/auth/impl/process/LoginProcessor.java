@@ -21,6 +21,7 @@ import java.util.Properties;
 
 /**
  * Nacos login processor.
+ * <p>登录处理器 SPI：将客户端 {@link Properties} 转为对 Server 的登录请求，并返回可挂载到后续 RPC/HTTP 的 {@link LoginIdentityContext}。</p>
  *
  * @author Nacos
  */
@@ -28,6 +29,7 @@ public interface LoginProcessor {
     
     /**
      * send request to server and get result.
+     * <p>向 Server 发送登录请求并解析响应；失败时返回 {@code null}。</p>
      *
      * @param properties request properties.
      * @return login identity context.

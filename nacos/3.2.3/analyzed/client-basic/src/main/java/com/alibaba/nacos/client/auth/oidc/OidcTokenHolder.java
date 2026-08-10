@@ -35,6 +35,7 @@ import java.util.StringJoiner;
 
 /**
  * Manages the OIDC Access Token lifecycle using the Client Credentials Grant.
+ * <p>管理 OIDC 访问令牌：向 IdP 换取 token、记录 expires_in 与获取时刻，并在 TTL 剩余约 6.7%–10% 时触发与 {@link com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl} 一致的随机提前刷新。</p>
  *
  * <p>Responsible for:
  * <ul>
@@ -51,10 +52,13 @@ public class OidcTokenHolder {
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
+    /** 当前有效的 access_token 字符串 */
     private volatile String accessToken;
     
+    /** 令牌有效时长（秒），来自 IdP 响应 expires_in */
     private volatile long expiresInSeconds;
     
+    /** 令牌获取成功的本地时间戳（毫秒） */
     private volatile long obtainedAtMs;
     
     /**
@@ -62,6 +66,7 @@ public class OidcTokenHolder {
      *
      * @param context the OIDC client context with configuration
      * @return true if the token was fetched successfully
+     *         POST 200 且 JSON 含 access_token 时为 true
      */
     public boolean fetchToken(OidcClientContext context) {
         String tokenEndpoint = context.getTokenEndpoint();
@@ -74,7 +79,7 @@ public class OidcTokenHolder {
         
         HttpURLConnection connection = null;
         try {
-            // Build form-encoded request body
+            // 构造 application/x-www-form-urlencoded 请求体
             String requestBody = buildTokenRequestBody(context);
             
             connection = (HttpURLConnection) new URL(tokenEndpoint).openConnection();
@@ -128,6 +133,7 @@ public class OidcTokenHolder {
      *
      * @param responseBody the JSON response body
      * @return true if parsing succeeds
+      * <p>OIDC 令牌生命周期；详见类级说明。</p>
      */
     private boolean parseTokenResponse(String responseBody) {
         try {
@@ -140,7 +146,7 @@ public class OidcTokenHolder {
             }
             
             JsonNode expiresInNode = root.get(OidcProtocolConstants.TOKEN_RESPONSE_EXPIRES_IN);
-            long newExpiresIn = 300; // default 5 minutes if not provided
+            long newExpiresIn = 300; // IdP 未返回 expires_in 时默认 5 分钟
             if (expiresInNode != null && !expiresInNode.isNull()) {
                 newExpiresIn = expiresInNode.asLong(300);
             }
@@ -164,6 +170,7 @@ public class OidcTokenHolder {
      *
      * @param context the OIDC client context
      * @return the URL-encoded form body
+      * <p>OIDC 令牌生命周期；详见类级说明。</p>
      */
     private String buildTokenRequestBody(OidcClientContext context) {
         try {
@@ -181,7 +188,7 @@ public class OidcTokenHolder {
             }
             return joiner.toString();
         } catch (UnsupportedEncodingException e) {
-            // Should never happen since UTF-8 is always supported
+            // UTF-8 在标准 JRE 中始终可用，不应到达此分支
             throw new IllegalStateException("UTF-8 encoding not supported", e);
         }
     }
@@ -194,6 +201,7 @@ public class OidcTokenHolder {
      * This is consistent with the refresh strategy used by {@code NacosClientAuthServiceImpl}.
      *
      * @return true if the token should be refreshed
+     *         尚无 token 或已进入随机刷新窗口时为 true
      */
     public boolean isExpiredOrNeedRefresh() {
         if (accessToken == null) {
@@ -212,6 +220,7 @@ public class OidcTokenHolder {
      *
      * @param tokenTtl the token TTL in seconds
      * @return the refresh window in seconds, range [tokenTtl/15, tokenTtl/10]
+     *         刷新窗口秒数，与用户名密码登录策略一致
      */
     long generateTokenRefreshWindow(long tokenTtl) {
         if (tokenTtl <= 0) {
@@ -229,6 +238,7 @@ public class OidcTokenHolder {
      * Get the current access token.
      *
      * @return the access token, or null if not yet obtained
+     *         尚未成功 fetch 时为 null
      */
     public String getAccessToken() {
         return accessToken;
@@ -238,6 +248,7 @@ public class OidcTokenHolder {
      * Get the token TTL in seconds.
      *
      * @return expires_in value from the token response
+     *         IdP 返回的 expires_in（秒）
      */
     public long getExpiresInSeconds() {
         return expiresInSeconds;
@@ -247,6 +258,7 @@ public class OidcTokenHolder {
      * Get the timestamp when the token was obtained.
      *
      * @return time in milliseconds
+     *         本地记录的下一次刷新计算的基准时刻
      */
     public long getObtainedAtMs() {
         return obtainedAtMs;

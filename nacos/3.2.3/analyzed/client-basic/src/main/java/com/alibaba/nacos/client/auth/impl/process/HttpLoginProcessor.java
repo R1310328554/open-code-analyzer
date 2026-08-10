@@ -44,6 +44,7 @@ import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 
 /**
  * Login processor for Http.
+ * <p>基于 HTTP 表单的 Nacos 登录处理器：优先调用 v3 登录接口，404/501 时回退 v1；解析 JSON 中的 accessToken 与 tokenTtl 构建 {@link LoginIdentityContext}。</p>
  *
  * @author Nacos
  */
@@ -51,14 +52,19 @@ public class HttpLoginProcessor implements LoginProcessor {
     
     private static final Logger SECURITY_LOGGER = LoggerFactory.getLogger(HttpLoginProcessor.class);
     
+    /** Nacos 1.x 兼容登录路径 */
     private static final String LOGIN_V1_URL = "/v1/auth/users/login";
     
+    /** Nacos 3.x 登录路径（优先尝试） */
     private static final String LOGIN_V3_URL = "/v3/auth/user/login";
     
+    /** 默认 Web 上下文路径，与 Server 部署一致 */
     public static final String DEFAULT_NACOS_WEB_CONTEXT = "/nacos";
     
+    /** 执行 HTTP 请求的 Nacos 客户端模板 */
     private final NacosRestTemplate nacosRestTemplate;
     
+    /** 注入 REST 模板以发起登录 POST 请求。 */
     public HttpLoginProcessor(NacosRestTemplate nacosRestTemplate) {
         this.nacosRestTemplate = nacosRestTemplate;
     }
@@ -78,6 +84,7 @@ public class HttpLoginProcessor implements LoginProcessor {
             server = getProtocolPrefix() + server;
         }
         
+        // 先走 v3 登录 API
         String url = server + contextPath + LOGIN_V3_URL;
         
         Map<String, String> params = new HashMap<>(2);
@@ -90,6 +97,7 @@ public class HttpLoginProcessor implements LoginProcessor {
             HttpRestResult<String> restResult = nacosRestTemplate.postForm(url, Header.EMPTY,
                 Query.newInstance().initParams(params), bodyMap, String.class);
             int code = restResult.getCode();
+            // 旧版 Server 不支持 v3 时降级 v1
             if (code == NacosException.NOT_FOUND || code == NacosException.SERVER_NOT_IMPLEMENTED) {
                 url = server + contextPath + LOGIN_V1_URL;
                 restResult = nacosRestTemplate.postForm(url, Header.EMPTY,
@@ -126,6 +134,7 @@ public class HttpLoginProcessor implements LoginProcessor {
         }
     }
     
+    /** 根据 JVM 系统属性 {@code nacos.remote.client.tls.enable} 选择 http 或 https 前缀。 */
     private static String getProtocolPrefix() {
         return Boolean.getBoolean(TlsSystemConfig.TLS_ENABLE) ? HTTPS_PREFIX : HTTP_PREFIX;
     }

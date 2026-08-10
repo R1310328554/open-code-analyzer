@@ -28,6 +28,7 @@ import java.util.Properties;
 
 /**
  * OIDC Client Authentication Service implementation.
+ * <p>基于 OIDC 的 Nacos 客户端鉴权实现：通过 OAuth2 Client Credentials 向 IdP 换取 accessToken，并写入 {@link LoginIdentityContext} 供后续请求携带 Bearer 头或 accessToken 参数。</p>
  *
  * <p>Implements the {@link AbstractClientAuthService} SPI to provide OIDC-based
  * authentication for Nacos clients. Uses the OAuth2 Client Credentials Grant
@@ -47,29 +48,33 @@ public class OidcClientAuthServiceImpl extends AbstractClientAuthService {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(OidcClientAuthServiceImpl.class);
     
+    /** 保护上下文初始化与令牌刷新的互斥锁 */
     private final Object refreshLock = new Object();
     
+    /** OIDC 配置与 Discovery 状态 */
     private volatile OidcClientContext context;
     
+    /** 访问令牌生命周期管理 */
     private volatile OidcTokenHolder tokenHolder;
     
+    /** 对外暴露的登录身份上下文 */
     private volatile LoginIdentityContext loginIdentityContext = new LoginIdentityContext();
     
     /**
      * Whether OIDC has been determined to be unconfigured.
-     * Once set to true, subsequent login() calls skip OIDC processing.
+     * 置为 true 后后续 {@link #login(Properties)} 直接跳过 OIDC 流程（未配置 client-id/secret）。
      */
     private volatile boolean oidcNotConfigured = false;
     
     @Override
     public Boolean login(Properties properties) {
         try {
-            // Fast path: if OIDC is already known to be unconfigured, skip
+            // 快速路径：已判定未配置 OIDC 则不再尝试
             if (oidcNotConfigured) {
                 return true;
             }
             
-            // Step 1: Initialize context on first call (double-check locking)
+            // 步骤 1：首次调用时双检锁初始化上下文
             if (context == null) {
                 synchronized (refreshLock) {
                     if (context == null) {
@@ -89,7 +94,7 @@ public class OidcClientAuthServiceImpl extends AbstractClientAuthService {
                 }
             }
             
-            // Step 2: Perform OIDC Discovery if not yet done
+            // 步骤 2：尚未 Discovery 时拉取 .well-known 配置
             if (!context.isDiscovered()) {
                 boolean discoveryResult = context.discover();
                 if (!discoveryResult) {
@@ -99,7 +104,7 @@ public class OidcClientAuthServiceImpl extends AbstractClientAuthService {
                 }
             }
             
-            // Step 3: Fetch or refresh token if needed (double-check locking)
+            // 步骤 3：令牌过期或进入刷新窗口时双检锁刷新
             if (tokenHolder.isExpiredOrNeedRefresh()) {
                 synchronized (refreshLock) {
                     if (tokenHolder.isExpiredOrNeedRefresh()) {
@@ -110,7 +115,7 @@ public class OidcClientAuthServiceImpl extends AbstractClientAuthService {
                             return false;
                         }
                         
-                        // Step 4: Update LoginIdentityContext with new access token (dual header)
+                        // 步骤 4：同步更新 Authorization Bearer 与 accessToken 双通道参数
                         LoginIdentityContext newCtx = new LoginIdentityContext();
                         String token = tokenHolder.getAccessToken();
                         newCtx.setParameter(OidcProtocolConstants.AUTHORIZATION_HEADER,
@@ -131,11 +136,13 @@ public class OidcClientAuthServiceImpl extends AbstractClientAuthService {
         }
     }
     
+    /** {@inheritDoc} 返回含 Bearer 与 accessToken 的 OIDC 身份上下文。 */
     @Override
     public LoginIdentityContext getLoginIdentityContext(RequestResource resource) {
         return this.loginIdentityContext;
     }
     
+    /** {@inheritDoc} 记录 OIDC 客户端鉴权服务关闭日志。 */
     @Override
     public void shutdown() throws NacosException {
         LOGGER.info("[OIDC-CLIENT] Shutting down OIDC client auth service");
