@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T07:00:00Z",
   "files": [
-    "js/apps/admin-ui/src/user/form-state.ts",
-    "js/apps/admin-ui/src/user/routes.ts",
-    "js/apps/admin-ui/src/user/utils.ts",
-    "js/apps/admin-ui/src/user/utils/user-profile.ts",
-    "js/apps/admin-ui/src/util.test.ts",
-    "js/apps/admin-ui/src/util.ts",
-    "js/apps/admin-ui/src/utils/client-url.test.ts",
-    "js/apps/admin-ui/src/utils/client-url.ts",
-    "js/apps/admin-ui/src/utils/generateEncodedPath.ts",
-    "js/apps/admin-ui/src/utils/getAuthorizationHeaders.ts",
-    "js/apps/admin-ui/src/utils/joinPath.test.ts",
-    "js/apps/admin-ui/src/utils/joinPath.ts",
-    "js/apps/admin-ui/src/utils/translationFormatter.ts",
-    "js/apps/admin-ui/src/utils/types.ts",
-    "js/apps/admin-ui/src/utils/useCurrentUser.ts",
     "js/apps/admin-ui/src/utils/useFormatDate.ts",
     "js/apps/admin-ui/src/utils/useIsAdminPermissionsClient.ts",
     "js/apps/admin-ui/src/utils/useIsFeatureEnabled.test.ts",
@@ -33,5 +18,5 @@
     "js/apps/admin-ui/vite.config.ts"
   ],
   "remaining_pending": 4978,
-  "done": 990
+  "done": 1005
 }
