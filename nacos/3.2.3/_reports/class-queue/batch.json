@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T02:05:59Z",
   "files": [
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillPublishForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillScopeForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillSubmitForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/admin/SkillUpdateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/client/SkillQueryForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/skills/client/SkillSearchForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/importer/config/AiResourceImportProperties.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/importer/config/AiResourceImportSourceConfig.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/importer/manager/AiResourceImportManager.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/importer/manager/AiResourceImportPluginManager.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/importer/manager/AiResourceImportSourceManager.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/importer/operator/AiResourceOperator.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/importer/operator/AiResourceOperatorRegistry.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/importer/operator/McpResourceOperator.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/importer/operator/SkillResourceOperator.java",
     "ai/src/main/java/com/alibaba/nacos/ai/importer/security/AiResourceImportSecurityGuard.java",
     "ai/src/main/java/com/alibaba/nacos/ai/index/AbstractMcpServerIndex.java",
     "ai/src/main/java/com/alibaba/nacos/ai/index/CachedMcpServerIndex.java",
@@ -33,5 +18,5 @@
     "ai/src/main/java/com/alibaba/nacos/ai/param/AgentSpecHttpParamExtractor.java"
   ],
   "remaining_pending": 2417,
-  "done": 90
+  "done": 105
 }
