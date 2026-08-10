@@ -19,18 +19,18 @@ package org.keycloak.protocol.oidc.grants.ciba.channel;
 import org.keycloak.provider.Provider;
 
 /**
- * Provides the interface for requesting the authentication(AuthN) and authorization(AuthZ) by an authentication device (AD) to the external entity via Authentication Channel.
- * This interface is for Client Initiated Backchannel Authentication(CIBA).
- * 
+ * CIBA 认证通道提供者接口。
+ * <p>通过认证通道向外部认证设备（AD）发起身份认证与授权请求。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public interface AuthenticationChannelProvider extends Provider {
 
     /**
-     * Request the authentication(AuthN) and authorization(AuthZ) by an authentication device (AD) to the external entity via Authentication Channel.
-     * @param request the representation of Authentication Request received on Backchannel Authentication Endpoint
-     * @param infoUsedByAuthenticator some value to help the AD to identify the user
-     * @return
+     * 经认证通道向外部实体请求 AD 完成认证与授权。
+     * @param request 后台认证端点收到的 {@link CIBAAuthenticationRequest}
+     * @param infoUsedByAuthenticator 供 AD 识别用户的辅助信息（如 login_hint）
+     * @return 请求是否已成功发出
      */
     boolean requestAuthentication(CIBAAuthenticationRequest request, String infoUsedByAuthenticator);
 }

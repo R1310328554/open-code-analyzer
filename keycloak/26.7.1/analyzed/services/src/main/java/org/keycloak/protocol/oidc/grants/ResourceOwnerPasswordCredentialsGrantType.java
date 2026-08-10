@@ -53,8 +53,9 @@ import org.keycloak.util.TokenUtil;
 import org.jboss.logging.Logger;
 
 /**
- * OAuth 2.0 Resource Owner Password Credentials Grant
- * https://datatracker.ietf.org/doc/html/rfc6749#section-4.3
+ * OAuth 2.0 资源所有者密码凭证模式（Resource Owner Password Credentials Grant）实现。
+ * <p>通过 Direct Grant 认证流验证用户名/密码后直接签发令牌。</p>
+ * <p>参见 RFC 6749 第 4.3 节：https://datatracker.ietf.org/doc/html/rfc6749#section-4.3</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a> (et al.)
  */
@@ -62,6 +63,11 @@ public class ResourceOwnerPasswordCredentialsGrantType extends OAuth2GrantTypeBa
 
     private static final Logger logger = Logger.getLogger(ResourceOwnerPasswordCredentialsGrantType.class);
 
+    /**
+     * 用用户名/密码换取访问令牌：校验客户端 direct access 权限并执行 Direct Grant 流。
+     * @param context 授权类型上下文
+     * @return 令牌响应或认证质询
+     */
     @Override
     public Response process(Context context) {
         setContext(context);
@@ -177,11 +183,13 @@ public class ResourceOwnerPasswordCredentialsGrantType extends OAuth2GrantTypeBa
         return cors.add(Response.ok(res, MediaType.APPLICATION_JSON_TYPE));
     }
 
+    /** @return 事件类型 {@link EventType#LOGIN} */
     @Override
     public EventType getEventType() {
         return EventType.LOGIN;
     }
 
+    /** @return 本授权类型无额外令牌参数名 */
     @Override
     public Set<String> getTokenParameterNames() {
         return Collections.emptySet();

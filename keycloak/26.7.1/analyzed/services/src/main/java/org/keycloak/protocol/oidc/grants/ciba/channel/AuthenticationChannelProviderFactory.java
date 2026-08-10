@@ -22,11 +22,15 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link AuthenticationChannelProvider} 工厂接口。
+ * <p>默认在 {@link Profile.Feature#CIBA} 启用时加载实现。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public interface AuthenticationChannelProviderFactory extends ProviderFactory<AuthenticationChannelProvider>,
         EnvironmentDependentProviderFactory {
 
+    /** @return 是否启用 CIBA 特性 */
     @Override
     default boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.CIBA);

@@ -28,16 +28,22 @@ import org.keycloak.validation.ValidationContext;
 import static org.keycloak.common.util.UriUtils.checkUrl;
 
 /**
+ * CIBA 客户端配置校验器。
+ * <p>校验后台令牌投递模式、客户端通知端点 URL 及后台认证请求签名算法。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CibaClientValidation {
 
+    /** 校验上下文，承载错误与待校验客户端 */
     private final ValidationContext<ClientModel> context;
 
+    /** @param context 客户端校验上下文 */
     public CibaClientValidation(ValidationContext<ClientModel> context) {
         this.context = context;
     }
 
+    /** 执行 CIBA 相关客户端属性校验，错误写入 {@link ValidationContext} */
     public void validate() {
         ClientModel client = context.getObjectToValidate();
 
@@ -68,6 +74,7 @@ public class CibaClientValidation {
         }
     }
 
+    /** 判断 CIBA 后台认证请求签名算法是否受支持（仅非对称算法，none 亦允许） */
     private static boolean isSupportedBackchannelAuthenticationRequestSigningAlg(KeycloakSession session, String alg) {
         // Consider removing 'none' . Not sure if we should allow him based on the CIBA specification...
         if (Algorithm.none.name().equals(alg)) {

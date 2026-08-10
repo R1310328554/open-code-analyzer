@@ -39,13 +39,19 @@ import org.keycloak.services.CorsErrorResponseException;
 import org.keycloak.services.managers.AppAuthManager;
 
 /**
- * User-Managed Access (UMA) 2.0 Grant for OAuth 2.0 Authorization
- * https://docs.kantarainitiative.org/uma/wg/rec-oauth-uma-grant-2.0.html#uma-grant-type
+ * UMA 2.0 权限令牌授权模式（Permission Grant）实现。
+ * <p>通过 {@link AuthorizationTokenService} 处理权限请求，签发或更新 RPT（Requesting Party Token）。</p>
+ * <p>规范：https://docs.kantarainitiative.org/uma/wg/rec-oauth-uma-grant-2.0.html#uma-grant-type</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a> (et al.)
  */
 public class PermissionGrantType extends OAuth2GrantTypeBase {
 
+    /**
+     * 处理 UMA 权限令牌请求：解析 bearer/claim/subject 令牌，组装授权请求并调用授权服务。
+     * @param context 授权类型上下文
+     * @return 授权响应（含 RPT 或权限元数据）
+     */
     @Override
     public Response process(Context context) {
         setContext(context);
@@ -187,11 +193,13 @@ public class PermissionGrantType extends OAuth2GrantTypeBase {
         return authorizationResponse;
     }
 
+    /** @return 事件类型 {@link EventType#PERMISSION_TOKEN} */
     @Override
     public EventType getEventType() {
         return EventType.PERMISSION_TOKEN;
     }
 
+    /** @return 本授权类型涉及的令牌参数名（claim_token、subject_token） */
     @Override
     public Set<String> getTokenParameterNames() {
         return Set.of("claim_token", "subject_token");

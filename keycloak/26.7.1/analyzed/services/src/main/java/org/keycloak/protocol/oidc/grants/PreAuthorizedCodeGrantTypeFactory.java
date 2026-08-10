@@ -26,12 +26,14 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import static org.keycloak.protocol.oid4vc.model.PreAuthorizedCodeGrant.PRE_AUTH_GRANT_TYPE;
 
 /**
- * Factory for Pre-Authorized Code Grant
+ * OID4VCI 预授权码模式工厂。
+ * <p>仅在 {@link Profile.Feature#OID4VC_VCI_PREAUTH_CODE} 特性启用时加载。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public class PreAuthorizedCodeGrantTypeFactory implements OAuth2GrantTypeFactory, EnvironmentDependentProviderFactory {
 
+    /** @param session Keycloak 会话 @return 新的 {@link PreAuthorizedCodeGrantType} 实例 */
     @Override
     public OAuth2GrantType create(KeycloakSession session) {
         return new PreAuthorizedCodeGrantType();
@@ -49,16 +51,19 @@ public class PreAuthorizedCodeGrantTypeFactory implements OAuth2GrantTypeFactory
     public void close() {
     }
 
+    /** @return grant_type 值 {@link PreAuthorizedCodeGrant#PRE_AUTH_GRANT_TYPE} */
     @Override
     public String getId() {
         return PRE_AUTH_GRANT_TYPE;
     }
 
+    /** @return 快捷标识 {@code pc} */
     @Override
     public String getShortcut() {
         return "pc";
     }
 
+    /** @return 是否启用 OID4VC 预授权码特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.OID4VC_VCI_PREAUTH_CODE);

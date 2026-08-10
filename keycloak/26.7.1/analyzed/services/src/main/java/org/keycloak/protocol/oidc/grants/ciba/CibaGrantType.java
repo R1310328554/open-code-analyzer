@@ -63,8 +63,9 @@ import org.keycloak.sessions.RootAuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
- * OpenID Connect Client-Initiated Backchannel Authentication Flow
- * https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#rfc.section.10.1
+ * OpenID Connect CIBA 模式（Client-Initiated Backchannel Authentication）令牌端点实现。
+ * <p>用 auth_req_id 轮询后台认证结果，成功后创建用户会话并签发令牌。</p>
+ * <p>规范：https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#rfc.section.10.1</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -72,42 +73,59 @@ public class CibaGrantType extends OAuth2GrantTypeBase {
 
     private static final Logger logger = Logger.getLogger(CibaGrantType.class);
 
+    /** 表单参数：是否需要用户同意 */
     public static final String IS_CONSENT_REQUIRED = "is_consent_required";
+    /** 表单参数：登录提示（用户名等） */
     public static final String LOGIN_HINT = "login_hint";
+    /** 表单参数：登录提示 JWT */
     public static final String LOGIN_HINT_TOKEN = "login_hint_token";
+    /** 表单参数：绑定消息，供认证设备展示 */
     public static final String BINDING_MESSAGE = "binding_message";
+    /** 表单参数：后台认证请求 ID（JWE） */
     public static final String AUTH_REQ_ID = "auth_req_id";
+    /** 表单参数：客户端通知令牌（ping 模式） */
     public static final String CLIENT_NOTIFICATION_TOKEN = "client_notification_token";
+    /** 表单参数：请求的认证有效期（秒） */
     public static final String REQUESTED_EXPIRY = "requested_expiry";
+    /** 表单参数：用户码 */
     public static final String USER_CODE = "user_code";
 
+    /** 表单参数：OIDC request JWT */
     public static final String REQUEST = OIDCLoginProtocol.REQUEST_PARAM;
+    /** 表单参数：OIDC request_uri */
     public static final String REQUEST_URI = OIDCLoginProtocol.REQUEST_URI_PARAM;
     /**
-     * Prefix used to store additional params from the original authentication callback response into {@link AuthenticationSessionModel} note to be available later in Authenticators, RequiredActions etc. Prefix is used to
-     * prevent collisions with internally used notes.
+     * 认证回调响应附加参数写入 {@link AuthenticationSessionModel} client note 的前缀。
+     * <p>避免与内部 note 键冲突，供 Authenticator、RequiredAction 等后续读取。</p>
      *
      * @see AuthenticationSessionModel#getClientNote(String)
      */
     public static final String ADDITIONAL_CALLBACK_PARAMS_PREFIX = "ciba_callback_response_param_";
     /**
-     * Prefix used to store additional params from the backchannel authentication request into {@link AuthenticationSessionModel} note to be available later in Authenticators, RequiredActions etc. Prefix is used to
-     * prevent collisions with internally used notes.
+     * 后台认证请求附加参数写入 {@link AuthenticationSessionModel} client note 的前缀。
+     * <p>避免与内部 note 键冲突。</p>
      *
      * @see AuthenticationSessionModel#getClientNote(String)
      */
     public static final String ADDITIONAL_BACKCHANNEL_REQ_PARAMS_PREFIX = "ciba_backchannel_request_param_";
 
+    /** 构建 CIBA 授权（发起后台认证）端点 URI */
     public static UriBuilder authorizationUrl(UriBuilder baseUriBuilder) {
         UriBuilder uriBuilder = OIDCLoginProtocolService.tokenServiceBaseUrl(baseUriBuilder);
         return uriBuilder.path(OIDCLoginProtocolService.class, "resolveExtension").resolveTemplate("extension", CibaRootEndpoint.PROVIDER_ID, false).path(CibaRootEndpoint.class, "authorize");
     }
 
+    /** 构建 CIBA 认证设备回调端点 URI */
     public static UriBuilder authenticationUrl(UriBuilder baseUriBuilder) {
         UriBuilder uriBuilder = OIDCLoginProtocolService.tokenServiceBaseUrl(baseUriBuilder);
         return uriBuilder.path(OIDCLoginProtocolService.class, "resolveExtension").resolveTemplate("extension", CibaRootEndpoint.PROVIDER_ID, false).path(CibaRootEndpoint.class, "authenticate");
     }
 
+    /**
+     * 用 auth_req_id 换取令牌：反序列化请求、轮询设备码状态并创建用户会话。
+     * @param context 授权类型上下文
+     * @return 令牌响应
+     */
     @Override
     public Response process(Context context) {
         setContext(context);
@@ -207,6 +225,12 @@ public class CibaGrantType extends OAuth2GrantTypeBase {
 
     }
 
+    /**
+     * 根据 CIBA 认证结果创建用户会话，处理同意书与客户端 scope。
+     * @param request 反序列化后的 CIBA 认证请求
+     * @param additionalParams 认证通道回调附加参数
+     * @return 新建的用户会话
+     */
     private UserSessionModel createUserSession(CIBAAuthenticationRequest request, Map<String, String> additionalParams) {
         RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().createRootAuthenticationSession(realm);
         // here Client Model of CD(Consumption Device) needs to be used to bind its Client Session with User Session.
@@ -311,15 +335,18 @@ public class CibaGrantType extends OAuth2GrantTypeBase {
         return userSession;
     }
 
+    /** 输出 CIBA 认证通道调试日志 */
     private static void logDebug(String message, CIBAAuthenticationRequest request) {
         logger.debugf("CIBA Grant :: authentication channel %s clientId = %s, authResultId = %s", message, request.getIssuedFor(), request.getAuthResultId());
     }
 
+    /** @return 事件类型 {@link EventType#AUTHREQID_TO_TOKEN} */
     @Override
     public EventType getEventType() {
         return EventType.AUTHREQID_TO_TOKEN;
     }
 
+    /** @return 本授权类型无额外令牌参数名 */
     @Override
     public Set<String> getTokenParameterNames() {
         return Collections.emptySet();

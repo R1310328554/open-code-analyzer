@@ -68,12 +68,23 @@ import static org.keycloak.protocol.oid4vc.model.ErrorType.UNKNOWN_CREDENTIAL_CO
 import static org.keycloak.protocol.oid4vc.model.PreAuthorizedCodeGrant.PRE_AUTH_GRANT_TYPE;
 import static org.keycloak.services.util.DefaultClientSessionContext.fromClientSessionAndScopeParameter;
 
+/**
+ * OID4VCI 预授权码模式（Pre-Authorized Code Grant）实现。
+ * <p>校验预授权码与凭证要约状态，创建临时用户会话并签发面向凭证端点的访问令牌。</p>
+ * <p>规范：https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html</p>
+ */
 public class PreAuthorizedCodeGrantType extends OAuth2GrantTypeBase {
 
     private static final Logger LOGGER = Logger.getLogger(PreAuthorizedCodeGrantType.class);
 
+    /** 客户端会话 note 键：标识 VC 签发流程类型 */
     public static final String VC_ISSUANCE_FLOW = "VC-Issuance-Flow";
 
+    /**
+     * 用预授权码换取访问令牌：校验 OID4VCI 开关、预授权码、TxCode 与凭证要约。
+     * @param context 授权类型上下文
+     * @return 含 authorization_details 的令牌响应
+     */
     @Override
     public Response process(Context context) {
         LOGGER.debug("Process grant request for preauthorized.");
@@ -263,19 +274,23 @@ public class PreAuthorizedCodeGrantType extends OAuth2GrantTypeBase {
         return cors.allowAllOrigins().add(Response.ok(tokenResponse).type(MediaType.APPLICATION_JSON_TYPE));
     }
 
+    /** @return 事件类型 {@link EventType#VERIFIABLE_CREDENTIAL_PRE_AUTHORIZED_GRANT} */
     @Override
     public EventType getEventType() {
         return EventType.VERIFIABLE_CREDENTIAL_PRE_AUTHORIZED_GRANT;
     }
 
+    /** @return 本授权类型无额外令牌参数名 */
     @Override
     public Set<String> getTokenParameterNames() {
         return Collections.emptySet();
     }
 
     /**
-     * Restrict pre-authorized tokens to the VC credential endpoint.
+     * 限制预授权令牌仅可用于 VC 凭证端点。
+     * <p>校验请求路径与 audience 是否严格匹配凭证端点 URL。</p>
      */
+    /** @param session Keycloak 会话 @param token 待校验访问令牌 @return 是否允许在当前端点使用 */
     @Override
     public boolean isTokenAllowed(KeycloakSession session, AccessToken token) {
         // Check if the request path ends with the credential endpoint path
@@ -296,8 +311,10 @@ public class PreAuthorizedCodeGrantType extends OAuth2GrantTypeBase {
     }
 
     /**
-     * Runs the pre-auth code verification logic using the configured PreAuthCodeHandler provider.
-     * A public, partial view of the CredentialOfferState is returned upon successful verification.
+     * 通过配置的 {@link PreAuthCodeHandler} 校验预授权码。
+     * <p>成功后返回 {@link PreAuthCodeCtx} 公开视图，并写入单次使用存储以防重放。</p>
+     * @param code 预授权码字符串
+     * @return 校验通过后的预授权上下文
      */
     private PreAuthCodeCtx verifyPreAuthCode(String code) {
         PreAuthCodeHandler preAuthCodeHandler = session.getProvider(PreAuthCodeHandler.class);
@@ -335,6 +352,7 @@ public class PreAuthorizedCodeGrantType extends OAuth2GrantTypeBase {
         return preAuthCodeCtx;
     }
 
+    /** 生成预授权码在单次使用存储中的键（类名 + SHA-256 哈希） */
     private static String getPreAuthCodeSingleObjectKey(String code) {
         String hash = HashUtils.sha256UrlEncodedHash(code.trim(), StandardCharsets.UTF_8);
         String fqcn = PreAuthorizedCodeGrantType.class.getName().toLowerCase();

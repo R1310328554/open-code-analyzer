@@ -37,15 +37,22 @@ import static org.keycloak.OAuth2Constants.ACTOR_TOKEN;
 import static org.keycloak.OAuth2Constants.SUBJECT_TOKEN;
 
 /**
- * OAuth 2.0 Authorization Code Grant
- * https://datatracker.ietf.org/doc/html/rfc8693#section-2.1
+ * OAuth 2.0 令牌交换模式（Token Exchange Grant）实现。
+ * <p>选择支持当前请求的 {@link TokenExchangeProvider} 并执行令牌交换。</p>
+ * <p>参见 RFC 8693 第 2.1 节：https://datatracker.ietf.org/doc/html/rfc8693#section-2.1</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a> (et al.)
  */
 public class TokenExchangeGrantType extends OAuth2GrantTypeBase {
 
+    /** 允许多值重复的请求参数名（audience、resource） */
     private static final Set<String> SUPPORTED_DUPLICATED_PARAMETERS = Set.of(OAuth2Constants.AUDIENCE, OAuth2Constants.RESOURCE);
 
+    /**
+     * 处理令牌交换请求：构建 {@link TokenExchangeContext}，选取 Provider 并触发客户端策略。
+     * @param context 授权类型上下文
+     * @return 交换后的令牌响应
+     */
     @Override
     public Response process(Context context) {
         setContext(context);
@@ -95,16 +102,19 @@ public class TokenExchangeGrantType extends OAuth2GrantTypeBase {
         return tokenExchangeProvider.exchange(exchange);
     }
 
+    /** @return 事件类型 {@link EventType#TOKEN_EXCHANGE} */
     @Override
     public EventType getEventType() {
         return EventType.TOKEN_EXCHANGE;
     }
 
+    /** @return 支持重复提交的请求参数集合 */
     @Override
     public Set<String> getSupportedMultivaluedRequestParameters() {
         return SUPPORTED_DUPLICATED_PARAMETERS;
     }
 
+    /** @return 本授权类型涉及的令牌参数名（subject_token、actor_token） */
     @Override
     public Set<String> getTokenParameterNames() {
         return Set.of(SUBJECT_TOKEN, ACTOR_TOKEN);

@@ -43,8 +43,9 @@ import org.keycloak.services.util.MtlsHoKTokenUtil;
 import org.jboss.logging.Logger;
 
 /**
- * OAuth 2.0 Refresh Token Grant
- * https://datatracker.ietf.org/doc/html/rfc6749#section-6
+ * OAuth 2.0 刷新令牌模式（Refresh Token Grant）实现。
+ * <p>校验 refresh_token，委托 {@link RefreshTokenProvider} 续签访问令牌。</p>
+ * <p>参见 RFC 6749 第 6 节：https://datatracker.ietf.org/doc/html/rfc6749#section-6</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a> (et al.)
  */
@@ -52,6 +53,11 @@ public class RefreshTokenGrantType extends OAuth2GrantTypeBase {
 
     private static final Logger logger = Logger.getLogger(RefreshTokenGrantType.class);
 
+    /**
+     * 用刷新令牌换取新的访问令牌（及可选的新 refresh_token）。
+     * @param context 授权类型上下文
+     * @return 令牌响应
+     */
     @Override
     public Response process(Context context) {
         setContext(context);
@@ -125,11 +131,13 @@ public class RefreshTokenGrantType extends OAuth2GrantTypeBase {
         return cors.add(Response.ok(res, MediaType.APPLICATION_JSON_TYPE));
     }
 
+    /** @return 事件类型 {@link EventType#REFRESH_TOKEN} */
     @Override
     public EventType getEventType() {
         return EventType.REFRESH_TOKEN;
     }
     
+    /** @return 本授权类型无额外令牌参数名 */
     @Override
     public Set<String> getTokenParameterNames() {
         return Collections.emptySet();

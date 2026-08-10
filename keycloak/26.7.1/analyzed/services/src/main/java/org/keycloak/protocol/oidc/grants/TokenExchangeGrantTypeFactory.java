@@ -26,27 +26,32 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 /**
- * Factory for OAuth 2.0 Authorization Code Grant
+ * OAuth 2.0 令牌交换模式工厂。
+ * <p>在 {@link Profile.Feature#TOKEN_EXCHANGE} 或 {@link Profile.Feature#TOKEN_EXCHANGE_STANDARD_V2} 启用时加载。</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public class TokenExchangeGrantTypeFactory implements OAuth2GrantTypeFactory, EnvironmentDependentProviderFactory {
 
+    /** @return grant_type 值 {@link OAuth2Constants#TOKEN_EXCHANGE_GRANT_TYPE} */
     @Override
     public String getId() {
         return OAuth2Constants.TOKEN_EXCHANGE_GRANT_TYPE;
     }
 
+    /** @return 快捷标识 {@code te} */
     @Override
     public String getShortcut() {
         return "te";
     }
 
+    /** @param session Keycloak 会话 @return 新的 {@link TokenExchangeGrantType} 实例 */
     @Override
     public OAuth2GrantType create(KeycloakSession session) {
         return new TokenExchangeGrantType();
     }
 
+    /** @return 是否启用令牌交换相关特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return     Profile.isFeatureEnabled(Profile.Feature.TOKEN_EXCHANGE)

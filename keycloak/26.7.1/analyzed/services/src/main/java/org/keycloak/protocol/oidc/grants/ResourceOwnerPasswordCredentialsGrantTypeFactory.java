@@ -24,22 +24,25 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
- * Factory for OAuth 2.0 Resource Owner Password Credentials Grant
+ * OAuth 2.0 资源所有者密码凭证模式工厂。
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public class ResourceOwnerPasswordCredentialsGrantTypeFactory implements OAuth2GrantTypeFactory {
 
+    /** @return grant_type 值 {@link OAuth2Constants#PASSWORD} */
     @Override
     public String getId() {
         return OAuth2Constants.PASSWORD;
     }
 
+    /** @return 快捷标识 {@code ro} */
     @Override
     public String getShortcut() {
         return "ro";
     }
 
+    /** @param session Keycloak 会话 @return 新的 {@link ResourceOwnerPasswordCredentialsGrantType} 实例 */
     @Override
     public OAuth2GrantType create(KeycloakSession session) {
         return new ResourceOwnerPasswordCredentialsGrantType();

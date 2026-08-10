@@ -24,22 +24,25 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
- * Factory for User-Managed Access (UMA) 2.0 Grant for OAuth 2.0 Authorization
+ * UMA 2.0 权限令牌授权模式工厂。
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public class PermissionGrantTypeFactory implements OAuth2GrantTypeFactory {
 
+    /** @return grant_type 值 {@link OAuth2Constants#UMA_GRANT_TYPE} */
     @Override
     public String getId() {
         return OAuth2Constants.UMA_GRANT_TYPE;
     }
 
+    /** @return 快捷标识 {@code pg} */
     @Override
     public String getShortcut() {
         return "pg";
     }
 
+    /** @param session Keycloak 会话 @return 新的 {@link PermissionGrantType} 实例 */
     @Override
     public OAuth2GrantType create(KeycloakSession session) {
         return new PermissionGrantType();

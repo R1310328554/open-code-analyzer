@@ -28,29 +28,35 @@ import org.keycloak.protocol.oidc.grants.OAuth2GrantTypeFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 /**
- * Factory for OpenID Connect Client-Initiated Backchannel Authentication Flow
+ * OpenID Connect CIBA 模式工厂。
+ * <p>仅在 {@link Profile.Feature#CIBA} 特性启用时加载。</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public class CibaGrantTypeFactory implements OAuth2GrantTypeFactory, EnvironmentDependentProviderFactory {
 
+    /** 授权类型快捷标识 {@code ci} */
     public static final String GRANT_SHORTCUT = "ci";
 
+    /** @return grant_type 值 {@link OAuth2Constants#CIBA_GRANT_TYPE} */
     @Override
     public String getId() {
         return OAuth2Constants.CIBA_GRANT_TYPE;
     }
 
+    /** @return 快捷标识 {@link #GRANT_SHORTCUT} */
     @Override
     public String getShortcut() {
         return GRANT_SHORTCUT;
     }
 
+    /** @param session Keycloak 会话 @return 新的 {@link CibaGrantType} 实例 */
     @Override
     public OAuth2GrantType create(KeycloakSession session) {
         return new CibaGrantType();
     }
 
+    /** @return 是否启用 CIBA 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.CIBA);
