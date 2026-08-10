@@ -12,6 +12,10 @@ import io.smallrye.config.ConfigSourceInterceptorContext;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * HTTP 反向代理相关属性映射：proxy-headers、PROXY 协议及
+ * Quarkus {@code quarkus.http.proxy.*} 转发头的派生开关。
+ */
 final class ProxyPropertyMappers implements PropertyMapperGrouping{
 
     @Override
@@ -72,7 +76,7 @@ final class ProxyPropertyMappers implements PropertyMapperGrouping{
     private static String proxyEnabled(ProxyOptions.Headers testHeader, String value, ConfigSourceInterceptorContext context) {
         boolean enabled = false;
 
-        if (value != null) { // proxy-headers explicitly configured
+        if (value != null) { // 已显式配置 proxy-headers
             if (testHeader != null) {
                 enabled = ProxyOptions.Headers.valueOf(value).equals(testHeader);
             } else {

@@ -11,6 +11,10 @@ import io.smallrye.config.ConfigSourceInterceptorContext;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 安全/FIPS 相关属性映射：{@link SecurityOptions#FIPS_MODE} 及
+ * 特性 {@link org.keycloak.common.Profile.Feature#FIPS} 启用时的默认值解析。
+ */
 final class SecurityPropertyMappers implements PropertyMapperGrouping {
 
 

@@ -6,6 +6,9 @@ import org.keycloak.config.TruststoreOptions;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 信任库（truststore）路径、Kubernetes CA 与主机名校验策略映射。
+ */
 public class TruststorePropertyMappers implements PropertyMapperGrouping {
 
     @Override

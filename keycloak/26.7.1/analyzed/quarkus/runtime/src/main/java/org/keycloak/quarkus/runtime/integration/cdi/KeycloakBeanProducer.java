@@ -29,6 +29,10 @@ import org.keycloak.quarkus.runtime.transaction.TransactionalSessionHandler;
 import io.quarkus.arc.Unremovable;
 import org.jboss.logging.Logger;
 
+/**
+ * CDI 生产者：为每个 HTTP 请求提供 {@link KeycloakSession}，
+ * 并在销毁时通过 {@link org.keycloak.quarkus.runtime.transaction.TransactionalSessionHandler} 关闭会话。
+ */
 @ApplicationScoped
 @Unremovable
 public class KeycloakBeanProducer implements TransactionalSessionHandler {
@@ -40,12 +44,12 @@ public class KeycloakBeanProducer implements TransactionalSessionHandler {
 
     @RequestScoped
     public KeycloakSession getKeycloakSession() {
-        // This is triggered lazily on the first method call on the session.
-        // Do not start the transaction here as it could still be inside the event loop when used with a (prematching) filter.
-        // JTA transactions must only be used in a blocking thread, so defer this until later.
+        // 首次调用 session 方法时才懒创建；此处不启动 JTA 事务——
+        // prematching 过滤器可能仍在事件循环中，事务须推迟到阻塞线程。
         return factory.create();
     }
 
+    /** 请求结束时销毁会话；若未主动关闭则记录警告并强制关闭。 */
     void dispose(@Disposes KeycloakSession session) {
         if (!session.isClosed()) {
             logger.warn("Proactive closing of the session was missed - refinements are needed to TransactionSessionHandler related logic");

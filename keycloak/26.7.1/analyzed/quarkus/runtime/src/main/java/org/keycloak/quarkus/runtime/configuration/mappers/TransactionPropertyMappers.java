@@ -13,6 +13,10 @@ import io.smallrye.config.ConfigSourceInterceptorContext;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * JTA/XA 事务相关属性映射：XA 开关、默认/迁移超时及
+ * Quarkus 数据源事务模式字符串转换。
+ */
 public class TransactionPropertyMappers implements PropertyMapperGrouping {
 
     @Override

@@ -23,12 +23,17 @@ import org.keycloak.services.DefaultKeycloakContext;
 import org.keycloak.services.DefaultKeycloakSession;
 import org.keycloak.services.DefaultKeycloakSessionFactory;
 
+/**
+ * Quarkus 运行时 {@link org.keycloak.models.KeycloakSession} 实现：
+ * 使用 {@link org.keycloak.quarkus.runtime.integration.resteasy.QuarkusKeycloakContext} 作为请求上下文。
+ */
 public final class QuarkusKeycloakSession extends DefaultKeycloakSession {
 
     public QuarkusKeycloakSession(DefaultKeycloakSessionFactory factory) {
         super(factory);
     }
 
+    /** {@inheritDoc} 创建 Quarkus 专用 Keycloak 请求上下文。 */
     @Override
     protected DefaultKeycloakContext createKeycloakContext(KeycloakSession session) {
         return new QuarkusKeycloakContext(session);

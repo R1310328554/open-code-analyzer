@@ -24,6 +24,9 @@ import org.keycloak.config.ServerOptions;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 服务端启动相关属性映射：异步 bootstrap 与 health 启用的关联映射。
+ */
 public final class ServerPropertyMappers implements PropertyMapperGrouping {
     @Override
     public List<? extends PropertyMapper<?>> getPropertyMappers() {

@@ -30,6 +30,10 @@ import org.keycloak.quarkus.runtime.themes.QuarkusJarThemeProviderFactory;
 import org.keycloak.services.DefaultKeycloakSessionFactory;
 import org.keycloak.theme.ClasspathThemeProviderFactory;
 
+/**
+ * Quarkus 版 {@link org.keycloak.services.DefaultKeycloakSessionFactory}：
+ * 从预构建 SPI 工厂表初始化 Provider，并产出 {@link QuarkusKeycloakSession}。
+ */
 public final class QuarkusKeycloakSessionFactory extends DefaultKeycloakSessionFactory {
 
     public QuarkusKeycloakSessionFactory(
@@ -74,6 +78,7 @@ public final class QuarkusKeycloakSessionFactory extends DefaultKeycloakSessionF
         return factory;
     }
 
+    /** {@inheritDoc} 创建绑定本工厂的 Quarkus 会话实例。 */
     @Override
     public KeycloakSession create() {
         return new QuarkusKeycloakSession(this);

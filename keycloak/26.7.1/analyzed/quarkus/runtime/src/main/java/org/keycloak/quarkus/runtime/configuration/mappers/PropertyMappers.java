@@ -37,11 +37,19 @@ import io.smallrye.config.Expressions;
 import static org.keycloak.quarkus.runtime.Environment.isRebuildCheck;
 import static org.keycloak.quarkus.runtime.configuration.KeycloakConfigSourceProvider.isKeyStoreConfigSource;
 
+/**
+ * Keycloak 配置属性映射注册表：聚合各 {@link PropertyMapperGrouping}，
+ * 在 SmallRye Config 拦截链中解析 kc/quarkus 键、掩码敏感值并区分构建/运行时映射。
+ */
 public final class PropertyMappers {
 
+    /** SPI 配置键前缀。 */
     public static final String KC_SPI_PREFIX = "kc.spi";
+    /** 敏感配置值的掩码占位符。 */
     public static String VALUE_MASK = "*******";
+    /** 全局映射器索引与通配符配置。 */
     private static MappersConfig MAPPERS;
+    /** 所有属性映射器分组（数据库、HTTP、代理、遥测等）。 */
     private final static List<PropertyMapperGrouping> GROUPINGS;
     static {
         GROUPINGS = List.of(new CachingPropertyMappers(), new DatabasePropertyMappers(),
@@ -73,12 +81,11 @@ public final class PropertyMappers {
     public static ConfigValue getValue(ConfigSourceInterceptorContext context, String name, boolean augmenting) {
         PropertyMapper<?> mapper = getMapper(name);
 
-        // During re-aug do not resolve server runtime properties and avoid including in the quarkus default value config source.
+        // 重新 augment 时不解析服务端运行时属性，避免写入 Quarkus 默认值配置源。
         //
-        // The special handling of log properties is because some logging runtime properties are requested during build time
-        // and we need to resolve them. That should be fine as they are generally not considered security sensitive.
-        // If however expressions are not enabled that means quarkus is specifically looking for runtime defaults, and we should not provide a value
-        // See https://github.com/quarkusio/quarkus/pull/42157
+        // 日志属性例外：部分 quarkus.log.* 在构建期被查询且通常非敏感；
+        // 若表达式未启用，说明 Quarkus 在查找运行时默认值，此时不应返回值。
+        // 参见 https://github.com/quarkusio/quarkus/pull/42157
         if (augmenting && isKeycloakRuntime(name, mapper)
                 && (NestedPropertyMappingInterceptor.getResolvingRoot().or(() -> Optional.of(name))
                         .filter(n -> n.startsWith("quarkus.log.") || n.startsWith("quarkus.console.")).isEmpty()
@@ -93,7 +100,7 @@ public final class PropertyMappers {
     }
 
     public static boolean isSpiBuildTimeProperty(String name) {
-        // we can't require the new property formant until we're ok with a breaking change
+        // 在新属性格式成为破坏性变更前，暂不强制的非 strict 模式
         return isSpiBuildTimeProperty(name, false);
     }
 
@@ -139,6 +146,8 @@ public final class PropertyMappers {
 
     /**
      * Removes all disabled mappers from the runtime/buildtime mappers
+     *
+     * 从运行时/构建时映射表移除当前命令下被禁用的映射器。
      */
     public static void sanitizeDisabledMappers(AbstractCommand command) {
         MAPPERS.sanitizeDisabledMappers(command);
@@ -171,6 +180,8 @@ public final class PropertyMappers {
     
     /**
      * Get the first non-synthetic wildcard matching the given option.
+     *
+     * 获取与给定选项键匹配的首个非 synthetic 通配符映射器。
      */
     public static Optional<WildcardPropertyMapper<?>> getWildcardPropertyMapper(Option<?> option) {
         return MAPPERS.getWildcardMappers().stream()
@@ -195,6 +206,8 @@ public final class PropertyMappers {
 
     /**
      * @return a mutable copy of all known mappers
+     *
+     * 返回所有已知映射器的可变副本集合。
      */
     public static Set<PropertyMapper<?>> getMappers() {
         return MAPPERS.values().stream().flatMap(Collection::stream).collect(Collectors.toCollection(LinkedHashSet::new));
@@ -288,7 +301,7 @@ public final class PropertyMappers {
         @Override
         @SuppressWarnings({"rawtypes", "unchecked"})
         public List<PropertyMapper<?>> get(Object key) {
-            // First check the base mappings
+            // 先查精确键映射
             String strKey = (String) key;
 
             List ret = super.get(key);
@@ -296,9 +309,7 @@ public final class PropertyMappers {
                 return ret;
             }
 
-            // TODO: we may want to introduce a prefix tree here as we add more wildcardMappers
-            // for now we'll just limit ourselves to searching wildcards when we see a quarkus or
-            // keycloak key
+            // TODO: 通配符增多时可引入前缀树；当前仅在 quarkus/keycloak 键上扫描通配符
             ret = wildcardConfig.get(strKey);
             return !ret.isEmpty() ? ret : null;
         }
@@ -313,13 +324,13 @@ public final class PropertyMappers {
         }
 
         public void sanitizeDisabledMappers(AbstractCommand command) {
-            // Initialize profile in order to check state of features. Disable Persisted CS for re-augmentation
+            // 初始化 Profile 以判断特性开关；re-augment 时禁用 PersistedConfigSource
             if (isRebuildCheck()) {
                 PersistedConfigSource.getInstance().runWithDisabled(Environment::getCurrentOrCreateFeatureProfile);
             } else {
                 Environment.getCurrentOrCreateFeatureProfile();
                 if (!command.shouldStart() && !Build.NAME.equals(command.getName())) {
-                    // this will use the deferred logger, which means it may not be seen in some circumstances
+                    // 使用延迟日志，部分场景下可能不可见
                     Profile.getInstance().logUnsupportedFeatures();
                 }
             }
@@ -327,7 +338,7 @@ public final class PropertyMappers {
             sanitizeMappers(buildTimeMappers, disabledBuildTimeMappers, command);
             sanitizeMappers(runtimeTimeMappers, disabledRuntimeMappers, command);
             
-            // enforce single mappings - by dropping multiple mapping synthetics
+            // 强制单一映射：丢弃多余的 synthetic 重复项
             entrySet().stream().forEach(e -> {
                 if (e.getValue().size() <= 1) {
                     return;
@@ -402,6 +413,8 @@ public final class PropertyMappers {
 
     /**
      * Helper class for handling Mappers config for wildcards
+     *
+     * 通配符 {@link WildcardPropertyMapper} 的注册与按键查找辅助类。
      */
     private static class WildcardMappersConfig {
         private final Set<WildcardPropertyMapper<?>> wildcardMappers = new HashSet<>();

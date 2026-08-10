@@ -24,8 +24,13 @@ import static org.keycloak.config.WildcardOptionsUtil.isWildcardOption;
 import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX;
 import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider.NS_QUARKUS_PREFIX;
 
+/**
+ * 通配符属性映射器：支持 {@code log-level-<category>} 等动态键，
+ * 在 kc/quarkus 命名空间间双向解析通配片段并校验字符合法性。
+ */
 public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
 
+    /** 通配符片段允许的字符集校验正则。 */
     private static final Pattern valueValidator = Pattern.compile("[\\[\\]\\$\\-._a-zA-Z0-9]+");
 
     private final BiFunction<String, Set<String>, Set<String>> wildcardKeysTransformer;
@@ -91,7 +96,7 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
         String to = getTo(wildcardValue);
         String from = getFrom(wildcardValue);
         String mapFrom = getMapFrom();
-        // resolve even the mapFrom() value
+        // 同时解析 mapFrom 侧的通配符键
         if (isWildcardOption(mapFrom)) {
             mapFrom = getWildcardNamedKey(mapFrom, wildcardValue);
         }
@@ -102,6 +107,8 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
 
     /**
      * Get connected options mapped to use the wildcard value
+     *
+     * 返回与当前通配符值绑定的关联选项键集合。
      */
     public Set<String> getConnectedOptions(String key) {
         return option.getConnectedOptions().stream()
@@ -114,10 +121,10 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
         if (key.startsWith(fromPrefix)) {
             result = key.substring(fromPrefix.length());
         } else if (key.startsWith(toPrefix) && key.endsWith(toSuffix)) {
-            // TODO: this presumes that the quarkus value is quoted
+            // TODO: 假定 Quarkus 侧通配值带引号
             result = key.substring(toPrefix.length(), key.length() - toSuffix.length());
         }
-        // TODO: it would be nice to warn the user for property file or env entries that look
+        // TODO: 对形似通配符但未通过校验的配置项可考虑告警用户
         // like they should be wildcards, but aren't allowed
         return Optional.ofNullable(result).filter(WildcardPropertyMapper::isValidWildcardValue);
     }
@@ -129,6 +136,8 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
     /**
      * Checks if the given option name matches the wildcard pattern of this option.
      * E.g. check if "log-level-io.quarkus" matches the wildcard pattern "log-level-<category>".
+     *
+     * 判断配置键是否匹配本通配符模式（如 log-level-io.quarkus 对应 log-level-&lt;category&gt;）。
      */
     public boolean matchesWildcardOptionName(String name) {
         return extractWildcardValue(name).isPresent();

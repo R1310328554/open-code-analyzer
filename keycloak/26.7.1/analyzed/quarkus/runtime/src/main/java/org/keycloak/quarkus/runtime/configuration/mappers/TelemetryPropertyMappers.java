@@ -45,13 +45,22 @@ import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvi
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromFeature;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * OpenTelemetry 遥测（日志/指标/公共端点）属性映射：
+ * 将 {@link TelemetryOptions} 映射到 Quarkus OTel 导出器与特性门控。
+ */
 public class TelemetryPropertyMappers implements PropertyMapperGrouping{
     private static final Logger log = Logger.getLogger(TelemetryPropertyMappers.class);
 
+    /** OTel 总开关启用条件：日志/指标/追踪任一组件已开启。 */
     private static final String OTEL_COLLECTOR_ENABLED_MSG = "any of available OpenTelemetry components (Logs, Metrics, Traces) is turned on";
+    /** OTel 日志特性启用时的条件描述。 */
     private static final String OTEL_LOGS_FEATURE_ENABLED_MSG = "feature '%s' is enabled".formatted(Profile.Feature.OPENTELEMETRY_LOGS.getVersionedKey());
+    /** 遥测日志功能已启用时的条件描述。 */
     private static final String OTEL_LOGS_ENABLED_MSG = "Telemetry Logs functionality ('%s') is enabled".formatted(TELEMETRY_LOGS_ENABLED.getKey());
+    /** OTel 指标特性与 metrics 同时启用时的条件描述。 */
     private static final String OTEL_METRICS_FEATURE_ENABLED_MSG = "metrics and feature '%s' are enabled".formatted(Profile.Feature.OPENTELEMETRY_METRICS.getVersionedKey());
+    /** 遥测指标功能已启用时的条件描述。 */
     private static final String OTEL_METRICS_ENABLED_MSG = "metrics ('%s') and Telemetry Metrics functionality ('%s') are enabled".formatted(MetricsOptions.METRICS_ENABLED.getKey(), TELEMETRY_METRICS_ENABLED.getKey());
 
     @Override
@@ -69,7 +78,7 @@ public class TelemetryPropertyMappers implements PropertyMapperGrouping{
                         .validator(TelemetryPropertyMappers::validateEndpoint)
                         .build(),
                 fromOption(TELEMETRY_SERVICE_NAME)
-                        .mapFrom(TracingOptions.TRACING_SERVICE_NAME) // the tracing option is deprecated, but we need to be backward compatible
+                        .mapFrom(TracingOptions.TRACING_SERVICE_NAME) // 追踪选项已弃用，保留向后兼容
                         .isEnabled(TelemetryPropertyMappers::isTelemetryEnabled, OTEL_COLLECTOR_ENABLED_MSG)
                         .to("quarkus.otel.service.name")
                         .paramLabel("name")
@@ -80,7 +89,7 @@ public class TelemetryPropertyMappers implements PropertyMapperGrouping{
                         .paramLabel("protocol")
                         .build(),
                 fromOption(TELEMETRY_RESOURCE_ATTRIBUTES)
-                        .mapFrom(TracingOptions.TRACING_RESOURCE_ATTRIBUTES) // the tracing option is deprecated, but we need to be backward compatible
+                        .mapFrom(TracingOptions.TRACING_RESOURCE_ATTRIBUTES) // 追踪资源属性已弃用，保留向后兼容
                         .isEnabled(TelemetryPropertyMappers::isTelemetryEnabled, OTEL_COLLECTOR_ENABLED_MSG)
                         .to("quarkus.otel.resource.attributes")
                         .paramLabel("attributes")
@@ -88,9 +97,9 @@ public class TelemetryPropertyMappers implements PropertyMapperGrouping{
                 fromOption(TELEMETRY_HEADER)
                         .isEnabled(TelemetryPropertyMappers::isTelemetryEnabled, OTEL_COLLECTOR_ENABLED_MSG)
                         .paramLabel("<value>")
-                        .isMasked(true) // it may contain sensitive information
+                        .isMasked(true) // 可能含敏感信息，输出时掩码
                         .build(),
-                // Telemetry Logs
+                // 遥测日志
                 fromOption(TELEMETRY_LOGS_ENABLED)
                         .isEnabled(TelemetryPropertyMappers::isOtelLogsFeatureEnabled, OTEL_LOGS_FEATURE_ENABLED_MSG)
                         .to("quarkus.otel.logs.enabled")
@@ -125,7 +134,7 @@ public class TelemetryPropertyMappers implements PropertyMapperGrouping{
                         .paramLabel("<value>")
                         .isMasked(true) // it may contain sensitive information
                         .build(),
-                // Telemetry Metrics
+                // 遥测指标
                 fromOption(TELEMETRY_METRICS_ENABLED)
                         .isEnabled(TelemetryPropertyMappers::isOtelMetricsFeatureEnabled, OTEL_METRICS_FEATURE_ENABLED_MSG)
                         .to("quarkus.otel.metrics.enabled")
@@ -240,11 +249,10 @@ public class TelemetryPropertyMappers implements PropertyMapperGrouping{
                 .collect(Collectors.joining(","));
     }
 
-    // cache found prefixes for telemetry headers
+    // 缓存已解析的遥测 HTTP 头通配符
     private static Map<Option<?>, Map<String, String>> TELEMETRY_HEADERS_CACHE;
 
-    // return map with entries for every telemetry option handling headers
-    // -> value is a map of headers specified for the specific option
+    // 返回各遥测头选项 -> 该选项下 header 名/值 的映射
     private static Map<Option<?>, Map<String, String>> getHeaders() {
         if (TELEMETRY_HEADERS_CACHE == null) {
             TELEMETRY_HEADERS_CACHE = new HashMap<>();

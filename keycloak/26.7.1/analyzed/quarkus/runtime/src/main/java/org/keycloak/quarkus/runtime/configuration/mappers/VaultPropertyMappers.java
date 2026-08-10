@@ -6,6 +6,9 @@ import org.keycloak.config.VaultOptions;
 
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 密钥库（Vault）SPI 属性映射：provider、文件/keystore 目录与凭证。
+ */
 final class VaultPropertyMappers implements PropertyMapperGrouping {
 
     @Override

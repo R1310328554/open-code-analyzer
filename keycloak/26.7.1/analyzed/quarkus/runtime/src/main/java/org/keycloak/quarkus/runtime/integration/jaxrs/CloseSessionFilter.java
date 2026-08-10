@@ -39,6 +39,8 @@ import org.keycloak.models.KeycloakSession;
  * This ensures the tranaction is committed and data is written to the database and the caches before the response is closed.
  * Without this filter a request that runs shortly after the first request completed might return still stale data.
  */
+ * 在响应返回前关闭 KeycloakSession，确保事务提交且缓存/数据库已刷盘，避免后续请求读到陈旧数据。
+
 @Provider
 @PreMatching
 @Priority(1)
@@ -75,6 +77,7 @@ public class CloseSessionFilter implements ContainerResponseFilter, org.keycloak
         closeSession();
     }
 
+    /** 委托 {@link org.keycloak.quarkus.runtime.transaction.TransactionalSessionHandler#close} 关闭注入的会话。 */
     private void closeSession() {
         close(session);
     }

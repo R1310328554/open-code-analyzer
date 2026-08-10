@@ -42,8 +42,14 @@ import static org.keycloak.config.TracingOptions.TRACING_SAMPLER_TYPE;
 import static org.keycloak.config.TracingOptions.TRACING_SERVICE_NAME;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 分布式追踪（OpenTelemetry Traces）属性映射：
+ * 采样、端点、JDBC/Infinispan 插桩及导出 HTTP 头。
+ */
 public class TracingPropertyMappers implements PropertyMapperGrouping {
+    /** 追踪选项启用条件：opentelemetry 特性已开启。 */
     private static final String OTEL_FEATURE_ENABLED_MSG = "'opentelemetry' feature is enabled";
+    /** 子选项启用条件：追踪功能已开启。 */
     private static final String TRACING_ENABLED_MSG = "Tracing is enabled";
     private static final Logger log = Logger.getLogger(TracingPropertyMappers.class);
 
@@ -62,12 +68,12 @@ public class TracingPropertyMappers implements PropertyMapperGrouping {
                         .validator(TelemetryPropertyMappers::validateEndpoint)
                         .build(),
                 fromOption(TRACING_SERVICE_NAME)
-                        // mapped to 'telemetry-service-name'
+                        // 实际映射到 telemetry-service-name
                         .isEnabled(TracingPropertyMappers::isTracingEnabled, TRACING_ENABLED_MSG)
                         .paramLabel("name")
                         .build(),
                 fromOption(TRACING_RESOURCE_ATTRIBUTES)
-                        // mapped to 'telemetry-resource-attributes'
+                        // 实际映射到 telemetry-resource-attributes
                         .isEnabled(TracingPropertyMappers::isTracingEnabled, TRACING_ENABLED_MSG)
                         .paramLabel("attributes")
                         .build(),
@@ -107,7 +113,7 @@ public class TracingPropertyMappers implements PropertyMapperGrouping {
                         .isEnabled(TracingPropertyMappers::isTracingEnabled, TRACING_ENABLED_MSG)
                         .to("quarkus.otel.exporter.otlp.traces.headers")
                         .transformer((value, ctx) -> TelemetryPropertyMappers.transformTelemetryHeaders(TRACING_HEADER, value))
-                        .isMasked(true) // it may contain sensitive information
+                        .isMasked(true) // 可能含敏感信息，输出时掩码
                         .build(),
                 fromOption(TRACING_HEADER)
                         .isEnabled(TracingPropertyMappers::isTracingEnabled, TRACING_ENABLED_MSG)
@@ -124,7 +130,7 @@ public class TracingPropertyMappers implements PropertyMapperGrouping {
 
         try {
             var ratio = Double.parseDouble(value);
-            // note: 0.0 is a legal value, see https://quarkus.io/guides/opentelemetry-tracing#sampler
+            // 0.0 为合法采样率，参见 Quarkus OTel 采样文档
             if (ratio < 0.0 || ratio > 1.0) {
                 throw new NumberFormatException();
             }
