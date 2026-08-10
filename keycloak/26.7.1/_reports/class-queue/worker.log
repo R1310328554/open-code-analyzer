@@ -1018,3 +1018,18 @@
 2026-08-10T07:04:28Z DONE js/libs/keycloak-admin-client/src/defs/clientSessionStat.ts wave35b admin-client client/component defs
 2026-08-10T07:04:28Z DONE js/libs/keycloak-admin-client/src/defs/componentExportRepresentation.ts wave35b admin-client client/component defs
 2026-08-10T07:04:28Z DONE js/libs/keycloak-admin-client/src/defs/componentRepresentation.ts wave35b admin-client client/component defs
+2026-08-10T07:04:37Z DONE js/apps/create-keycloak-theme/create.js wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/apps/keycloak-server/scripts/start-server.js wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/eslint.config.js wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/scripts/generate-doc-examples.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/client.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/AccessTokenAccess.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/PermissonRepresentation.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/accessTokenCertConf.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/accessTokenRepresentation.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/addressClaimSet.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/adminEventRepresentation.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/authDetailsRepresentation.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/authenticationExecutionExportRepresentation.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/authenticationExecutionInfoRepresentation.ts wave35a admin-client defs + scripts
+2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/authenticationFlowRepresentation.ts wave35a admin-client defs + scripts

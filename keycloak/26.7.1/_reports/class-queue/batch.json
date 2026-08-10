@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:03:04Z",
-  "files": [
-    "js/apps/create-keycloak-theme/create.js",
-    "js/apps/keycloak-server/scripts/start-server.js",
-    "js/eslint.config.js",
-    "js/libs/keycloak-admin-client/scripts/generate-doc-examples.ts",
-    "js/libs/keycloak-admin-client/src/client.ts",
-    "js/libs/keycloak-admin-client/src/defs/AccessTokenAccess.ts",
-    "js/libs/keycloak-admin-client/src/defs/PermissonRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/accessTokenCertConf.ts",
-    "js/libs/keycloak-admin-client/src/defs/accessTokenRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/addressClaimSet.ts",
-    "js/libs/keycloak-admin-client/src/defs/adminEventRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/authDetailsRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/authenticationExecutionExportRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/authenticationExecutionInfoRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/authenticationFlowRepresentation.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4948,
-  "done": 1035
+  "done": 1050
 }
