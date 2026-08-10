@@ -12,20 +12,8 @@
     "web/ui/react-app/src/pages/graph/GraphHelpers.test.ts",
     "web/ui/react-app/src/pages/graph/GraphHelpers.ts",
     "web/ui/react-app/src/pages/graph/HistogramHelpers.ts",
-    "web/ui/react-app/src/pages/index.ts",
-    "web/ui/react-app/src/pages/targets/__testdata__/testdata.ts",
-    "web/ui/react-app/src/pages/targets/target.test.ts",
-    "web/ui/react-app/src/pages/targets/target.ts",
-    "web/ui/react-app/src/react-app-env.d.ts",
-    "web/ui/react-app/src/setupProxy.js",
-    "web/ui/react-app/src/setupTests.ts",
-    "web/ui/react-app/src/types/index.d.ts",
-    "web/ui/react-app/src/types/types.ts",
-    "web/ui/react-app/src/utils/index.ts",
-    "web/ui/react-app/src/utils/utils.test.ts",
-    "web/ui/ui.go",
-    "web/web.go"
+    "web/ui/react-app/src/pages/index.ts"
   ],
   "remaining_pending": 0,
-  "done": 510
+  "done": 522
 }

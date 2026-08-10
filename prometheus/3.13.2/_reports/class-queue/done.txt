@@ -508,3 +508,15 @@ web/ui/module/codemirror-promql/src/lint/index.ts
 web/ui/module/codemirror-promql/src/parser/index.ts
 web/ui/module/codemirror-promql/src/parser/matcher.test.ts
 web/ui/module/codemirror-promql/src/parser/matcher.ts
+web/ui/react-app/src/pages/targets/__testdata__/testdata.ts
+web/ui/react-app/src/pages/targets/target.test.ts
+web/ui/react-app/src/pages/targets/target.ts
+web/ui/react-app/src/react-app-env.d.ts
+web/ui/react-app/src/setupProxy.js
+web/ui/react-app/src/setupTests.ts
+web/ui/react-app/src/types/index.d.ts
+web/ui/react-app/src/types/types.ts
+web/ui/react-app/src/utils/index.ts
+web/ui/react-app/src/utils/utils.test.ts
+web/ui/ui.go
+web/web.go
