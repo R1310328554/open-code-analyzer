@@ -6,23 +6,21 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderEvent;
 
 /**
- * Defines a provider interface for handling and converting events into workflow events.
+ * 工作流事件提供者：将 Keycloak 事件转换为 {@link WorkflowEvent} 并参与条件评估。
  * </p>
- * Implementations of this interface are responsible for determining whether specific
- * events (user events, admin events, or provider events) are supported, converting them
- * to workflow events, and evaluating workflow conditions based on these events.
+ * 实现类需判断用户事件、管理事件或 {@link org.keycloak.provider.ProviderEvent} 是否受支持，并完成转换与 {@link WorkflowExecutionContext} 下的匹配评估。
  */
 public interface WorkflowEventProvider extends Provider {
 
     /**
-     * Returns the {@link ResourceType} that this event provider is capable of handling.
+     * 返回本事件提供者所处理的 {@link ResourceType}。
      *
      * @return the supported ResourceType for this event provider implementation
      */
     ResourceType getSupportedResourceType();
 
     /**
-     * Creates a {@link WorkflowEvent} from a user {@link Event}.
+     * 将用户 {@link Event} 转换为 {@link WorkflowEvent}。
      *
      * @param event the user event to convert
      * @return a WorkflowEvent representing the given event, or {@code null} if the event is not supported
@@ -30,7 +28,7 @@ public interface WorkflowEventProvider extends Provider {
     WorkflowEvent create(Event event);
 
     /**
-     * Creates a {@link WorkflowEvent} from an {@link AdminEvent}.
+     * 将 {@link AdminEvent} 转换为 {@link WorkflowEvent}。
      *
      * @param adminEvent the admin event to convert
      * @return a WorkflowEvent representing the given admin event, or {@code null} if the event is not supported
@@ -38,7 +36,7 @@ public interface WorkflowEventProvider extends Provider {
     WorkflowEvent create(AdminEvent adminEvent);
 
     /**
-     * Creates a {@link WorkflowEvent} from a {@link ProviderEvent}.
+     * 将 {@link ProviderEvent} 转换为 {@link WorkflowEvent}。
      *
      * @param providerEvent the provider event to convert
      * @return a WorkflowEvent representing the given provider event, or {@code null} if the event is not supported
@@ -46,7 +44,7 @@ public interface WorkflowEventProvider extends Provider {
     WorkflowEvent create(ProviderEvent providerEvent);
 
     /**
-     * Determines whether this provider supports the given user {@link Event}.
+     * 判断本提供者是否支持给定用户 {@link Event}。
      *
      * @param event the user event to check
      * @return {@code true} if the event is supported, {@code false} otherwise
@@ -54,7 +52,7 @@ public interface WorkflowEventProvider extends Provider {
     boolean supports(Event event);
 
     /**
-     * Determines whether this provider supports the given {@link AdminEvent}.
+     * 判断本提供者是否支持给定 {@link AdminEvent}。
      *
      * @param adminEvent the admin event to check
      * @return {@code true} if the event is supported, {@code false} otherwise
@@ -62,7 +60,7 @@ public interface WorkflowEventProvider extends Provider {
     boolean supports(AdminEvent adminEvent);
 
     /**
-     * Determines whether this provider supports the given {@link ProviderEvent}.
+     * 判断本提供者是否支持给定 {@link ProviderEvent}。
      *
      * @param providerEvent the provider event to check
      * @return {@code true} if the event is supported, {@code false} otherwise
@@ -70,10 +68,9 @@ public interface WorkflowEventProvider extends Provider {
     boolean supports(ProviderEvent providerEvent);
 
     /**
-     * Evaluates whether the event in the workflow execution context matches this provider's criteria.
+     * 评估执行上下文中的工作流事件是否匹配本提供者的判定条件。
      * </p>
-     * Implementations should inspect the workflow event in the provided {@code context} and return
-     * {@code true} when the event matches the provider's specific conditions.
+     * 实现应检查 {@code context} 中的 {@link WorkflowEvent}，满足特定条件时返回 {@code true}。
      *
      * @param context the execution context for the workflow evaluation
      * @return {@code true} if the event matches the criteria, {@code false} otherwise

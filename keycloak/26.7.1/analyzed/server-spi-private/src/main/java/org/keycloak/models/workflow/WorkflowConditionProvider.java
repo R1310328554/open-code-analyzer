@@ -9,29 +9,23 @@ import jakarta.persistence.criteria.Root;
 import org.keycloak.provider.Provider;
 
 /**
- * Defines a provider interface for evaluating conditions within workflow executions.
+ * 工作流条件评估提供者接口。
  * </p>
- * Implementations of this interface are responsible for determining whether specific
- * conditions are met based on the context of a workflow execution, as well as providing
- * JPA Criteria API predicates for querying resources based on these conditions.
+ * 实现类根据 {@link WorkflowExecutionContext} 判断条件是否满足，并可生成 JPA Criteria API {@link Predicate} 用于批量筛选资源。
  */
 public interface WorkflowConditionProvider extends Provider {
 
     /**
-     * Returns the {@link }ResourceType} that this condition is capable of evaluating.
+     * 返回本条件实现所支持的 {@link }ResourceType}。
      *
      * @return the supported ResourceType for this condition implementation
      */
     ResourceType getSupportedResourceType();
 
     /**
-     * Evaluates the condition against the given workflow execution context.
+     * 针对给定执行上下文评估条件是否成立。
      * </p>
-     * Implementations should inspect the provided {@code context} and return {@code true}
-     * when the condition is satisfied and {@code false} otherwise. Typically, implementations
-     * use the resource found in the context to test if the condition holds or not, but sometimes
-     * the condition may depend on other aspects, such as the current time or other environmental
-     * conditions not directly related to the resource.
+     * 通常基于上下文中的资源对象判断；也可能依赖当前时间等与环境相关的因素。
      *
      * @param context the execution context for the workflow evaluation
      * @return {@code true} if the condition is met, {@code false} otherwise
@@ -39,12 +33,9 @@ public interface WorkflowConditionProvider extends Provider {
     boolean evaluate(WorkflowExecutionContext context);
 
     /**
-     * Creates a JPA Criteria API {@link Predicate} representing this condition for use in queries.
+     * 构造表示本条件的 JPA Criteria API {@link Predicate}，用于资源查询。
      * </p>
-     * Implementations should construct and return a Predicate that can be applied to a query
-     * that targets the underlying resource. The method receives a {@link CriteriaBuilder},
-     * the {@link CriteriaQuery} being built and the query {@link Root} corresponding to the
-     * resource being filtered.
+     * 实现应基于 {@link CriteriaBuilder}、{@link CriteriaQuery} 与资源实体 {@link Root} 构建谓词。
      *
      * @param cb the CriteriaBuilder used to construct predicates
      * @param query the CriteriaQuery being constructed
@@ -54,11 +45,9 @@ public interface WorkflowConditionProvider extends Provider {
     Predicate toPredicate(CriteriaBuilder cb, CriteriaQuery<String> query, Root<?> resourceRoot);
 
     /**
-     * Validates the internal configuration/state of this condition provider.
+     * 校验条件提供者的内部配置与状态。
      * </p>
-     * Implementations should perform any necessary self-checks and throw a
-     * {@link WorkflowInvalidStateException} if the provider is not correctly configured
-     * or cannot operate safely.
+     * 配置无效或无法安全运行时应抛出 {@link WorkflowInvalidStateException}。
      *
      * @throws WorkflowInvalidStateException if the provider is in an invalid state
      */
