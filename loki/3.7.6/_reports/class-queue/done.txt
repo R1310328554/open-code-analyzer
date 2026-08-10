@@ -1528,3 +1528,14 @@ tools/deprecated-config-checker/checker/checker.go
 tools/deprecated-config-checker/main.go
 tools/doc-generator/main.go
 tools/doc-generator/parse/parser.go
+tools/stream-generator/generator/distributor.go
+tools/stream-generator/generator/kafka.go
+tools/stream-generator/generator/metrics.go
+tools/stream-generator/generator/service.go
+tools/stream-generator/main.go
+tools/tsdb/helpers/setup.go
+tools/tsdb/helpers/util.go
+tools/tsdb/index-analyzer/analytics.go
+tools/tsdb/index-analyzer/main.go
+tools/tsdb/migrate-versions/main.go
+tools/tsdb/tsdb-map/main.go
