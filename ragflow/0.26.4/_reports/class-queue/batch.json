@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T19:12:54Z",
   "files": [
-    "internal/utility/http_client.go",
-    "internal/utility/mcp_call.go",
-    "internal/utility/mcp_client.go",
-    "internal/utility/network.go",
-    "internal/utility/oauth/client.go",
-    "internal/utility/oauth/github.go",
-    "internal/utility/oauth/oidc.go",
-    "internal/utility/otp.go",
-    "internal/utility/path.go",
-    "internal/utility/scheduled_task.go",
-    "internal/utility/smtp.go",
-    "internal/utility/ssrf.go",
-    "internal/utility/token.go",
-    "internal/utility/version.go",
-    "mcp/client/client.py",
     "mcp/client/streamable_http_client.py",
     "mcp/server/server.py",
     "memory/__init__.py",
@@ -33,5 +18,5 @@
     "rag/__init__.py"
   ],
   "remaining_pending": 594,
-  "done": 1140
+  "done": 1155
 }
