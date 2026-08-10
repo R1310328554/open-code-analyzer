@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T19:05:33Z",
   "files": [
-    "internal/service/dataset.go",
-    "internal/service/deep_researcher.go",
-    "internal/service/document.go",
-    "internal/service/document_upload_helpers.go",
-    "internal/service/file.go",
-    "internal/service/file2document.go",
-    "internal/service/file_commit.go",
-    "internal/service/generator.go",
-    "internal/service/graph/pipeline.go",
-    "internal/service/graph/retrieval.go",
-    "internal/service/graph/scoring.go",
-    "internal/service/graph/search.go",
-    "internal/service/graph/types.go",
-    "internal/service/kb_prompt.go",
-    "internal/service/langfuse.go",
     "internal/service/langfuse_service.go",
     "internal/service/llm.go",
     "internal/service/load_prompt.go",
@@ -33,5 +18,5 @@
     "internal/service/nlp/term_weight.go"
   ],
   "remaining_pending": 654,
-  "done": 1080
+  "done": 1095
 }
