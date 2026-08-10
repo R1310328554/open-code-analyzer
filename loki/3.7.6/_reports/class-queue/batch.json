@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:30:57Z",
-  "files": [
-    "pkg/bloombuild/protos/compat.go",
-    "pkg/bloombuild/protos/service.pb.go",
-    "pkg/bloombuild/protos/types.pb.go",
-    "pkg/bloomgateway/bloomgateway.go",
-    "pkg/bloomgateway/client.go",
-    "pkg/bloomgateway/client_pool.go",
-    "pkg/bloomgateway/config.go",
-    "pkg/bloomgateway/metrics.go",
-    "pkg/bloomgateway/multiplexing.go",
-    "pkg/bloomgateway/processor.go",
-    "pkg/bloomgateway/querier.go",
-    "pkg/bloomgateway/resolver.go",
-    "pkg/bloomgateway/stats.go",
-    "pkg/bloomgateway/util.go",
-    "pkg/bloomgateway/worker.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1342,
-  "done": 195
+  "done": 210
 }
