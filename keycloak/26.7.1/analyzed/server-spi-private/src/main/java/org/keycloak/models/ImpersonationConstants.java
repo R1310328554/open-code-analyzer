@@ -23,11 +23,15 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import static org.keycloak.models.AdminRoles.IMPERSONATION;
 
 /**
+ * 模拟登录（Impersonation）角色初始化工具类。
+ * <p>在 master 与 realm-management 客户端上创建 {@link AdminRoles#IMPERSONATION} 复合角色。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ImpersonationConstants {
 
+    /** 在 master 领域管理客户端上添加 impersonation 角色并挂入 admin 复合角色。 */
     public static void setupMasterRealmRole(RealmProvider model, RealmModel realm) {
         RealmModel adminRealm;
         RoleModel adminRole;
@@ -46,8 +50,9 @@ public class ImpersonationConstants {
         adminRole.addCompositeRole(impersonationRole);
     }
 
+    /** 在领域 realm-management 客户端上添加 impersonation 角色并挂入 realm-admin。 */
     public static void setupRealmRole(RealmModel realm) {
-        if (realm.getName().equals(Config.getAdminRealm())) { return; } // don't need to do this for master realm
+        if (realm.getName().equals(Config.getAdminRealm())) { return; } // master 领域无需重复配置
         String realmAdminApplicationClientId = Constants.REALM_MANAGEMENT_CLIENT_ID;
         ClientModel realmAdminApp = realm.getClientByClientId(realmAdminApplicationClientId);
         if (realmAdminApp.getRole(IMPERSONATION) != null) return;
@@ -58,6 +63,7 @@ public class ImpersonationConstants {
     }
 
 
+    /** 初始化 master 与目标领域的模拟登录角色。 */
     public static void setupImpersonationService(KeycloakSession session, RealmModel realm) {
         setupMasterRealmRole(session.realms(), realm);
         setupRealmRole(realm);

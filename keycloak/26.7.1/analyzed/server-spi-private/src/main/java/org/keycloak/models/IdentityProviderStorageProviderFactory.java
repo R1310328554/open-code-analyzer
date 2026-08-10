@@ -18,5 +18,9 @@ package org.keycloak.models;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link IdentityProviderStorageProvider} 的 {@link ProviderFactory} 工厂接口。
+ * <p>用于实例化 IdP 配置存储后端（如 JPA、Infinispan）。</p>
+ */
 public interface IdentityProviderStorageProviderFactory<T extends IdentityProviderStorageProvider> extends ProviderFactory<T> {
 }

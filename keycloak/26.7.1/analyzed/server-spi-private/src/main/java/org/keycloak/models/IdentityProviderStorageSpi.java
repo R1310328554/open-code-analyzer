@@ -20,25 +20,34 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 身份提供者存储 SPI，注册 {@link IdentityProviderStorageProvider} 提供者类型。
+ * <p>管理领域级 IdP 别名、配置与元数据的持久化访问。</p>
+ */
 public class IdentityProviderStorageSpi implements Spi {
 
+    /** SPI 注册名称常量。 */
     public static final String NAME = "identity-provider-storage";
 
+    /** IdP 存储工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return IdentityProviderStorageProviderFactory.class;
     }
 
+    /** IdP 存储提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return IdentityProviderStorageProvider.class;
     }
 
+    /** SPI 名称：{@code identity-provider-storage}。 */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;

@@ -20,7 +20,8 @@ package org.keycloak.models;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * A {@link ProviderFactory} for creating {@link RevokedTokenProvider} instances.
+ * {@link RevokedTokenProvider} 的 {@link ProviderFactory} 工厂接口。
+ * <p>用于创建管理已撤销访问/刷新令牌黑名单的提供者实例。</p>
  */
 public interface RevokedTokenProviderFactory<T extends RevokedTokenProvider> extends ProviderFactory<T> {
 }

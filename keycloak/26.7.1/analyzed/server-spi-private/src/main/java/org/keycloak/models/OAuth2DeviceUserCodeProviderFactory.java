@@ -20,6 +20,8 @@ package org.keycloak.models;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link OAuth2DeviceUserCodeProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:h2-wada@nri.co.jp">Hiroyuki Wada</a>
  */
 public interface OAuth2DeviceUserCodeProviderFactory extends ProviderFactory<OAuth2DeviceUserCodeProvider> {

@@ -22,27 +22,34 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * OAuth 2.0 设备授权用户码 SPI，注册 {@link OAuth2DeviceUserCodeProvider} 提供者类型。
+ *
  * @author <a href="mailto:h2-wada@nri.co.jp">Hiroyuki Wada</a>
  */
 public class OAuth2DeviceUserCodeSpi implements Spi {
 
+    /** SPI 注册名称常量。 */
     public static final String NAME = "oauth2DeviceUserCode";
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code oauth2DeviceUserCode}。 */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** 用户码提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass(){
         return OAuth2DeviceUserCodeProvider.class;
     }
 
+    /** 用户码工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return OAuth2DeviceUserCodeProviderFactory.class;

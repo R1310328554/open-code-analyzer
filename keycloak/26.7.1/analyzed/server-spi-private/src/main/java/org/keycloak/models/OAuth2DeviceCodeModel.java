@@ -25,6 +25,9 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.keycloak.common.util.Time;
 
 /**
+ * OAuth 2.0 设备授权流程的设备码（device code）缓存模型。
+ * <p>序列化到单用途对象存储，跟踪授权状态、轮询间隔与 PKCE 参数。</p>
+ *
  * @author <a href="mailto:h2-wada@nri.co.jp">Hiroyuki Wada</a>
  */
 public class OAuth2DeviceCodeModel {
@@ -58,6 +61,7 @@ public class OAuth2DeviceCodeModel {
     private final String codeChallenge;
     private final String codeChallengeMethod;
 
+    /** 创建设备码模型并计算过期时间戳。 */
     public static OAuth2DeviceCodeModel create(RealmModel realm, ClientModel client,
                                                String deviceCode, String scope, String nonce, int expiresIn, int pollingInterval,
                                                String clientNotificationToken, String authReqId, Map<String, String> additionalParams, String codeChallenge, String codeChallengeMethod) {
@@ -66,10 +70,12 @@ public class OAuth2DeviceCodeModel {
         return new OAuth2DeviceCodeModel(realm, client.getClientId(), deviceCode, scope, nonce, expiration, pollingInterval,  clientNotificationToken, authReqId, null, null, additionalParams, codeChallenge, codeChallengeMethod);
     }
 
+    /** 用户批准授权，关联用户会话 ID。 */
     public OAuth2DeviceCodeModel approve(String userSessionId) {
         return new OAuth2DeviceCodeModel(realm, clientId, deviceCode, scope, nonce, expiration,  pollingInterval, clientNotificationToken, authReqId, userSessionId, false, additionalParams, codeChallenge, codeChallengeMethod);
     }
 
+    /** 用户批准授权并合并额外 OAuth 参数。 */
     public OAuth2DeviceCodeModel approve(String userSessionId, Map<String, String> additionalParams) {
         if (additionalParams != null) {
             this.additionalParams.putAll(additionalParams);
@@ -77,6 +83,7 @@ public class OAuth2DeviceCodeModel {
         return new OAuth2DeviceCodeModel(realm, clientId, deviceCode, scope, nonce, expiration, pollingInterval, clientNotificationToken, authReqId, userSessionId, false, this.additionalParams, codeChallenge, codeChallengeMethod);
     }
 
+    /** 用户拒绝设备授权请求。 */
     public OAuth2DeviceCodeModel deny() {
         return new OAuth2DeviceCodeModel(realm, clientId, deviceCode, scope, nonce, expiration, pollingInterval,  clientNotificationToken, authReqId, null, true, additionalParams, codeChallenge, codeChallengeMethod);
     }
@@ -100,6 +107,7 @@ public class OAuth2DeviceCodeModel {
         this.codeChallengeMethod = codeChallengeMethod;
     }
 
+    /** 从缓存 Map 反序列化设备码；领域 ID 不匹配时返回 null。 */
     public static OAuth2DeviceCodeModel fromCache(RealmModel realm, String deviceCode, Map<String, String> data) {
         OAuth2DeviceCodeModel model = new OAuth2DeviceCodeModel(realm, deviceCode, data);
 
@@ -158,10 +166,12 @@ public class OAuth2DeviceCodeModel {
         return clientId;
     }
 
+    /** 是否仍在等待用户授权（尚未关联用户会话）。 */
     public boolean isPending() {
         return userSessionId == null;
     }
 
+    /** 用户是否已拒绝授权。 */
     public boolean isDenied() {
         return denied;
     }
@@ -170,6 +180,7 @@ public class OAuth2DeviceCodeModel {
         return userSessionId;
     }
 
+    /** 生成设备码在单用途存储中的缓存键。 */
     public static String createKey(String deviceCode) {
         return String.format("dc.%s", deviceCode);
     }
@@ -178,6 +189,7 @@ public class OAuth2DeviceCodeModel {
         return createKey(deviceCode);
     }
 
+    /** 轮询限流用的缓存键（设备码键加 {@code .polling} 后缀）。 */
     public String serializePollingKey() {
         return createKey(deviceCode) + ".polling";
     }
@@ -190,6 +202,7 @@ public class OAuth2DeviceCodeModel {
         return codeChallengeMethod;
     }
 
+    /** 序列化为可写入单用途对象存储的键值 Map。 */
     public Map<String, String> toMap() {
         Map<String, String> result = new HashMap<>();
 
@@ -229,6 +242,7 @@ public class OAuth2DeviceCodeModel {
         return result;
     }
 
+    /** 获取授权请求 OAuth 参数（scope、nonce 与额外参数）。 */
     public MultivaluedMap<String, String> getParams() {
         MultivaluedHashMap<String, String> params = new MultivaluedHashMap<>();
         params.putSingle(SCOPE_NOTE, scope);
@@ -243,6 +257,7 @@ public class OAuth2DeviceCodeModel {
         return additionalParams;
     }
 
+    /** 设备码是否已过期。 */
     public boolean isExpired() {
         return getExpiration() - Time.currentTime() < 0;
     }

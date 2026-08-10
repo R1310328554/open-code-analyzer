@@ -22,27 +22,35 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 领域 SPI，注册 {@link RealmProvider} 提供者类型。
+ * <p>管理 Keycloak 领域、客户端、用户等核心模型数据的 CRUD。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class RealmSpi implements Spi {
 
+    /** SPI 注册名称常量。 */
     public static final String NAME = "realm";
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code realm}。 */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** 领域提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return RealmProvider.class;
     }
 
+    /** 领域工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return RealmProviderFactory.class;

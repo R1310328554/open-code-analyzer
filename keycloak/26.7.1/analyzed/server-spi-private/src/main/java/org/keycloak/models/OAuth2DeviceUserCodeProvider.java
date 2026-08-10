@@ -21,19 +21,22 @@ import org.keycloak.provider.Provider;
 
 
 /**
+ * OAuth 2.0 设备授权用户码生成与格式化提供者 SPI。
+ * <p>负责生成、展示与规范化用户输入的设备用户码。</p>
+ *
  * @author <a href="mailto:h2-wada@nri.co.jp">Hiroyuki Wada</a>
  */
 public interface OAuth2DeviceUserCodeProvider extends Provider {
 
     /**
-     * Generate a new user code for OAuth 2.0 Device Authorization Grant.
+     * 为 OAuth 2.0 设备授权流程生成新的用户码。
      *
      * @return Return a generated user code
      */
     String generate();
 
     /**
-     * Get human-readability user code from original user code.
+     * 将内部用户码格式化为人类可读形式（如插入连字符）。
      *
      * @param userCode Original user code
      * @return Return a human-readability user code
@@ -41,7 +44,7 @@ public interface OAuth2DeviceUserCodeProvider extends Provider {
     String display(String userCode);
 
     /**
-     * Format inputted user code.
+     * 规范化用户输入的用户码（去空格、统一大小写等）。
      *
      * @param userCode Inputted user code.
      * @return

@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * OAuth 2.0 设备授权流程的用户码（user code）到设备码映射模型。
+ * <p>用户码供终端用户输入，内部映射到对应的设备码。</p>
+ *
  * @author <a href="mailto:h2-wada@nri.co.jp">Hiroyuki Wada</a>
  */
 public class OAuth2DeviceUserCodeModel {
@@ -36,6 +39,7 @@ public class OAuth2DeviceUserCodeModel {
         this.userCode = userCode;
     }
 
+    /** 从缓存 Map 反序列化用户码映射。 */
     public static OAuth2DeviceUserCodeModel fromCache(RealmModel realm, String userCode, Map<String, String> data) {
         return new OAuth2DeviceUserCodeModel(realm, userCode, data);
     }
@@ -54,6 +58,7 @@ public class OAuth2DeviceUserCodeModel {
         return userCode;
     }
 
+    /** 生成用户码在单用途存储中的缓存键。 */
     public static String createKey(RealmModel realm, String userCode) {
         return String.format("%s.uc.%s", realm.getId(), userCode);
     }
@@ -62,6 +67,7 @@ public class OAuth2DeviceUserCodeModel {
         return createKey(realm, userCode);
     }
 
+    /** 序列化为缓存值 Map（含关联设备码）。 */
     public Map<String, String> serializeValue() {
         Map<String, String> result = new HashMap<>();
         result.put(DEVICE_CODE_NOTE, deviceCode);

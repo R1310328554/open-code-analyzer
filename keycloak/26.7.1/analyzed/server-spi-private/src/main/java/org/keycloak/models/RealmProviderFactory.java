@@ -20,6 +20,9 @@ package org.keycloak.models;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link RealmProvider} 的 {@link ProviderFactory} 工厂接口。
+ * <p>用于实例化领域模型访问后端（JPA、Map 等）。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */

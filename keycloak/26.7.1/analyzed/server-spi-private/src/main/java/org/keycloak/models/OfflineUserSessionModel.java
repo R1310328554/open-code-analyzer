@@ -17,13 +17,16 @@
 package org.keycloak.models;
 
 /**
- * Hacked extension to UserSessionModel so that user id can be obtain directly so
+ * 离线用户会话模型扩展接口，可直接获取用户 ID 与登录用户名。
+ * <p>扩展 {@link UserSessionModel}，供离线令牌持久化层使用。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface OfflineUserSessionModel extends UserSessionModel {
+    /** 离线会话关联的用户 ID。 */
     public String getUserId();
 
+    /** 设置离线会话记录的用户登录名。 */
     void setLoginUsername(String loginUsername);
 }
