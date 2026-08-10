@@ -25,11 +25,16 @@ import jakarta.ws.rs.core.MediaType;
 import org.keycloak.representations.info.ServerInfoRepresentation;
 
 /**
+ * Keycloak 服务器信息 REST 资源。
+ * <p>
+ * 提供查询服务器版本、内置协议、主题、密码策略及系统配置等元数据的能力。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @Path("/admin/serverinfo")
 public interface ServerInfoResource {
 
+    /** 获取 Keycloak 服务器的完整信息表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ServerInfoRepresentation getInfo();

@@ -27,18 +27,30 @@ import jakarta.ws.rs.core.MediaType;
 import org.keycloak.representations.idm.MappingsRepresentation;
 
 /**
+ * 用户或组角色映射的管理 REST 资源。
+ * <p>
+ * 提供查询全部角色映射，以及分别访问领域级和客户端级角色作用域子资源的能力。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public interface RoleMappingResource {
 
+    /** 获取领域级与客户端级的全部角色映射。 */
     @GET
     MappingsRepresentation getAll();
 
+    /** 获取领域级角色作用域子资源。 */
     @Path("realm")
     RoleScopeResource realmLevel();
 
+    /**
+     * 获取指定客户端的角色作用域子资源。
+     *
+     * @param clientUUID 客户端 UUID
+     * @return 客户端级角色作用域子资源
+     */
     @Path("clients/{clientUUID}")
     RoleScopeResource clientLevel(@PathParam("clientUUID") String clientUUID);
 

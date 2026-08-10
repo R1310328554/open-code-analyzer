@@ -32,36 +32,48 @@ import org.keycloak.representations.idm.authorization.ScopePermissionRepresentat
 import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 
 /**
+ * 单个作用域权限（Scope Permission）的管理 REST 资源。
+ * <p>
+ * 支持读取、更新、删除作用域权限，并查询关联策略、依赖策略、
+ * 受保护资源及关联作用域。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface ScopePermissionResource {
 
+    /** 获取当前作用域权限的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ScopePermissionRepresentation toRepresentation();
 
+    /** 更新当前作用域权限配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(ScopePermissionRepresentation representation);
 
+    /** 删除当前作用域权限。 */
     @DELETE
     void remove();
 
+    /** 列出引用本权限的关联策略。 */
     @Path("/associatedPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> associatedPolicies();
 
+    /** 列出依赖本权限的其他策略。 */
     @Path("/dependentPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> dependentPolicies();
 
+    /** 列出受本权限保护的资源。 */
     @Path("/resources")
     @GET
     @Produces("application/json")
     List<ResourceRepresentation> resources();
 
+    /** 列出本权限关联的作用域。 */
     @Path("/scopes")
     @GET
     @Produces("application/json")

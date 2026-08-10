@@ -31,31 +31,41 @@ import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.RolePolicyRepresentation;
 
 /**
+ * 单个角色策略（Role Policy）的管理 REST 资源。
+ * <p>
+ * 支持读取、更新、删除角色策略，并查询关联策略、依赖策略及受保护资源。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface RolePolicyResource {
 
+    /** 获取当前角色策略的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     RolePolicyRepresentation toRepresentation();
 
+    /** 更新当前角色策略配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(RolePolicyRepresentation representation);
 
+    /** 删除当前角色策略。 */
     @DELETE
     void remove();
 
+    /** 列出引用本策略的关联策略。 */
     @Path("/associatedPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> associatedPolicies();
 
+    /** 列出依赖本策略的其他策略。 */
     @Path("/dependentPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> dependentPolicies();
 
+    /** 列出受本策略保护的资源。 */
     @Path("/resources")
     @GET
     @Produces("application/json")

@@ -30,21 +30,29 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 
 /**
+ * 单个授权资源（Resource）的管理 REST 资源。
+ * <p>
+ * 支持读取、更新、删除资源，并查询与该资源关联的权限策略。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface ResourceResource {
 
+    /** 获取当前资源的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ResourceRepresentation toRepresentation();
 
+    /** 更新当前资源配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(ResourceRepresentation resource);
 
+    /** 删除当前资源。 */
     @DELETE
     void remove();
 
+    /** 列出保护当前资源的所有权限策略。 */
     @Path("permissions")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

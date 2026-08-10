@@ -29,18 +29,40 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.authorization.ResourcePermissionRepresentation;
 
 /**
+ * 资源权限（Resource Permission）集合的管理 REST 资源。
+ * <p>
+ * 提供创建资源权限、按 ID 或名称查询，以及导航至单个权限子资源的能力。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface ResourcePermissionsResource {
 
+    /**
+     * 创建新的资源权限。
+     *
+     * @param representation 资源权限表示对象
+     * @return 包含新建权限信息的 HTTP 响应
+     */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Response create(ResourcePermissionRepresentation representation);
 
+    /**
+     * 按 ID 获取单个资源权限子资源。
+     *
+     * @param id 资源权限 ID
+     * @return 资源权限子资源
+     */
     @Path("{id}")
     ResourcePermissionResource findById(@PathParam("id") String id);
 
+    /**
+     * 按名称搜索资源权限。
+     *
+     * @param name 权限名称
+     * @return 匹配的资源权限表示对象
+     */
     @Path("/search")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

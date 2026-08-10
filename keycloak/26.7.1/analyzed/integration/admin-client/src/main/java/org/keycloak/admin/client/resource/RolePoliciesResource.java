@@ -29,18 +29,40 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.authorization.RolePolicyRepresentation;
 
 /**
+ * 角色策略（Role Policy）集合的管理 REST 资源。
+ * <p>
+ * 提供创建角色策略、按 ID 或名称查询，以及导航至单个策略子资源的能力。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface RolePoliciesResource {
 
+    /**
+     * 创建新的角色策略。
+     *
+     * @param representation 角色策略表示对象
+     * @return 包含新建策略信息的 HTTP 响应
+     */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Response create(RolePolicyRepresentation representation);
 
+    /**
+     * 按 ID 获取单个角色策略子资源。
+     *
+     * @param id 策略 ID
+     * @return 角色策略子资源
+     */
     @Path("{id}")
     RolePolicyResource findById(@PathParam("id") String id);
 
+    /**
+     * 按名称搜索角色策略。
+     *
+     * @param name 策略名称
+     * @return 匹配的角色策略表示对象
+     */
     @Path("/search")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

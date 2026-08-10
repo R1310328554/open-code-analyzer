@@ -38,17 +38,22 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
 /**
+ * 单个角色的管理 REST 资源。
+ * <p>
+ * 提供角色 CRUD、细粒度权限管理、组合角色操作，
+ * 以及查询拥有该角色的用户与组等功能。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 public interface RoleResource {
 
     /**
-     * Enables or disables the fine grain permissions feature.
-     * Returns the updated status of the server in the
-     * {@link ManagementPermissionReference}.
+     * 启用或禁用细粒度权限功能。
+     * <p>
+     * 返回更新后的服务器状态，封装于 {@link ManagementPermissionReference} 中。
      *
-     * @param status status request to apply
-     * @return permission reference indicating the updated status
+     * @param status 待应用的权限状态请求
+     * @return 指示更新后状态的权限引用
      */
     @PUT
     @Path("/management/permissions")
@@ -57,62 +62,83 @@ public interface RoleResource {
     ManagementPermissionReference setPermissions(ManagementPermissionRepresentation status);
 
     /**
-     * Returns indicator if the fine grain permissions are enabled or not.
+     * 查询细粒度权限功能是否已启用。
      *
-     * @return current representation of the permissions feature
+     * @return 当前权限功能的表示对象
      */
     @GET
     @Path("/management/permissions")
     @Produces(MediaType.APPLICATION_JSON)
     ManagementPermissionReference getPermissions();
 
+    /** 获取当前角色的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     RoleRepresentation toRepresentation();
 
+    /** 更新当前角色配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(RoleRepresentation roleRepresentation);
 
+    /** 删除当前角色。 */
     @DELETE
     void remove();
 
+    /** 获取当前角色的全部组合角色。 */
     @GET
     @Path("composites")
     @Produces(MediaType.APPLICATION_JSON)
     Set<RoleRepresentation> getRoleComposites();
 
+    /** 获取当前角色的领域级组合角色。 */
     @GET
     @Path("composites/realm")
     @Produces(MediaType.APPLICATION_JSON)
     Set<RoleRepresentation> getRealmRoleComposites();
 
+    /**
+     * 获取当前角色在指定客户端下的组合角色。
+     *
+     * @param clientUuid 客户端 UUID
+     * @return 客户端级组合角色集合
+     */
     @GET
     @Path("composites/clients/{clientUuid}")
     @Produces(MediaType.APPLICATION_JSON)
     Set<RoleRepresentation> getClientRoleComposites(@PathParam("clientUuid") String clientUuid);
 
+    /**
+     * 为当前角色添加组合角色。
+     *
+     * @param rolesToAdd 待添加的组合角色列表
+     */
     @POST
     @Path("composites")
     @Consumes(MediaType.APPLICATION_JSON)
     void addComposites(List<RoleRepresentation> rolesToAdd);
 
+    /**
+     * 从当前角色移除组合角色。
+     *
+     * @param rolesToRemove 待移除的组合角色列表
+     */
     @DELETE
     @Path("composites")
     @Consumes(MediaType.APPLICATION_JSON)
     void deleteComposites(List<RoleRepresentation> rolesToRemove);
 
     /**
-     * Get role members.
+     * 获取拥有当前角色的用户成员。
      * <p>
-     * Returns users that have the given role, sorted by username ascending.
+     * 返回按用户名升序排列的用户列表。
      * </p>
      * <p>
-     * Note: This method just returns the first 100 users. In order to retrieve all users, use paging (see
-     * {@link #getUserMembers(Integer, Integer)}).
+     * 注意：此方法仅返回前 100 名用户。如需获取全部用户，请使用分页
+     * （参见 {@link #getUserMembers(Integer, Integer)}）。
      * </p>
      *
-     * @return a list of users with the given role
+     * @return 拥有该角色的用户列表
      */
     @GET
     @Path("users")
@@ -120,13 +146,14 @@ public interface RoleResource {
     List<UserRepresentation> getUserMembers();
 
     /**
-     * Get role members.
-     * <p>Returns users that have the given role, sorted by username ascending, paginated according to the query
-     * parameters.</p>
+     * 分页获取拥有当前角色的用户成员。
+     * <p>
+     * 返回按用户名升序排列的用户列表，支持分页参数。
+     * </p>
      *
-     * @param firstResult Pagination offset
-     * @param maxResults Pagination size
-     * @return a list of users with the given role
+     * @param firstResult 分页偏移量
+     * @param maxResults 分页大小
+     * @return 拥有该角色的用户列表
      */
     @GET
     @Path("users")
@@ -135,14 +162,15 @@ public interface RoleResource {
             @QueryParam("max") Integer maxResults);
 
     /**
-     * Get role members.
-     * <p>Returns users that have the given role, sorted by username ascending, paginated according to the query
-     * parameters.</p>
+     * 分页获取拥有当前角色的用户成员（可选简要表示）。
+     * <p>
+     * 返回按用户名升序排列的用户列表，支持分页参数。
+     * </p>
      *
-     * @param briefRepresentation If the user should be returned in brief or full representation. Parameter available since Keycloak server 26. Will be ignored on older Keycloak versions with the default value false.
-     * @param firstResult Pagination offset
-     * @param maxResults Pagination size
-     * @return a list of users with the given role
+     * @param briefRepresentation 是否以简要形式返回用户（自 Keycloak 26 起可用；旧版本忽略此参数，默认为 false）
+     * @param firstResult 分页偏移量
+     * @param maxResults 分页大小
+     * @return 拥有该角色的用户列表
      */
     @GET
     @Path("users")
@@ -152,10 +180,12 @@ public interface RoleResource {
             @QueryParam("max") Integer maxResults);
 
     /**
-     * Get role groups.
-     * <p>Returns groups that have the given role.</p>
+     * 获取拥有当前角色的组成员。
+     * <p>
+     * 返回拥有该角色的组列表。
+     * </p>
      *
-     * @return a list of groups with the given role
+     * @return 拥有该角色的组集合
      */
     @GET
     @Path("groups")
@@ -163,12 +193,14 @@ public interface RoleResource {
     Set<GroupRepresentation> getRoleGroupMembers();
 
     /**
-     * Get role groups.
-     * <p>Returns groups that have the given role, paginated according to the query parameters.</p>
+     * 分页获取拥有当前角色的组成员。
+     * <p>
+     * 返回拥有该角色的组列表，支持分页参数。
+     * </p>
      *
-     * @param firstResult Pagination offset
-     * @param maxResults  Pagination size
-     * @return a list of groups with the given role
+     * @param firstResult 分页偏移量
+     * @param maxResults 分页大小
+     * @return 拥有该角色的组集合
      */
     @GET
     @Path("groups")
@@ -177,12 +209,14 @@ public interface RoleResource {
                                                @QueryParam("max") Integer maxResults);
 
     /**
-     * Get role members.
-     * <p>Returns users that have the given role.</p>
+     * 获取拥有当前角色的用户成员。
+     * <p>
+     * 返回拥有该角色的用户集合。
+     * </p>
      *
-     * @return a set of users with the given role
+     * @return 拥有该角色的用户集合
      *
-     * @deprecated please use {@link #getUserMembers()}
+     * @deprecated 请改用 {@link #getUserMembers()}
      */
     @GET
     @Path("users")
@@ -191,14 +225,16 @@ public interface RoleResource {
     Set<UserRepresentation> getRoleUserMembers();
 
     /**
-     * Get role members.
-     * <p>Returns users that have the given role, paginated according to the query parameters.</p>
+     * 分页获取拥有当前角色的用户成员。
+     * <p>
+     * 返回拥有该角色的用户集合，支持分页参数。
+     * </p>
      *
-     * @param firstResult Pagination offset
-     * @param maxResults  Pagination size
-     * @return a set of users with the given role
+     * @param firstResult 分页偏移量
+     * @param maxResults 分页大小
+     * @return 拥有该角色的用户集合
      *
-     * @deprecated please use {@link #getUserMembers(Integer, Integer)}
+     * @deprecated 请改用 {@link #getUserMembers(Integer, Integer)}
      */
     @GET
     @Path("users")
