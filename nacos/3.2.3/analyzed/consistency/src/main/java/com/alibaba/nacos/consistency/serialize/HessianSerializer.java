@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 
 /**
+ * 基于 Hessian2 的 {@link com.alibaba.nacos.consistency.Serializer} 实现，用于一致性日志与快照的二进制序列化。
+ *
  * Serializer implement by hessian.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -36,18 +38,23 @@ import java.lang.reflect.Type;
 @SuppressWarnings("all")
 public class HessianSerializer implements Serializer {
     
+    /** 序列化器注册名。 */
     private static final String NAME = "Hessian";
     
+    /** 带白名单的 Hessian 工厂，限制可反序列化类型。 */
     private SerializerFactory serializerFactory = new NacosHessianSerializerFactory();
     
+    /** 使用默认 {@link NacosHessianSerializerFactory} 构造。 */
     public HessianSerializer() {
     }
     
+    /** 反序列化字节数组。 */
     @Override
     public <T> T deserialize(byte[] data) {
         return deseiralize0(data);
     }
     
+    /** 反序列化字节数组。 */
     @Override
     public <T> T deserialize(byte[] data, Class<T> cls) {
         T result = deserialize(data);
@@ -62,11 +69,13 @@ public class HessianSerializer implements Serializer {
                 cls.getCanonicalName())));
     }
     
+    /** 反序列化字节数组。 */
     @Override
     public <T> T deserialize(byte[] data, Type type) {
         return deserialize(data);
     }
     
+    /** Hessian2 反序列化核心逻辑；空数组返回 null。 */
     private <T> T deseiralize0(byte[] data) {
         if (ByteUtils.isEmpty(data)) {
             return null;
@@ -84,6 +93,7 @@ public class HessianSerializer implements Serializer {
         return (T) resultObject;
     }
     
+    /** 序列化对象为字节数组。 */
     @Override
     public <T> byte[] serialize(T obj) {
         ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
@@ -99,6 +109,7 @@ public class HessianSerializer implements Serializer {
         return byteArray.toByteArray();
     }
     
+    /** 返回序列化器名称。 */
     @Override
     public String name() {
         return NAME;

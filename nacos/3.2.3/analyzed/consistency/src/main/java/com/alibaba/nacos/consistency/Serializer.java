@@ -21,15 +21,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 序列化抽象接口：定义对象与字节数组之间的双向转换，供一致性协议与 RPC 复用。
+ * 内置 {@link #CLASS_CACHE} 缓存类全名到 Class 的映射，避免重复反射加载。
+ *
  * Serialization interface.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public interface Serializer {
     
+    /** 类全名到 {@link Class} 的并发缓存，供 {@link #deserialize(byte[], String)} 使用。 */
     Map<String, Class<?>> CLASS_CACHE = new ConcurrentHashMap<>(8);
     
     /**
+     * 将字节数组反序列化为对象（实现类需自行推断类型）。
      * Deserialize the data.
      *
      * @param data byte[]
@@ -39,6 +44,7 @@ public interface Serializer {
     <T> T deserialize(byte[] data);
     
     /**
+     * 按指定 {@link Class} 将字节数组反序列化为目标类型实例。
      * Deserialize the data.
      *
      * @param data byte[]
@@ -49,6 +55,7 @@ public interface Serializer {
     <T> T deserialize(byte[] data, Class<T> cls);
     
     /**
+     * 按 {@link Type}（含泛型）将字节数组反序列化为目标实例。
      * Deserialize the data.
      *
      * @param data byte[]
@@ -59,6 +66,7 @@ public interface Serializer {
     <T> T deserialize(byte[] data, Type type);
     
     /**
+     * 按类全名字符串反序列化；类名经 {@link #CLASS_CACHE} 缓存，失败时返回 null。
      * Deserialize the data.
      *
      * @param data          byte[]
@@ -82,6 +90,7 @@ public interface Serializer {
     }
     
     /**
+     * 将对象序列化为字节数组。
      * Serialize the object.
      *
      * @param obj target obj
@@ -90,6 +99,7 @@ public interface Serializer {
     <T> byte[] serialize(T obj);
     
     /**
+     * 返回序列化实现标识名（如 Hessian、JSON），用于 SPI 选择与日志。
      * The name of the serializer implementer.
      *
      * @return name

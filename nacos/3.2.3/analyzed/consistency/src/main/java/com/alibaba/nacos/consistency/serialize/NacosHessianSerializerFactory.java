@@ -49,12 +49,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * Nacos 定制 Hessian {@link SerializerFactory}：启用白名单并预注册常用 JDK 与 Nacos 类型。
+ *
  * Nacos Hessian Serializer Factory.
  *
  * @author xiweng.yy
  */
 public class NacosHessianSerializerFactory extends SerializerFactory {
     
+    /** 初始化白名单：基础类型、集合、并发类、时间类及 com.alibaba.nacos.*。 */
     NacosHessianSerializerFactory() {
         super();
         super.getClassFactory().setWhitelist(true);
@@ -65,6 +68,7 @@ public class NacosHessianSerializerFactory extends SerializerFactory {
         super.getClassFactory().allow("com.alibaba.nacos.*");
     }
     
+    /** 允许基本类型及其包装类、String、Number、Class 等。 */
     private void allowBasicType() {
         super.getClassFactory().allow(boolean.class.getCanonicalName());
         super.getClassFactory().allow(byte.class.getCanonicalName());
@@ -88,6 +92,7 @@ public class NacosHessianSerializerFactory extends SerializerFactory {
         super.getClassFactory().allow(String.class.getCanonicalName());
     }
     
+    /** 允许 List/Set/Map 常用实现及 Collections 包装类。 */
     private void allowCollections() {
         super.getClassFactory().allow(List.class.getCanonicalName());
         super.getClassFactory().allow(ArrayList.class.getCanonicalName());
@@ -120,6 +125,7 @@ public class NacosHessianSerializerFactory extends SerializerFactory {
         super.getClassFactory().allow("java.util.Collections$UnmodifiableSortedSet");
     }
     
+    /** 允许原子类与常见并发容器。 */
     private void allowConcurrent() {
         super.getClassFactory().allow(AtomicBoolean.class.getCanonicalName());
         super.getClassFactory().allow(AtomicInteger.class.getCanonicalName());
@@ -132,6 +138,7 @@ public class NacosHessianSerializerFactory extends SerializerFactory {
         super.getClassFactory().allow(CopyOnWriteArrayList.class.getCanonicalName());
     }
     
+    /** 允许日期、Calendar 与 java.time 相关类型。 */
     private void allowTime() {
         super.getClassFactory().allow(SimpleDateFormat.class.getCanonicalName());
         super.getClassFactory().allow(DateTimeFormatter.class.getCanonicalName());

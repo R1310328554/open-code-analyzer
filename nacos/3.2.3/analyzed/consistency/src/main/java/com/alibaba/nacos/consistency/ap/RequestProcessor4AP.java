@@ -19,6 +19,9 @@ package com.alibaba.nacos.consistency.ap;
 import com.alibaba.nacos.consistency.RequestProcessor;
 
 /**
+ * AP 协议专用请求处理器抽象基类，继承 {@link com.alibaba.nacos.consistency.RequestProcessor}。
+ * 子类由 Distro 等 AP 实现注册，处理读请求与日志 apply。
+ *
  * log processor for ap.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>

@@ -20,6 +20,9 @@ import com.alibaba.nacos.consistency.Config;
 import com.alibaba.nacos.consistency.ConsistencyProtocol;
 
 /**
+ * AP（可用性优先）一致性协议标记接口，继承 {@link com.alibaba.nacos.consistency.ConsistencyProtocol}。
+ * 典型实现为 Distro，适用于命名临时实例等可容忍短暂不一致的场景。
+ *
  * ap protocol.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>

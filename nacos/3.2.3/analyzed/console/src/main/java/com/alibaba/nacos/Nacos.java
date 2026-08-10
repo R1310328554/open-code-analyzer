@@ -27,6 +27,11 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.ImportRuntimeHints;
 
 /**
+ * Nacos 全功能合并启动入口（Console 模块）：通过自定义 TypeFilter 控制各子模块是否加载。
+ * <p>
+ * 同时使用 {@link SpringBootApplication} 与 {@link ComponentScan}，以 CUSTOM 过滤器按需启用模块。
+ * </p>
+ *
  * Nacos Full merged starter.
  * <p>
  * Use @SpringBootApplication and @ComponentScan at the same time, using CUSTOM type filter to control module enabled.
@@ -45,6 +50,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @Deprecated
 public class Nacos {
     
+    /** Spring Boot 主入口，启动合并版 Nacos 进程。 */
     public static void main(String[] args) {
         SpringApplication.run(Nacos.class, args);
     }

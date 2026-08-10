@@ -20,29 +20,37 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
+ * 快照加载阶段的只读视图：暴露快照根路径及文件名到 {@link LocalFileMeta} 的映射。
+ *
  * Read the snapshot file interface.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class Reader {
     
+    /** 快照根目录路径。 */
     private final String path;
     
+    /** 文件名到元数据的不可变映射。 */
     private final Map<String, LocalFileMeta> allFiles;
     
+    /** 构造快照读取器，allFiles 会被包装为不可变 Map。 */
     public Reader(String path, Map<String, LocalFileMeta> allFiles) {
         this.path = path;
         this.allFiles = Collections.unmodifiableMap(allFiles);
     }
     
+    /** 返回快照根路径。 */
     public String getPath() {
         return path;
     }
     
+    /** 列出全部快照文件及其元数据。 */
     public Map<String, LocalFileMeta> listFiles() {
         return allFiles;
     }
     
+    /** 按文件名获取元数据，不存在时返回 null。 */
     public LocalFileMeta getFileMeta(String fileName) {
         return allFiles.get(fileName);
     }

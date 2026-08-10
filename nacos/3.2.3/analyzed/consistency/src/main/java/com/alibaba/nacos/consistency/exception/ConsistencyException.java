@@ -17,30 +17,38 @@
 package com.alibaba.nacos.consistency.exception;
 
 /**
+ * 一致性协议内部运行时异常，封装 Raft/Distro 等协议层的错误。
+ *
  * Conformance protocol internal exceptions.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class ConsistencyException extends RuntimeException {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 1935132712388069418L;
     
+    /** 无参构造。 */
     public ConsistencyException() {
         super();
     }
     
+    /** 指定错误消息。 */
     public ConsistencyException(String message) {
         super(message);
     }
     
+    /** 指定错误消息与根因。 */
     public ConsistencyException(String message, Throwable cause) {
         super(message, cause);
     }
     
+    /** 以根因构造。 */
     public ConsistencyException(Throwable cause) {
         super(cause);
     }
     
+    /** 完整控制栈追踪与 suppressed 行为的受保护构造。 */
     protected ConsistencyException(String message, Throwable cause, boolean enableSuppression,
         boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);

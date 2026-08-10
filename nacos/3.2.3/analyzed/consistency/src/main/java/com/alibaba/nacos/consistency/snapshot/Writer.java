@@ -21,25 +21,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 快照保存阶段的写入器：维护待落盘文件列表及各自 {@link LocalFileMeta}。
+ *
  * Snapshot write interface.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class Writer {
     
+    /** 待写入快照的文件名到元数据映射。 */
     private final Map<String, LocalFileMeta> files = new HashMap<>();
     
+    /** 快照目标根路径。 */
     private String path;
     
+    /** 指定快照根路径构造写入器。 */
     public Writer(String path) {
         this.path = path;
     }
     
+    /** 返回快照根路径。 */
     public String getPath() {
         return path;
     }
     
     /**
+     * 添加仅含默认 file-name 元数据的快照文件。
      * Adds a snapshot file without metadata.
      *
      * @param fileName file name
@@ -51,6 +58,7 @@ public class Writer {
     }
     
     /**
+     * 添加带自定义 {@link LocalFileMeta} 的快照文件。
      * Adds a snapshot file with metadata.
      *
      * @param fileName file name
@@ -62,6 +70,7 @@ public class Writer {
     }
     
     /**
+     * 从待写入列表移除指定快照文件。
      * Remove a snapshot file.
      *
      * @param fileName file name
@@ -72,6 +81,7 @@ public class Writer {
         return true;
     }
     
+    /** 返回当前待写入文件的不可变视图。 */
     public Map<String, LocalFileMeta> listFiles() {
         return Collections.unmodifiableMap(files);
     }

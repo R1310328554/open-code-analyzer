@@ -19,6 +19,8 @@ package com.alibaba.nacos.consistency.snapshot;
 import java.util.function.BiConsumer;
 
 /**
+ * 自定义快照操作接口，可由 SPI 或 {@link com.alibaba.nacos.consistency.cp.RequestProcessor4CP#loadSnapshotOperate()} 注册。
+ *
  * Custom snapshot operation interface Discovery via SPI.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -26,6 +28,7 @@ import java.util.function.BiConsumer;
 public interface SnapshotOperation {
     
     /**
+     * 执行快照保存：向 {@link Writer} 写入文件，完成后通过 callFinally 回调成功或失败。
      * do snapshot save operation.
      *
      * @param writer      {@link Writer}
@@ -34,6 +37,7 @@ public interface SnapshotOperation {
     void onSnapshotSave(Writer writer, BiConsumer<Boolean, Throwable> callFinally);
     
     /**
+     * 从 {@link Reader} 加载快照并恢复状态；返回是否加载成功。
      * do snapshot load operation.
      *
      * @param reader {@link Reader}

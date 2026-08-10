@@ -17,18 +17,24 @@
 package com.alibaba.nacos.consistency.cp;
 
 /**
+ * CP 协议元数据键名常量，与 {@link com.alibaba.nacos.consistency.ProtocolMetaData} 配合使用。
+ *
  * Key value of metadata information of CP protocol.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class MetadataKey {
     
+    /** 当前 Raft group 的 leader 节点标识。 */
     public static final String LEADER_META_DATA = "leader";
     
+    /** 当前 Raft term（任期）编号。 */
     public static final String TERM_META_DATA = "term";
     
+    /** Raft group 成员列表相关元数据键。 */
     public static final String RAFT_GROUP_MEMBER = "raftGroupMember";
     
+    /** 协议异常或错误描述信息键。 */
     public static final String ERR_MSG = "errMsg";
     
 }

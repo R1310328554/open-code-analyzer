@@ -20,6 +20,9 @@ import com.alibaba.nacos.consistency.Config;
 import com.alibaba.nacos.consistency.ConsistencyProtocol;
 
 /**
+ * CP（一致性优先）协议标记接口，继承 {@link com.alibaba.nacos.consistency.ConsistencyProtocol}。
+ * 典型实现为 JRaft，用于配置持久化等强一致场景；额外提供 leader 判定。
+ *
  * cp protocol.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -29,6 +32,7 @@ public interface CPProtocol<C extends Config, P extends RequestProcessor4CP>
     extends ConsistencyProtocol<C, P> {
     
     /**
+     * 判断本节点是否为指定业务 group 的 Raft leader。
      * Returns whether this node is a leader node
      *
      * @param group business module info

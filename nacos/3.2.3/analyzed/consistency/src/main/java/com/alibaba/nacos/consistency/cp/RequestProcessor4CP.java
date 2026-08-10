@@ -23,6 +23,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * CP 协议专用请求处理器抽象基类，继承 {@link com.alibaba.nacos.consistency.RequestProcessor}。
+ * 可覆写 {@link #loadSnapshotOperate()} 声明本模块参与快照的 {@link SnapshotOperation}。
+ *
  * log processor for cp.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -31,6 +34,7 @@ import java.util.List;
 public abstract class RequestProcessor4CP extends RequestProcessor {
     
     /**
+     * 返回本处理器负责的快照操作列表；默认空列表，子类按需注册。
      * Discovery snapshot handler It is up to LogProcessor to decide which SnapshotOperate should be loaded and saved by
      * itself.
      *
