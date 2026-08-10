@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+BGPT 科学文献检索工具：返回结构化证据（方法、样本量、局限等）供 Agent 研判。
+"""
+
 #
 import logging
 import os
@@ -27,7 +31,9 @@ BGPT_SEARCH_URL = "https://bgpt.pro/api/mcp-search"
 
 
 class BGPTParam(ToolParamBase):
-    """Define the BGPT component parameters."""
+    """
+    BGPT 组件参数：查询词、top_n、可选 api_key 与 days_back 时间窗。
+    """
 
     def __init__(self):
         self.meta: ToolMeta = {
@@ -71,6 +77,10 @@ class BGPTParam(ToolParamBase):
 
 
 class BGPT(ToolBase, ABC):
+    """
+    POST bgpt.pro MCP 搜索 API，将论文格式化为多段文本并写入引用块。
+    """
+
     component_name = "BGPT"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 30)))
@@ -119,6 +129,7 @@ class BGPT(ToolBase, ABC):
                 return self.output("formalized_content")
 
             except requests.HTTPError as e:
+                # 4xx（除 429）不重试，避免无效请求反复消耗配额
                 # Non-retryable 4xx (e.g. 400/401/403/404) should fail fast
                 # rather than wasting retries on bad requests or auth failures.
                 status = e.response.status_code if e.response is not None else None
@@ -154,6 +165,7 @@ class BGPT(ToolBase, ABC):
         assert False, self.output()
 
     def _format_bgpt_paper(self, paper: dict) -> str:
+        # 从 API 返回的 paper 字典提取标题、方法、结果等字段拼接为纯文本
         def field(*names: str) -> str:
             for name in names:
                 value = paper.get(name)

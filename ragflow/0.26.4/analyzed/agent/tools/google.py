@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Google 搜索工具：通过 SerpApi 获取 organic_results 并格式化为知识库引用。
+"""
+
 #
 import logging
 import os
@@ -24,7 +28,7 @@ from common.connection_utils import timeout
 
 class GoogleParam(ToolParamBase):
     """
-    Define the Google component parameters.
+    Google 搜索参数：SerpApi key、国家 gl、语言 hl 与分页 start/num。
     """
 
     def __init__(self):
@@ -475,6 +479,10 @@ class GoogleParam(ToolParamBase):
 
 
 class Google(ToolBase, ABC):
+    """
+    构造 SerpApi GoogleSearch 请求，提取摘要写入 formalized_content。
+    """
+
     component_name = "Google"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))

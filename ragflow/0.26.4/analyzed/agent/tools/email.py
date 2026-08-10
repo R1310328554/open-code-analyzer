@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+邮件发送工具：通过 SMTP（STARTTLS）发送 HTML 邮件，支持抄送与重试。
+"""
+
 #
 import os
 import time
@@ -30,7 +34,7 @@ from common.connection_utils import timeout
 
 class EmailParam(ToolParamBase):
     """
-    Define the Email component parameters.
+    邮件参数：SMTP 服务器、端口、发件人凭据及运行时收件人/主题/正文。
     """
 
     def __init__(self):
@@ -45,7 +49,7 @@ class EmailParam(ToolParamBase):
             },
         }
         super().__init__()
-        # Fixed configuration parameters
+        # 节点固定配置：SMTP 地址、端口、发件邮箱与授权码
         self.smtp_server = ""  # SMTP server address
         self.smtp_port = 465  # SMTP port
         self.email = ""  # Sender email
@@ -69,6 +73,10 @@ class EmailParam(ToolParamBase):
 
 
 class Email(ToolBase, ABC):
+    """
+    构建 MIME  multipart 邮件，登录 SMTP 并 send_message，失败可重试连接类错误。
+    """
+
     component_name = "Email"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 60)))
@@ -110,7 +118,7 @@ class Email(ToolBase, ABC):
                 # msg.attach(MIMEText(email_content, 'plain', 'utf-8'))
                 msg.attach(MIMEText(email_content, "html", "utf-8"))
 
-                # Connect to SMTP server and send
+                # STARTTLS 连接 SMTP 并发送
                 logging.info(f"Connecting to SMTP server {self._param.smtp_server}:{self._param.smtp_port}")
 
                 if self.check_if_canceled("Email processing"):
@@ -143,7 +151,7 @@ class Email(ToolBase, ABC):
                         success = True
                     except Exception as e:
                         logging.error(f"Error during send_message: {str(e)}")
-                        # Try alternative method
+                        # send_message 失败时尝试 sendmail 兜底
                         server.sendmail(self._param.email, recipients, msg.as_string())
                         success = True
 

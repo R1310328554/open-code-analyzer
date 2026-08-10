@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+arXiv 学术检索工具：按关键词搜索预印本论文并写入知识库引用块。
+"""
+
 #
 import logging
 import os
@@ -24,7 +28,7 @@ from common.connection_utils import timeout
 
 class ArXivParam(ToolParamBase):
     """
-    Define the ArXiv component parameters.
+    arXiv 组件参数：查询词、top_n 与排序方式 sort_by。
     """
 
     def __init__(self):
@@ -53,6 +57,10 @@ class ArXivParam(ToolParamBase):
 
 
 class ArXiv(ToolBase, ABC):
+    """
+    通过 arxiv 客户端搜索论文，经 _retrieve_chunks 写入 formalized_content。
+    """
+
     component_name = "ArXiv"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
@@ -70,6 +78,7 @@ class ArXiv(ToolBase, ABC):
                 return
 
             try:
+                # 将配置中的排序字段映射为 arxiv.SortCriterion
                 sort_choices = {"relevance": arxiv.SortCriterion.Relevance, "lastUpdatedDate": arxiv.SortCriterion.LastUpdatedDate, "submittedDate": arxiv.SortCriterion.SubmittedDate}
                 arxiv_client = arxiv.Client()
                 search = arxiv.Search(query=kwargs["query"], max_results=self._param.top_n, sort_by=sort_choices[self._param.sort_by])

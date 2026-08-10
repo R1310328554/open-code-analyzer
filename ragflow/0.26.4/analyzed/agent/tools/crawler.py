@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+网页爬虫工具：基于 crawl4ai 抓取 URL，支持 HTML/Markdown/正文多种提取格式。
+"""
+
 #
 import logging
 import os
@@ -24,7 +28,7 @@ from common.connection_utils import timeout
 
 class CrawlerParam(ToolParamBase):
     """
-    Define the Crawler component parameters.
+    爬虫参数：目标 URL、代理与 extract_type（html/markdown/content）。
     """
 
     def __init__(self):
@@ -52,6 +56,10 @@ class CrawlerParam(ToolParamBase):
 
 
 class Crawler(ToolBase, ABC):
+    """
+    SSRF 校验后通过 AsyncWebCrawler 抓取页面并写入 formalized_content。
+    """
+
     component_name = "Crawler"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 10 * 60)))
@@ -74,7 +82,7 @@ class Crawler(ToolBase, ABC):
             return msg
 
         try:
-            # pin_dns_global is used (not thread-local) because crawl4ai resolves
+            # crawl4ai 在 asyncio 线程池中解析 DNS，需全局 pin 而非 thread-local
             # DNS in asyncio executor threads that don't share thread-local state.
             with pin_dns_global(_ssrf_hostname, _ssrf_ip):
                 result = asyncio.run(self.get_web(url))
@@ -95,6 +103,7 @@ class Crawler(ToolBase, ABC):
             return msg
 
     async def get_web(self, url):
+        # 配置浏览器与缓存策略，按 extract_type 返回对应字段
         if self.check_if_canceled("Crawler async operation"):
             return
 

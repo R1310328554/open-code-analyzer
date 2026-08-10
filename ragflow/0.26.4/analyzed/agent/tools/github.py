@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+GitHub 仓库搜索工具：按关键词检索公开仓库并按 star 数排序。
+"""
+
 #
 import logging
 import os
@@ -25,7 +29,7 @@ from common.http_client import DEFAULT_TIMEOUT
 
 class GitHubParam(ToolParamBase):
     """
-    Define the GitHub component parameters.
+    GitHub 搜索参数：查询词与 top_n 返回数量。
     """
 
     def __init__(self):
@@ -52,6 +56,10 @@ class GitHubParam(ToolParamBase):
 
 
 class GitHub(ToolBase, ABC):
+    """
+    调用 GitHub Search API 获取仓库列表并写入引用块。
+    """
+
     component_name = "GitHub"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))

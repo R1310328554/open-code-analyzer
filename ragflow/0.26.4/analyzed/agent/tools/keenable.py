@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Keenable 网页搜索工具：面向 AI Agent 的搜索 API，支持无 key 免费层与 pro/realtime 模式。
+"""
+
 #
 import logging
 import os
@@ -26,7 +30,7 @@ from common.connection_utils import timeout
 
 
 def _base_url() -> str:
-    """Resolve the Keenable API base URL from ``KEENABLE_API_URL`` (HTTPS enforced)."""
+    """从环境变量 KEENABLE_API_URL 解析 API 基址（默认 https，本地可 http）。"""
     base = (os.environ.get("KEENABLE_API_URL") or "https://api.keenable.ai").rstrip("/")
     parsed = urlsplit(base)
     if parsed.hostname:
@@ -39,7 +43,7 @@ def _base_url() -> str:
 
 
 def _request(method: str, public_path: str, keyed_path: str, api_key: str, *, params=None, json=None, timeout_s: int = 30):
-    """Call the keyed endpoint with X-API-Key when a key is set, else the keyless public one."""
+    """有 API key 时走 keyed 路径并附加 X-API-Key，否则使用公开 endpoint。"""
     api_key = (api_key or "").strip()
     headers = {
         "User-Agent": "keenable-ragflow",
@@ -58,7 +62,7 @@ def _request(method: str, public_path: str, keyed_path: str, api_key: str, *, pa
 
 class KeenableSearchParam(ToolParamBase):
     """
-    Define the Keenable search component parameters.
+    Keenable 参数：query、site 域名限制、mode（pro/realtime）与 top_n。
     """
 
     def __init__(self):
@@ -87,7 +91,7 @@ When searching:
             },
         }
         super().__init__()
-        # A key is optional: blank uses the keyless public endpoint (free tier);
+        # api_key 可选：空则走公开免费 endpoint；realtime 模式必须提供 key
         # setting one lifts rate limits and enables the 'realtime' mode.
         self.api_key = ""
         # "pro" (default, deeper) or "realtime" (low latency; requires a key).
@@ -116,6 +120,10 @@ When searching:
 
 
 class KeenableSearch(ToolBase, ABC):
+    """
+    POST 搜索请求，截取 top_n 结果并经 _retrieve_chunks 写入 formalized_content。
+    """
+
     component_name = "KeenableSearch"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
@@ -155,6 +163,7 @@ class KeenableSearch(ToolBase, ABC):
                 logging.info(f"KeenableSearch: returned {len(results)} results")
                 return self.output("formalized_content")
             except ValueError as e:
+                # 配置错误（如非法 URL）不重试
                 # Config/local errors (e.g. invalid KEENABLE_API_URL) won't be
                 # fixed by retrying, so fail fast instead of sleeping.
                 if self.check_if_canceled("KeenableSearch processing"):

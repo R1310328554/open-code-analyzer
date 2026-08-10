@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+DuckDuckGo 搜索工具：隐私导向的网页/新闻检索，结果写入知识库引用。
+"""
+
 #
 import logging
 import os
@@ -24,7 +28,7 @@ from common.connection_utils import timeout
 
 class DuckDuckGoParam(ToolParamBase):
     """
-    Define the DuckDuckGo component parameters.
+    DuckDuckGo 参数：查询词、channel（general/news）与 top_n。
     """
 
     def __init__(self):
@@ -60,6 +64,10 @@ class DuckDuckGoParam(ToolParamBase):
 
 
 class DuckDuckGo(ToolBase, ABC):
+    """
+    按 topic 选择 ddgs.text 或 ddgs.news，经 _retrieve_chunks 格式化输出。
+    """
+
     component_name = "DuckDuckGo"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
@@ -77,6 +85,7 @@ class DuckDuckGo(ToolBase, ABC):
                 return
 
             try:
+                # general 走网页搜索，否则走新闻频道
                 if kwargs.get("topic", "general") == "general":
                     with DDGS() as ddgs:
                         if self.check_if_canceled("DuckDuckGo processing"):

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+金十数据组件：拉取快讯、日历、行情符号或新闻等金融开放 API 数据。
+"""
+
 #
 import json
 from abc import ABC
@@ -23,7 +27,7 @@ from common.http_client import DEFAULT_TIMEOUT
 
 class Jin10Param(ComponentParamBase):
     """
-    Define the Jin10 component parameters.
+    金十参数：type（flash/calendar/symbols/news）及各类子类型与 secret_key。
     """
 
     def __init__(self):
@@ -48,6 +52,10 @@ class Jin10Param(ComponentParamBase):
 
 
 class Jin10(ComponentBase, ABC):
+    """
+    按 type 请求 jin10 开放 API，将 JSON 转为 Markdown 表格或文本列表。
+    """
+
     component_name = "Jin10"
 
     def _run(self, history, **kwargs):
@@ -65,6 +73,7 @@ class Jin10(ComponentBase, ABC):
             if self.check_if_canceled("Jin10 processing"):
                 return
 
+            # 按数据类型分支请求不同 endpoint
             if self._param.type == "flash":
                 params = {"category": self._param.flash_type, "contain": self._param.contain, "filter": self._param.filter}
                 response = requests.get(url="https://open-data-api.jin10.com/data-api/flash?category=" + self._param.flash_type, headers=headers, data=json.dumps(params), timeout=DEFAULT_TIMEOUT)
@@ -99,6 +108,7 @@ class Jin10(ComponentBase, ABC):
                 response = response.json()
                 if self.check_if_canceled("Jin10 processing"):
                     return
+                # 将 API 短字段名映射为可读英文列名
                 if self._param.symbols_datatype == "symbols":
                     for i in response["data"]:
                         if self.check_if_canceled("Jin10 processing"):

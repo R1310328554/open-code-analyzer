@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+DeepL 翻译组件：将上游文本按源/目标语言调用 DeepL API 翻译。
+"""
+
 #
 from abc import ABC
 from agent.component.base import ComponentBase, ComponentParamBase
@@ -20,7 +24,7 @@ import deepl
 
 class DeepLParam(ComponentParamBase):
     """
-    Define the DeepL component parameters.
+    DeepL 参数：auth_key、源语言 source_lang 与目标语言 target_lang。
     """
 
     def __init__(self):
@@ -77,9 +81,14 @@ class DeepLParam(ComponentParamBase):
 
 
 class DeepL(ComponentBase, ABC):
+    """
+    合并输入 content 后调用 deepl.Translator.translate_text 返回译文。
+    """
+
     component_name = "DeepL"
 
     def _run(self, history, **kwargs):
+        # 从上游取文本，空输入直接返回空输出
         if self.check_if_canceled("DeepL processing"):
             return
         ans = self.get_input()

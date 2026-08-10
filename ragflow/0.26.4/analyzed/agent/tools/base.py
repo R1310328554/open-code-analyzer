@@ -12,6 +12,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Agent 工具基类与 LLM 工具调用会话：定义 ToolMeta、参数解析与同步/异步 invoke。
+
+LLMToolPluginCallSession 负责将 LLM function call 分派到 MCP 或本地工具实例。
+"""
+
 #
 import logging
 import re
@@ -32,6 +38,7 @@ from common.misc_utils import thread_pool_exec
 
 
 class ToolParameter(TypedDict):
+    """OpenAI function 单个参数的 schema 字段定义。"""
     type: str
     description: str
     displayDescription: str
@@ -40,6 +47,7 @@ class ToolParameter(TypedDict):
 
 
 class ToolMeta(TypedDict):
+    """工具元数据：名称、描述及 parameters 字典。"""
     name: str
     displayName: str
     description: str
@@ -48,11 +56,15 @@ class ToolMeta(TypedDict):
 
 
 class LLMToolPluginCallSession(ToolCallSession):
+    """
+    LLM 插件工具调用会话：按名称从 tools_map 查找并同步/异步执行。
+    """
     def __init__(self, tools_map: dict[str, object], callback: partial):
         self.tools_map = tools_map
         self.callback = callback
 
     def tool_call(self, name: str, arguments: dict[str, Any], timeout: float | int = 10) -> Any:
+        # 同步入口：包装 asyncio.run 调用异步实现
         return asyncio.run(self.tool_call_async(name, arguments, request_timeout=timeout))
 
     async def tool_call_async(self, name: str, arguments: dict[str, Any], request_timeout: float | int = 10) -> Any:
@@ -62,6 +74,7 @@ class LLMToolPluginCallSession(ToolCallSession):
             raise TypeError(f"Tool arguments for {name} must be an object, got {type(arguments).__name__}")
         st = timer()
         tool_obj = self.tools_map[name]
+        # 按工具类型分派：MCP 绑定、MCP 会话、原生 async 或线程池同步 invoke
         if isinstance(tool_obj, MCPToolBinding):
             resp = await thread_pool_exec(tool_obj.session.tool_call, tool_obj.original_name, arguments, request_timeout)
         elif isinstance(tool_obj, MCPToolCallSession):
@@ -96,6 +109,9 @@ class LLMToolPluginCallSession(ToolCallSession):
 
 
 class ToolParamBase(ComponentParamBase):
+    """
+    工具参数基类：从 meta 初始化 inputs 与默认值，并导出 OpenAI function schema。
+    """
     def __init__(self):
         # self.meta:ToolMeta = None
         super().__init__()
@@ -103,6 +119,7 @@ class ToolParamBase(ComponentParamBase):
         self._init_attr_by_meta()
 
     def _init_inputs(self):
+        # 深拷贝 meta.parameters 到 self.inputs
         self.inputs = {}
         for k, p in self.meta["parameters"].items():
             self.inputs[k] = deepcopy(p)
@@ -133,6 +150,9 @@ class ToolParamBase(ComponentParamBase):
 
 
 class ToolBase(ComponentBase):
+    """
+    画布工具组件基类：封装 invoke/invoke_async 与检索结果块 _retrieve_chunks。
+    """
     def __init__(self, canvas, id, param: ComponentParamBase):
         from agent.canvas import Canvas  # Local import to avoid cyclic dependency
 
@@ -146,6 +166,7 @@ class ToolBase(ComponentBase):
         return self._param.get_meta()
 
     def invoke(self, **kwargs):
+        # 记录耗时、调用 _invoke，异常写入 _ERROR 输出
         if self.check_if_canceled("Tool processing"):
             return
 
@@ -163,9 +184,7 @@ class ToolBase(ComponentBase):
 
     async def invoke_async(self, **kwargs):
         """
-        Async wrapper for tool invocation.
-        If `_invoke` is a coroutine, await it directly; otherwise run in a thread to avoid blocking.
-        Mirrors the exception handling of `invoke`.
+        异步调用包装：优先 _invoke_async / 协程 _invoke，否则在线程池执行。
         """
         if self.check_if_canceled("Tool processing"):
             return
@@ -189,12 +208,14 @@ class ToolBase(ComponentBase):
         return res
 
     def _retrieve_chunks(self, res_list: list, get_title, get_url, get_content, get_score=None):
+        # 将检索结果转为 chunk/aggs，写入画布引用并生成 kb_prompt 文本
         chunks = []
         aggs = []
         for r in res_list:
             content = get_content(r)
             if not content:
                 continue
+            # 剔除内嵌 base64 图片 markdown，并截断过长正文
             content = re.sub(r"!?\[[a-z]+\]\(data:image/png;base64,[ 0-9A-Za-z/_=+-]+\)", "", content)
             content = content[:10000]
             if not content:

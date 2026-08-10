@@ -12,6 +12,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+SQL 执行工具：连接多种数据库执行只读查询，结果以 Markdown 表格输出。
+
+含 SSRF 主机校验，禁止 INSERT/UPDATE/DELETE 及内置 rag_flow 库。
+"""
+
 #
 import contextlib
 import json
@@ -30,7 +36,7 @@ from common.ssrf_guard import assert_host_is_safe
 
 class ExeSQLParam(ToolParamBase):
     """
-    Define the ExeSQL component parameters.
+    ExeSQL 参数：db_type、连接信息与 max_records 行数上限。
     """
 
     def __init__(self):
@@ -68,6 +74,10 @@ class ExeSQLParam(ToolParamBase):
 
 
 class ExeSQL(ToolBase, ABC):
+    """
+    解析 SQL 变量占位、校验数据库主机安全后逐条执行并汇总 formalized_content。
+    """
+
     component_name = "ExeSQL"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 60)))
@@ -75,6 +85,7 @@ class ExeSQL(ToolBase, ABC):
         if self.check_if_canceled("ExeSQL processing"):
             return
 
+        # 将 Decimal/NaN 等不可 JSON 序列化类型转为 Python 原生值
         def convert_decimals(obj):
             from decimal import Decimal
             import math
@@ -114,7 +125,7 @@ class ExeSQL(ToolBase, ABC):
         if self.check_if_canceled("ExeSQL processing"):
             return
 
-        # The DB host/port are node-author-controlled and are connected to
+        # 数据库主机由节点配置，需 SSRF 校验并连接解析后的安全 IP
         # server-side, so guard against SSRF (internal hosts, loopback, cloud
         # metadata) the same way the `test_db_connection` endpoint does. Connect
         # to the validated, resolved public IP so a later DNS change cannot
@@ -253,6 +264,7 @@ class ExeSQL(ToolBase, ABC):
                 if not single_sql:
                     continue
                 single_sql = re.sub(r"\[ID:[0-9]+\]", "", single_sql)
+                # 安全策略：拒绝写操作语句
                 if re.match(r"^(insert|update|delete)\b", single_sql, flags=re.IGNORECASE):
                     sql_res.append({"content": "For security reasons, INSERT, UPDATE, and DELETE statements are not supported."})
                     formalized_content.append("For security reasons, INSERT, UPDATE, and DELETE statements are not supported.")
@@ -277,7 +289,7 @@ class ExeSQL(ToolBase, ABC):
                     sql_res.append(convert_decimals(single_res.to_dict(orient="records")))
                     formalized_content.append(single_res.to_markdown(index=False, floatfmt=".6f"))
                 except Exception as e:
-                    # A failing statement must not abort the node: report it and keep
+                    # 单条失败不终止节点：记录错误并 rollback 以便后续语句继续
                     # going so earlier results survive and later statements still run.
                     # The rollback clears PostgreSQL's aborted-transaction state, which
                     # would otherwise make every subsequent statement fail too.

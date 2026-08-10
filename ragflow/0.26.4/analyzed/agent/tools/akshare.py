@@ -23,7 +23,7 @@ from common.connection_utils import timeout
 
 class AkShareParam(ToolParamBase):
     """
-    Define the AkShare component parameters.
+    AkShare 组件参数：股票代码查询与返回条数 top_n。
     """
 
     def __init__(self):
@@ -50,6 +50,10 @@ class AkShareParam(ToolParamBase):
 
 
 class AkShare(ToolBase, ABC):
+    """
+    调用 akshare.stock_news_em 拉取指定股票代码的新闻并格式化为 HTML 链接列表。
+    """
+
     component_name = "AkShare"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
@@ -63,6 +67,7 @@ class AkShare(ToolBase, ABC):
             return ""
 
         last_e = None
+        # 带重试的循环：取消检查、拉取数据、格式化输出
         for _ in range(self._param.max_retries + 1):
             if self.check_if_canceled("AkShare processing"):
                 return
@@ -75,6 +80,7 @@ class AkShare(ToolBase, ABC):
                 if self.check_if_canceled("AkShare processing"):
                     return
 
+                # 将 DataFrame 每行转为带链接的 HTML 片段
                 items = ['<a href="{}">{}</a>\n 新闻内容: {} \n发布时间:{} \n文章来源: {}'.format(i["新闻链接"], i["新闻标题"], i["新闻内容"], i["发布时间"], i["文章来源"]) for _, i in df.iterrows()]
                 res = "\n\n".join(items)
                 self.set_output("formalized_content", res)

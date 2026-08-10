@@ -12,6 +12,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+代码沙箱执行工具：在 Provider 或 HTTP 沙箱中运行 Python/Node.js，校验输出契约并上传 artifacts。
+
+包含类型推断、业务输出选择与附件解析上传逻辑。
+"""
+
 #
 import ast
 import base64
@@ -49,10 +55,12 @@ SYSTEM_OUTPUT_KEYS = frozenset(
 
 
 class ContractError(ValueError):
+    """CodeExec 输出契约校验失败时抛出。"""
     pass
 
 
 def _validate_business_output_name(name: str) -> None:
+    """校验业务输出名非空、非系统保留且不含点号。"""
     if not name or not name.strip():
         raise ContractError("CodeExec business output name must not be empty")
     if name in SYSTEM_OUTPUT_KEYS:
@@ -62,6 +70,7 @@ def _validate_business_output_name(name: str) -> None:
 
 
 def select_business_output(outputs: Mapping[str, object]) -> tuple[str, object]:
+    """从 outputs 中选出唯一业务输出槽位及其元数据。"""
     if len(outputs) == 1:
         only_name, only_meta = next(iter(outputs.items()))
         _validate_business_output_name(only_name)
@@ -181,6 +190,7 @@ def _validate_expected_type(expected_type: str, value, path: str = "") -> None:
 
 
 def build_code_exec_contract(outputs: Mapping[str, object], raw_result) -> dict[str, object]:
+    """构建含 business_output、value、actual_type 与 content 的契约字典。"""
     business_name, business_meta = select_business_output(outputs)
     expected_type = ""
     if isinstance(business_meta, Mapping):
@@ -235,7 +245,7 @@ class CodeExecutionRequest(BaseModel):
 
 class CodeExecParam(ToolParamBase):
     """
-    Define the code sandbox component parameters.
+    代码沙箱参数：语言、脚本源码、arguments 与 outputs 契约定义。
     """
 
     def __init__(self):
@@ -321,6 +331,10 @@ module.exports = { main };
 
 
 class CodeExec(ToolBase, ABC):
+    """
+    优先走 sandbox Provider，失败时回退 HTTP /run；处理 stdout、stderr 与 artifacts。
+    """
+
     component_name = "CodeExec"
     _lifecycle_configured = False
 
@@ -349,7 +363,7 @@ class CodeExec(ToolBase, ABC):
         timeout_seconds = int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 10 * 60))
 
         try:
-            # Try using the new sandbox provider system first
+            # 优先使用新沙箱 Provider 体系执行代码
             try:
                 from agent.sandbox.client import execute_code as sandbox_execute_code
                 from agent.sandbox.client import get_provider_info
@@ -389,7 +403,7 @@ class CodeExec(ToolBase, ABC):
                 self.set_output("_ERROR", f"Provider system execution failed: {provider_error}")
                 return self.output()
 
-            # Fallback to direct HTTP request
+            # Provider 不可用时回退到直连 HTTP 沙箱
             code_b64 = self._encode_code(code)
             code_req = CodeExecutionRequest(code_b64=code_b64, language=language, arguments=arguments).model_dump()
         except Exception as e:
@@ -441,6 +455,7 @@ class CodeExec(ToolBase, ABC):
         artifacts: list | None = None,
         execution_metadata: dict | None = None,
     ):
+        # 解析结构化/stdout 结果，上传 artifacts 并合并 content 输出
         has_structured_result = bool((execution_metadata or {}).get("result_present") is True)
         resolved_value, used_stdout_fallback = self._resolve_execution_result_value(stdout, execution_metadata)
 
@@ -448,7 +463,7 @@ class CodeExec(ToolBase, ABC):
             self.set_output("_ERROR", stderr)
             return self.output()
 
-        # Clear any stale error from previous runs or base class initialization
+        # 清除上一轮或基类初始化遗留的错误标记
         self.set_output("_ERROR", "")
 
         if stderr:
@@ -527,6 +542,7 @@ class CodeExec(ToolBase, ABC):
             logging.warning(f"[CodeExec]: Failed to set bucket lifecycle: {e}")
 
     def _upload_artifacts(self, artifacts: list) -> list[dict]:
+        # 将 base64 附件写入对象存储并生成带 session_id 的下载 URL
         self._ensure_bucket_lifecycle()
         uploaded = []
         for art in artifacts:
@@ -576,6 +592,7 @@ class CodeExec(ToolBase, ABC):
         return text
 
     def _apply_business_output(self, parsed_stdout) -> str:
+        # 按 outputs 契约校验类型并写入对应业务输出槽
         normalized_result = normalize_output_value(parsed_stdout)
         self.set_output("raw_result", normalized_result)
 

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Google Scholar 学术搜索工具：检索论文并提取标题、作者与摘要。
+"""
+
 #
 import itertools
 import logging
@@ -25,7 +29,7 @@ from common.connection_utils import timeout
 
 class GoogleScholarParam(ToolParamBase):
     """
-    Define the GoogleScholar component parameters.
+    Google Scholar 参数：查询词、排序、年份范围与是否含专利。
     """
 
     def __init__(self):
@@ -58,6 +62,10 @@ class GoogleScholarParam(ToolParamBase):
 
 
 class GoogleScholar(ToolBase, ABC):
+    """
+    scholarly.search_pubs 惰性结果经 islice 物化后写入引用与 json 输出。
+    """
+
     component_name = "GoogleScholar"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
@@ -83,7 +91,7 @@ class GoogleScholar(ToolBase, ABC):
                 if self.check_if_canceled("GoogleScholar processing"):
                     return
 
-                # search_pubs returns a lazy generator: materialize at most top_n
+                # search_pubs 为惰性生成器：物化 top_n 条供 _retrieve_chunks 与 json 共用
                 # results once so the bound is respected and the same list feeds
                 # both _retrieve_chunks and the json output (iterating it twice
                 # would otherwise leave json empty).
