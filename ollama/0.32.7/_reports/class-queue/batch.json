@@ -1,13 +1,6 @@
 {
   "claimed_at": "2026-08-10T16:26:10Z",
   "files": [
-    "x/quant/quant.go",
-    "x/safetensors/extractor.go",
-    "x/server/show.go",
-    "x/tokenizer/tokenizer.go",
-    "x/tokenizer/tokenizer_bpe.go",
-    "x/tokenizer/tokenizer_decode.go",
-    "x/tokenizer/tokenizer_encode.go",
     "x/tokenizer/tokenizer_load.go",
     "x/transfer/download.go",
     "x/transfer/sparse_other.go",
@@ -16,5 +9,5 @@
     "x/transfer/upload.go"
   ],
   "remaining_pending": 0,
-  "done": 450
+  "done": 457
 }
