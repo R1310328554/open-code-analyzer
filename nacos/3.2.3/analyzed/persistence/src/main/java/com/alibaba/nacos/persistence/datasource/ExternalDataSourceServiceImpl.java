@@ -43,7 +43,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Base data source.
+ * 外部数据库数据源服务实现。
+ *
+ * <p>管理多 HikariCP 数据源的主从选举、健康巡检、PostgreSQL tenant_id 模式校验， 并提供 {@link JdbcTemplate} 与事务模板供持久层使用。</p>
  *
  * @author Nacos
  */
@@ -52,9 +54,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
     private static final Logger LOGGER =
         LoggerFactory.getLogger(ExternalDataSourceServiceImpl.class);
     
-    /**
-     * JDBC execute timeout value, unit:second.
-     */
+    /** JDBC 查询超时时间，单位：秒。 */
     private int queryTimeout = 3;
     
     private static final int TRANSACTION_QUERY_TIMEOUT = 5;
@@ -71,6 +71,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
     private static final String[] POSTGRESQL_CONFIG_TENANT_TABLES = {"config_info",
         "config_info_gray", "config_tags_relation", "his_config_info"};
     
+    /** 已加载的外部 HikariCP 数据源列表。 */
     private List<HikariDataSource> dataSourceList = new ArrayList<>();
     
     private JdbcTemplate jt;
@@ -87,6 +88,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
     
     private volatile List<Boolean> isHealthList;
     
+    /** 当前主库在 dataSourceList 中的索引。 */
     private volatile int masterIndex;
     
     private String dataSourceType = "";
@@ -94,10 +96,11 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
     private final String defaultDataSourceType = "";
     
     @Override
+    /** 初始化 JDBC 模板、事务管理器并启动主库选举与健康检查定时任务。 */
     public void init() {
         queryTimeout = ConvertUtils.toInt(System.getProperty("QUERYTIMEOUT"), 3);
         jt = new JdbcTemplate();
-        // Set the maximum number of records to prevent memory expansion
+        // 限制最大返回行数，防止内存膨胀
         jt.setMaxRows(50000);
         jt.setQueryTimeout(queryTimeout);
         
@@ -105,10 +108,10 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
         testMasterJt.setQueryTimeout(queryTimeout);
         
         testMasterWritableJt = new JdbcTemplate();
-        // Prevent the login interface from being too long because the main library is not available
+        // 主库不可用时缩短超时，避免登录接口长时间阻塞
         testMasterWritableJt.setQueryTimeout(1);
         
-        //  Database health check
+        // 初始化各数据源健康检测用的 JdbcTemplate
         
         testJtList = new ArrayList<>();
         isHealthList = new ArrayList<>();
@@ -116,7 +119,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
         tm = new DataSourceTransactionManager();
         tjt = new TransactionTemplate(tm);
         
-        // Transaction timeout needs to be distinguished from ordinary operations.
+        // 事务超时需与普通查询超时区分设置
         tjt.setTimeout(TRANSACTION_QUERY_TIMEOUT);
         
         dataSourceType = DatasourcePlatformUtil.getDatasourcePlatform(defaultDataSourceType);
@@ -137,6 +140,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
     }
     
     @Override
+    /** 重建数据源列表、重选主库并关闭旧连接池。 */
     public synchronized void reload() throws IOException {
         try {
             final List<JdbcTemplate> testJtListNew = new ArrayList<JdbcTemplate>();
@@ -144,7 +148,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
             
             List<HikariDataSource> dataSourceListNew = new ExternalDataSourceProperties()
                 .build(EnvUtil.getEnvironment(), (dataSource) -> {
-                    //check datasource connection
+                    // 校验数据源连接可用性
                     ConnectionCheckUtil.checkDataSourceConnection(dataSource);
                     
                     JdbcTemplate jdbcTemplate = new JdbcTemplate();
@@ -163,7 +167,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
             validatePostgresqlTenantSchema();
             new CheckDbHealthTask().run();
             
-            //close old datasource.
+            // 关闭旧数据源释放连接
             if (dataSourceListOld != null && !dataSourceListOld.isEmpty()) {
                 for (HikariDataSource dataSource : dataSourceListOld) {
                     dataSource.close();
@@ -183,10 +187,11 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
     }
     
     @Override
+    /** 通过 {@code SELECT @@read_only} 判断主库是否可写。 */
     public boolean checkMasterWritable() {
         
         testMasterWritableJt.setDataSource(jt.getDataSource());
-        // Prevent the login interface from being too long because the main library is not available
+        // 主库不可用时缩短超时，避免登录接口长时间阻塞
         testMasterWritableJt.setQueryTimeout(1);
         String sql = " SELECT @@read_only ";
         
@@ -225,15 +230,16 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
     }
     
     @Override
+    /** 汇总各库健康状态，主库异常返回 DOWN，从库异常返回 WARN。 */
     public String getHealth() {
         for (int i = 0; i < isHealthList.size(); i++) {
             if (!isHealthList.get(i)) {
                 if (i == masterIndex) {
-                    // The master is unhealthy.
+                    // 主库不健康
                     return "DOWN:"
                         + InternetAddressUtil.getIpFromString(dataSourceList.get(i).getJdbcUrl());
                 } else {
-                    // The slave  is unhealthy.
+                    // 从库不健康
                     return "WARN:"
                         + InternetAddressUtil.getIpFromString(dataSourceList.get(i).getJdbcUrl());
                 }
@@ -248,6 +254,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
         return dataSourceType;
     }
     
+    /** PostgreSQL 平台下校验 config 表 tenant_id 列约束。 */
     void validatePostgresqlTenantSchema() {
         if (!POSTGRESQL.equalsIgnoreCase(dataSourceType) || null == jt.getDataSource()) {
             return;
@@ -291,6 +298,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
             + " before starting Nacos.";
     }
     
+    /** 定时任务：通过试写探测可写主库并切换 JdbcTemplate。 */
     class SelectMasterTask implements Runnable {
         
         @Override
@@ -316,7 +324,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
                     isFound = true;
                     masterIndex = index;
                     break;
-                } catch (DataAccessException e) { // read only
+                } catch (DataAccessException e) { // 只读库写入失败，继续尝试下一个
                     LOGGER.warn("[master-db] master db access error", e);
                 }
             }
@@ -328,6 +336,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
         }
     }
     
+    /** 定时任务：对各数据源执行探活查询并更新健康标记。 */
     class CheckDbHealthTask implements Runnable {
         
         @Override
@@ -343,7 +352,7 @@ public class ExternalDataSourceServiceImpl implements DataSourceService {
                     try {
                         jdbcTemplate.queryForMap(sql);
                     } catch (EmptyResultDataAccessException e) {
-                        // do nothing.
+                        // 空结果视为健康，忽略
                     }
                     isHealthList.set(i, Boolean.TRUE);
                 } catch (DataAccessException e) {

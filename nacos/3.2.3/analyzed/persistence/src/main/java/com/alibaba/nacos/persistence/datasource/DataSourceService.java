@@ -22,65 +22,67 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Datasource interface.
+ * 数据源服务接口。
+ *
+ * <p>抽象 Nacos 持久层 JDBC 访问：初始化、重载、主库可写检测、 {@link JdbcTemplate} 与 {@link TransactionTemplate} 获取及健康状态查询。</p>
  *
  * @author Nacos
  */
 public interface DataSourceService {
     
     /**
-     * Initialize the relevant resource information.
+     * 初始化数据源及相关 JDBC 资源。
      *
-     * @throws Exception exception.
+     * @throws Exception 初始化失败时抛出
      */
     void init() throws Exception;
     
     /**
-     * Reload.
+     * 重新加载数据源配置（如外部 MySQL 多数据源切换）。
      *
-     * @throws IOException exception.
+     * @throws IOException 重载失败时抛出
      */
     void reload() throws IOException;
     
     /**
-     * Check master db.
+     * 检测当前主库是否可写。
      *
-     * @return is master.
+     * @return 主库可写返回 true
      */
     boolean checkMasterWritable();
     
     /**
-     * Get jdbc template.
+     * 获取用于 SQL 操作的 {@link JdbcTemplate}。
      *
-     * @return JdbcTemplate.
+     * @return JDBC 模板
      */
     JdbcTemplate getJdbcTemplate();
     
     /**
-     * Get transaction template.
+     * 获取事务模板，用于编程式事务。
      *
-     * @return TransactionTemplate.
+     * @return 事务模板
      */
     TransactionTemplate getTransactionTemplate();
     
     /**
-     * Get current db url.
+     * 返回当前活跃数据源的 JDBC URL。
      *
-     * @return database url
+     * @return 数据库连接 URL
      */
     String getCurrentDbUrl();
     
     /**
-     * Get heath information.
+     * 返回数据源健康状态摘要（UP/DOWN/WARN）。
      *
-     * @return heath info.
+     * @return 健康信息字符串
      */
     String getHealth();
     
     /**
-     * Get current db type.
+     * 返回当前数据源平台类型（如 mysql、derby）。
      *
-     * @return
+     * @return 数据源类型
      */
     String getDataSourceType();
     

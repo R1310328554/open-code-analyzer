@@ -19,12 +19,15 @@ package com.alibaba.nacos.persistence.model.event;
 import com.alibaba.nacos.common.notify.SlowEvent;
 
 /**
- * DerbyLoadEvent.
+ * Derby 数据库加载完成事件。
+ *
+ * <p>单例 {@link SlowEvent}，在嵌入式 Derby 初始化或 schema 加载完成后发布， 通知依赖方可以开始访问本地库。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class DerbyLoadEvent extends SlowEvent {
     
+    /** 全局单例事件实例。 */
     public static final DerbyLoadEvent INSTANCE = new DerbyLoadEvent();
     
     private static final long serialVersionUID = 875401667921565121L;

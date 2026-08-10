@@ -21,12 +21,15 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import org.springframework.jdbc.core.RowMapper;
 
 /**
- * Pagination Utils interface.
+ * 数据库分页查询辅助接口。
+ *
+ * <p>封装 count + fetch 分页、LIMIT 分页及 {@link MapperResult} 插件化 SQL 等多种分页模式， 返回 {@link Page} 统一结果。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public interface PaginationHelper<E> {
     
+    /** 标准 count + offset 分页查询。 */
     Page<E> fetchPage(final String sqlCountRows, final String sqlFetchRows, final Object[] args,
         final int pageNo,
         final int pageSize, final RowMapper<E> rowMapper);
@@ -35,6 +38,7 @@ public interface PaginationHelper<E> {
         final int pageNo,
         final int pageSize, final Long lastMaxId, final RowMapper<E> rowMapper);
     
+    /** 使用 LIMIT 语法的分页查询（count 与 fetch 共用 args）。 */
     Page<E> fetchPageLimit(final String sqlCountRows, final String sqlFetchRows,
         final Object[] args, final int pageNo,
         final int pageSize, final RowMapper<E> rowMapper);
@@ -47,9 +51,11 @@ public interface PaginationHelper<E> {
         final int pageSize,
         final RowMapper<E> rowMapper);
     
+    /** 基于插件 {@link MapperResult} 的分页查询。 */
     Page<E> fetchPageLimit(final MapperResult countMapperResult, final MapperResult mapperResult,
         final int pageNo,
         final int pageSize, final RowMapper<E> rowMapper);
     
+    /** 带 LIMIT 约束的更新操作。 */
     void updateLimit(final String sql, final Object[] args);
 }

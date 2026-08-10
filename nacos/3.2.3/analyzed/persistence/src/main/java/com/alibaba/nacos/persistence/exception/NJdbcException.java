@@ -19,19 +19,24 @@ package com.alibaba.nacos.persistence.exception;
 import org.springframework.dao.DataAccessException;
 
 /**
- * NJdbcException.
+ * Nacos 持久层 JDBC 访问异常。
+ *
+ * <p>继承 {@link DataAccessException}，可携带原始异常类名便于上层识别与转换。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 @SuppressWarnings("all")
 public class NJdbcException extends DataAccessException {
     
+    /** 原始异常类名，用于错误分类。 */
     private String originExceptionName;
     
+    /** 仅含消息的 JDBC 异常。 */
     public NJdbcException(String msg) {
         super(msg);
     }
     
+    /** 含消息与原始异常类名的 JDBC 异常。 */
     public NJdbcException(String msg, String originExceptionName) {
         super(msg);
         this.originExceptionName = originExceptionName;
@@ -50,6 +55,7 @@ public class NJdbcException extends DataAccessException {
         super("", cause);
     }
     
+    /** 返回原始异常类名。 */
     public String getOriginExceptionName() {
         return originExceptionName;
     }

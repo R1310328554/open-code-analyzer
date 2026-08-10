@@ -23,14 +23,16 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * Judge whether to user StandaloneEmbedStorage by condition.
- * When embeddedStorage==false.
+ * 判断是否启用单机嵌入式存储的 Spring {@link Condition}。
+ *
+ * <p>当 {@link DatasourceConfiguration#isEmbeddedStorage()} 为 true 且处于 {@link EnvUtil#getStandaloneMode()} 单机模式时匹配，用于条件化注册 Derby 相关 Bean。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class ConditionStandaloneEmbedStorage implements Condition {
     
     @Override
+    /** 嵌入式存储开启且为单机模式时返回 true。 */
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         return DatasourceConfiguration.isEmbeddedStorage() && EnvUtil.getStandaloneMode();
     }

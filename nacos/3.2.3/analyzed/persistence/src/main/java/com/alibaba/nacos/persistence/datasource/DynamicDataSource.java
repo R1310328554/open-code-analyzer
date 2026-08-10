@@ -19,30 +19,37 @@ package com.alibaba.nacos.persistence.datasource;
 import com.alibaba.nacos.persistence.configuration.DatasourceConfiguration;
 
 /**
- * Datasource adapter.
+ * 动态数据源适配器（单例）。
+ *
+ * <p>根据 {@link DatasourceConfiguration#isEmbeddedStorage()} 在 {@link LocalDataSourceServiceImpl}（Derby 嵌入式）与 {@link ExternalDataSourceServiceImpl}（外部 MySQL 等） 之间切换，单机默认嵌入式、集群默认外部库。</p>
  *
  * @author Nacos
  */
 public class DynamicDataSource {
     
+    /** 本地 Derby 嵌入式数据源服务。 */
     private DataSourceService localDataSourceService = null;
     
+    /** 外部数据库数据源服务。 */
     private DataSourceService basicDataSourceService = null;
     
+    /** 单例实例。 */
     private static final DynamicDataSource INSTANCE = new DynamicDataSource();
     
     private DynamicDataSource() {
     }
     
+    /** 获取动态数据源单例。 */
     public static DynamicDataSource getInstance() {
         return INSTANCE;
     }
     
+    /** 懒加载并返回当前模式对应的数据源服务。 */
     public synchronized DataSourceService getDataSource() {
         try {
             
-            // Embedded storage is used by default in stand-alone mode
-            // In cluster mode, external databases are used by default
+            // 单机模式默认使用嵌入式存储
+            // 集群模式默认使用外部数据库
             
             if (DatasourceConfiguration.isEmbeddedStorage()) {
                 if (localDataSourceService == null) {

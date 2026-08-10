@@ -28,7 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Manager RowMapper {@link RowMapper} for database object mapping.
+ * {@link RowMapper} 注册与管理器。
+ *
+ * <p>维护类全名到 RowMapper 实例的映射，内置 {@link MapRowMapper} 将结果集转为 Map， 支持运行时注册自定义映射器。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -36,26 +38,30 @@ public final class RowMapperManager {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(RowMapperManager.class);
     
+    /** 默认 Map 行映射器单例。 */
     public static final MapRowMapper MAP_ROW_MAPPER = new MapRowMapper();
     
+    /** 类全名到 RowMapper 的注册表。 */
     public static Map<String, RowMapper> mapperMap = new HashMap<>(16);
     
     static {
-        // MAP_ROW_MAPPER
+        // 注册内置 MAP_ROW_MAPPER
         mapperMap.put(MAP_ROW_MAPPER.getClass().getCanonicalName(), MAP_ROW_MAPPER);
     }
     
+    /** 按类全名查找已注册的 RowMapper。 */
     public static <D> RowMapper<D> getRowMapper(String classFullName) {
         return (RowMapper<D>) mapperMap.get(classFullName);
     }
     
     /**
-     * Register custom row mapper to manager.
+     * 注册自定义 RowMapper 到管理器。
      *
-     * @param classFullName full class name of row mapper handled.
-     * @param rowMapper     row mapper
-     * @param <D>           class of row mapper handled
+     * @param classFullName 映射器处理的类全名
+     * @param rowMapper RowMapper 实例
+     * @param <D> 映射目标类型
      */
+    /** 注册或覆盖 RowMapper，冲突时记录警告。 */
     public static synchronized <D> void registerRowMapper(String classFullName,
         RowMapper<D> rowMapper) {
         if (mapperMap.containsKey(classFullName)) {
@@ -66,9 +72,11 @@ public final class RowMapperManager {
         mapperMap.put(classFullName, rowMapper);
     }
     
+    /** 将 ResultSet 每行转为 LinkedHashMap 的 RowMapper 实现。 */
     public static final class MapRowMapper implements RowMapper<Map<String, Object>> {
         
         @Override
+        /** 按列标签填充 Map，保持列顺序。 */
         public Map<String, Object> mapRow(ResultSet resultSet, int rowNum) throws SQLException {
             ResultSetMetaData metaData = resultSet.getMetaData();
             int columnCount = metaData.getColumnCount();
