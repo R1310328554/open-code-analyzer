@@ -1,8 +1,8 @@
 import { sha256, sha384 } from "@noble/hashes/sha2.js";
 
-// Shim for Web Crypto API specifically for Keycloak JS, as this API can sometimes be missing, for example in an insecure context:
+// Keycloak JS 用的 Web Crypto API 垫片：非安全上下文（如 HTTP）可能缺少 crypto.subtle
 // https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts
-// Since we have decided to support insecure contexts, we (sadly) need to provide a fallback for the Web Crypto API.
+// 因需支持非安全上下文，须为缺失的 Web Crypto 能力提供降级实现
 if (typeof crypto === "undefined") {
   globalThis.crypto = {};
 }
@@ -28,6 +28,7 @@ if (typeof crypto.subtle === "undefined") {
 if (typeof crypto.getRandomValues === "undefined") {
   Object.defineProperty(crypto, "getRandomValues", {
     value: (array) => {
+      // 降级：用 Math.random 填充字节（非密码学安全，仅作缺失 API 时的兜底）
       for (let i = 0; i < array.length; i++) {
         array[i] = Math.floor(Math.random() * 256);
       }
@@ -47,7 +48,7 @@ if (typeof crypto.randomUUID === "undefined") {
       arr[6] = (arr[6] & 0x0f) | 0x40; // bits 12-15 are 0100
       arr[8] = (arr[8] & 0x3f) | 0x80; // bits 14-15 are 10
 
-      // Convert to hex string
+      // 转为标准 8-4-4-4-12 十六进制 UUID 字符串
       return Array.from(arr, (v) => v.toString(16).padStart(2, "0"))
         .join("")
         .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5");

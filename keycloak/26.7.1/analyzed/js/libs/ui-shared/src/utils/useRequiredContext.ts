@@ -3,11 +3,11 @@ import { useContext } from "react";
 import { isDefined } from "./isDefined";
 
 /**
- * Passes the call to `useContext` and throw an exception if the resolved value is either `null` or `undefined`.
- * Can be used for contexts that are required and should always have a non nullable value.
+ * 封装 {@link useContext}，当解析结果为 `null` 或 `undefined` 时抛出异常。
+ * 适用于必须存在 Provider 且值不可为空的 Context。
  *
- * @param context The context to pass to `useContext`
- * @returns
+ * @param context 传给 `useContext` 的 React Context
+ * @returns 非空的 Context 值
  */
 export function useRequiredContext<T>(context: Context<T>): NonNullable<T> {
   const resolved = useContext(context);

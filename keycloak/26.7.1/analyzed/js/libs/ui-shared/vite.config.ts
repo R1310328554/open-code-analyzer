@@ -6,6 +6,7 @@ import { checker } from "vite-plugin-checker";
 import dts from "vite-plugin-dts";
 import { libInjectCss } from "vite-plugin-lib-inject-css";
 
+// ui-shared 库模式构建：ESM 输出、类型声明与 CSS 注入
 // https://vitejs.dev/config/
 export default defineConfig({
   build: {
@@ -17,6 +18,7 @@ export default defineConfig({
     },
     rollupOptions: {
       plugins: [
+        // 将 peerDependencies 标记为 external，避免打进 bundle
         peerDepsExternal({
           includeDependencies: true,
         }),
