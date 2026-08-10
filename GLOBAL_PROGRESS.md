@@ -25,7 +25,7 @@
 | harness | 2.28.2 | 388 | 0 ✅ |
 | ollama | 0.32.7 | 463 | 0 ✅ |
 | ragflow | 0.26.4 | 1764 | 0 ✅ |
-| prometheus | 3.13.2 | 0 | 534 |
+| prometheus | 3.13.2 | 534 | 0 ✅ |
 
-已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness / ollama / ragflow。  
-进行中：prometheus 3.13.2（Go，pending=534）。
+已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness / ollama / ragflow / prometheus。  
+进行中：loki（待脚手架）。

@@ -145,9 +145,10 @@ projects:
   url: https://github.com/prometheus/prometheus
   languages:
   - go
-  status: in_progress
+  status: complete
   version: "3.13.2"
 - id: loki
   url: https://github.com/grafana/loki
   languages:
   - go
+  status: in_progress
