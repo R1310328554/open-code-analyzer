@@ -1,3 +1,7 @@
+/**
+ * use-edit-mcp.ts — MCP 服务器新建/编辑弹窗状态与提交逻辑。
+ */
+
 import { useSetModalState } from '@/hooks/common-hooks';
 import {
   useCreateMcpServer,
@@ -5,6 +9,7 @@ import {
 } from '@/hooks/use-mcp-request';
 import { useCallback, useState } from 'react';
 
+/** 管理编辑弹窗；id 为空时 create，否则 updateMcpServer。 */
 export const useEditMcp = () => {
   const {
     visible: editVisible,
@@ -50,4 +55,5 @@ export const useEditMcp = () => {
   };
 };
 
+/** useEditMcp 返回值类型，供设置页子组件引用。 */
 export type UseEditMcpReturnType = ReturnType<typeof useEditMcp>;

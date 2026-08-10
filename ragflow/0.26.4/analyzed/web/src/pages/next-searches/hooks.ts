@@ -1,4 +1,8 @@
-// src/pages/next-searches/hooks.ts
+/**
+ * next-searches/hooks.ts — 搜索应用列表与详情：创建、删除、更新及重命名弹窗。
+ */
+
+// src/pages/next-searches/hooks.ts（搜索应用 CRUD 与列表查询）
 
 import message from '@/components/ui/message';
 import { useSetModalState } from '@/hooks/common-hooks';
@@ -21,6 +25,7 @@ interface CreateSearchResponse {
   description: string;
 }
 
+/** 创建搜索应用；成功后 toast 提示。 */
 export const useCreateSearch = () => {
   const { t } = useTranslation();
 
@@ -55,6 +60,7 @@ export const useCreateSearch = () => {
   return { data, isError, createSearch };
 };
 
+/** 搜索应用列表 API 查询参数。 */
 export interface SearchListParams {
   keywords?: string;
   parser_id?: string;
@@ -64,6 +70,7 @@ export interface SearchListParams {
   desc?: boolean;
   owner_ids?: string;
 }
+/** 列表项：搜索应用摘要信息。 */
 export interface ISearchAppProps {
   avatar: any;
   create_time: number;
@@ -86,6 +93,7 @@ interface SearchListResponse {
   message: string;
 }
 
+/** 分页 + 关键词防抖拉取搜索应用列表。 */
 export const useFetchSearchList = () => {
   const { handleInputChange, searchString, pagination, setPagination } =
     useHandleSearchChange();
@@ -156,6 +164,7 @@ interface IllmSettingEnableProps {
   presencePenaltyEnabled?: boolean;
   frequencyPenaltyEnabled?: boolean;
 }
+/** 搜索应用详情，含 search_config（检索、LLM、元数据过滤等）。 */
 export interface ISearchAppDetailProps {
   avatar: any;
   created_by: string;
@@ -200,6 +209,7 @@ interface SearchDetailResponse {
   message: string;
 }
 
+/** 按路由 id 或 shared_id 拉取详情；共享链接需 tenantId。 */
 export const useFetchSearchDetail = (tenantId?: string) => {
   const { id } = useParams();
 
@@ -231,6 +241,7 @@ export const useFetchSearchDetail = (tenantId?: string) => {
   return { data: data?.data, isLoading, isError };
 };
 
+/** 删除搜索应用并刷新列表缓存。 */
 export const useDeleteSearch = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -271,6 +282,7 @@ export type IUpdateSearchProps = Omit<ISearchAppDetailProps, 'id'> & {
   search_id: string;
 };
 
+/** 更新搜索应用设置，成功后失效详情 query。 */
 export const useUpdateSearch = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -306,6 +318,7 @@ export const useUpdateSearch = () => {
   return { data, isError, updateSearch };
 };
 
+/** 新建/重命名弹窗：无 id 时 create，有 id 时先拉详情再 update。 */
 export const useRenameSearch = () => {
   const [search, setSearch] = useState<ISearchAppProps>({} as ISearchAppProps);
   const { navigateToSearch } = useNavigatePage();

@@ -1,3 +1,7 @@
+/**
+ * skills/hooks.ts — Skill Space 数据层：文件系统目录、搜索索引、上传/删除与配置。
+ */
+
 import message from '@/components/ui/message';
 import fileManagerService from '@/services/file-manager-service';
 import skillSpaceService, {
@@ -15,20 +19,23 @@ import {
   validateSkillFormat as validateSkillFormatImpl,
 } from './validation';
 
+// 根目录下存放所有 Skill Space 的文件夹名
 const SKILLS_FOLDER = 'skills';
 
-// Helper to get file extension
+// 从文件名提取扩展名（小写）
 const getFileExt = (filename: string): string => {
   const parts = filename.split('.');
   return parts.length > 1 ? parts.pop()!.toLowerCase() : '';
 };
 
+/** 判断文件名是否为 Markdown 扩展名。 */
 // Helper to check if file is markdown
 export const isMarkdownFile = (filename: string): boolean => {
   const mdExts = ['md', 'markdown', 'mdown', 'mkd'];
   return mdExts.includes(getFileExt(filename));
 };
 
+/** 解析 Markdown frontmatter 为 SkillMetadata 与正文。 */
 // Helper to parse YAML-like metadata from markdown frontmatter
 export const parseMetadata = (
   content: string,
@@ -37,7 +44,7 @@ export const parseMetadata = (
   return { metadata, body };
 };
 
-// Normalize timestamp-like values from backend to milliseconds.
+// 将后端多种时间格式统一为毫秒时间戳。
 // Supports epoch seconds, epoch milliseconds and ISO datetime strings.
 const toTimestampMs = (value: unknown): number | null => {
   if (value === null || value === undefined || value === '') return null;
@@ -121,7 +128,7 @@ const pickSkillTimestamp = (result: any): number => {
   return Date.now();
 };
 
-// Export validation function from validation module
+// 对外暴露校验函数（来自 validation 模块）
 export { validateSkillFormatImpl as validateSkillFormat };
 
 // Re-export validation utilities for use in components
@@ -135,6 +142,7 @@ export {
 // Query key for file content
 const fileContentQueryKey = (fileId: string) => ['skillFileContent', fileId];
 
+/** 按 fileId 拉取文件文本内容（React Query 缓存 5 分钟）。 */
 // Hook to fetch file content using TanStack Query
 export const useFileContent = (fileId: string | null) => {
   return useQuery({
@@ -155,6 +163,7 @@ export const useFileContent = (fileId: string | null) => {
   });
 };
 
+/** Skill 列表、Space 管理与上传/删除的主 hook。 */
 // Hook to manage skills
 export const useSkills = () => {
   const { t } = useTranslation();
@@ -1384,10 +1393,11 @@ export const useSkills = () => {
   };
 };
 
-// Query key for skill search config
+// Skill 搜索配置的 React Query key
 const skillSearchConfigQueryKey = (spaceId: string, embdId?: string) =>
   ['skillSearchConfig', spaceId, embdId].filter(Boolean);
 
+/** Skill 空间检索配置：读写、重建索引与语义搜索。 */
 // Skill Search Config Hook
 export const useSkillSearchConfig = (spaceId?: string) => {
   const { t } = useTranslation();

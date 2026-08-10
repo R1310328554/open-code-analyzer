@@ -1,4 +1,4 @@
-// Skill validation utilities
+// Skill 包结构与内容校验工具集
 
 import type {
   SkillFileEntry,
@@ -7,7 +7,7 @@ import type {
 } from './types';
 
 // ============================================================================
-// Text File Validation
+// 文本文件扩展名与 Content-Type 判定
 // ============================================================================
 
 const TEXT_FILE_EXTENSIONS = [
@@ -68,7 +68,7 @@ const TEXT_CONTENT_TYPES = [
 const TEXT_CONTENT_TYPE_SET = new Set<string>(TEXT_CONTENT_TYPES);
 
 /**
- * Check if a content type is text-based
+ * 判断 MIME 是否为可索引的文本类型。
  */
 export function isTextContentType(contentType: string): boolean {
   if (!contentType) return false;
@@ -79,7 +79,7 @@ export function isTextContentType(contentType: string): boolean {
 }
 
 /**
- * Check if a file is a text file based on its extension
+ * 根据扩展名或 Content-Type 判断是否为文本文件。
  */
 export function isTextFile(filePath: string, contentType?: string): boolean {
   // Check content type first
@@ -94,11 +94,11 @@ export function isTextFile(filePath: string, contentType?: string): boolean {
 }
 
 // ============================================================================
-// Path Sanitization
+// 相对路径清洗与目录穿越防护
 // ============================================================================
 
 /**
- * Sanitize relative path to prevent directory traversal attacks
+ * 规范化相对路径，拒绝 .. 与反斜杠等非法片段。
  */
 export function sanitizeRelPath(path: string): string | null {
   const normalized = path.replace(/^\.\/+/, '').replace(/^\/+/, '');
@@ -108,7 +108,7 @@ export function sanitizeRelPath(path: string): string | null {
 }
 
 /**
- * Check if a path is Mac junk file (should be ignored)
+ * 识别 macOS 压缩包 junk（.DS_Store、__MACOSX、._*）。
  */
 export function isMacJunkPath(path: string): boolean {
   const normalized = path.toLowerCase();
@@ -152,12 +152,11 @@ export function hasJunkFiles(files: File[]): boolean {
 }
 
 // ============================================================================
-// SKILL.md Validation
+// SKILL.md frontmatter 解析与必填项
 // ============================================================================
 
 /**
- * Parse YAML frontmatter from markdown content
- * Returns metadata and body content
+ * 解析 Markdown 顶部 --- 包裹的 YAML 风格元数据与正文。
  */
 export function parseFrontmatter(content: string): {
   metadata: SkillMetadata;
@@ -275,15 +274,14 @@ function parseYamlValue(value: string): unknown {
 }
 
 // ============================================================================
-// Main Validation Function
+// 上传前主校验入口
 // ============================================================================
 
-const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 整包上限 50MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 单文件上限 5MB
 
 /**
- * Validate skill format
- * This is the main validation function used before upload
+ * 上传前校验 Skill 包：SKILL.md、slug 名称、semver 与全文本文件。
  */
 export async function validateSkillFormat(
   files: File[],
@@ -401,7 +399,7 @@ function readFileAsText(file: File): Promise<string> {
 }
 
 // ============================================================================
-// Ignore Pattern Handling (simplified version of ignore package)
+// 简化版 .gitignore 风格 glob 匹配
 // ============================================================================
 
 /**
@@ -485,7 +483,7 @@ function globToRegex(pattern: string): RegExp {
 }
 
 // ============================================================================
-// Default Ignore Patterns
+// 默认忽略 node_modules、VCS、临时文件等
 // ============================================================================
 
 export const DEFAULT_IGNORE_PATTERNS = [
@@ -512,7 +510,7 @@ export const DEFAULT_IGNORE_PATTERNS = [
 ];
 
 // ============================================================================
-// File List Filtering
+// 列表与上传 File[] 的过滤入口
 // ============================================================================
 
 /**
@@ -542,7 +540,7 @@ export function filterUploadFiles(files: File[]): File[] {
 }
 
 /**
- * Check if a skill folder structure is valid
+ * 校验已有文件树是否包含 SKILL.md。
  */
 export function validateSkillStructure(files: SkillFileEntry[]): {
   valid: boolean;

@@ -1,3 +1,7 @@
+/**
+ * chat-channel/hooks.ts — 聊天渠道（WhatsApp 等）列表、增删改与助手绑定。
+ */
+
 import message from '@/components/ui/message';
 import { useSetModalState } from '@/hooks/common-hooks';
 import chatChannelService, {
@@ -12,12 +16,14 @@ import { useCallback, useMemo, useState } from 'react';
 import { ChatChannelKey, useChatChannelInfo } from './constant';
 import { IChatChannel, IChatChannelBase, IChatChannelInfo } from './interface';
 
+/** React Query 缓存键：列表、详情与可选助手列表。 */
 export const ChatChannelKeys = {
   list: () => ['chat-channel'] as const,
   detail: (id?: string) => ['chat-channel-detail', id] as const,
   dialogs: () => ['chat-channel-dialogs'] as const,
 };
 
+/** 拉取渠道实例并按 ChatChannelKey 分组展示。 */
 export const useListChatChannel = () => {
   const { chatChannelInfo } = useChatChannelInfo();
   const { data: list, isFetching } = useQuery<IChatChannelBase[]>({
@@ -56,6 +62,7 @@ export const useListChatChannel = () => {
   return { list, categorizedList, isFetching };
 };
 
+/** 新建/编辑渠道弹窗；WhatsApp 新建后保留弹窗以完成 OAuth 等步骤。 */
 export const useAddChatChannel = () => {
   const [activeChannel, setActiveChannel] = useState<
     IChatChannelInfo | undefined
@@ -132,6 +139,7 @@ export const useAddChatChannel = () => {
   };
 };
 
+/** 删除渠道实例并刷新列表。 */
 export const useDeleteChatChannel = () => {
   const queryClient = useQueryClient();
   const { mutateAsync, isPending } = useMutation({
@@ -148,6 +156,7 @@ export const useDeleteChatChannel = () => {
   return { handleDelete: mutateAsync, deleteLoading: isPending };
 };
 
+/** 按需拉取单个渠道详情（含 config）。 */
 export const useFetchChatChannelDetail = () => {
   const fetchDetail = useCallback(
     async (id: string): Promise<IChatChannel | undefined> => {
@@ -162,6 +171,7 @@ export const useFetchChatChannelDetail = () => {
   return { fetchDetail };
 };
 
+/** 将渠道绑定或解绑到指定助手（dialog）；dialogId 为 null 表示断开。 */
 // Connect (or disconnect) a chat channel to an assistant (dialog).
 export const useConnectChatChannelDialog = () => {
   const queryClient = useQueryClient();
@@ -186,6 +196,7 @@ export const useConnectChatChannelDialog = () => {
   return { connect: mutateAsync, connecting: isPending };
 };
 
+/** 拉取可绑定的助手列表（分页 100 条）。 */
 // Assistants (dialogs) available to connect a channel to.
 export const useChatChannelDialogList = () => {
   const { data, isFetching } = useQuery<Array<{ id: string; name: string }>>({

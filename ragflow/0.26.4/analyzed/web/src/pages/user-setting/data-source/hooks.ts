@@ -1,3 +1,7 @@
+/**
+ * data-source/hooks.ts — 外部数据源连接器：列表、日志、调度状态与连通性测试。
+ */
+
 import message from '@/components/ui/message';
 import { RunningStatus } from '@/constants/knowledge';
 import { useSetModalState } from '@/hooks/common-hooks';
@@ -22,6 +26,7 @@ import {
   IDataSourceLog,
 } from './interface';
 
+/** 拉取全部数据源并按 source 类型分组。 */
 export const useListDataSource = () => {
   const { dataSourceInfo } = useDataSourceInfo();
   const { data: list, isFetching } = useQuery<IDataSource[]>({
@@ -73,6 +78,7 @@ export const useListDataSource = () => {
   return { list, categorizedList: updatedDataSourceTemplates, isFetching };
 };
 
+/** 新建或编辑数据源弹窗；编辑时 reschedule 触发重新同步。 */
 export const useAddDataSource = ({ isEdit = false }: { isEdit?: boolean }) => {
   const [addSource, setAddSource] = useState<IDataSorceInfo | undefined>(
     undefined,
@@ -132,6 +138,7 @@ export const useAddDataSource = ({ isEdit = false }: { isEdit?: boolean }) => {
   };
 };
 
+/** 分页拉取同步日志；autoRefresh 时每 15 秒轮询。 */
 export const useLogListDataSource = (autoRefresh: boolean) => {
   const { pagination, setPagination } = useGetPaginationWithRouter();
   const [currentQueryParameters] = useSearchParams();
@@ -159,6 +166,7 @@ export const useLogListDataSource = (autoRefresh: boolean) => {
   };
 };
 
+/** 删除数据源并刷新列表缓存。 */
 export const useDeleteDataSource = () => {
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
   const { hideModal, showModal } = useSetModalState();
@@ -178,6 +186,7 @@ export const useDeleteDataSource = () => {
   return { deleteLoading, hideModal, showModal, handleDelete };
 };
 
+/** 从 URL ?id= 读取并缓存数据源详情。 */
 export const useFetchDataSourceDetail = () => {
   const [currentQueryParameters] = useSearchParams();
   const id = currentQueryParameters.get('id');
@@ -195,6 +204,7 @@ export const useFetchDataSourceDetail = () => {
   return { data };
 };
 
+/** 切换调度状态 SCHEDULE / CANCEL 并联动详情与日志 query。 */
 export const useUpdateDataSourceStatus = () => {
   const [currentQueryParameters] = useSearchParams();
   const id = currentQueryParameters.get('id');
@@ -240,6 +250,7 @@ export const useUpdateDataSourceStatus = () => {
   return { updateStatus, loading };
 };
 
+/** 对当前知识库触发指定 source 的全量重建索引。 */
 export const useDataSourceRebuild = () => {
   const { id } = useParams();
   // const [currentQueryParameters] = useSearchParams();
@@ -259,6 +270,7 @@ export const useDataSourceRebuild = () => {
   return { handleRebuild };
 };
 
+/** 测试 REST 等数据源连通性（?id= 当前实例）。 */
 export const useTestDataSource = () => {
   const [currentQueryParameters] = useSearchParams();
   const id = currentQueryParameters.get('id');

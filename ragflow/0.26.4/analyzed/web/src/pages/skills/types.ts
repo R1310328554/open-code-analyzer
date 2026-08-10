@@ -1,11 +1,16 @@
-// Skill types for Skill Space
+/**
+ * skills/types.ts — Skill Space 领域类型：Skill、Space、校验与 UI 组件 props。
+ */
+
+// Skill Space 核心类型定义
 
 // ============================================================================
-// Core Skill Types
+// 核心 Skill 实体
 // ============================================================================
 
+/** 单个 Skill：含文件树、元数据、版本列表及内部 folderId。 */
 export interface Skill {
-  id: string; // Skill name (used as identifier, consistent with search results)
+  id: string; // Skill 名称作为 ID，与搜索结果一致
   name: string;
   description: string;
   source_type: 'local' | 'git' | 'central' | 'search';
@@ -15,8 +20,8 @@ export interface Skill {
   updated_at: number;
   files: SkillFileEntry[];
   metadata?: SkillMetadata;
-  versions?: string[]; // Available versions (for versioned skills)
-  _folderId?: string; // Internal: file system folder ID for file operations
+  versions?: string[]; // 可用版本号列表（semver 目录结构）
+  _folderId?: string; // 内部字段：文件系统文件夹 ID
 }
 
 export interface SkillSpace {
@@ -36,7 +41,7 @@ export interface SkillFileEntry {
 }
 
 // ============================================================================
-// Skill Metadata Types
+// Skill 元数据（frontmatter）
 // ============================================================================
 
 export interface SkillMetadata {
@@ -53,7 +58,7 @@ export interface SkillMetadata {
 }
 
 // ============================================================================
-// API Payload Types
+// 上传/更新 API 载荷
 // ============================================================================
 
 export interface SkillUploadPayload {
@@ -69,7 +74,7 @@ export interface SkillUpdatePayload {
 }
 
 // ============================================================================
-// Validation Types
+// 校验结果与字段错误
 // ============================================================================
 
 export interface SkillValidationResult {
@@ -86,7 +91,7 @@ export interface ValidationError {
 }
 
 // ============================================================================
-// UI Types
+// 列表/详情/上传等 UI 组件 props
 // ============================================================================
 
 export type ViewMode = 'grid' | 'list';
@@ -121,7 +126,7 @@ export interface UploadModalProps {
 }
 
 // ============================================================================
-// Skill Search Types
+// 技能语义搜索配置与结果
 // ============================================================================
 
 export interface FieldWeight {

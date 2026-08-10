@@ -1,3 +1,7 @@
+/**
+ * use-import-mcp.ts — 从 JSON 导入 MCP 配置（Zod 校验 mcpServers 结构）。
+ */
+
 import message from '@/components/ui/message';
 import { FileMimeType } from '@/constants/common';
 import { useSetModalState } from '@/hooks/common-hooks';
@@ -7,6 +11,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
+/** 单个 MCP 服务条目：type、url 必填，token 与 tool_configuration 可选。 */
 const ServerEntrySchema = z.object({
   authorization_token: z.string().optional(),
   name: z.string().optional(),
@@ -15,10 +20,12 @@ const ServerEntrySchema = z.object({
   url: z.string().url(),
 });
 
+/** 导入文件根结构：mcpServers 为 name -> ServerEntry 映射。 */
 const McpConfigSchema = z.object({
   mcpServers: z.record(ServerEntrySchema),
 });
 
+/** 导入弹窗：仅接受 JSON，校验通过后调用 importMcpServer。 */
 export const useImportMcp = () => {
   const {
     visible: importVisible,

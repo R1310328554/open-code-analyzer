@@ -1,3 +1,7 @@
+/**
+ * next-search/hooks.ts — 新版搜索应用页数据层：SSE 问答、分块检索、思维导图与共享链接参数。
+ */
+
 import message from '@/components/ui/message';
 import { SharedFrom } from '@/constants/chat';
 import { useSetModalState } from '@/hooks/common-hooks';
@@ -33,6 +37,7 @@ import { useSearchParams } from 'react-router';
 import { ISearchAppDetailProps } from '../next-searches/hooks';
 import { useClickDrawer } from './document-preview-modal/hooks';
 
+/** 搜索页容器传入的 props：初始搜索词、应用详情与搜索状态 setter。 */
 export interface ISearchingProps {
   searchText?: string;
   data: ISearchAppDetailProps;
@@ -42,8 +47,10 @@ export interface ISearchingProps {
 
 export type ISearchReturnProps = ReturnType<typeof useSearching>;
 
+/** 从 URL 解析共享搜索参数（from、shared_id、tenantId 及 data_* 自定义字段）。 */
 export const useGetSharedSearchParams = () => {
   const [searchParams] = useSearchParams();
+  // 自定义参数统一以 data_ 前缀出现在 query string 中
   const data_prefix = 'data_';
   const data = Object.fromEntries(
     Array.from(searchParams.entries())
@@ -62,6 +69,7 @@ export const useGetSharedSearchParams = () => {
   };
 };
 
+/** 拉取问答思维导图；共享链接走 searchService，否则走 chatService。 */
 export const useSearchFetchMindMap = () => {
   const [searchParams] = useSearchParams();
   const sharedId = searchParams.get('shared_id');
@@ -92,6 +100,7 @@ export const useSearchFetchMindMap = () => {
   return { data, loading, fetchMindMap: mutateAsync };
 };
 
+/** 打开思维导图抽屉；问题或 kb 变化时重新请求，避免重复拉取相同参数。 */
 export const useShowMindMapDrawer = (
   kbIds: string[],
   question: string,
@@ -131,6 +140,7 @@ export const useShowMindMapDrawer = (
   };
 };
 
+/** 分页检索测试（当前页 chunks）；共享场景自动切换 retrievalTestShare。 */
 export const useTestChunkRetrieval = (
   tenantId?: string,
 ): ResponsePostType<ITestingResult> & {
@@ -182,6 +192,7 @@ export const useTestChunkRetrieval = (
   };
 };
 
+/** 检索测试（全量 doc 聚合视图），与 useTestChunkRetrieval 共用接口。 */
 export const useTestChunkAllRetrieval = (
   tenantId?: string,
 ): ResponsePostType<ITestingResult> & {
@@ -233,6 +244,7 @@ export const useTestChunkAllRetrieval = (
   };
 };
 
+/** 监听搜索词与分页，自动触发分块检索并维护已选文档 ID。 */
 export const useTestRetrieval = (
   kbIds: string[],
   searchStr: string,
@@ -274,6 +286,7 @@ export const useTestRetrieval = (
     setSelectedDocumentIds,
   };
 };
+/** 根据当前问题拉取相关搜索推荐词。 */
 export const useFetchRelatedQuestions = (
   tenantId?: string,
   searchId?: string,
@@ -304,6 +317,7 @@ export const useFetchRelatedQuestions = (
   return { data, loading, fetchRelatedQuestions: mutateAsync };
 };
 
+/** 核心问答 hook：SSE 流式回答 + 分块高亮检索 + 可选相关搜索。 */
 export const useSendQuestion = (
   kbIds: string[],
   tenantId?: string,
@@ -460,6 +474,7 @@ export const useSendQuestion = (
   };
 };
 
+/** 搜索页主 hook：组合问答、文档预览抽屉、思维导图与分页 Top-K。 */
 export const useSearching = ({
   searchText,
   data: searchData,
@@ -583,6 +598,7 @@ export const useSearching = ({
   };
 };
 
+/** 判断搜索应用是否需引导打开设置（缺 kb 或名称时 openSetting 为 true）。 */
 export const useCheckSettings = (data: ISearchAppDetailProps) => {
   if (!data) {
     return {
@@ -596,6 +612,7 @@ export const useCheckSettings = (data: ISearchAppDetailProps) => {
   };
 };
 
+/** 思维导图加载占位进度（0–100），约 43 秒内线性递增。 */
 export const usePendingMindMap = () => {
   const [count, setCount] = useState<number>(0);
   const ref = useRef<NodeJS.Timeout>();
