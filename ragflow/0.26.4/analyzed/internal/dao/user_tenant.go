@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// user_tenant.go — 用户-租户关系 DAO：维护成员身份、角色、软删除状态及租户成员列表联表查询。
+
 //
 
 package dao
@@ -23,20 +25,20 @@ import (
 	"ragflow/internal/entity"
 )
 
-// UserTenantDAO user tenant data access object
+// UserTenantDAO 用户-租户关联表的数据访问对象。
 type UserTenantDAO struct{}
 
-// NewUserTenantDAO create user tenant DAO
+// NewUserTenantDAO 创建 UserTenantDAO 实例。
 func NewUserTenantDAO() *UserTenantDAO {
 	return &UserTenantDAO{}
 }
 
-// Create create user tenant relationship
+// Create 插入新的用户-租户关系。
 func (dao *UserTenantDAO) Create(userTenant *entity.UserTenant) error {
 	return DB.Create(userTenant).Error
 }
 
-// GetByID get user tenant relationship by ID
+// GetByID 按 ID 查询有效（status=1）关系。
 func (dao *UserTenantDAO) GetByID(id string) (*entity.UserTenant, error) {
 	var userTenant entity.UserTenant
 	err := DB.Where("id = ? AND status = ?", id, "1").First(&userTenant).Error
@@ -46,36 +48,36 @@ func (dao *UserTenantDAO) GetByID(id string) (*entity.UserTenant, error) {
 	return &userTenant, nil
 }
 
-// Update update user tenant relationship
+// Update 全量保存关系实体。
 func (dao *UserTenantDAO) Update(userTenant *entity.UserTenant) error {
 	return DB.Save(userTenant).Error
 }
 
-// Delete delete user tenant relationship (soft delete by setting status to "0")
+// Delete 软删除：将 status 设为 "0"。
 func (dao *UserTenantDAO) Delete(id string) error {
 	return DB.Model(&entity.UserTenant{}).Where("id = ?", id).Update("status", "0").Error
 }
 
-// GetByUserID get user tenant relationships by user ID
+// GetByUserID 按用户 ID 查全部有效关系。
 func (dao *UserTenantDAO) GetByUserID(userID string) ([]*entity.UserTenant, error) {
 	return dao.GetByUserIDWithContext(context.Background(), userID)
 }
 
-// GetByUserIDWithContext gets active user tenant relationships by user ID with context.
+// GetByUserIDWithContext 带 context 的 GetByUserID。
 func (dao *UserTenantDAO) GetByUserIDWithContext(ctx context.Context, userID string) ([]*entity.UserTenant, error) {
 	var relations []*entity.UserTenant
 	err := DB.WithContext(ctx).Where("user_id = ? AND status = ?", userID, "1").Find(&relations).Error
 	return relations, err
 }
 
-// GetByTenantID get user tenant relationships by tenant ID
+// GetByTenantID 按租户 ID 查全部有效成员关系。
 func (dao *UserTenantDAO) GetByTenantID(tenantID string) ([]*entity.UserTenant, error) {
 	var relations []*entity.UserTenant
 	err := DB.Where("tenant_id = ? AND status = ?", tenantID, "1").Find(&relations).Error
 	return relations, err
 }
 
-// GetTenantIDsByUserID get tenant ID list by user ID
+// GetTenantIDsByUserID 返回用户所属全部租户 ID 列表。
 func (dao *UserTenantDAO) GetTenantIDsByUserID(userID string) ([]string, error) {
 	var tenantIDs []string
 	err := DB.Model(&entity.UserTenant{}).
@@ -85,7 +87,7 @@ func (dao *UserTenantDAO) GetTenantIDsByUserID(userID string) ([]string, error) 
 	return tenantIDs, err
 }
 
-// FilterByUserIDAndTenantID filter user tenant relationship by user ID and tenant ID
+// FilterByUserIDAndTenantID 按 user_id+tenant_id 精确查单条有效关系。
 func (dao *UserTenantDAO) FilterByUserIDAndTenantID(userID, tenantID string) (*entity.UserTenant, error) {
 	var userTenant entity.UserTenant
 	err := DB.Where("user_id = ? AND tenant_id = ? AND status = ?", userID, tenantID, "1").
@@ -96,14 +98,14 @@ func (dao *UserTenantDAO) FilterByUserIDAndTenantID(userID, tenantID string) (*e
 	return &userTenant, nil
 }
 
-// GetByUserIDAndRole get user tenant relationships by user ID and role
+// GetByUserIDAndRole 按用户 ID 与角色查关系列表。
 func (dao *UserTenantDAO) GetByUserIDAndRole(userID, role string) ([]*entity.UserTenant, error) {
 	var relations []*entity.UserTenant
 	err := DB.Where("user_id = ? AND role = ? AND status = ?", userID, role, "1").Find(&relations).Error
 	return relations, err
 }
 
-// GetNumMembers get number of members in a tenant (excluding owner)
+// GetNumMembers 统计租户成员数（不含 owner）。
 func (dao *UserTenantDAO) GetNumMembers(tenantID string) (int64, error) {
 	var count int64
 	err := DB.Model(&entity.UserTenant{}).
@@ -112,7 +114,7 @@ func (dao *UserTenantDAO) GetNumMembers(tenantID string) (int64, error) {
 	return count, err
 }
 
-// TenantInfoByUserID tenant info with user details
+// TenantInfoByUserID 用户视角的租户摘要（含昵称、邮箱等）。
 type TenantInfoByUserID struct {
 	TenantID   string `json:"tenant_id"`
 	Role       string `json:"role"`
@@ -122,7 +124,7 @@ type TenantInfoByUserID struct {
 	UpdateDate string `json:"update_date"`
 }
 
-// TenantMemberItem holds user details for a tenant member listing.
+// TenantMemberItem 租户成员列表项，含用户详情字段。
 type TenantMemberItem struct {
 	ID              string `json:"id"`
 	UserID          string `json:"user_id"`
@@ -138,8 +140,7 @@ type TenantMemberItem struct {
 	UpdateDate      string `json:"update_date"`
 }
 
-// GetMembersByTenantID returns all non-owner members of a tenant with user details.
-// update_date is formatted as "2006-01-02T15:04:05" (no timezone) to match the Python API.
+// GetMembersByTenantID 返回租户下非 owner 成员及用户详情；update_date 格式对齐 Python API。
 func (dao *UserTenantDAO) GetMembersByTenantID(tenantID string) ([]*TenantMemberItem, error) {
 	var results []*TenantMemberItem
 	err := DB.Table("user_tenant").
@@ -154,7 +155,7 @@ func (dao *UserTenantDAO) GetMembersByTenantID(tenantID string) ([]*TenantMember
 	return results, err
 }
 
-// GetTenantsByUserID get tenants by user ID with user details
+// GetTenantsByUserID 返回用户加入的全部租户及租户主账号信息。
 func (dao *UserTenantDAO) GetTenantsByUserID(userID string) ([]*TenantInfoByUserID, error) {
 	var results []*TenantInfoByUserID
 	err := DB.Table("user_tenant").
@@ -165,34 +166,33 @@ func (dao *UserTenantDAO) GetTenantsByUserID(userID string) ([]*TenantInfoByUser
 	return results, err
 }
 
-// DeleteByUserID delete user tenant relationships by user ID (hard delete)
+// DeleteByUserID 按用户 ID 硬删除全部关系。
 func (dao *UserTenantDAO) DeleteByUserID(userID string) (int64, error) {
 	result := DB.Unscoped().Where("user_id = ?", userID).Delete(&entity.UserTenant{})
 	return result.RowsAffected, result.Error
 }
 
-// DeleteByTenantID delete user tenant relationships by tenant ID (hard delete)
+// DeleteByTenantID 按租户 ID 硬删除全部关系。
 func (dao *UserTenantDAO) DeleteByTenantID(tenantID string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ?", tenantID).Delete(&entity.UserTenant{})
 	return result.RowsAffected, result.Error
 }
 
-// GetByUserIDAll get all user tenant relationships by user ID (including deleted)
+// GetByUserIDAll 返回用户全部关系（含已软删）。
 func (dao *UserTenantDAO) GetByUserIDAll(userID string) ([]*entity.UserTenant, error) {
 	var relations []*entity.UserTenant
 	err := DB.Where("user_id = ?", userID).Find(&relations).Error
 	return relations, err
 }
 
-// DeleteByUserAndTenant hard-deletes the join record for a specific user+tenant pair.
+// DeleteByUserAndTenant 硬删除指定 user+tenant 关联行。
 func (dao *UserTenantDAO) DeleteByUserAndTenant(userID, tenantID string) error {
 	return DB.Unscoped().
 		Where("user_id = ? AND tenant_id = ?", userID, tenantID).
 		Delete(&entity.UserTenant{}).Error
 }
 
-// UpdateRoleByUserAndTenant updates the role for a specific user+tenant pair.
-// Returns an error if no matching row was found.
+// UpdateRoleByUserAndTenant 更新指定 user+tenant 的角色；无匹配行则报错。
 func (dao *UserTenantDAO) UpdateRoleByUserAndTenant(userID, tenantID, role string) error {
 	result := DB.Model(&entity.UserTenant{}).
 		Where("user_id = ? AND tenant_id = ? AND status = ?", userID, tenantID, "1").

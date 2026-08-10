@@ -1,5 +1,7 @@
 //go:build cgo
 
+// reader.go（cgo）— 通过 office_oxide 打开 DOCX、导出 IR JSON 并按文档顺序转为 RawBlock 列表。
+
 package docx
 
 import (
@@ -12,9 +14,7 @@ import (
 	officeOxide "github.com/yfedoseev/office_oxide/go"
 )
 
-// ExtractRawBlocks opens a DOCX via office_oxide and extracts blocks in
-// document order, matching the format produced by python-docx's
-// _element.body iteration.
+// ExtractRawBlocks 用 office_oxide 按文档顺序提取块，对齐 python-docx body 迭代格式。
 func ExtractRawBlocks(data []byte) ([]RawBlock, error) {
 	doc, err := officeOxide.OpenFromBytes(data, "docx")
 	if err != nil {
@@ -42,6 +42,7 @@ func ExtractRawBlocks(data []byte) ([]RawBlock, error) {
 	return blocks, nil
 }
 
+// irElementToBlock 将 IR 元素转为 RawBlock（table/heading/image/paragraph）。
 func irElementToBlock(el irElement) RawBlock {
 	switch el.Type {
 	case "table":
@@ -83,6 +84,7 @@ func irElementToBlock(el irElement) RawBlock {
 	}
 }
 
+// joinRuns 拼接文本 run，忽略非 text 类型。
 func joinRuns(runs []irRun) string {
 	var b strings.Builder
 	for _, r := range runs {
@@ -93,9 +95,7 @@ func joinRuns(runs []irRun) string {
 	return b.String()
 }
 
-// joinElements extracts plain text from nested irElements (used for table cells).
-// When multiple elements are present, a newline is inserted between each one
-// to match python-docx _Cell.text behavior.
+// joinElements 从嵌套 irElement 提取纯文本（表格单元格）；多元素间插入换行，对齐 python-docx _Cell.text。
 func joinElements(els []irElement) string {
 	var b strings.Builder
 	for i, el := range els {

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// user_canvas_version.go — 用户画布版本历史 DAO：管理发布/草稿版本、SaveOrReplaceLatest 合并逻辑及未发布版本数量上限清理。
+
 //
 
 package dao
@@ -26,14 +28,13 @@ import (
 	"ragflow/internal/entity"
 )
 
-// ErrUserCanvasVersionNotFound is returned when a version lookup by id or
-// canvas id yields no rows. Service and handler layers map this to a 404.
+// ErrUserCanvasVersionNotFound 按 id 或 canvas id 查版本无结果时返回；上层映射为 404。
 var ErrUserCanvasVersionNotFound = errors.New("user_canvas_version: not found")
 
-// UserCanvasVersionDAO persists and queries UserCanvasVersion rows.
+// UserCanvasVersionDAO 画布版本表的数据访问对象。
 type UserCanvasVersionDAO struct{}
 
-// SaveOrReplaceLatestVersionOptions controls a version-history save.
+// SaveOrReplaceLatestVersionOptions 控制 SaveOrReplaceLatest 的保存参数。
 type SaveOrReplaceLatestVersionOptions struct {
 	NewID           string
 	UserCanvasID    string
@@ -45,22 +46,17 @@ type SaveOrReplaceLatestVersionOptions struct {
 	SameDSL         func(entity.JSONMap) bool
 }
 
-// NewUserCanvasVersionDAO returns a zero-value DAO. The struct is stateless
-// so callers can share a single instance or create their own.
+// NewUserCanvasVersionDAO 返回无状态 DAO 实例，可共享或按需创建。
 func NewUserCanvasVersionDAO() *UserCanvasVersionDAO {
 	return &UserCanvasVersionDAO{}
 }
 
-// Create inserts a new version row. The caller assigns ID, UserCanvasID,
-// Title, Description, DSL. CreateTime/UpdateTime are stamped by the
-// BaseModel BeforeCreate hook.
+// Create 插入新版本行；ID/UserCanvasID/Title/Description/DSL 由调用方赋值，时间戳由 BaseModel 钩子写入。
 func (dao *UserCanvasVersionDAO) Create(v *entity.UserCanvasVersion) error {
 	return DB.Create(v).Error
 }
 
-// GetByID fetches a single version by primary key. Returns
-// ErrUserCanvasVersionNotFound when the row is absent so callers can map
-// to a 404 instead of inspecting gorm.ErrRecordNotFound directly.
+// GetByID 按主键查单条版本；不存在返回 ErrUserCanvasVersionNotFound。
 func (dao *UserCanvasVersionDAO) GetByID(id string) (*entity.UserCanvasVersion, error) {
 	var v entity.UserCanvasVersion
 	err := DB.Where("id = ?", id).First(&v).Error
@@ -73,8 +69,7 @@ func (dao *UserCanvasVersionDAO) GetByID(id string) (*entity.UserCanvasVersion, 
 	return &v, nil
 }
 
-// ListByCanvasID returns every version of the given canvas, ordered by
-// create_time DESC so the most recent publish appears first.
+// ListByCanvasID 返回画布全部版本，按 create_time 降序（最新在前）。
 func (dao *UserCanvasVersionDAO) ListByCanvasID(canvasID string) ([]*entity.UserCanvasVersion, error) {
 	var vs []*entity.UserCanvasVersion
 	err := DB.Where("user_canvas_id = ?", canvasID).
@@ -83,8 +78,7 @@ func (dao *UserCanvasVersionDAO) ListByCanvasID(canvasID string) ([]*entity.User
 	return vs, err
 }
 
-// GetLatest returns the most recently created version of canvasID, or
-// ErrUserCanvasVersionNotFound when the canvas has never been published.
+// GetLatest 返回画布最新一条版本；从未发布过则 ErrUserCanvasVersionNotFound。
 func (dao *UserCanvasVersionDAO) GetLatest(canvasID string) (*entity.UserCanvasVersion, error) {
 	var v entity.UserCanvasVersion
 	err := DB.Where("user_canvas_id = ?", canvasID).
@@ -99,42 +93,34 @@ func (dao *UserCanvasVersionDAO) GetLatest(canvasID string) (*entity.UserCanvasV
 	return &v, nil
 }
 
-// Delete removes a single version by id. No-op when the row is absent.
+// Delete 按 id 删除单条版本；行不存在时为 no-op。
 func (dao *UserCanvasVersionDAO) Delete(id string) error {
 	return DB.Where("id = ?", id).Delete(&entity.UserCanvasVersion{}).Error
 }
 
-// DeleteTx is the transactional variant of Delete. Used by
-// service.AgentService.DeleteVersion so the version-row removal and the
-// (future) parent-canvas stat update land in one atomic write.
+// DeleteTx Delete 的事务变体；DeleteVersion 中与父画布统计更新同事务。
 func (dao *UserCanvasVersionDAO) DeleteTx(tx *gorm.DB, id string) error {
 	return tx.Where("id = ?", id).Delete(&entity.UserCanvasVersion{}).Error
 }
 
-// DeleteByCanvasID removes every version of the given canvas. Called from
-// the service layer when the parent canvas is deleted to enforce the
-// §2.9 cascade rule. Returns the number of rows actually deleted.
+// DeleteByCanvasID 删除画布下全部版本；删画布时级联（§2.9），返回实际删除行数。
 func (dao *UserCanvasVersionDAO) DeleteByCanvasID(canvasID string) (int64, error) {
 	res := DB.Where("user_canvas_id = ?", canvasID).Delete(&entity.UserCanvasVersion{})
 	return res.RowsAffected, res.Error
 }
 
-// DeleteByCanvasIDTx is the transactional variant of DeleteByCanvasID.
-// Used by service.AgentService.DeleteAgent so the cascade runs atomically
-// with the parent canvas row removal.
+// DeleteByCanvasIDTx DeleteByCanvasID 的事务变体；DeleteAgent 与删画布同事务。
 func (dao *UserCanvasVersionDAO) DeleteByCanvasIDTx(tx *gorm.DB, canvasID string) (int64, error) {
 	res := tx.Where("user_canvas_id = ?", canvasID).Delete(&entity.UserCanvasVersion{})
 	return res.RowsAffected, res.Error
 }
 
-// CreateTx is the transactional variant of Create.
+// CreateTx Create 的事务变体。
 func (dao *UserCanvasVersionDAO) CreateTx(tx *gorm.DB, v *entity.UserCanvasVersion) error {
 	return tx.Create(v).Error
 }
 
-// SaveOrReplaceLatest inserts a new version or refreshes the latest matching
-// draft in place. If the latest matching version is released and the current
-// save is a draft, it creates a new draft to preserve the released snapshot.
+// SaveOrReplaceLatest 插入新版本或原地更新最新匹配草稿；若最新已发布且当前为草稿保存，则新建草稿以保留已发布快照。
 func (dao *UserCanvasVersionDAO) SaveOrReplaceLatest(opts SaveOrReplaceLatestVersionOptions) (*entity.UserCanvasVersion, error) {
 	if opts.KeepUnpublished <= 0 {
 		opts.KeepUnpublished = 20
@@ -208,6 +194,7 @@ func (dao *UserCanvasVersionDAO) SaveOrReplaceLatest(opts SaveOrReplaceLatestVer
 	return saved, nil
 }
 
+// sameDSL 判断 DSL 是否与 opts 中内容相同；可注入 SameDSL 自定义比较。
 func (opts SaveOrReplaceLatestVersionOptions) sameDSL(dsl entity.JSONMap) bool {
 	if opts.SameDSL != nil {
 		return opts.SameDSL(dsl)
@@ -215,13 +202,12 @@ func (opts SaveOrReplaceLatestVersionOptions) sameDSL(dsl entity.JSONMap) bool {
 	return reflect.DeepEqual(dsl, opts.DSL)
 }
 
-// DeleteAllUnpublishedExcess keeps the newest keep unpublished versions for a
-// canvas and deletes older unpublished rows. Released versions are never
-// removed by this cleanup.
+// DeleteAllUnpublishedExcess 保留最新 keep 条未发布版本，删除更旧的未发布行；已发布版本不受影响。
 func (dao *UserCanvasVersionDAO) DeleteAllUnpublishedExcess(canvasID string, keep int) error {
 	return dao.deleteAllUnpublishedExcessTx(DB, canvasID, keep)
 }
 
+// deleteAllUnpublishedExcessTx 事务内执行未发布版本超额清理。
 func (dao *UserCanvasVersionDAO) deleteAllUnpublishedExcessTx(tx *gorm.DB, canvasID string, keep int) error {
 	if keep < 0 {
 		keep = 0

@@ -1,3 +1,5 @@
+// parser.go — DOCX 解析入口：将 office_oxide 提取的 RawBlock 映射为框架层 doctype.Section。
+
 package docx
 
 import (
@@ -7,9 +9,7 @@ import (
 	doctype "ragflow/internal/deepdoc/parser/type"
 )
 
-// blocksToSections converts raw DOCX blocks to the shared Section representation
-// consumed by the framework layer.  Headings get LayoutType "title", tables get
-// DocTypeKwd "table" with a populated TableItem, and everything else is "text".
+// blocksToSections 将 RawBlock 转为框架 Section；标题→title，表格→table+TableItem，其余→text。
 func blocksToSections(blocks []RawBlock) []doctype.Section {
 	sections := make([]doctype.Section, 0, len(blocks))
 	for _, b := range blocks {
@@ -19,6 +19,7 @@ func blocksToSections(blocks []RawBlock) []doctype.Section {
 	return sections
 }
 
+// blockToSection 单块映射：table/image/段落（含 Heading 样式→title）。
 func blockToSection(b RawBlock) doctype.Section {
 	switch b.Type {
 	case "table":
@@ -47,8 +48,7 @@ func blockToSection(b RawBlock) doctype.Section {
 	}
 }
 
-// Parse converts a DOCX file (given as bytes) into a doctype.ParseResult.
-// It uses office_oxide for raw block extraction, then maps blocks to Sections.
+// Parse 将 DOCX 字节解析为 ParseResult：ExtractRawBlocks + blocksToSections。
 func Parse(data []byte, cfg doctype.ParserConfig) (*doctype.ParseResult, error) {
 	blocks, err := ExtractRawBlocks(data)
 	if err != nil {

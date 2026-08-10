@@ -14,14 +14,8 @@
 //  limitations under the License.
 //
 
-// Package deepdoc — Go client for the optional deepdoc vision service
-// (DLA / OCR / TSR).
-//
-// Wire contract reconstructed from `deepdoc/vision/dla_cli.py` (fork)
-// and the Phase 0 research deliverable
-// `docs/agent-port/deepdoc-endpoints.md`. Only DLA has a remote HTTP
-// endpoint; OCR and TSR are 100% local ONNX in Python and stubbed
-// here as ErrNoRemoteEndpoint.
+// Package deepdoc — 可选 deepdoc 视觉服务的 Go 客户端（DLA / OCR / TSR）。
+// 协议自 deepdoc/vision/dla_cli.py 与 docs/agent-port/deepdoc-endpoints.md 还原。仅 DLA 有远程 HTTP 端点；Python 侧 OCR/TSR 为本地 ONNX，此处 OCR/TSR 桩返回 ErrNoRemoteEndpoint。
 package deepdoc
 
 import (
@@ -35,41 +29,31 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-// ErrNoURL is returned by methods when the client was constructed
-// without a base URL (DEEPDOC_URL / TENSORRT_DLA_SVR unset).
+// ErrNoURL 客户端未配置 base URL（DEEPDOC_URL / TENSORRT_DLA_SVR 未设置）时返回。
 var ErrNoURL = errors.New("deepdoc: not configured (set DEEPDOC_URL or TENSORRT_DLA_SVR)")
 
-// ErrNoRemoteEndpoint is returned by OCR/TSR because the Python
-// deepdoc service exposes no remote endpoint for those — they're
-// local ONNX only (deepdoc/vision/ocr.py:542, table_structure_recognizer.py:30).
+// ErrNoRemoteEndpoint OCR/TSR 无远程端点（Python 为本地 ONNX），调用即返回此错误。
 var ErrNoRemoteEndpoint = errors.New("deepdoc: no remote endpoint exists (Python deepdoc is local-ONNX only)")
 
-// ErrInvalidResponse is returned when the server returns a payload
-// that doesn't validate (e.g. DLA response missing "bboxes" key).
-// Per the Python contract, this triggers the retry loop.
+// ErrInvalidResponse 响应体校验失败（如缺少 bboxes）；按 Python 约定触发重试。
 var ErrInvalidResponse = errors.New("deepdoc: invalid response")
 
-// DefaultPerAttemptTimeout matches Python's @timeout(18) decorator
-// on DLAClient.predict (deepdoc/vision/dla_cli.py:23).
+// DefaultPerAttemptTimeout 单次请求超时，对齐 Python DLAClient @timeout(18)。
 const DefaultPerAttemptTimeout = 18 * time.Second
 
-// DefaultMaxAttempts matches Python's `for _ in range(3)` retry loop.
+// DefaultMaxAttempts 最大重试次数，对齐 Python 3 次循环。
 const DefaultMaxAttempts = 3
 
-// DefaultBackoff is the initial backoff between retries; doubled
-// each attempt, capped at MaxBackoff.
+// DefaultBackoff 重试初始退避；每次翻倍，上限 MaxBackoff。
 const DefaultBackoff = 200 * time.Millisecond
 
-// MaxBackoff caps the exponential backoff between retries.
+// MaxBackoff 指数退避的上限。
 const MaxBackoff = 3 * time.Second
 
-// predictPath is the DLA endpoint per
-// docs/agent-port/deepdoc-endpoints.md §2.1.
+// predictPath DLA 预测路径，见 deepdoc-endpoints.md §2.1。
 const predictPath = "/predict"
 
-// Client talks to an optional deepdoc service. When baseURL is empty,
-// Enabled() reports false and HTTP methods return ErrNoURL without
-// making any network call.
+// Client 连接可选 deepdoc 服务；baseURL 为空时 Enabled() 为 false，HTTP 方法直接返回 ErrNoURL。
 type Client struct {
 	baseURL     string
 	httpClient  *http.Client
@@ -77,29 +61,25 @@ type Client struct {
 	backoff     time.Duration
 }
 
-// Option mutates a Client at construction time. Used by tests to
-// point at httptest servers, override timeouts, etc.
+// Option 构造期配置 Client；测试可指向 httptest、覆盖超时等。
 type Option func(*Client)
 
-// WithHTTPClient overrides the underlying *http.Client.
+// WithHTTPClient 覆盖底层 HTTP 客户端。
 func WithHTTPClient(hc *http.Client) Option {
 	return func(c *Client) { c.httpClient = hc }
 }
 
-// WithMaxAttempts overrides the per-call retry count (default 3).
+// WithMaxAttempts 覆盖单次调用最大重试次数。
 func WithMaxAttempts(n int) Option {
 	return func(c *Client) { c.maxAttempts = n }
 }
 
-// WithBackoff overrides the initial backoff between retries.
+// WithBackoff 覆盖重试初始退避时间。
 func WithBackoff(d time.Duration) Option {
 	return func(c *Client) { c.backoff = d }
 }
 
-// NewClient returns a Client configured from the environment. The
-// base URL is read from DEEPDOC_URL (preferred) or TENSORRT_DLA_SVR
-// (legacy alias per deepdoc/vision/layout_recognizer.py:52). When
-// both are unset, Enabled() reports false.
+// NewClient 从环境变量构造 Client；优先 DEEPDOC_URL，否则 TENSORRT_DLA_SVR；均未设置则未启用。
 func NewClient(opts ...Option) *Client {
 	url := os.Getenv("DEEPDOC_URL")
 	if url == "" {
@@ -108,8 +88,7 @@ func NewClient(opts ...Option) *Client {
 	return NewClientWithURL(url, opts...)
 }
 
-// NewClientWithURL is NewClient with an explicit base URL. Primarily
-// used by tests pointing at httptest servers.
+// NewClientWithURL 显式指定 base URL，主要用于测试。
 func NewClientWithURL(baseURL string, opts ...Option) *Client {
 	c := &Client{
 		baseURL:     baseURL,
@@ -130,25 +109,15 @@ func NewClientWithURL(baseURL string, opts ...Option) *Client {
 	return c
 }
 
-// Enabled reports whether a remote deepdoc URL is configured. When
-// false, HTTP methods return ErrNoURL immediately.
+// Enabled 是否已配置远程 deepdoc URL；false 时 HTTP 方法立即 ErrNoURL。
 func (c *Client) Enabled() bool {
 	return c != nil && c.baseURL != ""
 }
 
-// bodyBuilder is a factory that produces a fresh request body per
-// retry attempt. Returns (body, contentType). The body is consumed
-// by http.Client.Do and must be readable (multipart.Writer writes
-// into a buffer so this is straightforward).
+// bodyBuilder 每次重试生成新的请求体工厂，返回 (body, contentType)。
 type bodyBuilder func() (io.Reader, string)
 
-// doPost issues a POST with retry + exponential backoff, matching
-// the Python DLAClient semantics (3 attempts, session rebuild on
-// failure, 18s per-attempt timeout, 200ms initial backoff).
-//
-// Retries on: network errors, 5xx, validation failure (validate
-// non-nil + returns error). Does NOT retry on: 4xx, ctx done.
-// Returns the validated response body bytes on success.
+// doPost 带重试与指数退避的 POST，语义对齐 Python DLAClient。网络错误/5xx/校验失败可重试；4xx 与 ctx 取消不重试；成功返回校验后的响应字节。
 func (c *Client) doPost(ctx context.Context, url string, buildBody bodyBuilder, validate func([]byte) error) ([]byte, error) {
 	if !c.Enabled() {
 		return nil, ErrNoURL
@@ -207,14 +176,14 @@ func (c *Client) doPost(ctx context.Context, url string, buildBody bodyBuilder, 
 	return nil, lastErr
 }
 
-// httpError carries the HTTP status + body so callers can inspect.
-// retryable=true means the doPost loop already exhausted retries.
+// httpError 携带 HTTP 状态与响应体；retryable 表示 doPost 已耗尽重试。
 type httpError struct {
 	Status    string
 	Body      string
 	retryable bool
 }
 
+// Error 格式化 deepdoc HTTP 错误信息。
 func (e *httpError) Error() string {
 	return "deepdoc: " + e.Status + ": " + e.Body
 }

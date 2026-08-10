@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// user_canvas.go — 用户画布（Agent Canvas）数据访问层：提供画布 CRUD、租户/团队可见性控制、标签筛选与排序白名单，对齐 Python UserCanvasService 行为并缓解 IDOR 风险。
+
 //
 
 package dao
@@ -26,14 +28,9 @@ import (
 	"ragflow/internal/entity"
 )
 
-// ErrUserCanvasNotFound is returned by GetByIDForUser when the canvas is
-// missing or the caller has no read access. We deliberately do not
-// distinguish "missing" from "forbidden" so the response cannot be used
-// to enumerate other users' canvas ids — see plan §4.8 (IDOR mitigation).
+// ErrUserCanvasNotFound 在 GetByIDForUser 中返回，表示画布不存在或调用方无读权限。故意不区分「不存在」与「无权限」，防止通过响应枚举他人画布 ID（IDOR 缓解，见 plan §4.8）。
 
-// userCanvasOrderableColumns whitelists the columns that may appear in an
-// ORDER BY clause. Keeps user-supplied `orderby` query params from being
-// spliced straight into SQL.
+// userCanvasOrderableColumns 为 ORDER BY 可排序列白名单，防止用户传入的 orderby 参数直接拼入 SQL。
 var userCanvasOrderableColumns = map[string]struct{}{
 	"id":              {},
 	"user_id":         {},
@@ -47,6 +44,7 @@ var userCanvasOrderableColumns = map[string]struct{}{
 	"update_date":     {},
 }
 
+// userCanvasOrderClause 根据白名单生成未限定表前缀的排序子句，非法字段回退 create_time。
 func userCanvasOrderClause(orderby string, desc bool) string {
 	if _, ok := userCanvasOrderableColumns[orderby]; !ok {
 		orderby = "create_time"
@@ -57,6 +55,7 @@ func userCanvasOrderClause(orderby string, desc bool) string {
 	return orderby + " ASC"
 }
 
+// userCanvasQualifiedOrderClause 生成带 user_canvas. 前缀的排序子句，用于联表查询。
 func userCanvasQualifiedOrderClause(orderby string, desc bool) string {
 	if _, ok := userCanvasOrderableColumns[orderby]; !ok {
 		orderby = "create_time"
@@ -68,11 +67,13 @@ func userCanvasQualifiedOrderClause(orderby string, desc bool) string {
 	return order + " ASC"
 }
 
+// escapeSQLLike 转义 LIKE 模式中的 \、%、_，供标签正则/LIKE 安全使用。
 func escapeSQLLike(s string) string {
 	replacer := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 	return replacer.Replace(s)
 }
 
+// splitUserCanvasTags 按逗号拆分标签字符串并去除空白。
 func splitUserCanvasTags(raw string) []string {
 	parts := strings.Split(raw, ",")
 	tags := make([]string, 0, len(parts))
@@ -85,6 +86,7 @@ func splitUserCanvasTags(raw string) []string {
 	return tags
 }
 
+// applyUserCanvasTagFilter 用 REGEXP 对 user_canvas.tags 做多标签 OR 过滤。
 func applyUserCanvasTagFilter(query *gorm.DB, tags []string) *gorm.DB {
 	if len(tags) == 0 {
 		return query
@@ -111,22 +113,23 @@ func applyUserCanvasTagFilter(query *gorm.DB, tags []string) *gorm.DB {
 	return query.Where(tagQuery)
 }
 
+// ErrUserCanvasNotFound 画布未找到或无访问权限的统一错误。
 var ErrUserCanvasNotFound = errors.New("user_canvas: not found or access denied")
 
-// UserCanvasDAO user canvas data access object
+// UserCanvasDAO 用户画布表的数据访问对象。
 type UserCanvasDAO struct{}
 
-// NewUserCanvasDAO create user canvas DAO
+// NewUserCanvasDAO 创建 UserCanvasDAO 实例。
 func NewUserCanvasDAO() *UserCanvasDAO {
 	return &UserCanvasDAO{}
 }
 
-// Create user canvas
+// Create 插入新画布记录。
 func (dao *UserCanvasDAO) Create(userCanvas *entity.UserCanvas) error {
 	return DB.Create(userCanvas).Error
 }
 
-// GetByID get user canvas by ID
+// GetByID 按主键查询画布；未找到时返回 ErrUserCanvasNotFound。
 func (dao *UserCanvasDAO) GetByID(id string) (*entity.UserCanvas, error) {
 	var canvas entity.UserCanvas
 	err := DB.Where("id = ?", id).First(&canvas).Error
@@ -139,18 +142,10 @@ func (dao *UserCanvasDAO) GetByID(id string) (*entity.UserCanvas, error) {
 	return &canvas, nil
 }
 
-// GetByIDForUser fetches a canvas and enforces ownership visibility:
-//
-//   - canvases with permission="me" or owned by the requesting user are
-//     always returned;
-//   - canvases with permission="team" are returned when the canvas owner
-//     is a tenant the requesting user belongs to (the team membership
-//     predicate mirrors user_canvas.ListByTenantIDs).
-//
-// Any other case — missing row, foreign private canvas, foreign team
-// canvas — yields ErrUserCanvasNotFound. The single error type stops
-// callers from leaking "exists but not yours" vs "doesn't exist" via the
-// HTTP status code.
+// GetByIDForUser 按画布 ID 查询并 enforce 可见性：
+//   - permission=me 或 user_id=请求用户 的画布始终返回；
+//   - permission=team 时仅当画布 owner 属于请求用户所在租户时返回（谓词同 ListByTenantIDs）。
+// 其余情况统一返回 ErrUserCanvasNotFound，避免 HTTP 层泄露「存在但无权」与「不存在」。
 func (dao *UserCanvasDAO) GetByIDForUser(canvasID, userID string, tenantIDs []string) (*entity.UserCanvas, error) {
 	if canvasID == "" {
 		return nil, ErrUserCanvasNotFound
@@ -179,31 +174,13 @@ func (dao *UserCanvasDAO) GetByIDForUser(canvasID, userID string, tenantIDs []st
 	return &canvas, nil
 }
 
-// Update update user canvas
+// Update 全量保存画布实体。
 func (dao *UserCanvasDAO) Update(userCanvas *entity.UserCanvas) error {
 	return DB.Save(userCanvas).Error
 }
 
-// Accessible reports whether canvasID is reachable by userID under
-// the same owner-or-team rule used by GetByIDForUser. Used by
-// downstream authorization gates (e.g. the sandbox-artifact
-// download endpoint introduced by PR #16169) to confirm a caller
-// may reach a given canvas before exposing its runtime artifacts.
-// Returns false on any error (not found, DB failure, or empty
-// inputs) so callers can treat a denial as a 404-equivalent and
-// avoid leaking whether the canvas exists at all.
-//
-// Tenant scoping (PR review round 5, security review #1): unlike
-// the previous form, a `permission = "team"` canvas is only
-// reachable when userID is a member of one of the owner's tenants.
-// Passing a nil/empty tenantIDs list effectively disables the
-// team-canvas branch (no team canvas can match), which is the
-// safe default — a caller that forgot to plumb the tenant list
-// cannot accidentally bypass team-membership scoping.
-//
-// Callers that don't have a tenant list handy (rare; most
-// handlers derive it from the user context) should call
-// GetTenantIDsByUserID first and pass the result.
+// Accessible 判断 userID 是否可访问 canvasID，规则同 GetByIDForUser。用于下游鉴权（如 PR #16169 沙箱产物下载）。任何错误返回 false，等价 404，不泄露画布是否存在。
+// 租户范围：permission=team 的画布仅当 userID 属于 owner 的租户之一时可访问；tenantIDs 为空则禁用 team 分支（安全默认）。无租户列表时应先 GetTenantIDsByUserID。
 func (dao *UserCanvasDAO) Accessible(canvasID, userID string, tenantIDs []string) bool {
 	if canvasID == "" || userID == "" {
 		return false
@@ -229,7 +206,7 @@ func (dao *UserCanvasDAO) Accessible(canvasID, userID string, tenantIDs []string
 	return canvas.ID == canvasID
 }
 
-// Delete delete user canvas
+// Delete 按 ID 硬删除画布。
 func (dao *UserCanvasDAO) Delete(id string) error {
 	// gorm v2 treats the first non-int inline arg as a column name, not a
 	// primary-key value — passing `id` verbatim produced WHERE ID = ?
@@ -239,25 +216,18 @@ func (dao *UserCanvasDAO) Delete(id string) error {
 	return DB.Where("id = ?", id).Delete(&entity.UserCanvas{}).Error
 }
 
-// UpdateTx is the transactional variant of Update. Callers wrap a sequence
-// of *Tx calls in dao.DB.Transaction(func(tx *gorm.DB) error { ... }) so
-// multi-step writes (e.g. publish-agent, delete-agent) are atomic.
+// UpdateTx Update 的事务变体，供 publish-agent、delete-agent 等多步写原子提交。
 func (dao *UserCanvasDAO) UpdateTx(tx *gorm.DB, userCanvas *entity.UserCanvas) error {
 	return tx.Save(userCanvas).Error
 }
 
-// DeleteTx is the transactional variant of Delete. The canvas must
-// already be loaded and access-checked by the caller.
+// DeleteTx Delete 的事务变体；调用方须已加载并校验访问权限。
 func (dao *UserCanvasDAO) DeleteTx(tx *gorm.DB, id string) error {
 	// See Delete() above for the rationale on Where("id = ?", id).
 	return tx.Where("id = ?", id).Delete(&entity.UserCanvas{}).Error
 }
 
-// GetByUserAndTitle returns the canvas matching user_id + title (and
-// optional canvas_category), or (nil, nil) when no such canvas exists.
-// Used by service.AgentService.CreateAgent to enforce the "title
-// already exists" rule that the Python agent API mirrors with
-// UserCanvasService.query(user_id=..., title=...).
+// GetByUserAndTitle 按 user_id+title（可选 canvas_category）查画布；不存在返回 (nil,nil)。CreateAgent 用于「标题已存在」校验，对齐 Python UserCanvasService.query。
 func (dao *UserCanvasDAO) GetByUserAndTitle(userID, title, canvasCategory string) (*entity.UserCanvas, error) {
 	q := DB.Where("user_id = ? AND title = ?", userID, title)
 	if canvasCategory != "" {
@@ -273,8 +243,7 @@ func (dao *UserCanvasDAO) GetByUserAndTitle(userID, title, canvasCategory string
 	return &row, nil
 }
 
-// GetList get canvases list with pagination and filtering
-// Similar to Python UserCanvasService.get_list
+// GetList 分页列出某租户下画布，支持 id/title/category/type 过滤；对齐 Python get_list。
 func (dao *UserCanvasDAO) GetList(tenantID string, pageNumber, itemsPerPage int, orderby string, desc bool, id, title string, canvasCategory, canvasType string) ([]*entity.UserCanvas, error) {
 
 	query := DB.Model(&entity.UserCanvas{}).
@@ -294,7 +263,7 @@ func (dao *UserCanvasDAO) GetList(tenantID string, pageNumber, itemsPerPage int,
 		query = query.Where("canvas_type = ?", canvasType)
 	}
 
-	// Order by
+	// 排序：经 userCanvasOrderClause 白名单校验，禁止原始 orderby 拼 SQL
 	// Route orderby through userCanvasOrderClause above so user-supplied
 	// query params can never reach Order() verbatim. The helper validates
 	// against userCanvasOrderableColumns (a closed allowlist) and falls
@@ -302,7 +271,7 @@ func (dao *UserCanvasDAO) GetList(tenantID string, pageNumber, itemsPerPage int,
 	// SQL fragment is always one of a fixed set of column names.
 	query = query.Order(userCanvasOrderClause(orderby, desc))
 
-	// Pagination
+	// 分页：pageNumber/itemsPerPage 均大于 0 时应用 Offset/Limit
 	if pageNumber > 0 && itemsPerPage > 0 {
 		offset := (pageNumber - 1) * itemsPerPage
 		query = query.Offset(offset).Limit(itemsPerPage)
@@ -313,8 +282,7 @@ func (dao *UserCanvasDAO) GetList(tenantID string, pageNumber, itemsPerPage int,
 	return canvases, err
 }
 
-// GetAllCanvasesByTenantIDs get all permitted canvases by tenant IDs
-// Similar to Python UserCanvasService.get_all_agents_by_tenant_ids
+// GetAllCanvasesByTenantIDs 返回租户 ID 列表下可见画布摘要（team 权限或本人）；对齐 Python get_all_agents_by_tenant_ids。
 func (dao *UserCanvasDAO) GetAllCanvasesByTenantIDs(tenantIDs []string, userID string) ([]*CanvasBasicInfo, error) {
 
 	query := DB.Model(&entity.UserCanvas{}).
@@ -328,7 +296,7 @@ func (dao *UserCanvasDAO) GetAllCanvasesByTenantIDs(tenantIDs []string, userID s
 	return results, err
 }
 
-// UserCanvasListItem is the joined row returned by ListByTenantIDs.
+// UserCanvasListItem ListByTenantIDs 联表 user 后的列表行结构。
 type UserCanvasListItem struct {
 	ID             string  `gorm:"column:id"`
 	Avatar         *string `gorm:"column:avatar"`
@@ -346,15 +314,13 @@ type UserCanvasListItem struct {
 	UpdateTime     *int64  `gorm:"column:update_time"`
 }
 
-// ListByTenantIDs lists agent canvases accessible to the given owner IDs with optional
-// keyword filter, tag filter, pagination, and ordering.
-// Mirrors Python UserCanvasService.get_by_tenant_ids (list route only).
+// ListByTenantIDs 按 ownerIDs 列出可访问 agent 画布，支持关键词/标签/分页/排序；对齐 Python get_by_tenant_ids。
 func (dao *UserCanvasDAO) ListByTenantIDs(ownerIDs []string, userID string, page, pageSize int, orderby string, desc bool, keywords, canvasCategory, canvasType string, tags []string) ([]*UserCanvasListItem, int64, error) {
 	if len(ownerIDs) == 0 {
 		return nil, 0, nil
 	}
 
-	// Canvases owned by any of the ownerIDs that are "team"-permission, plus all owned by userID.
+	// 谓词：ownerIDs 中 team 权限画布 + userID 拥有的全部画布。
 	base := DB.Model(&entity.UserCanvas{}).
 		Select(`user_canvas.id,
 			user_canvas.avatar,
@@ -418,7 +384,7 @@ func (dao *UserCanvasDAO) ListByTenantIDs(ownerIDs []string, userID string, page
 	return canvases, total, nil
 }
 
-// ListTags returns tag usage counts across canvases visible to userID.
+// ListTags 统计 userID 可见画布上各标签出现次数。
 func (dao *UserCanvasDAO) ListTags(ownerIDs []string, userID string, canvasCategory string) (map[string]int, error) {
 	if len(ownerIDs) == 0 {
 		return map[string]int{}, nil
@@ -453,12 +419,12 @@ func (dao *UserCanvasDAO) ListTags(ownerIDs []string, userID string, canvasCateg
 	return counts, nil
 }
 
-// GetByCanvasID get user canvas by canvas ID (alias for GetByID)
+// GetByCanvasID 按 canvas ID 查询（GetByID 别名）。
 func (dao *UserCanvasDAO) GetByCanvasID(canvasID string) (*entity.UserCanvas, error) {
 	return dao.GetByID(canvasID)
 }
 
-// CanvasBasicInfo basic canvas information for list responses
+// CanvasBasicInfo 列表接口返回的画布摘要字段。
 type CanvasBasicInfo struct {
 	ID             string  `gorm:"column:id" json:"id"`
 	Avatar         *string `gorm:"column:avatar" json:"avatar,omitempty"`
@@ -468,13 +434,13 @@ type CanvasBasicInfo struct {
 	CanvasCategory string  `gorm:"column:canvas_category" json:"canvas_category"`
 }
 
-// DeleteByUserID deletes all canvases by user ID (hard delete)
+// DeleteByUserID 按用户 ID 硬删除全部画布。
 func (dao *UserCanvasDAO) DeleteByUserID(userID string) (int64, error) {
 	result := DB.Unscoped().Where("user_id = ?", userID).Delete(&entity.UserCanvas{})
 	return result.RowsAffected, result.Error
 }
 
-// GetAllCanvasIDsByUserID gets all canvas IDs by user ID
+// GetAllCanvasIDsByUserID 返回用户拥有的全部画布 ID。
 func (dao *UserCanvasDAO) GetAllCanvasIDsByUserID(userID string) ([]string, error) {
 	var canvasIDs []string
 	err := DB.Model(&entity.UserCanvas{}).
@@ -483,19 +449,19 @@ func (dao *UserCanvasDAO) GetAllCanvasIDsByUserID(userID string) ([]string, erro
 	return canvasIDs, err
 }
 
-// UpdateDSL updates a canvas DSL by canvas ID.
+// UpdateDSL 按画布 ID 更新 dsl JSON 字段。
 func (dao *UserCanvasDAO) UpdateDSL(canvasID string, dsl entity.JSONMap) (int64, error) {
 	result := DB.Model(&entity.UserCanvas{}).Where("id = ?", canvasID).Update("dsl", dsl)
 	return result.RowsAffected, result.Error
 }
 
-// UpdateFields updates only the supplied user_canvas columns.
+// UpdateFields 按 ID 部分更新指定列。
 func (dao *UserCanvasDAO) UpdateFields(canvasID string, fields map[string]interface{}) (int64, error) {
 	result := DB.Model(&entity.UserCanvas{}).Where("id = ?", canvasID).Updates(fields)
 	return result.RowsAffected, result.Error
 }
 
-// UpdateTags updates a canvas's comma-separated tags by canvas ID.
+// UpdateTags 按画布 ID 更新逗号分隔的 tags 字段。
 func (dao *UserCanvasDAO) UpdateTags(canvasID, tags string) (int64, error) {
 	result := DB.Model(&entity.UserCanvas{}).Where("id = ?", canvasID).Update("tags", tags)
 	return result.RowsAffected, result.Error

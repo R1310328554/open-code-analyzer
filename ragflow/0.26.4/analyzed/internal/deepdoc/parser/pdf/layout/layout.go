@@ -1,3 +1,5 @@
+// layout.go — PDF 版面后处理：列分配（KMeans+轮廓系数）、横/纵合并、阅读顺序与项目符号合并。
+
 package layout
 
 import (
@@ -13,12 +15,9 @@ import (
 	"unicode/utf8"
 )
 
-// ---- Column assignment ----
+// ---- 列分配 ----
 
-// AssignColumn groups boxes into columns on each page by KMeans x0 clustering
-// with silhouette score selection, matching Python's _assign_column().
-//
-// Python: pdf_parser.py:739 _assign_column()
+// AssignColumn 每页对 x0 做 KMeans+轮廓系数选 k 并分配 ColID；对齐 _assign_column()。
 func AssignColumn(boxes []pdf.TextBox, zoom float64) []pdf.TextBox {
 	if len(boxes) == 0 {
 		return boxes
@@ -29,7 +28,7 @@ func AssignColumn(boxes []pdf.TextBox, zoom float64) []pdf.TextBox {
 	result := make([]pdf.TextBox, len(boxes))
 	copy(result, boxes)
 
-	// Step A: per-page best k using silhouette score.
+	// 步骤 A：每页用轮廓系数选最佳 k。
 	pageCols := make(map[int]int)
 	for _, pg := range sortedPages {
 		indices := pageGroups[pg]
@@ -46,7 +45,7 @@ func AssignColumn(boxes []pdf.TextBox, zoom float64) []pdf.TextBox {
 	return result
 }
 
-// determineBestKForPage finds the best number of clusters (k) for a page using silhouette score
+// determineBestKForPage 用轮廓系数在 k∈[1,min(4,n)] 中选最佳 k。
 func determineBestKForPage(boxes, result []pdf.TextBox, indices []int, pg int, pageCols map[int]int) {
 	n := len(indices)
 	if n < 2 {
@@ -66,7 +65,7 @@ func determineBestKForPage(boxes, result []pdf.TextBox, indices []int, pg int, p
 	pageCols[pg] = bestK
 }
 
-// extractX0Values extracts x0 coordinates from boxes on a page and finds minX0 and maxX1
+// extractX0Values 收集页内 box 的 x0 及 minX0、maxX1。
 func extractX0Values(boxes []pdf.TextBox, indices []int) (x0s []float64, minX0 float64, maxX1 float64) {
 	n := len(indices)
 	x0s = make([]float64, n)
@@ -84,7 +83,7 @@ func extractX0Values(boxes []pdf.TextBox, indices []int) (x0s []float64, minX0 f
 	return x0s, minX0, maxX1
 }
 
-// applyIndentTolerance adjusts x0 values that are close to minX0 to improve clustering
+// applyIndentTolerance 将接近 minX0 的 x0 钳到 minX0，改善聚类。
 func applyIndentTolerance(x0s []float64, minX0, indentTol float64) {
 	for i := range x0s {
 		if math.Abs(x0s[i]-minX0) < indentTol {
@@ -93,7 +92,7 @@ func applyIndentTolerance(x0s []float64, minX0, indentTol float64) {
 	}
 }
 
-// findBestK tries k from 1 to min(4, n) and returns the k with the best silhouette score
+// findBestK 遍历 k 取轮廓系数最高者。
 func findBestK(x0s []float64, n int) (bestK int, bestScore float64) {
 	maxTry := min(4, n)
 	if maxTry < 2 {
@@ -116,7 +115,7 @@ func findBestK(x0s []float64, n int) (bestK int, bestScore float64) {
 	return bestK, bestScore
 }
 
-// assignColIDsForPage assigns column IDs to boxes on a page using the best k
+// assignColIDsForPage 按页最佳 k 为 box 写入 ColID。
 func assignColIDsForPage(boxes, result []pdf.TextBox, indices []int, pg int, pageCols map[int]int) {
 	if len(indices) == 0 {
 		return
@@ -139,7 +138,7 @@ func assignColIDsForPage(boxes, result []pdf.TextBox, indices []int, pg int, pag
 	}
 }
 
-// remapLabelsByCentroidOrder remaps cluster labels so leftmost column = 0
+// remapLabelsByCentroidOrder 按质心 x 升序将簇标签映射为 0 起列号。
 func remapLabelsByCentroidOrder(centroids []float64) map[int]int {
 	type clPair struct {
 		center float64
@@ -157,16 +156,14 @@ func remapLabelsByCentroidOrder(centroids []float64) map[int]int {
 	return remap
 }
 
-// ---- Text merge (horizontal) ----
+// ---- 横向文本合并 ----
 
-// TextMerge horizontally merges adjacent boxes at similar vertical positions.
-//
-// Python: pdf_parser.py:888 _text_merge()
+// TextMerge 同页同列、layoutno 一致且纵向接近的相邻 box 横向合并；对齐 _text_merge()。
 func TextMerge(boxes []pdf.TextBox, medianHeights map[int]float64, zoom float64) []pdf.TextBox {
 	if len(boxes) < 2 {
 		return boxes
 	}
-	// Build output via collect: O(n) instead of O(n²) slice-element removal.
+	// 线性扫描合并，O(n)，避免 O(n²) 切片删除。
 	out := make([]pdf.TextBox, 0, len(boxes))
 	i := 0
 	for i < len(boxes) {
@@ -202,22 +199,20 @@ func TextMerge(boxes []pdf.TextBox, medianHeights map[int]float64, zoom float64)
 	return out
 }
 
-// ---- Naive vertical merge ----
+// ---- 朴素纵向合并 ----
 
-// NaiveVerticalMerge vertically merges boxes on the same page/column.
-//
-// Python: pdf_parser.py:926 _naive_vertical_merge()
+// NaiveVerticalMerge 同页纵向合并段落块；对齐 _naive_vertical_merge()。
 func NaiveVerticalMerge(boxes []pdf.TextBox, medianHeights map[int]float64, medianWidths map[int]float64, isEnglish bool) []pdf.TextBox {
 	if len(boxes) < 2 {
 		return boxes
 	}
 
-	// Group boxes by page
+	// 按页分组处理
 	pageGroups, sortedPages := groupBoxesByPage(boxes)
 
 	var result []pdf.TextBox
 	for _, pg := range sortedPages {
-		// Collect all boxes for this page
+		// 收集当前页全部 box
 		indices := pageGroups[pg]
 		bxs := make([]pdf.TextBox, len(indices))
 		for i, idx := range indices {
@@ -230,10 +225,10 @@ func NaiveVerticalMerge(boxes []pdf.TextBox, medianHeights map[int]float64, medi
 		}
 		mw := medianWidths[pg]
 		if mw <= 0 {
-			mw = 8 // Python fallback: np.median([...]) if chars else 8 (pdf_parser.py:1465)
+			mw = 8 // 中位宽缺失时回退 8（对齐 Python pdf_parser.py:1465）
 		}
 
-		// Process boxes for this page
+		// 对单页执行 processPageBoxes
 		processed := processPageBoxes(bxs, mh, mw, isEnglish)
 		result = append(result, processed...)
 	}
@@ -241,11 +236,9 @@ func NaiveVerticalMerge(boxes []pdf.TextBox, medianHeights map[int]float64, medi
 	return result
 }
 
-// ---- Reading order ----
+// ---- 阅读顺序 ----
 
-// FinalReadingOrderMerge sorts boxes by page → column → top → x0.
-//
-// Python: pdf_parser.py:1007 _final_reading_order_merge()
+// FinalReadingOrderMerge 按页→列→top→x0 排序；对齐 _final_reading_order_merge()。
 func FinalReadingOrderMerge(boxes []pdf.TextBox) []pdf.TextBox {
 	if len(boxes) == 0 {
 		return boxes
@@ -268,7 +261,7 @@ func FinalReadingOrderMerge(boxes []pdf.TextBox) []pdf.TextBox {
 
 var pageNumSuffixPattern = regexp.MustCompile(`[0-9  •一—-]+$`)
 
-// groupBoxesByPage groups text boxes by page, returning a map from page number to index list and sorted page number list
+// groupBoxesByPage 按页号分组，返回页→索引列表与排序后的页号列表。
 func groupBoxesByPage(boxes []pdf.TextBox) (map[int][]int, []int) {
 	if len(boxes) == 0 {
 		return map[int][]int{}, []int{}
@@ -279,7 +272,7 @@ func groupBoxesByPage(boxes []pdf.TextBox) (map[int][]int, []int) {
 		pageGroups[b.PageNumber] = append(pageGroups[b.PageNumber], i)
 	}
 
-	// Sort page numbers
+	// 对页号键排序
 	pageKeys := make([]int, 0, len(pageGroups))
 	for pg := range pageGroups {
 		pageKeys = append(pageKeys, pg)
@@ -289,29 +282,29 @@ func groupBoxesByPage(boxes []pdf.TextBox) (map[int][]int, []int) {
 	return pageGroups, pageKeys
 }
 
-// shouldMergeBoxes determines whether two boxes should be merged
+// shouldMergeBoxes 根据 layoutno、纵向间隙、水平重叠及中英文标点规则判断是否纵向合并。
 func shouldMergeBoxes(prev, curr *pdf.TextBox, mh, mw float64, isEnglish bool) bool {
-	// Check layout number
+	// 检查 layoutno 是否一致
 	if prev.LayoutNo != curr.LayoutNo {
 		slog.Debug("vm reject", "reason", "layoutNo", "prevLayout", prev.LayoutNo, "currLayout", curr.LayoutNo)
 		return false
 	}
 
-	// Check vertical gap
+	// 检查纵向间隙是否 ≤ mh*1.5
 	gap := curr.Top - prev.Bottom
 	if gap > mh*1.5 {
 		slog.Debug("vm reject", "reason", "gap", "gap", gap, "threshold", mh*1.5, "mh", mh)
 		return false
 	}
 
-	// Check horizontal overlap
+	// 检查水平重叠率是否 ≥ 0.3
 	ov := util.OverlapX(prev, curr)
 	if ov < 0.3 {
 		slog.Debug("vm reject", "reason", "ovX", "ov", ov, "threshold", 0.3)
 		return false
 	}
 
-	// Check merge/block conditions
+	// 检查连接符/反连接/ detach 条件
 	prevText := strings.TrimSpace(prev.Text)
 	currText := strings.TrimSpace(curr.Text)
 
@@ -334,7 +327,7 @@ func shouldMergeBoxes(prev, curr *pdf.TextBox, mh, mw float64, isEnglish bool) b
 	return true
 }
 
-// mergeTwoBoxes merges two text boxes
+// mergeTwoBoxes 合并两 box 的文本与 bbox。
 func mergeTwoBoxes(prev, curr pdf.TextBox) pdf.TextBox {
 	prevText := strings.TrimSpace(prev.Text)
 	currText := strings.TrimSpace(curr.Text)
@@ -356,13 +349,13 @@ func mergeTwoBoxes(prev, curr pdf.TextBox) pdf.TextBox {
 	return prev
 }
 
-// processPageBoxes processes all boxes for a single page
+// processPageBoxes 单页按 Top/X0 排序后逐对尝试纵向合并。
 func processPageBoxes(boxes []pdf.TextBox, mh, mw float64, isEnglish bool) []pdf.TextBox {
 	if len(boxes) == 0 {
 		return boxes
 	}
 
-	// Sort by Top, X0
+	// 按 Top、X0 排序
 	sortedBoxes := make([]pdf.TextBox, len(boxes))
 	copy(sortedBoxes, boxes)
 	sort.Slice(sortedBoxes, func(i, j int) bool {
@@ -376,12 +369,12 @@ func processPageBoxes(boxes []pdf.TextBox, mh, mw float64, isEnglish bool) []pdf
 	for i := 0; i < len(sortedBoxes); i++ {
 		curr := sortedBoxes[i]
 
-		// Skip cross-page suffixes (like previous page number)
+		// 跳过跨页页码后缀（如上一页页脚页码）
 		if i > 0 && sortedBoxes[i-1].PageNumber < curr.PageNumber && pageNumSuffixPattern.MatchString(sortedBoxes[i-1].Text) {
 			continue
 		}
 
-		// Handle empty boxes
+		// 空文本 box：若与上一块接近则延伸 bottom
 		if strings.TrimSpace(curr.Text) == "" {
 			if len(out) > 0 {
 				prev := &out[len(out)-1]
@@ -410,18 +403,21 @@ func processPageBoxes(boxes []pdf.TextBox, mh, mw float64, isEnglish bool) []pdf
 	return out
 }
 
-// ---- rune-based text helpers (CJK-safe) ----
+// ---- 基于 rune 的文本辅助（CJK 安全） ----
 
+// lastRune 取字符串最后一个 rune。
 func lastRune(s string) rune {
 	r, _ := utf8.DecodeLastRuneInString(s)
 	return r
 }
 
+// firstRune 取字符串第一个 rune。
 func firstRune(s string) rune {
 	r, _ := utf8.DecodeRuneInString(s)
 	return r
 }
 
+// secondLastRune 取倒数第二个 rune。
 func secondLastRune(s string) rune {
 	r, size := utf8.DecodeLastRuneInString(s)
 	if r == utf8.RuneError && size == 0 {
@@ -431,6 +427,7 @@ func secondLastRune(s string) rune {
 	return r2
 }
 
+// endsWithOneOf 末字符是否在 set 中。
 func endsWithOneOf(s, set string) bool {
 	r := lastRune(s)
 	if r == 0 {
@@ -439,6 +436,7 @@ func endsWithOneOf(s, set string) bool {
 	return strings.ContainsRune(set, r)
 }
 
+// endsSecondLastOneOf 倒数第二字符是否在 set 中。
 func endsSecondLastOneOf(s, set string) bool {
 	r := secondLastRune(s)
 	if r == 0 {
@@ -447,6 +445,7 @@ func endsSecondLastOneOf(s, set string) bool {
 	return strings.ContainsRune(set, r)
 }
 
+// startsWithOneOf 首字符是否在 set 中。
 func startsWithOneOf(s, set string) bool {
 	r := firstRune(s)
 	if r == 0 {
@@ -455,8 +454,7 @@ func startsWithOneOf(s, set string) bool {
 	return strings.ContainsRune(set, r)
 }
 
-// MergeSameBullet merges adjacent boxes that start with the same bullet/number
-// character, combining their text with a newline separator.
+// MergeSameBullet 合并首字符相同且非拉丁/非中文的项目符号相邻 box，文本用换行连接。
 func MergeSameBullet(boxes []pdf.TextBox, tok pdf.Tokenizer) []pdf.TextBox {
 	if len(boxes) < 2 {
 		return boxes
@@ -495,6 +493,7 @@ func MergeSameBullet(boxes []pdf.TextBox, tok pdf.Tokenizer) []pdf.TextBox {
 	return out
 }
 
+// firstRuneString 取 TrimSpace 后首 rune。
 func firstRuneString(s string) rune {
 	s = strings.TrimSpace(s)
 	if s == "" {

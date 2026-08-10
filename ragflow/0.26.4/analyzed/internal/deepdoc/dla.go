@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// dla.go — 文档版面分析（DLA）远程调用：multipart 上传 JPEG、解析 bboxes  wire 格式并映射为 DLAResult。
+
 //
 
 package deepdoc
@@ -27,16 +29,10 @@ import (
 	"strings"
 )
 
-// BBox is a 4-tuple [left, top, right, bottom] in the image's
-// native pixel coordinates. Float to preserve sub-pixel accuracy
-// from the upstream server (the Python client lowercases+indexes
-// without rounding).
+// BBox 图像像素坐标四元组 [left, top, right, bottom]；float 保留子像素精度。
 type BBox [4]float64
 
-// DLAResult is one detected layout region. Type is the normalized
-// class name (lowercased, per Python `dla_cli.py:43`); TypeIdx is
-// the raw class index into DLAClasses (preserved so callers can
-// disambiguate the documented duplicate class slots).
+// DLAResult 单块版面区域；Type 为规范化类名，TypeIdx 为 DLAClasses 原始索引（含重复槽位）。
 type DLAResult struct {
 	Type    string  `json:"type"`
 	Score   float64 `json:"score"`
@@ -44,11 +40,7 @@ type DLAResult struct {
 	TypeIdx int     `json:"type_idx"`
 }
 
-// DLAClasses is the 10-entry class taxonomy from
-// deepdoc/vision/dla_cli.py:10-21. Order is significant — TypeIdx
-// in the wire payload is an index into this slice. The duplicates
-// at indices 4/6/7/9 are kept verbatim for backward compatibility
-// with existing inference servers.
+// DLAClasses 10 类版面 taxonomy，顺序与 wire type_idx 对应；索引 4/6/7/9 重复项保留以兼容旧推理服务。
 var DLAClasses = []string{
 	"title",          // 0
 	"text",           // 1
@@ -62,27 +54,12 @@ var DLAClasses = []string{
 	"figure caption", // 9  duplicate
 }
 
-// rawDLA is the wire format the DLA server returns
-// (docs/agent-port/deepdoc-endpoints.md §2.3).
+// rawDLA DLA 服务 JSON 响应结构（§2.3）。
 type rawDLA struct {
 	BBoxes [][]float64 `json:"bboxes"`
 }
 
-// DLA calls the remote DLA service for layout analysis of one or
-// more JPEG-encoded images. The Python contract
-// (dla_cli.py:25-50) is replicated:
-//
-//   - one HTTP POST per image
-//   - 3 attempts per image, 18s per attempt, 200ms initial backoff
-//   - failed images return an empty DLAResult (caller does not
-//     have to handle per-image errors — the Python
-//     `layout_recognizer.py:74-76` is happy with empty results)
-//
-// When no DEEPDOC_URL is set, returns ErrNoURL without any network
-// call. When the base URL is set but the service is unreachable
-// after 3 attempts, the failed image's slot is an empty DLAResult
-// and the rest still process (matches Python's "len(res) == i"
-// append-empty pattern).
+// DLA 对多张 JPEG 调用远程版面分析，每张独立 POST+重试；失败图返回空 DLAResult 不中断批次（对齐 Python layout_recognizer）。未配置 URL 返回 ErrNoURL。
 func (c *Client) DLA(ctx context.Context, images [][]byte) ([]DLAResult, error) {
 	if !c.Enabled() {
 		return nil, ErrNoURL
@@ -109,8 +86,7 @@ func (c *Client) DLA(ctx context.Context, images [][]byte) ([]DLAResult, error) 
 	return out, nil
 }
 
-// predictURL resolves the DLA endpoint URL from the configured base.
-// Trims trailing slash to avoid `//predict` on `http://host/`.
+// predictURL 拼接 predict 端点 URL，去除 base 尾部斜杠。
 func (c *Client) predictURL() (string, error) {
 	base := strings.TrimRight(c.baseURL, "/")
 	u, err := url.Parse(base + predictPath)
@@ -120,11 +96,7 @@ func (c *Client) predictURL() (string, error) {
 	return u.String(), nil
 }
 
-// predictOne runs the retry loop for a single image. Returns the
-// list of bboxes the server returned, or an empty slice if all
-// attempts failed. Errors are NOT returned for retry exhaustion —
-// the caller maps "empty slice" to "no detections" per the Python
-// contract; a hard error (4xx, bad URL) is returned immediately.
+// predictOne 单张图片的重试预测；耗尽重试返回空切片（非 error）；4xx/坏 URL 立即失败。
 func (c *Client) predictOne(ctx context.Context, predictURL string, image []byte) []DLAResult {
 	buildBody := func() (io.Reader, string) {
 		// Each retry needs a fresh multipart body — multipart.Writer
@@ -165,7 +137,7 @@ func (c *Client) predictOne(ctx context.Context, predictURL string, image []byte
 		if len(b) < 6 {
 			continue
 		}
-		// [l, t, r, b, score, type_idx] per docs/agent-port/deepdoc-endpoints.md §2.3.
+		// bbox 六元组 [l,t,r,b,score,type_idx]，见 deepdoc-endpoints §2.3。
 		bbox := BBox{b[0], b[1], b[2], b[3]}
 		idx := int(b[5])
 		cls := ""

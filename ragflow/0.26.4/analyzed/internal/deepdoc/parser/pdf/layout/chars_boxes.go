@@ -1,3 +1,5 @@
+// chars_boxes.go — 字符级聚合：按行分组、列间隙切分与 TextBox 构建，对齐 Python pdf_parser.__images__。
+
 package layout
 
 import (
@@ -10,10 +12,7 @@ import (
 	util "ragflow/internal/deepdoc/parser/pdf/util"
 )
 
-// CharsToBoxes converts raw characters to initial text boxes by grouping
-// characters into lines based on vertical overlap.
-//
-// Python: pdf_parser.__images__ producing self.boxes
+// CharsToBoxes 按垂直重叠将字符聚合成行再切列，生成初始 TextBox；对齐 pdf_parser.__images__。
 func CharsToBoxes(chars []pdf.TextChar, pageNum int, sortByTop bool) []pdf.TextBox {
 	if len(chars) == 0 {
 		return nil
@@ -29,7 +28,7 @@ func CharsToBoxes(chars []pdf.TextChar, pageNum int, sortByTop bool) []pdf.TextB
 	for _, line := range lines {
 		thr := threshold
 		if thr > 100 {
-			// No significant column gaps on this page → use per-line threshold.
+			// 页级无显著列间隙 → 改用行内阈值。
 			thr = perLineXGapThreshold(line)
 		}
 		subLines := splitLineByXGap(line, thr)
@@ -42,8 +41,7 @@ func CharsToBoxes(chars []pdf.TextChar, pageNum int, sortByTop bool) []pdf.TextB
 	return boxes
 }
 
-// perLineXGapThreshold computes a dynamic X-gap threshold for column
-// splitting within a single line (fallback when page has few gaps).
+// perLineXGapThreshold 单行内列切分动态 X 间隙阈值（页级回退）。
 func perLineXGapThreshold(chars []pdf.TextChar) float64 {
 	if len(chars) <= 1 {
 		return 1e9
@@ -64,11 +62,7 @@ func perLineXGapThreshold(chars []pdf.TextChar) float64 {
 	return medianGap * 2.5
 }
 
-// pageXGapThreshold computes a global X-gap column threshold from all
-// inter-char gaps across all lines on the page.  95th percentile catches
-// column boundaries while excluding word-level gaps.
-// Returns a value > 100 when there are too few gaps for reliable p95,
-// signalling the caller to fall back to perLineXGapThreshold.
+// pageXGapThreshold 全页字符间隙 95 分位作为列边界阈值；间隙不足时返回 >100 触发 perLine 回退。
 func pageXGapThreshold(lines [][]pdf.TextChar) float64 {
 	var allGaps []float64
 	for _, line := range lines {
@@ -81,18 +75,15 @@ func pageXGapThreshold(lines [][]pdf.TextChar) float64 {
 		return 1e9 // too few gaps for reliable p95 → fall back to per-line
 	}
 	sort.Float64s(allGaps)
-	// 95th percentile: only the largest 5% of gaps are column boundaries.
+	// 95 分位：仅最大 5% 间隙视为列边界。
 	p95 := allGaps[len(allGaps)*95/100]
 	if p95 < 30 {
-		p95 = 30 // floor: column gaps are ≥30pt in practice
+		p95 = 30 // 下限 30pt：实际列间隙通常不小于此值
 	}
 	return p95
 }
 
-// splitLineByXGap splits a character line into sub-lines where X gaps
-// meet or exceed the threshold (column boundaries).  Uses >= to match the
-// p95 boundary value — a gap exactly at the 95th percentile is a column gap,
-// not a word gap.
+// splitLineByXGap 按 X 间隙≥阈值切分行内子行（列边界）；≥ 含等于 p95 边界值。
 func splitLineByXGap(chars []pdf.TextChar, threshold float64) [][]pdf.TextChar {
 	if len(chars) <= 1 {
 		return [][]pdf.TextChar{chars}
@@ -110,9 +101,9 @@ func splitLineByXGap(chars []pdf.TextChar, threshold float64) [][]pdf.TextChar {
 	return result
 }
 
-// ---- internal helpers ----
+// ---- 内部辅助 ----
 
-// groupCharsToLines groups characters into horizontal lines based on vertical overlap.
+// GroupCharsToLines 按垂直重叠将字符分组为水平行。
 func GroupCharsToLines(chars []pdf.TextChar, sortByTop bool) [][]pdf.TextChar {
 	if len(chars) == 0 {
 		return nil
@@ -159,7 +150,7 @@ func GroupCharsToLines(chars []pdf.TextChar, sortByTop bool) [][]pdf.TextChar {
 	return lines
 }
 
-// verticalOverlap checks if two characters are on the same horizontal line.
+// verticalOverlap 判断两字符是否同一水平行（Top 差 < 半行高）。
 func verticalOverlap(a, b pdf.TextChar) bool {
 	mh := math.Max(util.CharHeight(a), util.CharHeight(b))
 	if mh <= 0 {
@@ -168,12 +159,7 @@ func verticalOverlap(a, b pdf.TextChar) bool {
 	return math.Abs(a.Top-b.Top) < mh*0.5
 }
 
-// lineToTextBox converts a line of characters to a single pdf.TextBox.
-// asciiWordPattern matches strings composed entirely of ASCII word
-// characters. Python uses re.match (prefix match) — the stricter
-// full-string match here is equivalent in practice because each
-// pdf.TextChar.Text is a single rune, so prevText+currText ≤ 2 chars.
-// Python: pdf_parser.py:1528 re.match(r"[0-9a-zA-Z,.:;!%]+", ...)
+// LineToTextBox 将一行字符合并为 TextBox，扩展 bbox 并在 ASCII 词间按需插空格；对齐 pdf_parser.py:1524-1532。
 var asciiWordPattern = regexp.MustCompile(`^[0-9a-zA-Z,.:;!%]+$`)
 
 func LineToTextBox(chars []pdf.TextChar) pdf.TextBox {

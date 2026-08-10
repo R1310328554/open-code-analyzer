@@ -1,3 +1,5 @@
+// client.go — PDF 解析用 DeepDoc HTTP 客户端：封装 DLA/TSR/OCR 预测、批量识别与健康检查，带指数退避重试。
+
 package inference
 
 import (
@@ -21,7 +23,7 @@ import (
 	"github.com/cenkalti/backoff/v5"
 )
 
-// Client wraps the DeepDoc HTTP API.
+// Client 封装 DeepDoc HTTP API（DLA/TSR/OCR）。
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
@@ -32,11 +34,10 @@ type Client struct {
 	TSRLabels []string
 }
 
-// BaseURL returns the configured DeepDoc service URL.
+// BaseURL 返回配置的 DeepDoc 服务根 URL。
 func (c *Client) BaseURL() string { return c.baseURL }
 
-// NewClient creates a client.  baseURL must be provided by the caller
-// (e.g. from the DEEPDOC_URL environment variable).  Returns an error if empty.
+// NewClient 创建客户端；baseURL 必填（通常来自 DEEPDOC_URL），空则报错。
 func NewClient(baseURL string) (*Client, error) {
 	if baseURL == "" {
 		return nil, fmt.Errorf("deepdoc client: baseURL is required (set DEEPDOC_URL)")
@@ -51,9 +52,7 @@ func NewClient(baseURL string) (*Client, error) {
 	}, nil
 }
 
-// DefaultDLALabels returns the 10-class DLA taxonomy matching Python's
-// deepdoc/vision/dla_cli.py:10-21.  Duplicates at indices 4, 7, 9 are
-// kept verbatim for backward compatibility with existing inference servers.
+// DefaultDLALabels 返回 10 类 DLA 标签表，对齐 Python dla_cli；重复索引保留兼容。
 func DefaultDLALabels() []string {
 	return []string{
 		pdf.LayoutTypeTitle, pdf.LayoutTypeText, pdf.LayoutTypeReference,
@@ -63,8 +62,7 @@ func DefaultDLALabels() []string {
 	}
 }
 
-// DefaultTSRLabels returns the 6-class TSR taxonomy matching Python's
-// deepdoc/server/adapters/tsr_adapter.py:21-26.
+// DefaultTSRLabels 返回 6 类 TSR 标签表，对齐 Python tsr_adapter。
 func DefaultTSRLabels() []string {
 	return []string{
 		"table", "table column", "table row",
@@ -73,11 +71,12 @@ func DefaultTSRLabels() []string {
 	}
 }
 
+// bboxesResponse DeepDoc 预测接口通用 bboxes JSON 信封。
 type bboxesResponse struct {
 	BBoxes [][]float64 `json:"bboxes"`
 }
 
-// DLA analyzes a full page image and returns labeled regions.
+// DLA 分析整页图像，返回带标签的版面区域列表。
 func (c *Client) DLA(ctx context.Context, pageImage image.Image) ([]pdf.DLARegion, error) {
 	data, err := util.EncodeJPEG(pageImage)
 	if err != nil {
@@ -106,7 +105,7 @@ func (c *Client) DLA(ctx context.Context, pageImage image.Image) ([]pdf.DLARegio
 	return regions, nil
 }
 
-// TSR recognises table structure from a cropped image.
+// TSR 对裁剪表格图识别单元格结构。
 func (c *Client) TSR(ctx context.Context, cropped image.Image) ([]pdf.TSRCell, error) {
 	data, err := util.EncodeJPEG(cropped)
 	if err != nil {
@@ -136,29 +135,24 @@ func (c *Client) TSR(ctx context.Context, cropped image.Image) ([]pdf.TSRCell, e
 	return cells, nil
 }
 
-// ocrDetectResponse matches DeepDoc /predict/ocr?operator=det output:
-//
-//	{"output": [[[[[[x0,y0],[x1,y1],[x2,y2],[x3,y3]], ...]]]]}
+// ocrDetectResponse 匹配 /predict/ocr?operator=det 的四边形检测输出。
 type ocrDetectResponse struct {
 	Output [][][][][]float64 `json:"output"`
 }
 
-// ocrRecognizeResponse matches DeepDoc /predict/ocr?operator=rec output:
-//
-//	{"output": [[[["text", confidence], ...]]]}
+// ocrRecognizeResponse 匹配 /predict/ocr?operator=rec 的文本识别输出。
 type ocrRecognizeResponse struct {
 	Output [][][][]any `json:"output"`
 }
 
-// OCRDetect detects text regions (bounding boxes) in an image.
-// DeepDoc /predict/ocr with operator=det returns quad boxes: [[[x0,y0],[x1,y1],[x2,y2],[x3,y3]], ...]
+// OCRDetect 检测文本区域四边形框；operator=det。
 func (c *Client) OCRDetect(ctx context.Context, cropped image.Image) ([]pdf.OCRBox, error) {
 	data, err := util.EncodeJPEG(cropped)
 	if err != nil {
 		return nil, fmt.Errorf("ocr detect: encode: %w", err)
 	}
 
-	// First decode outer envelope as RawMessage so we can log on format mismatch.
+	// 先解析外层 RawMessage，格式不符时可打日志。
 	var rawEnvelope struct {
 		Output json.RawMessage `json:"output"`
 	}
@@ -195,8 +189,7 @@ func (c *Client) OCRDetect(ctx context.Context, cropped image.Image) ([]pdf.OCRB
 	return boxes, nil
 }
 
-// OCRRecognize recognizes text in a cropped image region.
-// DeepDoc /predict/ocr with operator=rec returns [[["text", confidence], ...]]
+// OCRRecognize 识别裁剪区域内文字；operator=rec。
 func (c *Client) OCRRecognize(ctx context.Context, cropped image.Image) ([]pdf.OCRText, error) {
 	data, err := util.EncodeJPEG(cropped)
 	if err != nil {
@@ -221,9 +214,7 @@ func (c *Client) OCRRecognize(ctx context.Context, cropped image.Image) ([]pdf.O
 	return texts, nil
 }
 
-// OCRRecognizeBatch recognizes text in multiple cropped image regions.
-// Returns a slice of results and a parallel slice of errors (nil on success).
-// A nil cropped image in the input produces nil results and a non-nil error.
+// OCRRecognizeBatch 批量 OCR 识别；结果与 errs 并行切片；nil 图像对应非 nil error。
 func (c *Client) OCRRecognizeBatch(ctx context.Context, cropped []image.Image) ([][]pdf.OCRText, []error) {
 	results := make([][]pdf.OCRText, len(cropped))
 	errs := make([]error, len(cropped))
@@ -254,7 +245,7 @@ func (c *Client) OCRRecognizeBatch(ctx context.Context, cropped []image.Image) (
 	return results, errs
 }
 
-// Health checks whether the DeepDoc service is reachable.
+// Health 探测 /health 是否可达。
 func (c *Client) Health() bool {
 	resp, err := c.httpClient.Get(c.baseURL + "/health")
 	if err != nil {
@@ -264,8 +255,9 @@ func (c *Client) Health() bool {
 	return resp.StatusCode == 200
 }
 
+// post multipart POST 通用实现：构建表单、指数退避重试、解析 JSON。
 func (c *Client) post(ctx context.Context, endpoint string, imgData []byte, filename string, result interface{}, extraFields ...string) error {
-	// Build multipart body once — the image data is idempotent.
+	// 请求体只构建一次（图像数据幂等，可复用于重试）。
 	var body bytes.Buffer
 	w := multipart.NewWriter(&body)
 	fw, err := w.CreateFormFile("request", filename)
@@ -315,7 +307,7 @@ func (c *Client) post(ctx context.Context, endpoint string, imgData []byte, file
 			slog.Warn("deepdoc: server error, will retry", "endpoint", endpoint, "status", resp.StatusCode)
 			return struct{}{}, respErr
 		}
-		// 4xx and other codes are not retryable.
+		// 4xx 等客户端错误不可重试。
 		return struct{}{}, backoff.Permanent(respErr)
 	}, backoff.WithMaxTries(4), backoff.WithNotify(func(err error, d time.Duration) {
 		slog.Info("deepdoc: retrying", "endpoint", endpoint, "backoff", d.Round(time.Millisecond), "err", err)

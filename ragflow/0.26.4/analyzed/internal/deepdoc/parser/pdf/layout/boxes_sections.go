@@ -1,3 +1,5 @@
+// boxes_sections.go — 版面框与 Section 互转：跨页位置标签、Markdown/JSON 导出及排序工具。
+
 package layout
 
 import (
@@ -8,13 +10,7 @@ import (
 	util "ragflow/internal/deepdoc/parser/pdf/util"
 )
 
-// ResolvePageSpan computes the ending page and bottom coordinate for a box
-// that may span multiple pages.  When pageHeights is nil or the box fits
-// within its starting page the returned (toPage, bottom) equal the inputs.
-//
-// Zero or negative page heights are treated as invalid: the span stops at
-// the preceding page, guarding against infinite loops caused by corrupted
-// page images.
+// ResolvePageSpan 计算跨页框的结束页与 bottom；pageHeights 无效或 box 不跨页则原样返回；零/负页高视为无效以防死循环。
 func ResolvePageSpan(pageNum int, bottom float64, pageHeights map[int]float64) (toPage int, newBottom float64) {
 	toPage = pageNum
 	newBottom = bottom
@@ -44,13 +40,7 @@ func ResolvePageSpan(pageNum int, bottom float64, pageHeights map[int]float64) (
 	return
 }
 
-// boxesToSections converts layout boxes to section format with position tags.
-//
-// pageHeights provides the PDF-point height of each page (image height / zoom).
-// Boxes that extend beyond their page produce multi-page position tags
-// (Python's _line_tag while-loop detection via resolvePageSpan).
-//
-// Python equivalent: output consumed by naive.py::chunk()
+// BoxesToSections 将 TextBox 转为带位置标签的 Section；跨页框生成多页 position tag（resolvePageSpan）；对齐 naive.py::chunk() 消费格式。
 func BoxesToSections(boxes []pdf.TextBox, pageHeights map[int]float64) []pdf.Section {
 	sections := make([]pdf.Section, 0, len(boxes))
 	for _, b := range boxes {
@@ -82,18 +72,7 @@ func BoxesToSections(boxes []pdf.TextBox, pageHeights map[int]float64) []pdf.Sec
 	return sections
 }
 
-// NormalizeSectionPositions ensures each Section's Positions field is populated
-// by parsing PositionTag when Positions is empty. Sections that already have
-// Positions populated are left unchanged.
-//
-// This mirrors the Python normalize_pdf_items_metadata — canonicalizing
-// position metadata from the string tag format into the typed []Position form.
-//
-// Callers should invoke this AFTER Parse() returns, just before consuming
-// Sections (e.g., before serialization to JSON or passing to the chunker).
-// The normalization is intentionally NOT embedded inside the parser pipeline
-// because Sections may come from multiple sources (deepdoc, MinerU, Docling,
-// JSON deserialization, etc.).
+// NormalizeSectionPositions 在 Positions 为空时从 PositionTag 解析填充；对齐 Python normalize_pdf_items_metadata；应在 Parse 之后、分块之前调用；不嵌入解析管线因 Section 来源多样。
 func NormalizeSectionPositions(sections []pdf.Section) {
 	for i := range sections {
 		if len(sections[i].Positions) == 0 && sections[i].PositionTag != "" {
@@ -102,7 +81,7 @@ func NormalizeSectionPositions(sections []pdf.Section) {
 	}
 }
 
-// SortByPageThenY sorts boxes by page → vertical key → x0.
+// SortByPageThenY 按页码→纵向键→x0 排序。
 func SortByPageThenY(boxes []pdf.TextBox, sortByTop bool) {
 	key := func(b pdf.TextBox) float64 { return b.Bottom }
 	if sortByTop {
@@ -119,13 +98,7 @@ func SortByPageThenY(boxes []pdf.TextBox, sortByTop bool) {
 	})
 }
 
-// SectionsToMarkdown converts Sections to a markdown string.
-//
-// Title sections get a "## " prefix.
-// Figure sections produce an "![Image](data:image/png;base64,...)" tag.
-// Text and all other sections are appended verbatim.
-//
-// This mirrors the Python parser.py:665-671 markdown output path.
+// SectionsToMarkdown 将 Section 转为 Markdown；标题加 ##，图片嵌 base64；对齐 parser.py:665-671。
 func SectionsToMarkdown(sections []pdf.Section) string {
 	var b strings.Builder
 	for _, s := range sections {
@@ -144,13 +117,7 @@ func SectionsToMarkdown(sections []pdf.Section) string {
 	return b.String()
 }
 
-// SectionsToJSON converts Sections to a Python-compatible JSON dict format.
-//
-// Each dict has keys: text, layout_type, doc_type_kwd, _pdf_positions, image.
-// The _pdf_positions key mirrors Python's PDF_POSITIONS_KEY constant —
-// the canonical position format consumed by the chunker's extract_pdf_positions.
-//
-// This mirrors the Python parser.py:662 set_output("json", bboxes) path.
+// SectionsToJSON 转为 Python 兼容的 dict 列表；_pdf_positions 对齐 chunker extract_pdf_positions。
 func SectionsToJSON(sections []pdf.Section) []map[string]any {
 	result := make([]map[string]any, len(sections))
 	for i, s := range sections {
