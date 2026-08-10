@@ -1,5 +1,7 @@
 package grpc
 
+// index_client 将 index.Client 语义映射到 gRPC store：WriteBatch 转 WriteIndex/DeleteIndex RPC，QueryPages 流式接收 QueryIndexResponse。
+
 import (
 	"context"
 	"io"
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/series/index"
 )
 
+// WriteBatch.Add 追加 IndexEntry 到 Writes 切片，BatchWrite 时一次性发送。
 func (w *WriteBatch) Add(tableName, hashValue string, rangeValue []byte, value []byte) {
 	w.Writes = append(w.Writes, &IndexEntry{
 		TableName:  tableName,
@@ -31,6 +34,7 @@ func (s *StorageClient) NewWriteBatch() index.WriteBatch {
 	return &WriteBatch{}
 }
 
+// BatchWrite 先 WriteIndex 再 DeleteIndex，均使用 context.Background 忽略传入 ctx。
 func (s *StorageClient) BatchWrite(_ context.Context, batch index.WriteBatch) error {
 	writeBatch := batch.(*WriteBatch)
 	batchWrites := &WriteIndexRequest{Writes: writeBatch.Writes}
@@ -48,6 +52,7 @@ func (s *StorageClient) BatchWrite(_ context.Context, batch index.WriteBatch) er
 	return nil
 }
 
+// QueryPages 并行发起多条 QueryIndex 流，QueryIndexResponse 实现 ReadBatchIterator。
 func (s *StorageClient) QueryPages(ctx context.Context, queries []index.Query, callback index.QueryPagesCallback) error {
 	return util.DoParallelQueries(ctx, s.query, queries, callback)
 }
@@ -88,6 +93,7 @@ func (r *QueryIndexResponse) Iterator() index.ReadBatchIterator {
 	}
 }
 
+// grpcIter 遍历 QueryIndexResponse.Rows，按序返回 RangeValue 与 Value。
 type grpcIter struct {
 	i int
 	*QueryIndexResponse
@@ -105,3 +111,4 @@ func (b *grpcIter) RangeValue() []byte {
 func (b *grpcIter) Value() []byte {
 	return b.Rows[b.i].Value
 }
+// Delete 仅填充 hash/range 无 Value；callback 返回 false 可提前终止流式读取。

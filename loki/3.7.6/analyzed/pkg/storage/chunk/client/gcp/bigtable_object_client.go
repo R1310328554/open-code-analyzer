@@ -1,5 +1,7 @@
 package gcp
 
+// bigtable_object_client 将 chunk 数据存入 Bigtable（非 GCS）：PutChunks/GetChunks 按 schema 表名分组批量 ApplyBulk/ReadRows，DeleteChunk 按列族删除。
+
 import (
 	"context"
 	"fmt"
@@ -16,12 +18,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/config"
 )
 
+// bigtableObjectClient 实现 chunk.Client，复用与索引相同的 Bigtable 连接与列族 f:c。
 type bigtableObjectClient struct {
 	cfg       Config
 	schemaCfg config.SchemaConfig
 	client    *bigtable.Client
 }
 
+// NewBigtableObjectClient 建立带 OTel 与 Prometheus 插桩的 Bigtable 数据客户端。
 // NewBigtableObjectClient makes a new chunk.Client that stores chunks in
 // Bigtable.
 func NewBigtableObjectClient(ctx context.Context, cfg Config, schemaCfg config.SchemaConfig) (client.Client, error) {
@@ -50,6 +54,7 @@ func (s *bigtableObjectClient) Stop() {
 	s.client.Close()
 }
 
+// PutChunks 编码各 chunk 后按表名聚合 mutation，ApplyBulk 批量写入。
 func (s *bigtableObjectClient) PutChunks(ctx context.Context, chunks []chunk.Chunk) error {
 	keys := map[string][]string{}
 	muts := map[string][]*bigtable.Mutation{}
@@ -86,6 +91,7 @@ func (s *bigtableObjectClient) PutChunks(ctx context.Context, chunks []chunk.Chu
 	return nil
 }
 
+// GetChunks 分页并行 ReadRows，解码后校验返回行数与请求数一致。
 func (s *bigtableObjectClient) GetChunks(ctx context.Context, input []chunk.Chunk) ([]chunk.Chunk, error) {
 	ctx, sp := tracer.Start(ctx, "GetChunks")
 	defer sp.End()
@@ -169,6 +175,7 @@ func (s *bigtableObjectClient) GetChunks(ctx context.Context, input []chunk.Chun
 	return output, nil
 }
 
+// DeleteChunk 解析外部键定位表与行，DeleteCellsInColumn 删除 f:c 列。
 func (s *bigtableObjectClient) DeleteChunk(ctx context.Context, userID, chunkID string) error {
 	chunkRef, err := chunk.ParseExternalKey(userID, chunkID)
 	if err != nil {
@@ -193,3 +200,4 @@ func (s *bigtableObjectClient) IsChunkNotFoundErr(_ error) bool {
 func (s *bigtableObjectClient) IsRetryableErr(_ error) bool {
 	return false
 }
+// IsChunkNotFoundErr/IsRetryableErr 均返回 false，错误语义由上层或 Bigtable SDK 自行处理。

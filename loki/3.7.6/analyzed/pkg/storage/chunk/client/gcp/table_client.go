@@ -1,5 +1,7 @@
 package gcp
 
+// table_client 通过 Bigtable Admin API 管理 Loki 索引/chunk 表：列举含列族 f 的表、创建表与列族、删除表，并缓存 TableInfo 减少 RPC。
+
 import (
 	"context"
 	"time"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/series/index"
 )
 
+// tableClient 维护 tableInfo 缓存与过期时间，ListTables 时刷新未命中条目。
 type tableClient struct {
 	cfg    Config
 	client *bigtable.AdminClient
@@ -27,6 +30,7 @@ type tableClient struct {
 	tableExpiration time.Time
 }
 
+// NewTableClient 连接 AdminClient，启用与数据面相同的 gRPC 插桩与 OTel stats handler。
 // NewTableClient returns a new TableClient.
 func NewTableClient(ctx context.Context, cfg Config) (index.TableClient, error) {
 	unaryInterceptors, streamInterceptors := bigtableInstrumentation()
@@ -47,6 +51,7 @@ func NewTableClient(ctx context.Context, cfg Config) (index.TableClient, error) 
 	}, nil
 }
 
+// ListTables 过滤缺少列族 f 的表，仅返回符合 Loki schema 的表名。
 // ListTables lists all of the correctly specified cortex tables in bigtable
 func (c *tableClient) ListTables(ctx context.Context) ([]string, error) {
 	tables, err := c.client.Tables(ctx)
@@ -88,6 +93,7 @@ func hasColumnFamily(infos []bigtable.FamilyInfo) bool {
 	return false
 }
 
+// CreateTable 幂等创建表与 columnFamily，AlreadyExists 视为成功。
 func (c *tableClient) CreateTable(ctx context.Context, desc config.TableDesc) error {
 	if err := c.client.CreateTable(ctx, desc.Name); err != nil {
 		if !alreadyExistsError(err) {
@@ -118,6 +124,7 @@ func (c *tableClient) DeleteTable(ctx context.Context, name string) error {
 	return nil
 }
 
+// DescribeTable 对 Bigtable 仅返回表名并标记 active，无额外元数据。
 func (c *tableClient) DescribeTable(_ context.Context, name string) (desc config.TableDesc, isActive bool, err error) {
 	return config.TableDesc{
 		Name: name,
@@ -131,3 +138,4 @@ func (c *tableClient) UpdateTable(_ context.Context, _, _ config.TableDesc) erro
 func (c *tableClient) Stop() {
 	c.client.Close()
 }
+// UpdateTable 为 noop；DeleteTable 成功后清除本地 tableInfo 缓存项。

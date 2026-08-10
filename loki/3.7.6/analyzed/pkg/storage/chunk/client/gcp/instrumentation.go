@@ -1,5 +1,7 @@
 package gcp
 
+// instrumentation 为 Bigtable gRPC 与 GCS HTTP 请求注册 Prometheus 直方图，并封装 grpc.DialOption 到 google.api option 的转换。
+
 import (
 	"net/http"
 	"strconv"
@@ -35,6 +37,7 @@ var (
 	}, []string{"operation", "status_code"})
 )
 
+// bigtableInstrumentation 返回 dskit middleware 客户端拦截器，按 operation/status 标签计时。
 func bigtableInstrumentation() ([]grpc.UnaryClientInterceptor, []grpc.StreamClientInterceptor) {
 	return []grpc.UnaryClientInterceptor{
 			middleware.UnaryClientInstrumentInterceptor(bigtableRequestDuration),
@@ -44,6 +47,7 @@ func bigtableInstrumentation() ([]grpc.UnaryClientInterceptor, []grpc.StreamClie
 		}
 }
 
+// gcsInstrumentation 用 instrumentedTransport 包装 RoundTripper 记录 GCS 请求耗时。
 func gcsInstrumentation(transport http.RoundTripper) *http.Client {
 	client := &http.Client{
 		Transport: instrumentedTransport{
@@ -54,6 +58,7 @@ func gcsInstrumentation(transport http.RoundTripper) *http.Client {
 	return client
 }
 
+// toOptions 将 dskit 生成的 grpc.DialOption 列表转为 Bigtable 客户端所需的 ClientOption。
 func toOptions(opts []grpc.DialOption) []option.ClientOption {
 	result := make([]option.ClientOption, 0, len(opts))
 	for _, opt := range opts {
@@ -62,6 +67,7 @@ func toOptions(opts []grpc.DialOption) []option.ClientOption {
 	return result
 }
 
+// instrumentedTransport 在 RoundTrip 成功时按 HTTP 方法与状态码 Observe 延迟。
 type instrumentedTransport struct {
 	observer prometheus.ObserverVec
 	next     http.RoundTripper
@@ -75,3 +81,4 @@ func (i instrumentedTransport) RoundTrip(req *http.Request) (*http.Response, err
 	}
 	return resp, err
 }
+// bigtable 桶覆盖约 1ms–65s；GCS 桶从 5ms 起指数扩展共 7 档，便于 SLO 与慢查询分析。

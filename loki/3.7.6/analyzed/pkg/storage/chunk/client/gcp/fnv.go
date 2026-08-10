@@ -14,6 +14,8 @@
 
 package gcp
 
+// fnv 提供内联 FNV-64a 哈希（源自 Prometheus common），无额外分配，供 Bigtable 行键 HashPrefix 做数据分布。
+
 // Inline and byte-free variant of hash/fnv's fnv64a.
 
 const (
@@ -21,11 +23,13 @@ const (
 	prime64  = 1099511628211
 )
 
+// hashNew 返回 FNV-64a 初始偏移量 offset64。
 // hashNew initializies a new fnv64a hash value.
 func hashNew() uint64 {
 	return offset64
 }
 
+// hashAdd 逐字节异或并乘 prime64，累积字符串的 64 位哈希。
 // hashAdd adds a string to a fnv64a hash value, returning the updated hash.
 func hashAdd(h uint64, s string) uint64 {
 	for i := 0; i < len(s); i++ {
@@ -34,3 +38,4 @@ func hashAdd(h uint64, s string) uint64 {
 	}
 	return h
 }
+// prime64 与 offset64 为 FNV-1a 64 位算法标准常量，LittleEndian 编码见 HashPrefix。

@@ -3,6 +3,8 @@
 
 package grpc
 
+// 本文件由 protoc-gen-gogo 从 grpc.proto 生成，定义远程 gRPC store 的消息与服务桩：chunk 读写、索引批写/流式查询/删除及表管理 RPC（List/Create/Delete/Describe/Update）。
+
 import (
 	bytes "bytes"
 	context "context"
@@ -31,6 +33,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// PutChunksRequest 批量上传编码后的 Chunk（含 key 与 tableName）。
 type PutChunksRequest struct {
 	Chunks []*Chunk `protobuf:"bytes,1,rep,name=chunks,proto3" json:"chunks,omitempty"`
 }
@@ -74,6 +77,7 @@ func (m *PutChunksRequest) GetChunks() []*Chunk {
 	return nil
 }
 
+// GetChunksRequest 指定待拉取的 Chunk 键列表，Encoded 字段在请求中留空。
 type GetChunksRequest struct {
 	Chunks []*Chunk `protobuf:"bytes,1,rep,name=chunks,proto3" json:"chunks,omitempty"`
 }
@@ -160,6 +164,7 @@ func (m *GetChunksResponse) GetChunks() []*Chunk {
 	return nil
 }
 
+// Chunk 表示单条日志块：Encoded 载荷、ExternalKey 字符串与物理表名。
 type Chunk struct {
 	Encoded   []byte `protobuf:"bytes,1,opt,name=encoded,proto3" json:"encoded,omitempty"`
 	Key       string `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
@@ -485,6 +490,7 @@ func (m *DeleteIndexRequest) GetDeletes() []*IndexEntry {
 	return nil
 }
 
+// QueryIndexResponse 流式返回多行 Row（RangeValue+Value），客户端 Iterator 逐条消费。
 type QueryIndexResponse struct {
 	Rows []*Row `protobuf:"bytes,1,rep,name=rows,proto3" json:"rows,omitempty"`
 }
@@ -579,6 +585,7 @@ func (m *Row) GetValue() []byte {
 	return nil
 }
 
+// IndexEntry 索引表一行：TableName、HashValue、RangeValue 与 Value 字节。
 type IndexEntry struct {
 	TableName  string `protobuf:"bytes,1,opt,name=tableName,proto3" json:"tableName,omitempty"`
 	HashValue  string `protobuf:"bytes,2,opt,name=hashValue,proto3" json:"hashValue,omitempty"`
@@ -646,6 +653,7 @@ func (m *IndexEntry) GetValue() []byte {
 	return nil
 }
 
+// QueryIndexRequest 携带 hash 前缀、range 起止/前缀及 ValueEqual 等过滤条件。
 type QueryIndexRequest struct {
 	TableName        string `protobuf:"bytes,1,opt,name=tableName,proto3" json:"tableName,omitempty"`
 	HashValue        string `protobuf:"bytes,2,opt,name=hashValue,proto3" json:"hashValue,omitempty"`
@@ -1993,6 +2001,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// GrpcStoreClient 为 grpc_store 服务客户端：索引/chunk CRUD 与表生命周期管理。
 // GrpcStoreClient is the client API for GrpcStore service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -2028,6 +2037,7 @@ type grpcStoreClient struct {
 	cc *grpc.ClientConn
 }
 
+// NewGrpcStoreClient 基于已有 ClientConn 创建类型安全的 store 客户端。
 func NewGrpcStoreClient(cc *grpc.ClientConn) GrpcStoreClient {
 	return &grpcStoreClient{cc}
 }
@@ -2177,6 +2187,7 @@ func (c *grpcStoreClient) UpdateTable(ctx context.Context, in *UpdateTableReques
 	return out, nil
 }
 
+// GrpcStoreServer 由远程 store 进程实现；UnimplementedGrpcStoreServer 供向前兼容嵌入。
 // GrpcStoreServer is the server API for GrpcStore service.
 type GrpcStoreServer interface {
 	// / WriteIndex writes batch of indexes to the index tables.
@@ -6482,3 +6493,4 @@ var (
 	ErrInvalidLengthGrpc = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowGrpc   = fmt.Errorf("proto: integer overflow")
 )
+// QueryIndex/GetChunks 为服务端流式 RPC；WriteIndex/PutChunks 等为一元调用返回 empty。

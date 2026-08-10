@@ -1,5 +1,7 @@
 package congestion
 
+// metrics 为 store_congestion_control 子系统注册 Prometheus 指标：当前限速、退避时长、请求/重试计数及不可重试与超限错误统计。
+
 import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 
@@ -15,6 +17,7 @@ type Metrics struct {
 	retriesExceeded    prometheus.Counter
 }
 
+// Unregister 在 ObjectClient 生命周期结束时注销全部指标，避免泄漏注册表条目。
 func (m Metrics) Unregister() {
 	prometheus.Unregister(m.currentLimit)
 	prometheus.Unregister(m.backoffSec)
@@ -24,6 +27,7 @@ func (m Metrics) Unregister() {
 	prometheus.Unregister(m.retriesExceeded)
 }
 
+// NewMetrics 按 strategy 与 name 常量标签注册指标；重复 name 会导致 MustRegister panic。
 // NewMetrics creates metrics to be used for monitoring congestion control.
 // It needs to accept a "name" because congestion control is used in object clients, and there can be many object clients
 // creates for the same store (multiple period configs, etc). It is the responsibility of the caller to ensure uniqueness,
@@ -89,3 +93,4 @@ func NewMetrics(name string, cfg Config) *Metrics {
 	prometheus.MustRegister(m.retriesExceeded)
 	return &m
 }
+// limit 反映 AIMD 当前每秒请求上限；backoff_seconds_total 累计遇限流时的等待时间。

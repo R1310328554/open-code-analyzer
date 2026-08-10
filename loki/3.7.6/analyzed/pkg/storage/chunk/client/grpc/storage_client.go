@@ -1,5 +1,7 @@
 package grpc
 
+// storage_client 实现 chunk.Client，经 gRPC 与远程 store 交换 chunk：PutChunks 批量编码上传，GetChunks 流式拉取并 Decode，DeleteChunk 按 chunkID 删除。
+
 import (
 	"context"
 	"io"
@@ -17,6 +19,7 @@ type StorageClient struct {
 	connection *grpc.ClientConn
 }
 
+// NewStorageClient 根据 Config.Address Dial 远程 grpc-store 并构造客户端。
 // NewStorageClient returns a new StorageClient.
 func NewStorageClient(cfg Config, schemaCfg config.SchemaConfig) (*StorageClient, error) {
 	grpcClient, conn, err := connectToGrpcServer(cfg.Address)
@@ -35,6 +38,7 @@ func (s *StorageClient) Stop() {
 	s.connection.Close()
 }
 
+// PutChunks 将各 chunk Encoded 后附带 ExternalKey 与 ChunkTableFor 表名发送 RPC。
 // PutChunks implements chunk.ObjectClient.
 func (s *StorageClient) PutChunks(ctx context.Context, chunks []chunk.Chunk) error {
 	req := &PutChunksRequest{}
@@ -66,6 +70,7 @@ func (s *StorageClient) PutChunks(ctx context.Context, chunks []chunk.Chunk) err
 	return nil
 }
 
+// DeleteChunk 仅传递 chunkID 字符串，userID 参数被忽略（键已编码在 chunkID 中）。
 func (s *StorageClient) DeleteChunk(ctx context.Context, _, chunkID string) error {
 	chunkInfo := &ChunkID{ChunkID: chunkID}
 	_, err := s.client.DeleteChunks(ctx, chunkInfo)
@@ -83,6 +88,7 @@ func (s *StorageClient) IsRetryableErr(_ error) bool {
 	return false
 }
 
+// GetChunks 流式 Recv 直至 EOF，逐条 Decode；服务端不知 schema 故客户端填充 TableName。
 func (s *StorageClient) GetChunks(ctx context.Context, input []chunk.Chunk) ([]chunk.Chunk, error) {
 	req := &GetChunksRequest{}
 	req.Chunks = []*Chunk{}
@@ -125,3 +131,4 @@ func (s *StorageClient) GetChunks(ctx context.Context, input []chunk.Chunk) ([]c
 
 	return result, err
 }
+// IsChunkNotFoundErr/IsRetryableErr 恒为 false，与 GCS/Bigtable 客户端行为保持一致接口。

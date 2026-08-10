@@ -1,5 +1,7 @@
 package gcp
 
+// gcs_object_client 实现 chunk.ObjectClient，读写 Google Cloud Storage：分离 default/gets bucket handle（PUT 禁用 hedge，GET 可选 HTTP/2 与 hedging）。
+
 import (
 	"context"
 	"crypto/tls"
@@ -30,6 +32,7 @@ var tracer = otel.Tracer("pkg/storage/chunk/client/gcp")
 
 type ClientFactory func(ctx context.Context, opts ...option.ClientOption) (*storage.Client, error)
 
+// GCSObjectClient 持有两个 BucketHandle：default 用于写/列/list，gets 用于读并支持 hedge。
 type GCSObjectClient struct {
 	cfg GCSConfig
 
@@ -37,6 +40,7 @@ type GCSObjectClient struct {
 	getsBuckets   *storage.BucketHandle
 }
 
+// GCSConfig 配置桶名、端点、服务账号 JSON、缓冲、超时、OpenCensus 与 HTTP/2 开关。
 // GCSConfig is config for the GCS Chunk Client.
 type GCSConfig struct {
 	BucketName       string         `yaml:"bucket_name"`
@@ -70,6 +74,7 @@ func (cfg *GCSConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.BoolVar(&cfg.EnableRetries, prefix+"gcs.enable-retries", true, "Enable automatic retries of failed idempotent requests.")
 }
 
+// NewGCSObjectClient 工厂入口，内部使用官方 storage.NewClient。
 // NewGCSObjectClient makes a new chunk.Client that writes chunks to GCS.
 func NewGCSObjectClient(ctx context.Context, cfg GCSConfig, hedgingCfg hedging.Config) (*GCSObjectClient, error) {
 	return newGCSObjectClient(ctx, cfg, hedgingCfg, storage.NewClient)
@@ -157,6 +162,7 @@ func (s *GCSObjectClient) GetAttributes(ctx context.Context, objectKey string) (
 	return client.ObjectAttributes{}, nil
 }
 
+// GetObject 可选 RequestTimeout，成功时 ReadCloser 关闭会 cancel 关联 context。
 // GetObject returns a reader and the size for the specified object key from the configured GCS bucket.
 func (s *GCSObjectClient) GetObject(ctx context.Context, objectKey string) (io.ReadCloser, int64, error) {
 	var cancel context.CancelFunc = func() {}
@@ -201,6 +207,7 @@ func (s *GCSObjectClient) getObject(ctx context.Context, objectKey string) (rc i
 	return reader, reader.Attrs.Size, nil
 }
 
+// PutObject 设置 ChunkBufferSize 控制分片上传，0 表示单次 PUT 适合 Loki chunk 尺寸。
 // PutObject puts the specified bytes into the configured GCS bucket at the provided key
 func (s *GCSObjectClient) PutObject(ctx context.Context, objectKey string, object io.Reader) error {
 	writer := s.defaultBucket.Object(objectKey).NewWriter(ctx)
@@ -216,6 +223,7 @@ func (s *GCSObjectClient) PutObject(ctx context.Context, objectKey string, objec
 	return writer.Close()
 }
 
+// List 列举对象与 common prefix；使用 delimiter 时无法同时 SetAttrSelection。
 // List implements chunk.ObjectClient.
 func (s *GCSObjectClient) List(ctx context.Context, prefix, delimiter string) ([]client.StorageObject, []client.StorageCommonPrefix, error) {
 	var storageObjects []client.StorageObject
@@ -287,6 +295,7 @@ func isContextErr(err error) bool {
 		errors.Is(err, context.Canceled)
 }
 
+// IsStorageTimeoutErr 区分服务端超时/连接重置与客户端 context 取消或配置错误。
 // IsStorageTimeoutErr returns true if error means that object cannot be retrieved right now due to server-side timeouts.
 func IsStorageTimeoutErr(err error) bool {
 	// TODO(dannyk): move these out to be generic
@@ -323,6 +332,7 @@ func IsStorageTimeoutErr(err error) bool {
 	return false
 }
 
+// IsStorageThrottledErr 识别 429 与 5xx，符合 GCS 官方重试策略文档。
 // IsStorageThrottledErr returns true if error means that object cannot be retrieved right now due to throttling.
 func IsStorageThrottledErr(err error) bool {
 	if gerr, ok := err.(*googleapi.Error); ok {
@@ -334,6 +344,7 @@ func IsStorageThrottledErr(err error) bool {
 	return false
 }
 
+// IsRetryableErr 合并超时与限流判断，供拥塞 Retrier 与上层重试逻辑共用。
 // IsRetryableErr returns true if the request failed due to some retryable server-side scenario
 func IsRetryableErr(err error) bool {
 	return IsStorageTimeoutErr(err) || IsStorageThrottledErr(err)
@@ -374,3 +385,4 @@ func gcsTransport(ctx context.Context, scope string, insecure bool, http2 bool, 
 	}
 	return google_http.NewTransport(ctx, customTransport, transportOptions...)
 }
+// gcsTransport 构建自定义 http.Transport，Insecure 模式跳过 TLS 并禁用 GCP 认证。

@@ -1,5 +1,7 @@
 package gcp
 
+// bigtable_index_client 实现基于 GCP Bigtable 的 series 索引读写：支持 v1 行键布局与 v2 column-key 布局，批量写入、分页查询及可选行键哈希前缀分布。
+
 import (
 	"bytes"
 	"context"
@@ -32,6 +34,7 @@ const (
 	maxRowReads  = 100
 )
 
+// Config 指定 Bigtable 项目/实例、GRPC 客户端选项及表元数据缓存 TTL。
 // Config for a StorageClient
 type Config struct {
 	Project  string `yaml:"project"`
@@ -62,6 +65,7 @@ func (cfg *Config) Validate() error {
 	return cfg.GRPCClientConfig.Validate()
 }
 
+// storageClientColumnKey 使用 rangeValue 作为列名（v2 schema），可选 DistributeKeys 哈希前缀。
 // storageClientColumnKey implements chunk.storageClient for GCP.
 type storageClientColumnKey struct {
 	cfg       Config
@@ -75,6 +79,7 @@ type storageClientV1 struct {
 	storageClientColumnKey
 }
 
+// NewStorageClientV1 创建 v1 索引客户端：行键为 hash+分隔符+range，单列 family f:c。
 // NewStorageClientV1 returns a new v1 StorageClient.
 func NewStorageClientV1(ctx context.Context, cfg Config, schemaCfg config.SchemaConfig) (index.Client, error) {
 	unaryInterceptors, streamInterceptors := bigtableInstrumentation()
@@ -104,6 +109,7 @@ func newStorageClientV1(cfg Config, schemaCfg config.SchemaConfig, client *bigta
 	}
 }
 
+// NewStorageClientColumnKey 创建 v2 客户端：hash 为行键，range 为列键，利于宽行多列。
 // NewStorageClientColumnKey returns a new v2 StorageClient.
 func NewStorageClientColumnKey(ctx context.Context, cfg Config, schemaCfg config.SchemaConfig) (index.Client, error) {
 	unaryInterceptors, streamInterceptors := bigtableInstrumentation()
@@ -136,6 +142,7 @@ func newStorageClientColumnKey(cfg Config, schemaCfg config.SchemaConfig, client
 	}
 }
 
+// HashPrefix 对输入做 FNV-64a 哈希并小端 hex 编码，用于行键均匀分布。
 // HashPrefix calculates a 64bit hash of the input string and hex-encodes
 // the result, taking care to zero pad etc.
 func HashPrefix(input string) string {
@@ -158,6 +165,7 @@ func (s *storageClientColumnKey) NewWriteBatch() index.WriteBatch {
 	}
 }
 
+// keysFn 将逻辑 hash/range 映射为 Bigtable 物理 rowKey 与 columnKey。
 // keysFn returns the row and column keys for the given hash and range keys.
 type keysFn func(hashValue string, rangeValue []byte) (rowKey, columnKey string)
 
@@ -221,6 +229,7 @@ func (s *storageClientColumnKey) BatchWrite(ctx context.Context, batch index.Wri
 	return nil
 }
 
+// QueryPages 按表聚合查询、分批 ReadRows（maxRowReads），并行 goroutine 拉取整行后客户端过滤。
 func (s *storageClientColumnKey) QueryPages(ctx context.Context, queries []index.Query, callback index.QueryPagesCallback) error {
 	ctx, sp := tracer.Start(ctx, "QueryPages")
 	defer sp.End()
@@ -299,6 +308,7 @@ func (s *storageClientColumnKey) QueryPages(ctx context.Context, queries []index
 	return lastErr
 }
 
+// columnKeyBatch 封装同一 hash 行下多列 ReadItem，Iterator 逐列产出 range/value。
 // columnKeyBatch represents a batch of values read from Bigtable.
 type columnKeyBatch struct {
 	items []bigtable.ReadItem
@@ -378,6 +388,7 @@ func (s *storageClientV1) query(ctx context.Context, query index.Query, callback
 	return nil
 }
 
+// rowBatch 用于 v1 布局：每次 ReadRows 回调仅含单行，Iterator 最多迭代一次。
 // rowBatch represents a batch of rows read from Bigtable.  As the
 // bigtable interface gives us rows one-by-one, a batch always only contains
 // a single row.
@@ -417,3 +428,4 @@ func (b *rowBatchIterator) Value() []byte {
 	}
 	return cf[0].Value
 }
+// v1 query 用 PrefixRange/Range 扫描行；ValueEqual 过滤在客户端完成因 Bigtable 仅支持值正则。

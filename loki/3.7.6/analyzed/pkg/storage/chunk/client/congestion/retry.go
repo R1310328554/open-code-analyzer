@@ -1,5 +1,7 @@
 package congestion
 
+// retry 实现 Retrier 策略：NoopRetrier 单次执行；LimitedRetrier 在可重试错误上循环至多 limit+1 次，超限返回 RetriesExceeded。
+
 import (
 	"context"
 	"errors"
@@ -24,6 +26,7 @@ func (n *NoopRetrier) Do(fn DoRequestFunc, _ IsRetryableErrFunc, _ func(), _ fun
 
 func (n *NoopRetrier) withLogger(log.Logger) Retrier { return n }
 
+// LimitedRetrier 执行首次请求加最多 limit 次重试；limit=0 等价于 NoopRetrier。
 // LimitedRetrier executes the initial request plus a configurable limit of subsequent retries.
 // limit=0 is equivalent to NoopRetrier
 type LimitedRetrier struct {
@@ -35,6 +38,7 @@ func NewLimitedRetrier(cfg Config) *LimitedRetrier {
 	return &LimitedRetrier{limit: cfg.Retry.Limit}
 }
 
+// Do 在可重试错误时调用 onError 触发 AIMD 乘性降速，成功时 onSuccess 触发加性增。
 func (l *LimitedRetrier) Do(fn DoRequestFunc, isRetryable IsRetryableErrFunc, onSuccess func(), onError func()) (io.ReadCloser, int64, error) {
 	// i = 0 is initial request
 	// i > 0 is retry
@@ -68,3 +72,4 @@ func (l *LimitedRetrier) withLogger(logger log.Logger) Retrier {
 	l.logger = logger
 	return l
 }
+// 不可重试错误（含 context.Canceled）立即返回；仅对可重试存储错误才继续循环。

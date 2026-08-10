@@ -1,5 +1,7 @@
 package gcp
 
+// fixtures 为 GCP 存储集成测试提供 bttest 内存 Bigtable 与 fake-gcs-server，组合 column-key/v1 索引、GCS/Bigtable chunk 后端及 hash 前缀等变体。
+
 import (
 	"context"
 	"fmt"
@@ -24,6 +26,7 @@ const (
 	proj, instance = "proj", "instance"
 )
 
+// fixture 记录测试矩阵维度并在 Clients() 中启动本地 Bigtable/GCS 服务。
 type fixture struct {
 	btsrv  *bttest.Server
 	gcssrv *fakestorage.Server
@@ -39,6 +42,7 @@ func (f *fixture) Name() string {
 	return f.name
 }
 
+// Clients 启动 bttest 与 fake GCS，返回 index/chunk/table 客户端及 closer。
 func (f *fixture) Clients() (
 	iClient index.Client, cClient client.Client, tClient index.TableClient,
 	schemaConfig config.SchemaConfig, closer io.Closer, err error,
@@ -112,6 +116,7 @@ func (f *fixture) Clients() (
 	return
 }
 
+// Fixtures 枚举 gcsObjectClient×columnKeyClient×hashPrefix 共 8 种配置供 testutils 驱动。
 // Fixtures for unit testing GCP storage.
 var Fixtures = func() []testutils.Fixture {
 	fixtures := []testutils.Fixture{}
@@ -129,3 +134,4 @@ var Fixtures = func() []testutils.Fixture {
 	}
 	return fixtures
 }()
+// gcsObjectClient 为 true 时用 fake GCS 存 chunk；否则 chunk 也写入 Bigtable 表。
