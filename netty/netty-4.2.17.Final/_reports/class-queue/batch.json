@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:43:08Z",
-  "files": [
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/LinuxSocket.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/MsgHdr.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/MsgHdrMemory.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/MsgHdrMemoryArray.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/Native.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/NativeStaticallyReferencedJniMethods.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/PendingOpMap.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/RingBuffer.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/SockaddrIn.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/SubmissionQueue.java",
-    "transport-classes-io_uring/src/main/java/io/netty/channel/uring/UserData.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueChannel.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueDatagramChannel.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueServerChannel.java",
-    "transport-classes-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueStreamChannel.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 98,
-  "done": 1815
+  "done": 1830
 }
