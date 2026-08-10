@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityBrokerException.java",
     "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProvider.java",
     "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProviderDataMarshaller.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProviderMapper.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProviderMapperSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProviderMapperSyncModeDelegate.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProviderSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/JWTAuthorizationGrantProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/TrustMaterialIdentityProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/TrustMaterialRequest.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/UserAuthenticationIdentityProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/mappersync/ConfigSyncEventListener.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/mappersync/ConfigSynchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/mappersync/GroupConfigPropertyByPathSynchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/mappersync/RoleConfigPropertyByClientIdSynchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/mappersync/RoleConfigPropertyByRoleNameSynchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/util/IdentityBrokerState.java",
-    "server-spi-private/src/main/java/org/keycloak/broker/provider/util/IdentityProviderTypeUtil.java"
+    "server-spi-private/src/main/java/org/keycloak/broker/provider/IdentityProviderFactory.java"
   ],
   "remaining_pending": 2968,
-  "done": 3000
+  "done": 3015
 }
