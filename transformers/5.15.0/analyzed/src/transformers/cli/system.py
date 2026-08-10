@@ -38,6 +38,7 @@ from ..utils import (
 )
 
 
+# env：汇总 transformers/torch/accelerate/deepspeed 等依赖与硬件信息
 def env(
     accelerate_config_file: Annotated[
         str | None,
@@ -130,6 +131,7 @@ def env(
     return info
 
 
+# version：仅输出包版本号
 def version() -> None:
     """Print CLI version."""
     print(__version__)

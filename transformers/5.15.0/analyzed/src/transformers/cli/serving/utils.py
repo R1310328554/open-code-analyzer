@@ -56,6 +56,7 @@ logger = logging.get_logger(__name__)
 X_REQUEST_ID = "x-request-id"
 
 
+# Modality：模型能力标签（LLM/VLM/STT/TTS 等），供路由与加载策略使用
 class Modality(enum.Enum):
     LLM = "LLM"
     VLM = "VLM"
@@ -83,6 +84,7 @@ class ReasoningText(str):
     """
 
 
+# CBWorkerDeadError：连续批处理 worker 崩溃时映射为 HTTP 503
 class CBWorkerDeadError(RuntimeError):
     """Raised when a request is submitted to a CB worker that has died.
 
@@ -454,6 +456,7 @@ def make_progress_tqdm_class(callback: Callable, model_id: str) -> type:
     return ProgressTqdm
 
 
+# DirectStreamer：在独立线程中 decode token，经 asyncio.Queue 推送到 SSE
 class DirectStreamer:
     """Streamer for ``model.generate()`` (used by :class:`GenerateManager`).
 
@@ -738,6 +741,7 @@ class BaseGenerateManager(ABC):
         """Stop the generation manager and free resources."""
 
 
+# GenerateManager：顺序 generate，包装 InferenceThread 与 DirectStreamer
 class GenerateManager(BaseGenerateManager):
     """Sequential generation via ``model.generate()`` on a persistent thread."""
 
@@ -806,6 +810,7 @@ class GenerateManager(BaseGenerateManager):
         pass  # inference thread is a daemon
 
 
+# CBGenerateManager：ContinuousBatchingManager 后端，高吞吐并发推理
 class CBGenerateManager(BaseGenerateManager):
     """Continuous batching generation via paged attention.
 
@@ -974,6 +979,7 @@ class CBGenerateManager(BaseGenerateManager):
             self._cb.stop(block=True, timeout=2)
 
 
+# GenerationState：按 model_id 缓存 GenerateManager/CBGenerateManager 实例
 class GenerationState:
     """Shared generation state across all handlers.
 
@@ -1055,6 +1061,7 @@ class GenerationState:
         return self._cb_manager is None or self._cb_manager.is_alive()
 
 
+# BaseHandler：chat/completion/response 等 JSON 端点的公共校验与生成逻辑
 class BaseHandler:
     """Shared logic for chat completion and responses handlers.
 

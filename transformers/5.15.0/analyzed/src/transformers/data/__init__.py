@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# transformers.data 包入口：导出 DataCollator、GLUE/SQuAD 处理器与 metrics。
+
 from .data_collator import (
     DataCollatorForLanguageModeling,
     DataCollatorForMultipleChoice,

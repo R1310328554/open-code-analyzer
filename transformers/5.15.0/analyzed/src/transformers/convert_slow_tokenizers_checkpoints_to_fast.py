@@ -45,6 +45,7 @@ for name in SLOW_TO_FAST_CONVERTERS:
         pass
 
 
+# convert_slow_checkpoint_to_fast：from_pretrained 慢速 tokenizer 后以 legacy_format=False 保存
 def convert_slow_checkpoint_to_fast(tokenizer_name, checkpoint_name, dump_path, force_download):
     if tokenizer_name is not None and tokenizer_name not in TOKENIZER_CLASSES:
         raise ValueError(f"Unrecognized tokenizer name, should be one of {list(TOKENIZER_CLASSES.keys())}.")

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# SquadDataset：SQuAD v1/v2 问答特征化，支持 doc_stride 滑动窗口与多线程转换。
+
 import os
 import time
 from dataclasses import dataclass, field
@@ -34,6 +36,7 @@ MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
 
 @dataclass
+# SquadDataTrainingArguments：doc_stride、max_query_length 等 SQuAD 专用超参
 class SquadDataTrainingArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
@@ -105,6 +108,7 @@ class Split(Enum):
     dev = "dev"
 
 
+# SquadDataset：缓存 features/dataset/examples，训练时附加 start/end_positions
 class SquadDataset(Dataset):
     args: SquadDataTrainingArguments
     features: list[SquadFeatures]

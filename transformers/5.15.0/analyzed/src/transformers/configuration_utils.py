@@ -60,6 +60,7 @@ _FLOAT_TAG_KEY = "__float__"
 _FLOAT_TAG_VALUES = {"Infinity": float("inf"), "-Infinity": float("-inf"), "NaN": float("nan")}
 
 
+# ALLOWED_ATTN_LAYER_TYPES：各层注意力/线性/MoE 等类型白名单
 ALLOWED_ATTN_LAYER_TYPES = (
     "full_attention",
     "sliding_attention",
@@ -95,6 +96,7 @@ _LEGACY_LAYER_TYPE_REMAP = {
 }
 
 
+# remap_legacy_layer_types：Hub 旧 checkpoint 中 mamba/attention 名称映射
 def remap_legacy_layer_types(layer_types: list[str]) -> list[str]:
     """Apply legacy → current layer-type name mapping."""
     return [_LEGACY_LAYER_TYPE_REMAP.get(t, t) for t in layer_types]
@@ -144,6 +146,7 @@ def wrap_init_to_accept_kwargs(cls: dataclass):
 @dataclass_transform(kw_only_default=True)
 @strict(accept_kwargs=True)
 @dataclass(repr=False)
+# PreTrainedConfig：所有模型配置的基类，支持 from_pretrained/save_pretrained
 class PreTrainedConfig(PushToHubMixin, RotaryEmbeddingConfigMixin, HeterogeneousConfigMixin):
     # no-format
     r"""
@@ -1416,6 +1419,7 @@ class PreTrainedConfig(PushToHubMixin, RotaryEmbeddingConfigMixin, Heterogeneous
         return text_config
 
 
+# get_configuration_file：多 config 文件中按版本号选取最新
 def get_configuration_file(configuration_files: list[str]) -> str:
     """
     Get the configuration file to use for this version of transformers.

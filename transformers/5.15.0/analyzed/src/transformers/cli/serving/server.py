@@ -41,6 +41,7 @@ from .utils import X_REQUEST_ID, CBWorkerDeadError, GenerationState
 logger = logging.get_logger(__name__)
 
 
+# build_server：注册路由、中间件与 lifespan，返回可交给 uvicorn 的 FastAPI 实例
 def build_server(
     model_manager: ModelManager,
     chat_handler: "ChatCompletionHandler",
@@ -98,7 +99,7 @@ def build_server(
         response.headers[X_REQUEST_ID] = request_id
         return response
 
-    # ---- Routes ----
+    # ---- Routes ---- OpenAI 兼容端点与模型管理接口
 
     @app.post("/v1/chat/completions")
     async def chat_completions(request: Request, body: dict):
@@ -138,6 +139,7 @@ def build_server(
     def list_models():
         return JSONResponse({"object": "list", "data": model_manager.get_gen_models()})
 
+    # /health：CB worker 异常时返回 503，避免误报 healthy
     @app.get("/health")
     def health():
         if not generation_state.is_cb_alive():

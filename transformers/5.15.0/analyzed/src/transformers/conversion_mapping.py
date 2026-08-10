@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from .quantizers import HfQuantizer
 
 
+# _MODEL_TO_CONVERSION_PATTERN：model_type → 权重转换模板（MoE/视觉等族）
 _MODEL_TO_CONVERSION_PATTERN = {
     # Mixtral-style MoE
     "minimax": "mixtral",
@@ -1707,6 +1708,7 @@ def _build_checkpoint_conversion_mapping():
 _checkpoint_conversion_mapping_cache = None
 
 
+# get_checkpoint_conversion_mapping：懒加载并返回某 model_type 的转换规则副本
 def get_checkpoint_conversion_mapping(model_type):
     global _checkpoint_conversion_mapping_cache
     if _checkpoint_conversion_mapping_cache is None:
@@ -1717,6 +1719,7 @@ def get_checkpoint_conversion_mapping(model_type):
 USER_REGISTERED_MAPPINGS = set()
 
 
+# register_checkpoint_conversion_mapping：运行时注册自定义 checkpoint 键名映射
 def register_checkpoint_conversion_mapping(
     model_type_or_class_name: str,
     mapping: list[WeightConverter | WeightRenaming],
@@ -1762,6 +1765,7 @@ def extract_weight_conversions_for_model(
     return conversions
 
 
+# get_model_conversion_mapping：加载/保存时收集完整 WeightTransform 列表
 def get_model_conversion_mapping(
     model: PreTrainedModel,
     key_mapping: dict[str, str] | None = None,

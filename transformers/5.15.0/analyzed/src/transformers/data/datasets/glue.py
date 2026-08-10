@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# GlueDataset：读取 GLUE TSV、tokenize 并缓存 InputFeatures（将逐步迁移至 Datasets 库）。
+
 import os
 import time
 import warnings
@@ -32,6 +34,7 @@ logger = logging.get_logger(__name__)
 
 
 @dataclass
+# GlueDataTrainingArguments：task_name、data_dir、max_seq_length 等 HfArgumentParser 字段
 class GlueDataTrainingArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
@@ -67,6 +70,7 @@ class Split(Enum):
     test = "test"
 
 
+# GlueDataset：FileLock 保护下的特征缓存与 __getitem__ 返回 InputFeatures
 class GlueDataset(Dataset):
     args: GlueDataTrainingArguments
     output_mode: str

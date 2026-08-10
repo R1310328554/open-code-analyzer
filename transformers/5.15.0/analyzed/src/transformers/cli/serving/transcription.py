@@ -53,6 +53,7 @@ UNUSED_TRANSCRIPTION_FIELDS = {
 }
 
 
+# TranscriptionHandler：独立处理器，表单字段校验后调用 STT 模型
 class TranscriptionHandler:
     """Handler for ``POST /v1/audio/transcriptions``.
 
@@ -82,6 +83,7 @@ class TranscriptionHandler:
         if unused:
             logger.warning_once(f"Ignoring unsupported fields in the request: {unused}")
 
+    # handle_request：解析 file/model/stream，加载音频模型并返回 JSON 或 SSE
     async def handle_request(self, request: Request) -> JSONResponse | StreamingResponse:
         """Parse multipart form, run transcription, return result.
 
@@ -155,6 +157,7 @@ class TranscriptionHandler:
         text = audio_processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
         return JSONResponse(Transcription(text=text).model_dump(exclude_none=True))
 
+    # _streaming：音频 generate 走 DirectStreamer，逐块推送转录文本
     def _streaming(
         self,
         gen_manager: GenerateManager,

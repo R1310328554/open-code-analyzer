@@ -80,6 +80,7 @@ def build_glob_alternation(
     return alternation, src_group_to_glob, tgt_group_to_glob
 
 
+# ConversionOps：单步张量变换抽象（Chunk/Concatenate/Transpose 等）
 class ConversionOps(ABC):
     """Base class for weight conversion operations."""
 
@@ -752,6 +753,7 @@ def process_source_pattern(source_pattern: str, target_pattern: str) -> str:
     return source_pattern
 
 
+# WeightTransform：描述 source/target 键模式与 operations 链
 class WeightTransform:
     # Restrict the attributes that can be attached
     __slots__ = (
@@ -1135,6 +1137,7 @@ _INTERNAL_MANY_TO_MANY_CONVERSIONS = (
 )
 
 
+# WeightConverter：多源键合并或拆分后写入目标参数
 class WeightConverter(WeightTransform):
     __slots__ = ("operations",)
 
@@ -1462,6 +1465,7 @@ def rename_source_key(
     return renamed_key, converter_source_pattern
 
 
+# convert_and_load_state_dict_in_model：按 mapping 重命名、转换并 load 到 model
 def convert_and_load_state_dict_in_model(
     model: PreTrainedModel,
     state_dict: dict[str, Any],

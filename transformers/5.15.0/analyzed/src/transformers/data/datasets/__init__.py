@@ -12,5 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# datasets 子包：导出 GLUE 与 SQuAD 的 PyTorch Dataset 及训练参数 dataclass。
+
 from .glue import GlueDataset, GlueDataTrainingArguments
 from .squad import SquadDataset, SquadDataTrainingArguments

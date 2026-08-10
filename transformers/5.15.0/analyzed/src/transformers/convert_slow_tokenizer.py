@@ -217,6 +217,7 @@ def check_number_comma(piece: str) -> bool:
     return len(piece) < 2 or piece[-1] != "," or not piece[-2].isdigit()
 
 
+# Converter：各架构慢速 tokenizer 到 Rust tokenizers 的转换基类
 class Converter:
     def __init__(self, original_tokenizer):
         self.original_tokenizer = original_tokenizer
@@ -631,6 +632,7 @@ class DebertaConverter(Converter):
         return tokenizer
 
 
+# SpmConverter：SentencePiece 模型通用的转换流程
 class SpmConverter(Converter):
     handle_byte_fallback = False
     SpmExtractor = SentencePieceExtractor
@@ -1978,6 +1980,7 @@ class TikTokenConverter:
         return tokenizer
 
 
+# SLOW_TO_FAST_CONVERTERS：慢速类名 → Converter 实现，供 save_pretrained 使用
 SLOW_TO_FAST_CONVERTERS = {
     "AlbertTokenizer": AlbertConverter,
     "BartTokenizer": RobertaConverter,

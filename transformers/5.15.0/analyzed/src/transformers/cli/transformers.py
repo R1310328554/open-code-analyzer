@@ -22,6 +22,7 @@ from transformers.cli.serve import Serve
 from transformers.cli.system import env, version
 
 
+# Typer 根应用，子命令由下方 app.command 挂载
 app = typer_factory(help="Transformers CLI")
 
 app.command()(add_new_model_like)
@@ -32,6 +33,7 @@ app.command(name="serve")(Serve)
 app.command()(version)
 
 
+# main：检查 CLI 更新后 dispatch 到 Typer
 def main():
     check_cli_update("transformers")
     app()

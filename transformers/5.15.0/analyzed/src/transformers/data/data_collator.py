@@ -34,6 +34,7 @@ of PyTorch tensors or NumPy arrays.
 DataCollator = Callable[[list[InputDataClass]], dict[str, Any]]
 
 
+# DataCollatorMixin：根据 return_tensors 分发 torch_call / numpy_call
 class DataCollatorMixin:
     def __call__(self, features, return_tensors: str | None = None):
         if return_tensors is None:
@@ -188,6 +189,7 @@ def numpy_default_data_collator(features: list[InputDataClass]) -> dict[str, Any
 
 
 @dataclass
+# DataCollatorWithPadding：动态 padding 至 batch 内最长序列
 class DataCollatorWithPadding:
     """
     Data collator that will dynamically pad the inputs received.
@@ -484,6 +486,7 @@ class DataCollatorForMultipleChoice(DataCollatorMixin):
 
 
 @dataclass
+# DataCollatorForSeq2Seq：seq2seq 标签 padding 与 decoder_input_ids 处理
 class DataCollatorForSeq2Seq:
     """
     Data collator that will dynamically pad the inputs received, as well as the labels.
@@ -616,6 +619,7 @@ class DataCollatorForSeq2Seq:
 
 
 @dataclass
+# DataCollatorForLanguageModeling：MLM/CLM 掩码语言模型训练 batch 构造
 class DataCollatorForLanguageModeling(DataCollatorMixin):
     """
     Data collator used for language modeling. Inputs are dynamically padded to the maximum length of a batch if they
