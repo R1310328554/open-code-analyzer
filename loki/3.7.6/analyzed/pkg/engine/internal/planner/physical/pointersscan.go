@@ -1,5 +1,7 @@
 package physical
 
+// PointersScan 表示通过 metastore 索引路径扫描 data object 指针，携带 selector 与时间边界。
+
 import (
 	"time"
 
@@ -18,6 +20,7 @@ type PointersScan struct {
 	End   time.Time
 }
 
+// MaxTimeRange 返回 Start/End 构成的查询时间窗口，供计划级时间边界合并。
 func (s *PointersScan) MaxTimeRange() TimeRange {
 	return TimeRange{s.Start, s.End}
 }
@@ -42,3 +45,4 @@ func (s *PointersScan) Clone() Node {
 func (s *PointersScan) Type() NodeType {
 	return NodeTypePointersScan
 }
+// Clone 深拷贝 Selector 与 Predicates，Type 返回 NodeTypePointersScan。

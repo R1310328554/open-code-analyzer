@@ -1,5 +1,7 @@
 package physical
 
+// planner 将逻辑计划 Instruction 转换为物理 DAG，并运行 Optimize 下推谓词、限流与投影。
+
 import (
 	"errors"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/util/dag"
 )
 
+// Context 携带时间范围、rangeInterval、排序方向、v1 兼容标志及 maxQuerySeries 等状态。
 // Context carries planning state that needs to be propagated down the plan tree.
 // This enables each branch to have independent context, which is essential for complex queries:
 // - Binary operations with different [$range] intervals, offsets or @timestamp.
@@ -79,6 +82,7 @@ func (pc *Context) GetResolveTimeRange() (from, through time.Time) {
 	return pc.from.Add(-pc.rangeInterval), pc.through
 }
 
+// Planner 两步工作：Convert 将逻辑节点映射为物理节点，Optimize 应用重写规则。
 // Planner creates an executable physical plan from a logical plan.
 // Planning is done in two steps:
 //  1. Convert
@@ -187,6 +191,7 @@ func (p *Planner) process(inst logical.Value, ctx *Context) (Node, error) {
 }
 
 // Convert [logical.MakeTable] into one or more [DataObjScan] nodes.
+// processMakeTable 解析 catalog 中的 data object，构建 Parallelize→ScanSet→DataObjScan 子图。
 func (p *Planner) processMakeTable(lp *logical.MakeTable, ctx *Context) (Node, error) {
 	shard, ok := lp.Shard.(*logical.ShardInfo)
 	if !ok {
@@ -515,6 +520,7 @@ func (p *Planner) processVectorAggregation(lp *logical.VectorAggregation, ctx *C
 //   - inputRef: a pointer to a node in `acc` that refers the input, if any. This is for convenience of
 //     renaming the column refenrece without a need to search for it in `acc` expression.
 //   - err: error
+// collapseMathExpressions 折叠数学表达式树，双输入时插入 Join 再挂 Projection。
 func (p *Planner) collapseMathExpressions(lp logical.Value, rootNode bool, ctx *Context) (acc Expression, input Node, inputRef *ColumnExpr, err error) {
 	switch v := lp.(type) {
 	case *logical.BinOp:
@@ -749,6 +755,7 @@ func disambiguateExpression(expr Expression, conflictingLabels []string) (Expres
 
 // Optimize runs optimization passes over the plan, modifying it
 // if any optimizations can be applied.
+// Optimize 依次运行 Predicate/Limit/GroupBy/Projection/Parallel 下推及 Cleanup 清理。
 func (p *Planner) Optimize(plan *Plan) (*Plan, error) {
 	for i, root := range plan.Roots() {
 		optimizations := []*optimization{
@@ -781,3 +788,4 @@ func (p *Planner) Optimize(plan *Plan) (*Plan, error) {
 	}
 	return plan, nil
 }
+// disambiguateExpression 将非标签集中的 Ambiguous 列引用改写为 Metadata 类型以便下推。

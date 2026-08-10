@@ -1,5 +1,7 @@
 package physical
 
+// ScanSet 聚合多个扫描目标（DataObjScan 或 PointersScan），统一承载下推的投影与谓词。
+
 import (
 	"fmt"
 	"iter"
@@ -7,6 +9,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+// ScanTarget 按 Type 持有 DataObject 或 Pointers 指针，二者不单独入 DAG 图。
 // ScanTarget represents a target of a [ScanSet].
 type ScanTarget struct {
 	Type ScanType
@@ -55,6 +58,7 @@ func (ty ScanType) String() string {
 	}
 }
 
+// Targets 列表可含多个 data object section 或索引路径；Projections/Predicates 由优化器下推。
 // ScanSet represents a physical plan operation for reading data from targets.
 type ScanSet struct {
 	NodeID ulid.ULID
@@ -94,6 +98,7 @@ func (s *ScanSet) Type() NodeType {
 	return NodeTypeScanSet
 }
 
+// Shards 为每个 target 产出独立扫描节点，合并 ScanSet 级投影谓词并保留原 NodeID 追溯。
 // Shards returns an iterator over the shards of the scan. Each emitted shard
 // will be a clone. Projections and predicates on the ScanSet are cloned and
 // applied to each shard.
@@ -128,3 +133,4 @@ func (s *ScanSet) Shards() iter.Seq[Node] {
 		}
 	}
 }
+// ScanTypeDataObject 与 ScanTypePointers 区分 catalog 解析与 metastore 索引两种扫描来源。

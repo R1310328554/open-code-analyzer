@@ -1,5 +1,7 @@
 package physical
 
+// optimizer 对物理计划应用多轮重写规则：谓词/限流/分组/投影/并行下推及空 Filter 清理。
+
 import (
 	"fmt"
 	"maps"
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/util/dag"
 )
 
+// rule 接口定义单次变换：apply 返回是否修改计划，各规则独立遍历匹配节点。
 // A rule is a transformation that can be applied on a Node.
 type rule interface {
 	// apply tries to apply the transformation on the node.
@@ -19,6 +22,7 @@ type rule interface {
 
 var _ rule = (*removeNoopFilter)(nil)
 
+// removeNoopFilter 消除谓词已下推完毕的空 Filter，简化执行图。
 // removeNoopFilter is a rule that removes Filter nodes without predicates.
 type removeNoopFilter struct {
 	plan *Plan
@@ -46,6 +50,7 @@ func (r *removeNoopFilter) apply(root Node) bool {
 
 var _ rule = (*predicatePushdown)(nil)
 
+// predicatePushdown 将可下推谓词移至 ScanSet/DataObjScan，减少中间行数。
 // predicatePushdown is a rule that moves down filter predicates to the scan nodes.
 type predicatePushdown struct {
 	plan *Plan
@@ -113,6 +118,7 @@ func canApplyPredicate(predicate Expression) bool {
 
 var _ rule = (*limitPushdown)(nil)
 
+// limitPushdown 将 Limit.Fetch 传播到 TopK.K，遇 Filter 则停止下推。
 // limitPushdown is a rule that moves down the limit to the scan nodes.
 type limitPushdown struct {
 	plan *Plan
@@ -161,6 +167,7 @@ func (r *limitPushdown) applyToTargets(node Node, limit uint32) bool {
 
 var _ rule = (*groupByPushdown)(nil)
 
+// groupByPushdown 在 SUM/MAX/MIN 等可交换聚合组合下将 by 标签并入 RangeAggregation。
 // groupByPushdown is an optimisation rule that enables groupby labels to be pushed down to range aggregations.
 type groupByPushdown struct {
 	plan *Plan
@@ -247,6 +254,7 @@ func (r *groupByPushdown) applyToTargets(node Node, grouping []ColumnExpression,
 
 var _ rule = (*projectionPushdown)(nil)
 
+// projectionPushdown 仅对 metric 查询生效，从消费者向扫描器收集所需列并写入 Projections。
 // projectionPushdown is a rule that pushes down column projections.
 type projectionPushdown struct {
 	plan *Plan
@@ -442,6 +450,7 @@ func (r *projectionPushdown) handleParse(expr *VariadicExpr, projections []Colum
 }
 
 // parseExprs is a helper struct for unpacking and packing parse arguments from generic expressions.
+// parseExprs 辅助 unpack/pack parse 函数四元组：源列、requestedKeys、strict、keepEmpty。
 type parseExprs struct {
 	sourceColumnExpr  *ColumnExpr
 	requestedKeysExpr *LiteralExpr
@@ -532,6 +541,7 @@ func (r *projectionPushdown) isMetricQuery() bool {
 	return false
 }
 
+// parallelPushdown 将 Filter/Projection/TopK/RangeAggregation 移入或复制到 Parallelize 子分支。
 // parallelPushdown is a rule that moves or splits supported operations as a
 // child of [Parallelize] to parallelize as much work as possible.
 type parallelPushdown struct {
@@ -743,6 +753,7 @@ func (o *optimization) applyRules(node Node) bool {
 	return anyChanged
 }
 
+// optimizer 按 Pass 顺序迭代 applyRules，每轮最多 10 次直至无变化。
 // The optimizer can optimize physical plans using the provided optimization passes.
 type optimizer struct {
 	plan          *Plan
@@ -844,3 +855,4 @@ func findMatchingNodes(plan *Plan, root Node, matchFn func(Node) bool) []Node {
 	}, dag.PostOrderWalk)
 	return result
 }
+// findMatchingNodes 使用后序遍历收集节点，便于先处理子 Filter 再处理父 Filter。

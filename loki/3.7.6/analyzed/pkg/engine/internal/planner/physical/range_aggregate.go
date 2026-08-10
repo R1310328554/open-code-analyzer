@@ -1,5 +1,7 @@
 package physical
 
+// RangeAggregation 物理节点执行 PromQL 区间向量聚合，含分组、步长、区间宽度与时间边界。
+
 import (
 	"time"
 
@@ -25,6 +27,7 @@ type RangeAggregation struct {
 func (r *RangeAggregation) ID() ulid.ULID { return r.NodeID }
 
 // Clone returns a deep copy of the node with a new unique ID.
+// Clone 深拷贝 Grouping.Columns 与各时间参数字段，供 parallelPushdown 复制分片。
 func (r *RangeAggregation) Clone() Node {
 	return &RangeAggregation{
 		NodeID: ulid.Make(),
@@ -45,3 +48,4 @@ func (r *RangeAggregation) Clone() Node {
 func (r *RangeAggregation) Type() NodeType {
 	return NodeTypeRangeAggregation
 }
+// Type 返回 NodeTypeRangeAggregation，计划顶层节点定义 CalculateMaxTimeRange 的全局时间窗。

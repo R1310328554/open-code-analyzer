@@ -1,5 +1,7 @@
 package physical
 
+// plan 定义物理执行计划 DAG：NodeType 枚举、Node 接口及 Plan 图遍历与时间范围计算。
+
 import (
 	"fmt"
 	"iter"
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/util/dag"
 )
 
+// NodeType 区分扫描、过滤、聚合、并行、合并等算子，String 便于调试输出。
 // NodeType represents the type of a node in the physical execution plan.
 type NodeType uint32
 
@@ -66,6 +69,7 @@ func (t NodeType) String() string {
 	}
 }
 
+// Node 要求 ID/Type/Clone，isNode 标记限制实现仅限 physical 包内。
 // Node represents a single operation in a physical execution plan.
 // It defines the core interface that all physical plan nodes must implement.
 // Each node represents a specific operation like scanning, filtering, or
@@ -85,6 +89,7 @@ type Node interface {
 	isNode()
 }
 
+// ShardableNode 扩展 Shards 迭代器，ScanSet 等可拆分为多个独立扫描分片。
 // ShardableNode is a Node that can be split into multiple smaller partitions.
 type ShardableNode interface {
 	Node
@@ -130,6 +135,7 @@ func (*Batching) isNode()          {}
 
 var _ fmt.Stringer = (*Plan)(nil)
 
+// Plan 封装 dag.Graph，提供 Parent/Children/Root/DFSWalk 及 CalculateMaxTimeRange。
 // Plan represents a physical execution plan as a directed acyclic graph (DAG).
 // It maintains the relationships between nodes, tracking parent-child connections
 // and providing methods for graph traversal and manipulation.
@@ -185,6 +191,7 @@ func (p *Plan) DFSWalk(n Node, f dag.WalkFunc[Node], order dag.WalkOrder) error 
 
 // CalculateMaxTimeRange calculates max time boundaries for the plan. Boundaries are defined
 // by either the topmost RangeAggregation or by data scans.
+// CalculateMaxTimeRange 取最顶层 RangeAggregation 或各扫描节点时间范围的并集。
 func (p *Plan) CalculateMaxTimeRange() TimeRange {
 	timeRange := TimeRange{}
 
@@ -219,3 +226,4 @@ func (p *Plan) CalculateMaxTimeRange() TimeRange {
 
 	return timeRange
 }
+// FromGraph 从已有 DAG 构造 Plan；String 委托 PrintAsTree 输出可读树形结构。

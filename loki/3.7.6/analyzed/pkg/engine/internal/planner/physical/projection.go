@@ -1,11 +1,15 @@
 package physical
 
+// Projection 物理节点对列做 expand/drop/select * 操作，Expressions 在运行时对输入列求值。
+
 import "github.com/oklog/ulid/v2"
 
+// All/Expand/Drop 互斥标记投影模式：保留全部、追加新列或删除匹配列。
 // Projection represents a column selection operation in the physical plan.
 // It contains a list of columns (column expressions) that are later
 // evaluated against the input columns to remove unnecessary colums from the
 // intermediate result.
+// Expressions 可含 parse/unwrap 等 VariadicExpr，逻辑 Projection 经 convertPredicate 转换而来。
 type Projection struct {
 	NodeID ulid.ULID
 
@@ -40,3 +44,4 @@ func (p *Projection) Clone() Node {
 func (*Projection) Type() NodeType {
 	return NodeTypeProjection
 }
+// Clone 复制表达式列表与标志位，Type 返回 NodeTypeProjection。

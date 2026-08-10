@@ -1,5 +1,7 @@
 package physical
 
+// metastore_planner 通过 metastore 索引路径构建物理计划，用于 data object 指针扫描场景。
+
 import (
 	"context"
 	"fmt"
@@ -16,6 +18,7 @@ type MetastorePlanner struct {
 	batchSize int
 }
 
+// NewMetastorePlanner 构造规划器，batchSize 用于 WrapWithBatching 控制批处理粒度。
 func NewMetastorePlanner(metastore metastore.Metastore, batchSize int) MetastorePlanner {
 	return MetastorePlanner{
 		metastore: metastore,
@@ -77,3 +80,4 @@ func (p MetastorePlanner) Plan(ctx context.Context, selector Expression, predica
 
 	return WrapWithBatching(plan, p.batchSize)
 }
+// GetIndexes 失败时返回包装错误；最终调用 WrapWithBatching 在计划外层插入 Batching 节点。

@@ -1,5 +1,7 @@
 package physical
 
+// printer 将物理计划转为树形文本或 Mermaid 图，便于调试与可视化执行 DAG。
+
 import (
 	"fmt"
 	"io"
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/util/tree"
 )
 
+// BuildTree 递归遍历 Plan 子节点，toTreeNode 按节点类型填充属性与注释。
 // BuildTree converts a physical plan node and its children into a tree structure
 // that can be used for visualization and debugging purposes.
 func BuildTree(p *Plan, n Node) *tree.Node {
@@ -161,6 +164,7 @@ func toAnySlice[T any](s []T) []any {
 	return ret
 }
 
+// PrintAsTree 对每个根节点调用 tree.Printer，多根计划以换行拼接输出。
 // PrintAsTree converts a physical [Plan] into a human-readable tree representation.
 // It processes each root node in the plan graph, and returns the combined
 // string output of all trees joined by newlines.
@@ -178,6 +182,7 @@ func PrintAsTree(p *Plan) string {
 	return strings.Join(results, "\n")
 }
 
+// WriteMermaidFormat 输出 Mermaid 流程图语法，可用于文档或 Web 可视化工具。
 func WriteMermaidFormat(w io.Writer, p *Plan) {
 	for _, root := range p.Roots() {
 		node := BuildTree(p, root)
@@ -187,3 +192,4 @@ func WriteMermaidFormat(w io.Writer, p *Plan) {
 		fmt.Fprint(w, "\n\n")
 	}
 }
+// ScanSet 打印时展开 @target 注释展示各 DataObjScan 或 PointersScan 子属性。
