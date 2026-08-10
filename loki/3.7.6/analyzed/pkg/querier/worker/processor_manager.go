@@ -1,5 +1,7 @@
 package worker
 
+// processorManager 管理单条 gRPC 连接上的多个 processor goroutine，动态调整并发并在 stop 时通知远端 shutdown。
+
 import (
 	"context"
 	"strconv"
@@ -15,6 +17,7 @@ const (
 	notifyShutdownTimeout = 5 * time.Second
 )
 
+// processorManager 通过 concurrency(n) 增减 processQueriesOnSingleStream worker。
 // Manages processor goroutines for single grpc connection.
 type processorManager struct {
 	p       processor
@@ -42,6 +45,7 @@ func newProcessorManager(ctx context.Context, p processor, conn *grpc.ClientConn
 	}
 }
 
+// stop 先 notifyShutdown 再 concurrency(0) 等待 wg，最后关闭 conn。
 func (pm *processorManager) stop() {
 	// Notify the remote query-frontend or query-scheduler we're shutting down.
 	// We use a new context to make sure it's not cancelled.
@@ -58,6 +62,7 @@ func (pm *processorManager) stop() {
 	_ = pm.conn.Close()
 }
 
+// concurrency 扩容时启动新 goroutine，缩容时 cancel 最旧 worker 的 context。
 func (pm *processorManager) concurrency(n int) {
 	pm.cancelsMu.Lock()
 	defer pm.cancelsMu.Unlock()
@@ -87,3 +92,4 @@ func (pm *processorManager) concurrency(n int) {
 		pm.cancels = pm.cancels[1:]
 	}
 }
+// currentProcessors 原子计数活跃 worker，供 metrics.concurrentWorkers 上报。

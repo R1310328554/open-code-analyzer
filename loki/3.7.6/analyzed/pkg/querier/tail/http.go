@@ -1,5 +1,7 @@
 package tail
 
+// TailHandler 将 HTTP tail 请求升级为 WebSocket，解析 LogQL 选择器后通过 Tailer 持续推送匹配日志流至客户端。
+
 import (
 	"net/http"
 	"time"
@@ -19,10 +21,12 @@ import (
 	serverutil "github.com/grafana/loki/v3/pkg/util/server"
 )
 
+// wsPingPeriod 每秒发送 Ping，在无日志时检测并清理僵死连接。
 const (
 	wsPingPeriod = 1 * time.Second
 )
 
+// TailHandler 解析 tail 参数、校验租户、升级 WebSocket 并循环写入 JSON 响应。
 // TailHandler is a http.HandlerFunc for handling tail queries.
 func (q *Querier) TailHandler(w http.ResponseWriter, r *http.Request) {
 	upgrader := websocket.Upgrader{
@@ -145,3 +149,4 @@ func (q *Querier) TailHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+// 支持 loghttp v1/v2 序列化，客户端断开或 iterator 错误时发送 CloseMessage。

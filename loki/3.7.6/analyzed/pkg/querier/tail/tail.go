@@ -1,5 +1,7 @@
 package tail
 
+// Tailer 管理单次 tail 请求的完整生命周期：合并 ingester 与历史 iterator、按 delayFor 延迟推送、重连断开的 ingester 并上报 metrics。
+
 import (
 	"context"
 	"fmt"
@@ -19,6 +21,7 @@ import (
 )
 
 const (
+// checkConnectionsWithIngestersPeriod 定期尝试重连断开或新增的 ingester。
 	// keep checking connections with ingesters in duration
 	checkConnectionsWithIngestersPeriod = time.Second * 5
 
@@ -35,6 +38,7 @@ const (
 	maxDroppedEntriesPerTailResponse = 1000
 )
 
+// Tailer 用 MergeEntryIterator 合并多路 stream，responseChan 缓冲推送至 HTTP 层。
 // Tailer manages complete lifecycle of a tail request
 type Tailer struct {
 	// openStreamIterator is for streams already open
@@ -76,6 +80,7 @@ func (t *Tailer) readTailClients() {
 	}
 }
 
+// loop 非阻塞发送，channel 满时 dropEntry 并随下一批响应附带 DroppedEntries。
 // keeps sending oldest entry to responseChan. If channel is blocked drop the entry
 // When channel is unblocked, send details of dropped entries with current entry
 func (t *Tailer) loop() {
@@ -177,6 +182,7 @@ func (t *Tailer) loop() {
 
 // Checks whether we are connected to all the ingesters to tail the logs.
 // Helps in connecting to disconnected ingesters or connecting to new ingesters
+// checkIngesterConnections 调用 tailDisconnectedIngesters 补全 querierTailClients。
 func (t *Tailer) checkIngesterConnections() error {
 	t.querierTailClientsMtx.Lock()
 	defer t.querierTailClientsMtx.Unlock()
@@ -209,6 +215,7 @@ func (t *Tailer) dropTailClient(addr string) {
 }
 
 // keeps reading streams from grpc connection with ingesters
+// readTailClient 在独立 goroutine 中 Recv ingester TailResponse 并 push 至合并迭代器。
 func (t *Tailer) readTailClient(addr string, querierTailClient logproto.Querier_TailClient) {
 	var resp *logproto.TailResponse
 	var err error
@@ -310,6 +317,7 @@ func (t *Tailer) activeStreamCount() float64 {
 	return float64(len(t.seenStreams))
 }
 
+// newTailer 启动 readTailClients 与 loop goroutine，并递增 tailsActive 指标。
 func newTailer(
 	delayFor time.Duration,
 	querierTailClients map[string]logproto.Querier_TailClient,
@@ -364,3 +372,4 @@ func dropEntries(droppedEntries []loghttp.DroppedEntry, streams []logproto.Strea
 
 	return droppedEntries
 }
+// tailMaxDuration 到期关闭 tail；next 按 Peeking 最旧 entry 且 respect delayFor 窗口。

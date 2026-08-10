@@ -1,5 +1,7 @@
 package worker
 
+// worker 包 schedulerProcessor 从 query-scheduler 拉取任务，执行 HTTP/Query 请求后将结果通过 frontend v2 QueryResult 回传。
+
 import (
 	"context"
 	"fmt"
@@ -58,6 +60,7 @@ func newSchedulerProcessor(cfg Config, handler RequestHandler, log log.Logger, m
 	return p, []services.Service{p.frontendPool}
 }
 
+// schedulerProcessor 实现 processor 接口，QuerierLoop 与 scheduler 保持长连接。
 // Handles incoming queries from query-scheduler.
 type schedulerProcessor struct {
 	log            log.Logger
@@ -120,6 +123,7 @@ func (sp *schedulerProcessor) processQueriesOnSingleStream(workerCtx context.Con
 }
 
 // process loops processing requests on an established stream.
+// querierLoop Recv 调度任务后在 goroutine 执行 runHTTPRequest/runQueryRequest。
 func (sp *schedulerProcessor) querierLoop(c schedulerpb.SchedulerForQuerier_QuerierLoopClient, address string, inflightQuery *atomic.Bool, workerID string) error {
 	// Build a child context so we can cancel a query when the stream is closed.
 	ctx, cancel := context.WithCancelCause(c.Context())
@@ -243,6 +247,7 @@ func (sp *schedulerProcessor) runHTTPRequest(ctx context.Context, logger log.Log
 	sp.reply(ctx, logger, frontendAddress, result)
 }
 
+// reply 经 frontendPool 向指定 frontend 发送 QueryResultRequest 并带 stats。
 func (sp *schedulerProcessor) reply(ctx context.Context, logger log.Logger, frontendAddress string, result *frontendv2pb.QueryResultRequest) {
 	runPoolWithBackoff(
 		ctx,
@@ -270,6 +275,7 @@ var defaultBackoff = backoff.Config{
 	MaxRetries: 5,
 }
 
+// runPoolWithBackoff 从 pool 取 client，失败时 health check 并 RemoveClientFor 重试。
 func runPoolWithBackoff(
 	ctx context.Context,
 	logger log.Logger,
@@ -344,3 +350,4 @@ type frontendClient struct {
 func (fc *frontendClient) Close() error {
 	return fc.conn.Close()
 }
+// newExecutionContext 确保 worker 取消时等待 inflight 查询结束再关闭 execCtx。

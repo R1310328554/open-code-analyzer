@@ -1,5 +1,7 @@
 package tail
 
+// tail 包 Querier 协调 ingester 实时 tail 与 store 历史日志，校验租户 tail 并发限制后构造 Tailer 生命周期。
+
 import (
 	"context"
 	"net/http"
@@ -22,12 +24,14 @@ import (
 )
 
 const (
+// tailerWaitEntryThrottle 在无新 entry 时休眠，避免空转占用 CPU。
 	// How long the Tailer should wait - once there are no entries to read from ingesters -
 	// before checking if a new entry is available (to avoid spinning the CPU in a continuous
 	// check loop)
 	tailerWaitEntryThrottle = time.Second / 2
 )
 
+// Ingester 抽象 ingester 侧 Tail/TailDisconnectedIngesters/TailersCount gRPC 调用。
 type Ingester interface {
 	TailDisconnectedIngesters(ctx context.Context, req *logproto.TailRequest, connectedIngestersAddr []string) (map[string]logproto.Querier_TailClient, error)
 	TailersCount(ctx context.Context) ([]uint32, error)
@@ -38,6 +42,7 @@ type Store interface {
 	SelectLogs(ctx context.Context, params logql.SelectLogParams) (iter.EntryIterator, error)
 }
 
+// Querier 依赖 ingester、store、limits 与 deleteGetter 完成 tail 请求编排。
 type Querier struct {
 	ingester     Ingester
 	store        Store
@@ -61,6 +66,7 @@ func NewQuerier(ingester Ingester, store Store, deleteGetter deletion.DeleteGett
 	}
 }
 
+// Tail 解析 Plan、加载 deletes、SelectLogs 历史段并连接所有 ingester tail 流。
 // Tail keeps getting matching logs from all ingesters for given query
 func (q *Querier) Tail(ctx context.Context, req *logproto.TailRequest, categorizedLabels bool) (*Tailer, error) {
 	err := q.checkTailRequestLimit(ctx)
@@ -141,6 +147,7 @@ func (q *Querier) Tail(ctx context.Context, req *logproto.TailRequest, categoriz
 	), nil
 }
 
+// checkTailRequestLimit 汇总各 ingester TailersCount 与 MaxConcurrentTailRequests 比较。
 func (q *Querier) checkTailRequestLimit(ctx context.Context) error {
 	userID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -169,3 +176,4 @@ func (q *Querier) checkTailRequestLimit(ctx context.Context) error {
 
 	return nil
 }
+// 历史查询用 queryCtx 超时，tailCtx 不受 QueryTimeout 限制以支持长连接 tail。

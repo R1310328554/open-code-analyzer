@@ -1,5 +1,7 @@
 package worker
 
+// worker 包 Metrics 注册 querier worker 并发、在途查询、frontend 客户端请求耗时与已连接 frontend 数量等 Prometheus 指标。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -12,6 +14,7 @@ type Metrics struct {
 	frontendClientsGauge          prometheus.Gauge
 }
 
+// NewMetrics 注册 loki_querier_worker_* 与 query_frontend_request_duration 系列。
 func NewMetrics(_ Config, r prometheus.Registerer) *Metrics {
 	return &Metrics{
 		concurrentWorkers: promauto.With(r).NewGauge(prometheus.GaugeOpts{
@@ -33,3 +36,4 @@ func NewMetrics(_ Config, r prometheus.Registerer) *Metrics {
 		}),
 	}
 }
+// frontendClientsGauge 由 dskit client.Pool 维护，反映 querier 到 frontend 连接数。

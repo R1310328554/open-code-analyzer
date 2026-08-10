@@ -1,5 +1,7 @@
 package worker
 
+// worker 包 frontendProcessor 处理 Frontend V1 直连模式：querier 与 query-frontend 间 gRPC Process 流上接收 HTTP 查询并回传响应。
+
 import (
 	"context"
 	"fmt"
@@ -35,6 +37,7 @@ func newFrontendProcessor(cfg Config, handler RequestHandler, log log.Logger, co
 	}
 }
 
+// 无 query-scheduler 时 querier 通过 frontendProcessor 向 frontend 注册并拉取任务。
 // Handles incoming queries from frontend. This is used if there's no query-scheduler between the frontend and querier.
 // This should be used by Frontend V1.
 type frontendProcessor struct {
@@ -57,6 +60,7 @@ func (fp *frontendProcessor) notifyShutdown(ctx context.Context, conn *grpc.Clie
 	}
 }
 
+// processQueriesOnSingleStream 带 backoff 重连 frontend Process 双向流。
 // runOne loops, trying to establish a stream to the frontend to begin request processing.
 func (fp *frontendProcessor) processQueriesOnSingleStream(ctx context.Context, conn *grpc.ClientConn, address, _ string) {
 	client := frontendv1pb.NewFrontendClient(conn)
@@ -80,6 +84,7 @@ func (fp *frontendProcessor) processQueriesOnSingleStream(ctx context.Context, c
 	}
 }
 
+// process 处理 HTTP_REQUEST/GET_ID，runRequest 在 goroutine 中执行并 Send 响应。
 // process loops processing requests on an established stream.
 func (fp *frontendProcessor) process(c frontendv1pb.Frontend_ProcessClient) error {
 	// Build a child context so we can cancel a query when the stream is closed.
@@ -118,6 +123,7 @@ func (fp *frontendProcessor) process(c frontendv1pb.Frontend_ProcessClient) erro
 	}
 }
 
+// runRequest 可选注入 Stats，响应超 maxMessageSize 时返回 413 避免 gRPC 重试。
 func (fp *frontendProcessor) runRequest(ctx context.Context, request *httpgrpc.HTTPRequest, statsEnabled bool, sendResponse func(response *httpgrpc.HTTPResponse, stats *querier_stats.Stats) error) {
 	ctx, queueSpan := tracer.Start(
 		httpgrpcutil.ExtractSpanFromHTTPRequest(ctx, request),
@@ -146,3 +152,4 @@ func (fp *frontendProcessor) runRequest(ctx context.Context, request *httpgrpc.H
 		level.Error(fp.log).Log("msg", "error processing requests", "err", err)
 	}
 }
+// notifyShutdown 向 frontend 发送 NotifyClientShutdownRequest 携带 querierID。

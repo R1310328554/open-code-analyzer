@@ -1,5 +1,7 @@
 package querier
 
+// StoreCombiner 将多个按时间切片的 Store 组合为单一 Store 接口，按查询时间窗路由至对应 schema 存储并合并迭代器结果。
+
 import (
 	"context"
 	"fmt"
@@ -22,17 +24,20 @@ import (
 
 var _ Store = &StoreCombiner{}
 
+// StoreConfig 绑定 Store 实例与其生效起始时间 From。
 // StoreConfig represents a store and its time range configuration
 type StoreConfig struct {
 	Store Store
 	From  model.Time // queries >= From will use this store
 }
 
+// StoreCombiner 实现 Store，findStoresForTimeRange 用二分查找匹配 schema 区间。
 // StoreCombiner combines multiple stores and routes queries to the appropriate store based on time range
 type StoreCombiner struct {
 	stores []StoreConfig
 }
 
+// NewStoreCombiner 按 From 升序排序并为每个 store 包装 instrumentedStore 以打 OTel span。
 // NewStoreCombiner creates a new StoreCombiner with the given store configurations.
 // The stores should be provided in order from newest to oldest time ranges.
 func NewStoreCombiner(stores []StoreConfig) *StoreCombiner {
@@ -50,6 +55,7 @@ func NewStoreCombiner(stores []StoreConfig) *StoreCombiner {
 }
 
 // findStoresForTimeRange returns the stores that should handle the given time range
+// findStoresForTimeRange 将跨 schema 查询切分为多个子区间 storeWithRange。
 func (sc *StoreCombiner) findStoresForTimeRange(from, through model.Time) []storeWithRange {
 	if len(sc.stores) == 0 {
 		return nil
@@ -99,6 +105,7 @@ type storeWithRange struct {
 }
 
 // SelectSamples implements Store
+// SelectSamples/SelectLogs 多 store 时用 MergeSampleIterator/MergeEntryIterator 合并。
 func (sc *StoreCombiner) SelectSamples(ctx context.Context, req logql.SelectSampleParams) (iter.SampleIterator, error) {
 	stores := sc.findStoresForTimeRange(model.TimeFromUnixNano(req.Start.UnixNano()), model.TimeFromUnixNano(req.End.UnixNano()))
 
@@ -354,6 +361,7 @@ func (sc *StoreCombiner) GetShards(ctx context.Context, userID string, from, thr
 	}
 }
 
+// instrumentedStore 为各 Store 方法创建 querier.Store.<name> span 并记录租户与时间窗。
 type instrumentedStore struct {
 	Store Store
 	name  string
@@ -519,3 +527,4 @@ func stringifyMatchers(matchers []*labels.Matcher) string {
 	}
 	return result.String()
 }
+// SelectSeries/LabelValues 跨 store 去重；Stats/Volume 调用 MergeStats 与 seriesvolume.Merge。

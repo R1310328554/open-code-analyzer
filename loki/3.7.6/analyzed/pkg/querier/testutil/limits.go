@@ -1,5 +1,7 @@
 package testutil
 
+// testutil 包 MockLimits 实现 limits.Limits 接口各字段的可配置 mock，供 querier/tail 等单元测试注入租户限制。
+
 import (
 	"context"
 	"time"
@@ -7,6 +9,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// MockLimits 通过 Val 后缀字段返回 MaxQueryLookback、QueryTimeout 等策略值。
 // MockLimits is a mock implementation of limits.Limits interface that can be used in tests
 type MockLimits struct {
 	MaxQueryLookbackVal           time.Duration
@@ -109,3 +112,4 @@ func (m *MockLimits) DebugEngineStreams(_ string) bool {
 func (m *MockLimits) DebugEngineTasks(_ string) bool {
 	return false
 }
+// BlockedQueries 恒返回 nil；pattern 相关方法满足 drain/pattern Limits 接口。

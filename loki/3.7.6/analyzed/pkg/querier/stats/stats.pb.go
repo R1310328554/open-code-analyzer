@@ -3,6 +3,8 @@
 
 package stats
 
+// stats.pb.go 由 stats.proto 生成，定义 querier 查询统计 protobuf 消息 Stats，含 wall_time、拉取 series 数与 chunk 字节数。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -29,11 +31,15 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Stats 记录单次查询在 querier 侧消耗的资源：墙钟时间、series 数与 chunk 字节。
 type Stats struct {
+// WallTime 为 querier 执行该查询累计的墙钟时间。
 	// The sum of all wall time spent in the querier to execute the query.
 	WallTime time.Duration `protobuf:"bytes,1,opt,name=wall_time,json=wallTime,proto3,stdduration" json:"wall_time"`
+// FetchedSeriesCount 为查询拉取的 log stream/series 数量。
 	// The number of series fetched for the query
 	FetchedSeriesCount uint64 `protobuf:"varint,2,opt,name=fetched_series_count,json=fetchedSeriesCount,proto3" json:"fetched_series_count,omitempty"`
+// FetchedChunkBytes 为从存储读取的 chunk 总字节数。
 	// The number of bytes of the chunks fetched for the query
 	FetchedChunkBytes uint64 `protobuf:"varint,3,opt,name=fetched_chunk_bytes,json=fetchedChunkBytes,proto3" json:"fetched_chunk_bytes,omitempty"`
 }
@@ -500,3 +506,4 @@ var (
 	ErrInvalidLengthStats = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowStats   = fmt.Errorf("proto: integer overflow")
 )
+// Stats 实现 proto.Message，供 gRPC 与 JSON 响应 stats 字段序列化。
