@@ -2488,3 +2488,18 @@
 2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/storage/ExternalRuleStorage.java wave82b [15:30] control connection/rules/storage
 2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/storage/LocalDiskRuleStorage.java wave82b [15:30] control connection/rules/storage
 2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/storage/RuleStorage.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:56Z DONE plugin/config/src/main/java/com/alibaba/nacos/plugin/config/ConfigChangePluginManager.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/config/src/main/java/com/alibaba/nacos/plugin/config/ConfigChangePluginProvider.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/config/src/main/java/com/alibaba/nacos/plugin/config/constants/ConfigChangeConstants.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/config/src/main/java/com/alibaba/nacos/plugin/config/constants/ConfigChangeExecuteTypes.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/config/src/main/java/com/alibaba/nacos/plugin/config/constants/ConfigChangePointCutTypes.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/config/src/main/java/com/alibaba/nacos/plugin/config/model/ConfigChangeRequest.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/config/src/main/java/com/alibaba/nacos/plugin/config/model/ConfigChangeResponse.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/config/src/main/java/com/alibaba/nacos/plugin/config/spi/ConfigChangePluginService.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/ControlManagerCenter.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/Loggers.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/configs/ControlConfigs.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/configs/ControlConfigsInitializer.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/ConnectionControlManager.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/ConnectionMetricsCollector.java wave82a [0:15] config change plugin + control center
+2026-08-10T05:16:56Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/DefaultConnectionControlManager.java wave82a [0:15] config change plugin + control center
