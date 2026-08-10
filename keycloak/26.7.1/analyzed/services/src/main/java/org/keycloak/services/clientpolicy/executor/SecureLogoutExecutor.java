@@ -34,9 +34,15 @@ import org.keycloak.utils.StringUtil;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * 安全登出执行器。
+ * <p>默认禁止前通道（front-channel）登出；可在客户端元数据或运行时 GET 登出请求中按策略配置放宽。</p>
+ */
 public class SecureLogoutExecutor implements ClientPolicyExecutorProvider<SecureLogoutExecutor.Configuration> {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
     public SecureLogoutExecutor(KeycloakSession session) {
@@ -53,7 +59,9 @@ public class SecureLogoutExecutor implements ClientPolicyExecutorProvider<Secure
         return Configuration.class;
     }
 
+    /** 安全登出策略配置 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 是否允许前通道登出 */
         @JsonProperty(SecureLogoutExecutorFactory.ALLOW_FRONT_CHANNEL_LOGOUT)
         protected Boolean allowFrontChannelLogout = Boolean.FALSE;
 

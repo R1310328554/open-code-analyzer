@@ -31,11 +31,14 @@ import org.keycloak.services.clientpolicy.context.SamlAuthnRequestContext;
 import org.keycloak.services.clientpolicy.context.SamlLogoutRequestContext;
 
 /**
+ * SAML 签名强制执行器。
+ * <p>在 SAML 客户端注册/更新及运行时请求中，确保客户端签名已启用，且文档签名或断言签名至少其一开启。</p>
  *
  * @author rmartinc
  */
 public class SamlSignatureEnforcerExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
+    /** @param session Keycloak 会话（本执行器未直接使用） */
     public SamlSignatureEnforcerExecutor(KeycloakSession session) {
     }
 
@@ -63,7 +66,7 @@ public class SamlSignatureEnforcerExecutor implements ClientPolicyExecutorProvid
     }
 
     private boolean signaturesAreForced(boolean clientSignature, boolean serverSignature, boolean assertionSignature) {
-        // ensure client is signed and server or asertion is signed
+        // 要求客户端签名开启，且服务端文档签名或断言签名至少其一开启
         return clientSignature && (serverSignature || assertionSignature);
     }
 

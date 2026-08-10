@@ -45,13 +45,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 安全客户端 URI 执行器。
+ * <p>在客户端注册/更新及授权请求中禁止非 HTTPS URI（本地 localhost 可配置例外），并拒绝含通配符的重定向 URI。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureClientUrisExecutor implements ClientPolicyExecutorProvider<SecureClientUrisExecutor.Configuration> {
 
     private static final Logger logger = Logger.getLogger(SecureClientUrisExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
 
@@ -82,7 +87,7 @@ public class SecureClientUrisExecutor implements ClientPolicyExecutorProvider<Se
                     ClientRepresentation clientRep = ((ClientCRUDContext)context).getProposedClientRepresentation();
                     confirmSecureUris(clientRep);
 
-                    // Use rootUrl as default redirectUrl to avoid creation of redirectUris with wildcards, which is done at later stages during client creation
+                    // 默认以 rootUrl 作为 redirectUri，避免后续阶段生成含通配符的重定向 URI
                     if (clientRep.getRootUrl() != null && (clientRep.getRedirectUris() == null || clientRep.getRedirectUris().isEmpty())) {
                         logger.debugf("Setup Redirect URI = %s for client %s", clientRep.getRootUrl(), clientRep.getClientId());
                         clientRep.setRedirectUris(Collections.singletonList(clientRep.getRootUrl()));
@@ -106,46 +111,46 @@ public class SecureClientUrisExecutor implements ClientPolicyExecutorProvider<Se
     }
 
     private void confirmSecureUris(ClientRepresentation clientRep) throws ClientPolicyException {
-        // rootUrl
+        // 校验 rootUrl
         String rootUrl = clientRep.getRootUrl();
         if (rootUrl != null) confirmSecureUris(List.of(rootUrl), "rootUrl");
 
-        // adminUrl
+        // 校验 adminUrl
         String adminUrl = clientRep.getAdminUrl();
         if (adminUrl != null) confirmSecureUris(List.of(adminUrl), "adminUrl");
 
-        // baseUrl
+        // 校验 baseUrl
         String baseUrl = clientRep.getBaseUrl();
         if (baseUrl != null) confirmSecureUris(List.of(baseUrl), "baseUrl");
 
-        // backchannel logout URL
+        // 校验后通道登出 URL
         String logoutUrl = Optional.ofNullable(clientRep.getAttributes()).orElse(Collections.emptyMap()).get(OIDCConfigAttributes.BACKCHANNEL_LOGOUT_URL);
         if (logoutUrl != null) confirmSecureUris(List.of(logoutUrl), "logoutUrl");
 
-        // OAuth2 : redirectUris
+        // 校验 OAuth2 redirectUris
         List<String> redirectUris = clientRep.getRedirectUris();
         if (redirectUris != null) confirmSecureUris(redirectUris, "redirectUris");
 
-        // web origins
+        // 校验 webOrigins（解析相对路径后）
         List<String> webOrigins = clientRep.getWebOrigins();
         if (webOrigins != null) {
             List<String> resolvedWebOriginUrls = resolveUrlWithRedirects(webOrigins, redirectUris, rootUrl, true);
             confirmSecureUris(resolvedWebOriginUrls, "webOrigins");
         }
 
-        // OAuth2 : jwks_uri
+        // 校验 jwks_uri
         String jwksUri = Optional.ofNullable(clientRep.getAttributes()).orElse(Collections.emptyMap()).get(OIDCConfigAttributes.JWKS_URL);
         if (jwksUri != null) confirmSecureUris(List.of(jwksUri), "jwksUri");
 
-        // OIDD : requestUris
+        // 校验 OIDC 请求 URI 列表
         List<String> requestUris = getAttributeMultivalued(clientRep, OIDCConfigAttributes.REQUEST_URIS);
         if (requestUris != null) confirmSecureUris(requestUris, "requestUris");
 
-        // CIBA : client notification endpoint
+        // 校验 CIBA 客户端通知端点
         String clientNotificationEndpoint = Optional.ofNullable(clientRep.getAttributes()).orElse(Collections.emptyMap()).get(CibaConfig.CIBA_BACKCHANNEL_CLIENT_NOTIFICATION_ENDPOINT);
         if (clientNotificationEndpoint != null) confirmSecureUris(List.of(clientNotificationEndpoint), "cibaClientNotificationEndpoint");
 
-        // OIDC: Post Logout URL
+        // 校验 OIDC 登出后重定向 URI
         List<String> postLogoutRedirectUris = getAttributeMultivalued(clientRep, OIDCConfigAttributes.POST_LOGOUT_REDIRECT_URIS);
         if (postLogoutRedirectUris != null && !postLogoutRedirectUris.isEmpty()) {
             List<String> validRedirects = clientRep.getRedirectUris() != null ? clientRep.getRedirectUris() : Collections.emptyList();
@@ -153,15 +158,15 @@ public class SecureClientUrisExecutor implements ClientPolicyExecutorProvider<Se
             confirmSecureUris(resolvedPostLogoutUrls, "postLogoutUris");
         }
 
-        // logoUri
+        // 校验 logoUri
         String logoUri = Optional.ofNullable(clientRep.getAttributes()).orElse(Collections.emptyMap()).get(OIDCConfigAttributes.LOGO_URI);
         if (logoUri != null) confirmSecureUris(List.of(logoUri), "logoUri");
 
-        // termsOfServiceUri
+        // 校验服务条款 URI
         String termsOfServiceUri = Optional.ofNullable(clientRep.getAttributes()).orElse(Collections.emptyMap()).get(OIDCConfigAttributes.TOS_URI);
         if (termsOfServiceUri != null) confirmSecureUris(List.of(termsOfServiceUri), "tosUri");
 
-        // policyUri
+        // 校验隐私策略 URI
         String policyUri = Optional.ofNullable(clientRep.getAttributes()).orElse(Collections.emptyMap()).get(OIDCConfigAttributes.POLICY_URI);
         if (policyUri != null) confirmSecureUris(List.of(policyUri), "policyUri");
     }
@@ -215,6 +220,7 @@ public class SecureClientUrisExecutor implements ClientPolicyExecutorProvider<Se
 
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
 
+        /** 是否允许 localhost/127.0.0.1 使用 HTTP 重定向 URI */
         @JsonProperty("allow-http-on-localhost")
         protected boolean allowHttpOnLocalhost;
 

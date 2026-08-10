@@ -31,13 +31,19 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link SecureClientAuthenticatorExecutor} 的 Provider 工厂。
+ * <p>暴露允许认证方式列表与默认认证方式配置项。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureClientAuthenticatorExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "secure-client-authenticator";
 
+    /** 配置键：允许的客户端认证方式 */
     public static final String ALLOWED_CLIENT_AUTHENTICATORS = "allowed-client-authenticators";
+    /** 配置键：默认客户端认证方式 */
     public static final String DEFAULT_CLIENT_AUTHENTICATOR = "default-client-authenticator";
 
     private List<ProviderConfigProperty> configProperties = new ArrayList<>();
@@ -79,6 +85,7 @@ public class SecureClientAuthenticatorExecutorFactory implements ClientPolicyExe
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "It makes the client enforce registering/updating secure client authentication.";

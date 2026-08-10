@@ -26,13 +26,14 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
- * <p>Policy executor that enforces client and server (full document or
- * assertion) signature is ON.</p>
+ * {@link SamlSignatureEnforcerExecutor} 的 Provider 工厂。
+ * <p>强制 SAML 客户端启用客户端签名，以及文档或断言签名。</p>
  *
  * @author rmartinc
  */
 public class SamlSignatureEnforcerExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "saml-signature-enforcer";
 
     @Override
@@ -60,6 +61,7 @@ public class SamlSignatureEnforcerExecutorFactory implements ClientPolicyExecuto
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "Executor to enforce that signatures are used in a SAML client.";

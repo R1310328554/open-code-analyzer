@@ -26,10 +26,13 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link SecureClientUrisExecutor} 的 Provider 工厂。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureClientUrisExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "secure-client-uris";
 
     @Override
@@ -54,6 +57,7 @@ public class SecureClientUrisExecutorFactory implements ClientPolicyExecutorProv
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "It prohibits the client registering/specifying http scheme URI.";

@@ -28,11 +28,18 @@ import org.keycloak.protocol.saml.SamlConfigAttributes;
 import org.keycloak.protocol.saml.SamlProtocol;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link SecureClientUrisPatternExecutor} 的 Provider 工厂。
+ * <p>配置允许 URI 正则模式及待校验的客户端 URI 字段。</p>
+ */
 public class SecureClientUrisPatternExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "secure-client-uris-pattern";
 
+    /** 配置键：允许的 URI 正则模式列表 */
     public static final String ALLOWED_PATTERNS = "allowed-patterns";
+    /** 配置键：待校验的客户端 URI 字段 */
     public static final String CLIENT_URI_FIELDS = "client-uri-fields";
 
     public static final List<String> ALL_CLIENT_URI_FIELDS = Arrays.asList(
@@ -42,7 +49,7 @@ public class SecureClientUrisPatternExecutorFactory implements ClientPolicyExecu
             "redirectUris",
             "webOrigins",
 
-            //attributes in OIDC clients
+            // OIDC 客户端属性 URI 字段
             "jwksUri",
             "requestUris",
             "backchannelLogoutUrl",
@@ -53,7 +60,7 @@ public class SecureClientUrisPatternExecutorFactory implements ClientPolicyExecu
             OIDCConfigAttributes.TOS_URI,
             OIDCConfigAttributes.SECTOR_IDENTIFIER_URI,
 
-            // attributes in SAML clients
+            // SAML 客户端属性 URI 字段
             SamlProtocol.SAML_ASSERTION_CONSUMER_URL_POST_ATTRIBUTE,
             SamlProtocol.SAML_ASSERTION_CONSUMER_URL_REDIRECT_ATTRIBUTE,
             SamlProtocol.SAML_ASSERTION_CONSUMER_URL_ARTIFACT_ATTRIBUTE,
@@ -102,6 +109,7 @@ public class SecureClientUrisPatternExecutorFactory implements ClientPolicyExecu
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "Enforces security policies on client URIs by validating them against regex patterns. If a URI does not match any configured pattern, the request is rejected.";

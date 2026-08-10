@@ -40,12 +40,17 @@ import org.keycloak.util.JsonSerialization;
 import org.jboss.logging.Logger;
 
 /**
+ * 安全客户端认证断言执行器。
+ * <p>当机密客户端使用 JWT 客户端断言（{@link OAuth2Constants#CLIENT_ASSERTION_TYPE_JWT}）认证时，校验 {@code aud} 声明必须为且仅为 Keycloak 发行者 URI。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureClientAuthenticationAssertionExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(SecureClientAuthenticationAssertionExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
     public SecureClientAuthenticationAssertionExecutor(KeycloakSession session) {
@@ -74,7 +79,7 @@ public class SecureClientAuthenticationAssertionExecutor implements ClientPolicy
         KeycloakContext context = session.getContext();
         ClientModel client = context.getClient();
 
-        // a public client does not need to send its credential for client authentication
+        // 公开客户端无需发送客户端认证凭据
         if (client.isPublicClient()) return;
 
         MultivaluedMap<String, String> params = context.getHttpRequest().getDecodedFormParameters();
@@ -82,18 +87,18 @@ public class SecureClientAuthenticationAssertionExecutor implements ClientPolicy
         String clientAssertion = params.getFirst(OAuth2Constants.CLIENT_ASSERTION);
 
         if (clientAssertionType == null || clientAssertion == null || !clientAssertionType.equals(OAuth2Constants.CLIENT_ASSERTION_TYPE_JWT)) {
-            // if the client did not send client assertion, then skit the further validation.
+            // 未发送 JWT 客户端断言则跳过后续校验
             return;
         }
 
-        // Validate the client assertion format
+        // 校验 JWT 段数格式
         String[] parts = clientAssertion.split("\\.");
         if (parts.length < 2 || parts.length > 3) {
             logger.warn("client assertion format error");
             throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "invalid client assertion format");
         }
 
-        // Decode the client assertion
+        // 解码 payload 并解析为 JsonWebToken
         String encodedContent = parts[1];
         byte[] content = Base64Url.decode(encodedContent);
         JsonWebToken token;
@@ -104,7 +109,7 @@ public class SecureClientAuthenticationAssertionExecutor implements ClientPolicy
             throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "invalid client assertion");
         }
 
-        // Validate the client assertion audience
+        // 校验 aud 必须为单一发行者 URL
         String issuerUrl = Urls.realmIssuer(session.getContext().getUri().getBaseUri(), session.getContext().getRealm().getName());
         List<String> expectedAudiences = new ArrayList<>(Collections.singletonList(issuerUrl));
         if (token.getAudience() == null || token.getAudience().length != 1) {

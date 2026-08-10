@@ -39,15 +39,21 @@ import org.keycloak.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * SAML 客户端安全 URI 执行器。
+ * <p>在 SAML 客户端注册/更新及 Authn/Logout 请求中强制所有 URL 使用 HTTPS，并可禁止通配符重定向 URI（可通过 {@link Configuration#allowWildcardRedirects} 放宽）。</p>
  *
  * @author rmartinc
  */
 public class SamlSecureClientUrisExecutor implements ClientPolicyExecutorProvider<SamlSecureClientUrisExecutor.Configuration> {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration config;
 
+    /** SAML 安全 URI 执行器配置 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 是否允许有效重定向 URI 使用通配符 */
         @JsonProperty("allow-wildcard-redirects")
         protected boolean allowWildcardRedirects;
 
@@ -68,6 +74,7 @@ public class SamlSecureClientUrisExecutor implements ClientPolicyExecutorProvide
         }
     }
 
+    /** @param session Keycloak 会话 */
     public SamlSecureClientUrisExecutor(KeycloakSession session) {
         this.session = session;
     }
@@ -87,6 +94,7 @@ public class SamlSecureClientUrisExecutor implements ClientPolicyExecutorProvide
         return SamlSecureClientUrisExecutorFactory.PROVIDER_ID;
     }
 
+    /** 在客户端 CRUD 及 SAML 请求事件中校验 URI 安全性 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -111,7 +119,7 @@ public class SamlSecureClientUrisExecutor implements ClientPolicyExecutorProvide
         if (uri != null) {
             confirmSecureUri(uri.toString(), "AssertionConsumerServiceURL", OAuthErrorException.INVALID_REQUEST);
         } else {
-            // use configuration for login, check URLs for login are all secure
+            // 请求未带 ACS URL 时，校验客户端配置中的登录相关 URL 均为 HTTPS
             ClientModel client = context.getClient();
             confirmSecureUri(client.getManagementUrl(),
                     "Master SAML Processing URL", OAuthErrorException.INVALID_REQUEST);
@@ -125,7 +133,7 @@ public class SamlSecureClientUrisExecutor implements ClientPolicyExecutorProvide
     }
 
     private void confirmLogoutRedirectUri(SamlLogoutRequestContext context) throws ClientPolicyException {
-        // check logout URLs are all secure
+        // 校验客户端配置中的登出相关 URL 均为 HTTPS
         ClientModel client = context.getClient();
         confirmSecureUri(client.getManagementUrl(),
                 "Master SAML Processing URL", OAuthErrorException.INVALID_REQUEST);
@@ -148,6 +156,7 @@ public class SamlSecureClientUrisExecutor implements ClientPolicyExecutorProvide
             return;
         }
 
+        // 非 HTTPS 方案视为不安全
         if (!uri.startsWith("https:")) { // make this configurable? (allowed schemes...)
             throw new ClientPolicyException(error, "Non secure scheme for " + uriType);
         }

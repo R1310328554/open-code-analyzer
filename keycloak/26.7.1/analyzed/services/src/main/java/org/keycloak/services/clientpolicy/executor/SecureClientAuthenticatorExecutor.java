@@ -32,13 +32,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 安全客户端认证方式执行器。
+ * <p>在客户端注册/更新时自动设置默认认证方式，并限制 {@code token_endpoint_auth_method} 必须为策略允许的 {@link ClientAuthenticator} 之一。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureClientAuthenticatorExecutor implements ClientPolicyExecutorProvider<SecureClientAuthenticatorExecutor.Configuration> {
 
     private static final Logger logger = Logger.getLogger(SecureClientAuthenticatorExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
     public SecureClientAuthenticatorExecutor(KeycloakSession session) {
@@ -55,9 +60,12 @@ public class SecureClientAuthenticatorExecutor implements ClientPolicyExecutorPr
         return Configuration.class;
     }
 
+    /** 允许的客户端认证方式配置 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 允许的客户端认证方式 ID 列表 */
         @JsonProperty("allowed-client-authenticators")
         protected List<String> allowedClientAuthenticators;
+        /** 注册/更新时未显式指定时使用的默认认证方式 */
         @JsonProperty("default-client-authenticator")
         protected String defaultClientAuthenticator;
 
@@ -117,7 +125,7 @@ public class SecureClientAuthenticatorExecutor implements ClientPolicyExecutorPr
     }
 
     private void validateDuringClientCRUD(ClientRepresentation rep) throws ClientPolicyException {
-        // Allow public clients (There is separate executor to check access type)
+        // 公开客户端另行校验，此处跳过
         if (rep.isPublicClient() != null && rep.isPublicClient()) return;
 
         String clientAuthenticatorType = rep.getClientAuthenticatorType();
@@ -125,7 +133,7 @@ public class SecureClientAuthenticatorExecutor implements ClientPolicyExecutorPr
         throw new ClientPolicyException(OAuthErrorException.INVALID_CLIENT_METADATA, "Invalid client metadata: token_endpoint_auth_method");
     }
 
-    // Validate client authenticator also during client request
+    // 令牌/登出等请求阶段同样校验客户端认证方式
     private void validateDuringClientRequest() throws ClientPolicyException {
         ClientModel client = session.getContext().getClient();
         // Allow public clients (There is separate executor to check access type)

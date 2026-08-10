@@ -44,12 +44,19 @@ import org.keycloak.services.clientpolicy.context.DynamicClientUpdateContext;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
+/**
+ * 客户端 URI 正则模式校验执行器。
+ * <p>在客户端注册/更新时，按配置的正则模式校验选定 URI 字段；未匹配任一允许模式的 URI 将被拒绝。</p>
+ */
 public class SecureClientUrisPatternExecutor implements ClientPolicyExecutorProvider<SecureClientUrisPatternExecutor.Configuration> {
 
     private static final Logger logger = Logger.getLogger(SecureClientUrisPatternExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 编译后的允许 URI 正则模式列表 */
     private List<Pattern> allowedPatterns;
+    /** 待校验的客户端 URI 字段名列表 */
     private List<String> clientUriFields;
 
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
@@ -82,7 +89,7 @@ public class SecureClientUrisPatternExecutor implements ClientPolicyExecutorProv
 
     @Override
     public void setupConfiguration(SecureClientUrisPatternExecutor.Configuration config) {
-        // 1. Setup Patterns
+        // 1. 编译允许的正则模式
         List<String> patternsAsStrings = config.getAllowedPatterns();
         this.allowedPatterns = new ArrayList<>();
         if (patternsAsStrings != null) {
@@ -95,7 +102,7 @@ public class SecureClientUrisPatternExecutor implements ClientPolicyExecutorProv
             }
         }
 
-        // if empty, validate all the fields
+        // 未指定字段时默认校验全部已知 URI 字段
         List<String> configuredFields = config.getClientUriFields();
 
         if (configuredFields == null || configuredFields.isEmpty()) {
@@ -146,7 +153,7 @@ public class SecureClientUrisPatternExecutor implements ClientPolicyExecutorProv
     }
 
     private void validateClientUris(ClientRepresentation clientRep) throws ClientPolicyException {
-        //skip validation if empty
+        // 无待校验字段则跳过
         if (clientUriFields == null || clientUriFields.isEmpty()) {
             return;
         }
@@ -199,7 +206,7 @@ public class SecureClientUrisPatternExecutor implements ClientPolicyExecutorProv
             case "webOrigins":
                 return client.getWebOrigins();
 
-            //attributes
+            // 客户端属性中的 URI 字段
             case "jwksUri":
                 return singletonOrEmpty(attributes.get(OIDCConfigAttributes.JWKS_URL));
             case "requestUris":
@@ -211,7 +218,7 @@ public class SecureClientUrisPatternExecutor implements ClientPolicyExecutorProv
             case "cibaClientNotificationEndpoint":
                 return singletonOrEmpty(attributes.get(CibaConfig.CIBA_BACKCHANNEL_CLIENT_NOTIFICATION_ENDPOINT));
             default:
-                // for the rest just use the fieldName as the attribute name
+                // 其余字段名直接作为属性键查找
                 return singletonOrEmpty(attributes.get(fieldName));
         }
     }

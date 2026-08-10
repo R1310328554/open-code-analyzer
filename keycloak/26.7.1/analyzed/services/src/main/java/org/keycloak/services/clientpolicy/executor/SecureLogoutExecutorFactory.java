@@ -25,10 +25,16 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link SecureLogoutExecutor} 的 Provider 工厂。
+ * <p>通过 {@link #ALLOW_FRONT_CHANNEL_LOGOUT} 控制是否允许前通道登出。</p>
+ */
 public class SecureLogoutExecutorFactory implements ClientPolicyExecutorProviderFactory  {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "secure-logout";
 
+    /** 配置键：是否允许前通道登出 */
     public static final String ALLOW_FRONT_CHANNEL_LOGOUT = "allow-front-channel-logout";
 
     private static final ProviderConfigProperty ALLOW_FRONT_CHANNEL_LOGOUT_PROPERTY = new ProviderConfigProperty(
@@ -56,6 +62,7 @@ public class SecureLogoutExecutorFactory implements ClientPolicyExecutorProvider
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "Enforces certain constraints on how clients should support logout.";

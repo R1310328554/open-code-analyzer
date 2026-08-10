@@ -45,12 +45,17 @@ import org.keycloak.services.clientpolicy.context.PreAuthorizationRequestContext
 
 import org.jboss.logging.Logger;
 
-/** 
+/**
+ * 安全 PAR（推送授权请求）内容执行器。
+ * <p>符合 FAPI 2.0：PAR 必须包含 {@code redirect_uri}；授权端点仅允许携带 PAR {@code request_uri} 及已在 PAR 中声明的查询参数。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class SecureParContentsExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 日志记录器 */
     private static final Logger log = Logger.getLogger(SecureParContentsExecutor.class);
 
     public SecureParContentsExecutor(KeycloakSession session) {
@@ -77,7 +82,7 @@ public class SecureParContentsExecutor implements ClientPolicyExecutorProvider<C
     }
 
     private void checkParAuthorizationRequest(PushedAuthorizationRequestContext context) throws ClientPolicyException {
-        // FAPI 2.0: For authorization-endpoint flows, ASs “shall require the redirect_uri parameter in pushed authorization requests”
+        // FAPI 2.0：推送授权请求必须包含 redirect_uri 参数
         // and clients must send only client_id and request_uri to the authorization endpoint afterward.
         AuthorizationEndpointRequest request = context.getRequest();
         if (request.getRedirectUri() == null) {
@@ -99,7 +104,7 @@ public class SecureParContentsExecutor implements ClientPolicyExecutorProvider<C
 
         Set<String> requestParameterKeysFromPAR;
         if (requestParametersFromPAR.containsKey(OIDCLoginProtocol.REQUEST_PARAM)) {
-            // if PAR request includes request object (JAR), parsing the request is needed.
+            // PAR 含 JAR 请求对象时需解析以获取完整参数集
             requestParameterKeysFromPAR = getParRetrievedRequestParameters(requestParametersFromPAR, context.getClientId());
         } else {
             requestParameterKeysFromPAR = requestParametersFromPAR.keySet();
@@ -109,7 +114,7 @@ public class SecureParContentsExecutor implements ClientPolicyExecutorProvider<C
                 .filter(it -> !it.equals(OIDCLoginProtocol.REQUEST_URI_PARAM))
                 .toList();
 
-        // FAPI says only parameters inside the request object should be used
+        // FAPI：授权端点查询参数必须全部已在 PAR 中声明
         //
         for (String queryParam : requestParameterKeysFromQuery) {
             if (!requestParameterKeysFromPAR.contains(queryParam)) {
@@ -129,12 +134,12 @@ public class SecureParContentsExecutor implements ClientPolicyExecutorProvider<C
 
         new AuthzEndpointRequestObjectParser(session, requestObjectString, client).parseRequest(request);
 
-        // from PAR request parameters other than ones included in a request object
+        // 收集 PAR 中除 request 对象外的顶层参数
         for (String param : requestParametersFromPAR.keySet()) {
             if (OIDCLoginProtocol.REQUEST_PARAM.equals(param)) continue;
             parRetrievedRequest.add(param);
         }
-        // from parsed PAR request parameters
+        // 合并 JAR 解析出的授权请求参数
         AuthorizationEndpoint.performActionOnParameters(request, (paramName, paramValue) -> {if (paramValue != null) parRetrievedRequest.add(paramName);});
         if (request.getClientId() != null) parRetrievedRequest.add(OIDCLoginProtocol.CLIENT_ID_PARAM);
         if (request.getResponseType() != null) parRetrievedRequest.add(OIDCLoginProtocol.RESPONSE_TYPE_PARAM);

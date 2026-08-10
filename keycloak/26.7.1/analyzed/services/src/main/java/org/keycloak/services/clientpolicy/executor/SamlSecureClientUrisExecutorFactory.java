@@ -26,15 +26,14 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
- * <p>Executor factory that enforces that all URLs configured in a SAML client
- * are secure (https). It also enforces that no wildcard valid redirect URIs
- * are configured on update/creation (wildcards can be allowed via
- * <em>allow-wildcard-redirects</em> configuration property).</p>
+ * {@link SamlSecureClientUrisExecutor} 的 Provider 工厂。
+ * <p>强制 SAML 客户端所有 URL 为 HTTPS，并可禁止通配符有效重定向 URI（可通过 <em>allow-wildcard-redirects</em> 配置放宽）。</p>
  *
  * @author rmartinc
  */
 public class SamlSecureClientUrisExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "saml-secure-client-uris";
 
     @Override
@@ -62,6 +61,7 @@ public class SamlSecureClientUrisExecutorFactory implements ClientPolicyExecutor
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "Executor that enforces all URLs defined in the SAML client are https (TLS enabled). "
