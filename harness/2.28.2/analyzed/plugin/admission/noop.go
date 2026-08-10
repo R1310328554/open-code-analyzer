@@ -20,9 +20,10 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// noop is a stub admission controller.
+// noop 是始终放行的桩准入控制器，供 OSS 构建或禁用策略时使用。
 type noop struct{}
 
+// Admit 空实现，不对用户做任何准入限制。
 func (noop) Admit(context.Context, *core.User) error {
 	return nil
 }

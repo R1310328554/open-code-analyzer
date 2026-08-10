@@ -21,23 +21,22 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// ErrClosed is returned when attempting to create a new
-// user account and admissions are closed.
+// ErrClosed 在尝试注册新用户但系统已关闭注册时返回。
 var ErrClosed = errors.New("User registration is disabled")
 
-// Open enforces an open admission policy by default unless
-// disabled.
+// Open 创建开放准入策略：默认允许新用户注册，可通过 disabled 标志关闭注册。
 func Open(disabled bool) core.AdmissionService {
 	return &closed{disabled: disabled}
 }
 
+// closed 根据 disabled 标志决定是否拒绝新用户注册。
 type closed struct {
 	disabled bool
 }
 
+// Admit 对新用户检查注册是否被禁用；已有用户始终放行。
 func (s *closed) Admit(ctx context.Context, user *core.User) error {
-	// this admission policy is only enforced for
-	// new users. Existing users are always admitted.
+	// 准入策略仅对新注册用户生效，已有用户始终允许通过。
 	if user.ID != 0 {
 		return nil
 	}

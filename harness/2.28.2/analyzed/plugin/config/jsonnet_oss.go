@@ -18,7 +18,7 @@ package config
 
 import "github.com/drone/drone/core"
 
-// Jsonnet returns a no-op configuration service.
+// Jsonnet 在 OSS 构建中返回空操作配置服务，不执行 Jsonnet 求值。
 func Jsonnet(service core.FileService, enabled bool) core.ConfigService {
 	return new(noop)
 }

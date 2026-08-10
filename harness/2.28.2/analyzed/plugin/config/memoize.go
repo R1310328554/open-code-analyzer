@@ -26,34 +26,30 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// cache key pattern used in the cache, comprised of the
-// repository slug and commit sha.
+// keyf 是 LRU 缓存键格式，由仓库 ID、构建元数据与配置路径等字段拼接而成。
 const keyf = "%d|%d|%s|%s|%s|%s|%s"
 
-// Memoize caches the conversion results for subsequent calls.
-// This micro-optimization is intended for multi-pipeline
-// projects that would otherwise covert the file for each
-// pipeline execution.
+// Memoize 为底层 ConfigService 增加 LRU 缓存，避免多流水线项目重复拉取与转换同一配置。
 func Memoize(base core.ConfigService) core.ConfigService {
-	// simple cache prevents the same yaml file from being
-	// requested multiple times in a short period.
+	// 容量 10 的简单 LRU，防止短时间内对同一 YAML 重复请求。
 	cache, _ := lru.New(10)
 	return &memoize{base: base, cache: cache}
 }
 
+// memoize 包装基础配置服务并在命中缓存时直接返回已解析结果。
 type memoize struct {
 	base  core.ConfigService
 	cache *lru.Cache
 }
 
+// Find 生成缓存键并查 LRU；未命中时委托 base 查找，成功且 commit SHA 非空则写入缓存。
 func (c *memoize) Find(ctx context.Context, req *core.ConfigArgs) (*core.Config, error) {
-	// this is a minor optimization that prevents caching if the
-	// base converter is a global config service and is disabled.
+	// 若底层为已禁用的 global 服务（client 为 nil），跳过缓存直接返回。
 	if global, ok := c.base.(*global); ok == true && global.client == nil {
 		return nil, nil
 	}
 
-	// generate the key used to cache the converted file.
+	// 根据仓库与构建上下文生成唯一缓存键。
 	key := fmt.Sprintf(keyf,
 		req.Repo.ID,
 		req.Build.Created,
@@ -73,7 +69,7 @@ func (c *memoize) Find(ctx context.Context, req *core.ConfigArgs) (*core.Config,
 
 	logger.Trace("extension: configuration: check cache")
 
-	// check the cache for the file and return if exists.
+	// 缓存命中则直接返回已存储的配置对象。
 	cached, ok := c.cache.Get(key)
 	if ok {
 		logger.Trace("extension: configuration: cache hit")
@@ -82,7 +78,7 @@ func (c *memoize) Find(ctx context.Context, req *core.ConfigArgs) (*core.Config,
 
 	logger.Trace("extension: configuration: cache miss")
 
-	// else find the configuration file.
+	// 缓存未命中，委托底层服务获取配置。
 	config, err := c.base.Find(ctx, req)
 	if err != nil {
 		return nil, err
@@ -95,9 +91,7 @@ func (c *memoize) Find(ctx context.Context, req *core.ConfigArgs) (*core.Config,
 		return nil, nil
 	}
 
-	// if the configuration file was retrieved
-	// it is temporarily cached. Note that we do
-	// not cache if the commit sha is empty (gogs).
+	// 成功获取配置后写入缓存；commit SHA 为空（如 Gogs）时不缓存。
 	if req.Build.After != "" {
 		c.cache.Add(key, config)
 	}

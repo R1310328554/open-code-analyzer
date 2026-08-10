@@ -20,10 +20,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Memoize caches the conversion results for subsequent calls.
-// This micro-optimization is intended for multi-pipeline
-// projects that would otherwise covert the file for each
-// pipeline execution.
+// Memoize 在 OSS 构建中直接返回空操作配置服务，不启用 LRU 缓存层。
 func Memoize(base core.ConfigService) core.ConfigService {
 	return new(noop)
 }

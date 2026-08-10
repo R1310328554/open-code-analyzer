@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// config 包提供流水线配置获取插件，支持从仓库、Jsonnet、远程端点等多源组合加载。
 package config
 
 import (
@@ -21,19 +22,20 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// error returned when no configured found.
+// errNotFound 在所有配置源均未找到有效配置时返回。
 var errNotFound = errors.New("configuration: not found")
 
-// Combine combines the config services, allowing the system
-// to source pipeline configuration from multiple sources.
+// Combine 将多个 ConfigService 串联为链式查找，按顺序尝试各配置源直至获得非空配置。
 func Combine(services ...core.ConfigService) core.ConfigService {
 	return &combined{services}
 }
 
+// combined 按注册顺序依次调用各配置源。
 type combined struct {
 	sources []core.ConfigService
 }
 
+// Find 遍历配置源，返回首个含非空 Data 的配置；全部未命中则返回 errNotFound。
 func (c *combined) Find(ctx context.Context, req *core.ConfigArgs) (*core.Config, error) {
 	for _, source := range c.sources {
 		config, err := source.Find(ctx, req)

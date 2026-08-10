@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// admission 包（非 OSS 构建）实现用户注册准入策略，包括反机器人与开放/关闭注册等。
 package admission
 
 import (
@@ -14,33 +15,29 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// ErrCannotVerify is returned when attempting to verify the
-// user is a human being.
+// ErrCannotVerify 在无法确认用户为真实人类账户时返回。
 var ErrCannotVerify = errors.New("Cannot verify user authenticity")
 
-// Nobot enforces an admission policy that restricts access to
-// users accounts that were recently created and may be bots.
-// The policy expects the source control management system will
-// identify and remove the bot accounts before they would be
-// eligible to use the system.
+// Nobot 创建反机器人准入策略：拒绝账号创建时间过短、疑似机器人的新用户。
+// 策略假定 SCM 会在账户达到最小年龄前识别并移除机器人账号。
 func Nobot(service core.UserService, age time.Duration) core.AdmissionService {
 	return &nobot{service: service, age: age}
 }
 
+// nobot 实现基于账号创建时间的准入校验。
 type nobot struct {
 	age     time.Duration
 	service core.UserService
 }
 
+// Admit 对新用户校验 SCM 账号创建时间是否超过配置的最小年龄；已有用户直接放行。
 func (s *nobot) Admit(ctx context.Context, user *core.User) error {
-	// this admission policy is only enforced for
-	// new users. Existing users are always admitted.
+	// 准入策略仅对新注册用户生效，已有用户始终允许通过。
 	if user.ID != 0 {
 		return nil
 	}
 
-	// if the minimum required age is not specified the check
-	// is skipped.
+	// 未配置最小年龄时跳过校验。
 	if s.age == 0 {
 		return nil
 	}

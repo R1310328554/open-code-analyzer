@@ -20,16 +20,17 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Repository returns a configuration service that fetches the yaml
-// directly from the source code management (scm) system.
+// Repository 创建从 SCM 直接读取仓库内 YAML 配置文件的 ConfigService。
 func Repository(service core.FileService) core.ConfigService {
 	return &repo{files: service}
 }
 
+// repo 通过 FileService 按 commit 与 ref 拉取仓库中的流水线配置文件。
 type repo struct {
 	files core.FileService
 }
 
+// Find 根据构建 commit、ref 与仓库配置路径从 SCM 获取原始文件并包装为 core.Config。
 func (r *repo) Find(ctx context.Context, req *core.ConfigArgs) (*core.Config, error) {
 	raw, err := r.files.Find(ctx, req.User, req.Repo.Slug, req.Build.After, req.Build.Ref, req.Repo.Config)
 	if err != nil {

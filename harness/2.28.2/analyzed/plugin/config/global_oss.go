@@ -23,13 +23,15 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Global returns a no-op configuration service.
+// Global 在 OSS 构建中返回空操作配置服务，不从远程端点拉取配置。
 func Global(string, string, bool, time.Duration) core.ConfigService {
 	return new(noop)
 }
 
+// noop 是始终返回 nil 的桩 ConfigService。
 type noop struct{}
 
+// Find 空实现，不返回任何配置。
 func (noop) Find(context.Context, *core.ConfigArgs) (*core.Config, error) {
 	return nil, nil
 }

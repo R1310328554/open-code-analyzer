@@ -22,7 +22,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Nobot is a no-op admission controller
+// Nobot 在 OSS 构建中返回空操作准入控制器，不执行反机器人校验。
 func Nobot(core.UserService, time.Duration) core.AdmissionService {
 	return new(noop)
 }

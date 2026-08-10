@@ -14,11 +14,12 @@
 
 // +build oss
 
+// admission 包（OSS 构建）提供用户准入策略插件的空实现与桩函数。
 package admission
 
 import "github.com/drone/drone/core"
 
-// External is a no-op admission controller
+// External 在 OSS 构建中返回空操作准入控制器，不执行外部身份校验。
 func External(string, string, bool) core.AdmissionService {
 	return new(noop)
 }
