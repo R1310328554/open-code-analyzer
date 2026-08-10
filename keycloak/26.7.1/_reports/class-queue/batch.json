@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:33:51Z",
-  "files": [
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/AbstractExtendableRevisioned.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/AbstractRevisioned.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedClient.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedClientRole.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedClientScope.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedCompositeRoles.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedFederatedIdentityLinks.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedGroup.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedRealm.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedRealmRole.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedRole.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedUser.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedUserConsent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedUserConsents.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedUserVerifiableCredential.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4678,
-  "done": 1305
+  "done": 1320
 }
