@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T13:06:46Z",
   "files": [
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/RegistrationWebOriginsPolicyFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ScopeClientRegistrationPolicy.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ScopeClientRegistrationPolicyFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/TrustedHostClientRegistrationPolicy.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/TrustedHostClientRegistrationPolicyFactory.java",
-    "services/src/main/java/org/keycloak/services/clienttype/DefaultClientTypeManager.java",
-    "services/src/main/java/org/keycloak/services/clienttype/DefaultClientTypeManagerFactory.java",
-    "services/src/main/java/org/keycloak/services/clienttype/client/TypeAwareClientModelDelegate.java",
-    "services/src/main/java/org/keycloak/services/clienttype/client/TypedClientAttribute.java",
-    "services/src/main/java/org/keycloak/services/clienttype/impl/DefaultClientType.java",
-    "services/src/main/java/org/keycloak/services/clienttype/impl/DefaultClientTypeProvider.java",
-    "services/src/main/java/org/keycloak/services/clienttype/impl/DefaultClientTypeProviderFactory.java",
-    "services/src/main/java/org/keycloak/services/cors/DefaultCors.java",
-    "services/src/main/java/org/keycloak/services/cors/DefaultCorsFactory.java",
-    "services/src/main/java/org/keycloak/services/error/KcUnrecognizedPropertyExceptionHandler.java",
     "services/src/main/java/org/keycloak/services/error/KeycloakErrorHandler.java",
     "services/src/main/java/org/keycloak/services/error/KeycloakMismatchedInputExceptionHandler.java",
     "services/src/main/java/org/keycloak/services/filters/InvalidQueryParameterFilter.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/services/managers/DefaultBruteForceProtector.java"
   ],
   "remaining_pending": 988,
-  "done": 4980
+  "done": 4995
 }
