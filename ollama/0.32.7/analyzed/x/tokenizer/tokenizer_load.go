@@ -1,3 +1,4 @@
+// 从 tokenizer.json 及配套配置文件加载 HuggingFace 风格分词器。
 package tokenizer
 
 import (
@@ -8,14 +9,20 @@ import (
 	"strings"
 )
 
+// TokenizerConfig 保存 LoadFromBytesWithConfig 可选传入的配套 JSON 配置。
 // TokenizerConfig holds optional configuration data that can be passed to LoadFromBytesWithConfig.
 type TokenizerConfig struct {
-	TokenizerConfigJSON  []byte // tokenizer_config.json content
-	GenerationConfigJSON []byte // generation_config.json content
-	SpecialTokensMapJSON []byte // special_tokens_map.json content
-	ConfigJSON           []byte // config.json content
+	TokenizerConfigJSON  []byte // tokenizer_config.json 内容
+	// tokenizer_config.json content
+	GenerationConfigJSON []byte // generation_config.json 内容
+	// generation_config.json content
+	SpecialTokensMapJSON []byte // special_tokens_map.json 内容
+	// special_tokens_map.json content
+	ConfigJSON           []byte // config.json 内容
+	// config.json content
 }
 
+// LoadFromBytes 从 tokenizer.json 字节加载分词器。
 // LoadFromBytes loads a tokenizer from tokenizer.json bytes.
 // This is useful when loading from blob storage where the file content is already in memory.
 // Note: This won't load special token config from companion files. Use LoadFromBytesWithConfig
@@ -24,6 +31,7 @@ func LoadFromBytes(data []byte) (*Tokenizer, error) {
 	return loadFromTokenizerJSON(data)
 }
 
+// LoadFromBytesWithConfig 加载 tokenizer.json 并应用额外配置文件。
 // LoadFromBytesWithConfig loads a tokenizer from tokenizer.json bytes with additional config files.
 // This is useful when loading from blob storage where companion config files are also blobs.
 func LoadFromBytesWithConfig(data []byte, config *TokenizerConfig) (*Tokenizer, error) {
@@ -36,12 +44,14 @@ func LoadFromBytesWithConfig(data []byte, config *TokenizerConfig) (*Tokenizer, 
 		return t, nil
 	}
 
+	// 根据传入的配置字节填充 BOS/EOS/PAD 等特殊 token
 	// Apply special token configs from provided data
 	loadSpecialTokenConfigFromBytes(t, config)
 
 	return t, nil
 }
 
+// loadFromTokenizerJSON 解析 tokenizer.json 并构建 BPE 分词器。
 // loadFromTokenizerJSON parses tokenizer.json content from bytes.
 func loadFromTokenizerJSON(data []byte) (*Tokenizer, error) {
 	var raw struct {
@@ -63,20 +73,24 @@ func loadFromTokenizerJSON(data []byte) (*Tokenizer, error) {
 		return nil, fmt.Errorf("failed to parse tokenizer: %w", err)
 	}
 
+	// 当前仅支持 BPE（含 SentencePiece 风格解码器）
 	// Covers SentencePiece and BPE models
 	if raw.Model.Type != "BPE" {
 		return nil, fmt.Errorf("unsupported tokenizer type: %s", raw.Model.Type)
 	}
 
+	// merges 可为 []string（Llama）或 [][]string（GPT-OSS）
 	// Parse merges - can be []string (Llama) or [][]string (GPT-OSS).
 	var mergesStrings []string
 	if raw.Model.Merges != nil {
 		var mergesArrays [][]string
 		if err := json.Unmarshal(raw.Model.Merges, &mergesStrings); err != nil {
+			// 尝试二维字符串数组格式
 			// Try array of arrays format
 			if err := json.Unmarshal(raw.Model.Merges, &mergesArrays); err != nil {
 				return nil, fmt.Errorf("failed to parse merges: %w", err)
 			}
+			// 将 [][]string 合并为 "a b" 形式
 			// Convert [][]string to []string
 			mergesStrings = make([]string, len(mergesArrays))
 			for i, pair := range mergesArrays {
@@ -88,6 +102,7 @@ func loadFromTokenizerJSON(data []byte) (*Tokenizer, error) {
 		}
 	}
 
+	// 初始化词表、合并规则与特殊 token 映射
 	// Build tokenizer
 	t := &Tokenizer{
 		vocab: &Vocabulary{
@@ -100,6 +115,7 @@ func loadFromTokenizerJSON(data []byte) (*Tokenizer, error) {
 		specialTokens: make(map[string]int32),
 	}
 
+	// 按 id 填充 id→token 数组
 	// Build values array
 	for token, id := range raw.Model.Vocab {
 		if int(id) >= len(t.vocab.Values) {
@@ -110,11 +126,13 @@ func loadFromTokenizerJSON(data []byte) (*Tokenizer, error) {
 		t.vocab.Values[id] = token
 	}
 
+	// 建立 merge 字符串→优先级索引
 	// Build merges map
 	for i, merge := range mergesStrings {
 		t.vocab.Merges[merge] = i
 	}
 
+	// 将所有 added_tokens 加入词表并视为特殊 token（对齐 HuggingFace）
 	// Add all added_tokens to vocabulary and special tokens map.
 	// HuggingFace treats ALL added_tokens as special for tokenization purposes -
 	// they bypass BPE and get their own token ID. The "special" flag just indicates
@@ -130,9 +148,11 @@ func loadFromTokenizerJSON(data []byte) (*Tokenizer, error) {
 		t.specialTokens[tok.Content] = tok.ID // Add ALL added_tokens to special tokens
 	}
 
+	// 预计算 <0xNN> 字节回退 token 的 id
 	// Precompute byte token IDs for <0xNN> fallback
 	initByteTokens(t)
 
+	// 根据 decoder 判断 SentencePiece 或 BPE
 	// Determine tokenizer type
 	switch {
 	case detectSentencePiece(raw.Decoder):
@@ -141,6 +161,7 @@ func loadFromTokenizerJSON(data []byte) (*Tokenizer, error) {
 		t.typ = TokenizerBPE
 	}
 
+	// BPE 编译预分词正则；SentencePiece 不使用 pretokenizer
 	// Parse and compile pretokenizer pattern (BPE only - SentencePiece doesn't use pretokenizer)
 	if t.typ == TokenizerBPE {
 		pattern := extractPretokenizer(raw.PreTokenizer)
@@ -160,6 +181,7 @@ func loadFromTokenizerJSON(data []byte) (*Tokenizer, error) {
 	return t, nil
 }
 
+// cacheSortedSpecialTokens 按长度降序缓存特殊 token，便于最长匹配。
 func cacheSortedSpecialTokens(t *Tokenizer) {
 	if len(t.specialTokens) == 0 {
 		t.sortedSpecialTokens = nil
@@ -183,6 +205,7 @@ type specialTokenConfigData struct {
 	configJSON           []byte
 }
 
+// applySpecialTokenConfig 按优先级从多份 JSON 解析 BOS/EOS/PAD。
 func applySpecialTokenConfig(t *Tokenizer, config specialTokenConfigData) {
 	parseTokenIDs := func(v interface{}) []int32 {
 		switch val := v.(type) {
@@ -200,6 +223,7 @@ func applySpecialTokenConfig(t *Tokenizer, config specialTokenConfigData) {
 		return nil
 	}
 
+	// 优先级 1：generation_config.json
 	// Priority 1: generation_config.json
 	if len(config.generationConfigJSON) > 0 {
 		var genConfig struct {
@@ -216,6 +240,7 @@ func applySpecialTokenConfig(t *Tokenizer, config specialTokenConfigData) {
 		}
 	}
 
+	// 优先级 2：config.json
 	// Priority 2: config.json
 	if len(config.configJSON) > 0 && (len(t.vocab.EOS) == 0 || t.vocab.BOS < 0) {
 		var modelConfig struct {
@@ -236,6 +261,7 @@ func applySpecialTokenConfig(t *Tokenizer, config specialTokenConfigData) {
 		}
 	}
 
+	// 优先级 3：tokenizer_config.json
 	// Priority 3: tokenizer_config.json
 	if len(config.tokenizerConfigJSON) > 0 {
 		var tokConfig struct {
@@ -276,6 +302,7 @@ func applySpecialTokenConfig(t *Tokenizer, config specialTokenConfigData) {
 		}
 	}
 
+	// 优先级 4：special_tokens_map.json
 	// Priority 4: special_tokens_map.json
 	if len(config.specialTokensMapJSON) > 0 {
 		var tokensMap map[string]interface{}
@@ -305,6 +332,7 @@ func applySpecialTokenConfig(t *Tokenizer, config specialTokenConfigData) {
 	}
 }
 
+// extractTokenString 从 HuggingFace 多种 token 表示中提取字符串。
 // extractTokenString extracts the token string from various formats used in HuggingFace configs.
 // Tokens can be represented as:
 //   - string: "token"
@@ -313,10 +341,12 @@ func extractTokenString(v interface{}) string {
 	if v == nil {
 		return ""
 	}
+	// 直接字符串形式
 	// Direct string
 	if s, ok := v.(string); ok {
 		return s
 	}
+	// {"content": "..."} 对象形式
 	// Object with content field
 	if m, ok := v.(map[string]interface{}); ok {
 		if content, ok := m["content"].(string); ok {
@@ -326,6 +356,7 @@ func extractTokenString(v interface{}) string {
 	return ""
 }
 
+// rewritePatternForRE2 将 HuggingFace 预分词正则改写为 Go RE2 可编译形式。
 // rewritePatternForRE2 rewrites HuggingFace pretokenizer regex patterns to be
 // compatible with Go's regexp package (RE2). HuggingFace patterns use PCRE features:
 //   - (?!\S) negative lookahead - RE2 doesn't support this
@@ -335,15 +366,18 @@ func extractTokenString(v interface{}) string {
 // The lookahead version splits "a  b" into ["a", " ", " b"] (space prepended to word).
 // Simple \s+ would give ["a", "  ", "b"]. We post-process to match Python's behavior.
 func rewritePatternForRE2(pattern string) string {
+	// 去掉 RE2 不支持的负向前瞻，边界在 encodeWithRegex 中修正
 	// Replace lookahead pattern with simple \s+ - we fix boundaries in encodeWithRegex()
 	pattern = strings.ReplaceAll(pattern, `\s+(?!\S)|\s+`, `\s+`)
 
+	// 处理 GPT-4o 风格可选缩写的 (?i:...) 后缀
 	// Handle the pattern when it appears with a ? suffix (optional contractions in GPT-4o style)
 	// IMPORTANT: Must be done before the non-optional version to avoid partial replacement
 	pattern = strings.ReplaceAll(pattern,
 		`(?i:'s|'t|'re|'ve|'m|'ll|'d)?`,
 		`(?:'[sS]|'[tT]|'[rR][eE]|'[vV][eE]|'[mM]|'[lL][lL]|'[dD])?`)
 
+	// 将 (?i:...) 缩写展开为显式大小写交替
 	// Expand case-insensitive contraction pattern to explicit alternations
 	// (?i:'s|'t|'re|'ve|'m|'ll|'d) -> '[sS]|'[tT]|'[rR][eE]|'[vV][eE]|'[mM]|'[lL][lL]|'[dD]
 	pattern = strings.ReplaceAll(pattern,
@@ -353,6 +387,7 @@ func rewritePatternForRE2(pattern string) string {
 	return pattern
 }
 
+// loadSpecialTokenConfigFromBytes 从 TokenizerConfig 字节加载特殊 token 配置。
 // loadSpecialTokenConfigFromBytes loads special token configuration from byte slices.
 func loadSpecialTokenConfigFromBytes(t *Tokenizer, config *TokenizerConfig) {
 	applySpecialTokenConfig(t, specialTokenConfigData{
@@ -363,6 +398,7 @@ func loadSpecialTokenConfigFromBytes(t *Tokenizer, config *TokenizerConfig) {
 	})
 }
 
+// detectSentencePiece 检测 decoder 是否为 SentencePiece 风格（▁ 表示空格）。
 // detectSentencePiece checks if the decoder uses SentencePiece-style (▁ for spaces)
 // vs GPT-2 byte-level encoding
 func detectSentencePiece(data json.RawMessage) bool {
@@ -370,6 +406,7 @@ func detectSentencePiece(data json.RawMessage) bool {
 		return false
 	}
 
+	// 检查 Sequence decoder 中 Replace ▁→空格 步骤
 	// Check for Sequence decoder with Replace step (SentencePiece style)
 	var seq struct {
 		Type     string `json:"type"`
@@ -383,6 +420,7 @@ func detectSentencePiece(data json.RawMessage) bool {
 	if err := json.Unmarshal(data, &seq); err == nil {
 		if seq.Type == "Sequence" {
 			for _, dec := range seq.Decoders {
+				// 查找将 ▁ 替换为空格的 Replace 解码器
 				// Look for Replace decoder that converts ▁ to space
 				if dec.Type == "Replace" && dec.Pattern.String == "▁" {
 					return true
@@ -391,6 +429,7 @@ func detectSentencePiece(data json.RawMessage) bool {
 		}
 	}
 
+	// 检查 ByteLevel decoder（GPT-2 字节级）
 	// Check for direct ByteLevel decoder (GPT-2 style)
 	var simple struct {
 		Type string `json:"type"`
@@ -404,6 +443,7 @@ func detectSentencePiece(data json.RawMessage) bool {
 	return false
 }
 
+// initByteTokens 预计算 256 个字节的 <0xNN> 回退 token id。
 // initByteTokens precomputes byte token IDs for <0xNN> fallback encoding
 func initByteTokens(t *Tokenizer) {
 	for i := range t.vocab.byteTokens {
@@ -417,12 +457,14 @@ func initByteTokens(t *Tokenizer) {
 	}
 }
 
+// extractPretokenizer 从 pre_tokenizer JSON 提取 Split 正则模式。
 // extractPretokenizer extracts the regex pattern from the pre_tokenizer config
 func extractPretokenizer(data json.RawMessage) string {
 	if data == nil {
 		return ""
 	}
 
+	// 尝试解析单个 Split 预分词器
 	// Try to parse as a single Split pretokenizer
 	var single struct {
 		Type    string `json:"type"`
@@ -434,6 +476,7 @@ func extractPretokenizer(data json.RawMessage) string {
 		return single.Pattern.Regex
 	}
 
+	// 尝试 Sequence：取第一个可编译的 Split 模式
 	// Try to parse as Sequence of pretokenizers - use first Split pattern
 	var seq struct {
 		Type          string `json:"type"`

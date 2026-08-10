@@ -1,3 +1,4 @@
+// registry blob 并行上传：直传 URL、分块 PATCH 回退与 manifest 推送。
 package transfer
 
 import (
@@ -37,6 +38,7 @@ type uploader struct {
 	userAgent  string
 	progress   *progressTracker
 	logger     *slog.Logger
+	// bodySem 限制同时上传 body 的连接数
 	// bodySem caps the number of simultaneous body-bearing transfers so a
 	// modest home uplink isn't saturated. Always set by upload(); nil only
 	// when tests build uploader directly (in which case holdBody is a no-op).
@@ -44,6 +46,7 @@ type uploader struct {
 	makeParts func(int64) []uploadPart // controls how blobs are split for chunked upload
 }
 
+// authToken 返回当前 Bearer token。
 // authToken returns the current bearer token. Safe to call concurrently with
 // refreshToken.
 func (u *uploader) authToken() string {
@@ -52,6 +55,7 @@ func (u *uploader) authToken() string {
 	return u.token
 }
 
+// refreshToken 合并并发 401 的 token 刷新。
 // refreshToken coalesces token fetches so concurrent 401s don't all hit the
 // auth server. prev is the token the caller used in the request that got
 // rejected: if the stored token has already moved past prev, another
@@ -74,6 +78,7 @@ func (u *uploader) refreshToken(ctx context.Context, ch AuthChallenge, prev stri
 	return nil
 }
 
+// holdBody 获取 body 传输槽位。
 // holdBody acquires a body-transfer slot. The returned release must be called
 // exactly once after the body-bearing request completes (defer is fine).
 func (u *uploader) holdBody(ctx context.Context) (func(), error) {
@@ -86,6 +91,7 @@ func (u *uploader) holdBody(ctx context.Context) (func(), error) {
 	return func() { u.bodySem.Release(1) }, nil
 }
 
+// upload 探测已存在 blob、上传缺失项并可选推送 manifest。
 func upload(ctx context.Context, opts UploadOptions) error {
 	if len(opts.Blobs) == 0 && len(opts.Manifest) == 0 {
 		return nil
@@ -105,6 +111,7 @@ func upload(ctx context.Context, opts UploadOptions) error {
 	u.bodySem = semaphore.NewWeighted(int64(max(1, opts.BodyConcurrency)))
 
 	if len(opts.Blobs) > 0 {
+		// HEAD 探测服务端已有 blob 以跳过上传
 		// Discover which blobs the server already has so we can skip uploading
 		needsUpload := make([]bool, len(opts.Blobs))
 		g, gctx := errgroup.WithContext(ctx)
@@ -127,6 +134,7 @@ func upload(ctx context.Context, opts UploadOptions) error {
 			return err
 		}
 
+		// 仅上传缺失 blob，进度仍按全部 blob 总量计算
 		// Filter to only blobs that need uploading, but track total across all blobs
 		var toUpload []Blob
 		var totalSize, alreadyExists int64
@@ -139,6 +147,7 @@ func upload(ctx context.Context, opts UploadOptions) error {
 			}
 		}
 
+		// 已存在 blob 的字节先计入 completed
 		// Progress includes all blobs — already-existing ones start as completed
 		u.progress = newProgressTracker(totalSize, opts.Progress)
 		u.progress.add(alreadyExists)
@@ -150,6 +159,7 @@ func upload(ctx context.Context, opts UploadOptions) error {
 				u.logger.Debug("all blobs exist, nothing to upload")
 			}
 		} else {
+			// 并行上传缺失 blob
 			// Upload the blobs the server doesn't already have. Concurrency
 			// caps blob-level parallelism.
 			concurrency := cmp.Or(opts.Concurrency, DefaultUploadConcurrency)
@@ -194,12 +204,14 @@ func upload(ctx context.Context, opts UploadOptions) error {
 	return nil
 }
 
+// upload 单 blob 上传重试循环。
 func (u *uploader) upload(ctx context.Context, blob Blob) error {
 	var lastErr error
 	var n int64
 
 	for attempt := range maxRetries {
 		if attempt > 0 {
+			// 上传退避更长，给服务端限速与会话清理留时间
 			// Longer backoff for uploads — server-side rate limiting and
 			// upload-session bookkeeping need real breathing room.
 			// attempt 1: up to 2s, attempt 2: up to 4s, attempt 3: up to 8s, etc.
@@ -227,6 +239,7 @@ func (u *uploader) upload(ctx context.Context, blob Blob) error {
 	return fmt.Errorf("%w: %v", errMaxRetriesExceeded, lastErr)
 }
 
+// uploadOnce 初始化上传会话并选择直传或分块路径。
 func (u *uploader) uploadOnce(ctx context.Context, blob Blob) (int64, error) {
 	if u.logger != nil {
 		u.logger.Debug("uploading blob", "digest", blob.Digest, "size", blob.Size)
@@ -237,6 +250,7 @@ func (u *uploader) uploadOnce(ctx context.Context, blob Blob) (int64, error) {
 		return 0, err
 	}
 	if ep.sessionURL == "" {
+		// 服务端已存在该 digest，无需上传
 		// Server matched ?digest= against existing storage; nothing to
 		// upload. Credit the full size to progress so a retry-after-failure
 		// (where the prior attempt streamed bytes that were rolled back)
@@ -252,11 +266,13 @@ func (u *uploader) uploadOnce(ctx context.Context, blob Blob) (int64, error) {
 	defer f.Close()
 
 	if ep.directUploadURL != "" {
+		// 直传：body PUT 到 X-Direct-Upload-URL
 		// Body goes straight to the URL the server returned; the server
 		// only sees a tiny commit roundtrip.
 		return u.putDirect(ctx, ep, f, blob)
 	}
 
+	// 分块：PATCH 各 part 后 finalize PUT  composite etag
 	// Body goes to the server in parts via PATCH, followed by a finalize PUT.
 	return u.putChunked(ctx, ep.sessionURL, f, blob)
 }
@@ -289,6 +305,7 @@ func (u *uploader) exists(ctx context.Context, blob Blob) (bool, error) {
 
 const maxInitRetries = 12
 
+// uploadEndpoint 描述 init 后 body 的上传目标与会话 URL。
 // uploadEndpoint describes where a blob's body should be uploaded after init.
 //
 // A zero-valued endpoint (sessionURL == "") means the server already has the
@@ -306,6 +323,7 @@ type uploadEndpoint struct {
 	signedHeaders   http.Header // headers the server provided that the client must echo on the direct PUT
 }
 
+// initUpload POST 开启上传并解析直传 URL 或分块会话。
 // initUpload announces the upload to the server and discovers which flow to
 // use. The server may return a direct-upload URL alongside the session URL;
 // the caller branches on whether one came back.
@@ -350,6 +368,7 @@ func (u *uploader) initUpload(ctx context.Context, blob Blob) (uploadEndpoint, e
 		}
 
 		if resp.StatusCode == http.StatusCreated {
+			// 201 Created：digest 已存在，跳过上传
 			// Server matched our ?digest= against existing storage —
 			// nothing to upload.
 			return uploadEndpoint{}, nil
@@ -377,6 +396,7 @@ func (u *uploader) initUpload(ctx context.Context, blob Blob) (uploadEndpoint, e
 
 		ep := uploadEndpoint{sessionURL: sessionURL.String()}
 
+		// 直传路径：解析 X-Direct-Upload-URL 与 X-Signed-Header-*
 		// Opt-in direct-upload path: enabled only when the server returns an
 		// upload URL. Any X-Signed-Header-<name> response headers must be
 		// echoed back on the direct PUT under <name> — the client doesn't
@@ -406,6 +426,7 @@ func (u *uploader) initUpload(ctx context.Context, blob Blob) (uploadEndpoint, e
 	return uploadEndpoint{}, lastErr
 }
 
+// putDirect 直传 body 后 bodyless commit 登记 blob。
 // putDirect PUTs the blob body to the URL the server returned, echoing any
 // signed headers it provided. The follow-up commit PUT records the blob on
 // the server side with no body.
@@ -422,6 +443,7 @@ func (u *uploader) putDirect(ctx context.Context, ep uploadEndpoint, f *os.File,
 	return pr.bytes(), nil
 }
 
+// streamPutBody 流式 PUT body 并占用 body 槽位。
 // streamPutBody PUTs the blob body to the server-supplied URL, holding a
 // body-transfer slot only for the duration of the body PUT (not the
 // follow-up commit). Returns the progressReader so the caller can report
@@ -440,6 +462,7 @@ func (u *uploader) streamPutBody(ctx context.Context, ep uploadEndpoint, f *os.F
 	req.ContentLength = blob.Size
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("User-Agent", u.userAgent)
+	// 回显签名头，覆盖默认值避免重复头破坏签名
 	// Echo signed headers — overwrite any defaults we set above so the
 	// signed value wins. Appending would leave duplicates that change the
 	// signature canonical form and the upload would be rejected.
@@ -459,6 +482,7 @@ func (u *uploader) streamPutBody(ctx context.Context, ep uploadEndpoint, f *os.F
 	return pr, nil
 }
 
+// commit 向 session URL 发送无 body PUT 完成登记。
 // commit sends a bodyless PUT to the session URL with ?digest= so the server
 // records a blob whose body was uploaded out-of-band.
 func (u *uploader) commit(ctx context.Context, sessionURL, digest string) error {
@@ -473,6 +497,7 @@ func (u *uploader) commit(ctx context.Context, sessionURL, digest string) error 
 	return u.bodylessRegistryPUT(ctx, finalURL.String(), "commit")
 }
 
+// bodylessRegistryPUT 无 body PUT 并重试 transport/401 错误。
 // bodylessRegistryPUT sends a zero-body PUT to a registry URL, retrying with
 // backoff on transport/server errors and once on auth challenge. op is used
 // as the error prefix.
@@ -522,6 +547,7 @@ func (u *uploader) bodylessRegistryPUT(ctx context.Context, url string, op strin
 	return fmt.Errorf("%w: %v", errMaxRetriesExceeded, lastErr)
 }
 
+// putChunked 分块 PATCH 回退：各 part MD5 合成 composite etag。
 // putChunked is the fallback used when the server doesn't return a
 // direct-upload URL. It splits the blob into parts and sends each via
 // PATCH with a Content-Range, following any redirect on the response,
@@ -574,6 +600,7 @@ func (u *uploader) putChunked(ctx context.Context, uploadURL string, f *os.File,
 	return written, nil
 }
 
+// uploadOnePartWithRetry 单 part 最多重试 maxPartRetries 次。
 // uploadOnePartWithRetry sends a single part with up to maxPartRetries
 // attempts; rolls back per-attempt progress on transient failures so the
 // progress tracker stays consistent.
@@ -600,11 +627,13 @@ func (u *uploader) uploadOnePartWithRetry(ctx context.Context, sessionURL *url.U
 	return nil, nil, fmt.Errorf("part %d: %w", part.n, lastErr)
 }
 
+// uploadOnePart 发送单个 PATCH part，处理 307 CDN 重传。
 // uploadOnePart sends one PATCH for a single part and returns the next
 // session URL, the part's MD5 sum, the bytes written, and any error. If the
 // server replies 307, the body is re-uploaded to the redirect URL via a
 // follow-up PUT; the next session URL still comes from the 307 response.
 func (u *uploader) uploadOnePart(ctx context.Context, sessionURL *url.URL, part *uploadPart, f *os.File) (*url.URL, []byte, int64, error) {
+	// body 槽位覆盖 PATCH 与后续 CDN PUT
 	// Hold the body slot across both the PATCH and any subsequent CDN PUT —
 	// both transfer body bytes and shouldn't double-count against the cap.
 	release, err := u.holdBody(ctx)
@@ -657,6 +686,7 @@ func (u *uploader) uploadOnePart(ctx context.Context, sessionURL *url.URL, part 
 		if redirectURL == nil {
 			return nil, nil, pr.bytes(), fmt.Errorf("patch part %d: 307 without Location", part.n)
 		}
+		// PATCH 进度作废，改向 CDN PUT 重传
 		// The PATCH attempt's progress is wasted — we re-upload to CDN.
 		// We can't safely Reset partHash here: the http transport's
 		// writeLoop may still be feeding TeeReader bytes into it, so
@@ -687,6 +717,7 @@ func (u *uploader) uploadOnePart(ctx context.Context, sessionURL *url.URL, part 
 	return next, partHash.Sum(nil), pr.bytes(), nil
 }
 
+// putPartToCDN 向 CDN 307 目标 PUT part 并内联计算 MD5。
 // putPartToCDN re-uploads a part's data to a CDN redirect URL via PUT.
 // Returns the md5 sum of bytes actually streamed to the CDN, the byte count,
 // and any error. The hash is fed inline so the composite etag we eventually
@@ -718,6 +749,7 @@ func (u *uploader) putPartToCDN(ctx context.Context, cdnURL *url.URL, part *uplo
 	return partHash.Sum(nil), pr.bytes(), nil
 }
 
+// 分块上传尺寸：默认 16 part，单 part 100MB～1GB。
 // Chunked-upload sizing — when computeParts splits a blob into parts for the
 // multipart fallback, parts are sized in [minUploadPartSize, maxUploadPartSize]
 // with a target count of numUploadParts. Smaller blobs end up as a single
@@ -728,6 +760,7 @@ const (
 	maxUploadPartSize int64 = 1000 << 20 // ~1 GB
 )
 
+// uploadPart 表示分块上传中的一个 part。
 // uploadPart represents a chunk of a blob for the multipart fallback.
 type uploadPart struct {
 	n      int
@@ -735,11 +768,13 @@ type uploadPart struct {
 	size   int64
 }
 
+// computeParts 按默认 num/min/max 切分 blob。
 // computeParts divides a blob into upload parts using default limits.
 func computeParts(totalSize int64) []uploadPart {
 	return computePartsWithLimits(totalSize, numUploadParts, minUploadPartSize, maxUploadPartSize)
 }
 
+// computePartsWithLimits 按可配置 part 数与大小切分。
 // computePartsWithLimits divides a blob into upload parts with configurable limits.
 func computePartsWithLimits(totalSize int64, nParts int, minPart, maxPart int64) []uploadPart {
 	partSize := totalSize / int64(nParts)
@@ -759,6 +794,7 @@ func computePartsWithLimits(totalSize int64, nParts int, minPart, maxPart int64)
 	return parts
 }
 
+// pushManifest PUT manifest 到 registry。
 func (u *uploader) pushManifest(ctx context.Context, repo, ref string, manifest []byte) error {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/v2/%s/manifests/%s", u.baseURL, repo, ref), bytes.NewReader(manifest))
 	req.Header.Set("Content-Type", "application/vnd.docker.distribution.manifest.v2+json")
@@ -789,6 +825,7 @@ func (u *uploader) pushManifest(ctx context.Context, repo, ref string, manifest 
 	return nil
 }
 
+// progressReader 在 Read 中计数已传输字节（atomic，与 transport 并发）。
 // progressReader counts bytes streamed through Read. The byte counter is
 // atomic because the HTTP transport's writeLoop runs concurrently with the
 // goroutine that returns the count after a non-2xx response — the transport
