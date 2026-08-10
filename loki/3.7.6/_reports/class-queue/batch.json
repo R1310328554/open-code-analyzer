@@ -15,23 +15,8 @@
     "pkg/ingester/checkpoint.pb.go",
     "pkg/ingester/client/client.go",
     "pkg/ingester/client/compat.go",
-    "pkg/ingester/client/fnv.go",
-    "pkg/ingester/downscale.go",
-    "pkg/ingester/flush.go",
-    "pkg/ingester/index/bitprefix.go",
-    "pkg/ingester/index/index.go",
-    "pkg/ingester/index/multi.go",
-    "pkg/ingester/ingester.go",
-    "pkg/ingester/instance.go",
-    "pkg/ingester/kafka_consumer.go",
-    "pkg/ingester/limiter.go",
-    "pkg/ingester/mapper.go",
-    "pkg/ingester/metrics.go",
-    "pkg/ingester/owned_streams.go",
-    "pkg/ingester/recalculate_owned_streams.go",
-    "pkg/ingester/recovery.go",
-    "pkg/ingester/replay_controller.go"
+    "pkg/ingester/client/fnv.go"
   ],
   "remaining_pending": 862,
-  "done": 660
+  "done": 675
 }
