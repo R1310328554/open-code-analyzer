@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// config 包从环境变量加载并解析 Drone 服务器的全部运行时配置。
 package config
 
 import (
@@ -31,8 +32,11 @@ import (
 // been discussed on the mailing list. We are attempting to reduce the
 // number of configuration parameters, and may reject pull requests that
 // introduce new parameters. (mailing list https://community.harness.io)
+//
+// 重要提示：新增配置项前须先在邮件列表讨论；项目正在精简配置参数数量。
 
 // default runner hostname.
+// 默认 Runner 主机名，init 时从 os.Hostname 获取。
 var hostname string
 
 func init() {
@@ -43,7 +47,7 @@ func init() {
 }
 
 type (
-	// Config provides the system configuration.
+	// Config 聚合 Drone 服务器的全部系统配置项。
 	Config struct {
 		License string `envconfig:"DRONE_LICENSE"`
 
@@ -80,6 +84,7 @@ type (
 		Yaml         Yaml
 
 		// Remote configurations
+		// 远程 SCM 平台集成配置
 		Bitbucket       Bitbucket
 		Gitea           Gitea
 		Github          Github
@@ -90,7 +95,7 @@ type (
 		IncomingWebhook IncomingWebhook
 	}
 
-	// Cloning provides the cloning configuration.
+	// Cloning 提供 Git 克隆相关配置。
 	Cloning struct {
 		AlwaysAuth bool   `envconfig:"DRONE_GIT_ALWAYS_AUTH"`
 		Username   string `envconfig:"DRONE_GIT_USERNAME"`
@@ -99,6 +104,7 @@ type (
 		Pull       string `envconfig:"DRONE_GIT_IMAGE_PULL" default:"IfNotExists"`
 	}
 
+	// Cleanup 提供僵尸构建清理任务配置。
 	Cleanup struct {
 		Disabled bool          `envconfig:"DRONE_CLEANUP_DISABLED"`
 		Interval time.Duration `envconfig:"DRONE_CLEANUP_INTERVAL"         default:"24h"`
@@ -107,13 +113,13 @@ type (
 		Buffer   time.Duration `envconfig:"DRONE_CLEANUP_BUFFER" default:"30m"`
 	}
 
-	// Cron provides the cron configuration.
+	// Cron 提供定时触发任务配置。
 	Cron struct {
 		Disabled bool          `envconfig:"DRONE_CRON_DISABLED"`
 		Interval time.Duration `envconfig:"DRONE_CRON_INTERVAL" default:"30m"`
 	}
 
-	// Database provides the database configuration.
+	// Database 提供数据库连接与加密配置。
 	Database struct {
 		Driver         string `envconfig:"DRONE_DATABASE_DRIVER"          default:"sqlite3"`
 		Datasource     string `envconfig:"DRONE_DATABASE_DATASOURCE"      default:"core.sqlite"`
@@ -128,38 +134,38 @@ type (
 		EncryptMixedContent bool `envconfig:"DRONE_DATABASE_ENCRYPT_MIXED_MODE"`
 	}
 
-	// Docker provides docker configuration
+	// Docker 提供 Docker 客户端配置。
 	Docker struct {
 		Config string `envconfig:"DRONE_DOCKER_CONFIG"`
 	}
 
-	// Datadog provides datadog configuration
+	// Datadog 提供 Datadog 指标上报配置。
 	Datadog struct {
 		Enabled  bool   `envconfig:"DRONE_DATADOG_ENABLED"`
 		Endpoint string `envconfig:"DRONE_DATADOG_ENDPOINT"`
 		Token    string `envconfig:"DRONE_DATADOG_TOKEN"`
 	}
 
-	// Jsonnet configures the jsonnet plugin
+	// Jsonnet 配置 Jsonnet 流水线转换插件。
 	Jsonnet struct {
 		Enabled     bool `envconfig:"DRONE_JSONNET_ENABLED"`
 		ImportLimit int  `envconfig:"DRONE_JSONNET_IMPORT_LIMIT" default:"0"`
 	}
 
-	// Starlark configures the starlark plugin
+	// Starlark 配置 Starlark 流水线转换插件。
 	Starlark struct {
 		Enabled   bool   `envconfig:"DRONE_STARLARK_ENABLED"`
 		StepLimit uint64 `envconfig:"DRONE_STARLARK_STEP_LIMIT"`
 		SizeLimit uint64 `envconfig:"DRONE_STARLARK_SIZE_LIMIT" default:"0"`
 	}
 
-	// License provides license configuration
+	// License 提供许可证相关配置。
 	License struct {
 		Key      string `envconfig:"DRONE_LICENSE"`
 		Endpoint string `envconfig:"DRONE_LICENSE_ENDPOINT"`
 	}
 
-	// Logging provides the logging configuration.
+	// Logging 提供日志输出级别与格式配置。
 	Logging struct {
 		Debug  bool `envconfig:"DRONE_LOGS_DEBUG"`
 		Trace  bool `envconfig:"DRONE_LOGS_TRACE"`
@@ -168,13 +174,13 @@ type (
 		Text   bool `envconfig:"DRONE_LOGS_TEXT"`
 	}
 
-	// Prometheus provides the prometheus configuration.
+	// Prometheus 提供 Prometheus 指标暴露配置。
 	Prometheus struct {
 		EnableAnonymousAccess bool `envconfig:"DRONE_PROMETHEUS_ANONYMOUS_ACCESS" default:"false"`
 		EnableHTTPMetrics     bool `envconfig:"DRONE_PROMETHEUS_HTTP_METRICS" default:"false"`
 	}
 
-	// Redis provides the redis configuration.
+	// Redis 提供 Redis 连接配置。
 	Redis struct {
 		ConnectionString string `envconfig:"DRONE_REDIS_CONNECTION"`
 		Addr             string `envconfig:"DRONE_REDIS_ADDR"`
@@ -182,7 +188,7 @@ type (
 		DB               int    `envconfig:"DRONE_REDIS_DB"`
 	}
 
-	// Repository provides the repository configuration.
+	// Repository 提供仓库同步与可见性配置。
 	Repository struct {
 		Filter     []string `envconfig:"DRONE_REPOSITORY_FILTER"`
 		Visibility string   `envconfig:"DRONE_REPOSITORY_VISIBILITY"`
@@ -193,21 +199,21 @@ type (
 		Ignore []string `envconfig:"DRONE_REPOSITORY_IGNORE"`
 	}
 
-	// Registries provides the registry configuration.
+	// Registries 提供容器镜像仓库凭证配置。
 	Registries struct {
 		Endpoint   string `envconfig:"DRONE_REGISTRY_ENDPOINT"`
 		Password   string `envconfig:"DRONE_REGISTRY_SECRET"`
 		SkipVerify bool   `envconfig:"DRONE_REGISTRY_SKIP_VERIFY"`
 	}
 
-	// Secrets provides the secret configuration.
+	// Secrets 提供密钥插件外部端点配置。
 	Secrets struct {
 		Endpoint   string `envconfig:"DRONE_SECRET_ENDPOINT"`
 		Password   string `envconfig:"DRONE_SECRET_SECRET"`
 		SkipVerify bool   `envconfig:"DRONE_SECRET_SKIP_VERIFY"`
 	}
 
-	// RPC provides the rpc configuration.
+	// RPC 提供远程 agent RPC 通信配置。
 	RPC struct {
 		Server string `envconfig:"DRONE_RPC_SERVER"`
 		Secret string `envconfig:"DRONE_RPC_SECRET"`
@@ -217,11 +223,12 @@ type (
 		// Hosts  map[string]string `envconfig:"DRONE_RPC_EXTRA_HOSTS"`
 	}
 
+	// Agent 控制远程 agent 是否启用。
 	Agent struct {
 		Disabled bool `envconfig:"DRONE_AGENTS_DISABLED"`
 	}
 
-	// Runner provides the runner configuration.
+	// Runner 提供本地 Docker 构建运行器配置。
 	Runner struct {
 		Local      bool              `envconfig:"DRONE_RUNNER_LOCAL"`
 		Image      string            `envconfig:"DRONE_RUNNER_IMAGE"    default:"drone/controller:1"`
@@ -248,7 +255,7 @@ type (
 		}
 	}
 
-	// Server provides the server configuration.
+	// Server 提供 HTTP/HTTPS 服务器监听与 TLS 配置。
 	Server struct {
 		Addr  string `envconfig:"-"`
 		Host  string `envconfig:"DRONE_SERVER_HOST" default:"localhost:8080"`
@@ -261,46 +268,46 @@ type (
 		Key   string `envconfig:"DRONE_TLS_KEY"`
 	}
 
-	// Proxy provides proxy server configuration.
+	// Proxy 提供反向代理服务器地址配置。
 	Proxy struct {
 		Addr  string `envconfig:"-"`
 		Host  string `envconfig:"DRONE_SERVER_PROXY_HOST"`
 		Proto string `envconfig:"DRONE_SERVER_PROXY_PROTO"`
 	}
 
-	// Registration configuration.
+	// Registration 控制新用户注册是否关闭。
 	Registration struct {
 		Closed bool `envconfig:"DRONE_REGISTRATION_CLOSED"`
 	}
 
-	// Authentication Controller configuration
+	// Authentication 提供外部准入控制插件配置。
 	Authentication struct {
 		Endpoint   string `envconfig:"DRONE_ADMISSION_PLUGIN_ENDPOINT"`
 		Secret     string `envconfig:"DRONE_ADMISSION_PLUGIN_SECRET"`
 		SkipVerify bool   `envconfig:"DRONE_ADMISSION_PLUGIN_SKIP_VERIFY"`
 	}
 
-	// Session provides the session configuration.
+	// Session 提供用户会话 Cookie 配置。
 	Session struct {
 		Timeout time.Duration `envconfig:"DRONE_COOKIE_TIMEOUT" default:"720h"`
 		Secret  string        `envconfig:"DRONE_COOKIE_SECRET"`
 		Secure  bool          `envconfig:"DRONE_COOKIE_SECURE"`
 	}
 
-	// Status provides status configurations.
+	// Status 提供 CI 状态回写配置。
 	Status struct {
 		Disabled bool   `envconfig:"DRONE_STATUS_DISABLED"`
 		Name     string `envconfig:"DRONE_STATUS_NAME"`
 	}
 
-	// Users provides the user configuration.
+	// Users 提供用户创建、过滤与最小账户年龄配置。
 	Users struct {
 		Create UserCreate    `envconfig:"DRONE_USER_CREATE"`
 		Filter []string      `envconfig:"DRONE_USER_FILTER"`
 		MinAge time.Duration `envconfig:"DRONE_MIN_AGE"`
 	}
 
-	// Webhook provides the webhook configuration.
+	// Webhook 提供出站 Webhook 事件转发配置。
 	Webhook struct {
 		Events     []string `envconfig:"DRONE_WEBHOOK_EVENTS"`
 		Endpoint   []string `envconfig:"DRONE_WEBHOOK_ENDPOINT"`
@@ -308,7 +315,7 @@ type (
 		SkipVerify bool     `envconfig:"DRONE_WEBHOOK_SKIP_VERIFY"`
 	}
 
-	// Yaml provides the yaml webhook configuration.
+	// Yaml 提供 YAML 流水线远程获取 Webhook 配置。
 	Yaml struct {
 		Endpoint   string        `envconfig:"DRONE_YAML_ENDPOINT"`
 		Secret     string        `envconfig:"DRONE_YAML_SECRET"`
@@ -316,7 +323,7 @@ type (
 		Timeout    time.Duration `envconfig:"DRONE_YAML_TIMEOUT" default:"1m"`
 	}
 
-	// Convert provides the converter webhook configuration.
+	// Convert 提供流水线转换插件 Webhook 配置。
 	Convert struct {
 		Extension  string        `envconfig:"DRONE_CONVERT_PLUGIN_EXTENSION"`
 		Endpoint   string        `envconfig:"DRONE_CONVERT_PLUGIN_ENDPOINT"`
@@ -330,7 +337,7 @@ type (
 		Multi bool `envconfig:"DRONE_CONVERT_MULTI"`
 	}
 
-	// Validate provides the validation webhook configuration.
+	// Validate 提供流水线校验插件 Webhook 配置。
 	Validate struct {
 		Endpoint   string        `envconfig:"DRONE_VALIDATE_PLUGIN_ENDPOINT"`
 		Secret     string        `envconfig:"DRONE_VALIDATE_PLUGIN_SECRET"`
@@ -340,9 +347,10 @@ type (
 
 	//
 	// Source code management.
+	// 源代码管理平台集成配置
 	//
 
-	// Bitbucket provides the bitbucket client configuration.
+	// Bitbucket 提供 Bitbucket Cloud 客户端配置。
 	Bitbucket struct {
 		ClientID     string `envconfig:"DRONE_BITBUCKET_CLIENT_ID"`
 		ClientSecret string `envconfig:"DRONE_BITBUCKET_CLIENT_SECRET"`
@@ -350,7 +358,7 @@ type (
 		Debug        bool   `envconfig:"DRONE_BITBUCKET_DEBUG"`
 	}
 
-	// Gitea provides the gitea client configuration.
+	// Gitea 提供 Gitea 客户端配置。
 	Gitea struct {
 		Server       string   `envconfig:"DRONE_GITEA_SERVER"`
 		ClientID     string   `envconfig:"DRONE_GITEA_CLIENT_ID"`
@@ -361,7 +369,7 @@ type (
 		Debug        bool     `envconfig:"DRONE_GITEA_DEBUG"`
 	}
 
-	// Github provides the github client configuration.
+	// Github 提供 GitHub 客户端配置。
 	Github struct {
 		Server       string   `envconfig:"DRONE_GITHUB_SERVER" default:"https://github.com"`
 		APIServer    string   `envconfig:"DRONE_GITHUB_API_SERVER"`
@@ -373,7 +381,7 @@ type (
 		Debug        bool     `envconfig:"DRONE_GITHUB_DEBUG"`
 	}
 
-	// Gitee providers the gitee client configuration.
+	// Gitee 提供 Gitee 客户端配置。
 	Gitee struct {
 		Server       string   `envconfig:"DRONE_GITEE_SERVER" default:"https://gitee.com"`
 		APIServer    string   `envconfig:"DRONE_GITEE_API_SERVER" default:"https://gitee.com/api/v5"`
@@ -385,7 +393,7 @@ type (
 		Debug        bool     `envconfig:"DRONE_GITEE_DEBUG"`
 	}
 
-	// GitLab provides the gitlab client configuration.
+	// GitLab 提供 GitLab 客户端配置。
 	GitLab struct {
 		Server       string `envconfig:"DRONE_GITLAB_SERVER" default:"https://gitlab.com"`
 		ClientID     string `envconfig:"DRONE_GITLAB_CLIENT_ID"`
@@ -394,14 +402,14 @@ type (
 		Debug        bool   `envconfig:"DRONE_GITLAB_DEBUG"`
 	}
 
-	// Gogs provides the gogs client configuration.
+	// Gogs 提供 Gogs 客户端配置。
 	Gogs struct {
 		Server     string `envconfig:"DRONE_GOGS_SERVER"`
 		SkipVerify bool   `envconfig:"DRONE_GOGS_SKIP_VERIFY"`
 		Debug      bool   `envconfig:"DRONE_GOGS_DEBUG"`
 	}
 
-	// Stash provides the stash client configuration.
+	// Stash 提供 Atlassian Stash 客户端配置。
 	Stash struct {
 		Server         string `envconfig:"DRONE_STASH_SERVER"`
 		ConsumerKey    string `envconfig:"DRONE_STASH_CONSUMER_KEY"`
@@ -411,7 +419,7 @@ type (
 		Debug          bool   `envconfig:"DRONE_STASH_DEBUG"`
 	}
 
-	// S3 provides the storage configuration.
+	// S3 提供 S3 对象存储配置（用于构建日志等）。
 	S3 struct {
 		Bucket    string `envconfig:"DRONE_S3_BUCKET"`
 		Prefix    string `envconfig:"DRONE_S3_PREFIX"`
@@ -419,14 +427,14 @@ type (
 		PathStyle bool   `envconfig:"DRONE_S3_PATH_STYLE"`
 	}
 
-	//AzureBlob providers the storage configuration.
+	// AzureBlob 提供 Azure Blob 存储配置。
 	AzureBlob struct {
 		ContainerName      string `envconfig:"DRONE_AZURE_BLOB_CONTAINER_NAME"`
 		StorageAccountName string `envconfig:"DRONE_AZURE_STORAGE_ACCOUNT_NAME"`
 		StorageAccessKey   string `envconfig:"DRONE_AZURE_STORAGE_ACCESS_KEY"`
 	}
 
-	// HTTP provides http configuration.
+	// HTTP 提供 HTTP 安全响应头与 SSL 重定向配置。
 	HTTP struct {
 		AllowedHosts          []string          `envconfig:"DRONE_HTTP_ALLOWED_HOSTS"`
 		HostsProxyHeaders     []string          `envconfig:"DRONE_HTTP_PROXY_HEADERS"`
@@ -445,12 +453,13 @@ type (
 		ReferrerPolicy        string            `envconfig:"DRONE_HTTP_REFERRER_POLICY"`
 	}
 
+	// IncomingWebhook 配置接收的入站 Webhook 事件类型。
 	IncomingWebhook struct {
 		Events []string `envconfig:"DRONE_INCOMING_WEBHOOK_EVENTS" default:"branch,deployment,push,tag,pull_request"`
 	}
 )
 
-// Environ returns the settings from the environment.
+// Environ 从环境变量加载配置并填充默认值。
 func Environ() (Config, error) {
 	cfg := Config{}
 	err := envconfig.Process("", &cfg)
@@ -466,60 +475,53 @@ func Environ() (Config, error) {
 	return cfg, err
 }
 
-// String returns the configuration in string format.
+// String 以 YAML 格式返回配置的字符串表示。
 func (c *Config) String() string {
 	out, _ := yaml.Marshal(c)
 	return string(out)
 }
 
-// IsGitHub returns true if the GitHub integration
-// is activated.
+// IsGitHub 若 GitHub 集成已激活则返回 true。
 func (c *Config) IsGitHub() bool {
 	return c.Github.ClientID != ""
 }
 
-// IsGitHubEnterprise returns true if the GitHub
-// integration is activated.
+// IsGitHubEnterprise 若 GitHub Enterprise 集成已激活则返回 true。
 func (c *Config) IsGitHubEnterprise() bool {
 	return c.IsGitHub() && !strings.HasPrefix(c.Github.Server, "https://github.com")
 }
 
-// IsGitLab returns true if the GitLab integration
-// is activated.
+// IsGitLab 若 GitLab 集成已激活则返回 true。
 func (c *Config) IsGitLab() bool {
 	return c.GitLab.ClientID != ""
 }
 
-// IsGogs returns true if the Gogs integration
-// is activated.
+// IsGogs 若 Gogs 集成已激活则返回 true。
 func (c *Config) IsGogs() bool {
 	return c.Gogs.Server != ""
 }
 
-// IsGitea returns true if the Gitea integration
-// is activated.
+// IsGitea 若 Gitea 集成已激活则返回 true。
 func (c *Config) IsGitea() bool {
 	return c.Gitea.Server != ""
 }
 
-// IsGitee returns true if the Gitee integration
-// is activated.
+// IsGitee 若 Gitee 集成已激活则返回 true。
 func (c *Config) IsGitee() bool {
 	return c.Gitee.ClientID != ""
 }
 
-// IsBitbucket returns true if the Bitbucket Cloud
-// integration is activated.
+// IsBitbucket 若 Bitbucket Cloud 集成已激活则返回 true。
 func (c *Config) IsBitbucket() bool {
 	return c.Bitbucket.ClientID != ""
 }
 
-// IsStash returns true if the Atlassian Stash
-// integration is activated.
+// IsStash 若 Atlassian Stash 集成已激活则返回 true。
 func (c *Config) IsStash() bool {
 	return c.Stash.Server != ""
 }
 
+// cleanHostname 规范化主机名字符串，去除协议前缀并转为小写。
 func cleanHostname(hostname string) string {
 	hostname = strings.ToLower(hostname)
 	hostname = strings.TrimPrefix(hostname, "http://")
@@ -528,6 +530,7 @@ func cleanHostname(hostname string) string {
 	return hostname
 }
 
+// defaultAddress 根据 TLS 配置填充服务器地址与协议默认值。
 func defaultAddress(c *Config) {
 	if c.Server.Key != "" || c.Server.Cert != "" || c.Server.Acme {
 		c.Server.Port = ":443"
@@ -537,6 +540,7 @@ func defaultAddress(c *Config) {
 	c.Server.Addr = c.Server.Proto + "://" + c.Server.Host
 }
 
+// defaultProxy 填充反向代理地址默认值。
 func defaultProxy(c *Config) {
 	if c.Proxy.Host == "" {
 		c.Proxy.Host = c.Server.Host
@@ -549,6 +553,7 @@ func defaultProxy(c *Config) {
 	c.Proxy.Addr = c.Proxy.Proto + "://" + c.Proxy.Host
 }
 
+// defaultCallback 填充 RPC 回调地址默认值。
 func defaultCallback(c *Config) {
 	if c.RPC.Host == "" {
 		c.RPC.Host = c.Server.Host
@@ -558,6 +563,7 @@ func defaultCallback(c *Config) {
 	}
 }
 
+// defaultRunner 填充 Runner 机器名与平台 OS/Arch 默认值。
 func defaultRunner(c *Config) {
 	if c.Runner.Machine == "" {
 		c.Runner.Machine = hostname
@@ -571,12 +577,14 @@ func defaultRunner(c *Config) {
 	}
 }
 
+// defaultSession 若未配置则自动生成会话 Cookie 密钥。
 func defaultSession(c *Config) {
 	if c.Session.Secret == "" {
 		c.Session.Secret = uniuri.NewLen(32)
 	}
 }
 
+// configureGithub 根据 GitHub 服务器地址推断 API 端点。
 func configureGithub(c *Config) {
 	if c.Github.APIServer != "" {
 		return
@@ -588,6 +596,7 @@ func configureGithub(c *Config) {
 	}
 }
 
+// kubernetesServiceConflict 检测 Kubernetes 服务端口配置冲突。
 func kubernetesServiceConflict(c *Config) error {
 	if strings.HasPrefix(c.Server.Port, "tcp://") {
 		return errors.New("Invalid port configuration. See https://community.harness.io/t/drone-server-changing-ports-protocol/11400")
@@ -595,29 +604,27 @@ func kubernetesServiceConflict(c *Config) error {
 	return nil
 }
 
-// Bytes stores number bytes (e.g. megabytes)
+// Bytes 表示字节数量（如内存限制），支持 humanize 格式解析。
 type Bytes int64
 
-// Decode implements a decoder that parses a string representation
-// of bytes into the number of bytes it represents.
+// Decode 将 humanize 可读字符串（如 "512MB"）解析为字节数。
 func (b *Bytes) Decode(value string) error {
 	v, err := humanize.ParseBytes(value)
 	*b = Bytes(v)
 	return err
 }
 
-// Int64 returns the int64 value of the Byte.
+// Int64 返回 Bytes 的 int64 值。
 func (b *Bytes) Int64() int64 {
 	return int64(*b)
 }
 
-// String returns the string value of the Byte.
+// String 返回 Bytes 的字符串表示。
 func (b *Bytes) String() string {
 	return fmt.Sprint(*b)
 }
 
-// UserCreate stores account information used to bootstrap
-// the admin user account when the system initializes.
+// UserCreate 存储系统初始化时引导创建管理员账户的配置信息。
 type UserCreate struct {
 	Username string
 	Machine  bool
@@ -625,8 +632,7 @@ type UserCreate struct {
 	Token    string
 }
 
-// Decode implements a decoder that extracts user information
-// from the environment variable string.
+// Decode 从环境变量逗号分隔字符串中解析用户创建参数。
 func (u *UserCreate) Decode(value string) error {
 	for _, param := range strings.Split(value, ",") {
 		parts := strings.Split(param, ":")

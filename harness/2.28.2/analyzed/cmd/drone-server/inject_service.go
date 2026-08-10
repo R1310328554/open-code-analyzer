@@ -48,6 +48,7 @@ import (
 )
 
 // wire set for loading the services.
+// serviceSet 定义业务服务层（提交、触发、同步等）的 Wire 提供者集合。
 var serviceSet = wire.NewSet(
 	canceler.New,
 	commit.New,
@@ -74,22 +75,19 @@ var serviceSet = wire.NewSet(
 	provideSystem,
 )
 
-// provideContentService is a Wire provider function that
-// returns a contents service wrapped with a simple LRU cache.
+// provideContentService 返回带 LRU 缓存的文件内容服务。
 func provideContentService(client *scm.Client, renewer core.Renewer) core.FileService {
 	return cache.Contents(
 		contents.New(client, renewer),
 	)
 }
 
-// provideHookService is a Wire provider function that returns a
-// hook service based on the environment configuration.
+// provideHookService 根据环境配置返回 Webhook 钩子管理服务。
 func provideHookService(client *scm.Client, renewer core.Renewer, config config.Config) core.HookService {
 	return hook.New(client, config.Proxy.Addr, renewer, config.IncomingWebhook.Events)
 }
 
-// provideNetrcService is a Wire provider function that returns
-// a netrc service based on the environment configuration.
+// provideNetrcService 根据环境配置返回 Git 克隆凭证（.netrc）服务。
 func provideNetrcService(client *scm.Client, renewer core.Renewer, config config.Config) core.NetrcService {
 	return netrc.New(
 		client,
@@ -100,14 +98,12 @@ func provideNetrcService(client *scm.Client, renewer core.Renewer, config config
 	)
 }
 
-// provideOrgService is a Wire provider function that
-// returns an organization service wrapped with a simple cache.
+// provideOrgService 返回带缓存的组织查询服务。
 func provideOrgService(client *scm.Client, renewer core.Renewer) core.OrganizationService {
 	return orgs.NewCache(orgs.New(client, renewer), 10, time.Minute*5)
 }
 
-// provideRepo is a Wire provider function that returns
-// a repo based on the environment configuration
+// provideRepositoryService 根据环境配置返回仓库管理服务。
 func provideRepositoryService(client *scm.Client, renewer core.Renewer, config config.Config) core.RepositoryService {
 	return repo.New(
 		client,
@@ -117,8 +113,7 @@ func provideRepositoryService(client *scm.Client, renewer core.Renewer, config c
 	)
 }
 
-// provideSession is a Wire provider function that returns a
-// user session based on the environment configuration.
+// provideSession 根据环境配置创建并返回用户会话管理器。
 func provideSession(store core.UserStore, config config.Config) (core.Session, error) {
 	return session.New(store, session.NewConfig(
 		config.Session.Secret,
@@ -127,8 +122,7 @@ func provideSession(store core.UserStore, config config.Config) (core.Session, e
 	), nil
 }
 
-// provideUserService is a Wire provider function that returns a
-// user service based on the environment configuration.
+// provideStatusService 根据环境配置返回 CI 状态回写服务。
 func provideStatusService(client *scm.Client, renewer core.Renewer, config config.Config) core.StatusService {
 	return status.New(client, renewer, status.Config{
 		Base:     config.Server.Addr,
@@ -137,25 +131,21 @@ func provideStatusService(client *scm.Client, renewer core.Renewer, config confi
 	})
 }
 
-// provideSyncer is a Wire provider function that returns a
-// repository synchronizer.
+// provideSyncer 返回仓库同步器，可按命名空间过滤器限制同步范围。
 func provideSyncer(repoz core.RepositoryService,
 	repos core.RepositoryStore,
 	users core.UserStore,
 	batch core.Batcher,
 	config config.Config) core.Syncer {
 	sync := syncer.New(repoz, repos, users, batch)
-	// the user can define a filter that limits which
-	// repositories can be synchronized and stored in the
-	// database.
+	// 用户可配置过滤器，限制哪些仓库允许同步并写入数据库
 	if filter := config.Repository.Filter; len(filter) > 0 {
 		sync.SetFilter(syncer.NamespaceFilter(filter))
 	}
 	return sync
 }
 
-// provideSyncer is a Wire provider function that returns the
-// system details structure.
+// provideSystem 返回包含服务器地址与版本信息的系统详情结构。
 func provideSystem(config config.Config) *core.System {
 	return &core.System{
 		Proto:   config.Server.Proto,
@@ -165,8 +155,7 @@ func provideSystem(config config.Config) *core.System {
 	}
 }
 
-// provideReaper is a Wire provider function that returns the
-// zombie build reaper.
+// provideReaper 返回僵尸构建清理器，用于终止超时未完成的构建。
 func provideReaper(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -185,8 +174,7 @@ func provideReaper(
 	)
 }
 
-// provideDatadog is a Wire provider function that returns the
-// datadog sink.
+// provideDatadog 返回 Datadog 指标上报 sink。
 func provideDatadog(
 	users core.UserStore,
 	repos core.RepositoryStore,

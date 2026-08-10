@@ -40,6 +40,7 @@ import (
 )
 
 // wire set for loading the stores.
+// storeSet 定义数据库连接与各持久化存储的 Wire 提供者集合。
 var storeSet = wire.NewSet(
 	provideDatabase,
 	provideEncrypter,
@@ -59,8 +60,7 @@ var storeSet = wire.NewSet(
 	template.New,
 )
 
-// provideDatabase is a Wire provider function that provides a
-// database connection, configured from the environment.
+// provideDatabase 根据环境配置建立并返回数据库连接。
 func provideDatabase(config config.Config) (*db.DB, error) {
 	return db.Connect(
 		config.Database.Driver,
@@ -69,15 +69,10 @@ func provideDatabase(config config.Config) (*db.DB, error) {
 	)
 }
 
-// provideEncrypter is a Wire provider function that provides a
-// database encrypter, configured from the environment.
+// provideEncrypter 根据环境配置返回数据库字段加密器。
 func provideEncrypter(config config.Config) (encrypt.Encrypter, error) {
 	enc, err := encrypt.New(config.Database.Secret)
-	// mixed-content mode should be set to true if the database
-	// originally had encryption disabled and therefore has
-	// plaintext entries. This prevents Drone from returning an
-	// error if decryption fails; on failure, the ciphertext is
-	// returned as-is and the error is ignored.
+	// 混合内容模式：数据库原先未加密时存在明文条目，解密失败时返回原文
 	if aesgcm, ok := enc.(*encrypt.Aesgcm); ok {
 		logrus.Debugln("main: database encryption enabled")
 		if config.Database.EncryptMixedContent {
@@ -88,9 +83,7 @@ func provideEncrypter(config config.Config) (encrypt.Encrypter, error) {
 	return enc, err
 }
 
-// provideBuildStore is a Wire provider function that provides a
-// build datastore, configured from the environment, with metrics
-// enabled.
+// provideBuildStore 返回启用 Prometheus 指标的构建数据存储。
 func provideBuildStore(db *db.DB) core.BuildStore {
 	builds := build.New(db)
 	metric.BuildCount(builds)
@@ -99,8 +92,7 @@ func provideBuildStore(db *db.DB) core.BuildStore {
 	return builds
 }
 
-// provideLogStore is a Wire provider function that provides a
-// log datastore, configured from the environment.
+// provideLogStore 根据环境配置返回构建日志存储（支持 S3/Azure/本地）。
 func provideLogStore(db *db.DB, config config.Config) core.LogStore {
 	s := logs.New(db)
 	if config.S3.Bucket != "" {
@@ -123,9 +115,7 @@ func provideLogStore(db *db.DB, config config.Config) core.LogStore {
 	return s
 }
 
-// provideStageStore is a Wire provider function that provides a
-// stage datastore, configured from the environment, with metrics
-// enabled.
+// provideStageStore 返回启用 Prometheus 指标的阶段（Job）数据存储。
 func provideStageStore(db *db.DB) core.StageStore {
 	stages := stage.New(db)
 	metric.PendingJobCount(stages)
@@ -133,17 +123,14 @@ func provideStageStore(db *db.DB) core.StageStore {
 	return stages
 }
 
-// provideRepoStore is a Wire provider function that provides a
-// user datastore, configured from the environment, with metrics
-// enabled.
+// provideRepoStore 返回启用 Prometheus 指标的仓库数据存储。
 func provideRepoStore(db *db.DB) core.RepositoryStore {
 	repos := repos.New(db)
 	metric.RepoCount(repos)
 	return repos
 }
 
-// provideBatchStore is a Wire provider function that provides a
-// batcher. If the experimental batcher is enabled it is returned.
+// provideBatchStore 返回批量操作器；LegacyBatch 启用时使用旧版实现。
 func provideBatchStore(db *db.DB, config config.Config) core.Batcher {
 	if config.Database.LegacyBatch {
 		return batch.New(db)
@@ -151,22 +138,11 @@ func provideBatchStore(db *db.DB, config config.Config) core.Batcher {
 	return batch2.New(db)
 }
 
-// provideUserStore is a Wire provider function that provides a
-// user datastore, configured from the environment, with metrics
-// enabled.
+// provideUserStore 返回用户数据存储；EncryptUserTable 启用时对用户表加密。
 func provideUserStore(db *db.DB, enc encrypt.Encrypter, config config.Config) core.UserStore {
-	// create the user store with encryption iff the user
-	// encryption feature flag is enabled.
-	//
-	// why not enable by default?  because the user table is
-	// accessed on every http request and we are unsure what,
-	// if any performance implications user table encryption
-	// may have on the system.
-	//
-	// it is very possible there are zero material performance
-	// implications, however, if there is a performance regression
-	// we could look at implementing in-memory lru caching, which
-	// we already employ in other areas of the software.
+	// 仅在启用用户表加密特性标志时创建加密存储。
+	// 用户表在每次 HTTP 请求中都会被访问，加密可能带来性能影响，
+	// 因此默认关闭；如有性能问题可考虑 LRU 内存缓存。
 	if config.Database.EncryptUserTable {
 		logrus.Debugln("main: database encryption enabled for user table")
 		users := user.New(db, enc)

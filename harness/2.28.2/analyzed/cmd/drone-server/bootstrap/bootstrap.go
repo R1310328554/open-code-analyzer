@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// bootstrap 包在 Drone 服务器首次启动时引导创建初始用户账户。
 package bootstrap
 
 import (
@@ -26,22 +27,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// errMissingToken 表示创建机器账户时未提供令牌。
 var errMissingToken = errors.New("You must provide the machine account token")
 
-// New returns a new account bootstrapper.
+// New 创建并返回一个新的账户引导器。
 func New(users core.UserStore) *Bootstrapper {
 	return &Bootstrapper{
 		users: users,
 	}
 }
 
-// Bootstrapper bootstraps the system with the initial account.
+// Bootstrapper 在系统初始化时引导创建初始账户。
 type Bootstrapper struct {
 	users core.UserStore
 }
 
-// Bootstrap creates the user account. If the account already exists,
-// no account is created, and a nil error is returned.
+// Bootstrap 创建用户账户。若账户已存在则不重复创建，返回 nil 错误。
 func (b *Bootstrapper) Bootstrap(ctx context.Context, user *core.User) error {
 	if user.Login == "" {
 		return nil
@@ -88,6 +89,7 @@ func (b *Bootstrapper) Bootstrap(ctx context.Context, user *core.User) error {
 	return nil
 }
 
+// update 在账户已存在时同步更新令牌、机器标志和管理员标志。
 func (b *Bootstrapper) update(ctx context.Context, src, dst *core.User) error {
 	log := logger.FromContext(ctx)
 	log.Debugln("bootstrap: updating account")

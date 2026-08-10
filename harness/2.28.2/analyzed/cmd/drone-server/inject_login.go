@@ -32,13 +32,13 @@ import (
 )
 
 // wire set for loading the authenticator.
+// loginSet 定义 OAuth 登录认证中间件与令牌刷新器的 Wire 提供者集合。
 var loginSet = wire.NewSet(
 	provideLogin,
 	provideRefresher,
 )
 
-// provideLogin is a Wire provider function that returns an
-// authenticator based on the environment configuration.
+// provideLogin 根据环境配置返回对应 SCM 平台的 OAuth 登录中间件。
 func provideLogin(config config.Config) login.Middleware {
 	switch {
 	case config.Bitbucket.ClientID != "":
@@ -60,9 +60,7 @@ func provideLogin(config config.Config) login.Middleware {
 	return nil
 }
 
-// provideBitbucketLogin is a Wire provider function that
-// returns a Bitbucket Cloud authenticator based on the
-// environment configuration.
+// provideBitbucketLogin 根据环境配置返回 Bitbucket Cloud OAuth 登录中间件。
 func provideBitbucketLogin(config config.Config) login.Middleware {
 	if config.Bitbucket.ClientID == "" {
 		return nil
@@ -74,8 +72,7 @@ func provideBitbucketLogin(config config.Config) login.Middleware {
 	}
 }
 
-// provideGithubLogin is a Wire provider function that returns
-// a GitHub authenticator based on the environment configuration.
+// provideGithubLogin 根据环境配置返回 GitHub OAuth 登录中间件。
 func provideGithubLogin(config config.Config) login.Middleware {
 	if config.Github.ClientID == "" {
 		return nil
@@ -90,8 +87,7 @@ func provideGithubLogin(config config.Config) login.Middleware {
 	}
 }
 
-// provideGiteeLogin is a Wire provider function that returns
-// a Gitee authenticator based on the environment configuration.
+// provideGiteeLogin 根据环境配置返回 Gitee OAuth 登录中间件。
 func provideGiteeLogin(config config.Config) login.Middleware {
 	if config.Gitee.ClientID == "" {
 		return nil
@@ -110,8 +106,7 @@ func provideGiteeLogin(config config.Config) login.Middleware {
 	}
 }
 
-// provideGiteaLogin is a Wire provider function that returns
-// a Gitea authenticator based on the environment configuration.
+// provideGiteaLogin 根据环境配置返回 Gitea OAuth 登录中间件。
 func provideGiteaLogin(config config.Config) login.Middleware {
 	if config.Gitea.Server == "" {
 		return nil
@@ -131,8 +126,7 @@ func provideGiteaLogin(config config.Config) login.Middleware {
 	}
 }
 
-// provideGitlabLogin is a Wire provider function that returns
-// a GitLab authenticator based on the environment configuration.
+// provideGitlabLogin 根据环境配置返回 GitLab OAuth 登录中间件。
 func provideGitlabLogin(config config.Config) login.Middleware {
 	if config.GitLab.ClientID == "" {
 		return nil
@@ -146,8 +140,7 @@ func provideGitlabLogin(config config.Config) login.Middleware {
 	}
 }
 
-// provideGogsLogin is a Wire provider function that returns
-// a Gogs authenticator based on the environment configuration.
+// provideGogsLogin 根据环境配置返回 Gogs OAuth 登录中间件。
 func provideGogsLogin(config config.Config) login.Middleware {
 	if config.Gogs.Server == "" {
 		return nil
@@ -160,8 +153,7 @@ func provideGogsLogin(config config.Config) login.Middleware {
 	}
 }
 
-// provideStashLogin is a Wire provider function that returns
-// a Stash authenticator based on the environment configuration.
+// provideStashLogin 根据环境配置返回 Stash OAuth 登录中间件。
 func provideStashLogin(config config.Config) login.Middleware {
 	if config.Stash.ConsumerKey == "" {
 		return nil
@@ -181,8 +173,7 @@ func provideStashLogin(config config.Config) login.Middleware {
 	}
 }
 
-// provideRefresher is a Wire provider function that returns
-// an oauth token refresher for Bitbucket and Gitea
+// provideRefresher 为 Bitbucket、Gitea 等平台返回 OAuth 令牌刷新器。
 func provideRefresher(config config.Config) *oauth2.Refresher {
 	switch {
 	case config.Bitbucket.ClientID != "":

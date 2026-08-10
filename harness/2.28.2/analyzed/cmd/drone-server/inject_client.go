@@ -41,13 +41,12 @@ import (
 )
 
 // wire set for loading the scm client.
+// clientSet 定义 SCM 客户端相关的 Wire 提供者集合。
 var clientSet = wire.NewSet(
 	provideClient,
 )
 
-// provideBitbucketClient is a Wire provider function that
-// returns a Source Control Management client based on the
-// environment configuration.
+// provideClient 根据环境配置返回对应的源代码管理（SCM）客户端。
 func provideClient(config config.Config) *scm.Client {
 	switch {
 	case config.Bitbucket.ClientID != "":
@@ -69,9 +68,7 @@ func provideClient(config config.Config) *scm.Client {
 	return nil
 }
 
-// provideBitbucketClient is a Wire provider function that
-// returns a Bitbucket Cloud client based on the environment
-// configuration.
+// provideBitbucketClient 根据环境配置返回 Bitbucket Cloud SCM 客户端。
 func provideBitbucketClient(config config.Config) *scm.Client {
 	client := bitbucket.NewDefault()
 	client.Client = &http.Client{
@@ -90,8 +87,7 @@ func provideBitbucketClient(config config.Config) *scm.Client {
 	return client
 }
 
-// provideGithubClient is a Wire provider function that returns
-// a GitHub client based on the environment configuration.
+// provideGithubClient 根据环境配置返回 GitHub SCM 客户端。
 func provideGithubClient(config config.Config) *scm.Client {
 	client, err := github.New(config.Github.APIServer)
 	if err != nil {
@@ -110,8 +106,7 @@ func provideGithubClient(config config.Config) *scm.Client {
 	return client
 }
 
-// provideGiteeClient is a Wire provider function that returns
-// a Gitee client based on the environment configuration.
+// provideGiteeClient 根据环境配置返回 Gitee SCM 客户端。
 func provideGiteeClient(config config.Config) *scm.Client {
 	client, err := gitee.New(config.Gitee.APIServer)
 	if err != nil {
@@ -136,8 +131,7 @@ func provideGiteeClient(config config.Config) *scm.Client {
 	return client
 }
 
-// provideGiteaClient is a Wire provider function that returns
-// a Gitea client based on the environment configuration.
+// provideGiteaClient 根据环境配置返回 Gitea SCM 客户端。
 func provideGiteaClient(config config.Config) *scm.Client {
 	client, err := gitea.New(config.Gitea.Server)
 	if err != nil {
@@ -162,8 +156,7 @@ func provideGiteaClient(config config.Config) *scm.Client {
 	return client
 }
 
-// provideGitlabClient is a Wire provider function that returns
-// a GitLab client based on the environment configuration.
+// provideGitlabClient 根据环境配置返回 GitLab SCM 客户端。
 func provideGitlabClient(config config.Config) *scm.Client {
 	logrus.WithField("server", config.GitLab.Server).
 		WithField("client", config.GitLab.ClientID).
@@ -193,8 +186,7 @@ func provideGitlabClient(config config.Config) *scm.Client {
 	return client
 }
 
-// provideGogsClient is a Wire provider function that returns
-// a Gogs client based on the environment configuration.
+// provideGogsClient 根据环境配置返回 Gogs SCM 客户端。
 func provideGogsClient(config config.Config) *scm.Client {
 	logrus.WithField("server", config.Gogs.Server).
 		WithField("skip_verify", config.Gogs.SkipVerify).
@@ -218,8 +210,7 @@ func provideGogsClient(config config.Config) *scm.Client {
 	return client
 }
 
-// provideStashClient is a Wire provider function that returns
-// a Stash client based on the environment configuration.
+// provideStashClient 根据环境配置返回 Atlassian Stash SCM 客户端。
 func provideStashClient(config config.Config) *scm.Client {
 	logrus.WithField("server", config.Stash.Server).
 		WithField("skip_verify", config.Stash.SkipVerify).
@@ -249,16 +240,14 @@ func provideStashClient(config config.Config) *scm.Client {
 	return client
 }
 
-// defaultClient provides a default http.Client. If skipverify
-// is true, the default transport will skip ssl verification.
+// defaultClient 返回默认 HTTP 客户端；skipverify 为 true 时跳过 SSL 验证。
 func defaultClient(skipverify bool) *http.Client {
 	client := &http.Client{}
 	client.Transport = defaultTransport(skipverify)
 	return client
 }
 
-// defaultTransport provides a default http.Transport. If
-// skipverify is true, the transport will skip ssl verification.
+// defaultTransport 返回默认 HTTP 传输层；skipverify 为 true 时跳过 SSL 验证。
 func defaultTransport(skipverify bool) http.RoundTripper {
 	return &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -268,8 +257,7 @@ func defaultTransport(skipverify bool) http.RoundTripper {
 	}
 }
 
-// parsePrivateKeyFile is a helper function that parses an
-// RSA Private Key file encoded in PEM format.
+// parsePrivateKeyFile 解析 PEM 格式编码的 RSA 私钥文件。
 func parsePrivateKeyFile(path string) (*rsa.PrivateKey, error) {
 	d, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -278,8 +266,7 @@ func parsePrivateKeyFile(path string) (*rsa.PrivateKey, error) {
 	return parsePrivateKey(d)
 }
 
-// parsePrivateKey is a helper function that parses an RSA
-// Private Key encoded in PEM format.
+// parsePrivateKey 解析 PEM 格式编码的 RSA 私钥字节数据。
 func parsePrivateKey(data []byte) (*rsa.PrivateKey, error) {
 	p, _ := pem.Decode(data)
 	return x509.ParsePKCS1PrivateKey(p.Bytes)

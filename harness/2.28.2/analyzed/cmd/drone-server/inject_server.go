@@ -36,14 +36,15 @@ import (
 )
 
 type (
-	healthzHandler http.Handler
-	metricsHandler http.Handler
-	pprofHandler   http.Handler
-	rpcHandlerV1   http.Handler
-	rpcHandlerV2   http.Handler
+	healthzHandler http.Handler // 健康检查 HTTP 处理器类型别名
+	metricsHandler http.Handler // Prometheus 指标 HTTP 处理器类型别名
+	pprofHandler   http.Handler // pprof 性能分析 HTTP 处理器类型别名
+	rpcHandlerV1   http.Handler // RPC v1 远程 agent 通信处理器类型别名
+	rpcHandlerV2   http.Handler // RPC v2 远程 agent 通信处理器类型别名
 )
 
 // wire set for loading the server.
+// serverSet 定义 HTTP 服务器、路由及 RPC 端点的 Wire 提供者集合。
 var serverSet = wire.NewSet(
 	manager.New,
 	api.New,
@@ -58,8 +59,7 @@ var serverSet = wire.NewSet(
 	provideServerOptions,
 )
 
-// provideRouter is a Wire provider function that returns a
-// router that is serves the provided handlers.
+// provideRouter 组装 chi 路由器并挂载 API、Web、RPC 及监控端点。
 func provideRouter(api api.Server, web web.Server, rpcv1 rpcHandlerV1, rpcv2 rpcHandlerV2, healthz healthzHandler, metrics *metric.Server, pprof pprofHandler, config config.Config) *chi.Mux {
 	r := chi.NewRouter()
 	if config.Prometheus.EnableHTTPMetrics {
@@ -76,21 +76,18 @@ func provideRouter(api api.Server, web web.Server, rpcv1 rpcHandlerV1, rpcv2 rpc
 	return r
 }
 
-// provideMetric is a Wire provider function that returns the
-// healthcheck server.
+// provideHealthz 返回健康检查 HTTP 处理器。
 func provideHealthz() healthzHandler {
 	v := health.New()
 	return healthzHandler(v)
 }
 
-// provideMetric is a Wire provider function that returns the
-// metrics server exposing metrics in prometheus format.
+// provideMetric 返回 Prometheus 格式的指标 HTTP 服务器。
 func provideMetric(session core.Session, config config.Config) *metric.Server {
 	return metric.NewServer(session, config.Prometheus.EnableAnonymousAccess)
 }
 
-// providePprof is a Wire provider function that returns the
-// pprof server endpoints.
+// providePprof 根据配置返回 pprof 性能分析端点或 404 处理器。
 func providePprof(config config.Config) pprofHandler {
 	if config.Server.Pprof == false {
 		return pprofHandler(
@@ -102,22 +99,19 @@ func providePprof(config config.Config) pprofHandler {
 	)
 }
 
-// provideRPC is a Wire provider function that returns an rpc
-// handler that exposes the build manager to a remote agent.
+// provideRPC 返回 RPC v1 处理器，向远程 agent 暴露构建管理器。
 func provideRPC(m manager.BuildManager, config config.Config) rpcHandlerV1 {
 	v := rpc.NewServer(m, config.RPC.Secret)
 	return rpcHandlerV1(v)
 }
 
-// provideRPC2 is a Wire provider function that returns an rpc
-// handler that exposes the build manager to a remote agent.
+// provideRPC2 返回 RPC v2 处理器，向远程 agent 暴露构建管理器。
 func provideRPC2(m manager.BuildManager, config config.Config) rpcHandlerV2 {
 	v := rpc2.NewServer(m, config.RPC.Secret)
 	return rpcHandlerV2(v)
 }
 
-// provideServer is a Wire provider function that returns an
-// http server that is configured from the environment.
+// provideServer 根据环境配置创建并返回 HTTP 服务器实例。
 func provideServer(handler *chi.Mux, config config.Config) *server.Server {
 	return &server.Server{
 		Acme:    config.Server.Acme,
@@ -129,8 +123,7 @@ func provideServer(handler *chi.Mux, config config.Config) *server.Server {
 	}
 }
 
-// provideServerOptions is a Wire provider function that returns
-// the http web server security option from the environment.
+// provideServerOptions 根据环境配置返回 Web 服务器安全响应头选项。
 func provideServerOptions(config config.Config) secure.Options {
 	return secure.Options{
 		AllowedHosts:          config.HTTP.AllowedHosts,

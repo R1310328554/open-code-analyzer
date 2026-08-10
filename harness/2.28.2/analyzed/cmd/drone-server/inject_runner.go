@@ -26,20 +26,19 @@ import (
 )
 
 // wire set for loading the server.
+// runnerSet 定义本地 Docker 构建运行器的 Wire 提供者集合。
 var runnerSet = wire.NewSet(
 	provideRunner,
 )
 
-// provideRunner is a Wire provider function that returns a
-// local build runner configured from the environment.
+// provideRunner 根据环境配置返回本地 Docker 构建运行器；远程 agent 启用时返回 nil。
 func provideRunner(
 	manager manager.BuildManager,
 	secrets core.SecretService,
 	registry core.RegistryService,
 	config config.Config,
 ) *runner.Runner {
-	// the local runner is only created when remote agents
-	// are disabled
+	// 仅在禁用远程 agent 时才创建本地运行器
 	if config.Agent.Disabled == false {
 		return nil
 	}

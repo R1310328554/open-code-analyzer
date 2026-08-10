@@ -25,13 +25,13 @@ import (
 )
 
 // wire set for loading the license.
+// licenseSet 定义许可证加载与服务的 Wire 提供者集合。
 var licenseSet = wire.NewSet(
 	provideLicense,
 	license.NewService,
 )
 
-// provideLicense is a Wire provider function that returns a
-// license loaded from a license file.
+// provideLicense 从许可证文件加载授权信息；未配置时使用试用许可证。
 func provideLicense(client *scm.Client, config config.Config) *core.License {
 	l, err := license.Load(config.License)
 	if config.License == "" {

@@ -30,6 +30,7 @@ import (
 )
 
 // wire set for loading plugins.
+// pluginSet 定义各类扩展插件（准入、配置、转换等）的 Wire 提供者集合。
 var pluginSet = wire.NewSet(
 	provideAdmissionPlugin,
 	provideConfigPlugin,
@@ -40,9 +41,7 @@ var pluginSet = wire.NewSet(
 	provideWebhookPlugin,
 )
 
-// provideAdmissionPlugin is a Wire provider function that
-// returns an admission plugin based on the environment
-// configuration.
+// provideAdmissionPlugin 根据环境配置组合并返回用户准入控制插件。
 func provideAdmissionPlugin(client *scm.Client, orgs core.OrganizationService, users core.UserService, config spec.Config) core.AdmissionService {
 	return admission.Combine(
 		admission.Membership(orgs, config.Users.Filter),
@@ -56,9 +55,7 @@ func provideAdmissionPlugin(client *scm.Client, orgs core.OrganizationService, u
 	)
 }
 
-// provideConfigPlugin is a Wire provider function that returns
-// a yaml configuration plugin based on the environment
-// configuration.
+// provideConfigPlugin 根据环境配置返回 YAML 流水线配置解析插件。
 func provideConfigPlugin(client *scm.Client, contents core.FileService, conf spec.Config) core.ConfigService {
 	return config.Combine(
 		config.Memoize(
@@ -73,9 +70,7 @@ func provideConfigPlugin(client *scm.Client, contents core.FileService, conf spe
 	)
 }
 
-// provideConvertPlugin is a Wire provider function that returns
-// a yaml conversion plugin based on the environment
-// configuration.
+// provideConvertPlugin 根据环境配置返回 YAML 流水线转换插件。
 func provideConvertPlugin(client *scm.Client, fileService core.FileService, conf spec.Config, templateStore core.TemplateStore) core.ConvertService {
 	return converter.Combine(
 		conf.Convert.Multi,
@@ -108,9 +103,7 @@ func provideConvertPlugin(client *scm.Client, fileService core.FileService, conf
 	)
 }
 
-// provideRegistryPlugin is a Wire provider function that
-// returns a registry plugin based on the environment
-// configuration.
+// provideRegistryPlugin 根据环境配置返回容器镜像仓库凭证插件。
 func provideRegistryPlugin(config spec.Config) core.RegistryService {
 	return registry.Combine(
 		registry.External(
@@ -129,8 +122,7 @@ func provideRegistryPlugin(config spec.Config) core.RegistryService {
 	)
 }
 
-// provideSecretPlugin is a Wire provider function that returns
-// a secret plugin based on the environment configuration.
+// provideSecretPlugin 根据环境配置返回密钥管理外部插件。
 func provideSecretPlugin(config spec.Config) core.SecretService {
 	return secret.External(
 		config.Secrets.Endpoint,
@@ -139,9 +131,7 @@ func provideSecretPlugin(config spec.Config) core.SecretService {
 	)
 }
 
-// provideValidatePlugin is a Wire provider function that
-// returns a yaml validation plugin based on the environment
-// configuration.
+// provideValidatePlugin 根据环境配置返回 YAML 流水线校验插件。
 func provideValidatePlugin(conf spec.Config) core.ValidateService {
 	return validator.Combine(
 		validator.Remote(
@@ -159,8 +149,7 @@ func provideValidatePlugin(conf spec.Config) core.ValidateService {
 	)
 }
 
-// provideWebhookPlugin is a Wire provider function that returns
-// a webhook plugin based on the environment configuration.
+// provideWebhookPlugin 根据环境配置返回 Webhook 事件转发插件。
 func provideWebhookPlugin(config spec.Config, system *core.System) core.WebhookSender {
 	return webhook.New(webhook.Config{
 		Events:   config.Webhook.Events,

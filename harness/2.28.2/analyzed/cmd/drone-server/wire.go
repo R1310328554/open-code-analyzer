@@ -14,6 +14,7 @@
 
 //+build wireinject
 
+// main 包的 Wire 注入定义，编译时由 google/wire 生成依赖装配代码。
 package main
 
 import (
@@ -21,6 +22,7 @@ import (
 	"github.com/google/wire"
 )
 
+// InitializeApplication 通过 Wire 依赖注入组装完整的 Drone 应用实例。
 func InitializeApplication(config config.Config) (application, error) {
 	wire.Build(
 		clientSet,

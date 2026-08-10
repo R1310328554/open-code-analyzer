@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// main 包是 Drone 服务器的入口，负责加载配置、依赖注入并启动 HTTP 服务及后台任务。
 package main
 
 import (
@@ -40,6 +41,7 @@ import (
 
 func main() {
 	var envfile string
+	// 从 .env 文件读取环境变量覆盖默认配置
 	flag.StringVar(&envfile, "env-file", ".env", "Read in a file of environment variables")
 	flag.Parse()
 
@@ -55,8 +57,7 @@ func main() {
 		context.Background(),
 	)
 
-	// if trace level logging is enabled, output the
-	// configuration parameters.
+	// 若启用 trace 级别日志，则输出完整配置参数
 	if logrus.IsLevelEnabled(logrus.TraceLevel) {
 		fmt.Println(config.String())
 	}
@@ -67,8 +68,7 @@ func main() {
 		logger.Fatalln("main: cannot initialize server")
 	}
 
-	// optionally bootstrap the system with administrative or
-	// machine users configured in the environment.
+	// 可选：根据环境变量中配置的管理员或机器用户引导系统初始化
 	err = bootstrap.New(app.users).Bootstrap(ctx, &core.User{
 		Login:   config.Users.Create.Username,
 		Machine: config.Users.Create.Machine,
@@ -81,6 +81,7 @@ func main() {
 	}
 
 	g := errgroup.Group{}
+	// 启动 HTTP 服务器
 	g.Go(func() error {
 		logrus.WithFields(
 			logrus.Fields{
@@ -94,8 +95,7 @@ func main() {
 		return app.server.ListenAndServe(ctx)
 	})
 
-	// launches the datadog sink in a goroutine. If the sink
-	// is disabled, the goroutine exits immediately without error.
+	// 在 goroutine 中启动 Datadog 指标上报；若未启用则立即退出
 	g.Go(func() (err error) {
 		if !config.Datadog.Enabled {
 			return nil
@@ -103,9 +103,7 @@ func main() {
 		return app.sink.Start(ctx)
 	})
 
-	// launches the cron runner in a goroutine. If the cron
-	// runner is disabled, the goroutine exits immediately
-	// without error.
+	// 在 goroutine 中启动定时任务调度器；若禁用则立即退出
 	g.Go(func() (err error) {
 		if config.Cron.Disabled {
 			return nil
@@ -115,9 +113,7 @@ func main() {
 		return app.cron.Start(ctx, config.Cron.Interval)
 	})
 
-	// launches the reaper in a goroutine. If the reaper
-	// is disabled, the goroutine exits immediately
-	// without error.
+	// 在 goroutine 中启动僵尸构建清理器；若禁用则立即退出
 	g.Go(func() (err error) {
 		if config.Cleanup.Disabled {
 			return nil
@@ -127,9 +123,7 @@ func main() {
 		return app.reaper.Start(ctx, config.Cleanup.Interval)
 	})
 
-	// launches the build runner in a goroutine. If the local
-	// runner is disabled (because nomad or kubernetes is enabled)
-	// then the goroutine exits immediately without error.
+	// 在 goroutine 中启动本地构建运行器；若远程 agent 已启用则跳过
 	g.Go(func() (err error) {
 		if app.runner == nil {
 			return nil
@@ -144,7 +138,7 @@ func main() {
 	}
 }
 
-// helper function configures the logging.
+// initLogging 根据配置初始化日志级别与输出格式。
 func initLogging(c config.Config) {
 	if c.Logging.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -164,7 +158,7 @@ func initLogging(c config.Config) {
 	}
 }
 
-// application is the main struct for the Drone server.
+// application 聚合 Drone 服务器运行所需的全部核心组件。
 type application struct {
 	cron   *cron.Scheduler
 	reaper *reaper.Reaper
@@ -174,7 +168,7 @@ type application struct {
 	users  core.UserStore
 }
 
-// newApplication creates a new application struct.
+// newApplication 组装并返回 application 结构体实例。
 func newApplication(
 	cron *cron.Scheduler,
 	reaper *reaper.Reaper,

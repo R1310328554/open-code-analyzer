@@ -23,12 +23,12 @@ import (
 )
 
 // wire set for loading the scheduler.
+// schedulerSet 定义构建阶段调度器的 Wire 提供者集合。
 var schedulerSet = wire.NewSet(
 	provideScheduler,
 )
 
-// provideScheduler is a Wire provider function that returns a
-// scheduler based on the environment configuration.
+// provideScheduler 根据环境配置返回基于 Redis 队列的构建阶段调度器。
 func provideScheduler(store core.StageStore, r redisdb.RedisDB) core.Scheduler {
 	return queue.New(store, r)
 }

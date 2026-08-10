@@ -22,10 +22,12 @@ import (
 )
 
 // wire set for loading the external services.
+// externalSet 定义 Redis 等外部服务的 Wire 提供者集合。
 var externalSet = wire.NewSet(
 	provideRedisClient,
 )
 
+// provideRedisClient 根据配置创建并返回 Redis 客户端连接。
 func provideRedisClient(config config.Config) (rdb redisdb.RedisDB, err error) {
 	return redisdb.New(config)
 }
