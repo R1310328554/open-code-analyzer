@@ -8,24 +8,21 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.services.clientpolicy.executor.ClientPolicyExecutorProvider;
 
 /**
- * The class is a factory class of {@link ClientIdMetadataDocumentExecutor}.
+ * {@link ClientIdMetadataDocumentExecutor} 的 SPI 工厂。
  *
- * <p>It provides the following configurations:
+ * <p>在抽象工厂公共配置基础上，额外提供：</p>
  * <ul>
- *     <li>Client Metadata Validation</li>
- *     <ul>
- *         <li>Only Allow Confidential Client: only accept a confidential client</li>
- *         <li>All URIs Restrict same domain: a client metadata includes properties whose values are URIs and an authorization server might access them.
- *         To prevent Server-side request forgery (SSRF), only allows these properties whose values are under the same domain of the permitted domains.</li>
- *     </ul>
+ *     <li>仅允许机密客户端（Only Allow Confidential Client）</li>
  * </ul>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientIdMetadataDocumentExecutorFactory extends AbstractClientIdMetadataDocumentExecutorFactory {
 
+    /** CIMD 执行器提供方 ID。 */
     public static final String PROVIDER_ID = "client-id-metadata-document";
 
+    /** 配置键：是否仅接受机密客户端。 */
     public static final String ONLY_ALLOW_CONFIDENTIAL_CLIENT = "only-allow-confidential-client";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
@@ -33,8 +30,8 @@ public class ClientIdMetadataDocumentExecutorFactory extends AbstractClientIdMet
     static {
         addCommonConfigProperties(configProperties);
 
-        // additional settings
-        // Client Metadata Validation
+        // Keycloak 特有附加配置项
+        // 客户端元数据额外验证
         ProviderConfigProperty property = new ProviderConfigProperty(
                 ONLY_ALLOW_CONFIDENTIAL_CLIENT,
                 "Only Allow Confidential Client",
@@ -45,16 +42,19 @@ public class ClientIdMetadataDocumentExecutorFactory extends AbstractClientIdMet
     }
 
     @Override
+    /** @param session Keycloak 会话 @return CIMD 执行器实例 */
     public ClientPolicyExecutorProvider<ClientIdMetadataDocumentExecutor.Configuration> create(KeycloakSession session) {
         return new ClientIdMetadataDocumentExecutor(session, providerConfig);
     }
 
     @Override
+    /** @return 提供方 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 执行器可配置属性列表（含公共与机密客户端选项） */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }

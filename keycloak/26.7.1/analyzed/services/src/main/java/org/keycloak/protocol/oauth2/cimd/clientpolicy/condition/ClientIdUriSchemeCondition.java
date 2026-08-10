@@ -19,9 +19,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
- * The class is a condition of client policies. On {@code PRE_AUTHORIZATION_REQUEST} event,
- * it checks if the value of {@code client_id} parameter is URI and
- * the scheme part of the URI is the one defined in its configuration.
+ * 客户端策略条件：在 {@code PRE_AUTHORIZATION_REQUEST} 事件中校验 {@code client_id} 是否为 URI，
+ * 且其 scheme 与 host 分别匹配配置中的允许 scheme 列表与受信域名列表。
+ * <p>用于 CIMD 场景下识别 URL 形式的 client_id。</p>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
@@ -29,6 +29,7 @@ public class ClientIdUriSchemeCondition extends AbstractClientPolicyConditionPro
 
     private static final Logger logger = Logger.getLogger(ClientIdUriSchemeCondition.class);
 
+    /** @param session Keycloak 会话 */
     public ClientIdUriSchemeCondition(KeycloakSession session) {
         super(session);
     }
@@ -38,25 +39,32 @@ public class ClientIdUriSchemeCondition extends AbstractClientPolicyConditionPro
         return ClientIdUriSchemeCondition.Configuration.class;
     }
 
+    /** 条件配置：允许的 URI scheme 与受信域名列表。 */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
         @JsonProperty(ClientIdUriSchemeConditionFactory.CLIENT_ID_URI_SCHEME)
+        /** 允许的 client_id URI scheme 列表（如 {@code https}）。 */
         protected List<String> clientIdUriSchemes = Collections.emptyList();
 
         @JsonProperty(ClientIdUriSchemeConditionFactory.TRUSTED_DOMAINS)
+        /** 受信域名列表，支持 {@code *.example.org} 通配符。 */
         protected List<String> trustedDomains = null;
 
+        /** @return 允许的 URI scheme 列表 */
         public List<String> getClientIdUriSchemes() {
             return clientIdUriSchemes;
         }
 
+        /** @param clientIdUriSchemes 允许的 URI scheme 列表 */
         public void setClientIdUriSchemes(List<String> clientIdUriSchemes) {
             this.clientIdUriSchemes = clientIdUriSchemes;
         }
 
+        /** @return 受信域名列表 */
         public List<String> getTrustedDomains() {
             return trustedDomains;
         }
 
+        /** @param permittedDomains 受信域名列表 */
         public void setTrustedDomains(List<String> permittedDomains) {
             this.trustedDomains = permittedDomains;
         }
@@ -68,6 +76,11 @@ public class ClientIdUriSchemeCondition extends AbstractClientPolicyConditionPro
     }
 
     @Override
+    /**
+     * 在预授权请求阶段评估 client_id 是否为符合配置的 URI。
+     * @param context 客户端策略上下文
+     * @return {@link ClientPolicyVote#YES} 匹配时，否则 {@link ClientPolicyVote#NO}
+     */
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
             case PRE_AUTHORIZATION_REQUEST:
@@ -91,10 +104,12 @@ public class ClientIdUriSchemeCondition extends AbstractClientPolicyConditionPro
         }
     }
 
+    /** 判断 URI scheme 是否在配置允许列表中。 */
     private boolean isUriSchemeMatched(URI uri) {
         return configuration.getClientIdUriSchemes().stream().anyMatch(i->i.equals(uri.getScheme()));
     }
 
+    /** 判断 URI host 是否匹配任一受信域名（含通配符）。 */
     private boolean isTrustedDomainMatched(URI uri) {
         List<String> trustedDomains = convertContentFilledList(configuration.getTrustedDomains());
         if (trustedDomains.isEmpty()) {
@@ -115,7 +130,8 @@ public class ClientIdUriSchemeCondition extends AbstractClientPolicyConditionPro
         return true;
     }
 
-    // return a list with non-null, non-blank, and distinct values. If the input list is null, return an empty list.
+    // 返回去重、非空、非空白字符串列表；输入为 null 时返回空列表
+    /** 过滤并去重配置列表中的有效条目。 */
     private List<String> convertContentFilledList(List<String> list) {
         if (list == null) {
             return Collections.emptyList();
@@ -123,7 +139,8 @@ public class ClientIdUriSchemeCondition extends AbstractClientPolicyConditionPro
         return list.stream().filter(Objects::nonNull).filter(i->!i.isBlank()).distinct().toList();
     }
 
-    // apply the same logic in TrustedHostClientRegistrationPolicy.
+    // 与 TrustedHostClientRegistrationPolicy 相同的域名通配符匹配逻辑
+    /** 单条受信域名规则匹配（支持 {@code *.domain} 前缀通配）。 */
     private boolean checkTrustedDomain(String hostname, String trustedDomain) {
         if (trustedDomain.startsWith("*.")) {
             String domain = trustedDomain.substring(2);

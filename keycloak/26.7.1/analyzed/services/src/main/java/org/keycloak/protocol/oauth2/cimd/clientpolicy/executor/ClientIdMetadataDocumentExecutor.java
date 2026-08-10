@@ -15,14 +15,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
- * The class is a concrete class of {@link AbstractClientIdMetadataDocumentExecutor}.
- * The class provide additional checks and processes, which are not determined by the CIMD and MCP specifications so these are keycloak-specific ones.
+ * {@link AbstractClientIdMetadataDocumentExecutor} 的具体实现，提供 Keycloak 特有的额外策略。
  *
- * <p>Client Metadata Validation:
- * The class provides the following policies:
+ * <p>额外客户端元数据验证策略：</p>
  * <ul>
- *     <li>only accept a confidential client</li>
- *     <li>under the same domain as Server-side request forgery(SSRF) countermeasure: client_id, redirect_uri, client_uri, logo_uri, tos_uri,policy_uri, jwks_uri</li>
+ *     <li>可选仅接受机密客户端（confidential client）</li>
+ *     <li>同域 SSRF 防护（继承自抽象类的受信域名与同域限制）</li>
  * </ul>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
@@ -31,10 +29,15 @@ public class ClientIdMetadataDocumentExecutor extends AbstractClientIdMetadataDo
 
     private static final Logger logger = Logger.getLogger(ClientIdMetadataDocumentExecutor.class);
 
+    /** @return 本执行器专用日志器 */
     protected Logger getLogger() {
         return logger;
     }
 
+    /**
+     * @param session Keycloak 会话
+     * @param providerConfig 工厂级 CIMD 全局配置
+     */
     public ClientIdMetadataDocumentExecutor(KeycloakSession session, ClientIdMetadataDocumentExecutorFactoryProviderConfig providerConfig) {
         super(session, providerConfig);
     }
@@ -59,9 +62,10 @@ public class ClientIdMetadataDocumentExecutor extends AbstractClientIdMetadataDo
     }
 
     public static class Configuration extends AbstractClientIdMetadataDocumentExecutor.Configuration {
-        // additional settings
-        // Client Metadata Validation
+        // Keycloak 特有附加配置
+        // 客户端元数据额外验证配置
         @JsonProperty(ClientIdMetadataDocumentExecutorFactory.ONLY_ALLOW_CONFIDENTIAL_CLIENT)
+        /** 为 true 时仅接受机密客户端。 */
         protected boolean onlyAllowConfidentialClient = false;
 
         public Configuration() {
@@ -77,7 +81,7 @@ public class ClientIdMetadataDocumentExecutor extends AbstractClientIdMetadataDo
         }
     }
 
-    // Client Metadata Validation Errors
+    // 机密客户端策略相关错误消息
     public static final String ERR_METADATA_NO_CONFIDENTIAL_CLIENT = "Invalid Client Metadata: confidential client is only allowed.";
     public static final String ERR_METADATA_NO_CONFIDENTIAL_CLIENT_JWKS = "Invalid Client Metadata: ether jwks or jwks_uri property is required.";
 
@@ -85,7 +89,7 @@ public class ClientIdMetadataDocumentExecutor extends AbstractClientIdMetadataDo
     protected void validateClientMetadata(final URI clientIdURI, final URI redirectUriURI, final OIDCClientRepresentation clientOIDC) throws ClientPolicyException {
         super.validateClientMetadata(clientIdURI, redirectUriURI, clientOIDC);
 
-        // only accept a confidential client
+        // 可选策略：仅接受机密客户端
         if (configuration.isOnlyAllowConfidentialClient()) {
             if (clientOIDC.getTokenEndpointAuthMethod() == null || !ALLOWED_ALGORITHMS.contains(clientOIDC.getTokenEndpointAuthMethod())) {
                 getLogger().warn("not confidential client");

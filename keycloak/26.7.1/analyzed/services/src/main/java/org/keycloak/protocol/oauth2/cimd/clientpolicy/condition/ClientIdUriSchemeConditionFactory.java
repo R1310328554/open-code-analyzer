@@ -12,17 +12,20 @@ import org.keycloak.services.clientpolicy.condition.AbstractClientPolicyConditio
 import org.keycloak.services.clientpolicy.condition.ClientPolicyConditionProvider;
 
 /**
- * The class is the factory class of {@link ClientIdUriSchemeCondition}.
- * It provides two configuration: Scheme part and host part of the URI.
+ * {@link ClientIdUriSchemeCondition} 的 SPI 工厂：提供 URI scheme 与受信域名两项配置。
+ * <p>仅在 {@link Profile.Feature#CIMD} 特性启用时可用。</p>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientIdUriSchemeConditionFactory extends AbstractClientPolicyConditionProviderFactory
         implements EnvironmentDependentProviderFactory {
 
+    /** 客户端策略条件提供方 ID。 */
     public static final String PROVIDER_ID = "client-id-uri";
 
+    /** 配置键：允许的 URI scheme 列表。 */
     public static final String CLIENT_ID_URI_SCHEME = "client-id-uri-scheme";
+    /** 配置键：受信域名列表。 */
     public static final String TRUSTED_DOMAINS = "client-id-uri-allow-permitted-domains";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
@@ -53,27 +56,32 @@ public class ClientIdUriSchemeConditionFactory extends AbstractClientPolicyCondi
     }
 
     @Override
+    /** @param session Keycloak 会话 @return 条件提供方实例 */
     public ClientPolicyConditionProvider create(KeycloakSession session) {
         return new ClientIdUriSchemeCondition(session);
     }
 
     @Override
+    /** @return 提供方 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 条件帮助说明（scheme 与 host 均需匹配） */
     public String getHelpText() {
         return "The condition checks that the scheme part of client_id parameter matches one of the filled ones " +
                "and the host part of the client_id matches one of the filled domains.";
     }
 
     @Override
+    /** @return 静态注册的配置属性列表 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
     @Override
+    /** 仅 CIMD 特性启用时注册此条件。 */
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.CIMD);
     }

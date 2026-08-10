@@ -11,23 +11,14 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.services.clientpolicy.executor.ClientPolicyExecutorProviderFactory;
 
 /**
- * The abstract class is the factory class of {@link AbstractClientIdMetadataDocumentExecutor}.
+ * {@link AbstractClientIdMetadataDocumentExecutor} 的抽象 SPI 工厂。
  *
- * <p>It provides the following configurations:
+ * <p>提供以下配置项：</p>
  * <ul>
- *     <li>Client ID Verification / Client Metadata Verification (URL related)</li>
- *     <ul>
- *         <li>Allow http scheme: allows http scheme of a URI (for development environment)<</li>
- *     </ul>
- *     <li>Client ID Validation</li>
- *     <ul>
- *         <li>Trusted domains: only allow a URI whose hostname is under the one of the permitted domain (wildcard * can be used)</li>
- *     </ul>
- *     <li>Client Metadata Validation</li>
- *     <ul>
- *         <li>Restrict same domain: only allow {client_id} and {redirect_uri} parameter of an authorization request whose hostname is under the one of the permitted domain (wildcard * can be used)</li>
- *         <li>Required properties: only allow a client metadata that includes all required properties</li>
- *     </ul>
+ *     <li>Client ID / 元数据 URL 校验：是否允许 http scheme（仅开发环境）</li>
+ *     <li>Client ID 策略：受信域名列表（支持 {@code *.example.org} 通配符）</li>
+ *     <li>元数据策略：同域限制、必填属性列表</li>
+ *     <li>工厂全局：CIMD 提供方名称、缓存时间上下限、元数据字节上限</li>
  * </ul>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
@@ -35,17 +26,17 @@ import org.keycloak.services.clientpolicy.executor.ClientPolicyExecutorProviderF
 public abstract class AbstractClientIdMetadataDocumentExecutorFactory
         implements ClientPolicyExecutorProviderFactory, EnvironmentDependentProviderFactory {
 
-    // Client ID Verification
+    // Client ID 格式校验配置键
     public static final String ALLOW_HTTP_SCHEME = "cimd-allow-http-scheme";
 
-    // Client ID Validation
+    // Client ID 策略验证配置键
     public static final String TRUSTED_DOMAINS = "cimd-allow-permitted-domains";
 
-    // Client Metadata Validation
+    // 客户端元数据策略验证配置键
     public static final String REQUIRED_PROPERTIES = "cimd-required-properties";
     public static final String RESTRICT_SAME_DOMAIN = "cimd-restrict-same-domain";
 
-    // Factory Global Settings
+    // 工厂级全局 SPI 配置键
     public static final String CONFIG_CIMD_PROVIDER_NAME = "cimd-provider-name";
     public static final String CONFIG_MIN_CACHE_TIME = "min-cache-time";
     public static final String CONFIG_MAX_CACHE_TIME = "max-cache-time";
@@ -54,6 +45,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutorFactory
     protected ClientIdMetadataDocumentExecutorFactoryProviderConfig providerConfig;
 
     @Override
+    /** 从 SPI 配置初始化工厂级全局参数。 */
     public void init(Config.Scope config) {
         providerConfig = new ClientIdMetadataDocumentExecutorFactoryProviderConfig(config);
     }
@@ -67,12 +59,13 @@ public abstract class AbstractClientIdMetadataDocumentExecutorFactory
     }
 
     @Override
+    /** @return 执行器帮助说明 */
     public String getHelpText() {
         return "On receiving an authorization request, this executor process the request by following OAuth Client ID Metadata Document (Internet Draft).";
     }
 
     static protected void addCommonConfigProperties(List<ProviderConfigProperty> configProperties) {
-        // Client ID Verification / Client Metadata Verification (URL related)
+        // Client ID 与元数据 URL 相关校验配置
         ProviderConfigProperty property = new ProviderConfigProperty(
                 ALLOW_HTTP_SCHEME,
                 "Allow http scheme",
@@ -82,7 +75,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutorFactory
                 false);
         configProperties.add(property);
 
-        // Client ID Validation
+        // Client ID 受信域名配置
         property = new ProviderConfigProperty(
                 TRUSTED_DOMAINS,
                 "Trusted domains",
@@ -96,7 +89,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutorFactory
                 null);
         configProperties.add(property);
 
-        // Client Metadata Validation
+        // 客户端元数据策略配置
         property = new ProviderConfigProperty(
                 RESTRICT_SAME_DOMAIN,
                 "Restrict same domain",
@@ -116,6 +109,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutorFactory
     }
 
     @Override
+    /** @return 工厂级 SPI 元数据配置（缓存时间、元数据大小上限等） */
     public List<ProviderConfigProperty> getConfigMetadata() {
         return ProviderConfigurationBuilder.create()
                 .property()
@@ -150,6 +144,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutorFactory
     }
 
     @Override
+    /** 仅 CIMD 特性启用时可用。 */
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.CIMD);
     }

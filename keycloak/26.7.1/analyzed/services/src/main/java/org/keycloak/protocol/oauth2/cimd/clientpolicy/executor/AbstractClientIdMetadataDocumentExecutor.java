@@ -39,70 +39,33 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jboss.logging.Logger;
 
 /**
- * The abstract class implements OAuth Client ID Metadata Document specification (Internet Draft v00).
- * @see <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-00">OAuth Client ID Metadata Document (CIMD) [Internet Draft]]</a>
+ * OAuth 客户端标识元数据文档（CIMD）执行器抽象基类，实现 Internet-Draft v00 规范。
+ * @see <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-00">OAuth Client ID Metadata Document (CIMD) [Internet Draft]</a>
  *
- * <p>Moreover, the abstract class implements Authorization part of Model Context Protocol (MCP) specification (version 2025-11-25).
- * @see <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization">Model Context Protocol (MCP) [2025-11-25]]</a>
+ * <p>同时实现 MCP（Model Context Protocol）2025-11-25 授权相关约束。</p>
+ * @see <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization">Model Context Protocol (MCP) [2025-11-25]</a>
  *
- * <p>The abstract class satisfies the following requirements of CIMD and MCP:
+ * <p>满足 CIMD/MCP 中 MUST/SHOULD 级别要求及安全考量章节。</p>
+ *
+ * <p>主要能力：</p>
  * <ul>
- *     <li>Requirements whose requirement level is MUST or SHOULD.</li>
- *     <li>Requirements in Security Consideration.</li>
+ *     <li>Client ID 校验：验证 {@code client_id} 参数是否符合规范</li>
+ *     <li>Client ID 策略验证：按策略判断 client_id 是否合法</li>
+ *     <li>拉取客户端元数据：通过 client_id URL 获取元数据文档</li>
+ *     <li>元数据校验与策略验证</li>
+ *     <li>在 {@link OIDCClientRepresentation} 中增强元数据以便转换</li>
  * </ul>
  *
- * <p>The abstract class provides the following features:
- * <ul>
- *     <li>Client ID Verification: if {client_id} parameter satisfies the requirements of the specifications</li>
- *     <li>Client ID Validation: if {client_id} parameter is valid according to the policy.</li>
- *     <li>Fetching Client Metadata: fetch a client metadata by accessing {client_id} URL.</li>
- *     <li>Client Metadata Verification: if a client metadata satisfies the requirements of the specifications.</li>
- *     <li>Client Metadata Validation: if a client metadata is valid according to the policy.</li>
- *     <li>Client Metadata Augmentation in {@link OIDCClientRepresentation}: augment a fetched client metadata.</li>
- * </ul>
- *
- * <p>Roles of the abstract class and its concrete class:
- * The abstract class covers the basic checks and processes by following the CIMD and MCP specifications while
- * the concrete class of the abstract class provides additional checks or processes.
- *
- * <p>For example, regarding Client ID Validation and Client Metadata Validation, the CIMD and MCP specifications allow
- * an authorization server to implement policies that determine the valid {client_id} parameter value and client metadata.
- * The CIMD and MCP specification show some examples of the policies roughly, but what policies are implemented in detail
- * is up to the authorization server implementation.
- * Therefore, the abstract class provides some of the examples and the concrete class can implement additional policies.
- *
- * <p>Client Metadata Caching:
- * The abstract class does not treat the following processes. It delegates them to {@link ClientIdMetadataDocumentProvider}:
- * <ul>
- *     <li>determining if (re-)fetching a client metadata is needed</li>
- *     <li>concrete process of caching a client metadata: create and update</li>
- *     <li>update cache expiry time</li>
- *     <li>augment a client metadata in {@code ClientRepresentation}</li>
- * </ul>
- * For example, {@code PersistentClientIdMetadataDocumentProvider} persists client metadata.
- * In the future, the provider for non-persisting a client metadata can be provided.
- *
- * <p>Client Metadata Format:
- * According to the CIMD specification, the client metadata format is the same as for Dynamic Client Registration except for {@code client_id} property.
- * @see <a href="https://datatracker.ietf.org/doc/html/rfc7591>OAuth 2.0 Dynamic Client Registration Protocol [RFC 7591]</a>
- * Therefore, {@link OIDCClientRepresentation} is used for the client metadata format.
- * The CIMD specification allows the use of additional properties (MAY requirement level), but the class does not treat them.
- *
- * <p>Client Metadata Augmentation in {@code OIDCClientRepresentation}:
- * To successfully convert a fetched client metadata to {@code ClientRepresentation}, intentionally augment it.
- * The actual example is a public client. The CIMD and MCP specification allows a public client.
- * {@code DescriptionConverter.toInternal} recognize a client as a public client if token_endpoint_auth_method is "none"
- * If a client metadata lacks token_endpoint_auth_method, it is converted to "none", meaning it is treated as a public client.
+ * <p>元数据缓存委托给 {@link ClientIdMetadataDocumentProvider}；具体子类可扩展额外策略。</p>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
- */
-public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends AbstractClientIdMetadataDocumentExecutor.Configuration> implements ClientPolicyExecutorProvider<CONFIG> {
+ */public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends AbstractClientIdMetadataDocumentExecutor.Configuration> implements ClientPolicyExecutorProvider<CONFIG> {
 
     protected final KeycloakSession session;
     protected CONFIG configuration;
     protected ClientIdMetadataDocumentProvider<CONFIG> provider;
 
-    // Factory Global Setting
+    // 工厂级全局配置
     protected ClientIdMetadataDocumentExecutorFactoryProviderConfig providerConfig;
 
     protected abstract Logger getLogger();
@@ -120,14 +83,15 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
         return configuration;
     }
 
+    /** 执行器配置：HTTP scheme、受信域名、同域限制与必填属性等。 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
-        // Client ID Verification
+        // Client ID 格式校验相关配置
         @JsonProperty(AbstractClientIdMetadataDocumentExecutorFactory.ALLOW_HTTP_SCHEME)
         protected boolean allowHttpScheme = false;
         @JsonProperty(AbstractClientIdMetadataDocumentExecutorFactory.TRUSTED_DOMAINS)
         protected List<String> trustedDomains = null;
 
-        // Client Metadata Validation
+        // 客户端元数据策略校验相关配置
         @JsonProperty(AbstractClientIdMetadataDocumentExecutorFactory.RESTRICT_SAME_DOMAIN)
         protected boolean restrictSameDomain = false;
         @JsonProperty(AbstractClientIdMetadataDocumentExecutorFactory.REQUIRED_PROPERTIES)
@@ -170,9 +134,9 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     }
 
     /**
-     * The CIMD and MCP specification requires an authorization server to cache a client metadata.
-     * The inner class put together a client metadata and Cache-Control header's value.
+     * CIMD/MCP 要求授权服务器缓存客户端元数据；此类封装元数据与 Cache-Control 头值。
      */
+    /** 客户端元数据与 Cache-Control 头的组合载体。 */
     public static class OIDCClientRepresentationWithCacheControl {
         private final OIDCClientRepresentation oidcClientRepresentation;
         private final ClientMetadataCacheControl clientMetadataCacheControl;
@@ -193,8 +157,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     }
 
     /**
-     * The CIMD and MCP specification requires an authorization server to cache a client metadata.
-     * The inner class covers the Cache-Control header's directives:
+     * 解析 HTTP Cache-Control 响应头，用于确定客户端元数据缓存生命周期。支持指令：
      * <ul>
      *     <li>only consider directives of a response.</li>
      *     <li>do not consider whether private or public.</li>
@@ -204,6 +167,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
      *     <li>do not consider other directives.</li>
      * </ul>
      */
+    /** 解析并规范化 Cache-Control 响应头，计算元数据缓存过期时间。 */
     public static class ClientMetadataCacheControl {
         private boolean noCache = false;
         private boolean noStore = false;
@@ -279,7 +243,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
             if (isNoCache() || isNoStore()) {
                 return minCacheTime > 0 ? Time.currentTime() + minCacheTime : Time.currentTime();
             }
-            if (isSmaxAge()) { // s-maxage takes precedence over max-age
+            if (isSmaxAge()) { // s-maxage 优先于 max-age
                 return Time.currentTime() + getSmaxAgeValue();
             }
             if (isMaxAge()) {
@@ -301,17 +265,21 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
                     return returnValue;
                 }
             } catch (NumberFormatException e) {
-                // no-op
+                // 解析失败时忽略该指令
             }
             return -1;
         }
     }
 
     /**
-     * CREATE: a client metadata is not created, so fetching it creating it is needed.
-     * UPDATE: a client metadata has been already created, but it has expired, so re-fetching it and updating it is needed.
-     * NO_UPDATE: a client metadata has been already created, and it does not expire, so fetching it is not needed.
+     * 元数据拉取操作类型：
+     * <ul>
+     *   <li>CREATE — 尚未缓存，需首次拉取并创建</li>
+     *   <li>UPDATE — 已过期，需重新拉取并更新</li>
+     *   <li>NO_UPDATE — 缓存仍有效，无需拉取</li>
+     * </ul>
      */
+    /** 元数据拉取/更新操作枚举。 */
     public enum FetchOperation {
         CREATE,
         UPDATE,
@@ -319,6 +287,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     }
 
     @Override
+    /** 在 {@code PRE_AUTHORIZATION_REQUEST} 事件上执行 CIMD 完整处理流程。 */
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         if (!Profile.isFeatureEnabled(Profile.Feature.CIMD)) {
             getLogger().warnf("CIMD executor is used, but CIMD feature is disabled. So CIMD is not enforced for the clients. " +
@@ -341,48 +310,48 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
 
         String clientId = preAuthorizationRequestContext.getClientId();
 
-        // Authorization Request verification
+        // 授权请求参数校验
         URI redirectUriURI = verifyAuthorizationRequest(preAuthorizationRequestContext);
 
-        // Client ID verification
+        // Client ID 格式校验（CIMD MUST 规则）
         URI clientIdURI = verifyClientId(clientId);
 
-        // Client ID validation
+        // Client ID 策略验证（授权服务器自定义）
         validateClientId(clientIdURI);
 
-        // determine if (re-)fetching a client metadata is needed
+        // 判断是否需要（重新）拉取客户端元数据
         FetchOperation fetchOp = provider.determineFetchOperation(clientId);
         if (fetchOp == FetchOperation.NO_UPDATE) {
-            // no update
+            // 缓存有效，跳过拉取
             return;
         }
 
-        // fetch Client ID Metadata
+        // 拉取 Client ID 元数据文档
         OIDCClientRepresentationWithCacheControl clientOIDCWithCacheControl = fetchClientMetadata(clientIdURI, fetchOp == FetchOperation.UPDATE, provider);
         if (clientOIDCWithCacheControl == null) {
-            // fetched but no update
+            // 304 Not Modified，仅更新缓存过期时间
             return;
         }
 
-        // Client Metadata verification
+        // 客户端元数据规范校验
         verifyClientMetadata(clientIdURI, redirectUriURI, clientOIDCWithCacheControl.getOidcClientRepresentation());
 
-        // Client Metadata validation
+        // 客户端元数据策略验证
         validateClientMetadata(clientIdURI, redirectUriURI, clientOIDCWithCacheControl.getOidcClientRepresentation());
 
         if (fetchOp == FetchOperation.CREATE) {
-            // Create Client Metadata
+            // 首次创建客户端元数据缓存
             provider.createClientMetadata(clientOIDCWithCacheControl);
         } else if (fetchOp == FetchOperation.UPDATE) {
-            // Update Client Metadata
+            // 更新已存在的客户端元数据缓存
             provider.updateClientMetadata(clientOIDCWithCacheControl);
         }
     }
 
-    // Authorization Request Verification Errors
+    // 授权请求校验错误消息
     public static final String ERR_INVALID_PARAMETER = "Invalid Authorization Request: it does not include redirect_uri parameter";
 
-    // Client ID Verification Errors
+    // Client ID 格式校验错误消息
     public static final String ERR_CLIENTID_MALFORMED_URL = "Invalid Client ID: malformed URL.";
     public static final String ERR_CLIENTID_INVALID_SCHEME = "Invalid Client ID: invalid scheme.";
     public static final String ERR_CLIENTID_EMPTY_PATH = "Invalid Client ID: empty path.";
@@ -391,10 +360,10 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     public static final String ERR_CLIENTID_USERINFO = "Invalid Client ID: userinfo included.";
     public static final String ERR_CLIENTID_QUERY = "Invalid Client ID: query included.";
 
-    // Client ID Validation Errors
+    // Client ID 策略验证错误消息
     public static final String ERR_NOTALLOWED_DOMAIN = "Invalid Client ID: domain not allowed.";
 
-    // Client Metadata Verification Errors
+    // 客户端元数据规范校验错误消息
     public static final String ERR_METADATA_NOCONTENT = "Invalid Client Metadata: no content.";
     public static final String ERR_METADATA_NOCLIENTID = "Invalid Client Metadata: no client_id.";
     public static final String ERR_METADATA_CLIENTID_UNMATCH = "Invalid Client Metadata: client_id property does not exactly match client_id parameter.";
@@ -403,21 +372,21 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     public static final String ERR_METADATA_REDIRECTURI = "Invalid Client Metadata: redirect_uri parameter does not exactly match the one of redirect_uris property in client metadata.";
     public static final String ERR_METADATA_MALFORMED_URL = "Invalid Client Metadata: malformed URL.";
 
-    // Client ID / Client Metadata Verification Errors
+    // Client ID 与元数据共用的校验错误消息
     public static final String ERR_HOST_UNRESOLVED = "Invalid Client ID / Metadata: host unresolved.";
 
-    // Client Metadata Validation Errors
+    // 客户端元数据策略验证错误消息
     public static final String ERR_METADATA_URIS_SAMEDOMAIN = "Invalid Client Metadata: client_id parameter, redirect_uri parameter and at least one of redirect_uris properties in client metadata should be under the same domain.";
     public static final String ERR_METADATA_NO_REQUIRED_PROPERTIES = "Invalid Client Metadata: it does not include all required properties.";
     public static final String ERR_METADATA_NO_ALL_URIS_SAMEDOMAIN = "Invalid Client Metadata: some uri property is not under the same permitted domain";
 
 
-    // Implementation
-    // Fetch Client Metadata
+    // 实现细节
+    // 拉取元数据相关错误
     public static final String ERR_METADATA_FETCH_FAILED = "Client Metadata fetch failed";
 
     /**
-     * Verifies an authorization request to check if the request includes required parameters and follows the expected format.
+     * 校验授权请求是否包含必需参数且格式正确。
      *
      * @param preAuthorizationRequestContext an authorization request
      * @return {@code URI} {@code redirect_uri} parameter value as {@link URI}
@@ -452,8 +421,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     }
 
     /**
-     * Verifies a value of {@code client_id} parameter of an authorization request
-     * to check if the value satisfies the requirements of the CIMD and MCP specifications.
+     * 校验 {@code client_id} 参数是否满足 CIMD/MCP 规范（HTTPS、路径、禁止 fragment/query 等）。
      *
      * @param clientId a value of {@code client_id} parameter of an authorization request
      * @return {@code URI} {@code client_uri} parameter value as {@link URI}
@@ -462,7 +430,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     protected URI verifyClientId(final String clientId) throws ClientPolicyException {
         getLogger().debugv("verifyClientId: clientId = {0}", clientId);
 
-        // Client identifier MUST be a URL.
+        // client_id 必须为 URL
         final URI uri;
         try {
             uri = new URI(clientId);
@@ -471,37 +439,37 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
             throw invalidClientIdMetadata(ERR_CLIENTID_MALFORMED_URL);
         }
 
-        // Client identifier URLs MUST have a "https" scheme.
+        // 默认必须为 https scheme（开发环境可配置允许 http）
         if (!getConfiguration().isAllowHttpScheme() && !"https".equals(uri.getScheme())) {
             getLogger().warnv("Invalid URL Scheme: scheme = {0}", uri.getScheme());
             throw invalidClientIdMetadata(ERR_CLIENTID_INVALID_SCHEME);
         }
 
-        // Client identifier URLs MUST contain a path component.
+        // URL 必须包含非空路径
         if (uri.getPath() == null || uri.getPath().isEmpty()) {
             getLogger().warn("Empty path:");
             throw invalidClientIdMetadata(ERR_CLIENTID_EMPTY_PATH);
         }
 
-        // Client identifier URLs MUST NOT contain single-dot or double-dot path segments.
+        // 禁止含 {@code .} 或 {@code ..} 路径段（防路径遍历）
         if (isUnsafeUriPath(uri)) {
             getLogger().warnv("traverse path segment: raw path = {0}", uri.getRawPath());
             throw invalidClientIdMetadata(ERR_CLIENTID_PATH_TRAVERSAL);
         }
 
-        // Client identifier URLs MUST NOT contain a fragment component.
+        // 禁止含 fragment
         if (uri.getFragment() != null) {
             getLogger().warnv("url fragment: fragment = {0}", uri.getFragment());
             throw invalidClientIdMetadata(ERR_CLIENTID_FRAGMENT);
         }
 
-        // Client identifier URLs MUST NOT contain a username or password.
+        // 禁止含 userinfo
         if (uri.getUserInfo() != null) {
             getLogger().warnv("user information: userinfo = {0}", uri.getUserInfo());
             throw invalidClientIdMetadata(ERR_CLIENTID_USERINFO);
         }
 
-        // Client identifier URLs SHOULD NOT include a query string component.
+        // 不应含 query 字符串
         if (uri.getQuery() != null) {
             getLogger().warnv("url query: query = {0}", uri.getQuery());
             throw invalidClientIdMetadata(ERR_CLIENTID_QUERY);
@@ -516,7 +484,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
         // A stable URL that does not frequently change for the client is RECOMMENDED.
         // -> no check
 
-        // Trusted domains and SSRF attack countermeasure:
+        // 受信域名与 SSRF 防护：
         //  It checks if a host part is under one of trusted domains.
         //  It checks if an address resolved from a property whose value is URI is loopback address.
         //  It checks if an address resolved from a property whose value is URI is private address.
@@ -530,17 +498,16 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     }
 
     /**
-     * Validate a value of {@code client_id} parameter of an authorization request
-     * to check if the value meets the policies.
+     * 按授权服务器自定义策略验证 client_id（基类默认无额外约束，子类可覆盖）。
      *
      * @param clientIdURI a value of {@code client_id} parameter of an authorization request in {@link URI}
      * @throws ClientPolicyException when validation of an authorization request fails.
      */
     protected void validateClientId(final URI clientIdURI) throws ClientPolicyException {
-        // The authorization server MAY choose to have its own heuristics and policies around the trust of domain names used as client IDs.
+        // 授权服务器可对用作 client_id 的域名制定自有信任策略
     }
 
-    // apply the same logic in TrustedHostClientRegistrationPolicy.
+    // 与 TrustedHostClientRegistrationPolicy 相同的域名匹配逻辑
     protected boolean checkTrustedDomain(String hostname, String trustedDomain) {
         if (trustedDomain.startsWith("*.")) {
             String domain = trustedDomain.substring(2);
@@ -550,7 +517,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     }
 
     /**
-     * fetch a client metadata and update cache expiry time if the client metadata has been already created.
+     * 拉取客户端元数据；若已存在缓存则在 304 响应时仅更新过期时间。
      *
      * @param clientIdURI a value of {@code client_id} parameter of an authorization request in {@link URI}
      * @param isUpdate indicates the client metadata has been already created
@@ -580,12 +547,12 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
             ClientMetadataCacheControl clientMetadataCacheControl = new ClientMetadataCacheControl(cacheControlHeaderValue, providerConfig.getMinCacheTime(), providerConfig.getMaxCacheTime());
 
             if (isUpdate) {
-                // it is better to compare the fetched client metadata with the existing client metadata.
-                // however, it is difficult to do that because the existing client metadata included additional properties when it was registered.
-                // therefore, such the comparing is not executed.
+                // 理想情况下应比对拉取元数据与现有元数据
+                // 因注册时可能附加额外属性，完整比对较困难
+                // 因此此处不执行内容比对
                 if (response.getStatus() == Response.Status.NOT_MODIFIED.getStatusCode()) {
                     ClientModel clientModel = session.getContext().getRealm().getClientByClientId(clientId);
-                    // update cache expiry time
+                    // 304 时仅更新缓存过期时间
                     provider.setCacheExpiryTimeToClientMetadata(clientModel, clientMetadataCacheControl.getCacheExpiryTimeInSec());
                     return null;
                 }
@@ -593,7 +560,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
 
             clientOIDC = response.asJson(OIDCClientRepresentation.class);
 
-            // to successfully convert it to Client Representation, intentionally augment it.
+            // 为成功转换为 ClientRepresentation 而增强元数据
             augmentClientOIDC(clientOIDC);
 
             return new OIDCClientRepresentationWithCacheControl(clientOIDC, clientMetadataCacheControl);
@@ -604,7 +571,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     }
 
     /**
-     * Verify a client metadata to check if it satisfies the requirements of the CIMD and MCP specifications.
+     * 校验拉取的客户端元数据是否满足 CIMD/MCP 规范要求。
      *
      * @param clientIdURI a value of {client_id} parameter of an authorization request in {@link URI}
      * @param redirectUriURI a value of {redirect_uri} parameter of an authorization request in {@link URI}
@@ -621,20 +588,20 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
             throw invalidClientIdMetadata(ERR_METADATA_NOCONTENT);
         }
 
-        // The client metadata document MUST contain a client_id property.
+        // 元数据文档必须包含 client_id 属性
         if (clientOIDC.getClientId() == null) {
             getLogger().warn("client metadata does not include client_id property.");
             throw invalidClientIdMetadata(ERR_METADATA_NOCLIENTID);
         }
 
-        // The client_id property's value MUST match the URL of the document
+        // client_id 属性值必须与文档 URL 精确匹配（RFC3986 字符串比较）
         // using simple string comparison as defined in [RFC3986] Section 6.2.1.
         if (!clientOIDC.getClientId().equals(clientId)) {
             getLogger().warnv("client_id property in client metadata does not exactly match client_id parameter in authorization request. property = {0}, parameter = {1}", clientOIDC.getClientId(), clientId);
             throw invalidClientIdMetadata(ERR_METADATA_CLIENTID_UNMATCH);
         }
 
-        // The token_endpoint_auth_method property MUST NOT include
+        // token_endpoint_auth_method 不得使用基于共享对称密钥的方式
         // client_secret_post, client_secret_basic, client_secret_jwt,
         // or any other method based around a shared symmetric secret.
         if (clientOIDC.getTokenEndpointAuthMethod() != null && NOTALLOWED_ALGORITHMS.contains(clientOIDC.getTokenEndpointAuthMethod())) {
@@ -642,13 +609,13 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
             throw invalidClientIdMetadata(ERR_METADATA_NOTALLOWED_CLIENTAUTH);
         }
 
-        // The client_secret and client_secret_expires_at properties MUST NOT be used.
+        // 不得包含 client_secret 或 client_secret_expires_at
         if (clientOIDC.getClientSecret() != null || clientOIDC.getClientSecretExpiresAt() != null) {
             getLogger().warn("client metadata includes client_secret or client_secret_expires_at.");
             throw invalidClientIdMetadata(ERR_METADATA_CLIENTSECRET);
         }
 
-        // An authorization server MUST validate redirect URIs presented in an authorization request
+        // 必须校验授权请求 redirect_uri 与元数据 redirect_uris 之一精确匹配
         // against those in the metadata document.
         if (clientOIDC.getRedirectUris() == null || RedirectUtils.verifyRedirectUri(session, clientOIDC.getClientUri(), redirectUri, Set.copyOf(clientOIDC.getRedirectUris()), true) == null) {
             getLogger().warnv("redirect_uri parameter does not exactly match the one of redirect_uris property in client metadata: redirectUri = {0}", redirectUri);
@@ -659,9 +626,9 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
         //  It checks if a host part is under one of trusted domains.
         //  It checks if an address resolved from a property whose value is URI is loopback address.
         //  It checks if an address resolved from a property whose value is URI is private address.
-        // CIMD (mandatory): client_id
-        // RFC 7591 (mandatory): redirect_uris
-        // RFC 7591 (optional): logo_uri, client_uri, tos_uri, policy_uri, jwks_uri
+        // CIMD 强制校验：client_id
+        // RFC 7591 强制校验：redirect_uris
+        // RFC 7591 可选 URI 属性（若存在则校验）
 
         List<String> trustedDomains = convertContentFilledList(getConfiguration().getTrustedDomains());
         verifyUriProperty(clientOIDC.getClientId(), "client_id", trustedDomains);
@@ -680,7 +647,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
         try {
             clientIdURIfromMetadata = new URI(clientOIDC.getClientId());
         } catch (URISyntaxException e) {
-            // never reach here
+            // 不应到达此处
             getLogger().warnv("Malformed URL: clientId in metadata = {0}", clientOIDC.getClientId());
             throw invalidClientIdMetadata(ERR_CLIENTID_MALFORMED_URL);
         }
@@ -701,7 +668,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
         }
     }
 
-    // any access to parent folder /../ or current /./ is unsafe with or without encoding
+    // 检测编码或未编码的 {@code /../}、{@code /./} 等不安全路径段
     private final static Pattern UNSAFE_PATH_PATTERN = Pattern.compile(
             "(/|%2[fF]|%5[cC]|\\\\)(%2[eE]|\\.){1,2}(/|%2[fF]|%5[cC]|\\\\)|(/|%2[fF]|%5[cC]|\\\\)(%2[eE]|\\.){1,2}$");
 
@@ -710,7 +677,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     }
 
     private void verifyUri(String uriString, List<String> trustedDomains, ErrorHandler errorHandler) throws ClientPolicyException {
-        if (trustedDomains.isEmpty()) {        // allow trusted domain
+        if (trustedDomains.isEmpty()) {        // 未配置受信域名则拒绝
             getLogger().debug("trusted domain list is vacant.");
             throw invalidClientIdMetadata(ERR_NOTALLOWED_DOMAIN);
         }
@@ -739,7 +706,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     }
 
     /**
-     * Validate a client metadata to check if the value meets the policies.
+     * 按策略验证客户端元数据（同域限制、必填属性等）。
      *
      * @param clientIdURI a value of {client_id} parameter of an authorization request in {@link URI}
      * @param redirectUriURI a value of {redirect_uri} parameter of an authorization request in {@link URI}
@@ -747,13 +714,13 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
      * @throws ClientPolicyException when validating a client metadata fails.
      */
     protected void validateClientMetadata(final URI clientIdURI, final URI redirectUriURI, final OIDCClientRepresentation clientOIDC) throws ClientPolicyException {
-        // An authorization server MAY impose restrictions or relationships
+        // 授权服务器可对 redirect_uris 与 client_id/client_uri 施加额外关系约束
         // between the redirect_uris and the client_id or client_uri properties
 
-        // same domain policy: client_id, redirect_uri, redirect_uris, client_uri, logo_uri, tos_uri,, policy_uri, jwks_uri
+        // 同域策略：client_id、redirect_uri 及元数据中各 URI 属性须在同一受信域
         List<String> trustedDomains = convertContentFilledList(getConfiguration().getTrustedDomains());
         if (getConfiguration().isRestrictSameDomain() && trustedDomains != null && !trustedDomains.isEmpty()) {
-            // Client Metadata verification ensures that
+            // 元数据规范校验已保证 client_id 与 redirect_uri 精确匹配
             //  - client_id parameter value in an authorization request exactly matches client_id property in metadata
             //  - redirect_uri parameter value in an authorization request exactly matches one of client_uris property in metadata
             // Therefore, only considering domain parts of client_id parameter value, redirect_uri parameter value matches one of permitted domains configuration.
@@ -778,7 +745,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
             }
         }
 
-        // required properties policy
+        // 必填属性策略
         List<String> requiredProperties = convertContentFilledList(getConfiguration().getRequiredProperties());
         if (requiredProperties != null && !requiredProperties.isEmpty()) {
             JsonNode jn = JsonSerialization.writeValueAsNode(clientOIDC);
@@ -789,7 +756,7 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
         }
     }
 
-    // to accept a public client in CIMD, intentionally "none" is not included
+    // 为支持 CIMD 公开客户端，故意未将 "none" 列入禁止列表
     protected static final Set<String> NOTALLOWED_ALGORITHMS = new LinkedHashSet<>(Arrays.asList(
             OIDCLoginProtocol.CLIENT_SECRET_POST,
             OIDCLoginProtocol.CLIENT_SECRET_BASIC,
@@ -806,14 +773,14 @@ public abstract class AbstractClientIdMetadataDocumentExecutor<CONFIG extends Ab
     // to successfully convert it to Client Representation, intentionally augment it.
 
     /**
-     * Augments a re-fetched client metadata to successfully convert it to {@code ClientRepresentation}.
+     * 增强拉取的元数据以便转换为 {@code ClientRepresentation}（如缺省 token_endpoint_auth_method 时设为 none）。
      *
      * @param oidcClient a fetched client metadata
      */
     protected void augmentClientOIDC(OIDCClientRepresentation oidcClient) {
-        // Allowing a public client:
-        // DescriptionConverter.toInternal recognize a client as a public client if token_endpoint_auth_method is "none"
-        // If a client metadata lacks token_endpoint_auth_method, it is converted to "none", meaning it is treated as a public client.
+        // 允许公开客户端：
+        // DescriptionConverter.toInternal 在 token_endpoint_auth_method 为 none 时识别为公开客户端
+        // 元数据缺少该字段时默认 none，即按公开客户端处理
         if (oidcClient.getTokenEndpointAuthMethod() == null) {
             oidcClient.setTokenEndpointAuthMethod("none");
         }

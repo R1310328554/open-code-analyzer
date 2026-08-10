@@ -18,20 +18,23 @@
 import org.keycloak.protocol.oidc.OIDCWellKnownProviderFactory;
 
 /**
- * {@link  OAuth2WellKnownProviderFactory} implementation for the OAuth2 auto discovery
- * <p>
- * {@see https://www.rfc-editor.org/rfc/rfc8414.html#section-3}
+ * OAuth 2.0 授权服务器元数据（Well-Known）提供方工厂。
+ * <p>继承 {@link OIDCWellKnownProviderFactory}，暴露 RFC 8414 定义的 {@code /.well-known/oauth-authorization-server} 端点。</p>
+ * <p>{@see https://www.rfc-editor.org/rfc/rfc8414.html#section-3}</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class OAuth2WellKnownProviderFactory extends OIDCWellKnownProviderFactory {
+    /** Well-Known 提供方 SPI ID。 */
     public static final String PROVIDER_ID = "oauth-authorization-server";
     @Override
+    /** @return 提供方 ID {@value #PROVIDER_ID} */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** 可通过服务器元数据（Server Metadata）发现此提供方。 */
     public boolean isAvailableViaServerMetadata() {
         return true;
     }
