@@ -15,23 +15,8 @@
     "ai/src/main/java/com/alibaba/nacos/ai/form/a2a/admin/AgentListForm.java",
     "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecBizTagsUpdateForm.java",
     "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecDetailForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecDraftCreateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecLabelsUpdateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecListForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecOnlineForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecPublishForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecScopeForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecSubmitForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecUpdateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/client/AgentSpecQueryForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/client/AgentSpecSearchForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/importer/AbstractAiResourceImportForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/importer/AiResourceImportExecuteForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/importer/AiResourceImportSearchForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/importer/AiResourceImportSourceListForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/importer/AiResourceImportValidateForm.java"
+    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecDraftCreateForm.java"
   ],
   "remaining_pending": 2477,
-  "done": 30
+  "done": 45
 }
