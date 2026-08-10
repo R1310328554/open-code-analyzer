@@ -9,17 +9,13 @@ import org.keycloak.models.RealmModel;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
 
 /**
- * Context object passed to constraint validators via Hibernate Validator's
- * constraint validator payload mechanism.
+ * 通过 Hibernate Validator constraint validator payload 传递给约束校验器的上下文对象。
  * <p>
- * Record components are annotated with Jakarta Validation so documentation tooling
- * (for example the Admin API v2 OpenAPI {@code ValidationAnnotationScanner}) can surface
- * the same constraints in schema descriptions as for representation types.
+ * Record 组件标注 Jakarta Validation，以便文档工具（如 Admin API v2 OpenAPI
+ * {@code ValidationAnnotationScanner}）在 schema 描述中展示与表示类型相同的约束。
  * <p>
- * Custom constraint validators can access this context by unwrapping the
- * {@link jakarta.validation.ConstraintValidatorContext} to
- * {@link org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext}
- * and retrieving the payload:
+ * 自定义约束校验器可将 {@link jakarta.validation.ConstraintValidatorContext} 解包为
+ * {@link org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext} 并读取 payload：
  * 
  * <pre>{@code
  * @Override
@@ -32,8 +28,8 @@ import org.hibernate.validator.constraintvalidation.HibernateConstraintValidator
  * }
  * }</pre>
  *
- * @param session the Keycloak session (required)
- * @param realm the realm model being validated against (required)
+ * @param session Keycloak 会话（必填）
+ * @param realm 校验所针对的领域模型（必填）
  */
 public record ValidationContext(@NotNull KeycloakSession session, @NotNull RealmModel realm) {
 
@@ -46,6 +42,7 @@ public record ValidationContext(@NotNull KeycloakSession session, @NotNull Realm
         }
     }
 
+    /** 从 {@link ConstraintValidatorContext} 解包出 {@link ValidationContext} payload。 */
     public static ValidationContext unwrap(ConstraintValidatorContext context) {
         HibernateConstraintValidatorContext hibernateContext = context
                 .unwrap(HibernateConstraintValidatorContext.class);

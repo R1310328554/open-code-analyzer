@@ -1,7 +1,7 @@
 package org.keycloak.services;
 
 /**
- * Service handling business logic for various user interfaces (REST API, GraphQL, GitOps,...)
+ * 面向多种用户界面（REST API、GraphQL、GitOps 等）的业务逻辑服务标记接口。
  */
 public interface Service {
 }

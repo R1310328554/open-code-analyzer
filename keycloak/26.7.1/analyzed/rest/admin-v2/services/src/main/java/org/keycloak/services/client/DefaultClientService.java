@@ -76,7 +76,7 @@ import static org.keycloak.utils.StreamsUtil.paginatedStream;
 import static org.keycloak.utils.StringUtil.isBlank;
 
 /**
- * Default client service for Admin Client API v2
+ * Admin Client API v2 的默认客户端服务实现。
  */
 public class DefaultClientService implements ClientService {
     private static final ObjectMapper MAPPER = new ObjectMapperResolver().getContext(null);
@@ -122,9 +122,9 @@ public class DefaultClientService implements ClientService {
                                                        @Nonnull ClientSortAndSliceOptions sortAndSliceOptions) {
         permissions.clients().requireList();
 
-        // TODO: this check is weak
-        //  a stronger check is whether the remaining fields have repSetters
-        //  however this highlights an issue we may hit with polymorphism a field may
+        // TODO: 此检查较弱
+        //  更严格的检查应确认剩余字段是否具有 repSetter
+        //  多态下某字段在一子类型可投影、在另一子类型固定，此处可能暴露该问题
         //  be projectable in one subtype, but fixed in another
 
         projectionOptions.getFields().forEach(s -> {
@@ -133,8 +133,8 @@ public class DefaultClientService implements ClientService {
             }
         });
 
-        // When FGAP is enabled, authorization filtering is applied at the JPA layer (via PartialEvaluator predicates), so we trust the DB results.
-        // When disabled, we fall back to in-memory filtering by VIEW_CLIENTS role.
+        // 启用 FGAP 时，授权过滤在 JPA 层（PartialEvaluator 谓词）完成，可直接信任数据库结果。
+        // 未启用时在内存中按 VIEW_CLIENTS 权限过滤。
         boolean canView = AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm) || permissions.clients().canView();
         boolean hasQuery = searchOptions != null && searchOptions.query() != null && !searchOptions.query().isBlank();
         boolean useJpaPagination = canView && !hasQuery;
@@ -364,10 +364,10 @@ public class DefaultClientService implements ClientService {
     }
 
     /**
-     * Fires a v2 admin event for client operations (only enabled for testing now to avoid duplicated admin events)
+     * 触发客户端操作的 v2 管理事件（默认关闭，避免与 v1 重复）。
      *
-     * @param operationType  the type of operation (CREATE, UPDATE, DELETE)
-     * @param representation the v2 representation of the client
+     * @param operationType  操作类型（CREATE、UPDATE、DELETE）
+     * @param representation 客户端 v2 表示
      */
     protected void fireAdminEvent(OperationType operationType, BaseClientRepresentation representation) {
         if (Boolean.parseBoolean(System.getProperty("kc.admin-v2.client-service.events.enabled", "false"))) {
@@ -380,11 +380,10 @@ public class DefaultClientService implements ClientService {
     }
 
     /**
-     * Creates a temporary client to convert BaseClientRepresentation to ClientRepresentation.
-     * Required because client policy contexts expect ClientRepresentation (v1), but there's no
-     * direct converter from BaseClientRepresentation (v2 API). The temp client is immediately removed.
+     * 创建临时客户端，将 {@link BaseClientRepresentation} 转为 v1 {@link ClientRepresentation}。
+     * 客户端策略上下文需要 v1 表示，而 v2 API 无直接转换器；临时客户端随即删除。
      * <p>
-     * For more details, see the <a href="https://github.com/keycloak/keycloak/issues/47576">keycloak#47576</a>.
+     * 详见 <a href="https://github.com/keycloak/keycloak/issues/47576">keycloak#47576</a>。
      */
     private ClientRepresentation getProposedOldRepresentation(RealmModel realm, BaseClientRepresentation client, ClientModelMapper mapper) {
         String tempId = "__temp__" + client.getClientId() + "__" + System.nanoTime();
@@ -408,8 +407,8 @@ public class DefaultClientService implements ClientService {
                 if (strategy == CreateOrUpdateStrategy.PATCH && patchExplicitNullSecret) {
                     auth.setSecret(KeycloakModelUtils.generateSecret(model));
                 } else {
-                    // On PUT the client often omits the secret; reuse the persisted secret before bean validation (PutClient).
-                    // On PATCH without explicit JSON null for secret, keep the same semantics (do not rotate).
+                    // PUT 时常省略 secret；Bean 校验（PutClient）前复用已持久化的 secret。
+                    // PATCH 未显式 JSON null secret 时保持相同语义（不轮换）。
                     if (!isBlank(model.getSecret())) {
                         auth.setSecret(model.getSecret());
                     } else {
@@ -422,7 +421,7 @@ public class DefaultClientService implements ClientService {
 
     protected void assertSameClientIds(String pathId, String payloadId) {
         if (payloadId == null) {
-            // When the payload clientId is null, it is not part of the payload at all - validated via @NotBlank validator annotation
+            // payload 中 clientId 为 null 表示未包含该字段，由 @NotBlank 校验
             return;
         }
         if (!Objects.equals(pathId, payloadId)) {
@@ -431,9 +430,9 @@ public class DefaultClientService implements ClientService {
     }
 
     /**
-     * Declaratively manage client roles - ensures the client has exactly the roles specified in 'rolesFromRep'
+     * 声明式管理客户端角色，使客户端角色集与表示中的 {@code roles} 完全一致。
      * <p>
-     * Reuses API v1 logic
+     * 复用 API v1 逻辑。
      */
     protected void handleRoles(RoleContainerResource clientRoles, Set<String> rolesFromRep) {
         Set<String> desiredRoleNames = Optional.ofNullable(rolesFromRep)
@@ -443,27 +442,26 @@ public class DefaultClientService implements ClientService {
                 .map(RoleRepresentation::getName)
                 .collect(Collectors.toSet());
 
-        // Add missing roles (in desiredRoleNames but not in currentRoleNames)
+        // 添加缺失角色（期望有而当前无）
         desiredRoleNames.stream()
                 .filter(roleName -> !currentRoleNames.contains(roleName))
                 .forEach(roleName -> {
                     try (var response = clientRoles.createRole(new RoleRepresentation(roleName, "", false))) {
-                        // close response and consume payload due to performance reasons
+                        // 关闭响应并消费 payload，避免性能问题
                         EntityUtils.consumeQuietly((HttpEntity) response.getEntity());
                     }
                 });
 
-        // Remove extra roles (in currentRoleNames but not in desiredRoleNames)
+        // 移除多余角色（当前有而期望无）
         currentRoleNames.stream()
                 .filter(role -> !desiredRoleNames.contains(role))
                 .forEach(clientRoles::deleteRole);
     }
 
     /**
-     * Declaratively manage service account - enables/disables it and ensures it has exactly the roles specified (realm and client roles)
+     * 声明式管理服务账户：启用/禁用并同步领域与客户端角色映射。
      * <p>
-     * Applies mappings on the {@link UserModel} with the same permission checks as the Admin REST role-mapping resources, but without
-     * routing through nested JAX-RS resources (which are not suited for in-process service calls).
+     * 在 {@link UserModel} 上应用与 Admin REST 角色映射资源相同的权限检查，但不经过嵌套 JAX-RS 资源（不适合进程内服务调用）。
      */
     protected void handleServiceAccount(ClientModel model, OIDCClientRepresentation rep) {
         boolean serviceAccountEnabled = rep.getLoginFlows().contains(OIDCClientRepresentation.Flow.SERVICE_ACCOUNT);
@@ -482,7 +480,7 @@ public class DefaultClientService implements ClientService {
         Set<RoleModel> currentRoles = serviceAccountUser.getRoleMappingsStream().collect(Collectors.toSet());
         Set<String> currentRoleNames = currentRoles.stream().map(RoleModel::getName).collect(Collectors.toSet());
 
-        // serviceAccountRoles are plain names; client roles on this client are resolved before realm roles (name collisions favor the client).
+        // serviceAccountRoles 为纯名称；同名时优先解析本客户端角色，再解析领域角色。
         List<RoleModel> rolesToAdd = new ArrayList<>();
         for (String roleName : desiredRoleNames) {
             if (currentRoleNames.contains(roleName)) {

@@ -8,11 +8,9 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 
 /**
- * Provider interface for Jakarta Bean Validation.
+ * Jakarta Bean Validation 的提供者接口。
  * <p>
- * Implementations can provide a {@link ValidationContext} to custom constraint validators
- * via Hibernate Validator's constraint validator payload mechanism. This allows validators
- * to access Keycloak's runtime context (session, realm) for validation logic.
+ * 实现可通过 Hibernate Validator 的 constraint validator payload 机制向自定义约束校验器提供 {@link ValidationContext}，以便访问 Keycloak 运行时上下文（session、realm）。
  *
  * @see ValidationContext
  * @see HibernateValidatorProvider
@@ -20,27 +18,27 @@ import jakarta.validation.Validator;
 public interface JakartaValidatorProvider {
 
     /**
-     * Validates the given object using the specified validation groups.
+     * 使用指定校验组校验给定对象。
      *
-     * @param object the object to validate
-     * @param groups the validation groups to apply
-     * @param <T> the type of object being validated
-     * @throws ConstraintViolationException if validation fails
+     * @param object 待校验对象
+     * @param groups 应用的校验组
+     * @param <T> 对象类型
+     * @throws ConstraintViolationException 校验失败时
      */
     <T> void validate(T object, Class<?>... groups) throws ConstraintViolationException;
 
     /**
-     * Validates using a custom validation function that receives the validator.
+     * 通过接收 {@link Validator} 的自定义函数执行校验。
      *
-     * @param validation a function that performs validation and returns constraint violations
-     * @throws ConstraintViolationException if validation fails
+     * @param validation 执行校验并返回约束违规集合的函数
+     * @throws ConstraintViolationException 校验失败时
      */
     void validate(Function<Validator, Set<ConstraintViolation<?>>> validation) throws ConstraintViolationException;
 
     /**
-     * Returns the underlying Jakarta Validator instance.
+     * 返回底层 Jakarta {@link Validator} 实例。
      *
-     * @return the validator
+     * @return 校验器实例
      */
     Validator getValidator();
 }

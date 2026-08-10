@@ -9,9 +9,9 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.error.KeycloakErrorHandler;
 
 /**
- * Exception mapper from {@link ServiceException} to {@link jakarta.ws.rs.WebApplicationException}.
+ * 将 {@link ServiceException} 映射为 {@link jakarta.ws.rs.WebApplicationException} 的异常转换器。
  * <p>
- * Useful for mapping exceptions from the service layer to JAX-RS responses.
+ * 用于把服务层异常转换为 JAX-RS 响应。
  */
 @Provider
 public class ServiceExceptionMapper implements ExceptionMapper<ServiceException> {

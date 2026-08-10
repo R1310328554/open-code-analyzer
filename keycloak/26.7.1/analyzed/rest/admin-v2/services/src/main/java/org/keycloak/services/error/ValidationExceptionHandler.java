@@ -8,6 +8,9 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
+/**
+ * 将 {@link jakarta.validation.ConstraintViolationException} 映射为 HTTP 400 JSON 响应。
+ */
 @Provider
 public class ValidationExceptionHandler implements ExceptionMapper<ConstraintViolationException> {
 

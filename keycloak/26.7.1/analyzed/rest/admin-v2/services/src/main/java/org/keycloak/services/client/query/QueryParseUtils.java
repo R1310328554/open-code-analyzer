@@ -6,10 +6,14 @@ import org.keycloak.scim.filter.FilterUtils;
 import org.keycloak.scim.filter.ScimFilterException;
 import org.keycloak.scim.filter.ScimFilterParser;
 
+/**
+ * 解析并校验 Admin Client API v2 的 SCIM 风格查询表达式。
+ */
 public class QueryParseUtils {
 
     private static final Set<String> SUPPORTED_OPERATORS = Set.of("eq", "ne", "co", "sw", "ew");
 
+    /** 将查询字符串解析为 filter 语法树。 */
     public static ScimFilterParser.FilterContext parse(String query) {
         if (query == null || query.isBlank()) {
             throw new ClientQueryException("Query expression cannot be null or empty");
@@ -21,6 +25,7 @@ public class QueryParseUtils {
         }
     }
 
+    /** 校验 filter 仅使用支持的字段与比较运算符。 */
     public static void validate(ScimFilterParser.FilterContext filterCtx) {
         validateExpression(filterCtx.expression());
     }

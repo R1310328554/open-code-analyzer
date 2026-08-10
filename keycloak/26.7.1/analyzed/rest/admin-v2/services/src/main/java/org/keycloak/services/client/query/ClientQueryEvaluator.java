@@ -8,6 +8,9 @@ import org.keycloak.scim.filter.FilterUtils;
 import org.keycloak.scim.filter.ScimFilterParser;
 import org.keycloak.scim.filter.ScimFilterParserBaseVisitor;
 
+/**
+ * 在内存中对 {@link BaseClientRepresentation} 求值 SCIM 风格客户端查询过滤器。
+ */
 public class ClientQueryEvaluator extends ScimFilterParserBaseVisitor<Boolean> {
 
     private final BaseClientRepresentation client;
@@ -16,6 +19,7 @@ public class ClientQueryEvaluator extends ScimFilterParserBaseVisitor<Boolean> {
         this.client = client;
     }
 
+    /** 判断客户端是否匹配已解析的 filter 表达式。 */
     public static boolean matches(ScimFilterParser.FilterContext filter, BaseClientRepresentation client) {
         return new ClientQueryEvaluator(client).visit(filter);
     }

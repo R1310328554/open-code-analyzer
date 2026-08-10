@@ -21,10 +21,15 @@ import org.keycloak.services.PatchType;
 import org.keycloak.services.Service;
 import org.keycloak.services.ServiceException;
 
+/**
+ * Admin Client API v2 的客户端业务服务接口。
+ */
 public interface ClientService extends Service {
 
+    /** 客户端列表查询选项（SCIM 风格 filter 表达式）。 */
     record ClientSearchOptions(String query) {}
 
+    /** 字段投影选项：仅返回请求的属性子集。 */
     class ClientProjectionOptions {
         private final LinkedHashSet<String> fields = new LinkedHashSet<>();
 
@@ -34,11 +39,13 @@ public interface ClientService extends Service {
             }
         }
         
+        /** 不可变的投影字段名集合。 */
         public Set<String> getFields() {
             return Collections.unmodifiableSet(fields);
         }
     }
 
+    /** 排序与分页（offset/limit）选项。 */
     class ClientSortAndSliceOptions {
         private List<SortOption> sortOptions;
         private int offset;
@@ -58,6 +65,7 @@ public interface ClientService extends Service {
             return this.offset;
         }
 
+        /** 从 {@link ListOptions} 解析并规范化排序与分页参数。 */
         public static ClientSortAndSliceOptions fromQuery(ListOptions listOptions) {
             List<SortOption> options;
             int normalizedOffset;
@@ -84,6 +92,7 @@ public interface ClientService extends Service {
             return new ClientSortAndSliceOptions(options, normalizedOffset, normalizedLimit);
         }
 
+        /** 按配置的 {@link SortOption} 链构建比较器。 */
         public Comparator<BaseClientRepresentation> getSortComparator() {
             return sortOptions.stream()
                     .map(option -> option.field().comparator(option.isAscending()))
@@ -92,6 +101,7 @@ public interface ClientService extends Service {
         }
     }
 
+    /** 创建或更新操作的结果：表示对象及是否为新建。 */
     record CreateOrUpdateResult(BaseClientRepresentation representation, boolean created) {}
 
     Optional<BaseClientRepresentation> getClient(RealmModel realm, String clientId) throws ServiceException;
