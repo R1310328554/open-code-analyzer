@@ -15,23 +15,8 @@
     "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/config/HttpPathConfiguration.java",
     "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/controller/McpRegistryController.java",
     "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/controller/SkillsRegistryController.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/form/GetServerForm.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/form/ListServerForm.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/form/ListServersNacosForm.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/form/ListServersOfficialForm.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/form/SkillsFileQueryForm.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/form/SkillsSearchForm.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/model/skills/SkillsSearchItem.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/model/skills/SkillsSearchResponse.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/model/skills/WellKnownSkillEntry.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/model/skills/WellKnownSkillsIndex.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/service/NacosMcpRegistryService.java",
-    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/service/NacosSkillsRegistryService.java",
-    "api/src/main/java/com/alibaba/nacos/api/NacosFactory.java",
-    "api/src/main/java/com/alibaba/nacos/api/PropertyKeyConst.java",
-    "api/src/main/java/com/alibaba/nacos/api/SystemPropertyKeyConst.java",
-    "api/src/main/java/com/alibaba/nacos/api/ability/ClientAbilities.java"
+    "ai-registry-adaptor/src/main/java/com/alibaba/nacos/airegistry/form/GetServerForm.java"
   ],
   "remaining_pending": 2297,
-  "done": 210
+  "done": 225
 }
