@@ -34,16 +34,33 @@ import java.util.regex.Pattern;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.owasp.html.PolicyFactory;
 
+/**
+ * 主题 {@code messages_*.properties} 文件的静态校验器。
+ * <p>
+ * 检查重复键、HTML 安全、MessageFormat 引号/占位符、首尾空白、禁用词汇等，
+ * 供 {@link ThemeVerifierMojo} 在构建阶段批量调用。
+ */
 public class VerifyMessageProperties {
 
+    /** 待校验的属性文件。 */
     private final File file;
+    /** 累积的校验错误消息。 */
     private List<String> messages;
+    /** 是否按后端 MessageFormat 规则校验引号与占位符。 */
     private boolean validateMessageFormatQuotes;
 
+    /**
+     * @param file 目标 properties 文件
+     */
     public VerifyMessageProperties(File file) {
         this.file = file;
     }
 
+    /**
+     * 执行全部校验规则并返回错误列表（空列表表示通过）。
+     *
+     * @return 校验错误描述列表
+     */
     public List<String> verify() throws MojoExecutionException {
         messages = new ArrayList<>();
         try {
@@ -67,8 +84,10 @@ public class VerifyMessageProperties {
         return messages;
     }
 
+    /** HTML 实体（如 {@code &nbsp;}）检测模式。 */
     private final static Pattern HTML_ENTITIES = Pattern.compile("&[a-zA-Z]+;");
 
+    /** 禁止直接使用 HTML 实体，应改用 UTF-8 字符。 */
     private void verifyNoHtmlEntities() {
         PropertyResourceBundle bundle = getPropertyResourceBundle();
 
@@ -82,13 +101,15 @@ public class VerifyMessageProperties {
         });
     }
 
+    /** 英文源文件中不推荐使用的词汇（whitelist/blacklist 等）。 */
     private final static Pattern DISCOURAGED_WORDS = Pattern.compile("(whitelist|blacklist)", Pattern.CASE_INSENSITIVE);
 
+    /** 仅在 {@code _en.properties} 中检查禁用词汇。 */
     private void verifyNoDiscouragedWords() {
         PropertyResourceBundle bundle = getPropertyResourceBundle();
 
         if (!file.getName().endsWith("_en.properties")) {
-            // Discouraged words only apply to English files.
+            // 禁用词规则仅适用于英文源文件
             return;
         }
 
@@ -103,8 +124,10 @@ public class VerifyMessageProperties {
         });
     }
 
+    /** MessageFormat 中表示字面量单引号的 {@code ''} 序列。 */
     private final static Pattern DOUBLE_SINGLE_QUOTES = Pattern.compile("''");
 
+    /** 前端展示模式下不允许出现 MessageFormat 双单引号转义。 */
     private void verifyNotMessageFormatQuotes() {
         PropertyResourceBundle bundle = getPropertyResourceBundle();
 
@@ -118,10 +141,12 @@ public class VerifyMessageProperties {
         });
     }
 
+    /** 字符串中间、末尾、开头的孤立单引号（MessageFormat 后端模式）。 */
     private static final Pattern SINGLE_QUOTE_MIDDLE = Pattern.compile("[^']'[^']");
     private static final Pattern SINGLE_QUOTE_END = Pattern.compile("[^']'$");
     private static final Pattern SINGLE_QUOTE_START = Pattern.compile("^'[^']");
 
+    /** 后端 MessageFormat 模式下禁止未转义的单引号。 */
     private void verifyMessageFormatQuotes() {
         PropertyResourceBundle bundle = getPropertyResourceBundle();
 
@@ -137,9 +162,11 @@ public class VerifyMessageProperties {
         });
     }
 
+    /** 后端 MessageFormat 双花括号占位符 {@code {{0}}} 的起止片段。 */
     private static final Pattern DOUBLE_CURLY_BRACES_START = Pattern.compile("\\{\\{[0-9]");
     private static final Pattern DOUBLE_CURLY_BRACES_END = Pattern.compile("[0-9]}}");
 
+    /** 后端模式下占位符必须使用双花括号，禁止单花括号形式。 */
     private void verifyMessageFormatPlaceholders() {
         PropertyResourceBundle bundle = getPropertyResourceBundle();
 
@@ -154,10 +181,12 @@ public class VerifyMessageProperties {
         });
     }
 
+    /** 前端展示模式下检测误用的单花括号占位符 {@code {0}}。 */
     private static final Pattern SINGLE_CURLY_BRACE_MIDDLE = Pattern.compile("[^{]\\{[0-9]");
     private static final Pattern SINGLE_CURLY_BRACE_END = Pattern.compile("[0-9]}$");
     private static final Pattern SINGLE_CURLY_BRACE_START = Pattern.compile("^\\{[0-9]");
 
+    /** 前端模式下不允许 MessageFormat 风格数字占位符。 */
     private void verifyNotMessageFormatPlaceholders() {
         PropertyResourceBundle bundle = getPropertyResourceBundle();
 
@@ -173,11 +202,13 @@ public class VerifyMessageProperties {
         });
     }
 
+    /** 检测不成对的花括号组合。 */
     private static final Pattern UNBALANCED_ONE = Pattern.compile("\\{\\{[^{}]*}[^}]");
     private static final Pattern UNBALANCED_ONE_END = Pattern.compile("\\{\\{[^{}]*}$");
     private static final Pattern UNBALANCED_TWO = Pattern.compile("[^{]\\{[^{}]*}}");
     private static final Pattern UNBALANCED_TWO_START = Pattern.compile("^\\{[^{}]*}}");
 
+    /** 校验各键值中花括号是否成对、格式是否一致。 */
     private void verifyUnbalancedCurlyBraces() {
         PropertyResourceBundle bundle = getPropertyResourceBundle();
 
@@ -192,6 +223,7 @@ public class VerifyMessageProperties {
         });
     }
 
+    /** 加载 properties 为 {@link PropertyResourceBundle}。 */
     private PropertyResourceBundle getPropertyResourceBundle() {
         PropertyResourceBundle bundle;
         try (FileInputStream fis = new FileInputStream(file)) {
@@ -202,13 +234,19 @@ public class VerifyMessageProperties {
         return bundle;
     }
 
+    /** 允许少量安全 HTML 标签的策略（与英文源对齐时使用）。 */
     PolicyFactory POLICY_SOME_HTML = new org.owasp.html.HtmlPolicyBuilder()
             .allowElements(
                     "br", "p", "strong", "b", "formattedLink"
             ).toFactory();
 
+    /** 禁止一切 HTML 的严格策略。 */
     PolicyFactory POLICY_NO_HTML = new org.owasp.html.HtmlPolicyBuilder().toFactory();
 
+    /**
+     * 对照英文源字符串，用 OWASP HTML 策略校验翻译值是否含非法 markup。
+     * 仅当英文原文含 HTML 时才允许对应键使用有限 HTML 标签。
+     */
     private void verifySafeHtml() {
         PropertyResourceBundle bundle = getPropertyResourceBundle();
 
@@ -229,18 +267,18 @@ public class VerifyMessageProperties {
 
             value = santizeAnchors(key, value, englishValue);
 
-            // Only if the English source string contains HTML we also allow HTML in the translation
+            // 英文源含 HTML 时，翻译也允许相同级别的 HTML
             PolicyFactory policy = containsHtml(englishValue) ? POLICY_SOME_HTML : POLICY_NO_HTML;
             String sanitized = policy.sanitize(value);
 
-            // Sanitizer will escape HTML entities for quotes and also for numberic tags like '<1>'
+            //  sanitizer 会转义引号及类似 '<1>' 的数字标签
             sanitized = org.apache.commons.text.StringEscapeUtils.unescapeHtml4(sanitized);
-            // Sanitizer will add them when there are double curly braces
+            // 双花括号场景下 sanitizer 可能插入占位注释
             sanitized = sanitized.replace("<!-- -->", "");
 
             if (!Objects.equals(sanitized, value)) {
 
-                // Strip identical characters from the beginning and the end to show where the difference is
+                // 剥去首尾相同片段，便于在错误信息中定位差异区间
                 int start = 0;
                 while (start < sanitized.length() && start < value.length() && value.charAt(start) == sanitized.charAt(start)) {
                     start++;
@@ -257,12 +295,13 @@ public class VerifyMessageProperties {
     }
 
     /**
+     * 双空格及字符串首尾空白难以在翻译工具中维护；UI 所需空白应放在 HTML 模板中。
      * Double blanks and blanks at the beginning of end of the string are difficult to translation in the translation tools and
      * are easily missed. If a blank before or after the string is needed in the UI, add it in the HTML template.
      */
     private void verifyProblematicBlanks() {
         if (!file.getName().endsWith("_en.properties")) {
-            // Only check EN original files, as the other files are checked by the translation tools
+            // 仅检查英文源文件；其它语言由翻译平台校验
             return;
         }
         PropertyResourceBundle bundle = getPropertyResourceBundle();
@@ -284,33 +323,37 @@ public class VerifyMessageProperties {
         });
     }
 
+    /** 对已知特殊键剥离模板占位片段，避免 HTML 校验误报。 */
     private String normalizeValue(String key, String value) {
         if (key.equals("templateHelp")) {
-            // Allow "CLAIM.<NAME>" here
+            // 允许 "CLAIM.<NAME>" 占位
             value = value.replaceAll("CLAIM\\.<[A-Z]*>", "");
         } else if (key.equals("optimizeLookupHelp")) {
-            // Allow "<Extensions>" here
+            // 允许 "<Extensions>" 占位
             value = value.replaceAll("<Extensions>", "");
         } else if (key.startsWith("linkExpirationFormatter.timePeriodUnit") || key.equals("error-invalid-multivalued-size")) {
-            // The problem is the "<" that appears in the choice
+            // choice 格式中的 "<" 会导致误判
             value = value.replaceAll("\\{[0-9]+,choice,[^}]*}", "...");
         }
 
-        // Unescape HTML entities, as we later also unescape HTML entities in the sanitized value
+        // 与 sanitized 值一致，先反转义 HTML 实体
         value = org.apache.commons.text.StringEscapeUtils.unescapeHtml4(value);
 
         return value;
     }
 
+    /** 检测字符串是否包含简单 HTML 开标签。 */
     Pattern HTML_TAGS = Pattern.compile("<[a-z]+[^>]*>");
 
     private boolean containsHtml(String englishValue) {
         return HTML_TAGS.matcher(englishValue).find();
     }
 
+    /** {@code <a>} 锚点标签匹配模式。 */
     private static final Pattern ANCHOR_PATTERN = Pattern.compile("</?a[^>]*>");
 
     /**
+     * 翻译中仅允许出现与英文源完全一致的 {@code <a>} 标签。
      * Allow only those anchor tags from the source key to also appear in the target key.
      */
     private String santizeAnchors(String key, String value, String englishValue) {
@@ -327,6 +370,7 @@ public class VerifyMessageProperties {
         return value;
     }
 
+    /** 读取英文 bundle 中同键值，缺失时返回空串。 */
     private static String getEnglishValue(String key, PropertyResourceBundle bundleEnglish) {
         String englishValue;
         try {
@@ -337,6 +381,7 @@ public class VerifyMessageProperties {
         return englishValue;
     }
 
+    /** 按行扫描原始文件文本，检测重复的 property 键。 */
     private void verifyNoDuplicateKeys(String contents) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new StringReader(contents));
         String line;
@@ -361,6 +406,12 @@ public class VerifyMessageProperties {
         }
     }
 
+    /**
+     * 链式设置 MessageFormat 校验模式。
+     *
+     * @param validateMessageFormatQuotes 是否启用后端 MessageFormat 规则
+     * @return 当前实例
+     */
     public VerifyMessageProperties withValidateMessageFormatQuotes(boolean validateMessageFormatQuotes) {
         this.validateMessageFormatQuotes = validateMessageFormatQuotes;
         return this;

@@ -5,6 +5,11 @@ import java.io.File;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 
+/**
+ * Maven 目标 {@code unsupported}：将新变更标记为<strong>不支持滚动升级</strong>并写入 unsupported JSON。
+ * <p>
+ * 与 {@link SupportedMojo} 参数顺序相反：目标文件为 unsupported，并从 supported 中移除冲突项。
+ */
 @Mojo(name = "unsupported")
 public class UnsupportedMojo extends AbstractNewEntryMojo {
 

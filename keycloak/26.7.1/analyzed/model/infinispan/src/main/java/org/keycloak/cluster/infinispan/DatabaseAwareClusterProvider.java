@@ -41,6 +41,9 @@ import org.jspecify.annotations.Nullable;
 
 
 /**
+ * 包装 {@link InfinispanClusterProvider}，在 Infinispan 集群通知之外将事件持久化到数据库，
+ * 以支持跨集群（多数据中心）通信。
+ *
  * Wraps an {@link InfinispanClusterProvider} and additionally persists events to the database
  * for cross-cluster communication.
  *
@@ -50,12 +53,24 @@ public class DatabaseAwareClusterProvider implements ClusterProvider {
 
     private static final Logger logger = Logger.getLogger(DatabaseAwareClusterProvider.class);
 
+    /** 底层 Infinispan 集群提供者。 */
     private final ClusterProvider delegate;
+    /** 当前 Keycloak 会话，用于访问 JPA 事件存储。 */
     private final KeycloakSession session;
+    /** 本节点所属集群与站点信息。 */
     private final NodeInfo nodeInfo;
+    /** 序列化集群事件的 ProtoStream marshaller。 */
     private final Marshaller marshaller;
+    /** 等待远端消费事件的最长时长（通常为轮询间隔的 5 倍）。 */
     private final Duration awaitTimeout;
 
+    /**
+     * @param delegate     委托的 Infinispan 集群提供者
+     * @param session      Keycloak 会话
+     * @param nodeInfo     节点与集群元数据
+     * @param marshaller   事件序列化器
+     * @param awaitTimeout 发布方等待事件被处理的超时时间
+     */
     public DatabaseAwareClusterProvider(ClusterProvider delegate, KeycloakSession session,
                                         NodeInfo nodeInfo, Marshaller marshaller, Duration awaitTimeout) {
         this.delegate = delegate;
@@ -70,6 +85,9 @@ public class DatabaseAwareClusterProvider implements ClusterProvider {
         return delegate.getClusterStartupTime();
     }
 
+    /**
+     * 非主集群节点上不执行一次性任务（避免跨集群重复执行）。
+     */
     @Override
     public <T> ExecutionResult<T> executeIfNotExecuted(String taskKey, int taskTimeoutInSeconds, Callable<T> task) {
         if (isPrimaryClusterSupported() && !isPrimaryCluster()) {
@@ -78,11 +96,13 @@ public class DatabaseAwareClusterProvider implements ClusterProvider {
         return delegate.executeIfNotExecuted(taskKey, taskTimeoutInSeconds, task);
     }
 
+    /** 判断本节点是否属于 JPA 事件存储认定的主集群。 */
     @Override
     public boolean isPrimaryCluster() {
         return Objects.equals(new JpaClusterEventStoreProvider(session).getPrimaryClusterName(), nodeInfo.clusterName());
     }
 
+    /** 当前拓扑是否启用 JDBC_PING 且支持主集群语义。 */
     @Override
     public boolean isPrimaryClusterSupported() {
         return new JpaClusterEventStoreProvider(session).isUsingJdbcPing(nodeInfo.clusterName(), nodeInfo.nodeName());
@@ -98,6 +118,7 @@ public class DatabaseAwareClusterProvider implements ClusterProvider {
         delegate.registerListener(taskKey, task);
     }
 
+    /** 本地 Infinispan 通知后，若非仅本 DC，则写入数据库供其它集群拉取。 */
     @Override
     public void notify(String taskKey, ClusterEvent event, boolean ignoreSender, DCNotify dcNotify) {
         delegate.notify(taskKey, event, ignoreSender, dcNotify);
@@ -126,13 +147,16 @@ public class DatabaseAwareClusterProvider implements ClusterProvider {
         persistToDatabase(taskKey, events, ignoreSender, DCNotify.ALL_DCS);
     }
 
+    /**
+     * 将集群事件序列化后写入 JPA 表，并阻塞等待消费方删除该事件（至多 {@link #awaitTimeout}）。
+     */
     private void persistToDatabase(String taskKey, Collection<? extends ClusterEvent> events, boolean ignoreSender, DCNotify dcNotify) {
         if (events == null || events.isEmpty() || nodeInfo.clusterName() == null) {
             return;
         }
 
         var wrappedEvent = WrapperClusterEvent.wrap(taskKey, events,
-                // append the cluster name to the node name to avoid situations where the same node name exists in both clusters
+                // 节点名附加集群名，避免不同集群间节点名冲突
                 nodeInfo.nodeName() + "@" + nodeInfo.clusterName(),
                 nodeInfo.siteName(),
                 dcNotify, ignoreSender);
@@ -147,13 +171,20 @@ public class DatabaseAwareClusterProvider implements ClusterProvider {
         awaitEventProcessing(eventId);
     }
 
+    /** 在独立事务中将事件字节写入数据库并返回事件 id。 */
     private @Nullable String storeEvent(byte[] data) {
         return KeycloakModelUtils.runJobInTransactionWithResult(session.getKeycloakSessionFactory(),
                 s -> new JpaClusterEventStoreProvider(s).persist(nodeInfo.clusterName(), data));
     }
 
+    /** 用于 {@link Retry} 退避循环中跳出等待的内部信号。 */
     private static class RetryException extends RuntimeException {}
 
+    /**
+     * 轮询直到事件从存储中消失（表示已被对端集群消费），超时则记录警告。
+     *
+     * @param eventId 已持久化的事件标识，null 时直接返回
+     */
     private void awaitEventProcessing(String eventId) {
         if (eventId == null) {
             return;

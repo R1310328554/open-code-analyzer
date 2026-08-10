@@ -20,9 +20,19 @@ import java.io.File;
 
 import org.apache.commons.io.filefilter.AbstractFileFilter;
 
+/**
+ * 主题国际化资源文件过滤器：仅接受 {@code messages_*.properties} 命名规则的文件。
+ */
 public class MessagePropertiesFilter extends AbstractFileFilter {
+    /** 单例实例，供 {@link ThemeVerifierMojo} 遍历资源目录时使用。 */
     public static MessagePropertiesFilter INSTANCE = new MessagePropertiesFilter();
 
+    /**
+     * 判断文件是否为待校验的消息属性文件。
+     *
+     * @param file 候选文件
+     * @return 文件名以 {@code messages_} 开头且以 {@code .properties} 结尾时返回 true
+     */
     @Override
     public boolean accept(File file) {
         return file.getName().startsWith("messages_") && file.getName().endsWith(".properties");

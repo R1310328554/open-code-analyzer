@@ -44,6 +44,10 @@ import org.infinispan.commons.marshall.Marshaller;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于数据库表中继的集群事件提供者工厂：在嵌入式 Infinispan 之上启用跨集群消息传递。
+ * <p>
+ * 通过定时轮询 JPA 事件表拉取远端写入的事件，并与 {@link DatabaseAwareClusterProvider} 配合发布。
+ *
  * This implementation sends information to other clusters via a database table.
  *
  * @author Alexander Schwartz
@@ -52,18 +56,25 @@ public class DatabaseAwareClusterProviderFactory extends InfinispanClusterProvid
 
     protected static final Logger logger = Logger.getLogger(DatabaseAwareClusterProviderFactory.class);
 
+    /** 默认数据库轮询间隔。 */
     private static final String DEFAULT_POLL_INTERVAL_MS = "100ms";
 
+    /** 初始化后缓存的节点与集群信息。 */
     private volatile NodeInfo nodeInfo;
+    /** ProtoStream 序列化器，与 Infinispan 连接共享。 */
     private volatile Marshaller protoStreamMarshaller;
+    /** 独立守护 Timer，避免与其它调度任务互相阻塞。 */
     private Timer timer;
 
+    /** 从数据库拉取新集群事件的间隔。 */
     private Duration pollInterval;
+    /** 发布方等待事件被消费的最长时长（pollInterval × 5）。 */
     private Duration awaitTimeout;
 
     public DatabaseAwareClusterProviderFactory() {
     }
 
+    /** 创建包装了 DB 持久化逻辑的 {@link DatabaseAwareClusterProvider}。 */
     @Override
     public ClusterProvider create(KeycloakSession session) {
         return new DatabaseAwareClusterProvider(super.create(session), session,
@@ -80,7 +91,7 @@ public class DatabaseAwareClusterProviderFactory extends InfinispanClusterProvid
             logger.warnf("Polling interval is %s. This is longer than 1 second, which seems to be too high for a production setting. Please verify.", pollInterval.toString());
         }
         awaitTimeout = pollInterval.multipliedBy(5);
-        // We run our own timer so that we're not delayed by other tasks
+        // 使用独立 Timer，避免被其它定时任务拖慢轮询
         timer = new Timer(true);
     }
 
@@ -96,6 +107,9 @@ public class DatabaseAwareClusterProviderFactory extends InfinispanClusterProvid
                 .build();
     }
 
+    /**
+     * 工厂后置初始化：解析节点信息并启动 {@link DatabaseClusterEventPollerTask} 定时轮询。
+     */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         KeycloakModelUtils.runJobInTransaction(factory, session -> {
@@ -124,6 +138,7 @@ public class DatabaseAwareClusterProviderFactory extends InfinispanClusterProvid
         }
     }
 
+    /** SPI 标识：嵌入式 Infinispan 提供者 id 后缀 {@code -db}。 */
     @Override
     public String getId() {
         return InfinispanUtils.EMBEDDED_PROVIDER_ID + "-db";
@@ -137,6 +152,7 @@ public class DatabaseAwareClusterProviderFactory extends InfinispanClusterProvid
         return result;
     }
 
+    /** 仅在嵌入式 Infinispan 且启用 STATELESS 特性时可用。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return InfinispanUtils.isEmbeddedInfinispan() &&

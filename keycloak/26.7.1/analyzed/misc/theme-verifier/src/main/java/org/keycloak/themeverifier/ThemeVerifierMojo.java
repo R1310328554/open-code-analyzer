@@ -33,12 +33,21 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
+/**
+ * Maven 目标 {@code verify-theme}：在 INSTALL 阶段扫描项目资源目录下全部
+ * {@code messages_*.properties}，并调用 {@link VerifyMessageProperties} 做主题文案校验。
+ */
 @Mojo(name = "verify-theme", defaultPhase = LifecyclePhase.INSTALL, threadSafe = true)
 public class ThemeVerifierMojo extends AbstractMojo {
 
+    /** 当前 Maven 项目，用于获取 {@code resources} 目录列表。 */
     @Parameter(defaultValue = "${project}", readonly = true)
     private MavenProject mavenProject;
 
+    /**
+     * 是否以后端 MessageFormat 规则校验引号与占位符；
+     * false 时按前端展示规则校验。
+     */
     @Parameter(defaultValue = "false")
     private boolean validateMessageFormatQuotes;
 
@@ -49,6 +58,7 @@ public class ThemeVerifierMojo extends AbstractMojo {
         while (resources.hasNext()) {
             Resource resource = resources.next();
             File dir = new File(resource.getDirectory());
+            // 递归遍历资源树中的 messages_*.properties
             Iterator<File> fileIterator = FileUtils.iterateFiles(dir, MessagePropertiesFilter.INSTANCE, DirectoryFileFilter.INSTANCE);
             while (fileIterator.hasNext()) {
                 File file = fileIterator.next();

@@ -13,9 +13,16 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+/**
+ * Maven 目标 {@code verify}：校验仓库中 Liquibase {@link ChangeSet} 与 {@link Migration}
+ * 是否已在 supported/unsupported JSON 中完整、互斥地登记。
+ * <p>
+ * 若代码库新增变更但未归类，构建失败并提示开发者判断滚动升级兼容性。
+ */
 @Mojo(name = "verify")
 public class VerifyMojo extends AbstractMojo {
 
+    /** 迁移类扫描包名，对应属性 {@code db.verify.migration.package}。 */
     @Parameter(property = "db.verify.migration.package")
     String migrationsPackage;
 
@@ -36,6 +43,13 @@ public class VerifyMojo extends AbstractMojo {
         }
     }
 
+    /**
+     * 若任一 JSON 存在则分别校验 ChangeSet 与 Migration。
+     *
+     * @param classLoader 项目类加载器
+     * @param sFile       supported 列表路径
+     * @param uFile       unsupported 列表路径
+     */
     void verify(ClassLoader classLoader, File sFile, File uFile) throws IOException, MojoExecutionException {
         if (!sFile.exists() && !uFile.exists()) {
             getLog().info("No JSON files exist to verify");
@@ -46,8 +60,9 @@ public class VerifyMojo extends AbstractMojo {
         verifyMigrations(classLoader, sFile, uFile);
     }
 
+    /** 比对 JSON 中登记的 ChangeSet 与 jpa-changelog*.xml 中的当前定义。 */
     void verifyChangeSets(ClassLoader classLoader, File sFile, File uFile) throws IOException, MojoExecutionException {
-        // Parse JSON files to determine all committed ChangeSets
+        // 从 JSON 读取已提交的 ChangeSet
         Collection<ChangeSet> sChanges = objectMapper.readValue(sFile, new TypeReference<JsonParent>() {}).changeSets();
         Collection<ChangeSet> uChanges = objectMapper.readValue(uFile, new TypeReference<JsonParent>() {}).changeSets();
         Set<ChangeSet> recordedChanges = Stream.of(sChanges, uChanges)
@@ -62,18 +77,19 @@ public class VerifyMojo extends AbstractMojo {
 
         verifyIntersection(description, sChanges, uChanges);
 
-        // Parse all ChangeSets currently defined in the jpa-changelog* files
+        // 扫描 jpa-changelog* 中当前全部 ChangeSet
         ChangeLogXMLParser xmlParser = new ChangeLogXMLParser(classLoader);
         Set<ChangeSet> currentChanges = xmlParser.discoverAllChangeSets();
         verifyMissing(description, currentChanges, recordedChanges, sFile, uFile);
     }
 
+    /** 比对 JSON 中登记的 Migration 与配置包内当前迁移类。 */
     void verifyMigrations(ClassLoader classLoader, File sFile, File uFile) throws IOException, MojoExecutionException {
         if (migrationsPackage != null && migrationsPackage.isEmpty()) {
             getLog().info("Skipping Migrations verification as no package configured");
             return;
         }
-        // Parse JSON files to determine all committed Migrations
+        // 从 JSON 读取已提交的 Migration
         Collection<Migration> sChanges = objectMapper.readValue(sFile, new TypeReference<JsonParent>() {}).migrations();
         Collection<Migration> uChanges = objectMapper.readValue(uFile, new TypeReference<JsonParent>() {}).migrations();
         Set<Migration> recordedChanges = Stream.of(sChanges, uChanges)
@@ -87,11 +103,18 @@ public class VerifyMojo extends AbstractMojo {
         }
         verifyIntersection(description, sChanges, uChanges);
 
-        // Parse all Migrations currently defined in the configured migrationsPackage
+        // 扫描 migrationsPackage 下当前全部 Migration 类
         Set<Migration> currentChanges = new KeycloakMigrationParser(classLoader, migrationsPackage).discoverAllMigrations();
         verifyMissing(description, currentChanges, recordedChanges, sFile, uFile);
     }
 
+    /**
+     * 确保同一条目不会同时出现在 supported 与 unsupported 中。
+     *
+     * @param description 条目类型描述（ChangeSet / Migration）
+     * @param sChanges    supported 集合
+     * @param uChanges    unsupported 集合
+     */
     void verifyIntersection(String description, Collection<?> sChanges, Collection<?> uChanges) throws MojoExecutionException {
         Set<?> intersection = new HashSet<>(sChanges);
         intersection.retainAll(uChanges);
@@ -103,6 +126,15 @@ public class VerifyMojo extends AbstractMojo {
         }
     }
 
+    /**
+     * 确保代码库中的当前条目集合与 JSON 快照完全一致；缺失则构建失败并输出升级兼容性指引。
+     *
+     * @param description      条目类型描述
+     * @param currentChanges   代码库当前条目
+     * @param recordedChanges  JSON 已登记条目
+     * @param sFile            supported 文件
+     * @param uFile            unsupported 文件
+     */
     void verifyMissing(String description, Set<?> currentChanges, Set<?> recordedChanges, File sFile, File uFile) throws MojoExecutionException {
         if (recordedChanges.equals(currentChanges)) {
             getLog().info("All %s in the module recorded as expected in the supported and unsupported files".formatted(description));
