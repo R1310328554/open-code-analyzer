@@ -53,9 +53,15 @@ import org.keycloak.saml.common.constants.JBossSAMLURIConstants;
 
 import static org.keycloak.organization.utils.Organizations.isEnabledAndOrganizationsPresent;
 
+/**
+ * SAML 组织组成员关系协议映射器：在断言中写入各组织的组路径及可选 realm/client 角色属性。
+ * <p>属性名格式为 {@code organization.<alias>.groups} 及 {@code organization.<alias>.realm_access.roles} 等；遍历用户所属的全部启用组织。</p>
+ */
 public class OrganizationGroupMembershipMapper extends AbstractSAMLProtocolMapper implements SAMLAttributeStatementMapper, EnvironmentDependentProviderFactory {
 
+    /** 映射器提供方 ID。 */
     public static final String ID = "saml-organization-group-membership-mapper";
+    /** 配置键：是否同时映射组织组上的角色。 */
     public static final String ADD_GROUP_ROLE_MAPPINGS = "addGroupRoleMappings";
 
     public static ProtocolMapperModel create() {
@@ -90,7 +96,7 @@ public class OrganizationGroupMembershipMapper extends AbstractSAMLProtocolMappe
 
             String orgAlias = organization.getAlias();
 
-            // Create attribute for this organization's groups
+            // 为该组织的 groups 创建 SAML 属性
             String attributeName = "organization." + orgAlias + ".groups";
             AttributeType attribute = new AttributeType(attributeName);
             attribute.setFriendlyName("Organization Groups");
@@ -102,7 +108,7 @@ public class OrganizationGroupMembershipMapper extends AbstractSAMLProtocolMappe
                 attributeStatement.addAttribute(new AttributeStatementType.ASTChoiceType(attribute));
             }
 
-            // Add role attributes if configured
+            // 配置启用时追加角色相关属性
             if (includeRoles) {
                 Set<RoleModel> roleMappings = userOrgGroups.stream()
                     .flatMap(GroupModel::getRoleMappingsStream)
@@ -184,7 +190,7 @@ public class OrganizationGroupMembershipMapper extends AbstractSAMLProtocolMappe
 
     @Override
     public int getPriority() {
-        // Run after OrganizationMembershipMapper
+        // 在 OrganizationMembershipMapper 之后执行
         return 10;
     }
 }

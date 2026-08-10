@@ -40,20 +40,34 @@ import static org.keycloak.models.IdentityProviderStorageProvider.FetchMode.ALL;
 import static org.keycloak.models.IdentityProviderStorageProvider.FetchMode.ORG_ONLY;
 import static org.keycloak.models.IdentityProviderStorageProvider.FetchMode.REALM_ONLY;
 
+/**
+ * 组织感知的身份提供者 FreeMarker Bean：按当前组织上下文过滤登录页展示的 IdP 列表。
+ * <p>支持仅领域 IdP、仅组织公开 IdP 或混合模式，并处理“在其他组织已链接时仍显示”等配置。</p>
+ */
 public class OrganizationAwareIdentityProviderBean extends IdentityProviderBean {
 
     private final OrganizationModel organization;
     private final boolean onlyRealmBrokers;
     private final boolean onlyOrganizationBrokers;
 
+    /** @param delegate 被包装的身份提供者 Bean */
     public OrganizationAwareIdentityProviderBean(IdentityProviderBean delegate) {
         this(delegate, false);
     }
 
+    /**
+     * @param delegate 被包装的身份提供者 Bean
+     * @param onlyOrganizationBrokers 是否仅展示组织 IdP
+     */
     public OrganizationAwareIdentityProviderBean(IdentityProviderBean delegate,  boolean onlyOrganizationBrokers) {
         this(delegate, onlyOrganizationBrokers, false);
     }
 
+    /**
+     * @param delegate 被包装的身份提供者 Bean
+     * @param onlyOrganizationBrokers 是否仅展示组织 IdP
+     * @param onlyRealmBrokers 是否仅展示领域级 IdP
+     */
     public OrganizationAwareIdentityProviderBean(IdentityProviderBean delegate, boolean onlyOrganizationBrokers, boolean onlyRealmBrokers) {
         super(delegate.getSession(), delegate.getRealm(), delegate.getBaseURI(), delegate.getFlowContext());
         this.organization = Organizations.resolveOrganization(super.session);
@@ -79,7 +93,7 @@ public class OrganizationAwareIdentityProviderBean extends IdentityProviderBean 
     @Override
     protected List<IdentityProvider> searchForIdentityProviders(String existingIDP) {
         if (onlyRealmBrokers) {
-            // we only want the realm-level IDPs - i.e. those not associated with any orgs.
+            // 仅返回领域级 IdP（未关联任何组织）
             return session.identityProviders().getForLogin(REALM_ONLY, null)
                     .filter(idp -> !Objects.equals(existingIDP, idp.getAlias()))
                     .map(idp -> createIdentityProvider(this.realm, this.baseURI, idp))
@@ -98,7 +112,7 @@ public class OrganizationAwareIdentityProviderBean extends IdentityProviderBean 
             return false;
         };
         if (onlyOrganizationBrokers) {
-            // we already have the organization, just fetch the organization's public enabled IDPs.
+            // 已有组织上下文，直接获取该组织的公开且已启用 IdP
             if (this.organization != null) {
                 return organization.getIdentityProviders()
                         .filter(idp -> idp.isEnabled() && Booleans.isFalse(idp.isLinkOnly()) && Booleans.isFalse(idp.isHideOnLogin()))
@@ -106,9 +120,9 @@ public class OrganizationAwareIdentityProviderBean extends IdentityProviderBean 
                         .map(idp -> createIdentityProvider(super.realm, super.baseURI, idp))
                         .sorted(IDP_COMPARATOR_INSTANCE).toList();
             }
-            // we don't have a specific organization - fetch public enabled IDPs linked to any org.
+            // 无特定组织时，获取任意组织关联的公开已启用 IdP
             return session.identityProviders().getForLogin(ORG_ONLY, null)
-                    .filter(defaultFilter) // re-check isEnabled as idp might have been wrapped.
+                    .filter(defaultFilter) // 再次校验 isEnabled，因 IdP 可能被包装
                     .map(idp -> createIdentityProvider(this.realm, this.baseURI, idp))
                     .sorted(IDP_COMPARATOR_INSTANCE).toList();
         }
@@ -120,7 +134,7 @@ public class OrganizationAwareIdentityProviderBean extends IdentityProviderBean 
 
     @Override
     protected Predicate<IdentityProviderModel> federatedProviderPredicate() {
-        // use the predicate from the superclass combined with the organization filter.
+        // 组合父类谓词与组织过滤条件
         return super.federatedProviderPredicate().and(idp -> {
             if (onlyRealmBrokers) {
                 return idp.getOrganizationId() == null;

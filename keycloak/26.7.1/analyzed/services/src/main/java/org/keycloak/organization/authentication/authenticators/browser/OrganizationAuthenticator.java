@@ -72,17 +72,23 @@ import static org.keycloak.organization.utils.Organizations.isEnabledAndOrganiza
 import static org.keycloak.organization.utils.Organizations.resolveHomeBroker;
 import static org.keycloak.utils.StringUtil.isBlank;
 
+/**
+ * 组织身份优先登录认证器：根据用户名/邮箱域名解析组织，自动重定向至组织 IdP 或展示组织选择/身份优先登录页。
+ * <p>继承 {@link IdentityProviderAuthenticator}，集成 WebAuthn 条件 UI，支持成员资格校验、多组织选择与 SSO 再认证场景。</p>
+ */
 public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
 
     private final KeycloakSession session;
     private final WebAuthnConditionalUIAuthenticator webauthnAuth;
 
+    /** @param session Keycloak 会话 */
     public OrganizationAuthenticator(KeycloakSession session) {
         this.session = session;
         this.webauthnAuth = new WebAuthnConditionalUIAuthenticator(session, (context) -> createLoginForm(context));
     }
 
     @Override
+    /** 解析 loginHint/组织上下文，决定初始挑战或继续 action 流程。 */
     public void authenticate(AuthenticationFlowContext context) {
         OrganizationProvider provider = getOrganizationProvider();
 
@@ -101,7 +107,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         }
 
         if (organization != null) {
-            // make sure the organization is set to the auth session to remember it when processing subsequent requests
+            // 将组织写入认证会话，供后续请求记住上下文
             authSession.setAuthNote(OrganizationModel.ORGANIZATION_ATTRIBUTE, organization.getId());
         }
 
@@ -109,23 +115,24 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
     }
 
     @Override
+    /** 处理表单提交：rememberMe、WebAuthn、用户名校验及组织解析。 */
     public void action(AuthenticationFlowContext context) {
         HttpRequest request = context.getHttpRequest();
         MultivaluedMap<String, String> parameters = request.getDecodedFormParameters();
         String username = parameters.getFirst(UserModel.USERNAME);
 
-        // Skip when re-entered from a form without the rememberMe field (e.g. select-organization.ftl):
-        // an unconditional call would clear the authNote saved on the first action() call.
+        // 从 select-organization.ftl 等无 rememberMe 字段的表单重入时跳过，避免清除已保存的 authNote
+        // 无条件调用会清除首次 action() 保存的 authNote
         if (parameters.containsKey("rememberMe")) {
             AuthenticatorUtils.processRememberMe(context, parameters);
         }
 
-        // check if it's a webauthn submission and perform the webauth login
+        // 检测 WebAuthn 提交并执行通行密钥登录
         if (webauthnAuth.isPasskeysEnabled() && (parameters.containsKey(WebAuthnConstants.AUTHENTICATOR_DATA)
                 || parameters.containsKey(WebAuthnConstants.ERROR))) {
             webauthnAuth.action(context);
             if (FlowStatus.SUCCESS != context.getStatus()) {
-                // if failure doing webauthn authentication return error; continue if success checking organizations
+                // WebAuthn 失败则返回；成功则继续组织校验
                 return;
             }
         }
@@ -143,6 +150,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         action(context, username);
     }
 
+    /** 按用户名解析用户与组织，处理 IdP 重定向、成员校验及 SSO 分支。 */
     private void action(AuthenticationFlowContext context, String username) {
         UserModel user = resolveUser(context, username);
         RealmModel realm = context.getRealm();
@@ -150,8 +158,8 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         OrganizationModel organization = resolveOrganization(user, domain);
 
         if (organization == null) {
-            // remember the username before the org selection challenge so it can be preserved
-            // when the user switches organizations (the switch handler reads ATTEMPTED_USERNAME)
+            // 组织选择挑战前记住用户名，切换组织时可从 ATTEMPTED_USERNAME 读取
+            // 用户切换组织时由 switch handler 读取 ATTEMPTED_USERNAME
             if (user != null && username != null) {
                 context.getAuthenticationSession().setAuthNote(AbstractUsernameFormAuthenticator.ATTEMPTED_USERNAME, username);
             }
@@ -164,15 +172,15 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
             }
 
             clearAuthenticationSession(context);
-            // request does not map to any organization, go to the next step/sub-flow
+            // 请求未映射到任何组织，进入下一步/子流程
             attempted(context, username);
             return;
         }
 
-        // remember the organization during the lifetime of the authentication session
+        // 在认证会话生命周期内记住组织
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
         authSession.setAuthNote(OrganizationModel.ORGANIZATION_ATTRIBUTE, organization.getId());
-        // make sure the organization is set to the session to make it available to templates
+        // 将会组织写入会话上下文，供 FreeMarker 模板使用
         session.getContext().setOrganization(organization);
 
         if (isMembershipRequired(context, organization, user)) {
@@ -188,14 +196,14 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
             return;
         }
 
-        // user exists, check if enabled
+        // 用户存在，检查是否启用
         if (!user.isEnabled()) {
             context.failure(AuthenticationFlowError.INVALID_USER);
             return;
         }
 
         if (isSSOAuthentication(authSession)) {
-            // if re-authenticating in the scope of an organization
+            // 在组织范围内再认证时直接成功
             context.success();
         } else {
             attempted(context, username);
@@ -203,6 +211,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
     }
 
     @Override
+    /** @return 领域启用组织功能时可用 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return realm.isOrganizationsEnabled();
     }
@@ -212,7 +221,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         HttpRequest request = context.getHttpRequest();
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
         MultivaluedMap<String, String> parameters = request.getDecodedFormParameters();
-        // parameter from the organization selection page
+        // 来自组织选择页的参数
         List<String> alias = parameters.getOrDefault(OrganizationModel.ORGANIZATION_ATTRIBUTE, List.of());
         OrganizationModel organization;
 
@@ -228,12 +237,12 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         }
 
         if (!alias.isEmpty() || isSSOAuthentication(authSession)) {
-            // make sure the organization selected by the user is available from the client session when running mappers and issuing tokens
+            // 用户所选组织写入 client session note，供 mapper 与签发令牌时使用
             authSession.setClientNote(OrganizationModel.ORGANIZATION_ATTRIBUTE, organization.getId());
         }
 
         if (!alias.isEmpty()) {
-            // user explicitly selected an organization, allow switching later in the flow
+            // 用户显式选择组织，允许后续流程中切换
             authSession.setAuthNote(OrganizationModel.ORGANIZATION_SWITCHABLE_ATTRIBUTE, Boolean.TRUE.toString());
         }
 
@@ -248,7 +257,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
 
         if (authSession.getClientNote(OrganizationModel.ORGANIZATION_ATTRIBUTE) != null) {
-            // organization already selected
+            // 组织已选定，无需再次选择
             return false;
         }
 
@@ -276,7 +285,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
     }
 
     private boolean tryRedirectBroker(AuthenticationFlowContext context, OrganizationModel organization, UserModel user, String username, String domain) {
-        // the user has credentials set; do not redirect to allow the user to pick how to authenticate
+        // 用户已设置凭据时不自动重定向，允许自行选择认证方式
         if (user != null && user.credentialManager().getFirstFactorCredentialsStream().findAny().isPresent()) {
             return false;
         }
@@ -284,7 +293,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         List<IdentityProviderModel> broker = resolveHomeBroker(session, user);
 
         if (broker.size() == 1) {
-            // user is a managed member and associated with a broker, redirect automatically
+            // 托管成员且仅关联一个 broker 时自动重定向
             redirect(context, broker.get(0).getAlias(), user.getEmail());
             return true;
         }
@@ -305,7 +314,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
             return false;
         }
 
-        // first look for an IDP that matches exactly the specified domain (case-insensitive)
+        // 优先查找与指定域名精确匹配（忽略大小写）的 IdP
         IdentityProviderModel idp = organization.getIdentityProviders()
                 .filter(IdentityProviderRedirectMode.EMAIL_MATCH::isSet)
                 .filter(broker -> {
@@ -352,7 +361,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         RealmModel realm = session.getContext().getRealm();
         UserModel user = findUserByNameOrEmail(session, realm, username);
 
-        // make sure the organization will be resolved based on the username provided
+        // 清除旧组织上下文，按所提供用户名重新解析组织
         clearAuthenticationSession(context);
         context.setUser(user);
 
@@ -360,15 +369,15 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
     }
 
     private void unknownUserChallenge(AuthenticationFlowContext context, OrganizationModel organization, RealmModel realm, boolean domainMatch) {
-        // the user does not exist and is authenticating in the scope of the organization, show the identity-first login page and the
-        // public organization brokers for selection
+        // 用户不存在且在组织范围内认证：展示身份优先登录页及
+        // 组织的公开 IdP 供选择
         LoginFormsProvider form = context.form()
                 .setAttributeMapper(attributes -> {
                     if (hasPublicBrokers(organization)) {
                         attributes.computeIfPresent("social",
                                 (key, bean) -> new OrganizationAwareIdentityProviderBean((IdentityProviderBean) bean, true)
                         );
-                        // do not show the self-registration link if there are public brokers available from the organization to force the user to register using a broker
+                        // 有组织公开 IdP 时隐藏自助注册链接，引导用户通过 broker 注册
                         attributes.computeIfPresent("realm",
                                 (key, bean) -> new OrganizationAwareRealmBean(realm)
                         );
@@ -389,7 +398,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
             form.addError(new FormMessage("Your email domain matches an organization but you don't have an account yet."));
         }
 
-        // user is null, setup webauthn data if enabled
+        // 用户为空且启用 WebAuthn 时填充通行密钥表单数据
         if (webauthnAuth.isPasskeysEnabled()) {
             webauthnAuth.fillContextForm(context);
         }
@@ -405,7 +414,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         UserModel user = context.getUser();
 
         if (user == null) {
-            // setup webauthn data when the user is not already selected
+            // 尚未选定用户时设置 WebAuthn 表单数据
             if (webauthnAuth.isPasskeysEnabled()) {
                 webauthnAuth.fillContextForm(context);
             }
@@ -416,10 +425,10 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
                 return;
             }
 
-            // user is re-authenticating, and there are no organizations to select
+            // 用户再认证且无待选组织时直接成功
             context.success();
         } else {
-            // user is re-authenticating, there is no organization to process
+            // 用户再认证且无组织需处理时标记 attempted
             attempted(context, user.getUsername());
         }
     }
@@ -429,7 +438,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
     }
 
     private Response createLoginForm(AuthenticationFlowContext context, Function<LoginFormsProvider, Response> formCreator) {
-        // the default challenge won't show any broker but just the identity-first login page and the option to try a different authentication mechanism
+        // 默认挑战仅展示身份优先登录页及“尝试其他方式”，不显示 broker
         LoginFormsProvider form = context.form()
                 .setAttributeMapper(attributes -> {
                     attributes.computeIfPresent("social",
@@ -512,7 +521,7 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
             return false;
         }
 
-        // do not show try another way
+        // 成员资格不满足时不展示“尝试其他方式”
         context.setAuthenticationSelections(List.of());
 
         LoginFormsProvider form = context.form();

@@ -54,11 +54,19 @@ import org.keycloak.representations.IDToken;
 import static org.keycloak.protocol.oidc.mappers.OIDCAttributeMapperHelper.JSON_TYPE;
 import static org.keycloak.protocol.oidc.mappers.OIDCAttributeMapperHelper.TOKEN_CLAIM_NAME;
 
+/**
+ * OIDC 组织成员关系协议映射器：将用户所属组织别名及可选属性、ID、域名写入令牌声明。
+ * <p>支持单值/多值及 String/JSON 类型；多组织场景下以别名为键构建嵌套 JSON 对象。</p>
+ */
 public class OrganizationMembershipMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper, TokenIntrospectionTokenMapper, EnvironmentDependentProviderFactory {
 
+    /** 映射器提供方 ID。 */
     public static final String PROVIDER_ID = "oidc-organization-membership-mapper";
+    /** 配置键：是否包含组织自定义属性。 */
     public static final String ADD_ORGANIZATION_ATTRIBUTES = "addOrganizationAttributes";
+    /** 配置键：是否包含组织 ID。 */
     public static final String ADD_ORGANIZATION_ID = "addOrganizationId";
+    /** 配置键：是否包含匹配的用户邮箱域名。 */
     public static final String ADD_ORGANIZATION_DOMAIN = "addOrganizationDomain";
 
     @Override
@@ -176,11 +184,11 @@ public class OrganizationMembershipMapper extends AbstractOIDCProtocolMapper imp
 
             Map<String, Object> claims = new HashMap<>();
 
-            // Add organization attributes first
+            // 先写入组织自定义属性
             if (isAddOrganizationAttributes(model)) {
                 claims.putAll(o.getAttributes());
             }
-            // Add organization ID last so it overrides any custom "id" attribute
+            // 最后写入组织 ID，覆盖可能存在的自定义 id 属性
             if (isAddOrganizationId(model)) {
                 claims.put(OAuth2Constants.ORGANIZATION_ID, o.getId());
             }
@@ -211,7 +219,7 @@ public class OrganizationMembershipMapper extends AbstractOIDCProtocolMapper imp
 
     @Override
     public ProtocolMapperModel getEffectiveModel(KeycloakSession session, RealmModel realm, ProtocolMapperModel model) {
-        // Effectively clone
+        // 有效克隆配置模型
         ProtocolMapperModel copy = RepresentationToModel.toModel(ModelToRepresentation.toRepresentation(model));
         Map<String, String> config = Optional.ofNullable(copy.getConfig()).orElseGet(HashMap::new);
 

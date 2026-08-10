@@ -69,6 +69,10 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
+/**
+ * 组织集合的管理 REST 资源：支持创建、分页搜索、计数及按成员查询关联组织。
+ * <p>所有操作均经 {@link AdminPermissionEvaluator} 的组织权限校验，并在组织功能未启用时通过 {@link Organizations#checkEnabled} 拒绝访问。</p>
+ */
 public class OrganizationsResource {
 
     private final KeycloakSession session;
@@ -78,6 +82,11 @@ public class OrganizationsResource {
 
     private static final Logger logger = Logger.getLogger(OrganizationsResource.class);
 
+    /**
+     * @param session Keycloak 会话
+     * @param auth 管理权限评估器
+     * @param adminEvent 管理事件构建器
+     */
     public OrganizationsResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.provider = session == null ? null : session.getProvider(OrganizationProvider.class);
@@ -86,10 +95,10 @@ public class OrganizationsResource {
     }
 
     /**
-     * Creates a new organization based on the specified {@link OrganizationRepresentation}.
+     * 基于指定的 {@link OrganizationRepresentation} 创建新组织。
      *
-     * @param organization the representation containing the organization data.
-     * @return a {@link Response} containing the status of the operation.
+     * @param organization 包含组织数据的表示对象
+     * @return 包含操作状态的 {@link Response}
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -126,16 +135,14 @@ public class OrganizationsResource {
     }
 
     /**
-     * Returns a stream of organizations, filtered according to query parameters.
+     * 按查询参数过滤并返回组织流。
      *
-     * @param search a {@code String} representing either an organization name or domain.
-     * @param searchQuery a query to search for organization attributes, in the format 'key1:value2 key2:value2'.
-     * @param exact if {@code true}, the organizations will be searched using exact match for the {@code search} param - i.e.
-     *              either the organization name or one of its domains must match exactly the {@code search} param. If false,
-     *              the method returns all organizations whose name or (domains) partially match the {@code search} param.
-     * @param first the position of the first result to be processed (pagination offset). Ignored if negative or {@code null}.
-     * @param max the maximum number of results to be returned. Ignored if negative or {@code null}.
-     * @return a non-null {@code Stream} of matched organizations.
+     * @param search 组织名称或域名
+     * @param searchQuery 自定义属性查询，格式为 key1:value1 key2:value2
+     * @param exact 为 true 时精确匹配 search；为 false 时部分匹配
+     * @param first 分页起始位置，负数或 null 时忽略
+     * @param max 最大返回条数，负数或 null 时忽略
+     * @return 匹配的组织表示流，永不为 null
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -158,12 +165,12 @@ public class OrganizationsResource {
         auth.orgs().requireQuery();
         Organizations.checkEnabled(provider, auth);
 
-        // if a dedicated admin can query, but cannot view (and FGAP is not enabled) - we can return empty list right away to save a roundtrip to the DB
+        // 专用管理员可查询但不可查看（且未启用 FGAP）时直接返回空列表，避免数据库往返
         if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(session.getContext().getRealm()) && !auth.orgs().canView()) {
             return Stream.empty();
         }
 
-        // check if are searching orgs by attribute.
+        // 按自定义属性搜索组织
         if (StringUtil.isNotBlank(searchQuery)) {
             Map<String, String> attributes = SearchQueryUtils.getFields(searchQuery);
             return provider.getAllStream(attributes, first, max).map(model -> ModelToRepresentation.toRepresentation(model, briefRepresentation));
@@ -172,9 +179,8 @@ public class OrganizationsResource {
         }
     }
 
-    /**
-     * Base path for the admin REST API for one particular organization.
-     */
+    /** 单个组织管理 REST API 的基路径。 */
+
     @Path("{org-id}")
     public OrganizationResource get(@PathParam("org-id") String orgId) {
         Organizations.checkEnabled(provider, auth);
@@ -198,9 +204,9 @@ public class OrganizationsResource {
     }
 
     /**
-     * Returns the organizations counts.
+     * 返回符合搜索条件的组织数量。
      *
-     * @return
+     * @return 组织计数
      */
     @GET
     @NoCache
@@ -220,7 +226,7 @@ public class OrganizationsResource {
         auth.orgs().requireQuery();
         Organizations.checkEnabled(provider, auth);
 
-        // if a dedicated admin can query, but cannot view (and FGAP is not enabled) - we can return 0L right away to save a roundtrip to the DB
+        // 专用管理员可查询但不可查看（且未启用 FGAP）时直接返回 0，避免数据库往返
         if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(session.getContext().getRealm()) && !auth.orgs().canView()) {
             return 0L;
         }
@@ -243,6 +249,12 @@ public class OrganizationsResource {
         @APIResponse(responseCode = "400", description = "Bad Request"),
         @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /**
+     * 返回指定用户所属的组织列表。
+     * @param memberId 用户 ID
+     * @param briefRepresentation 是否返回简要表示
+     * @return 组织表示流
+     */
     public Stream<OrganizationRepresentation> getOrganizations(
             @PathParam("member-id") String memberId,
             @Parameter(description = "if false, return the full representation. Otherwise, only the basic fields are returned.")

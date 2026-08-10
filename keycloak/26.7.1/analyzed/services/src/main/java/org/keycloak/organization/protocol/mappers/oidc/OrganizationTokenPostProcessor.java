@@ -16,15 +16,21 @@ import org.keycloak.protocol.oidc.token.TokenPostProcessor;
 import org.keycloak.protocol.oidc.token.TokenPostProcessorContext;
 import org.keycloak.representations.RefreshToken;
 
+/**
+ * 组织令牌后处理器：在签发或刷新令牌时将组织别名写入 refresh token 的 otherClaims，并在刷新时校验组织仍有效且用户仍为成员。
+ * <p>实现 {@link TokenPostProcessor}，无效组织或非成员时抛出 {@link TokenInterceptorException}。</p>
+ */
 public class OrganizationTokenPostProcessor implements TokenPostProcessor{
 
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public OrganizationTokenPostProcessor(KeycloakSession session) {
         this.session = session;
     }
 
     @Override
+    /** 根据 grant 类型从上下文或旧 refresh token 提取组织别名并写入新 refresh token。 */
     public void process(TokenPostProcessorContext context) {
         String grantType = context.clientSessionCtx().getAttribute(Constants.GRANT_TYPE, String.class);
 

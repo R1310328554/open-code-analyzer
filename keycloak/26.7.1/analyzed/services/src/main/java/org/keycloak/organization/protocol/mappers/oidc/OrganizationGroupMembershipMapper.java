@@ -54,9 +54,15 @@ import org.keycloak.representations.IDToken;
 
 import static org.keycloak.protocol.oidc.mappers.OIDCAttributeMapperHelper.TOKEN_CLAIM_NAME;
 
+/**
+ * OIDC 组织组成员关系协议映射器：将用户在组织内的组路径（及可选角色）写入 organization 声明。
+ * <p>依赖 {@link OrganizationMembershipMapper} 提供的声明名；在 {@link OrganizationMembershipMapper#PROVIDER_ID} 映射器存在且请求含 organization scope 时生效。</p>
+ */
 public class OrganizationGroupMembershipMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper, TokenIntrospectionTokenMapper, EnvironmentDependentProviderFactory {
 
+    /** 映射器提供方 ID。 */
     public static final String PROVIDER_ID = "oidc-organization-group-membership-mapper";
+    /** 配置键：是否同时映射组织组上的角色。 */
     public static final String ADD_GROUP_ROLE_MAPPINGS = "addGroupRoleMappings";
 
     @Override
@@ -98,7 +104,7 @@ public class OrganizationGroupMembershipMapper extends AbstractOIDCProtocolMappe
         if (!Organizations.isEnabled(session)) {
             return;
         }
-        // Get organization ID from client session or resolve from scopes
+        // 从 client session note 或请求的 scope 解析组织 ID
         String orgId = clientSessionCtx.getClientSession().getNote(OrganizationModel.ORGANIZATION_ATTRIBUTE);
         Stream<OrganizationModel> organizations;
 
@@ -115,7 +121,7 @@ public class OrganizationGroupMembershipMapper extends AbstractOIDCProtocolMappe
         ProtocolMapperModel organizationMapperModel = getOrganizationMapperModel(clientSessionCtx);
 
         if (organizationMapperModel == null) {
-            // this mapper requires the organization scope and its mapper set to the request
+            // 本映射器要求请求包含 organization scope 及对应 membership mapper
             return;
         }
 
@@ -128,7 +134,7 @@ public class OrganizationGroupMembershipMapper extends AbstractOIDCProtocolMappe
 
         boolean includeRoles = isAddGroupRoleMappings(model);
 
-        // Add groups to each organization
+        // 为每个组织写入 groups 列表
         organizations.forEach(org -> {
             if (org == null || !org.isEnabled() || !org.isMember(user)) {
                 return;
@@ -143,17 +149,17 @@ public class OrganizationGroupMembershipMapper extends AbstractOIDCProtocolMappe
 
             String orgAlias = org.getAlias();
 
-            // Get or create organization data map
+            // 获取或创建该组织在声明中的数据 Map
             Map<String, Object> orgData = (Map<String, Object>) orgClaims.get(orgAlias);
             if (orgData == null) {
                 orgData = new HashMap<>();
                 orgClaims.put(orgAlias, orgData);
             }
 
-            // Add groups
+            // 写入组路径
             orgData.put("groups", groupPaths);
 
-            // Add roles from org groups if configured
+            // 配置启用时追加组织组角色映射
             if (includeRoles) {
                 Set<RoleModel> roleMappings = userOrgGroups.stream()
                     .flatMap(GroupModel::getRoleMappingsStream)
@@ -220,7 +226,7 @@ public class OrganizationGroupMembershipMapper extends AbstractOIDCProtocolMappe
 
     @Override
     public int getPriority() {
-        // Run after OrganizationMembershipMapper (higher number = later execution)
+        // 在 OrganizationMembershipMapper 之后执行（数值越大越靠后）
         return 10;
     }
 

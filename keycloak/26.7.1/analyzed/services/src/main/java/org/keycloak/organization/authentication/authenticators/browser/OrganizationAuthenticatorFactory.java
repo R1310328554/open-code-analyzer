@@ -35,44 +35,55 @@ import org.keycloak.provider.ProviderConfigProperty;
 import static org.keycloak.provider.ProviderConfigProperty.BOOLEAN_TYPE;
 
 /**
+ * 组织身份优先登录认证器的 {@link AuthenticatorFactory}，工厂 ID 为 {@code organization}。
+ * <p>创建 {@link OrganizationAuthenticator}，在组织功能启用时按域名/成员关系自动重定向 IdP；可通过 {@link #REQUIRES_USER_MEMBERSHIP} 强制用户必须是组织成员。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class OrganizationAuthenticatorFactory extends IdentityProviderAuthenticatorFactory implements EnvironmentDependentProviderFactory {
 
+    /** 工厂标识 {@code organization}。 */
     public static final String ID = "organization";
+    /** 配置键：是否要求用户必须是组织成员。 */
     public static final String REQUIRES_USER_MEMBERSHIP = "requiresUserMembership";
 
     @Override
+    /** @return 工厂 ID {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Organization Identity-First Login";
     }
 
     @Override
+    /** @return 管理控制台帮助文本 */
     public String getHelpText() {
         return "If organizations are enabled, automatically redirects users to the corresponding identity provider.";
     }
 
     @Override
+    /** 创建 {@link OrganizationAuthenticator} 实例。 */
     public Authenticator create(KeycloakSession session) {
         return new OrganizationAuthenticator(session);
     }
 
     @Override
+    /** @return 组织特性启用时可用 */
     public boolean isSupported(Scope config) {
         return Profile.isFeatureEnabled(Feature.ORGANIZATION);
     }
 
     @Override
+    /** @return 认证器配置属性（含 requiresUserMembership） */
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.singletonList(new ProviderConfigProperty(REQUIRES_USER_MEMBERSHIP, "Requires user membership", "Enforces that users authenticating in the scope of an organization are members. If not a member, the user won't be able to proceed authenticating to the realm", BOOLEAN_TYPE, null));
     }
 
     @Override
+    /** @return 可选参考类别（启用通行密钥时包含无密码 WebAuthn） */
     public Set<String> getOptionalReferenceCategories(KeycloakSession session) {
         return WebAuthnConditionalUIAuthenticator.isPasskeysEnabled(session)
                 ? Collections.singleton(WebAuthnCredentialModel.TYPE_PASSWORDLESS)

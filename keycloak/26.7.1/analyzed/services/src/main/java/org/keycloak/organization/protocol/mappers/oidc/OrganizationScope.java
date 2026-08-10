@@ -51,17 +51,12 @@ import static org.keycloak.organization.utils.Organizations.getProvider;
 import static org.keycloak.utils.StringUtil.isBlank;
 
 /**
- * <p>An enum with utility methods to process the {@link OIDCLoginProtocolFactory#ORGANIZATION} scope.
- *
- * <p>The {@link OrganizationScope} behaves like a parameterized scope so that access to organizations is granted depending
- * on how the client requests the {@link OIDCLoginProtocolFactory#ORGANIZATION} scope.
+ * 处理 {@link OIDCLoginProtocolFactory#ORGANIZATION} 客户端 scope 的枚举及工具方法。
+ * <p>{@link OrganizationScope} 行为类似参数化 scope：客户端以不同格式请求 organization scope 时，授予的组织访问范围随之变化（全部/指定/任一）。</p>
  */
 public enum OrganizationScope {
 
-    /**
-     * Maps to any organization a user is a member. When this scope is requested by clients, all the organizations
-     * the user is a member are granted.
-     */
+    /** 映射用户所属的全部组织；客户端请求此 scope 时授予用户所有成员组织。 */
     ALL("*"::equals,
             (user, scopes, session) -> {
                 if (user == null) {
@@ -73,25 +68,23 @@ public enum OrganizationScope {
             (session, current, previous) -> {
                 OrganizationScope currentScope = valueOfScope(session, current);
                 
-                // Only handle organization scopes, ignore non-organization scopes
+                // 仅处理 organization scope，忽略其他 scope
                 if (currentScope == null) {
                     return null;
                 }
                 
-                // Reject ANY scope requests - they require user selection which isn't available during refresh
+                // 刷新令牌场景拒绝 ANY scope（需用户选择，刷新时不可用）
                 if (isAnyScope(currentScope)) {
                     throw new BadRequestException("ANY organization scope is not allowed in this context");
                 }
                 
-                // Allow SINGLE (narrowing) or ALL (maintaining) scopes
+                // 允许 SINGLE（收窄）或 ALL（维持）scope
                 return current;
             }),
 
     /**
-     * Maps to one or more specific organizations the user is a member of. When this scope is requested by clients,
-     * only the organizations whose aliases are specified in the scope are granted. Multiple organizations can be
-     * requested using separate scopes, for example {@code organization:org-a organization:org-b}.
-     * If any of the aliases does not match an existing organization or the user is not a member, the request will be rejected.
+     * 映射用户所属的一个或多个指定组织（按别名）；例如 {@code organization:org-a organization:org-b}。
+     * 别名不存在或用户非成员时拒绝请求。
      */
     SPECIFIC(StringUtil::isNotBlank,
             (user, scopes, session) -> {
@@ -116,9 +109,8 @@ public enum OrganizationScope {
                     return previous;
                 }
 
-                // Handle the case where current is ANY scope ("organization") and previous is a SINGLE scope ("organization:foo")
-                // When the current scope is just "organization" and the previous scope has a specific org like "organization:foo",
-                // we should preserve the specific organization from the previous scope
+                // 当前为 ANY（organization）而先前为 SINGLE（organization:foo）时保留先前的具体组织
+                // 当前 scope 仅为 organization 且先前含 organization:foo 等具体值时保留先前组织
                 if (isAnyScope(currentScope)) {
                     return previous;
                 }
@@ -127,9 +119,7 @@ public enum OrganizationScope {
             }),
 
     /**
-     * Maps to a single organization if the user is a member of a single organization. When this scope is requested by clients,
-     * the user will be asked to select and organization if a member of multiple organizations or, in case the user is a
-     * member of a single organization, grant access to that organization.
+     * 映射单个组织：用户仅属一个组织时直接授予；属多个组织时需用户选择或从 client session 读取已选组织。
      */
     ANY(""::equals,
             (user, scopes, session) -> {
@@ -179,38 +169,24 @@ public enum OrganizationScope {
     private static final String EMPTY_SCOPE = "";
 
     /**
-     * Checks if the given scope is {@link OrganizationScope#ANY}.
-     *
-     * <p>This method exists because {@code ALL} and {@code SINGLE} are declared before {@code ANY} in this enum.
-     * Referencing {@code OrganizationScope.ANY} directly inside their initializer lambdas causes a
-     * "Cannot refer to enum constant before its definition" compile error. Routing through this static method
-     * (defined after all constants) avoids the forward-reference restriction.
+     * 判断给定 scope 是否为 {@link OrganizationScope#ANY}。
+     * <p>因 ALL/SPECIFIC 在 ANY 之前定义，其初始化 lambda 不能直接引用 ANY 常量；通过本静态方法（定义于所有常量之后）规避前向引用编译错误。</p>
      */
     private static boolean isAnyScope(OrganizationScope scope) {
         return OrganizationScope.ANY.equals(scope);
     }
 
 
-    /**
-     * <p>Resolves the value of the scope from its raw format. For instance, {@code organization:<value>} will resolve to {@code <value>}.
-     *
-     * <p>If no value is provided, like in {@code organization}, an empty string is returned instead.
-     */
+    /** scope 原始值匹配谓词，例如 organization:alias 中的 alias 部分。 */
     private final Predicate<String> valueMatcher;
 
-    /**
-     * Resolves the organizations of the user based on the values of the scope.
-     */
+    /** 根据 scope 值解析用户可访问的组织流。 */
     private final TriFunction<UserModel, String, KeycloakSession, Stream<OrganizationModel>> valueResolver;
 
-    /**
-     * Validate the value of the scope based on how they map to existing organizations.
-     */
+    /** 校验 scope 解析结果是否映射到有效组织。 */
     private final Predicate<Stream<OrganizationModel>> valueValidator;
 
-    /**
-     * Resolves the name of the scope when requesting a scope using a different format.
-     */
+    /** 在 scope 格式变更（如刷新令牌）时解析应保留的 scope 名称。 */
     private final TriFunction<KeycloakSession, String, String, String> nameResolver;
 
     OrganizationScope(Predicate<String> valueMatcher, TriFunction<UserModel, String, KeycloakSession, Stream<OrganizationModel>> valueResolver, Predicate<Stream<OrganizationModel>> valueValidator, TriFunction<KeycloakSession, String, String, String> nameResolver) {
@@ -221,12 +197,11 @@ public enum OrganizationScope {
     }
 
     /**
-     * Returns the organizations mapped from the {@code scope} based on the given {@code user}.
-     *
-     * @param user the user. Can be {@code null} depending on how the scope resolves its value.
-     * @param scope the string referencing the scope
-     * @param session the session
-     * @return the organizations mapped from the {@code scope} parameter. Or an empty stream if no organizations were mapped from the parameter.
+     * 根据 scope 字符串解析用户可访问的组织。
+     * @param user 用户，部分 scope 解析时可为 null
+     * @param scope scope 字符串
+     * @param session Keycloak 会话
+     * @return 解析出的组织流，无匹配时为空
      */
     public Stream<OrganizationModel> resolveOrganizations(UserModel user, String scope, KeycloakSession session) {
         if (!Organizations.isEnabled(session)) {
@@ -236,35 +211,30 @@ public enum OrganizationScope {
     }
 
     /**
-     * Returns a stream of {@link OrganizationScope} instances based on the scopes from the {@code AuthenticationSessionModel} associated
-     * with the given {@code session} and where the given {@code user} is a member.
-     *
-     * @param user the user. Can be {@code null} depending on how the scope resolves its value.
-     * @param session the session
-     * @return the organizations mapped from the {@code scope} parameter. Or an empty stream if no organizations were mapped from the parameter.
+     * 从认证会话请求的 scope 解析用户所属组织。
+     * @param user 用户
+     * @param session Keycloak 会话
+     * @return 组织流
      */
     public Stream<OrganizationModel> resolveOrganizations(UserModel user, KeycloakSession session) {
         return resolveOrganizations(user, getRequestedScopes(session), session);
     }
 
     /**
-     * Returns a stream of {@link OrganizationScope} instances based on the scopes from the {@code AuthenticationSessionModel} associated
-     * with the given {@code session}.
-     *
-     * @param session the session
-     * @return the organizations mapped from the {@code scope} parameter. Or an empty stream if no organizations were mapped from the parameter.
+     * 从认证会话 scope 解析组织（不指定用户）。
+     * @param session Keycloak 会话
+     * @return 组织流
      */
     public Stream<OrganizationModel> resolveOrganizations(KeycloakSession session) {
         return resolveOrganizations(null, session);
     }
 
     /**
-     * Returns a {@link ClientScopeModel} with the given {@code name} for this scope.
-     *
-     * @param name the name of the scope
-     * @param user the user
-     * @param session the session
-     * @return the {@link ClientScopeModel}
+     * 将 scope 名称转换为带组织语义的 {@link ClientScopeModel}。
+     * @param name scope 名称
+     * @param user 用户
+     * @param session Keycloak 会话
+     * @return 客户端 scope 模型，无效时 null
      */
     public ClientScopeModel toClientScope(String name, UserModel user, KeycloakSession session) {
         OrganizationScope scope = valueOfScope(session, name);
@@ -283,15 +253,11 @@ public enum OrganizationScope {
     }
 
     /**
-     * <p>Resolves the name of this scope based on the given set of {@code scopes} and the {@code previous} name.
-     *
-     * <p>The scope name can be mapped to another scope depending on its semantics. Otherwise, it will map to
-     * the same name. This method is mainly useful to recognize if a scope previously granted is still valid
-     * and can be mapped to the new scope being requested. For instance, when refreshing tokens.
-     *
-     * @param scopes the scopes to resolve the name from
-     * @param previous the previous name of this scope
-     * @return the name of the scope
+     * 根据新请求的 scope 集合与先前 scope 名称，解析刷新时应保留的 scope 名。
+     * @param session Keycloak 会话
+     * @param scopes 新 scope 集合
+     * @param previous 先前 scope 名称
+     * @return 解析后的 scope 名称，无法映射时 null
      */
     public String resolveName(KeycloakSession session, Set<String> scopes, String previous) {
         for (String scope : scopes) {
@@ -308,10 +274,10 @@ public enum OrganizationScope {
     }
 
     /**
-     * Returns a {@link OrganizationScope} instance based on the given {@code rawScope}.
-     *
-     * @param rawScope the string referencing the scope
-     * @return the organization scope that maps the given {@code rawScope}
+     * 从原始 scope 字符串解析 {@link OrganizationScope} 枚举值。
+     * @param session Keycloak 会话
+     * @param rawScope 原始 scope 字符串
+     * @return 匹配的枚举值，无匹配时 null
      */
     public static OrganizationScope valueOfScope(KeycloakSession session, String rawScope) {
         return parseScopeParameter(session, Optional.ofNullable(rawScope).orElse(EMPTY_SCOPE))
@@ -328,11 +294,9 @@ public enum OrganizationScope {
     }
 
     /**
-     * Returns a {@link OrganizationScope} instance based on the scopes from the {@code AuthenticationSessionModel} associated
-     * with the given {@code session}.
-     *
-     * @param session the session
-     * @return the organization scope that maps the given {@code rawScope}
+     * 从认证会话请求的 scope 解析 {@link OrganizationScope}（带会话缓存）。
+     * @param session Keycloak 会话
+     * @return 组织 scope 枚举值
      */
     public static OrganizationScope valueOfScope(KeycloakSession session) {
         OrganizationScope value = session.getAttribute(OrganizationScope.class.getName(), OrganizationScope.class);
@@ -397,7 +361,7 @@ public enum OrganizationScope {
         }
 
         if (session.getAttributeOrDefault(UNSUPPORTED_ORGANIZATION_SCOPES_ATTRIBUTE, Set.of()).contains(scope)) {
-            // scope already processed and does not support mapping organizations
+            // scope 已处理且不支持组织映射
             return null;
         }
 
@@ -405,7 +369,7 @@ public enum OrganizationScope {
 
         for (ClientScopeModel clientScope : organizationScopes) {
             if (scope.equals(clientScope.getName()) || scope.startsWith(clientScope.getName() + VALUE_SEPARATOR)) {
-                // scope already processed and supports organizations
+                // scope 已处理且支持组织映射
                 return clientScope;
             }
         }
@@ -428,7 +392,7 @@ public enum OrganizationScope {
                     nonOrganizationScopes = new HashSet<>();
                 }
 
-                // scope does not support organizations, cache the scope in this session to avoid processing it again
+                // 非 organization scope，缓存以避免重复处理
                 nonOrganizationScopes.add(scope);
                 session.setAttribute(UNSUPPORTED_ORGANIZATION_SCOPES_ATTRIBUTE, nonOrganizationScopes);
 
@@ -442,7 +406,7 @@ public enum OrganizationScope {
             }
 
             organizationScopes.add(clientScope);
-            // scope supports organizations, cache the scope in this session to avoid processing it again
+            // 支持组织的 scope，缓存以避免重复处理
             session.setAttribute(ORGANIZATION_SCOPES_SESSION_ATTRIBUTE, organizationScopes);
         }
 

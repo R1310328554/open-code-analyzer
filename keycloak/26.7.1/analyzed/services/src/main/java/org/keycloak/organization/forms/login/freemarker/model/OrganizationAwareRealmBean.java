@@ -20,13 +20,19 @@ package org.keycloak.organization.forms.login.freemarker.model;
 import org.keycloak.forms.login.freemarker.model.RealmBean;
 import org.keycloak.models.RealmModel;
 
+/**
+ * 组织感知的领域 FreeMarker Bean：在存在组织公开 IdP 时禁用自助注册链接，引导用户通过组织身份提供者完成注册。
+ * <p>继承 {@link RealmBean}，覆盖 {@link #isRegistrationAllowed()} 返回 false。</p>
+ */
 public class OrganizationAwareRealmBean extends RealmBean {
 
+    /** @param realmModel 领域模型 */
     public OrganizationAwareRealmBean(RealmModel realmModel) {
         super(realmModel);
     }
 
     @Override
+    /** @return 组织登录场景下不允许自助注册 */
     public boolean isRegistrationAllowed() {
         return false;
     }

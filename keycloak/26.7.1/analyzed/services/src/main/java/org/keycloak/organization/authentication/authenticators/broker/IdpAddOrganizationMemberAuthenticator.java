@@ -34,13 +34,19 @@ import org.keycloak.organization.utils.Organizations;
 
 import static org.keycloak.organization.utils.Organizations.isEnabledAndOrganizationsPresent;
 
+/**
+ * 身份代理（IdP）组织成员入驻认证器：在联邦登录成功后，将用户加入当前解析到的组织并校验 IdP 是否属于该组织。
+ * <p>若组织未配置或 IdP 不匹配，分别标记 attempted 或 ACCESS_DENIED。</p>
+ */
 public class IdpAddOrganizationMemberAuthenticator extends AbstractIdpAuthenticator {
 
     @Override
+    /** IdP 认证器 action 阶段无额外逻辑。 */
     protected void actionImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
     }
 
     @Override
+    /** 解析组织、校验 IdP 匹配后将用户添加为托管成员。 */
     protected void authenticateImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         KeycloakSession session = context.getSession();
         OrganizationProvider provider = session.getProvider(OrganizationProvider.class);
@@ -65,11 +71,13 @@ public class IdpAddOrganizationMemberAuthenticator extends AbstractIdpAuthentica
     }
 
     @Override
+    /** @return 本认证器需要已解析的用户 */
     public boolean requiresUser() {
         return true;
     }
 
     @Override
+    /** 组织功能启用、组织存在且已配置 IdP 时返回 true。 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         OrganizationProvider provider = session.getProvider(OrganizationProvider.class);
 
