@@ -35,55 +35,68 @@ import org.keycloak.util.TokenUtil;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+/**
+ * Claims 参数令牌映射器。
+ * <p>将 OIDC 授权请求中 {@code claims} 参数标记为 essential 的声明写入 ID Token 或 UserInfo 响应。</p>
+ */
 public class ClaimsParameterTokenMapper extends AbstractOIDCProtocolMapper implements OIDCIDTokenMapper, UserInfoTokenMapper {
 
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "oidc-claims-param-token-mapper";
 
+    /** 映射器配置属性列表 */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
     static {
         OIDCAttributeMapperHelper.addIncludeInTokensConfig(configProperties, ClaimsParameterTokenMapper.class);
     }
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Claims parameter Token";
     }
 
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Claims specified by Claims parameter are put into tokens.";
     }
 
+    /** @return 配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** 根据 claims 参数向 ID Token 或 UserInfo 写入 essential 声明 */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession keycloakSession, ClientSessionContext clientSessionCtx) {
         String claims = clientSessionCtx.getClientSession().getNote(OIDCLoginProtocol.CLAIMS_PARAM);
         if (claims == null) return;
 
         if (TokenUtil.TOKEN_TYPE_ID.equals(token.getType())) {
-            // ID Token
+            // 处理 ID Token
             putClaims("id_token", claims, token, mappingModel, userSession);
         } else {
-            // UserInfo
+            // 处理 UserInfo 响应
             putClaims("userinfo", claims, token, mappingModel, userSession);
         }
     }
 
+    /** 解析 claims 参数并按令牌类型写入 essential 声明 @param tokenType 令牌类型键（id_token/userinfo） */
     private void putClaims(String tokenType, String claims, IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession) {
         JsonNode requestParams = null;
 
@@ -102,9 +115,8 @@ public class ClaimsParameterTokenMapper extends AbstractOIDCProtocolMapper imple
             .filter(i->tokenNode.findValue(i).findValue("essential").isBoolean())
             .filter(i->tokenNode.findValue(i).findValue("essential").asBoolean())
             .forEach(i -> {
-                    // insert claim to Token
-                    // "aud", "sub", "iss", "auth_time", "acr" are set as default.
-                    // "name", "given_name", "family_name", "preferred_username", "email" need to be set explicitly using existing mapper.
+                    // 将声明写入令牌
+                    // aud/sub/iss/auth_time/acr 默认已设置；name/given_name 等需借助现有映射器显式填充
                     if (i.equals(IDToken.NAME)) {
                         FullNameMapper fullNameMapper = new FullNameMapper();
                         fullNameMapper.setClaim(token, mappingModel, userSession);
@@ -124,6 +136,7 @@ public class ClaimsParameterTokenMapper extends AbstractOIDCProtocolMapper imple
             });
     }
 
+    /** 创建 Claims 参数映射器 @param name 名称 @param idToken 是否写入 ID Token @param userInfo 是否写入 UserInfo @return 协议映射器模型 */
     public static ProtocolMapperModel createMapper(String name, boolean idToken, boolean userInfo) {
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);

@@ -32,13 +32,15 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.IDToken;
 
 /**
- * Set the 'name' claim to be first + last name.
+ * 用户全名映射器。
+ * <p>将用户名字与姓氏拼接为 OpenID Connect {@code name} 声明，格式为「名 + 空格 + 姓」。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class FullNameMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper, TokenIntrospectionTokenMapper {
 
+    /** 映射器配置属性列表 */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
     static {
@@ -46,33 +48,40 @@ public class FullNameMapper extends AbstractOIDCProtocolMapper implements OIDCAc
 
     }
 
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "oidc-full-name-mapper";
 
 
+    /** @return 配置属性列表 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "User's full name";
     }
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Maps the user's first and last name to the OpenID Connect 'name' claim. Format is <first> + ' ' + <last>";
     }
 
+    /** 将用户全名写入 {@code name} 声明 @param token 目标令牌 @param userSession 用户会话 */
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession) {
         UserModel user = userSession.getUser();
         List<String> parts = new LinkedList<>();
@@ -83,6 +92,15 @@ public class FullNameMapper extends AbstractOIDCProtocolMapper implements OIDCAc
         }
     }
 
+    /**
+     * 创建全名映射器。
+     * @param name 映射器名称
+     * @param accessToken 是否写入访问令牌
+     * @param idToken 是否写入 ID Token
+     * @param userInfo 是否写入 UserInfo
+     * @param introspectionEndpoint 是否写入自省端点
+     * @return 协议映射器模型
+     */
     public static ProtocolMapperModel create(String name, boolean accessToken, boolean idToken, boolean userInfo, boolean introspectionEndpoint) {
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);

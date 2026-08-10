@@ -32,14 +32,18 @@ import org.keycloak.representations.AddressClaimSet;
 import org.keycloak.representations.IDToken;
 
 /**
+ * OIDC 地址声明映射器。
+ * <p>将用户地址属性（街道、地区、省/州、邮编、国家等）映射到 OpenID Connect {@code address} 声明。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class AddressMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper, TokenIntrospectionTokenMapper {
 
+    /** 映射器配置属性列表 */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
+    /** 街道地址属性名 */
     public static final String STREET = "street";
 
     static {
@@ -53,6 +57,7 @@ public class AddressMapper extends AbstractOIDCProtocolMapper implements OIDCAcc
         configProperties.add(createConfigProperty(AddressClaimSet.FORMATTED));
     }
 
+    /** 为指定地址子声明创建配置属性 @param claimName 声明名 @return 配置属性 */
     protected static ProviderConfigProperty createConfigProperty(String claimName) {
         ProviderConfigProperty property = new ProviderConfigProperty();
         property.setName(getModelPropertyName(claimName));
@@ -63,16 +68,27 @@ public class AddressMapper extends AbstractOIDCProtocolMapper implements OIDCAcc
         return property;
     }
 
+    /** 将声明名转换为模型配置键 @param claimName 声明名 @return 配置键名 */
     public static String getModelPropertyName(String claimName) {
         return "user.attribute." + claimName;
     }
 
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "oidc-address-mapper";
 
+    /** 创建默认地址映射器（全部令牌类型均包含） @return 协议映射器模型 */
     public static ProtocolMapperModel createAddressMapper() {
         return createAddressMapper(true, true, true, true);
     }
 
+    /**
+     * 创建地址映射器。
+     * @param idToken 是否写入 ID Token
+     * @param accessToken 是否写入访问令牌
+     * @param userInfo 是否写入 UserInfo
+     * @param introspectionEndpoint 是否写入自省端点响应
+     * @return 协议映射器模型
+     */
     public static ProtocolMapperModel createAddressMapper(boolean idToken, boolean accessToken, boolean userInfo, boolean introspectionEndpoint) {
         Map<String, String> config;
         ProtocolMapperModel address = new ProtocolMapperModel();
@@ -97,30 +113,41 @@ public class AddressMapper extends AbstractOIDCProtocolMapper implements OIDCAcc
     }
 
 
+    /** @return 配置属性列表 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "User Address";
     }
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Maps user address attributes (street, locality, region, postal_code, and country) to the OpenID Connect 'address' claim.";
     }
 
+    /**
+     * 从用户属性填充 {@code address} 声明。
+     * @param token 目标令牌
+     * @param mappingModel 映射器配置
+     * @param userSession 用户会话
+     */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession) {
         UserModel user = userSession.getUser();
@@ -146,6 +173,7 @@ public class AddressMapper extends AbstractOIDCProtocolMapper implements OIDCAcc
         }
     }
 
+    /** 读取用户模型上的地址属性值 @param user 用户 @param mappingModel 映射配置 @param claim 声明名 @return 属性值 */
     private String getUserModelAttributeValue(UserModel user, ProtocolMapperModel mappingModel, String claim) {
         String modelPropertyName = getModelPropertyName(claim);
         String userAttrName = mappingModel.getConfig().get(modelPropertyName);

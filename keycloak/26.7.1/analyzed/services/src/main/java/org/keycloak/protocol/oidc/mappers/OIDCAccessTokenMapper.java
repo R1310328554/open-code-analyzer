@@ -24,11 +24,23 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.representations.AccessToken;
 
 /**
+ * OIDC 访问令牌映射器接口。
+ * <p>实现此接口的协议映射器可在访问令牌签发阶段对 {@link AccessToken} 进行转换。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface OIDCAccessTokenMapper {
 
+    /**
+     * 转换访问令牌。
+     * @param token 访问令牌
+     * @param mappingModel 映射器配置
+     * @param session Keycloak 会话
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 转换后的访问令牌
+     */
     AccessToken transformAccessToken(AccessToken token, ProtocolMapperModel mappingModel, KeycloakSession session,
                                      UserSessionModel userSession, ClientSessionContext clientSessionCtx);
 }

@@ -40,42 +40,51 @@ import org.keycloak.representations.IDToken;
 import org.jboss.logging.Logger;
 
 /**
+ * 认证方法引用（AMR）协议映射器。
+ * <p>根据用户会话中已完成认证器的配置，将 {@code amr} 声明写入 OIDC 令牌。</p>
+ *
  * @author Ben Cresitello-Dittmar
- * This protocol mapper sets the 'amr' claim on the OIDC tokens to the reference values configured on the
- * completed authenticators found in the user session notes.
  */
 public class AmrProtocolMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(AmrProtocolMapper.class);
 
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "oidc-amr-mapper";
 
+    /** @return 配置属性列表 */
     public List<ProviderConfigProperty> getConfigProperties() {
         List<ProviderConfigProperty> configProperties = new ArrayList<>();
         OIDCAttributeMapperHelper.addIncludeInTokensConfig(configProperties, AmrProtocolMapper.class);
         return configProperties;
     }
 
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Authentication Method Reference (AMR)";
     }
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Add authentication method reference (AMR) to the token.";
     }
 
+    /** 将会话中的 AMR 值写入令牌声明 */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession keycloakSession,
                             ClientSessionContext clientSessionCtx) {
@@ -84,6 +93,7 @@ public class AmrProtocolMapper extends AbstractOIDCProtocolMapper implements OID
         token.setOtherClaims(OAuth2Constants.AUTHENTICATOR_METHOD_REFERENCE, amr);
     }
 
+    /** 创建 AMR 映射器 @param name 名称 @param accessToken 是否写入访问令牌 @param idToken 是否写入 ID Token @return 协议映射器模型 */
     public static ProtocolMapperModel create(String name, boolean accessToken, boolean idToken) {
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);
@@ -97,11 +107,11 @@ public class AmrProtocolMapper extends AbstractOIDCProtocolMapper implements OID
     }
 
     /**
-     * Extract the AMR values from the existing session.
+     * 从现有会话提取 AMR 值。
      *
-     * @param clientSession The existing authenticated session
-     * @param realmModel The realm the mapper is executed in. Used to get the execution configuration.
-     * @return The authenticator reference values associated with the completed executions
+     * @param clientSession 已认证的客户端会话
+     * @param realmModel 映射器所在领域，用于读取认证执行配置
+     * @return 已完成认证执行对应的认证器引用值列表
      */
     protected List<String> getAmr(AuthenticatedClientSessionModel clientSession, RealmModel realmModel) {
         Map<String, Integer> executions = AuthenticatorUtils.parseCompletedExecutions(clientSession.getUserSession().getNote(Constants.AUTHENTICATORS_COMPLETED));
