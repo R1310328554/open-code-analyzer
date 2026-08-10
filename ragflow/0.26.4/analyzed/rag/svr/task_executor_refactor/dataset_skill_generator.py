@@ -14,7 +14,8 @@
 #  limitations under the License.
 #
 
-"""Corpus → Skill tree generator.
+"""Corpus→Skill 树生成：逐文档摘要、RAPTOR 聚类递归折叠，输出 skill/skill_all ES 行。
+Corpus → Skill tree generator.
 
 Extracted from ``rag.svr.task_executor_refactor.task_handler`` where the
 same pipeline previously lived as a set of ``_skill_*`` methods and one
@@ -69,11 +70,11 @@ from rag.svr.task_executor_refactor.task_context import TaskContext
 # ----- tunables ------------------------------------------------------
 # Stop folding clusters once we've boiled the KB down to ≤ this many
 # top-level nodes. Mirrors Corpus2Skill's default top-of-tree fan-out.
-SKILL_MAX_TOP_CLUSTERS = 8
+SKILL_MAX_TOP_CLUSTERS = 8  # 顶层 skill 节点数量上限（停止聚类阈值）
 # Per-doc summary is built from a budget of this fraction of the chat
 # model's context window. Stops adding chunks once cumulative tokens
 # hit the cap.
-SKILL_DOC_BUDGET_FRACTION = 0.5
+SKILL_DOC_BUDGET_FRACTION = 0.5  # 单文档摘要所用上下文窗口比例
 # Concurrency caps for the two LLM-bound stages.
 SKILL_DOC_SUMMARY_CONCURRENCY = 8
 SKILL_LABEL_CONCURRENCY = 10
@@ -95,6 +96,8 @@ ChunkLoader = Callable[
 
 @dataclass
 class SkillNode:
+    # Skill 树节点：叶子对应单文档，分支为聚类摘要
+
     """One node in the corpus → skill hierarchy.
 
     Leaves wrap a single doc; branch nodes wrap a cluster of child
@@ -165,6 +168,8 @@ async def label_skill_node_one(
 
 
 async def doc_summary_for_skill(
+    # 流式读取 doc chunk 并在 token 预算内生成文档摘要
+
     doc_id: str,
     raptor,
     chat_mdl,
@@ -220,7 +225,9 @@ async def doc_summary_for_skill(
     )
 
 
-def build_skill_md(node: "SkillNode") -> str:
+def build_skill_md(node: "SkillNode")
+    # 生成节点 SKILL.md 风格 markdown 内容
+ -> str:
     """SKILL.md (depth 0) / INDEX.md (deeper) text. Mirrors
     Corpus2Skill's ``_format_skill_md`` (skill_builder.py:193): YAML
     frontmatter (name / description / level / num_documents), then
@@ -266,7 +273,9 @@ def build_skill_md(node: "SkillNode") -> str:
     return "\n".join(lines)
 
 
-def skill_node_es_row(ctx: TaskContext, node: "SkillNode") -> Dict:
+def skill_node_es_row(ctx: TaskContext, node: "SkillNode")
+    # 单节点 compile_kwd=skill 的 ES 行
+ -> Dict:
     """Build the ES row for one tree node. Stable id from
     (kb_id, folder_name) so re-runs upsert cleanly."""
     kb_id_str = str(ctx.kb_id)
@@ -305,7 +314,9 @@ def skill_tree_node(node: "SkillNode") -> Dict:
     }
 
 
-def skill_all_es_row(ctx: TaskContext, roots: list["SkillNode"]) -> Dict:
+def skill_all_es_row(ctx: TaskContext, roots: list["SkillNode"])
+    # 整棵树 JSON 的 compile_kwd=skill_all 聚合行
+ -> Dict:
     """Build the aggregate tree row loaded by the Skills sidebar."""
     kb_id_str = str(ctx.kb_id)
     row_id = xxhash.xxh64(
@@ -329,6 +340,8 @@ def skill_all_es_row(ctx: TaskContext, roots: list["SkillNode"]) -> Dict:
 
 
 async def run_corpus2skill(
+    # 主入口：Phase1 逐 doc 摘要 → Phase2 聚类折叠 → 持久化 ES
+
     ctx: TaskContext,
     embedding_model,
     load_chunks_for_doc: Callable[..., AsyncIterator[list[dict]]],

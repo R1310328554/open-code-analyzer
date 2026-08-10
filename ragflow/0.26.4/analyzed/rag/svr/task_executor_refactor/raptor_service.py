@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+RAPTOR 服务：递归抽象摘要树生成，支持文件级/数据集级 scope 与旧版 row 迁移。
 Raptor Service Module.
 
 Provides [`RaptorService`](rag/svr/task_executor_refactor/raptor_service.py:48) for RAPTOR
@@ -50,7 +51,9 @@ from rag.utils.raptor_utils import (
 from rag.svr.task_executor_refactor.task_context import TaskContext
 
 
-def _sum_tree_text_tokens(tree) -> int:
+def _sum_tree_text_tokens(tree)
+    # 迭代遍历树节点 title 累计 token 数（计费/日志用）
+ -> int:
     """Count tokens across every ``title`` string in the RAPTOR tree.
 
     Mirrors the legacy ``tk_count`` semantic (sum over summary texts)
@@ -76,6 +79,7 @@ def _sum_tree_text_tokens(tree) -> int:
 
 
 class RaptorService:
+    # RAPTOR 摘要生成：检测 checkpoint、清理 stale chunk、build_doc_tree
     """Service for RAPTOR summary generation.
 
     This service handles:
@@ -98,6 +102,8 @@ class RaptorService:
 
     @timeout(3600)
     async def run_raptor_for_kb(
+        # KB 级入口：按 scope 分发 file/dataset 级 RAPTOR
+
         self,
         kb_parser_config: Dict,
         chat_mdl,
@@ -158,7 +164,9 @@ class RaptorService:
             }
         return doc_info_by_id
 
-    async def _run_file_level_raptor(self, raptor_config, tree_builder, clustering_method, chat_mdl, embd_mdl, vctr_nm, doc_ids, doc_info_by_id, max_errors, res, tk_count, cleanup_raptor_chunks):
+    async def _run_file_level_raptor(self, raptor_config, tree_builder
+        # 逐文档生成 RAPTOR，可迁移 dataset 级摘要
+, clustering_method, chat_mdl, embd_mdl, vctr_nm, doc_ids, doc_info_by_id, max_errors, res, tk_count, cleanup_raptor_chunks):
         """Run RAPTOR at file level (per document)."""
         ctx = self._task_context
         fake_doc_id = GRAPH_RAPTOR_FAKE_DOC_ID
@@ -215,7 +223,9 @@ class RaptorService:
 
         return res, tk_count
 
-    async def _run_dataset_level_raptor(self, raptor_config, tree_builder, clustering_method, chat_mdl, embd_mdl, vctr_nm, doc_ids, doc_info_by_id, max_errors, res, tk_count, cleanup_raptor_chunks):
+    async def _run_dataset_level_raptor(self, raptor_config, tree_builder
+        # 数据集级：合并多 doc chunk 后单次 RAPTOR
+, clustering_method, chat_mdl, embd_mdl, vctr_nm, doc_ids, doc_info_by_id, max_errors, res, tk_count, cleanup_raptor_chunks):
         """Run RAPTOR at dataset level (all documents combined)."""
         ctx = self._task_context
         fake_doc_id = GRAPH_RAPTOR_FAKE_DOC_ID
@@ -348,6 +358,8 @@ class RaptorService:
         return chunks
 
     async def _generate_raptor(
+        # 调用 Raptor 类生成摘要 chunk 或树 blob
+
         self,
         chunks: List[Tuple[str, np.ndarray, str]],
         doc_id: str,
@@ -477,6 +489,8 @@ class RaptorService:
         return [row], _sum_tree_text_tokens(processed_chunks)
 
     async def build_doc_tree(
+        # is_tree=True 路径：构建层级摘要树（structure 模板用）
+
         self,
         chunks: List[Tuple[str, np.ndarray, str]],
         raptor_config: Dict,
@@ -531,6 +545,8 @@ class RaptorService:
         return tree if isinstance(tree, dict) else None
 
     async def _generate_raptor_legacy_rows(
+        # 旧版逐 summary row 写入路径（PSI builder 兼容）
+
         self,
         raptor,
         raptor_input,
@@ -639,7 +655,9 @@ class RaptorService:
             raise
 
     @staticmethod
-    def _build_raptor_graph(rows: List[Dict]) -> Dict:
+    def _build_raptor_graph(rows: List[Dict])
+    # 将 RAPTOR row 列表组装为 canvas 图 entities/relations
+ -> Dict:
         """Project loaded RAPTOR summary rows onto the canvas graph shape.
 
         Each row contributes one entity::
@@ -711,7 +729,9 @@ class RaptorService:
 
         return {"entities": list(by_id.values()), "relations": relations}
 
-    async def _persist_raptor_graph_to_es(self, doc_id: str) -> None:
+    async def _persist_raptor_graph_to_es(self, doc_id: str)
+    # 将 RAPTOR 图 JSON upsert 到 doc store
+ -> None:
         """Load the just-inserted RAPTOR summaries for ``doc_id`` and
         persist a single graph row that the dataset structure-graph
         endpoint can surface as a tree.

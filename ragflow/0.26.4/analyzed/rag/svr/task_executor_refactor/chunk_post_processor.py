@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+Chunk 后处理：关键词/问题/元数据/标签 LLM 增强，以及文档结构编译与 RAPTOR 树模板流水线。
 Chunk Post-Processor Module.
 
 Provides post-processing functions for chunks:
@@ -44,7 +45,9 @@ from rag.prompts.generator import gen_metadata, keyword_extraction, question_pro
 from rag.graphrag.utils import get_llm_cache, set_llm_cache, get_tags_from_cache, set_tags_to_cache
 
 
-async def extract_keywords(docs: List[Dict], ctx: TaskContext) -> None:
+async def extract_keywords(docs: List[Dict], ctx: TaskContext)
+    # LLM 提取 important_kwd 并分词，带 Redis 缓存
+ -> None:
     """Extract keywords for chunks.
 
     Args:
@@ -86,7 +89,9 @@ async def extract_keywords(docs: List[Dict], ctx: TaskContext) -> None:
         ctx.progress_cb(msg="Keywords generation {} chunks completed in {:.2f}s".format(len(docs), timer() - st))
 
 
-async def generate_questions(docs: List[Dict], ctx: TaskContext) -> None:
+async def generate_questions(docs: List[Dict], ctx: TaskContext)
+    # LLM 生成 question_kwd 列表
+ -> None:
     """Generate questions for chunks.
 
     Args:
@@ -127,7 +132,9 @@ async def generate_questions(docs: List[Dict], ctx: TaskContext) -> None:
         ctx.progress_cb(msg="Question generation {} chunks completed in {:.2f}s".format(len(docs), timer() - st))
 
 
-def build_metadata_config(parser_config: dict) -> list:
+def build_metadata_config(parser_config: dict)
+    # 合并 metadata 与 built_in_metadata 为 JSON Schema
+ -> list:
     """Build the metadata configuration from parser_config.
 
     Extracts and normalizes ``metadata`` and ``built_in_metadata`` from the
@@ -166,7 +173,9 @@ def build_metadata_config(parser_config: dict) -> list:
     return metadata_conf
 
 
-async def generate_metadata(docs: List[Dict], ctx: TaskContext) -> None:
+async def generate_metadata(docs: List[Dict], ctx: TaskContext)
+    # 按 schema 为每个 chunk 生成 metadata_obj 并写文档级元数据
+ -> None:
     """Generate metadata for chunks.
 
     Args:
@@ -221,7 +230,9 @@ async def generate_metadata(docs: List[Dict], ctx: TaskContext) -> None:
         ctx.progress_cb(msg="Metadata generation {} chunks completed in {:.2f}s".format(len(docs), timer() - st))
 
 
-async def apply_tags(docs: List[Dict], ctx: TaskContext) -> None:
+async def apply_tags(docs: List[Dict], ctx: TaskContext)
+    # 基于 tag_kb 检索 + LLM content_tagging 打标签
+ -> None:
     """Apply tags to chunks.
 
     Args:
@@ -358,7 +369,7 @@ from rag.advanced_rag.knowlege_compile.structure import (  # noqa: E402
 # ``compile_structure_from_text`` invocation. The call fans them out
 # across max_workers internally, so a moderate window keeps memory +
 # LLM-context pressure predictable for long docs.
-DOC_STRUCTURE_COMPILE_BATCH_CHUNKS = 4
+DOC_STRUCTURE_COMPILE_BATCH_CHUNKS = 4  # 单次 structure compile 最多源 chunk 数
 
 # Bound how many compiled ES-ready docs may accumulate before we flush
 # them through ``merge_compiled_structures``. The merger does pairwise
@@ -462,7 +473,9 @@ def cap_done_progress(progress_cb: Callable) -> Callable:
 # ----- tree helpers --------------------------------------------------
 
 
-def raptor_tree_to_graph(tree: Dict) -> Dict:
+def raptor_tree_to_graph(tree: Dict)
+    # 将 RAPTOR 树投影为 entities/relations 图结构
+ -> Dict:
     """Project a RAPTOR tree dict (from ``Raptor(is_tree=True)``) onto
     the ``{entities, relations}`` shape the document-structure graph
     endpoint already serves for ``page_index``-kind rows."""
@@ -494,6 +507,8 @@ def raptor_tree_to_graph(tree: Dict) -> Dict:
 
 
 async def load_chunks_with_vec(
+    # 分页加载文档 chunk 的 content+向量，供 build_doc_tree 使用
+
     tenant_id: str,
     kb_id: str,
     doc_id: str,
@@ -560,6 +575,8 @@ async def load_chunks_with_vec(
 
 
 async def rechunk_doc_by_tree(
+    # 按树叶子簇合并源 chunk 为单条 replacement chunk
+
     handler,
     tree: dict,
     template_id: str,
@@ -773,6 +790,8 @@ async def rechunk_doc_by_tree(
 
 
 async def run_tree_templates(
+    # 对每个 tree 模板调用 RaptorService.build_doc_tree 并持久化图 JSON
+
     handler,
     templates: list[tuple[str, dict]],
     chat_mdl_by_tid: dict[str, "LLMBundle"],
@@ -903,7 +922,9 @@ async def run_tree_templates(
         )
 
 
-async def run_document_structure_compile(handler, embedding_model: LLMBundle) -> None:
+async def run_document_structure_compile(handler, embedding_model: LLMBundle)
+    # 流式 structure/list/timeline/synthesis 模板编译
+ -> None:
     """Run document-scoped knowledge compilation for non-artifact
     templates. Streams the doc's chunks (via
     ``handler._load_chunks_for_doc``) and fans each batch out to every
@@ -1169,6 +1190,8 @@ async def run_document_structure_compile(handler, embedding_model: LLMBundle) ->
 
 
 async def run_document_post_chunking_if_last(
+    # 门控：仅最后一个分块任务并发跑 structure compile 与 RAPTOR
+
     handler,
     embedding_model: LLMBundle,
     vector_size: int,

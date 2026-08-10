@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+后处理器：索引完成后的表格元数据聚合与 TOC chunk 插入。
 Post Processor Module.
 
 Provides [`PostProcessor`](rag/svr/task_executor_refactor/post_processor.py:42) for post-indexing
@@ -35,6 +36,7 @@ from rag.utils.table_es_metadata import (
 
 
 class PostProcessor:
+    # 索引后处理：table parser 元数据、目录 chunk 写入 doc store
     """Service for post-indexing operations.
 
     This service handles:
@@ -55,6 +57,8 @@ class PostProcessor:
         self._task_context = ctx
 
     async def process_table_parser_metadata(
+        # 表格解析器：聚合 chunk 元数据并 merge 到 DocMetadataService
+
         self,
         task_doc_id: str,
         chunks: List[Dict],
@@ -110,6 +114,8 @@ class PostProcessor:
             )
 
     async def insert_toc_chunk(
+        # 将目录 chunk 插入 ES 并更新文档 chunk 计数
+
         self,
         toc_chunk: Optional[Dict],
         chunk_service,

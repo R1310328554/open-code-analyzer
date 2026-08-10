@@ -14,7 +14,8 @@
 #  limitations under the License.
 #
 
-"""KB-wide wiki / artifact compilation.
+"""数据集 Wiki/Artifact 编译：MAP-REDUCE-PLAN-REFINE 流水线，生成 artifact_page 与 canvas 图。
+KB-wide wiki / artifact compilation.
 
 Extracted from ``rag.svr.task_executor_refactor.task_handler`` where the
 same pipeline previously lived as a set of ``_wiki_*`` / ``_persist_wiki_*``
@@ -69,14 +70,14 @@ from rag.svr.task_executor_refactor.task_context import TaskContext
 # persist, so smaller batches mean more (small) ES round-trips but a flat
 # memory footprint. 64 keeps the resume-set re-reads cheap while leaving
 # room for the function's internal split_chunks packing to do real work.
-WIKI_MAP_BATCH_CHUNKS = 64
+WIKI_MAP_BATCH_CHUNKS = 64  # 单次 wiki_map_from_chunks 喂入的 chunk 上限
 
 # Per-node cap on ``source_chunk_ids`` carried by the canvas graph blob.
 # Pages can accumulate hundreds of source chunks; the graph response is
 # meant for fast canvas rendering, not full provenance audit, so we trim
 # each node's list. The full per-page list is still available on the
 # ``artifact_page`` row the UI deep-links into.
-WIKI_GRAPH_MAX_CHUNK_IDS_PER_NODE = 64
+WIKI_GRAPH_MAX_CHUNK_IDS_PER_NODE = 64  # canvas 图节点 source_chunk_ids 截断上限
 
 # Title + comments stamped on every ``artifact_commit`` row produced by
 # :func:`run_wiki`'s regeneration path (as opposed to the dialog-edit
@@ -113,6 +114,8 @@ def _parser_config_compilation_template_ids(parser_config, tenant_id: str) -> li
 
 
 async def persist_wiki_pages_to_es(
+    # 将 refined artifact 页写入 ES（artifact_page 行）
+
     ctx: TaskContext,
     pages: List[Dict],
     embd_mdl,
@@ -310,6 +313,8 @@ async def persist_wiki_pages_to_es(
 
 
 def build_wiki_page_graph(
+    # 从 wiki 页列表构建 artifact_entity/relation 图
+
     pages: List[Dict],
     kb_id: str,
 ) -> tuple[List[Dict], List[Dict]]:
@@ -434,6 +439,8 @@ def build_wiki_page_graph(
 
 
 async def persist_wiki_page_graph_to_es(
+    # 持久化 artifact 图到 ES（替换 entity/relation bucket）
+
     ctx: TaskContext,
     pages: List[Dict],
 ) -> None:
@@ -511,6 +518,8 @@ async def persist_wiki_page_graph_to_es(
 
 
 async def run_wiki(
+    # 主入口：KB 级 artifact 编译（用户点击 Artifact 按钮触发）
+
     ctx: TaskContext,
     embedding_model,
     load_chunks_for_doc: Callable[..., AsyncIterator[list[dict]]],

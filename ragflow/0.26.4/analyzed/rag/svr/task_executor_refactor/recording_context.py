@@ -13,7 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Recording Context Module.
+"""录制上下文：在生产执行路径中采集中间指标与最终结果，供 dry-run 对比使用。
+Recording Context Module.
 
 This module provides the [`BaseRecordingContext`](rag/svr/task_executor_refactor/recording_context.py:48) abstract base class,
 [`RecordingContext`](rag/svr/task_executor_refactor/recording_context.py:89) concrete class, and
@@ -55,6 +56,7 @@ from typing import Any, Callable, Dict, List, Tuple
 
 
 class BaseRecordingContext(ABC):
+    # 抽象基类：定义 record/get/measure 等统一接口
     """Abstract base class for recording context implementations.
 
     Defines the common interface shared by
@@ -108,6 +110,7 @@ class BaseRecordingContext(ABC):
 
 
 class RecordingContext(BaseRecordingContext):
+    # 生产模式：字典式容器存储键值对与耗时记录
     """Captures actual execution results from production code for comparison.
 
     This class acts as a dictionary-like container that stores key-value pairs
@@ -259,6 +262,7 @@ class RecordingContext(BaseRecordingContext):
 
 
 class NullRecordingContext(BaseRecordingContext):
+    # 空实现：生产环境无需对比时零内存开销
     """No-op RecordingContext for production mode.
 
     Accepts all RecordingContext API calls but performs no allocation.
@@ -311,10 +315,12 @@ _NULL_RECORDING_CONTEXT = NullRecordingContext()
 
 
 # Context variable for coroutine / thread isolation
+# 协程/线程隔离的上下文变量
 _recording_ctx_var: contextvars.ContextVar[BaseRecordingContext] = contextvars.ContextVar("recording_context")
 
 
 def get_recording_context() -> BaseRecordingContext:
+    # 获取当前执行上下文绑定的 RecordingContext
     """Get the BaseRecordingContext for the current execution context.
 
     Returns the BaseRecordingContext bound to the current coroutine / thread.
@@ -330,6 +336,7 @@ def get_recording_context() -> BaseRecordingContext:
 
 
 def set_recording_context(ctx: BaseRecordingContext) -> None:
+    # 将 RecordingContext 绑定到当前协程/线程
     """Bind a BaseRecordingContext to the current execution context.
 
     Args:
@@ -340,6 +347,7 @@ def set_recording_context(ctx: BaseRecordingContext) -> None:
 
 @contextmanager
 def recording_context_manager(ctx: BaseRecordingContext = None):
+    # 上下文管理器：进入时 set、退出时 reset
     """Context manager that sets and restores the BaseRecordingContext.
 
     Usage::
@@ -363,6 +371,8 @@ def recording_context_manager(ctx: BaseRecordingContext = None):
 
 
 def timed_with_recording(
+    # 装饰器：自动将函数耗时写入当前 RecordingContext
+
     func: Callable = None,
     *,
     recording_context: BaseRecordingContext = None,

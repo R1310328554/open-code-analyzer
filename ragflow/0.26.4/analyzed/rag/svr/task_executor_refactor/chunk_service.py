@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+Chunk 服务：文档分块、MinIO 图片上传、关键词/问题/元数据/标签后处理及 ES 批量写入。
 Chunk Service Module.
 
 Provides [`ChunkService`](rag/svr/task_executor_refactor/chunk_service.py:50) for document chunking,
@@ -60,6 +61,7 @@ from rag.svr.task_executor_refactor.chunk_post_processor import (
 
 
 class ChunkService:
+    # 分块流水线编排：chunk_builder + chunk_post_processor + insert
     """Service for document chunking and post-processing.
 
     This service handles:
@@ -88,6 +90,8 @@ class ChunkService:
 
     @timeout(60 * 80, 1)
     async def build_chunks(
+        # 主入口：校验大小→分块→大纲→MinIO→后处理→录制 final_chunks
+
         self,
         storage_binary: bytes,
     ) -> List[Dict[str, Any]]:
@@ -174,7 +178,9 @@ class ChunkService:
 
         return docs
 
-    async def _prepare_docs_and_upload(self, cks: List[Dict]) -> List[Dict]:
+    async def _prepare_docs_and_upload(self, cks: List[Dict])
+        # 为 chunk 生成 id/时间戳并并发上传图片到 MinIO
+ -> List[Dict]:
         """Prepare docs and upload images to MinIO."""
         ctx = self._task_context
         docs = []
@@ -235,6 +241,8 @@ class ChunkService:
     # =========================================================================
 
     async def insert_chunks(
+        # 写入 doc store：先 mother chunk 再主 chunk，支持取消回滚
+
         self,
         task_id: str,
         task_tenant_id: str,
@@ -267,7 +275,9 @@ class ChunkService:
         return await self._insert_main_chunks(task_id, task_tenant_id, task_dataset_id, chunks, doc_bulk_size)
 
     @classmethod
-    def _create_mother_chunks(cls, chunks: List[Dict]) -> List[Dict]:
+    def _create_mother_chunks(cls, chunks: List[Dict])
+        # 从 mom/mom_with_weight 字段生成摘要 mother chunk
+ -> List[Dict]:
         """Create mother chunks from summary fields.
 
         Mother chunks are summary/abstract chunks that are stored separately.
@@ -371,6 +381,8 @@ class ChunkService:
         return True
 
     async def _rollback_raptor_chunks(
+        # 任务取消时回滚已部分插入的 RAPTOR 摘要 chunk
+
         self,
         task_id: str,
         task_tenant_id: str,

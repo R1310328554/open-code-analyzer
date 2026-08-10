@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+任务上下文：对原始 task 字典的 TypedDict 封装，统一限流器、回调与录制上下文访问。
 Task Context Module.
 
 Provides [`TaskContext`](rag/svr/task_executor_refactor/task_context.py) as a typed wrapper
@@ -68,6 +69,7 @@ from rag.svr.task_executor_refactor.write_operation_interceptor import WriteOper
 
 
 class TaskDict(TypedDict, total=False):
+    # 原始任务字典结构：id/tenant_id 必填，其余可选
     """TypedDict defining the structure of the raw task dictionary.
 
     All fields are optional except 'id' and 'tenant_id' which are required.
@@ -151,6 +153,7 @@ class TaskDict(TypedDict, total=False):
 
 @dataclass
 class TaskLimiters:
+    # 封装 chat/minio/chunk/embed/kg 五类 asyncio 信号量
     """Encapsulates all rate limiters for task execution.
 
     Each limiter is an asyncio.Semaphore used to control concurrency
@@ -185,6 +188,7 @@ def _not_canceled(task_id: str) -> bool:
 
 @dataclass
 class TaskCallbacks:
+    # 进度回调与任务取消检测函数
     """Encapsulates all callback functions for task execution."""
 
     progress: Callable = field(default_factory=lambda: _noop_progress)
@@ -200,6 +204,7 @@ class TaskCallbacks:
 
 
 class TaskContext:
+    # 门面类：属性访问 task 字段 + limiter + recording_context + write_interceptor
     """Typed wrapper around the task dictionary providing convenient property accessors.
 
     This class uses composition to encapsulate:
@@ -239,6 +244,8 @@ class TaskContext:
     }
 
     def __init__(
+        # 校验 id/tenant_id，绑定 progress_cb partial
+
         self,
         task: TaskDict,
         limiters: TaskLimiters,
@@ -433,6 +440,8 @@ class TaskContext:
 
     @property
     def raw_task(self) -> Dict[str, Any]:
+        # 返回底层 task 字典（供 table 元数据等直接读取）
+
         """Return the raw task dictionary."""
         return self._task
 
@@ -483,6 +492,8 @@ class TaskContext:
 
     @property
     def recording_context(self) -> BaseRecordingContext:
+        # 必须在构造时注入，否则 RuntimeError
+
         """BaseRecordingContext for this task.
 
         Must be injected via constructor. Raises RuntimeError if accessed

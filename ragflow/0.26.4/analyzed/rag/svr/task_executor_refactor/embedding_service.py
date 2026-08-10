@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+嵌入服务：对 chunk 列表批量 encode，标题+正文加权合并后写入 q_{dim}_vec。
 Embedding Service Module.
 
 Provides [`EmbeddingService`](rag/svr/task_executor_refactor/embedding_service.py:42) for vector embedding operations.
@@ -30,6 +31,7 @@ from rag.svr.task_executor_refactor.task_context import TaskContext
 
 
 class EmbeddingService:
+    # 封装 embed_limiter 限流与 EmbeddingUtils 批量编码
     """Service for vector embedding operations.
 
     This service handles:
@@ -56,6 +58,8 @@ class EmbeddingService:
         self._embedding_batch_size = embedding_batch_size or settings.EMBEDDING_BATCH_SIZE
 
     async def embed_chunks(
+        # 标题单条 encode 后 tile，正文分批 encode，加权合并 attach
+
         self,
         docs: List[Dict[str, Any]],
         embedding_model,

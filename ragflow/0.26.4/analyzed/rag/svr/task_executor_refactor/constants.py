@@ -14,11 +14,12 @@
 #  limitations under the License.
 
 """
+任务执行器共享常量：打破 task_executor 与 refactor 模块间的循环导入。
 Shared constants for task executor modules.
 
 This module exists to break circular imports between task_executor.py and
 task_executor_refactor modules.
 """
 
-CANVAS_DEBUG_DOC_ID = "dataflow_x"
-GRAPH_RAPTOR_FAKE_DOC_ID = "graph_raptor_x"
+CANVAS_DEBUG_DOC_ID = "dataflow_x"  # Dataflow 画布调试用的假文档 ID
+GRAPH_RAPTOR_FAKE_DOC_ID = "graph_raptor_x"  # GraphRAPTOR / 数据集级 RAPTOR 占位 doc_id

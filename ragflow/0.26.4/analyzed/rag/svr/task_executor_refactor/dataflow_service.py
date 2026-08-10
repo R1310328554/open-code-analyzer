@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+Dataflow 服务：执行用户画布 DSL 流水线，对输出 chunk 嵌入、元数据处理并索引。
 Dataflow Service Module.
 
 Provides [`DataflowService`](rag/svr/task_executor_refactor/dataflow_service.py:42) for dataflow
@@ -49,6 +50,7 @@ from rag.svr.task_executor_refactor.task_context import TaskContext
 
 
 class BillingHook(abc.ABC):
+    # 计费钩子抽象：流水线成功/失败时扣费或释放配额
     """Abstract base for billing hooks on pipeline success/error.
 
     Implementations override the no-op methods to integrate with billing
@@ -63,6 +65,7 @@ class BillingHook(abc.ABC):
 
 
 class DataflowService:
+    # 加载 DSL→Pipeline.run→嵌入→元数据→ChunkService.insert
     """Service for dataflow pipeline execution.
 
     This service handles:
@@ -92,6 +95,8 @@ class DataflowService:
         self._doc_bulk_size = doc_bulk_size or self._get_default_bulk_size()
 
     async def run_dataflow(self) -> None:
+        # 主入口：执行 dataflow 任务并更新文档统计
+
         """Run a dataflow pipeline."""
         ctx = self._task_context
         pipeline = None
@@ -228,7 +233,9 @@ class DataflowService:
         return []
 
     @timeout(60)
-    async def _embed_chunks(self, chunks: List[Dict], token_consumption: int) -> Tuple[Optional[List[Dict]], int]:
+    async def _embed_chunks(self, chunks: List[Dict], token_consumption: int)
+        # 若 chunk 无 q_*_vec 则批量嵌入并 attach
+ -> Tuple[Optional[List[Dict]], int]:
         """Embed chunks using the embedding model."""
         ctx = self._task_context
         try:
@@ -277,6 +284,8 @@ class DataflowService:
         return embedding_model.encode(truncated)
 
     def _process_chunks(self, chunks: List[Dict]) -> Dict:
+        # 规范化 questions/keywords/summary 字段并分词
+
         """Process chunks for metadata and indexing."""
         ctx = self._task_context
         metadata = {}

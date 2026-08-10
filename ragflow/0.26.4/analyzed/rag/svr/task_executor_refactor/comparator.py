@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+对比器：比较生产与 dry-run 两个 RecordingContext 的中间结果，支持 chunk/数值/字典多策略。
 Comparison Logic Module.
 
 This module provides the [`ContextComparator`](rag/svr/task_executor_refactor/comparator.py:100) class, which compares
@@ -40,6 +41,7 @@ from rag.svr.task_executor_refactor.write_operation_interceptor import ALLOWED_M
 
 
 class ContextComparator:
+    # 按键遍历对比，生成 ComparisonReport
     """Compare two RecordingContext instances for intermediate results.
 
     This class compares the recorded data from production execution against
@@ -52,10 +54,10 @@ class ContextComparator:
     """
 
     # Default tolerance for float comparison
-    DEFAULT_FLOAT_TOLERANCE = 1e-6
+    DEFAULT_FLOAT_TOLERANCE = 1e-6  # 浮点数相等判定容差
 
     # Keys to strip from dict values before comparison (non-deterministic values)
-    DICT_KEYS_TO_STRIP = {"seconds", "_created_time", "_elapsed_time"}
+    DICT_KEYS_TO_STRIP = {"seconds", "_created_time", "_elapsed_time"}  # 对比前剔除非确定性字段
 
     # Keys that represent counts and should be compared as numbers
     COUNT_KEYS = {
@@ -70,7 +72,8 @@ class ContextComparator:
     }
 
     # Keys that contain chunk data for comparison
-    CHUNK_KEYS = {
+    CHUNK_KEYS = {  # 需多级对比（长度→ID 集合→全文）的 chunk 列表键
+
         "toc_chunk",
         "raw_chunks",
         "final_chunks",
@@ -125,6 +128,8 @@ class ContextComparator:
         return prod_data
 
     def compare(
+        # 主入口：合并两上下文键集，逐键 compare_value
+
         self,
         task_id: str,
         ctx_production: BaseRecordingContext,
@@ -183,6 +188,8 @@ class ContextComparator:
         return report
 
     def compare_value(
+        # 按类型分发：None/bool/list/dict/number/str
+
         self,
         key: str,
         prod_value: Any,
@@ -296,6 +303,8 @@ class ContextComparator:
         )
 
     def _compare_chunks(
+        # chunk 三级对比：数量→ID 集合→逐条 content/vector
+
         self,
         key: str,
         prod_chunks: list,
@@ -535,6 +544,8 @@ class ContextComparator:
         )
 
     def _compare_numbers(
+        # 数值对比：差值在 float_tolerance 内视为匹配
+
         self,
         key: str,
         prod_value: float,

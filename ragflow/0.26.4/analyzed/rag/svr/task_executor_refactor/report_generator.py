@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+对比报告生成：RecordingContext 生产/dry-run 对比结果的数据类与 Markdown 序列化。
 Report Generator Module.
 
 Provides data classes for comparison result reporting:
@@ -27,6 +28,7 @@ from typing import Any, List, Optional
 
 @dataclass
 class ComparisonResult:
+    # 单个键的生产值 vs dry-run 值对比结果
     """Result of comparing a single key between two contexts.
 
     Attributes:
@@ -54,6 +56,7 @@ class ComparisonResult:
 
 @dataclass
 class ComparisonReport:
+    # 整任务对比报告：匹配/不匹配键统计与明细列表
     """Report of comparing two RecordingContext instances.
 
     Attributes:
@@ -75,6 +78,8 @@ class ComparisonReport:
     details: List["ComparisonResult"] = field(default_factory=list)
 
     def summary(self) -> str:
+        # 生成可读摘要字符串（匹配率百分比）
+
         """Generate a summary string.
 
         Returns:
@@ -103,6 +108,8 @@ class ComparisonReport:
         }
 
     def to_markdown(self) -> str:
+        # 导出 Markdown 表格格式对比报告
+
         """Generate a mark-down report.
 
         Returns:

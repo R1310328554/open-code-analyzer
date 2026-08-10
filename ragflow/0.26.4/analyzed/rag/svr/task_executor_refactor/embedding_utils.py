@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+嵌入工具类：集中处理文本截断、批量编码、向量拼接与 chunk 字段写入，避免各服务重复实现。
 Embedding Utils Module.
 
 Provides utility functions for vector embedding operations to avoid code duplication
@@ -36,6 +37,7 @@ from common.token_utils import truncate
 
 
 class EmbeddingUtils:
+    # 静态工具方法：标题/正文提取、批量 encode、向量加权合并
     """Utility class for common embedding operations.
 
     This class provides static methods for:
@@ -46,12 +48,14 @@ class EmbeddingUtils:
     - Combining title and content vectors with weights
     """
 
-    DEFAULT_TITLE_WEIGHT = 0.1
+    DEFAULT_TITLE_WEIGHT = 0.1  # 标题向量在最终 embedding 中的默认权重
     DEFAULT_TITLE_PLACEHOLDER = "Title"
     CONTENT_PLACEHOLDER_FOR_WHITESPACE = "None"
 
     @classmethod
     def prepare_texts_for_embedding(
+        # 从 chunk 字典提取 docnm_kwd 标题与 question/content 正文
+
         cls,
         docs: List[Dict[str, Any]],
         use_question_kwd: bool = True,
@@ -84,6 +88,8 @@ class EmbeddingUtils:
 
     @classmethod
     def prepare_texts_for_dataflow_embedding(
+        # Dataflow 输出：按 questions/summary/text 优先级取文本
+
         cls,
         chunks: List[Dict[str, Any]],
     ) -> List[str]:
@@ -105,7 +111,9 @@ class EmbeddingUtils:
         return texts
 
     @classmethod
-    def truncate_texts(cls, texts: List[str], max_length: int) -> List[str]:
+    def truncate_texts(cls, texts: List[str], max_length: int)
+        # 按模型 max_length 安全截断（留 10 token 余量）
+ -> List[str]:
         """Truncate texts to the specified maximum length.
 
         Args:
@@ -119,7 +127,9 @@ class EmbeddingUtils:
         return [truncate(text, safe_max_length) for text in texts]
 
     @classmethod
-    def stack_vectors(cls, vects_batches: List[np.ndarray]) -> np.ndarray:
+    def stack_vectors(cls, vects_batches: List[np.ndarray])
+        # 将多批 encode 结果 vstack 为单一数组
+ -> np.ndarray:
         """Stack a list of vector batches into a single array.
 
         Args:
@@ -132,6 +142,8 @@ class EmbeddingUtils:
 
     @classmethod
     def attach_vectors(
+        # 将向量写入 chunk 的 q_{dim}_vec 字段
+
         cls,
         docs: List[Dict[str, Any]],
         vectors: np.ndarray,
@@ -159,6 +171,8 @@ class EmbeddingUtils:
 
     @classmethod
     def combine_title_content_vectors(
+        # 按 title_weight 线性组合标题与正文向量
+
         cls,
         title_vecs: Optional[np.ndarray],
         content_vecs: np.ndarray,

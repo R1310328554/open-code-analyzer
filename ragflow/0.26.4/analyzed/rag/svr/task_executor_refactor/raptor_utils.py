@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+RAPTOR chunk 管理工具：查询/删除文档级 RAPTOR 摘要 chunk 的 ES 辅助函数。
 RAPTOR chunk management utilities.
 
 Provides functions for managing RAPTOR summary chunks,
@@ -29,10 +30,11 @@ from rag.utils.raptor_utils import (
     collect_raptor_chunk_ids,
 )
 
-RAPTOR_METHOD_SEARCH_LIMIT = 10000
+RAPTOR_METHOD_SEARCH_LIMIT = 10000  # 单次 doc store 检索 RAPTOR 标记的上限
 
 
-async def get_raptor_chunk_field_map(doc_id: str, tenant_id: str, kb_id: str) -> dict:
+async def get_raptor_chunk_field_map(doc_id: str, tenant_id: str, kb_id: str)
+    # 读取文档已存储的 raptor_kwd/extra 字段映射 -> dict:
     """Return stored RAPTOR marker fields for a document."""
     from common.doc_store.doc_store_base import OrderByExpr
 
@@ -56,7 +58,9 @@ async def get_raptor_chunk_field_map(doc_id: str, tenant_id: str, kb_id: str) ->
         return primary
 
 
-async def delete_raptor_chunks(doc_id: str, tenant_id: str, kb_id: str, keep_method: str | None = None) -> int:
+async def delete_raptor_chunks(doc_id: str, tenant_id: str, kb_id: str, keep_method: str | None = None)
+    # 删除 RAPTOR 摘要 chunk；keep_method 非空时保留指定构建方式
+ -> int:
     """Delete RAPTOR summaries for doc_id, optionally preserving one method."""
     if keep_method is None:
         logging.info(
