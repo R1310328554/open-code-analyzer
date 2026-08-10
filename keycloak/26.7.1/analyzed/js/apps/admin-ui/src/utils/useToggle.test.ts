@@ -1,4 +1,8 @@
 /**
+ * useToggle Hook 单元测试（jsdom 环境）。
+ * 覆盖默认值、初始值、toggle 与 setValue 行为。
+ */
+/**
  * @vitest-environment jsdom
  */
 import { act, renderHook } from "@testing-library/react";
