@@ -48,61 +48,64 @@ import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_MATCH
 import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_OVER_LIMIT;
 
 /**
- * fuzzy wather context for a single group key pattern.
+ * 单个 groupKey 模式的命名模糊监听上下文。
  *
- * <p>This class manages the context information for fuzzy listening, including environment name, task ID, data ID
- * pattern, group, tenant, listener set, and other related information.
- * </p>
+ * <p>管理环境名、模式、已接收 serviceKey 集合、监听器包装器及与服务端的一致性状态；负责向 {@link FuzzyWatchEventWatcher} 分发 {@link FuzzyWatchChangeEvent}。</p>
  *
  * @author stone-98
  * @date 2024/3/4
  */
 public class NamingFuzzyWatchContext {
     
-    /**
-     * Logger for FuzzyListenContext.
-     */
+    /** 模糊监听上下文日志记录器。 */
+    /** Logger for FuzzyListenContext. */
+    /** FuzzyListenContext 日志器。 */
     private static final Logger LOGGER = LogUtils.logger(NamingFuzzyWatchContext.class);
     
-    /**
-     * Environment name.
-     */
+    /** 环境/作用域名称，用于日志前缀。 */
+    /** Environment name. */
+    /** 环境名称。 */
     private String envName;
     
+    /** 模糊匹配的 groupKey 模式字符串。 */
     private String groupKeyPattern;
     
-    /**
-     * Set of service keys associated with the context.
-     */
+    /** 服务端已推送、与本模式匹配的 serviceKey 集合。 */
+    /** Set of service keys associated with the context. */
+    /** 上下文关联的 serviceKey 集合。 */
     private Set<String> receivedServiceKeys = new ConcurrentHashSet<>();
     
+    /** serviceKey 集合变更时的同步版本戳。 */
     private long syncVersion = 0;
     
-    /**
-     * Flag indicating whether the context is consistent with the server.
-     */
+    /** 是否已与服务端模糊监听状态一致。 */
+    /** Flag indicating whether the context is consistent with the server. */
+    /** 与服务端一致性标志。 */
     private final AtomicBoolean isConsistentWithServer = new AtomicBoolean();
     
-    /**
-     * Condition object for waiting initialization completion.
-     */
+    /** 初始化是否完成的标志，供 Future 等待。 */
+    /** Condition object for waiting initialization completion. */
+    /** 等待初始化完成的条件对象。 */
     final AtomicBoolean initializationCompleted = new AtomicBoolean(false);
     
-    /**
-     * Flag indicating whether the context is discarded.
-     */
+    /** 上下文是否已标记废弃（待取消订阅）。 */
+    /** Flag indicating whether the context is discarded. */
+    /** 上下文废弃标志。 */
     private volatile boolean isDiscard = false;
     
-    /**
-     * Set of listeners associated with the context.
-     */
+    /** 已注册的模糊监听包装器集合。 */
+    /** Set of listeners associated with the context. */
+    /** 关联的监听器集合。 */
     private final Set<FuzzyWatchEventWatcherWrapper> fuzzyWatchEventWatcherWrappers =
         new HashSet<>();
     
+    /** 上次触发模式/匹配数超限通知的时间戳，用于抑制重复告警。 */
     long patternLimitTs = 0;
     
+    /** 超限通知抑制窗口（毫秒）。 */
     private static final long SUPPRESSED_PERIOD = 60 * 1000L;
     
+    /** 当前是否处于超限通知抑制期内。 */
     boolean patternLimitSuppressed() {
         return patternLimitTs > 0
             && System.currentTimeMillis() - patternLimitTs < SUPPRESSED_PERIOD;
@@ -125,12 +128,14 @@ public class NamingFuzzyWatchContext {
      *
      * @param envName         Environment name
      * @param groupKeyPattern groupKeyPattern
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public NamingFuzzyWatchContext(String envName, String groupKeyPattern) {
         this.envName = envName;
         this.groupKeyPattern = groupKeyPattern;
     }
     
+    /** 构造 {@link FuzzyWatchChangeEvent} 并异步/同步回调指定监听器。 */
     private void doNotifyWatcher(final String serviceKey, final String changedType,
         final String syncType,
         FuzzyWatchEventWatcherWrapper fuzzyWatchEventWatcherWrapper) {
@@ -198,6 +203,7 @@ public class NamingFuzzyWatchContext {
     
     /**
      * Mark initialization as complete and notify waiting threads.
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public void markInitializationComplete() {
         LOGGER.info(
@@ -214,6 +220,7 @@ public class NamingFuzzyWatchContext {
      * Remove a watcher from the context.
      *
      * @param watcher watcher to be removed
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public synchronized void removeWatcher(FuzzyWatchEventWatcher watcher) {
         Iterator<FuzzyWatchEventWatcherWrapper> iterator =
@@ -237,6 +244,7 @@ public class NamingFuzzyWatchContext {
      * Get the environment name.
      *
      * @return Environment name
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public String getEnvName() {
         return envName;
@@ -246,6 +254,7 @@ public class NamingFuzzyWatchContext {
      * Set the environment name.
      *
      * @param envName Environment name to be set
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public void setEnvName(String envName) {
         this.envName = envName;
@@ -259,6 +268,7 @@ public class NamingFuzzyWatchContext {
      * Get the flag indicating whether the context is consistent with the server.
      *
      * @return AtomicBoolean indicating whether the context is consistent with the server
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public boolean isConsistentWithServer() {
         return isConsistentWithServer.get();
@@ -272,6 +282,7 @@ public class NamingFuzzyWatchContext {
      * Check if the context is discarded.
      *
      * @return True if the context is discarded, otherwise false
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public boolean isDiscard() {
         return isDiscard;
@@ -281,6 +292,7 @@ public class NamingFuzzyWatchContext {
      * Set the flag indicating whether the context is discarded.
      *
      * @param discard True to mark the context as discarded, otherwise false
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public void setDiscard(boolean discard) {
         isDiscard = discard;
@@ -290,6 +302,7 @@ public class NamingFuzzyWatchContext {
      * Check if the context is initializing.
      *
      * @return True if the context is initializing, otherwise false
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public boolean isInitializing() {
         return !initializationCompleted.get();
@@ -299,6 +312,7 @@ public class NamingFuzzyWatchContext {
      * Get the set of data IDs associated with the context.
      *
      * @return Set of data IDs
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public Set<String> getReceivedServiceKeys() {
         return Collections.unmodifiableSet(receivedServiceKeys);
@@ -309,6 +323,7 @@ public class NamingFuzzyWatchContext {
      *
      * @param serviceKey service key.
      * @return
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public boolean addReceivedServiceKey(String serviceKey) {
         boolean added = receivedServiceKeys.add(serviceKey);
@@ -323,6 +338,7 @@ public class NamingFuzzyWatchContext {
      *
      * @param serviceKey service key.
      * @return
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public boolean removeReceivedServiceKey(String serviceKey) {
         
@@ -337,11 +353,13 @@ public class NamingFuzzyWatchContext {
      * Get the set of listeners associated with the context.
      *
      * @return Set of listeners
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public Set<FuzzyWatchEventWatcherWrapper> getFuzzyWatchEventWatcherWrappers() {
         return fuzzyWatchEventWatcherWrappers;
     }
     
+    /** 对账上下文与监听器已同步 serviceKey，补发差异变更事件。 */
     void syncFuzzyWatchers() {
         for (FuzzyWatchEventWatcherWrapper namingFuzzyWatcher : fuzzyWatchEventWatcherWrappers) {
             
@@ -367,6 +385,7 @@ public class NamingFuzzyWatchContext {
         }
     }
     
+    /** 向指定或全部监听器推送单条 serviceKey 变更。 */
     void notifyFuzzyWatchers(String serviceKey, String changedType, String syncType,
         String watcherUuid) {
         for (FuzzyWatchEventWatcherWrapper namingFuzzyWatcher : filterWatchers(watcherUuid)) {
@@ -374,6 +393,7 @@ public class NamingFuzzyWatchContext {
         }
     }
     
+    /** 向 {@link FuzzyWatchLoadWatcher} 通知模式或匹配数超限。 */
     void notifyOverLimitWatchers(int code) {
         
         if (this.patternLimitSuppressed()) {
@@ -416,6 +436,7 @@ public class NamingFuzzyWatchContext {
      * create a new future of this context.
      *
      * @return
+      * <p>单模式模糊监听上下文；详见类级说明。</p>
      */
     public Future<ListView<String>> createNewFuture() {
         Future<ListView<String>> completableFuture = new Future<ListView<String>>() {

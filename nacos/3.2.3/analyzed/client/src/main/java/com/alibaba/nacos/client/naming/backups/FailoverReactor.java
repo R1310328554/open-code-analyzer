@@ -45,24 +45,33 @@ import java.util.concurrent.TimeUnit;
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Failover reactor.
+ * 命名容灾反应器。
+ *
+ * <p>定时轮询 {@link FailoverDataSource} 的开关与磁盘容灾数据，切换本地服务映射并在开关变化时发布 {@link InstancesChangeEvent}。与 {@link ServiceInfoHolder} 协同在容灾关闭时恢复服务端缓存。</p>
  *
  * @author nkorange
  */
 public class FailoverReactor implements Closeable {
     
+    /** 当前生效的容灾服务实例映射（groupKey -> ServiceInfo）。 */
     private Map<String, ServiceInfo> serviceMap = new ConcurrentHashMap<>();
     
+    /** 容灾模式是否已开启。 */
     private boolean failoverSwitchEnable;
     
+    /** 正常模式下的服务缓存持有者，用于容灾关闭时对账恢复。 */
     private final ServiceInfoHolder serviceInfoHolder;
     
+    /** 定时刷新容灾开关与数据的单线程调度器。 */
     private final ScheduledExecutorService executorService;
     
+    /** 实例列表差异计算器，用于生成变更事件。 */
     private final InstancesDiffer instancesDiffer;
     
+    /** SPI 加载的容灾数据源（通常仅取首个）。 */
     private FailoverDataSource failoverDataSource;
     
+    /** 发布实例变更事件的作用域标识。 */
     private String notifierEventScope;
     
     public FailoverReactor(ServiceInfoHolder serviceInfoHolder, String notifierEventScope) {
@@ -76,20 +85,21 @@ public class FailoverReactor implements Closeable {
             NAMING_LOGGER.info("FailoverDataSource type is {}", dataSource.getClass());
             break;
         }
-        // init executorService
+        // 初始化容灾刷新线程池
         this.executorService = new ScheduledThreadPoolExecutor(1,
             new NameThreadFactory("com.alibaba.nacos.naming.failover"));
         this.init();
     }
     
-    /**
-     * Init.
-     */
+    /** 启动定时任务，每 5 秒刷新容灾开关与数据。 */
+    /** Init. */
+    /** 初始化容灾刷新调度。 */
     public void init() {
         executorService.scheduleWithFixedDelay(new FailoverSwitchRefresher(), 0L, 5000L,
             TimeUnit.MILLISECONDS);
     }
     
+    /** 定时任务：读取开关、同步容灾数据并在切换时通知监听器。 */
     class FailoverSwitchRefresher implements Runnable {
         
         @Override
@@ -158,15 +168,18 @@ public class FailoverReactor implements Closeable {
         }
     }
     
+    /** 全局容灾开关是否开启。 */
     public boolean isFailoverSwitch() {
         return failoverSwitchEnable;
     }
     
+    /** 指定服务是否在容灾模式且拥有可用实例。 */
     public boolean isFailoverSwitch(String serviceName) {
         ServiceInfo serviceInfo = serviceMap.get(serviceName);
         return failoverSwitchEnable && serviceInfo != null && serviceInfo.ipCount() > 0;
     }
     
+    /** 按 groupKey 获取容灾服务信息；不存在时返回空壳 ServiceInfo。 */
     public ServiceInfo getService(String key) {
         ServiceInfo serviceInfo = serviceMap.get(key);
         
@@ -179,9 +192,9 @@ public class FailoverReactor implements Closeable {
     }
     
     /**
-     * shutdown ThreadPool.
+     * 关闭容灾刷新线程池。
      *
-     * @throws NacosException Nacos exception
+     * @throws NacosException 关闭过程中的 Nacos 异常
      */
     @Override
     public void shutdown() throws NacosException {
@@ -191,6 +204,7 @@ public class FailoverReactor implements Closeable {
         NAMING_LOGGER.info("{} do shutdown stop", className);
     }
     
+    /** 为各容灾服务注册 Micrometer 实例数 Gauge。 */
     private void failoverServiceCntMetrics() {
         for (Map.Entry<String, ServiceInfo> entry : serviceMap.entrySet()) {
             String serviceName = entry.getKey();
@@ -205,6 +219,7 @@ public class FailoverReactor implements Closeable {
         }
     }
     
+    /** 容灾关闭时移除已注册的实例数 Gauge。 */
     private void failoverServiceCntMetricsClear() {
         for (Map.Entry<String, ServiceInfo> entry : serviceMap.entrySet()) {
             Gauge gauge = Metrics.globalRegistry.find("nacos_naming_client_failover_instances")

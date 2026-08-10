@@ -21,42 +21,52 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 
 /**
- * Metrics Monitor.
+ * Nacos 客户端 Prometheus 指标门面。
+ *
+ * <p>封装命名与配置模块的 Gauge、Histogram、Counter 子指标，供各子模块上报监控数据。</p>
  *
  * @author Nacos
  */
 public class MetricsMonitor {
     
+    /** 通用监控 Gauge：module + name 标签。 */
     private static final Gauge NACOS_MONITOR_GAUGE =
         Gauge.build().name("nacos_monitor").labelNames("module", "name")
             .help("nacos_monitor").register();
     
+    /** 客户端 HTTP 请求耗时直方图。 */
     private static final Histogram NACOS_CLIENT_REQUEST_HISTOGRAM = Histogram.build()
         .labelNames("module", "method", "url", "code").name("nacos_client_request")
         .help("nacos_client_request")
         .register();
     
+    /** 命名模块请求失败计数器。 */
     private static final Counter NACOS_CLIENT_NAMING_REQUEST_FAILED_TOTAL = Counter.build()
         .name("nacos_client_naming_request_failed_total")
         .help("nacos_client_naming_request_failed_total")
         .labelNames("module", "req_class", "res_status", "res_code", "err_class").register();
     
+    /** 命名服务本地缓存 serviceInfoMap 大小监控项。 */
     public static Gauge.Child getServiceInfoMapSizeMonitor() {
         return NACOS_MONITOR_GAUGE.labels("naming", "serviceInfoMapSize");
     }
     
+    /** 配置模块当前监听条目数监控项。 */
     public static Gauge.Child getListenConfigCountMonitor() {
         return NACOS_MONITOR_GAUGE.labels("config", "listenConfigCount");
     }
     
+    /** 配置模块 HTTP 请求监控子项。 */
     public static Histogram.Child getConfigRequestMonitor(String method, String url, String code) {
         return NACOS_CLIENT_REQUEST_HISTOGRAM.labels("config", method, url, code);
     }
     
+    /** 命名模块 HTTP 请求监控子项。 */
     public static Histogram.Child getNamingRequestMonitor(String method, String url, String code) {
         return NACOS_CLIENT_REQUEST_HISTOGRAM.labels("naming", method, url, code);
     }
     
+    /** 命名模块请求失败监控子项，按请求/响应/异常类型分维度。 */
     public static Counter.Child getNamingRequestFailedMonitor(String reqClass, String resStatus,
         String resCode,
         String errClass) {

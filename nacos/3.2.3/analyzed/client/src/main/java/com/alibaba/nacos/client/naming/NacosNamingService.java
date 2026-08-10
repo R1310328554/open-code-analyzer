@@ -67,34 +67,45 @@ import static com.alibaba.nacos.client.naming.selector.NamingSelectorFactory.get
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Nacos Naming Service.
+ * Nacos 命名服务客户端主入口。
+ *
+ * <p>实现 {@link NamingService}，负责实例注册/注销、服务订阅、健康实例选择、模糊监听及服务列表查询。内部组合 {@link ServiceInfoHolder} 本地缓存、{@link NamingClientProxyDelegate} 远程通信与 {@link InstancesChangeNotifier} 变更通知。</p>
  *
  * @author nkorange
  */
 public class NacosNamingService implements NamingService {
     
+    /** 默认命名模块日志文件名。 */
     private static final String DEFAULT_NAMING_LOG_FILE_PATH = "naming.log";
     
+    /** 服务端健康状态标识。 */
     private static final String UP = "UP";
     
+    /** 服务端不可用状态标识。 */
     private static final String DOWN = "DOWN";
     
-    /**
-     * Each Naming service should have different namespace.
-     */
+    /** 当前客户端绑定的命名空间 ID。 */
+    /** Each Naming service should have different namespace. */
+    /** 每个 Naming 客户端实例应对应独立命名空间。 */
     private String namespace;
     
+    /** @deprecated 命名日志文件名，已由统一日志模块接管。 */
     @Deprecated
     private String logName;
     
+    /** 服务实例本地缓存与容灾切换持有者。 */
     private ServiceInfoHolder serviceInfoHolder;
     
+    /** 模糊监听上下文与 RPC 同步调度器。 */
     private NamingFuzzyWatchServiceListHolder namingFuzzyWatchServiceListHolder;
     
+    /** 实例变更事件分发器，驱动订阅回调。 */
     private InstancesChangeNotifier changeNotifier;
     
+    /** 命名远程代理（HTTP/gRPC 委托）。 */
     private NamingClientProxy clientProxy;
     
+    /** 本客户端实例的事件作用域 UUID，隔离 NotifyCenter 订阅。 */
     private String notifierEventScope;
     
     public NacosNamingService(String serverList) throws NacosException {
@@ -107,6 +118,7 @@ public class NacosNamingService implements NamingService {
         init(properties);
     }
     
+    /** 初始化命名空间、缓存、模糊监听、变更通知与远程代理。 */
     private void init(Properties properties) throws NacosException {
         PreInitUtils.asyncPreLoadCostComponent();
         final NacosClientProperties nacosClientProperties =
@@ -135,6 +147,7 @@ public class NacosNamingService implements NamingService {
             changeNotifier, namingFuzzyWatchServiceListHolder);
     }
     
+    /** @deprecated 从属性读取命名日志文件名。 */
     @Deprecated
     private void initLogName(NacosClientProperties properties) {
         logName = properties.getProperty(UtilAndComs.NACOS_NAMING_LOG_NAME,
@@ -351,6 +364,7 @@ public class NacosNamingService implements NamingService {
         return selectInstances(serviceInfo, healthy);
     }
     
+    /** 按健康、启用与权重过滤实例列表。 */
     private List<Instance> selectInstances(ServiceInfo serviceInfo, boolean healthy) {
         List<Instance> list;
         if (serviceInfo == null || CollectionUtils.isEmpty(list = serviceInfo.getHosts())) {
@@ -369,6 +383,7 @@ public class NacosNamingService implements NamingService {
         return list;
     }
     
+    /** 获取服务信息：容灾开启时优先读 failover 缓存，否则订阅或直连查询。 */
     private ServiceInfo getServiceInfo(String serviceName, String groupName, List<String> clusters,
         boolean subscribe)
         throws NacosException {
@@ -388,12 +403,14 @@ public class NacosNamingService implements NamingService {
         return serviceInfo;
     }
     
+    /** 从容灾缓存读取服务并按集群选择器过滤实例。 */
     private ServiceInfo getServiceInfoByFailover(String serviceName, String groupName,
         NamingSelector clusterSelector) {
         ServiceInfo result = serviceInfoHolder.getFailoverServiceInfo(serviceName, groupName);
         return doSelectInstance(result, clusterSelector);
     }
     
+    /** 从本地缓存或远程查询服务；subscribe 为 true 时确保已订阅。 */
     private ServiceInfo getServiceInfoBySubscribe(String serviceName, String groupName,
         List<String> clusters,
         NamingSelector selector, boolean subscribe) throws NacosException {
@@ -410,18 +427,19 @@ public class NacosNamingService implements NamingService {
         return serviceInfo;
     }
     
+    /** 确保服务已订阅：无缓存则新建订阅，有缓存未订阅则补订。 */
     private ServiceInfo tryToSubscribe(String serviceName, String groupName,
         ServiceInfo cachedServiceInfo)
         throws NacosException {
-        // not found in cache, service never subscribed.
+        // 缓存未命中，从未订阅过该服务
         if (null == cachedServiceInfo) {
             return clientProxy.subscribe(serviceName, groupName, StringUtils.EMPTY);
         }
-        // found in cache, and subscribed.
+        // 缓存命中且已订阅，直接返回
         if (clientProxy.isSubscribed(serviceName, groupName, StringUtils.EMPTY)) {
             return cachedServiceInfo;
         }
-        // found in cached, but not subscribed, such as cached from local file when starting.
+        // 缓存来自本地文件但尚未订阅，尝试向服务端订阅
         ServiceInfo result = cachedServiceInfo;
         try {
             result = clientProxy.subscribe(serviceName, groupName, StringUtils.EMPTY);
@@ -432,6 +450,7 @@ public class NacosNamingService implements NamingService {
         return result;
     }
     
+    /** 使用集群选择器过滤 {@link ServiceInfo} 中的实例列表。 */
     private ServiceInfo doSelectInstance(ServiceInfo serviceInfo, NamingSelector clusterSelector) {
         if (null == serviceInfo) {
             return null;
@@ -533,6 +552,7 @@ public class NacosNamingService implements NamingService {
         doSubscribe(serviceName, groupName, Constants.NULL, selector, listener);
     }
     
+    /** 注册选择器包装监听器并向服务端发起订阅。 */
     private void doSubscribe(String serviceName, String groupName, String clusters,
         NamingSelector selector,
         EventListener listener) throws NacosException {
@@ -584,6 +604,7 @@ public class NacosNamingService implements NamingService {
         doUnsubscribe(serviceName, groupName, selector, listener);
     }
     
+    /** 注销监听器；无剩余监听器时取消服务端订阅。 */
     private void doUnsubscribe(String serviceName, String groupName, NamingSelector selector,
         EventListener listener)
         throws NacosException {
@@ -624,6 +645,7 @@ public class NacosNamingService implements NamingService {
         return doFuzzyWatch(serviceNamePattern, groupNamePattern, listener);
     }
     
+    /** 注册模糊监听器并返回初始化完成的 Future。 */
     private Future<ListView<String>> doFuzzyWatch(String serviceNamePattern,
         String groupNamePattern,
         FuzzyWatchEventWatcher watcher) {
@@ -652,6 +674,7 @@ public class NacosNamingService implements NamingService {
         doCancelFuzzyWatch(serviceNamePattern, fixedGroupName, listener);
     }
     
+    /** 按模式定位上下文并移除模糊监听器。 */
     private void doCancelFuzzyWatch(String serviceNamePattern, String groupNamePattern,
         FuzzyWatchEventWatcher watcher)
         throws NacosException {
@@ -699,11 +722,13 @@ public class NacosNamingService implements NamingService {
     }
     
     @Override
+    /** 返回命名服务端健康状态 {@code UP}/{@code DOWN}。 */
     public String getServerStatus() {
         return clientProxy.serverHealthy() ? UP : DOWN;
     }
     
     @Override
+    /** 关闭缓存、远程代理、模糊监听并注销变更通知订阅。 */
     public void shutDown() throws NacosException {
         serviceInfoHolder.shutdown();
         clientProxy.shutdown();
@@ -711,6 +736,7 @@ public class NacosNamingService implements NamingService {
         NotifyCenter.deregisterSubscriber(changeNotifier);
     }
     
+    /** 批量校验并剥离实例 serviceName 中的 group 前缀（兼容模式）。 */
     private void batchCheckAndStripGroupNamePrefix(List<Instance> instances, String groupName)
         throws NacosException {
         for (Instance instance : instances) {
@@ -718,6 +744,7 @@ public class NacosNamingService implements NamingService {
         }
     }
     
+    /** 校验 group 前缀一致性并剥离 serviceName 中的 group 段。 */
     private void checkAndStripGroupNamePrefix(Instance instance, String groupName)
         throws NacosException {
         String serviceName = instance.getServiceName();
@@ -733,6 +760,7 @@ public class NacosNamingService implements NamingService {
         }
     }
     
+    /** 重复订阅时用当前缓存立即通知监听器，避免漏推。 */
     private void notifyIfSubscribed(String serviceName, String groupName,
         NamingSelectorWrapper wrapper)
         throws NacosException {
@@ -746,6 +774,7 @@ public class NacosNamingService implements NamingService {
         }
     }
     
+    /** 将缓存中的服务实例包装为变更事件（全部视为新增）。 */
     private InstancesChangeEvent transferToEvent(ServiceInfo serviceInfo) {
         if (serviceInfo == null) {
             return null;

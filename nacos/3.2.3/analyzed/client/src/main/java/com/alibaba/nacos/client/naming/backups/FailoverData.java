@@ -17,42 +17,47 @@
 package com.alibaba.nacos.client.naming.backups;
 
 /**
- * Failover Data.
+ * 容灾数据通用封装。
+ *
+ * <p>携带数据类型（命名/配置）与原始载荷对象，供 {@link FailoverDataSource} 读取。</p>
  *
  * @author zongkang.guo
  */
 public class FailoverData {
     
-    /**
-     * failover type,naming or config.
-     */
+    /** 容灾数据类型：命名或配置。 */
+    /** failover type,naming or config. */
+    /** 容灾类型，命名或配置。 */
     private final DataType dataType;
     
-    /**
-     * failover data.
-     */
+    /** 容灾载荷（如 {@link com.alibaba.nacos.api.naming.pojo.ServiceInfo}）。 */
+    /** failover data. */
+    /** 容灾数据对象。 */
     private final Object data;
     
+    /** 构造指定类型与载荷的容灾数据。 */
     public FailoverData(DataType dataType, Object data) {
         this.data = data;
         this.dataType = dataType;
     }
     
     public enum DataType {
-        /**
-         * naming.
-         */
+        /** 命名服务容灾数据。 */
+        /** naming. */
+        /** 命名模块。 */
         naming,
-        /**
-         * config.
-         */
+        /** 配置模块容灾数据。 */
+        /** config. */
+        /** 配置模块。 */
         config
     }
     
+    /** 返回容灾数据类型。 */
     public DataType getDataType() {
         return dataType;
     }
     
+    /** 返回容灾载荷对象。 */
     public Object getData() {
         return data;
     }

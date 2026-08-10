@@ -24,28 +24,36 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * fuzzy watcher wrapper.
+ * 模糊监听回调包装器。
+ *
+ * <p>为每个 {@link FuzzyWatchEventWatcher} 分配 UUID，维护已同步的 serviceKey 集合与同步版本号，供 {@link NamingFuzzyWatchContext} 对账。</p>
  *
  * @author shiyiyue
  */
 public class FuzzyWatchEventWatcherWrapper {
     
+    /** 与上下文 serviceKey 集合对齐的版本戳。 */
     long syncVersion = 0;
     
+    /** 被包装的模糊监听回调。 */
     FuzzyWatchEventWatcher fuzzyWatchEventWatcher;
     
+    /** 监听器实例唯一标识，用于定向通知。 */
     String uuid = UUID.randomUUID().toString();
     
     public FuzzyWatchEventWatcherWrapper(FuzzyWatchEventWatcher fuzzyWatchEventWatcher) {
         this.fuzzyWatchEventWatcher = fuzzyWatchEventWatcher;
     }
     
+    /** 已向该监听器同步过的 serviceKey 集合。 */
     private Set<String> syncServiceKeys = new HashSet<>();
     
+    /** 返回监听器 UUID。 */
     final String getUuid() {
         return uuid;
     }
     
+    /** 返回已同步 serviceKey 集合（可变，供上下文更新）。 */
     Set<String> getSyncServiceKeys() {
         return syncServiceKeys;
     }

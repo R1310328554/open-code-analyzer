@@ -45,23 +45,30 @@ import static com.alibaba.nacos.client.constant.Constants.Security.SECURITY_INFO
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Nacos naming maintain service.
+ * Nacos 命名服务运维客户端（HTTP 实现）。
+ *
+ * <p>提供服务与实例的 CRUD、保护阈值与选择器配置等运维能力，通过 {@link NamingHttpClientProxy} 与命名服务端通信。</p>
  *
  * @author liaochuntao
  * @since 1.0.1
- * @deprecated Use {@link com.alibaba.nacos.api.naming.maintain.NamingMaintainService} in nacos-maintainer-client article tp replaced.
+ * @deprecated 请改用 nacos-maintainer-client 中的 {@link com.alibaba.nacos.api.naming.maintain.NamingMaintainService}。
  */
 @Deprecated
 public class NacosNamingMaintainService implements NamingMaintainService {
     
+    /** 当前命名空间 ID。 */
     private String namespace;
     
+    /** HTTP 远程代理，执行运维 API 调用。 */
     private NamingHttpClientProxy serverProxy;
     
+    /** 命名服务端地址列表管理器。 */
     private NamingServerListManager serverListManager;
     
+    /** 鉴权代理，负责登录与凭证刷新。 */
     private SecurityProxy securityProxy;
     
+    /** 定时刷新鉴权信息的线程池。 */
     private ScheduledExecutorService executorService;
     
     public NacosNamingMaintainService(String serverList) throws NacosException {
@@ -74,6 +81,7 @@ public class NacosNamingMaintainService implements NamingMaintainService {
         init(properties);
     }
     
+    /** 初始化命名空间、服务端列表、鉴权与 HTTP 代理。 */
     private void init(Properties properties) throws NacosException {
         final NacosClientProperties nacosClientProperties =
             NacosClientProperties.PROTOTYPE.derive(properties);
@@ -90,6 +98,7 @@ public class NacosNamingMaintainService implements NamingMaintainService {
             nacosClientProperties);
     }
     
+    /** 启动鉴权登录并定时刷新安全凭证。 */
     private void initSecurityProxy(Properties properties) {
         this.executorService = new ScheduledThreadPoolExecutor(1,
             new NameThreadFactory("com.alibaba.nacos.client.naming.maintainService.security"));
@@ -202,6 +211,7 @@ public class NacosNamingMaintainService implements NamingMaintainService {
     }
     
     @Override
+    /** 关闭服务端列表、HTTP 代理与鉴权线程池。 */
     public void shutDown() throws NacosException {
         String className = this.getClass().getName();
         NAMING_LOGGER.info("{} do shutdown begin", className);

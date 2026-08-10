@@ -19,16 +19,20 @@ package com.alibaba.nacos.client.naming.backups;
 import com.alibaba.nacos.api.naming.pojo.ServiceInfo;
 
 /**
- * Naming Failover Data.
+ * 命名模块容灾数据。
+ *
+ * <p>将 {@link com.alibaba.nacos.api.naming.pojo.ServiceInfo} 包装为类型 {@code naming} 的 {@link FailoverData}。</p>
  *
  * @author zongkang.guo
  */
 public class NamingFailoverData extends FailoverData {
     
+    /** 私有构造，通过工厂方法创建。 */
     private NamingFailoverData(ServiceInfo serviceInfo) {
         super(DataType.naming, serviceInfo);
     }
     
+    /** 由服务信息创建命名容灾数据实例。 */
     public static NamingFailoverData newNamingFailoverData(ServiceInfo serviceInfo) {
         return new NamingFailoverData(serviceInfo);
     }

@@ -32,18 +32,20 @@ import java.util.Set;
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * The instance list differ for nacos naming.
+ * 命名服务实例列表差异计算器。
+ *
+ * <p>对比新旧 {@link ServiceInfo} 的主机列表，识别新增、删除与修改的 {@link Instance}，供变更事件与容灾切换使用。</p>
  *
  * @author xiweng.yy
  */
 public final class InstancesDiffer {
     
     /**
-     * Do instance different for input service info.
+     * 计算两次服务信息之间的实例差异。
      *
-     * @param oldService old service info
-     * @param newService new service info
-     * @return {@link InstancesDiff} of the differences between old and new service info.
+     * @param oldService 旧服务信息（可为 null，表示首次加载）
+     * @param newService 新服务信息
+     * @return 包含增删改实例集合的 {@link InstancesDiff}
      */
     public InstancesDiff doDiff(ServiceInfo oldService, ServiceInfo newService) {
         InstancesDiff instancesDiff = new InstancesDiff();
@@ -96,7 +98,7 @@ public final class InstancesDiffer {
                 continue;
             }
             
-            //add to remove hosts
+            // 加入待移除实例集合
             remvHosts.add(host);
         }
         

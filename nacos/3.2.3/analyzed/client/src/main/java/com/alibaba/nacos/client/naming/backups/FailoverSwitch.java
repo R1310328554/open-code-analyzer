@@ -17,21 +17,25 @@
 package com.alibaba.nacos.client.naming.backups;
 
 /**
- * Failover switch.
+ * 容灾开关值对象。
+ *
+ * <p>表示磁盘或外部数据源读取到的容灾模式是否启用。</p>
  *
  * @author zongkang.guo
  */
 public class FailoverSwitch {
     
-    /**
-     * Failover switch enable.
-     */
+    /** 容灾模式是否启用。 */
+    /** Failover switch enable. */
+    /** 容灾开关是否开启。 */
     private final boolean enabled;
     
+    /** 返回容灾开关状态。 */
     public boolean getEnabled() {
         return enabled;
     }
     
+    /** 构造指定开关状态的容灾开关。 */
     public FailoverSwitch(boolean enabled) {
         this.enabled = enabled;
     }

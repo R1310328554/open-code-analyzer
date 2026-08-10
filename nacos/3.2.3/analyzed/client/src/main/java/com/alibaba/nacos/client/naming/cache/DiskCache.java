@@ -39,17 +39,19 @@ import java.util.Map;
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Disk cache.
+ * 命名服务磁盘缓存读写工具。
+ *
+ * <p>将 {@link ServiceInfo} 序列化为 JSON 写入本地文件，支持启动时从缓存目录恢复服务实例列表。</p>
  *
  * @author xuanyin
  */
 public class DiskCache {
     
     /**
-     * Write service info to dir.
+     * 将服务信息写入指定缓存目录。
      *
-     * @param dom service info
-     * @param dir directory
+     * @param dom 服务信息
+     * @param dir 目标目录
      */
     public static void write(ServiceInfo dom, String dir) {
         writeWithResult(dom, dir);
@@ -73,7 +75,7 @@ public class DiskCache {
             
             keyContentBuffer.append(json);
             
-            //Use the concurrent API to ensure the consistency.
+            // 使用并发磁盘 API 保证读写一致性
             ConcurrentDiskUtil.writeFileContent(file, keyContentBuffer.toString(),
                 Charset.defaultCharset().toString());
             return true;
@@ -88,10 +90,10 @@ public class DiskCache {
     }
     
     /**
-     * Read service info from disk.
+     * 从磁盘缓存目录批量读取服务信息。
      *
-     * @param cacheDir cache file dir
-     * @return service infos
+     * @param cacheDir 缓存目录
+     * @return groupKey 到 ServiceInfo 的映射
      */
     public static Map<String, ServiceInfo> read(String cacheDir) {
         Map<String, ServiceInfo> domMap = new HashMap<>(16);
@@ -115,11 +117,11 @@ public class DiskCache {
     }
     
     /**
-     * Parse Service info from cache file or failover file.
+     * 从单个缓存或容灾文件解析服务信息。
      *
-     * @param file cache file or failover file
-     * @return Service info
-     * @throws UnsupportedEncodingException if the file is not encoded in UTF-8
+     * @param file 缓存/容灾文件
+     * @return 解析出的服务映射
+     * @throws UnsupportedEncodingException 文件名非 UTF-8 编码时抛出
      */
     public static Map<String, ServiceInfo> parseServiceInfoFromCache(File file)
         throws UnsupportedEncodingException {
@@ -165,11 +167,11 @@ public class DiskCache {
     }
     
     /**
-     * Create file if absent.
+     * 若不存在则创建文件或目录。
      *
-     * @param file  file
-     * @param isDir is dir
-     * @throws IOException if any io exception during create.
+     * @param file  目标文件
+     * @param isDir 是否为目录
+     * @throws IOException 创建失败时抛出
      */
     public static void createFileIfAbsent(File file, boolean isDir) throws IOException {
         if (file.exists()) {
@@ -182,6 +184,7 @@ public class DiskCache {
         }
     }
     
+    /** 确保缓存目录存在并返回 File 引用。 */
     private static File makeSureCacheDirExists(String dir) throws IOException {
         File cacheDir = new File(dir);
         createFileIfAbsent(cacheDir, true);

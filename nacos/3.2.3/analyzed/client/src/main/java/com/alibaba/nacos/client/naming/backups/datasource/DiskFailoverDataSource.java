@@ -37,30 +37,40 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Failover Data Disk Impl.
+ * 基于本地磁盘的命名容灾数据源。
+ *
+ * <p>从容灾目录读取开关文件与缓存服务文件，解析为 {@link NamingFailoverData} 映射。开关文件变更时触发重新加载。</p>
  *
  * @author zongkang.guo
  */
 public class DiskFailoverDataSource implements FailoverDataSource {
     
+    /** 容灾数据相对缓存根目录的子路径。 */
     private static final String FAILOVER_DIR = "/failover";
     
+    /** 开关文件中表示开启容灾的行内容。 */
     private static final String IS_FAILOVER_MODE = "1";
     
+    /** 开关文件中表示关闭容灾的行内容。 */
     private static final String NO_FAILOVER_MODE = "0";
     
+    /** 内存中缓存的开关参数键名。 */
     private static final String FAILOVER_MODE_PARAM = "failover-mode";
     
     private static final FailoverSwitch FAILOVER_SWITCH_FALSE = new FailoverSwitch(Boolean.FALSE);
     
     private static final FailoverSwitch FAILOVER_SWITCH_TRUE = new FailoverSwitch(Boolean.TRUE);
     
+    /** 容灾开关参数的内存缓存。 */
     private final Map<String, String> switchParams = new ConcurrentHashMap<>();
     
+    /** 从磁盘加载的容灾服务数据映射。 */
     private Map<String, FailoverData> serviceMap = new ConcurrentHashMap<>();
     
+    /** 容灾文件根目录绝对路径。 */
     private String failoverDir;
     
+    /** 开关文件上次读取时的修改时间戳。 */
     private long lastModifiedMillis = 0L;
     
     public DiskFailoverDataSource() {
@@ -68,6 +78,7 @@ public class DiskFailoverDataSource implements FailoverDataSource {
         switchParams.put(FAILOVER_MODE_PARAM, Boolean.FALSE.toString());
     }
     
+    /** 扫描容灾目录并解析各服务缓存文件为容灾数据。 */
     class FailoverFileReader implements Runnable {
         
         @Override

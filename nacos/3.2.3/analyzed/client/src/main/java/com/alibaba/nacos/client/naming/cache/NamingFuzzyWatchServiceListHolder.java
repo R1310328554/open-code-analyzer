@@ -55,7 +55,9 @@ import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_MATCH
 import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_OVER_LIMIT;
 
 /**
- * Naming client fuzzy watch service list holder.
+ * 命名客户端模糊监听调度与上下文持有者。
+ *
+ * <p>维护 pattern -> {@link NamingFuzzyWatchContext} 映射，通过单线程 Worker 与服务端执行模糊订阅 RPC，并订阅 {@link NamingFuzzyWatchNotifyEvent} 推送。</p>
  *
  * @author tanyongquan
  */
@@ -63,26 +65,32 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
     
     private static final Logger LOGGER = LogUtils.logger(NamingFuzzyWatchServiceListHolder.class);
     
+    /** 本持有者的事件作用域，过滤 NotifyCenter 事件。 */
     private String notifierEventScope;
     
+    /** gRPC 命名代理，执行模糊监听请求。 */
     private NamingGrpcClientProxy namingGrpcClientProxy;
     
-    /**
-     * fuzzyListenExecuteBell.
-     */
+    /** 触发模糊监听同步执行的单元素队列（铃铛）。 */
+    /** fuzzyListenExecuteBell. */
+    /** 模糊监听执行铃铛队列。 */
     private final BlockingQueue<Object> fuzzyWatchExecuteBell = new ArrayBlockingQueue<>(1);
     
+    /** 放入铃铛队列的占位元素。 */
     private final Object bellItem = new Object();
     
+    /** 上次全量对账同步的时间戳。 */
     private final AtomicLong fuzzyWatchLastAllSyncTime = new AtomicLong(System.currentTimeMillis());
     
+    /** 全量对账间隔：3 分钟。 */
     private static final long FUZZY_LISTEN_ALL_SYNC_INTERNAL = 3 * 60 * 1000;
     
+    /** 模糊监听 Worker 单线程调度器。 */
     ScheduledExecutorService executorService;
     
-    /**
-     * The contents of {@code patternMatchMap} are Map{pattern -> Set[matched services]}.
-     */
+    /** 模糊模式到 {@link NamingFuzzyWatchContext} 的映射。 */
+    /** The contents of {@code patternMatchMap} are Map{pattern -> Set[matched services]}. */
+    /** patternMatchMap：pattern -> 匹配上下文。 */
     private Map<String, NamingFuzzyWatchContext> fuzzyMatchContextMap = new ConcurrentHashMap<>();
     
     public NamingFuzzyWatchServiceListHolder(String notifierEventScope) {
@@ -92,10 +100,11 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
     
     /**
      * shut down.
+      * <p>模糊监听调度持有者；详见类级说明。</p>
      */
     @Override
     public void shutdown() {
-        // deregister subscriber which registered in constructor
+        // 注销构造时注册的 NotifyCenter 订阅者
         NotifyCenter.deregisterSubscriber(this);
         if (executorService != null && !executorService.isShutdown()) {
             executorService.shutdown();
@@ -104,6 +113,7 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
     
     /**
      * start.
+      * <p>模糊监听调度持有者；详见类级说明。</p>
      */
     public void start() {
         
@@ -142,6 +152,7 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
      * Add a watcher to the context.
      *
      * @param watcher watcher to be added
+      * <p>模糊监听调度持有者；详见类级说明。</p>
      */
     public NamingFuzzyWatchContext registerFuzzyWatcher(String groupKeyPattern,
         FuzzyWatchEventWatcher watcher) {
@@ -182,6 +193,7 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
      *
      * @param groupKeyPattern groupKeyPattern.
      * @return fuzzy context.
+      * <p>模糊监听调度持有者；详见类级说明。</p>
      */
     public NamingFuzzyWatchContext initFuzzyWatchContextIfNeed(String groupKeyPattern) {
         if (!fuzzyMatchContextMap.containsKey(groupKeyPattern)) {
@@ -203,6 +215,7 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
      * remove fuzzy watch context for pattern.
      *
      * @param groupKeyPattern group key pattern.
+      * <p>模糊监听调度持有者；详见类级说明。</p>
      */
     public synchronized void removePatternMatchCache(String groupKeyPattern) {
         NamingFuzzyWatchContext namingFuzzyWatchContext = fuzzyMatchContextMap.get(groupKeyPattern);
@@ -219,6 +232,7 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
     
     /**
      * notify sync fuzzy watch with server.
+      * <p>模糊监听调度持有者；详见类级说明。</p>
      */
     void notifyFuzzyWatchSync() {
         fuzzyWatchExecuteBell.offer(bellItem);
@@ -232,23 +246,24 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
      * execute the fuzzy listen operation.
      *
      * @throws NacosException If an error occurs during the execution of fuzzy listen configuration changes.
+      * <p>模糊监听调度持有者；详见类级说明。</p>
      */
     public void executeNamingFuzzyWatch() throws NacosException {
         
-        // Obtain the current timestamp
+        // 获取当前时间戳
         long now = System.currentTimeMillis();
         
-        // Determine whether a full synchronization is needed
+        // 判断是否需要进行全量对账
         boolean needAllSync =
             now - fuzzyWatchLastAllSyncTime.get() >= FUZZY_LISTEN_ALL_SYNC_INTERNAL;
         
         List<NamingFuzzyWatchContext> needSyncContexts = new ArrayList<>();
-        // Iterate through all fuzzy listen contexts
+        // 遍历所有模糊监听上下文
         for (NamingFuzzyWatchContext context : fuzzyMatchContextMap.values()) {
-            // Check if the context is consistent with the server
+            // 若已与服务端一致则先同步本地监听器
             if (context.isConsistentWithServer()) {
                 context.syncFuzzyWatchers();
-                // Skip if a full synchronization is not needed
+                // 未到全量间隔则跳过 RPC 同步
                 if (!needAllSync) {
                     continue;
                 }
@@ -257,10 +272,10 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
             needSyncContexts.add(context);
         }
         
-        // Execute fuzzy listen operation for addition
+        // 对需同步的上下文执行模糊订阅 RPC
         doExecuteNamingFuzzyWatch(needSyncContexts);
         
-        // Update last all sync time if a full synchronization was performed
+        // 全量对账完成后更新上次全量时间
         if (needAllSync) {
             fuzzyWatchLastAllSyncTime.set(now);
         }
@@ -279,21 +294,22 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
      *
      * @param contextLists The map of contexts to execute fuzzy listen operations for.
      * @throws NacosException If an error occurs during the execution of fuzzy listen configuration changes.
+      * <p>模糊监听调度持有者；详见类级说明。</p>
      */
     private void doExecuteNamingFuzzyWatch(List<NamingFuzzyWatchContext> contextLists)
         throws NacosException {
-        // Return if the context map is null or empty
+        // 无待同步上下文则直接返回
         if (CollectionUtils.isEmpty(contextLists)) {
             return;
         }
         
-        // Iterate through the context map and submit tasks for execution
+        // 逐个上下文构建请求并调用 gRPC
         for (NamingFuzzyWatchContext entry : contextLists) {
-            // Submit task for execution
+            // 提交模糊监听 RPC 任务
             NamingFuzzyWatchRequest configFuzzyWatchRequest = buildFuzzyWatchNamingRequest(entry);
             try {
                 
-                // Execute the fuzzy listen operation
+            // 执行模糊监听 RPC
                 NamingFuzzyWatchResponse listenResponse = namingGrpcClientProxy.fuzzyWatchRequest(
                     configFuzzyWatchRequest);
                 if (listenResponse != null && listenResponse.isSuccess()) {
@@ -307,7 +323,7 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
                 }
                 
             } catch (NacosException e) {
-                // Log error and retry after a short delay
+                // 记录错误并在短暂延迟后重试
                 
                 if (FUZZY_WATCH_PATTERN_OVER_LIMIT.getCode() == e.getErrCode()
                     || FUZZY_WATCH_PATTERN_MATCH_COUNT_OVER_LIMIT.getCode() == e.getErrCode()) {
@@ -325,9 +341,9 @@ public class NamingFuzzyWatchServiceListHolder extends SmartSubscriber implement
                     try {
                         Thread.sleep(1000L);
                     } catch (InterruptedException interruptedException) {
-                        // Ignore interruption
+                        // 忽略中断
                     }
-                    // Retry notification
+                    // 重新触发同步铃铛
                     notifyFuzzyWatchSync();
                 }
                 
