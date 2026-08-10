@@ -21,17 +21,29 @@ import org.keycloak.testframework.util.ApiUtil;
 import org.junit.jupiter.api.Assertions;
 
 /**
- * Utilities to work with managed realms
+ * 测试框架创建的托管 Keycloak Realm 封装。
+ * <p>
+ * 提供 Realm 基础 URL、Admin API、带自动回滚的配置/用户/客户端变更，以及测试结束清理。
  */
 public class ManagedRealm extends ManagedTestResource {
 
+    /** Realm 对外访问基础 URL。 */
     private final String baseUrl;
+    /** 创建 Realm 时使用的表示对象。 */
     private final RealmRepresentation createdRepresentation;
+    /** 对应 Realm 的 Admin REST 资源。 */
     private final RealmResource realmResource;
+    /** 懒加载缓存的 Realm UUID。 */
     private String realmId;
 
+    /** 懒初始化的 Realm 级清理任务收集器。 */
     private ManagedRealmCleanup cleanup;
 
+    /**
+     * @param baseUrl Realm 基础 URL
+     * @param createdRepresentation 已创建的 Realm 表示
+     * @param realmResource Admin Realm 资源
+     */
     public ManagedRealm(String baseUrl, RealmRepresentation createdRepresentation, RealmResource realmResource) {
         this.baseUrl = baseUrl;
         this.createdRepresentation = createdRepresentation;
@@ -39,18 +51,18 @@ public class ManagedRealm extends ManagedTestResource {
     }
 
     /**
-     * The base URL of the realm (for example <code>http://localhost:8080/realms/myrealm</code>)
+     * 返回 Realm 基础 URL（例如 <code>http://localhost:8080/realms/myrealm</code>）。
      *
-     * @return the realm base URL
+     * @return Realm 基础 URL
      */
     public String getBaseUrl() {
         return baseUrl;
     }
 
     /**
-     * The UUID of the realm
+     * 返回 Realm 内部 UUID。
      *
-     * @return realm UUID
+     * @return Realm UUID
      */
     public String getId() {
         if (realmId == null && createdRepresentation.getId() != null) {
@@ -62,38 +74,38 @@ public class ManagedRealm extends ManagedTestResource {
     }
 
     /**
-     * The name of the realm
+     * 返回 Realm 名称。
      *
-     * @return realm name
+     * @return Realm 名称
      */
     public String getName() {
         return createdRepresentation.getRealm();
     }
 
     /**
-     * Admin realm resource for the realm to view or update the configuration of the realm. Updates should in general
-     * not be done directly through the realm resource as it will leave the realm in an unexpected state for sub-sequent
-     * tests
+     * 返回用于查看或修改 Realm 配置的 Admin 资源。
+     * <p>
+     * 一般应优先使用 {@link #updateWithCleanup} 等带清理的更新方法。
      *
-     * @return realm resource
+     * @return Realm Admin 资源
      */
     public RealmResource admin() {
         return realmResource;
     }
 
     /**
-     * The representation used to create the realm
+     * 返回创建 Realm 时使用的表示对象。
      *
-     * @return realm representation
+     * @return Realm 表示
      */
     public RealmRepresentation getCreatedRepresentation() {
         return createdRepresentation;
     }
 
     /**
-     * Update the realm within a test with automatic reset to the original configuration after the test has completed
+     * 在测试内更新 Realm 配置，测试结束后自动还原。
      *
-     * @param updates the updates to the realm
+     * @param updates 要应用的 Realm 变更
      */
     public void updateWithCleanup(RealmUpdate... updates) {
         RealmRepresentation rep = admin().toRepresentation();
@@ -108,9 +120,9 @@ public class ManagedRealm extends ManagedTestResource {
     }
 
     /**
-     * Add a user to the realm, which is automatically removed once the test is completed
+     * 向 Realm 添加用户，测试结束后自动删除。
      *
-     * @param user the user to add
+     * @param user 用户构建器
      */
     public void addUser(UserBuilder user) {
         UserRepresentation rep = user.build();
@@ -119,10 +131,10 @@ public class ManagedRealm extends ManagedTestResource {
     }
 
     /**
-     * Update a user within the realm, which is automatically reset once the test is completed
+     * 更新 Realm 内指定用户，测试结束后自动还原。
      *
-     * @param username the username of the user to update
-     * @param update the update to perform on the user
+     * @param username 要更新的用户名
+     * @param update 用户变更
      */
     public void updateUserWithCleanup(String username, ManagedUser.UserUpdate update) {
         List<UserRepresentation> result = realmResource.users().search(username);
@@ -138,10 +150,10 @@ public class ManagedRealm extends ManagedTestResource {
     }
 
     /**
-     * Update a client within the realm, which is automatically reset once the test is completed
+     * 更新 Realm 内指定客户端，测试结束后自动还原。
      *
-     * @param clientId the clientId of the client to update
-     * @param update the update to perform on the client
+     * @param clientId 目标 clientId
+     * @param update 客户端变更
      */
     public void updateClientWithCleanup(String clientId, ManagedClient.ClientUpdate update) {
         List<ClientRepresentation> result = realmResource.clients().findByClientId(clientId);
@@ -157,10 +169,10 @@ public class ManagedRealm extends ManagedTestResource {
     }
 
     /**
-     * Update an identity provider within the realm, which is automatically reset once the test is completed
+     * 更新 Realm 内身份提供者，测试结束后自动还原。
      *
-     * @param alias the alias of the identity provider to update
-     * @param update the update to perform on the identity provider
+     * @param alias IdP 别名
+     * @param update IdP 变更
      */
     public void updateIdentityProvider(String alias, IdentityProviderUpdate update) {
         IdentityProviderResource resource = realmResource.identityProviders().get(alias);
@@ -173,6 +185,12 @@ public class ManagedRealm extends ManagedTestResource {
         cleanup().add(r -> r.identityProviders().get(alias).update(original));
     }
 
+    /**
+     * 更新客户端作用域，测试结束后自动还原。
+     *
+     * @param id 客户端作用域 id
+     * @param update 作用域变更
+     */
     public void updateClientScope(String id, ClientScopeUpdate update) {
         ClientScopeRepresentation original = realmResource.clientScopes().get(id).toRepresentation();
 
@@ -183,6 +201,11 @@ public class ManagedRealm extends ManagedTestResource {
         cleanup().add(r -> r.clientScopes().get(id).update(original));
     }
 
+    /**
+     * 更新客户端 Profile 策略集合，测试结束后还原。
+     *
+     * @param profiles 新的 Profile 列表
+     */
     public void updateClientProfile(List<ClientProfileRepresentation> profiles) {
         ClientProfilesRepresentation oldProfiles = realmResource.clientPoliciesProfilesResource().getProfiles(true);
         ClientProfilesRepresentation profilesToUpdate = realmResource.clientPoliciesProfilesResource().getProfiles(true);
@@ -191,6 +214,11 @@ public class ManagedRealm extends ManagedTestResource {
         cleanup().add(r -> r.clientPoliciesProfilesResource().updateProfiles(oldProfiles));
     }
 
+    /**
+     * 更新客户端 Policy 策略集合，测试结束后还原。
+     *
+     * @param policies 新的 Policy 列表
+     */
     public void updateClientPolicy(List<ClientPolicyRepresentation> policies) {
         ClientPoliciesRepresentation oldPolicies = realmResource.clientPoliciesPoliciesResource().getPolicies();
         ClientPoliciesRepresentation policiesToUpdate = realmResource.clientPoliciesPoliciesResource().getPolicies();
@@ -200,10 +228,10 @@ public class ManagedRealm extends ManagedTestResource {
     }
 
     /**
-     * Update a component within the realm, which is automatically reset once the test is completed
+     * 更新 Realm 内组件，测试结束后自动还原。
      *
-     * @param id the id of the component to update
-     * @param update the update to perform on the component
+     * @param id 组件 id
+     * @param update 组件变更
      */
     public void updateComponent(String id, ComponentUpdate update) {
         ComponentResource componentResource = realmResource.components().component(id);
@@ -216,6 +244,7 @@ public class ManagedRealm extends ManagedTestResource {
         cleanup().add(r -> r.components().component(id).update(original));
     }
 
+    /** 返回（必要时创建）Realm 级清理任务收集器。 */
     public ManagedRealmCleanup cleanup() {
         if (cleanup == null) {
             cleanup = new ManagedRealmCleanup();
@@ -223,6 +252,7 @@ public class ManagedRealm extends ManagedTestResource {
         return cleanup;
     }
 
+    /** {@inheritDoc} 执行已注册的 Realm 清理任务。 */
     @Override
     public void runCleanup() {
         if (cleanup != null) {
@@ -231,26 +261,52 @@ public class ManagedRealm extends ManagedTestResource {
         }
     }
 
+    /** 描述对 {@link RealmBuilder} 的单次变更。 */
     public interface RealmUpdate {
 
+        /**
+         * 应用变更并返回更新后的构建器。
+         *
+         * @param realm 当前 Realm 构建器
+         * @return 变更后的构建器
+         */
         RealmBuilder update(RealmBuilder realm);
 
     }
 
+    /** 描述对 {@link ClientScopeBuilder} 的单次变更。 */
     public interface ClientScopeUpdate {
 
+        /**
+         * 应用变更并返回更新后的构建器。
+         *
+         * @param scope 当前客户端作用域构建器
+         * @return 变更后的构建器
+         */
         ClientScopeBuilder update(ClientScopeBuilder scope);
 
     }
 
+    /** 就地修改 {@link IdentityProviderRepresentation} 的变更回调。 */
     public interface IdentityProviderUpdate {
 
+        /**
+         * 应用 IdP 表示变更。
+         *
+         * @param rep 可变的 IdP 表示
+         */
         void update(IdentityProviderRepresentation rep);
 
     }
 
+    /** 就地修改 {@link ComponentRepresentation} 的变更回调。 */
     public interface ComponentUpdate {
 
+        /**
+         * 应用组件表示变更。
+         *
+         * @param rep 可变的组件表示
+         */
         void update(ComponentRepresentation rep);
 
     }
