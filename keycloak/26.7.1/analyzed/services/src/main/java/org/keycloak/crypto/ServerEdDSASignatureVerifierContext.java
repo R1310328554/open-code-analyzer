@@ -21,13 +21,18 @@ import org.keycloak.common.VerificationException;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 服务端 EdDSA（OKP）JWS 验签上下文。
+ * <p>按 kid 解析 Realm OKP 公钥，或直接使用 {@link KeyWrapper} 校验签名。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ServerEdDSASignatureVerifierContext extends  AsymmetricSignatureVerifierContext {
+    /** @param session 当前会话 @param kid 密钥 ID @param algorithm EdDSA 算法名 */
     public ServerEdDSASignatureVerifierContext(KeycloakSession session, String kid, String algorithm) throws VerificationException {
         super(ServerAsymmetricSignatureVerifierContext.getKey(session, kid, algorithm));
     }
 
+    /** @param key 已解析的 OKP 验签公钥包装 */
     public ServerEdDSASignatureVerifierContext(KeyWrapper key) {
         super(key);
     }

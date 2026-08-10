@@ -20,14 +20,19 @@ package org.keycloak.crypto;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 服务端 EdDSA（OKP）JWS 签名上下文。
+ * <p>复用 {@link ServerAsymmetricSignatureSignerContext#getKey} 解析 Realm 活动 OKP 密钥。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ServerEdDSASignatureSignerContext extends AsymmetricSignatureSignerContext {
 
+    /** @param session 当前会话 @param algorithm EdDSA 算法名 */
     public ServerEdDSASignatureSignerContext(KeycloakSession session, String algorithm) throws SignatureException {
         super(ServerAsymmetricSignatureSignerContext.getKey(session, algorithm));
     }
 
+    /** @param key 已解析的 OKP 签名私钥包装 */
     public ServerEdDSASignatureSignerContext(KeyWrapper key) {
         super(key);
     }

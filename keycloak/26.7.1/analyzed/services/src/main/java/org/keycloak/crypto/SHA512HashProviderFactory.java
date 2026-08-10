@@ -20,18 +20,24 @@ package org.keycloak.crypto;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * SHA-512 哈希 SPI 工厂。
+ * <p>注册 ID 为 {@link JavaAlgorithm#SHA512}，创建 {@link JavaAlgorithmHashProvider} 实例。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SHA512HashProviderFactory implements HashProviderFactory {
 
+    /** SPI 工厂标识：{@code SHA-512}。 */
     public static final String ID = JavaAlgorithm.SHA512;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return SHA-512 哈希提供者 */
     public HashProvider create(KeycloakSession session) {
         return new JavaAlgorithmHashProvider(ID);
     }

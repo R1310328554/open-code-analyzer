@@ -18,16 +18,23 @@ package org.keycloak.crypto;
 
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 服务端非对称（RSA/通用）JWS 签名上下文。
+ * <p>从 Realm 活动签名密钥或显式 {@link KeyWrapper} 初始化，用于签发令牌。</p>
+ */
 public class ServerAsymmetricSignatureSignerContext extends AsymmetricSignatureSignerContext {
 
+    /** @param session 当前会话 @param algorithm JWS 签名算法名 */
     public ServerAsymmetricSignatureSignerContext(KeycloakSession session, String algorithm) throws SignatureException {
         super(getKey(session, algorithm));
     }
 
+    /** @param key 已解析的签名私钥包装 */
     public ServerAsymmetricSignatureSignerContext(KeyWrapper key) throws SignatureException {
         super(key);
     }
 
+    /** 解析 Realm 当前活动 {@link KeyUse#SIG} 密钥；未找到则抛出 {@link SignatureException}。 */
     static KeyWrapper getKey(KeycloakSession session, String algorithm) {
         KeyWrapper key = session.keys().getActiveKey(session.getContext().getRealm(), KeyUse.SIG, algorithm);
         if (key == null) {

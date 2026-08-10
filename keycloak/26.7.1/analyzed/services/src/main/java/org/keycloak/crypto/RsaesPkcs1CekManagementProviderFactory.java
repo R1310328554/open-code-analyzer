@@ -20,16 +20,23 @@ package org.keycloak.crypto;
 import org.keycloak.jose.jwe.JWEConstants;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * JWE 密钥管理算法 RSAES-PKCS1-v1_5 的 SPI 工厂。
+ * <p>算法 ID 为 {@link #ID}（JWA {@code RSA1_5}），创建 {@link RsaCekManagementProvider} 实例。</p>
+ */
 public class RsaesPkcs1CekManagementProviderFactory implements CekManagementProviderFactory {
 
+    /** JWE 密钥管理算法标识：RSA1_5。 */
     public static final String ID = JWEConstants.RSA1_5;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return RSA CEK 管理提供者 */
     public CekManagementProvider create(KeycloakSession session) {
         return new RsaCekManagementProvider(session, ID);
     }
