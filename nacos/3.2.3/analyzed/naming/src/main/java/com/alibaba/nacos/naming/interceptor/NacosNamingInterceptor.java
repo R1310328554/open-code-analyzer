@@ -17,16 +17,18 @@
 package com.alibaba.nacos.naming.interceptor;
 
 /**
- * Nacos naming interceptor.
+ * Nacos Naming 拦截器接口。
+ *
+ * <p>通过 SPI 扩展，在健康检查、推送等流程中对特定类型对象进行前置拦截与短路。</p>
  *
  * @author xiweng.yy
  */
 public interface NacosNamingInterceptor<T extends Interceptable> {
     
     /**
-     * Judge whether the input type is intercepted by this Interceptor.
+     * 判断给定类型是否由本拦截器处理。
      *
-     * <p>This method only should judge the object type whether need be do intercept. Not the intercept logic.
+     * <p>仅做类型匹配，不包含实际拦截逻辑。</p>
      *
      * @param type type
      * @return true if the input type is intercepted by this Interceptor, otherwise false
@@ -34,9 +36,9 @@ public interface NacosNamingInterceptor<T extends Interceptable> {
     boolean isInterceptType(Class<?> type);
     
     /**
-     * Do intercept operation.
+     * 执行拦截操作。
      *
-     * <p>This method is the actual intercept operation.
+     * <p>返回 true 表示已拦截，拦截链将停止并调用 {@link Interceptable#afterIntercept()}。</p>
      *
      * @param object need intercepted object
      * @return true if object is intercepted, otherwise false
@@ -44,7 +46,7 @@ public interface NacosNamingInterceptor<T extends Interceptable> {
     boolean intercept(T object);
     
     /**
-     * The order of interceptor. The lower the number, the earlier the execution.
+     * 拦截器执行顺序，数值越小越先执行。
      *
      * @return the order number of interceptor
      */

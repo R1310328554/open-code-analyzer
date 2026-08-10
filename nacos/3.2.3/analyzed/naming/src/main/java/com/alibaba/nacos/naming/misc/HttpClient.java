@@ -42,14 +42,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Http Client.
+ * Naming 模块 HTTP 客户端工具类。
+ *
+ * <p>封装同步/异步 GET、POST、PUT、DELETE 及大 body 请求，自动附加版本号、User-Agent、鉴权头等信息，供集群同步与推送等场景使用。</p>
  *
  * @author nacos
  */
 public class HttpClient {
     
+    /** 默认读超时（毫秒）。 */
     private static final int TIME_OUT_MILLIS = 10000;
     
+    /** 默认连接超时（毫秒）。 */
     private static final int CON_TIME_OUT_MILLIS = 5000;
     
     private static final NacosRestTemplate APACHE_SYNC_NACOS_REST_TEMPLATE =
@@ -63,7 +67,7 @@ public class HttpClient {
     private static final String NOFIX = "1";
     
     /**
-     * Request http delete method.
+     * 同步 HTTP DELETE 请求。
      *
      * @param url         url
      * @param headers     headers
@@ -78,7 +82,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http get method.
+     * 同步 HTTP GET 请求。
      *
      * @param url         url
      * @param headers     headers
@@ -93,7 +97,7 @@ public class HttpClient {
     }
     
     /**
-     * Do http request.
+     * 通用同步 HTTP 请求入口。
      *
      * @param url            request url
      * @param headers        request headers
@@ -137,7 +141,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http get method by async.
+     * 异步 HTTP GET 请求。
      *
      * @param url         url
      * @param headers     headers
@@ -151,7 +155,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http post method by async.
+     * 异步 HTTP POST 表单请求。
      *
      * @param url         url
      * @param headers     headers
@@ -165,7 +169,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http delete method by async.
+     * 异步 HTTP DELETE 请求。
      *
      * @param url         url
      * @param headers     headers
@@ -179,7 +183,7 @@ public class HttpClient {
     }
     
     /**
-     * Do http request by async.
+     * 通用异步 HTTP 请求入口。
      *
      * @param url         request url
      * @param headers     request headers
@@ -222,7 +226,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http post method by async with large body.
+     * 异步 POST 大 body 请求（String 内容）。
      *
      * @param url      url
      * @param headers  headers
@@ -236,7 +240,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http post method by async with large body.
+     * 异步 POST 大 body 请求（String 内容）。
      *
      * @param url      url
      * @param headers  headers
@@ -263,6 +267,7 @@ public class HttpClient {
      * @param headers  headers
      * @param content  full request content
      * @param callback callback after request execute
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
     public static void asyncHttpDeleteLarge(String url, List<String> headers, String content,
         Callback<String> callback)
@@ -283,7 +288,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http post method.
+     * 同步 HTTP POST 表单请求。
      *
      * @param url         url
      * @param headers     headers
@@ -313,7 +318,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http put method by async with large body.
+     * 异步 PUT 大 body 请求。
      *
      * @param url      url
      * @param headers  headers
@@ -333,7 +338,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http put method with large body.
+     * 同步 PUT 大 body 请求。
      *
      * @param url     url
      * @param headers headers
@@ -358,7 +363,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http get method with large body.
+     * 同步 GET 大 body 请求。
      *
      * @param url     url
      * @param headers headers
@@ -383,7 +388,7 @@ public class HttpClient {
     }
     
     /**
-     * Request http post method with large body.
+     * 同步 POST JSON 大 body 请求。
      *
      * @param url     url
      * @param headers headers
@@ -407,7 +412,7 @@ public class HttpClient {
     }
     
     /**
-     * Translate parameter map.
+     * 将 Servlet 参数数组 Map 转为单值 Map。
      *
      * @param parameterMap parameter map
      * @return new parameter

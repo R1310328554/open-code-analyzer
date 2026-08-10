@@ -21,27 +21,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Naming loggers holder.
+ * Naming 模块日志 Logger 集中定义。
+ *
+ * <p>按功能域划分推送、健康检查 RT、主流程、事件、Raft、Distro、性能等独立 Logger，支持运行时动态调整级别。</p>
  *
  * @author nacos
  */
 public class Loggers {
     
+    /** 实例推送相关日志。 */
     public static final Logger PUSH = LoggerFactory.getLogger("com.alibaba.nacos.naming.push");
     
+    /** 健康检查 RT 耗时日志。 */
     public static final Logger CHECK_RT = LoggerFactory.getLogger("com.alibaba.nacos.naming.rt");
     
+    /** Naming 主流程日志。 */
     public static final Logger SRV_LOG = LoggerFactory.getLogger("com.alibaba.nacos.naming.main");
     
+    /** 服务变更事件日志。 */
     public static final Logger EVT_LOG = LoggerFactory.getLogger("com.alibaba.nacos.naming.event");
     
+    /** Raft 一致性协议日志。 */
     public static final Logger RAFT = LoggerFactory.getLogger("com.alibaba.nacos.naming.raft");
     
+    /** Distro 协议同步日志。 */
     public static final Logger DISTRO = LoggerFactory.getLogger("com.alibaba.nacos.naming.distro");
     
+    /** 服务端性能指标日志。 */
     public static final Logger PERFORMANCE_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.naming.performance");
     
+    /** 按别名动态设置指定 Logger 的日志级别。 */
     public static void setLogLevel(String logName, String level) {
         
         switch (logName) {

@@ -17,19 +17,21 @@
 package com.alibaba.nacos.naming.interceptor;
 
 /**
- * Interceptable Interface.
+ * 可被 Naming 拦截器链拦截的对象接口。
+ *
+ * <p>实现类在拦截链执行完毕后根据是否被拦截调用 {@link #passIntercept()} 或 {@link #afterIntercept()} 继续或中止后续逻辑。</p>
  *
  * @author xiweng.yy
  */
 public interface Interceptable {
     
     /**
-     * If no {@link NacosNamingInterceptor} intercept this object, this method will be called to execute.
+     * 无拦截器命中时调用，表示对象可正常执行后续逻辑。
      */
     void passIntercept();
     
     /**
-     * If one {@link NacosNamingInterceptor} intercept this object, this method will be called.
+     * 被某拦截器命中时调用，通常用于跳过默认执行路径。
      */
     void afterIntercept();
 }

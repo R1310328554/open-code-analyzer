@@ -40,7 +40,9 @@ import com.alibaba.nacos.common.utils.ThreadUtils;
 import com.alibaba.nacos.sys.env.EnvUtil;
 
 /**
- * http Manager.
+ * Naming HTTP 客户端管理器。
+ *
+ * <p>维护同步/异步及健康检查专用等多套 {@link NacosRestTemplate} 与 {@link NacosAsyncRestTemplate} 实例，注册 JVM 关闭钩子统一销毁连接池。</p>
  *
  * @author mai.jh
  */
@@ -69,7 +71,7 @@ public class HttpClientManager {
     private static final NacosAsyncRestTemplate PROCESSOR_NACOS_ASYNC_REST_TEMPLATE;
     
     static {
-        // build nacos rest template
+        // 初始化各类型 Nacos HTTP 客户端模板
         NACOS_REST_TEMPLATE = HttpClientBeanHolder.getNacosRestTemplate(SYNC_HTTP_CLIENT_FACTORY);
         APACHE_NACOS_REST_TEMPLATE =
             HttpClientBeanHolder.getNacosRestTemplate(APACHE_SYNC_HTTP_CLIENT_FACTORY);
@@ -81,12 +83,13 @@ public class HttpClientManager {
         ThreadUtils.addShutdownHook(HttpClientManager::shutdown);
     }
     
+    /** 获取默认同步 REST 模板。 */
     public static NacosRestTemplate getNacosRestTemplate() {
         return NACOS_REST_TEMPLATE;
     }
     
     /**
-     * Use apache http client to achieve.
+     * 获取基于 Apache HttpClient 的同步模板。
      *
      * @return NacosRestTemplate
      */
@@ -94,13 +97,15 @@ public class HttpClientManager {
         return APACHE_NACOS_REST_TEMPLATE;
     }
     
+    /** 获取通用异步 REST 模板。 */
     public static NacosAsyncRestTemplate getAsyncRestTemplate() {
         return NACOS_ASYNC_REST_TEMPLATE;
     }
     
     /**
-     * To be compatible with the old version of http client request, this NacosAsyncRestTemplate is only used for
-     * HttpHealthCheckProcessor.
+     * 获取健康检查专用异步模板（兼容旧版 VIPServer 行为）。
+     *
+     * <p>仅供 {@link com.alibaba.nacos.naming.healthcheck.v2.processor.HttpHealthCheckProcessor} 使用。</p>
      *
      * @return NacosAsyncRestTemplate
      */
@@ -127,6 +132,7 @@ public class HttpClientManager {
         SRV_LOG.info("[NamingServerHttpClientManager] Completed destruction of HTTP-Client");
     }
     
+    /** 通用异步 HTTP 客户端工厂。 */
     private static class AsyncHttpClientFactory extends AbstractHttpClientFactory {
         
         @Override
@@ -142,6 +148,7 @@ public class HttpClientManager {
         }
     }
     
+    /** 通用同步 HTTP 客户端工厂。 */
     private static class SyncHttpClientFactory extends AbstractHttpClientFactory {
         
         @Override
@@ -156,6 +163,7 @@ public class HttpClientManager {
         }
     }
     
+    /** Apache 同步 HTTP 客户端工厂。 */
     private static class ApacheSyncHttpClientFactory extends AbstractApacheHttpClientFactory {
         
         @Override
@@ -173,6 +181,7 @@ public class HttpClientManager {
         }
     }
     
+    /** 健康检查处理器专用异步 HTTP 客户端工厂，短超时、高并发连接池。 */
     public static class ProcessorHttpClientFactory extends AbstractHttpClientFactory {
         
         @Override
@@ -203,6 +212,7 @@ public class HttpClientManager {
         }
     }
     
+    /** 周期性监控并清理健康检查 HTTP 连接池。 */
     private static class MonitorHealthCheckPool implements Runnable {
         
         private AsyncClientConnectionManager connectionManager;
@@ -213,7 +223,7 @@ public class HttpClientManager {
         
         @Override
         public void run() {
-            // release source
+            // 释放过期与空闲连接
             closeExpiredAndIdleConnections();
             monitor();
         }
@@ -222,7 +232,7 @@ public class HttpClientManager {
             try {
                 PoolingAsyncClientConnectionManager manager =
                     (PoolingAsyncClientConnectionManager) connectionManager;
-                // Get the status of each route
+                // 输出各路由连接池统计
                 Set<HttpRoute> routes = manager.getRoutes();
                 if (routes != null && !routes.isEmpty()) {
                     for (HttpRoute httpRoute : routes) {
@@ -230,7 +240,7 @@ public class HttpClientManager {
                         SRV_LOG.debug("connectionManager every route: {}", stats);
                     }
                 }
-                // Get the connection pool status of all routes
+                // 输出全局连接池统计
                 PoolStats totalStats = manager.getTotalStats();
                 SRV_LOG.debug("connectionManager total status: {}", totalStats);
             } catch (Exception e) {

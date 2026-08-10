@@ -41,29 +41,34 @@ import java.util.concurrent.TimeoutException;
 import static com.alibaba.nacos.naming.misc.Loggers.SRV_LOG;
 
 /**
- * MySQL health check processor for v2.x.
+ * Nacos v2.x MySQL 健康检查处理器。
  *
- * <p>Current health check logic is same as v1.x. TODO refactor health check for v2.x.
+ * <p>通过 JDBC 连接实例 MySQL 端口并执行配置的 SQL 命令验证数据库可用性；支持主从检测（read_only 变量）；当前逻辑与 v1.x 一致。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class MysqlHealthCheckProcessor implements HealthCheckProcessorV2 {
     
+    /** 健康检查类型标识：MYSQL。 */
     public static final String TYPE = HealthCheckType.MYSQL.name();
     
     private final HealthCheckCommonV2 healthCheckCommon;
     
     private final SwitchDomain switchDomain;
     
+    /** JDBC 连接与套接字超时（毫秒）。 */
     public static final int CONNECT_TIMEOUT_MS = 500;
     
-    // TODO: Move MySQL health check capability to a dedicated plugin so naming no longer needs mysql driver visibility.
+    // TODO：将 MySQL 健康检查能力迁移至独立插件，避免 naming 模块直接依赖 MySQL 驱动。
+    /** 检测 MySQL 主从角色的 SQL（查询 read_only 变量）。 */
     private static final String CHECK_MYSQL_MASTER_SQL =
         "show global variables where variable_name='read_only'";
     
+    /** 从库 read_only 变量值，为 ON 时表示当前节点为从库。 */
     private static final String MYSQL_SLAVE_READONLY = "ON";
     
+    /** 按实例键缓存的 JDBC 连接池（简易复用）。 */
     private static final ConcurrentMap<String, Connection> CONNECTION_POOL =
         new ConcurrentHashMap<String, Connection>();
     
@@ -87,7 +92,7 @@ public class MysqlHealthCheckProcessor implements HealthCheckProcessorV2 {
         }
         SRV_LOG.debug("mysql check, ip:" + instance);
         try {
-            // TODO handle marked(white list) logic like v1.x.
+            // TODO：与 v1.x 一致处理 marked（白名单）逻辑。
             if (!instance.tryStartCheck()) {
                 SRV_LOG.warn(
                     "mysql check started before last one finished, service: {} : {} : {}:{}",
@@ -109,6 +114,7 @@ public class MysqlHealthCheckProcessor implements HealthCheckProcessorV2 {
         }
     }
     
+    /** MySQL 健康检查异步任务，在独立线程池中执行 JDBC 探测。 */
     private class MysqlCheckTask implements Runnable {
         
         private final HealthCheckTaskV2 task;
@@ -171,7 +177,7 @@ public class MysqlHealthCheckProcessor implements HealthCheckProcessorV2 {
                 healthCheckCommon.reEvaluateCheckRt(System.currentTimeMillis() - startTime, task,
                     switchDomain.getMysqlHealthParams());
             } catch (SQLException e) {
-                // fail immediately
+                // SQL 异常时立即标记实例不健康
                 healthCheckCommon.checkFailNow(task, service, "mysql:" + e.getMessage());
                 healthCheckCommon.reEvaluateCheckRt(switchDomain.getHttpHealthParams().getMax(),
                     task,
@@ -194,7 +200,7 @@ public class MysqlHealthCheckProcessor implements HealthCheckProcessorV2 {
                     cause = cause.getCause();
                 }
                 
-                // connection error, probably not reachable
+                // 连接错误，实例可能不可达
                 healthCheckCommon.checkFail(task, service, "mysql:error:" + t.getMessage());
                 healthCheckCommon.reEvaluateCheckRt(switchDomain.getMysqlHealthParams().getMax(),
                     task,

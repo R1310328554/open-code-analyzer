@@ -17,21 +17,23 @@
 package com.alibaba.nacos.naming.interceptor;
 
 /**
- * Nacos naming interceptor chain.
+ * Nacos Naming 拦截器链接口。
+ *
+ * <p>定义拦截器的注册与链式执行契约，由 {@link AbstractNamingInterceptorChain} 提供默认实现。</p>
  *
  * @author xiweng.yy
  */
 public interface NacosNamingInterceptorChain<T extends Interceptable> {
     
     /**
-     * Add interceptor.
+     * 向链中追加拦截器。
      *
      * @param interceptor interceptor
      */
     void addInterceptor(NacosNamingInterceptor<T> interceptor);
     
     /**
-     * Do intercept by added interceptors.
+     * 对已注册拦截器依次执行拦截逻辑。
      *
      * @param object be interceptor object
      */

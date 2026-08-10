@@ -23,15 +23,19 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Abstract Naming Interceptor Chain.
+ * Naming 拦截器链抽象基类。
+ *
+ * <p>通过 {@link NacosServiceLoader} 加载 SPI 拦截器并按 {@link NacosNamingInterceptor#order()} 排序，依次调用 {@link #doInterceptor(Interceptable)} 执行拦截逻辑。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractNamingInterceptorChain<T extends Interceptable>
     implements NacosNamingInterceptorChain<T> {
     
+    /** 已加载并排序的拦截器列表。 */
     private final List<NacosNamingInterceptor<T>> interceptors;
     
+    /** 通过 SPI 加载指定类型的拦截器并排序。 */
     protected AbstractNamingInterceptorChain(Class<? extends NacosNamingInterceptor<T>> clazz) {
         this.interceptors = new LinkedList<>();
         interceptors.addAll(NacosServiceLoader.load(clazz));
@@ -39,7 +43,7 @@ public abstract class AbstractNamingInterceptorChain<T extends Interceptable>
     }
     
     /**
-     * Get all interceptors.
+     * 获取所有已注册的拦截器。
      *
      * @return interceptors list
      */
@@ -47,12 +51,14 @@ public abstract class AbstractNamingInterceptorChain<T extends Interceptable>
         return interceptors;
     }
     
+    /** 动态追加拦截器并重新排序。 */
     @Override
     public void addInterceptor(NacosNamingInterceptor<T> interceptor) {
         interceptors.add(interceptor);
         interceptors.sort(Comparator.comparingInt(NacosNamingInterceptor::order));
     }
     
+    /** 按顺序遍历拦截器，首个命中则调用 {@link Interceptable#afterIntercept()} 并返回。 */
     @Override
     public void doInterceptor(T object) {
         for (NacosNamingInterceptor<T> each : interceptors) {

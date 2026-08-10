@@ -27,7 +27,9 @@ import static com.alibaba.nacos.naming.constants.Constants.EXPIRED_METADATA_EXPI
 import static com.alibaba.nacos.naming.constants.Constants.EXPIRE_INSTANCE;
 
 /**
- * Stores some configurations for Distro protocol.
+ * Naming 全局配置读取器（Distro 协议及相关清理策略）。
+ *
+ * <p>从 {@link EnvUtil} 读取数据预热、实例过期、空服务清理、过期元数据清理及模糊订阅上限等运行时参数。</p>
  *
  * @author nkorange
  * @since 1.0.0
@@ -35,34 +37,42 @@ import static com.alibaba.nacos.naming.constants.Constants.EXPIRE_INSTANCE;
 @Component
 public class GlobalConfig {
     
+    /** 是否启用数据预热。 */
     public boolean isDataWarmup() {
         return EnvUtil.getProperty(DATA_WARMUP, Boolean.class, false);
     }
     
+    /** 是否启用实例过期清理。 */
     public boolean isExpireInstance() {
         return EnvUtil.getProperty(EXPIRE_INSTANCE, Boolean.class, true);
     }
     
+    /** 空服务清理任务执行间隔（毫秒）。 */
     public static Long getEmptyServiceCleanInterval() {
         return EnvUtil.getProperty(EMPTY_SERVICE_CLEAN_INTERVAL, Long.class, 60000L);
     }
     
+    /** 空服务判定过期时间（毫秒）。 */
     public static Long getEmptyServiceExpiredTime() {
         return EnvUtil.getProperty(EMPTY_SERVICE_EXPIRED_TIME, Long.class, 60000L);
     }
     
+    /** 过期元数据清理任务间隔（毫秒）。 */
     public static Long getExpiredMetadataCleanInterval() {
         return EnvUtil.getProperty(EXPIRED_METADATA_CLEAN_INTERVAL, Long.class, 5000L);
     }
     
+    /** 元数据过期判定时间（毫秒）。 */
     public static Long getExpiredMetadataExpiredTime() {
         return EnvUtil.getProperty(EXPIRED_METADATA_EXPIRED_TIME, Long.class, 60000L);
     }
     
+    /** 模糊订阅最大 pattern 数量上限。 */
     public static int getMaxPatternCount() {
         return EnvUtil.getProperty("nacos.naming.fuzzy.watch.max.pattern.count", Integer.class, 20);
     }
     
+    /** 单个模糊 pattern 最大匹配服务数上限。 */
     public static int getMaxMatchedServiceCount() {
         return EnvUtil.getProperty("nacos.naming.fuzzy.watch.max.pattern.match.service.count",
             Integer.class, 500);

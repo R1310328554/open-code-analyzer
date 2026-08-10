@@ -23,14 +23,19 @@ import com.alibaba.nacos.naming.healthcheck.v2.HealthCheckTaskV2;
 import org.springframework.stereotype.Component;
 
 /**
- * none health check processor,it will do not anything.
+ * 空操作（NONE）健康检查处理器。
+ *
+ * <p>当集群健康检查类型配置为 NONE 时使用，不执行任何探测逻辑，实例健康状态完全依赖客户端心跳上报。</p>
+ *
  * @author onewe
  */
 @Component("noneHealthCheckProcessorV2")
 public class NoneHealthCheckProcessor implements HealthCheckProcessorV2 {
     
+    /** 健康检查类型标识：NONE。 */
     public static final String TYPE = HealthCheckType.NONE.name();
     
+    /** 空实现：不执行任何健康检查。 */
     @Override
     public void process(HealthCheckTaskV2 task, Service service, ClusterMetadata metadata) {
         

@@ -20,13 +20,16 @@ import com.alibaba.nacos.core.listener.NacosApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * graceful shutdown listenner.
+ * Naming 模块优雅关闭监听器。
+ *
+ * <p>在 Spring 应用启动失败时销毁 {@link NamingExecuteTaskDispatcher}，释放异步任务调度资源，避免残留线程。</p>
  *
  * @author Weizhan▪Yun
  * @date 2022/11/2 14:40
  */
 public class GracefulShutdownListener implements NacosApplicationListener {
     
+    /** 应用启动失败回调，销毁 Naming 任务分发器。 */
     @Override
     public void failed(ConfigurableApplicationContext context, Throwable exception) {
         try {

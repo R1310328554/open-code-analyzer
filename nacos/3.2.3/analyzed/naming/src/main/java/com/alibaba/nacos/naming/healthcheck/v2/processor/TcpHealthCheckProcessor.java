@@ -48,26 +48,28 @@ import java.util.concurrent.TimeUnit;
 import static com.alibaba.nacos.naming.misc.Loggers.SRV_LOG;
 
 /**
- * TCP health check processor for v2.x.
+ * Nacos v2.x TCP 健康检查处理器。
  *
- * <p>Current health check logic is same as v1.x. TODO refactor health check for v2.x.
+ * <p>基于 NIO {@link Selector} 异步探测实例 TCP 端口连通性，采用 SuperSense 多线程模型批量处理连接任务；当前逻辑与 v1.x 一致。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable {
     
+    /** 健康检查类型标识：TCP。 */
     public static final String TYPE = HealthCheckType.TCP.name();
     
+    /** TCP 连接超时（毫秒）。 */
     public static final int CONNECT_TIMEOUT_MS = 500;
     
     /**
-     * this value has been carefully tuned, do not modify unless you're confident.
+     * NIO 工作线程数，经调优确定，请勿随意修改。
      */
     private static final int NIO_THREAD_COUNT = EnvUtil.getAvailableProcessors(0.5);
     
     /**
-     * because some hosts doesn't support keep-alive connections, disabled temporarily.
+     * TCP 连接保活时长（毫秒）；部分主机不支持 keep-alive，暂设为 0 禁用复用。
      */
     private static final long TCP_KEEP_ALIVE_MILLIS = 0;
     
@@ -100,7 +102,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         if (null == instance) {
             return;
         }
-        // TODO handle marked(white list) logic like v1.x.
+        // TODO：与 v1.x 一致处理 marked（白名单）逻辑。
         if (!instance.tryStartCheck()) {
             SRV_LOG.warn(
                 "[HEALTH-CHECK-V2] tcp check started before last one finished, service: {} : {} : {}:{}",
@@ -160,6 +162,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         }
     }
     
+    /** NIO 连接就绪后的后置处理器，判定 TCP 检查结果。 */
     public class PostProcessor implements Runnable {
         
         SelectionKey key;
@@ -174,7 +177,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
             SocketChannel channel = (SocketChannel) key.channel();
             try {
                 if (!beat.isHealthy()) {
-                    //invalid beat means this server is no longer responsible for the current service
+                    // beat 已过期，表示本节点不再负责该实例的健康检查
                     key.cancel();
                     key.channel().close();
                     
@@ -183,7 +186,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
                 }
                 
                 if (key.isValid() && key.isConnectable()) {
-                    //connected
+                    // 连接成功，标记实例健康
                     channel.finishConnect();
                     beat.finishCheck(true, false,
                         System.currentTimeMillis() - beat.getTask().getStartTime(),
@@ -202,19 +205,19 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
                 }
                 
                 if (key.isValid() && key.isReadable()) {
-                    //disconnected
+                    // 对端关闭连接
                     ByteBuffer buffer = ByteBuffer.allocate(128);
                     if (channel.read(buffer) == -1) {
                         key.cancel();
                         key.channel().close();
                     } else {
-                        // not terminate request, ignore
+                        // 非终止请求，忽略响应数据
                         SRV_LOG.warn(
                             "Tcp check ok, but the connected server responses some msg. Connection won't be closed.");
                     }
                 }
             } catch (ConnectException e) {
-                // unable to connect, possibly port not opened
+                // 无法连接，可能端口未开放
                 beat.finishCheck(false, true, switchDomain.getTcpHealthParams().getMax(),
                     "tcp:unable2connect:" + e.getMessage());
                 // finishCheck() already removed this beat from keyMap, so the next round
@@ -288,7 +291,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         }
         
         /**
-         * finish check only, no ip state will be changed.
+         * 仅结束检查流程，不修改实例 IP 健康状态。
          */
         public void finishCheck() {
             instance.finishCheck();
@@ -332,6 +335,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         }
     }
     
+    /** TCP 检查 beat 与 SelectionKey 的关联键。 */
     private static class BeatKey {
         
         public SelectionKey key;
@@ -344,6 +348,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         }
     }
     
+    /** TCP 连接超时任务，超时后关闭 channel 并标记失败。 */
     private static class TimeOutTask implements Runnable {
         
         SelectionKey key;
@@ -378,6 +383,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         }
     }
     
+    /** TCP 检查任务处理器，发起非阻塞 connect 并注册到 Selector。 */
     private class TaskProcessor implements Callable<Void> {
         
         private static final int MAX_WAIT_TIME_MILLISECONDS = 500;
@@ -412,7 +418,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
                 
                 channel = SocketChannel.open();
                 channel.configureBlocking(false);
-                // only by setting this can we make the socket close event asynchronous
+                // 设置 SO_LINGER 使 socket 关闭事件异步触发
                 channel.socket().setSoLinger(false, -1);
                 channel.socket().setReuseAddress(true);
                 channel.socket().setKeepAlive(true);

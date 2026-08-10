@@ -42,24 +42,29 @@ import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 import static com.alibaba.nacos.naming.misc.Loggers.SRV_LOG;
 
 /**
- * TCP health check processor for v2.x.
+ * Nacos v2.x HTTP 健康检查处理器。
  *
- * <p>Current health check logic is same as v1.x. TODO refactor health check for v2.x.
+ * <p>通过 {@link NacosAsyncRestTemplate} 异步发起 GET 请求探测实例 HTTP 端点，根据响应状态码判定健康与否；当前逻辑与 v1.x 一致，后续计划重构。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class HttpHealthCheckProcessor implements HealthCheckProcessorV2 {
     
+    /** 健康检查类型标识：HTTP。 */
     public static final String TYPE = HealthCheckType.HTTP.name();
     
+    /** 专用于健康检查的异步 HTTP 客户端模板。 */
     private static final NacosAsyncRestTemplate ASYNC_REST_TEMPLATE = HttpClientManager
         .getProcessorNacosAsyncRestTemplate();
     
+    /** 健康检查通用逻辑（成功/失败计数、RT 评估等）。 */
     private final HealthCheckCommonV2 healthCheckCommon;
     
+    /** 运行时开关与 HTTP 健康检查参数域。 */
     private final SwitchDomain switchDomain;
     
+    /** 构造 HTTP 健康检查处理器。 */
     public HttpHealthCheckProcessor(HealthCheckCommonV2 healthCheckCommon,
         SwitchDomain switchDomain) {
         this.healthCheckCommon = healthCheckCommon;
@@ -74,7 +79,7 @@ public class HttpHealthCheckProcessor implements HealthCheckProcessorV2 {
             return;
         }
         try {
-            // TODO handle marked(white list) logic like v1.x.
+            // TODO：与 v1.x 一致处理 marked（白名单）逻辑。
             if (!instance.tryStartCheck()) {
                 SRV_LOG.warn(
                     "http check started before last one finished, service: {} : {} : {}:{}",
@@ -111,6 +116,7 @@ public class HttpHealthCheckProcessor implements HealthCheckProcessorV2 {
         return TYPE;
     }
     
+    /** HTTP 健康检查异步回调，解析响应码并更新实例健康状态。 */
     private class HttpHealthCheckCallback implements Callback<String> {
         
         private final HealthCheckTaskV2 task;
@@ -119,6 +125,7 @@ public class HttpHealthCheckProcessor implements HealthCheckProcessorV2 {
         
         private final HealthCheckInstancePublishInfo instance;
         
+        /** 请求发起时间戳，用于计算 RT。 */
         private long startTime = System.currentTimeMillis();
         
         public HttpHealthCheckCallback(HealthCheckInstancePublishInfo instance,
@@ -139,13 +146,13 @@ public class HttpHealthCheckProcessor implements HealthCheckProcessorV2 {
                     switchDomain.getHttpHealthParams());
             } else if (HttpURLConnection.HTTP_UNAVAILABLE == httpCode
                 || HttpURLConnection.HTTP_MOVED_TEMP == httpCode) {
-                // server is busy, need verification later
+                // 服务端繁忙，稍后需再次验证
                 healthCheckCommon.checkFail(task, service, "http:" + httpCode);
                 healthCheckCommon
                     .reEvaluateCheckRt(task.getCheckRtNormalized() * 2, task,
                         switchDomain.getHttpHealthParams());
             } else {
-                //probably means the state files has been removed by administrator
+                // 可能表示状态文件已被管理员移除，立即标记不健康
                 healthCheckCommon.checkFailNow(task, service, "http:" + httpCode);
                 healthCheckCommon.reEvaluateCheckRt(switchDomain.getHttpHealthParams().getMax(),
                     task,
@@ -168,7 +175,7 @@ public class HttpHealthCheckProcessor implements HealthCheckProcessorV2 {
                 cause = cause.getCause();
             }
             
-            // connection error, probably not reachable
+            // 连接错误，实例可能不可达
             if (throwable instanceof ConnectException) {
                 healthCheckCommon.checkFailNow(task, service,
                     "http:unable2connect:" + throwable.getMessage());
