@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:41:09Z",
-  "files": [
-    "pkg/xcap/observation.go",
-    "pkg/xcap/region.go",
-    "pkg/xcap/span.go",
-    "pkg/xcap/statistics.go",
-    "pkg/xcap/stats_definitions.go",
-    "pkg/xcap/summary.go",
-    "pkg/xcap/tracer.go",
-    "pkg/xcap/unmarshal.go",
-    "tools/bigtable-backup/bigtable-backup.py",
-    "tools/bloom/inspector/main.go",
-    "tools/dataobj-sort/main.go",
-    "tools/deprecated-config-checker/checker/checker.go",
-    "tools/deprecated-config-checker/main.go",
-    "tools/doc-generator/main.go",
-    "tools/doc-generator/parse/parser.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 22,
-  "done": 1515
+  "done": 1530
 }
