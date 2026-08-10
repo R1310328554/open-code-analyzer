@@ -20,9 +20,12 @@ import io.netty.channel.ServerChannel;
 
 /**
  * Helper class which provides often used {@link ChannelMatcher} implementations.
+ *
+ * <p>提供常用 {@link ChannelMatcher} 工厂与组合/取反等辅助方法的工具类。</p>
  */
 public final class ChannelMatchers {
 
+    /** 匹配全部 channel 的单例匹配器。 */
     private static final ChannelMatcher ALL_MATCHER = new ChannelMatcher() {
         @Override
         public boolean matches(Channel channel) {
@@ -39,6 +42,7 @@ public final class ChannelMatchers {
 
     /**
      * Returns a {@link ChannelMatcher} that matches all {@link Channel}s.
+     * <p>返回匹配所有 {@link Channel} 的匹配器。</p>
      */
     public static ChannelMatcher all() {
         return ALL_MATCHER;
@@ -46,6 +50,7 @@ public final class ChannelMatchers {
 
     /**
      * Returns a {@link ChannelMatcher} that matches all {@link Channel}s except the given.
+     * <p>返回匹配除指定 channel 外全部成员的匹配器。</p>
      */
     public static ChannelMatcher isNot(Channel channel) {
         return invert(is(channel));
@@ -53,6 +58,7 @@ public final class ChannelMatchers {
 
     /**
      * Returns a {@link ChannelMatcher} that matches the given {@link Channel}.
+     * <p>返回仅匹配指定 channel 实例（引用相等）的匹配器。</p>
      */
     public static ChannelMatcher is(Channel channel) {
         return new InstanceMatcher(channel);
@@ -61,6 +67,7 @@ public final class ChannelMatchers {
     /**
      * Returns a {@link ChannelMatcher} that matches all {@link Channel}s that are an instance of sub-type of
      * the given class.
+     * <p>返回匹配给定类型或其子类实例的匹配器。</p>
      */
     public static ChannelMatcher isInstanceOf(Class<? extends Channel> clazz) {
         return new ClassMatcher(clazz);
@@ -69,6 +76,7 @@ public final class ChannelMatchers {
     /**
      * Returns a {@link ChannelMatcher} that matches all {@link Channel}s that are <strong>not</strong> an
      * instance of sub-type of the given class.
+     * <p>返回<strong>不</strong>匹配给定类型或其子类实例的匹配器。</p>
      */
     public static ChannelMatcher isNotInstanceOf(Class<? extends Channel> clazz) {
         return invert(isInstanceOf(clazz));
@@ -76,6 +84,7 @@ public final class ChannelMatchers {
 
     /**
      * Returns a {@link ChannelMatcher} that matches all {@link Channel}s that are of type {@link ServerChannel}.
+     * <p>返回匹配 {@link ServerChannel} 类型的匹配器。</p>
      */
     public static ChannelMatcher isServerChannel() {
          return SERVER_CHANNEL_MATCHER;
@@ -84,6 +93,7 @@ public final class ChannelMatchers {
     /**
      * Returns a {@link ChannelMatcher} that matches all {@link Channel}s that are <strong>not</strong> of type
      * {@link ServerChannel}.
+     * <p>返回匹配非 {@link ServerChannel} 的匹配器。</p>
      */
     public static ChannelMatcher isNonServerChannel() {
         return NON_SERVER_CHANNEL_MATCHER;
@@ -91,6 +101,7 @@ public final class ChannelMatchers {
 
     /**
      * Invert the given {@link ChannelMatcher}.
+     * <p>对给定匹配器取逻辑非。</p>
      */
     public static ChannelMatcher invert(ChannelMatcher matcher) {
         return new InvertMatcher(matcher);
@@ -99,6 +110,7 @@ public final class ChannelMatchers {
     /**
      * Return a composite of the given {@link ChannelMatcher}s. This means all {@link ChannelMatcher} must
      * return {@code true} to match.
+     * <p>组合多个匹配器：全部返回 {@code true} 时才算匹配（逻辑与）。</p>
      */
     public static ChannelMatcher compose(ChannelMatcher... matchers) {
         if (matchers.length < 1) {
@@ -110,6 +122,7 @@ public final class ChannelMatchers {
         return new CompositeMatcher(matchers);
     }
 
+    /** 多个匹配器全部满足才匹配。 */
     private static final class CompositeMatcher implements ChannelMatcher {
         private final ChannelMatcher[] matchers;
 
@@ -128,6 +141,7 @@ public final class ChannelMatchers {
         }
     }
 
+    /** 对内部匹配器结果取反。 */
     private static final class InvertMatcher implements ChannelMatcher {
         private final ChannelMatcher matcher;
 
@@ -141,6 +155,7 @@ public final class ChannelMatchers {
         }
     }
 
+    /** 按 channel 引用相等匹配。 */
     private static final class InstanceMatcher implements ChannelMatcher {
         private final Channel channel;
 
@@ -154,6 +169,7 @@ public final class ChannelMatchers {
         }
     }
 
+    /** 按运行时类型匹配。 */
     private static final class ClassMatcher implements ChannelMatcher {
         private final Class<? extends Channel> clazz;
 

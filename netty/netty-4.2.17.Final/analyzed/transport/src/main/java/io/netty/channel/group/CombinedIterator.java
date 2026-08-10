@@ -21,11 +21,13 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
+ * 顺序遍历两个 {@link Iterator} 的组合迭代器，先耗尽第一个再遍历第二个。
  */
 final class CombinedIterator<E> implements Iterator<E> {
 
     private final Iterator<E> i1;
     private final Iterator<E> i2;
+    /** 当前正在使用的子迭代器。 */
     private Iterator<E> currentIterator;
 
     CombinedIterator(Iterator<E> i1, Iterator<E> i2) {
@@ -41,6 +43,7 @@ final class CombinedIterator<E> implements Iterator<E> {
                 return true;
             }
 
+            // 第一个迭代器耗尽后切换到第二个
             if (currentIterator == i1) {
                 currentIterator = i2;
             } else {

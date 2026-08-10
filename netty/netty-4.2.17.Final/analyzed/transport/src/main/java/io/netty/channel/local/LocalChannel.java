@@ -50,6 +50,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * A {@link Channel} for the local transport.
+ *
+ * <p>本地传输 {@link Channel}：同 JVM 内通过内存队列在对端 channel 间传递消息，用于测试或进程内通信。</p>
  */
 public class LocalChannel extends AbstractChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(LocalChannel.class);
@@ -57,16 +59,21 @@ public class LocalChannel extends AbstractChannel {
     private static final AtomicReferenceFieldUpdater<LocalChannel, Future> FINISH_READ_FUTURE_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(LocalChannel.class, Future.class, "finishReadFuture");
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
+    /** 同线程递归读 inbound 的最大栈深度，超出则异步调度 readTask。 */
     private static final int MAX_READER_STACK_DEPTH = 8;
 
+    /** 本地 channel 生命周期状态。 */
     private enum State { OPEN, BOUND, CONNECTED, CLOSED }
 
     private final ChannelConfig config = new DefaultChannelConfig(this);
+    // 入站消息 SPSC 队列；可进一步优化为专用 SPSC 实现
     // To further optimize this we could write our own SPSC queue.
     final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
+    /** 当 inboundBuffer 非空时在事件循环中触发读。 */
     private final Runnable readTask = new Runnable() {
         @Override
         public void run() {
+            // 确保 inboundBuffer 非空再读，readInbound 总会 fireChannelReadComplete
             // Ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
             if (!inboundBuffer.isEmpty()) {
                 readInbound();
@@ -84,19 +91,23 @@ public class LocalChannel extends AbstractChannel {
     private IoRegistration registration;
 
     private volatile State state;
+    /** 配对的对端本地 channel（客户端-服务端各一端）。 */
     private volatile LocalChannel peer;
     private volatile LocalAddress localAddress;
     private volatile LocalAddress remoteAddress;
     private volatile ChannelPromise connectPromise;
     private volatile boolean readInProgress;
     private volatile boolean writeInProgress;
+    /** 对端写进行中时延迟本端读的任务 future。 */
     private volatile Future<?> finishReadFuture;
 
+    /** 无 parent 的客户端 channel 构造。 */
     public LocalChannel() {
         super(null);
         config().setAllocator(new PreferHeapByteBufAllocator(config.getAllocator()));
     }
 
+    /** 由 {@link LocalServerChannel} 接受连接时创建的对端 channel。 */
     protected LocalChannel(LocalServerChannel parent, LocalChannel peer) {
         super(parent);
         config().setAllocator(new PreferHeapByteBufAllocator(config.getAllocator()));
@@ -217,6 +228,7 @@ public class LocalChannel extends AbstractChannel {
         State oldState = state;
         try {
             if (oldState != State.CLOSED) {
+                // 在 closeFuture 通知前先更新内部状态
                 // Update all internal state before the closeFuture is notified.
                 if (localAddress != null) {
                     if (parent() == null) {
@@ -225,10 +237,12 @@ public class LocalChannel extends AbstractChannel {
                     localAddress = null;
                 }
 
+                // 状态变更须在 finishPeerRead 之前，保证 doWrite/channelRead 中正确释放写缓冲
                 // State change must happen before finishPeerRead to ensure writes are released either in doWrite or
                 // channelRead.
                 state = State.CLOSED;
 
+                // 关闭前先强制对端读，保证事件顺序
                 // Preserve order of event and force a read operation now before the close operation is processed.
                 if (writeInProgress && peer != null) {
                     finishPeerRead(peer);
@@ -236,6 +250,7 @@ public class LocalChannel extends AbstractChannel {
 
                 ChannelPromise promise = connectPromise;
                 if (promise != null) {
+                    // 使用 tryFailure 避免与 cancel 竞态
                     // Use tryFailure() instead of setFailure() to avoid the race against cancel().
                     promise.tryFailure(new ClosedChannelException());
                     connectPromise = null;
@@ -244,6 +259,7 @@ public class LocalChannel extends AbstractChannel {
 
             if (peer != null) {
                 this.peer = null;
+                // 始终通过 peer 事件循环 execute，保证 channelInactive 顺序（本端先于对端）
                 // Always call peer.eventLoop().execute() even if peer.eventLoop().inEventLoop() is true.
                 // This ensures that if both channels are on the same event loop, the peer's channelInActive
                 // event is triggered *after* this peer's channelInActive event
@@ -262,6 +278,7 @@ public class LocalChannel extends AbstractChannel {
                     if (peerEventLoop.inEventLoop()) {
                         peer.releaseInboundBuffers();
                     } else {
+                        // inboundBuffers 为 SPSC，事件循环异常关闭时可能泄漏，尽力 close
                         // inboundBuffers is a SPSC so we may leak if the event loop is shutdown prematurely or
                         // rejects the close Runnable but give a best effort.
                         peer.close();
@@ -270,8 +287,10 @@ public class LocalChannel extends AbstractChannel {
                 }
             }
         } finally {
+            // 若曾注册过且未关闭，释放 inbound 队列中未读消息，避免泄漏
             // Release all buffers if the Channel was already registered in the past and if it was not closed before.
             if (oldState != null && oldState != State.CLOSED) {
+                // 关闭 channel 后 inbound 中消息不会被对端消费，需本地 release（语义类似 TCP 不保证对端收到）
                 // We need to release all the buffers that may be put into our inbound queue since we closed the Channel
                 // to ensure we not leak any memory. This is fine as it basically gives the same guarantees as TCP which
                 // means even if the promise was notified before its not really guaranteed that the "remote peer" will
@@ -289,6 +308,7 @@ public class LocalChannel extends AbstractChannel {
         }
     }
 
+    /** 从 inboundBuffer 读取并 fireChannelRead，必要时合并多个 ByteBuf。 */
     private void readInbound() {
         RecvByteBufAllocator.Handle handle = unsafe().recvBufAllocHandle();
         handle.reset(config());
@@ -302,6 +322,7 @@ public class LocalChannel extends AbstractChannel {
                 ByteBuf msg = (ByteBuf) received;
                 ByteBuf output = handle.allocate(alloc());
                 if (msg.readableBytes() < output.writableBytes()) {
+                    // 尝试合并多个小 ByteBuf 以减少 pipeline 调用次数
                     // We have an opportunity to coalesce buffers.
                     output.writeBytes(msg, msg.readerIndex(), msg.readableBytes());
                     msg.release();
@@ -313,8 +334,9 @@ public class LocalChannel extends AbstractChannel {
                         msg.release();
                     }
                     handle.lastBytesRead(output.readableBytes());
-                    received = output; // Send the coalesced buffer down the pipeline.
+                    received = output; // 向下游发送合并后的 buffer
                 } else {
+                    // 本次合并不划算，释放临时分配
                     // It won't be profitable to coalesce buffers this time around.
                     handle.lastBytesRead(output.capacity());
                     output.release();
@@ -349,6 +371,7 @@ public class LocalChannel extends AbstractChannel {
                 threadLocals.setLocalChannelReaderStackDepth(stackDepth);
             }
         } else {
+            // 递归深度超限，异步调度避免栈溢出
             try {
                 eventLoop().execute(readTask);
             } catch (Throwable cause) {
@@ -383,6 +406,7 @@ public class LocalChannel extends AbstractChannel {
                     break;
                 }
                 try {
+                    // 对端可能已关闭，需模拟真实 socket 写失败
                     // It is possible the peer could have closed while we are writing, and in this case we should
                     // simulate real socket behavior and ensure the write operation is failed.
                     if (peer.state == State.CONNECTED) {
@@ -399,6 +423,7 @@ public class LocalChannel extends AbstractChannel {
                 }
             }
         } finally {
+            // 保证 write 事件先于 close 事件（见注释中的 promise 监听器场景）
             // The following situation may cause trouble:
             // 1. Write (with promise X)
             // 2. promise X is completed when in.remove() is called, and a listener on this promise calls close()
@@ -410,6 +435,7 @@ public class LocalChannel extends AbstractChannel {
         finishPeerRead(peer);
     }
 
+    /** 触发对端读；若对端也在写则须调度到事件循环以保持读顺序。 */
     private void finishPeerRead(final LocalChannel peer) {
         // If the peer is also writing, then we must schedule the event on the event loop to preserve read order.
         if (peer.eventLoop() == eventLoop() && !peer.writeInProgress) {
@@ -420,6 +446,7 @@ public class LocalChannel extends AbstractChannel {
     }
 
     private void runFinishTask0() {
+        // 对端写进行中时须等其写完再读，用 finishReadFuture 协调
         // If the peer is writing, we must wait until after reads are completed for that peer before we can read. So
         // we keep track of the task, and coordinate later that our read can't happen until the peer is done.
         if (writeInProgress) {
@@ -440,6 +467,7 @@ public class LocalChannel extends AbstractChannel {
         }
     }
 
+    /** 释放 inbound 队列中所有未消费消息的引用计数。 */
     private void releaseInboundBuffers() {
         assert eventLoop() == null || eventLoop().inEventLoop();
         readInProgress = false;
@@ -461,6 +489,7 @@ public class LocalChannel extends AbstractChannel {
                 FINISH_READ_FUTURE_UPDATER.compareAndSet(peer, peerFinishReadFuture, null);
             }
         }
+        // 仅当对端确有未读数据时才清除 readInProgress 并读，避免丢读
         // We should only set readInProgress to false if there is any data that was read as otherwise we may miss to
         // forward data later on.
         if (peer.readInProgress && !peer.inboundBuffer.isEmpty()) {
@@ -469,8 +498,10 @@ public class LocalChannel extends AbstractChannel {
         }
     }
 
+    /** 本地 channel 的 Unsafe，同时实现 {@link LocalIoHandle}。 */
     private class LocalUnsafe extends AbstractUnsafe implements LocalIoHandle {
 
+        /** 事件循环关闭时自动关闭 channel。 */
         private final Runnable shutdownHook = this::closeNow;
 
         @Override
@@ -485,12 +516,14 @@ public class LocalChannel extends AbstractChannel {
 
         @Override
         public void registered() {
+            // peer 与 parent 均非 null 表示由 LocalServerChannel 接受连接创建
             // Check if both peer and parent are non-null because this channel was created by a LocalServerChannel.
             // This is needed as a peer may not be null also if a LocalChannel was connected before and
             // deregistered / registered later again.
             //
             // See https://github.com/netty/netty/issues/2400
             if (peer != null && parent() != null) {
+                // 局部变量保存 peer，doClose 可能将其置 null（见 issue #2144）
                 // Store the peer in a local variable as it may be set to null if doClose() is called.
                 // See https://github.com/netty/netty/issues/2144
                 final LocalChannel peer = LocalChannel.this.peer;
@@ -499,6 +532,7 @@ public class LocalChannel extends AbstractChannel {
                 peer.remoteAddress = parent() == null ? null : parent().localAddress();
                 peer.state = State.CONNECTED;
 
+                // 通过 peer 事件循环 execute，保证 channelActive 在本端 registered 之后（见 pipeline 初始化顺序）
                 // Always call peer.eventLoop().execute() even if peer.eventLoop().inEventLoop() is true.
                 // This ensures that if both channels are on the same event loop, the peer's channelActive
                 // event is triggered *after* this channel's channelRegistered event, so that this channel's
@@ -508,6 +542,7 @@ public class LocalChannel extends AbstractChannel {
                     public void run() {
                         ChannelPromise promise = peer.connectPromise;
 
+                        // 仅当 connectPromise 未完成时触发 fireChannelActive
                         // Only trigger fireChannelActive() if the promise was not null and was not completed yet.
                         // connectPromise may be set to null if doClose() was called in the meantime.
                         if (promise != null && promise.trySuccess()) {
@@ -555,6 +590,7 @@ public class LocalChannel extends AbstractChannel {
             connectPromise = promise;
 
             if (state != State.BOUND) {
+                // 尚未 bind 且未指定 localAddress 时自动分配临时地址
                 // Not bound yet and no localAddress specified - get one.
                 if (localAddress == null) {
                     localAddress = new LocalAddress(LocalChannel.this);

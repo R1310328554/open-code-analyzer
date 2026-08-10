@@ -15,8 +15,13 @@
  */
 package io.netty.channel.internal;
 
+/**
+ * 通道实现内部共享的工具常量。
+ */
 public final class ChannelUtils {
+    /** gather-write 单次尝试写入的字节数低阈值（4096）。 */
     public static final int MAX_BYTES_PER_GATHERING_WRITE_ATTEMPTED_LOW_THRESHOLD = 4096;
+    /** 表示发送缓冲区已满的写状态标记值。 */
     public static final int WRITE_STATUS_SNDBUF_FULL = Integer.MAX_VALUE;
 
     private ChannelUtils() {

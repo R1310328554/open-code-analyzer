@@ -39,27 +39,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The default {@link ChannelGroup} implementation.
+ *
+ * <p>{@link ChannelGroup} 的默认实现：线程安全地管理 {@link ServerChannel} 与普通 channel，
+ * 支持按 {@link ChannelMatcher} 批量写/刷/关闭，并在 channel 关闭时自动移除。</p>
  */
 public class DefaultChannelGroup extends AbstractSet<Channel> implements ChannelGroup {
 
+    /** 自动生成组名时使用的递增 ID。 */
     private static final AtomicInteger nextId = new AtomicInteger();
     private final String name;
+    /** 用于通知 {@link ChannelGroupFuture} 监听器的事件执行器。 */
     private final EventExecutor executor;
+    /** 服务端 channel 映射（按 {@link ChannelId}）。 */
     private final ConcurrentMap<ChannelId, Channel> serverChannels = new ConcurrentHashMap<>();
+    /** 非服务端 channel 映射。 */
     private final ConcurrentMap<ChannelId, Channel> nonServerChannels = new ConcurrentHashMap<>();
+    /** channel 关闭完成后自动从组中移除。 */
     private final ChannelFutureListener remover = new ChannelFutureListener() {
         @Override
         public void operationComplete(ChannelFuture future) throws Exception {
             remove(future.channel());
         }
     };
+    /** void promise 写操作返回的占位 future。 */
     private final VoidChannelGroupFuture voidFuture = new VoidChannelGroupFuture(this);
+    /** 为 true 时组一旦关闭则保持关闭，后续 add 会立即关闭新 channel。 */
     private final boolean stayClosed;
     private volatile boolean closed;
 
     /**
      * Creates a new group with a generated name and the provided {@link EventExecutor} to notify the
      * {@link ChannelGroupFuture}s.
+     * <p>使用自动生成的组名与指定 {@link EventExecutor} 创建组。</p>
      */
     public DefaultChannelGroup(EventExecutor executor) {
         this(executor, false);
@@ -69,6 +80,7 @@ public class DefaultChannelGroup extends AbstractSet<Channel> implements Channel
      * Creates a new group with the specified {@code name} and {@link EventExecutor} to notify the
      * {@link ChannelGroupFuture}s.  Please note that different groups can have the same name, which means no
      * duplicate check is done against group names.
+     * <p>指定组名创建；不同组可重名，不做唯一性校验。</p>
      */
     public DefaultChannelGroup(String name, EventExecutor executor) {
         this(name, executor, false);
@@ -79,6 +91,7 @@ public class DefaultChannelGroup extends AbstractSet<Channel> implements Channel
      * {@link ChannelGroupFuture}s. {@code stayClosed} defines whether or not, this group can be closed
      * more than once. Adding channels to a closed group will immediately close them, too. This makes it
      * easy, to shutdown server and child channels at once.
+     * <p>{@code stayClosed} 为 true 时关闭后保持关闭状态，便于一次性关停服务端与子 channel。</p>
      */
     public DefaultChannelGroup(EventExecutor executor, boolean stayClosed) {
         this("group-0x" + Integer.toHexString(nextId.incrementAndGet()), executor, stayClosed);
@@ -90,6 +103,7 @@ public class DefaultChannelGroup extends AbstractSet<Channel> implements Channel
      * more than once. Adding channels to a closed group will immediately close them, too. This makes it
      * easy, to shutdown server and child channels at once. Please note that different groups can have
      * the same name, which means no duplicate check is done against group names.
+     * <p>完整构造：组名、执行器与 stayClosed 标志。</p>
      */
     public DefaultChannelGroup(String name, EventExecutor executor, boolean stayClosed) {
         ObjectUtil.checkNotNull(name, "name");
@@ -145,6 +159,7 @@ public class DefaultChannelGroup extends AbstractSet<Channel> implements Channel
 
         if (stayClosed && closed) {
 
+            // 先加入再检查 closed，利用 volatile 保证线程安全（见 issue #4020）
             // First add channel, than check if closed.
             // Seems inefficient at first, but this way a volatile
             // gives us enough synchronization to be thread-safe.
@@ -236,6 +251,7 @@ public class DefaultChannelGroup extends AbstractSet<Channel> implements Channel
         return write(message, ChannelMatchers.all());
     }
 
+    // 为每个 channel 安全复制消息，避免多路写共享同一 buffer（见 issue #1461）
     // Create a safe duplicate of the message to write it to a channel but not affect other writes.
     // See https://github.com/netty/netty/issues/1461
     private static Object safeDuplicate(Object message) {
@@ -323,6 +339,7 @@ public class DefaultChannelGroup extends AbstractSet<Channel> implements Channel
                 new LinkedHashMap<Channel, ChannelFuture>(size());
 
         if (stayClosed) {
+            // 关闭前先置 closed=true，保证 add 与 close 的 happens-before 顺序（见 issue #4020）
             // It is important to set the closed to true, before closing channels.
             // Our invariants are:
             // closed=true happens-before ChannelGroup.close()

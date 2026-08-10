@@ -30,9 +30,14 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
+/**
+ * 本地传输的 {@link IoHandler}：无真实网络 I/O，负责注册/注销 {@link LocalIoHandle} 并在事件循环中阻塞等待。
+ */
 public final class LocalIoHandler implements IoHandler {
+    /** 已注册的本地 I/O 句柄集合。 */
     private final Set<LocalIoHandle> registeredChannels = new HashSet<LocalIoHandle>(64);
     private final ThreadAwareExecutor executor;
+    /** 执行 {@link #run} 的线程，用于 {@link #wakeup} 时 unpark。 */
     private volatile Thread executionThread;
 
     private LocalIoHandler(ThreadAwareExecutor executor) {
@@ -41,11 +46,13 @@ public final class LocalIoHandler implements IoHandler {
 
     /**
      * Returns a new {@link IoHandlerFactory} that creates {@link LocalIoHandler} instances.
+     * <p>返回创建 {@link LocalIoHandler} 的工厂。</p>
      */
     public static IoHandlerFactory newFactory() {
         return LocalIoHandler::new;
     }
 
+    /** 将 {@link IoHandle} 转为 {@link LocalIoHandle}，类型不符则抛异常。 */
     private static LocalIoHandle cast(IoHandle handle) {
         if (handle instanceof LocalIoHandle) {
             return (LocalIoHandle) handle;
@@ -59,7 +66,7 @@ public final class LocalIoHandler implements IoHandler {
             executionThread = Thread.currentThread();
         }
         if (context.canBlock()) {
-            // Just block until there is a task ready to process or wakeup(...) is called.
+            // 本地传输无就绪 I/O，可阻塞直到 wakeup 或超时
             LockSupport.parkNanos(this, context.delayNanos(System.nanoTime()));
         }
 
@@ -74,7 +81,7 @@ public final class LocalIoHandler implements IoHandler {
         if (!executor.isExecutorThread(Thread.currentThread())) {
             Thread thread = executionThread;
             if (thread != null) {
-                // Wakeup if we block at the moment.
+                // 唤醒正在 park 的事件循环线程
                 LockSupport.unpark(thread);
             }
         }
@@ -108,6 +115,7 @@ public final class LocalIoHandler implements IoHandler {
         return LocalIoHandle.class.isAssignableFrom(handleType);
     }
 
+    /** 本地 channel 的 {@link IoRegistration} 实现。 */
     private final class LocalIoRegistration implements IoRegistration {
         private final AtomicBoolean canceled = new AtomicBoolean();
         private final ThreadAwareExecutor executor;
@@ -146,6 +154,7 @@ public final class LocalIoHandler implements IoHandler {
             return true;
         }
 
+        /** 从注册表移除并触发 unregistered 回调。 */
         private void cancel0() {
             if (registeredChannels.remove(handle)) {
                 handle.unregistered();

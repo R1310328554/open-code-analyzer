@@ -37,14 +37,20 @@ import java.util.Map;
 
 /**
  * The default {@link ChannelGroupFuture} implementation.
+ *
+ * <p>{@link ChannelGroupFuture} 的默认实现：聚合多个 {@link ChannelFuture}，全部完成后通知监听器。</p>
  */
 final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements ChannelGroupFuture {
 
     private final ChannelGroup group;
+    /** 各 channel 对应的子 future，不可变。 */
     private final Map<Channel, ChannelFuture> futures;
+    /** 已成功完成的子 future 数量。 */
     private int successCount;
+    /** 已失败的子 future 数量。 */
     private int failureCount;
 
+    /** 子 future 完成时累加计数并在全部结束时设置组 future 结果。 */
     private final ChannelFutureListener childListener = new ChannelFutureListener() {
         @Override
         public void operationComplete(ChannelFuture future) throws Exception {
@@ -80,6 +86,7 @@ final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements Ch
 
     /**
      * Creates a new instance.
+     * <p>从 {@link ChannelFuture} 集合构造，为每个子 future 注册完成监听器。</p>
      */
     DefaultChannelGroupFuture(ChannelGroup group, Collection<ChannelFuture> futures,  EventExecutor executor) {
         super(executor);
@@ -103,6 +110,7 @@ final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements Ch
         }
     }
 
+    /** 从 channel -> future 映射直接构造。 */
     DefaultChannelGroupFuture(ChannelGroup group, Map<Channel, ChannelFuture> futures, EventExecutor executor) {
         super(executor);
         this.group = group;
@@ -204,6 +212,7 @@ final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements Ch
         super.setFailure(cause);
     }
 
+    /** 组 future 结果由子 future 聚合决定，禁止外部直接 setSuccess。 */
     @Override
     public DefaultChannelGroupFuture setSuccess(Void result) {
         throw new IllegalStateException();
@@ -224,6 +233,7 @@ final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements Ch
         throw new IllegalStateException();
     }
 
+    /** 禁止在 I/O 事件循环线程中阻塞 await/sync。 */
     @Override
     protected void checkDeadLock() {
         EventExecutor e = executor();
@@ -232,6 +242,7 @@ final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements Ch
         }
     }
 
+    /** 只读 Map.Entry 实现，用于收集失败 channel 与原因。 */
     private static final class DefaultEntry<K, V> implements Map.Entry<K, V> {
         private final K key;
         private final V value;

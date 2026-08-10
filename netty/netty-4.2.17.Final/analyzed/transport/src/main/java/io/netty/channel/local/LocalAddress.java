@@ -25,11 +25,14 @@ import java.util.UUID;
 /**
  * An endpoint in the local transport.  Each endpoint is identified by a unique
  * case-insensitive string.
+ *
+ * <p>本地传输端点，由唯一的不区分大小写字符串 ID 标识。</p>
  */
 public final class LocalAddress extends SocketAddress implements Comparable<LocalAddress> {
 
     private static final long serialVersionUID = 4644331421130916435L;
 
+    /** 通配地址，绑定时会自动分配临时 ID。 */
     public static final LocalAddress ANY = new LocalAddress("ANY");
 
     private final String id;
@@ -39,6 +42,8 @@ public final class LocalAddress extends SocketAddress implements Comparable<Loca
      * Creates a new ephemeral port based on the ID of the specified channel.
      * Note that we prepend an upper-case character so that it never conflicts with
      * the addresses created by a user, which are always lower-cased on construction time.
+     *
+     * <p>根据 channel 哈希生成临时地址；前缀大写字符避免与用户手动创建的小写地址冲突。</p>
      */
     LocalAddress(Channel channel) {
         StringBuilder buf = new StringBuilder(16);
@@ -51,6 +56,7 @@ public final class LocalAddress extends SocketAddress implements Comparable<Loca
 
     /**
      * Creates a new instance with the specified ID.
+     * <p>使用指定 ID 创建地址（构造时会转为小写）。</p>
      */
     public LocalAddress(String id) {
         this.id = checkNonEmptyAfterTrim(id, "id").toLowerCase();
@@ -59,6 +65,7 @@ public final class LocalAddress extends SocketAddress implements Comparable<Loca
 
     /**
      * Creates a new instance with a random ID based on the given class.
+     * <p>基于类名与随机 UUID 生成唯一 ID。</p>
      */
     public LocalAddress(Class<?> cls) {
         this(cls.getSimpleName() + '/' + UUID.randomUUID());
@@ -66,6 +73,7 @@ public final class LocalAddress extends SocketAddress implements Comparable<Loca
 
     /**
      * Returns the ID of this address.
+     * <p>返回地址 ID 字符串。</p>
      */
     public String id() {
         return id;

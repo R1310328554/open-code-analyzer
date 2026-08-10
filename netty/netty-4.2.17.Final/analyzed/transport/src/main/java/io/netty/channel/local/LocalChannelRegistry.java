@@ -23,10 +23,17 @@ import java.net.SocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * 本地 channel 地址注册表，维护 {@link LocalAddress} 到 {@link Channel} 的全局映射。
+ */
 final class LocalChannelRegistry {
 
+    /** 已绑定地址 -> channel 的并发映射。 */
     private static final ConcurrentMap<LocalAddress, Channel> boundChannels = new ConcurrentHashMap<>();
 
+    /**
+     * 将 channel 绑定到指定本地地址；{@link LocalAddress#ANY} 会自动分配临时地址。
+     */
     static LocalAddress register(
             Channel channel, LocalAddress oldLocalAddress, SocketAddress localAddress) {
         if (oldLocalAddress != null) {
@@ -48,10 +55,12 @@ final class LocalChannelRegistry {
         return addr;
     }
 
+    /** 按地址查找已绑定的 channel。 */
     static Channel get(SocketAddress localAddress) {
         return boundChannels.get(localAddress);
     }
 
+    /** 解除地址绑定。 */
     static void unregister(LocalAddress localAddress) {
         boundChannels.remove(localAddress);
     }

@@ -24,6 +24,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 使用 void promise 进行组写操作时的占位 {@link ChannelGroupFuture}：不可 await/sync/注册监听器。
+ */
 // Suppress a warning about returning the same iterator since it always returns an empty iterator
 final class VoidChannelGroupFuture implements ChannelGroupFuture {
 
@@ -143,6 +146,7 @@ final class VoidChannelGroupFuture implements ChannelGroupFuture {
      * {@inheritDoc}
      *
      * @param mayInterruptIfRunning this value has no effect in this implementation.
+     * <p>本实现中 {@code mayInterruptIfRunning} 无实际效果。</p>
      */
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
@@ -169,6 +173,7 @@ final class VoidChannelGroupFuture implements ChannelGroupFuture {
         throw reject();
     }
 
+    /** void future 不允许阻塞或监听，统一抛出 {@link IllegalStateException}。 */
     private static RuntimeException reject() {
         return new IllegalStateException("void future");
     }

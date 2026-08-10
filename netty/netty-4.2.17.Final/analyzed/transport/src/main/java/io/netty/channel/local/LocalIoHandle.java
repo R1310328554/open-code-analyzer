@@ -19,7 +19,10 @@ import io.netty.channel.IoHandle;
 
 /**
  * {@link IoHandle} sub-type that is used by the local transport internally.
+ *
+ * <p>本地传输内部使用的 {@link IoHandle} 子类型，扩展了立即关闭能力。</p>
  */
 public interface LocalIoHandle extends IoHandle {
+    /** 立即关闭关联的本地 channel，不等待异步流程。 */
     void closeNow();
 }

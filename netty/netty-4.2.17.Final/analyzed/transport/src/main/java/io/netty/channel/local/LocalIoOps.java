@@ -19,11 +19,14 @@ import io.netty.channel.IoOps;
 
 /**
  * {@link IoOps} implementation that can be used with {@link LocalIoHandler}.
+ *
+ * <p>与 {@link LocalIoHandler} 配合使用的 {@link IoOps} 实现；本地传输无真实 I/O 提交，仅作占位。</p>
  */
 public final class LocalIoOps implements IoOps {
 
     /**
      * Default instance to use.
+     * <p>默认单例实例。</p>
      */
     public static final LocalIoOps DEFAULT = new LocalIoOps();
 

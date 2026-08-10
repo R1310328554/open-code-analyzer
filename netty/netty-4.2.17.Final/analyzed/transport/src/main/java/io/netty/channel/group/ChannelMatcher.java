@@ -22,11 +22,15 @@ import io.netty.channel.Channel;
  * Allows to only match some {@link Channel}'s for operations in {@link ChannelGroup}.
  *
  * {@link ChannelMatchers} provide you with helper methods for usual needed implementations.
+ *
+ * <p>在 {@link ChannelGroup} 批量操作中筛选目标 {@link Channel} 的匹配器。
+ * 常用实现见 {@link ChannelMatchers}。</p>
  */
 public interface ChannelMatcher {
 
     /**
      * Returns {@code true} if the operation should be also executed on the given {@link Channel}.
+     * <p>若给定 {@link Channel} 应参与本次组操作则返回 {@code true}。</p>
      */
     boolean matches(Channel channel);
 }

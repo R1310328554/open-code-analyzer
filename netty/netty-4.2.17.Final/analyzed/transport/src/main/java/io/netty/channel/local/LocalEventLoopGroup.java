@@ -21,12 +21,15 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * @deprecated Use {@link MultiThreadIoEventLoopGroup} with {@link LocalIoHandler#newFactory()}.
+ *
+ * <p>已废弃：请改用 {@link MultiThreadIoEventLoopGroup} 配合 {@link LocalIoHandler#newFactory()}。</p>
  */
 @Deprecated
 public class LocalEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance with the default number of threads.
+     * <p>使用默认线程数创建本地事件循环组。</p>
      */
     public LocalEventLoopGroup() {
         this(0);
@@ -36,6 +39,7 @@ public class LocalEventLoopGroup extends MultiThreadIoEventLoopGroup {
      * Create a new instance
      *
      * @param nThreads          the number of threads to use
+     * <p>指定线程数创建实例。</p>
      */
     public LocalEventLoopGroup(int nThreads) {
         this(nThreads, null);
@@ -45,6 +49,7 @@ public class LocalEventLoopGroup extends MultiThreadIoEventLoopGroup {
      * Create a new instance with the default number of threads and the given {@link ThreadFactory}.
      *
      * @param threadFactory     the {@link ThreadFactory} or {@code null} to use the default
+     * <p>使用默认线程数与指定 {@link ThreadFactory} 创建实例。</p>
      */
     public LocalEventLoopGroup(ThreadFactory threadFactory) {
         this(0, threadFactory);
@@ -55,6 +60,7 @@ public class LocalEventLoopGroup extends MultiThreadIoEventLoopGroup {
      *
      * @param nThreads          the number of threads to use
      * @param threadFactory     the {@link ThreadFactory} or {@code null} to use the default
+     * <p>指定线程数与 {@link ThreadFactory} 创建本地传输专用事件循环组。</p>
      */
     public LocalEventLoopGroup(int nThreads, ThreadFactory threadFactory) {
         super(nThreads, threadFactory, LocalIoHandler.newFactory());
