@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:46:10Z",
-  "files": [
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/DomainDatagramChannel.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/DomainDatagramChannelConfig.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/DomainDatagramPacket.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/DomainDatagramSocketAddress.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/DomainSocketAddress.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/DomainSocketChannel.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/DomainSocketChannelConfig.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/DomainSocketReadMode.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/Errors.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/ErrorsStaticallyReferencedJniMethods.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/FileDescriptor.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/GenericUnixChannelOption.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/IntegerUnixChannelOption.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/IovArray.java",
-    "transport-native-unix-common/src/main/java/io/netty/channel/unix/Limits.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 68,
-  "done": 1845
+  "done": 1860
 }
