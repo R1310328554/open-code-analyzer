@@ -7,13 +7,23 @@ import org.keycloak.cluster.ClusterEvent;
 import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
+/**
+ * 工作流定时调度集群事件：在节点间同步 schedule 的创建、更新或删除。
+ * <p>
+ * 由 {@link WorkflowScheduleEventListener} 接收并触发本地定时器重调度。
+ */
 @ProtoTypeId(65621)
 public class WorkflowScheduleClusterEvent implements ClusterEvent {
 
+    /** 所属 realm ID。 */
     private String realmId;
+    /** 工作流组件 ID。 */
     private String workflowId;
+    /** 是否为删除/取消调度事件。 */
     private boolean removed;
+    /** 调度间隔（秒）；removed 时可为 0。 */
     private int intervalSecs;
+    /** 上次调度运行时间（epoch 秒），用于计算初始延迟。 */
     private int lastScheduleRun;
 
     @ProtoField(1)
@@ -61,6 +71,15 @@ public class WorkflowScheduleClusterEvent implements ClusterEvent {
         this.lastScheduleRun = lastScheduleRun;
     }
 
+    /**
+     * 创建集群调度事件实例。
+     *
+     * @param realmId realm ID
+     * @param workflowId 工作流 ID
+     * @param removed 是否取消调度
+     * @param intervalSecs 间隔秒数
+     * @param lastScheduleRun 上次运行 epoch 秒
+     */
     public static WorkflowScheduleClusterEvent create(String realmId, String workflowId, boolean removed,
             int intervalSecs, int lastScheduleRun) {
         WorkflowScheduleClusterEvent event = new WorkflowScheduleClusterEvent();

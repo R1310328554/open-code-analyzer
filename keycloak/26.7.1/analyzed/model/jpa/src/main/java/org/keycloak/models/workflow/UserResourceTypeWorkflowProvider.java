@@ -41,6 +41,12 @@ import org.keycloak.utils.StringUtil;
 
 import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_CONDITIONS;
 
+/**
+ * 用户资源类型工作流选择器：通过 JPA Criteria 查询符合条件的用户 ID。
+ * <p>
+ * 排除已有工作流状态记录的用户，并按 {@link WorkflowConstants#CONFIG_CONDITIONS} 解析条件表达式；
+ * 批量大小由 {@link WorkflowConstants#CONFIG_SCHEDULE_BATCH_SIZE} 控制。
+ */
 public class UserResourceTypeWorkflowProvider implements ResourceTypeSelector {
 
     private final EntityManager em;
@@ -58,7 +64,7 @@ public class UserResourceTypeWorkflowProvider implements ResourceTypeSelector {
         Root<UserEntity> userRoot = query.from(UserEntity.class);
         List<Predicate> predicates = new ArrayList<>();
 
-        // Subquery will find if a state record exists for the user and workflow
+        // 子查询：判断该用户在此工作流下是否已有状态记录
         // SELECT 1 FROM WorkflowActionStateEntity s WHERE s.resourceId = userRoot.id AND s.workflowId = :workflowId
         Subquery<Integer> subquery = query.subquery(Integer.class);
         Root<WorkflowStateEntity> stateRoot = subquery.from(WorkflowStateEntity.class);
@@ -89,6 +95,7 @@ public class UserResourceTypeWorkflowProvider implements ResourceTypeSelector {
         return ResourceType.USERS.resolveResource(session, resourceId);
     }
 
+    /** 将工作流条件表达式转换为 JPA {@link Predicate}；无条件时返回恒真。 */
     private Predicate getConditionsPredicate(Workflow workflow, CriteriaBuilder cb, CriteriaQuery<String> query, Root<UserEntity> path) {
         MultivaluedHashMap<String, String> config = workflow.getConfig();
         String conditions = config.getFirst(CONFIG_CONDITIONS);

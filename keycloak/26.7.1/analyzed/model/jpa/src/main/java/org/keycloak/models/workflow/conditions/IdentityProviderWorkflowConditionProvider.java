@@ -19,8 +19,12 @@ import org.keycloak.models.workflow.WorkflowExecutionContext;
 import org.keycloak.models.workflow.WorkflowInvalidStateException;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * 身份提供者关联工作流条件：判断用户是否已链接指定 alias 的身份提供者。
+ */
 public class IdentityProviderWorkflowConditionProvider implements WorkflowConditionProvider {
 
+    /** 期望的身份提供者 alias。 */
     private final String expectedAlias;
     private final KeycloakSession session;
 

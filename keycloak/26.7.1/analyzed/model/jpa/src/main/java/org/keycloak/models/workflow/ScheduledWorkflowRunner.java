@@ -16,14 +16,23 @@ import org.keycloak.timer.TimerProvider;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 定时工作流运行器：按配置间隔周期性激活所有符合条件的资源。
+ * <p>
+ * 通过集群锁避免多节点重复执行；配置变更（禁用、删除 schedule、间隔变化）时自动取消或重调度任务。
+ */
 public class ScheduledWorkflowRunner implements ScheduledTask {
 
     private static final Logger log = Logger.getLogger("org.keycloak.workflow.schedule");
 
+    /** 集群锁最小超时（秒）。 */
     private static final int MIN_LOCK_TIMEOUT_SECS = 30;
 
+    /** 工作流组件 ID。 */
     private final String workflowId;
+    /** 所属 realm ID。 */
     private final String realmId;
+    /** 调度间隔（秒）。 */
     private final int intervalSecs;
 
     public ScheduledWorkflowRunner(String workflowId, String realmId, int intervalSecs) {
@@ -109,6 +118,7 @@ public class ScheduledWorkflowRunner implements ScheduledTask {
         }
     }
 
+    /** 判断是否已到下一调度周期（距上次运行至少 intervalSecs 秒）。 */
     private boolean isSchedulePeriod(Workflow workflow) {
         int lastRun = getLastScheduleRun(workflow);
 
@@ -120,16 +130,19 @@ public class ScheduledWorkflowRunner implements ScheduledTask {
         return elapsed >= (intervalSecs - 1);
     }
 
+    /** 将本次运行时间写入工作流组件配置。 */
     private void updateLastScheduleRun(KeycloakSession session) {
         ComponentModel component = session.getContext().getRealm().getComponent(workflowId);
         component.put(WorkflowConstants.CONFIG_LAST_SCHEDULE_RUN, String.valueOf(Time.currentTime()));
         session.getContext().getRealm().updateComponent(component);
     }
 
+    /** 取消当前定时任务。 */
     private void cancelTask(KeycloakSession session) {
         session.getProvider(TimerProvider.class).cancelTask(getTaskName());
     }
 
+    /** 按新间隔重新注册对齐后的定时任务。 */
     private void scheduleAligned(KeycloakSession session, Workflow workflow, int newIntervalSecs) {
         TimerProvider timer = session.getProvider(TimerProvider.class);
         ScheduledWorkflowRunner newRunner = new ScheduledWorkflowRunner(workflowId, realmId, newIntervalSecs);
@@ -142,19 +155,29 @@ public class ScheduledWorkflowRunner implements ScheduledTask {
         return taskName(workflowId);
     }
 
+    /** 生成工作流定时任务的唯一名称。 */
     static String taskName(String workflowId) {
         return "workflow-" + workflowId;
     }
 
+    /** 从工作流配置读取上次调度运行时间（epoch 秒）。 */
     static int getLastScheduleRun(Workflow workflow) {
         String val = workflow.getConfig().getFirst(WorkflowConstants.CONFIG_LAST_SCHEDULE_RUN);
         return val == null ? 0 : Integer.parseInt(val);
     }
 
+    /** 根据工作流配置计算初始延迟（秒）。 */
     static int computeInitialDelay(Workflow workflow, int intervalSecs) {
         return computeInitialDelay(getLastScheduleRun(workflow), intervalSecs);
     }
 
+    /**
+     * 根据上次运行时间与间隔计算初始延迟（秒）。
+     *
+     * @param lastRunSecs 上次运行 epoch 秒，{@code <=0} 表示从未运行
+     * @param intervalSecs 调度间隔（秒）
+     * @return 距下次触发的延迟秒数
+     */
     static int computeInitialDelay(int lastRunSecs, int intervalSecs) {
         if (lastRunSecs <= 0) {
             return intervalSecs;

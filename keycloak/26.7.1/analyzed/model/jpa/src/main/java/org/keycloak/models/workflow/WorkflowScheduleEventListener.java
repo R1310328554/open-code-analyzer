@@ -16,9 +16,15 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 
+/**
+ * 工作流定时调度集群监听器：接收 {@link WorkflowScheduleClusterEvent} 并在各节点重调度本地 Timer。
+ * <p>
+ * 迁移完成后注册集群监听；通知在事务提交后发送，避免可串行化隔离级别下的死锁。
+ */
 public final class WorkflowScheduleEventListener implements ClusterListener, ProviderEventListener {
 
     private static final Logger logger = Logger.getLogger("org.keycloak.workflow.schedule");
+    /** 集群通知通道键。 */
     static final String WORKFLOW_SCHEDULE_TASK_KEY = "workflow-schedule";
 
     private final KeycloakSessionFactory sessionFactory;
@@ -59,6 +65,7 @@ public final class WorkflowScheduleEventListener implements ClusterListener, Pro
         }
     }
 
+    /** 根据集群事件取消旧任务并按新间隔注册 {@link ScheduledWorkflowRunner}。 */
     private void rescheduleWorkflow(KeycloakSession session, WorkflowScheduleClusterEvent workflowEvent) {
         TimerProvider timer = session.getProvider(TimerProvider.class);
         String workflowId = workflowEvent.getWorkflowId();
@@ -80,6 +87,16 @@ public final class WorkflowScheduleEventListener implements ClusterListener, Pro
         logger.debugf("Rescheduled workflow %s with interval %d s, initial delay %d s (cluster event)", workflowId, intervalSecs, initialDelaySecs);
     }
 
+    /**
+     * 向集群广播工作流 schedule 变更；在事务提交后执行 notify。
+     *
+     * @param session 当前会话
+     * @param realmId realm ID
+     * @param workflowId 工作流 ID
+     * @param removed 是否取消调度
+     * @param intervalSecs 新间隔（秒）
+     * @param lastScheduleRun 上次运行 epoch 秒
+     */
     void notifyCluster(KeycloakSession session, String realmId, String workflowId, boolean removed,
             int intervalSecs, int lastScheduleRun) {
         ClusterProvider clusterProvider = session.getProvider(ClusterProvider.class);
@@ -87,8 +104,8 @@ public final class WorkflowScheduleEventListener implements ClusterListener, Pro
         if (clusterProvider != null) {
             WorkflowScheduleClusterEvent event = WorkflowScheduleClusterEvent.create(
                     realmId, workflowId, removed, intervalSecs, lastScheduleRun);
-            // Only run the notification after the transaction is complete to ensure that we'll load the latest data on each node,
-            // and not get into a deadlock if the database is using a serializable transaction isolation level.
+            // 仅在事务完成后发送通知，确保各节点加载最新数据，
+            // 且在数据库使用可串行化隔离级别时避免死锁
             session.getTransactionManager().enlistAfterCompletion(new AbstractKeycloakTransaction() {
                 @Override
                 protected void commitImpl() {

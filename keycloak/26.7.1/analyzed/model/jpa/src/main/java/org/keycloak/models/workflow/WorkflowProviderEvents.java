@@ -4,7 +4,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
 /**
- * Utility class for creating and publishing workflow provider events.
+ * 工作流 Provider 事件发布工具类：构造并发布各类 {@link WorkflowProviderEvent}。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
@@ -13,6 +13,7 @@ final class WorkflowProviderEvents {
     private WorkflowProviderEvents() {
     }
 
+    /** 发布工作流激活事件。 */
     static void fireWorkflowActivatedEvent(KeycloakSession session, Workflow workflow, String resourceId,
                                           String executionId, String triggerEventType) {
         session.getKeycloakSessionFactory().publish(new WorkflowProviderEvent.WorkflowActivatedEvent() {
@@ -58,6 +59,7 @@ final class WorkflowProviderEvents {
         });
     }
 
+    /** 发布工作流停用事件。 */
     static void fireWorkflowDeactivatedEvent(KeycloakSession session, Workflow workflow, String resourceId,
                                             String executionId, String reason) {
         session.getKeycloakSessionFactory().publish(new WorkflowProviderEvent.WorkflowDeactivatedEvent() {
@@ -103,6 +105,7 @@ final class WorkflowProviderEvents {
         });
     }
 
+    /** 发布工作流重启事件。 */
     static void fireWorkflowRestartedEvent(KeycloakSession session, Workflow workflow, String resourceId,
                                           String executionId) {
         session.getKeycloakSessionFactory().publish(new WorkflowProviderEvent.WorkflowRestartedEvent() {
@@ -143,6 +146,7 @@ final class WorkflowProviderEvents {
         });
     }
 
+    /** 发布工作流步骤已调度事件。 */
     static void fireWorkflowStepScheduledEvent(KeycloakSession session, Workflow workflow, WorkflowStep step,
                                               String resourceId, String executionId, long scheduledTime, String delay) {
         session.getKeycloakSessionFactory().publish(new WorkflowProviderEvent.WorkflowStepScheduledEvent() {
@@ -203,6 +207,7 @@ final class WorkflowProviderEvents {
         });
     }
 
+    /** 发布工作流步骤已执行事件。 */
     static void fireWorkflowStepExecutedEvent(KeycloakSession session, Workflow workflow, WorkflowStep step,
                                              String resourceId, String executionId) {
         session.getKeycloakSessionFactory().publish(new WorkflowProviderEvent.WorkflowStepExecutedEvent() {
@@ -253,6 +258,7 @@ final class WorkflowProviderEvents {
         });
     }
 
+    /** 发布工作流步骤执行失败事件。 */
     static void fireWorkflowStepFailedEvent(KeycloakSession session, Workflow workflow, WorkflowStep step,
                                            String resourceId, String executionId, String errorMessage) {
         session.getKeycloakSessionFactory().publish(new WorkflowProviderEvent.WorkflowStepFailedEvent() {
@@ -308,6 +314,7 @@ final class WorkflowProviderEvents {
         });
     }
 
+    /** 发布工作流资源迁移事件（从一个工作流/步骤迁移到另一个）。 */
     static void fireWorkflowResourceMigratedEvent(KeycloakSession session, Workflow sourceWorkflow, Workflow destWorkflow,
                                                  WorkflowStep sourceStep, WorkflowStep destStep, String resourceId,
                                                  String oldExecutionId, String newExecutionId) {
@@ -394,6 +401,7 @@ final class WorkflowProviderEvents {
         });
     }
 
+    /** 发布工作流执行完成事件。 */
     static void fireWorkflowCompletedEvent(KeycloakSession session, Workflow workflow, String resourceId, String executionId) {
         session.getKeycloakSessionFactory().publish(new WorkflowProviderEvent.WorkflowCompletedEvent() {
             @Override

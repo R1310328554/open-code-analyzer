@@ -22,8 +22,14 @@ import org.keycloak.models.workflow.WorkflowExecutionContext;
 import org.keycloak.models.workflow.WorkflowInvalidStateException;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * 角色工作流条件：判断用户是否拥有指定 realm 或 client 角色。
+ * <p>
+ * Client 角色格式为 {@code clientId/roleName}；支持运行时评估与 JPA 子查询谓词。
+ */
 public class RoleWorkflowConditionProvider implements WorkflowConditionProvider {
 
+    /** 期望的角色名或 clientId/roleName。 */
     private final String expectedRole;
     private final KeycloakSession session;
 
@@ -59,7 +65,7 @@ public class RoleWorkflowConditionProvider implements WorkflowConditionProvider 
 
         RoleModel role = getRole(expectedRole, session.getContext().getRealm());
         if (role == null) {
-            return cb.disjunction(); // always false
+            return cb.disjunction(); // 恒假
         }
 
         Subquery<Integer> subquery = query.subquery(Integer.class);
@@ -86,6 +92,7 @@ public class RoleWorkflowConditionProvider implements WorkflowConditionProvider 
         }
     }
 
+    /** 按名称解析 realm 角色或 {@code clientId/roleName} 形式的 client 角色。 */
     private RoleModel getRole(String expectedRole, RealmModel realm) {
         boolean isClientRole = expectedRole.indexOf('/') != -1;
 

@@ -25,28 +25,36 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Represents the state of a resource within a time-based workflow.
+ * 基于时间的工作流状态 JPA 实体，映射 WORKFLOW_STATE 表。
+ * <p>
+ * 记录某资源在某工作流下的执行 ID、待运行步骤及计划触发时间戳。
  */
 @Entity
 @Table(name = "WORKFLOW_STATE")
 public class WorkflowStateEntity {
 
+    /** 工作流执行唯一 ID（主键）。 */
     @Id
     @Column(name = "EXECUTION_ID")
     private String executionId;
 
+    /** 目标资源 ID（如用户 ID）。 */
     @Column(name = "RESOURCE_ID")
     private String resourceId;
 
+    /** 工作流组件 ID。 */
     @Column(name = "WORKFLOW_ID")
     private String workflowId;
 
+    /** 资源类型标识。 */
     @Column(name = "RESOURCE_TYPE")
-    private String resourceType; // do we want/need to store this?
+    private String resourceType; // 是否需要持久化此字段仍待评估
 
+    /** 下一待执行步骤 ID。 */
     @Column(name = "SCHEDULED_STEP_ID")
     private String scheduledStepId;
 
+    /** 计划执行该步骤的时间戳（毫秒 epoch）。 */
     @Column(name = "SCHEDULED_STEP_TIMESTAMP")
     private long scheduledStepTimestamp;
 

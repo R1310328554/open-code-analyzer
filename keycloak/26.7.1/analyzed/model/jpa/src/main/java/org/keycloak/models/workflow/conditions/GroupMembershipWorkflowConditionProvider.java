@@ -18,8 +18,14 @@ import org.keycloak.models.workflow.WorkflowExecutionContext;
 import org.keycloak.models.workflow.WorkflowInvalidStateException;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * 组成员关系工作流条件：判断用户是否为指定路径组的成员。
+ * <p>
+ * 支持运行时 {@link #evaluate} 与批量查询 {@link #toPredicate} 两种评估方式。
+ */
 public class GroupMembershipWorkflowConditionProvider implements WorkflowConditionProvider {
 
+    /** 期望的组路径（如 {@code /parent/child}）。 */
     private final String expectedGroup;
     private final KeycloakSession session;
 
@@ -53,7 +59,7 @@ public class GroupMembershipWorkflowConditionProvider implements WorkflowConditi
 
         GroupModel group = KeycloakModelUtils.findGroupByPath(session, session.getContext().getRealm(), expectedGroup);
         if (group == null) {
-            return cb.disjunction(); // always false
+            return cb.disjunction(); // 恒假
         }
 
         Subquery<Integer> subquery = query.subquery(Integer.class);

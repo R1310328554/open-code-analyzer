@@ -7,9 +7,15 @@ import org.keycloak.models.RealmModel;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 事件触发工作流的调度任务：将工作流第一步写入状态表并发布激活/调度事件。
+ * <p>
+ * 启动阶段 realm 可能尚未就绪时会跳过处理；调度时临时将首步 {@code after} 设为工作流 {@code notBefore}。
+ */
 final class ScheduleWorkflowTask extends WorkflowTransactionalTask {
 
     private static final Logger log = Logger.getLogger(ScheduleWorkflowTask.class);
+    /** 待调度的工作流执行上下文。 */
     private final DefaultWorkflowExecutionContext context;
 
     ScheduleWorkflowTask(DefaultWorkflowExecutionContext context) {
@@ -23,7 +29,7 @@ final class ScheduleWorkflowTask extends WorkflowTransactionalTask {
         RealmModel realm = context.getRealm();
 
         if (realm == null) {
-            // during startup realms might be created/imported - skip processing in this case
+            // 启动时 realm 可能正在创建/导入，此情况下跳过处理
             return;
         }
 
@@ -41,24 +47,24 @@ final class ScheduleWorkflowTask extends WorkflowTransactionalTask {
             fireWorkflowActivated(session, workflowContext);
             fireWorkflowStepScheduled(session, workflowContext, firstStep);
         } finally {
-            // restore the original after value
+            // 恢复首步原始的 after 配置
             firstStep.setAfter(originalAfter);
         }
     }
 
+    /** 发布工作流激活事件。 */
     private void fireWorkflowActivated(KeycloakSession session, DefaultWorkflowExecutionContext context) {
         log.debugf("Workflow '%s' activated for resource %s (execution id: %s)", context.getWorkflow().getName(),
                 context.getResourceId(), context.getExecutionId());
-        // fire workflow activated event
         WorkflowProviderEvents.fireWorkflowActivatedEvent(session, context.getWorkflow(), context.getEvent().getResourceId(),
                 context.getExecutionId(), context.getEvent().getEventProviderId());
     }
 
+    /** 发布工作流步骤已调度事件。 */
     private void fireWorkflowStepScheduled(KeycloakSession session, DefaultWorkflowExecutionContext context, WorkflowStep nextStep) {
         log.debugf("Scheduled step %s to run in %s for resource %s (execution id: %s)",
                 nextStep.getProviderId(), nextStep.getAfter(), context.getResourceId(), context.getExecutionId());
         long scheduledTime = System.currentTimeMillis() + DurationConverter.parseDuration(nextStep.getAfter()).toMillis();
-        // fire workflow step scheduled event
         WorkflowProviderEvents.fireWorkflowStepScheduledEvent(session, context.getWorkflow(), nextStep, context.getResourceId(), context.getExecutionId(),
                 scheduledTime, nextStep.getAfter());
     }
