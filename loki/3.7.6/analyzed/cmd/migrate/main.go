@@ -1,5 +1,8 @@
 package main
 
+// chunk 迁移工具：按时间分片并行从源 Loki store 读取 chunk，
+// 可选改租户 ID 后写入目标 store，用于存储后端或 schema 升级迁移。
+
 import (
 	"context"
 	"flag"
@@ -29,6 +32,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// syncRange 表示一次迁移任务的时间窗口编号与纳秒起止边界。
 type syncRange struct {
 	number int
 	from   int64
@@ -239,6 +243,7 @@ func main() {
 	}
 }
 
+// 将总时间区间按 shardBy 切分为不重叠的 syncRange 列表供 worker 消费。
 func calcSyncRanges(from, to int64, shardBy int64) []*syncRange {
 	// Calculate the sync ranges
 	syncRanges := []*syncRange{}
@@ -299,6 +304,7 @@ func newChunkMover(ctx context.Context, s config.SchemaConfig, source, dest stor
 	return cm
 }
 
+// worker 主循环：GetChunks 批量拉取、FetchChunks 读对象存储、Put 写入目标。
 func (m *chunkMover) moveChunks(ctx context.Context, threadID int, syncRangeCh <-chan *syncRange, errCh chan<- error, statsCh chan<- stats) {
 	for {
 		select {
@@ -423,6 +429,7 @@ func mustParse(t string) time.Time {
 	return ret
 }
 
+// 以十进制 KB/MB 等单位格式化字节数，用于迁移吞吐量日志输出。
 func ByteCountDecimal(b uint64) string {
 	const unit = 1000
 	if b < unit {

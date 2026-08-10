@@ -1,5 +1,8 @@
 package main
 
+// Loki 主进程入口：解析 ConfigWrapper、校验 limits、可选 tracing/profiling，
+// 分配 ballast 降低 GC 频率后构造 loki.Loki 并阻塞运行直至收到信号。
+
 import (
 	"flag"
 	"fmt"
@@ -36,6 +39,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// 刷新 util_log 缓冲后 os.Exit，确保异步日志落盘。
 func exit(code int) {
 	util_log.Flush()
 	os.Exit(code)
@@ -150,6 +154,7 @@ func main() {
 	util_log.CheckFatal("running loki", err, util_log.Logger)
 }
 
+// 按配置启用 block/cpu/mutex runtime 采样，便于性能剖析。
 func setProfilingOptions(cfg loki.ProfilingConfig) {
 	if cfg.BlockProfileRate > 0 {
 		runtime.SetBlockProfileRate(cfg.BlockProfileRate)

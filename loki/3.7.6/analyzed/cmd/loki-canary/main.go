@@ -1,5 +1,8 @@
 package main
 
+// loki-canary 端到端探针：周期性写入带唯一标签的日志，通过 WebSocket
+// 或查询比对收发延迟，并暴露 /metrics 与 suspend/resume 控制端点。
+
 import (
 	"crypto/tls"
 	"flag"
@@ -30,6 +33,7 @@ const (
 	defaultMaxRetries = 10
 )
 
+// canary 聚合 writer、reader 与 comparator，用互斥锁协调重启与停止。
 type canary struct {
 	lock sync.Mutex
 
@@ -252,6 +256,7 @@ func main() {
 	}
 }
 
+// 依次停止 writer、reader、comparator 并清空指针，供 suspend 或重启使用。
 func (c *canary) stop() {
 	c.lock.Lock()
 	defer c.lock.Unlock()

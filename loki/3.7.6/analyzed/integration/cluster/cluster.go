@@ -1,5 +1,8 @@
 package cluster
 
+// 集成测试内存 Loki 集群：用 YAML 模板生成各组件配置，
+// 在临时目录启动 ingester/querier 等进程并等待 /ready 后供测试访问。
+
 import (
 	"bytes"
 	"context"
@@ -131,6 +134,7 @@ ruler:
   rule_path: {{.sharedDataPath}}/prom-rule
 `))
 
+// wrappedRegisterer 忽略重复注册，避免多组件测试时 prometheus panic。
 func resetMetricRegistry() {
 	registry := &wrappedRegisterer{Registry: prometheus.NewRegistry()}
 	prometheus.DefaultRegisterer = registry
@@ -160,6 +164,7 @@ func (w *wrappedRegisterer) MustRegister(collectors ...prometheus.Collector) {
 	}
 }
 
+// Cluster 管理共享数据目录、组件列表、schema 版本与 overrides 文件路径。
 type Cluster struct {
 	sharedPath    string
 	components    []*Component
@@ -170,6 +175,7 @@ type Cluster struct {
 	schemaVer     string
 }
 
+// 创建临时 sharedPath、空 overrides YAML，并重置全局 metrics registry。
 func New(logLevel level.Value, opts ...func(*Cluster)) *Cluster {
 	if logLevel != nil {
 		util_log.Logger = level.NewFilter(log.NewLogfmtLogger(os.Stderr), level.Allow(logLevel))
@@ -207,6 +213,7 @@ func (c *Cluster) SetSchemaVer(schemaVer string) {
 	c.schemaVer = schemaVer
 }
 
+// 依次启动尚未 running 的 Component，任一 run 失败则立即返回。
 func (c *Cluster) Run() error {
 	for _, component := range c.components {
 		if component.running {
@@ -238,6 +245,7 @@ func (c *Cluster) Cleanup() error {
 	return c.stop(true)
 }
 
+// 停止所有组件、等待 waitGroup，可选删除临时目录与配置文件。
 func (c *Cluster) stop(cleanupFiles bool) error {
 	_, cancelFunc := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancelFunc()
@@ -290,6 +298,7 @@ func (c *Cluster) AddComponent(name string, flags ...string) *Component {
 	return component
 }
 
+// Component 表示集群内单个 Loki 进程实例及其配置、数据路径与运行状态。
 type Component struct {
 	loki    *loki.Loki
 	name    string
@@ -367,6 +376,7 @@ func (c *Component) writeConfig() error {
 }
 
 // MergedConfig merges the base config template with any additional config that has been provided
+// 合并基础模板、schema period 片段与 extraConfigs 为最终 YAML 字节。
 func (c *Component) MergedConfig() ([]byte, error) {
 	var sb bytes.Buffer
 
@@ -413,6 +423,7 @@ func (c *Component) MergedConfig() ([]byte, error) {
 	return merged, nil
 }
 
+// 写配置、DynamicUnmarshal、New+Run，轮询 /ready 直至 HTTP 200 或启动失败。
 func (c *Component) run() error {
 	c.running = true
 
@@ -522,6 +533,7 @@ type runtimeConfigValues struct {
 	TenantLimits map[string]*validation.Limits `yaml:"overrides"`
 }
 
+// 将 per-tenant limits 写入 overrides 文件，供 runtime 热加载。
 func (c *Component) SetTenantLimits(tenant string, limits validation.Limits) error {
 	rcv := runtimeConfigValues{}
 	rcv.TenantLimits = c.loki.TenantLimits.AllByUserID()
@@ -547,6 +559,7 @@ func (c *Component) GetTenantLimits(tenant string) validation.Limits {
 	return *limits
 }
 
+// 在 127.0.0.1 随机端口启动 httptest 服务，供 ruler remote write 测试。
 func NewRemoteWriteServer(handler *http.HandlerFunc) *httptest.Server {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

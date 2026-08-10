@@ -1,5 +1,8 @@
 package main
 
+// Loki 轻量健康检查：在完整配置解析前拦截 -health 标志，
+// 对 /ready 端点发起 HTTP GET 并返回 0/1 退出码供容器探针使用。
+
 import (
 	"fmt"
 	"net/http"
@@ -14,6 +17,7 @@ const (
 	healthTimeout    = 5 * time.Second
 )
 
+// 扫描 argv 是否含 -health，供 main 在加载配置前短路退出。
 // CheckHealth checks if args contain the -health flag
 func CheckHealth(args []string) bool {
 	pattern := regexp.MustCompile(`^-+` + healthFlag + `$`)
@@ -25,6 +29,7 @@ func CheckHealth(args []string) bool {
 	return false
 }
 
+// 带超时请求 ready URL，状态 200 打印 healthy 否则返回错误码 1。
 // RunHealthCheck performs a health check against the /ready endpoint
 // Returns exit code 0 if healthy, 1 if unhealthy
 func RunHealthCheck(args []string) int {
@@ -51,6 +56,7 @@ func RunHealthCheck(args []string) int {
 	return 1
 }
 
+// 支持 -health.url= 或 -health.url <url> 两种形式，默认 localhost:3100。
 // getHealthURL extracts the URL from args or returns default
 // Looks for -health.url=<url> or -health.url <url>
 func getHealthURL(args []string) string {

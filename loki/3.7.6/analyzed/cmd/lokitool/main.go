@@ -1,5 +1,8 @@
 package main
 
+// lokitool CLI 入口：注册 rule 与 audit 管理子命令及 version 查询，
+// 封装 pkg/tool/commands 中对 Loki 规则与审计日志的操作。
+
 import (
 	"fmt"
 	"os"
@@ -16,6 +19,7 @@ var (
 	auditCommand commands.AuditCommand
 )
 
+// 创建 kingpin 应用，挂载 RuleCommand、AuditCommand 后解析命令行。
 func main() {
 	app := kingpin.New("lokitool", "A command-line tool to manage Loki.")
 	ruleCommand.Register(app)

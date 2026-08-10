@@ -1,5 +1,8 @@
 package client
 
+// 集成测试 HTTP 客户端：为每个请求注入 X-Scope-OrgID 与 Basic Auth，
+// 封装 push、query_range、tail、flush 及 delete API 供 e2e 测试调用。
+
 import (
 	"bytes"
 	"context"
@@ -30,6 +33,7 @@ import (
 
 const requestTimeout = 30 * time.Second
 
+// roundTripper 在 RoundTrip 中统一附加租户头、认证与可选自定义头。
 type roundTripper struct {
 	instanceID    string
 	token         string
@@ -62,6 +66,7 @@ func (n InjectHeadersOption) Type() string {
 	return "headerinject"
 }
 
+// Client 持有 baseURL 与 httpClient，Now 字段供 instant 查询默认时间点。
 // Client is a HTTP client that adds basic auth and scope
 type Client struct {
 	Now time.Time
@@ -72,6 +77,7 @@ type Client struct {
 }
 
 // NewLogsClient creates a new client
+// 构造带 roundTripper 的 Client，支持 InjectHeadersOption 注入额外头。
 func New(instanceID, token, baseURL string, opts ...Option) *Client {
 	rt := &roundTripper{
 		instanceID: instanceID,
@@ -121,6 +127,7 @@ type stream struct {
 }
 
 // pushLogLine creates a new logline
+// 组装 Loki push JSON（stream+values），POST 到 /loki/api/v1/push。
 func (c *Client) pushLogLine(line string, timestamp time.Time, structuredMetadata labels.Labels, extraLabelList ...map[string]string) error {
 	apiEndpoint := fmt.Sprintf("%s/loki/api/v1/push", c.baseURL)
 
@@ -178,6 +185,7 @@ func (c *Client) pushLogLine(line string, timestamp time.Time, structuredMetadat
 }
 
 // pushOTLPLogLine creates a new logline
+// 用 plog/plogotlp 构造 OTLP 日志批次，POST 到 /otlp/v1/logs。
 func (c *Client) pushOTLPLogLine(line string, timestamp time.Time, logAttributes map[string]any) error {
 	apiEndpoint := fmt.Sprintf("%s/otlp/v1/logs", c.baseURL)
 
@@ -374,6 +382,7 @@ func (e *Entry) UnmarshalJSON(data []byte) error {
 	return err
 }
 
+// StreamValues 对应 LogQL streams 结果中单个流的标签与 [ts,line,metadata] 条目。
 // StreamValues holds a label key value pairs for the Stream and a list of a list of values
 type StreamValues struct {
 	Stream map[string]string
@@ -414,6 +423,7 @@ func (a *VectorValues) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// DataType.UnmarshalJSON 按 resultType 分支反序列化 streams/matrix/vector。
 // DataType holds the result type and a list of StreamValues
 type DataType struct {
 	ResultType    string
@@ -490,6 +500,7 @@ func (c *Client) RunRangeQuery(ctx context.Context, query string, extraHeaders .
 }
 
 // RunRangeQuery runs a query and returns an error if anything went wrong
+// 带超时的 query_range GET，解析 JSON 为 streams/matrix/vector 结果。
 func (c *Client) RunRangeQueryWithStartEnd(ctx context.Context, query string, start, end time.Time, extraHeaders ...Header) (*Response, error) {
 	ctx, cancelFunc := context.WithTimeout(ctx, requestTimeout)
 	defer cancelFunc()
@@ -710,6 +721,7 @@ type TailResult struct {
 	Err      error
 }
 
+// 通过 logcli LiveTailQueryConn 建立 WebSocket，goroutine 持续推送 TailResponse。
 func (c *Client) Tail(ctx context.Context, query string, out chan TailResult) (*websocket.Conn, error) {
 	client := &logcli.DefaultClient{
 		Address:   c.baseURL,

@@ -1,5 +1,8 @@
 package main
 
+// dataobj-inspect 的 dump 子命令：遍历 data object 各 section，
+// 按租户与 stream ID 过滤后输出 streams/logs 段的标签与可选日志行。
+
 import (
 	"context"
 	"errors"
@@ -16,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/streams"
 )
 
+// dumpCommand 持有 CLI 参数，负责将 data object 内容格式化打印到终端。
 // dumpCommand dumps the contents of the data object.
 type dumpCommand struct {
 	files      *[]string
@@ -31,6 +35,7 @@ func (cmd *dumpCommand) run(_ *kingpin.ParseContext) error {
 	return nil
 }
 
+// 打开本地文件，解析为 dataobj.Object 后逐 section 分发到对应 dump 函数。
 func (cmd *dumpCommand) dumpFile(name string) {
 	f, err := os.Open(name)
 	if err != nil {
@@ -60,6 +65,7 @@ func (cmd *dumpCommand) dumpFile(name string) {
 	}
 }
 
+// 读取 streams section 行数据，打印 stream ID 与 Prometheus 风格标签键值对。
 func (cmd *dumpCommand) dumpStreamsSection(ctx context.Context, offset int, sec *dataobj.Section) {
 	streamsSec, err := streams.Open(ctx, sec)
 	if err != nil {
@@ -94,6 +100,7 @@ func (cmd *dumpCommand) dumpStreamsSection(ctx context.Context, offset int, sec 
 	}
 }
 
+// 读取 logs section 记录，可选 --print-lines 将日志正文按行宽折行输出。
 func (cmd *dumpCommand) dumpLogsSection(ctx context.Context, offset int, sec *dataobj.Section) {
 	logsSec, err := logs.Open(ctx, sec)
 	if err != nil {
@@ -137,6 +144,7 @@ func (cmd *dumpCommand) dumpLogsSection(ctx context.Context, offset int, sec *da
 	}
 }
 
+// 向 kingpin 应用注册 dump 命令及 tenant、stream、print-lines 等标志位。
 func addDumpCommand(app *kingpin.Application) {
 	cmd := &dumpCommand{}
 	dump := app.Command("dump", "Dump the contents of the data object.").Action(cmd.run)

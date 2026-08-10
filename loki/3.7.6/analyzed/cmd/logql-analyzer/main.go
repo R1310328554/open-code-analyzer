@@ -1,5 +1,8 @@
 package main
 
+// logql-analyzer 独立 HTTP 服务：暴露 /api/logql-analyze 供前端
+// 提交 LogQL 进行语法分析，附带 CORS 与 /ready 健康检查端点。
+
 import (
 	"flag"
 	"net/http"
@@ -13,6 +16,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// 解析 dskit server 配置、初始化日志并启动 LogQL 分析 HTTP 服务。
 func main() {
 	cfg := getConfig()
 	util_log.InitLogger(&server.Config{
@@ -30,6 +34,7 @@ func main() {
 	}
 }
 
+// 从标准 flag 包注册并解析 server.Config 监听地址与日志级别等。
 func getConfig() server.Config {
 	cfg := server.Config{}
 	cfg.RegisterFlags(flag.CommandLine)

@@ -1,5 +1,8 @@
 package main
 
+// stats 子命令：汇总 data object 压缩大小、section 数量、租户分布
+// 及 streams/logs 各列的压缩比与行数等统计信息。
+
 import (
 	"context"
 	"errors"
@@ -16,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/tools"
 )
 
+// statsCommand 对每个输入文件调用 tools.ReadStats 并打印人类可读摘要。
 // statsCommand prints stats for each data object in files.
 type statsCommand struct {
 	files *[]string
@@ -28,6 +32,7 @@ func (cmd *statsCommand) run(_ *kingpin.ParseContext) error {
 	return nil
 }
 
+// printStats 打开文件并委托 printObjStats 输出对象级与各 section 级指标。
 // summarizeFile prints stats for the data object file.
 func (cmd *statsCommand) printStats(name string) {
 	f, err := os.Open(name)
@@ -46,6 +51,7 @@ func (cmd *statsCommand) printStats(name string) {
 	cmd.printObjStats(context.TODO(), obj)
 }
 
+// 打印 p50/p95/p99 等分位数，再逐 section 调用专用 stats 打印函数。
 func (cmd *statsCommand) printObjStats(ctx context.Context, obj *dataobj.Object) {
 	stats, err := tools.ReadStats(ctx, obj)
 	if err != nil {
@@ -83,6 +89,7 @@ func (cmd *statsCommand) printObjStats(ctx context.Context, obj *dataobj.Object)
 	}
 }
 
+// 展示 streams section 各列名称、类型、填充行数及压缩/未压缩字节数。
 func (cmd *statsCommand) printStreamsSectionStats(ctx context.Context, offset int, sec *dataobj.Section) {
 	streamsSec, err := streams.Open(ctx, sec)
 	if err != nil {
@@ -114,6 +121,7 @@ func (cmd *statsCommand) printStreamsSectionStats(ctx context.Context, offset in
 	}
 }
 
+// 展示 logs section 列级统计，含压缩算法后缀截取展示。
 func (cmd *statsCommand) printLogsSectionStats(ctx context.Context, offset int, sec *dataobj.Section) {
 	logsSec, err := logs.Open(ctx, sec)
 	if err != nil {

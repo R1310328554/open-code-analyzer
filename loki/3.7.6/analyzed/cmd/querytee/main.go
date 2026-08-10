@@ -1,5 +1,8 @@
 package main
 
+// query-tee 代理入口：将 Loki 读写 API 双发到多个后端并比较响应，
+// 用于升级验证；同时暴露 metrics 端口与可选分布式追踪。
+
 import (
 	"flag"
 	"os"
@@ -19,6 +22,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Config 聚合 metrics 端口、日志级别、ProxyConfig 与 tracing 配置。
 type Config struct {
 	ServerMetricsPort int
 	LogLevel          log.Level
@@ -86,6 +90,7 @@ func exit(code int) {
 	os.Exit(code)
 }
 
+// 注册 query_range/query/labels/series 等读路由及样本比较器。
 func lokiReadRoutes(cfg Config) []querytee.Route {
 	samplesComparator := comparator.NewSamplesComparator(comparator.SampleComparisonOptions{
 		Tolerance:         cfg.ProxyConfig.ValueComparisonTolerance,
@@ -108,6 +113,7 @@ func lokiReadRoutes(cfg Config) []querytee.Route {
 	}
 }
 
+// 注册 push 写路由，写路径不做响应体逐字节比对。
 func lokiWriteRoutes() []querytee.Route {
 	return []querytee.Route{
 		{Path: constants.PathLokiPush, RouteName: "api_v1_push", Methods: []string{"POST"}, ResponseComparator: nil},

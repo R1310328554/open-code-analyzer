@@ -1,5 +1,8 @@
 package main
 
+// logcli 命令行入口：注册 query、labels、series、stats、volume、
+// detected-fields、delete 等子命令，解析全局标志后分发到 pkg/logcli 实现。
+
 import (
 	"fmt"
 	"io"
@@ -356,6 +359,7 @@ Example:
 	deleteCancelQuery = newDeleteCancelQuery(deleteCancelCmd)
 )
 
+// 初始化日志与可选 pprof，按 kingpin 解析结果路由到对应查询或管理子命令。
 func main() {
 	log.SetOutput(os.Stderr)
 
@@ -535,6 +539,7 @@ func main() {
 	}
 }
 
+// fmt 子命令：从 stdin 读取 LogQL 表达式并用 syntax.Prettify 格式化输出。
 func formatLogQL(r io.Reader, w io.Writer) error {
 	b, err := io.ReadAll(r)
 	if err != nil {
@@ -551,6 +556,7 @@ func formatLogQL(r io.Reader, w io.Writer) error {
 	return nil
 }
 
+// 构造 DefaultClient 并注册 addr、TLS、org-id、重试与代理等全局 HTTP 标志。
 func newQueryClient(app *kingpin.Application) client.Client {
 
 	client := &client.DefaultClient{
@@ -653,6 +659,7 @@ func newSeriesQuery(cmd *kingpin.CmdClause) *seriesquery.SeriesQuery {
 	return q
 }
 
+// 为 range 或 instant 查询绑定时间窗口、并行下载、limit 等 kingpin 参数。
 func newQuery(instant bool, cmd *kingpin.CmdClause) *query.Query {
 	// calculate query range from cli params
 	var now, from, to string
@@ -716,6 +723,7 @@ func newQuery(instant bool, cmd *kingpin.CmdClause) *query.Query {
 	return q
 }
 
+// 解析 RFC3339Nano 时间字符串，空串则返回默认回溯窗口边界。
 func mustParse(t string, defaultTime time.Time) time.Time {
 	if t == "" {
 		return defaultTime
@@ -730,6 +738,7 @@ func mustParse(t string, defaultTime time.Time) time.Time {
 	return ret
 }
 
+// stdin 模式下本地计算默认 step，与服务端 params.go 中逻辑保持一致。
 // This method is to duplicate the same logic of `step` value from `start` and `end`
 // done on the loki server side.
 // https://github.com/grafana/loki/blob/main/pkg/loghttp/params.go
@@ -738,6 +747,7 @@ func defaultQueryRangeStep(start, end time.Time) time.Duration {
 	return time.Duration(step) * time.Second
 }
 
+// 绑定 stats 子命令的时间范围与 LogQL 查询参数（需 TSDB 索引）。
 func newStatsQuery(cmd *kingpin.CmdClause) *index.StatsQuery {
 	// calculate query range from cli params
 	var from, to string
@@ -766,6 +776,7 @@ func newStatsQuery(cmd *kingpin.CmdClause) *index.StatsQuery {
 	return q
 }
 
+// 配置 volume 或 volume_range 子命令的标签聚合与 step 参数。
 func newVolumeQuery(rangeQuery bool, cmd *kingpin.CmdClause) *volume.Query {
 	// calculate query range from cli params
 	var from, to string
@@ -802,6 +813,7 @@ func newVolumeQuery(rangeQuery bool, cmd *kingpin.CmdClause) *volume.Query {
 	return q
 }
 
+// detected-fields 子命令：限制字段数与每子查询行数以控制资源消耗。
 func newDetectedFieldsQuery(cmd *kingpin.CmdClause) *detected.FieldsQuery {
 	// calculate query range from cli params
 	var fieldName, from, to string
@@ -844,6 +856,7 @@ func newDetectedFieldsQuery(cmd *kingpin.CmdClause) *detected.FieldsQuery {
 	return q
 }
 
+// delete create 子命令：按 LogQL 与时间范围创建日志删除请求。
 func newDeleteCreateQuery(cmd *kingpin.CmdClause) *delete.Query {
 	var from, to string
 	var since time.Duration

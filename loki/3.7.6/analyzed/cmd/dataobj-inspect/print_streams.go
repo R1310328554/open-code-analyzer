@@ -1,5 +1,8 @@
 package main
 
+// print-streams 子命令：从 logs section 读取日志行，
+// 按 --stream-id 过滤（未指定则输出全部）并逐行打印到 stdout。
+
 import (
 	"context"
 	"errors"
@@ -13,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/logs"
 )
 
+// printStreamsCommand 仅输出原始日志正文，不含标签或时间戳格式化。
 // printStreamsCommand prints the streams in the data object.
 type printStreamsCommand struct {
 	files     *[]string
@@ -43,6 +47,7 @@ func (cmd *printStreamsCommand) printStreamsInFile(name string) {
 	cmd.printStreams(context.TODO(), dataObj)
 }
 
+// 遍历 logs section 行读取器，匹配 stream ID 集合后 fmt.Printf 每行内容。
 func (cmd *printStreamsCommand) printStreams(ctx context.Context, dataObj *dataobj.Object) {
 	var (
 		tmp            = make([]logs.Record, 512)
@@ -80,6 +85,7 @@ func (cmd *printStreamsCommand) printStreams(ctx context.Context, dataObj *datao
 	}
 }
 
+// 注册 print-streams 命令，--stream-id 可重复指定多个流。
 func addPrintStreamsCommand(app *kingpin.Application) {
 	cmd := &printStreamsCommand{}
 	dump := app.Command("print-streams", "Prints the streams in the data object.").Action(cmd.run)

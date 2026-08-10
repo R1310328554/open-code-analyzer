@@ -1,5 +1,8 @@
 package main
 
+// list-streams 子命令：扫描 data object 中所有 streams section，
+// 汇总各租户 stream 的时间范围与标签，按租户与 ID 排序后输出。
+
 import (
 	"cmp"
 	"context"
@@ -18,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/streams"
 )
 
+// listStreamsCommand 遍历文件内 streams 段，去重后列出元数据摘要。
 // listStreamsCommand lists the streams in the data object.
 type listStreamsCommand struct {
 	files  *[]string
@@ -48,6 +52,7 @@ func (cmd *listStreamsCommand) listStreamsInFile(name string) {
 	cmd.listStreams(context.TODO(), dataObj)
 }
 
+// 用 map 按 tenant+id 去重，SortFunc 排序后打印起止时间与 labels 字符串。
 func (cmd *listStreamsCommand) listStreams(ctx context.Context, dataObj *dataobj.Object) {
 	type key struct {
 		tenant string
@@ -96,6 +101,7 @@ func (cmd *listStreamsCommand) listStreams(ctx context.Context, dataObj *dataobj
 	}
 }
 
+// 注册 list-streams 命令，支持 --tenant 过滤指定租户。
 func addListStreamsCommand(app *kingpin.Application) {
 	cmd := &listStreamsCommand{}
 	dump := app.Command("list-streams", "Lists all streams in the data object.").Action(cmd.run)
