@@ -20,7 +20,10 @@ import io.netty.handler.codec.socksx.SocksMessage;
 
 /**
  * A tag interface that all SOCKS4a protocol messages implement.
+ *
+ * <p>SOCKS4/4a 协议消息的标记接口，继承 {@link SocksMessage} 以统一版本与解码结果语义。
+ * 具体类型为 {@link Socks4CommandRequest} 或 {@link Socks4CommandResponse}。</p>
  */
 public interface Socks4Message extends SocksMessage {
-    // Tag interface
+    // Tag interface — 无额外方法，仅用于类型分层与 pipeline 消息分发
 }

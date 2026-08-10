@@ -21,10 +21,14 @@ import io.netty.handler.codec.socksx.SocksVersion;
 
 /**
  * An abstract {@link Socks5Message}.
+ *
+ * <p>SOCKS5 消息的抽象基类：固定协议版本为 {@link SocksVersion#SOCKS5}（线格式 VER=0x05），
+ * 并继承 {@link AbstractSocksMessage} 的解码结果与引用计数语义。</p>
  */
 public abstract class AbstractSocks5Message extends AbstractSocksMessage implements Socks5Message {
     @Override
     public final SocksVersion version() {
+        // RFC 1928 规定 SOCKS5 版本字节为 0x05
         return SocksVersion.SOCKS5;
     }
 }

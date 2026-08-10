@@ -27,6 +27,9 @@ import java.util.List;
 
 /**
  * The default {@link Socks5InitialRequest}.
+ *
+ * <p>SOCKS5 方法协商请求（RFC 1928 第一阶段）：客户端列出支持的 {@link Socks5AuthMethod}，
+ * 服务端从中择一在 {@link Socks5InitialResponse} 中回复。列表不可为空；遇 null 元素即停止收集。</p>
  */
 public class DefaultSocks5InitialRequest extends AbstractSocks5Message implements Socks5InitialRequest {
 
@@ -38,7 +41,7 @@ public class DefaultSocks5InitialRequest extends AbstractSocks5Message implement
         List<Socks5AuthMethod> list = new ArrayList<Socks5AuthMethod>(authMethods.length);
         for (Socks5AuthMethod m: authMethods) {
             if (m == null) {
-                break;
+                break; // varargs 尾部 null 视为结束
             }
             list.add(m);
         }

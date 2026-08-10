@@ -21,6 +21,9 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * The default {@link Socks5PasswordAuthRequest}.
+ *
+ * <p>RFC 1929 用户名/密码子协商请求：VER(1) + ULEN + UNAME + PLEN + PASSWD。
+ * 用户名与密码长度均不得超过 255 字节；{@link #toString()} 隐藏密码明文。</p>
  */
 public class DefaultSocks5PasswordAuthRequest extends AbstractSocks5Message implements Socks5PasswordAuthRequest {
 
@@ -31,6 +34,7 @@ public class DefaultSocks5PasswordAuthRequest extends AbstractSocks5Message impl
         ObjectUtil.checkNotNull(username, "username");
         ObjectUtil.checkNotNull(password, "password");
 
+        // RFC 1929：单字节长度前缀，故字符串 UTF-8 长度上限 255
         if (username.length() > 255) {
             throw new IllegalArgumentException("username: **** (expected: less than 256 chars)");
         }

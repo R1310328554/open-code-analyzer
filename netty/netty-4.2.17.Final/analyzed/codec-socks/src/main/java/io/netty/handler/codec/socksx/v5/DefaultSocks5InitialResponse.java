@@ -21,6 +21,10 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * The default {@link Socks5InitialResponse}.
+ *
+ * <p>SOCKS5 方法协商应答：服务端从客户端提供的认证方法中选定 {@link Socks5AuthMethod}。
+ * 若为 {@link Socks5AuthMethod#NO_AUTH} 则直接进入命令阶段；若为 {@code USERNAME_PASSWORD}
+ * 等则需后续子协商。</p>
  */
 public class DefaultSocks5InitialResponse extends AbstractSocks5Message implements Socks5InitialResponse {
 

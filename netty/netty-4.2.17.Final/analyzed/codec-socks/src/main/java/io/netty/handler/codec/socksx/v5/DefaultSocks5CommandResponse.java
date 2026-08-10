@@ -24,6 +24,9 @@ import java.net.IDN;
 
 /**
  * The default {@link Socks5CommandResponse}.
+ *
+ * <p>SOCKS5 命令应答的默认实现，携带 REP 状态与可选 BND.ADDR/BND.PORT（绑定地址）。
+ * 失败应答常仅含状态与地址类型占位；BIND/UDP ASSOCIATE 成功时需返回有效绑定端点。</p>
  */
 public final class DefaultSocks5CommandResponse extends AbstractSocks5Message implements Socks5CommandResponse {
 
@@ -32,6 +35,7 @@ public final class DefaultSocks5CommandResponse extends AbstractSocks5Message im
     private final String bndAddr;
     private final int bndPort;
 
+    /** 仅状态与地址类型的简化构造（无绑定地址/端口，用于失败或占位应答）。 */
     public DefaultSocks5CommandResponse(Socks5CommandStatus status, Socks5AddressType bndAddrType) {
         this(status, bndAddrType, null, 0);
     }
@@ -43,6 +47,7 @@ public final class DefaultSocks5CommandResponse extends AbstractSocks5Message im
         ObjectUtil.checkNotNull(bndAddrType, "bndAddrType");
 
         if (bndAddr != null) {
+            // 与 CommandRequest 相同：按 ATYP 校验 BND 地址
             if (bndAddrType == Socks5AddressType.IPv4) {
                 if (!NetUtil.isValidIpV4Address(bndAddr)) {
                     throw new IllegalArgumentException("bndAddr: " + bndAddr + " (expected: a valid IPv4 address)");

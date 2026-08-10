@@ -25,12 +25,16 @@ import io.netty.util.NetUtil;
 
 /**
  * Encodes a {@link Socks4CommandResponse} into a {@link ByteBuf}.
+ *
+ * <p>将 {@link Socks4CommandResponse} 编码为 8 字节 SOCKS4 应答：VN(0) + CD + DSTPORT + DSTIP。
+ * {@code dstAddr} 为 null 时写入全零 IP（CONNECT 成功时的常见占位）。</p>
  */
 @Sharable
 public final class Socks4ServerEncoder extends MessageToByteEncoder<Socks4CommandResponse> {
 
     public static final Socks4ServerEncoder INSTANCE = new Socks4ServerEncoder();
 
+    /** CONNECT 成功且无需返回绑定地址时使用的 DSTIP 占位。 */
     private static final byte[] IPv4_HOSTNAME_ZEROED = { 0x00, 0x00, 0x00, 0x00 };
 
     private Socks4ServerEncoder() {
@@ -39,7 +43,7 @@ public final class Socks4ServerEncoder extends MessageToByteEncoder<Socks4Comman
 
     @Override
     protected void encode(ChannelHandlerContext ctx, Socks4CommandResponse msg, ByteBuf out) throws Exception {
-        out.writeByte(0);
+        out.writeByte(0); // 应答版本字节恒为 0
         out.writeByte(msg.status().byteValue());
         ByteBufUtil.writeShortBE(out, msg.dstPort());
         out.writeBytes(msg.dstAddr() == null? IPv4_HOSTNAME_ZEROED

@@ -24,6 +24,10 @@ import java.net.IDN;
 
 /**
  * The default {@link Socks5CommandRequest}.
+ *
+ * <p>SOCKS5 命令请求（CONNECT/BIND/UDP ASSOCIATE）的默认不可变实现。
+ * 构造时按 {@link Socks5AddressType} 校验并规范化 {@code dstAddr}（域名转 punycode），
+ * 端口范围 0~65535。</p>
  */
 public final class DefaultSocks5CommandRequest extends AbstractSocks5Message implements Socks5CommandRequest {
 
@@ -39,6 +43,7 @@ public final class DefaultSocks5CommandRequest extends AbstractSocks5Message imp
         ObjectUtil.checkNotNull(dstAddrType, "dstAddrType");
         ObjectUtil.checkNotNull(dstAddr, "dstAddr");
 
+        // 按 ATYP 校验目标地址格式，与 RFC 1928 地址编码一致
         if (dstAddrType == Socks5AddressType.IPv4) {
             if (!NetUtil.isValidIpV4Address(dstAddr)) {
                 throw new IllegalArgumentException("dstAddr: " + dstAddr + " (expected: a valid IPv4 address)");

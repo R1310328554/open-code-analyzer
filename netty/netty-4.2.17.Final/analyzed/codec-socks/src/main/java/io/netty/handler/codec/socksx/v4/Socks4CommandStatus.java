@@ -19,14 +19,24 @@ import io.netty.util.internal.ObjectUtil;
 
 /**
  * The status of {@link Socks4CommandResponse}.
+ *
+ * <p>SOCKS4 应答 CD 字段取值。标准值 0x5a~0x5d 对应成功、拒绝、ident 不可达、ident 认证失败；
+ * 未知字节会包装为 {@code UNKNOWN(n)} 实例以便调试。</p>
  */
 public class Socks4CommandStatus implements Comparable<Socks4CommandStatus> {
 
+    /** 请求已授予，代理将建立或已建立连接（0x5a）。 */
     public static final Socks4CommandStatus SUCCESS = new Socks4CommandStatus(0x5a, "SUCCESS");
+    /** 代理拒绝或本地规则导致失败（0x5b）。 */
     public static final Socks4CommandStatus REJECTED_OR_FAILED = new Socks4CommandStatus(0x5b, "REJECTED_OR_FAILED");
+    /** 无法连接 identd 服务（0x5c）。 */
     public static final Socks4CommandStatus IDENTD_UNREACHABLE = new Socks4CommandStatus(0x5c, "IDENTD_UNREACHABLE");
+    /** identd 报告的用户 ID 与请求 USERID 不一致（0x5d）。 */
     public static final Socks4CommandStatus IDENTD_AUTH_FAILURE = new Socks4CommandStatus(0x5d, "IDENTD_AUTH_FAILURE");
 
+    /**
+     * 将应答 CD 字节映射为已知常量；非标准值返回带 {@code UNKNOWN} 名称的新实例。
+     */
     public static Socks4CommandStatus valueOf(byte b) {
         switch (b) {
         case 0x5a:
@@ -55,10 +65,12 @@ public class Socks4CommandStatus implements Comparable<Socks4CommandStatus> {
         this.byteValue = (byte) byteValue;
     }
 
+    /** 返回协议线格式中的 CD 字节。 */
     public byte byteValue() {
         return byteValue;
     }
 
+    /** 是否表示代理已接受请求（仅 0x5a 为 true）。 */
     public boolean isSuccess() {
         return byteValue == 0x5a;
     }

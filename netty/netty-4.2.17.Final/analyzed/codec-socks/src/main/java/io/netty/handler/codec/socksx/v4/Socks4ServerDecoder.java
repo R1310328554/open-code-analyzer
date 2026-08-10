@@ -34,11 +34,17 @@ import java.util.List;
  * On successful decode, this decoder will forward the received data to the next handler, so that
  * other handler can remove this decoder later.  On failed decode, this decoder will discard the
  * received data, so that other handler closes the connection later.
+ *
+ * <p>SOCKS4 服务端解码器：多阶段状态机解析客户端命令请求。
+ * 先读固定头（VN/CD/PORT/IP），再读 NUL 结尾 USERID；若 DSTIP 为 0.0.0.x 占位则进入 SOCKS4a
+ * 分支读取域名。成功后透传后续隧道字节；失败时产出带 {@link DecoderResult} 的占位请求。</p>
  */
 public class Socks4ServerDecoder extends ReplayingDecoder<State> {
 
+    /** SOCKS4 可变长字符串字段（USERID、域名）最大长度。 */
     private static final int MAX_FIELD_LENGTH = 255;
 
+    /** 解码阶段：固定头 → USERID → 可选域名 → 成功透传 / 失败丢弃。 */
     @UnstableApi
     public enum State {
         START,
@@ -79,6 +85,7 @@ public class Socks4ServerDecoder extends ReplayingDecoder<State> {
             }
             case READ_DOMAIN: {
                 // Check for Socks4a protocol marker 0.0.0.x
+                // 0.0.0.0 为 BIND 合法地址；0.0.0.1~254 表示 USERID 后还有域名
                 if (!"0.0.0.0".equals(dstAddr) && dstAddr.startsWith("0.0.0.")) {
                     dstAddr = readString("dstAddr", in);
                 }
@@ -102,6 +109,7 @@ public class Socks4ServerDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 用已解析的部分字段构造失败占位请求，便于上层统一处理 {@link DecoderResult}。 */
     private void fail(List<Object> out, Exception cause) {
         if (!(cause instanceof DecoderException)) {
             cause = new DecoderException(cause);
@@ -121,6 +129,8 @@ public class Socks4ServerDecoder extends ReplayingDecoder<State> {
 
     /**
      * Reads a variable-length NUL-terminated string as defined in SOCKS4.
+     *
+     * <p>读取 SOCKS4 NUL 终止字符串；超过 {@link #MAX_FIELD_LENGTH} 未遇 NUL 则抛错。</p>
      */
     private static String readString(String fieldName, ByteBuf in) {
         int length = in.bytesBefore(MAX_FIELD_LENGTH + 1, (byte) 0);
