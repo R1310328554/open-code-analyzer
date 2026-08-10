@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:21:19Z",
-  "files": [
-    "clients/pkg/promtail/targets/journal/metrics.go",
-    "clients/pkg/promtail/targets/kafka/authentication.go",
-    "clients/pkg/promtail/targets/kafka/consumer.go",
-    "clients/pkg/promtail/targets/kafka/formatter.go",
-    "clients/pkg/promtail/targets/kafka/parser.go",
-    "clients/pkg/promtail/targets/kafka/target.go",
-    "clients/pkg/promtail/targets/kafka/target_syncer.go",
-    "clients/pkg/promtail/targets/kafka/targetmanager.go",
-    "clients/pkg/promtail/targets/kafka/topics.go",
-    "clients/pkg/promtail/targets/lokipush/pushtarget.go",
-    "clients/pkg/promtail/targets/lokipush/pushtargetmanager.go",
-    "clients/pkg/promtail/targets/manager.go",
-    "clients/pkg/promtail/targets/serverutils/config.go",
-    "clients/pkg/promtail/targets/stdin/stdin_target_manager.go",
-    "clients/pkg/promtail/targets/syslog/metrics.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1432,
-  "done": 105
+  "done": 120
 }
