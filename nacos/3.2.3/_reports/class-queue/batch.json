@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T02:00:58Z",
-  "files": [
-    "ai/src/main/java/com/alibaba/nacos/ai/controller/PromptClientController.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/controller/SkillAdminController.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/controller/SkillClientController.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/enums/ExternalDataTypeEnum.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/enums/McpImportResultStatusEnum.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/event/PromptDownloadEvent.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/event/SkillDownloadEvent.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/AiResourceFilterableForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/a2a/admin/AgentCardForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/a2a/admin/AgentCardUpdateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/a2a/admin/AgentForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/a2a/admin/AgentListForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecBizTagsUpdateForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecDetailForm.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/form/agentspecs/admin/AgentSpecDraftCreateForm.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2477,
-  "done": 45
+  "done": 60
 }
