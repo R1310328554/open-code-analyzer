@@ -17,6 +17,8 @@
 package com.alibaba.nacos.common.utils;
 
 /**
+ * HTTP 方法名常量：标准 REST 动词及 Nacos 自定义的 GET-LARGE、DELETE_LARGE
+ * （参数过大时放 body 而非 URL）。
  * Http method constants.
  *
  * @author nkorange
@@ -27,11 +29,11 @@ public class HttpMethod {
     private HttpMethod() {
     }
     
+    /** 标准 GET 方法 */
     public static final String GET = "GET";
     
     /**
-     * this is only use in nacos, Custom request type, essentially a GET request, Mainly used for GET request parameters
-     * are relatively large,can not be placed on the URL, so it needs to be placed in the body.
+     * Nacos 自定义：本质为 GET，参数过大无法放 URL 时放请求体。
      */
     public static final String GET_LARGE = "GET-LARGE";
     
@@ -46,8 +48,7 @@ public class HttpMethod {
     public static final String DELETE = "DELETE";
     
     /**
-     * this is only use in nacos, Custom request type, essentially a DELETE request, Mainly used for DELETE request
-     * parameters are relatively large, can not be placed on the URL, so it needs to be placed in the body.
+     * Nacos 自定义：本质为 DELETE，参数过大时放请求体。
      */
     public static final String DELETE_LARGE = "DELETE_LARGE";
     

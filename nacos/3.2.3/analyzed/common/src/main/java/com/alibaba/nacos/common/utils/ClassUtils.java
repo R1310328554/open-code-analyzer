@@ -38,6 +38,9 @@ import java.util.Set;
 import static com.alibaba.nacos.api.exception.NacosException.SERVER_ERROR;
 
 /**
+ * 类加载与反射工具：扩展 {@link Class#forName(String)} 支持原始类型与数组名、
+ * 包装类型映射、默认 ClassLoader 解析及类名与资源路径互转；
+ * 静态缓存常用 Java 类型以加速远程反序列化。
  * Utils for Class.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -47,6 +50,7 @@ public final class ClassUtils {
     private ClassUtils() {
     }
     
+    /** Java 源码风格数组后缀，如 {@code String[]} */
     public static final String ARRAY_SUFFIX = "[]";
     
     private static final String INTERNAL_ARRAY_PREFIX = "[";
@@ -64,12 +68,14 @@ public final class ClassUtils {
     /**
      * Map with primitive wrapper type as key and corresponding primitive type as value, for example: Integer.class ->
      * int.class.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     private static final Map<Class<?>, Class<?>> PRIMITIVE_WRAPPER_TYPE_MAP =
         new IdentityHashMap<>(9);
     
     /**
      * Map with primitive type as key and corresponding wrapper type as value, for example: int.class -> Integer.class.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     private static final Map<Class<?>, Class<?>> PRIMITIVE_TYPE_TO_WRAPPER_MAP =
         new IdentityHashMap<>(9);
@@ -77,6 +83,7 @@ public final class ClassUtils {
     /**
      * Map with primitive type name as key and corresponding primitive type as value, for example: "int" ->
      * "int.class".
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     private static final Map<String, Class<?>> PRIMITIVE_TYPE_NAME_MAP = new HashMap<>(32);
     
@@ -85,6 +92,7 @@ public final class ClassUtils {
     /**
      * Map with common Java language class name as key and corresponding Class as value. Primarily for efficient
      * deserialization of remote invocations.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     private static final Map<String, Class<?>> COMMON_CLASS_CACHE = new HashMap<>(64);
     
@@ -99,7 +107,7 @@ public final class ClassUtils {
         PRIMITIVE_WRAPPER_TYPE_MAP.put(Short.class, short.class);
         PRIMITIVE_WRAPPER_TYPE_MAP.put(Void.class, void.class);
         
-        // Map entry iteration is less expensive to initialize than forEach with lambdas
+        // 遍历 Map 条目初始化比 forEach 更省开销
         for (Map.Entry<Class<?>, Class<?>> entry : PRIMITIVE_WRAPPER_TYPE_MAP.entrySet()) {
             PRIMITIVE_TYPE_TO_WRAPPER_MAP.put(entry.getValue(), entry.getKey());
             registerCommonClasses(entry.getKey());
@@ -134,6 +142,7 @@ public final class ClassUtils {
     
     /**
      * Register the given common classes with the ClassUtils cache.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     private static void registerCommonClasses(Class<?>... commonClasses) {
         for (Class<?> clazz : commonClasses) {
@@ -146,6 +155,7 @@ public final class ClassUtils {
      *
      * @param className String value for className.
      * @return class Instances of the class represent classes and interfaces.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static Class findClassByName(String className) {
         try {
@@ -162,6 +172,7 @@ public final class ClassUtils {
      * @param clazz Instances of the class represent classes and interfaces.
      * @param cls   Instances of the class represent classes and interfaces.
      * @return the value indicating whether objects of the type can be assigned to objects of this class.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static boolean isAssignableFrom(Class clazz, Class cls) {
         Objects.requireNonNull(cls, "cls");
@@ -173,6 +184,7 @@ public final class ClassUtils {
      *
      * @param cls Instances of the class represent classes and interfaces.
      * @return the name of the class or interface represented by this object.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static String getName(Class cls) {
         Objects.requireNonNull(cls, "cls");
@@ -184,6 +196,7 @@ public final class ClassUtils {
      *
      * @param obj Object instance.
      * @return className.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static String getName(Object obj) {
         Objects.requireNonNull(obj, "obj");
@@ -195,6 +208,7 @@ public final class ClassUtils {
      *
      * @param cls Instances of the class represent classes and interfaces.
      * @return The canonical name of the underlying class.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static String getCanonicalName(Class cls) {
         Objects.requireNonNull(cls, "cls");
@@ -206,6 +220,7 @@ public final class ClassUtils {
      *
      * @param obj Object instance.
      * @return The canonical name of the underlying class.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static String getCanonicalName(Object obj) {
         Objects.requireNonNull(obj, "obj");
@@ -217,6 +232,7 @@ public final class ClassUtils {
      *
      * @param cls Instances of the class represent classes and interfaces.
      * @return the simple name of the underlying class.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static String getSimpleName(Class cls) {
         Objects.requireNonNull(cls, "cls");
@@ -228,6 +244,7 @@ public final class ClassUtils {
      *
      * @param obj Object instance.
      * @return the simple name of the underlying class.
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static String getSimpleName(Object obj) {
         Objects.requireNonNull(obj, "obj");
@@ -245,6 +262,7 @@ public final class ClassUtils {
      * @throws ClassNotFoundException if the class was not found
      * @throws LinkageError           if the class file could not be loaded
      * @see Class#forName(String, boolean, ClassLoader)
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static Class<?> forName(String name, ClassLoader classLoader)
         throws ClassNotFoundException, LinkageError {
@@ -314,6 +332,7 @@ public final class ClassUtils {
      * @param name the name of the potentially primitive class
      * @return the primitive class, or {@code null} if the name does not denote a primitive class or primitive array
      * class
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     
     public static Class<?> resolvePrimitiveClassName(String name) {
@@ -339,6 +358,7 @@ public final class ClassUtils {
      * @return the default ClassLoader (only {@code null} if even the system ClassLoader isn't accessible)
      * @see Thread#getContextClassLoader()
      * @see ClassLoader#getSystemClassLoader()
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     
     public static ClassLoader getDefaultClassLoader() {
@@ -375,6 +395,7 @@ public final class ClassUtils {
      * @return a path which represents the package name
      * @see ClassLoader#getResource
      * @see Class#getResource
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static String classPackageAsResourcePath(Class<?> clazz) {
         if (clazz == null) {
@@ -394,6 +415,7 @@ public final class ClassUtils {
      *
      * @param className the fully qualified class name
      * @return the corresponding resource path, pointing to the class
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static String convertClassNameToResourcePath(String className) {
         Objects.requireNonNull(className, "Class name must not be null");
@@ -405,6 +427,7 @@ public final class ClassUtils {
      *
      * @param className the fully qualified class name
      * @return the corresponding resource path, pointing to the class
+      * <p>类加载与反射辅助；详见类级说明。</p>
      */
     public static String resourcePathToConvertClassName(String className) {
         Objects.requireNonNull(className, "Class name must not be null");

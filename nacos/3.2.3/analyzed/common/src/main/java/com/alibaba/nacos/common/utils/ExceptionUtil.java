@@ -23,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
+ * 异常处理工具：拼接 cause 链消息、获取根 cause、将堆栈转为 UTF-8 字符串；
+ * {@link #NONE_EXCEPTION} 表示「无异常」占位常量。
  * Common methods for exception.
  *
  * @author nkorange
@@ -33,11 +35,11 @@ public class ExceptionUtil {
     private ExceptionUtil() {
     }
     
-    /**
-     * Represents an empty exception, that is, no exception occurs, only a constant.
-     */
+    /** 表示无异常发生的占位 RuntimeException（空消息） */
+
     public static final Exception NONE_EXCEPTION = new RuntimeException("");
     
+    /** 沿 cause 链拼接 {@code caused: message;} 直至消息为空 */
     public static String getAllExceptionMsg(Throwable e) {
         Throwable cause = e;
         StringBuilder strBuilder = new StringBuilder();
@@ -50,6 +52,7 @@ public class ExceptionUtil {
         return strBuilder.toString();
     }
     
+    /** 返回最内层 cause，无 cause 时返回 t 自身 */
     public static Throwable getCause(final Throwable t) {
         final Throwable cause = t.getCause();
         if (Objects.isNull(cause)) {
@@ -58,6 +61,7 @@ public class ExceptionUtil {
         return cause;
     }
     
+    /** 将完整堆栈打印到内存并以 UTF-8 字符串返回；t 为 null 时返回空串 */
     public static String getStackTrace(final Throwable t) {
         if (t == null) {
             return "";
@@ -70,7 +74,7 @@ public class ExceptionUtil {
             ps.flush();
             return new String(out.toByteArray(), StandardCharsets.UTF_8);
         } catch (UnsupportedEncodingException e) {
-            // Should never happen since UTF-8 is always supported
+            // UTF-8 在 JVM 中始终可用，不应到达此分支
             throw new IllegalStateException(e);
         }
     }

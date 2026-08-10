@@ -19,6 +19,8 @@ package com.alibaba.nacos.common.utils;
 import java.util.Set;
 
 /**
+ * 字符串与基本类型转换工具：安全解析 int/long/boolean，非法或空白时返回默认值；
+ * 布尔解析扩展支持 on/yes/y/t 等别名（性能优于 {@link Boolean#valueOf}）。
  * Value Convert Utils.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -30,8 +32,10 @@ public final class ConvertUtils {
     
     private static final String NULL_STR = "null";
     
+    /** 解析为 true 的字符串集合（忽略大小写） */
     public static final Set<String> TRUE_SET = CollectionUtils.set("y", "yes", "on", "true", "t");
     
+    /** 解析为 false 的字符串集合（忽略大小写） */
     public static final Set<String> FALSE_SET = CollectionUtils.set("n", "no", "off", "false", "f");
     
     /**
@@ -40,6 +44,7 @@ public final class ConvertUtils {
      *
      * @param val String value which need to be converted to int value.
      * @return Converted int value and its default value is 0.
+      * <p>字符串到基本类型转换；详见类级说明。</p>
      */
     public static int toInt(String val) {
         return toInt(val, 0);
@@ -52,6 +57,7 @@ public final class ConvertUtils {
      * @param val          value
      * @param defaultValue default value
      * @return int value if input value is legal, otherwise default value
+      * <p>字符串到基本类型转换；详见类级说明。</p>
      */
     public static int toInt(String val, int defaultValue) {
         if (StringUtils.equalsIgnoreCase(val, NULL_STR)) {
@@ -73,6 +79,7 @@ public final class ConvertUtils {
      *
      * @param val object value
      * @return Converted long value and its default value is 0.
+      * <p>字符串到基本类型转换；详见类级说明。</p>
      */
     public static long toLong(Object val) {
         if (val instanceof Long) {
@@ -87,6 +94,7 @@ public final class ConvertUtils {
      *
      * @param val String value which need to be converted to int value.
      * @return Converted long value and its default value is 0.
+      * <p>字符串到基本类型转换；详见类级说明。</p>
      */
     public static long toLong(String val) {
         return toLong(val, 0L);
@@ -99,6 +107,7 @@ public final class ConvertUtils {
      * @param val          value
      * @param defaultValue default value
      * @return long value if input value is legal, otherwise default value
+      * <p>字符串到基本类型转换；详见类级说明。</p>
      */
     public static long toLong(String val, long defaultValue) {
         if (StringUtils.isBlank(val)) {
@@ -118,6 +127,7 @@ public final class ConvertUtils {
      * @param val          value
      * @param defaultValue default value
      * @return boolean value if input value is legal, otherwise default value
+      * <p>字符串到基本类型转换；详见类级说明。</p>
      */
     public static boolean toBoolean(String val, boolean defaultValue) {
         if (StringUtils.isBlank(val)) {
@@ -126,8 +136,8 @@ public final class ConvertUtils {
         return Boolean.parseBoolean(val);
     }
     
-    //   The following utility functions are extracted from <link>org.apache.commons.lang3</link>
-    //   start
+    // 以下布尔转换方法摘自 org.apache.commons.lang3
+    // start
     
     /**
      * <p>Converts a String to a boolean (optimised for performance).</p>
@@ -155,6 +165,7 @@ public final class ConvertUtils {
      *
      * @param str the String to check
      * @return the boolean value of the string, {@code false} if no match or the String is null
+      * <p>字符串到基本类型转换；详见类级说明。</p>
      */
     public static boolean toBoolean(final String str) {
         return Boolean.TRUE.equals(toBooleanObject(str));
@@ -191,6 +202,7 @@ public final class ConvertUtils {
      *
      * @param str the String to check; upper and lower case are treated as the same
      * @return the Boolean value of the string, {@code null} if no match or {@code null} input
+      * <p>字符串到基本类型转换；详见类级说明。</p>
      */
     @SuppressWarnings("all")
     public static Boolean toBooleanObject(String str) {
@@ -205,6 +217,6 @@ public final class ConvertUtils {
         }
     }
     
-    //   end
+    // end
     
 }

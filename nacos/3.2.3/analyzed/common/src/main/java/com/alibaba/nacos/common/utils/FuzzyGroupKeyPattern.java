@@ -28,10 +28,10 @@ import static com.alibaba.nacos.api.common.Constants.DEFAULT_NAMESPACE_ID;
 import static com.alibaba.nacos.api.common.Constants.FUZZY_WATCH_PATTERN_SPLITTER;
 
 /**
+ * 模糊 GroupKey 模式匹配工具：支持 namespace、group、dataId 三段式 pattern
+ * （{@link com.alibaba.nacos.api.common.Constants#FUZZY_WATCH_PATTERN_SPLITTER} 分隔），
+ * 含 {@code *} 通配的前缀/后缀/包含匹配，以及订阅集合 diff 计算。
  * Utility class for matching group keys against a given pattern.
- *
- * <p>This class provides methods to match group keys based on a pattern specified. It supports matching based on
- * dataId, group, and namespace components of the group key.
  *
  * @author stone-98
  * @date 2024/3/14
@@ -47,6 +47,7 @@ public class FuzzyGroupKeyPattern {
      * @param fixNamespace    (Optional) The tenant associated with the dataIds (can be null or empty).
      * @return A unique group key pattern for fuzzy listen.
      * @throws IllegalArgumentException If the dataId pattern or group is blank.
+      * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
      */
     public static String generatePattern(final String resourcePattern, final String groupPattern,
         String fixNamespace) {
@@ -77,6 +78,7 @@ public class FuzzyGroupKeyPattern {
      * @param namespace        The group to match.
      * @param groupKeyPatterns The collection of completed group key patterns to match against.
      * @return A set of patterns that match the dataId and group.
+      * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
      */
     public static Set<String> filterMatchedPatterns(Collection<String> groupKeyPatterns,
         String resourceName,
@@ -100,6 +102,7 @@ public class FuzzyGroupKeyPattern {
      * @param namespace        The group to match.
      * @param groupKeyPattern  The pattern to match.
      * @return  matched or not.
+      * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
      */
     public static boolean matchPattern(String groupKeyPattern, String resourceName, String group,
         String namespace) {
@@ -121,32 +124,33 @@ public class FuzzyGroupKeyPattern {
      * @param pattern pattern contain *.
      * @param resource resource to check.
      * @return
+      * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
      */
     private static boolean itemMatched(String pattern, String resource) {
         
-        //accurate match without *
+        // 不含 * 的精确匹配
         if (!pattern.contains(ALL_PATTERN)) {
             return pattern.equals(resource);
         }
         
-        //match for '*' pattern
+        // 纯 * 匹配任意资源
         if (pattern.equals(ALL_PATTERN)) {
             return true;
         }
         
-        //match for *{string}*
+        // 前后缀均为 * 的包含匹配
         if (pattern.startsWith(ALL_PATTERN) && pattern.endsWith(ALL_PATTERN)) {
             String pureString = pattern.replace(ALL_PATTERN, "");
             return resource.contains(pureString);
         }
         
-        //match for postfix match *{string}
+        // 前缀 * 的后缀匹配
         if (pattern.startsWith(ALL_PATTERN)) {
             String pureString = pattern.replace(ALL_PATTERN, "");
             return resource.endsWith(pureString);
         }
         
-        //match for prefix match {string}*
+        // 后缀 * 的前缀匹配
         if (pattern.endsWith(ALL_PATTERN)) {
             String pureString = pattern.replace(ALL_PATTERN, "");
             return resource.startsWith(pureString);
@@ -164,10 +168,11 @@ public class FuzzyGroupKeyPattern {
      * @return a different list of GroupKeyState objects representing the states which the followed sets should be added
      * or removed GroupKeyState#exist true presents follow set should add,GroupKeyState#exist false presents follow set
      * should removed.
+      * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
      */
     public static List<GroupKeyState> diffGroupKeys(Set<String> basedGroupKeys,
         Set<String> followedGroupKeys) {
-        // Calculate the set of group keys to be added and removed
+        // 计算需新增与需移除的 groupKey 集合
         Set<String> addGroupKeys = new HashSet<>();
         if (CollectionUtils.isNotEmpty(basedGroupKeys)) {
             addGroupKeys.addAll(basedGroupKeys);
@@ -184,13 +189,14 @@ public class FuzzyGroupKeyPattern {
             removeGroupKeys.removeAll(basedGroupKeys);
         }
         
-        // Convert the group keys to be added and removed into corresponding ConfigState objects and merge them into a list
+        // 将增删集合转为 GroupKeyState 列表（exist=true 表示应订阅，false 表示应取消）
         return Stream
             .concat(addGroupKeys.stream().map(groupKey -> new GroupKeyState(groupKey, true)),
                 removeGroupKeys.stream().map(groupKey -> new GroupKeyState(groupKey, false)))
             .collect(Collectors.toList());
     }
     
+    /** 单个 groupKey 的订阅状态变更描述 */
     public static class GroupKeyState {
         
         String groupKey;
@@ -202,6 +208,7 @@ public class FuzzyGroupKeyPattern {
          *
          * @param groupKey The group key associated with the configuration.
          * @param exist    {@code true} if the configuration exists, {@code false} otherwise.
+          * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
          */
         public GroupKeyState(String groupKey, boolean exist) {
             this.groupKey = groupKey;
@@ -212,6 +219,7 @@ public class FuzzyGroupKeyPattern {
          * Retrieves the group key associated with the configuration.
          *
          * @return The group key.
+          * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
          */
         public String getGroupKey() {
             return groupKey;
@@ -221,6 +229,7 @@ public class FuzzyGroupKeyPattern {
          * Sets the group key associated with the configuration.
          *
          * @param groupKey The group key to set.
+          * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
          */
         public void setGroupKey(String groupKey) {
             this.groupKey = groupKey;
@@ -230,6 +239,7 @@ public class FuzzyGroupKeyPattern {
          * Checks whether the configuration exists or not.
          *
          * @return {@code true} if the configuration exists, {@code false} otherwise.
+          * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
          */
         public boolean isExist() {
             return exist;
@@ -239,6 +249,7 @@ public class FuzzyGroupKeyPattern {
          * Sets the existence flag of the configuration.
          *
          * @param exist {@code true} if the configuration exists, {@code false} otherwise.
+          * <p>模糊 GroupKey 模式匹配；详见类级说明。</p>
          */
         public void setExist(boolean exist) {
             this.exist = exist;

@@ -31,15 +31,16 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
+ * 集合工具类（源自 Apache Commons Collections）：统一从 Map/List/数组/Iterator 等
+ * 结构按索引取值、判空、基数统计及集合相等性比较等。
  * Copy from {@link org.apache.commons.collections}.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public final class CollectionUtils {
     
-    /**
-     * Constant to avoid repeated object creation.
-     */
+    /** 复用 Integer(1) 避免重复装箱 */
+
     private static final Integer INTEGER_ONE = 1;
     
     private CollectionUtils() {
@@ -74,6 +75,7 @@ public final class CollectionUtils {
      * @return the object at the specified index
      * @throws IndexOutOfBoundsException if the index is invalid
      * @throws IllegalArgumentException  if the object type is invalid
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static Object get(Object object, int index) {
         if (index < 0) {
@@ -140,6 +142,7 @@ public final class CollectionUtils {
      * @return the size of the specified collection
      * @throws IllegalArgumentException thrown if object is not recognised or null
      * @since Commons Collections 3.1
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static int size(Object object) {
         int total = 0;
@@ -180,6 +183,7 @@ public final class CollectionUtils {
      * @param object object
      * @return true if object is empty, otherwise false
      * @throws IllegalArgumentException if object has no length or size
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static boolean sizeIsEmpty(Object object) {
         if (object instanceof Collection) {
@@ -211,6 +215,7 @@ public final class CollectionUtils {
      * @param target target value
      * @param <T>    General Type
      * @return true if contain, otherwise false
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static <T> boolean contains(Collection<T> coll, T target) {
         if (isEmpty(coll)) {
@@ -227,6 +232,7 @@ public final class CollectionUtils {
      * @param coll the collection to check, may be null
      * @return true if empty or null
      * @since Commons Collections 3.2
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static boolean isEmpty(Collection coll) {
         return (coll == null || coll.isEmpty());
@@ -240,6 +246,7 @@ public final class CollectionUtils {
      * @param coll the collection to check, may be null
      * @return true if non-null and non-empty
      * @since Commons Collections 3.2
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static boolean isNotEmpty(Collection coll) {
         return !CollectionUtils.isEmpty(coll);
@@ -255,6 +262,7 @@ public final class CollectionUtils {
      * @param <T>          General Type
      * @return the value to which the specified index , or {@code defaultValue} if this collection contains no value for
      * the index.
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static <T> T getOrDefault(Object obj, int index, T defaultValue) {
         try {
@@ -270,6 +278,7 @@ public final class CollectionUtils {
      * @param elements element array
      * @return arraylist containing all input parameters
      * @author zzq
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static <T> List<T> list(T... elements) {
         if (elements == null) {
@@ -286,6 +295,7 @@ public final class CollectionUtils {
      *
      * @param elements elements element array
      * @return set containing all input parameters
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static <T> Set<T> set(T... elements) {
         if (elements == null) {
@@ -303,6 +313,7 @@ public final class CollectionUtils {
      * @throws NoSuchElementException   if the iterator is empty
      * @throws IllegalArgumentException if the iterator contains multiple elements. The state of the iterator is
      *                                  unspecified.
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static <T> T getOnlyElement(Iterable<T> iterable) {
         if (iterable == null) {
@@ -336,6 +347,7 @@ public final class CollectionUtils {
      *
      * @param map the Map to check
      * @return whether the given Map is empty
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static boolean isMapEmpty(Map<?, ?> map) {
         return (map == null || map.isEmpty());
@@ -349,6 +361,7 @@ public final class CollectionUtils {
      *
      * @param coll the collection to get the cardinality map for, must not be null
      * @return the populated cardinality map
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static Map getCardinalityMap(final Collection coll) {
         Map count = new HashMap(coll.size());
@@ -374,6 +387,7 @@ public final class CollectionUtils {
      * @param a the first collection, must not be null
      * @param b the second collection, must not be null
      * @return <code>true</code> iff the collections contain the same elements with the same cardinalities.
+      * <p>集合通用操作；详见类级说明。</p>
      */
     public static boolean isEqualCollection(final Collection a, final Collection b) {
         if (a.size() != b.size()) {

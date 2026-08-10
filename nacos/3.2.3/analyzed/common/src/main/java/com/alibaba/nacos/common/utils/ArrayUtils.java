@@ -19,6 +19,8 @@ package com.alibaba.nacos.common.utils;
 import java.util.Arrays;
 
 /**
+ * 数组工具类：提供空数组判断与元素包含性检查等常用操作，
+ * 私有构造防止实例化。
  * Array utils.
  *
  * @author zzq
@@ -29,23 +31,21 @@ public class ArrayUtils {
     }
     
     /**
-     * <p>Checks if an array of Objects is empty or {@code null}.</p>
+     * 判断对象数组是否为 null 或长度为 0。
      *
-     * @param array  the array to test
-     * @return {@code true} if the array is empty or {@code null}
+     * @param array  待检测数组
+     * @return 为 null 或空数组时返回 {@code true}
      */
     public static boolean isEmpty(final Object[] array) {
         return array == null || array.length == 0;
     }
     
     /**
-     * <p>Checks if the object is in the given array.</p>
+     * 判断数组是否包含指定元素（使用 {@link java.util.Arrays#asList} 比较）。
      *
-     * <p>The method returns {@code false} if a {@code null} array is passed in.</p>
-     *
-     * @param array  the array to search through
-     * @param objectToFind  the object to find
-     * @return {@code true} if the array contains the object
+     * @param array         待搜索数组，null 时返回 false
+     * @param objectToFind  目标元素
+     * @return 包含则 true
      */
     public static boolean contains(final Object[] array, final Object objectToFind) {
         if (array == null) {

@@ -33,24 +33,32 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 /**
+ * 链路追踪事件发布器：独立守护线程从有界队列取 {@link com.alibaba.nacos.common.notify.Event}，
+ * 按事件类型分发给已注册 {@link com.alibaba.nacos.common.notify.listener.Subscriber}；
+ * 实现 {@link com.alibaba.nacos.common.notify.ShardedEventPublisher}，队列满时仅 WARN 不阻塞调用方。
  * Event publisher for trace event.
  *
  * @author yanda
  */
 public class TraceEventPublisher extends Thread implements ShardedEventPublisher {
     
+    /** 发布线程名前缀 */
     private static final String THREAD_NAME = "trace.publisher-";
     
     private static final Logger LOGGER =
         LoggerFactory.getLogger("com.alibaba.nacos.common.trace.publisher");
     
+    /** 启动时等待首个订阅者注册的最长秒数 */
     private static final int DEFAULT_WAIT_TIME = 60;
     
+    /** 事件类型 → 订阅者集合（线程安全） */
     private final Map<Class<? extends Event>, Set<Subscriber<? extends Event>>> subscribes =
         new ConcurrentHashMap<>();
     
+    /** 是否已完成 init 并启动消费线程 */
     private volatile boolean initialized = false;
     
+    /** 关闭标志，true 时退出事件循环 */
     private volatile boolean shutdown = false;
     
     private int queueMaxSize = -1;
@@ -59,6 +67,7 @@ public class TraceEventPublisher extends Thread implements ShardedEventPublisher
     
     private String publisherName;
     
+    /** 初始化有界队列并启动守护消费线程 */
     @Override
     public void init(Class<? extends Event> type, int bufferSize) {
         this.queueMaxSize = bufferSize;
@@ -99,6 +108,7 @@ public class TraceEventPublisher extends Thread implements ShardedEventPublisher
         });
     }
     
+    /** 非阻塞入队；队列满时记录 WARN，仍返回 true */
     @Override
     public boolean publish(Event event) {
         checkIsStart();
@@ -110,6 +120,7 @@ public class TraceEventPublisher extends Thread implements ShardedEventPublisher
         return true;
     }
     
+    /** 同步或委托订阅者 executor 异步执行 onEvent */
     @Override
     public void notifySubscriber(Subscriber subscriber, Event event) {
         if (LOGGER.isDebugEnabled()) {
@@ -128,6 +139,7 @@ public class TraceEventPublisher extends Thread implements ShardedEventPublisher
         }
     }
     
+    /** 置 shutdown 标志并清空队列 */
     @Override
     public void shutdown() throws NacosException {
         this.shutdown = true;
@@ -147,8 +159,7 @@ public class TraceEventPublisher extends Thread implements ShardedEventPublisher
     }
     
     private void waitSubscriberForInit() {
-        // To ensure that messages are not lost, enable EventHandler when
-        // waiting for the first Subscriber to register
+        // 为避免首个订阅者注册前丢事件，启动后最多等待 DEFAULT_WAIT_TIME 秒
         for (int waitTimes = DEFAULT_WAIT_TIME; waitTimes > 0; waitTimes--) {
             if (shutdown || !subscribes.isEmpty()) {
                 break;
@@ -165,7 +176,7 @@ public class TraceEventPublisher extends Thread implements ShardedEventPublisher
             } catch (InterruptedException e) {
                 LOGGER.warn("Trace Event Publisher {} take event from queue failed:",
                     this.publisherName, e);
-                // set the interrupted flag
+                // 恢复中断标志，便于上层感知
                 Thread.currentThread().interrupt();
             }
         }
@@ -186,12 +197,14 @@ public class TraceEventPublisher extends Thread implements ShardedEventPublisher
         }
     }
     
+    /** 未 init 时抛出 IllegalStateException */
     void checkIsStart() {
         if (!initialized) {
             throw new IllegalStateException("Publisher does not start");
         }
     }
     
+    /** 返回发布器运行状态摘要（shutdown、队列占用等） */
     public String getStatus() {
         return String.format("Publisher %-30s: shutdown=%5s, queue=%7d/%-7d", publisherName,
             shutdown,

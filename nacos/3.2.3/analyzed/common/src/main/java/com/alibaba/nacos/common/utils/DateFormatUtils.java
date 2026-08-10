@@ -20,6 +20,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
+ * 日期时间格式化工具：封装 {@link SimpleDateFormat} 常用 pattern 常量及
+ * {@link #format(Date, String)} 安全格式化（null 参数抛 NPE）。
  * Date and time formatting utilities.
  * @author zzq
  */
@@ -28,6 +30,7 @@ public class DateFormatUtils {
     private DateFormatUtils() {
     }
     
+    /** 日期格式：yyyyMMdd */
     public static final String YYYYMMDD = "yyyyMMdd";
     
     public static final String YYMMDD = "yyMMdd";
@@ -36,6 +39,7 @@ public class DateFormatUtils {
     
     public static final String YYYYMM = "yyyyMM";
     
+    /** 日期时间格式：yyyyMMddHHmmss */
     public static final String YYYYMMDDHHMMSS = "yyyyMMddHHmmss";
     
     public static final String YYYY = "yyyy";
@@ -54,6 +58,7 @@ public class DateFormatUtils {
      * @param date  the date to format, not null
      * @param pattern  the pattern to use to format the date, not null
      * @return the formatted date
+      * <p>日期格式化常量与方法；详见类级说明。</p>
      */
     public static String format(final Date date, final String pattern) {
         if (date == null) {

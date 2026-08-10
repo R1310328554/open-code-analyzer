@@ -27,6 +27,8 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
+ * 连接标签（conn labels）解析与合并工具：从 Properties、JVM 参数或环境变量
+ * 读取 {@code key=value} 逗号分隔串，支持 Map 按优先级合并及 key 批量加前缀。
  * ConnLabelsUtils.
  *
  * @author rong
@@ -35,10 +37,13 @@ public class ConnLabelsUtils {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnLabelsUtils.class);
     
+    /** 标签键值分隔符 */
     public static final String LABEL_EQUALS_OPERATOR = "=";
     
+    /** 多标签之间的分隔符 */
     public static final String LABEL_SPLIT_OPERATOR = ",";
     
+    /** 合法标签 split 后应为 2 段（key 与 value） */
     public static final int TAG_V2_LABEL_KEY_VALUE_SPLIT_LENGTH = 2;
     
     /**
@@ -53,6 +58,7 @@ public class ConnLabelsUtils {
      * <p>eg: if the value of "nacos.app.conn.labels"(properties' key) is "k1=v1,k2=v2"(properties' value), the result
      * will be
      * a Map with value{k1=v1,k2=v2}.</p>
+      * <p>连接标签解析与合并；详见类级说明。</p>
      */
     public static Map<String, String> parsePropertyValue2Map(Properties properties,
         String propertyName) {
@@ -72,6 +78,7 @@ public class ConnLabelsUtils {
      * @return map parsed from rawLabels
      * @date 2024/1/29
      * @description
+      * <p>连接标签解析与合并；详见类级说明。</p>
      */
     public static Map<String, String> parseRawLabels(String rawLabels) {
         if (StringUtils.isBlank(rawLabels)) {
@@ -102,6 +109,7 @@ public class ConnLabelsUtils {
      * @param backwardMap  backwardMap
      * @date 2024/1/29
      * @description merge two map into one preferring using the first one when key is duplicated
+      * <p>连接标签解析与合并；详见类级说明。</p>
      */
     public static <T, R> Map<T, R> mergeMapByOrder(Map<T, R> preferredMap, Map<T, R> backwardMap) {
         if (preferredMap == null || preferredMap.isEmpty()) {
@@ -141,6 +149,7 @@ public class ConnLabelsUtils {
      * @param prefix prefix
      * @date 2024/1/29
      * @description add prefix for each key in map
+      * <p>连接标签解析与合并；详见类级说明。</p>
      */
     public static <T> Map<String, T> addPrefixForEachKey(Map<String, T> map, String prefix) {
         if (map == null || map.isEmpty()) {

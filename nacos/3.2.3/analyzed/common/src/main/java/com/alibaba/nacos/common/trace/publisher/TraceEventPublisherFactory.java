@@ -27,6 +27,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 链路追踪事件发布器工厂（单例）：按 {@link com.alibaba.nacos.common.trace.event.TraceEvent}
+ * 子类缓存 {@link TraceEventPublisher} 实例，避免重复创建消费线程；
+ * 实现 {@link com.alibaba.nacos.common.notify.EventPublisherFactory}。
  * event publisher factory for trace event.
  *
  * @author yanda
@@ -34,10 +37,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TraceEventPublisherFactory implements EventPublisherFactory {
     
+    /** 工厂单例 */
     private static final TraceEventPublisherFactory INSTANCE = new TraceEventPublisherFactory();
     
+    /** 事件基类 → 已创建的发布器 */
     private final Map<Class<? extends Event>, TraceEventPublisher> publisher;
     
+    /** 已注册的追踪事件类型集合，用于匹配子类 */
     private final Set<Class<? extends Event>> publisherEvents;
     
     private TraceEventPublisherFactory() {
@@ -45,6 +51,7 @@ public class TraceEventPublisherFactory implements EventPublisherFactory {
         publisherEvents = new ConcurrentHashSet<>();
     }
     
+    /** 获取工厂单例 */
     public static TraceEventPublisherFactory getInstance() {
         return INSTANCE;
     }
@@ -68,6 +75,7 @@ public class TraceEventPublisherFactory implements EventPublisherFactory {
         });
     }
     
+    /** 汇总所有已创建发布器的 {@link TraceEventPublisher#getStatus()} 文本 */
     public String getAllPublisherStatues() {
         StringBuilder result = new StringBuilder("Trace event publisher statues:\n");
         for (TraceEventPublisher each : publisher.values()) {
@@ -76,6 +84,7 @@ public class TraceEventPublisherFactory implements EventPublisherFactory {
         return result.toString();
     }
     
+    /** 注册可由此工厂管理的追踪事件类型 */
     public void addPublisherEvent(Class<? extends Event> event) {
         this.publisherEvents.add(event);
     }
