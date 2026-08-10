@@ -22,11 +22,14 @@ import java.util.Set;
 import liquibase.statement.core.InitializeDatabaseChangeLogLockTableStatement;
 
 /**
+ * 扩展 Liquibase 锁表初始化语句，携带数据库中已存在的锁 ID 集合。
+ * <p>供 {@link CustomInsertLockRecordGenerator} 仅插入缺失的命名空间锁行，避免重复或误删。</p>
  *
  * @author rmartinc
  */
 public class CustomInitializeDatabaseChangeLogLockTableStatement extends InitializeDatabaseChangeLogLockTableStatement {
 
+    /** 迁移前 DATABASECHANGELOGLOCK 表中已有的 ID。 */
     private final Set<Integer> currentIds;
 
     public CustomInitializeDatabaseChangeLogLockTableStatement(Set<Integer> currentIds) {

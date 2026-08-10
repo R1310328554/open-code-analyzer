@@ -24,12 +24,14 @@ import liquibase.statement.core.UpdateStatement;
 import liquibase.structure.core.Table;
 
 /**
- * Update CREATED_ON and LAST_SESSION_REFRESH columns to current startup time
+ * 4.7.0 迁移：将离线用户会话的 {@code LAST_SESSION_REFRESH} 设为当前启动时间。
+ * <p>升级后统一刷新离线会话时间戳，避免旧版本遗留的无效或缺失时间值。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JpaUpdate4_7_0_OfflineSessionsTimestamps extends CustomKeycloakTask {
 
+    /** 对 OFFLINE_USER_SESSION 全表 UPDATE LAST_SESSION_REFRESH。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         String offlineUserSessionsTableName = database.correctObjectName("OFFLINE_USER_SESSION", Table.class);

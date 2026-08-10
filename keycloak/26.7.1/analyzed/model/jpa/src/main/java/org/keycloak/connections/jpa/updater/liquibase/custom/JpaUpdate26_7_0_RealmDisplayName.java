@@ -19,8 +19,13 @@ package org.keycloak.connections.jpa.updater.liquibase.custom;
 import liquibase.exception.CustomChangeException;
 import liquibase.statement.core.RawParameterizedSqlStatement;
 
+/**
+ * 26.7.0 迁移：将 {@code REALM_ATTRIBUTE} 中的 {@code displayName} 回填到 {@code REALM.DISPLAY_NAME} 列。
+ * <p>仅当领域存在名为 {@code displayName} 的属性时才执行 UPDATE。</p>
+ */
 public class JpaUpdate26_7_0_RealmDisplayName extends CustomKeycloakTask {
 
+    /** 子查询从 REALM_ATTRIBUTE 取 displayName 写入 REALM 表对应行。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         String realmTable = getTableName("REALM");

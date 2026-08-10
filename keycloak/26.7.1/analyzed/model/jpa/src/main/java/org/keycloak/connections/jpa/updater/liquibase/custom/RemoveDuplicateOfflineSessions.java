@@ -29,11 +29,14 @@ import liquibase.statement.core.DeleteStatement;
 import liquibase.structure.core.Column;
 
 /**
+ * 清理 {@code OFFLINE_CLIENT_SESSION} 中同一用户/客户端/离线标志的重复行。
+ * <p>按 (USER_SESSION_ID, CLIENT_ID, OFFLINE_FLAG) 分组，保留排序后首条，删除其余 CLIENT_SESSION_ID。</p>
  *
  * @author hmlnarik
  */
 public class RemoveDuplicateOfflineSessions extends CustomKeycloakTask {
 
+    /** 离线客户端会话去重键：用户会话 + 客户端 + 离线标志三元组。 */
     private static class Key {
         private final String userSessionId;
         private final String clientId;
@@ -74,6 +77,7 @@ public class RemoveDuplicateOfflineSessions extends CustomKeycloakTask {
 
     }
 
+    /** 查询重复组，保留每组首行，分批 DELETE 多余 CLIENT_SESSION_ID。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         Set<String> clientSessionIdsToDelete = new HashSet<>();
@@ -95,7 +99,7 @@ public class RemoveDuplicateOfflineSessions extends CustomKeycloakTask {
 
             ResultSet resultSet = ps.executeQuery()
           ) {
-            // Find out all offending duplicates, keep first row only
+            // 有序扫描：同一 Key 的后续行视为重复待删
             Key origKey = new Key(null, null, null);
             while (resultSet.next()) {
                 String clientSessionId = resultSet.getString(1);
@@ -113,7 +117,7 @@ public class RemoveDuplicateOfflineSessions extends CustomKeycloakTask {
 
         AtomicInteger ai = new AtomicInteger();
         clientSessionIdsToDelete.stream()
-          .collect(Collectors.groupingByConcurrent(id -> ai.getAndIncrement() / 20, Collectors.toList())) // Split into chunks of at most 20 items
+          .collect(Collectors.groupingByConcurrent(id -> ai.getAndIncrement() / 20, Collectors.toList())) // 每批最多 20 条 DELETE
 
           .values().stream()
           .map(ids -> new DeleteStatement(null, null, "OFFLINE_CLIENT_SESSION")

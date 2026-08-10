@@ -24,11 +24,14 @@ import liquibase.statement.core.InsertStatement;
 import liquibase.structure.core.Table;
 
 /**
+ * 4.0.0 迁移：将客户端模板的默认作用域写入 {@code CLIENT_SCOPE_CLIENT}。
+ * <p>遍历 {@code CLIENT.CLIENT_TEMPLATE_ID}，为每个有效客户端插入 {@code DEFAULT_SCOPE=true} 的关联行。</p>
  *
  * @author hmlnarik
  */
 public class JpaUpdate4_0_0_DefaultClientScopes extends CustomKeycloakTask {
 
+    /** 读取 CLIENT 与模板 ID，生成 CLIENT_SCOPE_CLIENT 默认作用域插入语句。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         String clientTableName = database.correctObjectName("CLIENT", Table.class);

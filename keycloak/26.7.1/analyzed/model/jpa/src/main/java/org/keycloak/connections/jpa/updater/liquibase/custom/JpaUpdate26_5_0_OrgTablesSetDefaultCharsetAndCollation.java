@@ -28,10 +28,12 @@ import liquibase.structure.core.Schema;
 import liquibase.structure.core.Table;
 
 /**
- * Ensures ORG.ID column and ORG_INVITATION table has set the default charset and collation for MySQL/MariaDB.
+ * 确保 MySQL/MariaDB 上 {@code ORG.ID} 列与 {@code ORG_INVITATION} 表使用 schema 默认字符集与排序规则。
+ * <p>修复组织表与邀请表字符集不一致导致的外键/比较问题；仅在 {@code ORG} 表已存在时执行。</p>
  */
 public class JpaUpdate26_5_0_OrgTablesSetDefaultCharsetAndCollation extends CustomKeycloakTask {
 
+    /** 仅 MySQL/MariaDB 且 ORG 表存在时适用（含初次建库场景）。 */
     @Override
     protected boolean isApplicable() throws CustomChangeException {
         // Only run on MySQL or MariaDB (MariaDBDatabase extends MySQLDatabase)
@@ -43,6 +45,7 @@ public class JpaUpdate26_5_0_OrgTablesSetDefaultCharsetAndCollation extends Cust
         return tableExists("ORG");
     }
 
+    /** 读取 schema 默认 charset/collation，ALTER ORG 与 ORG_INVITATION 后重建外键。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         String schemaName = database.escapeObjectName(database.getDefaultSchemaName(), Schema.class);
@@ -64,7 +67,7 @@ public class JpaUpdate26_5_0_OrgTablesSetDefaultCharsetAndCollation extends Cust
                 statements.add(new RawSqlStatement("SET FOREIGN_KEY_CHECKS=0"));
 
                 if (tableExists("ORG_INVITATION")) {
-                    // Fix ORG_INVITATION.ORGANIZATION_ID charset/collation
+                    // 先删外键，再 CONVERT 整表字符集
                     statements.add(new RawSqlStatement(
                         "ALTER TABLE " + orgInvTable + " DROP FOREIGN KEY FK_ORG_INVITATION_ORG"
                     ));
@@ -75,7 +78,7 @@ public class JpaUpdate26_5_0_OrgTablesSetDefaultCharsetAndCollation extends Cust
                     ));
                 }
 
-                // Fix ORG.ID charset/collation
+                // 单独修正 ORG.ID 列字符集与排序规则
                 statements.add(new RawSqlStatement(
                     "ALTER TABLE " + orgTable +
                     " MODIFY ID VARCHAR(255) CHARACTER SET " + charset + " COLLATE " + collation + " NOT NULL"
@@ -102,6 +105,7 @@ public class JpaUpdate26_5_0_OrgTablesSetDefaultCharsetAndCollation extends Cust
         return "Update ORG and ORG_INVITATION tables charset and collation";
     }
 
+    /** 通过 Liquibase Snapshot API 判断表是否存在于当前 schema。 */
     private boolean tableExists(String tableName) throws CustomChangeException {
         try {
             // Correct the table name based on the database dialect (quotes, case-sensitivity)

@@ -26,10 +26,14 @@ import org.keycloak.storage.UserStorageProvider;
 import liquibase.exception.CustomChangeException;
 
 /**
+ * 2.5.0 迁移：将非 LDAP 用户联邦存储迁移为 Component 模型。
+ * <p>遍历已注册的 {@link UserStorageProvider} 工厂（排除 LDAP），逐个调用 {@link AbstractUserFedToComponent} 转换逻辑。</p>
+ *
  * @author <a href="mailto:bburke@redhat.com">Bill Burke</a>
  */
 public class MigrateUserFedToComponent extends AbstractUserFedToComponent {
 
+    /** 除 LDAP 外所有 UserStorageProvider 实现均转为 COMPONENT 配置。 */
     @Override
     protected void generateStatementsImpl() {
         kcSession.getKeycloakSessionFactory().getProviderFactoriesStream(UserStorageProvider.class)
@@ -43,6 +47,7 @@ public class MigrateUserFedToComponent extends AbstractUserFedToComponent {
         return "Update 2.5.0.Final";
     }
 
+    /** 包装 CustomChangeException 为 RuntimeException 以适配 Stream forEach。 */
     private void convertFedProviderToComponent(String id) {
         try {
             convertFedProviderToComponent(id, null);

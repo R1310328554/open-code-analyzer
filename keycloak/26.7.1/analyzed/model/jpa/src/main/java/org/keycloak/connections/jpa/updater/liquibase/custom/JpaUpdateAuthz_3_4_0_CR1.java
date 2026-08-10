@@ -23,8 +23,13 @@ import liquibase.statement.SqlStatement;
 import liquibase.statement.core.RawSqlStatement;
 import liquibase.structure.core.Table;
 
+/**
+ * authz 3.4.0 CR1 迁移（第二部分）：回填资源服务器子表的 {@code RESOURCE_SERVER_CLIENT_ID}。
+ * <p>策略、资源、作用域表通过 {@code RESOURCE_SERVER_ID} 关联主表，写入对应 {@code CLIENT_ID}。</p>
+ */
 public class JpaUpdateAuthz_3_4_0_CR1 extends CustomKeycloakTask {
 
+    /** 按数据库方言生成 UPDATE：MSSQL 用 FROM 子查询，其余用标量子查询。 */
     private SqlStatement generateUpdateStatement(String resourceServerDetailTable) {
         String resourceServerTableName = database.correctObjectName(getTableName("RESOURCE_SERVER"), Table.class);
         String resourceServerDetailTableName = database.correctObjectName(getTableName(resourceServerDetailTable), Table.class);
@@ -60,6 +65,7 @@ public class JpaUpdateAuthz_3_4_0_CR1 extends CustomKeycloakTask {
 
     }
 
+    /** 对 POLICY、RESOURCE、SCOPE 三张明细表各执行一次回填。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         statements.add(generateUpdateStatement("RESOURCE_SERVER_POLICY"));

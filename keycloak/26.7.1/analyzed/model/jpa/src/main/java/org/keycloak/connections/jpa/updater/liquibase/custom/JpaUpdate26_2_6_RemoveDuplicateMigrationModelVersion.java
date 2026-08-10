@@ -12,7 +12,8 @@ import liquibase.statement.core.DeleteStatement;
 import liquibase.structure.core.Column;
 
 /**
- * Cleanup script for removing duplicated migration model versions in the MIGRATION_MODEL table
+ * 清理 {@code MIGRATION_MODEL} 表中 {@code VERSION} 重复的记录。
+ * <p>同一版本号出现多行时，保留 {@code UPDATE_TIME} 较新（或 ID 较大）的一条，删除其余。</p>
  * See: <a href="https://github.com/keycloak/keycloak/issues/39866">keycloak#39866</a>
  */
 public class JpaUpdate26_2_6_RemoveDuplicateMigrationModelVersion extends CustomKeycloakTask {
@@ -24,6 +25,7 @@ public class JpaUpdate26_2_6_RemoveDuplicateMigrationModelVersion extends Custom
         return "Delete duplicated records for DB version in MIGRATION_MODEL table";
     }
 
+    /** 找出应删除的重复 VERSION 行 ID，并按 20 条一批生成 DELETE。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         Set<String> idsToDelete = new HashSet<>();
@@ -45,7 +47,7 @@ public class JpaUpdate26_2_6_RemoveDuplicateMigrationModelVersion extends Custom
 
         AtomicInteger i = new AtomicInteger();
         idsToDelete.stream()
-                .collect(Collectors.groupingByConcurrent(id -> i.getAndIncrement() / 20, Collectors.toList())) // Split into chunks of at most 20 items
+                .collect(Collectors.groupingByConcurrent(id -> i.getAndIncrement() / 20, Collectors.toList())) // 每批最多 20 条
                 .values().stream()
                 .map(ids -> new DeleteStatement(null, null, MIGRATION_MODEL_TABLE)
                         .setWhere(":name IN (" + ids.stream().map(id -> "?").collect(Collectors.joining(",")) + ")")
@@ -56,13 +58,13 @@ public class JpaUpdate26_2_6_RemoveDuplicateMigrationModelVersion extends Custom
     }
 
     /**
-     * Get duplicated records
+     * 查询 VERSION 重复组中应删除的较旧记录 ID。
      * <p>
-     * If there is VERSION duplication, choose:
+     * 若存在 VERSION 重复，选择规则：
      * <p>
-     * - If UPDATE_TIME is: different -> pick more recent
+     * - UPDATE_TIME 不同：保留较新的记录
      * <p>
-     * - If UPDATE_TIME is: equal -> pick some random
+     * - UPDATE_TIME 相同：按 ID 较大者保留（等价于随机择一）
      */
     private String getOlderDuplicatedRecords(String tableName, String colId, String colVersion, String colUpdateTime) {
         return """

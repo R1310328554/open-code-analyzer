@@ -23,8 +23,13 @@ import liquibase.database.core.PostgresDatabase;
 import liquibase.exception.CustomChangeException;
 import liquibase.statement.core.RawParameterizedSqlStatement;
 
+/**
+ * 26.6.0 迁移：回填 {@code OFFLINE_CLIENT_SESSION.REALM_ID}。
+ * <p>从关联的 {@code OFFLINE_USER_SESSION} 按 {@code user_session_id} 与 {@code offline_flag} 复制 realm_id；按数据库方言选用最优 UPDATE 语法。</p>
+ */
 public class JpaUpdate26_6_0_OfflineClientSessionRealm extends CustomKeycloakTask {
 
+    /** 按数据库类型分派到各厂商专用或通用 SQL 更新语句。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         String clientSessionTable = getTableName("OFFLINE_CLIENT_SESSION");
@@ -51,7 +56,7 @@ public class JpaUpdate26_6_0_OfflineClientSessionRealm extends CustomKeycloakTas
             return;
         }
 
-        // H2 and others, very slow with O(n^2) complexity
+        // H2 等：标准相关子查询，复杂度 O(n²) 但兼容性最广
         // It is standard SQL queries, it *must* be compatible with all vendors (fingers crossed)
         generateUpdateQueryUsingStandardSQL(clientSessionTable, userSessionTable);
     }
@@ -61,6 +66,7 @@ public class JpaUpdate26_6_0_OfflineClientSessionRealm extends CustomKeycloakTas
         return "Sets the realm column in offline_client_session";
     }
 
+    /** 标准 SQL：子查询回填 realm_id，仅更新 NULL 行。 */
     private void generateUpdateQueryUsingStandardSQL(String clientSessionTable, String userSessionTable) {
         statements.add(new RawParameterizedSqlStatement("""
                 UPDATE %s cs
@@ -73,6 +79,7 @@ public class JpaUpdate26_6_0_OfflineClientSessionRealm extends CustomKeycloakTas
                 .formatted(clientSessionTable, userSessionTable)));
     }
 
+    /** Oracle MERGE 语法批量关联更新。 */
     private void generateUpdateQueryForOracle(String clientSessionTable, String userSessionTable) {
         statements.add(new RawParameterizedSqlStatement("""
                 MERGE INTO %s cs
@@ -83,6 +90,7 @@ public class JpaUpdate26_6_0_OfflineClientSessionRealm extends CustomKeycloakTas
                 .formatted(clientSessionTable, userSessionTable)));
     }
 
+    /** SQL Server UPDATE … FROM … JOIN 语法。 */
     private void generateUpdateQueryForMSSQL(String clientSessionTable, String userSessionTable) {
         statements.add(new RawParameterizedSqlStatement("""
                 UPDATE cs
@@ -92,6 +100,7 @@ public class JpaUpdate26_6_0_OfflineClientSessionRealm extends CustomKeycloakTas
                 .formatted(clientSessionTable, userSessionTable)));
     }
 
+    /** MySQL/MariaDB UPDATE … JOIN … SET 语法。 */
     private void generateUpdateQueryForMySQL(String clientSessionTable, String userSessionTable) {
         statements.add(new RawParameterizedSqlStatement("""
                 UPDATE %s cs
@@ -100,6 +109,7 @@ public class JpaUpdate26_6_0_OfflineClientSessionRealm extends CustomKeycloakTas
                 .formatted(clientSessionTable, userSessionTable)));
     }
 
+    /** PostgreSQL UPDATE … FROM … WHERE 语法。 */
     private void generateUpdateQueryForPostgresSQL(String clientSessionTable, String userSessionTable) {
         statements.add(new RawParameterizedSqlStatement("""
                 UPDATE %s cs

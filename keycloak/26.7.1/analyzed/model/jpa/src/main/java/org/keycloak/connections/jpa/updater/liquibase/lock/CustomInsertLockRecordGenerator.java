@@ -35,12 +35,14 @@ import liquibase.statement.core.InitializeDatabaseChangeLogLockTableStatement;
 import liquibase.statement.core.InsertStatement;
 
 /**
- * We need to remove DELETE SQL command, which liquibase adds by default when inserting record to table lock. This is causing buggy behaviour
+ * 自定义 Liquibase 锁表初始化 SQL 生成器：仅 INSERT 缺失锁行，不附带默认 DELETE。
+ * <p>Liquibase 默认实现会在插入前 DELETE 全表，导致 Keycloak 多命名空间锁行为异常；本生成器按 {@link DBLockProvider.Namespace} 补缺。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CustomInsertLockRecordGenerator extends AbstractSqlGenerator<InitializeDatabaseChangeLogLockTableStatement> {
 
+    /** 优先级高于默认 InitializeDatabaseChangeLogLockTableGenerator，确保本实现生效。 */
     @Override
     public int getPriority() {
         return super.getPriority() + 1; // Ensure bigger priority than InitializeDatabaseChangeLogLockTableGenerator
@@ -51,6 +53,7 @@ public class CustomInsertLockRecordGenerator extends AbstractSqlGenerator<Initia
         return new ValidationErrors();
     }
 
+    /** 为尚未存在的 DBLockProvider 命名空间 ID 生成 INSERT（LOCKED=false）。 */
     @Override
     public Sql[] generateSql(InitializeDatabaseChangeLogLockTableStatement statement, Database database, SqlGeneratorChain sqlGeneratorChain) {
         // get the IDs that are already in the database if migration

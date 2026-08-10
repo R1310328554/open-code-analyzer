@@ -21,6 +21,8 @@ import liquibase.statement.SqlStatement;
 import liquibase.statement.core.RawSqlStatement;
 
 /**
+ * 26.4.0 迁移：为 SAML 客户端补全旧版加密相关默认属性。
+ * <p>向 {@code CLIENT_ATTRIBUTES} 插入算法、密钥算法与摘要方法的默认值，仅作用于尚未配置该属性的 SAML 客户端。</p>
  *
  * @author rmartinc
  */
@@ -31,6 +33,7 @@ public class JpaUpdate26_4_0_SamlEncryptionAttributes extends CustomKeycloakTask
         return "Insert legacy encryption attributes in SAML clients";
     }
 
+    /** 为三项 SAML 加密属性各生成一条 INSERT … SELECT 语句。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         statements.add(createInsertQueryForAttribute("saml.encryption.algorithm", "http://www.w3.org/2001/04/xmlenc#aes128-cbc"));
@@ -38,6 +41,7 @@ public class JpaUpdate26_4_0_SamlEncryptionAttributes extends CustomKeycloakTask
         statements.add(createInsertQueryForAttribute("saml.encryption.digestMethod", "http://www.w3.org/2000/09/xmldsig#sha1"));
     }
 
+    /** 构造 INSERT：PROTOCOL=saml 且缺少指定 NAME 的客户端才写入默认值。 */
     private SqlStatement createInsertQueryForAttribute(String attribute, String value) {
         final String clientTable = getTableName("CLIENT");
         final String clientAttributesTable = getTableName("CLIENT_ATTRIBUTES");

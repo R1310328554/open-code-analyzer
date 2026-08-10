@@ -14,7 +14,8 @@ import liquibase.statement.core.DeleteStatement;
 import liquibase.structure.core.Column;
 
 /**
- * Cleanup script for removing duplicated migration model update time in the MIGRATION_MODEL table
+ * 清理 {@code MIGRATION_MODEL} 表中 {@code UPDATE_TIME} 重复的记录。
+ * <p>同一更新时间可能对应多条迁移记录；保留 Keycloak 版本号最高的一条，删除其余重复行。</p>
  * See: <a href="https://github.com/keycloak/keycloak/issues/40088">keycloak#40088</a>
  */
 public class JpaUpdate26_2_6_RemoveDuplicateMigrationModelTime extends CustomKeycloakTask {
@@ -25,6 +26,7 @@ public class JpaUpdate26_2_6_RemoveDuplicateMigrationModelTime extends CustomKey
         return "Delete duplicated records for DB update time in MIGRATION_MODEL table";
     }
 
+    /** 查询重复 UPDATE_TIME 组，保留最高 VERSION，分批生成 DELETE 语句。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         final Map<String, ModelVersion> itemsToDelete = new HashMap<>();
@@ -63,7 +65,7 @@ public class JpaUpdate26_2_6_RemoveDuplicateMigrationModelTime extends CustomKey
             throw new CustomChangeException(getTaskId() + ": Failed to detect duplicate MIGRATION_MODEL rows", e);
         }
 
-        // Get ID of the highest Keycloak version with the same update time
+        // 同一 UPDATE_TIME 下保留 Keycloak 版本号最高的记录 ID
         var highestVersionId = itemsToDelete.entrySet()
                 .stream()
                 .reduce((e1, e2) -> e1.getValue().lessThan(e2.getValue()) ? e2 : e1)
@@ -73,7 +75,7 @@ public class JpaUpdate26_2_6_RemoveDuplicateMigrationModelTime extends CustomKey
         AtomicInteger i = new AtomicInteger();
         itemsToDelete.keySet().stream()
                 .filter(f -> !f.equals(highestVersionId))
-                .collect(Collectors.groupingByConcurrent(id -> i.getAndIncrement() / 20, Collectors.toList())) // Split into chunks of at most 20 items
+                .collect(Collectors.groupingByConcurrent(id -> i.getAndIncrement() / 20, Collectors.toList())) // 每批最多 20 条，避免 IN 子句过长
                 .values().stream()
                 .map(ids -> new DeleteStatement(null, null, MIGRATION_MODEL_TABLE)
                         .setWhere(":name IN (" + ids.stream().map(id -> "?").collect(Collectors.joining(",")) + ")")

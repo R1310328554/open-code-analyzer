@@ -22,10 +22,14 @@ import org.keycloak.models.LDAPConstants;
 import liquibase.exception.CustomChangeException;
 
 /**
+ * 2.4.0 迁移：将 LDAP 用户联邦存储迁移为 Component 模型。
+ * <p>专门处理 {@code ldap} 提供者，并保留 {@code LDAPStorageMapper} 映射器组件类型。</p>
+ *
  * @author <a href="mailto:bburke@redhat.com">Bill Burke</a>
  */
 public class PortLdapUserFedToComponentModel extends AbstractUserFedToComponent {
 
+    /** 转换 LDAP 联邦配置及关联 mapper 为 COMPONENT/COMPONENT_CONFIG 行。 */
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         convertFedProviderToComponent(LDAPConstants.LDAP_PROVIDER, "org.keycloak.storage.ldap.mappers.LDAPStorageMapper");
