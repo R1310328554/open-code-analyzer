@@ -21,14 +21,18 @@ import com.alibaba.nacos.client.redo.data.RedoData;
 import java.util.Objects;
 
 /**
- * Nacos naming redo data.
+ * 命名模块 redo 数据基类。
+ *
+ * <p>在 {@link com.alibaba.nacos.client.redo.data.RedoData} 基础上绑定 serviceName 与 groupName，供实例与订阅 redo 子类复用。</p>
  *
  * @author xiweng.yy
  */
 public abstract class NamingRedoData<T> extends RedoData<T> {
     
+    /** 服务名。 */
     private final String serviceName;
     
+    /** 分组名。 */
     private final String groupName;
     
     protected NamingRedoData(String serviceName, String groupName) {

@@ -36,12 +36,15 @@ import java.util.Collection;
 import static com.alibaba.nacos.api.common.Constants.FUZZY_WATCH_RESOURCE_CHANGED;
 
 /**
- * handle fuzzy watch request from server.
+ * 命名模糊监听服务端推送请求处理器。
+ *
+ * <p>处理 {@link NamingFuzzyWatchSyncRequest} 全量/增量同步与{@link NamingFuzzyWatchChangeNotifyRequest} 变更通知，发布 {@link NamingFuzzyWatchNotifyEvent} 驱动本地回调。</p>
  *
  * @author shiyiyue
  */
 public class NamingFuzzyWatchNotifyRequestHandler implements ServerRequestHandler {
     
+    /** 模糊监听上下文与模式映射持有者。 */
     NamingFuzzyWatchServiceListHolder namingFuzzyWatchServiceListHolder;
     
     public NamingFuzzyWatchNotifyRequestHandler(
@@ -66,7 +69,7 @@ public class NamingFuzzyWatchNotifyRequestHandler implements ServerRequestHandle
                     || watchNotifySyncRequest.getSyncType()
                         .equals(Constants.FUZZY_WATCH_DIFF_SYNC_NOTIFY)) {
                     for (NamingFuzzyWatchSyncRequest.Context serviceKey : serviceKeys) {
-                        // may have a 'change event' sent to client before 'init event'
+                        // 初始化完成前可能先收到变更事件，需去重后再发布
                         if (namingFuzzyWatchContext
                             .addReceivedServiceKey(serviceKey.getServiceKey())) {
                             NotifyCenter.publishEvent(NamingFuzzyWatchNotifyEvent.build(
@@ -111,7 +114,7 @@ public class NamingFuzzyWatchNotifyRequestHandler implements ServerRequestHandle
                             && namingFuzzyWatchContext.addReceivedServiceKey(
                                 ((NamingFuzzyWatchChangeNotifyRequest) request)
                                     .getServiceKey())) {
-                            //publish local service add event
+                            // 发布本地服务新增事件
                             NotifyCenter.publishEvent(NamingFuzzyWatchNotifyEvent.build(
                                 namingFuzzyWatchServiceListHolder.getNotifierEventScope(),
                                 pattern,

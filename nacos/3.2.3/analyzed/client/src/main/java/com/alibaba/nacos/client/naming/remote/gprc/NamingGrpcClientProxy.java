@@ -83,22 +83,30 @@ import static com.alibaba.nacos.api.remote.RemoteConstants.MONITOR_LABEL_NONE;
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Naming grpc client proxy.
+ * 命名服务 gRPC 远程代理。
+ *
+ * <p>通过 {@link RpcClient} 与命名服务端通信，负责临时实例注册/注销、批量注册、服务订阅、模糊监听及服务列表查询；集成 {@link NamingGrpcRedoService} 实现断线重连后的 redo 补偿。</p>
  *
  * @author xiweng.yy
  */
 public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     
+    /** 当前命名空间 ID。 */
     private final String namespaceId;
     
+    /** 本 gRPC 客户端唯一标识，用于 RpcClientFactory 注册与销毁。 */
     private final String uuid;
     
+    /** RPC 请求超时毫秒数，-1 表示使用默认值。 */
     private final Long requestTimeout;
     
+    /** 底层 gRPC RPC 客户端。 */
     private final RpcClient rpcClient;
     
+    /** 断线重连 redo 服务，缓存注册与订阅状态。 */
     private final NamingGrpcRedoService redoService;
     
+    /** 是否启用客户端请求失败指标上报。 */
     private boolean enableClientMetrics = true;
     
     public NamingGrpcClientProxy(String namespaceId, SecurityProxy securityProxy,
@@ -127,6 +135,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
         start(serverListFactory, serviceInfoHolder, namingFuzzyWatchServiceListHolder);
     }
     
+    /** 启动 RPC 客户端、注册推送/模糊监听处理器并订阅服务端列表变更。 */
     private void start(ServerListFactory serverListFactory, ServiceInfoHolder serviceInfoHolder,
         NamingFuzzyWatchServiceListHolder namingFuzzyWatchServiceListHolder)
         throws NacosException {
@@ -163,6 +172,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
         }
     }
     
+    /** 临时实例注册：先缓存 redo 数据再发起 RPC。 */
     private void registerServiceForEphemeral(String serviceName, String groupName,
         Instance instance)
         throws NacosException {
@@ -188,7 +198,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Get instance list that need to be Retained.
+     * 计算批量注销后仍需保留的实例列表。
      *
      * @param serviceName         service name
      * @param groupName           group name
@@ -230,10 +240,10 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
                 deRegisterInstanceMap.entrySet().iterator();
             while (it.hasNext()) {
                 Instance deRegisterInstance = it.next().getKey();
-                // only compare Ip & Port because redoInstance's instanceId or serviceName might be null but deRegisterInstance's might not be null.
+                // 仅比较 IP 与端口：redo 缓存中 instanceId 等字段可能为空
                 if (compareIpAndPort(deRegisterInstance, redoInstance)) {
                     needRetained = false;
-                    // clear current entry to speed up next redoInstance comparing.
+                    // 移除已匹配项以加速后续比较
                     it.remove();
                     break;
                 }
@@ -251,7 +261,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Execute batch register operation.
+     * 执行批量注册 RPC 并标记 redo 为已注册。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -268,7 +278,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Execute register operation.
+     * 执行临时实例注册 RPC 并标记 redo 为已注册。
      *
      * @param serviceName name of service
      * @param groupName   group of service
@@ -284,7 +294,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Execute register operation for persistent instance.
+     * 执行持久实例注册 RPC（不经 redo 缓存）。
      *
      * @param serviceName name of service
      * @param groupName   group of service
@@ -313,6 +323,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
         }
     }
     
+    /** 临时实例注销：批量场景走差量保留，否则标记 redo 并发起 RPC。 */
     private void deregisterServiceForEphemeral(String serviceName, String groupName,
         Instance instance)
         throws NacosException {
@@ -331,7 +342,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Execute deregister operation.
+     * 执行临时实例注销 RPC 并更新 redo 状态。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -347,7 +358,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Execute deregister operation for persistent instance.
+     * 执行持久实例注销 RPC。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -425,7 +436,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Execute subscribe operation.
+     * 执行订阅 RPC 并标记订阅 redo 为已注册。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -460,7 +471,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Execute unsubscribe operation.
+     * 执行取消订阅 RPC 并清理 redo 缓存。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -482,7 +493,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Determine whether nacos-server supports the capability.
+     * 判断命名服务端是否支持指定能力键。
      *
      * @param abilityKey ability key
      * @return true if supported, otherwise false
@@ -492,7 +503,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Execute unsubscribe operation.
+     * 发送模糊监听 RPC 请求。
      *
      * @param namingFuzzyWatchRequest namingFuzzyWatchRequest
      * @throws NacosException nacos exception
@@ -523,7 +534,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
             response = requestTimeout < 0 ? rpcClient.request(request)
                 : rpcClient.request(request, requestTimeout);
             if (ResponseCode.SUCCESS.getCode() != response.getResultCode()) {
-                // If the 403 login operation is triggered, refresh the accessToken of the client
+                // 403 无权限时触发重新登录以刷新 accessToken
                 if (NacosException.NO_RIGHT == response.getErrorCode()) {
                     reLogin();
                 }
@@ -547,7 +558,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Records registration metrics for a service instance.
+     * 记录命名 RPC 请求失败指标。
      *
      * @param request   The registration request object.
      * @param exception The Exception encountered during the registration process, or null if registration was
@@ -585,6 +596,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
         NotifyCenter.deregisterSubscriber(this);
     }
     
+    /** 销毁并移除 RpcClientFactory 中注册的 gRPC 客户端。 */
     private void shutDownAndRemove(String uuid) {
         synchronized (RpcClientFactory.getAllClientEntries()) {
             try {

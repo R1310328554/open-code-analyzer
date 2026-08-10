@@ -42,30 +42,38 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Naming client gprc redo service.
+ * 命名 gRPC 客户端 redo 服务。
  *
- * <p>When connection reconnect to server, redo the register and subscribe.
+ * <p>监听连接事件，断线时将注册/订阅标记为待重做；重连后由 {@link RedoScheduledTask} 定时补偿注册与订阅操作。</p>
  * TODO refactor to extends from {@link com.alibaba.nacos.client.redo.service.AbstractRedoService}
  *
  * @author xiweng.yy
  */
 public class NamingGrpcRedoService implements ConnectionEventListener {
     
+    /** redo 定时任务线程名前缀。 */
     private static final String REDO_THREAD_NAME = "com.alibaba.nacos.client.naming.grpc.redo";
     
+    /** redo 线程池大小。 */
     private int redoThreadCount;
     
+    /** redo 任务执行间隔毫秒数。 */
     private long redoDelayTime;
     
+    /** 已注册实例 redo 缓存，键为 group@@service。 */
     private final ConcurrentMap<String, InstanceRedoData> registeredInstances =
         new ConcurrentHashMap<>();
     
+    /** 订阅 redo 缓存，键为 serviceKey。 */
     private final ConcurrentMap<String, SubscriberRedoData> subscribes = new ConcurrentHashMap<>();
     
+    /** 模糊监听持有者，断线时重置一致性状态。 */
     private final NamingFuzzyWatchServiceListHolder namingFuzzyWatchServiceListHolder;
     
+    /** 定时执行 redo 任务的线程池。 */
     private final ScheduledExecutorService redoExecutor;
     
+    /** gRPC 连接是否处于已连接状态。 */
     private volatile boolean connected = false;
     
     public NamingGrpcRedoService(NamingGrpcClientProxy clientProxy,
@@ -80,6 +88,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
             TimeUnit.MILLISECONDS);
     }
     
+    /** 从客户端属性读取 redo 延迟与线程数配置。 */
     private void setProperties(NacosClientProperties properties) {
         redoDelayTime = properties.getLong(PropertyKeyConst.REDO_DELAY_TIME,
             Constants.DEFAULT_REDO_DELAY_TIME);
@@ -120,7 +129,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Cache registered instance for redo.
+     * 缓存单实例注册 redo 数据。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -135,7 +144,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Cache registered instance for redo.
+     * 缓存批量实例注册 redo 数据。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -152,7 +161,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Instance register successfully, mark registered status as {@code true}.
+     * 实例注册成功后标记 redo 为已注册。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -168,7 +177,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Instance deregister, mark unregistering status as {@code true}.
+     * 实例开始注销，标记 redo 为注销中。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -185,7 +194,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Instance deregister finished, mark unregistered status.
+     * 实例注销完成，更新 redo 为已注销。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -201,7 +210,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Remove registered instance for redo.
+     * 从 redo 缓存移除实例（预期不再注册时）。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -217,7 +226,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Find all instance redo data which need do redo.
+     * 查找所有需要重做注册的实例 redo 数据。
      *
      * @return set of {@code InstanceRedoData} need to do redo.
      */
@@ -234,7 +243,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Cache subscriber for redo.
+     * 缓存订阅 redo 数据。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -250,7 +259,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Subscriber register successfully, mark registered status as {@code true}.
+     * 订阅成功后标记 redo 为已注册。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -268,7 +277,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Subscriber deregister, mark unregistering status as {@code true}.
+     * 取消订阅开始，标记 redo 为注销中。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -287,7 +296,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Judge subscriber has registered to server.
+     * 判断订阅是否已在服务端注册成功。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -304,7 +313,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Remove subscriber for redo.
+     * 从 redo 缓存移除订阅（预期不再订阅时）。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -322,7 +331,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Find all subscriber redo data which need do redo.
+     * 查找所有需要重做订阅的 redo 数据。
      *
      * @return set of {@code SubscriberRedoData} need to do redo.
      */
@@ -339,7 +348,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * get Cache service.
+     * 按组合服务名获取实例 redo 缓存。
      *
      * @return cache service
      */
@@ -348,7 +357,7 @@ public class NamingGrpcRedoService implements ConnectionEventListener {
     }
     
     /**
-     * Shutdown redo service.
+     * 关闭 redo 线程池并清空缓存。
      */
     public void shutdown() {
         LogUtils.NAMING_LOGGER.info("Shutdown grpc redo service executor " + redoExecutor);

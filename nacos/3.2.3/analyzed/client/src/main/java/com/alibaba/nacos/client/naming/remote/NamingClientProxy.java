@@ -27,14 +27,18 @@ import com.alibaba.nacos.common.lifecycle.Closeable;
 import java.util.List;
 
 /**
- * Naming Client Proxy.
+ * 命名服务远程代理接口。
+ *
+ * <p>封装实例注册/注销、服务订阅、服务 CRUD 及健康检查等与服务端交互的能力，由 {@link NamingClientProxyDelegate} 委托至 HTTP 或 gRPC 实现。</p>
  *
  * @author xiweng.yy
  */
 public interface NamingClientProxy extends Closeable {
     
     /**
-     * Register an instance to service with specified instance properties.
+     * 向指定服务注册实例。
+     *
+     * <p>根据实例类型（临时/持久）由具体代理选择 HTTP 或 gRPC 通道。</p>
      *
      * @param serviceName name of service
      * @param groupName   group of service
@@ -45,7 +49,7 @@ public interface NamingClientProxy extends Closeable {
         throws NacosException;
     
     /**
-     * Batch register instance to service with specified instance properties.
+     * 批量注册实例到指定服务。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -57,7 +61,7 @@ public interface NamingClientProxy extends Closeable {
         throws NacosException;
     
     /**
-     * Batch deRegister instance to service with specified instance properties.
+     * 批量注销指定服务下的实例。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -69,7 +73,7 @@ public interface NamingClientProxy extends Closeable {
         throws NacosException;
     
     /**
-     * Deregister instance from a service.
+     * 从服务中注销实例。
      *
      * @param serviceName name of service
      * @param groupName   group name
@@ -80,7 +84,7 @@ public interface NamingClientProxy extends Closeable {
         throws NacosException;
     
     /**
-     * Update instance to service.
+     * 更新服务下的实例信息。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -91,7 +95,7 @@ public interface NamingClientProxy extends Closeable {
         throws NacosException;
     
     /**
-     * Query instance list.
+     * 查询服务实例列表。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -105,7 +109,7 @@ public interface NamingClientProxy extends Closeable {
         throws NacosException;
     
     /**
-     * Query Service.
+     * 查询服务元数据。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -115,7 +119,7 @@ public interface NamingClientProxy extends Closeable {
     Service queryService(String serviceName, String groupName) throws NacosException;
     
     /**
-     * Create service.
+     * 创建服务。
      *
      * @param service  service
      * @param selector selector
@@ -124,7 +128,7 @@ public interface NamingClientProxy extends Closeable {
     void createService(Service service, AbstractSelector selector) throws NacosException;
     
     /**
-     * Delete service.
+     * 删除服务。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -134,7 +138,7 @@ public interface NamingClientProxy extends Closeable {
     boolean deleteService(String serviceName, String groupName) throws NacosException;
     
     /**
-     * Update service.
+     * 更新服务配置。
      *
      * @param service  service
      * @param selector selector
@@ -143,7 +147,7 @@ public interface NamingClientProxy extends Closeable {
     void updateService(Service service, AbstractSelector selector) throws NacosException;
     
     /**
-     * Get service list.
+     * 分页获取服务名称列表。
      *
      * @param pageNo    page number
      * @param pageSize  size per page
@@ -157,7 +161,7 @@ public interface NamingClientProxy extends Closeable {
         throws NacosException;
     
     /**
-     * Subscribe service.
+     * 订阅服务实例变更。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -169,7 +173,7 @@ public interface NamingClientProxy extends Closeable {
         throws NacosException;
     
     /**
-     * Unsubscribe service.
+     * 取消订阅服务。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -179,7 +183,7 @@ public interface NamingClientProxy extends Closeable {
     void unsubscribe(String serviceName, String groupName, String clusters) throws NacosException;
     
     /**
-     * Judge whether service has been subscribed.
+     * 判断服务是否已订阅。
      *
      * @param serviceName service name
      * @param groupName   group name
@@ -191,7 +195,7 @@ public interface NamingClientProxy extends Closeable {
         throws NacosException;
     
     /**
-     * Check Server healthy.
+     * 检查命名服务端是否健康可用。
      *
      * @return true if server is healthy
      */

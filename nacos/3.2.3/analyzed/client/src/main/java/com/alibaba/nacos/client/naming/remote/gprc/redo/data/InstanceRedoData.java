@@ -19,7 +19,9 @@ package com.alibaba.nacos.client.naming.remote.gprc.redo.data;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 
 /**
- * Redo data for register service instance.
+ * 单实例注册 redo 数据。
+ *
+ * <p>封装服务名、分组与 {@link Instance}，供 {@link NamingGrpcRedoService} 在断线重连后补偿注册或注销。</p>
  *
  * @author xiweng.yy
  */
@@ -30,7 +32,7 @@ public class InstanceRedoData extends NamingRedoData<Instance> {
     }
     
     /**
-     * Build a new {@code RedoData} for register service instance.
+     * 构建单实例注册 redo 数据。
      *
      * @param serviceName service name for redo data
      * @param groupName   group name for redo data

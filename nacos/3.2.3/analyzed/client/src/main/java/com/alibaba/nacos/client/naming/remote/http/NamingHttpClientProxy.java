@@ -62,53 +62,76 @@ import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTPS_PREFIX
 import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 
 /**
- * Naming proxy.
+ * 命名服务 HTTP 远程代理。
+ *
+ * <p>通过 REST API 与命名服务端通信，主要处理持久实例注册/注销、服务 CRUD 及健康检查；临时实例与订阅由 gRPC 代理承担。</p>
  *
  * @author nkorange
  */
 public class NamingHttpClientProxy extends AbstractNamingClientProxy {
     
+    /** 共享 HTTP 客户端模板。 */
     private final NacosRestTemplate nacosRestTemplate =
         NamingHttpClientManager.getInstance().getNacosRestTemplate();
     
+    /** 默认命名服务端端口。 */
     private static final int DEFAULT_SERVER_PORT = 8848;
     
+    /** HTTP 请求头模块标识。 */
     private static final String MODULE_NAME = "Naming";
     
+    /** 实例 IP 查询参数名。 */
     private static final String IP_PARAM = "ip";
     
+    /** 实例端口查询参数名。 */
     private static final String PORT_PARAM = "port";
     
+    /** 实例权重参数名。 */
     private static final String WEIGHT_PARAM = "weight";
     
+    /** 实例启用状态参数名。 */
     private static final String ENABLE_PARAM = "enabled";
     
+    /** 临时实例标志参数名。 */
     private static final String EPHEMERAL_PARAM = "ephemeral";
     
+    /** 元数据 JSON 参数名。 */
     private static final String META_PARAM = "metadata";
     
+    /** 服务选择器参数名。 */
     private static final String SELECTOR_PARAM = "selector";
     
+    /** 健康状态参数名。 */
     private static final String HEALTHY_PARAM = "healthy";
     
+    /** 保护阈值参数名。 */
     private static final String PROTECT_THRESHOLD_PARAM = "protectThreshold";
     
+    /** 集群列表参数名。 */
     private static final String CLUSTERS_PARAM = "clusters";
     
+    /** 客户端 IP 参数名。 */
     private static final String CLIENT_IP_PARAM = "clientIP";
     
+    /** 仅健康实例参数名。 */
     private static final String HEALTHY_ONLY_PARAM = "healthyOnly";
     
+    /** 注册启用参数名。 */
     private static final String REGISTER_ENABLE_PARAM = "enable";
     
+    /** 当前命名空间 ID。 */
     private final String namespaceId;
     
+    /** 命名服务端地址列表管理器。 */
     private final NamingServerListManager serverListManager;
     
+    /** 域名模式下最大重试次数。 */
     private final int maxRetry;
     
+    /** 命名服务端 HTTP 端口。 */
     private int serverPort = DEFAULT_SERVER_PORT;
     
+    /** 是否上报 HTTP 请求耗时指标。 */
     private boolean enableClientMetrics = true;
     
     public NamingHttpClientProxy(String namespaceId, SecurityProxy securityProxy,
@@ -127,7 +150,7 @@ public class NamingHttpClientProxy extends AbstractNamingClientProxy {
     
     @Override
     public void onEvent(ServerListChangeEvent event) {
-        // do nothing in http client
+        // HTTP 客户端不响应服务端列表变更事件
     }
     
     @Override
@@ -365,7 +388,7 @@ public class NamingHttpClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Request api.
+     * 向服务端列表发起 HTTP API 请求，失败时轮询下一节点。
      *
      * @param api     api
      * @param params  parameters
@@ -426,7 +449,7 @@ public class NamingHttpClientProxy extends AbstractNamingClientProxy {
     }
     
     /**
-     * Call server.
+     * 调用单个服务端节点并处理鉴权、指标与 403 重登录。
      *
      * @param api       api
      * @param params    parameters
@@ -481,7 +504,7 @@ public class NamingHttpClientProxy extends AbstractNamingClientProxy {
                 return StringUtils.EMPTY;
             }
             
-            // If the 403 login operation is triggered, refresh the accessToken of the client
+            // 403 无权限时触发重新登录以刷新 accessToken
             if (HttpStatus.SC_FORBIDDEN == restResult.getCode()) {
                 reLogin();
             }

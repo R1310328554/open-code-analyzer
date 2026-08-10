@@ -48,24 +48,33 @@ import static com.alibaba.nacos.client.constant.Constants.Security.SECURITY_INFO
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Delegate of naming client proxy.
+ * 命名远程代理委托类。
+ *
+ * <p>组合 {@link NamingHttpClientProxy} 与 {@link NamingGrpcClientProxy}，按实例类型与服务端能力路由请求；统一管理鉴权、服务端列表与本地缓存更新。</p>
  *
  * @author xiweng.yy
  */
 public class NamingClientProxyDelegate implements NamingClientProxy {
     
+    /** 命名服务端地址列表管理器。 */
     private final NamingServerListManager serverListManager;
     
+    /** 订阅服务的定时拉取更新调度器。 */
     private final ServiceInfoUpdateService serviceInfoUpdateService;
     
+    /** 服务实例本地缓存持有者。 */
     private final ServiceInfoHolder serviceInfoHolder;
     
+    /** HTTP 远程代理，处理持久实例等 HTTP 通道操作。 */
     private final NamingHttpClientProxy httpClientProxy;
     
+    /** gRPC 远程代理，处理临时实例、订阅与模糊监听。 */
     private final NamingGrpcClientProxy grpcClientProxy;
     
+    /** 鉴权代理，负责登录与凭证刷新。 */
     private final SecurityProxy securityProxy;
     
+    /** 定时刷新鉴权信息的线程池。 */
     private ScheduledExecutorService executorService;
     
     public NamingClientProxyDelegate(String namespace, ServiceInfoHolder serviceInfoHolder,
@@ -88,6 +97,7 @@ public class NamingClientProxyDelegate implements NamingClientProxy {
                 serviceInfoHolder, namingFuzzyWatchServiceListHolder);
     }
     
+    /** 启动鉴权登录并定时刷新安全凭证。 */
     private void initSecurityProxy(NacosClientProperties properties) {
         this.executorService = new ScheduledThreadPoolExecutor(1,
             new NameThreadFactory("com.alibaba.nacos.client.naming.security"));
@@ -215,6 +225,7 @@ public class NamingClientProxyDelegate implements NamingClientProxy {
         return grpcClientProxy.serverHealthy() || httpClientProxy.serverHealthy();
     }
     
+    /** 按实例类型与服务端 gRPC 能力选择 HTTP 或 gRPC 代理。 */
     private NamingClientProxy getExecuteClientProxy(Instance instance) {
         if (instance.isEphemeral() || grpcClientProxy.isAbilitySupportedByServer(
             AbilityKey.SERVER_PERSISTENT_INSTANCE_BY_GRPC)) {

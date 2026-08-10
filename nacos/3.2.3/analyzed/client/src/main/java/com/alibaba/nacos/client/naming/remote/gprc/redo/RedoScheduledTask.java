@@ -26,15 +26,19 @@ import com.alibaba.nacos.client.utils.LogUtils;
 import com.alibaba.nacos.common.task.AbstractExecuteTask;
 
 /**
- * Redo task.
+ * 命名 gRPC redo 定时任务。
+ *
+ * <p>连接可用时遍历待重做实例与订阅，按 {@link NamingRedoData.RedoType} 执行注册、注销或清理操作。</p>
  * TODO refactor to extends from {@link com.alibaba.nacos.client.redo.service.AbstractRedoTask}
  *
  * @author xiweng.yy
  */
 public class RedoScheduledTask extends AbstractExecuteTask {
     
+    /** gRPC 代理，执行实际的注册/订阅 RPC。 */
     private final NamingGrpcClientProxy clientProxy;
     
+    /** redo 服务，提供待重做数据与状态更新。 */
     private final NamingGrpcRedoService redoService;
     
     public RedoScheduledTask(NamingGrpcClientProxy clientProxy, NamingGrpcRedoService redoService) {
@@ -56,6 +60,7 @@ public class RedoScheduledTask extends AbstractExecuteTask {
         }
     }
     
+    /** 遍历并重做所有待补偿的实例操作。 */
     private void redoForInstances() {
         for (InstanceRedoData each : redoService.findInstanceRedoData()) {
             try {
@@ -68,6 +73,7 @@ public class RedoScheduledTask extends AbstractExecuteTask {
         }
     }
     
+    /** 按 redo 类型执行单条实例补偿。 */
     private void redoForInstance(InstanceRedoData redoData) throws NacosException {
         NamingRedoData.RedoType redoType = redoData.getRedoType();
         String serviceName = redoData.getServiceName();
@@ -98,7 +104,7 @@ public class RedoScheduledTask extends AbstractExecuteTask {
     private void processRegisterRedoType(InstanceRedoData redoData, String serviceName,
         String groupName) throws NacosException {
         if (redoData instanceof BatchInstanceRedoData) {
-            // Execute Batch Register
+            // 执行批量注册补偿
             BatchInstanceRedoData batchInstanceRedoData = (BatchInstanceRedoData) redoData;
             clientProxy.doBatchRegisterService(serviceName, groupName,
                 batchInstanceRedoData.getInstances());
@@ -107,6 +113,7 @@ public class RedoScheduledTask extends AbstractExecuteTask {
         clientProxy.doRegisterService(serviceName, groupName, redoData.get());
     }
     
+    /** 遍历并重做所有待补偿的订阅操作。 */
     private void redoForSubscribes() {
         for (SubscriberRedoData each : redoService.findSubscriberRedoData()) {
             try {
@@ -119,6 +126,7 @@ public class RedoScheduledTask extends AbstractExecuteTask {
         }
     }
     
+    /** 按 redo 类型执行单条订阅补偿。 */
     private void redoForSubscribe(SubscriberRedoData redoData) throws NacosException {
         NamingRedoData.RedoType redoType = redoData.getRedoType();
         String serviceName = redoData.getServiceName();
@@ -147,6 +155,7 @@ public class RedoScheduledTask extends AbstractExecuteTask {
         }
     }
     
+    /** 判断 gRPC 客户端是否已停止运行。 */
     private boolean isClientDisabled() {
         return !clientProxy.isEnable();
     }

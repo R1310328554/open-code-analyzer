@@ -25,12 +25,15 @@ import com.alibaba.nacos.common.remote.client.Connection;
 import com.alibaba.nacos.common.remote.client.ServerRequestHandler;
 
 /**
- * Naming push request handler.
+ * 命名服务推送请求处理器。
+ *
+ * <p>接收服务端 {@link NotifySubscriberRequest}，将最新 {@link ServiceInfo} 写入 {@link ServiceInfoHolder} 本地缓存并触发变更通知。</p>
  *
  * @author xiweng.yy
  */
 public class NamingPushRequestHandler implements ServerRequestHandler {
     
+    /** 服务实例本地缓存，接收推送后更新。 */
     private final ServiceInfoHolder serviceInfoHolder;
     
     public NamingPushRequestHandler(ServiceInfoHolder serviceInfoHolder) {

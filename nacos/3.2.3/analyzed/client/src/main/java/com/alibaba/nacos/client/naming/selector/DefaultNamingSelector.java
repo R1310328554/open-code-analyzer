@@ -27,12 +27,15 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * Default naming selector.
+ * 默认命名实例选择器。
+ *
+ * <p>基于 {@link Predicate} 过滤 {@link NamingContext} 中的实例列表，返回 {@link NamingResult} 供调用方获取筛选结果。</p>
  *
  * @author lideyou
  */
 public class DefaultNamingSelector implements NamingSelector {
     
+    /** 实例过滤谓词。 */
     private final Predicate<Instance> filter;
     
     public DefaultNamingSelector(Predicate<Instance> filter) {
@@ -45,6 +48,7 @@ public class DefaultNamingSelector implements NamingSelector {
         return () -> instances;
     }
     
+    /** 对实例列表应用过滤谓词，null 时返回空列表。 */
     private List<Instance> doFilter(List<Instance> instances) {
         return instances == null ? Collections.emptyList()
             : instances.stream().filter(filter).collect(Collectors.toList());

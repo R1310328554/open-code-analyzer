@@ -27,14 +27,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * Naming listener invoker.
+ * 命名事件监听器调用器。
+ *
+ * <p>实现 {@link ListenerInvoker}，将 {@link NamingEvent} 分发给 {@link EventListener}；若监听器指定了 Executor 则异步回调。</p>
  *
  * @author lideyou
  */
 public class NamingListenerInvoker implements ListenerInvoker<NamingEvent> {
     
+    /** 被包装的命名事件监听器。 */
     private final EventListener listener;
     
+    /** 是否已至少触发过一次回调。 */
     private final AtomicBoolean invoked = new AtomicBoolean(false);
     
     public NamingListenerInvoker(EventListener listener) {
@@ -53,6 +57,7 @@ public class NamingListenerInvoker implements ListenerInvoker<NamingEvent> {
         }
     }
     
+    /** 记录监听器回调日志。 */
     private void logInvoke(NamingEvent event) {
         NAMING_LOGGER.info("Invoke event groupName: {}, serviceName: {} to Listener: {}",
             event.getGroupName(),

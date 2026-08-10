@@ -17,7 +17,9 @@
 package com.alibaba.nacos.client.naming.remote.gprc.redo.data;
 
 /**
- * Redo data for subscribers.
+ * 服务订阅 redo 数据。
+ *
+ * <p>泛型值为集群名（clusters），用于断线后补偿订阅或取消订阅。</p>
  *
  * @author xiweng.yy
  */
@@ -28,7 +30,7 @@ public class SubscriberRedoData extends NamingRedoData<String> {
     }
     
     /**
-     * Build a new {@code RedoData} for subscribers.
+     * 构建订阅 redo 数据。
      *
      * @param serviceName service name for redo data
      * @param groupName   group name for redo data

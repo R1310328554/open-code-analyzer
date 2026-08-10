@@ -22,12 +22,15 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * batch instance redo service.
+ * 批量实例注册 redo 数据。
+ *
+ * <p>继承 {@link InstanceRedoData}，持有多个 {@link Instance} 列表，用于批量注册/差量注销场景的断线补偿。</p>
  *
  * @author <a href="mailto:chenhao26@xiaomi.com">chenhao26</a>
  */
 public class BatchInstanceRedoData extends InstanceRedoData {
     
+    /** 批量注册的实例列表。 */
     List<Instance> instances;
     
     public List<Instance> getInstances() {
@@ -43,7 +46,7 @@ public class BatchInstanceRedoData extends InstanceRedoData {
     }
     
     /**
-     * build BatchInstanceRedoData.
+     * 构建批量实例 redo 数据。
      *
      * @param serviceName service name
      * @param groupName   group name
