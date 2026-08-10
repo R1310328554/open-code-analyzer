@@ -1,3 +1,6 @@
+/**
+ * 当前选中模型：按显存推荐默认项、云端/Turbo 迁移、聊天历史恢复与列表合并。
+ */
 import { useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useModels } from "./useModels";
@@ -8,6 +11,7 @@ import { getTotalVRAM } from "@/utils/vram.ts";
 import { getInferenceCompute } from "@/api";
 import { useCloudStatus } from "./useCloudStatus";
 
+/** 按总显存（GB）推荐默认模型名称。 */
 export function recommendDefaultModel(totalVRAM: number): string {
   const vram = Math.max(0, Number(totalVRAM) || 0);
 
@@ -19,6 +23,7 @@ export function recommendDefaultModel(totalVRAM: number): string {
   return "gpt-oss:20b";
 }
 
+/** 解析并同步 settings 中的选中模型，必要时自动切换或从聊天历史恢复。 */
 export function useSelectedModel(currentChatId?: string, searchQuery?: string) {
   const { settings, setSettings } = useSettings();
   const { data: models = [], isLoading } = useModels(searchQuery || "");
@@ -30,7 +35,8 @@ export function useSelectedModel(currentChatId?: string, searchQuery?: string) {
   const { data: inferenceComputeResponse } = useQuery({
     queryKey: ["inferenceCompute"],
     queryFn: getInferenceCompute,
-    enabled: !settings.selectedModel, // Only fetch if no model is selected
+    enabled: !settings.selectedModel, // 尚未选中模型时才拉取推理设备信息
+    // Only fetch if no model is selected
   });
 
   const inferenceComputes = inferenceComputeResponse?.inferenceComputes || [];
@@ -45,10 +51,12 @@ export function useSelectedModel(currentChatId?: string, searchQuery?: string) {
     [totalVRAM],
   );
 
+  // 记录已为哪个聊天恢复过历史模型，避免重复写入 settings
   // Track which chat we've already restored the model for
   const restoredChatRef = useRef<string | null>(null);
 
   const selectedModel: Model | null = useMemo(() => {
+    // 云端禁用时若仍选中 *cloud 模型，回退到本地推荐默认项。
     // If cloud is disabled and selected model ends with cloud, switch to a local default.
     if (cloudDisabled && settings.selectedModel?.endsWith("cloud")) {
       return (
@@ -60,6 +68,7 @@ export function useSelectedModel(currentChatId?: string, searchQuery?: string) {
       );
     }
 
+    // Turbo 迁移：启用 turbo 且选中基础模型时，自动切换到对应 cloud 后缀模型。
     // Migration logic: if turboEnabled is true and selectedModel is a base model,
     // migrate to the cloud version and disable turboEnabled permanently
     // TODO: remove this logic in a future release
@@ -127,8 +136,10 @@ export function useSelectedModel(currentChatId?: string, searchQuery?: string) {
     settings.selectedModel,
   ]);
 
+  // 聊天详情加载后，从最近一条带 model 的消息恢复选中模型
   // Set model from chat history when chat data loads
   useEffect(() => {
+    // 仅在有有效 chatId（非 new）时执行恢复逻辑
     // Only run this effect if we have a valid currentChatId
     if (!currentChatId || currentChatId === "new") {
       return;
@@ -139,6 +150,7 @@ export function useSelectedModel(currentChatId?: string, searchQuery?: string) {
       !isChatLoading &&
       restoredChatRef.current !== currentChatId
     ) {
+      // 从最新消息向前查找该聊天最近使用的模型
       // Find the most recent model used in this chat
       const messages = [...chatData.chat.messages].reverse();
       for (const message of messages) {
@@ -149,11 +161,13 @@ export function useSelectedModel(currentChatId?: string, searchQuery?: string) {
             setSettings({ SelectedModel: chatModelName });
           }
 
+          // 标记该聊天已处理，避免 effect 重复写入
           // Mark this chat as restored
           restoredChatRef.current = currentChatId;
           return;
         }
       }
+      // 即使未找到 model 也标记已处理，防止无限重试
       // Mark this chat as processed even if no model was found
       restoredChatRef.current = currentChatId;
     }
@@ -165,6 +179,7 @@ export function useSelectedModel(currentChatId?: string, searchQuery?: string) {
     setSettings,
   ]);
 
+  // 首次加载且 settings 无选中模型时，按推荐/本地/云端优先级设默认
   // On initial load, if no model is selected, set default model
   useEffect(() => {
     if (
@@ -195,6 +210,7 @@ export function useSelectedModel(currentChatId?: string, searchQuery?: string) {
     cloudDisabled,
   ]);
 
+  // 若选中模型不在列表中（如仅存在于 settings），合并进返回列表
   // Add the selected model to the models list if it's not already there
   const allModels = useMemo(() => {
     if (!selectedModel || models.find((m) => m.model === selectedModel.model)) {

@@ -1,11 +1,16 @@
+/**
+ * copyTextToClipboard 单元测试：Clipboard API 与 execCommand 回退路径。
+ */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { copyTextToClipboard } from "./clipboard";
 
+/** 覆盖现代 Clipboard API 与降级复制两种场景。 */
 describe("copyTextToClipboard", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
+  /** 可用时使用 navigator.clipboard.writeText。 */
   it("copies via Clipboard API when available", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", {
@@ -20,6 +25,7 @@ describe("copyTextToClipboard", () => {
     expect(writeText).toHaveBeenCalledWith("ollama launch claude");
   });
 
+  /** API 失败时通过隐藏 textarea + execCommand 复制。 */
   it("falls back to execCommand when Clipboard API fails", async () => {
     const writeText = vi.fn().mockRejectedValue(new Error("not allowed"));
     vi.stubGlobal("navigator", {

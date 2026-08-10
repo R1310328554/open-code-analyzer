@@ -1,6 +1,10 @@
+/**
+ * fileValidation 模块单元测试：扩展名、大小与自定义校验器。
+ */
 import { describe, it, expect } from "vitest";
 import { IMAGE_EXTENSIONS, validateFile } from "./fileValidation";
 
+/** validateFile 与 IMAGE_EXTENSIONS 常量行为验证。 */
 describe("fileValidation", () => {
   describe("IMAGE_EXTENSIONS", () => {
     it("should include all supported image formats including WebP", () => {
@@ -21,6 +25,7 @@ describe("fileValidation", () => {
       return new File([blob], name, { type });
     };
 
+    /** 启用 vision 能力时接受 WebP 图片。 */
     it("should accept WebP images when vision capability is enabled", () => {
       const file = createMockFile("test.webp", 1024, "image/webp");
       const result = validateFile(file, {
@@ -29,6 +34,7 @@ describe("fileValidation", () => {
       expect(result.valid).toBe(true);
     });
 
+    /** 校验层不拦截图片；vision 限制在 UI 层处理。 */
     it("should accept images regardless of vision capability", () => {
       // Vision capability check is handled at the UI layer (ChatForm),
       // not at validation time, so users can switch models without
@@ -56,6 +62,7 @@ describe("fileValidation", () => {
       expect(result.valid).toBe(true);
     });
 
+    /** 超过 maxFileSize（MB）时拒绝。 */
     it("should reject files that are too large", () => {
       // Create a file with size property set correctly
       const largeSize = 11 * 1024 * 1024; // 11MB
@@ -94,6 +101,7 @@ describe("fileValidation", () => {
     });
   });
 
+  // processFiles 依赖 FileReader，Node 单测环境跳过，由浏览器集成测试覆盖
   // Note: processFiles tests are skipped because FileReader is not available in the Node.js test environment
   // These functions are tested in browser environment via integration tests
 });

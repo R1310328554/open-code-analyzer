@@ -1,6 +1,10 @@
+/**
+ * 基于 Shiki 的代码高亮：One Light / One Dark 主题与常用语言预加载。
+ */
 import { createHighlighter } from "shiki";
 import type { ThemeRegistration } from "shiki";
 
+/** Atom One Light 风格浅色主题注册。 */
 const oneLightTheme: ThemeRegistration = {
   name: "one-light",
   type: "light",
@@ -63,6 +67,7 @@ const oneLightTheme: ThemeRegistration = {
   ],
 };
 
+/** Atom One Dark 风格深色主题注册。 */
 const oneDarkTheme: ThemeRegistration = {
   name: "one-dark",
   type: "dark",
@@ -125,9 +130,11 @@ const oneDarkTheme: ThemeRegistration = {
   ],
 };
 
+/** 全局 Shiki 高亮器实例；createHighlighter 完成后赋值。 */
 export let highlighter: Awaited<ReturnType<typeof createHighlighter>> | null =
   null;
 
+/** 异步创建高亮器并缓存到 highlighter 变量。 */
 export const highlighterPromise = createHighlighter({
   themes: [oneLightTheme, oneDarkTheme],
   langs: [

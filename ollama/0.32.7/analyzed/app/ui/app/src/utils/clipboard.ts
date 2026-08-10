@@ -1,3 +1,7 @@
+/**
+ * 将文本写入系统剪贴板，优先 Clipboard API，失败则 execCommand 降级。
+ */
+/** 成功返回 true；两种路径均失败时返回 false。 */
 export async function copyTextToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
