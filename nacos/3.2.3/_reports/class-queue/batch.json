@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T03:39:50Z",
-  "files": [
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/Md5Comparator.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/Md5ComparatorDelegate.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/NacosMd5Comparator.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/ParamUtils.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/PropertyUtil.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/Protocol.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/RegexParser.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/RequestUtil.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/ResponseUtil.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/SimpleCache.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/SimpleFlowData.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/SimpleIpFlowData.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/SimpleReadWriteLock.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/StatConstants.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/SystemConfig.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1247,
-  "done": 1275
+  "done": 1290
 }
