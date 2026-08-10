@@ -34,8 +34,12 @@ import static io.netty.channel.ChannelOption.SO_RCVBUF;
 import static io.netty.channel.ChannelOption.SO_SNDBUF;
 import static io.netty.channel.unix.UnixChannelOption.DOMAIN_SOCKET_READ_MODE;
 
+/**
+ * Unix 域流套接字配置：读模式（字节/FD）、半关闭与缓冲区大小。
+ */
 public final class EpollDomainSocketChannelConfig extends EpollChannelConfig
         implements DomainSocketChannelConfig, DuplexChannelConfig {
+    /** 读模式：按字节或按传递的文件描述符 */
     private volatile DomainSocketReadMode mode = DomainSocketReadMode.BYTES;
     private volatile boolean allowHalfClosure;
 

@@ -41,6 +41,9 @@ import java.nio.ByteBuffer;
 
 import static io.netty.channel.epoll.LinuxSocket.newSocketDomainDgram;
 
+/**
+ * Unix 域数据报通道的 epoll 实现，支持无连接与已连接两种模式。
+ */
 public final class EpollDomainDatagramChannel extends AbstractEpollChannel implements DomainDatagramChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(true, 16);
@@ -137,7 +140,7 @@ public final class EpollDomainDatagramChannel extends AbstractEpollChannel imple
             } catch (IOException e) {
                 maxMessagesPerWrite--;
 
-                // Continue on write error as a DatagramChannel can write to multiple remote peers
+                // 数据报可写多个对端，单条写失败时继续处理后续消息
                 //
                 // See https://github.com/netty/netty/issues/2665
                 in.remove(e);
@@ -281,6 +284,7 @@ public final class EpollDomainDatagramChannel extends AbstractEpollChannel imple
 
     /**
      * Returns the unix credentials (uid, gid, pid) of the peer
+     * <p>返回对端 Unix 凭证（uid、gid、pid），对应 SO_PEERCRED。</p>
      * <a href=https://man7.org/linux/man-pages/man7/socket.7.html>SO_PEERCRED</a>
      */
     public PeerCredentials peerCredentials() throws IOException {

@@ -56,6 +56,10 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 import static io.netty.util.internal.StringUtil.className;
 
+/**
+ * Epoll 流式通道抽象基类：TCP 及 Unix 域流套接字的读写、半关闭与 splice 零拷贝。
+ * <p>监听 EPOLLRDHUP 以感知对端关闭。</p>
+ */
 public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel implements DuplexChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
     private static final String EXPECTED_TYPES =
@@ -66,7 +70,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
     private final Runnable flushTask = new Runnable() {
         @Override
         public void run() {
-            // Calling flush0 directly to ensure we not try to flush messages that were added via write(...) in the
+            // 直接 flush0，避免 write 期间新入队消息被误 flush
             // meantime.
             ((AbstractEpollUnsafe) unsafe()).flush0();
         }
@@ -92,7 +96,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
     }
 
     AbstractEpollStreamChannel(Channel parent, LinuxSocket fd) {
-        // Add EPOLLRDHUP so we are notified once the remote peer close the connection.
+        // 注册 EPOLLRDHUP，对端关闭连接时收到通知
         super(parent, fd, true, EpollIoOps.EPOLLRDHUP);
     }
 
@@ -118,6 +122,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Splice from this {@link AbstractEpollStreamChannel} to another {@link AbstractEpollStreamChannel}.
+     * <p>通过 Linux splice 将数据从本通道零拷贝传输到另一 {@link AbstractEpollStreamChannel}。</p>
      * The {@code len} is the number of bytes to splice. If using {@link Integer#MAX_VALUE} it will
      * splice until the {@link ChannelFuture} was canceled or it was failed.
      *
@@ -137,6 +142,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Splice from this {@link AbstractEpollStreamChannel} to another {@link AbstractEpollStreamChannel}.
+     * <p>通过 Linux splice 将数据从本通道零拷贝传输到另一 {@link AbstractEpollStreamChannel}。</p>
      * The {@code len} is the number of bytes to splice. If using {@link Integer#MAX_VALUE} it will
      * splice until the {@link ChannelFuture} was canceled or it was failed.
      *
@@ -172,6 +178,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Splice from this {@link AbstractEpollStreamChannel} to another {@link FileDescriptor}.
+     * <p>通过 splice 将数据零拷贝写入目标 {@link FileDescriptor}。</p>
      * The {@code offset} is the offset for the {@link FileDescriptor} and {@code len} is the
      * number of bytes to splice. If using {@link Integer#MAX_VALUE} it will splice until the
      * {@link ChannelFuture} was canceled or it was failed.
@@ -192,6 +199,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Splice from this {@link AbstractEpollStreamChannel} to another {@link FileDescriptor}.
+     * <p>通过 splice 将数据零拷贝写入目标 {@link FileDescriptor}。</p>
      * The {@code offset} is the offset for the {@link FileDescriptor} and {@code len} is the
      * number of bytes to splice. If using {@link Integer#MAX_VALUE} it will splice until the
      * {@link ChannelFuture} was canceled or it was failed.
@@ -244,6 +252,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Write bytes form the given {@link ByteBuf} to the underlying {@link java.nio.channels.Channel}.
+     * <p>将 {@link ByteBuf} 字节写入底层通道，返回写量子消耗值。</p>
      * @param in the collection which contains objects to write.
      * @param buf the {@link ByteBuf} from which the bytes should be written
      * @return The value that should be decremented from the write quantum which starts at
@@ -287,6 +296,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Write multiple bytes via {@link IovArray}.
+     * <p>通过 {@link IovArray} 聚集写多个缓冲区。</p>
      * @param in the collection which contains objects to write.
      * @param array The array which contains the content to write.
      * @return The value that should be decremented from the write quantum which starts at
@@ -317,6 +327,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Write multiple bytes via {@link ByteBuffer} array.
+     * <p>通过 {@link ByteBuffer} 数组聚集写。</p>
      * @param in the collection which contains objects to write.
      * @param nioBuffers The buffers to write.
      * @param nioBufferCnt The number of buffers to write.
@@ -352,6 +363,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Write a {@link DefaultFileRegion}
+     * <p>写出 {@link DefaultFileRegion}（sendfile 零拷贝）。</p>
      * @param in the collection which contains objects to write.
      * @param region the {@link DefaultFileRegion} from which the bytes should be written
      * @return The value that should be decremented from the write quantum which starts at
@@ -387,6 +399,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Write a {@link FileRegion}
+     * <p>写出通用 {@link FileRegion}。</p>
      * @param in the collection which contains objects to write.
      * @param region the {@link FileRegion} from which the bytes should be written
      * @return The value that should be decremented from the write quantum which starts at
@@ -459,6 +472,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Attempt to write a single object.
+     * <p>尝试写出单个 outbound 消息。</p>
      * @param in the collection which contains objects to write.
      * @return The value that should be decremented from the write quantum which starts at
      * {@link ChannelConfig#getWriteSpinCount()}. The typical use cases are as follows:
@@ -494,6 +508,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
 
     /**
      * Attempt to write multiple {@link ByteBuf} objects.
+     * <p>尝试聚集写出多个 {@link ByteBuf}。</p>
      * @param in the collection which contains objects to write.
      * @return The value that should be decremented from the write quantum which starts at
      * {@link ChannelConfig#getWriteSpinCount()}. The typical use cases are as follows:

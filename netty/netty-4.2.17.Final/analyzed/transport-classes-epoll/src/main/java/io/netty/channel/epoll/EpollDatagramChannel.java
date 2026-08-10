@@ -56,6 +56,10 @@ import static io.netty.channel.epoll.LinuxSocket.newSocketDgram;
 
 /**
  * {@link DatagramChannel} implementation that uses linux EPOLL.
+ * <p>基于 Linux epoll 的 {@link DatagramChannel} 实现，支持 sendmmsg/recvmmsg 等优化。</p>
+ */
+/**
+ * 基于 epoll 的 UDP {@link DatagramChannel}，支持组播、sendmmsg/recvmmsg 与分段数据报。
  */
 public final class EpollDatagramChannel extends AbstractEpollChannel implements DatagramChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(EpollDatagramChannel.class);
@@ -80,6 +84,7 @@ public final class EpollDatagramChannel extends AbstractEpollChannel implements 
 
     /**
      * Returns {@code true} if {@link io.netty.channel.unix.SegmentedDatagramPacket} is supported natively.
+     * <p>原生是否支持 {@link io.netty.channel.unix.SegmentedDatagramPacket}（需 sendmmsg 与 UDP_SEGMENT）。</p>
      *
      * @return {@code true} if supported, {@code false} otherwise.
      */
@@ -91,6 +96,7 @@ public final class EpollDatagramChannel extends AbstractEpollChannel implements 
 
     /**
      * Create a new instance which selects the {@link SocketProtocolFamily} to use depending
+     * <p>创建实例，协议族为 null 时使用操作系统默认。</p>
      * on the Operation Systems default which will be chosen.
      */
     public EpollDatagramChannel() {
@@ -99,6 +105,7 @@ public final class EpollDatagramChannel extends AbstractEpollChannel implements 
 
     /**
      * Create a new instance using the given {@link InternetProtocolFamily}. If {@code null} is used it will depend
+     * <p>按 {@link InternetProtocolFamily} 创建实例；null 时使用 OS 默认。</p>
      * on the Operation Systems default which will be chosen.
      *
      * @deprecated use {@link EpollDatagramChannel#EpollDatagramChannel(SocketProtocolFamily)}
@@ -110,6 +117,7 @@ public final class EpollDatagramChannel extends AbstractEpollChannel implements 
 
     /**
      * Create a new instance using the given {@link SocketProtocolFamily}. If {@code null} is used it will depend
+     * <p>按 {@link SocketProtocolFamily} 创建实例；null 时使用 OS 默认。</p>
      * on the Operation Systems default which will be chosen.
      */
     public EpollDatagramChannel(SocketProtocolFamily family) {
@@ -118,6 +126,7 @@ public final class EpollDatagramChannel extends AbstractEpollChannel implements 
 
     /**
      * Create a new instance which selects the {@link SocketProtocolFamily} to use depending
+     * <p>创建实例，协议族为 null 时使用操作系统默认。</p>
      * on the Operation Systems default which will be chosen.
      */
     public EpollDatagramChannel(int fd) {
@@ -127,7 +136,7 @@ public final class EpollDatagramChannel extends AbstractEpollChannel implements 
     private EpollDatagramChannel(LinuxSocket fd, boolean active) {
         super(null, fd, active, EpollIoOps.EPOLLERR);
 
-        // Configure IP_MULTICAST_ALL - disable by default to match the behaviour of NIO.
+        // 默认关闭 IP_MULTICAST_ALL，与 NIO 行为一致
         try {
             fd.setIpMulticastAll(IP_MULTICAST_ALL);
         } catch (IOException | ChannelException e) {
@@ -383,7 +392,7 @@ public final class EpollDatagramChannel extends AbstractEpollChannel implements 
             }
 
             try {
-                // Check if sendmmsg(...) is supported which is only the case for GLIBC 2.14+
+                // GLIBC 2.14+ 且多条消息或分段包时用 sendmmsg 批量发送
                 if (Native.IS_SUPPORTING_SENDMMSG && in.size() > 1 ||
                         // We only handle UDP_SEGMENT in sendmmsg.
                         in.current() instanceof io.netty.channel.unix.SegmentedDatagramPacket) {

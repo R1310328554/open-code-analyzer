@@ -26,6 +26,10 @@ import io.netty.channel.ServerChannel;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+/**
+ * Epoll 服务端通道抽象基类：监听 accept 并为每个新连接创建子通道。
+ * <p>不支持 outbound write 与 connect。</p>
+ */
 public abstract class AbstractEpollServerChannel extends AbstractEpollChannel implements ServerChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
 
@@ -69,13 +73,13 @@ public abstract class AbstractEpollServerChannel extends AbstractEpollChannel im
     protected abstract Channel newChildChannel(int fd, byte[] remote, int offset, int len) throws Exception;
 
     final class EpollServerSocketUnsafe extends AbstractEpollUnsafe {
-        // Will hold the remote address after accept(...) was successful.
+        // accept 成功后暂存对端地址（最多 24 字节 + 1 字节长度）
         // We need 24 bytes for the address as maximum + 1 byte for storing the length.
         private final byte[] acceptedAddress = new byte[25];
 
         @Override
         public void connect(SocketAddress socketAddress, SocketAddress socketAddress2, ChannelPromise channelPromise) {
-            // Connect not supported by ServerChannel implementations
+            // 服务端通道不支持 outbound connect
             channelPromise.setFailure(new UnsupportedOperationException());
         }
 

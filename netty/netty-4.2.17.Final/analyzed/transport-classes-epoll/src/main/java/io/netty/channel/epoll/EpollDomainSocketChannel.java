@@ -29,6 +29,9 @@ import java.net.SocketAddress;
 
 import static io.netty.channel.epoll.LinuxSocket.newSocketDomain;
 
+/**
+ * Unix 域流套接字 epoll 通道，支持字节模式与文件描述符传递（SCM_RIGHTS）。
+ */
 public final class EpollDomainSocketChannel extends AbstractEpollStreamChannel implements DomainSocketChannel {
     private final EpollDomainSocketChannelConfig config = new EpollDomainSocketChannelConfig(this);
 
@@ -107,7 +110,7 @@ public final class EpollDomainSocketChannel extends AbstractEpollStreamChannel i
     protected int doWriteSingle(ChannelOutboundBuffer in) throws Exception {
         Object msg = in.current();
         if (msg instanceof FileDescriptor && socket.sendFd(((FileDescriptor) msg).intValue()) > 0) {
-            // File descriptor was written, so remove it.
+            // 文件描述符已通过 sendmsg 发出，从 outbound 队列移除
             in.remove();
             return 1;
         }
@@ -124,6 +127,7 @@ public final class EpollDomainSocketChannel extends AbstractEpollStreamChannel i
 
     /**
      * Returns the unix credentials (uid, gid, pid) of the peer
+     * <p>返回对端 Unix 凭证（uid、gid、pid），对应 SO_PEERCRED。</p>
      * <a href=https://man7.org/linux/man-pages/man7/socket.7.html>SO_PEERCRED</a>
      */
     public PeerCredentials peerCredentials() throws IOException {

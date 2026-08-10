@@ -31,7 +31,11 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Map;
 
+/**
+ * {@link EpollDatagramChannel} 配置：组播、SO_REUSEPORT、IP 透明代理与 recvmmsg 等选项。
+ */
 public final class EpollDatagramChannelConfig extends EpollChannelConfig implements DatagramChannelConfig {
+    /** 注册完成后是否立即视为 active */
     private boolean activeOnOpen;
     private volatile int maxDatagramSize;
 
@@ -416,6 +420,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Returns {@code true} if the SO_REUSEPORT option is set.
+     * <p>是否已设置 SO_REUSEPORT。</p>
      */
     public boolean isReusePort() {
         try {
@@ -427,6 +432,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Set the SO_REUSEPORT option on the underlying Channel. This will allow to bind multiple
+     * <p>设置 SO_REUSEPORT，允许多个通道绑定同一端口（须在 bind 前调用）。</p>
      * {@link EpollSocketChannel}s to the same port and so accept connections with multiple threads.
      *
      * Be aware this method needs be called before {@link EpollDatagramChannel#bind(java.net.SocketAddress)} to have
@@ -443,6 +449,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>是否启用 IP_TRANSPARENT 透明代理。</p>
      * {@code false} otherwise.
      */
     public boolean isIpTransparent() {
@@ -455,6 +462,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>启用或禁用 IP_TRANSPARENT；默认禁用。</p>
      * {@code false} for disable it. Default is disabled.
      */
     public EpollDatagramChannelConfig setIpTransparent(boolean ipTransparent) {
@@ -468,6 +476,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_FREEBIND</a> is enabled,
+     * <p>是否启用 IP_FREEBIND 自由绑定。</p>
      * {@code false} otherwise.
      */
     public boolean isFreeBind() {
@@ -480,6 +489,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_FREEBIND</a> is enabled,
+     * <p>启用或禁用 IP_FREEBIND；默认禁用。</p>
      * {@code false} for disable it. Default is disabled.
      */
     public EpollDatagramChannelConfig setFreeBind(boolean freeBind) {
@@ -493,6 +503,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_RECVORIGDSTADDR</a> is
+     * <p>是否启用 IP_RECVORIGDSTADDR 以接收原始目的地址。</p>
      * enabled, {@code false} otherwise.
      */
     public boolean isIpRecvOrigDestAddr() {
@@ -505,6 +516,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_RECVORIGDSTADDR</a> is
+     * <p>启用或禁用 IP_RECVORIGDSTADDR；默认禁用。</p>
      * enabled, {@code false} for disable it. Default is disabled.
      */
     public EpollDatagramChannelConfig setIpRecvOrigDestAddr(boolean ipTransparent) {
@@ -518,6 +530,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_MULTICAST_ALL</a> (or
+     * <p>是否启用 IP_MULTICAST_ALL（IPv6 为 IPV6_MULTICAST_ALL）。</p>
      * IPV6_MULTICAST_ALL for IPV6) is enabled, {@code false} otherwise.
      */
     public boolean isIpMulticastAll() {
@@ -530,6 +543,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_MULTICAST_ALL</a> is
+     * <p>启用或禁用 IP_MULTICAST_ALL；默认启用。</p>
      * enabled (or IPV6_MULTICAST_ALL for IPV6), {@code false} for disable it. Default is enabled.
      */
     public EpollDatagramChannelConfig setIpMulticastAll(boolean multicastAll) {
@@ -543,6 +557,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Set the maximum {@link io.netty.channel.socket.DatagramPacket} size. This will be used to determine if
+     * <p>设置最大 {@link DatagramPacket} 尺寸，用于决定是否使用 recvmmsg 及缓冲区切片。</p>
      * {@code recvmmsg} should be used when reading from the underlying socket. When {@code recvmmsg} is used
      * we may be able to read multiple {@link io.netty.channel.socket.DatagramPacket}s with one syscall and so
      * greatly improve the performance. This number will be used to slice {@link ByteBuf}s returned by the used
@@ -556,6 +571,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Get the maximum {@link io.netty.channel.socket.DatagramPacket} size.
+     * <p>获取最大 {@link DatagramPacket} 尺寸配置。</p>
      */
     public int getMaxDatagramPayloadSize() {
         return maxDatagramSize;
@@ -565,6 +581,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Enable / disable <a href="https://lwn.net/Articles/768995/">UDP_GRO</a>.
+     * <p>启用或禁用 UDP_GRO 接收卸载。</p>
      * @param gro {@code true} if {@code UDP_GRO} should be enabled, {@code false} otherwise.
      * @return this.
      */
@@ -580,6 +597,7 @@ public final class EpollDatagramChannelConfig extends EpollChannelConfig impleme
 
     /**
      * Returns if {@code UDP_GRO} is enabled.
+     * <p>是否启用 UDP_GRO（返回缓存值，避免内核 bug 下的 syscall）。</p>
      * @return {@code true} if enabled, {@code false} otherwise.
      */
     public boolean isUdpGro() {

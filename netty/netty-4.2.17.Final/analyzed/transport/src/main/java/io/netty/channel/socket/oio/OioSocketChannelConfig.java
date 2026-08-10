@@ -31,6 +31,7 @@ import io.netty.channel.socket.SocketChannelConfig;
  * In addition to the options provided by {@link SocketChannelConfig},
  * {@link OioSocketChannelConfig} allows the following options in the
  * option map:
+ * <p>除 {@link SocketChannelConfig} 外还支持 SO_TIMEOUT 等 OIO 特有选项。</p>
  *
  * <table border="1" cellspacing="0" cellpadding="6">
  * <tr>
@@ -47,11 +48,13 @@ public interface OioSocketChannelConfig extends SocketChannelConfig {
 
     /**
      * Sets the maximal time a operation on the underlying socket may block.
+     * <p>设置底层套接字 I/O 操作的最大阻塞超时（毫秒）。</p>
      */
     OioSocketChannelConfig setSoTimeout(int timeout);
 
     /**
      * Returns the maximal time a operation on the underlying socket may block.
+     * <p>返回底层套接字 I/O 操作的最大阻塞超时（毫秒）。</p>
      */
     int getSoTimeout();
 

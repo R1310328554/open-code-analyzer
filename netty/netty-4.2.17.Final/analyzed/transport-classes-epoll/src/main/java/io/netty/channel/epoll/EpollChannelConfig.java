@@ -34,10 +34,14 @@ import java.util.Map;
 
 import static io.netty.channel.unix.Limits.SSIZE_MAX;
 
+/**
+ * Epoll 通道通用配置：Epoll 模式、Unix 套接字选项与聚集写上限等。
+ */
 public class EpollChannelConfig extends DefaultChannelConfig {
 
     private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(EpollChannelConfig.class);
 
+    /** 单次聚集写尝试的最大字节数 */
     private volatile long maxBytesPerGatheringWrite = SSIZE_MAX;
 
     protected EpollChannelConfig(Channel channel) {
@@ -181,6 +185,7 @@ public class EpollChannelConfig extends DefaultChannelConfig {
 
     /**
      * Return the {@link EpollMode} used.
+     * <p>返回当前 Epoll 模式（已废弃，恒为水平触发）。</p>
      *
      * @deprecated Netty always uses level-triggered mode and so this method is just a no-op.
      */
@@ -191,6 +196,7 @@ public class EpollChannelConfig extends DefaultChannelConfig {
 
     /**
      * Set the {@link EpollMode} used. Default is
+     * <p>设置 Epoll 模式（已废弃，Netty 恒使用水平触发）。</p>
      * {@link EpollMode#LEVEL_TRIGGERED}.
      *
      * <strong>Be aware this config setting can only be adjusted before the channel was registered.</strong>

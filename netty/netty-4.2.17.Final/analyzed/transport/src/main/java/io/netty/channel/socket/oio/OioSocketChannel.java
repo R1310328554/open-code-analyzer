@@ -38,6 +38,7 @@ import java.net.SocketTimeoutException;
 
 /**
  * A {@link SocketChannel} which is using Old-Blocking-IO
+ * <p>基于传统阻塞 I/O（OIO）的 {@link SocketChannel} 实现。</p>
  *
  * @deprecated use NIO / EPOLL / KQUEUE transport.
  */
@@ -46,11 +47,13 @@ public class OioSocketChannel extends OioByteStreamChannel implements SocketChan
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(OioSocketChannel.class);
 
+    // 底层阻塞式 Java Socket
     private final Socket socket;
     private final OioSocketChannelConfig config;
 
     /**
      * Create a new instance with an new {@link Socket}
+     * <p>使用新建 {@link Socket} 创建实例。</p>
      */
     public OioSocketChannel() {
         this(new Socket());
@@ -58,6 +61,7 @@ public class OioSocketChannel extends OioByteStreamChannel implements SocketChan
 
     /**
      * Create a new instance from the given {@link Socket}
+     * <p>使用给定 {@link Socket} 创建实例。</p>
      *
      * @param socket    the {@link Socket} which is used by this instance
      */
@@ -67,6 +71,7 @@ public class OioSocketChannel extends OioByteStreamChannel implements SocketChan
 
     /**
      * Create a new instance from the given {@link Socket}
+     * <p>使用给定 {@link Socket} 创建实例。</p>
      *
      * @param parent    the parent {@link Channel} which was used to create this instance. This can be null if the
      *                  {@link} has no parent as it was created by your self.
@@ -154,11 +159,13 @@ public class OioSocketChannel extends OioByteStreamChannel implements SocketChan
 
     @Override
     protected int doReadBytes(ByteBuf buf) throws Exception {
+        // 套接字已关闭则返回 EOF
         if (socket.isClosed()) {
             return -1;
         }
         try {
             return super.doReadBytes(buf);
+        // OIO 读超时返回 0 而非抛异常，便于事件循环继续
         } catch (SocketTimeoutException ignored) {
             return 0;
         }

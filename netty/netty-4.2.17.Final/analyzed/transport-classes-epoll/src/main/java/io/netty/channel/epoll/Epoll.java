@@ -23,7 +23,12 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
  * Tells if <a href="https://netty.io/wiki/native-transports.html">{@code netty-transport-native-epoll}</a> is
+ * <p>检测 Linux 原生 <a href="https://netty.io/wiki/native-transports.html">{@code netty-transport-native-epoll}</a> 传输是否可用。</p>
  * supported.
+ */
+/**
+ * Epoll 原生传输可用性探测工具类。
+ * <p>类加载时尝试创建 epoll 与 eventfd，失败则记录原因。</p>
  */
 public final class Epoll {
 
@@ -48,7 +53,7 @@ public final class Epoll {
                     try {
                         epollFd.close();
                     } catch (Exception ignore) {
-                        // ignore
+                        // 探测阶段关闭 fd 时的异常可忽略
                     }
                 }
                 if (eventFd != null) {
@@ -73,6 +78,7 @@ public final class Epoll {
 
     /**
      * Returns {@code true} if and only if the <a href="https://netty.io/wiki/native-transports.html">{@code
+     * <p>当且仅当 epoll 原生传输可用时返回 {@code true}。</p>
      * netty-transport-native-epoll}</a> is available.
      */
     public static boolean isAvailable() {
@@ -81,6 +87,7 @@ public final class Epoll {
 
     /**
      * Ensure that <a href="https://netty.io/wiki/native-transports.html">{@code netty-transport-native-epoll}</a> is
+     * <p>确保 epoll 原生传输可用，否则抛出 {@link UnsatisfiedLinkError}。</p>
      * available.
      *
      * @throws UnsatisfiedLinkError if unavailable
@@ -94,6 +101,7 @@ public final class Epoll {
 
     /**
      * Returns the cause of unavailability of <a href="https://netty.io/wiki/native-transports.html">
+     * <p>返回 epoll 原生传输不可用的原因；可用时返回 {@code null}。</p>
      * {@code netty-transport-native-epoll}</a>.
      *
      * @return the cause if unavailable. {@code null} if available.
@@ -104,6 +112,7 @@ public final class Epoll {
 
     /**
      * Returns {@code true} if the epoll native transport is both {@linkplain #isAvailable() available} and supports
+     * <p>epoll 原生传输可用且支持客户端 TCP FastOpen 时返回 {@code true}。</p>
      * {@linkplain ChannelOption#TCP_FASTOPEN_CONNECT client-side TCP FastOpen}.
      *
      * @return {@code true} if it's possible to use client-side TCP FastOpen via epoll, otherwise {@code false}.
@@ -114,6 +123,7 @@ public final class Epoll {
 
     /**
      * Returns {@code true} if the epoll native transport is both {@linkplain #isAvailable() available} and supports
+     * <p>epoll 原生传输可用且支持客户端 TCP FastOpen 时返回 {@code true}。</p>
      * {@linkplain ChannelOption#TCP_FASTOPEN server-side TCP FastOpen}.
      *
      * @return {@code true} if it's possible to use server-side TCP FastOpen via epoll, otherwise {@code false}.

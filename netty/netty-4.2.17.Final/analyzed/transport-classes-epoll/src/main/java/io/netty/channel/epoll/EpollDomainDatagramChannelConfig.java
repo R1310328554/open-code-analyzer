@@ -30,6 +30,9 @@ import java.util.Map;
 import static io.netty.channel.ChannelOption.DATAGRAM_CHANNEL_ACTIVE_ON_REGISTRATION;
 import static io.netty.channel.ChannelOption.SO_SNDBUF;
 
+/**
+ * Unix 域数据报通道配置，主要含注册即 active 与发送缓冲区选项。
+ */
 public final class EpollDomainDatagramChannelConfig extends EpollChannelConfig implements DomainDatagramChannelConfig {
 
     private boolean activeOnOpen;

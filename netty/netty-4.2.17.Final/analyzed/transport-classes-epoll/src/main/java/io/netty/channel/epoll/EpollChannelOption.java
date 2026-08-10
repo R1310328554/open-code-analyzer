@@ -20,8 +20,13 @@ import io.netty.channel.unix.UnixChannelOption;
 import java.net.InetAddress;
 import java.util.Map;
 
+/**
+ * Linux/epoll 特有的 {@link ChannelOption} 常量集合。
+ * <p>含 TCP_CORK、IP_TRANSPARENT、UDP_GRO 等仅原生传输支持的选项。</p>
+ */
 public final class EpollChannelOption<T> extends UnixChannelOption<T> {
 
+    /** TCP 粘包（CORK）选项 */
     public static final ChannelOption<Boolean> TCP_CORK = valueOf(EpollChannelOption.class, "TCP_CORK");
     public static final ChannelOption<Long> TCP_NOTSENT_LOWAT = valueOf(EpollChannelOption.class, "TCP_NOTSENT_LOWAT");
     public static final ChannelOption<Integer> TCP_KEEPIDLE = valueOf(EpollChannelOption.class, "TCP_KEEPIDLE");
@@ -36,12 +41,14 @@ public final class EpollChannelOption<T> extends UnixChannelOption<T> {
     public static final ChannelOption<Boolean> IP_RECVORIGDSTADDR = valueOf("IP_RECVORIGDSTADDR");
     /**
      * @deprecated Use {@link ChannelOption#TCP_FASTOPEN} instead.
+      * <p>Netty epoll/OIO 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public static final ChannelOption<Integer> TCP_FASTOPEN = ChannelOption.TCP_FASTOPEN;
 
     /**
      * @deprecated Use {@link ChannelOption#TCP_FASTOPEN_CONNECT} instead.
+      * <p>Netty epoll/OIO 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public static final ChannelOption<Boolean> TCP_FASTOPEN_CONNECT = ChannelOption.TCP_FASTOPEN_CONNECT;
@@ -52,6 +59,7 @@ public final class EpollChannelOption<T> extends UnixChannelOption<T> {
 
     /**
      * @deprecated Netty always uses level-triggered mode and so this method is just a no-op.
+      * <p>Netty epoll/OIO 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public static final ChannelOption<EpollMode> EPOLL_MODE =
@@ -59,6 +67,7 @@ public final class EpollChannelOption<T> extends UnixChannelOption<T> {
 
     public static final ChannelOption<Map<InetAddress, byte[]>> TCP_MD5SIG = valueOf("TCP_MD5SIG");
 
+    /** 数据报最大载荷，影响 recvmmsg 分批读 */
     public static final ChannelOption<Integer> MAX_DATAGRAM_PAYLOAD_SIZE = valueOf("MAX_DATAGRAM_PAYLOAD_SIZE");
     public static final ChannelOption<Boolean> UDP_GRO = valueOf("UDP_GRO");
 

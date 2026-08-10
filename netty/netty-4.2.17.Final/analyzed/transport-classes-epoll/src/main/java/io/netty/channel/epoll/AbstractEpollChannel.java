@@ -63,13 +63,19 @@ import static io.netty.channel.internal.ChannelUtils.WRITE_STATUS_SNDBUF_FULL;
 import static io.netty.channel.unix.UnixChannelUtil.computeRemoteAddr;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * Epoll 通道抽象基类：封装 Linux 原生 socket、epoll 事件注册与连接生命周期。
+ * <p>子类实现流式、数据报或域套接字等具体语义。</p>
+ */
 abstract class AbstractEpollChannel extends AbstractChannel implements UnixChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
+    /** 底层 Linux 原生套接字 */
     protected final LinuxSocket socket;
     private final EpollIoOps initial;
 
     /**
      * The future of the current connection attempt.  If not null, subsequent
+     * <p>当前连接尝试对应的 Promise；非 null 时后续 connect 将失败。</p>
      * connection attempts will fail.
      */
     private ChannelPromise connectPromise;
@@ -120,7 +126,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
     protected void setFlag(int flag) throws IOException {
         if (ops.contains(flag)) {
-            // we can save a syscall if the ops did not change
+            // ops 未变时可省略一次 epoll_ctl 系统调用
             return;
         }
         ops = ops.with(EpollIoOps.valueOf(flag));
@@ -315,6 +321,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
     /**
      * Returns an off-heap copy of the specified {@link ByteBuf}, and releases the original one.
+     * <p>返回指定 {@link ByteBuf} 的堆外副本并释放原缓冲区。</p>
      */
     protected final ByteBuf newDirectBuffer(ByteBuf buf) {
         return newDirectBuffer(buf, buf);
@@ -322,6 +329,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
     /**
      * Returns an off-heap copy of the specified {@link ByteBuf}, and releases the specified holder.
+     * <p>返回堆外副本并释放 holder 持有的原 {@link ByteBuf}。</p>
      * The caller must ensure that the holder releases the original {@link ByteBuf} when the holder is released by
      * this method.
      */
@@ -362,6 +370,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
     /**
      * Read bytes into the given {@link ByteBuf} and return the amount.
+     * <p>从套接字读入字节到 {@link ByteBuf}，返回实际读取字节数。</p>
      */
     protected final int doReadBytes(ByteBuf byteBuf) throws Exception {
         int writerIndex = byteBuf.writerIndex();
@@ -401,6 +410,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
     /**
      * Write bytes to the socket, with or without a remote address.
+     * <p>向套接字写入字节，可带或不带远端地址（用于 UDP 与 TCP FastOpen）。</p>
      * Used for datagram and TCP client fast open writes.
      */
     final long doWriteOrSendBytes(ByteBuf data, InetSocketAddress remoteAddress, boolean fastOpen)
@@ -459,7 +469,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
             EpollIoEvent epollEvent = (EpollIoEvent) event;
             int ops = epollEvent.ops().value;
 
-            // Don't change the ordering of processing EPOLLOUT | EPOLLRDHUP / EPOLLIN if you're not 100%
+            // 切勿随意调整 EPOLLOUT/EPOLLRDHUP 与 EPOLLIN 的处理顺序（历史 bug 教训）
             // sure about it!
             // Re-ordering can easily introduce bugs and bad side-effects, as we found out painfully in the
             // past.
@@ -473,7 +483,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
             // the connection).
             // See https://github.com/netty/netty/issues/3848
             if ((ops & EPOLL_ERR_OUT_MASK) != 0) {
-                // Force flush of data as the epoll is writable again
+                // 可写时强制 flush 积压出站数据
                 epollOutReady();
             }
 
@@ -497,6 +507,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
         /**
          * Called once EPOLLIN event is ready to be processed
+         * <p>EPOLLIN 就绪时调用，子类实现具体读逻辑。</p>
          */
         abstract void epollInReady();
 
@@ -512,6 +523,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
         /**
          * Called once EPOLLRDHUP event is ready to be processed
+         * <p>EPOLLRDHUP 就绪时调用，处理对端关闭读端。</p>
          */
         final void epollRdHupReady() {
             // This must happen before we attempt to read. This will ensure reading continues until an error occurs.
@@ -533,6 +545,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
         /**
          * Clear the {@link Native#EPOLLRDHUP} flag from EPOLL, and close on failure.
+         * <p>清除 EPOLL 上的 {@link Native#EPOLLRDHUP} 标志；失败时关闭通道。</p>
          */
         private void clearEpollRdHup() {
             try {
@@ -545,6 +558,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
         /**
          * Shutdown the input side of the channel.
+         * <p>关闭通道输入端（半关闭或全关闭取决于配置）。</p>
          */
         void shutdownInput(boolean allDataRead) {
             if (!socket.isInputShutdown()) {
@@ -591,6 +605,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
         /**
          * Create a new {@link EpollRecvByteAllocatorHandle} instance.
+         * <p>创建带 epoll 逻辑的 {@link EpollRecvByteAllocatorHandle} 包装实例。</p>
          * @param handle The handle to wrap with EPOLL specific logic.
          */
         EpollRecvByteAllocatorHandle newEpollHandle(RecvByteBufAllocator.ExtendedHandle handle) {
@@ -609,6 +624,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
         /**
          * Called once a EPOLLOUT event is ready to be processed
+         * <p>EPOLLOUT 就绪时调用，完成连接或 flush 出站数据。</p>
          */
         final void epollOutReady() {
             if (connectPromise != null) {
@@ -767,6 +783,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
         /**
          * Finish the connect
+         * <p>完成非阻塞 connect，清除 EPOLLOUT 并更新远端地址。</p>
          */
         private boolean doFinishConnect() throws Exception {
             if (socket.finishConnect()) {
@@ -794,6 +811,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
     /**
      * Connect to the remote peer
+     * <p>连接远端 peer，处理 EINPROGRESS 与地址校验。</p>
      */
     protected boolean doConnect(SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
         if (localAddress instanceof InetSocketAddress) {
