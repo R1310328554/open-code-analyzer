@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PuppetDB 资源模型：定义 Resource/Parameters 结构体，
+// 将 Puppet 资源 parameters 递归转换为 Prometheus meta 标签集。
+
+// PuppetDB 资源模型：定义 Resource/Parameters 结构体，
+// 将 Puppet 资源 parameters 递归转换为 Prometheus meta 标签集。
+
+// PuppetDB 资源模型：定义 Resource/Parameters 结构体，
+// 将 Puppet 资源 parameters 递归转换为 Prometheus meta 标签集。
+
 package puppetdb
 
 import (
@@ -34,6 +43,7 @@ type Resource struct {
 	Parameters  Parameters `json:"parameters"`
 }
 
+// Parameters 为 Puppet 资源参数的键值映射，支持嵌套结构。
 type Parameters map[string]any
 
 func (p *Parameters) toLabels() model.LabelSet {
@@ -72,12 +82,14 @@ func (p *Parameters) toLabels() model.LabelSet {
 				}
 			}
 			labelValue = strings.Join(values, separator)
+// 嵌套 map 递归展开，键名加前缀后合并到标签集。
 		case map[string]any:
 			subParameter := Parameters(value)
 			prefix := strutil.SanitizeLabelName(k + "_")
 			for subk, subv := range subParameter.toLabels() {
 				labels[model.LabelName(prefix)+subk] = subv
 			}
+// 不支持的 parameter 类型直接跳过，避免生成无效标签。
 		default:
 			continue
 		}

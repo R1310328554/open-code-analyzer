@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Scaleway 裸金属服务发现：通过 baremetal API 列出服务器，
+// 关联 offer/OS 信息，映射为带 scaleway_baremetal_* meta 标签的抓取目标。
+
+// Scaleway 裸金属服务发现：通过 baremetal API 列出服务器，
+// 关联 offer/OS 信息，映射为带 scaleway_baremetal_* meta 标签的抓取目标。
+
+// Scaleway 裸金属服务发现：通过 baremetal API 列出服务器，
+// 关联 offer/OS 信息，映射为带 scaleway_baremetal_* meta 标签的抓取目标。
+
 package scaleway
 
 import (
@@ -29,6 +38,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// baremetalDiscovery 持有 Scaleway 客户端与过滤条件，负责裸金属刷新。
 type baremetalDiscovery struct {
 	*refresh.Discovery
 	client     *scw.Client
@@ -57,6 +67,7 @@ const (
 	baremetalZoneLabel       = baremetalLabelPrefix + "zone"
 )
 
+// 创建 baremetalDiscovery：配置 HTTP 客户端、Profile 与 Scaleway SDK 客户端。
 func newBaremetalDiscovery(conf *SDConfig) (*baremetalDiscovery, error) {
 	d := &baremetalDiscovery{
 		port:       conf.Port,
@@ -90,6 +101,7 @@ func newBaremetalDiscovery(conf *SDConfig) (*baremetalDiscovery, error) {
 	return d, nil
 }
 
+// ListServers 分页拉取服务器，解析 IPv4/IPv6 并优先以 IPv4 作为 __address__。
 func (d *baremetalDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	api := baremetal.NewAPI(d.client)
 
@@ -153,6 +165,7 @@ func (d *baremetalDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group,
 		}
 
 		for _, ip := range server.IPs {
+// 按 IP 版本分支：IPv4 优先作为地址，IPv6 在无 IPv4 时作为回退。
 			switch v := ip.Version.String(); v {
 			case "IPv4":
 				if _, ok := labels[baremetalPublicIPv4Label]; ok {

@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 服务发现配置注册表：通过反射动态扩展 scrape_config 结构体字段，
+// 支持各 SD 机制的 YAML 内联 unmarshaling/marshaling 与指标注册。
+
 package discovery
 
 import (
@@ -46,6 +49,7 @@ var (
 	configsType     = reflect.TypeFor[Configs]()
 )
 
+// RegisterConfig 注册 SD 配置类型，为其生成 AUTO_DISCOVERY_* 反射字段。
 // RegisterConfig registers the given Config type for YAML marshaling and unmarshaling.
 func RegisterConfig(config Config) {
 	registerConfig(config.Name()+"_sd_configs", reflect.TypeOf(config), config)
@@ -58,6 +62,7 @@ func init() {
 	registerConfig(staticConfigsKey, elemTyp, StaticConfig{})
 }
 
+// registerConfig 内部实现：按 yamlKey 排序插入 configFields 切片。
 func registerConfig(yamlKey string, elemType reflect.Type, config Config) {
 	name := config.Name()
 	if _, ok := configNames[name]; ok {
@@ -108,6 +113,7 @@ func getConfigType(out reflect.Type) reflect.Type {
 	return typ
 }
 
+// UnmarshalYAMLWithInlineConfigs 将各 SD 配置段反序列化到 Configs 切片。
 // UnmarshalYAMLWithInlineConfigs helps implement yaml.Unmarshal for structs
 // that have a Configs field that should be inlined.
 func UnmarshalYAMLWithInlineConfigs(out any, unmarshal func(any) error) error {
@@ -159,6 +165,7 @@ func UnmarshalYAMLWithInlineConfigs(out any, unmarshal func(any) error) error {
 	return err
 }
 
+// readConfigs 遍历动态字段，合并 static_configs 与各 SD Config 实例。
 func readConfigs(structVal reflect.Value, startField int) (Configs, error) {
 	var (
 		configs Configs
@@ -196,6 +203,7 @@ func readConfigs(structVal reflect.Value, startField int) (Configs, error) {
 	return configs, nil
 }
 
+// MarshalYAMLWithInlineConfigs 将 Configs 写回各 SD 配置段与 static_configs。
 // MarshalYAMLWithInlineConfigs helps implement yaml.Marshal for structs
 // that have a Configs field that should be inlined.
 func MarshalYAMLWithInlineConfigs(in any) (any, error) {
@@ -260,6 +268,7 @@ func replaceYAMLTypeError(err error, oldTyp, newTyp reflect.Type) error {
 	return err
 }
 
+// RegisterSDMetrics 为所有已注册 SD 机制创建并注册 DiscovererMetrics。
 // RegisterSDMetrics registers the metrics used by service discovery mechanisms.
 // RegisterSDMetrics should be called only once during the lifetime of the Prometheus process.
 // There is no need for the Prometheus process to unregister the metrics.
@@ -281,6 +290,7 @@ func RegisterSDMetrics(registerer prometheus.Registerer, rmm RefreshMetricsManag
 	return metrics, nil
 }
 
+// RegisteredConfigNames 返回全部已注册 SD 提供者名称（排序后）。
 // RegisteredConfigNames returns the names of all registered service discovery providers.
 func RegisteredConfigNames() []string {
 	names := make([]string, 0, len(configNames))

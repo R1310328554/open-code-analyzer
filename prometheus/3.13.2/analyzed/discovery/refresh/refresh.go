@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 通用刷新型服务发现框架：包装任意 refresh 函数，
+// 启动时立即执行一次并按 interval 周期性推送 targetgroup 到 channel。
+
 package refresh
 
 import (
@@ -25,6 +28,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// Options 配置刷新 Discoverer 的日志、机制名、间隔、回调与指标实例化器。
 type Options struct {
 	Logger              *slog.Logger
 	Mech                string
@@ -34,6 +38,7 @@ type Options struct {
 	MetricsInstantiator discovery.RefreshMetricsInstantiator
 }
 
+// Discovery 实现 Discoverer 接口，持有 refresh 回调与 RefreshMetrics。
 // Discovery implements the Discoverer interface.
 type Discovery struct {
 	logger   *slog.Logger
@@ -42,6 +47,7 @@ type Discovery struct {
 	metrics  *discovery.RefreshMetrics
 }
 
+// NewDiscovery 创建 Discovery：实例化指标并绑定 refresh 回调。
 // NewDiscovery returns a Discoverer function that calls a refresh() function at every interval.
 func NewDiscovery(opts Options) *Discovery {
 	m := opts.MetricsInstantiator.Instantiate(opts.Mech, opts.SetName)
@@ -63,6 +69,7 @@ func NewDiscovery(opts Options) *Discovery {
 	return &d
 }
 
+// Run 先立即刷新一次，再按 ticker 周期调用 refresh 并发送到 channel。
 // Run implements the Discoverer interface.
 func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	// Get an initial set right away.
@@ -104,6 +111,7 @@ func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	}
 }
 
+// refresh 包装 refreshf：记录耗时直方图，失败时递增 failures 计数。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	now := time.Now()
 	defer func() {

@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Scaleway 服务发现指标适配器：实现 DiscovererMetrics 接口，
+// 委托 RefreshMetricsInstantiator 记录刷新耗时与失败次数。
+
+// Scaleway 服务发现指标适配器：实现 DiscovererMetrics 接口，
+// 委托 RefreshMetricsInstantiator 记录刷新耗时与失败次数。
+
+// Scaleway 服务发现指标适配器：实现 DiscovererMetrics 接口，
+// 委托 RefreshMetricsInstantiator 记录刷新耗时与失败次数。
+
 package scaleway
 
 import (
@@ -23,10 +32,12 @@ type scalewayMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 }
 
+// Register 无需额外注册，直接返回 nil。
 // Register implements discovery.DiscovererMetrics.
 func (*scalewayMetrics) Register() error {
 	return nil
 }
 
+// Unregister 为空操作，刷新指标由全局 RefreshMetrics 统一管理。
 // Unregister implements discovery.DiscovererMetrics.
 func (*scalewayMetrics) Unregister() {}

@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OVHcloud VPS 服务发现：通过 /vps API 列出虚拟专用服务器，
+// 获取每台 VPS 详情与 IP，映射为带 ovhcloud_vps_* meta 标签的抓取目标。
+
+// OVHcloud VPS 服务发现：通过 /vps API 列出虚拟专用服务器，
+// 获取每台 VPS 详情与 IP，映射为带 ovhcloud_vps_* meta 标签的抓取目标。
+
+// OVHcloud VPS 服务发现：通过 /vps API 列出虚拟专用服务器，
+// 获取每台 VPS 详情与 IP，映射为带 ovhcloud_vps_* meta 标签的抓取目标。
+
 package ovhcloud
 
 import (
@@ -34,6 +43,7 @@ const (
 	vpsLabelPrefix = metaLabelPrefix + "vps_"
 )
 
+// vpsModel 表示 OVH API 返回的 VPS 规格模型字段。
 // Model struct from API.
 type vpsModel struct {
 	MaximumAdditionalIP int      `json:"maximumAdditionnalIp"`
@@ -46,6 +56,7 @@ type vpsModel struct {
 	Memory              int      `json:"memory"`
 }
 
+// virtualPrivateServer 表示 VPS 详情（含独立拉取的 IP 地址列表）。
 // VPS struct from API. Also contains IP addresses that are fetched
 // independently.
 type virtualPrivateServer struct {
@@ -74,6 +85,7 @@ func newVpsDiscovery(conf *SDConfig, logger *slog.Logger) *vpsDiscovery {
 	return &vpsDiscovery{config: conf, logger: logger}
 }
 
+// 获取单台 VPS 详情及其 /ips 端点返回的 IP 地址。
 func getVpsDetails(client *ovh.Client, vpsName string) (*virtualPrivateServer, error) {
 	var vpsDetails virtualPrivateServer
 	vpsNamePath := path.Join(vpsAPIPath, url.QueryEscape(vpsName))
@@ -117,6 +129,7 @@ func (d *vpsDiscovery) getSource() string {
 	return fmt.Sprintf("%s_%s", d.config.Name(), d.getService())
 }
 
+// 遍历 VPS 列表，解析 IPv4/IPv6 并写入规格与状态 meta 标签。
 func (d *vpsDiscovery) refresh(context.Context) ([]*targetgroup.Group, error) {
 	client, err := createClient(d.config)
 	if err != nil {

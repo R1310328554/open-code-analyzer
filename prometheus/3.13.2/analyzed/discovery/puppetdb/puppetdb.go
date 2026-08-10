@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PuppetDB 服务发现：向 PuppetDB v4 查询 API 发送 PQL 查询，
+// 将返回的资源映射为以 certname 为地址的 Prometheus 抓取目标。
+
+// PuppetDB 服务发现：向 PuppetDB v4 查询 API 发送 PQL 查询，
+// 将返回的资源映射为以 certname 为地址的 Prometheus 抓取目标。
+
+// PuppetDB 服务发现：向 PuppetDB v4 查询 API 发送 PQL 查询，
+// 将返回的资源映射为以 certname 为地址的 Prometheus 抓取目标。
+
 package puppetdb
 
 import (
@@ -56,7 +65,8 @@ const (
 )
 
 var (
-	// DefaultSDConfig is the default PuppetDB SD configuration.
+	// PuppetDB SD 默认配置：60s 刷新、80 端口与默认 HTTP 客户端。
+// DefaultSDConfig is the default PuppetDB SD configuration.
 	DefaultSDConfig = SDConfig{
 		RefreshInterval:  model.Duration(60 * time.Second),
 		Port:             80,
@@ -70,6 +80,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// SDConfig 定义 PuppetDB SD 配置：URL、PQL 查询、端口与是否包含 parameters。
 // SDConfig is the configuration for PuppetDB based discovery.
 type SDConfig struct {
 	HTTPClientConfig  config.HTTPClientConfig `yaml:",inline"`
@@ -127,6 +138,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
+// Discovery 包装 refresh.Discovery，通过 POST 查询 PuppetDB 资源。
 // Discovery provides service discovery functionality based
 // on PuppetDB resources.
 type Discovery struct {
@@ -139,6 +151,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new PuppetDB discovery for the given config.
+// 创建 PuppetDB Discovery：构建 HTTP 客户端并将 URL 指向 pdb/query/v4。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*puppetdbMetrics)
 	if !ok {
@@ -182,6 +195,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery,
 	return d, nil
 }
 
+// POST JSON 查询体，校验 Content-Type 后解析资源列表并生成目标标签。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	body := struct {
 		Query string `json:"query"`
@@ -257,6 +271,7 @@ func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 		// Parameters are not included by default. This should only be enabled
 		// on select resources as it might expose secrets on the Prometheus UI
 		// for certain resources.
+// 仅在显式启用时导出 parameters 标签，避免在 UI 暴露敏感配置。
 		if d.includeParameters {
 			for k, v := range resource.Parameters.toLabels() {
 				labels[pdbLabelParameter+k] = v

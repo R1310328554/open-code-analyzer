@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OVHcloud 服务发现入口：配置 endpoint/凭证/service 类型，
+// 按 dedicated_server 或 vps 创建对应 refresher 并包装为 refresh.Discovery。
+
+// OVHcloud 服务发现入口：配置 endpoint/凭证/service 类型，
+// 按 dedicated_server 或 vps 创建对应 refresher 并包装为 refresh.Discovery。
+
+// OVHcloud 服务发现入口：配置 endpoint/凭证/service 类型，
+// 按 dedicated_server 或 vps 创建对应 refresher 并包装为 refresh.Discovery。
+
 package ovhcloud
 
 import (
@@ -31,6 +40,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// metaLabelPrefix 为所有 OVHcloud meta 标签的统一前缀。
 // metaLabelPrefix is the meta prefix used for all meta labels in this discovery.
 const metaLabelPrefix = model.MetaLabelPrefix + "ovhcloud_"
 
@@ -43,6 +53,7 @@ var DefaultSDConfig = SDConfig{
 	RefreshInterval: model.Duration(60 * time.Second),
 }
 
+// SDConfig 定义 OVHcloud SD 配置：endpoint、应用密钥、consumer key 与服务类型。
 // SDConfig defines the Service Discovery struct used for configuration.
 type SDConfig struct {
 	Endpoint          string         `yaml:"endpoint"`
@@ -66,6 +77,7 @@ func (SDConfig) Name() string {
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
+// YAML 反序列化：校验 endpoint/密钥非空且 service 为 dedicated_server 或 vps。
 func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultSDConfig
 	type plain SDConfig
@@ -99,6 +111,7 @@ func createClient(config *SDConfig) (*ovh.Client, error) {
 	return ovh.NewClient(config.Endpoint, config.ApplicationKey, string(config.ApplicationSecret), string(config.ConsumerKey))
 }
 
+// NewDiscoverer 创建 OVHcloud Discoverer 实例。
 // NewDiscoverer returns a Discoverer for the Config.
 func (c *SDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewDiscovery(c, opts)
@@ -108,6 +121,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// parseIPList 解析 OVH 返回的 IP 列表，支持单地址与 /32 前缀格式。
 // ParseIPList parses ip list as they can have different formats.
 func parseIPList(ipList []string) ([]netip.Addr, error) {
 	var ipAddresses []netip.Addr
@@ -137,6 +151,7 @@ func parseIPList(ipList []string) ([]netip.Addr, error) {
 	return ipAddresses, nil
 }
 
+// 按 service 字段选择 VPS 或独立服务器 refresher 实现。
 func newRefresher(conf *SDConfig, logger *slog.Logger) (refresher, error) {
 	switch conf.Service {
 	case "vps":
@@ -147,6 +162,7 @@ func newRefresher(conf *SDConfig, logger *slog.Logger) (refresher, error) {
 	return nil, fmt.Errorf("unknown OVHcloud discovery service '%s'", conf.Service)
 }
 
+// NewDiscovery 创建周期性刷新的 OVHcloud 服务发现 Discoverer。
 // NewDiscovery returns a new OVHcloud Discoverer which periodically refreshes its targets.
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*refresh.Discovery, error) {
 	m, ok := opts.Metrics.(*ovhcloudMetrics)

@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Scaleway 服务发现入口：配置 project/zone/role 与 API 凭证，
+// 按 instance 或 baremetal 角色创建 refresher 并包装为 refresh.Discovery。
+
+// Scaleway 服务发现入口：配置 project/zone/role 与 API 凭证，
+// 按 instance 或 baremetal 角色创建 refresher 并包装为 refresh.Discovery。
+
+// Scaleway 服务发现入口：配置 project/zone/role 与 API 凭证，
+// 按 instance 或 baremetal 角色创建 refresher 并包装为 refresh.Discovery。
+
 package scaleway
 
 import (
@@ -32,6 +41,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// metaLabelPrefix 为所有 Scaleway meta 标签的统一前缀。
 // metaLabelPrefix is the meta prefix used for all meta labels.
 // in this discovery.
 const (
@@ -39,6 +49,7 @@ const (
 	separator       = ","
 )
 
+// role 表示 Scaleway SD 目标类型：instance（云实例）或 baremetal（裸金属）。
 // role is the role of the target within the Scaleway Ecosystem.
 type role string
 
@@ -66,6 +77,7 @@ func (c *role) UnmarshalYAML(unmarshal func(any) error) error {
 	}
 }
 
+// Scaleway SD 默认配置：80 端口、60s 刷新、fr-par-1 区域与默认 API URL。
 // DefaultSDConfig is the default Scaleway Service Discovery configuration.
 var DefaultSDConfig = SDConfig{
 	Port:             80,
@@ -75,6 +87,7 @@ var DefaultSDConfig = SDConfig{
 	APIURL:           "https://api.scaleway.com",
 }
 
+// SDConfig 定义 Scaleway SD 配置：project、zone、凭证、过滤器与 role。
 type SDConfig struct {
 	// Project: The Scaleway Project ID used to filter discovery on.
 	Project string `yaml:"project_id"`
@@ -114,6 +127,7 @@ func (SDConfig) Name() string {
 	return "scaleway"
 }
 
+// secretKeyForConfig 从文件读取密钥时返回占位 UUID 以满足 SDK 校验。
 // secretKeyForConfig returns a secret key that looks like a UUID, even if we
 // take the actual secret from a file.
 func (c SDConfig) secretKeyForConfig() string {
@@ -180,6 +194,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Discovery 包装 refresh.Discovery，按 role 分发到 instance/baremetal 刷新。
 // Discovery periodically performs Scaleway requests. It implements
 // the Discoverer interface.
 type Discovery struct{}
@@ -211,6 +226,7 @@ type refresher interface {
 	refresh(context.Context) ([]*targetgroup.Group, error)
 }
 
+// 按 role 字段选择 baremetal 或 instance refresher 实现。
 func newRefresher(conf *SDConfig) (refresher, error) {
 	switch conf.Role {
 	case roleBaremetal:
@@ -221,6 +237,7 @@ func newRefresher(conf *SDConfig) (refresher, error) {
 	return nil, errors.New("unknown Scaleway discovery role")
 }
 
+// newScalewayHTTPClient 从 SD 配置创建 HTTP 客户端，可选挂载 token 文件认证。
 // newScalewayHTTPClient creates an HTTP client from the SD config, optionally
 // wrapping the transport with token-file authentication.
 func newScalewayHTTPClient(conf *SDConfig) (*http.Client, error) {
@@ -271,6 +288,7 @@ func newAuthTokenFileRoundTripper(tokenFile string, rt http.RoundTripper) (http.
 	return &authTokenFileRoundTripper{tokenFile, rt}, nil
 }
 
+// RoundTrip 从文件读取 X-Auth-Token 并注入请求头后转发。
 func (rt *authTokenFileRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	b, err := os.ReadFile(rt.authTokenFile)
 	if err != nil {

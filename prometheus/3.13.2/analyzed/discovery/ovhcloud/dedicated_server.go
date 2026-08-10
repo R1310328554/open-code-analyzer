@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OVHcloud 独立服务器服务发现：通过 OVH API 列出 dedicated/server，
+// 逐台获取详情与 IP 列表，生成带 ovhcloud_dedicated_server_* meta 标签的抓取目标。
+
+// OVHcloud 独立服务器服务发现：通过 OVH API 列出 dedicated/server，
+// 逐台获取详情与 IP 列表，生成带 ovhcloud_dedicated_server_* meta 标签的抓取目标。
+
+// OVHcloud 独立服务器服务发现：通过 OVH API 列出 dedicated/server，
+// 逐台获取详情与 IP 列表，生成带 ovhcloud_dedicated_server_* meta 标签的抓取目标。
+
 package ovhcloud
 
 import (
@@ -34,6 +43,7 @@ const (
 	dedicatedServerLabelPrefix = metaLabelPrefix + "dedicated_server_"
 )
 
+// dedicatedServer 表示 OVH API 返回的独立服务器详情（含独立拉取的 IP 列表）。
 // dedicatedServer struct from API. Also contains IP addresses that are fetched
 // independently.
 type dedicatedServer struct {
@@ -51,6 +61,7 @@ type dedicatedServer struct {
 	Name            string `json:"name"`
 }
 
+// dedicatedServerDiscovery 包装 refresh.Discovery，实现独立服务器刷新逻辑。
 type dedicatedServerDiscovery struct {
 	*refresh.Discovery
 	config *SDConfig
@@ -61,6 +72,7 @@ func newDedicatedServerDiscovery(conf *SDConfig, logger *slog.Logger) *dedicated
 	return &dedicatedServerDiscovery{config: conf, logger: logger}
 }
 
+// 调用 /dedicated/server 获取账户下全部独立服务器名称列表。
 func getDedicatedServerList(client *ovh.Client) ([]string, error) {
 	var dedicatedListName []string
 	err := client.Get(dedicatedServerAPIPath, &dedicatedListName)
@@ -71,6 +83,7 @@ func getDedicatedServerList(client *ovh.Client) ([]string, error) {
 	return dedicatedListName, nil
 }
 
+// 获取单台服务器详情及其 /ips 端点返回的 IP 地址列表。
 func getDedicatedServerDetails(client *ovh.Client, serverName string) (*dedicatedServer, error) {
 	var dedicatedServerDetails dedicatedServer
 	err := client.Get(path.Join(dedicatedServerAPIPath, url.QueryEscape(serverName)), &dedicatedServerDetails)
@@ -101,6 +114,7 @@ func (d *dedicatedServerDiscovery) getSource() string {
 	return fmt.Sprintf("%s_%s", d.config.Name(), d.getService())
 }
 
+// 遍历服务器列表，解析 IPv4/IPv6 并写入 meta 标签；单台失败仅告警跳过。
 func (d *dedicatedServerDiscovery) refresh(context.Context) ([]*targetgroup.Group, error) {
 	client, err := createClient(d.config)
 	if err != nil {

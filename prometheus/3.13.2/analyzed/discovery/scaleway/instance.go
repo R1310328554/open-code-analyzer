@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Scaleway 云实例服务发现：通过 instance API 列出虚拟机，
+// 结合 IPAM 解析私有网卡 IP，映射为 scaleway_instance_* meta 标签目标。
+
+// Scaleway 云实例服务发现：通过 instance API 列出虚拟机，
+// 结合 IPAM 解析私有网卡 IP，映射为 scaleway_instance_* meta 标签目标。
+
+// Scaleway 云实例服务发现：通过 instance API 列出虚拟机，
+// 结合 IPAM 解析私有网卡 IP，映射为 scaleway_instance_* meta 标签目标。
+
 package scaleway
 
 import (
@@ -59,6 +68,7 @@ const (
 	instanceRegionLabel              = instanceLabelPrefix + "region"
 )
 
+// instanceDiscovery 持有 Scaleway 客户端与过滤条件，负责云实例刷新。
 type instanceDiscovery struct {
 	*refresh.Discovery
 	client     *scw.Client
@@ -71,6 +81,7 @@ type instanceDiscovery struct {
 	tagsFilter []string
 }
 
+// 创建 instanceDiscovery：配置 HTTP 客户端、Profile 与 Scaleway SDK 客户端。
 func newInstanceDiscovery(conf *SDConfig) (*instanceDiscovery, error) {
 	d := &instanceDiscovery{
 		port:       conf.Port,
@@ -104,6 +115,7 @@ func newInstanceDiscovery(conf *SDConfig) (*instanceDiscovery, error) {
 	return d, nil
 }
 
+// ListServers 拉取实例，通过 IPAM 补全私有网卡 IP 并选择抓取地址。
 func (d *instanceDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	instanceAPI := instance.NewAPI(d.client)
 	ipamAPI := ipam.NewAPI(d.client)
@@ -238,6 +250,7 @@ func (d *instanceDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, 
 	return []*targetgroup.Group{{Source: "scaleway", Targets: targets}}, nil
 }
 
+// privateNICIPs 按 region 批量查询 IPAM，将私有网卡 ID 映射为 IPv4 地址。
 func privateNICIPs(ctx context.Context, api *ipam.API, servers []*instance.Server) (map[string]string, error) {
 	privateNICIDsByRegion := map[scw.Region][]string{}
 	for _, server := range servers {

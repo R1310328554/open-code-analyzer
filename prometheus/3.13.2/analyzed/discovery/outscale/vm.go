@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Outscale VM 服务发现：通过 osc-sdk-go 分页调用 ReadVms API，
+// 将虚拟机实例映射为 Prometheus 抓取目标，附带 region/state/tag 等 meta 标签。
+
+// Outscale VM 服务发现：通过 osc-sdk-go 分页调用 ReadVms API，
+// 将虚拟机实例映射为 Prometheus 抓取目标，附带 region/state/tag 等 meta 标签。
+
+// Outscale VM 服务发现：通过 osc-sdk-go 分页调用 ReadVms API，
+// 将虚拟机实例映射为 Prometheus 抓取目标，附带 region/state/tag 等 meta 标签。
+
 package outscale
 
 import (
@@ -37,6 +46,7 @@ const (
 	vmLabelTag        = vmLabelPrefix + "tag_"
 )
 
+// vmDiscovery 持有 Outscale API 客户端与 SD 配置，负责 VM 列表刷新。
 type vmDiscovery struct {
 	client *osc.APIClient
 	cfg    *SDConfig
@@ -53,6 +63,7 @@ func newVMDiscovery(conf *SDConfig) (*vmDiscovery, error) {
 	}, nil
 }
 
+// 分页拉取全部 VM，合并 AWSv4 签名上下文后调用 ReadVms。
 func (d *vmDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	secretKey, err := d.cfg.SecretKeyValue()
 	if err != nil {
@@ -88,11 +99,13 @@ func (d *vmDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error)
 	return []*targetgroup.Group{tg}, nil
 }
 
+// vmsToLabelSets 将 VM 列表转为 LabelSet：优先私网 IP，其次公网 IP。
 // vmsToLabelSets converts Outscale VMs into target label sets.
 func vmsToLabelSets(vms []osc.Vm, cfg *SDConfig) []model.LabelSet {
 	var out []model.LabelSet
 	for _, vm := range vms {
 		var addr string
+// 按私网/公网 IP 选择 __address__；无可用 IP 则跳过该 VM。
 		switch {
 		case vm.PrivateIp != nil && *vm.PrivateIp != "":
 			addr = net.JoinHostPort(*vm.PrivateIp, strconv.Itoa(cfg.Port))
