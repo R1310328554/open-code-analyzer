@@ -19,11 +19,15 @@ package org.keycloak.component;
 import java.util.Comparator;
 
 /**
+ * 带优先级的 {@link ComponentModel}：通过配置项 {@link #PRIORITY} 排序组件实例。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PrioritizedComponentModel extends ComponentModel {
+    /** 优先级配置键。 */
     public static final String PRIORITY = "priority";
+    /** 按优先级升序比较 {@link ComponentModel} 的比较器。 */
     public static Comparator<ComponentModel> comparator = new Comparator<ComponentModel>() {
         @Override
         public int compare(ComponentModel o1, ComponentModel o2) {
@@ -31,6 +35,7 @@ public class PrioritizedComponentModel extends ComponentModel {
         }
     };
 
+    /** 从已有 {@link ComponentModel} 复制构造。 */
     public PrioritizedComponentModel(ComponentModel copy) {
         super(copy);
     }
@@ -38,6 +43,7 @@ public class PrioritizedComponentModel extends ComponentModel {
     public PrioritizedComponentModel() {
     }
 
+    /** 从组件配置解析优先级，缺省为 0。 */
     public static int parsePriority(ComponentModel component) {
         String priority = component.getConfig().getFirst(PRIORITY);
         if (priority == null) return 0;
@@ -45,11 +51,13 @@ public class PrioritizedComponentModel extends ComponentModel {
 
     }
 
+    /** @return 当前组件的优先级 */
     public int getPriority() {
         return parsePriority(this);
 
     }
 
+    /** 设置当前组件的优先级。 */
     public void setPriority(int priority) {
         getConfig().putSingle("priority", Integer.toString(priority));
     }

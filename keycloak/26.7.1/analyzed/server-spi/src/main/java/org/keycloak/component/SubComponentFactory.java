@@ -24,18 +24,21 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 子组件工厂：配置属性可受父 {@link ComponentModel} 影响。
  * Useful when you want to describe config properties that are effected by the parent ComponentModel
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface SubComponentFactory<CreatedType, ProviderType extends Provider> extends ComponentFactory<CreatedType, ProviderType> {
+    /** 按 realm 与父组件返回配置属性列表。 */
     default
     List<ProviderConfigProperty> getConfigProperties(RealmModel realm, ComponentModel parent) {
         return getConfigProperties();
     }
 
     /**
+     * 返回组件类型的元数据（类型级配置，非单个实例）。
      * This is metadata about this component type.  Its really configuration information about the component type and not
      * an individual instance
      *

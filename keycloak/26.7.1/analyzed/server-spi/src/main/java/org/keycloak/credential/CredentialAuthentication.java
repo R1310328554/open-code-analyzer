@@ -20,6 +20,7 @@ import org.keycloak.models.CredentialValidationOutput;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 凭据认证 SPI：在用户未知时从凭据中提取身份并完成认证（如 Kerberos）。
  * Single purpose method that knows how to authenticate a user based on a credential type.  This is used when the user
  * is not known but the provider knows how to extract this information from the credential.  Examples are Kerberos.
  *
@@ -27,6 +28,8 @@ import org.keycloak.models.RealmModel;
  * @version $Revision: 1 $
  */
 public interface CredentialAuthentication {
+    /** 是否支持指定类型的凭据认证。 */
     boolean supportsCredentialAuthenticationFor(String type);
+    /** 在 realm 中根据 {@link CredentialInput} 执行认证。 */
     CredentialValidationOutput authenticate(RealmModel realm, CredentialInput input);
 }

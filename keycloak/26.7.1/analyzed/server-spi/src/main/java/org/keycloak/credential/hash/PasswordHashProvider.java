@@ -23,14 +23,19 @@ import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.provider.Provider;
 
 /**
+ * 密码哈希提供者 SPI：编码、校验密码并报告哈希强度。
+ *
  * @author <a href="mailto:me@tsudot.com">Kunal Kerkar</a>
  */
 public interface PasswordHashProvider extends Provider {
+    /** 检查已存储凭据是否满足 realm 密码策略（如迭代次数）。 */
     boolean policyCheck(PasswordPolicy policy, PasswordCredentialModel credential);
 
+    /** 将明文密码编码为 {@link PasswordCredentialModel}。 */
     PasswordCredentialModel encodedCredential(String rawPassword, int iterations);
 
     /**
+     * 向后兼容的编码方法；推荐使用 {@link #encodedCredential(String, int)}。
      * Exists due the backwards compatibility. It is recommended to use {@link #encodedCredential(String, int)}
      */
     @Deprecated
@@ -39,9 +44,11 @@ public interface PasswordHashProvider extends Provider {
         return rawPassword;
     }
 
+    /** 校验明文密码是否与存储凭据匹配。 */
     boolean verify(String rawPassword, PasswordCredentialModel credential);
 
     /**
+     * 返回哈希强度标识（非密码本身强度）；默认实现为迭代次数字符串。
      * Returns a string that denotes a hashing strength for a password (do not confuse with strength of the password itself!)
      * <p />
      * The default implementation is returning the number of iterations used for hashing password.
@@ -57,6 +64,7 @@ public interface PasswordHashProvider extends Provider {
     }
 
     /**
+     * @deprecated 向后兼容；推荐使用 {@link #policyCheck(PasswordPolicy, PasswordCredentialModel)}
      * @deprecated Exists due the backwards compatibility. It is recommended to use {@link #policyCheck(PasswordPolicy, PasswordCredentialModel)}
      */
     @Deprecated
@@ -65,6 +73,7 @@ public interface PasswordHashProvider extends Provider {
     }
 
     /**
+     * @deprecated 向后兼容；推荐使用 {@link #encodedCredential(String, int)}}
      * @deprecated Exists due the backwards compatibility. It is recommended to use {@link #encodedCredential(String, int)}}
      */
     @Deprecated
@@ -76,6 +85,7 @@ public interface PasswordHashProvider extends Provider {
     }
 
     /**
+     * @deprecated 向后兼容；推荐使用 {@link #verify(String, PasswordCredentialModel)}
      * @deprecated Exists due the backwards compatibility. It is recommended to use {@link #verify(String, PasswordCredentialModel)}
      */
     @Deprecated

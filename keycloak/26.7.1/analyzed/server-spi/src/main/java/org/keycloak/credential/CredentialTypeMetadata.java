@@ -25,12 +25,15 @@ import org.keycloak.models.RequiredActionProviderModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 凭据类型元数据：描述登录/账户页中某凭据类型的展示信息与必需操作。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata> {
 
     private static final Logger logger = Logger.getLogger(CredentialTypeMetadata.class);
 
+    /** 默认认证器图标 CSS 类。 */
     public static final String DEFAULT_ICON_CSS_CLASS = "kcAuthenticatorDefaultClass";
 
     private String type;
@@ -50,6 +53,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
     private Category category;
 
 
+    /** 凭据类别：基础认证、双因素、无密码。 */
     public enum Category {
         BASIC_AUTHENTICATION("basic-authentication", 1),
         TWO_FACTOR("two-factor", 2),
@@ -68,6 +72,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
             return categoryName;
         }
 
+        /** 按预定义顺序比较类别。 */
         public int compareWith(Category that) {
             return order - that.order;
         }
@@ -79,9 +84,11 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
     }
 
 
+    // 访问器
     // GETTERS
 
     /**
+     * @return 凭据类型 ID，如 "password"、"otp"、"webauthn"
      * @return credential type like for example "password", "otp" or "webauthn"
      */
     public String getType() {
@@ -89,6 +96,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
     }
 
    /**
+     * @return 面向终端用户的显示名称或国际化消息键
      * @return the label, which will be shown to the end user on various screens, like login screen with available authentication mechanisms.
      * This label will reference this particular authenticator type.
      * It should be clear to end users. For example, implementations can return "Authenticator Application" for OTP or "Passkey" for WebAuthn.
@@ -100,6 +108,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
     }
 
     /**
+     * @return 帮助说明文本或国际化消息键
      * @return the text, which will be shown to the user on various screens, like login screen with available authentication mechanisms.
      * This text will reference this particular authenticator type.
      * For example for OTP, the returned text could be "Enter a verification code from authenticator application" .
@@ -111,6 +120,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
     }
 
     /**
+     * 返回认证器图标 CSS：可为 themes.properties 中的键或直接 CSS 类名。
      * Return the icon CSS, which can be used to display icon, which represents this particular authenticator.
      *
      * The icon will be displayed on various places. For example the "Select authenticator" screen during login, where user can select from
@@ -131,6 +141,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
     }
 
     /**
+     * @return 创建该类型凭据的必需操作 providerId；无则为 null
      * @return the providerID of the required action, which can be used by the user to create new credential of our type. Null if there is no
      * action for creating credential. For example we're creating credential in case of "otp" type, but we're updating credential
      * in case of type "password"
@@ -140,6 +151,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
     }
 
     /**
+     * @return 更新该类型凭据的必需操作 providerId；无则为 null
      * @return the providerID of the required action, which can be used by the user to update credential of our type. Null if there is no
      * action for updating credential. For example we're creating credential in case of "otp" type, but we're updating credential
      * in case of type "password"
@@ -149,6 +161,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
     }
 
     /**
+     * @return 用户是否可删除已注册的该类型凭据
      * @return true if user can remove some previously registered credentials of this type.
      */
     public boolean isRemoveable() {
@@ -156,12 +169,14 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
     }
 
     /**
+     * @return 凭据类别
      * @return Category of this credential
      */
     public Category getCategory() {
         return category;
     }
 
+    /** @return 元数据构建器 */
     public static CredentialTypeMetadataBuilder builder() {
         return new CredentialTypeMetadataBuilder();
     }
@@ -176,6 +191,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
 
     }
 
+    // 构建器
     // BUILDER
 
     public static class CredentialTypeMetadataBuilder {
@@ -223,6 +239,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
         }
 
         /**
+         * 校验元数据完整性并返回实例（同时验证必需操作是否已注册）。
          * This will validate metadata and return them
          *
          * @return metadata
@@ -241,6 +258,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
             if (!verifyRequiredAction(session, instance.updateAction)) {
                 instance.updateAction = null;
             }
+            // 凭据不能同时配置 createAction 与 updateAction
             // Assume credential can't have both createAction and updateAction.
             if (instance.createAction != null && instance.updateAction != null) {
                 throw new IllegalStateException("Both createAction and updateAction are not null when building CredentialTypeMetadata for the credential type '" + instance.type);
@@ -258,6 +276,7 @@ public class CredentialTypeMetadata implements Comparable<CredentialTypeMetadata
             }
         }
 
+        // 检查 realm 中是否已注册并启用指定必需操作
         // Check if required action of specified providerId is registered in the realm and enabled
         private boolean verifyRequiredAction(KeycloakSession session, String requiredActionProviderId) {
             if (requiredActionProviderId == null) {

@@ -17,13 +17,16 @@
 package org.keycloak.credential;
 
 /**
- *
+ * 凭据输入 SPI：封装认证流程中提交的凭据标识、类型与挑战响应。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface CredentialInput {
+    /** @return 凭据 ID（可为 null） */
     String getCredentialId();
+    /** @return 凭据类型（如 password、otp） */
     String getType();
+    /** @return 用户提交的凭据值或挑战响应 */
     String getChallengeResponse();
 }

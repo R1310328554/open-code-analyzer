@@ -23,14 +23,19 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
 
 /**
+ * 用户凭据存储 SPI：持久化与查询用户的 {@link CredentialModel}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface UserCredentialStore extends Provider {
+    /** 更新用户已有凭据。 */
     void updateCredential(RealmModel realm, UserModel user, CredentialModel cred);
+    /** 创建并持久化新凭据。 */
     CredentialModel createCredential(RealmModel realm, UserModel user, CredentialModel cred);
 
     /**
+     * 删除用户指定 ID 的凭据。
      * Removes credential with the {@code id} for the {@code user}.
      *
      * @param realm realm.
@@ -41,9 +46,11 @@ public interface UserCredentialStore extends Provider {
      * TODO: Make this method return Boolean so that store can return "I don't know" answer, this can be used for example in async stores
      */
     boolean removeStoredCredential(RealmModel realm, UserModel user, String id);
+    /** 按 ID 获取已存储凭据。 */
     CredentialModel getStoredCredentialById(RealmModel realm, UserModel user, String id);
 
     /**
+     * 获取用户全部已存储凭据。
      * Obtains the stored credentials associated with the specified user.
      *
      * @param realm a reference to the realm.
@@ -53,6 +60,7 @@ public interface UserCredentialStore extends Provider {
     Stream<CredentialModel> getStoredCredentialsStream(RealmModel realm, UserModel user);
 
     /**
+     * 获取用户指定类型的已存储凭据。
      * Obtains the stored credentials associated with the specified user that match the specified type.
      *
      * @param realm a reference to the realm.
@@ -62,9 +70,12 @@ public interface UserCredentialStore extends Provider {
      */
     Stream<CredentialModel> getStoredCredentialsByTypeStream(RealmModel realm, UserModel user, String type);
 
+    /** 按用户标签名与类型获取凭据。 */
     CredentialModel getStoredCredentialByNameAndType(RealmModel realm, UserModel user, String name, String type);
 
+    // 列表排序操作
     //list operations
+    /** 调整凭据在列表中的顺序。 */
     boolean moveCredentialTo(RealmModel realm, UserModel user, String id, String newPreviousCredentialId);
 
 }

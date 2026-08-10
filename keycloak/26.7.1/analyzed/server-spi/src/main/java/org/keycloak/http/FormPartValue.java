@@ -19,9 +19,14 @@ package org.keycloak.http;
 
 import java.io.InputStream;
 
+/**
+ * multipart 表单字段值的抽象：可按字符串或 {@link java.io.InputStream} 读取。
+ */
 public interface FormPartValue {
 
+    /** 以字符串形式读取表单字段值。 */
     String asString();
+    /** 以输入流形式读取表单字段值（如文件上传）。 */
     InputStream asInputStream();
 
 }

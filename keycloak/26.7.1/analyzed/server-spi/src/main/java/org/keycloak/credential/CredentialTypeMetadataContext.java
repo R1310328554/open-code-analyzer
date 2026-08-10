@@ -22,6 +22,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 
 /**
+ * 构建 {@link CredentialTypeMetadata} 时的上下文（如目标用户）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CredentialTypeMetadataContext {
@@ -32,16 +34,19 @@ public class CredentialTypeMetadataContext {
     }
 
     /**
+     * @return 元数据关联的用户，可为 null
      * @return user, for which we create metadata. Could be null
      */
     public UserModel getUser() {
         return user;
     }
 
+    /** @return 上下文构建器 */
     public static CredentialTypeMetadataContext.CredentialTypeMetadataContextBuilder builder() {
         return new CredentialTypeMetadataContext.CredentialTypeMetadataContextBuilder();
     }
 
+    // 构建器
     // BUILDER
 
     public static class CredentialTypeMetadataContextBuilder {
@@ -53,7 +58,9 @@ public class CredentialTypeMetadataContext {
             return this;
         }
 
+        /** 构建上下文；用户可为 null。 */
         public CredentialTypeMetadataContext build(KeycloakSession session) {
+            // 允许 user 为 null
             // Possible to have null user
             return instance;
         }

@@ -20,6 +20,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 凭据输入校验 SPI：验证 {@link CredentialInput}（如密码）。
+ * <p>{@link org.keycloak.storage.UserStorageProvider} 与 {@link CredentialProvider} 可实现此接口。</p>
  * Implentations of this interface can validate CredentialInput, i.e. verify a password.
  * UserStorageProviders and CredentialProviders can implement this interface.
  *
@@ -28,10 +30,13 @@ import org.keycloak.models.UserModel;
  * @version $Revision: 1 $
  */
 public interface CredentialInputValidator {
+    /** 是否支持指定凭据类型。 */
     boolean supportsCredentialType(String credentialType);
+    /** 用户是否已配置指定类型的凭据。 */
     boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType);
 
     /**
+     * 校验凭据是否有效。
      * Tests whether a credential is valid
      * @param realm The realm in which to which the credential belongs to
      * @param user The user for which to test the credential

@@ -30,35 +30,42 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
+ * 用户凭据持久化模型：存储凭据类型、密钥数据与元数据 JSON。
+ * <p>用于直接读写哈希/盐值等场景（如导入导出）；新代码请优先使用 {@link org.keycloak.models.credential.PasswordCredentialModel} 等子类型。</p>
  * Used just in cases when we want to "directly" update or retrieve the hash or salt of user credential (For example during export/import)
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CredentialModel implements Serializable {
 
-    @Deprecated /** Use PasswordCredentialModel.TYPE instead **/
+    @Deprecated /** 请改用 {@link org.keycloak.models.credential.PasswordCredentialModel#TYPE} // Use PasswordCredentialModel.TYPE instead **/
     public static final String PASSWORD = "password";
 
-    @Deprecated /** Use PasswordCredentialModel.PASSWORD_HISTORY instead **/
+    @Deprecated /** 请改用 PasswordCredentialModel.PASSWORD_HISTORY // Use PasswordCredentialModel.PASSWORD_HISTORY instead **/
     public static final String PASSWORD_HISTORY = "password-history";
 
-    @Deprecated /** Legacy stuff. Not used in Keycloak anymore **/
+    @Deprecated /** 遗留类型，Keycloak 已不再使用 // Legacy stuff. Not used in Keycloak anymore **/
     public static final String PASSWORD_TOKEN = "password-token";
 
-    @Deprecated /** Use OTPCredentialModel.TYPE instead **/
+    @Deprecated /** 请改用 OTPCredentialModel.TYPE // Use OTPCredentialModel.TYPE instead **/
     public static final String OTP = "otp";
 
-    @Deprecated /** Use OTPCredentialModel.TOTP instead **/
+    @Deprecated /** 请改用 OTPCredentialModel.TOTP // Use OTPCredentialModel.TOTP instead **/
     public static final String TOTP = "totp";
 
-    @Deprecated /** Use OTPCredentialModel.HOTP instead **/
+    @Deprecated /** 请改用 OTPCredentialModel.HOTP // Use OTPCredentialModel.HOTP instead **/
     public static final String HOTP = "hotp";
 
+    // secret 类似 password 但不哈希
     // Secret is same as password but it is not hashed
+    /** 未哈希密钥凭据类型。 */
     public static final String SECRET = "secret";
+    /** 客户端证书凭据类型。 */
     public static final String CLIENT_CERT = "cert";
+    /** Kerberos 凭据类型。 */
     public static final String KERBEROS = "kerberos";
 
+    /** 用户自定义凭据标签字段名。 */
     public static final String USER_LABEL = "userLabel";
 
     private String id;
@@ -71,6 +78,7 @@ public class CredentialModel implements Serializable {
 
     private String federationLink;
 
+    /** 浅拷贝当前凭据模型。 */
     public CredentialModel shallowClone() {
         CredentialModel res = new CredentialModel();
         res.id = id;
@@ -125,14 +133,16 @@ public class CredentialModel implements Serializable {
         this.credentialData = credentialData;
     }
 
+    /** 按创建时间降序排列的比较器。 */
     public static Comparator<CredentialModel> comparingByStartDateDesc() {
-        return (o1, o2) -> { // sort by date descending
+        return (o1, o2) -> { // 按创建时间降序 // sort by date descending
             Long o1Date = o1.getCreatedDate() == null ? Long.MIN_VALUE : o1.getCreatedDate();
             Long o2Date = o2.getCreatedDate() == null ? Long.MIN_VALUE : o2.getCreatedDate();
             return (-o1Date.compareTo(o2Date));
         };
     }
 
+    // 以下方法已弃用，仅为向后兼容保留
     // DEPRECATED - the methods below exists for the backwards compatibility
 
     /**
@@ -296,10 +306,12 @@ public class CredentialModel implements Serializable {
         writeProperty("config", config, false);
     }
 
+    /** 设置联邦存储链接 ID。 */
     public void setFederationLink(String federationLink) {
         this.federationLink = federationLink;
     }
 
+    /** @return 联邦存储链接 ID */
     public String getFederationLink() {
         return federationLink;
     }
