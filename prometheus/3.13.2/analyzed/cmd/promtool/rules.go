@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// rules 导入子命令：通过 QueryRange API 回放规则表达式并写入 TSDB 块。
+
 package main
 
 import (
@@ -37,6 +39,7 @@ type queryRangeAPI interface {
 	QueryRange(ctx context.Context, query string, r v1.Range, opts ...v1.Option) (model.Value, v1.Warnings, error)
 }
 
+// 规则导入器：加载规则组、按区间查询并持久化为 TSDB 块。
 type ruleImporter struct {
 	logger *slog.Logger
 	config ruleImporterConfig
@@ -58,6 +61,7 @@ type ruleImporterConfig struct {
 
 // newRuleImporter creates a new rule importer that can be used to parse and evaluate recording rule files and create new series
 // written to disk in blocks.
+// 构造 ruleImporter 实例。
 func newRuleImporter(logger *slog.Logger, config ruleImporterConfig, apiClient queryRangeAPI) *ruleImporter {
 	logger.Info("new rule importer", "component", "backfiller", "start", config.start.Format(time.RFC822), "end", config.end.Format(time.RFC822))
 	return &ruleImporter{
@@ -96,6 +100,7 @@ func (importer *ruleImporter) importAll(ctx context.Context) (errs []error) {
 }
 
 // importRule queries a prometheus API to evaluate rules at times in the past.
+// 对单条规则在 [start,end] 上执行 QueryRange 并将样本写入块。
 func (importer *ruleImporter) importRule(ctx context.Context, ruleExpr, ruleName string, ruleLabels labels.Labels, start, end time.Time,
 	maxBlockDuration int64, grp *rules.Group,
 ) (err error) {
@@ -198,6 +203,7 @@ func newMultipleAppender(ctx context.Context, blockWriter *tsdb.BlockWriter) *mu
 
 // multipleAppender keeps track of how many series have been added to the current appender.
 // If the max samples have been added, then all series are committed and a new appender is created.
+// 跨多个 TSDB 块的批量 Appender，用于大规则导入时分片提交。
 type multipleAppender struct {
 	maxSamplesInMemory int
 	currentSampleCount int

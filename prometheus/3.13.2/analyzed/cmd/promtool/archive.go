@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// debug 子命令的 tar.gz 归档写入辅助：将采集的调试文件打包压缩。
+
 package main
 
 import (
@@ -29,6 +31,7 @@ type tarGzFileWriter struct {
 	file      *os.File
 }
 
+// 创建新的 .tar.gz 归档文件。
 func newTarGzFileWriter(archiveName string) (*tarGzFileWriter, error) {
 	file, err := os.Create(archiveName)
 	if err != nil {
@@ -53,6 +56,7 @@ func (w *tarGzFileWriter) close() error {
 	return w.file.Close()
 }
 
+// 向归档追加单个文件条目。
 func (w *tarGzFileWriter) write(filename string, b []byte) error {
 	header := &tar.Header{
 		Name: filename,

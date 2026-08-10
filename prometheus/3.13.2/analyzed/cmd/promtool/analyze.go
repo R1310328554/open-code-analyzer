@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// query analyze 子命令实现：通过 HTTP API 拉取直方图序列并统计桶分布。
+
+// query analyze 子命令实现：通过 HTTP API 拉取直方图序列并统计桶分布。
+
+// query analyze 子命令实现：通过 HTTP API 拉取直方图序列并统计桶分布。
+
 package main
 
 import (
@@ -47,6 +53,7 @@ which is typical for classic but not native histograms).`
 Each line shows min/avg/max over the series above.`
 )
 
+// 查询分析参数：指标类型、时间范围与 label 匹配器。
 type QueryAnalyzeConfig struct {
 	metricType string
 	duration   time.Duration
@@ -54,6 +61,7 @@ type QueryAnalyzeConfig struct {
 	matchers   []string
 }
 
+// 执行分析：按 metricType 拉取 classic 或 native 直方图并输出桶统计。
 // run retrieves metrics that look like conventional histograms (i.e. have _bucket
 // suffixes) or native histograms, depending on metricType flag.
 func (c *QueryAnalyzeConfig) run(url *url.URL, roundtripper http.RoundTripper) error {
@@ -178,6 +186,7 @@ func querySamples(ctx context.Context, api v1.API, query string, end time.Time) 
 // minPop/avgPop/maxPop is for the number of populated (non-zero) buckets.
 // total is the total number of buckets across all samples in the series,
 // populated or not.
+// 直方图桶数量在 min/avg/max 上的汇总统计。
 type statistics struct {
 	minPop, maxPop, total int
 	avgPop                float64
@@ -190,6 +199,7 @@ func (s statistics) String() string {
 	return fmt.Sprintf("%d/%.3f/%d/%d", s.minPop, s.avgPop, s.maxPop, s.total)
 }
 
+// 对 classic 直方图（_bucket 后缀）计算桶填充统计。
 func calcClassicBucketStatistics(matrix model.Matrix) (*statistics, error) {
 	numBuckets := len(matrix)
 
@@ -279,6 +289,7 @@ func makeBucketBounds(b *model.HistogramBucket) bucketBounds {
 	}
 }
 
+// 对 native 直方图样本流计算桶统计。
 func calcNativeBucketStatistics(series *model.SampleStream) (*statistics, error) {
 	stats := &statistics{
 		minPop: math.MaxInt,

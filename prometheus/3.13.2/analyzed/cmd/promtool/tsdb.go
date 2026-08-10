@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// tsdb 子命令：TSDB 基准测试、块列表/分析、数据导出与 OpenMetrics 回填。
+
 package main
 
 import (
@@ -49,6 +51,7 @@ import (
 
 const timeDelta = 30000
 
+// TSDB 写入基准测试状态（路径、样本文件、profiling 句柄等）。
 type writeBenchmark struct {
 	outPath     string
 	samplesFile string
@@ -64,6 +67,7 @@ type writeBenchmark struct {
 	logger    *slog.Logger
 }
 
+// 运行 TSDB 写入基准并输出耗时统计。
 func benchmarkWrite(outPath, samplesFile string, numMetrics, numScrapes int) error {
 	b := &writeBenchmark{
 		outPath:     outPath,
@@ -329,6 +333,7 @@ func readPrometheusLabels(r io.Reader, n int) ([]labels.Labels, error) {
 	return mets, nil
 }
 
+// 列出数据目录下所有 TSDB 块元信息。
 func listBlocks(path string, humanReadable bool) error {
 	db, err := tsdb.OpenDBReadOnly(path, "", nil)
 	if err != nil {
@@ -405,6 +410,7 @@ func openBlock(path, blockID string) (*tsdb.DBReadOnly, tsdb.BlockReader, error)
 	return db, b, nil
 }
 
+// 分析单个块的标签基数、压缩与 churn 等统计。
 func analyzeBlock(ctx context.Context, path, blockID string, limit int, runExtended bool, matchers string, p parser.Parser) error {
 	var (
 		selectors []*labels.Matcher
@@ -703,6 +709,7 @@ func analyzeCompaction(ctx context.Context, block tsdb.BlockReader, indexr tsdb.
 
 type SeriesSetFormatter func(series storage.SeriesSet) error
 
+// 按时间范围与 matcher 导出 TSDB 序列数据。
 func dumpTSDBData(ctx context.Context, dbDir, sandboxDirRoot string, mint, maxt int64, match []string, formatter SeriesSetFormatter, p parser.Parser) (err error) {
 	db, err := tsdb.OpenDBReadOnly(dbDir, sandboxDirRoot, nil)
 	if err != nil {
@@ -842,6 +849,7 @@ func checkErr(err error) int {
 	return 0
 }
 
+// 从 OpenMetrics 文件创建 TSDB 块（tsdb openmetrics create 入口）。
 func backfillOpenMetrics(path, outputDir string, humanReadable, quiet bool, maxBlockDuration time.Duration, customLabels map[string]string) int {
 	var buf []byte
 	info, err := os.Stat(path)

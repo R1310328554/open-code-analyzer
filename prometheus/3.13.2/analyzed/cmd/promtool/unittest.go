@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// test rules 子命令：基于 YAML 单元测试文件对告警/recording 规则做时间线仿真测试。
+
+// test rules 子命令：基于 YAML 单元测试文件对告警/recording 规则做时间线仿真测试。
+
+// test rules 子命令：基于 YAML 单元测试文件对告警/recording 规则做时间线仿真测试。
+
 package main
 
 import (
@@ -45,6 +51,7 @@ import (
 	"github.com/prometheus/prometheus/util/junitxml"
 )
 
+// 对规则单元测试 YAML 文件批量执行测试并返回退出码。
 // RulesUnitTest does unit testing of rules based on the unit testing files provided.
 // More info about the file format can be found in the docs.
 func RulesUnitTest(queryOpts promqltest.LazyLoaderOpts, p parser.Parser, runStrings []string, diffFlag, debug, ignoreUnknownFields bool, files ...string) int {
@@ -157,6 +164,7 @@ func matchesRun(name string, run *regexp.Regexp) bool {
 }
 
 // unitTestFile holds the contents of a single unit test file.
+// 单元测试文件顶层结构：规则文件路径与测试组列表。
 type unitTestFile struct {
 	RuleFiles          []string       `yaml:"rule_files"`
 	EvaluationInterval model.Duration `yaml:"evaluation_interval,omitempty"`
@@ -211,6 +219,7 @@ func (t *testStartTimestamp) UnmarshalYAML(unmarshal func(any) error) error {
 }
 
 // testGroup is a group of input series and tests associated with it.
+// 单个测试组：输入序列、评估间隔、期望告警与 PromQL 断言。
 type testGroup struct {
 	Interval        model.Duration     `yaml:"interval"`
 	InputSeries     []series           `yaml:"input_series"`
@@ -225,6 +234,7 @@ type testGroup struct {
 }
 
 // test performs the unit tests.
+// 执行一组规则测试：加载数据、按时间步评估并比对期望结果。
 func (tg *testGroup) test(testname string, evalInterval time.Duration, groupOrderMap map[string]int, queryOpts promqltest.LazyLoaderOpts, diffFlag, debug, ignoreUnknownFields, fuzzyCompare bool, ruleFiles ...string) (outErr []error) {
 	if debug {
 		testStart := time.Now()
@@ -688,6 +698,7 @@ type series struct {
 	Values string `yaml:"values"`
 }
 
+// 期望触发的告警：exp_labels 与 exp_annotations。
 type alertTestCase struct {
 	EvalTime  model.Duration `yaml:"eval_time"`
 	Alertname string         `yaml:"alertname"`
@@ -699,6 +710,7 @@ type alert struct {
 	ExpAnnotations map[string]string `yaml:"exp_annotations"`
 }
 
+// PromQL 断言：在给定 eval_time 期望的向量结果。
 type promqlTestCase struct {
 	Expr       string         `yaml:"expr"`
 	EvalTime   model.Duration `yaml:"eval_time"`

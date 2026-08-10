@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// debug 子命令：从运行中的 Prometheus 拉取 pprof/metrics 等端点并写入 tar.gz。
+
 package main
 
 import (

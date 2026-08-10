@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// AWS 服务发现：统一 SDConfig 按 role 分发到 EC2/ECS/RDS/MSK 等子发现器。
+
 package aws
 
 import (
@@ -28,6 +30,7 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 )
 
+// AWS 服务发现默认配置（60s 刷新间隔）。
 // DefaultSDConfig is the default AWS SD configuration.
 var DefaultSDConfig = SDConfig{
 	RefreshInterval:  model.Duration(60 * time.Second),
@@ -38,6 +41,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// AWS 服务角色枚举：指定发现哪种 AWS 资源。
 // Role is role of the service in AWS.
 type Role string
 
@@ -68,12 +72,14 @@ func (c Role) String() string {
 	return string(c)
 }
 
+// AWS API 资源过滤器（名称 + 取值列表）。
 // Filter is the configuration for filtering AWS resources.
 type Filter struct {
 	Name   string   `yaml:"name"`
 	Values []string `yaml:"values"`
 }
 
+// AWS SD 统一配置：凭证、区域、role 及嵌入的子配置。
 // SDConfig is the configuration for AWS service discovery.
 type SDConfig struct {
 	Role             Role                    `yaml:"role"`
@@ -340,6 +346,7 @@ func (*SDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.Ref
 }
 
 // NewDiscoverer returns a Discoverer for the AWS Config.
+// 按 Role 实例化对应的 AWS Discoverer。
 func (c *SDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	awsMetrics, ok := opts.Metrics.(*awsMetrics)
 	if !ok {
@@ -400,6 +407,7 @@ func (c *SDConfig) SetDirectory(dir string) {
 	}
 }
 
+// 解析 AWS 区域：显式配置 → 默认凭证链 → IMDS。
 // loadRegion finds the region in order: AWS config/env vars ->IMDS.
 func loadRegion(ctx context.Context, specifiedRegion string) (string, error) {
 	if specifiedRegion != "" {

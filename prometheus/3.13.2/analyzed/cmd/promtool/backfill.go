@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TSDB backfill：将 OpenMetrics/Prometheus text 样本导入为本地 TSDB 块。
+
+// TSDB backfill：将 OpenMetrics/Prometheus text 样本导入为本地 TSDB 块。
+
+// TSDB backfill：将 OpenMetrics/Prometheus text 样本导入为本地 TSDB 块。
+
 package main
 
 import (
@@ -29,6 +35,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb"
 )
 
+// 扫描文本解析器输入，得到样本时间戳的最小/最大值。
 func getMinAndMaxTimestamps(p textparse.Parser) (int64, int64, error) {
 	var maxt, mint int64 = math.MinInt64, math.MaxInt64
 
@@ -68,6 +75,7 @@ func getMinAndMaxTimestamps(p textparse.Parser) (int64, int64, error) {
 	return maxt, mint, nil
 }
 
+// 将用户指定的块时长对齐到 TSDB 允许的指数块范围。
 func getCompatibleBlockDuration(maxBlockDuration int64) int64 {
 	blockDuration := tsdb.DefaultBlockDuration
 	if maxBlockDuration > tsdb.DefaultBlockDuration {
@@ -84,6 +92,7 @@ func getCompatibleBlockDuration(maxBlockDuration int64) int64 {
 	return blockDuration
 }
 
+// 解析输入并按时间窗口写入一个或多个 TSDB 块。
 func createBlocks(input []byte, mint, maxt, maxBlockDuration int64, maxSamplesInAppender int, outputDir string, humanReadable, quiet bool, customLabels map[string]string) (returnErr error) {
 	blockDuration := getCompatibleBlockDuration(maxBlockDuration)
 	mint = blockDuration * (mint / blockDuration)
@@ -228,6 +237,7 @@ func createBlocks(input []byte, mint, maxt, maxBlockDuration int64, maxSamplesIn
 	return nil
 }
 
+// backfill 入口：读取 stdin/文件字节并调用 createBlocks。
 func backfill(maxSamplesInAppender int, input []byte, outputDir string, humanReadable, quiet bool, maxBlockDuration time.Duration, customLabels map[string]string) (err error) {
 	p := textparse.NewOpenMetricsParser(input, nil) // Don't need a SymbolTable to get max and min timestamps.
 	maxt, mint, err := getMinAndMaxTimestamps(p)

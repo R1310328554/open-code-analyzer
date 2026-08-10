@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// push metrics 子命令：将本地 exposition 文件通过 Remote Write 推送到测试端点。
+
+// push metrics 子命令：将本地 exposition 文件通过 Remote Write 推送到测试端点。
+
+// push metrics 子命令：将本地 exposition 文件通过 Remote Write 推送到测试端点。
+
 package main
 
 import (
@@ -28,6 +34,7 @@ import (
 	"github.com/prometheus/prometheus/util/fmtutil"
 )
 
+// 将指标文件推送到 Remote Write URL（仅用于测试）。
 // PushMetrics to a prometheus remote write (for testing purpose only).
 func PushMetrics(url *url.URL, roundTripper http.RoundTripper, headers map[string]string, timeout time.Duration, protoMsg string, labels map[string]string, files ...string) int {
 	addressURL, err := url.Parse(url.String())
@@ -104,6 +111,7 @@ func PushMetrics(url *url.URL, roundTripper http.RoundTripper, headers map[strin
 	return successExitCode
 }
 
+// 解析 exposition 数据并通过 Remote Write API 发送。
 func parseAndPushMetrics(writeAPI *remoteapi.API, messageType remoteapi.WriteMessageType, data []byte, labels map[string]string) bool {
 	metricsData, err := fmtutil.MetricTextToWriteRequest(bytes.NewReader(data), labels)
 	if err != nil {
@@ -121,6 +129,7 @@ func parseAndPushMetrics(writeAPI *remoteapi.API, messageType remoteapi.WriteMes
 	return true
 }
 
+// 为 HTTP 请求附加自定义头的 RoundTripper 包装。
 type setHeadersTransport struct {
 	http.RoundTripper
 	headers map[string]string

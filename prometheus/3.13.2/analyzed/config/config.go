@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus 主配置包：定义 prometheus.yml 各段的 Go 结构体、默认值、YAML 解析/校验与服务发现配置注册。
+
+// Prometheus 主配置包：定义 prometheus.yml 各段的 Go 结构体、默认值、YAML 解析/校验与服务发现配置注册。
+
 package config
 
 import (
@@ -70,6 +74,7 @@ var (
 	}
 )
 
+// 从 YAML 字符串解析 Config（严格模式）。
 // Load parses the YAML input s into a Config.
 func Load(s string, logger *slog.Logger) (*Config, error) {
 	cfg := &Config{}
@@ -126,6 +131,7 @@ func Load(s string, logger *slog.Logger) (*Config, error) {
 	return cfg, nil
 }
 
+// 从文件路径加载并解析配置（支持 agent 模式）。
 // LoadFile parses and validates the given YAML file into a read-only Config.
 // Callers should never write to or shallow copy the returned Config.
 func LoadFile(filename string, agentMode bool, logger *slog.Logger) (*Config, error) {
@@ -289,6 +295,7 @@ var (
 )
 
 // Config is the top-level configuration for Prometheus's config files.
+// prometheus.yml 根配置：global、scrape、alerting、remote、storage、tracing 等。
 type Config struct {
 	GlobalConfig      GlobalConfig    `yaml:"global"`
 	Runtime           RuntimeConfig   `yaml:"runtime,omitempty"`
@@ -480,6 +487,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(any) error) error {
 
 // GlobalConfig configures values that are used across other configuration
 // objects.
+// 全局段：抓取/评估间隔、外部标签、Query 超时等默认值。
 type GlobalConfig struct {
 	// How frequently to scrape targets by default.
 	ScrapeInterval model.Duration `yaml:"scrape_interval,omitempty"`
@@ -761,6 +769,7 @@ type ScrapeConfigs struct {
 }
 
 // ScrapeConfig configures a scraping unit for Prometheus.
+// 单个 scrape job 的配置：SD、relabel、协议、TLS 等。
 type ScrapeConfig struct {
 	// The job name to which the job label is set by default.
 	JobName string `yaml:"job_name"`
@@ -1146,6 +1155,7 @@ type ChunkEncodingConfig struct {
 }
 
 // TSDBConfig configures runtime reloadable configuration options.
+// 本地 TSDB 保留、块时长、WAL 压缩等存储选项。
 type TSDBConfig struct {
 	// OutOfOrderTimeWindow sets how long back in time an out-of-order sample can be inserted
 	// into the TSDB. This flag is typically set while unmarshaling the configuration file and translating
@@ -1360,6 +1370,7 @@ var SupportedAlertmanagerAPIVersions = []AlertmanagerAPIVersion{
 }
 
 // AlertmanagerConfig configures how Alertmanagers can be discovered and communicated with.
+// Alertmanager 发现/static 配置与 relabel 规则。
 type AlertmanagerConfig struct {
 	// We cannot do proper Go type embedding below as the parser will then parse
 	// values arbitrarily into the overflow maps of further-down types.
@@ -1479,6 +1490,7 @@ func CheckTargetAddress(address model.LabelValue) error {
 }
 
 // RemoteWriteConfig is the configuration for writing to remote storage.
+// Remote Write 端点配置：URL、队列、重试、SigV4/Azure/GCP 认证等。
 type RemoteWriteConfig struct {
 	URL                  *config.URL       `yaml:"url"`
 	RemoteTimeout        model.Duration    `yaml:"remote_timeout,omitempty"`

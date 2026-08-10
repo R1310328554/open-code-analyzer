@@ -11,6 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus 服务端主程序入口。
+// 负责解析命令行与配置文件、初始化 TSDB/抓取/规则/告警/远程读写等子系统，并启动 HTTP API 与生命周期管理。
+
+// Prometheus 服务端主程序入口。
+// 负责解析命令行与配置文件、初始化 TSDB/抓取/规则/告警/远程读写等子系统，并启动 HTTP API 与生命周期管理。
+
+// Prometheus 服务端主程序入口。
+// 负责解析命令行与配置文件、初始化 TSDB/抓取/规则/告警/远程读写等子系统，并启动 HTTP API 与生命周期管理。
+
+// Prometheus 可执行文件的主包。
 // The main package for the Prometheus server executable.
 package main
 
@@ -181,6 +191,7 @@ func agentOnlyFlag(app *kingpin.Application, name, help string) *kingpin.FlagCla
 		})
 }
 
+// 聚合所有命令行标志对应的运行时配置项。
 type flagConfig struct {
 	configFile string
 
@@ -362,6 +373,7 @@ func parseCompressionType(compress bool, compressType compression.Type) compress
 	return compression.None
 }
 
+// 程序入口：解析标志、加载配置并启动各组件。
 func main() {
 	if os.Getenv("DEBUG") != "" {
 		runtime.SetBlockProfileRate(20)
@@ -1622,6 +1634,7 @@ func main() {
 	logger.Info("See you next time!")
 }
 
+// 打开 TSDB 并注册相关 Prometheus 指标。
 func openDBWithMetrics(dir string, logger *slog.Logger, reg prometheus.Registerer, opts *tsdb.Options, stats *tsdb.DBStats) (*tsdb.DB, error) {
 	db, err := tsdb.Open(
 		dir,
@@ -1673,11 +1686,13 @@ func (i *safePromQLNoStepSubqueryInterval) Get(int64) int64 {
 	return i.value.Load()
 }
 
+// 配置重载回调：name 用于日志，apply 应用新配置。
 type reloader struct {
 	name     string
 	reloader func(*config.Config) error
 }
 
+// 热重载 prometheus.yml：校验配置并依次调用各子系统 reloader。
 func reloadConfig(filename string, enableExemplarStorage bool, logger *slog.Logger, noStepSubqueryInterval *safePromQLNoStepSubqueryInterval, callback func(bool), rls ...reloader) (err error) {
 	start := time.Now()
 	timingsLogger := logger
@@ -1805,6 +1820,7 @@ func storagePathFsSize(path string) uint64 {
 
 // readyStorage implements the Storage interface while allowing to set the actual
 // storage at a later point in time.
+// 线程安全的存储包装：在 TSDB 就绪前拒绝查询与写入。
 type readyStorage struct {
 	mtx             sync.RWMutex
 	db              storage.Storage
@@ -2049,6 +2065,7 @@ func (s *readyStorage) WALReplayStatus() (tsdb.WALReplayStatus, error) {
 var ErrNotReady = errors.New("scrape manager not ready")
 
 // ReadyScrapeManager allows a scrape manager to be retrieved. Even if it's set at a later point in time.
+// 线程安全的抓取管理器包装，就绪前返回 ErrNotReady。
 type readyScrapeManager struct {
 	mtx sync.RWMutex
 	m   *scrape.Manager

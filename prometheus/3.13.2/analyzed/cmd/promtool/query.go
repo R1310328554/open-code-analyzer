@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// query 子命令：通过 Prometheus HTTP API 执行即时/区间/序列/标签查询并格式化输出。
+
 package main
 
 import (
@@ -32,6 +34,7 @@ import (
 	_ "github.com/prometheus/prometheus/plugins" // Register plugins.
 )
 
+// 构造带可选请求头的 v1 API 客户端。
 func newAPI(url *url.URL, roundTripper http.RoundTripper, headers map[string]string) (v1.API, error) {
 	if url.Scheme == "" {
 		url.Scheme = "http"
@@ -61,6 +64,7 @@ func newAPI(url *url.URL, roundTripper http.RoundTripper, headers map[string]str
 }
 
 // QueryInstant performs an instant query against a Prometheus server.
+// 执行即时向量查询（/api/v1/query）。
 func QueryInstant(url *url.URL, roundTripper http.RoundTripper, headers map[string]string, query, evalTime string, p printer) int {
 	api, err := newAPI(url, roundTripper, headers)
 	if err != nil {
@@ -91,6 +95,7 @@ func QueryInstant(url *url.URL, roundTripper http.RoundTripper, headers map[stri
 }
 
 // QueryRange performs a range query against a Prometheus server.
+// 执行区间矩阵查询（/api/v1/query_range）。
 func QueryRange(url *url.URL, roundTripper http.RoundTripper, headers map[string]string, query, start, end string, step time.Duration, p printer) int {
 	api, err := newAPI(url, roundTripper, headers)
 	if err != nil {
@@ -146,6 +151,7 @@ func QueryRange(url *url.URL, roundTripper http.RoundTripper, headers map[string
 }
 
 // QuerySeries queries for a series against a Prometheus server.
+// 查询时间范围内的序列（/api/v1/series）。
 func QuerySeries(url *url.URL, roundTripper http.RoundTripper, matchers []string, start, end string, p printer) int {
 	api, err := newAPI(url, roundTripper, nil)
 	if err != nil {
@@ -173,6 +179,7 @@ func QuerySeries(url *url.URL, roundTripper http.RoundTripper, matchers []string
 }
 
 // QueryLabels queries for label values against a Prometheus server.
+// 查询标签值列表（/api/v1/labels 或 /label/<name>/values）。
 func QueryLabels(url *url.URL, roundTripper http.RoundTripper, matchers []string, name, start, end string, p printer) int {
 	api, err := newAPI(url, roundTripper, nil)
 	if err != nil {

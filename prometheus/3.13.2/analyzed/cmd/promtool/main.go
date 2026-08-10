@@ -11,6 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// promtool 命令行工具主入口。
+// 提供配置/规则校验、查询、TSDB 操作、服务发现检查、单元测试等子命令注册与调度。
+
+// promtool 命令行工具主入口。
+// 提供配置/规则校验、查询、TSDB 操作、服务发现检查、单元测试等子命令注册与调度。
+
+// promtool 命令行工具主入口。
+// 提供配置/规则校验、查询、TSDB 操作、服务发现检查、单元测试等子命令注册与调度。
+
 package main
 
 import (
@@ -96,6 +105,7 @@ var (
 
 const httpConfigFileDescription = "HTTP client configuration file, see details at https://prometheus.io/docs/prometheus/latest/configuration/promtool"
 
+// 解析 kingpin 子命令并分发到对应处理函数。
 func main() {
 	var (
 		httpRoundTripper   = api.DefaultRoundTripper
@@ -489,6 +499,7 @@ func checkExperimental(f bool) {
 
 var errLint = errors.New("lint error")
 
+// 规则 lint 选项：重复检测、致命级别、命名校验方案等。
 type rulesLintConfig struct {
 	all                  bool
 	duplicateRules       bool
@@ -524,6 +535,7 @@ func (ls rulesLintConfig) lintDuplicateRules() bool {
 	return ls.all || ls.duplicateRules
 }
 
+// 配置文件 lint 选项。
 type configLintConfig struct {
 	rulesLintConfig
 
@@ -564,6 +576,7 @@ func newConfigLintConfig(optionsStr string, fatal, ignoreUnknownFields bool, nam
 }
 
 // CheckServerStatus - healthy & ready.
+// 探测 Prometheus HTTP 服务是否就绪（默认 /-/ready）。
 func CheckServerStatus(serverURL *url.URL, checkEndpoint string, roundTripper http.RoundTripper) error {
 	if serverURL.Scheme == "" {
 		serverURL.Scheme = "http"
@@ -604,6 +617,7 @@ func CheckServerStatus(serverURL *url.URL, checkEndpoint string, roundTripper ht
 }
 
 // CheckConfig validates configuration files.
+// 校验 prometheus.yml 语法与语义（含 scrape/alerting/remote 等段）。
 func CheckConfig(agentMode, checkSyntaxOnly bool, lintSettings configLintConfig, p parser.Parser, files ...string) int {
 	failed := false
 	hasErrors := false
@@ -852,6 +866,7 @@ func checkSDFile(filename string) ([]*targetgroup.Group, error) {
 }
 
 // CheckRules validates rule files.
+// 校验告警/ recording 规则文件格式与 PromQL 表达式。
 func CheckRules(ls rulesLintConfig, p parser.Parser, files ...string) int {
 	failed := false
 	hasErrors := false
@@ -1049,6 +1064,7 @@ $ curl -s http://localhost:9100/metrics | promtool check metrics --extended --li
 `)
 
 // CheckMetrics performs a linting pass on input metrics.
+// 对 exposition 格式指标做 promlint 静态检查。
 func CheckMetrics(extended bool, lint string) int {
 	// Validate that at least one feature is enabled.
 	if !extended && lint == lintOptionNone {

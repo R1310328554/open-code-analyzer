@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// sd 子命令：对指定 job 运行服务发现并输出 relabel 前后标签（JSON）。
+
 package main
 
 import (
@@ -31,12 +33,14 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 )
 
+// 单次 SD 检查结果：发现标签、relabel 后标签与错误信息。
 type sdCheckResult struct {
 	DiscoveredLabels labels.Labels `json:"discoveredLabels"`
 	Labels           labels.Labels `json:"labels"`
 	Error            error         `json:"error,omitempty"`
 }
 
+// 对给定 job 执行服务发现并打印/返回结果。
 // CheckSD performs service discovery for the given job name and reports the results.
 func CheckSD(sdConfigFiles, sdJobName string, sdTimeout time.Duration, _ prometheus.Registerer) int {
 	logger := promslog.New(&promslog.Config{})
@@ -127,6 +131,7 @@ outerLoop:
 	return successExitCode
 }
 
+// 将 target group 经 scrape relabel 规则转换后生成检查结果。
 func getSDCheckResult(targetGroups []*targetgroup.Group, scrapeConfig *config.ScrapeConfig) []sdCheckResult {
 	sdCheckResults := []sdCheckResult{}
 	lb := labels.NewBuilder(labels.EmptyLabels())

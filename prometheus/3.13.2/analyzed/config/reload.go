@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 配置重载辅助：计算主配置及其引用外部文件（规则/scrape 片段）的内容校验和。
+
 package config
 
 import (
@@ -29,6 +31,7 @@ type ExternalFilesConfig struct {
 	ScrapeConfigFiles []string `yaml:"scrape_config_files"`
 }
 
+// 对主 YAML 及其 glob 引用的规则/scrape 文件内容计算 SHA256 十六进制校验和。
 // GenerateChecksum generates a checksum of the YAML file and the files it references.
 func GenerateChecksum(yamlFilePath string) (string, error) {
 	hash := sha256.New()
