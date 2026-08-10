@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:58:28Z",
-  "files": [
-    "pkg/querier/worker/util.go",
-    "pkg/querier/worker/worker.go",
-    "pkg/querier/worker_service.go",
-    "pkg/querytee/comparator/response_comparator.go",
-    "pkg/querytee/fanout_handler.go",
-    "pkg/querytee/goldfish/comparator.go",
-    "pkg/querytee/goldfish/config.go",
-    "pkg/querytee/goldfish/context.go",
-    "pkg/querytee/goldfish/goldfish.go",
-    "pkg/querytee/goldfish/manager.go",
-    "pkg/querytee/goldfish/result_store.go",
-    "pkg/querytee/goldfish/sampler.go",
-    "pkg/querytee/goldfish/stats_extractor.go",
-    "pkg/querytee/goldfish/storage_factory.go",
-    "pkg/querytee/handler_factory.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 472,
-  "done": 1065
+  "done": 1080
 }
