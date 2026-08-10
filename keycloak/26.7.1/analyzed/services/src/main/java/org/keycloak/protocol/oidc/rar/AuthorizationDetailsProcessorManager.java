@@ -18,16 +18,31 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.jboss.logging.Logger;
 
+/**
+ * 授权详情（authorization_details）处理器管理器。
+ * <p>协调各 {@link AuthorizationDetailsProcessor} SPI，完成 RAR 参数的解析、校验、处理与令牌响应清理。</p>
+ */
 public class AuthorizationDetailsProcessorManager {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(AuthorizationDetailsProcessorManager.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public AuthorizationDetailsProcessorManager(KeycloakSession session) {
         this.session = session;
     }
 
+    /**
+     * 处理授权请求中的 authorization_details 参数。
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @param authorizationDetailsParam JSON 字符串
+     * @return 处理后的授权详情列表
+     * @throws InvalidAuthorizationDetailsException 参数无效时
+     */
     public List<AuthorizationDetailsJSONRepresentation> processAuthorizationDetails(UserSessionModel userSession, ClientSessionContext clientSessionCtx,
                                                                                     String authorizationDetailsParam) throws InvalidAuthorizationDetailsException {
         return processAuthorizationDetailsInternal(authorizationDetailsParam,
@@ -35,6 +50,7 @@ public class AuthorizationDetailsProcessorManager {
     }
 
 
+    /** 处理已存储（会话中）的 authorization_details @return 处理后的授权详情列表 */
     public List<AuthorizationDetailsJSONRepresentation> processStoredAuthorizationDetails(UserSessionModel userSession,
                                                                                           ClientSessionContext clientSessionCtx,
                                                                                           String authorizationDetailsParam) throws InvalidAuthorizationDetailsException {
@@ -44,6 +60,10 @@ public class AuthorizationDetailsProcessorManager {
     }
 
 
+    /**
+     * 请求未携带 authorization_details 时，由各处理器生成默认响应（如预授权/凭证 offer 流程）。
+     * @return 聚合后的授权详情列表
+     */
     public List<AuthorizationDetailsJSONRepresentation> handleMissingAuthorizationDetails(UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         List<AuthorizationDetailsJSONRepresentation> allAuthzDetails = new ArrayList<>();
         session.getKeycloakSessionFactory()
@@ -56,11 +76,13 @@ public class AuthorizationDetailsProcessorManager {
         return allAuthzDetails;
     }
 
+    /** 校验 authorization_details 参数格式与各 type 处理器 @param authorizationDetailsParam JSON 字符串 */
     public void validateAuthorizationDetail(String authorizationDetailsParam) {
         processAuthorizationDetailsInternal(authorizationDetailsParam, AuthorizationDetailsProcessor::validateAuthorizationDetail);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
+    /** 授权详情处理完成后的后置回调 @param authorizationDetailsResponse 已处理的响应列表 */
     public void afterAuthorizationDetailsProcessed(UserSessionModel userSession,
                                                    ClientSessionContext clientSessionCtx,
                                                    List<AuthorizationDetailsJSONRepresentation> authorizationDetailsResponse) throws InvalidAuthorizationDetailsException {
@@ -72,10 +94,10 @@ public class AuthorizationDetailsProcessorManager {
     }
 
     /**
-     * Sanitize authorization details before they are sent as part of the Token Response
-     * https://github.com/keycloak/keycloak/issues/50079
+     * 在令牌响应发出前清理 authorization_details（见 issue #50079）。
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
+    /** 清理令牌响应中的 authorization_details @param tokenResponse 访问令牌响应 */
     public void sanitizeBeforeSendingTokenResponse(AccessTokenResponse tokenResponse) {
         if (tokenResponse.getAuthorizationDetails() != null) {
             List<AuthorizationDetailsJSONRepresentation> outAuthzDetails = new ArrayList<>();
@@ -89,14 +111,16 @@ public class AuthorizationDetailsProcessorManager {
         }
     }
 
-    // Private ---------------------------------------------------------------------------------------------------------
+    // 私有辅助方法
 
+    /** @return 按 type/providerId 索引的处理器映射 */
     private Map<String, AuthorizationDetailsProcessor<?>> getAuthorizationDetailsProcessorMap() {
         return session.getKeycloakSessionFactory()
                 .getProviderFactoriesStream(AuthorizationDetailsProcessor.class)
                 .collect(Collectors.toMap(ProviderFactory::getId, factory -> (AuthorizationDetailsProcessor<?>) session.getProvider(AuthorizationDetailsProcessor.class, factory.getId())));
     }
 
+    /** 内部通用处理流程：解析 JSON 并逐条分派给对应处理器 @return 非 null 响应列表 */
     private List<AuthorizationDetailsJSONRepresentation> processAuthorizationDetailsInternal(String authorizationDetailsParam,
                                                                                              BiFunction<AuthorizationDetailsProcessor<?>, AuthorizationDetailsJSONRepresentation, AuthorizationDetailsJSONRepresentation> function) throws InvalidAuthorizationDetailsException {
 
@@ -121,6 +145,7 @@ public class AuthorizationDetailsProcessorManager {
         return authzResponses;
     }
 
+    /** 按 type 查找处理器，缺失或不支持时抛出 {@link InvalidAuthorizationDetailsException} */
     private AuthorizationDetailsProcessor<?> findProcessorForAuthorizationDetails(Map<String, AuthorizationDetailsProcessor<?>> processors, AuthorizationDetailsJSONRepresentation authzDetail) {
         if (authzDetail.getType() == null) {
             throw new InvalidAuthorizationDetailsException("Authorization_Details parameter provided without type: " + authzDetail);
@@ -135,6 +160,7 @@ public class AuthorizationDetailsProcessorManager {
         return processor;
     }
 
+    /** 将 JSON 字符串解析为授权详情列表 @throws InvalidAuthorizationDetailsException 解析失败时 */
     private List<AuthorizationDetailsJSONRepresentation> parseAuthorizationDetails(String authorizationDetailsParam) {
         try {
             return JsonSerialization.readValue(authorizationDetailsParam, new TypeReference<>() {});

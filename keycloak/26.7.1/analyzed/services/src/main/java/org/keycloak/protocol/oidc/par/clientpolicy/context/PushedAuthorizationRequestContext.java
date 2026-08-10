@@ -26,12 +26,24 @@ import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 import org.keycloak.services.clientpolicy.context.ClientModelContext;
 import org.keycloak.services.clientpolicy.context.ScopeParameterContext;
 
+/**
+ * 推送授权请求（PAR）客户端策略上下文。
+ * <p>在 PAR 端点处理期间传递给客户端策略，携带客户端、授权请求与原始表单参数。</p>
+ */
 public class PushedAuthorizationRequestContext implements ClientPolicyContext, ClientModelContext, ScopeParameterContext {
 
+    /** 发起 PAR 的客户端 */
     private final ClientModel client;
+    /** 原始表单参数（多值映射） */
     private final MultivaluedMap<String, String> requestParameters;
+    /** 已解析的授权端点请求 */
     private AuthorizationEndpointRequest request;
 
+    /**
+     * @param client 客户端模型
+     * @param request 授权端点请求
+     * @param requestParameters 原始请求参数
+     */
     public PushedAuthorizationRequestContext(ClientModel client, AuthorizationEndpointRequest request,
             MultivaluedMap<String, String> requestParameters) {
         this.client = client;
@@ -39,24 +51,29 @@ public class PushedAuthorizationRequestContext implements ClientPolicyContext, C
         this.requestParameters = requestParameters;
     }
 
+    /** @return 客户端策略事件 {@link ClientPolicyEvent#PUSHED_AUTHORIZATION_REQUEST} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.PUSHED_AUTHORIZATION_REQUEST;
     }
 
+    /** @return 授权端点请求 */
     public AuthorizationEndpointRequest getRequest() {
         return request;
     }
 
+    /** @return 原始表单参数 */
     public MultivaluedMap<String, String> getRequestParameters() {
         return requestParameters;
     }
 
+    /** @return 客户端模型 */
     @Override
     public ClientModel getClient() {
         return client;
     }
 
+    /** @return 授权请求中的 scope 参数 */
     @Override
     public String getScopeParameter() {
         return request.getScope();

@@ -31,14 +31,17 @@ import org.keycloak.representations.IDToken;
 import org.keycloak.utils.RoleResolveUtil;
 
 /**
- * Allows mapping of user realm role mappings to an ID and Access Token claim.
+ * 用户领域角色映射器。
+ * <p>将用户已解析的领域角色映射写入 ID Token 与访问令牌声明。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public class UserRealmRoleMappingMapper extends AbstractUserRoleMappingMapper {
 
+    /** 提供方标识 */
     public static final String PROVIDER_ID = "oidc-usermodel-realm-role-mapper";
 
+    /** 映射器配置属性列表 */
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
 
     static {
@@ -61,31 +64,44 @@ public class UserRealmRoleMappingMapper extends AbstractUserRoleMappingMapper {
         OIDCAttributeMapperHelper.addAttributeConfig(CONFIG_PROPERTIES, UserRealmRoleMappingMapper.class);
     }
 
+    /** @return 配置属性列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return CONFIG_PROPERTIES;
     }
 
+    /** @return 映射器标识 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "User Realm Role";
     }
 
+    /** @return 映射器分类 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** @return 映射器说明文本 */
     @Override
     public String getHelpText() {
         return "Map a user realm role to a token claim.";
     }
 
+    /**
+     * 将已解析的领域角色写入令牌声明。
+     * @param token 目标令牌
+     * @param mappingModel 映射器配置
+     * @param userSession 用户会话
+     * @param session Keycloak 会话
+     * @param clientSessionCtx 客户端会话上下文
+     */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession session, ClientSessionContext clientSessionCtx) {
         String rolePrefix = mappingModel.getConfig().get(ProtocolMapperUtils.USER_MODEL_REALM_ROLE_MAPPING_ROLE_PREFIX);
@@ -98,6 +114,7 @@ public class UserRealmRoleMappingMapper extends AbstractUserRoleMappingMapper {
         AbstractUserRoleMappingMapper.setClaim(token, mappingModel, access.getRoles(),null, rolePrefix);
     }
 
+    /** 创建领域角色映射器（默认单值） @param realmRolePrefix 角色前缀 @return 协议映射器模型 */
     public static ProtocolMapperModel create(String realmRolePrefix,
                                              String name,
                                              String tokenClaimName, boolean accessToken, boolean idToken, boolean introspectionEndpoint) {
@@ -105,6 +122,17 @@ public class UserRealmRoleMappingMapper extends AbstractUserRoleMappingMapper {
         return create(realmRolePrefix, name, tokenClaimName, accessToken, idToken, introspectionEndpoint, false);
     }
 
+    /**
+     * 创建领域角色映射器。
+     * @param realmRolePrefix 角色名前缀
+     * @param name 映射器名称
+     * @param tokenClaimName 令牌声明名
+     * @param accessToken 是否写入访问令牌
+     * @param idToken 是否写入 ID Token
+     * @param introspectionEndpoint 是否写入自省端点
+     * @param multiValued 是否多值声明
+     * @return 协议映射器模型
+     */
     public static ProtocolMapperModel create(String realmRolePrefix,
                                              String name,
                                              String tokenClaimName, boolean accessToken, boolean idToken, boolean introspectionEndpoint, boolean multiValued) {

@@ -21,14 +21,27 @@ import java.util.Objects;
 import org.keycloak.models.ClientScopeModel;
 
 /**
+ * 客户端范围中间表示。
+ * <p>在 OAuth scope 与 RAR {@link AuthorizationDetails} 之间传递已匹配的 {@link ClientScopeModel}、参数化 scope 参数及原始请求 scope 字符串。</p>
+ *
  * @author <a href="mailto:dgozalob@redhat.com">Daniel Gozalo</a>
  */
 public class IntermediaryScopeRepresentation {
+    /** 匹配的客户端范围模型 */
     final private ClientScopeModel scope;
+    /** 授权请求中的原始 scope 字符串 */
     final private String requestedScopeString;
+    /** 参数化 scope 提取的参数值（静态 scope 为 null） */
     final private String parameter;
+    /** 是否为参数化 scope */
     final private boolean isParameterized;
 
+    /**
+     * 参数化 scope 构造。
+     * @param scope 客户端范围
+     * @param parameter 提取的参数
+     * @param requestedScopeString 请求的 scope 字符串
+     */
     public IntermediaryScopeRepresentation(ClientScopeModel scope, String parameter, String requestedScopeString) {
         this.scope = scope;
         this.parameter = parameter;
@@ -36,6 +49,7 @@ public class IntermediaryScopeRepresentation {
         this.requestedScopeString = requestedScopeString;
     }
 
+    /** 静态 scope 构造 @param scope 客户端范围 */
     public IntermediaryScopeRepresentation(ClientScopeModel scope) {
         this.scope = scope;
         this.isParameterized = false;
@@ -43,18 +57,22 @@ public class IntermediaryScopeRepresentation {
         this.requestedScopeString = scope.getName();
     }
 
+    /** @return 客户端范围模型 */
     public ClientScopeModel getScope() {
         return scope;
     }
 
+    /** @return 参数化 scope 参数 */
     public String getParameter() {
         return parameter;
     }
 
+    /** @return 是否为参数化 scope */
     public boolean isParameterized() {
         return isParameterized;
     }
 
+    /** @return 原始请求 scope 字符串 */
     public String getRequestedScopeString() {
         return requestedScopeString;
     }

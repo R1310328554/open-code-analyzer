@@ -37,17 +37,27 @@ import static org.keycloak.protocol.oidc.par.endpoints.ParEndpoint.PAR_CREATED_T
 import static org.keycloak.protocol.oidc.par.endpoints.ParEndpoint.PAR_DPOP_PROOF_JKT;
 
 /**
- * Parse the parameters from PAR
- *
+ * PAR request_uri 授权端点请求解析器。
+ * <p>从单次使用存储中加载 PAR 参数，并在后续授权请求中解析；支持 JAR 请求对象与 DPoP JKT 传递。</p>
  */
 public class AuthzEndpointParParser extends AuthzEndpointRequestParser {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(AuthzEndpointParParser.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 请求客户端 */
     private final ClientModel client;
+    /** 从 PAR 存储加载的请求参数 */
     private final Map<String, String> requestParams;
 
+    /**
+     * 加载并校验 PAR 参数。
+     * @param session Keycloak 会话
+     * @param client 客户端
+     * @param requestUri PAR 返回的 request_uri
+     */
     public AuthzEndpointParParser(KeycloakSession session, ClientModel client, String requestUri) {
         super(session);
         this.session = session;
@@ -65,20 +75,20 @@ public class AuthzEndpointParParser extends AuthzEndpointRequestParser {
         } else {
             throw new RuntimeException("PAR expired.");
         }
-        // If DPoP Proof existed with PAR request, its public key needs to be matched with the one with Token Request afterward
+        // 若 PAR 阶段存在 DPoP 证明，将 JKT 写入会话供后续令牌请求校验
         String dpopJkt = retrievedRequest.get(PAR_DPOP_PROOF_JKT);
         if (dpopJkt != null) {
             session.setAttribute(PAR_DPOP_PROOF_JKT, dpopJkt);
         }
     }
 
+    /** 解析 PAR 参数；若含 request 对象则优先使用 JAR 解析 @param request 授权端点请求 */
     @Override
     public void parseRequest(AuthorizationEndpointRequest request) {
         String requestParam = requestParams.get(OIDCLoginProtocol.REQUEST_PARAM);
 
         if (requestParam != null) {
-            // parses the request object if PAR was registered using JAR
-            // parameters from the request object have precedence over those sent directly in the request
+            // PAR 使用 JAR 注册时解析 request 对象；其参数优先于直接提交的参数
             new ParEndpointRequestObjectParser(session, requestParam, client).parseRequest(request);
         } else {
             super.parseRequest(request);
@@ -101,6 +111,7 @@ public class AuthzEndpointParParser extends AuthzEndpointRequestParser {
         return requestParams.keySet();
     }
     
+    /** 读取 PAR 存储的参数（不删除） @param requestUri request_uri @return 参数 Map，不存在时返回 null */
     public static Map<String, String> getRequestObject(KeycloakSession session, String requestUri) {
         String key = getRequestObjectKey(requestUri);
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
@@ -109,10 +120,9 @@ public class AuthzEndpointParParser extends AuthzEndpointRequestParser {
     }
 
     /**
-     * Authorization servers that enforce one-time use of request_uri values do so at the point of authorization,
-     * not at the point of visiting the authorization endpoint
-     * OpenID CT: fapi2-security-profile-final-par-ensure-reused-request-uri-prior-to-auth-completion-succeeds
+     * 一次性 request_uri 在授权完成时消耗，而非访问授权端点时（FAPI2 PAR 一致性测试）。
      */
+    /** 移除并返回 PAR 存储的参数（授权完成时调用） @return 已存储的参数 Map */
     public static Map<String, String> removeRequestObject(KeycloakSession session, String requestUri) {
         String key = getRequestObjectKey(requestUri);
         return session.singleUseObjects().remove(CACHE_KEY_PREFIX + key);

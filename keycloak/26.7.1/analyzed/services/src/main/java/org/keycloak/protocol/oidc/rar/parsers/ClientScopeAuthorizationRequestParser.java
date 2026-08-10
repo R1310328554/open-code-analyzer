@@ -46,45 +46,50 @@ import static org.keycloak.representations.AuthorizationDetailsJSONRepresentatio
 import static org.keycloak.representations.AuthorizationDetailsJSONRepresentation.STATIC_SCOPE_RAR_TYPE;
 
 /**
+ * 客户端范围授权请求解析器。
+ * <p>将 OAuth {@code scope} 参数（含默认与可选客户端范围、参数化 scope）解析为 RAR {@link AuthorizationRequestContext}。</p>
+ *
  * @author <a href="mailto:dgozalob@redhat.com">Daniel Gozalo</a>
  */
 public class ClientScopeAuthorizationRequestParser implements AuthorizationRequestParserProvider {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ClientScopeAuthorizationRequestParser.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public ClientScopeAuthorizationRequestParser(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 解析 scope（无用户上下文，如授权端点） @return 授权请求上下文 */
     @Override
     public AuthorizationRequestContext parseScopes(ClientModel client, String scopeParam) {
         return parseScopes(null, client, scopeParam);
     }
 
     /**
-     * Creates a {@link AuthorizationRequestContext} with a list of {@link AuthorizationDetails} that will be parsed from
-     * the provided OAuth scopes that have been requested in a given Auth request, together with default client scopes.
-     * <p>
-     * Parameterized scopes will also be parsed with the extracted parameter, so it can be used later
+     * 从请求的 OAuth scope 与默认客户端范围构建 {@link AuthorizationRequestContext}。
+     * <p>参数化 scope 会提取并保留参数供后续使用。</p>
      *
-     * @param user The user in the login (can be null, for example in the authorization endpoint)
-     * @param client The client requesting the parsing
-     * @param scopeParam the OAuth scope param for the current request
-     * @return see description
+     * @param user 登录用户（授权端点等场景可为 null）
+     * @param client 请求解析的客户端
+     * @param scopeParam 当前请求的 OAuth scope 参数
+     * @return 包含 {@link AuthorizationDetails} 列表的授权请求上下文
      */
     @Override
     public AuthorizationRequestContext parseScopes(UserModel user, ClientModel client, String scopeParam) {
-        // Process all the default ClientScopeModels for the current client, and maps them to the IntermediaryScopeRepresentation to make use of a HashSet
+        // 将默认客户端范围映射为中间表示并加入集合
         Set<IntermediaryScopeRepresentation> clientScopeModelSet = client.getClientScopes(true).values().stream()
-                .filter(clientScopeModel -> !clientScopeModel.isParameterizedScope()) // not strictly needed as Parameterized Scopes are going to be Optional scopes for now
+                .filter(clientScopeModel -> !clientScopeModel.isParameterizedScope()) // 参数化 scope 目前仅作为可选范围
                 .map(IntermediaryScopeRepresentation::new)
                 .collect(Collectors.toSet());
 
         Set<IntermediaryScopeRepresentation> intermediaryScopeRepresentations = new HashSet<>();
         if (scopeParam != null) {
-            // Go through the parsed requested scopes and attempt to match them against the optional scopes list
+            // 遍历请求的 scope 并与可选客户端范围匹配
             intermediaryScopeRepresentations = TokenManager.parseScopeParameter(scopeParam).collect(Collectors.toSet()).stream()
                     .map((String requestScope) -> getMatchingClientScope(user, requestScope, client.getClientScopes(false).values()))
                     .filter(Optional::isPresent)
@@ -92,10 +97,10 @@ public class ClientScopeAuthorizationRequestParser implements AuthorizationReque
                     .collect(Collectors.toSet());
         }
 
-        // merge both sets, avoiding duplicates
+        // 合并默认与请求 scope，去重
         intermediaryScopeRepresentations.addAll(clientScopeModelSet);
 
-        // Map the intermediary scope representations into the final AuthorizationDetails representation to be included into the RAR context
+        // 将中间表示转换为 RAR 上下文中的 AuthorizationDetails
         List<AuthorizationDetails> authorizationDetails = intermediaryScopeRepresentations.stream()
                 .map(this::buildAuthorizationDetailsJSONRepresentation)
                 .collect(Collectors.toList());
@@ -105,11 +110,10 @@ public class ClientScopeAuthorizationRequestParser implements AuthorizationReque
     }
 
     /**
-     * From a {@link IntermediaryScopeRepresentation}, create an {@link AuthorizationDetails} object that serves as the representation of a
-     * ClientScope inside a Rich Authorization Request object
+     * 由 {@link IntermediaryScopeRepresentation} 构建 RAR 中的 {@link AuthorizationDetails}。
      *
-     * @param intermediaryScopeRepresentation the intermediary scope representation to be included into the RAR request object
-     * @return see description
+     * @param intermediaryScopeRepresentation 中间 scope 表示
+     * @return 客户端范围对应的授权详情
      */
     private AuthorizationDetails buildAuthorizationDetailsJSONRepresentation(IntermediaryScopeRepresentation intermediaryScopeRepresentation) {
         AuthorizationDetailsJSONRepresentation representation = new AuthorizationDetailsJSONRepresentation();
@@ -123,14 +127,11 @@ public class ClientScopeAuthorizationRequestParser implements AuthorizationReque
     }
 
     /**
-     * Gets one of the requested OAuth scopes and obtains the list of all the optional client scope models for the current client and searches whether
-     * there is a match.
-     * Parameterized scopes are matching using the registered Regexp, while static scopes are matched by name.
-     * It returns an Optional of a {@link IntermediaryScopeRepresentation} with either a static scope data, a parameterized scope data or an empty Optional
-     * if there was no match for the regexp.
+     * 在可选客户端范围中匹配单个请求 scope。
+     * <p>参数化 scope 按注册正则匹配并校验参数；静态 scope 按名称匹配。</p>
      *
-     * @param requestScope one of the requested OAuth scopes
-     * @return see description
+     * @param requestScope 请求 scope 之一
+     * @return 匹配成功时返回中间表示，否则 empty
      */
     private Optional<IntermediaryScopeRepresentation> getMatchingClientScope(UserModel user, String requestScope, Collection<ClientScopeModel> optionalScopes) {
         for (ClientScopeModel clientScopeModel : optionalScopes) {
@@ -159,6 +160,7 @@ public class ClientScopeAuthorizationRequestParser implements AuthorizationReque
         return Optional.empty();
     }
 
+    /** 解析参数化 scope 类型提供方 @param clientScopeModel 客户端范围 @return 类型提供方 */
     private ParameterizedScopeTypeProvider resolveType(ClientScopeModel clientScopeModel) {
         String typeId = clientScopeModel.getAttribute(ClientScopeModel.PARAMETERIZED_SCOPE_TYPE);
         if (StringUtil.isNullOrEmpty(typeId)) {
@@ -172,6 +174,7 @@ public class ClientScopeAuthorizationRequestParser implements AuthorizationReque
         return provider;
     }
 
+    /** 关闭资源（无操作） */
     @Override
     public void close() {
 

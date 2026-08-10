@@ -36,10 +36,21 @@ import org.keycloak.services.messages.Messages;
 import org.keycloak.services.util.AuthorizationContextUtil;
 
 /**
+ * PAR 端点请求解析处理器。
+ * <p>解析 PAR 表单参数、可选 JAR request 对象，并应用客户端 request 对象强制策略。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ParEndpointRequestParserProcessor {
 
+    /**
+     * 解析 PAR 请求并构建 {@link AuthorizationEndpointRequest}。
+     * @param event 事件构建器
+     * @param session Keycloak 会话
+     * @param client 客户端
+     * @param requestParams 表单参数
+     * @return 授权端点请求
+     */
     public static AuthorizationEndpointRequest parseRequest(EventBuilder event, KeycloakSession session, ClientModel client, MultivaluedMap<String, String> requestParams) {
         try {
             AuthorizationEndpointRequest request = new AuthorizationEndpointRequest();

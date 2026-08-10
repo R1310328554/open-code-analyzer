@@ -34,20 +34,31 @@ import org.keycloak.protocol.oidc.utils.AuthorizeClientUtil;
 import org.keycloak.services.CorsErrorResponseException;
 import org.keycloak.services.cors.Cors;
 
+/**
+ * PAR 端点抽象基类。
+ * <p>提供 SSL/领域校验、客户端认证、哈希计算与 CORS 错误响应等公共逻辑。</p>
+ */
 public abstract class AbstractParEndpoint {
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 事件构建器 */
     protected final EventBuilder event;
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** CORS 处理器 */
     protected Cors cors;
+    /** 已认证的客户端 */
     protected ClientModel client;
 
+    /** @param session Keycloak 会话 @param event 事件构建器 */
     public AbstractParEndpoint(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.event = event;
         realm = session.getContext().getRealm();
     }
 
+    /** 校验 HTTPS 要求，不满足时抛出 CORS 错误响应 */
     protected void checkSsl() {
         ClientConnection clientConnection = session.getContext().getConnection();
 
@@ -56,12 +67,14 @@ public abstract class AbstractParEndpoint {
         }
     }
 
+    /** 校验领域是否启用 */
     protected void checkRealm() {
         if (!realm.isEnabled()) {
             throw new CorsErrorResponseException(cors.allowAllOrigins(), OAuthErrorException.ACCESS_DENIED, "Realm not enabled", Response.Status.FORBIDDEN);
         }
     }
 
+    /** 认证客户端并校验允许的来源 */
     protected void authorizeClient() {
         try {
             AuthorizeClientUtil.ClientAuthResult clientAuth = AuthorizeClientUtil.authorizeClient(session, event, cors);
@@ -81,6 +94,7 @@ public abstract class AbstractParEndpoint {
         }
     }
 
+    /** 计算输入字符串的 SHA-256 哈希 @param inputData 输入数据 @return 哈希字节数组 */
     protected byte[] getHash(String inputData) {
         byte[] hash;
 
@@ -93,6 +107,13 @@ public abstract class AbstractParEndpoint {
         return hash;
     }
 
+    /**
+     * 构建 CORS 兼容的 OAuth 错误响应。
+     * @param error OAuth 错误码
+     * @param detail 错误详情
+     * @param status HTTP 状态
+     * @return CORS 错误响应异常
+     */
     protected CorsErrorResponseException errorResponseException(String error, String detail, Response.Status status) {
         this.event.detail("detail", detail).error(error);
         return new CorsErrorResponseException(cors, error, detail, status);

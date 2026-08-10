@@ -23,25 +23,32 @@ import org.keycloak.protocol.oidc.endpoints.request.AuthorizationEndpointRequest
 import org.keycloak.protocol.oidc.endpoints.request.AuthzEndpointRequestObjectParser;
 
 /**
- * Parse the parameters from a request object sent to PAR Endpoint
+ * PAR 端点请求对象（JAR）解析器。
+ * <p>解析 PAR 请求中的 signed/encrypted request 对象；按规范忽略直接参数，以 request 对象值为准。</p>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ParEndpointRequestObjectParser extends AuthzEndpointRequestObjectParser {
 
+    /**
+     * @param session Keycloak 会话
+     * @param requestObject 请求对象 JWT/字符串
+     * @param client 客户端
+     */
     public ParEndpointRequestObjectParser(KeycloakSession session, String requestObject, ClientModel client) {
         super(session, requestObject, client);
     }
 
+    /** PAR 规范：始终以 request 对象中的值覆盖直接参数 @return 新值 */
     @Override
     protected <T> T replaceIfNotNull(T previousVal, T newVal) {
-        // force parameters values from request object as per spec any parameter set directly should be ignored
+        // 按规范强制使用 request 对象值，忽略直接提交的参数
         return newVal;
     }
 
+    /** PAR 下不校验重复 response_type（直接参数已被忽略） */
     @Override
     protected void validateResponseTypeParameter(String responseType, AuthorizationEndpointRequest request) {
-        // Don't need to validate duplicated "response_type" parameter as per spec any parameter set directly should be ignored
-        // and the value from "request" object should be used
+        // 直接参数被忽略，无需校验重复 response_type；以 request 对象值为准
     }
 }
