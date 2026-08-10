@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * LDAP 存储映射器 SPI：注册 {@link LDAPStorageMapper} 提供者及其工厂类型。
+ *
  * @author <a href="mailto:me@tsudot.com">Kunal Kerkar</a>
  */
 public class LDAPStorageMapperSpi implements Spi {
 
+    /** {@inheritDoc} 内部 SPI，不对外暴露。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** {@inheritDoc} SPI 名称为 {@code ldap-mapper}。 */
     @Override
     public String getName() {
         return "ldap-mapper";
     }
 
+    /** {@inheritDoc} 提供者接口为 {@link LDAPStorageMapper}。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return LDAPStorageMapper.class;
     }
 
+    /** {@inheritDoc} 工厂接口为 {@link LDAPStorageMapperFactory}。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return LDAPStorageMapperFactory.class;

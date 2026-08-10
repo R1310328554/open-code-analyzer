@@ -22,7 +22,9 @@ import org.keycloak.models.ModelException;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
 /**
- * TODO: LDAPStorageMapper should be divided into more interfaces and let the LDAPStorageMapperManager to check which operation (feature) is supported by which mapper implementation
+ * LDAP 存储映射器管理器：根据组件模型从会话中解析并获取 {@link LDAPStorageMapper} 实例。
+ * <p>
+ * TODO: {@link LDAPStorageMapper} 应拆分为更多接口，由本管理器按映射器实现检查各操作（特性）是否受支持。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -30,10 +32,18 @@ public class LDAPStorageMapperManager {
 
     private final LDAPStorageProvider ldapProvider;
 
+    /** 绑定所属的 LDAP 存储提供者。 */
     public LDAPStorageMapperManager(LDAPStorageProvider ldapProvider) {
         this.ldapProvider = ldapProvider;
     }
 
+    /**
+     * 按组件模型查找并返回对应的 LDAP 映射器。
+     *
+     * @param mapperModel 映射器组件配置
+     * @return 已注册的映射器实例
+     * @throws ModelException 找不到指定 providerId 的映射器类型时
+     */
     public LDAPStorageMapper getMapper(ComponentModel mapperModel) {
         LDAPStorageMapper ldapMapper = ldapProvider.getSession().getProvider(LDAPStorageMapper.class, mapperModel);
         if (ldapMapper == null) {

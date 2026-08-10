@@ -46,10 +46,13 @@ import org.keycloak.storage.ldap.mappers.membership.UserRolesRetrieveStrategy;
 import org.keycloak.storage.ldap.mappers.membership.role.RoleMapperConfig;
 
 /**
+ * 组 LDAP 存储映射器工厂：配置 LDAP 组 DN、成员策略、同步模式及用户组检索策略。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFactory {
 
+    /** 提供者 ID：{@code group-ldap-mapper}。 */
     public static final String PROVIDER_ID = "group-ldap-mapper";
 
     protected static final List<ProviderConfigProperty> configProperties;
@@ -58,7 +61,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
     protected static final List<String> MODES = new LinkedList<>();
     protected static final List<String> NO_IMPORT_MODES = new LinkedList<>();
 
-    // TODO: Merge with RoleLDAPFederationMapperFactory as there are lot of similar properties
+    // TODO：与 RoleLDAPFederationMapperFactory 合并，二者配置项高度相似
     static {
         userGroupsStrategies.put(GroupMapperConfig.LOAD_GROUPS_BY_MEMBER_ATTRIBUTE, new UserRolesRetrieveStrategy.LoadRolesByMember());
         userGroupsStrategies.put(GroupMapperConfig.GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE, new UserRolesRetrieveStrategy.GetRolesFromUserMemberOfAttribute());
@@ -76,6 +79,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
         configProperties = config;
     }
 
+    /** 构建组映射器配置项（默认值随父 LDAP 是否为 AD、是否可写等变化）。 */
     private static List<ProviderConfigProperty> getProps(ComponentModel parent) {
         String roleObjectClasses = LDAPConstants.GROUP_OF_NAMES;
         String mode = LDAPGroupMapperMode.LDAP_ONLY.toString();
@@ -185,7 +189,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
         if (isActiveDirectory) {
             groupRetrieversHelpText = groupRetrieversHelpText + "LOAD_GROUPS_BY_MEMBER_ATTRIBUTE_RECURSIVELY is applicable just in Active Directory and it means that groups of user will be retrieved recursively with usage of LDAP_MATCHING_RULE_IN_CHAIN Ldap extension. When this strategy is selected, listing the members of a group also returns the members of its nested groups.";
         } else {
-            // Option should be available just for the Active Directory
+            // 非 AD 环境不提供递归 member 检索选项
             groupRetrievers.remove(GroupMapperConfig.LOAD_GROUPS_BY_MEMBER_ATTRIBUTE_RECURSIVELY);
         }
 
@@ -235,6 +239,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
         return config.build();
     }
 
+    /** {@inheritDoc} 将 LDAP DN 下的组映射到 Keycloak 组。 */
     @Override
     public String getHelpText() {
         return "Used to map group mappings of groups from some LDAP DN to Keycloak group mappings";
@@ -250,6 +255,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 声明支持 LDAP↔Keycloak 双向组同步。 */
     @Override
     public Map<String, Object> getTypeMetadata() {
         Map<String, Object> metadata = new HashMap<>();
@@ -262,6 +268,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
     }
 
 
+    /** 父 LDAP 提供者关闭 import 时，将 IMPORT 模式降级为 READ_ONLY。 */
     @Override
     public void onParentUpdate(RealmModel realm, UserStorageProviderModel oldParent, UserStorageProviderModel newParent, ComponentModel mapperModel) {
         if (!newParent.isImportEnabled()) {
@@ -273,6 +280,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
         }
     }
 
+    /** 创建映射器时初始化默认 groups path 并校验父级配置。 */
     @Override
     public void onCreate(KeycloakSession session, RealmModel realm, ComponentModel model) {
         ComponentModel parentModel = realm.getComponent(model.getParentId());
@@ -290,6 +298,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
         setDefaultGroupsPath(realm, newModel);
     }
 
+    /** 若未配置 groups path，写入默认值 {@code /}。 */
     private void setDefaultGroupsPath(RealmModel realm, ComponentModel mapperModel) {
         if (ObjectUtil.isBlank(mapperModel.getConfig().getFirst(GroupMapperConfig.LDAP_GROUPS_PATH))) {
             mapperModel.getConfig().putSingle(GroupMapperConfig.LDAP_GROUPS_PATH, GroupMapperConfig.DEFAULT_LDAP_GROUPS_PATH);
@@ -302,6 +311,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
         return getProps(parent);
     }
 
+    /** 校验必填项、UID 与组继承互斥、自定义过滤器及 groups path 是否存在。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
         checkMandatoryConfigAttribute(GroupMapperConfig.GROUPS_DN, "LDAP Groups DN", config);
@@ -327,6 +337,7 @@ public class GroupLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFact
         return new GroupLDAPStorageMapper(mapperModel, federationProvider, this);
     }
 
+    /** 按策略键返回用户组检索策略实例。 */
     protected UserRolesRetrieveStrategy getUserGroupsRetrieveStrategy(String strategyKey) {
         return userGroupsStrategies.get(strategyKey);
     }

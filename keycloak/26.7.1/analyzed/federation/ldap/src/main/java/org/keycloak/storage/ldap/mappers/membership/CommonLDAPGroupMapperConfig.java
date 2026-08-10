@@ -26,56 +26,63 @@ import org.keycloak.models.ModelException;
 import org.keycloak.storage.ldap.LDAPConfig;
 
 /**
+ * LDAP 组/角色映射器通用配置：成员属性、成员类型、同步模式及检索策略等。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class CommonLDAPGroupMapperConfig {
 
-    // Name of LDAP attribute on role, which is used for membership mappings. Usually it will be "member"
+    // 组对象上用于成员关系的 LDAP 属性名，通常为 "member"
     public static final String MEMBERSHIP_LDAP_ATTRIBUTE = "membership.ldap.attribute";
 
-    // See docs for MembershipType enum
+    // 参见 {@link MembershipType} 枚举说明
     public static final String MEMBERSHIP_ATTRIBUTE_TYPE = "membership.attribute.type";
 
-    // Used just for membershipType=UID. Name of LDAP attribute on user, which is used for membership mappings. Usually it will be "uid"
+    // 仅 membershipType=UID 时使用：用户对象上的成员标识属性，通常为 "uid"
     public static final String MEMBERSHIP_USER_LDAP_ATTRIBUTE = "membership.user.ldap.attribute";
 
-    // See docs for Mode enum
+    // 参见 {@link LDAPGroupMapperMode} 枚举说明
     public static final String MODE = "mode";
 
-    // See docs for UserRolesRetrieveStrategy enum
+    // 参见 {@link UserRolesRetrieveStrategy} 枚举说明
     public static final String USER_ROLES_RETRIEVE_STRATEGY = "user.roles.retrieve.strategy";
 
-    // Used just for UserRolesRetrieveStrategy.GetRolesFromUserMemberOfAttribute. It's the name of the attribute on LDAP user, which is used to track the groups which user is member.
-    // Usually it will "memberof"
+    // 仅 UserRolesRetrieveStrategy.GetRolesFromUserMemberOfAttribute 时使用：用户对象上的 memberOf 类属性，通常为 "memberof"
     public static final String MEMBEROF_LDAP_ATTRIBUTE = "memberof.ldap.attribute";
 
 
     protected final ComponentModel mapperModel;
 
+    /** 绑定映射器组件模型。 */
     public CommonLDAPGroupMapperConfig(ComponentModel mapperModel) {
         this.mapperModel = mapperModel;
     }
 
+    /** 成员关系 LDAP 属性名，默认 {@link LDAPConstants#MEMBER}。 */
     public String getMembershipLdapAttribute() {
         String membershipAttrName = mapperModel.getConfig().getFirst(MEMBERSHIP_LDAP_ATTRIBUTE);
         return membershipAttrName!=null ? membershipAttrName : LDAPConstants.MEMBER;
     }
 
+    /** 成员值类型（DN 或 UID）。 */
     public MembershipType getMembershipTypeLdapAttribute() {
         String membershipType = mapperModel.getConfig().getFirst(MEMBERSHIP_ATTRIBUTE_TYPE);
         return (membershipType!=null && !membershipType.isEmpty()) ? Enum.valueOf(MembershipType.class, membershipType) : MembershipType.DN;
     }
 
+    /** UID 模式下用户对象上的成员标识属性。 */
     public String getMembershipUserLdapAttribute(LDAPConfig ldapConfig) {
         String membershipUserAttrName = mapperModel.getConfig().getFirst(MEMBERSHIP_USER_LDAP_ATTRIBUTE);
         return membershipUserAttrName!=null ? membershipUserAttrName : ldapConfig.getUsernameLdapAttribute();
     }
 
+    /** 用户对象上的 memberOf 类属性名，默认 {@link LDAPConstants#MEMBER_OF}。 */
     public String getMemberOfLdapAttribute() {
         String memberOfLdapAttrName = mapperModel.getConfig().getFirst(MEMBEROF_LDAP_ATTRIBUTE);
         return memberOfLdapAttrName!=null ? memberOfLdapAttrName : LDAPConstants.MEMBER_OF;
     }
 
+    /** 映射器同步模式（LDAP_ONLY / IMPORT / READ_ONLY）。 */
     public LDAPGroupMapperMode getMode() {
         String modeString = mapperModel.getConfig().getFirst(MODE);
         if (modeString == null || modeString.isEmpty()) {
@@ -85,6 +92,7 @@ public abstract class CommonLDAPGroupMapperConfig {
         return Enum.valueOf(LDAPGroupMapperMode.class, modeString.toUpperCase());
     }
 
+    /** 将逗号分隔字符串解析为去重后的集合。 */
     protected Set<String> getConfigValues(String str) {
         String[] objClasses = str.split(",");
         Set<String> trimmed = new HashSet<>();
@@ -97,8 +105,10 @@ public abstract class CommonLDAPGroupMapperConfig {
         return trimmed;
     }
 
+    /** LDAP 组/角色树的 DN 根。 */
     public abstract String getLDAPGroupsDn();
 
+    /** 组/角色对象上用作名称与 RDN 的 LDAP 属性。 */
     public abstract String getLDAPGroupNameLdapAttribute();
 
 

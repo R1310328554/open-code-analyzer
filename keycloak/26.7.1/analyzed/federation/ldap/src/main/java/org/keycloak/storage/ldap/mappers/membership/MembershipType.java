@@ -32,12 +32,14 @@ import org.keycloak.storage.ldap.idm.model.LDAPDn;
 import org.keycloak.storage.ldap.idm.model.LDAPObject;
 
 /**
+ * LDAP 组成员值类型：成员以完整 DN 或纯 UID 形式存储时的解析策略。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public enum MembershipType {
 
     /**
-     * Used if LDAP role has it's members declared in form of their full DN. For example ( "member: uid=john,ou=users,dc=example,dc=com" )
+     * 成员以完整 DN 声明，例如 {@code member: uid=john,ou=users,dc=example,dc=com}。
      */
     DN {
 
@@ -48,7 +50,7 @@ public enum MembershipType {
                     LDAPDn.fromString(config.getLDAPGroupsDn()), config.getLDAPGroupNameLdapAttribute());
         }
 
-        // Get just those members of specified group, which are descendants of "requiredParentDn"
+        // 仅保留 requiredParentDn 的后代且 RDN 正确的成员
         protected Set<LDAPDn> getLDAPMembersWithParent(LDAPStorageProvider ldapProvider, LDAPObject ldapGroup,
                 String membershipLdapAttribute, LDAPDn requiredParentDn, String rdnAttr) {
             Set<String> allMemberships = LDAPUtils.getExistingMemberships(ldapProvider, membershipLdapAttribute, ldapGroup);
@@ -83,11 +85,11 @@ public enum MembershipType {
     },
 
     /**
-     * Used if LDAP role has it's members declared in form of pure user uids. For example ( "memberUid: john" )
+     * 成员以纯 UID 声明，例如 {@code memberUid: john}。
      */
     UID {
 
-        // Group inheritance not supported for this config
+        // UID 模式不支持组继承
         @Override
         public Set<LDAPDn> getLDAPSubgroups(CommonLDAPGroupMapper groupMapper, LDAPObject ldapGroup) {
             return Collections.emptySet();
@@ -112,7 +114,9 @@ public enum MembershipType {
         }
     };
 
+    /** 获取 LDAP 组的直接子组 DN 集合。 */
     public abstract Set<LDAPDn> getLDAPSubgroups(CommonLDAPGroupMapper groupMapper, LDAPObject ldapGroup);
 
+    /** 分页返回 LDAP 组的成员用户列表。 */
     public abstract List<UserModel> getGroupMembers(RealmModel realm, CommonLDAPGroupMapper groupMapper, LDAPObject ldapGroup, int firstResult, int maxResults);
 }

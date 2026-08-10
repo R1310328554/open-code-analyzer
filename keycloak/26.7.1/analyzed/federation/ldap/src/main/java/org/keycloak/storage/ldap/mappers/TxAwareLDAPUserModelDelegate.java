@@ -25,6 +25,8 @@ import org.keycloak.storage.ldap.idm.model.LDAPObject;
 import org.jboss.logging.Logger;
 
 /**
+ * 事务感知的 LDAP 用户模型委托：在用户属性变更时启动 {@link LDAPTransaction} 并将写操作延迟到事务提交。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class TxAwareLDAPUserModelDelegate extends UserModelDelegate {
@@ -34,12 +36,14 @@ public abstract class TxAwareLDAPUserModelDelegate extends UserModelDelegate {
     protected LDAPStorageProvider provider;
     protected LDAPObject ldapUser;
 
+    /** 包装本地用户模型并绑定 LDAP 提供者与 LDAP 用户对象。 */
     public TxAwareLDAPUserModelDelegate(UserModel delegate, LDAPStorageProvider provider, LDAPObject ldapUser) {
         super(delegate);
         this.provider = provider;
         this.ldapUser = ldapUser;
     }
 
+    /** 若 LDAP 事务尚未启动，则 enlist 到 Keycloak 事务管理器。 */
     protected void ensureTransactionStarted() {
         LDAPTransaction transaction = provider.getUserManager().getTransaction(getId());
         if (transaction.getState() == LDAPTransaction.TransactionState.NOT_STARTED) {
@@ -51,12 +55,14 @@ public abstract class TxAwareLDAPUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 在本 LDAP 事务中标记已更新的模型属性。 */
     protected void markUpdatedAttributeInTransaction(String modelAttributeName) {
         ensureTransactionStarted();
         LDAPTransaction transaction = provider.getUserManager().getTransaction(getId());
         transaction.addUpdatedAttribute(modelAttributeName);
     }
 
+    /** 在本 LDAP 事务中标记已更新的 required action。 */
     protected void markUpdatedRequiredActionInTransaction(String requiredActionName) {
         ensureTransactionStarted();
         LDAPTransaction transaction = provider.getUserManager().getTransaction(getId());

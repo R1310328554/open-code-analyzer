@@ -18,28 +18,26 @@
 package org.keycloak.storage.ldap.mappers.membership;
 
 /**
+ * LDAP 组映射器同步模式：控制组成员关系在 LDAP 与 Keycloak 之间的读写策略。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public enum LDAPGroupMapperMode {
 
     /**
-     * All role mappings are retrieved from LDAP and saved into LDAP
+     * 全部组成员关系从 LDAP 读取并写回 LDAP。
      */
     LDAP_ONLY,
 
     /**
-     * Read-only LDAP mode. Role mappings are retrieved from LDAP for particular user just at the time when he is imported and then
-     * they are saved to local keycloak DB. Then all role mappings are always retrieved from keycloak DB, never from LDAP.
-     * Creating or deleting of role mapping is propagated only to DB.
-     *
-     * This is read-only mode LDAP mode and it's good for performance, but when user is put to some role directly in LDAP, it
-     * won't be seen by Keycloak
+     * 只读 LDAP：用户导入时从 LDAP 拉取组成员关系并写入 Keycloak 本地库，之后始终从 Keycloak 读取。
+     * 性能较好，但 LDAP 中直接变更的成员关系不会反映到 Keycloak。
      */
     IMPORT,
 
     /**
-     * Read-only LDAP mode. Role mappings are retrieved from both LDAP and DB and merged together. New role grants are not saved to LDAP but to DB.
-     * Deleting role mappings, which is mapped to LDAP, will throw an error.
+     * 只读 LDAP：合并 LDAP 与数据库中的组成员关系；新建成员关系仅写入数据库。
+     * 删除映射到 LDAP 的成员关系会抛出错误。
      */
     READ_ONLY
 

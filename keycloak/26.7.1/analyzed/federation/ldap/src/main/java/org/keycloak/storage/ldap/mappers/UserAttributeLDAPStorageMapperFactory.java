@@ -32,10 +32,13 @@ import org.keycloak.storage.ldap.LDAPConfig;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
 /**
+ * 用户属性 LDAP 映射器工厂：提供单属性双向映射的配置项与实例创建。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UserAttributeLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFactory implements LDAPConfigDecorator {
 
+    /** 提供者 ID：{@code user-attribute-ldap-mapper}。 */
     public static final String PROVIDER_ID = "user-attribute-ldap-mapper";
     protected static final List<ProviderConfigProperty> configProperties;
 
@@ -44,6 +47,7 @@ public class UserAttributeLDAPStorageMapperFactory extends AbstractLDAPStorageMa
         configProperties = props;
     }
 
+    /** 构建映射器配置属性列表（只读默认值随父 LDAP 编辑模式变化）。 */
     static List<ProviderConfigProperty> getConfigProps(ComponentModel p) {
         String readOnly = "false";
         UserStorageProviderModel parent = new UserStorageProviderModel();
@@ -103,6 +107,7 @@ public class UserAttributeLDAPStorageMapperFactory extends AbstractLDAPStorageMa
         return config.build();
     }
 
+    /** {@inheritDoc} 将单个 LDAP 属性映射到 Keycloak 用户模型属性。 */
     @Override
     public String getHelpText() {
         return "Used to map single attribute from LDAP user to attribute of UserModel in Keycloak DB";
@@ -118,6 +123,7 @@ public class UserAttributeLDAPStorageMapperFactory extends AbstractLDAPStorageMa
         return PROVIDER_ID;
     }
 
+    /** 校验必填配置；二进制属性必须同时启用“始终从 LDAP 读取”。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
         checkMandatoryConfigAttribute(UserAttributeLDAPStorageMapper.USER_MODEL_ATTRIBUTE, "User Model Attribute", config);
@@ -142,6 +148,7 @@ public class UserAttributeLDAPStorageMapperFactory extends AbstractLDAPStorageMa
     }
 
 
+    /** 将二进制 LDAP 属性名注册到 {@link LDAPConfig}。 */
     @Override
     public void updateLDAPConfig(LDAPConfig ldapConfig, ComponentModel mapperModel) {
         boolean isBinaryAttribute = mapperModel.get(UserAttributeLDAPStorageMapper.IS_BINARY_ATTRIBUTE, false);

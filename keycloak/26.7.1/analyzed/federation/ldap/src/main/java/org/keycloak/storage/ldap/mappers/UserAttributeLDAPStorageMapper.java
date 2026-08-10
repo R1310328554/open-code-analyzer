@@ -55,6 +55,10 @@ import org.jboss.logging.Logger;
 import static java.util.Optional.ofNullable;
 
 /**
+ * 用户属性 LDAP 存储映射器：将单个 LDAP 属性与 Keycloak {@link UserModel} 属性双向同步。
+ * <p>
+ * 支持只读、可写、二进制属性、默认值及从 LDAP 优先读取等模式，并通过 {@link TxAwareLDAPUserModelDelegate} 延迟写回 LDAP。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
@@ -63,29 +67,43 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
 
     private static final Map<String, Property<Object>> userModelProperties = LDAPUtils.getUserModelProperties();
 
+    /** 配置键：Keycloak 用户模型属性名。 */
     public static final String USER_MODEL_ATTRIBUTE = "user.model.attribute";
+    /** 配置键：LDAP 属性名。 */
     public static final String LDAP_ATTRIBUTE = "ldap.attribute";
+    /** 配置键：是否只读（仅导入，不回写 LDAP）。 */
     public static final String READ_ONLY = "read.only";
+    /** 配置键：读取时始终从 LDAP 取值。 */
     public static final String ALWAYS_READ_VALUE_FROM_LDAP = "always.read.value.from.ldap";
+    /** 配置键：该属性在 LDAP 中是否必填。 */
     public static final String IS_MANDATORY_IN_LDAP = "is.mandatory.in.ldap";
+    /** 配置键：是否为二进制 LDAP 属性。 */
     public static final String IS_BINARY_ATTRIBUTE = "is.binary.attribute";
+    /** 配置键：二进制属性解码方式。 */
     public static final String BINARY_ATTRIBUTE_DECODER = "binary.attribute.decoder";
+    /** 解码模式：自动（匹配 UUID 属性时解码为 UUID）。 */
     public static final String BINARY_DECODER_AUTO = "auto";
+    /** 解码模式：始终 Base64 字符串。 */
     public static final String BINARY_DECODER_BASE64 = "base64";
+    /** 解码模式：始终解码为 UUID/GUID。 */
     public static final String BINARY_DECODER_UUID = "uuid";
+    /** 配置键：LDAP 必填时的默认属性值。 */
     public static final String ATTRIBUTE_DEFAULT_VALUE = "attribute.default.value";
+    /** 配置键：未配置默认值时是否强制使用空默认值。 */
     public static final String FORCE_DEFAULT_VALUE = "attribute.force.default";
 
+    /** 构造映射器并绑定组件模型与 LDAP 提供者。 */
     public UserAttributeLDAPStorageMapper(ComponentModel mapperModel, LDAPStorageProvider ldapProvider) {
         super(mapperModel, ldapProvider);
     }
 
+    /** 从 LDAP 导入用户时，将 LDAP 属性值写入 Keycloak 用户模型。 */
     @Override
     public void onImportUserFromLDAP(LDAPObject ldapUser, UserModel user, RealmModel realm, boolean isCreate) {
         String userModelAttrName = getUserModelAttribute();
         String ldapAttrName = getLdapAttributeName();
 
-        // We won't update binary attributes to Keycloak DB. They might be too big
+        // 二进制属性不写回 Keycloak 数据库，体积可能过大
         if (isBinaryAttribute()) {
             return;
         }
@@ -94,7 +112,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
 
         if (userModelProperty != null) {
 
-            // we have java property on UserModel
+            // UserModel 上存在对应 Java 属性
             String ldapAttrValue = ldapUser.getAttributeAsString(ldapAttrName);
 
             checkDuplicateEmail(userModelAttrName, ldapAttrValue, realm, ldapProvider.getSession(), user);
@@ -102,7 +120,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
             setPropertyOnUserModel(userModelProperty, user, ldapAttrValue);
         } else {
 
-            // we don't have java property. Let's set attribute
+            // 无 Java 属性，按自定义属性写入
             Set<String> ldapAttrValue = ldapUser.getAttributeAsSet(ldapAttrName);
             if (ldapAttrValue != null) {
                 user.setAttribute(userModelAttrName, new ArrayList<>(ldapAttrValue));
@@ -112,6 +130,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
         }
     }
 
+    /** 将 Keycloak 用户注册到 LDAP 时，把模型属性写入 LDAP 对象。 */
     @Override
     public void onRegisterUserToLDAP(LDAPObject ldapUser, UserModel localUser, RealmModel realm) {
         String userModelAttrName = getUserModelAttribute();
@@ -123,7 +142,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
 
         if (userModelProperty != null) {
 
-            // we have java property on UserModel. Assuming we support just properties of simple types
+            // UserModel Java 属性，仅支持简单类型
             Object attrValue = userModelProperty.getValue(localUser);
 
             if (attrValue == null) {
@@ -137,7 +156,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
             }
         } else {
 
-            // we don't have java property. Let's set attribute
+            // 无 Java 属性，按多值属性写入 LDAP
             List<String> attrValues = localUser.getAttributeStream(userModelAttrName).collect(Collectors.toList());
 
             if (attrValues.isEmpty()) {
@@ -167,7 +186,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
         return Collections.singleton(getUserModelAttribute());
     }
 
-    // throw ModelDuplicateException if there is different user in model with same email
+    /** 若域内已有其他用户使用相同邮箱，则抛出 {@link ModelDuplicateException}。 */
     protected void checkDuplicateEmail(String userModelAttrName, String email, RealmModel realm, KeycloakSession session, UserModel user) {
         if (email == null || realm.isDuplicateEmailsAllowed()) return;
         if (UserModel.EMAIL.equalsIgnoreCase(userModelAttrName)) {
@@ -177,7 +196,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
             UserModel that = UserStoragePrivateUtil.userLocalStorage(session).getUserByEmail(realm, email);
 
             if (that != null && !that.getId().equals(user.getId())) {
-                // call getUserById to trigger validation - if user is federated from LDAP and no longer exists there, it is removed from the local DB.
+                // 通过 getUserById 触发校验：若 LDAP 联邦用户已不存在则从本地库移除
                 that = ((StoreManagers) session.getProvider(DatastoreProvider.class)).userStorageManager().getUserById(realm, that.getId());
                 if (that != null) {
                     session.getTransactionManager().setRollbackOnly();
@@ -188,8 +207,9 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
         }
     }
 
+    /** 校验用户名变更是否违反域策略或与其他用户冲突。 */
     protected void checkDuplicateUsername(String userModelAttrName, String username, RealmModel realm, KeycloakSession session, UserModel user) {
-        // only if working in USERNAME attribute
+        // 仅处理 USERNAME 属性映射
         if (UserModel.USERNAME.equalsIgnoreCase(userModelAttrName)) {
             if (username == null || username.isEmpty()) {
                 throw new ModelException("Cannot set an empty username");
@@ -211,6 +231,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
         }
     }
 
+    /** 代理用户模型：可写模式下将属性变更同步至 LDAP，并支持始终从 LDAP 读取。 */
     @Override
     public UserModel proxy(final LDAPObject ldapUser, UserModel delegate, RealmModel realm) {
         final String userModelAttrName = getUserModelAttribute();
@@ -221,7 +242,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
         final boolean isBinaryAttribute = parseBooleanParameter(mapperModel, IS_BINARY_ATTRIBUTE);
         final String attributeDefaultValue = getAttributeDefaultValue();
 
-        // For writable mode, we want to propagate writing of attribute to LDAP as well
+        // 可写模式：属性写入同时传播到 LDAP
         if (ldapProvider.getEditMode() == UserStorageProvider.EditMode.WRITABLE && !isReadOnly()) {
 
             delegate = new TxAwareLDAPUserModelDelegate(delegate, ldapProvider, ldapUser) {
@@ -251,7 +272,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
                 @Override
                 public void removeAttribute(String name) {
                     if(!UserModel.USERNAME.equals(name)){
-                        //do not remove username
+                        // 不允许移除用户名
                         if (setLDAPAttribute(name, null)) {
                             super.removeAttribute(name);
                         }
@@ -402,7 +423,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
 
         }
 
-        // We prefer to read attribute value from LDAP instead of from local Keycloak DB
+        // 优先从 LDAP 读取属性值，而非本地 Keycloak 数据库
         if (isAlwaysReadValueFromLDAP) {
 
             delegate = new UserModelDelegate(delegate) {
@@ -503,18 +524,19 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
         return delegate;
     }
 
+    /** 查询前将用户模型条件转换为 LDAP 属性并加入返回字段。 */
     @Override
     public void beforeLDAPQuery(LDAPQuery query) {
         String userModelAttrName = getUserModelAttribute();
         String ldapAttrName = getLdapAttributeName();
 
-        // Add mapped attribute to returning ldap attributes
+        // 将映射属性加入 LDAP 查询返回字段
         query.addReturningLdapAttribute(ldapAttrName);
         if (isReadOnly()) {
             query.addReturningReadOnlyLdapAttribute(ldapAttrName);
         }
 
-        // Change conditions and use ldapAttribute instead of userModel
+        // 将查询条件中的用户模型属性名替换为 LDAP 属性名
         for (Condition condition : query.getConditions()) {
             condition.updateParameterName(userModelAttrName, ldapAttrName);
             String parameterName = condition.getParameterName();
@@ -548,7 +570,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
         String decoder = mapperModel.getConfig().getFirst(BINARY_ATTRIBUTE_DECODER);
         if (BINARY_DECODER_BASE64.equals(decoder)) return false;
         if (BINARY_DECODER_UUID.equals(decoder)) return true;
-        // "auto" or not set: uuid when LDAP attribute matches the configured UUID LDAP attribute
+        // "auto" 或未设置：当 LDAP 属性与配置的 UUID 属性一致时按 UUID 解码
         LDAPConfig ldapConfig = ldapProvider.getLdapIdentityStore().getConfig();
         return getLdapAttributeName().equalsIgnoreCase(ldapConfig.getUuidLDAPAttributeName());
     }
@@ -557,6 +579,7 @@ public class UserAttributeLDAPStorageMapper extends AbstractLDAPStorageMapper {
         return parseBooleanParameter(mapperModel, READ_ONLY);
     }
 
+    /** 将 LDAP 字符串值写入 UserModel 的 Java 属性（String/Boolean）。 */
     protected void setPropertyOnUserModel(Property<Object> userModelProperty, UserModel user, String ldapAttrValue) {
         if (ldapAttrValue == null) {
             userModelProperty.setValue(user, null);

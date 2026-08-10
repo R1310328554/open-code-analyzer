@@ -21,13 +21,15 @@ import org.keycloak.storage.ldap.idm.query.internal.LDAPQuery;
 import org.keycloak.storage.ldap.mappers.LDAPStorageMapper;
 
 /**
- * Mapper related to mapping of LDAP groups to keycloak model objects (either keycloak roles or keycloak groups)
+ * 通用 LDAP 组映射器接口：将 LDAP 组映射到 Keycloak 模型对象（角色或组）。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface CommonLDAPGroupMapper extends LDAPStorageMapper {
 
+    /** 创建用于检索 LDAP 组/角色的查询对象。 */
     LDAPQuery createLDAPGroupQuery();
 
+    /** 返回本映射器的配置封装。 */
     CommonLDAPGroupMapperConfig getConfig();
 }

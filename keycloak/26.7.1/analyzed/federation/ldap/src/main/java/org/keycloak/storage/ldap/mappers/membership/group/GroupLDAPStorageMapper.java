@@ -60,6 +60,8 @@ import org.keycloak.storage.user.SynchronizationResult;
 import org.jboss.logging.Logger;
 
 /**
+ * 组 LDAP 存储映射器：将 LDAP 组 DN 下的组结构同步到 Keycloak 组，并管理用户-组成员关系。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements CommonLDAPGroupMapper {
@@ -69,9 +71,10 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     private final GroupMapperConfig config;
     private final GroupLDAPStorageMapperFactory factory;
 
-    // Flag to avoid syncing multiple times per transaction
+    // 避免同一事务内重复执行 LDAP→Keycloak 全量同步
     private boolean syncFromLDAPPerformedInThisTransaction = false;
 
+    /** 构造映射器并绑定配置与工厂。 */
     public GroupLDAPStorageMapper(ComponentModel mapperModel, LDAPStorageProvider ldapProvider, GroupLDAPStorageMapperFactory factory) {
         super(mapperModel, ldapProvider);
         this.config = new GroupMapperConfig(mapperModel);
@@ -79,8 +82,9 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     }
 
 
-    // CommonLDAPGroupMapper interface
+    // CommonLDAPGroupMapper 接口实现
 
+    /** {@inheritDoc} 创建不含 member 属性的组查询。 */
     @Override
     public LDAPQuery createLDAPGroupQuery() {
         return createGroupQuery(false);
@@ -93,12 +97,12 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
 
 
-    // LDAP Group CRUD operations
-    // !! This function must be always called from try-with-resources block, otherwise vault secret may be leaked !!
+    // LDAP 组 CRUD 操作
+    // !! 必须在 try-with-resources 中调用，否则 vault 密钥可能泄漏 !!
     public LDAPQuery createGroupQuery(boolean includeMemberAttribute) {
         LDAPQuery ldapQuery = new LDAPQuery(ldapProvider);
 
-        // For now, use same search scope, which is configured "globally" and used for user's search.
+        // 暂与全局用户搜索范围一致
         ldapQuery.setSearchScope(ldapProvider.getLdapIdentityStore().getConfig().getSearchScope());
 
         String groupsDn = config.getGroupsDn();
@@ -115,7 +119,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
         ldapQuery.addReturningLdapAttribute(config.getGroupNameLdapAttribute());
 
-        // Performance improvement
+        // 性能优化：按需返回 member 属性
         if (includeMemberAttribute) {
             ldapQuery.addReturningLdapAttribute(config.getMembershipLdapAttribute());
         }
@@ -127,6 +131,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         return ldapQuery;
     }
 
+    /** 在 LDAP 中创建组对象。 */
     public LDAPObject createLDAPGroup(String groupName, Map<String, Set<String>> additionalAttributes) {
         LDAPObject ldapGroup = LDAPUtils.createLDAPGroup(ldapProvider, groupName, config.getGroupNameLdapAttribute(), config.getGroupObjectClasses(ldapProvider),
                 config.getRelativeCreateDn() + config.getGroupsDn(), additionalAttributes, config.getMembershipLdapAttribute());
@@ -135,6 +140,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         return ldapGroup;
     }
 
+    /** 按组名加载 LDAP 组。 */
     public LDAPObject loadLDAPGroupByName(String groupName) {
         try (LDAPQuery ldapQuery = createGroupQuery(true)) {
             Condition roleNameCondition = new LDAPQueryConditionsBuilder().equal(config.getGroupNameLdapAttribute(), groupName);
@@ -155,8 +161,9 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     }
 
 
-    // Sync from Ldap to KC
+    // 从 LDAP 同步到 Keycloak
 
+    /** {@inheritDoc} 将 LDAP 组树同步到 Keycloak 组结构。 */
     @Override
     public SynchronizationResult syncDataFromFederationProviderToKeycloak(RealmModel realm) {
         SynchronizationResult syncResult = new SynchronizationResult() {
@@ -170,15 +177,15 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
         logger.debugf("Syncing groups from LDAP into Keycloak DB. Mapper is [%s], LDAP provider is [%s]", mapperModel.getName(), ldapProvider.getModel().getName());
 
-        // Get all LDAP groups
+        // 获取全部 LDAP 组
         List<LDAPObject> ldapGroups = getAllLDAPGroups(config.isPreserveGroupsInheritance());
 
-        // Convert to internal format
+        // 转换为内部表示
         Map<String, LDAPObject> ldapGroupsMap = new HashMap<>();
         List<GroupTreeResolver.Group> ldapGroupsRep = new LinkedList<>();
         convertGroupsToInternalRep(ldapGroups, ldapGroupsMap, ldapGroupsRep);
 
-        // Now we have list of LDAP groups. Let's form the tree (if needed)
+        // 构建组树（若启用继承保留）
         if (config.isPreserveGroupsInheritance()) {
             try {
                 List<GroupTreeResolver.GroupTreeEntry> groupTrees = new GroupTreeResolver().resolveGroupTree(ldapGroupsRep, config.isIgnoreMissingGroups());
@@ -199,8 +206,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     private void syncExistingGroup(RealmModel realm, GroupModel kcExistingGroup, Map.Entry<String, LDAPObject> groupEntry,
                                    SynchronizationResult syncResult, Set<String> visitedGroupIds, String groupName) {
         try {
-            // Update each existing group to be synced in its own inner transaction to prevent race condition when
-            // the groups intended to be updated was already deleted via other channel in the meantime
+            // 在独立内层事务中更新，避免并发删除导致竞态
             KeycloakModelUtils.runJobInTransaction(ldapProvider.getSession().getKeycloakSessionFactory(), session -> {
                 RealmModel innerTransactionRealm = session.realms().getRealm(realm.getId());
                 GroupModel innerTransactionGroup = session.groups().getGroupById(innerTransactionRealm, kcExistingGroup.getId());
@@ -218,8 +224,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     private void syncNonExistingGroup(RealmModel realm, Map.Entry<String, LDAPObject> groupEntry,
                                       SynchronizationResult syncResult, Set<String> visitedGroupIds, String groupName) {
         try {
-            // Create each non-existing group to be synced in its own inner transaction to prevent race condition when
-            // the group intended to be created was already created via other channel in the meantime
+            // 在独立内层事务中创建，避免并发创建导致竞态
             KeycloakModelUtils.runJobInTransaction(ldapProvider.getSession().getKeycloakSessionFactory(), session -> {
                 RealmModel innerTransactionRealm = session.realms().getRealm(realm.getId());
                 GroupModel kcGroup = createKcGroup(innerTransactionRealm, groupName, null);
@@ -257,7 +262,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     private void syncFlatGroupStructure(RealmModel realm, SynchronizationResult syncResult, Map<String, LDAPObject> ldapGroupsMap) {
         Set<String> visitedGroupIds = new HashSet<>();
 
-        // Just add flat structure of groups with all groups at groups path
+        // 扁平结构：所有组挂在 groups path 下
         LDAPConfig ldapConfig = ldapProvider.getLdapIdentityStore().getConfig();
         final int groupsPerTransaction = ldapConfig.getBatchSizeForSync();
         Set<Map.Entry<String, LDAPObject>> entries = ldapGroupsMap.entrySet();
@@ -265,13 +270,10 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
             KeycloakModelUtils.runJobInTransaction(ldapProvider.getSession().getKeycloakSessionFactory(), session -> {
 
-                // KEYCLOAK-8253 The retrieval of the current realm to operate at, was intentionally left
-                // outside the following for loop! This prevents the scenario, when LDAP group sync time
-                // initially improves, but during the time (after ~20K groups are synced) degrades again
-                // due to the realm cache being bloated with huge amount of (temporary) realm entities
+                // KEYCLOAK-8253：realm 获取 intentionally 放在 for 循环外，避免同步大量组时 realm 缓存膨胀
                 RealmModel currentRealm = session.realms().getRealm(realm.getId());
 
-                // List of group path groups known to the whole transaction
+                // 本事务内已知的组路径子组
                 Map<String, GroupModel> transactionGroupPathGroups = getKcSubGroups(currentRealm, null)
                         .collect(Collectors.toMap(GroupModel::getName, Function.identity()));
 
@@ -290,7 +292,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
             });
         }
 
-        // Possibly remove keycloak groups, which don't exist in LDAP
+        // 可选：删除 LDAP 中已不存在的 Keycloak 组
         if (config.isDropNonExistingGroupsDuringSync()) {
             dropNonExistingKcGroups(realm, syncResult, visitedGroupIds);
         }
@@ -303,7 +305,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
             updateKeycloakGroupTreeEntry(realm, groupEntry, ldapGroups, null, syncResult, visitedGroupIds);
         }
 
-        // Possibly remove keycloak groups, which don't exist in LDAP
+        // 可选：删除 LDAP 中已不存在的 Keycloak 组
         if (config.isDropNonExistingGroupsDuringSync()) {
             dropNonExistingKcGroups(realm, syncResult, visitedGroupIds);
         }
@@ -352,6 +354,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
                 });
     }
 
+    /** 将 LDAP 组属性同步到 Keycloak 组。 */
     private void updateAttributesOfKCGroup(GroupModel kcGroup, LDAPObject ldapGroup) {
         Collection<String> groupAttributes = config.getGroupAttributes();
         LDAPConfig ldapConfig = ldapProvider.getLdapIdentityStore().getConfig();
@@ -373,6 +376,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     }
 
 
+    /** 按 LDAP 组查找对应的 Keycloak 组。 */
     protected GroupModel findKcGroupByLDAPGroup(RealmModel realm, GroupModel parent, LDAPObject ldapGroup) {
         String groupNameAttr = config.getGroupNameLdapAttribute();
         String groupName = ldapGroup.getAttributeAsString(groupNameAttr);
@@ -382,11 +386,12 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
             return getAllKcGroups(realm, parent)
                     .filter(group -> Objects.equals(group.getName(), groupName)).findFirst().orElse(null);
         } else {
-            // Without preserved inheritance, it's always at groups path
+            // 未保留继承时，组始终在 groups path 下
             return getSession().groups().getGroupByName(realm, parent, groupName);
         }
     }
 
+    /** 查找 Keycloak 组，不存在时按需从 LDAP 同步创建。 */
     protected GroupModel findKcGroupOrSyncFromLDAP(RealmModel realm, GroupModel parent, LDAPObject ldapGroup, UserModel user) {
         GroupModel kcGroup = findKcGroupByLDAPGroup(realm, parent, ldapGroup);
 
@@ -394,7 +399,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
             if (config.isPreserveGroupsInheritance()) {
 
-                // Better to sync all groups from LDAP with preserved inheritance
+                // 保留继承时，全量同步 LDAP 组树更可靠
                 if (!syncFromLDAPPerformedInThisTransaction) {
                     syncDataFromFederationProviderToKeycloak(realm);
                     kcGroup = findKcGroupByLDAPGroup(realm, parent, ldapGroup);
@@ -407,7 +412,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
                 updateAttributesOfKCGroup(kcGroup, ldapGroup);
             }
 
-            // Could theoretically happen on some LDAP servers if 'memberof' style is used and 'memberof' attribute of user references non-existing group
+            // memberOf 策略下，用户可能引用 LDAP 中已不存在的组
             if (kcGroup == null) {
                 String groupName = ldapGroup.getAttributeAsString(config.getGroupNameLdapAttribute());
                 logger.warnf("User '%s' is member of group '%s', which doesn't exist in LDAP", user.getUsername(), groupName);
@@ -417,7 +422,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         return kcGroup;
     }
 
-    // Send LDAP query to retrieve all groups
+    /** 发送 LDAP 查询获取全部组。 */
     protected List<LDAPObject> getAllLDAPGroups(boolean includeMemberAttribute) {
         try (LDAPQuery ldapGroupQuery = createGroupQuery(includeMemberAttribute)) {
             return LDAPUtils.loadAllLDAPObjects(ldapGroupQuery, ldapProvider);
@@ -425,7 +430,9 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     }
 
 
-    // Sync from Keycloak to LDAP
+    // 从 Keycloak 同步到 LDAP
+
+    /** {@inheritDoc} 将 Keycloak 组结构同步到 LDAP（仅 LDAP_ONLY 模式）。 */
     @Override
     public SynchronizationResult syncDataFromKeycloakToFederationProvider(RealmModel realm) {
         SynchronizationResult syncResult = new SynchronizationResult() {
@@ -444,8 +451,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
         logger.debugf("Syncing groups from Keycloak into LDAP. Mapper is [%s], LDAP provider is [%s]", mapperModel.getName(), ldapProvider.getModel().getName());
 
-        // Query existing LDAP groups
-
+        // 查询现有 LDAP 组
         List<LDAPObject> ldapGroups = getAllLDAPGroups(config.isPreserveGroupsInheritance());
 
         // Convert them to Map<String, LDAPObject>
@@ -457,14 +463,14 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         }
 
 
-        // Map to track all LDAP groups also exist in Keycloak
+        // 跟踪 LDAP 中仍存在于 Keycloak 的组名
         Set<String> ldapGroupNames = new HashSet<>();
 
-        // Create or update KC groups to LDAP including their attributes
+        // 创建或更新 Keycloak 组到 LDAP（含属性）
         getKcSubGroups(realm, null)
                 .forEach(kcGroup -> processKeycloakGroupSyncToLDAP(kcGroup, ldapGroupsMap, ldapGroupNames, syncResult));
 
-        // If dropNonExisting, then drop all groups, which doesn't exist in KC from LDAP as well
+        // dropNonExisting 时，删除 LDAP 中 Keycloak 已不存在的组
         if (config.isDropNonExistingGroupsDuringSync()) {
             Set<String> copy = new HashSet<>(ldapGroupsMap.keySet());
             for (String groupName : copy) {
@@ -476,7 +482,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
             }
         }
 
-        // Finally process memberships,
+        // 最后处理组成员关系（保留继承时）
         if (config.isPreserveGroupsInheritance()) {
             getKcSubGroups(realm, null)
                     .forEach(kcGroup -> processKeycloakGroupMembershipsSyncToLDAP(kcGroup, ldapGroupsMap));
@@ -485,13 +491,11 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         return syncResult;
     }
 
-    // For given kcGroup check if it exists in LDAP (map) by name
-    // If not, create it in LDAP including attributes. Otherwise update attributes in LDAP.
-    // Process this recursively for all subgroups of KC group
+    /** 递归同步 Keycloak 组到 LDAP（按名称匹配，创建或更新属性）。 */
     private void processKeycloakGroupSyncToLDAP(GroupModel kcGroup, Map<String, LDAPObject> ldapGroupsMap, Set<String> ldapGroupNames, SynchronizationResult syncResult) {
         String groupName = kcGroup.getName();
 
-        // extract group attributes to be updated to LDAP
+        // 提取待写入 LDAP 的组属性
         Map<String, Set<String>> supportedLdapAttributes = new HashMap<>();
         for (String attrName : config.getGroupAttributes()) {
             Set<String> valueSet = kcGroup.getAttributeStream(attrName).collect(Collectors.toSet());
@@ -520,24 +524,24 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
                 .forEach(kcSubgroup -> processKeycloakGroupSyncToLDAP(kcSubgroup, ldapGroupsMap, ldapGroupNames, syncResult));
     }
 
-    // Update memberships of group in LDAP based on subgroups from KC. Do it recursively
+    /** 递归将 Keycloak 子组成员关系同步到 LDAP 父组的 member 属性。 */
     private void processKeycloakGroupMembershipsSyncToLDAP(GroupModel kcGroup, Map<String, LDAPObject> ldapGroupsMap) {
         LDAPObject ldapGroup = ldapGroupsMap.get(kcGroup.getName());
         Set<LDAPDn> toRemoveSubgroupsDNs = getLDAPSubgroups(ldapGroup);
 
-        String membershipUserLdapAttrName = getMembershipUserLdapAttribute(); // Not applicable for groups, but needs to be here
+        String membershipUserLdapAttrName = getMembershipUserLdapAttribute(); // 对组继承不适用，但接口需要
 
-        // Add LDAP subgroups, which are KC subgroups
+        // 将 Keycloak 子组添加为 LDAP 子组成员
         Set<GroupModel> kcSubgroups = kcGroup.getSubGroupsStream().collect(Collectors.toSet());
         for (GroupModel kcSubgroup : kcSubgroups) {
             LDAPObject ldapSubgroup = ldapGroupsMap.get(kcSubgroup.getName());
             if (!toRemoveSubgroupsDNs.remove(ldapSubgroup.getDn())) {
-                // if the group is not in the ldap group => add it
+                // LDAP 组中尚无该子组 => 添加成员
                 LDAPUtils.addMember(ldapProvider, MembershipType.DN, config.getMembershipLdapAttribute(), membershipUserLdapAttrName, ldapGroup, ldapSubgroup);
             }
         }
 
-        // Remove LDAP subgroups, which are not members in KC anymore
+        // 移除 Keycloak 中已不再是子组的 LDAP 成员
         for (LDAPDn toRemoveDN : toRemoveSubgroupsDNs) {
             LDAPObject fakeGroup = new LDAPObject();
             fakeGroup.setDn(toRemoveDN);
@@ -549,8 +553,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         }
     }
 
-    // Recursively check if parent group exists in LDAP. If yes, then return current group. If not, then recursively call this method
-    // for the predecessor. Result is the highest group, which doesn't yet exist in LDAP (and hence requires sync to LDAP)
+    /** 递归查找 LDAP 中尚不存在的最高祖先组，以便批量同步到 LDAP。 */
     private GroupModel getHighestPredecessorNotExistentInLdap(GroupModel groupsPathGroup, GroupModel group) {
         GroupModel parentGroup = group.getParent();
         if (parentGroup == groupsPathGroup) {
@@ -559,31 +562,32 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
         LDAPObject ldapGroup = loadLDAPGroupByName(parentGroup.getName());
         if (ldapGroup != null) {
-            // Parent exists in LDAP. Let's return current group
+            // 父组已存在于 LDAP，返回当前组
             return group;
         } else {
-            // Parent doesn't exist in LDAP. Let's recursively go up.
+            // 父组不存在，继续向上递归
             return getHighestPredecessorNotExistentInLdap(groupsPathGroup, parentGroup);
         }
     }
 
 
-    // group-user membership operations
+    // 组-用户成员关系操作
 
 
+    /** {@inheritDoc} 返回 LDAP 组成员（IMPORT 模式返回空以避免重复）。 */
     @Override
     public List<UserModel> getGroupMembers(RealmModel realm, GroupModel kcGroup, int firstResult, int maxResults) {
         if (config.getMode() == LDAPGroupMapperMode.IMPORT) {
-            // only results from Keycloak should be returned, or imported LDAP and KC items will duplicate
+            // IMPORT 模式仅返回 Keycloak 结果，避免与 LDAP 导入项重复
             return Collections.emptyList();
         }
 
         if (!isGroupInGroupPath(realm, kcGroup)) {
-            // group being inspected is not managed by this mapper - return empty collection
+            // 所查组不在本映射器管理的 groups path 下
             return Collections.emptyList();
         }
 
-        // TODO: with ranged search in AD we can improve the search using the specific range (not done for the moment)
+        // TODO：AD 范围搜索可进一步优化（暂未实现）
         LDAPObject ldapGroup = loadLDAPGroupByName(kcGroup.getName());
         if (ldapGroup == null) {
             return Collections.emptyList();
@@ -594,12 +598,13 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         return strategy.getLDAPRoleMembers(realm, this, ldapGroup, firstResult, maxResults);
     }
 
+    /** 在 LDAP 组中添加用户成员关系，必要时先同步 Keycloak 组到 LDAP。 */
     public void addGroupMappingInLDAP(RealmModel realm, GroupModel kcGroup, LDAPObject ldapUser) {
         String groupName = kcGroup.getName();
         LDAPObject ldapGroup = loadLDAPGroupByName(groupName);
 
         if (ldapGroup == null) {
-            // Needs to partially sync Keycloak groups to LDAP
+            // 需要部分同步 Keycloak 组到 LDAP
             if (config.isPreserveGroupsInheritance()) {
                 GroupModel groupsPathGroup = getKcGroupsPathGroup(realm);
                 GroupModel highestGroupToSync = getHighestPredecessorNotExistentInLdap(groupsPathGroup, kcGroup);
@@ -612,13 +617,13 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
                 ldapGroup = loadLDAPGroupByName(groupName);
 
-                // Finally update LDAP membership in the parent group
+                // 最后更新父组中的 LDAP 成员关系
                 if (highestGroupToSync.getParent() != groupsPathGroup) {
                     LDAPObject ldapParentGroup = loadLDAPGroupByName(highestGroupToSync.getParent().getName());
                     LDAPUtils.addMember(ldapProvider, MembershipType.DN, config.getMembershipLdapAttribute(), getMembershipUserLdapAttribute(), ldapParentGroup, ldapGroup);
                 }
             } else {
-                // No care about group inheritance. Let's just sync current group
+                // 不保留继承时，仅同步当前组
                 logger.debugf("Will sync group '%s' from DB to LDAP", groupName);
                 processKeycloakGroupSyncToLDAP(kcGroup, new HashMap<>(), new HashSet<>(), new SynchronizationResult());
                 ldapGroup = loadLDAPGroupByName(groupName);
@@ -630,11 +635,13 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         LDAPUtils.addMember(ldapProvider, config.getMembershipTypeLdapAttribute(), config.getMembershipLdapAttribute(), membershipUserLdapAttrName, ldapGroup, ldapUser);
     }
 
+    /** 从 LDAP 组中移除用户成员关系。 */
     public void deleteGroupMappingInLDAP(LDAPObject ldapUser, LDAPObject ldapGroup) {
         String membershipUserLdapAttrName = getMembershipUserLdapAttribute();
         LDAPUtils.deleteMember(ldapProvider, config.getMembershipTypeLdapAttribute(), config.getMembershipLdapAttribute(), membershipUserLdapAttrName, ldapGroup, ldapUser);
     }
 
+    /** 按配置策略获取用户的 LDAP 组映射。 */
     protected List<LDAPObject> getLDAPGroupMappings(LDAPObject ldapUser) {
         String strategyKey = config.getUserGroupsRetrieveStrategy();
         UserRolesRetrieveStrategy strategy = factory.getUserGroupsRetrieveStrategy(strategyKey);
@@ -654,7 +661,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     public UserModel proxy(LDAPObject ldapUser, UserModel delegate, RealmModel realm) {
         final LDAPGroupMapperMode mode = config.getMode();
 
-        // For IMPORT mode, all operations are performed against local DB
+        // IMPORT 模式下所有操作针对本地数据库
         if (mode == LDAPGroupMapperMode.IMPORT) {
             return delegate;
         } else {
@@ -670,13 +677,13 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     public void onImportUserFromLDAP(LDAPObject ldapUser, UserModel user, RealmModel realm, boolean isCreate) {
         LDAPGroupMapperMode mode = config.getMode();
 
-        // For now, import LDAP group mappings just during create
+        // 目前仅在用户创建时从 LDAP 导入组映射
         if (mode == LDAPGroupMapperMode.IMPORT && isCreate) {
 
             List<LDAPObject> ldapGroups = getLDAPGroupMappings(ldapUser);
             if (!ldapGroups.isEmpty()) {
                 GroupModel parent = getKcGroupsPathGroup(realm);
-                // Import role mappings from LDAP into Keycloak DB
+                // 从 LDAP 导入组成员关系到 Keycloak
                 for (LDAPObject ldapGroup : ldapGroups) {
 
                     GroupModel kcGroup = findKcGroupOrSyncFromLDAP(realm, parent, ldapGroup, user);
@@ -696,12 +703,13 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     }
 
 
+    /** 用户代理：合并 LDAP 与 Keycloak 组成员关系，并按模式处理 join/leave。 */
     public class LDAPGroupMappingsUserDelegate extends UserModelDelegate {
 
         private final RealmModel realm;
         private final LDAPObject ldapUser;
 
-        // Avoid loading group mappings from LDAP more times per-request
+        // 避免同一请求内多次从 LDAP 加载组映射
         private Set<GroupModel> cachedLDAPGroupMappings;
 
         public LDAPGroupMappingsUserDelegate(RealmModel realm, UserModel user, LDAPObject ldapUser) {
@@ -719,10 +727,10 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         public Stream<GroupModel> getGroupsStream() {
             Stream<GroupModel> ldapGroupMappings = getLDAPGroupMappingsConverted();
             if (config.isTopLevelGroupsPath() && config.getMode() == LDAPGroupMapperMode.LDAP_ONLY) {
-                // Use just group mappings from LDAP
+                // 顶级 groups path 且 LDAP_ONLY：仅使用 LDAP 组映射
                 return ldapGroupMappings;
             } else {
-                // Merge mappings from both DB and LDAP (including groups assigned from other group mappers)
+                // 合并 LDAP 与数据库映射（含其他映射器分配的组）
                 return Stream.concat(ldapGroupMappings, super.getGroupsStream());
             }
         }
@@ -730,7 +738,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         @Override
         public void joinGroup(GroupModel group) {
             if (config.getMode() == LDAPGroupMapperMode.LDAP_ONLY && isGroupInGroupPath(realm, group)) {
-                // We need to create new role mappings in LDAP
+                // LDAP_ONLY 且组在本映射器 path 下：在 LDAP 中创建成员关系
                 cachedLDAPGroupMappings = null;
                 addGroupMappingInLDAP(realm, group, ldapUser);
             } else {
@@ -740,7 +748,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
 
         @Override
         public void leaveGroup(GroupModel group) {
-            // if user is leaving group not managed by this mapper, let the call proceed to the next mapper or to the DB.
+            // 退出的组不由本映射器管理时，委托后续映射器或数据库
             if (!isGroupInGroupPath(realm, group)) {
                 super.leaveGroup(group);
             }
@@ -757,16 +765,16 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
                 LDAPObject ldapGroup = ldapQuery.getFirstResult();
 
                 if (ldapGroup == null) {
-                    // Group mapping doesn't exist in LDAP. For LDAP_ONLY mode, we don't need to do anything. For READ_ONLY, delete it in local DB.
+                    // LDAP 中无此映射：LDAP_ONLY 无需操作；READ_ONLY 删除本地映射
                     if (config.getMode() == LDAPGroupMapperMode.READ_ONLY) {
                         super.leaveGroup(group);
                     }
                 } else {
-                    // Group mapping exists in LDAP. For LDAP_ONLY mode, we can just delete it in LDAP. For READ_ONLY we can't delete it -> throw error
+                    // LDAP 中存在映射：READ_ONLY 不可删；LDAP_ONLY 从 LDAP 删除
                     if (config.getMode() == LDAPGroupMapperMode.READ_ONLY) {
                         throw new ModelException("Not possible to delete LDAP group mappings as mapper mode is READ_ONLY");
                     } else {
-                        // Delete ldap role mappings
+                        // 删除 LDAP 组成员关系
                         cachedLDAPGroupMappings = null;
                         deleteGroupMappingInLDAP(ldapUser, ldapGroup);
                     }
@@ -777,7 +785,7 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         @Override
         public boolean isMemberOf(GroupModel group) {
             if (!isGroupInGroupPath(realm, group)) {
-                // this mapper doesn't manage the group - delegate to the next mapper or the JPA store.
+                // 本映射器不管理该组，委托后续映射器或 JPA 存储
                 return super.isMemberOf(group);
             }
             return RoleUtils.isDirectMember(getGroupsStream(),group);
@@ -805,35 +813,36 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
         }
     }
 
-    // LDAP groups path operations
+    // LDAP 组路径相关操作
 
     /**
-     * Translates given LDAP group name into a KC group within the groups path.
+     * 将 LDAP 组名转换为 groups path 下的 Keycloak 组路径。
      */
     protected String getKcGroupPathFromLDAPGroupName(String ldapGroupName) {
         return config.getGroupsPathWithTrailingSlash() + ldapGroupName;
     }
 
     /**
-     * Provides KC group defined as groups path or null (top-level group) if corresponding group is not available.
+     * 返回配置的 groups path 对应 Keycloak 组；顶级路径时返回 null。
      */
     protected GroupModel getKcGroupsPathGroup(RealmModel realm) {
         return config.isTopLevelGroupsPath() ? null : KeycloakModelUtils.findGroupByPath(getSession(), realm, config.getGroupsPath());
     }
 
+    /** 判断组是否位于本映射器配置的 groups path 下。 */
     protected boolean isGroupInGroupPath(RealmModel realm, GroupModel group) {
         if (group.getType() == GroupModel.Type.ORGANIZATION) {
-            return false; // always skip organization groups as those are internal groups.
+            return false; // 组织内部组始终跳过
         }
         if (config.isTopLevelGroupsPath()) {
-            return true; // any group is in the path of the top level path.
+            return true; // 顶级路径下任意组均受管
         }
         GroupModel groupPathGroup = KeycloakModelUtils.findGroupByPath(getSession(), realm, config.getGroupsPath());
         if (groupPathGroup != null) {
             while(!groupPathGroup.getId().equals(group.getId())) {
                 group = group.getParent();
                 if (group == null) {
-                    return false; // we checked every ancestor group, and none matches the group path group.
+                    return false; // 已遍历所有祖先，均不匹配 groups path
                 }
             }
             return true;
@@ -842,11 +851,11 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     }
 
     /**
-     * Creates a new KC group from given LDAP group name in given KC parent group or the groups path.
+     * 在指定父组或 groups path 下，根据 LDAP 组名创建 Keycloak 组。
      */
     protected GroupModel createKcGroup(RealmModel realm, String ldapGroupName, GroupModel parentGroup) {
 
-        // If no parent group given then use groups path
+        // 未指定父组时使用 groups path
         if (parentGroup == null) {
             parentGroup = getKcGroupsPathGroup(realm);
         }
@@ -854,11 +863,11 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     }
 
     /**
-     * Provides a list of all KC sub groups from given parent group or from groups path.
+     * 返回指定父组（或 groups path）下的 Keycloak 直接子组流。
      */
     protected Stream<GroupModel> getKcSubGroups(RealmModel realm, GroupModel parentGroup) {
 
-        // If no parent group given then use groups path
+        // 未指定父组时使用 groups path
         if (parentGroup == null) {
             parentGroup = getKcGroupsPathGroup(realm);
         }
@@ -867,14 +876,14 @@ public class GroupLDAPStorageMapper extends AbstractLDAPStorageMapper implements
     }
 
     /**
-     * Provides a stream of all KC groups (with their sub groups) from groups path configured by the "Groups Path" configuration property.
+     * 返回 groups path 配置下所有 Keycloak 组（含子组）的流。
      */
     protected Stream<GroupModel> getAllKcGroups(RealmModel realm, GroupModel topParentGroup) {
         Stream<GroupModel> allGroups = realm.getGroupsStream();
         if (topParentGroup == null) return allGroups;
 
         return allGroups.filter(group -> {
-            // Check if group is descendant of the topParentGroup (which is group configured by "Groups Path")
+            // 检查是否为 topParentGroup（Groups Path）的后代
             GroupModel parent = group.getParent();
             while (parent != null) {
                 if (parent.getId().equals(topParentGroup.getId())) {

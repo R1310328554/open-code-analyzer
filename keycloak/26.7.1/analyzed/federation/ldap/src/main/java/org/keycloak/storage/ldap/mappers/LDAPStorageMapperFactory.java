@@ -30,12 +30,14 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.UserStorageProviderModel;
 
 /**
+ * LDAP 存储映射器工厂接口：作为 {@link SubComponentFactory} 子组件，负责创建各类 LDAP 映射器实例。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface LDAPStorageMapperFactory<T extends LDAPStorageMapper> extends SubComponentFactory<T, LDAPStorageMapper> {
     /**
-     * called per Keycloak transaction.
+     * 每个 Keycloak 事务调用一次，创建映射器实例。
      *
      * @param session
      * @param model
@@ -44,50 +46,57 @@ public interface LDAPStorageMapperFactory<T extends LDAPStorageMapper> extends S
     T create(KeycloakSession session, ComponentModel model);
 
     /**
-     * This is the name of the provider and will be showed in the admin console as an option.
+     * 提供者名称，会在管理控制台中作为选项展示。
      *
      * @return
      */
     @Override
     String getId();
 
+    /** {@inheritDoc} 默认无初始化逻辑。 */
     @Override
     default void init(Config.Scope config) {
 
     }
 
+    /** {@inheritDoc} 默认无后置初始化。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
 
     }
 
+    /** {@inheritDoc} 默认无资源需释放。 */
     @Override
     default void close() {
 
     }
 
+    /** {@inheritDoc} 默认无帮助文本。 */
     @Override
     default String getHelpText() {
         return "";
     }
 
+    /** {@inheritDoc} 默认无配置项。 */
     @Override
     default List<ProviderConfigProperty> getConfigProperties() {
         return Collections.EMPTY_LIST;
     }
 
+    /** {@inheritDoc} 默认跳过配置校验。 */
     @Override
     default void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
 
     }
 
+    /** 父级 LDAP 用户存储提供者更新时的回调，子类可覆盖以同步配置。 */
     default void onParentUpdate(RealmModel realm, UserStorageProviderModel oldParent, UserStorageProviderModel newParent, ComponentModel mapperModel) {
 
     }
 
     /**
-     * Called when UserStorageProviderModel is created.  This allows you to do initialization of any additional configuration
-     * you need to add.  For example, you may be introspecting a database or ldap schema to automatically create mappings.
+     * 创建 {@link UserStorageProviderModel} 时调用，可用于初始化额外配置。
+     * 例如通过内省数据库或 LDAP 模式自动创建属性映射。
      *
      * @param session
      * @param realm

@@ -34,24 +34,27 @@ import org.keycloak.storage.ldap.idm.query.internal.LDAPQueryConditionsBuilder;
 import org.keycloak.utils.StreamsUtil;
 
 /**
- * Strategy for how to retrieve LDAP roles of user
+ * 用户 LDAP 角色/组检索策略：定义如何从目录获取用户的组成员关系。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface UserRolesRetrieveStrategy {
 
 
+    /** 获取指定 LDAP 用户所属的角色/组 LDAP 对象列表。 */
     List<LDAPObject> getLDAPRoleMappings(CommonLDAPGroupMapper roleOrGroupMapper, LDAPObject ldapUser, LDAPConfig ldapConfig);
 
+    /** 分页返回属于指定 LDAP 角色/组的用户。 */
     List<UserModel> getLDAPRoleMembers(RealmModel realm, CommonLDAPGroupMapper roleOrGroupMapper, LDAPObject ldapRoleOrGroup, int firstResult, int maxResults);
 
+    /** 用户 LDAP 查询执行前的预处理（例如追加 memberOf 返回属性）。 */
     void beforeUserLDAPQuery(CommonLDAPGroupMapper roleOrGroupMapper, LDAPQuery query);
 
 
-    // Impl subclasses
+    // 实现子类
 
     /**
-     * Roles of user will be retrieved by sending LDAP query to retrieve all roles where "member" is our user
+     * 通过 LDAP 查询检索 member 属性包含当前用户的所有角色/组。
      */
     class LoadRolesByMember implements UserRolesRetrieveStrategy {
 
@@ -87,7 +90,7 @@ public interface UserRolesRetrieveStrategy {
     };
 
     /**
-     * Roles of user will be loaded from LDAP based on "memberOf" attribute of our user
+     * 从 LDAP 用户对象的 memberOf 属性加载其所属角色/组。
      */
     class GetRolesFromUserMemberOfAttribute implements UserRolesRetrieveStrategy {
 
@@ -98,9 +101,7 @@ public interface UserRolesRetrieveStrategy {
                 String rdnAttr = config.getLDAPGroupNameLdapAttribute();
                 LDAPQueryConditionsBuilder conditionBuilder = new LDAPQueryConditionsBuilder();
                 Set<String> memberOfValues = ldapUser.getAttributeAsSetOrDefault(config.getMemberOfLdapAttribute(), Set.of());
-                // load only those groups/roles the user is memberOf
-                // we do this by query to apply defined custom filters
-                // and make sure the values of memberOf have the role/group base DN as its parent
+                // 仅加载 memberOf 中位于组/角色基 DN 下的条目，并应用自定义过滤器
                 Condition[] conditions = memberOfValues.stream()
                         .map(LDAPDn::fromString)
                         .filter(roleDN -> roleDN.isDescendantOf(LDAPDn.fromString(config.getLDAPGroupsDn())))
@@ -108,7 +109,7 @@ public interface UserRolesRetrieveStrategy {
                         .toArray(Condition[]::new);
 
                 if (conditions.length == 0) {
-                    // no roles/groups to fetch based on the pre-filters applied to the memberOf values
+                    // 预过滤后无有效 memberOf 值，无需查询
                     return List.of();
                 }
 
@@ -138,8 +139,7 @@ public interface UserRolesRetrieveStrategy {
     };
 
     /**
-     * Extension specific to Active Directory. Roles of user will be retrieved by sending LDAP query to retrieve all roles where "member" is our user.
-     * The query will be able to retrieve memberships recursively with usage of AD specific extension LDAP_MATCHING_RULE_IN_CHAIN, so likely doesn't work on other LDAP servers
+     * Active Directory 扩展：使用 {@link LDAPConstants#LDAP_MATCHING_RULE_IN_CHAIN} 递归检索嵌套组成员关系。
      */
     class LoadRolesByMemberRecursively extends LoadRolesByMember {
 
