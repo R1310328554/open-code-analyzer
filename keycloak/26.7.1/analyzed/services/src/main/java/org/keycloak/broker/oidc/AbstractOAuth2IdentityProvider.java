@@ -115,16 +115,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jboss.logging.Logger;
 
 /**
+ * OAuth 2.0 身份代理抽象基类：授权码流程、令牌交换、刷新与回调端点。
+ * <p>实现 {@link ExchangeTokenToIdentityProviderToken} 与 {@link ExchangeExternalToken}，子类负责 scope 默认值与联邦身份解析。</p>
  * @author Pedro Igor
  */
 public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityProviderConfig> extends AbstractIdentityProvider<C> implements ExchangeTokenToIdentityProviderToken, ExchangeExternalToken {
     protected static final Logger logger = Logger.getLogger(AbstractOAuth2IdentityProvider.class);
 
+    /** OAuth2 grant_type：refresh_token。 */
     public static final String OAUTH2_GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
+    /** OAuth2 grant_type：authorization_code。 */
     public static final String OAUTH2_GRANT_TYPE_AUTHORIZATION_CODE = "authorization_code";
 
+    /** 会话 note：联邦 refresh token。 */
     public static final String FEDERATED_REFRESH_TOKEN = "FEDERATED_REFRESH_TOKEN";
+    /** 会话 note：联邦 token 过期时间戳。 */
     public static final String FEDERATED_TOKEN_EXPIRATION = "FEDERATED_TOKEN_EXPIRATION";
+    /** OAuth 错误码：access_denied。 */
     public static final String ACCESS_DENIED = "access_denied";
     protected static ObjectMapper mapper = new ObjectMapper();
 
@@ -141,8 +148,10 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
     private static final String BROKER_CODE_CHALLENGE_PARAM = "BROKER_CODE_CHALLENGE";
     private static final String BROKER_CODE_CHALLENGE_METHOD_PARAM = "BROKER_CODE_CHALLENGE_METHOD";
 
+    /** 存储 token 响应中的 access token 绝对过期时间字段名。 */
     public static final String ACCESS_TOKEN_EXPIRATION = "accessTokenExpiration";
 
+    /** @param session Keycloak 会话 @param config OAuth2 配置 */
     public AbstractOAuth2IdentityProvider(KeycloakSession session, C config) {
         super(session, config);
 
@@ -151,11 +160,13 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         }
     }
 
+    /** @return OAuth 回调 {@link Endpoint} JAX-RS 资源 */
     @Override
     public Object callback(RealmModel realm, AuthenticationCallback callback, EventBuilder event) {
         return new Endpoint(callback, realm, event, this);
     }
 
+    /** 构建授权 URL 并重定向用户至外部 IdP。 */
     @Override
     public Response performLogin(AuthenticationRequest request) {
         try {
@@ -168,8 +179,8 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
     }
 
     /**
-     * This is a custom variant of {@link AccessTokenResponse} which avoid primitives that would auto-add zero values
-     * to the original responses. It also allows accessTokenExpiration to be handled as a long value.
+     * 自定义令牌响应 DTO：避免原始类型零值污染 JSON，并支持 long 型 accessTokenExpiration。
+     * <p>{@link AccessTokenResponse} 的变体，用于持久化联邦 token。</p>
      */
     public static class OAuthResponse {
         @JsonProperty(OAuth2Constants.ACCESS_TOKEN)
@@ -252,6 +263,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
 
     }
 
+    /** 从联邦身份存储读取 token，必要时自动 refresh。 */
     @Override
     public Response retrieveToken(KeycloakSession session, FederatedIdentityModel identity) {
         try {
@@ -276,10 +288,12 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         return Response.ok(identity.getToken()).type(MediaType.APPLICATION_JSON).build();
     }
 
+    /** @return access token 是否在 minValidity 窗口内即将过期 */
     private boolean needsRefresh(Long exp) {
         return exp != null && exp != 0 && exp < Time.currentTime() + getConfig().getMinValidityToken();
     }
 
+    /** 使用 refresh_token grant 刷新并合并缺失字段。 */
     private OAuthResponse refreshToken(OAuthResponse previousResponse, KeycloakSession session) throws IOException {
         try (VaultStringSecret vaultStringSecret = session.vault().getStringSecret(getConfig().getClientSecret())) {
             SimpleHttpRequest refreshTokenRequest = getRefreshTokenRequest(session, previousResponse.getRefreshToken(), getConfig().getClientId(), vaultStringSecret.get().orElse(getConfig().getClientSecret()));
@@ -306,12 +320,13 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         }
     }
 
+    /** Token Exchange V2：优先会话 token，否则回退存储 token。 */
     @Override
     public Response retrieveToken(KeycloakSession session, FederatedIdentityModel identity, UserSessionModel userSession, UserModel user) {
         UriInfo uriInfo = session.getContext().getUri();
         Response response = null;
         if (userSession != null && getConfig().isStoreTokenInSession()) {
-            // use the session if present and configured to be used, only in V2
+            // V2 流程：若配置启用且会话存在则优先使用会话中的联邦 token
             String brokerId = userSession.getNote(Details.IDENTITY_PROVIDER);
             brokerId = brokerId == null ? userSession.getNote(UserAuthenticationIdentityProvider.EXTERNAL_IDENTITY_PROVIDER) : brokerId;
             String federatedAccessToken = userSession.getNote(FEDERATED_ACCESS_TOKEN);
@@ -334,6 +349,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         return response;
     }
 
+    /** 构建 refresh_token grant 的 POST 请求。 */
     protected SimpleHttpRequest getRefreshTokenRequest(KeycloakSession session, String refreshToken, String clientId, String clientSecret) {
         SimpleHttpRequest refreshTokenRequest = SimpleHttp.create(session).doPost(getConfig().getTokenUrl())
                 .param(OAUTH2_GRANT_TYPE_REFRESH_TOKEN, refreshToken)
@@ -346,6 +362,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         return super.getConfig();
     }
 
+    /** 从 token 端点 JSON 响应中提取指定字段。 */
     protected String extractTokenFromResponse(String response, String tokenName) {
         if(response == null)
             return null;
@@ -375,6 +392,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         return null;
     }
 
+    /** Token Exchange 入口：将会话或存储的联邦 token 交换给请求客户端。 */
     @Override
     public Response exchangeFromToken(UriInfo uriInfo, EventBuilder event, ClientModel authorizedClient, UserSessionModel tokenUserSession, UserModel tokenSubject, MultivaluedMap<String, String> params) {
         // check to see if we have a token exchange in session
@@ -443,6 +461,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         return null;
     }
 
+    /** 从用户联邦身份存储读取并返回 token 响应。 */
     protected Response exchangeStoredToken(UriInfo uriInfo, EventBuilder event, ClientModel authorizedClient, UserSessionModel tokenUserSession, UserModel tokenSubject) {
         RealmModel realm = authorizedClient != null ? authorizedClient.getRealm() : session.getContext().getRealm();
         FederatedIdentityModel model = session.users().getFederatedIdentity(realm, tokenSubject, getConfig().getAlias());
@@ -471,6 +490,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         return buildTokenResponse(uriInfo, event, authorizedClient, tokenUserSession, tokenResponse, OAuth2Constants.ACCESS_TOKEN_TYPE);
     }
 
+    /** 从用户会话 note 读取联邦 access token 并交换。 */
     protected Response exchangeSessionToken(UriInfo uriInfo, EventBuilder event, ClientModel authorizedClient, UserSessionModel tokenUserSession, UserModel tokenSubject) {
         String accessToken = tokenUserSession.getNote(FEDERATED_ACCESS_TOKEN);
 
@@ -487,6 +507,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         return buildTokenResponse(uriInfo, event, authorizedClient, tokenUserSession, tokenResponse, OAuth2Constants.ACCESS_TOKEN_TYPE);
     }
 
+    /** 解析 token 端点响应并构建 {@link BrokeredIdentityContext}。 */
     public BrokeredIdentityContext getFederatedIdentity(String response) {
         String accessToken = extractTokenFromResponse(response, getAccessTokenResponseParameter());
 
@@ -524,6 +545,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
     }
 
 
+    /** 构建授权端点 URL（含 state、PKCE、转发参数等）。 */
     protected UriBuilder createAuthorizationUrl(AuthenticationRequest request) {
         final UriBuilder uriBuilder = UriBuilder.fromUri(getConfig().getAuthorizationUrl())
                 .queryParam(OAUTH2_PARAMETER_SCOPE, getConfig().getDefaultScope())
@@ -615,14 +637,17 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         return mapper.readTree(json);
     }
 
+    /** @return 默认 OAuth scope 字符串（子类实现） */
     protected abstract String getDefaultScopes();
 
+    /** 认证完成后将联邦 token 写入会话 note（若配置启用）。 */
     @Override
     public void authenticationFinished(AuthenticationSessionModel authSession, BrokeredIdentityContext context) {
         String token = (String) context.getContextData().get(FEDERATED_ACCESS_TOKEN);
         if (token != null) authSession.setUserSessionNote(FEDERATED_ACCESS_TOKEN, token);
     }
 
+    /** 按 clientAuthMethod 为 token 请求添加客户端认证（secret/JWT/basic）。 */
     public SimpleHttpRequest authenticateTokenRequest(final SimpleHttpRequest tokenRequest) {
 
         if (getConfig().isJWTAuthentication()) {
@@ -665,6 +690,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         }
     }
 
+    /** 生成 client_assertion JWT（client_secret_jwt / private_key_jwt）。 */
     protected JsonWebToken generateToken() {
         JsonWebToken jwt = new JsonWebToken();
         jwt.id(SecretGenerator.getInstance().generateSecureID());
@@ -698,6 +724,7 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         return session.getProvider(SignatureProvider.class, alg).signer();
     }
 
+    /** OAuth 授权回调 JAX-RS 端点：处理 code/error 并交换 token。 */
     protected static class Endpoint {
         protected final AuthenticationCallback callback;
         protected final RealmModel realm;

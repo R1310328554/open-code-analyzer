@@ -105,21 +105,29 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jboss.logging.Logger;
 
 /**
+ * OpenID Connect 身份代理：ID Token 校验、UserInfo、登出与 token 交换。
+ * <p>实现 JWT Authorization Grant、Client Assertion 与 Trust Material 等扩展接口。</p>
  * @author Pedro Igor
  */
 public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIdentityProviderConfig> implements ExchangeExternalToken, ClientAssertionIdentityProvider<OIDCIdentityProviderConfig>, JWTAuthorizationGrantProvider<OIDCIdentityProviderConfig>, TrustMaterialIdentityProvider<OIDCIdentityProviderConfig> {
     protected static final Logger logger = Logger.getLogger(OIDCIdentityProvider.class);
 
+    /** 默认 OIDC scope。 */
     public static final String SCOPE_OPENID = "openid";
+    /** 会话 note：联邦 ID Token。 */
     public static final String FEDERATED_ID_TOKEN = "FEDERATED_ID_TOKEN";
+    /** 上下文键：OIDC UserInfo JSON。 */
     public static final String USER_INFO = "UserInfo";
     public static final String FEDERATED_ACCESS_TOKEN_RESPONSE = "FEDERATED_ACCESS_TOKEN_RESPONSE";
+    /** 上下文键：已校验的 ID Token。 */
     public static final String VALIDATED_ID_TOKEN = "VALIDATED_ID_TOKEN";
     public static final String EXCHANGE_PROVIDER = "EXCHANGE_PROVIDER";
+    /** 上下文键：已校验的 Access Token JWT。 */
     public static final String VALIDATED_ACCESS_TOKEN = "VALIDATED_ACCESS_TOKEN";
     private static final String BROKER_NONCE_PARAM = "BROKER_NONCE";
     private static final List<String> SUPPORTED_TOKEN_TYPES = Arrays.asList(TokenUtil.TOKEN_TYPE_ID, TokenUtil.TOKEN_TYPE_BEARER, TokenUtil.TOKEN_TYPE_JWT_ACCESS_TOKEN, TokenUtil.TOKEN_TYPE_JWT_ACCESS_TOKEN_PREFIXED);
 
+    /** @param session Keycloak 会话 @param config OIDC 配置 */
     public OIDCIdentityProvider(KeycloakSession session, OIDCIdentityProviderConfig config) {
         super(session, config);
 
@@ -135,6 +143,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         return new OIDCEndpoint(callback, realm, event, this);
     }
 
+    /** @return 是否匹配 JWT Authorization Grant 或 Client Assertion 类型 */
     @Override
     public boolean isType(KeycloakSession session, IdentityProviderType type) {
         return switch(type) {
@@ -160,6 +169,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         }
     }
 
+    /** 向 IdP 发送 backchannel logout 请求（含 ID Token hint）。 */
     @Override
     public void backchannelLogout(KeycloakSession session, UserSessionModel userSession, UriInfo uriInfo, RealmModel realm) {
         if (getConfig().getLogoutUrl() == null || getConfig().getLogoutUrl().trim().equals("") || !getConfig().isBackchannelSupported())
@@ -192,6 +202,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
     }
 
 
+    /** Keycloak 发起的浏览器登出：重定向至 IdP end_session 端点。 */
     @Override
     public Response keycloakInitiatedBrowserLogout(KeycloakSession session, UserSessionModel userSession, UriInfo uriInfo, RealmModel realm) {
         if (getConfig().getLogoutUrl() == null || getConfig().getLogoutUrl().trim().equals("")) return null;
@@ -409,6 +420,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         }
     }
 
+    /** OIDC 回调端点：token 交换与 front-channel logout 响应。 */
     protected static class OIDCEndpoint extends Endpoint {
         public OIDCEndpoint(AuthenticationCallback callback, RealmModel realm, EventBuilder event, OIDCIdentityProvider provider) {
             super(callback, realm, event, provider);
@@ -451,6 +463,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
     }
 
 
+    /** 解析 token 响应、校验 ID Token 并提取联邦身份。 */
     @Override
     public BrokeredIdentityContext getFederatedIdentity(String response) {
         AccessTokenResponse tokenResponse = null;
@@ -554,6 +567,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
 
     private static final MediaType APPLICATION_JWT_TYPE = MediaType.valueOf("application/jwt");
 
+    /** 从 token 响应与 ID Token 提取联邦身份（UserInfo 可选）。 */
     protected BrokeredIdentityContext extractIdentity(AccessTokenResponse tokenResponse, String accessToken, JsonWebToken idToken) throws IOException {
         String id = idToken.getSubject();
         BrokeredIdentityContext identity = new BrokeredIdentityContext(id, getConfig());
@@ -688,6 +702,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         return PublicKeyStorageManager.getIdentityProviderKeyWrapper(session, session.getContext().getRealm(), getConfig(), jws);
     }
 
+    /** 校验 JWS 签名与 issuer/audience 等标准 claim。 */
     protected boolean verify(JWSInput jws) {
         if (!getConfig().isValidateSignature()) return true;
         return verifySignature(jws);
@@ -698,6 +713,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
      *
      * @return true if signature was successfully verified with the keys available to identity provider
      */
+    /** 使用 JWKS 或静态公钥验证 JWS 签名。 */
     protected boolean verifySignature(JWSInput jws) {
         try {
             KeyWrapper key = getIdentityProviderKeyWrapper(jws);
@@ -791,6 +807,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         }
     }
 
+    /** 解析并校验 OIDC token（含 audience 检查）。 */
     public JsonWebToken validateToken(String encodedToken) {
         boolean ignoreAudience = false;
 
@@ -852,11 +869,13 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         }
     }
 
+    /** @return 默认 scope openid */
     @Override
     protected String getDefaultScopes() {
         return "openid";
     }
 
+    /** @return 给定 issuer 是否与本 IdP 配置匹配 */
     @Override
     public boolean isIssuer(String issuer, MultivaluedMap<String, String> params) {
         if (!supportsExternalExchange()) return false;
@@ -895,6 +914,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         return userInfoUrl;
     }
 
+    /** 从 UserInfo JSON 构建 {@link BrokeredIdentityContext}。 */
     @Override
     protected BrokeredIdentityContext extractIdentityFromProfile(EventBuilder event, JsonNode userInfo) {
         String id = getJsonProperty(userInfo, "sub");
@@ -1032,6 +1052,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         }
     }
 
+    /** 构建 OIDC 授权 URL（含 openid scope 与 nonce）。 */
     @Override
     protected UriBuilder createAuthorizationUrl(AuthenticationRequest request) {
         UriBuilder uriBuilder = super.createAuthorizationUrl(request);
@@ -1052,6 +1073,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         return uriBuilder;
     }
 
+    /** 预处理联邦身份：同步 email_verified 等属性。 */
     @Override
     public void preprocessFederatedIdentity(KeycloakSession session, RealmModel realm, BrokeredIdentityContext context) {
         AuthenticationSessionModel authenticationSession = session.getContext().getAuthenticationSession();
@@ -1135,6 +1157,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         return Boolean.valueOf(emailVerified.toString());
     }
 
+    /** 校验 Federated JWT Client Assertion（issuer 与 JWKS）。 */
     @Override
     public boolean verifyClientAssertion(ClientAuthenticationFlowContext context) throws Exception {
         OIDCIdentityProviderConfig config = getConfig();

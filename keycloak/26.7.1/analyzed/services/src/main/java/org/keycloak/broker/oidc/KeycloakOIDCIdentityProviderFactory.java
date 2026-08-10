@@ -23,32 +23,39 @@ import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * Keycloak OIDC 身份代理工厂，provider id 为 keycloak-oidc。
  * @author Pedro Igor
  */
 public class KeycloakOIDCIdentityProviderFactory extends AbstractIdentityProviderFactory<KeycloakOIDCIdentityProvider> {
 
+    /** 身份代理提供者标识符。 */
     public static final String PROVIDER_ID = "keycloak-oidc";
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getName() {
         return "Keycloak OpenID Connect";
     }
 
+    /** @return {@link KeycloakOIDCIdentityProvider} 实例 */
     @Override
     public KeycloakOIDCIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new KeycloakOIDCIdentityProvider(session, new OIDCIdentityProviderConfig(model));
     }
 
+    /** @return provider id keycloak-oidc */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 委托 {@link OIDCIdentityProviderFactory#parseOIDCConfig} 解析发现文档。 */
     @Override
     public Map<String, String> parseConfig(KeycloakSession session, String config) {
         return OIDCIdentityProviderFactory.parseOIDCConfig(session, config);
     }
 
+    /** @return 默认 {@link OIDCIdentityProviderConfig} */
     @Override
     public OIDCIdentityProviderConfig createConfig() {
         return new OIDCIdentityProviderConfig();

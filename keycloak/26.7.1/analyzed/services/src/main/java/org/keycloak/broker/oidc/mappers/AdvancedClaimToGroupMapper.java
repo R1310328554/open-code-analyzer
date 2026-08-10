@@ -31,9 +31,15 @@ import org.keycloak.provider.ProviderConfigProperty;
 
 import static org.keycloak.utils.RegexUtils.valueMatchesRegex;
 
+/**
+ * 高级 Claim 到组映射器：要求全部配置的 claim 均匹配（支持正则值）。
+ * <p>兼容 keycloak-oidc 与 oidc 身份代理。</p>
+ */
 public class AdvancedClaimToGroupMapper extends AbstractClaimToGroupMapper {
 
+    /** 配置键：claim 名称到期望值的映射。 */
     public static final String CLAIM_PROPERTY_NAME = "claims";
+    /** 配置键：claim 值是否按正则解释。 */
     public static final String ARE_CLAIM_VALUES_REGEX_PROPERTY_NAME = "are.claim.values.regex";
 
     public static final String[] COMPATIBLE_PROVIDERS = {KeycloakOIDCIdentityProviderFactory.PROVIDER_ID, OIDCIdentityProviderFactory.PROVIDER_ID};
@@ -61,6 +67,7 @@ public class AdvancedClaimToGroupMapper extends AbstractClaimToGroupMapper {
         configProperties.add(groupProperty);
     }
 
+    /** 映射器 provider id。 */
     public static final String PROVIDER_ID = "oidc-advanced-group-idp-mapper";
 
     @Override
@@ -88,16 +95,19 @@ public class AdvancedClaimToGroupMapper extends AbstractClaimToGroupMapper {
         return "Group Importer";
     }
 
+    /** @return 控制台显示类型 Advanced Claim to Group */
     @Override
     public String getDisplayType() {
         return "Advanced Claim to Group";
     }
 
+    /** @return 全部 claim 存在且匹配时分配用户到指定组 */
     @Override
     public String getHelpText() {
         return "If all claims exists, assign the user to the specified group.";
     }
 
+    /** 校验所有配置的 claim 均匹配（可选正则模式）。 */
     @Override
     protected boolean applies(IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
         Map<String, List<String>> claims = mapperModel.getConfigMap(CLAIM_PROPERTY_NAME);

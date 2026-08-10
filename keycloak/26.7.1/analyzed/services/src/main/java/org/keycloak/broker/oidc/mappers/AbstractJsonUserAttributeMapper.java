@@ -39,10 +39,8 @@ import org.jboss.logging.Logger;
 import static org.keycloak.utils.JsonUtils.splitClaimPath;
 
 /**
- * Abstract class for Social Provider mappers which allow mapping of JSON user profile field into Keycloak user
- * attribute. Concrete mapper classes with own ID and provider mapping must be implemented for each social provider who
- * uses {@link JsonNode} user profile.
- *
+ * JSON 用户属性映射器抽象基类：将社交/OIDC UserInfo JSON 字段导入 Keycloak 用户属性。
+ * <p>支持点分路径与数组下标语法；各提供者需实现具体 mapper 子类。</p>
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public abstract class AbstractJsonUserAttributeMapper extends AbstractIdentityProviderMapper {
@@ -55,18 +53,15 @@ public abstract class AbstractJsonUserAttributeMapper extends AbstractIdentityPr
 
 	private static final String JSON_PATH_DELIMITER = ".";
 
-	/**
-	 * Config param where name of mapping source JSON User Profile field is stored.
-	 */
+	/** 配置键：JSON User Profile 源字段路径。 */
+
 	public static final String CONF_JSON_FIELD = "jsonField";
-	/**
-	 * Config param where name of mapping target USer attribute is stored.
-	 */
+	/** 配置键：目标 Keycloak 用户属性名。 */
+
 	public static final String CONF_USER_ATTRIBUTE = "userAttribute";
 
-	/**
-	 * Key in {@link BrokeredIdentityContext#getContextData()} where {@link JsonNode} with user profile is stored.
-	 */
+	/** {@link BrokeredIdentityContext#getContextData()} 中存放 UserInfo {@link JsonNode} 的键。 */
+
 	public static final String CONTEXT_JSON_NODE = OIDCIdentityProvider.USER_INFO;
 
 	private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
@@ -89,11 +84,11 @@ public abstract class AbstractJsonUserAttributeMapper extends AbstractIdentityPr
 	}
 
 	/**
-	 * Store used profile JsonNode into user context for later use by this mapper. Profile data are dumped into special logger if enabled also to allow investigation of the structure.
+	 * 将 UserInfo {@link JsonNode} 存入上下文供映射器使用；debug 时写入专用日志。
 	 *
-	 * @param user context to store profile data into
-	 * @param profile to store into context
-	 * @param provider identification of social provider to be used in log dump
+	 * @param user 联邦身份上下文
+	 * @param profile 用户资料 JSON
+	 * @param provider 提供者标识（用于日志）
 	 *
 	 * @see #preprocessFederatedIdentity(KeycloakSession, RealmModel, IdentityProviderMapperModel, BrokeredIdentityContext)
 	 * @see BrokeredIdentityContext#getContextData()
@@ -129,6 +124,7 @@ public abstract class AbstractJsonUserAttributeMapper extends AbstractIdentityPr
 		return "Import user profile information if it exists in Social provider JSON data into the specified user attribute.";
 	}
 
+	/** 预处理：从 JSON 提取字段并写入联邦身份用户属性。 */
 	@Override
 	public void preprocessFederatedIdentity(KeycloakSession session, RealmModel realm, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
 		String attribute = getAttribute(mapperModel);
@@ -146,11 +142,13 @@ public abstract class AbstractJsonUserAttributeMapper extends AbstractIdentityPr
 		}
 	}
 
+	/** 旧版更新：不从社交提供者同步用户资料。 */
 	@Override
 	public void updateBrokeredUserLegacy(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
-		// we do not update user profile from social provider
+		// 不从社交提供者更新用户资料
 	}
 
+	/** 同步更新用户属性；JSON 缺失时移除属性。 */
 	@Override
 	public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user, IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
 		String attribute = getAttribute(mapperModel);
@@ -204,6 +202,7 @@ public abstract class AbstractJsonUserAttributeMapper extends AbstractIdentityPr
 	}
 
 
+	/** 按点分/数组路径从 {@link JsonNode} 提取文本或数组值。 */
 	public static Object getJsonValue(JsonNode baseNode, String fieldPath) {
 		logger.debugf("Going to process JsonNode path %s on data %s", fieldPath, baseNode);
 		if (baseNode != null) {
@@ -217,7 +216,7 @@ public abstract class AbstractJsonUserAttributeMapper extends AbstractIdentityPr
 			JsonNode currentNode = baseNode;
 			for (String currentFieldName : fields) {
 
-				// if array path, retrieve field name and index
+				// 数组路径：解析字段名与下标
 				String currentNodeName = currentFieldName;
 				int arrayIndex = -1;
 				if (currentFieldName.endsWith("]")) {

@@ -26,11 +26,13 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * Claim 到组映射器抽象基类：按 OIDC claim 条件将用户加入或移出指定组。
  * @author <a href="mailto:artur.baltabayev@bosch.io">Artur Baltabayev</a>,
  * <a href="mailto:daniel.fesenmeyer@bosch.io">Daniel Fesenmeyer</a>
  */
 public abstract class AbstractClaimToGroupMapper extends AbstractClaimMapper {
 
+    /** 首次导入用户时，若 claim 匹配则将用户加入配置的组。 */
     @Override
     public void importNewUser(KeycloakSession session, RealmModel realm, UserModel user,
             IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
@@ -45,6 +47,7 @@ public abstract class AbstractClaimToGroupMapper extends AbstractClaimMapper {
         }
     }
 
+    /** 同步更新：按 claim 变化加入或离开组，避免重复处理已分配组。 */
     @Override
     public void updateBrokeredUser(KeycloakSession session, RealmModel realm, UserModel user,
             IdentityProviderMapperModel mapperModel, BrokeredIdentityContext context) {
@@ -66,12 +69,11 @@ public abstract class AbstractClaimToGroupMapper extends AbstractClaimMapper {
     }
 
     /**
-     * This method must be implemented by subclasses and they must return {@code true} if their mapping can be applied
-     * (i.e. user has the OIDC claim that should be mapped) or {@code false} otherwise.
+     * 子类实现：当用户 OIDC claim 满足映射条件时返回 {@code true}。
      *
-     * @param mapperModel a reference to the {@link IdentityProviderMapperModel}.
-     * @param context a reference to the {@link BrokeredIdentityContext}.
-     * @return {@code true} if the mapping can be applied or {@code false} otherwise.*
+     * @param mapperModel {@link IdentityProviderMapperModel} 引用
+     * @param context {@link BrokeredIdentityContext} 引用
+     * @return 可应用映射时为 {@code true}
      */
     protected abstract boolean applies(final IdentityProviderMapperModel mapperModel,
             final BrokeredIdentityContext context);

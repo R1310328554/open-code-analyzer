@@ -14,14 +14,22 @@ import org.keycloak.utils.KeycloakSessionUtil;
 import static org.keycloak.common.util.UriUtils.checkUrl;
 import static org.keycloak.models.IdentityProviderModel.ISSUER;
 
+/**
+ * Issuer 校验契约：确保 OIDC issuer URL 合法且在 realm 内唯一。
+ * <p>JWT Authorization Grant 与 Federated Client Authentication 要求 issuer 不重复。</p>
+ */
 public interface IssuerValidation {
 
+    /** @return 身份代理配置映射 */
     Map<String, String> getConfig();
 
+    /** @return 当前 IdP 内部 ID（更新时排除自身） */
     String getInternalId();
 
+    /** @return IdP 是否已启用 */
     boolean isEnabled();
 
+    /** 校验 issuer 非空、SSL 合规且未被其他 IdP 占用。 */
     default void validateIssuer(RealmModel realm, IdentityProviderType type) {
 
         String issuer = getConfig().get(ISSUER);

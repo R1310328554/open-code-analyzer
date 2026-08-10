@@ -34,17 +34,24 @@ import org.keycloak.models.KeycloakSession;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+/**
+ * 通用 OAuth 2.0 身份代理：通过 UserInfo 端点获取用户资料并映射联邦身份。
+ * <p>适用于非 OIDC 的 OAuth 2.0 提供者；claim 名称可在配置中自定义。</p>
+ */
 public class OAuth2IdentityProvider extends AbstractOAuth2IdentityProvider<OAuth2IdentityProviderConfig> {
 
+    /** @param session Keycloak 会话 @param config OAuth2 身份代理配置 */
     public OAuth2IdentityProvider(KeycloakSession session, OAuth2IdentityProviderConfig config) {
         super(session, config);
     }
 
+    /** @return 默认 OAuth scope（OAuth2 提供者通常为空） */
     @Override
     protected String getDefaultScopes() {
         return "";
     }
 
+    /** 调用 UserInfo 端点，按配置 claim 映射用户 ID、姓名、邮箱与用户名。 */
     @Override
     protected BrokeredIdentityContext doGetFederatedIdentity(String accessToken) {
         BrokeredIdentityContext identity = new BrokeredIdentityContext(getConfig());
@@ -96,6 +103,7 @@ public class OAuth2IdentityProvider extends AbstractOAuth2IdentityProvider<OAuth
     }
 
 
+    /** 携带 Bearer access token 请求 UserInfo 并解析 JSON 响应。 */
     private JsonNode fetchUserProfile(String accessToken) {
         String userInfoUrl = getConfig().getUserInfoUrl();
 
@@ -125,6 +133,7 @@ public class OAuth2IdentityProvider extends AbstractOAuth2IdentityProvider<OAuth
         }
     }
 
+    /** 执行 HTTP 请求并校验 2xx 成功状态。 */
     private SimpleHttpResponse executeRequest(String url, SimpleHttpRequest request) throws IOException {
         SimpleHttpResponse response = request.asResponse();
         int status = response.getStatus();

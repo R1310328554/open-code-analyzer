@@ -26,17 +26,21 @@ import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentatio
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * OpenID Connect 身份代理工厂，provider id 为 oidc。
  * @author Pedro Igor
  */
 public class OIDCIdentityProviderFactory extends AbstractIdentityProviderFactory<OIDCIdentityProvider> {
 
+    /** 身份代理提供者标识符。 */
     public static final String PROVIDER_ID = "oidc";
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getName() {
         return "OpenID Connect v1.0";
     }
 
+    /** @return {@link OIDCIdentityProvider} 实例 */
     @Override
     public OIDCIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new OIDCIdentityProvider(session, new OIDCIdentityProviderConfig(model));
@@ -57,6 +61,7 @@ public class OIDCIdentityProviderFactory extends AbstractIdentityProviderFactory
         return parseOIDCConfig(session, config);
     }
 
+    /** 从 OIDC 发现文档解析 issuer、端点与 JWKS 配置。 */
     protected static Map<String, String> parseOIDCConfig(KeycloakSession session, String configString) {
         OIDCConfigurationRepresentation rep;
         try {
@@ -76,8 +81,8 @@ public class OIDCIdentityProviderFactory extends AbstractIdentityProviderFactory
             config.setJwksUrl(rep.getJwksUri());
         }
 
-        // Introspection URL may or may not be available in the configuration. It is available in RFC8414 , but not in the OIDC discovery specification.
-        // Hence some servers may not add it to their well-known responses
+        // 自省 URL 在 RFC8414 中定义但 OIDC 发现规范未强制
+        // 部分 IdP 的 well-known 响应可能不包含该字段
         if (rep.getIntrospectionEndpoint() != null) {
             config.setTokenIntrospectionUrl(rep.getIntrospectionEndpoint());
         }

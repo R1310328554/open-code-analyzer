@@ -45,21 +45,26 @@ import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * Keycloak-to-Keycloak OIDC 身份代理：强制 JWT access token 并支持适配器 backchannel logout。
+ * <p>扩展 {@link OIDCIdentityProvider}，处理 {@link AdapterConstants#K_LOGOUT} 注销回调。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeycloakOIDCIdentityProvider extends OIDCIdentityProvider {
 
+    /** @param session Keycloak 会话；强制 {@code accessTokenJwt=true} */
     public KeycloakOIDCIdentityProvider(KeycloakSession session, OIDCIdentityProviderConfig config) {
         super(session, config);
-        config.setAccessTokenJwt(true); // force access token JWT
+        config.setAccessTokenJwt(true); // 强制 access token 为 JWT 格式
     }
 
+    /** @return 含 backchannel logout 的 {@link KeycloakEndpoint} */
     @Override
     public Object callback(RealmModel realm, AuthenticationCallback callback, EventBuilder event) {
         return new KeycloakEndpoint(callback, realm, event, this);
     }
 
+    /** Keycloak 专用回调端点，额外处理适配器注销 POST。 */
     protected static class KeycloakEndpoint extends OIDCEndpoint {
 
         private KeycloakOIDCIdentityProvider provider;
@@ -70,6 +75,7 @@ public class KeycloakOIDCIdentityProvider extends OIDCIdentityProvider {
             this.provider = provider;
         }
 
+        /** 验证 JWS 注销动作并按 brokerSessionId 执行 backchannel logout。 */
         @POST
         @Path(AdapterConstants.K_LOGOUT)
         public Response backchannelLogout(String input) {
@@ -107,11 +113,12 @@ public class KeycloakOIDCIdentityProvider extends OIDCIdentityProvider {
 
             }
 
-            // TODO Empty content with ok makes no sense. Should it display a page? Or use noContent?
+            // TODO 空 body 返回 200 是否合理？是否应显示页面或 noContent？
             session.getProvider(SecurityHeadersProvider.class).options().allowEmptyContentType();
             return Response.ok().build();
         }
 
+        /** 校验注销 {@link AdminAction} 签名、过期时间与 clientId。 */
         protected boolean validateAction(AdminAction action)  {
             if (!action.validate()) {
                 logger.warn("admin request failed, not validated" + action.getAction());
@@ -129,15 +136,17 @@ public class KeycloakOIDCIdentityProvider extends OIDCIdentityProvider {
             return true;
         }
 
+        /** 附加 CLIENT_SESSION_STATE 参数以兼容 backchannel logout。 */
         @Override
         public SimpleHttpRequest generateTokenRequest(String authorizationCode) {
             return super.generateTokenRequest(authorizationCode)
-                    .param(AdapterConstants.CLIENT_SESSION_STATE, "n/a");  // hack to get backchannel logout to work
+                    .param(AdapterConstants.CLIENT_SESSION_STATE, "n/a");  // 兼容 backchannel logout 的临时参数
 
         }
 
     }
 
+    /** 外部 token 交换：校验 subject_token 并调用 JWT 验证。 */
     @Override
     protected BrokeredIdentityContext exchangeExternalImpl(EventBuilder event, MultivaluedMap<String, String> params) {
         String subjectToken = params.getFirst(OAuth2Constants.SUBJECT_TOKEN);

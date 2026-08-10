@@ -25,14 +25,19 @@ import org.keycloak.models.RealmModel;
 import static org.keycloak.common.util.UriUtils.checkUrl;
 
 /**
+ * OIDC 身份代理配置：签名校验、JWKS、登出与 JWT Authorization Grant 选项。
+ * <p>实现 {@link JWTAuthorizationGrantConfig} 与 {@link IssuerValidation}。</p>
  * @author Pedro Igor
  */
 public class OIDCIdentityProviderConfig extends OAuth2IdentityProviderConfig implements JWTAuthorizationGrantConfig, IssuerValidation {
 
+    /** 配置键：JWKS 端点 URL。 */
     public static final String JWKS_URL = "jwksUrl";
 
     public static final String USE_JWKS_URL = "useJwksUrl";
+    /** 配置键：是否校验 ID/Access Token 签名。 */
     public static final String VALIDATE_SIGNATURE = "validateSignature";
+    /** 配置键：access token 是否为 JWT。 */
     public static final String IS_ACCESS_TOKEN_JWT = "isAccessTokenJWT";
     public static final String SUPPORTS_CLIENT_ASSERTIONS = "supportsClientAssertions";
     public static final String SUPPORTS_CLIENT_ASSERTION_REUSE = "supportsClientAssertionReuse";
@@ -73,6 +78,7 @@ public class OIDCIdentityProviderConfig extends OAuth2IdentityProviderConfig imp
         getConfig().put("sendIdTokenOnLogout", String.valueOf(value));
     }
 
+    /** @return 是否启用 token 签名校验 */
     public boolean isValidateSignature() {
         return Boolean.parseBoolean(getConfig().get("validateSignature"));
     }
@@ -85,6 +91,7 @@ public class OIDCIdentityProviderConfig extends OAuth2IdentityProviderConfig imp
         getConfig().put(IS_ACCESS_TOKEN_JWT, String.valueOf(accessTokenJwt));
     }
 
+    /** @return access token 是否按 JWT 解析 */
     public boolean isAccessTokenJwt() {
         return Boolean.parseBoolean(getConfig().get(IS_ACCESS_TOKEN_JWT));
     }
@@ -97,6 +104,7 @@ public class OIDCIdentityProviderConfig extends OAuth2IdentityProviderConfig imp
         getConfig().put("backchannelSupported", String.valueOf(backchannel));
     }
 
+    /** @return 是否禁用 UserInfo 端点调用 */
     public boolean isDisableUserInfoService() {
         String disableUserInfo = getConfig().get("disableUserInfo");
         return Boolean.parseBoolean(disableUserInfo);
@@ -106,6 +114,7 @@ public class OIDCIdentityProviderConfig extends OAuth2IdentityProviderConfig imp
         getConfig().put("disableUserInfo", String.valueOf(disable));
     }
 
+    /** @return 是否禁用 nonce 校验 */
     public boolean isDisableNonce() {
         return Boolean.parseBoolean(getConfig().get("disableNonce"));
     }
@@ -118,6 +127,7 @@ public class OIDCIdentityProviderConfig extends OAuth2IdentityProviderConfig imp
         }
     }
 
+    /** @return token 校验允许的时钟偏差（秒） */
     public int getAllowedClockSkew() {
         String allowedClockSkew = getConfig().get(ALLOWED_CLOCK_SKEW);
         if (allowedClockSkew == null || allowedClockSkew.isEmpty()) {
@@ -126,7 +136,7 @@ public class OIDCIdentityProviderConfig extends OAuth2IdentityProviderConfig imp
         try {
             return Integer.parseInt(getConfig().get(ALLOWED_CLOCK_SKEW));
         } catch (NumberFormatException e) {
-            // ignore it and use default
+            // 解析失败时使用默认值 0
             return 0;
         }
     }
@@ -143,6 +153,7 @@ public class OIDCIdentityProviderConfig extends OAuth2IdentityProviderConfig imp
         }
     }
 
+    /** @return 是否支持 Federated Client Assertion */
     public boolean isSupportsClientAssertions() {
         return Boolean.parseBoolean(getConfig().get(SUPPORTS_CLIENT_ASSERTIONS));
     }
@@ -163,6 +174,7 @@ public class OIDCIdentityProviderConfig extends OAuth2IdentityProviderConfig imp
         getConfig().put(ALLOW_CLIENT_ID_AS_AUDIENCE, String.valueOf(allowClientIdAsAudience));
     }
 
+    /** 校验 JWKS/公钥、logout URL 及 issuer 唯一性。 */
     @Override
     public void validate(RealmModel realm) {
         super.validate(realm);

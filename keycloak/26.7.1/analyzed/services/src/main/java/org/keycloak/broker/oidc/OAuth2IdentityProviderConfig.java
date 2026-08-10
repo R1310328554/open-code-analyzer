@@ -28,17 +28,21 @@ import org.keycloak.representations.IDToken;
 import static org.keycloak.common.util.UriUtils.checkUrl;
 
 /**
+ * OAuth 2.0 身份代理配置：端点 URL、客户端认证、PKCE 与 UserInfo claim 映射。
  * @author Pedro Igor
  */
 public class OAuth2IdentityProviderConfig extends IdentityProviderModel {
 
+    /** 配置键：是否启用 PKCE。 */
     public static final String PKCE_ENABLED = "pkceEnabled";
     public static final String PKCE_METHOD = "pkceMethod";
+    /** 配置键：token 端点 URL。 */
     public static final String TOKEN_ENDPOINT_URL = "tokenUrl";
     public static final String TOKEN_INTROSPECTION_URL = "tokenIntrospectionUrl";
 
     public static final String JWT_X509_HEADERS_ENABLED = "jwtX509HeadersEnabled";
 
+    /** 配置键：是否要求短 state 参数（兼容旧 IdP）。 */
     public static final String REQUIRES_SHORT_STATE_PARAMETER = "requiresShortStateParameter";
 
     public OAuth2IdentityProviderConfig(IdentityProviderModel model) {
@@ -49,6 +53,7 @@ public class OAuth2IdentityProviderConfig extends IdentityProviderModel {
         super();
     }
 
+    /** @return 授权端点 URL */
     public String getAuthorizationUrl() {
         return getConfig().get("authorizationUrl");
     }
@@ -57,6 +62,7 @@ public class OAuth2IdentityProviderConfig extends IdentityProviderModel {
         getConfig().put("authorizationUrl", authorizationUrl);
     }
 
+    /** @return token 端点 URL */
     public String getTokenUrl() {
         return getConfig().get(TOKEN_ENDPOINT_URL);
     }
@@ -65,6 +71,7 @@ public class OAuth2IdentityProviderConfig extends IdentityProviderModel {
         getConfig().put(TOKEN_ENDPOINT_URL, tokenUrl);
     }
 
+    /** @return UserInfo 端点 URL */
     public String getUserInfoUrl() {
         return getConfig().get("userInfoUrl");
     }
@@ -89,6 +96,7 @@ public class OAuth2IdentityProviderConfig extends IdentityProviderModel {
         getConfig().put("clientId", clientId);
     }
 
+    /** @return 客户端认证方式，默认 client_secret_post */
     public String getClientAuthMethod() {
         return getConfig().getOrDefault("clientAuthMethod", OIDCLoginProtocol.CLIENT_SECRET_POST);
     }
@@ -113,6 +121,7 @@ public class OAuth2IdentityProviderConfig extends IdentityProviderModel {
         getConfig().put("defaultScope", defaultScope);
     }
     
+    /** @return 是否使用 JWT 客户端认证（secret_jwt 或 private_key_jwt） */
     public boolean isJWTAuthentication() {
         if (getClientAuthMethod().equals(OIDCLoginProtocol.CLIENT_SECRET_JWT)
                 || getClientAuthMethod().equals(OIDCLoginProtocol.PRIVATE_KEY_JWT)) {
@@ -157,6 +166,7 @@ public class OAuth2IdentityProviderConfig extends IdentityProviderModel {
        getConfig().put("forwardParameters", forwardParameters);
     }
 
+    /** @return 是否启用 PKCE */
     public boolean isPkceEnabled() {
         return Boolean.parseBoolean(getConfig().getOrDefault(PKCE_ENABLED, "false"));
     }
@@ -202,10 +212,12 @@ public class OAuth2IdentityProviderConfig extends IdentityProviderModel {
         getConfig().put(JWT_X509_HEADERS_ENABLED, String.valueOf(enabled));
     }
 
+    /** @return 用户 ID claim 名，默认 sub */
     public String getUserIDClaim() {
         return getConfig().getOrDefault("userIDClaim", IDToken.SUBJECT);
     }
 
+    /** @return 用户名 claim 名，默认 preferred_username */
     public String getUserNameClaim() {
         return getConfig().getOrDefault("userNameClaim", IDToken.PREFERRED_USERNAME);
     }
@@ -222,10 +234,12 @@ public class OAuth2IdentityProviderConfig extends IdentityProviderModel {
         return getConfig().getOrDefault("familyNameClaim", IDToken.FAMILY_NAME);
     }
 
+    /** @return 邮箱 claim 名，默认 email */
     public String getEmailClaim() {
         return getConfig().getOrDefault("emailClaim", IDToken.EMAIL);
     }
 
+    /** 校验各端点 URL 的 SSL 要求及 PKCE 方法合法性。 */
     @Override
     public void validate(RealmModel realm) {
         SslRequired sslRequired = realm.getSslRequired();
