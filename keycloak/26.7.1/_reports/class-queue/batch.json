@@ -15,23 +15,8 @@
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AttributeStatementType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AttributeType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AudienceRestrictionCondition.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AuthenticationStatementType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AuthorityBindingType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AuthorizationDecisionStatementType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11ConditionAbstractType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11ConditionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11ConditionsAbstractType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11ConditionsType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11DecisionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11DoNotCacheConditionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11EvidenceType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11NameIdentifierType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11StatementAbstractType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11StatementType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11SubjectConfirmationType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11SubjectLocalityType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11SubjectStatementType.java"
+    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AuthenticationStatementType.java"
   ],
   "remaining_pending": 3568,
-  "done": 2400
+  "done": 2415
 }
