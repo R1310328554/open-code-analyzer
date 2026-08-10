@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:41:56Z",
-  "files": [
-    "app/ui/app/src/hooks/useRenameChat.ts",
-    "app/ui/app/src/hooks/useSelectedModel.ts",
-    "app/ui/app/src/hooks/useSettings.ts",
-    "app/ui/app/src/hooks/useUser.ts",
-    "app/ui/app/src/lib/config.ts",
-    "app/ui/app/src/lib/highlighter.ts",
-    "app/ui/app/src/lib/ollama-client.ts",
-    "app/ui/app/src/routeTree.gen.ts",
-    "app/ui/app/src/types/webview.d.ts",
-    "app/ui/app/src/util/jsonl-parsing.ts",
-    "app/ui/app/src/utils/clipboard.test.ts",
-    "app/ui/app/src/utils/clipboard.ts",
-    "app/ui/app/src/utils/fileValidation.test.ts",
-    "app/ui/app/src/utils/fileValidation.ts",
-    "app/ui/app/src/utils/imageUtils.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 373,
-  "done": 75
+  "done": 90
 }
