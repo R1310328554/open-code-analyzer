@@ -25,18 +25,23 @@ import com.alibaba.nacos.sys.module.ModuleState;
 import java.util.Optional;
 
 /**
+ * 鉴权模块状态构建器：汇总鉴权开关、鉴权插件类型及是否支持管理端请求等运行时信息。
  * Module state builder for auth module.
  *
  * @author xiweng.yy
  */
 public class AuthModuleStateBuilder extends AbstractServerModuleStateBuilder {
     
+    /** 模块名称标识：auth。 */
     public static final String AUTH_MODULE = "auth";
     
+    /** 状态键：鉴权总开关是否启用。 */
     public static final String AUTH_ENABLED = "auth_enabled";
     
+    /** 状态键：当前鉴权插件类型。 */
     public static final String AUTH_SYSTEM_TYPE = "auth_system_type";
     
+    /** 状态键：鉴权插件是否区分管理端请求。 */
     public static final String AUTH_ADMIN_REQUEST = "auth_admin_request";
     
     private boolean cacheable;

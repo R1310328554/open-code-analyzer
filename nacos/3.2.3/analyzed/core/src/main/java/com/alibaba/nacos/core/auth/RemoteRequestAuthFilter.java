@@ -42,6 +42,7 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.Method;
 
 /**
+ * gRPC 远程请求鉴权过滤器：对带 {@link Secured} 的 RPC 方法执行服务端身份、身份认证与权限校验。
  * request auth filter for remote.
  *
  * @author liuzunfei
@@ -75,12 +76,12 @@ public class RemoteRequestAuthFilter extends AbstractRequestFilter {
                 Secured secured = method.getAnnotation(Secured.class);
                 RequestContext requestContext = RequestContextHolder.getContext();
                 requestContext.getAuthContext().setApiType(secured.apiType().name());
-                // During Upgrading, Old Nacos server might not with server identity for some Inner API, follow old version logic.
+                // 升级过渡期：内部 API 在未全员升级前跳过鉴权，兼容旧版节点
                 if (ApiType.INNER_API.equals(secured.apiType())
                     && !innerApiAuthEnabled.isEnabled()) {
                     return null;
                 }
-                // Inner API must do check server identity. So judge api type not inner api and whether auth is enabled.
+                // 非内部 API 且鉴权未开启时直接放行
                 if (ApiType.INNER_API != secured.apiType() && !authConfig.isAuthEnabled()) {
                     return null;
                 }

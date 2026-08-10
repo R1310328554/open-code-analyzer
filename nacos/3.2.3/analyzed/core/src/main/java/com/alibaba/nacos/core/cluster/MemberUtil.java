@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
+ * 集群成员工具类：解析地址、同步文件、健康状态迁移及元数据变更比较等通用逻辑。
  * Member node tool class.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -56,7 +57,7 @@ public class MemberUtil {
     private static final int DEFAULT_MEMBER_FAIL_ACCESS_CNT = 3;
     
     /**
-     * Information copy.
+     * 将新成员的基础字段与扩展信息复制到已有成员对象。
      *
      * @param newMember {@link Member}
      * @param oldMember {@link Member}
@@ -72,16 +73,16 @@ public class MemberUtil {
     }
     
     /**
-     * parse ip:port to member.
+     * 将 ip 或 ip:port 字符串解析为 {@link Member}，并填充默认 Raft 端口等元数据。
      *
      * @param member ip:port
      * @return {@link Member}
      */
     public static Member singleParse(String member) {
-        // Nacos default port is 8848
+        // Nacos 默认服务端口 8848
         int defaultPort =
             EnvUtil.getProperty(SERVER_PORT_PROPERTY, Integer.class, DEFAULT_SERVER_PORT);
-        // Set the default Raft port information for securit
+        // 预置 Raft 端口等安全相关元数据
         
         String address = member;
         int port = defaultPort;
@@ -93,18 +94,18 @@ public class MemberUtil {
         
         Member target = Member.builder().ip(address).port(port).state(NodeState.UP).build();
         Map<String, Object> extendInfo = new HashMap<>(4);
-        // The Raft Port information needs to be set by default
+        // 默认写入 Raft 端口偏移计算结果
         extendInfo.put(MemberMetaDataConstants.RAFT_PORT,
             String.valueOf(calculateRaftPort(target)));
         extendInfo.put(MemberMetaDataConstants.READY_TO_UPGRADE, true);
         target.setExtendInfo(extendInfo);
-        // use grpc to report default
+        // 默认启用 gRPC 上报
         target.setGrpcReportEnabled(true);
         return target;
     }
     
     /**
-     * check whether the member support long connection or not.
+     * 判断成员是否支持远程长连接（gRPC 上报或能力位声明）。
      *
      * @param member member instance of server.
      * @return support long connection or not.
@@ -124,7 +125,7 @@ public class MemberUtil {
     }
     
     /**
-     * Resolves to Member list.
+     * 批量解析地址列表为成员集合。
      *
      * @param addresses ip list, example [127.0.0.1:8847,127.0.0.1:8848,127.0.0.1:8849]
      * @return member list
@@ -139,7 +140,7 @@ public class MemberUtil {
     }
     
     /**
-     * Successful processing of the operation on the node.
+     * 节点访问成功：重置失败计数、标记 UP 并在状态变化时通知监听器。
      *
      * @param member {@link Member}
      */
@@ -154,7 +155,7 @@ public class MemberUtil {
     }
     
     /**
-     * Successful processing of the operation on the node and update metadata.
+     * 节点访问成功且对端返回元数据：若能力或扩展信息变更则合并后通知。
      *
      * @param member {@link Member}
      * @since 2.1.2
@@ -180,12 +181,12 @@ public class MemberUtil {
     }
     
     public static void onFail(final ServerMemberManager manager, final Member member) {
-        // To avoid null pointer judgments, pass in one NONE_EXCEPTION
+        // 避免空指针，传入 NONE_EXCEPTION 占位
         onFail(manager, member, ExceptionUtil.NONE_EXCEPTION);
     }
     
     /**
-     * Failure processing of the operation on the node.
+     * 节点访问失败：递增失败次数，超阈值或连接被拒时标记 DOWN 并通知。
      *
      * @param member {@link Member}
      * @param ex     {@link Throwable}
@@ -200,8 +201,7 @@ public class MemberUtil {
             .getProperty(MEMBER_FAIL_ACCESS_CNT_PROPERTY, Integer.class,
                 DEFAULT_MEMBER_FAIL_ACCESS_CNT);
         
-        // If the number of consecutive failures to access the target node reaches
-        // a maximum, or the link request is rejected, the state is directly down
+        // 连续失败超过阈值或连接被拒绝时，直接将节点置为 DOWN
         if (member.getFailAccessCnt() > maxFailAccessCnt || StringUtils
             .containsIgnoreCase(ex.getMessage(), TARGET_MEMBER_CONNECT_REFUSE_ERRMSG)) {
             member.setState(NodeState.DOWN);
@@ -212,7 +212,7 @@ public class MemberUtil {
     }
     
     /**
-     * Node list information persistence.
+     * 将当前成员地址列表持久化到集群配置文件。
      *
      * @param members member list
      */
@@ -231,7 +231,7 @@ public class MemberUtil {
     }
     
     /**
-     * Default configuration format resolution, only NACos-Server IP or IP :port or hostname: Port information.
+     * 解析集群配置文件中的成员行（IP、IP:port 或 hostname:port）。
      */
     public static Collection<Member> readServerConf(Collection<String> members) {
         Set<Member> nodes = new HashSet<>();
@@ -245,7 +245,7 @@ public class MemberUtil {
     }
     
     /**
-     * Select target members with filter.
+     * 按谓词筛选目标成员子集。
      *
      * @param members original members
      * @param filter  filter
@@ -257,7 +257,7 @@ public class MemberUtil {
     }
     
     /**
-     * Get address list of members.
+     * 提取成员 address 字段并排序返回。
      *
      * @param members members
      * @return address list
@@ -268,7 +268,7 @@ public class MemberUtil {
     }
     
     /**
-     * Judge whether basic info has changed.
+     * 比较 IP、端口、状态、gRPC 开关及基础扩展元数据是否发生变化。
      *
      * @param actual   actual member
      * @param expected expected member
@@ -291,7 +291,7 @@ public class MemberUtil {
             return true;
         }
         
-        // if change
+        // gRPC 上报开关变更亦视为基础信息变化
         if (expected.isGrpcReportEnabled() != actual.isGrpcReportEnabled()) {
             return true;
         }

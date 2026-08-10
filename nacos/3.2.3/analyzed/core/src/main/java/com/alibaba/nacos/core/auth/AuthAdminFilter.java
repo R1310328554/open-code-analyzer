@@ -22,6 +22,7 @@ import com.alibaba.nacos.auth.config.NacosAuthConfig;
 import com.alibaba.nacos.core.code.ControllerMethodsCache;
 
 /**
+ * 管理端（ADMIN_API）HTTP 鉴权过滤器：仅处理 {@link ApiType#ADMIN_API} 类型接口的认证与授权。
  * Unified filter to handle authentication and authorization.
  *
  * @author nkorange
@@ -43,7 +44,7 @@ public class AuthAdminFilter extends AbstractWebAuthFilter {
     
     @Override
     protected boolean isMatchFilter(Secured secured) {
-        // Other API authed by {@link AuthFilter}
+        // 非管理端 API 由 {@link AuthFilter} 处理
         return ApiType.ADMIN_API.equals(secured.apiType());
     }
 }

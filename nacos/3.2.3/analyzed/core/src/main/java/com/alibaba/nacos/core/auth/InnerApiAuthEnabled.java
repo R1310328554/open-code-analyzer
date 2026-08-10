@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 内部 API 鉴权启用探测：在 2.x 升级至 3.x 期间，待集群全部节点升至 3.x 后再开启内部 API 身份校验。
  * Nacos Inner API auth enabled.
  *
  * <p>
@@ -62,8 +63,7 @@ public class InnerApiAuthEnabled {
     }
     
     /**
-     * Check whether all servers are all upgraded to new version. If so enabled inner api auth check.
-     * After enabled, checking will directly return.
+     * 定时检查集群成员版本：全部为 3.x 时将内部 API 鉴权标记为已启用，之后不再重复检查。
      */
     @Scheduled(fixedRate = 3000)
     public void doCheck() {

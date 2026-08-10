@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * 鉴权过滤器 Spring 配置：注册开放 API 与管理端 API 两套 Servlet Filter 及对应 Bean。
  * auth filter config.
  *
  * @author mai.jh
@@ -32,6 +33,7 @@ import org.springframework.context.annotation.Configuration;
 @NacosWebBean
 public class AuthConfig {
     
+    /** 注册开放 API 鉴权 Filter，拦截全部 URL，执行顺序为 6。 */
     @Bean
     public FilterRegistrationBean<AuthFilter> authFilterRegistration(AuthFilter authFilter) {
         FilterRegistrationBean<AuthFilter> registration = new FilterRegistrationBean<>();
@@ -42,6 +44,7 @@ public class AuthConfig {
         return registration;
     }
     
+    /** 注册管理端 API 鉴权 Filter，与开放 API Filter 并列、顺序同为 6。 */
     @Bean
     public FilterRegistrationBean<AuthAdminFilter> authAdminFilterRegistration(
         AuthAdminFilter authAdminFilter) {
@@ -53,6 +56,7 @@ public class AuthConfig {
         return registration;
     }
     
+    /** 构造开放 API {@link AuthFilter}，绑定 OPEN_API 作用域配置与内部 API 升级探测。 */
     @Bean
     public AuthFilter authFilter(ControllerMethodsCache methodsCache,
         InnerApiAuthEnabled innerApiAuthEnabled) {
@@ -61,6 +65,7 @@ public class AuthConfig {
             innerApiAuthEnabled);
     }
     
+    /** 构造管理端 {@link AuthAdminFilter}，绑定 ADMIN_API 作用域鉴权配置。 */
     @Bean
     public AuthAdminFilter authAdminFilter(ControllerMethodsCache methodsCache) {
         return new AuthAdminFilter(NacosAuthConfigHolder.getInstance()

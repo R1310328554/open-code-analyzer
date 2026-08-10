@@ -24,6 +24,7 @@ import com.alibaba.nacos.core.code.ControllerMethodsCache;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
+ * 开放 API HTTP 鉴权过滤器：处理除 {@link ApiType#ADMIN_API} 外的 Secured 接口，并在集群升级期间对内部 API 兼容旧版无身份头逻辑。
  * Unified filter to handle authentication and authorization.
  *
  * @author nkorange
@@ -49,14 +50,14 @@ public class AuthFilter extends AbstractWebAuthFilter {
     
     @Override
     protected boolean isMatchFilter(Secured secured) {
-        // ADMIN API use {@link AuthAdminFilter} to handle
+        // 管理端 API 交由 {@link AuthAdminFilter} 处理
         return !ApiType.ADMIN_API.equals(secured.apiType());
     }
     
     @Override
     protected ServerIdentityResult checkServerIdentity(HttpServletRequest request,
         Secured secured) {
-        // During Upgrading, Old Nacos server might not with server identity for some Inner API, follow old version logic.
+        // 升级过渡期：旧版节点内部 API 可能无 server identity，沿用旧逻辑放行
         if (ApiType.INNER_API.equals(secured.apiType()) && !innerApiAuthEnabled.isEnabled()) {
             return ServerIdentityResult.success();
         }

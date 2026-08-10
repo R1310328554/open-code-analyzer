@@ -20,6 +20,7 @@ import com.alibaba.nacos.common.notify.Event;
 import com.alibaba.nacos.common.notify.listener.Subscriber;
 
 /**
+ * 集群成员变更事件监听器抽象基类：订阅 {@link MembersChangeEvent} 并默认忽略过期事件。
  * Node change listeners.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -27,7 +28,7 @@ import com.alibaba.nacos.common.notify.listener.Subscriber;
 public abstract class MemberChangeListener extends Subscriber<MembersChangeEvent> {
     
     /**
-     * return NodeChangeEvent.class info.
+     * 声明订阅的事件类型为 {@link MembersChangeEvent}。
      *
      * @return {@link MembersChangeEvent#getClass()}
      */
@@ -37,7 +38,7 @@ public abstract class MemberChangeListener extends Subscriber<MembersChangeEvent
     }
     
     /**
-     * Whether to ignore expired events.
+     * 是否忽略过期事件，默认 {@link Boolean#TRUE}。
      *
      * @return default value is {@link Boolean#TRUE}
      */

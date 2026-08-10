@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
+ * Nacos 开放 API（OPEN_API）鉴权动态配置：管理鉴权开关、插件类型、服务端身份及插件扩展属性。
  * Nacos Server auth configurations.
  *
  * @author xiweng.yy
@@ -46,12 +47,12 @@ public class NacosServerAuthConfig extends AbstractDynamicConfig implements Naco
     public static final String NACOS_SERVER_AUTH_SCOPE = ApiType.OPEN_API.name();
     
     /**
-     * Whether server auth enabled.
+     * 开放 API 鉴权总开关。
      */
     private boolean authEnabled;
     
     /**
-     * Which auth system is in use.
+     * 当前启用的鉴权插件类型。
      */
     private String nacosAuthSystemType;
     
@@ -68,7 +69,7 @@ public class NacosServerAuthConfig extends AbstractDynamicConfig implements Naco
     }
     
     /**
-     * Validate auth config.
+     * 校验鉴权配置：开启鉴权时类型与服务端 identity 键值均不能为空。
      */
     private void validate() {
         if (!authEnabled) {
@@ -110,7 +111,7 @@ public class NacosServerAuthConfig extends AbstractDynamicConfig implements Naco
     }
     
     /**
-     * server auth function is open.
+     * 开放 API 鉴权功能是否已开启。
      *
      * @return server auth function is open
      */

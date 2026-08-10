@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
+ * 集群成员寻址策略接口：定义启动、注入成员管理器、发现节点与销毁等生命周期。
  * Member node addressing mode.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -30,42 +31,42 @@ import java.util.Map;
 public interface MemberLookup {
     
     /**
-     * start.
+     * 启动寻址组件并开始发现集群节点。
      *
      * @throws NacosException NacosException
      */
     void start() throws NacosException;
     
     /**
-     * is using address server.
+     * 是否通过独立 address-server 获取成员列表。
      *
      * @return using address server or not.
      */
     boolean useAddressServer();
     
     /**
-     * Inject the ServerMemberManager property.
+     * 注入 {@link ServerMemberManager}，供寻址结果回写集群视图。
      *
      * @param memberManager {@link NacosMemberManager}
      */
     void injectMemberManager(NacosMemberManager memberManager);
     
     /**
-     * The addressing pattern finds cluster nodes.
+     * 寻址完成后的回调，将发现的成员集合交给成员管理器处理。
      *
      * @param members {@link Collection}
      */
     void afterLookup(Collection<Member> members);
     
     /**
-     * Addressing mode closed.
+     * 关闭寻址模式并释放相关资源。
      *
      * @throws NacosException NacosException
      */
     void destroy() throws NacosException;
     
     /**
-     * Some data information about the addressing pattern.
+     * 返回当前寻址模式的诊断信息（默认空映射）。
      *
      * @return {@link Map}
      */

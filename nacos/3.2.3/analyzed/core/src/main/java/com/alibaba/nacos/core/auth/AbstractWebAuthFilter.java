@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 
 /**
+ * Web 鉴权过滤器抽象基类：拦截带 {@link Secured} 注解的 HTTP 接口，依次完成服务端身份校验、身份认证与权限授权。
  * Abstract Auth filter.
  *
  * @author xiweng.yy
@@ -213,7 +214,7 @@ public abstract class AbstractWebAuthFilter implements Filter {
     }
     
     /**
-     * Check whether this filter should be applied for this {@link Secured} API.
+     * 判断当前过滤器是否应处理该 {@link Secured} API（子类按 apiType 等条件细分）。
      *
      * @param secured api Secured annotation
      * @return {@code true} if this auth filter should handle this request, {@code false} otherwise
@@ -228,7 +229,7 @@ public abstract class AbstractWebAuthFilter implements Filter {
     }
     
     /**
-     * Whether this auth filter is enabled.
+     * 当前过滤器对应的鉴权功能是否已启用。
      *
      * @return get value from {@link NacosAuthConfig#isAuthEnabled()}
      */

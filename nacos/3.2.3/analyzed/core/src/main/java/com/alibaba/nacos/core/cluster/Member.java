@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 
 /**
+ * 集群成员节点：封装 IP、端口、状态与扩展元数据，支持序列化拷贝与 Builder 构建。
  * Cluster member node.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -45,7 +46,7 @@ public class Member extends NacosMember implements Comparable<Member>, Cloneable
     private transient int failAccessCnt = 0;
     
     /**
-     * After 2.3 version, all server request will use grpc default.
+     * 2.3 起默认经 gRPC 上报；低版本升级路径移除后将废弃。
      *
      * @deprecated will be deprecated after server not support upgrade from lower 2.3.
      */
@@ -117,7 +118,7 @@ public class Member extends NacosMember implements Comparable<Member>, Cloneable
     }
     
     /**
-     * get a copy.
+     * 通过 Java 序列化深拷贝当前成员对象。
      *
      * @return member.
      */
@@ -127,7 +128,7 @@ public class Member extends NacosMember implements Comparable<Member>, Cloneable
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(this);
-            // convert the input stream to member object
+            // 反序列化得到拷贝实例
             ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
             ObjectInputStream ois = new ObjectInputStream(bais);
             copy = (Member) ois.readObject();
@@ -171,7 +172,7 @@ public class Member extends NacosMember implements Comparable<Member>, Cloneable
         }
         
         /**
-         * build Member.
+         * 根据 Builder 字段组装 {@link Member} 并设置 address。
          *
          * @return {@link Member}
          */

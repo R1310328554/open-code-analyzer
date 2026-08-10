@@ -17,6 +17,7 @@
 package com.alibaba.nacos.core.cluster;
 
 /**
+ * 集群成员扩展元数据键名常量：站点、权重、Raft 端口、版本与升级就绪状态等。
  * The necessary metadata information for the node.
  *
  * @author <a href="mailto:liaochunyhm@live.com">liaochuntao</a>
@@ -24,7 +25,7 @@ package com.alibaba.nacos.core.cluster;
 public class MemberMetaDataConstants {
     
     /**
-     * Raft port，This parameter is dropped when RPC is used as a whole.
+     * Raft 通信端口；全面 RPC 化后该字段将逐步弃用。
      */
     public static final String RAFT_PORT = "raftPort";
     

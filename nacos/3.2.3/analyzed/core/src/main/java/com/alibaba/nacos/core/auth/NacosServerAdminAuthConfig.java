@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Nacos 管理端（ADMIN_API）鉴权动态配置：从环境变量加载开关、插件类型与服务端身份凭证。
  * Nacos Server auth configurations.
  *
  * @author xiweng.yy
@@ -39,12 +40,12 @@ public class NacosServerAdminAuthConfig extends AbstractDynamicConfig implements
     public static final String NACOS_SERVER_ADMIN_AUTH_SCOPE = ApiType.ADMIN_API.name();
     
     /**
-     * Whether server auth enabled.
+     * 管理端鉴权总开关。
      */
     private boolean authEnabled;
     
     /**
-     * Which auth system is in use.
+     * 当前启用的鉴权插件类型（如 nacos、ldap 等）。
      */
     private String nacosAuthSystemType;
     
@@ -59,7 +60,7 @@ public class NacosServerAdminAuthConfig extends AbstractDynamicConfig implements
     }
     
     /**
-     * Validate auth config.
+     * 校验鉴权配置：开启鉴权时类型与服务端 identity 键值均不能为空。
      */
     private void validate() {
         if (!authEnabled) {
@@ -81,7 +82,7 @@ public class NacosServerAdminAuthConfig extends AbstractDynamicConfig implements
     }
     
     /**
-     * server auth function is open.
+     * 管理端鉴权功能是否已开启。
      *
      * @return server auth function is open
      */
