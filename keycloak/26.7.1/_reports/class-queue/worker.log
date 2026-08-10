@@ -1738,3 +1738,18 @@
 2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserConsentClientScopeEntity.java wave59a JPA entities realm/role/user/consent/outbox
 2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserConsentEntity.java wave59a JPA entities realm/role/user/consent/outbox
 2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/RunWorkflowTask.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/ScheduleWorkflowTask.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/ScheduledWorkflowRunner.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/UserResourceTypeWorkflowProvider.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowProviderEvents.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowScheduleClusterEvent.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowScheduleEventListener.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowStateEntity.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowValidator.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/conditions/GroupMembershipWorkflowConditionFactory.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/conditions/GroupMembershipWorkflowConditionProvider.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/conditions/IdentityProviderWorkflowConditionFactory.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/conditions/IdentityProviderWorkflowConditionProvider.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/conditions/RoleWorkflowConditionFactory.java wave60b workflow schedule/cluster + condition providers
+2026-08-10T08:24:56Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/conditions/RoleWorkflowConditionProvider.java wave60b workflow schedule/cluster + condition providers

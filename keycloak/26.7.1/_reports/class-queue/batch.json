@@ -15,23 +15,8 @@
     "model/jpa/src/main/java/org/keycloak/models/workflow/JpaWorkflowStateProviderFactory.java",
     "model/jpa/src/main/java/org/keycloak/models/workflow/RestartWorkflowStepProvider.java",
     "model/jpa/src/main/java/org/keycloak/models/workflow/RestartWorkflowStepProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/RestartWorkflowTask.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/RunWorkflowTask.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/ScheduleWorkflowTask.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/ScheduledWorkflowRunner.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/UserResourceTypeWorkflowProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowProviderEvents.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowScheduleClusterEvent.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowScheduleEventListener.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowStateEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/WorkflowValidator.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/conditions/GroupMembershipWorkflowConditionFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/conditions/GroupMembershipWorkflowConditionProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/conditions/IdentityProviderWorkflowConditionFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/conditions/IdentityProviderWorkflowConditionProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/conditions/RoleWorkflowConditionFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/conditions/RoleWorkflowConditionProvider.java"
+    "model/jpa/src/main/java/org/keycloak/models/workflow/RestartWorkflowTask.java"
   ],
   "remaining_pending": 4198,
-  "done": 1770
+  "done": 1785
 }
