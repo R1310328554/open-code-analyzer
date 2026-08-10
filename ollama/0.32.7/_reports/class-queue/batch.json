@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:51:03Z",
-  "files": [
-    "cmd/launch/launch.go",
-    "cmd/launch/model_inventory.go",
-    "cmd/launch/models.go",
-    "cmd/launch/omp.go",
-    "cmd/launch/openclaw.go",
-    "cmd/launch/opencode.go",
-    "cmd/launch/pi.go",
-    "cmd/launch/poolside.go",
-    "cmd/launch/qwen.go",
-    "cmd/launch/registry.go",
-    "cmd/launch/selector_hooks.go",
-    "cmd/launch/spinner.go",
-    "cmd/launch/vscode.go",
-    "cmd/runner/main.go",
-    "cmd/start.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 313,
-  "done": 135
+  "done": 150
 }
