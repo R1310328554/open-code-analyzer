@@ -14,6 +14,8 @@
 //  limitations under the License.
 //
 
+// base.go — GORM 实体基类与时间戳钩子：对齐 Python Peewee 可空时间字段；JSONMap/JSONSlice 数据库 JSON 映射。
+
 package entity
 
 import (
@@ -24,8 +26,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// BaseModel base model
-// All time fields are nullable to match Python Peewee model (null=True)
+// BaseModel 嵌入基类；时间字段可空以对齐 Python Peewee null=True
 type BaseModel struct {
 	CreateTime *int64     `gorm:"column:create_time;index" json:"create_time,omitempty"`
 	CreateDate *time.Time `gorm:"column:create_date;index" json:"create_date,omitempty"`
@@ -63,7 +64,7 @@ func statementHasTimeField(tx *gorm.DB, fieldNames ...string) bool {
 	return false
 }
 
-// BeforeCreate injects timestamps for models embedding BaseModel.
+// BeforeCreate 创建前自动注入 create/update 时间与日期
 func (m *BaseModel) BeforeCreate(tx *gorm.DB) error {
 	timestamp, dateTime := autoModelTime()
 
@@ -97,7 +98,7 @@ func (m *BaseModel) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// BeforeUpdate injects update timestamps for models embedding BaseModel.
+// BeforeUpdate 更新前刷新 update_time/update_date
 func (m *BaseModel) BeforeUpdate(tx *gorm.DB) error {
 	timestamp, dateTime := autoModelTime()
 
@@ -133,10 +134,10 @@ func (m *BaseModel) UpdateUpdateDateAndTime() error {
 	return nil
 }
 
-// JSONMap is a map type that can store JSON data
+// JSONMap 可序列化为 JSON 的 map，实现 driver.Valuer/sql.Scanner
 type JSONMap map[string]interface{}
 
-// Value implements driver.Valuer interface
+// Value 序列化为 JSON 写入数据库
 func (j JSONMap) Value() (driver.Value, error) {
 	if j == nil {
 		return nil, nil
@@ -144,7 +145,7 @@ func (j JSONMap) Value() (driver.Value, error) {
 	return json.Marshal(j)
 }
 
-// Scan implements sql.Scanner interface
+// Scan 从数据库字节反序列化
 func (j *JSONMap) Scan(value interface{}) error {
 	if value == nil {
 		*j = nil
@@ -157,7 +158,7 @@ func (j *JSONMap) Scan(value interface{}) error {
 	return json.Unmarshal(b, j)
 }
 
-// JSONSlice is a slice type that can store JSON array data
+// JSONSlice JSON 数组类型，同样实现 Valuer/Scanner
 type JSONSlice []interface{}
 
 // Value implements driver.Valuer interface
@@ -180,3 +181,5 @@ func (j *JSONSlice) Scan(value interface{}) error {
 	}
 	return json.Unmarshal(b, j)
 }
+
+// autoModelTime 使用本地时区毫秒时间戳与截断秒级日期。statementHasTimeField 避免 map 批量更新时覆盖显式传入的时间列。

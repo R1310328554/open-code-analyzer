@@ -14,9 +14,11 @@
 //  limitations under the License.
 //
 
+// chat_channel.go — 外部聊天渠道绑定：Slack/Teams 等 channel 与 Dialog 关联及列表 API 投影。
+
 package entity
 
-// ChatChannel chat channel model
+// ChatChannel 租户聊天渠道配置（channel 类型 + JSON config）
 type ChatChannel struct {
 	ID       string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	TenantID string  `gorm:"column:tenant_id;size:32;not null;index" json:"tenant_id"`
@@ -39,5 +41,7 @@ type ChatChannelListResponse struct {
 	Channel    string  `json:"channel"`
 	ChatID     *string `json:"chat_id"`
 	Status     int     `json:"status"`
-	DialogName *string `json:"dialog_name"` // Dialog.name.alias("dialog_name")
+	DialogName *string `json:"dialog_name"` // 关联 Dialog 名称（列表 JOIN 别名）
 }
+
+// status 默认 1 表示启用；chat_id 可空表示尚未绑定具体 Dialog。

@@ -14,6 +14,8 @@
 //  limitations under the License.
 //
 
+// types.go — 检索引擎统一抽象：SearchRequest/Result、排序表达式、文本/向量/融合匹配表达式；ES 与 Infinity 共用同一请求/结果模型。
+
 package types
 
 import (
@@ -27,45 +29,45 @@ import (
 
 var ErrDocumentNotFound = errors.New("document not found")
 
-// SearchRequest unified search request for all engines
+// SearchRequest 跨引擎统一检索请求（索引、分页、过滤、匹配表达式）
 type SearchRequest struct {
-	// Search target
-	IndexNames []string // For ES: index names; For Infinity: treated as table name prefixes
-	KbIDs      []string // Knowledge base IDs filter
+	// 检索目标
+	IndexNames []string // ES 为索引名；Infinity 视为表名前缀
+	KbIDs      []string // 知识库 ID 过滤
 
-	// Pagination
-	Offset int // Offset for pagination (0-based)
-	Limit  int // Limit for pagination
+	// 分页参数
+	Offset int // 分页偏移（从 0 起）
+	Limit  int // 每页条数上限
 
-	// Source fields (for ES: fields to return)
-	SelectFields []string // List of field names to return
+	// 返回字段列表（ES _source）
+	SelectFields []string // 需返回的字段名
 
-	// Filtering
-	Filter map[string]interface{} // Filters for search
+	// 结构化过滤条件
+	Filter map[string]interface{} // 检索过滤 map
 
 	// Match expressions
-	MatchExprs []interface{} // List of match expressions: [matchText, matchDense, fusionExpr]
+	MatchExprs []interface{} // 匹配表达式：MatchText/Dense/Fusion
 
-	// Sorting and ranking
-	OrderBy     *OrderByExpr       // Order by expression (asc/desc on fields)
-	RankFeature map[string]float64 // Rank features for learning to rank
+	// 排序与 LTR 特征
+	OrderBy     *OrderByExpr       // 多字段升/降序
+	RankFeature map[string]float64 // 学习排序特征权重
 }
 
-// SearchResult unified search result for all engines
+// SearchResult 统一检索结果（分块列表 + 总数）
 type SearchResult struct {
-	Chunks []map[string]interface{} // Search results
-	Total  int64                    // Total number of matches
+	Chunks []map[string]interface{} // 命中文档/分块记录
+	Total  int64                    // 命中总数
 }
 
-// SearchMetadataResult unified search result for metadata indices
+// SearchMetadataResult 元数据索引检索结果
 type SearchMetadataResult struct {
-	MetadataRecords []map[string]interface{} // Metadata search results
+	MetadataRecords []map[string]interface{} // 元数据记录列表
 	Total           int64                    // Total number of matches
 }
 
-// SearchMetadataRequest unified search request for metadata indices
+// SearchMetadataRequest 租户元数据索引检索请求
 type SearchMetadataRequest struct {
-	TenantID     string                 // Tenant ID (index name derived: ragflow_doc_meta_{tenantID})
+	TenantID     string                 // 租户 ID（索引名 ragflow_doc_meta_{tenantID}）
 	Offset       int                    // Pagination offset
 	Limit        int                    // Pagination limit
 	SelectFields []string               // List of field names to return (nil means all fields)
@@ -77,43 +79,43 @@ type OrderByExpr struct {
 	Fields []OrderByField
 }
 
-// OrderByField represents a single field ordering.
+// OrderByField 单字段排序项
 type OrderByField struct {
 	Field string
 	Type  OrderByType
 }
 
-// OrderByType represents ascending or descending order.
+// OrderByType 升序或降序枚举
 type OrderByType int
 
 const (
-	// SortAsc represents ascending order.
+	// SortAsc 升序
 	SortAsc OrderByType = 0
-	// SortDesc represents descending order.
+	// SortDesc 降序
 	SortDesc OrderByType = 1
 )
 
-// Asc adds an ascending order field.
+// Asc 追加升序字段（链式调用）
 func (o *OrderByExpr) Asc(field string) *OrderByExpr {
 	o.Fields = append(o.Fields, OrderByField{Field: field, Type: SortAsc})
 	return o
 }
 
-// Desc adds a descending order field.
+// Desc 追加降序字段（链式调用）
 func (o *OrderByExpr) Desc(field string) *OrderByExpr {
 	o.Fields = append(o.Fields, OrderByField{Field: field, Type: SortDesc})
 	return o
 }
 
-// MatchTextExpr represents a text match expression
+// MatchTextExpr 全文/关键词匹配表达式
 type MatchTextExpr struct {
-	Fields       []string               // Field names to search (with optional boost, e.g., "title_tks^10")
-	MatchingText string                 // Text to match
-	TopN         int                    // Number of results to return
+	Fields       []string               // 检索字段（可带 boost，如 title_tks^10）
+	MatchingText string                 // 待匹配查询文本
+	TopN         int                    // 返回 TopN
 	ExtraOptions map[string]interface{} // Additional options (e.g., minimum_should_match, filter)
 }
 
-// MatchDenseExpr represents a dense vector match expression
+// MatchDenseExpr 稠密向量相似度匹配
 type MatchDenseExpr struct {
 	VectorColumnName  string
 	EmbeddingData     []float64
@@ -123,14 +125,14 @@ type MatchDenseExpr struct {
 	ExtraOptions      map[string]interface{}
 }
 
-// FusionExpr represents a fusion expression for hybrid search
+// FusionExpr 混合检索融合表达式（如 weighted_sum）
 type FusionExpr struct {
-	Method       string                 // Fusion method (e.g., "weighted_sum")
+	Method       string                 // 融合方法名
 	TopN         int                    // TopK for fusion
-	FusionParams map[string]interface{} // Fusion parameters (e.g., {"weights": "0.05,0.95"})
+	FusionParams map[string]interface{} // 融合参数（如 weights）
 }
 
-// LogSearchRequest logs SearchRequest in debug mode
+// LogSearchRequest 在 Debug 模式下结构化打印检索请求
 func LogSearchRequest(engineName string, req *SearchRequest) {
 	common.Info(fmt.Sprintf("Search in %s started", engineName), zap.Any("indexNames", req.IndexNames))
 
@@ -162,3 +164,5 @@ func LogSearchRequest(engineName string, req *SearchRequest) {
 		"    RankFeature=%v",
 		req.IndexNames, req.KbIDs, req.Offset, req.Limit, req.SelectFields, req.Filter, matchExprsStr, req.OrderBy, req.RankFeature))
 }
+
+// 设计说明：本包屏蔽 ES/Infinity 方言差异，MatchExprs 以 interface{} 承载多态表达式，引擎实现层负责类型断言与 DSL 翻译。ErrDocumentNotFound 供文档级检索未命中时使用。

@@ -14,34 +14,36 @@
 //  limitations under the License.
 //
 
+// kb.go — 知识库与租户枚举：Dataset 模型、解析器/任务状态常量、列表/detail API 投影及邀请码。
+
 package entity
 
 import "time"
 
-// DatasetNameLimit is the maximum length for dataset name
+// DatasetNameLimit 数据集名称最大长度 128
 const DatasetNameLimit = 128
 
-// Status represents the status enum values
+// Status 记录有效/无效状态枚举（字符串 1/0）
 type Status string
 
 const (
-	// StatusValid indicates a valid/active record
+	// StatusValid 有效/未删除
 	StatusValid Status = "1"
-	// StatusInvalid indicates a deleted/inactive record
+	// StatusInvalid 已删除/无效
 	StatusInvalid Status = "0"
 )
 
-// TenantPermission represents the permission level for tenant access
+// TenantPermission 租户内资源可见范围
 type TenantPermission string
 
 const (
-	// TenantPermissionMe indicates only the creator can access
+	// TenantPermissionMe 仅创建者可见
 	TenantPermissionMe TenantPermission = "me"
-	// TenantPermissionTeam indicates all team members can access
+	// TenantPermissionTeam 团队成员可见
 	TenantPermissionTeam TenantPermission = "team"
 )
 
-// ParserType represents the document parser type
+// ParserType 文档解析器类型标识
 type ParserType string
 
 const (
@@ -62,7 +64,7 @@ const (
 	ParserTypeTag          ParserType = "tag"
 )
 
-// TaskStatus represents the status of a processing task
+// TaskStatus 文档/管道任务状态码
 type TaskStatus string
 
 const (
@@ -74,7 +76,7 @@ const (
 	TaskStatusSchedule TaskStatus = "5"
 )
 
-// PipelineTaskType represents the type of pipeline task
+// PipelineTaskType 知识库增强管道任务类型
 type PipelineTaskType string
 
 const (
@@ -86,7 +88,7 @@ const (
 	PipelineTaskTypeMemory   PipelineTaskType = "Memory"
 )
 
-// FileSource represents the source of a file
+// FileSource 文件来源枚举
 type FileSource string
 
 const (
@@ -95,7 +97,7 @@ const (
 	FileSourceS3            FileSource = "s3"
 )
 
-// Knowledgebase represents the knowledge base model
+// Knowledgebase 知识库（向量模型、解析配置、GraphRAG/RAPTOR 任务 ID）
 type Knowledgebase struct {
 	ID                     string     `gorm:"column:id;primaryKey;size:32" json:"id"`
 	Avatar                 *string    `gorm:"column:avatar;type:longtext" json:"avatar,omitempty"`
@@ -126,12 +128,12 @@ type Knowledgebase struct {
 	BaseModel
 }
 
-// TableName returns the table name for Knowledgebase model
+// TableName 返回表名 knowledgebase
 func (Knowledgebase) TableName() string {
 	return "knowledgebase"
 }
 
-// ToMap converts Knowledgebase to a map for JSON response
+// ToMap 转为 API 友好 map（格式化 graphrag/raptor 完成时间）
 func (kb *Knowledgebase) ToMap() map[string]interface{} {
 	result := map[string]interface{}{
 		"id":                       kb.ID,
@@ -188,7 +190,7 @@ func (kb *Knowledgebase) ToMap() map[string]interface{} {
 	return result
 }
 
-// KnowledgebaseDetail represents detailed knowledge base information with joined data
+// KnowledgebaseDetail 详情 API（含 pipeline、connectors JOIN）
 type KnowledgebaseDetail struct {
 	ID                   string   `json:"id"`
 	EmbdID               string   `json:"embd_id"`
@@ -218,7 +220,7 @@ type KnowledgebaseDetail struct {
 	Connectors           []string `json:"connectors"`
 }
 
-// KnowledgebaseListItem represents a knowledge base item in list responses
+// KnowledgebaseListItem 列表项（含 nickname、tenant_avatar）
 type KnowledgebaseListItem struct {
 	ID           string  `json:"id"`
 	Avatar       *string `json:"avatar,omitempty"`
@@ -237,7 +239,7 @@ type KnowledgebaseListItem struct {
 	UpdateTime   *int64  `json:"update_time,omitempty"`
 }
 
-// InvitationCode represents the invitation code model
+// InvitationCode 租户邀请码
 type InvitationCode struct {
 	ID        string     `gorm:"column:id;primaryKey;size:32" json:"id"`
 	Code      string     `gorm:"column:code;size:32;not null;index" json:"code"`
@@ -248,7 +250,9 @@ type InvitationCode struct {
 	BaseModel
 }
 
-// TableName returns the table name for InvitationCode model
+// TableName 返回表名 invitation_code
 func (InvitationCode) TableName() string {
 	return "invitation_code"
 }
+
+// ParserType 覆盖 presentation/laws/naive/knowledge_graph 等十余种解析策略；Knowledgebase 统计 doc_num/token_num/chunk_num 供仪表盘展示。ToMap 将 *time.Time 格式化为 yyyy-MM-dd HH:mm:ss 字符串。

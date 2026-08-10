@@ -14,6 +14,8 @@
 //  limitations under the License.
 //
 
+// connector.go — 数据源连接器实体：外部系统同步配置、KB 映射、同步日志及 API JSON 时间格式适配。
+
 package entity
 
 import (
@@ -21,7 +23,7 @@ import (
 	"time"
 )
 
-// Connector connector model
+// Connector 数据源连接器（刷新/修剪频率、索引状态）
 type Connector struct {
 	ID            string     `gorm:"column:id;primaryKey;size:32" json:"id"`
 	TenantID      string     `gorm:"column:tenant_id;size:32;not null;index" json:"tenant_id"`
@@ -42,7 +44,7 @@ func (Connector) TableName() string {
 	return "connector"
 }
 
-// MarshalJSON formats connector timestamps to match the Python API contract.
+// MarshalJSON 将 time.Time 格式化为 ISO 字符串以对齐 Python API
 func (c Connector) MarshalJSON() ([]byte, error) {
 	type connectorJSON struct {
 		ID            string  `json:"id"`
@@ -89,7 +91,7 @@ func formatConnectorTime(value *time.Time) *string {
 	return &formatted
 }
 
-// Connector2Kb connector to knowledge base mapping model
+// Connector2Kb 连接器与知识库多对多映射
 type Connector2Kb struct {
 	ID          string `gorm:"column:id;primaryKey;size:32" json:"id"`
 	ConnectorID string `gorm:"column:connector_id;size:32;not null;index" json:"connector_id"`
@@ -103,7 +105,7 @@ func (Connector2Kb) TableName() string {
 	return "connector2kb"
 }
 
-// SyncLogs sync logs model
+// SyncLogs 单次同步/索引任务完整日志
 type SyncLogs struct {
 	ID                   string     `gorm:"column:id;primaryKey;size:32" json:"id"`
 	ConnectorID          string     `gorm:"column:connector_id;size:32;index" json:"connector_id"`
@@ -128,7 +130,7 @@ func (SyncLogs) TableName() string {
 	return "sync_logs"
 }
 
-// ConnectorSyncLog is the API projection used by the connector logs endpoint.
+// ConnectorSyncLog 连接器日志列表 API 投影（含 kb_name 等 JOIN 字段）
 type ConnectorSyncLog struct {
 	ID                   string     `gorm:"column:id" json:"id"`
 	ConnectorID          string     `gorm:"column:connector_id" json:"connector_id"`
@@ -147,7 +149,7 @@ type ConnectorSyncLog struct {
 	Status               string     `gorm:"column:status" json:"status"`
 }
 
-// MarshalJSON formats datetime fields to match the Python API encoder.
+// MarshalJSON 日志时间格式化为 Python 兼容的 yyyy-MM-dd HH:mm:ss
 func (c ConnectorSyncLog) MarshalJSON() ([]byte, error) {
 	type connectorSyncLogJSON struct {
 		ID                   string  `json:"id"`
@@ -193,3 +195,5 @@ func formatConnectorLogTime(value *time.Time) *string {
 	formatted := value.Format("2006-01-02 15:04:05")
 	return &formatted
 }
+
+// Connector.status 默认 schedule；SyncLogs 记录 new/total/removed 文档计数与异常栈。formatConnectorTime 与 formatConnectorLogTime 分别服务 Connector 与 SyncLog 序列化。

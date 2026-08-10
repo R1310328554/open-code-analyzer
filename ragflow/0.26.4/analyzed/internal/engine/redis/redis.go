@@ -14,6 +14,8 @@
 //  limitations under the License.
 //
 
+// redis.go — Redis 客户端封装：全局单例初始化、KV/集合/有序集合、Stream 队列、分布式锁、令牌桶限流；供任务调度、缓存与会话状态共享。
+
 package redis
 
 import (
@@ -39,7 +41,7 @@ var (
 	once         sync.Once
 )
 
-// RedisClient wraps go-redis client with additional utility methods
+// RedisClient 封装 go-redis 客户端，提供 KV、集合、Stream 与 Lua 脚本工具方法
 type RedisClient struct {
 	client           *redis.Client
 	luaDeleteIfEqual *redis.Script
@@ -48,7 +50,7 @@ type RedisClient struct {
 	config           *server.RedisConfig
 }
 
-// RedisMsg represents a message from Redis Stream
+// RedisMsg 表示从 Redis Stream 消费到的单条消息及其元数据
 type RedisMsg struct {
 	consumer  *redis.Client
 	queueName string
@@ -57,7 +59,7 @@ type RedisMsg struct {
 	message   map[string]interface{}
 }
 
-// Lua scripts
+// Lua 脚本常量（原子删除、令牌桶）
 const (
 	luaDeleteIfEqualScript = `
 		local current_value = redis.call('get', KEYS[1])
@@ -104,7 +106,7 @@ const (
 	`
 )
 
-// Init initializes Redis client
+// Init 以 sync.Once 初始化全局 Redis 客户端；Host 为空则跳过
 func Init(cfg *server.RedisConfig) error {
 	var initErr error
 	once.Do(func() {
@@ -119,7 +121,7 @@ func Init(cfg *server.RedisConfig) error {
 			DB:       cfg.DB,
 		})
 
-		// Test connection
+		// Ping 验证连接可用性
 		ctx, cancel := context.WithTimeout(context.Background(), server.DefaultConnectTimeout)
 		defer cancel()
 
@@ -144,12 +146,12 @@ func Init(cfg *server.RedisConfig) error {
 	return initErr
 }
 
-// Get gets global Redis client instance
+// Get 返回全局 RedisClient 单例（可能为 nil）
 func Get() *RedisClient {
 	return globalClient
 }
 
-// Close closes Redis client
+// Close 关闭底层 go-redis 连接
 func Close() error {
 	if globalClient != nil && globalClient.client != nil {
 		return globalClient.client.Close()
@@ -157,12 +159,12 @@ func Close() error {
 	return nil
 }
 
-// IsEnabled checks if Redis is enabled (configured and initialized)
+// IsEnabled 判断 Redis 是否已配置并成功初始化
 func IsEnabled() bool {
 	return globalClient != nil && globalClient.client != nil
 }
 
-// Health checks if Redis is healthy
+// Health 通过 Ping + Set/Get 探活验证 Redis 可用
 func (r *RedisClient) Health() bool {
 	if r.client == nil {
 		return false
@@ -185,7 +187,7 @@ func (r *RedisClient) Health() bool {
 	return true
 }
 
-// Info returns Redis server information
+// Info 获取 Redis INFO 并提取版本、内存、客户端等关键指标
 func (r *RedisClient) Info() map[string]interface{} {
 	if r.client == nil {
 		return nil
@@ -197,7 +199,7 @@ func (r *RedisClient) Info() map[string]interface{} {
 		return nil
 	}
 
-	// Parse info string to map
+	// 将 INFO 文本解析为键值 map
 	info := make(map[string]string)
 	lines := splitLines(infoStr)
 	for _, line := range lines {
@@ -268,12 +270,12 @@ func parseInt(s string) int {
 	return v
 }
 
-// IsAlive checks if Redis client is alive
+// IsAlive 仅检查 client 指针非 nil
 func (r *RedisClient) IsAlive() bool {
 	return r.client != nil
 }
 
-// Exist checks if key exists
+// Exist 判断键是否存在
 func (r *RedisClient) Exist(key string) (bool, error) {
 	if r.client == nil {
 		return false, nil
@@ -287,7 +289,7 @@ func (r *RedisClient) Exist(key string) (bool, error) {
 	return exists > 0, nil
 }
 
-// Get gets value by key
+// Get 按键读取字符串；redis.Nil 时返回空串
 func (r *RedisClient) Get(key string) (string, error) {
 	if r.client == nil {
 		return "", nil
@@ -304,7 +306,7 @@ func (r *RedisClient) Get(key string) (string, error) {
 	return val, nil
 }
 
-// SetObj sets object with JSON serialization
+// SetObj 将对象 JSON 序列化后写入并设置过期时间
 func (r *RedisClient) SetObj(key string, obj interface{}, exp time.Duration) bool {
 	if r.client == nil {
 		return false
@@ -322,7 +324,7 @@ func (r *RedisClient) SetObj(key string, obj interface{}, exp time.Duration) boo
 	return true
 }
 
-// GetObj gets and unmarshals object from Redis
+// GetObj 读取 JSON 并反序列化到 dest
 func (r *RedisClient) GetObj(key string, dest interface{}) bool {
 	if r.client == nil {
 		return false
@@ -343,7 +345,7 @@ func (r *RedisClient) GetObj(key string, dest interface{}) bool {
 	return true
 }
 
-// Set sets value with expiration
+// Set 写入字符串键值并设置 TTL
 func (r *RedisClient) Set(key string, value string, exp time.Duration) bool {
 	if r.client == nil {
 		return false
@@ -356,7 +358,7 @@ func (r *RedisClient) Set(key string, value string, exp time.Duration) bool {
 	return true
 }
 
-// SetNX sets value only if key does not exist
+// SetNX 仅在键不存在时写入（分布式锁基础）
 func (r *RedisClient) SetNX(key string, value string, exp time.Duration) bool {
 	if r.client == nil {
 		return false
@@ -370,22 +372,21 @@ func (r *RedisClient) SetNX(key string, value string, exp time.Duration) bool {
 	return ok
 }
 
-// GetOrCreateSecretKey atomically retrieves an existing key or creates a new one
-// Uses Redis SETNX command to ensure atomicity across multiple goroutines/processes
+// GetOrCreateKey 原子获取已有键或通过 SETNX 创建新键，跨进程/协程安全
 func (r *RedisClient) GetOrCreateKey(key string, value string) (string, error) {
 	if r.client == nil {
 		return "", nil
 	}
 	ctx := context.Background()
-	// First, try to get the existing key
+	// 先尝试读取已有值
 	existingKey, err := r.client.Get(ctx, key).Result()
 	if err == nil {
 		common.Warn("Redis Get error", zap.String("key", key), zap.Error(err))
-		// Successfully retrieved existing key
+		// 命中已有键直接返回
 		return existingKey, nil
 	}
 
-	// Use SETNX to atomically set the key only if it doesn't exist
+	// SETNX 仅在键不存在时写入
 	// SETNX returns true if the key was set, false if it already existed
 	success, err := r.client.SetNX(ctx, key, value, 0).Result()
 	if err != nil {
@@ -393,11 +394,11 @@ func (r *RedisClient) GetOrCreateKey(key string, value string) (string, error) {
 	}
 
 	if success {
-		// This goroutine successfully set the key
+		// 本协程成功创建键
 		return value, nil
 	}
 
-	// SETNX failed, meaning another goroutine set the key concurrently
+	// 并发写入失败，读取对方设置的值
 	// Retrieve and return that key
 	finalKey, err := r.client.Get(ctx, key).Result()
 	if err != nil {
@@ -407,7 +408,7 @@ func (r *RedisClient) GetOrCreateKey(key string, value string) (string, error) {
 	return finalKey, nil
 }
 
-// SAdd adds member to set
+// SAdd 向集合添加成员
 func (r *RedisClient) SAdd(key string, member string) bool {
 	if r.client == nil {
 		return false
@@ -420,7 +421,7 @@ func (r *RedisClient) SAdd(key string, member string) bool {
 	return true
 }
 
-// SRem removes member from set
+// SRem 从集合移除成员
 func (r *RedisClient) SRem(key string, member string) bool {
 	if r.client == nil {
 		return false
@@ -433,7 +434,7 @@ func (r *RedisClient) SRem(key string, member string) bool {
 	return true
 }
 
-// SMembers returns all members of a set
+// SMembers 返回集合全部成员
 func (r *RedisClient) SMembers(key string) ([]string, error) {
 	if r.client == nil {
 		return nil, nil
@@ -447,7 +448,7 @@ func (r *RedisClient) SMembers(key string) ([]string, error) {
 	return members, nil
 }
 
-// SIsMember checks if member exists in set
+// SIsMember 判断成员是否在集合中
 func (r *RedisClient) SIsMember(key string, member string) bool {
 	if r.client == nil {
 		return false
@@ -461,7 +462,7 @@ func (r *RedisClient) SIsMember(key string, member string) bool {
 	return ok
 }
 
-// ZAdd adds member with score to sorted set
+// ZAdd 向有序集合添加带分数成员
 func (r *RedisClient) ZAdd(key string, member string, score float64) bool {
 	if r.client == nil {
 		return false
@@ -474,7 +475,7 @@ func (r *RedisClient) ZAdd(key string, member string, score float64) bool {
 	return true
 }
 
-// ZCount returns count of members with score in range
+// ZCount 统计分数区间内的成员数量
 func (r *RedisClient) ZCount(key string, min, max float64) int64 {
 	if r.client == nil {
 		return 0
@@ -488,7 +489,7 @@ func (r *RedisClient) ZCount(key string, min, max float64) int64 {
 	return count
 }
 
-// ZPopMin pops minimum score members from sorted set
+// ZPopMin 弹出分数最小的若干成员
 func (r *RedisClient) ZPopMin(key string, count int) ([]redis.Z, error) {
 	if r.client == nil {
 		return nil, nil
@@ -502,7 +503,7 @@ func (r *RedisClient) ZPopMin(key string, count int) ([]redis.Z, error) {
 	return members, nil
 }
 
-// ZRangeByScore returns members with score in range
+// ZRangeByScore 按分数区间返回成员列表
 func (r *RedisClient) ZRangeByScore(key string, min, max float64) ([]string, error) {
 	if r.client == nil {
 		return nil, nil
@@ -519,7 +520,7 @@ func (r *RedisClient) ZRangeByScore(key string, min, max float64) ([]string, err
 	return members, nil
 }
 
-// ZRemRangeByScore removes members with score in range
+// ZRemRangeByScore 删除分数区间内的成员
 func (r *RedisClient) ZRemRangeByScore(key string, min, max float64) int64 {
 	if r.client == nil {
 		return 0
@@ -533,7 +534,7 @@ func (r *RedisClient) ZRemRangeByScore(key string, min, max float64) int64 {
 	return count
 }
 
-// IncrBy increments key by increment
+// IncrBy 将键值按增量递增
 func (r *RedisClient) IncrBy(key string, increment int64) (int64, error) {
 	if r.client == nil {
 		return 0, nil
@@ -547,7 +548,7 @@ func (r *RedisClient) IncrBy(key string, increment int64) (int64, error) {
 	return val, nil
 }
 
-// DecrBy decrements key by decrement
+// DecrBy 将键值按减量递减
 func (r *RedisClient) DecrBy(key string, decrement int64) (int64, error) {
 	if r.client == nil {
 		return 0, nil
@@ -561,7 +562,7 @@ func (r *RedisClient) DecrBy(key string, decrement int64) (int64, error) {
 	return val, nil
 }
 
-// GenerateAutoIncrementID generates auto-increment ID
+// GenerateAutoIncrementID 基于 Redis INCR 生成命名空间自增 ID
 func (r *RedisClient) GenerateAutoIncrementID(keyPrefix string, namespace string, increment int64, ensureMinimum *int64) int64 {
 	if r.client == nil {
 		return -1
@@ -579,7 +580,7 @@ func (r *RedisClient) GenerateAutoIncrementID(keyPrefix string, namespace string
 	redisKey := fmt.Sprintf("%s:%s", keyPrefix, namespace)
 	ctx := context.Background()
 
-	// Check if key exists
+	// 检查计数器键是否存在
 	exists, err := r.client.Exists(ctx, redisKey).Result()
 	if err != nil {
 		common.Warn("Redis GenerateAutoIncrementID error", zap.Error(err))
@@ -592,7 +593,7 @@ func (r *RedisClient) GenerateAutoIncrementID(keyPrefix string, namespace string
 		return startID
 	}
 
-	// Get current value
+	// 读取当前值并与 ensureMinimum 对齐
 	if ensureMinimum != nil {
 		current, err := r.client.Get(ctx, redisKey).Int64()
 		if err == nil && current < *ensureMinimum {
@@ -601,7 +602,7 @@ func (r *RedisClient) GenerateAutoIncrementID(keyPrefix string, namespace string
 		}
 	}
 
-	// Increment
+	// INCRBY 递增并返回新 ID
 	nextID, err := r.client.IncrBy(ctx, redisKey, increment).Result()
 	if err != nil {
 		common.Warn("Redis GenerateAutoIncrementID increment error", zap.Error(err))
@@ -611,7 +612,7 @@ func (r *RedisClient) GenerateAutoIncrementID(keyPrefix string, namespace string
 	return nextID
 }
 
-// Transaction sets key with NX flag (transaction-like behavior)
+// Transaction 通过 Pipeline SetNX 模拟事务写入
 func (r *RedisClient) Transaction(key string, value string, exp time.Duration) bool {
 	if r.client == nil {
 		return false
@@ -627,7 +628,7 @@ func (r *RedisClient) Transaction(key string, value string, exp time.Duration) b
 	return true
 }
 
-// QueueProduct produces a message to Redis Stream
+// QueueProduct 向 Stream 生产 JSON 消息（最多重试 3 次）
 func (r *RedisClient) QueueProduct(queue string, message interface{}) bool {
 	if r.client == nil {
 		return false
@@ -654,7 +655,7 @@ func (r *RedisClient) QueueProduct(queue string, message interface{}) bool {
 	return false
 }
 
-// QueueConsumer consumes a message from Redis Stream
+// QueueConsumer 从 Stream 消费组读取单条消息
 func (r *RedisClient) QueueConsumer(queueName, groupName, consumerName string, msgID string) (*RedisMsg, error) {
 	if r.client == nil {
 		return nil, nil
@@ -662,7 +663,7 @@ func (r *RedisClient) QueueConsumer(queueName, groupName, consumerName string, m
 	ctx := context.Background()
 
 	for i := 0; i < 3; i++ {
-		// Create consumer group if not exists
+		// 按需创建消费者组
 		groups, err := r.client.XInfoGroups(ctx, queueName).Result()
 		if err != nil && err.Error() != "no such key" {
 			common.Warn("Redis QueueConsumer XInfoGroups error", zap.Error(err))
@@ -725,7 +726,7 @@ func (r *RedisClient) QueueConsumer(queueName, groupName, consumerName string, m
 	return nil, nil
 }
 
-// Ack acknowledges the message
+// Ack 确认 Stream 消息已处理
 func (m *RedisMsg) Ack() bool {
 	if m.consumer == nil {
 		return false
@@ -739,17 +740,17 @@ func (m *RedisMsg) Ack() bool {
 	return true
 }
 
-// GetMessage returns the message data
+// GetMessage 返回反序列化后的消息体 map
 func (m *RedisMsg) GetMessage() map[string]interface{} {
 	return m.message
 }
 
-// GetMsgID returns the message ID
+// GetMsgID 返回 Stream 消息 ID
 func (m *RedisMsg) GetMsgID() string {
 	return m.msgID
 }
 
-// GetPendingMsg gets pending messages
+// GetPendingMsg 查询消费者组 pending 消息列表
 func (r *RedisClient) GetPendingMsg(queue, groupName string) ([]redis.XPendingExt, error) {
 	if r.client == nil {
 		return nil, nil
@@ -771,7 +772,7 @@ func (r *RedisClient) GetPendingMsg(queue, groupName string) ([]redis.XPendingEx
 	return msgs, nil
 }
 
-// RequeueMsg requeues a message
+// RequeueMsg 将指定消息重新 XAdd 并 Ack 原消息
 func (r *RedisClient) RequeueMsg(queue, groupName, msgID string) {
 	if r.client == nil {
 		return
@@ -798,7 +799,7 @@ func (r *RedisClient) RequeueMsg(queue, groupName, msgID string) {
 	}
 }
 
-// QueueInfo returns queue group info
+// QueueInfo 返回指定消费者组的 pending/consumers 等统计
 func (r *RedisClient) QueueInfo(queue, groupName string) (map[string]interface{}, error) {
 	if r.client == nil {
 		return nil, nil
@@ -828,7 +829,7 @@ func (r *RedisClient) QueueInfo(queue, groupName string) (map[string]interface{}
 	return nil, nil
 }
 
-// DeleteIfEqual deletes key if its value equals expected value (atomic)
+// DeleteIfEqual 通过 Lua 原子比较删除（分布式锁释放）
 func (r *RedisClient) DeleteIfEqual(key, expectedValue string) bool {
 	if r.client == nil {
 		return false
@@ -842,7 +843,7 @@ func (r *RedisClient) DeleteIfEqual(key, expectedValue string) bool {
 	return result.(int64) == 1
 }
 
-// Delete deletes a key
+// Delete 删除指定键
 func (r *RedisClient) Delete(key string) bool {
 	if r.client == nil {
 		return false
@@ -855,7 +856,7 @@ func (r *RedisClient) Delete(key string) bool {
 	return true
 }
 
-// Expire sets expiration on a key
+// Expire 为键设置过期时间
 func (r *RedisClient) Expire(key string, exp time.Duration) bool {
 	if r.client == nil {
 		return false
@@ -868,7 +869,7 @@ func (r *RedisClient) Expire(key string, exp time.Duration) bool {
 	return true
 }
 
-// TTL gets remaining time to live of a key
+// TTL 查询键剩余生存时间
 func (r *RedisClient) TTL(key string) time.Duration {
 	if r.client == nil {
 		return -2
@@ -882,7 +883,7 @@ func (r *RedisClient) TTL(key string) time.Duration {
 	return ttl
 }
 
-// DistributedLock distributed lock implementation
+// DistributedLock 基于 SetNX + DeleteIfEqual 的分布式锁
 type DistributedLock struct {
 	client          *RedisClient
 	lockKey         string
@@ -891,7 +892,7 @@ type DistributedLock struct {
 	blockingTimeout time.Duration
 }
 
-// NewDistributedLock creates a new distributed lock
+// NewDistributedLock 创建分布式锁实例（默认随机 lockValue）
 func NewDistributedLock(lockKey string, lockValue string, timeout time.Duration, blockingTimeout time.Duration) *DistributedLock {
 	if globalClient == nil {
 		return nil
@@ -908,17 +909,17 @@ func NewDistributedLock(lockKey string, lockValue string, timeout time.Duration,
 	}
 }
 
-// Acquire acquires the lock
+// Acquire 尝试获取锁（先清理过期值再 SetNX）
 func (l *DistributedLock) Acquire() bool {
 	if l.client == nil {
 		return false
 	}
-	// Delete if stale
+	// 获取前清理可能过期的锁值
 	l.client.DeleteIfEqual(l.lockKey, l.lockValue)
 	return l.client.SetNX(l.lockKey, l.lockValue, l.timeout)
 }
 
-// SpinAcquire keeps trying to acquire the lock
+// SpinAcquire 在 ctx 取消前循环尝试获取锁
 func (l *DistributedLock) SpinAcquire(ctx context.Context) error {
 	for {
 		select {
@@ -934,7 +935,7 @@ func (l *DistributedLock) SpinAcquire(ctx context.Context) error {
 	}
 }
 
-// Release releases the lock
+// Release 仅当 lockValue 匹配时删除键释放锁
 func (l *DistributedLock) Release() bool {
 	if l.client == nil {
 		return false
@@ -942,7 +943,7 @@ func (l *DistributedLock) Release() bool {
 	return l.client.DeleteIfEqual(l.lockKey, l.lockValue)
 }
 
-// TokenBucket token bucket rate limiter
+// TokenBucket 基于 Redis Lua 的令牌桶限流器
 type TokenBucket struct {
 	client   *RedisClient
 	key      string
@@ -950,7 +951,7 @@ type TokenBucket struct {
 	rate     float64
 }
 
-// NewTokenBucket creates a new token bucket
+// NewTokenBucket 创建令牌桶（capacity/rate 由调用方指定）
 func NewTokenBucket(key string, capacity, rate float64) *TokenBucket {
 	if globalClient == nil {
 		return nil
@@ -963,7 +964,7 @@ func NewTokenBucket(key string, capacity, rate float64) *TokenBucket {
 	}
 }
 
-// Allow checks if request is allowed
+// Allow 消耗 cost 个令牌；Redis 不可用时 fail-open 放行
 func (tb *TokenBucket) Allow(cost float64) (bool, float64) {
 	if tb.client == nil || tb.client.client == nil {
 		return true, 0
@@ -984,20 +985,12 @@ func (tb *TokenBucket) Allow(cost float64) (bool, float64) {
 	return allowed, float64(tokens)
 }
 
-// GetClient returns the underlying go-redis client for advanced usage
+// GetClient 暴露底层 *redis.Client 供高级场景使用
 func (r *RedisClient) GetClient() *redis.Client {
 	return r.client
 }
 
-// EvalTokenBucketStrict is the fail-closed counterpart to TokenBucket.Allow.
-// It surfaces Lua errors and the uninitialised-Redis case to the caller so
-// security gates (e.g. webhook rate limiter) can deny on transport failure
-// rather than silently passing traffic. The existing TokenBucket.Allow
-// silently fails-open and is reserved for the chat driver path where
-// transient Redis outages should not block traffic.
-//
-// Cost is fixed at 1.0; callers wanting variable cost should compose their
-// own Lua. ctx is used for both the EVALSHA round-trip and the deadline.
+// EvalTokenBucketStrict 为 fail-closed 令牌桶：Redis/Lua 失败时返回错误，供 webhook 等安全门禁拒绝流量；与 chat 路径 fail-open 的 Allow 区分。
 func (r *RedisClient) EvalTokenBucketStrict(
 	ctx context.Context, key string, capacity, rate float64,
 ) (allowed bool, err error) {
@@ -1021,8 +1014,10 @@ func (r *RedisClient) EvalTokenBucketStrict(
 	return allowedI == 1, nil
 }
 
-// RandomSleep sleeps for random duration between min and max milliseconds
+// RandomSleep 在 [minMs,maxMs) 毫秒间随机休眠（退避抖动）
 func RandomSleep(minMs, maxMs int) {
 	duration := time.Duration(rand.Intn(maxMs-minMs)+minMs) * time.Millisecond
 	time.Sleep(duration)
 }
+
+// 模块小结：Redis 层为 RAGFlow 提供跨实例共享状态——任务队列 Stream、限流令牌桶、分布式锁与 JSON 缓存。Init 未配置 Host 时全局 client 为 nil，上层须通过 IsEnabled 判断。QueueConsumer 自动建组并以 5s Block 阻塞读；Health 额外做 Set/Get 探活。EvalTokenBucketStrict 与 TokenBucket.Allow 分别用于 fail-closed 与 fail-open 场景。

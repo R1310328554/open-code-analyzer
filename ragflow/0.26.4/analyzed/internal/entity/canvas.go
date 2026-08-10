@@ -14,9 +14,11 @@
 //  limitations under the License.
 //
 
+// canvas.go — Agent 画布实体：用户画布、模板库与版本快照；DSL 存 JSONMap 工作流图。
+
 package entity
 
-// UserCanvas user canvas model
+// UserCanvas 用户 Agent 画布（权限、发布状态、DSL）
 type UserCanvas struct {
 	ID             string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	Avatar         *string `gorm:"column:avatar;type:longtext" json:"avatar,omitempty"`
@@ -37,7 +39,7 @@ func (UserCanvas) TableName() string {
 	return "user_canvas"
 }
 
-// CanvasTemplate canvas template model
+// CanvasTemplate 可复用画布模板（多语言 title/description）
 type CanvasTemplate struct {
 	ID             string    `gorm:"column:id;primaryKey;size:32" json:"id"`
 	Avatar         *string   `gorm:"column:avatar;type:longtext" json:"avatar,omitempty"`
@@ -55,7 +57,7 @@ func (CanvasTemplate) TableName() string {
 	return "canvas_template"
 }
 
-// UserCanvasVersion user canvas version model
+// UserCanvasVersion 画布历史版本快照
 type UserCanvasVersion struct {
 	ID           string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	UserCanvasID string  `gorm:"column:user_canvas_id;size:255;not null;index" json:"user_canvas_id"`
@@ -70,3 +72,5 @@ type UserCanvasVersion struct {
 func (UserCanvasVersion) TableName() string {
 	return "user_canvas_version"
 }
+
+// canvas_category 默认 agent_canvas；UserCanvas.permission 与 kb 包 TenantPermission 语义一致（me/team）。CanvasTemplate.title/description 使用 JSONMap 支持多语言模板库；UserCanvasVersion 在 release=true 时可作为对外发布快照。DSL 字段存储 Agent 工作流图 JSON，与 internal/agent/canvas 运行时共享 schema。

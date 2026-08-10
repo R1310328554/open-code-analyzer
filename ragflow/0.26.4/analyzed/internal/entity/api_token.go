@@ -14,11 +14,13 @@
 //  limitations under the License.
 //
 
+// api_token.go — API 令牌与 Open API 会话实体：租户级 token、对话绑定及 api_4_conversation 持久化模型。
+
 package entity
 
 import "encoding/json"
 
-// APIToken API token model
+// APIToken 租户 API 访问令牌（复合主键 tenant_id+token）
 type APIToken struct {
 	TenantID string  `gorm:"column:tenant_id;size:32;not null;primaryKey" json:"tenant_id"`
 	Token    string  `gorm:"column:token;size:255;not null;primaryKey" json:"token"`
@@ -28,12 +30,12 @@ type APIToken struct {
 	BaseModel
 }
 
-// TableName specify table name
+// TableName 返回 GORM 表名 api_token
 func (APIToken) TableName() string {
 	return "api_token"
 }
 
-// API4Conversation API for conversation model
+// API4Conversation Open API 对话记录（消息、引用、DSL、耗时统计）
 type API4Conversation struct {
 	ID           string          `gorm:"column:id;primaryKey;size:32" json:"id"`
 	Name         *string         `gorm:"column:name;size:255" json:"name,omitempty"`
@@ -57,3 +59,5 @@ type API4Conversation struct {
 func (API4Conversation) TableName() string {
 	return "api_4_conversation"
 }
+
+// APIToken 可绑定 dialog_id/source/beta 区分调用场景；API4Conversation 的 message/reference 以 json.RawMessage 存储原始 JSON。Open API 路径通过 token 鉴权后读写 api_4_conversation，tokens/duration/round/thumb_up 字段用于用量与质量统计。

@@ -14,9 +14,11 @@
 //  limitations under the License.
 //
 
+// file.go — 租户文件树与文档映射：文件夹层级 file 表及 file2document 关联。
+
 package entity
 
-// File file model
+// File 租户文件/文件夹节点（parent_id 树形结构）
 type File struct {
 	ID         string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	ParentID   string  `gorm:"column:parent_id;size:32;not null;index" json:"parent_id"`
@@ -35,7 +37,7 @@ func (File) TableName() string {
 	return "file"
 }
 
-// File2Document file to document mapping model
+// File2Document 文件与知识库 document 的可选双向关联
 type File2Document struct {
 	ID         string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	FileID     *string `gorm:"column:file_id;size:32;index" json:"file_id,omitempty"`
@@ -47,3 +49,5 @@ type File2Document struct {
 func (File2Document) TableName() string {
 	return "file2document"
 }
+
+// File.type 区分文件与目录；source_type 标记上传来源。File2Document 允许 file_id/document_id 可空以支持渐进绑定。

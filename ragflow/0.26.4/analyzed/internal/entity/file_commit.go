@@ -14,9 +14,11 @@
 //  limitations under the License.
 //
 
+// file_commit.go — 工作区版本控制：类 Git 提交、变更项、树快照及 diff/版本历史 API 结构。
+
 package entity
 
-// FileCommit represents a snapshot commit for a workspace folder (like git commit).
+// FileCommit 工作区文件夹快照提交（类 git commit）
 type FileCommit struct {
 	ID        string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	FolderID  string  `gorm:"column:folder_id;size:32;not null;index" json:"folder_id"`
@@ -28,12 +30,12 @@ type FileCommit struct {
 	BaseModel
 }
 
-// TableName returns the table name for FileCommit model.
+// TableName 返回表名 file_commit
 func (FileCommit) TableName() string {
 	return "file_commit"
 }
 
-// FileCommitItem represents a single file change within a commit.
+// FileCommitItem 提交内单文件变更（add/modify/delete/rename）
 type FileCommitItem struct {
 	ID          string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	CommitID    string  `gorm:"column:commit_id;size:32;not null;uniqueIndex:idx_commit_file" json:"commit_id"`
@@ -53,29 +55,29 @@ func (FileCommitItem) TableName() string {
 	return "file_commit_item"
 }
 
-// TreeNode represents a file node in the commit tree state snapshot.
+// TreeNode 提交 tree_state JSON 中的文件树节点
 type TreeNode struct {
 	ID       string      `json:"id"`
 	Name     string      `json:"name"`
-	Type     string      `json:"type"` // "file" or "folder"
+	Type     string      `json:"type"` // 节点类型：file 或 folder
 	Hash     string      `json:"hash,omitempty"`
 	Location string      `json:"location,omitempty"`
 	Size     int64       `json:"size,omitempty"`
-	Status   string      `json:"status"` // "1" = active, "0" = deleted
+	Status   string      `json:"status"` // 状态：1 有效，0 已删除
 	Children []*TreeNode `json:"children,omitempty"`
 }
 
-// FileChange represents a file change in a commit request.
+// FileChange 创建提交 API 请求中的单文件变更
 type FileChange struct {
 	FileID    string `json:"file_id"`
 	FileName  string `json:"file_name"`
-	Operation string `json:"operation"` // "add", "modify", "delete", "rename"
+	Operation string `json:"operation"` // 操作：add/modify/delete/rename
 	Content   string `json:"content,omitempty"`
 	OldName   string `json:"old_name,omitempty"`
 	NewName   string `json:"new_name,omitempty"`
 }
 
-// CommitResponse is the API response for a commit.
+// CommitResponse 提交 API 响应体
 type CommitResponse struct {
 	ID         string  `json:"id"`
 	FolderID   string  `json:"folder_id"`
@@ -87,7 +89,7 @@ type CommitResponse struct {
 	CreateTime *int64  `json:"create_time,omitempty"`
 }
 
-// DiffEntry represents a single diff entry between two commits.
+// DiffEntry 两提交间单文件 diff 项
 type DiffEntry struct {
 	FileID      string  `json:"file_id"`
 	FileName    string  `json:"file_name"`
@@ -98,7 +100,7 @@ type DiffEntry struct {
 	NewLocation *string `json:"new_location,omitempty"`
 }
 
-// VersionEntry represents a single version in a file's version history.
+// VersionEntry 文件版本历史中的单条记录
 type VersionEntry struct {
 	CommitID   string `json:"commit_id"`
 	Operation  string `json:"operation"`
@@ -106,3 +108,5 @@ type VersionEntry struct {
 	CreateTime *int64 `json:"create_time,omitempty"`
 	Message    string `json:"message"`
 }
+
+// tree_state 存储完整目录树 JSON；FileCommitItem 通过 idx_commit_file 保证 commit+file 唯一。DiffEntry/VersionEntry 为纯 API DTO，无 GORM 映射。

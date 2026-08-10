@@ -14,11 +14,13 @@
 //  limitations under the License.
 //
 
+// chat.go — 对话（Dialog）与会话实体：RAG 检索参数、LLM 配置、知识库绑定及 conversation 消息存储。
+
 package entity
 
 import "encoding/json"
 
-// Chat chat model (mapped to dialog table)
+// Chat 对话配置模型（物理表 dialog）
 type Chat struct {
 	ID                     string    `gorm:"column:id;primaryKey;size:32" json:"id"`
 	TenantID               string    `gorm:"column:tenant_id;size:32;not null;index" json:"tenant_id"`
@@ -49,7 +51,7 @@ func (Chat) TableName() string {
 	return "dialog"
 }
 
-// Conversation conversation model
+// ChatSession 单次会话线程（message/reference JSON）
 type ChatSession struct {
 	ID        string          `gorm:"column:id;primaryKey;size:32" json:"id"`
 	DialogID  string          `gorm:"column:dialog_id;size:32;not null;index" json:"dialog_id"`
@@ -64,3 +66,5 @@ type ChatSession struct {
 func (ChatSession) TableName() string {
 	return "conversation"
 }
+
+// Chat 聚合 similarity_threshold、vector_similarity_weight、top_n/top_k 等 RAG 参数；kb_ids 为 JSONSlice 多库绑定；ChatSession 映射 conversation 表。prompt_type/prompt_config 驱动简单或高级提示模板；do_refer/rerank_id 控制引用展示与重排模型；tenant_llm_id/tenant_rerank_id 指向租户级模型配置行。

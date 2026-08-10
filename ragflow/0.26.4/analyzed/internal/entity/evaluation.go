@@ -14,10 +14,12 @@
 //  limitations under the License.
 //
 
+// evaluation.go — RAG 评测数据集实体：数据集、用例、运行批次与逐条评测结果；时间字段自定义以对齐 Python。
+
 package entity
 
-// EvaluationDataset evaluation dataset model
-// Note: Python defines custom create_time/update_time (not null) instead of using BaseModel's
+// EvaluationDataset 评测数据集（绑定 kb_ids、创建者）
+// 注：Python 使用非空 create_time/update_time，未嵌入 BaseModel
 type EvaluationDataset struct {
 	ID          string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	TenantID    string  `gorm:"column:tenant_id;size:32;not null;index" json:"tenant_id"`
@@ -36,7 +38,7 @@ func (EvaluationDataset) TableName() string {
 	return "evaluation_datasets"
 }
 
-// EvaluationCase evaluation case model
+// EvaluationCase 单条问答用例（标准答案、相关 doc/chunk ID）
 // Note: Python defines custom create_time (not null) instead of using BaseModel's
 type EvaluationCase struct {
 	ID               string   `gorm:"column:id;primaryKey;size:32" json:"id"`
@@ -55,7 +57,7 @@ func (EvaluationCase) TableName() string {
 	return "evaluation_cases"
 }
 
-// EvaluationRun evaluation run model
+// EvaluationRun 一次评测运行（dialog 快照、metrics_summary、状态机）
 // Note: Python defines custom create_time/complete_time instead of using BaseModel's
 type EvaluationRun struct {
 	ID             string   `gorm:"column:id;primaryKey;size:32" json:"id"`
@@ -76,7 +78,7 @@ func (EvaluationRun) TableName() string {
 	return "evaluation_runs"
 }
 
-// EvaluationResult evaluation result model
+// EvaluationResult 单用例评测输出（生成答案、检索块、指标）
 // Note: Python defines custom create_time (not null) instead of using BaseModel's
 type EvaluationResult struct {
 	ID              string   `gorm:"column:id;primaryKey;size:32" json:"id"`
@@ -95,3 +97,5 @@ type EvaluationResult struct {
 func (EvaluationResult) TableName() string {
 	return "evaluation_results"
 }
+
+// EvaluationRun.status 默认 PENDING；config_snapshot 冻结运行时的 Dialog 配置。EvaluationResult.retrieved_chunks/metrics 均为 JSONMap 便于扩展指标。

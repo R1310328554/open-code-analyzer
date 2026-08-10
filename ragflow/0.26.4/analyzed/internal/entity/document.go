@@ -14,11 +14,13 @@
 //  limitations under the License.
 //
 
+// document.go — 知识库文档实体：解析进度、分块统计、元数据及带 JOIN 的列表项投影。
+
 package entity
 
 import "time"
 
-// Document document model
+// Document 知识库内单个文档（解析器、进度、哈希、元数据）
 type Document struct {
 	ID              string     `gorm:"column:id;primaryKey;size:32" json:"id"`
 	Thumbnail       *string    `gorm:"column:thumbnail;type:longtext" json:"thumbnail,omitempty"`
@@ -46,7 +48,7 @@ type Document struct {
 	BaseModel
 }
 
-// DocumentListItem represents a document list row with joined fields.
+// DocumentListItem 文档列表行（含 pipeline_name、nickname 等 JOIN 字段）
 type DocumentListItem struct {
 	ID              string     `gorm:"column:id" json:"id"`
 	Thumbnail       *string    `gorm:"column:thumbnail" json:"thumbnail,omitempty"`
@@ -83,3 +85,5 @@ type DocumentListItem struct {
 func (Document) TableName() string {
 	return "document"
 }
+
+// progress/process_begin_at 跟踪解析流水线；meta_fields 为可选 JSONMap；DocumentListItem 中 parser_config/meta_fields 为字符串便于列表展示。

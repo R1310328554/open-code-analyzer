@@ -14,20 +14,24 @@
 //  limitations under the License.
 //
 
+// license.go — 企业版许可证存储：encrypted_data 字段持久化加密许可载荷。
+
 package entity
 
 import (
 	"time"
 )
 
-// License time record model
+// License 许可证记录（id + encrypted_data + created_at）
 type License struct {
 	ID        string    `gorm:"column:id;size:128;not null;primaryKey" json:"id"`
 	License   string    `gorm:"column:encrypted_data;type:longtext;not null" json:"encrypted_data"`
 	CreatedAt time.Time `gorm:"column:created_at;type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`
 }
 
-// TableName specify table name
+// TableName 返回表名 license
 func (License) TableName() string {
 	return "license"
 }
+
+// License 不含 BaseModel；created_at 由数据库 DEFAULT CURRENT_TIMESTAMP 维护。解密与校验逻辑在上层 admin/enterprise 服务中完成。

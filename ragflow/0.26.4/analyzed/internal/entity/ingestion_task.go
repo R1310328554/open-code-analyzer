@@ -14,8 +14,11 @@
 //  limitations under the License.
 //
 
+// ingestion_task.go — 结构化摄取任务：任务/子任务（tasklet）状态机及 checkpoint 日志表。
+
 package entity
 
+// IngestionTask 结构化数据摄取主任务（document+dataset+schema）
 type IngestionTask struct {
 	ID         string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	UserID     string  `gorm:"column:user_id;size:32;not null" json:"user_id"`
@@ -31,6 +34,7 @@ func (IngestionTask) TableName() string {
 	return "ingestion_task"
 }
 
+// IngestionTaskLog 主任务 checkpoint 日志（自增 id）
 type IngestionTaskLog struct {
 	ID         int     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
 	TaskID     string  `gorm:"column:task_id;size:32;not null;index" json:"task_id"`
@@ -43,6 +47,7 @@ func (IngestionTaskLog) TableName() string {
 	return "ingestion_task_log"
 }
 
+// IngestionTasklet 可并行执行的子任务切片
 type IngestionTasklet struct {
 	ID     string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	TaskID string  `gorm:"column:task_id;size:32;not null;index" json:"task_id"`
@@ -56,6 +61,7 @@ func (IngestionTasklet) TableName() string {
 	return "ingestion_tasklet"
 }
 
+// IngestionTaskletLog 子任务 checkpoint 日志
 type IngestionTaskletLog struct {
 	ID         int     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
 	TaskletID  string  `gorm:"column:tasklet_id;size:32;not null;index" json:"tasklet_id"`
@@ -67,3 +73,5 @@ type IngestionTaskletLog struct {
 func (IngestionTaskletLog) TableName() string {
 	return "ingestion_tasklet_log"
 }
+
+// schema/checkpoint 均为 JSONMap，便于存储任意摄取管道配置与断点。Tasklet 通过 task_id 关联主任务，支持细粒度重试与进度恢复。
