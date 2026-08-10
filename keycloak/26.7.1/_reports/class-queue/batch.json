@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:46:07Z",
-  "files": [
-    "services/src/main/java/org/keycloak/credential/PasswordCredentialProviderFactory.java",
-    "services/src/main/java/org/keycloak/credential/RecoveryAuthnCodesCredentialProvider.java",
-    "services/src/main/java/org/keycloak/credential/RecoveryAuthnCodesCredentialProviderFactory.java",
-    "services/src/main/java/org/keycloak/credential/WebAuthnCredentialModelInput.java",
-    "services/src/main/java/org/keycloak/credential/WebAuthnCredentialProvider.java",
-    "services/src/main/java/org/keycloak/credential/WebAuthnCredentialProviderFactory.java",
-    "services/src/main/java/org/keycloak/credential/WebAuthnPasswordlessCredentialProvider.java",
-    "services/src/main/java/org/keycloak/credential/WebAuthnPasswordlessCredentialProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/Aes128CbcHmacSha256ContentEncryptionProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/Aes128GcmContentEncryptionProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/Aes192CbcHmacSha384ContentEncryptionProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/Aes192GcmContentEncryptionProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/Aes256CbcHmacSha512ContentEncryptionProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/Aes256GcmContentEncryptionProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/AesCbcHmacShaContentEncryptionProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1918,
-  "done": 4065
+  "done": 4080
 }
