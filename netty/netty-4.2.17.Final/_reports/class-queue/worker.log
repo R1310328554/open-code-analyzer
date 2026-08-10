@@ -958,3 +958,18 @@
 2026-08-10T00:18:51Z DONE codec-smtp/src/main/java/io/netty/handler/codec/smtp/DefaultSmtpContent.java wave32b agent-understood
 2026-08-10T00:18:51Z DONE codec-smtp/src/main/java/io/netty/handler/codec/smtp/DefaultSmtpRequest.java wave32b agent-understood
 2026-08-10T00:18:51Z DONE codec-smtp/src/main/java/io/netty/handler/codec/smtp/DefaultSmtpResponse.java wave32b agent-understood
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksAuthStatus.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksCmdRequest.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksCmdRequestDecoder.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksCmdResponse.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksCmdResponseDecoder.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksCmdStatus.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksCmdType.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksCommonUtils.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksInitRequest.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksInitRequestDecoder.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksInitResponse.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksInitResponseDecoder.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksMessage.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksMessageEncoder.java wave33b
+2026-08-10T00:21:23Z DONE codec-socks/src/main/java/io/netty/handler/codec/socks/SocksMessageType.java wave33b
