@@ -1138,3 +1138,18 @@
 2026-08-10T03:27:36Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/GroupkeyListenserStatus.java nacos 3.2.3 wave37b [15:30] config model wrappers
 2026-08-10T03:27:36Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/ListenerCheckResult.java nacos 3.2.3 wave37b [15:30] config model wrappers
 2026-08-10T03:27:36Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/NacosConfigCacheFactory.java nacos 3.2.3 wave37b [15:30] config model wrappers
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/NacosConfigCachePostProcessor.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/SampleResult.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/SubscriberStatus.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/capacity/Capacity.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/capacity/GroupCapacity.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/capacity/NamespaceCapacity.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/event/ConfigDataChangeEvent.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/event/ConfigDumpEvent.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/event/ConfigFuzzyWatchEvent.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/event/IstioConfigChangeEvent.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/event/LocalDataChangeEvent.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/event/RaftDbErrorRecoverEvent.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/form/ConfigForm.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/form/ConfigFormV3.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
+2026-08-10T03:29:09Z DONE config/src/main/java/com/alibaba/nacos/config/server/model/form/UpdateCapacityForm.java nacos 3.2.3 wave38a [0:15] config capacity/event/form
