@@ -1,5 +1,7 @@
 package worker
 
+// thread 表示单个 worker 执行线程：循环 Recv 任务、运行物理计划片段、将结果 drain 到 sink 并向调度器回报任务状态。
+
 import (
 	"context"
 	"errors"
@@ -28,12 +30,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// RecordSink 抽象结果写出端，便于 drainPipeline 单元测试注入 mock。
 // RecordSink sends record batches to a destination. Used by drainPipeline so callers can inject mocks in tests.
 type recordSink interface {
 	Send(ctx context.Context, rec arrow.RecordBatch) error
 }
 
 // sinksForJob returns the job's sinks as a slice for use with drainPipeline.
+// sinksForJob 将 job.Sinks map 转为 slice 供 drainPipeline 顺序发送。
 func sinksForJob(job *threadJob) []recordSink {
 	sinks := make([]recordSink, 0, len(job.Sinks))
 	for _, s := range job.Sinks {
@@ -45,7 +49,8 @@ func sinksForJob(job *threadJob) []recordSink {
 type threadState int
 
 const (
-	// threadStateIdle reports that a thread is not running.
+	// threadStateIdle 线程已退出 Run 循环或尚未启动。
+// threadStateIdle reports that a thread is not running.
 	threadStateIdle threadState = iota
 
 	// threadStateReady reports that a thread is ready to run a task.
@@ -72,6 +77,7 @@ func (s threadState) String() string {
 	}
 }
 
+// thread 持有 executor 配置、JobManager 与可观测的 state 字段。
 // thread represents a worker thread that executes one task at a time.
 type thread struct {
 	BatchSize      int64
@@ -88,6 +94,7 @@ type thread struct {
 	state    threadState
 }
 
+// State 读锁返回当前 threadState，供 metrics collector 采集。
 // State returns the current state of the thread.
 func (t *thread) State() threadState {
 	t.stateMut.RLock()
@@ -95,6 +102,7 @@ func (t *thread) State() threadState {
 	return t.state
 }
 
+// Run 在 ready/busy 状态间切换，ctx 取消时 Recv 返回并设为 idle。
 // Run starts the thread. Run will request and run tasks in a loop until the
 // context is canceled.
 func (t *thread) Run(ctx context.Context) error {
@@ -114,6 +122,7 @@ func (t *thread) Run(ctx context.Context) error {
 	}
 }
 
+// setState 写锁更新状态，供 Run 与 runJob 调用。
 func (t *thread) setState(state threadState) {
 	t.stateMut.Lock()
 	defer t.stateMut.Unlock()
@@ -316,6 +325,7 @@ func (t *thread) runJob(ctx context.Context, job *threadJob) {
 	}
 }
 
+// drainPipeline 循环 Read 直到 EOF，非空批次 best-effort 发送到各 sink 并记录 xcap 指标。
 func (t *thread) drainPipeline(ctx context.Context, pipeline executor.Pipeline, sinks []recordSink, logger log.Logger) (int, error) {
 	region := xcap.RegionFromContext(ctx)
 
@@ -358,3 +368,4 @@ func (t *thread) drainPipeline(ctx context.Context, pipeline executor.Pipeline, 
 
 	return totalRows, nil
 }
+// 任务失败时发送 TaskStateFailed；成功时同步等待 TaskStateCompleted 确认后再 Recv 下一任务。

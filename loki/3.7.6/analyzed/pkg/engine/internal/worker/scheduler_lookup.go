@@ -1,5 +1,7 @@
 package worker
 
+// schedulerLookup 通过 DNS SRV 周期性解析调度器地址，对新增/删除的 endpoint 启动或取消对应的 schedulerLoop goroutine。
+
 import (
 	"context"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/dskit/grpcutil"
 )
 
+// schedulerLookup 封装 DNS 轮询间隔与 dnsWatcher，供 worker 发现多个调度器。
 type schedulerLookup struct {
 	logger   log.Logger
 	watcher  *dnsWatcher
@@ -36,6 +39,7 @@ func newSchedulerLookup(logger log.Logger, address string, lookupInterval time.D
 	}, nil
 }
 
+// Run 定时 Poll DNS 变更，Add 启动 handler goroutine，Delete 取消并移除 handler。
 func (l *schedulerLookup) Run(ctx context.Context, handlerFunc handleScheduler) error {
 	var handlerWg sync.WaitGroup
 	defer handlerWg.Wait()
@@ -113,6 +117,7 @@ func (l *schedulerLookup) Run(ctx context.Context, handlerFunc handleScheduler) 
 	}
 }
 
+// parseTCPAddr 将 IP:port 字符串解析为 net.TCPAddr，不做主机名解析。
 // parseTCPAddr parses a TCP address string into a [net.TCPAddr]. It doesn't do
 // any name resolution: the addr must be a numeric pair of IP and port.
 func parseTCPAddr(addr string) (*net.TCPAddr, error) {
@@ -124,6 +129,7 @@ func parseTCPAddr(addr string) (*net.TCPAddr, error) {
 	return net.TCPAddrFromAddrPort(ap), nil
 }
 
+// provider 抽象 DNS 解析：Resolve 刷新记录，Addresses 返回当前地址列表。
 type provider interface {
 	Resolve(ctx context.Context, addrs []string) error
 	Addresses() []string
@@ -145,6 +151,7 @@ func newDNSWatcher(addr string, provider provider) *dnsWatcher {
 	}
 }
 
+// Poll 解析 SRV 记录并与 cached 对比，返回 grpcutil.Update 增量列表。
 // Poll polls for changes in the DNS records.
 func (w *dnsWatcher) Poll(ctx context.Context) ([]*grpcutil.Update, error) {
 	if err := w.provider.Resolve(ctx, []string{w.addr}); err != nil {
@@ -179,6 +186,7 @@ func (w *dnsWatcher) Poll(ctx context.Context) ([]*grpcutil.Update, error) {
 	return updates, nil
 }
 
+// discovered 将 provider.Addresses 转为 set 便于与缓存比较。
 func (w *dnsWatcher) discovered() map[string]struct{} {
 	slice := w.provider.Addresses()
 
@@ -188,3 +196,4 @@ func (w *dnsWatcher) discovered() map[string]struct{} {
 	}
 	return res
 }
+// worker 可同时配置 SchedulerAddress 与 SchedulerLookupAddress 连接多调度器。

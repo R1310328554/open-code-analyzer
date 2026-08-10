@@ -1,5 +1,7 @@
 package worker
 
+// nodeSource 将跨任务输入流聚合为单一 executor.Pipeline，通过引用计数与 channel 实现背压：所有 streamSource 绑定同一 nodeSource。
+
 import (
 	"context"
 	"sync"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// nodeSource 懒初始化 closed/records 通道；Write 阻塞直到 Read 消费或 ctx 取消。
 // nodeSource exposes data for a receiver of a stream as an [executor.Pipeline].
 //
 // Records are made available by a [nodeSource] calling [nodeSource.Write],
@@ -35,6 +38,7 @@ func (src *nodeSource) Open(_ context.Context) error {
 	return nil
 }
 
+// Read 从 records 通道取下一批 Arrow 数据，并记录 xcap 接收耗时。
 // Read returns the next record of the node data. Blocks until results are
 // available or until the provided ctx is canceled.
 func (src *nodeSource) Read(ctx context.Context) (arrow.RecordBatch, error) {
@@ -56,6 +60,7 @@ func (src *nodeSource) Read(ctx context.Context) (arrow.RecordBatch, error) {
 	}
 }
 
+// lazyInit 保证 closed 与 records 通道只创建一次。
 func (src *nodeSource) lazyInit() {
 	src.initOnce.Do(func() {
 		src.closed = make(chan struct{})
@@ -63,6 +68,7 @@ func (src *nodeSource) lazyInit() {
 	})
 }
 
+// Write 向读端投递 RecordBatch；源已关闭时返回 executor.EOF。
 // Write writes a record to the read end of the node source. Write blocks until
 // the record has been read or the context is canceled.
 func (src *nodeSource) Write(ctx context.Context, rec arrow.RecordBatch) error {
@@ -78,6 +84,7 @@ func (src *nodeSource) Write(ctx context.Context, rec arrow.RecordBatch) error {
 	}
 }
 
+// Add 维护输入流引用计数；减至零自动 Close，负数则 panic。
 // Add adds a delta, which may be negative, to the node source's input stream
 // counter. If the counter becomes zero, the source is automatically closed. If
 // the counter goes negative, Add panics.
@@ -92,6 +99,7 @@ func (src *nodeSource) Add(delta int64) {
 	}
 }
 
+// Close 关闭 closed 通道，后续 Read/Write 均返回 EOF。
 // Close closes the source. All future Reads and Write calls will return
 // [executor.EOF].
 func (src *nodeSource) Close() {
@@ -99,3 +107,4 @@ func (src *nodeSource) Close() {
 
 	src.closeOnce.Do(func() { close(src.closed) })
 }
+// 多 stream 共享一个 nodeSource 使背压按节点而非按流数量施加。

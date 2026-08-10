@@ -1,5 +1,7 @@
 package worker
 
+// streamSink 将任务输出 RecordBatch 经 wire 协议发送到远程 worker 或调度器，支持 Bind 绑定目标地址、断线重连与指数退避重试。
+
 import (
 	"context"
 	"errors"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/workflow"
 )
 
+// streamSink 维护 destConn 对等连接，Send 阻塞直到对端确认或 ctx 取消。
 // streamSink allows for sending records remotely across a stream.
 type streamSink struct {
 	Logger      log.Logger
@@ -38,6 +41,7 @@ type streamSink struct {
 	destConn    *wire.Peer
 }
 
+// Bind 一次性设置 destination 并通知调度器 StreamStateOpen，唤醒等待中的 Send。
 // Bind informs the sink about the address to send stream data to. Calls to Bind
 // after the first will return an error.
 func (sink *streamSink) Bind(ctx context.Context, destination net.Addr) error {
@@ -63,6 +67,7 @@ func (sink *streamSink) Bind(ctx context.Context, destination net.Addr) error {
 	return nil
 }
 
+// lazyInit 创建 peer 连接用的 Background ctx 与 bound 同步 channel。
 func (sink *streamSink) lazyInit() {
 	sink.initOnce.Do(func() {
 		sink.ctx, sink.cancel = context.WithCancel(context.Background())
@@ -71,6 +76,7 @@ func (sink *streamSink) lazyInit() {
 	})
 }
 
+// Send 在可重试错误（连接关闭）时使用 backoff 重试，载荷被拒则立即失败。
 // Send sends a record to the remote side of the stream.
 //
 // Calls to Send block until:
@@ -111,6 +117,7 @@ func (sink *streamSink) Send(ctx context.Context, rec arrow.RecordBatch) error {
 	return bo.Err()
 }
 
+// send 经 getPeer 获取连接后发送 StreamDataMessage。
 func (sink *streamSink) send(ctx context.Context, rec arrow.RecordBatch) error {
 	peer, err := sink.getPeer(ctx)
 	if err != nil {
@@ -133,6 +140,7 @@ func (sink *streamSink) send(ctx context.Context, rec arrow.RecordBatch) error {
 	return nil
 }
 
+// getPeer 等待 Bind 完成，按需 Dial 并后台 Serve；连接关闭时清空 destConn 供重连。
 func (sink *streamSink) getPeer(ctx context.Context) (*wire.Peer, error) {
 	// Wait for destination.
 	select {
@@ -179,6 +187,7 @@ func (sink *streamSink) getPeer(ctx context.Context) (*wire.Peer, error) {
 	return peer, nil
 }
 
+// isRetryable 目前仅 wire.ErrConnClosed 可重试，其余错误直接上报。
 // isRetryable checks if the error is retryable:
 //
 //   - Connections closed to the peer can be retried
@@ -186,6 +195,7 @@ func (sink *streamSink) isRetryable(err error) bool {
 	return errors.Is(err, wire.ErrConnClosed)
 }
 
+// Close 取消 peer ctx 并异步通知调度器 StreamStateClosed。
 // Close closes the sink.
 func (sink *streamSink) Close(ctx context.Context) error {
 	sink.lazyInit()
@@ -204,3 +214,4 @@ func (sink *streamSink) Close(ctx context.Context) error {
 
 	return err
 }
+// Dialer 由 Worker 注入，与 listener 地址配对建立 worker 间数据通道。

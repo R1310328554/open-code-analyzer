@@ -1,3 +1,4 @@
+// Package workflow 将物理计划分区为可并行 Task DAG，经 Runner 分布式执行并汇总结果。
 // Package workflow defines how to represent physical plans as distributed
 // workflows.
 package workflow
@@ -35,6 +36,7 @@ var (
 	})
 )
 
+// Options 配置租户、并发 scan/其他任务上限及调试日志开关。
 // Options configures a [Workflow].
 type Options struct {
 	Tenant string   // Tenant ID associated with the workflow.
@@ -62,6 +64,7 @@ type Options struct {
 
 var _ fmt.Stringer = (*Workflow)(nil)
 
+// Workflow 持有任务 DAG、resultsStream/Pipeline、准入控制与状态映射。
 // Workflow represents a physical plan that has been partitioned into
 // parallelizable tasks.
 type Workflow struct {
@@ -92,6 +95,7 @@ type Workflow struct {
 	admissionControl *admissionControl
 }
 
+// New 调用 planWorkflow 分区计划，injectResultsStream 注入最终结果流并注册 Manifest。
 // New creates a new Workflow from a physical plan. New returns an error if the
 // physical plan does not have exactly one root node, or if the physical plan
 // cannot be partitioned into a Workflow.
@@ -127,6 +131,7 @@ func New(opts Options, logger log.Logger, runner Runner, plan *physical.Plan) (*
 	return wf, nil
 }
 
+// injectResultsStream 在根任务 rootNode 的 Sinks 追加 results Stream。
 // injectResultsStream injects a new stream into the sinks of the root task for
 // the workflow to receive final results.
 func injectResultsStream(tenantID string, graph *dag.Graph[*Task]) (*Stream, error) {
@@ -147,6 +152,7 @@ func injectResultsStream(tenantID string, graph *dag.Graph[*Task]) (*Stream, err
 	return results, nil
 }
 
+// init 构建 Manifest 并 RegisterManifest、Listen 绑定 resultsPipeline。
 // init initializes the workflow.
 func (wf *Workflow) init(ctx context.Context) error {
 	wf.manifest = &Manifest{
@@ -178,6 +184,7 @@ func (wf *Workflow) Opts() Options { return wf.opts }
 // Len returns the total number of tasks in the workflow.
 func (wf *Workflow) Len() int { return len(wf.manifest.Tasks) }
 
+// Close 结束 span 并 UnregisterManifest 取消关联任务。
 // Close releases resources associated with the workflow.
 func (wf *Workflow) Close() {
 	if wf.span != nil {
@@ -189,6 +196,7 @@ func (wf *Workflow) Close() {
 	}
 }
 
+// Run 后台 dispatchTasks，返回 wrappedPipeline 供调用方 Read 最终结果。
 // Run executes the workflow, returning a pipeline to read results from. The
 // provided context is used for the lifetime of the workflow execution.
 //
@@ -226,6 +234,7 @@ func (wf *Workflow) Run(ctx context.Context) (pipeline executor.Pipeline, err er
 	return wrapped, nil
 }
 
+// dispatchTasks 按 scan/other 车道 Acquire 令牌后调用 runner.Start 逐批下发任务。
 // dispatchTasks groups the slice of tasks by their associated "admission lane" (token bucket)
 // and dispatches them to the runner.
 // Tasks from different admission lanes are dispatched concurrently.
@@ -278,6 +287,7 @@ func (wf *Workflow) dispatchTasks(ctx context.Context, tasks []*Task) error {
 	return nil
 }
 
+// allStreams 遍历 DAG Sources 收集唯一 Stream，并包含 resultsStream。
 func (wf *Workflow) allStreams() []*Stream {
 	var (
 		result      []*Stream
@@ -311,6 +321,7 @@ func (wf *Workflow) allStreams() []*Stream {
 	return result
 }
 
+// allTasks 前序遍历图收集全部 Task 供 Manifest 注册。
 func (wf *Workflow) allTasks() []*Task {
 	var tasks []*Task
 
@@ -327,6 +338,7 @@ func (wf *Workflow) allTasks() []*Task {
 	return tasks
 }
 
+// onStreamChange 跟踪流状态；resultsStream 关闭时关闭 resultsPipeline。
 func (wf *Workflow) onStreamChange(_ context.Context, stream *Stream, newState StreamState) {
 	if wf.opts.DebugStreams {
 		level.Debug(wf.logger).Log("msg", "stream state change", "stream_id", stream.ULID, "new_state", newState)
@@ -343,6 +355,7 @@ func (wf *Workflow) onStreamChange(_ context.Context, stream *Stream, newState S
 	}
 }
 
+// onTaskChange 区分终端/非终端状态，分别触发短路取消或准入释放。
 func (wf *Workflow) onTaskChange(ctx context.Context, task *Task, newStatus TaskStatus) {
 	if wf.opts.DebugTasks {
 		level.Debug(wf.logger).Log("msg", "task state change", "task_id", task.ULID, "new_state", newStatus.State)
@@ -360,6 +373,7 @@ func (wf *Workflow) onTaskChange(ctx context.Context, task *Task, newStatus Task
 	}
 }
 
+// handleTerminalStateChange 合并 Capture/统计、Release 令牌，并取消满足条件的子任务。
 func (wf *Workflow) handleTerminalStateChange(ctx context.Context, task *Task, oldState TaskState, newStatus TaskStatus) {
 	// State has not changed
 	if oldState == newStatus.State {
@@ -419,6 +433,7 @@ func (wf *Workflow) handleTerminalStateChange(ctx context.Context, task *Task, o
 	wf.cancelTasks(ctx, tasksToCancel)
 }
 
+// handleNonTerminalStateChange 根据 ContributingTimeRange 短路不再贡献数据的子任务。
 func (wf *Workflow) handleNonTerminalStateChange(ctx context.Context, task *Task, newStatus TaskStatus) {
 	// If the task is running, but its contributing time range has been changed
 	if newStatus.State == TaskStateRunning && !newStatus.ContributingTimeRange.Timestamp.IsZero() {
@@ -457,6 +472,7 @@ func (wf *Workflow) handleNonTerminalStateChange(ctx context.Context, task *Task
 	}
 }
 
+// cancelTasks 调用 runner.Cancel，不在持锁状态下调用以避免重入死锁。
 func (wf *Workflow) cancelTasks(ctx context.Context, tasks []*Task) {
 	// Runners may re-invoke onTaskChange, so we don't want to hold the mutex
 	// when calling this.
@@ -465,6 +481,7 @@ func (wf *Workflow) cancelTasks(ctx context.Context, tasks []*Task) {
 	}
 }
 
+// mergeCapture 将任务级 xcap 区域链接父 Region 并合并到工作流 Capture。
 func (wf *Workflow) mergeCapture(capture *xcap.Capture) {
 	wf.captureMut.Lock()
 	defer wf.captureMut.Unlock()
@@ -483,6 +500,7 @@ func (wf *Workflow) mergeCapture(capture *xcap.Capture) {
 	}
 }
 
+// mergeResults 线程安全合并各任务 logql 统计到 wf.stats。
 func (wf *Workflow) mergeResults(results stats.Result) {
 	wf.statsMut.Lock()
 	defer wf.statsMut.Unlock()
@@ -505,8 +523,10 @@ func (p *wrappedPipeline) Read(ctx context.Context) (arrow.RecordBatch, error) {
 	return p.inner.Read(ctx)
 }
 
+// Close 关闭 inner 并执行 onClose 回调合并统计。
 // Close closes the resources of the pipeline.
 func (p *wrappedPipeline) Close() {
 	p.inner.Close()
 	p.onClose()
 }
+// shortCircuitsTotal 计数因 ContributingTimeRange 被 preemptively 取消的子任务。

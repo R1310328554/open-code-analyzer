@@ -1,3 +1,4 @@
+// Package worker 连接调度器接收任务分配，管理线程池、peer 连接与跨 worker 数据流。
 // Package worker provides a mechanism to connect to the [scheduler] for
 // executing tasks.
 package worker
@@ -30,6 +31,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/httpreq"
 )
 
+// Config 涵盖存储、Metastore、Dialer/Listener、调度器地址发现及并发线程数等。
 // Config holds configuration options for [Worker].
 type Config struct {
 	// Logger for optional log messages.
@@ -87,6 +89,7 @@ type Config struct {
 	StreamFilterer executor.RequestStreamFilterer `yaml:"-"`
 }
 
+// readyRequest/readyResponse 为线程就绪协议预留结构（当前由 jobManager 替代）。
 // readyRequest is a message sent from a thread to notify the worker that it's
 // ready for a task.
 type readyRequest struct {
@@ -105,6 +108,7 @@ type readyResponse struct {
 	Error error
 }
 
+// Worker 维护 sources/sinks/jobs 映射，通过 wire 与调度器及其他 worker 通信。
 // Worker requests tasks from a set of [scheduler.Scheduler] instances and
 // executes them. Task results are forwarded along streams, which are received
 // by other [Worker] instances or the scheduler.
@@ -132,6 +136,7 @@ type Worker struct {
 	jobManager *jobManager
 }
 
+// New 校验 Listener/Dialer/调度器地址，NumThreads 为 0 时默认 GOMAXPROCS。
 // New creates a new instance of a worker. Use [Worker.Service] to manage
 // the lifecycle of the returned worker.
 //
@@ -175,6 +180,7 @@ func New(config Config) (*Worker, error) {
 	}, nil
 }
 
+// Service 包装 dskit BasicService，run 方法驱动整个 worker 生命周期。
 // Service returns the service used to manage the lifecycle of the worker.
 func (w *Worker) Service() services.Service {
 	w.initOnce.Do(func() {
@@ -184,6 +190,7 @@ func (w *Worker) Service() services.Service {
 	return w.svc
 }
 
+// run 启动线程池、Accept 循环与调度器连接；关闭时先等线程完成当前任务再断开调度器。
 // run starts the worker, running until the provided context is canceled.
 func (w *Worker) run(ctx context.Context) error {
 	threadsCtx, threadsCancel := context.WithCancel(context.Background())
@@ -268,6 +275,7 @@ func (w *Worker) run(ctx context.Context) error {
 	return nil
 }
 
+// runAcceptLoop 接受 peer 连接并 handleConn，仅处理 StreamDataMessage 入站数据。
 // runAcceptLoop handles incoming connections from peers. Incoming connections
 // are exclusively used to receive task results from other workers, or between
 // threads within this worker.
@@ -285,6 +293,7 @@ func (w *Worker) runAcceptLoop(ctx context.Context) {
 	}
 }
 
+// handleConn 创建带 128 帧缓冲的 Peer 并 Serve 直到连接关闭。
 func (w *Worker) handleConn(ctx context.Context, conn wire.Conn) {
 	logger := log.With(w.logger, "remote_addr", conn.RemoteAddr())
 	level.Info(logger).Log("msg", "handling connection")
@@ -317,6 +326,7 @@ func (w *Worker) handleConn(ctx context.Context, conn wire.Conn) {
 	}
 }
 
+// schedulerLoop 对单调度器地址无限重连：Dial 成功后 handleSchedulerConn 直到断开。
 // schedulerLoop manages the lifecycle of a connection to a specific scheduler.
 func (w *Worker) schedulerLoop(ctx context.Context, addr net.Addr) error {
 	logger := log.With(w.logger, "remote_addr", addr)
@@ -350,10 +360,12 @@ func (w *Worker) schedulerLoop(ctx context.Context, addr net.Addr) error {
 }
 
 // dial opens a connection to the given address.
+// dial 使用配置的 Dialer，本地地址为 listener.Addr()。
 func (w *Worker) dial(ctx context.Context, addr net.Addr) (wire.Conn, error) {
 	return w.dialer.Dial(ctx, w.listener.Addr(), addr)
 }
 
+// handleSchedulerConn 处理 WorkerHello、TaskAssign、StreamBind 等调度器消息。
 // handleSchedulerConn handles a single connection to a scheduler.
 func (w *Worker) handleSchedulerConn(ctx context.Context, logger log.Logger, conn wire.Conn) error {
 	level.Info(logger).Log("msg", "connected to scheduler")
@@ -459,6 +471,7 @@ func (w *Worker) handleSchedulerConn(ctx context.Context, logger log.Logger, con
 	return err
 }
 
+// newJob 为任务创建 streamSource/streamSink，注入 trace 与 HTTP 头到 job ctx。
 // newJob creates a new job for the given assigned task. The job will have a
 // context bound to the provided ctx.
 //
@@ -580,6 +593,7 @@ func (w *Worker) newJob(ctx context.Context, scheduler *wire.Peer, logger log.Lo
 	return job, nil
 }
 
+// handleCancelMessage 查找 job 并调用 Cancel 终止正在执行的任务。
 func (w *Worker) handleCancelMessage(msg wire.TaskCancelMessage) error {
 	w.resourcesMut.RLock()
 	job, found := w.jobs[msg.ID]
@@ -593,6 +607,7 @@ func (w *Worker) handleCancelMessage(msg wire.TaskCancelMessage) error {
 	return nil
 }
 
+// handleBindMessage 将 StreamBindMessage.Receiver 绑定到对应 streamSink。
 func (w *Worker) handleBindMessage(ctx context.Context, msg wire.StreamBindMessage) error {
 	w.resourcesMut.RLock()
 	sink, found := w.sinks[msg.StreamID]
@@ -604,6 +619,7 @@ func (w *Worker) handleBindMessage(ctx context.Context, msg wire.StreamBindMessa
 	return sink.Bind(ctx, msg.Receiver)
 }
 
+// handleStreamStatusMessage 在流关闭时关闭本地 streamSource。
 func (w *Worker) handleStreamStatusMessage(msg wire.StreamStatusMessage) error {
 	w.resourcesMut.RLock()
 	source, found := w.sources[msg.StreamID]
@@ -620,6 +636,7 @@ func (w *Worker) handleStreamStatusMessage(msg wire.StreamStatusMessage) error {
 	return nil
 }
 
+// handleDataMessage 将入站 RecordBatch 写入对应 streamSource。
 func (w *Worker) handleDataMessage(ctx context.Context, msg wire.StreamDataMessage) error {
 	w.resourcesMut.RLock()
 	source, found := w.sources[msg.StreamID]
@@ -631,6 +648,7 @@ func (w *Worker) handleDataMessage(ctx context.Context, msg wire.StreamDataMessa
 	return source.Write(ctx, msg.Data)
 }
 
+// RegisterMetrics 注册 collector、worker metrics 与 wire metrics。
 // RegisterMetrics registers metrics about s to report to reg.
 func (w *Worker) RegisterMetrics(reg prometheus.Registerer) error {
 	var errs []error
@@ -642,9 +660,11 @@ func (w *Worker) RegisterMetrics(reg prometheus.Registerer) error {
 	return errors.Join(errs...)
 }
 
+// UnregisterMetrics 反向注销上述三类指标。
 // UnregisterMetrics unregisters metrics about s from reg.
 func (w *Worker) UnregisterMetrics(reg prometheus.Registerer) {
 	reg.Unregister(w.collector)
 	w.metrics.Unregister(reg)
 	w.wireMetrics.Unregister(reg)
 }
+// TaskAssign 时 jobManager.Send 失败返回 429，表示无空闲线程可接收任务。

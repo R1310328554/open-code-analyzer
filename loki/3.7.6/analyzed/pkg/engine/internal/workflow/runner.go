@@ -1,5 +1,7 @@
 package workflow
 
+// runner 包内类型定义工作流运行时契约：Manifest 注册任务与流，Runner 接口驱动异步执行、监听与取消。
+
 import (
 	"context"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// Manifest 聚合同一工作流内的 Stream/Task 及事件回调处理器。
 // A Manifest is a collection of related Tasks and Streams. A manifest is given
 // to a [Runner] before tasks can run.
 type Manifest struct {
@@ -30,12 +33,14 @@ type Manifest struct {
 	TaskEventHandler   TaskEventHandler   // Handler for task events.
 }
 
+// RecordWriter 抽象流写入，Listen 时将 streamPipe 绑定到 writer。
 // A RecordWriter is used to write records to a stream.
 type RecordWriter interface {
 	// Write writes a new record to the stream.
 	Write(ctx context.Context, record arrow.RecordBatch) error
 }
 
+// Runner 由调度器实现：RegisterManifest、Start、Cancel、Listen 等。
 // A Runner can asynchronously execute a workflow.
 type Runner interface {
 	// RegisterManifest registers a Manifest to use with the runner. Registering
@@ -76,9 +81,11 @@ type Runner interface {
 	Cancel(ctx context.Context, tasks ...*Task) error
 }
 
+// StreamEventHandler 在流状态变更时回调，Workflow 用于关闭 resultsPipeline。
 // StreamEventHandler is a function that handles events for changed streams.
 type StreamEventHandler func(ctx context.Context, s *Stream, newState StreamState)
 
+// StreamState 枚举 Idle/Open/Blocked/Closed，反映跨任务数据通道生命周期。
 // StreamState represents the state of a stream. It is sent as an event by a
 // [Runner] whenever a stream associated with a task changes its state.
 //
@@ -117,9 +124,11 @@ func (s StreamState) String() string {
 	return fmt.Sprintf("StreamState(%d)", s)
 }
 
+// TaskEventHandler 在任务状态变更时回调，驱动准入释放与短路取消。
 // TaskEventHandler is a function that handles events for changed tasks.
 type TaskEventHandler func(ctx context.Context, t *Task, newStatus TaskStatus)
 
+// TaskStatus 携带状态、错误、xcap Capture、统计与 ContributingTimeRange。
 // TaskStatus holds the state of a task and additional information about that
 // state.
 type TaskStatus struct {
@@ -140,6 +149,7 @@ type TaskStatus struct {
 	ContributingTimeRange ContributingTimeRange
 }
 
+// ContributingTimeRange 描述运行中任务仍可能受影响的输入时间边界，用于短路子任务。
 // ContributingTimeRange represents a time range of input data that can change the
 // current state of a running task. Anything outside of this range can not meaningfully
 // contribute to the task state.
@@ -150,6 +160,7 @@ type ContributingTimeRange struct {
 	LessThan bool
 }
 
+// TaskState 从 Created 经 Pending/Running 到 Completed/Cancelled/Failed 终端态。
 // TaskState represents the state of a Task. It is sent as an event by a
 // [Runner] whenever a Task associated with a task changes its state.
 type TaskState int
@@ -187,6 +198,7 @@ var TaskStates = [...]string{
 	"Failed",
 }
 
+// Terminal 判断 Completed、Cancelled、Failed 三种终态。
 // Terminal returns true if the TaskState is terminal.
 func (s TaskState) Terminal() bool {
 	return s == TaskStateCompleted || s == TaskStateCancelled || s == TaskStateFailed
@@ -199,3 +211,4 @@ func (s TaskState) String() string {
 	}
 	return fmt.Sprintf("TaskState(%d)", s)
 }
+// StreamStateBlocked 表示发送端因背压暂时无法继续写入。
