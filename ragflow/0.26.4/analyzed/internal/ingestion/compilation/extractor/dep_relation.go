@@ -1,6 +1,6 @@
-// Go implementation of dependency-based relation extraction.
-// Direct port of Python DepRelationExtractor — semantica-aligned.
-// Operates on a dependency tree (heads + labels) independent of parser.
+// 基于依存树的关系抽取 Go 实现。
+// 直接移植 Python DepRelationExtractor，与 semantica 对齐。
+// 在依存树（head + dep 标签）上操作，与具体解析器解耦。
 
 package extractor
 
@@ -10,7 +10,7 @@ import (
 )
 
 
-// Verb lemmatization — multi-language
+// 动词词形还原表（多语言）
 var verbLemma = map[string]string{
 	// English
 	"founded": "found", "founding": "found",
@@ -77,9 +77,7 @@ func lemma(w string) string {
 	return w
 }
 
-// Verb+prep → relation type (multi-language)
-// Keys: verbLemma+prep (or verbLemma alone for direct-object relations).
-// Matches Python _VERB_RELATIONS exactly.
+// 动词+介词 → 关系类型（多语言）；键为 verbLemma+prep 或单独 verbLemma。
 var depVerbRelations = map[string]string{
 	// English
 	"found+by": "founded_by", "co-found+by": "founded_by",
@@ -150,7 +148,7 @@ var depVerbRelations = map[string]string{
 	"買収+によって": "acquired",
 }
 
-// Copula title patterns — X is [title] of Y → typed relation
+// 系词头衔模式：X is [title] of Y → 类型化关系
 var depCopulaTitles = map[string][]string{
 	"ceo": {"ceo_of", "works_for"}, "cto": {"works_for"},
 	"cfo": {"works_for"}, "coo": {"works_for"},
@@ -160,7 +158,7 @@ var depCopulaTitles = map[string][]string{
 	"founder":  {"founded_by"}, "co-founder": {"founded_by"},
 }
 
-// Multi-hop inference rules: A rel1 B + B rel2 C ⇒ A rel3 C
+// 多跳推理规则：A rel1 B + B rel2 C ⇒ A rel3 C
 var multiHopRules = map[string]map[string]string{
 	"ceo_of":     {"is_subsidiary_of": "works_for", "located_in": "works_for"},
 	"works_for":  {"is_subsidiary_of": "works_for"},
@@ -168,14 +166,14 @@ var multiHopRules = map[string]map[string]string{
 }
 
 // ---------------------------------------------------------------------------
-// Language-specific dependency role mappings
+// 各语言依存角色映射（与 Python _LANG_DEP_RULES 一致）
 // ---------------------------------------------------------------------------
-// Matches Python _LANG_DEP_RULES exactly for all 7 languages.
+// 覆盖 en/zh/de/fr/es/pt/ja 七种语言。
 
 type roleSpec struct {
-	dep        string // main dependency label (e.g. "nsubj", "obl:agent")
-	childDep   string // child dep for compound rules (e.g. "pobj" for "agent"→"pobj")
-	caseMarker string // optional case marker text (zh:"由", ja:"によって")
+	dep        string // 主依存标签（如 nsubj、obl:agent）
+	childDep   string // 复合规则的子依存标签
+	caseMarker string // 可选格标记文本（中文「由」、日文「によって」）
 }
 
 var langRolesMap = map[string]map[string]roleSpec{
@@ -190,7 +188,7 @@ var langRolesMap = map[string]map[string]roleSpec{
 		"subj":     {dep: "sb"},
 		"agent":    {dep: "sbp", childDep: "nk"},
 		"prep_obj": {dep: "mo", childDep: "nk"},
-		// German ROOT is aux verb, real verb has dep "oc"
+		// 德语 ROOT 为助动词，真实动词 dep 为 oc
 		"root_verb_child": {dep: "oc"},
 	},
 	"fr": {
@@ -226,8 +224,7 @@ var langRolesMap = map[string]map[string]roleSpec{
 	},
 }
 
-// Copula dependency labels per language (attr_deps, prep_deps, obj_deps).
-// Matches Python _extract_copula label sets.
+// 各语言系词依存标签集（attr/prep/obj），与 Python _extract_copula 一致。
 var copulaDeps = map[string]struct {
 	attrDeps []string
 	prepDeps []string
@@ -242,8 +239,7 @@ var copulaDeps = map[string]struct {
 	"ja": {attrDeps: []string{"attr"}, prepDeps: []string{"case"}, objDeps: []string{"obl"}},
 }
 
-// be-verb surface forms across all 7 languages (used for copula detection).
-// Duplicate strings between languages are normalised into a single entry.
+// 七种语言的 be 动词表面形式（系词检测用）。
 var beVerbs = map[string]bool{
 	// English
 	"is": true, "are": true, "was": true, "were": true, "be": true, "been": true, "being": true,
@@ -260,7 +256,7 @@ var beVerbs = map[string]bool{
 	"ser": true, "sido": true, "siendo": true, "sendo": true,
 }
 
-// DepToken holds token dependency info from the C++ parser.
+// DepToken C++ 解析器返回的 token 依存信息。
 type DepToken struct {
 	Text  string `json:"text"`
 	Head  int    `json:"head"`
@@ -269,31 +265,30 @@ type DepToken struct {
 	POS   string `json:"pos,omitempty"`
 }
 
-// roleResult is the return type for getByRole.
+// roleResult getByRole 返回值（实体 + 可选介词）。
 type roleResult struct {
 	entity Entity
 	prep   string // prep lemma for prep_obj role; empty otherwise
 }
 
 // ---------------------------------------------------------------------------
-// Main entry point
+// 主入口
 // ---------------------------------------------------------------------------
 
-// DepExtractRelations extracts typed relations from a dependency parse tree.
-// lang is the language code (en/zh/de/fr/es/pt/ja).
-// maxDistance is the max character distance for co-occurrence (0 = use default 100).
+// DepExtractRelations 从依存 parse 树抽取类型化关系。
+// lang 为语言代码；maxDistance 为共现最大字符距离（0 默认 100）。
 func DepExtractRelations(text string, tokens []DepToken, entities []Entity, lang string, maxDistance int) []Relation {
 	entityMap := buildEntityMapMulti(entities)
 	var relations []Relation
 
-	// Detect German-style "oc" handling
+	// 检测德语 oc 特殊处理
 	_, hasRootVerbChild := langRolesMap[lang]["root_verb_child"]
 
 	for _, tok := range tokens {
 		if tok.Head != tok.Index {
 			continue
 		}
-		// German: ROOT is aux verb; real verb is an "oc" child
+		// 德语：ROOT 为助动词，真实动词为 oc 子节点
 		if hasRootVerbChild {
 			for _, c := range childrenOf(tok.Index, tokens) {
 				if c.Dep == langRolesMap[lang]["root_verb_child"].dep {
@@ -310,7 +305,7 @@ func DepExtractRelations(text string, tokens []DepToken, entities []Entity, lang
 			}
 			continue
 		}
-		// Standard languages: ROOT = main verb
+		// 标准语言：ROOT 即主动词
 		if hasNegation(tok.Index, tokens) {
 			continue
 		}
@@ -322,7 +317,7 @@ func DepExtractRelations(text string, tokens []DepToken, entities []Entity, lang
 		}
 	}
 
-	// Co-occurrence (always, matching Python DepRelationExtractor.extract())
+	// 共现关系（始终执行，与 Python extract 一致）
 	if maxDistance <= 0 {
 		maxDistance = 100
 	}
@@ -334,7 +329,7 @@ func DepExtractRelations(text string, tokens []DepToken, entities []Entity, lang
 }
 
 // ---------------------------------------------------------------------------
-// Negation
+// 否定检测
 // ---------------------------------------------------------------------------
 
 func hasNegation(idx int, tokens []DepToken) bool {
@@ -351,7 +346,7 @@ func isBeVerb(tok DepToken) bool {
 }
 
 // ---------------------------------------------------------------------------
-// Multi-hop inference
+// 多跳推理
 // ---------------------------------------------------------------------------
 
 func inferMultiHop(rels []Relation) []Relation {
@@ -399,7 +394,7 @@ func inferMultiHop(rels []Relation) []Relation {
 }
 
 // ---------------------------------------------------------------------------
-// Entity map
+// 实体映射
 // ---------------------------------------------------------------------------
 
 func buildEntityMapMulti(entities []Entity) map[string][]Entity {
@@ -426,11 +421,10 @@ func findBestEntity(key string, entityMap map[string][]Entity) *Entity {
 }
 
 // ---------------------------------------------------------------------------
-// Language-aware role lookup (replaces old getChildEntity/getAgentPobj/getPrepObjs)
+// 语言感知角色查找（替代旧 getChildEntity 等）
 // ---------------------------------------------------------------------------
 
-// getByRole returns matching (entity, prep) pairs for a semantic role.
-// Matches Python DepRelationExtractor._get_by_role.
+// getByRole 返回语义角色的 (entity, prep) 对，与 Python _get_by_role 一致。
 func getByRole(lang string, role string, rootIdx int, tokens []DepToken, entityMap map[string][]Entity) []roleResult {
 	roles, ok := langRolesMap[lang]
 	if !ok {
@@ -444,14 +438,14 @@ func getByRole(lang string, role string, rootIdx int, tokens []DepToken, entityM
 	var results []roleResult
 	for _, c := range childrenOf(rootIdx, tokens) {
 		if spec.caseMarker != "" {
-			// zh/ja agent: check for case marker in subtree
+			// 中/日 agent：检查子树中的格标记
 			if c.Dep == spec.dep && hasCaseMarkerInSubtree(c.Index, tokens, spec.caseMarker) {
 				if ent := findEntityInSubtree(c.Index, tokens, entityMap); ent != nil {
 					results = append(results, roleResult{entity: *ent})
 				}
 			}
 		} else if spec.childDep != "" {
-			// Compound rule: parent dep + child dep
+			// 复合规则：父 dep + 子 dep
 			if c.Dep == spec.dep {
 				prepLemma := strings.ToLower(c.Text)
 				for _, gc := range childrenOf(c.Index, tokens) {
@@ -467,7 +461,7 @@ func getByRole(lang string, role string, rootIdx int, tokens []DepToken, entityM
 				}
 			}
 		} else {
-			// Simple rule: single dep label
+			// 简单规则：单一 dep 标签
 			if c.Dep == spec.dep {
 				if ent := findEntityInSubtree(c.Index, tokens, entityMap); ent != nil {
 					results = append(results, roleResult{entity: *ent})
@@ -478,7 +472,7 @@ func getByRole(lang string, role string, rootIdx int, tokens []DepToken, entityM
 	return results
 }
 
-// hasCaseMarkerInSubtree checks if any token in the subtree of idx contains marker text.
+// hasCaseMarkerInSubtree 检查子树是否含格标记。
 func hasCaseMarkerInSubtree(idx int, tokens []DepToken, marker string) bool {
 	visited := map[int]bool{}
 	subtree := collectSubtree(idx, tokens, visited)
@@ -503,7 +497,7 @@ func collectSubtree(idx int, tokens []DepToken, visited map[int]bool) []DepToken
 }
 
 // ---------------------------------------------------------------------------
-// extractFromRoot — passive/active/preposition patterns (language-aware)
+// extractFromRoot — 被动/主动/介词模式（语言感知）
 // ---------------------------------------------------------------------------
 
 func extractFromRoot(text string, rootIdx int, tokens []DepToken, entityMap map[string][]Entity, lang string) []Relation {
@@ -511,7 +505,7 @@ func extractFromRoot(text string, rootIdx int, tokens []DepToken, entityMap map[
 	root := tokens[rootIdx]
 	verbLemma := lemma(strings.ToLower(root.Text))
 
-	// Get roles using language-aware mapping
+	// 用语言感知映射获取各语义角色
 	first := func(lst []roleResult) *Entity {
 		if len(lst) > 0 {
 			return &lst[0].entity
@@ -546,7 +540,7 @@ func extractFromRoot(text string, rootIdx int, tokens []DepToken, entityMap map[
 		}
 	}
 
-	// Passive: X was founded/acquired by Y
+	// 被动：X was founded/acquired by Y
 	if effectiveNsubjpass != nil && agentEntity != nil {
 		candidates := []string{"by", "von", "par", "por", "durch", "由", "によって"}
 		for _, candidate := range candidates {
@@ -565,7 +559,7 @@ func extractFromRoot(text string, rootIdx int, tokens []DepToken, entityMap map[
 		}
 	}
 
-	// Active: X VERB Y or X VERB prep Y
+	// 主动：X VERB Y 或 X VERB prep Y
 	if effectiveNsubj != nil {
 		if dobj != nil {
 			if relType := lookupVerb(verbLemma, ""); relType != "" {
@@ -583,7 +577,7 @@ func extractFromRoot(text string, rootIdx int, tokens []DepToken, entityMap map[
 		}
 	}
 
-	// Passive with prep ("is based in")
+	// 带介词的被动（如 is based in）
 	if effectiveNsubjpass != nil && len(prepList) > 0 && agentEntity == nil {
 		for _, pe := range prepList {
 			relType := lookupVerb(verbLemma, pe.prep)
@@ -602,7 +596,7 @@ func extractFromRoot(text string, rootIdx int, tokens []DepToken, entityMap map[
 }
 
 // ---------------------------------------------------------------------------
-// Copula extraction (language-aware)
+// 系词抽取（语言感知）
 // ---------------------------------------------------------------------------
 
 func extractCopula(text string, rootIdx int, tokens []DepToken, entityMap map[string][]Entity, lang string) []Relation {
@@ -659,7 +653,7 @@ func extractCopula(text string, rootIdx int, tokens []DepToken, entityMap map[st
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// 辅助函数
 // ---------------------------------------------------------------------------
 
 func makeRelation(subj Entity, pred string, obj Entity, conf float64) Relation {
@@ -702,7 +696,7 @@ func findEntityInSubtree(idx int, tokens []DepToken, emap map[string][]Entity) *
 	if ent := findBestEntity(key, emap); ent != nil {
 		return ent
 	}
-	// For CJK (no spaces), also try joining without spaces
+	// 中日韩无空格文本，尝试无空格拼接匹配
 	noSpace := strings.ToLower(strings.TrimSpace(strings.Join(words, "")))
 	if noSpace != key {
 		if ent := findBestEntity(noSpace, emap); ent != nil {
@@ -717,7 +711,7 @@ func findEntityInSubtree(idx int, tokens []DepToken, emap map[string][]Entity) *
 			}
 		}
 	}
-	// Fuzzy: try substring match
+	// 模糊：尝试子串匹配
 	for ek, ev := range emap {
 		if strings.Contains(ek, key) || strings.Contains(key, ek) {
 			e := ev[0]

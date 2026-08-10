@@ -27,12 +27,8 @@ import (
 	"ragflow/internal/tokenizer"
 )
 
-// newChunkerByName dispatches the DSL name to a typed constructor.
-// Centralised here so each chunker file only needs an init() that
-// declares its registered name (see register.go). The returned
-// runtime.Component interface is satisfied directly by each
-// constructor (NewTokenChunker etc.) — no intermediate assertion
-// is needed.
+// newChunkerByName 将 DSL 名称分派到具体分块器构造函数。
+// 集中于此，各 chunker 文件仅需 init 注册名称；直接返回 runtime.Component。
 func newChunkerByName(name string, params map[string]any) (runtime.Component, error) {
 	switch name {
 	case ComponentNameTokenChunker:
@@ -49,12 +45,11 @@ func newChunkerByName(name string, params map[string]any) (runtime.Component, er
 }
 
 // ---------------------------------------------------------------------------
-// numeric / list conversion helpers (shared across chunker variants)
+// 数值/列表转换辅助（各分块器变体共享）
 // ---------------------------------------------------------------------------
 
-// numericFromAny normalises JSON-decoded ints to float64 so the
-// schema-defaults-vs-Param-Update convention doesn't depend on the
-// encoding source (yaml/toml/json all behave the same).
+// numericFromAny 将 JSON 解码整数规范为 float64，
+// 使 schema 默认值与 Param.Update 约定不依赖编码来源。
 func numericFromAny(v any) (float64, bool) {
 	switch x := v.(type) {
 	case float64:
@@ -88,13 +83,11 @@ func stringListFromAny(in []any) []string {
 }
 
 // ---------------------------------------------------------------------------
-// regex / split helpers
+// 正则/分割辅助
 // ---------------------------------------------------------------------------
 
-// compileDelimPattern joins all delimiter entries into a single
-// alternation. Entries wrapped in backticks are treated as regex
-// literals and regex-escaped; plain strings are simply regex-escaped.
-// Longer patterns win (matches python `sorted(set, key=len, reverse=True)`).
+// compileDelimPattern 将分隔符合并为正则 alternation；
+// 反引号包裹为字面量，普通字符串转义；较长模式优先。
 func compileDelimPattern(delims []string) *regexp.Regexp {
 	var custom []string
 	var plain []string
@@ -116,11 +109,8 @@ func compileDelimPattern(delims []string) *regexp.Regexp {
 	return regexp.MustCompile(strings.Join(all, "|"))
 }
 
-// splitKeepingDelim is the Go equivalent of python's
-// `re.split((pattern), text, flags=re.DOTALL)` with the matched
-// delimiter preserved (alternation keeps the original delimiter text
-// in the output stream so the rebuilding at token_chunker.py:88-93
-// stays lossy-free).
+// splitKeepingDelim 等价 Python re.split 并保留匹配分隔符，
+// 与 token_chunker.py:88-93 重建逻辑无损对齐。
 func splitKeepingDelim(text string, pattern *regexp.Regexp) []string {
 	if pattern == nil {
 		return []string{text}
@@ -146,11 +136,10 @@ func splitKeepingDelim(text string, pattern *regexp.Regexp) []string {
 }
 
 // ---------------------------------------------------------------------------
-// chunk-doc helpers
+// chunk 文档辅助
 // ---------------------------------------------------------------------------
 
-// itemText returns the text payload from a JSON-style chunk item,
-// preferring "text", then "content_with_weight".
+// itemText 从 chunk 项取文本，优先 text 再 content_with_weight。
 func itemText(it schema.ChunkDoc) (string, bool) {
 	if it.Text != "" {
 		return it.Text, true
@@ -161,7 +150,7 @@ func itemText(it schema.ChunkDoc) (string, bool) {
 	return "", false
 }
 
-// itemDocType mirrors _build_json_chunks's type derivation.
+// itemDocType 镜像 _build_json_chunks 的类型推导。
 func itemDocType(it schema.ChunkDoc) string {
 	switch strings.ToLower(strings.TrimSpace(it.DocType)) {
 	case "table":
@@ -172,7 +161,7 @@ func itemDocType(it schema.ChunkDoc) string {
 	return "text"
 }
 
-// itemTextOrFallback returns the item's preferred text, or "".
+// itemTextOrFallback 返回首选文本或空串。
 func itemTextOrFallback(it schema.ChunkDoc) string {
 	if t, ok := itemText(it); ok {
 		return t
@@ -180,13 +169,10 @@ func itemTextOrFallback(it schema.ChunkDoc) string {
 	return ""
 }
 
-// tokenizeStr is the shared NumTokensFromString wrapper used by
-// Table/Image context attachment. Lives here so we can centrally
-// swizzle the count strategy in one place if needed.
+// tokenizeStr 共享 NumTokensFromString 包装，便于集中调整计数策略。
 func tokenizeStr(s string) int { return tokenizer.NumTokensFromString(s) }
 
-// toString normalises a chunk-map field to a string. Empty strings
-// for missing fields.
+// toString 将 chunk-map 字段规范为字符串，缺失返回空。
 func toString(v any) string {
 	if v == nil {
 		return ""
@@ -197,7 +183,7 @@ func toString(v any) string {
 	return ""
 }
 
-// emptyOutputs returns the canonical no-chunks payload.
+// emptyOutputs 返回标准空 chunks 载荷。
 func emptyOutputs() map[string]any {
 	return map[string]any{
 		"output_format": "chunks",

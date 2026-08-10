@@ -1,4 +1,6 @@
-// Package prebuilt provides pre-built components for common Agent Harness patterns.
+// Package prebuilt 提供常见 Agent Harness 模式的预置组件。
+//
+// 包含 ReAct Agent、ToolNode、ValidationNode、ConditionalNode 与 TransformNode。
 package prebuilt
 
 import (
@@ -8,39 +10,39 @@ import (
 	"ragflow/internal/harness/graph/runnable"
 )
 
-// ReactAgentConfig holds configuration for a ReAct agent.
+// ReactAgentConfig ReAct Agent 配置。
 type ReactAgentConfig struct {
-	// Tools available to the agent
+	// Tools Agent 可用工具列表
 	Tools []Tool
-	// LLM model to use
+	// Model 使用的 LLM 模型
 	Model LLM
-	// System prompt
+	// SystemPrompt 系统提示词
 	SystemPrompt string
-	// Maximum iterations
+	// MaxIterations 最大迭代次数
 	MaxIterations int
-	// Stop condition
+	// StopCondition 停止条件回调
 	StopCondition func(*ReActState) bool
 }
 
-// ReActState represents the state of a ReAct agent.
+// ReActState ReAct Agent 运行时状态。
 type ReActState struct {
-	// Input from user
+	// Input 用户输入
 	Input string
-	// Current thought
+	// Thought 当前思考
 	Thought string
-	// Current action
+	// Action 当前动作
 	Action string
-	// Observation from action
+	// Observation 动作观察结果
 	Observation string
-	// Final answer
+	// Answer 最终答案
 	Answer string
-	// Iteration count
+	// Iteration 迭代计数
 	Iteration int
-	// Tool calls history
+	// ToolCalls 工具调用历史
 	ToolCalls []ToolCall
 }
 
-// Tool represents a tool that can be called by the agent.
+// Tool Agent 可调用的工具定义。
 type Tool struct {
 	Name        string
 	Description string
@@ -48,7 +50,7 @@ type Tool struct {
 	Schema      map[string]interface{}
 }
 
-// ToolCall represents a call to a tool.
+// ToolCall 单次工具调用记录。
 type ToolCall struct {
 	ToolName string
 	Input    map[string]interface{}
@@ -56,13 +58,13 @@ type ToolCall struct {
 	Error    error
 }
 
-// LLM represents a language model.
+// LLM 语言模型接口。
 type LLM interface {
 	Generate(ctx context.Context, messages []map[string]interface{}) (string, error)
 	GenerateStream(ctx context.Context, messages []map[string]interface{}) (<-chan string, error)
 }
 
-// NewReactAgent creates a new ReAct (Reasoning + Acting) agent.
+// NewReactAgent 创建 ReAct（推理+行动）Agent。
 func NewReactAgent(config ReactAgentConfig) (runnable.Runnable[map[string]interface{}, map[string]interface{}], error) {
 	if len(config.Tools) == 0 {
 		return nil, fmt.Errorf("at least one tool is required")
@@ -74,7 +76,7 @@ func NewReactAgent(config ReactAgentConfig) (runnable.Runnable[map[string]interf
 		config.MaxIterations = 10
 	}
 
-	// Create the agent as a runnable
+	// 将 Agent 包装为 Runnable
 	agent := runnable.NewRunnableFunc(
 		func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {
 			state := &ReActState{
@@ -84,29 +86,29 @@ func NewReactAgent(config ReactAgentConfig) (runnable.Runnable[map[string]interf
 			}
 
 			for state.Iteration < config.MaxIterations {
-				// Check stop condition
+				// 检查停止条件
 				if config.StopCondition != nil && config.StopCondition(state) {
 					break
 				}
 
-				// Generate thought
+				// 生成思考
 				thought, err := config.Model.Generate(ctx, buildMessages(state, config.SystemPrompt))
 				if err != nil {
 					return nil, fmt.Errorf("failed to generate thought: %w", err)
 				}
 				state.Thought = thought
 
-				// Parse action from thought (simplified)
+				// 从思考中解析动作（简化版）
 				action := parseAction(thought)
 				state.Action = action
 
 				if action == "ANSWER" {
-					// Extract answer
+					// 提取答案
 					state.Answer = extractAnswer(thought)
 					break
 				}
 
-				// Execute tool
+				// 执行工具
 				toolOutput, err := executeTool(ctx, action, input, config.Tools)
 				state.Observation = fmt.Sprintf("%v", toolOutput)
 				state.ToolCalls = append(state.ToolCalls, ToolCall{
@@ -138,7 +140,7 @@ func NewReactAgent(config ReactAgentConfig) (runnable.Runnable[map[string]interf
 	return agent, nil
 }
 
-// ToolNode creates a node that executes a tool.
+// ToolNode 创建执行工具的节点。
 func ToolNode(tool Tool) runnable.Runnable[map[string]interface{}, map[string]interface{}] {
 	return runnable.NewRunnableFunc(
 		func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {
@@ -160,7 +162,7 @@ func ToolNode(tool Tool) runnable.Runnable[map[string]interface{}, map[string]in
 	)
 }
 
-// ValidationNode creates a node that validates input.
+// ValidationNode 创建校验输入的节点。
 func ValidationNode(
 	validateFunc func(map[string]interface{}) error,
 	errorMessage string,
@@ -170,7 +172,7 @@ func ValidationNode(
 			if err := validateFunc(input); err != nil {
 				return nil, fmt.Errorf("%s: %w", errorMessage, err)
 			}
-			// Pass through input if valid
+			// 校验通过后原样透传输入
 			return input, nil
 		},
 		runnable.WithName[map[string]interface{}, map[string]interface{}]("validation_node"),
@@ -178,7 +180,7 @@ func ValidationNode(
 	)
 }
 
-// ConditionalNode creates a node that routes based on a condition.
+// ConditionalNode 创建按条件路由的节点。
 func ConditionalNode(
 	condition func(map[string]interface{}) string,
 	branches map[string]runnable.Runnable[map[string]interface{}, map[string]interface{}],
@@ -205,7 +207,7 @@ func ConditionalNode(
 	)
 }
 
-// TransformNode creates a node that transforms input.
+// TransformNode 创建变换输入的节点。
 func TransformNode(
 	transformFunc func(map[string]interface{}) (map[string]interface{}, error),
 ) runnable.Runnable[map[string]interface{}, map[string]interface{}] {
@@ -218,7 +220,7 @@ func TransformNode(
 	)
 }
 
-// Helper functions
+// 辅助函数
 
 func buildMessages(state *ReActState, systemPrompt string) []map[string]interface{} {
 	messages := make([]map[string]interface{}, 0)
@@ -253,7 +255,7 @@ func buildMessages(state *ReActState, systemPrompt string) []map[string]interfac
 }
 
 func parseAction(thought string) string {
-	// Simplified parsing - in reality would use more sophisticated parsing
+	// 简化解析——生产环境应使用更完善的解析器
 	if len(thought) > 10 && thought[:5] == "THINK" {
 		return "THINK"
 	}
@@ -268,12 +270,12 @@ func parseAction(thought string) string {
 }
 
 func extractAnswer(thought string) string {
-	// Simplified extraction
+	// 简化提取
 	return thought
 }
 
 func executeTool(ctx context.Context, action string, input map[string]interface{}, tools []Tool) (interface{}, error) {
-	// Find the tool
+	// 查找匹配工具
 	for _, tool := range tools {
 		if tool.Name == action {
 			return tool.Function(ctx, input)

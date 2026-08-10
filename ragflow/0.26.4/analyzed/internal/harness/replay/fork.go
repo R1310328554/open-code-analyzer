@@ -12,24 +12,22 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// ForkContextKey is used to pass the ForkConfig's ModelOverride/ToolOverride
-// through context to node-level wrappers during true replay.
-// This is a spare key; the actual model/tool substitution during engine
-// re-execution is done by the caller via agent-level middleware.
+// ForkContextKey 在真实重放时经 context 向节点级包装器传递 ModelOverride/ToolOverride。
+// 此为备用键；引擎重执行时的模型/工具替换由调用方通过 Agent 中间件完成。
 type ForkContextKey struct{}
 
-// ForkConfig configures a fork operation.
+// ForkConfig Fork 操作配置。
 type ForkConfig struct {
-	// Store is the event source for the original trace.
+	// Store 原始轨迹的事件源。
 	Store events.EventLog
 
-	// TraceID identifies the original trace to fork from.
+	// TraceID 待 Fork 的原始轨迹 ID。
 	TraceID string
 
-	// Point is the event ID at which to fork.
+	// Point Fork 分叉点事件 ID。
 	Point events.EventID
 
-	// Substitution strategies for the forked branch.
+	// ModelOverride/ToolOverride Fork 分支的替换策略。
 	ModelOverride ModelOverrideFunc
 	ToolOverride  ToolOverrideFunc
 	NewInput      any
@@ -44,47 +42,45 @@ type ForkConfig struct {
 	// ForkEngine. When nil, a fresh MemorySaver is created.
 	Checkpointer checkpoint.BaseCheckpointer
 
-	// OutputStore receives events generated during the fork (nil = discard).
+	// OutputStore 接收 Fork 产生的事件（nil 则丢弃）。
 	OutputStore events.EventLog
 }
 
-// ForkResult contains the result of a fork operation.
+// ForkResult Fork 操作结果。
 type ForkResult struct {
-	// ForkTraceID identifies the new fork trace.
+	// ForkTraceID 新 Fork 轨迹 ID。
 	ForkTraceID string
 
-	// ForkEvents generated during the forked execution.
+	// ForkEvents Fork 执行产生的事件。
 	ForkEvents []*events.Event
 
-	// ParentTraceID is the original trace that was forked.
+	// ParentTraceID 被 Fork 的父轨迹 ID。
 	ParentTraceID string
 
-	// ForkPoint is the event ID where the fork occurred.
+	// ForkPoint Fork 发生点事件 ID。
 	ForkPoint events.EventID
 
 	// FinalState is the output state from the forked Engine execution.
 	// Only set when ForkEngine was used.
 	FinalState any
 
-	// Duration of the fork operation.
+	// Duration Fork 操作耗时。
 	Duration time.Duration
 }
 
-// Fork creates a branched execution from a specified point in the trace.
-// Events up to ForkPoint are replayed from the original store.
-// After ForkPoint, if ForkEngine is set, execution hands off to the real
-// graph engine via checkpoint resume; otherwise replay continues
-// deterministically with overrides.
+// Fork 从轨迹指定点创建分支执行。
+// ForkPoint 之前从原存储重放；之后若设 ForkEngine 则经检查点恢复交给真实引擎，
+// 否则继续带覆盖的确定性重放。
 func (e *ReplayEngine) Fork(ctx context.Context, cfg *ForkConfig) (*ForkResult, error) {
 	start := time.Now()
 
-	// Use config store, falling back to engine store.
+	// 优先使用配置 Store，回退到引擎 Store。
 	store := cfg.Store
 	if store == nil {
 		store = e.store
 	}
 
-	// Find the fork point event.
+	// 查找 Fork 点事件。
 	forkEvent, err := store.Get(ctx, cfg.Point)
 	if err != nil {
 		return nil, err
@@ -117,7 +113,7 @@ func (e *ReplayEngine) Fork(ctx context.Context, cfg *ForkConfig) (*ForkResult, 
 		ForkPoint:     cfg.Point,
 	}
 
-	// Append fork marker event.
+	// 追加 Fork 标记事件。
 	forkMarker := events.NewEvent(events.EventFork, 0)
 	forkMarker.TraceID = result.ForkTraceID
 	forkMarker.ParentID = cfg.Point
@@ -125,7 +121,7 @@ func (e *ReplayEngine) Fork(ctx context.Context, cfg *ForkConfig) (*ForkResult, 
 	forkMarker.Metadata["parent_trace"] = cfg.TraceID
 	forkMarker.Seal()
 
-	// Collect pre-fork events.
+	// 收集 Fork 前事件。
 	result.ForkEvents = append(result.ForkEvents, preForkEvents...)
 	result.ForkEvents = append(result.ForkEvents, forkMarker)
 
@@ -135,7 +131,7 @@ func (e *ReplayEngine) Fork(ctx context.Context, cfg *ForkConfig) (*ForkResult, 
 		}
 	}
 
-	// If a fork engine is provided, reconstruct checkpoint and resume.
+	// 若提供 ForkEngine，重建检查点并恢复执行。
 	if cfg.ForkEngine != nil {
 		forkResult, err := e.resumeFromCheckpoint(ctx, cfg, preForkEvents, forkMarker)
 		if err != nil {
@@ -148,9 +144,8 @@ func (e *ReplayEngine) Fork(ctx context.Context, cfg *ForkConfig) (*ForkResult, 
 	return result, nil
 }
 
-// resumeFromCheckpoint reconstructs checkpoint state from pre-fork events and
-// resumes the ForkEngine from that point. The engine runs the graph from the
-// reconstructed state and returns the final output.
+// resumeFromCheckpoint 从 Fork 前事件重建检查点状态并恢复 ForkEngine，
+// 从重建状态运行图并返回最终输出。
 func (e *ReplayEngine) resumeFromCheckpoint(ctx context.Context, cfg *ForkConfig, preForkEvents []*events.Event, forkMarker *events.Event) (any, error) {
 	if cfg.ForkEngine == nil {
 		return nil, nil
@@ -161,10 +156,10 @@ func (e *ReplayEngine) resumeFromCheckpoint(ctx context.Context, cfg *ForkConfig
 		threadID = "fork-" + string(cfg.Point)
 	}
 
-	// Build checkpoint map from pre-fork events.
+	// 从 Fork 前事件构建检查点 map。
 	cp, cpID := BuildCheckpoint(preForkEvents, threadID)
 
-	// Save checkpoint into a MemorySaver (or caller-provided checkpointer).
+	// 将检查点写入 MemorySaver 或调用方提供的 checkpointer。
 	saver := cfg.Checkpointer
 	if saver == nil {
 		saver = checkpoint.NewMemorySaver()
@@ -181,16 +176,16 @@ func (e *ReplayEngine) resumeFromCheckpoint(ctx context.Context, cfg *ForkConfig
 	// We inject our own via WithCheckpointer option at Fork creation time
 	// by creating a new Engine wrapping the same graph.
 
-	// Configure the engine's runnable config to point at the checkpoint.
+	// 配置 RunnableConfig 指向目标检查点。
 	rc := types.NewRunnableConfig()
 	rc.ThreadID = threadID
 	rc.Set(constants.ConfigKeyThreadID, threadID)
 	rc.Set(constants.ConfigKeyCheckpointID, cpID)
 
-	// Run the ForkEngine with the resume config.
+	// 以恢复配置运行 ForkEngine。
 	outputCh, errCh := cfg.ForkEngine.Run(ctx, nil, types.StreamModeValues)
 
-	// Drain outputCh for final state.
+	// 排空 outputCh 获取最终状态。
 	var finalState any
 	for result := range outputCh {
 		if se, ok := result.(*pregel.StreamEvent); ok {
@@ -208,7 +203,7 @@ func (e *ReplayEngine) resumeFromCheckpoint(ctx context.Context, cfg *ForkConfig
 		return nil, err
 	}
 
-	// If output store is set, record fork completion.
+	// 若设 OutputStore，记录 Fork 完成事件。
 	if cfg.OutputStore != nil {
 		forkEnd := events.NewEvent(events.EventGraphEnd, 0)
 		forkEnd.TraceID = cfg.TraceID + "_fork_" + string(cfg.Point)

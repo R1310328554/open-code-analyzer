@@ -1,3 +1,4 @@
+// parser_go.go — C++ ThincParser/ThincTagger cgo 绑定。
 //go:build cgo_thincner
 
 package extractor
@@ -13,7 +14,7 @@ import (
 	"unsafe"
 )
 
-// DepToken holds dependency parse info for one token (mirrors Go dep_relation.go)
+// DepToken 单 token 依存解析信息（与 dep_relation.go 一致）。
 type DepTokenC struct {
 	Text  string `json:"text"`
 	Head  int    `json:"head"`
@@ -21,10 +22,8 @@ type DepTokenC struct {
 	Index int    `json:"index"`
 }
 
-// RunParser runs the C++ dependency parser on tokenized text.
-// modelBaseDir: path to model directory containing ner/ and parser/ subdirectories.
-// tokensJSON: JSON array of token strings.
-// Returns JSON array of DepTokenC.
+// RunParser 对分词文本运行 C++ 依存解析器。
+// nerDir/parserDir 为模型子目录；tokensJSON 为 token JSON 数组；返回 DepTokenC JSON。
 func RunParser(nerDir, parserDir string, tokensJSON string) (string, error) {
 	cNer := C.CString(nerDir)
 	cParser := C.CString(parserDir)
@@ -48,9 +47,7 @@ func RunParser(nerDir, parserDir string, tokensJSON string) (string, error) {
 	return C.GoString(cResult), nil
 }
 
-// RunTagger runs the C++ POS tagger.
-// nerDir: path to NER model directory (for tok2vec weights).
-// taggerDir: path to tagger model directory.
+// RunTagger 运行 C++ 词性标注器；nerDir 提供 tok2vec 权重。
 func RunTagger(nerDir, taggerDir string, tokensJSON string) (string, error) {
 	cNer := C.CString(nerDir)
 	cTagger := C.CString(taggerDir)
@@ -74,7 +71,7 @@ func RunTagger(nerDir, taggerDir string, tokensJSON string) (string, error) {
 	return C.GoString(cResult), nil
 }
 
-// ParseTokensWithParser runs the C++ parser and returns parsed DepToken slice.
+// ParseTokensWithParser 运行 C++ 解析器并返回 DepToken 切片。
 func ParseTokensWithParser(nerDir, parserDir string, tokens []string) ([]DepTokenC, error) {
 	tj, _ := json.Marshal(tokens)
 	resultJSON, err := RunParser(nerDir, parserDir, string(tj))

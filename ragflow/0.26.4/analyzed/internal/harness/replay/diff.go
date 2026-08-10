@@ -6,37 +6,37 @@ import (
 	"ragflow/internal/harness/events"
 )
 
-// DiffResult contains the comparison of two execution traces.
+// DiffResult 两条执行轨迹的对比结果。
 type DiffResult struct {
-	// LeftTraceID identifies the left (reference) trace.
+	// LeftTraceID 左侧（参考）轨迹 ID。
 	LeftTraceID string
 
-	// RightTraceID identifies the right (candidate) trace.
+	// RightTraceID 右侧（候选）轨迹 ID。
 	RightTraceID string
 
-	// MissingInRight are events present in the left trace but absent in the right.
+	// MissingInRight 左有右无的事件。
 	MissingInRight []*events.Event
 
-	// MissingInLeft are events present in the right trace but absent in the left.
+	// MissingInLeft 右有左无的事件。
 	MissingInLeft []*events.Event
 
-	// Mismatched are events that exist in both traces but have different payloads.
+	// Mismatched 两侧均存在但载荷不同的事件。
 	Mismatched []EventMismatch
 
-	// StateDiff captures differences in state transitions.
+	// StateDiff 状态转换差异。
 	StateDiff map[string]StateDiff
 
-	// ToolCallDiff captures differences in tool invocations.
+	// ToolCallDiff 工具调用差异。
 	ToolCallDiff []ToolCallDiff
 
-	// LLMResponseDiff captures differences in LLM responses.
+	// LLMResponseDiff LLM 响应差异。
 	LLMResponseDiff []LLMResponseDiff
 
-	// FinalOutputDiff is the difference in the final output (empty when identical).
+	// FinalOutputDiff 最终输出差异（相同时为空）。
 	FinalOutputDiff string
 }
 
-// EventMismatch describes a single event-level difference between two traces.
+// EventMismatch 单条事件级差异描述。
 type EventMismatch struct {
 	Clock      uint64
 	LeftEvent  *events.Event
@@ -46,7 +46,7 @@ type EventMismatch struct {
 	RightValue string
 }
 
-// StateDiff describes a difference in state at a specific point.
+// StateDiff 特定时刻的状态差异。
 type StateDiff struct {
 	Clock      uint64
 	Key        string
@@ -54,7 +54,7 @@ type StateDiff struct {
 	RightValue any
 }
 
-// ToolCallDiff describes a difference in a tool invocation between two traces.
+// ToolCallDiff 两条轨迹间工具调用差异。
 type ToolCallDiff struct {
 	Index       int
 	ToolName    string
@@ -64,16 +64,15 @@ type ToolCallDiff struct {
 	RightError  string
 }
 
-// LLMResponseDiff describes a difference in an LLM response between two traces.
+// LLMResponseDiff 两条轨迹间 LLM 响应差异。
 type LLMResponseDiff struct {
 	Index        int
 	LeftContent  string
 	RightContent string
 }
 
-// Diff compares two execution traces from the same event store.
-// It identifies events that are present in one trace but not the other,
-// and events that exist in both but differ in content.
+// Diff 对比同一事件存储中的两条执行轨迹，
+// 识别仅一侧存在的事件及两侧内容不一致的事件。
 func Diff(ctx context.Context, left, right events.EventLog, leftTraceID, rightTraceID string) (*DiffResult, error) {
 	result := &DiffResult{
 		LeftTraceID:  leftTraceID,
@@ -81,7 +80,7 @@ func Diff(ctx context.Context, left, right events.EventLog, leftTraceID, rightTr
 		StateDiff:    make(map[string]StateDiff),
 	}
 
-	// Collect events from both traces.
+	// 收集两侧轨迹的全部事件。
 	leftEvents, err := readAllEvents(ctx, left, leftTraceID)
 	if err != nil {
 		return nil, err
@@ -91,7 +90,7 @@ func Diff(ctx context.Context, left, right events.EventLog, leftTraceID, rightTr
 		return nil, err
 	}
 
-	// Build lookup maps.
+	// 按逻辑时钟构建查找表。
 	leftByClock := make(map[uint64]*events.Event)
 	for _, ev := range leftEvents {
 		leftByClock[ev.Clock] = ev
@@ -101,7 +100,7 @@ func Diff(ctx context.Context, left, right events.EventLog, leftTraceID, rightTr
 		rightByClock[ev.Clock] = ev
 	}
 
-	// Collect all clock values.
+	// 收集全部 clock 值。
 	allClocks := make(map[uint64]bool)
 	for _, ev := range leftEvents {
 		allClocks[ev.Clock] = true
@@ -110,7 +109,7 @@ func Diff(ctx context.Context, left, right events.EventLog, leftTraceID, rightTr
 		allClocks[ev.Clock] = true
 	}
 
-	// Compare event by event.
+	// 逐 clock 对比事件。
 	for clock := range allClocks {
 		leftEv, leftOk := leftByClock[clock]
 		rightEv, rightOk := rightByClock[clock]
@@ -121,7 +120,7 @@ func Diff(ctx context.Context, left, right events.EventLog, leftTraceID, rightTr
 		case !leftOk && rightOk:
 			result.MissingInLeft = append(result.MissingInLeft, rightEv)
 		case leftOk && rightOk:
-			// Both exist — compare.
+			// 两侧均存在——比较类型与哈希。
 			if leftEv.Type != rightEv.Type {
 				result.Mismatched = append(result.Mismatched, EventMismatch{
 					Clock:      clock,
@@ -143,7 +142,7 @@ func Diff(ctx context.Context, left, right events.EventLog, leftTraceID, rightTr
 				})
 			}
 
-			// Categorise by event type.
+			// 按事件类型分类差异。
 			switch leftEv.Type {
 			case events.EventLLMCallEnd:
 				result.LLMResponseDiff = append(result.LLMResponseDiff, LLMResponseDiff{
@@ -170,7 +169,7 @@ func Diff(ctx context.Context, left, right events.EventLog, leftTraceID, rightTr
 	return result, nil
 }
 
-// readAllEvents reads all events for a trace from the store.
+// readAllEvents 从存储读取指定轨迹的全部事件。
 func readAllEvents(ctx context.Context, store events.EventLog, traceID string) ([]*events.Event, error) {
 	iter := store.Stream(ctx, events.EventFilter{TraceID: traceID})
 	defer iter.Close()
@@ -186,7 +185,7 @@ func readAllEvents(ctx context.Context, store events.EventLog, traceID string) (
 	return result, nil
 }
 
-// extractContent extracts the Content field from an LLMCallPayload event.
+// extractContent 从 LLMCallPayload 事件提取 Content。
 func extractContent(ev *events.Event) string {
 	if ev.Payload == nil {
 		return ""
@@ -198,7 +197,7 @@ func extractContent(ev *events.Event) string {
 	return payload.Content
 }
 
-// extractToolName extracts the ToolName field from a ToolCallPayload event.
+// extractToolName 从 ToolCallPayload 事件提取 ToolName。
 func extractToolName(ev *events.Event) string {
 	if ev.Payload == nil {
 		return ""

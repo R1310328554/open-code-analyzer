@@ -7,34 +7,30 @@ import (
 	"ragflow/internal/harness/events"
 )
 
-// ---- common overrides ----
+// ---- 通用覆盖策略 ----
 
-// ReplayExactTools returns a ToolOverrideFunc that uses the recorded result
-// unchanged. This is the default behaviour for deterministic replay.
+// ReplayExactTools 返回使用录制结果不变的工具覆盖函数，为确定性重放默认行为。
 func ReplayExactTools() ToolOverrideFunc {
 	return func(toolName string, args map[string]any, recordedResult any) (any, error) {
 		return recordedResult, nil
 	}
 }
 
-// ReplayLiveTools returns a ToolOverrideFunc that always returns nil,
-// signalling the replay to execute the tool with the real implementation.
+// ReplayLiveTools 返回始终 nil 的工具覆盖函数，指示重放使用真实工具实现。
 func ReplayLiveTools() ToolOverrideFunc {
 	return func(toolName string, args map[string]any, recordedResult any) (any, error) {
-		// Return nil to indicate "execute live".
+		// 返回 nil 表示「实时执行」。
 		return nil, nil
 	}
 }
 
-// ReplaySubstituteModel returns a ModelOverrideFunc that replaces the
-// recorded LLM response with a fixed string. Use this to compare how
-// a different model would change behaviour while keeping tool results frozen.
+// ReplaySubstituteModel 用固定字符串替换录制的 LLM 响应，
+// 在冻结工具结果时对比不同模型的行为变化。
 //
-// The callback receives the original recorded response and should return
-// the substitute response. Return ("", nil) to suppress the response.
+// 回调接收原始录制响应并返回替换响应；返回空串可抑制响应。
 type ReplayModelCallback func(recordedResponse string) string
 
-// ReplaySubstituteModel creates a ModelOverrideFunc from a callback.
+// ReplaySubstituteModel 从回调创建 ModelOverrideFunc。
 func ReplaySubstituteModel(fn ReplayModelCallback) ModelOverrideFunc {
 	return func(_ []any, recordedResponse string) (*string, error) {
 		substituted := fn(recordedResponse)
@@ -42,7 +38,7 @@ func ReplaySubstituteModel(fn ReplayModelCallback) ModelOverrideFunc {
 	}
 }
 
-// ---- error types ----
+// ---- 错误类型 ----
 
 type replayError struct {
 	msg string
@@ -54,7 +50,7 @@ func errorf(format string, args ...any) error {
 	return &replayError{msg: fmt.Sprintf(format, args...)}
 }
 
-// ---- helpers ----
+// ---- 辅助函数 ----
 
 func jsonUnmarshal(data []byte, target any) error {
 	return json.Unmarshal(data, target)
@@ -64,7 +60,7 @@ func jsonMarshal(v any) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-// copyEvent creates a shallow copy of an Event with a deep copy of Payload and Metadata.
+// copyEvent 浅拷贝 Event，深拷贝 Payload 与 Metadata。
 func copyEvent(ev *events.Event) *events.Event {
 	cp := *ev
 	if ev.Payload != nil {
@@ -84,9 +80,9 @@ func copyEvent(ev *events.Event) *events.Event {
 	return &cp
 }
 
-// ---- event helpers for test assertions ----
+// ---- 测试断言用事件辅助 ----
 
-// FindEventsOfType filters events by type.
+// FindEventsOfType 按类型过滤事件。
 func FindEventsOfType(evts []*events.Event, typ events.EventType) []*events.Event {
 	var result []*events.Event
 	for _, ev := range evts {
@@ -97,7 +93,7 @@ func FindEventsOfType(evts []*events.Event, typ events.EventType) []*events.Even
 	return result
 }
 
-// EventsContains checks if any event has the given type.
+// EventsContains 检查是否存在指定类型事件。
 func EventsContains(evts []*events.Event, typ events.EventType) bool {
 	for _, ev := range evts {
 		if ev.Type == typ {
@@ -107,7 +103,7 @@ func EventsContains(evts []*events.Event, typ events.EventType) bool {
 	return false
 }
 
-// EventCount counts events of a given type.
+// EventCount 统计指定类型事件数量。
 func EventCount(evts []*events.Event, typ events.EventType) int {
 	count := 0
 	for _, ev := range evts {

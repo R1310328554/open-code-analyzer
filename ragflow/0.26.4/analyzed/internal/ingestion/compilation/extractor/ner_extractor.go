@@ -14,19 +14,15 @@
 //  limitations under the License.
 //
 
-// Package extractor provides NER and relation extraction for the ingestion
-// pipeline. It mirrors the Python rag/graphrag/ner package so that both
-// code paths produce identical output.
+// Package extractor 为 ingestion 流水线提供 NER 与关系抽取，
+// 镜像 Python rag/graphrag/ner 包以保证双路径输出一致。
 //
-// The C++ ThincNER engine (internal/binding/cpp/) loads spaCy model.ckpt+model.bin
-// directly for NER inference. Relation extraction is pure Go regex.
+// C++ ThincNER（internal/binding/cpp/）直接加载 spaCy model.ckpt+model.bin 做 NER；
+// 关系抽取为纯 Go 正则实现。
 //
-// Usage:
-//
+// 用法示例：
 //	ext := extractor.NewExtractor("en")
 //	result, err := ext.Extract("Apple Inc. was founded by Steve Jobs.", true)
-//	for _, e := range result.Entities { ... }
-//	for _, r := range result.Relations { ... }
 //go:build cgo_thincner
 
 package extractor

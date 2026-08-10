@@ -16,25 +16,15 @@
 //  limitations under the License.
 //
 
-// Stub for non-CGO builds.
+// 非 CGO 构建的桩实现。
 //
-// The C++ ThincNER engine (and its ThincParser / ThincTagger
-// siblings) is wired through cgo in ner.go, parser_go.go, and
-// ner_extractor.go — those files carry `//go:build cgo_thincner`.
-// Without the `cgo_thincner` build tag, the test binary cannot link the missing
-// ThincNER_* / ThincParser_* / ThincTagger_* symbols.
+// C++ ThincNER/ThincParser/ThincTagger 经 cgo 接入（ner.go、parser_go.go 等，build tag cgo_thincner）。
+// 无 cgo_thincner 时测试二进制无法链接 ThincNER_* 等符号。
 //
-// This file declares the same exported surface the rest of the
-// package depends on (Entity / Relation / ExtractionResult /
-// Extractor / RunParser / RunTagger / NewExtractor / DetectLanguage
-// / ParseTokensWithParser / ExtractRelations) so the pure-Go files
-// in the package — primarily dep_relation.go and the relation-
-// extraction pure-Go logic — continue to compile.
+// 本文件声明包其余部分依赖的导出面（Entity/Relation/Extractor 等），
+// 使 dep_relation.go 等纯 Go 文件继续编译。
 //
-// The cgo-backed functions return an explicit ErrNoCGO error so
-// any caller that reaches the C++ engine on a no-CGO build fails
-// loudly rather than silently degrading. Production builds use
-// the `cgo_thincner` path only when that explicit build tag is enabled.
+// cgo 函数返回 ErrNoCGO，无 CGO 构建时调用方显式失败而非静默降级。
 
 package extractor
 
@@ -44,14 +34,11 @@ import (
 	"sync"
 )
 
-// ErrNoCGO is returned by all cgo-backed entry points on non-CGO
-// builds. The Python-side ThincNER engine requires the C++ static
-// library at internal/cpp/cmake-build-release/librag_tokenizer_c_api.a;
-// without it the package compiles but the inference paths fail
-// with this error.
+// ErrNoCGO 非 CGO 构建时所有 cgo 入口返回此错误；
+// 需 C++ 静态库 librag_tokenizer_c_api.a 才能推理。
 var ErrNoCGO = errors.New("extractor: CGO disabled — ThincNER / ThincParser / ThincTagger unavailable")
 
-// Entity mirrors the cgo-backed declaration.
+// Entity 镜像 cgo 版声明。
 type Entity struct {
 	Text       string         `json:"text"`
 	Label      string         `json:"label"`
@@ -62,7 +49,7 @@ type Entity struct {
 	Metadata   map[string]any `json:"metadata,omitempty"`
 }
 
-// Relation mirrors the cgo-backed declaration.
+// Relation 镜像 cgo 版声明。
 type Relation struct {
 	Subject    Entity         `json:"subject"`
 	Predicate  string         `json:"predicate"`
@@ -72,7 +59,7 @@ type Relation struct {
 	Metadata   map[string]any `json:"metadata,omitempty"`
 }
 
-// ExtractionResult mirrors the cgo-backed declaration.
+// ExtractionResult 镜像 cgo 版声明。
 type ExtractionResult struct {
 	Entities  []Entity       `json:"entities"`
 	Relations []Relation     `json:"relations"`
@@ -80,9 +67,7 @@ type ExtractionResult struct {
 	Metadata  map[string]any `json:"metadata,omitempty"`
 }
 
-// Extractor mirrors the cgo-backed declaration. The no-CGO
-// instance returns ErrNoCGO from every inference call but
-// otherwise satisfies the same surface as the CGO build.
+// Extractor 镜像 cgo 版；推理调用返回 ErrNoCGO，其余接口一致。
 type Extractor struct {
 	mu                  sync.Mutex
 	Lang                string
@@ -90,33 +75,25 @@ type Extractor struct {
 	IncludeTokens       bool
 }
 
-// ModelPredictor is the dependency-injection seam used by tests;
-// no-CGO builds mirror the type so existing test helpers compile.
+// ModelPredictor 测试注入 seam，no-CGO 镜像类型以保持测试编译。
 type ModelPredictor func(tokensJSON string) (string, error)
 
-// NewExtractor returns a no-CGO Extractor. Inference calls fail
-// with ErrNoCGO. The pure-Go relation-extraction helpers
-// (DepExtractRelations / ExtractRelations) do not depend on cgo
-// and continue to function.
+// NewExtractor 返回 no-CGO Extractor；DepExtractRelations/ExtractRelations 不依赖 cgo。
 func NewExtractor(lang string) *Extractor {
 	return &Extractor{Lang: lang}
 }
 
-// RunParser is the no-CGO stub. The cgo-backed implementation is
-// in parser_go.go (build tag: cgo_thincner).
+// RunParser no-CGO 桩，cgo 实现在 parser_go.go。
 func RunParser(nerDir, parserDir string, tokensJSON string) (string, error) {
 	return "", ErrNoCGO
 }
 
-// RunTagger is the no-CGO stub. The cgo-backed implementation is
-// in parser_go.go (build tag: cgo_thincner).
+// RunTagger no-CGO 桩，cgo 实现在 parser_go.go。
 func RunTagger(nerDir, taggerDir string, tokensJSON string) (string, error) {
 	return "", ErrNoCGO
 }
 
-// ParseTokensWithParser is the no-CGO stub for the typed wrapper
-// around RunParser. Production callers should check the error
-// before using the returned slice.
+// ParseTokensWithParser RunParser 的类型化包装桩；调用方应先检查 error。
 func ParseTokensWithParser(nerDir, parserDir string, tokens []string) ([]DepTokenC, error) {
 	tj, _ := json.Marshal(tokens)
 	resultJSON, err := RunParser(nerDir, parserDir, string(tj))
@@ -130,7 +107,7 @@ func ParseTokensWithParser(nerDir, parserDir string, tokens []string) ([]DepToke
 	return tokensC, nil
 }
 
-// DepTokenC mirrors the cgo-backed declaration.
+// DepTokenC 镜像 cgo 版声明。
 type DepTokenC struct {
 	Text  string `json:"text"`
 	Head  int    `json:"head"`
@@ -138,17 +115,14 @@ type DepTokenC struct {
 	Index int    `json:"index"`
 }
 
-// DetectLanguage is pure-Go and unchanged by this stub file.
-// The CGO build's DetectLanguage is identical; keeping the
-// declaration here makes the no-CGO path self-contained.
+// DetectLanguage 纯 Go 实现，与 CGO 版一致；此处声明使 no-CGO 路径自包含。
 func DetectLanguage(text string) string {
 	return detectLanguageNoCGO(text)
 }
 
-// detectLanguageNoCGO is the pure-Go language detection helper.
-// Mirrors the CGO file's DetectLanguage without any cgo deps.
+// detectLanguageNoCGO 纯 Go 语言检测，无 cgo 依赖。
 //
-// The detector prefers the most specific Unicode range:
+// 检测器优先最具体的 Unicode 范围：
 //
 //   - Hiragana / Katakana → "ja" (Japanese)
 //   - CJK Unified Ideographs → "zh" (Chinese)
@@ -158,10 +132,7 @@ func DetectLanguage(text string) string {
 //   - Devanagari → "hi"
 //   - Otherwise → "en"
 //
-// This matches the production heuristic closely enough for the
-// no-CGO test binary link; production code that depends on
-// DetectLanguage's accuracy should set `-tags=cgo_thincner` to
-// select the real implementation.
+// 与生产启发式足够接近供 no-CGO 测试链接；高精度场景请用 -tags=cgo_thincner。
 func detectLanguageNoCGO(text string) string {
 	if len(text) == 0 {
 		return "en"

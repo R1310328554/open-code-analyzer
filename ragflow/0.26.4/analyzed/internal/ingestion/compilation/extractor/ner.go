@@ -14,12 +14,9 @@
 //  limitations under the License.
 //
 
-// Package extractor provides NER and relation extraction for the ingestion
-// pipeline. It wraps the C++ ThincNER engine via cgo and supplements it with
-// pure-Go regex-based relation extraction.
-//
-// The architecture mirrors the Python rag/graphrag/ner package so that both
-// code paths produce identical output (verified by test).
+// Package extractor 为 ingestion 流水线提供 NER 与关系抽取。
+// 通过 cgo 封装 C++ ThincNER 引擎，并用纯 Go 正则关系抽取补充。
+// 架构镜像 Python rag/graphrag/ner，双路径输出一致（测试验证）。
 //go:build cgo_thincner
 
 package extractor
@@ -42,7 +39,7 @@ import (
 	"unsafe"
 )
 
-// Entity represents an extracted named entity.
+// Entity 抽取的命名实体。
 type Entity struct {
 	Text       string                 `json:"text"`
 	Label      string                 `json:"label"`
@@ -53,7 +50,7 @@ type Entity struct {
 	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// Relation represents a typed relation between two entities.
+// Relation 两实体间的类型化关系。
 type Relation struct {
 	Subject    Entity                 `json:"subject"`
 	Predicate  string                 `json:"predicate"`
@@ -63,7 +60,7 @@ type Relation struct {
 	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// ExtractionResult holds the output of a full extraction pass.
+// ExtractionResult 完整抽取 pass 的输出。
 type ExtractionResult struct {
 	Entities  []Entity               `json:"entities"`
 	Relations []Relation             `json:"relations"`
@@ -71,20 +68,20 @@ type ExtractionResult struct {
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// Extractor provides NER + relation extraction
+// Extractor 提供 NER + 关系抽取。
 type Extractor struct {
 	mu sync.Mutex
-	// Language code (en/zh/de/fr/es/pt/ja)
+	// Lang 语言代码（en/zh/de/fr/es/pt/ja）
 	Lang string
-	// Minimum confidence to include an entity (default 0.0 = all)
+	// ConfidenceThreshold 实体最低置信度（默认 0.0 含全部）
 	ConfidenceThreshold float64
-	// Include token-level info (POS, dep) in ExtractionResult metadata
+	// IncludeTokens 是否在元数据中包含 token 级 POS/dep 信息
 	IncludeTokens bool
-	// Max character distance for co-occurrence relations (default 100)
+	// MaxDistance 共现关系最大字符距离（默认 100）
 	MaxDistance int
 }
 
-// spaCy NER label → application entity type mapping
+// spaCy NER 标签 → 应用实体类型映射
 var spacyToAppType = map[string]string{
 	"PERSON":      "person",
 	"ORG":         "organization",
@@ -109,8 +106,7 @@ var skipLabels = map[string]bool{
 	"CARDINAL": true,
 }
 
-// ModelPredictor is a cached predict function for a model path.
-// Closure captures the C handle to avoid unsafe.Pointer type issues.
+// ModelPredictor 缓存的预测函数，闭包捕获 C handle。
 type ModelPredictor func(tokensJSON string) (string, error)
 
 var (
@@ -118,7 +114,7 @@ var (
 	modelCache   = map[string]ModelPredictor{}
 )
 
-// langModel maps language codes to spaCy model names.
+// langModel 语言代码 → spaCy 模型名。
 var langModel = map[string]string{
 	"en": "en_core_web_sm",
 	"zh": "zh_core_web_sm",
@@ -129,7 +125,7 @@ var langModel = map[string]string{
 	"ja": "ja_core_news_sm",
 }
 
-// langFallback maps languages without dedicated relation patterns to a fallback.
+// langFallback 无专用关系模式的语言回退映射。
 var langFallback = map[string]string{
 	"de": "en",
 	"fr": "en",
@@ -138,8 +134,7 @@ var langFallback = map[string]string{
 	"ja": "zh",
 }
 
-// NewExtractor creates a new extractor.
-// Supported langs: en, zh, de, fr, es, pt, ja.
+// NewExtractor 创建抽取器，支持 en/zh/de/fr/es/pt/ja。
 func NewExtractor(lang string) *Extractor {
 	if lang == "" {
 		lang = "en"
@@ -154,14 +149,14 @@ func NewExtractor(lang string) *Extractor {
 	}
 }
 
-// Extract runs NER and optionally relation extraction (dep-based via C++ parser, or regex fallback).
+// Extract 运行 NER 及可选关系抽取（C++ 依存或正则回退）。
 func (e *Extractor) Extract(text string, extractRelations bool) (*ExtractionResult, error) {
 	entities, err := e.ExtractEntities(text)
 	if err != nil {
 		return nil, err
 	}
 
-	// Collect token info if requested (before entity dedup changes offsets)
+	// 按需收集 token 信息（实体去重前）
 	var tokensMeta []map[string]interface{}
 	if e.IncludeTokens {
 		tokensJSON := tokenizeText(text, e.Lang)
@@ -205,7 +200,7 @@ func (e *Extractor) Extract(text string, extractRelations bool) (*ExtractionResu
 	return result, nil
 }
 
-// extractRelations attempts dep-based extraction via C++ parser; falls back to regex.
+// extractRelations 尝试 C++ 依存抽取，失败则正则回退。
 func (e *Extractor) extractRelations(text string, entities []Entity) []Relation {
 	relLang := e.Lang
 	if fb, ok := langFallback[e.Lang]; ok {
@@ -233,7 +228,7 @@ func (e *Extractor) extractRelations(text string, entities []Entity) []Relation 
 			return rels
 		}
 	}
-	// Fallback: regex-based extraction
+	// 回退：基于正则的关系抽取
 	return extractRelationsWithOpts(text, entities, relLang, e.MaxDistance)
 }
 
@@ -248,7 +243,7 @@ func (e *Extractor) getPredictor(modelDir string) ModelPredictor {
 	handle := C.ThincNER_Create(cModelDir, cModelVocab)
 	C.free(unsafe.Pointer(cModelDir))
 	C.free(unsafe.Pointer(cModelVocab))
-	// Don't cache a nil handle — return a one-shot error predictor instead.
+	// nil handle 不缓存，返回一次性错误预测器。
 	if handle == nil {
 		fn := func(tokensJSON string) (string, error) {
 			return "", fmt.Errorf("ThincNER handle is nil for model dir: %s", modelDir)
@@ -271,7 +266,7 @@ func (e *Extractor) getPredictor(modelDir string) ModelPredictor {
 	return p
 }
 
-// ExtractEntities extracts named entities from text using C++ ThincNER.
+// ExtractEntities 用 C++ ThincNER 从文本抽取命名实体。
 func (e *Extractor) ExtractEntities(text string) ([]Entity, error) {
 	tokensJSON := tokenizeText(text, e.Lang)
 	if tokensJSON == "" {
@@ -335,7 +330,7 @@ func (e *Extractor) ExtractEntities(text string) ([]Entity, error) {
 	return entities, nil
 }
 
-// findModelDir locates the spaCy model directory under /usr/share/infinity/resource/spacy.
+// findModelDir 定位 spaCy 模型目录。
 func (e *Extractor) findModelDir() string {
 	modelName := langModel[e.Lang]
 	if modelName == "" {
@@ -356,8 +351,7 @@ func dirExists(path string) bool {
 	return err == nil && info.IsDir()
 }
 
-// tokenizeText tokenizes text via C++ tokenizer (all languages).
-// Returns JSON array of token strings.
+// tokenizeText 经 C++ 分词器分词，返回 JSON token 数组。
 func tokenizeText(text, lang string) string {
 	cText := C.CString(text)
 	cLang := C.CString(lang)
@@ -376,8 +370,7 @@ func getenv(key string) string {
 	return os.Getenv(key)
 }
 
-// DetectLanguage detects text language based on Unicode ranges.
-// Pure Go, zero dependencies.
+// DetectLanguage 基于 Unicode 范围检测语言，纯 Go 无依赖。
 func DetectLanguage(text string) string {
 	han, hira, kata, latin := 0, 0, 0, 0
 	for _, r := range text {
@@ -396,17 +389,17 @@ func DetectLanguage(text string) string {
 	if total == 0 {
 		return "en"
 	}
-	// CJK majority
+	// CJK 占多数
 	if float64(han+hira+kata)/float64(total) > 0.3 {
 		if hira+kata > han {
-			return "ja" // Japanese-heavy
+			return "ja" // 假名为主 → 日语
 		}
 		if han > 0 {
-			return "zh" // Han-heavy → Chinese
+			return "zh" // 汉字为主 → 中文
 		}
 		return "en"
 	}
-	// Latin majority — default to en (user specifies de/fr/es/pt explicitly)
+	// 拉丁字母为主 → 默认 en
 	return "en"
 }
 

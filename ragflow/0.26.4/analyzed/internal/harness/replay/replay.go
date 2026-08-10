@@ -1,10 +1,7 @@
-// Package replay provides deterministic replay, fork, and diff for
-// agent execution traces recorded by the events package.
+// Package replay 为 events 包录制的 Agent 执行轨迹提供确定性重放、Fork 与 Diff。
 //
-// A ReplayEngine replays events from an EventLog, optionally substituting
-// model responses or tool results. Fork creates a branched execution from
-// any point in the trace. Diff compares two execution traces to detect
-// regression or behavioral changes.
+// ReplayEngine 从 EventLog 重放事件，可替换模型响应或工具结果；
+// Fork 从任意点创建分支执行；Diff 对比两条轨迹以检测回归或行为变化。
 package replay
 
 import (
@@ -14,121 +11,115 @@ import (
 	"ragflow/internal/harness/events"
 )
 
-// ReplayConfig configures a deterministic replay.
+// ReplayConfig 确定性重放配置。
 type ReplayConfig struct {
-	// Store is the event source to replay from.
+	// Store 重放事件源。
 	Store events.EventLog
 
-	// TraceID identifies the trace to replay.
+	// TraceID 待重放轨迹 ID。
 	TraceID string
 
-	// Start is the starting logical clock (0 = from beginning).
+	// Start 起始逻辑时钟（0 表示从头）。
 	Start uint64
 
-	// End is the ending logical clock (0 = to end).
+	// End 结束逻辑时钟（0 表示至末尾）。
 	End uint64
 
-	// Substitution strategies.
+	// 替换策略（Model/Tool/State Override）。
 	ModelOverride ModelOverrideFunc
 	ToolOverride  ToolOverrideFunc
 	StateOverride StateOverrideFunc
 
-	// OutputStore receives events generated during replay (nil = discard).
+	// OutputStore 接收重放产生的事件（nil 则丢弃）。
 	OutputStore events.EventLog
 
-	// DiffEnabled compares replayed events with original trace.
+	// DiffEnabled 是否对比重放与原始轨迹。
 	DiffEnabled bool
 }
 
-// ModelOverrideFunc replaces LLM model responses during replay.
-// Return a non-nil *string to use the substituted response.
-// Return nil, nil to use the recorded response.
+// ModelOverrideFunc 重放时替换 LLM 响应；非 nil *string 使用替换值，nil 使用录制值。
 type ModelOverrideFunc func(messages []any, recordedResponse string) (*string, error)
 
-// ToolOverrideFunc replaces tool execution results during replay.
-// Return a non-nil value to use the substituted result.
-// Return nil to use the recorded result.
+// ToolOverrideFunc 重放时替换工具结果；非 nil 使用替换值，nil 使用录制值。
 type ToolOverrideFunc func(toolName string, args map[string]any, recordedResult any) (any, error)
 
-// StateOverrideFunc replaces initial state during replay.
-// Return the modified state, or nil to keep the recorded state.
+// StateOverrideFunc 重放时替换初始状态；nil 保留录制状态。
 type StateOverrideFunc func(recordedState map[string]any) (map[string]any, error)
 
-// ReplayResult contains the result of a deterministic replay.
+// ReplayResult 确定性重放结果。
 type ReplayResult struct {
-	// Events generated during replay (when OutputStore is set).
+	// Events 重放产生的事件（设 OutputStore 时）。
 	Events []*events.Event
 
-	// OriginalLen is the number of events in the original trace.
+	// OriginalLen 原始轨迹事件数。
 	OriginalLen int
 
-	// ReplayLen is the number of events generated during replay.
+	// ReplayLen 重放产生的事件数。
 	ReplayLen int
 
-	// Divergences between replayed and original events (when DiffEnabled).
+	// Divergences 重放与原始事件差异（DiffEnabled 时）。
 	Divergences []EventDivergence
 
-	// ReplayMetrics contains metrics about the replay operation.
+	// ReplayMetrics 重放操作指标。
 	ReplayMetrics ReplayMetrics
 
-	// Duration of the replay operation.
+	// Duration 重放操作耗时。
 	Duration time.Duration
 }
 
-// EventDivergence describes a difference between original and replayed events.
+// EventDivergence 原始与重放事件的差异描述。
 type EventDivergence struct {
-	// Clock position in the event log.
+	// Clock 事件日志中的逻辑时钟位置。
 	Clock uint64
 
-	// Original event (nil when the event is new in replay).
+	// OriginalEvent 原始事件（重放新增时为 nil）。
 	OriginalEvent *events.Event
 
-	// Replay event (nil when the original event was skipped).
+	// ReplayEvent 重放事件（原始被跳过时为 nil）。
 	ReplayEvent *events.Event
 
-	// Type of divergence.
+	// Type 差异类型。
 	Type DivergenceType
 
-	// Description explains the difference.
+	// Description 差异说明。
 	Description string
 }
 
-// DivergenceType categorises event divergences.
+// DivergenceType 事件差异分类。
 type DivergenceType string
 
 const (
-	// DivergenceMissing means the original event is absent in replay.
+	// DivergenceMissing 原始事件在重放中缺失。
 	DivergenceMissing DivergenceType = "missing"
-	// DivergenceExtra means the replay produced an event not in the original.
+	// DivergenceExtra 重放产生了原始不存在的事件。
 	DivergenceExtra DivergenceType = "extra"
-	// DivergenceMismatch means the event exists in both but differs.
+	// DivergenceMismatch 两侧均存在但内容不同。
 	DivergenceMismatch DivergenceType = "mismatch"
 )
 
-// ReplayMetrics contains metrics about a replay operation.
+// ReplayMetrics 重放操作统计指标。
 type ReplayMetrics struct {
 	TotalEvents     int
 	DivergenceCount int
 	MatchCount      int
 }
 
-// ReplayEngine replays execution traces from an EventLog.
+// ReplayEngine 从 EventLog 重放执行轨迹。
 type ReplayEngine struct {
 	store events.EventLog
 }
 
-// NewReplayEngine creates a ReplayEngine backed by the given event store.
+// NewReplayEngine 创建绑定事件存储的重放引擎。
 func NewReplayEngine(store events.EventLog) *ReplayEngine {
 	return &ReplayEngine{store: store}
 }
 
-// Replay executes a deterministic replay of the given trace.
-// It replays events from the EventLog sequentially, optionally calling
-// ModelOverride and ToolOverride to substitute non-deterministic operations.
+// Replay 对指定轨迹执行确定性重放，
+// 顺序读取 EventLog 并可调用 ModelOverride/ToolOverride 替换非确定性操作。
 func (e *ReplayEngine) Replay(ctx context.Context, cfg *ReplayConfig) (*ReplayResult, error) {
 	start := time.Now()
 
-	// Default to exact replay when no overrides are set.
+	// 未设覆盖时使用精确重放默认值。
 	modelOverride := cfg.ModelOverride
 	if modelOverride == nil {
 		modelOverride = func(_ []any, recorded string) (*string, error) {
@@ -161,7 +152,7 @@ func (e *ReplayEngine) Replay(ctx context.Context, cfg *ReplayConfig) (*ReplayRe
 	var originalEvents []*events.Event
 	var replayEvents []*events.Event
 
-	// Phase 1: read original events.
+	// 阶段 1：读取原始事件。
 	for {
 		ev, ok := iter.Next(ctx)
 		if !ok {
@@ -199,7 +190,7 @@ func (e *ReplayEngine) Replay(ctx context.Context, cfg *ReplayConfig) (*ReplayRe
 		}
 	}
 
-	// Phase 2: replay with overrides.
+	// 阶段 2：带覆盖重放。
 	// Copy each event before modifying so the original list is preserved
 	// for accurate diff comparison.
 	for _, original := range originalEvents {
@@ -207,7 +198,7 @@ func (e *ReplayEngine) Replay(ctx context.Context, cfg *ReplayConfig) (*ReplayRe
 
 		switch original.Type {
 		case events.EventLLMCallStart, events.EventLLMCallEnd:
-			// Apply model override.
+			// 应用模型覆盖。
 			if original.Type == events.EventLLMCallEnd {
 				var payload events.LLMCallPayload
 				_ = parsePayload(original, &payload)
@@ -224,7 +215,7 @@ func (e *ReplayEngine) Replay(ctx context.Context, cfg *ReplayConfig) (*ReplayRe
 			replayEvents = append(replayEvents, replayEv)
 
 		case events.EventToolCallStart, events.EventToolCallResult:
-			// Apply tool override.
+			// 应用工具覆盖。
 			if original.Type == events.EventToolCallResult {
 				var payload events.ToolCallPayload
 				_ = parsePayload(original, &payload)
@@ -247,14 +238,14 @@ func (e *ReplayEngine) Replay(ctx context.Context, cfg *ReplayConfig) (*ReplayRe
 
 	result.ReplayLen = len(replayEvents)
 
-	// Phase 3: diff (optional).
+	// 阶段 3：可选 diff。
 	var divergences []EventDivergence
 	if cfg.DiffEnabled {
 		divergences = diffEventLists(originalEvents, replayEvents)
 		result.Divergences = divergences
 	}
 
-	// Populate ReplayMetrics.
+	// 填充 ReplayMetrics。
 	divergenceCount := len(divergences)
 	replayMetrics := ReplayMetrics{
 		TotalEvents:     result.ReplayLen,
@@ -263,7 +254,7 @@ func (e *ReplayEngine) Replay(ctx context.Context, cfg *ReplayConfig) (*ReplayRe
 	}
 	result.ReplayMetrics = replayMetrics
 
-	// Phase 4: write to output store (optional).
+	// 阶段 4：可选写入 OutputStore。
 	if cfg.OutputStore != nil {
 		if err := cfg.OutputStore.Append(ctx, replayEvents...); err != nil {
 			return nil, err
@@ -275,7 +266,7 @@ func (e *ReplayEngine) Replay(ctx context.Context, cfg *ReplayConfig) (*ReplayRe
 	return result, nil
 }
 
-// parsePayload unmarshals a typed payload from an event.
+// parsePayload 从事件反序列化类型化载荷。
 func parsePayload(ev *events.Event, target any) error {
 	if ev.Payload == nil {
 		return nil
@@ -283,7 +274,7 @@ func parsePayload(ev *events.Event, target any) error {
 	return jsonUnmarshal(ev.Payload, target)
 }
 
-// diffEventLists compares original and replayed event lists.
+// diffEventLists 对比原始与重放事件列表。
 func diffEventLists(original, replayed []*events.Event) []EventDivergence {
 	var divergences []EventDivergence
 	maxLen := len(original)
@@ -321,7 +312,7 @@ func diffEventLists(original, replayed []*events.Event) []EventDivergence {
 			continue
 		}
 
-		// Both exist — compare.
+		// 两侧均存在——比较类型与哈希。
 		if orig.Type != replay.Type {
 			divergences = append(divergences, EventDivergence{
 				Clock:         orig.Clock,

@@ -21,10 +21,9 @@ import (
 	"strings"
 )
 
-// Multilingual relation patterns — matching Python MULTILANG_RELATION_PATTERNS.
-// Entity groups [A-Z] are case-sensitive; relation keywords use (?i) inline.
-// _entWord: uppercase-start word with optional trailing period (e.g. "Inc.", "Corp.")
-// Periods between initials are also supported (e.g. "U.S.", "J.K.")
+// 多语言关系正则模式，与 Python MULTILANG_RELATION_PATTERNS 一致。
+// 实体组大小写敏感；关系关键词内联 (?i)。
+// _entWord 支持 Inc./Corp. 及 U.S./J.K. 等缩写。
 const _entWord = `[A-Za-z][\w']*(?:\.[A-Za-z][\w']*)*\.?`
 const _relEntity = `(` + _entWord + `(?:\s+` + _entWord + `)*?)`
 const _relEntity2 = `(` + _entWord + `(?:\s+` + _entWord + `){0,1})`
@@ -63,26 +62,25 @@ type relPatternEntry struct {
 	predicate string
 }
 
-// ExtractRelations extracts typed relations between entities.
-// Matches the Python RelationExtractor pattern-based approach,
-// including cross-sentence filtering via sentence boundary checks.
+// ExtractRelations 抽取实体间类型化关系，
+// 匹配 Python RelationExtractor 模式法，含跨句边界过滤。
 func ExtractRelations(text string, entities []Entity, lang string) []Relation {
 	return extractRelationsWithOpts(text, entities, lang, 100)
 }
 
-// extractRelationsWithOpts is the internal version with configurable max distance.
+// extractRelationsWithOpts 可配置最大距离的内部实现。
 func extractRelationsWithOpts(text string, entities []Entity, lang string, maxDistance int) []Relation {
 	patterns, ok := relationPatterns[lang]
 	if !ok {
 		patterns = relationPatterns["en"]
 	}
 
-	// Build multimap: entity text → all occurrences (handles duplicate entity names)
+	// 构建 entity text → 全部出现位置的多值映射
 	entityMultiMap := make(map[string][]Entity, len(entities))
 	for _, e := range entities {
 		key := strings.ToLower(e.Text)
 		entityMultiMap[key] = append(entityMultiMap[key], e)
-		// Also add punctuation-stripped version
+		// 同时加入去标点版本
 		cleaned := strings.TrimRight(e.Text, ".,;:!?")
 		cleaned = strings.TrimSpace(cleaned)
 		if cleaned != e.Text {
@@ -91,7 +89,7 @@ func extractRelationsWithOpts(text string, entities []Entity, lang string, maxDi
 		}
 	}
 
-	// Build sentence spans (matching Python's sentence splitting regex)
+	// 构建句子 span（匹配 Python 分句正则）
 	hasOffsets := false
 	for _, e := range entities {
 		if e.StartChar != 0 || e.EndChar != 0 {
@@ -107,7 +105,7 @@ func extractRelationsWithOpts(text string, entities []Entity, lang string, maxDi
 	seen := make(map[string]bool)
 	var relations []Relation
 
-	// Phase 1: Pattern-based typed relations
+	// 阶段 1：基于模式的类型化关系
 	// Process each sentence separately to prevent cross-sentence regex matches.
 	// When entities have no offsets, fall back to full-text matching.
 	if hasOffsets && len(sentenceSpans) > 0 {
@@ -124,7 +122,7 @@ func extractRelationsWithOpts(text string, entities []Entity, lang string, maxDi
 					if subjStart < 0 || objStart < 0 {
 						continue
 					}
-					// Adjust to absolute positions
+					// 调整为绝对字符位置
 					absSubjStart := subjStart + sp[0]
 					absSubjEnd := subjEnd + sp[0]
 					absObjStart := objStart + sp[0]
@@ -157,7 +155,7 @@ func extractRelationsWithOpts(text string, entities []Entity, lang string, maxDi
 			}
 		}
 	} else {
-		// No offsets: process full text
+		// 无 offset：处理全文
 		for _, entry := range patterns {
 			matches := entry.pattern.FindAllStringSubmatchIndex(text, -1)
 			for _, m := range matches {
@@ -197,7 +195,7 @@ func extractRelationsWithOpts(text string, entities []Entity, lang string, maxDi
 		}
 	}
 
-	// Phase 2: Co-occurrence (standalone, with sentence boundary check)
+	// 阶段 2：共现关系（含句子边界检查）
 	for _, r := range extractCooccurrence(text, entities, maxDistance) {
 		key := r.Subject.Text + "|related_to|" + r.Object.Text
 		if !seen[key] {
@@ -206,15 +204,14 @@ func extractRelationsWithOpts(text string, entities []Entity, lang string, maxDi
 		}
 	}
 
-	// Multi-hop inference + dedup (matching Python always applies these)
+	// 多跳推理 + 去重（与 Python 一致始终应用）
 	relations = inferMultiHop(relations)
 	relations = dedupRelations(relations)
 
 	return relations
 }
 
-// extractCooccurrence generates related_to relations for entity pairs
-// within maxDistance characters in the same sentence.
+// extractCooccurrence 为同句内 maxDistance 字符内的实体对生成 related_to 关系。
 func extractCooccurrence(text string, entities []Entity, maxDistance int) []Relation {
 	if len(entities) < 2 {
 		return nil
@@ -265,11 +262,10 @@ func extractCooccurrence(text string, entities []Entity, maxDistance int) []Rela
 	return relations
 }
 
-// findEntityByText finds the entity occurrence closest to matchPos.
-// Uses multimap to handle duplicate entity names at different positions.
+// findEntityByText 查找距 matchPos 最近的实体出现，支持重名。
 func findEntityByText(raw string, matchPos int, entityMultiMap map[string][]Entity) Entity {
 	text := strings.TrimSpace(raw)
-	// Strip trailing punctuation
+	// 去除尾部标点
 	for len(text) > 0 && strings.ContainsAny(text[len(text)-1:], ".,;:!?") {
 		text = strings.TrimSpace(text[:len(text)-1])
 	}
@@ -277,7 +273,7 @@ func findEntityByText(raw string, matchPos int, entityMultiMap map[string][]Enti
 	if ent.Text != "" {
 		return ent
 	}
-	// Try stripping trailing " and ..." / " or ..." / ", ..."
+	// 尝试截断 and/or/逗号 后的尾部
 	key := strings.ToLower(text)
 	for _, sep := range []string{" and ", " or ", ", "} {
 		if idx := strings.Index(key, sep); idx > 0 {
@@ -286,12 +282,12 @@ func findEntityByText(raw string, matchPos int, entityMultiMap map[string][]Enti
 			}
 		}
 	}
-	// Try progressively shorter word sequences (right-to-left word stripping)
-	// Handles cases like "Google in" → try "Google" or "Microsoft. Microsoft" → try "microsoft" (stripped)
+	// 从右向左逐词缩短尝试匹配
+	// 处理如 Google in → Google 等截断场景
 	words := strings.Fields(key)
 	for i := len(words) - 1; i > 0; i-- {
 		candidate := strings.Join(words[:i], " ")
-		// Strip trailing punctuation from candidate before lookup
+		// 查找前去除候选尾部标点
 		candidate = strings.TrimRight(candidate, ".,;:!?")
 		candidate = strings.TrimSpace(candidate)
 		if e := findClosest(candidate, matchPos, entityMultiMap); e.Text != "" {
@@ -301,12 +297,11 @@ func findEntityByText(raw string, matchPos int, entityMultiMap map[string][]Enti
 	return Entity{}
 }
 
-// findClosest returns the entity occurrence closest to matchPos from the multimap.
-// Also tries stripping trailing punctuation from name if exact match fails.
+// findClosest 从 multimap 返回距 matchPos 最近的实体，精确匹配失败时去标点重试。
 func findClosest(name string, matchPos int, multiMap map[string][]Entity) Entity {
 	entries := multiMap[strings.ToLower(name)]
 	if len(entries) == 0 {
-		// Try with trailing punctuation stripped
+		// 精确匹配失败时去尾部标点重试
 		cleaned := strings.TrimRight(name, ".,;:!?")
 		cleaned = strings.TrimSpace(cleaned)
 		if cleaned != name {
@@ -319,7 +314,7 @@ func findClosest(name string, matchPos int, multiMap map[string][]Entity) Entity
 	if len(entries) == 1 {
 		return entries[0]
 	}
-	// Multiple occurrences: pick the one whose span center is closest to matchPos
+	// 多次出现：选 span 中心距 matchPos 最近者
 	best := entries[0]
 	bestDist := abs(best.StartChar + best.EndChar - 2*matchPos)
 	for i := 1; i < len(entries); i++ {
@@ -381,12 +376,8 @@ func max(a, b int) int {
 	return b
 }
 
-// splitSentences splits text into sentence spans [start, end).
-// Matches Python's: re.finditer(r'[^.!?]+(?:[.!?](?=\s|$))+', text)
-// Go RE2 lacks lookahead, so this manually identifies sentence boundaries:
-// - Periods followed by uppercase letter or end-of-string are sentence ends.
-// - Periods followed by lowercase letter are abbreviations (e.g., "Inc."), not sentence ends.
-// - ! and ? are always sentence-ending.
+// splitSentences 将文本切分为句子 span [start, end)。
+// Go RE2 无前瞻，手动识别边界：大写/句末句号分句，小写前句号视为缩写，! ? 始终分句。
 func splitSentences(text string) [][2]int {
 	var spans [][2]int
 	start := 0
@@ -400,35 +391,35 @@ func splitSentences(text string) [][2]int {
 			continue
 		}
 		if ch == '.' {
-			// Check if this period is a sentence end or abbreviation
-			// Sentence end: period followed by space(s) + uppercase or end-of-string
-			// Abbreviation: period followed by space(s) + lowercase
+			// 判断句号是句末还是缩写
+			// 句末：句号 + 空格 + 大写或文本结尾
+			// 缩写：句号 + 空格 + 小写
 			end := i + 1
 			next := end
 			for next < len(text) && text[next] == ' ' {
 				next++
 			}
 			if next >= len(text) {
-				// Period at end of text = sentence end
+				// 文本末尾句号 = 句末
 				spans = append(spans, [2]int{start, end})
 				start = end
 				i = end
 				continue
 			}
 			if text[next] >= 'A' && text[next] <= 'Z' {
-				// Period + space + uppercase = sentence end
+				// 句号 + 空格 + 大写 = 句末
 				spans = append(spans, [2]int{start, end})
 				start = end
 				i = end
 				continue
 			}
-			// Lowercase after period = abbreviation, not sentence end
+			// 句号后小写 = 缩写，非句末
 			i = end
 			continue
 		}
 		i++
 	}
-	// Remaining text after last sentence boundary
+	// 最后句界之后的剩余文本
 	if start < len(text) {
 		spans = append(spans, [2]int{start, len(text)})
 	}

@@ -14,23 +14,16 @@
 //  limitations under the License.
 //
 
-// SCOPE (honest) for group.go:
+// group.go 职责说明：
 //
-//   - Implements the GroupTitleChunker variant: aggregates adjacent
-//     text records into chunks that span multiple body records while
-//     staying inside one heading section.
+//   - 实现 GroupTitleChunker：在同标题节内合并相邻文本记录为多记录 chunk。
 //
-//   - PARALLELISM: Parallelism() advertises a fan-out hint to outer
-//     executors. Heading detection stays sequential; grouping work is
-//     local to one invocation.
+//   - Parallelism() 向外层执行器提示 fan-out；标题检测串行，分组本地完成。
 //
-//   - MIRRORS python `_build_section_ids` + `GroupTitleChunker.build_chunks`:
-//     consecutive records with the same (target_level-derived) sec_id
-//     are merged up to MIN_GROUP_TOKENS / MAX_GROUP_TOKENS, then
-//     emitted as one chunk per group.
+//   - 镜像 Python _build_section_ids + GroupTitleChunker.build_chunks：
+//     相同 sec_id 的记录在 MIN/MAX_GROUP_TOKENS 内合并后逐组输出。
 //
-//   - No PDF-position merge is performed (mirrors TokenChunker SCOPE
-//     notes — those land with the deepdoc/parser port).
+//   - 不做 PDF 位置合并（与 TokenChunker 一致，待 deepdoc/parser 移植）。
 package chunker
 
 import (
@@ -45,16 +38,13 @@ import (
 
 const ComponentNameGroupTitleChunker = "GroupTitleChunker"
 
-// MIN_GROUP_TOKENS / MAX_GROUP_TOKENS mirror the python constants in
-// group_chunker.py:22-23. They drive the merge heuristic for adjacent
-// text records.
+// minGroupTokens/maxGroupTokens 镜像 group_chunker.py:22-23，驱动相邻文本合并启发式。
 const (
 	minGroupTokens = 32
 	maxGroupTokens = 1024
 )
 
-// resolveTargetLevel mirrors common.py:resolve_target_level: pick the
-// n-th smallest heading level from the per-line `levels` vector.
+// resolveTargetLevel 镜像 common.py：从 levels 向量选第 n 小标题层级。
 func resolveTargetLevel(levels []int, hierarchy int) int {
 	tiers := make([]int, 0, len(levels))
 	seen := make(map[int]bool)
@@ -67,7 +57,7 @@ func resolveTargetLevel(levels []int, hierarchy int) int {
 	if len(tiers) == 0 {
 		return 0
 	}
-	// ascending
+	// 升序排序
 	for i := 1; i < len(tiers); i++ {
 		for j := i; j > 0 && tiers[j-1] > tiers[j]; j-- {
 			tiers[j-1], tiers[j] = tiers[j], tiers[j-1]
@@ -82,9 +72,8 @@ func resolveTargetLevel(levels []int, hierarchy int) int {
 	return tiers[hierarchy-1]
 }
 
-// _buildSectionIDs computes, for each input level, the section id
-// (`sid`) under which that record falls. Each heading encounter
-// increments sid by 1; body lines share the active sid.
+// buildSectionIDs 为每行计算所属 section id（sid）；
+// 遇标题 sid+1，正文共享当前 sid。
 func buildSectionIDs(levels []int, targetLevel int) []int {
 	secIDs := make([]int, len(levels))
 	sid := 0
@@ -97,10 +86,7 @@ func buildSectionIDs(levels []int, targetLevel int) []int {
 	return secIDs
 }
 
-// invokeGroup runs the GroupTitleChunker strategy against the
-// supplied inputs. Detected headings + adjacent merges happen in two
-// goroutines (heading detection sequential, then a fan-out over
-// record-buckets for the merge pass).
+// invokeGroup 执行 GroupTitleChunker 策略：标题检测串行，分组合并本地完成。
 func invokeGroup(_ context.Context, inputs map[string]any, p *titleChunkerParam) (map[string]any, error) {
 	records := extractLineRecords(inputs)
 	if len(records) == 0 {
@@ -133,9 +119,8 @@ func invokeGroup(_ context.Context, inputs map[string]any, p *titleChunkerParam)
 	}, nil
 }
 
-// groupRecords mirrors `GroupTitleChunker.build_chunks`: merges
-// adjacent text records while staying inside the same logical section
-// (matching last_sid) and token-budget constraints.
+// groupRecords 镜像 GroupTitleChunker.build_chunks：
+// 同 section 且满足 token 预算时合并相邻文本记录。
 func groupRecords(records []lineRecord, secIDs []int, p *titleChunkerParam) [][]lineRecord {
 	if len(records) == 0 {
 		return nil
@@ -183,9 +168,8 @@ func groupRecords(records []lineRecord, secIDs []int, p *titleChunkerParam) [][]
 	return recordGroups
 }
 
-// applyRootAsHeading mirrors the `root_chunk_as_heading` branch in
-// common.py:build_chunks_from_record_groups — prepending the root
-// text to every following chunk and dropping the root chunk itself.
+// applyRootAsHeading 镜像 root_chunk_as_heading：
+// 将 root 文本前置到后续 chunk 并丢弃 root chunk。
 func applyRootAsHeading(groups [][]lineRecord) [][]lineRecord {
 	if len(groups) < 2 {
 		return groups
@@ -220,14 +204,9 @@ func prependJoin(g []lineRecord, prefix string) []lineRecord {
 	return out
 }
 
-// extractLineRecords reads the chunker inputs in the same order the
-// python BaseTitleChunker.extract_line_records uses:
-//
-//  1. If upstream emitted chunks (output_format == "chunks") OR
-//     upstream emitted JSON, normalise from the list payload.
-//  2. Otherwise, treat text/markdown/html as a "one record per line"
-//     stream (preserving indentation for non-text formats, strip-only
-//     for the text format).
+// extractLineRecords 按 Python BaseTitleChunker.extract_line_records 顺序读取输入：
+//  1. 上游 chunks/JSON → 结构化归一化；
+//  2. 否则 text/markdown/html 按行一条记录。
 func extractLineRecords(inputs map[string]any) []lineRecord {
 	if docs := chunksFromInputs(inputs); docs != nil {
 		return recordsFromStructured(docs)
@@ -265,8 +244,7 @@ func recordsFromStructured(items []schema.ChunkDoc) []lineRecord {
 	return out
 }
 
-// hierarchyOr returns the param's hierarchy value (if set), falling
-// back to the `mostLevel` computed from the level-frequency pass.
+// hierarchyOr 返回 param.hierarchy 或 level 频率统计的 mostLevel。
 func hierarchyOr(p *titleChunkerParam, mostLevel int) int {
 	if p.Hierarchy != nil && *p.Hierarchy > 0 {
 		return *p.Hierarchy
@@ -274,17 +252,13 @@ func hierarchyOr(p *titleChunkerParam, mostLevel int) int {
 	return mostLevel
 }
 
-// GroupTitleChunkerComponent is the standalone variant entry point.
-// It is registered separately so canvas authors can pick the strategy
-// directly. TitleChunker's dispatcher routes to invokeGroup /
-// invokeHierarchy as well.
+// GroupTitleChunkerComponent 独立变体入口，canvas 可直接选用。
 type GroupTitleChunkerComponent struct {
 	name  string
 	param titleChunkerParam
 }
 
-// NewGroupTitleChunker constructs the variant component with method
-// pre-set to "group".
+// NewGroupTitleChunker 构造 method=group 的变体组件。
 func NewGroupTitleChunker(params map[string]any) (runtime.Component, error) {
 	conf := map[string]any{"method": "group"}
 	for k, v := range params {
@@ -325,7 +299,7 @@ func (c *GroupTitleChunkerComponent) Invoke(ctx context.Context, inputs map[stri
 	})
 }
 
-// init registers GroupTitleChunker under CategoryIngestion.
+// init 在 CategoryIngestion 下注册 GroupTitleChunker。
 func init() {
 	MustRegisterChunker(ComponentNameGroupTitleChunker)
 }
