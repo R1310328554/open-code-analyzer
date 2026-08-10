@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T03:55:33Z",
   "files": [
-    "core/src/main/java/com/alibaba/nacos/core/ability/control/ServerAbilityControlManager.java",
-    "core/src/main/java/com/alibaba/nacos/core/auth/AbstractWebAuthFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/auth/AuthAdminFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/auth/AuthConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/auth/AuthFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/auth/AuthModuleStateBuilder.java",
-    "core/src/main/java/com/alibaba/nacos/core/auth/InnerApiAuthEnabled.java",
-    "core/src/main/java/com/alibaba/nacos/core/auth/NacosServerAdminAuthConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/auth/NacosServerAuthConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/auth/RemoteRequestAuthFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/cluster/Member.java",
-    "core/src/main/java/com/alibaba/nacos/core/cluster/MemberChangeListener.java",
-    "core/src/main/java/com/alibaba/nacos/core/cluster/MemberLookup.java",
-    "core/src/main/java/com/alibaba/nacos/core/cluster/MemberMetaDataConstants.java",
-    "core/src/main/java/com/alibaba/nacos/core/cluster/MemberUtil.java",
     "core/src/main/java/com/alibaba/nacos/core/cluster/MembersChangeEvent.java",
     "core/src/main/java/com/alibaba/nacos/core/cluster/NacosMemberManager.java",
     "core/src/main/java/com/alibaba/nacos/core/cluster/ServerMemberManager.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/com/alibaba/nacos/core/cluster/remote/request/AbstractClusterRequest.java"
   ],
   "remaining_pending": 1037,
-  "done": 1470
+  "done": 1485
 }
