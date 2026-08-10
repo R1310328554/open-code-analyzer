@@ -1,3 +1,4 @@
+// Olmo3 渲染器：ChatML、function_calls 与 environment 工具结果。
 package renderers
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Olmo3 默认 system 文案与函数调用说明常量。
 const (
 	olmo3DefaultSystemMessage  = "You are a helpful function-calling AI assistant. "
 	olmo31DefaultSystemMessage = "You are Olmo, a helpful AI assistant built by Ai2. Your date cutoff is December 2024, and your model weights are available at https://huggingface.co/allenai. "
@@ -16,14 +18,17 @@ const (
 	olmo3WithFunctionsMessage  = "You are provided with function signatures within <functions></functions> XML tags. You may call one or more functions to assist with the user query. Output any function calls within <function_calls></function_calls> XML tags. Do not make assumptions about what values to plug into functions."
 )
 
+// Olmo3Renderer 渲染 Olmo3/Olmo3.1 函数调用模板。
 type Olmo3Renderer struct {
-	UseExtendedSystemMessage bool
+	UseExtendedSystemMessage bool // 为 true 时使用 Olmo3.1 扩展 system
 }
 
+// LeadingBOS Olmo3 无额外 BOS。
 func (r *Olmo3Renderer) LeadingBOS() string {
 	return ""
 }
 
+// Render 过滤 system、渲染 functions 与 assistant function_calls。
 func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
@@ -39,6 +44,7 @@ func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.
 		filteredMessages = append(filteredMessages, message)
 	}
 
+	// 渲染 system：自定义或默认文案，并嵌入 <functions> JSON。
 	// Render system message
 	if systemMessage != nil {
 		// Custom system message - single newline after "system"
@@ -99,11 +105,13 @@ func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.
 			if len(message.ToolCalls) > 0 {
 				sb.WriteString("<function_calls>")
 				for j, tc := range message.ToolCalls {
-					// Format as function_name(arg1="value1", arg2="value2")
+					// 格式化为 function_name(arg1="v1", arg2="v2")。
+			// Format as function_name(arg1="value1", arg2="value2")
 					sb.WriteString(tc.Function.Name)
 					sb.WriteString("(")
 
-					// Get sorted keys for deterministic output
+					// 排序参数键以保证输出确定性。
+			// Get sorted keys for deterministic output
 					keys := make([]string, 0, tc.Function.Arguments.Len())
 					for k := range tc.Function.Arguments.All() {
 						keys = append(keys, k)
@@ -130,6 +138,7 @@ func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.
 				sb.WriteString("</function_calls>")
 			}
 
+			// 非纯内容预填充的 assistant 回合需闭合 im_end。
 			// Add end tag unless it's the last message with content only (prefill)
 			if !lastMessage || len(message.ToolCalls) > 0 {
 				sb.WriteString("<|im_end|>\n")
@@ -142,6 +151,7 @@ func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.
 		}
 	}
 
+	// 按需追加 assistant 生成提示。
 	// Add generation prompt if needed
 	needsGenerationPrompt := true
 	if len(filteredMessages) > 0 {

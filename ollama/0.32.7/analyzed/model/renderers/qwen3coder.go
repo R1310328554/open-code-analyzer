@@ -1,3 +1,4 @@
+// Qwen3-Coder 渲染器：XML 工具 schema 与 function/parameter 调用格式。
 package renderers
 
 import (
@@ -9,18 +10,22 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// ChatML im 块起止标签（Qwen 系列共用）。
 var (
 	imStartTag = "<|im_start|>"
 	imEndTag   = "<|im_end|>"
 )
 
+// LeadingBOS Qwen3-Coder 无额外 BOS。
 func (r *Qwen3CoderRenderer) LeadingBOS() string {
 	return ""
 }
 
+// renderAdditionalKeys 输出除 handledKeys 外 JSON 字段为 XML 子标签。
 // renderAdditionalKeys renders all JSON fields except the ones in handledKeys
 // This follows the same approach from the reference implementation, which gives
 // a particular key ordering
+// renderAdditionalKeys 序列化对象并渲染未处理的 schema 扩展键。
 func renderAdditionalKeys(obj any, handledKeys map[string]bool) string {
 	data, err := json.Marshal(obj)
 	if err != nil {
@@ -59,11 +64,14 @@ func renderAdditionalKeys(obj any, handledKeys map[string]bool) string {
 	return sb.String()
 }
 
+// Qwen3CoderRenderer 渲染 Qwen3-Coder 工具调用模板。
 type Qwen3CoderRenderer struct{}
 
+// Render 组装 system+tools XML 与 assistant tool_call 块。
 func (r *Qwen3CoderRenderer) Render(messages []api.Message, tools []api.Tool, _ *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
+	// 过滤 system 消息，首条 system 优先。
 	// filter out system messages and choose the first (if any) to win
 	var systemMessage string
 	var filteredMessages []api.Message
@@ -81,6 +89,7 @@ func (r *Qwen3CoderRenderer) Render(messages []api.Message, tools []api.Tool, _ 
 	if systemMessage != "" || len(tools) > 0 {
 		sb.WriteString(imStartTag + "system\n")
 
+		// 有工具无 system 时使用参考实现的默认 system 文案。
 		// if we have tools but no system message, match the reference implementation by providing a default system message
 		if systemMessage == "" {
 			systemMessage = "You are Qwen, a helpful AI assistant that can interact with a computer to solve tasks."
@@ -112,7 +121,8 @@ func (r *Qwen3CoderRenderer) Render(messages []api.Message, tools []api.Tool, _ 
 						sb.WriteString("\n<description>" + prop.Description + "</description>")
 					}
 
-					// Render any additional keys not already handled
+					// 渲染 parameter 上未显式处理的 JSON schema 扩展键。
+				// Render any additional keys not already handled
 					handledKeys := map[string]bool{
 						"type":        true,
 						"description": true,
@@ -166,6 +176,7 @@ func (r *Qwen3CoderRenderer) Render(messages []api.Message, tools []api.Tool, _ 
 				}
 			}
 		case "tool":
+			// 连续 tool 响应共享同一 user im 块，各自独立 tool_response。
 			// consecutive tool responses should share a single `<im_start>user`, but
 			// have their own <tool_response> tags
 
@@ -196,6 +207,7 @@ func (r *Qwen3CoderRenderer) Render(messages []api.Message, tools []api.Tool, _ 
 	return sb.String(), nil
 }
 
+// formatToolCallArgument 格式化工具调用参数值。
 func formatToolCallArgument(value any) string {
 	if value == nil {
 		return "null"
@@ -220,6 +232,7 @@ func formatToolCallArgument(value any) string {
 	return fmt.Sprintf("%v", value)
 }
 
+// formatToolDefinitionType 格式化 JSON schema 类型字段。
 func formatToolDefinitionType(tp api.PropertyType) string {
 	if len(tp) == 0 {
 		return "[]"

@@ -8,16 +8,20 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// GLM-4.7 渲染器：交错/保留/轮级 thinking 模式与紧凑 tool_call XML。
+// GLM47Renderer 为 GLM-4.7 模型渲染消息。
 // GLM47Renderer renders messages for GLM-4.7 models.
 //
 // GLM-4.7 Thinking Modes (ref: https://docs.z.ai/guides/capabilities/thinking-mode):
 //
+//  1. 交错思考（INTERLEAVED THINKING）
 //  1. INTERLEAVED THINKING
 //     The model thinks between tool calls and after receiving tool results.
 //     This enables complex step-by-step reasoning: interpreting each tool output
 //     before deciding what to do next. Thinking blocks are preserved and returned
 //     with tool results to maintain reasoning continuity.
 //
+//  2. 保留思考（PRESERVED THINKING）
 //  2. PRESERVED THINKING
 //     The model retains reasoning content from previous assistant turns in context.
 //     This preserves reasoning continuity across multi-turn conversations. The
@@ -25,23 +29,28 @@ import (
 //     - clear_thinking=true:  clears reasoning from previous turns (outputs </think>)
 //     - clear_thinking=false: preserves <think>...</think> blocks from previous turns
 //
+//  3. 轮级思考（TURN-LEVEL THINKING）
 //  3. TURN-LEVEL THINKING
 //     Controls whether the model should reason on each turn. The upstream API
 //     uses "enable_thinking" parameter:
 //     - enable_thinking=true:  outputs <think> to start reasoning
 //     - enable_thinking=false: outputs </think> to skip reasoning
 //
+// Ollama 默认：默认启用 thinking、默认保留历史推理。
 // OLLAMA DEFAULTS:
 //   - Thinking is ENABLED by default (thinkValue=nil or true outputs <think>)
 //   - Thinking is PRESERVED by default (reasoning content from previous turns is always
 //     included in <think>...</think> blocks, equivalent to clear_thinking=false)
 //   - Users can disable thinking per-turn via thinkValue=false
+// GLM47Renderer 实现 GLM-4.7 聊天模板。
 type GLM47Renderer struct{}
 
+// LeadingBOS GLM-4.7 无额外 BOS。
 func (r *GLM47Renderer) LeadingBOS() string {
 	return ""
 }
 
+// Render 按 think 偏好输出 <think> 或 </think> 生成提示。
 func (r *GLM47Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
@@ -113,6 +122,7 @@ func (r *GLM47Renderer) Render(messages []api.Message, tools []api.Tool, thinkVa
 	return sb.String(), nil
 }
 
+// renderGLM47ToolArguments 将工具参数序列化为 arg_key/arg_value XML。
 func renderGLM47ToolArguments(args api.ToolCallFunctionArguments) string {
 	var sb strings.Builder
 	for key, value := range args.All() {
@@ -135,6 +145,7 @@ func renderGLM47ToolArguments(args api.ToolCallFunctionArguments) string {
 	return sb.String()
 }
 
+// formatGLM47ToolJSON 在 JSON 冒号/逗号后插入空格以匹配上游格式。
 func formatGLM47ToolJSON(raw []byte) string {
 	var sb strings.Builder
 	sb.Grow(len(raw) + len(raw)/10)

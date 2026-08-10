@@ -1,3 +1,4 @@
+// Nemotron-3-Nano 渲染器：ChatML、thinking 截断与 XML 工具格式。
 package renderers
 
 import (
@@ -11,18 +12,22 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Nemotron3NanoRenderer 渲染 Nemotron-3-Nano 聊天模板。
 type Nemotron3NanoRenderer struct{}
 
+// LeadingBOS 无额外 BOS。
 func (r *Nemotron3NanoRenderer) LeadingBOS() string {
 	return ""
 }
 
+// Render 组装 system/tools、消息循环与 thinking 生成提示。
 func (r *Nemotron3NanoRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 	imageOffset := 0
 
 	enableThinking := r.resolveThinking(messages, thinkValue)
 
+	// 提取首条 system 消息供 system 块使用。
 	// Extract system message if present
 	var systemMessage string
 	var loopMessages []api.Message
@@ -33,6 +38,7 @@ func (r *Nemotron3NanoRenderer) Render(messages []api.Message, tools []api.Tool,
 		loopMessages = messages
 	}
 
+	// 定位最后 user 索引以截断较早 assistant 的 thinking。
 	// Find last user message index for thinking truncation
 	lastUserIdx := -1
 	for i, msg := range loopMessages {
@@ -80,6 +86,7 @@ func (r *Nemotron3NanoRenderer) Render(messages []api.Message, tools []api.Tool,
 			sb.WriteString("<|im_end|>\n")
 
 		case "tool":
+			// 连续 tool 消息合并到同一 user im 块。
 			// Check if previous message was also a tool message
 			prevWasTool := i > 0 && loopMessages[i-1].Role == "tool"
 			nextIsTool := i+1 < len(loopMessages) && loopMessages[i+1].Role == "tool"
@@ -104,6 +111,7 @@ func (r *Nemotron3NanoRenderer) Render(messages []api.Message, tools []api.Tool,
 
 	sb.WriteString("\n")
 
+	// 追加 assistant 生成提示并 priming thinking 块。
 	// Add generation prompt
 	if enableThinking {
 		sb.WriteString("<|im_start|>assistant\n<think>\n")
@@ -114,6 +122,7 @@ func (r *Nemotron3NanoRenderer) Render(messages []api.Message, tools []api.Tool,
 	return sb.String(), nil
 }
 
+// renderTools 将工具 schema 渲染为 Nemotron XML 格式与调用说明。
 func (r *Nemotron3NanoRenderer) renderTools(tools []api.Tool) string {
 	var sb strings.Builder
 	sb.WriteString("# Tools\n\nYou have access to the following functions:\n\n<tools>")
@@ -172,6 +181,7 @@ func (r *Nemotron3NanoRenderer) renderTools(tools []api.Tool) string {
 	return sb.String()
 }
 
+// buildContent 合并 Thinking 字段与正文并补全 redacted_thinking 标签。
 func (r *Nemotron3NanoRenderer) buildContent(message api.Message) string {
 	content := nemotron3NanoRenderContent(message.Content)
 	if message.Thinking != "" {
@@ -183,6 +193,7 @@ func (r *Nemotron3NanoRenderer) buildContent(message api.Message) string {
 	return content
 }
 
+// formatAssistantContent 按 truncate 决定是否清空历史 thinking。
 func (r *Nemotron3NanoRenderer) formatAssistantContent(content string, truncate bool) string {
 	if !truncate {
 		return strings.TrimSpace(content)
@@ -196,6 +207,7 @@ func (r *Nemotron3NanoRenderer) formatAssistantContent(content string, truncate 
 	return strings.TrimSpace(c)
 }
 
+// formatToolCallContent 格式化含工具调用的 assistant 内容。
 func (r *Nemotron3NanoRenderer) formatToolCallContent(content string, truncate bool) string {
 	if strings.TrimSpace(content) == "" {
 		return "<think></think>"
@@ -218,6 +230,7 @@ func (r *Nemotron3NanoRenderer) formatToolCallContent(content string, truncate b
 	return strings.TrimSpace(c) + "\n"
 }
 
+// writeToolCalls 输出 <tool_call><function=...> XML 工具调用。
 func (r *Nemotron3NanoRenderer) writeToolCalls(sb *strings.Builder, toolCalls []api.ToolCall) {
 	for _, tc := range toolCalls {
 		sb.WriteString("<tool_call>\n<function=" + tc.Function.Name + ">\n")
@@ -228,6 +241,7 @@ func (r *Nemotron3NanoRenderer) writeToolCalls(sb *strings.Builder, toolCalls []
 	}
 }
 
+// formatArgValue 格式化工具参数值（Python 风格 JSON 或 %v）。
 func (r *Nemotron3NanoRenderer) formatArgValue(value any) string {
 	switch v := value.(type) {
 	case map[string]any, []any:
@@ -237,6 +251,7 @@ func (r *Nemotron3NanoRenderer) formatArgValue(value any) string {
 	}
 }
 
+// renderMessageContent 渲染消息正文并插入 [img] 占位符。
 func (r *Nemotron3NanoRenderer) renderMessageContent(message api.Message, imageOffset int) string {
 	content := nemotron3NanoRenderContent(message.Content)
 	if len(message.Images) == 0 {
@@ -247,6 +262,7 @@ func (r *Nemotron3NanoRenderer) renderMessageContent(message api.Message, imageO
 	return content
 }
 
+// nemotron3NanoRenderContent 将多模态 content 转为文本与 <image>。
 func nemotron3NanoRenderContent(content any) string {
 	switch v := content.(type) {
 	case string:
@@ -280,6 +296,7 @@ func nemotron3NanoRenderContent(content any) string {
 	}
 }
 
+// resolveThinking 结合 thinkValue 与 /think、/no_think 指令决定 thinking。
 func (r *Nemotron3NanoRenderer) resolveThinking(messages []api.Message, thinkValue *api.ThinkValue) bool {
 	enableThinking := thinkValue == nil || thinkValue.Bool()
 	for _, message := range messages {
@@ -296,6 +313,7 @@ func (r *Nemotron3NanoRenderer) resolveThinking(messages []api.Message, thinkVal
 	return enableThinking
 }
 
+// sanitizeSystemMessage 清理 system 中的 thinking 控制 token。
 func (r *Nemotron3NanoRenderer) sanitizeSystemMessage(content string) string {
 	system := nemotron3NanoRenderContent(content)
 	system = strings.ReplaceAll(system, "</think>", "<_end_think>")
@@ -305,6 +323,7 @@ func (r *Nemotron3NanoRenderer) sanitizeSystemMessage(content string) string {
 	return system
 }
 
+// formatPropertyType 格式化 JSON schema 属性类型。
 func (r *Nemotron3NanoRenderer) formatPropertyType(propertyType api.PropertyType) string {
 	if len(propertyType) == 1 {
 		return propertyType[0]
@@ -316,6 +335,7 @@ func (r *Nemotron3NanoRenderer) formatPropertyType(propertyType api.PropertyType
 	return "[" + strings.Join(quoted, ", ") + "]"
 }
 
+// renderToolPropertyExtraKeys 输出参数属性的 anyOf/items 等扩展键。
 func (r *Nemotron3NanoRenderer) renderToolPropertyExtraKeys(sb *strings.Builder, prop api.ToolProperty) {
 	if len(prop.AnyOf) > 0 {
 		sb.WriteString("\n<anyOf>" + r.pythonJSON(prop.AnyOf) + "</anyOf>")
@@ -331,6 +351,7 @@ func (r *Nemotron3NanoRenderer) renderToolPropertyExtraKeys(sb *strings.Builder,
 	}
 }
 
+// renderToolParameterExtraKeys 输出 parameters 的 $defs/items 等扩展键。
 func (r *Nemotron3NanoRenderer) renderToolParameterExtraKeys(sb *strings.Builder, params api.ToolFunctionParameters) {
 	if params.Defs != nil {
 		sb.WriteString("\n<$defs>" + r.pythonJSON(params.Defs) + "</$defs>")
@@ -340,6 +361,7 @@ func (r *Nemotron3NanoRenderer) renderToolParameterExtraKeys(sb *strings.Builder
 	}
 }
 
+// pythonJSON 将 Go 值格式化为 Python 风格 JSON 字面量字符串。
 func (r *Nemotron3NanoRenderer) pythonJSON(v any) string {
 	switch value := v.(type) {
 	case nil:

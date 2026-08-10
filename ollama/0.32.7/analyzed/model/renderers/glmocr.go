@@ -1,3 +1,4 @@
+// GLM-OCR 渲染器：视觉 OCR 变体，支持 [img] 与 /nothink。
 package renderers
 
 import (
@@ -8,14 +9,17 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// GlmOcrRenderer 渲染 GLM-OCR 多模态聊天模板。
 type GlmOcrRenderer struct {
-	useImgTags bool
+	useImgTags bool // 为 true 时用 [img] 占位图像
 }
 
+// LeadingBOS GLM-OCR 无额外 BOS。
 func (r *GlmOcrRenderer) LeadingBOS() string {
 	return ""
 }
 
+// renderContent 按 useImgTags 渲染文本或 [img-N] 占位符。
 func (r *GlmOcrRenderer) renderContent(message api.Message, imageOffset int) (string, int) {
 	if r.useImgTags {
 		return renderContentWithImageTags(message.Content, len(message.Images), imageOffset)
@@ -24,6 +28,7 @@ func (r *GlmOcrRenderer) renderContent(message api.Message, imageOffset int) (st
 	return message.Content, imageOffset
 }
 
+// Render 组装 GLM-OCR 对话；显式禁 thinking 时在 user 末尾追加 /nothink。
 func (r *GlmOcrRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
@@ -105,6 +110,7 @@ func (r *GlmOcrRenderer) Render(messages []api.Message, tools []api.Tool, thinkV
 	return sb.String(), nil
 }
 
+// renderGlmOcrToolArguments 将工具参数格式化为紧凑 XML arg 块。
 func renderGlmOcrToolArguments(args api.ToolCallFunctionArguments) string {
 	var sb strings.Builder
 	for key, value := range args.All() {

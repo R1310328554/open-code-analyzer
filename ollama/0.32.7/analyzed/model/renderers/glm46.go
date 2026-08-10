@@ -1,3 +1,4 @@
+// GLM-4.6 渲染器：[gMASK] 前缀、redacted_thinking 与 XML tool_call。
 package renderers
 
 import (
@@ -8,12 +9,15 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// GLM46Renderer 渲染 GLM-4.6 系列聊天模板。
 type GLM46Renderer struct{}
 
+// LeadingBOS GLM-4.6 无额外 BOS。
 func (r *GLM46Renderer) LeadingBOS() string {
 	return ""
 }
 
+// Render 组装 system/tools/user/assistant/tool 块并追加生成提示。
 func (r *GLM46Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
@@ -104,6 +108,7 @@ func (r *GLM46Renderer) Render(messages []api.Message, tools []api.Tool, thinkVa
 		}
 	}
 
+	// 追加 assistant 生成提示；禁 thinking 时输出空 redacted_thinking 块。
 	// Add generation prompt
 	sb.WriteString("<|assistant|>")
 	if thinkValue != nil && !thinkValue.Bool() {

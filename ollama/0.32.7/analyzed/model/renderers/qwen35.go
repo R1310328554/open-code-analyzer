@@ -1,3 +1,4 @@
+// Qwen3.5 渲染器：thinking、多步工具与 Nemotron 风格 tool_call。
 package renderers
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Qwen3.5 thinking 标签与工具说明后缀常量。
 const (
 	qwen35ThinkOpenTag  = "<think>"
 	qwen35ThinkCloseTag = "</think>"
@@ -36,34 +38,40 @@ Reminder:
 </IMPORTANT>`
 )
 
+// Qwen35Renderer 渲染 Qwen3.5 聊天/工具/视觉模板。
 type Qwen35Renderer struct {
-	isThinking bool
+	isThinking bool // 默认是否启用 thinking 模式
 
-	alwaysRenderAssistantThinkBlock bool
-	emitEmptyThinkOnNoThink         bool
-	useImgTags                      bool
+	alwaysRenderAssistantThinkBlock bool // 是否始终输出 assistant thinking 块
+	emitEmptyThinkOnNoThink         bool // 禁 thinking 时是否输出空 thinking 块
+	useImgTags                      bool // 为 true 时用 [img] 占位图像
 }
 
+// LeadingBOS Qwen3.5 无额外 BOS。
 func (r *Qwen35Renderer) LeadingBOS() string {
 	return ""
 }
 
+// renderContent 渲染文本或 vision/[img] 占位符。
 func (r *Qwen35Renderer) renderContent(content api.Message, imageOffset int) (string, int) {
 	if r.useImgTags {
 		return renderContentWithImageTags(content.Content, len(content.Images), imageOffset)
 	}
 
+	// 假设图像位于消息前部（与 runner.go 一致）。
 	// This assumes all images are at the front of the message - same assumption as ollama/ollama/runner.go
 	var subSb strings.Builder
 	for range content.Images {
 		subSb.WriteString("<|vision_start|><|image_pad|><|vision_end|>")
 	}
+	// TODO: 支持视频输入
 	// TODO: support videos
 
 	subSb.WriteString(content.Content)
 	return subSb.String(), imageOffset
 }
 
+// splitQwen35ReasoningContent 从 content 或 Thinking 字段拆分推理与正文。
 func splitQwen35ReasoningContent(content, messageThinking string, isThinking bool) (reasoning string, remaining string) {
 	if isThinking && messageThinking != "" {
 		return strings.TrimSpace(messageThinking), content
@@ -82,6 +90,7 @@ func splitQwen35ReasoningContent(content, messageThinking string, isThinking boo
 	return strings.TrimSpace(reasoning), content
 }
 
+// Render 组装 system/tools、多步工具上下文与 assistant thinking 块。
 func (r *Qwen35Renderer) Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
@@ -183,6 +192,7 @@ func (r *Qwen35Renderer) Render(messages []api.Message, tools []api.Tool, think 
 			}
 		}
 
+		// 末尾追加 assistant 生成提示或 thinking priming。
 		// prefill at the end
 		if lastMessage && !prefill {
 			sb.WriteString(imStartTag + "assistant\n")

@@ -1,3 +1,4 @@
+// Qwen3-VL 渲染器：视觉 token、thinking 与 JSON tool_call。
 package renderers
 
 import (
@@ -6,17 +7,20 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Qwen3VLRenderer 渲染 Qwen3-VL instruct/thinking 模板。
 type Qwen3VLRenderer struct {
-	isThinking bool
+	isThinking bool // 默认 thinking 模式
 
-	emitEmptyThinkOnNoThink bool
-	useImgTags              bool
+	emitEmptyThinkOnNoThink bool // 禁 thinking 时输出空 thinking 块
+	useImgTags              bool // 为 true 时用 [img] 占位图像
 }
 
+// LeadingBOS Qwen3-VL 无额外 BOS。
 func (r *Qwen3VLRenderer) LeadingBOS() string {
 	return ""
 }
 
+// renderContent 渲染 vision 块或 [img] 占位符与文本。
 func (r *Qwen3VLRenderer) renderContent(content api.Message, imageOffset int) (string, int) {
 	if r.useImgTags {
 		return renderContentWithImageTags(content.Content, len(content.Images), imageOffset)
@@ -25,6 +29,7 @@ func (r *Qwen3VLRenderer) renderContent(content api.Message, imageOffset int) (s
 	// This assumes all images are at the front of the message - same assumption as ollama/ollama/runner.go
 	var subSb strings.Builder
 	for range content.Images {
+		// TODO: 不同后端 vision token 渲染方式可能不同，后续应参数化。
 		// TODO: (jmorganca): how to render this is different for different
 		// model backends, and so we should eventually parameterize this or
 		// only output a placeholder such as [img]
@@ -36,6 +41,7 @@ func (r *Qwen3VLRenderer) renderContent(content api.Message, imageOffset int) (s
 	return subSb.String(), imageOffset
 }
 
+// Render 组装 system/tools、多步工具上下文与 JSON tool_call。
 func (r *Qwen3VLRenderer) Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
 	var sb strings.Builder
 
@@ -66,6 +72,7 @@ func (r *Qwen3VLRenderer) Render(messages []api.Message, tools []api.Tool, think
 	for i := len(messages) - 1; i >= 0; i-- {
 		message := messages[i]
 		if multiStepTool && message.Role == "user" {
+			// 检测 user 消息是否为 tool_response 包装以定位 lastQueryIndex。
 			// Check if content starts with <tool_response> and ends with </tool_response>
 			content, _ := r.renderContent(message, 0)
 			if !(strings.HasPrefix(content, "<tool_response>") && strings.HasSuffix(content, "</tool_response>")) {
@@ -96,7 +103,7 @@ func (r *Qwen3VLRenderer) Render(messages []api.Message, tools []api.Tool, think
 
 			if isThinking && i > lastQueryIndex {
 				if i == len(messages)-1 || contentReasoning != "" {
-					sb.WriteString("<|im_start|>" + message.Role + "\n<think>\n" + strings.Trim(contentReasoning, "\n")) // do we want to add a new line here?
+					sb.WriteString("<|im_start|>" + message.Role + "\n<think>\n" + strings.Trim(contentReasoning, "\n")) // 是否在末尾换行待确认
 					if content != "" {
 						sb.WriteString("\n</think>\n\n" + strings.TrimLeft(content, "\n"))
 					}
@@ -134,6 +141,7 @@ func (r *Qwen3VLRenderer) Render(messages []api.Message, tools []api.Tool, think
 			}
 		}
 
+		// 末尾追加 assistant 生成提示。
 		// prefill at the end
 		if lastMessage && !prefill {
 			sb.WriteString("<|im_start|>assistant\n")
