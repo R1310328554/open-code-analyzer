@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 通用 Unix statfs 实现（非 Windows/OpenBSD/NetBSD/Solaris/386）：将 statfs Type magic 映射为文件系统名，并计算挂载点总字节数。
+
 //go:build !windows && !openbsd && !netbsd && !solaris && !386
 
 package runtime
@@ -141,6 +143,7 @@ func FsType(path string) string {
 	return strconv.FormatInt(localType, 16)
 }
 
+// FsSize 返回 Bsize * Blocks 的总容量；Statfs 失败时返回 0。
 func FsSize(path string) uint64 {
 	var fs syscall.Statfs_t
 	err := syscall.Statfs(path, &fs)

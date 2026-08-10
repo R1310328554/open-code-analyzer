@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 非 Windows 平台资源限制查询：通过 syscall.Getrlimit 格式化 soft/hard 限制供调试页展示。
+
 //go:build !windows
 
 package runtime
@@ -25,6 +27,7 @@ import (
 // Its type is int on most architectures but there are exceptions such as loong64.
 // Uniform it to uint according to the standard.
 // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_resource.h.html
+// unlimited 将各架构 RLIM_INFINITY 统一为 uint64，便于与 rlimit 值比较。
 var unlimited uint64 = syscall.RLIM_INFINITY & math.MaxUint64
 
 func limitToString(v uint64, unit string) string {
@@ -34,6 +37,7 @@ func limitToString(v uint64, unit string) string {
 	return fmt.Sprintf("%d%s", v, unit)
 }
 
+// getLimits 读取指定 rlimit 资源并返回 (soft=..., hard=...) 形式字符串。
 func getLimits(resource int, unit string) string {
 	rlimit := syscall.Rlimit{}
 	err := syscall.Getrlimit(resource, &rlimit)
@@ -45,6 +49,7 @@ func getLimits(resource int, unit string) string {
 	return fmt.Sprintf("(soft=%s, hard=%s)", limitToString(uint64(rlimit.Cur), unit), limitToString(uint64(rlimit.Max), unit)) //nolint:unconvert
 }
 
+// FdLimits 返回 RLIMIT_NOFILE 的软/硬限制，用于 /debug/pprof 等诊断页面。
 // FdLimits returns the soft and hard limits for file descriptors.
 func FdLimits() string {
 	return getLimits(syscall.RLIMIT_NOFILE, "")

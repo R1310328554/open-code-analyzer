@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// notifications 管理 Prometheus Web UI/API 的运行时通知：维护通知列表、支持订阅推送，并暴露相关 Prometheus 指标。
+
 package notifications
 
 import (
@@ -26,6 +28,7 @@ const (
 	ShuttingDown              = "Prometheus is shutting down and gracefully stopping all operations."
 )
 
+// Notification 表示单条通知，含文本、时间戳与是否仍有效（Active）。
 // Notification represents an individual notification message.
 type Notification struct {
 	Text   string    `json:"text"`
@@ -33,6 +36,7 @@ type Notification struct {
 	Active bool      `json:"active"`
 }
 
+// Notifications 线程安全地存储通知列表，并向订阅 channel 广播更新。
 // Notifications stores a list of Notification objects.
 // It also manages live subscribers that receive notifications via channels.
 type Notifications struct {
@@ -46,6 +50,7 @@ type Notifications struct {
 	notificationsDropped prometheus.Counter
 }
 
+// NewNotifications 初始化订阅表与 prometheus_api_* 指标；reg 为 nil 时不注册。
 // NewNotifications creates a new Notifications instance.
 func NewNotifications(maxSubscribers int, reg prometheus.Registerer) *Notifications {
 	n := &Notifications{
@@ -78,6 +83,7 @@ func NewNotifications(maxSubscribers int, reg prometheus.Registerer) *Notificati
 	return n
 }
 
+// AddNotification 按文本去重：已存在则刷新 Date 并再次推送，否则追加新通知。
 // AddNotification adds a new notification or updates the timestamp if it already exists.
 func (n *Notifications) AddNotification(text string) {
 	n.mu.Lock()
@@ -102,6 +108,7 @@ func (n *Notifications) AddNotification(text string) {
 	n.notifySubscribers(newNotification)
 }
 
+// notifySubscribers 向所有订阅者非阻塞发送；channel 满则计数 dropped。
 // notifySubscribers sends a notification to all active subscribers.
 func (n *Notifications) notifySubscribers(notification Notification) {
 	for sub := range n.subscribers {
@@ -117,6 +124,7 @@ func (n *Notifications) notifySubscribers(notification Notification) {
 	}
 }
 
+// DeleteNotification 先以 Active=false 通知订阅者，再从内部列表移除首条匹配项。
 // DeleteNotification removes the first notification that matches the provided text.
 // The deleted notification is sent to subscribers with Active: false before being removed.
 func (n *Notifications) DeleteNotification(text string) {
@@ -137,6 +145,7 @@ func (n *Notifications) DeleteNotification(text string) {
 	}
 }
 
+// Get 返回通知切片副本，避免调用方在无锁情况下修改内部状态。
 // Get returns a copy of the list of notifications for safe access outside the struct.
 func (n *Notifications) Get() []Notification {
 	n.mu.Lock()
@@ -148,6 +157,7 @@ func (n *Notifications) Get() []Notification {
 	return notificationsCopy
 }
 
+// Sub 注册带缓冲 channel 的订阅者，并回放当前全部通知；返回取消函数与是否成功。
 // Sub allows a client to subscribe to live notifications.
 // It returns a channel where the subscriber will receive notifications and a function to unsubscribe.
 // Each subscriber has its own goroutine to handle notifications and prevent blocking.

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// netconnlimit 提供跨多个 Listener 共享连接数上限的网络工具，源自 golang.org/x/net/netutil。
 // Package netconnlimit provides network utility functions for limiting
 // simultaneous connections across multiple listeners.
 package netconnlimit
@@ -22,12 +23,14 @@ import (
 	"sync"
 )
 
+// NewSharedSemaphore 创建容量为 n 的共享信号量 channel，供多个限流 Listener 复用。
 // NewSharedSemaphore creates and returns a new semaphore channel that can be used
 // to limit the number of simultaneous connections across multiple listeners.
 func NewSharedSemaphore(n int) chan struct{} {
 	return make(chan struct{}, n)
 }
 
+// SharedLimitListener 包装 net.Listener，通过共享 sem 限制全局并发连接数。
 // SharedLimitListener returns a listener that accepts at most n simultaneous
 // connections across multiple listeners using the provided shared semaphore.
 func SharedLimitListener(l net.Listener, sem chan struct{}) net.Listener {
@@ -38,6 +41,7 @@ func SharedLimitListener(l net.Listener, sem chan struct{}) net.Listener {
 	}
 }
 
+// sharedLimitListener 在 Accept 时占用 sem 槽位，Close 后通过 done 通知 acquire 失败。
 type sharedLimitListener struct {
 	net.Listener
 	sem       chan struct{}
@@ -45,6 +49,7 @@ type sharedLimitListener struct {
 	done      chan struct{} // No values sent; closed when Close is called.
 }
 
+// acquire 非阻塞尝试写入 sem；若 Listener 已关闭则返回 false。
 // Acquire acquires the shared semaphore. Returns true if successfully
 // acquired, false if the listener is closed and the semaphore is not
 // acquired.
@@ -57,6 +62,7 @@ func (l *sharedLimitListener) acquire() bool {
 	}
 }
 
+// release 从 sem 取出一个令牌，在 Accept 失败或连接关闭时归还配额。
 func (l *sharedLimitListener) release() { <-l.sem }
 
 func (l *sharedLimitListener) Accept() (net.Conn, error) {
@@ -84,6 +90,7 @@ func (l *sharedLimitListener) Close() error {
 	return err
 }
 
+// sharedLimitListenerConn 包装 net.Conn，Close 时通过 sync.Once 仅释放一次 sem。
 type sharedLimitListenerConn struct {
 	net.Conn
 	releaseOnce sync.Once

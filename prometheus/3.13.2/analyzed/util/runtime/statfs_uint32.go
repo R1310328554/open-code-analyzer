@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 386 架构 Darwin/FreeBSD statfs：Type 为 uint32，magic 映射与 Linux 386 类似。
+
 //go:build (386 && darwin) || (386 && freebsd)
 
 package runtime
@@ -76,6 +78,7 @@ func FsType(path string) string {
 	return strconv.Itoa(int(fs.Type))
 }
 
+// FsSize 返回挂载点总字节数（Bsize * Blocks）。
 func FsSize(path string) uint64 {
 	var fs syscall.Statfs_t
 	err := syscall.Statfs(path, &fs)

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Windows 磁盘信息：FsType 暂不支持；FsSize 通过 GetDiskFreeSpaceExW 获取总容量。
+
 //go:build windows
 
 package runtime
@@ -28,6 +30,7 @@ var (
 	getDiskFreeSpaceExW = dll.MustFindProc("GetDiskFreeSpaceExW")
 )
 
+// FsType 在 Windows 上无法区分文件系统类型，返回 unknown。
 func FsType(path string) string {
 	return "unknown"
 }

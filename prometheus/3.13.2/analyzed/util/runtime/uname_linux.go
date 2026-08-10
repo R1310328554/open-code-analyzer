@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Linux Uname：调用 unix.Uname 读取内核 utsname 并拼接 sysname/release 等字段。
+
 package runtime
 
 import "golang.org/x/sys/unix"
 
+// Uname 格式化 (sysname release version machine nodename domainname)；失败时 panic。
 // Uname returns the uname of the host machine.
 func Uname() string {
 	buf := unix.Utsname{}

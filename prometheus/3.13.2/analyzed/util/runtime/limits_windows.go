@@ -11,15 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Windows 平台资源限制桩：Getrlimit 不可用，FdLimits/VMLimits 均返回 N/A。
+
 //go:build windows
 
 package runtime
 
+// FdLimits 在 Windows 上无对应 API，固定返回 N/A。
 // FdLimits not supported on Windows
 func FdLimits() string {
 	return "N/A"
 }
 
+// VMLimits 在 Windows 上无对应 API，固定返回 N/A。
 // VMLimits not supported on Windows
 func VMLimits() string {
 	return "N/A"

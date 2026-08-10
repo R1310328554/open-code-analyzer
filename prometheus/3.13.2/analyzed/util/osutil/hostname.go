@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// osutil 主机名工具：尝试解析 FQDN，DNS 反向解析失败时回退到 os.Hostname。
+
 package osutil
 
 import (
@@ -19,6 +21,7 @@ import (
 	"os"
 )
 
+// GetFQDN 先取系统 hostname，再对关联 IP 做 PTR 查询；任一环节失败则返回 hostname。
 // GetFQDN returns a FQDN if it's possible, otherwise falls back to hostname.
 func GetFQDN() (string, error) {
 	hostname, err := os.Hostname()
@@ -32,6 +35,7 @@ func GetFQDN() (string, error) {
 		return hostname, nil
 	}
 
+// lookup 将 IP 序列化为文本后调用 net.LookupAddr 获取第一个主机名。
 	lookup := func(ipStr encoding.TextMarshaler) (string, error) {
 		ip, err := ipStr.MarshalText()
 		if err != nil {

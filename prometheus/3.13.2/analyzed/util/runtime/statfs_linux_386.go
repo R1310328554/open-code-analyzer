@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Linux i386 专用 statfs：Type 为 int32，使用精简版 magic 映射表。
+
 //go:build linux && 386
 
 package runtime
@@ -20,6 +22,7 @@ import (
 	"syscall"
 )
 
+// FsType 在 32 位 Linux 上解析 syscall.Statfs_t.Type 并查表或返回十进制字符串。
 // FsType returns the file system type (Unix only).
 func FsType(path string) string {
 	// Types of file systems that may be returned by `statfs`
@@ -77,6 +80,7 @@ func FsType(path string) string {
 	return strconv.Itoa(int(fs.Type))
 }
 
+// FsSize 计算 Bsize * Blocks；Statfs 出错时返回 0。
 // FsSize returns the file system size (Unix only).
 func FsSize(path string) uint64 {
 	var fs syscall.Statfs_t

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 非 Windows/OpenBSD 虚拟内存限制：查询 RLIMIT_AS 并以字节为单位格式化 soft/hard。
+
 //go:build !windows && !openbsd
 
 package runtime
@@ -19,6 +21,7 @@ import (
 	"syscall"
 )
 
+// VMLimits 返回地址空间（RLIMIT_AS）限制，单位后缀 b 表示字节。
 // VMLimits returns the soft and hard limits for virtual memory.
 func VMLimits() string {
 	return getLimits(syscall.RLIMIT_AS, "b")

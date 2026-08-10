@@ -11,12 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 非 Linux 平台 Uname 桩：无法调用 unix.Uname 时仅返回 (GOOS) 占位字符串。
+
 //go:build !linux
 
 package runtime
 
 import "runtime"
 
+// Uname 在非 Linux 构建中返回括号包裹的 runtime.GOOS，供版本页展示。
 // Uname for any platform other than linux.
 func Uname() string {
 	return "(" + runtime.GOOS + ")"

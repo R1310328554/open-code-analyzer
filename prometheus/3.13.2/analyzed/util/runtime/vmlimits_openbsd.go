@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenBSD 虚拟内存限制：使用 RLIMIT_DATA 而非 RLIMIT_AS 查询数据段上限。
+
 //go:build openbsd
 
 package runtime
@@ -19,6 +21,7 @@ import (
 	"syscall"
 )
 
+// VMLimits 在 OpenBSD 上通过 RLIMIT_DATA 获取可写数据段 soft/hard 限制。
 // VMLimits returns the soft and hard limits for virtual memory.
 func VMLimits() string {
 	return getLimits(syscall.RLIMIT_DATA, "b")
