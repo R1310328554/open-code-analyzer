@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T02:20:33Z",
   "files": [
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentCardBasicInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentCardDetailInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentCardVersionInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentEndpoint.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentExtension.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentInterface.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentProvider.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentSkill.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentVersionDetail.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/SecurityScheme.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/agentspecs/AgentSpec.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/agentspecs/AgentSpecBase.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/agentspecs/AgentSpecBasicInfo.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/agentspecs/AgentSpecMeta.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/agentspecs/AgentSpecResource.java",
     "api/src/main/java/com/alibaba/nacos/api/ai/model/agentspecs/AgentSpecSummary.java",
     "api/src/main/java/com/alibaba/nacos/api/ai/model/agentspecs/AgentSpecUtils.java",
     "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportCandidateItem.java",
@@ -33,5 +18,5 @@
     "api/src/main/java/com/alibaba/nacos/api/ai/model/importer/AiResourceImportValidationStatus.java"
   ],
   "remaining_pending": 2237,
-  "done": 270
+  "done": 285
 }
