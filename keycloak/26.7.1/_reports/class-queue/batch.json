@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:51:31Z",
-  "files": [
-    "core/src/main/java/org/keycloak/TokenVerifier.java",
-    "core/src/main/java/org/keycloak/VCFormat.java",
-    "core/src/main/java/org/keycloak/constants/AdapterConstants.java",
-    "core/src/main/java/org/keycloak/constants/ServiceUrlConstants.java",
-    "core/src/main/java/org/keycloak/crypto/Algorithm.java",
-    "core/src/main/java/org/keycloak/crypto/AsymmetricSignatureSignerContext.java",
-    "core/src/main/java/org/keycloak/crypto/AsymmetricSignatureVerifierContext.java",
-    "core/src/main/java/org/keycloak/crypto/ECDSAAlgorithm.java",
-    "core/src/main/java/org/keycloak/crypto/ECDSASignatureSignerContext.java",
-    "core/src/main/java/org/keycloak/crypto/ECDSASignatureVerifierContext.java",
-    "core/src/main/java/org/keycloak/crypto/HashException.java",
-    "core/src/main/java/org/keycloak/crypto/JavaAlgorithm.java",
-    "core/src/main/java/org/keycloak/crypto/KeyStatus.java",
-    "core/src/main/java/org/keycloak/crypto/KeyType.java",
-    "core/src/main/java/org/keycloak/crypto/KeyUse.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5728,
-  "done": 255
+  "done": 270
 }
