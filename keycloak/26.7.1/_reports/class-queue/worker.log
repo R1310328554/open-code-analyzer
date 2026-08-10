@@ -268,3 +268,18 @@
 2026-08-10T05:53:40Z DONE core/src/main/java/org/keycloak/crypto/KeyStatus.java wave9b core tokens + crypto keys
 2026-08-10T05:53:40Z DONE core/src/main/java/org/keycloak/crypto/KeyType.java wave9b core tokens + crypto keys
 2026-08-10T05:53:40Z DONE core/src/main/java/org/keycloak/crypto/KeyUse.java wave9b core tokens + crypto keys
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/JWEConstants.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/JWEException.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/JWEHeader.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/JWEKeyStorage.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/JWERegistry.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/JWEUtils.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/alg/DirectAlgorithmProvider.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/alg/JWEAlgorithmProvider.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/enc/AesCbcHmacShaEncryptionProvider.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/enc/AesCbcHmacShaJWEEncryptionProvider.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/enc/AesGcmEncryptionProvider.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/enc/AesGcmJWEEncryptionProvider.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwe/enc/JWEEncryptionProvider.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwk/AKPPublicJWK.java wave10b JWE providers + JWK
+2026-08-10T05:56:16Z DONE core/src/main/java/org/keycloak/jose/jwk/AKPUtils.java wave10b JWE providers + JWK

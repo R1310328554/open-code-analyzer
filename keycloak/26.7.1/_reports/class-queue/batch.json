@@ -15,23 +15,8 @@
     "core/src/main/java/org/keycloak/jose/JOSE.java",
     "core/src/main/java/org/keycloak/jose/JOSEHeader.java",
     "core/src/main/java/org/keycloak/jose/JOSEParser.java",
-    "core/src/main/java/org/keycloak/jose/jwe/JWE.java",
-    "core/src/main/java/org/keycloak/jose/jwe/JWEConstants.java",
-    "core/src/main/java/org/keycloak/jose/jwe/JWEException.java",
-    "core/src/main/java/org/keycloak/jose/jwe/JWEHeader.java",
-    "core/src/main/java/org/keycloak/jose/jwe/JWEKeyStorage.java",
-    "core/src/main/java/org/keycloak/jose/jwe/JWERegistry.java",
-    "core/src/main/java/org/keycloak/jose/jwe/JWEUtils.java",
-    "core/src/main/java/org/keycloak/jose/jwe/alg/DirectAlgorithmProvider.java",
-    "core/src/main/java/org/keycloak/jose/jwe/alg/JWEAlgorithmProvider.java",
-    "core/src/main/java/org/keycloak/jose/jwe/enc/AesCbcHmacShaEncryptionProvider.java",
-    "core/src/main/java/org/keycloak/jose/jwe/enc/AesCbcHmacShaJWEEncryptionProvider.java",
-    "core/src/main/java/org/keycloak/jose/jwe/enc/AesGcmEncryptionProvider.java",
-    "core/src/main/java/org/keycloak/jose/jwe/enc/AesGcmJWEEncryptionProvider.java",
-    "core/src/main/java/org/keycloak/jose/jwe/enc/JWEEncryptionProvider.java",
-    "core/src/main/java/org/keycloak/jose/jwk/AKPPublicJWK.java",
-    "core/src/main/java/org/keycloak/jose/jwk/AKPUtils.java"
+    "core/src/main/java/org/keycloak/jose/jwe/JWE.java"
   ],
   "remaining_pending": 5698,
-  "done": 270
+  "done": 285
 }
