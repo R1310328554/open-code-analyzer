@@ -25,32 +25,39 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认 {@link ClientPolicyManagerFactory}：创建 {@link DefaultClientPolicyManager} 实例。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultClientPolicyManagerFactory implements ClientPolicyManagerFactory {
 
     private static final Logger logger = Logger.getLogger(DefaultClientPolicyManagerFactory.class);
 
+    /** @param session Keycloak 会话 @return DefaultClientPolicyManager 实例 */
     @Override
     public ClientPolicyManager create(KeycloakSession session) {
         return new DefaultClientPolicyManager(session);
     }
 
+    /** SPI 初始化（无配置项） @param config 配置作用域 */
     @Override
     public void init(Config.Scope config) {
 
     }
 
+    /** 工厂后置初始化 @param factory 会话工厂 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
 
     }
 
+    /** 关闭工厂（无资源需释放） */
     @Override
     public void close() {
 
     }
 
+    /** @return 提供方 ID {@code default} */
     @Override
     public String getId() {
         return "default";

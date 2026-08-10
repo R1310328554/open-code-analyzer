@@ -24,10 +24,13 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link AnyClientCondition} 的 SPI 工厂：无额外配置，匹配任意客户端。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class AnyClientConditionFactory extends AbstractClientPolicyConditionProviderFactory {
 
+    /** 客户端策略条件提供方 ID */
     public static final String PROVIDER_ID = "any-client";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
@@ -36,22 +39,26 @@ public class AnyClientConditionFactory extends AbstractClientPolicyConditionProv
         addCommonConfigProperties(configProperties);
     }
 
+    /** @param session Keycloak 会话 @return AnyClientCondition 实例 */
     @Override
     public ClientPolicyConditionProvider create(KeycloakSession session) {
         return new AnyClientCondition(session);
     }
 
+    /** @return 提供方 ID */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 条件帮助说明 */
     @Override
     public String getHelpText() {
         return "The condition is satisfied by any client on any event.";
     }
 
 
+    /** @return 公共配置属性列表（含否定逻辑等） */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;

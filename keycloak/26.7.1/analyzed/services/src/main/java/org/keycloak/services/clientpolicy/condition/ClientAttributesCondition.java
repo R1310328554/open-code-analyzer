@@ -35,12 +35,16 @@ import org.jboss.logging.Logger;
 import static org.keycloak.services.clientpolicy.ClientPolicyEvent.PRE_AUTHORIZATION_REQUEST;
 
 /**
+ * 客户端策略条件：要求客户端携带配置的全部自定义属性键值对才满足条件。
+ * <p>在预授权请求或 {@link ClientModelContext} 事件中评估，便于管理员通过客户端属性标记需施加策略的客户端。</p>
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 public class ClientAttributesCondition extends AbstractClientPolicyConditionProvider<ClientAttributesCondition.Configuration> {
 
     private static final Logger logger = Logger.getLogger(ClientAttributesCondition.class);
 
+    /** @param session Keycloak 会话 */
     public ClientAttributesCondition(KeycloakSession session) {
         super(session);
     }
@@ -50,14 +54,18 @@ public class ClientAttributesCondition extends AbstractClientPolicyConditionProv
         return Configuration.class;
     }
 
+    /** 条件配置：序列化的客户端属性映射（键→单值列表） */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
 
+        /** 属性映射 JSON/序列化字符串 */
         private String attributes;
 
+        /** @return 属性配置字符串 */
         public String getAttributes() {
             return attributes;
         }
 
+        /** @param attributes 属性配置字符串 */
         public void setAttributes(String attributes) {
             this.attributes = attributes;
         }
@@ -68,6 +76,7 @@ public class ClientAttributesCondition extends AbstractClientPolicyConditionProv
         return ClientAttributesConditionFactory.PROVIDER_ID;
     }
 
+    /** 在预授权或客户端模型上下文中比对客户端属性 @param context 策略上下文 @return 投票结果 */
     @Override
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
         if (context.getEvent() == PRE_AUTHORIZATION_REQUEST) {
@@ -84,6 +93,7 @@ public class ClientAttributesCondition extends AbstractClientPolicyConditionProv
         }
     }
 
+    /** 判断客户端是否包含配置要求的全部属性键值 */
     private boolean isAttributesMatched(ClientModel client) {
         if (client == null) return false;
 
@@ -117,6 +127,7 @@ public class ClientAttributesCondition extends AbstractClientPolicyConditionProv
                 });
     }
 
+    /** 反序列化配置中的属性映射 */
     private Map<String, List<String>> getAttributesForMatching() {
         if (configuration.getAttributes() == null) return null;
         return MapperTypeSerializer.deserialize(configuration.getAttributes());

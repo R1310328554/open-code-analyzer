@@ -33,18 +33,25 @@ import org.keycloak.util.JsonSerialization;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认 {@link ClientPolicyManager} 实现。
+ * <p>在 {@link Profile.Feature#CLIENT_POLICIES} 启用时，按 Realm 已启用的 {@link ClientPolicy} 评估条件并执行关联 {@link ClientProfile} 中的 Executor；同时负责客户端策略/配置文件的 CRUD 与 Realm 导入导出同步。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class DefaultClientPolicyManager implements ClientPolicyManager {
 
+    /** 策略运行 trace 日志 */
     private static final Logger logger = Logger.getLogger(DefaultClientPolicyManager.class);
 
+    /** 当前 Keycloak 会话 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public DefaultClientPolicyManager(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 在客户端策略事件上触发条件评估与 Executor 执行 @param context 事件上下文 */
     @Override
     public void triggerOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         if (!Profile.isFeatureEnabled(Profile.Feature.CLIENT_POLICIES)) {
@@ -61,6 +68,7 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         );
     }
 
+    /** 遍历 Realm 已启用策略：条件满足则执行关联 Profile 中的 Executor */
     private void doPolicyOperation(ClientConditionOperation condition, ClientExecutorOperation executor, RealmModel realm) throws ClientPolicyException {
         List<ClientPolicy> list = ClientPoliciesUtil.getEnabledClientPolicies(session, realm);
 
@@ -81,6 +89,7 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         }
     }
 
+    /** 评估策略全部条件（含否定逻辑与 STRICT/PERMISSIVE 模式） @return 条件组合是否满足 */
     private boolean isSatisfied(
             ClientPolicy policy,
             ClientConditionOperation op) throws ClientPolicyException {
@@ -133,6 +142,7 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         return ret;
     }
 
+    /** 对策略引用的各 ClientProfile 依次执行 Executor */
     private void execute(
             ClientPolicy policy,
             ClientExecutorOperation op,
@@ -143,7 +153,7 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
             return;
         }
 
-        // Get profiles from realm
+        // 从 Realm 加载客户端配置文件表示
         ClientProfilesRepresentation clientProfiles =  ClientPoliciesUtil.getClientProfilesRepresentation(session, realm);
 
         for (String profileName : policy.getProfiles()) {
@@ -172,19 +182,23 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         }
     }
 
+    /** 条件评估回调 */
     private interface ClientConditionOperation {
         ClientPolicyVote run(ClientPolicyConditionProvider condition) throws ClientPolicyException;
     }
 
+    /** Executor 执行回调 */
     private interface ClientExecutorOperation {
         void run(ClientPolicyExecutorProvider executor) throws ClientPolicyException;
     }
 
+    /** 新建 Realm 时初始化客户端策略（当前不自动创建） @param realm 目标 Realm */
     @Override
     public void setupClientPoliciesOnCreatedRealm(RealmModel realm) {
-        // For now, not create any create policies on the new realms. Administrator is supposed to add the policies if needed
+        // 暂不自动创建策略，由管理员按需配置
     }
 
+    /** 从 Realm 导入表示更新客户端配置文件与策略 @param realm 目标 Realm @param rep 导入表示 */
     @Override
     public void updateRealmModelFromRepresentation(RealmModel realm, RealmRepresentation rep) {
         logger.tracev("LOAD PROFILE POLICIES ON IMPORTED REALM :: realm = {0}", realm.getName());
@@ -211,6 +225,7 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         }
     }
 
+    /** 校验并持久化客户端配置文件 @param realm 目标 Realm @param clientProfiles 待更新表示 */
     @Override
     public void updateClientProfiles(RealmModel realm, ClientProfilesRepresentation clientProfiles) throws ClientPolicyException {
         try {
@@ -228,6 +243,7 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         }
     }
 
+    /** 读取 Realm 客户端配置文件 @param includeGlobalProfiles 是否合并全局配置 @return 配置文件表示 */
     @Override
     public ClientProfilesRepresentation getClientProfiles(RealmModel realm, boolean includeGlobalProfiles) throws ClientPolicyException {
         try {
@@ -249,6 +265,7 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         }
     }
 
+    /** 校验并持久化客户端策略 @param realm 目标 Realm @param clientPolicies 待更新表示 */
     @Override
     public void updateClientPolicies(RealmModel realm, ClientPoliciesRepresentation clientPolicies) throws ClientPolicyException {
         String validatedJsonString = null;
@@ -267,6 +284,7 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         logger.tracev("UPDATE POLICIES :: realm = {0}, validated and modified PUT = {1}", realm.getName(), validatedJsonString);
     }
 
+    /** 读取 Realm 客户端策略 @param includeGlobalPolicies 是否合并全局策略 @return 策略表示 */
     @Override
     public ClientPoliciesRepresentation getClientPolicies(RealmModel realm, boolean includeGlobalPolicies) throws ClientPolicyException {
         try {
@@ -286,10 +304,11 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         }
     }
 
+    /** 导出 Realm 时将客户端配置文件/策略写入表示（不含全局项） @param realm 源 Realm @param rep 导出表示 */
     @Override
     public void updateRealmRepresentationFromModel(RealmModel realm, RealmRepresentation rep) {
         try {
-            // client profiles  that filter out global profiles..
+            // 导出时过滤掉全局配置文件
             ClientProfilesRepresentation filteredOutProfiles = getClientProfiles(realm, false);
             rep.setParsedClientProfiles(filteredOutProfiles);
 
@@ -300,6 +319,7 @@ public class DefaultClientPolicyManager implements ClientPolicyManager {
         }
     }
 
+    /** 关闭 Manager（无资源需释放） */
     @Override
     public void close() {
     }

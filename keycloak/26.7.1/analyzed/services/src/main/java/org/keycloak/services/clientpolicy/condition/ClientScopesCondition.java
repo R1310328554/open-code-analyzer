@@ -35,12 +35,16 @@ import org.keycloak.services.clientpolicy.context.ScopeParameterContext;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端策略条件：按客户端 Scope 配置（默认/可选/任意）与请求 scope 参数决定是否应用策略。
+ * <p>仅在同时实现 {@link ScopeParameterContext} 与 {@link ClientModelContext} 的上下文中评估。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientScopesCondition extends AbstractClientPolicyConditionProvider<ClientScopesCondition.Configuration> {
 
     private static final Logger logger = Logger.getLogger(ClientScopesCondition.class);
 
+    /** @param session Keycloak 会话 */
     public ClientScopesCondition(KeycloakSession session) {
         super(session);
     }
@@ -50,23 +54,30 @@ public class ClientScopesCondition extends AbstractClientPolicyConditionProvider
         return Configuration.class;
     }
 
+    /** 条件配置：匹配模式（default/optional/any）与期望 scope 列表 */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
 
+        /** 匹配类型，见 {@link ClientScopesConditionFactory#DEFAULT} 等常量 */
         protected String type;
+        /** 期望匹配的客户端 scope 名称列表 */
         protected List<String> scopes;
 
+        /** @return 匹配类型 */
         public String getType() {
             return type;
         }
 
+        /** @param type 匹配类型 */
         public void setType(String type) {
             this.type = type;
         }
 
+        /** @return 期望 scope 列表 */
         public List<String> getScopes() {
             return scopes;
         }
 
+        /** @param scope 期望 scope 列表 */
         public void setScopes(List<String> scope) {
             this.scopes = scope;
         }
@@ -77,6 +88,7 @@ public class ClientScopesCondition extends AbstractClientPolicyConditionProvider
         return ClientScopesConditionFactory.PROVIDER_ID;
     }
 
+    /** 根据 scope 参数与客户端默认/可选 scope 评估条件 @param context 策略上下文 @return 投票结果 */
     @Override
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
         if (context instanceof ScopeParameterContext && context instanceof ClientModelContext) {
@@ -90,6 +102,7 @@ public class ClientScopesCondition extends AbstractClientPolicyConditionProvider
         }
     }
 
+    /** 按配置的 type 模式匹配显式 scope 与客户端 scope 集合 */
     private boolean isScopeMatched(String explicitScopes, ClientModel client) {
         if (client == null) {
             return false;
@@ -133,6 +146,7 @@ public class ClientScopesCondition extends AbstractClientPolicyConditionProvider
         }
     }
 
+    /** 复制配置中的期望 scope 集合 */
     private Set<String> getScopesForMatching() {
         List<String> scopes = configuration.getScopes();
         if (scopes == null) return null;

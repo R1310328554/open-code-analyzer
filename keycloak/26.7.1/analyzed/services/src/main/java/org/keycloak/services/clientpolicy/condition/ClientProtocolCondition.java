@@ -29,32 +29,41 @@ import org.keycloak.services.clientpolicy.context.ClientModelContext;
 import static org.keycloak.services.clientpolicy.ClientPolicyEvent.REGISTER;
 
 /**
+ * 客户端策略条件：按客户端登录协议（如 OpenID Connect、SAML）决定是否应用策略。
+ * <p>在 {@link ClientPolicyEvent#REGISTER} 或 {@link ClientModelContext} 事件中评估协议字段。</p>
  *
  * @author rmartinc
  */
 public class ClientProtocolCondition extends AbstractClientPolicyConditionProvider<ClientProtocolCondition.Configuration> {
 
+    /** 条件配置：期望的客户端协议 ID */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
 
+        /** 配置的协议标识（与 {@link LoginProtocol} 提供方 ID 对应） */
         protected String protocol;
 
+        /** 默认构造，protocol 为 null */
         public Configuration() {
             protocol = null;
         }
 
+        /** @param protocol 期望协议 ID */
         public Configuration(String protocol) {
             this.protocol = protocol;
         }
 
+        /** @return 配置的协议 ID */
         public String getProtocol() {
             return protocol;
         }
 
+        /** @param protocol 协议 ID */
         public void setProtocol(String protocol) {
             this.protocol = protocol;
         }
     }
 
+    /** @param session Keycloak 会话 */
     public ClientProtocolCondition(KeycloakSession session) {
         super(session);
     }
@@ -69,6 +78,7 @@ public class ClientProtocolCondition extends AbstractClientPolicyConditionProvid
         return Configuration.class;
     }
 
+    /** 比较客户端或待注册客户端的 protocol 与配置 @param context 策略上下文 @return 投票结果 */
     @Override
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
         if (context.getEvent() == REGISTER) {
@@ -88,6 +98,7 @@ public class ClientProtocolCondition extends AbstractClientPolicyConditionProvid
         }
     }
 
+    /** 判断已持久化客户端的协议是否匹配配置 */
     private boolean isCorrectClientProtocol(ClientModel client) {
         if (client != null) {
             String protocol = client.getProtocol();
@@ -98,6 +109,7 @@ public class ClientProtocolCondition extends AbstractClientPolicyConditionProvid
         return false;
     }
 
+    /** 判断注册提议表示中的协议是否匹配配置 */
     public boolean isCorrectProtocolFromRepresentation(ClientCRUDContext context) {
         ClientRepresentation clientRep = context.getProposedClientRepresentation();
         if (clientRep != null) {

@@ -36,12 +36,16 @@ import org.jboss.logging.Logger;
 import static org.keycloak.services.clientpolicy.ClientPolicyEvent.REGISTER;
 
 /**
+ * 客户端策略条件：按客户端访问类型（confidential/public/bearer-only）决定是否应用策略。
+ * <p>在 {@link ClientModelContext} 或 {@link ClientPolicyEvent#REGISTER} 注册事件中评估。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientAccessTypeCondition extends AbstractClientPolicyConditionProvider<ClientAccessTypeCondition.Configuration> {
 
     private static final Logger logger = Logger.getLogger(ClientAccessTypeCondition.class);
 
+    /** @param session Keycloak 会话 */
     public ClientAccessTypeCondition(KeycloakSession session) {
         super(session);
     }
@@ -51,14 +55,18 @@ public class ClientAccessTypeCondition extends AbstractClientPolicyConditionProv
         return Configuration.class;
     }
 
+    /** 条件配置：允许的客户端访问类型列表 */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
 
+        /** 期望匹配的访问类型（confidential、public、bearer-only） */
         protected List<String> type;
 
+        /** @return 配置的访问类型列表 */
         public List<String> getType() {
             return type;
         }
 
+        /** @param type 访问类型列表 */
         public void setType(List<String> type) {
             this.type = type;
         }
@@ -69,6 +77,7 @@ public class ClientAccessTypeCondition extends AbstractClientPolicyConditionProv
         return ClientAccessTypeConditionFactory.PROVIDER_ID;
     }
 
+    /** 比较客户端或待注册客户端的访问类型与配置 @param context 策略上下文 @return 投票结果 */
     @Override
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
         if (context instanceof ClientModelContext) {
@@ -83,11 +92,13 @@ public class ClientAccessTypeCondition extends AbstractClientPolicyConditionProv
         }
     }
 
+    /** 从 ClientModel 推导访问类型字符串 */
     private String getClientAccessType(ClientModel client) {
         if (client == null) return null;
         return getClientAccessType(client.isPublicClient(), client.isBearerOnly());
     }
 
+    /** 从注册/更新提议表示推导访问类型 */
     private String getProposedClientAccessType(ClientCRUDContext context) {
         ClientRepresentation clientRep = context.getProposedClientRepresentation();
         if (clientRep == null) return null;
@@ -95,6 +106,7 @@ public class ClientAccessTypeCondition extends AbstractClientPolicyConditionProv
                 Optional.ofNullable(clientRep.isBearerOnly()).orElse(Boolean.FALSE).booleanValue());
     }
 
+    /** 根据 public/bearer-only 标志映射为访问类型常量 */
     private String getClientAccessType(boolean isPublicClient, boolean isBearerOnly) {
         if (isPublicClient) return ClientAccessTypeConditionFactory.TYPE_PUBLIC;
         if (isBearerOnly) return ClientAccessTypeConditionFactory.TYPE_BEARERONLY;
@@ -109,6 +121,7 @@ public class ClientAccessTypeCondition extends AbstractClientPolicyConditionProv
         return isClientAccessTypeMatched(getProposedClientAccessType(context));
     }
 
+    /** 判断访问类型是否在配置允许列表中 */
     private boolean isClientAccessTypeMatched(String accessType) {
         if (accessType == null) return false;
 
