@@ -1,0 +1,15 @@
+agent/approval.go
+agent/compactor.go
+agent/events.go
+agent/registry.go
+agent/session.go
+agent/skill_activation.go
+agent/skills.go
+agent/tools/bash.go
+agent/tools/bash_unix.go
+agent/tools/bash_windows.go
+agent/tools/file.go
+agent/tools/skill.go
+agent/tools/web.go
+anthropic/anthropic.go
+anthropic/trace.go
