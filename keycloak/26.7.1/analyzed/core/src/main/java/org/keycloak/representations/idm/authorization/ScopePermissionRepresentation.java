@@ -17,10 +17,13 @@
 package org.keycloak.representations.idm.authorization;
 
 /**
+ * 作用域（scope）类型权限策略的 REST 表示，将策略绑定到特定作用域。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ScopePermissionRepresentation extends AbstractPolicyRepresentation {
 
+    /** @return 固定策略类型 {@code scope} */
     @Override
     public String getType() {
         return "scope";

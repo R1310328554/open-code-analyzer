@@ -20,25 +20,32 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 用户（user）类型授权策略的 REST 表示，按指定用户身份匹配请求。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UserPolicyRepresentation extends AbstractPolicyRepresentation {
 
+    /** 匹配的用户 ID 或用户名集合。 */
     private Set<String> users;
 
+    /** @return 固定策略类型 {@code user} */
     @Override
     public String getType() {
         return "user";
     }
 
+    /** @return 用户集合 */
     public Set<String> getUsers() {
         return users;
     }
 
+    /** @param users 用户集合 */
     public void setUsers(Set<String> users) {
         this.users= users;
     }
 
+    /** 添加单个用户。 */
     public void addUser(String name) {
         if (users == null) {
             users = new HashSet<>();

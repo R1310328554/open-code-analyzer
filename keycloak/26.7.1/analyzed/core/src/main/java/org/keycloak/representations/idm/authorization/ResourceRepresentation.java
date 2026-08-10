@@ -33,48 +33,59 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
- * <p>One or more resources that the resource server manages as a set of protected resources.
+ * <p>资源服务器所管理的一个或多个受保护资源的 REST 表示。
  *
- * <p>For more details, <a href="https://docs.kantarainitiative.org/uma/draft-oauth-resource-reg.html#rfc.section.2.2">OAuth-resource-reg</a>.
+ * <p>详见 <a href="https://docs.kantarainitiative.org/uma/draft-oauth-resource-reg.html#rfc.section.2.2">OAuth-resource-reg</a>。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ResourceRepresentation {
 
+    /** 创建 {@link Builder} 实例。 */
     public static Builder create() {
         return new Builder();
     }
 
+    /** 资源唯一标识。 */
     @JsonProperty("_id")
     private String id;
 
+    /** 资源名称。 */
     private String name;
 
+    /** 资源 URI 集合。 */
     @JsonProperty("uris")
     private Set<String> uris;
+    /** 资源类型标识。 */
     private String type;
+    /** 该资源可用的作用域集合。 */
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonProperty("scopes")
     private Set<ScopeRepresentation> scopes;
 
+    /** 资源图标 URI。 */
     @JsonProperty("icon_uri")
     private String iconUri;
+    /** 资源所有者。 */
     private ResourceOwnerRepresentation owner;
+    /** 是否启用所有者托管访问（UMA）。 */
     private Boolean ownerManagedAccess;
 
+    /** 资源显示名称。 */
     private String displayName;
 
+    /** 资源自定义属性（键 → 值列表）。 */
     @JsonDeserialize(using = StringListMapDeserializer.class)
     private Map<String, List<String>> attributes;
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
-     * @param name a human-readable string describing a set of one or more resources
-     * @param uris a {@link List} of {@link URI} that provides network locations for the resource set being registered
-     * @param type a string uniquely identifying the semantics of the resource set
-     * @param scopes the available scopes for this resource set
-     * @param iconUri a {@link URI} for a graphic icon representing the resource set
+     * @param name 描述资源集的可读名称
+     * @param uris 提供资源集网络位置的 {@link URI} {@link List}
+     * @param type 唯一标识资源集语义的字符串
+     * @param scopes 该资源集可用的作用域
+     * @param iconUri 表示资源集的图标 {@link URI}
      */
     public ResourceRepresentation(String name, Set<ScopeRepresentation> scopes, Set<String> uris, String type, String iconUri) {
         this.name = name;
@@ -84,37 +95,40 @@ public class ResourceRepresentation {
         this.iconUri = iconUri;
     }
 
+    /** 使用单个 URI 创建实例。 */
     public ResourceRepresentation(String name, Set<ScopeRepresentation> scopes, String uri, String type, String iconUri) {
         this(name, scopes, Collections.singleton(uri), type, iconUri);
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例（无图标 URI）。
      *
-     * @param name a human-readable string describing a set of one or more resources
-     * @param uris a {@link List} of {@link URI} that provides the network location for the resource set being registered
-     * @param type a string uniquely identifying the semantics of the resource set
-     * @param scopes the available scopes for this resource set
+     * @param name 描述资源集的可读名称
+     * @param uris 提供资源集网络位置的 {@link URI} {@link List}
+     * @param type 唯一标识资源集语义的字符串
+     * @param scopes 该资源集可用的作用域
      */
     public ResourceRepresentation(String name, Set<ScopeRepresentation> scopes, Set<String> uris, String type) {
         this(name, scopes, uris, type, null);
     }
 
+    /** 使用单个 URI 创建实例（无图标 URI）。 */
     public ResourceRepresentation(String name, Set<ScopeRepresentation> scopes, String uri, String type) {
         this(name, scopes, Collections.singleton(uri), type, null);
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例（仅含名称与作用域）。
      *
-     * @param name a human-readable string describing a set of one or more resources
-     * @param serverUri a {@link URI} that identifies this resource server
-     * @param scopes the available scopes for this resource set
+     * @param name 描述资源集的可读名称
+     * @param serverUri 标识该资源服务器的 {@link URI}
+     * @param scopes 该资源集可用的作用域
      */
     public ResourceRepresentation(String name, Set<ScopeRepresentation> scopes) {
         this(name, scopes, (Set<String>) null, null, null);
     }
 
+    /** 按名称与作用域名称列表创建实例。 */
     public ResourceRepresentation(String name, String... scopes) {
         this.name = name;
         this.scopes = new HashSet<>();
@@ -124,30 +138,32 @@ public class ResourceRepresentation {
         }
     }
 
-    /**
-     * Creates a new instance.
-     *
-     */
+    /** 创建空实例。 */
     public ResourceRepresentation() {
         this(null, null, (Set<String>) null, null, null);
     }
 
+    /** @param id 资源 ID */
     public void setId(String id) {
         this.id = id;
     }
 
+    /** @return 资源 ID */
     public String getId() {
         return this.id;
     }
 
+    /** @return 资源名称 */
     public String getName() {
         return this.name;
     }
 
+    /** @return 资源显示名称 */
     public String getDisplayName() {
         return displayName;
     }
 
+    /** @deprecated 请使用 {@link #getUris()} */
     @Deprecated
     @JsonIgnore
     public String getUri() {
@@ -158,14 +174,17 @@ public class ResourceRepresentation {
         return this.uris.iterator().next();
     }
 
+    /** @return 资源 URI 集合 */
     public Set<String> getUris() {
         return this.uris;
     }
 
+    /** @return 资源类型 */
     public String getType() {
         return this.type;
     }
 
+    /** @return 作用域集合（不可变视图） */
     public Set<ScopeRepresentation> getScopes() {
         if (this.scopes == null) {
             return Collections.emptySet();
@@ -174,18 +193,22 @@ public class ResourceRepresentation {
         return Collections.unmodifiableSet(this.scopes);
     }
 
+    /** @return 图标 URI */
     public String getIconUri() {
         return this.iconUri;
     }
 
+    /** @param name 资源名称 */
     public void setName(String name) {
         this.name = name;
     }
 
+    /** @param displayName 显示名称 */
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
 
+    /** @deprecated 请使用 {@link #setUris(Set)} */
     @Deprecated
     @JsonSetter("uri")
     public void setUri(String uri) {
@@ -194,6 +217,7 @@ public class ResourceRepresentation {
         }
     }
 
+    /** @param uris 资源 URI 集合 */
     public void setUris(Set<String> uris) {
         if (uris != null) {
             Set<String> resultSet = new HashSet<>();
@@ -207,39 +231,45 @@ public class ResourceRepresentation {
         }
     }
 
+    /** @param type 资源类型 */
     public void setType(String type) {
         if (type != null && !"".equalsIgnoreCase(type.trim())) {
             this.type = type;
         }
     }
 
+    /** @param scopes 作用域集合 */
     public void setScopes(Set<ScopeRepresentation> scopes) {
         this.scopes = scopes;
     }
 
     /**
-     * TODO: This is a workaround to allow deserialization of UMA resource representation. Jackson 2.19+ support aliases, once we upgrade, change this.
+     * UMA 资源表示反序列化的临时方案；Jackson 2.19+ 支持别名后可替换。
      *
-     * @param scopes
+     * @param scopes 作用域集合
      */
     @JsonSetter("resource_scopes")
     private void setScopesUma(Set<ScopeRepresentation> scopes) {
         this.scopes = scopes;
     }
 
+    /** @param iconUri 图标 URI */
     public void setIconUri(String iconUri) {
         this.iconUri = iconUri;
     }
 
+    /** @return 资源所有者 */
     public ResourceOwnerRepresentation getOwner() {
         return this.owner;
     }
 
+    /** @param owner 资源所有者 */
     @JsonProperty
     public void setOwner(ResourceOwnerRepresentation owner) {
         this.owner = owner;
     }
 
+    /** 按所有者 ID 设置资源所有者。 */
     @JsonIgnore
     public void setOwner(String ownerId) {
         if (ownerId == null) {
@@ -254,14 +284,17 @@ public class ResourceRepresentation {
         owner.setId(ownerId);
     }
 
+    /** @return 是否启用所有者托管访问 */
     public Boolean getOwnerManagedAccess() {
         return ownerManagedAccess;
     }
 
+    /** @param ownerManagedAccess 是否启用所有者托管访问 */
     public void setOwnerManagedAccess(Boolean ownerManagedAccess) {
         this.ownerManagedAccess = ownerManagedAccess;
     }
 
+    /** 按名称添加一个或多个作用域。 */
     public void addScope(String... scopeNames) {
         if (scopes == null) {
             scopes = new HashSet<>();
@@ -271,6 +304,7 @@ public class ResourceRepresentation {
         }
     }
 
+    /** 添加作用域表示。 */
     public void addScope(ScopeRepresentation scope) {
         if (scopes == null) {
             scopes = new HashSet<>();
@@ -278,14 +312,17 @@ public class ResourceRepresentation {
         scopes.add(scope);
     }
 
+    /** @return 资源属性映射 */
     public Map<String, List<String>> getAttributes() {
         return attributes;
     }
 
+    /** @param attributes 资源属性映射 */
     public void setAttributes(Map<String, List<String>> attributes) {
         this.attributes = attributes;
     }
 
+    /** 按名称比较资源是否相等。 */
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -297,6 +334,7 @@ public class ResourceRepresentation {
         return Objects.hash(getName());
     }
 
+    /** 流式构建 {@link ResourceRepresentation} 的辅助类。 */
     public static final class Builder {
 
         private final ResourceRepresentation rep;
@@ -305,11 +343,13 @@ public class ResourceRepresentation {
             rep = new ResourceRepresentation();
         }
 
+        /** @param name 资源名称 */
         public Builder name(String name) {
             rep.setName(name);
             return this;
         }
 
+        /** @return 构建完成的资源表示 */
         public ResourceRepresentation build() {
             return rep;
         }
