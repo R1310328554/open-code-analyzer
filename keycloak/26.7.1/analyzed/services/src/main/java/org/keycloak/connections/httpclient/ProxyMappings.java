@@ -34,10 +34,10 @@ import org.jboss.logging.Logger;
 import static org.keycloak.utils.StringUtil.isBlank;
 
 /**
- * {@link ProxyMappings} describes an ordered mapping for hostname regex patterns to a {@link HttpHost} proxy.
+ * 按主机名正则顺序映射到 {@link HttpHost} 代理的规则集合。
  * <p>
- * Mappings can be created via {@link #valueOf(String...)} or {@link #valueOf(List)}.
- * For a description of the mapping format see {@link ProxyMapping#valueOf(String)}
+ * 可通过 {@link #valueOf(String...)}、{@link #valueOf(List)} 或环境变量风格 {@link #withFixedProxyMapping} 构建。
+ * 映射字符串格式见 {@link ProxyMapping#valueOf(String)}。
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
@@ -45,16 +45,18 @@ public class ProxyMappings {
 
   private static final Logger logger = Logger.getLogger(ProxyMappings.class);
 
+  /** 空映射单例，表示直连。 */
   private static final ProxyMappings EMPTY_MAPPING = valueOf(Collections.emptyList());
 
   private static final String NO_PROXY_DELIMITER = ",";
 
   private final List<ProxyMapping> entries;
 
+  /** 主机名到匹配结果的并发缓存，避免重复正则匹配。 */
   private static final Map<String, ProxyMapping> hostnameToProxyCache = new ConcurrentHashMap<>();
 
   /**
-   * Creates a {@link ProxyMappings} from the provided {@link ProxyMapping Entries}.
+   * 由已解析的 {@link ProxyMapping} 条目列表构造。
    *
    * @param entries
    */
@@ -63,7 +65,7 @@ public class ProxyMappings {
   }
 
   /**
-   * Creates a new  {@link ProxyMappings} from the provided {@code List} of proxy mapping strings.
+   * 从映射字符串列表解析并构造 {@link ProxyMappings}。
    * <p>
    *
    * @param proxyMappings
@@ -82,7 +84,7 @@ public class ProxyMappings {
   }
 
   /**
-   * Creates a new  {@link ProxyMappings} from the provided {@code String[]} of proxy mapping strings.
+   * 从映射字符串数组解析并构造 {@link ProxyMappings}。
    *
    * @param proxyMappings
    * @return
@@ -99,12 +101,10 @@ public class ProxyMappings {
   }
 
   /**
-   * Creates a new {@link ProxyMappings} from provided parameters representing the established {@code HTTP(S)_PROXY}
-   * and {@code NO_PROXY} environment variables.
+   * 模拟 {@code HTTP(S)_PROXY} 与 {@code NO_PROXY} 环境变量构建映射。
    *
-   * @param httpProxy a proxy used for all hosts except the ones specified in {@code noProxy}
-   * @param noProxy a list of hosts (separated by comma) that should not use proxy;
-   *                all suffixes are matched too (e.g. redhat.com will also match access.redhat.com)
+   * @param httpProxy 全局代理 URI，除 noProxy 列表外的主机均走此代理
+   * @param noProxy 逗号分隔的不走代理的主机列表（支持后缀匹配，如 redhat.com 匹配 access.redhat.com）
    * @return
    * @see <a href="https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/">https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/</a>
    */
@@ -112,10 +112,10 @@ public class ProxyMappings {
     List<ProxyMapping> proxyMappings = new ArrayList<>();
 
     if (!isBlank(httpProxy)) {
-      // noProxy must be first as it's more specific than .*
+      // noProxy 规则须排在通配符 .* 之前，优先匹配更具体的主机
       if (!isBlank(noProxy)) {
         for (String host : noProxy.split(NO_PROXY_DELIMITER)) {
-          // do not support regex in no_proxy
+          // NO_PROXY 不支持正则，仅按字面主机名转义匹配
           proxyMappings.add(new ProxyMapping(Pattern.compile("(?:.+\\.)?" + Pattern.quote(host)), null, null));
         }
       }
@@ -127,14 +127,14 @@ public class ProxyMappings {
   }
 
 
+  /** @return 是否无任何代理映射（直连） */
   public boolean isEmpty() {
     return this.entries.isEmpty();
   }
 
   /**
-   * @param hostname
-   * @return the {@link ProxyMapping} associated with the first matching hostname {@link Pattern}
-   * or the {@link ProxyMapping} including {@literal null} as {@link HttpHost} if none matches.
+   * @param hostname 目标主机名
+   * @return 首个匹配的正则对应 {@link ProxyMapping}；无匹配时返回 proxyHost 为 null 的占位映射
    */
   public ProxyMapping getProxyFor(String hostname) {
 
@@ -153,16 +153,17 @@ public class ProxyMappings {
     return proxyMapping;
   }
 
+  /** 清空主机名到代理的解析缓存（配置变更后调用）。 */
   public static void clearCache() {
     hostnameToProxyCache.clear();
   }
 
   /**
-   * {@link ProxyMapping} describes a Proxy Mapping with a Hostname {@link Pattern}
-   * that is mapped to a proxy {@link HttpHost}.
+   * 单条代理映射：主机名 {@link Pattern} 对应 {@link HttpHost} 及可选凭据。
    */
   public static class ProxyMapping {
 
+    /** 映射字符串中表示直连（不使用代理）的特殊 URI。 */
     public static final String NO_PROXY = "NO_PROXY";
     private static final String DELIMITER = ";";
 
@@ -190,19 +191,18 @@ public class ProxyMappings {
       return proxyCredentials;
     }
 
+    /** @param hostname 待匹配主机名 @return 正则是否完全匹配 */
     public boolean matches(String hostname) {
       return getHostnamePattern().matcher(hostname).matches();
     }
 
     /**
-     * Parses a mapping string into an {@link ProxyMapping}.
+     * 解析映射字符串为 {@link ProxyMapping}。
      * <p>
-     * A proxy mapping string must have the following format: {@code hostnameRegex;www-proxy-uri}
-     * with semicolon as a delimiter.</p>
-     * <p>
-     * If no proxy should be used for a host pattern then use {@code NO_PROXY} as www-proxy-uri.
+     * 格式：{@code hostnameRegex;proxy-uri}，分号分隔。
+     * 直连时使用 {@code NO_PROXY} 作为 proxy-uri。
      * </p>
-     * <p>Examples:
+     * <p>示例：
      * <pre>
      * {@code
      *

@@ -25,15 +25,19 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 
 /**
- * Limit the amount of data read to prevent a {@link OutOfMemoryError}.
+ * {@link HttpEntity} 装饰器：限制 {@link #getContent()} 读取量，避免 OOM。
+ * <p>内部使用 {@link SafeInputStream} 在流级别截断超额数据。</p>
  *
  * @author Alexander Schwartz
  */
 class SafeHttpEntity implements HttpEntity {
 
+    /** 被包装的原始 HTTP 实体。 */
     private final HttpEntity delegate;
+    /** 允许读取的最大字节数。 */
     private final long maxConsumedResponseSize;
 
+    /** @param delegate 原始实体 @param maxConsumedResponseSize 读取上限 */
     SafeHttpEntity(HttpEntity delegate, long maxConsumedResponseSize) {
         this.delegate = delegate;
         this.maxConsumedResponseSize = maxConsumedResponseSize;
@@ -65,6 +69,7 @@ class SafeHttpEntity implements HttpEntity {
     }
 
     @Override
+    /** 返回带字节上限的安全输入流。 */
     public InputStream getContent() throws IOException, UnsupportedOperationException {
         return new SafeInputStream(delegate.getContent(), maxConsumedResponseSize);
     }

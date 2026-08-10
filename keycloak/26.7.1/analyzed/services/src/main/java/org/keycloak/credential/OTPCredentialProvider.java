@@ -34,6 +34,9 @@ import org.keycloak.models.utils.TimeBasedOTP;
 import org.jboss.logging.Logger;
 
 /**
+ * OTP（TOTP/HOTP）凭证提供者：创建、校验与元数据管理。
+ * <p>校验 HOTP 时更新计数器；TOTP 在非可复用策略下通过 {@link SingleUseObjectProvider} 防重放。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -42,11 +45,13 @@ public class OTPCredentialProvider implements CredentialProvider<OTPCredentialMo
 
     protected KeycloakSession session;
 
+    /** @param session 当前 Keycloak 会话 */
     public OTPCredentialProvider(KeycloakSession session) {
         this.session = session;
     }
 
     @Override
+    /** 创建 OTP 凭证，未设置创建时间则写入当前时间戳。 */
     public CredentialModel createCredential(RealmModel realm, UserModel user, OTPCredentialModel credentialModel) {
         if (credentialModel.getCreatedDate() == null) {
             credentialModel.setCreatedDate(Time.currentTimeMillis());
@@ -65,11 +70,13 @@ public class OTPCredentialProvider implements CredentialProvider<OTPCredentialMo
     }
 
     @Override
+    /** @return 是否支持 otp/totp/hotp 类型 */
     public boolean supportsCredentialType(String credentialType) {
         return List.of(OTPCredentialModel.TYPE, OTPCredentialModel.TOTP, OTPCredentialModel.HOTP).contains(credentialType);
     }
 
     @Override
+    /** 检查用户是否已配置指定 OTP 子类型凭证。 */
     public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
         if (!supportsCredentialType(credentialType)) return false;
         return user.credentialManager().getStoredCredentialsByTypeStream(credentialType).findAny().isPresent();
@@ -80,6 +87,7 @@ public class OTPCredentialProvider implements CredentialProvider<OTPCredentialMo
     }
 
     @Override
+    /** 校验 HOTP/TOTP 动态码；HOTP 成功时递增计数器，TOTP 可选单次使用约束。 */
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput credentialInput) {
         if (!(credentialInput instanceof UserCredentialModel)) {
             logger.debug("Expected instance of UserCredentialModel for CredentialInput");
@@ -132,6 +140,7 @@ public class OTPCredentialProvider implements CredentialProvider<OTPCredentialMo
     }
 
     @Override
+    /** 返回 OTP 在凭据 UI 中的分类、文案与必需动作配置。 */
     public CredentialTypeMetadata getCredentialTypeMetadata(CredentialTypeMetadataContext metadataContext) {
         return CredentialTypeMetadata.builder()
                 .type(getType())

@@ -18,11 +18,17 @@ package org.keycloak.credential;
 
 import com.webauthn4j.data.attestation.authenticator.AAGUID;
 
+/**
+ * WebAuthn 认证器 AAGUID（Authenticator Attestation GUID）与数据库字节列的 JPA 转换器。
+ * <p>持久化 16 字节 UUID，实体侧为 {@link AAGUID}。</p>
+ */
 public class AAGUIDConverter {
+    /** @param aaguid 实体属性 @return 16 字节 AAGUID 原始值 */
     public byte[] convertToDatabaseColumn(AAGUID aaguid) {
         return aaguid.getBytes();
     }
 
+    /** @param bytes 数据库列 @return {@link AAGUID} 实例 */
     public AAGUID convertToEntityAttribute(byte[] bytes) {
         return new AAGUID(bytes);
     }

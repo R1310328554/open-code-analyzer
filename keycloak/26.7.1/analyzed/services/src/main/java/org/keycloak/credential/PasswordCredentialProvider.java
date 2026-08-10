@@ -47,6 +47,9 @@ import static org.keycloak.credential.PasswordCredentialProviderFactory.METER_RE
 import static org.keycloak.credential.PasswordCredentialProviderFactory.METER_VALIDATION_OUTCOME_TAG;
 
 /**
+ * 密码凭证提供者：哈希存储、策略校验、历史记录与验证时自动 rehash。
+ * <p>支持 Micrometer 指标（算法、强度、Realm、结果标签可配置）。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -78,12 +81,14 @@ public class PasswordCredentialProvider implements CredentialProvider<PasswordCr
         this.withOutcomeInMetric = withOutcomeInMetric;
     }
 
+    /** @return 用户当前主密码凭证，未设置则 null */
     public PasswordCredentialModel getPassword(RealmModel realm, UserModel user) {
         List<CredentialModel> passwords = user.credentialManager().getStoredCredentialsByTypeStream(getType()).collect(Collectors.toList());
         if (passwords.isEmpty()) return null;
         return PasswordCredentialModel.createFromCredentialModel(passwords.get(0));
     }
 
+    /** 校验密码策略后哈希并创建/更新密码凭证。 */
     public boolean createCredential(RealmModel realm, UserModel user, String password) {
         PasswordPolicy policy = realm.getPasswordPolicy();
 
@@ -111,30 +116,30 @@ public class PasswordCredentialProvider implements CredentialProvider<PasswordCr
         int expiredPasswordsPolicyValue = policy.getExpiredPasswords();
         int passwordAgeInDaysPolicy = Math.max(0, policy.getPasswordAgeInDays());
 
-        // 1) create new or reset existing password
+        // 1) 创建新密码或覆盖现有密码
         CredentialModel createdCredential;
         CredentialModel oldPassword = getPassword(realm, user);
         if (credentialModel.getCreatedDate() == null) {
             credentialModel.setCreatedDate(Time.currentTimeMillis());
         }
-        if (oldPassword == null) { // no password exists --> create new
+        if (oldPassword == null) { // 尚无密码 → 新建
             createdCredential = user.credentialManager().createStoredCredential(credentialModel);
-        } else { // password exists --> update existing
+        } else { // 已有密码 → 更新并可选写入历史
             credentialModel.setId(oldPassword.getId());
             user.credentialManager().updateStoredCredential(credentialModel);
             createdCredential = credentialModel;
 
-            // 2) add a password history item based on the old password
+            // 2) 按策略将旧密码写入历史记录
             if (expiredPasswordsPolicyValue > 1 || passwordAgeInDaysPolicy > 0) {
                 oldPassword.setId(null);
                 oldPassword.setType(PasswordCredentialModel.PASSWORD_HISTORY);
-                // Setting the label to "nulL" avoids duplicate label errors
+                // 清空 userLabel 避免历史项标签冲突
                 oldPassword.setUserLabel(null);
                 oldPassword = user.credentialManager().createStoredCredential(oldPassword);
             }
         }
 
-        // 3) remove old password history items, if both history policies are set, more restrictive policy wins
+        // 3) 按数量与年龄策略裁剪过期历史密码（两者并存时取更严格者）
         final int passwordHistoryListMaxSize = Math.max(0, expiredPasswordsPolicyValue - 1);
 
         final long passwordMaxAgeMillis = Time.currentTimeMillis() - Duration.ofDays(passwordAgeInDaysPolicy).toMillis();
@@ -167,6 +172,7 @@ public class PasswordCredentialProvider implements CredentialProvider<PasswordCr
     }
 
 
+    /** 按 Realm 策略解析 {@link PasswordHashProvider}，未配置则回退默认实现。 */
     protected PasswordHashProvider getHashProvider(PasswordPolicy policy) {
         if (policy != null && policy.getHashAlgorithm() != null) {
             PasswordHashProvider provider = session.getProvider(PasswordHashProvider.class, policy.getHashAlgorithm());
@@ -206,6 +212,7 @@ public class PasswordCredentialProvider implements CredentialProvider<PasswordCr
     }
 
     @Override
+    /** 校验明文密码；成功时按需异步 rehash 以符合最新策略。 */
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
         if (!(input instanceof UserCredentialModel)) {
             logger.debug("Expected instance of UserCredentialModel for CredentialInput");
@@ -247,7 +254,7 @@ public class PasswordCredentialProvider implements CredentialProvider<PasswordCr
     }
 
     private void publishMetricIfEnabled(RealmModel realm, String algorithm, String hashingStrength, String outcome) {
-        // Do not publish metrics if metrics are disabled
+        // 指标未启用时不发布
         if (!metricsEnabled) {
             return;
         }
@@ -286,9 +293,8 @@ public class PasswordCredentialProvider implements CredentialProvider<PasswordCr
         if (!provider.policyCheck(passwordPolicy, password)) {
             final int iterations = passwordPolicy != null ? passwordPolicy.getHashIterations() : -1;
             final String hashAlgorithm = passwordPolicy != null ? passwordPolicy.getHashAlgorithm() : null;
-            // Refresh the password in a different transaction, do not fail if there is a model exception on current modifications due to concurrent logins.
-            // Also do not start it as a nested transaction, as the current transaction might have auto-migrated the credential.
-            // see: JpaUserCredentialStore#toModel for the on-the-fly migration of the salt column
+            // 在独立事务中刷新密码哈希，避免并发登录导致当前事务失败；
+            // 不使用嵌套事务，因当前事务可能已触发凭证 salt 列自动迁移（见 JpaUserCredentialStore#toModel）
             session.getTransactionManager().enlistAfterCompletion(new AbstractKeycloakTransaction() {
                 @Override
                 protected void commitImpl() {
@@ -338,7 +344,7 @@ public class PasswordCredentialProvider implements CredentialProvider<PasswordCr
                 .helpText("password-help-text")
                 .iconCssClass("kcAuthenticatorPasswordClass");
 
-        // Check if we are creating or updating password
+        // 根据用户是否已有密码决定 create/update 必需动作
         UserModel user = metadataContext.getUser();
         if (user != null && user.credentialManager().isConfiguredFor(getType())) {
             metadataBuilder.updateAction(UserModel.RequiredAction.UPDATE_PASSWORD.toString());

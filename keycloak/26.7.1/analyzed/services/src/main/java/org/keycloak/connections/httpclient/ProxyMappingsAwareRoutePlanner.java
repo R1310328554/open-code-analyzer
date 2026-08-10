@@ -32,8 +32,8 @@ import org.jboss.logging.Logger;
 import static org.keycloak.connections.httpclient.ProxyMappings.ProxyMapping;
 
 /**
- * A {@link DefaultRoutePlanner} that determines the proxy to use for a given target hostname by consulting
- * the given {@link ProxyMappings}.
+ * 基于 {@link ProxyMappings} 为每个目标主机选择代理的 {@link DefaultRoutePlanner} 实现。
+ * <p>匹配到带凭据的代理时，将 {@link CredentialsProvider} 写入 {@link HttpClientContext}。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  * @see ProxyMappings
@@ -44,12 +44,14 @@ public class ProxyMappingsAwareRoutePlanner extends DefaultRoutePlanner {
 
   private final ProxyMappings proxyMappings;
 
+  /** @param proxyMappings 主机名到代理的映射规则 */
   public ProxyMappingsAwareRoutePlanner(ProxyMappings proxyMappings) {
     super(DefaultSchemePortResolver.INSTANCE);
     this.proxyMappings = proxyMappings;
   }
 
   @Override
+  /** 根据目标主机名解析代理，并在需要时注入代理认证凭据。 */
   protected HttpHost determineProxy(HttpHost target, HttpRequest request, HttpContext context) throws HttpException {
 
     String targetHostName = target.getHostName();

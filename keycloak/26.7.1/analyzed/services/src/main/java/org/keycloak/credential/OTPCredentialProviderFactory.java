@@ -19,17 +19,22 @@ package org.keycloak.credential;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * {@link OTPCredentialProvider} 的 SPI 工厂，提供者 ID 为 {@link #PROVIDER_ID}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class OTPCredentialProviderFactory implements CredentialProviderFactory<OTPCredentialProvider> {
+    /** SPI 工厂标识：{@code keycloak-otp}。 */
     public static final String PROVIDER_ID="keycloak-otp";
     @Override
+    /** @param session 当前会话 @return OTP 凭证提供者实例 */
     public OTPCredentialProvider create(KeycloakSession session) {
         return new OTPCredentialProvider(session);
     }
 
     @Override
+    /** @return {@link #PROVIDER_ID} */
     public String getId() {
         return PROVIDER_ID;
     }

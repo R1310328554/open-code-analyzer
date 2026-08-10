@@ -46,7 +46,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContexts;
 
 /**
- * Abstraction for creating HttpClients. Allows SSL configuration.
+ * 创建 Apache HttpClient 的构建器抽象，集中配置 SSL、连接池、超时与代理。
+ * <p>支持信任库/密钥库、主机名校验策略、连接复用与 {@link ProxyMappings} 路由。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -57,6 +58,7 @@ public class HttpClientBuilder {
      * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
      * @version $Revision: 1 $
      */
+    /** 跳过证书校验的信任管理器（仅在与 {@link #disableTrustManager()} 联用时启用）。 */
     private static class PassthroughTrustManager implements X509TrustManager {
         @Override
         public void checkClientTrusted(X509Certificate[] chain,
@@ -74,6 +76,7 @@ public class HttpClientBuilder {
         }
     }
 
+    /** 默认连接池获取连接超时（毫秒）。 */
     public static long DEFAULT_CONNECTION_REQUEST_TIMEOUT_MILLIS = 5000L;
 
     protected KeyStore truststore;
@@ -96,20 +99,23 @@ public class HttpClientBuilder {
     protected long connectionRequestTimeout = DEFAULT_CONNECTION_REQUEST_TIMEOUT_MILLIS;
     protected TimeUnit connectionRequestTimeoutUnits = TimeUnit.MILLISECONDS;
     protected boolean disableCookies = false;
+    /** 主机名到代理的映射规则。 */
     protected ProxyMappings proxyMappings;
     protected boolean expectContinueEnabled = false;
     protected final org.apache.http.impl.client.HttpClientBuilder apacheBuilder;
 
+    /** 使用默认 Apache HttpClient 构建器。 */
     public HttpClientBuilder() {
         this(HttpClients.custom());
     }
 
+    /** @param apacheBuilder 底层 Apache 构建器实例 */
     public HttpClientBuilder(org.apache.http.impl.client.HttpClientBuilder apacheBuilder) {
         this.apacheBuilder = apacheBuilder;
     }
 
     /**
-     * Socket inactivity timeout
+     * 设置 Socket 读超时（无数据可读时的最长等待）。
      *
      * @param timeout
      * @param unit
@@ -123,7 +129,7 @@ public class HttpClientBuilder {
     }
 
     /**
-     * When trying to make an initial socket connection, what is the timeout?
+     * 建立 TCP 连接的超时时间。
      *
      * @param timeout
      * @param unit
@@ -137,7 +143,7 @@ public class HttpClientBuilder {
     }
 
     /**
-     * When trying to obtain a connection, what is the timeout?
+     * 从连接池获取连接的超时时间。
      *
      * @param timeout
      * @param unit
@@ -150,37 +156,40 @@ public class HttpClientBuilder {
         return this;
     }
 
+    /** 设置连接在池中的存活时间（TTL）。 */
     public HttpClientBuilder connectionTTL(long ttl, TimeUnit unit) {
         this.connectionTTL = ttl;
         this.connectionTTLUnit = unit;
         return this;
     }
 
+    /** 是否复用 HTTP 连接（Keep-Alive）。 */
     public HttpClientBuilder reuseConnections(boolean reuseConnections) {
         this.reuseConnections = reuseConnections;
         return this;
     }
 
+    /** 空闲连接最大存活时间，超时后由后台线程清理。 */
     public HttpClientBuilder maxConnectionIdleTime(long maxConnectionIdleTime, TimeUnit unit) {
         this.maxConnectionIdleTime = maxConnectionIdleTime;
         this.maxConnectionIdleTimeUnit = unit;
         return this;
     }
 
+    /** 每个路由（目标主机）的最大并发连接数。 */
     public HttpClientBuilder maxPooledPerRoute(int maxPooledPerRoute) {
         this.maxPooledPerRoute = maxPooledPerRoute;
         return this;
     }
 
+    /** 连接池总容量上限。 */
     public HttpClientBuilder connectionPoolSize(int connectionPoolSize) {
         this.connectionPoolSize = connectionPoolSize;
         return this;
     }
 
     /**
-     * Disable trust management and hostname verification. <i>NOTE</i> this is a security
-     * hole, so only set this option if you cannot or do not want to verify the identity of the
-     * host you are communicating with.
+     * 禁用信任管理与主机名校验。<i>注意</i>：存在中间人攻击风险，仅在无法或无需校验对端身份时使用。
      */
     public HttpClientBuilder disableTrustManager() {
         this.disableTrustManager = true;
@@ -188,7 +197,7 @@ public class HttpClientBuilder {
     }
 
     /**
-     * Disables automatic redirect handling.
+     * 禁用 HTTP 自动重定向跟随。
      * @return
      */
     public HttpClientBuilder disableRedirectHandling() {
@@ -197,7 +206,7 @@ public class HttpClientBuilder {
     }
 
     /**
-     * Disable cookie management.
+     * 禁用 HttpClient 内置 Cookie 管理。
      */
     public HttpClientBuilder disableCookies(boolean disable) {
         this.disableCookies = disable;
@@ -205,7 +214,7 @@ public class HttpClientBuilder {
     }
 
     /**
-     * SSL policy used to verify hostnames
+     * 设置 SSL 主机名校验策略。
      *
      * @param policy
      * @return
@@ -216,16 +225,19 @@ public class HttpClientBuilder {
     }
 
 
+    /** 注入自定义 {@link SSLContext}。 */
     public HttpClientBuilder sslContext(SSLContext sslContext) {
         this.sslContext = sslContext;
         return this;
     }
 
+    /** 设置信任 CA 证书库。 */
     public HttpClientBuilder trustStore(KeyStore truststore) {
         this.truststore = truststore;
         return this;
     }
 
+    /** 设置客户端 TLS 密钥库及私钥口令。 */
     public HttpClientBuilder keyStore(KeyStore keyStore, String password) {
         this.clientKeyStore = keyStore;
         this.clientPrivateKeyPassword = password;
@@ -238,16 +250,19 @@ public class HttpClientBuilder {
         return this;
     }
 
+    /** 配置按主机名匹配的 HTTP 代理映射。 */
     public HttpClientBuilder proxyMappings(ProxyMappings proxyMappings) {
         this.proxyMappings = proxyMappings;
         return this;
     }
 
+    /** 是否启用 HTTP Expect: 100-continue 握手。 */
     public HttpClientBuilder expectContinueEnabled(boolean expectContinueEnabled) {
         this.expectContinueEnabled = expectContinueEnabled;
         return this;
     }
 
+    /** 根据当前配置构建 {@link CloseableHttpClient} 实例。 */
     public CloseableHttpClient build() {
         HostnameVerifier verifier = null;
         switch (policy) {
@@ -306,7 +321,7 @@ public class HttpClientBuilder {
             }
 
             if (maxConnectionIdleTime > 0) {
-                // Will start background cleaner thread
+                // 启动后台线程清理空闲连接
                 builder.evictIdleConnections(maxConnectionIdleTime, maxConnectionIdleTimeUnit);
             }
 
@@ -318,6 +333,7 @@ public class HttpClientBuilder {
         }
     }
 
+    /** @return 底层 Apache HttpClient 构建器（供子类扩展） */
     protected org.apache.http.impl.client.HttpClientBuilder getApacheHttpClientBuilder() {
         return apacheBuilder;
     }

@@ -23,8 +23,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.webauthn4j.data.attestation.statement.AttestationStatement;
 
+/**
+ * AttestationStatement CBOR 序列化容器：携带 {@code fmt} 与 {@code attStmt} 字段。
+ * <p>Jackson {@link JsonTypeInfo} 按 {@code fmt} 多态反序列化具体 attestation 类型。</p>
+ */
 public class AttestationStatementSerializationContainer {
 
+    /** CBOR/JSON 中的 attStmt 字段，fmt 决定具体子类型。 */
     @JsonProperty("attStmt")
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "fmt")
     private AttestationStatement attestationStatement;
@@ -34,11 +39,13 @@ public class AttestationStatementSerializationContainer {
         this.attestationStatement = attestationStatement;
     }
 
+    /** @return attestation 格式标识（如 packed、android-safetynet） */
     @JsonProperty("fmt")
     public String getFormat() {
         return attestationStatement.getFormat();
     }
 
+    /** @return 解析后的认证声明对象 */
     public AttestationStatement getAttestationStatement() {
         return attestationStatement;
     }
