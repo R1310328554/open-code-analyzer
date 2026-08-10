@@ -28,6 +28,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 /**
+ * 默认历史配置清理器：按 {@link PropertyUtil#getConfigRententionDays} 保留天数，
+ * 分批删除过期 config_history 记录。
  * The type Default history config cleaner.
  *
  * @author Sunrisea
@@ -38,6 +40,7 @@ public class DefaultHistoryConfigCleaner implements HistoryConfigCleaner {
     
     private HistoryConfigInfoPersistService historyConfigInfoPersistService;
     
+    /** 计算 cutoff 时间点并分页调用 removeConfigHistory 清理历史。 */
     @Override
     public void cleanHistoryConfig() {
         Timestamp startTime = getBeforeStamp(TimeUtils.getCurrentTime(), 24 * getRetentionDays());
@@ -66,6 +69,7 @@ public class DefaultHistoryConfigCleaner implements HistoryConfigCleaner {
         return PropertyUtil.getConfigRententionDays();
     }
     
+    /** 清理器插件名：nacos。 */
     @Override
     public String getName() {
         return "nacos";

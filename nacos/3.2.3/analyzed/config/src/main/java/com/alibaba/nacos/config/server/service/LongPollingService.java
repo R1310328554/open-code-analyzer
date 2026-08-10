@@ -55,6 +55,8 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.MEMORY_LOG;
 import static com.alibaba.nacos.config.server.utils.LogUtil.PULL_LOG;
 
 /**
+ * 配置长轮询核心服务：维护客户端挂起连接队列，监听 {@link LocalDataChangeEvent} 推送变更，
+ * 支持连接限流、采样统计与 MD5 比对即时响应。
  * LongPollingService.
  *
  * @author Nacos
@@ -91,7 +93,7 @@ public class LongPollingService {
         
         for (ClientLongPolling clientLongPolling : allSubs) {
             if (clientLongPolling.ip.equals(clientIp)) {
-                // One ip can have multiple listener.
+                // 同一 IP 可监听多个 groupKey
                 for (Map.Entry<String, ConfigListenState> entry : clientLongPolling.clientMd5Map
                     .entrySet()) {
                     lisenersGroupkeyStatus.put(entry.getKey(), entry.getValue().getMd5());
@@ -108,6 +110,7 @@ public class LongPollingService {
      *
      * @param sampleResults sample Results.
      * @return Results.
+      * <p>长轮询核心服务；详见类级说明。</p>
      */
     public SampleResult mergeSampleResult(List<SampleResult> sampleResults) {
         SampleResult mergeResult = new SampleResult();
@@ -173,6 +176,7 @@ public class LongPollingService {
      * @param rsp              HttpServletResponse.
      * @param clientMd5Map     clientMd5Map.
      * @param probeRequestSize probeRequestSize.
+      * <p>长轮询核心服务；详见类级说明。</p>
      */
     public void addLongPollingClient(HttpServletRequest req, HttpServletResponse rsp,
         Map<String, ConfigListenState> clientMd5Map,
@@ -197,9 +201,9 @@ public class LongPollingService {
             return;
         }
         
-        // Must be called by http thread, or send response.
+        // 须在 HTTP 线程启动 AsyncContext，否则无法异步挂起
         final AsyncContext asyncContext = req.startAsync();
-        // AsyncContext.setTimeout() is incorrect, Control by oneself
+        // 不使用容器超时，由 ClientLongPolling 自行调度
         asyncContext.setTimeout(0L);
         String ip = RequestUtil.getRemoteIp(req);
         ConnectionCheckResponse connectionCheckResponse = checkLimit(req);
@@ -216,7 +220,7 @@ public class LongPollingService {
         int minLongPoolingTimeout =
             SwitchService.getSwitchInteger("MIN_LONG_POOLING_TIMEOUT", 10000);
         
-        // Add delay time for LoadBalance, and one response is returned 500 ms in advance to avoid client timeout.
+        // 为负载均衡预留 delay，并提前 500ms 结束以避免客户端超时
         String requestLongPollingTimeOut = req.getHeader(LongPollingService.LONG_POLLING_HEADER);
         long timeout =
             Math.max(minLongPoolingTimeout, Long.parseLong(requestLongPollingTimeOut) - delayTime);
@@ -245,10 +249,10 @@ public class LongPollingService {
         
         ConfigExecutor.scheduleLongPolling(new StatTask(), 0L, 10L, TimeUnit.SECONDS);
         
-        // Register LocalDataChangeEvent to NotifyCenter.
+        // 向 NotifyCenter 注册本地配置变更事件
         NotifyCenter.registerToPublisher(LocalDataChangeEvent.class, NotifyCenter.ringBufferSize);
         
-        // Register A Subscriber to subscribe LocalDataChangeEvent.
+        // 订阅变更事件，触发 DataChangeTask 唤醒相关长轮询
         NotifyCenter.registerSubscriber(new Subscriber() {
             
             @Override
@@ -273,6 +277,7 @@ public class LongPollingService {
     public static final String LONG_POLLING_NO_HANG_UP_HEADER = "Long-Pulling-Timeout-No-Hangup";
     
     /**
+     * 当前所有挂起的长轮询客户端连接队列。
      * ClientLongPolling subscribers.
      */
     final Queue<ClientLongPolling> allSubs;
@@ -287,7 +292,7 @@ public class LongPollingService {
                     if (clientSub.clientMd5Map.containsKey(groupKey)) {
                         
                         getRetainIps().put(clientSub.ip, System.currentTimeMillis());
-                        iter.remove(); // Delete subscribers' relationships.
+                        iter.remove(); // 变更推送后移除该订阅关系
                         LogUtil.CLIENT_LOG.info("{}|{}|{}|{}|{}|{}|{}",
                             (System.currentTimeMillis() - changeTime),
                             "in-advance",
@@ -332,7 +337,7 @@ public class LongPollingService {
                 try {
                     getRetainIps().put(ClientLongPolling.this.ip, System.currentTimeMillis());
                     
-                    // Delete subscriber's relations.
+                    // 超时后从 allSubs 移除订阅关系
                     boolean removeFlag = allSubs.remove(ClientLongPolling.this);
                     
                     if (removeFlag) {
@@ -358,7 +363,7 @@ public class LongPollingService {
         
         void sendResponse(Map<String, ConfigListenState> changedGroups) {
             
-            // Cancel time out task.
+            // 提前响应时取消超时定时任务
             if (null != asyncTimeoutFuture) {
                 asyncTimeoutFuture.cancel(false);
             }
@@ -368,7 +373,7 @@ public class LongPollingService {
         void generateResponse(Map<String, ConfigListenState> changedGroups) {
             
             if (null == changedGroups) {
-                // Tell web container to send http response.
+                // 无变更时直接 complete，结束挂起
                 asyncContext.complete();
                 return;
             }
@@ -378,7 +383,7 @@ public class LongPollingService {
             try {
                 final String respString = MD5Util.compareMd5ResultString(changedGroups);
                 
-                // Disable cache.
+                // 禁用 HTTP 缓存头
                 response.setHeader("Pragma", "no-cache");
                 response.setDateHeader("Expires", 0);
                 response.setHeader("Cache-Control", "no-cache,no-store");

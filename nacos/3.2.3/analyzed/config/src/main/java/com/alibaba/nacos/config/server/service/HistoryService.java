@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
+ * 配置历史查询服务：分页/详情/前后版本对比，含权限校验与加密内容解密。
  * HistoryService.
  *
  * @author dongyafei
@@ -59,7 +60,7 @@ public class HistoryService {
     }
     
     /**
-     * Query the list history config.
+     * 分页查询指定 dataId/group/namespace 的配置变更历史列表。
      */
     public Page<ConfigHistoryInfo> listConfigHistory(String dataId, String group,
         String namespaceId, Integer pageNo,
@@ -69,7 +70,7 @@ public class HistoryService {
     }
     
     /**
-     * Query the detailed configuration history information.
+     * 按 nid 查询单条历史详情，解密后返回明文 content。
      */
     public ConfigHistoryInfo getConfigHistoryInfo(String dataId, String group, String namespaceId,
         Long nid)
@@ -79,7 +80,7 @@ public class HistoryService {
         if (Objects.isNull(configHistoryInfo)) {
             return null;
         }
-        // check if history config match the input
+        // 校验历史记录与请求参数三元组一致，防止越权访问
         checkHistoryInfoPermission(configHistoryInfo, dataId, group, namespaceId);
         
         String encryptedDataKey = configHistoryInfo.getEncryptedDataKey();
@@ -91,7 +92,7 @@ public class HistoryService {
     }
     
     /**
-     * Query previous config history information.
+     * 查询指定 id 的上一条历史记录（时间序前一版本）。
      */
     public ConfigHistoryInfo getPreviousConfigHistoryInfo(String dataId, String group,
         String namespaceId, Long id)
@@ -113,14 +114,14 @@ public class HistoryService {
     }
     
     /**
-     * Query configs list by namespace.
+     * 按命名空间列出当前全部配置（非历史表）。
      */
     public List<ConfigInfoWrapper> getConfigListByNamespace(String namespaceId) {
         return configInfoPersistService.queryConfigInfoByNamespace(namespaceId);
     }
     
     /**
-     * Check if the input dataId,group and namespaceId match the history config.
+     * 校验 dataId、group、namespaceId 与历史记录一致，否则抛出 {@link AccessException}。
      */
     private void checkHistoryInfoPermission(ConfigHistoryInfo configHistoryInfo, String dataId,
         String group,
@@ -135,6 +136,7 @@ public class HistoryService {
     
     /**
      * Query the detailed config history info pair, including the original version and the updated version.
+      * <p>配置历史查询；详见类级说明。</p>
      */
     public ConfigHistoryInfoDetail getConfigHistoryInfoDetail(String dataId, String group,
         String namespaceId, Long nid)
@@ -153,7 +155,7 @@ public class HistoryService {
         BeanUtils.copyProperties(configHistoryInfo, configHistoryInfoDetail);
         configHistoryInfoDetail.setOpType(configHistoryInfoDetail.getOpType().trim());
         
-        //insert
+        // 新增操作：仅填充 updated 侧字段
         if (OperationType.INSERT.getValue().equals(configHistoryInfoDetail.getOpType())) {
             configHistoryInfoDetail.setUpdatedContent(configHistoryInfo.getContent());
             configHistoryInfoDetail.setUpdatedMd5(configHistoryInfo.getMd5());
@@ -166,7 +168,7 @@ public class HistoryService {
             configHistoryInfoDetail.setOriginalEncryptedDataKey(StringUtils.EMPTY);
         }
         
-        //update
+        // 更新操作：当前记录为 original，下一条或现网为 updated
         if (OperationType.UPDATE.getValue().equals(configHistoryInfoDetail.getOpType())) {
             
             configHistoryInfoDetail.setOriginalExtInfo(configHistoryInfo.getExtInfo());
@@ -182,7 +184,7 @@ public class HistoryService {
             
             ConfigInfo currentConfigInfo = null;
             if (Objects.isNull(nextHistoryInfo)) {
-                //double check for concurrent
+                // 并发场景下二次拉取下一条历史或现网配置
                 currentConfigInfo = StringUtils.isEmpty(configHistoryInfoDetail.getGrayName())
                     ? configInfoPersistService.findConfigInfo(dataId, group, namespaceId)
                     : configInfoGrayPersistService.findConfigInfo4Gray(dataId, group, namespaceId,
@@ -209,7 +211,7 @@ public class HistoryService {
             }
         }
         
-        //delete
+        // 删除操作：保留被删版本的 original 快照
         if (OperationType.DELETE.getValue().equals(configHistoryInfoDetail.getOpType())) {
             configHistoryInfoDetail.setOriginalMd5(configHistoryInfo.getMd5());
             configHistoryInfoDetail.setOriginalContent(configHistoryInfo.getContent());
@@ -218,7 +220,7 @@ public class HistoryService {
             configHistoryInfoDetail.setOriginalExtInfo(configHistoryInfo.getExtInfo());
         }
         
-        // decrypt content
+        // 对 original/updated 密文内容统一解密
         if (StringUtils.isNotBlank(configHistoryInfoDetail.getOriginalContent())) {
             String originalContent = EncryptionHandler.decryptHandler(dataId,
                 configHistoryInfoDetail.getOriginalEncryptedDataKey(),

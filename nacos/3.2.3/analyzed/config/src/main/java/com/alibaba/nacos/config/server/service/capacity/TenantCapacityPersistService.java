@@ -47,6 +47,8 @@ import java.util.List;
 import static com.alibaba.nacos.config.server.utils.LogUtil.FATAL_LOG;
 
 /**
+ * 租户（命名空间）容量持久化：操作 tenant_capacity 表，
+ * 与 {@link GroupCapacityPersistService} 对称提供 usage 与配额维护。
  * Tenant Capacity Service.
  *
  * @author hexu.hxy
@@ -66,6 +68,7 @@ public class TenantCapacityPersistService {
     
     /**
      * init method.
+      * <p>租户容量持久化；详见类级说明。</p>
      */
     @PostConstruct
     public void init() {
@@ -115,6 +118,7 @@ public class TenantCapacityPersistService {
      *
      * @param tenantCapacity tenantCapacity object instance.
      * @return operate result.
+      * <p>租户容量持久化；详见类级说明。</p>
      */
     public boolean insertTenantCapacity(final NamespaceCapacity tenantCapacity) {
         TenantCapacityMapper tenantCapacityMapper =
@@ -146,6 +150,7 @@ public class TenantCapacityPersistService {
      *
      * @param tenantCapacity tenantCapacity object instance.
      * @return operate result.
+      * <p>租户容量持久化；详见类级说明。</p>
      */
     public boolean incrementUsageWithDefaultQuotaLimit(NamespaceCapacity tenantCapacity) {
         TenantCapacityMapper tenantCapacityMapper =
@@ -173,6 +178,7 @@ public class TenantCapacityPersistService {
      *
      * @param tenantCapacity tenantCapacity object instance.
      * @return operate result.
+      * <p>租户容量持久化；详见类级说明。</p>
      */
     public boolean incrementUsageWithQuotaLimit(NamespaceCapacity tenantCapacity) {
         TenantCapacityMapper tenantCapacityMapper =
@@ -198,6 +204,7 @@ public class TenantCapacityPersistService {
      *
      * @param tenantCapacity tenantCapacity object instance.
      * @return operate result.
+      * <p>租户容量持久化；详见类级说明。</p>
      */
     public boolean incrementUsage(NamespaceCapacity tenantCapacity) {
         TenantCapacityMapper tenantCapacityMapper =
@@ -223,6 +230,7 @@ public class TenantCapacityPersistService {
      *
      * @param tenantCapacity tenantCapacity object instance.
      * @return operate result.
+      * <p>租户容量持久化；详见类级说明。</p>
      */
     public boolean decrementUsage(NamespaceCapacity tenantCapacity) {
         TenantCapacityMapper tenantCapacityMapper =
@@ -250,6 +258,7 @@ public class TenantCapacityPersistService {
      * @param maxAggrCount maxAggrCount int value.
      * @param maxAggrSize  maxAggrSize int value.
      * @return operate result.
+      * <p>租户容量持久化；详见类级说明。</p>
      */
     public boolean updateTenantCapacity(String tenant, Integer quota, Integer maxSize,
         Integer maxAggrCount,
@@ -303,6 +312,7 @@ public class TenantCapacityPersistService {
      * @param tenant      tenant.
      * @param gmtModified gmtModified.
      * @return operate result.
+      * <p>租户容量持久化；详见类级说明。</p>
      */
     public boolean correctUsage(String tenant, Timestamp gmtModified) {
         TenantCapacityMapper tenantCapacityMapper =
@@ -323,7 +333,7 @@ public class TenantCapacityPersistService {
     }
     
     /**
-     * Get TenantCapacity List, only including id and tenantId value.
+     * 分页获取待校正用量的租户列表（仅 id 与 tenantId）。
      *
      * @param lastId   lastId long value.
      * @param pageSize pageSize int value.
@@ -357,6 +367,7 @@ public class TenantCapacityPersistService {
      *
      * @param tenant tenant string value.
      * @return operate result.
+      * <p>租户容量持久化；详见类级说明。</p>
      */
     public boolean deleteTenantCapacity(final String tenant) {
         try {

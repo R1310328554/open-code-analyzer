@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 配置容量管理服务：维护 group/tenant/cluster 配额与 usage 计数，
+ * 定时校正用量、支持自动扩容与 API 更新配额。
  * Capacity service.
  *
  * @author hexu.hxy
@@ -64,10 +66,11 @@ public class CapacityService {
     
     /**
      * Init.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     @PostConstruct
     public void init() {
-        // All servers have jobs that modify usage, idempotent.
+        // 各节点均调度校正任务，幂等更新 usage
         ConfigExecutor.scheduleCorrectUsageTask(() -> {
             LOGGER.info("[capacityManagement] start correct usage");
             StopWatch watch = new StopWatch();
@@ -88,6 +91,7 @@ public class CapacityService {
     
     /**
      * Correct the usage of group capacity.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     private void correctGroupUsage() {
         long lastId = 0;
@@ -106,8 +110,7 @@ public class CapacityService {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                // ignore
-                // set the interrupted flag
+                // 忽略中断但恢复线程中断标志
                 Thread.currentThread().interrupt();
             }
         }
@@ -123,6 +126,7 @@ public class CapacityService {
     
     /**
      * Correct the usage of group capacity.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     private void correctTenantUsage() {
         long lastId = 0;
@@ -186,6 +190,7 @@ public class CapacityService {
      * @param counterMode      increase or decrease mode.
      * @param ignoreQuotaLimit ignoreQuotaLimit flag.
      * @return the result of update cluster usage.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     public boolean insertAndUpdateClusterUsage(CounterMode counterMode, boolean ignoreQuotaLimit) {
         Capacity capacity = groupCapacityPersistService.getClusterCapacity();
@@ -199,6 +204,7 @@ public class CapacityService {
     
     /**
      * Update cluster usage with the given counter mode.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     public boolean updateClusterUsage(CounterMode counterMode) {
         return updateGroupUsage(counterMode, GroupCapacityPersistService.CLUSTER,
@@ -214,6 +220,7 @@ public class CapacityService {
      * @param group            tenant string value.
      * @param ignoreQuotaLimit ignoreQuotaLimit flag.
      * @return operate successfully or not.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     public boolean insertAndUpdateGroupUsage(CounterMode counterMode, String group,
         boolean ignoreQuotaLimit) {
@@ -240,8 +247,7 @@ public class CapacityService {
             if (ignoreQuotaLimit) {
                 return groupCapacityPersistService.incrementUsage(groupCapacity);
             }
-            // First update the quota according to the default value. In most cases, it is the default value.
-            // The quota field in the default value table is 0
+            // 优先按默认配额（表中 quota=0）尝试 increment，失败再按显式 quota 限制
             return groupCapacityPersistService.incrementUsageWithDefaultQuotaLimit(groupCapacity)
                 || groupCapacityPersistService.incrementUsageWithQuotaLimit(groupCapacity);
         }
@@ -258,6 +264,7 @@ public class CapacityService {
      *
      * @param group group string value.
      * @return init result.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     public boolean initGroupCapacity(String group) {
         return initGroupCapacity(group, null, null, null, null);
@@ -273,6 +280,7 @@ public class CapacityService {
      * @param maxAggrCount maxAggrCount int value.
      * @param maxAggrSize  maxAggrSize int value.
      * @return init result.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     private boolean initGroupCapacity(String group, Integer quota, Integer maxSize,
         Integer maxAggrCount,
@@ -290,6 +298,7 @@ public class CapacityService {
      *
      * @param group  group string value.
      * @param tenant tenant string value.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     private void autoExpansion(String group, String tenant) {
         Capacity capacity = getCapacity(group, tenant);
@@ -298,8 +307,7 @@ public class CapacityService {
         if (usage < defaultQuota) {
             return;
         }
-        // Initialize the capacity information of the group. If the quota is reached,
-        // the capacity will be automatically expanded to reduce the operation and maintenance cost.
+        // 初始化后若 usage 已达默认上限，按 initialExpansionPercent 自动升配额
         int initialExpansionPercent = PropertyUtil.getInitialExpansionPercent();
         if (initialExpansionPercent > 0) {
             int finalQuota = (int) (usage + defaultQuota * (1.0 * initialExpansionPercent / 100));
@@ -377,6 +385,7 @@ public class CapacityService {
      * @param group  group string value.
      * @param tenant tenant string value.
      * @return init result.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     public boolean initCapacity(String group, String tenant) {
         if (StringUtils.isNotBlank(tenant)) {
@@ -385,7 +394,7 @@ public class CapacityService {
         if (GroupCapacityPersistService.CLUSTER.equals(group)) {
             return insertGroupCapacity(GroupCapacityPersistService.CLUSTER);
         }
-        // Group can expand capacity automatically.
+        // 普通 group 支持自动扩容
         return initGroupCapacity(group);
     }
     
@@ -414,7 +423,7 @@ public class CapacityService {
             groupCapacity.setGmtModified(now);
             return groupCapacityPersistService.insertGroupCapacity(groupCapacity);
         } catch (DuplicateKeyException e) {
-            // this exception will meet when concurrent insert，ignore it
+            // 并发插入重复键时忽略并返回 false
             LogUtil.DEFAULT_LOG.warn("group: {}, message: {}", group, e.getMessage());
         }
         return false;
@@ -428,6 +437,7 @@ public class CapacityService {
      * @param tenant           tenant string value.
      * @param ignoreQuotaLimit ignoreQuotaLimit flag.
      * @return operate successfully or not.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     public boolean insertAndUpdateTenantUsage(CounterMode counterMode, String tenant,
         boolean ignoreQuotaLimit) {
@@ -468,6 +478,7 @@ public class CapacityService {
      *
      * @param tenant tenant string value.
      * @return init result.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     public boolean initTenantCapacity(String tenant) {
         return initTenantCapacity(tenant, null, null, null, null);
@@ -483,6 +494,7 @@ public class CapacityService {
      * @param maxAggrCount maxAggrCount int value.
      * @param maxAggrSize  maxAggrSize int value.
      * @return
+      * <p>容量配额管理；详见类级说明。</p>
      */
     public boolean initTenantCapacity(String tenant, Integer quota, Integer maxSize,
         Integer maxAggrCount,
@@ -542,6 +554,7 @@ public class CapacityService {
      * @param maxAggrCount maxAggrCount int value.
      * @param maxAggrSize  maxAggrSize int value.
      * @return operate successfully or not.
+      * <p>容量配额管理；详见类级说明。</p>
      */
     public boolean insertOrUpdateCapacity(String group, String tenant, Integer quota,
         Integer maxSize,

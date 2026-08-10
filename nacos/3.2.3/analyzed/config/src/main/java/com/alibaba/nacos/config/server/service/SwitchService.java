@@ -30,6 +30,8 @@ import java.util.Map;
 import static com.alibaba.nacos.config.server.utils.LogUtil.FATAL_LOG;
 
 /**
+ * 运行时开关服务：从 meta 配置 {@link #SWITCH_META_DATA_ID} 解析 key=value 行，
+ * 维护内存 switches 供长轮询延迟等模块热读取。
  * SwitchService.
  *
  * @author Nacos
@@ -37,12 +39,21 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.FATAL_LOG;
 @Service
 public class SwitchService {
     
+    /** 开关元数据 dataId，由 DumpConfigHandler 加载触发 refresh。 */
     public static final String SWITCH_META_DATA_ID = "com.alibaba.nacos.meta.switch";
     
+    /** 长轮询固定延迟毫秒数开关键名。 */
     public static final String FIXED_DELAY_TIME = "fixedDelayTime";
     
     private static volatile Map<String, String> switches = new HashMap<>();
     
+    /**
+     * 读取整型开关，解析失败或缺失时返回 defaultValue。
+     *
+     * @param key          开关键
+     * @param defaultValue 默认值
+     * @return 开关整数值
+     */
     public static int getSwitchInteger(String key, int defaultValue) {
         int rtn;
         try {
@@ -59,6 +70,7 @@ public class SwitchService {
      * Load config.
      *
      * @param config config content string value.
+      * <p>运行时开关；详见类级说明。</p>
      */
     public static void load(String config) {
         if (StringUtils.isBlank(config)) {
@@ -91,6 +103,7 @@ public class SwitchService {
         }
     }
     
+    /** 将全部开关序列化为 "key=value; ..." 便于日志输出。 */
     public static String getSwitches() {
         StringBuilder sb = new StringBuilder();
         

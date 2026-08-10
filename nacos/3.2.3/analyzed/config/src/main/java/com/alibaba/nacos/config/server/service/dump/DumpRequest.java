@@ -18,18 +18,23 @@
 package com.alibaba.nacos.config.server.service.dump;
 
 /**
+ * Dump 请求 DTO：携带 dataId/group/tenant、灰度名、变更时间与来源 IP。
  * dump request.
  *
  * @author shiyiyue
  */
 public class DumpRequest {
     
+    /** 配置 dataId。 */
     String dataId;
     
+    /** 配置 group。 */
     String group;
     
+    /** 命名空间 tenant。 */
     String tenant;
     
+    /** 灰度版本名，正式配置为空。 */
     String grayName;
     
     private long lastModifiedTs;
@@ -93,6 +98,7 @@ public class DumpRequest {
      * @param lastModifiedTs lastModifiedTs.
      * @param sourceIp       sourceIp.
      * @return
+      * <p>Dump 请求模型；详见类级说明。</p>
      */
     public static DumpRequest create(String dataId, String group, String tenant,
         long lastModifiedTs, String sourceIp) {

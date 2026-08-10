@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 灰度配置增量 Dump worker：处理 GRAY 类型历史删除与灰度表变更，
+ * 维护 {@link ConfigCacheService} 灰度缓存。
  * Dump gray config worker.
  *
  * @author shiyiyue
@@ -124,7 +126,7 @@ public class DumpChangeGrayConfigWorker implements Runnable {
                     }
                     final String groupKey =
                         GroupKey2.getKey(cf.getDataId(), cf.getGroup(), cf.getTenant());
-                    //check md5 & localtimestamp update local disk cache.
+                    // 比对 MD5 与时间戳，变更则 dumpGray 更新本地灰度缓存
                     boolean newLastModified =
                         cf.getLastModified() > ConfigCacheService.getLastModifiedTs(groupKey);
                     String localContentMd5 = ConfigCacheService.getContentMd5(groupKey);

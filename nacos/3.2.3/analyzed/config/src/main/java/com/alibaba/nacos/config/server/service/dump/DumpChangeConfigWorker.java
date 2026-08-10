@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 正式配置增量 Dump  worker：周期扫描 DB 变更与历史删除，
+ * 同步 {@link ConfigCacheService} 本地磁盘缓存并触发迁移状态检查。
  * Dump change processor.
  *
  * @author Nacos
@@ -68,6 +70,7 @@ public class DumpChangeConfigWorker implements Runnable {
     
     /**
      * do check change.
+      * <p>正式配置增量 Dump；详见类级说明。</p>
      */
     @Override
     public void run() {
@@ -123,7 +126,7 @@ public class DumpChangeConfigWorker implements Runnable {
                     }
                     final String groupKey =
                         GroupKey2.getKey(cf.getDataId(), cf.getGroup(), cf.getTenant());
-                    //check md5 & localtimestamp update local disk cache.
+                    // 比对 MD5 与 lastModified，有变更则 dump 到本地缓存
                     boolean newLastModified =
                         cf.getLastModified() > ConfigCacheService.getLastModifiedTs(groupKey);
                     String localContentMd5 = ConfigCacheService.getContentMd5(groupKey);

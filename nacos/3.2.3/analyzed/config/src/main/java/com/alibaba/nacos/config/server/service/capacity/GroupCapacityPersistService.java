@@ -48,6 +48,8 @@ import java.util.List;
 import static com.alibaba.nacos.config.server.utils.LogUtil.FATAL_LOG;
 
 /**
+ * Group/集群容量持久化：基于 {@link GroupCapacityMapper} 读写 group_capacity 表，
+ * 提供增减 usage、校正、配额更新等 JDBC 操作。
  * Group Capacity Service.
  *
  * @author hexu.hxy
@@ -56,6 +58,7 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.FATAL_LOG;
 @Service
 public class GroupCapacityPersistService {
     
+    /** 集群级容量记录的 group_id 空字符串标识。 */
     static final String CLUSTER = "";
     
     private static final GroupCapacityRowMapper GROUP_CAPACITY_ROW_MAPPER =
@@ -69,6 +72,7 @@ public class GroupCapacityPersistService {
     
     /**
      * init.
+      * <p>Group 容量持久化；详见类级说明。</p>
      */
     @PostConstruct
     public void init() {
@@ -121,6 +125,7 @@ public class GroupCapacityPersistService {
      *
      * @param capacity capacity object instance.
      * @return operate result.
+      * <p>Group 容量持久化；详见类级说明。</p>
      */
     public boolean insertGroupCapacity(final GroupCapacity capacity) {
         GroupCapacityMapper groupCapacityMapper =
@@ -140,7 +145,7 @@ public class GroupCapacityPersistService {
         if (CLUSTER.equals(capacity.getGroupName())) {
             mapperResult = groupCapacityMapper.insertIntoSelect(context);
         } else {
-            // Note: add "tenant_id = ''" condition.
+            // 非集群 group 插入时附加 tenant_id 为空条件
             mapperResult = groupCapacityMapper.insertIntoSelectByWhere(context);
         }
         return jdbcTemplate.update(mapperResult.getSql(),
@@ -168,6 +173,7 @@ public class GroupCapacityPersistService {
      *
      * @param groupCapacity groupCapacity object instance.
      * @return operate result.
+      * <p>Group 容量持久化；详见类级说明。</p>
      */
     public boolean incrementUsageWithDefaultQuotaLimit(GroupCapacity groupCapacity) {
         GroupCapacityMapper groupCapacityMapper =
@@ -194,6 +200,7 @@ public class GroupCapacityPersistService {
      *
      * @param groupCapacity groupCapacity object instance.
      * @return operate result.
+      * <p>Group 容量持久化；详见类级说明。</p>
      */
     public boolean incrementUsageWithQuotaLimit(GroupCapacity groupCapacity) {
         GroupCapacityMapper groupCapacityMapper =
@@ -219,6 +226,7 @@ public class GroupCapacityPersistService {
      *
      * @param groupCapacity groupCapacity object instance.
      * @return operate result.
+      * <p>Group 容量持久化；详见类级说明。</p>
      */
     public boolean incrementUsage(GroupCapacity groupCapacity) {
         GroupCapacityMapper groupCapacityMapper =
@@ -243,6 +251,7 @@ public class GroupCapacityPersistService {
      *
      * @param groupCapacity groupCapacity object instance.
      * @return operate result.
+      * <p>Group 容量持久化；详见类级说明。</p>
      */
     public boolean decrementUsage(GroupCapacity groupCapacity) {
         GroupCapacityMapper groupCapacityMapper =
@@ -270,6 +279,7 @@ public class GroupCapacityPersistService {
      * @param maxAggrCount maxAggrCount int value.
      * @param maxAggrSize  maxAggrSize int value.
      * @return operate result.
+      * <p>Group 容量持久化；详见类级说明。</p>
      */
     public boolean updateGroupCapacity(String group, Integer quota, Integer maxSize,
         Integer maxAggrCount,
@@ -325,6 +335,7 @@ public class GroupCapacityPersistService {
      * @param group       group string value.
      * @param gmtModified gmtModified.
      * @return operate result.
+      * <p>Group 容量持久化；详见类级说明。</p>
      */
     public boolean correctUsage(String group, Timestamp gmtModified) {
         GroupCapacityMapper groupCapacityMapper =
@@ -357,7 +368,7 @@ public class GroupCapacityPersistService {
     }
     
     /**
-     * Get group capacity list, noly has id and groupId value.
+     * 分页获取待校正用量的 group 列表（仅 id 与 groupId）。
      *
      * @param lastId   lastId long value.
      * @param pageSize pageSize long value.
@@ -392,6 +403,7 @@ public class GroupCapacityPersistService {
      *
      * @param group group string value.
      * @return operate result.
+      * <p>Group 容量持久化；详见类级说明。</p>
      */
     public boolean deleteGroupCapacity(final String group) {
         try {

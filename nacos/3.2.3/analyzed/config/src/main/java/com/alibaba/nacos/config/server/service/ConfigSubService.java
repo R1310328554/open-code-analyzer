@@ -57,6 +57,8 @@ import java.util.concurrent.TimeoutException;
 import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 
 /**
+ * 配置订阅集群采样服务（已废弃）：向各集群成员并发发起 HTTP 请求，
+ * 汇总长轮询监听分布与 MD5 状态，用于运维排查与一致性抽检。
  * Config sub service.
  *
  * @author Nacos
@@ -77,7 +79,9 @@ public class ConfigSubService {
      * @param ip           ip.
      * @param relativePath path.
      * @return all path.
+      * <p>集群监听采样；详见类级说明。</p>
      */
+    /** 拼接成员 IP、上下文路径与相对路径，生成集群内调用 URL。 */
     private static String getUrl(String ip, String relativePath) {
         return HTTP_PREFIX + ip + EnvUtil.getContextPath() + relativePath;
     }
@@ -152,17 +156,17 @@ public class ConfigSubService {
             Collection<Member> ipList = serverMemberManager.allMembers();
             List<T> collectionResult = new ArrayList<>(ipList.size());
             
-            // Submit query task.
+            // 向各成员提交并发查询任务
             for (Member ip : ipList) {
                 try {
                     completionService.submit(new Job<T>(ip.getAddress()) {
                     });
-                } catch (Throwable e) { // Send request failed.
+                } catch (Throwable e) { // 提交任务失败时记录警告并跳过该节点
                     LogUtil.DEFAULT_LOG.warn("invoke to {} with exception: {} during submit job",
                         ip, e.getMessage());
                 }
             }
-            // Get and merge result.
+            // 轮询合并各成员返回的采样结果
             T sampleResults;
             for (Member member : ipList) {
                 try {
@@ -200,6 +204,7 @@ public class ConfigSubService {
      * @param url    url.
      * @param type   type.
      * @return
+      * <p>集群监听采样；详见类级说明。</p>
      */
     public static Object runSingleJob(String ip, Map<String, String> params, String url,
         Type type) {
@@ -212,7 +217,7 @@ public class ConfigSubService {
             
             String urlAll = getUrl(ip, url) + "?" + paramUrl;
             RestResult<String> result = invokeUrl(urlAll, Constants.ENCODE_UTF8);
-            // Http code 200
+            // HTTP 200 时反序列化为目标类型
             if (result.ok()) {
                 Object t = JacksonUtils.toObj(result.getData(), type);
                 return t;
@@ -234,6 +239,7 @@ public class ConfigSubService {
      * @param listenerCheckResult listenerCheckResult.
      * @param sampleResults       sampleResults.
      * @return
+      * <p>集群监听采样；详见类级说明。</p>
      */
     public ListenerCheckResult mergeListenerCheckResult(ListenerCheckResult listenerCheckResult,
         List<ListenerCheckResult> sampleResults, int expectSize) {
@@ -257,6 +263,7 @@ public class ConfigSubService {
      * @param sampleCollectResult sampleCollectResult.
      * @param sampleResults       sampleResults.
      * @return SampleResult.
+      * <p>集群监听采样；详见类级说明。</p>
      */
     public SampleResult mergeSampleResult(SampleResult sampleCollectResult,
         List<SampleResult> sampleResults) {
@@ -279,6 +286,16 @@ public class ConfigSubService {
         return mergeResult;
     }
     
+    /**
+     * 多轮采样指定 dataId/group/tenant 的集群监听分布。
+     *
+     * @param dataId     配置 dataId
+     * @param group      配置 group
+     * @param tenant     命名空间
+     * @param sampleTime 采样轮数
+     * @return 合并后的采样结果
+     * @throws Exception 并发任务异常
+     */
     public SampleResult getCollectSampleResult(String dataId, String group, String tenant,
         int sampleTime)
         throws Exception {
@@ -304,6 +321,13 @@ public class ConfigSubService {
         return sampleCollectResult;
     }
     
+    /**
+     * 按客户端 IP 多轮采样其监听的 groupKey 与 MD5。
+     *
+     * @param ip         客户端 IP
+     * @param sampleTime 采样轮数
+     * @return 合并后的采样结果
+     */
     public SampleResult getCollectSampleResultByIp(String ip, int sampleTime) {
         Map<String, String> params = new HashMap<>(50);
         params.put("ip", ip);
@@ -330,6 +354,7 @@ public class ConfigSubService {
      * @param encoding encoding.
      * @return result.
      * @throws Exception exception.
+      * <p>集群监听采样；详见类级说明。</p>
      */
     public static RestResult<String> invokeUrl(String url, String encoding) throws Exception {
         Header header = Header.newInstance();

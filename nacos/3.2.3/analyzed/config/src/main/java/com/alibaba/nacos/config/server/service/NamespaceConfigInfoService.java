@@ -24,6 +24,8 @@ import com.alibaba.nacos.sys.env.EnvUtil;
 import org.springframework.stereotype.Service;
 
 /**
+ * 命名空间详情注入器：为 {@link Namespace} 填充配置配额与当前配置条数，
+ * 供控制台展示租户容量概览。
  * Namespace detail for config info.
  *
  * @author xiweng.yy
@@ -37,6 +39,11 @@ public class NamespaceConfigInfoService extends AbstractNamespaceDetailInjector 
         this.configInfoPersistService = configInfoPersistService;
     }
     
+    /**
+     * 注入命名空间配额（若配置）与 configCount。
+     *
+     * @param namespace 待 enrich 的命名空间对象
+     */
     @Override
     public void injectDetail(Namespace namespace) {
         
@@ -45,7 +52,7 @@ public class NamespaceConfigInfoService extends AbstractNamespaceDetailInjector 
                 EnvUtil.getProperty(PropertiesConstant.DEFAULT_TENANT_QUOTA, Integer.class));
         }
         
-        // set config count.
+        // 统计该命名空间下配置总数并写入 namespace
         int configCount = configInfoPersistService.configInfoCount(namespace.getNamespace());
         namespace.setConfigCount(configCount);
     }

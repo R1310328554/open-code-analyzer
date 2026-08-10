@@ -26,6 +26,8 @@ import com.alibaba.nacos.config.server.service.SwitchService;
 import com.alibaba.nacos.config.server.service.trace.ConfigTraceService;
 
 /**
+ * 配置 Dump 事件订阅者：消费 {@link ConfigDumpEvent}，
+ * 写入/删除本地缓存，并处理开关与白名单等特殊 dataId。
  * Dump config subscriber.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -37,6 +39,7 @@ public class DumpConfigHandler extends Subscriber<ConfigDumpEvent> {
      *
      * @param event {@link ConfigDumpEvent}
      * @return {@code true} if the config dump task success , else {@code false}
+      * <p>Dump 事件处理；详见类级说明。</p>
      */
     public static boolean configDump(ConfigDumpEvent event) {
         final String dataId = event.getDataId();
@@ -45,7 +48,7 @@ public class DumpConfigHandler extends Subscriber<ConfigDumpEvent> {
         final String content = event.getContent();
         final long lastModified = event.getLastModifiedTs();
         
-        //gray
+        // 灰度配置：dumpGray 或 removeGray 并记录 trace
         if (StringUtils.isNotBlank(event.getGrayName())) {
             boolean result = false;
             if (!event.isRemove()) {
@@ -106,11 +109,13 @@ public class DumpConfigHandler extends Subscriber<ConfigDumpEvent> {
         
     }
     
+    /** 事件入口，委托 {@link #configDump(ConfigDumpEvent)}。 */
     @Override
     public void onEvent(ConfigDumpEvent event) {
         configDump(event);
     }
     
+    /** 订阅 {@link ConfigDumpEvent} 类型。 */
     @Override
     public Class<? extends Event> subscribeType() {
         return ConfigDumpEvent.class;
