@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// xDS 服务发现公共基础：定义 SD 配置、protobuf 类型注册与 Fetch 长轮询发现器，
+// 供 Kuma 等基于 Envoy xDS REST-JSON 协议的服务发现机制复用。
+
 package xds
 
 import (
@@ -36,6 +39,7 @@ const (
 	namespace = "prometheus"
 )
 
+// ProtocolVersion 表示 xDS 协议版本标识。
 // ProtocolVersion is the xDS protocol version.
 type ProtocolVersion string
 
@@ -47,6 +51,7 @@ type HTTPConfig struct {
 	config.HTTPClientConfig `yaml:",inline"`
 }
 
+// SDConfig 为 xDS 类 SD 的公共配置：HTTP 客户端、刷新/超时间隔、server 与 client_id。
 // SDConfig is a base config for xDS-based SD mechanisms.
 type SDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
@@ -58,6 +63,7 @@ type SDConfig struct {
 
 // mustRegisterMessage registers the provided message type in the typeRegistry, and panics
 // if there is an error.
+// mustRegisterMessage 向 protobuf 类型注册表注册消息类型，失败则 panic。
 func mustRegisterMessage(typeRegistry *protoregistry.Types, mt protoreflect.MessageType) {
 	if err := typeRegistry.RegisterMessage(mt); err != nil {
 		panic(err)
@@ -91,10 +97,12 @@ var (
 	}
 )
 
+// resourceParser 将 xDS 返回的 Any 资源解析为 Prometheus LabelSet 目标列表。
 // resourceParser is a function that takes raw discovered objects and translates them into
 // targetgroup.Group Targets. On error, no updates are sent to the scrape manager and the failure count is incremented.
 type resourceParser func(resources []*anypb.Any, typeUrl string) ([]model.LabelSet, error)
 
+// fetchDiscovery 通过 xDS Fetch REST-JSON 长轮询周期性拉取并推送目标组。
 // fetchDiscovery implements long-polling via xDS Fetch REST-JSON.
 type fetchDiscovery struct {
 	client ResourceClient
@@ -108,6 +116,7 @@ type fetchDiscovery struct {
 	metrics *xdsMetrics
 }
 
+// Run 按 refreshInterval 定时 poll，将解析后的 targetgroup 写入输出通道。
 func (d *fetchDiscovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	defer d.client.Close()
 
@@ -125,6 +134,7 @@ func (d *fetchDiscovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group
 	}
 }
 
+// poll 单次 Fetch：记录耗时指标，解析资源并在成功时推送目标组。
 func (d *fetchDiscovery) poll(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	t0 := time.Now()
 	response, err := d.client.Fetch(ctx)

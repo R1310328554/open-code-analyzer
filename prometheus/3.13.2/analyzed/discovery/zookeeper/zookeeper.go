@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Zookeeper 服务发现：支持 Twitter Serverset 与 AirBnB Nerve 两种 ZK 路径监听，
+// 通过 treecache 订阅节点变更并将 JSON 成员信息映射为抓取目标标签。
+
 package zookeeper
 
 import (
@@ -51,6 +54,7 @@ func init() {
 	discovery.RegisterConfig(&NerveSDConfig{})
 }
 
+// ServersetSDConfig 定义 Twitter Serverset 的 ZK 服务器、监听路径与超时。
 // ServersetSDConfig is the configuration for Twitter serversets in Zookeeper based discovery.
 type ServersetSDConfig struct {
 	Servers []string       `yaml:"servers"`
@@ -93,6 +97,7 @@ func (c *ServersetSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// NerveSDConfig 定义 AirBnB Nerve 的 ZK 服务器、监听路径与超时。
 // NerveSDConfig is the configuration for AirBnB's Nerve in Zookeeper based discovery.
 type NerveSDConfig struct {
 	Servers []string       `yaml:"servers"`
@@ -135,6 +140,7 @@ func (c *NerveSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// Discovery 实现 Discoverer：维护 ZK 连接、treecache 与按路径聚合的目标组。
 // Discovery implements the Discoverer interface for discovering
 // targets from Zookeeper.
 type Discovery struct {
@@ -151,17 +157,20 @@ type Discovery struct {
 }
 
 // NewNerveDiscovery returns a new Discovery for the given Nerve config.
+// NewNerveDiscovery 创建 Nerve 格式的 Zookeeper 服务发现。
 func NewNerveDiscovery(conf *NerveSDConfig, logger *slog.Logger) (*Discovery, error) {
 	return NewDiscovery(conf.Servers, time.Duration(conf.Timeout), conf.Paths, logger, parseNerveMember)
 }
 
 // NewServersetDiscovery returns a new Discovery for the given serverset config.
+// NewServersetDiscovery 创建 Serverset 格式的 Zookeeper 服务发现。
 func NewServersetDiscovery(conf *ServersetSDConfig, logger *slog.Logger) (*Discovery, error) {
 	return NewDiscovery(conf.Servers, time.Duration(conf.Timeout), conf.Paths, logger, parseServersetMember)
 }
 
 // NewDiscovery returns a new discovery along Zookeeper parses with
 // the given parse function.
+// NewDiscovery 连接 ZK 并为每个 path 创建 treecache，绑定解析函数。
 func NewDiscovery(
 	srvs []string,
 	timeout time.Duration,
@@ -198,6 +207,7 @@ func NewDiscovery(
 }
 
 // Run implements the Discoverer interface.
+// Run 转发各 path 的 treecache 事件，解析成员并增量推送 targetgroup。
 func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	defer func() {
 		for _, tc := range d.treeCaches {
@@ -259,6 +269,7 @@ const (
 	serversetShardLabel          = serversetLabelPrefix + "shard"
 )
 
+// serversetMember 表示 Serverset ZK 节点 JSON 中的服务成员结构。
 type serversetMember struct {
 	ServiceEndpoint     serversetEndpoint
 	AdditionalEndpoints map[string]serversetEndpoint
@@ -271,6 +282,7 @@ type serversetEndpoint struct {
 	Port int
 }
 
+// parseServersetMember 解析 Serverset 成员 JSON 并生成 __address__ 与 meta 标签。
 func parseServersetMember(data []byte, path string) (model.LabelSet, error) {
 	member := serversetMember{}
 
@@ -306,6 +318,7 @@ const (
 	nerveEndpointLabelPrefix = nerveLabelPrefix + "endpoint"
 )
 
+// nerveMember 表示 Nerve ZK 节点 JSON 中的 host/port/name 字段。
 type nerveMember struct {
 	Host string `json:"host"`
 	Port int    `json:"port"`

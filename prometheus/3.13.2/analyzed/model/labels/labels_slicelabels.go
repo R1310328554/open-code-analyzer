@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// slicelabels 实现：以 []Label 切片存储排序标签集，
+// 实现简单直观，适合调试与中等规模标签操作场景。
+
 //go:build slicelabels
 
 package labels
@@ -28,6 +31,7 @@ import (
 // ImplementationName is the name of the labels implementation.
 const ImplementationName = "slicelabels"
 
+// Labels 为排序的 Label 切片，构造时必须保证名按字典序唯一。
 // Labels is a sorted set of labels. Order has to be guaranteed upon
 // instantiation.
 type Labels []Label
@@ -191,6 +195,7 @@ func (ls Labels) BytesWithoutLabels(buf []byte, names ...string) []byte {
 	return b.Bytes()
 }
 
+// Copy 分配新切片并复制全部 Label。
 // Copy returns a copy of the labels.
 func (ls Labels) Copy() Labels {
 	res := make(Labels, len(ls))
@@ -263,6 +268,7 @@ func (ls Labels) ByteSize() uint64 {
 	return size
 }
 
+// Equal 使用 slices.Equal 比较两排序标签切片。
 // Equal returns whether the two label sets are equal.
 func Equal(ls, o Labels) bool {
 	return slices.Equal(ls, o)
@@ -273,6 +279,7 @@ func EmptyLabels() Labels {
 	return Labels{}
 }
 
+// New 复制并排序传入标签，要求名唯一。
 // New returns a sorted Labels from the given labels.
 // The caller has to guarantee that all label names are unique.
 func New(ls ...Label) Labels {
@@ -393,6 +400,7 @@ func (ls Labels) ReleaseStrings(release func(string)) {
 	}
 }
 
+// Builder 对切片 labels 做 del/add 合并，未修改时返回原 base。
 // Builder allows modifying Labels.
 type Builder struct {
 	base Labels
@@ -434,6 +442,7 @@ func (b *Builder) Labels() Labels {
 	return res
 }
 
+// ScratchBuilder 预分配切片构建标签，可选 unique.Make 克隆 unsafe 字符串。
 // ScratchBuilder allows efficient construction of a Labels from scratch.
 type ScratchBuilder struct {
 	add       Labels
@@ -441,6 +450,7 @@ type ScratchBuilder struct {
 }
 
 // SymbolTable is no-op, just for api parity with dedupelabels.
+// SymbolTable 为空结构，仅为与 dedupelabels API 对齐。
 type SymbolTable struct{}
 
 func NewSymbolTable() *SymbolTable { return nil }
@@ -466,6 +476,7 @@ func (*ScratchBuilder) SetSymbolTable(*SymbolTable) {
 	// no-op
 }
 
+// SetUnsafeAdd(true) 时 Add 通过 unique.Make 克隆字符串以防底层内存复用。
 // SetUnsafeAdd allows turning on/off the assumptions that added strings are unsafe
 // for reuse. ScratchBuilder implementations that do reuse strings, must clone
 // the strings.

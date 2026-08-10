@@ -11,8 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 工具依赖追踪包：通过 blank import 固定 protobuf/代码生成工具链版本。
+// 参见 https://github.com/golang/go/issues/25922
+
 //go:build tools
 
+// tools 包仅用于 go mod 追踪 buf/gci/protoc-gen 等构建工具依赖，不参与运行时。
 // Package tools tracks dependencies for tools that are required to generate the protobuf code.
 // See https://github.com/golang/go/issues/25922
 package tools

@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 标签匹配器：封装 PromQL/selector 中的 =、!=、=~、!~ 四种匹配类型，
+// 正则匹配委托 FastRegexMatcher 并暴露前缀/集合优化等元信息。
+
 package labels
 
 import (
@@ -18,6 +21,7 @@ import (
 	"strconv"
 )
 
+// MatchType 枚举标签匹配运算符：等于、不等、正则、非正则。
 // MatchType is an enum for label matching types.
 type MatchType int
 
@@ -43,6 +47,7 @@ func (m MatchType) String() string {
 	return matchTypeToStr[m]
 }
 
+// Matcher 绑定 Type/Name/Value，正则类型时持有预编译 FastRegexMatcher。
 // Matcher models the matching of a label.
 type Matcher struct {
 	Type  MatchType
@@ -52,6 +57,7 @@ type Matcher struct {
 	re *FastRegexMatcher
 }
 
+// NewMatcher 构造 Matcher，正则类型时编译 FastRegexMatcher。
 // NewMatcher returns a matcher object.
 func NewMatcher(t MatchType, n, v string) (*Matcher, error) {
 	m := &Matcher{
@@ -69,6 +75,7 @@ func NewMatcher(t MatchType, n, v string) (*Matcher, error) {
 	return m, nil
 }
 
+// MustNewMatcher 测试专用，出错时 panic。
 // MustNewMatcher panics on error - only for use in tests!
 func MustNewMatcher(mt MatchType, name, val string) *Matcher {
 	m, err := NewMatcher(mt, name, val)
@@ -104,6 +111,7 @@ func (m *Matcher) shouldQuoteName() bool {
 	return m.Name == ""
 }
 
+// Matches 按 Type 做相等或正则匹配。
 // Matches returns whether the matcher matches the given string value.
 func (m *Matcher) Matches(s string) bool {
 	switch m.Type {
@@ -119,6 +127,7 @@ func (m *Matcher) Matches(s string) bool {
 	panic("labels.Matcher.Matches: invalid match type")
 }
 
+// Inverse 返回逻辑取反的 Matcher（=↔!=，=~↔!~）。
 // Inverse returns a matcher that matches the opposite.
 func (m *Matcher) Inverse() (*Matcher, error) {
 	switch m.Type {
@@ -142,6 +151,7 @@ func (m *Matcher) GetRegexString() string {
 	return m.re.GetRegexString()
 }
 
+// SetMatches 若正则可展开为有限字面量集合则返回备选值列表。
 // SetMatches returns a set of equality matchers for the current regex matchers if possible.
 // For examples the regexp `a(b|f)` will returns "ab" and "af".
 // Returns nil if we can't replace the regexp by only equality matchers.
@@ -152,6 +162,7 @@ func (m *Matcher) SetMatches() []string {
 	return m.re.SetMatches()
 }
 
+// Prefix 返回正则优化推导的必需前缀（纯等值匹配时为空）。
 // Prefix returns the required prefix of the value to match, if possible.
 // It will be empty if it's an equality matcher or if the prefix can't be determined.
 func (m *Matcher) Prefix() string {
@@ -161,6 +172,7 @@ func (m *Matcher) Prefix() string {
 	return m.re.prefix
 }
 
+// IsRegexOptimized 指示 FastRegexMatcher 是否启用快速路径优化。
 // IsRegexOptimized returns whether regex is optimized.
 func (m *Matcher) IsRegexOptimized() bool {
 	if m.re == nil {

@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// FloatHistogram：PromQL 与聚合运算使用的浮点计数 Native Histogram 表示，
+// 桶为绝对计数，支持加减、Kahan 求和、分辨率降低、counter reset 检测与 NHCB 对齐。
+
 package histogram
 
 import (
@@ -22,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/util/kahansum"
 )
 
+// FloatHistogram 以 float64 存储全部计数，供 PromQL 分数运算及广义 histogram 表示。
 // FloatHistogram is similar to Histogram but uses float64 for all
 // counts. Additionally, bucket counts are absolute and not deltas.
 //
@@ -66,6 +70,7 @@ func (h *FloatHistogram) UsesCustomBuckets() bool {
 }
 
 // Copy returns a deep copy of the Histogram.
+// Copy 深拷贝 FloatHistogram，CustomValues 共享 intern 引用。
 func (h *FloatHistogram) Copy() *FloatHistogram {
 	c := FloatHistogram{
 		CounterResetHint: h.CounterResetHint,
@@ -144,6 +149,7 @@ func (h *FloatHistogram) CopyTo(to *FloatHistogram) {
 // target schema, which must be ≤ the original schema (i.e. it must have a lower
 // resolution). This method panics if a custom buckets schema is used in the
 // receiving FloatHistogram or as the provided targetSchema.
+// CopyToSchema 深拷贝并降低 schema 分辨率，NHCB 或目标 schema 非法时 panic。
 func (h *FloatHistogram) CopyToSchema(targetSchema int32) *FloatHistogram {
 	if targetSchema == h.Schema {
 		// Fast path.
@@ -203,6 +209,7 @@ func (h *FloatHistogram) String() string {
 	return sb.String()
 }
 
+// TestExpression 生成 promtool 单元测试框架使用的 histogram 字面量语法。
 // TestExpression returns the string representation of this histogram as it is used in the internal PromQL testing
 // framework as well as in promtool rules unit tests.
 // The syntax is described in https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/#series
@@ -281,6 +288,7 @@ func (h *FloatHistogram) ZeroBucket() Bucket[float64] {
 	}
 }
 
+// Mul 缩放全部计数与 Sum，负因子时将 CounterResetHint 设为 GaugeType。
 // Mul multiplies the FloatHistogram by the provided factor, i.e. it scales all
 // bucket counts including the zero bucket and the count and the sum of
 // observations. The bucket layout stays the same. This method changes the
@@ -303,6 +311,7 @@ func (h *FloatHistogram) Mul(factor float64) *FloatHistogram {
 	return h
 }
 
+// Div 除以标量；除零清空桶，负标量时标记为 gauge histogram。
 // Div works like Mul but divides instead of multiplies.
 // When dividing by 0, everything will be set to Inf. If scalar is negative,
 // the counter reset hint is set to GaugeType.
@@ -330,6 +339,7 @@ func (h *FloatHistogram) Div(scalar float64) *FloatHistogram {
 	return h
 }
 
+// Add 合并两 histogram：对齐 schema/零桶/NHCB 边界，返回 counter reset 冲突与 NHCB 对齐标志。
 // Add adds the provided other histogram to the receiving histogram. Count, Sum,
 // and buckets from the other histogram are added to the corresponding
 // components of the receiving histogram. Buckets in the other histogram that do
@@ -410,6 +420,7 @@ func (h *FloatHistogram) Add(other *FloatHistogram) (res *FloatHistogram, counte
 	return h, counterResetCollision, nhcbBoundsReconciled, nil
 }
 
+// KahanAdd 使用 Kahan 补偿项 c 做数值稳定的 histogram 加法，就地修改 c。
 // KahanAdd works like Add but using the Kahan summation algorithm to minimize numerical errors.
 // c is a histogram holding the Kahan compensation term. It is modified in-place if non-nil.
 // If c is nil, a new compensation histogram is created inside the function. In this case,
@@ -645,6 +656,7 @@ func (h *FloatHistogram) Equals(h2 *FloatHistogram) bool {
 // Size returns the total size of the FloatHistogram, which includes the size of the pointer
 // to FloatHistogram, all its fields, and all elements contained in slices.
 // NOTE: this is only valid for 64 bit architectures.
+// Size 估算 histogram 占用的结构体与切片内存字节数。
 func (h *FloatHistogram) Size() int {
 	// Size of each slice separately.
 	posSpanSize := len(h.PositiveSpans) * 8     // 8 bytes (int32 + uint32).
@@ -805,6 +817,7 @@ func (h *FloatHistogram) DetectReset(previous *FloatHistogram) bool {
 	return detectReset(&currIt, &prevIt)
 }
 
+// detectReset 逐桶比较绝对计数检测 counter reset。
 func detectReset(currIt, prevIt *floatBucketIterator) bool {
 	if !prevIt.Next() {
 		return false // If no buckets in previous histogram, nothing can be reset.
@@ -865,6 +878,7 @@ func detectReset(currIt, prevIt *floatBucketIterator) bool {
 	}
 }
 
+// PositiveBucketIterator 升序迭代正侧绝对计数桶。
 // PositiveBucketIterator returns a BucketIterator to iterate over all positive
 // buckets in ascending order (starting next to the zero bucket and going up).
 func (h *FloatHistogram) PositiveBucketIterator() BucketIterator[float64] {
@@ -872,6 +886,7 @@ func (h *FloatHistogram) PositiveBucketIterator() BucketIterator[float64] {
 	return &it
 }
 
+// NegativeBucketIterator 降序迭代负侧绝对计数桶。
 // NegativeBucketIterator returns a BucketIterator to iterate over all negative
 // buckets in descending order (starting next to the zero bucket and going
 // down).
@@ -901,6 +916,7 @@ func (h *FloatHistogram) NegativeReverseBucketIterator() BucketIterator[float64]
 // and going up). If the highest negative bucket or the lowest positive bucket
 // overlap with the zero bucket, their upper or lower boundary, respectively, is
 // set to the zero threshold.
+// AllBucketIterator 按负→零→正顺序迭代全部桶。
 func (h *FloatHistogram) AllBucketIterator() BucketIterator[float64] {
 	return &allFloatBucketIterator{
 		h:         h,
@@ -924,6 +940,7 @@ func (h *FloatHistogram) AllReverseBucketIterator() BucketIterator[float64] {
 	}
 }
 
+// Validate 校验 span/桶/自定义边界及 Count 一致性。
 // Validate validates consistency between span and bucket slices. Also, buckets are checked
 // against negative values. We check to make sure there are no unexpected fields or field values
 // based on the exponential / custom buckets schema.
@@ -1106,6 +1123,7 @@ func (h *FloatHistogram) trimBucketsInZeroBucket(c *FloatHistogram) {
 // also modifies the compensation histogram `c` (used for Kahan summation) if provided,
 // but leaves the other histogram as is. Instead, it returns the zero count the
 // other histogram would have if it were modified, as well as its Kahan compensation term.
+// reconcileZeroBuckets 对齐两 histogram 零桶阈值并返回应对齐的零计数。
 func (h *FloatHistogram) reconcileZeroBuckets(other, c *FloatHistogram) (otherZeroCount, otherCZeroCount float64) {
 	otherZeroCount = other.ZeroCount
 	otherZeroThreshold := other.ZeroThreshold
@@ -1200,6 +1218,7 @@ func newReverseFloatBucketIterator(
 	return r
 }
 
+// floatBucketIterator 解码 FloatHistogram 绝对计数桶的迭代器。
 type floatBucketIterator struct {
 	baseBucketIterator[float64, float64]
 
@@ -1318,6 +1337,7 @@ func (i *floatBucketIterator) Next() bool {
 	return true
 }
 
+// reverseFloatBucketIterator 反向迭代单符号侧桶。
 type reverseFloatBucketIterator struct {
 	baseBucketIterator[float64, float64]
 	idxInSpan int32 // Changed from uint32 to allow negative values for exhaustion detection.
@@ -1348,6 +1368,7 @@ func (i *reverseFloatBucketIterator) Next() bool {
 	return true
 }
 
+// allFloatBucketIterator 串联负/零/正三段迭代器。
 type allFloatBucketIterator struct {
 	h         *FloatHistogram
 	leftIter  reverseFloatBucketIterator
@@ -1417,6 +1438,7 @@ func targetIdx(idx, originSchema, targetSchema int32) int32 {
 // All buckets must use the same provided schema.
 // Buckets in spansB/bucketsB with an absolute upper limit ≤ threshold are ignored.
 // If negative is true, the buckets in spansB/bucketsB are subtracted rather than added.
+// addBuckets 合并两 histogram 同符号侧 span 与绝对桶计数。
 func addBuckets(
 	schema int32, threshold float64, negative bool,
 	spansA []Span, bucketsA []float64,
@@ -1542,6 +1564,7 @@ func addBuckets(
 // and takes additional arguments, compensationBucketsA and compensationBucketsB,
 // which hold the Kahan compensation values associated with histograms A and B.
 // It returns the resulting spans/buckets and compensation buckets.
+// kahanAddBuckets 使用 Kahan 算法合并桶计数并更新补偿切片。
 func kahanAddBuckets(
 	schema int32, threshold float64, negative bool,
 	spansA []Span, bucketsA []float64,
@@ -1776,6 +1799,7 @@ func (h *FloatHistogram) detectResetWithMismatchedCustomBounds(
 }
 
 // intersectCustomBucketBounds returns the intersection of two custom bucket boundary sets.
+// intersectCustomBucketBounds 求两组 NHCB 边界的交集上界序列。
 func intersectCustomBucketBounds(boundsA, boundsB []float64) []float64 {
 	if len(boundsA) == 0 || len(boundsB) == 0 {
 		return nil
@@ -1809,6 +1833,7 @@ func intersectCustomBucketBounds(boundsA, boundsB []float64) []float64 {
 // addCustomBucketsWithMismatches handles adding/subtracting custom bucket histograms
 // with mismatched bucket layouts by mapping both to an intersected layout.
 // It also processes the Kahan compensation term if provided.
+// addCustomBucketsWithMismatches 在 NHCB 边界不一致时映射到交集布局后相加。
 func addCustomBucketsWithMismatches(
 	negative bool,
 	spansA []Span, bucketsA, boundsA []float64,
@@ -1908,6 +1933,7 @@ func addCustomBucketsWithMismatches(
 //   - The target schema is a custom buckets schema.
 //   - Any spans have an invalid offset.
 //   - The spans are inconsistent with the number of buckets.
+// ReduceResolution 就地降低 schema，NHCB 不支持。
 func (h *FloatHistogram) ReduceResolution(targetSchema int32) error {
 	// Note that the follow three returns are not returning a
 	// histogram.Error because they are programming errors.
@@ -2097,6 +2123,7 @@ func (h *FloatHistogram) adjustCounterReset(other *FloatHistogram) (counterReset
 
 // HasOverflow reports whether any of the FloatHistogram's fields contain an infinite value.
 // This can happen when aggregating multiple histograms and exceeding float64 capacity.
+// HasOverflow 检测桶计数或 Sum 是否出现 Inf/NaN 溢出。
 func (h *FloatHistogram) HasOverflow() bool {
 	if math.IsInf(h.ZeroCount, 0) || math.IsInf(h.Count, 0) || math.IsInf(h.Sum, 0) {
 		return true
@@ -2414,6 +2441,7 @@ func computeZeroBucketTrim(zeroBucket Bucket[float64], rhs float64, hasNegative,
 	return zeroBucket.Count * fraction, midpoint
 }
 
+// computeBucketTrim 计算单桶在裁剪边界下的保留比例与中点。
 func computeBucketTrim(b Bucket[float64], rhs float64, isUpperTrim, isPositive, isCustomBucket bool) (float64, float64) {
 	if math.IsInf(b.Lower, -1) || math.IsInf(b.Upper, 1) {
 		return handleInfinityBuckets(isUpperTrim, b, rhs)

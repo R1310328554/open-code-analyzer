@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 整数计数 Native Histogram 核心类型：稀疏高分辨率直方图编码，
+// 支持指数分桶与自定义分桶（NHCB），桶计数以 delta 形式存储。
+
 package histogram
 
 import (
@@ -21,6 +24,7 @@ import (
 	"strings"
 )
 
+// CounterResetHint 描述计数器重置/仪表类型等元信息，用于 PromQL 与 remote write。
 // CounterResetHint contains the known information about a counter reset,
 // or alternatively that we are dealing with a gauge histogram, where counter resets do not apply.
 type CounterResetHint byte
@@ -32,6 +36,7 @@ const (
 	GaugeType                                   // GaugeType means this is a gauge histogram, where counter resets do not happen.
 )
 
+// Histogram 以 Schema/Span/桶 delta 编码稀疏直方图，CustomValues 用于 NHCB 模式。
 // Histogram encodes a sparse, high-resolution histogram. See the design
 // document for full details:
 // https://docs.google.com/document/d/1cLNv3aufPZb3fNfaJgdaRBZsInZKKIHo9E6HinJVbpM/edit#
@@ -79,6 +84,7 @@ type Histogram struct {
 	CustomValues []float64
 }
 
+// Span 描述连续桶区间：Offset 为与前一段间隔，Length 为本段桶数量。
 // A Span defines a continuous sequence of buckets.
 type Span struct {
 	// Gap to previous span (always positive), or starting index for the 1st
@@ -93,6 +99,7 @@ func (h *Histogram) UsesCustomBuckets() bool {
 }
 
 // Copy returns a deep copy of the Histogram.
+// Copy 深拷贝 Histogram，CustomValues 可共享 intern 引用。
 func (h *Histogram) Copy() *Histogram {
 	c := Histogram{
 		CounterResetHint: h.CounterResetHint,
@@ -132,6 +139,7 @@ func (h *Histogram) Copy() *Histogram {
 
 // CopyTo makes a deep copy into the given Histogram object.
 // The destination object has to be a non-nil pointer.
+// CopyTo 将内容深拷贝到已有 Histogram 对象以复用内存。
 func (h *Histogram) CopyTo(to *Histogram) {
 	to.CounterResetHint = h.CounterResetHint
 	to.Schema = h.Schema
@@ -167,6 +175,7 @@ func (h *Histogram) CopyTo(to *Histogram) {
 }
 
 // String returns a string representation of the Histogram.
+// String 按负桶/零桶/正桶顺序输出人类可读表示。
 func (h *Histogram) String() string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "{count:%d, sum:%g", h.Count, h.Sum)
@@ -197,6 +206,7 @@ func (h *Histogram) String() string {
 	return sb.String()
 }
 
+// ZeroBucket 返回零桶区间与计数，NHCB 模式下会 panic。
 // ZeroBucket returns the zero bucket. This method panics if the schema is for custom buckets.
 func (h *Histogram) ZeroBucket() Bucket[uint64] {
 	if h.UsesCustomBuckets() {
@@ -211,6 +221,7 @@ func (h *Histogram) ZeroBucket() Bucket[uint64] {
 	}
 }
 
+// PositiveBucketIterator 按升序迭代正侧桶（紧邻零桶向上）。
 // PositiveBucketIterator returns a BucketIterator to iterate over all positive
 // buckets in ascending order (starting next to the zero bucket and going up).
 func (h *Histogram) PositiveBucketIterator() BucketIterator[uint64] {
@@ -218,6 +229,7 @@ func (h *Histogram) PositiveBucketIterator() BucketIterator[uint64] {
 	return &it
 }
 
+// NegativeBucketIterator 按降序迭代负侧桶（紧邻零桶向下）。
 // NegativeBucketIterator returns a BucketIterator to iterate over all negative
 // buckets in descending order (starting next to the zero bucket and going down).
 func (h *Histogram) NegativeBucketIterator() BucketIterator[uint64] {
@@ -225,6 +237,7 @@ func (h *Histogram) NegativeBucketIterator() BucketIterator[uint64] {
 	return &it
 }
 
+// CumulativeBucketIterator 返回累积视图迭代器，当前仅支持无负桶且主要用于测试。
 // CumulativeBucketIterator returns a BucketIterator to iterate over a
 // cumulative view of the buckets. This method currently only supports
 // Histograms without negative buckets and panics if the Histogram has negative
@@ -236,6 +249,7 @@ func (h *Histogram) CumulativeBucketIterator() BucketIterator[uint64] {
 	return &cumulativeBucketIterator{h: h, posSpansIdx: -1}
 }
 
+// Equals 精确比较布局与桶值，Sum 按位模式比较而非数学相等。
 // Equals returns true if the given histogram matches exactly.
 // Exact match is when there are no new buckets (even empty) and no missing buckets,
 // and all the bucket values match. Spans can have different empty length spans in between,
@@ -282,6 +296,7 @@ func (h *Histogram) Equals(h2 *Histogram) bool {
 	return true
 }
 
+// spansMatch 合并零长度 span 后比较两 span 序列是否表示相同桶布局。
 // spansMatch returns true if both spans represent the same bucket layout
 // after combining zero length spans with the next non-zero length span.
 func spansMatch(s1, s2 []Span) bool {
@@ -346,6 +361,7 @@ func allEmptySpans(s []Span) bool {
 	return true
 }
 
+// Compact 压缩空桶与相邻 span，行为同 FloatHistogram.Compact。
 // Compact works like FloatHistogram.Compact. See there for detailed
 // explanations.
 func (h *Histogram) Compact(maxEmptyBuckets int) *Histogram {
@@ -358,6 +374,7 @@ func (h *Histogram) Compact(maxEmptyBuckets int) *Histogram {
 	return h
 }
 
+// ToFloat 转为 FloatHistogram：delta 桶累加为绝对计数，可复用传入 fh 内存。
 // ToFloat returns a FloatHistogram representation of the Histogram. It is a deep
 // copy (e.g. spans are not shared). The function accepts a FloatHistogram as an
 // argument whose memory will be reused and overwritten if provided. If this
@@ -415,6 +432,7 @@ func resize[T any](items []T, n int) []T {
 	return items[:n]
 }
 
+// Validate 校验 span/桶一致性、schema 字段约束及 Count 与桶观测数关系。
 // Validate validates consistency between span and bucket slices. Also, buckets are checked
 // against negative values. We check to make sure there are no unexpected fields or field values
 // based on the exponential / custom buckets schema.
@@ -478,6 +496,7 @@ func (h *Histogram) Validate() error {
 	return nil
 }
 
+// regularBucketIterator 解码 delta 桶并迭代单个符号侧桶序列。
 type regularBucketIterator struct {
 	baseBucketIterator[uint64, int64]
 }
@@ -527,6 +546,7 @@ func (r *regularBucketIterator) Next() bool {
 	return true
 }
 
+// cumulativeBucketIterator 将正侧桶转为累积计数视图。
 type cumulativeBucketIterator struct {
 	h *Histogram
 
@@ -624,6 +644,7 @@ func (c *cumulativeBucketIterator) At() Bucket[uint64] {
 //   - The target schema is a custom buckets schema.
 //   - Any spans have an invalid offset.
 //   - The spans are inconsistent with the number of buckets.
+// ReduceResolution 就地降低 schema 分辨率（合并相邻桶）。
 func (h *Histogram) ReduceResolution(targetSchema int32) error {
 	// Note that the follow three returns are not returning a
 	// histogram.Error because they are programming errors.

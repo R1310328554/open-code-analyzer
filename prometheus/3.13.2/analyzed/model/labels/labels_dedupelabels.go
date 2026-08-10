@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// dedupelabels 实现：用 SymbolTable 将标签名值 intern 为整数，
+// 以紧凑 varint 编码存储排序标签集，降低高基数场景内存占用。
+
 //go:build dedupelabels
 
 package labels
@@ -24,9 +27,11 @@ import (
 	"github.com/cespare/xxhash/v2"
 )
 
+// ImplementationName 标识当前 labels 后端为 dedupelabels。
 // ImplementationName is the name of the labels implementation.
 const ImplementationName = "dedupelabels"
 
+// Labels 由 nameTable 与 varint 编码的 name/value 索引串组成，名按字典序。
 // Labels is implemented by a SymbolTable and string holding name/value
 // pairs encoded as indexes into the table in varint encoding.
 // Names are in alphabetical order.
@@ -38,11 +43,13 @@ type Labels struct {
 // Split SymbolTable into the part used by Labels and the part used by Builder.  Only the latter needs the map.
 
 // This part is used by Labels. All fields are immutable after construction.
+// nameTable 为 Labels 共享的不可变符号表切片头。
 type nameTable struct {
 	byNum       []string     // This slice header is never changed, even while we are building the symbol table.
 	symbolTable *SymbolTable // If we need to use it in a Builder.
 }
 
+// SymbolTable 线程安全地将字符串映射为整数编号并支持扩容复制 nameTable。
 // SymbolTable is used to map strings into numbers so they can be packed together.
 type SymbolTable struct {
 	mx sync.Mutex
@@ -71,6 +78,7 @@ func (t *SymbolTable) Len() int {
 // ToNum maps a string to an integer, adding the string to the table if it is not already there.
 // Note: copies the string before adding, in case the caller passed part of
 // a buffer that should not be kept alive by this SymbolTable.
+// ToNum 查找或插入字符串并返回符号编号。
 func (t *SymbolTable) ToNum(name string) int {
 	t.mx.Lock()
 	defer t.mx.Unlock()
@@ -110,6 +118,7 @@ func (t *nameTable) ToName(num int) string {
 // "Varint" in this file is non-standard: we encode small numbers (up to 32767) in 2 bytes,
 // because we expect most Prometheus to have more than 127 unique strings.
 // And we don't encode numbers larger than 4 bytes because we don't expect more than 536,870,912 unique strings.
+// decodeVarint 解码非标准 2/3/4 字节变长整数（优化小编号）。
 func decodeVarint(data string, index int) (int, int) {
 	b := int(data[index]) + int(data[index+1])<<8
 	index += 2
@@ -143,6 +152,7 @@ func decodeString(t *nameTable, data string, index int) (string, int) {
 	return t.ToName(num), index
 }
 
+// Bytes 生成可作 map key 的不透明字节编码（跨版本不保证稳定）。
 // Bytes returns an opaque, not-human-readable, encoding of ls, usable as a map key.
 // Encoding may change over time or between runs of Prometheus.
 func (ls Labels) Bytes(buf []byte) []byte {
@@ -180,6 +190,7 @@ func (ls Labels) MatchLabels(on bool, names ...string) Labels {
 	return b.Labels()
 }
 
+// Hash 用 xxhash 计算标签集哈希，大标签集时分段写入。
 // Hash returns a hash value for the label set.
 // Note: the result is not guaranteed to be consistent across different runs of Prometheus.
 func (ls Labels) Hash() uint64 {
@@ -427,6 +438,7 @@ func (ls Labels) ByteSize() uint64 {
 	return uint64(len(ls.data))
 }
 
+// Equal 比较两 Labels：同符号表时直接比 data，否则逐对解码比较。
 // Equal returns whether the two label sets are equal.
 func Equal(a, b Labels) bool {
 	if a.syms == b.syms {
@@ -592,6 +604,7 @@ func (ls Labels) DropReserved(shouldDropFn func(name string) bool) Labels {
 	return ls
 }
 
+// Builder 基于 SymbolTable 对 dedupelabels 做增删改并合并生成新 Labels。
 // Builder allows modifying Labels.
 type Builder struct {
 	syms *SymbolTable
@@ -717,6 +730,7 @@ func encodeVarint(data []byte, offset, v int) int {
 }
 
 // Map all the strings in lbls to the symbol table; return the total size required to hold them and all the individual mappings.
+// mapLabelsToNumbers 将标签名值批量 intern 并计算编码总长度。
 func mapLabelsToNumbers(t *SymbolTable, lbls []Label, buf []int) (totalSize int, nums []int) {
 	nums = buf[:0]
 	t.mx.Lock()
@@ -734,6 +748,7 @@ func mapLabelsToNumbers(t *SymbolTable, lbls []Label, buf []int) (totalSize int,
 	return totalSize, nums
 }
 
+// appendLabelTo 将一对符号编号 varint 追加到缓冲区。
 func appendLabelTo(nameNum, valueNum int, buf []byte) []byte {
 	size := sizeVarint(uint64(nameNum)) + sizeVarint(uint64(valueNum))
 	sizeRequired := len(buf) + size
@@ -755,6 +770,7 @@ func appendLabelTo(nameNum, valueNum int, buf []byte) []byte {
 	return buf
 }
 
+// ScratchBuilder 从零构建 Labels，Labels() 时批量映射符号并编码。
 // ScratchBuilder allows efficient construction of a Labels from scratch.
 type ScratchBuilder struct {
 	syms            *SymbolTable

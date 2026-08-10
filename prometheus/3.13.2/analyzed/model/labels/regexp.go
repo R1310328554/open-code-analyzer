@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// FastRegexMatcher：Prometheus 标签正则匹配优化引擎，
+// 通过语法树分析将常见模式编译为字面量/前缀/后缀/contains 等快速匹配器。
+
 package labels
 
 import (
@@ -34,6 +37,7 @@ const (
 	minEqualMultiStringMatcherMapThreshold = 16
 )
 
+// FastRegexMatcher 缓存 reString、编译 regexp 及多种 StringMatcher 快速路径状态。
 type FastRegexMatcher struct {
 	// Under some conditions, re is nil because the expression is never parsed.
 	// We store the original string to be able to return it in GetRegexString().
@@ -53,6 +57,7 @@ type FastRegexMatcher struct {
 	matchString func(string) bool
 }
 
+// NewFastRegexMatcher 解析并优化正则：优先字面量交替，否则编译并提取前缀/集合匹配。
 func NewFastRegexMatcher(v string) (*FastRegexMatcher, error) {
 	m := &FastRegexMatcher{
 		reString: v,
@@ -105,6 +110,7 @@ func NewFastRegexMatcher(v string) (*FastRegexMatcher, error) {
 	return m, nil
 }
 
+// compileMatchStringFunction 按可用优化组合生成 MatchString 闭包。
 // compileMatchStringFunction returns the function to run by MatchString().
 func (m *FastRegexMatcher) compileMatchStringFunction() func(string) bool {
 	// If the only optimization available is the string matcher, then we can just run it.
@@ -141,12 +147,14 @@ func (m *FastRegexMatcher) compileMatchStringFunction() func(string) bool {
 	}
 }
 
+// IsOptimized 判断是否启用了 setMatches/prefix/suffix/contains/stringMatcher 等优化。
 // IsOptimized returns true if any fast-path optimization is applied to the
 // regex matcher.
 func (m *FastRegexMatcher) IsOptimized() bool {
 	return len(m.setMatches) > 0 || m.stringMatcher != nil || m.prefix != "" || m.suffix != "" || len(m.contains) > 0
 }
 
+// findSetMatches 从正则语法树提取可展开为有限等值集合的匹配项。
 // findSetMatches extract equality matches from a regexp.
 // Returns nil if we can't replace the regexp by only equality matchers or the regexp contains
 // a mix of case sensitive and case insensitive matchers.
@@ -271,6 +279,7 @@ func findSetMatchesFromAlternate(re *syntax.Regexp, base string) (matches []stri
 }
 
 // clearCapture removes capture operation as they are not used for matching.
+// clearCapture 清除捕获组以便后续优化分析。
 func clearCapture(regs ...*syntax.Regexp) {
 	for _, r := range regs {
 		// Iterate on the regexp because capture groups could be nested.
@@ -345,6 +354,7 @@ func (m *FastRegexMatcher) GetRegexString() string {
 //
 // this function returns an optimized StringMatcher or nil if the regex
 // cannot be optimized in this way, and a list of setMatches up to maxSetMatches.
+// optimizeAlternatingLiterals 检测 a|b|c 纯字面量交替并直接构建匹配器。
 func optimizeAlternatingLiterals(s string) (StringMatcher, []string) {
 	if s == "" {
 		return emptyStringMatcher{}, nil
@@ -423,6 +433,7 @@ func optimizeAlternatingSimpleContains(r *syntax.Regexp) *syntax.Regexp {
 
 // optimizeConcatRegex returns literal prefix/suffix text that can be safely
 // checked against the label value before running the regexp matcher.
+// optimizeConcatRegex 从 OpConcat 提取前缀/后缀/contains 子串约束。
 func optimizeConcatRegex(r *syntax.Regexp) (caseInsensitivePrefix bool, prefix, suffix string, contains []string) {
 	sub := r.Sub
 	clearCapture(sub...)
@@ -463,6 +474,7 @@ func optimizeConcatRegex(r *syntax.Regexp) (caseInsensitivePrefix bool, prefix, 
 }
 
 // StringMatcher is a matcher that matches a string in place of a regular expression.
+// StringMatcher 为优化后的字符串匹配策略接口。
 type StringMatcher interface {
 	Matches(s string) bool
 }
@@ -672,6 +684,7 @@ func isCaseSensitiveLiteral(re *syntax.Regexp) bool {
 // If left and right are not nil, it's a contains operation where left and right must match.
 // If left is nil, it's a hasPrefix operation and right must match.
 // Finally, if right is nil it's a hasSuffix operation and left must match.
+// containsStringMatcher 按顺序包含多个子串（支持大小写变体）。
 type containsStringMatcher struct {
 	// The matcher that must match the left side. Can be nil.
 	left StringMatcher
@@ -812,6 +825,7 @@ func (m orStringMatcher) Matches(s string) bool {
 }
 
 // equalStringMatcher matches a string exactly and support case insensitive.
+// equalStringMatcher 精确等值匹配（可选大小写不敏感）。
 type equalStringMatcher struct {
 	s             string
 	caseSensitive bool
@@ -831,6 +845,7 @@ type multiStringMatcherBuilder interface {
 	setMatches() []string
 }
 
+// newEqualMultiStringMatcher 根据预估规模选择 slice 或 map 多值匹配器。
 func newEqualMultiStringMatcher(caseSensitive bool, estimatedSize, estimatedPrefixes, minPrefixLength int) multiStringMatcherBuilder {
 	// If the estimated size is low enough, it's faster to use a slice instead of a map.
 	if estimatedSize < minEqualMultiStringMatcherMapThreshold && estimatedPrefixes == 0 {
@@ -878,6 +893,7 @@ func (m *equalMultiStringSliceMatcher) Matches(s string) bool {
 
 // equalMultiStringMapMatcher matches a string exactly against a map of valid values
 // or against a set of prefix matchers.
+// equalMultiStringMapMatcher 用 map 做大量等值/前缀组合匹配。
 type equalMultiStringMapMatcher struct {
 	// values contains values to match a string against. If the matching is case insensitive,
 	// the values here must be lowercase.
@@ -1057,6 +1073,7 @@ func (trueMatcher) Matches(string) bool {
 //
 // In this specific case, when we have many strings to match against we can use a map instead
 // of iterating over the list of strings.
+// optimizeEqualOrPrefixStringMatchers 合并 OR 链上的等值/前缀匹配器为 map。
 func optimizeEqualOrPrefixStringMatchers(input StringMatcher, threshold int) StringMatcher {
 	var (
 		caseSensitive    bool
@@ -1167,6 +1184,7 @@ func findEqualOrPrefixStringMatchers(input StringMatcher, equalMatcherCallback f
 	return true
 }
 
+// hasPrefixCaseInsensitive Unicode 感知的大小写不敏感前缀比较。
 func hasPrefixCaseInsensitive(s, prefix string) bool {
 	return len(s) >= len(prefix) && strings.EqualFold(s[0:len(prefix)], prefix)
 }
@@ -1175,6 +1193,7 @@ func hasSuffixCaseInsensitive(s, suffix string) bool {
 	return len(s) >= len(suffix) && strings.EqualFold(s[len(s)-len(suffix):], suffix)
 }
 
+// containsInOrder 检查 s 是否按序包含全部子串。
 func containsInOrder(s string, contains []string) bool {
 	// Optimization for the case we only have to look for 1 substring.
 	if len(contains) == 1 {

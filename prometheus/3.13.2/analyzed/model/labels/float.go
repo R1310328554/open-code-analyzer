@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenMetrics 浮点字面量格式化：将 float64 格式化为 OM 兼容字符串，
+// 确保整数形式带 .0 后缀，并处理 NaN/±Inf 等特殊值。
+
 package labels
 
 import (
@@ -20,6 +23,7 @@ import (
 	"sync"
 )
 
+// floatFormatBufPool 复用 []byte 缓冲以避免 FormatOpenMetricsFloat 频繁分配。
 // floatFormatBufPool is exclusively used in FormatOpenMetricsFloat.
 var floatFormatBufPool = sync.Pool{
 	New: func() any {
@@ -29,11 +33,13 @@ var floatFormatBufPool = sync.Pool{
 	},
 }
 
+// FormatOpenMetricsFloat 格式化浮点：无 '.' 或 'e' 时追加 ".0" 以符合 OpenMetrics。
 // FormatOpenMetricsFloat works like the usual Go string formatting of a float
 // but appends ".0" if the resulting number would otherwise contain neither a
 // "." nor an "e".
 func FormatOpenMetricsFloat(f float64) string {
 	// A few common cases hardcoded.
+// 快速路径处理 0/±1 及 NaN/Inf；其余走 strconv 并按需补 ".0"。
 	switch {
 	case f == 1:
 		return "1.0"

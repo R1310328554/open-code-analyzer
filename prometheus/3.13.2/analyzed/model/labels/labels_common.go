@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Labels 公共 API：所有实现共享的标签名常量、Label 结构、
+// 序列化/校验/Builder 等跨 stringlabels/slicelabels/dedupelabels 的通用逻辑。
+
 package labels
 
 import (
@@ -24,7 +27,8 @@ import (
 )
 
 const (
-	// MetricName is a special label name that represent a metric name.
+	// MetricName（__name__）为指标名特殊标签，已弃用，推荐 schema.Metadata 或 common/model 常量。
+// MetricName is a special label name that represent a metric name.
 	//
 	// Deprecated: Instead, consider using schema.Metadata structure and its methods for consistent metadata behaviour with the newly added __type__ and __unit__ labels. Alternatively use github.com/prometheus/common/model.MetricNameLabel for the direct replacement.
 	//
@@ -40,6 +44,7 @@ const (
 
 var seps = []byte{sep} // Used with Hash, which has no WriteByte method.
 
+// Label 表示单个 name/value 标签对。
 // Label is a key/value a pair of strings.
 type Label struct {
 	Name, Value string
@@ -50,6 +55,7 @@ func (ls Labels) String() string {
 }
 
 // StringNoSpace is like String but does not add a space after commas.
+// StringNoSpace 类似 String 但逗号后不加空格。
 func (ls Labels) StringNoSpace() string {
 	return ls.stringImpl(false)
 }
@@ -132,6 +138,7 @@ func (ls Labels) IsValid(validationScheme model.ValidationScheme) bool {
 	return err == nil
 }
 
+// Map 将标签集转为 map[string]string。
 // Map returns a string map of the labels.
 func (ls Labels) Map() map[string]string {
 	m := make(map[string]string)
@@ -141,6 +148,7 @@ func (ls Labels) Map() map[string]string {
 	return m
 }
 
+// FromMap 从 map 构造按名排序的 Labels。
 // FromMap returns new sorted Labels from the given map.
 func FromMap(m map[string]string) Labels {
 	l := make([]Label, 0, len(m))
@@ -150,6 +158,7 @@ func FromMap(m map[string]string) Labels {
 	return New(l...)
 }
 
+// NewBuilder 创建基于 base 标签集的 Builder。
 // NewBuilder returns a new LabelsBuilder.
 func NewBuilder(base Labels) *Builder {
 	b := &Builder{
@@ -160,6 +169,7 @@ func NewBuilder(base Labels) *Builder {
 	return b
 }
 
+// Del 标记删除指定名称标签（延迟到 Labels() 应用）。
 // Del deletes the label of the given name.
 func (b *Builder) Del(ns ...string) *Builder {
 	for _, n := range ns {
@@ -173,6 +183,7 @@ func (b *Builder) Del(ns ...string) *Builder {
 	return b
 }
 
+// Keep 仅保留给定名称的标签，其余标记删除。
 // Keep removes all labels from the base except those with the given names.
 func (b *Builder) Keep(ns ...string) *Builder {
 	b.base.Range(func(l Label) {
@@ -184,6 +195,7 @@ func (b *Builder) Keep(ns ...string) *Builder {
 	return b
 }
 
+// Set 设置或覆盖标签，空值等价于 Del。
 // Set the name/value pair as a label. A value of "" means delete that label.
 func (b *Builder) Set(n, v string) *Builder {
 	if v == "" {

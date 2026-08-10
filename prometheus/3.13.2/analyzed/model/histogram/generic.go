@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Histogram 通用基础设施：schema 常量与校验错误、Bucket 泛型类型、
+// 桶边界计算、迭代器基类、分辨率降低与桶压缩等共享逻辑。
+
 package histogram
 
 import (
@@ -28,6 +31,7 @@ const (
 	CustomBucketsSchema          int32 = -53
 )
 
+// Error 包装 histogram 校验错误，支持 errors.Unwrap。
 type Error struct {
 	error
 }
@@ -65,6 +69,7 @@ func UnknownSchemaError(s int32) error {
 	return Error{error: fmt.Errorf("%w, got schema %d", ErrHistogramsUnknownSchema, s)}
 }
 
+// IsCustomBucketsSchema 判断是否为 NHCB 自定义分桶 schema。
 func IsCustomBucketsSchema(s int32) bool {
 	return s == CustomBucketsSchema
 }
@@ -77,6 +82,7 @@ func IsExponentialSchemaReserved(s int32) bool {
 	return s >= ExponentialSchemaMinReserved && s <= ExponentialSchemaMaxReserved
 }
 
+// IsValidSchema 判断 schema 是否为已知有效类型。
 func IsValidSchema(s int32) bool {
 	return IsCustomBucketsSchema(s) || IsExponentialSchema(s)
 }
@@ -87,6 +93,7 @@ func IsKnownSchema(s int32) bool {
 	return IsCustomBucketsSchema(s) || IsExponentialSchemaReserved(s)
 }
 
+// CustomBucketBoundsMatch 逐元素比较两组自定义桶上界是否完全一致。
 // CustomBucketBoundsMatch compares histogram custom bucket bounds (CustomValues)
 // and returns true if all values match.
 func CustomBucketBoundsMatch(c1, c2 []float64) bool {
@@ -101,12 +108,14 @@ func CustomBucketBoundsMatch(c1, c2 []float64) bool {
 	return true
 }
 
+// BucketCount 约束桶计数类型：float64（FloatHistogram）或 uint64（Histogram）。
 // BucketCount is a type constraint for the count in a bucket, which can be
 // float64 (for type FloatHistogram) or uint64 (for type Histogram).
 type BucketCount interface {
 	float64 | uint64
 }
 
+// InternalBucketCount 为内部存储类型，Histogram 使用 int64 delta 而 FloatHistogram 用 float64 绝对值。
 // InternalBucketCount is used internally by Histogram and FloatHistogram. The
 // difference to the BucketCount above is that Histogram internally uses deltas
 // between buckets rather than absolute counts (while FloatHistogram uses
@@ -118,6 +127,7 @@ type InternalBucketCount interface {
 	float64 | int64
 }
 
+// Bucket 表示解码后的单桶：上下界、开闭区间语义、计数与 schema 内索引。
 // Bucket represents a bucket with lower and upper limit and the absolute count
 // of samples in the bucket. It also specifies if each limit is inclusive or
 // not. (Mathematically, inclusive limits create a closed interval, and
@@ -135,6 +145,7 @@ type Bucket[BC BucketCount] struct {
 	Index int32
 }
 
+// strippedBucket 省略边界值的轻量桶表示，用于仅需计数与索引的场景。
 // strippedBucket is Bucket without bound values (which are expensive to calculate
 // and not used in certain use cases).
 type strippedBucket[BC BucketCount] struct {
@@ -162,6 +173,7 @@ func (b Bucket[BC]) String() string {
 	return sb.String()
 }
 
+// BucketIterator 泛型桶迭代器接口：Next 推进，At 返回当前解码桶。
 // BucketIterator iterates over the buckets of a Histogram, returning decoded
 // buckets.
 type BucketIterator[BC BucketCount] interface {
@@ -171,6 +183,7 @@ type BucketIterator[BC BucketCount] interface {
 	At() Bucket[BC]
 }
 
+// baseBucketIterator 为多数迭代器共享的状态机与 At 实现基类。
 // baseBucketIterator provides a struct that is shared by most BucketIterator
 // implementations, together with an implementation of the At method. This
 // iterator can be embedded in full implementations of BucketIterator to save on
@@ -234,6 +247,7 @@ func (b *baseBucketIterator[BC, IBC]) strippedAt() strippedBucket[BC] {
 // primaryBuckets hold the main histogram values, while compensationBuckets (if provided) store
 // Kahan compensation values. compensationBuckets can only be provided for float histograms
 // and are processed in parallel with primaryBuckets to maintain synchronization.
+// compactBuckets 合并空桶并压缩 span，支持 delta 与绝对计数两种模式。
 func compactBuckets[IBC InternalBucketCount](
 	primaryBuckets []IBC, compensationBuckets []float64,
 	spans []Span, maxEmptyBuckets int, deltaBuckets bool,
@@ -475,6 +489,7 @@ func compactBuckets[IBC InternalBucketCount](
 	return primaryBuckets, compensationBuckets, spans
 }
 
+// checkHistogramSpans 校验 span 长度之和与桶切片长度一致。
 func checkHistogramSpans(spans []Span, numBuckets int) error {
 	var spanBuckets int
 	for n, span := range spans {
@@ -489,6 +504,7 @@ func checkHistogramSpans(spans []Span, numBuckets int) error {
 	return nil
 }
 
+// checkHistogramBuckets 校验桶计数非负并可选累加得到总计数。
 func checkHistogramBuckets[BC BucketCount, IBC InternalBucketCount](buckets []IBC, count *BC, deltas bool) error {
 	if len(buckets) == 0 {
 		return nil
@@ -512,6 +528,7 @@ func checkHistogramBuckets[BC BucketCount, IBC InternalBucketCount](buckets []IB
 	return nil
 }
 
+// checkHistogramCustomBounds 校验自定义边界严格递增且有限。
 func checkHistogramCustomBounds(bounds []float64, spans []Span, numBuckets int) error {
 	prev := math.Inf(-1)
 	for i, curr := range bounds {
@@ -546,6 +563,7 @@ func checkHistogramCustomBounds(bounds []float64, spans []Span, numBuckets int) 
 	return nil
 }
 
+// getBound 按 schema 与索引计算桶边界（指数或自定义）。
 func getBound(idx, schema int32, customValues []float64) float64 {
 	if IsCustomBucketsSchema(schema) {
 		length := int32(len(customValues))
@@ -563,6 +581,7 @@ func getBound(idx, schema int32, customValues []float64) float64 {
 	return getBoundExponential(idx, schema)
 }
 
+// getBoundExponential 用预计算表或公式求指数分桶边界。
 func getBoundExponential(idx, schema int32) float64 {
 	// Here a bit of context about the behavior for the last bucket counting
 	// regular numbers (called simply "last bucket" below) and the bucket
@@ -618,6 +637,7 @@ func getBoundExponential(idx, schema int32) float64 {
 
 // exponentialBounds is a precalculated table of bucket bounds in the interval
 // [0.5,1) in schema 0 to 8.
+// exponentialBounds 缓存各 schema 下常用指数桶边界以加速计算。
 var exponentialBounds = [][]float64{
 	// Schema "0":
 	{0.5},
@@ -779,6 +799,7 @@ var exponentialBounds = [][]float64{
 // new slices will be allocated for result).
 // The functions returns an error if there are too many or too few buckets for the spans
 // or if any span except the first has a negative offset.
+// reduceResolution 将高分辨率桶合并到更低 schema，返回新 span 与桶。
 func reduceResolution[IBC InternalBucketCount](
 	originSpans []Span,
 	originBuckets []IBC,
@@ -888,6 +909,7 @@ func reduceResolution[IBC InternalBucketCount](
 // mustReduceResolution works like reduceResolution, but panics instead of
 // returning an error. Use mustReduceResolution if you are sure that the spans
 // and buckets are valid.
+// mustReduceResolution 同 reduceResolution，schema 不兼容时 panic。
 func mustReduceResolution[IBC InternalBucketCount](
 	originSpans []Span,
 	originBuckets []IBC,
@@ -905,6 +927,7 @@ func mustReduceResolution[IBC InternalBucketCount](
 	return targetSpans, targetBuckets
 }
 
+// clearIfNotNil 将切片重置为 nil 长度零切片以释放引用。
 func clearIfNotNil[T any](items []T) []T {
 	if items == nil {
 		return nil

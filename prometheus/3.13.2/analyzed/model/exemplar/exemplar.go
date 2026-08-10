@@ -11,16 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Exemplar（样本 exemplar）模型：表示与某时间序列关联的带标签观测点，
+// 遵循 OpenMetrics 对 exemplar 标签集长度与字段语义的约束。
+
 package exemplar
 
 import "github.com/prometheus/prometheus/model/labels"
 
+// ExemplarMaxLabelSetLength 为 OpenMetrics 规定的 exemplar 标签名值总长度上限（128 UTF-8 字符）。
 // ExemplarMaxLabelSetLength is defined by OpenMetrics: "The combined length of
 // the label names and values of an Exemplar's LabelSet MUST NOT exceed 128
 // UTF-8 characters."
 // https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#exemplars
 const ExemplarMaxLabelSetLength = 128
 
+// Exemplar 携带 labels/value/timestamp，HasTs 标记 timestamp 是否显式导出。
 // Exemplar is additional information associated with a time series.
 type Exemplar struct {
 	Labels labels.Labels `json:"labels"`
@@ -29,11 +34,13 @@ type Exemplar struct {
 	HasTs  bool
 }
 
+// QueryResult 表示一次 exemplar 查询返回的序列标签与 exemplar 列表。
 type QueryResult struct {
 	SeriesLabels labels.Labels `json:"seriesLabels"`
 	Exemplars    []Exemplar    `json:"exemplars"`
 }
 
+// Equals 比较两个 exemplar：双方均无 HasTs 时忽略时间戳以支持重复抓取去重。
 // Equals compares if the exemplar e is the same as e2. Note that if HasTs is false for
 // both exemplars then the timestamps will be ignored for the comparison. This can come up
 // when an exemplar is exported without it's own timestamp, in which case the scrape timestamp
@@ -51,6 +58,7 @@ func (e Exemplar) Equals(e2 Exemplar) bool {
 	return e.Value == e2.Value
 }
 
+// Compare 按时间戳、数值、标签字典序比较两个 exemplar。
 // Compare first timestamps, then values, then labels.
 func Compare(a, b Exemplar) int {
 	if a.Ts < b.Ts {

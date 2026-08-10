@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// stringlabels 实现（默认）：单 flat string 存储长度前缀编码的排序标签，
+// 内存紧凑且 Compare/Bytes 高效，为 Prometheus 默认 labels 后端。
+
 //go:build !slicelabels && !dedupelabels
 
 package labels
@@ -26,6 +29,7 @@ import (
 // ImplementationName is the name of the labels implementation.
 const ImplementationName = "stringlabels"
 
+// Labels 用单字符串存储按名排序的长度前缀 name/value 对，最大单段 16MB。
 // Labels is implemented by a single flat string holding name/value pairs.
 // Each name and value is preceded by its length, encoded as a single byte
 // for size 0-254, or the following 3 bytes little-endian, if the first byte is 255.
@@ -35,6 +39,7 @@ type Labels struct {
 	data string
 }
 
+// decodeSize 解码 1 字节或 4 字节（255 前缀）长度前缀。
 func decodeSize(data string, index int) (int, int) {
 	b := data[index]
 	index++
@@ -48,6 +53,7 @@ func decodeSize(data string, index int) (int, int) {
 	return int(b), index
 }
 
+// decodeString 读取长度前缀后的子串并返回新索引。
 func decodeString(data string, index int) (string, int) {
 	var size int
 	size, index = decodeSize(data, index)
@@ -85,6 +91,7 @@ func (ls Labels) MatchLabels(on bool, names ...string) Labels {
 	return b.Labels()
 }
 
+// Hash 直接对底层 data 字节做 xxhash。
 // Hash returns a hash value for the label set.
 // Note: the result is not guaranteed to be consistent across different runs of Prometheus.
 func (ls Labels) Hash() uint64 {
@@ -293,6 +300,7 @@ func (ls Labels) ByteSize() uint64 {
 	return uint64(len(ls.data))
 }
 
+// Equal 比较底层 data 字符串是否相同（可共享 intern）。
 // Equal returns whether the two label sets are equal.
 func Equal(ls, o Labels) bool {
 	return ls.data == o.data
@@ -303,6 +311,7 @@ func EmptyLabels() Labels {
 	return Labels{}
 }
 
+// yoloBytes 零拷贝将 string 转为 []byte（unsafe，仅只读场景）。
 func yoloBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
@@ -330,6 +339,7 @@ func FromStrings(ss ...string) Labels {
 	return New(ls...)
 }
 
+// Compare 先 8 字节块memcmp 找首差异，再定位到具体标签字段比较。
 // Compare compares the two label sets.
 // The result will be 0 if a==b, <0 if a < b, and >0 if a > b.
 func Compare(a, b Labels) int {
@@ -460,6 +470,7 @@ func (*Labels) InternStrings(func(string) string) {
 func (Labels) ReleaseStrings(func(string)) {
 }
 
+// Builder 在 flat string 上合并 del/add 并重新编码。
 // Builder allows modifying Labels.
 type Builder struct {
 	base Labels
@@ -529,6 +540,7 @@ func marshalLabelsToSizedBuffer(lbls []Label, data []byte) int {
 	return len(data) - i
 }
 
+// marshalLabelToSizedBuffer 从尾部向前写入 name/value 长度前缀编码。
 func marshalLabelToSizedBuffer(m *Label, data []byte) int {
 	i := len(data)
 	i -= len(m.Value)
@@ -599,6 +611,7 @@ func appendLabelTo(buf []byte, m *Label) []byte {
 	return buf
 }
 
+// ScratchBuilder 收集 []Label 后一次性 marshal 为 flat string。
 // ScratchBuilder allows efficient construction of a Labels from scratch.
 type ScratchBuilder struct {
 	add             []Label

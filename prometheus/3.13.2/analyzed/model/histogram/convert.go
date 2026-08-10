@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Native Histogram Custom Buckets (NHCB) 到经典 histogram 序列的转换：
+// 用于 Remote Write v1 兼容及迁移场景，将 NHCB 展开为 _bucket/_count/_sum 序列。
+
 package histogram
 
 import (
@@ -23,6 +26,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// ConvertNHCBToClassic 将 NHCB 直方图转为经典 bucket/count/sum 时间序列并通过 emitSeriesFn 输出。
 // ConvertNHCBToClassic converts Native Histogram Custom Buckets (NHCB) to classic histogram series.
 // This conversion is needed in various scenarios where users need to get NHCB back to classic histogram format,
 // such as Remote Write v1 for external system compatibility and migration use cases.
@@ -48,6 +52,7 @@ func ConvertNHCBToClassic(nhcb any, lset labels.Labels, lsetBuilder *labels.Buil
 		currIdx         int // This index is to track buckets in Native Histogram
 	)
 
+// 按 *Histogram 或 *FloatHistogram 分支：校验 schema、Validate 后将 delta/绝对桶转为累积计数。
 	switch h := nhcb.(type) {
 	case *Histogram:
 		if !IsCustomBucketsSchema(h.Schema) {
@@ -110,6 +115,7 @@ func ConvertNHCBToClassic(nhcb any, lset labels.Labels, lsetBuilder *labels.Buil
 	}
 
 	currCount := float64(0)
+// 为每个自定义上界生成 _bucket 序列，le 标签使用 OpenMetrics 浮点格式。
 	for i, val := range customValues {
 		currCount += positiveBuckets[i]
 		lsetBuilder.Reset(lset)
@@ -130,6 +136,7 @@ func ConvertNHCBToClassic(nhcb any, lset labels.Labels, lsetBuilder *labels.Buil
 	}
 
 	lsetBuilder.Reset(lset)
+// 最后输出 _count 与 _sum 序列，并在 defer 中恢复原始标签集。
 	lsetBuilder.Set(model.MetricNameLabel, baseName+"_count")
 	if err := emitSeriesFn(lsetBuilder.Labels(), count); err != nil {
 		return err
