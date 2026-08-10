@@ -27,18 +27,22 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * The default share event publisher implementation for slow event.
+ * <p>慢事件共享发布器：多种 {@link SlowEvent} 子类型共用单线程与队列，按事件 Class 维护 subMappings 以 O(1) 查找对应订阅者。</p>
  *
  * @author zongtanghu
  */
 public class DefaultSharePublisher extends DefaultPublisher implements ShardedEventPublisher {
     
+    /** 慢事件类型 → 订阅者集合的分组映射 */
     private final Map<Class<? extends SlowEvent>, Set<Subscriber>> subMappings =
         new ConcurrentHashMap<>();
     
+    /** 保护 subMappings 增删的互斥锁 */
     private final Lock lock = new ReentrantLock();
     
     @Override
     public void addSubscriber(Subscriber subscriber, Class<? extends Event> subscribeType) {
+        // 按 SlowEvent 子类型分类注册；同时加入父类 subscribers 以唤醒消费线程
         // Actually, do a classification based on the slowEvent type.
         Class<? extends SlowEvent> subSlowEventType = (Class<? extends SlowEvent>) subscribeType;
         // For stop waiting subscriber, see {@link DefaultPublisher#openEventHandler}.
@@ -86,6 +90,7 @@ public class DefaultSharePublisher extends DefaultPublisher implements ShardedEv
         final Class<? extends SlowEvent> slowEventType =
             (Class<? extends SlowEvent>) event.getClass();
         
+        // 按具体 SlowEvent 类型 O(1) 取订阅者，无映射则直接返回
         // Get for Map, the algorithm is O(1).
         Set<Subscriber> subscribers = subMappings.get(slowEventType);
         if (null == subscribers) {
@@ -104,6 +109,7 @@ public class DefaultSharePublisher extends DefaultPublisher implements ShardedEv
                 continue;
             }
             
+            // 逐个通知慢事件订阅者
             // Notify single subscriber for slow event.
             notifySubscriber(subscriber, event);
         }

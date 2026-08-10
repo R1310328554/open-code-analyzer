@@ -21,6 +21,7 @@ import com.alibaba.nacos.common.notify.listener.Subscriber;
 
 /**
  * Event publisher.
+ * <p>事件发布器接口：定义初始化、订阅管理、发布与通知流程，继承 {@link Closeable} 以支持优雅关闭。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  * @author zongtanghu
@@ -29,6 +30,7 @@ public interface EventPublisher extends Closeable {
     
     /**
      * Initializes the event publisher.
+     * <p>绑定事件类型并创建缓冲队列，启动后台消费线程。</p>
      *
      * @param type       {@link Event >}
      * @param bufferSize Message staging queue size
@@ -37,6 +39,7 @@ public interface EventPublisher extends Closeable {
     
     /**
      * The number of currently staged events.
+     * <p>返回队列中尚未消费的事件数量。</p>
      *
      * @return event size
      */
@@ -44,6 +47,7 @@ public interface EventPublisher extends Closeable {
     
     /**
      * Add listener.
+     * <p>注册事件订阅者。</p>
      *
      * @param subscriber {@link Subscriber}
      */
@@ -51,6 +55,7 @@ public interface EventPublisher extends Closeable {
     
     /**
      * Remove listener.
+     * <p>移除已注册的订阅者。</p>
      *
      * @param subscriber {@link Subscriber}
      */
@@ -58,6 +63,7 @@ public interface EventPublisher extends Closeable {
     
     /**
      * publish event.
+     * <p>将事件入队或直接派发；队列满时实现类可同步降级处理。</p>
      *
      * @param event {@link Event}
      * @return publish event is success
@@ -66,6 +72,7 @@ public interface EventPublisher extends Closeable {
     
     /**
      * Notify listener.
+     * <p>向单个订阅者投递事件，通常由发布器内部线程调用。</p>
      *
      * @param subscriber {@link Subscriber}
      * @param event      {@link Event}

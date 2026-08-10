@@ -23,11 +23,13 @@ import java.util.Properties;
 
 /**
  * Nacos Logging Properties, save some nacos logging properties.
+ * <p>Nacos 日志配置属性封装：解析 {@code nacos.logging.config}、默认配置开关与热重载间隔等客户端日志相关参数。</p>
  *
  * @author xiweng.yy
  */
 public class NacosLoggingProperties {
     
+    /** 用户自定义 Nacos 日志配置文件路径属性键 */
     private static final String NACOS_LOGGING_CONFIG_PROPERTY = "nacos.logging.config";
     
     private static final String NACOS_LOGGING_DEFAULT_CONFIG_ENABLED_PROPERTY =
@@ -36,6 +38,7 @@ public class NacosLoggingProperties {
     private static final String NACOS_LOGGING_RELOAD_INTERVAL_PROPERTY =
         "nacos.logging.reload.interval.seconds";
     
+    /** 日志配置热重载默认间隔（秒） */
     private static final long DEFAULT_NACOS_LOGGING_RELOAD_INTERVAL = 10L;
     
     private final String defaultLocation;
@@ -51,9 +54,11 @@ public class NacosLoggingProperties {
      * Get the location of nacos logging configuration.
      *
      * @return location of nacos logging configuration
+      * <p>Nacos 日志配置属性；详见类级说明。</p>
      */
     public String getLocation() {
         String location = properties.getProperty(NACOS_LOGGING_CONFIG_PROPERTY);
+        // 未显式配置路径时，视 default.config.enabled 决定是否回退到内置默认路径
         if (StringUtils.isBlank(location)) {
             if (isDefaultLocationEnabled()) {
                 return defaultLocation;
@@ -69,6 +74,7 @@ public class NacosLoggingProperties {
      * <p> It is judged when user don't set the location of nacos logging configuration. </p>
      *
      * @return {@code true} if default location enabled, otherwise {@code false}, default is {@code true}
+      * <p>Nacos 日志配置属性；详见类级说明。</p>
      */
     private boolean isDefaultLocationEnabled() {
         String property = properties.getProperty(NACOS_LOGGING_DEFAULT_CONFIG_ENABLED_PROPERTY);
@@ -77,6 +83,7 @@ public class NacosLoggingProperties {
     
     /**
      * Get reload internal.
+     * <p>获取日志配置热重载间隔（秒），未配置时使用默认 10 秒。</p>
      *
      * @return reload internal
      */
@@ -87,6 +94,7 @@ public class NacosLoggingProperties {
     
     /**
      * get property value.
+     * <p>按 key 读取属性值，不存在时返回 defaultValue。</p>
      *
      * @param source       source
      * @param defaultValue defaultValue

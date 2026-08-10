@@ -24,17 +24,22 @@ import java.util.Map;
 
 /**
  * Represents an HTTP request , consisting of headers and body.
+ * <p>HTTP 请求实体：聚合请求头、查询参数、请求体与可选的 {@link HttpClientConfig}，供 {@link com.alibaba.nacos.common.http.client.NacosRestTemplate} 发起调用。</p>
  *
  * @author mai.jh
  */
 public class RequestHttpEntity {
     
+    /** 可变请求头容器，构造时从入参 Header 拷贝 */
     private final Header headers = Header.newInstance();
     
+    /** 可选的 per-request HTTP 客户端配置，null 表示使用模板默认配置 */
     private final HttpClientConfig httpClientConfig;
     
+    /** URL 查询参数封装，可为 null */
     private final Query query;
     
+    /** 请求体对象（JSON/表单等），可为 null */
     private final Object body;
     
     public RequestHttpEntity(Header header, Query query) {
@@ -65,6 +70,7 @@ public class RequestHttpEntity {
         this.body = body;
     }
     
+    /** 将外部 Header 合并到内部 headers 实例 */
     private void handleHeader(Header header) {
         if (header != null && !header.getHeader().isEmpty()) {
             Map<String, String> headerMap = header.getHeader();
@@ -88,6 +94,7 @@ public class RequestHttpEntity {
         return httpClientConfig;
     }
     
+    /** 判断请求是否无 body（GET 等场景常用） */
     public boolean isEmptyBody() {
         return body == null;
     }

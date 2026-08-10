@@ -18,6 +18,7 @@ package com.alibaba.nacos.common.model.core;
 
 /**
  * IResultCode.
+ * <p>结果码接口（已废弃）：业务枚举实现此接口以提供统一 code 与 message，供 {@link RestResultUtils#buildResult} 构造响应；新代码请使用 v2 Result API。</p>
  *
  * @author klw
  * @ClassName: IResultCode
@@ -29,6 +30,7 @@ public interface IResultCode {
     
     /**
      * Get the result code.
+     * <p>返回数值型业务错误码。</p>
      *
      * @return code value.
      */
@@ -36,6 +38,7 @@ public interface IResultCode {
     
     /**
      * Get the result code's message.
+     * <p>返回与错误码对应的人类可读描述。</p>
      *
      * @return code's message.
      */

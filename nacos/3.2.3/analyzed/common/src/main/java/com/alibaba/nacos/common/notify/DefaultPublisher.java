@@ -32,7 +32,7 @@ import static com.alibaba.nacos.common.notify.NotifyCenter.ringBufferSize;
 
 /**
  * The default event publisher implementation.
- *
+ * <p>默认事件发布器：独立守护线程从 {@link ArrayBlockingQueue} 取事件，按订阅者 scope 与序号过滤后同步或异步回调 {@link Subscriber#onEvent}。</p>
  * <p>Internally, use {@link ArrayBlockingQueue <Event/>} as a message staging queue.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -42,18 +42,22 @@ public class DefaultPublisher extends Thread implements EventPublisher {
     
     protected static final Logger LOGGER = LoggerFactory.getLogger(NotifyCenter.class);
     
+    /** 发布线程是否已启动 */
     private volatile boolean initialized = false;
     
+    /** 关闭标志，run 循环据此退出 */
     private volatile boolean shutdown = false;
     
     private Class<? extends Event> eventType;
     
+    /** 当前事件类型的所有订阅者集合 */
     protected final ConcurrentHashSet<Subscriber> subscribers = new ConcurrentHashSet<>();
     
     private int queueMaxSize = -1;
     
     private BlockingQueue<Event> queue;
     
+    /** 已处理的最大事件序号，用于过期事件过滤 */
     protected volatile Long lastEventSequence = -1L;
     
     private static final AtomicReferenceFieldUpdater<DefaultPublisher, Long> UPDATER =
@@ -80,6 +84,7 @@ public class DefaultPublisher extends Thread implements EventPublisher {
     @Override
     public synchronized void start() {
         if (!initialized) {
+            // 保证 init 后只启动一次消费线程
             // start just called once
             super.start();
             initialized = true;
@@ -99,6 +104,7 @@ public class DefaultPublisher extends Thread implements EventPublisher {
     void openEventHandler() {
         try {
             
+            // 最多等待 60 秒直到首个订阅者注册，避免事件在无订阅者时丢失
             // This variable is defined to resolve the problem which message overstock in the queue.
             int waitTimes = 60;
             // To ensure that messages are not lost, enable EventHandler when
@@ -138,6 +144,7 @@ public class DefaultPublisher extends Thread implements EventPublisher {
     @Override
     public boolean publish(Event event) {
         checkIsStart();
+        // 队列满时降级为同步派发，防止事件丢失
         boolean success = this.queue.offer(event);
         if (!success) {
             LOGGER.warn(
@@ -171,6 +178,7 @@ public class DefaultPublisher extends Thread implements EventPublisher {
      * Receive and notifySubscriber to process the event.
      *
      * @param event {@link Event}.
+      * <p>默认事件发布器；详见类级说明。</p>
      */
     void receiveEvent(Event event) {
         final long currentEventSequence = event.sequence();
@@ -182,11 +190,13 @@ public class DefaultPublisher extends Thread implements EventPublisher {
         
         // Notification single event listener
         for (Subscriber subscriber : subscribers) {
+            // scope 不匹配则跳过该订阅者
             if (!subscriber.scopeMatches(event)) {
                 continue;
             }
             
             // Whether to ignore expiration events
+            // 订阅者忽略过期事件且当前序号落后于已处理序号时跳过
             if (subscriber.ignoreExpireEvent() && lastEventSequence > currentEventSequence) {
                 LOGGER.debug(
                     "[NotifyCenter] the {} is unacceptable to this subscriber, because had expire",
@@ -208,6 +218,7 @@ public class DefaultPublisher extends Thread implements EventPublisher {
         final Runnable job = () -> subscriber.onEvent(event);
         final Executor executor = subscriber.executor();
         
+        // 订阅者指定线程池则异步回调，否则在当前线程同步执行
         if (executor != null) {
             executor.execute(job);
         } else {

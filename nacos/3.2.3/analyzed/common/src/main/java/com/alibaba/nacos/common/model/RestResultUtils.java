@@ -20,15 +20,18 @@ import com.alibaba.nacos.common.model.core.IResultCode;
 
 /**
  * Rest result utils.
+ * <p>{@link RestResult} 工厂工具类：提供 success/failed 等静态方法，统一构造常见 HTTP 风格响应码与消息。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class RestResultUtils {
     
+    /** 构造 code=200 的无数据成功响应 */
     public static <T> RestResult<T> success() {
         return RestResult.<T>builder().withCode(200).build();
     }
     
+    /** 构造带 data 的成功响应（code=200） */
     public static <T> RestResult<T> success(T data) {
         return RestResult.<T>builder().withCode(200).withData(data).build();
     }
@@ -41,10 +44,12 @@ public class RestResultUtils {
         return RestResult.<T>builder().withCode(code).withData(data).build();
     }
     
+    /** 构造 code=500 的通用失败响应 */
     public static <T> RestResult<T> failed() {
         return RestResult.<T>builder().withCode(500).build();
     }
     
+    /** 构造带错误消息的 500 响应 */
     public static <T> RestResult<T> failed(String errMsg) {
         return RestResult.<T>builder().withCode(500).withMsg(errMsg).build();
     }
@@ -61,6 +66,7 @@ public class RestResultUtils {
         return RestResult.<T>builder().withCode(code).withMsg(errMsg).build();
     }
     
+    /** 根据 {@link IResultCode} 枚举构造带 data 的标准响应 */
     public static <T> RestResult<T> buildResult(IResultCode resultCode, T data) {
         return RestResult.<T>builder().withCode(resultCode.getCode())
             .withMsg(resultCode.getCodeMsg()).withData(data).build();

@@ -20,6 +20,7 @@ import java.util.function.BiFunction;
 
 /**
  * Event publisher factory.
+ * <p>事件发布器工厂 SPI：作为 {@link BiFunction} 根据事件类型与队列容量创建 {@link DefaultPublisher} 或 {@link DefaultSharePublisher} 等实现。</p>
  *
  * @author xiweng.yy
  */
@@ -28,6 +29,7 @@ public interface EventPublisherFactory
     
     /**
      * Build an new {@link EventPublisher}.
+     * <p>为指定 eventType 创建新的发布器实例并配置队列大小。</p>
      *
      * @param eventType    eventType for {@link EventPublisher}
      * @param maxQueueSize max queue size for {@link EventPublisher}

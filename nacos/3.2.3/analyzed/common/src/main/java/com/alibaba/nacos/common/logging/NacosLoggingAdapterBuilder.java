@@ -18,7 +18,7 @@ package com.alibaba.nacos.common.logging;
 
 /**
  * Builder of {@link NacosLoggingAdapter}.
- *
+ * <p>Nacos 日志适配器构建器 SPI：延迟实例化适配器，避免直接 SPI {@link NacosLoggingAdapter} 时初始化异常导致整个加载器退出。</p>
  * <p>
  *     Why not directly SPI {@link NacosLoggingAdapter}?
  * </p>
@@ -32,6 +32,7 @@ public interface NacosLoggingAdapterBuilder {
     
     /**
      * Build {@link NacosLoggingAdapter} implementation.
+     * <p>构建并返回具体的日志适配器实例。</p>
      *
      * @return {@link NacosLoggingAdapter}
      */

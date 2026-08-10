@@ -20,7 +20,7 @@ import java.io.Serializable;
 
 /**
  * Rest result.
- *
+ * <p>通用 REST 响应封装：包含业务码 code、消息 message 与泛型数据 data，提供 {@link #ok()}、{@link #isNoRight()} 等便捷判断。</p>
  * <p>TODO replaced or extend by {@link com.alibaba.nacos.api.model.v2.Result}.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -29,10 +29,13 @@ public class RestResult<T> implements Serializable {
     
     private static final long serialVersionUID = 6095433538316185017L;
     
+    /** 业务/HTTP 状态码，0 或 200 视为成功 */
     private int code;
     
+    /** 错误或提示信息 */
     private String message;
     
+    /** 响应载荷 */
     private T data;
     
     public RestResult() {
@@ -68,10 +71,12 @@ public class RestResult<T> implements Serializable {
         this.data = data;
     }
     
+    /** 判断请求是否成功（code 为 0 或 200） */
     public boolean ok() {
         return this.code == 0 || this.code == 200;
     }
     
+    /** 判断是否为未授权/无权限（401 或 403） */
     public boolean isNoRight() {
         return this.code == 403 || this.code == 401;
     }
@@ -86,6 +91,7 @@ public class RestResult<T> implements Serializable {
         return new ResResultBuilder<>();
     }
     
+    /** 流式构建 {@link RestResult} 的内部 Builder */
     public static final class ResResultBuilder<T> {
         
         private int code;
@@ -114,6 +120,7 @@ public class RestResult<T> implements Serializable {
         
         /**
          * Build result.
+         * <p>组装并返回不可变语义上的 {@link RestResult} 实例。</p>
          *
          * @return result
          */

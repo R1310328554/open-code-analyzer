@@ -33,13 +33,16 @@ import static com.alibaba.nacos.api.common.Constants.JVM_KEY;
 
 /**
  * DefaultLabelsCollector.
+ * <p>默认连接标签收集器：从 Properties、JVM 系统属性与环境变量三处读取 {@code nacos.app.conn.labels} 及灰度标签，按优先级合并后供客户端上报。</p>
  *
  * @author rong
  */
 public class DefaultLabelsCollector implements LabelsCollector {
     
+    /** 标签收集过程专用日志记录器 */
     private static final Logger LOGGER = LoggerFactory.getLogger("com.alibaba.nacos.common.labels");
     
+    /** SPI 注册名称，用于日志与调试识别 */
     private final String customName = "defaultNacosLabelsCollector";
     
     private static final String UNDERSCORE = "_";
@@ -56,10 +59,12 @@ public class DefaultLabelsCollector implements LabelsCollector {
      * by env).
      * <p>eg: if the value of "nacos.app.conn.labels"(properties' key) is "k1=v1,k2=v2"(properties' value), the result
      * will be a Map with value{k1=v1,k2=v2}.</p>
+      * <p>默认连接标签收集器；详见类级说明。</p>
      */
     @Override
     public Map<String, String> collectLabels(Properties properties) {
         
+        // 第一优先级：从客户端 Properties 解析原始标签字符串
         //properties
         LOGGER.info("default nacos collect properties raw labels: {}",
             properties.getProperty(Constants.APP_CONN_LABELS_KEY));
@@ -71,6 +76,7 @@ public class DefaultLabelsCollector implements LabelsCollector {
         }
         LOGGER.info("default nacos collect properties labels: {}", propertiesLabels);
         
+        // 第二优先级：从 JVM 系统属性读取标签
         //jvm
         LOGGER.info("default nacos collect jvm raw labels: {}",
             System.getProperty(Constants.APP_CONN_LABELS_KEY));
@@ -82,6 +88,7 @@ public class DefaultLabelsCollector implements LabelsCollector {
         }
         LOGGER.info("default nacos collect jvm labels: {}", jvmLabels);
         
+        // 第三优先级：环境变量（点号转下划线）读取标签
         //env
         LOGGER.info("default nacos collect env raw labels: {}",
             System.getenv(Constants.APP_CONN_LABELS_KEY.replaceAll(ESCAPE + DOT, UNDERSCORE)));
@@ -94,6 +101,7 @@ public class DefaultLabelsCollector implements LabelsCollector {
         }
         LOGGER.info("default nacos collect env labels: {}", envLabels);
         
+        // 合并结果容器；可通过 APP_CONN_LABELS_PREFERRED 指定 JVM 或 ENV 为首选来源
         Map<String, String> finalLabels = new HashMap<>(4);
         String preferred = System.getenv(Constants.APP_CONN_LABELS_PREFERRED);
         boolean jvmPrefferred = false;
@@ -101,6 +109,7 @@ public class DefaultLabelsCollector implements LabelsCollector {
         
         if (StringUtils.isNotBlank(preferred)) {
             LOGGER.info("default nacos  labels collector preferred {} labels.", preferred);
+            // 显式指定 JVM 为首选时，先写入 JVM 标签并跳过后续 JVM 合并
             if (JVM_KEY.equals(preferred)) {
                 finalLabels.putAll(jvmLabels);
                 jvmPrefferred = true;
@@ -109,6 +118,7 @@ public class DefaultLabelsCollector implements LabelsCollector {
                 envPrefferred = true;
             }
         }
+        // 按 properties → jvm → env 顺序合并，后者覆盖前者同名键
         finalLabels = ConnLabelsUtils.mergeMapByOrder(finalLabels, propertiesLabels);
         if (!jvmPrefferred) {
             finalLabels = ConnLabelsUtils.mergeMapByOrder(finalLabels, jvmLabels);
@@ -128,6 +138,7 @@ public class DefaultLabelsCollector implements LabelsCollector {
         return customName;
     }
     
+    /** SPI 排序权重，数值越大越优先执行 */
     private static final int DEFAULT_INITIAL_ORDER = 100;
     
     @Override
