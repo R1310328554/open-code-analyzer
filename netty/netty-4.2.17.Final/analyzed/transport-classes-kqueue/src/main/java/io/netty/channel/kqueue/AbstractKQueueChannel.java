@@ -58,12 +58,17 @@ import static io.netty.channel.internal.ChannelUtils.WRITE_STATUS_SNDBUF_FULL;
 import static io.netty.channel.unix.UnixChannelUtil.computeRemoteAddr;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * KQueue 传输通道抽象基类：管理 BsdSocket、过滤器注册与连接生命周期。
+ * <p>实现 {@link UnixChannel} 与 {@link KQueueIoHandle}，通过 EVFILT_READ/WRITE/SOCK 处理 I/O 事件。</p>
+ */
 abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     /**
      * The future of the current connection attempt.  If not null, subsequent
      * connection attempts will fail.
+     * <p>当前连接尝试的 Promise；非 null 时拒绝后续 connect。</p>
      */
     private ChannelPromise connectPromise;
     private Future<?> connectTimeoutFuture;
@@ -85,8 +90,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
         socket = checkNotNull(fd, "fd");
         this.active = active;
         if (active) {
-            // Directly cache the remote and local addresses
-            // See https://github.com/netty/netty/issues/2359
+            // 活跃时缓存本地/远端地址，避免重复系统调用（netty#2359）
             local = fd.localAddress();
             remote = fd.remoteAddress();
         }
@@ -137,8 +141,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
 
     @Override
     protected void doClose() throws Exception {
-        // Clear kqueue registrations *before* we close the file descriptor.
-        // Otherwise, the filter removals might hit a reused file descriptor.
+        // 关闭 fd 前先清除 kqueue 注册，避免 fd 复用导致误删他人过滤器
         doDeregister();
 
         active = false;
@@ -167,9 +170,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
     protected void doDeregister() throws Exception {
         IoRegistration registration = this.registration;
         if (registration != null) {
-            // As unregisteredFilters() may have not been called because isOpen() returned false we just set both
-            // filters to false, to ensure a consistent state in all cases.
-            // Make sure we unregister our filters from kqueue!
+            // 确保读写过滤器从 kqueue 注销，保持状态一致
             readFilter(false);
             writeFilter(false);
             clearRdHup0();
@@ -185,8 +186,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
 
     private void submit(KQueueIoOps ops) {
         if (!isOpen()) {
-            // If the channel was closed in the meantime we should just drop the ops as otherwise we might end up
-            // affected another channel that re-used the fd.
+            // 通道已关闭则丢弃 ops，避免 fd 复用后影响其他通道
             return;
         }
         try {
@@ -198,7 +198,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
 
     @Override
     protected final void doBeginRead() throws Exception {
-        // Channel.read() or ChannelHandlerContext.read() was called
+        // 用户触发 read，置 readPending 并启用读过滤器
         final AbstractKQueueUnsafe unsafe = (AbstractKQueueUnsafe) unsafe();
         unsafe.readPending = true;
 
@@ -220,7 +220,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
 
                 submit(KQueueIoOps.newOps(Native.EVFILT_SOCK, Native.EV_ADD, Native.NOTE_RDHUP));
 
-                // Add the write event first so we get notified of connection refused on the client side!
+                // 先注册写事件以便客户端感知 connection refused
                 if (writeFilterEnabled) {
                     submit(Native.WRITE_ENABLED_OPS);
                 }
@@ -242,6 +242,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
 
     /**
      * Returns an off-heap copy of the specified {@link ByteBuf}, and releases the original one.
+     * <p>将 ByteBuf 复制为堆外 direct buffer 并释放原 buf。</p>
      */
     protected final ByteBuf newDirectBuffer(ByteBuf buf) {
         return newDirectBuffer(buf, buf);
@@ -251,6 +252,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
      * Returns an off-heap copy of the specified {@link ByteBuf}, and releases the specified holder.
      * The caller must ensure that the holder releases the original {@link ByteBuf} when the holder is released by
      * this method.
+      * <p>Netty 传输层 API；详见上方英文说明。</p>
      */
     protected final ByteBuf newDirectBuffer(Object holder, ByteBuf buf) {
         final int readableBytes = buf.readableBytes();
@@ -289,6 +291,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
 
     /**
      * Read bytes into the given {@link ByteBuf} and return the amount.
+     * <p>从 socket 读入 ByteBuf，优先使用 memoryAddress 零拷贝路径。</p>
      */
     protected final int doReadBytes(ByteBuf byteBuf) throws Exception {
         int writerIndex = byteBuf.writerIndex();
@@ -347,7 +350,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
             if (loop.inEventLoop()) {
                 unsafe.clearReadFilter0();
             } else {
-                // schedule a task to clear the EPOLLIN as it is not safe to modify it directly
+                // 非 EventLoop 线程须调度任务清除读过滤器
                 loop.execute(new Runnable() {
                     @Override
                     public void run() {
@@ -406,12 +409,11 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
             final int fflags = kqueueEvent.fflags();
             final long data = kqueueEvent.data();
 
-            // First check for EPOLLOUT as we may need to fail the connect ChannelPromise before try
-            // to read from the file descriptor.
+            // 先处理写就绪（含 connect 完成/失败），再处理读
             if (filter == Native.EVFILT_WRITE) {
                 writeReady();
             } else if (filter == Native.EVFILT_READ) {
-                // Check READ before EOF to ensure all data is read before shutting down the input.
+                // 先读尽数据再处理 EOF，避免丢包
                 KQueueRecvByteAllocatorHandle allocHandle = recvBufAllocHandle();
                 readReady(allocHandle);
             } else if (filter == Native.EVFILT_SOCK && (fflags & Native.NOTE_RDHUP) != 0) {
@@ -419,9 +421,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
                 return;
             }
 
-            // Check if EV_EOF was set, this will notify us for connection-reset in which case
-            // we may close the channel directly or try to read more data depending on the state of the
-            // Channel and also depending on the AbstractKQueueChannel subtype.
+            // EV_EOF 表示对端关闭或 reset，由子类决定读或 shutdown
             if ((flags & Native.EV_EOF) != 0) {
                 readEOF();
             }
@@ -467,6 +467,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
 
         /**
          * Shutdown the input side of the channel.
+         * <p>关闭输入侧；半关闭模式下触发 {@link ChannelInputShutdownEvent}。</p>
          */
         void shutdownInput(boolean readEOF) {
             // We need to take special care of calling finishConnect() if readEOF is true and we not
@@ -520,7 +521,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
                 shutdownInput(true);
             }
 
-            // Clear the RDHUP flag to prevent continuously getting woken up on this event.
+            // 清除 NOTE_RDHUP，避免重复唤醒
             clearRdHup0();
         }
 
@@ -535,7 +536,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
 
         @Override
         protected final void flush0() {
-            // Flush immediately only when there's no pending flush.
+            // 无写过滤器挂起时立即 flush
             // If there's a pending flush operation, event loop will call forceFlush() later,
             // and thus there's no need to call it now.
             if (!writeFilterEnabled) {
@@ -710,6 +711,7 @@ abstract class AbstractKQueueChannel extends AbstractChannel implements UnixChan
 
     /**
      * Connect to the remote peer
+     * <p>非阻塞 connect；EINPROGRESS 时启用写过滤器等待 finishConnect。</p>
      */
     protected boolean doConnect(SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
         if (localAddress instanceof InetSocketAddress) {

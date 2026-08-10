@@ -16,6 +16,10 @@
 package io.netty.channel.uring;
 
 
+/**
+ * io_uring 提交队列（SQ）与完成队列（CQ）的聚合封装。
+ * <p>创建时 ring 处于 disabled 状态，须在同线程调用 {@link #enable()} 后再 submit。</p>
+ */
 final class RingBuffer {
     private final SubmissionQueue ioUringSubmissionQueue;
     private final CompletionQueue ioUringCompletionQueue;
@@ -32,12 +36,12 @@ final class RingBuffer {
     /**
      * Enable ring. This method must be called from the same method that will call {@link SubmissionQueue#submit()} and
      * {@link SubmissionQueue#submitAndWait()}.
+     * <p>启用 ring 并注册 ring fd；须与后续 submit 在同一线程。</p>
      */
     void enable() {
-        // We create our ring in disabled mode and so need to enable it first.
+        // ring 以 R_DISABLED 创建，须先 io_uring_register_enable_rings
         Native.ioUringRegisterEnableRings(fd());
-        // Now also register the ring filedescriptor itself. This needs to happen in the same thread
-        // that will also call the io_uring_enter(...)
+        // 同线程注册 ring fd，供 io_uring_enter 使用
         ioUringSubmissionQueue.tryRegisterRingFd();
     }
 

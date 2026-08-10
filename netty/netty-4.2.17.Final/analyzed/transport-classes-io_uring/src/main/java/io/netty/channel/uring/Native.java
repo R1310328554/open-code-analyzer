@@ -36,23 +36,23 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Locale;
 
+/**
+ * io_uring JNI 原生层入口：库加载、ring 创建、常量与特性探测。
+ * <p>静态块预加载类以避免 JNI/classloader 死锁，并注册 Unix 扩展。</p>
+ */
 final class Native {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Native.class);
 
     static {
         Selector selector = null;
         try {
-            // We call Selector.open() as this will under the hood cause IOUtil to be loaded.
-            // This is a workaround for a possible classloader deadlock that could happen otherwise:
-            //
-            // See https://github.com/netty/netty/issues/10187
+            // 预加载 IOUtil（通过 Selector.open）以避免 classloader 死锁，见 netty#10187
             selector = Selector.open();
         } catch (IOException ignore) {
             // Just ignore
         }
 
-        // Preload all classes that will be used in the OnLoad(...) function of JNI to eliminate the possiblity of a
-        // class-loader deadlock. This is a workaround for https://github.com/netty/netty/issues/11209.
+        // 预加载 JNI OnLoad 会用到的类，避免 classloader 死锁（netty#11209）
 
         // This needs to match all the classes that are loaded via NETTY_JNI_UTIL_LOAD_CLASS or looked up via
         // NETTY_JNI_UTIL_FIND_CLASS.
@@ -65,8 +65,7 @@ final class Native {
         File tmpDir = PlatformDependent.tmpdir();
         Path tmpFile = tmpDir.toPath().resolve("netty_io_uring.tmp");
         try {
-            // First, try calling a side-effect free JNI method to see if the library was already
-            // loaded by the application.
+            // 先调用无副作用 JNI 方法检测库是否已被应用加载
             Native.createFile(tmpFile.toString());
         } catch (UnsatisfiedLinkError ignore) {
             // The library was not previously loaded, load it now.
@@ -154,9 +153,7 @@ final class Native {
     static final int IOURING_BUFFER_OFFSETOF_LEN = NativeStaticallyReferencedJniMethods.ioUringBufferOffsetLen();
     static final int IOURING_BUFFER_OFFSETOF_BID = NativeStaticallyReferencedJniMethods.ioUringBufferOffsetBid();
 
-    // These constants must be defined to have the same numeric value as their corresponding
-    // ordinal in the enum defined in the io_uring.h header file.
-    // DO NOT CHANGE THESE VALUES!
+    // IORING_OP_* 数值须与 io_uring.h 枚举 ordinal 一致，禁止修改！
     static final byte IORING_OP_NOP = 0; // Specified by IORING_OP_NOP in io_uring.h
     static final byte IORING_OP_READV = 1; // Specified by IORING_OP_READV in io_uring.h
     static final byte IORING_OP_WRITEV = 2; // Specified by IORING_OP_WRITEV in io_uring.h
@@ -336,12 +333,14 @@ final class Native {
     /**
      * <a href ="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt">tcp_fastopen</a> client mode enabled
      * state.
+      * <p>Netty 传输层 API；详见上方英文说明。</p>
      */
     static final boolean IS_SUPPORTING_TCP_FASTOPEN_CLIENT =
             (TCP_FASTOPEN_MODE & TFO_ENABLED_CLIENT_MASK) == TFO_ENABLED_CLIENT_MASK;
     /**
      * <a href ="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt">tcp_fastopen</a> server mode enabled
      * state.
+      * <p>Netty 传输层 API；详见上方英文说明。</p>
      */
     static final boolean IS_SUPPORTING_TCP_FASTOPEN_SERVER =
             (TCP_FASTOPEN_MODE & TFO_ENABLED_SERVER_MASK) == TFO_ENABLED_SERVER_MASK;
@@ -372,7 +371,7 @@ final class Native {
         }
 
         if (useSingleIssuer) {
-            // See https://github.com/axboe/liburing/wiki/io_uring-and-networking-in-2023#task-work
+            // SINGLE_ISSUER/DEFER_TASKRUN 见 liburing 网络 task-work 说明
             if (IoUring.isSetupSingleIssuerSupported()) {
                 flags |= Native.IORING_SETUP_SINGLE_ISSUER;
             }
@@ -382,13 +381,12 @@ final class Native {
                 flags |= Native.IORING_SETUP_TASKRUN_FLAG;
             }
         }
-        // liburing uses IORING_SETUP_NO_SQARRAY by default these days, we should do the same by default if possible.
-        // See https://github.com/axboe/liburing/releases/tag/liburing-2.6
+        // 若支持则默认启用 NO_SQARRAY（liburing 2.6+ 默认行为）
         if (IoUring.isIoringSetupNoSqarraySupported()) {
             flags  |= Native.IORING_SETUP_NO_SQARRAY;
         }
 
-        // Use IORING_SETUP_CQE_MIXED by default if supported so we can support any OP in the future.
+        // 默认启用 CQE_MIXED 以兼容未来任意 OP 的 CQE 大小
         if (IoUring.isSetupCqeMixedSupported()) {
             flags |= Native.IORING_SETUP_CQE_MIXED;
         }
@@ -496,6 +494,7 @@ final class Native {
      * check current kernel version whether support io_uring_register_io_wq_worker
      * Available since 5.15.
      * @return true if support io_uring_register_io_wq_worker
+     * <p>检测内核是否支持 io_uring_register_io_wq_worker（5.15+）。</p>
      */
     static boolean isRegisterIoWqWorkerSupported(int ringFd) {
         // See https://github.com/torvalds/linux/blob/v5.5/fs/io_uring.c#L5488C10-L5488C16
@@ -503,7 +502,7 @@ final class Native {
         if (result >= 0) {
             return true;
         }
-        // This is not supported and so will return -EINVAL
+        // 不支持时 JNI 返回 -EINVAL
         return false;
     }
 
@@ -644,7 +643,7 @@ final class Native {
 
     private static native int blockingEventFd();
 
-    // for testing only!
+    // 仅供测试：创建临时文件
     static native int createFile(String name);
 
     private static native int registerUnix();
@@ -657,7 +656,7 @@ final class Native {
         // utility
     }
 
-    // From io_uring native library
+    // 加载 netty_transport_native_io_uring 共享库（仅 Linux）
     private static void loadNativeLibrary() {
         String name = PlatformDependent.normalizedOs().toLowerCase(Locale.ROOT).trim();
         if (!name.startsWith("linux")) {

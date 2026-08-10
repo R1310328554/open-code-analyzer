@@ -15,6 +15,10 @@
  */
 package io.netty.channel.uring;
 
+/**
+ * io_uring SQE userData 快速路径打包/解包工具。
+ * <p>将 registration id、opcode 与 16 位自定义 data 编码为单个 long。</p>
+ */
 final class UserData {
     private UserData() {
     }
@@ -28,19 +32,23 @@ final class UserData {
      * @param op        the operation
      * @param data      the custom data
      * @return          the udata.
+     * <p>位布局：高 32 位 id，中间 8 位 op，低 16 位 data。</p>
      */
     static long encode(int id, byte op, short data) {
         return ((long) id << Integer.SIZE) | ((op & 0xFFL) << Short.SIZE) | (data & 0xFFFFL);
     }
 
+    /** 从 userData 解出 registration id（高 32 位） */
     static int decodeId(long udata) {
         return (int) (udata >>> Integer.SIZE);
     }
 
+    /** 从 userData 解出 IORING 操作码 */
     static byte decodeOp(long udata) {
         return (byte) (udata >>> Short.SIZE);
     }
 
+    /** 从 userData 解出 16 位自定义 data */
     static short decodeData(long udata) {
         return (short) udata;
     }

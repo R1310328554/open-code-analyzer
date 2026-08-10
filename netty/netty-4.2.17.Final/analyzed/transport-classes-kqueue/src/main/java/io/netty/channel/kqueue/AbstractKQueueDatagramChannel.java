@@ -21,6 +21,10 @@ import io.netty.channel.ChannelOutboundBuffer;
 
 import java.io.IOException;
 
+/**
+ * KQueue datagram 通道抽象基类：实现多目标写入与 writeSpinCount 循环。
+ * <p>单个 write 失败不中断整批（可写多个远端），见 netty#2665。</p>
+ */
 abstract class AbstractKQueueDatagramChannel extends AbstractKQueueChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(true, 16);
@@ -63,14 +67,12 @@ abstract class AbstractKQueueDatagramChannel extends AbstractKQueueChannel {
             } catch (IOException e) {
                 maxMessagesPerWrite--;
 
-                // Continue on write error as a DatagramChannel can write to multiple remote peers
-                //
-                // See https://github.com/netty/netty/issues/2665
+                // datagram 可写多个远端，单条失败继续写其余（netty#2665）
                 in.remove(e);
             }
         }
 
-        // Whether all messages were written or not.
+        // 根据 outbound 是否为空切换写过滤器
         writeFilter(!in.isEmpty());
     }
 }

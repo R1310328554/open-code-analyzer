@@ -27,13 +27,16 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.StringJoiner;
 
+/**
+ * io_uring 提交队列（SQ）实现：通过 VarHandle 读写内核共享 head/tail，enqueue SQE 并 io_uring_enter。
+ * <p>支持注册 ring fd、IORING_ENTER_NO_IOWAIT 与 SUBMIT_ALL 回退循环。</p>
+ */
 final class SubmissionQueue {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(SubmissionQueue.class);
 
     static final int SQE_SIZE = 64;
 
-    //these offsets are used to access specific properties
-    //SQE https://github.com/axboe/liburing/blob/liburing-2.6/src/include/liburing/io_uring.h#L30
+    // SQE 各字段偏移（参见 liburing io_uring.h）
     private static final int SQE_OP_CODE_FIELD = 0;
     private static final int SQE_FLAGS_FIELD = 1;
     private static final int SQE_IOPRIO_FIELD = 2; // u16
@@ -48,8 +51,7 @@ final class SubmissionQueue {
     private static final int SQE_UNION5_FIELD = 44;
     private static final int SQE_UNION6_FIELD = 48;
 
-    // These unsigned integer pointers(shared with the kernel) will be changed by the kernel and us
-    // using a VarHandle.
+    // 与内核共享的无符号整数指针，通过 VarHandle 读写
     private static final VarHandle INT_HANDLE =
             MethodHandles.byteBufferViewVarHandle(int[].class, ByteOrder.nativeOrder());
     private final ByteBuffer kHead;
@@ -92,7 +94,7 @@ final class SubmissionQueue {
         if (closed) {
             return 0;
         }
-        // we only need memory_order_relaxed
+        // 读取 kflags 仅需 memory_order_relaxed
         return (int) INT_HANDLE.getOpaque(kflags, 0);
     }
 
@@ -112,19 +114,17 @@ final class SubmissionQueue {
 
     void tryRegisterRingFd() {
         checkClosed();
-        // Try to use IORING_REGISTER_RING_FDS.
-        // See https://manpages.debian.org/unstable/liburing-dev/io_uring_register.2.en.html#IORING_REGISTER_RING_FDS
+        // 尝试 IORING_REGISTER_RING_FDS 注册 ring fd
         int enterRingFd = Native.ioUringRegisterRingFds(ringFd);
         int enterFlags;
         if (enterRingFd < 0) {
-            // Use of IORING_REGISTER_RING_FDS failed, just use the ring fd directly.
+            // 注册失败则直接使用原始 ring fd
             enterRingFd = ringFd;
             enterFlags = 0;
         } else {
             enterFlags = Native.IORING_ENTER_REGISTERED_RING;
         }
-        // Opt out of iowait accounting while waiting on CQEs for pure networking workloads.
-        // See https://github.com/netty/netty/issues/16655
+        // 纯网络负载启用 IORING_ENTER_NO_IOWAIT，避免计入 iowait
         if (IoUring.isIoringEnterNoIoWaitEnabled()) {
             enterFlags |= Native.IORING_ENTER_NO_IOWAIT;
         }
@@ -139,13 +139,13 @@ final class SubmissionQueue {
         if (pending == ringEntries) {
             int submitted = submit();
             if (submitted == 0) {
-                // We have a problem, could not submit to make more room in the ring
+                // SQ 已满且 submit 未腾出空间
                 throw new RuntimeException("SQ ring full and no submissions accepted");
             }
         }
         int sqe = sqeIndex(tail++, ringMask);
 
-        //set sqe(submission queue) properties
+        // 写入 SQE 各字段
         submissionQueueArray.put(sqe + SQE_OP_CODE_FIELD, opcode);
         submissionQueueArray.put(sqe + SQE_FLAGS_FIELD, flags);
         // This constant is set up-front
@@ -199,8 +199,7 @@ final class SubmissionQueue {
     }
 
     long addNop(byte flags, int nopFlags, long udata) {
-        // Mimic what liburing does:
-        // https://github.com/axboe/liburing/blob/liburing-2.8/src/include/liburing.h#L592
+        // 行为对齐 liburing io_uring_prep_nop
         return enqueueSqe(Native.IORING_OP_NOP, flags, (short) 0, -1, 0, 0, 0, nopFlags, udata,
                 (short) 0, (short) 0, 0, 0);
     }
@@ -235,6 +234,7 @@ final class SubmissionQueue {
      * Submit entries.
      *
      * @return  the number of submitted entries.
+     * <p>提交 SQ 中待处理条目数。</p>
      */
     int submit() {
         checkClosed();
@@ -244,6 +244,7 @@ final class SubmissionQueue {
 
     /**
      * Submit entries and fetch completions. This method will block until there is at least one completion ready to be
+     * <p>提交并等待至少一条 CQE 完成。</p>
      * processed.
      *
      * @return  the number of submitted entries.
@@ -254,6 +255,7 @@ final class SubmissionQueue {
 
     /**
      * Submit entries and fetch completions.
+     * <p>提交 SQ 并获取完成事件。</p>
      *
      * @return  the number of submitted entries.
      */
@@ -276,9 +278,9 @@ final class SubmissionQueue {
     }
 
     private int submit(int toSubmit, int minComplete, int flags) {
-        INT_HANDLE.setRelease(kTail, 0, tail);
+        // 发布新 tail 后调用 io_uring_enter（setRelease 保证 SQE 可见性）
         int ret = ioUringEnter(toSubmit, minComplete, flags);
-        head = (int) INT_HANDLE.getVolatile(kHead, 0); // acquire memory barrier
+        // acquire 读取 head，确认内核已消费 SQE
         if (ret != toSubmit) {
             if (ret < 0) {
                 throw new UncheckedIOException(Errors.newIOException("io_uring_enter", ret));
@@ -293,8 +295,7 @@ final class SubmissionQueue {
         if (IoUring.isSetupSubmitAllSupported()) {
             return ioUringEnter0(toSubmit, minComplete, f);
         }
-        // If IORING_SETUP_SUBMIT_ALL is not supported we need to loop until we submitted everything as
-        // io_uring_enter(...) will stop submitting once the first inline executed submission fails.
+        // 无 SUBMIT_ALL 时须循环 submit，因首个 inline 失败会中止后续
         int submitted = 0;
         for (;;) {
             int ret = ioUringEnter0(toSubmit, minComplete, f);

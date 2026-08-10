@@ -31,16 +31,21 @@ import java.util.Enumeration;
 
 /**
  * A socket which provides access Linux native methods.
+ * <p>Linux 原生 socket 封装，提供 TCP/UDP/Unix 域套接字的 JNI 操作与 Linux 专有 socket 选项。</p>
+ * <p>继承 {@link io.netty.channel.unix.Socket}，供 io_uring 通道读写与配置使用。</p>
  */
 final class LinuxSocket extends Socket {
+    /** IPv6 任意地址（::） */
     static final InetAddress INET6_ANY = unsafeInetAddrByName("::");
     private static final InetAddress INET_ANY = unsafeInetAddrByName("0.0.0.0");
+    /** uint32_t 最大值，用于校验 tcpNotSentLowAt 等选项 */
     private static final long MAX_UINT32_T = 0xFFFFFFFFL;
 
     LinuxSocket(int fd) {
         super(fd);
     }
 
+    /** 返回当前 socket 的协议族（IPv4/IPv6） */
     SocketProtocolFamily family() {
         return ipv6 ? SocketProtocolFamily.INET6 : SocketProtocolFamily.INET;
     }
@@ -141,22 +146,27 @@ final class LinuxSocket extends Socket {
         return -1;
     }
 
+    /** 设置 TCP_DEFER_ACCEPT（延迟 accept 直至有数据） */
     void setTcpDeferAccept(int deferAccept) throws IOException {
         setTcpDeferAccept(intValue(), deferAccept);
     }
 
+    /** 启用/禁用 TCP_QUICKACK（快速 ACK） */
     void setTcpQuickAck(boolean quickAck) throws IOException {
         setTcpQuickAck(intValue(), quickAck ? 1 : 0);
     }
 
+    /** 启用/禁用 TCP_CORK（合并小包发送） */
     void setTcpCork(boolean tcpCork) throws IOException {
         setTcpCork(intValue(), tcpCork ? 1 : 0);
     }
 
+    /** 设置 SO_BUSY_POLL 忙轮询微秒数 */
     void setSoBusyPoll(int loopMicros) throws IOException {
         setSoBusyPoll(intValue(), loopMicros);
     }
 
+    /** 设置 TCP_NOTSENT_LOWAT 未发送字节低水位 */
     void setTcpNotSentLowAt(long tcpNotSentLowAt) throws IOException {
         if (tcpNotSentLowAt < 0 || tcpNotSentLowAt > MAX_UINT32_T) {
             throw new IllegalArgumentException("tcpNotSentLowAt must be a uint32_t");
@@ -164,6 +174,7 @@ final class LinuxSocket extends Socket {
         setTcpNotSentLowAt(intValue(), (int) tcpNotSentLowAt);
     }
 
+    /** 设置 TCP Fast Open 监听 backlog */
     void setTcpFastOpen(int tcpFastopenBacklog) throws IOException {
         setTcpFastOpen(intValue(), tcpFastopenBacklog);
     }
@@ -192,10 +203,12 @@ final class LinuxSocket extends Socket {
         setTcpUserTimeout(intValue(), milliseconds);
     }
 
+    /** 启用/禁用 IP_FREEBIND（非本地地址 bind） */
     void setIpFreeBind(boolean enabled) throws IOException {
         setIpFreeBind(intValue(), enabled ? 1 : 0);
     }
 
+    /** 启用/禁用 IP_TRANSPARENT（透明代理） */
     void setIpTransparent(boolean enabled) throws IOException {
         setIpTransparent(intValue(), enabled ? 1 : 0);
     }
@@ -285,10 +298,12 @@ final class LinuxSocket extends Socket {
         setIpMulticastLoop(intValue(), ipv6, loopbackModeDisabled ? 0 : 1);
     }
 
+    /** 启用/禁用 UDP GRO（Generic Receive Offload） */
     void setUdpGro(boolean gro) throws IOException {
         setUdpGro(intValue(), gro ? 1 : 0);
     }
 
+    /** 从网卡推导与协议族匹配的 InetAddress；无合适地址时返回 INET_ANY/INET6_ANY */
     private static InetAddress deriveInetAddress(NetworkInterface netInterface, boolean ipv6) {
         final InetAddress ipAny = ipv6 ? INET6_ANY : INET_ANY;
         if (netInterface != null) {
@@ -308,6 +323,7 @@ final class LinuxSocket extends Socket {
         return ipv6;
     }
 
+    /** 创建流式 TCP socket（指定 IPv4/IPv6） */
     public static LinuxSocket newSocketStream(boolean ipv6) {
         return new LinuxSocket(newSocketStream0(ipv6));
     }
@@ -316,6 +332,7 @@ final class LinuxSocket extends Socket {
         return newSocketStream(isIPv6Preferred());
     }
 
+    /** 创建 UDP datagram socket（指定 IPv4/IPv6） */
     public static LinuxSocket newSocketDgram(boolean ipv6) {
         return new LinuxSocket(newSocketDgram0(ipv6));
     }
@@ -324,6 +341,7 @@ final class LinuxSocket extends Socket {
         return newSocketDgram(isIPv6Preferred());
     }
 
+    /** 创建 Unix 域 socket */
     public static LinuxSocket newSocketDomain() {
         return new LinuxSocket(newSocketDomain0());
     }

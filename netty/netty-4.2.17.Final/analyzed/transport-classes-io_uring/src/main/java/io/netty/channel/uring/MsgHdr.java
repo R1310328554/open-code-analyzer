@@ -31,11 +31,14 @@ import java.nio.ByteBuffer;
  *     int          msg_flags;       // flags on received message
  * };
  * }</pre>
+ * <p>Linux {@code msghdr} 结构体的 Java 侧内存布局写入工具。</p>
+ * <p>用于 io_uring SENDMSG/RECVMSG 及 SCM_RIGHTS 文件描述符传递。</p>
  */
 final class MsgHdr {
 
     private MsgHdr() { }
 
+    /** 填充无地址、无辅助数据的 msghdr（仅 iovec 数组） */
     static void set(ByteBuffer memory, long iovMemory, int iovLength) {
         int memoryPosition = memory.position();
         memory.putInt(memoryPosition + Native.MSGHDR_OFFSETOF_MSG_NAMELEN, 0);
@@ -68,7 +71,7 @@ final class MsgHdr {
                     Native.UDP_SEGMENT, segmentSize);
             msgControlAddr = Buffer.memoryAddress(msgControl) + msgControl.position();
         } else {
-            // Set to 0 if we not explicit requested GSO.
+            // 未显式请求 GSO 时 control 置 0
             msgControlAddr = 0;
         }
         long sockAddr = sockAddrMemory == null ? 0 : Buffer.memoryAddress(sockAddrMemory);
@@ -86,7 +89,7 @@ final class MsgHdr {
             memory.putLong(memoryPosition + Native.MSGHDR_OFFSETOF_MSG_CONTROL, msgControlAddr);
             memory.putLong(memoryPosition + Native.MSGHDR_OFFSETOF_MSG_CONTROLLEN, msgControlLen);
         }
-        // No flags (we assume the memory was memset before)
+        // 不设置 flags（假定内存已 memset 为 0）
     }
 
     static void set(ByteBuffer memory, ByteBuffer sockAddrMemory, int addressSize, ByteBuffer iovMemory, int iovLength,
@@ -95,6 +98,7 @@ final class MsgHdr {
                 msgControl, cmsgHdrDataOffset, segmentSize);
     }
 
+    /** 准备通过 SCM_RIGHTS 发送文件描述符的 msghdr */
     static void prepSendFd(ByteBuffer memory, int fd, ByteBuffer msgControl,
                            int cmsgHdrDataOffset, ByteBuffer iovMemory, int iovLength) {
         int memoryPosition = memory.position();
@@ -114,6 +118,7 @@ final class MsgHdr {
         }
     }
 
+    /** 准备接收 SCM_RIGHTS 文件描述符的 msghdr */
     static void prepReadFd(ByteBuffer memory, ByteBuffer msgControl, int cmsgHdrDataOffset,
                            ByteBuffer iovMemory, int iovLength) {
         int memoryPosition = memory.position();
@@ -132,6 +137,7 @@ final class MsgHdr {
         }
     }
 
+    /** 从辅助数据读取 SCM_RIGHTS 传递的 fd */
     static int getCmsgData(ByteBuffer memory, ByteBuffer msgControl, int cmsgHdrDataOffset) {
         return CmsgHdr.readScmRights(msgControl, cmsgHdrDataOffset);
     }

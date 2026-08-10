@@ -25,12 +25,16 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * 单条 msghdr 及其关联 sockaddr/iovec/cmsg 的堆外内存布局。
+ * <p>支持独立分配或从 {@link MsgHdrMemoryArray} 切片复用。</p>
+ * <p>供 datagram sendmsg/recvmsg 与 fd 传递使用。</p>
+ */
 final class MsgHdrMemory {
     public static final int MSG_HDR_SIZE =
             Native.SIZEOF_MSGHDR + Native.SIZEOF_SOCKADDR_STORAGE + Native.SIZEOF_IOVEC + Native.CMSG_SPACE;
     private static final byte[] EMPTY_SOCKADDR_STORAGE = new byte[Native.SIZEOF_SOCKADDR_STORAGE];
-    // It is not possible to have a zero length buffer in sendFd,
-    // so we use a 1 byte buffer here.
+    // sendFd 不允许零长度 iovec，故使用 1 字节占位 buffer
     private static final int GLOBAL_IOV_LEN = 1;
     private static final ByteBuffer GLOBAL_IOV_BASE =  Buffer.allocateDirectWithNativeOrder(GLOBAL_IOV_LEN);
     private static final long GLOBAL_IOV_BASE_ADDRESS = Buffer.memoryAddress(GLOBAL_IOV_BASE);
@@ -54,8 +58,7 @@ final class MsgHdrMemory {
         this.iovMemoryCleanable = null;
         this.cmsgDataMemoryCleanable = null;
         int offset = idx * MSG_HDR_SIZE;
-        // ByteBuffer.slice(int, int) / duplicate() are specified to produce BIG_ENDIAN byte buffers.
-        // Set native order explicitly so native structs written via putInt/putLong use the expected endianness.
+        // slice/duplicate 默认为 BIG_ENDIAN；显式设为 nativeOrder 以正确写入 C 结构体
         this.msgHdrMemory = PlatformDependent.offsetSlice(
                 msgHdrMemoryArray, offset, Native.SIZEOF_MSGHDR
         ).order(ByteOrder.nativeOrder());
@@ -81,7 +84,7 @@ final class MsgHdrMemory {
 
     MsgHdrMemory() {
         this.idx = 0;
-        // jdk will memset the memory to 0, so we don't need to do it here.
+        // JDK 分配的直接内存已清零，此处无需再 memset
         msgHdrMemoryCleanable = Buffer.allocateDirectBufferWithNativeOrder(Native.SIZEOF_MSGHDR);
         socketAddrMemoryCleanable = null;
         iovMemoryCleanable = Buffer.allocateDirectBufferWithNativeOrder(Native.SIZEOF_IOVEC);
@@ -93,8 +96,7 @@ final class MsgHdrMemory {
         cmsgDataMemory = cmsgDataMemoryCleanable.buffer();
 
         msgHdrMemoryAddress = Buffer.memoryAddress(msgHdrMemory);
-        // These two parameters must be set to valid values and cannot be 0,
-        // otherwise the fd we get in io_uring_recvmsg is 0
+        // iovec 基址与长度不可为 0，否则 recvmsg 得到的 fd 恒为 0
         Iov.set(iovMemory, GLOBAL_IOV_BASE_ADDRESS, GLOBAL_IOV_LEN);
 
         long cmsgDataMemoryAddr = Buffer.memoryAddress(cmsgDataMemory);
@@ -102,6 +104,7 @@ final class MsgHdrMemory {
         cmsgDataOffset = (int) (cmsgDataAddr - cmsgDataMemoryAddr);
     }
 
+    /** 配置 datagram 发送：目标地址、iovec 与可选 UDP GSO segmentSize */
     void set(LinuxSocket socket, InetSocketAddress address, long bufferAddress , int length, short segmentSize) {
         int addressLength = setSocketAddress(socket, address);
         Iov.set(iovMemory, bufferAddress, length);
@@ -136,6 +139,7 @@ final class MsgHdrMemory {
         return addressLength;
     }
 
+    /** 配置通过 SCM_RIGHTS 发送指定 fd */
     void setScmRightsFd(int fd) {
         MsgHdr.prepSendFd(msgHdrMemory, fd, cmsgDataMemory, cmsgDataOffset, iovMemory, 1);
     }
@@ -144,6 +148,7 @@ final class MsgHdrMemory {
         return MsgHdr.getCmsgData(msgHdrMemory, cmsgDataMemory, cmsgDataOffset);
     }
 
+    /** 准备 recvmsg 以接收 SCM_RIGHTS 传递的 fd */
     void prepRecvReadFd() {
         MsgHdr.prepReadFd(msgHdrMemory, cmsgDataMemory, cmsgDataOffset, iovMemory, 1);
     }
@@ -168,8 +173,7 @@ final class MsgHdrMemory {
         }
         long bufferAddress = Iov.getBufferAddress(iovMemory);
         int bufferLength = Iov.getBufferLength(iovMemory);
-        // reconstruct the reader index based on the memoryAddress of the buffer and the bufferAddress that was used
-        // in the iovec.
+        // 根据 buffer 基址与 iovec 中的地址反推 readerIndex
         long memoryAddress = IoUring.memoryAddress(buffer);
         int readerIndex = (int) (bufferAddress - memoryAddress);
 
@@ -186,6 +190,7 @@ final class MsgHdrMemory {
         return msgHdrMemoryAddress;
     }
 
+    /** 释放独立分配模式下各 CleanableDirectBuffer */
     void release() {
         if (msgHdrMemoryCleanable != null) {
             msgHdrMemoryCleanable.clean();

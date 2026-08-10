@@ -25,6 +25,8 @@ package io.netty.channel.uring;
  * <li>java.lang.UnsatisfiedLinkError is thrown because native method has not yet been registered.</li>
  * </ol>
  * Static members which call JNI methods must not be declared in this class!
+ * <p>打破 JNI 循环依赖：在 RegisterNatives 完成前提供仅由 JNI 调用的静态 native 方法。</p>
+ * <p>供 {@link Native} 静态字段读取 sock/struct 偏移与 io_uring 常量。</p>
  */
 final class NativeStaticallyReferencedJniMethods {
 

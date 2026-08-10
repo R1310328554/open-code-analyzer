@@ -48,6 +48,10 @@ import static io.netty.channel.internal.ChannelUtils.MAX_BYTES_PER_GATHERING_WRI
 import static io.netty.channel.internal.ChannelUtils.WRITE_STATUS_SNDBUF_FULL;
 import static io.netty.util.internal.StringUtil.className;
 
+/**
+ * KQueue 流式通道抽象基类：TCP/Unix stream 的读写、gathering write 与半关闭。
+ * <p>支持 ByteBuf、DefaultFileRegion 与 FileRegion；实现 {@link DuplexChannel}。</p>
+ */
 public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel implements DuplexChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractKQueueStreamChannel.class);
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
@@ -58,8 +62,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
     private final Runnable flushTask = new Runnable() {
         @Override
         public void run() {
-            // Calling flush0 directly to ensure we not try to flush messages that were added via write(...) in the
-            // meantime.
+            // 直接 flush0，避免 write 期间新消息被遗漏
             ((AbstractKQueueUnsafe) unsafe()).flush0();
         }
     };
@@ -88,6 +91,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
 
     /**
      * Write bytes form the given {@link ByteBuf} to the underlying {@link java.nio.channels.Channel}.
+     * <p>将 ByteBuf 写入底层 Channel。</p>
      * @param in the collection which contains objects to write.
      * @param buf the {@link ByteBuf} from which the bytes should be written
      * @return The value that should be decremented from the write quantum which starts at
@@ -117,9 +121,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
     }
 
     private void adjustMaxBytesPerGatheringWrite(long attempted, long written, long oldMaxBytesPerGatheringWrite) {
-        // By default we track the SO_SNDBUF when ever it is explicitly set. However some OSes may dynamically change
-        // SO_SNDBUF (and other characteristics that determine how much data can be written at once) so we should try
-        // make a best effort to adjust as OS behavior changes.
+        // 根据实际写入量动态调整 maxBytesPerGatheringWrite（OS 可能改变 SNDBUF）
         if (attempted == written) {
             if (attempted << 1 > oldMaxBytesPerGatheringWrite) {
                 config().setMaxBytesPerGatheringWrite(attempted << 1);
@@ -131,6 +133,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
 
     /**
      * Write multiple bytes via {@link IovArray}.
+     * <p>通过 IovArray 执行 writev。</p>
      * @param in the collection which contains objects to write.
      * @param array The array which contains the content to write.
      * @return The value that should be decremented from the write quantum which starts at
@@ -161,6 +164,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
 
     /**
      * Write multiple bytes via {@link ByteBuffer} array.
+     * <p>通过 ByteBuffer 数组执行 writev。</p>
      * @param in the collection which contains objects to write.
      * @param nioBuffers The buffers to write.
      * @param nioBufferCnt The number of buffers to write.
@@ -196,6 +200,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
 
     /**
      * Write a {@link DefaultFileRegion}
+     * <p>写入 DefaultFileRegion（sendfile）。</p>
      * @param in the collection which contains objects to write.
      * @param region the {@link DefaultFileRegion} from which the bytes should be written
      * @return The value that should be decremented from the write quantum which starts at
@@ -232,6 +237,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
 
     /**
      * Write a {@link FileRegion}
+     * <p>写入 FileRegion。</p>
      * @param in the collection which contains objects to write.
      * @param region the {@link FileRegion} from which the bytes should be written
      * @return The value that should be decremented from the write quantum which starts at
@@ -269,7 +275,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
         int writeSpinCount = config().getWriteSpinCount();
         do {
             final int msgCount = in.size();
-            // Do gathering write if the outbound buffer entries start with more than one ByteBuf.
+            // 队首多个 ByteBuf 时使用 gathering write（writev）
             if (msgCount > 1 && in.current() instanceof ByteBuf) {
                 writeSpinCount -= doWriteMultiple(in);
             } else if (msgCount == 0) {
@@ -287,23 +293,20 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
         } while (writeSpinCount > 0);
 
         if (writeSpinCount == 0) {
-            // It is possible that we have set the write filter, woken up by KQUEUE because the socket is writable, and
-            // then use our write quantum. In this case we no longer want to set the write filter because the socket is
-            // still writable (as far as we know). We will find out next time we attempt to write if the socket is
-            // writable and set the write filter if necessary.
+            // writeSpin 用尽但 socket 仍可写时不挂写过滤器，稍后 flushTask 重试
             writeFilter(false);
 
             // We used our writeSpin quantum, and should try to write again later.
             eventLoop().execute(flushTask);
         } else {
-            // Underlying descriptor can not accept all data currently, so set the WRITE flag to be woken up
-            // when it can accept more data.
+            // 发送缓冲区满，启用写过滤器等待可写
             writeFilter(true);
         }
     }
 
     /**
      * Attempt to write a single object.
+     * <p>尝试写出 outbound 中的单条消息。</p>
      * @param in the collection which contains objects to write.
      * @return The value that should be decremented from the write quantum which starts at
      * {@link ChannelConfig#getWriteSpinCount()}. The typical use cases are as follows:
@@ -333,6 +336,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
 
     /**
      * Attempt to write multiple {@link ByteBuf} objects.
+     * <p>尝试 gathering 写出多个 ByteBuf。</p>
      * @param in the collection which contains objects to write.
      * @return The value that should be decremented from the write quantum which starts at
      * {@link ChannelConfig#getWriteSpinCount()}. The typical use cases are as follows:
@@ -517,8 +521,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
             boolean close = false;
             try {
                 do {
-                    // we use a direct buffer here as the native implementations only be able
-                    // to handle direct buffers.
+                    // 原生 read 仅支持 direct buffer
                     byteBuf = allocHandle.allocate(allocator);
                     allocHandle.lastBytesRead(doReadBytes(byteBuf));
                     if (allocHandle.lastBytesRead() <= 0) {
@@ -583,8 +586,7 @@ public abstract class AbstractKQueueStreamChannel extends AbstractKQueueChannel 
                 pipeline.fireChannelReadComplete();
                 pipeline.fireExceptionCaught(cause);
 
-                // If oom will close the read event, release connection.
-                // See https://github.com/netty/netty/issues/10434
+                // OOM/IO 异常时 shutdown 输入，释放连接（netty#10434）
                 if (close ||
                         cause instanceof OutOfMemoryError ||
                         cause instanceof LeakPresenceDetector.AllocationProhibitedException ||

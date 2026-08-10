@@ -27,6 +27,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * {@code sockaddr_in}/{@code sockaddr_in6}/{@code sockaddr_un} 的堆外读写工具。
+ * <p>在 ByteBuffer 中按 {@link Native} 偏移写入/解析地址与端口。</p>
+ */
 final class SockaddrIn {
     static final byte[] IPV4_MAPPED_IPV6_PREFIX = {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0xff, (byte) 0xff };
@@ -57,12 +61,13 @@ final class SockaddrIn {
      *     uint32_t       s_addr;     // address in network byte order
      * };
      * }</pre>
+      * <p>Netty 传输层 API；详见上方英文说明。</p>
      */
     static int setIPv4(ByteBuffer memory, InetAddress address, int port) {
         int position = memory.position();
         memory.mark();
         try {
-            // memset
+            // 先清零 sockaddr 结构体
             memory.put(SOCKADDR_IN_EMPTY_ARRAY);
 
             memory.putShort(position + Native.SOCKADDR_IN_OFFSETOF_SIN_FAMILY, Native.AF_INET);
@@ -72,7 +77,7 @@ final class SockaddrIn {
             byte[] bytes = address.getAddress();
             int offset = 0;
             if (bytes.length == IPV6_ADDRESS_LENGTH) {
-                // IPV6 mapped IPV4 address, we only need the last 4 bytes.
+                // IPv4-mapped IPv6 地址仅取末 4 字节
                 offset = IPV4_MAPPED_IPV6_PREFIX.length;
             }
             assert bytes.length == offset + IPV4_ADDRESS_LENGTH;
@@ -99,6 +104,7 @@ final class SockaddrIn {
      *     unsigned char s6_addr[16];   // IPv6 address
      * };
      * }</pre>
+      * <p>Netty 传输层 API；详见上方英文说明。</p>
      */
     static int setIPv6(ByteBuffer memory, InetAddress address, int port) {
         int position = memory.position();
@@ -109,7 +115,7 @@ final class SockaddrIn {
             memory.putShort(position + Native.SOCKADDR_IN6_OFFSETOF_SIN6_FAMILY, Native.AF_INET6);
             memory.putShort(position + Native.SOCKADDR_IN6_OFFSETOF_SIN6_PORT,
                     handleNetworkOrder(memory.order(), (short) port));
-            // Skip sin6_flowinfo as we did memset before
+            // flowinfo 已由 memset 置 0，跳过
             byte[] bytes = address.getAddress();
             int offset = Native.SOCKADDR_IN6_OFFSETOF_SIN6_ADDR + Native.IN6_ADDRESS_OFFSETOF_S6_ADDR;
             if (bytes.length == IPV4_ADDRESS_LENGTH) {
@@ -138,11 +144,12 @@ final class SockaddrIn {
      *      char sun_path[108];      // Pathname
      * }
      * }</pre>
+      * <p>Netty 传输层 API；详见上方英文说明。</p>
      */
     static int setUds(ByteBuffer memory, DomainSocketAddress address) {
         byte[] path = address.path().getBytes(StandardCharsets.UTF_8);
 
-        // Check if this is an abstract namespace socket (starts with '\0')
+        // 抽象命名空间 Unix socket 以 \0 开头
         boolean isAbstract = path.length > 0 && path[0] == 0;
 
         // For pathname sockets, we need space for the null terminator
@@ -160,14 +167,12 @@ final class SockaddrIn {
             memory.position(position + Native.SOCKADDR_UN_OFFSETOF_SUN_PATH);
             memory.put(path);
 
-            // Only add null terminator for pathname sockets, not for abstract sockets
+            // 路径型 Unix socket 需 NUL 终止符，抽象 socket 不需要
             if (!isAbstract) {
                 memory.put((byte) 0);
             }
 
-            // Return the actual address length:
-            // - For pathname sockets: offsetof(sun_path) + strlen(path) + 1
-            // - For abstract sockets: offsetof(sun_path) + name_length
+            // 返回实际地址长度：路径型含 NUL，抽象型为 name 长度
             return Native.SOCKADDR_UN_OFFSETOF_SUN_PATH + requiredLength;
         } finally {
             memory.reset();

@@ -17,9 +17,14 @@ package io.netty.channel.uring;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 慢路径挂起 io_uring 操作的开放寻址哈希表。
+ * <p>token 为负 long（bit 63 置位），与快速路径 packed userData 区分。</p>
+ * <p>使用 Fibonacci hashing 与 tombstone 处理删除与 rehash。</p>
+ */
 final class PendingOpMap {
     private static final float LOAD_FACTOR = 0.5f;
-    // Fibonacci hashing spreads the monotonically increasing token sequence across the table.
+    // Fibonacci 哈希将单调递增 token 均匀映射到表槽
     private static final long HASH_MULTIPLIER = 0x9E3779B97F4A7C15L;
     private static final long EMPTY = 0;
     private static final long TOMBSTONE = 1;
@@ -46,8 +51,7 @@ final class PendingOpMap {
     long nextToken() {
         long sequence = nextSequence.getAndIncrement();
         if (sequence <= 0) {
-            // Monotonic sequence starting at 3; ~29k years to exhaust positive long space at 10M/s,
-            // so overflow is purely theoretical.
+            // 单调序列从 3 起；以 10M/s 计溢出需约 2.9 万年，可忽略
             throw new IllegalStateException("slow path sequence overflow");
         }
         return token(sequence);
@@ -105,8 +109,7 @@ final class PendingOpMap {
     }
 
     void release(int slot) {
-        // Only tokens define slot liveness. Payload values are ignored for tombstones and are
-        // either overwritten on slot reuse or discarded when the table is rehashed.
+        // 槽位存活仅由 token 决定；tombstone 时 payload 可被覆盖或 rehash 丢弃
         tokens[slot] = TOMBSTONE;
         size--;
         tombstones++;
@@ -147,7 +150,7 @@ final class PendingOpMap {
 
         for (int i = 0; i < oldTokens.length; i++) {
             long token = oldTokens[i];
-            // we only move live token to new array
+            // rehash 时仅迁移有效 token（负值）
             if (token < 0) {
                 insertDuringRehash(token, oldRegistrationIds[i], oldOps[i], oldUserDatas[i]);
             }
@@ -172,11 +175,10 @@ final class PendingOpMap {
     /**
      * Slow-path and internal tokens are negative so they can be distinguished from packed fast-path userdata
      * by checking bit 63.
+     * <p>慢路径 token 为负 long，通过 bit 63 与快速路径 userData 区分。</p>
      */
     static long token(long sequence) {
-        // We intentionally do not handle sequence wrap-around here.
-        // `nextSequence` would need to reach Long.MAX_VALUE and overflow,
-        // which is considered practically impossible in this context.
+        // 不处理 sequence 回绕；Long.MAX_VALUE 溢出在此场景可忽略
         return Long.MIN_VALUE | sequence;
     }
 

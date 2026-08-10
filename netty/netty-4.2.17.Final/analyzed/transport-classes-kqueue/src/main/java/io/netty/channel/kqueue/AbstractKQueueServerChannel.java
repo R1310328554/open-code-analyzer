@@ -25,6 +25,10 @@ import io.netty.channel.ServerChannel;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+/**
+ * KQueue 服务端通道抽象基类：listen/accept 新连接。
+ * <p>不支持 outbound write/connect；子类实现 {@link #newChildChannel} 创建 accepted 子通道。</p>
+ */
 public abstract class AbstractKQueueServerChannel extends AbstractKQueueChannel implements ServerChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
 
@@ -69,8 +73,7 @@ public abstract class AbstractKQueueServerChannel extends AbstractKQueueChannel 
     }
 
     final class KQueueServerSocketUnsafe extends AbstractKQueueUnsafe {
-        // Will hold the remote address after accept(...) was successful.
-        // We need 24 bytes for the address as maximum + 1 byte for storing the capacity.
+        // accept 成功后存放对端地址；最多 24 字节 + 1 字节长度
         private final byte[] acceptedAddress = new byte[25];
 
         @Override
@@ -91,7 +94,7 @@ public abstract class AbstractKQueueServerChannel extends AbstractKQueueChannel 
                     do {
                         int acceptFd = socket.accept(acceptedAddress);
                         if (acceptFd == -1) {
-                            // this means everything was handled for now
+                            // 暂无更多连接可 accept
                             allocHandle.lastBytesRead(-1);
                             break;
                         }

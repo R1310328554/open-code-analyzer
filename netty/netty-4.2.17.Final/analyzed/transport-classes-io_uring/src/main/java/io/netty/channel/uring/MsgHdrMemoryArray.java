@@ -21,7 +21,13 @@ import io.netty.util.internal.CleanableDirectBuffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+/**
+ * 批量 datagram 发送用的 msghdr 数组池。
+ * <p>预分配连续堆外内存，按索引切片为 {@link MsgHdrMemory}。</p>
+ * <p>配合 {@code ids} 数组跟踪每条消息的 userData。</p>
+ */
 final class MsgHdrMemoryArray {
+    /** 未关联 userData 时的占位 id */
     static final long NO_ID = 0;
 
     private final MsgHdrMemory[] hdrs;
@@ -45,10 +51,12 @@ final class MsgHdrMemoryArray {
         }
     }
 
+    /** 是否已用完当前批次容量 */
     boolean isFull() {
         return idx == hdrs.length;
     }
 
+    /** 获取下一个可用 msghdr 槽位；满则返回 null */
     MsgHdrMemory nextHdr() {
         if (isFull()) {
             return null;
@@ -56,6 +64,7 @@ final class MsgHdrMemoryArray {
         return hdrs[idx++];
     }
 
+    /** 回退 nextHdr 索引（提交失败时恢复） */
     void restoreNextHdr(MsgHdrMemory hdr) {
         assert hdr.idx() == idx - 1;
         idx--;
@@ -73,6 +82,7 @@ final class MsgHdrMemoryArray {
         ids[idx] = id;
     }
 
+    /** 清空已用槽位的 id 并重置写入索引 */
     void clear() {
         Arrays.fill(ids, 0, idx, NO_ID);
         idx = 0;
@@ -82,6 +92,7 @@ final class MsgHdrMemoryArray {
         return idx;
     }
 
+    /** 释放底层连续内存并置 released */
     void release() {
         assert !released;
         released = true;
