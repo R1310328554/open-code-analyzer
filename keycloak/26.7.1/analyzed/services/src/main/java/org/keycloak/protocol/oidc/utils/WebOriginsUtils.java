@@ -26,10 +26,17 @@ import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
 
 /**
- * Created by st on 22.09.15.
+ * Web 来源（CORS）解析工具。
+ * <p>合并客户端配置的 {@code webOrigins}；若含 {@link Constants#INCLUDE_REDIRECTS}，则从合法重定向 URI 提取 http(s) origin。</p>
  */
 public class WebOriginsUtils {
 
+    /**
+     * 解析客户端有效 Web 来源集合。
+     * @param session Keycloak 会话
+     * @param client 客户端模型
+     * @return 允许的来源 origin 集合
+     */
     public static Set<String> resolveValidWebOrigins(KeycloakSession session, ClientModel client) {
         Set<String> origins = new HashSet<>();
         if (client.getWebOrigins() != null) {

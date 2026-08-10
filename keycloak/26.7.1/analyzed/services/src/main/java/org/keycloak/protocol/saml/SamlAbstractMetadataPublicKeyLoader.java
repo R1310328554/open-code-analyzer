@@ -46,23 +46,27 @@ import org.jboss.logging.Logger;
 import org.w3c.dom.Element;
 
 /**
- * <p>PublicKeyLoader to retrieve keys from a SAML metadata entity endpoint.
- * It can be used to load IDP or SP keys. The abstract class does not
- * depend on keycloak session.</p>
+ * 从 SAML 元数据加载公钥的抽象 {@link PublicKeyLoader}。
+ * <p>解析 EntityDescriptor 中 IdP/SP 的 {@link KeyDescriptorType}，提取 X509 证书与 KeyName；不依赖 {@link KeycloakSession}，由子类提供元数据内容。</p>
  *
  * @author rmartinc
  */
 public abstract class SamlAbstractMetadataPublicKeyLoader implements PublicKeyLoader {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(SamlAbstractMetadataPublicKeyLoader.class);
+    /** true 加载 IdP 密钥，false 加载 SP 密钥 */
     private final boolean forIdP;
 
+    /** @param forIdP 是否解析 IdP SSO 描述符 */
     public SamlAbstractMetadataPublicKeyLoader(boolean forIdP) {
         this.forIdP = forIdP;
     }
 
+    /** 子类提供 SAML 元数据 XML 字符串 @return EntityDescriptor XML */
     protected abstract String getKeys() throws Exception;
 
+    /** 解析元数据并返回公钥包装及过期时间 @return 公钥集合与缓存过期戳 */
     @Override
     public PublicKeysWrapper loadKeys() throws Exception {
         String descriptor = getKeys();
@@ -92,7 +96,7 @@ public abstract class SamlAbstractMetadataPublicKeyLoader implements PublicKeyLo
                     continue;
                 }
 
-                KeyUse use = null; // TODO: default SIG? Or Both?
+                KeyUse use = null; // TODO：默认 SIG 还是双用途？
                 if (KeyTypes.SIGNING.equals(keyDescriptorType.getUse())) {
                     use = KeyUse.SIG;
                 } else if (KeyTypes.ENCRYPTION.equals(keyDescriptorType.getUse())) {
@@ -111,13 +115,13 @@ public abstract class SamlAbstractMetadataPublicKeyLoader implements PublicKeyLo
                             for (Object content : ((X509Data) xs).getContent()) {
                                 if (content instanceof X509Certificate) {
                                     cert = ((X509Certificate) content);
-                                    // only the first X509Certificate is the signer
+                                    // 仅首个 X509Certificate 为签名证书，其余为链
                                     // the rest are just part of the chain
                                     break;
                                 }
                             }
                         }
-                        // TODO: parse if KeyValue is defined without cert???
+                        // TODO：无证书时是否解析 KeyValue？
                         if (kid != null && cert != null) {
                             break;
                         }
@@ -136,6 +140,7 @@ public abstract class SamlAbstractMetadataPublicKeyLoader implements PublicKeyLo
         return new PublicKeysWrapper(keys, expirationTime);
     }
 
+    /** 根据 validUntil 与 cacheDuration 计算密钥缓存过期时间（毫秒） @return 过期时间戳或 null */
     private Long getExpirationTime(Supplier<XMLGregorianCalendar> validUntil, Supplier<Duration> cacheDuration) {
         Long exp = null;
         final Duration cacheDurationValue = cacheDuration.get();
@@ -154,6 +159,7 @@ public abstract class SamlAbstractMetadataPublicKeyLoader implements PublicKeyLo
         return exp;
     }
 
+    /** 由证书构建 {@link KeyWrapper} @param kid 密钥 ID，null 时用证书 DN */
     private KeyWrapper createKeyWrapper(X509Certificate cert, String kid, KeyUse use) {
         KeyWrapper key = new KeyWrapper();
         key.setKid(kid != null? kid : cert.getSubjectX500Principal().getName());

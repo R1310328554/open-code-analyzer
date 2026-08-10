@@ -30,17 +30,28 @@ import org.keycloak.keys.PublicKeyStorageProvider;
 import org.keycloak.rotation.KeyLocator;
 
 /**
- * <p>KeyLocator that caches the keys into a PublicKeyStorageProvider.</p>
+ * 基于 SAML 元数据的 {@link KeyLocator}。
+ * <p>通过 {@link PublicKeyStorageProvider} 缓存 {@link PublicKeyLoader} 加载的公钥，支持按 kid 或密钥材料查找，并在证书过期时刷新。</p>
  *
  * @author rmartinc
  */
 public class SamlMetadataKeyLocator implements KeyLocator {
 
+    /** 公钥存储模型键（如客户端/IdP 标识） */
     private final String modelKey;
+    /** 元数据公钥加载器 */
     private final PublicKeyLoader loader;
+    /** 公钥缓存存储提供者 */
     private final PublicKeyStorageProvider keyStorage;
+    /** 期望的密钥用途（SIG/ENC） */
     private final KeyUse use;
 
+    /**
+     * @param modelKey 缓存键
+     * @param loader 公钥加载器
+     * @param use 密钥用途过滤
+     * @param keyStorage 公钥存储提供者
+     */
     public SamlMetadataKeyLocator(String modelKey, PublicKeyLoader loader, KeyUse use, PublicKeyStorageProvider keyStorage) {
         this.modelKey = modelKey;
         this.loader = loader;
@@ -48,34 +59,38 @@ public class SamlMetadataKeyLocator implements KeyLocator {
         this.use = use;
     }
 
+    /** 按 Key ID 获取公钥 @param kid 密钥标识 @return 公钥或 null */
     @Override
     public Key getKey(String kid) throws KeyManagementException {
         if (kid == null) {
             return null;
         }
-        // search the key by kid and reload if expired or null
+        // 按 kid 查找，过期或缺失时通过 loader 重载
         KeyWrapper keyWrapper = keyStorage.getFirstPublicKey(modelKey, sameKidPredicate(kid), loader);
         return keyWrapper != null? keyWrapper.getPublicKey() : null;
     }
 
+    /** 按密钥字节匹配获取缓存公钥 @param key 参考公钥 @return 匹配的公钥或 null */
     @Override
     public Key getKey(Key key) throws KeyManagementException {
         if (key == null) {
             return null;
         }
-        // search the key and reload if expired or null
+        // 按密钥材料查找，过期或缺失时重载
         KeyWrapper keyWrapper = keyStorage.getFirstPublicKey(modelKey, sameKeyPredicate(key), loader);
         return keyWrapper != null? keyWrapper.getPublicKey() : null;
     }
 
+    /** 强制刷新元数据公钥缓存 */
     @Override
     public void refreshKeyCache() {
         keyStorage.reloadKeys(modelKey, loader);
     }
 
+    /** @return 符合用途且证书有效的公钥迭代器 */
     @Override
     public Iterator<Key> iterator() {
-        // force a refresh if a certificate is expired?
+        // 遍历缓存密钥（证书无效时由存储层触发刷新）
         return keyStorage.getKeys(modelKey, loader)
                 .stream()
                 .filter(k -> isSameUse(k) && isValidCertificate(k))
@@ -114,7 +129,7 @@ public class SamlMetadataKeyLocator implements KeyLocator {
         if (k == null) {
             return false;
         }
-        // if key use is null means it is valid for both uses
+        // use 为 null 表示签名与加密均可
         return k.getUse() == null || k.getUse().equals(this.use);
     }
 

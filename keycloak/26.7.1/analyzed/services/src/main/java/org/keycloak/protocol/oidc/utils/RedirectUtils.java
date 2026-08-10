@@ -43,10 +43,14 @@ import org.keycloak.services.util.ResolveRelative;
 import org.jboss.logging.Logger;
 
 /**
+ * OIDC 重定向 URI 校验与解析工具。
+ * <p>校验客户端 {@code redirect_uri} 是否匹配已注册地址，支持相对路径解析、通配符、回环接口默认端口及禁止在查询串中携带 OIDC 响应参数（防 HTTP 参数污染）。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class RedirectUtils {
 
+    /** 回环主机名/地址集合（用于 HTTP 默认端口 80 匹配） */
     public static final Set<String> LOOPBACK_INTERFACES = new HashSet<>(Arrays.asList("localhost", "127.0.0.1", "[::1]"));
 
     private static final Set<String> FORBIDDEN_OIDC_PARAMS = Set.of(
@@ -65,21 +69,32 @@ public class RedirectUtils {
                                                                      Constants.KC_ACTION_STATUS
                                                                    );
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(RedirectUtils.class);
 
+    /** 校验重定向 URI（默认要求提供 redirect_uri） @param session Keycloak 会话 @return 合法 URI 或 null */
     public static String verifyRedirectUri(KeycloakSession session, String redirectUri, ClientModel client) {
         return verifyRedirectUri(session, redirectUri, client, true);
     }
 
+    /**
+     * 校验客户端重定向 URI。
+     * @param session Keycloak 会话
+     * @param redirectUri 请求中的重定向 URI
+     * @param client 客户端模型
+     * @param requireRedirectUri 是否必须显式提供 redirect_uri
+     * @return 规范化后的合法 URI，失败时 null
+     */
     public static String verifyRedirectUri(KeycloakSession session, String redirectUri, ClientModel client, boolean requireRedirectUri) {
         if (client != null)
             return verifyRedirectUri(session, client.getRootUrl(), redirectUri, client.getRedirectUris(), requireRedirectUri);
         return null;
     }
 
+    /** 将相对合法重定向 URI 解析为绝对地址（按长度降序排序以便最长匹配） @return 解析后的 URI 集合 */
     public static Set<String> resolveValidRedirects(KeycloakSession session, String rootUrl, Set<String> validRedirects) {
-        // If the valid redirect URI is relative (no scheme, host, port) then use the request's scheme, host, and port
-        // the set is ordered by length to get the longest match first
+        // 合法重定向为相对路径时，使用请求的 scheme/host/port 补全
+        // 按长度排序以实现最长前缀匹配
         Set<String> resolveValidRedirects = new TreeSet<>((String s1, String s2) -> s1.length() == s2.length()? s1.compareTo(s2) : s1.length() < s2.length()? 1 : -1);
         for (String validRedirect : validRedirects) {
             if (validRedirect.startsWith("/")) {
@@ -114,12 +129,12 @@ public class RedirectUtils {
                 return null;
             }
 
-            // Check for HTTP Parameter Pollution - forbidden OIDC response parameters in redirect URI
+            // 检查 HTTP 参数污染：禁止 redirect_uri 查询串含 OIDC 响应参数
             if (containsForbiddenOidcParameters(originalRedirect)){
                 return null;
             }
 
-            // check if the passed URI allows wildcards
+            // 判断传入 URI 是否允许通配符匹配
             boolean allowWildcards = areWildcardsAllowed(originalRedirect);
 
             String r = redirectUri;
@@ -133,7 +148,7 @@ public class RedirectUtils {
             }
 
             if (valid != null && !originalRedirect.isAbsolute()) {
-                // return absolute if the original URI is relative
+                // 原始 URI 为相对路径时返回绝对形式
                 if (!redirectUri.startsWith("/")) {
                     redirectUri = "/" + redirectUri;
                 }
@@ -142,7 +157,7 @@ public class RedirectUtils {
 
             String scheme = originalRedirect.getScheme();
             if (valid != null && scheme != null) {
-                // check the scheme is valid, it should be http(s) or explicitly allowed by the validation
+                // 校验 scheme 须为 http(s) 或配置中显式允许
                 if (!valid.startsWith(scheme + ":") && !"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
                     logger.debugf("Invalid URI because scheme is not allowed: %s", redirectUri);
                     valid = null;
@@ -159,6 +174,7 @@ public class RedirectUtils {
         }
     }
 
+    /** 检测查询参数是否含禁止的 OIDC 响应参数名 @return 含禁止参数时 true */
     private static boolean containsForbiddenOidcParameters(URI originalRedirect) {
         String query = originalRedirect.getRawQuery();
         if (query != null && !query.isEmpty()) {
@@ -177,6 +193,7 @@ public class RedirectUtils {
         return false;
     }
 
+    /** 安全解析 URI 字符串 @param redirectUri 原始字符串 @return URI 或 null */
     private static URI toUri(String redirectUri) {
         URI uri = null;
         if (redirectUri != null) {
@@ -191,20 +208,22 @@ public class RedirectUtils {
         return uri;
     }
 
-    // any access to parent folder /../ is unsafe with or without encoding
+    // 路径中含 /../（含编码变体）视为不安全
     //   <sep>             = / | %2F | %5C | \
     //   <dots>            = "..", including %2E and %252E (double-encoded) variants
     //   <terminator>      = / | %2F | %5C | \ | ; | %3B | %09 | %0A | %0D | %00 | end-of-input
     private final static Pattern UNSAFE_PATH_PATTERN = Pattern.compile(
             "(/|%2[fF]|%5[cC]|\\\\)(%2[eE]|%252[eE]|\\.){2}(/|%2[fF]|%5[cC]|\\\\|;|%3[bB]|%09|%0[aAdD]|%00|$)");
 
+    /** 判断是否允许通配符：无 user-info、无异常 authority 且路径无父目录穿越 @return 允许时 true */
     private static boolean areWildcardsAllowed(URI redirectUri) {
-        // wildcars are only allowed if no user-info and no unparsed authority and no unsafe pattern in path
+        // 仅当无 user-info、authority 可解析且路径安全时才允许通配符
         return redirectUri.getRawUserInfo() == null
                 && !(redirectUri.getRawAuthority() != null && redirectUri.getRawUserInfo() == null && redirectUri.getHost() == null && redirectUri.getPort() == -1)
                 && (redirectUri.getRawPath() == null || !UNSAFE_PATH_PATTERN.matcher(redirectUri.getRawPath()).find());
     }
 
+    /** 将相对 URI 拼接为绝对 URI @param rootUrl 客户端根 URL @param relative 相对路径 @return 绝对 URI */
     private static String relativeToAbsoluteURI(KeycloakSession session, String rootUrl, String relative) {
         if (rootUrl != null) {
             rootUrl = ResolveRelative.resolveRootUrl(session, rootUrl);
@@ -219,17 +238,18 @@ public class RedirectUtils {
         return sb.toString();
     }
 
-    // return the String that matched the redirect or null if not matched
+    // 返回匹配到的合法重定向字符串，未匹配时 null
+    /** 在合法重定向集合中查找匹配项 @param allowWildcards 是否启用通配符 @return 匹配串或 null */
     private static String matchesRedirects(Set<String> validRedirects, String redirect, boolean allowWildcards) {
         logger.tracef("matchesRedirects: redirect URL to check: %s, allow wildcards: %b, Configured valid redirect URLs: %s", redirect, allowWildcards, validRedirects);
         for (String validRedirect : validRedirects) {
             if ("*".equals(validRedirect)) {
-                // the valid redirect * is a full wildcard for http(s) even if the redirect URI does not allow wildcards
+                // 配置为 * 时对 http(s) 全匹配，不受 allowWildcards 限制
                 return validRedirect;
             } else {
                 String validRedirectWildcard = allowWildcards ? checkValidRedirectWildcard(validRedirect) : null;
                 if (validRedirectWildcard != null) {
-                    // strip off the query or fragment components - we don't check them when wildcards are effective
+                    // 通配符匹配时忽略 query/fragment
                     int idx = redirect.indexOf('?');
                     if (idx == -1) {
                         idx = redirect.indexOf('#');
@@ -257,6 +277,7 @@ public class RedirectUtils {
         return null;
     }
 
+    /** 校验并规范化带通配符的合法重定向配置 @return 可用通配符模式或 null */
     private static String checkValidRedirectWildcard(String validRedirect) {
         if (!validRedirect.endsWith("*") || validRedirect.contains("?") || validRedirect.contains("#")) {
             return null; // no wildcard as before
@@ -281,12 +302,14 @@ public class RedirectUtils {
         return null;
     }
 
+    /** 仅当恰好配置一个合法重定向时返回（去除 /* 后缀） @return URI 或 null */
     private static String getSingleValidRedirectUri(Collection<String> validRedirects) {
         if (validRedirects.size() != 1) return null;
         String validRedirect = validRedirects.iterator().next();
         return validateRedirectUriWildcard(validRedirect);
     }
 
+    /** 去除 redirect URI 末尾 {@code /*} 通配符后缀 @return 规范化 URI */
     public static String validateRedirectUriWildcard(String redirectUri) {
         if (redirectUri == null)
             return null;
@@ -298,6 +321,11 @@ public class RedirectUtils {
         return redirectUri;
     }
 
+    /**
+     * 解析 URL 列表；若含 {@link Constants#INCLUDE_REDIRECTS} 则展开客户端重定向 URI。
+     * @param returnAsOrigins 为 true 时仅保留 origin，否则保留完整 URI
+     * @return 解析后的 URL 集合
+     */
     public static Set<String> resolveUrlsWithRedirects(KeycloakSession session, List<String> origUrls,
                                                        String rootUrl, List<String> redirectUris, boolean returnAsOrigins) {
 
@@ -319,6 +347,7 @@ public class RedirectUtils {
         return refactoredUrls;
     }
 
+    /** 判断 URL 是否为 http/https scheme @return 合法时 true */
     private static boolean isValidScheme(String url) {
         return url != null && (url.startsWith("http://") || url.startsWith("https://"));
     }

@@ -27,25 +27,31 @@ import org.keycloak.saml.common.util.XmlKeyInfoKeyNameTransformer;
 import org.jboss.logging.Logger;
 
 /**
- * Configuration of a SAML-enabled client.
+ * SAML 客户端配置访问器。
+ * <p>封装 {@link ClientModel} 上 SAML 协议相关属性：签名/加密、NameID 格式、绑定方式、断言寿命及元数据 URL 等。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SamlClient extends ClientConfigResolver {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(SamlClient.class);
 
+    /** 默认 XML Signature KeyInfo KeyName 转换策略（KEY_ID） */
     public static final XmlKeyInfoKeyNameTransformer DEFAULT_XML_KEY_INFO_KEY_NAME_TRANSFORMER = XmlKeyInfoKeyNameTransformer.KEY_ID;
 
+    /** @param client 底层客户端模型 */
     public SamlClient(ClientModel client) {
         super(client);
     }
 
+    /** @return 底层 {@link ClientModel} */
     public ClientModel getClient() {
         return client;
     }
 
+    /** @return XML 规范化方法 URI */
     public String getCanonicalizationMethod() {
         return resolveAttribute(SamlConfigAttributes.SAML_CANONICALIZATION_METHOD_ATTRIBUTE);
     }
@@ -54,6 +60,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_CANONICALIZATION_METHOD_ATTRIBUTE, value);
     }
 
+    /** @return 签名算法，未配置时默认 RSA_SHA256 */
     public SignatureAlgorithm getSignatureAlgorithm() {
         String alg = resolveAttribute(SamlConfigAttributes.SAML_SIGNATURE_ALGORITHM);
         if (alg != null) {
@@ -68,6 +75,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_SIGNATURE_ALGORITHM, algorithm.name());
     }
 
+    /** @return SAML NameID 格式 URI，未配置时 null */
     public String getNameIDFormat() {
         String nameIdFormat = null;
 
@@ -89,6 +97,7 @@ public class SamlClient extends ClientConfigResolver {
 
     }
 
+    /** 将 SAML NameID URI 转为客户端属性短名（email/persistent 等） @return 短名或 null */
     public static String samlNameIDFormatToClientAttribute(String nameIdFormat) {
         if (nameIdFormat.equals(JBossSAMLURIConstants.NAMEID_FORMAT_EMAIL.get())) {
             return "email";
@@ -108,6 +117,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_NAME_ID_FORMAT_ATTRIBUTE, format);
     }
 
+    /** @return 断言是否包含 AuthnStatement */
     public boolean includeAuthnStatement() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_AUTHNSTATEMENT));
     }
@@ -116,6 +126,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_AUTHNSTATEMENT, Boolean.toString(val));
     }
 
+    /** @return 是否强制使用配置的 NameID 格式 */
     public boolean forceNameIDFormat() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_FORCE_NAME_ID_FORMAT_ATTRIBUTE));
 
@@ -125,6 +136,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_FORCE_NAME_ID_FORMAT_ATTRIBUTE, Boolean.toString(val));
     }
 
+    /** @return 是否允许 ECP（PAOS）流程 */
     public boolean allowECPFlow() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_ALLOW_ECP_FLOW));
     }
@@ -133,6 +145,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_ALLOW_ECP_FLOW, Boolean.toString(val));
     }
 
+    /** @return 是否强制 Artifact 绑定 */
     public boolean forceArtifactBinding(){
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_ARTIFACT_BINDING));
     }
@@ -141,6 +154,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_ARTIFACT_BINDING, Boolean.toString(val));
     }
 
+    /** @return IdP/领域是否对 SAML 响应签名 */
     public boolean requiresRealmSignature() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_SERVER_SIGNATURE));
     }
@@ -149,6 +163,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_SERVER_SIGNATURE, Boolean.toString(val));
     }
 
+    /** @return 是否在 Extensions 元素中包含 KeyInfo */
     public boolean addExtensionsElementWithKeyInfo() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_SERVER_SIGNATURE_KEYINFO_EXT));
     }
@@ -157,6 +172,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_SERVER_SIGNATURE_KEYINFO_EXT, Boolean.toString(val));
     }
 
+    /** @return 是否强制 HTTP-POST 绑定 */
     public boolean forcePostBinding() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_FORCE_POST_BINDING));
     }
@@ -166,6 +182,7 @@ public class SamlClient extends ClientConfigResolver {
 
     }
 
+    /** @return 是否要求断言级签名 */
     public boolean requiresAssertionSignature() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_ASSERTION_SIGNATURE));
     }
@@ -175,6 +192,7 @@ public class SamlClient extends ClientConfigResolver {
 
     }
 
+    /** @return 是否要求加密断言 */
     public boolean requiresEncryption() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_ENCRYPT));
     }
@@ -185,6 +203,7 @@ public class SamlClient extends ClientConfigResolver {
 
     }
 
+    /** @return 是否要求客户端对 AuthnRequest 签名 */
     public boolean requiresClientSignature() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_CLIENT_SIGNATURE_ATTRIBUTE));
     }
@@ -261,9 +280,8 @@ public class SamlClient extends ClientConfigResolver {
     }
 
     /**
-     * Always returns non-{@code null} result.
-     *
-     * @return Configured ransformer of {@link #DEFAULT_XML_KEY_INFO_KEY_NAME_TRANSFORMER} if not set.
+     * 始终返回非 null 的 KeyName 转换器。
+     * @return 已配置转换器，未设置时 {@link #DEFAULT_XML_KEY_INFO_KEY_NAME_TRANSFORMER}
      */
     public XmlKeyInfoKeyNameTransformer getXmlSigKeyInfoKeyNameTransformer() {
         return XmlKeyInfoKeyNameTransformer.from(
@@ -278,6 +296,7 @@ public class SamlClient extends ClientConfigResolver {
                         : xmlSigKeyInfoKeyNameTransformer.name());
     }
 
+    /** @return 断言是否包含 OneTimeUse 条件 */
     public boolean includeOneTimeUseCondition() {
         return "true".equals(resolveAttribute(SamlConfigAttributes.SAML_ONETIMEUSE_CONDITION));
     }
@@ -290,6 +309,7 @@ public class SamlClient extends ClientConfigResolver {
         client.setAttribute(SamlConfigAttributes.SAML_ASSERTION_LIFESPAN, Integer.toString(assertionLifespan));
     }
 
+    /** @return 断言寿命（秒），无效或未配置时 -1 */
     public int getAssertionLifespan() {
         String value = client.getAttribute(SamlConfigAttributes.SAML_ASSERTION_LIFESPAN);
         if (value == null || value.isEmpty()) {
@@ -303,10 +323,12 @@ public class SamlClient extends ClientConfigResolver {
         }
     }
 
+    /** 根据实体 ID 计算并设置 Artifact Binding SourceID 标识 @param identifierFrom 源实体 ID */
     public void setArtifactBindingIdentifierFrom(String identifierFrom) {
         client.setAttribute(SamlConfigAttributes.SAML_ARTIFACT_BINDING_IDENTIFIER, ArtifactBindingUtils.computeArtifactBindingIdentifierString(identifierFrom));
     }
 
+    /** @return Artifact Binding SourceID 标识 */
     public String getArtifactBindingIdentifier() {
         return client.getAttribute(SamlConfigAttributes.SAML_ARTIFACT_BINDING_IDENTIFIER);
     }
@@ -319,10 +341,12 @@ public class SamlClient extends ClientConfigResolver {
         }
     }
 
+    /** @return 是否从元数据 URL 加载 SP 配置 */
     public boolean isUseMetadataDescriptorUrl() {
         return Boolean.parseBoolean(resolveAttribute(SamlConfigAttributes.SAML_USE_METADATA_DESCRIPTOR_URL));
     }
 
+    /** @return SP 元数据描述符 URL */
     public String getMetadataDescriptorUrl() {
         return client.getAttribute(SamlConfigAttributes.SAML_METADATA_DESCRIPTOR_URL);
     }

@@ -26,11 +26,13 @@ import org.keycloak.crypto.Algorithm;
 import org.apache.xml.security.encryption.XMLCipher;
 
 /**
- * This enum provides mapping between Keycloak provided encryption algorithms and algorithms from xmlsec.
- * It is used to make sure we are using keys generated for given algorithm only with that algorithm.
+ * SAML/XML 加密算法映射枚举。
+ * <p>关联 Keycloak {@link Algorithm} 标识与 Apache XMLSec {@link XMLCipher} URI，确保密钥仅用于其生成时指定的算法。</p>
  */
 public enum SAMLEncryptionAlgorithms {
+    /** RSA-OAEP（含 MGF1 与 OAEP 1.1 变体） */
     RSA_OAEP(Algorithm.RSA_OAEP, XMLCipher.RSA_OAEP, XMLCipher.RSA_OAEP_11),
+    /** RSA PKCS#1 v1.5 */
     RSA1_5(Algorithm.RSA1_5, XMLCipher.RSA_v1dot5);
 
     private final String[] xmlEncIdentifier;
@@ -58,35 +60,34 @@ public enum SAMLEncryptionAlgorithms {
     }
 
     /**
-     * Getter for all the XML encoding identifiers.
-     * There should be at least one.
-     * @return The array of XML encoding identifiers
+     * 获取所有 XML 加密算法 URI。
+     * @return xmlenc 标识符数组（至少一个）
      */
     public String[] getXmlEncIdentifiers() {
         return xmlEncIdentifier;
     }
 
     /**
-     * Getter for the keycloak identifier.
-     * @return The keycloak identifier.
+     * 获取 Keycloak 内部算法标识。
+     * @return Keycloak 算法名
      */
     public String getKeycloakIdentifier() {
         return keycloakIdentifier;
     }
 
     /**
-     * Returns the SAMLEncryptionAlgorithms that contains the xml enc identifier.
-     * @param xmlEncIdentifier The Xml encoding identifier
-     * @return The associated SAMLEncryptionAlgorithms or null
+     * 按 XML 加密 URI 查找枚举值。
+     * @param xmlEncIdentifier xmlenc 算法 URI
+     * @return 对应枚举或 null
      */
     public static SAMLEncryptionAlgorithms forXMLEncIdentifier(String xmlEncIdentifier) {
         return forXMLEncIdentifier.get(xmlEncIdentifier);
     }
 
     /**
-     * Returns the SAMLEncryptionAlgorithms for the keycloak identifier.
-     * @param keycloakIdentifier The keycloak identifier
-     * @return The associated SAMLEncryptionAlgorithms or null
+     * 按 Keycloak 算法标识查找枚举值。
+     * @param keycloakIdentifier Keycloak 算法名
+     * @return 对应枚举或 null
      */
     public static SAMLEncryptionAlgorithms forKeycloakIdentifier(String keycloakIdentifier) {
         return forKeycloakIdentifier.get(keycloakIdentifier);

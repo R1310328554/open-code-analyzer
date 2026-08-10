@@ -57,30 +57,34 @@ import org.keycloak.saml.processing.core.parsers.saml.SAMLParser;
 import org.keycloak.saml.processing.core.saml.v2.util.SAMLMetadataUtil;
 
 /**
+ * SAML 2.0 EntityDescriptor 客户端描述转换器。
+ * <p>将 SP 元数据 XML 导入为 {@link ClientRepresentation}，填充 ACS、SLO、签名/加密证书、NameID 格式及属性消费服务映射器。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class EntityDescriptorDescriptionConverter implements ClientDescriptionConverter, ClientDescriptionConverterFactory {
 
+    /** 转换器标识：saml2-entity-descriptor */
     public static final String ID = "saml2-entity-descriptor";
 
+    /** 判断描述是否为 EntityDescriptor XML @param description 客户端描述文本 @return 支持时 true */
     @Override
     public boolean isSupported(String description) {
         description = description.trim();
         return (description.startsWith("<") && description.endsWith(">") && description.contains("EntityDescriptor"));
     }
 
+    /** 将 EntityDescriptor XML 转为内部客户端表示 @return 客户端表示 */
     @Override
     public ClientRepresentation convertToInternal(String description) {
         return loadEntityDescriptors(new ByteArrayInputStream(description.getBytes()));
     }
 
     /**
-     * Get the SP Descriptor from an entity descriptor
-     *
-     * @param entityDescriptor
-     *
-     * @return
+     * 从实体描述符提取 SP SSO 描述符。
+     * @param entityDescriptor 实体描述符
+     * @return SP SSO 描述符，不存在时 null
      */
     public static SPSSODescriptorType getSPDescriptor(EntityDescriptorType entityDescriptor) {
         return entityDescriptor.getChoiceType().stream()
@@ -92,12 +96,10 @@ public class EntityDescriptorDescriptionConverter implements ClientDescriptionCo
     }
 
     /**
-     * Get the service url for the SP
-     *
-     * @param sp
-     * @param bindingURI
-     *
-     * @return
+     * 按绑定类型获取断言消费服务 URL。
+     * @param sp SP SSO 描述符
+     * @param bindingURI SAML 绑定 URI
+     * @return 服务端点 URL 或 null
      */
     public static String getServiceURL(SPSSODescriptorType sp, String bindingURI) {
         List<IndexedEndpointType> endpoints = sp.getAssertionConsumerService();
@@ -111,10 +113,10 @@ public class EntityDescriptorDescriptionConverter implements ClientDescriptionCo
     }
 
     /**
-     * Gets from a SPSSO descriptor the artifact resolution service for a given index
-     * @param sp an SPSSO descriptor
-     * @param index the index of the artifact resolution service to return
-     * @return the location of the artifact resolution service
+     * 按索引获取 Artifact 解析服务端点。
+     * @param sp SP SSO 描述符
+     * @param index 服务端点索引
+     * @return 端点 location 或 null
      */
     private static String getArtifactResolutionService(SPSSODescriptorType sp, int index) {
         List<IndexedEndpointType> endpoints = sp.getArtifactResolutionService();
@@ -127,10 +129,9 @@ public class EntityDescriptorDescriptionConverter implements ClientDescriptionCo
     }
 
     /**
-     * Tries to get from a SPSSO descriptor the default artifact resolution service. Or if it doesn't
-     * exist, the artifact resolution service with the lowest index
-     * @param sp an SPSSO descriptor
-     * @return the location of the artifact resolution service
+     * 获取默认 Artifact 解析服务；若无默认则取索引最小者。
+     * @param sp SP SSO 描述符
+     * @return 端点 location 或 null
      */
     private static String getArtifactResolutionService(SPSSODescriptorType sp) {
         List<IndexedEndpointType> endpoints = sp.getArtifactResolutionService();
@@ -150,6 +151,7 @@ public class EntityDescriptorDescriptionConverter implements ClientDescriptionCo
         return null;
     }
 
+    /** 解析元数据流并构建 SAML 客户端表示 @return 客户端表示 @throws BadRequestException 解析/校验失败时 */
     private static ClientRepresentation loadEntityDescriptors(InputStream is) {
         Object metadata;
         try {
@@ -287,6 +289,7 @@ public class EntityDescriptorDescriptionConverter implements ClientDescriptionCo
         return app;
     }
     
+    /** 将 SAML 属性 NameFormat URI 映射为 Keycloak 内部格式 @return 内部格式或 null */
     private static String getSAMLNameFormat(String xmlValue) {
         String value =null;
         if (JBossSAMLURIConstants.ATTRIBUTE_FORMAT_URI.getUri().toString().equals(xmlValue)) {
@@ -301,6 +304,7 @@ public class EntityDescriptorDescriptionConverter implements ClientDescriptionCo
         
     }
 
+    /** 按绑定类型获取单点登出服务 URL @return 登出端点 location 或 null */
     private static String getLogoutLocation(SPSSODescriptorType idp, String bindingURI) {
         String logoutResponseLocation = null;
 
@@ -320,6 +324,7 @@ public class EntityDescriptorDescriptionConverter implements ClientDescriptionCo
         return logoutResponseLocation;
     }
 
+    /** @param session Keycloak 会话 @return 转换器自身 */
     @Override
     public ClientDescriptionConverter create(KeycloakSession session) {
         return this;
@@ -337,6 +342,7 @@ public class EntityDescriptorDescriptionConverter implements ClientDescriptionCo
     public void close() {
     }
 
+    /** @return 转换器标识 {@link #ID} */
     @Override
     public String getId() {
         return ID;

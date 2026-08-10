@@ -39,10 +39,9 @@ import org.apache.xml.security.keys.KeyInfo;
 import org.apache.xml.security.keys.content.KeyName;
 
 /**
- * This implementation locates the decryption keys within realm keys.
- * It filters realm keys based on algorithm provided within {@link EncryptedData}
- *
- * Example of encrypted data:
+ * SAML XML 解密密钥定位器。
+ * <p>从领域密钥中筛选 {@link KeyUse#ENC} 用途的私钥，按 {@link EncryptedData} 内 EncryptedKey 算法、KeyName（kid）及可选请求算法过滤。</p>
+ * <p>示例 EncryptedData 结构见下方 {@code pre} 块。</p>
  * <pre>
  * {@code
  * <xenc:EncryptedData Type="http://www.w3.org/2001/04/xmlenc#Element">
@@ -50,35 +49,35 @@ import org.apache.xml.security.keys.content.KeyName;
  *     <ds:KeyInfo>
  *         <xenc:EncryptedKey>
  *             <xenc:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"/>
- *             <xenc:CipherData>
- *                 <xenc:CipherValue>
- *                     .....
- *                 </xenc:CipherValue>
- *             </xenc:CipherData>
+ *             ...
  *         </xenc:EncryptedKey>
  *     </ds:KeyInfo>
- *     <xenc:CipherData>
- *         <xenc:CipherValue>
- *             ...
- *         </xenc:CipherValue>
- *     </xenc:CipherData>
+ *     ...
  * </xenc:EncryptedData>
  * }
  * </pre>
- *
  */
 public class SAMLDecryptionKeysLocator implements XMLEncryptionUtil.DecryptionKeyLocator {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 调用方指定的密钥算法（可选） */
     private final String requestedAlgorithm;
 
+    /**
+     * @param session Keycloak 会话
+     * @param realm 领域模型
+     * @param requestedAlgorithm 期望的 Keycloak 加密算法标识，可为 null
+     */
     public SAMLDecryptionKeysLocator(KeycloakSession session, RealmModel realm, String requestedAlgorithm) {
         this.session = session;
         this.realm = realm;
         this.requestedAlgorithm = requestedAlgorithm;
     }
 
+    /** 从 KeyInfo 提取 KeyName 列表 @return kid 名称列表 */
     private List<String> getKeyNames(KeyInfo keyInfo) {
         List<String> keyNames = new LinkedList<>();
 
@@ -96,6 +95,7 @@ public class SAMLDecryptionKeysLocator implements XMLEncryptionUtil.DecryptionKe
         return keyNames;
     }
 
+    /** 按 XML 加密算法 URI 构建 KeyWrapper 过滤谓词 @param algorithm xmlenc 算法 URI */
     private Predicate<KeyWrapper> hasMatchingAlgorithm(String algorithm) {
         SAMLEncryptionAlgorithms usedAlgorithm = SAMLEncryptionAlgorithms.forXMLEncIdentifier(algorithm);
 
@@ -106,9 +106,10 @@ public class SAMLDecryptionKeysLocator implements XMLEncryptionUtil.DecryptionKe
         return keyWrapper -> Objects.equals(keyWrapper.getAlgorithmOrDefault(), usedAlgorithm.getKeycloakIdentifier());
     }
 
+    /** 解析并返回可用于解密的私钥列表 @param encryptedData XML 加密数据 @return 私钥列表 */
     @Override
     public List<PrivateKey> getKeys(EncryptedData encryptedData) {
-        // Check encryptedData contains keyinfo
+        // 校验 EncryptedData 必须包含 KeyInfo
         KeyInfo keyInfo = encryptedData.getKeyInfo();
         if (keyInfo == null) {
             throw new IllegalStateException("EncryptedData does not contain KeyInfo");
@@ -121,13 +122,13 @@ public class SAMLDecryptionKeysLocator implements XMLEncryptionUtil.DecryptionKe
             keysStream = keysStream.filter(keyWrapper -> Objects.equals(keyWrapper.getAlgorithmOrDefault(), requestedAlgorithm));
         }
 
-        // If encryptedData contains keyName we will use only for keys with given kid
+        // 含 KeyName 时仅匹配指定 kid 的密钥
         if (keyInfo.containsKeyName()) {
             List<String> keyNames = getKeyNames(keyInfo);
             keysStream = keysStream.filter(keyWrapper -> keyNames.contains(keyWrapper.getKid()));
         }
 
-        // Look for algorithm used inside encryptedData and allow only keys generated for specific algorithm
+        // 按 EncryptedKey 内 EncryptionMethod 算法过滤密钥
         try {
             EncryptedKey encryptedKey = keyInfo.itemEncryptedKey(0);
             if (encryptedKey != null) {
@@ -147,7 +148,7 @@ public class SAMLDecryptionKeysLocator implements XMLEncryptionUtil.DecryptionKe
             throw new IllegalArgumentException("EncryptedData does not contain KeyInfo ", e);
         }
 
-        // Map keys to PrivateKey
+        // 映射为 PrivateKey 列表返回
         return keysStream
                 .map(KeyWrapper::getPrivateKey)
                 .filter(Objects::nonNull)

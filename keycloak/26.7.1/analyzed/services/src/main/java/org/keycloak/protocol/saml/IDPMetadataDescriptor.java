@@ -57,10 +57,14 @@ import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.SAML_SOAP
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.XMLDSIG_NSURI;
 
 /**
+ * IdP SAML 元数据描述符生成器。
+ * <p>构建包含 SSO/SLO、Artifact 解析、NameID 格式及签名密钥的 {@link EntityDescriptorType} XML，可选对元数据进行签名。</p>
+ *
  * @version $Revision: 1 $
  */
 public class IDPMetadataDescriptor {
 
+    /** 生成未签名的 IdP 元数据（无密钥包装器） @return XML 字符串 @throws ProcessingException 生成失败时 */
     public static String getIDPDescriptor(URI loginPostEndpoint, URI loginRedirectEndpoint, URI logoutEndpoint,
             URI artifactResolutionService, String entityId, boolean wantAuthnRequestsSigned, List<Element> signingCerts)
             throws ProcessingException {
@@ -68,6 +72,7 @@ public class IDPMetadataDescriptor {
                 artifactResolutionService, entityId, wantAuthnRequestsSigned, signingCerts, null);
     }
 
+    /** 生成 IdP 元数据，可选使用密钥对签名 @return XML 字符串 */
     public static String getIDPDescriptor(KeyWrapper keyWrapper, SignatureAlgorithm sigAlg,
             URI loginPostEndpoint, URI loginRedirectEndpoint, URI logoutEndpoint,
             URI artifactResolutionService, String entityId, boolean wantAuthnRequestsSigned, List<Element> signingCerts)
@@ -76,6 +81,12 @@ public class IDPMetadataDescriptor {
                 artifactResolutionService, entityId, wantAuthnRequestsSigned, signingCerts, null);
     }
 
+    /**
+     * 生成完整 IdP 元数据 XML。
+     * @param expiration 缓存有效期（秒），写入 cacheDuration
+     * @return 元数据 XML（可能已签名）
+     * @throws ProcessingException 构建或签名失败时
+     */
     public static String getIDPDescriptor(KeyWrapper keyWrapper, SignatureAlgorithm sigAlg,
             URI loginPostEndpoint, URI loginRedirectEndpoint, URI logoutEndpoint,
             URI artifactResolutionService, String entityId, boolean wantAuthnRequestsSigned, List<Element> signingCerts, Long expiration)
@@ -134,6 +145,13 @@ public class IDPMetadataDescriptor {
         }
     }
 
+    /**
+     * 构建 ds:KeyInfo 元素（含可选 KeyName 与 X509Certificate）。
+     * @param keyName 密钥名称，可为 null
+     * @param pemEncodedCertificate PEM 编码证书（不含头尾）
+     * @return KeyInfo DOM 元素
+     * @throws javax.xml.parsers.ParserConfigurationException 文档构建失败时
+     */
     public static Element buildKeyInfoElement(String keyName, String pemEncodedCertificate)
         throws javax.xml.parsers.ParserConfigurationException
     {
