@@ -1,5 +1,8 @@
 package targets
 
+// Promtail targets 总调度器：按 scrape config 类型分发至 file/journal/kafka/push 等
+// 各 TargetManager；stdin 模式时仅启用 StdinTargetManager。
+
 import (
 	"fmt"
 
@@ -54,6 +57,7 @@ var (
 	herokuDrainMetrics *heroku.Metrics
 )
 
+// 各具体 target manager 统一接口：Ready/Stop/ActiveTargets/AllTargets。
 type targetManager interface {
 	Ready() bool
 	Stop()
@@ -61,12 +65,14 @@ type targetManager interface {
 	AllTargets() map[string][]target.Target
 }
 
+// 聚合多个 targetManager，positions 文件为 file/journal 等共享单例。
 // TargetManagers manages a list of target managers.
 type TargetManagers struct {
 	targetManagers []targetManager
 	positions      positions.Positions
 }
 
+// stdin 模式短路；否则按 config 字段分类 scrapeConfigs 并懒初始化 metrics。
 // NewTargetManagers makes a new TargetManagers
 func NewTargetManagers(
 	app stdin.Shutdownable,
@@ -101,10 +107,12 @@ func NewTargetManagers(
 			targetScrapeConfigs[SyslogScrapeConfigs] = append(targetScrapeConfigs[SyslogScrapeConfigs], cfg)
 		case cfg.GcplogConfig != nil:
 			targetScrapeConfigs[GcplogScrapeConfigs] = append(targetScrapeConfigs[GcplogScrapeConfigs], cfg)
+// Push job 归入 pushScrapeConfigs，启动 Loki Push API HTTP 接收端。
 		case cfg.PushConfig != nil:
 			targetScrapeConfigs[PushScrapeConfigs] = append(targetScrapeConfigs[PushScrapeConfigs], cfg)
 		case cfg.WindowsConfig != nil:
 			targetScrapeConfigs[WindowsEventsConfigs] = append(targetScrapeConfigs[WindowsEventsConfigs], cfg)
+// Kafka job 归入 kafkaConfigs，由 kafka.NewTargetManager 创建 consumer group target。
 		case cfg.KafkaConfig != nil:
 			targetScrapeConfigs[KafkaConfigs] = append(targetScrapeConfigs[KafkaConfigs], cfg)
 		case cfg.AzureEventHubsConfig != nil:
@@ -314,6 +322,7 @@ func (tm *TargetManagers) AllTargets() map[string][]target.Target {
 }
 
 // Ready if there's at least one ready target manager.
+// 任一子 manager Ready 即整体就绪，适配多 target 类型并存场景。
 func (tm *TargetManagers) Ready() bool {
 	for _, t := range tm.targetManagers {
 		if t.Ready() {

@@ -1,5 +1,8 @@
 package kafka
 
+// Kafka ConsumerGroup 封装：实现 sarama.ConsumerGroupHandler，
+// 为每个 partition claim 创建 Target 并维护 active/dropped 列表，rebalance 时重置。
+
 import (
 	"context"
 	"fmt"
@@ -20,6 +23,7 @@ var defaultBackOff = backoff.Config{
 	MaxRetries: 20,
 }
 
+// 可运行 target 扩展 Target 接口，增加 run() 消费消息循环。
 type RunnableTarget interface {
 	target.Target
 	run()
@@ -29,6 +33,7 @@ type TargetDiscoverer interface {
 	NewTarget(sarama.ConsumerGroupSession, sarama.ConsumerGroupClaim) (RunnableTarget, error)
 }
 
+// 嵌入 ConsumerGroup，通过 TargetDiscoverer 为每个 claim 实例化 target。
 // consumer handle a group consumer instance.
 // It will create a new target for every consumer claim using the `TargetDiscoverer`.
 type consumer struct {
@@ -45,6 +50,7 @@ type consumer struct {
 	droppedTargets []target.Target
 }
 
+// 后台 goroutine 无限循环 Consume，失败时指数退避重试至多 MaxRetries 次。
 // start starts the consumer for a given list of topics.
 func (c *consumer) start(ctx context.Context, topics []string) {
 	c.wg.Wait()
@@ -79,6 +85,7 @@ func (c *consumer) start(ctx context.Context, topics []string) {
 	}()
 }
 
+// 标签为空时归入 droppedTargets 仍消费以推进 offset，否则加入 activeTargets。
 // ConsumeClaim creates a target for the given received claim and start reading message from it.
 func (c *consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	c.wg.Add(1)
@@ -119,6 +126,7 @@ func (c *consumer) stop() {
 	c.resetTargets()
 }
 
+// rebalance Setup/Cleanup 时清空 active 与 dropped 列表。
 func (c *consumer) resetTargets() {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

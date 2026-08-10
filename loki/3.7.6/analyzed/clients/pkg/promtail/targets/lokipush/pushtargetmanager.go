@@ -1,5 +1,8 @@
 package lokipush
 
+// PushTargetManager：为含 PushConfig 的 scrape job 创建 HTTP push target，
+// job_name 必须唯一且非空（用于 metrics namespace 与 pipeline 命名）。
+
 import (
 	"errors"
 	"fmt"
@@ -15,12 +18,14 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/target"
 )
 
+// 按 jobName 索引 PushTarget，每个 job 独立 HTTP 监听端口。
 // PushTargetManager manages a series of PushTargets.
 type PushTargetManager struct {
 	logger  log.Logger
 	targets map[string]*PushTarget
 }
 
+// validateJobName 后构建 push_pipeline 并 NewPushTarget。
 // NewPushTargetManager creates a new PushTargetManager.
 func NewPushTargetManager(
 	reg prometheus.Registerer,
@@ -55,6 +60,7 @@ func NewPushTargetManager(
 	return tm, nil
 }
 
+// 校验 job_name 唯一非空，SanitizeLabelName 规范化 job 名用于指标注册。
 func validateJobName(scrapeConfigs []scrapeconfig.Config) error {
 	jobNames := map[string]struct{}{}
 	for i, cfg := range scrapeConfigs {
@@ -93,6 +99,7 @@ func (tm *PushTargetManager) Stop() {
 	}
 }
 
+// Push target 无 deactivate，ActiveTargets 与 AllTargets 返回相同集合。
 // ActiveTargets returns the list of PushTargets where Push data
 // is being read. ActiveTargets is an alias to AllTargets as
 // PushTargets cannot be deactivated, only stopped.

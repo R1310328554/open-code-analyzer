@@ -1,5 +1,8 @@
 package kafka
 
+// Kafka partition target：从 ConsumerGroupClaim 读取消息，
+// 合并 message key 标签→parser 解析→写入 EntryHandler channel 并 MarkMessage。
+
 import (
 	"fmt"
 	"time"
@@ -15,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/target"
 )
 
+// relabel 后无有效标签时的 dropped target，仍消费消息以提交 offset。
 type runnableDroppedTarget struct {
 	target.Target
 	runFn func()
@@ -24,6 +28,7 @@ func (d *runnableDroppedTarget) run() {
 	d.runFn()
 }
 
+// 可插拔解析接口，默认 messageParser 原样传递 message.Value。
 // MessageParser defines parsing for each incoming message
 type MessageParser interface {
 	Parse(message *sarama.ConsumerMessage, labels model.LabelSet, relabels []*relabel.Config, useIncomingTimestamp bool) ([]api.Entry, error)
@@ -71,6 +76,7 @@ const (
 	labelKeyKafkaMessageKey = "__meta_kafka_message_key"
 )
 
+// 循环 claim.Messages()：格式化 message key 标签、parser 解析、推送 channel、MarkMessage。
 func (t *Target) run() {
 	defer t.client.Stop()
 	for message := range t.claim.Messages() {
@@ -104,6 +110,7 @@ func (t *Target) run() {
 	}
 }
 
+// useIncomingTimestamp 为 true 时使用 Kafka 消息时间戳，否则 time.Now()。
 func timestamp(useIncoming bool, incoming time.Time) time.Time {
 	if useIncoming {
 		return incoming
@@ -127,6 +134,7 @@ func (t *Target) Labels() model.LabelSet {
 	return t.lbs
 }
 
+// 返回 ConsumerDetails：member_id、generation、topic、partition、initial_offset。
 // Details returns target-specific details.
 func (t *Target) Details() interface{} {
 	return t.details

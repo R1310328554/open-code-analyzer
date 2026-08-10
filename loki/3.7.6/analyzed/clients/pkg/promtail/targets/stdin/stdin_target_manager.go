@@ -1,5 +1,8 @@
 package stdin
 
+// Stdin target：从标准输入按行读取日志，pipeline 处理后推送 Loki；
+// EOF 或 cancel 时触发 app.Shutdown()，适用于 kubectl logs -f | promtail 场景。
+
 import (
 	"bufio"
 	"context"
@@ -23,6 +26,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// 8096 字节缓冲，平衡 stdin 小块读取与内存占用。
 // bufferSize is the size of the buffered reader
 const bufferSize = 8096
 
@@ -48,10 +52,12 @@ var (
 	}
 )
 
+// stdin 读完或出错时回调 Shutdown 终止 promtail 进程。
 type Shutdownable interface {
 	Shutdown()
 }
 
+// StdinTargetManager 嵌入 readerTarget 并实现 targetManager 接口。
 // nolint:revive
 type StdinTargetManager struct {
 	*readerTarget
@@ -129,6 +135,7 @@ func newReaderTarget(reg prometheus.Registerer, logger log.Logger, in io.Reader,
 	return t, nil
 }
 
+// ReadString('\n') 逐行读取，Trim 后写入 pipeline channel，EOF 退出。
 func (t *readerTarget) read() {
 	defer t.cancel()
 	defer t.out.Stop()

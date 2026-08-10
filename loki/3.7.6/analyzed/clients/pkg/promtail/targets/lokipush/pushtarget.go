@@ -1,5 +1,8 @@
 package lokipush
 
+// Loki Push API target：独立 HTTP 服务接收 /loki/api/v1/push 与 /promtail/api/v1/raw，
+// 解析 stream→relabel→写入 pipeline；禁用全局 metrics 避免热重载冲突。
+
 import (
 	"bufio"
 	"fmt"
@@ -29,6 +32,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Push 模式 HTTP 接收端：dskit server + relabel + 静态标签配置。
 type PushTarget struct {
 	logger        log.Logger
 	handler       api.EntryHandler
@@ -68,6 +72,7 @@ func NewPushTarget(logger log.Logger,
 	return pt, nil
 }
 
+// 合并 server 默认配置、独立 Registry、注册 push/raw/ready 路由并后台 Run。
 func (t *PushTarget) run() error {
 	level.Info(t.logger).Log("msg", "starting push server", "job", t.jobName)
 	// To prevent metric collisions because all metrics are going to be registered in the global Prometheus registry.
@@ -112,6 +117,7 @@ func (t *PushTarget) run() error {
 	return nil
 }
 
+// ParseRequest 解析 Loki push body，逐 stream relabel 后写入 handler channel。
 func (t *PushTarget) handleLoki(w http.ResponseWriter, r *http.Request) {
 	logger := util_log.WithContext(r.Context(), util_log.Logger)
 	userID, _ := tenant.TenantID(r.Context())
@@ -179,6 +185,7 @@ func (t *PushTarget) handleLoki(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// 按行读取 plaintext/NDJSON，使用静态 Labels 推送，无 stream 级标签。
 // handlePlaintext handles newline delimited input such as plaintext or NDJSON.
 func (t *PushTarget) handlePlaintext(w http.ResponseWriter, r *http.Request) {
 	entries := t.handler.Chan()
@@ -249,6 +256,7 @@ func (t *PushTarget) Stop() error {
 }
 
 // ready function serves the ready endpoint
+// GET /ready 返回 200 ready，供 Kubernetes readiness probe 使用。
 func (t *PushTarget) ready(w http.ResponseWriter, _ *http.Request) {
 	resp := "ready"
 	if _, err := w.Write([]byte(resp)); err != nil {

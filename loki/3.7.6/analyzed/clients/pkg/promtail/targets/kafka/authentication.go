@@ -1,5 +1,8 @@
 package kafka
 
+// Kafka 连接认证辅助：TLS 证书加载与 SASL/SCRAM 客户端实现，
+// 供 TargetSyncer 构建 sarama.Config 时调用。
+
 import (
 	"crypto/sha256"
 	"crypto/sha512"
@@ -37,12 +40,14 @@ func createTLSConfig(cfg promconfig.TLSConfig) (*tls.Config, error) {
 	return tc, nil
 }
 
+// SHA256/SHA512 哈希生成器供 SCRAM-SHA256/512 机制使用。
 // copied from https://github.com/Shopify/sarama/blob/44627b731c60bb90efe25573e7ef2b3f8df3fa23/examples/sasl_scram_client/scram_client.go
 var (
 	SHA256 scram.HashGeneratorFcn = sha256.New
 	SHA512 scram.HashGeneratorFcn = sha512.New
 )
 
+// 封装 xdg-go/scram 客户端，实现 Begin/Step/Done 握手流程。
 // XDGSCRAMClient implements sarama.SCRAMClient
 type XDGSCRAMClient struct {
 	*scram.Client

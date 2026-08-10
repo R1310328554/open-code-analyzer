@@ -1,5 +1,8 @@
 package kafka
 
+// Kafka TargetSyncer：从 scrape config 构建 ConsumerGroup、pipeline 与 topic 轮询，
+// 动态发现 topic 变化并重启 consumer；支持 SSL/SASL 认证与多种 rebalance 策略。
+
 import (
 	"context"
 	"errors"
@@ -24,12 +27,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// 定期刷新 broker metadata 以匹配 ^ 正则 topic 模式的新增 topic。
 var TopicPollInterval = 30 * time.Second
 
 type TopicManager interface {
 	Topics() ([]string, error)
 }
 
+// 与 scrape config 解耦的配置子集：relabel、时间戳、静态标签、GroupID。
 // TargetSyncerConfig contains specific TargetSyncer configuration.
 // It allows to make the TargetSyncer creation independent from the scrape config structure.
 type TargetSyncerConfig struct {
@@ -57,6 +62,7 @@ type TargetSyncer struct {
 	messageParser  MessageParser
 }
 
+// 校验配置→解析 Kafka 版本→设置 assignor→认证→创建 client/group/pipeline→NewSyncer。
 // NewSyncerFromScrapeConfig creates TargetSyncer from scrape config
 func NewSyncerFromScrapeConfig(
 	reg prometheus.Registerer,
@@ -165,6 +171,7 @@ func NewSyncer(ctx context.Context,
 	return t, nil
 }
 
+// 按 type 分发 SSL 或 SASL（Plaintext/SCRAM-SHA256/512）认证配置。
 func withAuthentication(cfg sarama.Config, authCfg scrapeconfig.KafkaAuthentication) (*sarama.Config, error) {
 	if len(authCfg.Type) == 0 || authCfg.Type == scrapeconfig.KafkaAuthenticationTypeNone {
 		return &cfg, nil
@@ -233,6 +240,7 @@ func withSASLAuthentication(cfg sarama.Config, authCfg scrapeconfig.KafkaAuthent
 	return &cfg, nil
 }
 
+// 双 goroutine：topic 变更时 stop/start consumer；定时 poll topic 列表差异。
 func (ts *TargetSyncer) loop() {
 	topicChanged := make(chan []string)
 	ts.wg.Add(2)
@@ -317,6 +325,7 @@ func (ts *TargetSyncer) DroppedTargets() []target.Target {
 	return ts.getDroppedTargets()
 }
 
+// 注入 __meta_kafka_* 标签，relabel 为空则返回 dropped target 空消费 claim。
 // NewTarget creates a new targets based on the current kafka claim and group session.
 func (ts *TargetSyncer) NewTarget(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) (RunnableTarget, error) {
 	discoveredLabels := model.LabelSet{
@@ -356,6 +365,7 @@ func (ts *TargetSyncer) NewTarget(session sarama.ConsumerGroupSession, claim sar
 	return t, nil
 }
 
+// 默认 version=2.1.1、group_id=promtail；校验 brokers 与 topics 非空。
 func validateConfig(cfg *scrapeconfig.Config) error {
 	if cfg.KafkaConfig == nil {
 		return errors.New("the Kafka configuration is empty")

@@ -1,5 +1,8 @@
 package kafka
 
+// Kafka topic 发现：支持精确 topic 名与 ^ 前缀正则匹配，
+// RefreshMetadata 后返回排序后的匹配 topic 列表。
+
 import (
 	"errors"
 	"fmt"
@@ -19,6 +22,7 @@ type topicManager struct {
 	matches  []string
 }
 
+// 非 ^ 开头为精确匹配；^ 开头编译为正则，可匹配多个 broker topic。
 // newTopicManager fetches topics and returns matchings one based on list of requested topics.
 // If a topic starts with a '^' it is treated as a regexp and can match multiple topics.
 func newTopicManager(client topicClient, topics []string) (*topicManager, error) {
@@ -46,6 +50,7 @@ func newTopicManager(client topicClient, topics []string) (*topicManager, error)
 	}, nil
 }
 
+// 刷新 metadata 后遍历 broker topics，精确或正则匹配后 sort 返回。
 func (tm *topicManager) Topics() ([]string, error) {
 	if err := tm.client.RefreshMetadata(); err != nil {
 		return nil, err
