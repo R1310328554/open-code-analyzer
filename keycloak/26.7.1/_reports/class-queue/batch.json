@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:14:45Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/authentication/AuthenticatorSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/ClientAuthenticationFlowContext.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/ClientAuthenticationFlowContextSupplier.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/ClientAuthenticator.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/ClientAuthenticatorFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/ClientAuthenticatorSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/ConfigurableAuthenticatorFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/CredentialAction.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/CredentialRegistrator.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/CredentialValidator.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/FlowStatus.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/ForkFlowException.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/FormAction.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/FormActionFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/FormActionSpi.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3058,
-  "done": 2925
+  "done": 2940
 }
