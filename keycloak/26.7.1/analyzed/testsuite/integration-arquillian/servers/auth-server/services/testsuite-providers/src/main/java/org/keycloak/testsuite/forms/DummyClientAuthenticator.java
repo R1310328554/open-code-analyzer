@@ -34,12 +34,20 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 测试套件用的虚拟客户端认证器：优先尝试 client_id + secret，失败时仅按 client_id 认证。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DummyClientAuthenticator extends AbstractClientAuthenticator {
 
+    /** 提供者唯一标识。 */
     public static final String PROVIDER_ID = "testsuite-client-dummy";
 
+    /**
+     * 执行客户端认证：先委托 {@link ClientIdAndSecretAuthenticator}，失败则仅解析 client_id。
+     *
+     * @param context 客户端认证流程上下文
+     */
     @Override
     public void authenticateClient(ClientAuthenticationFlowContext context) {
         ClientIdAndSecretAuthenticator authenticator = new ClientIdAndSecretAuthenticator();

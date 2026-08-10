@@ -35,16 +35,22 @@ import org.infinispan.tasks.TaskContext;
 import org.infinispan.tasks.TaskExecutionMode;
 import org.infinispan.util.EmbeddedTimeService;
 
+/**
+ * Infinispan 服务器任务：按参数偏移集群时间并触发各缓存过期处理。
+ */
 public class InfinispanTimeServiceTask implements ServerTask<String> {
 
     private static final Log log = LogFactory.getLog(InfinispanTimeServiceTask.class);
+    /** 任务执行上下文。 */
     private TaskContext context = null;
+    /** 时间偏移量（秒）。 */
     private static int offset;
 
     public InfinispanTimeServiceTask() {
         log.info("InfinispanTimeServiceTask construction");
     }
 
+    /** 替换 TimeService、重连组件并处理所有缓存过期。 */
     @Override
     public String call() {
         EmbeddedCacheManager cacheManager = context.getCacheManager();
@@ -54,14 +60,14 @@ public class InfinispanTimeServiceTask implements ServerTask<String> {
         if (params.containsKey("timeService")) {
             offset = (int) params.get("timeService");
 
-            // rewire the Time service
+            // 重新接线 TimeService
             GlobalComponentRegistry cr = GlobalComponentRegistry.of(cacheManager);
             BasicComponentRegistry bcr = cr.getComponent(BasicComponentRegistry.class);
             bcr.replaceComponent(TimeService.class.getName(), KEYCLOAK_TIME_SERVICE, true);
             cr.rewire();
             cr.rewireNamedRegistries();
 
-            // process expiration in all caches
+            // 处理所有缓存的过期条目
             cacheManager.getCacheNames().stream()
                     .map(cacheManager::getCache)
                     .filter(Objects::nonNull)
@@ -83,13 +89,16 @@ public class InfinispanTimeServiceTask implements ServerTask<String> {
         this.context = context;
     }
 
+    /** {@inheritDoc} 在所有节点上执行。 */
     @Override
     public TaskExecutionMode getExecutionMode() {
         return TaskExecutionMode.ALL_NODES;
     }
 
+    /** 带秒级偏移的 Keycloak 测试用 TimeService 实现。 */
     public static final TimeService KEYCLOAK_TIME_SERVICE = new EmbeddedTimeService() {
 
+        /** 返回含偏移的当前毫秒时间戳。 */
         private long getCurrentTimeMillis() {
             return System.currentTimeMillis() + (TimeUnit.SECONDS.toMillis(offset));
         }

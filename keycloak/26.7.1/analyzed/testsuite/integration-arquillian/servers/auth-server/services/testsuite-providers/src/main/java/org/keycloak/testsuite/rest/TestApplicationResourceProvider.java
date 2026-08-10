@@ -52,26 +52,51 @@ import org.keycloak.utils.MediaType;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 测试应用 REST 资源提供者：接收适配器推送、登出通知及 OIDC 测试端点。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class TestApplicationResourceProvider implements RealmResourceProvider {
 
+    /** 当前 Keycloak 会话。 */
     private KeycloakSession session;
 
+    /** 管理端登出动作队列。 */
     private final BlockingQueue<LogoutAction> adminLogoutActions;
+    /** 前端通道登出令牌队列。 */
     private final BlockingQueue<LogoutToken> frontChannelLogoutTokens;
+    /** 后端通道登出令牌（原始字符串）队列。 */
     private final BlockingQueue<String> backChannelLogoutTokens;
+    /** Push-not-before 动作队列。 */
     private final BlockingQueue<PushNotBeforeAction> adminPushNotBeforeActions;
+    /** 可用性测试动作队列。 */
     private final BlockingQueue<TestAvailabilityAction> adminTestAvailabilityAction;
+    /** OIDC 客户端测试数据。 */
     private final TestApplicationResourceProviderFactory.OIDCClientData oidcClientData;
 
+    /** 认证通道请求映射（按 ID）。 */
     private final ConcurrentMap<String, TestAuthenticationChannelRequest> authenticationChannelRequests;
+    /** CIBA 客户端通知映射。 */
     private final ConcurrentMap<String, ClientNotificationEndpointRequest> cibaClientNotifications;
+    /** Intent 客户端绑定映射。 */
     private final ConcurrentMap<String, String> intentClientBindings;
 
+    /** 当前 HTTP 请求。 */
     private final HttpRequest request;
 
+    /**
+     * @param session Keycloak 会话
+     * @param adminLogoutActions 管理登出动作队列
+     * @param backChannelLogoutTokens 后端通道登出令牌队列
+     * @param frontChannelLogoutTokens 前端通道登出令牌队列
+     * @param adminPushNotBeforeActions Push-not-before 队列
+     * @param adminTestAvailabilityAction 可用性测试队列
+     * @param oidcClientData OIDC 客户端测试数据
+     * @param authenticationChannelRequests 认证通道请求映射
+     * @param cibaClientNotifications CIBA 通知映射
+     * @param intentClientBindings Intent 绑定映射
+     */
     public TestApplicationResourceProvider(KeycloakSession session, BlockingQueue<LogoutAction> adminLogoutActions,
             BlockingQueue<String> backChannelLogoutTokens,
             BlockingQueue<LogoutToken> frontChannelLogoutTokens,
@@ -94,6 +119,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         this.request = session.getContext().getHttpRequest();
     }
 
+    /** 接收 JWS 编码的管理端登出动作并入队。 */
     @POST
     @Consumes(MediaType.TEXT_PLAIN_UTF_8)
     @Path("/admin/k_logout")
@@ -101,6 +127,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         adminLogoutActions.add(new JWSInput(data).readJsonContent(LogoutAction.class));
     }
 
+    /** 接收后端通道登出表单并保存 logout_token。 */
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Path("/admin/backchannelLogout")
@@ -108,6 +135,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         backChannelLogoutTokens.add(request.getDecodedFormParameters().getFirst(OAuth2Constants.LOGOUT_TOKEN));
     }
 
+    /** 接收 JWS 编码的 push-not-before 动作并入队。 */
     @POST
     @Consumes(MediaType.TEXT_PLAIN_UTF_8)
     @Path("/admin/k_push_not_before")
@@ -115,6 +143,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         adminPushNotBeforeActions.add(new JWSInput(data).readJsonContent(PushNotBeforeAction.class));
     }
 
+    /** 接收 JWS 编码的可用性测试动作并入队。 */
     @POST
     @Consumes(MediaType.TEXT_PLAIN_UTF_8)
     @Path("/admin/k_test_available")
@@ -122,6 +151,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         adminTestAvailabilityAction.add(new JWSInput(data).readJsonContent(TestAvailabilityAction.class));
     }
 
+    /** 轮询管理端登出动作（最多等待 10 秒）。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/poll-admin-logout")
@@ -129,6 +159,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         return adminLogoutActions.poll(10, TimeUnit.SECONDS);
     }
 
+    /** 轮询后端通道登出令牌并解析为 {@link LogoutToken}。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/poll-backchannel-logout")
@@ -136,6 +167,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         return new JWSInput(backChannelLogoutTokens.poll(20, TimeUnit.SECONDS)).readJsonContent(LogoutToken.class);
     }
 
+    /** 轮询原始后端通道登出令牌字符串。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/poll-backchannel-raw-logout")
@@ -143,6 +175,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         return backChannelLogoutTokens.poll(20, TimeUnit.SECONDS);
     }
 
+    /** 轮询 push-not-before 动作。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/poll-admin-not-before")
@@ -150,6 +183,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         return adminPushNotBeforeActions.poll(10, TimeUnit.SECONDS);
     }
 
+    /** 轮询可用性测试动作。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/poll-test-available")
@@ -157,6 +191,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         return adminTestAvailabilityAction.poll(10, TimeUnit.SECONDS);
     }
 
+    /** 清空管理端动作队列。 */
     @POST
     @Path("/clear-admin-actions")
     public Response clearAdminActions() {
@@ -165,6 +200,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         return Response.noContent().build();
     }
 
+    /** 处理 POST 表单请求，渲染参数 HTML 或执行 clear-admin-actions。 */
     @POST
     @Consumes(jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_HTML_UTF_8)
@@ -200,6 +236,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         return Response.ok(sb.toString()).build();
     }
 
+    /** 处理 GET 请求，返回带账户链接的简单 HTML 页。 */
     @GET
     @Produces(MediaType.TEXT_HTML_UTF_8)
     @Path("/{action}")
@@ -222,6 +259,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         return sb.toString();
     }
 
+    /** 返回用于 AJAX 拉取账户资料的 HTML/JS 测试页。 */
     @GET
     @NoCache
     @Produces(MediaType.TEXT_HTML_UTF_8)
@@ -249,6 +287,7 @@ public class TestApplicationResourceProvider implements RealmResourceProvider {
         return sb.toString();
     }
 
+    /** 暴露 OIDC 客户端测试子资源。 */
     @Path("/oidc-client-endpoints")
     public TestingOIDCEndpointsApplicationResource getTestingOIDCClientEndpoints() {
         return new TestingOIDCEndpointsApplicationResource(oidcClientData, authenticationChannelRequests, cibaClientNotifications, intentClientBindings);

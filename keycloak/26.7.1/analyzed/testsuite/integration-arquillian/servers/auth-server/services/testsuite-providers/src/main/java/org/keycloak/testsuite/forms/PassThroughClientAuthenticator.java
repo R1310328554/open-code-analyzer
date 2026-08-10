@@ -34,17 +34,23 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 测试套件用的客户端直通认证器：自动认证硬编码客户端（如 {@code test-app}）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class PassThroughClientAuthenticator extends AbstractClientAuthenticator {
 
+    /** 提供者唯一标识。 */
     public static final String PROVIDER_ID = "testsuite-client-passthrough";
 
+    /** 硬编码的客户端 ID，用于查找并绑定客户端。 */
     public static String clientId = "test-app";
 
-    // If this parameter is present in the HTTP request, the error will be thrown during authentication
+    // 若 HTTP 请求中包含此参数，认证过程中将抛出异常
+    /** 测试用错误参数名；存在时触发 {@link RuntimeException}。 */
     public static final String TEST_ERROR_PARAM = "test_error_param";
 
+    /** 每客户端配置属性列表（foo/bar 占位项）。 */
     private static final List<ProviderConfigProperty> clientConfigProperties = new ArrayList<ProviderConfigProperty>();
 
     static {
@@ -64,6 +70,11 @@ public class PassThroughClientAuthenticator extends AbstractClientAuthenticator 
 
     }
 
+    /**
+     * 执行客户端认证：可选触发测试错误，否则绑定硬编码客户端。
+     *
+     * @param context 客户端认证流程上下文
+     */
     @Override
     public void authenticateClient(ClientAuthenticationFlowContext context) {
         String testErrorParamVal = context.getHttpRequest().getDecodedFormParameters().getFirst(TEST_ERROR_PARAM);
@@ -112,6 +123,7 @@ public class PassThroughClientAuthenticator extends AbstractClientAuthenticator 
         return clientConfigProperties;
     }
 
+    /** 返回适配器用的虚拟 dummy 配置映射。 */
     @Override
     public Map<String, Object> getAdapterConfiguration(KeycloakSession session, ClientModel client) {
         Map<String, Object> props = new HashMap<>();

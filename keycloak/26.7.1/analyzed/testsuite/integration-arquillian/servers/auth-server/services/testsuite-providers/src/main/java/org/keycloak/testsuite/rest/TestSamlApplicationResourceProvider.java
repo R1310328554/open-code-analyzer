@@ -42,18 +42,29 @@ import org.keycloak.services.resources.RealmsResource;
 import org.keycloak.utils.MediaType;
 
 /**
- * Copied from {@link TestApplicationResourceProvider} 
+ * SAML 测试应用 REST 资源提供者，自 {@link TestApplicationResourceProvider} 复制并精简。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class TestSamlApplicationResourceProvider implements RealmResourceProvider {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** 管理端登出动作队列。 */
     private final BlockingQueue<LogoutAction> adminLogoutActions;
+    /** Push-not-before 动作队列。 */
     private final BlockingQueue<PushNotBeforeAction> adminPushNotBeforeActions;
+    /** 可用性测试动作队列。 */
     private final BlockingQueue<TestAvailabilityAction> adminTestAvailabilityAction;
 
+    /**
+     * @param session Keycloak 会话
+     * @param adminLogoutActions 管理登出动作队列
+     * @param adminPushNotBeforeActions Push-not-before 队列
+     * @param adminTestAvailabilityAction 可用性测试队列
+     */
     public TestSamlApplicationResourceProvider(KeycloakSession session, BlockingQueue<LogoutAction> adminLogoutActions,
             BlockingQueue<PushNotBeforeAction> adminPushNotBeforeActions,
             BlockingQueue<TestAvailabilityAction> adminTestAvailabilityAction) {
@@ -63,6 +74,7 @@ public class TestSamlApplicationResourceProvider implements RealmResourceProvide
         this.adminTestAvailabilityAction = adminTestAvailabilityAction;
     }
 
+    /** 接收 SAML 路径下的 JWS 登出动作并入队。 */
     @POST
     @Consumes(MediaType.TEXT_PLAIN_UTF_8)
     @Path("/saml/k_logout")
@@ -70,6 +82,7 @@ public class TestSamlApplicationResourceProvider implements RealmResourceProvide
         adminLogoutActions.add(new JWSInput(data).readJsonContent(LogoutAction.class));
     }
 
+    /** 接收 SAML 路径下的 push-not-before 动作并入队。 */
     @POST
     @Consumes(MediaType.TEXT_PLAIN_UTF_8)
     @Path("/saml/k_push_not_before")
@@ -77,6 +90,7 @@ public class TestSamlApplicationResourceProvider implements RealmResourceProvide
         adminPushNotBeforeActions.add(new JWSInput(data).readJsonContent(PushNotBeforeAction.class));
     }
 
+    /** 接收 SAML 路径下的可用性测试动作并入队。 */
     @POST
     @Consumes(MediaType.TEXT_PLAIN_UTF_8)
     @Path("/saml/k_test_available")
@@ -84,6 +98,7 @@ public class TestSamlApplicationResourceProvider implements RealmResourceProvide
         adminTestAvailabilityAction.add(new JWSInput(data).readJsonContent(TestAvailabilityAction.class));
     }
 
+    /** 轮询管理端登出动作。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/poll-admin-logout")
@@ -91,6 +106,7 @@ public class TestSamlApplicationResourceProvider implements RealmResourceProvide
         return adminLogoutActions.poll(10, TimeUnit.SECONDS);
     }
 
+    /** 轮询 push-not-before 动作。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/poll-admin-not-before")
@@ -98,6 +114,7 @@ public class TestSamlApplicationResourceProvider implements RealmResourceProvide
         return adminPushNotBeforeActions.poll(10, TimeUnit.SECONDS);
     }
 
+    /** 轮询可用性测试动作。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/poll-test-available")
@@ -105,6 +122,7 @@ public class TestSamlApplicationResourceProvider implements RealmResourceProvide
         return adminTestAvailabilityAction.poll(10, TimeUnit.SECONDS);
     }
 
+    /** 清空管理端动作队列。 */
     @POST
     @Path("/clear-admin-actions")
     public Response clearAdminActions() {
@@ -113,6 +131,7 @@ public class TestSamlApplicationResourceProvider implements RealmResourceProvide
         return Response.noContent().build();
     }
 
+    /** 处理 POST 请求，渲染表单参数 HTML 页。 */
     @POST
     @Produces(MediaType.TEXT_HTML_UTF_8)
     @Path("/{action}")
@@ -142,6 +161,7 @@ public class TestSamlApplicationResourceProvider implements RealmResourceProvide
         return sb.toString();
     }
 
+    /** 处理 GET 请求，返回带账户链接的简单 HTML 页。 */
     @GET
     @Produces(MediaType.TEXT_HTML_UTF_8)
     @Path("/{action}")

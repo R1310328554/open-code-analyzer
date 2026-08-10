@@ -30,10 +30,18 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * 测试套件用的错误事件触发认证器：向事件日志写入伪造用户与错误消息后立即成功。
+ */
 public class ErrorEventAuthenticator implements Authenticator, AuthenticatorFactory {
+    /** 提供者唯一标识。 */
     public static final String PROVIDER_ID = "test-suite-fire-error-event";
+    /** 写入事件日志的错误消息。 */
     public static final String ERROR_MESSAGE = "fire-error-event";
+    /** 写入事件的伪造用户 ID。 */
     public static final String FAKE_USERID = "fake-userid";
+
+    /** 触发错误事件并标记认证成功。 */
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         context.getEvent().user(FAKE_USERID);
@@ -42,21 +50,25 @@ public class ErrorEventAuthenticator implements Authenticator, AuthenticatorFact
         context.success();
     }
 
+    /** {@inheritDoc} 不依赖已有用户。 */
     @Override
     public boolean requiresUser() {
         return false;
     }
 
+    /** {@inheritDoc} 对所有用户均视为已配置。 */
     @Override
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }
 
+    /** {@inheritDoc} 无需设置必需操作。 */
     @Override
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
 
     }
 
+    /** {@inheritDoc} 无表单动作处理。 */
     @Override
     public void action(AuthenticationFlowContext context) {
     }

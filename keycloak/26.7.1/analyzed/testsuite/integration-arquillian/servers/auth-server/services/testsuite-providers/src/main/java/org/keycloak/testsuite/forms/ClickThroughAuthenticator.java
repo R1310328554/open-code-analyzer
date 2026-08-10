@@ -33,33 +33,41 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 测试套件用的“点击通过”认证器：展示条款页面，用户确认后继续流程。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ClickThroughAuthenticator implements Authenticator, AuthenticatorFactory {
+    /** 提供者唯一标识。 */
     public static final String PROVIDER_ID = "testsuite-dummy-click-through";
 
+    /** 展示 terms.ftl 表单作为挑战页面。 */
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         Response challenge = context.form().createForm("terms.ftl");
         context.challenge(challenge);
     }
 
+    /** {@inheritDoc} 本认证器不依赖已有用户。 */
     @Override
     public boolean requiresUser() {
         return false;
     }
 
+    /** {@inheritDoc} 对所有用户均视为已配置。 */
     @Override
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }
 
+    /** {@inheritDoc} 无需设置必需操作。 */
     @Override
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
 
     }
 
+    /** 处理表单提交；若用户取消则重新展示挑战页，否则标记成功。 */
     @Override
     public void action(AuthenticationFlowContext context) {
         if (context.getHttpRequest().getDecodedFormParameters().containsKey("cancel")) {

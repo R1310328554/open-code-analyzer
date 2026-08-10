@@ -33,13 +33,18 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 测试套件用的直通认证器：硬编码查找指定用户并直接标记认证成功。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PassThroughAuthenticator implements Authenticator, AuthenticatorFactory {
+    /** 提供者唯一标识。 */
     public static final String PROVIDER_ID = "testsuite-dummy-passthrough";
+    /** 硬编码的用户名，用于查找并绑定用户。 */
     public static String username = "test-user@localhost";
 
+    /** 按硬编码用户名查找用户；找不到则失败，否则设置用户并成功。 */
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         UserModel user = KeycloakModelUtils.findUserByNameOrEmail(context.getSession(), context.getRealm(), username);
@@ -51,21 +56,25 @@ public class PassThroughAuthenticator implements Authenticator, AuthenticatorFac
         context.success();
     }
 
+    /** {@inheritDoc} 不依赖已有用户。 */
     @Override
     public boolean requiresUser() {
         return false;
     }
 
+    /** {@inheritDoc} 对所有用户均视为已配置。 */
     @Override
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }
 
+    /** {@inheritDoc} 无需设置必需操作。 */
     @Override
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
 
     }
 
+    /** {@inheritDoc} 无表单动作处理。 */
     @Override
     public void action(AuthenticationFlowContext context) {
 
@@ -86,6 +95,7 @@ public class PassThroughAuthenticator implements Authenticator, AuthenticatorFac
         return false;
     }
 
+    /** 本认证器仅支持 REQUIRED 执行要求。 */
     public static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED
     };

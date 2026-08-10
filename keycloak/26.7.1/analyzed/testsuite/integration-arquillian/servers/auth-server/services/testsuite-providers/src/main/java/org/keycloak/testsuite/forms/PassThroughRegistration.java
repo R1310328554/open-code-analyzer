@@ -34,14 +34,20 @@ import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 测试套件用的直通注册认证器：硬编码创建用户并记录注册/登录事件。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PassThroughRegistration implements Authenticator, AuthenticatorFactory {
+    /** 提供者唯一标识。 */
     public static final String PROVIDER_ID = "testsuite-dummy-registration";
+    /** 硬编码注册用户名。 */
     public static String username = "new-user@localhost";
+    /** 硬编码注册邮箱。 */
     public static String email = "new-user@localhost";
 
+    /** 创建硬编码用户、写入事件详情并切换至登录事件。 */
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         context.getEvent().detail(Details.USERNAME, username)
@@ -67,21 +73,25 @@ public class PassThroughRegistration implements Authenticator, AuthenticatorFact
         context.success();
     }
 
+    /** {@inheritDoc} 不依赖已有用户。 */
     @Override
     public boolean requiresUser() {
         return false;
     }
 
+    /** {@inheritDoc} 对所有用户均视为已配置。 */
     @Override
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }
 
+    /** {@inheritDoc} 无需设置必需操作。 */
     @Override
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
 
     }
 
+    /** {@inheritDoc} 无表单动作处理。 */
     @Override
     public void action(AuthenticationFlowContext context) {
 
@@ -102,6 +112,7 @@ public class PassThroughRegistration implements Authenticator, AuthenticatorFact
         return false;
     }
 
+    /** 本认证器仅支持 REQUIRED 执行要求。 */
     public static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED
     };

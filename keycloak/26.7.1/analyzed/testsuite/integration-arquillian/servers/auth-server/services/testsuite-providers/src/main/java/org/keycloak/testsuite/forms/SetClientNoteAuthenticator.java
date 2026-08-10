@@ -37,17 +37,22 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 将 HTTP 请求中以 {@link #PREFIX} 开头的表单参数写入认证会话客户端备注的认证器。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SetClientNoteAuthenticator implements Authenticator, AuthenticatorFactory {
 
     protected static final Logger logger = Logger.getLogger(SetClientNoteAuthenticator.class);
 
+    /** 提供者唯一标识。 */
     public static final String PROVIDER_ID = "set-client-note-authenticator";
 
-    // Query parameters of this name will be used to save the client note to authentication session
+    // 以此前缀开头的查询参数将保存为认证会话的客户端备注
+    /** 表单参数名前缀；去掉前缀后的部分作为 client note 键。 */
     public static final String PREFIX = "note-";
 
+    /** 扫描表单参数，将 note-* 键值对写入认证会话并标记成功。 */
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> inputData = context.getHttpRequest().getDecodedFormParameters();
@@ -65,21 +70,25 @@ public class SetClientNoteAuthenticator implements Authenticator, AuthenticatorF
         context.success();
     }
 
+    /** {@inheritDoc} 不依赖已有用户。 */
     @Override
     public boolean requiresUser() {
         return false;
     }
 
+    /** {@inheritDoc} 对所有用户均视为已配置。 */
     @Override
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }
 
+    /** {@inheritDoc} 无需设置必需操作。 */
     @Override
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
 
     }
 
+    /** {@inheritDoc} 无表单动作处理。 */
     @Override
     public void action(AuthenticationFlowContext context) {
 
@@ -100,6 +109,7 @@ public class SetClientNoteAuthenticator implements Authenticator, AuthenticatorF
         return false;
     }
 
+    /** 本认证器仅支持 REQUIRED 执行要求。 */
     public static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED
     };
