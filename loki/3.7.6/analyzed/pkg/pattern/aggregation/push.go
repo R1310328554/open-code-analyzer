@@ -1,5 +1,7 @@
 package aggregation
 
+// aggregation 包 push 实现 EntryWriter：将模式/聚合指标条目异步批量 POST 到 Loki /loki/api/v1/push。
+
 import (
 	"bufio"
 	"bytes"
@@ -43,6 +45,7 @@ const (
 
 var defaultUserAgent = fmt.Sprintf("pattern-ingester-push/%s", build.GetVersion().Version)
 
+// EntryWriter 抽象非阻塞写日志入口，Stop 用于优雅关闭后台 goroutine。
 type EntryWriter interface {
 	// WriteEntry handles sending the log to the output
 	// To maintain consistent log timing, Write is expected to be non-blocking
@@ -50,6 +53,7 @@ type EntryWriter interface {
 	Stop()
 }
 
+// Push 为单租户维护条目缓冲，按 pushPeriod 定时构建 snappy 压缩 protobuf 并发送。
 // Push is a io.Writer, that writes given log entries by pushing
 // directly to the given loki server URL. Each `Push` instance handles for a single tenant.
 // No batching of log lines happens when sending to Loki.
@@ -106,6 +110,7 @@ func (e *entries) reset() []entry {
 }
 
 // NewPush creates an instance of `Push` which writes logs directly to given `lokiAddr`
+// NewPush 构造 HTTP 客户端、Loki push URL，并启动 run 循环定期 flush。
 func NewPush(
 	lokiAddr, tenantID string,
 	timeout time.Duration,
@@ -161,6 +166,7 @@ func NewPush(
 }
 
 // WriteEntry implements EntryWriter
+// WriteEntry 将条目追加到内存队列，由 run 周期性地批量发送。
 func (p *Push) WriteEntry(ts time.Time, e string, lbls labels.Labels, structuredMetadata []logproto.LabelAdapter) {
 	p.entries.add(entry{ts: ts, entry: e, labels: lbls, structuredMetadata: structuredMetadata})
 }
@@ -174,6 +180,7 @@ func (p *Push) Stop() {
 }
 
 // buildPayload creates the snappy compressed protobuf to send to Loki
+// buildPayload 按 stream 标签分组条目，序列化为 PushRequest 并 snappy 压缩。
 func (p *Push) buildPayload(ctx context.Context) ([]byte, error) {
 	_, sp := tracer.Start(ctx, "patternIngester.aggregation.Push.buildPayload")
 	defer sp.End()
@@ -255,6 +262,7 @@ func (p *Push) buildPayload(ctx context.Context) ([]byte, error) {
 }
 
 // run pulls lines out of the channel and sends them to Loki
+// run 在 ticker 触发时构建 payload，带指数退避重试 send 直至成功或放弃。
 func (p *Push) run(pushPeriod time.Duration) {
 	defer p.running.Done()
 
@@ -314,6 +322,7 @@ func (p *Push) run(pushPeriod time.Duration) {
 }
 
 // send makes one attempt to send the payload to Loki
+// send 执行单次 HTTP POST，设置 X-Scope-OrgID 与 BasicAuth，记录错误类型指标。
 func (p *Push) send(ctx context.Context, payload []byte) (int, error) {
 	var (
 		err  error
@@ -373,6 +382,7 @@ func (p *Push) send(ctx context.Context, payload []byte) (int, error) {
 	return statusCode, err
 }
 
+// AggregatedMetricEntry 格式化聚合指标日志行（ts/bytes/count 及 stream 标签）。
 func AggregatedMetricEntry(
 	ts model.Time,
 	totalBytes, totalCount uint64,
@@ -389,6 +399,7 @@ func AggregatedMetricEntry(
 	return internalEntry(base, lbls)
 }
 
+// PatternEntry 格式化检测到的模式样本行，pattern 经 QueryEscape 转义。
 func PatternEntry(
 	ts time.Time,
 	count int64,
@@ -415,3 +426,4 @@ func internalEntry(
 
 	return base
 }
+// internalEntry 将 labels 序列化为 key="value" 片段附加到日志行末尾。

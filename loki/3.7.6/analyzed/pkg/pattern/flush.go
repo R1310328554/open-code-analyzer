@@ -1,5 +1,7 @@
 package pattern
 
+// pattern 包 flush 负责 ingester 级定期 sweep：清理过期 stream、关闭 flush 优先级队列。
+
 import (
 	"fmt"
 
@@ -18,6 +20,7 @@ func (i *Ingester) initFlushQueues() {
 	}
 }
 
+// Flush 触发立即 sweep 并等待所有 flush 队列 drain 完成。
 func (i *Ingester) Flush() {
 	i.flush(true)
 }
@@ -34,6 +37,7 @@ func (i *Ingester) flush(mayRemoveStreams bool) {
 	level.Debug(i.logger).Log("msg", "flush queues have drained")
 }
 
+// flushOp 实现 PriorityQueue 元素：按 userID/fp 键与 from 时间戳优先级排序。
 type flushOp struct {
 	from      model.Time
 	userID    string
@@ -49,6 +53,7 @@ func (o *flushOp) Priority() int64 {
 	return -int64(o.from)
 }
 
+// sweepUsers 遍历所有租户 instance，调用 sweepInstance  prune 超 RetainFor 的 stream。
 // sweepUsers periodically schedules series for flushing and garbage collects users with no series
 func (i *Ingester) sweepUsers(immediate, mayRemoveStreams bool) {
 	instances := i.getInstances()
@@ -58,6 +63,7 @@ func (i *Ingester) sweepUsers(immediate, mayRemoveStreams bool) {
 	}
 }
 
+// sweepInstance 对每个 stream 调用 prune，满足条件时从 instance 索引中移除。
 func (i *Ingester) sweepInstance(instance *instance, _, mayRemoveStreams bool) {
 	level.Debug(i.logger).Log("msg", "sweeping instance", "instance", instance.instanceID)
 	_ = instance.streams.ForEach(func(s *stream) (bool, error) {
@@ -71,3 +77,4 @@ func (i *Ingester) sweepInstance(instance *instance, _, mayRemoveStreams bool) {
 		return true, nil
 	})
 }
+// flush(false) 在 shutdown 路径关闭队列并 Wait flushQueuesDone，确保后台 worker 退出。

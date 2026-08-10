@@ -1,5 +1,7 @@
 package iter
 
+// iter 包 batch 从 Iterator 批量读取 PatternSample，组装为 QueryPatternsResponse 的 Series 切片。
+
 import (
 	"math"
 
@@ -37,6 +39,8 @@ func ReadBatch(it Iterator, batchSize int) (*logproto.QueryPatternsResponse, err
 	return &result, it.Err()
 }
 
+// ReadAll 等价于 ReadBatch(it, MaxInt32)，一次性耗尽迭代器。
 func ReadAll(it Iterator) (*logproto.QueryPatternsResponse, error) {
 	return ReadBatch(it, math.MaxInt32)
 }
+// Merge/NewQueryClientIterator 等组合器与 ReadBatch 配合实现跨 ingester 查询合并。

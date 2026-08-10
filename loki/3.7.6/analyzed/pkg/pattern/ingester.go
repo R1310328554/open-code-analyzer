@@ -1,5 +1,7 @@
 package pattern
 
+// pattern 包 ingester 是 Loki 模式挖掘组件核心：ring 注册、Push/Query RPC、租户 instance 管理与周期性 flush/指标降采样。
+
 import (
 	"context"
 	"errors"
@@ -32,6 +34,7 @@ import (
 
 const readBatchSize = 1024
 
+// Config 聚合 lifecycler、client pool、Drain 限制、聚合/持久化推送与 tee 批处理参数。
 type Config struct {
 	Enabled               bool                  `yaml:"enabled,omitempty" doc:"description=Whether the pattern ingester is enabled."`
 	LifecyclerConfig      ring.LifecyclerConfig `yaml:"lifecycler,omitempty" doc:"description=Configures how the lifecycle of the pattern ingester will operate and where it will register for discovery."`
@@ -54,6 +57,7 @@ type Config struct {
 	factory ring_client.PoolFactory `yaml:"-"`
 }
 
+// RegisterFlags 注册 pattern-ingester.* CLI 标志并校验 retain/chunk/sample 间隔关系。
 // RegisterFlags registers pattern ingester related flags.
 func (cfg *Config) RegisterFlags(fs *flag.FlagSet) {
 	cfg.LifecyclerConfig.RegisterFlagsWithPrefix("pattern-ingester.", fs, util_log.Logger)
@@ -194,6 +198,7 @@ func (cfg *Config) Validate() error {
 	return cfg.LifecyclerConfig.Validate()
 }
 
+// Limits 扩展 drain.Limits，增加租户级聚合/持久化开关、粒度与速率阈值。
 type Limits interface {
 	drain.Limits
 	MetricAggregationEnabled(userID string) bool
@@ -202,6 +207,7 @@ type Limits interface {
 	PatternRateThreshold(userID string) float64
 }
 
+// Ingester 持有 lifecycler、instances 映射、flush 队列与 drain 默认配置副本。
 type Ingester struct {
 	services.Service
 	lifecycler *ring.Lifecycler
@@ -228,6 +234,7 @@ type Ingester struct {
 	drainCfg *drain.Config
 }
 
+// New 构造 Ingester、注册 ring lifecycler 并初始化 metrics 与 drainCfg。
 func New(
 	cfg Config,
 	limits Limits,
@@ -330,6 +337,7 @@ func (i *Ingester) stopping(_ error) error {
 	return err
 }
 
+// loop 带 jitter 的周期性 sweep 与 MetricAggregation.SamplePeriod 降采样 ticker。
 func (i *Ingester) loop() {
 	defer i.loopDone.Done()
 
@@ -394,6 +402,7 @@ func (i *Ingester) TransferOut(_ context.Context) error {
 	return ring.ErrTransferDisabled
 }
 
+// Push 从 context 解析租户 ID，路由到 GetOrCreateInstance 处理日志流。
 func (i *Ingester) Push(ctx context.Context, req *logproto.PushRequest) (*logproto.PushResponse, error) {
 	instanceID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -406,6 +415,7 @@ func (i *Ingester) Push(ctx context.Context, req *logproto.PushRequest) (*logpro
 	return &logproto.PushResponse{}, instance.Push(ctx, req)
 }
 
+// Query 构建租户级 pattern 迭代器，经 ReadBatch 分批 Send 到 gRPC stream。
 func (i *Ingester) Query(req *logproto.QueryPatternsRequest, stream logproto.Pattern_QueryServer) error {
 	ctx := stream.Context()
 	instanceID, err := tenant.TenantID(ctx)
@@ -440,6 +450,7 @@ func sendPatternSample(ctx context.Context, it iter.Iterator, stream logproto.Pa
 	return nil
 }
 
+// GetOrCreateInstance 懒创建租户 instance，并按 limits 初始化 metric/pattern Push writer。
 func (i *Ingester) GetOrCreateInstance(instanceID string) (*instance, error) { //nolint:revive
 	inst, ok := i.getInstanceByID(instanceID)
 	if ok {
@@ -549,6 +560,7 @@ func (i *Ingester) stopWriters() {
 }
 
 // flushPatterns flushes all patterns from all instances on shutdown.
+// flushPatterns 在 stopping 时对所有启用持久化的 instance 调用 flushPatterns。
 func (i *Ingester) flushPatterns() {
 	level.Info(i.logger).Log("msg", "flushing patterns on shutdown")
 	instances := i.getInstances()
@@ -569,3 +581,4 @@ func (i *Ingester) downsampleMetrics(ts model.Time) {
 		}
 	}
 }
+// downsampleMetrics 遍历 instance 调用 Downsample，将 Observe 累积的字节/条数写入 Loki。

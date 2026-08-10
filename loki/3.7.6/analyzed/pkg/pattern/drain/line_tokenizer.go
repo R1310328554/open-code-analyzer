@@ -1,5 +1,7 @@
 package drain
 
+// drain 包 line_tokenizer 将原始日志行切分为 token 序列，支持空格/标点/logfmt/JSON 及占位符去重。
+
 import (
 	"bytes"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logql/log/logfmt"
 )
 
+// LineTokenizer 定义 Tokenize/Join/Clone：分词、还原模式字符串与深拷贝 token 状态。
 type LineTokenizer interface {
 	Tokenize(line string, tokens []string, state interface{}, linesDropped *prometheus.CounterVec) ([]string, interface{})
 	Join(tokens []string, state interface{}) string
@@ -41,6 +44,7 @@ type punctuationTokenizer struct {
 	maxLineLength     int
 }
 
+// newPunctuationTokenizer 按标点与空格切分非结构化日志，保留空格位置于 state。
 func newPunctuationTokenizer(maxLineLength int) *punctuationTokenizer {
 	var included [128]rune
 	var excluded [128]rune
@@ -215,6 +219,7 @@ type logfmtTokenizer struct {
 	maxLineLength int
 }
 
+// newLogfmtTokenizer 逐 key=value 解析 logfmt，可变字段（ts/traceID 等）替换为占位符。
 func newLogfmtTokenizer(varReplace string, maxLineLength int) *logfmtTokenizer {
 	return &logfmtTokenizer{
 		dec:           logfmt.NewDecoder(nil),
@@ -290,6 +295,7 @@ type jsonTokenizer struct {
 	fieldsToTokenize []string
 }
 
+// newJSONTokenizer 从 JSON 指定字段提取内嵌消息，再交给 punctuationTokenizer 切分。
 func newJSONTokenizer(varReplace string, maxLineLength int, fieldsToTokenize []string) *jsonTokenizer {
 	return &jsonTokenizer{
 		punctuationTokenizer: newPunctuationTokenizer(maxLineLength),
@@ -331,6 +337,7 @@ func (t *jsonTokenizer) Join(tokens []string, state interface{}) string {
 	return fmt.Sprintf("%s%s%s", t.varReplace, t.punctuationTokenizer.Join(tokens, state), t.varReplace)
 }
 
+// isVariableField 识别时间戳/trace 等应参数化的 logfmt 键名。
 func isVariableField(key []byte) bool {
 	return bytes.EqualFold(key, []byte("ts")) ||
 		bytes.Equal(key, []byte("t")) ||
@@ -339,6 +346,7 @@ func isVariableField(key []byte) bool {
 		bytes.EqualFold(key, []byte("timestamp"))
 }
 
+// DedupingTokenizer 包装 LineTokenizer，Join 时合并连续 ParamString 占位符。
 type DedupingTokenizer struct {
 	LineTokenizer
 	dedupParam string
@@ -347,3 +355,4 @@ type DedupingTokenizer struct {
 func (d DedupingTokenizer) Join(tokens []string, state interface{}) string {
 	return deduplicatePlaceholders(d.LineTokenizer.Join(tokens, state), d.dedupParam)
 }
+// linesDropped 非 nil 时在行过长或解析失败时递增 LinesSkipped 指标。

@@ -1,5 +1,7 @@
 package drain
 
+// drain 包 chunk 将模式匹配计数按时间窗口切分为 Chunk 序列，支持查询重采样与合并。
+
 import (
 	"sort"
 	"time"
@@ -18,6 +20,7 @@ const (
 
 type Chunks []Chunk
 
+// Chunk 保存同一时间跨度内的 PatternSample 切片，按 sampleInterval 递增计数。
 type Chunk struct {
 	Samples []logproto.PatternSample
 }
@@ -40,6 +43,7 @@ func (c Chunk) spaceFor(ts model.Time, maxChunkAge time.Duration) bool {
 	return ts.Sub(c.Samples[0].Timestamp) < maxChunkAge
 }
 
+// ForRange 在 [start,end) 内选取样本，必要时按 step 聚合为更大步长的 bucket。
 // ForRange returns samples with only the values
 // in the given range [start:end) and aggregates them by step duration.
 // start and end are in milliseconds since epoch. step is a duration in milliseconds.
@@ -98,6 +102,7 @@ func (c Chunk) ForRange(start, end, step, sampleInterval model.Time) []logproto.
 	return aggregatedSamples
 }
 
+// Add 在 Chunks 末尾追加或递增样本；跨 maxChunkAge 时开新 Chunk 并返回上一样本。
 // Add records the sample by incrementing the value of the current sample
 // or creating a new sample if past the time resolution of the current one.
 // Returns the previous sample if a new sample was created, nil otherwise.
@@ -127,6 +132,7 @@ func (c *Chunks) Add(ts model.Time, maxChunkAge time.Duration, sampleInterval ti
 	return &last.Samples[len(last.Samples)-2]
 }
 
+// Iterator 为每个 Chunk 构建 ForRange 子迭代器，再合并非重叠序列。
 func (c Chunks) Iterator(pattern, lvl string, from, through, step, sampleInterval model.Time) iter.Iterator {
 	iters := make([]iter.Iterator, 0, len(c))
 	for _, chunk := range c {
@@ -155,6 +161,7 @@ func (c Chunks) samples() []*logproto.PatternSample {
 	return s
 }
 
+// merge 按时间戳归并外部样本与本地 Chunk，相同时间戳累加 Value。
 func (c *Chunks) merge(samples []*logproto.PatternSample) []logproto.PatternSample {
 	toMerge := c.samples()
 	// TODO: Avoid allocating a new slice, if possible.
@@ -186,6 +193,7 @@ func (c *Chunks) merge(samples []*logproto.PatternSample) []logproto.PatternSamp
 	return result
 }
 
+// prune 移除最后样本早于 olderThan 的 Chunk，返回被丢弃样本供持久化或合并。
 func (c *Chunks) prune(olderThan time.Duration) []*logproto.PatternSample {
 	if len(*c) == 0 {
 		return nil
@@ -215,4 +223,6 @@ func (c *Chunks) size() int {
 	return size
 }
 
+// TruncateTimestamp 将毫秒时间戳向下对齐到 step 边界。
 func TruncateTimestamp(ts, step model.Time) model.Time { return ts - ts%step }
+// size 汇总所有样本 Value 作为模式出现次数，用于集群 Size 与剪枝决策。

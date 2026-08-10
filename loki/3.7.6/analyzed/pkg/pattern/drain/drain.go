@@ -22,6 +22,8 @@
 
 package drain
 
+// drain 实现 Drain 日志模板挖掘算法：前缀树索引 token 序列，LRU 缓存 LogCluster，支持 logfmt/JSON/标点分词与相似度匹配。
+
 import (
 	"math"
 	"strconv"
@@ -35,6 +37,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// Config 控制树深度、相似度阈值 SimTh、最大子节点数、样本间隔与 chunk 寿命等。
 type Config struct {
 	maxNodeDepth         int
 	LogClusterDepth      int
@@ -49,6 +52,7 @@ type Config struct {
 	SampleInterval       time.Duration
 }
 
+// Limits 供租户级 JSON 可 tokenize 字段列表等限制注入 Drain。
 type Limits interface {
 	PatternIngesterTokenizableJSONFields(userID string) []string
 }
@@ -63,6 +67,7 @@ func createLogClusterCache(maxSize int, onEvict func(int, *LogCluster)) *LogClus
 	}
 }
 
+// LogClusterCache 包装 LRU，驱逐时触发指标与 limiter 回调。
 type LogClusterCache struct {
 	cache simplelru.LRUCache[int, *LogCluster]
 }
@@ -90,6 +95,7 @@ func createNode() *Node {
 	}
 }
 
+// Node 为 Drain 前缀树节点：子节点 map 与叶子上关联的 cluster ID 列表。
 type Node struct {
 	keyToChildNode map[string]*Node
 	clusterIDs     []int
@@ -143,6 +149,7 @@ func DefaultConfig() *Config {
 	}
 }
 
+// New 按日志格式选择 tokenizer，创建 LRU 集群缓存与 eviction limiter。
 func New(tenantID string, config *Config, limits Limits, format string, metrics *Metrics) *Drain {
 	if config.LogClusterDepth < 3 {
 		panic("depth argument must be at least 3")
@@ -189,6 +196,7 @@ func New(tenantID string, config *Config, limits Limits, format string, metrics 
 	return d
 }
 
+// Drain 维护 rootNode、idToCluster、tokenizer 与训练状态 tokens/state。
 type Drain struct {
 	config          *Config
 	rootNode        *Node
@@ -207,6 +215,7 @@ func (d *Drain) Clusters() []*LogCluster {
 	return d.idToCluster.Values()
 }
 
+// Train 在 limiter 允许时分词日志行，匹配或新建 LogCluster 并更新时序样本。
 func (d *Drain) Train(content string, ts int64) *LogCluster {
 	if !d.limiter.Allow() {
 		return nil
@@ -328,6 +337,7 @@ func (d *Drain) Delete(cluster *LogCluster) {
 	d.pruning = false
 }
 
+// treeSearch 按 token 数量进入首层，再沿前缀向下直至叶，调用 fastMatch 选最佳集群。
 func (d *Drain) treeSearch(rootNode *Node, tokens []string, simTh float64, includeParams bool) *LogCluster {
 	tokenCount := len(tokens)
 
@@ -373,6 +383,7 @@ func (d *Drain) treeSearch(rootNode *Node, tokens []string, simTh float64, inclu
 	return cluster
 }
 
+// fastMatch 在候选 clusterIDs 中计算序列相似度，取 simTh 以上且参数位最多的集群。
 // fastMatch Find the best match for a log message (represented as tokens) versus a list of clusters
 func (d *Drain) fastMatch(clusterIDs []int, tokens []string, simTh float64, includeParams bool) *LogCluster {
 	var matchCluster, maxCluster *LogCluster
@@ -430,6 +441,7 @@ func (d *Drain) getSeqDistance(clusterTokens, tokens []string, includeParams boo
 	return retVal, paramCount
 }
 
+// addSeqToPrefixTree 将新集群 token 序列插入前缀树，数字 token 优先走 ParamString 通配路径。
 func (d *Drain) addSeqToPrefixTree(rootNode *Node, cluster *LogCluster) {
 	tokenCount := len(cluster.Tokens)
 	tokenCountStr := strconv.Itoa(tokenCount)
@@ -516,6 +528,7 @@ func (d *Drain) hasNumbers(s string) bool {
 	return false
 }
 
+// createTemplate 将不匹配位置替换为 ParamString，泛化集群模板。
 func (d *Drain) createTemplate(tokens, matchClusterTokens []string) []string {
 	if len(tokens) != len(matchClusterTokens) {
 		panic("seq1 seq2 be of same length")
@@ -535,3 +548,4 @@ func unsafeString(s []byte) string {
 func unsafeBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s)) // #nosec G103 -- we know the string is not mutated -- nosemgrep: use-of-unsafe-block
 }
+// Prune/pruneTree 递归清理树中已驱逐的 cluster 引用，保持前缀树与 LRU 一致。

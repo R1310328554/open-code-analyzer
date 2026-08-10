@@ -1,5 +1,7 @@
 package clientpool
 
+// clientpool 为 pattern ingester 提供 gRPC 客户端工厂：连接远端 ingester、健康检查与拦截器链。
+
 import (
 	"flag"
 	"io"
@@ -24,6 +26,7 @@ var ingesterClientRequestDuration = promauto.NewHistogramVec(prometheus.Histogra
 	Buckets: prometheus.ExponentialBuckets(0.001, 4, 6),
 }, []string{"operation", "status_code"})
 
+// HealthAndIngesterClient 组合 Pattern RPC、grpc health 与 Close 能力。
 type HealthAndIngesterClient interface {
 	grpc_health_v1.HealthClient
 	Close() error
@@ -35,6 +38,7 @@ type ClosableHealthAndIngesterClient struct {
 	io.Closer
 }
 
+// Config 配置连接池、远程超时、gRPC 客户端选项及是否内部机器调用（跳过 userid 注入）。
 // Config for an ingester client.
 type Config struct {
 	PoolConfig                   PoolConfig                     `yaml:"pool_config,omitempty" doc:"description=Configures how connections are pooled."`
@@ -59,6 +63,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 }
 
 // New returns a new ingester client.
+// NewClient 拨号 addr，挂载 OTel stats handler 与 instrumentation 拦截器。
 func NewClient(cfg Config, addr string) (HealthAndIngesterClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(cfg.GRPCClientConfig.CallOptions()...),
@@ -84,6 +89,7 @@ func NewClient(cfg Config, addr string) (HealthAndIngesterClient, error) {
 	}, nil
 }
 
+// instrumentation 组装 query tags、用户头、请求耗时 histogram 等客户端拦截器。
 func instrumentation(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.StreamClientInterceptor) {
 	var unaryInterceptors []grpc.UnaryClientInterceptor
 	unaryInterceptors = append(unaryInterceptors, cfg.GRPCUnaryClientInterceptors...)
@@ -103,3 +109,4 @@ func instrumentation(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.StreamC
 
 	return unaryInterceptors, streamInterceptors
 }
+// ClosableHealthAndIngesterClient 将 PatternClient、HealthClient 与 conn Close 绑定为同一句柄。

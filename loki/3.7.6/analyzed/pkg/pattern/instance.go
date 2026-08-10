@@ -1,5 +1,7 @@
 package pattern
 
+// pattern 包 instance 表示单租户模式 ingester 状态：stream 映射、倒排索引、Drain 配置与聚合/模式写回 Loki 的 EntryWriter。
+
 import (
 	"context"
 	"errors"
@@ -36,6 +38,7 @@ var tracer = otel.Tracer("pkg/pattern")
 
 const indexShards = 32
 
+// instance 通过 FpMapper 与 BitPrefixInvertedIndex 管理 stream 指纹与标签查询。
 // instance is a tenant instance of the pattern ingester.
 type instance struct {
 	instanceID      string
@@ -64,6 +67,7 @@ type aggregatedMetrics struct {
 	count uint64
 }
 
+// newInstance 初始化 streamsMap、32 分片倒排索引与 per-stream 聚合 metrics 映射。
 func newInstance(
 	instanceID string,
 	logger log.Logger,
@@ -102,6 +106,7 @@ func newInstance(
 	return i, nil
 }
 
+// Push 对所有 stream Observe 指标；仅 ring 归属本 ingester 的 stream 才做模式检测。
 // Push pushes the log entries in the given PushRequest to the appropriate streams.
 // It returns an error if any error occurs during the push operation.
 func (i *instance) Push(ctx context.Context, req *logproto.PushRequest) error {
@@ -146,6 +151,7 @@ func (i *instance) Push(ctx context.Context, req *logproto.PushRequest) error {
 	return appendErr.Err()
 }
 
+// isOwnedStream 用 TokenFor 查 ring Write 复制集，判断当前 ingester 是否应处理该 stream。
 func (i *instance) isOwnedStream(ingesterID string, stream string) (bool, error) {
 	var descs [1]ring.InstanceDesc
 	replicationSet, err := i.ringClient.Ring().Get(
@@ -175,6 +181,7 @@ func (i *instance) isOwnedStream(ingesterID string, stream string) (bool, error)
 	return false, nil
 }
 
+// Iterator 解析 matchers，对匹配 stream 构建 pattern 样本迭代器并 Merge。
 // Iterator returns an iterator of pattern samples matching the given query patterns request.
 func (i *instance) Iterator(ctx context.Context, req *logproto.QueryPatternsRequest) (iter.Iterator, error) {
 	matchers, err := syntax.ParseMatchers(req.Query, true)
@@ -234,6 +241,7 @@ outer:
 	return nil
 }
 
+// createStream 解析标签、分配 fingerprint，DetectLogFormat 后 newStream 启动 Drain。
 func (i *instance) createStream(_ context.Context, pushReqStream logproto.Stream) (*stream, error) {
 	labels, err := syntax.ParseLabels(pushReqStream.Labels)
 	if err != nil {
@@ -292,6 +300,7 @@ func (i *instance) flushPatterns() {
 	})
 }
 
+// Observe 按 stream 与 log level 累加 bytes/count，供 Downsample 写入聚合指标。
 func (i *instance) Observe(ctx context.Context, stream string, entries []logproto.Entry) {
 	i.aggMetricsLock.Lock()
 	defer i.aggMetricsLock.Unlock()
@@ -328,6 +337,7 @@ func (i *instance) Observe(ctx context.Context, stream string, entries []logprot
 	}
 }
 
+// Downsample 将 Observe 窗口内累积量格式化为 AggregatedMetricEntry 经 metricWriter 推送。
 func (i *instance) Downsample(now model.Time) {
 	i.aggMetricsLock.Lock()
 	defer func() {
@@ -387,3 +397,4 @@ func (i *instance) writeAggregatedMetrics(
 		i.metrics.metricSamples.WithLabelValues(i.instanceID).Inc()
 	}
 }
+// flushPatterns 遍历 streams 触发各 stream flush，shutdown 前确保持久化未完成样本。

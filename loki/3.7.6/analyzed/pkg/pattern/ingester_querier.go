@@ -1,5 +1,7 @@
 package pattern
 
+// pattern 包 ingester_querier 在查询侧 fan-out 到所有 healthy pattern ingester，合并模式序列并按集群大小与 maxPatterns 剪枝。
+
 import (
 	"context"
 	"math"
@@ -23,6 +25,7 @@ const (
 	maxPatterns    = 300
 )
 
+// IngesterQuerier 持有 ring 客户端与 querier 级 prune 指标。
 type IngesterQuerier struct {
 	cfg    Config
 	logger log.Logger
@@ -49,6 +52,7 @@ func NewIngesterQuerier(
 	}, nil
 }
 
+// Patterns 并行 Query 各 ingester，Merge 迭代器后 ReadBatch 再 prunePatterns 过滤。
 func (q *IngesterQuerier) Patterns(ctx context.Context, req *logproto.QueryPatternsRequest) (*logproto.QueryPatternsResponse, error) {
 	_, err := syntax.ParseMatchers(req.Query, true)
 	if err != nil {
@@ -72,6 +76,7 @@ func (q *IngesterQuerier) Patterns(ctx context.Context, req *logproto.QueryPatte
 	return prunePatterns(resp, minClusterSize, q.ingesterQuerierMetrics), nil
 }
 
+// prunePatterns 按样本总和降序，丢弃低于 minClusterSize 的模式并截断至 maxPatterns。
 func prunePatterns(resp *logproto.QueryPatternsResponse, minClusterSize int64, metrics *ingesterQuerierMetrics) *logproto.QueryPatternsResponse {
 	patternsBefore := len(resp.Series)
 	total := make([]int64, len(resp.Series))
@@ -126,6 +131,7 @@ func prunePatterns(resp *logproto.QueryPatternsResponse, minClusterSize int64, m
 	return resp
 }
 
+// forAllIngesters 从 ring 取 Read 复制集，委托 forGivenIngesters 并行执行 f。
 // ForAllIngesters runs f, in parallel, for all ingesters
 func (q *IngesterQuerier) forAllIngesters(ctx context.Context, f func(context.Context, logproto.PatternClient) (interface{}, error)) ([]ResponseFromIngesters, error) {
 	replicationSet, err := q.ringClient.Ring().GetAllHealthy(ring.Read)
@@ -141,6 +147,7 @@ type ResponseFromIngesters struct {
 	response interface{}
 }
 
+// forGivenIngesters 用 errgroup 为每个 ingester 地址获取 PatternClient 并收集响应。
 func (q *IngesterQuerier) forGivenIngesters(ctx context.Context, replicationSet ring.ReplicationSet, f func(context.Context, logproto.PatternClient) (interface{}, error)) ([]ResponseFromIngesters, error) {
 	g, ctx := errgroup.WithContext(ctx)
 	responses := make([]ResponseFromIngesters, len(replicationSet.Instances))
@@ -165,3 +172,4 @@ func (q *IngesterQuerier) forGivenIngesters(ctx context.Context, replicationSet 
 	}
 	return responses, nil
 }
+// minClusterSize=30 与 maxPatterns=300 为全局查询剪枝默认阈值。

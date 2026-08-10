@@ -1,5 +1,7 @@
 package aggregation
 
+// aggregation 包 metrics 定义 pattern ingester 向 Loki 推送聚合指标与模式样本时的 Prometheus 观测项。
+
 import (
 	"sync"
 
@@ -14,13 +16,16 @@ var (
 	metricsOnce sync.Once
 )
 
+// Metrics 封装 push 错误、批次大小、活跃模式数等 Counter/Histogram/Gauge 向量。
 type Metrics struct {
 	reg prometheus.Registerer
 
+// push 相关：推送失败计数与 payload 体积直方图。
 	// push operation
 	pushErrors  *prometheus.CounterVec
 	payloadSize *prometheus.HistogramVec
 
+// 批次指标：每次 push 的 stream/entry 数量与被跟踪 service 数。
 	// Batch metrics
 	streamsPerPush  *prometheus.HistogramVec
 	entriesPerPush  *prometheus.HistogramVec
@@ -28,15 +33,18 @@ type Metrics struct {
 
 	writeTimeout *prometheus.CounterVec
 
+// 模式写入：字节总量、写入次数与内存中活跃模式数。
 	// Pattern writing metrics
 	PatternBytesWrittenTotal *prometheus.CounterVec
 	PatternWritesTotal       *prometheus.CounterVec
 	PatternsActive           *prometheus.GaugeVec
 
+// 聚合指标写入：汇总后的 metric 条目字节总量。
 	// Aggregated metrics writing metrics
 	AggregatedMetricBytesWrittenTotal *prometheus.CounterVec
 }
 
+// NewMetrics 以 sync.Once 注册并返回单例 Metrics，避免重复注册同名指标。
 func NewMetrics(r prometheus.Registerer) *Metrics {
 	metricsOnce.Do(func() {
 		aggMetrics = &Metrics{
@@ -116,3 +124,4 @@ func NewMetrics(r prometheus.Registerer) *Metrics {
 
 	return aggMetrics
 }
+// writeTimeout 统计 HTTP 客户端超时次数，便于排查 Loki 端慢响应。
