@@ -31,12 +31,16 @@ import org.hibernate.stat.Statistics;
 import org.jboss.logging.Logger;
 
 /**
+ * 定时任务：周期性输出 Hibernate 全局统计信息，并记录超过阈值的实体、集合与查询指标。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class HibernateStatsReporter implements ScheduledTask {
 
+    /** 仅输出计数超过此阈值的统计项（当前硬编码）。 */
     private static final int LIMIT = 100; // Just hardcoded for now
 
+    /** 用于读取统计数据的 EntityManagerFactory。 */
     private final EntityManagerFactory emf;
     private static final Logger logger = Logger.getLogger(HibernateStatsReporter.class);
 
@@ -52,10 +56,11 @@ public class HibernateStatsReporter implements ScheduledTask {
 
         logStats(stats);
 
-        stats.clear(); // For now, clear stats after each iteration
+        stats.clear(); // 每轮输出后清空，便于观察增量
     }
 
 
+    /** 汇总并记录全局统计及高负载实体/集合/查询详情。 */
     protected void logStats(Statistics stats) {
         String lineSep = System.getProperty("line.separator");
         StringBuilder builder = new StringBuilder(lineSep).append(stats.toString()).append(lineSep).append(lineSep);
@@ -68,6 +73,7 @@ public class HibernateStatsReporter implements ScheduledTask {
     }
 
 
+    /** 记录 insert/update/delete/load/fetch 计数超过 {@link #LIMIT} 的实体。 */
     protected void logEntities(StringBuilder builder, String lineSep, Statistics stats) {
         builder.append("Important entities statistics: ").append(lineSep);
         for (String entity : stats.getEntityNames()) {
@@ -86,6 +92,7 @@ public class HibernateStatsReporter implements ScheduledTask {
     }
 
 
+    /** 记录 recreate/update/remove/load/fetch 计数超过阈值的集合关联。 */
     protected void logCollections(StringBuilder builder, String lineSep, Statistics stats) {
         builder.append("Important collections statistics: ").append(lineSep);
         for (String col : stats.getCollectionRoleNames()) {
@@ -105,6 +112,7 @@ public class HibernateStatsReporter implements ScheduledTask {
     }
 
 
+    /** 记录执行次数或总耗时超过阈值的命名/HQL 查询。 */
     protected void logQueries(StringBuilder builder, String lineSep, Statistics stats) {
         builder.append("Important queries statistics: ").append(lineSep).append(lineSep);
         for (String query : stats.getQueries()) {

@@ -28,6 +28,12 @@ import jakarta.persistence.Table;
 
 import org.keycloak.connections.jpa.AsynchronousCommitAllowed;
 
+/**
+ * 集群事件 JPA 实体，映射表 {@code CLUSTER_EVENT}，用于跨节点广播集群消息。
+ * <p>
+ * 复合主键为事件 ID 与目标集群名；实现 {@link AsynchronousCommitAllowed} 以允许 PostgreSQL 异步提交优化。
+ * 附带命名查询支持按目标集群读取、按 ID 删除及过期清理。
+ */
 @Entity
 @Table(name = "CLUSTER_EVENT")
 @NamedQueries({
@@ -43,21 +49,26 @@ import org.keycloak.connections.jpa.AsynchronousCommitAllowed;
 @IdClass(ClusterEventKey.class)
 public class ClusterEventEntity implements AsynchronousCommitAllowed {
 
+    /** 事件唯一标识（同一广播可对多个目标集群复用同一 ID）。 */
     @Id
     @Column(name = "ID", length = 36)
     private String id;
 
+    /** 接收事件的目标集群名称（复合主键之一）。 */
     @Id
     @Column(name = "TARGET_CLUSTER", nullable = false, length = 200)
     private String targetCluster;
 
+    /** 发送方集群名称。 */
     @Column(name = "SENDER_CLUSTER", nullable = false, length = 200)
     private String senderCluster;
 
+    /** 序列化后的集群事件负载。 */
     @Lob
     @Column(name = "EVENT_DATA", nullable = false)
     private byte[] eventData;
 
+    /** 事件创建时间戳（毫秒）。 */
     @Column(name = "CREATED_AT", nullable = false)
     private long createdAt;
 

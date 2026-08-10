@@ -18,6 +18,14 @@
 package org.keycloak.connections.jpa;
 
 /**
+ * 标记接口：实现此接口的 JPA 实体可容忍异步提交。
+ * <p>
+ * 当一笔事务仅修改实现了本接口且 {@link #isAsyncCommitAllowed(EntityOperationType)} 对相应操作
+ * 返回 {@code true} 的实体时，{@link AsyncCommitIntegrator} 可在 PostgreSQL 上启用异步提交。
+ * 目前仅支持 PostgreSQL。
+ * <p>
+ * 未实现本接口的实体视为“重要数据”——对其的任何修改都会强制整笔事务同步提交。
+ * <p>
  * Marker interface for JPA entities that can tolerate asynchronous commit.
  * <p>
  * When a transaction only modifies entities that implement this interface (and whose
@@ -32,11 +40,16 @@ package org.keycloak.connections.jpa;
  */
 public interface AsynchronousCommitAllowed {
 
+    /** 实体上的数据库操作类型。 */
     enum EntityOperationType {
         INSERT, UPDATE, DELETE
     }
 
     /**
+     * 给定操作类型是否允许异步提交。
+     * <p>
+     * 若事务中任一操作返回 {@code false}，整笔事务将强制同步提交。
+     * <p>
      * Whether this entity allows asynchronous commit for the given operation type.
      * <p>
      * Returning {@code false} for any operation that occurs during a transaction

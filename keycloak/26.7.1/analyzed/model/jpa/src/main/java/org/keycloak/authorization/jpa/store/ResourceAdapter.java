@@ -41,15 +41,23 @@ import org.keycloak.models.jpa.JpaModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * {@link ResourceEntity} 的 JPA 适配器，表示授权服务中的受保护资源。
+ * <p>
+ * 负责 URI、作用域、属性等字段的读写；属性变更通过命名查询批量删除并重新 persist。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ResourceAdapter extends AbstractAuthorizationModel implements Resource, JpaModel<ResourceEntity> {
 
+    /** 底层 JPA 资源实体。 */
     private ResourceEntity entity;
+    /** 当前会话的 EntityManager。 */
     private EntityManager em;
+    /** 授权 Store 工厂。 */
     private StoreFactory storeFactory;
 
+    /** 用已有实体构造资源适配器。 */
     public ResourceAdapter(ResourceEntity entity, EntityManager em, StoreFactory storeFactory) {
         super(storeFactory);
         this.entity = entity;
@@ -157,6 +165,7 @@ public class ResourceAdapter extends AbstractAuthorizationModel implements Resou
         entity.setOwnerManagedAccess(ownerManagedAccess);
     }
 
+    /** 将资源作用域同步为给定集合：移除多余项并追加缺失项。 */
     @Override
     public void updateScopes(Set<Scope> toUpdate) {
         throwExceptionIfReadonly();
@@ -170,6 +179,7 @@ public class ResourceAdapter extends AbstractAuthorizationModel implements Resou
             if (!ids.contains(next.getId())) it.remove();
             else ids.remove(next.getId());
         }
+        // 剩余 ID 为需新增的作用域引用
         for (String addId : ids) {
             entity.getScopes().add(em.getReference(ScopeEntity.class, addId));
         }
@@ -242,6 +252,7 @@ public class ResourceAdapter extends AbstractAuthorizationModel implements Resou
         entity.getAttributes().removeAll(toRemove);
     }
 
+    /** 将 {@link Resource} 转为 {@link ResourceEntity}，优先复用适配器内实体。 */
     public static ResourceEntity toEntity(EntityManager em, Resource resource) {
         if (resource instanceof ResourceAdapter) {
             return ((ResourceAdapter)resource).getEntity();

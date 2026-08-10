@@ -32,22 +32,29 @@ import org.keycloak.models.KeycloakSession;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 基于 JPA 的集群事件存储，通过 {@code CLUSTER_EVENT} 表与 JGroups JDBC_PING 表协调多节点广播。
+ * <p>
+ * 写入时向所有活跃（非陈旧）目标集群各插入一行；读取时使用悲观写锁保证消费与删除的原子性。
+ */
 public class JpaClusterEventStoreProvider {
 
     private static final Logger logger = Logger.getLogger(JpaClusterEventStoreProvider.class);
 
-    /* KEYCLOAK_JDBC_PING will update the table periodically, see staleness_timeout in that class.
-       To ignore entries for clusters that shut down unexpectedly or are no longer connected to the database,
-       ignore those stale entries.
+    /* KEYCLOAK_JDBC_PING 会周期性更新表，参见该类中的 staleness_timeout。
+       为忽略意外下线或已断开数据库的集群节点，过滤超过此阈值的陈旧条目。
      */
     private static final int STALENESS_CUTOFF_SECONDS = 60;
 
+    /** 当前 Keycloak 会话，用于获取 JPA 连接。 */
     private final KeycloakSession session;
 
+    /** 绑定到给定会话的集群事件存储实例。 */
     public JpaClusterEventStoreProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 返回 JDBC_PING 表中最近活跃的最小集群名，作为“主”集群标识。 */
     public String getPrimaryClusterName() {
         EntityManager em = getEntityManager();
         String tableName = JpaUtils.getTableNameForNativeQuery("JGROUPS_PING", em);
@@ -58,6 +65,11 @@ public class JpaClusterEventStoreProvider {
                 .getSingleResult();
     }
 
+    /**
+     * 将事件持久化到除发送方外所有活跃目标集群；若无可用目标则返回 {@code null}。
+     *
+     * @return 生成的事件 ID，或无可达目标时为 {@code null}
+     */
     public String persist(String senderCluster, byte[] eventData) {
         EntityManager em = getEntityManager();
         String tableName = JpaUtils.getTableNameForNativeQuery("JGROUPS_PING", em);
@@ -92,6 +104,7 @@ public class JpaClusterEventStoreProvider {
         return id;
     }
 
+    /** 以悲观写锁读取指定目标集群的待处理事件，最多返回 {@code maxResults} 条。 */
     public List<StoredClusterEvent> readEvents(String targetCluster, int maxResults) {
         return getEntityManager().createNamedQuery("clusterEvent.readByTargetCluster", StoredClusterEvent.class)
                 .setParameter("target", targetCluster)
@@ -100,6 +113,7 @@ public class JpaClusterEventStoreProvider {
                 .getResultList();
     }
 
+    /** 删除指定目标集群下给定 ID 集合的事件。 */
     public void deleteEvents(String targetCluster, Collection<String> ids) {
         if (ids.isEmpty()) {
             return;
@@ -110,6 +124,7 @@ public class JpaClusterEventStoreProvider {
                 .executeUpdate();
     }
 
+    /** 清理创建时间早于给定时间戳的过期事件。 */
     public void deleteEventsOlderThan(long timestampMillis) {
         int deleted = getEntityManager().createNamedQuery("clusterEvent.deleteOlderThan")
                 .setParameter("timestamp", timestampMillis)
@@ -119,6 +134,7 @@ public class JpaClusterEventStoreProvider {
         }
     }
 
+    /** 检查是否存在指定 ID 的集群事件。 */
     public boolean eventExists(String id) {
         return !getEntityManager().createNamedQuery("clusterEvent.eventWithIdExists", Integer.class)
                 .setParameter("id", id)
@@ -133,6 +149,7 @@ public class JpaClusterEventStoreProvider {
         return session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }
 
+    /** 判断给定集群/节点是否在 JDBC_PING 表中处于近期活跃状态。 */
     public boolean isUsingJdbcPing(String cluster, String node) {
         EntityManager em = getEntityManager();
         String tableName = JpaUtils.getTableNameForNativeQuery("JGROUPS_PING", em);

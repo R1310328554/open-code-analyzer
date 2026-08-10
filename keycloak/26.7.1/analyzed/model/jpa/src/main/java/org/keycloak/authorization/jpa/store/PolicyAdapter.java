@@ -38,14 +38,23 @@ import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.Logic;
 
 /**
+ * {@link PolicyEntity} 的 JPA 适配器，将授权策略领域模型映射到持久化实体。
+ * <p>
+ * 读写操作委托给底层 {@link PolicyEntity}；修改前通过 {@link AbstractAuthorizationModel#throwExceptionIfReadonly()}
+ * 校验只读模式。关联策略、资源与作用域通过 Store 懒加载并包装为对应 Adapter。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PolicyAdapter extends AbstractAuthorizationModel implements Policy, JpaModel<PolicyEntity> {
+    /** 底层 JPA 策略实体。 */
     private PolicyEntity entity;
+    /** 当前会话的 EntityManager。 */
     private EntityManager em;
+    /** 授权 Store 工厂，用于解析关联对象。 */
     private StoreFactory storeFactory;
 
+    /** 用已有实体构造策略适配器。 */
     public PolicyAdapter(PolicyEntity entity, EntityManager em, StoreFactory storeFactory) {
         super(storeFactory);
         this.entity = entity;
@@ -91,6 +100,7 @@ public class PolicyAdapter extends AbstractAuthorizationModel implements Policy,
         entity.setLogic(logic);
     }
 
+    /** 返回策略配置的不可变副本，避免调用方直接修改实体内部 Map。 */
     @Override
     public Map<String, String> getConfig() {
         Map<String, String> result = new HashMap<String, String>();
@@ -249,6 +259,9 @@ public class PolicyAdapter extends AbstractAuthorizationModel implements Policy,
         return getId().hashCode();
     }
 
+    /**
+     * 将 {@link Policy} 转为 {@link PolicyEntity}：已是本适配器则直接取实体，否则按 ID 获取懒加载引用。
+     */
     public static PolicyEntity toEntity(EntityManager em, Policy policy) {
         if (policy instanceof PolicyAdapter) {
             return ((PolicyAdapter)policy).getEntity();

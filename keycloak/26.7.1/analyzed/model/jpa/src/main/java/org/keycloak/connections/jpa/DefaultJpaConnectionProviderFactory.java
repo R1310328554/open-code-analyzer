@@ -65,16 +65,21 @@ import static org.keycloak.connections.jpa.util.JpaUtils.getDatabaseType;
 import static org.keycloak.connections.jpa.util.JpaUtils.loadSpecificNamedQueries;
 
 /**
+ * 默认 JPA 连接 Provider 工厂：懒初始化 {@link EntityManagerFactory}、执行 Liquibase 迁移、
+ * 注册数据库专属命名查询，并为每个 {@link KeycloakSession} 创建托管 EntityManager。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultJpaConnectionProviderFactory implements JpaConnectionProviderFactory, ServerInfoAwareProviderFactory {
 
     private static final Logger logger = Logger.getLogger(DefaultJpaConnectionProviderFactory.class);
 
+    /** 数据库 schema 迁移策略。 */
     enum MigrationStrategy {
         UPDATE, VALIDATE, MANUAL
     }
 
+    /** 全局共享的 EntityManagerFactory（双重检查锁懒初始化）。 */
     private volatile EntityManagerFactory emf;
 
     private Config.Scope config;
@@ -86,6 +91,7 @@ public class DefaultJpaConnectionProviderFactory implements JpaConnectionProvide
 
     private KeycloakSessionFactory factory;
 
+    /** 为会话创建 JPA 连接 Provider，首次调用时触发 EMF 懒初始化。 */
     @Override
     public JpaConnectionProvider create(KeycloakSession session) {
         logger.trace("Create JpaConnectionProvider");
@@ -94,6 +100,7 @@ public class DefaultJpaConnectionProviderFactory implements JpaConnectionProvide
         return new DefaultJpaConnectionProvider(createEntityManager(session, true));
     }
 
+    /** 创建会话级 EntityManager，非 JTA 模式下 enlist 到 {@link JpaKeycloakTransaction}。 */
     private EntityManager createEntityManager(KeycloakSession session, boolean sessionManaged) {
         EntityManager em;
         if (!jtaEnabled) {
@@ -160,6 +167,7 @@ public class DefaultJpaConnectionProviderFactory implements JpaConnectionProvide
         }
     }
 
+    /** 双重检查锁：首次访问时构建 EMF、运行迁移并注册统计定时任务。 */
     private void lazyInit(KeycloakSession session) {
         if (emf == null) {
             synchronized (this) {
@@ -297,6 +305,7 @@ public class DefaultJpaConnectionProviderFactory implements JpaConnectionProvide
         timer.scheduleTask(new HibernateStatsReporter(emf), globalStatsIntervalSecs * 1000);
     }
 
+    /** 按迁移策略校验/更新/导出数据库 schema。 */
     void migration(MigrationStrategy strategy, boolean initializeEmpty, String schema, File databaseUpdateFile, Connection connection, KeycloakSession session) {
         JpaUpdaterProvider updater = session.getProvider(JpaUpdaterProvider.class, LiquibaseJpaUpdaterProviderFactory.PROVIDER_ID);
 
@@ -422,8 +431,9 @@ public class DefaultJpaConnectionProviderFactory implements JpaConnectionProvide
         }
     }
 
+    /** 在数据库锁保护下执行模型层迁移，防止并发启动节点重复迁移。 */
     private void migrateModel(KeycloakSession session) {
-        // Using a lock to prevent concurrent migration in concurrently starting nodes
+        // 加锁防止并发启动的节点同时执行迁移
         DBLockManager dbLockManager = new DBLockManager(session);
         DBLockProvider dbLock = dbLockManager.getDBLock();
         dbLock.waitForLock(DBLockProvider.Namespace.DATABASE);

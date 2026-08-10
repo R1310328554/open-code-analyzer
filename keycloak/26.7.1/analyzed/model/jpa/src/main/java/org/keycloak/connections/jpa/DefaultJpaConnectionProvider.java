@@ -22,13 +22,17 @@ import jakarta.persistence.EntityManager;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认 {@link JpaConnectionProvider} 实现，封装单个 {@link EntityManager} 的生命周期。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultJpaConnectionProvider implements JpaConnectionProvider {
 
     private static final Logger logger = Logger.getLogger(DefaultJpaConnectionProvider.class);
+    /** 本会话绑定的 EntityManager。 */
     private final EntityManager em;
 
+    /** 用给定 EntityManager 构造 Provider。 */
     public DefaultJpaConnectionProvider(EntityManager em) {
         this.em = em;
     }
@@ -38,6 +42,7 @@ public class DefaultJpaConnectionProvider implements JpaConnectionProvider {
         return em;
     }
 
+    /** 关闭底层 EntityManager，释放 JDBC 连接。 */
     @Override
     public void close() {
         logger.trace("DefaultJpaConnectionProvider close()");

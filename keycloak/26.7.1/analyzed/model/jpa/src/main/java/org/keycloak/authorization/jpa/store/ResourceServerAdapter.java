@@ -27,14 +27,22 @@ import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.PolicyEnforcementMode;
 
 /**
+ * {@link ResourceServerEntity} 的 JPA 适配器，对应 OAuth 客户端上的授权资源服务器配置。
+ * <p>
+ * 管理远程资源管理开关、策略执行模式与决策策略等客户端级授权设置。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ResourceServerAdapter extends AbstractAuthorizationModel implements ResourceServer, JpaModel<ResourceServerEntity> {
+    /** 底层 JPA 资源服务器实体。 */
     private ResourceServerEntity entity;
+    /** 当前会话的 EntityManager。 */
     private EntityManager em;
+    /** 授权 Store 工厂。 */
     private StoreFactory storeFactory;
 
+    /** 用已有实体构造资源服务器适配器。 */
     public ResourceServerAdapter(ResourceServerEntity entity, EntityManager em, StoreFactory storeFactory) {
         super(storeFactory);
         this.entity = entity;
@@ -106,6 +114,7 @@ public class ResourceServerAdapter extends AbstractAuthorizationModel implements
         return getId().hashCode();
     }
 
+    /** 将 {@link ResourceServer} 转为 {@link ResourceServerEntity}。 */
     public static ResourceServerEntity toEntity(EntityManager em, ResourceServer resource) {
         if (resource instanceof ResourceServerAdapter) {
             return ((ResourceServerAdapter)resource).getEntity();

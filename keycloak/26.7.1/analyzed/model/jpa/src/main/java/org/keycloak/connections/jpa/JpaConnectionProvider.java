@@ -22,10 +22,13 @@ import jakarta.persistence.EntityManager;
 import org.keycloak.provider.Provider;
 
 /**
+ * JPA 连接 Provider SPI：为 Keycloak 会话暴露 {@link EntityManager}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface JpaConnectionProvider extends Provider {
 
+    /** 返回当前会话绑定的 EntityManager。 */
     EntityManager getEntityManager();
 
 }

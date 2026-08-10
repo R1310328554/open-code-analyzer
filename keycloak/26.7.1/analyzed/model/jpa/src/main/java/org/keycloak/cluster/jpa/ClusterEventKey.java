@@ -20,6 +20,9 @@ package org.keycloak.cluster.jpa;
 
 import java.util.Objects;
 
+/**
+ * {@link ClusterEventEntity} 的复合主键 record，由事件 ID 与目标集群名组成。
+ */
 public record ClusterEventKey(String id, String targetCluster) {
     public ClusterEventKey {
         Objects.requireNonNull(id);

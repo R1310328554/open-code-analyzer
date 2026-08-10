@@ -25,10 +25,19 @@ import jakarta.persistence.EntityManagerFactory;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 通过 JNDI 查找 {@link EntityManagerFactory} 并创建会话级 {@link EntityManager} 的工具类。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class JndiEntityManagerLookup {
+    /**
+     * 从 JNDI 解析 EMF、创建 EntityManager 并 enlist 到 {@link JpaKeycloakTransaction}。
+     *
+     * @param session                    当前 Keycloak 会话
+     * @param entityManagerFactoryJndiName EMF 的 JNDI 名称
+     * @return 已纳入事务管理的 EntityManager
+     */
     public static EntityManager getSessionEntityManager(KeycloakSession session, String entityManagerFactoryJndiName) {
         EntityManagerFactory factory = null;
         try {

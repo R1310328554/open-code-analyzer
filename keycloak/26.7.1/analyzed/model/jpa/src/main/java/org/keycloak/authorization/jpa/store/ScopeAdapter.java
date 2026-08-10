@@ -26,14 +26,20 @@ import org.keycloak.authorization.store.StoreFactory;
 import org.keycloak.models.jpa.JpaModel;
 
 /**
+ * {@link ScopeEntity} 的 JPA 适配器，表示资源上的授权作用域（如 read、write）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ScopeAdapter extends AbstractAuthorizationModel implements Scope, JpaModel<ScopeEntity> {
+    /** 底层 JPA 作用域实体。 */
     private ScopeEntity entity;
+    /** 当前会话的 EntityManager。 */
     private EntityManager em;
+    /** 授权 Store 工厂。 */
     private StoreFactory storeFactory;
 
+    /** 用已有实体构造作用域适配器。 */
     public ScopeAdapter(ScopeEntity entity, EntityManager em, StoreFactory storeFactory) {
         super(storeFactory);
         this.entity = entity;
@@ -91,6 +97,7 @@ public class ScopeAdapter extends AbstractAuthorizationModel implements Scope, J
         return storeFactory.getResourceServerStore().findById(entity.getResourceServer().getId());
     }
 
+    /** 将 {@link Scope} 转为 {@link ScopeEntity}。 */
     public static ScopeEntity toEntity(EntityManager em, Scope scope) {
         if (scope instanceof ScopeAdapter) {
             return ((ScopeAdapter)scope).getEntity();

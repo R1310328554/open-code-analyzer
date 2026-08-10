@@ -40,8 +40,10 @@ import org.hibernate.event.spi.PreUpdateEventListener;
 import org.jboss.logging.Logger;
 
 /**
- * Hibernate event listener that enables asynchronous commit for PostgreSQL transactions
- * that only modify entities implementing {@link AsynchronousCommitAllowed}.
+ * Hibernate 事件监听器：在 PostgreSQL 上为仅修改 {@link AsynchronousCommitAllowed} 实体的
+ * 事务启用异步提交（{@code SET LOCAL synchronous_commit TO OFF}），跳过 WAL fsync 等待以提升吞吐。
+ * <p>
+ * 数据库仍保持崩溃一致性；此类事务在崩溃时可能丢失最后几毫秒的数据。非 PostgreSQL 数据库为 no-op。
  * <p>
  * On PostgreSQL, issues {@code SET LOCAL synchronous_commit TO OFF} before commit when
  * all modified entities in the transaction allow it. This skips the WAL fsync wait,
@@ -56,10 +58,13 @@ public class AsyncCommitIntegrator implements PreInsertEventListener, PreUpdateE
 
     private static final Logger logger = Logger.getLogger(AsyncCommitIntegrator.class);
 
+    /** 会话属性：本事务需要同步提交（不可异步）。 */
     private static final String SYNC_REQUIRED = "kc.sync_commit_required";
+    /** 会话属性：已注册事务完成回调。 */
     private static final String CALLBACK_REGISTERED = "kc.async_commit.registered";
 
     /**
+     * 若底层数据库为 PostgreSQL，则在给定 {@link EntityManagerFactory} 上注册异步提交监听器；其他数据库无操作。
      * Registers asynchronous commit listeners on the given {@link EntityManagerFactory}
      * if the underlying database is PostgreSQL. No-op for other databases.
      */
@@ -102,6 +107,7 @@ public class AsyncCommitIntegrator implements PreInsertEventListener, PreUpdateE
         return false;
     }
 
+    /** 根据实体类型与操作决定是否允许异步提交，必要时标记整笔事务需同步提交。 */
     private void handleEntity(Object entity, SharedSessionContractImplementor session, AsynchronousCommitAllowed.EntityOperationType opType) {
         if (!(session instanceof Session s)) {
             return;
@@ -134,6 +140,12 @@ public class AsyncCommitIntegrator implements PreInsertEventListener, PreUpdateE
     }
 
     /**
+     * 检测是否为启用逻辑复制的 Aurora PostgreSQL——此组合下 {@code synchronous_commit = off}
+     * 可能导致已提交事务无法（或严重延迟）出现在 Debezium 等逻辑解码消费者中。
+     * <p>
+     * 检测方式：{@code SELECT aurora_version()} 仅 Aurora 存在；{@code SHOW wal_level = 'logical'} 表示可能有 CDC 消费者。
+     * 异常时保守返回 {@code true} 以避免静默丢失 CDC 数据。
+     * <p>
      * Detects Aurora PostgreSQL with logical replication enabled — a combination where
      * {@code SET LOCAL synchronous_commit TO OFF} can cause committed transactions to
      * never appear (or appear with extreme delay) in logical decoding consumers like Debezium.
@@ -171,6 +183,7 @@ public class AsyncCommitIntegrator implements PreInsertEventListener, PreUpdateE
         }
     }
 
+    /** 在当前连接上执行 {@code SET LOCAL synchronous_commit TO OFF}。 */
     private static void setAsyncCommit(Connection connection) throws SQLException {
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("SET LOCAL synchronous_commit TO OFF");

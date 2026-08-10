@@ -22,13 +22,17 @@ import java.sql.Connection;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link JpaConnectionProvider} 的工厂 SPI，额外提供 JDBC 连接与 schema 名称访问。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface JpaConnectionProviderFactory extends ProviderFactory<JpaConnectionProvider> {
 
+    /** 获取原始 JDBC 连接；调用方负责关闭。 */
     // Caller is responsible for closing connection
     Connection getConnection();
 
+    /** 返回配置的数据库 schema 名称，未配置时为 {@code null}。 */
     String getSchema();
 
 }
