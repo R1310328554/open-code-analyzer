@@ -1,3 +1,6 @@
+"""
+HTTP 重试工具：指数退避 + jitter，以及带 raise_for_status 的 request_with_retries。
+"""
 from collections.abc import Callable
 import logging
 from logging import Logger
@@ -14,6 +17,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 logger = logging.getLogger(__name__)
 
 
+# 工厂：返回可配置 tries/backoff/exceptions 的重试装饰器
 def retry_builder(
     tries: int = 20,
     delay: float = 0.1,
@@ -44,6 +48,7 @@ def retry_builder(
     return retry_with_default
 
 
+# 同步 HTTP 请求：失败自动重试并记录上下文
 def request_with_retries(
     method: str,
     url: str,

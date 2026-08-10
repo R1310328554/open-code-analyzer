@@ -1,3 +1,6 @@
+"""
+GitHub 连接器：按仓库检查点拉取 PR/Issue，支持 offset 与 cursor 双分页及限流退避。
+"""
 import copy
 import logging
 from collections.abc import Callable
@@ -145,6 +148,7 @@ def _paginate_until_error(
         raise
 
 
+# 单页 PR/Issue 拉取：限流 sleep + 422 cursor 分页降级
 def _get_batch_rate_limited(
     # We pass in a callable because we want git_objs to produce a fresh
     # PaginatedList each time it's called to avoid using the same object for cursor-based pagination
@@ -214,6 +218,7 @@ def _get_userinfo(user: NamedUser) -> dict[str, str]:
     }
 
 
+# Pull Request 正文与元数据 → Document
 def _convert_pr_to_document(pull_request: PullRequest, repo_external_access: ExternalAccess | None) -> Document:
     repo_name = pull_request.base.repo.full_name if pull_request.base else ""
     doc_metadata = DocMetadata(repo=repo_name)
@@ -264,6 +269,7 @@ def _fetch_issue_comments(issue: Issue) -> str:
     return "\nComment: ".join(comment.body for comment in comments)
 
 
+# Issue（排除关联 PR）→ Document
 def _convert_issue_to_document(issue: Issue, repo_external_access: ExternalAccess | None) -> Document:
     repo_name = issue.repository.full_name if issue.repository else ""
     doc_metadata = DocMetadata(repo=repo_name)
@@ -304,12 +310,14 @@ def _convert_issue_to_document(issue: Issue, repo_external_access: ExternalAcces
 
 
 class GithubConnectorStage(Enum):
+    # 单仓库索引阶段：PR → Issue
     START = "start"
     PRS = "prs"
     ISSUES = "issues"
 
 
 class GithubConnectorCheckpoint(ConnectorCheckpoint):
+    # 缓存待处理 repo 列表、当前页与 cursor 分页状态
     stage: GithubConnectorStage
     curr_page: int
 
@@ -343,6 +351,7 @@ def make_cursor_url_callback(
 
 
 class GithubConnector(CheckpointedConnectorWithPermSyncGH[GithubConnectorCheckpoint]):
+    # repo_owner + 可选 repositories 列表；state_filter 控制 open/closed/all
     def __init__(
         self,
         repo_owner: str,
@@ -434,6 +443,7 @@ class GithubConnector(CheckpointedConnectorWithPermSyncGH[GithubConnectorCheckpo
     def _issues_func(self, repo: Repository.Repository) -> Callable[[], PaginatedList[Issue]]:
         return lambda: repo.get_issues(state=self.state_filter, sort="updated", direction="desc")
 
+    # 检查点驱动：逐 repo 拉 PR 再 Issue，yield Document 或 ConnectorFailure
     def _fetch_from_github(
         self,
         checkpoint: GithubConnectorCheckpoint,

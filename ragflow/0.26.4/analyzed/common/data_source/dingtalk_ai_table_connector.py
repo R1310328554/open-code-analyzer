@@ -1,4 +1,6 @@
-"""DingTalk AI Table connector for RAGFlow. By the way, "notable" is a reference to the DingTalk AI Table.
+"""钉钉 AI 表格（Notable）连接器：拉取指定表格下各 Sheet 的记录并转为 JSON Document。
+
+DingTalk AI Table connector for RAGFlow. By the way, "notable" is a reference to the DingTalk AI Table.
 
 This connector ingests records from DingTalk AI Table as documents.
 It first retrieves all sheets from a specified table, then fetches all records
@@ -39,6 +41,7 @@ class DingTalkAITableClientNotSetUpError(PermissionError):
 
 
 class DingTalkAITableConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    # GetAllSheets + ListRecords 分页，记录字段序列化为 blob
     """
     DingTalk AI Table (Notable) connector for accessing table records.
 
@@ -142,6 +145,7 @@ class DingTalkAITableConnector(LoadConnector, PollConnector, SlimConnectorWithPe
             raise ConnectorValidationError(f"DingTalk Notable credential validation failed: {e}")
 
     def _get_all_sheets(self) -> list[dict[str, Any]]:
+        # 调用 Notable GetAllSheets API
         """
         Retrieve all sheets from the Notable table.
 
@@ -180,6 +184,7 @@ class DingTalkAITableConnector(LoadConnector, PollConnector, SlimConnectorWithPe
             logger.exception(f"[DingTalk Notable]: Failed to get sheets: {e}")
             raise
 
+    # 单页 ListRecords，返回 (records, next_token)
     def _list_records(
         self,
         sheet_id: str,
@@ -263,6 +268,7 @@ class DingTalkAITableConnector(LoadConnector, PollConnector, SlimConnectorWithPe
         logger.info(f"[DingTalk Notable]: Retrieved {len(all_records)} records from sheet {sheet_id}")
         return all_records
 
+    # 将一行记录转为 dingtalk_ai_table:{table}:{sheet}:{id} Document
     def _convert_record_to_document(
         self,
         record: dict[str, Any],

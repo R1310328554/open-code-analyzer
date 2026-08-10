@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class DropboxConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    # access_token 鉴权；重名文件用语义路径区分
     """Dropbox connector for accessing Dropbox files and folders"""
 
     def __init__(self, batch_size: int = INDEX_BATCH_SIZE) -> None:
@@ -123,6 +124,7 @@ class DropboxConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         if batch:
             yield batch
 
+    # 非递归 list_folder + 子文件夹 DFS，按时间窗口收集 FileMetadata
     def _collect_file_entries_recursive(
         self,
         path: str,
@@ -165,6 +167,7 @@ class DropboxConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         return modified_time.astimezone(timezone.utc)
 
     def _get_semantic_identifier(self, entry: FileMetadata, filename_counts: dict[str, int]) -> str:
+        # 重名时用 path_display 构造「目录 / 文件名」
         if filename_counts.get(entry.name, 0) <= 1:
             return entry.name
 

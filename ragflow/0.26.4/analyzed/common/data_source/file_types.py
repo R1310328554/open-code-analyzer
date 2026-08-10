@@ -1,3 +1,7 @@
+"""
+上传与索引允许的 MIME 类型常量：Office/PDF/图片/纯文本等。
+"""
+
 PRESENTATION_MIME_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
 SPREADSHEET_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -6,6 +10,7 @@ PDF_MIME_TYPE = "application/pdf"
 
 
 class UploadMimeTypes:
+    # 按类别聚合的可上传 MIME 集合
     IMAGE_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
     CSV_MIME_TYPES = {"text/csv"}
     TEXT_MIME_TYPES = {
@@ -29,4 +34,5 @@ class UploadMimeTypes:
         "application/epub+zip",
     }
 
+    # 全部允许类型的并集
     ALLOWED_MIME_TYPES = IMAGE_MIME_TYPES.union(TEXT_MIME_TYPES, DOCUMENT_MIME_TYPES, CSV_MIME_TYPES)

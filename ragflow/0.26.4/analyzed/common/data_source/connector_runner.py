@@ -1,3 +1,6 @@
+"""
+连接器运行器：统一 Checkpointed / Poll / Load 三类接口，负责批处理与异常日志。
+"""
 import sys
 import time
 import logging
@@ -21,6 +24,7 @@ TimeRange = tuple[datetime, datetime]
 CT = TypeVar("CT", bound=ConnectorCheckpoint)
 
 
+# 从检查点输出流中收集 document/failure ID 并按批 yield
 def batched_doc_ids(
     checkpoint_connector_generator: CheckpointOutput[CT],
     batch_size: int,
@@ -40,6 +44,7 @@ def batched_doc_ids(
 
 
 class CheckpointOutputWrapper(Generic[CT]):
+    # 将 Connector 原生 CheckpointOutput 转为 (Document|Failure, checkpoint) 三元组
     """
     Wraps a CheckpointOutput generator to give things back in a more digestible format,
     specifically for Document outputs.
@@ -81,6 +86,7 @@ class CheckpointOutputWrapper(Generic[CT]):
 
 
 class ConnectorRunner(Generic[CT]):
+    # 对外统一 run()：按 batch_size 聚合 Document，透传 Failure 与下一检查点
     """
     Handles:
         - Batching
@@ -107,6 +113,7 @@ class ConnectorRunner(Generic[CT]):
         self.doc_batch: list[Document] = []
 
     def run(
+        # 根据连接器类型分发 load_from_checkpoint / poll_source / load_from_state
         self, checkpoint: CT
     ) -> Generator[
         tuple[list[Document] | None, ConnectorFailure | None, CT | None],

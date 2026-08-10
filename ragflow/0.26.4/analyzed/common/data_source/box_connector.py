@@ -16,6 +16,7 @@ from common.data_source.utils import get_file_ext
 
 
 class BoxConnector(LoadConnector, PollConnector):
+    # Box 文件索引：LoadConnector 全量 + PollConnector 按时间窗口增量
     def __init__(self, folder_id: str, batch_size: int = INDEX_BATCH_SIZE, use_marker: bool = True) -> None:
         self.batch_size = batch_size
         self.folder_id = "0" if not folder_id else folder_id
@@ -23,10 +24,12 @@ class BoxConnector(LoadConnector, PollConnector):
         self.box_client: BoxClient | None = None
 
     def load_credentials(self, auth: Any):
+        # 用 OAuth 凭证初始化 BoxClient
         self.box_client = BoxClient(auth=auth)
         return None
 
     def validate_connector_settings(self):
+        # 调用 get_user_me 校验令牌有效性
         if self.box_client is None:
             raise ConnectorMissingCredentialError("Box")
 
@@ -36,6 +39,7 @@ class BoxConnector(LoadConnector, PollConnector):
             logging.exception("[Box]: Failed to validate Box credentials")
             raise ConnectorValidationError(f"Unexpected error during Box settings validation: {e}")
 
+    # 深度优先递归枚举文件夹内文件（支持 marker 分页）
     def _iter_files_recursive(
         self,
         folder_id: str,
@@ -73,6 +77,7 @@ class BoxConnector(LoadConnector, PollConnector):
                 usemarker=True,
             )
 
+    # 按时间窗口过滤并批量 yield Document
     def _yield_files_recursive(
         self,
         folder_id: str,
@@ -149,9 +154,11 @@ class BoxConnector(LoadConnector, PollConnector):
             yield batch
 
     def poll_source(self, start, end):
+        # 增量同步：仅拉取 (start, end] 内变更文件
         return self._yield_files_recursive(folder_id=self.folder_id, start=start, end=end)
 
     def load_from_state(self):
+        # 全量索引：不限制时间范围
         return self._yield_files_recursive(folder_id=self.folder_id, start=None, end=None)
 
 

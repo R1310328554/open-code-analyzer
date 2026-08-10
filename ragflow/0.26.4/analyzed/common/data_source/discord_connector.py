@@ -28,6 +28,7 @@ _DISCORD_DOC_ID_PREFIX = "DISCORD_"
 _SNIPPET_LENGTH = 30
 
 
+# 单条 Discord 消息 → Document（含频道/线程语义标识）
 def _convert_message_to_document(
     message: DiscordMessage,
     sections: list[TextSection],
@@ -77,6 +78,7 @@ def _convert_message_to_document(
     )
 
 
+# 按 server_ids / channel_names 过滤可读历史消息的 TextChannel
 async def _fetch_filtered_channels(
     discord_client: Client,
     server_ids: list[int] | None,
@@ -232,6 +234,7 @@ def _iterate_async_messages(async_messages: AsyncIterable[DiscordMessage]) -> It
 
 
 class DiscordConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    # Bot Token 鉴权；poll 按 created_at 窗口过滤
     """Discord connector for accessing Discord messages and channels"""
 
     def __init__(
@@ -254,6 +257,7 @@ class DiscordConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
             raise ConnectorMissingCredentialError("Discord")
         return self._discord_bot_token
 
+    # 将多条消息合并为单个 Document（batch_size 控制合并粒度）
     def _iter_merged_documents(
         self,
         start: datetime | None = None,

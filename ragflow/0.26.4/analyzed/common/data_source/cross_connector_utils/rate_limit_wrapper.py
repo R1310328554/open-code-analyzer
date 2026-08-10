@@ -1,3 +1,6 @@
+"""
+客户端侧限流：滑动窗口计数与 429 Retry-After 退避，供各连接器 HTTP 调用复用。
+"""
 import time
 import logging
 from collections.abc import Callable
@@ -12,10 +15,12 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 class RateLimitTriedTooManyTimesError(Exception):
+    # 超过最大 sleep 重试次数
     pass
 
 
 class _RateLimitDecorator:
+    # 通用滑动窗口限流装饰器（非线程安全）
     """Builds a generic wrapper/decorator for calls to external APIs that
     prevents making more than `max_calls` requests per `period`
 
@@ -82,6 +87,7 @@ R = TypeVar("R", bound=Callable[..., requests.Response])
 
 
 def wrap_request_to_handle_ratelimiting(request_fn: R, default_wait_time_sec: int = 30, max_waits: int = 30) -> R:
+    # 包装 requests 调用：遇 429 按 Retry-After 等待后重试
     def wrapped_request(*args: list, **kwargs: dict[str, Any]) -> requests.Response:
         for _ in range(max_waits):
             response = request_fn(*args, **kwargs)
@@ -106,6 +112,7 @@ _rate_limited_post = wrap_request_to_handle_ratelimiting(requests.post)
 
 
 class _RateLimitedRequest:
+    # 带 429 处理的 get/post 门面
     get = _rate_limited_get
     post = _rate_limited_post
 

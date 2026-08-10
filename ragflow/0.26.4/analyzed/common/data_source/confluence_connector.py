@@ -78,6 +78,7 @@ _USER_EMAIL_CACHE: dict[str, str | None] = {}
 
 
 class ConfluenceCheckpoint(ConnectorCheckpoint):
+    # 检查点：保存下一页 CQL URL 以支持断点续传
     next_page_url: str | None
 
 
@@ -86,6 +87,7 @@ class ConfluenceRateLimitError(Exception):
 
 
 class OnyxConfluence:
+    # 封装 atlassian Confluence 客户端：CQL 扩展、限流重试与 OAuth 凭证续期
     """
     This is a custom Confluence class that:
 
@@ -847,6 +849,7 @@ def sanitize_attachment_title(title: str) -> str:
     return title.replace("<", "_").replace(">", "_").replace(" ", "_").replace(":", "_")
 
 
+# 解析 Confluence HTML：替换 @用户、展开 include 宏、格式化正文
 def extract_text_from_confluence_html(
     confluence_client: OnyxConfluence,
     confluence_object: dict[str, Any],
@@ -1063,6 +1066,7 @@ def _process_image_attachment(
     return AttachmentProcessingResult(text="", file_blob=raw_bytes, file_name=attachment.get("title", "unknown_title"), error=None)
 
 
+# 下载并处理页面附件（文档文本或图片 blob）
 def process_attachment(
     confluence_client: "OnyxConfluence",
     attachment: dict[str, Any],
@@ -1167,6 +1171,7 @@ def convert_attachment_to_content(
     return result.file_name, result.file_blob
 
 
+# 主连接器：CheckpointedConnector + Slim 权限同步
 class ConfluenceConnector(
     CheckpointedConnector[ConfluenceCheckpoint],
     SlimConnector,
@@ -1285,6 +1290,7 @@ class ConfluenceConnector(
         return self._low_timeout_confluence_client
 
     def set_credentials_provider(self, credentials_provider: CredentialsProviderInterface) -> None:
+        # 注入凭证提供者并探活、初始化长短超时双客户端
         self.credentials_provider = credentials_provider
 
         # raises exception if there's a problem
@@ -1699,6 +1705,7 @@ class ConfluenceConnector(
         return update_param_in_path(cql_url, "limit", str(limit))
 
     @override
+    # 从检查点增量拉取页面与附件 Document
     def load_from_checkpoint(
         self,
         start: SecondsSinceUnixEpoch,

@@ -8,6 +8,7 @@ from typing import cast
 
 
 def get_current_tz_offset() -> int:
+    # 本地时区相对 UTC 的小时偏移（Confluence/Jira CQL 时间过滤用）
     # datetime now() gets local time, datetime.now(timezone.utc) gets UTC time.
     # remove tzinfo to compare non-timezone-aware objects.
     time_diff = datetime.now() - datetime.now(timezone.utc).replace(tzinfo=None)
@@ -31,6 +32,7 @@ ONYX_SLACK_LOCK_TOTAL_BLOCKING_TIMEOUT = 3600
 
 
 class BlobType(str, Enum):
+    # 对象存储后端类型（S3/R2/GCS 等）
     """Supported storage types"""
 
     S3 = "s3"
@@ -41,6 +43,7 @@ class BlobType(str, Enum):
 
 
 class DocumentSource(str, Enum):
+    # 文档来源枚举：索引与权限同步时标识连接器类型
     """Document sources"""
 
     RSS = "rss"
@@ -80,6 +83,7 @@ class DocumentSource(str, Enum):
 
 
 class FileOrigin(str, Enum):
+    # 文件来源（当前仅 connector）
     """File origins"""
 
     CONNECTOR = "connector"
@@ -115,6 +119,7 @@ _PAGE_EXPANSION_FIELDS = [
 
 # Configuration constants
 BLOB_STORAGE_SIZE_THRESHOLD = 20 * 1024 * 1024  # 20MB
+# 单次 yield 的 Document 批大小
 INDEX_BATCH_SIZE = 2
 SLACK_NUM_THREADS = 4
 ENABLE_EXPENSIVE_EXPERT_CALLS = False
@@ -217,6 +222,7 @@ GITHUB_CONNECTOR_BASE_URL = os.environ.get("GITHUB_CONNECTOR_BASE_URL") or None
 
 
 class HtmlBasedConnectorTransformLinksStrategy(str, Enum):
+    # HTML 连接器内链处理：剥离或转 Markdown
     # remove links entirely
     STRIP = "strip"
     # turn HTML links into markdown links
