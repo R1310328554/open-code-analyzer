@@ -19,59 +19,40 @@ package com.alibaba.nacos.common.remote.client;
 import java.util.Map;
 
 /**
+ * RPC 客户端运行时配置接口：定义客户端名称、重试次数、超时、保活、
+ * 健康检查及标签等参数，由 gRPC 等具体实现提供。
  * RpcClientConfig.
  *
  * @author karsonto
  */
 public interface RpcClientConfig {
     
-    /**
-     * get name.
-     *
-     * @return name.
-     */
+    /** 获取客户端唯一名称，用于日志与工厂索引 */
+
     String name();
     
-    /**
-     * get request retry times.
-     *
-     * @return retryTimes.
-     */
+    /** 请求失败时的最大重试次数 */
+
     int retryTimes();
     
-    /**
-     * get time out mills.
-     *
-     * @return timeOutMills.
-     */
+    /** 单次 RPC 请求超时时间（毫秒） */
+
     long timeOutMills();
     
-    /**
-     * get connection keep alive time.
-     *
-     * @return connectionKeepAlive.
-     */
+    /** 连接保活检测间隔（毫秒），超时未活动则触发健康检查 */
+
     long connectionKeepAlive();
     
-    /**
-     * get health check retry times.
-     *
-     * @return healthCheckRetryTimes.
-     */
+    /** 健康检查失败时的重试次数 */
+
     int healthCheckRetryTimes();
     
-    /**
-     * get health check time out.
-     *
-     * @return healthCheckTimeOut.
-     */
+    /** 单次健康检查请求超时（毫秒） */
+
     long healthCheckTimeOut();
     
-    /**
-     * get map of labels.
-     *
-     * @return labels.
-     */
+    /** 客户端标签键值对，随连接上报供服务端识别来源模块 */
+
     Map<String, String> labels();
     
 }

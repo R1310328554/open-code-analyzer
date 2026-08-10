@@ -32,17 +32,21 @@ import static com.alibaba.nacos.common.remote.client.RpcConstants.NACOS_CLIENT_R
 import static com.alibaba.nacos.common.remote.client.RpcConstants.NACOS_PEER_RPC;
 
 /**
+ * RPC 客户端 TLS 配置工厂（单例）：从 Properties 分别构建 SDK 与集群
+ * 通信所需的 {@link RpcClientTlsConfig}，键前缀见 {@link RpcConstants}。
  * TlsConfigFactory.
  *
  * @author stone-98
  */
 public class RpcClientTlsConfigFactory implements RpcTlsConfigFactory {
     
+    /** 单例实例 */
     private static RpcClientTlsConfigFactory instance;
     
     private RpcClientTlsConfigFactory() {
     }
     
+    /** 获取 TLS 配置工厂单例 */
     public static synchronized RpcClientTlsConfigFactory getInstance() {
         if (instance == null) {
             instance = new RpcClientTlsConfigFactory();
@@ -51,6 +55,7 @@ public class RpcClientTlsConfigFactory implements RpcTlsConfigFactory {
     }
     
     /**
+     * 从 Properties 构建 SDK 客户端 TLS 配置（前缀 {@link RpcConstants#NACOS_CLIENT_RPC}）。
      * Create SDK client TLS config.
      *
      * @param properties Properties containing TLS configuration
@@ -78,6 +83,7 @@ public class RpcClientTlsConfigFactory implements RpcTlsConfigFactory {
     }
     
     /**
+     * 从 Properties 构建集群节点间 TLS 配置（前缀 {@link RpcConstants#NACOS_PEER_RPC}）。
      * Create cluster client TLS config.
      *
      * @param properties Properties containing TLS configuration

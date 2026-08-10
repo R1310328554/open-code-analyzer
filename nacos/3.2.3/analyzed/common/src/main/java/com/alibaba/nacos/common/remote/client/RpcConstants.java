@@ -27,16 +27,21 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * RPC 模块配置常量：定义客户端/服务端/集群 TLS 属性键前缀、后缀及
+ * 带 {@link RpcConfigLabel} 注解的可扫描配置项集合。
  * RpcConstants.
  *
  * @author githubcheng2978.
  */
 public class RpcConstants {
     
+    /** SDK 客户端 RPC 配置前缀 */
     public static final String NACOS_CLIENT_RPC = "nacos.remote.client.rpc";
     
+    /** 服务端 RPC TLS 配置前缀 */
     public static final String NACOS_SERVER_RPC = "nacos.remote.server.rpc.tls";
     
+    /** 集群节点间 RPC TLS 配置前缀 */
     public static final String NACOS_PEER_RPC = "nacos.remote.peer.rpc.tls";
     
     @RpcConfigLabel
@@ -76,6 +81,7 @@ public class RpcConstants {
     public static final String RPC_CLIENT_TLS_TRUST_ALL =
         NACOS_CLIENT_RPC + ClientSuffix.TLS_TRUST_ALL;
     
+    /** 启动时反射收集的带 RpcConfigLabel 的配置键名集合 */
     private static final Set<String> CONFIG_NAMES = new HashSet<>();
     
     static {
@@ -94,6 +100,7 @@ public class RpcConstants {
     }
     
     /**
+     * 客户端 RPC TLS 配置属性后缀集合，与 {@link #NACOS_CLIENT_RPC} 前缀拼接成完整键。
      * Enumeration of common suffixes for RPC configuration properties. Each enum constant represents a specific
      * configuration attribute suffix. This allows for the construction of complete configuration property keys.
      */
@@ -101,57 +108,68 @@ public class RpcConstants {
         
         /**
          * Suffix for 'tls.enable' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_ENABLE = ".tls.enable";
         
         /**
          * Suffix for 'tls.provider' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_PROVIDER = ".tls.provider";
         
         /**
          * Suffix for 'tls.mutualAuth' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String MUTUAL_AUTH = ".tls.mutualAuth";
         
         /**
          * Suffix for 'tls.protocols' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_PROTOCOLS = ".tls.protocols";
         
         /**
          * Suffix for 'tls.ciphers' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_CIPHERS = ".tls.ciphers";
         
         /**
          * Suffix for 'tls.certChainFile' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_CERT_CHAIN_PATH = ".tls.certChainFile";
         
         /**
          * Suffix for 'tls.certPrivateKey' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_CERT_KEY = ".tls.certPrivateKey";
         
         /**
          * Suffix for 'tls.certPrivateKeyPassword' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_TRUST_PWD = ".tls.certPrivateKeyPassword";
         
         /**
          * Suffix for 'tls.trustCollectionChainPath' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_TRUST_COLLECTION_CHAIN_PATH =
             ".tls.trustCollectionChainPath";
         
         /**
          * Suffix for 'tls.trustAll' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_TRUST_ALL = ".tls.trustAll";
     }
     
     /**
+     * 服务端/集群 RPC TLS 配置属性后缀，与 {@link #NACOS_PEER_RPC} 等前缀拼接。
      * Enumeration of common suffixes for RPC configuration properties. Each enum constant represents a specific
      * configuration attribute suffix. This allows for the construction of complete configuration property keys.
      */
@@ -159,61 +177,73 @@ public class RpcConstants {
         
         /**
          * Suffix for 'tls.enable' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_ENABLE = ".enableTls";
         
         /**
          * Suffix for 'tls.provider' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_PROVIDER = ".sslProvider";
         
         /**
          * Suffix for 'tls.mutualAuth' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String MUTUAL_AUTH = ".mutualAuthEnable";
         
         /**
          * Suffix for 'tls.protocols' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_PROTOCOLS = ".protocols";
         
         /**
          * Suffix for 'tls.ciphers' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_CIPHERS = ".ciphers";
         
         /**
          * Suffix for 'tls.certChainFile' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_CERT_CHAIN_PATH = ".certChainFile";
         
         /**
          * Suffix for 'tls.certPrivateKey' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_CERT_KEY = ".certPrivateKey";
         
         /**
          * Suffix for 'tls.certPrivateKeyPassword' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_TRUST_PWD = ".certPrivateKeyPassword";
         
         /**
          * Suffix for 'tls.trustCollectionChainPath' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_TRUST_COLLECTION_CHAIN_PATH = ".trustCollectionCertFile";
         
         /**
          * Suffix for 'tls.trustAll' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String TLS_TRUST_ALL = ".trustAll";
         
         /**
          * Suffix for '.sslContextRefresher' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String SSL_CONTEXT_REFRESHER = ".sslContextRefresher";
         
         /**
          * Suffix for '.compatibility' configuration property.
+          * <p>RPC 配置常量；详见类级说明。</p>
          */
         public static final String COMPATIBILITY = ".compatibility";
     }
@@ -225,6 +255,7 @@ public class RpcConstants {
         
     }
     
+    /** 返回所有已注册的 RPC 配置键名（不可变集合） */
     public static Set<String> getRpcParams() {
         return Collections.unmodifiableSet(CONFIG_NAMES);
     }

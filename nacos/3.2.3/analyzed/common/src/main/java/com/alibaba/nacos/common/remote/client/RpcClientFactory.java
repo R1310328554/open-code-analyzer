@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * RPC 客户端工厂：按 clientName 缓存并创建 SDK / 集群 gRPC 客户端，
+ * 支持多模块各自持有独立 {@link RpcClient} 实例。
  * RpcClientFactory.to support multi client for different modules of usage.
  *
  * @author liuzunfei
@@ -40,12 +42,14 @@ public class RpcClientFactory {
     private static final Logger LOGGER =
         LoggerFactory.getLogger("com.alibaba.nacos.common.remote.client");
     
+    /** clientName → RpcClient 全局缓存，computeIfAbsent 保证同名单例 */
     private static final Map<String, RpcClient> CLIENT_MAP = new ConcurrentHashMap<>();
     
     /**
      * get all client.
      *
      * @return client collection.
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static Set<Map.Entry<String, RpcClient>> getAllClientEntries() {
         return CLIENT_MAP.entrySet();
@@ -55,6 +59,7 @@ public class RpcClientFactory {
      * shut down client.
      *
      * @param clientName client name.
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static void destroyClient(String clientName) throws NacosException {
         RpcClient rpcClient = CLIENT_MAP.remove(clientName);
@@ -63,6 +68,7 @@ public class RpcClientFactory {
         }
     }
     
+    /** 按名称获取已创建的客户端，不存在返回 null */
     public static RpcClient getClient(String clientName) {
         return CLIENT_MAP.get(clientName);
     }
@@ -73,6 +79,7 @@ public class RpcClientFactory {
      * @param clientName     client name.
      * @param connectionType client type.
      * @return rpc client.
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static RpcClient createClient(String clientName, ConnectionType connectionType,
         Map<String, String> labels) {
@@ -90,6 +97,7 @@ public class RpcClientFactory {
      *
      * @return rpc client.
      * @date 2024/3/7
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static RpcClient createClient(String clientName, ConnectionType connectionType,
         Map<String, String> labels,
@@ -113,11 +121,13 @@ public class RpcClientFactory {
      * @param threadPoolMaxSize  grpc thread pool max size
      * @param tlsConfig          tlsconfig
      * @return rpc client.
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static RpcClient createClient(String clientName, ConnectionType connectionType,
         Integer threadPoolCoreSize,
         Integer threadPoolMaxSize, Map<String, String> labels, RpcClientTlsConfig tlsConfig) {
         
+        // 当前仅支持 gRPC 连接类型
         if (!ConnectionType.GRPC.equals(connectionType)) {
             throw new UnsupportedOperationException(
                 "unsupported connection type :" + connectionType.getType());
@@ -137,6 +147,7 @@ public class RpcClientFactory {
      * @param connectionType     client type.
      * @param grpcClientConfig   grpc client config.
      * @return rpc client.
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static RpcClient createClient(String clientName, ConnectionType connectionType,
         GrpcClientConfig grpcClientConfig) {
@@ -160,6 +171,7 @@ public class RpcClientFactory {
      * @param connectionType The type of client connection.
      * @param labels         Additional labels for RPC-related attributes.
      * @return An RPC client for cluster communication.
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static RpcClient createClusterClient(String clientName, ConnectionType connectionType,
         Map<String, String> labels) {
@@ -174,6 +186,7 @@ public class RpcClientFactory {
      * @param labels         Additional labels for RPC-related attributes.
      * @param tlsConfig      TLS configuration for secure communication.
      * @return An RPC client for cluster communication with TLS configuration.
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static RpcClient createClusterClient(String clientName, ConnectionType connectionType,
         Map<String, String> labels, RpcClientTlsConfig tlsConfig) {
@@ -189,6 +202,7 @@ public class RpcClientFactory {
      * @param threadPoolMaxSize  The maximum size of the gRPC thread pool.
      * @param labels             Additional labels for RPC-related attributes.
      * @return An RPC client for cluster communication with custom thread pool settings.
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static RpcClient createClusterClient(String clientName, ConnectionType connectionType,
         Integer threadPoolCoreSize, Integer threadPoolMaxSize, Map<String, String> labels) {
@@ -206,6 +220,7 @@ public class RpcClientFactory {
      * @param labels             tables.
      * @param tlsConfig          tlsConfig.
      * @return
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static RpcClient createClusterClient(String clientName, ConnectionType connectionType,
         Integer threadPoolCoreSize, Integer threadPoolMaxSize, Map<String, String> labels,
@@ -215,6 +230,7 @@ public class RpcClientFactory {
                 "unsupported connection type :" + connectionType.getType());
         }
         
+        // 集群通信客户端，用于节点间 RPC
         return CLIENT_MAP.computeIfAbsent(clientName,
             clientNameInner -> new GrpcClusterClient(clientNameInner, threadPoolCoreSize,
                 threadPoolMaxSize, labels,
@@ -228,6 +244,7 @@ public class RpcClientFactory {
      * @param connectionType     client type.
      * @param grpcClientConfig   grpc client config.
      * @return rpc client.
+      * <p>RPC 客户端工厂；详见类级说明。</p>
      */
     public static RpcClient createClusterClient(String clientName, ConnectionType connectionType,
         GrpcClientConfig grpcClientConfig) {

@@ -24,6 +24,9 @@ import java.util.Map;
 import java.util.ServiceLoader;
 
 /**
+ * RPC 载荷（Payload）注册表：通过 {@link ServiceLoader} 扫描 classpath 下所有
+ * {@link com.alibaba.nacos.api.remote.Payload} 实现，建立 simpleName → Class 映射，
+ * 供远程请求/响应反序列化时按类型名查找具体类。
  * payload registry,Define basic scan behavior request and response.
  *
  * @author liuzunfei
@@ -33,10 +36,13 @@ import java.util.ServiceLoader;
 
 public class PayloadRegistry {
     
+    /** 类型名 → Payload 实现类的全局注册表 */
     private static final Map<String, Class<?>> REGISTRY_REQUEST = new HashMap<>();
     
+    /** 是否已完成 SPI 扫描，保证 {@link #scan()} 只执行一次 */
     static boolean initialized = false;
     
+    /** 触发 SPI 扫描并注册所有 Payload 实现 */
     public static void init() {
         scan();
     }
@@ -52,6 +58,7 @@ public class PayloadRegistry {
         initialized = true;
     }
     
+    /** 注册单个 Payload 类；抽象类跳过，重复 type 抛异常 */
     static void register(String type, Class<?> clazz) {
         if (Modifier.isAbstract(clazz.getModifiers())) {
             return;
@@ -63,6 +70,7 @@ public class PayloadRegistry {
         REGISTRY_REQUEST.put(type, clazz);
     }
     
+    /** 按 simpleName 查找已注册的 Payload 类 */
     public static Class<?> getClassByType(String type) {
         return REGISTRY_REQUEST.get(type);
     }

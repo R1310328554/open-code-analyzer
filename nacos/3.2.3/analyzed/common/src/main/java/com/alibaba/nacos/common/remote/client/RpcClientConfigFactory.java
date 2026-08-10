@@ -23,17 +23,21 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
+ * RPC 客户端配置工厂（单例）：根据 {@link java.util.Properties} 与标签
+ * 构建 {@link com.alibaba.nacos.common.remote.client.grpc.GrpcClientConfig} 实例。
  * RpcClientConfigFactory.
  *
  * @author Nacos
  */
 public class RpcClientConfigFactory implements RpcConfigFactory {
     
+    /** 双重检查锁单例持有者 */
     private static volatile RpcClientConfigFactory rpcClientConfigFactory;
     
     private RpcClientConfigFactory() {
     }
     
+    /** 获取全局唯一配置工厂实例 */
     public static RpcClientConfigFactory getInstance() {
         if (rpcClientConfigFactory == null) {
             synchronized (RpcClientConfigFactory.class) {
@@ -45,6 +49,7 @@ public class RpcClientConfigFactory implements RpcConfigFactory {
         return rpcClientConfigFactory;
     }
     
+    /** 从 Properties 解析 SDK 侧 gRPC 客户端配置并附加 labels */
     @Override
     public GrpcClientConfig createGrpcClientConfig(Properties properties,
         Map<String, String> labels) {

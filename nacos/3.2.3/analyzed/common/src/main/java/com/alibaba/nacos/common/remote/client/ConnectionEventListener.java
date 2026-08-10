@@ -17,6 +17,8 @@
 package com.alibaba.nacos.common.remote.client;
 
 /**
+ * 客户端连接事件监听器：在 RPC 连接建立或断开时接收回调，
+ * 由 {@link RpcClient#registerConnectionListener(ConnectionEventListener)} 注册。
  * connection event listener of client side.
  * @author liuzunfei
  * @version $Id: ConnectionEventListener.java, v 0.1 2020年07月14日 10:59 AM liuzunfei Exp $
@@ -24,6 +26,7 @@ package com.alibaba.nacos.common.remote.client;
 public interface ConnectionEventListener {
     
     /**
+     * 与服务端成功建立连接时回调。
      * notify when  connected to server.
      *
      * @param connection connection has connected
@@ -31,6 +34,7 @@ public interface ConnectionEventListener {
     void onConnected(Connection connection);
     
     /**
+     * 与服务端连接断开时回调。
      * notify when  disconnected to server.
      *
      * @param connection connection has disconnected

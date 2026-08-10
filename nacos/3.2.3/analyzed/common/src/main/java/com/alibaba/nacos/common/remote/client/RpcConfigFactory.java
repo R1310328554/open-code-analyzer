@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
+ * RPC 配置工厂 SPI 接口：抽象 gRPC 客户端配置的创建逻辑，
+ * 默认实现为 {@link RpcClientConfigFactory}。
  * RpcConfigFactory.
  *
  * @author Nacos
@@ -29,6 +31,7 @@ import java.util.Properties;
 public interface RpcConfigFactory {
     
     /**
+     * 根据 Properties 与标签创建 gRPC 客户端配置。
      * createGrpcClientConfig.
      *
      * @param properties properties

@@ -17,6 +17,7 @@
 package com.alibaba.nacos.common.remote.client;
 
 /**
+ * RPC 客户端生命周期状态枚举：从等待初始化到运行、不健康、关闭的完整状态机。
  * status of rpc client.
  *
  * @author liuzunfei
@@ -24,38 +25,28 @@ package com.alibaba.nacos.common.remote.client;
  */
 public enum RpcClientStatus {
     
-    /**
-     * wait to init.
-     */
+    /** 等待注入 {@link ServerListFactory} */
     WAIT_INIT(0, "Wait to init server list factory..."),
     
-    /**
-     * already init.
-     */
+    /** 服务器列表工厂已就绪，等待 start */
     INITIALIZED(1, "Server list factory is ready, wait to starting..."),
     
-    /**
-     * in starting.
-     */
+    /** 正在启动并尝试首次连接 */
     STARTING(2, "Client already staring, wait to connect with server..."),
     
-    /**
-     * unhealthy.
-     */
+    /** 连接不健康，可能已被服务端关闭，正在重连 */
     UNHEALTHY(3, "Client unhealthy, may closed by server, in reconnecting"),
     
-    /**
-     * in running.
-     */
+    /** 正常运行，可收发 RPC 请求 */
     RUNNING(4, "Client is running"),
     
-    /**
-     * shutdown.
-     */
+    /** 已关闭，不再重连 */
     SHUTDOWN(5, "Client is shutdown");
     
+    /** 状态数值编码 */
     int status;
     
+    /** 状态可读描述 */
     String desc;
     
     RpcClientStatus(int status, String desc) {

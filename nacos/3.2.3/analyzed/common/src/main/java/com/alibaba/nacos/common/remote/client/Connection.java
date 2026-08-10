@@ -23,6 +23,8 @@ import com.alibaba.nacos.api.remote.Requester;
 import java.util.Map;
 
 /**
+ * 客户端侧 RPC 连接抽象基类：封装连接 ID、目标服务器信息、能力表及废弃标记，
+ * 具体传输实现（如 gRPC）继承此类并完成 {@link com.alibaba.nacos.api.remote.Requester} 请求发送。
  * connection on client side.
  *
  * @author liuzunfei
@@ -30,12 +32,16 @@ import java.util.Map;
  */
 public abstract class Connection implements Requester {
     
+    /** 服务端分配的唯一连接标识 */
     private String connectionId;
     
+    /** 连接是否已废弃；废弃后不再触发连接事件回调 */
     private boolean abandon = false;
     
+    /** 当前连接对应的服务器 IP 与端口 */
     protected RpcClient.ServerInfo serverInfo;
     
+    /** 服务端能力协商表：能力名 → 是否支持 */
     protected Map<String, Boolean> abilityTable;
     
     public Connection(RpcClient.ServerInfo serverInfo) {
@@ -50,6 +56,7 @@ public abstract class Connection implements Requester {
         this.connectionId = connectionId;
     }
     
+    /** 查询当前连接对指定 {@link AbilityKey} 的支持状态 */
     public AbilityStatus getConnectionAbility(AbilityKey abilityKey) {
         if (abilityTable == null || !abilityTable.containsKey(abilityKey.getName())) {
             return AbilityStatus.UNKNOWN;
@@ -58,10 +65,12 @@ public abstract class Connection implements Requester {
             : AbilityStatus.NOT_SUPPORTED;
     }
     
+    /** 能力表是否已从服务端同步 */
     public boolean isAbilitiesSet() {
         return abilityTable != null;
     }
     
+    /** 设置协商后的能力表 */
     public void setAbilityTable(Map<String, Boolean> abilityTable) {
         this.abilityTable = abilityTable;
     }
@@ -70,6 +79,7 @@ public abstract class Connection implements Requester {
      * Getter method for property <tt>abandon</tt>.
      *
      * @return property value of abandon
+      * <p>客户端 RPC 连接抽象；详见类级说明。</p>
      */
     public boolean isAbandon() {
         return abandon;
@@ -79,6 +89,7 @@ public abstract class Connection implements Requester {
      * Setter method for property <tt>abandon</tt>. connection event will be ignored if connection is abandoned.
      *
      * @param abandon value to be assigned to property abandon
+      * <p>客户端 RPC 连接抽象；详见类级说明。</p>
      */
     public void setAbandon(boolean abandon) {
         this.abandon = abandon;
