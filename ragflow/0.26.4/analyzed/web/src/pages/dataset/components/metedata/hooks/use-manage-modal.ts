@@ -1,3 +1,5 @@
+// use-manage-modal.ts — 知识库元数据管理弹窗：表格数据转换、增删改操作与保存逻辑。
+
 import message from '@/components/ui/message';
 import { useSetModalState } from '@/hooks/common-hooks';
 import { useSelectedIds } from '@/hooks/logic-hooks/use-row-selection';
@@ -30,7 +32,9 @@ import {
   UpdateOperation,
 } from '../interface';
 
+/** 元数据表格与 API 返回结构之间的双向转换工具集。 */
 export const util = {
+  /** 将后端 summary 对象转为表格行，兼容带 type 与纯数组两种值形态。 */
   changeToMetaDataTableData(data: IMetaDataReturnType): IMetaDataTableData[] {
     const res = Object.entries(data).map(
       ([key, value]: [
@@ -62,6 +66,7 @@ export const util = {
     return res;
   },
 
+  /** 将单文档 meta JSON 键值对转为表格行，标量与数组统一为 values 列表。 */
   JSONToMetaDataTableData(
     data: Record<string, string | string[]>,
   ): IMetaDataTableData[] {
@@ -85,6 +90,7 @@ export const util = {
     });
   },
 
+  /** 表格行聚合为 field -> values 的提交 JSON。 */
   tableDataToMetaDataJSON(data: IMetaDataTableData[]): IMetaDataReturnJSONType {
     return data.reduce<IMetaDataReturnJSONType>((pre, cur) => {
       pre[cur.field] = cur.values;
@@ -92,6 +98,7 @@ export const util = {
     }, {});
   },
 
+  /** 表格行转为知识库元数据 schema 配置项数组。 */
   tableDataToMetaDataSettingJSON(
     data: IMetaDataTableData[],
   ): IMetaDataReturnJSONSettings {
@@ -105,6 +112,7 @@ export const util = {
     });
   },
 
+  /** 将 schema 配置（数组或 JSON Schema properties）还原为可编辑表格行。 */
   metaDataSettingJSONToMetaDataTableData(
     data: IMetaDataReturnJSONSettings,
   ): IMetaDataTableData[] {
@@ -135,6 +143,7 @@ export const util = {
   },
 };
 
+/** 维护元数据批量编辑的 deletes/updates 操作队列，供保存时一次性提交。 */
 export const useMetadataOperations = () => {
   const [operations, setOperations] = useState<MetadataOperations>({
     deletes: [],
@@ -142,6 +151,7 @@ export const useMetadataOperations = () => {
   });
   // const operationsRef = useRef(operations);
 
+  /** 记录整行字段删除。 */
   const addDeleteRow = useCallback((key: string) => {
     setOperations((prev) => ({
       ...prev,
@@ -149,6 +159,7 @@ export const useMetadataOperations = () => {
     }));
   }, []);
 
+  /** 批量记录多行字段删除。 */
   const addDeleteBatch = useCallback((keys: string[]) => {
     setOperations((prev) => ({
       ...prev,
@@ -156,6 +167,7 @@ export const useMetadataOperations = () => {
     }));
   }, []);
 
+  /** 记录某字段下单个枚举值的删除。 */
   const addDeleteValue = useCallback((key: string, value: string) => {
     setOperations((prev) => ({
       ...prev,
@@ -163,6 +175,7 @@ export const useMetadataOperations = () => {
     }));
   }, []);
 
+  /** 追加或合并字段值更新；list 类型保留数组，其余类型取首元素。 */
   const addUpdateValue = useCallback(
     (
       key: string,
@@ -247,6 +260,7 @@ export const useMetadataOperations = () => {
   };
 };
 
+/** 按知识库 id 与可选 doc_ids 拉取元数据 summary 并转为表格数据。 */
 export const useFetchMetaDataManageData = (
   type: MetadataType = MetadataType.Manage,
   documentIds?: string[],
@@ -284,6 +298,7 @@ export const useFetchMetaDataManageData = (
 };
 
 const fetchTypeList = [MetadataType.Manage, MetadataType.UpdateSingle];
+/** 元数据管理弹窗核心逻辑：本地表格态、删除/保存与多种 MetadataType 分支。 */
 export const useManageMetaDataModal = (
   metaData: IMetaDataTableData[] = [],
   type: MetadataType = MetadataType.Manage,
@@ -328,6 +343,7 @@ export const useManageMetaDataModal = (
     }
   }, [metaData, type]);
 
+  /** 删除单元格枚举值并同步本地表格与操作队列。 */
   const handleDeleteSingleValue = useCallback(
     (field: string, value: string) => {
       addDeleteValue(field, value);
@@ -374,6 +390,7 @@ export const useManageMetaDataModal = (
     [addDeleteBatch],
   );
 
+  /** 调用 updateDocumentsMetadata 提交 selector 与 operations，成功后刷新文档列表。 */
   const handleSaveManage = useCallback(
     async (callback: () => void) => {
       console.log('handleSaveManage', tableData);
@@ -412,6 +429,7 @@ export const useManageMetaDataModal = (
   //   [tableData, otherData, setDocumentMeta],
   // );
 
+  /** 保存知识库级元数据 schema 与内置字段配置。 */
   const handleSaveSettings = useCallback(
     async (callback: () => void, builtInMetadata?: IBuiltInMetadataItem[]) => {
       const data = util.tableDataToMetaDataSettingJSON(tableData);
@@ -455,6 +473,7 @@ export const useManageMetaDataModal = (
     [tableData, t, otherData, id],
   );
 
+  /** 按 MetadataType 分发至 Manage / Setting / SingleFileSetting 保存路径。 */
   const handleSave = useCallback(
     async ({
       callback,
@@ -503,6 +522,7 @@ export const useManageMetaDataModal = (
   };
 };
 
+/** 封装管理弹窗显隐、初始 tableData 与 ShowManageMetadataModalProps 配置。 */
 export const useManageMetadata = () => {
   const [tableData, setTableData] = useState<IMetaDataTableData[]>([]);
   const [config, setConfig] = useState<ShowManageMetadataModalProps>(
@@ -535,6 +555,7 @@ export const useManageMetadata = () => {
   };
 };
 
+/** 表格多选批量删除：将 rowSelection 映射为 field 键并调用 handleDeleteBatchRow。 */
 export const useOperateData = ({
   rowSelection,
   list,

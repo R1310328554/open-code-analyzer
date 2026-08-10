@@ -1,3 +1,5 @@
+// hook.ts — 数据集 GraphRAG/RAPTOR 生成：启动、暂停、进度轮询与任务解绑。
+
 import message from '@/components/ui/message';
 import agentService from '@/services/agent-service';
 import {
@@ -11,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { ProcessingType } from '../../dataset-overview/dataset-common';
 import { GenerateType, GenerateTypeMap } from './generate';
+/** 索引生成任务在前端的粗粒度状态常量。 */
 export const generateStatus = {
   running: 'running',
   completed: 'completed',
@@ -23,6 +26,7 @@ enum DatasetKey {
   pauseGenerate = 'pauseGenerate',
 }
 
+/** traceIndex 返回的单条索引任务进度与元信息。 */
 export interface ITraceInfo {
   begin_at: string;
   chunk_ids: string;
@@ -43,6 +47,7 @@ export interface ITraceInfo {
   update_time: number;
 }
 
+/** 弹窗打开时轮询 graph/raptor 任务进度，未完成时每 5s 刷新。 */
 export const useTraceGenerate = ({ open }: { open: boolean }) => {
   const { id } = useParams();
   const [isLoopGraphRun, setLoopGraphRun] = useState(false);
@@ -104,6 +109,7 @@ export const useTraceGenerate = ({ open }: { open: boolean }) => {
   };
 };
 
+/** 调用 deletePipelineTask 解绑知识库上的后处理流水线任务。 */
 export const useUnBindTask = () => {
   const { id } = useParams();
   const { mutateAsync: handleUnbindTask } = useMutation({
@@ -131,6 +137,7 @@ export const useUnBindTask = () => {
   });
   return { handleUnbindTask };
 };
+/** 封装 runIndex 启动与 pauseGenerate（取消 dataflow + 可选 wipe 解绑）。 */
 export const useDatasetGenerate = () => {
   const queryClient = useQueryClient();
   const { id } = useParams();
@@ -169,6 +176,7 @@ export const useDatasetGenerate = () => {
     }) => {
       const { data } = await agentService.cancelDataflow(task_id);
 
+      // GraphRAG 暂停保留部分子图/实体进度以便 resume；RAPTOR 仍可按 wipe 清理
       // For GraphRAG, pause must preserve partial progress (subgraphs,
       // entities, relations, community reports) so the next run_graphrag
       // call can resume instead of redoing hours of LLM extraction. Raptor

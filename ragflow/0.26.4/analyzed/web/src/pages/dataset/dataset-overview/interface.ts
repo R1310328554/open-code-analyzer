@@ -1,12 +1,16 @@
+// interface.ts — 数据集概览页类型：日志表格 props、汇总统计与单条日志项。
+
 import { RunningStatus, RunningStatusMap } from '../dataset/constant';
 import { LogTabs } from './dataset-common';
 
+/** 文档日志行附加字段：文件名与 RunningStatus 展示名。 */
 export interface DocumentLog {
   fileName: string;
   status: RunningStatus;
   statusName: typeof RunningStatusMap;
 }
 
+/** 文件日志表格组件 props：分页、加载态与当前 Tab。 */
 export interface FileLogsTableProps {
   data: Array<IFileLogItem & DocumentLog>;
   pageCount: number;
@@ -20,6 +24,7 @@ export interface FileLogsTableProps {
   active: (typeof LogTabs)[keyof typeof LogTabs];
 }
 
+/** 概览顶栏各解析状态文档数量统计。 */
 export interface IOverviewTotal {
   cancelled: number;
   failed: number;
@@ -28,6 +33,7 @@ export interface IOverviewTotal {
   downloaded: number;
 }
 
+/** 单条数据流水线日志完整字段，含 DSL、进度与 pipeline 信息。 */
 export interface IFileLogItem {
   create_date: string;
   create_time: number;
@@ -58,6 +64,7 @@ export interface IFileLogItem {
   update_date: string;
   update_time: number;
 }
+/** listDataPipelineLogDocument 分页响应：logs 数组与 total。 */
 export interface IFileLogList {
   logs: Array<IFileLogItem & DocumentLog>;
   total: number;

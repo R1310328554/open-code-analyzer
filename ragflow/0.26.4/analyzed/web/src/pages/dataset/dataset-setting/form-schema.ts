@@ -1,7 +1,10 @@
+// form-schema.ts — 知识库/数据集设置页 Zod 校验 schema：解析方式、分块与 RAPTOR/GraphRAG 配置。
+
 import { ParseType } from '@/constants/knowledge';
 import { t } from 'i18next';
 import { z } from 'zod';
 
+/** 知识库主设置表单 schema，含 parser_config 嵌套与 Pipeline 必选校验。 */
 export const formSchema = z
   .object({
     parse_type: z.nativeEnum(ParseType),
@@ -33,6 +36,7 @@ export const formSchema = z
         toc_extraction: z.boolean().optional(),
         image_table_context_window: z.number().optional(),
         overlapped_percent: z.number().optional(),
+        // MinerU 解析器专用选项
         // MinerU-specific options
         mineru_parse_method: z.enum(['auto', 'txt', 'ocr']).optional(),
         mineru_formula_enable: z.boolean().optional(),
@@ -103,6 +107,7 @@ export const formSchema = z
           .optional(),
         enable_metadata: z.boolean().optional(),
         llm_id: z.string().optional(),
+        // 表格解析器：auto 全列双向量，manual 按列角色映射
         // Table parser: "auto" = all columns both, "manual" = use column role selector
         table_column_mode: z.enum(['auto', 'manual']).optional(),
         // Table parser: column name -> role (indexing | metadata | both); legacy "vectorize" -> indexing
@@ -131,6 +136,7 @@ export const formSchema = z
       .optional(),
     // icon: z.array(z.instanceof(File)),
   })
+  // parse_type 为 Pipeline 时必须选择 pipeline_id
   .superRefine((data, ctx) => {
     if (data.parse_type === ParseType.Pipeline && !data.pipeline_id) {
       ctx.addIssue({
@@ -141,6 +147,7 @@ export const formSchema = z
     }
   });
 
+/** 关联/编辑数据流水线弹窗的精简 schema。 */
 export const pipelineFormSchema = z.object({
   pipeline_id: z.string().optional(),
   set_default: z.boolean().optional(),

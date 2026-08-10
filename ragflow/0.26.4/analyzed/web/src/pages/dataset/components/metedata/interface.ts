@@ -1,15 +1,20 @@
+// interface.ts — 知识库元数据模块 TypeScript 类型：API 结构、表格行与弹窗 props。
+
 import { ReactNode } from 'react';
 import { MetadataType } from './constant';
+/** 后端 getMetaData summary 原始结构：值可为 typed 对象或二维数组。 */
 export type IMetaDataReturnType = Record<
   string,
   | { type: string; values: Array<Array<string | number>> }
   | Array<Array<string | number>>
 >;
+/** 单文档 meta 提交 JSON：field -> string | string[]。 */
 export type IMetaDataReturnJSONType = Record<
   string,
   Array<string | number> | string
 >;
 
+/** 元数据 schema 扁平配置项：key、type、description 与 enum 可选值。 */
 export interface IMetaDataReturnJSONSettingItem {
   key: string;
   type?: string;
@@ -26,6 +31,7 @@ export interface IMetaDataJsonSchemaProperty {
   };
   format?: string;
 }
+/** JSON Schema 形态的元数据定义，properties 映射字段约束。 */
 export interface IMetaDataJsonSchema {
   type?: 'object';
   properties?: Record<string, IMetaDataJsonSchemaProperty>;
@@ -35,6 +41,7 @@ export type IMetaDataReturnJSONSettings =
   | IMetaDataJsonSchema
   | Array<IMetaDataReturnJSONSettingItem>;
 
+/** 元数据字段值类型：string、list、time、number 等。 */
 export type MetadataValueType =
   | 'string'
   | 'list'
@@ -43,6 +50,7 @@ export type MetadataValueType =
   | 'time'
   | 'number';
 
+/** 元数据管理表格单行：字段名、描述、枚举值列表与值类型。 */
 export type IMetaDataTableData = {
   field: string;
   description: string;
@@ -56,6 +64,7 @@ export type IBuiltInMetadataItem = {
   type: MetadataValueType;
 };
 
+/** 元数据管理主弹窗 props：表格数据、操作模式与内置字段等。 */
 export type IManageModalProps = {
   documentIds?: string[];
   title: ReactNode;
@@ -81,6 +90,7 @@ export type IManageModalProps = {
   nestedModalOkButtonTestId?: string;
 };
 
+/** 单字段值编辑子弹窗 props，含 addUpdateValue/addDeleteValue 回调。 */
 export interface IManageValuesProps {
   title: ReactNode;
   existsKeys: string[];
@@ -120,6 +130,7 @@ export interface UpdateOperation {
   valueType?: MetadataValueType;
 }
 
+/** 待提交的元数据批量操作：删除列表与更新列表。 */
 export interface MetadataOperations {
   deletes: DeleteOperation[];
   updates: UpdateOperation[];
@@ -127,6 +138,7 @@ export interface MetadataOperations {
 export interface ShowManageMetadataModalOptions {
   title?: ReactNode | string;
 }
+/** 打开管理弹窗时的可选配置，metadata 为初始表格数据。 */
 export type ShowManageMetadataModalProps = Partial<IManageModalProps> & {
   metadata?: IMetaDataTableData[];
   isCanAdd: boolean;

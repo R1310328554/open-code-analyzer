@@ -1,3 +1,5 @@
+// use-manage-values-modal.ts — 单字段元数据值编辑弹窗：校验、临时态与 blur 同步。
+
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -7,6 +9,7 @@ import {
 } from '../constant';
 import { IManageValuesProps, IMetaDataTableData } from '../interface';
 
+/** 管理单条元数据字段的编辑态、枚举值输入与保存/删除确认流程。 */
 export const useManageValues = (props: IManageValuesProps) => {
   const {
     data,
@@ -49,6 +52,7 @@ export const useManageValues = (props: IManageValuesProps) => {
     });
   };
 
+  // 使用函数式 setState 避免闭包读到过期 metaData
   // Use functional update to avoid closure issues
   const handleChange = useCallback(
     async (field: string, value: any) => {
@@ -97,6 +101,7 @@ export const useManageValues = (props: IManageValuesProps) => {
     [existsKeys, type, t],
   );
 
+  // tempValues 与 metaData.values 分离，避免 blur 竞态导致保存空值
   // Maintain separate state for each input box
   const [tempValues, setTempValues] = useState<string[]>(['']);
 
@@ -113,6 +118,7 @@ export const useManageValues = (props: IManageValuesProps) => {
     setMetaData({} as IMetaDataTableData);
   }, [hideModal]);
 
+  /** 新增模式用 tempValues 入队；Setting 模式下字段名校验失败则中止。 */
   const handleSave = useCallback(() => {
     if (type === MetadataType.Setting && valueError.field) {
       return;
@@ -136,6 +142,7 @@ export const useManageValues = (props: IManageValuesProps) => {
     }
   }, [shouldSave, onSave, handleHideModal, metaData]);
 
+  // 失焦时将 tempValues 与原始 values  diff 后写入 update 队列
   // Handle blur event, synchronize to main state
   const handleValueBlur = useCallback(
     (values?: string[]) => {
@@ -164,6 +171,7 @@ export const useManageValues = (props: IManageValuesProps) => {
     [handleChange, tempValues, metaData, data, addUpdateValue, isAddValueMode],
   );
 
+  // 输入过程中仅更新 tempValues，并检测重复值报错
   // Handle value changes, only update temporary state
   const handleValueChange = useCallback(
     (index: number, value: string, isUpdate: boolean = false) => {
@@ -195,6 +203,7 @@ export const useManageValues = (props: IManageValuesProps) => {
     [t, type, handleValueBlur],
   );
 
+  // 删除某一枚举值：同步 tempValues、主态并记录 delete 操作
   // Handle delete operation
   const handleDelete = useCallback(
     (index: number) => {
@@ -245,6 +254,7 @@ export const useManageValues = (props: IManageValuesProps) => {
     });
   };
 
+  // 追加空字符串输入框，供用户填写新枚举值
   // Handle adding new value
   const handleAddValue = useCallback(() => {
     setTempValues((prev) => [...new Set([...prev, ''])]);
