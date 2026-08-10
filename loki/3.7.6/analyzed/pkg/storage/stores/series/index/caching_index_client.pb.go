@@ -3,6 +3,8 @@
 
 package index
 
+// 本文件由 protoc-gen-gogo 生成，定义索引缓存 ReadBatch/CacheEntry 的 protobuf 序列化结构。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -25,6 +27,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// CacheEntry 表示索引缓存中的一行：Column 为 range 键，Value 为索引值字节。
 type CacheEntry struct {
 	Column Bytes `protobuf:"bytes,1,opt,name=Column,proto3,customtype=Bytes" json:"Column"`
 	Value  Bytes `protobuf:"bytes,2,opt,name=Value,proto3,customtype=Bytes" json:"Value"`
@@ -62,6 +65,7 @@ func (m *CacheEntry) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CacheEntry proto.InternalMessageInfo
 
+// ReadBatch 聚合一次索引查询的缓存条目、原始 cache key、过期时间与基数计数。
 type ReadBatch struct {
 	Entries []CacheEntry `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries"`
 	Key     string       `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
@@ -843,3 +847,4 @@ var (
 	ErrInvalidLengthCachingIndexClient = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowCachingIndexClient   = fmt.Errorf("proto: integer overflow")
 )
+// Expiry 为 Unix 纳秒时间戳；Immutable 查询对应 Expiry=0 表示永不过期。

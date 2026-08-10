@@ -1,5 +1,7 @@
 package index
 
+// cachingIndexClient 在 series 索引 Client 外包装 Snappy 缓存层，支持 broad/exact 两种查询键策略与基数超限保护。
+
 import (
 	"context"
 	fmt "fmt"
@@ -47,6 +49,7 @@ var (
 	})
 )
 
+// CardinalityExceededError 表示单行索引结果超过租户 CardinalityLimit 配额。
 // CardinalityExceededError is returned when the user reads a row that
 // is too large.
 type CardinalityExceededError struct {
@@ -75,6 +78,7 @@ type cachingIndexClient struct {
 	disableBroadQueries bool
 }
 
+// NewCachingIndexClient 无缓存或空 tiered cache 时透传底层 Client，否则包装 Snappy 缓存。
 func NewCachingIndexClient(client Client, c cache.Cache, validity time.Duration, limits StoreLimits, logger log.Logger, disableBroadQueries bool) Client {
 	if c == nil || cache.IsEmptyTieredCache(c) {
 		return client
@@ -226,6 +230,7 @@ func (s *cachingIndexClient) queryPages(ctx context.Context, queries []Query, ca
 	}
 }
 
+// doBroadQueries 以表名+哈希宽查索引并在客户端过滤，降低 index QPS 但提高缓存占用。
 // doBroadQueries does broad queries on the store by using just TableName and HashValue.
 // This is useful for chunks queries or when we need to reduce QPS on index store at the expense of higher cache requirement.
 // All the results from the index store are cached and the responses are filtered based on the actual queries.
@@ -239,6 +244,7 @@ func (s *cachingIndexClient) doBroadQueries(ctx context.Context, queries []Query
 	})
 }
 
+// doQueries 使用完整 Query 键精确缓存，适合非 chunk 查询且 disableBroadQueries 为 true。
 // doQueries does the exact same queries as opposed to doBroadQueries doing broad queries with limited query params.
 func (s *cachingIndexClient) doQueries(ctx context.Context, queries []Query, callback QueryPagesCallback) error {
 	return s.queryPages(ctx, queries, callback, func(query Query) Query {
@@ -317,6 +323,7 @@ func (s *cachingIndexClient) cacheStore(ctx context.Context, keys []string, batc
 	return s.cache.Store(ctx, hashed, bufs)
 }
 
+// cacheFetch 批量拉取缓存、校验 key 碰撞与 expiry，返回命中 batch 与 miss 键列表。
 func (s *cachingIndexClient) cacheFetch(ctx context.Context, keys []string) (batches []ReadBatch, missed []string) {
 	cacheGets.Add(float64(len(keys)))
 
@@ -381,3 +388,4 @@ func (s *cachingIndexClient) cacheFetch(ctx context.Context, keys []string) (bat
 
 	return batches, missed
 }
+// cacheStore 对 key 做 HashKey 以兼容 memcache 长度与 Unicode 限制，再 proto 序列化 ReadBatch。

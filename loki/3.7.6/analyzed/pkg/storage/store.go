@@ -1,5 +1,7 @@
 package storage
 
+// LokiStore 是 querier/ingester 使用的顶层存储：组合多 schema 周期的 CompositeStore、chunk 缓存与 SelectLogs/SelectSamples 批处理迭代。
+
 import (
 	"context"
 	"fmt"
@@ -71,6 +73,7 @@ type Instrumentable interface {
 	SetPipelineWrapper(wrapper lokilog.PipelineWrapper)
 }
 
+// Store 扩展 stores.Store，增加 LogQL 选择器、schema 配置访问与 pipeline 包装钩子。
 type Store interface {
 	stores.Store
 	SelectStore
@@ -106,6 +109,7 @@ type LokiStore struct {
 	metricsNamespace string
 }
 
+// NewStore 初始化索引/chunk/写去重缓存、CompositeStore 并按 schema 周期注册子 store。
 // NewStore creates a new Loki Store using configuration supplied.
 func NewStore(cfg Config, storeCfg config.ChunkStoreConfig, schemaCfg config.SchemaConfig,
 	limits StoreLimits, clientMetrics ClientMetrics, registerer prometheus.Registerer, logger log.Logger,
@@ -328,6 +332,7 @@ func (s *LokiStore) storeForPeriod(p config.PeriodConfig, tableRange config.Tabl
 		nil
 }
 
+// decodeReq 解析 LogQL 选择器、注入 logs __name__ 与分片标签，并将时间对齐到毫秒。
 // decodeReq sanitizes an incoming request, rounds bounds, appends the __name__ matcher,
 // and adds the "__cortex_shard__" label if this is a sharded query.
 // todo(cyriltovena) refactor this.
@@ -475,6 +480,7 @@ func (s *LokiStore) SelectSeries(ctx context.Context, req logql.SelectLogParams)
 	return result, nil
 }
 
+// SelectLogs 构建 lazy chunk 批迭代器，按 MaxChunkBatchSize 分批加载 chunk 而非一次全拉。
 // SelectLogs returns an iterator that will query the store for more chunks while iterating instead of fetching all chunks upfront
 // for that request.
 func (s *LokiStore) SelectLogs(ctx context.Context, req logql.SelectLogParams) (iter.EntryIterator, error) {
@@ -524,6 +530,7 @@ func (s *LokiStore) SelectLogs(ctx context.Context, req logql.SelectLogParams) (
 	return newLogBatchIterator(ctx, s.schemaCfg, s.chunkMetrics, lazyChunks, s.cfg.MaxChunkBatchSize, matchers, pipeline, req.Direction, req.Start, req.End, chunkFilterer)
 }
 
+// SelectSamples 与 SelectLogs 对称，为 metrics 查询构建 sample 批迭代器。
 func (s *LokiStore) SelectSamples(ctx context.Context, req logql.SelectSampleParams) (iter.SampleIterator, error) {
 	matchers, from, through, err := decodeReq(req)
 	if err != nil {
@@ -611,3 +618,4 @@ func (f failingChunkWriter) Put(_ context.Context, _ []chunk.Chunk) error {
 func (f failingChunkWriter) PutOne(_ context.Context, _, _ model.Time, _ chunk.Chunk) error {
 	return errWritingChunkUnsupported
 }
+// TSDB 周期可走 Index Gateway 只读路径，此时 chunk 写入由 failingChunkWriter 拒绝以强制只读模式。

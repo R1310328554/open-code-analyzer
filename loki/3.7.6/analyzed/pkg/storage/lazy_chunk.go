@@ -1,5 +1,7 @@
 package storage
 
+// LazyChunk 封装尚未加载数据的 chunk 引用，在迭代时按需解码并缓存与相邻 chunk 重叠的 block。
+
 import (
 	"context"
 	"errors"
@@ -16,6 +18,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// LazyChunk 持有 chunk 元数据、有效性标志及负责拉取数据的 Fetcher。
 // LazyChunk loads the chunk when it is accessed.
 type LazyChunk struct {
 	Chunk   chunk.Chunk
@@ -31,6 +34,7 @@ type LazyChunk struct {
 // Iterator returns an entry iterator.
 // The iterator returned will cache overlapping block's entries with the next chunk if passed.
 // This way when we re-use them for ordering across batches we don't re-decompress the data again.
+// Iterator 按时间范围与方向构建日志 entry 迭代器，重叠 block 可缓存供下一 chunk 复用。
 func (c *LazyChunk) Iterator(
 	ctx context.Context,
 	from, through time.Time,
@@ -112,6 +116,7 @@ func (c *LazyChunk) Iterator(
 // SampleIterator returns an sample iterator.
 // The iterator returned will cache overlapping block's entries with the next chunk if passed.
 // This way when we re-use them for ordering across batches we don't re-decompress the data again.
+// SampleIterator 与 Iterator 类似，为 metrics 查询构建 sample 迭代器并缓存重叠 block。
 func (c *LazyChunk) SampleIterator(
 	ctx context.Context,
 	from, through time.Time,
@@ -171,6 +176,7 @@ func (c *LazyChunk) SampleIterator(
 	), nil
 }
 
+// IsBlockOverlapping 判断 block 时间边界是否与下一 LazyChunk 在查询方向上重叠。
 func IsBlockOverlapping(b chunkenc.Block, with *LazyChunk, direction logproto.Direction) bool {
 	if direction == logproto.BACKWARD {
 		through := int64(with.Chunk.Through) * int64(time.Millisecond)
@@ -199,6 +205,7 @@ func (c *LazyChunk) IsOverlapping(with *LazyChunk, direction logproto.Direction)
 	return false
 }
 
+// lazyChunks 实现 sort.Interface，按查询方向对 chunk 起止时间与 fingerprint 排序。
 // lazyChunks is a slice of lazy chunks that can ordered by chunk boundaries
 // in ascending or descending depending on the direction
 type lazyChunks struct {
@@ -240,3 +247,4 @@ func (l *lazyChunks) pop(count int) []*LazyChunk {
 	l.chunks = newChks
 	return res
 }
+// pop 从堆顶取出 count 个 LazyChunk 并复制切片尾部，避免保留对已处理 chunk 的引用。

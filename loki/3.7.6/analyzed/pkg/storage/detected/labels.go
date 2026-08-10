@@ -1,5 +1,7 @@
 package detected
 
+// detected 包处理 logproto.DetectedLabel：反序列化 HyperLogLog sketch、按标签名合并并估算基数，供日志标签检测 API 使用。
+
 import (
 	"github.com/axiomhq/hyperloglog"
 
@@ -11,6 +13,7 @@ type UnmarshaledDetectedLabel struct {
 	Sketch *hyperloglog.Sketch
 }
 
+// unmarshalDetectedLabel 将 protobuf 中的二进制 sketch 反序列化为 hyperloglog.Sketch。
 func unmarshalDetectedLabel(l *logproto.DetectedLabel) (*UnmarshaledDetectedLabel, error) {
 	sketch := hyperloglog.New()
 	err := sketch.UnmarshalBinary(l.Sketch)
@@ -23,6 +26,7 @@ func unmarshalDetectedLabel(l *logproto.DetectedLabel) (*UnmarshaledDetectedLabe
 	}, nil
 }
 
+// Merge 将同标签的新 sketch 合并进已有 HyperLogLog 结构以累加基数估计。
 func (m *UnmarshaledDetectedLabel) Merge(dl *logproto.DetectedLabel) error {
 	sketch := hyperloglog.New()
 	err := sketch.UnmarshalBinary(dl.Sketch)
@@ -32,6 +36,7 @@ func (m *UnmarshaledDetectedLabel) Merge(dl *logproto.DetectedLabel) error {
 	return m.Sketch.Merge(sketch)
 }
 
+// MergeLabels 按标签名聚合 DetectedLabel，输出带 Cardinality 与可再次合并的二进制 sketch。
 func MergeLabels(labels []*logproto.DetectedLabel) (result []*logproto.DetectedLabel, err error) {
 	mergedLabels := make(map[string]*UnmarshaledDetectedLabel)
 	for _, label := range labels {
@@ -70,3 +75,4 @@ func MergeLabels(labels []*logproto.DetectedLabel) (result []*logproto.DetectedL
 
 	return
 }
+// 保留序列化 sketch 以便 query frontend 与 MultiTenantQuerier 跨租户响应再次合并。

@@ -1,5 +1,7 @@
 package stores
 
+// compositeStoreEntry 与 storeEntry 实现单个 schema 周期的 store 委托：索引读、chunk 写、查询时间校验与 chunk 引用过滤。
+
 import (
 	"context"
 	"fmt"
@@ -31,6 +33,7 @@ type StoreLimits interface {
 	MaxQueryLength(context.Context, string) time.Duration
 }
 
+// compositeStoreEntry 绑定 schema 起始时间与底层 Store 实现。
 type compositeStoreEntry struct {
 	start model.Time
 	Store
@@ -44,6 +47,7 @@ type storeEntry struct {
 	ChunkWriter
 }
 
+// GetChunks 从索引获取 ChunkRef（或使用 override），按查询时间过滤后返回未加载 chunk。
 func (c *storeEntry) GetChunks(
 	ctx context.Context,
 	userID string,
@@ -88,6 +92,7 @@ func (c *storeEntry) GetChunks(
 	return [][]chunk.Chunk{chunks}, []*fetcher.Fetcher{c.fetcher}, err
 }
 
+// filterForTimeRange 保留与 [from,through] 时间窗相交的 chunk 引用。
 func filterForTimeRange(refs []*logproto.ChunkRef, from, through model.Time) []chunk.Chunk {
 	filtered := make([]chunk.Chunk, 0, len(refs))
 	for _, ref := range refs {
@@ -219,6 +224,7 @@ func (c *storeEntry) GetChunkRefsWithSizingInfo(ctx context.Context, userID stri
 	return c.indexReader.GetChunkRefsWithSizingInfo(ctx, userID, from, through, predicate)
 }
 
+// validateQueryTimeRange 校验查询长度与 future 边界，必要时截断 through 并返回空结果 shortcut。
 func (c *storeEntry) validateQueryTimeRange(ctx context.Context, userID string, from *model.Time, through *model.Time) (bool, error) {
 	//nolint:ineffassign,staticcheck //Leaving ctx even though we don't currently use it, we want to make it available for when we might need it and hopefully will ensure us using the correct context at that time
 
@@ -257,3 +263,4 @@ func (c *storeEntry) Stop() {
 		c.stop()
 	}
 }
+// store override 的 chunk 可能不属于本子 store，需按请求时间窗过滤以免 fetch 阶段报错。

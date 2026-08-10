@@ -1,5 +1,7 @@
 package stats
 
+// stats 包合并跨 TSDB 文件的 IndexStats，并用 Bloom 过滤器去重 streams 避免重复计数。
+
 import (
 	"encoding/binary"
 	"sync"
@@ -15,6 +17,7 @@ var BloomPool PoolBloom
 
 type Stats = logproto.IndexStatsResponse
 
+// MergeStats 对多个 IndexStatsResponse 的 streams/chunks/bytes/entries 字段求和。
 func MergeStats(xs ...*Stats) (s Stats) {
 	for _, x := range xs {
 		if x == nil {
@@ -48,6 +51,7 @@ func (p *PoolBloom) Put(x *Blooms) {
 	p.pool.Put(x)
 }
 
+// 每个 Bloom 过滤器约 12.5MB；跨 schema 边界可能重复计数，属已知可接受偏差。
 // These are very expensive in terms of memory usage,
 // each requiring ~12.5MB. Therefore we heavily rely on pool usage.
 // See https://hur.st/bloomfilter for play around with this idea.
@@ -80,6 +84,7 @@ func newBlooms() *Blooms {
 // Bloom filters for estimating duplicate statistics across both series
 // and chunks within TSDB indices. These are used to calculate data topology
 // statistics prior to running queries.
+// Blooms 用 per-query Bloom 去重 stream fingerprint，并累加 chunk 统计到 Stats。
 type Blooms struct {
 	sync.RWMutex
 	Streams *bloom.BloomFilter
@@ -88,6 +93,7 @@ type Blooms struct {
 
 func (b *Blooms) Stats() Stats { return b.stats.Stats() }
 
+// AddStream 在 Bloom 未见过该 fingerprint 时调用 stats.AddStream 递增 stream 计数。
 func (b *Blooms) AddStream(fp model.Fingerprint) {
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key, uint64(fp))
@@ -115,3 +121,4 @@ func (b *Blooms) add(filter *bloom.BloomFilter, key []byte, update func()) {
 		update()
 	}
 }
+// PoolBloom 复用 Blooms 实例并在 Put 时 ClearAll，降低高基数 stats 查询的分配压力。

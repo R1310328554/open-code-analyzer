@@ -1,5 +1,7 @@
 package index
 
+// index 包定义索引读写接口、MonitoredReaderWriter 装饰器及 Prometheus 延迟 histogram 埋点。
+
 import (
 	"context"
 	"time"
@@ -17,6 +19,7 @@ import (
 	loki_instrument "github.com/grafana/loki/v3/pkg/util/instrument"
 )
 
+// Filterable 允许注入 RequestChunkFilterer，在取 chunk 引用时按请求过滤。
 type Filterable interface {
 	// SetChunkFilterer sets a chunk filter to be used when retrieving chunks.
 	SetChunkFilterer(chunkFilter chunk.RequestChunkFilterer)
@@ -49,6 +52,7 @@ type StatsReader interface {
 	GetChunkRefsWithSizingInfo(ctx context.Context, userID string, from, through model.Time, predicate chunk.Predicate) ([]logproto.ChunkRefWithSizingInfo, error)
 }
 
+// Reader 聚合 BaseReader、StatsReader、Filterable 与 GetChunkRefs 索引查询能力。
 type Reader interface {
 	BaseReader
 	StatsReader
@@ -65,11 +69,13 @@ type ReaderWriter interface {
 	Writer
 }
 
+// MonitoredReaderWriter 包装 ReaderWriter，为各索引操作记录 index_request_duration_seconds。
 type MonitoredReaderWriter struct {
 	rw      ReaderWriter
 	metrics *metrics
 }
 
+// NewMonitoredReaderWriter 创建带 metrics 的索引读写装饰器。
 func NewMonitoredReaderWriter(rw ReaderWriter, reg prometheus.Registerer) *MonitoredReaderWriter {
 	return &MonitoredReaderWriter{
 		rw:      rw,
@@ -170,6 +176,7 @@ func (m MonitoredReaderWriter) Volume(ctx context.Context, userID string, from, 
 	return vol, nil
 }
 
+// GetShards 计时并在成功时将 ShardsDuration 写入响应统计，供查询计划分析。
 func (m MonitoredReaderWriter) GetShards(
 	ctx context.Context,
 	userID string,
@@ -238,3 +245,4 @@ func (m MonitoredReaderWriter) HasForSeries(from, through model.Time) (sharding.
 func (m MonitoredReaderWriter) HasChunkSizingInfo(from, through model.Time) bool {
 	return m.rw.HasChunkSizingInfo(from, through)
 }
+// HasForSeries 若底层支持则包装 ForSeries 遍历，用于 bloom 加速的分片计算优化路径。

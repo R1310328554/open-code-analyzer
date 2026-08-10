@@ -1,5 +1,7 @@
 package main
 
+// hack 工具：向本地 boltdb+filesystem 存储写入约 1GiB 随机日志块，供存储层基准测试预热数据。
+
 import (
 	"context"
 	"fmt"
@@ -33,6 +35,7 @@ var (
 	maxChunks = 1200 // 1200 chunks is 2gib ish of data enough to run benchmark
 )
 
+// main 在 /tmp/benchmark/chunks 不存在时调用 fillStore 生成基准数据集。
 // fill up the local filesystem store with 1gib of data to run benchmark
 func main() {
 	cm := storage.NewClientMetrics()
@@ -44,6 +47,7 @@ func main() {
 	}
 }
 
+// getStore 构造 boltdb 索引 + 本地 filesystem chunk 的 LokiStore 与 v13 schema 配置。
 func getStore(cm storage.ClientMetrics) (storage.Store, *config.SchemaConfig, error) {
 	storeConfig := storage.Config{
 		BoltDBConfig: local.BoltDBConfig{Directory: "/tmp/benchmark/index"},
@@ -70,6 +74,7 @@ func getStore(cm storage.ClientMetrics) (storage.Store, *config.SchemaConfig, er
 	return store, &schemaCfg, err
 }
 
+// fillStore 启动 5 条 goroutine 写入随机 250 字节日志行，直至 flush 约 maxChunks 个 chunk。
 func fillStore(cm storage.ClientMetrics) error {
 	store, schemacfg, err := getStore(cm)
 	if err != nil {
@@ -148,6 +153,8 @@ func randStringWithCharset(length int, charset string) string {
 	return string(b)
 }
 
+// randString 生成指定长度的字母数字随机串，用于放大 chunk 体积。
 func randString(length int) string {
 	return randStringWithCharset(length, charset)
 }
+// 每条流按毫秒步进时间戳；chunk 满时 Encode 后 Put 到 store，约 1200 个 chunk 对应 2GiB 量级。

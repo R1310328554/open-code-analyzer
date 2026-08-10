@@ -1,5 +1,7 @@
 package stores
 
+// CompositeStore 按 schema 激活时间将读写请求路由到多个底层 store，并合并跨周期的 series、stats、volume 与 shard 结果。
+
 import (
 	"context"
 	"sort"
@@ -48,6 +50,7 @@ type Store interface {
 	Stop()
 }
 
+// CompositeStore 持有按 start 时间排序的 compositeStoreEntry 列表。
 // CompositeStore is a Store which delegates to various stores depending
 // on when they were activated.
 type CompositeStore struct {
@@ -58,6 +61,7 @@ type CompositeStore struct {
 // Ensure interface implementation of CompositeStore
 var _ Store = &CompositeStore{}
 
+// NewCompositeStore 创建空的组合 store，后续通过 AddStore 按周期注册。
 // NewCompositeStore creates a new Store which delegates to different stores depending
 // on time.
 func NewCompositeStore(limits StoreLimits) *CompositeStore {
@@ -163,6 +167,7 @@ func (c CompositeStore) LabelNamesForMetricName(ctx context.Context, userID stri
 	return result.Strings(), err
 }
 
+// GetChunks 遍历覆盖时间范围的子 store，拼接 chunk 引用与对应 Fetcher。
 func (c CompositeStore) GetChunks(
 	ctx context.Context,
 	userID string,
@@ -191,6 +196,7 @@ func (c CompositeStore) GetChunks(
 	return chunkIDs, fetchers, err
 }
 
+// Stats 收集各子 store 的 IndexStats 并通过 stats.MergeStats 求和。
 func (c CompositeStore) Stats(ctx context.Context, userID string, from, through model.Time, matchers ...*labels.Matcher) (*stats.Stats, error) {
 	xs := make([]*stats.Stats, 0, len(c.stores))
 	err := c.forStores(ctx, from, through, func(innerCtx context.Context, from, through model.Time, store Store) error {
@@ -348,6 +354,7 @@ func (c CompositeStore) Stop() {
 	}
 }
 
+// forStores 根据 from/through 定位重叠的 schema 区间并逐段调用 callback。
 func (c CompositeStore) forStores(ctx context.Context, from, through model.Time, callback func(innerCtx context.Context, from, through model.Time, store Store) error) error {
 	if len(c.stores) == 0 {
 		return nil
@@ -388,3 +395,4 @@ func (c CompositeStore) forStores(ctx context.Context, from, through model.Time,
 
 	return nil
 }
+// 跨 schema 边界查询 GetShards 时取 shard 数量最多的子 store 响应，因 shard 结果不易合并。

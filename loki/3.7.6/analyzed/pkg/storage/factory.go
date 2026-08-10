@@ -1,5 +1,7 @@
 package storage
 
+// storage 工厂包：根据 schema 周期配置创建 chunk/index/table/object 客户端，并管理命名对象存储与 Index Gateway 单例。
+
 import (
 	"context"
 	"flag"
@@ -51,6 +53,7 @@ var (
 	boltdbIndexClientsWithShipper = make(map[config.DayTime]*boltdb.IndexClient)
 )
 
+// ResetBoltDBIndexClientsWithShipper 停止并重置 boltdb-shipper 与 Index Gateway 单例，仅测试使用。
 // ResetBoltDBIndexClientsWithShipper allows to reset the singletons.
 // MUST ONLY BE USED IN TESTS
 func ResetBoltDBIndexClientsWithShipper() {
@@ -66,6 +69,7 @@ func ResetBoltDBIndexClientsWithShipper() {
 	}
 }
 
+// StoreLimits 聚合下载、索引网关与基数限制等查询相关配额接口。
 // StoreLimits helps get Limits specific to Queries for Stores
 type StoreLimits interface {
 	downloads.Limits
@@ -161,6 +165,7 @@ func (cfg *NamedCOSConfig) UnmarshalYAML(unmarshal func(interface{}) error) erro
 	return unmarshal((*ibmcloud.COSConfig)(cfg))
 }
 
+// NamedStores 允许在 YAML 中为同一云厂商配置多个具名对象存储实例。
 // NamedStores helps configure additional object stores from a given storage provider
 type NamedStores struct {
 	AWS          map[string]NamedAWSStorageConfig  `yaml:"aws"`
@@ -272,6 +277,7 @@ func (ns *NamedStores) Exists(name string) bool {
 	return ok
 }
 
+// Config 汇总各后端存储配置、缓存、shipper 与 Thanos objstore 开关。
 // Config chooses which storage client to use.
 type Config struct {
 	AlibabaStorageConfig   alibaba.OssConfig         `yaml:"alibabacloud"`
@@ -381,6 +387,7 @@ func (cfg *Config) Validate() error {
 	return cfg.NamedStores.Validate()
 }
 
+// NewIndexClient 按 PeriodConfig.IndexType 创建 boltdb-shipper、Index Gateway 或遗留 Dynamo/Bigtable 客户端。
 // NewIndexClient creates a new index client of the desired type specified in the PeriodConfig
 func NewIndexClient(component string, periodCfg config.PeriodConfig, tableRange config.TableRange, cfg Config, schemaCfg config.SchemaConfig, limits StoreLimits, cm ClientMetrics, shardingStrategy indexgateway.ShardingStrategy, registerer prometheus.Registerer, logger log.Logger, metricsNamespace string) (index.Client, error) {
 
@@ -473,6 +480,7 @@ func NewIndexClient(component string, periodCfg config.PeriodConfig, tableRange 
 	return nil, fmt.Errorf("unrecognized index client type %s, choose one of: %s", periodCfg.IndexType, strings.Join(types.SupportedIndexTypes, ","))
 }
 
+// NewChunkClient 创建 chunk 读写客户端，支持 Thanos objstore、命名存储与拥塞控制包装。
 // NewChunkClient makes a new chunk.Client of the desired types.
 func NewChunkClient(name, component string, cfg Config, schemaCfg config.SchemaConfig, p config.PeriodConfig, registerer prometheus.Registerer, clientMetrics ClientMetrics, logger log.Logger) (client.Client, error) {
 	var cc congestion.Controller
@@ -659,6 +667,7 @@ func (c *ClientMetrics) Unregister() {
 	c.AzureMetrics.Unregister()
 }
 
+// NewObjectClient 创建底层 ObjectClient，可选 Thanos objstore 路径与全局 key 前缀。
 // NewObjectClient makes a new StorageClient with the prefix in the front.
 func NewObjectClient(name, component string, cfg Config, clientMetrics ClientMetrics) (client.ObjectClient, error) {
 	if cfg.UseThanosObjstore {
@@ -805,3 +814,4 @@ func internalNewObjectClient(storeName string, cfg Config, clientMetrics ClientM
 		return nil, fmt.Errorf("Unrecognized storage client %v, choose one of: %v, %v, %v, %v, %v, %v, %v, %v, %v", storeName, types.StorageTypeAWS, types.StorageTypeS3, types.StorageTypeGCS, types.StorageTypeAzure, types.StorageTypeAlibabaCloud, types.StorageTypeSwift, types.StorageTypeBOS, types.StorageTypeCOS, types.StorageTypeFileSystem)
 	}
 }
+// Named*StorageConfig 在 UnmarshalYAML 时注入 flag 默认值，避免命名存储块缺少 CLI 注册默认值。
