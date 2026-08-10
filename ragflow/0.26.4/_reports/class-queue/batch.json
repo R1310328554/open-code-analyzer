@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:39:56Z",
-  "files": [
-    "web/src/custom.d.ts",
-    "web/src/hooks/auth-hooks.ts",
-    "web/src/hooks/logic-hooks.ts",
-    "web/src/hooks/logic-hooks/navigate-hooks.ts",
-    "web/src/hooks/logic-hooks/use-build-options.ts",
-    "web/src/hooks/logic-hooks/use-change-search.ts",
-    "web/src/hooks/logic-hooks/use-pagination.ts",
-    "web/src/hooks/logic-hooks/use-row-selection.ts",
-    "web/src/hooks/parser-config-utils.ts",
-    "web/src/hooks/route-hook.ts",
-    "web/src/hooks/use-agent-request.ts",
-    "web/src/hooks/use-callback-ref.ts",
-    "web/src/hooks/use-chat-request.ts",
-    "web/src/hooks/use-chunk-request.ts",
-    "web/src/hooks/use-client-search.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 324,
-  "done": 1425
+  "done": 1440
 }
