@@ -1,15 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:54:10Z",
-  "files": [
-    "transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtByteConnectorChannel.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtByteRendezvousChannel.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtMessageAcceptorChannel.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtMessageConnectorChannel.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtMessageRendezvousChannel.java",
-    "transport-udt/src/main/java/io/netty/channel/udt/nio/NioUdtProvider.java",
-    "varhandle-stub/src/main/java/java/lang/invoke/MethodHandle.java",
-    "varhandle-stub/src/main/java/java/lang/invoke/VarHandle.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 0,
-  "done": 1920
+  "done": 1928
 }
