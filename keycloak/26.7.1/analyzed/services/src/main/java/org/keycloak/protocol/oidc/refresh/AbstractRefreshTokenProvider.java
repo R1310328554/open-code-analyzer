@@ -47,16 +47,27 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.models.Constants.AUTHORIZATION_DETAILS_RESPONSE;
 
+/**
+ * 刷新令牌提供者抽象基类：校验旧 refresh token 并签发新的 access/refresh token。
+ * <p>封装 scope 裁剪、会话锁定、令牌重用检测及 authorization_details 传递等通用逻辑；子类实现 {@link #validateToken} 与 {@link #afterRefreshTokenGenerated}。</p>
+ */
 public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvider {
 
     private static final Logger logger = Logger.getLogger(AbstractRefreshTokenProvider.class);
 
     protected final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     protected AbstractRefreshTokenProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /**
+     * 执行 refresh_token grant：校验旧令牌、重建 access token，并按客户端配置轮换 refresh token。
+     * @param ctx 含旧 refresh token、grant 上下文与 scope/resource 参数
+     * @return 成功时的新令牌响应构建器
+     * @throws OAuthErrorException 校验失败或 consent 失效
+     */
     @Override
     public TokenManager.AccessTokenResponseBuilder refreshAccessToken(RefreshTokenContext ctx) throws OAuthErrorException {
         RealmModel realm = ctx.grantContext().getRealm();
@@ -67,7 +78,7 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
         String scopeParameter = ctx.scopeParameter();
 
         if (realm.isRevokeRefreshToken()) {
-            // If refresh tokens are revoked, we need to serialize all requests to avoid wrong conclusions.
+            // 启用 refresh token 吊销时需串行化请求，避免并发误判
             // This needs to be called before we load the user session from the database or the cache
             createTemporaryExclusiveLockForTokenRefreshOperation(session, oldRefreshToken, tokenManager);
         }
@@ -80,10 +91,10 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
             event.detail(Details.REFRESH_TOKEN_SUB, oldRefreshToken.getSubject());
         }
 
-        // Setup clientScopes from refresh token to the context
+        // 从 refresh token 恢复客户端 scope 到上下文
         String oldTokenScope = oldRefreshToken.getScope();
-        //The requested scope MUST NOT include any scope not originally granted by the resource owner
-        //if scope parameter is not null, remove every scope that is not part of scope parameter
+        // 请求的 scope 不得包含资源所有者未 originally 授权的范围
+        // 若传入 scope 参数，则过滤掉不在其中的 scope
         if (scopeParameter != null && ! scopeParameter.isEmpty()) {
             Set<String> scopeParamScopes = Arrays.stream(scopeParameter.split(" ")).collect(Collectors.toSet());
             oldTokenScope = Arrays.stream(oldTokenScope.split(" "))
@@ -108,7 +119,7 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
             throw new OAuthErrorException(OAuthErrorException.INVALID_GRANT, "Stale token");
         }
 
-        // Check user didn't revoke granted consent
+        // 检查用户是否已撤销先前授权 consent
         if (!TokenManager.verifyConsentStillAvailable(session, user, authorizedClient, clientSessionCtx.getClientSession(), oldTokenScope)) {
             throw new OAuthErrorException(OAuthErrorException.INVALID_SCOPE, "Client no longer has requested consent from user");
         }
@@ -118,14 +129,14 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
         }
         clientSessionCtx.setAttribute(Constants.GRANT_TYPE, OAuth2Constants.REFRESH_TOKEN);
 
-        // recreate token.
+        // 重建 access token
         AccessToken newToken = tokenManager.createClientAccessToken(session, realm, authorizedClient, user, userSession, clientSessionCtx, userSession.isOffline());
 
         session.getContext().setUserSession(validation.userSession);
         AuthenticatedClientSessionModel clientSession = validation.clientSessionCtx.getClientSession();
         OIDCAdvancedConfigWrapper clientConfig = OIDCAdvancedConfigWrapper.fromClientModel(authorizedClient);
 
-        // validate authorizedClient is same as validated client
+        // 校验授权客户端与令牌内客户端一致
         if (!clientSession.getClient().getId().equals(authorizedClient.getId())) {
             throw new OAuthErrorException(OAuthErrorException.INVALID_GRANT, "Invalid refresh token. Token client and authorized client don't match");
         }
@@ -152,7 +163,7 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
         TokenManager.AccessTokenResponseBuilder responseBuilder = tokenManager.responseBuilder(realm, authorizedClient, event, session,
                 validation.userSession, validation.clientSessionCtx).offlineToken( TokenUtil.TOKEN_TYPE_OFFLINE.equals(oldRefreshToken.getType())).accessToken(newToken);
 
-        // Copy authorization_details from refresh token to new access token and to accessTokenResponse (if present)
+        // 将 authorization_details 从 refresh token 复制到新 access token 与响应
         List<AuthorizationDetailsJSONRepresentation> authorizationDetails = oldRefreshToken.getAuthorizationDetails();
         if (authorizationDetails != null) {
             newToken.setAuthorizationDetails(authorizationDetails);
@@ -160,7 +171,7 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
         }
 
         if (clientConfig.isUseRefreshToken()) {
-            //refresh token must have same scope as old refresh token (type, scope, expiration)
+            // 新 refresh token 须与旧令牌保持相同 type、scope 与过期策略
             responseBuilder.generateRefreshToken(oldRefreshToken, clientSession);
         }
 
@@ -184,7 +195,7 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
     }
 
     /**
-     * Validation specific to the particular refreshToken provider type. For example this could be validation if related user session still exists and is not expired etc.
+     * 特定 refresh token 提供者类型的校验逻辑（如用户会话是否仍存在且未过期）。
      *
      * @return token validation with successful context information
      * @throws OAuthErrorException In case that some validation failed
@@ -195,13 +206,14 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
 
 
     /**
-     * Callback method invoked after refresh token is generated
+     * 新 refresh token 生成后的回调，供子类更新会话等状态
      *
-     * @param ctx context
-     * @param responseBuilder response builder with already filled refresh token and client session context
+     * @param ctx 刷新上下文
+     * @param responseBuilder 已填充 refresh token 与客户端会话上下文的响应构建器
      */
     protected abstract void afterRefreshTokenGenerated(RefreshTokenContext ctx, TokenManager.AccessTokenResponseBuilder responseBuilder);
 
+    /** 基于 access token 创建 refresh token 并分配 ID 与签发时间 */
     protected RefreshToken createRefreshToken(AccessToken accessToken, AccessToken.Confirmation confirmation, String provider) {
         RefreshToken refreshToken = new RefreshToken(accessToken, confirmation, provider);
         refreshToken.id(SecretGenerator.getInstance().generateSecureID());
@@ -227,12 +239,12 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
     private void createTemporaryExclusiveLockForTokenRefreshOperation(KeycloakSession session, RefreshToken refreshToken, TokenManager tokenManager) {
         String lockId = "refreshLock:" + refreshToken.getSessionId() + ":" + tokenManager.getReuseIdKey(refreshToken);
         Retry.executeWithBackoff((int iteration) -> {
-            // This assumes that 60 seconds is the maximum time this operation will take
+            // 假定刷新操作最长 60 秒
             if (!session.singleUseObjects().putIfAbsent(lockId, 60)) {
                 throw new RuntimeException("Unable to acquire serialization lock for token refresh");
             }
 
-            // Trigger the session provider, to ensure that it enlists first for enlistAfterCompletion
+            // 触发会话 provider，确保其在 enlistAfterCompletion 中优先登记
             session.sessions();
 
             KeycloakSessionFactory factory = session.getKeycloakSessionFactory();
@@ -251,7 +263,7 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
     }
 
     /**
-     * Store information to identify early token refreshes of clients which stress the IAM system.
+     * 记录刷新时序信息，用于识别过早刷新令牌的客户端。
      */
     private void storeRefreshTimingInformation(EventBuilder event, RefreshToken refreshToken, AccessToken newToken) {
         long expirationAccessToken = newToken.getExp() - newToken.getIat();
@@ -270,8 +282,7 @@ public abstract class AbstractRefreshTokenProvider implements RefreshTokenProvid
                 int currentCount = clientSession.getRefreshTokenUseCount(key);
                 clientSession.setRefreshTokenUseCount(key, currentCount + 1);
             } catch (OAuthErrorException oee) {
-                if (logger.isDebugEnabled()) {
-                    logger.debugf("Failed validation of refresh token %s due it was used before. Realm: %s, client: %s, user: %s, user session: %s. Will detach client session from user session",
+                // 重用检测失败：记录调试信息并将客户端会话从用户会话分离
                             refreshToken.getId(), realm.getName(), clientSession.getClient().getClientId(), clientSession.getUserSession().getUser().getUsername(), clientSession.getUserSession().getId());
                 }
                 clientSession.detachFromUserSession();
