@@ -20,6 +20,10 @@ package org.keycloak.cluster;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * 集群 Provider 工厂 SPI 接口，用于创建 {@link ClusterProvider} 实例。
+ * <p>
+ * 实现类负责在 Keycloak 集群节点间注册协调后端（如 Infinispan、JPA 事件存储等）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClusterProviderFactory extends ProviderFactory<ClusterProvider> {

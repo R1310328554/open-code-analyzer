@@ -30,10 +30,13 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 1.6.0 版本迁移：配置离线会话超时、offline_access 角色、locale 映射器及 create-client 管理角色。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo1_6_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("1.6.0");
 
     public ModelVersion getVersion() {
@@ -65,6 +68,7 @@ public class MigrateTo1_6_0 implements Migration {
 
     }
 
+    /** 对单个 realm 设置离线会话、offline_access 角色、locale 映射器及管理角色。 */
     protected void migrateRealm(KeycloakSession session, ProtocolMapperModel localeMapper, RealmModel realm) {
         realm.setOfflineSessionIdleTimeout(Constants.DEFAULT_OFFLINE_SESSION_IDLE_TIMEOUT);
 
@@ -72,7 +76,7 @@ public class MigrateTo1_6_0 implements Migration {
             KeycloakModelUtils.setupOfflineRole(realm);
             RoleModel role = realm.getRole(Constants.OFFLINE_ACCESS_ROLE);
 
-            // Bulk grant of offline_access role to all users
+            // 批量向所有用户授予 offline_access 角色
             session.users().grantToAllUsers(realm, role);
         }
 
@@ -99,6 +103,7 @@ public class MigrateTo1_6_0 implements Migration {
         }
     }
 
+    /** 检查 admin console 客户端是否已添加 locale 协议映射器。 */
     private boolean localeMapperAdded(ClientModel adminConsoleClient) {
         return adminConsoleClient.getProtocolMapperByName("openid-connect", "locale") != null;
     }

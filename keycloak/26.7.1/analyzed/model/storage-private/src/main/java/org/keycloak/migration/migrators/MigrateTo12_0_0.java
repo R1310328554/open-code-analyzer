@@ -24,10 +24,15 @@ import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.utils.DefaultRequiredActions;
 
+/**
+ * 12.0.0 版本迁移：为 account 客户端添加 delete_account 角色及对应必需操作。
+ */
 public class MigrateTo12_0_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("12.0.0");
 
+    /** 为缺少 delete_account 角色的 account 客户端补全该角色。 */
     @Override
     public void migrate(KeycloakSession session) {
         session.realms()
@@ -38,6 +43,7 @@ public class MigrateTo12_0_0 implements Migration {
           .forEach(client -> client.addRole(AccountRoles.DELETE_ACCOUNT)
           .setDescription("${role_" + AccountRoles.DELETE_ACCOUNT + "}"));
 
+        // 为缺少 delete_account 必需操作的 realm 添加该操作
         session.realms()
                 .getRealmsStream()
                 .filter(realm -> Objects.isNull(realm.getRequiredActionProviderByAlias("delete_account")))

@@ -40,10 +40,13 @@ import org.keycloak.storage.UserStoragePrivateUtil;
 import org.keycloak.storage.UserStorageUtil;
 
 /**
+ * 1.4.0 版本迁移：初始化认证流、模拟服务、LDAP 映射器及用户邮箱规范化。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class MigrateTo1_4_0 implements Migration {
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("1.4.0");
     public ModelVersion getVersion() {
         return VERSION;
@@ -53,6 +56,7 @@ public class MigrateTo1_4_0 implements Migration {
         session.realms().getRealmsStream().forEach(realm -> migrateRealm(session, realm));
     }
 
+    /** 对单个 realm 执行认证流、模拟、LDAP 与用户迁移。 */
     protected void migrateRealm(KeycloakSession session, RealmModel realm) {
         if (realm.getAuthenticationFlowsStream().count() == 0) {
             DefaultAuthenticationFlows.migrateFlows(realm);
@@ -70,6 +74,7 @@ public class MigrateTo1_4_0 implements Migration {
 
     }
 
+    /** 将 LDAP 中 username/first name/last name 等映射器标记为 mandatory。 */
     private void migrateLDAPMappers(KeycloakSession session, RealmModel realm) {
         List<String> mandatoryInLdap = Arrays.asList("username", "username-cn", "first name", "last name");
         ((StorageProviderRealmModel) realm).getUserStorageProvidersStream()
@@ -77,12 +82,13 @@ public class MigrateTo1_4_0 implements Migration {
                 .forEachOrdered(providerModel -> realm.getComponentsStream(providerModel.getId())
                         .filter(mapper -> mandatoryInLdap.contains(mapper.getName()))
                         .forEach(mapper -> {
-                            mapper = new ComponentModel(mapper);  // don't want to modify cache
+                            mapper = new ComponentModel(mapper);  // 复制副本，避免修改缓存
                             mapper.getConfig().putSingle("is.mandatory.in.ldap", "true");
                             realm.updateComponent(mapper);
                         }));
     }
 
+    /** 将所有用户邮箱统一转为小写并刷新用户缓存。 */
     private void migrateUsers(KeycloakSession session, RealmModel realm) {
         Map<String, String> searchAttributes = new HashMap<>(1);
         searchAttributes.put(UserModel.INCLUDE_SERVICE_ACCOUNT, Boolean.FALSE.toString());

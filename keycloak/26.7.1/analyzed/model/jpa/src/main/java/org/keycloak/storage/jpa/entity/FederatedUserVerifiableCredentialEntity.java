@@ -29,6 +29,12 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 
 
+/**
+ * 联邦用户可验证凭证（VC）定义 JPA 实体，映射 FED_USER_VER_CREDENTIAL 表。
+ * <p>
+ * 存储外部用户存储中用户的 VC 定义记录；同一用户与客户端作用域组合唯一。
+ * 命名查询支持按用户查询及按 realm、作用域、存储提供者批量删除。
+ */
 @Entity
 @Table(name="FED_USER_VER_CREDENTIAL", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"USER_ID", "CLIENT_SCOPE_ID"})
@@ -42,35 +48,45 @@ import jakarta.persistence.Version;
 })
 public class FederatedUserVerifiableCredentialEntity {
 
+    /** VC 定义 UUID（主键）。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY)
     protected String id;
 
+    /** 联邦用户 ID。 */
     @Column(name="USER_ID")
     protected String userId;
 
+    /** 所属 realm ID。 */
     @Column(name="REALM_ID")
     protected String realmId;
 
+    /** 用户存储提供者组件 ID。 */
     @Column(name="STORAGE_PROVIDER_ID", length = 36)
     protected String storageProviderId;
 
+    /** 关联的客户端作用域 ID。 */
     @Column(name="CLIENT_SCOPE_ID")
     protected String clientScopeId;
 
+    /** VC 定义 revision，用于乐观锁与并发控制。 */
     @Column(name="REVISION")
     protected String revision;
 
+    /** 用户属性 JSON 序列化字符串。 */
     @Column(name="USER_ATTRIBUTES")
     protected String userAttributes;
 
+    /** 创建时间（毫秒）。 */
     @Column(name="CREATED_DATE")
     private Long createdDate;
 
+    /** 最后更新时间（毫秒）。 */
     @Column(name="UPDATED_DATE")
     private Long updatedDate;
 
+    /** JPA 乐观锁版本号。 */
     @Version
     @Column(name="VERSION")
     private int version;
@@ -155,6 +171,7 @@ public class FederatedUserVerifiableCredentialEntity {
         this.version = version;
     }
 
+    /** 仅按主键 id 判等。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

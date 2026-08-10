@@ -27,10 +27,13 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 1.2.0 版本迁移：初始化 broker 服务客户端并为内置客户端设置显示名称。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class MigrateTo1_2_0 implements Migration {
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("1.2.0");
 
     @Override
@@ -38,6 +41,7 @@ public class MigrateTo1_2_0 implements Migration {
         return VERSION;
     }
 
+    /** 创建或补全 broker 服务客户端及其角色。 */
     public void setupBrokerService(RealmModel realm) {
         ClientModel client = realm.getClientByClientId(Constants.BROKER_SERVICE_CLIENT_ID);
         if (client == null) {
@@ -55,6 +59,7 @@ public class MigrateTo1_2_0 implements Migration {
         }
     }
 
+    /** 为 account、admin-console、realm-management 等内置客户端设置 i18n 名称。 */
     private void setupClientNames(RealmModel realm) {
         setupClientName(realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID));
         setupClientName(realm.getClientByClientId(Constants.ADMIN_CONSOLE_CLIENT_ID));
@@ -65,6 +70,7 @@ public class MigrateTo1_2_0 implements Migration {
         if (client != null && client.getName() == null) client.setName("${client_" + client.getClientId() + "}");
     }
 
+    /** 对所有 realm 执行 broker 与客户端名称迁移。 */
     public void migrate(KeycloakSession session) {
         session.realms().getRealmsStream().forEach(realm -> {
             setupBrokerService(realm);

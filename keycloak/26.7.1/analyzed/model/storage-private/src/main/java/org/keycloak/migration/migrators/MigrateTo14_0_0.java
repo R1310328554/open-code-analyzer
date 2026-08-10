@@ -27,10 +27,13 @@ import org.keycloak.representations.idm.ClientProfilesRepresentation;
 import org.keycloak.services.clientpolicy.ClientPolicyException;
 
 /**
+ * 14.0.0 版本迁移：初始化各 realm 的客户端配置（Client Profiles）与策略（Client Policies）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo14_0_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("14.0.0");
 
     @Override
@@ -40,6 +43,7 @@ public class MigrateTo14_0_0 implements Migration {
                 .forEach(realm -> migrateRealm(session, realm));
     }
 
+    /** 对单个 realm 写入空的客户端配置与策略表示（触发默认初始化）。 */
     private void migrateRealm(KeycloakSession session, RealmModel realm) {
         try {
             session.clientPolicy().updateClientProfiles(realm, new ClientProfilesRepresentation());

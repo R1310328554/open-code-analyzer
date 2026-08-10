@@ -74,37 +74,41 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
+ * Realm 与实体导出工具类：将 {@link RealmModel}、用户、客户端、角色等模型转换为
+ * {@link RealmRepresentation} 及关联 IDM 表示，供导入/备份使用。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ExportUtils {
 
+    /** 使用默认导出选项导出 realm（可选是否包含用户）。 */
     public static RealmRepresentation exportRealm(KeycloakSession session, RealmModel realm, boolean includeUsers, boolean internal) {
         ExportOptions opts = new ExportOptions(includeUsers, true, true, false, false);
         return exportRealm(session, realm, opts, internal);
     }
 
+    /** 按 {@link ExportOptions} 导出完整 realm 表示。 */
     public static RealmRepresentation exportRealm(KeycloakSession session, RealmModel realm, ExportOptions options, boolean internal) {
         RealmRepresentation rep = ModelToRepresentation.toRepresentation(session, realm, internal, true);
         ModelToRepresentation.exportAuthenticationFlows(session, realm, rep);
         ModelToRepresentation.exportRequiredActions(realm, rep);
 
-        // Project/product version
+        // 项目/产品版本号
         rep.setKeycloakVersion(Version.VERSION);
 
-        // Client Scopes
+        // 客户端作用域
         rep.setClientScopes(realm.getClientScopesStream().map(ModelToRepresentation::toRepresentation).collect(Collectors.toList()));
         rep.setDefaultDefaultClientScopes(realm.getDefaultClientScopesStream(true)
                 .map(ClientScopeModel::getName).collect(Collectors.toList()));
         rep.setDefaultOptionalClientScopes(realm.getDefaultClientScopesStream(false)
                 .map(ClientScopeModel::getName).collect(Collectors.toList()));
 
-        // Clients
+        // 客户端
         List<ClientModel> clients = new LinkedList<>();
 
         if (options.isClientsIncluded()) {
-            // we iterate over all clients in the stream.
-            // only those client models that can be translated into a valid client representation will be added to the client list
-            // that is later used to retrieve related information about groups and roles
+            // 遍历所有客户端流；仅将能转为有效 ClientRepresentation 的客户端加入列表，
+            // 后续用于导出关联的组与角色
             List<ClientRepresentation> clientReps = ModelToRepresentation.filterValidRepresentations(realm.getClientsStream(), app -> {
                 ClientRepresentation clientRepresentation = exportClient(session, app);
                 clients.add(app);
@@ -113,7 +117,7 @@ public class ExportUtils {
             rep.setClients(clientReps);
         }
 
-        // Groups and Roles
+        // 组与角色
         if (options.isGroupsAndRolesIncluded()) {
             ModelToRepresentation.exportGroups(session, realm, rep);
 
@@ -139,13 +143,13 @@ public class ExportUtils {
             rep.setRoles(rolesRep);
         }
 
-        // Scopes
+        // 作用域映射
         Map<String, List<ScopeMappingRepresentation>> clientScopeReps = new HashMap<>();
 
         if (options.isClientsIncluded()) {
             List<ClientModel> allClients = new ArrayList<>(clients);
 
-            // Scopes of clients
+            // 客户端的作用域映射
             for (ClientModel client : allClients) {
                 Set<RoleModel> clientScopes = client.getScopeMappingsStream().collect(Collectors.toSet());
                 ScopeMappingRepresentation scopeMappingRep = null;
@@ -178,7 +182,7 @@ public class ExportUtils {
             }
         }
 
-        // Scopes of client scopes
+        // 客户端作用域的作用域映射
         realm.getClientScopesStream().forEach(clientScope -> {
             Set<RoleModel> clientScopes = clientScope.getScopeMappingsStream().collect(Collectors.toSet());
             ScopeMappingRepresentation scopeMappingRep = null;
@@ -214,7 +218,7 @@ public class ExportUtils {
             rep.setClientScopeMappings(clientScopeReps);
         }
 
-        // Finally users if needed
+        // 按需导出用户
         if (options.isUsersIncluded()) {
             List<UserRepresentation> users = UserStoragePrivateUtil.userLocalStorage(session).searchForUserStream(realm, Collections.emptyMap())
                     .map(user -> exportUser(session, realm, user, options, internal))
@@ -250,11 +254,11 @@ public class ExportUtils {
             }
         }
 
-        // components
+        // 组件树（递归导出子组件）
         MultivaluedHashMap<String, ComponentExportRepresentation> components = exportComponents(realm, realm.getId());
         rep.setComponents(components);
 
-        // Message Bundle
+        // 消息包本地化文本
         rep.setLocalizationTexts(realm.getRealmLocalizationTexts());
 
         if (Profile.isFeatureEnabled(Feature.ORGANIZATION) && !options.isPartial()) {
@@ -268,7 +272,7 @@ public class ExportUtils {
                             member.setUsername(user.getUsername());
                             member.setMembershipType(orgProvider.isManagedMember(model, user) ? MembershipType.MANAGED : MembershipType.UNMANAGED);
 
-                            // Export organization group memberships
+                            // 导出组织成员所属组
                             List<String> groupIds = orgProvider.getOrganizationGroupsByMember(model, user).map(GroupModel::getId).collect(Collectors.toList());
                             if (!groupIds.isEmpty()) {
                                 member.setGroups(groupIds);
@@ -295,6 +299,7 @@ public class ExportUtils {
         return rep;
     }
 
+    /** 递归导出指定父组件下的子组件树。 */
     public static MultivaluedHashMap<String, ComponentExportRepresentation> exportComponents(RealmModel realm, String parentId) {
         MultivaluedHashMap<String, ComponentExportRepresentation> components = new MultivaluedHashMap<>();
         realm.getComponentsStream(parentId).forEach(component -> {
@@ -311,9 +316,10 @@ public class ExportUtils {
     }
 
     /**
-     * Full export of application including claims and secret
-     * @param client
-     * @return full ApplicationRepresentation
+     * 完整导出客户端（含 claims 与 secret）。
+     *
+     * @param client 客户端模型
+     * @return 含密钥与授权设置的完整 {@link ClientRepresentation}
      */
     public static ClientRepresentation exportClient(KeycloakSession session, ClientModel client) {
         ClientRepresentation clientRep = ModelToRepresentation.toRepresentation(client, session);
@@ -324,14 +330,16 @@ public class ExportUtils {
         return clientRep;
     }
 
+    /** 批量导出角色流为 {@link RoleRepresentation} 列表。 */
     public static List<RoleRepresentation> exportRoles(Stream<RoleModel> roles) {
         return roles.map(ExportUtils::exportRole).collect(Collectors.toList());
     }
 
     /**
-     * Full export of role including composite roles
-     * @param role
-     * @return RoleRepresentation with all stuff filled (including composite roles)
+     * 完整导出角色（含复合角色）。
+     *
+     * @param role 角色模型
+     * @return 填充了复合角色信息的 {@link RoleRepresentation}
      */
     public static RoleRepresentation exportRole(RoleModel role) {
         RoleRepresentation roleRep = ModelToRepresentation.toRepresentation(role);
@@ -380,15 +388,15 @@ public class ExportUtils {
     }
 
     /**
-     * Full export of user (including role mappings and credentials)
+     * 完整导出用户（含角色映射、凭证、可验证凭证等）。
      *
-     * @param user
-     * @return fully exported user representation
+     * @param user 用户模型
+     * @return 完整导出的 {@link UserRepresentation}
      */
     public static UserRepresentation exportUser(KeycloakSession session, RealmModel realm, UserModel user, ExportOptions options, boolean internal) {
         UserRepresentation userRep = ModelToRepresentation.toRepresentation(session, realm, user);
 
-        // Social links
+        // 社交/联邦身份链接
         List<FederatedIdentityRepresentation> socialLinkReps = session.users().getFederatedIdentitiesStream(realm, user)
                 .map(ExportUtils::exportSocialLink).collect(Collectors.toList());
         if (socialLinkReps.size() > 0) {
@@ -424,7 +432,7 @@ public class ExportUtils {
             }
         }
 
-        // Credentials - extra security, do not export credentials if service accounts
+        // 凭证——额外安全：服务账户不导出凭证
         if (internal) {
             List<CredentialRepresentation> credReps = user.credentialManager().getStoredCredentialsStream()
                     .map(ExportUtils::exportCredential).collect(Collectors.toList());
@@ -433,18 +441,18 @@ public class ExportUtils {
 
         userRep.setFederationLink(user.getFederationLink());
 
-        // Grants
+        // 用户授权（consent）
         List<UserConsentRepresentation> consentReps = session.users().getConsentsStream(realm, user.getId())
                 .map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
         if (consentReps.size() > 0) {
             userRep.setClientConsents(consentReps);
         }
 
-        // Not Before
+        // Not Before 时间戳
         int notBefore = session.users().getNotBeforeOfUser(realm, user);
         userRep.setNotBefore(notBefore);
 
-        // Verifiable credentials
+        // 可验证凭证定义
         List<UserVerifiableCredentialRepresentation> verifiableCredentialReps = session.users().getVerifiableCredentialsByUser(user.getId())
                 .map(model -> ModelToRepresentation.toRepresentation(model, realm))
                 .toList();
@@ -452,7 +460,7 @@ public class ExportUtils {
             userRep.setVerifiableCredentials(verifiableCredentialReps);
         }
 
-        // Issued verifiable credentials
+        // 已签发的可验证凭证
         List<IssuedVerifiableCredentialRepresentation> issuedCredentialReps = session.users().getIssuedVerifiableCredentialsStreamByUser(user.getId())
                 .map(model -> ModelToRepresentation.toRepresentation(model, session, realm))
                 .toList();
@@ -460,7 +468,7 @@ public class ExportUtils {
             userRep.setIssuedVerifiableCredentials(issuedCredentialReps);
         }
 
-        // Service account
+        // 服务账户关联客户端
         if (user.getServiceAccountClientLink() != null) {
             String clientInternalId = user.getServiceAccountClientLink();
             ClientModel client = realm.getClientById(clientInternalId);
@@ -479,6 +487,7 @@ public class ExportUtils {
         return userRep;
     }
 
+    /** 导出联邦身份链接为 {@link FederatedIdentityRepresentation}。 */
     public static FederatedIdentityRepresentation exportSocialLink(FederatedIdentityModel socialLink) {
         FederatedIdentityRepresentation socialLinkRep = new FederatedIdentityRepresentation();
         socialLinkRep.setIdentityProvider(socialLink.getIdentityProvider());
@@ -487,16 +496,19 @@ public class ExportUtils {
         return socialLinkRep;
     }
 
+    /** 导出单条凭证模型为 {@link CredentialRepresentation}。 */
     public static CredentialRepresentation exportCredential(CredentialModel userCred) {
         return ModelToRepresentation.toRepresentation(userCred);
     }
 
-    // Streaming API
+    // 流式 JSON 导出 API
 
+    /** 将用户列表以 JSON 流式写入输出流（默认 ExportOptions）。 */
     public static void exportUsersToStream(KeycloakSession session, RealmModel realm, List<UserModel> usersToExport, ObjectMapper mapper, OutputStream os) throws IOException {
         exportUsersToStream(session, realm, usersToExport, mapper, os, new ExportOptions());
     }
 
+    /** 将用户列表以 JSON 流式写入输出流（指定 ExportOptions）。 */
     public static void exportUsersToStream(KeycloakSession session, RealmModel realm, List<UserModel> usersToExport, ObjectMapper mapper, OutputStream os, ExportOptions options) throws IOException {
         JsonFactory factory = mapper.getFactory();
         JsonGenerator generator = factory.createGenerator(os, JsonEncoding.UTF8);
@@ -522,10 +534,12 @@ public class ExportUtils {
         }
     }
 
+    /** 将联邦用户 ID 列表以 JSON 流式写入输出流（默认 ExportOptions）。 */
     public static void exportFederatedUsersToStream(KeycloakSession session, RealmModel realm, List<String> usersToExport, ObjectMapper mapper, OutputStream os) throws IOException {
         exportFederatedUsersToStream(session, realm, usersToExport, mapper, os, new ExportOptions());
     }
 
+    /** 将联邦用户 ID 列表以 JSON 流式写入输出流（指定 ExportOptions）。 */
     public static void exportFederatedUsersToStream(KeycloakSession session, RealmModel realm, List<String> usersToExport, ObjectMapper mapper, OutputStream os, ExportOptions options) throws IOException {
         JsonFactory factory = mapper.getFactory();
         JsonGenerator generator = factory.createGenerator(os, JsonEncoding.UTF8);
@@ -552,10 +566,10 @@ public class ExportUtils {
     }
 
     /**
-     * Full export of user data stored in federated storage (including role mappings and credentials)
+     * 完整导出联邦存储中的用户数据（含角色映射与凭证）。
      *
-     * @param id
-     * @return fully exported user representation
+     * @param id 联邦用户 ID
+     * @return 完整导出的 {@link UserRepresentation}
      */
     public static UserRepresentation exportFederatedUser(KeycloakSession session, RealmModel realm, String id, ExportOptions options) {
         UserRepresentation userRep = new UserRepresentation();
@@ -572,7 +586,7 @@ public class ExportUtils {
             userRep.setRequiredActions(requiredActions);
         }
 
-        // Social links
+        // 社交/联邦身份链接
         List<FederatedIdentityRepresentation> socialLinkReps = userFederatedStorage(session).getFederatedIdentitiesStream(id, realm)
                 .map(ExportUtils::exportSocialLink).collect(Collectors.toList());
 
@@ -580,7 +594,7 @@ public class ExportUtils {
             userRep.setFederatedIdentities(socialLinkReps);
         }
 
-        // Role mappings
+        // 角色映射
         if (options.isGroupsAndRolesIncluded()) {
             Set<RoleModel> roles = userFederatedStorage(session).getRoleMappingsStream(realm, id).collect(Collectors.toSet());
             List<String> realmRoleNames = new ArrayList<>();
@@ -609,19 +623,19 @@ public class ExportUtils {
             }
         }
 
-        // Credentials
+        // 凭证
         List<CredentialRepresentation> credReps = userFederatedStorage(session).getStoredCredentialsStream(realm, id)
                 .map(ExportUtils::exportCredential).collect(Collectors.toList());
         userRep.setCredentials(credReps);
 
-        // Grants
+        // 用户授权（consent）
         List<UserConsentRepresentation> consentReps = session.users().getConsentsStream(realm, id)
                 .map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
         if (consentReps.size() > 0) {
             userRep.setClientConsents(consentReps);
         }
 
-        // Not Before
+        // Not Before 时间戳
         int notBefore = userFederatedStorage(session).getNotBeforeOfUser(realm, userRep.getId());
         userRep.setNotBefore(notBefore);
 
@@ -633,6 +647,7 @@ public class ExportUtils {
         return userRep;
     }
 
+    /** 获取会话中的 {@link UserFederatedStorageProvider}。 */
     private static UserFederatedStorageProvider userFederatedStorage(KeycloakSession session) {
         return session.getProvider(UserFederatedStorageProvider.class);
     }

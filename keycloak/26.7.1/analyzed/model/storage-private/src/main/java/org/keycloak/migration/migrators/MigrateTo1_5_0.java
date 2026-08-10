@@ -26,10 +26,13 @@ import org.keycloak.models.utils.DefaultAuthenticationFlows;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 1.5.0 版本迁移：补全认证流引用、OTP 策略及客户端认证器类型。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class MigrateTo1_5_0 implements Migration {
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("1.5.0");
 
     public ModelVersion getVersion() {
@@ -45,8 +48,9 @@ public class MigrateTo1_5_0 implements Migration {
         migrateRealm(session, realm);
     }
 
+    /** 对单个 realm 设置 OTP 策略、各默认流及客户端认证器。 */
     protected void migrateRealm(KeycloakSession session, RealmModel realm) {
-        DefaultAuthenticationFlows.migrateFlows(realm); // add reset credentials flo
+        DefaultAuthenticationFlows.migrateFlows(realm); // 添加重置凭证流
         realm.setOTPPolicy(OTPPolicy.DEFAULT_POLICY);
         realm.setBrowserFlow(realm.getFlowByAlias(DefaultAuthenticationFlows.BROWSER_FLOW));
         realm.setRegistrationFlow(realm.getFlowByAlias(DefaultAuthenticationFlows.REGISTRATION_FLOW));

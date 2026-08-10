@@ -29,10 +29,14 @@ import org.keycloak.models.utils.DefaultAuthenticationFlows;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 1.7.0 版本迁移：设置隐式流 access token 超时、创建 admin-cli 客户端、
+ * 配置 firstBrokerLogin 流并关联到所有身份提供者。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo1_7_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("1.7.0");
 
     public ModelVersion getVersion() {
@@ -56,15 +60,16 @@ public class MigrateTo1_7_0 implements Migration {
         session.getContext().setRealm(sessionRealm);
     }
 
+    /** 对单个 realm 设置隐式流超时、admin-cli 及 firstBrokerLogin 流。 */
     protected void migrateRealm(KeycloakSession session, RealmModel realm) {
-        // Set default accessToken timeout for implicit flow
+        // 为隐式流设置默认 access token 超时
         realm.setAccessTokenLifespanForImplicitFlow(Constants.DEFAULT_ACCESS_TOKEN_LIFESPAN_FOR_IMPLICIT_FLOW_TIMEOUT);
 
-        // Add 'admin-cli' builtin client
+        // 添加内置 admin-cli 客户端
         MigrationProvider migrationProvider = session.getProvider(MigrationProvider.class);
         migrationProvider.setupAdminCli(realm);
 
-        // add firstBrokerLogin flow and set it to all identityProviders
+        // 添加 firstBrokerLogin 流并关联到所有身份提供者
         DefaultAuthenticationFlows.migrateFlows(realm);
         AuthenticationFlowModel firstBrokerLoginFlow = realm.getFlowByAlias(DefaultAuthenticationFlows.FIRST_BROKER_LOGIN_FLOW);
 

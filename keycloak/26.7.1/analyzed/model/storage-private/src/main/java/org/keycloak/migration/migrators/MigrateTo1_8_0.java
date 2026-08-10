@@ -30,10 +30,13 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.storage.UserStorageProviderModel;
 
 /**
+ * 1.8.0 版本迁移：为 Active Directory LDAP 提供者添加 MSAD account controls 映射器。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo1_8_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("1.8.0");
 
     public ModelVersion getVersion() {
@@ -50,18 +53,20 @@ public class MigrateTo1_8_0 implements Migration {
         migrateRealm(realm);
     }
 
+    /** 对单个 realm 中为 AD LDAP 提供者补全 MSAD 账户控制映射器。 */
     protected void migrateRealm(RealmModel realm) {
         ((StorageProviderRealmModel) realm).getUserStorageProvidersStream()
                 .filter(fedProvider -> Objects.equals(fedProvider.getProviderId(), LDAPConstants.LDAP_PROVIDER))
                 .filter(this::isActiveDirectory)
                 .filter(fedProvider -> Objects.isNull(getMapperByName(realm, fedProvider, "MSAD account controls")))
-                // Create mapper for MSAD account controls
+                // 创建 MSAD 账户控制映射器
                 .map(fedProvider -> KeycloakModelUtils.createComponentModel("MSAD account controls",
                         fedProvider.getId(), LDAPConstants.MSAD_USER_ACCOUNT_CONTROL_MAPPER,
                         "org.keycloak.storage.ldap.mappers.LDAPStorageMapper"))
                 .forEachOrdered(realm::addComponentModel);
     }
 
+    /** 按名称查找 LDAP 存储映射器组件。 */
     public static ComponentModel getMapperByName(RealmModel realm, ComponentModel providerModel, String name) {
         return realm.getComponentsStream(providerModel.getId(), "org.keycloak.storage.ldap.mappers.LDAPStorageMapper")
                 .filter(component -> Objects.equals(component.getName(), name))
@@ -70,6 +75,7 @@ public class MigrateTo1_8_0 implements Migration {
     }
 
 
+    /** 判断 LDAP 提供者是否为 Active Directory 厂商。 */
     private boolean isActiveDirectory(UserStorageProviderModel provider) {
         String vendor = provider.getConfig().getFirst(LDAPConstants.VENDOR);
         return vendor != null && vendor.equals(LDAPConstants.VENDOR_ACTIVE_DIRECTORY);

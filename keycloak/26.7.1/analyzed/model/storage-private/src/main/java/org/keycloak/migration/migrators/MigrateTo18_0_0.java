@@ -30,10 +30,13 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.jboss.logging.Logger;
 
 /**
+ * 18.0.0 版本迁移：在启用 STEP_UP_AUTHENTICATION 特性时为各 realm 创建 acr 客户端作用域。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo18_0_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("18.0.0");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo18_0_0.class);
@@ -55,16 +58,17 @@ public class MigrateTo18_0_0 implements Migration {
         migrateRealm(session, realm);
     }
 
+    /** 对单个 realm 创建 acr 默认客户端作用域并关联到所有 OIDC 客户端。 */
     protected void migrateRealm(KeycloakSession session, RealmModel realm) {
         if (Profile.isFeatureEnabled(Profile.Feature.STEP_UP_AUTHENTICATION)) {
             MigrationProvider migrationProvider = session.getProvider(MigrationProvider.class);
 
             ClientScopeModel acrScope = KeycloakModelUtils.getClientScopeByName(realm, "acr");
             if (acrScope == null) {
-                // create 'acr' default client scope in the realm.
+                // 在 realm 中创建默认 acr 客户端作用域
                 acrScope = migrationProvider.addOIDCAcrClientScope(realm);
 
-                //add acr scope to all existing OIDC clients
+                // 将 acr 作用域添加到所有现有 OIDC 客户端
                 session.clients().addClientScopeToAllClients(realm, acrScope, true);
             }
         }

@@ -33,10 +33,13 @@ import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.UserStorageProviderModel;
 
 /**
+ * 1.3.0 版本迁移：升级 LDAP 联邦提供者配置并创建默认属性映射器。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class MigrateTo1_3_0 implements Migration {
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("1.3.0");
 
     public ModelVersion getVersion() {
@@ -52,13 +55,14 @@ public class MigrateTo1_3_0 implements Migration {
         migrateLDAPProviders(session, realm);
     }
 
+    /** 对所有 realm 中的 LDAP 提供者执行配置迁移。 */
     private void migrateLDAPProviders(KeycloakSession session, RealmModel realm) {
         ((StorageProviderRealmModel) realm).getUserStorageProvidersStream().forEachOrdered(fedProvider -> {
             if (fedProvider.getProviderId().equals(LDAPConstants.LDAP_PROVIDER)) {
-                fedProvider = new UserStorageProviderModel(fedProvider);  // copy don't want to muck with cache
+                fedProvider = new UserStorageProviderModel(fedProvider);  // 复制副本，避免污染缓存
                 MultivaluedHashMap<String, String> config = fedProvider.getConfig();
 
-                // Update config properties for LDAP federation provider
+                // 更新 LDAP 联邦提供者的配置属性
                 if (config.get(LDAPConstants.SEARCH_SCOPE) == null) {
                     config.putSingle(LDAPConstants.SEARCH_SCOPE, String.valueOf(SearchControls.SUBTREE_SCOPE));
                 }
@@ -84,7 +88,7 @@ public class MigrateTo1_3_0 implements Migration {
 
                 realm.updateComponent(fedProvider);
 
-                // Create default mappers for LDAP
+                // 为 LDAP 创建默认属性映射器
                 if (realm.getComponentsStream(fedProvider.getId()).count() == 0) {
                     ProviderFactory ldapFactory = session.getKeycloakSessionFactory().getProviderFactory(UserStorageProvider.class, LDAPConstants.LDAP_PROVIDER);
                     if (ldapFactory != null) {

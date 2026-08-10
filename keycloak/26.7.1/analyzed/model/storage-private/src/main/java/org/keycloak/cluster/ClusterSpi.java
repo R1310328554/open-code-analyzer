@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 集群 SPI：向 Keycloak 注册 {@link ClusterProvider} 及其工厂实现，支持多节点协调与事件广播。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClusterSpi implements Spi {
 
+    /** 内部 SPI，不对外暴露给扩展模块配置。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称，对应配置键 {@code cluster}。 */
     @Override
     public String getName() {
         return "cluster";
     }
 
+    /** 本 SPI 提供的 Provider 接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ClusterProvider.class;
     }
 
+    /** 本 SPI 对应的 ProviderFactory 实现类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ClusterProviderFactory.class;
