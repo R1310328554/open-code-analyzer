@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:48:40Z",
-  "files": [
-    "tsdb/head_wal.go",
-    "tsdb/index/index.go",
-    "tsdb/index/postings.go",
-    "tsdb/index/postingsstats.go",
-    "tsdb/isolation.go",
-    "tsdb/ooo_head.go",
-    "tsdb/ooo_head_read.go",
-    "tsdb/ooo_isolation.go",
-    "tsdb/querier.go",
-    "tsdb/record/buffers.go",
-    "tsdb/record/record.go",
-    "tsdb/repair.go",
-    "tsdb/testutil.go",
-    "tsdb/tombstones/tombstones.go",
-    "tsdb/tsdbblockutil.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 174,
-  "done": 345
+  "done": 360
 }
