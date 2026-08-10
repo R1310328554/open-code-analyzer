@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T18:26:22Z",
   "files": [
-    "internal/harness/core/agent_loop.go",
-    "internal/harness/core/agent_loop_agent.go",
-    "internal/harness/core/agent_loop_bridge.go",
-    "internal/harness/core/agent_loop_buffer.go",
-    "internal/harness/core/agent_loop_checkpoint.go",
-    "internal/harness/core/agent_loop_config.go",
-    "internal/harness/core/agent_loop_preempt.go",
-    "internal/harness/core/agent_loop_push.go",
-    "internal/harness/core/agent_loop_run.go",
-    "internal/harness/core/agent_loop_stop.go",
-    "internal/harness/core/backend/backend.go",
-    "internal/harness/core/backend/backend_inmemory.go",
-    "internal/harness/core/backend/large_tool_result.go",
-    "internal/harness/core/callback.go",
-    "internal/harness/core/cancel.go",
     "internal/harness/core/contracts.go",
     "internal/harness/core/evals/evals.go",
     "internal/harness/core/event_sender.go",
@@ -33,5 +18,5 @@
     "internal/harness/core/middlewares/reduction/clear_tool_result.go"
   ],
   "remaining_pending": 894,
-  "done": 840
+  "done": 855
 }
