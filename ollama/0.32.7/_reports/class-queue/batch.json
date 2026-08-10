@@ -15,23 +15,8 @@
     "app/ui/app/src/utils/clipboard.ts",
     "app/ui/app/src/utils/fileValidation.test.ts",
     "app/ui/app/src/utils/fileValidation.ts",
-    "app/ui/app/src/utils/imageUtils.ts",
-    "app/ui/app/src/utils/remarkCitationParser.ts",
-    "app/ui/app/src/utils/vram.test.ts",
-    "app/ui/app/src/utils/vram.ts",
-    "app/ui/app/src/vite-env.d.ts",
-    "app/ui/app/tailwind.config.js",
-    "app/ui/app/vite.config.ts",
-    "app/ui/app/vitest.config.ts",
-    "app/ui/app/vitest.shims.d.ts",
-    "app/ui/extract.go",
-    "app/ui/responses/types.go",
-    "app/ui/ui.go",
-    "app/updater/updater.go",
-    "app/updater/updater_darwin.go",
-    "app/updater/updater_windows.go",
-    "app/version/version.go"
+    "app/ui/app/src/utils/imageUtils.ts"
   ],
   "remaining_pending": 373,
-  "done": 60
+  "done": 75
 }
