@@ -1,0 +1,765 @@
+// Copyright 2019 Drone.IO Inc. All rights reserved.
+// Use of this source code is governed by the Drone Non-Commercial License
+// that can be found in the LICENSE file.
+
+//go:build !oss
+// +build !oss
+
+package trigger
+
+import (
+	"context"
+	"database/sql"
+	"io"
+	"io/ioutil"
+	"testing"
+
+	"github.com/drone/drone/core"
+	"github.com/drone/drone/mock"
+	"github.com/sirupsen/logrus"
+
+	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+)
+
+var noContext = context.Background()
+
+func init() {
+	logrus.SetOutput(ioutil.Discard)
+}
+
+func TestTrigger(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	checkBuild := func(_ context.Context, build *core.Build, stages []*core.Stage) {
+		if diff := cmp.Diff(build, dummyBuild, ignoreBuildFields); diff != "" {
+			t.Errorf("Diff: %s", diff)
+		}
+		if diff := cmp.Diff(stages, dummyStages, ignoreStageFields); diff != "" {
+			t.Errorf("Diff: %s", diff)
+		}
+	}
+
+	checkStatus := func(_ context.Context, _ *core.User, req *core.StatusInput) error {
+		if diff := cmp.Diff(req.Build, dummyBuild, ignoreBuildFields); diff != "" {
+			t.Errorf("Diff: %s", diff)
+		}
+		if diff := cmp.Diff(req.Repo, dummyRepo, ignoreStageFields); diff != "" {
+			t.Errorf("Diff: %s", diff)
+		}
+		return nil
+	}
+
+	mockUsers := mock.NewMockUserStore(controller)
+	mockUsers.EXPECT().Find(gomock.Any(), dummyRepo.UserID).Return(dummyUser, nil)
+
+	mockRepos := mock.NewMockRepositoryStore(controller)
+	mockRepos.EXPECT().Increment(gomock.Any(), dummyRepo).Return(dummyRepo, nil)
+
+	mockConfigService := mock.NewMockConfigService(controller)
+	mockConfigService.EXPECT().Find(gomock.Any(), gomock.Any()).Return(dummyYaml, nil)
+
+	mockConvertService := mock.NewMockConvertService(controller)
+	mockConvertService.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(dummyYaml, nil)
+
+	mockValidateService := mock.NewMockValidateService(controller)
+	mockValidateService.EXPECT().Validate(gomock.Any(), gomock.Any()).Return(nil)
+
+	mockStatus := mock.NewMockStatusService(controller)
+	mockStatus.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Do(checkStatus)
+
+	mockQueue := mock.NewMockScheduler(controller)
+	mockQueue.EXPECT().Schedule(gomock.Any(), gomock.Any()).Return(nil)
+
+	mockBuilds := mock.NewMockBuildStore(controller)
+	mockBuilds.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any()).Do(checkBuild).Return(nil)
+
+	mockWebhooks := mock.NewMockWebhookSender(controller)
+	mockWebhooks.EXPECT().Send(gomock.Any(), gomock.Any()).Return(nil)
+
+	triggerer := New(
+		nil,
+		mockConfigService,
+		mockConvertService,
+		nil,
+		mockStatus,
+		mockBuilds,
+		mockQueue,
+		mockRepos,
+		mockUsers,
+		mockValidateService,
+		mockWebhooks,
+	)
+
+	build, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if diff := cmp.Diff(build, dummyBuild, ignoreBuildFields); diff != "" {
+		t.Errorf("Diff: %s", diff)
+	}
+}
+
+// this test verifies that hook is ignored if the commit
+// message includes the [CI SKIP] keyword.
+func TestTrigger_SkipCI(t *testing.T) {
+	triggerer := New(
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	dummyHookSkip := *dummyHook
+	dummyHookSkip.Message = "foo [CI SKIP] bar"
+	triggerer.Trigger(noContext, dummyRepo, &dummyHookSkip)
+}
+
+// this test verifies that if the system cannot determine
+// the repository owner, the function must exit with an error.
+// The owner is required because we need an oauth token
+// when fetching the configuration file.
+func TestTrigger_NoOwner(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	mockUsers := mock.NewMockUserStore(controller)
+	mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(nil, sql.ErrNoRows)
+
+	triggerer := New(
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		mockUsers,
+		nil,
+		nil,
+	)
+
+	_, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	if err != sql.ErrNoRows {
+		t.Errorf("Expect error when yaml not found")
+	}
+}
+
+// this test verifies that if the system cannot fetch the yaml
+// configuration file, the function must exit with an error.
+func TestTrigger_MissingYaml(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	mockUsers := mock.NewMockUserStore(controller)
+	mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(dummyUser, nil)
+
+	mockConfigService := mock.NewMockConfigService(controller)
+	mockConfigService.EXPECT().Find(gomock.Any(), gomock.Any()).Return(nil, io.EOF)
+
+	triggerer := New(
+		nil,
+		mockConfigService,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		mockUsers,
+		nil,
+		nil,
+	)
+
+	_, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	if err == nil {
+		t.Errorf("Expect error when yaml not found")
+	}
+}
+
+// this test verifies that if the system cannot parse the yaml
+// configuration file, the function must exit with an error.
+func TestTrigger_ErrorYaml(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	checkBuild := func(_ context.Context, build *core.Build, stages []*core.Stage) {
+		if diff := cmp.Diff(build, dummyErrorBuild, ignoreBuildFields); diff != "" {
+			t.Errorf("Diff: %s", diff)
+		}
+		if diff := cmp.Diff(stages, []*core.Stage(nil), ignoreStageFields); diff != "" {
+			t.Errorf("Diff: %s", diff)
+		}
+	}
+
+	checkStatus := func(_ context.Context, _ *core.User, req *core.StatusInput) error {
+		if diff := cmp.Diff(req.Build, dummyErrorBuild, ignoreBuildFields); diff != "" {
+			t.Errorf("Diff: %s", diff)
+		}
+		if diff := cmp.Diff(req.Repo, dummyRepo, ignoreStageFields); diff != "" {
+			t.Errorf("Diff: %s", diff)
+		}
+		return nil
+	}
+
+	mockUsers := mock.NewMockUserStore(controller)
+	mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(dummyUser, nil).MaxTimes(3)
+
+	mockRepos := mock.NewMockRepositoryStore(controller)
+	mockRepos.EXPECT().Increment(gomock.Any(), dummyRepo).Return(dummyRepo, nil)
+
+	mockConfigService := mock.NewMockConfigService(controller)
+	mockConfigService.EXPECT().Find(gomock.Any(), gomock.Any()).Return(dummyYamlInvalid, nil)
+
+	mockConvertService := mock.NewMockConvertService(controller)
+	mockConvertService.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(dummyYamlInvalid, nil)
+
+	mockStatus := mock.NewMockStatusService(controller)
+	mockStatus.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Do(checkStatus)
+
+	mockBuilds := mock.NewMockBuildStore(controller)
+	mockBuilds.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any()).Do(checkBuild).Return(nil)
+
+	mockWebhooks := mock.NewMockWebhookSender(controller)
+	mockWebhooks.EXPECT().Send(gomock.Any(), gomock.Any()).Return(nil)
+
+	triggerer := New(
+		nil,
+		mockConfigService,
+		mockConvertService,
+		nil,
+		mockStatus,
+		mockBuilds,
+		nil,
+		mockRepos,
+		mockUsers,
+		nil,
+		mockWebhooks,
+	)
+
+	build, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if got, want := build.Status, core.StatusError; got != want {
+		t.Errorf("Want status %s, got %s", want, got)
+	}
+	if got, want := build.Error, "yaml: found unknown directive name"; got != want {
+		t.Errorf("Want error %s, got %s", want, got)
+	}
+	if build.Finished == 0 {
+		t.Errorf("Want non-zero finished time")
+	}
+}
+
+// this test verifies that no build should be scheduled if the
+// hook branch does not match the branches defined in the yaml.
+func TestTrigger_SkipBranch(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	mockUsers := mock.NewMockUserStore(controller)
+	mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(dummyUser, nil)
+
+	mockConfigService := mock.NewMockConfigService(controller)
+	mockConfigService.EXPECT().Find(gomock.Any(), gomock.Any()).Return(dummyYamlSkipBranch, nil)
+
+	mockConvertService := mock.NewMockConvertService(controller)
+	mockConvertService.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(dummyYamlSkipBranch, nil)
+
+	mockValidateService := mock.NewMockValidateService(controller)
+	mockValidateService.EXPECT().Validate(gomock.Any(), gomock.Any()).Return(nil)
+
+	triggerer := New(
+		nil,
+		mockConfigService,
+		mockConvertService,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		mockUsers,
+		mockValidateService,
+		nil,
+	)
+
+	_, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	if err != nil {
+		t.Errorf("Expect build silently skipped if branch does not match")
+	}
+}
+
+// this test verifies that no build should be scheduled if the
+// hook event does not match the events defined in the yaml.
+func TestTrigger_SkipEvent(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	mockUsers := mock.NewMockUserStore(controller)
+	mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(dummyUser, nil)
+
+	mockConfigService := mock.NewMockConfigService(controller)
+	mockConfigService.EXPECT().Find(gomock.Any(), gomock.Any()).Return(dummyYamlSkipEvent, nil)
+
+	mockConvertService := mock.NewMockConvertService(controller)
+	mockConvertService.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(dummyYamlSkipEvent, nil)
+
+	mockValidateService := mock.NewMockValidateService(controller)
+	mockValidateService.EXPECT().Validate(gomock.Any(), gomock.Any()).Return(nil)
+
+	triggerer := New(
+		nil,
+		mockConfigService,
+		mockConvertService,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		mockUsers,
+		mockValidateService,
+		nil,
+	)
+
+	_, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	if err != nil {
+		t.Errorf("Expect build silently skipped if event does not match")
+	}
+}
+
+// this test verifies that no build should be scheduled if the
+// hook action does not match the actions defined in the yaml.
+func TestTrigger_SkipAction(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	mockUsers := mock.NewMockUserStore(controller)
+	mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(dummyUser, nil)
+
+	mockConfigService := mock.NewMockConfigService(controller)
+	mockConfigService.EXPECT().Find(gomock.Any(), gomock.Any()).Return(dummyYamlSkipAction, nil)
+
+	mockConvertService := mock.NewMockConvertService(controller)
+	mockConvertService.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(dummyYamlSkipAction, nil)
+
+	mockValidateService := mock.NewMockValidateService(controller)
+	mockValidateService.EXPECT().Validate(gomock.Any(), gomock.Any()).Return(nil)
+
+	triggerer := New(
+		nil,
+		mockConfigService,
+		mockConvertService,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		mockUsers,
+		mockValidateService,
+		nil,
+	)
+
+	_, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	if err != nil {
+		t.Errorf("Expect build silently skipped if action does not match")
+	}
+}
+
+// this test verifies that if the system cannot increment the
+// build number, the function must exit with error and must not
+// schedule a new build.
+func TestTrigger_ErrorIncrement(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	mockUsers := mock.NewMockUserStore(controller)
+	mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(dummyUser, nil)
+
+	mockRepos := mock.NewMockRepositoryStore(controller)
+	mockRepos.EXPECT().Increment(gomock.Any(), dummyRepo).Return(nil, sql.ErrNoRows)
+
+	mockConfigService := mock.NewMockConfigService(controller)
+	mockConfigService.EXPECT().Find(gomock.Any(), gomock.Any()).Return(dummyYaml, nil)
+
+	mockConvertService := mock.NewMockConvertService(controller)
+	mockConvertService.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(dummyYaml, nil)
+
+	mockValidateService := mock.NewMockValidateService(controller)
+	mockValidateService.EXPECT().Validate(gomock.Any(), gomock.Any()).Return(nil)
+
+	triggerer := New(
+		nil,
+		mockConfigService,
+		mockConvertService,
+		nil,
+		nil,
+		nil,
+		nil,
+		mockRepos,
+		mockUsers,
+		mockValidateService,
+		nil,
+	)
+
+	_, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	if err != sql.ErrNoRows {
+		t.Errorf("Expect error when unable to increment build sequence")
+	}
+}
+
+func TestTrigger_ErrorCreate(t *testing.T) {
+	t.Skip()
+	// 	controller := gomock.NewController(t)
+	// 	defer controller.Finish()
+
+	// 	mockUsers := mock.NewMockUserStore(controller)
+	// 	mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(dummyUser, nil)
+
+	// 	mockTriggers := mock.NewMockTriggerStore(controller)
+	// 	mockTriggers.EXPECT().List(noContext, dummyRepo.ID).Return([]*core.Trigger{dummyTrigger}, nil)
+
+	// 	mockRepos := mock.NewMockRepositoryStore(controller)
+	// 	mockRepos.EXPECT().Increment(gomock.Any(), dummyRepo).Return(dummyRepo, nil)
+
+	// 	mockContents := mock.NewMockContentService(controller)
+	// 	mockContents.EXPECT().Find(gomock.Any(), dummyRepo.Slug, dummyTrigger.Path, dummyHook.After).Return(dummyYaml, nil, nil)
+	// 	mockContents.EXPECT().Find(gomock.Any(), dummyRepo.Slug, dummySignature.Path, dummyHook.After).Return(dummySignature, nil, nil)
+
+	// 	mockClient := new(scm.Client)
+	// 	mockClient.Contents = mockContents
+
+	// 	mockBuilds := mock.NewMockBuildStore(controller)
+	// 	mockBuilds.EXPECT().Create(gomock.Any(), gomock.Any()).Return(sql.ErrNoRows)
+
+	// 	triggerer := New(
+	// 		mockClient,
+	// 		mockBuilds,
+	// 		nil,
+	// 		mockRepos,
+	// 		mockTriggers,
+	// 		mockUsers,
+	// 	)
+
+	// 	builds, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	// 	if err != sql.ErrNoRows {
+	// 		t.Error("Expect error when persisting the build fails")
+	// 	}
+	// 	if got, want := len(builds), 0; got != want {
+	// 		t.Errorf("Got build count %d, want %d", got, want)
+	// 	}
+}
+
+func TestTrigger_ErrorEnqueue(t *testing.T) {
+	t.Skip()
+	// 	controller := gomock.NewController(t)
+	// 	defer controller.Finish()
+
+	// 	mockUsers := mock.NewMockUserStore(controller)
+	// 	mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(dummyUser, nil)
+
+	// 	mockTriggers := mock.NewMockTriggerStore(controller)
+	// 	mockTriggers.EXPECT().List(noContext, dummyRepo.ID).Return([]*core.Trigger{dummyTrigger}, nil)
+
+	// 	mockRepos := mock.NewMockRepositoryStore(controller)
+	// 	mockRepos.EXPECT().Increment(gomock.Any(), dummyRepo).Return(dummyRepo, nil)
+
+	// 	mockContents := mock.NewMockContentService(controller)
+	// 	mockContents.EXPECT().Find(gomock.Any(), dummyRepo.Slug, dummyTrigger.Path, dummyHook.After).Return(dummyYaml, nil, nil)
+	// 	mockContents.EXPECT().Find(gomock.Any(), dummyRepo.Slug, dummySignature.Path, dummyHook.After).Return(dummySignature, nil, nil)
+
+	// 	mockClient := new(scm.Client)
+	// 	mockClient.Contents = mockContents
+
+	// 	mockQueue := mock.NewMockQueue(controller)
+	// 	mockQueue.EXPECT().Push(gomock.Any(), gomock.Any()).Return(sql.ErrNoRows)
+
+	// 	mockBuilds := mock.NewMockBuildStore(controller)
+	// 	mockBuilds.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+
+	// 	triggerer := New(
+	// 		mockClient,
+	// 		mockBuilds,
+	// 		mockQueue,
+	// 		mockRepos,
+	// 		mockTriggers,
+	// 		mockUsers,
+	// 	)
+
+	// 	builds, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+	// 	if err != sql.ErrNoRows {
+	// 		t.Error("Expect error when enqueueing the build fails")
+	// 	}
+	// 	if got, want := len(builds), 0; got != want {
+	// 		t.Errorf("Got build count %d, want %d", got, want)
+	// 	}
+}
+
+var (
+	dummyHook = &core.Hook{
+		Event:        core.EventPush,
+		Link:         "https://github.com/octocat/Hello-World/commit/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+		Timestamp:    1299283200,
+		Message:      "first commit",
+		Before:       "553c2077f0edc3d5dc5d17262f6aa498e69d6f8e",
+		After:        "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+		Ref:          "refs/heads/master",
+		Source:       "master",
+		Target:       "master",
+		Author:       "octocat",
+		AuthorName:   "The Octocat",
+		AuthorEmail:  "octocat@hello-world.com",
+		AuthorAvatar: "https://avatars3.githubusercontent.com/u/583231",
+		Sender:       "octocat",
+		Action:       "opened",
+	}
+
+	dummyBuild = &core.Build{
+		Number: dummyRepo.Counter,
+		RepoID: dummyRepo.ID,
+		Status: core.StatusPending,
+		Event:  core.EventPush,
+		Link:   "https://github.com/octocat/Hello-World/commit/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+		// Timestamp:    1299283200,
+		Message:      "first commit",
+		Before:       "553c2077f0edc3d5dc5d17262f6aa498e69d6f8e",
+		After:        "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+		Ref:          "refs/heads/master",
+		Source:       "master",
+		Target:       "master",
+		Author:       "octocat",
+		AuthorName:   "The Octocat",
+		AuthorEmail:  "octocat@hello-world.com",
+		AuthorAvatar: "https://avatars3.githubusercontent.com/u/583231",
+		Sender:       "octocat",
+		Action:       "opened",
+	}
+
+	dummyErrorBuild = &core.Build{
+		Number: dummyRepo.Counter,
+		RepoID: dummyRepo.ID,
+		Status: core.StatusError,
+		Error:  "yaml: found unknown directive name",
+		Event:  core.EventPush,
+		Link:   "https://github.com/octocat/Hello-World/commit/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+		// Timestamp:    1299283200,
+		Message:      "first commit",
+		Before:       "553c2077f0edc3d5dc5d17262f6aa498e69d6f8e",
+		After:        "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+		Ref:          "refs/heads/master",
+		Source:       "master",
+		Target:       "master",
+		Author:       "octocat",
+		AuthorName:   "The Octocat",
+		AuthorEmail:  "octocat@hello-world.com",
+		AuthorAvatar: "https://avatars3.githubusercontent.com/u/583231",
+		Sender:       "octocat",
+		Action:       "opened",
+	}
+
+	dummyRepo = &core.Repository{
+		ID:         1,
+		UID:        "1296269",
+		UserID:     2,
+		Namespace:  "octocat",
+		Name:       "Hello-World",
+		Slug:       "octocat/Hello-World",
+		SCM:        "git",
+		HTTPURL:    "https://github.com/octocat/Hello-World.git",
+		SSHURL:     "git@github.com:octocat/Hello-World.git",
+		Link:       "https://github.com/octocat/Hello-World",
+		Branch:     "master",
+		Private:    false,
+		Visibility: core.VisibilityPublic,
+		Active:     true,
+		Counter:    42,
+		Secret:     "g9dMChy22QutQM5lrpbe0yCR3f15t1gv",
+		Signer:     "g9dMChy22QutQM5lrpbe0yCR3f15t1gv",
+		Config:     ".drone.yml",
+	}
+
+	dummyStage = &core.Stage{
+		Kind:      "pipeline",
+		Type:      "docker",
+		RepoID:    1,
+		Name:      "default",
+		Number:    1,
+		OS:        "linux",
+		Arch:      "amd64",
+		OnSuccess: true,
+		OnFailure: false,
+		Status:    core.StatusPending,
+	}
+
+	dummyStages = []*core.Stage{
+		dummyStage,
+	}
+
+	dummyErrorStages = []*core.Stage{
+		dummyStage,
+	}
+
+	dummyUser = &core.User{
+		ID:     2,
+		Login:  "octocat",
+		Active: true,
+	}
+
+	dummyYaml = &core.Config{
+		Data: "kind: pipeline\nsteps: [ ]",
+	}
+
+	dummyYamlInvalid = &core.Config{
+		Data: "%ERROR",
+	}
+
+	dummyYamlSkipBranch = &core.Config{
+		Data: `
+kind: pipeline
+trigger:
+  branch:
+    exclude:
+    - master`,
+	}
+
+	dummyYamlSkipEvent = &core.Config{
+		Data: `
+kind: pipeline
+trigger:
+  event:
+    exclude:
+    - push`,
+	}
+
+	dummyYamlSkipAction = &core.Config{
+		Data: `
+kind: pipeline
+trigger:
+  action:
+    exclude:
+    - opened`,
+	}
+
+	ignoreBuildFields = cmpopts.IgnoreFields(core.Build{},
+		"Created", "Updated", "Started", "Finished")
+
+	ignoreStageFields = cmpopts.IgnoreFields(core.Stage{},
+		"Created", "Updated")
+)
+
+func TestTrigger_MemoryLimitFormats(t *testing.T) {
+	tests := []struct {
+		name        string
+		memoryLimit string
+		description string
+	}{
+		{
+			name:        "Mi_format_without_B",
+			memoryLimit: "16Mi",
+			description: "Kubernetes-style mebibyte format without 'B' suffix (supported in v0.4.0, breaks in v0.5.0)",
+		},
+		{
+			name:        "Gi_format_without_B",
+			memoryLimit: "16Gi",
+			description: "Kubernetes-style gibibyte format without 'B' suffix (supported in v0.4.0, breaks in v0.5.0)",
+		},
+		{
+			name:        "MiB_format_with_B",
+			memoryLimit: "16MiB",
+			description: "Standard mebibyte format with 'B' suffix (works in both v0.4.0 and v0.5.0)",
+		},
+		{
+			name:        "GiB_format_with_B",
+			memoryLimit: "16GiB",
+			description: "Standard gibibyte format with 'B' suffix (works in both v0.4.0 and v0.5.0)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			controller := gomock.NewController(t)
+			defer controller.Finish()
+
+			mockUsers := mock.NewMockUserStore(controller)
+			mockUsers.EXPECT().Find(noContext, dummyRepo.UserID).Return(dummyUser, nil)
+
+			mockRepos := mock.NewMockRepositoryStore(controller)
+			mockRepos.EXPECT().Increment(gomock.Any(), dummyRepo).Return(dummyRepo, nil)
+
+			// Create YAML with the memory limit format being tested
+			yamlConfig := &core.Config{
+				Data: `
+kind: pipeline
+type: docker
+name: test-memory-limit-` + tt.name + `
+
+steps:
+- name: test
+  image: alpine:latest
+  resources:
+    limits:
+      memory: ` + tt.memoryLimit + `
+  commands:
+  - echo "Memory limit test"
+`,
+			}
+
+			mockConfigService := mock.NewMockConfigService(controller)
+			mockConfigService.EXPECT().Find(gomock.Any(), gomock.Any()).Return(yamlConfig, nil)
+
+			mockConvertService := mock.NewMockConvertService(controller)
+			mockConvertService.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(yamlConfig, nil)
+
+			mockValidateService := mock.NewMockValidateService(controller)
+			mockValidateService.EXPECT().Validate(gomock.Any(), gomock.Any()).Return(nil)
+
+			mockStatus := mock.NewMockStatusService(controller)
+			mockStatus.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+			mockBuilds := mock.NewMockBuildStore(controller)
+			mockBuilds.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+			mockQueue := mock.NewMockScheduler(controller)
+			mockQueue.EXPECT().Schedule(gomock.Any(), gomock.Any()).Return(nil)
+
+			mockWebhooks := mock.NewMockWebhookSender(controller)
+			mockWebhooks.EXPECT().Send(gomock.Any(), gomock.Any()).Return(nil)
+
+			triggerer := New(
+				nil,
+				mockConfigService,
+				mockConvertService,
+				nil,
+				mockStatus,
+				mockBuilds,
+				mockQueue,
+				mockRepos,
+				mockUsers,
+				mockValidateService,
+				mockWebhooks,
+			)
+
+			build, err := triggerer.Trigger(noContext, dummyRepo, dummyHook)
+			if err != nil {
+				t.Errorf("Expected pipeline with '%s' memory limit to parse successfully with v0.4.0, but got error: %v\nDescription: %s", tt.memoryLimit, err, tt.description)
+				return
+			}
+
+			if build == nil {
+				t.Error("Expected build to be created, but got nil")
+				return
+			}
+		})
+	}
+}
