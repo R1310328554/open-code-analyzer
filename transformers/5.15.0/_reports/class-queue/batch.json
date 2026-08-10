@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:47:46Z",
-  "files": [
-    "src/transformers/_typing.py",
-    "src/transformers/activations.py",
-    "src/transformers/audio_utils.py",
-    "src/transformers/backbone_utils.py",
-    "src/transformers/cache_utils.py",
-    "src/transformers/cli/__init__.py",
-    "src/transformers/cli/add_new_model_like.py",
-    "src/transformers/cli/chat.py",
-    "src/transformers/cli/download.py",
-    "src/transformers/cli/serve.py",
-    "src/transformers/cli/serving/__init__.py",
-    "src/transformers/cli/serving/chat_completion.py",
-    "src/transformers/cli/serving/completion.py",
-    "src/transformers/cli/serving/model_manager.py",
-    "src/transformers/cli/serving/response.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2649,
-  "done": 15
+  "done": 30
 }
