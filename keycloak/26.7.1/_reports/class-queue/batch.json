@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T11:37:17Z",
   "files": [
-    "services/src/main/java/org/keycloak/authentication/requiredactions/util/EmailCooldownManager.java",
-    "services/src/main/java/org/keycloak/authentication/requiredactions/util/RequiredActionsValidator.java",
-    "services/src/main/java/org/keycloak/authentication/requiredactions/util/UpdateProfileContext.java",
-    "services/src/main/java/org/keycloak/authentication/requiredactions/util/UserUpdateProfileContext.java",
-    "services/src/main/java/org/keycloak/authorization/AuthorizationService.java",
-    "services/src/main/java/org/keycloak/authorization/DefaultAuthorizationProviderFactory.java",
-    "services/src/main/java/org/keycloak/authorization/ErrorCode.java",
-    "services/src/main/java/org/keycloak/authorization/admin/AuthorizationService.java",
-    "services/src/main/java/org/keycloak/authorization/admin/PermissionService.java",
-    "services/src/main/java/org/keycloak/authorization/admin/PolicyEvaluationService.java",
-    "services/src/main/java/org/keycloak/authorization/admin/PolicyResourceService.java",
-    "services/src/main/java/org/keycloak/authorization/admin/PolicyService.java",
-    "services/src/main/java/org/keycloak/authorization/admin/PolicyTypeResourceService.java",
-    "services/src/main/java/org/keycloak/authorization/admin/PolicyTypeService.java",
-    "services/src/main/java/org/keycloak/authorization/admin/ResourceServerService.java",
     "services/src/main/java/org/keycloak/authorization/admin/ResourceSetService.java",
     "services/src/main/java/org/keycloak/authorization/admin/ScopeService.java",
     "services/src/main/java/org/keycloak/authorization/admin/representation/FGAPPolicyEvaluationResponseBuilder.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/authorization/protection/permission/AbstractPermissionService.java"
   ],
   "remaining_pending": 2038,
-  "done": 3930
+  "done": 3945
 }
