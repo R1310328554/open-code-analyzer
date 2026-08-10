@@ -22,20 +22,19 @@ import java.util.Objects;
 import org.keycloak.util.EnumWithStableIndex;
 
 /**
- * The decision strategy dictates how the policies associated with a given policy are evaluated and how a final decision
- * is obtained.
+ * 策略逻辑模式，决定如何将单条策略的评估结果转换为最终决策。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public enum Logic implements EnumWithStableIndex {
 
     /**
-     * Defines that this policy follows a positive logic. In other words, the final decision is the policy outcome.
+     * 正向逻辑：最终决策与策略评估结果一致。
      */
     POSITIVE(0),
 
     /**
-     * Defines that this policy uses a logical negation. In other words, the final decision would be a negative of the policy outcome.
+     * 反向逻辑：最终决策为策略评估结果的逻辑取反。
      */
     NEGATIVE(1);
 
@@ -47,11 +46,13 @@ public enum Logic implements EnumWithStableIndex {
         this.stableIndex = stableIndex;
     }
 
+    /** @return 持久化用的稳定索引值 */
     @Override
     public int getStableIndex() {
         return stableIndex;
     }
 
+    /** @param id 稳定索引值 */
     public static Logic valueOfInteger(Integer id) {
         return id == null ? null : BY_ID.get(id);
     }

@@ -20,16 +20,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 通用授权策略的 REST 表示，通过键值对 {@code config} 承载策略提供方特定配置。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class PolicyRepresentation extends AbstractPolicyRepresentation {
 
+    /** 策略提供方特定的配置项（键 → 值）。 */
     private Map<String, String> config = new HashMap();
 
+    /** @return 策略配置映射 */
     public Map<String, String> getConfig() {
         return this.config;
     }
 
+    /** @param config 策略配置映射 */
     public void setConfig(Map<String, String> config) {
         this.config = config;
     }

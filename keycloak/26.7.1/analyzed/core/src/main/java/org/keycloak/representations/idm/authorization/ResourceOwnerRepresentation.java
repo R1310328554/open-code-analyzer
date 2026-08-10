@@ -17,33 +17,43 @@
 package org.keycloak.representations.idm.authorization;
 
 /**
+ * 资源所有者的 REST 表示，标识 UMA 场景下资源的归属用户或实体。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ResourceOwnerRepresentation {
 
+    /** 所有者唯一标识。 */
     private String id;
+    /** 所有者显示名称。 */
     private String name;
 
+    /** 创建空的所有者表示。 */
     public ResourceOwnerRepresentation() {
 
     }
 
+    /** @param id 所有者 ID */
     public ResourceOwnerRepresentation(String id) {
         this.id = id;
     }
 
+    /** @return 所有者 ID */
     public String getId() {
         return this.id;
     }
 
+    /** @param id 所有者 ID */
     public void setId(String id) {
         this.id = id;
     }
 
+    /** @return 所有者显示名称 */
     public String getName() {
         return this.name;
     }
 
+    /** @param name 所有者显示名称 */
     public void setName(String name) {
         this.name = name;
     }

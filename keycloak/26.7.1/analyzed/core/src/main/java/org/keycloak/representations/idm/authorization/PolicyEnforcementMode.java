@@ -22,24 +22,24 @@ import java.util.Objects;
 import org.keycloak.util.EnumWithStableIndex;
 
 /**
- * The policy enforcement mode dictates how authorization requests are handled by the server.
+ * 策略执行模式，决定授权服务器如何处理未绑定策略的资源访问请求。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public enum PolicyEnforcementMode implements EnumWithStableIndex {
 
     /**
-     * Requests are denied by default even when there is no policy associated with a given resource.
+     * 强制模式：资源未关联策略时默认拒绝访问。
      */
     ENFORCING(0),
 
     /**
-     * Requests are allowed even when there is no policy associated with a given resource.
+     * 宽松模式：资源未关联策略时默认允许访问。
      */
     PERMISSIVE(1),
 
     /**
-     * Completely disables the evaluation of policies and allow access to any resource.
+     * 禁用模式：跳过策略评估，允许访问所有资源。
      */
     DISABLED(2);
 
@@ -51,11 +51,13 @@ public enum PolicyEnforcementMode implements EnumWithStableIndex {
         this.stableIndex = stableIndex;
     }
 
+    /** @return 持久化用的稳定索引值 */
     @Override
     public int getStableIndex() {
         return stableIndex;
     }
 
+    /** @param id 稳定索引值 */
     public static PolicyEnforcementMode valueOfInteger(Integer id) {
         return id == null ? null : BY_ID.get(id);
     }

@@ -18,20 +18,26 @@
 package org.keycloak.representations.idm.authorization;
 
 /**
+ * 权限申请响应，返回授权服务签发的权限票据（Permission Ticket）。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class PermissionResponse {
 
+    /** 权限票据令牌字符串。 */
     private final String ticket;
 
+    /** @param ticket 权限票据 */
     public PermissionResponse(String ticket) {
         this.ticket = ticket;
     }
 
+    /** 创建空响应。 */
     public PermissionResponse() {
         this(null);
     }
 
+    /** @return 权限票据令牌 */
     public String getTicket() {
         return this.ticket;
     }
