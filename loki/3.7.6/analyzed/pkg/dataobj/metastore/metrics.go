@@ -1,5 +1,7 @@
 package metastore
 
+// metastore 包内 Prometheus 指标：目录（ToC）写入耗时与对象元存储查询各阶段统计。
+
 import (
 	"time"
 
@@ -20,6 +22,7 @@ type tocMetrics struct {
 	tocWriteFailures  *prometheus.CounterVec
 }
 
+// newTableOfContentsMetrics 创建 ToC 相关原生直方图与带 status 标签的计数器。
 func newTableOfContentsMetrics() *tocMetrics {
 	metrics := &tocMetrics{
 		tocReplayTime: prometheus.NewHistogram(prometheus.HistogramOpts{
@@ -55,6 +58,7 @@ func newTableOfContentsMetrics() *tocMetrics {
 	return metrics
 }
 
+// register 注册全部 ToC 采集器，已注册则忽略 AlreadyRegisteredError。
 func (p *tocMetrics) register(reg prometheus.Registerer) error {
 	collectors := []prometheus.Collector{
 		p.tocReplayTime,
@@ -102,12 +106,14 @@ func (p *tocMetrics) observeMetastoreEncoding(recordTimestamp time.Time) {
 	}
 }
 
+// observeMetastoreProcessing 记录一次 WriteEntry 操作的总处理时长。
 func (p *tocMetrics) observeMetastoreProcessing(recordTimestamp time.Time) {
 	if !recordTimestamp.IsZero() { // Only observe if timestamp is valid
 		p.tocProcessingTime.Observe(time.Since(recordTimestamp).Seconds())
 	}
 }
 
+// ObjectMetastoreMetrics 汇总索引对象数、流过滤、段估算与段解析等查询指标。
 type ObjectMetastoreMetrics struct {
 	indexObjectsTotal                   prometheus.Histogram
 	streamFilterTotalDuration           prometheus.Histogram
@@ -122,6 +128,7 @@ type ObjectMetastoreMetrics struct {
 	resolvedSectionsRatio               prometheus.Histogram
 }
 
+// NewObjectMetastoreMetrics 构造指标集合并立即向 reg 注册。
 func NewObjectMetastoreMetrics(reg prometheus.Registerer) *ObjectMetastoreMetrics {
 	metrics := &ObjectMetastoreMetrics{
 		indexObjectsTotal: prometheus.NewHistogram(prometheus.HistogramOpts{
@@ -234,3 +241,4 @@ func (p *ObjectMetastoreMetrics) register(reg prometheus.Registerer) {
 	reg.MustRegister(p.resolvedSectionsTotal)
 	reg.MustRegister(p.resolvedSectionsRatio)
 }
+// 流过滤与段解析直方图用于评估查询裁剪效率与 I/O 开销分布。

@@ -1,5 +1,7 @@
 package indexpointers
 
+// indexpointers Arrow 批读取器：列选择、谓词下推与 columnar 适配。
+
 import (
 	"context"
 	"errors"
@@ -22,6 +24,7 @@ import (
 
 var tracer = otel.Tracer("pkg/dataobj/sections/indexpointers")
 
+// ReaderOptions 指定读取列、谓词列表与可选 Arrow 内存分配器。
 // ReaderOptions customizes the behavior of a [Reader].
 type ReaderOptions struct {
 	// Columns to read. Each column must belong to the same [Section].
@@ -122,6 +125,7 @@ func (opts *ReaderOptions) Validate() error {
 	return errors.Join(errs...)
 }
 
+// Reader 封装 columnar.ReaderAdapter，Open 后按批返回 Arrow RecordBatch。
 // A Reader reads batches of rows from a [Section].
 type Reader struct {
 	opts   ReaderOptions
@@ -191,6 +195,7 @@ func (r *Reader) Open(ctx context.Context) error {
 //
 // When a record is returned, it will match the schema specified by
 // [Reader.Schema]. These records must always be released after use.
+// Read 将 columnar 批次转为 Arrow 记录，先处理数据再返回 io.EOF 等错误。
 func (r *Reader) Read(ctx context.Context, batchSize int) (arrow.RecordBatch, error) {
 	if !r.ready {
 		return nil, errReaderNotOpen
@@ -272,6 +277,7 @@ func (r *Reader) init(ctx context.Context) error {
 	return nil
 }
 
+// mapPredicates 将 indexpointers 谓词映射为 dataset 层谓词，panic 转 error。
 func mapPredicates(ps []Predicate, columnLookup map[*Column]dataset.Column) (predicates []dataset.Predicate, err error) {
 	// For simplicity, [mapPredicate] and the functions it calls panic if they
 	// encounter an unsupported conversion.
@@ -406,6 +412,7 @@ func mustConvertType(dtype arrow.DataType) datasetmd.PhysicalType {
 	return toType
 }
 
+// Reset 关闭 inner reader、重建 schema 并清空 ready 状态以便复用实例。
 // Reset discards any state and resets r with a new set of options. This
 // permits reusing a Reader rather than allocating a new one.
 func (r *Reader) Reset(opts ReaderOptions) {
@@ -473,6 +480,7 @@ func columnToField(col *Column) arrow.Field {
 // type.
 //
 // Unique names are used by unit tests to be able to produce expected rows.
+// makeColumnName 生成唯一 Arrow 字段名，供单元测试断言期望行使用。
 func makeColumnName(label string, name string, dty arrow.DataType) string {
 	switch {
 	case label == "" && name == "":
@@ -486,3 +494,4 @@ func makeColumnName(label string, name string, dty arrow.DataType) string {
 		return label + "." + name + "." + dty.Name()
 	}
 }
+// Validate 确保所有谓词引用的列均在 Columns 中且标量类型受支持。

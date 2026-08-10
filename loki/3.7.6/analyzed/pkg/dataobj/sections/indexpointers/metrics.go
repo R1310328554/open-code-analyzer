@@ -1,5 +1,7 @@
 package indexpointers
 
+// indexpointers section 的 Prometheus 指标：编码耗时、记录数与时间戳范围。
+
 import (
 	"context"
 	"errors"
@@ -18,6 +20,7 @@ type Metrics struct {
 	maxTimestamp  prometheus.Gauge
 }
 
+// NewMetrics 初始化 encode_seconds、records_total 与 min/max_timestamp 仪表。
 func NewMetrics() *Metrics {
 	return &Metrics{
 		columnar: columnar.NewMetrics(sectionType),
@@ -54,6 +57,7 @@ func NewMetrics() *Metrics {
 	}
 }
 
+// Register 注册 columnar 子指标与本包四个采集器。
 func (m *Metrics) Register(reg prometheus.Registerer) error {
 	var errs []error
 	errs = append(errs, m.columnar.Register(reg))
@@ -73,7 +77,9 @@ func (m *Metrics) Unregister(reg prometheus.Registerer) {
 	reg.Unregister(m.maxTimestamp)
 }
 
+// Observe 委托 columnar.Metrics 统计已打开 section 的列级信息。
 // Observe observes section statistics for a given section.
 func (m *Metrics) Observe(ctx context.Context, section *Section) error {
 	return m.columnar.Observe(ctx, section.inner)
 }
+// min/max_timestamp 仪表在 Builder.Reset 后清零，反映当前批次时间跨度。

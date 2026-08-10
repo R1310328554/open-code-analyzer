@@ -1,5 +1,7 @@
 package dataobj
 
+// data object section 核心类型：Sections 集合、Section 描述与读写 builder/writer 接口。
+
 import (
 	"context"
 	"io"
@@ -7,6 +9,7 @@ import (
 	"strconv"
 )
 
+// Sections 提供 Filter 迭代与 Count 计数等便捷方法。
 // A Sections is a slice of [Section].
 type Sections []*Section
 
@@ -36,6 +39,7 @@ func (s Sections) Count(predicate func(*Section) bool) int {
 	return count
 }
 
+// Section 绑定类型、底层 SectionReader 与可选租户 ID。
 // A Section is a subset of an [Object] that holds a specific type of data. Use
 // section packages for higher-level abstractions around sections.
 type Section struct {
@@ -48,6 +52,7 @@ type Section struct {
 }
 
 // SectionType uniquely identifies a [Section] type.
+// SectionType 由 Namespace、Kind 与可选 Version 唯一标识 section 编码。
 type SectionType struct {
 	Namespace string // A namesapce for the section (e.g., "github.com/grafana/loki").
 	Kind      string // The kind of section, scoped to the namespace (e.g., "logs").
@@ -69,6 +74,7 @@ func (ty SectionType) String() string {
 	return base
 }
 
+// SectionReader 暴露 ExtensionData、DataRange、MetadataRange 及区域大小查询。
 // SectionReader is a low-level interface to read data ranges and metadata from
 // a section.
 //
@@ -110,6 +116,7 @@ type SectionReader interface {
 	MetadataSize() int64
 }
 
+// SectionBuilder 由各类 section 包实现，Flush 后重置可复用。
 // A SectionBuilder accumulates data for a single in-progress section.
 //
 // Each section package provides an implementation of SectionBuilder that
@@ -140,6 +147,7 @@ type SectionBuilder interface {
 	Reset()
 }
 
+// SectionWriter.WriteSection 将 data 与 metadata 切片写入底层对象流。
 // SectionWriter writes data object sections to an underlying stream, such as a
 // data object.
 type SectionWriter interface {
@@ -163,6 +171,7 @@ type SectionWriter interface {
 	WriteSection(opts *WriteSectionOptions, data, metadata []byte) (n int64, err error)
 }
 
+// WriteSectionOptions 携带租户与可选 ExtensionData（文件级小载荷）。
 // WriteSectionOptions provides additional options when writing sections.
 type WriteSectionOptions struct {
 	// Tenant that owns the written data and metadata. Tenant must be set for
@@ -181,3 +190,4 @@ type WriteSectionOptions struct {
 	// slice after WriteSection returns.
 	ExtensionData []byte
 }
+// Filter 迭代器 yield 的 index 为通过谓词的 section 序号而非原始下标。

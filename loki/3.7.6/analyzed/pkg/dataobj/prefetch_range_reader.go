@@ -1,5 +1,7 @@
 package dataobj
 
+// prefetchedRangeReader 在 rangeReader 之上缓存对象头或尾的预读字节窗口。
+
 import (
 	"bytes"
 	"context"
@@ -8,6 +10,7 @@ import (
 	"io"
 )
 
+// 重叠 ReadRange 请求优先从预读切片服务，其余走底层远程读取。
 // prefetchedRangeReader wraps a rangeReader with a prefetched byte window.
 // Overlapping ranges are served partially or wholly from prefetched bytes.
 type prefetchedRangeReader struct {
@@ -27,6 +30,7 @@ func (rr *prefetchedRangeReader) Read(ctx context.Context) (io.ReadCloser, error
 	return rr.inner.Read(ctx)
 }
 
+// ReadRange 计算请求区间与预读区间的交集，拼接 prefix/缓存/suffix 三段。
 func (rr *prefetchedRangeReader) ReadRange(ctx context.Context, offset int64, length int64) (io.ReadCloser, error) {
 	if length < 0 {
 		return nil, fmt.Errorf("length must not be negative: %d", length)
@@ -99,6 +103,7 @@ func (rr *prefetchedRangeReader) ReadRange(ctx context.Context, offset int64, le
 	}, nil
 }
 
+// multiReadCloser 用 MultiReader 串联多个 Reader 并在 Close 时逆序关闭。
 type multiReadCloser struct {
 	reader  io.Reader
 	closers []io.Closer
@@ -112,6 +117,7 @@ func (rc *multiReadCloser) Close() error {
 	return closeClosers(rc.closers)
 }
 
+// closeClosers 逆序关闭 closers 并合并错误。
 func closeClosers(closers []io.Closer) error {
 	var errs []error
 	for i := len(closers) - 1; i >= 0; i-- {
@@ -121,3 +127,4 @@ func closeClosers(closers []io.Closer) error {
 	}
 	return errors.Join(errs...)
 }
+// 预读区间通常位于对象绝对头部或尾部，中间重叠亦作防御性处理。

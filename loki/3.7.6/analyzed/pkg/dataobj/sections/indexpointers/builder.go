@@ -1,5 +1,7 @@
 package indexpointers
 
+// indexpointers section 构建器：累积 path 与时间戳列并编码为 columnar 格式。
+
 import (
 	"errors"
 	"fmt"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// IndexPointer 记录 index 对象路径及其覆盖的数据时间范围。
 // IndexPointer is a pointer to an index object. It is used to lookup the index object
 // by data object path within a time range.
 //
@@ -26,6 +29,7 @@ type IndexPointer struct {
 	EndTs   time.Time
 }
 
+// TenantIndexPointer 在指针上附加所属租户 ID，供多租户目录合并使用。
 // TenantIndexPointer is meant to collectively hold IndexPointer with the ID of the tenant it belongs to.
 type TenantIndexPointer struct {
 	Tenant string
@@ -61,6 +65,7 @@ func (b *Builder) Tenant() string { return b.tenant }
 
 func (b *Builder) Type() dataobj.SectionType { return sectionType }
 
+// Append 将路径与时间戳规范为 UTC 后追加到内部切片。
 // Append adds a new index pointer to the builder.
 func (b *Builder) Append(path string, startTs time.Time, endTs time.Time) {
 	p := &IndexPointer{
@@ -71,6 +76,7 @@ func (b *Builder) Append(path string, startTs time.Time, endTs time.Time) {
 	b.indexPointers = append(b.indexPointers, p)
 }
 
+// EstimatedSize 基于路径长度、ZSTD 压缩比与 delta 编码启发式估算字节数。
 // EstimatedSize returns the estimated size of the Pointers section in bytes.
 func (b *Builder) EstimatedSize() int {
 	// Since columns are only built when encoding, we can't use
@@ -111,6 +117,7 @@ func (b *Builder) EstimatedSize() int {
 	return sizeEstimate
 }
 
+// Flush 排序、编码三列（path/min/max timestamp）并在成功后 Reset。
 // Flush flushes the streams section to the provided writer.
 //
 // After successful encoding, b is reset to a fresh state and can be reused.
@@ -224,6 +231,7 @@ func (b *Builder) encodeTo(enc *columnar.Encoder) error {
 	return nil
 }
 
+// encodeColumn 刷新单列页并提交；min_timestamp 列设置升序 SortInfo。
 func encodeColumn(enc *columnar.Encoder, columnType ColumnType, builder *dataset.ColumnBuilder) error {
 	column, err := builder.Flush()
 	if err != nil {
@@ -264,3 +272,4 @@ func encodeColumn(enc *columnar.Encoder, columnType ColumnType, builder *dataset
 
 	return columnEnc.Commit()
 }
+// Reset 清空指针切片并将 min/max timestamp 仪表归零以便下次编码。

@@ -1,12 +1,16 @@
 package indexpointers
 
+// indexpointers Reader 行过滤谓词：组合逻辑、比较与自定义 Func 谓词。
+
 import (
 	"github.com/apache/arrow-go/v18/arrow/scalar"
 )
 
+// Predicate 为 sealed 接口，各具体类型通过 isPredicate 标记实现。
 // Predicate is an expression used to filter column values in a [Reader].
 type Predicate interface{ isPredicate() }
 
+// 支持 And/Or/Not、True/False、Equal/In、大小比较及 FuncPredicate。
 // Supported predicates.
 type (
 	// An AndPredicate is a [Predicate] which asserts that a row may only be
@@ -87,6 +91,7 @@ func (FuncPredicate) isPredicate()        {}
 // calling fn(p). If fn(p) returns true, walkPredicate is invoked recursively
 // with fn for each of the non-nil children of p, followed by a call of
 // fn(nil).
+// walkPredicate 深度优先遍历谓词树，子节点访问完毕后调用 fn(nil)。
 func walkPredicate(p Predicate, fn func(Predicate) bool) {
 	if p == nil || !fn(p) {
 		return
@@ -119,6 +124,7 @@ func walkPredicate(p Predicate, fn func(Predicate) bool) {
 	fn(nil)
 }
 
+// WhereTimeRangeOverlapsWith 构造区间重叠谓词：query [start,end) 与指针时间窗相交。
 func WhereTimeRangeOverlapsWith(
 	colMinTimestamp *Column,
 	colMaxTimestamp *Column,
@@ -148,3 +154,4 @@ func WhereTimeRangeOverlapsWith(
 		},
 	}
 }
+// FuncPredicate 无法做页级裁剪，仅在缺少显式谓词实现时使用。

@@ -1,5 +1,7 @@
 package dataobj
 
+// dataobj 编码阶段 Prometheus 指标：section 数量与元数据大小分布。
+
 import (
 	"errors"
 	"fmt"
@@ -9,6 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Metrics 使用原生直方图限制 builder 侧时间序列数量。
 // Metrics instruments encoded data objects.
 type Metrics struct {
 	sectionsCount       prometheus.Histogram
@@ -16,6 +19,7 @@ type Metrics struct {
 	sectionMetadataSize *prometheus.HistogramVec
 }
 
+// NewMetrics 创建 sections_count、file_metadata_size 与按 section 标签的 vec。
 // NewMetrics creates a new set of metrics for encoding.
 func NewMetrics() *Metrics {
 	// To limit the number of time series per data object builder, these metrics
@@ -46,6 +50,7 @@ func NewMetrics() *Metrics {
 	}
 }
 
+// newNativeHistogram 统一设置 1.1 桶因子与每小时最小重置间隔。
 func newNativeHistogram(opts prometheus.HistogramOpts) prometheus.Histogram {
 	opts.NativeHistogramBucketFactor = 1.1
 	opts.NativeHistogramMaxBucketNumber = 100
@@ -78,6 +83,7 @@ func (m *Metrics) Unregister(reg prometheus.Registerer) {
 	reg.Unregister(m.sectionMetadataSize)
 }
 
+// Observe 遍历对象 metadata 中各 section 并记录元数据字节数。
 // Observe updates metrics with statistics about the given [Object].
 func (m *Metrics) Observe(obj *Object) error {
 	m.sectionsCount.Observe(float64(len(obj.sections)))
@@ -98,3 +104,4 @@ func (m *Metrics) Observe(obj *Object) error {
 
 	return errors.Join(errs...)
 }
+// section_metadata_size 按 section 类型标签区分各段元数据体积。

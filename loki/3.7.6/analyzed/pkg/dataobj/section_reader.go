@@ -1,5 +1,7 @@
 package dataobj
 
+// sectionReader 将 filemd.SectionInfo 布局映射为相对 data/metadata 区域的绝对读取。
+
 import (
 	"context"
 	"fmt"
@@ -22,6 +24,7 @@ type sectionReader struct {
 
 func (sr *sectionReader) ExtensionData() []byte { return sr.extensionData }
 
+// DataRange 校验 section 数据区边界后将相对偏移转为文件绝对偏移读取。
 func (sr *sectionReader) DataRange(ctx context.Context, offset, length int64) (io.ReadCloser, error) {
 	if offset < 0 || length < 0 {
 		return nil, fmt.Errorf("parameters must not be negative: offset=%d length=%d", offset, length)
@@ -49,6 +52,7 @@ func (sr *sectionReader) DataRange(ctx context.Context, offset, length int64) (i
 	return sr.rr.ReadRange(ctx, absoluteOffset, length)
 }
 
+// MetadataRange 同理读取 section 元数据区，无 metadata 布局则报错。
 func (sr *sectionReader) MetadataRange(ctx context.Context, offset, length int64) (io.ReadCloser, error) {
 	if offset < 0 || length < 0 {
 		return nil, fmt.Errorf("parameters must not be negative: offset=%d length=%d", offset, length)
@@ -72,6 +76,7 @@ func (sr *sectionReader) MetadataRange(ctx context.Context, offset, length int64
 	return sr.rr.ReadRange(ctx, absoluteOffset, length)
 }
 
+// DataSize 返回 section 数据区总字节数，无数据区则为零。
 func (sr *sectionReader) DataSize() int64 {
 	dataRegion := sr.sec.GetLayout().GetData()
 	if dataRegion == nil {
@@ -87,3 +92,4 @@ func (sr *sectionReader) MetadataSize() int64 {
 	}
 	return int64(metadataRegion.Length)
 }
+// ExtensionData 来自文件级选项，可在不读 metadata 前获取关键 section 信息。

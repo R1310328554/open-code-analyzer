@@ -1,5 +1,7 @@
 package indexpointers
 
+// indexpointers 迭代工具：遍历 data object 内全部 index pointer 行。
+
 import (
 	"context"
 	"errors"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// Iter 按 section 顺序打开并 yield 带租户 ID 的 TenantIndexPointer。
 // Iter iterates over indexpointers in the provided decoder. All indexpointers sections are
 // iterated over in order.
 func Iter(ctx context.Context, obj *dataobj.Object) result.Seq[TenantIndexPointer] {
@@ -37,6 +40,7 @@ func Iter(ctx context.Context, obj *dataobj.Object) result.Seq[TenantIndexPointe
 	})
 }
 
+// IterSection 对单个 section 构建 dataset 行读取器并批量解码指针。
 func IterSection(ctx context.Context, section *Section) result.Seq[IndexPointer] {
 	return result.Iter(func(yield func(IndexPointer) bool) error {
 		columnarSection := section.inner
@@ -86,6 +90,7 @@ func IterSection(ctx context.Context, section *Section) result.Seq[IndexPointer]
 	})
 }
 
+// decodeRow 按列类型填充 IndexPointer，path 列可经 symbolizer 复用字符串。
 // decodeRow decodes an indexpointer from a [dataset.Row], using the provided columns to
 // determine the column type. The list of columns must match the columns used
 // to create the row.
@@ -143,6 +148,8 @@ func decodeRow(columns []*Column, row dataset.Row, pointer *IndexPointer, sym *s
 	return nil
 }
 
+// unsafeString 零拷贝将 []byte 转为 string，仅供 symbolizer 热路径使用。
 func unsafeString(data []byte) string {
 	return unsafe.String(unsafe.SliceData(data), len(data))
 }
+// IterSection 预取列数据并以 1024 行批量读取提升顺序扫描吞吐。

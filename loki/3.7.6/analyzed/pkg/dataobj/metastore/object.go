@@ -1,5 +1,8 @@
 package metastore
 
+// ObjectMetastore 基于对象存储的元数据索引：
+// 通过 ToC 目录定位 data object，支持流/标签查询与段解析。
+
 import (
 	"bytes"
 	"context"
@@ -49,6 +52,7 @@ const (
 
 var tracer = otel.Tracer("pkg/dataobj/metastore")
 
+// ObjectMetastore 封装 bucket、并行度与查询指标，是 metastore 主入口。
 // ObjectMetastore is a metastore that stores data objects in object storage.
 type ObjectMetastore struct {
 	bucket      objstore.Bucket
@@ -58,11 +62,13 @@ type ObjectMetastore struct {
 }
 
 // SectionKey is a unique identifier for a section of a data object.
+// SectionKey 唯一标识某 data object 内的一个 section（路径 + 索引）。
 type SectionKey struct {
 	ObjectPath string
 	SectionIdx int64
 }
 
+// DataobjSectionDescriptor 汇总 section 的流 ID、行数、大小、时间跨度及歧义谓词。
 // DataobjSectionDescriptor is a descriptor for single section of a data object, containing some useful information about that section.
 type DataobjSectionDescriptor struct {
 	SectionKey
@@ -78,6 +84,7 @@ type DataobjSectionDescriptor struct {
 }
 
 // NewSectionDescriptor creates a new section descriptor with the given pointer and labels.
+// NewSectionDescriptor 由 section 指针与歧义标签名构造初始描述符。
 func NewSectionDescriptor(pointer pointers.SectionPointer, ambiguousLabelNames []string) *DataobjSectionDescriptor {
 	obj := &DataobjSectionDescriptor{
 		SectionKey: SectionKey{
@@ -99,6 +106,7 @@ func NewSectionDescriptor(pointer pointers.SectionPointer, ambiguousLabelNames [
 }
 
 // Merge merges the given pointer and labels into an existing section's descriptor.
+// Merge 将同一 section 的额外指针与标签合并进已有描述符。
 func (d *DataobjSectionDescriptor) Merge(pointer pointers.SectionPointer, lbls []string) {
 	d.StreamIDs = append(d.StreamIDs, pointer.StreamIDRef)
 	d.RowCount += int(pointer.LineCount)
@@ -125,6 +133,7 @@ func (d *DataobjSectionDescriptor) Merge(pointer pointers.SectionPointer, lbls [
 }
 
 // Table of Content files are stored in well-known locations that can be computed from a known time.
+// tableOfContentsPath 根据 12 小时窗口起点生成 ToC 对象存储路径。
 func tableOfContentsPath(window time.Time) string {
 	return fmt.Sprintf("%s%s.toc", TocPrefix, strings.ReplaceAll(window.Format(time.RFC3339), ":", "_"))
 }
@@ -146,6 +155,7 @@ func iterTableOfContentsPaths(start, end time.Time) iter.Seq2[string, multitenan
 	}
 }
 
+// NewObjectMetastore 可选前缀包装 bucket 并启用 XCap 计量。
 func NewObjectMetastore(b objstore.Bucket, cfg Config, logger log.Logger, metrics *ObjectMetastoreMetrics) *ObjectMetastore {
 	if logger == nil {
 		logger = log.NewNopLogger()
@@ -179,6 +189,7 @@ func matchersToString(matchers []*labels.Matcher) string {
 	return s.String()
 }
 
+// streams 按时间范围遍历 ToC，列出匹配对象并过滤流标签。
 func (m *ObjectMetastore) streams(ctx context.Context, start, end time.Time, matchers ...*labels.Matcher) ([]*labels.Labels, error) {
 	tenantID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -205,6 +216,7 @@ func (m *ObjectMetastore) streams(ctx context.Context, start, end time.Time, mat
 	return m.listStreamsFromObjects(ctx, paths, predicate)
 }
 
+// DataObjects 返回时间范围内所有索引 data object 路径（去重排序）。
 func (m *ObjectMetastore) DataObjects(ctx context.Context, start, end time.Time, _ ...*labels.Matcher) ([]string, error) {
 	tenantID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -265,6 +277,7 @@ func (m *ObjectMetastore) forEachLabel(ctx context.Context, start, end time.Time
 	return nil
 }
 
+// streamPredicateFromMatchers 将 Prometheus 标签匹配器转为 streams 行谓词树。
 func streamPredicateFromMatchers(start, end time.Time, matchers ...*labels.Matcher) streams.RowPredicate {
 	if len(matchers) == 0 {
 		return nil
@@ -326,6 +339,7 @@ func streamPredicateFromMatchers(start, end time.Time, matchers ...*labels.Match
 	return current
 }
 
+// listObjectsFromTables 并发读取多个 ToC 文件并按时间戳过滤 index pointer。
 // listObjectsFromTables concurrently lists objects from multiple metastore files
 func (m *ObjectMetastore) listObjectsFromTables(ctx context.Context, tablePaths []string, start, end time.Time) ([]string, error) {
 	objects := make([][]string, len(tablePaths))
@@ -577,6 +591,7 @@ func dedupeAndSort(objects [][]string) []string {
 	return paths
 }
 
+// Sections 解析查询请求：取索引、并行读取各索引对象的 section 描述符。
 func (m *ObjectMetastore) Sections(ctx context.Context, req SectionsRequest) (SectionsResponse, error) {
 	ctx, span := xcap.StartSpan(ctx, tracer, "metastore.Sections")
 	defer span.End()
@@ -687,6 +702,7 @@ func (m *ObjectMetastore) IndexSectionsReader(ctx context.Context, req IndexSect
 	return IndexSectionsReaderResponse{Reader: reader}, nil
 }
 
+// GetIndexes 收集 ToC 路径并并发列出其中的 index object 路径。
 func (m *ObjectMetastore) GetIndexes(ctx context.Context, req GetIndexesRequest) (GetIndexesResponse, error) {
 	ctx, span := xcap.StartSpan(ctx, tracer, "metastore.GetIndexes")
 	defer span.End()
@@ -725,6 +741,7 @@ func (m *ObjectMetastore) GetIndexes(ctx context.Context, req GetIndexesRequest)
 	return resp, nil
 }
 
+// CollectSections 从 IndexSectionsReader 批量读取并合并 section 描述符。
 func (m *ObjectMetastore) CollectSections(ctx context.Context, req CollectSectionsRequest) (CollectSectionsResponse, error) {
 	objectSectionDescriptors := make(map[SectionKey]*DataobjSectionDescriptor)
 
@@ -799,3 +816,4 @@ func addSectionDescriptors(rec arrow.RecordBatch, result map[SectionKey]*Dataobj
 	}
 	return nil
 }
+// 段解析路径结合流匹配与 AMQ 过滤器，指标记录裁剪比例与耗时。

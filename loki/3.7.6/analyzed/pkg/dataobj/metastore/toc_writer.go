@@ -1,5 +1,7 @@
 package metastore
 
+// ToC（Table of Contents）写入器：按 12 小时窗口维护 metastore 目录文件。
+
 import (
 	"bytes"
 	"context"
@@ -22,6 +24,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/indexpointers"
 )
 
+// tocBuilderCfg 为目录对象定制的较小目标尺寸与分页参数。
 // Define our own builder config for the Table Of Contents object because they are smaller than logs objects.
 var tocBuilderCfg = logsobj.BuilderBaseConfig{
 	TargetObjectSize:  32 * 1024 * 1024,
@@ -35,8 +38,10 @@ var tocBuilderCfg = logsobj.BuilderBaseConfig{
 	SectionStripeMergeLimit: 2,
 }
 
+// TableOfContentsWriter 通过 GetAndReplace 原子合并写入 index pointer 条目。
 // The TableOfContents (ToC) writer manages the metastore's Table of Contents files, which are a list of other data objects in storage for a particular time range.
 // The Table of Contents files are used to look up other objects based on a time range, either index files or the log objects themselves. All entries are expected to have an applicable time window.
+// TableOfContentsWriter 持有 indexobj.Builder、指标与可复用缓冲区。
 type TableOfContentsWriter struct {
 	tocBuilder *indexobj.Builder // New index pointer based builder.
 	metrics    *tocMetrics
@@ -47,6 +52,7 @@ type TableOfContentsWriter struct {
 	builderOnce sync.Once
 }
 
+// NewTableOfContentsWriter 创建写入器并初始化 ToC 指标（延迟注册）。
 // NewTableOfContentsWriter creates a new Writer for adding entries to the metastore's Table of Contents files.
 func NewTableOfContentsWriter(bucket objstore.Bucket, logger log.Logger) *TableOfContentsWriter {
 	metrics := newTableOfContentsMetrics()
@@ -82,6 +88,7 @@ func (m *TableOfContentsWriter) initBuilder() error {
 	return initErr
 }
 
+// WriteEntry 按租户时间范围更新所有重叠 ToC 窗口，带退避重试。
 // WriteEntry adds the provided path to the Table of Contents file. The min/max timestamps are stored as metastore for the new entry can be accessed by time.
 func (m *TableOfContentsWriter) WriteEntry(ctx context.Context, dataobjPath string, tenantTimeRanges []multitenancy.TimeRange) error {
 	var err error
@@ -214,6 +221,7 @@ func (w *wrappedReadCloser) Close() error {
 }
 
 // copyFromExistingToc reads the provided table of contents (toc) object and appends the contained index pointers to the builder. The resulting builder will contain exactly the same entries as the input object.
+// copyFromExistingToc 重放已有 ToC 中全部 index pointer 到新 builder。
 func (m *TableOfContentsWriter) copyFromExistingToc(ctx context.Context, tocObject *dataobj.Object) error {
 	var indexPointersReader indexpointers.RowReader
 	defer indexPointersReader.Close()
@@ -246,3 +254,4 @@ func (m *TableOfContentsWriter) copyFromExistingToc(ctx context.Context, tocObje
 
 	return nil
 }
+// wrappedReadCloser 在关闭时串联释放对象 reader 与 builder 资源。

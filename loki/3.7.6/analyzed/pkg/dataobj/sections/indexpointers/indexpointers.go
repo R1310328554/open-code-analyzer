@@ -1,5 +1,7 @@
 package indexpointers
 
+// indexpointers section 打开与列类型定义：指向 index data object 的路径与时间窗口。
+
 import (
 	"context"
 	"fmt"
@@ -14,15 +16,18 @@ var sectionType = dataobj.SectionType{
 	Version:   columnar.FormatVersion,
 }
 
+// CheckSection 通过 SectionType 命名空间与 kind 判断是否为 indexpointers 段。
 // CheckSection returns true if section is a indexpointers section.
 func CheckSection(section *dataobj.Section) bool { return sectionType.Equals(section.Type) }
 
+// Section 包装 columnar.Section 并解析为 path/min/max 三列 Column 列表。
 // Section represents an opened indexpointers section.
 type Section struct {
 	inner   *columnar.Section
 	columns []*Column
 }
 
+// Open 校验类型与版本，解码 columnar 元数据并初始化列描述。
 // Open opens a Section from an underlying [dataobj.Section]. Open returns an
 // error if the section metadata could not be read or if the provided ctx is
 // canceled.
@@ -79,6 +84,7 @@ func (s *Section) init() error {
 func (s *Section) Columns() []*Column { return s.columns }
 
 // ColumnType represents the kind of information stored in a [Column].
+// ColumnType 枚举 path、min_timestamp、max_timestamp 三类逻辑列。
 type ColumnType int
 
 const (
@@ -121,6 +127,7 @@ func (ct ColumnType) String() string {
 	return text
 }
 
+// Column 关联 Section 与底层 columnar.Column，供 Reader 与 Predicate 引用。
 // A Column represents one of the columns in the indexpointers section. Valid columns
 // can only be retrieved by calling [Section.Columns].
 //
@@ -132,3 +139,4 @@ type Column struct {
 
 	inner *columnar.Column
 }
+// 未识别的新版列在 init 时被跳过以保持向前兼容。
