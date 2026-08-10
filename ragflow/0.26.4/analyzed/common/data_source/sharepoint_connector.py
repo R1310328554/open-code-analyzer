@@ -1,4 +1,7 @@
-"""SharePoint connector
+"""
+SharePoint 连接器：经 Microsoft Graph 拉取站点文档库文件。
+
+SharePoint connector
 
 Ingests files from SharePoint document libraries via the Microsoft Graph API
 (Office365-REST-Python-Client). Authentication uses MSAL client-credentials
@@ -40,6 +43,7 @@ GRAPH_SCOPES = ["https://graph.microsoft.com/.default"]
 
 
 class SharePointConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSync):
+    # MSAL 应用-only 凭证；按 lastModifiedDateTime 过滤增量
     """SharePoint connector for accessing SharePoint sites and documents."""
 
     def __init__(self, batch_size: int = INDEX_BATCH_SIZE) -> None:
@@ -50,6 +54,7 @@ class SharePointConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPe
     # -- credentials ---------------------------------------------------------
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # 懒加载 GraphClient，首次请求时 acquire_token_for_client
         """Configure a Microsoft Graph client from app-only credentials.
 
         The token is acquired lazily through a callback (the way
@@ -110,6 +115,7 @@ class SharePointConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPe
         return "folder" in getattr(drive_item, "properties", {})
 
     def _walk_files(self, root_item: Any) -> Generator[Any, None, None]:
+        # 深度优先遍历 driveItem，仅 yield 文件节点
         """Depth-first walk of a drive yielding file (non-folder) driveItems."""
         stack = [root_item]
         while stack:
@@ -139,6 +145,7 @@ class SharePointConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPe
 
     @staticmethod
     def _composite_doc_id(drive_id: Any, drive_item: Any) -> str:
+        # drive 内 item id 不全局唯一，需与 drive_id 组合
         # Graph driveItem IDs are only unique within a single drive. A site can
         # expose multiple document libraries (drives), so we namespace the item
         # ID by drive ID to keep document identifiers globally unique.

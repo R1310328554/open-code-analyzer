@@ -1,4 +1,7 @@
-"""Salesforce data source connector.
+"""
+Salesforce CRM 数据源连接器：REST/SOQL 拉取记录，以 SystemModstamp 做增量游标。
+
+Salesforce data source connector.
 
 Talks to a Salesforce org over the REST + SOQL APIs, turns each selected
 object's records into a Document, and uses ``SystemModstamp`` as the
@@ -54,6 +57,7 @@ _OPTIONAL_OBJECTS = frozenset({"Knowledge__kav"})
 
 
 class SalesforceObjectUnavailable(UnexpectedValidationError):
+    # SObject 在本 org 不存在或不可查询（404/INVALID_TYPE），可安全跳过
     """An SObject is genuinely absent or not queryable for this org/user.
 
     Raised for HTTP 404 (describe of a non-existent object) and HTTP 400
@@ -89,6 +93,7 @@ def _is_object_unavailable(resp: requests.Response) -> bool:
 
 
 class SalesforceCheckpoint(ConnectorCheckpoint):
+    # 按 SObject 名独立保存 SystemModstamp ISO 游标
     """Per-object SystemModstamp cursor.
 
     Stored as ISO-8601 strings (Salesforce's native format) keyed by
@@ -100,6 +105,7 @@ class SalesforceCheckpoint(ConnectorCheckpoint):
 
 
 class SalesforceConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSync):
+    # Connected App 客户端凭证流；默认索引 Account/Contact 等 CRM 对象
     """Salesforce CRM connector.
 
     Requires a Connected App with:
@@ -129,6 +135,7 @@ class SalesforceConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPe
     # ------------------------------------------------------------------
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # OAuth2 client_credentials 换 token，优先采用响应中的 canonical instance_url
         instance_url = (credentials.get("instance_url") or "").rstrip("/")
         client_id = credentials.get("client_id")
         client_secret = credentials.get("client_secret")
@@ -177,6 +184,7 @@ class SalesforceConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPe
     # ------------------------------------------------------------------
 
     def validate_connector_settings(self) -> None:
+        # 探测 /sobjects 以验证 API 权限与各配置对象可达性
         if not self._access_token or not self._instance_url:
             raise ConnectorMissingCredentialError("Salesforce")
 

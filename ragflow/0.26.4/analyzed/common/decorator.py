@@ -1,3 +1,4 @@
+# 通用装饰器：进程级单例与函数耗时统计。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# 通用装饰器：进程级单例与函数耗时统计。
+
 import functools
 import inspect
 import logging
@@ -21,6 +24,7 @@ import time
 
 
 def singleton(cls, *args, **kw):
+    # 按进程 pid + 类名缓存唯一实例
     instances = {}
 
     def _singleton():
@@ -33,6 +37,8 @@ def singleton(cls, *args, **kw):
 
 
 def timing(func=None, *, name=None, context=None):
+    """装饰器：记录函数执行耗时，可选写入 RecordingContext。"""
+
     """Decorator that records function execution time.
 
     Usage:
@@ -58,6 +64,7 @@ def timing(func=None, *, name=None, context=None):
     func_name = name or func.__name__
     log = logging.getLogger(__name__)
 
+    # 协程与同步函数分别包装，finally 中写 debug 日志
     if inspect.iscoroutinefunction(func):
 
         @functools.wraps(func)

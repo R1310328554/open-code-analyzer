@@ -1,4 +1,7 @@
-"""Microsoft Teams connector
+"""
+Microsoft Teams 连接器：经 Graph API 拉取频道帖子及回复，合并为单 Document。
+
+Microsoft Teams connector
 
 Ingests Microsoft Teams channel conversations (posts and their replies) via the
 Microsoft Graph API (Office365-REST-Python-Client). Authentication uses MSAL
@@ -42,12 +45,14 @@ GRAPH_SCOPES = ["https://graph.microsoft.com/.default"]
 
 
 class TeamsCheckpoint(ConnectorCheckpoint):
+    # Teams 专用检查点，预留 todo_team_ids 字段
     """Teams-specific checkpoint"""
 
     todo_team_ids: list[str] | None = None
 
 
 class TeamsConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSync):
+    # 复用 MSAL 应用实例以利用 token 缓存
     """Microsoft Teams connector for accessing Teams messages and channels."""
 
     def __init__(self, batch_size: int = _SLIM_DOC_BATCH_SIZE) -> None:
@@ -149,6 +154,8 @@ class TeamsConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSyn
         return content or "", (content_type or "text").lower()
 
     def _message_to_document(
+        # 将主帖与回复正文拼接，取最新 modified 时间
+
         self,
         message: Any,
         replies: list[Any],
@@ -198,6 +205,7 @@ class TeamsConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSyn
         )
 
     def _iter_channel_messages(self):
+        # get_all() 跟随 @odata.nextLink，避免大租户只取首页
         """Yield (team_id, team_name, channel_id, channel_name, message) tuples.
 
         Uses ``get_all()`` for every collection so Microsoft Graph's

@@ -1,3 +1,7 @@
+"""
+RSS 连接器：拉取 Feed 条目、手动跟随重定向并 DNS 固定以防 SSRF/TOCTOU。
+"""
+
 import hashlib
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -24,6 +28,7 @@ _MAX_REDIRECTS = 10
 
 
 class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    # feed_url 指定 RSS/Atom 源；支持全量 load 与 poll 时间窗口
     def __init__(self, feed_url: str, batch_size: int = INDEX_BATCH_SIZE) -> None:
         self.feed_url = feed_url.strip()
         self.batch_size = batch_size
@@ -47,6 +52,8 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         yield from self._load_entries(start=start, end=end)
 
     def retrieve_all_slim_docs_perm_sync(
+        # 权限同步用：仅 yield 条目 id 的 SlimDocument 批次
+
         self,
         callback: Any = None,
     ) -> GenerateSlimDocumentOutput:
@@ -103,6 +110,7 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         return assert_url_is_safe(self.feed_url)
 
     def _read_feed(self, require_entries: bool) -> Any:
+        # 逐跳校验重定向并用 pin_dns 拉取，解析后缓存 feed
         if self._cached_feed is not None:
             if require_entries and not self._cached_feed.entries:
                 raise ValueError("RSS feed contains no entries")
@@ -153,6 +161,7 @@ class RSSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         return feed
 
     def _build_document(self, entry: Any, updated_at: datetime) -> Document:
+        # 将 feed 条目转为 Document，正文优先 content 块再 summary
         link = (entry.get("link") or "").strip()
         title = (entry.get("title") or "").strip()
         stable_key = self._resolve_stable_key(entry)

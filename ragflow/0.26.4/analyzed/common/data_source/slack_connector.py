@@ -1,4 +1,6 @@
-"""Slack connector"""
+"""
+Slack 连接器：拉取频道线程消息，过滤 bot/系统 subtype，支持权限同步瘦文档。
+"""
 
 import itertools
 import logging
@@ -56,6 +58,7 @@ _DISALLOWED_MSG_SUBTYPES = {
 
 
 def default_msg_filter(message: MessageType) -> SlackMessageFilterReason | None:
+    # 默认过滤 bot 消息与频道管理类 subtype
     """Default message filter"""
     # Filter bot messages
     if message.get("bot_id") or message.get("app_id"):
@@ -170,6 +173,8 @@ def _build_doc_id(channel_id: str, thread_ts: str) -> str:
 
 
 def thread_to_doc(
+    # 将线程（含回复）展平为单个 Document
+
     channel: ChannelType,
     thread: ThreadType,
     slack_cleaner: SlackTextCleaner,
@@ -417,6 +422,8 @@ def _get_all_doc_ids(
 
 
 class SlackConnector(
+    # 简化版：未完整实现 checkpoint，全量/增量均走 _fetch_document_batches
+
     SlimConnectorWithPermSync,
     CredentialsConnector,
     CheckpointedConnectorWithPermSync,
@@ -455,6 +462,7 @@ class SlackConnector(
         raise NotImplementedError("Use set_credentials_provider with this connector.")
 
     def set_credentials_provider(self, credentials_provider: Any) -> None:
+        # 从 provider 取 bot token，初始化 WebClient 与 SlackTextCleaner
         """Set credentials provider"""
         credentials = credentials_provider.get_credentials()
         bot_token = credentials["slack_bot_token"]
@@ -493,6 +501,8 @@ class SlackConnector(
         )
 
     def _fetch_document_batches(
+        # 遍历配置频道，按 oldest/latest 边界批量 yield 线程 Document
+
         self,
         oldest: str | None = None,
         latest: str | None = None,

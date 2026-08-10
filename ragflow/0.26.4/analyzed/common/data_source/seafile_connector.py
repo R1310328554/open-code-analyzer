@@ -1,4 +1,6 @@
-"""SeaFile connector with granular sync support"""
+"""
+Seafile 连接器：支持账号 / 资料库 / 目录级同步，兼容 account token 与 repo token 两套 API。
+"""
 
 import logging
 from datetime import datetime, timezone
@@ -35,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class SeaFileConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    # sync_scope 控制同步粒度；大文件可超 BLOB_STORAGE_SIZE_THRESHOLD 跳过
     """SeaFile connector supporting account-, library- and directory-level sync.
 
     API endpoints used:
@@ -117,6 +120,7 @@ class SeaFileConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         return datetime.now(timezone.utc)
 
     def _validate_scope_params(self) -> None:
+        # library/directory 模式必须提供 repo_id；directory 需非根 sync_path
         if self.sync_scope in (SeafileSyncScope.LIBRARY, SeafileSyncScope.DIRECTORY):
             if not self.repo_id:
                 raise ConnectorValidationError(f"sync_scope={self.sync_scope.value!r} requires 'repo_id'.")
@@ -146,6 +150,7 @@ class SeaFileConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         }
 
     def _account_get(self, endpoint: str, params: Optional[dict] = None):
+        # 使用账号 Token 访问 /api2/ 端点
         """GET against /api2/... using the account token."""
         url = f"{self.seafile_url}/api2/{endpoint.lstrip('/')}"
         resp = rl_requests.get(
@@ -168,6 +173,7 @@ class SeaFileConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         return resp
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # 支持 account_token 或 repo_token 两种认证方式
         logger.debug("Loading credentials for SeaFile server %s", self.seafile_url)
 
         token = credentials.get("seafile_token")

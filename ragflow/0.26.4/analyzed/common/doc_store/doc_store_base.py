@@ -1,3 +1,4 @@
+# 文档存储抽象层：检索表达式、排序与 DocStoreConnection CRUD 接口。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# 文档存储抽象层：检索表达式、排序与 DocStoreConnection CRUD 接口。
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import numpy as np
@@ -24,6 +27,7 @@ VEC = list | np.ndarray
 
 @dataclass
 class SparseVector:
+    # 稀疏向量：indices + values，支持 dict 互转
     indices: list[int]
     values: list[float] | list[int] | None = None
 
@@ -56,6 +60,7 @@ class SparseVector:
 
 
 class MatchTextExpr:
+    # 全文匹配表达式
     def __init__(
         self,
         fields: list[str],
@@ -70,6 +75,7 @@ class MatchTextExpr:
 
 
 class MatchDenseExpr:
+    # 稠密向量 KNN 匹配
     def __init__(
         self,
         vector_column_name: str,
@@ -120,6 +126,7 @@ class MatchTensorExpr:
 
 
 class FusionExpr:
+    # 多路检索融合（如 RRF）
     def __init__(self, method: str, topn: int, fusion_params: dict | None = None):
         self.method = method
         self.topn = topn
@@ -146,6 +153,7 @@ class OrderByExpr:
 
 
 class DocStoreConnection(ABC):
+    # 文档引擎统一抽象：索引生命周期、检索、CRUD 与 SQL
     """
     Database operations
     """

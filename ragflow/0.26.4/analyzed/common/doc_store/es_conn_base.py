@@ -1,3 +1,4 @@
+# Elasticsearch 文档存储基类：索引管理、检索辅助与 text-to-sql 转发。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# Elasticsearch 文档存储基类：索引管理、检索辅助与 text-to-sql 转发。
+
 
 import logging
 import re
@@ -35,6 +38,7 @@ ATTEMPT_TIME = 2
 
 
 class ESConnectionBase(DocStoreConnection):
+    # 从连接池取 ES 客户端，加载 conf/mapping.json 映射
     def __init__(self, mapping_file_name: str = "mapping.json", logger_name: str = "ragflow.es_conn"):
         from common.doc_store.es_conn_pool import ES_CONN
 
@@ -118,6 +122,7 @@ class ESConnectionBase(DocStoreConnection):
     """
 
     def create_idx(self, index_name: str, dataset_id: str, vector_size: int, parser_id: str = None):
+        # parser_id 为 Infinity 兼容保留，ES 侧忽略
         # parser_id is used by Infinity but not needed for ES (kept for interface compatibility)
         if self.index_exist(index_name, dataset_id):
             return True
@@ -180,6 +185,7 @@ class ESConnectionBase(DocStoreConnection):
             return -1
 
     def replace_meta_fields(self, index_name: str, doc_id: str, meta_fields: dict) -> bool:
+        # 脚本整对象替换 meta_fields，避免 update 深合并残留旧键
         """
         Fully replace the ``meta_fields`` object on a single document.
 
@@ -357,6 +363,7 @@ class ESConnectionBase(DocStoreConnection):
     """
 
     def sql(self, sql: str, fetch_size: int, format: str):
+        # 将 LLM 生成的 SQL 中 like 条件改写为 ES MATCH 查询
         self.logger.debug(f"ESConnection.sql get sql: {sql}")
         sql = re.sub(r"[ `]+", " ", sql)
         sql = sql.replace("%", "")

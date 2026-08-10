@@ -1,3 +1,4 @@
+# Elasticsearch 连接池：单例、健康检查与主版本 >= 8 校验。
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -13,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+# Elasticsearch 连接池：单例、健康检查与主版本 >= 8 校验。
+
 import logging
 import time
 from elasticsearch import Elasticsearch
@@ -25,6 +28,7 @@ ATTEMPT_TIME = 2
 
 @singleton
 class ElasticSearchConnectionPool:
+    # @singleton 进程内共享 ES 客户端，启动时最多重试 ATTEMPT_TIME 次
     def __init__(self):
         if hasattr(settings, "ES"):
             self.ES_CONFIG = settings.ES
@@ -66,6 +70,7 @@ class ElasticSearchConnectionPool:
         return self.es_conn
 
     def refresh_conn(self):
+        # ping 失败则关闭并重连
         if self.es_conn.ping():
             return self.es_conn
         else:
@@ -80,4 +85,4 @@ class ElasticSearchConnectionPool:
             self.es_conn.close()
 
 
-ES_CONN = ElasticSearchConnectionPool()
+ES_CONN = ElasticSearchConnectionPool()  # 模块级全局连接池实例

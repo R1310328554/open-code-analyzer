@@ -1,4 +1,7 @@
-"""Generic, configuration-driven REST API data source connector.
+"""
+通用配置驱动 REST API 数据源连接器：无需改代码即可接入任意 REST API。
+
+Generic, configuration-driven REST API data source connector.
 
 Connect any REST API as a RAGFlow data source without code changes.
 All behaviour — URL, auth, pagination, field mapping — is controlled
@@ -49,6 +52,7 @@ _MAX_REDIRECTS = 5
 
 
 class AuthType:
+    # 认证方式枚举：无认证 / API Key 请求头 / Bearer / Basic
     NONE = "none"
     API_KEY_HEADER = "api_key_header"
     BEARER = "bearer"
@@ -56,6 +60,7 @@ class AuthType:
 
 
 class PaginationType:
+    # 分页策略：无 / 页码 / 偏移量 / 游标
     NONE = "none"
     PAGE = "page"
     OFFSET = "offset"
@@ -92,6 +97,7 @@ def _text_to_dict(v: Any) -> Dict[str, str]:
 
 
 class RestAPIConnectorConfig(BaseModel):
+    # UI 暴露的 REST 连接器配置 schema，经 Pydantic 校验
     """Validated schema for the REST API connector configuration."""
 
     model_config = ConfigDict(extra="ignore")
@@ -166,6 +172,7 @@ class RestAPIConnectorConfig(BaseModel):
 
 
 class RestAPIConnector(LoadConnector, PollConnector):
+    # 按配置拉取 REST 资源并映射为 Document，支持轮询增量
     """Configuration-driven REST API connector.
 
     Implements ``LoadConnector`` and ``PollConnector`` to fetch documents
@@ -175,6 +182,7 @@ class RestAPIConnector(LoadConnector, PollConnector):
 
     @staticmethod
     def _validate_url_for_ssrf(url: str) -> None:
+        # 阻止 localhost、私网、链路本地等 SSRF 目标
         """Validate that the URL does not point to localhost or private/internal networks.
 
         Raises:
@@ -285,6 +293,7 @@ class RestAPIConnector(LoadConnector, PollConnector):
     # -- Credentials --------------------------------------------------------
 
     def load_credentials(self, credentials: Dict[str, Any]) -> Dict[str, Any] | None:
+        # 应用认证凭据（无网络 I/O，连通性由 validate_config 负责）
         """Apply authentication credentials (no network call).
 
         Use ``validate_config()`` to perform a live connectivity check.
@@ -294,6 +303,7 @@ class RestAPIConnector(LoadConnector, PollConnector):
         return None
 
     def _build_auth(self) -> None:
+        # 根据 auth_type 生成请求头或 HTTP Basic 凭证
         """Derive auth headers / basic-auth object from credentials."""
         self._auth_headers = {}
         self._basic_auth = None

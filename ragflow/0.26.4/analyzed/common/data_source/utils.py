@@ -1,4 +1,6 @@
-"""Utility functions for all connectors"""
+"""
+各数据源连接器共享的工具函数：限流、S3/Slack/Confluence 辅助等。
+"""
 
 import base64
 import contextvars
@@ -52,6 +54,7 @@ _TZ_SUFFIX_PATTERN = re.compile(r"([+-])([\d:]+)$")
 
 
 def datetime_from_string(datetime_string: str) -> datetime:
+    # 解析 Jira/Slack 等多种时区格式字符串为 UTC datetime
     datetime_string = datetime_string.strip()
 
     match_jira_format = _TZ_SUFFIX_PATTERN.search(datetime_string)
@@ -203,6 +206,7 @@ def get_start_param_from_url(url: str) -> int:
 
 
 def wrap_request_to_handle_ratelimiting(request_fn: R, default_wait_time_sec: int = 30, max_waits: int = 30) -> R:
+    # 429 时按 Retry-After 退避重试，超限抛 RateLimitTriedTooManyTimesError
     def wrapped_request(*args: list, **kwargs: dict[str, Any]) -> requests.Response:
         for _ in range(max_waits):
             response = request_fn(*args, **kwargs)
@@ -233,12 +237,13 @@ class _RateLimitedRequest:
     request = _rate_limited_request
 
 
-rl_requests = _RateLimitedRequest
+rl_requests = _RateLimitedRequest  # 带 429 退避的 requests 封装
 
 # Blob Storage Utilities
 
 
 def create_s3_client(bucket_type: BlobType, credentials: dict[str, Any], european_residency: bool = False) -> S3Client:
+    # 按 BlobType 创建 S3/R2/GCS/OCI 等兼容客户端
     """Create S3 client for different blob storage types"""
     if bucket_type == BlobType.R2:
         subdomain = "eu." if european_residency else ""
@@ -637,6 +642,7 @@ def expert_info_from_slack_id(
 
 
 class SlackTextCleaner:
+    # 解析 Slack mrkdwn/mention/channel 为可读纯文本
     """Slack text cleaning utility class"""
 
     def __init__(self, client: WebClient) -> None:
@@ -1128,6 +1134,7 @@ def _next_or_none(ind: int, gen: Iterator[R]) -> tuple[int, R | None]:
 
 
 def parallel_yield(gens: list[Iterator[R]], max_workers: int = 10) -> Iterator[R]:
+    # 多路迭代器并行 merge，任一耗尽即停止对应 worker
     """
     Runs the list of generators with thread-level parallelism, yielding
     results as available. The asynchronous nature of this yielding means
@@ -1252,6 +1259,8 @@ rate_limit_builder = _RateLimitDecorator
 
 
 def retry_builder(
+    # 装饰器工厂：按异常类型与次数重试，可配合 rate_limit_builder
+
     tries: int = 20,
     delay: float = 0.1,
     max_delay: float | None = 60,

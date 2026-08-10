@@ -1,4 +1,6 @@
-"""WebDAV connector"""
+"""
+WebDAV 连接器：递归列举远程目录，下载受支持扩展名的文件为 Document。
+"""
 
 import logging
 import os
@@ -19,6 +21,7 @@ from common.data_source.models import Document, GenerateDocumentsOutput, Generat
 
 
 class WebDAVConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    # webdav4 客户端；可选 allow_images 扩展多媒体类型
     """WebDAV connector for syncing files from WebDAV servers"""
 
     def __init__(
@@ -73,6 +76,7 @@ class WebDAVConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
 
     @classmethod
     def _get_size_bytes(cls, file_info: dict[str, Any]) -> int | None:
+        # 兼容 size/content_length/getcontentlength 多种 WebDAV 响应字段
         # webdav4's Client.ls(detail=True) reports the size under "content_length"
         # (see webdav4.multistatus.Response.as_dict); other servers/libraries or
         # webdav4's fsspec wrapper may instead use "size" or the raw
@@ -106,6 +110,7 @@ class WebDAVConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         self._allow_images = allow_images
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # 用户名/密码初始化 WebDAVClient
         """Load credentials and initialize WebDAV client
 
         Args:

@@ -1,3 +1,7 @@
+"""
+Zendesk 连接器：Help Center 文章或 Support 工单，游标/时间戳分页与作者缓存。
+"""
+
 import copy
 import logging
 import time
@@ -28,6 +32,7 @@ class ZendeskCredentialsNotSetUpError(PermissionError):
 
 
 class ZendeskClient:
+    # subdomain + email/token 基础客户端，make_request 带限流与重试
     def __init__(
         self,
         subdomain: str,
@@ -40,7 +45,9 @@ class ZendeskClient:
         self.make_request = request_with_rate_limit(self, calls_per_minute)
 
 
-def request_with_rate_limit(client: ZendeskClient, max_calls_per_minute: int | None = None) -> Callable[[str, dict[str, Any]], dict[str, Any]]:
+def request_with_rate_limit(client: ZendeskClient, max_calls_per_minute: int | None = None)
+    # 包装 GET：429 读 Retry-After，403 SupportProductInactive 直接返回 JSON
+ -> Callable[[str, dict[str, Any]], dict[str, Any]]:
     @retry_builder()
     @(rate_limit_builder(max_calls=max_calls_per_minute, period=60) if max_calls_per_minute else lambda x: x)
     def make_request(endpoint: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -296,6 +303,7 @@ def _is_indexable_ticket(ticket: dict[str, Any]) -> bool:
 
 
 class ZendeskConnectorCheckpoint(ConnectorCheckpoint):
+    # 文章用 after_cursor；工单用 next_start_time；缓存 author/content_tags
     # We use cursor-based paginated retrieval for articles
     after_cursor_articles: str | None
 
@@ -307,6 +315,7 @@ class ZendeskConnectorCheckpoint(ConnectorCheckpoint):
 
 
 class ZendeskConnector(SlimConnectorWithPermSync, CheckpointedConnector[ZendeskConnectorCheckpoint]):
+    # content_type 切换 articles/tickets 两套检索逻辑
     def __init__(
         self,
         content_type: str = "articles",
@@ -355,6 +364,8 @@ class ZendeskConnector(SlimConnectorWithPermSync, CheckpointedConnector[ZendeskC
             raise ValueError(f"Unsupported content_type: {self.content_type}")
 
     def _retrieve_articles(
+        # 游标分页拉文章，跳过不可索引条目并 yield ConnectorFailure
+
         self,
         start: SecondsSinceUnixEpoch | None,
         end: SecondsSinceUnixEpoch | None,
