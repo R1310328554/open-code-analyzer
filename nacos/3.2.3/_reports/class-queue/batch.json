@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:56:16Z",
   "files": [
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/config/AuthImplPackageExcludeFilter.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/AuthConfigs.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/autoconfiguration/NacosAuthPluginInnerAutoConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/autoconfiguration/NacosAuthPluginRemoteAutoConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/core/NacosAuthPluginCoreConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/core/NacosAuthPluginInnerServiceConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/core/NacosAuthPluginRemoteServiceConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/persistence/NacosAuthPluginEmbeddedStorageConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/persistence/NacosAuthPluginExternalStorageConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/persistence/NacosAuthPluginPersistenceConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/web/NacosAuthPluginControllerConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/web/NacosAuthPluginOldControllerConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/configuration/web/NacosAuthPluginWebConfig.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/constant/AuthConstants.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/constant/AuthPageConstant.java",
     "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/constant/AuthSystemTypes.java",
     "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/controller/UserController.java",
     "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/controller/v3/PermissionControllerV3.java",
@@ -33,5 +18,5 @@
     "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/ExternalPermissionPersistServiceImpl.java"
   ],
   "remaining_pending": 287,
-  "done": 2205
+  "done": 2235
 }
