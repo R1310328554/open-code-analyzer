@@ -23,27 +23,36 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Config of the rules when attribute is selected.
- * 
+ * 属性可见性选择器配置，按 OAuth 范围决定属性是否在 UI 中展示。
+ *
  * @author Vlastimil Elias <velias@redhat.com>
  *
  */
 public class UPAttributeSelector implements Cloneable {
 
+    /** 触发可见性的 OAuth 范围集合；为空表示始终展示。 */
     private Set<String> scopes;
 
+    /** 默认构造函数，供 JSON 反序列化与反射使用。 */
     public UPAttributeSelector() {
-        // for reflection
+        // 供反射使用
     }
 
+    /**
+     * 以范围集合构造可见性选择器。
+     *
+     * @param scopes OAuth 范围集合
+     */
     public UPAttributeSelector(Set<String> scopes) {
         this.scopes = scopes;
     }
 
+    /** @return 可见性范围集合 */
     public Set<String> getScopes() {
         return scopes;
     }
 
+    /** @param scopes 可见性范围集合 */
     public void setScopes(Set<String> scopes) {
         this.scopes = scopes;
     }
@@ -53,6 +62,11 @@ public class UPAttributeSelector implements Cloneable {
         return "UPAttributeSelector [scopes=" + scopes + "]";
     }
 
+    /**
+     * 深拷贝当前可见性选择器（集合内容独立复制）。
+     *
+     * @return 独立的选择器副本
+     */
     @Override
     protected UPAttributeSelector clone() {
         return new UPAttributeSelector(scopes == null ? null : new HashSet<>(scopes));

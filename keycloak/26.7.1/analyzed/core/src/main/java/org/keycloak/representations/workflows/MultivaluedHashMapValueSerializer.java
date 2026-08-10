@@ -14,6 +14,9 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
+/**
+ * Jackson 序列化器：将 {@link MultivaluedHashMap} 写为 JSON 对象，单值输出为标量，多值输出为数组，并忽略已有 getter 属性。
+ */
 public final class MultivaluedHashMapValueSerializer extends JsonSerializer<MultivaluedHashMap<String, String>> {
 
     @Override
@@ -53,10 +56,13 @@ public final class MultivaluedHashMapValueSerializer extends JsonSerializer<Mult
 
     @Override
     public boolean isEmpty(SerializerProvider provider, MultivaluedHashMap<String, String> value) {
-        // if all properties are ignored, consider the map as empty
+        // 若所有键均被忽略，则视为空 Map
         return getIgnoredProperties(provider.getGenerator()).containsAll(value.keySet());
     }
 
+    /**
+     * 收集父对象中已有 getter 对应的 JSON 属性名（小写），序列化时跳过以避免重复输出。
+     */
     private static Set<String> getIgnoredProperties(JsonGenerator gen) {
         Class<?> parentClazz = gen.currentValue().getClass();
         return Arrays.stream(parentClazz.getDeclaredMethods())

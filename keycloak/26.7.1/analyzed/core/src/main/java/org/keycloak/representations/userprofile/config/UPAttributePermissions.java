@@ -26,37 +26,50 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Configuration of permissions for the attribute
- * 
+ * 用户 Profile 属性的读写权限配置，分别指定可查看与可编辑该属性的角色或范围集合。
+ *
  * @author Vlastimil Elias <velias@redhat.com>
  *
  */
 public class UPAttributePermissions implements Cloneable {
 
+    /** 拥有查看权限的角色或范围集合。 */
     private Set<String> view = Collections.emptySet();
+    /** 拥有编辑权限的角色或范围集合。 */
     private Set<String> edit = Collections.emptySet();
 
+    /** 默认构造函数，供 JSON 反序列化与反射使用。 */
     public UPAttributePermissions() {
-        // for reflection
+        // 供反射使用
     }
 
+    /**
+     * 以查看与编辑权限集合构造权限配置。
+     *
+     * @param view 可查看的角色或范围
+     * @param edit 可编辑的角色或范围
+     */
     public UPAttributePermissions(Set<String> view, Set<String> edit) {
         this.view = view;
         this.edit = edit;
     }
 
+    /** @return 可查看权限集合 */
     public Set<String> getView() {
         return view;
     }
 
+    /** @param view 可查看权限集合 */
     public void setView(Set<String> view) {
         this.view = view;
     }
 
+    /** @return 可编辑权限集合 */
     public Set<String> getEdit() {
         return edit;
     }
 
+    /** @param edit 可编辑权限集合 */
     public void setEdit(Set<String> edit) {
         this.edit = edit;
     }
@@ -66,11 +79,21 @@ public class UPAttributePermissions implements Cloneable {
         return "UPAttributePermissions [view=" + view + ", edit=" + edit + "]";
     }
 
+    /**
+     * 判断权限配置是否为空（查看与编辑集合均为空）。
+     *
+     * @return 若未配置任何权限则返回 {@code true}
+     */
     @JsonIgnore
     public boolean isEmpty() {
         return getEdit().isEmpty() && getView().isEmpty();
     }
 
+    /**
+     * 深拷贝当前权限配置（集合内容独立复制）。
+     *
+     * @return 独立的权限配置副本
+     */
     @Override
     protected UPAttributePermissions clone() {
         Set<String> view = this.view == null ? null : new HashSet<>(this.view);

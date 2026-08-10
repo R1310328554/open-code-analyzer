@@ -10,6 +10,9 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 
+/**
+ * Jackson 反序列化器：将 JSON 对象转换为 {@link MultivaluedHashMap}，支持单值与数组两种值形式。
+ */
 public final class MultivaluedHashMapValueDeserializer extends JsonDeserializer {
 
     @Override
