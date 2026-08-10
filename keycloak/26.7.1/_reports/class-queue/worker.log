@@ -43,3 +43,18 @@
 2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/SingleSignOnServiceParser.java wave2a [0:15] saml adapter config parsers
 2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/SpParser.java wave2a [0:15] saml adapter config parsers
 2026-08-10T05:32:49Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/descriptor/parsers/SamlDescriptorIDPKeysExtractor.java wave2a [0:15] saml adapter config parsers
+2026-08-10T05:34:31Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/AbstractSamlAuthenticationHandler.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/SamlAuthenticationHandler.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/SamlInvocationContext.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/ecp/EcpAuthenticationHandler.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/webbrowsersso/BrowserHandler.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/webbrowsersso/SamlEndpoint.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/webbrowsersso/WebBrowserSsoAuthenticationHandler.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/core/src/main/java/org/keycloak/adapters/saml/rotation/SamlDescriptorPublicKeyLocator.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronHttpFacade.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronSamlAuthenticator.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronSamlEndpoint.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronSamlSessionStore.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronTokeStore.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/IdMapperUpdaterSessionListener.java wave2b [15:30] saml profile + elytron adapters
+2026-08-10T05:34:31Z DONE adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/KeycloakConfigurationServletListener.java wave2b [15:30] saml profile + elytron adapters

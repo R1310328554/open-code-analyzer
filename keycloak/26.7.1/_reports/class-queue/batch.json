@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:31:16Z",
-  "files": [
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/AbstractSamlAuthenticationHandler.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/SamlAuthenticationHandler.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/SamlInvocationContext.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/ecp/EcpAuthenticationHandler.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/webbrowsersso/BrowserHandler.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/webbrowsersso/SamlEndpoint.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/profile/webbrowsersso/WebBrowserSsoAuthenticationHandler.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/rotation/SamlDescriptorPublicKeyLocator.java",
-    "adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronHttpFacade.java",
-    "adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronSamlAuthenticator.java",
-    "adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronSamlEndpoint.java",
-    "adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronSamlSessionStore.java",
-    "adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/ElytronTokeStore.java",
-    "adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/IdMapperUpdaterSessionListener.java",
-    "adapters/saml/wildfly-elytron/src/main/java/org/keycloak/adapters/saml/elytron/KeycloakConfigurationServletListener.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5938,
-  "done": 45
+  "done": 60
 }
