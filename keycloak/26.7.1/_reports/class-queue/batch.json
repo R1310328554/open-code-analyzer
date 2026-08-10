@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:45:17Z",
-  "files": [
-    "testsuite/integration-arquillian/servers/auth-server/undertow/src/main/java/org/keycloak/testsuite/arquillian/undertow/lb/SimpleUndertowLoadBalancerContainer.java",
-    "testsuite/integration-arquillian/test-apps/servlets/src/main/java/org/keycloak/testsuite/adapter/filter/AdapterActionsFilter.java",
-    "testsuite/integration-arquillian/test-apps/servlets/src/main/java/org/keycloak/testsuite/adapter/servlet/ErrorServlet.java",
-    "testsuite/integration-arquillian/test-apps/servlets/src/main/java/org/keycloak/testsuite/adapter/servlet/InputServlet.java",
-    "testsuite/integration-arquillian/test-apps/servlets/src/main/java/org/keycloak/testsuite/adapter/servlet/SamlMultiTenantResolver.java",
-    "testsuite/integration-arquillian/test-apps/servlets/src/main/java/org/keycloak/testsuite/adapter/servlet/SamlSPFacade.java",
-    "testsuite/integration-arquillian/test-apps/servlets/src/main/java/org/keycloak/testsuite/adapter/servlet/SendUsernameServlet.java",
-    "testsuite/integration-arquillian/test-apps/servlets/src/main/java/org/keycloak/testsuite/adapter/servlet/ServletTestUtils.java",
-    "testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/arquillian/ContainerConstants.java",
-    "testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/arquillian/DeploymentArchiveProcessorUtils.java",
-    "testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/arquillian/KeycloakDependenciesResolver.java",
-    "testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/io/IOUtil.java",
-    "testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/tls/TLSUtils.java",
-    "testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/undertow/SimpleWebXmlParser.java",
-    "testsuite/integration-arquillian/util/src/main/java/org/keycloak/testsuite/utils/undertow/UndertowDeployerHelper.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 28,
-  "done": 5955
+  "done": 5970
 }
