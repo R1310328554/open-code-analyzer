@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T10:27:28Z",
   "files": [
-    "server-spi-private/src/main/java/org/keycloak/compatibility/Util.java",
-    "server-spi-private/src/main/java/org/keycloak/component/AmphibianProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/component/ComponentFactoryProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/component/ComponentFactoryProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/component/ComponentFactorySpi.java",
-    "server-spi-private/src/main/java/org/keycloak/component/ComponentModelScope.java",
-    "server-spi-private/src/main/java/org/keycloak/connections/httpclient/HttpClientFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/connections/httpclient/HttpClientProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/connections/httpclient/HttpClientSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/connections/httpclient/RetryConfig.java",
-    "server-spi-private/src/main/java/org/keycloak/connections/httpclient/SafeInputStream.java",
-    "server-spi-private/src/main/java/org/keycloak/connections/jpa/support/EntityManagerProxy.java",
-    "server-spi-private/src/main/java/org/keycloak/connections/jpa/support/EntityManagers.java",
-    "server-spi-private/src/main/java/org/keycloak/constants/OID4VCIConstants.java",
-    "server-spi-private/src/main/java/org/keycloak/cookie/CookieMaxAge.java",
     "server-spi-private/src/main/java/org/keycloak/cookie/CookiePath.java",
     "server-spi-private/src/main/java/org/keycloak/cookie/CookieProvider.java",
     "server-spi-private/src/main/java/org/keycloak/cookie/CookieProviderFactory.java",
@@ -33,5 +18,5 @@
     "server-spi-private/src/main/java/org/keycloak/credential/hash/Pbkdf2Sha512PasswordHashProviderFactory.java"
   ],
   "remaining_pending": 2908,
-  "done": 3060
+  "done": 3075
 }
