@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:16:39Z",
-  "files": [
-    "discovery/gce/metrics.go",
-    "discovery/hetzner/hcloud.go",
-    "discovery/hetzner/hetzner.go",
-    "discovery/hetzner/metrics.go",
-    "discovery/hetzner/robot.go",
-    "discovery/http/http.go",
-    "discovery/http/metrics.go",
-    "discovery/install/install.go",
-    "discovery/ionos/ionos.go",
-    "discovery/ionos/metrics.go",
-    "discovery/ionos/server.go",
-    "discovery/kubernetes/client.go",
-    "discovery/kubernetes/endpoints.go",
-    "discovery/kubernetes/endpointslice.go",
-    "discovery/kubernetes/ingress.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 474,
-  "done": 45
+  "done": 60
 }
