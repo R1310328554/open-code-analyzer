@@ -17,9 +17,15 @@
 package org.keycloak.client.cli.util;
 
 /**
+ * CLI 命令结果输出格式枚举。
+ * <p>
+ * 由 {@code --format} 选项选择，对应 JSON 缩进或 CSV 扁平化输出。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public enum OutputFormat {
+    /** JSON 格式（Jackson 缩进输出）。 */
     JSON,
+    /** CSV 格式（逗号分隔扁平行）。 */
     CSV
 }

@@ -23,11 +23,21 @@ import org.apache.http.annotation.ThreadingBehavior;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 
 /**
+ * 支持请求体的 HTTP DELETE 方法实现。
+ * <p>
+ * Apache HttpClient 默认 {@code HttpDelete} 不允许携带实体；本类继承
+ * {@link HttpEntityEnclosingRequestBase} 以支持带 JSON 正文的 DELETE 调用。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Contract(threading = ThreadingBehavior.UNSAFE)
 public class HttpDelete extends HttpEntityEnclosingRequestBase {
 
+    /**
+     * 创建指向指定 URI 的 DELETE 请求。
+     *
+     * @param uri 目标 URI 字符串
+     */
     public HttpDelete(final String uri) {
         super();
         setURI(URI.create(uri));

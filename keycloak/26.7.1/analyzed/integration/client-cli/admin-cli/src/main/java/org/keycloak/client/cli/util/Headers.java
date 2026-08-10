@@ -23,16 +23,34 @@ import java.util.Optional;
 import org.apache.http.entity.ContentType;
 
 /**
+ * 大小写不敏感、保持插入顺序的 HTTP 头集合。
+ * <p>
+ * 内部以小写键索引 {@link Header}，便于查找与去重。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class Headers implements Iterable<Header> {
 
+    /** 以小写头名为键的有序映射。 */
     private LinkedHashMap<String, Header> headers = new LinkedHashMap<>();
 
+    /**
+     * 添加或覆盖指定头。
+     *
+     * @param header 头名称
+     * @param value 头值
+     */
     public void add(String header, String value) {
         headers.put(header.toLowerCase(), new Header(header, value));
     }
 
+    /**
+     * 仅当该头尚不存在时添加。
+     *
+     * @param header 头名称
+     * @param value 头值
+     * @return 成功添加时返回 {@code true}
+     */
     public boolean addIfMissing(String header, String value) {
         String key = header.toLowerCase();
         if (!headers.containsKey(key)) {
@@ -42,11 +60,13 @@ public class Headers implements Iterable<Header> {
         return false;
     }
 
+    /** 判断是否包含指定头（大小写不敏感）。 */
     public boolean contains(String header) {
         String key = header.toLowerCase();
         return headers.containsKey(key);
     }
 
+    /** 按名称获取头，不存在时返回 {@code null}。 */
     public Header get(String header) {
         return headers.get(header.toLowerCase());
     }
@@ -56,6 +76,7 @@ public class Headers implements Iterable<Header> {
         return headers.values().iterator();
     }
 
+    /** 解析 {@code Content-Type} 头为 Apache {@link ContentType}。 */
     public Optional<ContentType> getContentType() {
         return Optional.ofNullable(headers.get("content-type")).map(Header::getValue).map(ContentType::parse);
     }

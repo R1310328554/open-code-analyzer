@@ -46,10 +46,20 @@ import static java.nio.file.Files.isDirectory;
 import static java.nio.file.Files.isRegularFile;
 
 /**
+ * CLI 文件/流 I/O 与控制台输出工具。
+ * <p>
+ * 支持从文件或标准输入读取、流拷贝，以及创建仅属主可读写（POSIX/ACL）的配置文件。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class IoUtil {
 
+    /**
+     * 从文件路径或 {@code "-"}（标准输入）读取全部 UTF-8 文本。
+     *
+     * @param file 文件路径，{@code "-"} 表示 stdin
+     * @return 文件或 stdin 内容
+     */
     public static String readFileOrStdin(String file) {
         String content;
         if ("-".equals(file)) {
@@ -66,6 +76,7 @@ public class IoUtil {
         return content;
     }
 
+    /** 以 UTF-8 读取输入流全部内容为字符串。 */
     public static String readFully(InputStream is) {
         try {
             return StreamUtil.readString(is, StandardCharsets.UTF_8);
@@ -74,6 +85,7 @@ public class IoUtil {
         }
     }
 
+    /** 将输入流拷贝到输出流（8 KiB 缓冲），结束时刷新输出。 */
     public static void copyStream(InputStream is, OutputStream os) {
 
         byte [] buf = new byte[8192];
@@ -94,6 +106,14 @@ public class IoUtil {
         }
     }
 
+    /**
+     * 确保配置文件及其父目录存在，并限制为仅属主可访问。
+     * <p>
+     * POSIX 系统设置 {@code 0600/0700} 权限；Windows 通过 ACL 仅保留属主条目。
+     *
+     * @param path 目标配置文件路径
+     * @throws IOException 创建或权限设置失败时抛出
+     */
     public static void ensureFile(Path path) throws IOException {
 
         FileSystem fs = FileSystems.getDefault();
@@ -102,7 +122,7 @@ public class IoUtil {
 
         if (!isDirectory(parent)) {
             createDirectories(parent);
-            // make sure only owner can read/write it
+            // 确保仅属主可读写目录
             if (supportedViews.contains("posix")) {
                 setUnixPermissions(parent);
             } else if (supportedViews.contains("acl")) {
@@ -113,7 +133,7 @@ public class IoUtil {
         }
         if (!isRegularFile(path)) {
             createFile(path);
-            // make sure only owner can read/write it
+            // 确保仅属主可读写文件
             if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
                 setUnixPermissions(path);
             } else if (supportedViews.contains("acl")) {
@@ -124,6 +144,7 @@ public class IoUtil {
         }
     }
 
+    /** 设置 Unix 属主读/写（目录额外可执行）权限。 */
     private static void setUnixPermissions(Path path) throws IOException {
         Set<PosixFilePermission> perms = new HashSet<>();
         perms.add(PosixFilePermission.OWNER_READ);
@@ -134,6 +155,7 @@ public class IoUtil {
         Files.setPosixFilePermissions(path, perms);
     }
 
+    /** 重建 Windows ACL，仅保留文件属主完整权限。 */
     private static void setWindowsPermissions(Path path) throws IOException {
         AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class);
         UserPrincipal owner = view.getOwner();
@@ -159,34 +181,42 @@ public class IoUtil {
         view.setAcl(acl);
     }
 
+    /** 向标准输出打印一行。 */
     public static void printOut(String msg) {
         System.out.println(msg);
     }
 
+    /** 向标准错误打印一行。 */
     public static void printErr(String msg) {
         System.err.println(msg);
     }
 
+    /** 格式化输出到 stdout（前缀 WARN）。 */
     public static void printfOut(String format, String ... params) {
         System.out.println(new Formatter().format("WARN: " + format, params));
     }
 
+    /** 向 stdout 打印 WARN 前缀警告。 */
     public static void warnOut(String msg) {
         System.out.println("WARN: " + msg);
     }
 
+    /** 向 stderr 打印 WARN 前缀警告。 */
     public static void warnErr(String msg) {
         System.err.println("WARN: " + msg);
     }
 
+    /** 格式化 WARN 输出到 stdout。 */
     public static void warnfOut(String format, String ... params) {
         System.out.println(new Formatter().format("WARN: " + format, params));
     }
 
+    /** 格式化 WARN 输出到 stderr。 */
     public static void warnfErr(String format, String ... params) {
         System.err.println(new Formatter().format("WARN: " + format, params));
     }
 
+    /** 向 stdout 打印 LOG 前缀日志行。 */
     public static void logOut(String msg) {
         System.out.println("LOG: " + msg);
     }

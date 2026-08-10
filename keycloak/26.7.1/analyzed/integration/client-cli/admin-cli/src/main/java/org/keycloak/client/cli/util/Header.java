@@ -17,22 +17,36 @@
 package org.keycloak.client.cli.util;
 
 /**
+ * HTTP 请求/响应头的名称-值对。
+ * <p>
+ * 由 {@link Headers} 集合持有，供 {@link HttpUtil} 组装 Apache HttpClient 请求。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class Header {
 
+    /** 头名称（保留原始大小写）。 */
     private String name;
+    /** 头值。 */
     private String value;
 
+    /**
+     * 构造 HTTP 头。
+     *
+     * @param key 头名称
+     * @param value 头值
+     */
     public Header(String key, String value) {
         this.name = key;
         this.value = value;
     }
 
+    /** 返回头名称。 */
     public String getName() {
         return name;
     }
 
+    /** 返回头值。 */
     public String getValue() {
         return value;
     }

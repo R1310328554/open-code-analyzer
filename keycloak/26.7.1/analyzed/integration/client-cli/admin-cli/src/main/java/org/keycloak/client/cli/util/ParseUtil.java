@@ -17,12 +17,23 @@
 package org.keycloak.client.cli.util;
 
 /**
+ * CLI 键值参数字符串解析工具。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class ParseUtil {
 
+    /**
+     * 将 {@code key=value} 字符串拆分为键与值。
+     * <p>
+     * 要求等号不在首位且至少出现一次；值部分保留等号后的全部内容。
+     *
+     * @param keyval 原始键值字符串
+     * @return 长度为 2 的数组，索引 0 为键、1 为值
+     * @throws IllegalArgumentException 格式无效时抛出
+     */
     public static String[] parseKeyVal(String keyval) {
-        // we expect = as a separator
+        // 期望以 = 作为分隔符
         int pos = keyval.indexOf("=");
         if (pos <= 0) {
             throw new IllegalArgumentException("Invalid key=value parameter: [" + keyval + "]");

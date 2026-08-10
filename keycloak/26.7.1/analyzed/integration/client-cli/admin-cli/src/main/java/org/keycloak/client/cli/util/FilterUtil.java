@@ -27,10 +27,24 @@ import static org.keycloak.client.cli.util.OutputUtil.MAPPER;
 import static org.keycloak.client.cli.util.OutputUtil.convertToJsonNode;
 
 /**
+ * 按 {@link ReturnFields} 定义递归过滤 JSON 对象/数组的工具。
+ * <p>
+ * 用于 CLI {@code --fields} 输出裁剪，仅保留请求返回的字段子集。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class FilterUtil {
 
+    /**
+     * 深拷贝并过滤对象，仅保留 {@code returnFields} 允许的字段。
+     * <p>
+     * 数组元素逐条递归过滤；对象按字段名匹配后递归处理子字段。
+     *
+     * @param object 源对象（POJO 或 {@link JsonNode}）
+     * @param returnFields 字段白名单描述
+     * @return 过滤后的 {@link JsonNode}
+     * @throws IOException JSON 转换失败时抛出
+     */
     public static JsonNode copyFilteredObject(Object object, ReturnFields returnFields) throws IOException {
 
         JsonNode node = convertToJsonNode(object);
