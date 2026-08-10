@@ -1,5 +1,7 @@
 package executor
 
+// parse 变参函数入口：按 VariadicOp 分派 logfmt/json/regexp 解析并输出 struct 列。
+
 import (
 	"fmt"
 	"sort"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/util"
 )
 
+// parseFn 返回 VariadicFunction，统一提取参数后调用各 build*Columns 生成解析列。
 func parseFn(op types.VariadicOp) VariadicFunction {
 	return VariadicFunctionFunc(func(args ...arrow.Array) (arrow.Array, error) {
 		var headers []string
@@ -171,9 +174,11 @@ func extractParseFnParameters(args []arrow.Array) (*array.String, []string, bool
 	return sourceCol, requestedKeys, strict, keepEmpty, nil
 }
 
+// parseFunc 解析单行日志为键值 map，供 buildColumns 动态发现列并回填历史行 null。
 // parseFunc represents a function that parses a single line and returns key-value pairs
 type parseFunc func(line string) (map[string]string, error)
 
+// buildColumns 遍历 input 行，按 columnOrder 输出 headers 与对应 String 数组列。
 // buildColumns builds Arrow columns from input lines using the provided parser
 // Returns the column headers, the Arrow columns, and any error
 func buildColumns(input *array.String, _ []string, parseFunc parseFunc, errorType string) ([]string, []arrow.Array) {
@@ -193,6 +198,7 @@ func buildColumns(input *array.String, _ []string, parseFunc parseFunc, errorTyp
 	return headers, columns
 }
 
+// parseLines 遇解析错误追加 error/error_details 列并对失败行回填空值。
 // parseLines discovers columns dynamically as lines are parsed
 func parseLines(input *array.String, columnBuilders map[string]*array.StringBuilder, parseFunc parseFunc, errorType string) []string {
 	columnOrder := []string{}
@@ -287,6 +293,7 @@ func parseLines(input *array.String, columnBuilders map[string]*array.StringBuil
 	return columnOrder
 }
 
+// unsafeBytes/unsafeString 零拷贝转换，供 logfmt/json 解析器直接读底层字节。
 // unsafeBytes converts a string to []byte without allocation
 func unsafeBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s))
@@ -296,3 +303,4 @@ func unsafeBytes(s string) []byte {
 func unsafeString(b []byte) string {
 	return unsafe.String(unsafe.SliceData(b), len(b))
 }
+// 解析成功列名排序输出；error 列固定置于末尾以保持 schema 稳定。

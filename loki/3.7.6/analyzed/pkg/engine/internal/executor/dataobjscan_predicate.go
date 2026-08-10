@@ -1,5 +1,7 @@
 package executor
 
+// dataobjscan_predicate 将物理计划表达式编译为 logs.Predicate，供 dataobj 扫描下推过滤。
+
 import (
 	"bytes"
 	"fmt"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// buildLogsPredicate 递归解析一元/二元/字面量/列引用，不存在的列映射为 FalsePredicate。
 // buildLogsPredicate builds a [logs.Predicate] from an expr. The columns slice
 // determines available columns that can be referenced by the expression.
 //
@@ -86,6 +89,7 @@ func buildLogsUnaryPredicate(expr physical.UnaryExpression, columns []*logs.Colu
 	return nil, fmt.Errorf("unsupported unary operator %s in logs predicate", unaryExpr.Op)
 }
 
+// comparisonBinaryOps 列出可下推为 logs 比较或匹配谓词的二元运算符集合。
 var comparisonBinaryOps = map[types.BinaryOp]struct{}{
 	types.BinaryOpEq:                            {},
 	types.BinaryOpNeq:                           {},
@@ -270,6 +274,7 @@ func buildLogsComparison(expr *physical.BinaryExpr, columns []*logs.Column) (log
 	return nil, fmt.Errorf("unsupported binary operator %s in logs predicate", expr.Op)
 }
 
+// findColumn 将 builtin timestamp/message 或 metadata 列名映射到 logs.Column，未找到返回 nil。
 // findColumn finds a column by ref in the slice of columns. If ref is invalid,
 // findColumn returns an error. If the column does not exist, findColumn
 // returns nil.
@@ -300,6 +305,7 @@ func findColumn(ref types.ColumnRef, columns []*logs.Column) (*logs.Column, erro
 	return nil, nil
 }
 
+// buildDataobjScalar 将 Literal 转为 Arrow scalar，供 Equal/Gt 等谓词比较使用。
 // buildDataobjScalar builds a dataobj-compatible [scalar.Scalar] from a
 // [types.Literal].
 func buildDataobjScalar(expr *physical.LiteralExpr) (scalar.Scalar, error) {
@@ -450,3 +456,4 @@ func buildLogsCaseInsensitiveMatch(col *logs.Column, op types.BinaryOp, value sc
 
 	return nil, fmt.Errorf("unrecognized case-insensitive match operation %s", op)
 }
+// 大小写不敏感匹配委托 matchutil，列不存在时按运算符语义折叠为恒真或恒假谓词。

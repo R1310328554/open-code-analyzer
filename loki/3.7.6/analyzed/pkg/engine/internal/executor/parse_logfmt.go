@@ -1,5 +1,7 @@
 package executor
 
+// parse_logfmt：基于标准 logfmt decoder 逐行提取键值，支持 strict 与 keepEmpty 选项。
+
 import (
 	"github.com/apache/arrow-go/v18/arrow"
 	"github.com/apache/arrow-go/v18/arrow/array"
@@ -8,6 +10,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logql/log/logfmt"
 )
 
+// buildLogfmtColumns 将 tokenizeLogfmt 作为 parseFunc 委托给通用 buildColumns。
 func buildLogfmtColumns(input *array.String, requestedKeys []string, strict bool, keepEmpty bool) ([]string, []arrow.Array) {
 	parseFunc := func(line string) (map[string]string, error) {
 		return tokenizeLogfmt(line, requestedKeys, strict, keepEmpty)
@@ -15,6 +18,7 @@ func buildLogfmtColumns(input *array.String, requestedKeys []string, strict bool
 	return buildColumns(input, requestedKeys, parseFunc, types.LogfmtParserErrorType)
 }
 
+// tokenizeLogfmt 重复键采用 first-wins；requestedKeys 非空时仅保留白名单键。
 // tokenizeLogfmt parses logfmt input using the standard decoder
 // Returns a map of key-value pairs with first-wins semantics for duplicates
 // If requestedKeys is provided, the result will be filtered to only include those keys
@@ -74,3 +78,4 @@ func tokenizeLogfmt(input string, requestedKeys []string, strict bool, keepEmpty
 
 	return result, nil
 }
+// 键名经 sanitizeLabelKey 规范化；strict 模式下 decoder 首次错误即停止扫描。

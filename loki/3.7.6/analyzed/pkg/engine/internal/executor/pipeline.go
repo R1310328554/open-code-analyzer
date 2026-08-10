@@ -1,5 +1,7 @@
 package executor
 
+// pipeline 定义引擎数据流抽象：Open/Read/Close 语义、懒构建、观测包装与并发打开辅助。
+
 import (
 	"context"
 	"errors"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// Pipeline 每次 Read 返回下一批 RecordBatch，耗尽时返回 executor.EOF 错误。
 // Pipeline represents a data processing pipeline that can read Arrow records.
 // It provides methods to read data, access the current record, and close resources.
 type Pipeline interface {
@@ -30,6 +33,7 @@ type Pipeline interface {
 	Close()
 }
 
+// WrappedPipeline.Unwrap 供 Unwrap 递归剥离装饰层以访问最内层实现。
 // WrappedPipeline represents a pipeline that wraps another pipeline.
 type WrappedPipeline interface {
 	Pipeline
@@ -39,6 +43,7 @@ type WrappedPipeline interface {
 	Unwrap() Pipeline
 }
 
+// Unwrap 循环调用 WrappedPipeline 直到得到非包装 pipeline。
 // Unwrap recursively unwraps the provided pipeline. [WrappedPipeline.Unwrap] is
 // invoked for each wrapped pipeline until the first non-wrapped pipeline is
 // reached.
@@ -76,6 +81,7 @@ type state struct {
 
 type readFunc func(context.Context, []Pipeline) (arrow.RecordBatch, error)
 
+// GenericPipeline 以 readFunc 驱动读取，state 缓存最近一次 batch 与错误。
 type GenericPipeline struct {
 	inputs []Pipeline
 	read   readFunc
@@ -291,6 +297,7 @@ func (lp *lazyPipeline) Close() {
 	lp.built = nil
 }
 
+// observedPipeline 在 Read 时注入 xcap span/region，Close 时结束 span 并关闭 inner。
 // observedPipeline wraps a Pipeline to automatically collect common statistics.
 //
 // It creates an [xcap.Span] paired with a [xcap.Region] for the given
@@ -367,3 +374,4 @@ func (p *observedPipeline) Close() {
 		p.readSpan.End()
 	}
 }
+// lazyPipeline 首次 Read 才 materialize 子 plan；openInputsConcurrently 并行 Open 多路输入。

@@ -1,5 +1,7 @@
 package executor
 
+// Merge pipeline：顺序耗尽 N 路输入后再切换下一路，可选预取后续输入以隐藏延迟。
+
 import (
 	"context"
 	"errors"
@@ -8,6 +10,7 @@ import (
 	"github.com/apache/arrow-go/v18/arrow"
 )
 
+// Merge 完全消费当前 input 后才递增 currInput，空 batch 会继续读取同一路。
 // Merge is a pipeline that takes N inputs and sequentially consumes each one of them.
 // It completely exhausts an input before moving to the next one.
 type Merge struct {
@@ -19,6 +22,7 @@ type Merge struct {
 
 var _ Pipeline = (*Merge)(nil)
 
+// newMergePipeline 将各 input 包装为 prefetchWrapper，maxPrefetch 控制并行预取深度。
 // newMergePipeline creates a new merge pipeline that merges N inputs into a single output.
 //
 // The argument maxPrefetch controls how many inputs are prefetched simultaneously while the current one is consumed.
@@ -69,6 +73,7 @@ func (m *Merge) init(ctx context.Context) {
 	m.initialized = true
 }
 
+// startPrefetchingInputAtIndex 在切换输入时启动 maxPrefetch 窗口外的下一路预取。
 // startPrefetchingInputAtIndex initializes the input at given index i,
 // if the index is not out of bounds and if the input is of type [prefetchWrapper].
 // Initializing the input will start its prefetching.
@@ -126,3 +131,4 @@ func (m *Merge) Close() {
 		input.Close()
 	}
 }
+// 已耗尽输入在 EOF 时 Close；Read 首次调用触发 init 启动首批预取。

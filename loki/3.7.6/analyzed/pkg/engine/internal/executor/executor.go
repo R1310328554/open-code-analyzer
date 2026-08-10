@@ -1,5 +1,7 @@
 package executor
 
+// executor 包：按 physical.Plan 递归构造 Pipeline，驱动 dataobj 扫描、过滤、聚合与合并。
+
 import (
 	"context"
 	"errors"
@@ -25,17 +27,20 @@ import (
 
 var tracer = otel.Tracer("pkg/engine/internal/executor")
 
+// RequestStreamFilterer 按请求上下文生成流标签过滤器，用于扫描前剔除不可见 stream。
 // RequestStreamFilterer creates a StreamFilterer for a given request context.
 type RequestStreamFilterer interface {
 	ForRequest(ctx context.Context) StreamFilterer
 }
 
+// StreamFilterer.ShouldFilter 返回 true 表示该 labels 对应 stream 应被排除。
 // StreamFilterer filters streams based on their labels.
 type StreamFilterer interface {
 	// ShouldFilter returns true if the stream should be filtered out.
 	ShouldFilter(labels labels.Labels) bool
 }
 
+// Config 绑定 batch 大小、对象存储 bucket、metastore、预取与可选外部输入注入。
 type Config struct {
 	BatchSize int64
 	Bucket    objstore.Bucket
@@ -79,6 +84,7 @@ func Run(ctx context.Context, cfg Config, plan *physical.Plan, logger log.Logger
 	return c.execute(ctx, node)
 }
 
+// Context 持有 plan、evaluator、bucket 与各 execute* 节点实现共享的执行状态。
 // Context is the execution context
 type Context struct {
 	batchSize     int64
@@ -270,6 +276,7 @@ func (c *Context) executeDataObjScan(ctx context.Context, node *physical.DataObj
 	return pipeline
 }
 
+// filterStreamsByLabels 经 streamsView 读取标签并过滤，失败时记录日志并跳过该 stream。
 // filterStreamsByLabels filters stream IDs based on the StreamFilterer.
 func (c *Context) filterStreamsByLabels(ctx context.Context, streamIDs []int64, streamsSection *streams.Section, filterer StreamFilterer) []int64 {
 	if len(streamIDs) == 0 {
@@ -524,6 +531,7 @@ func (c *Context) executeScanSet(ctx context.Context, set *physical.ScanSet) Pip
 	return pipeline
 }
 
+// nodeAttributes 为各 physical 节点类型生成 OpenTelemetry span 属性便于链路追踪。
 // nodeAttributes returns OTel span attributes relevant to the given physical
 // plan node type.
 func nodeAttributes(n physical.Node) []attribute.KeyValue {
@@ -617,3 +625,4 @@ func nodeAttributes(n physical.Node) []attribute.KeyValue {
 
 	return attrs
 }
+// DataObjScan 懒构建 pipeline 以避免规划期打开大量对象；Parallelize 节点在本地执行时透传输入。

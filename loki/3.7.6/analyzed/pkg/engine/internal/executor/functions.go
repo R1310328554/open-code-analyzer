@@ -1,5 +1,7 @@
 package executor
 
+// functions 注册一元/二元/变参表达式算子实现，按 BinaryOp 与 Arrow 类型分派求值。
+
 import (
 	"fmt"
 	"math"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// init 中为算术、比较、逻辑、正则与 parse* 变参函数注册各 Arrow 类型的实现。
 var (
 	unaryFunctions    UnaryFunctionRegistry    = &unaryFuncReg{}
 	binaryFunctions   BinaryFunctionRegistry   = &binaryFuncReg{}
@@ -159,6 +162,7 @@ func init() {
 	variadicFunctions.register(types.VariadicOpParseRegexp, parseFn(types.VariadicOpParseRegexp))
 }
 
+// UnaryFunctionRegistry 按 UnaryOp 与左操作数 Arrow 类型查找一元函数。
 type UnaryFunctionRegistry interface {
 	register(types.UnaryOp, arrow.DataType, UnaryFunction)
 	GetForSignature(types.UnaryOp, arrow.DataType) (UnaryFunction, error)
@@ -205,6 +209,7 @@ func (u *unaryFuncReg) GetForSignature(op types.UnaryOp, ltype arrow.DataType) (
 	return fn, nil
 }
 
+// BinaryFunctionRegistry 按 BinaryOp 与操作数 Arrow 类型查找二元函数。
 type BinaryFunctionRegistry interface {
 	register(types.BinaryOp, arrow.DataType, BinaryFunction)
 	GetForSignature(types.BinaryOp, arrow.DataType) (BinaryFunction, error)
@@ -245,6 +250,7 @@ func (b *binaryFuncReg) GetForSignature(op types.BinaryOp, ltype arrow.DataType)
 	return fn, nil
 }
 
+// regexpFunction 在 rhs 为标量时预编译正则，否则逐行 Compile 以支持动态模式列。
 type regexpFunction struct {
 	eval func(a, b string, reg *regexp.Regexp) (bool, error)
 }
@@ -306,6 +312,7 @@ func (f *regexpFunction) Evaluate(lhs arrow.Array, rhs arrow.Array, _, rhsIsScal
 
 // genericBoolFunction is a struct that implements the [BinaryFunction] interface methods
 // and can be used for any array type with comparable elements.
+// genericBoolFunction 泛型包装逐行 bool 比较，null 行输出 false 而非 null。
 type genericBoolFunction[E arrow.TypedArray[T], T arrow.ValueType] struct {
 	eval func(a, b T) (bool, error)
 }
@@ -396,6 +403,7 @@ func boolToInt(b bool) int {
 	return i
 }
 
+// VariadicFunctionRegistry 管理 parse_logfmt/json/regexp 等变参算子注册与查找。
 type VariadicFunctionRegistry interface {
 	register(types.VariadicOp, VariadicFunction)
 	GetForSignature(types.VariadicOp) (VariadicFunction, error)
@@ -438,3 +446,4 @@ func (u *variadicFuncReg) GetForSignature(op types.VariadicOp) (VariadicFunction
 	}
 	return fn, nil
 }
+// 大小写不敏感字符串比较复用 matchutil；未注册签名返回 ErrNotImplemented。

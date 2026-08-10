@@ -1,5 +1,7 @@
 package executor
 
+// Limit pipeline：对单输入流应用 skip/fetch，跨 batch 边界切片 Arrow RecordBatch。
+
 import (
 	"context"
 
@@ -56,3 +58,4 @@ func NewLimitPipeline(input Pipeline, skip, fetch uint32) *GenericPipeline {
 		return batch.NewSlice(start, end), nil
 	}, input)
 }
+// 跳过 offset 期间忽略零长度 batch；最终用 batch.NewSlice 返回所需行区间。

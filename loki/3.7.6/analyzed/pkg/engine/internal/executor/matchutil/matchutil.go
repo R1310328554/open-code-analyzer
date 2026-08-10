@@ -1,4 +1,5 @@
-// Package matchutil provides optimized string matching utilities for the query engine.
+// Package matchutil 为查询引擎提供大小写不敏感的高性能字节串匹配工具。
+// 调用方须预先将模式转为大写，逻辑与 logql filter 中 containsLower 对齐。
 package matchutil
 
 import (
@@ -6,6 +7,7 @@ import (
 	"unicode/utf8"
 )
 
+// toUpperASCII 仅处理 a-z，非小写字母原样返回，供 ASCII 快速路径使用。
 // toUpperASCII converts an ASCII lowercase letter to uppercase.
 // If the byte is not a lowercase ASCII letter, it returns the byte unchanged.
 func toUpperASCII(c byte) byte {
@@ -15,6 +17,7 @@ func toUpperASCII(c byte) byte {
 	return c
 }
 
+// ContainsUpper 在 line 中查找已大写的 substr，支持 ASCII 与 Unicode 混合比较。
 // ContainsUpper checks if line contains substr using case-insensitive comparison.
 // substr MUST already be uppercased by the caller.
 //
@@ -115,6 +118,7 @@ func ContainsUpper(line, substr []byte) bool {
 	return false
 }
 
+// EqualUpper 先比长度再委托 ContainsUpper，要求 match 已大写。
 // EqualUpper checks if line equals match using case-insensitive comparison.
 // match MUST already be uppercased by the caller.
 func EqualUpper(line, match []byte) bool {
@@ -123,3 +127,4 @@ func EqualUpper(line, match []byte) bool {
 	}
 	return ContainsUpper(line, match)
 }
+// substr 含小写 ASCII 时会 panic，因优化器配合 Go 正则解析器已保证模式为大写。

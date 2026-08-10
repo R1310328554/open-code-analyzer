@@ -1,5 +1,7 @@
 package executor
 
+// parse_json：用 jsonparser 流式解析日志行，嵌套对象扁平化为下划线分隔键。
+
 import (
 	"bytes"
 	"strings"
@@ -31,6 +33,7 @@ var (
 	}
 )
 
+// buildJSONColumns 预建 requestedKeyLookup，逐行调用 jsonParser.process 提取字段。
 func buildJSONColumns(input *array.String, requestedKeys []string) ([]string, []arrow.Array) {
 	parser := newJSONParser()
 
@@ -49,11 +52,13 @@ func buildJSONColumns(input *array.String, requestedKeys []string) ([]string, []
 	return buildColumns(input, requestedKeys, parseFunc, types.JSONParserErrorType)
 }
 
+// jsonParser 复用 prefixBuffer 构建嵌套键路径，sanitizedPrefixBuffer 清理非法 UTF-8。
 type jsonParser struct {
 	prefixBuffer          [][]byte // buffer used to build json keys
 	sanitizedPrefixBuffer []byte
 }
 
+// newJSONParser 初始化可增长的前缀缓冲区，支持对象/数组递归展开。
 // newJSONParser creates a JSON parser that can handle nested objects with flattening.
 func newJSONParser() *jsonParser {
 	return &jsonParser{
@@ -267,3 +272,4 @@ func shouldExtractPrefix(prefix []byte, requestedKeyLookup map[string]struct{}) 
 
 	return false
 }
+// 布尔与 null 字面量转为字符串；Prometheus 不接受的 RuneError 替换为空格。

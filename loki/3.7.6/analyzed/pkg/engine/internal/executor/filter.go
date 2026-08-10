@@ -1,5 +1,7 @@
 package executor
 
+// Filter pipeline：对每条 RecordBatch 逐行求值谓词并重建仅保留满足全部条件的行。
+
 import (
 	"context"
 	"fmt"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/planner/physical"
 )
 
+// NewFilterPipeline 对每个 predicate 求布尔列，全部行内 AND 后调用 filterBatch 裁剪。
 func NewFilterPipeline(filter *physical.Filter, input Pipeline, evaluator *expressionEvaluator) *GenericPipeline {
 	return newGenericPipeline(func(ctx context.Context, inputs []Pipeline) (arrow.RecordBatch, error) {
 		// Pull the next item from the input pipeline
@@ -51,6 +54,7 @@ func NewFilterPipeline(filter *physical.Filter, input Pipeline, evaluator *expre
 	}, input)
 }
 
+// filterBatch 逐列用 Arrow builder 复制保留行，类型不支持时会 panic；谓词下推可绕过此路径。
 // This is a very inefficient approach which creates a new filtered batch from a
 // pre-existing batch. Additionally, there is not plumbing in the arrow library
 // to do this efficiently, meaning we have to do a lot of roundabout type coercion
@@ -145,3 +149,4 @@ func filterBatch(batch arrow.RecordBatch, include func(int) bool) arrow.RecordBa
 
 	return array.NewRecordBatch(batch.Schema(), arrays, ct)
 }
+// 空 batch 直接透传；任一 predicate 非 bool 类型则返回错误中止读取。

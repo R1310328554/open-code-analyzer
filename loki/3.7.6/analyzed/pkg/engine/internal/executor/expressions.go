@@ -1,5 +1,7 @@
 package executor
 
+// expressionEvaluator 在 Arrow RecordBatch 上求值 physical.Expression，产出布尔或标量列。
+
 import (
 	"fmt"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// expressionEvaluator 缓存 semconv.Identifier 解析结果以加速列查找与歧义列合并。
 type expressionEvaluator struct {
 	identCache *semconv.IdentifierCache
 }
@@ -20,6 +23,7 @@ func newExpressionEvaluator() *expressionEvaluator {
 	}
 }
 
+// eval 分派字面量、列引用、一元/二元/变参表达式，并通过函数注册表查找实现。
 func (e expressionEvaluator) eval(expr physical.Expression, input arrow.RecordBatch) (arrow.Array, error) {
 	switch expr := expr.(type) {
 
@@ -149,6 +153,7 @@ func (e expressionEvaluator) eval(expr physical.Expression, input arrow.RecordBa
 	return nil, fmt.Errorf("unknown expression: %v", expr)
 }
 
+// newFunc 将表达式闭包为 evalFunc，供投影与过滤 pipeline 按 batch 重复调用。
 // newFunc returns a new function that can evaluate an input against a binded expression.
 func (e expressionEvaluator) newFunc(expr physical.Expression) evalFunc {
 	return func(input arrow.RecordBatch) (arrow.Array, error) {
@@ -158,7 +163,9 @@ func (e expressionEvaluator) newFunc(expr physical.Expression) evalFunc {
 
 type evalFunc func(input arrow.RecordBatch) (arrow.Array, error)
 
+// columnWithType 携带 Arrow 列及其 ColumnType，供 Coalesce 按类型优先级选值。
 type columnWithType struct {
 	col arrow.Array
 	ct  types.ColumnType
 }
+// 歧义列名匹配多列时返回 Coalesce；缺失列以空字符串标量填充以兼容旧 label 过滤语义。

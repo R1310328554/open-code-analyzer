@@ -1,5 +1,7 @@
 package executor
 
+// metastore pipeline：通过 IndexSectionsReader 读取 catalog 指针并产出 Arrow batch 流。
+
 import (
 	"context"
 
@@ -28,6 +30,7 @@ func (m *metastorePipeline) Close() {
 
 var _ Pipeline = (*metastorePipeline)(nil)
 
+// scanPointersOptions 携带 metastore 客户端、索引路径、SectionsRequest 与预取参数。
 type scanPointersOptions struct {
 	metastore metastore.Metastore
 	req       metastore.SectionsRequest
@@ -50,3 +53,4 @@ func newScanPointersPipeline(ctx context.Context, opts scanPointersOptions) (*me
 
 	return &metastorePipeline{resp.Reader}, nil
 }
+// PointersScan 物理节点经 lazyPipeline 延迟构造，Open/Read/Close 遵循标准 Pipeline 契约。
