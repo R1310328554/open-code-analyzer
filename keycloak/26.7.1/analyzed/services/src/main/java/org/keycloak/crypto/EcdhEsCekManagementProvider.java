@@ -22,17 +22,25 @@ import org.keycloak.jose.jwe.JWEConstants;
 import org.keycloak.jose.jwe.alg.JWEAlgorithmProvider;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * JWE 密钥管理提供者：基于 ECDH-ES 的内容加密密钥协商。
+ * <p>按 JWE 算法名（ECDH-ES 或 ECDH-ES+A*KW）委托底层 {@link JWEAlgorithmProvider} 执行密钥封装。</p>
+ */
 public class EcdhEsCekManagementProvider implements CekManagementProvider {
 
+    /** 当前 Keycloak 会话（SPI 生命周期绑定）。 */
     private final KeycloakSession session;
+    /** JWE 密钥管理算法标识（如 ECDH-ES+A256KW）。 */
     private final String jweAlgorithmName;
 
+    /** @param session 当前会话 @param jweAlgorithmName JWA 密钥管理算法名 */
     public EcdhEsCekManagementProvider(KeycloakSession session, String jweAlgorithmName) {
         this.session = session;
         this.jweAlgorithmName = jweAlgorithmName;
     }
 
     @Override
+    /** @return 对应 ECDH-ES 变体的 JWE 算法提供者；不支持的算法名返回 null */
     public JWEAlgorithmProvider jweAlgorithmProvider() {
         if (JWEConstants.ECDH_ES.equals(jweAlgorithmName) || JWEConstants.ECDH_ES_A128KW.equals(jweAlgorithmName)
                 || JWEConstants.ECDH_ES_A192KW.equals(jweAlgorithmName)

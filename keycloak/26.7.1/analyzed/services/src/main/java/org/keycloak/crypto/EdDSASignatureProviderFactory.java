@@ -21,23 +21,30 @@ import java.util.Set;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * EdDSA 服务端签名 SPI 工厂。
+ * <p>创建 {@link EdDSASignatureProvider}，并声明 OKP 私钥 JWK 所需 claims。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class EdDSASignatureProviderFactory implements SignatureProviderFactory {
 
+    /** SPI 工厂标识：{@code EdDSA}。 */
     public static final String ID = Algorithm.EdDSA;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return EdDSA 签名提供者 */
     public SignatureProvider create(KeycloakSession session) {
         return new EdDSASignatureProvider(session);
     }
 
     @Override
+    /** @return OKP 私钥 JWK 导出所需的 claim 集合 */
     public Set<String> getJwkPrivateKeyClaims() {
         return OKP_PRIVATE_JWK_CLAIMS;
     }

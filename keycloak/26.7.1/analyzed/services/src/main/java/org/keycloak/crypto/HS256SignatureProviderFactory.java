@@ -20,22 +20,30 @@ import java.util.Set;
 
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * HS256（HMAC-SHA256）服务端签名 SPI 工厂。
+ * <p>创建 {@link MacSecretSignatureProvider}，并声明 oct JWK 私钥所需的 "k" claim。</p>
+ */
 public class HS256SignatureProviderFactory implements SignatureProviderFactory {
 
+    /** SPI 工厂标识：{@code HS256}。 */
     public static final String ID = Algorithm.HS256;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return HS256 HMAC 签名提供者 */
     public SignatureProvider create(KeycloakSession session) {
         return new MacSecretSignatureProvider(session, Algorithm.HS256);
     }
 
     /**
-     * Returns the "k" claim which represents the secret key material for symmetric algorithms (oct JWKs).
+     * 返回对称算法（oct JWK）私钥材料对应的 "k" claim。
+     * @return oct 私钥 JWK 导出所需的 claim 集合
      */
     @Override
     public Set<String> getJwkPrivateKeyClaims() {

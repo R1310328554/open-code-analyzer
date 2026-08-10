@@ -20,16 +20,23 @@ package org.keycloak.crypto;
 import org.keycloak.jose.jwe.JWEConstants;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * JWE 密钥管理算法 ECDH-ES + A128KW 的 SPI 工厂。
+ * <p>算法 ID 为 {@link #ID}（JWA {@code ECDH-ES+A128KW}），创建 {@link EcdhEsCekManagementProvider} 实例。</p>
+ */
 public class EcdhEsA128KwCekManagementProviderFactory implements CekManagementProviderFactory {
 
+    /** JWE 密钥管理算法标识：ECDH-ES+A128KW。 */
     public static final String ID = JWEConstants.ECDH_ES_A128KW;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return ECDH-ES CEK 管理提供者 */
     public CekManagementProvider create(KeycloakSession session) {
         return new EcdhEsCekManagementProvider(session, ID);
     }
