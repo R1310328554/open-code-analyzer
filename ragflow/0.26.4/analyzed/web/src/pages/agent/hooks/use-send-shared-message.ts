@@ -1,3 +1,5 @@
+// use-send-shared-message.ts — 分享页聊天：解析 URL 参数、Task 模式自动触发与参数弹窗。
+
 import { SharedFrom } from '@/constants/chat';
 import { useSetModalState } from '@/hooks/common-hooks';
 import { useFetchExternalAgentInputs } from '@/hooks/use-agent-request';
@@ -13,12 +15,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { AgentDialogueMode } from '../constant';
 
+/** 输入框 trim 后为空则禁用发送按钮。 */
 export const useSendButtonDisabled = (value: string) => {
   return trim(value) === '';
 };
 
+/** URL 中以 data_ 开头的查询键会剥离前缀后注入 Begin 表单。 */
 const DATA_PREFIX = 'data_';
 
+/** 分享页 URL 解析结果：来源、sharedId、主题及 data_* 预填字段。 */
 interface SharedChatSearchParams {
   from: SharedFrom;
   sharedId: string | null;
@@ -29,6 +34,7 @@ interface SharedChatSearchParams {
   visibleAvatar: boolean;
 }
 
+/** 从 searchParams 提取分享上下文与 data_ 前缀的键值对。 */
 export const useGetSharedChatSearchParams = () => {
   const [searchParams] = useSearchParams();
   const data = Object.fromEntries(
@@ -49,6 +55,7 @@ export const useGetSharedChatSearchParams = () => {
   } as SharedChatSearchParams;
 };
 
+/** 分享页发送消息：Task 模式无 inputs 时自动 ok([])，否则走参数弹窗。 */
 export const useSendNextSharedMessage = (
   addEventList: (data: IEventList, messageId: string) => void,
 ) => {
@@ -65,6 +72,7 @@ export const useSendNextSharedMessage = (
   const [params, setParams] = useState<BeginQuery[]>([]);
   const sendedTaskMessage = useRef(false);
 
+  // Task 模式跳过对话输入，直接以 beginInputs 触发执行
   const isTaskMode = inputsData.mode === AgentDialogueMode.Task;
 
   const {
@@ -103,6 +111,7 @@ export const useSendNextSharedMessage = (
     handlePressEnter();
   }, [handlePressEnter]);
 
+  /** Task 且无 inputs 时仅自动发送一次空参数任务。 */
   const runTask = useCallback(() => {
     if (
       isTaskMode &&
