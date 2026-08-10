@@ -21,6 +21,9 @@ package org.keycloak.services.clientpolicy;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link ClientPolicyManager} 的 SPI 工厂接口。
+ * <p>注册并创建客户端策略管理器实例。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientPolicyManagerFactory extends ProviderFactory<ClientPolicyManager> {

@@ -19,6 +19,8 @@ package org.keycloak.securityprofile;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link SecurityProfileProvider} 的 SPI 工厂接口。
+ * <p>注册并创建安全配置文件提供者实例。</p>
  *
  * @author rmartinc
  */

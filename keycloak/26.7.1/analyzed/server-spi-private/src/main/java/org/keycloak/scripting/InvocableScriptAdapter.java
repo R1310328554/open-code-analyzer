@@ -23,24 +23,21 @@ import javax.script.ScriptException;
 import org.keycloak.models.ScriptModel;
 
 /**
- * Wraps a {@link ScriptModel} and makes it {@link Invocable}.
+ * 可调用脚本适配器：包装 {@link ScriptModel} 并实现 {@link Invocable} 接口。
+ * <p>由 {@link ScriptingProvider#prepareInvocableScript} 创建，用于调用脚本中的函数与方法。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public class InvocableScriptAdapter implements Invocable {
 
-    /**
-     * Holds the {@ScriptModel}
-     */
+    /** 被包装的 {@link ScriptModel}。 */
     private final ScriptModel scriptModel;
 
-    /**
-     * Holds the {@link ScriptEngine} instance initialized with the script code.
-     */
+    /** 已加载脚本代码的 {@link ScriptEngine} 实例。 */
     private final ScriptEngine scriptEngine;
 
     /**
-     * Creates a new {@link InvocableScriptAdapter} instance.
+     * 创建新的 {@link InvocableScriptAdapter} 实例。
      *
      * @param scriptModel  must not be {@literal null}
      * @param scriptEngine must not be {@literal null}
@@ -59,6 +56,7 @@ public class InvocableScriptAdapter implements Invocable {
         this.scriptEngine = scriptEngine;
     }
 
+    /** 调用脚本对象上的方法，失败时包装为 {@link ScriptExecutionException}。 */
     @Override
     public Object invokeMethod(Object thiz, String name, Object... args) throws ScriptExecutionException {
 
@@ -69,6 +67,7 @@ public class InvocableScriptAdapter implements Invocable {
         }
     }
 
+    /** 调用脚本中的全局函数，失败时包装为 {@link ScriptExecutionException}。 */
     @Override
     public Object invokeFunction(String name, Object... args) throws ScriptExecutionException {
         try {
@@ -78,21 +77,23 @@ public class InvocableScriptAdapter implements Invocable {
         }
     }
 
+    /** 获取脚本引擎实现的指定 Java 接口。 */
     @Override
     public <T> T getInterface(Class<T> clazz) {
         return getInvocableEngine().getInterface(clazz);
     }
 
+    /** 获取脚本对象 thiz 实现的指定 Java 接口。 */
     @Override
     public <T> T getInterface(Object thiz, Class<T> clazz) {
         return getInvocableEngine().getInterface(thiz, clazz);
     }
 
     /**
-     * Returns {@literal true} if the {@link ScriptEngine} has a definition with the given {@code name}.
+     * 检查 {@link ScriptEngine} 上下文中是否已定义给定名称的绑定。
      *
-     * @param name
-     * @return
+     * @param name 绑定名称
+     * @return 已定义返回 {@code true}
      */
     public boolean isDefined(String name) {
 
@@ -101,6 +102,7 @@ public class InvocableScriptAdapter implements Invocable {
         return candidate != null;
     }
 
+    /** @return 将 {@link ScriptEngine} 转为 {@link Invocable} */
     private Invocable getInvocableEngine() {
         return (Invocable) scriptEngine;
     }

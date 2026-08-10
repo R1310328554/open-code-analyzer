@@ -21,26 +21,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 安全配置文件 SPI：注册 {@link SecurityProfileProvider} 及工厂。
+ * <p>内部 SPI，名称 {@code security-profile}。</p>
  *
  * @author rmartinc
  */
 public class SecurityProfileSpi implements Spi {
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code security-profile} */
     @Override
     public String getName() {
         return "security-profile";
     }
 
+    /** @return 提供者接口 {@link SecurityProfileProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return SecurityProfileProvider.class;
     }
 
+    /** @return 工厂接口 {@link SecurityProfileProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return SecurityProfileProviderFactory.class;

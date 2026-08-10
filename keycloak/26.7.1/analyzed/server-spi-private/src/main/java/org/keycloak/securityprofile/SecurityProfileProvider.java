@@ -23,30 +23,22 @@ import org.keycloak.representations.idm.ClientPolicyRepresentation;
 import org.keycloak.representations.idm.ClientProfileRepresentation;
 
 /**
- * The security profile provider is a default security configuration that enforces a
- * minimum level of security in the keycloak environment. For the moment the class
- * is just used for client policies but it can be extended for password policies
- * or any other security configuration in the future.
+ * 安全配置文件提供者：在 Keycloak 环境中强制执行最低安全基线。
+ * <p>当前主要用于客户端策略（Client Policy），未来可扩展至密码策略等安全配置。</p>
  *
  * @author rmartinc
  */
 public interface SecurityProfileProvider extends Provider {
 
-    /**
-     * Name of the security profile.
-     * @return The name
-     */
+    /** @return 安全配置文件名称 */
+
     String getName();
 
-    /**
-     * List of default client profiles that the security profile contains.
-     * @return The list of client profiles defined
-     */
+    /** @return 安全配置文件包含的默认客户端 Profile 列表 */
+
     List<ClientProfileRepresentation> getDefaultClientProfiles();
 
-    /**
-     * List of default client policies defined in the security profile.
-     * @return The list of client policies defined
-     */
+    /** @return 安全配置文件定义的默认客户端 Policy 列表 */
+
     List<ClientPolicyRepresentation> getDefaultClientPolicies();
 }

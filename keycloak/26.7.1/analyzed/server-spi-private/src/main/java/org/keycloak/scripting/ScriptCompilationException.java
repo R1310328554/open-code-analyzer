@@ -21,12 +21,17 @@ import javax.script.ScriptException;
 import org.keycloak.models.ScriptModel;
 
 /**
- * Indicates compilation problems reported by a {@link ScriptException} and adds additional metadata.
+ * 脚本编译异常：包装 {@link ScriptException} 并附加 {@link ScriptModel} 元数据。
+ * <p>在脚本编译阶段由脚本引擎抛出。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public class ScriptCompilationException extends RuntimeException {
 
+    /**
+     * @param script 编译失败的脚本模型
+     * @param ex 底层 {@link ScriptException} 或其他异常
+     */
     public ScriptCompilationException(ScriptModel script, Exception ex) {
         super("Could not compile '" + script.getName() + "' problem was: " + ex.getMessage(), ex);
     }

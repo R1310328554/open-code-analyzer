@@ -23,25 +23,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 客户端策略管理器 SPI：注册 {@link ClientPolicyManager} 及工厂。
+ * <p>内部 SPI，名称 {@code client-policy-manager}。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientPolicyManagerSpi implements Spi {
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code client-policy-manager} */
     @Override
     public String getName() {
         return "client-policy-manager";
     }
 
+    /** @return 提供者接口 {@link ClientPolicyManager} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ClientPolicyManager.class;
     }
 
+    /** @return 工厂接口 {@link ClientPolicyManagerFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ClientPolicyManagerFactory.class;

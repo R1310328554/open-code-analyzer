@@ -19,23 +19,22 @@ package org.keycloak.scripting;
 import javax.script.Bindings;
 
 /**
- * Callback interface for customization of {@link Bindings} for a {@link javax.script.ScriptEngine}.
- * <p>Used by {@link ScriptingProvider}</p>
+ * 脚本绑定配置回调接口：为 {@link javax.script.ScriptEngine} 自定义 {@link Bindings}。
+ * <p>由 {@link ScriptingProvider} 在准备脚本时调用。</p>
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 @FunctionalInterface
 public interface ScriptBindingsConfigurer {
 
-    /**
-     * A default {@link ScriptBindingsConfigurer} that provides no Bindings.
-     */
+    /** 默认空配置器：不添加任何绑定。 */
     ScriptBindingsConfigurer EMPTY = new ScriptBindingsConfigurer() {
 
         @Override
         public void configureBindings(Bindings bindings) {
-            //NOOP
+            // 无操作
         }
     };
 
+    /** 向给定 {@link Bindings} 注入脚本运行时变量。 */
     void configureBindings(Bindings bindings);
 }

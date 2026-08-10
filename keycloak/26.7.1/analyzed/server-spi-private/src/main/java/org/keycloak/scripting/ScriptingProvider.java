@@ -22,38 +22,41 @@ import org.keycloak.models.ScriptModel;
 import org.keycloak.provider.Provider;
 
 /**
- * A {@link Provider} than provides Scripting capabilities.
+ * 脚本提供者接口：为 Keycloak 提供 JSR-223 脚本编译与执行能力。
+ * <p>支持创建可调用与可求值脚本适配器，以及构建 {@link ScriptModel}。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public interface ScriptingProvider extends Provider {
 
     /**
-     * Returns an {@link InvocableScriptAdapter} based on the given {@link ScriptModel}.
-     * <p>The {@code InvocableScriptAdapter} wraps a dedicated {@link ScriptEngine} that was populated with the provided {@link ScriptBindingsConfigurer}</p>
+     * 基于 {@link ScriptModel} 创建 {@link InvocableScriptAdapter}。
+     * <p>使用 {@link ScriptBindingsConfigurer} 填充专用 {@link ScriptEngine} 的绑定。</p>
      *
      * @param scriptModel        the scriptModel to wrap
      * @param bindingsConfigurer populates the {@link javax.script.Bindings}
-     * @return
+     * @return 可调用脚本适配器
      */
     InvocableScriptAdapter prepareInvocableScript(ScriptModel scriptModel, ScriptBindingsConfigurer bindingsConfigurer);
 
     /**
-     * Returns an {@link EvaluatableScriptAdapter} based on the given {@link ScriptModel}.
-     * <p>The {@code EvaluatableScriptAdapter} wraps a dedicated {@link ScriptEngine} that was populated with empty bindings.</p>
+     * 基于 {@link ScriptModel} 创建 {@link EvaluatableScriptAdapter}。
+     * <p>使用空绑定初始化专用 {@link ScriptEngine}。</p>
      *
      * @param scriptModel the scriptModel to wrap
+     * @return 可求值脚本适配器
      */
     EvaluatableScriptAdapter prepareEvaluatableScript(ScriptModel scriptModel);
 
     /**
-     * Creates a new {@link ScriptModel} instance.
+     * 创建新的 {@link ScriptModel} 实例。
      *
-     * @param realmId
-     * @param scriptName
-     * @param scriptCode
-     * @param scriptDescription
-     * @return
+     * @param realmId 所属 realm ID
+     * @param mimeType 脚本 MIME 类型
+     * @param scriptName 脚本名称
+     * @param scriptCode 脚本源代码
+     * @param scriptDescription 脚本描述
+     * @return 新脚本模型
      */
     ScriptModel createScript(String realmId, String mimeType, String scriptName, String scriptCode, String scriptDescription);
 }

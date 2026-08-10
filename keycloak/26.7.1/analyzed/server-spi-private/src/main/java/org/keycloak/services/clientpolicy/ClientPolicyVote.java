@@ -18,10 +18,16 @@
 package org.keycloak.services.clientpolicy;
 
 /**
+ * 客户端策略投票枚举：表示条件评估器对策略条件的表决结果。
+ * <p>{@link #YES} 满足条件，{@link #NO} 不满足，{@link #ABSTAIN} 弃权。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public enum ClientPolicyVote {
+    /** 条件满足 */
     YES,
+    /** 条件不满足 */
     NO,
+    /** 弃权（不参与表决） */
     ABSTAIN
 }

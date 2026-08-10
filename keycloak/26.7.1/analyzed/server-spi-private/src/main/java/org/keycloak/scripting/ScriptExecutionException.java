@@ -21,12 +21,17 @@ import javax.script.ScriptException;
 import org.keycloak.models.ScriptModel;
 
 /**
- * Augments a {@link ScriptException} and adds additional metadata.
+ * 脚本执行异常：包装 {@link ScriptException} 并附加 {@link ScriptModel} 元数据。
+ * <p>在脚本运行阶段由 {@link InvocableScriptAdapter} 等抛出。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public class ScriptExecutionException extends RuntimeException {
 
+    /**
+     * @param script 执行失败的脚本模型
+     * @param ex 底层 {@link ScriptException} 或其他异常
+     */
     public ScriptExecutionException(ScriptModel script, Exception ex) {
         super("Could not execute script '" + script.getName() + "' problem was: " + ex.getMessage(), ex);
     }
