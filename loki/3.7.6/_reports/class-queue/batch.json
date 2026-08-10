@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:53:59Z",
-  "files": [
-    "pkg/querier/queryrange/parquet.go",
-    "pkg/querier/queryrange/prometheus.go",
-    "pkg/querier/queryrange/queryrange.pb.go",
-    "pkg/querier/queryrange/queryrangebase/alias.go",
-    "pkg/querier/queryrange/queryrangebase/definitions/definitions.pb.go",
-    "pkg/querier/queryrange/queryrangebase/definitions/interface.go",
-    "pkg/querier/queryrange/queryrangebase/instrumentation.go",
-    "pkg/querier/queryrange/queryrangebase/limits.go",
-    "pkg/querier/queryrange/queryrangebase/middleware.go",
-    "pkg/querier/queryrange/queryrangebase/query_range.go",
-    "pkg/querier/queryrange/queryrangebase/queryrange.pb.go",
-    "pkg/querier/queryrange/queryrangebase/results_cache.go",
-    "pkg/querier/queryrange/queryrangebase/retry.go",
-    "pkg/querier/queryrange/queryrangebase/roundtrip.go",
-    "pkg/querier/queryrange/queryrangebase/step_align.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 532,
-  "done": 1005
+  "done": 1020
 }
