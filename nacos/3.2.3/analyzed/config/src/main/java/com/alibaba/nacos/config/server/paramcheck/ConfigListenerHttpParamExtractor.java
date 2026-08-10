@@ -30,16 +30,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 配置长轮询监听 HTTP 参数提取器：解析 {@code Listening-Configs} 编码串，
+ * 按行/字段分隔符拆分为多条 {@link ParamInfo}（dataId、group、可选 tenant）。
  * ConfigListener http param extractor.
  *
  * @author zhuoguang
  */
 public class ConfigListenerHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** 单行内字段分隔符（ASCII 2） */
     static final char WORD_SEPARATOR_CHAR = (char) 2;
     
+    /** 多配置行分隔符（ASCII 1） */
     static final char LINE_SEPARATOR_CHAR = (char) 1;
     
+    /**
+     * 解码并解析 Listening-Configs 批量监听参数。
+     *
+     * @param request HTTP 请求
+     * @return 待校验的监听配置列表
+     * @throws NacosRuntimeException URL 解码失败时抛出
+     */
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) throws NacosRuntimeException {
         ArrayList<ParamInfo> paramInfos = new ArrayList<>();

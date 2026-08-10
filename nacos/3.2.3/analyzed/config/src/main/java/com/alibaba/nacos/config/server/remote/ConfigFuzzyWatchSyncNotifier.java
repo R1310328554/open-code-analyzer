@@ -43,6 +43,8 @@ import static com.alibaba.nacos.api.common.Constants.FUZZY_WATCH_DIFF_SYNC_NOTIF
 import static com.alibaba.nacos.api.common.Constants.FUZZY_WATCH_INIT_NOTIFY;
 
 /**
+ * 模糊监听同步通知器：消费 {@link ConfigFuzzyWatchEvent}，计算模式匹配 diff，
+ * 分批 RPC 推送初始化或增量 {@link ConfigFuzzyWatchSyncRequest} 至客户端。
  * Handles batch fuzzy listen events and pushes corresponding notifications to clients.
  *
  * @author stone-98
@@ -67,21 +69,20 @@ public class ConfigFuzzyWatchSyncNotifier extends SmartSubscriber {
     }
     
     /**
-     * Handles the ConfigBatchFuzzyListenEvent. This method is responsible for processing batch fuzzy listen events and
-     * pushing corresponding notifications to clients.
+     * 处理模糊监听事件：diff 匹配结果、分批推送并在初始化完成时发送 finish 请求。
      *
      * @param event The ConfigBatchFuzzyListenEvent to handle
      */
     public void handleFuzzyWatchEvent(ConfigFuzzyWatchEvent event) {
         
-        // Match client effective group keys based on the event pattern, client IP, and tag
+        // 按模式匹配服务端当前有效的 groupKey 集合
         Set<String> matchGroupKeys =
             configFuzzyWatchContextService.matchGroupKeys(event.getGroupKeyPattern());
         
-        // Retrieve existing group keys for the client from the event
+        // 客户端侧已知的 groupKey（用于 diff）
         Set<String> clientExistingGroupKeys = event.getClientExistingGroupKeys();
         
-        // Calculate and merge configuration states based on matched and existing group keys
+        // 计算新增/删除 diff 列表
         List<FuzzyGroupKeyPattern.GroupKeyState> configStates =
             FuzzyGroupKeyPattern.diffGroupKeys(matchGroupKeys,
                 clientExistingGroupKeys);
@@ -92,7 +93,7 @@ public class ConfigFuzzyWatchSyncNotifier extends SmartSubscriber {
                 ConfigFuzzyWatchSyncRequest request =
                     ConfigFuzzyWatchSyncRequest.buildInitFinishRequest(
                         event.getGroupKeyPattern());
-                // Create RPC push task and push the request to the client
+                // 调度 RPC 推送任务
                 FuzzyWatchSyncNotifyTask fuzzyWatchSyncNotifyTask =
                     new FuzzyWatchSyncNotifyTask(connectionManager,
                         rpcPushService, request, null, maxPushRetryTimes, event.getConnectionId());
@@ -101,7 +102,7 @@ public class ConfigFuzzyWatchSyncNotifier extends SmartSubscriber {
             
         } else {
             
-            // delete notify protection when pattern match count over limit because matchGroupKeys may not a full set.
+            // 超限时 matchGroupKeys 可能不完整，过滤掉删除类通知避免误删客户端缓存
             if (configFuzzyWatchContextService.reachToUpLimit(event.getGroupKeyPattern())) {
                 configStates.removeIf(item -> !item.isExist());
             }
@@ -110,18 +111,18 @@ public class ConfigFuzzyWatchSyncNotifier extends SmartSubscriber {
                 event.isInitializing() ? FUZZY_WATCH_INIT_NOTIFY : FUZZY_WATCH_DIFF_SYNC_NOTIFY;
             
             int batchSize = ConfigCommonConfig.getInstance().getBatchSize();
-            // Divide config states into batches
+            // 按 batchSize 切分待推送状态
             List<List<FuzzyGroupKeyPattern.GroupKeyState>> divideConfigStatesIntoBatches =
                 divideConfigStatesIntoBatches(
                     configStates, batchSize);
             
-            // Calculate the number of batches and initialize push batch finish count
+            // 记录总批次数，末批完成后触发 finish
             int totalBatch = divideConfigStatesIntoBatches.size();
             BatchTaskCounter batchTaskCounter =
                 new BatchTaskCounter(divideConfigStatesIntoBatches.size());
             int currentBatch = 1;
             for (List<FuzzyGroupKeyPattern.GroupKeyState> configStateList : divideConfigStatesIntoBatches) {
-                // Map config states to FuzzyListenNotifyDiffRequest.Context objects
+                // 映射为同步请求的 Context（ADD/DELETE）
                 Set<ConfigFuzzyWatchSyncRequest.Context> contexts =
                     configStateList.stream().map(state -> {
                         
@@ -162,7 +163,7 @@ public class ConfigFuzzyWatchSyncNotifier extends SmartSubscriber {
     }
     
     /**
-     * Divides a collection of items into batches.
+     * 将配置状态列表按固定 batchSize 分组。
      *
      * @param configStates The collection of items to be divided into batches
      * @param batchSize    The size of each batch
@@ -171,10 +172,10 @@ public class ConfigFuzzyWatchSyncNotifier extends SmartSubscriber {
      */
     private <T> List<List<T>> divideConfigStatesIntoBatches(Collection<T> configStates,
         int batchSize) {
-        // Initialize an index to track the current batch number
+        // 用递增索引按 batchSize 分组
         AtomicInteger index = new AtomicInteger();
         
-        // Group the elements into batches based on their index divided by the batch size
+        // stream groupingBy 实现均匀分批
         return new ArrayList<>(
             configStates.stream()
                 .collect(Collectors.groupingBy(e -> index.getAndIncrement() / batchSize))

@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 配置订阅者指标采集器：定时汇总 v1 长轮询与 v2 gRPC 监听连接数，
+ * 分别写入 {@link MetricsMonitor} 的 "v1"/"v2" 订阅监控项。
  * v1 and v2 config subscriber metrics collector.
  *
  * @author <a href="mailto:liuyixiao0821@gmail.com">liuyixiao</a>
@@ -33,8 +35,15 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class ConfigSubscriberMetricsCollector {
     
+    /** 首次延迟与采集周期（秒） */
     private static final long DELAY_SECONDS = 5;
     
+    /**
+     * 启动定时任务，每 {@link #DELAY_SECONDS} 秒刷新订阅者数量指标。
+     *
+     * @param longPollingService         v1 长轮询服务
+     * @param configChangeListenContext  v2 gRPC 监听上下文
+     */
     @Autowired
     public ConfigSubscriberMetricsCollector(LongPollingService longPollingService,
         ConfigChangeListenContext configChangeListenContext) {

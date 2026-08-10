@@ -24,6 +24,8 @@ import com.alibaba.nacos.core.cluster.remote.ClusterRpcClientProxy;
 import org.springframework.stereotype.Service;
 
 /**
+ * 配置模块集群 RPC 客户端代理：封装向指定 {@link Member} 异步发送
+ * {@link ConfigChangeClusterSyncRequest}，用于跨节点配置变更通知。
  * ConfigClusterRpcClientProxy.
  *
  * @author liuzunfei
@@ -32,14 +34,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class ConfigClusterRpcClientProxy {
     
+    /** 核心集群 RPC 代理，负责实际网络发送 */
     final ClusterRpcClientProxy clusterRpcClientProxy;
     
+    /** @param clusterRpcClientProxy 集群 RPC 客户端 */
     public ConfigClusterRpcClientProxy(ClusterRpcClientProxy clusterRpcClientProxy) {
         this.clusterRpcClientProxy = clusterRpcClientProxy;
     }
     
     /**
-     * sync config change request.
+     * 异步向目标集群成员推送配置变更同步请求。
      *
      * @param member  member of server.
      * @param request request of config change sync.

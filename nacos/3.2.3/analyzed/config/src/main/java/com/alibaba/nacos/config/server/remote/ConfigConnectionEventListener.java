@@ -23,6 +23,8 @@ import com.alibaba.nacos.core.utils.Loggers;
 import org.springframework.stereotype.Component;
 
 /**
+ * 配置 RPC 连接事件监听器：客户端断开时清理 v2 精确监听与模糊监听上下文，
+ * 防止僵尸 connectionId 占用内存并误触发推送。
  * ConfigConnectionEventListener.
  *
  * @author liuzunfei
@@ -31,8 +33,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConfigConnectionEventListener extends ClientConnectionEventListener {
     
+    /** v2 批量监听上下文 */
     final ConfigChangeListenContext configChangeListenContext;
     
+    /** 模糊监听上下文服务 */
     final ConfigFuzzyWatchContextService configFuzzyWatchContextService;
     
     public ConfigConnectionEventListener(ConfigChangeListenContext configChangeListenContext,
@@ -43,9 +47,10 @@ public class ConfigConnectionEventListener extends ClientConnectionEventListener
     
     @Override
     public void clientConnected(Connection connect) {
-        //Do nothing.
+        // 连接建立时无需预注册，监听由后续 RPC 请求完成
     }
     
+    /** 连接断开：清理该 connectionId 下的全部监听与模糊 watch 状态。 */
     @Override
     public void clientDisConnected(Connection connect) {
         String connectionId = connect.getMetaInfo().getConnectionId();

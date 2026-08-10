@@ -25,12 +25,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 配置默认 HTTP 参数提取器：兼容多种 query 别名（tenant/namespaceId、group/groupName 等），
+ * 组装 namespaceId、dataId、group、ip 供 {@link AbstractHttpParamExtractor} 统一校验。
  * Config default http param extractor.
  *
  * @author zhuoguang
  */
 public class ConfigDefaultHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /**
+     * 提取并归一化配置 HTTP 参数。
+     *
+     * @param request HTTP 请求
+     * @return 含单条 {@link ParamInfo} 的列表
+     */
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) {
         ParamInfo paramInfo = new ParamInfo();
@@ -43,6 +51,7 @@ public class ConfigDefaultHttpParamExtractor extends AbstractHttpParamExtractor 
         return paramInfos;
     }
     
+    /** 依次尝试 namespaceId、tenant、namespace 参数作为命名空间 ID。 */
     private String getAliasNamespaceId(HttpServletRequest request) {
         String namespaceid = request.getParameter("namespaceId");
         if (StringUtils.isBlank(namespaceid)) {
@@ -54,11 +63,13 @@ public class ConfigDefaultHttpParamExtractor extends AbstractHttpParamExtractor 
         return namespaceid;
     }
     
+    /** 读取 dataId 参数。 */
     private String getAliasDataId(HttpServletRequest request) {
         String dataid = request.getParameter("dataId");
         return dataid;
     }
     
+    /** 优先 groupName，否则 group。 */
     private String getAliasGroup(HttpServletRequest request) {
         String group = request.getParameter("groupName");
         if (StringUtils.isBlank(group)) {
@@ -67,6 +78,7 @@ public class ConfigDefaultHttpParamExtractor extends AbstractHttpParamExtractor 
         return group;
     }
     
+    /** 读取客户端 ip 参数。 */
     private String getAliasIp(HttpServletRequest request) {
         String ip = request.getParameter("ip");
         return ip;

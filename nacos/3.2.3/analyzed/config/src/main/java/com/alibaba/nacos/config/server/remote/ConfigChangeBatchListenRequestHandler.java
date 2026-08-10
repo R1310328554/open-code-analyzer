@@ -39,6 +39,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
+ * 配置批量变更监听 RPC 处理器（v2 gRPC）：处理客户端批量注册/取消监听，
+ * 维护 {@link ConfigChangeListenContext} 并返回需立即推送的变更项列表。
  * config change listen request handler.
  *
  * @author liuzunfei
@@ -49,6 +51,7 @@ import org.springframework.stereotype.Component;
 public class ConfigChangeBatchListenRequestHandler
     extends RequestHandler<ConfigBatchListenRequest, ConfigChangeBatchListenResponse> {
     
+    /** v2 监听上下文，维护 connectionId 与 groupKey 双向映射 */
     @Autowired
     private ConfigChangeListenContext configChangeListenContext;
     
@@ -57,6 +60,14 @@ public class ConfigChangeBatchListenRequestHandler
     @TpsControl(pointName = "ConfigListen")
     @Secured(action = ActionTypes.READ, signType = SignType.CONFIG)
     @ExtractorManager.Extractor(rpcExtractor = ConfigBatchListenRequestParamExtractor.class)
+    /**
+     * 批量处理监听或取消监听请求。
+     *
+     * @param configChangeListenRequest 含多条监听上下文及 listen 标志
+     * @param meta                      RPC 连接元数据（connectionId、客户端 IP 等）
+     * @return 需立即通知客户端的配置变更列表
+     * @throws NacosException 参数或权限校验失败
+     */
     public ConfigChangeBatchListenResponse handle(
         ConfigBatchListenRequest configChangeListenRequest, RequestMeta meta)
         throws NacosException {

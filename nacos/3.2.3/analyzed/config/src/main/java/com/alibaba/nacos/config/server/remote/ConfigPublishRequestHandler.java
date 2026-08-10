@@ -48,6 +48,8 @@ import org.springframework.stereotype.Component;
 import static com.alibaba.nacos.config.server.constant.Constants.RPC;
 
 /**
+ * 配置发布 RPC 处理器：将 gRPC {@link ConfigPublishRequest} 转为 {@link ConfigForm}，
+ * 处理加密、CAS、Beta 等扩展参数后委托 {@link ConfigOperationService#publishConfig} 持久化。
  * request handler to publish config.
  *
  * @author liuzunfei
@@ -60,6 +62,7 @@ public class ConfigPublishRequestHandler
     
     private ConfigOperationService configOperationService;
     
+    /** @param configOperationService 配置写操作服务 */
     public ConfigPublishRequestHandler(ConfigOperationService configOperationService) {
         this.configOperationService = configOperationService;
     }
@@ -69,6 +72,14 @@ public class ConfigPublishRequestHandler
     @TpsControl(pointName = "ConfigPublish")
     @Secured(action = ActionTypes.WRITE, signType = SignType.CONFIG)
     @ExtractorManager.Extractor(rpcExtractor = ConfigRequestParamExtractor.class)
+    /**
+     * 处理配置发布 RPC：校验参数、可选加密、调用发布服务并返回成功/失败响应。
+     *
+     * @param request 发布内容与元数据
+     * @param meta    客户端连接信息
+     * @return 发布结果响应
+     * @throws NacosException 严重错误时抛出
+     */
     public ConfigPublishResponse handle(ConfigPublishRequest request, RequestMeta meta)
         throws NacosException {
         
@@ -87,7 +98,7 @@ public class ConfigPublishRequestHandler
             final String srcUser = request.getAdditionParam("src_user");
             final String encryptedDataKey = request.getAdditionParam("encryptedDataKey");
             
-            // check tenant
+            // 校验 dataId/group/content/tag 等必填项
             ParamUtils.checkParam(dataId, group, "datumId", content);
             ParamUtils.checkParam(tag);
             

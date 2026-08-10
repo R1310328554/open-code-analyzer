@@ -53,6 +53,8 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.PULL_LOG;
 import static com.alibaba.nacos.config.server.utils.RequestUtil.CLIENT_APPNAME_HEADER;
 
 /**
+ * 配置查询 RPC 处理器：经 {@link ConfigQueryChainService} 责任链拉取配置，
+ * 处理灰度/Beta/Tag、冲突与不存在场景，并记录 {@link ConfigTraceService} 拉取轨迹。
  * ConfigQueryRequestHandler.
  *
  * @author liuzunfei
@@ -67,6 +69,7 @@ public class ConfigQueryRequestHandler
     
     private final ConfigQueryChainService configQueryChainService;
     
+    /** @param configQueryChainService 配置查询责任链服务 */
     public ConfigQueryRequestHandler(ConfigQueryChainService configQueryChainService) {
         this.configQueryChainService = configQueryChainService;
     }
@@ -76,6 +79,14 @@ public class ConfigQueryRequestHandler
     @TpsControl(pointName = "ConfigQuery")
     @Secured(action = ActionTypes.READ, signType = SignType.CONFIG)
     @ExtractorManager.Extractor(rpcExtractor = ConfigRequestParamExtractor.class)
+    /**
+     * 处理 gRPC 配置查询：走查询链、组装响应并写 pull 日志。
+     *
+     * @param request 查询 dataId/group/tenant/tag 等
+     * @param meta    客户端元数据
+     * @return 配置内容或错误码
+     * @throws NacosException 未捕获异常时包装返回
+     */
     public ConfigQueryResponse handle(ConfigQueryRequest request, RequestMeta meta)
         throws NacosException {
         try {
@@ -112,7 +123,7 @@ public class ConfigQueryRequestHandler
             
             ConfigQueryResponse response = new ConfigQueryResponse();
             
-            // Check if there is a matched gray rule
+            // 命中灰度规则时设置 beta 或 tag 响应字段
             if (chainResponse
                 .getStatus() == ConfigQueryChainResponse.ConfigQueryStatus.CONFIG_FOUND_GRAY) {
                 if (BetaGrayRule.TYPE_BETA
@@ -125,7 +136,7 @@ public class ConfigQueryRequestHandler
                 }
             }
             
-            // Check if there is a special tag
+            // 特殊 tag 配置不存在时回显请求 tag
             if (chainResponse
                 .getStatus() == ConfigQueryChainResponse.ConfigQueryStatus.SPECIAL_TAG_CONFIG_NOT_FOUND) {
                 response.setTag(request.getTag());
@@ -164,6 +175,7 @@ public class ConfigQueryRequestHandler
         
     }
     
+    /** 配置正在 dump 修改中，返回 CONFLICT 提示客户端稍后重试。 */
     private ConfigQueryResponse handlerConfigConflict(String clientIp, String groupKey) {
         ConfigQueryResponse response = new ConfigQueryResponse();
         
@@ -177,7 +189,7 @@ public class ConfigQueryRequestHandler
     private ConfigQueryResponse handlerConfigNotFound(String dataId, String group, String tenant,
         String requestIpApp,
         String clientIp, boolean notify) {
-        //CacheItem No longer exists. It is impossible to simply calculate the push delayed. Here, simply record it as - 1.
+        // 缓存项已不存在，推送延迟无法计算，轨迹中记为 -1
         ConfigQueryResponse response = new ConfigQueryResponse();
         ConfigTraceService.logPullEvent(dataId, group, tenant, requestIpApp, -1,
             ConfigTraceService.PULL_EVENT,
@@ -188,6 +200,7 @@ public class ConfigQueryRequestHandler
         
     }
     
+    /** 根据查询状态解析 pull 事件类型（含灰度后缀）。 */
     private String resolvePullEventType(ConfigQueryChainResponse chainResponse, String tag) {
         switch (chainResponse.getStatus()) {
             case CONFIG_FOUND_GRAY:

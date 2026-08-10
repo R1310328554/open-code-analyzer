@@ -42,6 +42,8 @@ import static com.alibaba.nacos.api.common.Constants.WATCH_TYPE_WATCH;
 import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_MATCH_COUNT_OVER_LIMIT;
 
 /**
+ * 模糊监听 RPC 请求处理器：根据 watchType 注册或取消 groupKey 模式监听，
+ * 发布 {@link ConfigFuzzyWatchEvent} 触发全量/增量同步，并校验模式匹配数量上限。
  * Handler for processing batch fuzzy listen requests.
  * <p>
  * This handler is responsible for processing batch fuzzy listen requests sent by clients. It adds or removes clients
@@ -65,7 +67,7 @@ public class ConfigFuzzyWatchRequestHandler
     }
     
     /**
-     * Handles the batch fuzzy listen request.
+     * 处理模糊监听或取消监听 RPC 请求。
      * <p>
      * This method processes the batch fuzzy listen request by adding or removing clients from the fuzzy listening
      * context based on the request, and publishes corresponding events to notify interested parties.
@@ -86,10 +88,10 @@ public class ConfigFuzzyWatchRequestHandler
         String connectionId = StringPool.get(meta.getConnectionId());
         String groupKeyPattern = request.getGroupKeyPattern();
         if (WATCH_TYPE_WATCH.equals(request.getWatchType())) {
-            // Add client to the fuzzy listening context
+            // 将客户端加入模糊监听上下文
             try {
                 configFuzzyWatchContextService.addFuzzyWatch(groupKeyPattern, connectionId);
-                // Get existing group keys for the client and publish initialization event
+                // 携带客户端已有 groupKey 发布初始化同步事件
                 Set<String> clientExistingGroupKeys = request.getReceivedGroupKeys();
                 NotifyCenter.publishEvent(
                     new ConfigFuzzyWatchEvent(connectionId, clientExistingGroupKeys,
@@ -115,7 +117,7 @@ public class ConfigFuzzyWatchRequestHandler
             configFuzzyWatchContextService.removeFuzzyListen(groupKeyPattern, connectionId);
         }
         
-        // Return response
+        // 返回成功或带错误码的响应
         return new ConfigFuzzyWatchResponse();
     }
 }

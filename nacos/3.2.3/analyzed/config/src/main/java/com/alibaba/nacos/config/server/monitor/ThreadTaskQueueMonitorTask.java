@@ -22,6 +22,8 @@ import com.alibaba.nacos.config.server.utils.ConfigExecutor;
 import static com.alibaba.nacos.config.server.utils.LogUtil.MEMORY_LOG;
 
 /**
+ * 线程任务队列监控任务：周期性采样异步通知队列与客户端推送队列深度，
+ * 写入内存日志并更新 {@link MetricsMonitor} 指标，便于观测配置变更推送积压。
  * NotifyTaskQueueMonitorTask.
  *
  * @author zongtanghu
@@ -30,10 +32,16 @@ public class ThreadTaskQueueMonitorTask implements Runnable {
     
     private final AsyncNotifyService notifySingleService;
     
+    /**
+     * 构造监控任务（保留 {@link AsyncNotifyService} 引用供后续扩展）。
+     *
+     * @param notifySingleService 单条异步通知服务
+     */
     ThreadTaskQueueMonitorTask(AsyncNotifyService notifySingleService) {
         this.notifySingleService = notifySingleService;
     }
     
+    /** 采样队列长度并刷新监控指标。 */
     @Override
     public void run() {
         int size = ConfigExecutor.asyncNotifyQueueSize();

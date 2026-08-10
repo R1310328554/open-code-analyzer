@@ -45,6 +45,8 @@ import com.alibaba.nacos.plugin.auth.constant.SignType;
 import org.springframework.stereotype.Component;
 
 /**
+ * 集群配置变更同步 RPC 处理器：接收其它 Nacos 节点的变更通知，
+ * 经兼容性与灰度迁移处理后调用 {@link DumpService#dump(DumpRequest)} 落盘并刷新本地缓存。
  * handler to handler config change from other servers.
  *
  * @author liuzunfei
@@ -56,10 +58,16 @@ import org.springframework.stereotype.Component;
 public class ConfigChangeClusterSyncRequestHandler
     extends RequestHandler<ConfigChangeClusterSyncRequest, ConfigChangeClusterSyncResponse> {
     
+    /** 配置 dump 服务，负责持久化与内存同步 */
     private final DumpService dumpService;
     
+    /** 命名空间/灰度模型迁移服务 */
     private ConfigMigrateService configMigrateService;
     
+    /**
+     * @param dumpService           配置 dump 服务
+     * @param configMigrateService  迁移兼容服务
+     */
     public ConfigChangeClusterSyncRequestHandler(DumpService dumpService,
         ConfigMigrateService configMigrateService) {
         this.dumpService = dumpService;
@@ -71,6 +79,14 @@ public class ConfigChangeClusterSyncRequestHandler
     @TpsControl(pointName = "ClusterConfigChangeNotify")
     @ExtractorManager.Extractor(rpcExtractor = ConfigRequestParamExtractor.class)
     @Secured(signType = SignType.CONFIG, apiType = ApiType.INNER_API)
+    /**
+     * 处理来自集群节点的配置变更同步请求。
+     *
+     * @param configChangeSyncRequest 变更 dataId/group/tenant 及灰度信息
+     * @param meta                    来源节点 RPC 元数据
+     * @return 空成功响应
+     * @throws NacosException dump 失败时抛出
+     */
     public ConfigChangeClusterSyncResponse handle(
         ConfigChangeClusterSyncRequest configChangeSyncRequest,
         RequestMeta meta) throws NacosException {
@@ -88,7 +104,7 @@ public class ConfigChangeClusterSyncRequestHandler
     }
     
     /**
-     * if notified from old server,try to migrate and transfer gray model.
+     * 若通知来自旧版服务端，尝试迁移 Beta/Tag 灰度并转换为新 grayName 模型。
      *
      * @param configChangeSyncRequest request.
      */
@@ -100,7 +116,7 @@ public class ConfigChangeClusterSyncRequestHandler
                 || StringUtils.isNotBlank(configChangeSyncRequest.getTag())) {
                 
                 String grayName = null;
-                //from old server ,beta or tag persist into old model,try migrate and transfer gray model.
+                // 旧集群仍使用 beta/tag 字段，需迁移到新 grayName 存储
                 if (configChangeSyncRequest.isBeta()) {
                     configMigrateService.checkMigrateBeta(configChangeSyncRequest.getDataId(),
                         configChangeSyncRequest.getGroup(), configChangeSyncRequest.getTenant());
@@ -133,7 +149,7 @@ public class ConfigChangeClusterSyncRequestHandler
     }
     
     /**
-     * Check namespace compatible boolean.
+     * 检查是否处于命名空间兼容模式且对端版本低于 3.0.0。
      *
      * @param configSyncRequest the config sync request
      * @param meta              the meta

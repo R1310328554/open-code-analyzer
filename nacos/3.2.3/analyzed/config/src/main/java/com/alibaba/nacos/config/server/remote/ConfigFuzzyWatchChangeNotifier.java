@@ -34,6 +34,8 @@ import static com.alibaba.nacos.api.common.Constants.ConfigChangedType.CONFIG_CH
 import static com.alibaba.nacos.api.common.Constants.ConfigChangedType.DELETE_CONFIG;
 
 /**
+ * 模糊监听配置变更推送器：订阅 {@link LocalDataChangeEvent}，
+ * 匹配模糊 watch 客户端后通过 {@link RpcPushService} 异步推送变更通知。
  * Notify remote clients about fuzzy listen configuration changes. Use subscriber mode to monitor local data changes,
  * and push notifications to remote clients accordingly.
  *
@@ -50,7 +52,7 @@ public class ConfigFuzzyWatchChangeNotifier extends Subscriber<LocalDataChangeEv
     private final ConfigFuzzyWatchContextService configFuzzyWatchContextService;
     
     /**
-     * Constructs RpcFuzzyListenConfigChangeNotifier with the specified dependencies.
+     * 构造推送器并注册为 {@link LocalDataChangeEvent} 订阅者。
      *
      * @param connectionManager The manager for connections.
      * @param rpcPushService    The service for RPC push.
@@ -64,11 +66,12 @@ public class ConfigFuzzyWatchChangeNotifier extends Subscriber<LocalDataChangeEv
         NotifyCenter.registerSubscriber(this);
     }
     
+    /** 本地配置变更时筛选匹配的模糊监听客户端并调度推送任务。 */
     @Override
     public void onEvent(LocalDataChangeEvent event) {
         
         boolean exists = ConfigCacheService.getContentCache(event.groupKey) != null;
-        //can not recognize add or update,  set config_changed here
+        // 无法区分新增与更新，统一标记为 CONFIG_CHANGED
         String changedType = exists ? CONFIG_CHANGED : DELETE_CONFIG;
         boolean needNotify =
             configFuzzyWatchContextService.syncGroupKeyContext(event.groupKey, changedType);
@@ -96,6 +99,7 @@ public class ConfigFuzzyWatchChangeNotifier extends Subscriber<LocalDataChangeEv
         
     }
     
+    /** @return 订阅事件类型 {@link LocalDataChangeEvent} */
     @Override
     public Class<? extends Event> subscribeType() {
         return LocalDataChangeEvent.class;
