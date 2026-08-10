@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:30:39Z",
-  "files": [
-    "pkg/ui/goldfish.go",
-    "pkg/ui/handler.go",
-    "pkg/ui/metrics.go",
-    "pkg/ui/service.go",
-    "pkg/util/active_user.go",
-    "pkg/util/allowed_tenants.go",
-    "pkg/util/arrowtest/arrowtest.go",
-    "pkg/util/atomicfs/fsync.go",
-    "pkg/util/cfg/cfg.go",
-    "pkg/util/cfg/dynamic.go",
-    "pkg/util/cfg/files.go",
-    "pkg/util/cfg/flag.go",
-    "pkg/util/config.go",
-    "pkg/util/constants/api_paths.go",
-    "pkg/util/constants/internal_streams.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 142,
-  "done": 1395
+  "done": 1410
 }
