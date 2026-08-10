@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/storage/SetDefaultsForNewRealm.java",
     "server-spi-private/src/main/java/org/keycloak/storage/StoreMigrateRepresentationEvent.java",
     "server-spi-private/src/main/java/org/keycloak/storage/StoreSyncEvent.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/adapter/AbstractInMemoryUserAdapter.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/adapter/UpdateOnlyChangeUserModelDelegate.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/role/RoleStorageProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/role/RoleStorageProviderSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/theme/ThemeManagerFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/theme/ThemeManagerSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/theme/ThemeProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/theme/ThemeProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/theme/ThemeSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/timer/ScheduledTask.java",
-    "server-spi-private/src/main/java/org/keycloak/timer/TaskRunner.java",
-    "server-spi-private/src/main/java/org/keycloak/timer/TimerProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/timer/TimerProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/timer/TimerSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/tracing/NoopTracingProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/tracing/NoopTracingProviderFactory.java"
+    "server-spi-private/src/main/java/org/keycloak/storage/adapter/AbstractInMemoryUserAdapter.java"
   ],
   "remaining_pending": 2518,
-  "done": 3450
+  "done": 3465
 }
