@@ -23,12 +23,20 @@ import org.keycloak.models.sessions.infinispan.entities.LoginFailureEntity;
 import org.keycloak.models.sessions.infinispan.entities.LoginFailureKey;
 
 /**
+ * {@link UserLoginFailureModel} 的 Infinispan 适配器。
+ * <p>
+ * 将登录失败计数、锁定时间等变更封装为 {@link LoginFailuresUpdateTask}，
+ * 通过变更日志事务延迟写入缓存。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UserLoginFailureAdapter implements UserLoginFailureModel {
 
+    /** 所属登录失败 Provider。 */
     private InfinispanUserLoginFailureProvider provider;
+    /** 缓存键（realm + 用户）。 */
     private LoginFailureKey key;
+    /** 当前事务内可见的实体副本。 */
     private LoginFailureEntity entity;
 
     public UserLoginFailureAdapter(InfinispanUserLoginFailureProvider provider, LoginFailureKey key, LoginFailureEntity entity) {
@@ -151,6 +159,7 @@ public class UserLoginFailureAdapter implements UserLoginFailureModel {
         update(task);
     }
 
+    /** 将更新任务加入登录失败变更事务。 */
     void update(LoginFailuresUpdateTask task) {
         provider.getLoginFailuresTx().addTask(key, task);
     }

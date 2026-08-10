@@ -42,28 +42,42 @@ import org.keycloak.models.sessions.infinispan.entities.UserSessionEntity;
 import org.jboss.logging.Logger;
 
 /**
+ * {@link UserSessionModel} 的 Infinispan 适配器。
+ * <p>
+ * 持有 {@link UserSessionEntity} 本地副本，读写操作通过 {@link UserSessionUpdateTask}
+ * 与用户/客户端会话变更事务合并；支持在线与离线会话及多站点 lastSessionRefresh 同步。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UserSessionAdapter<T extends SessionRefreshStore & UserSessionProvider> implements UserSessionModel {
 
     private static final Logger logger = Logger.getLogger(UserSessionAdapter.class);
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** 用户会话 Provider（同时提供刷新存储）。 */
     private final T provider;
 
+    /** 用户会话变更事务。 */
     private final SessionsChangelogBasedTransaction<String, UserSessionEntity> userSessionUpdateTx;
 
+    /** 嵌入式客户端会话变更事务。 */
     private final SessionsChangelogBasedTransaction<EmbeddedClientSessionKey, AuthenticatedClientSessionEntity> clientSessionUpdateTx;
 
+    /** 所属 realm。 */
     private final RealmModel realm;
 
+    /** 会话关联用户。 */
     private final UserModel user;
 
+    /** 事务内跟踪的用户会话实体。 */
     private final UserSessionEntity entity;
 
+    /** 是否为离线会话。 */
     private final boolean offline;
 
+    /** 持久化状态（如 TRANSIENT 会话不写缓存）。 */
     private SessionPersistenceState persistenceState;
 
     public UserSessionAdapter(KeycloakSession session, UserModel user, T provider,
@@ -88,18 +102,17 @@ public class UserSessionAdapter<T extends SessionRefreshStore & UserSessionProvi
         List<String> removedClientUUIDS = new LinkedList<>();
 
         clientSessionEntities.forEach(clientUUID -> {
-            // Check if client still exists
+            // 检查客户端是否仍存在
             ClientModel client = realm.getClientById(clientUUID);
             if (client == null) {
-                // client does no longer exist
+                // 客户端已删除，稍后从映射中移除
                 removedClientUUIDS.add(clientUUID);
                 return;
             }
             var clientSession = provider.getClientSession(this, client, offline);
             if (clientSession == null) {
-                // Either the client session has expired, or it hasn't been added by a concurrently running login yet.
-                // So it is unsafe to remove it, so we need to keep it for now.
-                // Otherwise, the test ConcurrentLoginTest.concurrentLoginSingleUser will fail.
+                // 客户端会话可能已过期或并发登录尚未写入，此时不宜移除映射
+                // 否则 ConcurrentLoginTest.concurrentLoginSingleUser 会失败
                 return;
             }
             result.put(clientUUID, clientSession);
@@ -115,8 +128,7 @@ public class UserSessionAdapter<T extends SessionRefreshStore & UserSessionProvi
         ClientModel client = realm.getClientById(clientUUID);
 
         if (client != null) {
-            // Might return null either the client session has expired, or it hasn't been added by a concurrently running login yet.
-            // So it is unsafe to clear it, so we need to keep it for now. Otherwise, the test ConcurrentLoginTest.concurrentLoginSingleUser will fail.
+            // 可能因过期或并发登录尚未完成而返回 null，不宜主动清理映射
             return provider.getClientSession(this, client, offline);
         }
 
@@ -133,13 +145,12 @@ public class UserSessionAdapter<T extends SessionRefreshStore & UserSessionProvi
         }
         logger.debugf("Removing client sessions. clients=%s, offline=%s", removedClientUUIDS, offline);
 
-        // do not iterate the removedClientUUIDS and remove the clientSession directly as the addTask can manipulate
-        // the collection being iterated, and that can lead to unpredictable behaviour (e.g. NPE)
+        // 勿在迭代 removedClientUUIDS 时直接删客户端会话，addTask 可能修改被迭代的集合导致 NPE
         List<String> clientSessionUuids = removedClientUUIDS.stream()
                 .filter(entity.getClientSessions()::contains)
                 .toList();
 
-        // Update user session
+        // 更新用户会话上的客户端 UUID 集合
         UserSessionUpdateTask task = new UserSessionUpdateTask() {
             @Override
             public void runUpdate(UserSessionEntity entity) {
@@ -184,8 +195,7 @@ public class UserSessionAdapter<T extends SessionRefreshStore & UserSessionProvi
     @Override
     public String getLoginUsername() {
         if (entity.getLoginUsername() == null) {
-            // this is a hack so that UserModel doesn't have to be available when offline token is imported.
-            // see related JIRA - KEYCLOAK-5350 and corresponding test
+            // 导入离线令牌时 UserModel 可能不可用，回退到用户对象（KEYCLOAK-5350）
             return getUser().getUsername();
         } else {
             return entity.getLoginUsername();
@@ -224,8 +234,7 @@ public class UserSessionAdapter<T extends SessionRefreshStore & UserSessionProvi
         }
 
         if (!MultiSiteUtils.isPersistentSessionsEnabled() && offline) {
-            // Received the message from the other DC that we should update the lastSessionRefresh in local cluster. Don't update DB in that case.
-            // The other DC already did.
+            // 其他数据中心已更新 DB，本地集群仅刷新 lastSessionRefresh 缓存
             provider.getPersisterLastSessionRefreshStore().putLastSessionRefresh(session, entity.getId(), realm.getId(), lastSessionRefresh);
         }
 
@@ -345,8 +354,7 @@ public class UserSessionAdapter<T extends SessionRefreshStore & UserSessionProvi
 
     @Override
     public void restartSession(RealmModel realm, UserModel user, String loginUsername, String ipAddress, String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId) {
-        // Sending a delete statement for each client session may have a performance impact.
-        // The update task will clear the entity.getClientSessions() set.
+        // 逐客户端发 DELETE 开销大；用户会话更新任务会清空 clientSessions 集合
         entity.getClientSessions().forEach(clientUUID -> this.clientSessionUpdateTx.addTask(new EmbeddedClientSessionKey(entity.getId(), clientUUID), Tasks.removeSync(offline)));
         UserSessionUpdateTask task = new UserSessionUpdateTask() {
 
@@ -387,10 +395,12 @@ public class UserSessionAdapter<T extends SessionRefreshStore & UserSessionProvi
     }
 
     // TODO: This should not be public
+    /** 返回底层用户会话实体（供同包事务类使用）。 */
     public UserSessionEntity getEntity() {
         return entity;
     }
 
+    /** 将用户会话更新任务加入变更事务。 */
     void update(UserSessionUpdateTask task) {
         userSessionUpdateTx.addTask(getId(), task);
     }

@@ -22,17 +22,16 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.sessions.infinispan.entities.SessionEntity;
 
 /**
- * <p>Function definition used for the lifespan and idle calculations for the infinispan
- * session entities. The method receives the realm, client if needed (it's optional)
- * and the entity. It returns the timestamp for the entity (lifespan, idle
- * timeout,...) in milliseconds.</p>
+ * <p>Infinispan 会话实体的 lifespan 与 idle 超时计算函数。
+ * 接收 realm、可选 client 及实体，返回毫秒级时间戳（lifespan、idle 等）。</p>
  *
- * @param <V> The session entity to apply the function
+ * @param <V> 适用的会话实体类型
  *
  * @author rmartinc
  */
 @FunctionalInterface
 public interface SessionFunction<V extends SessionEntity> {
 
+    /** 根据 realm、client 与实体计算超时毫秒值。 */
     Long apply(RealmModel realm, ClientModel client, V entity);
 }

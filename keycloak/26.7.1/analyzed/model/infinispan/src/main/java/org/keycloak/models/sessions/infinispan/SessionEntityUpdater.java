@@ -18,28 +18,27 @@
 package org.keycloak.models.sessions.infinispan;
 
 /**
- * An updated interface for Infinispan cache.
+ * Infinispan 会话实体更新器接口。
  * <p>
- * When the entity is changed, the new entity must be written (or removed) into the Infinispan cache.
- * The methods {@link #onEntityUpdated()} and {@link #onEntityRemoved()} signals the entity has changed.
+ * 实体变更后须写入或从 Infinispan 缓存移除；{@link #onEntityUpdated()} 与
+ * {@link #onEntityRemoved()} 用于通知缓存同步。
  *
- * @param <T> The entity type.
+ * @param <T> 实体类型
  */
 public interface SessionEntityUpdater<T> {
 
     /**
-     * @return The entity tracked by this {@link SessionEntityUpdater}.
-     * It does not fetch the value from the Infinispan cache and uses a local copy.
+     * @return 本 {@link SessionEntityUpdater} 跟踪的实体（本地副本，不访问缓存）。
      */
     T getEntity();
 
     /**
-     * Signals that the entity was updated, and the Infinispan cache needs to be updated.
+     * 通知实体已更新，需同步写入 Infinispan 缓存。
      */
     void onEntityUpdated();
 
     /**
-     * Signals that the entity was removed, and the Infinispan cache needs to be updated.
+     * 通知实体已删除，需从 Infinispan 缓存移除。
      */
     void onEntityRemoved();
 

@@ -38,13 +38,17 @@ import org.infinispan.util.concurrent.ActionSequencer;
 import org.jboss.logging.Logger;
 
 /**
- * Utility methods for embedded and change-log based transaction
+ * 嵌入式变更日志事务的工具方法。
+ * <p>
+ * 负责创建 {@link CacheHolder}、在集群上执行合并后的缓存操作（ADD/REPLACE/REMOVE），
+ * 以及带重试与版本检查的 replace 流程。
  */
 public class InfinispanChangesUtils {
 
     private InfinispanChangesUtils() {
     }
 
+    /** 绑定 Infinispan 缓存、ActionSequencer 与亲和键生成器。 */
     public static <K, V extends SessionEntity> CacheHolder<K, V> createWithCache(KeycloakSession session,
                                                                                  String cacheName,
                                                                                  SessionFunction<V> lifespanFunction,
@@ -63,17 +67,24 @@ public class InfinispanChangesUtils {
         return new CacheHolder<>(cache, sequencer, lifespanFunction, maxIdleFunction, SessionAffinityService.create(cache, keyGenerator));
     }
 
+    /** 无底层 Infinispan 缓存的 CacheHolder（仅超时计算）。 */
     public static <K, V extends SessionEntity> CacheHolder<K, V> createWithoutCache(SessionFunction<V> lifespanFunction,
                                                                                     SessionFunction<V> maxIdleFunction) {
         return new CacheHolder<>(null, null, lifespanFunction, maxIdleFunction, null);
     }
 
+    /** 无缓存但带自定义键生成器的 CacheHolder。 */
     public static <K, V extends SessionEntity> CacheHolder<K, V> createWithoutCache(SessionFunction<V> lifespanFunction,
                                                                                     SessionFunction<V> maxIdleFunction,
                                                                                     Supplier<K> keyGenerator) {
         return new CacheHolder<>(null, null, lifespanFunction, maxIdleFunction, keyGenerator);
     }
 
+    /**
+     * 在集群缓存上执行合并后的 {@link MergedUpdate} 操作。
+     * <p>
+     * 本地实体已在事务内更新，此处仅异步同步到 Infinispan。
+     */
     public static <K, V extends SessionEntity> void runOperationInCluster(
             CacheHolder<K, V> cacheHolder,
             K key,
@@ -84,12 +95,12 @@ public class InfinispanChangesUtils {
     ) {
         SessionUpdateTask.CacheOperation operation = task.getOperation();
 
-        // Don't need to run update of underlying entity. Local updates were already run
+        // 底层实体本地已更新，无需在此 runUpdate
         //task.runUpdate(session);
 
         switch (operation) {
             case REMOVE:
-                // Just remove it
+                // 直接从缓存移除
                 stage.dependsOn(CacheDecorators.ignoreReturnValues(cacheHolder.cache()).removeAsync(key));
                 break;
             case ADD:
@@ -131,7 +142,7 @@ public class InfinispanChangesUtils {
             logger.debugf("Existing entity in cache for key: %s . Will update it", key);
         }
 
-        // Apply updates on the existing entity and replace it
+        // 对已有条目应用更新并 replace
         task.runUpdate(existing.getEntity());
 
         return replace(cacheHolder, key, task, existing, logger);

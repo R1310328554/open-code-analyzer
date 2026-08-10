@@ -20,8 +20,12 @@ package org.keycloak.models.sessions.infinispan.changes;
 import org.keycloak.models.sessions.infinispan.entities.SessionEntity;
 
 /**
- * Marker interface for tasks that update persistent sessions
+ * 持久化会话更新任务的标记接口。
+ * <p>
+ * 扩展 {@link SessionUpdateTask}，额外声明会话是否为离线模式，
+ * 供持久化事务区分在线/离线缓存与数据库写入路径。
  */
 public interface PersistentSessionUpdateTask<S extends SessionEntity> extends SessionUpdateTask<S> {
+    /** 该任务是否针对离线会话。 */
     boolean isOffline();
 }

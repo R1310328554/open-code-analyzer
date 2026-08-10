@@ -26,8 +26,10 @@ import org.infinispan.Cache;
 import org.infinispan.util.concurrent.ActionSequencer;
 
 /**
- * Groups the {@link Cache}, the {@link ActionSequencer} (used by replace method) and the {@link SessionFunction} to
- * compute the lifespan, and the max-idle for this session entity.
+ * 聚合会话变更事务所需的缓存相关依赖。
+ * <p>
+ * 包含 {@link Cache}、用于 replace 操作的 {@link ActionSequencer}、
+ * 计算 lifespan 与 max-idle 的 {@link SessionFunction}，以及可选的亲和键生成器。
  */
 public record CacheHolder<K, V extends SessionEntity>(Cache<K, SessionEntityWrapper<V>> cache,
                                                       ActionSequencer sequencer,

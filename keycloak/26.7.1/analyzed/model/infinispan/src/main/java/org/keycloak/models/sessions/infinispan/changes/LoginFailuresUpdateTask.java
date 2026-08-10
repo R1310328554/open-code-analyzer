@@ -20,6 +20,10 @@ package org.keycloak.models.sessions.infinispan.changes;
 import org.keycloak.models.sessions.infinispan.entities.LoginFailureEntity;
 
 /**
+ * 登录失败记录更新任务的抽象基类。
+ * <p>
+ * 默认以 {@link CacheOperation#REPLACE} 合并到 Infinispan 变更日志事务中。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class LoginFailuresUpdateTask implements SessionUpdateTask<LoginFailureEntity> {

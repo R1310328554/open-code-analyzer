@@ -37,10 +37,18 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.CLIENT_SESSION_CACHE_NAME;
 
+/**
+ * 持久化客户端会话的变更日志事务。
+ * <p>
+ * 缓存未命中时从 {@link UserSessionPersisterProvider} 加载并导入；
+ * 与用户会话事务协作维护 clientSessions 映射，并处理认证会话悲观锁场景。
+ */
 public class ClientSessionPersistentChangelogBasedTransaction extends PersistentSessionsChangelogBasedTransaction<EmbeddedClientSessionKey, AuthenticatedClientSessionEntity> {
 
     private static final Logger LOG = Logger.getLogger(ClientSessionPersistentChangelogBasedTransaction.class);
+    /** 关联的用户会话持久化事务。 */
     private final UserSessionPersistentChangelogBasedTransaction userSessionTx;
+    /** 认证会话是否使用悲观锁（影响 ADD_IF_ABSENT 的 DB 锁策略）。 */
     private final boolean pessimisticLockingAuthenticationSession;
 
     public ClientSessionPersistentChangelogBasedTransaction(KeycloakSession session,
@@ -53,6 +61,7 @@ public class ClientSessionPersistentChangelogBasedTransaction extends Persistent
         this.pessimisticLockingAuthenticationSession = pessimisticLockingAuthenticationSession;
     }
 
+    /** 批量更新客户端会话实体上的 userSessionId。 */
     public void setUserSessionId(Collection<EmbeddedClientSessionKey> keys, String userSessionId, boolean offline) {
         keys.stream().map(getUpdates(offline)::get)
                 .filter(Objects::nonNull)
@@ -62,6 +71,9 @@ public class ClientSessionPersistentChangelogBasedTransaction extends Persistent
                 .forEach(authenticatedClientSessionEntity -> authenticatedClientSessionEntity.setUserSessionId(userSessionId));
     }
 
+    /**
+     * 按 realm/client/userSession 获取客户端会话；优先事务内副本，其次缓存，最后持久层。
+     */
     public SessionEntityWrapper<AuthenticatedClientSessionEntity> get(RealmModel realm, ClientModel client, UserSessionModel userSession, EmbeddedClientSessionKey key, boolean offline) {
         if (key == null) {
             key = new EmbeddedClientSessionKey(userSession.getId(), client.getId());
@@ -89,7 +101,7 @@ public class ClientSessionPersistentChangelogBasedTransaction extends Persistent
                 return null;
             }
 
-            // Cache does not contain the offline flag value so adding it
+            // 缓存不含 offline 标志，导入时补全
             wrappedEntity.getEntity().setOffline(offline);
             wrappedEntity.getEntity().setUserSessionId(userSession.getId());
 
@@ -105,7 +117,7 @@ public class ClientSessionPersistentChangelogBasedTransaction extends Persistent
             return wrappedEntity;
         } else {
 
-            // If entity is scheduled for remove, we don't return it.
+            // 已调度删除的实体不返回
             boolean scheduledForRemove = myUpdates.getUpdateTasks().stream()
                     .map(SessionUpdateTask::getOperation)
                     .anyMatch(SessionUpdateTask.CacheOperation.REMOVE::equals);
@@ -122,15 +134,15 @@ public class ClientSessionPersistentChangelogBasedTransaction extends Persistent
     @Override
     protected boolean lockDatabaseEntity(RealmModel realm, EmbeddedClientSessionKey clientSessionKey, boolean offline, SessionUpdateTask.CacheOperation operation) {
         if (operation == SessionUpdateTask.CacheOperation.ADD_IF_ABSENT) {
-            // There might be concurrent inserts for the same key, which can lead to conflicts.
-            // If the authentication session was locked pessimistically, we can still perform the insert safely.
-            // See UserSessionConcurrencyTest#testConcurrentNotesChange for a test.
+            // 同键并发插入可能冲突；认证会话已悲观锁定时可安全插入
+            // 参见 UserSessionConcurrencyTest#testConcurrentNotesChange
             return pessimisticLockingAuthenticationSession;
         } else {
             return kcSession.getProvider(UserSessionPersisterProvider.class).lockClientSession(realm, clientSessionKey.userSessionId(), clientSessionKey.clientId(), offline, operation == SessionUpdateTask.CacheOperation.REMOVE);
         }
     }
 
+    /** 从持久层加载客户端会话实体。 */
     private SessionEntityWrapper<AuthenticatedClientSessionEntity> getSessionEntityFromPersister(RealmModel realm, ClientModel client, UserSessionModel userSession, EmbeddedClientSessionKey clientSessionId, boolean offline) {
         UserSessionPersisterProvider persister = kcSession.getProvider(UserSessionPersisterProvider.class);
         AuthenticatedClientSessionModel clientSession = persister.loadClientSession(realm, client, userSession, offline);
@@ -150,6 +162,7 @@ public class ClientSessionPersistentChangelogBasedTransaction extends Persistent
         return authenticatedClientSessionEntitySessionEntityWrapper;
     }
 
+    /** 根据持久化模型创建 {@link AuthenticatedClientSessionEntity} 实例。 */
     public static AuthenticatedClientSessionEntity createAuthenticatedClientSessionInstance(String userSessionId, String userId, AuthenticatedClientSessionModel clientSession,
                                                                                       String realmId, String clientId, boolean offline) {
 
@@ -178,9 +191,7 @@ public class ClientSessionPersistentChangelogBasedTransaction extends Persistent
         entity.setUserSessionId(userSession.getId());
 
         if (offline) {
-            // Update timestamp to the same value as userSession. LastSessionRefresh of userSession from DB will have a correct value.
-            // This is an optimization with the old code before persistent user sessions existed, and is probably valid as an offline user session is supposed to have only one client session.
-            // Remove this code once this once the persistent sessions is the only way to handle sessions, and the old client sessions have been migrated to have an updated timestamp.
+            // 离线会话 timestamp 与用户会话 lastSessionRefresh 对齐（历史优化，持久化迁移后可移除）
             entity.setTimestamp(userSession.getLastSessionRefresh());
         }
 
@@ -204,7 +215,7 @@ public class ClientSessionPersistentChangelogBasedTransaction extends Persistent
             return imported;
         }
 
-        // TODO do we need the code below? In theory, if we are importing a client session, it is already mapped in the user session
+        // TODO: 导入客户端会话时用户会话映射是否仍需下列逻辑？
         if (! (userSession instanceof UserSessionAdapter<?> sessionToImportInto)) {
             throw new IllegalStateException("UserSessionModel must be instance of UserSessionAdapter");
         }

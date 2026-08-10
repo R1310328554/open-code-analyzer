@@ -19,6 +19,12 @@ package org.keycloak.models.sessions.infinispan;
 
 import org.keycloak.models.sessions.infinispan.changes.sessions.PersisterLastSessionRefreshStore;
 
+/**
+ * 暴露 {@link PersisterLastSessionRefreshStore} 的会话刷新存储接口。
+ * <p>
+ * 供 {@link UserSessionAdapter} 等组件批量持久化 lastSessionRefresh 时使用。
+ */
 public interface SessionRefreshStore {
+    /** 返回用于批量刷新 lastSessionRefresh 的持久化存储。 */
     PersisterLastSessionRefreshStore getPersisterLastSessionRefreshStore();
 }

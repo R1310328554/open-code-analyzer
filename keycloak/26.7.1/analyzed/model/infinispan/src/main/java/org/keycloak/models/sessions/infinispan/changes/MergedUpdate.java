@@ -26,15 +26,22 @@ import org.keycloak.models.sessions.infinispan.util.SessionTimeouts;
 import org.jboss.logging.Logger;
 
 /**
+ * 将同一事务内多条 {@link SessionUpdateTask} 合并为单次缓存操作的更新任务。
+ * <p>
+ * 提交时按序执行子任务、合并 {@link CacheOperation}，并携带 lifespan/maxIdle 元数据。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MergedUpdate<S extends SessionEntity> implements SessionUpdateTask<S> {
 
     private static final Logger logger = Logger.getLogger(MergedUpdate.class);
 
+    /** 待合并的子更新任务列表。 */
     private final List<SessionUpdateTask<S>> childUpdates = new LinkedList<>();
     private CacheOperation operation;
+    /** 缓存条目 lifespan（毫秒）。 */
     private final long lifespanMs;
+    /** 缓存条目 max-idle（毫秒）。 */
     private final long maxIdleTimeMs;
 
     private MergedUpdate(CacheOperation operation, long lifespanMs, long maxIdleTimeMs) {
@@ -74,6 +81,9 @@ public class MergedUpdate<S extends SessionEntity> implements SessionUpdateTask<
     }
 
 
+    /**
+     * 将子任务列表合并为单个 {@link MergedUpdate}；空列表或已过期条目返回 null 或 REMOVE。
+     */
     public static <S extends SessionEntity> MergedUpdate<S> computeUpdate(List<SessionUpdateTask<S>> childUpdates, SessionEntityWrapper<S> sessionWrapper, long lifespanMs, long maxIdleTimeMs) {
         if (childUpdates == null || childUpdates.isEmpty()) {
             return null;
@@ -94,17 +104,16 @@ public class MergedUpdate<S extends SessionEntity> implements SessionUpdateTask<
                 result.childUpdates.add(child);
             } else {
 
-                // Merge the operations.
+                // 合并缓存操作类型
                 result.operation = result.getOperation().merge(child.getOperation(), session);
 
-                // REMOVE is special case as other operations are not needed then.
+                // REMOVE 为终态，后续子任务可丢弃
                 if (result.operation == CacheOperation.REMOVE) {
                     result = new MergedUpdate<>(result.operation, lifespanMs, maxIdleTimeMs);
                     result.childUpdates.add(child);
                     return result;
                 }
 
-                // Finally add another update to the result
                 result.childUpdates.add(child);
             }
         }

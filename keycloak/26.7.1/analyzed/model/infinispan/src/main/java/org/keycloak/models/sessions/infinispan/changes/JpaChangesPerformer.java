@@ -51,10 +51,18 @@ import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.O
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.OFFLINE_USER_SESSION_CACHE_NAME;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.USER_SESSION_CACHE_NAME;
 
+/**
+ * 将 Infinispan 会话变更刷入 JPA 持久层的执行器。
+ * <p>
+ * 按缓存名选择用户/客户端会话处理器，在事务提交时批量 {@link #write} 到
+ * {@link UserSessionPersisterProvider}。
+ */
 public class JpaChangesPerformer<K, V extends SessionEntity> {
     private static final Logger LOG = Logger.getLogger(JpaChangesPerformer.class);
 
+    /** 待执行的持久化更新队列。 */
     private final List<PersistentUpdate> changes;
+    /** 按缓存类型分派的更新处理器。 */
     private final TriConsumer<KeycloakSession, Map.Entry<K, SessionUpdatesList<V>>, MergedUpdate<V>> processor;
 
     public JpaChangesPerformer(String cacheName) {
@@ -64,27 +72,25 @@ public class JpaChangesPerformer<K, V extends SessionEntity> {
     }
 
     /**
-     * It queues a database write to be applied at a future invocation.
+     * 将数据库写入操作加入队列，在后续 {@link #write} 时执行。
      *
-     * @param entry  The {@link Map.Entry} with the ID and the session.
-     * @param merged The {@link MergedUpdate} to be applied to the existing session.
+     * @param entry  会话 ID 与 {@link SessionUpdatesList} 条目
+     * @param merged 合并后的 {@link MergedUpdate}
      */
     public void registerChange(Map.Entry<K, SessionUpdatesList<V>> entry, MergedUpdate<V> merged) {
         changes.add(newUpdate(entry, merged));
     }
 
     /**
-     * Applies all the pending write operation into the database.
+     * 将所有待处理的写入应用到数据库。
      *
-     * @param session The {@link KeycloakSession} to access the database.
+     * @param session 用于访问持久层的 {@link KeycloakSession}
      */
     public void write(KeycloakSession session) {
         changes.forEach(persistentUpdate -> persistentUpdate.perform(session));
     }
 
-    /**
-     * Clears any pending blocking changes.
-     */
+    /** 清空待处理的阻塞型变更。 */
     public void clear() {
         changes.clear();
     }
@@ -103,6 +109,7 @@ public class JpaChangesPerformer<K, V extends SessionEntity> {
         };
     }
 
+    /** 处理客户端会话的 CREATE/MERGE/REMOVE。 */
     private static <K, V extends SessionEntity> void processClientSessionUpdate(KeycloakSession session, Map.Entry<K, SessionUpdatesList<V>> entry, MergedUpdate<V> merged) {
         SessionUpdatesList<V> sessionUpdates = entry.getValue();
         SessionEntityWrapper<V> sessionWrapper = sessionUpdates.getEntityWrapper();
@@ -121,6 +128,7 @@ public class JpaChangesPerformer<K, V extends SessionEntity> {
 
     }
 
+    /** 将内存实体变更合并到已加载的持久化客户端会话并 flush。 */
     private static <V extends SessionEntity> void mergeClientSession(SessionEntityWrapper<V> sessionWrapper, UserSessionPersisterProvider userSessionPersister, RealmModel realm, SessionUpdatesList<V> sessionUpdates) {
         AuthenticatedClientSessionEntity entity = (AuthenticatedClientSessionEntity) sessionWrapper.getEntity();
         ClientModel client = new ClientModelLazyDelegate(null) {
@@ -253,6 +261,7 @@ public class JpaChangesPerformer<K, V extends SessionEntity> {
         }
     }
 
+    /** 根据实体快照创建新的持久化客户端会话。 */
     private static <V extends SessionEntity> void createClientSession(KeycloakSession session, SessionEntityWrapper<V> sessionWrapper, UserSessionPersisterProvider userSessionPersister) {
         AuthenticatedClientSessionEntity entity = (AuthenticatedClientSessionEntity) sessionWrapper.getEntity();
         userSessionPersister.createClientSession(new AuthenticatedClientSessionModel() {
@@ -368,6 +377,7 @@ public class JpaChangesPerformer<K, V extends SessionEntity> {
         }, entity.isOffline());
     }
 
+    /** 处理用户会话的 CREATE/MERGE/REMOVE，含并发创建校验。 */
     private static <K, V extends SessionEntity> void processUserSessionUpdate(KeycloakSession session, Map.Entry<K, SessionUpdatesList<V>> entry, MergedUpdate<V> merged) {
         SessionUpdatesList<V> sessionUpdates = entry.getValue();
         SessionEntityWrapper<V> sessionWrapper = sessionUpdates.getEntityWrapper();
@@ -382,19 +392,13 @@ public class JpaChangesPerformer<K, V extends SessionEntity> {
             case ADD_IF_ABSENT -> {
                 PersistentUserSessionAdapter userSessionModel = (PersistentUserSessionAdapter) userSessionPersister.loadUserSession(realm, entry.getKey().toString(), entity.isOffline());
                 if (userSessionModel != null) {
-                    // This might happen if the user logs in via multiple tabs at the same time from an external broker, and the same authentication session creates
-                    // multiple user sessions concurrently.
+                    // 多标签/外部 broker 并发登录可能重复 ADD_IF_ABSENT 同 ID
                     if (!Objects.equals(userSessionModel.getUserId(), entity.getUser())) {
-                        // This should never happen, and if it does, it shows a bug somewhere else where a wrong ID was used.
-                        // Still, this check would help us to identify if such a problem exists, so this is why we keep it here.
+                        // 用户 ID 不应变化，出现即表示其他路径误用了会话 ID
                         throw new ModelIllegalStateException("User ID of the session does not match, the user ID should not change");
                     }
                     if (Math.abs(userSessionModel.getStarted() - entity.getStarted()) > 10) {
-                        // The only valid situation where a session is created with an already existing ID is that there are concurrent requests.
-                        // For example, an authentication flow is triggered in two different tabs of a browser, and processed concurrently.
-                        // In such a case, it is valid and this code will then update the first one created.
-                        // In all other cases, if such a request for an authentication session would come in later, this should be handled in other places.
-                        // Due to this, this is limited to the first 10 seconds of a user session to handle only the current login case.
+                        // 合法并发创建仅限会话开始后约 10 秒内（如浏览器多标签同时登录）
                         throw new ModelIllegalStateException("Session has already aged, concurrent requests to create it should not happen");
                     }
                     mergeUserSession(session, entry, userSessionModel, realm, sessionUpdates, userSessionPersister, entity);
@@ -413,6 +417,7 @@ public class JpaChangesPerformer<K, V extends SessionEntity> {
         }
     }
 
+    /** 根据 {@link UserSessionEntity} 快照在 DB 中创建用户会话。 */
     private static void createUserSession(UserSessionPersisterProvider userSessionPersister, UserSessionEntity entity) {
         userSessionPersister.createUserSession(new UserSessionModel() {
             @Override
@@ -492,7 +497,7 @@ public class JpaChangesPerformer<K, V extends SessionEntity> {
 
             @Override
             public Map<String, AuthenticatedClientSessionModel> getAuthenticatedClientSessions() {
-                // This is not used when saving this to the database.
+                // 持久化创建路径不使用此映射
                 return Collections.emptyMap();
             }
 
@@ -538,6 +543,7 @@ public class JpaChangesPerformer<K, V extends SessionEntity> {
         }, entity.isOffline());
     }
 
+    /** 将变更任务应用到已加载的 {@link PersistentUserSessionAdapter} 并持久化。 */
     private static <K, V extends SessionEntity> void mergeUserSession(KeycloakSession innerSession, Map.Entry<K, SessionUpdatesList<V>> entry, PersistentUserSessionAdapter userSessionModel, RealmModel realm, SessionUpdatesList<V> sessionUpdates, UserSessionPersisterProvider userSessionPersister, UserSessionEntity entity) {
         UserSessionEntity userSessionEntity = new UserSessionEntity(userSessionModel.getId()) {
             @Override

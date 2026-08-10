@@ -39,14 +39,22 @@ import org.infinispan.commons.util.concurrent.CompletionStages;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于变更日志的 Infinispan 会话事务（纯缓存、非持久化路径）。
+ * <p>
+ * 事务内累积 {@link SessionUpdateTask}，提交时合并为 {@link MergedUpdate} 并异步写入集群缓存；
+ * 支持实体导入、重启及 TRANSIENT 会话跳过缓存写入。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> implements SessionsChangelogBasedTransaction<K, V>, NonBlockingTransaction {
 
     public static final Logger logger = Logger.getLogger(InfinispanChangelogBasedTransaction.class);
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession kcSession;
+    /** 键到待提交更新列表的映射。 */
     protected final Map<K, SessionUpdatesList<V>> updates = new HashMap<>();
+    /** 缓存、序列化器与超时计算函数。 */
     protected final CacheHolder<K, V> cacheHolder;
 
     public InfinispanChangelogBasedTransaction(KeycloakSession kcSession, CacheHolder<K, V> cacheHolder) {
@@ -77,7 +85,7 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
     }
 
 
-    // Create entity and new version for it
+    // 创建实体及其首个版本
     public void addTask(K key, SessionUpdateTask<V> task, V entity, UserSessionModel.SessionPersistenceState persistenceState) {
         if (entity == null) {
             throw new IllegalArgumentException("Null entity not allowed");
@@ -89,7 +97,7 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
         updates.put(key, myUpdates);
 
         if (task != null) {
-            // Run the update now, so reader in same transaction can see it
+            // 立即执行以便同事务内读者可见
             myUpdates.addAndExecute(task);
         }
     }
@@ -132,7 +140,7 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
 
             return wrappedEntity;
         } else {
-            // If entity is scheduled for remove, we don't return it.
+            // 已标记删除的实体不再对外返回
             boolean scheduledForRemove = myUpdates.getUpdateTasks().stream()
                     .map(SessionUpdateTask::getOperation)
                     .anyMatch(SessionUpdateTask.CacheOperation.REMOVE::equals);
@@ -149,14 +157,14 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
             List<SessionUpdateTask<V>> updateTasks = sessionUpdates.getUpdateTasks();
 
             if (updateTasks.isEmpty()) {
-                // no changes tracked, moving on.
+                // 无变更，跳过
                 continue;
             }
 
-            // Don't save transient entities to infinispan. They are valid just for current transaction
+            // TRANSIENT 实体仅存在于当前事务，不写 Infinispan
             if (sessionUpdates.getPersistenceState() == UserSessionModel.SessionPersistenceState.TRANSIENT) continue;
 
-            // Don't save entities in infinispan that are both added and removed within the same transaction.
+            // 同事务内 ADD_IF_ABSENT 后又 REMOVE 的条目无需写缓存
             if (updateTasks.get(0).getOperation().equals(SessionUpdateTask.CacheOperation.ADD_IF_ABSENT)
                     && updateTasks.get(updateTasks.size() - 1).getOperation().equals(SessionUpdateTask.CacheOperation.REMOVE)) {
                 continue;
@@ -170,7 +178,7 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
             MergedUpdate<V> merged = MergedUpdate.computeUpdate(updateTasks, sessionWrapper, computeLifespan(maxIdleTimeMs, lifespanMs), computeMaxIdle(maxIdleTimeMs, lifespanMs));
 
             if (merged != null) {
-                // Now run the operation in our cluster
+                // 在集群上执行合并后的缓存操作
                 InfinispanChangesUtils.runOperationInCluster(cacheHolder, entry.getKey(), merged, sessionWrapper, stage, logger);
             }
         }
@@ -182,7 +190,7 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
     }
 
     /**
-     * @return The {@link Cache} backing up this transaction.
+     * @return  backing {@link Cache}。
      */
     public Cache<K, SessionEntityWrapper<V>> getCache() {
         return cacheHolder.cache();
@@ -194,31 +202,27 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
     }
 
     /**
-     * Imports a session from an external source into the {@link Cache}.
+     * 从外部源导入会话到 {@link Cache}。
      * <p>
-     * If a session already exists in the cache, this method does not insert the {@code session}. The invoker should use
-     * the session returned by this method invocation. When the session is successfully imported, this method returns
-     * null and the {@code session} can be used by the transaction.
-     * <p>
-     * This transaction will keep track of further changes in the session.
+     * 若缓存中已存在同键会话，返回已有条目且不插入参数中的 session；成功导入时返回 null，
+     * 调用方可继续使用参数 session。本事务会继续跟踪后续变更。
      *
-     * @param realmModel The {@link RealmModel} where the session belong to.
-     * @param key        The cache's key.
-     * @param session    The session to import.
-     * @param lifespan   How long the session stays cached until it is expired and removed.
-     * @param maxIdle    How long the session can be idle (without reading or writing) before being removed.
-     * @return The existing cached session. If it returns {@code null}, it means the {@code session} used in the
-     * parameters was cached.
+     * @param realmModel 会话所属 {@link RealmModel}
+     * @param key        缓存键
+     * @param session    待导入会话
+     * @param lifespan   缓存存活时间（毫秒）
+     * @param maxIdle    最大空闲时间（毫秒）
+     * @return 已存在的缓存会话；null 表示参数 session 已写入缓存
      */
     public V importSession(RealmModel realmModel, K key, SessionEntityWrapper<V> session, long lifespan, long maxIdle) {
         SessionUpdatesList<V> updatesList = updates.get(key);
         if (updatesList != null) {
-            // exists in transaction, avoid cache operation
+            // 事务内已存在，跳过缓存操作
             return updatesList.getEntityWrapper().getEntity();
         }
         SessionEntityWrapper<V> existing = cacheHolder.cache().putIfAbsent(key, session, computeLifespan(maxIdle, lifespan), TimeUnit.MILLISECONDS, computeMaxIdle(maxIdle, lifespan), TimeUnit.MILLISECONDS);
         if (existing == null) {
-            // keep track of the imported session for updates
+            // 记录导入会话以便后续更新
             updates.put(key, new SessionUpdatesList<>(realmModel, session));
             return null;
         }
@@ -227,32 +231,26 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
     }
 
     /**
-     * Imports multiple sessions from an external source into the {@link Cache}.
+     * 并发批量导入会话到 {@link Cache}。
      * <p>
-     * If the {@code lifespanFunction} or {@code maxIdleFunction} returns {@link SessionTimeouts#ENTRY_EXPIRED_FLAG},
-     * the session is considered expired and not stored in the cache.
-     * <p>
-     * Also, if one or more sessions already exist in the {@link Cache}, it will not be imported.
-     * <p>
-     * This transaction will keep track of further changes in the sessions.
+     * 若 lifespan/maxIdle 函数返回 {@link SessionTimeouts#ENTRY_EXPIRED_FLAG} 则视为已过期不导入；
+     * 缓存中已存在的键也不会覆盖。本事务会跟踪所有成功导入的会话。
      *
-     * @param realmModel       The {@link RealmModel} where the sessions belong to.
-     * @param sessions         The {@link Map} with the cache's key/session mapping to be imported.
-     * @param lifespanFunction The {@link java.util.function.Function} to compute the lifespan of the session. It
-     *                         defines how long the session should be stored in the cache until it is removed.
-     * @param maxIdleFunction  The {@link java.util.function.Function} to compute the max-idle of the session. It
-     *                         defines how long the session will be idle before it is removed.
+     * @param realmModel       会话所属 realm
+     * @param sessions         键与会话包装器的映射
+     * @param lifespanFunction lifespan 计算函数
+     * @param maxIdleFunction  max-idle 计算函数
      */
     public void importSessionsConcurrently(RealmModel realmModel, Map<K, SessionEntityWrapper<V>> sessions, SessionFunction<V> lifespanFunction, SessionFunction<V> maxIdleFunction) {
         if (sessions.isEmpty()) {
-            //nothing to import
+            // 无待导入项
             return;
         }
         var stage = CompletionStages.aggregateCompletionStage();
         var allSessions = new ConcurrentHashMap<K, SessionEntityWrapper<V>>();
         sessions.forEach((key, session) -> {
             if (updates.containsKey(key)) {
-                //nothing to import, already exists in transaction
+                // 事务内已有，无需导入
                 return;
             }
             var clientModel = session.getClientIfNeeded(realmModel);
@@ -260,11 +258,11 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
             var lifespan = lifespanFunction.apply(realmModel, clientModel, sessionEntity);
             var maxIdle = maxIdleFunction.apply(realmModel, clientModel, sessionEntity);
             if (lifespan == SessionTimeouts.ENTRY_EXPIRED_FLAG || maxIdle == SessionTimeouts.ENTRY_EXPIRED_FLAG) {
-                //nothing to import, already expired
+                // 已过期，跳过导入
                 return;
             }
             var future = cacheHolder.cache().putIfAbsentAsync(key, session, computeLifespan(maxIdle, lifespan), TimeUnit.MILLISECONDS, computeMaxIdle(maxIdle, lifespan), TimeUnit.MILLISECONDS);
-            // write result into concurrent hash map because the consumer is invoked in a different thread each time.
+            // 回调可能在不同线程执行，用并发 Map 收集结果
             stage.dependsOn(future.thenAccept(existing -> allSessions.put(key, existing == null ? session : existing)));
         });
 
@@ -273,7 +271,7 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
     }
 
     private void lookupAndAndExecuteTask(K key, SessionUpdateTask<V> task) {
-        // Lookup entity from cache
+        // 从缓存加载实体
         SessionEntityWrapper<V> wrappedEntity = cacheHolder.cache().get(key);
         if (wrappedEntity == null) {
             logger.tracef("Not present cache item for key %s", key);
@@ -285,7 +283,7 @@ public class InfinispanChangelogBasedTransaction<K, V extends SessionEntity> imp
         SessionUpdatesList<V> myUpdates = new SessionUpdatesList<>(realm, wrappedEntity);
         updates.put(key, myUpdates);
 
-        // Run the update now, so reader in same transaction can see it (TODO: Rollback may not work correctly. See if it's an issue..)
+        // 立即执行以便同事务读者可见（回滚行为待验证）
         myUpdates.addAndExecute(task);
     }
 
