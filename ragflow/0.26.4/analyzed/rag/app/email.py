@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+邮件（EML）解析器：解析头/正文/附件，正文 naive_merge 分块并递归解析附件。
+"""
+
+
 
 import logging
 from email import policy
@@ -36,7 +41,7 @@ def chunk(
     **kwargs,
 ):
     """
-    Only eml is supported
+    仅支持 EML 格式：解析 multipart 邮件并 tokenize 正文与附件。
     """
     eng = lang.lower() == "english"  # is_english(cks)
     parser_config = kwargs.get(
@@ -59,11 +64,11 @@ def chunk(
             msg = BytesParser(policy=policy.default).parse(buffer)
 
     text_txt, html_txt = [], []
-    # get the email header info
+    # 收集邮件头键值对
     for header, value in msg.items():
         text_txt.append(f"{header}: {value}")
 
-    #  get the email main info
+    # 递归解析 multipart 正文（plain/html）
     def _add_content(msg, content_type):
         def _decode_payload(payload, charset, target_list):
             try:
@@ -104,7 +109,7 @@ def chunk(
 
     main_res.extend(tokenize_chunks(chunks, doc, eng, None, language=lang))
     logging.debug("naive_merge({}): {}".format(filename, timer() - st))
-    # get the attachment info
+    # 遍历附件并委托 naive.chunk 解析
     for part in msg.iter_attachments():
         content_disposition = part.get("Content-Disposition")
         if content_disposition:

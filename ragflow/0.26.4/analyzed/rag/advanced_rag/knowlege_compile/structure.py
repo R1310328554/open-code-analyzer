@@ -13,6 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+结构化知识编译：从文本 chunk 抽取 list/set/hypergraph 结构并写入 ES。
+
+公开入口：compile_structure_from_text（单文档抽取）、merge_compiled_structures（跨 chunk 合并去重）。
+"""
+
+
 import datetime
 import json
 import logging
@@ -36,10 +43,12 @@ from ._common import (
 )
 
 
+# 支持的 compile_kwd 结构类型
 _STRUCT_TYPES = ("list", "set", "hypergraph")
 
 
 def _struct_normalize_kind(kind) -> str:
+    """规范化 parser_config 中的结构 kind 字符串。"""
     if not isinstance(kind, str):
         return ""
     normalized = kind.strip().lower().replace("-", "_")
@@ -265,6 +274,7 @@ def _struct_unwrap_items(res) -> list:
 
 
 async def _struct_extract_hypergraph(text: str, parser_config: dict, chat_mdl, language: str) -> Tuple[list[dict], list[dict]]:
+    # 单 chunk 超图抽取：实体 + 关系列表
     node_prompt, edge_prompt_template = _struct_hypergraph_prompts(parser_config, language)
 
     user_prompt = f"## Source Text:\n{text}\n\n## Output (JSON only):"
@@ -497,6 +507,7 @@ def _struct_to_es_doc(
 
 
 async def _struct_process_batch(
+    # 批处理：对每个 chunk 调用 gen_json 抽取结构 payload
     packed: list[dict],
     batch_idx: int,
     total: int,
@@ -599,7 +610,7 @@ async def compile_structure_from_text(
     max_workers: int = 10,
     compilation_template_id: str | None = None,
 ) -> list[dict]:
-    """Extract list/set/hypergraph structures from text chunks and prepare ES docs.
+    """从文本 chunk 抽取 list/set/hypergraph 结构并组装 ES 文档。
 
     Each chunk is processed independently — cross-chunk merging of entities and
     relations is deferred to a separate pipeline stage and is intentionally not
@@ -1184,6 +1195,7 @@ async def _struct_upsert_graph_json(
 
 
 async def rebuild_structure_graph_json(
+    # 重建 KB 级结构图 JSON 缓存行
     tenant_id: str,
     kb_id: str,
     doc_id: str,
@@ -1405,6 +1417,7 @@ def _chain_gather_chunk_text(
 
 
 async def validate_and_correct_chain(
+    # 校验并修正链式关系中的违规边
     docs: list[dict],
     chunks_by_id: dict[str, str],
     chat_mdl,
@@ -1524,7 +1537,7 @@ async def merge_compiled_structures(
     compilation_template_id: str | None = None,
     cancel_check: Callable[[], bool] | None = None,
 ) -> dict:
-    """Merge ``docs`` (the output of ``compile_structure_from_text``) before
+    """合并 compile_structure_from_text 输出：本地余弦去重 + ES KNN 去重后写入。
     inserting them into ES.
 
     Two phases:
@@ -1635,3 +1648,5 @@ __all__ = [
     "merge_compiled_structures",
     "rebuild_structure_graph_json",
 ]
+
+# 单 chunk 内不做跨 chunk 实体合并；合并逻辑在 merge_compiled_structures 阶段完成。

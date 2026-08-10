@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+思维导图抽取器：调用 LLM 将文档段落转为层级 JSON 树结构。
+"""
+
+
 
 import asyncio
 import logging
@@ -32,12 +37,13 @@ from common.token_utils import num_tokens_from_string
 
 @dataclass
 class MindMapResult:
-    """Unipartite Mind Graph result class definition."""
+    """单部图思维导图抽取结果，output 为嵌套 id/children 字典。"""
 
     output: dict
 
 
 class MindMapExtractor(Extractor):
+    # 继承 GraphRAG Extractor，按 token 窗口分批调用 LLM 并合并 JSON
     _input_text_key: str
     _mind_map_prompt: str
     _on_error: ErrorHandlerFn
@@ -73,7 +79,7 @@ class MindMapExtractor(Extractor):
         return arr
 
     async def __call__(self, sections: list[str], prompt_variables: dict[str, Any] | None = None) -> MindMapResult:
-        """Call method definition."""
+        """对 sections 列表分批抽取并合并为统一思维导图树。"""
         if prompt_variables is None:
             prompt_variables = {}
 
@@ -156,6 +162,7 @@ class MindMapExtractor(Extractor):
         return self._list_to_kv(to_ret)
 
     async def _process_document(self, text: str, prompt_variables: dict[str, str], out_res) -> str:
+        # 单批文本：填充 prompt → LLM 生成 → markdown_to_json 解析
         variables = {
             **prompt_variables,
             self._input_text_key: text,

@@ -13,6 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAPTOR（Recursive Abstractive Processing for Tree-Organized Retrieval）实现。
+
+支持经典层次聚类树与 Psi 合并树两种构建策略，对 chunk 逐层抽象生成摘要节点。
+"""
+
+
 import asyncio
 from dataclasses import dataclass, field
 import logging
@@ -43,14 +50,14 @@ from rag.utils.raptor_utils import (
     SUPPORTED_TREE_BUILDERS,
 )
 
-# Regularization added to GMM covariance diagonals; keeps components
+# GMM 协方差对角正则化，防止组件在单点/近重复嵌入上坍缩
 # from collapsing on singleton/near-identical reduced points.
 _GMM_REG_COVAR = 1e-4
 
 
 @dataclass
 class _PsiTreeNode:
-    """Node used to represent the in-memory Psi merge tree."""
+    """Psi 合并树的内存节点，携带文本、嵌入与子 chunk id 溯源。"""
 
     index: int
     text: str = ""
@@ -66,10 +73,10 @@ class _PsiTreeNode:
 
 
 class _PsiUnionFind:
-    """Build parent links for the Psi merge tree from ranked leaf pairs."""
+    """按排序叶节点对构建 Psi 合并树的并查集父链。"""
 
     def __init__(self, n: int):
-        """Initialize the union-find state for n leaf nodes."""
+        """初始化 n 个叶节点的并查集状态。"""
         self._rank = [0 for _ in range(n)]
         self._parent_chains = [[] for _ in range(n)]
         self._node_ids = [[i] for i in range(n)]
@@ -163,7 +170,8 @@ class _PsiUnionFind:
 
 
 class RecursiveAbstractiveProcessing4TreeOrganizedRetrieval:
-    """Build RAPTOR summary layers with the classic or Psi tree strategy."""
+    # 入口：__call__ 接收 chunk 列表，输出多层摘要 chunk
+    """RAPTOR 主类：经典聚类树或 Psi 策略逐层生成摘要层。"""
 
     def __init__(
         self,
@@ -980,3 +988,5 @@ class RecursiveAbstractiveProcessing4TreeOrganizedRetrieval:
         # a single root. Wrap in a synthetic root so the caller always
         # sees one dict.
         return {"title": "(root)", "children": top_nodes}
+
+# 聚类方法支持 AHC/GMM；树构建器支持 RAPTOR_TREE_BUILDER 与 PSI_TREE_BUILDER。

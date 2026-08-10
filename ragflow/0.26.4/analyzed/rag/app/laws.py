@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+法律法规文档解析器：按标题层级构建 Node 树，支持 docx/pdf 结构化分块。
+"""
+
+
 
 import logging
 import re
@@ -32,6 +37,7 @@ from common.parser_config_utils import normalize_layout_recognizer
 
 
 class Docx(DocxParser):
+    # 法规 DOCX：段落+表格按 docx_question_level 建树
     def __init__(self):
         pass
 
@@ -86,7 +92,7 @@ class Docx(DocxParser):
         lines = []
         level_set = set()
         bull = bullets_category([p.text for p in self.doc.paragraphs])
-        # Tables carry no heading level; assign a sentinel deeper than any heading so
+        # 表格无标题级别；赋予哨兵深度以便并入 enclosing section
         # build_tree merges them into the enclosing section as leaf content (keeping the
         # section's title path as retrieval context) instead of dropping them.
         table_level = 10**6
@@ -141,6 +147,7 @@ class Docx(DocxParser):
 
 
 class Pdf(PdfParser):
+    # 法规 PDF：DeepDOC 布局识别 + 层级合并
     def __init__(self):
         self.model_species = ParserType.LAWS.value
         super().__init__()
@@ -166,14 +173,14 @@ class Pdf(PdfParser):
 
 def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, **kwargs):
     """
-    Supported file formats are docx, pdf, txt.
+    支持 docx、pdf、txt；输出按法规条款层级 tree_merge 后的 tokenized chunks。
     """
     parser_config = kwargs.get("parser_config", {"chunk_token_num": 512, "delimiter": "\n!?。；！？", "layout_recognize": "DeepDOC"})
     doc = {"docnm_kwd": filename, "title_tks": rag_tokenizer.tokenize(re.sub(r"\.[a-zA-Z]+$", "", filename))}
     doc["title_sm_tks"] = rag_tokenizer.fine_grained_tokenize(doc["title_tks"])
     pdf_parser = None
     sections = []
-    # is it English
+    # 根据 lang 判定英文分词策略
     eng = lang.lower() == "english"  # is_english(sections)
 
     if re.search(r"\.docx$", filename, re.IGNORECASE):

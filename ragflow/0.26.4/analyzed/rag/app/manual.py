@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+手册/说明书解析器：问答对结构（question + answer），支持 PDF/DOCX 与 PDF 书签大纲。
+"""
+
+
 
 import logging
 import copy
@@ -31,6 +36,7 @@ from common.parser_config_utils import normalize_layout_recognizer
 
 
 class Pdf(PdfParser):
+    # 手册 PDF：OCR + 布局 + 表格 + 向下拼接清理
     def __init__(self):
         self.model_species = ParserType.MANUAL.value
         super().__init__()
@@ -60,7 +66,7 @@ class Pdf(PdfParser):
         self._filter_forpages()
         callback(0.68, "Text merged ({:.2f}s)".format(timer() - start))
 
-        # clean mess
+        # 清理多余空白与全角空格
         for b in self.boxes:
             b["text"] = re.sub(r"([\t 　]|\u3000){2,}", " ", b["text"].strip())
 
@@ -68,6 +74,7 @@ class Pdf(PdfParser):
 
 
 class Docx(DocxParser):
+    # 手册 DOCX：识别 question_level 段落，累积 answer 与图片
     def __init__(self):
         pass
 
@@ -136,7 +143,7 @@ class Docx(DocxParser):
 
 def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, **kwargs):
     """
-    Only pdf is supported.
+    主要支持 PDF/DOCX；PDF 可结合 outline 书签提取问答对。
     """
     parser_config = kwargs.get("parser_config", {"chunk_token_num": 512, "delimiter": "\n!?。；！？", "layout_recognize": "DeepDOC"})
     pdf_parser = None
@@ -173,6 +180,7 @@ def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang=
         )
 
         def _normalize_section(section):
+            # 将 section 规范为 (txt, layoutno, poss) 三元组
             # pad section to length 3: (txt, sec_id, poss)
             if len(section) == 1:
                 section = (section[0], "", [])

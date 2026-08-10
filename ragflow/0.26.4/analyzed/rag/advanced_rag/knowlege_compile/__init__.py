@@ -13,6 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+knowlege_compile 包：知识编译流水线公共入口。
+
+导出 structure 编译（list/set/hypergraph）与 wiki 四阶段流水线（MAP→REDUCE→PLAN→REFINE）函数及 compile_kwd 常量。
+"""
+
+
 
 from .structure import compile_structure_from_text, merge_compiled_structures
 from .wiki import (

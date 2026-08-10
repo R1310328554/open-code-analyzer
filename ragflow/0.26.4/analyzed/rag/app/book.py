@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+书籍类文档解析器：长文档 docx/pdf/txt/html 分块，支持目录剔除与多布局识别器。
+"""
+
+
 
 import logging
 import re
@@ -32,6 +37,7 @@ from rag.utils.lazy_image import LazyImage
 
 
 class Pdf(PdfParser):
+    # 书籍 PDF：OCR → 布局 → 表格 → 文本合并提取
     def __call__(self, filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, zoomin=3, callback=None):
         from timeit import default_timer as timer
 
@@ -62,7 +68,7 @@ class Pdf(PdfParser):
 
 def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, **kwargs):
     """
-    Supported file formats are docx, pdf, txt.
+    支持 docx、pdf、txt、html、doc；PDF 建议设置页码范围以节省算力。
     Since a book is long and not all the parts are useful, if it's a PDF,
     please set up the page ranges for every book in order eliminate negative effects and save elapsed computing time.
     """
@@ -74,7 +80,7 @@ def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang=
     if re.search(r"\.docx$", filename, re.IGNORECASE):
         callback(0.1, "Start to parse.")
         doc_parser = naive.Docx()
-        # TODO: table of contents need to be removed
+        # TODO: 需移除目录页
         main_sections = doc_parser(filename, binary=binary, from_page=from_page, to_page=to_page)
 
         sections = []

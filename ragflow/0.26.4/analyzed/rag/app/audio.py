@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+音频文档解析器：Speech2Text 转写后 tokenize 为单 chunk 文档。
+"""
+
+
 import logging
 import os
 import re
@@ -25,10 +30,11 @@ from rag.nlp import rag_tokenizer, tokenize
 
 
 def chunk(filename, binary, tenant_id, lang, callback=None, **kwargs):
+    # 支持 wav/mp3 等格式：临时文件 → 租户默认 Speech2Text 模型转写 → 分词
     doc = {"docnm_kwd": filename, "title_tks": rag_tokenizer.tokenize(re.sub(r"\.[a-zA-Z]+$", "", filename))}
     doc["title_sm_tks"] = rag_tokenizer.fine_grained_tokenize(doc["title_tks"])
 
-    # is it English
+    # 根据 lang 参数判定是否按英文分词
     is_english = lang.lower() == "english"  # is_english(sections)
     try:
         _, ext = os.path.splitext(filename)

@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+树状查询分解检索（Deep Research）：递归分解子问题并从 KB/网络/知识图谱检索。
+"""
+
+
 import asyncio
 import logging
 from functools import partial
@@ -24,6 +29,7 @@ from timeit import default_timer as timer
 
 
 class TreeStructuredQueryDecompositionRetrieval:
+    # 深度研究检索器：不足则 multi_queries_gen 分解并递归搜索
     def __init__(
         self,
         chat_mdl: LLMBundle,
@@ -40,8 +46,8 @@ class TreeStructuredQueryDecompositionRetrieval:
         self._lock = asyncio.Lock()
 
     async def _retrieve_information(self, search_query):
-        """Retrieve information from different sources"""
-        # 1. Knowledge base retrieval
+        """从知识库、Tavily 网络与知识图谱并行检索信息。"""
+        # 1. 知识库检索
         kbinfos = {"total": 0, "chunks": [], "doc_aggs": []}
         try:
             kbinfos = await self._kb_retrieve(question=search_query) if self._kb_retrieve else {"total": 0, "chunks": [], "doc_aggs": []}
@@ -49,7 +55,7 @@ class TreeStructuredQueryDecompositionRetrieval:
         except Exception as e:
             logging.error(f"Knowledge base retrieval error: {e}")
 
-        # 2. Web retrieval (if Tavily API is configured)
+        # 2. 网络检索（配置 Tavily API 时）
         try:
             if self.internet_enabled and self.prompt_config.get("tavily_api_key"):
                 tav = Tavily(self.prompt_config["tavily_api_key"])
@@ -59,7 +65,7 @@ class TreeStructuredQueryDecompositionRetrieval:
         except Exception as e:
             logging.error(f"Web retrieval error: {e}")
 
-        # 3. Knowledge graph retrieval (if configured)
+        # 3. 知识图谱检索（启用 use_kg 时）
         try:
             if self.prompt_config.get("use_kg") and self._kg_retrieve:
                 ck = await self._kg_retrieve(question=search_query)
@@ -72,7 +78,7 @@ class TreeStructuredQueryDecompositionRetrieval:
 
     async def _async_update_chunk_info(self, chunk_info, kbinfos):
         async with self._lock:
-            """Update chunk information for citations"""
+            """合并检索结果到 chunk_info，供引用去重。"""
             if not chunk_info["chunks"]:
                 # If this is the first retrieval, use the retrieval results directly
                 for k in chunk_info.keys():
@@ -92,6 +98,7 @@ class TreeStructuredQueryDecompositionRetrieval:
                 chunk_info["total"] = chunk_info.get("total", 0) + kbinfos.get("total", 0)
 
     async def research(self, chunk_info, question, query, depth=3, callback=None):
+        # 对外入口：包裹 _research 并发送 START/END 深度研究标记
         if callback:
             await callback("<START_DEEP_RESEARCH>")
         try:
@@ -103,6 +110,7 @@ class TreeStructuredQueryDecompositionRetrieval:
                 await callback("<END_DEEP_RESEARCH>")
 
     async def _research(self, chunk_info, question, query, depth=3, callback=None):
+        # 递归核心：检索 → 充分性检查 → 不足则分解子问题并行继续
         if depth == 0:
             # if callback:
             #    await callback("Reach the max search depth.")

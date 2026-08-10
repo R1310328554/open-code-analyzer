@@ -13,3 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+rag.app 包：各文档类型专用解析与分块策略（book、laws、manual、email、audio 等）。
+"""
+
+

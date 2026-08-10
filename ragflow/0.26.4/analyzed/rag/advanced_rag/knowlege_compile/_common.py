@@ -13,10 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""Shared helpers for the knowlege_compile pipelines (structure + wiki).
+"""
+knowlege_compile 流水线共享工具模块（structure + wiki）。
 
-Both ``structure.py`` (compile_structure_from_text / merge_compiled_structures)
-and ``wiki.py`` (the MAP→REDUCE→PLAN→REFINE artifact pipeline) need the same set
+structure.py 与 wiki.py 共用的底层能力：
+
+# structure.py（compile_structure_from_text / merge_compiled_structures）
+# 与 wiki.py（MAP→REDUCE→PLAN→REFINE 制品流水线）均需：
 of plumbing: encode-through-LLMBundle, stable id minting, search-tokenizer
 pairs, order-preserving chunk-id unions, defensive LLMBundle validation, the
 ``chat_mdl.max_length * INPUT_UTILIZATION - prompt_overhead`` token-budget
@@ -49,11 +52,12 @@ from rag.prompts.generator import INPUT_UTILIZATION, gen_json, split_chunks
 
 
 # ---------------------------------------------------------------------------
-# ID minting
+# ID 生成
 # ---------------------------------------------------------------------------
 
 
 def stable_row_id(*parts) -> str:
+    """基于 xxhash 为 ES 行生成稳定主键。"""
     """xxh64 hexdigest of ``":".join(parts)`` — stable per part tuple, used
     as the ES row id when we want idempotent upserts.
 
@@ -69,6 +73,7 @@ def stable_row_id(*parts) -> str:
 
 
 async def encode(embd_mdl, texts: list[str]) -> list:
+    """经 LLMBundle 批量嵌入文本向量。"""
     """``LLMBundle.encode`` wrapped in ``thread_pool_exec``.
 
     Returns the embeddings list (drops the ``used_tokens`` count); empty
@@ -87,6 +92,7 @@ async def encode(embd_mdl, texts: list[str]) -> list:
 
 
 def tokenize_for_search(text: str) -> tuple[str, str]:
+    """生成检索用粗/细粒度分词对。"""
     """Returns ``(content_ltks, content_sm_ltks)`` for a piece of text.
 
     Empty / non-string input returns ``("", "")``. Used wherever we write a
@@ -107,6 +113,7 @@ def tokenize_for_search(text: str) -> tuple[str, str]:
 
 
 def union_ordered(*lists: Optional[Iterable]) -> list[str]:
+    """按首次出现顺序合并多个 chunk_id 列表并去重。"""
     """Concatenate iterables and dedupe, preserving first-seen order.
     Falsy values and non-strings are silently dropped.
     """
@@ -131,6 +138,7 @@ def union_ordered(*lists: Optional[Iterable]) -> list[str]:
 
 
 def make_input_budget(
+    # 计算 LLM 输入 token 预算：max_length * INPUT_UTILIZATION - prompt_overhead
     chat_mdl,
     *prompts: str,
     floor: int = 1024,
@@ -155,6 +163,7 @@ def make_input_budget(
 
 
 def ensure_llm_bundle(mdl, method: str, *, label: str = "model"):
+    """校验 LLMBundle 是否具备指定方法，否则抛出明确异常。"""
     """Return ``mdl`` if it exposes ``method``; otherwise try to unwrap a
     tuple, otherwise return ``None`` and log an error.
 
@@ -190,6 +199,7 @@ def ensure_llm_bundle(mdl, method: str, *, label: str = "model"):
 
 
 async def es_search(
+    # 异步封装 docStoreConn.search，统一异常日志
     select_fields: list[str],
     condition: dict,
     *,
@@ -231,6 +241,7 @@ async def es_search(
 
 
 async def es_insert(
+    # 异步封装 docStoreConn.insert
     rows: list[dict],
     tenant_id: str,
     kb_id: str,
@@ -251,6 +262,7 @@ async def es_insert(
 
 
 async def es_delete(
+    # 异步封装 docStoreConn.delete
     condition: dict,
     tenant_id: str,
     kb_id: str,
@@ -270,6 +282,7 @@ async def es_delete(
 
 
 async def es_upsert_one(
+    # 按 id 先删后插实现 upsert
     filter_condition: dict,
     row: dict,
     tenant_id: str,
@@ -295,6 +308,7 @@ async def es_upsert_one(
 
 
 def find_vec_field(doc: dict) -> tuple[Optional[str], Optional[list]]:
+    """从 ES 文档中查找 q_<dim>_vec 向量字段。"""
     """Locate the ``q_<dim>_vec`` field on an ES doc dict. Returns
     ``(field_name, vec)`` or ``(None, None)`` if the doc carries no
     embedding."""
@@ -336,6 +350,7 @@ def _default_label(position_in_batch: int) -> str:
 
 
 def build_chunk_batches(
+    # 按 token 预算将 chunk 列表切分为 LLM 批处理窗口
     chunks: list[dict],
     chat_mdl,
     *,
@@ -478,7 +493,7 @@ async def run_chunked_pipeline(
     callback: Optional[Callable] = None,
     log_prefix: str = "chunked_pipeline",
 ) -> Any:
-    """Run ``process_batch`` over each batch in parallel.
+    """并行执行 process_batch 处理各批次。
 
     ``process_batch`` is called as
     ``await process_batch(entries: list[dict], batch_idx: int, total: int)``
@@ -526,7 +541,7 @@ async def run_chunked_pipeline(
 
 
 # ---------------------------------------------------------------------------
-# Bulk dedup engine — exact + embedding + LLM disambiguation
+# 批量去重引擎：精确匹配 + 嵌入相似度 + LLM 消歧
 # ---------------------------------------------------------------------------
 #
 # Replaces wiki's _wiki_exact_dedup_entities / _wiki_exact_dedup_concepts /
@@ -829,7 +844,7 @@ async def bulk_dedup_items(
     aggregate_extra: Optional[Callable[[list[dict]], dict]] = None,
     strip_norm_key: bool = True,
 ) -> list[dict]:
-    """Three-phase dedup → canonical items.
+    """三阶段去重：精确键 → 嵌入余弦 → LLM 消歧，输出规范条目列表。
 
     Phase 1 (always): exact dedup by ``(normalize(item[name_key]),
     item.get(type_key))`` — groups by normalized key, sums mention_count,
@@ -911,3 +926,5 @@ __all__ = [
     "bulk_dedup_items",
     "DEFAULT_DISAMBIGUATE_SYSTEM",
 ]
+
+# 本模块为 LLMBundle 感知、provider 无关的共享 plumbing；较复杂的 pairwise dedup 仍保留在各流水线文件中。

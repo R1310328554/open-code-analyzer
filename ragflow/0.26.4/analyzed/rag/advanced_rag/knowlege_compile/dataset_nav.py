@@ -14,9 +14,12 @@
 #  limitations under the License.
 #
 
-"""Dataset-level navigation markdown for tree-kind compilations.
+"""
+数据集级导航 Markdown（tree 类编译产物）。
 
-After a doc finishes a ``tree``-kind compilation template the helper
+tree 模板编译完成后，
+
+# 文档完成 tree 类编译后，
 ``upsert_dataset_nav_doc`` here appends (or refreshes) one line in the
 KB's nav markdown — one line per doc, each line carrying the doc id +
 a short summary lifted from the per-doc tree's root.
@@ -48,12 +51,12 @@ from common.token_utils import num_tokens_from_string
 from rag.utils.redis_conn import RedisDistributedLock
 
 
-# Hard cap on the number of docs we record in the nav markdown.
+# 导航 Markdown 中记录文档数量的硬上限。
 # Beyond this we no-op on adds; the next doc to drop out of the KB
 # frees a slot via ``remove_dataset_nav_doc``.
 MAX_DATASET_NAV_DOCS = 128
 
-# Hard cap on the per-doc summary length, in tokens. Long summaries
+# 单文档摘要 token 数硬上限。 Long summaries
 # bloat the markdown and slow downstream LLM passes that ingest the
 # whole nav blob; 128 tokens is enough for 1-2 sentences in either
 # Chinese or English text.
@@ -61,7 +64,7 @@ MAX_DOC_SUMMARY_TOKENS = 128
 
 _COMPILE_KWD = "dataset_nav"
 
-# Lock TTL — long enough that an ES round-trip can't expire it mid-write
+# Redis 分布式锁 TTL：足够覆盖 ES 往返，崩溃后自动释放
 # but short enough that a crashed executor doesn't pin the KB.
 _LOCK_TIMEOUT_S = 30
 _LOCK_BLOCKING_TIMEOUT_S = 5
@@ -245,7 +248,7 @@ async def _write_row(tenant_id: str, kb_id: str, payload: dict) -> None:
 
 
 # --------------------------------------------------------------------
-# Public surface
+# 公开 API
 # --------------------------------------------------------------------
 
 
@@ -255,7 +258,7 @@ async def upsert_dataset_nav_doc(
     doc_id: str,
     summary_or_tree: Any,
 ) -> None:
-    """Add or refresh a doc's line in the KB's nav markdown.
+    """在知识库导航 Markdown 中新增或刷新某文档的一行摘要。
 
     ``summary_or_tree`` can be:
       - a plain string (taken as-is and truncated to ``MAX_DOC_SUMMARY_TOKENS``)
@@ -347,6 +350,7 @@ async def upsert_dataset_nav_doc(
 
 
 async def remove_dataset_nav_doc(
+    # 从导航 Markdown 移除指定 doc_id 对应行
     tenant_id: str,
     kb_id: str,
     doc_id: str,
@@ -405,6 +409,7 @@ async def remove_dataset_nav_doc(
 
 
 def remove_dataset_nav_doc_sync(
+    # remove_dataset_nav_doc 的同步包装
     tenant_id: str,
     kb_id: str,
     doc_id: str,
@@ -435,3 +440,5 @@ def remove_dataset_nav_doc_sync(
             kb_id,
             doc_id,
         )
+
+# 存储：每 KB 一条 ES 行（compile_kwd=dataset_nav，available_int=0）；并发写入由 RedisDistributedLock 保护。

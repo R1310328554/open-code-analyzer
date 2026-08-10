@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+advanced_rag 包：导出树状查询分解检索 DeepResearcher（TreeStructuredQueryDecompositionRetrieval 别名）。
+"""
+
+
 
 from .tree_structured_query_decomposition_retrieval import TreeStructuredQueryDecompositionRetrieval as DeepResearcher
 

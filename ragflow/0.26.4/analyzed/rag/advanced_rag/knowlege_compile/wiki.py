@@ -13,7 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""WIKI compilation pipeline — MAP phase.
+"""
+WIKI 知识编译流水线 — MAP 阶段及后续 REDUCE/PLAN/REFINE。
+
+四阶段制品流水线：
 
   - Chunks come from ES (or any pre-chunked list passed in by the caller).
     No outline-driven chunking; per-chunk byte offsets are not tracked.
@@ -53,7 +56,7 @@ from ._common import (
 )
 
 
-# Global pipeline-rev — bumping this constant invalidates every cached
+# 全局流水线版本号：变更后使所有缓存 artifact 行失效
 # artifact_map_extract / artifact_reduce_result / artifact_compilation_plan
 # / artifact_page_draft / artifact_page row on the next re-run. Use it
 # when a prompt or extraction schema changes in a way that should
@@ -62,7 +65,7 @@ _WIKI_PIPELINE_REV = "v1"
 
 
 def _chunk_hash(content: str) -> str:
-    """xxh64 of a chunk's ``content_with_weight`` mixed with the global
+    """chunk 内容 xxh64 混合流水线版本，用于缓存失效判定。
     pipeline rev. The mix-in means a prompt / schema bump invalidates
     every cached row without us having to touch each row individually.
     """
@@ -769,6 +772,7 @@ async def _wiki_delete_map_rows(
 
 
 async def _wiki_persist_extracts(
+    # 将 MAP 抽取结果写入 artifact_map_extract 行
     per_chunk: dict[str, dict],
     doc_id: str,
     tenant_id: str,
@@ -813,6 +817,7 @@ async def _wiki_persist_extracts(
 
 
 async def _wiki_extract_one_batch(
+    # 单批 MAP 抽取：gen_json 解析实体/概念列表
     packed: list[dict],
     doc_id: str,
     chat_mdl,
@@ -914,7 +919,7 @@ async def _wiki_process_batch(
 
 
 # ---------------------------------------------------------------------------
-# Public entry
+# 公开入口（MAP）
 # ---------------------------------------------------------------------------
 
 
@@ -933,7 +938,7 @@ async def wiki_map_from_chunks(
     batch_size_cap: Optional[int] = None,
     window_fraction: Optional[float] = None,
 ) -> dict:
-    """Phase 1 (MAP) of the artifact compilation pipeline.
+    """制品编译 Phase 1（MAP）：分批 gen_json 抽取实体/概念并持久化 artifact_map_extract。
 
     Packs the provided RAGFlow chunks into batches via ``split_chunks``, runs
     one ``gen_json`` extraction call per batch in parallel (bounded by
@@ -1397,7 +1402,7 @@ async def _wiki_persist_reduce(
         logging.exception("wiki_reduce: failed to persist result row")
 
 
-# --- public entry ----------------------------------------------------------
+# --- 公开入口（REDUCE） ----------------------------------------------------------
 
 
 async def wiki_reduce_from_extracts(
@@ -1412,7 +1417,7 @@ async def wiki_reduce_from_extracts(
     force_rerun: bool = False,
     callback: Optional[Callable] = None,
 ) -> dict:
-    """Phase 2 (REDUCE/Dedup) — KB-scoped.
+    """Phase 2（REDUCE/去重）— 知识库范围：精确 + 嵌入 + LLM 消歧合并 MAP 抽取。
 
     Loads every ``artifact_map_extract`` row in this KB (across all documents) and
     produces a single canonical dict of entities/concepts via:
@@ -1733,6 +1738,7 @@ def _wiki_format_concept_for_plan(concept: dict, reconciliation: dict) -> str:
 
 
 async def _wiki_reconcile_with_kb(
+    # PLAN 阶段：KNN 对账已有 wiki 页面，判定 UPDATE/CREATE/MAYBE
     canonical_entities: list[dict],
     canonical_concepts: list[dict],
     embd_mdl,
@@ -2169,7 +2175,7 @@ async def _wiki_persist_plan(
         logging.exception("wiki_plan: failed to persist plan row")
 
 
-# --- public entry ---------------------------------------------------------
+# --- 公开入口（PLAN） ---------------------------------------------------------
 
 
 async def wiki_plan_from_reduction(
@@ -2186,7 +2192,7 @@ async def wiki_plan_from_reduction(
     force_rerun: bool = False,
     callback: Optional[Callable] = None,
 ) -> dict:
-    """Phase 3 (PLAN) — KB-scoped.
+    """Phase 3（PLAN）— 与已有 wiki 页面对账后生成编译计划 JSON。
 
     Loads the cached ``artifact_reduce_result`` for this KB, reconciles every
     canonical entity/concept against existing ``artifact_page`` rows in the same
@@ -3017,6 +3023,7 @@ async def _wiki_chat_text(
 
 
 async def _wiki_write_page_simple(
+    # REFINE：为新 slug 生成首版 wiki 页面正文
     plan_item: dict,
     evidence: list[dict],
     existing_md: Optional[str],
@@ -3063,6 +3070,7 @@ async def _wiki_write_page_simple(
 
 
 async def _wiki_merge_page_content(
+    # REFINE：LLM 合并已有页面与新证据
     existing_md: str,
     new_md: str,
     slug: str,
@@ -3240,7 +3248,7 @@ async def _wiki_load_refine_resume(
     return out
 
 
-# --- public entry ---------------------------------------------------------
+# --- 公开入口（REFINE） ---------------------------------------------------------
 
 
 async def wiki_refine_from_plan(
@@ -3256,7 +3264,7 @@ async def wiki_refine_from_plan(
     callback: Optional[Callable] = None,
     example: Optional[str] = None,
 ) -> list[dict]:
-    """Phase 4 (REFINE) — KB-scoped.
+    """Phase 4（REFINE）— 按计划并行撰写/合并 wiki 页面并写入 ES。
 
     Reads the cached ``wiki_compilation_plan`` for this KB and writes one
     wiki page per planned entry. Writers run in parallel under
@@ -3574,3 +3582,5 @@ __all__ = [
     "wiki_plan_from_reduction",
     "wiki_refine_from_plan",
 ]
+
+# compile_kwd 常量：artifact_map_extract / artifact_reduce_result / artifact_compilation_plan / wiki_page / wiki_page_draft。
