@@ -11,13 +11,20 @@ import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 
 /**
- * Retrieve emails sent by the Keycloak server. Received emails are reset when a test is executed, which means
- * only emails sent during a test was executed are returned.
+ * 接收 Keycloak 服务器发出的邮件的测试资源。
+ * <p>
+ * 每次测试执行时会清空邮箱，因此 {@link #getReceivedMessages()} 仅返回当前测试期间收到的邮件。
  */
 public class MailServer extends ManagedTestResource {
 
     private final GreenMail greenMail;
 
+    /**
+     * 在指定主机与端口启动 GreenMail SMTP 服务。
+     *
+     * @param host SMTP 监听主机
+     * @param port SMTP 监听端口
+     */
     public MailServer(String host, int port) {
         ServerSetup setup = new ServerSetup(port, host, "smtp");
 
@@ -25,34 +32,47 @@ public class MailServer extends ManagedTestResource {
         greenMail.start();
     }
 
+    /** 停止 GreenMail 服务器。 */
     public void stop() {
         greenMail.stop();
     }
 
+    /**
+     * 配置 SMTP 认证用户名与密码。
+     *
+     * @param username SMTP 用户名
+     * @param password SMTP 密码
+     */
     public void credentials(String username, String password) {
         greenMail.setUser(username, password);
     }
 
+    /**
+     * 配置 SMTP 认证用户名与自定义令牌校验器。
+     *
+     * @param username SMTP 用户名
+     * @param validator OAuth 等场景的令牌校验器
+     */
     public void credentials(String username, TokenValidator validator) {
         greenMail.setUser(username, null);
         GreenMailUser user = greenMail.getUserManager().getUser(username);
-        // greenmail refactoring required, see https://github.com/greenmail-mail-test/greenmail/pull/838
+        // GreenMail 尚未公开 TokenValidator API，暂通过 UserImpl 设置；见 greenmail#838
         ((com.icegreen.greenmail.user.UserImpl)user).setTokenValidator(validator);
     }
 
     /**
-     * Retrieve all received emails
+     * 获取当前测试期间收到的全部邮件。
      *
-     * @return list of received emails
+     * @return 已接收的 MIME 邮件数组
      */
     public MimeMessage[] getReceivedMessages() {
         return greenMail.getReceivedMessages();
     }
 
     /**
-     * Retrieve the last received email
+     * 获取最后一封收到的邮件。
      *
-     * @return the last received email
+     * @return 最后一封 MIME 邮件，若无邮件则返回 {@code null}
      */
     public MimeMessage getLastReceivedMessage() {
         MimeMessage[] receivedMessages = greenMail.getReceivedMessages();
@@ -60,25 +80,27 @@ public class MailServer extends ManagedTestResource {
     }
 
     /**
-     * Wait for the specified time to receive the specified number of emails
+     * 在指定超时时间内等待收到指定数量的邮件。
      *
-     * @param timeout the time to wait for emails to be received
-     * @param emailCount the number of emails to wait for
-     * @return
+     * @param timeout 最长等待时间（毫秒）
+     * @param emailCount 期望收到的邮件数量
+     * @return 若在超时前收到足够邮件则返回 {@code true}
      */
     public boolean waitForIncomingEmail(long timeout, int emailCount) {
         return greenMail.waitForIncomingEmail(timeout, emailCount);
     }
 
     /**
+     * 使用默认超时等待收到指定数量的邮件。
      *
-     * @param emailCount
-     * @return
+     * @param emailCount 期望收到的邮件数量
+     * @return 若在默认超时前收到足够邮件则返回 {@code true}
      */
     public boolean waitForIncomingEmail(int emailCount) {
         return greenMail.waitForIncomingEmail(emailCount);
     }
 
+    /** {@inheritDoc} 清空所有邮箱中的邮件。 */
     @Override
     public void runCleanup() {
         try {

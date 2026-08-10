@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Injects a {@link org.keycloak.testframework.mail.MailServer} to receive emails sent by the Keycloak server
+ * 向测试字段注入 {@link org.keycloak.testframework.mail.MailServer}，用于接收 Keycloak 发出的邮件。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
