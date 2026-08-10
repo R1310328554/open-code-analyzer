@@ -12,26 +12,30 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// types.go — 模型类型枚举：entity 包内各模态模型的字符串常量，供路由与校验使用。
 //
 
 package entity
 
-// ModelType represents the type of model
+// ModelType 模型能力类型（字符串别名）
 type ModelType string
 
 const (
-	// ModelTypeChat chat model
+	// ModelTypeChat 对话/补全模型
 	ModelTypeChat ModelType = "chat"
-	// ModelTypeEmbedding embedding model
+	// ModelTypeEmbedding 文本嵌入模型
 	ModelTypeEmbedding ModelType = "embedding"
-	// ModelTypeSpeech2Text speech to text model
+	// ModelTypeSpeech2Text 语音转文字（ASR）
 	ModelTypeSpeech2Text ModelType = "speech2text"
-	// ModelTypeImage2Text image to text model
+	// ModelTypeImage2Text 图像理解/图生文
 	ModelTypeImage2Text ModelType = "image2text"
-	// ModelTypeRerank rerank model
+	// ModelTypeRerank 检索重排模型
 	ModelTypeRerank ModelType = "rerank"
-	// ModelTypeTTS text to speech model
+	// ModelTypeTTS 文字转语音
 	ModelTypeTTS ModelType = "tts"
-	// ModelTypeOCR optical character recognition model
+	// ModelTypeOCR 光学字符识别
 	ModelTypeOCR ModelType = "ocr"
 )
+
+// 与 tenant_model.model_type、tenant_llm.model_type 字段值对齐；新增模态时需同步扩展 ModelDriver 接口实现。
