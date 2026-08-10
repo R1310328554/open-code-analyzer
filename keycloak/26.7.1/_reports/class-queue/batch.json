@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T05:42:48Z",
   "files": [
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/regex/RegexPolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/regex/RegexPolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/role/RolePolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/role/RolePolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/time/TimePolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/time/TimePolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/user/UserPolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/user/UserPolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/util/PolicyValidationException.java",
-    "authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZen.java",
-    "authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenRealmResourceProvider.java",
-    "authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenRealmResourceProviderFactory.java",
-    "authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenRequestIdFilter.java",
-    "authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenResource.java",
-    "authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenWellKnownProvider.java",
     "authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenWellKnownProviderFactory.java",
     "common/src/main/java/org/keycloak/common/ClientConnection.java",
     "common/src/main/java/org/keycloak/common/Profile.java",
@@ -33,5 +18,5 @@
     "common/src/main/java/org/keycloak/common/crypto/FipsMode.java"
   ],
   "remaining_pending": 5818,
-  "done": 150
+  "done": 165
 }

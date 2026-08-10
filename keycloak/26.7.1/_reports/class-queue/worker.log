@@ -148,3 +148,18 @@
 2026-08-10T05:42:30Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/aggregated/AggregatePolicyProviderFactory.java wave5a authz client util + policy providers
 2026-08-10T05:42:30Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/client/ClientPolicyProvider.java wave5a authz client util + policy providers
 2026-08-10T05:42:30Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/client/ClientPolicyProviderFactory.java wave5a authz client util + policy providers
+2026-08-10T05:44:44Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/regex/RegexPolicyProvider.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/regex/RegexPolicyProviderFactory.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/role/RolePolicyProvider.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/role/RolePolicyProviderFactory.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/time/TimePolicyProvider.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/time/TimePolicyProviderFactory.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/user/UserPolicyProvider.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/user/UserPolicyProviderFactory.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/util/PolicyValidationException.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZen.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenRealmResourceProvider.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenRealmResourceProviderFactory.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenRequestIdFilter.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenResource.java wave6a authz policy + authzen services
+2026-08-10T05:44:44Z DONE authzen/services/src/main/java/org/keycloak/authorization/authzen/AuthZenWellKnownProvider.java wave6a authz policy + authzen services
