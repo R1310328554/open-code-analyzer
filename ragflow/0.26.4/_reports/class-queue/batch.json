@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:45:27Z",
-  "files": [
-    "web/src/locales/it.ts",
-    "web/src/locales/ja.ts",
-    "web/src/locales/ko.ts",
-    "web/src/locales/pt-br.ts",
-    "web/src/locales/ru.ts",
-    "web/src/locales/tr.ts",
-    "web/src/locales/vi.ts",
-    "web/src/locales/zh-traditional.ts",
-    "web/src/locales/zh.ts",
-    "web/src/pages/agent/canvas/node/note-node/use-watch-change.ts",
-    "web/src/pages/agent/canvas/node/use-build-categorize-handle-positions.ts",
-    "web/src/pages/agent/canvas/node/use-build-switch-handle-positions.ts",
-    "web/src/pages/agent/chat/use-send-agent-message.ts",
-    "web/src/pages/agent/constant/chat.ts",
-    "web/src/pages/agent/context.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 264,
-  "done": 1485
+  "done": 1500
 }
