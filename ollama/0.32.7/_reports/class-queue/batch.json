@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T15:58:02Z",
   "files": [
-    "convert/convert_mllama.go",
-    "convert/convert_nemotron_h.go",
-    "convert/convert_nomicbert.go",
-    "convert/convert_olmo.go",
-    "convert/convert_phi3.go",
-    "convert/convert_qwen2.go",
-    "convert/convert_qwen25vl.go",
-    "convert/convert_qwen3.go",
-    "convert/convert_qwen3next.go",
-    "convert/convert_qwen3vl.go",
-    "convert/json_compat.go",
-    "convert/reader.go",
-    "convert/reader_safetensors.go",
-    "convert/reader_torch.go",
-    "convert/sentencepiece/sentencepiece_model.pb.go",
     "convert/tensor.go",
     "convert/tokenizer.go",
     "convert/tokenizer_spm.go",
@@ -33,5 +18,5 @@
     "discover/native_probe_stub.go"
   ],
   "remaining_pending": 253,
-  "done": 180
+  "done": 195
 }
