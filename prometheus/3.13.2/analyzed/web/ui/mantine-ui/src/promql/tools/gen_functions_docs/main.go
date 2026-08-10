@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 代码生成工具：解析 docs/functions.md 为 React JSX 函数文档映射 funcDocs。
+
 package main
 
 import (
@@ -26,6 +28,7 @@ import (
 	"github.com/russross/blackfriday/v2"
 )
 
+// funcDocsRe 匹配 Markdown 二级标题中的单函数、双函数或三角函数分组节。
 var funcDocsRe = regexp.MustCompile("^## `([^)]+)\\(\\)` and `([^)]+)\\(\\)`\n$|^## `(.+)\\(\\)`\n$|^## (Trigonometric Functions)\n$")
 
 func main() {
@@ -48,6 +51,7 @@ func main() {
 
 	saveCurrent := func() {
 		switch currentFunc {
+// saveCurrent 将 _over_time 聚合族与三角函数等共享章节复制到多个函数键。
 		case "<aggregation>_over_time":
 			for _, fn := range []string{
 				"avg_over_time",
@@ -147,6 +151,7 @@ func main() {
 		//   {   ===>   {'{'}
 		//   }   ===>   {'}'}
 		//
+// 大括号转 JSX 表达式需占位符替换，避免与 TSX 字面量冲突。
 		// TODO: Make this set of conflicting string replacements less hacky.
 		jsxEscapedDocs := strings.ReplaceAll(funcDocs[fn], "{", `__LEFT_BRACE__'{'__RIGHT_BRACE__`)
 		jsxEscapedDocs = strings.ReplaceAll(jsxEscapedDocs, "}", `__LEFT_BRACE__'}'__RIGHT_BRACE__`)

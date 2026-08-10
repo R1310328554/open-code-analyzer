@@ -1,3 +1,6 @@
+// PromQL 函数签名表：各内置函数的参数 valueType、variadic 标志与返回类型。
+
+// 签名与 parser.Functions 对齐，可由 gen_functions_list 工具从 Go 侧重新生成。
 import { valueType, Func } from "./ast";
 
 export const functionSignatures: Record<string, Func> = {

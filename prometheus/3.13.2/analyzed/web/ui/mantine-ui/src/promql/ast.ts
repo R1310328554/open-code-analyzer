@@ -1,3 +1,5 @@
+// PromQL AST 类型定义：节点/运算符/匹配器/向量匹配与聚合器枚举及接口。
+
 export enum nodeType {
   aggregation = "aggregation",
   binaryExpr = "binaryExpr",
@@ -12,6 +14,7 @@ export enum nodeType {
   placeholder = "placeholder",
 }
 
+// aggregationType 列出 PromQL 支持的聚合算子，含 limitk/limit_ratio 等扩展。
 export enum aggregationType {
   sum = "sum",
   min = "min",
@@ -29,6 +32,7 @@ export enum aggregationType {
   limitRatio = "limit_ratio",
 }
 
+// binaryOperatorType 覆盖算术、比较、集合与 atan2 等二元运算符字面量。
 export enum binaryOperatorType {
   add = "+",
   sub = "-",
@@ -70,6 +74,7 @@ export enum unaryOperatorType {
   minus = "-",
 }
 
+// vectorMatchCardinality 描述 on/ignoring 后的向量匹配基数 one-to-one 等。
 export enum vectorMatchCardinality {
   oneToOne = "one-to-one",
   manyToOne = "many-to-one",
@@ -78,6 +83,7 @@ export enum vectorMatchCardinality {
 }
 
 export enum valueType {
+// valueType.none 对应解析器内部占位，UI 侧主要用于类型检查完整性。
   // TODO: 'none' should never make it out of Prometheus. Do we need this here?
   none = "none",
   vector = "vector",
@@ -110,6 +116,7 @@ export interface FillValues {
   lhs: number | null;
   rhs: number | null;
 }
+// VectorMatching 封装 on/ignoring、group_left/right 与 fill 修饰符状态。
 export interface VectorMatching {
   card: vectorMatchCardinality;
   labels: string[];
@@ -120,6 +127,7 @@ export interface VectorMatching {
 
 export type StartOrEnd = "start" | "end" | null;
 
+// 以下接口为各 nodeType 对应的结构化节点，联合为 ASTNode 判别联合。
 // AST Node Types.
 
 export interface Aggregation {

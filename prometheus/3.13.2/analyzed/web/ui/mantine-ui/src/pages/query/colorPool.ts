@@ -1,3 +1,5 @@
+// 查询页图表配色池：按序列索引循环取色，浅色主题下对颜色做 lighten 提亮。
+
 import { lighten } from "@mantine/core";
 
 export const getSeriesColor = (idx: number, light: boolean): string => {
@@ -5,6 +7,7 @@ export const getSeriesColor = (idx: number, light: boolean): string => {
   return light ? color : lighten(color, 0.4);
 };
 
+// colorPool 为预生成十六进制色表，保证多序列图表下颜色可区分且风格一致。
 const colorPool = [
   "#008000",
   "#008080",

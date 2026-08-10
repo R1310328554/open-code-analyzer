@@ -1,3 +1,5 @@
+// binOp 模块单元测试：向量匹配分组、比较/算术/集合运算与 limit 截断等场景。
+
 import { describe, expect, it } from "vitest";
 import {
   BinOpResult,
@@ -14,6 +16,7 @@ import {
 } from "./ast";
 import { InstantSample, Metric } from "../api/responseTypes/query";
 
+// TestCase 结构化描述一次 binop 输入、matching 修饰符与期望 BinOpResult。
 type TestCase = {
   desc: string;
   op: binaryOperatorType;
@@ -3328,7 +3331,8 @@ const testCases: TestCase[] = [
 ];
 
 describe("binOp", () => {
-  describe("resultMetric", () => {
+  // resultMetric 测试 on/ignoring、group_left 与算术算子对 __name__ 的处理。
+describe("resultMetric", () => {
     it("should drop metric name for operations that change meaning", () => {
       const lhs: Metric = { __name__: "metric_a", label1: "value1" };
       const rhs: Metric = { __name__: "metric_b", label2: "value2" };
@@ -3397,7 +3401,8 @@ describe("binOp", () => {
     });
   });
 
-  describe("computeVectorVectorBinOp", () => {
+  // computeVectorVectorBinOp 覆盖 one-to-one、many-to-one、fill 与 bool 等用例。
+describe("computeVectorVectorBinOp", () => {
     testCases.forEach((tc) => {
       it(tc.desc, () => {
         expect(

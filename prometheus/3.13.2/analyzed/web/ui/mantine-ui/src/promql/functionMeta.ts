@@ -1,3 +1,5 @@
+// PromQL 内置函数元数据：部分函数的参数展示名与英文简短描述，供 UI 提示使用。
+
 export const functionArgNames: Record<string, string[]> = {
   // abs: ['value'],
   // absent: [],
@@ -49,6 +51,7 @@ export const functionArgNames: Record<string, string[]> = {
   year: ['timestamp (default = vector(time()))'],
 };
 
+// functionDescriptions 映射函数名到一行英文说明，用于自动补全或文档气泡。
 export const functionDescriptions: Record<string, string> = {
   abs: 'return absolute values of input series',
   absent: 'determine whether input vector is empty',

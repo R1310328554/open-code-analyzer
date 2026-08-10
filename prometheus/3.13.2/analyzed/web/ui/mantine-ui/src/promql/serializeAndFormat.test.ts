@@ -1,3 +1,5 @@
+// serialize/format 单元测试：各类 AST 节点序列化输出与 formatNode 渲染一致性。
+
 import { describe, expect, it } from "vitest";
 import serializeNode from "./serialize";
 import ASTNode, {
@@ -12,9 +14,11 @@ import { functionSignatures } from "./functionSignatures";
 import { formatNode } from "./format";
 import { render } from "@testing-library/react";
 
+// 对比 serializeNode 紧凑/pretty 输出与 formatNode React 渲染的预期 PromQL。
 describe("serializeNode and formatNode", () => {
   it("should serialize correctly", () => {
     const tests: { node: ASTNode; output: string; prettyOutput?: string }[] = [
+// 向量选择器用例覆盖裸 metric、matcher、offset、@ 与 extended charset。
       // Vector selectors.
       {
         node: {

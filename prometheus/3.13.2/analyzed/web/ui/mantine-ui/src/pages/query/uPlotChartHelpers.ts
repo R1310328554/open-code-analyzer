@@ -1,3 +1,5 @@
+// uPlot 查询图表辅助：Y 轴 SI 刻度、悬浮 tooltip、选项构建与 range 样本对齐。
+
 import { RangeSamples } from "../../api/responseTypes/query";
 import { formatSeries } from "../../lib/formatSeries";
 import { formatTimestamp } from "../../lib/formatTime";
@@ -53,6 +55,7 @@ const formatYAxisTickValue = (y: number | null, precision = 2): string => {
   throw Error("couldn't format a value, this is a bug");
 };
 
+// maxYAxisTickPrecision 限制重复刻度标签时递增精度的上限。
 const maxYAxisTickPrecision = 8;
 
 const hasDuplicateLabels = (labels: string[]): boolean =>
@@ -214,6 +217,7 @@ const tooltipPlugin = (useLocalTime: boolean, data: AlignedData) => {
   };
 };
 
+// autoPadLeft 根据最长刻度文本动态计算 Y 轴左侧留白宽度。
 // A helper function to automatically create enough space for the Y axis
 // ticket labels depending on their length.
 const autoPadLeft = (
@@ -246,6 +250,7 @@ const autoPadLeft = (
   return Math.ceil(axisSize);
 };
 
+// onlyDrawPointsForDisconnectedSamplesFilter 仅在断点/缺口处绘制散点，连续段只画线。
 // This filter functions ensures that only points that are disconnected
 // from their neighbors are drawn. Otherwise, we just draw line segments
 // without dots on them.
@@ -307,6 +312,7 @@ const onlyDrawPointsForDisconnectedSamplesFilter = (
   return filtered.length ? filtered : null;
 };
 
+// getUPlotOptions 组装 uPlot 配置：时区、图例、拖拽选区、轴格式与 series 样式。
 export const getUPlotOptions = (
   data: AlignedData,
   width: number,
@@ -459,6 +465,7 @@ export const getUPlotOptions = (
 
 const parseValue = (value: string): null | number => {
   const val = parseFloat(value);
+// parseValue 将 Prometheus 无穷大样本转为 null，图表以缺口表示不可绘制值。
   // "+Inf", "-Inf", "+Inf" will be parsed into NaN by parseFloat(). They
   // can't be graphed, so show them as gaps (null).
   return isNaN(val) ? null : val;

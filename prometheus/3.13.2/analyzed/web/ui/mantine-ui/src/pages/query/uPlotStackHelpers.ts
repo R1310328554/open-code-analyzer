@@ -1,6 +1,9 @@
+// uPlot 堆叠图辅助：将多序列累加为 stacked 数据并配置 band 填充与动态重堆叠。
+
 import { lighten } from "@mantine/core";
 import uPlot, { AlignedData, TypedArray } from "uplot";
 
+// stack 函数改编自 uPlot 官方堆叠示例，对非 omit 序列做前缀和并生成 band 区间。
 // Stacking code adapted from https://leeoniya.github.io/uPlot/demos/stack.js
 function stack(
   data: uPlot.AlignedData,
@@ -39,6 +42,7 @@ function stack(
   };
 }
 
+// setStackedOpts 写入 bands/cursor/series 填充，并将 Y 轴下限固定为 0。
 export function setStackedOpts(opts: uPlot.Options, data: uPlot.AlignedData) {
   const stacked = stack(data, (_i) => false);
   opts.bands = stacked.bands;
@@ -56,6 +60,7 @@ export function setStackedOpts(opts: uPlot.Options, data: uPlot.AlignedData) {
       s.fill = lighten(s.stroke as string, 0.6);
     }
 
+// points.filter 基于原始未堆叠数据决定哪些索引绘制散点。
     // scan raw unstacked data to return only real points
     s.points.filter = (
       _self: uPlot,
@@ -76,6 +81,7 @@ export function setStackedOpts(opts: uPlot.Options, data: uPlot.AlignedData) {
     };
   });
 
+// 堆叠模式下 Y 轴 range 从 0 起算，使总和而非底层序列作为视觉基线。
   // force 0 to be the sum minimum this instead of the bottom series
   opts.scales = opts.scales || {};
   opts.scales.y = {
@@ -85,6 +91,7 @@ export function setStackedOpts(opts: uPlot.Options, data: uPlot.AlignedData) {
     },
   };
 
+// setSeries hook 在显隐切换时按当前 show 状态重新 stack 并刷新 bands/data。
   // restack on toggle (but not on focus/hover)
   opts.hooks = opts.hooks || {};
   opts.hooks.setSeries = opts.hooks.setSeries || [];

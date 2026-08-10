@@ -1,3 +1,5 @@
+// PromQL 向量二元运算客户端模拟：匹配分组、FNV 签名、逐元素运算与结果标签合并。
+
 import { InstantSample, Metric } from "../api/responseTypes/query";
 import {
   formatPrometheusFloat,
@@ -10,6 +12,7 @@ import {
 } from "./ast";
 import { isComparisonOperator, isSetOperator } from "./utils";
 
+// filteredSampleValue 标记比较运算过滤掉的样本，表格中以特殊样式展示。
 // We use a special (otherwise invalid) sample value to indicate that
 // a sample has been filtered away by a comparison operator.
 export const filteredSampleValue = "filtered";
@@ -50,6 +53,7 @@ export type MaybeFilledInstantSample = InstantSample & {
   filled?: boolean;
 };
 
+// BinOpMatchGroup 保存单组 lhs/rhs 样本、匹配标签、结果序列与 error 诊断信息。
 // A single match group as produced by a vector-to-vector binary operation, with all of its
 // left-hand side and right-hand side series, as well as a result and error, if applicable.
 export type BinOpMatchGroup = {
@@ -81,6 +85,7 @@ export type BinOpResult = {
   numGroups: number;
 };
 
+// fnv1a 用 FNV-1a 对标签值序列哈希，生成与 Prometheus 一致的匹配组签名。
 // FNV-1a hash parameters.
 const FNV_PRIME = 0x01000193;
 const OFFSET_BASIS = 0x811c9dc5;
@@ -136,6 +141,7 @@ const matchLabels = (metric: Metric, on: boolean, labels: string[]): Metric => {
   return result;
 };
 
+// scalarBinOp 对标量二元运算，比较算子返回 0/1 而非 filtered 标记。
 export const scalarBinOp = (
   op: binaryOperatorType,
   lhs: number,
@@ -149,6 +155,7 @@ export const scalarBinOp = (
   return value;
 };
 
+// vectorElemBinop 实现单对样本的算术/比较/atan2，比较运算额外返回 keep 布尔。
 export const vectorElemBinop = (
   op: binaryOperatorType,
   lhs: number,
@@ -199,6 +206,7 @@ const shouldDropMetricName = (op: binaryOperatorType): boolean =>
   ].includes(op);
 
 // Compute the time series labels for the result metric.
+// resultMetric 合并 lhs/rhs 标签，按算子与 matching 规则丢弃或保留 __name__。
 export const resultMetric = (
   lhs: Metric,
   rhs: Metric,
@@ -257,6 +265,7 @@ export const resultMetric = (
 // In the error case, the match groups are still populated and returned, but the error field is set for
 // the respective group. Results are not populated for error cases, since especially in the case of a
 // many-to-many matching, the cross-product output can become prohibitively expensive.
+// computeVectorVectorBinOp 主流程：分组、fill 默认值、错误检测与逐组求值。
 export const computeVectorVectorBinOp = (
   op: binaryOperatorType,
   matching: VectorMatching,

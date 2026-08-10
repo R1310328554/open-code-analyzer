@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 代码生成工具：从 prometheus/promql/parser.Functions 导出 TypeScript functionSignatures。
+
 package main
 
 import (
@@ -33,6 +35,7 @@ func formatValueTypes(vts []parser.ValueType) string {
 	return strings.Join(fmtVts, ", ")
 }
 
+// main 排序函数名并打印 import 与 Record<string, Func> 字面量供前端同步。
 func main() {
 	fnNames := make([]string, 0, len(parser.Functions))
 	for name := range parser.Functions {

@@ -1,3 +1,5 @@
+// 查询页 URL 状态编解码：面板 expr/可视化选项与 gN.* 查询参数的双向映射。
+
 import {
   GraphDisplayMode,
   Panel,
@@ -9,6 +11,7 @@ import {
   parsePrometheusDuration,
 } from "../../lib/formatTime";
 
+// parseTime 将 UTC 格式时间字符串解析为 epoch 毫秒，供 end_input 等字段使用。
 export function parseTime(timeText: string): number {
   return dayjs.utc(timeText).valueOf();
 }
@@ -19,6 +22,7 @@ export const decodePanelOptionsFromURLParams = (query: string): Panel[] => {
 
   for (let i = 0; ; i++) {
     if (!urlParams.has(`g${i}.expr`)) {
+// 无 g{i}.expr 时认为后续面板不存在，结束循环。
       // Every panel should have an expr, so if we don't find one, we're done.
       break;
     }
@@ -39,6 +43,7 @@ export const decodePanelOptionsFromURLParams = (query: string): Panel[] => {
       panel.showTree = value === "1";
     });
     decodeSetting("tab", (value) => {
+// tab 仍兼容旧 UI 的数字枚举 0/1，同时支持 graph/table/explain 字符串。
       // Numeric values are deprecated (from the old UI), but we still support decoding them.
       switch (value) {
         case "0":
@@ -76,6 +81,7 @@ export const decodePanelOptionsFromURLParams = (query: string): Panel[] => {
     decodeSetting("end_input", (value) => {
       panel.visualizer.endTime = parseTime(value);
     });
+// step_input 为遗留步长参数，若存在 res_type/res_step 则以新分辨率字段为准。
     // Legacy "step_input" parameter, overridden below by
     // "res_type" / "res_density" / "res_step" if present.
     decodeSetting("step_input", (value) => {
@@ -128,6 +134,7 @@ export const decodePanelOptionsFromURLParams = (query: string): Panel[] => {
   return panels;
 };
 
+// formatTime 将毫秒时间戳格式化为 YYYY-MM-DD HH:mm:ss UTC 字符串。
 export function formatTime(time: number): string {
   return dayjs.utc(time).format("YYYY-MM-DD HH:mm:ss");
 }

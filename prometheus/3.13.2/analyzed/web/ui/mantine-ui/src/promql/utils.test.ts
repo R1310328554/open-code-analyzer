@@ -1,3 +1,5 @@
+// promql/utils 单元测试：节点类型展开、占位符检测、值类型推断与标签名引号。
+
 import { describe, expect, it } from "vitest";
 import {
   getNonParenNodeType,
@@ -7,6 +9,7 @@ import {
 } from "./utils";
 import { nodeType, valueType, binaryOperatorType } from "./ast";
 
+// getNonParenNodeType 应穿透任意层 parenExpr 返回内层真实 nodeType。
 describe("getNonParenNodeType", () => {
   it("works for non-paren type", () => {
     expect(
@@ -45,6 +48,7 @@ describe("getNonParenNodeType", () => {
   });
 });
 
+// containsPlaceholders 检测 AST 子树是否含 placeholder 节点。
 describe("containsPlaceholders", () => {
   it("does not find placeholders in complete expressions", () => {
     expect(
@@ -80,6 +84,7 @@ describe("containsPlaceholders", () => {
   });
 });
 
+// nodeValueType 推断字面量、选择器、调用与二元运算结果的 PromQL 值类型。
 describe("nodeValueType", () => {
   it("works for binary expressions with placeholders", () => {
     expect(
@@ -161,6 +166,7 @@ describe("nodeValueType", () => {
   });
 });
 
+// maybeQuoteLabelName 对非标识符标签名加双引号，合法标识符保持原样。
 describe("maybeQuoteLabelName", () => {
   it("does not quote valid PromQL label names", () => {
     expect(maybeQuoteLabelName("job")).toBe("job");

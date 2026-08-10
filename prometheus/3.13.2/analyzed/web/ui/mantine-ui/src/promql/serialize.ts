@@ -1,3 +1,5 @@
+// PromQL AST 序列化：将 ASTNode 递归还原为 PromQL 文本，支持 pretty 缩进格式。
+
 import { formatPrometheusDuration } from "../lib/formatTime";
 import ASTNode, {
   VectorSelector,
@@ -19,6 +21,7 @@ const labelNameList = (labels: string[]): string => {
   return labels.map((ln) => maybeQuoteLabelName(ln)).join(", ");
 };
 
+// serializeAtAndOffset 拼接 @ 时间戳/start()/end() 与 offset 修饰符片段。
 const serializeAtAndOffset = (
   timestamp: number | null,
   startOrEnd: StartOrEnd,
@@ -32,6 +35,7 @@ const serializeAtAndOffset = (
         : ` offset -${formatPrometheusDuration(-offset)}`
   }`;
 
+// serializeSelector 格式化向量/矩阵选择器：matcher、range、anchored/smoothed。
 const serializeSelector = (node: VectorSelector | MatrixSelector): string => {
   const matchers = node.matchers
     .filter((m) => !(m.name === "__name__" && m.type === matchType.equal))
@@ -39,6 +43,7 @@ const serializeSelector = (node: VectorSelector | MatrixSelector): string => {
       (m) => `${maybeQuoteLabelName(m.name)}${m.type}"${escapeString(m.value)}"`
     );
 
+// 扩展字符集 metric 名需转义并以引号形式置于花括号 matcher 列表首位。
   // If the metric name contains the new extended charset, we need to escape it
   // and add it at the beginning of the matchers list in the curly braces.
   const metricName =
@@ -70,6 +75,7 @@ const serializeSelector = (node: VectorSelector | MatrixSelector): string => {
   return `${!metricExtendedCharset ? metricName : ""}${matchers.length > 0 ? `{${matchers.join(",")}}` : ""}${range}${extendedAttribute}${atAndOffset}`;
 };
 
+// serializeNode 按 nodeType 分发，pretty 模式下插入换行与递增缩进。
 const serializeNode = (
   node: ASTNode,
   indent = 0,
@@ -180,6 +186,7 @@ const serializeNode = (
     }
 
     case nodeType.placeholder:
+// placeholder 节点序列化为省略号，便于编辑中途含占位符的 AST 文本模式。
       // TODO: Should we just throw an error when trying to serialize an AST containing a placeholder node?
       // (that would currently break editing-as-text of ASTs that contain placeholders)
       return `${initialInd}…${

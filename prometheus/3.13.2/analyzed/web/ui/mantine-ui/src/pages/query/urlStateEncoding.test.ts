@@ -1,3 +1,5 @@
+// urlStateEncoding 单元测试：时间解析/格式化往返与面板 URL 参数编解码边界用例。
+
 import {
   parseTime,
   formatTime,
@@ -6,6 +8,7 @@ import {
 } from "./urlStateEncoding";
 import { GraphDisplayMode, Panel } from "../../state/queryPageSlice";
 
+// parseTime 用例覆盖 ISO 日期、仅日期与不同时间值的 UTC 解析。
 describe("parseTime", () => {
   test("parses ISO date string correctly", () => {
     expect(parseTime("2024-01-15 12:30:45")).toBe(1705321845000);
@@ -20,6 +23,7 @@ describe("parseTime", () => {
   });
 });
 
+// formatTime 验证毫秒时间戳到固定格式字符串的输出。
 describe("formatTime", () => {
   test("formats timestamp to expected string format", () => {
     expect(formatTime(1705321845000)).toBe("2024-01-15 12:30:45");
@@ -34,6 +38,7 @@ describe("formatTime", () => {
   });
 });
 
+// 往返测试确保 parseTime 与 formatTime 对合法输入可逆。
 describe("parseTime and formatTime roundtrip", () => {
   test("roundtrip preserves time", () => {
     const original = "2024-03-20 15:45:30";
@@ -42,6 +47,7 @@ describe("parseTime and formatTime roundtrip", () => {
   });
 });
 
+// decode 测试空串、缺 expr、多面板及旧版 stacked/step 等参数组合。
 describe("decodePanelOptionsFromURLParams", () => {
   test("returns empty array for empty query string", () => {
     expect(decodePanelOptionsFromURLParams("")).toEqual([]);
@@ -299,6 +305,7 @@ describe("decodePanelOptionsFromURLParams", () => {
   });
 });
 
+// encode 测试与 decode 对称，并覆盖 resolution/display_mode 等字段。
 describe("encodePanelOptionsToURLParams", () => {
   const createPanel = (overrides: Partial<Panel> = {}): Panel => ({
     id: "test-id",
