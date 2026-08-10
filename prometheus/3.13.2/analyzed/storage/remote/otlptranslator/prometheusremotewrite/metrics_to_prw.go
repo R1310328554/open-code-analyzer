@@ -14,6 +14,8 @@
 // Provenance-includes-license: Apache-2.0
 // Provenance-includes-copyright: Copyright The OpenTelemetry Authors.
 
+// OTLP Metrics→Prometheus remote write 主转换器：Resource/Scope 上下文缓存与逐 metric 分发。
+
 package prometheusremotewrite
 
 import (
@@ -35,6 +37,7 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
+// PromoteResourceAttributes 控制哪些 OTel resource 属性提升为 Prometheus 标签。
 type PromoteResourceAttributes struct {
 	promoteAll bool
 	attrs      map[string]struct{}
@@ -65,6 +68,7 @@ type Settings struct {
 
 // cachedResourceLabels holds precomputed labels constant for all datapoints in a ResourceMetrics.
 // These are computed once per ResourceMetrics boundary and reused for all datapoints.
+// cachedResourceLabels 在 ResourceMetrics 边界预计算 job/instance 等常量标签。
 type cachedResourceLabels struct {
 	jobLabel       string        // from service.name + service.namespace.
 	instanceLabel  string        // from service.instance.id.
@@ -82,6 +86,7 @@ type cachedScopeLabels struct {
 }
 
 // PrometheusConverter converts from OTel write format to Prometheus remote write format.
+// PrometheusConverter 持有 AppenderV2 与 resource/scope 标签缓存状态。
 type PrometheusConverter struct {
 	everyN         everyNTimes
 	scratchBuilder labels.ScratchBuilder
@@ -106,6 +111,7 @@ type targetInfoKey struct {
 	timestamp  int64
 }
 
+// NewPrometheusConverter 绑定 storage.AppenderV2 作为样本写入目标。
 func NewPrometheusConverter(appender storage.AppenderV2) *PrometheusConverter {
 	return &PrometheusConverter{
 		scratchBuilder:  labels.NewScratchBuilder(0),
@@ -172,6 +178,7 @@ func newScopeFromScopeMetrics(scopeMetrics pmetric.ScopeMetrics) scope {
 }
 
 // FromMetrics appends pmetric.Metrics to storage.AppenderV2.
+// FromMetrics 遍历 Resource/Scope/Metric 树并按类型调用各 datapoint 转换器。
 func (c *PrometheusConverter) FromMetrics(ctx context.Context, md pmetric.Metrics, settings Settings) (annots annotations.Annotations, errs error) {
 	namer := otlptranslator.MetricNamer{
 		Namespace:          settings.Namespace,
@@ -405,6 +412,7 @@ func (s *PromoteResourceAttributes) addPromotedAttributes(builder *labels.Builde
 // setResourceContext precomputes and caches resource-level labels.
 // Called once per ResourceMetrics boundary, before processing any datapoints.
 // If an error is returned, resource level cache is reset.
+// setResourceContext 在进入 datapoint 循环前缓存 resource 级标签。
 func (c *PrometheusConverter) setResourceContext(resource pcommon.Resource, settings Settings) error {
 	resourceAttrs := resource.Attributes()
 	c.resourceLabels = &cachedResourceLabels{
@@ -443,6 +451,7 @@ func (c *PrometheusConverter) setResourceContext(resource pcommon.Resource, sett
 // setScopeContext precomputes and caches scope-level labels.
 // Called once per ScopeMetrics boundary, before processing any metrics.
 // If an error is returned, scope level cache is reset.
+// setScopeContext 可选将 OTel instrumentation scope 元数据提升为标签。
 func (c *PrometheusConverter) setScopeContext(scope scope, settings Settings) error {
 	if !settings.PromoteScopeMetadata || scope.name == "" {
 		c.scopeLabels = nil

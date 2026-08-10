@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Remote read 存储适配层：将 ReadClient 包装为 storage.SampleAndChunkQueryable，注入 external labels、required matchers 与本地 TSDB 时间范围裁剪。
+
 package remote
 
 import (
@@ -23,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
+// sampleAndChunkQueryableClient 桥接 remote endpoint 与 Prometheus 存储查询接口。
 type sampleAndChunkQueryableClient struct {
 	client           ReadClient
 	externalLabels   labels.Labels
@@ -31,6 +34,7 @@ type sampleAndChunkQueryableClient struct {
 	callback         startTimeCallback
 }
 
+// NewSampleAndChunkQueryableClient 构造带 external/required label 策略的Queryable。
 // NewSampleAndChunkQueryableClient returns a storage.SampleAndChunkQueryable which queries the given client to select series sets.
 func NewSampleAndChunkQueryableClient(
 	c ReadClient,
@@ -103,6 +107,7 @@ func (c *sampleAndChunkQueryableClient) ChunkQuerier(mint, maxt int64) (storage.
 	return cq, nil
 }
 
+// preferLocalStorage 若查询窗口完全落在本地 TSDB 之前则返回 noop Querier。
 // preferLocalStorage returns noop if requested timeframe can be answered completely by the local TSDB, and
 // reduces maxt if the timeframe can be partially answered by TSDB.
 func (c *sampleAndChunkQueryableClient) preferLocalStorage(mint, maxt int64) (cmaxt int64, noop bool, err error) {
@@ -123,6 +128,7 @@ func (c *sampleAndChunkQueryableClient) preferLocalStorage(mint, maxt int64) (cm
 	return cmaxt, false, nil
 }
 
+// querier 在 Select 时追加 external label 匹配器并从结果剥离这些标签。
 type querier struct {
 	mint, maxt int64
 	client     ReadClient
@@ -132,6 +138,7 @@ type querier struct {
 	requiredMatchers []*labels.Matcher
 }
 
+// Select 校验 requiredMatchers 后调用 remote Read 并过滤 external labels。
 // Select implements storage.Querier and uses the given matchers to read series sets from the client.
 // Select also adds equality matchers for all external labels to the list of matchers before calling remote endpoint.
 // The added external labels are removed from the returned series sets.
@@ -227,6 +234,7 @@ func (*querier) Close() error {
 }
 
 // chunkQuerier is an adapter to make a client usable as a storage.ChunkQuerier.
+// chunkQuerier 暂通过 SeriesSet→ChunkSet 适配 remote read（待原生 chunk 支持）。
 type chunkQuerier struct {
 	querier
 }
@@ -246,6 +254,7 @@ func newSeriesSetFilter(ss storage.SeriesSet, toFilter []string) storage.SeriesS
 	}
 }
 
+// seriesSetFilter 从 remote read 返回的时序中移除注入的 external label。
 type seriesSetFilter struct {
 	storage.SeriesSet
 	toFilter []string // Label names to remove from result

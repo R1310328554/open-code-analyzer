@@ -14,6 +14,8 @@
 // Provenance-includes-license: Apache-2.0
 // Provenance-includes-copyright: Copyright The OpenTelemetry Authors.
 
+// OTLP 指数/经典 histogram 到 Prometheus native histogram 的转换逻辑。
+
 package prometheusremotewrite
 
 import (
@@ -32,6 +34,7 @@ import (
 
 const defaultZeroThreshold = 1e-128
 
+// addExponentialHistogramDataPoints 将 OTel 指数 histogram 写入 native histogram 样本。
 // addExponentialHistogramDataPoints adds OTel exponential histogram data points to the corresponding time series
 // as native histogram samples.
 func (c *PrometheusConverter) addExponentialHistogramDataPoints(
@@ -84,6 +87,7 @@ func (c *PrometheusConverter) addExponentialHistogramDataPoints(
 	return annots, nil
 }
 
+// exponentialToNativeHistogram 映射 scale/bucket 布局并处理 delta 时序性。
 // exponentialToNativeHistogram translates an OTel Exponential Histogram data point
 // to a Prometheus Native Histogram.
 func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint, temporality pmetric.AggregationTemporality) (*histogram.Histogram, annotations.Annotations, error) {
@@ -255,6 +259,7 @@ func convertBucketsLayout(bucketCounts []uint64, offset, scaleDown int32, adjust
 	return spans, deltas
 }
 
+// addCustomBucketsHistogramDataPoints 将 OTLP 显式桶 histogram 转为 custom buckets native histogram。
 func (c *PrometheusConverter) addCustomBucketsHistogramDataPoints(
 	ctx context.Context,
 	dataPoints pmetric.HistogramDataPointSlice,
@@ -305,6 +310,7 @@ func (c *PrometheusConverter) addCustomBucketsHistogramDataPoints(
 	return annots, nil
 }
 
+// explicitHistogramToCustomBucketsHistogram 映射 OTLP 显式边界到 Prometheus custom buckets 布局。
 func explicitHistogramToCustomBucketsHistogram(p pmetric.HistogramDataPoint, temporality pmetric.AggregationTemporality) (*histogram.Histogram, annotations.Annotations, error) {
 	var annots annotations.Annotations
 

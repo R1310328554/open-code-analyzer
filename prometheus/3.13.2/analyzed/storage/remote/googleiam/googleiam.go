@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// googleiam 包为 remote write HTTP 请求附加 Google Cloud Monitoring 访问令牌。
 // Package googleiam provides an http.RoundTripper that attaches an Google Cloud accessToken
 // to remote write requests.
 package googleiam
@@ -25,10 +26,12 @@ import (
 	apihttp "google.golang.org/api/transport/http"
 )
 
+// Config 可选指定服务账号 credentials JSON 文件路径。
 type Config struct {
 	CredentialsFile string `yaml:"credentials_file,omitempty"`
 }
 
+// NewRoundTripper 构建带 monitoring.write 作用域 OAuth2 的 RoundTripper 链。
 // NewRoundTripper creates a round tripper that adds Google Cloud Monitoring authorization to calls
 // using either a credentials file or the default credentials.
 func NewRoundTripper(cfg *Config, next http.RoundTripper) (http.RoundTripper, error) {

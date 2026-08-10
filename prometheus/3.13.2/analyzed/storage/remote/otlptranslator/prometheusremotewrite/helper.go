@@ -14,6 +14,8 @@
 // Provenance-includes-license: Apache-2.0
 // Provenance-includes-copyright: Copyright The OpenTelemetry Authors.
 
+// OTLP→Prometheus 转换辅助函数：标签/属性合成、exemplar、summary/histogram 与 target_info。
+
 package prometheusremotewrite
 
 import (
@@ -62,6 +64,7 @@ const (
 	defaultLookbackDelta = 5 * time.Minute
 )
 
+// reservedLabelNames 过滤已由 extras 单独设置的 __name__ 等保留标签。
 // reservedLabelNames contains label names that should be filtered from
 // OTLP attributes because they are set separately (via extras parameter).
 // Allowing these through could create duplicate labels.
@@ -69,6 +72,7 @@ var reservedLabelNames = []string{
 	model.MetricNameLabel, // "__name__" - set from metric name
 }
 
+// createAttributes 合并 resource/scope 缓存标签与 datapoint 属性并做名称规范化。
 // createAttributes creates a slice of Prometheus Labels with OTLP attributes and pairs of string values.
 // Unpaired string values are ignored. String pairs overwrite OTLP labels if collisions happen and
 // if logOnOverwrite is true, the overwrite is logged. Resulting label names are sanitized.
@@ -194,6 +198,7 @@ func (c *PrometheusConverter) createAttributes(
 	return c.builder.Labels(), nil
 }
 
+// aggregationTemporality 从各 metric 类型提取聚合时序性。
 func aggregationTemporality(metric pmetric.Metric) (pmetric.AggregationTemporality, bool, error) {
 	//exhaustive:enforce
 	switch metric.Type() {
@@ -216,6 +221,7 @@ func aggregationTemporality(metric pmetric.Metric) (pmetric.AggregationTemporali
 // with the user defined bucket boundaries of non-exponential OTel histograms.
 // However, work is under way to resolve this shortcoming through a feature called native histograms custom buckets:
 // https://github.com/prometheus/prometheus/issues/13485.
+// addHistogramDataPoints 将 OTLP 经典 histogram 转为 Prometheus 桶序列样本。
 func (c *PrometheusConverter) addHistogramDataPoints(
 	ctx context.Context,
 	dataPoints pmetric.HistogramDataPointSlice,
@@ -316,6 +322,7 @@ func (c *PrometheusConverter) addHistogramDataPoints(
 	return nil
 }
 
+// getPromExemplars 转换 OTLP exemplar 为 Prometheus exemplar（含 trace/span id）。
 func (c *PrometheusConverter) getPromExemplars(ctx context.Context, exemplars pmetric.ExemplarSlice) ([]exemplar.Exemplar, error) {
 	if exemplars.Len() == 0 {
 		return nil, nil
@@ -422,6 +429,7 @@ func findMinAndMaxTimestamps(metric pmetric.Metric, minTimestamp, maxTimestamp p
 	return minTimestamp, maxTimestamp
 }
 
+// addSummaryDataPoints 将 OTLP summary 展开为 _sum/_count/_quantile 多条时序。
 func (c *PrometheusConverter) addSummaryDataPoints(
 	ctx context.Context,
 	dataPoints pmetric.SummaryDataPointSlice,
@@ -495,6 +503,7 @@ func (c *PrometheusConverter) addLabels(name string, baseLabels labels.Labels, e
 }
 
 // addResourceTargetInfo converts the resource to the target info metric.
+// addResourceTargetInfo 为 resource 生成 target_info 指标以保留 OTel resource 属性。
 func (c *PrometheusConverter) addResourceTargetInfo(resource pcommon.Resource, settings Settings, earliestTimestamp, latestTimestamp time.Time) error {
 	if settings.DisableTargetInfo {
 		return nil
@@ -605,6 +614,7 @@ func (c *PrometheusConverter) addResourceTargetInfo(resource pcommon.Resource, s
 }
 
 // convertTimeStamp converts OTLP timestamp in ns to timestamp in ms.
+// convertTimeStamp 将 OTLP 纳秒时间戳转为 Prometheus 毫秒时间戳。
 func convertTimeStamp(timestamp pcommon.Timestamp) int64 {
 	return int64(timestamp) / 1_000_000
 }

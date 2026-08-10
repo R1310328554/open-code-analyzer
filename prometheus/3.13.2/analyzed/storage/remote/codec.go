@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Remote read/write 编解码层：snappy/protobuf 请求解析、Query/QueryResult 与 storage 互转、分块 XOR chunk 流式响应及 OTLP write 请求解码。
+
 package remote
 
 import (
@@ -47,6 +49,7 @@ const (
 	jsonContentType = "application/json"
 )
 
+// HTTPError 封装 remote read 可恢复 HTTP 错误（状态码 + 消息）。
 type HTTPError struct {
 	msg    string
 	status int
@@ -60,6 +63,7 @@ func (e HTTPError) Status() int {
 	return e.status
 }
 
+// DecodeReadRequest 从 HTTP 请求体读取 snappy 压缩的 ReadRequest protobuf。
 // DecodeReadRequest reads a remote.Request from a http.Request.
 func DecodeReadRequest(r *http.Request) (*prompb.ReadRequest, error) {
 	compressed, err := io.ReadAll(io.LimitReader(r.Body, decodeReadLimit))
@@ -88,6 +92,7 @@ func DecodeReadRequest(r *http.Request) (*prompb.ReadRequest, error) {
 	return &req, nil
 }
 
+// EncodeReadResponse 将 ReadResponse 序列化并 snappy 压缩后写入响应。
 // EncodeReadResponse writes a remote.Response to a http.ResponseWriter.
 func EncodeReadResponse(resp *prompb.ReadResponse, w http.ResponseWriter) error {
 	data, err := proto.Marshal(resp)
@@ -100,6 +105,7 @@ func EncodeReadResponse(resp *prompb.ReadResponse, w http.ResponseWriter) error 
 	return err
 }
 
+// ToQuery 将 PromQL 选择器与时间范围转换为 prompb.Query。
 // ToQuery builds a Query proto.
 func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHints) (*prompb.Query, error) {
 	ms, err := ToLabelMatchers(matchers)
@@ -128,6 +134,7 @@ func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHi
 	}, nil
 }
 
+// ToQueryResult 遍历 storage.SeriesSet 构建 QueryResult，含样本上限校验。
 // ToQueryResult builds a QueryResult proto.
 func ToQueryResult(ss storage.SeriesSet, sampleLimit int) (*prompb.QueryResult, annotations.Annotations, error) {
 	numSamples := 0
@@ -181,6 +188,7 @@ func ToQueryResult(ss storage.SeriesSet, sampleLimit int) (*prompb.QueryResult, 
 	return resp, ss.Warnings(), ss.Err()
 }
 
+// FromQueryResult 将 QueryResult 反序列化为 concreteSeriesSet。
 // FromQueryResult unpacks and sorts a QueryResult proto.
 func FromQueryResult(sortSeries bool, res *prompb.QueryResult) storage.SeriesSet {
 	b := labels.NewScratchBuilder(0)
@@ -203,6 +211,7 @@ func FromQueryResult(sortSeries bool, res *prompb.QueryResult) storage.SeriesSet
 	}
 }
 
+// NegotiateResponseType 协商 remote read 响应类型（SAMPLES 或 STREAMED_XOR_CHUNKS）。
 // NegotiateResponseType returns first accepted response type that this server supports.
 // On the empty accepted list we assume that the SAMPLES response type was requested. This is to maintain backward compatibility.
 func NegotiateResponseType(accepted []prompb.ReadRequest_ResponseType) (prompb.ReadRequest_ResponseType, error) {
@@ -223,6 +232,7 @@ func NegotiateResponseType(accepted []prompb.ReadRequest_ResponseType) (prompb.R
 	return 0, fmt.Errorf("server does not support any of the requested response types: %v; supported: %v", accepted, supported)
 }
 
+// StreamChunkedReadResponses 按 maxBytesInFrame 分帧流式发送 XOR chunk 响应。
 // StreamChunkedReadResponses iterates over series, builds chunks and streams those to the caller.
 // It expects Series set with populated chunks.
 func StreamChunkedReadResponses(
@@ -303,6 +313,7 @@ func StreamChunkedReadResponses(
 	return ss.Warnings(), ss.Err()
 }
 
+// MergeLabels 合并两组有序 proto 标签，主集优先覆盖同名标签。
 // MergeLabels merges two sets of sorted proto labels, preferring those in
 // primary to those in secondary when there is an overlap.
 func MergeLabels(primary, secondary []prompb.Label) []prompb.Label {
@@ -351,6 +362,7 @@ func (e errSeriesSet) Err() error {
 func (errSeriesSet) Warnings() annotations.Annotations { return nil }
 
 // concreteSeriesSet implements storage.SeriesSet.
+// concreteSeriesSet 将 prompb 时序列表实现为 storage.SeriesSet。
 type concreteSeriesSet struct {
 	cur    int
 	series []storage.Series
@@ -391,6 +403,7 @@ func (c *concreteSeries) Iterator(it chunkenc.Iterator) chunkenc.Iterator {
 }
 
 // concreteSeriesIterator implements storage.SeriesIterator.
+// concreteSeriesIterator 合并 float 与 histogram 样本的双游标迭代器。
 type concreteSeriesIterator struct {
 	floatsCur     int
 	histogramsCur int
@@ -629,6 +642,7 @@ func (c *concreteSeriesIterator) Err() error {
 }
 
 // chunkedSeriesSet implements storage.SeriesSet.
+// chunkedSeriesSet 从 HTTP 流逐帧读取 ChunkedReadResponse。
 type chunkedSeriesSet struct {
 	chunkedReader *ChunkedReader
 	respBody      io.ReadCloser
@@ -855,6 +869,7 @@ func (it *chunkedSeriesIterator) Err() error {
 	return it.err
 }
 
+// validateLabelsAndMetricName 校验 remote read 返回的标签与指标名合法性。
 // validateLabelsAndMetricName validates the label names/values and metric names returned from remote read,
 // also making sure that there are no labels with duplicate names.
 func validateLabelsAndMetricName(ls []prompb.Label) error {
@@ -927,6 +942,7 @@ func FromLabelMatchers(matchers []*prompb.LabelMatcher) ([]*labels.Matcher, erro
 	return result, nil
 }
 
+// DecodeWriteRequest 解码 snappy 压缩的 PRW v1 WriteRequest。
 // DecodeWriteRequest from an io.Reader into a prompb.WriteRequest, handling
 // snappy decompression.
 // Used also by documentation/examples/remote_storage.
@@ -949,6 +965,7 @@ func DecodeWriteRequest(r io.Reader) (*prompb.WriteRequest, error) {
 	return &req, nil
 }
 
+// DecodeWriteV2Request 解码 snappy 压缩的 PRW v2 WriteRequest。
 // DecodeWriteV2Request from an io.Reader into a writev2.Request, handling
 // snappy decompression.
 // Used also by documentation/examples/remote_storage.
@@ -971,6 +988,7 @@ func DecodeWriteV2Request(r io.Reader) (*writev2.Request, error) {
 	return &req, nil
 }
 
+// DecodeOTLPWriteRequest 按 Content-Type/Encoding 解码 OTLP metrics 导出请求。
 func DecodeOTLPWriteRequest(r *http.Request) (pmetricotlp.ExportRequest, error) {
 	contentType := r.Header.Get("Content-Type")
 	var decoderFunc func(buf []byte) (pmetricotlp.ExportRequest, error)

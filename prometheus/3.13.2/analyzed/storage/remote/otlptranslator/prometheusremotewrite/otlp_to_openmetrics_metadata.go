@@ -14,6 +14,8 @@
 // Provenance-includes-license: Apache-2.0
 // Provenance-includes-copyright: Copyright The OpenTelemetry Authors.
 
+// OTLP metric 类型到 OpenMetrics/Prometheus MetricType 的映射（含 delta 暂标记 unknown）。
+
 package prometheusremotewrite
 
 import (

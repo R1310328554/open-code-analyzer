@@ -14,6 +14,8 @@
 // Provenance-includes-license: Apache-2.0
 // Provenance-includes-copyright: Copyright The OpenTelemetry Authors.
 
+// OTLP Gauge/Sum NumberDataPoint 到 Prometheus 浮点样本的转换。
+
 package prometheusremotewrite
 
 import (
@@ -27,6 +29,7 @@ import (
 	"github.com/prometheus/prometheus/storage"
 )
 
+// addGaugeNumberDataPoints 将 gauge datapoint 转为即时值样本（含 stale NaN）。
 func (c *PrometheusConverter) addGaugeNumberDataPoints(
 	ctx context.Context,
 	dataPoints pmetric.NumberDataPointSlice,
@@ -71,6 +74,7 @@ func (c *PrometheusConverter) addGaugeNumberDataPoints(
 	return nil
 }
 
+// addSumNumberDataPoints 处理 counter/gauge sum，区分单调性与 delta 时序性。
 func (c *PrometheusConverter) addSumNumberDataPoints(
 	ctx context.Context,
 	dataPoints pmetric.NumberDataPointSlice,

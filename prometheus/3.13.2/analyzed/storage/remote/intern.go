@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// 字符串驻留池：remote write 路径复用标签字符串以降低堆分配与 GC 压力。
 // Inspired / copied / modified from https://gitlab.com/cznic/strutil/blob/master/strutil.go,
 // which is MIT licensed, so:
 //
@@ -33,6 +34,7 @@ var noReferenceReleases = promauto.NewCounter(prometheus.CounterOpts{
 	Help:      "The number of times release has been called for strings that are not interned.",
 })
 
+// pool 维护 string→entry 映射，entry 带引用计数。
 type pool struct {
 	mtx  sync.RWMutex
 	pool map[string]*entry
@@ -54,6 +56,7 @@ func newPool() *pool {
 	}
 }
 
+// intern 返回驻留字符串并增加引用；双检锁处理并发首次插入。
 func (p *pool) intern(s string) string {
 	if s == "" {
 		return ""
@@ -82,6 +85,7 @@ func (p *pool) intern(s string) string {
 	return s
 }
 
+// release 递减引用，归零时从池中删除条目。
 func (p *pool) release(s string) {
 	p.mtx.RLock()
 	interned, ok := p.pool[s]

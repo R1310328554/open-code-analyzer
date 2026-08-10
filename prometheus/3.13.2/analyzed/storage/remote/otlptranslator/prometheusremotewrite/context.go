@@ -10,6 +10,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+// OTLP→PRW 转换上下文辅助：批量处理时周期性检查 ctx 取消以避免长时间阻塞。
+
 package prometheusremotewrite
 
 import "context"
@@ -22,6 +25,7 @@ type everyNTimes struct {
 }
 
 // checkContext calls ctx.Err() every e.n times and returns an eventual error.
+// checkContext 返回缓存的 context 错误或 nil。
 func (e *everyNTimes) checkContext(ctx context.Context) error {
 	if e.err != nil {
 		return e.err

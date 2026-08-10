@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 线程安全的最大时间戳 Gauge：remote write 队列记录已发送/待发送样本的最高 timestamp。
+
 package remote
 
 import (

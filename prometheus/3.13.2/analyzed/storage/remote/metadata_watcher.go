@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 抓取元数据监视器：周期从 Scrape Manager 收集 MetricMetadata 并通过 MetadataAppender 推送到 remote write。
+
 package remote
 
 import (
@@ -25,11 +27,13 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 )
 
+// MetadataAppender 接收去重后的 scrape 元数据批次。
 // MetadataAppender is an interface used by the Metadata Watcher to send metadata, It is read from the scrape manager, on to somewhere else.
 type MetadataAppender interface {
 	AppendWatcherMetadata(context.Context, []scrape.MetricMetadata)
 }
 
+// Watchable 提供活跃抓取 target 列表以枚举元数据。
 // Watchable represents from where we fetch active targets for metadata.
 type Watchable interface {
 	TargetsActive() map[string][]*scrape.Target
@@ -42,6 +46,7 @@ func (*noopScrapeManager) Get() (*scrape.Manager, error) {
 }
 
 // MetadataWatcher watches the Scrape Manager for a given WriteMetadataTo.
+// MetadataWatcher 按 interval 轮询并 soft/hard 两级优雅停机。
 type MetadataWatcher struct {
 	name   string
 	logger *slog.Logger
@@ -61,6 +66,7 @@ type MetadataWatcher struct {
 	hardShutdownCtx    context.Context
 }
 
+// NewMetadataWatcher 绑定 scrape manager 就绪回调与 remote metadata 写入器。
 // NewMetadataWatcher builds a new MetadataWatcher.
 func NewMetadataWatcher(l *slog.Logger, mg ReadyScrapeManager, name string, w MetadataAppender, interval model.Duration, deadline time.Duration) *MetadataWatcher {
 	if l == nil {
@@ -125,6 +131,7 @@ func (mw *MetadataWatcher) loop() {
 	}
 }
 
+// collect 跨活跃 target 去重元数据并阻塞发送至 remote endpoint。
 func (mw *MetadataWatcher) collect() {
 	if !mw.ready() {
 		return
@@ -149,6 +156,7 @@ func (mw *MetadataWatcher) collect() {
 	mw.writer.AppendWatcherMetadata(mw.hardShutdownCtx, metadata)
 }
 
+// ready 懒加载 Scrape Manager，未就绪时跳过本轮收集。
 func (mw *MetadataWatcher) ready() bool {
 	if mw.manager != nil {
 		return true

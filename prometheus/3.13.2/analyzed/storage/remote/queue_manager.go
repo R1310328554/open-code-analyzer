@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Remote write 队列管理器：WAL 回放样本经分片队列、EWMA 动态扩缩容、带退避的批量 PRW v1/v2 推送及元数据同步。
+
 package remote
 
 import (
@@ -66,6 +68,7 @@ const (
 	reasonNHCBNotSupported           = "nhcb_in_rw1_not_supported"
 )
 
+// queueManagerMetrics 注册 remote write 吞吐、失败、pending 与分片容量等指标。
 type queueManagerMetrics struct {
 	reg prometheus.Registerer
 
@@ -406,6 +409,7 @@ func (m *queueManagerMetrics) unregister() {
 
 // WriteClient defines an interface for sending a batch of samples to an
 // external timeseries database.
+// WriteClient 抽象 remote endpoint 的 Store/StoreV2 与 metadata 写入。
 type WriteClient interface {
 	// Store stores the given samples in the remote storage.
 	Store(ctx context.Context, req []byte, retryAttempt int) (WriteResponseStats, error)
@@ -418,6 +422,7 @@ type WriteClient interface {
 // QueueManager manages a queue of samples to be sent to the Storage
 // indicated by the provided WriteClient. Implements writeTo interface
 // used by WAL Watcher.
+// QueueManager 协调 WAL consumer、分片 worker 与动态 shard 调整循环。
 type QueueManager struct {
 	lastSendTimestamp            atomic.Int64
 	buildRequestLimitTimestamp   atomic.Int64
@@ -463,6 +468,7 @@ type QueueManager struct {
 	highestRecvTimestamp *maxTimestamp
 }
 
+// NewQueueManager 初始化 EWMA、shard 上下界并挂载 WAL watcher 作为 WriteTo 目标。
 // NewQueueManager builds a new QueueManager and starts a new
 // WAL watcher with queue manager as the WriteTo destination.
 // The WAL watcher takes the dir parameter as the base directory
@@ -724,6 +730,7 @@ func isV2TimeSeriesOldFilter(metrics *queueManagerMetrics, baseTime time.Time, s
 
 // Append queues a sample to be sent to the remote storage. Blocks until all samples are
 // enqueued on their shards or a shutdown signal is received.
+// Append 将 TSDB head 浮点样本入队，超龄或 dropped series 则计数丢弃。
 func (t *QueueManager) Append(samples []record.RefSample) bool {
 	currentTime := time.Now()
 outer:
@@ -784,6 +791,7 @@ outer:
 	return true
 }
 
+// AppendExemplars 入队 exemplar 样本供分片批量发送。
 func (t *QueueManager) AppendExemplars(exemplars []record.RefExemplar) bool {
 	if !t.sendExemplars {
 		return true
@@ -841,6 +849,7 @@ outer:
 	return true
 }
 
+// AppendHistograms 入队 integer native histogram 样本。
 func (t *QueueManager) AppendHistograms(histograms []record.RefHistogramSample) bool {
 	if !t.sendNativeHistograms {
 		return true
@@ -967,6 +976,7 @@ outer:
 
 // Start the queue manager sending samples to the remote storage.
 // Does not block.
+// Start 启动 shard worker 与 updateShards/reshard 后台循环。
 func (t *QueueManager) Start() {
 	// Register and initialise some metrics.
 	t.metrics.register()
@@ -1099,6 +1109,7 @@ func processExternalLabels(b *labels.Builder, externalLabels []labels.Label) {
 	}
 }
 
+// updateShardsLoop 按 EWMA 吞吐与 backlog 计算 desiredShards 并触发 reshard。
 func (t *QueueManager) updateShardsLoop() {
 	defer t.wg.Done()
 
@@ -1253,6 +1264,7 @@ func (t *QueueManager) newShards() *shards {
 	return s
 }
 
+// shards 管理 N 个并发 worker，各自消费独立 batch 队列。
 type shards struct {
 	mtx sync.RWMutex // With the WAL, this is never actually contended.
 
@@ -1386,6 +1398,7 @@ func (s *shards) enqueue(ref chunks.HeadSeriesRef, data timeSeries) bool {
 	}
 }
 
+// queue 有界 channel 批量缓冲 timeSeries，支持 flush 与 shutdown。
 type queue struct {
 	// batchMtx covers operations appending to or publishing the partial batch.
 	batchMtx   sync.Mutex
@@ -1540,6 +1553,7 @@ func (q *queue) newBatch(capacity int) []timeSeries {
 	return make([]timeSeries, 0, capacity)
 }
 
+// runShard 从队列取 batch、组装 WriteRequest 并带指数退避重试发送。
 func (s *shards) runShard(ctx context.Context, shardID int, queue *queue) {
 	defer func() {
 		if s.running.Dec() == 0 {
@@ -1653,6 +1667,7 @@ func (s *shards) runShard(ctx context.Context, shardID int, queue *queue) {
 	}
 }
 
+// populateTimeSeries 将内部 timeSeries 批次填充为 prompb.TimeSeries 切片。
 func populateTimeSeries(batch []timeSeries, pendingData []prompb.TimeSeries, sendExemplars, sendNativeHistograms bool) (int, int, int) {
 	var nPendingSamples, nPendingExemplars, nPendingHistograms int
 	for nPending, d := range batch {
@@ -1747,6 +1762,7 @@ func (s *shards) updateMetrics(_ context.Context, err error, sampleCount, exempl
 }
 
 // sendSamplesWithBackoff to the remote storage with backoff for recoverable errors.
+// sendSamplesWithBackoff PRW v1 发送路径，含可恢复错误重试与指标更新。
 func (s *shards) sendSamplesWithBackoff(ctx context.Context, samples []prompb.TimeSeries, sampleCount, exemplarCount, histogramCount, metadataCount int, pBuf *proto.Buffer, buf compression.EncodeBuffer, compr compression.Type) (WriteResponseStats, error) {
 	// Build the WriteRequest with no metadata.
 	req, highest, lowest, err := buildWriteRequest(s.qm.logger, samples, nil, pBuf, nil, buf, compr)
@@ -2134,6 +2150,7 @@ func buildTimeSeries(timeSeries []prompb.TimeSeries, filter func(prompb.TimeSeri
 	return timeSeries, stats
 }
 
+// buildWriteRequest 序列化并压缩 PRW v1 请求体。
 func buildWriteRequest(logger *slog.Logger, timeSeries []prompb.TimeSeries, metadata []prompb.MetricMetadata, pBuf *proto.Buffer, filter func(prompb.TimeSeries) bool, buf compression.EncodeBuffer, compr compression.Type) (_ []byte, highest, lowest int64, _ error) {
 	timeSeries, stats := buildTimeSeries(timeSeries, filter)
 
@@ -2162,6 +2179,7 @@ func buildWriteRequest(logger *slog.Logger, timeSeries []prompb.TimeSeries, meta
 	return compressed, stats.highest, stats.lowest, nil
 }
 
+// buildV2WriteRequest 构建符号表压缩的 PRW v2 请求。
 func buildV2WriteRequest(logger *slog.Logger, samples []writev2.TimeSeries, labels []string, pBuf *[]byte, filter func(writev2.TimeSeries) bool, buf compression.EncodeBuffer, compr compression.Type) (compressed []byte, highest, lowest int64, _ error) {
 	timeSeries, stats := buildV2TimeSeries(samples, filter)
 
