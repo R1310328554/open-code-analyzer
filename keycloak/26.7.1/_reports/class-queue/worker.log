@@ -1078,3 +1078,18 @@
 2026-08-10T07:08:28Z DONE js/libs/keycloak-admin-client/src/defs/scopeRepresentation.ts wave37a admin-client realm/resource defs
 2026-08-10T07:08:28Z DONE js/libs/keycloak-admin-client/src/defs/serverInfoRepesentation.ts wave37a admin-client realm/resource defs
 2026-08-10T07:08:28Z DONE js/libs/keycloak-admin-client/src/defs/synchronizationResultRepresentation.ts wave37a admin-client realm/resource defs
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/systemInfoRepersantation.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/testLdapConnection.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/userConsentRepresentation.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/userProfileMetadata.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/userRepresentation.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/userSessionRepresentation.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/userVerifiableCredentialRepresentation.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/verifiableCredentialOfferActionConfigRepresentation.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/whoAmIRepresentation.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/defs/workflowRepresentation.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/index.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/resources/agent.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/resources/attackDetection.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/resources/authenticationManagement.ts wave37b admin-client user/resources
+2026-08-10T07:08:46Z DONE js/libs/keycloak-admin-client/src/resources/cache.ts wave37b admin-client user/resources

@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:06:54Z",
-  "files": [
-    "js/libs/keycloak-admin-client/src/defs/systemInfoRepersantation.ts",
-    "js/libs/keycloak-admin-client/src/defs/testLdapConnection.ts",
-    "js/libs/keycloak-admin-client/src/defs/userConsentRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/userProfileMetadata.ts",
-    "js/libs/keycloak-admin-client/src/defs/userRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/userSessionRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/userVerifiableCredentialRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/verifiableCredentialOfferActionConfigRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/whoAmIRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/workflowRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/index.ts",
-    "js/libs/keycloak-admin-client/src/resources/agent.ts",
-    "js/libs/keycloak-admin-client/src/resources/attackDetection.ts",
-    "js/libs/keycloak-admin-client/src/resources/authenticationManagement.ts",
-    "js/libs/keycloak-admin-client/src/resources/cache.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4888,
-  "done": 1095
+  "done": 1110
 }
