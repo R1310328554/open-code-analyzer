@@ -42,11 +42,18 @@ import org.keycloak.saml.common.constants.JBossSAMLURIConstants;
 
 import static org.keycloak.organization.utils.Organizations.isEnabledAndOrganizationsPresent;
 
+/**
+ * SAML 组织成员协议映射器：在 SAML 断言的属性声明中加入用户所属组织的别名。
+ * <p>仅当组织特性启用且 Realm 中存在组织时生效；实现 {@link SAMLAttributeStatementMapper} 与 {@link EnvironmentDependentProviderFactory}。</p>
+ */
 public class OrganizationMembershipMapper extends AbstractSAMLProtocolMapper implements SAMLAttributeStatementMapper, EnvironmentDependentProviderFactory {
 
+    /** 协议映射器工厂 ID。 */
     public static final String ID = "saml-organization-membership-mapper";
+    /** SAML 断言中组织成员属性的名称。 */
     public static final String ORGANIZATION_ATTRIBUTE_NAME = "organization";
 
+    /** 创建默认的“organization” SAML 组织成员映射器配置。 */
     public static ProtocolMapperModel create() {
         ProtocolMapperModel mapper = new ProtocolMapperModel();
 
@@ -58,6 +65,14 @@ public class OrganizationMembershipMapper extends AbstractSAMLProtocolMapper imp
 
     }
 
+    /**
+     * 将用户所属已启用组织的别名写入 SAML 属性声明。
+     * @param attributeStatement 待填充的属性声明
+     * @param mappingModel 协议映射器模型
+     * @param session Keycloak 会话
+     * @param userSession 用户会话
+     * @param clientSession 客户端会话
+     */
     @Override
     public void transformAttributeStatement(AttributeStatementType attributeStatement, ProtocolMapperModel mappingModel, KeycloakSession session, UserSessionModel userSession, AuthenticatedClientSessionModel clientSession) {
         OrganizationProvider provider = session.getProvider(OrganizationProvider.class);
@@ -94,6 +109,7 @@ public class OrganizationMembershipMapper extends AbstractSAMLProtocolMapper imp
         return ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Organization Membership";
@@ -104,11 +120,13 @@ public class OrganizationMembershipMapper extends AbstractSAMLProtocolMapper imp
         return AttributeStatementHelper.ATTRIBUTE_STATEMENT_CATEGORY;
     }
 
+    /** @return 映射器帮助说明文本 */
     @Override
     public String getHelpText() {
         return "Add an attribute to the assertion with information about the organization membership.";
     }
 
+    /** 仅当 {@link Feature#ORGANIZATION} 特性启用时支持此映射器。 */
     @Override
     public boolean isSupported(Scope config) {
         return Profile.isFeatureEnabled(Feature.ORGANIZATION);

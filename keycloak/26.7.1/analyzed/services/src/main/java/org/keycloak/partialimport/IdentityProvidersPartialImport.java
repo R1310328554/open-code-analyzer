@@ -27,7 +27,7 @@ import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.PartialImportRepresentation;
 
 /**
- * PartialImport handler for Identity Providers.
+ * 身份提供方部分导入处理器：按 alias 判断存在性并生成 internalId 后创建。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */

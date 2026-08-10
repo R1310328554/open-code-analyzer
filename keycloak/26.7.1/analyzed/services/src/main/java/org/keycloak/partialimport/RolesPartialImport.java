@@ -35,15 +35,8 @@ import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ServicesLogger;
 
 /**
- * This class handles both realm roles and client roles.  It delegates to
- * RealmRolesPartialImport and ClientRolesPartialImport, which are no longer used
- * directly by the PartialImportManager.
- *
- * The strategy is to utilize RepresentationToModel.importRoles().  That way,
- * the complex code for bulk creation of roles is kept in one place.  To do this, the
- * logic for skip needs to remove the roles that are going to be skipped so that
- * importRoles() doesn't know about them.  The logic for overwrite needs to delete
- * the overwritten roles before importRoles() is called.
+ * 角色部分导入处理器：统一处理 Realm 角色与客户端角色。
+ * <p>委托 {@link RealmRolesPartialImport} 与 {@link ClientRolesPartialImport} 做 prepare，最终通过 {@link RepresentationToModel#importRoles} 批量创建；跳过项从请求中移除，覆盖项在 importRoles 前删除。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
@@ -57,6 +50,7 @@ public class RolesPartialImport implements PartialImport<RolesRepresentation> {
 
     private final RealmRolesPartialImport realmRolesPI = new RealmRolesPartialImport();
     private final ClientRolesPartialImport clientRolesPI = new ClientRolesPartialImport();
+    /** 覆盖导入时若包含当前默认角色，需单独重建并设回 Realm 默认角色。 */
     private RoleRepresentation newDefaultRole;
 
     @Override
@@ -102,7 +96,7 @@ public class RolesPartialImport implements PartialImport<RolesRepresentation> {
         PartialImportResults results = new PartialImportResults();
         if (!rep.hasRealmRoles() && !rep.hasClientRoles()) return results;
 
-        // finalize preparation and add results for skips
+        // 完成准备阶段：从请求移除跳过项并记录结果
         removeRealmRoleSkips(results, rep, realm, session);
         removeClientRoleSkips(results, rep, realm);
         if (rep.hasRealmRoles()) setUniqueIds(rep.getRoles().getRealm());
@@ -120,11 +114,11 @@ public class RolesPartialImport implements PartialImport<RolesRepresentation> {
             throw ErrorResponse.error(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
         }
 
-        // add "add" results for new roles created
+        // 为新建角色追加“已新增”结果
         realmRoleAdds(results, rep, realm, session);
         clientRoleAdds(results, rep, realm);
 
-        // add "overwritten" results for roles overwritten
+        // 为覆盖角色追加“已覆盖”结果
         addResultsForOverwrittenRealmRoles(results, realm, session);
         addResultsForOverwrittenClientRoles(results, realm);
 

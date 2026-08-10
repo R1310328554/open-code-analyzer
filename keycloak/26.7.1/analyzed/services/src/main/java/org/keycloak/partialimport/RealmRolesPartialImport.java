@@ -28,7 +28,8 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.services.resources.admin.RoleResource;
 
 /**
- * PartialImport handler for Realm Roles.
+ * Realm 角色部分导入辅助类：处理 Realm 级角色的 SKIP/OVERWRITE 策略。
+ * <p>由 {@link RolesPartialImport} 委托；删除角色时复用 {@link RoleResource} 逻辑。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
@@ -90,6 +91,7 @@ public class RealmRolesPartialImport extends AbstractPartialImport<RoleRepresent
         realm.addRole(getName(roleRep));
     }
 
+    /** 暴露 {@link RoleResource#deleteRole} 供部分导入删除 Realm 角色。 */
     public static class RoleHelper extends RoleResource {
         public RoleHelper(RealmModel realm) {
             super(realm);

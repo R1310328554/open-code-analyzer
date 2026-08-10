@@ -46,7 +46,8 @@ import org.keycloak.sessions.RootAuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
- * Common base class for Authorization REST endpoints implementation, which have to be implemented by each protocol.
+ * 授权端点 REST 实现的公共基类：各登录协议（OIDC、SAML 等）的授权端点继承此类。
+ * <p>统一浏览器认证请求处理、SSL/Realm 校验及认证会话创建逻辑。</p>
  *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -54,6 +55,7 @@ public abstract class AuthorizationEndpointBase {
 
     private static final Logger logger = Logger.getLogger(AuthorizationEndpointBase.class);
 
+    /** 认证会话 note：标记由应用发起的登录流。 */
     public static final String APP_INITIATED_FLOW = "APP_INITIATED_FLOW";
 
     protected final RealmModel realm;
@@ -68,6 +70,10 @@ public abstract class AuthorizationEndpointBase {
 
     protected final ClientConnection clientConnection;
 
+    /**
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     */
     public AuthorizationEndpointBase(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -77,6 +83,7 @@ public abstract class AuthorizationEndpointBase {
         this.headers = session.getContext().getRequestHeaders();
     }
 
+    /** 创建并配置浏览器认证处理器，写入当前流路径 note。 */
     protected AuthenticationProcessor createProcessor(AuthenticationSessionModel authSession, String flowId, String flowPath) {
         AuthenticationProcessor processor = new AuthenticationProcessor();
         processor.setAuthenticationSession(authSession)
@@ -96,13 +103,12 @@ public abstract class AuthorizationEndpointBase {
     }
 
     /**
-     * Common method to handle browser authentication request in protocols unified way.
-     *
-     * @param authSession for current request
-     * @param protocol handler for protocol used to initiate login
-     * @param isPassive set to true if login should be passive (without login screen shown)
-     * @param redirectToAuthentication if true redirect to flow url.  If initial call to protocol is a POST, you probably want to do this.  This is so we can disable the back button on browser
-     * @return response to be returned to the browser
+     * 以统一方式处理各协议的浏览器认证请求。
+     * @param authSession 当前请求的认证会话
+     * @param protocol 发起登录的协议处理器
+     * @param isPassive 为 true 时被动登录（OIDC prompt=none / SAML IsPassive）
+     * @param redirectToAuthentication 为 true 时重定向到认证流 URL（POST 入口通常需开启以禁用浏览器后退）
+     * @return 返回给浏览器的响应
      */
     protected Response handleBrowserAuthenticationRequest(AuthenticationSessionModel authSession, LoginProtocol protocol, boolean isPassive, boolean redirectToAuthentication) {
         AuthenticationFlowModel flow = getAuthenticationFlow(authSession);
@@ -110,19 +116,18 @@ public abstract class AuthorizationEndpointBase {
         AuthenticationProcessor processor = createProcessor(authSession, flowId, LoginActionsService.AUTHENTICATE_PATH);
         event.detail(Details.CODE_ID, authSession.getParentSession().getId());
         if (isPassive) {
-            // OIDC prompt == NONE or SAML 2 IsPassive flag
-            // This means that client is just checking if the user is already completely logged in.
-            // We cancel login if any authentication action or required action is required
+            // OIDC prompt=none 或 SAML IsPassive：客户端仅探测是否已完全登录
+            // 客户端仅探测是否已完全登录；若仍需认证动作或必需操作则取消被动登录
             try {
                 Response challenge = processor.authenticateOnly();
                 if (challenge != null) {
-                    // KEYCLOAK-8043: forward the request with prompt=none to the default provider.
+                    // KEYCLOAK-8043：prompt=none 时转发至默认身份提供方
                     if ("true".equals(authSession.getAuthNote(AuthenticationProcessor.FORWARDED_PASSIVE_LOGIN))) {
                         RestartLoginCookie.setRestartCookie(session, authSession);
                         if (redirectToAuthentication) {
                             return processor.redirectToFlow();
                         }
-                        // no need to trigger authenticate, just return the challenge we got from authenticateOnly.
+                        // 无需再次 authenticate，直接返回 authenticateOnly 的挑战
                         return challenge;
                     }
                     else {
@@ -153,10 +158,12 @@ public abstract class AuthorizationEndpointBase {
         }
     }
 
+    /** 解析浏览器认证流模型。 */
     protected AuthenticationFlowModel getAuthenticationFlow(AuthenticationSessionModel authSession) {
         return AuthenticationFlowResolver.resolveBrowserFlow(authSession);
     }
 
+    /** 按 Realm SSL 要求校验当前连接是否为 HTTPS。 */
     protected void checkSsl() {
         if (!session.getContext().getUri().getBaseUri().getScheme().equals("https") && realm.getSslRequired().isRequired(clientConnection)) {
             event.error(Errors.SSL_REQUIRED);
@@ -164,6 +171,7 @@ public abstract class AuthorizationEndpointBase {
         }
     }
 
+    /** 校验 Realm 已启用，否则抛出错误页异常。 */
     protected void checkRealm() {
         if (!realm.isEnabled()) {
             event.error(Errors.REALM_DISABLED);
@@ -171,6 +179,12 @@ public abstract class AuthorizationEndpointBase {
         }
     }
 
+    /**
+     * 创建或复用根认证会话下的客户端认证会话；必要时从身份 Cookie 恢复用户会话。
+     * @param client 请求客户端
+     * @param requestState 请求状态（由子类使用）
+     * @return 新建的认证会话
+     */
     protected AuthenticationSessionModel createAuthenticationSession(ClientModel client, String requestState) {
         AuthenticationSessionManager manager = new AuthenticationSessionManager(session);
         RootAuthenticationSessionModel rootAuthSession = manager.getCurrentRootAuthenticationSession(realm);
@@ -195,11 +209,11 @@ public abstract class AuthorizationEndpointBase {
                     String userSessionId = userSession.getId();
                     rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, userSessionId);
                     if (rootAuthSession == null) {
-                        // depending on the storage layer we don't want to re-create the root authentication session
+                        // 视存储层实现，可能需按 userSessionId 重建根认证会话
                         rootAuthSession = session.authenticationSessions().createRootAuthenticationSession(realm, userSessionId);
                     }
                     authSession = rootAuthSession.createAuthenticationSession(client);
-                    // set auth session cookies because they can be missing if recovered from identity cookie
+                    // 从身份 Cookie 恢复时可能缺少认证会话 Cookie，此处补写
                     manager.setAuthSessionCookie(rootAuthSession.getId());
                     manager.setAuthSessionIdHashCookie(rootAuthSession.getId());
                     logger.debugf("Sent request to authz endpoint. We don't have root authentication session with ID '%s' but we have userSession." +
@@ -217,6 +231,7 @@ public abstract class AuthorizationEndpointBase {
 
     }
 
+    /** 创建新的根认证会话及客户端认证子会话。 */
     private AuthenticationSessionModel createNewAuthenticationSession(AuthenticationSessionManager manager, ClientModel client) {
         RootAuthenticationSessionModel rootAuthSession = manager.createAuthenticationSession(realm, true);
         AuthenticationSessionModel authSession = rootAuthSession.createAuthenticationSession(client);

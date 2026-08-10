@@ -49,8 +49,13 @@ import static org.keycloak.models.OrganizationDomainModel.ANY_DOMAIN;
 import static org.keycloak.organization.utils.Organizations.resolveHomeBroker;
 import static org.keycloak.validate.BuiltinValidators.emailValidator;
 
+/**
+ * 组织成员邮箱域校验器：确保受管成员或 IdP 审核场景下邮箱域与组织域配置一致。
+ * <p>实现 {@link EnvironmentDependentProviderFactory}，仅在 {@link Feature#ORGANIZATION} 启用时可用。</p>
+ */
 public class OrganizationMemberValidator extends AbstractSimpleValidator implements EnvironmentDependentProviderFactory {
 
+    /** 校验器 Provider ID。 */
     public static final String ID = "organization-member-validator";
 
     @Override
@@ -66,7 +71,7 @@ public class OrganizationMemberValidator extends AbstractSimpleValidator impleme
         UserModel user = attributeContext.getUser();
         OrganizationModel organization = Organizations.resolveOrganization(session, user);
 
-        // skip validation if we are not able to resolve org, or if user is not a member and the context is not IDP_REVIEW.
+        // 无法解析组织，或非成员且非 IdP 审核上下文时跳过校验
         if (organization == null || (user != null && !UserProfileContext.IDP_REVIEW.equals(attributeContext.getContext()) && !organization.isMember(user))) {
             return;
         }
@@ -114,7 +119,7 @@ public class OrganizationMemberValidator extends AbstractSimpleValidator impleme
                 return;
             }
         } else {
-            // no validation happens for unmanaged users as they are realm users linked to an organization
+            // 非受管用户为关联组织的 Realm 用户，不做域校验
             return;
         }
 
@@ -122,7 +127,7 @@ public class OrganizationMemberValidator extends AbstractSimpleValidator impleme
     }
 
     private static boolean validateEmailDomainMatch(String emailDomain, OrganizationModel organization, Set<String> expectedDomains) {
-        // Check if the email domain matches any expected domain with wildcard support
+        // 检查邮箱域是否与期望域列表匹配（支持通配符）
         for (String expectedDomain : expectedDomains) {
             String domain = ofNullable(Organizations.getMatchingDomain(emailDomain, organization)).map(OrganizationDomainModel::getName).orElse(null);
 
@@ -156,7 +161,7 @@ public class OrganizationMemberValidator extends AbstractSimpleValidator impleme
     }
 
     private static Set<String> resolveExpectedDomainsWhenReviewingFederatedUserProfile(OrganizationModel organization, AttributeContext attributeContext) {
-        // validating in the context of the brokering flow
+        // IdP 联合登录审核流程中的域校验
         KeycloakSession session = attributeContext.getSession();
         BrokeredIdentityContext brokerContext = (BrokeredIdentityContext) session.getAttribute(BrokeredIdentityContext.class.getName());
 
@@ -171,11 +176,11 @@ public class OrganizationMemberValidator extends AbstractSimpleValidator impleme
                 .orElse(null);
 
         if (broker == null) {
-            // the broker the user is authenticating is not linked to the organization
+            // 用户正在使用的 IdP 未关联该组织
             return Set.of();
         }
 
-        // expect the email domain to match the domain set to the broker or none if not set
+        // 期望邮箱域与 IdP 配置的域一致；未配置则不限制
         String brokerDomain = broker.getConfig().get(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
         if (ANY_DOMAIN.equals(brokerDomain)) {
             return organization.getDomains().map(OrganizationDomainModel::getName).collect(Collectors.toSet());

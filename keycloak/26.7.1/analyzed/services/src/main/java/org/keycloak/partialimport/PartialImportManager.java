@@ -26,24 +26,32 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.PartialImportRepresentation;
 
 /**
- * This class manages the PartialImport handlers.
+ * 部分导入管理器：按固定顺序编排各资源类型处理器的 prepare、删除覆盖与导入。
+ * <p>顺序为客户端 → 角色 → IdP → IdP 映射器 → 群组 → 用户。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class PartialImportManager {
+    /** 按依赖顺序注册的部分导入处理器列表。 */
     private final List<PartialImport> partialImports = new ArrayList<>();
 
     private final PartialImportRepresentation rep;
     private final KeycloakSession session;
     private final RealmModel realm;
 
+    /**
+     * 初始化管理器并注册各资源处理器（顺序不可变更）。
+     * @param rep 部分导入表示
+     * @param session Keycloak 会话
+     * @param realm 目标 Realm
+     */
     public PartialImportManager(PartialImportRepresentation rep, KeycloakSession session,
                                 RealmModel realm) {
         this.rep = rep;
         this.session = session;
         this.realm = realm;
 
-        // Do not change the order of these!!!
+        // 切勿更改以下处理器的注册顺序！！！
         partialImports.add(new ClientsPartialImport());
         partialImports.add(new RolesPartialImport());
         partialImports.add(new IdentityProvidersPartialImport());
@@ -52,6 +60,7 @@ public class PartialImportManager {
         partialImports.add(new UsersPartialImport());
     }
 
+    /** 执行完整部分导入流程并返回汇总结果。 */
     public PartialImportResults saveResources() {
         PartialImportResults results = new PartialImportResults();
 

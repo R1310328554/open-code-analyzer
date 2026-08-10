@@ -27,7 +27,7 @@ import org.keycloak.representations.idm.IdentityProviderMapperRepresentation;
 import org.keycloak.representations.idm.PartialImportRepresentation;
 
 /**
- * PartialImport handler for Identity Provider Mappers.
+ * 身份提供方映射器部分导入处理器：按 IdP 别名与映射器名称判断存在性。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */

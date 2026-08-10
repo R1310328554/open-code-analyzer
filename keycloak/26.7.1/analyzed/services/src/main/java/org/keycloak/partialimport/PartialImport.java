@@ -22,46 +22,35 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.PartialImportRepresentation;
 
 /**
- * Main interface for PartialImport handlers.
+ * 部分导入处理器主接口：定义 prepare、removeOverwrites、doImport 三阶段生命周期。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public interface PartialImport<T> {
 
     /**
-     * Find which resources will need to be skipped or overwritten.  Also,
-     * do a preliminary check for errors.
-     *
-     * @param rep Everything in the PartialImport request.
-     * @param realm Realm to be imported into.
-     * @param session The KeycloakSession.
-     * @ If the PartialImport can not be performed,
-     *                                throw this exception.
+     * 预处理阶段：识别需跳过或覆盖的资源，并进行初步错误检查。
+     * @param rep 部分导入请求中的全部内容
+     * @param realm 导入目标 Realm
+     * @param session Keycloak 会话
      */
     void prepare(PartialImportRepresentation rep,
                  RealmModel realm,
                  KeycloakSession session);
 
     /**
-     * Delete resources that will be overwritten.  This is done separately so
-     * that it can be called for all resource types before calling all the doImports.
-     *
-     * It was found that doing delete/add per resource causes errors because of
-     * cascading deletes.
-     *
-     * @param realm Realm to be imported into.
-     * @param session The KeycloakSession
+     * 删除将被覆盖的资源。各资源类型统一先删后建，避免级联删除导致的顺序错误。
+     * @param realm 导入目标 Realm
+     * @param session Keycloak 会话
      */
     void removeOverwrites(RealmModel realm, KeycloakSession session);
 
     /**
-     * Create (or re-create) all the imported resources.
-     *
-     * @param rep Everything in the PartialImport request.
-     * @param realm Realm to be imported into.
-     * @param session The KeycloakSession.
-     * @return The final results of the PartialImport request.
-     * @ if an error was detected trying to doImport a resource.
+     * 创建或重建所有导入资源。
+     * @param rep 部分导入请求
+     * @param realm 导入目标 Realm
+     * @param session Keycloak 会话
+     * @return 部分导入最终结果
      */
     PartialImportResults doImport(PartialImportRepresentation rep,
                                   RealmModel realm,

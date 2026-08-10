@@ -36,12 +36,15 @@ import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ErrorResponseException;
 
 /**
- * Partial Import handler for Client Roles.
+ * 客户端角色部分导入辅助类：按客户端 ID 分组处理 SKIP/OVERWRITE 策略。
+ * <p>由 {@link RolesPartialImport} 委托调用，不直接注册到 {@link PartialImportManager}。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class ClientRolesPartialImport {
+    /** 按 clientId 分组的待覆盖客户端角色。 */
     private final Map<String, Set<RoleRepresentation>> toOverwrite = new HashMap<>();
+    /** 按 clientId 分组的待跳过客户端角色。 */
     private final Map<String, Set<RoleRepresentation>> toSkip = new HashMap<>();
 
     public Map<String, Set<RoleRepresentation>> getToOverwrite() {
@@ -74,7 +77,7 @@ public class ClientRolesPartialImport {
         return client.getRolesStream().anyMatch(role -> Objects.equals(getName(roleRep), role.getName()));
     }
 
-    // check if client currently exists or will exists as a result of this partial import
+    // 检查客户端是否已存在或将在本次部分导入中创建
     private boolean clientExists(PartialImportRepresentation partialImportRep, RealmModel realm, String clientId) {
         if (realm.getClientByClientId(clientId) != null) return true;
 
@@ -98,18 +101,18 @@ public class ClientRolesPartialImport {
     public void deleteRole(RealmModel realm, String clientId, RoleRepresentation roleRep) {
         ClientModel client = realm.getClientByClientId(clientId);
         if (client == null) {
-            // client might have been removed as part of this partial import
+            // 客户端可能已在本次导入的其他步骤中被删除
             return;
         }
         RoleModel role = client.getRole(getName(roleRep));
         if (role == null) {
-            // role might not exist if client was just created as part of the
-            // partial import
+            // 若客户端刚被创建，角色可能尚不存在
             return;
         }
         client.removeRole(role);
     }
 
+    /** 预处理客户端角色：校验客户端存在并按策略归类。 */
     public void prepare(PartialImportRepresentation partialImportRep, RealmModel realm, KeycloakSession session) {
         Map<String, List<RoleRepresentation>> repList = getRepList(partialImportRep);
         if (repList == null || repList.isEmpty()) return;

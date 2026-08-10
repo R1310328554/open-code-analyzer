@@ -28,7 +28,7 @@ import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.PartialImportRepresentation;
 
 /**
- * Partial import handler for Groups.
+ * 群组部分导入处理器：按群组路径判断存在性并委托 {@link RepresentationToModel#importGroup} 创建。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
@@ -44,6 +44,7 @@ public class GroupsPartialImport extends AbstractPartialImport<GroupRepresentati
         return group.getName();
     }
 
+    /** 按群组路径在 Realm 中查找 {@link GroupModel}。 */
     private GroupModel findGroupModel(KeycloakSession session, RealmModel realm, GroupRepresentation groupRep) {
         return KeycloakModelUtils.findGroupByPath(session, realm, groupRep.getPath());
     }

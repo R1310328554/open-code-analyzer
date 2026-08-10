@@ -29,13 +29,16 @@ import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.ServicesLogger;
 
 /**
- * Base PartialImport for most resource types.
+ * 部分导入抽象基类：按 SKIP/OVERWRITE 策略处理资源存在性，统一 prepare/removeOverwrites/doImport 流程。
+ * <p>子类实现各资源类型的表示解析、存在性检查与创建/删除逻辑。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public abstract class AbstractPartialImport<T> implements PartialImport<T> {
 
+    /** 策略为 OVERWRITE 时待覆盖重建的资源集合。 */
     protected final Set<T> toOverwrite = new HashSet<>();
+    /** 策略为 SKIP 时跳过的已存在资源集合。 */
     protected final Set<T> toSkip = new HashSet<>();
 
     public abstract List<T> getRepList(PartialImportRepresentation partialImportRep);
@@ -47,6 +50,12 @@ public abstract class AbstractPartialImport<T> implements PartialImport<T> {
     public abstract void remove(RealmModel realm, KeycloakSession session, T resourceRep);
     public abstract void create(RealmModel realm, KeycloakSession session, T resourceRep);
 
+    /**
+     * 预处理：扫描资源列表，按策略归类为跳过或覆盖；冲突且策略为 FAIL 时抛错。
+     * @param partialImportRep 部分导入请求体
+     * @param realm 目标 Realm
+     * @param session Keycloak 会话
+     */
     @Override
     public void prepare(PartialImportRepresentation partialImportRep,
                          RealmModel realm,
@@ -65,22 +74,27 @@ public abstract class AbstractPartialImport<T> implements PartialImport<T> {
         }
     }
 
+    /** 资源已存在且策略不允许覆盖时抛出 exists 错误。 */
     protected ErrorResponseException existsError(String message) {
         throw ErrorResponse.exists(message);
     }
 
+    /** 构造“已覆盖”导入结果条目。 */
     protected PartialImportResult overwritten(String modelId, T resourceRep){
         return PartialImportResult.overwritten(getResourceType(), getName(resourceRep), modelId, resourceRep);
     }
 
+    /** 构造“已跳过”导入结果条目。 */
     protected PartialImportResult skipped(String modelId, T resourceRep) {
         return PartialImportResult.skipped(getResourceType(), getName(resourceRep), modelId, resourceRep);
     }
 
+    /** 构造“已新增”导入结果条目。 */
     protected PartialImportResult added(String modelId, T resourceRep) {
         return PartialImportResult.added(getResourceType(), getName(resourceRep), modelId, resourceRep);
     }
 
+    /** 删除所有标记为覆盖的既有资源（在 doImport 重建之前统一执行）。 */
     @Override
     public void removeOverwrites(RealmModel realm, KeycloakSession session) {
         for (T resourceRep : toOverwrite) {
@@ -88,6 +102,10 @@ public abstract class AbstractPartialImport<T> implements PartialImport<T> {
         }
     }
 
+    /**
+     * 执行导入：先重建覆盖项、记录跳过项，再创建其余新资源。
+     * @return 汇总的部分导入结果
+     */
     @Override
     public PartialImportResults doImport(PartialImportRepresentation partialImportRep, RealmModel realm, KeycloakSession session) {
         PartialImportResults results = new PartialImportResults();

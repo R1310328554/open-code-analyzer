@@ -31,14 +31,15 @@ import org.keycloak.representations.idm.PartialImportRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
 /**
- * PartialImport handler for users.
+ * 用户部分导入处理器：按用户名或邮箱（Realm 不允许重复邮箱时）判断存在性。
+ * <p>创建后缓存用户 ID，避免刚创建后立即查询失败。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class UsersPartialImport extends AbstractPartialImport<UserRepresentation> {
 
-    // Sometimes session.users().getUserByUsername() doesn't work right after create,
-    // so we cache the created id here.
+    // 创建后立即按用户名查询可能失败，此处缓存新建用户 ID
+    /** 用户名/标识 → 新建用户 ID 的缓存。 */
     private final Map<String, String> createdIds = new HashMap<>();
 
     @Override

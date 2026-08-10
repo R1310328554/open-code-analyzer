@@ -38,12 +38,13 @@ import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.jboss.logging.Logger;
 
 /**
- * PartialImport handler for Clients.
+ * 客户端部分导入处理器：过滤内部客户端，支持服务账户清理与授权设置导入。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class ClientsPartialImport extends AbstractPartialImport<ClientRepresentation> {
 
+    /** Keycloak 内置客户端 ID 集合，部分导入时自动跳过。 */
     private static Set<String> INTERNAL_CLIENTS = Collections.unmodifiableSet(new HashSet(Constants.defaultClients));
 
     private static Logger logger = Logger.getLogger(ClientsPartialImport.class);
@@ -55,7 +56,7 @@ public class ClientsPartialImport extends AbstractPartialImport<ClientRepresenta
             return clients;
         }
 
-        // filter out internal clients
+        // 过滤内置/内部客户端
         List<ClientRepresentation> ret = new ArrayList();
 
         for (ClientRepresentation c: clients) {
@@ -96,15 +97,15 @@ public class ClientsPartialImport extends AbstractPartialImport<ClientRepresenta
     @Override
     public void remove(RealmModel realm, KeycloakSession session, ClientRepresentation clientRep) {
         ClientModel clientModel = realm.getClientByClientId(getName(clientRep));
-        // remove the associated service account if the account exists
+        // 若存在则删除关联的服务账户用户
         if (clientModel.isServiceAccountsEnabled()) {
             UserModel serviceAccountUser = session.users().getServiceAccount(clientModel);
             if (serviceAccountUser != null) {
                 session.users().removeUser(realm, serviceAccountUser);
             }
         }
-        // the authorization resource server seems to be removed using the delete event, so it's not needed
-        // remove the client itself
+        // 授权资源服务器随删除事件清理，此处无需单独处理
+        // 删除客户端本身
         realm.removeClient(clientModel.getId());
     }
 
@@ -126,6 +127,7 @@ public class ClientsPartialImport extends AbstractPartialImport<ClientRepresenta
         RepresentationToModel.importAuthorizationSettings(clientRep, client, session);
     }
 
+    /** 判断 clientId 是否为内置客户端或以 {@code -realm} 结尾的 Realm 客户端。 */
     public static boolean isInternalClient(String clientId) {
         if (clientId != null && clientId.endsWith("-realm")) {
             return true;
