@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:01:00Z",
-  "files": [
-    "handler/src/main/java/io/netty/handler/timeout/IdleStateHandler.java",
-    "handler/src/main/java/io/netty/handler/timeout/ReadTimeoutException.java",
-    "handler/src/main/java/io/netty/handler/timeout/ReadTimeoutHandler.java",
-    "handler/src/main/java/io/netty/handler/timeout/TimeoutException.java",
-    "handler/src/main/java/io/netty/handler/timeout/WriteTimeoutException.java",
-    "handler/src/main/java/io/netty/handler/timeout/WriteTimeoutHandler.java",
-    "handler/src/main/java/io/netty/handler/traffic/AbstractTrafficShapingHandler.java",
-    "handler/src/main/java/io/netty/handler/traffic/ChannelTrafficShapingHandler.java",
-    "handler/src/main/java/io/netty/handler/traffic/GlobalChannelTrafficCounter.java",
-    "handler/src/main/java/io/netty/handler/traffic/GlobalChannelTrafficShapingHandler.java",
-    "handler/src/main/java/io/netty/handler/traffic/GlobalTrafficShapingHandler.java",
-    "handler/src/main/java/io/netty/handler/traffic/TrafficCounter.java",
-    "handler-proxy/src/main/java/io/netty/handler/proxy/HttpProxyHandler.java",
-    "handler-proxy/src/main/java/io/netty/handler/proxy/ProxyConnectException.java",
-    "handler-proxy/src/main/java/io/netty/handler/proxy/ProxyConnectionEvent.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 488,
-  "done": 1425
+  "done": 1440
 }
