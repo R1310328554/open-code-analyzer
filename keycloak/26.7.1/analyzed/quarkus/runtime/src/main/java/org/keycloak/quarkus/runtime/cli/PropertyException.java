@@ -17,12 +17,22 @@
 
 package org.keycloak.quarkus.runtime.cli;
 
+/**
+ * CLI 配置属性校验失败时抛出的运行时异常。
+ */
 public class PropertyException extends RuntimeException {
 
+    /**
+     * @param message 错误描述
+     */
     public PropertyException(String message) {
         super(message);
     }
 
+    /**
+     * @param message 错误描述
+     * @param throwable 根本原因
+     */
     public PropertyException(String message, Throwable throwable) {
         super(message, throwable);
     }

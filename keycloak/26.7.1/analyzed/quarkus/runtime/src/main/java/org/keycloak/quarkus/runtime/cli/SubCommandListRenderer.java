@@ -28,10 +28,12 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.UsageMessageSpec;
 
 /**
- * A {@link picocli.CommandLine.IHelpSectionRenderer} based on Quarkus CLI to show subcommands in help messages.
+ * 基于 Quarkus CLI 风格的子命令列表渲染器，用于帮助信息中的 Commands 区块。
+ * 实现 {@link picocli.CommandLine.IHelpSectionRenderer}。
  */
 class SubCommandListRenderer implements CommandLine.IHelpSectionRenderer {
 
+    /** 渲染层级缩进的子命令名称与描述表格。 */
     @Override
     public String render(Help help) {
         CommandSpec spec = help.commandSpec();
@@ -50,10 +52,11 @@ class SubCommandListRenderer implements CommandLine.IHelpSectionRenderer {
         return textTable.toString();
     }
 
+    /** 递归添加子命令及其嵌套子命令行。 */
     private void addHierarchy(Collection<CommandLine> collection, CommandLine.Help.TextTable textTable,
             String indent) {
         collection.stream().distinct().forEach(subcommand -> {
-            // create comma-separated list of command name and aliases
+            // 命令名与别名以逗号分隔
             String names = String.join(", ", subcommand.getCommandSpec().names());
             String description = description(subcommand.getCommandSpec().usageMessage());
             textTable.addRowValues(indent + names, description);
@@ -65,6 +68,7 @@ class SubCommandListRenderer implements CommandLine.IHelpSectionRenderer {
         });
     }
 
+    /** 优先取 header 首行，否则取 description 首行。 */
     private String description(UsageMessageSpec usageMessage) {
         if (usageMessage.header().length > 0) {
             return usageMessage.header()[0];

@@ -21,8 +21,12 @@ import picocli.CommandLine;
 import picocli.CommandLine.Help.ColorScheme;
 import picocli.CommandLine.Model.CommandSpec;
 
+/**
+ * Picocli 帮助工厂：为 Keycloak CLI 创建自定义 {@link Help} 实例。
+ */
 final class HelpFactory implements CommandLine.IHelpFactory {
 
+    /** @return Keycloak 定制版帮助渲染器 */
     @Override
     public CommandLine.Help create(CommandSpec commandSpec,
             ColorScheme colorScheme) {

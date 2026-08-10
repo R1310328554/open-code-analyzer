@@ -38,13 +38,19 @@ import static org.keycloak.utils.StringUtil.removeSuffix;
 import static picocli.CommandLine.Help.Column.Overflow.SPAN;
 import static picocli.CommandLine.Help.Column.Overflow.WRAP;
 
+/**
+ * Keycloak CLI 定制帮助渲染：按选项类别分组、过滤隐藏/不支持项并优化表格布局。
+ */
 public final class Help extends CommandLine.Help {
 
+    /** 标准帮助选项名。 */
     static final String[] OPTION_NAMES = new String[] { "-h", "--help" };
+    /** 帮助文本总宽度。 */
     private static final int HELP_WIDTH = 100;
     private static final String DEFAULT_OPTION_LIST_HEADING = "Options:";
     private static final String DEFAULT_COMMAND_LIST_HEADING = "Commands:";
 
+    /** 是否显示全部选项（含隐藏与不支持项）。 */
     private boolean all;
 
     Help(CommandLine.Model.CommandSpec commandSpec, ColorScheme colorScheme) {
@@ -55,12 +61,14 @@ public final class Help extends CommandLine.Help {
         configureUsageMessage(commandSpec);
     }
 
+    /** 渲染非分组可见选项列表及各选项组区块。 */
     @Override
     public String optionList(Layout layout, Comparator<OptionSpec> optionSort, IParamLabelRenderer valueLabelRenderer) {
         List<OptionSpec> visibleOptionsNotInGroups = excludeHiddenAndGroupOptions(commandSpec().options());
         return optionListExcludingGroups(visibleOptionsNotInGroups, layout, optionSort, valueLabelRenderer) + optionListGroupSections();
     }
 
+    /** 排除已归入 ArgGroup 及不可见选项。 */
     private List<OptionSpec> excludeHiddenAndGroupOptions(List<OptionSpec> all) {
         List<OptionSpec> result = new ArrayList<>(all);
 
@@ -79,6 +87,7 @@ public final class Help extends CommandLine.Help {
         return result;
     }
 
+    /** 创建仅渲染可见选项的默认布局。 */
     @Override
     public Layout createDefaultLayout() {
         return new Layout(colorScheme(), createTextTable(), createDefaultOptionRenderer(), createDefaultParameterRenderer()) {
@@ -93,13 +102,12 @@ public final class Help extends CommandLine.Help {
         };
     }
 
+    /** 两列 TextTable：选项名与自动换行描述。 */
     private TextTable createTextTable() {
         int longOptionsColumnWidth = commandSpec().commandLine().getUsageHelpLongOptionsMaxWidth();
         int descriptionWidth = HELP_WIDTH - longOptionsColumnWidth;
 
-        // save space by using only two columns with better control over how option names and description are rendered
-        // for now, no support for required options
-        // picocli has a limit of 2 chars for shortnames, we do not
+        // 使用两列布局以更好控制选项名与描述的换行
         TextTable textTable = TextTable.forColumns(colorScheme(),
                 new Column(longOptionsColumnWidth, 0, SPAN),  // " -cf, --config-file"
                 new Column(descriptionWidth, 1, WRAP));
@@ -114,29 +122,32 @@ public final class Help extends CommandLine.Help {
         return new OptionRenderer();
     }
 
+    /** 为标题添加粗体与前后空行，并去除 Picocli 默认尾部空白。 */
     @Override
     public String createHeading(String text, Object... params) {
         if (StringUtil.isBlank(text)) {
             return super.createHeading(text, params);
         }
 
-        // Strip trailing whitespace (e.g., Picocli's "Usage: ") since our format adds newlines after
+        // 去除 Picocli 默认 "Usage: " 等尾部空白，由本类统一控制换行
         String trimmedText = text.stripTrailing();
         return super.createHeading("%n@|bold " + trimmedText + "|@%n%n", params);
     }
 
+    /** 位置参数由选项渲染器统一处理，此处返回空矩阵。 */
     @Override
     public IParameterRenderer createDefaultParameterRenderer() {
         return new IParameterRenderer() {
             @Override
             public Ansi.Text[][] render(CommandLine.Model.PositionalParamSpec param,
                     IParamLabelRenderer parameterLabelRenderer, ColorScheme scheme) {
-                // we do our own formatting of parameters and labels when rendering optionsq
+                // 参数标签在选项渲染阶段统一格式化
                 return new Ansi.Text[0][];
             }
         };
     }
 
+    /** 过滤掉没有任何可见选项的分组。 */
     @Override
     public List<ArgGroupSpec> optionSectionGroups() {
         List<ArgGroupSpec> allGroupSpecs = super.optionSectionGroups();
@@ -150,13 +161,14 @@ public final class Help extends CommandLine.Help {
                 continue;
             }
 
-            // remove groups with no options in it
+            // 移除不含可见选项的分组
             argGroupSpecsIt.remove();
         }
 
         return nonEmptyGroups;
     }
 
+    /** 配置 usage 消息缩写 synopsis 与列表标题。 */
     private void configureUsageMessage(CommandLine.Model.CommandSpec commandSpec) {
         commandSpec.usageMessage()
                 .abbreviateSynopsis(true)
@@ -164,9 +176,13 @@ public final class Help extends CommandLine.Help {
                 .commandListHeading(DEFAULT_COMMAND_LIST_HEADING);
     }
 
+    /**
+     * 判断选项是否应在帮助中展示。
+     * 无描述、hidden、或非 --help-all 下的不支持项会被隐藏。
+     */
     private boolean isVisible(OptionSpec option) {
         if (option.description().length == 0 || option.hidden()) {
-            // do not show options without a description nor hidden
+            // 无描述或显式 hidden 的选项不展示
             return false;
         }
 
@@ -189,11 +205,11 @@ public final class Help extends CommandLine.Help {
         if (mapper == null) {
             final var disabledMapper = PropertyMappers.getDisabledMapper(kcKey);
 
-            // Show disabled mappers, which do not have a description when they're enabled
+            // 展示无 enabledWhen 约束的禁用映射器
             return disabledMapper.flatMap(PropertyMapper::getEnabledWhen).isEmpty();
         }
 
-        // unsupported options removed from help if all options are not requested
+        // 未请求 --help-all 时隐藏不支持的选项
         return PropertyMappers.isSupported(mapper);
     }
 

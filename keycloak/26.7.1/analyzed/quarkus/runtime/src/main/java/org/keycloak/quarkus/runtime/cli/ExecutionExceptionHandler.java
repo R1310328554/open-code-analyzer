@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.keycloak.quarkus.runtime.cli;
+package org.keycloak.quarkus.runtime;
 
 import java.io.PrintWriter;
 import java.nio.file.FileSystemException;
@@ -35,14 +35,28 @@ import picocli.CommandLine.ParseResult;
 
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getConfig;
 
+/**
+ * Picocli 命令执行异常处理器：格式化 CLI 错误输出并支持异常转换链。
+ * 实现 {@link CommandLine.IExecutionExceptionHandler}。
+ */
 public final class ExecutionExceptionHandler implements CommandLine.IExecutionExceptionHandler {
 
     private static Logger logger;
+    /** 是否输出完整堆栈跟踪。 */
     private boolean verbose;
+    /** 按堆栈类名注册的异常转换器。 */
     private static Map<String, Function<Throwable, Throwable>> exceptionTransformers = new HashMap<>();
 
     public ExecutionExceptionHandler() {}
 
+    /**
+     * 处理命令执行期间的异常。
+     *
+     * @param cause 捕获的异常
+     * @param cmd 命令行实例
+     * @param parseResult 解析结果
+     * @return 退出码
+     */
     @Override
     public int handleExecutionException(Exception cause, CommandLine cmd, ParseResult parseResult) {
         var exception = handleExceptionTransformers(cause);
@@ -62,6 +76,13 @@ public final class ExecutionExceptionHandler implements CommandLine.IExecutionEx
         return cmd.getCommandSpec().exitCodeOnExecutionException();
     }
 
+    /**
+     * 向 stderr 输出错误消息及可选的异常链。
+     *
+     * @param errorWriter 错误输出流
+     * @param message 顶层错误描述
+     * @param cause 根本原因
+     */
     public void error(PrintWriter errorWriter, String message, Throwable cause) {
         var exception = handleExceptionTransformers(cause);
         if (message != null) {
@@ -77,6 +98,7 @@ public final class ExecutionExceptionHandler implements CommandLine.IExecutionEx
         }
     }
 
+    /** 按 verbose 模式输出异常详情或仅输出消息链。 */
     private void dumpException(PrintWriter errorWriter, Throwable cause) {
         if (verbose) {
             logError(errorWriter, cause == null ? "Unknown error." : "Error details:", cause);
@@ -92,6 +114,7 @@ public final class ExecutionExceptionHandler implements CommandLine.IExecutionEx
         printErrorHints(errorWriter, cause);
     }
 
+    /** 针对证书文件缺失等场景输出额外提示。 */
     private void printErrorHints(PrintWriter errorWriter, Throwable cause) {
         if (cause instanceof FileSystemException) {
             FileSystemException fse = (FileSystemException) cause;
@@ -107,10 +130,11 @@ public final class ExecutionExceptionHandler implements CommandLine.IExecutionEx
         logError(errorWriter, errorMessage, null);
     }
 
-    // The "cause" can be null
+    // cause 可为 null
+    /** 优先委托 JBoss Logger，否则直接写入 PrintWriter。 */
     private void logError(PrintWriter errorWriter, String errorMessage, Throwable cause) {
         if (InitialConfigurator.DELAYED_HANDLER.isActivated()) {
-            // Can delegate to proper logger once delayed handler is activated
+            // 延迟处理器激活后可使用正式 Logger
             if (cause == null) {
                 getLogger().error(errorMessage);
             } else {
@@ -133,10 +157,17 @@ public final class ExecutionExceptionHandler implements CommandLine.IExecutionEx
         return logger;
     }
 
+    /** 设置是否输出详细堆栈。 */
     public void setVerbose(boolean verbose) {
         this.verbose = verbose;
     }
 
+    /**
+     * 注册按堆栈帧类名触发的异常转换器。
+     *
+     * @param fromClass 触发转换的类
+     * @param transformer 转换函数
+     */
     public static void addExceptionTransformer(Class<?> fromClass, Function<Throwable, Throwable> transformer) {
         if (exceptionTransformers.get(fromClass.getName()) != null) {
             getLogger().warnf("Transformer for the '%s' class is overridden", fromClass.getName());
@@ -144,10 +175,12 @@ public final class ExecutionExceptionHandler implements CommandLine.IExecutionEx
         exceptionTransformers.put(fromClass.getName(), transformer);
     }
 
+    /** 清空所有异常转换器（测试或重置配置时调用）。 */
     public static void resetExceptionTransformers() {
         exceptionTransformers = new HashMap<>();
     }
 
+    /** 沿堆栈查找并应用首个匹配的转换器。 */
     private static Throwable handleExceptionTransformers(Throwable exception) {
         if (exception == null) {
             return null;

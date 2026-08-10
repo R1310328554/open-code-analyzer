@@ -20,8 +20,17 @@ package org.keycloak.quarkus.runtime;
 import org.keycloak.provider.KeycloakDeploymentInfo;
 import org.keycloak.provider.ProviderManager;
 
+/**
+ * Quarkus 运行时 Provider 发现工具：从类路径加载 SPI 与主题资源。
+ */
 public final class Providers {
 
+    /**
+     * 创建基于类路径的 {@link ProviderManager}，用于扫描服务与主题资源 Provider。
+     *
+     * @param classLoader 用于加载 Provider 实现的类加载器
+     * @return 配置为 classpath 部署的 Provider 管理器
+     */
     public static ProviderManager getProviderManager(ClassLoader classLoader) {
         KeycloakDeploymentInfo keycloakDeploymentInfo = KeycloakDeploymentInfo.create()
                 .name("classpath")

@@ -71,13 +71,18 @@ import liquibase.servicelocator.ServiceLocator;
 import org.hibernate.cfg.AvailableSettings;
 import org.infinispan.protostream.SerializationContextInitializer;
 
+/**
+ * Quarkus 构建时录制器：在运行阶段初始化 Keycloak 配置、Profile、信任库、会话工厂等。
+ */
 @Recorder
 public class KeycloakRecorder {
 
+    /** 绑定 Keycloak {@link Config} 到 MicroProfile 配置提供者。 */
     public void initConfig() {
         Config.init(new MicroProfileConfigProvider());
     }
 
+    /** 若启用 HTTP 访问日志文件，则在数据目录下创建 log 子目录。 */
     public void createHttpAccessLogDirectory() {
         if (Configuration.isTrue(HttpAccessLogOptions.HTTP_ACCESS_LOG_FILE_ENABLED)) {
             Environment.getHomeDir().ifPresent(homeDir -> {
@@ -89,15 +94,23 @@ public class KeycloakRecorder {
         }
     }
 
+    /**
+     * 初始化 Keycloak {@link Profile} 及特性开关。
+     *
+     * @param profileName Profile 名称
+     * @param features 特性到布尔值的映射
+     * @param enablements 特性启用级别映射
+     */
     public void configureProfile(Profile.ProfileName profileName, Map<Profile.Feature, Boolean> features, Map<Feature, Enablement> enablements) {
         Profile.init(profileName, features, enablements);
     }
 
-    // default handler for redirecting to specific path
+    /** 返回将请求重定向到指定路径的 Vert.x 处理器。 */
     public Handler<RoutingContext> getRedirectHandler(String redirectPath) {
         return routingContext -> routingContext.redirect(redirectPath);
     }
 
+    /** 管理接口首页可链接的端点列表。 */
     private static final List<ManagementInterfaceItem> MANAGEMENT_INTERFACE_ENDPOINTS = List.of(
             new ManagementInterfaceItem("/health", "Health endpoint", () -> Configuration.isTrue(HealthOptions.HEALTH_ENABLED)),
             new ManagementInterfaceItem("/metrics", "Metrics endpoint", () -> Configuration.isTrue(MetricsOptions.METRICS_ENABLED)),
@@ -105,7 +118,7 @@ public class KeycloakRecorder {
             new ManagementInterfaceItem("/openapi/ui", "OpenAPI UI specification (Swagger)", () -> Configuration.isTrue(OpenApiOptions.OPENAPI_UI_ENABLED))
     );
 
-    // default handler for the management interface
+    /** 返回管理接口 HTML 索引页处理器。 */
     public Handler<RoutingContext> getManagementHandler() {
         String itemsHtml = "<ul>%s</ul>".formatted(MANAGEMENT_INTERFACE_ENDPOINTS.stream()
                 .filter(f -> f.isEnabled.getAsBoolean())
@@ -120,16 +133,21 @@ public class KeycloakRecorder {
                 """.formatted(itemsHtml));
     }
 
+    /** 管理接口列表项：路径、描述与启用条件。 */
     private record ManagementInterfaceItem(String path, String description, BooleanSupplier isEnabled) {
         String getListItem() {
             return "<li><a href=\"%s\">%s</a> - %s</li>".formatted(path, path, description);
         }
     }
 
+    /**
+     * 若未接受非规范化路径，则返回拒绝过滤器；否则返回 null。
+     */
     public Handler<RoutingContext> getRejectNonNormalizedPathFilter() {
         return !Configuration.isTrue(HttpOptions.HTTP_ACCEPT_NON_NORMALIZED_PATHS) ? new RejectNonNormalizedPathFilter() : null;
     }
 
+    /** 聚合配置、Kubernetes CA 与 conf/truststores 目录，设置 JVM 信任库。 */
     public void configureTruststore() {
         List<String> truststores = new ArrayList<>();
         Configuration.getOptionalKcValue(TruststoreOptions.TRUSTSTORE_PATHS.getKey())
@@ -148,12 +166,17 @@ public class KeycloakRecorder {
         if (truststoresDir != null && truststoresDir.exists() && Optional.ofNullable(truststoresDir.list()).map(a -> a.length).orElse(0) > 0) {
             truststores.add(truststoresDir.getAbsolutePath());
         } else if (truststores.size() == 0) {
-            return; // nothing to configure, we'll just use the system default
+            return; // 无自定义信任库，使用系统默认
         }
 
         TruststoreBuilder.setSystemTruststore(truststores.toArray(String[]::new), true, dataDir.orElseThrow());
     }
 
+    /**
+     * 向 FastServiceLocator 注入预解析的 Liquibase 服务映射。
+     *
+     * @param services Liquibase 服务类到实现类列表的映射
+     */
     public void configureLiquibase(Map<String, List<String>> services) {
         ServiceLocator locator = Scope.getCurrentScope().getServiceLocator();
         if (locator instanceof FastServiceLocator) {
@@ -161,6 +184,9 @@ public class KeycloakRecorder {
         }
     }
 
+    /**
+     * 创建 Quarkus 版 Keycloak 会话工厂 RuntimeValue。
+     */
     public RuntimeValue<QuarkusKeycloakSessionFactory> createSessionFactory(
             Map<Spi, Map<Class<? extends Provider>, Map<String, Class<? extends ProviderFactory>>>> factories,
             Map<Class<? extends Provider>, String> defaultProviders,
@@ -169,15 +195,22 @@ public class KeycloakRecorder {
         return new RuntimeValue<QuarkusKeycloakSessionFactory>(new QuarkusKeycloakSessionFactory(factories, defaultProviders, preConfiguredProviders, themes));
     }
 
+    /** 设置声明式用户 Profile 的默认 UP 配置。 */
     public void setDefaultUserProfileConfiguration(UPConfig configuration) {
         DeclarativeUserProfileProviderFactory.setDefaultConfig(configuration);
     }
 
+    /** 设置 WebAuthn 认证器默认元数据。 */
     public void setDefaultWebAuthnMetadata(Map<String, WebAuthnAuthenticatorMetadata> metadata) {
         WebAuthnMetadataService.setDefaultMetadata(metadata);
     }
 
 
+    /**
+     * 为命名 Hibernate 持久化单元创建数据源绑定监听器。
+     *
+     * @param name Quarkus 数据源名称
+     */
     public HibernateOrmIntegrationRuntimeInitListener createUserDefinedUnitListener(String name) {
         return propertyCollector -> {
             try (InstanceHandle<AgroalDataSource> instance = Arc.container().instance(
@@ -195,10 +228,16 @@ public class KeycloakRecorder {
         };
     }
 
+    /** 为默认持久化单元设置数据库 schema。 */
     public HibernateOrmIntegrationRuntimeInitListener createDefaultUnitListener() {
         return propertyCollector -> propertyCollector.accept(AvailableSettings.DEFAULT_SCHEMA, Configuration.getConfigValue(DatabaseOptions.DB_SCHEMA).getValue());
     }
 
+    /**
+     * 按 FIPS 模式加载并注册 CryptoProvider。
+     *
+     * @param fipsMode FIPS 运行模式
+     */
     public void setCryptoProvider(FipsMode fipsMode) {
         String cryptoProvider = fipsMode.getProviderClassName();
 
@@ -215,6 +254,7 @@ public class KeycloakRecorder {
         }
     }
 
+    /** 注册 Infinispan ProtoStream 序列化 schema 初始化器列表。 */
     public void configureProtoStreamSchemas(List<SerializationContextInitializer> schemas) {
         Marshalling.setSchemas(schemas);
     }

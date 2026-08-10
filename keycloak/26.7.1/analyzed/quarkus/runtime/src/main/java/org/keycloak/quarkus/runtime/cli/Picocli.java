@@ -84,34 +84,51 @@ import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvi
 
 import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST;
 
+/**
+ * Keycloak Quarkus CLI 核心门面：构建 Picocli 命令树、解析参数、校验配置并驱动启动/构建。
+ */
 public class Picocli {
 
+    /** Provider JAR 时间戳变更且需完全重建时的错误消息。 */
     static final String PROVIDER_TIMESTAMP_ERROR = "A provider JAR was updated since the last build, please rebuild for this to be fully utilized.";
+    /** 容器内 Provider 时间戳与构建时不一致时的警告消息。 */
     static final String PROVIDER_TIMESTAMP_WARNING = "A provider jar has a different timestamp than when the optimized container image was created. If you are changing provider jars after the build, you must run another build to properly account for those modifications.";
+    /** 持久化 Provider 文件时间戳属性的键前缀。 */
     static final String KC_PROVIDER_FILE_PREFIX = "kc.provider.file.";
+    /** 长选项前缀。 */
     public static final String ARG_PREFIX = "--";
+    /** 短选项前缀。 */
     public static final String ARG_SHORT_PREFIX = "-";
+    /** 表示无参数占位符的特殊标签。 */
     public static final String NO_PARAM_LABEL = "none";
 
+    /** 控制帮助/校验时是否包含运行时、构建时选项及未识别参数。 */
     private record IncludeOptions(boolean includeRuntime, boolean includeBuildTime, boolean allowUnrecognized) {
     }
 
     private final ExecutionExceptionHandler errorHandler = new ExecutionExceptionHandler();
+    /** 当前解析到的 AbstractCommand，配置初始化后可用。 */
     private Optional<AbstractCommand> parsedCommand = Optional.empty();
+    /** 是否已输出 Provider 时间戳警告（容器场景仅警告一次）。 */
     private boolean warnedTimestampChanged;
 
     private Ansi colorMode = hasColorSupport() ? Ansi.ON : Ansi.OFF;
+    /** 由当前命令推导的选项包含策略。 */
     private IncludeOptions options;
+    /** CLI 中重复出现的选项名，用于校验后警告。 */
     private Set<String> duplicatedOptionsNames = new HashSet<String>();
 
+    /** @return 终端是否支持 ANSI 颜色 */
     public static boolean hasColorSupport() {
         return TerminalUtils.hasColorSupport();
     }
 
+    /** @return 当前 ANSI 颜色模式 */
     public Ansi getColorMode() {
         return colorMode;
     }
 
+    /** 递归判断解析结果或其子命令是否请求了 --help。 */
     private boolean isHelpRequested(ParseResult result) {
         if (result.isUsageHelpRequested()) {
             return true;
@@ -120,6 +137,11 @@ public class Picocli {
         return result.subcommands().stream().anyMatch(this::isHelpRequested);
     }
 
+    /**
+     * 解析 CLI 参数、初始化配置、校验选项并执行命令。
+     *
+     * @param cliArgs 命令行参数字符串列表
+     */
     public void parseAndRun(List<String> cliArgs) {
         List<String> unrecognizedArgs = new ArrayList<>();
         CommandLine cmd = createCommandLine(unrecognizedArgs);
@@ -140,7 +162,7 @@ public class Picocli {
                 currentCommand = null;
             }
 
-            // any unrecognized args can now be normalized to our property mapper based argument expectations
+            // 未识别参数可规范化为基于 PropertyMapper 的键值对
             Map<String, String> normalizedArgs = new LinkedHashMap<String, String>();
             List<String> unknown = new ArrayList<String>();
             ConfigArgsConfigSource.parseConfigArgs(unrecognizedArgs, (k, v) -> {
@@ -154,7 +176,7 @@ public class Picocli {
 
             initConfig(currentCommand);
 
-            // now that the property mappers are properly initalized further refine the args
+            // PropertyMapper 就绪后进一步精炼参数
             if (options.allowUnrecognized) {
                 normalizedArgs.keySet().removeIf(arg -> PropertyMappers.getMapperByCliKey(arg) != null || arg.startsWith(ConfigArgsConfigSource.SPI_OPTION_PREFIX));
             }
@@ -176,13 +198,10 @@ public class Picocli {
                 addCommandOptions(cl, currentCommand);
             }
 
-            // ParseResult retain memory. Clear it, so it's not on the stack while the command runs
+            // ParseResult 占用内存，命令执行前释放引用
             result = null;
 
-            // there's another ParseResult being created under the covers here.
-            // to reuse the previous result either means we need to duplicate the logic in the execute method
-            // or refactor the above logic so that it happens in the command logic
-            // We could also reduce the memory footprint of the ParseResult, but that looks a little hackish
+            // execute 内部会再次创建 ParseResult；复用需重构上述逻辑或复制 execute 内逻辑
             int exitCode = execute(cmd, argArray);
 
             exit(exitCode);
@@ -193,14 +212,17 @@ public class Picocli {
         }
     }
 
+    /** 子类可覆盖以自定义 execute 行为（测试用）。 */
     protected int execute(CommandLine cmd, String[] argArray) {
         return cmd.execute(argArray);
     }
 
+    /** @return 当前已解析的 AbstractCommand（若存在） */
     public Optional<AbstractCommand> getParsedCommand() {
         return parsedCommand;
     }
 
+    /** 处理 ParameterException 并退出进程。 */
     private void catchParameterException(ParameterException parEx, CommandLine cmd, String[] args) {
         int exitCode;
         try {
@@ -212,21 +234,25 @@ public class Picocli {
         exit(exitCode);
     }
 
+    /** 输出用法错误并以 USAGE 退出码终止。 */
     public void usageException(String message, Throwable cause) {
         errorHandler.error(getErrWriter(), message, cause);
         exit(CommandLine.ExitCode.USAGE);
     }
 
+    /** 以给定退出码终止 JVM（子类可改为 Quarkus.asyncExit）。 */
     public void exit(int exitCode) {
         System.exit(exitCode);
     }
 
+    /** @return 是否曾执行过 build（持久化配置非空） */
     private static boolean wasBuildEverRun() {
         return !Configuration.getRawPersistedProperties().isEmpty();
     }
 
     /**
-     * Additional validation and handling of deprecated options
+     * 校验当前命令的配置：必填项、禁用项、弃用项、Provider 变更等。
+     * 额外验证并处理已弃用选项。
      */
     public void validateConfig() {
         AbstractCommand abstractCommand = this.getParsedCommand().orElseThrow();
@@ -260,8 +286,7 @@ public class Picocli {
             disabledMappers.addAll(PropertyMappers.getDisabledRuntimeMappers().values());
         }
 
-        // first validate the advertised property names
-        // - this allows for efficient resolution of wildcard values and checking spi options
+        // 第一遍：校验已出现的属性名，便于通配符与 SPI 解析
         Configuration.getPropertyNames().forEach(name -> {
             if (name.startsWith(PropertyMappers.KC_SPI_PREFIX)) {
                 if (!options.includeRuntime) {
@@ -282,8 +307,8 @@ public class Picocli {
                     secondClassOptions.put(name, forKey.getFrom());
                 }
             }
-            if (!mapper.hasWildcard() // non-wildcard options will be validated in the next pass
-                    // validate only canonical mappings to kc. values - no need to consider alternative forms
+            if (!mapper.hasWildcard() // 非通配符选项在第二遍校验
+                    // 仅校验映射到 kc. 的规范键
                     || !name.startsWith(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX)) {
                 return;
             }
@@ -291,8 +316,7 @@ public class Picocli {
                     deprecatedInUse, missingOption, false, forKey, unnecessary);
         });
 
-        // second pass validate any property mapper not seen in the first pass
-        // - this will catch required values, anything missing from the property names, or disabled
+        // 第二遍：校验第一遍未覆盖的 PropertyMapper（必填、禁用等）
         for (PropertyMapper<?> mapper : PropertyMappers.getMappers()) {
             if (!mapper.hasWildcard() && !mapper.getOption().isSynthetic()) {
                 validateProperty(abstractCommand, options, ignoredRunTime, disabledBuildTime, disabledRunTime,
@@ -302,7 +326,7 @@ public class Picocli {
 
         PropertyMappers.getPropertyMapperGroupings().forEach(g -> g.validateConfig(this));
 
-        // third pass check for disabled mappers
+        // 第三遍：检查已禁用的映射器
         for (PropertyMapper<?> mapper : disabledMappers) {
             if (!mapper.hasWildcard() && !mapper.getOption().isSynthetic()) {
                 validateProperty(abstractCommand, options, ignoredRunTime, disabledBuildTime, disabledRunTime,
@@ -342,10 +366,10 @@ public class Picocli {
         }
     }
 
+    /** 校验构建时选项是否与持久化值一致，并检测 Provider JAR 变更。 */
     private void validateBuildtime() {
         final List<String> ignoredBuildTime = new ArrayList<>();
-        // check for provider changes, or overrides of existing persisted options
-        // we have to ignore things like the profile properties because the commands set them at runtime
+        // 检查 Provider 变更或持久化选项被覆盖；Profile 等由命令在运行时设置，此处忽略
         checkChangesInBuildOptions((key, oldValue, newValue) -> {
             if (key.startsWith(KC_PROVIDER_FILE_PREFIX)) {
                 boolean changed = false;
@@ -364,7 +388,7 @@ public class Picocli {
                 }
             } else if (newValue != null && !isIgnoredPersistedOption(key)
                     && isUserModifiable(Configuration.getConfigValue(key))
-                    // let quarkus handle this - it's unsupported for direct usage in keycloak
+                    // Quarkus 前缀项由 Quarkus 处理，Keycloak 不支持直接使用
                     && !key.startsWith(MicroProfileConfigProvider.NS_QUARKUS_PREFIX)) {
                 ignoredBuildTime.add(key);
             }
@@ -376,13 +400,17 @@ public class Picocli {
         }
     }
 
+    /**
+     * 比较新旧 Provider 文件时间戳；Docker 常截断到秒，允许该特例。
+     */
     static boolean timestampChanged(String oldValue, String newValue) {
         long longNewValue = Long.valueOf(newValue);
         long longOldValue = Long.valueOf(oldValue);
-        // docker commonly truncates to the second at runtime, so we'll allow that special case
+        // docker 运行时常见秒级截断，对此做特殊容忍
         return ((longNewValue / 1000) * 1000) != longNewValue || ((longOldValue / 1000) * 1000) != longNewValue;
     }
 
+    /** 临时禁用 PropertyMappingInterceptor 以读取未映射的原始配置值。 */
     private ConfigValue getUnmappedValue(String key) {
         PropertyMappingInterceptor.disable();
         try {
@@ -392,12 +420,13 @@ public class Picocli {
         }
     }
 
+    /** 对单个 PropertyMapper 执行必填、禁用、弃用与多余选项校验。 */
     private void validateProperty(AbstractCommand abstractCommand, IncludeOptions options,
             final List<String> ignoredRunTime, final Set<String> disabledBuildTime, final Set<String> disabledRunTime,
             final Set<String> deprecatedInUse, final Set<String> missingOption,
             boolean disabled, PropertyMapper<?> mapper, final Set<String> unnecessary) {
         if (mapper.isBuildTime() && !options.includeBuildTime) {
-            return; // no need to validate as we've already checked for changes in the build time state
+            return; // 构建时选项已在 validateBuildtime 中检查变更
         }
         boolean ignoreRuntime = mapper.isRunTime() && !options.includeRuntime;
 
@@ -416,9 +445,7 @@ public class Picocli {
         }
 
         if (disabled) {
-            // add an error message if no enabled propertymapper, and it's not a cli value
-            // as some cli options may be directly on the command and not backed by a property mapper
-            // - if they are disabled that should have already been handled as an unrecognized arg
+            // 无启用映射器且非 CLI 来源的值视为禁用
             if (PropertyMappers.getMapper(mapper.getFrom()) == null
                     && !PropertyMapper.isCliOption(configValue)) {
                 handleDisabled(mapper.isRunTime() ? disabledRunTime : disabledBuildTime, mapper);
@@ -440,6 +467,7 @@ public class Picocli {
         }
     }
 
+    /** 在仅构建阶段将运行时 SPI 选项记入 ignoredRunTime 列表。 */
     private static void checkRuntimeSpiOptions(String key, final List<String> ignoredRunTime) {
         boolean buildTimeOption = PropertyMappers.isSpiBuildTimeProperty(key);
 
@@ -447,13 +475,14 @@ public class Picocli {
             ConfigValue configValue = Configuration.getConfigValue(key);
             String configValueStr = configValue.getValue();
 
-            // don't consider missing or anything below standard env properties
+            // 忽略缺失值及低于标准环境变量优先级的配置
             if (configValueStr != null && isUserModifiable(configValue)) {
                 ignoredRunTime.add(key);
             }
         }
     }
 
+    /** 收集弃用选项/取值的使用说明行。 */
     private static void handleDeprecated(Set<String> deprecatedInUse, PropertyMapper<?> mapper, String configValue,
             DeprecatedMetadata metadata) {
         Set<String> deprecatedValuesInUse = new HashSet<>();
@@ -462,7 +491,7 @@ public class Picocli {
             deprecatedValuesInUse.retainAll(metadata.getDeprecatedValues());
 
             if (deprecatedValuesInUse.isEmpty()) {
-                return; // no deprecated values are used, don't emit any warning
+                return; // 未使用弃用取值则不警告
             }
         }
 
@@ -496,10 +525,12 @@ public class Picocli {
         deprecatedInUse.add(sb.toString());
     }
 
+    /** 记录禁用选项及 enabledWhen 说明。 */
     private static void handleDisabled(Set<String> disabledInUse, PropertyMapper<?> mapper) {
         handleMessage(disabledInUse, mapper, PropertyMapper::getEnabledWhen);
     }
 
+    /** 记录必填选项及 requiredWhen 说明。 */
     private static void handleRequired(Set<String> requiredOptions, PropertyMapper<?> mapper) {
         handleMessage(requiredOptions, mapper, PropertyMapper::getRequiredWhen);
     }
@@ -512,30 +543,39 @@ public class Picocli {
         messages.add(sb.toString());
     }
 
+    /** 向 stdout 输出绿色 INFO 前缀消息。 */
     public void info(String text) {
         ColorScheme defaultColorScheme = picocli.CommandLine.Help.defaultColorScheme(colorMode);
         getOutWriter().println(defaultColorScheme.apply("INFO: ", Arrays.asList(Style.fg_green, Style.bold)) + text);
     }
 
+    /** 向 stderr 输出红色错误消息。 */
     public void error(String text) {
         ColorScheme defaultColorScheme = picocli.CommandLine.Help.defaultColorScheme(colorMode);
         getErrWriter().println(defaultColorScheme.apply(text, Arrays.asList(Style.fg_red, Style.bold)));
     }
 
+    /** 向 stdout 输出黄色 WARNING 前缀消息。 */
     public void warn(String text) {
         ColorScheme defaultColorScheme = picocli.CommandLine.Help.defaultColorScheme(colorMode);
         getOutWriter().println(defaultColorScheme.apply("WARNING: ", Arrays.asList(Style.fg_yellow, Style.bold)) + text);
     }
 
+    /** 输出在当前阶段不可用的构建时/运行时选项列表。 */
     private void outputDisabledProperties(Set<String> properties, boolean build) {
         warn(format("The following used %s time options are UNAVAILABLE and will be ignored during %s time:\n %s",
                 build ? "build" : "run", build ? "run" : "build",
                 String.join("\n", properties)));
     }
 
+    /**
+     * 收集当前应持久化的构建时选项（含 Quarkus 与 Provider 时间戳）。
+     *
+     * @return 待写入 PersistedConfigSource 的属性集
+     */
     public static Properties getNonPersistedBuildTimeOptions() {
         Properties properties = new Properties();
-        // TODO: could get only non-persistent property names
+        // TODO: 可仅获取非持久化属性名
         Configuration.getPropertyNames().forEach(name -> {
             boolean quarkus = false;
             PropertyMapper<?> mapper = PropertyMappers.getMapper(name);
@@ -548,8 +588,7 @@ public class Picocli {
                     return;
                 }
             } else if (name.startsWith(MicroProfileConfigProvider.NS_QUARKUS)) {
-                // TODO: this is not correct - we are including runtime properties here, but at least they
-                // are already coming from a file
+                // TODO: 此处会混入部分运行时 Quarkus 属性，但至少来自文件
                 quarkus = true;
             } else if (!PropertyMappers.isSpiBuildTimeProperty(name)) {
                 return;
@@ -557,12 +596,11 @@ public class Picocli {
             ConfigValue value = Configuration.getNonPersistedConfigValue(name);
             if (value.getValue() == null || value.getConfigSourceName() == null
                     || (quarkus && !value.getConfigSourceName().contains(QuarkusPropertiesConfigSource.NAME))) {
-                // only persist build options resolved from config sources and not default values
-                // instead we'll persist the profile (if set) because that may influence the defaults
+                // 仅持久化来自配置源解析的值，非默认值
+                // Profile 可能影响默认值，故单独持久化
                 return;
             }
-            // since we're persisting all quarkus values, this may leak some runtime information - we don't want
-            // to capture expanded expressions that may be referencing environment variables
+            // 持久化全部 Quarkus 值可能泄露运行时信息，避免保存含环境变量引用的展开表达式
             String stringValue = value.getValue();
             if (quarkus && value.getRawValue() != null) {
                 stringValue = value.getRawValue();
@@ -570,15 +608,14 @@ public class Picocli {
             properties.put(name, stringValue);
         });
 
-        // the following should be ignored when output the optimized check message
-        // they are either not set by the user, or not properly initialized
+        // 以下项在优化检查消息中忽略：非用户设置或未正确初始化
 
         for (File jar : getProviderFiles().values()) {
             properties.put(String.format(KC_PROVIDER_FILE_PREFIX + "%s.last-modified", jar.getName()), String.valueOf(jar.lastModified()));
         }
 
         if (!Environment.isRebuildCheck()) {
-            // not auto-build (e.g.: start without optimized option) but a regular build to create an optimized server image
+            // 非 auto-build 的常规 build，标记为 optimized 镜像
             Configuration.markAsOptimized(properties);
         }
 
@@ -591,6 +628,7 @@ public class Picocli {
         return properties;
     }
 
+    /** 递归为命令树添加 --help 与未匹配参数绑定。 */
     private void updateSpecHelpAndUnmatched(CommandSpec spec, List<String> unrecognizedArgs) {
         try {
             spec.addOption(OptionSpec.builder(Help.OPTION_NAMES)
@@ -598,7 +636,7 @@ public class Picocli {
                     .description("This help message.")
                     .build());
         } catch (DuplicateOptionAnnotationsException e) {
-            // Completion is inheriting mixinStandardHelpOptions = true
+            // Completion 子命令继承了 mixinStandardHelpOptions = true
         }
 
         spec.addUnmatchedArgsBinding(CommandLine.Model.UnmatchedArgsBinding.forStringArrayConsumer(new ISetter() {
@@ -614,6 +652,7 @@ public class Picocli {
         spec.subcommands().values().forEach(c -> updateSpecHelpAndUnmatched(c.getCommandSpec(), unrecognizedArgs));
     }
 
+    /** 创建根 CommandLine：Main 命令、异常处理器、Help 与子命令渲染器。 */
     CommandLine createCommandLine(List<String> unrecognizedArgs) {
         CommandSpec spec = CommandSpec.forAnnotatedObject(new Main(), new IFactory() {
             @Override
@@ -644,7 +683,7 @@ public class Picocli {
     }
 
     /**
-     * Removes platform-specific commands on non-applicable platforms
+     * 移除非当前平台的子命令（如 Unix 下隐藏 Windows 服务命令）。
      */
     private void removePlatformSpecificCommands(CommandLine cmd) {
         if (getCommandMode() == CommandMode.UNIX) {
@@ -658,28 +697,32 @@ public class Picocli {
         }
     }
 
+    /** CLI 帮助中使用的命令模式（ALL/WIN/UNIX）。 */
     enum CommandMode {
         ALL,
         WIN,
         UNIX
     }
 
+    /** 由环境变量 KEYCLOAK_COMMAND_MODE 或 OS 推导命令展示模式。 */
     protected CommandMode getCommandMode() {
-        // not an official option, just a way for integration tests to produce the same output regardless of OS
+        // 非官方选项，供集成测试跨 OS 一致输出
         return Optional.ofNullable(System.getenv("KEYCLOAK_COMMAND_MODE")).map(CommandMode::valueOf)
                 .orElse(Environment.isWindows() ? CommandMode.WIN : CommandMode.UNIX);
     }
 
+    /** 帮助 synopsis 中使用的脚本名（ALL 模式统一为 kc.sh）。 */
     private String getCommandNameForHelp() {
-        // enforce kc.sh for ALL mode to ensure consistent line wrapping
+        // ALL 模式强制 kc.sh 以保证换行一致
         return switch (getCommandMode()) {
         case WIN -> "kc.bat";
         default -> "kc.sh";
         };
     }
 
+    /** 通过 KEYCLOAK_HELP_WIDTH 环境变量覆盖帮助文本宽度。 */
     private void configureUsageHelpWidth(CommandLine cmd) {
-        // not an official option, just a way to make help wrapping configurable
+        // 非官方选项，仅用于可配置换行宽度
         Optional.ofNullable(System.getenv("KEYCLOAK_HELP_WIDTH"))
                 .map(Integer::parseInt)
                 .filter(width -> width > 0)
@@ -689,14 +732,17 @@ public class Picocli {
                 });
     }
 
+    /** @return 绑定 System.err 的 PrintWriter */
     public PrintWriter getErrWriter() {
         return new PrintWriter(System.err, true);
     }
 
+    /** @return 绑定 System.out 的 PrintWriter */
     public PrintWriter getOutWriter() {
         return new PrintWriter(System.out, true);
     }
 
+    /** 根据命令类型决定校验/帮助中是否包含运行时与构建时选项。 */
     private IncludeOptions getIncludeOptions(AbstractCommand abstractCommand) {
         if (abstractCommand == null) {
             return new IncludeOptions(false, false, false);
@@ -706,6 +752,7 @@ public class Picocli {
         return new IncludeOptions(autoBuild, includeBuildTime, autoBuild || includeBuildTime || abstractCommand instanceof ShowConfig);
     }
 
+    /** 将 PropertyMapper 定义的选项按类别加入 ArgGroup。 */
     private void addCommandOptions(CommandLine command, AbstractCommand ac) {
         if (!options.includeBuildTime && !options.includeRuntime) {
             return;
@@ -718,6 +765,7 @@ public class Picocli {
         addMappedOptionsToArgGroups(command, mappers, ac, options);
     }
 
+    /** 静态方法：为命令行规范批量添加映射选项分组。 */
     private static void addMappedOptionsToArgGroups(CommandLine commandLine, Map<OptionCategory, List<PropertyMapper<?>>> propertyMappers, AbstractCommand ac, IncludeOptions options) {
         CommandSpec cSpec = commandLine.getCommandSpec();
         for (Entry<OptionCategory, List<PropertyMapper<?>>> entry : propertyMappers.entrySet()) {
@@ -744,11 +792,11 @@ public class Picocli {
                 }
 
                 if (cSpec.optionsMap().containsKey(name)) {
-                    continue; // command is dominant
+                    continue; // 命令级选项优先，跳过重复映射
                 }
 
                 if (ac.isHelpAll() && !names.add(name)) {
-                    continue; // we sometimes duplicate mappers within the same command
+                    continue; // --help-all 下同 CLI 键可能重复
                 }
 
                 OptionSpec.Builder optBuilder = OptionSpec.builder(name)
@@ -764,15 +812,14 @@ public class Picocli {
                     optBuilder.defaultValue(Option.getDefaultValueString(mapper.getDefaultValue().get()));
                 }
 
-                optBuilder.arity("1"); // everything requires a value to match configargs parsing
+                optBuilder.arity("1"); // 与 ConfigArgs 解析一致，所有选项均需值
                 if (mapper.getType() != null) {
                     optBuilder.type(mapper.getType());
                     if (mapper.isList()) {
-                        // make picocli aware of the only list convention we allow
+                        // 唯一允许的列表约定：逗号分隔
                         optBuilder.splitRegex(",");
                     } else if (mapper.getType().isEnum()) {
-                        // prevent the auto-conversion that picocli does
-                        // we validate the expected values later
+                        // 阻止 Picocli 自动转换，校验阶段再检查枚举
                         optBuilder.type(String.class);
                     }
                 } else {
@@ -790,6 +837,7 @@ public class Picocli {
         }
     }
 
+    /** 为帮助描述追加候选值、默认值、enabledWhen 与弃用标记。 */
     private static String getDecoratedOptionDescription(PropertyMapper<?> mapper) {
         StringBuilder transformedDesc = new StringBuilder(Optional.ofNullable(mapper.getDescription()).orElse(""));
 
@@ -812,14 +860,14 @@ public class Picocli {
         }
 
         mapper.getDefaultValue()
-                .map(d -> Option.getDefaultValueString(d).replaceAll("%", "%%")) // escape formats
+                .map(d -> Option.getDefaultValueString(d).replaceAll("%", "%%")) // 转义格式占位符
                 .map(d -> " Default: " + d + ".")
                 .ifPresent(transformedDesc::append);
 
         mapper.getEnabledWhen().map(e -> format(" %s.", e)).ifPresent(transformedDesc::append);
         mapper.getRequiredWhen().map(e -> format(" %s.", e)).ifPresent(transformedDesc::append);
 
-        // only fully deprecated options, not just deprecated values
+        // 仅整项弃用的选项，非仅弃用某个取值
         mapper.getDeprecatedMetadata()
                 .filter(deprecatedMetadata -> deprecatedMetadata.getDeprecatedValues().isEmpty())
                 .ifPresent(deprecatedMetadata -> {
@@ -848,10 +896,12 @@ public class Picocli {
         return transformedDesc.toString();
     }
 
+    /** 向 stdout 打印一行消息。 */
     public void println(String message) {
         getOutWriter().println(message);
     }
 
+    /** 自动构建前对比持久化选项，输出将被覆盖的构建项警告。 */
     public void checkChangesInBuildOptionsDuringAutoBuild(PrintWriter out) {
         StringBuilder options = new StringBuilder();
 
@@ -871,11 +921,12 @@ public class Picocli {
         );
     }
 
+    /** 比较当前与持久化构建选项，对每个差异调用 valueChanged。 */
     private static void checkChangesInBuildOptions(TriConsumer<String, String, String> valueChanged) {
         var current = getNonPersistedBuildTimeOptions();
         var persisted = Configuration.getRawPersistedProperties();
 
-        // TODO: order is not well defined here
+        // TODO: 键顺序在此未严格定义
 
         current.forEach((key, value) -> {
             String persistedValue = persisted.get(key);
@@ -891,8 +942,9 @@ public class Picocli {
         });
     }
 
+    /** 格式化单个构建选项从旧值到新值的变更行。 */
     private static void optionChanged(StringBuilder options, String key, String oldValue, String newValue) {
-        // the assumption here is that no build time options need mask handling
+        // 假定构建时选项无需掩码处理
         boolean isIgnored = !key.startsWith(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX)
                 || key.startsWith(KC_PROVIDER_FILE_PREFIX) || isIgnoredPersistedOption(key);
         if (!isIgnored) {
@@ -909,16 +961,23 @@ public class Picocli {
                 || key.equals(LaunchMode.current().getProfileKey());
     }
 
+    /** 启动 Quarkus 服务器（委托 {@link KeycloakMain#start}）。 */
     public void start() {
         KeycloakMain.start(this, (AbstractNonServerCommand) this.getParsedCommand()
                 .filter(AbstractNonServerCommand.class::isInstance).orElse(null), this.errorHandler);
     }
 
+    /** 触发 Quarkus 构建（re-augmentation）。 */
     public void build() throws Throwable {
         Environment.setRebuild();
         QuarkusEntryPoint.main();
     }
 
+    /**
+     * 在 Profile 确定后初始化 MicroProfile 配置与 PropertyMappers。
+     *
+     * @param command 当前解析到的命令，可为 null
+     */
     public void initConfig(AbstractCommand command) {
         if (Configuration.isInitialized()) {
             throw new IllegalStateException("Config should not be initialized until profile is determined");
@@ -938,7 +997,7 @@ public class Picocli {
         }
     }
 
-    // Show warning about duplicated options in CLI
+    /** 若 CLI 中存在重复选项名，输出 WARNING。 */
     public void warnOnDuplicatedOptionsInCli() {
         if (!duplicatedOptionsNames.isEmpty()) {
             warn("Duplicated options present in CLI: %s".formatted(String.join(", ", duplicatedOptionsNames)));

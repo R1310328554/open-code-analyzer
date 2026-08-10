@@ -20,8 +20,18 @@ import picocli.CommandLine.UnmatchedArgumentException;
 
 import static java.lang.String.format;
 
+/**
+ * Picocli 参数解析异常处理器：输出简短、可操作的 CLI 错误信息。
+ */
 public class ShortErrorMessageHandler implements IParameterExceptionHandler {
 
+    /**
+     * 处理未知选项、禁用选项、缺少参数等解析错误。
+     *
+     * @param ex 参数异常
+     * @param args 原始命令行参数
+     * @return 无效输入对应的退出码
+     */
     @Override
     public int handleParseException(ParameterException ex, String[] args) {
         CommandLine cmd = ex.getCommandLine();
@@ -83,22 +93,26 @@ public class ShortErrorMessageHandler implements IParameterExceptionHandler {
         return getInvalidInputExitCode(ex, cmd);
     }
 
+    /** 根据 ExitCodeExceptionMapper 或命令规范返回无效输入退出码。 */
     static int getInvalidInputExitCode(Throwable ex, CommandLine cmd) {
         return cmd.getExitCodeExceptionMapper() != null
                 ? cmd.getExitCodeExceptionMapper().getExitCode(ex)
                 : cmd.getCommandSpec().exitCodeOnInvalidInput();
     }
 
+    /** 按分隔符拆分首个未匹配参数。 */
     private String[] getUnmatchedPartsByOptionSeparator(UnmatchedArgumentException uae, String separator) {
         return uae.getUnmatched().get(0).split(separator);
     }
 
+    /** 构造缺少参数时的期望值说明。 */
     private String getExpectedMessage(OptionSpec option) {
         return String.format("Option '%s' (%s) expects %s.%s", String.join(", ", option.names()), option.paramLabel(),
                 option.typeInfo().isMultiValue() ? "one or more comma separated values without whitespace": "a single value",
                 getExpectedValuesMessage(option.completionCandidates(), isCaseInsensitive(option)));
     }
 
+    /** 判断选项是否配置为大小写不敏感枚举。 */
     private boolean isCaseInsensitive(OptionSpec option) {
         if (option.longestName().startsWith("--")) {
             var mapper = PropertyMappers.getMapper(option.longestName().substring(2));
@@ -109,6 +123,7 @@ public class ShortErrorMessageHandler implements IParameterExceptionHandler {
         return false;
     }
 
+    /** 格式化候选值列表后缀。 */
     public static String getExpectedValuesMessage(Iterable<String> specCandidates, boolean caseInsensitive) {
         if (specCandidates == null || !specCandidates.iterator().hasNext()) {
             return "";

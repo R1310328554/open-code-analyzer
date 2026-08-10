@@ -29,11 +29,16 @@ import static org.keycloak.quarkus.runtime.cli.Picocli.NO_PARAM_LABEL;
 
 import static picocli.CommandLine.Help.Ansi.OFF;
 
+/**
+ * Keycloak CLI 选项行渲染器：格式化短/长选项名与参数标签及描述列。
+ */
 public class OptionRenderer implements CommandLine.Help.IOptionRenderer {
 
+    /** 短名与长名之间的分隔符。 */
     private static final String OPTION_NAME_SEPARATOR = ", ";
     private static final Text EMPTY_TEXT = OFF.text("");
 
+    /** @return 两列表格单元格：选项名与单行描述 */
     @Override
     public Text[][] render(OptionSpec option, IParamLabelRenderer paramLabelRenderer, ColorScheme scheme) {
         String[] names = option.names();
@@ -47,8 +52,7 @@ public class OptionRenderer implements CommandLine.Help.IOptionRenderer {
         Text[][] result = new Text[1][];
         Text description = scheme.text(option.description()[0]);
 
-        // for better formatting, only a single line is expected in the description
-        // formatting is done by customizations to the text table
+        // 描述仅允许单行，换行由 TextTable 布局控制
         if (option.description().length > 1) {
             throw new CommandLine.PicocliException("Option[" + option + "] description should have a single line.");
         }
@@ -62,6 +66,7 @@ public class OptionRenderer implements CommandLine.Help.IOptionRenderer {
         return result;
     }
 
+    /** 生成长选项名，必要时附加参数占位符。 */
     private Text createLongName(OptionSpec option, ColorScheme scheme) {
         String longestName = option.longestName();
         Text name = scheme.optionText(longestName);
@@ -74,6 +79,7 @@ public class OptionRenderer implements CommandLine.Help.IOptionRenderer {
         return name;
     }
 
+    /** 为无尖括号的参数标签自动补全 {@code <...>}。 */
     private String formatParamLabel(OptionSpec option) {
         String label = option.paramLabel();
 

@@ -53,21 +53,32 @@ import static org.keycloak.quarkus.runtime.Environment.getKeycloakModeFromProfil
 import static org.keycloak.quarkus.runtime.Environment.hasEarlyExitLaunchMode;
 
 /**
- * <p>The main entry point, responsible for initialize and run the CLI as well as start the server.
+ * Keycloak Quarkus 主入口：负责初始化 CLI、解析参数并启动 Quarkus 服务器。
+ * <p>
+ * 实现 {@link QuarkusApplication}，由 {@code @QuarkusMain} 注册为 {@code keycloak} 应用。
  */
 @QuarkusMain(name = "keycloak")
 @ApplicationScoped
 public class KeycloakMain implements QuarkusApplication {
 
+    /** 系统属性：服务器就绪后是否打印运行提示。 */
     public static final String KC_SERVER_PRINT_RUNNING = "kc.server.print_running";
+    /** 服务器运行中的控制台消息。 */
     public static final String RUNNING_MESSAGE = "The server is running";
+    /** 当前执行的非服务器 CLI 命令（静态，启动期间有效）。 */
     private static AbstractNonServerCommand COMMAND;
+    /** 异步退出时的错误处理器。 */
     private static Consumer<Throwable> ERROR_HANDLER;
 
     static {
         InfinispanUtils.configureVirtualThreads();
     }
 
+    /**
+     * JVM 入口：配置虚拟线程与 ForkJoinPool，委托 Picocli 解析并执行命令。
+     *
+     * @param args 命令行参数
+     */
     public static void main(String[] args) {
         ensureForkJoinPoolThreadFactoryHasBeenSetToQuarkus();
         InfinispanUtils.ensureVirtualThreadsParallelism();
@@ -76,7 +87,7 @@ public class KeycloakMain implements QuarkusApplication {
         Properties clonedProps = null;
         if (!(Thread.currentThread().getContextClassLoader() instanceof RunnerClassLoader)) {
             clonedProps = (Properties) System.getProperties().clone();
-            picocli = new Picocli() { // non-script launch case, avoid System.exit
+            picocli = new Picocli() { // 非脚本启动路径，避免 System.exit
                 @Override
                 public void exit(int exitCode) {
                     Quarkus.asyncExit(exitCode);
@@ -97,6 +108,11 @@ public class KeycloakMain implements QuarkusApplication {
         }
     }
 
+    /**
+     * 重置系统属性与全局配置单例（测试或非脚本场景）。
+     *
+     * @param systemProperties 要恢复的系统属性快照
+     */
     public static void reset(Properties systemProperties) {
         System.setProperties((Properties) systemProperties.clone());
         PropertyMappers.reset();
@@ -106,6 +122,12 @@ public class KeycloakMain implements QuarkusApplication {
         ExecutionExceptionHandler.resetExceptionTransformers();
     }
 
+    /**
+     * 使用给定 Picocli 实例解析参数；无参数时默认显示帮助。
+     *
+     * @param args 命令行参数
+     * @param picocli CLI 门面
+     */
     public static void main(String[] args, Picocli picocli) {
         List<String> cliArgs = List.of(args.length == 0 ? new String[] {"-h"} : args);
 
@@ -113,18 +135,16 @@ public class KeycloakMain implements QuarkusApplication {
             PersistedConfigSource.getInstance().useDryRunProperties();
         }
 
-        // parse arguments and execute any of the configured commands
+        // 解析参数并执行已配置的子命令
         picocli.parseAndRun(cliArgs);
     }
 
     /**
-     * Verify that the property for the ForkJoinPool factory set by Quarkus matches the actual factory.
-     * If this is not the case, the classloader for those threads is not set correctly, and for example loading configurations
-     * via SmallRye is unreliable. This can happen if a Java Agent or JMX initializes the ForkJoinPool before Java's main method is run.
+     * 验证 Quarkus 设置的 ForkJoinPool 工厂与系统属性一致。
+     * 若 Java Agent 或 JMX 在 main 之前初始化公共池，SmallRye 配置加载可能不可靠。
      */
     private static void ensureForkJoinPoolThreadFactoryHasBeenSetToQuarkus() {
-        // At this point, the settings from the CLI are no longer visible as they have been overwritten in the QuarkusEntryPoint.
-        // Therefore, the only thing we can do is to check if the thread pool class name is the same as in the configuration.
+        // 此时 CLI 设置已被 QuarkusEntryPoint 覆盖，只能比对工厂类名与配置属性
         final String FORK_JOIN_POOL_COMMON_THREAD_FACTORY = "java.util.concurrent.ForkJoinPool.common.threadFactory";
         String sf = System.getProperty(FORK_JOIN_POOL_COMMON_THREAD_FACTORY);
         //noinspection resource
@@ -136,8 +156,15 @@ public class KeycloakMain implements QuarkusApplication {
         }
     }
 
+    /**
+     * 启动 Quarkus 运行时（由 {@link Picocli#start()} 调用）。
+     *
+     * @param picocli CLI 门面
+     * @param command 非服务器命令，可为 null
+     * @param errorHandler 启动失败时的错误处理器
+     */
     public static void start(Picocli picocli, AbstractNonServerCommand command, ExecutionExceptionHandler errorHandler) {
-        COMMAND = command; // it would be nice to not do this statically - start quarkus with an instance of KeycloakMain, rather than a class for example
+        COMMAND = command; // 理想情况下应通过实例而非静态字段传递
         ERROR_HANDLER = cause -> errorHandler.error(picocli.getErrWriter(),
                 String.format("Failed to start server in (%s) mode", getKeycloakModeFromProfile(org.keycloak.common.util.Environment.getProfile())),
                 cause.getCause());
@@ -162,7 +189,11 @@ public class KeycloakMain implements QuarkusApplication {
     }
 
     /**
-     * Should be called after the server is fully initialized
+     * Quarkus 应用就绪后回调：通知非服务器命令、处理早退模式或等待退出。
+     * 应在服务器完全初始化后调用。
+     *
+     * @param args Quarkus 传入的参数（通常未使用）
+     * @return 进程退出码
      */
     @Override
     public int run(String... args) throws Exception {
@@ -172,8 +203,7 @@ public class KeycloakMain implements QuarkusApplication {
             COMMAND.onStart(application, sessionFactory);
         }
         if (hasEarlyExitLaunchMode() || isNonServerMode()) {
-            // in test mode we exit immediately
-            // we should be managing this behavior more dynamically depending on the tests requirements (short/long lived)
+            // 测试模式下立即退出（后续可按测试需求区分短/长生命周期）
             Quarkus.asyncExit(ApplicationLifecycleManager.getExitCode());
         } else {
             if (Boolean.getBoolean(KC_SERVER_PRINT_RUNNING)) {
@@ -190,10 +220,16 @@ public class KeycloakMain implements QuarkusApplication {
 
         return ApplicationLifecycleManager.getExitCode();
     }
-    
+
+    /**
+     * 异步退出并可选触发错误处理器。
+     *
+     * @param exitCode 退出码
+     * @param t 关联异常
+     */
     public static void asyncExit(int exitCode, Throwable t) {
         Optional.ofNullable(ERROR_HANDLER).ifPresent(h -> h.accept(t));
         Quarkus.asyncExit(exitCode);
     }
-    
+
 }
