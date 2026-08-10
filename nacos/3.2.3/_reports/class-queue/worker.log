@@ -1843,3 +1843,18 @@
 2026-08-10T04:21:04Z DONE lock/src/main/java/com/alibaba/nacos/lock/raft/request/MutexLockRequest.java wave61a [0:15] lock core/factory/monitor/service
 2026-08-10T04:21:04Z DONE lock/src/main/java/com/alibaba/nacos/lock/remote/rpc/handler/LockRequestHandler.java wave61a [0:15] lock core/factory/monitor/service
 2026-08-10T04:21:04Z DONE lock/src/main/java/com/alibaba/nacos/lock/service/LockOperationService.java wave61a [0:15] lock core/factory/monitor/service
+2026-08-10T04:21:37Z DONE lock/src/main/java/com/alibaba/nacos/lock/service/impl/LockOperationServiceImpl.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/NacosMaintainerFactory.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/address/DefaultServerListManager.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/A2aMaintainerService.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/A2aMaintainerServiceImpl.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/AbstractAiDelegateMaintainerService.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/AgentSpecMaintainerService.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/AgentSpecMaintainerServiceImpl.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/AiMaintainerFactory.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/AiMaintainerHttpContext.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/AiMaintainerService.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/McpMaintainerService.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/McpMaintainerServiceImpl.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/NacosAiMaintainerServiceImpl.java wave61b [15:30] lock impl + maintainer-client ai
+2026-08-10T04:21:37Z DONE maintainer-client/src/main/java/com/alibaba/nacos/maintainer/client/ai/PipelineAdminClient.java wave61b [15:30] lock impl + maintainer-client ai
