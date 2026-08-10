@@ -17,6 +17,10 @@ package io.netty.channel.embedded;
 
 import java.net.SocketAddress;
 
+/**
+ * {@link EmbeddedChannel} 使用的占位 {@link SocketAddress}。
+ * <p>本地与远程地址均指向同一单例语义，{@link #toString()} 返回 {@code "embedded"}。</p>
+ */
 final class EmbeddedSocketAddress extends SocketAddress {
     private static final long serialVersionUID = 1400788804624980619L;
 

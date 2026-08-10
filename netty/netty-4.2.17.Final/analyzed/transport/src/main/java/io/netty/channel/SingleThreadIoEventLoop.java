@@ -32,14 +32,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * {@link IoEventLoop} implementation that execute all its submitted tasks in a single thread using the provided
  * {@link IoHandler}.
+ * <p>基于 {@link IoHandler} 的单线程 {@link IoEventLoop}：在 {@link #run()} 中交替执行 I/O
+ * 与限时任务批处理（{@code maxTaskProcessingQuantum}）。</p>
  */
 public class SingleThreadIoEventLoop extends SingleThreadEventLoop implements IoEventLoop {
 
     // TODO: Is this a sensible default ?
+    /** 单次任务批处理默认上限（纳秒），可通过系统属性配置 */
     private static final long DEFAULT_MAX_TASK_PROCESSING_QUANTUM_NS = TimeUnit.MILLISECONDS.toNanos(Math.max(100,
             SystemPropertyUtil.getInt("io.netty.eventLoop.maxTaskProcessingQuantumMs", 1000)));
 
+    /** 每轮 I/O 前允许运行任务的最长时间（纳秒） */
     private final long maxTaskProcessingQuantumNs;
+    /** 传给 {@link IoHandler#run(IoHandlerContext)} 的上下文 */
     private final IoHandlerContext context = new IoHandlerContext() {
         @Override
         public boolean canBlock() {
@@ -70,12 +75,15 @@ public class SingleThreadIoEventLoop extends SingleThreadEventLoop implements Io
         }
     };
 
+    /** 底层 I/O 处理器 */
     private final IoHandler ioHandler;
 
+    /** 当前注册的 {@link IoHandle} 数量，用于 suspend 判定 */
     private final AtomicInteger numRegistrations = new AtomicInteger();
 
     /**
      *  Creates a new instance
+     * <p>使用 {@link ThreadFactory} 创建单线程 loop 并绑定 {@link IoHandler}。</p>
      *
      * @param parent            the parent that holds this {@link IoEventLoop}.
      * @param threadFactory     the {@link ThreadFactory} that is used to create the underlying {@link Thread}.
@@ -188,6 +196,7 @@ public class SingleThreadIoEventLoop extends SingleThreadEventLoop implements Io
         this.ioHandler = ioHandlerFactory.newHandler(this);
     }
 
+    /** 主循环：runIo → 限时 runAllTasks → 直至确认 shutdown 或可 suspend */
     @Override
     protected void run() {
         assert inEventLoop();
@@ -204,10 +213,12 @@ public class SingleThreadIoEventLoop extends SingleThreadEventLoop implements Io
         } while (!confirmShutdown() && !canSuspend());
     }
 
+    /** 返回底层 {@link IoHandler} */
     protected final IoHandler ioHandler() {
         return ioHandler;
     }
 
+    /** 无注册 I/O 句柄时才允许 suspend */
     @Override
     protected boolean canSuspend(int state) {
         // We should only allow to suspend if there are no registrations on this loop atm.
@@ -219,17 +230,20 @@ public class SingleThreadIoEventLoop extends SingleThreadEventLoop implements Io
      * This method returns the number of {@link IoHandle}s for which IO was processed.
      *
      * This method must be called from the {@link EventLoop} thread.
+     * <p>在事件循环线程中调用 {@link IoHandler#run} 处理全部 {@link IoHandle} 的 I/O。</p>
      */
     protected int runIo() {
         assert inEventLoop();
         return ioHandler.run(context);
     }
 
+    /** 单线程 IoEventLoop 的 next 即自身 */
     @Override
     public IoEventLoop next() {
         return this;
     }
 
+    /** 注册 {@link IoHandle}；非事件循环线程时通过 {@link #execute} 投递 */
     @Override
     public final Future<IoRegistration> register(final IoHandle handle) {
         Promise<IoRegistration> promise = newPromise();
@@ -260,11 +274,13 @@ public class SingleThreadIoEventLoop extends SingleThreadEventLoop implements Io
         promise.setSuccess(new IoRegistrationWrapper(registration));
     }
 
+    /** 通过 {@link IoHandler} 唤醒阻塞的 I/O 等待 */
     @Override
     protected final void wakeup(boolean inEventLoop) {
         ioHandler.wakeup();
     }
 
+    /** 销毁 {@link IoHandler} 资源 */
     @Override
     protected final void cleanup() {
         assert inEventLoop();
@@ -286,12 +302,14 @@ public class SingleThreadIoEventLoop extends SingleThreadEventLoop implements Io
         return newTaskQueue0(maxPendingTasks);
     }
 
+    /** 本 loop 从不调用 {@link #takeTask()}，使用 MPSC 任务队列 */
     protected static Queue<Runnable> newTaskQueue0(int maxPendingTasks) {
         // This event loop never calls takeTask()
         return maxPendingTasks == Integer.MAX_VALUE ? PlatformDependent.<Runnable>newMpscQueue()
                 : PlatformDependent.<Runnable>newMpscQueue(maxPendingTasks);
     }
 
+    /** 包装 {@link IoRegistration}，在 {@link #cancel()} 时递减注册计数 */
     private final class IoRegistrationWrapper implements IoRegistration {
         private final IoRegistration registration;
         IoRegistrationWrapper(IoRegistration registration) {

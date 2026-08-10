@@ -20,25 +20,30 @@ import io.netty.channel.ChannelId;
 
 /**
  * A dummy {@link ChannelId} implementation.
+ * <p>{@link EmbeddedChannel} 使用的占位 {@link ChannelId}，文本形式固定为 {@code "embedded"}。</p>
  */
 final class EmbeddedChannelId implements ChannelId {
 
     private static final long serialVersionUID = -251711922203466130L;
 
+    /** 单例实例，供默认 {@link EmbeddedChannel} 使用 */
     static final ChannelId INSTANCE = new EmbeddedChannelId();
 
     private EmbeddedChannelId() { }
 
+    /** 短文本与 {@link #toString()} 相同 */
     @Override
     public String asShortText() {
         return toString();
     }
 
+    /** 长文本与 {@link #toString()} 相同 */
     @Override
     public String asLongText() {
         return toString();
     }
 
+    /** 与其他 {@link EmbeddedChannelId} 相等时返回 0，否则按长文本字典序比较 */
     @Override
     public int compareTo(final ChannelId o) {
         if (o instanceof EmbeddedChannelId) {

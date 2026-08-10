@@ -48,13 +48,17 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Base class for {@link Channel} implementations that are used in an embedded fashion.
+ * <p>内存中的嵌入式 {@link Channel}，用于单元测试：通过 {@link #writeInbound}、 {@link #writeOutbound} 驱动 pipeline，无需真实网络 I/O。</p>
  */
 public class EmbeddedChannel extends AbstractChannel {
 
+    /** 激活后报告的本地 {@link SocketAddress} */
     private static final SocketAddress LOCAL_ADDRESS = new EmbeddedSocketAddress();
+    /** 激活后报告的远程 {@link SocketAddress} */
     private static final SocketAddress REMOTE_ADDRESS = new EmbeddedSocketAddress();
 
     private static final ChannelHandler[] EMPTY_HANDLERS = new ChannelHandler[0];
+    /** channel 生命周期：打开 / 激活 / 已关闭 */
     private enum State { OPEN, ACTIVE, CLOSED }
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(EmbeddedChannel.class);
@@ -62,21 +66,28 @@ public class EmbeddedChannel extends AbstractChannel {
     private static final ChannelMetadata METADATA_NO_DISCONNECT = new ChannelMetadata(false);
     private static final ChannelMetadata METADATA_DISCONNECT = new ChannelMetadata(true);
 
+    /** 构造时创建、注册前使用的嵌入式事件循环 */
     private final EmbeddedEventLoop loop;
     private final ChannelFutureListener recordExceptionListener = this::recordException;
 
     private final ChannelMetadata metadata;
     private final ChannelConfig config;
 
+    /** 经 pipeline 处理后仍存留的入站消息（懒创建） */
     private Queue<Object> inboundMessages;
+    /** handler 写出但未消费出站消息（懒创建） */
     private Queue<Object> outboundMessages;
+    /** 最近一次记录的 pipeline 异常，供 {@link #checkException()} 重抛 */
     private Throwable lastException;
     private State state;
+    /** 嵌套 I/O 调用深度，为 0 时触发 {@link #maybeRunPendingTasks()} */
     private int executingStackCnt;
+    /** 关闭后是否取消剩余调度任务 */
     private boolean cancelRemainingScheduledTasks;
 
     /**
      * Create a new instance with an {@link EmbeddedChannelId} and an empty pipeline.
+     * <p>使用默认 {@link EmbeddedChannelId} 与空 pipeline 创建实例。</p>
      */
     public EmbeddedChannel() {
         this(builder());
@@ -84,6 +95,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Create a new instance with the specified ID and an empty pipeline.
+     * <p>指定 {@link ChannelId} 与空 pipeline 创建实例。</p>
      *
      * @param channelId the {@link ChannelId} that will be used to identify this channel
      */
@@ -93,6 +105,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Create a new instance with the pipeline initialized with the specified handlers.
+     * <p>使用给定 {@link ChannelHandler} 初始化 pipeline。</p>
      *
      * @param handlers the {@link ChannelHandler}s which will be add in the {@link ChannelPipeline}
      */
@@ -102,6 +115,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Create a new instance with the pipeline initialized with the specified handlers.
+     * <p>使用给定 {@link ChannelHandler} 初始化 pipeline。</p>
      *
      * @param hasDisconnect {@code false} if this {@link Channel} will delegate {@link #disconnect()}
      *                      to {@link #close()}, {@code true} otherwise.
@@ -113,6 +127,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Create a new instance with the pipeline initialized with the specified handlers.
+     * <p>使用给定 {@link ChannelHandler} 初始化 pipeline。</p>
      *
      * @param register {@code true} if this {@link Channel} is registered to the {@link EventLoop} in the
      *                 constructor. If {@code false} the user will need to call {@link #register()}.
@@ -202,7 +217,8 @@ public class EmbeddedChannel extends AbstractChannel {
     }
 
     /**
-     * Create a new instance with the configuration from the given builder. This method is {@code protected} for use by
+     * Create a new instance with the configuration from the given builder.
+     * <p>由 {@link Builder} 配置构造；子类应通过此构造扩展。</p> This method is {@code protected} for use by
      * subclasses; Otherwise, please use {@link Builder#build()}.
      *
      * @param builder The builder
@@ -254,6 +270,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Register this {@code Channel} on its {@link EventLoop}.
+     * <p>将 channel 注册到嵌入式 {@link EventLoop}；构造时未 register 时需手动调用。</p>
      */
     public void register() throws Exception {
         ChannelFuture future = loop.register(this);
@@ -291,6 +308,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Returns the {@link Queue} which holds all the {@link Object}s that were received by this {@link Channel}.
+     * <p>返回仍留在入站缓冲中的消息队列。</p>
      */
     public Queue<Object> inboundMessages() {
         if (inboundMessages == null) {
@@ -309,6 +327,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Returns the {@link Queue} which holds all the {@link Object}s that were written by this {@link Channel}.
+     * <p>返回出站缓冲中尚未 {@link #readOutbound()} 的消息队列。</p>
      */
     public Queue<Object> outboundMessages() {
         if (outboundMessages == null) {
@@ -327,6 +346,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Return received data from this {@link Channel}
+     * <p>从入站队列 poll 一条消息；调用方负责释放引用计数对象。</p>
      */
     @SuppressWarnings("unchecked")
     public <T> T readInbound() {
@@ -339,6 +359,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Read data from the outbound. This may return {@code null} if nothing is readable.
+     * <p>从出站队列 poll 一条消息；无数据时返回 {@code null}。</p>
      */
     @SuppressWarnings("unchecked")
     public <T> T readOutbound() {
@@ -351,6 +372,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Write messages to the inbound of this {@link Channel}.
+     * <p>模拟对端写入：经 {@code fireChannelRead} 注入 pipeline。</p>
      *
      * @param msgs the messages to be written
      *
@@ -408,6 +430,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Flushes the inbound of this {@link Channel}. This method is conceptually equivalent to {@link #flush()}.
+     * <p>触发 {@code fireChannelReadComplete} 并运行 pending 任务。</p>
      *
      * @see #flushOutbound()
      */
@@ -433,6 +456,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Write messages to the outbound of this {@link Channel}.
+     * <p>经 pipeline 写出并 flush，结果进入 {@link #outboundMessages()}。</p>
      *
      * @param msgs              the messages to be written
      * @return bufferReadable   returns {@code true} if the write operation did add something to the outbound buffer
@@ -509,6 +533,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Flushes the outbound of this {@link Channel}. This method is conceptually equivalent to {@link #flush()}.
+     * <p>flush outbound 并运行 pending 任务。</p>
      *
      * @see #flushInbound()
      */
@@ -536,6 +561,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Mark this {@link Channel} as finished. Any further try to write data to it will fail.
+     * <p>关闭 channel；返回缓冲中是否仍有可读消息。</p>
      *
      * @return bufferReadable returns {@code true} if any of the used buffers has something left to read
      */
@@ -545,6 +571,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Mark this {@link Channel} as finished and release all pending message in the inbound and outbound buffer.
+     * <p>关闭并释放入站/出站缓冲中全部消息的引用计数。</p>
      * Any further try to write data to it will fail.
      *
      * @return bufferReadable returns {@code true} if any of the used buffers has something left to read
@@ -555,6 +582,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Mark this {@link Channel} as finished. Any further try to write data to it will fail.
+     * <p>关闭 channel；返回缓冲中是否仍有可读消息。</p>
      *
      * @param releaseAll if {@code true} all pending message in the inbound and outbound buffer are released.
      * @return bufferReadable returns {@code true} if any of the used buffers has something left to read
@@ -580,6 +608,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Release all buffered inbound messages and return {@code true} if any were in the inbound buffer, {@code false}
+     * <p>释放全部入站缓冲消息。</p>
      * otherwise.
      */
     public boolean releaseInbound() {
@@ -588,6 +617,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Release all buffered outbound messages and return {@code true} if any were in the outbound buffer, {@code false}
+     * <p>释放全部出站缓冲消息。</p>
      * otherwise.
      */
     public boolean releaseOutbound() {
@@ -828,6 +858,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Run all tasks (which also includes scheduled tasks) that are pending in the {@link EventLoop}
+     * <p>执行嵌入式 loop 中的普通与到期调度任务。</p>
      * for this {@link Channel}
      */
     public void runPendingTasks() {
@@ -846,6 +877,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Check whether this channel has any pending tasks that would be executed by a call to {@link #runPendingTasks()}.
+     * <p>是否存在待执行的普通或已到期调度任务。</p>
      * This includes normal tasks, and scheduled tasks where the deadline has expired. If this method returns
      * {@code false}, a call to {@link #runPendingTasks()} would do nothing.
      *
@@ -858,6 +890,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Run all pending scheduled tasks in the {@link EventLoop} for this {@link Channel} and return the
+     * <p>运行全部到期调度任务，返回下一任务的延迟纳秒（无则 {@code -1}）。</p>
      * {@code nanoseconds} when the next scheduled task is ready to run. If no other task was scheduled it will return
      * {@code -1}.
      */
@@ -897,7 +930,8 @@ public class EmbeddedChannel extends AbstractChannel {
     }
 
     /**
-     * Advance the clock of the event loop of this channel by the given duration. Any scheduled tasks will execute
+     * Advance the clock of the event loop of this channel by the given duration.
+     * <p>将可冻结 ticker 的虚拟时钟前进指定时长。</p> Any scheduled tasks will execute
      * sooner by the given time (but {@link #runScheduledPendingTasks()} still needs to be called).
      */
     public void advanceTimeBy(long duration, TimeUnit unit) {
@@ -905,7 +939,8 @@ public class EmbeddedChannel extends AbstractChannel {
     }
 
     /**
-     * Freeze the clock of this channel's event loop. Any scheduled tasks that are not already due will not run on
+     * Freeze the clock of this channel's event loop.
+     * <p>冻结事件循环时钟，阻止调度任务自动到期。</p> Any scheduled tasks that are not already due will not run on
      * future {@link #runScheduledPendingTasks()} calls. While the event loop is frozen, it is still possible to
      * {@link #advanceTimeBy(long, TimeUnit) advance time} manually so that scheduled tasks execute.
      */
@@ -914,7 +949,8 @@ public class EmbeddedChannel extends AbstractChannel {
     }
 
     /**
-     * Unfreeze an event loop that was {@link #freezeTime() frozen}. Time will continue at the point where
+     * Unfreeze an event loop that was {@link #freezeTime() frozen}.
+     * <p>解除冻结，虚拟时间从冻结点继续。</p> Time will continue at the point where
      * {@link #freezeTime()} stopped it: if a task was scheduled ten minutes in the future and {@link #freezeTime()}
      * was called, it will run ten minutes after this method is called again (assuming no
      * {@link #advanceTimeBy(long, TimeUnit)} calls, and assuming pending scheduled tasks are run at that time using
@@ -944,6 +980,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Check if there was any {@link Throwable} received and if so rethrow it.
+     * <p>若记录过 pipeline 异常则重抛或写入 promise。</p>
      */
     public void checkException() {
       checkException(voidPromise());
@@ -974,6 +1011,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Ensure the {@link Channel} is open and if not throw an exception.
+     * <p>断言 channel 仍打开，否则经 {@link #checkException()} 失败。</p>
      */
     protected final void ensureOpen() {
         if (!checkOpen(true)) {
@@ -1049,6 +1087,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Called for each outbound message.
+     * <p>默认将出站消息加入 {@link #outboundMessages()} 队列，子类可覆盖。</p>
      *
      * @see #doWrite(ChannelOutboundBuffer)
      */
@@ -1058,6 +1097,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     /**
      * Called for each inbound message.
+     * <p>未处理的入站消息默认进入 {@link #inboundMessages()} 队列。</p>
      */
     protected void handleInboundMessage(Object msg) {
         inboundMessages().add(msg);
@@ -1067,6 +1107,7 @@ public class EmbeddedChannel extends AbstractChannel {
         return new Builder();
     }
 
+    /** 构建 {@link EmbeddedChannel} 的 fluent 配置器 */
     public static final class Builder {
         Channel parent;
         ChannelId channelId = EmbeddedChannelId.INSTANCE;
@@ -1083,6 +1124,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
         /**
          * The parent {@link Channel} of this {@link EmbeddedChannel}.
+     * <p>设置父 {@link Channel}。</p>
          *
          * @param parent the parent {@link Channel} of this {@link EmbeddedChannel}.
          * @return This builder
@@ -1094,6 +1136,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
         /**
          * The {@link ChannelId} that will be used to identify this channel.
+     * <p>设置 channel 标识。</p>
          *
          * @param channelId the {@link ChannelId} that will be used to identify this channel
          * @return This builder
@@ -1166,6 +1209,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
         /**
          * Configure a custom ticker for this event loop.
+     * <p>为嵌入式 loop 配置自定义 {@link Ticker}。</p>
          *
          * @param ticker The custom ticker
          * @return This builder
@@ -1177,6 +1221,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
         /**
          * Create the channel. If you wish to extend {@link EmbeddedChannel}, please use the
+     * <p>根据 builder 配置构建 {@link EmbeddedChannel} 实例。</p>
          * {@link #EmbeddedChannel(Builder)} constructor instead.
          *
          * @return The channel
@@ -1188,7 +1233,7 @@ public class EmbeddedChannel extends AbstractChannel {
 
     private final class EmbeddedUnsafe extends AbstractUnsafe {
 
-        // Delegates to the EmbeddedUnsafe instance but ensures runPendingTasks() is called after each operation
+        // 委托真实 Unsafe，并在每次可能调度任务的操作后触发 runPendingTasks()
         // that may change the state of the Channel and may schedule tasks for later execution.
         final Unsafe wrapped = new Unsafe() {
             @Override

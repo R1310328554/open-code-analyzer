@@ -97,11 +97,13 @@ public interface ChannelGroup extends Set<Channel>, Comparable<ChannelGroup> {
     /**
      * Returns the name of this group.  A group name is purely for helping
      * you to distinguish one group from others.
+     * <p>返回 group 名称，仅用于区分不同实例。</p>
      */
     String name();
 
     /**
      * Returns the {@link Channel} which has the specified {@link ChannelId}.
+     * <p>按 {@link ChannelId} 查找成员 channel，未找到返回 {@code null}。</p>
      *
      * @return the matching {@link Channel} if found. {@code null} otherwise.
      */
@@ -114,6 +116,7 @@ public interface ChannelGroup extends Set<Channel>, Comparable<ChannelGroup> {
      * {@linkplain ByteBuf#duplicate() duplicated} to avoid a race
      * condition. The same is true for {@link ByteBufHolder}. Please note that this operation is asynchronous as
      * {@link Channel#write(Object)} is.
+     * <p>向组内全部 channel 异步写入；{@link ByteBuf}/{@link ByteBufHolder} 会自动 duplicate。</p>
      *
      * @return itself
      */
@@ -129,6 +132,7 @@ public interface ChannelGroup extends Set<Channel>, Comparable<ChannelGroup> {
      *
      * @return the {@link ChannelGroupFuture} instance that notifies when
      *         the operation is done for all channels
+     * <p>仅向匹配 {@link ChannelMatcher} 的 channel 写入。</p>
      */
     ChannelGroupFuture write(Object message, ChannelMatcher matcher);
 
@@ -158,6 +162,7 @@ public interface ChannelGroup extends Set<Channel>, Comparable<ChannelGroup> {
      *
      * @return the {@link ChannelGroupFuture} instance that notifies when
      *         the operation is done for all channels
+     * <p>刷新组内全部 channel 的 outbound 缓冲。</p>
      */
     ChannelGroup flush();
 
@@ -176,6 +181,7 @@ public interface ChannelGroup extends Set<Channel>, Comparable<ChannelGroup> {
 
     /**
      * Shortcut for calling {@link #write(Object)} and {@link #flush()}.
+     * <p>{@link #write(Object)} 与 {@link #flush()} 的组合快捷方式。</p>
      */
     ChannelGroupFuture writeAndFlush(Object message);
 
@@ -205,6 +211,7 @@ public interface ChannelGroup extends Set<Channel>, Comparable<ChannelGroup> {
 
     /**
      * Disconnects all {@link Channel}s in this group from their remote peers.
+     * <p>断开组内全部 channel 与远端的对端连接。</p>
      *
      * @return the {@link ChannelGroupFuture} instance that notifies when
      *         the operation is done for all channels
@@ -224,6 +231,7 @@ public interface ChannelGroup extends Set<Channel>, Comparable<ChannelGroup> {
      * Closes all {@link Channel}s in this group.  If the {@link Channel} is
      * connected to a remote peer or bound to a local address, it is
      * automatically disconnected and unbound.
+     * <p>关闭组内全部 channel，必要时先 disconnect 再 unbind。</p>
      *
      * @return the {@link ChannelGroupFuture} instance that notifies when
      *         the operation is done for all channels
@@ -267,6 +275,7 @@ public interface ChannelGroup extends Set<Channel>, Comparable<ChannelGroup> {
     /**
      * Returns the {@link ChannelGroupFuture} which will be notified when all {@link Channel}s that are part of this
      * {@link ChannelGroup}, at the time of calling, are closed.
+     * <p>调用时刻组内全部 channel 均关闭时完成的 future。</p>
      */
     ChannelGroupFuture newCloseFuture();
 

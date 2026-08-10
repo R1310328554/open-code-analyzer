@@ -101,17 +101,20 @@ import java.util.Iterator;
  * where it is more convenient to call {@link #await()}. In such a case, please
  * make sure you do not call {@link #await()} in an I/O thread.  Otherwise,
  * {@link IllegalStateException} will be raised to prevent a dead lock.
+ * <p>异步 {@link ChannelGroup} 批量 I/O 的聚合结果，由多个 {@link ChannelFuture} 组成；优先使用 {@link #addListener} 而非在 I/O 线程中 {@link #await()}。</p>
  */
 public interface ChannelGroupFuture extends Future<Void>, Iterable<ChannelFuture> {
 
     /**
      * Returns the {@link ChannelGroup} which is associated with this future.
+     * <p>返回关联的 {@link ChannelGroup}。</p>
      */
     ChannelGroup group();
 
     /**
      * Returns the {@link ChannelFuture} of the individual I/O operation which
      * is associated with the specified {@link Channel}.
+     * <p>返回指定 {@link Channel} 对应的单个 {@link ChannelFuture}。</p>
      *
      * @return the matching {@link ChannelFuture} if found.
      *         {@code null} otherwise.
@@ -121,6 +124,7 @@ public interface ChannelGroupFuture extends Future<Void>, Iterable<ChannelFuture
     /**
      * Returns {@code true} if and only if all I/O operations associated with
      * this future were successful without any failure.
+     * <p>当且仅当全部子 future 均成功时返回 {@code true}。</p>
      */
     @Override
     boolean isSuccess();
@@ -131,12 +135,14 @@ public interface ChannelGroupFuture extends Future<Void>, Iterable<ChannelFuture
     /**
      * Returns {@code true} if and only if the I/O operations associated with
      * this future were partially successful with some failure.
+     * <p>部分成功、部分失败时为 {@code true}。</p>
      */
     boolean isPartialSuccess();
 
     /**
      * Returns {@code true} if and only if the I/O operations associated with
      * this future have failed partially with some success.
+     * <p>部分失败、部分成功时为 {@code true}。</p>
      */
     boolean isPartialFailure();
 
@@ -169,6 +175,7 @@ public interface ChannelGroupFuture extends Future<Void>, Iterable<ChannelFuture
      * which are associated with this future.  Please note that the returned
      * {@link Iterator} is unmodifiable, which means a {@link ChannelFuture}
      * cannot be removed from this future.
+     * <p>返回不可修改的 {@link ChannelFuture} 迭代器。</p>
      */
     @Override
     Iterator<ChannelFuture> iterator();

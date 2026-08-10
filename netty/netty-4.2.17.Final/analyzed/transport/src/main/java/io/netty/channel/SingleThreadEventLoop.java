@@ -30,12 +30,16 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * Abstract base class for {@link EventLoop}s that execute all its submitted tasks in a single thread.
+ * <p>在单线程中执行全部已提交任务的 {@link EventLoop} 抽象基类；除普通任务队列外，还提供
+ * {@link #executeAfterEventLoopIteration(Runnable)} 在每次事件循环迭代末尾执行尾部任务。</p>
  */
 public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor implements EventLoop {
 
+    /** 默认最大待处理任务数，可通过系统属性 {@code io.netty.eventLoop.maxPendingTasks} 覆盖 */
     protected static final int DEFAULT_MAX_PENDING_TASKS = Math.max(16,
             SystemPropertyUtil.getInt("io.netty.eventLoop.maxPendingTasks", Integer.MAX_VALUE));
 
+    /** 在当前或下一次事件循环迭代末尾执行的任务队列 */
     private final Queue<Runnable> tailTasks;
 
     protected SingleThreadEventLoop(EventLoopGroup parent, ThreadFactory threadFactory, boolean addTaskWakesUp) {
@@ -108,11 +112,13 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
         return (EventLoop) super.next();
     }
 
+    /** 将 {@link Channel} 注册到本 {@link EventLoop} */
     @Override
     public ChannelFuture register(Channel channel) {
         return register(new DefaultChannelPromise(channel, this));
     }
 
+    /** 使用给定 {@link ChannelPromise} 完成注册 */
     @Override
     public ChannelFuture register(final ChannelPromise promise) {
         ObjectUtil.checkNotNull(promise, "promise");
@@ -131,6 +137,7 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
 
     /**
      * Adds a task to be run once at the end of next (or current) {@code eventloop} iteration.
+     * <p>在下次（或当前）事件循环迭代末尾执行一次的任务；常用于在 I/O 轮次结束后清理或汇总。</p>
      *
      * @param task to be added.
      */
@@ -151,6 +158,7 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
 
     /**
      * Removes a task that was added previously via {@link #executeAfterEventLoopIteration(Runnable)}.
+     * <p>移除此前通过 {@link #executeAfterEventLoopIteration(Runnable)} 加入的尾部任务。</p>
      *
      * @param task to be removed.
      *
@@ -160,16 +168,19 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
         return tailTasks.remove(ObjectUtil.checkNotNull(task, "task"));
     }
 
+    /** 普通任务执行完毕后，继续 drain 尾部任务队列 */
     @Override
     protected void afterRunningAllTasks() {
         runAllTasksFrom(tailTasks);
     }
 
+    /** 普通任务或尾部任务任一非空即视为有待执行任务 */
     @Override
     protected boolean hasTasks() {
         return super.hasTasks() || !tailTasks.isEmpty();
     }
 
+    /** 待处理任务数 = 普通队列 + 尾部队列 */
     @Override
     public int pendingTasks() {
         return super.pendingTasks() + tailTasks.size();
@@ -179,6 +190,8 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
      * Returns the number of {@link Channel}s registered with this {@link EventLoop} or {@code -1}
      * if operation is not supported. The returned value is not guaranteed to be exact accurate and
      * should be viewed as a best effort.
+     * <p>返回注册到本 {@link EventLoop} 的 {@link Channel} 数量；不支持时返回 {@code -1}。
+     * 数值为尽力估计，不保证精确。</p>
      */
     @UnstableApi
     public int registeredChannels() {
@@ -191,12 +204,14 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
      *         should be viewed as a best effort. This method is expected to be called from within
      *         event loop.
      * @throws UnsupportedOperationException if operation is not supported by implementation.
+     * <p>返回已注册活跃 {@link Channel} 的只读迭代器；应在事件循环线程内调用，数值为尽力估计。</p>
      */
     @UnstableApi
     public Iterator<Channel> registeredChannelsIterator() {
         throw new UnsupportedOperationException("registeredChannelsIterator");
     }
 
+    /** 已注册 {@link Channel} 的只读迭代器包装 */
     protected static final class ChannelsReadOnlyIterator<T extends Channel> implements Iterator<Channel> {
         private final Iterator<T> channelIterator;
 
@@ -220,6 +235,7 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
             throw new UnsupportedOperationException("remove");
         }
 
+        /** 返回永不产生元素的只读空迭代器 */
         @SuppressWarnings("unchecked")
         public static <T> Iterator<T> empty() {
             return (Iterator<T>) EMPTY;

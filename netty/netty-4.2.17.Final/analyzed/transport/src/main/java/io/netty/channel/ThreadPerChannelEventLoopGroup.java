@@ -42,25 +42,36 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * An {@link EventLoopGroup} that creates one {@link EventLoop} per {@link Channel}.
+ * <p>为每个 {@link Channel} 创建独立 {@link EventLoop} 的 {@link EventLoopGroup}；
+ * 通过 active/idle 子 loop 池复用已终止 channel 的线程。</p>
  *
  * @deprecated this will be remove in the next-major release.
  */
 @Deprecated
 public class ThreadPerChannelEventLoopGroup extends AbstractEventExecutorGroup implements EventLoopGroup {
 
+    /** 传给 {@link #newChild(Object...)} 的构造参数 */
     private final Object[] childArgs;
+    /** 允许同时 active 的最大 channel 数，{@code 0} 表示无限制 */
     private final int maxChannels;
+    /** 创建子 loop 线程的 {@link Executor} */
     final Executor executor;
+    /** 当前正在处理 channel 的子 loop 集合 */
     final Set<EventLoop> activeChildren = ConcurrentHashMap.newKeySet();
+    /** 空闲可复用的子 loop 队列 */
     final Queue<EventLoop> idleChildren = new ConcurrentLinkedQueue<>();
+    /** 超过 {@code maxChannels} 时抛出的静态 {@link ChannelException} */
     private final ChannelException tooManyChannels;
 
+    /** 是否已进入关闭流程 */
     private volatile boolean shuttingDown;
+    /** 全部子 loop 终止后的 future */
     private final Promise<?> terminationFuture = new DefaultPromise<Void>(GlobalEventExecutor.INSTANCE);
+    /** 子 loop 终止时检查是否整组已 terminated */
     private final FutureListener<Object> childTerminationListener = new FutureListener<Object>() {
         @Override
         public void operationComplete(Future<Object> future) throws Exception {
-            // Inefficient, but works.
+            // Inefficient, but works. — 逐个监听子 loop 终止以完成 group future
             if (isTerminated()) {
                 terminationFuture.trySuccess(null);
             }
@@ -69,6 +80,7 @@ public class ThreadPerChannelEventLoopGroup extends AbstractEventExecutorGroup i
 
     /**
      * Create a new {@link ThreadPerChannelEventLoopGroup} with no limit in place.
+     * <p>创建无 channel 数量上限的 group。</p>
      */
     protected ThreadPerChannelEventLoopGroup() {
         this(0);
@@ -76,6 +88,7 @@ public class ThreadPerChannelEventLoopGroup extends AbstractEventExecutorGroup i
 
     /**
      * Create a new {@link ThreadPerChannelEventLoopGroup}.
+     * <p>指定最大 channel 数；{@code maxChannels=0} 表示不限制。</p>
      *
      * @param maxChannels       the maximum number of channels to handle with this instance. Once you try to register
      *                          a new {@link Channel} and the maximum is exceed it will throw an
@@ -137,6 +150,7 @@ public class ThreadPerChannelEventLoopGroup extends AbstractEventExecutorGroup i
 
     /**
      * Creates a new {@link EventLoop}.  The default implementation creates a new {@link ThreadPerChannelEventLoop}.
+     * <p>工厂方法：默认返回 {@link ThreadPerChannelEventLoop}。</p>
      */
     protected EventLoop newChild(@SuppressWarnings("UnusedParameters") Object... args) throws Exception {
         return new ThreadPerChannelEventLoop(this);
@@ -147,11 +161,13 @@ public class ThreadPerChannelEventLoopGroup extends AbstractEventExecutorGroup i
         return new ReadOnlyIterator<EventExecutor>(activeChildren.iterator());
     }
 
+    /** 本 group 不支持 round-robin {@link #next()} */
     @Override
     public EventLoop next() {
         throw new UnsupportedOperationException();
     }
 
+    /** 向所有 active 与 idle 子 loop 发起优雅关闭 */
     @Override
     public Future<?> shutdownGracefully(long quietPeriod, long timeout, TimeUnit unit) {
         shuttingDown = true;
@@ -268,6 +284,7 @@ public class ThreadPerChannelEventLoopGroup extends AbstractEventExecutorGroup i
         return isTerminated();
     }
 
+    /** 注册 channel：从 idle 池取或新建子 loop，再在其上 register */
     @Override
     public ChannelFuture register(Channel channel) {
         ObjectUtil.checkNotNull(channel, "channel");
@@ -301,6 +318,7 @@ public class ThreadPerChannelEventLoopGroup extends AbstractEventExecutorGroup i
         }
     }
 
+    /** 从 idle 池获取或创建子 loop，并加入 active 集合 */
     private EventLoop nextChild() throws Exception {
         if (shuttingDown) {
             throw new RejectedExecutionException("shutting down");

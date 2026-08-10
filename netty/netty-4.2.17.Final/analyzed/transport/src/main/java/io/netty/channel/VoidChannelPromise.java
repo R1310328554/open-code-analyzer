@@ -23,17 +23,27 @@ import io.netty.util.internal.UnstableApi;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 不存储结果、不阻塞等待的“空”{@link ChannelPromise}，常用于内部 fire-and-forget 写操作。
+ * <p>多数 mutating 方法会抛出 {@link IllegalStateException}；失败时可选地将异常
+ * 通过 pipeline 的 {@code fireExceptionCaught} 传播。</p>
+ */
 @UnstableApi
 public final class VoidChannelPromise extends AbstractFuture<Void> implements ChannelPromise {
 
+    /** 关联的 {@link Channel} */
     private final Channel channel;
     // Will be null if we should not propagate exceptions through the pipeline on failure case.
+    /** 失败时是否经 pipeline 传播异常；为 {@code null} 则不传播 */
     private final ChannelFutureListener fireExceptionListener;
 
     /**
      * Creates a new instance.
+     * <p>创建 void promise；{@code fireException=true} 时在 channel 已注册的情况下
+     * 将失败原因投递到 pipeline。</p>
      *
      * @param channel the {@link Channel} associated with this future
+     * @param fireException 失败时是否触发 {@code fireExceptionCaught}
      */
     public VoidChannelPromise(final Channel channel, boolean fireException) {
         ObjectUtil.checkNotNull(channel, "channel");
@@ -53,6 +63,7 @@ public final class VoidChannelPromise extends AbstractFuture<Void> implements Ch
         }
     }
 
+    /** void promise 不支持添加监听器 */
     @Override
     public VoidChannelPromise addListener(GenericFutureListener<? extends Future<? super Void>> listener) {
         fail();
@@ -162,17 +173,20 @@ public final class VoidChannelPromise extends AbstractFuture<Void> implements Ch
         return this;
     }
 
+    /** 设置失败原因并可选地经 pipeline 传播异常 */
     @Override
     public VoidChannelPromise setFailure(Throwable cause) {
         fireException0(cause);
         return this;
     }
 
+    /** 成功设置对 void promise 无效果 */
     @Override
     public VoidChannelPromise setSuccess() {
         return this;
     }
 
+    /** 尝试设置失败；始终返回 {@code false} */
     @Override
     public boolean tryFailure(Throwable cause) {
         fireException0(cause);
@@ -189,11 +203,13 @@ public final class VoidChannelPromise extends AbstractFuture<Void> implements Ch
         return false;
     }
 
+    /** 尝试标记成功；始终返回 {@code false} */
     @Override
     public boolean trySuccess() {
         return false;
     }
 
+    /** void future 上调用 mutating/await 操作时抛出 */
     private static void fail() {
         throw new IllegalStateException("void future");
     }
@@ -213,6 +229,7 @@ public final class VoidChannelPromise extends AbstractFuture<Void> implements Ch
         return null;
     }
 
+    /** 转为可等待、可监听的普通 {@link ChannelPromise} */
     @Override
     public ChannelPromise unvoid() {
         ChannelPromise promise = new DefaultChannelPromise(channel);
@@ -227,6 +244,7 @@ public final class VoidChannelPromise extends AbstractFuture<Void> implements Ch
         return true;
     }
 
+    /** 仅在 channel 已注册且配置了传播时，向 pipeline 投递异常 */
     private void fireException0(Throwable cause) {
         // Only fire the exception if the channel is open and registered
         // if not the pipeline is not setup and so it would hit the tail

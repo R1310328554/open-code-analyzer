@@ -32,20 +32,29 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
  * <p>
  * Note that messages needs to be handled by the {@link MessageSizeEstimator}
  * used by the channel for {@link Channel#isWritable()} to provide accurate back-pressure.
+ * <p>写缓冲区高低水位标记：超过高水位时 {@link Channel#isWritable()} 变为 {@code false}，
+ * 待排队字节数回落到低水位以下后恢复为 {@code true}，用于背压控制。须配合
+ * {@link MessageSizeEstimator} 才能准确估算消息大小。</p>
  */
 public final class WriteBufferWaterMark {
 
+    /** 默认低水位：32 KiB */
     private static final int DEFAULT_LOW_WATER_MARK = 32 * 1024;
+    /** 默认高水位：64 KiB */
     private static final int DEFAULT_HIGH_WATER_MARK = 64 * 1024;
 
+    /** 默认高低水位实例 */
     public static final WriteBufferWaterMark DEFAULT =
             new WriteBufferWaterMark(DEFAULT_LOW_WATER_MARK, DEFAULT_HIGH_WATER_MARK, false);
 
+    /** 低水位（字节） */
     private final int low;
+    /** 高水位（字节） */
     private final int high;
 
     /**
      * Create a new instance.
+     * <p>创建写缓冲区水位配置；{@code low} 须非负且 {@code high} 不得小于 {@code low}。</p>
      *
      * @param low low water mark for write buffer.
      * @param high high water mark for write buffer
@@ -56,6 +65,7 @@ public final class WriteBufferWaterMark {
 
     /**
      * This constructor is needed to keep backward-compatibility.
+     * <p>包内构造，{@code validate=false} 时跳过参数校验以保持向后兼容。</p>
      */
     WriteBufferWaterMark(int low, int high, boolean validate) {
         if (validate) {
@@ -73,6 +83,7 @@ public final class WriteBufferWaterMark {
 
     /**
      * Returns the low water mark for the write buffer.
+     * <p>返回写缓冲区低水位（字节）。</p>
      */
     public int low() {
         return low;
@@ -80,6 +91,7 @@ public final class WriteBufferWaterMark {
 
     /**
      * Returns the high water mark for the write buffer.
+     * <p>返回写缓冲区高水位（字节）。</p>
      */
     public int high() {
         return high;
