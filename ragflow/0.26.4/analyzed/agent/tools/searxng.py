@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+SearXNG 元搜索引擎工具：聚合多源搜索结果，内置 SSRF 防护与 DNS 固定。
+"""
+
 #
 import logging
 import os
@@ -25,7 +29,7 @@ from common.ssrf_guard import assert_url_is_safe, pin_dns
 
 class SearXNGParam(ToolParamBase):
     """
-    Define the SearXNG component parameters.
+    SearXNG 参数：查询词、实例 URL 与 top_n 结果数量。
     """
 
     def __init__(self):
@@ -66,6 +70,10 @@ class SearXNGParam(ToolParamBase):
 
 
 class SearXNG(ToolBase, ABC):
+    """
+    向自建 SearXNG /search 端点发起 JSON 搜索并写入引用块。
+    """
+
     component_name = "SearXNG"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
@@ -73,14 +81,14 @@ class SearXNG(ToolBase, ABC):
         if self.check_if_canceled("SearXNG processing"):
             return
 
-        # Gracefully handle try-run without inputs
+        # 试运行无输入时优雅返回空结果
         query = kwargs.get("query")
         if not query or not isinstance(query, str) or not query.strip():
             self.set_output("formalized_content", "")
             return ""
 
         searxng_url = (getattr(self._param, "searxng_url", "") or kwargs.get("searxng_url") or "").strip()
-        # In try-run, if no URL configured, just return empty instead of raising
+        # 未配置 URL 时不抛错，返回空（便于面板试跑）
         if not searxng_url:
             self.set_output("formalized_content", "")
             return ""
@@ -99,6 +107,8 @@ class SearXNG(ToolBase, ABC):
             try:
                 search_params = {"q": query, "format": "json", "categories": "general", "language": "auto", "safesearch": 1, "pageno": 1}
 
+                # SSRF 校验通过后固定 DNS 解析再请求
+                # SSRF 校验通过后固定 DNS 解析再请求
                 with pin_dns(_ssrf_hostname, _ssrf_ip):
                     response = requests.get(f"{searxng_url}/search", params=search_params, timeout=10)
                 response.raise_for_status()

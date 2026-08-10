@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+OpenID Connect 客户端：发现元数据、JWKS 验签 ID Token 并合并 userinfo。
+"""
+
 #
 
 import jwt
@@ -19,7 +23,7 @@ from common.http_client import sync_request
 from .oauth import OAuthClient
 
 
-# Asymmetric signing algorithms safe to accept for OIDC ID tokens.
+# OIDC ID Token 允许的非对称签名算法白名单（排除 HS* 与 none 防算法混淆攻击）。
 # Symmetric HMAC algorithms (HS*) are intentionally excluded — when the
 # verification key is the asymmetric public key fetched from the provider's
 # JWKS (as it is for every OIDC ID token), accepting HS256 lets an attacker
@@ -41,7 +45,7 @@ _ALLOWED_OIDC_SIGNING_ALGS = frozenset(
     }
 )
 
-# OIDC Core 1.0 § 2 makes RS256 the spec-default ``id_token_signing_alg``,
+# 发现文档未声明安全算法时回退 RS256，绝不信任 JWT header 中的 alg,
 # so this is the safe fallback when a provider's discovery document does not
 # advertise ``id_token_signing_alg_values_supported`` (or advertises only
 # algorithms outside the safe allowlist).
@@ -49,7 +53,10 @@ _DEFAULT_OIDC_SIGNING_ALGS = ("RS256",)
 
 
 def _resolve_id_token_signing_algs(metadata):
-    """Return the algorithms to pass to ``jwt.decode(..., algorithms=...)``.
+    """
+    从发现元数据解析 ID Token 验签算法，与安全白名单求交后回退 RS256。
+
+    Return the algorithms to pass to ``jwt.decode(..., algorithms=...)``.
 
     Intersects the provider-advertised
     ``id_token_signing_alg_values_supported`` with
@@ -67,10 +74,10 @@ def _resolve_id_token_signing_algs(metadata):
 
 
 class OIDCClient(OAuthClient):
+    """OIDC 扩展：自动发现 endpoint、固定验签算法并解析 id_token。"""
     def __init__(self, config):
         """
-        Initialize the OIDCClient with the provider's configuration.
-        Use `issuer` as the single source of truth for configuration discovery.
+        以 issuer 拉取 /.well-known/openid-configuration 并填充 OAuth 端点。
         """
         self.issuer = config.get("issuer")
         if not self.issuer:
@@ -99,7 +106,7 @@ class OIDCClient(OAuthClient):
     @staticmethod
     def _load_oidc_metadata(issuer):
         """
-        Load OIDC metadata from `/.well-known/openid-configuration`.
+        GET issuer/.well-known/openid-configuration 获取 JWKS 与各 endpoint。
         """
         try:
             metadata_url = f"{issuer}/.well-known/openid-configuration"
@@ -111,6 +118,8 @@ class OIDCClient(OAuthClient):
 
     def parse_id_token(self, id_token):
         """
+        用 PyJWKClient 取公钥，按构造时固定的 algorithms 验签并解码 claims。
+
         Parse and validate OIDC ID Token (JWT format) with signature verification.
 
         The accepted signing algorithms come from ``self.id_token_signing_algs``
@@ -123,7 +132,7 @@ class OIDCClient(OAuthClient):
         key fetched from the provider's JWKS (CWE-345 / CWE-347).
         """
         try:
-            # Use PyJWT's PyJWKClient to fetch JWKS and find signing key.
+            # PyJWKClient 按 JWT header kid 从 JWKS 选取验签公钥
             # The client reads the ``kid`` from the JWT header internally to
             # look up the key — that's fine: ``kid`` is not a security
             # decision, the signature still proves which key was used.
@@ -144,7 +153,7 @@ class OIDCClient(OAuthClient):
 
     def fetch_user_info(self, access_token, id_token=None, **kwargs):
         """
-        Fetch user info.
+        优先解析 id_token claims，再合并 userinfo 端点结果。
         """
         user_info = {}
         if id_token:
@@ -153,6 +162,7 @@ class OIDCClient(OAuthClient):
         return self.normalize_user_info(user_info)
 
     async def async_fetch_user_info(self, access_token, id_token=None, **kwargs):
+        """async_fetch 版本：id_token + userinfo 合并后 normalize。"""
         user_info = {}
         if id_token:
             user_info = self.parse_id_token(id_token)

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+同花顺问财选股工具：自然语言条件查询股票/基金等（pywencai 集成当前已注释）。
+"""
+
 #
 import logging
 import os
@@ -26,7 +30,7 @@ from common.connection_utils import timeout
 
 class WenCaiParam(ToolParamBase):
     """
-    Define the WenCai component parameters.
+    问财参数：查询语句、query_type（stock/fund 等）与 top_n。
     """
 
     def __init__(self):
@@ -52,6 +56,10 @@ fund selection platform: through AI technology, is committed to providing excell
 
 
 class WenCai(ToolBase, ABC):
+    """
+    调用问财 API 获取结构化结果并转为 Markdown 写入 report 输出。
+    """
+
     component_name = "WenCai"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
@@ -70,6 +78,8 @@ class WenCai(ToolBase, ABC):
 
             try:
                 wencai_res = []
+                # pywencai 调用已注释；res 为空时仍走统一格式化分支
+                # pywencai 调用已注释；res 为空时仍走统一格式化分支
                 # res = pywencai.get(query=kwargs["query"], query_type=self._param.query_type, perpage=self._param.top_n)
                 res = []
                 if self.check_if_canceled("WenCai processing"):
@@ -77,6 +87,8 @@ class WenCai(ToolBase, ABC):
 
                 if isinstance(res, pd.DataFrame):
                     wencai_res.append(res.to_markdown())
+                # dict 结果按 key 分类型转 Markdown
+                # dict 结果按 key 分类型转 Markdown
                 elif isinstance(res, dict):
                     for item in res.items():
                         if self.check_if_canceled("WenCai processing"):

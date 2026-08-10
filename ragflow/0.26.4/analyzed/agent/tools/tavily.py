@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Tavily 搜索与网页抽取工具：面向 LLM 优化的搜索 API 及 URL 正文提取。
+"""
+
 #
 import logging
 import os
@@ -24,7 +28,7 @@ from common.connection_utils import timeout
 
 class TavilySearchParam(ToolParamBase):
     """
-    Define the Retrieval component parameters.
+    Tavily 搜索参数：API key、topic、search_depth、域名白/黑名单等。
     """
 
     def __init__(self):
@@ -89,6 +93,10 @@ When searching:
 
 
 class TavilySearch(ToolBase, ABC):
+    """
+    调用 TavilyClient.search，将结果经 _retrieve_chunks 写入 formalized_content。
+    """
+
     component_name = "TavilySearch"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
@@ -102,6 +110,8 @@ class TavilySearch(ToolBase, ABC):
 
         self.tavily_client = TavilyClient(api_key=self._param.api_key)
         last_e = None
+        # 用组件默认参数补全 LLM 未传入的可选字段
+        # 用组件默认参数补全 LLM 未传入的可选字段
         for fld in ["search_depth", "topic", "max_results", "days", "include_answer", "include_raw_content", "include_images", "include_image_descriptions", "include_domains", "exclude_domains"]:
             if fld not in kwargs:
                 kwargs[fld] = getattr(self._param, fld)
@@ -110,6 +120,8 @@ class TavilySearch(ToolBase, ABC):
                 return
 
             try:
+                # 关闭图片与 raw_content 以控制响应体积
+                # 关闭图片与 raw_content 以控制响应体积
                 kwargs["include_images"] = False
                 kwargs["include_raw_content"] = False
                 res = self.tavily_client.search(**kwargs)
@@ -147,7 +159,7 @@ Looking for the most relevant articles.
 
 class TavilyExtractParam(ToolParamBase):
     """
-    Define the Retrieval component parameters.
+    Tavily 抽取参数：URL 列表、extract_depth 与输出 format（markdown/text）。
     """
 
     def __init__(self):
@@ -194,6 +206,10 @@ class TavilyExtractParam(ToolParamBase):
 
 
 class TavilyExtract(ToolBase, ABC):
+    """
+    批量抽取指定 URL 正文，结果写入 json 输出。
+    """
+
     component_name = "TavilyExtract"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 10 * 60)))
@@ -206,6 +222,8 @@ class TavilyExtract(ToolBase, ABC):
         for fld in ["urls", "extract_depth", "format"]:
             if fld not in kwargs:
                 kwargs[fld] = getattr(self._param, fld)
+        # 支持逗号分隔的 URL 字符串输入
+        # 支持逗号分隔的 URL 字符串输入
         if kwargs.get("urls") and isinstance(kwargs["urls"], str):
             kwargs["urls"] = kwargs["urls"].split(",")
         for _ in range(self._param.max_retries + 1):

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Yahoo Finance 行情工具：通过 yfinance 拉取股票信息、财报、历史价与新闻。
+"""
+
 #
 import logging
 import os
@@ -25,7 +29,7 @@ from common.connection_utils import timeout
 
 class YahooFinanceParam(ToolParamBase):
     """
-    Define the YahooFinance component parameters.
+    Yahoo Finance 参数：股票代码及各数据块开关（info/history/news 等）。
     """
 
     def __init__(self):
@@ -59,6 +63,10 @@ class YahooFinanceParam(ToolParamBase):
 
 
 class YahooFinance(ToolBase, ABC):
+    """
+    构造 yf.Ticker，按开关拼接 info、财报与新闻 Markdown 到 report。
+    """
+
     component_name = "YahooFinance"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 60)))
@@ -77,6 +85,8 @@ class YahooFinance(ToolBase, ABC):
 
             yahoo_res = []
             try:
+                # 按参数开关依次追加各数据段 Markdown
+                # 按参数开关依次追加各数据段 Markdown
                 msft = yf.Ticker(kwargs["stock_code"])
                 if self.check_if_canceled("YahooFinance processing"):
                     return None

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+和风天气组件：根据地名查询 location_id，再拉取实时/预报天气、生活指数或空气质量。
+"""
+
 #
 from abc import ABC
 import pandas as pd
@@ -22,7 +26,7 @@ from common.http_client import DEFAULT_TIMEOUT
 
 class QWeatherParam(ComponentParamBase):
     """
-    Define the QWeather component parameters.
+    和风天气参数：API key、语言、数据类型（weather/indices/airquality）与订阅类型。
     """
 
     def __init__(self):
@@ -89,6 +93,10 @@ class QWeatherParam(ComponentParamBase):
 
 
 class QWeather(ComponentBase, ABC):
+    """
+    先 geo lookup 解析城市，再按 type 分支请求 v7 API 并返回 Markdown 或 DataFrame。
+    """
+
     component_name = "QWeather"
 
     def _run(self, history, **kwargs):
@@ -113,8 +121,12 @@ class QWeather(ComponentBase, ABC):
             if self.check_if_canceled("Qweather processing"):
                 return
 
+            # 付费与免费订阅使用不同 API 基址
+            # 付费与免费订阅使用不同 API 基址
             base_url = "https://api.qweather.com/v7/" if self._param.user_type == "paid" else "https://devapi.qweather.com/v7/"
 
+            # 按配置类型分支：天气、生活指数或空气质量
+            # 按配置类型分支：天气、生活指数或空气质量
             if self._param.type == "weather":
                 url = base_url + "weather/" + self._param.time_period + "?location=" + location_id + "&key=" + self._param.web_apikey + "&lang=" + self._param.lang
                 response = requests.get(url=url, timeout=DEFAULT_TIMEOUT).json()

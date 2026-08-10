@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+PubMed 生物医学文献检索工具：通过 NCBI Entrez API 搜索 MEDLINE 并解析 XML 摘要。
+"""
+
 #
 import logging
 import os
@@ -26,7 +30,7 @@ from common.connection_utils import timeout
 
 class PubMedParam(ToolParamBase):
     """
-    Define the PubMed component parameters.
+    PubMed 组件参数：查询词、top_n 返回条数与 Entrez 联系邮箱。
     """
 
     def __init__(self):
@@ -63,6 +67,10 @@ In addition to MEDLINE, PubMed provides access to:
 
 
 class PubMed(ToolBase, ABC):
+    """
+    esearch 获取 PMID 列表，efetch 拉取 XML 后经 _retrieve_chunks 写入引用块。
+    """
+
     component_name = "PubMed"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
@@ -75,6 +83,7 @@ class PubMed(ToolBase, ABC):
             return ""
 
         last_e = ""
+        # 带重试的 Entrez 搜索与 XML 解析循环
         for _ in range(self._param.max_retries + 1):
             if self.check_if_canceled("PubMed processing"):
                 return
@@ -113,7 +122,7 @@ class PubMed(ToolBase, ABC):
         assert False, self.output()
 
     def _format_pubmed_content(self, child):
-        """Extract structured reference info from PubMed XML"""
+        """从 PubMed XML 节点提取标题、作者、期刊、DOI 与摘要等结构化引用信息。"""
 
         def safe_find(path, base=None):
             node = child if base is None else base
@@ -130,7 +139,7 @@ class PubMed(ToolBase, ABC):
         issue = safe_find("MedlineCitation/Article/Journal/JournalIssue/Issue") or "-"
         pages = safe_find("MedlineCitation/Article/Pagination/MedlinePgn") or "-"
 
-        # Authors
+        # 遍历 AuthorList 拼接作者姓名
         authors = []
         for author in child.findall(".//AuthorList/Author"):
             lastname = safe_find("LastName", author) or ""
@@ -140,7 +149,7 @@ class PubMed(ToolBase, ABC):
                 authors.append(fullname)
         authors_str = ", ".join(authors) if authors else "Unknown Authors"
 
-        # DOI
+        # 从 ArticleId 列表中查找 IdType=doi
         doi = None
         for eid in child.findall(".//ArticleId"):
             if eid.attrib.get("IdType") == "doi":

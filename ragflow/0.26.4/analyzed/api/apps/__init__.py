@@ -12,6 +12,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+RAGFlow Quart HTTP 应用：路由自动注册、认证装饰器与会话管理。
+
+扫描 api/apps 下 *_app.py 动态挂载 Blueprint，并提供 JWT/API/Beta 多种鉴权路径。
+"""
+
 #
 import logging
 import os
@@ -45,6 +51,7 @@ UNAUTHORIZED_MESSAGE = "<Unauthorized '401: Unauthorized'>"
 
 
 def _unauthorized_message(error):
+    """从异常对象提取 401 响应文案。"""
     if error is None:
         return UNAUTHORIZED_MESSAGE
 
@@ -58,6 +65,8 @@ def _unauthorized_message(error):
         return UNAUTHORIZED_MESSAGE
 
 
+# 创建 Quart 应用并启用 CORS
+# 创建 Quart 应用并启用 CORS
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
 
@@ -68,7 +77,7 @@ app.url_map.strict_slashes = False
 app.json_encoder = CustomJSONEncoder
 app.errorhandler(Exception)(server_error_response)
 
-# Configure Quart timeouts for slow LLM responses (e.g., local Ollama on CPU)
+# 慢速 LLM 后端（如本地 Ollama）需放宽 Quart 读写超时
 # Default Quart timeouts are 60 seconds which is too short for many LLM backends
 app.config["RESPONSE_TIMEOUT"] = int(os.environ.get("QUART_RESPONSE_TIMEOUT", 600))
 app.config["BODY_TIMEOUT"] = int(os.environ.get("QUART_BODY_TIMEOUT", 600))
@@ -91,6 +100,8 @@ from werkzeug.local import LocalProxy
 T = TypeVar("T")
 P = ParamSpec("P")
 
+# 支持的鉴权类型常量
+# 支持的鉴权类型常量
 AUTH_JWT = "JWT"
 AUTH_API = "API"
 AUTH_BETA = "BETA"
@@ -98,6 +109,7 @@ DEFAULT_AUTH_TYPES = (AUTH_JWT, AUTH_API)
 
 
 def _normalize_auth_types(auth_types=None):
+    """将 auth_types 规范化为大写集合，默认 JWT+API。"""
     if auth_types is None:
         return set(DEFAULT_AUTH_TYPES)
     if isinstance(auth_types, str):
@@ -108,6 +120,11 @@ def _normalize_auth_types(auth_types=None):
 
 
 def _load_user_from_session():
+    """
+    从 OAuth/OIDC 回调写入的服务端 session 恢复当前用户。
+
+    前端 401 后可能清掉 Authorization 头，此时仍依赖 cookie session。
+    """
     """Resolve the current user from the session cookie set by ``login_user()``.
 
     OAuth/OIDC callbacks call ``login_user(user)`` which writes ``_user_id``
@@ -142,12 +159,15 @@ def _load_user_from_session():
 
 
 def _load_user(auth_types=None):
+    """
+    按优先级解析当前用户：session → Beta token → JWT → API token。
+    """
     explicit_auth_types = auth_types is not None
     auth_types = _normalize_auth_types(auth_types)
     if getattr(g, "user", None) and (not explicit_auth_types or getattr(g, "auth_type", None) in auth_types):
         return g.user
 
-    # No Authorization header, try to load user from session cookie if JWT auth is allowed
+    # 无 Authorization 头时，若允许 JWT 则尝试 session cookie
     authorization = request.headers.get("Authorization")
     if not authorization:
         return _load_user_from_session() if AUTH_JWT in auth_types else None
@@ -166,7 +186,7 @@ def _load_user(auth_types=None):
     g.auth_type = None
     g.auth_error_message = None
 
-    # Try Beta token
+    # 依次尝试 Beta API key、JWT 与租户 API token
     if AUTH_BETA in auth_types:
         try:
             objs = APIToken.query(beta=auth_token)
@@ -181,7 +201,7 @@ def _load_user(auth_types=None):
             logging.warning(f"load_user from beta token got exception {e_beta}")
             g.auth_error_message = "Authentication error: API key is invalid!"
 
-    # Try JWT decoding
+    # JWT：URLSafeTimedSerializer 解码后与 DB access_token 比对
     if AUTH_JWT in auth_types:
         try:
             jwt = Serializer(secret_key=settings.get_secret_key())
@@ -207,7 +227,7 @@ def _load_user(auth_types=None):
         except Exception as e_jwt:
             logging.warning(f"load_user from jwt got exception {e_jwt}")
 
-    # JWT decode failed, try as api_token
+    # JWT 失败后按 APIToken 表查租户用户
     if AUTH_API in auth_types:
         try:
             objs = APIToken.query(token=auth_token)
@@ -233,6 +253,9 @@ current_user = LocalProxy(_load_user)
 
 
 def login_required(func: Callable[P, Awaitable[T]] = None, auth_types=None) -> Callable[P, Awaitable[T]]:
+    """
+    路由装饰器：要求请求已通过 _load_user 认证，否则抛出 401。
+    """
     """A decorator to restrict route access to authenticated users.
 
     This should be used to wrap a route handler (or view function) to
@@ -282,6 +305,8 @@ def login_required(func: Callable[P, Awaitable[T]] = None, auth_types=None) -> C
 
 def login_user(user, remember=False, duration=None, force=False, fresh=True):
     """
+    将用户写入 session（OAuth/OIDC 回调使用）。若用户未激活且未 force 则失败。
+
     Logs a user in. You should pass the actual user object to this. If the
     user's `is_active` property is ``False``, they will not be logged in
     unless `force` is ``True``.
@@ -315,6 +340,8 @@ def login_user(user, remember=False, duration=None, force=False, fresh=True):
 
 def logout_user():
     """
+    清除 session 中的用户标识与 remember cookie。
+
     Logs a user out. (You do not need to pass the actual user.) This will
     also clean up the remember me cookie if it exists.
     """
@@ -338,6 +365,7 @@ def logout_user():
 
 
 def search_pages_path(page_path):
+    """扫描目录下 *_app.py 与 sdk/restful_apis 模块路径。"""
     app_path_list = [path for path in page_path.glob("*_app.py") if not path.name.startswith(".")]
     api_path_list = [path for path in page_path.glob("*sdk/*.py") if not path.name.startswith(".")]
     app_path_list.extend(api_path_list)
@@ -347,6 +375,7 @@ def search_pages_path(page_path):
 
 
 def register_page(page_path):
+    """动态 import 页面模块并注册 Blueprint，返回 url_prefix。"""
     path = f"{page_path}"
 
     page_name = page_path.stem.removesuffix("_app")
@@ -375,7 +404,7 @@ pages_dir = [
 
 client_urls_prefix = [register_page(path) for directory in pages_dir for path in search_pages_path(directory)]
 
-# Register backward compatibility routes for deprecated APIs
+# 注册已废弃 API 的向后兼容路由
 from api.apps.backward_compat import register_backward_compat_routes
 
 register_backward_compat_routes(app)
@@ -420,6 +449,7 @@ async def handle_model_exception(error):
 
 @app.teardown_request
 def _db_close(exception):
+    """请求结束时关闭数据库连接。"""
     if exception:
         logging.exception(f"Request failed: {exception}")
     close_connection()

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+通用 OAuth2 客户端：授权 URL 生成、code 换 token 与用户信息拉取。
+"""
+
 #
 
 import urllib.parse
@@ -19,6 +23,7 @@ from common.http_client import async_request, sync_request
 
 
 class UserInfo:
+    """OAuth 用户信息 DTO：email、username、nickname、avatar_url。"""
     def __init__(self, email, username, nickname, avatar_url):
         self.email = email
         self.username = username
@@ -26,13 +31,15 @@ class UserInfo:
         self.avatar_url = avatar_url
 
     def to_dict(self):
+        """导出为字典供 OIDC 等流程合并 claims。"""
         return {key: value for key, value in self.__dict__.items()}
 
 
 class OAuthClient:
+    """标准 OAuth2 授权码流程客户端，提供同步与 httpx 异步 HTTP 方法。"""
     def __init__(self, config):
         """
-        Initialize the OAuthClient with the provider's configuration.
+        从配置读取 client_id/secret、各 endpoint 与 redirect_uri。
         """
         self.client_id = config["client_id"]
         self.client_secret = config["client_secret"]
@@ -46,7 +53,7 @@ class OAuthClient:
 
     def get_authorization_url(self, state=None):
         """
-        Generate the authorization URL for user login.
+        拼接授权页 URL，可选附带 state 防 CSRF。
         """
         params = {
             "client_id": self.client_id,
@@ -62,7 +69,7 @@ class OAuthClient:
 
     def exchange_code_for_token(self, code):
         """
-        Exchange authorization code for access token.
+        用 authorization_code grant 同步换取 access_token。
         """
         try:
             payload = {"client_id": self.client_id, "client_secret": self.client_secret, "code": code, "redirect_uri": self.redirect_uri, "grant_type": "authorization_code"}
@@ -80,7 +87,7 @@ class OAuthClient:
 
     async def async_exchange_code_for_token(self, code):
         """
-        Async variant of exchange_code_for_token using httpx.
+        exchange_code_for_token 的 httpx 异步版本。
         """
         payload = {
             "client_id": self.client_id,
@@ -104,7 +111,7 @@ class OAuthClient:
 
     def fetch_user_info(self, access_token, **kwargs):
         """
-        Fetch user information using access token.
+        Bearer token 请求 userinfo 端点并 normalize。
         """
         try:
             headers = {"Authorization": f"Bearer {access_token}"}
@@ -116,7 +123,7 @@ class OAuthClient:
             raise ValueError(f"Failed to fetch user info: {e}")
 
     async def async_fetch_user_info(self, access_token, **kwargs):
-        """Async variant of fetch_user_info using httpx."""
+        """fetch_user_info 的 httpx 异步版本。"""
         headers = {"Authorization": f"Bearer {access_token}"}
         try:
             response = await async_request(
@@ -132,6 +139,7 @@ class OAuthClient:
             raise ValueError(f"Failed to fetch user info: {e}")
 
     def normalize_user_info(self, user_info):
+        """将各厂商字段差异统一为 UserInfo。"""
         email = user_info.get("email")
         username = user_info.get("username", str(email).split("@")[0])
         nickname = user_info.get("nickname", username)

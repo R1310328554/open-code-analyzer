@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+TuShare 财经快讯组件：调用 tushare.pro news 接口并按关键词过滤后输出 Markdown。
+"""
+
 #
 import json
 import logging
@@ -25,7 +29,7 @@ from common.http_client import DEFAULT_TIMEOUT
 
 class TuShareParam(ComponentParamBase):
     """
-    Define the TuShare component parameters.
+    TuShare 参数：token、新闻源 src、起止日期与可选 keyword。
     """
 
     def __init__(self):
@@ -41,6 +45,10 @@ class TuShareParam(ComponentParamBase):
 
 
 class TuShare(ComponentBase, ABC):
+    """
+    POST api.tushare.pro 拉取快讯 DataFrame，按 keyword 过滤后 to_markdown。
+    """
+
     component_name = "TuShare"
 
     def _run(self, history, **kwargs):
@@ -68,6 +76,8 @@ class TuShare(ComponentBase, ABC):
             df.columns = response["data"]["fields"]
             if self.check_if_canceled("TuShare processing"):
                 return
+            # 优先使用参数 keyword，否则用上游输入作为过滤词
+            # 优先使用参数 keyword，否则用上游输入作为过滤词
             keyword = self._param.keyword or ans
             logging.info(
                 "TuShare news filter keyword source=%s",

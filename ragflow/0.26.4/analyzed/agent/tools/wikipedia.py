@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Wikipedia 百科检索工具：按关键词搜索条目并提取 summary 写入知识库引用。
+"""
+
 #
 import logging
 import os
@@ -24,7 +28,7 @@ from common.connection_utils import timeout
 
 class WikipediaParam(ToolParamBase):
     """
-    Define the Wikipedia component parameters.
+    Wikipedia 参数：查询词、top_n 与语言代码 language。
     """
 
     def __init__(self):
@@ -128,19 +132,19 @@ class WikipediaParam(ToolParamBase):
 
 
 class Wikipedia(ToolBase, ABC):
-    """Wikipedia search tool that retrieves and processes Wikipedia articles."""
+    """Wikipedia 搜索工具：检索并处理百科条目摘要。"""
 
     component_name = "Wikipedia"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 60)))
     def _invoke(self, **kwargs):
-        """Search Wikipedia for articles matching the query and return formalized content.
+        """按 query 搜索 Wikipedia 条目并返回 formalized_content。
 
         Args:
-            **kwargs: Must include 'query' key with the search keyword.
+            **kwargs: 须包含 query 搜索关键词。
 
         Returns:
-            Formatted Wikipedia content or error message.
+            格式化百科内容或错误信息。
         """
         if self.check_if_canceled("Wikipedia processing"):
             return
@@ -155,6 +159,8 @@ class Wikipedia(ToolBase, ABC):
                 return
 
             try:
+                # 设置百科语言后逐条 search 并 page 加载
+                # 设置百科语言后逐条 search 并 page 加载
                 wikipedia.set_lang(self._param.language)
                 wiki_engine = wikipedia
                 pages = []
@@ -164,6 +170,8 @@ class Wikipedia(ToolBase, ABC):
 
                     try:
                         pages.append(wikipedia.page(p))
+                    # 消歧义页跳过，记录可选条目
+                    # 消歧义页跳过，记录可选条目
                     except wikipedia.exceptions.DisambiguationError as e:
                         logging.info(f"Wikipedia disambiguation for '{p}', options: {e.options[:5]}")
                     except wikipedia.exceptions.PageError:

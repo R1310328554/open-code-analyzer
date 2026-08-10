@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+知识库/记忆检索工具：在 Agent 画布中按 query 检索 dataset 或 memory 并格式化 prompt 输出。
+"""
+
 #
 import asyncio
 from functools import partial
@@ -36,7 +40,7 @@ from rag.prompts.generator import cross_languages, kb_prompt, memory_prompt
 
 class RetrievalParam(ToolParamBase):
     """
-    Define the Retrieval component parameters.
+    检索参数：相似度阈值、top_n/top_k、dataset_ids、rerank 与元数据过滤等。
     """
 
     def __init__(self):
@@ -80,14 +84,20 @@ class RetrievalParam(ToolParamBase):
 
 
 class Retrieval(ToolBase, ABC):
+    """
+    支持知识库向量检索与记忆消息检索，输出 formalized_content 与 json 块列表。
+    """
+
     component_name = "Retrieval"
 
     @property
     def _dataset_ids(self):
-        """Get dataset IDs with backward compatibility for kb_ids."""
+        """获取 dataset ID 列表，兼容旧版 kb_ids 字段。"""
         return self._param.dataset_ids or getattr(self._param, "kb_ids", None) or []
 
     async def _retrieve_kb(self, query_text: str):
+        # 解析 dataset 变量引用、加载 embedding/rerank 模型并执行向量检索
+        # 解析 dataset 变量引用、加载 embedding/rerank 模型并执行向量检索
         kb_ids: list[str] = []
         for id in self._dataset_ids:
             if id.find("@") < 0:
@@ -137,6 +147,8 @@ class Retrieval(ToolBase, ABC):
                 return DocMetadataService.get_flatted_meta_by_kbs(kb_ids)
 
             def _resolve_manual_filter(flt: dict) -> dict:
+                # 将手动过滤器 value 中的 {var} 占位符替换为画布变量，避免原地修改配置
+                # 将手动过滤器 value 中的 {var} 占位符替换为画布变量，避免原地修改配置
                 # Return a new dict instead of mutating `flt` in place. The
                 # caller passes filters straight out of self._param.meta_data_filter,
                 # so mutating them would replace the variable reference with its
@@ -211,6 +223,8 @@ class Retrieval(ToolBase, ABC):
             if self.check_if_canceled("Retrieval processing"):
                 return
 
+            # 可选：基于目录结构二次检索增强 chunk
+            # 可选：基于目录结构二次检索增强 chunk
             if self._param.toc_enhance:
                 tenant_id = self._canvas._tenant_id
                 chat_model_config = get_tenant_default_model_by_type(tenant_id, LLMType.CHAT)
@@ -221,6 +235,8 @@ class Retrieval(ToolBase, ABC):
                 if cks:
                     kbinfos["chunks"] = cks
             kbinfos["chunks"] = settings.retriever.retrieval_by_children(kbinfos["chunks"], [kb.tenant_id for kb in kbs])
+            # 可选：知识图谱检索结果插入 chunk 列表首位
+            # 可选：知识图谱检索结果插入 chunk 列表首位
             if self._param.use_kg:
                 tenant_id = self._canvas.get_tenant_id()
                 chat_model_config = get_tenant_default_model_by_type(tenant_id, LLMType.CHAT)
@@ -265,6 +281,8 @@ class Retrieval(ToolBase, ABC):
         return form_cnt
 
     async def _retrieve_memory(self, query_text: str):
+        # 在指定 memory 集合中按语义相似度检索历史消息
+        # 在指定 memory 集合中按语义相似度检索历史消息
         memory_ids: list[str] = [memory_id for memory_id in self._param.memory_ids]
         user_id: str = self._param.user_id if hasattr(self._param, "user_id") else None
         memory_list = MemoryService.get_by_ids(memory_ids)
@@ -300,6 +318,8 @@ class Retrieval(ToolBase, ABC):
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 12)))
     async def _invoke_async(self, **kwargs):
+        # 按 retrieval_from 或已配置 ID 分派到 KB 或 memory 检索
+        # 按 retrieval_from 或已配置 ID 分派到 KB 或 memory 检索
         if self.check_if_canceled("Retrieval processing"):
             return
         if not kwargs.get("query"):
