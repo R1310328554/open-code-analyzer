@@ -7,6 +7,11 @@ import org.keycloak.models.workflow.AbstractWorkflowEventProvider;
 import org.keycloak.models.workflow.ResourceType;
 import org.keycloak.models.workflow.WorkflowExecutionContext;
 
+/**
+ * 用户认证工作流事件 provider：匹配 {@link EventType#LOGIN} 事件。
+ * <p>
+ * 配置参数可选指定 clientId，例如 {@code user-authenticated(account-console)}。
+ */
 public class UserAuthenticatedWorkflowEventProvider extends AbstractWorkflowEventProvider {
 
     public UserAuthenticatedWorkflowEventProvider(KeycloakSession session, String configParameter, String providerId) {
@@ -29,11 +34,11 @@ public class UserAuthenticatedWorkflowEventProvider extends AbstractWorkflowEven
             return false;
         }
         if (super.configParameter != null) {
-            // this is the case when the clientId is passed as a parameter to the event provider - like user-logged-in(account-console)
+            // 配置参数为 clientId 时，须与登录事件的 clientId 一致
             Event loginEvent = (Event) context.getEvent().getEvent();
             return loginEvent != null && configParameter.equals(loginEvent.getClientId());
         } else {
-            // nothing else to check
+            // 无额外参数时直接通过
             return true;
         }
     }

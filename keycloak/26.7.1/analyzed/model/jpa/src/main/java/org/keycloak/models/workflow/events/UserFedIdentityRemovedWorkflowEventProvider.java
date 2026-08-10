@@ -7,6 +7,11 @@ import org.keycloak.models.workflow.ResourceType;
 import org.keycloak.models.workflow.WorkflowExecutionContext;
 import org.keycloak.provider.ProviderEvent;
 
+/**
+ * 用户联邦身份移除工作流事件 provider：匹配 {@link FederatedIdentityRemovedEvent}。
+ * <p>
+ * 配置参数可选指定 IdP alias，例如 {@code user-federated-identity-removed(myidp)}。
+ */
 public class UserFedIdentityRemovedWorkflowEventProvider extends AbstractWorkflowEventProvider {
 
     public UserFedIdentityRemovedWorkflowEventProvider(final KeycloakSession session, final String configParameter, final String providerId) {
@@ -37,7 +42,7 @@ public class UserFedIdentityRemovedWorkflowEventProvider extends AbstractWorkflo
             return false;
         }
         if (super.configParameter != null) {
-            // this is the case when the idp alias is passed as a parameter to the event provider - like user-federated-identity-removed(myidp)
+            // 配置参数为 IdP alias 时，须与联邦身份事件的 IdP 一致
             ProviderEvent fedIdentityEvent = (ProviderEvent) context.getEvent().getEvent();
             if (fedIdentityEvent instanceof FederatedIdentityRemovedEvent fie) {
                 return configParameter.equals(fie.getFederatedIdentity().getIdentityProvider());
@@ -45,7 +50,7 @@ public class UserFedIdentityRemovedWorkflowEventProvider extends AbstractWorkflo
                 return false;
             }
         } else {
-            // nothing else to check
+            // 无额外参数时直接通过
             return true;
         }
     }

@@ -8,6 +8,10 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.workflow.AbstractWorkflowEventProvider;
 import org.keycloak.models.workflow.ResourceType;
 
+/**
+ * 用户创建工作流事件 provider：匹配用户自注册（{@link EventType#REGISTER}）
+ * 或管理员创建用户（{@link AdminEvent} CREATE 操作）。
+ */
 public class UserCreatedWorkflowEventProvider extends AbstractWorkflowEventProvider {
 
     public UserCreatedWorkflowEventProvider(KeycloakSession session, String configParameter, String providerId) {

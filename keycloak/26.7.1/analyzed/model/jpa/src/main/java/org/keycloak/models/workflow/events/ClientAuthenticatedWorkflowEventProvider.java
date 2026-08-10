@@ -6,6 +6,9 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.workflow.AbstractWorkflowEventProvider;
 import org.keycloak.models.workflow.ResourceType;
 
+/**
+ * 客户端认证工作流事件 provider：匹配 {@link EventType#CLIENT_LOGIN} 事件，资源类型为客户端。
+ */
 public class ClientAuthenticatedWorkflowEventProvider extends AbstractWorkflowEventProvider {
 
     public ClientAuthenticatedWorkflowEventProvider(final KeycloakSession session, final String configParameter, final String providerId) {
