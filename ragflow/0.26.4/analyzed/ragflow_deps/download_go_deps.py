@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+Go 构建专用依赖下载：stagehand-server 二进制与 pdfium/pdf_oxide/office_oxide 原生库。
+比 download_deps.py 范围更小，支持 --china-mirrors 与进度条下载。
+"""
+
 # PEP 723 metadata
 # /// script
 # requires-python = ">=3.10"
@@ -90,6 +95,7 @@ def get_urls(use_china_mirrors=False) -> list[Union[str, list[str]]]:
 
 
 def download_with_progress(url, filename):
+    # requests 流式下载并显示百分比进度
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
     block_size = 1024
@@ -137,6 +143,7 @@ if __name__ == "__main__":
     # Extract native static libraries to ~/ragflow-native-libs for Go build.
     # Ensures build.sh can find them without network access.
     native_deps_dir = os.path.expanduser("~/ragflow-native-libs")
+    # 解压到 ~/ragflow-native-libs 供 Go FFI 链接
     extractions = [
         ("pdfium-linux-x64-static.tgz", "pdfium-static"),
         ("pdf_oxide-go-ffi-linux-amd64.tar.gz", "pdf_oxide"),

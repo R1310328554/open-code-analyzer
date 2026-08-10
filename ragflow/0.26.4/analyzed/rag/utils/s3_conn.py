@@ -13,6 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""AWS S3 及兼容存储适配器：put/get/rm/copy/move 与预签名 URL。"""
+
+
 
 import logging
 import boto3
@@ -26,6 +29,7 @@ from common import settings
 
 @singleton
 class RAGFlowS3:
+    # S3 单例：conn 包装为单元素列表以兼容多连接扩展
     def __init__(self):
         self.conn = None
         self.s3_config = settings.S3
@@ -51,6 +55,7 @@ class RAGFlowS3:
 
     @staticmethod
     def use_prefix_path(method):
+        # prefix_path 模式下 bucket 入参作为 key 前缀段
         def wrapper(self, bucket, fnm, *args, **kwargs):
             # If the prefix path is set, use the prefix path.
             # The bucket passed from the upstream call is
@@ -62,6 +67,7 @@ class RAGFlowS3:
         return wrapper
 
     def __open__(self):
+        # 可选 AK/SK 或 IAM 链式认证创建 boto3 client
         try:
             if self.conn:
                 self.__close__()
@@ -195,12 +201,14 @@ class RAGFlowS3:
         return None
 
     def _resolve_path(self, bucket, fnm):
+        # 统一解析 default_bucket 与 prefix_path
         """Apply default_bucket and prefix_path transformations."""
         actual_bucket = self.bucket if self.bucket else bucket
         actual_fnm = f"{self.prefix_path}/{bucket}/{fnm}" if self.prefix_path else fnm
         return actual_bucket, actual_fnm
 
     def copy(self, src_bucket, src_path, dest_bucket, dest_path):
+        # S3 copy_object 跨路径复制
         try:
             actual_src_bucket, actual_src_path = self._resolve_path(src_bucket, src_path)
             actual_dest_bucket, actual_dest_path = self._resolve_path(dest_bucket, dest_path)
@@ -216,6 +224,7 @@ class RAGFlowS3:
             return False
 
     def move(self, src_bucket, src_path, dest_bucket, dest_path):
+        # copy 成功后删除源对象
         try:
             if self.copy(src_bucket, src_path, dest_bucket, dest_path):
                 actual_src_bucket, actual_src_path = self._resolve_path(src_bucket, src_path)
@@ -234,6 +243,7 @@ class RAGFlowS3:
 
     @use_default_bucket
     def rm_bucket(self, bucket, *args, **kwargs):
+        # 清空并删除整个 bucket
         for conn in self.conn:
             try:
                 if not conn.bucket_exists(bucket):

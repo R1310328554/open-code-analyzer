@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+RAGFlow 单元测试运行器：封装 pytest 命令行，支持覆盖率、并行与 marker 过滤。
+"""
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -23,6 +26,7 @@ from typing import List
 import platform
 from enum import Enum
 class Colors(Enum):
+    # 终端 ANSI 颜色枚举
     """ANSI color codes for terminal output"""
 
     RED = "\033[0;31m"
@@ -36,6 +40,7 @@ class Colors(Enum):
     NC = "\033[0m"  # No Color
 
 def _is_color_supported() -> bool:
+    # 检测 TTY/Windows ANSI/tput 是否支持彩色输出
     """
     Detect whether the current environment supports color output
 
@@ -109,6 +114,7 @@ def set_color(s: str,
     return f"{s}"  # pragma: no cover
 
 class TestRunner:
+    # 解析 CLI 参数并组装 pytest 命令
     """RAGFlow Unit Test Runner"""
 
     def __init__(self):
@@ -178,6 +184,7 @@ EXAMPLES:
         print(usage)
 
     def build_pytest_command(self) -> List[str]:
+        # 根据 coverage/parallel/markers 等选项构建命令
         """Build the pytest command arguments"""
         cmd = ["pytest"]
         if self.test_path:
@@ -230,6 +237,7 @@ EXAMPLES:
         return cmd
 
     def run_tests(self) -> bool:
+        # 执行 pytest 并打印 SUCCESS/FAILURE
         """Execute the pytest command"""
         # Change to test directory
         os.chdir(self.project_root)
@@ -285,6 +293,7 @@ EXAMPLES:
             return False
 
     def parse_arguments(self) -> bool:
+        # argparse 解析 -c/-p/-t/-m/-k 等选项
         """Parse command line arguments"""
         parser = argparse.ArgumentParser(
             description="RAGFlow Unit Test Runner",
@@ -348,6 +357,7 @@ Examples:
 
 
 def main():
+    # 入口：TestRunner().run() 返回进程退出码
     """Entry point"""
     runner = TestRunner()
     return runner.run()

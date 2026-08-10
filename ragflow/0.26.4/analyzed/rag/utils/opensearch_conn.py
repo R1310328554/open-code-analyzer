@@ -13,6 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""OpenSearch 文档引擎连接：索引 CRUD、混合检索（BM25+KNN）、元数据索引与 SQL 查询。"""
+
+
 
 import logging
 import re
@@ -33,6 +36,7 @@ from common import settings
 
 ATTEMPT_TIME = 2
 
+# Painless 脚本：原子调整 chunk pagerank_fea 并 clamp 到 [min_w, max_w]
 _PAGERANK_FEA_ADJUST_SCRIPT = """
 double cur = 0.0;
 if (ctx._source.containsKey(params.pf)) {
@@ -62,6 +66,7 @@ logger = logging.getLogger("ragflow.opensearch_conn")
 
 @singleton
 class OSConnection(DocStoreConnection):
+    # OpenSearch 后端 DocStore 实现：对齐 ESConnection 抽象接口
     def __init__(self):
         self.info = {}
         logger.info(f"Use OpenSearch {settings.OS['hosts']} as the doc engine.")
@@ -101,9 +106,10 @@ class OSConnection(DocStoreConnection):
 
     # normalization-processor (needed to merge the BM25 and KNN scores) only
     # exists on OpenSearch 2.10+.
-    HYBRID_MIN_VERSION = (2, 10)
+    HYBRID_MIN_VERSION = (2, 10)  # 混合检索 normalization-processor 最低版本
 
     def _init_hybrid_search(self):
+        # 启动时创建 search pipeline，失败则回退纯向量检索
         """Create the hybrid-search pipeline if it isn't there yet.
 
         A {"hybrid": {...}} query is scored by a normalization-processor that has
@@ -168,6 +174,7 @@ class OSConnection(DocStoreConnection):
     """
 
     def create_idx(self, indexName: str, knowledgebaseId: str, vectorSize: int, parser_id: str = None):
+        # 按 conf/os_mapping.json 创建 chunk 索引
         if self.index_exist(indexName, knowledgebaseId):
             return True
         try:
@@ -178,6 +185,7 @@ class OSConnection(DocStoreConnection):
             logger.exception("OSConnection.createIndex error %s" % (indexName))
 
     def create_doc_meta_idx(self, index_name: str):
+        # 创建 per-tenant 文档元数据索引（dynamic=runtime 在 OS 上降级为 true）
         """
         Create a per-tenant document metadata index on OpenSearch.
 
@@ -312,6 +320,8 @@ class OSConnection(DocStoreConnection):
     """
 
     def search(
+        # 构建 bool/knn/hybrid 查询；支持高亮、排序、聚合与 rank_feature
+
         self,
         select_fields: list[str],
         highlight_fields: list[str],
@@ -508,6 +518,7 @@ class OSConnection(DocStoreConnection):
         raise Exception("OSConnection.get timeout.")
 
     def insert(self, documents: list[dict], indexName: str, knowledgebaseId: str = None) -> list[str]:
+        # bulk index；id 同时作为 _id 与文档字段
         # Refers to https://opensearch.org/docs/latest/api-reference/document-apis/bulk/
         operations = []
         for d in documents:
@@ -545,6 +556,7 @@ class OSConnection(DocStoreConnection):
         return res
 
     def update(self, condition: dict, newValue: dict, indexName: str, knowledgebaseId: str) -> bool:
+        # 单条 update 或 UpdateByQuery 批量脚本更新
         doc = copy.deepcopy(newValue)
         doc.pop("id", None)
         if "id" in condition and isinstance(condition["id"], str):
@@ -649,6 +661,8 @@ class OSConnection(DocStoreConnection):
         return False
 
     def adjust_chunk_pagerank_fea(
+        # 对单 chunk 执行 pagerank_fea 增量调整
+
         self,
         chunk_id: str,
         indexName: str,
@@ -695,6 +709,7 @@ class OSConnection(DocStoreConnection):
         return False
 
     def delete(self, condition: dict, indexName: str, knowledgebaseId: str) -> int:
+        # delete_by_query 按 kb_id/id 等条件删除
         assert "_id" not in condition
         condition["kb_id"] = knowledgebaseId
 
@@ -762,6 +777,7 @@ class OSConnection(DocStoreConnection):
         return [d["_id"] for d in res["hits"]["hits"]]
 
     def get_scores(self, res) -> dict[str, float]:
+        # 提取 KNN 二阶段检索的 _score 映射
         """
         Map hit `_id` to its raw `_score`. Used by rag/nlp/search.py:_knn_scores()
         to recover the cosine similarity returned by a KNN-only second-pass search
@@ -841,6 +857,7 @@ class OSConnection(DocStoreConnection):
     """
 
     def sql(self, sql: str, fetch_size: int, format: str):
+        # OpenSearch SQL 插件：将 LIKE 转为 MATCH 分词查询
         logger.debug(f"OSConnection.sql get sql: {sql}")
         sql = re.sub(r"[ `]+", " ", sql)
         sql = sql.replace("%", "")

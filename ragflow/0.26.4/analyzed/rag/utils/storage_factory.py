@@ -13,3 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+存储工厂占位模块：RAGFlow 按配置选择 minio/s3/oss/opendal 等后端。
+实际 Storage 实例化逻辑见各 conn 模块与 common.settings。
+"""
+

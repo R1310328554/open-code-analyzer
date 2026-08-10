@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+ragflow_deps 依赖下载脚本：拉取 Docker 镜像 infiniflow/ragflow_deps 所需的全部离线制品。
+包括 HuggingFace 模型、NLTK 数据、Chrome/Tika/uv/stagehand 及 Go 原生库。
+"""
+
 # PEP 723 metadata
 # /// script
 # requires-python = ">=3.10"
@@ -40,6 +45,7 @@ from huggingface_hub import snapshot_download
 
 
 def get_urls(use_china_mirrors=False) -> list[Union[str, list[str]]]:
+    # 返回下载 URL 列表；--china-mirrors 使用清华/华为镜像
     if use_china_mirrors:
         return [
             "http://mirrors.tuna.tsinghua.edu.cn/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb",
@@ -117,6 +123,7 @@ repos = [
 
 
 def download_model(repository_id):
+    # snapshot_download 将 HuggingFace 仓库写入 huggingface.co/
     local_directory = os.path.abspath(os.path.join("huggingface.co", repository_id))
     os.makedirs(local_directory, exist_ok=True)
     snapshot_download(repo_id=repository_id, local_dir=local_directory)
@@ -150,6 +157,7 @@ if __name__ == "__main__":
 
     # Extract native static libraries to ~/ragflow-native-libs for Go build.
     # Ensures build.sh can find them without network access.
+    # 解压 pdfium/pdf_oxide/office_oxide 到本地供 build.sh 离线编译
     native_deps_dir = os.path.expanduser("~/ragflow-native-libs")
     extractions = [
         ("pdfium-linux-x64-static.tgz", "pdfium-static"),

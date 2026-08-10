@@ -1,3 +1,5 @@
+"""OpenDAL 统一对象存储适配器：MySQL 表后端或 YAML 配置的多种 scheme。"""
+
 import opendal
 import logging
 import pymysql
@@ -7,6 +9,7 @@ from urllib.parse import quote_plus
 from common.config_utils import get_base_config
 from common.decorator import singleton
 
+# MySQL 后端建表 DDL：key-value 存储 blob
 CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS `{}` (
     `key` VARCHAR(255) PRIMARY KEY,
@@ -21,6 +24,7 @@ SET GLOBAL max_allowed_packet={}
 
 
 def get_opendal_config():
+    # 从 yaml 读取 opendal/mysql 配置并组装连接参数（日志脱敏）
     try:
         opendal_config = get_base_config("opendal", {})
         if opendal_config.get("scheme", "mysql") == "mysql":
@@ -63,6 +67,7 @@ def get_opendal_config():
 
 @singleton
 class OpenDALStorage:
+    # 单例存储：put/get/rm/scan 封装 opendal.Operator
     def __init__(self):
         self._kwargs = get_opendal_config()
         self._scheme = self._kwargs.get("scheme", "mysql")
@@ -74,6 +79,7 @@ class OpenDALStorage:
         logging.info("OpenDALStorage initialized successfully")
 
     def health(self):
+        # 写入探针对象验证连通性
         bucket, fnm, binary = "txtxtxtxt1", "txtxtxtxt1", b"_t@@@1"
         return self._operator.write(f"{bucket}/{fnm}", binary)
 
@@ -94,6 +100,7 @@ class OpenDALStorage:
         return self._operator.exists(f"{bucket}/{fnm}")
 
     def init_db_config(self):
+        # MySQL 模式：设置 max_allowed_packet 避免大 blob 写入失败
         try:
             conn = pymysql.connect(host=self._kwargs["host"], port=int(self._kwargs["port"]), user=self._kwargs["user"], password=self._kwargs["password"], database=self._kwargs["database"])
             cursor = conn.cursor()
@@ -109,6 +116,7 @@ class OpenDALStorage:
             raise
 
     def init_opendal_mysql_table(self):
+        # 校验表名并执行 CREATE TABLE IF NOT EXISTS
         table_name = self._kwargs["table"]
         # Validate table name to prevent SQL injection
         if not re.match(r"^[a-zA-Z0-9_]+$", table_name):

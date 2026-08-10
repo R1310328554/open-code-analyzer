@@ -13,6 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAGFlow Python SDK 包入口：beartype 运行时类型检查与核心模块导出。
+"""
+
 
 from beartype.claw import beartype_this_package
 

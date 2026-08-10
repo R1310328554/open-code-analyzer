@@ -13,6 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""阿里云 OSS 存储适配器：基于 boto3 S3 兼容 API 实现 put/get/rm/预签名 URL。"""
+
 import logging
 import boto3
 from botocore.exceptions import ClientError
@@ -25,6 +27,7 @@ from common import settings
 
 @singleton
 class RAGFlowOSS:
+    # OSS 单例：支持默认 bucket 与 prefix_path 装饰器
     def __init__(self):
         self.conn = None
         self.oss_config = settings.OSS
@@ -40,6 +43,7 @@ class RAGFlowOSS:
 
     @staticmethod
     def use_default_bucket(method):
+        # 装饰器：配置默认 bucket 时覆盖入参
         def wrapper(self, bucket, *args, **kwargs):
             # If there is a default bucket, use the default bucket
             actual_bucket = self.bucket if self.bucket else bucket
@@ -49,6 +53,7 @@ class RAGFlowOSS:
 
     @staticmethod
     def use_prefix_path(method):
+        # 装饰器：为对象 key 加 prefix_path 前缀
         def wrapper(self, bucket, fnm, *args, **kwargs):
             # If the prefix path is set, use the prefix path
             fnm = f"{self.prefix_path}/{fnm}" if self.prefix_path else fnm
@@ -57,6 +62,7 @@ class RAGFlowOSS:
         return wrapper
 
     def __open__(self):
+        # 创建 boto3 S3 client（signature_version / addressing_style 可配）
         try:
             if self.conn:
                 self.__close__()
@@ -94,6 +100,7 @@ class RAGFlowOSS:
         return exists
 
     def health(self):
+        # 上传探针文件验证 OSS 连通性
         bucket = self.bucket
         fnm = "txtxtxtxt1"
         fnm, binary = f"{self.prefix_path}/{fnm}" if self.prefix_path else fnm, b"_t@@@1"
@@ -164,6 +171,7 @@ class RAGFlowOSS:
     @use_prefix_path
     @use_default_bucket
     def get_presigned_url(self, bucket, fnm, expires, tenant_id=None):
+        # 生成临时下载 URL，失败时重连并重试
         for _ in range(10):
             try:
                 r = self.conn.generate_presigned_url("get_object", Params={"Bucket": bucket, "Key": fnm}, ExpiresIn=expires)

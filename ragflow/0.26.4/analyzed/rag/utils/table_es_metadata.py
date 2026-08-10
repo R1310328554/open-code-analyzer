@@ -14,7 +14,8 @@
 #  limitations under the License.
 #
 
-"""Table manual-mode ES field resolution and document metadata aggregation (lightweight; used by task_executor)."""
+"""表格 manual 模式 ES 字段解析与文档级元数据聚合（task_executor 轻量调用）。
+Table manual-mode ES field resolution and document metadata aggregation (lightweight; used by task_executor)."""
 
 import logging
 
@@ -30,6 +31,7 @@ def _knowledgebase_service_cls():
 
 
 def merge_table_parser_config_from_kb(task: dict) -> dict:
+    # 将知识库级 table 解析配置合并进 task.parser_config
     """Merge dataset-level table parser keys into document parser_config (see build_chunks)."""
     pc = task.get("parser_config") or {}
     if task.get("parser_id", "").lower() != "table" or not task.get("kb_parser_config"):
@@ -43,6 +45,7 @@ def merge_table_parser_config_from_kb(task: dict) -> dict:
 
 
 def table_parser_strip_doc_metadata_keys(eff_parser_config: dict) -> frozenset[str]:
+    # reparse 时剥离旧 CSV 列对应的 document metadata 键
     """
     Table manual mode stores per-column values under document metadata keys equal to the
     CSV column name. On reparse, strip these keys from existing metadata before merging
@@ -69,6 +72,7 @@ def _field_map_typed_key_for_column(field_map: dict, col: str) -> str | None:
 
 
 def _probe_es_typed_key_for_column(col: str, sample_chunk: dict) -> str | None:
+    # field_map 缺失时按 _tks/_raw 等后缀探测 ES 字段名
     """
     When field_map is missing/stale, try to infer the ES field key present on a chunk.
     Table chunks use normalized/pinyin keys of the form <normalized_base><suffix>, where suffix is
@@ -152,6 +156,7 @@ def _es_field_value_to_doc_metadata(val, *, from_tks_fallback: bool) -> str | No
 
 
 def aggregate_table_doc_metadata(chunks: list, task: dict) -> dict:
+    # 跨 chunk 收集 metadata/both 列的唯一值供 DocMetadataService
     """
     Collect unique values per metadata/both column across chunks for document-level metadata.
     Works for both table_column_mode == manual and auto (where all columns default to "both").

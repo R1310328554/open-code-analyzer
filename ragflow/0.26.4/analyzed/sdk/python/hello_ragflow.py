@@ -13,6 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""RAGFlow Python SDK 最小示例：导入 ragflow_sdk 并打印 __version__。"""
+
+
 
 import ragflow_sdk
 

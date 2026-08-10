@@ -13,6 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""Tavily 网页搜索连接器：将搜索结果转为 RAGFlow chunk 格式供检索链路使用。"""
+
+
 import logging
 from tavily import TavilyClient
 from common.misc_utils import get_uuid
@@ -20,10 +23,12 @@ from rag.nlp import rag_tokenizer
 
 
 class Tavily:
+    # TavilyClient 薄封装：search + retrieve_chunks
     def __init__(self, api_key: str):
         self.tavily_client = TavilyClient(api_key=api_key)
 
     def search(self, query):
+        # advanced 深度搜索，最多 6 条结果
         try:
             response = self.tavily_client.search(query=query, search_depth="advanced", max_results=6)
             return [{"url": res["url"], "title": res["title"], "content": res["content"], "score": res["score"]} for res in response["results"]]
@@ -33,6 +38,7 @@ class Tavily:
         return []
 
     def retrieve_chunks(self, question):
+        # 将 Tavily 结果分词并组装 chunks/doc_aggs 结构
         chunks = []
         aggs = []
         logging.info("[Tavily]Q: " + question)

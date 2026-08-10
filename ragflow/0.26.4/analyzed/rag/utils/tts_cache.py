@@ -13,6 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""TTS 合成 Redis 缓存：按模型 ID + 文本 SHA256 键缓存 hex 编码音频。"""
+
+
 import binascii
 import hashlib
 import logging
@@ -21,7 +24,7 @@ from typing import Any, Optional
 
 from rag.utils.redis_conn import REDIS_CONN
 
-_DEFAULT_TTL_SECONDS = 7 * 24 * 60 * 60
+_DEFAULT_TTL_SECONDS = 7 * 24 * 60 * 60  # 默认缓存 7 天
 _KEY_PREFIX = "tts:cache:"
 
 
@@ -50,6 +53,7 @@ def _model_id(tts_mdl: Any) -> Optional[str]:
 
 
 def _build_key(tts_mdl: Any, text: str) -> Optional[str]:
+    # 缓存键：tts:cache:{model_id}:{sha256(text)}
     mid = _model_id(tts_mdl)
     if not mid:
         return None
@@ -71,6 +75,7 @@ def _to_hex_string(value: Any) -> Optional[str]:
 
 
 def synthesize_with_cache(tts_mdl: Any, cleaned_text: str) -> Optional[str]:
+    # 先查 Redis 缓存，未命中则流式合成并回写
     """
     Synthesize ``cleaned_text`` through ``tts_mdl`` and return a hex-encoded
     audio blob, reusing a Redis-cached result when available.

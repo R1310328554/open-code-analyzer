@@ -15,6 +15,7 @@
 #
 
 """
+RAPTOR 处理决策工具：树构建器/聚类方法解析、结构化文件跳过逻辑与 chunk 元数据收集。
 Utility functions for Raptor processing decisions.
 """
 
@@ -24,7 +25,7 @@ from typing import Optional
 
 import xxhash
 
-RAPTOR_TREE_BUILDER = "raptor"
+RAPTOR_TREE_BUILDER = "raptor"  # 默认 RAPTOR 树构建器标识
 PSI_TREE_BUILDER = "psi"
 SUPPORTED_TREE_BUILDERS = {RAPTOR_TREE_BUILDER, PSI_TREE_BUILDER}
 GMM_CLUSTERING_METHOD = "gmm"
@@ -32,12 +33,14 @@ AHC_CLUSTERING_METHOD = "ahc"
 SUPPORTED_CLUSTERING_METHODS = {GMM_CLUSTERING_METHOD, AHC_CLUSTERING_METHOD}
 
 # File extensions for structured data types
+# 结构化数据扩展名：Excel/CSV 默认跳过 RAPTOR
 EXCEL_EXTENSIONS = {".xls", ".xlsx", ".xlsm", ".xlsb"}
 CSV_EXTENSIONS = {".csv", ".tsv"}
 STRUCTURED_EXTENSIONS = EXCEL_EXTENSIONS | CSV_EXTENSIONS
 
 
 def get_raptor_tree_builder(raptor_config: dict | None) -> str:
+    # 读取 tree_builder（兼容 ext 嵌套配置）
     """Return the configured RAPTOR tree builder with legacy ext fallback."""
     raptor_config = raptor_config or {}
     ext = raptor_config.get("ext") or {}
@@ -105,6 +108,7 @@ def _raptor_methods_from_fields(fields: dict, extra: dict | None = None) -> set[
 
 
 def collect_raptor_methods(field_map: dict) -> set[str]:
+    # 从 chunk 字段收集已使用的 RAPTOR 构建方法
     """Collect tree-builder methods from RAPTOR summary chunk fields."""
     methods = set()
     for fields in field_map.values():
@@ -181,7 +185,9 @@ def is_tabular_pdf(parser_id: str = "", parser_config: Optional[dict] = None) ->
     return False
 
 
-def should_skip_raptor(file_type: Optional[str] = None, parser_id: str = "", parser_config: Optional[dict] = None, raptor_config: Optional[dict] = None) -> bool:
+def should_skip_raptor(
+    # 判断是否对 Excel/CSV/表格 PDF 自动禁用 RAPTOR
+file_type: Optional[str] = None, parser_id: str = "", parser_config: Optional[dict] = None, raptor_config: Optional[dict] = None) -> bool:
     """
     Determine if Raptor should be skipped for a given document.
 
@@ -220,7 +226,9 @@ def should_skip_raptor(file_type: Optional[str] = None, parser_id: str = "", par
     return False
 
 
-def get_skip_reason(file_type: Optional[str] = None, parser_id: str = "", parser_config: Optional[dict] = None) -> str:
+def get_skip_reason(
+    # 返回跳过 RAPTOR 的人类可读原因
+file_type: Optional[str] = None, parser_id: str = "", parser_config: Optional[dict] = None) -> str:
     """
     Get a human-readable reason why Raptor was skipped.
 

@@ -13,6 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""Redis/Valkey 连接封装：KV 操作、Stream 队列、Lua 脚本、分布式锁与令牌桶限流。"""
+
+
 
 import asyncio
 import logging
@@ -35,6 +38,7 @@ except Exception:
 
 
 class RedisMsg:
+    # Stream 消息包装：xack 确认与 JSON payload 解析
     def __init__(self, consumer, queue_name, group_name, msg_id, message):
         self.__consumer = consumer
         self.__queue_name = queue_name
@@ -59,8 +63,10 @@ class RedisMsg:
 
 @singleton
 class RedisDB:
+    # 单例 Redis 客户端：自动重连与 Lua 脚本注册
     lua_delete_if_equal = None
     lua_token_bucket = None
+    # 原子 compare-and-delete Lua 脚本
     LUA_DELETE_IF_EQUAL_SCRIPT = """
         local current_value = redis.call('get', KEYS[1])
         if current_value and current_value == ARGV[1] then
@@ -70,6 +76,7 @@ class RedisDB:
         return 0
     """
 
+    # 令牌桶限流 Lua 脚本
     LUA_TOKEN_BUCKET_SCRIPT = """
         -- KEYS[1] = rate limit key
         -- ARGV[1] = capacity
@@ -117,6 +124,7 @@ class RedisDB:
         self.__open__()
 
     def register_scripts(self) -> None:
+        # 注册 delete_if_equal 与 token_bucket 脚本
         cls = self.__class__
         client = self.REDIS
         cls.lua_delete_if_equal = client.register_script(cls.LUA_DELETE_IF_EQUAL_SCRIPT)
@@ -312,6 +320,7 @@ class RedisDB:
         return self.REDIS.decrby(key, decrement)
 
     def generate_auto_increment_id(self, key_prefix: str = "id_generator", namespace: str = "default", increment: int = 1, ensure_minimum: int | None = None) -> int:
+        # 分布式自增 ID 生成器
         redis_key = f"{key_prefix}:{namespace}"
 
         try:
@@ -355,6 +364,7 @@ class RedisDB:
         return -1
 
     def get_or_create_secret_key(self, key_name: str, new_value: str) -> str:
+        # SETNX 原子创建密钥，并发时返回已有值
         """
         Atomically get an existing key or create a new one.
 
@@ -402,6 +412,7 @@ class RedisDB:
         return False
 
     def queue_product(self, queue, message) -> bool:
+        # XADD 写入 Stream 队列
         for _ in range(3):
             try:
                 payload = {"message": json.dumps(message)}
@@ -413,6 +424,7 @@ class RedisDB:
         return False
 
     def queue_consumer(self, queue_name, group_name, consumer_name, msg_id=b">") -> RedisMsg:
+        # XREADGROUP 消费一条消息（自动创建 consumer group）
         """https://redis.io/docs/latest/commands/xreadgroup/"""
         for _ in range(3):
             try:
@@ -454,6 +466,7 @@ class RedisDB:
         return None
 
     def get_unacked_iterator(self, queue_names: list[str], group_name, consumer_name):
+        # 遍历 pending 未 ack 消息
         try:
             for queue_name in queue_names:
                 try:
@@ -510,6 +523,7 @@ class RedisDB:
         return None
 
     def delete_if_equal(self, key: str, expected_value: str) -> bool:
+        # Lua 原子：值匹配才删除
         """
         Do following atomically:
         Delete a key if its value is equals to the given one, do nothing otherwise.
@@ -526,10 +540,12 @@ class RedisDB:
         return False
 
 
+# 全局 Redis 单例
 REDIS_CONN = RedisDB()
 
 
 class RedisDistributedLock:
+    # 基于 valkey.lock 的分布式锁，acquire 前清理陈旧 token
     def __init__(self, lock_key, lock_value=None, timeout=10, blocking_timeout=1):
         self.lock_key = lock_key
         if lock_value:
@@ -544,6 +560,7 @@ class RedisDistributedLock:
         return self.lock.acquire(token=self.lock_value)
 
     async def spin_acquire(self):
+        # 异步自旋获取锁（每 10s 重试）
         REDIS_CONN.delete_if_equal(self.lock_key, self.lock_value)
         while True:
             if self.lock.acquire(token=self.lock_value):
