@@ -15,23 +15,8 @@
     "scrape/manager.go",
     "scrape/metrics.go",
     "scrape/scrape.go",
-    "scrape/scrape_append_v2.go",
-    "scrape/st_synthesis.go",
-    "scrape/target.go",
-    "storage/buffer.go",
-    "storage/errors.go",
-    "storage/fanout.go",
-    "storage/generic.go",
-    "storage/interface.go",
-    "storage/interface_append.go",
-    "storage/lazy.go",
-    "storage/memoized_iterator.go",
-    "storage/merge.go",
-    "storage/noop.go",
-    "storage/remote/azuread/azuread.go",
-    "storage/remote/chunked.go",
-    "storage/remote/client.go"
+    "scrape/scrape_append_v2.go"
   ],
   "remaining_pending": 294,
-  "done": 210
+  "done": 225
 }
