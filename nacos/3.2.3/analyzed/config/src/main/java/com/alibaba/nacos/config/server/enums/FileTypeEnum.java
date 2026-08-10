@@ -20,6 +20,8 @@ import com.alibaba.nacos.common.http.param.MediaType;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
+ * 配置文件类型枚举：映射扩展名、逻辑类型与 HTTP Content-Type。
+ * 用于发布/导出时选择正确的 MIME 与存储格式。
  * Config file type enum.
  *
  * @author klw
@@ -28,58 +30,70 @@ import com.alibaba.nacos.common.utils.StringUtils;
 public enum FileTypeEnum {
     
     /**
+     * YAML 配置文件（扩展名 yaml）。
      * Yaml file.
      */
     YML("yaml", MediaType.TEXT_PLAIN),
     
     /**
      * Yaml file.
+      * <p>配置文件类型与 Content-Type 映射；详见类级说明。</p>
      */
+    /** YAML 别名，同 {@link #YML} */
     YAML("yaml", MediaType.TEXT_PLAIN),
     
     /**
+     * 纯文本配置（扩展名 text）。
      * Text file.
      */
     TXT("text", MediaType.TEXT_PLAIN),
     
     /**
      * Text file.
+      * <p>配置文件类型与 Content-Type 映射；详见类级说明。</p>
      */
+    /** TEXT 别名，同 {@link #TXT} */
     TEXT("text", MediaType.TEXT_PLAIN),
     
     /**
+     * JSON 配置文件。
      * Json file.
      */
     JSON("json", MediaType.APPLICATION_JSON),
     
     /**
+     * XML 配置文件。
      * Xml file.
      */
     XML("xml", MediaType.APPLICATION_XML),
     
     /**
+     * HTML 配置文件（htm 扩展名）。
      * Html file.
      */
     HTM("html", MediaType.TEXT_HTML),
     
     /**
      * Html file.
+      * <p>配置文件类型与 Content-Type 映射；详见类级说明。</p>
      */
+    /** HTML 别名，同 {@link #HTM} */
     HTML("html", MediaType.TEXT_HTML),
     
     /**
+     * Java Properties 键值对配置。
      * Properties file.
      */
     PROPERTIES("properties", MediaType.TEXT_PLAIN);
     
-    /**
-     * File type corresponding to file extension.
-     */
+    /** 逻辑文件类型（yaml/text/json 等） */
+    /** File type corresponding to file extension. */
+    
     private String fileType;
     
-    /**
-     * Http Content type corresponding to file extension.
-     */
+    /** 对应 HTTP Content-Type 头 */
+    /** Http Content type corresponding to file extension. */
+    
     private String contentType;
     
     FileTypeEnum(String fileType) {
@@ -101,10 +115,10 @@ public enum FileTypeEnum {
     }
     
     /**
-     * Get the corresponding FileTypeEnum by file extension or fileType. If not found FileTypeEnum.TEXT is returned
+     * 按扩展名或类型名解析枚举；未匹配时默认 {@link #TEXT}。
      *
      * @param extOrFileType file extension or fileType
-     * @return
+     * @return 匹配的 FileTypeEnum，或 TEXT
      */
     public static FileTypeEnum getFileTypeEnumByFileExtensionOrFileType(String extOrFileType) {
         if (StringUtils.isNotBlank(extOrFileType)) {

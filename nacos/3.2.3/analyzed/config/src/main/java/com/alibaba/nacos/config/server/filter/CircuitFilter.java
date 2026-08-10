@@ -47,6 +47,8 @@ import java.util.List;
 import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
 
 /**
+ * 嵌入式 Raft 存储熔断过滤器：节点未入组或触发降级时拒绝写请求，
+ * 防止 Follower 或异常节点处理一致性写操作。
  * If the embedded distributed storage is enabled, all requests are routed to the Leader node for processing, and the
  * maximum number of forwards for a single request cannot exceed three.
  *
@@ -54,8 +56,10 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
  */
 public class CircuitFilter implements Filter {
     
+    /** Raft 数据库不可恢复错误触发的降级标志 */
     private volatile boolean isDowngrading = false;
     
+    /** 本节点已加入 Raft 组且可对外提供服务 */
     private volatile boolean isOpenService = false;
     
     @Autowired
@@ -64,6 +68,7 @@ public class CircuitFilter implements Filter {
     @Autowired
     private CPProtocol protocol;
     
+    /** 初始化：订阅集群成员与 Raft 错误事件 */
     @PostConstruct
     protected void init() {
         listenerSelfInCluster();
@@ -84,8 +89,7 @@ public class CircuitFilter implements Filter {
         }
         
         try {
-            // If an unrecoverable exception occurs on this node, the write request operation shall not be processed
-            // This is a very important warning message !!!
+            // 本节点发生不可恢复异常时拒绝写请求（重要告警场景）
             if (isDowngrading) {
                 resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE,
                     "Unable to process the request at this time: System triggered degradation");
@@ -107,6 +111,7 @@ public class CircuitFilter implements Filter {
         
     }
     
+    /** 订阅 CONFIG Raft 组成员变更，判断本节点是否在 peers 中 */
     private void listenerSelfInCluster() {
         protocol.protocolMetaData().subscribe(PersistenceConstant.CONFIG_MODEL_RAFT_GROUP,
             MetadataKey.RAFT_GROUP_MEMBER, o -> {
@@ -122,19 +127,18 @@ public class CircuitFilter implements Filter {
                 final Member self = memberManager.getSelf();
                 final String raftAddress =
                     self.getIp() + ":" + self.getExtendVal(MemberMetaDataConstants.RAFT_PORT);
-                // Only when you are in the cluster and the current Leader is
-                // elected can you provide external services
+                // 仅当本节点地址在 Raft 成员列表中时才开放对外服务
                 isOpenService = peers.contains(raftAddress);
             });
     }
     
+    /** 注册 RaftDbError/Recover 事件，控制 isDowngrading 开关 */
     private void registerSubscribe() {
         NotifyCenter.registerSubscriber(new SmartSubscriber() {
             
             @Override
             public void onEvent(Event event) {
-                // @JustForTest
-                // This event only happens in the case of unit tests
+                // @JustForTest — 单元测试中模拟 Raft 恢复事件
                 if (event instanceof RaftDbErrorRecoverEvent) {
                     isDowngrading = false;
                     return;

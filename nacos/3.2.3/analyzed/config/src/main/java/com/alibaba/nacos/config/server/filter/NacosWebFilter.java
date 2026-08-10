@@ -30,20 +30,24 @@ import java.io.IOException;
 import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
 
 /**
+ * Web 编码过滤器：统一请求/响应 UTF-8 字符集，
+ * 并在 init 时缓存 ServletContext 根路径供测试与静态资源使用。
  * Web encode filter.
  *
  * @author Nacos
  */
 public class NacosWebFilter implements Filter {
     
+    /** 缓存的 Web 应用根路径（realPath） */
     private static String webRootPath;
     
+    /** 获取缓存的 Web 根路径 */
     public static String rootPath() {
         return webRootPath;
     }
     
     /**
-     * Easy for testing.
+     * 测试用：手动设置 Web 根路径。
      *
      * @param path web path.
      */
@@ -51,12 +55,16 @@ public class NacosWebFilter implements Filter {
         webRootPath = path;
     }
     
+    /** 初始化时从 ServletContext 读取 realPath 并缓存 */
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         ServletContext ctx = filterConfig.getServletContext();
         setWebRootPath(ctx.getRealPath("/"));
     }
     
+    /**
+     * 设置请求 UTF-8 编码与 JSON 响应 Content-Type，继续过滤链。
+     */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
         throws IOException, ServletException {

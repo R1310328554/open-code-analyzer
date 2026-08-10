@@ -28,21 +28,31 @@ import static com.alibaba.nacos.sys.env.EnvUtil.FUNCTION_MODE_CONFIG;
 import static com.alibaba.nacos.sys.env.EnvUtil.FUNCTION_MODE_MICROSERVICE;
 
 /**
+ * 配置模块启用过滤器：按 {@code nacos.functionMode} 决定是否在 Spring 扫描中排除
+ * {@code com.alibaba.nacos.config.server} 包下组件。
  * Config module enabled filter by spring packages scan.
  *
  * @author xiweng.yy
  */
 public class ConfigEnabledFilter implements NacosPackageExcludeFilter {
     
+    /** 返回配置模块根包名，供 Nacos 包扫描排除逻辑匹配 */
     @Override
     public String getResponsiblePackagePrefix() {
         return Config.class.getPackage().getName();
     }
     
+    /**
+     * 非 config/microservice/ai 模式时排除配置模块类。
+     *
+     * @param className       待扫描类全名
+     * @param annotationNames 类上注解名集合
+     * @return 是否从扫描中排除
+     */
     @Override
     public boolean isExcluded(String className, Set<String> annotationNames) {
         String functionMode = EnvUtil.getFunctionMode();
-        // When not specified config mode or specified all mode, the config module not start and load.
+        // 未指定 functionMode 时不排除（默认加载配置模块）
         if (StringUtils.isEmpty(functionMode)) {
             return false;
         }

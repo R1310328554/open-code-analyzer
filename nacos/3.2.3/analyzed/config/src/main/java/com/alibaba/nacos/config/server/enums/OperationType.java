@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.enums;
 
 /**
+ * 配置变更操作类型枚举，持久化与审计日志中标识增删改。
  * Operation type enum.
  *
  * @author dirtybit
@@ -24,33 +25,38 @@ package com.alibaba.nacos.config.server.enums;
 public enum OperationType {
     
     /**
+     * 新增配置（I）。
      * Insert.
      */
     INSERT("I"),
     
     /**
+     * 更新配置（U）。
      * Update.
      */
     UPDATE("U"),
     
     /**
+     * 删除配置（D）。
      * Delete.
      */
     DELETE("D");
     
-    /**
-     * operation type value.
-     */
+    /** 操作类型单字符编码（I/U/D） */
+    /** operation type value. */
+    
     private String value;
     
     OperationType(String value) {
         this.value = value;
     }
     
+    /** 设置操作类型编码 */
     public void setValue(String value) {
         this.value = value;
     }
     
+    /** 获取操作类型编码 */
     public String getValue() {
         return this.value;
     }

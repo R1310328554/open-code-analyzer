@@ -31,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 /**
+ * 延迟任务管理器：基于单线程引擎顺序执行 dump 等后台任务，
+ * 提供 await 阻塞、JMX 监控与 dump 队列指标上报。
  * TaskManager, is aim to process the task which is need to be done. And this class process the task by single thread to
  * ensure task should be process successfully.
  *
@@ -44,14 +46,18 @@ public final class TaskManager extends NacosDelayTaskExecuteEngine implements Ta
     
     Condition notEmpty = this.lock.newCondition();
     
+    /**
+     * 创建命名任务管理器，内部使用 32 容量延迟队列。
+     *
+     * @param name 管理器名称（亦用于 JMX ObjectName）
+     */
     public TaskManager(String name) {
         super(name, 32, LOGGER, 100L);
         this.name = name;
     }
     
-    /**
-     * Close task manager.
-     */
+    /** 关闭任务引擎，忽略 shutdown 过程中的 NacosException。Close task manager. */
+    
     public void close() {
         try {
             super.shutdown();
@@ -60,7 +66,7 @@ public final class TaskManager extends NacosDelayTaskExecuteEngine implements Ta
     }
     
     /**
-     * Await for lock.
+     * 阻塞直至任务队列为空（Condition 等待）。
      *
      * @throws InterruptedException InterruptedException.
      */
@@ -76,11 +82,11 @@ public final class TaskManager extends NacosDelayTaskExecuteEngine implements Ta
     }
     
     /**
-     * Await for lock by timeout.
+     * 带超时的队列排空等待。
      *
      * @param timeout timeout value.
      * @param unit    time unit.
-     * @return success or not.
+     * @return 是否在超时前等到队列空
      * @throws InterruptedException InterruptedException.
      */
     public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
@@ -96,12 +102,14 @@ public final class TaskManager extends NacosDelayTaskExecuteEngine implements Ta
         }
     }
     
+    /** 添加延迟任务并更新 dump 监控 gauge */
     @Override
     public void addTask(Object key, AbstractDelayTask newTask) {
         super.addTask(key, newTask);
         MetricsMonitor.getDumpTaskMonitor().set(tasks.size());
     }
     
+    /** 移除任务并更新 dump 监控 gauge */
     @Override
     public AbstractDelayTask removeTask(Object key) {
         AbstractDelayTask result = super.removeTask(key);
@@ -109,6 +117,7 @@ public final class TaskManager extends NacosDelayTaskExecuteEngine implements Ta
         return result;
     }
     
+    /** 批处理任务后刷新监控并在队列空时 signalAll */
     @Override
     protected void processTasks() {
         super.processTasks();
@@ -123,6 +132,7 @@ public final class TaskManager extends NacosDelayTaskExecuteEngine implements Ta
         }
     }
     
+    /** JMX：返回各任务类型及最后处理时间的文本摘要 */
     @Override
     public String getTaskInfos() {
         StringBuilder sb = new StringBuilder();
@@ -140,9 +150,8 @@ public final class TaskManager extends NacosDelayTaskExecuteEngine implements Ta
         return sb.toString();
     }
     
-    /**
-     * Init and register the mbean object.
-     */
+    /** 向 Platform MBeanServer 注册本 TaskManager。Init and register the mbean object. */
+    
     public void init() {
         try {
             ObjectName oName =

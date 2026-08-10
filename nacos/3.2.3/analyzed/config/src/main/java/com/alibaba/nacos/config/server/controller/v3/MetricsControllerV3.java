@@ -67,6 +67,8 @@ import static com.alibaba.nacos.api.config.remote.request.ClientConfigMetricRequ
 import static com.alibaba.nacos.api.config.remote.request.ClientConfigMetricRequest.MetricsKey.SNAPSHOT_DATA;
 
 /**
+ * 配置客户端指标 REST 控制器（V3 管理 API）。
+ * 提供集群级异步聚合与单机 gRPC 直连两种指标查询路径。
  * Metric management.
  *
  * @author Nacos
@@ -88,6 +90,8 @@ public class MetricsControllerV3 {
     }
     
     /**
+     * 集群级客户端配置指标：向各成员节点异步发起 GET，
+     * 3 秒内 CountDownLatch 聚合结果，响应含 {@code complete} 标志。
      * get client metric.
      */
     @Since("3.0.0")
@@ -144,6 +148,7 @@ public class MetricsControllerV3 {
         return Result.success(responseMap);
     }
     
+    /** 集群指标异步回调：合并成员响应或标记聚合不完整 */
     static class ClusterMetricsCallBack implements Callback<Map> {
         
         Map<String, Object> responseMap;
@@ -162,6 +167,18 @@ public class MetricsControllerV3 {
         
         Member member;
         
+        /**
+         * 构造集群指标回调，绑定共享响应 Map 与完成计数器。
+         *
+         * @param responseMap  聚合结果容器
+         * @param latch        成员请求完成计数
+         * @param complete     是否全部成功标志
+         * @param dataId       配置 dataId
+         * @param group        配置 group
+         * @param namespaceId  命名空间
+         * @param ip           客户端 IP
+         * @param member       目标集群成员
+         */
         public ClusterMetricsCallBack(Map<String, Object> responseMap, CountDownLatch latch,
             AtomicBoolean complete,
             String dataId,
@@ -176,6 +193,7 @@ public class MetricsControllerV3 {
             this.ip = ip;
         }
         
+        /** 收到成员节点成功响应时合并 data 到 responseMap */
         @Override
         public void onReceive(RestResult<Map> result) {
             if (result != null && result.ok() && result.getData() != null) {
@@ -186,6 +204,7 @@ public class MetricsControllerV3 {
             latch.countDown();
         }
         
+        /** 成员请求失败：记录日志、标记 incomplete 并 countDown */
         @Override
         public void onError(Throwable throwable) {
             complete.set(false);
@@ -195,6 +214,7 @@ public class MetricsControllerV3 {
             latch.countDown();
         }
         
+        /** 异步请求被取消时标记 incomplete */
         @Override
         public void onCancel() {
             complete.set(false);
@@ -203,6 +223,8 @@ public class MetricsControllerV3 {
     }
     
     /**
+     * 本机客户端配置指标：通过 {@link ConnectionManager} 按 IP 查找 gRPC 连接，
+     * 发送 {@link ClientConfigMetricRequest} 获取 CACHE/SNAPSHOT 等指标。
      * Get client config listener lists of subscriber in local machine.
      */
     @Since("3.0.0")

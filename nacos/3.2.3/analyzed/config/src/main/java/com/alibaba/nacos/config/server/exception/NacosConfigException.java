@@ -17,27 +17,33 @@
 package com.alibaba.nacos.config.server.exception;
 
 /**
+ * 配置模块内部运行时异常基类，用于非 API 层错误传播。
  * NacosConfigException.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class NacosConfigException extends RuntimeException {
     
+    /** 无参构造 */
     public NacosConfigException() {
     }
     
+    /** 带消息的构造 */
     public NacosConfigException(String message) {
         super(message);
     }
     
+    /** 带消息与根因的构造 */
     public NacosConfigException(String message, Throwable cause) {
         super(message, cause);
     }
     
+    /** 仅根因的构造 */
     public NacosConfigException(Throwable cause) {
         super(cause);
     }
     
+    /** 完整 {@link RuntimeException} 构造，可控制 suppression 与 stackTrace */
     public NacosConfigException(String message, Throwable cause, boolean enableSuppression,
         boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);

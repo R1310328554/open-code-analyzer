@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.manager;
 
 /**
+ * TaskManager JMX MBean 接口，暴露后台任务队列状态查询。
  * TaskManagerMBean.
  *
  * @author Nacos
@@ -24,7 +25,7 @@ package com.alibaba.nacos.config.server.manager;
 public interface TaskManagerMBean {
     
     /**
-     * Get task info.
+     * 获取各延迟任务类型及最后执行时间的文本描述。
      *
      * @return info
      */

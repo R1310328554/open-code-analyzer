@@ -39,6 +39,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 配置监听器管理 REST 控制器（V3 管理 API）。
+ * 按客户端 IP 查询订阅状态，支持命名空间过滤与全量/非全量两种聚合模式。
  * Listener management.
  *
  * @author Nacos
@@ -51,11 +53,19 @@ public class ListenerControllerV3 {
     
     private final ConfigListenerStateDelegate configListenerStateDelegate;
     
+    /**
+     * 注入配置监听器状态委托，用于聚合各连接上的订阅快照。
+     *
+     * @param configListenerStateDelegate 监听器状态查询委托
+     */
     public ListenerControllerV3(ConfigListenerStateDelegate configListenerStateDelegate) {
         this.configListenerStateDelegate = configListenerStateDelegate;
     }
     
     /**
+     * 按客户端 IP 获取订阅信息。
+     * 可选 {@code namespaceId} 过滤；{@code all=true} 返回全部配置键，
+     * 否则仅返回未指定 group 的订阅项。
      * Get subscribe information from client side.
      */
     @Since("3.0.0")

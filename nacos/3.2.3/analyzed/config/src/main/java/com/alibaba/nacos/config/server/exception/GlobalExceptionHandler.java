@@ -31,6 +31,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.io.IOException;
 
 /**
+ * 配置模块全局异常处理器：统一将业务/持久化异常转为 HTTP 响应，
+ * 并递增 {@link MetricsMonitor} 与 {@link DatasourceMetrics} 计数。
  * Global exception handler.
  *
  * @author Nacos
@@ -40,8 +42,7 @@ import java.io.IOException;
 public class GlobalExceptionHandler {
     
     /**
-     * For IllegalArgumentException, we are returning void with status code as 400, so our error-page will be used in
-     * this case.
+     * 处理参数非法异常，返回 HTTP 400 与完整堆栈消息，并递增监控计数。
      *
      * @throws IllegalArgumentException IllegalArgumentException.
      */
@@ -52,7 +53,7 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * For NacosRuntimeException.
+     * 处理 {@link NacosRuntimeException}，HTTP 状态码取 errCode。
      *
      * @throws com.alibaba.nacos.api.exception.runtime.NacosRuntimeException NacosRuntimeException.
      */
@@ -64,7 +65,7 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * For NacosException.
+     * 处理受检 {@link NacosException}，HTTP 状态码取 errCode。
      *
      * @throws NacosException NacosException.
      */
@@ -75,7 +76,7 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * For DataAccessException.
+     * 处理 Spring 数据访问异常，返回 HTTP 500 并递增 DB 异常监控。
      *
      * @throws DataAccessException DataAccessException.
      */
