@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:15:02Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/keybinding/ProofValidator.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/keybinding/ProofValidatorFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/keybinding/ProofValidatorSpi.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/keybinding/StaticAttestationKeyResolver.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/keybinding/TrustedAttestationKeyResolver.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/mappers/OID4VCContextMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/mappers/OID4VCGeneratedIdMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/mappers/OID4VCIssuedAtTimeClaimMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/mappers/OID4VCMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/mappers/OID4VCStaticClaimMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/mappers/OID4VCSubjectIdMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/mappers/OID4VCTargetRoleMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/mappers/OID4VCTypeMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/mappers/OID4VCUserAttributeMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/requiredactions/CredentialOfferActionToken.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1558,
-  "done": 4425
+  "done": 4440
 }
