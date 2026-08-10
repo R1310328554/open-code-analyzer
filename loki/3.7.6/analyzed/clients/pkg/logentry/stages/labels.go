@@ -1,5 +1,7 @@
 package stages
 
+// labels.go — 将 extracted 中的字段提升为 Prometheus 流标签。
+
 import (
 	"fmt"
 	"reflect"
@@ -17,10 +19,10 @@ const (
 	ErrInvalidLabelName      = "invalid label name: %s"
 )
 
-// LabelsConfig is a set of labels to be extracted
+// LabelsConfig 映射目标标签名到 extracted 源字段（空值则同名）。
 type LabelsConfig map[string]*string
 
-// validateLabelsConfig validates the Label stage configuration
+// validateLabelsConfig 校验标签名合法并为空 source 填默认值。
 func validateLabelsConfig(c LabelsConfig) error {
 	if c == nil {
 		return errors.New(ErrEmptyLabelStageConfig)
@@ -38,7 +40,7 @@ func validateLabelsConfig(c LabelsConfig) error {
 	return nil
 }
 
-// newLabelStage creates a new label stage to set labels from extracted data
+// newLabelStage 创建 labelStage，从 extracted 写入 labels。
 func newLabelStage(logger log.Logger, configs interface{}) (Stage, error) {
 	cfgs := &LabelsConfig{}
 	err := mapstructure.Decode(configs, cfgs)
@@ -55,21 +57,23 @@ func newLabelStage(logger log.Logger, configs interface{}) (Stage, error) {
 	}), nil
 }
 
-// labelStage sets labels from extracted data
+// labelStage 从 extracted 取值并校验后写入 labels。
 type labelStage struct {
 	cfgs   LabelsConfig
 	logger log.Logger
 }
 
-// Process implements Stage
+// Process 将 extracted 中匹配字段设为 stream labels。
 func (l *labelStage) Process(labels model.LabelSet, extracted map[string]interface{}, _ *time.Time, _ *string) {
 	processLabelsConfigs(l.logger, extracted, l.cfgs, func(_, labelName model.LabelName, labelValue model.LabelValue) {
 		labels[labelName] = labelValue
 	})
 }
 
+// labelsConsumer 回调：将 source 字段值写入目标 labelName。
 type labelsConsumer func(source, labelName model.LabelName, labelValue model.LabelValue)
 
+// processLabelsConfigs 遍历配置，转换并校验 extracted 值后调用 consumer。
 func processLabelsConfigs(logger log.Logger, extracted map[string]interface{}, configs LabelsConfig, consumer labelsConsumer) {
 	for lName, lSrc := range configs {
 		source := *lSrc

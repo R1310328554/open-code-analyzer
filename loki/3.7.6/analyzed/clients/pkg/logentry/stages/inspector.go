@@ -1,5 +1,7 @@
 package stages
 
+// inspector.go — pipeline 调试工具，彩色输出各阶段前后 Entry 差异。
+
 import (
 	"fmt"
 	"io"
@@ -9,11 +11,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+// inspector 将 stage 处理前后的 Entry 差异写入 Writer。
 type inspector struct {
 	writer    io.Writer
 	formatter *formatter
 }
 
+// newInspector 创建带可选 ANSI 高亮的检查器。
 func newInspector(writer io.Writer, disableFormatting bool) *inspector {
 	f := &formatter{
 		red:    color.New(color.FgRed),
@@ -32,6 +36,7 @@ func newInspector(writer io.Writer, disableFormatting bool) *inspector {
 	}
 }
 
+// formatter 封装红/黄/绿/粗体终端颜色。
 type formatter struct {
 	red    *color.Color
 	yellow *color.Color
@@ -46,6 +51,7 @@ func (f *formatter) disable() {
 	f.bold.DisableColor()
 }
 
+// inspect 比较 before/after，输出 stage 名称与 diff 摘要。
 func (i inspector) inspect(stageName string, before *Entry, after Entry) {
 	if before == nil {
 		fmt.Fprintln(i.writer, i.formatter.red.Sprintf("could not copy entry in '%s' stage; inspect aborted", stageName))
@@ -63,10 +69,11 @@ func (i inspector) inspect(stageName string, before *Entry, after Entry) {
 		diff = i.formatter.red.Sprintf("none")
 	}
 
-	fmt.Fprintf(i.writer, "[inspect: %s stage]: %s\n", i.formatter.bold.Sprintf("%s", stageName), diff)
+	fmt.Fprintf(i.writer, "[inspect: %s stage]: %s
+", i.formatter.bold.Sprintf("%s", stageName), diff)
 }
 
-// diffReporter is a simple custom reporter that only records differences
+// diffReporter 实现 go-cmp Reporter，收集路径级增删改。 that only records differences
 // detected during comparison.
 type diffReporter struct {
 	path cmp.Path
@@ -110,13 +117,13 @@ func (r *diffReporter) Report(rs cmp.Result) {
 	r.diffs = append(r.diffs, titleColor.Sprintf("%#v:", r.path))
 
 	if removal {
-		r.diffs = append(r.diffs, r.formatter.red.Sprintf("\t-: %v", vx))
+		r.diffs = append(r.diffs, r.formatter.red.Sprintf("	-: %v", vx))
 	}
 	if mod {
-		r.diffs = append(r.diffs, r.formatter.yellow.Sprintf("\t-: %v", vx))
+		r.diffs = append(r.diffs, r.formatter.yellow.Sprintf("	-: %v", vx))
 	}
 	if addition {
-		r.diffs = append(r.diffs, r.formatter.green.Sprintf("\t+: %v", vy))
+		r.diffs = append(r.diffs, r.formatter.green.Sprintf("	+: %v", vy))
 	}
 }
 
@@ -125,5 +132,7 @@ func (r *diffReporter) PopStep() {
 }
 
 func (r *diffReporter) String() string {
-	return fmt.Sprintf("\n%s", strings.Join(r.diffs, "\n"))
+	return fmt.Sprintf("
+%s", strings.Join(r.diffs, "
+"))
 }

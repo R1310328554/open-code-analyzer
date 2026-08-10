@@ -1,5 +1,7 @@
 package stages
 
+// extensions.go — Docker JSON 与 CRI 容器日志格式的预置 pipeline 扩展。
+
 import (
 	"strings"
 	"sync"
@@ -18,7 +20,7 @@ const (
 	MaxPartialLinesSize = 100 // Max buffer size to hold partial lines.
 )
 
-// NewDocker creates a Docker json log format specific pipeline stage.
+// NewDocker 组装 Docker JSON 日志解析 pipeline（json/labels/timestamp/output）。
 func NewDocker(logger log.Logger, registerer prometheus.Registerer) (Stage, error) {
 	stages := PipelineStages{
 		PipelineStage{
@@ -46,6 +48,7 @@ func NewDocker(logger log.Logger, registerer prometheus.Registerer) (Stage, erro
 	return NewPipeline(logger, stages, nil, registerer)
 }
 
+// cri 在 CRI 基础 pipeline 之上合并 P/F 分片日志行。
 type cri struct {
 	// bounded buffer for CRI-O Partial logs lines (identified with tag `P` till we reach first `F`)
 	partialLines map[model.Fingerprint]Entry
@@ -54,7 +57,7 @@ type cri struct {
 	lock         sync.Mutex
 }
 
-// implement Stage interface
+// Name 返回阶段名称 "cri"。
 func (c *cri) Name() string {
 	return "cri"
 }
@@ -64,7 +67,7 @@ func (*cri) Cleanup() {
 	// no-op
 }
 
-// implements Stage interface
+// Run 先运行基础 pipeline，再按 flags 合并或跳过 partial 行。
 func (c *cri) Run(entry chan Entry) chan Entry {
 	entry = c.base.Run(entry)
 
@@ -120,20 +123,21 @@ func (c *cri) Run(entry chan Entry) chan Entry {
 	return in
 }
 
+// ensureTruncateIfRequired 在启用截断时限制合并后行长度。
 func (c *cri) ensureTruncateIfRequired(e *Entry) {
 	if c.cfg.MaxPartialLineSizeTruncate && len(e.Line) > c.cfg.MaxPartialLineSize.Val() {
 		e.Line = e.Line[:c.cfg.MaxPartialLineSize.Val()]
 	}
 }
 
-// CriConfig contains the configuration for the cri stage
+// CriConfig 配置 partial 行缓存上限与单行最大字节数。
 type CriConfig struct {
 	MaxPartialLines            int              `mapstructure:"max_partial_lines"`
 	MaxPartialLineSize         flagext.ByteSize `mapstructure:"max_partial_line_size"`
 	MaxPartialLineSizeTruncate bool             `mapstructure:"max_partial_line_size_truncate"`
 }
 
-// validateCriConfig validates the CriConfig for the cri stage
+// validateCriConfig 为 max_partial_lines 设置默认值。
 func validateCriConfig(cfg *CriConfig) error {
 	if cfg.MaxPartialLines == 0 {
 		cfg.MaxPartialLines = MaxPartialLinesSize
@@ -141,12 +145,12 @@ func validateCriConfig(cfg *CriConfig) error {
 	return nil
 }
 
-// NewCRI creates a CRI format specific pipeline stage
+// NewCRI 创建带 regex 解析与 partial 合并逻辑的 CRI 阶段。
 func NewCRI(logger log.Logger, config interface{}, registerer prometheus.Registerer) (Stage, error) {
 	base := PipelineStages{
 		PipelineStage{
 			StageTypeRegex: RegexConfig{
-				Expression: "^(?s)(?P<time>\\S+?) (?P<stream>stdout|stderr) (?P<flags>\\S+?) (?P<content>.*)$",
+				Expression: "^(?s)(?P<time>\S+?) (?P<stream>stdout|stderr) (?P<flags>\S+?) (?P<content>.*)$",
 			},
 		},
 		PipelineStage{

@@ -1,5 +1,7 @@
 package stages
 
+// eventlogmessage.go — 解析 Windows 事件日志 message 字段中的 key:value 行。
+
 import (
 	"fmt"
 	"strings"
@@ -16,18 +18,20 @@ const (
 	ErrEmptyEvtLogMsgStageConfig = "empty event log message stage configuration"
 )
 
+// EventLogMessageConfig 控制 message 来源键与标签冲突策略。
 type EventLogMessageConfig struct {
 	Source            *string `mapstructure:"source"`
 	DropInvalidLabels bool    `mapstructure:"drop_invalid_labels"`
 	OverwriteExisting bool    `mapstructure:"overwrite_existing"`
 }
 
+// eventLogMessageStage 将 message 内多行键值对写入 extracted 映射。
 type eventLogMessageStage struct {
 	cfg    *EventLogMessageConfig
 	logger log.Logger
 }
 
-// Create a event log message stage, including validating any supplied configuration
+// newEventLogMessageStage 创建 event_log_message 阶段并校验 source 标签名。, including validating any supplied configuration
 func newEventLogMessageStage(logger log.Logger, config interface{}) (Stage, error) {
 	cfg, err := parseEventLogMessageConfig(config)
 	if err != nil {
@@ -44,7 +48,7 @@ func newEventLogMessageStage(logger log.Logger, config interface{}) (Stage, erro
 	}, nil
 }
 
-// Parse the event log message configuration, creating a default configuration struct otherwise
+// parseEventLogMessageConfig 解码阶段配置。, creating a default configuration struct otherwise
 func parseEventLogMessageConfig(config interface{}) (*EventLogMessageConfig, error) {
 	cfg := &EventLogMessageConfig{}
 	err := mapstructure.Decode(config, cfg)
@@ -54,7 +58,7 @@ func parseEventLogMessageConfig(config interface{}) (*EventLogMessageConfig, err
 	return cfg, nil
 }
 
-// Ensure a event log message configuration object is valid, checking that any specified source
+// validateEventLogMessageConfig 校验配置非空且 source 为合法标签名。, checking that any specified source
 // is a valid label name, and setting default values if a nil config object is provided
 func validateEventLogMessageConfig(c *EventLogMessageConfig) error {
 	if c == nil {
@@ -85,7 +89,7 @@ func (m *eventLogMessageStage) Run(in chan Entry) chan Entry {
 	return out
 }
 
-// Process a event log message from extracted with the specified key, adding additional
+// processEntry 按行解析 message，提取合法标签键值到 extracted。 with the specified key, adding additional
 // entries into the extracted map
 func (m *eventLogMessageStage) processEntry(extracted map[string]interface{}, key string) error {
 	value, ok := extracted[key]
@@ -100,7 +104,8 @@ func (m *eventLogMessageStage) processEntry(extracted map[string]interface{}, ke
 		level.Warn(m.logger).Log("msg", "invalid label value parsed", "value", value)
 		return err
 	}
-	lines := strings.Split(s, "\r\n")
+	lines := strings.Split(s, "
+")
 	for _, line := range lines {
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) < 2 {
@@ -147,7 +152,7 @@ func (*eventLogMessageStage) Cleanup() {
 	// no-op
 }
 
-// Sanitize a input string to convert it into a valid prometheus label
+// SanitizeFullLabelName 将任意字符串规整为合法 Prometheus 标签名。
 // TODO: switch to prometheus/prometheus/util/strutil/SanitizeFullLabelName
 func SanitizeFullLabelName(input string) string {
 	if len(input) == 0 {

@@ -11,11 +11,12 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-// Expirable allows checking if something has exceeded the provided maxAge based on the provided currentTime
+// Expirable 表示可依据当前时间与 maxAge 判断是否已过期的指标。
 type Expirable interface {
 	HasExpired(currentTimeSec int64, maxAgeSec int64) bool
 }
 
+// metricVec 按流指纹缓存 Prometheus 指标，支持空闲过期与标签清洗。
 type metricVec struct {
 	factory   func(labels map[string]string) prometheus.Metric
 	mtx       sync.Mutex
@@ -23,6 +24,7 @@ type metricVec struct {
 	maxAgeSec int64
 }
 
+// newMetricVec 构造 metricVec，factory 负责为每组 const labels 创建具体指标。
 func newMetricVec(factory func(labels map[string]string) prometheus.Metric, maxAgeSec int64) *metricVec {
 	return &metricVec{
 		metrics:   map[model.Fingerprint]prometheus.Metric{},
@@ -35,7 +37,7 @@ func newMetricVec(factory func(labels map[string]string) prometheus.Metric, maxA
 // see https://godoc.org/github.com/prometheus/client_golang/prometheus#hdr-Custom_Collectors_and_constant_Metrics search for "unchecked"
 func (c *metricVec) Describe(_ chan<- *prometheus.Desc) {}
 
-// Collect implements prometheus.Collector
+// Collect 导出当前缓存的全部指标，并在持有锁的情况下触发 prune。
 func (c *metricVec) Collect(ch chan<- prometheus.Metric) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
@@ -45,7 +47,7 @@ func (c *metricVec) Collect(ch chan<- prometheus.Metric) {
 	c.prune()
 }
 
-// With returns the metric associated with the labelset.
+// With 按标签指纹查找或懒创建指标，写入前会清洗非法/reserved 标签名。
 func (c *metricVec) With(labels model.LabelSet) prometheus.Metric {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
@@ -59,7 +61,7 @@ func (c *metricVec) With(labels model.LabelSet) prometheus.Metric {
 	return metric
 }
 
-// cleanLabels removes labels whose label name is not a valid prometheus one, or has the reserved `__` prefix.
+// cleanLabels 移除非法 UTF-8 标签名及以 __ 开头的 Prometheus 保留前缀。
 func cleanLabels(set model.LabelSet) model.LabelSet {
 	out := make(model.LabelSet, len(set))
 	for k, v := range set {
@@ -73,6 +75,7 @@ func cleanLabels(set model.LabelSet) model.LabelSet {
 	return out
 }
 
+// Delete 按标签指纹删除单个缓存指标，存在则返回 true。
 func (c *metricVec) Delete(labels model.LabelSet) bool {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
@@ -84,14 +87,14 @@ func (c *metricVec) Delete(labels model.LabelSet) bool {
 	return ok
 }
 
+// DeleteAll 清空全部缓存指标（通常在配置重载时使用）。
 func (c *metricVec) DeleteAll() {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	c.metrics = map[model.Fingerprint]prometheus.Metric{}
 }
 
-// prune will remove all metrics which implement the Expirable interface and have expired
-// it does not take out a lock on the metrics map so whoever calls this function should do so.
+// prune 移除实现 Expirable 且已超过 maxAgeSec 的指标；调用方需已持有 metrics 锁。
 func (c *metricVec) prune() {
 	currentTimeSec := time.Now().Unix()
 	for fp, m := range c.metrics {

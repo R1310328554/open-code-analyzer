@@ -1,5 +1,7 @@
 package stages
 
+// logfmt.go — 解析 logfmt 键值对并按 mapping 写入 extracted。
+
 import (
 	"fmt"
 	"reflect"
@@ -21,13 +23,13 @@ const (
 	ErrEmptyLogfmtStageSource = "empty source"
 )
 
-// LogfmtConfig represents a logfmt Stage configuration
+// LogfmtConfig 定义 logfmt 键到 extracted 键的 mapping 与可选 source。
 type LogfmtConfig struct {
 	Mapping map[string]string `mapstructure:"mapping"`
 	Source  *string           `mapstructure:"source"`
 }
 
-// validateLogfmtConfig validates a logfmt stage config and returns an inverse mapping of configured mapping.
+// validateLogfmtConfig 校验 mapping 非空并构建反向查找表。 and returns an inverse mapping of configured mapping.
 // Mapping inverse is done to make lookup easier. The key would be the key from parsed logfmt and
 // value would be the key with which the data in extracted map would be set.
 func validateLogfmtConfig(c *LogfmtConfig) (map[string]string, error) {
@@ -55,14 +57,14 @@ func validateLogfmtConfig(c *LogfmtConfig) (map[string]string, error) {
 	return inverseMapping, nil
 }
 
-// logfmtStage sets extracted data using logfmt parser
+// logfmtStage 扫描 logfmt 记录，仅提取 mapping 中配置的键。
 type logfmtStage struct {
 	cfg            *LogfmtConfig
 	inverseMapping map[string]string
 	logger         log.Logger
 }
 
-// newLogfmtStage creates a new logfmt pipeline stage from a config.
+// newLogfmtStage 解析配置并预计算 inverseMapping。
 func newLogfmtStage(logger log.Logger, config interface{}) (Stage, error) {
 	cfg, err := parseLogfmtConfig(config)
 	if err != nil {
@@ -92,7 +94,7 @@ func parseLogfmtConfig(config interface{}) (*LogfmtConfig, error) {
 	return cfg, nil
 }
 
-// Process implements Stage
+// Process 从 entry 或 extracted source 读取 logfmt 并填充字段。
 func (j *logfmtStage) Process(_ model.LabelSet, extracted map[string]interface{}, _ *time.Time, entry *string) {
 	// If a source key is provided, the logfmt stage should process it
 	// from the extracted map, otherwise should fallback to the entry

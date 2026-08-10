@@ -1,5 +1,7 @@
 package stages
 
+// geoip.go — 基于 MaxMind GeoIP2 数据库为 IP enrich 地理/ASN 标签。
+
 import (
 	"fmt"
 	"net"
@@ -22,6 +24,7 @@ const (
 	ErrEmptyDBTypeGeoIPStageConfig = "db type should be either city or asn"
 )
 
+// GeoIPFields 枚举 City 数据库可导出的地理字段类型。
 type GeoIPFields int
 
 const (
@@ -48,13 +51,14 @@ var fields = map[GeoIPFields]string{
 	SUBDIVISIONCODE: "geoip_subdivision_code",
 }
 
-// GeoIPConfig represents GeoIP stage config
+// GeoIPConfig 指定数据库路径、IP 来源字段与 db_type（city/asn）。
 type GeoIPConfig struct {
 	DB     string  `mapstructure:"db"`
 	Source *string `mapstructure:"source"`
 	DBType string  `mapstructure:"db_type"`
 }
 
+// validateGeoIPConfig 校验 GeoIP 阶段必填项。
 func validateGeoIPConfig(c *GeoIPConfig) error {
 	if c == nil {
 		return errors.New(ErrEmptyGeoIPStageConfig)
@@ -75,6 +79,7 @@ func validateGeoIPConfig(c *GeoIPConfig) error {
 	return nil
 }
 
+// newGeoIPStage 打开 GeoIP 数据库并构造 geoIPStage。
 func newGeoIPStage(logger log.Logger, configs interface{}) (Stage, error) {
 	cfgs := &GeoIPConfig{}
 	err := mapstructure.Decode(configs, cfgs)
@@ -99,13 +104,14 @@ func newGeoIPStage(logger log.Logger, configs interface{}) (Stage, error) {
 	}, nil
 }
 
+// geoIPStage 在 pipeline 结束时关闭 GeoIP 数据库。
 type geoIPStage struct {
 	logger log.Logger
 	db     *geoip2.Reader
 	cfgs   *GeoIPConfig
 }
 
-// Run implements Stage
+// Run 对每条日志解析 IP 并写入 labels。
 func (g *geoIPStage) Run(in chan Entry) chan Entry {
 	out := make(chan Entry)
 	go func() {
@@ -129,6 +135,7 @@ func (*geoIPStage) Cleanup() {
 	// no-op
 }
 
+// process 从 extracted 取 IP，按 db_type 查询并填充 labels。
 func (g *geoIPStage) process(labels model.LabelSet, extracted map[string]interface{}, _ *time.Time, _ *string) {
 	var ip net.IP
 	if g.cfgs.Source != nil {
@@ -190,6 +197,7 @@ func (g *geoIPStage) close() {
 	}
 }
 
+// populateLabelsWithCityData 将 City 记录字段映射到 geoip_* 标签。
 func (g *geoIPStage) populateLabelsWithCityData(labels model.LabelSet, record *geoip2.City) {
 	for field, label := range fields {
 		switch field {
@@ -251,6 +259,7 @@ func (g *geoIPStage) populateLabelsWithCityData(labels model.LabelSet, record *g
 	}
 }
 
+// populateLabelsWithASNData 写入 ASN 编号与组织名称标签。
 func (g *geoIPStage) populateLabelsWithASNData(labels model.LabelSet, record *geoip2.ASN) {
 	autonomousSystemNumber := record.AutonomousSystemNumber
 	autonomousSystemOrganization := record.AutonomousSystemOrganization

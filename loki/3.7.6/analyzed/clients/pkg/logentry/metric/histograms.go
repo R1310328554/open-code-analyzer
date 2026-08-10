@@ -8,15 +8,18 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// HistogramConfig 定义 histogram 观测值来源与自定义 bucket 边界。
 type HistogramConfig struct {
 	Value   *string   `mapstructure:"value"`
 	Buckets []float64 `mapstructure:"buckets"`
 }
 
+// validateHistogramConfig 当前无额外约束，预留扩展校验入口。
 func validateHistogramConfig(_ *HistogramConfig) error {
 	return nil
 }
 
+// parseHistogramConfig 将 pipeline 配置解码为 HistogramConfig。
 func parseHistogramConfig(config interface{}) (*HistogramConfig, error) {
 	cfg := &HistogramConfig{}
 	err := mapstructure.Decode(config, cfg)
@@ -26,13 +29,13 @@ func parseHistogramConfig(config interface{}) (*HistogramConfig, error) {
 	return cfg, nil
 }
 
-// Histograms is a vector of histograms for a each log stream.
+// Histograms 为每个日志流维护独立的 Histogram 指标向量。
 type Histograms struct {
 	*metricVec
 	Cfg *HistogramConfig
 }
 
-// NewHistograms creates a new histogram vec.
+// NewHistograms 创建带 bucket 配置与空闲过期策略的 Histogram 向量。
 func NewHistograms(name, help string, config interface{}, maxIdleSec int64) (*Histograms, error) {
 	cfg, err := parseHistogramConfig(config)
 	if err != nil {
@@ -57,11 +60,12 @@ func NewHistograms(name, help string, config interface{}, maxIdleSec int64) (*Hi
 	}, nil
 }
 
-// With returns the histogram associated with a stream labelset.
+// With 根据流标签集返回对应的 Histogram 实例。
 func (h *Histograms) With(labels model.LabelSet) prometheus.Histogram {
 	return h.metricVec.With(labels).(prometheus.Histogram)
 }
 
+// expiringHistogram 包装 prometheus.Histogram，Observe 时刷新最后修改时间。
 type expiringHistogram struct {
 	prometheus.Histogram
 	lastModSec int64
@@ -73,7 +77,7 @@ func (h *expiringHistogram) Observe(val float64) {
 	h.lastModSec = time.Now().Unix()
 }
 
-// HasExpired implements Expirable
+// HasExpired 实现 Expirable：长时间无观测则可在 prune 时移除。
 func (h *expiringHistogram) HasExpired(currentTimeSec int64, maxAgeSec int64) bool {
 	return currentTimeSec-h.lastModSec >= maxAgeSec
 }

@@ -1,5 +1,7 @@
 package stages
 
+// limit.go — 令牌桶限速：可全局或按标签值分别限流并可选丢弃。
+
 import (
 	"context"
 	"fmt"
@@ -24,6 +26,7 @@ const (
 
 var ratelimitDropReason = "ratelimit_drop_stage"
 
+// LimitConfig 定义 rate/burst、是否 drop 及按标签分桶参数。
 type LimitConfig struct {
 	Rate              float64 `mapstructure:"rate"`
 	Burst             int     `mapstructure:"burst"`
@@ -32,6 +35,7 @@ type LimitConfig struct {
 	MaxDistinctLabels int     `mapstructure:"max_distinct_labels"`
 }
 
+// newLimitStage 创建 limitStage，按配置选择全局或分标签 Limiter。
 func newLimitStage(logger log.Logger, config interface{}, registerer prometheus.Registerer) (Stage, error) {
 	cfg := &LimitConfig{}
 
@@ -71,6 +75,7 @@ func newLimitStage(logger log.Logger, config interface{}, registerer prometheus.
 	return r, nil
 }
 
+// validateLimitConfig 校验 rate/burst 为正；按标签限流时必须 drop。
 func validateLimitConfig(cfg *LimitConfig) error {
 	if cfg.Rate <= 0 || cfg.Burst <= 0 {
 		return errors.Errorf(ErrLimitStageInvalidRateOrBurst)
@@ -82,7 +87,7 @@ func validateLimitConfig(cfg *LimitConfig) error {
 	return nil
 }
 
-// limitStage applies Label matchers to determine if the include stages should be run
+// limitStage 在 shouldThrottle 为 true 时丢弃或阻塞日志。
 type limitStage struct {
 	logger             log.Logger
 	cfg                *LimitConfig
@@ -107,6 +112,7 @@ func (m *limitStage) Run(in chan Entry) chan Entry {
 	return out
 }
 
+// shouldThrottle 按全局或标签 Limiter 判断是否应限流/丢弃。
 func (m *limitStage) shouldThrottle(labels model.LabelSet) bool {
 	if m.cfg.ByLabelName != "" {
 		labelValue, ok := labels[model.LabelName(m.cfg.ByLabelName)]
@@ -143,6 +149,7 @@ func (*limitStage) Cleanup() {
 	// no-op
 }
 
+// getDropCountByLabelMetric 注册按标签维度统计的丢弃计数。
 func getDropCountByLabelMetric(registerer prometheus.Registerer) *prometheus.CounterVec {
 	return util.RegisterCounterVec(registerer, "logentry", "dropped_lines_by_label_total",
 		"A count of all log lines dropped as a result of a pipeline stage",

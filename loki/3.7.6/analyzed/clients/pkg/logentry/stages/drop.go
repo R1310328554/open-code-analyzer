@@ -1,5 +1,7 @@
 package stages
 
+// drop.go — 按长度、时间、正则或 extracted 字段等条件丢弃整条日志。
+
 import (
 	"fmt"
 	"reflect"
@@ -31,7 +33,7 @@ var (
 	defaultSeparator  = ";"
 )
 
-// DropConfig contains the configuration for a dropStage
+// DropConfig 定义 drop 阶段的过滤条件与计数器 reason。
 type DropConfig struct {
 	DropReason *string     `mapstructure:"drop_counter_reason"`
 	Source     interface{} `mapstructure:"source"`
@@ -46,7 +48,7 @@ type DropConfig struct {
 	longerThan flagext.ByteSize
 }
 
-// validateDropConfig validates the DropConfig for the dropStage
+// validateDropConfig 校验至少配置一种丢弃条件，并编译正则/解析时长。
 func validateDropConfig(cfg *DropConfig) error {
 	if cfg == nil ||
 		(cfg.Source == nil && cfg.Expression == nil && cfg.OlderThan == nil && cfg.LongerThan == nil) {
@@ -103,7 +105,7 @@ func validateDropConfig(cfg *DropConfig) error {
 	return nil
 }
 
-// unifySourceField unify Source into a slice of strings
+// unifySourceField 将 source 配置统一为字符串切片。
 func unifySourceField(s interface{}) ([]string, error) {
 	switch s := s.(type) {
 	case []interface{}:
@@ -120,7 +122,7 @@ func unifySourceField(s interface{}) ([]string, error) {
 	return nil, errors.New(ErrDropStageInvalidSource)
 }
 
-// newDropStage creates a DropStage from config
+// newDropStage 解析配置并创建 dropStage，注册丢弃计数指标。
 func newDropStage(logger log.Logger, config interface{}, registerer prometheus.Registerer) (Stage, error) {
 	cfg := &DropConfig{}
 	err := mapstructure.WeakDecode(config, cfg)
@@ -139,7 +141,7 @@ func newDropStage(logger log.Logger, config interface{}, registerer prometheus.R
 	}, nil
 }
 
-// dropStage applies Label matchers to determine if the include stages should be run
+// dropStage 根据多项 AND 条件决定是否丢弃日志行。
 type dropStage struct {
 	logger    log.Logger
 	cfg       *DropConfig
@@ -161,6 +163,7 @@ func (m *dropStage) Run(in chan Entry) chan Entry {
 	return out
 }
 
+// shouldDrop 按配置顺序逐项检查；任一条件不满足则不丢弃。
 func (m *dropStage) shouldDrop(e Entry) bool {
 	// There are many options for dropping a log and if multiple are defined it's treated like an AND condition
 	// where all drop conditions must be met to drop the log.
@@ -262,7 +265,7 @@ func (m *dropStage) shouldDrop(e Entry) bool {
 	return true
 }
 
-// Name implements Stage
+// Name 返回阶段类型 StageTypeDrop。
 func (m *dropStage) Name() string {
 	return StageTypeDrop
 }

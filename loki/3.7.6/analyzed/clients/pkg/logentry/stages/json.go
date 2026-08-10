@@ -1,5 +1,7 @@
 package stages
 
+// json.go — 用 JMESPath 从 JSON 日志或 extracted 字段提取结构化数据。
+
 import (
 	"fmt"
 	"reflect"
@@ -21,14 +23,14 @@ const (
 	ErrMalformedJSON        = "malformed json"
 )
 
-// JSONConfig represents a JSON Stage configuration
+// JSONConfig 定义 JMESPath 表达式映射与可选 source/drop_malformed。
 type JSONConfig struct {
 	Expressions   map[string]string `mapstructure:"expressions"`
 	Source        *string           `mapstructure:"source"`
 	DropMalformed bool              `mapstructure:"drop_malformed"`
 }
 
-// validateJSONConfig validates a json config and returns a map of necessary jmespath expressions.
+// validateJSONConfig 编译全部 JMESPath 表达式并校验配置非空。 and returns a map of necessary jmespath expressions.
 func validateJSONConfig(c *JSONConfig) (map[string]*jmespath.JMESPath, error) {
 	if c == nil {
 		return nil, errors.New(ErrEmptyJSONStageConfig)
@@ -59,14 +61,14 @@ func validateJSONConfig(c *JSONConfig) (map[string]*jmespath.JMESPath, error) {
 	return expressions, nil
 }
 
-// jsonStage sets extracted data using JMESPath expressions
+// jsonStage 将 JSON 解析结果按表达式写入 extracted。
 type jsonStage struct {
 	cfg         *JSONConfig
 	expressions map[string]*jmespath.JMESPath
 	logger      log.Logger
 }
 
-// newJSONStage creates a new json pipeline stage from a config.
+// newJSONStage 解析配置并预编译 JMESPath。
 func newJSONStage(logger log.Logger, config interface{}) (Stage, error) {
 	cfg, err := parseJSONConfig(config)
 	if err != nil {
@@ -107,6 +109,7 @@ func (j *jsonStage) Run(in chan Entry) chan Entry {
 	return out
 }
 
+// processEntry 解析 JSON 并对每个表达式执行 Search，类型归一后写入 extracted。
 func (j *jsonStage) processEntry(extracted map[string]interface{}, entry *string) error {
 	// If a source key is provided, the json stage should process it
 	// from the extracted map, otherwise should fallback to the entry
