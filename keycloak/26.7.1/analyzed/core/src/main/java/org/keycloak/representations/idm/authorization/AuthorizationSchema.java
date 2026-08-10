@@ -32,8 +32,12 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+/**
+ * 授权服务资源模式（schema）表示，描述受保护资源的类型定义。
+ */
 public class AuthorizationSchema {
 
+    /** 资源类型名称到 {@link ResourceType} 定义的映射。 */
     @JsonDeserialize(using = ResourceTypeDeserializer.class)
     private final Map<String, ResourceType> resourceTypes;
 
@@ -42,25 +46,26 @@ public class AuthorizationSchema {
         this.resourceTypes = resourceTypes;
     }
 
+    /** @return 不可变的资源类型映射 */
     public Map<String, ResourceType> getResourceTypes() {
         return Collections.unmodifiableMap(resourceTypes);
     }
 
-    // Custom deserializer to handle both arrays and maps
+    /** 自定义反序列化器，兼容数组与对象两种 resourceTypes JSON 格式。 */
     public static class ResourceTypeDeserializer extends JsonDeserializer<Map<String, ResourceType>> {
         @Override
         public Map<String, ResourceType> deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            // Check if the input is an array or an object
+            // 判断输入是数组还是对象
             if (parser.isExpectedStartArrayToken()) {
-                // Deserialize array of ResourceType and convert to Map
+                // 将 ResourceType 数组反序列化并转换为 Map
                 List<ResourceType> resourceTypeList = parser.readValueAs(new TypeReference<List<ResourceType>>() {});
                 return resourceTypeList.stream()
                         .collect(Collectors.toMap(ResourceType::getType, Function.identity()));
             } else if (parser.isExpectedStartObjectToken()) {
-                // Deserialize directly as a Map
+                // 直接反序列化为 Map
                 return parser.readValueAs(new TypeReference<Map<String, ResourceType>>() {});
             } else {
-                // Throw JsonMappingException for unexpected formats
+                // 非预期格式时抛出 JsonMappingException
                 throw JsonMappingException.from(parser, "Expected an array or object for resourceTypes");
             }
         }

@@ -20,25 +20,32 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 客户端 Scope（client-scope）类型授权策略的 REST 表示，按令牌中的客户端 Scope 匹配请求。
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 public class ClientScopePolicyRepresentation extends AbstractPolicyRepresentation {
 
+    /** 匹配的客户端 Scope 定义集合。 */
     private Set<ClientScopeDefinition> clientScopes;
 
+    /** @return 固定策略类型 {@code client-scope} */
     @Override
     public String getType() {
         return "client-scope";
     }
 
+    /** @return 客户端 Scope 定义集合 */
     public Set<ClientScopeDefinition> getClientScopes() {
         return clientScopes;
     }
 
+    /** @param clientScopes 客户端 Scope 定义集合 */
     public void setClientScopes(Set<ClientScopeDefinition> clientScopes) {
         this.clientScopes = clientScopes;
     }
 
+    /** 添加一个客户端 Scope（可指定是否必需）。 */
     public void addClientScope(String name, boolean required) {
         if (clientScopes == null) {
             clientScopes = new HashSet<>();
@@ -46,12 +53,16 @@ public class ClientScopePolicyRepresentation extends AbstractPolicyRepresentatio
         clientScopes.add(new ClientScopeDefinition(name, required));
     }
 
+    /** 添加一个非必需的客户端 Scope。 */
     public void addClientScope(String name) {
         addClientScope(name, false);
     }
 
+    /** 单个客户端 Scope 的定义。 */
     public static class ClientScopeDefinition {
+        /** Scope ID 或名称。 */
         private String id;
+        /** 是否为必需 Scope。 */
         private boolean required;
 
         public ClientScopeDefinition() {
@@ -63,18 +74,22 @@ public class ClientScopePolicyRepresentation extends AbstractPolicyRepresentatio
             this.required = required;
         }
 
+        /** @return Scope ID */
         public String getId() {
             return id;
         }
 
+        /** @param id Scope ID */
         public void setId(String id) {
             this.id = id;
         }
 
+        /** @return 是否必需 */
         public boolean isRequired() {
             return required;
         }
 
+        /** @param required 是否必需 */
         public void setRequired(boolean required) {
             this.required = required;
         }

@@ -18,11 +18,18 @@ package org.keycloak.representations.idm;
 
 import java.util.Map;
 
+/**
+ * 用户配置（User Profile）属性分组的元数据，描述分组名称、展示标题及附加注解。
+ */
 public class UserProfileAttributeGroupMetadata {
 
+    /** 分组内部名称标识。 */
     private String name;
+    /** 分组展示标题（UI 头部文本）。 */
     private String displayHeader;
+    /** 分组展示描述（UI 说明文本）。 */
     private String displayDescription;
+    /** 分组级自定义注解键值对。 */
     private Map<String, Object> annotations;
 
     public UserProfileAttributeGroupMetadata() {
@@ -35,19 +42,23 @@ public class UserProfileAttributeGroupMetadata {
         this.annotations = annotations;
     }
 
+    /** @return 分组名称 */
     public String getName() {
         return name;
     }
 
+    /** @return 分组展示标题 */
     public String getDisplayHeader() {
         return displayHeader;
     }
 
 
+    /** @return 分组展示描述 */
     public String getDisplayDescription() {
         return displayDescription;
     }
 
+    /** @return 分组注解映射 */
     public Map<String, Object> getAnnotations() {
         return annotations;
     }

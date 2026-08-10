@@ -20,15 +20,24 @@ package org.keycloak.representations.idm.authorization;
 import org.keycloak.representations.AccessTokenResponse;
 
 /**
+ * UMA 授权请求的响应，继承 {@link AccessTokenResponse} 并携带 RPT 升级标志。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AuthorizationResponse extends AccessTokenResponse {
 
+    /** RPT 是否已升级（包含新权限）。 */
     private boolean upgraded;
 
     public AuthorizationResponse() {
     }
 
+    /**
+     * 从已有令牌响应构造授权响应。
+     *
+     * @param response 源 AccessTokenResponse
+     * @param upgraded RPT 是否已升级
+     */
     public AuthorizationResponse(AccessTokenResponse response, boolean upgraded) {
         setToken(response.getToken());
         setTokenType("Bearer");
@@ -39,10 +48,12 @@ public class AuthorizationResponse extends AccessTokenResponse {
         this.upgraded = upgraded;
     }
 
+    /** @return RPT 是否已升级 */
     public boolean isUpgraded() {
         return upgraded;
     }
 
+    /** @param upgraded RPT 是否已升级 */
     public void setUpgraded(boolean upgraded) {
         this.upgraded = upgraded;
     }

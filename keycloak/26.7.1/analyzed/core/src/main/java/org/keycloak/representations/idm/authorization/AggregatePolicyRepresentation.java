@@ -17,10 +17,13 @@
 package org.keycloak.representations.idm.authorization;
 
 /**
+ * 聚合（aggregate）类型授权策略的 REST 表示，通过组合多个子策略并按决策策略求值。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AggregatePolicyRepresentation extends AbstractPolicyRepresentation {
 
+    /** @return 固定策略类型 {@code aggregate} */
     @Override
     public String getType() {
         return "aggregate";

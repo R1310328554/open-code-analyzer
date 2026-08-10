@@ -21,25 +21,32 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 客户端（client）类型授权策略的 REST 表示，按 OAuth 客户端 ID 匹配请求主体。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ClientPolicyRepresentation extends AbstractPolicyRepresentation {
 
+    /** 匹配的客户端 ID 集合。 */
     private Set<String> clients;
 
+    /** @return 固定策略类型 {@code client} */
     @Override
     public String getType() {
         return "client";
     }
 
+    /** @return 匹配的客户端 ID 集合 */
     public Set<String> getClients() {
         return clients;
     }
 
+    /** @param clients 匹配的客户端 ID 集合 */
     public void setClients(Set<String> clients) {
         this.clients = clients;
     }
 
+    /** 添加一个或多个客户端 ID。 */
     public void addClient(String... id) {
         if (this.clients == null) {
             this.clients = new HashSet<>();

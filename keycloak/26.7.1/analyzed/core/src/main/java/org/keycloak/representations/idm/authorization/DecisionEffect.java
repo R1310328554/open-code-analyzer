@@ -17,10 +17,14 @@
 package org.keycloak.representations.idm.authorization;
 
 /**
+ * 授权决策效果枚举，表示策略求值结果为允许或拒绝。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public enum DecisionEffect {
+    /** 允许访问。 */
     PERMIT,
+    /** 拒绝访问。 */
     DENY
 }
