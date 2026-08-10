@@ -1,3 +1,4 @@
+// llama-server 设备发现：短生命周期子进程枚举 GPU 能力与显存。
 package discover
 
 import (
@@ -20,10 +21,12 @@ import (
 	"github.com/ollama/ollama/ml"
 )
 
+// llamaServerDiscoveryWaitDelay 限制 discovery 子进程被 kill 后 Wait 的最长阻塞时间。
 // llamaServerDiscoveryWaitDelay bounds how long Wait can hang after we stop
 // the short-lived discovery subprocess.
 const llamaServerDiscoveryWaitDelay = 5 * time.Second
 
+// llamaServerDiscoverDevices 无模型启动 llama-server，捕获 stderr/stdout 设备信息。
 // llamaServerDiscoverDevices spawns llama-server briefly (without a model) to
 // discover GPU devices and their capabilities. The server prints device info
 // and system_info (including compiled CUDA architectures) on startup before
@@ -52,6 +55,7 @@ func llamaServerDiscoverDevices(ctx context.Context, libDirs []string, extraEnvs
 		slog.Debug("llama-server device discovery took", "duration", time.Since(start), "libDirs", libDirs)
 	}()
 
+	// 随机端口避免冲突；拿到 GPU 信息后即可终止进程。
 	// Use a random port to avoid conflicts. The server may start listening
 	// before it emits system_info, but we stop it as soon as we have the GPU
 	// discovery output we need.
@@ -70,6 +74,7 @@ func llamaServerDiscoverDevices(ctx context.Context, libDirs []string, extraEnvs
 
 	logutil.Trace("running llama-server for discovery", "cmd", cmd.Path, "libDirs", libDirs)
 
+	// 管道读取 stderr（设备详情与 system_info），满足条件即 kill。
 	// Capture stderr (device info + system_info) via pipe so we can
 	// read it line-by-line and kill the server as soon as we have what we need.
 	stderrPipe, err := cmd.StderrPipe()
@@ -77,6 +82,7 @@ func llamaServerDiscoverDevices(ctx context.Context, libDirs []string, extraEnvs
 		slog.Debug("llama-server discovery: failed to create stderr pipe", "error", err)
 		return nil, status, err
 	}
+	// stdout 经 StatusWriter 转发以便 trace 日志完整记录。
 	// Forward stdout through the same status writer so trace logging captures
 	// all llama-server discovery output.
 	cmd.Stdout = status
@@ -86,6 +92,7 @@ func llamaServerDiscoverDevices(ctx context.Context, libDirs []string, extraEnvs
 		return nil, status, err
 	}
 
+	// 扫描 stderr 直至出现 system_info 或超时。
 	// Read stderr until we see system_info or timeout
 	var stderrLines []string
 	gotSystemInfo := false
@@ -109,6 +116,7 @@ func llamaServerDiscoverDevices(ctx context.Context, libDirs []string, extraEnvs
 	case <-ctx.Done():
 	}
 
+	// 已收集足够信息或超时，终止 llama-server。
 	// Kill the server - we have what we need, or timed out.
 	stoppedForDiscovery := false
 	if cmd.Process != nil {
@@ -138,6 +146,7 @@ func llamaServerDiscoverDevices(ctx context.Context, libDirs []string, extraEnvs
 			"libDirs", libDirs, "lines_captured", len(stderrLines))
 	}
 
+	// 再跑 --list-devices 获取带空闲显存的 stdout 设备列表。
 	// Also run --list-devices to get the stdout device list with free memory
 	// (the brief server startup doesn't print that)
 	cmd2 := exec.CommandContext(ctx, llamaServer, "--list-devices", "--offline", "--verbose")
@@ -171,6 +180,7 @@ func llamaServerDiscoveryOutput(ctx context.Context) io.Writer {
 	return io.Discard
 }
 
+// deviceLineRegex 匹配 --list-devices stdout 中的设备行。
 // deviceLineRegex matches stdout lines like:
 //
 //	CUDA0: NVIDIA GeForce RTX 4060 Ti (16379 MiB, 14900 MiB free)
@@ -179,6 +189,7 @@ var deviceLineRegex = regexp.MustCompile(
 	`^\s+(.+?):\s+(.+?)\s+\((\d+)\s+MiB,\s+(\d+)\s+MiB\s+free\)`,
 )
 
+// cudaCCRegex 匹配 stderr 中 CUDA compute capability 行。
 // cudaCCRegex matches CUDA stderr lines like:
 //
 //	Device 0: NVIDIA GeForce GTX 1060 6GB, compute capability 6.1, VMM: yes, VRAM: 6063 MiB
@@ -186,6 +197,7 @@ var cudaCCRegex = regexp.MustCompile(
 	`Device\s+(\d+):.*compute capability\s+(\d+)\.(\d+)`,
 )
 
+// cudaArchsRegex 从 system_info 提取已编译 CUDA ARCHS 列表。
 // cudaArchsRegex matches the CUDA architecture list from system_info like:
 //
 //	CUDA : ARCHS = 750,800,860,890,900,1000,1030,1100,1200,1210
@@ -199,6 +211,7 @@ var (
 	cudaRuntimeDirRegex = regexp.MustCompile(`^cuda_v(\d+)$`)
 )
 
+// parseLlamaServerDevices 解析 discovery 合并输出为 DeviceInfo 列表。
 // parseLlamaServerDevices parses the combined output of llama-server discovery.
 // It extracts device info, ROCm gfx targets, CUDA compute capabilities, and
 // CUDA compiled architecture lists.
@@ -214,6 +227,7 @@ func parseLlamaServerDevicesWithNative(output, nativeOutput string, libDirs []st
 	// Extract per-device metadata from stderr
 	gfxByIndex := parseROCmGFXTargets(combined)
 	rocmGFXOverride := hsaOverrideGFXTarget()
+	// 原生探测的 Vulkan 枚举顺序可能与 llama-server 不同，不可按索引关联 UMA。
 	// The native probe enumerates Vulkan devices in its own order, which can
 	// differ from llama-server's, so its ggml_vulkan uma lines must not key
 	// into llama-server's device indexes.
@@ -259,6 +273,7 @@ func parseLlamaServerDevicesWithNative(output, nativeOutput string, libDirs []st
 		}
 	}
 
+	// 校验 CUDA 设备计算能力是否在已编译 ARCHS 集合中。
 	// Validate CUDA devices against compiled architectures
 	cudaArchSet := make(map[string]bool, len(cudaArchs))
 	for _, arch := range cudaArchs {
@@ -282,6 +297,7 @@ func parseLlamaServerDevicesWithNative(output, nativeOutput string, libDirs []st
 		freeMiB, _ := strconv.ParseUint(matches[4], 10, 64)
 		library := inferLibrary(name, description)
 
+		// 跳过显存为 0 的 BLAS/Accelerate 伪设备。
 		// Skip pseudo-devices like BLAS/Accelerate that report zero memory.
 		// These are CPU math libraries, not real GPUs — they shouldn't appear
 		// as inference compute devices or inflate the scheduler's GPU count.
@@ -291,6 +307,7 @@ func parseLlamaServerDevicesWithNative(output, nativeOutput string, libDirs []st
 			continue
 		}
 
+		// CUDA 设备需确认当前变体是否编译了对应计算能力。
 		// For CUDA devices, check if this variant supports the device's CC
 		if library == "CUDA" {
 			cc, ok := ccByIndex[deviceIndex]
@@ -464,6 +481,7 @@ func computeVersion(library string, deviceIndex int, gfxByIndex map[int]string, 
 	return 0, 0
 }
 
+// inferLibrary 从设备名与描述推断 CUDA/ROCm/Metal/Vulkan 库类型。
 // inferLibrary determines the GPU library type from the llama-server device name and description.
 func inferLibrary(name, description string) string {
 	combined := strings.ToLower(name + " " + description)
@@ -486,6 +504,7 @@ func isIntegratedLlamaServerDevice(library string, deviceIndex int, integratedBy
 		return true
 	}
 
+	// llama-server 无稳定后端设备类型字段，仅对 Vulkan UMA 与 Apple Metal 推断集成 GPU。
 	// llama-server discovery does not expose a stable backend device-type field,
 	// so we only infer "integrated" here for cases where the contract is strong:
 	// explicit Vulkan UMA metadata, or the single Apple Silicon Metal device.
@@ -516,5 +535,6 @@ func llamaServerBootstrapDevicesWithStatus(ctx context.Context, ollamaLibDirs []
 	return filterUnsupportedROCmDevices(devices, ollamaLibDirs), status, nil
 }
 
+// 确保 stderrPipe 被完全消费以免阻塞（编译期引用 io.Reader）。
 // Ensure stderrPipe is fully consumed to avoid blocking
 var _ io.Reader

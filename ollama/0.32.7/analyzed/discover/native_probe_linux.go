@@ -1,3 +1,4 @@
+// Linux CGO 原生 GPU 探测：dlopen GGML/CUDA/ROCm 并读取 sysfs。
 //go:build linux
 
 package discover
@@ -134,6 +135,7 @@ type dlHandle struct {
 	ptr unsafe.Pointer
 }
 
+// runPlatformNativeProbe 合并 GGML、CUDA 驱动与 ROCm sysfs 三路探测结果。
 func runPlatformNativeProbe(ctx context.Context, libDirs []string) ([]nativeProbeDevice, error) {
 	select {
 	case <-ctx.Done():
@@ -167,6 +169,7 @@ func runPlatformNativeProbe(ctx context.Context, libDirs []string) ([]nativeProb
 	return nil, cudaErr
 }
 
+// probeGGMLDevicesLinux 动态加载 ggml 后端并枚举各 backend 注册设备。
 func probeGGMLDevicesLinux(libDirs []string) ([]nativeProbeDevice, error) {
 	if len(libDirs) == 0 {
 		return nil, errors.New("no library directories provided")
@@ -246,6 +249,7 @@ func probeGGMLDevicesLinux(libDirs []string) ([]nativeProbeDevice, error) {
 	return devices, nil
 }
 
+// probeCUDADriverLinux 通过 libcuda 直接查询设备 CC、PCI 与驱动版本。
 func probeCUDADriverLinux() ([]nativeProbeDevice, error) {
 	cuda, err := dlopenFirst([]string{"libcuda.so.1", "libcuda.so"}, false)
 	if err != nil {
@@ -350,6 +354,7 @@ func probeCUDADriverLinux() ([]nativeProbeDevice, error) {
 	return devices, nil
 }
 
+// probeROCmSysfsLinux 从 KFD/DRM sysfs 读取 ROCm 设备 gfx 与集成标志。
 func probeROCmSysfsLinux() ([]nativeProbeDevice, error) {
 	sysfsDevices, err := readROCmLinuxSysfsDevices("/sys")
 	if err != nil {
@@ -357,6 +362,7 @@ func probeROCmSysfsLinux() ([]nativeProbeDevice, error) {
 	}
 
 	override := hsaOverrideGFXTarget()
+	// sysfs 为物理 KFD 顺序；ROCm 可见性环境变量重排时需仅按 PCI 合并。
 	// Sysfs stays in physical KFD order; ROCm visibility envs can reindex the
 	// backend device list, so filtered sysfs data must merge by PCI ID only.
 	backendIndex := !rocmVisibleDevicesEnvSet()
@@ -388,6 +394,7 @@ func rocmVisibleDevicesEnvSet() bool {
 	return false
 }
 
+// probeNVIDIADriverMajorLinux 通过 NVML 读取 NVIDIA 驱动主版本号。
 func probeNVIDIADriverMajorLinux() (int, error) {
 	nvml, err := dlopenFirst([]string{"libnvidia-ml.so.1", "libnvidia-ml.so"}, false)
 	if err != nil {

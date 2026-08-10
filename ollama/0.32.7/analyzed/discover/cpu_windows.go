@@ -1,3 +1,4 @@
+// Windows CPU 内存探测：GlobalMemoryStatusEx API。
 package discover
 
 import (
@@ -6,6 +7,7 @@ import (
 	"unsafe"
 )
 
+// MEMORYSTATUSEX 对应 Win32 GlobalMemoryStatusEx 结构体。
 type MEMORYSTATUSEX struct {
 	length               uint32
 	MemoryLoad           uint32
@@ -24,6 +26,7 @@ var (
 	sizeofMemoryStatusEx     = uint32(unsafe.Sizeof(MEMORYSTATUSEX{}))
 )
 
+// GetCPUMem 通过 GlobalMemoryStatusEx 获取物理内存与页面文件余量。
 func GetCPUMem() (memInfo, error) {
 	memStatus := MEMORYSTATUSEX{length: sizeofMemoryStatusEx}
 	r1, _, err := globalMemoryStatusExProc.Call(uintptr(unsafe.Pointer(&memStatus)))
@@ -33,7 +36,9 @@ func GetCPUMem() (memInfo, error) {
 	return memInfo{TotalMemory: memStatus.TotalPhys, FreeMemory: memStatus.AvailPhys, FreeSwap: memStatus.AvailPageFile}, nil
 }
 
+// IsNUMA Windows 上 ggml 不支持 NUMA，恒为 false。
 func IsNUMA() bool {
+	// ggml NUMA 支持仅限 Linux。
 	// numa support in ggml is linux only
 	return false
 }

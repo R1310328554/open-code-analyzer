@@ -1,3 +1,4 @@
+// AMD/ROCm 设备发现：gfx 目标、rocBLAS 内核校验与 Linux sysfs 集成/独显判定。
 // AMD discovery needs a small amount of backend-specific handling beyond the
 // generic llama-server device list. ROCm devices expose their real capability
 // as gfx targets, and the shipped rocBLAS kernels define which of those
@@ -23,6 +24,7 @@ import (
 	"github.com/ollama/ollama/ml"
 )
 
+// gfxTargetRegex 匹配 llama-server stderr 中的 ROCm gfx 目标行。
 // gfxTargetRegex matches ROCm stderr lines like:
 //
 //	Device 0: AMD Radeon RX 6700 XT, gfx1031 (0x1031), VMM: no, Wave Size: 32, VRAM: 12272 MiB
@@ -33,6 +35,7 @@ var gfxTargetRegex = regexp.MustCompile(
 
 var pciIDRegex = regexp.MustCompile(`^[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]$`)
 
+// parseROCmGFXTargets 从 stderr 输出提取设备索引到 gfx 目标的映射。
 func parseROCmGFXTargets(output string) map[int]string {
 	gfxByIndex := make(map[int]string)
 
@@ -47,6 +50,7 @@ func parseROCmGFXTargets(output string) map[int]string {
 	return gfxByIndex
 }
 
+// parseGFXTarget 将 gfxNNNN 字符串解析为主/次版本号。
 func parseGFXTarget(gfx string) (int, int) {
 	gfx, ok := strings.CutPrefix(gfx, "gfx")
 	if !ok || len(gfx) < 3 {
@@ -65,12 +69,15 @@ func parseGFXTarget(gfx string) (int, int) {
 	return int(major), int(minor)
 }
 
+// HSA_OVERRIDE_GFX_VERSION 可覆盖有效 HIP/rocBLAS 目标（物理 ASIC 不变）。
 // HSA_OVERRIDE_GFX_VERSION changes the effective HIP/rocBLAS target even
 // though KFD/sysfs still reports the physical ASIC.
+// hsaOverrideGFXTarget 读取环境变量 HSA_OVERRIDE_GFX_VERSION。
 func hsaOverrideGFXTarget() string {
 	return rocmGFXTargetOverride(os.Getenv("HSA_OVERRIDE_GFX_VERSION"))
 }
 
+// rocmGFXTargetOverride 将环境变量值规范化为 gfx 目标字符串。
 func rocmGFXTargetOverride(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -103,6 +110,7 @@ func rocmGFXTargetOverride(value string) string {
 		strconv.FormatUint(digits[2], 16)
 }
 
+// setROCmGFXTarget 为 ROCm 设备写入 GFXTarget 与计算能力。
 func setROCmGFXTarget(device *ml.DeviceInfo, gfx string) {
 	if gfx == "" || device.Library != "ROCm" {
 		return
@@ -111,6 +119,7 @@ func setROCmGFXTarget(device *ml.DeviceInfo, gfx string) {
 	device.ComputeMajor, device.ComputeMinor = parseGFXTarget(gfx)
 }
 
+// rocblasGFXTargets 扫描 rocblas 目录中 TensileLibrary_lazy_gfx*.dat 支持的目标。
 // rocblasGFXTargets scans the rocblas library directory for supported gfx targets
 // by looking for TensileLibrary_lazy_gfxNNNN.dat files.
 func rocblasGFXTargets(libDirs []string) map[string]bool {
@@ -129,6 +138,7 @@ func rocblasGFXTargets(libDirs []string) map[string]bool {
 	return targets
 }
 
+// rocmLinuxSysfsDevice 表示 KFD/DRM sysfs 读出的 ROCm 设备属性。
 type rocmLinuxSysfsDevice struct {
 	pciID      string
 	gfxTarget  string
@@ -136,6 +146,7 @@ type rocmLinuxSysfsDevice struct {
 	known      bool
 }
 
+// refineLinuxROCmDevices 在 Linux 上用 sysfs 细化 ROCm 设备 PCI 与集成标志。
 func refineLinuxROCmDevices(devices []ml.DeviceInfo) []ml.DeviceInfo {
 	if runtime.GOOS != "linux" {
 		return devices
@@ -144,6 +155,7 @@ func refineLinuxROCmDevices(devices []ml.DeviceInfo) []ml.DeviceInfo {
 	return devices
 }
 
+// applyLinuxROCmRefinement 将 sysfs 数据匹配到 llama-server 报告的 ROCm 设备。
 func applyLinuxROCmRefinement(devices []ml.DeviceInfo, sysfsRoot string) bool {
 	var rocmIndexes []int
 	for i, device := range devices {
@@ -215,6 +227,7 @@ func uniqueROCmSysfsDevicesByGFX(sysfsDevices []rocmLinuxSysfsDevice) map[string
 }
 
 func matchROCmLinuxSysfsDevice(device ml.DeviceInfo, index int, sysfsDevices []rocmLinuxSysfsDevice, byPCI, byGFX map[string]rocmLinuxSysfsDevice) (rocmLinuxSysfsDevice, bool) {
+	// ROCm 可见性环境变量会重排后端序号，优先用 PCI/GFX 稳定匹配。
 	// ROCm visibility envs can remap backend ordinals while sysfs stays in
 	// physical KFD order, so prefer stable identity before index fallback.
 	if device.PCIID != "" {
@@ -250,6 +263,7 @@ func applyROCmLinuxSysfsDevice(device *ml.DeviceInfo, sysfsDevice rocmLinuxSysfs
 	}
 }
 
+// readROCmLinuxSysfsDevices 遍历 KFD topology 节点读取 GPU 设备信息。
 func readROCmLinuxSysfsDevices(sysfsRoot string) ([]rocmLinuxSysfsDevice, error) {
 	nodeRoot := filepath.Join(sysfsRoot, "class", "kfd", "kfd", "topology", "nodes")
 	entries, err := os.ReadDir(nodeRoot)
@@ -285,6 +299,7 @@ func readROCmLinuxSysfsDevices(sysfsRoot string) ([]rocmLinuxSysfsDevice, error)
 	return devices, nil
 }
 
+// kfdNodeProperties 解析 KFD 节点 properties 文件字段。
 type kfdNodeProperties struct {
 	vendorID         uint64
 	deviceID         uint64
@@ -442,6 +457,7 @@ func gfxTargetFromKFDVersion(version uint64) string {
 	return "gfx" + strconv.FormatUint(major, 10) + strconv.FormatUint(minor, 16) + strconv.FormatUint(stepping, 16)
 }
 
+// filterUnsupportedROCmDevices 丢弃无匹配 rocBLAS 内核的 gfx 目标设备。
 // filterUnsupportedROCmDevices removes ROCm devices whose gfx target doesn't have
 // matching rocblas kernels bundled.
 func filterUnsupportedROCmDevices(devices []ml.DeviceInfo, libDirs []string) []ml.DeviceInfo {
@@ -475,6 +491,7 @@ func filterUnsupportedROCmDevices(devices []ml.DeviceInfo, libDirs []string) []m
 	return filtered
 }
 
+// detectOldAMDDriverWindows 检测 Windows 上过旧 AMD HIP 驱动并告警。
 func detectOldAMDDriverWindows() {
 	if runtime.GOOS != "windows" {
 		return

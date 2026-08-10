@@ -1,3 +1,4 @@
+// Linux CPU 内存探测：/proc/meminfo 与 cgroup v2 限制。
 package discover
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/ollama/ollama/format"
 )
 
+// GetCPUMem 返回系统总/可用内存，并叠加 cgroup 内存上限。
 func GetCPUMem() (memInfo, error) {
 	mem, err := getCPUMem()
 	if err != nil {
@@ -20,6 +22,7 @@ func GetCPUMem() (memInfo, error) {
 	return getCPUMemByCgroups(mem), nil
 }
 
+// getCPUMem 解析 /proc/meminfo 获取物理内存与 swap。
 func getCPUMem() (memInfo, error) {
 	var mem memInfo
 	var total, available, free, buffers, cached, freeSwap uint64
@@ -61,6 +64,7 @@ func getCPUMem() (memInfo, error) {
 	return mem, nil
 }
 
+// getCPUMemByCgroups 用 cgroup memory.max/current 覆盖容器内可见内存。
 func getCPUMemByCgroups(mem memInfo) memInfo {
 	total, err := getUint64ValueFromFile("/sys/fs/cgroup/memory.max")
 	if err == nil {
@@ -73,6 +77,7 @@ func getCPUMemByCgroups(mem memInfo) memInfo {
 	return mem
 }
 
+// getUint64ValueFromFile 读取 sysfs/cgroup 文件首行的 uint64 值。
 func getUint64ValueFromFile(path string) (uint64, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -87,6 +92,7 @@ func getUint64ValueFromFile(path string) (uint64, error) {
 	return 0, errors.New("empty file content")
 }
 
+// IsNUMA 检测是否存在多个 physical_package_id（NUMA 节点）。
 func IsNUMA() bool {
 	ids := map[string]any{}
 	packageIds, _ := filepath.Glob("/sys/devices/system/cpu/cpu*/topology/physical_package_id")

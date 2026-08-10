@@ -1,3 +1,4 @@
+// SentencePiece 词表：解析 tokenizer.model 与附加特殊 token。
 package convert
 
 import (
@@ -16,6 +17,7 @@ import (
 	"github.com/ollama/ollama/convert/sentencepiece"
 )
 
+// parseSentencePiece 从 protobuf 模型与 added_tokens.json 构建 llama 词表。
 func parseSentencePiece(fsys fs.FS) (*Vocabulary, error) {
 	slog.Debug("using spm vocabulary")
 
@@ -48,6 +50,7 @@ func parseSentencePiece(fsys fs.FS) (*Vocabulary, error) {
 		default:
 			tt := int32(sentencepiece.ModelProto_SentencePiece_NORMAL)
 
+			// 临时修复 Gemma3 错误 SPM 配置中的特殊 token 类型。
 			// temporary fix to handle gemma3 broken configs
 			// TODO(parthsareen): allow reading of tokenizer.json to allow managing special tokens when using spm
 			if slices.Contains([]string{"<end_of_turn>", "<start_of_turn>", "<start_function_declaration>", "<end_function_declaration>", "<start_function_call>", "<end_function_call>", "<start_function_response>", "<end_function_response>", "<escape>"}, piece.GetPiece()) {
@@ -112,6 +115,7 @@ func parseSentencePiece(fsys fs.FS) (*Vocabulary, error) {
 	return &v, nil
 }
 
+// specialToken 表示 special_tokens_map.json 中的附加 token。
 type specialToken struct {
 	Content    string `json:"content"`
 	Lstrip     bool   `json:"lstrip"`
@@ -120,6 +124,7 @@ type specialToken struct {
 	SingleWord bool   `json:"single_word"`
 }
 
+// parseAdditionalSpecialTokens 读取 additional_special_tokens 列表。
 func parseAdditionalSpecialTokens(fsys fs.FS) ([]specialToken, error) {
 	f, err := fsys.Open("special_tokens_map.json")
 	if errors.Is(err, os.ErrNotExist) {
@@ -146,6 +151,7 @@ func parseAdditionalSpecialTokens(fsys fs.FS) ([]specialToken, error) {
 		}
 	case []any:
 		for _, s := range st {
+			// 通过 JSON 往返解析对象形式的特殊 token。
 			// marshal and unmarshal the object to get the special token
 			tMap := s.(map[string]any)
 			data, err := json.Marshal(tMap)

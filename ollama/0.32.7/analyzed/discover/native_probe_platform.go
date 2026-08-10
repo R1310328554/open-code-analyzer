@@ -1,3 +1,4 @@
+// 原生探测共享工具：GGML 库路径解析与后端 so/dll 发现。
 //go:build (linux && cgo) || windows
 
 package discover
@@ -18,10 +19,12 @@ const (
 	ggmlBackendDeviceTypeIGPU = 2
 )
 
+// ggmlDeviceTypeIntegrated 判断 GGML 设备类型是否为集成 GPU。
 func ggmlDeviceTypeIntegrated(deviceType int32) bool {
 	return deviceType == ggmlBackendDeviceTypeIGPU
 }
 
+// ggmlProbeLibraryName 将 GGML backend 注册名规范化为 CUDA/ROCm 等。
 func ggmlProbeLibraryName(name string) string {
 	switch strings.ToLower(name) {
 	case "cuda":
@@ -37,6 +40,7 @@ func ggmlProbeLibraryName(name string) string {
 	}
 }
 
+// ggmlLibraryFile 解析 libggml-*.so 或 *.dll 的实际路径（含版本后缀）。
 func ggmlLibraryFile(dir, name string) string {
 	if runtime.GOOS == "windows" {
 		return filepath.Join(dir, name+".dll")
@@ -54,6 +58,7 @@ func ggmlLibraryFile(dir, name string) string {
 	return exact
 }
 
+// nativeProbeBackendFiles 在库目录中 glob ggml-cuda/hip/vulkan 后端文件。
 func nativeProbeBackendFiles(libDirs []string) []string {
 	var files []string
 	seen := map[string]bool{}
@@ -88,6 +93,7 @@ func nativeProbeBackendPatterns(dir string) []string {
 	}
 }
 
+// nativeProbeHasCUDA 判断库目录是否包含 CUDA 后端。
 func nativeProbeHasCUDA(libDirs []string) bool {
 	for _, dir := range libDirs {
 		if strings.Contains(strings.ToLower(filepath.Base(dir)), "cuda") {
@@ -102,6 +108,7 @@ func nativeProbeHasCUDA(libDirs []string) bool {
 	return false
 }
 
+// nativeProbeHasROCm 判断库目录是否包含 ROCm/HIP 后端。
 func nativeProbeHasROCm(libDirs []string) bool {
 	for _, dir := range libDirs {
 		base := strings.ToLower(filepath.Base(dir))
@@ -118,6 +125,7 @@ func nativeProbeHasROCm(libDirs []string) bool {
 	return false
 }
 
+// parseNVIDIADriverMajor 从 NVML 驱动版本字符串解析主版本号。
 func parseNVIDIADriverMajor(version string) (int, error) {
 	version = strings.TrimSpace(version)
 	if version == "" {

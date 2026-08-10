@@ -1,3 +1,4 @@
+// Tokenizer 解析：从 HuggingFace tokenizer 文件构建 GGUF 词表与特殊 token。
 package convert
 
 import (
@@ -24,6 +25,7 @@ const (
 	tokenTypeByte
 )
 
+// Tokenizer 聚合词表、BPE 合并规则、预处理与聊天模板。
 type Tokenizer struct {
 	*Vocabulary
 	SpecialVocabulary []*SpecialVocabulary
@@ -33,6 +35,7 @@ type Tokenizer struct {
 	Template string
 }
 
+// parseTokenizer 读取 tokenizer.json / config / generation_config 构建 Tokenizer。
 func parseTokenizer(fsys fs.FS, specialTokenTypes []string) (*Tokenizer, error) {
 	v, err := parseVocabulary(fsys)
 	if err != nil {
@@ -61,8 +64,11 @@ func parseTokenizer(fsys fs.FS, specialTokenTypes []string) (*Tokenizer, error) 
 		}
 
 		if len(tt.Model.Merges) == 0 {
-			// noop; merges is empty
+			// merges 为空则跳过。
+			// 文件不存在则跳过。
+		// noop; merges is empty
 		} else if err := json.Unmarshal(tt.Model.Merges, &t.Merges); err == nil {
+			// merges 为 []string 格式。
 			// noop; merges is []string
 		} else if merges, err := func() ([][]string, error) {
 			var merges [][]string
@@ -85,7 +91,8 @@ func parseTokenizer(fsys fs.FS, specialTokenTypes []string) (*Tokenizer, error) 
 			switch pt.Type {
 			case "Split":
 				if pt.Pattern.Regex != "" {
-					// create a checksum of all Split pretokenizers which should be sufficient
+					// 对 Split 预分词器正则做 SHA256 以识别 pretokenizer 类型。
+				// create a checksum of all Split pretokenizers which should be sufficient
 					// to identify the pretokenizer
 					sha256sum.Write([]byte(pt.Pattern.Regex))
 				}
@@ -106,6 +113,7 @@ func parseTokenizer(fsys fs.FS, specialTokenTypes []string) (*Tokenizer, error) 
 		case "b92c0824a58e1d8dc3221cf3e12c433c3a86f57e46d57229993489f0798e7702":
 			t.Pre = "laguna"
 		case "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855":
+			// 空 pretokenizer，保持 default。
 			// noop, empty pretokenizer
 		default:
 			slog.Warn("unknown pretokenizer, using default", "digest", digest)
@@ -207,6 +215,7 @@ func parseTokenizer(fsys fs.FS, specialTokenTypes []string) (*Tokenizer, error) 
 	return t, nil
 }
 
+// tokenizer 映射 tokenizer.json 的 JSON 结构。
 type tokenizer struct {
 	AddedTokens []token `json:"added_tokens"`
 	Model       struct {
@@ -230,6 +239,7 @@ type tokenizer struct {
 	} `json:"pre_tokenizer"`
 }
 
+// token 表示词表中的一个 token 条目。
 type token struct {
 	ID          int    `json:"id"`
 	Content     string `json:"content"`
@@ -237,6 +247,7 @@ type token struct {
 	UserDefined bool
 }
 
+// Vocabulary 存储 GGUF 词表字符串、分数与类型。
 type Vocabulary struct {
 	Model  string
 	Tokens []string
@@ -244,6 +255,7 @@ type Vocabulary struct {
 	Types  []int32
 }
 
+// parseVocabularyFromTokenizer 从 tokenizer.json 构建 GPT-2 风格词表。
 func parseVocabularyFromTokenizer(fsys fs.FS) (*Vocabulary, error) {
 	f, err := fsys.Open("tokenizer.json")
 	if err != nil {
@@ -288,6 +300,7 @@ func parseVocabularyFromTokenizer(fsys fs.FS) (*Vocabulary, error) {
 	return &v, nil
 }
 
+// parseVocabulary 按 tokenizer.model 或 tokenizer.json 自动选择解析器。
 func parseVocabulary(fsys fs.FS) (*Vocabulary, error) {
 	patterns := []struct {
 		Pattern string
@@ -310,20 +323,24 @@ func parseVocabulary(fsys fs.FS) (*Vocabulary, error) {
 	return nil, errors.New("unknown tokenizer format")
 }
 
+// SpecialVocabulary 描述 bos/eos 等特殊 token 及其 GGUF 语义。
 type SpecialVocabulary struct {
 	Type     string
 	ID       int
 	Content  string
 	AddToken bool
+	// AddTokenSet 标记 add_*_token 是否在 config 中显式设置（影响 GGUF 语义）。
 	// AddTokenSet tracks whether tokenizer_config.json explicitly defined the
 	// add_*_token setting. Missing and explicit false have different GGUF
 	// semantics for some tokenizers.
 	AddTokenSet bool
 
+	// IDs 由 generation_config.json 的 *_token_id 列表填充。
 	// IDs is populated by generation_config.json
 	IDs []int32
 }
 
+// Key 将特殊 token 类型映射为 GGUF 元数据键名。
 func (sv SpecialVocabulary) Key() string {
 	switch t := sv.Type; t {
 	case "bos", "eos", "cls", "mask":

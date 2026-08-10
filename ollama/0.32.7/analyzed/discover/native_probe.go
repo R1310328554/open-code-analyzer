@@ -1,3 +1,4 @@
+// 原生 GPU 探测：独立子进程加载 GGML/驱动库，避免拖垮主进程。
 package discover
 
 import (
@@ -16,15 +17,18 @@ import (
 	"github.com/ollama/ollama/ml"
 )
 
+// 原生 GPU 发现在短生命周期 Ollama 子进程中运行，stdout 输出 JSON、stderr 供诊断。
 // Native GPU discovery runs in a short-lived Ollama subprocess so loading GGML
 // and driver libraries cannot crash the main server process. The subprocess
 // keeps stdout reserved for JSON and lets GGML's default logger write to
 // stderr; the parent captures that stderr for trace/debug diagnostics.
 const nativeProbeTimeout = 15 * time.Second
 
+// nativeProbeDevice 表示单块 GPU 的原生探测结果。
 type nativeProbeDevice struct {
 	Library string `json:"library"`
 	Index   int    `json:"index"`
+	// IndexMatchesBackend 表示 Index 与 llama-server 可见设备顺序一致，可安全关联。
 	// IndexMatchesBackend means Index is in the same visible-device order that
 	// llama-server reports, so it is safe to correlate when PCI ID is missing.
 	IndexMatchesBackend bool   `json:"index_matches_backend,omitempty"`
@@ -43,6 +47,7 @@ type nativeProbeDevice struct {
 	GFXTarget           string `json:"gfx_target,omitempty"`
 }
 
+// nativeProbeResult 为 gpu-discover 子命令的 JSON 输出。
 type nativeProbeResult struct {
 	Devices []nativeProbeDevice `json:"devices"`
 }
@@ -66,6 +71,7 @@ type ggmlBackendDevProps struct {
 	_           [4]byte
 }
 
+// discoverNativeDevices 启动 ollama gpu-discover 子进程并解析 JSON 设备列表。
 func discoverNativeDevices(ctx context.Context, llamaServer string, libDirs []string, extraEnvs map[string]string) ([]nativeProbeDevice, string, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		return nil, "", nil
@@ -105,6 +111,7 @@ func discoverNativeDevices(ctx context.Context, llamaServer string, libDirs []st
 	return result.Devices, stderr.String(), nil
 }
 
+// RunNativeProbeCommand 实现 gpu-discover CLI，将探测结果写入 out。
 func RunNativeProbeCommand(ctx context.Context, libDirs []string, out io.Writer) error {
 	if len(libDirs) == 0 {
 		libDirs = []string{ml.LibOllamaPath}
@@ -122,6 +129,7 @@ func runNativeProbe(ctx context.Context, libDirs []string) ([]nativeProbeDevice,
 	return runPlatformNativeProbe(ctx, libDirs)
 }
 
+// mergeNativeProbeDevices 按 PCI/索引合并 GGML、CUDA 与 ROCm 探测结果。
 func mergeNativeProbeDevices(base, supplement []nativeProbeDevice) []nativeProbeDevice {
 	if len(base) == 0 {
 		var out []nativeProbeDevice
@@ -218,6 +226,7 @@ func nativeProbeLibraryIndexExists(devices []nativeProbeDevice, target nativePro
 	return false
 }
 
+// nativeProbeByLibraryIndex 按库类型与后端索引索引原生探测设备。
 func nativeProbeByLibraryIndex(devices []nativeProbeDevice) map[string]map[int]nativeProbeDevice {
 	out := map[string]map[int]nativeProbeDevice{}
 	for _, dev := range devices {
@@ -251,6 +260,7 @@ func normalizeNativeProbeLibrary(library string) string {
 	}
 }
 
+// logNativeProbeFailure 以 Debug 级别记录原生探测失败与 stderr。
 func logNativeProbeFailure(err error, stderr string, libDirs []string) {
 	if err == nil {
 		return
