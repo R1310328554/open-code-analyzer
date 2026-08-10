@@ -15,23 +15,8 @@
     "common/src/main/java/io/netty/util/internal/VarHandleFactory.java",
     "common/src/main/java/io/netty/util/internal/VarHandleReferenceCountUpdater.java",
     "common/src/main/java/io/netty/util/internal/logging/AbstractInternalLogger.java",
-    "common/src/main/java/io/netty/util/internal/logging/CommonsLogger.java",
-    "common/src/main/java/io/netty/util/internal/logging/CommonsLoggerFactory.java",
-    "common/src/main/java/io/netty/util/internal/logging/FormattingTuple.java",
-    "common/src/main/java/io/netty/util/internal/logging/InternalLogLevel.java",
-    "common/src/main/java/io/netty/util/internal/logging/InternalLogger.java",
-    "common/src/main/java/io/netty/util/internal/logging/InternalLoggerFactory.java",
-    "common/src/main/java/io/netty/util/internal/logging/JdkLogger.java",
-    "common/src/main/java/io/netty/util/internal/logging/JdkLoggerFactory.java",
-    "common/src/main/java/io/netty/util/internal/logging/LocationAwareSlf4JLogger.java",
-    "common/src/main/java/io/netty/util/internal/logging/Log4J2Logger.java",
-    "common/src/main/java/io/netty/util/internal/logging/Log4J2LoggerFactory.java",
-    "common/src/main/java/io/netty/util/internal/logging/Log4JLogger.java",
-    "common/src/main/java/io/netty/util/internal/logging/Log4JLoggerFactory.java",
-    "common/src/main/java/io/netty/util/internal/logging/MessageFormatter.java",
-    "common/src/main/java/io/netty/util/internal/logging/Slf4JLogger.java",
-    "common/src/main/java/io/netty/util/internal/logging/Slf4JLoggerFactory.java"
+    "common/src/main/java/io/netty/util/internal/logging/CommonsLogger.java"
   ],
   "remaining_pending": 668,
-  "done": 1230
+  "done": 1245
 }
