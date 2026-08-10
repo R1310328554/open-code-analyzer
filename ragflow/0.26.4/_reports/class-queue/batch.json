@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:46:00Z",
-  "files": [
-    "internal/cli/dev_parser.go",
-    "internal/cli/filesystem/base.go",
-    "internal/cli/filesystem/dataset.go",
-    "internal/cli/filesystem/engine.go",
-    "internal/cli/filesystem/file.go",
-    "internal/cli/filesystem/skill.go",
-    "internal/cli/filesystem/skill_hub/security/guard.go",
-    "internal/cli/filesystem/skill_hub/security/patterns.go",
-    "internal/cli/filesystem/skill_hub/security/scanner.go",
-    "internal/cli/filesystem/skill_hub/source/clawhub.go",
-    "internal/cli/filesystem/skill_hub/source/github.go",
-    "internal/cli/filesystem/skill_hub/source/interface.go",
-    "internal/cli/filesystem/skill_hub/source/local.go",
-    "internal/cli/filesystem/skill_hub/source/skillssh.go",
-    "internal/cli/filesystem/skill_hub/source/types.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1224,
-  "done": 525
+  "done": 540
 }
