@@ -29,12 +29,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
-
-/**
- * Liquibase 服务实现类索引与运行时配置的 Quarkus 构建处理器。
- */
 import static org.keycloak.quarkus.deployment.KeycloakProcessor.getDefaultDataSource;
-
 
 /**
  * Liquibase 服务实现类索引与运行时配置的 Quarkus 构建处理器。
@@ -90,7 +85,6 @@ class LiquibaseProcessor {
         recorder.configureLiquibase(services);
     }
 
-    /** 按当前数据库类型过滤 Liquibase Database 实现类。 */
     /** 按当前数据库类型过滤 Liquibase Database 实现类。 */
     private void filterImplementations(Class<?> types, String dbKind, Set<ClassInfo> classes) {
         if (Database.class.equals(types)) {

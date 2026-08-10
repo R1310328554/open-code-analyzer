@@ -18,12 +18,7 @@ package org.keycloak.quarkus.deployment;
 
 import java.util.function.BooleanSupplier;
 
-
-/**
- * Quarkus 构建条件：管理接口是否已启用。
- */
 import org.keycloak.quarkus.runtime.configuration.mappers.ManagementPropertyMappers;
-
 
 /**
  * Quarkus 构建条件：管理接口是否已启用。

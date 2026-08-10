@@ -200,24 +200,17 @@ import static org.keycloak.theme.ClasspathThemeProviderFactory.KEYCLOAK_THEMES_J
 /**
  * Keycloak Quarkus 扩展核心构建处理器：配置、持久化、Provider、健康检查与 REST 集成。
  */
-/**
- * Keycloak Quarkus 扩展核心构建处理器：配置、持久化、Provider、健康检查与 REST 集成。
- */
 class KeycloakProcessor {
 
     private static final Logger logger = Logger.getLogger(KeycloakProcessor.class);
 
     /** JAR URL 中路径与条目分隔符。 */
-    /** JAR URL 中路径与条目分隔符。 */
     private static final String JAR_FILE_SEPARATOR = "!/";
-    /** 可部署脚本 Provider 类型到注册函数的映射。 */
     /** 可部署脚本 Provider 类型到注册函数的映射。 */
     private static final Map<String, Function<ScriptProviderMetadata, ProviderFactory>> DEPLOYEABLE_SCRIPT_PROVIDERS = new HashMap<>();
     /** 脚本 Provider 描述符在 classpath 中的路径。 */
-    /** 脚本 Provider 描述符在 classpath 中的路径。 */
     private static final String KEYCLOAK_SCRIPTS_JSON_PATH = "META-INF/keycloak-scripts.json";
 
-    /** 构建时跳过预加载的 ProviderFactory 类型。 */
     /** 构建时跳过预加载的 ProviderFactory 类型。 */
     private static final List<Class<? extends ProviderFactory>> IGNORED_PROVIDER_FACTORY = List.of(
             JBossJtaTransactionManagerLookup.class,
@@ -559,11 +552,7 @@ class KeycloakProcessor {
      * allowed to set any additional defaults that we think that makes sense.
      *
      * @param config
- * @param config Hibernate ORM 构建时配置
-
      * @param descriptors
- * @param descriptors persistence.xml 解析结果列表
-
      */
     @BuildStep
     @Consume(ValidatePersistenceUnitsBuildItem.class)
@@ -714,15 +703,11 @@ class KeycloakProcessor {
      * <p>Load the built-in provider factories during build time so we don't spend time looking up them at runtime. By loading
  * 构建时预加载内置 ProviderFactory，避免运行时 SPI 扫描；用户自定义 Provider 仍在启动时加载。
 
- * 构建时预加载内置 ProviderFactory，避免运行时 SPI 扫描开销；用户自定义 Provider 仍在启动时加载。
-
      * providers at this stage we are also able to perform a more dynamic configuration based on the default providers.
      *
      * <p>User-defined providers are going to be loaded at startup</p>
      *
      * @param recorder
- * @param recorder Keycloak 运行时录制器
-
      */
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
@@ -821,8 +806,6 @@ class KeycloakProcessor {
 
      *
      * @param configSources
- * @param configSources 静态初始化 ConfigSource 构建项生产者
-
      */
     @BuildStep
     /** 注册 Keycloak 静态 ConfigSource 构建器。 */
@@ -877,8 +860,6 @@ class KeycloakProcessor {
      * Similar reason is liquibase
      *
      * @param indexDependencyBuildItemBuildProducer
- * @param indexDependencyBuildItemBuildProducer 索引依赖构建项生产者
-
      */
     @BuildStep
     /** 将 Liquibase、keycloak-services 等模块加入 Jandex 索引。 */

@@ -34,19 +34,13 @@ import org.keycloak.config.Option;
 
 import io.quarkus.runtime.util.StringUtil;
 
-
-/**
- * Keycloak 支持的数据库厂商元数据：驱动、方言、默认 JDBC URL 与 Liquibase 类型映射。
- */
 import static java.util.Arrays.asList;
-
 
 /**
  * Keycloak 支持的数据库厂商元数据：驱动、方言、默认 JDBC URL 与 Liquibase 类型映射。
  */
 public final class Database {
     
-    /** 数据库别名到 {@link Vendor} 的查找表。 */
     /** 数据库别名到 {@link Vendor} 的查找表。 */
     private static final Map<String, Vendor> DATABASES = new HashMap<>();
 
@@ -59,7 +53,6 @@ public final class Database {
     }
 
     /** 判断给定 Liquibase 数据库类型是否与当前 db-kind 兼容。 */
-    /** 判断给定 Liquibase 数据库类型是否与当前 db-kind 兼容。 */
     public static boolean isLiquibaseDatabaseSupported(String databaseType, String dbKind) {
         for (Vendor vendor : DATABASES.values()) {
             if (vendor.liquibaseType.equals(databaseType) && vendor.isOfKind(dbKind)) {
@@ -71,14 +64,12 @@ public final class Database {
     }
 
     /** 按厂商名或别名解析 {@link Vendor}。 */
-    /** 按厂商名或别名解析 {@link Vendor}。 */
     public static Optional<Vendor> getVendor(String vendor) {
         return Arrays.stream(Vendor.values())
                 .filter(v -> v.isOfKind(vendor) || asList(v.aliases).contains(vendor))
                 .findAny();
     }
 
-    /** 返回别名对应的 Quarkus db-kind 字符串。 */
     /** 返回别名对应的 Quarkus db-kind 字符串。 */
     public static Optional<String> getDatabaseKind(String alias) {
         return mapValue(alias, vendor -> vendor.databaseKind);
@@ -90,24 +81,20 @@ public final class Database {
 
      */
     /** 按配置选项与别名生成默认 JDBC URL。 */
-    /** 按配置选项与别名生成默认 JDBC URL。 */
     public static Optional<String> getDefaultUrl(Function<Option<?>, String> getter, String namedProperty, String alias) {
         return getVendor(alias).map(f -> f.defaultUrl.apply(getter, namedProperty, alias));
     }
 
-    /** 返回 XA 或非 XA JDBC 驱动类名。 */
     /** 返回 XA 或非 XA JDBC 驱动类名。 */
     public static Optional<String> getDriver(String alias, boolean isXaEnabled) {
         return mapValue(alias, vendor -> isXaEnabled ? vendor.xaDriver : vendor.nonXaDriver);
     }
 
     /** 返回 Hibernate 方言类名。 */
-    /** 返回 Hibernate 方言类名。 */
     public static Optional<String> getDialect(String alias) {
         return mapValue(alias, vendor -> vendor.dialect.apply(alias));
     }
 
-    /** 解析别名后对 Vendor 应用映射函数。 */
     /** 解析别名后对 Vendor 应用映射函数。 */
     private static <T> Optional<T> mapValue(String alias, Function<Vendor, T> mapper) {
         return getVendor(alias).map(mapper);
@@ -125,7 +112,6 @@ public final class Database {
                 .collect(Collectors.toList());
     }
 
-    /** 支持的数据库厂商枚举，含驱动、方言、默认 URL 与 Liquibase 类型。 */
     /** 支持的数据库厂商枚举，含驱动、方言、默认 URL 与 Liquibase 类型。 */
     public enum Vendor {
         H2("h2",
@@ -283,7 +269,6 @@ public final class Database {
         }
 
         /** 判断是否与给定 Quarkus db-kind 匹配。 */
-        /** 判断是否与给定 Quarkus db-kind 匹配。 */
         public boolean isOfKind(String dbKind) {
             return databaseKind.equals(dbKind);
         }
@@ -296,7 +281,6 @@ public final class Database {
             return Optional.ofNullable(getter.apply(option)).orElse(defaultValue);
         }
 
-        /** @return Liquibase Database 实现类全限定名 */
         /** @return Liquibase Database 实现类全限定名 */
         public String getLiquibaseType() {
             return liquibaseType;

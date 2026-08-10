@@ -4,12 +4,7 @@ import java.util.Map;
 
 import org.keycloak.authentication.authenticators.browser.WebAuthnAuthenticatorMetadata;
 
-
-/**
- * WebAuthn 认证器元数据解析结果的构建项。
- */
 import io.quarkus.builder.item.SimpleBuildItem;
-
 
 /**
  * WebAuthn 认证器元数据解析结果的构建项。
@@ -24,7 +19,6 @@ final class WebAuthnMetadataBuildItem extends SimpleBuildItem {
         this.metadata = metadata;
     }
 
-    /** @return WebAuthn 认证器元数据映射 */
     /** @return WebAuthn 认证器元数据映射 */
     Map<String, WebAuthnAuthenticatorMetadata> getMetadata() {
         return metadata;
