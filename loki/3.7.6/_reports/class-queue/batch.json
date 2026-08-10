@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:38:42Z",
-  "files": [
-    "pkg/logql/log/labels_stringlabels.go",
-    "pkg/logql/log/logfmt/decode.go",
-    "pkg/logql/log/logfmt/jsonstring.go",
-    "pkg/logql/log/logfmt/lexer.go",
-    "pkg/logql/log/logfmt/logfmtexpr.y.go",
-    "pkg/logql/log/logfmt/parser.go",
-    "pkg/logql/log/metrics_extraction.go",
-    "pkg/logql/log/parser.go",
-    "pkg/logql/log/parser_hints.go",
-    "pkg/logql/log/pattern/ast.go",
-    "pkg/logql/log/pattern/expr.y.go",
-    "pkg/logql/log/pattern/lexer.go",
-    "pkg/logql/log/pattern/lexer.rl.go",
-    "pkg/logql/log/pattern/parser.go",
-    "pkg/logql/log/pattern/pattern.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 682,
-  "done": 855
+  "done": 870
 }
