@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:25:16Z",
-  "files": [
-    "pkg/storage/stores/shipper/indexshipper/storage/client.go",
-    "pkg/storage/stores/shipper/indexshipper/storage/index_set.go",
-    "pkg/storage/stores/shipper/indexshipper/storage/util.go",
-    "pkg/storage/stores/shipper/indexshipper/table_client.go",
-    "pkg/storage/stores/shipper/indexshipper/testutil/testutil.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/bounds.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/builder.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/compactor.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/head.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/head_manager.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/head_read.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/head_wal.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/identifier.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/index.go",
-    "pkg/storage/stores/shipper/indexshipper/tsdb/index/chunk.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 202,
-  "done": 1335
+  "done": 1350
 }
