@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T18:00:45Z",
-  "files": [
-    "internal/deepdoc/parser/pdf/table/table_annotate.go",
-    "internal/deepdoc/parser/pdf/table/table_cells.go",
-    "internal/deepdoc/parser/pdf/table/table_construct.go",
-    "internal/deepdoc/parser/pdf/table/table_coords.go",
-    "internal/deepdoc/parser/pdf/table/table_html.go",
-    "internal/deepdoc/parser/pdf/table/table_layout.go",
-    "internal/deepdoc/parser/pdf/table/table_merge.go",
-    "internal/deepdoc/parser/pdf/table/table_orient.go",
-    "internal/deepdoc/parser/pdf/table/table_post.go",
-    "internal/deepdoc/parser/pdf/table/table_spans.go",
-    "internal/deepdoc/parser/pdf/table_extract.go",
-    "internal/deepdoc/parser/pdf/tool/char_adapter.go",
-    "internal/deepdoc/parser/pdf/tool/compare.go",
-    "internal/deepdoc/parser/pdf/tool/config.go",
-    "internal/deepdoc/parser/pdf/tool/metadata.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1104,
-  "done": 645
+  "done": 660
 }
