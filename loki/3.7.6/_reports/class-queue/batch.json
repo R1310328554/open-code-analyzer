@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:13:01Z",
-  "files": [
-    "pkg/engine/internal/proto/ulid/ulid.go",
-    "pkg/engine/internal/proto/ulid/ulid.pb.go",
-    "pkg/engine/internal/proto/wirepb/wirepb.pb.go",
-    "pkg/engine/internal/scheduler/collector.go",
-    "pkg/engine/internal/scheduler/metrics.go",
-    "pkg/engine/internal/scheduler/notifier.go",
-    "pkg/engine/internal/scheduler/scheduler.go",
-    "pkg/engine/internal/scheduler/stream.go",
-    "pkg/engine/internal/scheduler/task.go",
-    "pkg/engine/internal/scheduler/wire/addr.go",
-    "pkg/engine/internal/scheduler/wire/codec.go",
-    "pkg/engine/internal/scheduler/wire/error.go",
-    "pkg/engine/internal/scheduler/wire/frame.go",
-    "pkg/engine/internal/scheduler/wire/message.go",
-    "pkg/engine/internal/scheduler/wire/metrics.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 952,
-  "done": 585
+  "done": 600
 }
