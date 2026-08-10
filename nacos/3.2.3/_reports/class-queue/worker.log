@@ -898,3 +898,18 @@
 2026-08-10T03:08:48Z DONE common/src/main/java/com/alibaba/nacos/common/http/AbstractHttpClientFactory.java nacos 3.2.3 wave29a [0:15]
 2026-08-10T03:08:48Z DONE common/src/main/java/com/alibaba/nacos/common/http/BaseHttpMethod.java nacos 3.2.3 wave29a [0:15]
 2026-08-10T03:08:48Z DONE common/src/main/java/com/alibaba/nacos/common/http/Callback.java nacos 3.2.3 wave29a [0:15]
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/handler/RestResultResponseHandler.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/handler/StringResponseHandler.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/request/AsyncHttpClientRequest.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/request/DefaultAsyncHttpClientRequest.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/request/DefaultHttpClientRequest.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/request/HttpClientRequest.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/request/JdkHttpClientRequest.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/response/DefaultClientHttpResponse.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/response/HttpClientResponse.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/client/response/JdkHttpClientResponse.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/param/Header.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/param/MediaType.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/http/param/Query.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/labels/LabelsCollector.java nacos 3.2.3 wave30a [0:15] common http request/labels
+2026-08-10T03:11:27Z DONE common/src/main/java/com/alibaba/nacos/common/labels/LabelsCollectorManager.java nacos 3.2.3 wave30a [0:15] common http request/labels
