@@ -20,14 +20,22 @@ package com.alibaba.nacos.istio.model;
 
 import java.util.Map;
 
-/**.
+/**
+ * Istio 资源快照中的服务集合容器。
+ *
+ * <p>键为服务全名，值为对应的 {@link IstioService}；CRD 资源扩展见 TODO。</p>
+ *
  * @author RocketEngine26
  * @date 2022/8/9 16:26
  */
 public class IstioResources {
-    //TODO: crd
+    // TODO: 后续补充 VirtualService、DestinationRule 等 CRD 映射
+    /** 服务名 → {@link IstioService} 映射表。 */
     private Map<String, IstioService> istioServiceMap;
     
+    /**
+     * @param istioServiceMap 当前快照下的全部 Istio 服务
+     */
     public IstioResources(Map<String, IstioService> istioServiceMap) {
         this.istioServiceMap = istioServiceMap;
     }

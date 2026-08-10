@@ -20,12 +20,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Loggers Holder.
+ * Istio 模块 SLF4J 日志记录器集中定义。
+ *
+ * <p>统一使用 {@code com.alibaba.nacos.istio.main} 命名空间，便于按模块过滤日志。</p>
  *
  * @author nkorange
  * @since 1.1.4
  */
 public class Loggers {
     
+    /** Istio 主流程（MCP/xDS 服务、推送、连接）日志。 */
     public static final Logger MAIN = LoggerFactory.getLogger("com.alibaba.nacos.istio.main");
 }

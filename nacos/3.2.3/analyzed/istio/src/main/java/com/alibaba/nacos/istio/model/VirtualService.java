@@ -17,22 +17,34 @@ package com.alibaba.nacos.istio.model;
 
 import java.util.List;
 
+/**
+ * Istio {@code VirtualService} CRD 的 Java 映射，描述 L7 路由、重写与重定向规则。
+ *
+ * <p>嵌套结构对应 Kubernetes YAML 中的 metadata/spec/http 层级。</p>
+ */
 public class VirtualService {
     
+    /** Kubernetes API 版本。 */
     private String apiVersion;
     
+    /** 资源类型，固定为 {@code VirtualService}。 */
     private String kind;
     
+    /** 资源元数据。 */
     private Metadata metadata;
     
+    /** 路由规则主体。 */
     private Spec spec;
     
     public VirtualService() {}
     
+    /** VirtualService 的 Kubernetes 元数据。 */
     public static class Metadata {
         
+        /** 规则名称。 */
         private String name;
         
+        /** 规则所在命名空间。 */
         private String namespace;
         
         public String getName() {
@@ -52,34 +64,49 @@ public class VirtualService {
         }
     }
     
+    /** VirtualService 规格：匹配主机与 HTTP 路由链。 */
     public static class Spec {
         
+        /** 本规则适用的目标主机列表。 */
         private List<String> hosts;
         
+        /** HTTP 层路由规则列表（按顺序匹配）。 */
         private List<Http> http;
         
+        /** 单条 HTTP 路由规则。 */
         public static class Http {
             
+            /** 规则名称，便于调试与引用。 */
             private String name;
             
+            /** URI/头等匹配条件。 */
             private List<Match> match;
             
+            /** 匹配成功后的 URI 重写。 */
             private Rewrite rewrite;
             
+            /** 转发目标列表（权重路由）。 */
             private List<Route> route;
     
+            /** HTTP 重定向配置。 */
             private Redirect redirect;
             
+            /** 请求匹配条件。 */
             public static class Match {
                 
+                /** URI 匹配规则。 */
                 private Uri uri;
                 
+                /** URI 前缀/精确/正则匹配。 */
                 public static class Uri {
                     
+                    /** 前缀匹配。 */
                     private String prefix;
     
+                    /** 精确匹配。 */
                     private String exact;
     
+                    /** 正则匹配。 */
                     private String regex;
     
                     public String getPrefix() {
@@ -116,8 +143,10 @@ public class VirtualService {
                 }
             }
             
+            /** URI 重写规则。 */
             public static class Rewrite {
                 
+                /** 重写后的 URI 路径。 */
                 private String uri;
                 
                 public String getUri() {
@@ -129,20 +158,28 @@ public class VirtualService {
                 }
             }
             
+            /** 单条转发路由，指向 DestinationRule 子集。 */
             public static class Route {
                 
+                /** 目标服务与子集。 */
                 private Destination destination;
                 
+                /** 转发目标描述。 */
                 public static class Destination {
                     
+                    /** 目标服务主机。 */
                     private String host;
                     
+                    /** DestinationRule 子集名。 */
                     private String subset;
     
+                    /** 目标端口。 */
                     private Port port;
     
+                    /** 目标端口号。 */
                     public static class Port {
         
+                        /** 端口号。 */
                         private int number;
         
                         public int getNumber() {
@@ -188,10 +225,13 @@ public class VirtualService {
                 }
             }
     
+            /** HTTP 重定向配置。 */
             public static class Redirect {
         
+                /** 重定向 URI。 */
                 private String uri;
                 
+                /** 重定向 authority（主机:端口）。 */
                 private String authority;
         
                 public String getUri() {

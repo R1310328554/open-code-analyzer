@@ -23,25 +23,46 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 向 Istio 客户端（Envoy/MCP）推送资源的请求上下文。
+ *
+ * <p>携带 {@link ResourceSnapshot}、推送原因、订阅类型及增量删除集合。</p>
+ *
  * @author RocketEngine26
  * @date 2022/8/21 下午1:09
  */
 public class PushRequest {
+    /** 当前资源快照（服务、配置等）。 */
     private ResourceSnapshot resourceSnapshot;
     
+    /** 触发本次推送的原因集合（如服务变更、配置刷新）。 */
     private final Set<String> reason = new HashSet<>();
     
+    /** 客户端订阅的资源类型集合；null 表示全量推送。 */
     private Set<String> subscribe;
     
+    /** 增量推送中需删除的资源名集合。 */
     private final Set<String> removed = new HashSet<>();
     
+    /** 是否为全量推送（相对增量/delta）。 */
     private boolean full;
     
+    /**
+     * 基于快照构造推送请求。
+     *
+     * @param snapshot 资源快照
+     * @param full     是否全量
+     */
     public PushRequest(ResourceSnapshot snapshot, boolean full) {
         this.resourceSnapshot = snapshot;
         this.full = full;
     }
     
+    /**
+     * 仅指定推送原因构造请求（快照后续设置）。
+     *
+     * @param reason 推送原因
+     * @param full   是否全量
+     */
     public PushRequest(String reason, boolean full) {
         this.full = full;
         this.reason.add(reason);

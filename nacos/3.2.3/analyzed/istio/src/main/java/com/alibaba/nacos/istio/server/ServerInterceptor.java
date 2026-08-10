@@ -26,6 +26,10 @@ import org.springframework.stereotype.Component;
 import java.net.SocketAddress;
 
 /**
+ * Istio gRPC 服务端拦截器：记录每个 RPC 的远端地址与方法名。
+ *
+ * <p>便于排查 Envoy/MCP 客户端连接与调用问题。</p>
+ *
  * @author special.fy
  */
 @Component
@@ -34,6 +38,7 @@ public class ServerInterceptor implements io.grpc.ServerInterceptor {
     @Override
     public <R, T> ServerCall.Listener<R> interceptCall(ServerCall<R, T> call, Metadata headers,
         ServerCallHandler<R, T> next) {
+        // 提取客户端传输层地址与完整方法名
         SocketAddress address = call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR);
         String methodName = call.getMethodDescriptor().getFullMethodName();
         

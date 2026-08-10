@@ -24,15 +24,28 @@ import io.envoyproxy.envoy.service.discovery.v3.DeltaDiscoveryResponse;
 import io.grpc.stub.StreamObserver;
 
 /**
+ * xDS Delta 发现协议的 gRPC 连接实现。
+ *
+ * <p>向 Envoy 推送 {@link DeltaDiscoveryResponse} 并更新 {@link WatchedStatus} 版本/nonce。</p>
+ *
  * @author RocketEngine26
  * @date 2022/8/20 下午10:46
  */
 public class DeltaConnection extends AbstractConnection<DeltaDiscoveryResponse> {
     
+    /**
+     * @param streamObserver 客户端 Delta 响应流
+     */
     public DeltaConnection(StreamObserver<DeltaDiscoveryResponse> streamObserver) {
         super(streamObserver);
     }
     
+    /**
+     * 推送 Delta 响应并同步 WatchedStatus 中的 version/nonce。
+     *
+     * @param response       Delta 发现响应
+     * @param watchedStatus  对应资源类型的订阅状态
+     */
     @Override
     public void push(DeltaDiscoveryResponse response, WatchedStatus watchedStatus) {
         if (Loggers.MAIN.isDebugEnabled()) {
@@ -43,7 +56,7 @@ public class DeltaConnection extends AbstractConnection<DeltaDiscoveryResponse> 
         
         this.streamObserver.onNext(response);
         
-        // Update watched status
+        // 更新订阅状态的最新 version 与 nonce，供 ACK 比对
         watchedStatus.setLatestVersion(response.getSystemVersionInfo());
         watchedStatus.setLatestNonce(response.getNonce());
         

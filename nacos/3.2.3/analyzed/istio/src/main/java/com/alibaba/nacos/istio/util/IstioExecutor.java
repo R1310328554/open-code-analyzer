@@ -26,30 +26,40 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 /**
+ * Istio 模块专用线程池：事件处理、推送防抖与周期防抖。
+ *
+ * <p>三类任务均使用 {@link ExecutorFactory.Managed} 单线程池，避免并发竞态。</p>
+ *
  * @author special.fy
  */
 public class IstioExecutor {
     
+    /** 处理命名/配置变更事件的单线程池。 */
     private static final ExecutorService EVENT_HANDLE_EXECUTOR = ExecutorFactory.Managed
         .newSingleExecutorService(ClassUtils.getCanonicalName(IstioApp.class),
             new NameThreadFactory("com.alibaba.nacos.istio.event.handle"));
     
+    /** 推送变更防抖（debounce）单线程池。 */
     private static final ExecutorService PUSH_CHANGE_EXECUTOR = ExecutorFactory.Managed
         .newSingleExecutorService(ClassUtils.getCanonicalName(IstioApp.class),
             new NameThreadFactory("com.alibaba.nacos.istio.pushchange.debounce"));
     
+    /** 周期防抖通知单线程池。 */
     private static final ExecutorService CYCLE_DEBOUNCE_EXECUTOR = ExecutorFactory.Managed
         .newSingleExecutorService(ClassUtils.getCanonicalName(IstioApp.class),
             new NameThreadFactory("com.alibaba.nacos.istio.cycle.debounce"));
     
+    /** 异步提交事件处理任务。 */
     public static <V> Future<V> asyncHandleEvent(Callable<V> task) {
         return EVENT_HANDLE_EXECUTOR.submit(task);
     }
     
+    /** 异步提交推送防抖任务。 */
     public static <V> Future<V> debouncePushChange(Callable<V> debounce) {
         return PUSH_CHANGE_EXECUTOR.submit(debounce);
     }
     
+    /** 提交周期防抖 Runnable。 */
     public static void cycleDebounce(Runnable toNotify) {
         CYCLE_DEBOUNCE_EXECUTOR.submit(toNotify);
     }

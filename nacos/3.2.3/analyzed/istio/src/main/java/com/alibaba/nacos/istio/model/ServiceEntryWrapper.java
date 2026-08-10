@@ -20,14 +20,24 @@ import istio.mcp.v1alpha1.MetadataOuterClass.Metadata;
 import istio.networking.v1alpha3.ServiceEntryOuterClass.ServiceEntry;
 
 /**
+ * MCP ServiceEntry 资源及其元数据的包装类。
+ *
+ * <p>将 {@link Metadata} 与 {@link ServiceEntry} 成对传递，供 MCP 聚合推送。</p>
+ *
  * @author special.fy
  */
 public class ServiceEntryWrapper {
 
+    /** MCP 资源元数据（名称、版本、标签、注解）。 */
     private Metadata metadata;
 
+    /** Istio ServiceEntry protobuf 主体。 */
     private ServiceEntry serviceEntry;
 
+    /**
+     * @param metadata     MCP 元数据
+     * @param serviceEntry ServiceEntry 资源体
+     */
     public ServiceEntryWrapper(Metadata metadata, ServiceEntry serviceEntry) {
         this.metadata = metadata;
         this.serviceEntry = serviceEntry;

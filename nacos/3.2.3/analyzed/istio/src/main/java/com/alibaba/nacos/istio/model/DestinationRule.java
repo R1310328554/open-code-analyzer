@@ -18,20 +18,32 @@ package com.alibaba.nacos.istio.model;
 
 import java.util.List;
 
+/**
+ * Istio {@code DestinationRule} CRD 的 Java 映射，描述目标服务子集与负载均衡策略。
+ *
+ * <p>用于解析 Nacos 中存储的 DestinationRule YAML/JSON，供 xDS 生成器消费。</p>
+ */
 public class DestinationRule {
     
+    /** Kubernetes API 版本，如 {@code networking.istio.io/v1alpha3}。 */
     private String apiVersion;
     
+    /** 资源类型，固定为 {@code DestinationRule}。 */
     private String kind;
     
+    /** 资源元数据（名称、命名空间）。 */
     private Metadata metadata;
     
+    /** 规则主体：目标主机与子集定义。 */
     private Spec spec;
     
+    /** DestinationRule 的 Kubernetes 元数据。 */
     public static class Metadata {
         
+        /** 规则名称。 */
         private String name;
         
+        /** 规则所在命名空间。 */
         private String namespace;
         
         public String getName() {
@@ -51,20 +63,28 @@ public class DestinationRule {
         }
     }
     
+    /** DestinationRule 规格：绑定主机及其子集列表。 */
     public static class Spec {
         
+        /** 目标服务主机名（FQDN 或服务名）。 */
         private String host;
         
+        /** 按标签划分的子集列表，用于版本/环境路由。 */
         private List<Subset> subsets;
         
+        /** 单个子集：名称 + 标签选择器。 */
         public static class Subset {
             
+            /** 子集名称，VirtualService 路由时可引用。 */
             private String name;
             
+            /** 实例标签匹配条件。 */
             private Labels labels;
             
+            /** 子集标签，常见键为 {@code version}。 */
             public static class Labels {
                 
+                /** 版本标签值，用于灰度/多版本路由。 */
                 private String version;
                 
                 public String getVersion() {

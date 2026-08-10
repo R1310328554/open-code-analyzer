@@ -31,23 +31,38 @@ import java.util.Map;
 
 import static com.alibaba.nacos.istio.util.IstioCrdUtil.ISTIO_HOSTNAME;
 
-/**.
+/**
+ * 将 Nacos 注册实例转换为 Istio/Envoy 可识别的负载均衡端点视图。
+ *
+ * <p>封装 {@link Instance} 元数据，按需构建 {@link LbEndpoint} 与 {@link Locality}。</p>
+ *
  * @author RocketEngine26
  * @date 2022/8/9 10:29
  */
 public class IstioEndpoint {
+    /** 缓存的 Envoy {@link LbEndpoint}，按需懒构建。 */
     private LbEndpoint lbEndpoint;
     
+    /** 原始 Nacos 注册实例。 */
     private Instance instance;
     
+    /** 地域/可用区/子区三元组，用于 locality 负载均衡。 */
     private Locality locality;
     
+    /** 服务协议（http/grpc），由实例 metadata 推导。 */
     private String protocol;
     
+    /** Istio 主机名，来自 metadata {@link com.alibaba.nacos.istio.util.IstioCrdUtil#ISTIO_HOSTNAME}。 */
     private String hostName;
     
+    /** Nacos 集群名，写入 WorkloadEntry 标签。 */
     private String clusterName;
     
+    /**
+     * 从 Nacos 实例构造 Istio 端点，解析协议、主机名与地域信息。
+     *
+     * @param instance Nacos 命名服务实例
+     */
     public IstioEndpoint(Instance instance) {
         this.instance = instance;
         this.hostName = StringUtils.isNotEmpty(instance.getMetadata().get(ISTIO_HOSTNAME)) ? instance.getMetadata().get(ISTIO_HOSTNAME) : "";
@@ -56,6 +71,7 @@ public class IstioEndpoint {
         if (StringUtils.isNotEmpty(instance.getMetadata().get("protocol"))) {
             this.protocol = instance.getMetadata().get("protocol");
         
+            // triple/tri 为 Dubbo3 协议别名，统一映射为 grpc
             if ("triple".equals(this.protocol) || "tri".equals(this.protocol)) {
                 this.protocol = "grpc";
             }
@@ -66,6 +82,7 @@ public class IstioEndpoint {
         buildLocality();
     }
     
+    /** 从实例 metadata 的 region/zone/subzone 构建 Envoy Locality。 */
     private void buildLocality() {
         String region = instance.getMetadata().getOrDefault("region", "");
         String zone = instance.getMetadata().getOrDefault("zone", "");
@@ -74,6 +91,7 @@ public class IstioEndpoint {
         this.locality = Locality.newBuilder().setRegion(region).setZone(zone).setSubZone(subzone).build();
     }
     
+    /** 按 IP、端口与权重构建 Envoy {@link LbEndpoint}。 */
     private LbEndpoint buildLbEndpoint() {
         Address adder = Address.newBuilder().setSocketAddress(SocketAddress.newBuilder().setAddress(instance.getIp())
                 .setPortValue(this.instance.getPort()).setProtocol(SocketAddress.Protocol.TCP).build()).build();

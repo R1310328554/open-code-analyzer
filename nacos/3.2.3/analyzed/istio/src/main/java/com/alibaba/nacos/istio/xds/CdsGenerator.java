@@ -40,13 +40,19 @@ import static com.alibaba.nacos.istio.util.IstioCrdUtil.buildClusterName;
 import static io.envoyproxy.envoy.config.core.v3.ApiVersion.V2_VALUE;
 
 /**
+ * CDS（Cluster Discovery Service）全量集群配置生成器。
+ *
+ * <p>为每个 {@link IstioService} 生成 EDS 类型 Cluster，供 xDS 全量推送；Delta 暂未实现。</p>
+ *
  * @author RocketEngine26
  * @date 2022/8/17
  */
 public final class CdsGenerator implements ApiGenerator<Any> {
     
+    /** 单例实例（双重检查锁）。 */
     private static volatile CdsGenerator singleton = null;
     
+    /** 获取 {@link CdsGenerator} 单例。 */
     public static CdsGenerator getInstance() {
         if (singleton == null) {
             synchronized (CdsGenerator.class) {
@@ -58,6 +64,11 @@ public final class CdsGenerator implements ApiGenerator<Any> {
         return singleton;
     }
     
+    /**
+     * 全量生成 Cluster 资源列表；非全量推送时返回 null。
+     *
+     * @param pushRequest 推送上下文
+     */
     @Override
     public List<Any> generate(PushRequest pushRequest) {
         if (!pushRequest.isFull()) {
@@ -72,6 +83,7 @@ public final class CdsGenerator implements ApiGenerator<Any> {
                 entry.getKey() + '.' + istioConfig.getDomainSuffix(),
                 entry.getValue().getPort());
             
+            // EDS 集群：端点由 EDS 推送，此处仅声明 Cluster 骨架
             Cluster.Builder cluster =
                 Cluster.newBuilder().setName(name).setType(Cluster.DiscoveryType.EDS)
                     .setEdsClusterConfig(Cluster.EdsClusterConfig
@@ -80,6 +92,7 @@ public final class CdsGenerator implements ApiGenerator<Any> {
                                 .setAds(AggregatedConfigSource.newBuilder())
                                 .setResourceApiVersionValue(V2_VALUE).build())
                         .build());
+            // grpc 服务启用 HTTP/2 协议选项
             if ("grpc".equals(entry.getValue().getProtocol())) {
                 cluster.setHttp2ProtocolOptions(Http2ProtocolOptions.newBuilder().build());
             } else {
@@ -93,6 +106,7 @@ public final class CdsGenerator implements ApiGenerator<Any> {
         return result;
     }
     
+    /** Delta CDS 尚未支持，记录日志并返回 null。 */
     @Override
     public List<Resource> deltaGenerate(PushRequest pushRequest) {
         Loggers.MAIN.info("Delta Cds Not supported");
