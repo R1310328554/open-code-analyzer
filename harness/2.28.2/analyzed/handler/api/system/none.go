@@ -14,6 +14,7 @@
 
 // +build oss
 
+// system 包在 OSS 构建中提供系统 API 的占位实现，所有端点均返回未实现。
 package system
 
 import (
@@ -23,16 +24,17 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
+// notImplemented 为 OSS 版统一返回 501 Not Implemented 的占位处理器。
 var notImplemented = func(w http.ResponseWriter, r *http.Request) {
 	render.NotImplemented(w, render.ErrNotImplemented)
 }
 
-// HandleLicense returns a no-op http.HandlerFunc.
+// HandleLicense 查询许可证信息（OSS 版未实现）。
 func HandleLicense(license core.License) http.HandlerFunc {
 	return notImplemented
 }
 
-// HandleStats returns a no-op http.HandlerFunc.
+// HandleStats 查询系统运行统计（OSS 版未实现）。
 func HandleStats(
 	core.BuildStore,
 	core.StageStore,

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// user 包提供当前登录用户相关的 REST API 处理器。
 package user
 
 import (
@@ -21,8 +22,7 @@ import (
 	"github.com/drone/drone/handler/api/request"
 )
 
-// HandleFind returns an http.HandlerFunc that writes json-encoded
-// account information to the http response body.
+// HandleFind 返回 HTTP 处理器，将请求上下文中当前登录用户的账户信息以 JSON 写入响应。
 func HandleFind() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

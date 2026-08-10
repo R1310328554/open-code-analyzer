@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// template 包提供流水线模板（Template）相关的 REST API 处理器。
 package template
 
 import (
@@ -15,8 +16,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDelete returns an http.HandlerFunc that processes http
-// requests to delete a template.
+// HandleDelete 返回 HTTP 处理器，按命名空间与名称删除模板并返回 204 No Content。
 func HandleDelete(template core.TemplateStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (

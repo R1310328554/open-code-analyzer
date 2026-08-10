@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// system 包提供系统级信息（许可证、统计、限额等）的 REST API 处理器。
 package system
 
 import (
@@ -13,8 +14,7 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
-// HandleLicense returns an http.HandlerFunc that writes
-// json-encoded license details to the response body.
+// HandleLicense 返回 HTTP 处理器，将当前实例的许可证详情以 JSON 写入响应体。
 func HandleLicense(license core.License) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, license, 200)

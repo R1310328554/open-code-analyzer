@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// system 包提供系统级信息（许可证、统计、限额等）的 REST API 处理器。
 package system
 
 import (
@@ -15,29 +16,35 @@ import (
 )
 
 type (
+	// users 汇总用户数量统计。
 	users struct {
 		Total int64 `json:"total"`
 	}
 
+	// repos 汇总活跃仓库数量。
 	repos struct {
 		Active int64 `json:"active"`
 	}
 
+	// builds 汇总构建总数及待执行、运行中数量。
 	builds struct {
 		Pending int   `json:"pending"`
 		Running int   `json:"running"`
 		Total   int64 `json:"total"`
 	}
 
+	// events 汇总事件总线订阅者数量。
 	events struct {
 		Subscribers int `json:"subscribers"`
 	}
 
+	// streams 汇总日志流订阅者与频道数量。
 	streams struct {
 		Subscribers int `json:"subscribers"`
 		Channels    int `json:"channels"`
 	}
 
+	// platform 描述单个目标平台（OS/架构/变体）上待执行与运行中的阶段数。
 	platform struct {
 		Subscribers int    `json:"subscribers"`
 		OS          string `json:"os"`
@@ -48,6 +55,7 @@ type (
 		Running     int    `json:"running"`
 	}
 
+	// stats 为 /api/system/stats 响应的顶层聚合结构。
 	stats struct {
 		Users     users         `json:"users"`
 		Repos     repos         `json:"repos"`
@@ -59,8 +67,7 @@ type (
 	}
 )
 
-// HandleStats returns an http.HandlerFunc that writes a
-// json-encoded list of system stats to the response body.
+// HandleStats 返回 HTTP 处理器，聚合用户、仓库、构建、队列、事件与日志流等系统指标并以 JSON 返回。
 func HandleStats(
 	builds core.BuildStore,
 	stages core.StageStore,
@@ -163,8 +170,7 @@ func HandleStats(
 	}
 }
 
-// platform statistics are returned in a fixed array. these
-// are pointers to the platform index in the array.
+// 平台统计以固定长度数组返回，下列常量对应数组下标。
 const (
 	linuxArm6 int = iota
 	linuxArm7
@@ -176,8 +182,7 @@ const (
 	windows1809
 )
 
-// helper function returns a list of all platforms
-// and variants currently supported by core.
+// newPlatformList 初始化 core 当前支持的全部目标平台槽位。
 func newPlatformList() []*platform {
 	platforms := [8]*platform{}
 	platforms[linuxArm6] = &platform{OS: "linux", Arch: "arm", Variant: "v6"}
@@ -191,8 +196,7 @@ func newPlatformList() []*platform {
 	return platforms[:]
 }
 
-// helper function counts the number of running and
-// pending stages by os, architecture, and variant.
+// aggregatePlatformStats 按 OS、架构与变体将未完成阶段计数累加到对应平台槽位。
 func aggregatePlatformStats(platforms []*platform, stages []*core.Stage) {
 	for _, stage := range stages {
 		var index int

@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// template 包提供流水线模板（Template）相关的 REST API 处理器。
 package template
 
 import (
@@ -15,8 +16,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleList returns an http.HandlerFunc that writes a json-encoded
-// list of templates to the response body by namespace
+// HandleList 返回 HTTP 处理器，列出指定命名空间下的全部模板并以 JSON 数组返回。
 func HandleList(templateStore core.TemplateStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		namespace := chi.URLParam(r, "namespace")

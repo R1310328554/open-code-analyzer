@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// template 包提供流水线模板（Template）相关的 REST API 处理器。
 package template
 
 import (
@@ -16,13 +17,13 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// templateUpdate 为更新模板请求体，字段均为可选指针以便部分更新。
 type templateUpdate struct {
 	Data      *string `json:"data"`
 	Namespace *string `json:"namespace"`
 }
 
-// HandleUpdate returns an http.HandlerFunc that processes http
-// requests to update a template.
+// HandleUpdate 返回 HTTP 处理器，按命名空间与名称更新已有模板并返回 JSON。
 func HandleUpdate(templateStore core.TemplateStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
@@ -43,6 +44,7 @@ func HandleUpdate(templateStore core.TemplateStore) http.HandlerFunc {
 			return
 		}
 
+		// 仅合并请求体中显式提供的字段。
 		if in.Data != nil {
 			s.Data = *in.Data
 		}

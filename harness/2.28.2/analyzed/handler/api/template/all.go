@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// template 包提供流水线模板（Template）相关的 REST API 处理器。
 package template
 
 import (
@@ -13,8 +14,7 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
-// HandleListAll returns an http.HandlerFunc that writes a json-encoded
-// list of templates to the response body.
+// HandleListAll 返回 HTTP 处理器，列出系统中全部模板并以 JSON 数组写入响应。
 func HandleListAll(templateStore core.TemplateStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := templateStore.ListAll(r.Context())

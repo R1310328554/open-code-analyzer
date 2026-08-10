@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// template 包提供流水线模板（Template）相关的 REST API 处理器。
 package template
 
 import (
@@ -19,16 +20,17 @@ import (
 )
 
 var (
+	// errTemplateExtensionInvalid 表示模板文件名扩展名不在允许列表中。
 	errTemplateExtensionInvalid = errors.New("Template extension invalid. Must be yaml, starlark or jsonnet")
 )
 
+// templateInput 为创建模板请求体，包含文件名与模板内容。
 type templateInput struct {
 	Name string `json:"name"`
 	Data string `json:"data"`
 }
 
-// HandleCreate returns an http.HandlerFunc that processes http
-// requests to create a new template.
+// HandleCreate 返回 HTTP 处理器，在指定命名空间下创建新模板并返回 JSON。
 func HandleCreate(templateStore core.TemplateStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		namespace := chi.URLParam(r, "namespace")
@@ -39,7 +41,7 @@ func HandleCreate(templateStore core.TemplateStore) http.HandlerFunc {
 			return
 		}
 
-		// check valid template extension type
+		// 校验模板文件扩展名必须为 yaml、starlark 或 jsonnet 之一。
 		switch filepath.Ext(in.Name) {
 		case ".yml", ".yaml":
 		case ".star", ".starlark", ".script":
