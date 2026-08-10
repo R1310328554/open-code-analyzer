@@ -30,6 +30,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
+ * <p>基于 epoll 的单线程 {@link EventLoop}；已弃用，请改用 {@link SingleThreadIoEventLoop} + {@link EpollIoHandler}。</p>
  * @deprecated Use {@link SingleThreadIoEventLoop} with {@link EpollIoHandler}
  */
 @Deprecated
@@ -73,6 +74,7 @@ public class EpollEventLoop extends SingleThreadIoEventLoop {
 
     /**
      * Returns 0.
+     * <p>IO 时间占比已移除，恒返回 0。</p>
      */
     public int getIoRatio() {
         return 0;
@@ -80,6 +82,7 @@ public class EpollEventLoop extends SingleThreadIoEventLoop {
 
     /**
      * This method is a no-op.
+     * <p>IO 比例设置逻辑已删除，调用无效果。</p>
      *
      * @deprecated
      */

@@ -27,12 +27,15 @@ import java.net.SocketAddress;
 
 import static io.netty.channel.epoll.LinuxSocket.newSocketDomain;
 
+/** epoll UNIX 域套接字服务端通道：bind 路径、listen、accept 子连接 */
 public final class EpollServerDomainSocketChannel extends AbstractEpollServerChannel
         implements ServerDomainSocketChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(
             EpollServerDomainSocketChannel.class);
 
+    /** 服务端通道配置 */
     private final EpollServerChannelConfig config = new EpollServerChannelConfig(this);
+    /** 绑定后的本地域套接字地址 */
     private volatile DomainSocketAddress local;
 
     public EpollServerDomainSocketChannel() {
@@ -71,7 +74,7 @@ public final class EpollServerDomainSocketChannel extends AbstractEpollServerCha
         socket.listen(config.getBacklog());
         local = (DomainSocketAddress) localAddress;
         active = true;
-        // We now listen for new connections, submit the ops so we receive events.
+        // listen 完成后提交 epoll 监听以接收新连接
         submitCurrentOps();
     }
 
@@ -82,7 +85,7 @@ public final class EpollServerDomainSocketChannel extends AbstractEpollServerCha
         } finally {
             DomainSocketAddress local = this.local;
             if (local != null) {
-                // Delete the socket file if possible.
+                // 关闭后尽量删除域套接字文件
                 File socketFile = new File(local.path());
                 boolean success = socketFile.delete();
                 if (!success && logger.isDebugEnabled()) {

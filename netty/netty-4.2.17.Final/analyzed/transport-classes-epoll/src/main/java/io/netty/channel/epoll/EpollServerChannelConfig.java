@@ -34,8 +34,11 @@ import static io.netty.channel.ChannelOption.SO_REUSEADDR;
 import static io.netty.channel.ChannelOption.TCP_FASTOPEN;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
+/** epoll 服务端通道基类配置：backlog、TCP Fast Open、SO_* 等 */
 public class EpollServerChannelConfig extends EpollChannelConfig implements ServerSocketChannelConfig {
+    /** listen 队列长度，默认 SOMAXCONN */
     private volatile int backlog = NetUtil.SOMAXCONN;
+    /** TCP Fast Open 被动打开待处理连接数上限 */
     private volatile int pendingFastOpenRequestsThreshold;
 
     EpollServerChannelConfig(AbstractEpollChannel channel) {
@@ -136,6 +139,7 @@ public class EpollServerChannelConfig extends EpollChannelConfig implements Serv
 
     /**
      * Returns threshold value of number of pending for fast open connect.
+     * <p>返回 TFO 被动打开允许的挂起连接数阈值。</p>
      *
      * @see <a href="https://tools.ietf.org/html/rfc7413#appendix-A.2">RFC 7413 Passive Open</a>
      */
@@ -146,6 +150,7 @@ public class EpollServerChannelConfig extends EpollChannelConfig implements Serv
     /**
      * Enables tcpFastOpen on the server channel. If the underlying os doesn't support TCP_FASTOPEN setting this has no
      * effect. This has to be set before doing listen on the socket otherwise this takes no effect.
+     * <p>在 listen 前启用服务端 TFO；OS 不支持则无效。</p>
      *
      * @param pendingFastOpenRequestsThreshold number of requests to be pending for fastopen at a given point in time
      * for security.

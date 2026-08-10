@@ -39,11 +39,13 @@ import static io.netty.channel.epoll.Native.IS_SUPPORTING_TCP_FASTOPEN_CLIENT;
 
 /**
  * {@link SocketChannel} implementation that uses linux EPOLL.
+ * <p>基于 Linux epoll 的 TCP 客户端 {@link SocketChannel}，支持 TFO 连接与 TCP_INFO。</p>
  */
 public final class EpollSocketChannel extends AbstractEpollStreamChannel implements SocketChannel {
 
     private final EpollSocketChannelConfig config;
 
+    /** 继承自父 Server 或本地配置的 TCP_MD5SIG 地址 */
     private volatile Collection<InetAddress> tcpMd5SigAddresses = Collections.emptyList();
 
     public EpollSocketChannel() {
@@ -54,6 +56,7 @@ public final class EpollSocketChannel extends AbstractEpollStreamChannel impleme
     /**
      *
      * @deprecated use {@link EpollServerSocketChannel#EpollServerSocketChannel(SocketProtocolFamily)}.
+      * <p>Netty epoll 传输实现；详见上方英文说明。</p>
      */
     @Deprecated
     public EpollSocketChannel(InternetProtocolFamily protocol) {
@@ -88,6 +91,7 @@ public final class EpollSocketChannel extends AbstractEpollStreamChannel impleme
     /**
      * Returns the {@code TCP_INFO} for the current socket.
      * See <a href="https://linux.die.net//man/7/tcp">man 7 tcp</a>.
+     * <p>读取当前套接字的 Linux {@code TCP_INFO} 统计。</p>
      */
     public EpollTcpInfo tcpInfo() {
         return tcpInfo(new EpollTcpInfo());
@@ -96,6 +100,7 @@ public final class EpollSocketChannel extends AbstractEpollStreamChannel impleme
     /**
      * Updates and returns the {@code TCP_INFO} for the current socket.
      * See <a href="https://linux.die.net//man/7/tcp">man 7 tcp</a>.
+     * <p>填充并返回传入的 {@link EpollTcpInfo} 对象。</p>
      */
     public EpollTcpInfo tcpInfo(EpollTcpInfo info) {
         try {
@@ -139,13 +144,11 @@ public final class EpollSocketChannel extends AbstractEpollStreamChannel impleme
             Object curr;
             if ((curr = outbound.current()) instanceof ByteBuf) {
                 ByteBuf initialData = (ByteBuf) curr;
-                // If no cookie is present, the write fails with EINPROGRESS and this call basically
-                // becomes a normal async connect. All writes will be sent normally afterwards.
+                // 无 TFO cookie 时写失败为 EINPROGRESS，退化为普通异步 connect
                 long localFlushedAmount = doWriteOrSendBytes(
                         initialData, (InetSocketAddress) remote, true);
                 if (localFlushedAmount > 0) {
-                    // We had a cookie and our fast-open proceeded. Remove written data
-                    // then continue with normal TCP operation.
+                    // TFO 成功：移除已发送的 SYN 数据，后续走正常 TCP
                     outbound.removeBytes(localFlushedAmount);
                     return true;
                 }
@@ -158,12 +161,9 @@ public final class EpollSocketChannel extends AbstractEpollStreamChannel impleme
         @Override
         protected Executor prepareToClose() {
             try {
-                // Check isOpen() first as otherwise it will throw a RuntimeException
-                // when call getSoLinger() as the fd is not valid anymore.
+                // 先检查 isOpen，避免 fd 已关闭时 getSoLinger 抛异常
                 if (isOpen() && config().getSoLinger() > 0) {
-                    // We need to cancel this key of the channel so we may not end up in a eventloop spin
-                    // because we try to read or write until the actual close happens which may be later due
-                    // SO_LINGER handling.
+                    // SO_LINGER>0 时取消 epoll 注册，避免 close 延迟导致 event loop 空转
                     // See https://github.com/netty/netty/issues/4449
                     registration().cancel();
                     return GlobalEventExecutor.INSTANCE;
@@ -178,7 +178,7 @@ public final class EpollSocketChannel extends AbstractEpollStreamChannel impleme
     }
 
     void setTcpMd5Sig(Map<InetAddress, byte[]> keys) throws IOException {
-        // Add synchronized as newTcpMp5Sigs might do multiple operations on the socket itself.
+        // 更新 MD5 密钥需同步，因底层可能多次 socket 操作
         synchronized (this) {
             tcpMd5SigAddresses = TcpMd5Util.newTcpMd5Sigs(this, tcpMd5SigAddresses, keys);
         }

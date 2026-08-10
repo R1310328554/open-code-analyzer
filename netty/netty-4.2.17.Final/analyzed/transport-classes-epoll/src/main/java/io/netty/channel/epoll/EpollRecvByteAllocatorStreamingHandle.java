@@ -17,6 +17,7 @@ package io.netty.channel.epoll;
 
 import io.netty.channel.RecvByteBufAllocator;
 
+/** 流式套接字专用：按 epoll man Q9 判断读满后是否继续读 */
 final class EpollRecvByteAllocatorStreamingHandle extends EpollRecvByteAllocatorHandle {
     EpollRecvByteAllocatorStreamingHandle(RecvByteBufAllocator.ExtendedHandle handle) {
         super(handle);
@@ -27,6 +28,7 @@ final class EpollRecvByteAllocatorStreamingHandle extends EpollRecvByteAllocator
         /**
          * For stream oriented descriptors we can assume we are done reading if the last read attempt didn't produce
          * a full buffer (see Q9 in <a href="https://man7.org/linux/man-pages/man7/epoll.7.html">epoll man</a>).
+         * <p>流式 fd：未读满缓冲区可认为暂无更多数据；收到 EPOLLRDHUP 则须读至错误。</p>
          *
          * If EPOLLRDHUP has been received we must read until we get a read error.
          */

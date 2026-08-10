@@ -48,6 +48,7 @@ import static java.lang.Math.min;
 
 /**
  * {@link IoHandler} which uses epoll under the covers. Only works on Linux!
+ * <p>Linux epoll 核心 {@link IoHandler}：管理 epoll fd、eventfd 唤醒、timerfd 定时与通道注册。</p>
  */
 public class EpollIoHandler implements IoHandler {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(EpollIoHandler.class);
@@ -58,7 +59,7 @@ public class EpollIoHandler implements IoHandler {
         Epoll.ensureAvailability();
     }
 
-    // Pick a number that no task could have previously used.
+    // 初始 deadline 哨兵值，保证与任何真实任务时间不同
     private long prevDeadlineNanos = NONE;
     private FileDescriptor epollFd;
     private FileDescriptor eventFd;
@@ -80,20 +81,18 @@ public class EpollIoHandler implements IoHandler {
     private static final long AWAKE = -1L;
     private static final long NONE = Long.MAX_VALUE;
 
-    // nextWakeupNanos is:
-    //    AWAKE            when EL is awake
-    //    NONE             when EL is waiting with no wakeup scheduled
-    //    other value T    when EL is waiting with wakeup scheduled at time T
+    // nextWakeupNanos 状态：AWAKE=已唤醒；NONE=阻塞无定时；其他=计划在 T 纳秒唤醒
     private final AtomicLong nextWakeupNanos = new AtomicLong(AWAKE);
     private boolean pendingWakeup;
 
     private int numChannels;
 
-    // See https://man7.org/linux/man-pages/man2/timerfd_create.2.html.
+    // timerfd 单次调度纳秒上限，见 man timerfd_create
     private static final long MAX_SCHEDULED_TIMERFD_NS = 999999999;
 
     /**
      * Returns a new {@link IoHandlerFactory} that creates {@link EpollIoHandler} instances.
+     * <p>创建默认 {@link EpollIoHandler} 工厂（事件数组可增长）。</p>
      */
     public static IoHandlerFactory newFactory() {
         return newFactory(0, DefaultSelectStrategyFactory.INSTANCE);
@@ -101,6 +100,7 @@ public class EpollIoHandler implements IoHandler {
 
     /**
      * Returns a new {@link IoHandlerFactory} that creates {@link EpollIoHandler} instances.
+     * <p>创建 {@link EpollIoHandler} 实例的工厂。</p>
      */
     public static IoHandlerFactory newFactory(final int maxEvents,
                                               final SelectStrategyFactory selectStrategyFactory) {
@@ -120,7 +120,7 @@ public class EpollIoHandler implements IoHandler {
         };
     }
 
-    // Package-private for testing
+    // 包内可见，供单元测试构造
     EpollIoHandler(ThreadAwareExecutor executor, int maxEvents, SelectStrategy strategy) {
         this.executor = ObjectUtil.checkNotNull(executor, "executor");
         selectStrategy = ObjectUtil.checkNotNull(strategy, "strategy");
@@ -152,6 +152,7 @@ public class EpollIoHandler implements IoHandler {
     /**
      * This method is intended for use by a process checkpoint/restore
      * integration, such as OpenJDK CRaC.
+     * <p>打开 epoll/eventfd/timerfd；供 CRaC 等检查点恢复集成使用。</p>
      */
     @UnstableApi
     public void openFileDescriptors() {
@@ -163,8 +164,7 @@ public class EpollIoHandler implements IoHandler {
             this.epollFd = epollFd = Native.newEpollCreate();
             this.eventFd = eventFd = Native.newEventFd();
             try {
-                // It is important to use EPOLLET here as we only want to get the notification once per
-                // wakeup and don't call eventfd_read(...).
+                // eventfd 使用 EPOLLET，每次唤醒只通知一次，避免重复 read
                 Native.epollCtlAdd(epollFd.intValue(), eventFd.intValue(), Native.EPOLLIN | Native.EPOLLET);
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to add eventFd filedescriptor to epoll", e);
@@ -200,15 +200,14 @@ public class EpollIoHandler implements IoHandler {
     @Override
     public void wakeup() {
         if (!executor.isExecutorThread(Thread.currentThread()) && nextWakeupNanos.getAndSet(AWAKE) != AWAKE) {
-            // write to the evfd which will then wake-up epoll_wait(...)
+            // 向 eventfd 写入以唤醒阻塞在 epoll_wait 的线程
             Native.eventFdWrite(eventFd.intValue(), 1L);
         }
     }
 
     @Override
     public void prepareToDestroy() {
-        // Using the intermediate collection to prevent ConcurrentModificationException.
-        // In the `close()` method, the channel is deleted from `channels` map.
+        // 先拷贝注册表再关闭，避免 close 时修改 map 导致 CME
         DefaultEpollIoRegistration[] copy = registrations.values().toArray(new DefaultEpollIoRegistration[0]);
 
         for (DefaultEpollIoRegistration reg: copy) {
@@ -227,11 +226,11 @@ public class EpollIoHandler implements IoHandler {
     }
 
     private enum RegistrationState {
-        // Was not added via EPOLL_CTL_ADD
+        // 尚未 EPOLL_CTL_ADD
         Pending,
-        // Was added via EPOLL_CTL_ADD
+        // 已通过 EPOLL_CTL_ADD 注册
         Added,
-        // Was canceled an so removed via EPOLL_CTL_DEL
+        // 已取消并从 epoll 删除
         Cancelled
     }
 
@@ -262,8 +261,7 @@ public class EpollIoHandler implements IoHandler {
                             return -1;
                         case Pending:
                             if (epollIoOps.value == EpollIoOps.NONE.value) {
-                                // 0 is a special value that basically means we should remove the registration.
-                                // As we did not add the fd yet we should just return.
+                                // ops 为 0 表示不监听；Pending 状态直接返回
                                 return 0;
                             }
                             Native.epollCtlAdd(epollFd.intValue(), handle.fd().intValue(), epollIoOps.value);
@@ -271,8 +269,7 @@ public class EpollIoHandler implements IoHandler {
                             return epollIoOps.value;
                         case Added:
                             if (epollIoOps.value == EpollIoOps.NONE.value) {
-                                // 0 means there is nothing to handle anymore, unregister the fd as otherwise
-                                // we might get notified forever because of EPOLLHUP / EPOLLERR.
+                                // ops 为 0 则 EPOLL_CTL_DEL，避免 EPOLLHUP/ERR 永久通知
                                 Native.epollCtlDel(epollFd.intValue(), handle.fd().intValue());
                                 return 0;
                             }
@@ -313,7 +310,7 @@ public class EpollIoHandler implements IoHandler {
             DefaultEpollIoRegistration old = registrations.remove(fd);
             if (old != null) {
                 if (old != this) {
-                    // The Channel mapping was already replaced due FD reuse, put back the stored Channel.
+                    // fd 复用导致映射已被替换，恢复旧映射
                     registrations.put(fd, old);
                     return;
                 } else if (old.handle instanceof AbstractEpollChannel.AbstractEpollUnsafe) {
@@ -321,8 +318,7 @@ public class EpollIoHandler implements IoHandler {
                 }
                 if (handle.fd().isOpen()) {
                     try {
-                        // Remove the fd registration from epoll. This is only needed if it's still open as otherwise
-                        // it will be automatically removed once the file-descriptor is closed.
+                        // fd 仍打开时显式 EPOLL_CTL_DEL；关闭后内核会自动移除
                         Native.epollCtlDel(epollFd.intValue(), fd);
                     } catch (IOException e) {
                         logger.debug("Unable to remove fd {} from epoll {}", fd, epollFd.intValue());
@@ -358,8 +354,7 @@ public class EpollIoHandler implements IoHandler {
         int fd = epollHandle.fd().intValue();
         DefaultEpollIoRegistration old = registrations.put(fd, registration);
 
-        // We either expect to have no registration in the map with the same FD or that the FD of the old registration
-        // is already closed.
+        // 同 fd 无有效旧注册，或旧 fd 已关闭
         assert old == null || !old.isValid();
 
         if (epollHandle instanceof AbstractEpollChannel.AbstractEpollUnsafe) {
@@ -417,7 +412,7 @@ public class EpollIoHandler implements IoHandler {
     }
 
     private int epollWaitTimeboxed() throws IOException {
-        // Wait with 1 second "safeguard" timeout
+        // 带 1 秒 safeguard 超时的 epoll_wait
         return Native.epollWait(epollFd, events, 1000);
     }
 
@@ -439,34 +434,32 @@ public class EpollIoHandler implements IoHandler {
 
                 case SelectStrategy.SELECT:
                     if (pendingWakeup) {
-                        // We are going to be immediately woken so no need to reset wakenUp
-                        // or check for timerfd adjustment.
+                        // 即将被唤醒，无需重置 wakeup 或调整 timerfd
                         strategy = epollWaitTimeboxed();
                         if (strategy != 0) {
                             break;
                         }
-                        // We timed out so assume that we missed the write event due to an
-                        // abnormally failed syscall (the write itself or a prior epoll_wait)
+                        // 超时认为遗漏 eventfd 写事件（异常 syscall）
                         logger.warn("Missed eventfd write (not seen after > 1 second)");
                         pendingWakeup = false;
                         if (!context.canBlock()) {
                             break;
                         }
-                        // fall-through
+                        // 继续 fall-through 到 SELECT 分支
                     }
 
                     long curDeadlineNanos = context.deadlineNanos();
                     if (curDeadlineNanos == -1L) {
-                        curDeadlineNanos = NONE; // nothing on the calendar
+                        curDeadlineNanos = NONE; // 无定时任务
                     }
                     nextWakeupNanos.set(curDeadlineNanos);
                     try {
                         if (context.canBlock()) {
                             if (curDeadlineNanos == prevDeadlineNanos) {
-                                // No timer activity needed
+                                // deadline 未变，无需重设 timerfd
                                 strategy = epollWaitNoTimerChange();
                             } else {
-                                // Timerfd needs to be re-armed or disarmed
+                                // deadline 变化，需重设或解除 timerfd
                                 long result = epollWait(context, curDeadlineNanos);
                                 // The result contains the actual return value and if a timer was used or not.
                                 // We need to "unpack" using the helper methods exposed in Native.
@@ -481,7 +474,7 @@ public class EpollIoHandler implements IoHandler {
                             pendingWakeup = true;
                         }
                     }
-                    // fallthrough
+                    // fallthrough 到 default 处理就绪事件
                 default:
             }
             if (strategy > 0) {
@@ -503,7 +496,7 @@ public class EpollIoHandler implements IoHandler {
             }
 
             if (allowGrowing && strategy == events.length()) {
-                //increase the size of the array as we needed the whole space for the events
+                // 就绪数等于数组长度时扩容，避免下次溢出
                 events.increase();
             }
         } catch (Error e) {
@@ -516,12 +509,12 @@ public class EpollIoHandler implements IoHandler {
 
     /**
      * Visible only for testing!
+     * <p>selector 循环异常处理：打日志并 sleep 1s 防止 CPU 空转（仅测试可见）。</p>
      */
     void handleLoopException(Throwable t) {
         logger.warn("Unexpected exception in the selector loop.", t);
 
-        // Prevent possible consecutive immediate failures that lead to
-        // excessive CPU consumption.
+        // 连续失败时 sleep，防止 selector 循环占满 CPU
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -529,8 +522,7 @@ public class EpollIoHandler implements IoHandler {
         }
     }
 
-    // Returns packed int: each real I/O event adds 2, timer fired adds 1.
-    // Unpack: real events = result >>> 1, timer fired = (result & 1) != 0.
+    // 打包返回值：每个真实 I/O 事件 +2，timer 触发 +1；解包见注释
     private int processReady(EpollEventArray events, int ready) {
         int result = 0;
         for (int i = 0; i < ready; i ++) {
@@ -547,14 +539,11 @@ public class EpollIoHandler implements IoHandler {
                 if (registration != null) {
                     registration.handle(ev);
                 } else {
-                    // We received an event for an fd which we not use anymore. Remove it from the epoll_event set.
+                    // 收到已注销 fd 的事件，从 epoll 集删除
                     try {
                         Native.epollCtlDel(epollFd.intValue(), fd);
                     } catch (IOException ignore) {
-                        // This can happen but is nothing we need to worry about as we only try to delete
-                        // the fd from the epoll set as we not found it in our mappings. So this call to
-                        // epollCtlDel(...) is just to ensure we cleanup stuff and so may fail if it was
-                        // deleted before or the file descriptor was closed before.
+                        // 清理孤儿 fd；已删或已关闭时 epollCtlDel 失败可忽略
                     }
                 }
             }
@@ -567,15 +556,16 @@ public class EpollIoHandler implements IoHandler {
      * integration, such as OpenJDK CRaC.
      * It's up to the caller to ensure that there is no concurrent use
      * of the FDs while these are closed, e.g. by blocking the executor.
+     * <p>关闭 eventfd/timerfd/epoll fd；调用方须保证无并发 I/O（如阻塞 executor）。</p>
      */
     @UnstableApi
     public void closeFileDescriptors() {
-        // Ensure any in-flight wakeup writes have been performed prior to closing eventFd.
+        // 关闭 eventFd 前尽量消费未处理的 wakeup 写
         while (pendingWakeup) {
             try {
                 int count = epollWaitTimeboxed();
                 if (count == 0) {
-                    // We timed-out so assume that the write we're expecting isn't coming
+                    // 超时则假定不会再有 wakeup 写
                     break;
                 }
                 for (int i = 0; i < count; i++) {

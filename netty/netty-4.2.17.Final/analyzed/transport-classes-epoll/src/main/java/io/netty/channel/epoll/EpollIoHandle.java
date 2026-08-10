@@ -20,10 +20,12 @@ import io.netty.channel.unix.FileDescriptor;
 
 /**
  * {@link IoHandle} implementation which is using epoll.
+ * <p>基于 epoll 的 {@link IoHandle}，暴露底层 {@link FileDescriptor}。</p>
  */
 public interface EpollIoHandle extends IoHandle {
     /**
      * Returns the {@link FileDescriptor} that used by this {@link IoHandle}.
+     * <p>返回本 handle 注册到 epoll 的文件描述符。</p>
      *
      * @return fd
      */

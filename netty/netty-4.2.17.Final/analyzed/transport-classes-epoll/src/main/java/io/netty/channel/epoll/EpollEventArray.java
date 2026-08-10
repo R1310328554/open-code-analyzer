@@ -24,6 +24,8 @@ import java.nio.ByteBuffer;
 
 /**
  * This is an internal datastructure which can be directly passed to epoll_wait to reduce the overhead.
+ * <p>可直接传给 {@code epoll_wait} 的内部结构，减少 JNI 拷贝；{@code epoll_data} 的 {@code fd} 字段存
+ * {@link AbstractEpollChannel} 文件描述符以便后续映射。</p>
  *
  * typedef union epoll_data {
  *     void        *ptr;
@@ -42,9 +44,9 @@ import java.nio.ByteBuffer;
  */
 @UnstableApi
 public final class EpollEventArray {
-    // Size of the epoll_event struct
+    // epoll_event 结构体字节大小
     private static final int EPOLL_EVENT_SIZE = Native.sizeofEpollEvent();
-    // The offset of the data union in the epoll_event struct
+    // epoll_event 中 data 联合体的偏移量
     private static final int EPOLL_DATA_OFFSET = Native.offsetofEpollData();
 
     private CleanableDirectBuffer cleanable;
@@ -64,6 +66,7 @@ public final class EpollEventArray {
 
     /**
      * Return the {@code memoryAddress} which points to the start of this {@link EpollEventArray}.
+     * <p>返回指向本数组起始地址的原生内存指针，供 {@code epoll_wait} 使用。</p>
      */
     long memoryAddress() {
         return memoryAddress;
@@ -72,6 +75,7 @@ public final class EpollEventArray {
     /**
      * Return the length of the {@link EpollEventArray} which represent the maximum number of {@code epoll_events}
      * that can be stored in it.
+     * <p>数组容量，即单次 {@code epoll_wait} 最多可接收的事件数。</p>
      */
     int length() {
         return length;
@@ -79,11 +83,12 @@ public final class EpollEventArray {
 
     /**
      * Increase the storage of this {@link EpollEventArray}.
+     * <p>容量翻倍扩容；旧内容无需保留。</p>
      */
     void increase() {
-        // double the size
+        // 容量翻倍
         length <<= 1;
-        // There is no need to preserve what was in the memory before.
+        // 无需保留旧内存内容
         CleanableDirectBuffer buffer = Buffer.allocateDirectBufferWithNativeOrder(calculateBufferCapacity(length));
         cleanable.clean();
         cleanable = buffer;
@@ -93,6 +98,7 @@ public final class EpollEventArray {
 
     /**
      * Free this {@link EpollEventArray}. Any usage after calling this method may segfault the JVM!
+     * <p>释放直接内存；调用后继续使用可能导致 JVM 段错误。</p>
      */
     void free() {
         cleanable.clean();
@@ -101,6 +107,7 @@ public final class EpollEventArray {
 
     /**
      * Return the events for the {@code epoll_event} on this index.
+     * <p>读取指定下标 {@code epoll_event} 的 events 掩码。</p>
      */
     int events(int index) {
         return getInt(index, 0);
@@ -108,6 +115,7 @@ public final class EpollEventArray {
 
     /**
      * Return the file descriptor for the {@code epoll_event} on this index.
+     * <p>读取指定下标事件关联的文件描述符。</p>
      */
     int fd(int index) {
         return getInt(index, EPOLL_DATA_OFFSET);

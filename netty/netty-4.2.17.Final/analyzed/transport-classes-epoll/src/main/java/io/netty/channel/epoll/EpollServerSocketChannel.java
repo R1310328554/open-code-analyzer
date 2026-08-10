@@ -34,10 +34,12 @@ import static io.netty.channel.unix.NativeInetAddress.address;
 
 /**
  * {@link ServerSocketChannel} implementation that uses linux EPOLL.
+ * <p>基于 Linux epoll 的 TCP {@link ServerSocketChannel}，支持 TFO、TCP_MD5SIG 等 Linux 特性。</p>
  */
 public final class EpollServerSocketChannel extends AbstractEpollServerChannel implements ServerSocketChannel {
 
     private final EpollServerSocketChannelConfig config;
+    /** 已配置 TCP_MD5SIG 的对端地址集合 */
     private volatile Collection<InetAddress> tcpMd5SigAddresses = Collections.emptyList();
 
     public EpollServerSocketChannel() {
@@ -46,6 +48,7 @@ public final class EpollServerSocketChannel extends AbstractEpollServerChannel i
 
     /**
      * @deprecated  use {@link EpollServerSocketChannel#EpollServerSocketChannel(SocketProtocolFamily)}
+      * <p>Netty epoll 传输实现；详见上方英文说明。</p>
      */
     @Deprecated
     public EpollServerSocketChannel(InternetProtocolFamily protocol) {
@@ -59,8 +62,7 @@ public final class EpollServerSocketChannel extends AbstractEpollServerChannel i
     }
 
     public EpollServerSocketChannel(int fd) {
-        // Must call this constructor to ensure this object's local address is configured correctly.
-        // The local address can only be obtained from a Socket object.
+        // 须经 Socket 构造以正确解析本地地址
         this(new LinuxSocket(fd));
     }
 
@@ -83,7 +85,7 @@ public final class EpollServerSocketChannel extends AbstractEpollServerChannel i
         }
         socket.listen(config.getBacklog());
         active = true;
-        // We now listen for new connections, submit the ops so we receive events.
+        // bind+listen 后提交 epoll 读事件等待 accept
         submitCurrentOps();
     }
 
@@ -112,7 +114,7 @@ public final class EpollServerSocketChannel extends AbstractEpollServerChannel i
     }
 
     void setTcpMd5Sig(Map<InetAddress, byte[]> keys) throws IOException {
-        // Add synchronized as newTcpMp5Sigs might do multiple operations on the socket itself.
+        // 更新 MD5 密钥可能对 socket 多次 ioctl，需同步
         synchronized (this) {
             tcpMd5SigAddresses = TcpMd5Util.newTcpMd5Sigs(this, tcpMd5SigAddresses, keys);
         }

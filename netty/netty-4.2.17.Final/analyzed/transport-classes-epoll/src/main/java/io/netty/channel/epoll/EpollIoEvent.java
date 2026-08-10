@@ -19,11 +19,13 @@ import io.netty.channel.IoEvent;
 
 /**
  * {@link IoEvent} that must be handled by the {@link EpollIoHandle}.
+ * <p>epoll 触发的 {@link IoEvent}，由 {@link EpollIoHandle} 处理。</p>
  */
 public interface EpollIoEvent extends IoEvent {
 
     /**
      * Returns the {@link EpollIoOps} which did trigger the {@link EpollIoEvent}.
+     * <p>返回触发本事件的 epoll 事件掩码。</p>
      *
      * @return  ops.
      */

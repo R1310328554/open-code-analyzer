@@ -27,13 +27,14 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Map;
 
+/** TCP 服务端 epoll 通道配置：SO_REUSEPORT、IP_FREEBIND、TCP_DEFER_ACCEPT 等 Linux 选项 */
 public final class EpollServerSocketChannelConfig extends EpollServerChannelConfig
         implements ServerSocketChannelConfig {
 
     EpollServerSocketChannelConfig(EpollServerSocketChannel channel) {
         super(channel);
 
-        // Use SO_REUSEADDR by default as java.nio does the same.
+        // 默认开启 SO_REUSEADDR，与 java.nio 行为一致
         //
         // See https://github.com/netty/netty/issues/2605
         setReuseAddress(true);
@@ -176,6 +177,7 @@ public final class EpollServerSocketChannelConfig extends EpollServerChannelConf
      * Set the {@code TCP_MD5SIG} option on the socket. See {@code linux/tcp.h} for more details.
      * Keys can only be set on, not read to prevent a potential leak, as they are confidential.
      * Allowing them being read would mean anyone with access to the channel could get them.
+     * <p>设置 BGP TCP MD5 签名密钥；仅可写不可读以防泄露。</p>
      */
     public EpollServerSocketChannelConfig setTcpMd5Sig(Map<InetAddress, byte[]> keys) {
         try {
@@ -188,6 +190,7 @@ public final class EpollServerSocketChannelConfig extends EpollServerChannelConf
 
     /**
      * Returns {@code true} if the SO_REUSEPORT option is set.
+     * <p>是否启用 SO_REUSEPORT（多进程/线程同端口监听）。</p>
      */
     public boolean isReusePort() {
         try {
@@ -200,6 +203,7 @@ public final class EpollServerSocketChannelConfig extends EpollServerChannelConf
     /**
      * Set the SO_REUSEPORT option on the underlying Channel. This will allow to bind multiple
      * {@link EpollSocketChannel}s to the same port and so accept connections with multiple threads.
+     * <p>启用端口复用，须在 bind 前设置。</p>
      *
      * Be aware this method needs be called before {@link EpollSocketChannel#bind(java.net.SocketAddress)} to have
      * any affect.
@@ -216,6 +220,7 @@ public final class EpollServerSocketChannelConfig extends EpollServerChannelConf
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_FREEBIND</a> is enabled,
      * {@code false} otherwise.
+     * <p>是否启用 IP_FREEBIND（非本地地址 bind）。</p>
      */
     public boolean isFreeBind() {
         try {
@@ -228,6 +233,7 @@ public final class EpollServerSocketChannelConfig extends EpollServerChannelConf
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_FREEBIND</a> is enabled,
      * {@code false} for disable it. Default is disabled.
+     * <p>开关 IP_FREEBIND，默认关闭。</p>
      */
     public EpollServerSocketChannelConfig setFreeBind(boolean freeBind) {
         try {
@@ -241,6 +247,7 @@ public final class EpollServerSocketChannelConfig extends EpollServerChannelConf
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
      * {@code false} otherwise.
+     * <p>是否启用透明代理 IP_TRANSPARENT。</p>
      */
     public boolean isIpTransparent() {
         try {
@@ -253,6 +260,7 @@ public final class EpollServerSocketChannelConfig extends EpollServerChannelConf
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
      * {@code false} for disable it. Default is disabled.
+      * <p>Netty epoll 传输实现；详见上方英文说明。</p>
      */
     public EpollServerSocketChannelConfig setIpTransparent(boolean transparent) {
         try {
@@ -265,6 +273,7 @@ public final class EpollServerSocketChannelConfig extends EpollServerChannelConf
 
     /**
      * Set the {@code TCP_DEFER_ACCEPT} option on the socket. See {@code man 7 tcp} for more details.
+     * <p>设置 TCP_DEFER_ACCEPT，延迟向应用交付连接直至有数据。</p>
      */
     public EpollServerSocketChannelConfig setTcpDeferAccept(int deferAccept) {
         try {
@@ -277,6 +286,7 @@ public final class EpollServerSocketChannelConfig extends EpollServerChannelConf
 
     /**
      * Returns a positive value if <a href="https://linux.die.net//man/7/tcp">TCP_DEFER_ACCEPT</a> is enabled.
+     * <p>返回 TCP_DEFER_ACCEPT 秒数，未启用则为 0。</p>
      */
     public int getTcpDeferAccept() {
         try {

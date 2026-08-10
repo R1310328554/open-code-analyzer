@@ -22,6 +22,7 @@ import io.netty.channel.RecvByteBufAllocator.ExtendedHandle;
 import io.netty.channel.unix.PreferredDirectByteBufAllocator;
 import io.netty.util.UncheckedBooleanSupplier;
 
+/** epoll 接收缓冲区分配 handle：强制直接内存，并处理 EPOLLRDHUP 续读逻辑 */
 class EpollRecvByteAllocatorHandle extends DelegatingHandle implements ExtendedHandle {
     private final PreferredDirectByteBufAllocator preferredDirectByteBufAllocator =
             new PreferredDirectByteBufAllocator();
@@ -37,21 +38,24 @@ class EpollRecvByteAllocatorHandle extends DelegatingHandle implements ExtendedH
         super(handle);
     }
 
+    /** 标记已收到 EPOLLRDHUP，需读至错误 */
     final void receivedRdHup() {
         receivedRdHup = true;
     }
 
+    /** 是否已收到对端半关闭通知 */
     final boolean isReceivedRdHup() {
         return receivedRdHup;
     }
 
+    /** 上次读满缓冲区则可能仍有数据 */
     boolean maybeMoreDataToRead() {
         return lastBytesRead() == attemptedBytesRead();
     }
 
     @Override
     public final ByteBuf allocate(ByteBufAllocator alloc) {
-        // We need to ensure we always allocate a direct ByteBuf as we can only use a direct buffer to read via JNI.
+        // JNI 读路径仅支持直接缓冲区，故强制 direct 分配
         preferredDirectByteBufAllocator.updateAllocator(alloc);
         return delegate().allocate(preferredDirectByteBufAllocator);
     }
@@ -63,7 +67,7 @@ class EpollRecvByteAllocatorHandle extends DelegatingHandle implements ExtendedH
 
     @Override
     public final boolean continueReading() {
-        // We must override the supplier which determines if there maybe more data to read.
+        // 覆盖“是否还有数据可读”的默认判定逻辑
         return continueReading(defaultMaybeMoreDataSupplier);
     }
 }

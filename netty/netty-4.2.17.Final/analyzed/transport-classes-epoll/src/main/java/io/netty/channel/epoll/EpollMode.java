@@ -17,6 +17,7 @@ package io.netty.channel.epoll;
 
 /**
  * The <a href="https://linux.die.net//man/7/epoll">epoll</a> mode to use.
+ * <p>epoll 触发模式枚举；Netty 现固定使用水平触发，本枚举已弃用。</p>
  *
  * @deprecated Netty always uses level-triggered mode.
  */
@@ -25,6 +26,7 @@ public enum EpollMode {
 
     /**
      * Use {@code EPOLLET} (edge-triggered).
+     * <p>边沿触发（EPOLLET）。</p>
      *
      * @see <a href="https://linux.die.net//man/7/epoll">man 7 epoll</a>.
      */
@@ -32,6 +34,7 @@ public enum EpollMode {
 
     /**
      * Do not use {@code EPOLLET} (level-triggered).
+     * <p>水平触发（默认，不设 EPOLLET）。</p>
      *
      * @see <a href="https://linux.die.net//man/7/epoll">man 7 epoll</a>.
      */

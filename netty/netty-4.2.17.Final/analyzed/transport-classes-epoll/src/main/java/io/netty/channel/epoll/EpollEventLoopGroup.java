@@ -35,22 +35,23 @@ import java.util.concurrent.ThreadFactory;
 /**
  * {@link EventLoopGroup} which uses epoll under the covers. Because of this
  * it only works on linux.
+ * <p>Linux epoll 多线程 {@link EventLoopGroup}；已弃用，请改用 {@link MultiThreadIoEventLoopGroup} + {@link EpollIoHandler#newFactory()}。</p>
  *
  * @deprecated Use {@link MultiThreadIoEventLoopGroup} with {@link EpollIoHandler#newFactory()}.
  */
 @Deprecated
 public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
-    // This does not use static by design to ensure the class can be loaded and only do the check when its actually
-    // instanced.
+    // 非 static 初始化块：仅在实例化时触发 JNI 可用性检查
     {
-        // Ensure JNI is initialized by the time this class is loaded.
+        // 确保实例化前 epoll JNI 已加载
         Epoll.ensureAvailability();
     }
     private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(EpollEventLoopGroup.class);
 
     /**
      * Create a new instance using the default number of threads and the default {@link ThreadFactory}.
+     * <p>使用默认线程数与默认 {@link ThreadFactory} 创建实例。</p>
      */
     public EpollEventLoopGroup() {
         this(0);
@@ -58,6 +59,7 @@ public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads and the default {@link ThreadFactory}.
+     * <p>指定线程数，使用默认 {@link ThreadFactory}。</p>
      */
     public EpollEventLoopGroup(int nThreads) {
         this(nThreads, (ThreadFactory) null);
@@ -65,6 +67,7 @@ public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the default number of threads and the given {@link ThreadFactory}.
+     * <p>默认线程数，指定 {@link ThreadFactory}。</p>
      */
     @SuppressWarnings("deprecation")
     public EpollEventLoopGroup(ThreadFactory threadFactory) {
@@ -73,6 +76,7 @@ public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads and the default {@link ThreadFactory}.
+     * <p>指定线程数，使用默认 {@link ThreadFactory}。</p>
      */
     @SuppressWarnings("deprecation")
     public EpollEventLoopGroup(int nThreads, SelectStrategyFactory selectStrategyFactory) {
@@ -81,6 +85,7 @@ public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads and the given {@link ThreadFactory}.
+     * <p>指定线程数与 {@link ThreadFactory}。</p>
      */
     @SuppressWarnings("deprecation")
     public EpollEventLoopGroup(int nThreads, ThreadFactory threadFactory) {
@@ -93,6 +98,7 @@ public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads and the given {@link ThreadFactory}.
+     * <p>指定线程数与 {@link ThreadFactory}。</p>
      */
     @SuppressWarnings("deprecation")
     public EpollEventLoopGroup(int nThreads, ThreadFactory threadFactory, SelectStrategyFactory selectStrategyFactory) {
@@ -102,6 +108,7 @@ public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
     /**
      * Create a new instance using the specified number of threads, the given {@link ThreadFactory} and the given
      * maximal amount of epoll events to handle per epollWait(...).
+     * <p>可指定单次 {@code epollWait} 最大事件数（已弃用）。</p>
      *
      * @deprecated  Use {@link #EpollEventLoopGroup(int)} or {@link #EpollEventLoopGroup(int, ThreadFactory)}
      */
@@ -112,6 +119,7 @@ public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * Create a new instance using the specified number of threads, the given {@link ThreadFactory} and the given
+     * <p>创建新实例。</p>
      * maximal amount of epoll events to handle per epollWait(...).
      *
      * @deprecated  Use {@link #EpollEventLoopGroup(int)}, {@link #EpollEventLoopGroup(int, ThreadFactory)}, or
@@ -162,6 +170,7 @@ public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
      * @param tailTaskQueueFactory the {@link EventLoopTaskQueueFactory} to use for
      *                             {@link SingleThreadEventLoop#executeAfterEventLoopIteration(Runnable)},
      *                             or {@code null} if default one should be used.
+      * <p>Netty epoll 传输实现；详见上方英文说明。</p>
      */
     public EpollEventLoopGroup(int nThreads, Executor executor, EventExecutorChooserFactory chooserFactory,
                                SelectStrategyFactory selectStrategyFactory,
@@ -174,6 +183,7 @@ public final class EpollEventLoopGroup extends MultiThreadIoEventLoopGroup {
 
     /**
      * This method is a no-op.
+     * <p>IO 比例设置已移除，调用无效果。</p>
      *
      * @deprecated
      */
