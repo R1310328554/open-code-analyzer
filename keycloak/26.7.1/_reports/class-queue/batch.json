@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:56:00Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/condition/AbstractClientPolicyConditionProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/condition/AbstractClientPolicyConditionProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/condition/ClientPolicyConditionProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/condition/ClientPolicyConditionProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/condition/ClientPolicyConditionSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/executor/ClientPolicyExecutorProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/executor/ClientPolicyExecutorProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/executor/ClientPolicyExecutorSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/services/cors/Cors.java",
-    "server-spi-private/src/main/java/org/keycloak/services/cors/CorsFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/cors/CorsSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/services/managers/BruteForceProtector.java",
-    "server-spi-private/src/main/java/org/keycloak/services/managers/BruteForceProtectorFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/managers/BruteForceProtectorSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/services/resource/AccountResourceProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2548,
-  "done": 3435
+  "done": 3450
 }
