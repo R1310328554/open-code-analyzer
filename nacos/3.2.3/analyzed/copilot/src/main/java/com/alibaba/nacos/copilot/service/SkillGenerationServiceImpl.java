@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * Skill 生成服务实现：整合对话历史、MCP 工具与背景信息，调用 Copilot 生成并解析 Skill JSON。
  * Skill generation service implementation.
  *
  * @author nacos
@@ -52,14 +53,19 @@ import java.util.concurrent.atomic.AtomicReference;
 @Service
 public class SkillGenerationServiceImpl implements SkillGenerationService {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(SkillGenerationServiceImpl.class);
     
+    /** Markdown JSON 代码块起始标记。 */
     private static final String JSON_CODE_BLOCK = "```json";
     
+    /** Markdown 代码块标记。 */
     private static final String CODE_BLOCK = "```";
     
+    /** Copilot Agent 管理器。 */
     private final CopilotAgentManager agentManager;
     
+    /** 注入 Agent 管理器。 */
     @Autowired
     public SkillGenerationServiceImpl(CopilotAgentManager agentManager) {
         this.agentManager = agentManager;
@@ -68,37 +74,37 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
     @Override
     @SuppressWarnings("PMD.MethodTooLongRule")
     public SkillGenerationResponse generateSkill(SkillGenerationRequest request) {
-        // 1. Validate request
+        // 1. 校验请求
         if (request == null || StringUtils.isBlank(request.getBackgroundInfo())) {
             throw new RuntimeException(new NacosException(NacosException.INVALID_PARAM,
                 "Background information is required"));
         }
         
-        // 2. Check if Copilot is enabled
+        // 2. 检查 Copilot 是否启用
         if (!agentManager.isEnabled()) {
             throw new RuntimeException(new NacosException(NacosException.INVALID_PARAM,
                 "AI 功能未启用：请配置 Copilot API Key。请设置 nacos.copilot.llm.apiKey 或环境变量 COPILOT_API_KEY"));
         }
         
-        // 3. Get system prompt
+        // 3. 加载 Skill 生成系统提示词
         String systemPrompt = SkillGenerationPrompt.SYSTEM_PROMPT;
         
-        // 4. Build user message
+        // 4. 组装用户消息
         String userMessage = buildUserMessage(request);
         
-        // 5. Create agent with system prompt
+        // 5. 创建 Agent
         ReActAgent agent = agentManager.createAgent(systemPrompt);
         if (agent == null) {
             throw new RuntimeException(new NacosException(NacosException.INVALID_PARAM,
                 "Failed to create Copilot agent. Please check configuration."));
         }
         
-        // 6. Create user message
+        // 6. 构造 Msg
         Msg userMsg = Msg.builder()
             .textContent(userMessage)
             .build();
         
-        // 7. Call agent (non-streaming, collect all results)
+        // 7. 非流式调用并收集全部输出
         try {
             StreamOptions streamOptions = StreamOptions.builder()
                 .eventTypes(EventType.REASONING, EventType.TOOL_RESULT)
@@ -134,7 +140,7 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
                     latch.countDown();
                 });
             
-            // Wait for completion (with timeout)
+            // 等待流式完成（超时 60 秒）
             boolean completed = latch.await(60, TimeUnit.SECONDS);
             if (!completed) {
                 throw new RuntimeException(new NacosException(NacosException.SERVER_ERROR,
@@ -146,7 +152,7 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
                     "Failed to generate skill: " + errorRef.get().getMessage()));
             }
             
-            // 8. Parse response
+            // 8. 解析模型输出为 Skill
             SkillGenerationResponse generationResponse = new SkillGenerationResponse();
             parseGenerationResult(fullContent.toString(), generationResponse);
             
@@ -166,27 +172,27 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
     @SuppressWarnings("PMD.MethodTooLongRule")
     public void generateSkillStream(SkillGenerationRequest request,
         StreamResponseCallback<SkillGenerationResponse> callback) {
-        // 1. Validate request
+        // 1. 校验请求
         if (request == null || StringUtils.isBlank(request.getBackgroundInfo())) {
             callback.onError(new NacosException(NacosException.INVALID_PARAM,
                 "Background information is required"));
             return;
         }
         
-        // 2. Check if Copilot is enabled
+        // 2. 检查 Copilot 是否启用
         if (!agentManager.isEnabled()) {
             callback.onError(new NacosException(NacosException.INVALID_PARAM,
                 "AI 功能未启用：请配置 Copilot API Key。请设置 nacos.copilot.llm.apiKey 或环境变量 COPILOT_API_KEY"));
             return;
         }
         
-        // 3. Get system prompt
+        // 3. 加载 Skill 生成系统提示词
         String systemPrompt = SkillGenerationPrompt.SYSTEM_PROMPT;
         
-        // 4. Build user message
+        // 4. 组装用户消息
         String userMessage = buildUserMessage(request);
         
-        // 5. Create agent with system prompt
+        // 5. 创建 Agent
         ReActAgent agent = agentManager.createAgent(systemPrompt);
         if (agent == null) {
             callback.onError(new NacosException(NacosException.INVALID_PARAM,
@@ -194,19 +200,18 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
             return;
         }
         
-        // 6. Create user message
+        // 6. 构造 Msg
         Msg userMsg = Msg.builder()
             .textContent(userMessage)
             .build();
         
-        // 7. Configure streaming options
+        // 7. 配置流式选项
         StreamOptions streamOptions = StreamOptions.builder()
             .eventTypes(EventType.REASONING, EventType.TOOL_RESULT)
             .incremental(true)
             .build();
         
-        // 8. Call agent with stream response
-        // Frontend will accumulate and parse the content itself, so we don't need to accumulate fullContent
+        // 8. 流式调用 Agent；前端自行累积解析，服务端无需缓存全文
         Flux<io.agentscope.core.agent.Event> eventFlux = agent.stream(userMsg, streamOptions)
             .subscribeOn(Schedulers.boundedElastic());
         
@@ -228,7 +233,7 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
             && request.getConversationHistory().getMessages() != null
             && !request.getConversationHistory().getMessages().isEmpty();
         
-        // Add conversation history analysis if provided
+        // 若提供对话历史，追加分析指令与完整对话内容
         if (hasConversationHistory) {
             sb.append("对话历史分析（请充分理解这段对话历史，判断是否适合沉淀为一个 Skill）：\n\n");
             ConversationHistory history = request.getConversationHistory();
@@ -283,7 +288,7 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
         sb.append("背景信息：\n");
         sb.append(request.getBackgroundInfo()).append("\n\n");
         
-        // Add MCP tools information if provided
+        // 若选定 MCP 工具，追加工具说明与使用约束
         if (request.getSelectedMcpTools() != null && !request.getSelectedMcpTools().isEmpty()) {
             sb.append("可用的 MCP 工具（可根据 Skill 功能需求合理选择使用）：\n");
             for (Map<String, Object> tool : request.getSelectedMcpTools()) {
@@ -318,12 +323,12 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
     @SuppressWarnings("unchecked")
     private void parseGenerationResult(String fullContent, SkillGenerationResponse response) {
         try {
-            // Try to extract JSON from the content
+            // 尝试从模型输出中提取 JSON
             String jsonContent = extractJsonFromContent(fullContent);
             
             Map<String, Object> result = JacksonUtils.toObj(jsonContent, Map.class);
             
-            // Parse skill (only field required)
+            // 解析 skill 字段（必需）
             Map<String, Object> skillMap = (Map<String, Object>) result.get("skill");
             if (skillMap != null) {
                 // Normalize resource structure: handle nested resources (resources.scripts.xxx) to flat structure (resource.xxx)
@@ -333,7 +338,7 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
                 Skill skill = JacksonUtils.toObj(JacksonUtils.toJson(skillMap), Skill.class);
                 response.setSkill(skill);
             } else {
-                // If skill is not found, try to parse the entire result as skill
+                // 若无 skill 字段，尝试将整个结果当作 Skill
                 normalizeResourceStructure(result);
                 normalizeSkillMdField(result);
                 Skill skill = JacksonUtils.toObj(JacksonUtils.toJson(result), Skill.class);
@@ -344,12 +349,12 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
             
         } catch (Exception e) {
             LOGGER.warn("Failed to parse generation result from LLM response: {}", fullContent, e);
-            // Set done flag even if parsing failed
+            // 解析失败仍标记 done，避免前端无限等待
             response.setDone(true);
             
-            // Try to extract skill from the content even if JSON parsing failed
+            // JSON 解析失败时二次尝试提取 Skill
             try {
-                // Try to extract JSON from markdown code blocks or find JSON object
+                // 优先从 Markdown 代码块提取 JSON or find JSON object
                 String jsonContent = extractJsonFromContent(fullContent);
                 if (jsonContent != null && !jsonContent.isEmpty()) {
                     Map<String, Object> result = JacksonUtils.toObj(jsonContent, Map.class);
@@ -394,18 +399,18 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
             }
         }
         
-        // Try to find JSON object by properly matching braces
+        // 通过括号匹配定位 JSON 对象
         String jsonObject = extractJsonObject(content);
         if (jsonObject != null && isValidJson(jsonObject)) {
             return jsonObject;
         }
         
-        // If no valid JSON found, return the original content
+        // 未找到合法 JSON 时返回原文
         return content;
     }
     
     /**
-     * Find the matching closing ``` for a code block.
+     * 定位与起始标记配对的代码块结束 ``` 位置。
      */
     private int findMatchingCodeBlockEnd(String content, int startPos) {
         int pos = startPos;
@@ -429,7 +434,7 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
     }
     
     /**
-     * Extract JSON object by properly matching braces.
+     * 通过括号计数与字符串转义处理，提取完整 JSON 对象字符串。
      */
     private String extractJsonObject(String content) {
         int start = content.indexOf("{");
@@ -478,7 +483,7 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
     }
     
     /**
-     * Check if a string is valid JSON by trying to parse it.
+     * 尝试反序列化以判断字符串是否为合法 JSON。
      */
     private boolean isValidJson(String json) {
         if (json == null || json.trim().isEmpty()) {
@@ -493,8 +498,8 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
     }
     
     /**
-     * Normalize resource structure from nested format to flat format.
-     * Handles cases where LLM returns nested resources like:
+     * 将 LLM 返回的嵌套 resources 结构规范化为扁平 resource 映射。
+     * 典型嵌套格式示例：
      * {
      *   "resources": {
      *     "scripts": {
@@ -515,10 +520,10 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
      */
     @SuppressWarnings("unchecked")
     private void normalizeResourceStructure(Map<String, Object> skillMap) {
-        // Check if there's a nested "resources" structure
+        // 检查是否存在嵌套 resources 字段
         Object resourcesObj = skillMap.get("resources");
         if (resourcesObj == null) {
-            // No nested resources, check if "resource" already exists
+            // 无嵌套结构时确保 resource 字段存在
             Object resourceObj = skillMap.get("resource");
             if (resourceObj == null || !(resourceObj instanceof Map)) {
                 skillMap.put("resource", new HashMap<>(16));
@@ -526,7 +531,7 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
             return;
         }
         
-        // If resources is not a Map, skip normalization
+        // resources 非 Map 时跳过规范化
         if (!(resourcesObj instanceof Map)) {
             return;
         }
@@ -534,16 +539,16 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
         Map<String, Object> resources = (Map<String, Object>) resourcesObj;
         Map<String, Object> flatResourceMap = new HashMap<>(16);
         
-        // Recursively flatten nested resource structure
+        // 递归扁平化嵌套资源
         flattenResources(resources, flatResourceMap, "");
         
-        // Replace "resources" with "resource" (singular) and use flattened structure
+        // 用扁平 resource 替换 resources
         skillMap.remove("resources");
         skillMap.put("resource", flatResourceMap);
     }
     
     /**
-     * Accept legacy "instruction" field from model output and map it to skillMd.
+     * 兼容模型输出的 instruction 字段，映射为 skillMd。
      */
     private void normalizeSkillMdField(Map<String, Object> skillMap) {
         if (skillMap == null) {
@@ -560,11 +565,11 @@ public class SkillGenerationServiceImpl implements SkillGenerationService {
     }
     
     /**
-     * Recursively flatten nested resource structure.
+     * 递归扁平化嵌套资源结构。
      *
-     * @param nestedResources nested resource structure
-     * @param flatMap output flat resource map
-     * @param prefix prefix for resource keys (currently unused, kept for API consistency)
+     * @param nestedResources 嵌套资源 Map
+     * @param flatMap 输出的扁平资源 Map
+     * @param prefix 资源键前缀（当前未使用，保留 API 一致性）
      */
     @SuppressWarnings({"unchecked", "unused"})
     private void flattenResources(Map<String, Object> nestedResources, Map<String, Object> flatMap,

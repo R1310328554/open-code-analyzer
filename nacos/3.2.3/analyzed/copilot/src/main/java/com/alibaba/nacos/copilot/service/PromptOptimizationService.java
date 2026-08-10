@@ -21,6 +21,7 @@ import com.alibaba.nacos.copilot.model.PromptOptimizationRequest;
 import com.alibaba.nacos.copilot.model.PromptOptimizationResponse;
 
 /**
+ * Prompt 优化服务接口：基于 Copilot 对现有 Prompt 进行结构化改进并流式返回结果。
  * Prompt optimization service interface.
  *
  * @author nacos
@@ -28,10 +29,10 @@ import com.alibaba.nacos.copilot.model.PromptOptimizationResponse;
 public interface PromptOptimizationService {
     
     /**
-     * Optimize prompt with stream response.
+     * 流式优化 Prompt，按分片推送优化过程与结果。
      *
-     * @param request  optimization request containing prompt and optimization goal
-     * @param callback stream response callback
+     * @param request  优化请求，含原始 Prompt 与优化目标
+     * @param callback 流式响应回调
      */
     void optimizePromptStream(PromptOptimizationRequest request,
         StreamResponseCallback<PromptOptimizationResponse> callback);

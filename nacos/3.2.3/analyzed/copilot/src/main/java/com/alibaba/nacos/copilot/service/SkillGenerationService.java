@@ -21,6 +21,7 @@ import com.alibaba.nacos.copilot.model.SkillGenerationRequest;
 import com.alibaba.nacos.copilot.model.SkillGenerationResponse;
 
 /**
+ * Skill 生成服务接口：根据背景信息与对话历史生成符合 Agent Skill 规范的 Skill。
  * Skill generation service interface.
  *
  * @author nacos
@@ -28,18 +29,18 @@ import com.alibaba.nacos.copilot.model.SkillGenerationResponse;
 public interface SkillGenerationService {
     
     /**
-     * Generate skill from background information.
+     * 同步生成 Skill：阻塞等待模型输出并解析 JSON 结果。
      *
-     * @param request generation request
-     * @return generated skill response
+     * @param request 生成请求
+     * @return 含 Skill 对象的生成响应
      */
     SkillGenerationResponse generateSkill(SkillGenerationRequest request);
     
     /**
-     * Generate skill with stream response.
+     * 流式生成 Skill，按分片推送生成过程。
      *
-     * @param request  generation request
-     * @param callback stream response callback
+     * @param request  生成请求
+     * @param callback 流式响应回调
      */
     void generateSkillStream(SkillGenerationRequest request,
         StreamResponseCallback<SkillGenerationResponse> callback);

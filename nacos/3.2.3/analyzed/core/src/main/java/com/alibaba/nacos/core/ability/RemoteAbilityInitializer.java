@@ -19,12 +19,14 @@ package com.alibaba.nacos.core.ability;
 import com.alibaba.nacos.api.ability.ServerAbilities;
 
 /**
+ * 远程连接能力初始化器：向 {@link ServerAbilities} 注册服务端支持远程连接。
  * Server ability initializer for remote.
  *
  * @author xiweng.yy
  */
 public class RemoteAbilityInitializer implements ServerAbilityInitializer {
     
+    /** 启用 remoteAbility.supportRemoteConnection 标志。 */
     @Override
     public void initialize(ServerAbilities abilities) {
         abilities.getRemoteAbility().setSupportRemoteConnection(true);

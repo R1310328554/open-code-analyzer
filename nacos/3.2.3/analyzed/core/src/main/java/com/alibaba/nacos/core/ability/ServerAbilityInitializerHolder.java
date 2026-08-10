@@ -23,17 +23,21 @@ import java.util.Collection;
 import java.util.HashSet;
 
 /**
+ * 服务端能力初始化器持有者：通过 SPI 加载全部 {@link ServerAbilityInitializer} 实现。
  * Nacos server ability initializer holder.
  *
  * @author xiweng.yy
  */
 public class ServerAbilityInitializerHolder {
     
+    /** 单例实例。 */
     private static final ServerAbilityInitializerHolder INSTANCE =
         new ServerAbilityInitializerHolder();
     
+    /** 已加载的初始化器集合。 */
     private final Collection<ServerAbilityInitializer> initializers;
     
+    /** 私有构造：通过 {@link NacosServiceLoader} 发现并注册初始化器。 */
     private ServerAbilityInitializerHolder() {
         initializers = new HashSet<>();
         for (ServerAbilityInitializer each : NacosServiceLoader
@@ -44,10 +48,12 @@ public class ServerAbilityInitializerHolder {
         }
     }
     
+    /** 获取持有者单例。 */
     public static ServerAbilityInitializerHolder getInstance() {
         return INSTANCE;
     }
     
+    /** 返回全部已加载的服务端能力初始化器。 */
     public Collection<ServerAbilityInitializer> getInitializers() {
         return initializers;
     }

@@ -43,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
+ * Skill 优化服务实现：构造多轮对话消息、调用 Agent 流式推理并推送优化分片。
  * Skill optimization service implementation.
  *
  * @author nacos
@@ -50,16 +51,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class SkillOptimizationServiceImpl implements SkillOptimizationService {
     
+    /** SKILL.md 文件名常量。 */
     private static final String SKILL_MD_FILE_NAME = "SKILL.md";
     
+    /** SKILL.md 在资源 Map 中的键名。 */
     private static final String SKILL_MD_KEY = "skill-md";
     
+    /** 英文资源关键词，用于检测优化目标。 */
     private static final String RESOURCE_KEYWORD_EN = "resource";
     
+    /** 中文资源关键词，用于检测优化目标。 */
     private static final String RESOURCE_KEYWORD_ZH = "资源";
     
+    /** Copilot Agent 管理器。 */
     private final CopilotAgentManager agentManager;
     
+    /** 注入 Agent 管理器。 */
     @Autowired
     public SkillOptimizationServiceImpl(CopilotAgentManager agentManager) {
         this.agentManager = agentManager;
@@ -68,7 +75,7 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
     @Override
     public void optimizeSkillStream(SkillOptimizationRequest request,
         StreamResponseCallback<SkillOptimizationResponse> callback) {
-        // 1. Validate request
+        // 1. 校验 Skill 对象
         Skill skill = request.getSkill();
         if (skill == null) {
             callback.onError(new NacosException(NacosException.INVALID_PARAM,
@@ -76,27 +83,27 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
             return;
         }
         
-        // 2. Validate target file name (required)
+        // 2. 校验目标文件名（必填）
         if (StringUtils.isBlank(request.getTargetFileName())) {
             callback.onError(new NacosException(NacosException.INVALID_PARAM,
                 "Target file name is required. Please select a file to optimize."));
             return;
         }
         
-        // 3. Check if Copilot is enabled
+        // 3. 检查 Copilot 是否启用
         if (!agentManager.isEnabled()) {
             callback.onError(new NacosException(NacosException.INVALID_PARAM,
                 "AI 功能未启用：请配置 Copilot API Key。请设置 nacos.copilot.llm.apiKey 或环境变量 COPILOT_API_KEY"));
             return;
         }
         
-        // 3. Get system prompt (hardcoded)
+        // 4. 加载 Skill 优化系统提示词
         String systemPrompt = SkillOptimizationPrompt.SYSTEM_PROMPT;
         
-        // 4. Build conversation messages (user-assistant pairs)
+        // 5. 构造多轮对话消息
         List<Msg> messages = buildConversationMessages(skill, request);
         
-        // 5. Create agent with system prompt
+        // 6. 创建 Agent
         ReActAgent agent = agentManager.createAgent(systemPrompt);
         if (agent == null) {
             callback.onError(new NacosException(NacosException.INVALID_PARAM,
@@ -104,14 +111,13 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
             return;
         }
         
-        // 6. Configure streaming options
+        // 7. 配置流式选项
         StreamOptions streamOptions = StreamOptions.builder()
             .eventTypes(EventType.REASONING, EventType.TOOL_RESULT)
             .incremental(true)
             .build();
         
-        // 7. Call agent with stream response using message list
-        // Frontend will accumulate and parse the content itself, so we don't need to accumulate fullContent
+        // 8. 以消息列表流式调用 Agent；前端自行累积解析
         Flux<io.agentscope.core.agent.Event> eventFlux = agent.stream(messages, streamOptions)
             .subscribeOn(Schedulers.boundedElastic());
         
@@ -127,21 +133,18 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
     }
     
     /**
-     * Build conversation messages as user-assistant-user pairs.
-     * Message flow:
-     * 1. First user message: Skill content
-     * 2. Second assistant message: Acknowledge and ask "你希望我怎么优化这条skill"
-     * 3. Third user message: Optimization requirements (goal/tools/history) based on actual situation
+     * 构造 user-assistant-user 三轮对话消息。
+     * 流程：用户提交 Skill 内容 → 助手确认并询问优化方向 → 用户给出优化要求。
      *
-     * @param skill the skill to optimize
-     * @param request the optimization request
-     * @return list of messages forming a conversation
+     * @param skill 待优化的 Skill
+     * @param request 优化请求
+     * @return AgentScope 消息列表
      */
     @SuppressWarnings("PMD.MethodTooLongRule")
     private List<Msg> buildConversationMessages(Skill skill, SkillOptimizationRequest request) {
         List<Msg> messages = new ArrayList<>();
         
-        // Check what information is available
+        // 判断请求中可用的上下文信息
         boolean hasOptimizationGoal = StringUtils.isNotBlank(request.getOptimizationGoal());
         boolean hasSelectedTools = false;
         List<Map<String, Object>> selectedMcpTools = null;
@@ -161,29 +164,29 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
             }
         }
         
-        // Target file name is required (validated above)
+        // 目标文件名已在上方校验
         String targetFileName = request.getTargetFileName();
         
-        // Message 1: User provides Skill information (only the target file's content)
+        // 消息 1：用户提供目标文件的 Skill 内容
         StringBuilder skillInfo = new StringBuilder();
         skillInfo.append("名称：").append(skill.getName()).append("\n");
         
-        // Check if target file is SKILL.md or a resource file
+        // 判断目标是 SKILL.md 还是资源文件
         boolean isSkillMd =
             SKILL_MD_FILE_NAME.equals(targetFileName) || SKILL_MD_KEY.equals(targetFileName);
         if (isSkillMd) {
-            // Target is SKILL.md, include description and full markdown content
+            // 目标为 SKILL.md，包含描述与完整 Markdown
             skillInfo.append("描述：").append(skill.getDescription()).append("\n");
             skillInfo.append("SKILL.md：\n").append(skill.getSkillMd()).append("\n");
         } else if (skill.getResource() != null && !skill.getResource().isEmpty()) {
-            // Target is a resource file, find and include only that resource
+            // 目标为资源文件，仅包含匹配的资源内容
             boolean found = false;
             for (java.util.Map.Entry<String, SkillResource> entry : skill.getResource()
                 .entrySet()) {
                 String key = entry.getKey();
                 SkillResource res = entry.getValue();
                 
-                // Match by key or name
+                // 按 key 或 name 匹配
                 boolean matchByKey = key.equals(targetFileName);
                 boolean matchByName = res.getName() != null && res.getName().equals(targetFileName);
                 if (matchByKey || matchByName) {
@@ -200,7 +203,7 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
                 }
             }
             if (!found) {
-                // File not found, include all resources for context
+                // 未找到文件时列出全部资源供参考
                 skillInfo.append("\n注意：未找到指定的文件 ").append(targetFileName)
                     .append("，以下是所有资源文件供参考：\n");
                 skill.getResource().forEach((key, resource) -> {
@@ -219,17 +222,15 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
             .role(MsgRole.USER)
             .build());
         
-        // Message 2: Assistant acknowledges and asks how to optimize
+        // 消息 2：助手确认收到并询问优化方式
         messages.add(Msg.builder()
             .textContent("我已经收到了这个 Skill 的信息。你希望我怎么优化这条 skill？")
             .role(MsgRole.ASSISTANT)
             .build());
         
-        // Message 3: User provides optimization requirements based on actual situation
-        // Order: Conversation History > MCP Tools > Optimization Goal (last, highest priority via recency effect)
-        // If no specific requirements, merge into a simpler structure
+        // 消息 3：用户给出优化要求；优先级：对话历史 > MCP 工具 > 优化目标（近因效应最高）
         if (!hasConversationHistory && !hasSelectedTools && !hasOptimizationGoal) {
-            // Simplest case: user just wants to try the feature, check for obvious improvements
+            // 最简单场景：用户仅试探功能，检查明显可改进点
             String simpleRequest = "请帮我看看这个文件（" + targetFileName + "）有没有明显可以优化的地方。"
                 + "请只优化这个文件的内容，其他文件保持不变。如果没有明显问题，保持原样即可。";
             messages.add(Msg.builder()
@@ -237,10 +238,10 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
                 .role(MsgRole.USER)
                 .build());
         } else {
-            // Complex case: build structured optimization request
+            // 复杂场景：组装结构化优化请求
             StringBuilder optimizationRequest = new StringBuilder();
             
-            // Part 1: Conversation history (if available)
+            // 第一部分：对话历史（若有）
             if (hasConversationHistory) {
                 optimizationRequest.append("以下是一段对话交互历史。请仔细分析这段对话，完成以下任务：\n");
                 optimizationRequest.append("1. 分析对话中的交互场景：识别用户的需求、助手的处理逻辑、工具调用的模式和流程\n");
@@ -278,7 +279,7 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
                 }
             }
             
-            // Part 2: MCP tools (if available)
+            // 第二部分：MCP 工具（若有）
             if (hasSelectedTools && selectedMcpTools != null) {
                 if (hasConversationHistory) {
                     optimizationRequest.append("\n");
@@ -298,7 +299,7 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
                 }
             }
             
-            // Part 3: Optimization goal (last, highest priority via recency effect)
+            // 第三部分：优化目标（近因效应优先级最高）
             if (hasOptimizationGoal) {
                 if (hasConversationHistory || hasSelectedTools) {
                     optimizationRequest.append("\n");
@@ -307,7 +308,7 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
                     .append("\n");
                 optimizationRequest.append("请优先考虑并聚焦于这个优化目标，所有优化建议和改动都应该围绕这个目标展开。");
                 
-                // 如果优化目标中包含"资源"相关关键词，特别强调不要添加SKILL.md
+                // 优化目标涉及资源时，强调禁止将 SKILL.md 放入 resource
                 String optimizationGoalLower = request.getOptimizationGoal().toLowerCase();
                 boolean containsResourceKeyword =
                     optimizationGoalLower.contains(RESOURCE_KEYWORD_ZH)
@@ -330,13 +331,13 @@ public class SkillOptimizationServiceImpl implements SkillOptimizationService {
                 }
             }
             
-            // Part 4: Final request with context-aware emphasis
+            // 第四部分：结合上下文的最终优化指令
             optimizationRequest.append("\n\n");
             
-            // Add target file constraint (targetFileName is required)
+            // 追加仅优化目标文件的约束
             String targetFileConstraint = "【重要】请只优化文件 " + targetFileName + " 的内容，其他文件保持不变。";
             
-            // Always add SKILL.md constraint
+            // 始终追加 SKILL.md 禁止放入 resource 的约束
             optimizationRequest.append("\n【绝对禁止】无论优化目标是什么，都绝对不能：");
             optimizationRequest.append("\n- 将 SKILL.md 放在 resource 字段中");
             optimizationRequest.append("\n- 创建名为 SKILL.md 的资源文件");

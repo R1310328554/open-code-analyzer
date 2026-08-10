@@ -20,6 +20,7 @@ import com.alibaba.nacos.api.ability.ServerAbilities;
 import com.alibaba.nacos.api.ability.initializer.AbilityInitializer;
 
 /**
+ * Nacos 服务端能力初始化器 SPI：在启动阶段填充 {@link ServerAbilities} 各子能力开关。
  * Nacos server ability initializer.
  *
  * @author xiweng.yy
@@ -27,9 +28,9 @@ import com.alibaba.nacos.api.ability.initializer.AbilityInitializer;
 public interface ServerAbilityInitializer extends AbilityInitializer<ServerAbilities> {
     
     /**
-     * Initialize server abilities content.
+     * 初始化服务端能力集合的具体字段。
      *
-     * @param abilities server abilities
+     * @param abilities 服务端能力注册对象
      */
     @Override
     void initialize(ServerAbilities abilities);

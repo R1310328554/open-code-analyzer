@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
+ * 统一流式事件处理器：解析 AgentScope 流式事件，提取思考/工具/正文内容并驱动回调。
  * Unified stream event processor for handling AgentScope stream events.
  * Provides common logic for processing events and extracting content.
  *
@@ -36,13 +37,14 @@ import java.util.List;
  */
 public class StreamEventProcessor {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(StreamEventProcessor.class);
     
     /**
-     * Extract text content from Msg.
+     * 从 {@link Msg} 提取纯文本内容，优先 textContent 再回退 content 字符串。
      *
-     * @param msg message to extract content from
-     * @return text content, or null if not available
+     * @param msg 待提取的消息
+     * @return 文本内容，不可用时返回 null
      */
     public static String getTextContent(Msg msg) {
         if (msg == null) {
@@ -63,10 +65,10 @@ public class StreamEventProcessor {
     }
     
     /**
-     * Check if Msg contains only one thinkblock.
+     * 判断消息是否仅包含单个 {@link ThinkingBlock}。
      *
-     * @param msg message to check
-     * @return true if msg contains only one thinkblock, false otherwise
+     * @param msg 待检查消息
+     * @return 仅含一个 think block 时返回 true
      */
     public static boolean hasOnlyThinkBlock(Msg msg) {
         if (msg == null) {
@@ -87,10 +89,10 @@ public class StreamEventProcessor {
     }
     
     /**
-     * Extract thinking content from Msg (from thinkblock).
+     * 从 think block 提取模型思考文本。
      *
-     * @param msg message containing thinkblock
-     * @return thinking content, or null if not available
+     * @param msg 含 think block 的消息
+     * @return 思考内容，不可用时返回 null
      */
     public static String getThinkingContent(Msg msg) {
         if (msg == null) {
@@ -98,7 +100,7 @@ public class StreamEventProcessor {
         }
         
         try {
-            // Get thinkblock from msg content
+            // 从消息 content 列表读取 think block
             Object content = msg.getContent();
             if (content instanceof List) {
                 List<?> contentList = (List<?>) content;
@@ -119,14 +121,13 @@ public class StreamEventProcessor {
     }
     
     /**
-     * Process a single event and determine its type and content.
+     * 处理单个流式事件，映射为 {@link StreamResponseType} 与内容片段。
      *
-     * @param event the event to process
-     * @return EventProcessResult containing type and content, or null if event should be skipped
+     * @param event AgentScope 事件
+     * @return 处理结果；应跳过的 event 返回 null
      */
     public static EventProcessResult processEvent(io.agentscope.core.agent.Event event) {
-        // Check if this is the last message, which contains full content
-        // If it's the last message, skip sending chunk to avoid duplicate content
+        // 末帧含完整内容，跳过分片推送以避免重复
         if (event.isLast()) {
             return null;
         }
@@ -136,25 +137,25 @@ public class StreamEventProcessor {
             return null;
         }
         
-        // First determine response type based on event type and message structure
+        // 根据事件类型与消息结构确定响应类型
         StreamResponseType type = StreamResponseType.CONTENT;
         String content = null;
         
         if (event.getType() == EventType.TOOL_RESULT) {
-            // Tool call: get content from textContent
+            // 工具调用：从 textContent 取内容
             type = StreamResponseType.TOOL_CALL;
             content = getTextContent(msg);
         } else if (event.getType() == EventType.REASONING && hasOnlyThinkBlock(msg)) {
-            // Thinking: get content from thinkblock
+            // 思考过程：从 think block 取内容
             type = StreamResponseType.THINKING;
             content = getThinkingContent(msg);
         } else {
-            // Final response or other content: get content from textContent
+            // 正文或其他：从 textContent 取内容
             type = StreamResponseType.CONTENT;
             content = getTextContent(msg);
         }
         
-        // Only process if content is not empty
+        // 内容为空则跳过
         if (content == null || content.isEmpty()) {
             return null;
         }
@@ -163,30 +164,30 @@ public class StreamEventProcessor {
     }
     
     /**
-     * Response builder interface for creating response objects.
+     * 响应构建器：将类型、内容与完成标志转换为具体响应 DTO。
      *
-     * @param <T> response type
+     * @param <T> 响应类型
      */
     public interface ResponseBuilder<T> {
         
         /**
-         * Create a response object with the given type and content.
+         * 构建单帧响应对象。
          *
-         * @param type response type
-         * @param content content chunk (null for DONE)
-         * @param done whether the response is complete
-         * @return response object
+         * @param type 响应类型
+         * @param content 内容片段（DONE 时为 null）
+         * @param done 是否已完成
+         * @return 响应实例；返回 null 表示过滤该帧
          */
         T build(StreamResponseType type, String content, boolean done);
     }
     
     /**
-     * Create a Subscriber for processing stream events with a generic response type.
+     * 创建 Reactor {@link Subscriber}，统一处理 onNext/onError/onComplete 流式生命周期。
      *
-     * @param responseBuilder builder for creating response instances
-     * @param callback callback for sending responses
-     * @param <T> response type
-     * @return Subscriber instance
+     * @param responseBuilder 响应构建器
+     * @param callback 流式回调
+     * @param <T> 响应类型
+     * @return Subscriber 实例
      */
     public static <T> Subscriber<io.agentscope.core.agent.Event> createSubscriber(
         ResponseBuilder<T> responseBuilder,
@@ -206,7 +207,7 @@ public class StreamEventProcessor {
                     if (result != null) {
                         T response =
                             responseBuilder.build(result.getType(), result.getContent(), false);
-                        // Skip if response is null (e.g., filtered out by builder)
+                        // builder 返回 null 时跳过（如 THINKING 过滤）
                         if (response != null) {
                             callback.onNext(response);
                         }
@@ -224,7 +225,7 @@ public class StreamEventProcessor {
             
             @Override
             public void onComplete() {
-                // Frontend will parse the accumulated content itself, so we just send DONE signal
+                // 前端自行解析累积内容，此处仅发送 DONE 信号
                 T finalResponse = responseBuilder.build(StreamResponseType.DONE, null, true);
                 callback.onNext(finalResponse);
                 callback.onComplete();
@@ -233,22 +234,25 @@ public class StreamEventProcessor {
     }
     
     /**
-     * Result of processing an event.
+     * 单事件处理结果，携带类型与内容。
      */
     public static class EventProcessResult {
         
         private final StreamResponseType type;
         private final String content;
         
+        /** 构造事件处理结果。 */
         public EventProcessResult(StreamResponseType type, String content) {
             this.type = type;
             this.content = content;
         }
         
+        /** 获取响应类型。 */
         public StreamResponseType getType() {
             return type;
         }
         
+        /** 获取内容片段。 */
         public String getContent() {
             return content;
         }

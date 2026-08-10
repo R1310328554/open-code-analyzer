@@ -21,6 +21,7 @@ import com.alibaba.nacos.copilot.model.PromptDebugRequest;
 import com.alibaba.nacos.copilot.model.PromptDebugResponse;
 
 /**
+ * Prompt 调试服务接口：以用户自定义 Prompt 为系统提示词，流式返回模型推理与回复。
  * Prompt debug service interface.
  *
  * @author nacos
@@ -28,12 +29,10 @@ import com.alibaba.nacos.copilot.model.PromptDebugResponse;
 public interface PromptDebugService {
     
     /**
-     * Debug prompt with stream response.
-     * This will send the prompt as system prompt and user input to the LLM,
-     * returning the model's response including thinking process.
+     * 流式调试 Prompt：将 request 中的 Prompt 作为系统提示词、用户输入作为 user 消息，返回包含思考过程在内的完整模型响应。
      *
-     * @param request  debug request containing prompt and user input
-     * @param callback stream response callback
+     * @param request  调试请求，含 Prompt 与用户输入
+     * @param callback 流式响应回调
      */
     void debugPromptStream(PromptDebugRequest request,
         StreamResponseCallback<PromptDebugResponse> callback);

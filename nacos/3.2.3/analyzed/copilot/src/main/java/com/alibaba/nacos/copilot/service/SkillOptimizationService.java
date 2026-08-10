@@ -21,6 +21,7 @@ import com.alibaba.nacos.copilot.model.SkillOptimizationRequest;
 import com.alibaba.nacos.copilot.model.SkillOptimizationResponse;
 
 /**
+ * Skill 优化服务接口：针对指定 Skill 文件流式返回优化建议与结果。
  * Skill optimization service interface.
  *
  * @author nacos
@@ -28,10 +29,10 @@ import com.alibaba.nacos.copilot.model.SkillOptimizationResponse;
 public interface SkillOptimizationService {
     
     /**
-     * Optimize skill with stream response.
+     * 流式优化 Skill，支持对话历史、MCP 工具与优化目标等上下文。
      *
-     * @param request  optimization request
-     * @param callback stream response callback
+     * @param request  优化请求
+     * @param callback 流式响应回调
      */
     void optimizeSkillStream(SkillOptimizationRequest request,
         StreamResponseCallback<SkillOptimizationResponse> callback);
