@@ -54,13 +54,16 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * AbstractHttpClientFactory Let the creator only specify the http client config.
+ * <p>HTTP 客户端工厂抽象基类：子类仅需实现 {@link #buildHttpClientConfig()} 与 {@link #assignLogger()}，本类负责创建 JDK/Apache 同步与异步 {@link com.alibaba.nacos.common.http.client.NacosRestTemplate} 及 TLS 初始化。</p>
  *
  * @author mai.jh
  */
 public abstract class AbstractHttpClientFactory implements HttpClientFactory {
     
+    /** 异步 HTTP 客户端工作线程名前缀 */
     private static final String ASYNC_THREAD_NAME = "nacos-http-async-client";
     
+    /** I/O Reactor 专用线程名前缀 */
     private static final String ASYNC_IO_REACTOR_NAME = ASYNC_THREAD_NAME + "#I/O Reactor";
     
     @Override
@@ -68,7 +71,7 @@ public abstract class AbstractHttpClientFactory implements HttpClientFactory {
         HttpClientConfig httpClientConfig = buildHttpClientConfig();
         final JdkHttpClientRequest clientRequest = new JdkHttpClientRequest(httpClientConfig);
         
-        // enable ssl
+        // 若启用 TLS，加载 SSLContext 并设置主机名校验
         initTls((sslContext, hostnameVerifier) -> {
             clientRequest.setSslContext(loadSslContext());
             clientRequest.replaceSslHostnameVerifier(hostnameVerifier);
@@ -87,13 +90,13 @@ public abstract class AbstractHttpClientFactory implements HttpClientFactory {
             getConnectionManager(originalRequestConfig);
         monitorAndExtension(connectionManager);
         
-        // issue#12028 upgrade to httpclient5
+        // issue#12028：升级至 HttpClient 5 异步客户端
         return new NacosAsyncRestTemplate(assignLogger(), new DefaultAsyncHttpClientRequest(
             HttpAsyncClients.custom()
                 .addRequestInterceptorLast(new RequestContent(true))
                 .setThreadFactory(new NameThreadFactory(ASYNC_THREAD_NAME))
                 .setIOReactorConfig(ioReactorConfig)
-                // catch all exceptions here instead of in DefaultConnectingIOReactor
+                // 在工厂层捕获 I/O Reactor 异常，避免 Reactor 被未知网络错误终止
                 .setIoReactorExceptionCallback((ex) -> {
                 
                 })
@@ -142,7 +145,7 @@ public abstract class AbstractHttpClientFactory implements HttpClientFactory {
             getIoReactorConfig(),
             new NameThreadFactory(threadName),
             null,
-            // handle exception in io reactor
+            // I/O Reactor 层异常回调：IO/运行时异常降级为 WARN
             (ex) -> {
                 if (ex instanceof IOException) {
                     assignLogger()
@@ -168,6 +171,7 @@ public abstract class AbstractHttpClientFactory implements HttpClientFactory {
      *
      * @param originalRequestConfig request config.
      * @return {@link AsyncClientConnectionManager}.
+      * <p>HTTP 客户端工厂基类；详见类说明。</p>
      */
     private AsyncClientConnectionManager getConnectionManager(
         HttpClientConfig originalRequestConfig) {
@@ -175,15 +179,15 @@ public abstract class AbstractHttpClientFactory implements HttpClientFactory {
             SSLContext sslcontext = SSLContext.getDefault();
             HostnameVerifier hostnameVerifier = new DefaultHostnameVerifier();
             TlsStrategy sslStrategy = new DefaultClientTlsStrategy(sslcontext, hostnameVerifier);
-            // manager no more needs IOReactor
+            // HttpClient 5：连接管理器不再依赖外部 IOReactor
             return PoolingAsyncClientConnectionManagerBuilder
-                // old method Registry::register("http", NoopIOSessionStrategy.INSTANCE) has been a default strategy
+                // 默认已注册 http 策略，等价于旧版 NoopIOSessionStrategy
                 .create()
-                // refers to old Registry::register("https", sslStrategy)
+                // 等价于旧版 Registry.register("https", sslStrategy)
                 .setTlsStrategy(sslStrategy)
-                // setMaxTotal now can be used in builder
+                // 最大连接总数可在 builder 上配置
                 .setMaxConnTotal(originalRequestConfig.getMaxConnTotal())
-                // setDefaultMaxPerRoute now can be used in builder
+                // 每路由最大连接数可在 builder 上配置
                 .setMaxConnPerRoute(originalRequestConfig.getMaxConnPerRoute())
                 .build();
         } catch (NoSuchAlgorithmException e) {
@@ -244,6 +248,7 @@ public abstract class AbstractHttpClientFactory implements HttpClientFactory {
     
     /**
      * build http client config.
+     * <p>由子类提供 HTTP 客户端超时、连接池等配置。</p>
      *
      * @return HttpClientConfig
      */
@@ -251,6 +256,7 @@ public abstract class AbstractHttpClientFactory implements HttpClientFactory {
     
     /**
      * assign Logger.
+     * <p>由子类指定本工厂使用的 SLF4J 日志记录器。</p>
      *
      * @return Logger
      */
@@ -258,6 +264,7 @@ public abstract class AbstractHttpClientFactory implements HttpClientFactory {
     
     /**
      * add some monitor and do some extension. default empty implementation, implemented by subclass
+     * <p>子类可覆写：对异步连接管理器做监控或扩展，默认空实现。</p>
      */
     protected void monitorAndExtension(AsyncClientConnectionManager connectionManager) {
     }

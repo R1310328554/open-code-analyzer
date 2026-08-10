@@ -35,19 +35,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>For unified management of thread pool resources, the consumer can simply call the register method to {@link
  * ThreadPoolManager#register(String, String, ExecutorService)} the thread pool that needs to be included in the life
  * cycle management of the resource
+ * <p>线程池资源统一生命周期管理器：按 namespace → group 两级组织 {@link ExecutorService}，JVM 关闭钩子会调用 {@link #shutdown()} 优雅关闭全部已注册池。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public final class ThreadPoolManager {
     
+    /** 本类日志记录器 */
     private static final Logger LOGGER = LoggerFactory.getLogger(ThreadPoolManager.class);
     
+    /** namespace → group → 线程池集合 的资源表 */
     private Map<String, Map<String, Set<ExecutorService>>> resourcesManager;
     
+    /** 单例实例 */
     private static final ThreadPoolManager INSTANCE = new ThreadPoolManager();
     
+    /** 是否已全局 shutdown，防止重复关闭 */
     private static final AtomicBoolean CLOSED = new AtomicBoolean(false);
     
+    /** 类加载时初始化资源表并注册 JVM 关闭钩子 */
     static {
         INSTANCE.init();
         ThreadUtils.addShutdownHook(new Thread(() -> {
@@ -57,6 +63,7 @@ public final class ThreadPoolManager {
         }));
     }
     
+    /** @return 全局 {@link ThreadPoolManager} 单例 */
     public static ThreadPoolManager getInstance() {
         return INSTANCE;
     }
@@ -70,6 +77,7 @@ public final class ThreadPoolManager {
     
     /**
      * Register the thread pool resources with the resource manager.
+     * <p>将线程池纳入指定 namespace/group 的统一管理。</p>
      *
      * @param namespace namespace name
      * @param group     group name
@@ -87,6 +95,7 @@ public final class ThreadPoolManager {
     
     /**
      * Cancel the uniform lifecycle management for all threads under this resource.
+     * <p>取消整个 group 下所有线程池的注册（不主动 shutdown）。</p>
      *
      * @param namespace namespace name
      * @param group     group name
@@ -100,6 +109,7 @@ public final class ThreadPoolManager {
     
     /**
      * Undoing the uniform lifecycle management of {@link ExecutorService} under this resource.
+     * <p>从 group 中移除单个线程池的注册。</p>
      *
      * @param namespace namespace name
      * @param group     group name
@@ -117,6 +127,7 @@ public final class ThreadPoolManager {
     
     /**
      * Destroys all thread pool resources under this namespace.
+     * <p>关闭并清空指定 namespace 下全部线程池。</p>
      *
      * @param namespace namespace
      */
@@ -135,6 +146,7 @@ public final class ThreadPoolManager {
     
     /**
      * This namespace destroys all thread pool resources under the grouping.
+     * <p>关闭并移除指定 namespace/group 下的全部线程池。</p>
      *
      * @param namespace namespace
      * @param group     group
@@ -154,6 +166,7 @@ public final class ThreadPoolManager {
     
     /**
      * Shutdown thread pool manager.
+     * <p>全局关闭：遍历所有 namespace 并调用 {@link #destroy(String)}，仅执行一次。</p>
      */
     public static void shutdown() {
         if (!CLOSED.compareAndSet(false, true)) {

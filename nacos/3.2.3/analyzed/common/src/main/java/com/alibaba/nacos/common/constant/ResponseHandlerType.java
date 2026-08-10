@@ -18,17 +18,22 @@ package com.alibaba.nacos.common.constant;
 
 /**
  * Response Handler Type.
+ * <p>HTTP 响应体反序列化处理器类型标识常量，用于按返回类型选择 {@code ResponseHandler}。</p>
  *
  * @author mai.jh
  */
 public final class ResponseHandlerType {
     
+    /** 字符串类型处理器标识 */
     public static final String STRING_TYPE = "java.lang.String";
     
+    /** {@link com.alibaba.nacos.common.model.RestResult} 类型处理器标识 */
     public static final String RESTRESULT_TYPE = "com.alibaba.nacos.common.model.RestResult";
     
+    /** 字节数组类型处理器标识 */
     public static final String BYTE_ARRAY_TYPE = byte[].class.getName();
     
+    /** 默认 Bean 处理器标识 */
     public static final String DEFAULT_BEAN_TYPE = "default_bean_handler";
     
 }

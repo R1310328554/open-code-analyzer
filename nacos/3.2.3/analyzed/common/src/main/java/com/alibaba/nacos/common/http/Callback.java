@@ -20,6 +20,7 @@ import com.alibaba.nacos.common.model.RestResult;
 
 /**
  * Http callback.
+ * <p>异步 HTTP 请求结果回调接口：成功、失败与取消三种路径。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -27,6 +28,7 @@ public interface Callback<T> {
     
     /**
      * Callback after the request is responded.
+     * <p>收到 HTTP 响应并成功解析为 {@link RestResult} 时调用。</p>
      *
      * @param result {@link RestResult}
      */
@@ -34,6 +36,7 @@ public interface Callback<T> {
     
     /**
      * An error occurred during the request.
+     * <p>请求或解析过程中抛出异常时调用。</p>
      *
      * @param throwable {@link Throwable}
      */
@@ -41,6 +44,7 @@ public interface Callback<T> {
     
     /**
      * Callback when the request is cancelled.
+     * <p>请求被取消（如超时或主动取消）时调用。</p>
      */
     void onCancel();
     

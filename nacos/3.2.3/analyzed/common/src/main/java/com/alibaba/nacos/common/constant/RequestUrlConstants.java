@@ -18,12 +18,15 @@ package com.alibaba.nacos.common.constant;
 
 /**
  * Nacos request url constants.
+ * <p>Nacos 请求 URL 协议前缀常量。</p>
  *
  * @author chenhao26
  */
 public interface RequestUrlConstants {
     
+    /** HTTP 协议前缀 */
     String HTTP_PREFIX = "http://";
+    /** HTTPS 协议前缀 */
     String HTTPS_PREFIX = "https://";
     
 }

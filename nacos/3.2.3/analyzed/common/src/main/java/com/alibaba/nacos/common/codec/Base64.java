@@ -19,6 +19,7 @@ package com.alibaba.nacos.common.codec;
 /**
  * From apache common codec, and remove some useless method. Provides Base64 encoding and decoding as defined by <a
  * href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045</a>.
+ * <p>源自 Apache Commons Codec 的 Base64 编解码工具，遵循 RFC 2045；支持标准与 URL 安全字母表、可选分块与行分隔符。本类非线程安全，每线程应使用独立实例。</p>
  *
  * <p>This class implements section <cite>6.8. Base64 Content-Transfer-Encoding</cite> from RFC 2045
  *
@@ -41,11 +42,14 @@ public class Base64 {
     /**
      * BASE32 characters are 6 bits in length. They are formed by taking a block of 3 octets to form a 24-bit string,
      * which is converted into 4 BASE64 characters.
+     * <p>每个编码字符对应 6 位有效数据。</p>
      */
     private static final int BITS_PER_ENCODED_BYTE = 6;
     
+    /** 未编码块字节数（3 字节一组） */
     private static final int BYTES_PER_UNENCODED_BLOCK = 3;
     
+    /** 编码块字符数（4 字符一组） */
     private static final int BYTES_PER_ENCODED_BLOCK = 4;
     
     /**
@@ -54,6 +58,7 @@ public class Base64 {
      * <p>N.B. The next major release may break compatibility and make this field private. </p>
      *
      * @see <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045 section 2.1</a>
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     static final byte[] CHUNK_SEPARATOR = {'\r', '\n'};
     
@@ -64,6 +69,7 @@ public class Base64 {
      * <p>Thanks to "commons" project in ws.apache.org for this code.
      *
      * <p>http://svn.apache.org/repos/asf/webservices/commons/trunk/modules/util/
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private static final byte[] STANDARD_ENCODE_TABLE =
         {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
@@ -76,6 +82,7 @@ public class Base64 {
     /**
      * This is a copy of the STANDARD_ENCODE_TABLE above, but with + and / changed to - and _ to make the encoded Base64
      * results more URL-SAFE. This table is only used when the Base64's mode is set to URL-SAFE.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private static final byte[] URL_SAFE_ENCODE_TABLE =
         {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
@@ -96,6 +103,7 @@ public class Base64 {
      * <p>Thanks to "commons" project in ws.apache.org for this code.
      *
      * <p>http://svn.apache.org/repos/asf/webservices/commons/trunk/modules/util/
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private static final byte[] DECODE_TABLE =
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -109,45 +117,51 @@ public class Base64 {
     
     /**
      * Base64 uses 6-bit fields. Mask used to extract 6 bits, used when encoding
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private static final int MASK_6BITS = 0x3f;
     
-    // The static final fields above are used for the original static byte[] methods on Base64.
-    // The private member fields below are used with the new streaming approach, which requires
-    // some state be preserved between calls of encode() and decode().
+    // 上方静态字段供静态 byte[] 便捷方法使用
+    // 下方实例字段用于流式编解码，在多次 encode/decode 调用间保持状态
     
     /**
      * Encode table to use: either STANDARD or URL_SAFE. Note: the DECODE_TABLE above remains static because it is able
      * to decode both STANDARD and URL_SAFE streams, but the encodeTable must be a member variable so we can switch
      * between the two modes.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private final byte[] encodeTable;
     
     /**
      * Only one decode table currently; keep for consistency with Base32 code.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private final byte[] decodeTable = DECODE_TABLE;
     
     /**
      * Line separator for encoding. Not used when decoding. Only used if lineLength > 0.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private final byte[] lineSeparator;
     
     /**
      * Convenience variable to help us determine when our buffer is going to run out of room and needs resizing.
      * <code>decodeSize = 3 + lineSeparator.length;</code>
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private final int decodeSize;
     
     /**
      * Convenience variable to help us determine when our buffer is going to run out of room and needs resizing.
      * <code>encodeSize = 4 + lineSeparator.length;</code>
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private final int encodeSize;
     
     /**
      * Place holder for the bytes we're dealing with for our based logic. Bitwise operations store and extract the
      * encoding or decoding from this variable.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private int bitWorkArea;
     
@@ -156,6 +170,7 @@ public class Base64 {
      * length is 0 (no chunking), and the encoding table is STANDARD_ENCODE_TABLE. </p>
      *
      * <p>When decoding all variants are supported. </p>
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     public Base64() {
         this(0, CHUNK_SEPARATOR, false);
@@ -176,6 +191,7 @@ public class Base64 {
      * @throws IllegalArgumentException The provided lineSeparator included some base64 characters. That's not going to
      *                                  work!
      * @since 1.4
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private Base64(int lineLength, byte[] lineSeparator, boolean urlSafe) {
         chunkSeparatorLength = lineSeparator.length;
@@ -201,6 +217,7 @@ public class Base64 {
      *
      * @param pArray a byte array containing binary data
      * @return A byte array containing only the basen alphabetic character data
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private byte[] encode(byte[] pArray) {
         reset();
@@ -221,6 +238,7 @@ public class Base64 {
      * @param in      byte[] array of binary data to base64 encode.
      * @param inPos   Position to start reading data from.
      * @param inAvail Amount of bytes available from input for encoding.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     void encode(byte[] in, int inPos, int inAvail) {
         if (eof) {
@@ -294,6 +312,7 @@ public class Base64 {
      *
      * @param pArray A byte array containing Base-N character data
      * @return a byte array containing binary data
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private byte[] decode(byte[] pArray) {
         reset();
@@ -319,6 +338,7 @@ public class Base64 {
      * @param in      byte[] array of ascii data to base64 decode.
      * @param inPos   Position to start reading data from.
      * @param inAvail Amount of bytes available from input for encoding.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     void decode(byte[] in, int inPos, int inAvail) {
         if (eof) {
@@ -331,7 +351,7 @@ public class Base64 {
             ensureBufferSize(decodeSize);
             byte b = in[inPos++];
             if (b == PAD) {
-                // We're done.
+                // 遇到填充符 '='，标记输入结束
                 eof = true;
                 break;
             } else {
@@ -350,9 +370,8 @@ public class Base64 {
             }
         }
         
-        // Two forms of EOF as far as base64 decoder is concerned: actual
-        // EOF (-1) and first time '=' character is encountered in stream.
-        // This approach makes the '=' padding characters completely optional.
+        // 解码 EOF 两种形式：实际 EOF（inAvail=-1）或流中首次出现 '='
+        // 因此 '=' 填充字符完全可选
         if (eof && modulus != 0) {
             ensureBufferSize(decodeSize);
             
@@ -378,6 +397,7 @@ public class Base64 {
     
     /**
      * Encodes binary data using the base64 algorithm but does not chunk the output.
+     * <p>将二进制数据编码为 Base64 字节数组，输出不分块。</p>
      *
      * @param binaryData binary data to encode
      * @return byte[] containing Base64 characters in their UTF-8 representation.
@@ -397,6 +417,7 @@ public class Base64 {
      * @return Base64-encoded data.
      * @throws IllegalArgumentException Thrown when the input array needs an output array bigger than maxResultSize
      * @since 1.4
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     public static byte[] encodeBase64(byte[] binaryData, boolean isChunked, boolean urlSafe,
         int maxResultSize) {
@@ -404,8 +425,7 @@ public class Base64 {
             return binaryData;
         }
         
-        // Create this so can use the super-class method
-        // Also ensures that the same roundings are performed by the ctor and the code
+        // 构造实例以复用实例方法，保证与构造函数相同的分块/舍入规则
         Base64 b64 = isChunked ? new Base64(MIME_CHUNK_SIZE, CHUNK_SEPARATOR, urlSafe)
             : new Base64(0, CHUNK_SEPARATOR, urlSafe);
         long len = b64.getEncodedLength(binaryData);
@@ -420,6 +440,7 @@ public class Base64 {
     
     /**
      * Decodes Base64 data into octets.
+     * <p>将 Base64 字节数组解码为原始二进制数据。</p>
      *
      * @param base64Data Byte array containing Base64 data
      * @return Array containing decoded data.
@@ -435,6 +456,7 @@ public class Base64 {
      * any equal signs. </p>
      *
      * @see <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045 section 6.8</a>
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private static final int MIME_CHUNK_SIZE = 76;
     
@@ -443,16 +465,19 @@ public class Base64 {
     /**
      * Defines the default buffer size - currently {@value} - must be large enough for at least one encoded
      * block+separator.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private static final int DEFAULT_BUFFER_SIZE = 8192;
     
     /**
      * Mask used to extract 8 bits, used in decoding bytes.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private static final int MASK_8BITS = 0xff;
     
     /**
      * Byte used to pad output.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private static final byte PAD_DEFAULT = '=';
     
@@ -460,55 +485,65 @@ public class Base64 {
     
     /**
      * Number of bytes in each full block of unencoded data, e.g. 4 for Base64 and 5 for Base32
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private final int unencodedBlockSize;
     
     /**
      * Number of bytes in each full block of encoded data, e.g. 3 for Base64 and 8 for Base32
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private final int encodedBlockSize;
     
     /**
      * Chunksize for encoding. Not used when decoding. A value of zero or less implies no chunking of the encoded data.
      * Rounded down to nearest multiple of encodedBlockSize.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private final int lineLength;
     
     /**
      * Size of chunk separator. Not used unless {@link #lineLength} > 0.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private final int chunkSeparatorLength;
     
     /**
      * Buffer for streaming.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private byte[] buffer;
     
     /**
      * Position where next character should be written in the buffer.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private int pos;
     
     /**
      * Position where next character should be read from the buffer.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private int readPos;
     
     /**
      * Boolean flag to indicate the EOF has been reached. Once EOF has been reached, this object becomes useless, and
      * must be thrown away.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private boolean eof;
     
     /**
      * Variable tracks how many characters have been written to the current line. Only used when encoding. We use it to
      * make sure each encoded line never goes beyond lineLength (if lineLength > 0).
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private int currentLinePos;
     
     /**
      * Writes to the buffer only occur after every 3/5 reads when encoding, and every 4/8 reads when decoding. This
      * variable helps track that.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private int modulus;
     
@@ -516,6 +551,7 @@ public class Base64 {
      * Ensure that the buffer has room for <code>size</code> bytes.
      *
      * @param size minimum spare space required
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private void ensureBufferSize(int size) {
         if ((buffer == null) || (buffer.length < pos + size)) {
@@ -539,6 +575,7 @@ public class Base64 {
      * @param bPos   position in byte[] array to start extraction at.
      * @param bAvail amount of bytes we're allowed to extract. We may extract fewer (if fewer are available).
      * @return The number of bytes successfully extracted into the provided byte[] array.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private int readResults(byte[] b, int bPos, int bAvail) {
         if (buffer != null) {
@@ -555,6 +592,7 @@ public class Base64 {
     
     /**
      * Resets this object to its initial newly constructed state.
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private void reset() {
         buffer = null;
@@ -571,6 +609,7 @@ public class Base64 {
      * @param pArray byte[] array which will later be encoded
      * @return amount of space needed to encoded the supplied array. Returns a long since a max-len array will require >
      * Integer.MAX_VALUE
+      * <p>RFC 2045 Base64 编解码；详见类级说明。</p>
      */
     private long getEncodedLength(byte[] pArray) {
         // Calculate non-chunked size - rounded up to allow for padding

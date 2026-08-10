@@ -31,6 +31,7 @@ import java.net.URI;
 
 /**
  * Base http method.
+ * <p>HTTP 动词与 Apache HttpClient 5 {@link org.apache.hc.client5.http.classic.methods.HttpUriRequestBase} 的映射枚举；含带请求体的 GET/DELETE 大参数变体。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -38,6 +39,7 @@ public enum BaseHttpMethod {
     
     /**
      * get request.
+     * <p>标准 GET 请求。</p>
      */
     GET(HttpMethod.GET) {
         
@@ -57,6 +59,7 @@ public enum BaseHttpMethod {
     
     /**
      * post request.
+     * <p>POST 请求。</p>
      */
     POST(HttpMethod.POST) {
         
@@ -68,6 +71,7 @@ public enum BaseHttpMethod {
     
     /**
      * put request.
+     * <p>PUT 请求。</p>
      */
     PUT(HttpMethod.PUT) {
         
@@ -79,6 +83,7 @@ public enum BaseHttpMethod {
     
     /**
      * delete request.
+     * <p>标准 DELETE 请求。</p>
      */
     DELETE(HttpMethod.DELETE) {
         
@@ -90,6 +95,7 @@ public enum BaseHttpMethod {
     
     /**
      * delete Large request.
+     * <p>带请求体的大参数 DELETE 请求。</p>
      */
     DELETE_LARGE(HttpMethod.DELETE_LARGE) {
         
@@ -101,6 +107,7 @@ public enum BaseHttpMethod {
     
     /**
      * head request.
+     * <p>HEAD 请求。</p>
      */
     HEAD(HttpMethod.HEAD) {
         
@@ -112,6 +119,7 @@ public enum BaseHttpMethod {
     
     /**
      * trace request.
+     * <p>TRACE 请求。</p>
      */
     TRACE(HttpMethod.TRACE) {
         
@@ -123,6 +131,7 @@ public enum BaseHttpMethod {
     
     /**
      * patch request.
+     * <p>PATCH 请求。</p>
      */
     PATCH(HttpMethod.PATCH) {
         
@@ -134,6 +143,7 @@ public enum BaseHttpMethod {
     
     /**
      * options request.
+     * <p>OPTIONS 请求（当前实现复用 HttpTrace）。</p>
      */
     OPTIONS(HttpMethod.OPTIONS) {
         
@@ -143,12 +153,15 @@ public enum BaseHttpMethod {
         }
     };
     
+    /** 对应 {@link com.alibaba.nacos.common.utils.HttpMethod} 中的方法名字符串 */
     private String name;
     
+    /** @param name HTTP 方法名 */
     BaseHttpMethod(String name) {
         this.name = name;
     }
     
+    /** 根据 URL 创建对应的 HttpClient 请求对象 */
     public HttpUriRequestBase init(String url) {
         return createRequest(url);
     }
@@ -159,6 +172,7 @@ public enum BaseHttpMethod {
     
     /**
      * Value of {@link BaseHttpMethod}.
+     * <p>按方法名（忽略大小写）解析枚举值。</p>
      *
      * @param name method name
      * @return {@link BaseHttpMethod}
@@ -178,6 +192,7 @@ public enum BaseHttpMethod {
      * Mainly used for GET request parameters are relatively large, can not be placed on the URL, so it needs to be
      * placed in the body.
      * </p>
+     * <p>带实体体的 GET：参数过大无法放在 URL 查询串时放入请求体。</p>
      */
     public static class HttpGetWithEntity extends HttpUriRequestBase {
         
@@ -194,6 +209,7 @@ public enum BaseHttpMethod {
      * Mainly used for DELETE request parameters are relatively large, can not be placed on the URL, so it needs to be
      * placed in the body.
      * </p>
+     * <p>带实体体的 DELETE：大参数放入请求体而非 URL。</p>
      */
     public static class HttpDeleteWithEntity extends HttpUriRequestBase {
         

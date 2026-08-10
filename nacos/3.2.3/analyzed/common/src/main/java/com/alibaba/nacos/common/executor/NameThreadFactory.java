@@ -23,15 +23,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Name thread factory.
+ * <p>为线程统一添加前缀与递增序号的 {@link ThreadFactory}，创建出的线程默认为守护线程。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class NameThreadFactory implements ThreadFactory {
     
+    /** 线程名后缀递增序号 */
     private final AtomicInteger id = new AtomicInteger(0);
     
+    /** 线程名前缀（保证以 {@link com.alibaba.nacos.common.utils.StringUtils#DOT} 结尾） */
     private String name;
     
+    /**
+     * @param name 线程名前缀
+     */
     public NameThreadFactory(String name) {
         if (!name.endsWith(StringUtils.DOT)) {
             name += StringUtils.DOT;
@@ -39,6 +45,7 @@ public class NameThreadFactory implements ThreadFactory {
         this.name = name;
     }
     
+    /** {@inheritDoc} 创建名为 {@code prefix + 序号} 的守护线程 */
     @Override
     public Thread newThread(Runnable r) {
         String threadName = name + id.getAndIncrement();

@@ -28,6 +28,7 @@ import org.apache.hc.core5.util.Timeout;
 
 /**
  * apache http client factory implements.
+ * <p>基于 Apache HttpClient 5 的同步 HTTP 客户端工厂抽象类，使用连接池 {@link org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager} 构建 {@link com.alibaba.nacos.common.http.client.NacosRestTemplate}。</p>
  *
  * @author mai.jh
  */
@@ -37,7 +38,7 @@ public abstract class AbstractApacheHttpClientFactory extends AbstractHttpClient
     public final NacosRestTemplate createNacosRestTemplate() {
         final HttpClientConfig originalRequestConfig = buildHttpClientConfig();
         final RequestConfig defaultConfig = getRequestConfig();
-        // in latest version of Apache Http Components all client settings have been moved into manager
+        // HttpClient 5 将连接相关配置收敛到 ConnectionManager
         PoolingHttpClientConnectionManager poolingManager =
             PoolingHttpClientConnectionManagerBuilder
                 .create()

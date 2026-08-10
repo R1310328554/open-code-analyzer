@@ -18,6 +18,7 @@ package com.alibaba.nacos.common.constant;
 
 /**
  * Symbols.
+ * <p>通用符号字符串常量，避免魔法字符散落各处。</p>
  *
  * @author haiqi.wang
  * @date 2024/08/13
@@ -26,6 +27,7 @@ public final class Symbols {
     
     /**
      * Comma.
+     * <p>英文逗号分隔符。</p>
      */
     public static final String COMMA = ",";
 }
