@@ -20,6 +20,10 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link ClientValidationProvider} 的 SPI 工厂接口。
+ * <p>负责注册并创建客户端校验提供者实例。</p>
+ */
 public interface ClientValidationProviderFactory extends ProviderFactory<ClientValidationProvider> {
 
     @Override

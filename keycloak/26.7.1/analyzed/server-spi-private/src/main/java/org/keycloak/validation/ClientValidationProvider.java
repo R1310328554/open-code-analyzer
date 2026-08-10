@@ -18,9 +18,16 @@ package org.keycloak.validation;
 
 import org.keycloak.models.ClientModel;
 
+/**
+ * 客户端校验提供者：对 {@link ClientModel} 执行创建/更新校验。
+ * <p>扩展 {@link Validator}，支持标准校验与 OIDC 动态注册场景。</p>
+ */
 public interface ClientValidationProvider extends Validator<ClientModel> {
 
+    // OIDC 动态客户端注册专用校验入口
     // for a special case when performing OIDC client registration
+    /** @param validationContext 含 OIDC 表示的校验上下文
+     * @return 校验结果 */
     ValidationResult validate(ClientValidationContext.OIDCContext validationContext);
 
     @Override

@@ -17,6 +17,9 @@
 package org.keycloak.component;
 
 /**
+ * 组件配置校验异常：在 {@link ComponentFactory#validateConfiguration} 中抛出。
+ * <p>可携带消息格式化参数供上层国际化展示。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -27,6 +30,7 @@ public class ComponentValidationException extends RuntimeException {
     public ComponentValidationException() {
     }
 
+    /** @param parameters 消息格式化参数 */
     public ComponentValidationException(String message, Object... parameters) {
         super(message);
         this.parameters = parameters;
@@ -44,10 +48,12 @@ public class ComponentValidationException extends RuntimeException {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 
+    /** @return 消息格式化参数数组 */
     public Object[] getParameters() {
         return parameters;
     }
 
+    /** @param parameters 消息格式化参数 */
     public void setParameters(Object[] parameters) {
         this.parameters = parameters;
     }

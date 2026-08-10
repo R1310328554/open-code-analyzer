@@ -20,23 +20,30 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 客户端校验 SPI：定义 {@link ClientValidationProvider} 的注册与发现机制。
+ */
 public class ClientValidationSPI implements Spi {
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code clientValidation} */
     @Override
     public String getName() {
         return "clientValidation";
     }
 
+    /** @return 提供者接口 {@link ClientValidationProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ClientValidationProvider.class;
     }
 
+    /** @return 工厂接口 {@link ClientValidationProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ClientValidationProviderFactory.class;

@@ -23,6 +23,8 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
+ * 单条校验错误：包含字段 ID、消息及可选的国际化键与参数。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class ValidationError {
@@ -31,6 +33,10 @@ public class ValidationError {
     private final String localizedMessageKey;
     private final Object[] localizedMessageParameters;
 
+    /** @param fieldId 出错字段（可为 {@code null} 表示全局错误）
+     * @param message 默认错误消息
+     * @param localizedMessageKey 国际化消息键
+     * @param localizedMessageParameters 国际化参数 */
     public ValidationError(String fieldId, String message, String localizedMessageKey, Object[] localizedMessageParameters) {
         if (message == null) {
             throw new IllegalArgumentException("Message must be set");
@@ -42,22 +48,28 @@ public class ValidationError {
         this.localizedMessageParameters = localizedMessageParameters;
     }
 
+    /** @return 出错字段标识 */
     public String getFieldId() {
         return fieldId;
     }
 
+    /** @return 国际化消息资源键 */
     public String getLocalizedMessageKey() {
         return localizedMessageKey;
     }
 
+    /** @return 国际化消息格式化参数 */
     public Object[] getLocalizedMessageParams() {
         return localizedMessageParameters;
     }
 
+    /** @return 默认（非国际化）错误消息 */
     public String getMessage() {
         return message;
     }
 
+    /** @param messagesBundle 消息资源包
+     * @return 按资源键格式化后的错误消息，无键时返回默认消息 */
     public String getLocalizedMessage(Properties messagesBundle) {
         if (getLocalizedMessageKey() != null) {
             return MessageFormat.format(messagesBundle.getProperty(getLocalizedMessageKey(), getMessage()), getLocalizedMessageParams());

@@ -19,6 +19,8 @@ package org.keycloak.component;
 import org.keycloak.provider.ConfiguredProvider;
 
 /**
+ * 已配置组件标记接口：继承 {@link ConfiguredProvider}，表示组件实例暴露配置元数据。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */

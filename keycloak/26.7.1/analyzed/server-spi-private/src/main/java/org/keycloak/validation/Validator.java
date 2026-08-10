@@ -20,8 +20,13 @@ package org.keycloak.validation;
 import org.keycloak.provider.Provider;
 
 /**
+ * 通用校验器接口：对给定 {@link ValidationContext} 执行校验并返回 {@link ValidationResult}。
+ * <p>作为 Keycloak {@link Provider} 扩展点，可由 SPI 注册实现。</p>
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface Validator<T> extends Provider {
+    /** @param validationContext 校验上下文
+     * @return 校验结果 */
     ValidationResult validate(ValidationContext<T> validationContext);
 }

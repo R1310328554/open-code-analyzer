@@ -29,7 +29,9 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
- * Stored configuration of a User Storage provider instance.
+ * 组件配置模型：持久化存储组件实例的 ID、名称、提供者类型及键值配置。
+ * <p>Stored configuration of a User Storage provider instance.</p>
+ * <p>支持运行时 notes 与 Infinispan ProtoStream 序列化。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  * @author <a href="mailto:bburke@redhat.com">Bill Burke</a>
@@ -45,8 +47,10 @@ public class ComponentModel {
     private MultivaluedHashMap<String, String> config = new MultivaluedHashMap<>();
     private transient ConcurrentHashMap<String, Object> notes = new ConcurrentHashMap<>();
 
+    /** 默认构造函数。 */
     public ComponentModel() {}
 
+    /** 复制构造：深拷贝配置映射。 */
     public ComponentModel(ComponentModel copy) {
         this.id = copy.id;
         this.name = copy.name;
@@ -76,6 +80,7 @@ public class ComponentModel {
         this.name = name;
     }
 
+    /** @return 多值配置映射 */
     public MultivaluedHashMap<String, String> getConfig() {
         return config;
     }
@@ -84,34 +89,44 @@ public class ComponentModel {
         this.config = config;
     }
 
+    /** @param key 配置键
+     * @return 存在该键时返回 {@code true} */
     public boolean contains(String key) {
         return config.containsKey(key);
     }
 
+    /** @param key 配置键
+     * @return 首个配置值，不存在时返回 {@code null} */
     public String get(String key) {
         return config.getFirst(key);
     }
 
+    /** @param defaultValue 默认值
+     * @return 配置值或默认值 */
     public String get(String key, String defaultValue) {
         String s = get(key);
         return s != null ? s : defaultValue;
     }
 
+    /** 读取整型配置值。 */
     public int get(String key, int defaultValue) {
         String s = get(key);
         return s != null ? Integer.parseInt(s) : defaultValue;
     }
 
+    /** 读取长整型配置值。 */
     public long get(String key, long defaultValue) {
         String s = get(key);
         return s != null ? Long.parseLong(s) : defaultValue;
     }
 
+    /** 读取布尔配置值。 */
     public boolean get(String key, boolean defaultValue) {
         String s = get(key);
         return s != null ? Boolean.valueOf(s) : defaultValue;
     }
 
+    /** 写入字符串配置项。 */
     public void put(String key, String value) {
         config.putSingle(key, value);
     }
@@ -128,14 +143,17 @@ public class ComponentModel {
         put(key, Boolean.toString(value));
     }
 
+    /** @return 运行时 note 是否存在 */
     public boolean hasNote(String key) {
         return notes.containsKey(key);
     }
 
+    /** @return 运行时 note 值（不持久化） */
     public <T> T getNote(String key) {
         return (T) notes.get(key);
     }
 
+    /** 设置运行时 note（会话级，不写入数据库）。 */
     public void setNote(String key, Object object) {
         notes.put(key, object);
     }
@@ -191,6 +209,7 @@ public class ComponentModel {
         }
     }
 
+    /** ProtoStream 多值映射条目，用于配置序列化。 */
     @ProtoTypeId(65538) //see org.keycloak.Marshalling
     public static final class MultiMapEntry {
         private final String key;
@@ -216,6 +235,7 @@ public class ComponentModel {
             return value;
         }
 
+        /** 将条目插入目标配置映射。 */
         public void insert(MultivaluedHashMap<String, String> config) {
             config.put(key, value);
         }
