@@ -20,13 +20,20 @@ import org.keycloak.ssf.Ssf;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
+/**
+ * SSF SET 投递方式枚举，映射规范定义的投递 URI。
+ * <p>含标准 SSF（RFC 8935/8936）与旧版 RISC 变体。</p>
+ */
 public enum DeliveryMethod {
 
-    // Standard SSF Delivery Methods
+    /** 标准 SSF HTTP Push 投递（RFC 8935）。 */
     PUSH(Ssf.DELIVERY_METHOD_PUSH_URI),
+    /** 标准 SSF HTTP Poll 投递（RFC 8936）。 */
     POLL(Ssf.DELIVERY_METHOD_POLL_URI),
 
+    /** 旧版 RISC Push 投递 URI。 */
     RISC_PUSH(Ssf.DELIVERY_METHOD_RISC_PUSH_URI),
+    /** 旧版 RISC Poll 投递 URI。 */
     RISC_POLL(Ssf.DELIVERY_METHOD_RISC_POLL_URI);
 
     private final String specUrn;
@@ -35,6 +42,12 @@ public enum DeliveryMethod {
         this.specUrn = specUrn;
     }
 
+    /**
+     * 按规范 URI 解析 {@link DeliveryMethod}。
+     * @param deliveryMethod 投递方式 URI 字符串
+     * @return 匹配的枚举常量
+     * @throws IllegalArgumentException 未知 URI
+     */
     public static DeliveryMethod valueOfUri(String deliveryMethod) {
         for(DeliveryMethod dm : values()) {
             if (dm.specUrn.equals(deliveryMethod)) {
@@ -45,10 +58,9 @@ public enum DeliveryMethod {
     }
 
     /**
-     * Coarse-grained PUSH/POLL family. Both spec variants of each transport
-     * (RFC 8935 + legacy RISC PUSH; RFC 8936 + legacy RISC POLL) collapse to
-     * the same family so per-client allow-listing operates on the operator's
-     * mental model rather than four separate URIs.
+     * 粗粒度 PUSH/POLL 族分类。每种传输的标准与旧版 RISC 变体
+     * （RFC 8935 + RISC PUSH；RFC 8936 + RISC POLL）归入同一族，
+     * 使 per-client 白名单基于运维心智模型而非四个独立 URI。
      */
     public DeliveryMethodFamily family() {
         return switch (this) {
@@ -57,6 +69,7 @@ public enum DeliveryMethod {
         };
     }
 
+    /** @return 规范定义的投递方式 URI（Jackson 序列化值） */
     @JsonValue
     public String getSpecUri() {
         return specUrn;

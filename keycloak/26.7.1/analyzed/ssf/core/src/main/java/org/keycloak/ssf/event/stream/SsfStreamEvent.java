@@ -3,7 +3,7 @@ package org.keycloak.ssf.event.stream;
 import org.keycloak.ssf.event.SsfEvent;
 
 /**
- * Base class for all SSF stream related events.
+ * 所有 SSF 流（stream）相关事件的基类。
  */
 public abstract class SsfStreamEvent extends SsfEvent {
 

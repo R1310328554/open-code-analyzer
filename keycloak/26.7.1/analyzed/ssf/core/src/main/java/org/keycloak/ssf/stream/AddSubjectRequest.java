@@ -4,23 +4,24 @@ import org.keycloak.ssf.subject.SubjectId;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Receiver 向 Transmitter 添加 subject 订阅的请求体。
+ * <p>用于 SSF add-subject 端点。</p>
+ */
 public class AddSubjectRequest {
 
-    /**
-     * REQUIRED. A string identifying the stream to which the subject is being added.
-     */
+    /** REQUIRED。目标流标识字符串。 */
+
     @JsonProperty("stream_id")
     private String streamId;
 
-    /**
-     * REQUIRED. A Subject claim identifying the subject to be added.
-     */
+    /** REQUIRED。待添加的安全主体 Subject 声明。 */
+
     @JsonProperty("subject")
     private SubjectId subject;
 
-    /**
-     * OPTIONAL. A boolean value; when true, it indicates that the Event Receiver has verified the Subject claim. When false, it indicates that the Event Receiver has not verified the Subject claim. If omitted, Event Transmitters SHOULD assume that the subject has been verified.
-     */
+    /** OPTIONAL。{@code true} 表示 Receiver 已验证 Subject；{@code false} 表示未验证；省略时 Transmitter SHOULD 假定已验证。 */
+
     @JsonProperty("verified")
     private Boolean verified;
 

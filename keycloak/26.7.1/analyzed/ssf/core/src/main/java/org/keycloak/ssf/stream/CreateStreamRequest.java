@@ -4,23 +4,24 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Receiver 创建 SSF 事件流的请求体。
+ * <p>指定请求的事件类型、投递方式及可选描述。</p>
+ */
 public class CreateStreamRequest {
 
-        /**
-         * Receiver-Supplied, OPTIONAL. An array of URIs identifying the set of events that the Receiver requested. A Receiver SHOULD request only the events that it understands and it can act on. This is configurable by the Receiver. A Transmitter MUST ignore any array values that it does not understand. This array SHOULD NOT be empty.
-         */
+        /** Receiver 提供，OPTIONAL。Receiver 请求的事件类型 URI 集合；SHOULD 仅请求可理解且可处理的事件；Transmitter MUST 忽略不认识的值；SHOULD NOT 为空。 */
+
         @JsonProperty("events_requested")
         private Set<String> eventsRequested;
 
-        /**
-         * Receiver-Supplied, OPTIONAL. A JSON object containing a set of name/value pairs specifying configuration parameters for the SET delivery method. The actual delivery method is identified by the special key "method" with the value being a URI as defined in Section 10.3.1. The value of the "delivery" field contains two sub-fields:
-         */
+        /** Receiver 提供，OPTIONAL。SET 投递方式配置对象；{@code method} 键标识具体投递 URI（见规范 §10.3.1）。 */
+
         @JsonProperty("delivery")
         private AbstractDeliveryMethodRepresentation delivery;
 
-        /**
-         * Receiver-Supplied, OPTIONAL. A string that describes the properties of the stream. This is useful in multi-stream systems to identify the stream for human actors. The transmitter MAY truncate the string beyond an allowed max length.
-         */
+        /** Receiver 提供，OPTIONAL。流的描述字符串，便于多流场景下人工识别；Transmitter MAY 截断超长内容。 */
+
         @JsonProperty("description")
         private String description;
 

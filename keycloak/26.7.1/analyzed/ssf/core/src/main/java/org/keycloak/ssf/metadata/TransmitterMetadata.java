@@ -12,41 +12,58 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * SSF Transmitter 元数据文档（Well-Known 响应体）。
+ * <p>描述 Transmitter 能力、端点 URL 及 subject 投递策略等，
+ * 供 Receiver 发现与配置流。</p>
+ */
 public class TransmitterMetadata {
 
+    /** SSF 规范版本标识。 */
     @JsonProperty("spec_version")
     private String specVersion;
 
+    /** Transmitter 签发者标识（issuer）。 */
     @JsonProperty("issuer")
     private String issuer;
 
+    /** SET 签名验证用 JWKS 端点 URI。 */
     @JsonProperty("jwks_uri")
     private String jwksUri;
 
+    /** Transmitter 支持的投递方式 URI 集合。 */
     @JsonProperty("delivery_methods_supported")
     private Set<String> deliveryMethodSupported;
 
+    /** 流配置端点 URL。 */
     @JsonProperty("configuration_endpoint")
     private String configurationEndpoint;
 
+    /** 流状态查询端点 URL。 */
     @JsonProperty("status_endpoint")
     private String statusEndpoint;
 
+    /** 添加 subject 订阅端点 URL。 */
     @JsonProperty("add_subject_endpoint")
     private String addSubjectEndpoint;
 
+    /** 移除 subject 订阅端点 URL。 */
     @JsonProperty("remove_subject_endpoint")
     private String removeSubjectEndpoint;
 
+    /** 端点验证（Verification）URL。 */
     @JsonProperty("verification_endpoint")
     private String verificationEndpoint;
 
+    /** 关键 subject 成员声明名集合。 */
     @JsonProperty("critical_subject_members")
     private Set<String> criticalSubjectMembers;
 
+    /** 默认 subject 投递策略（{@link DefaultSubjects} 字符串值）。 */
     @JsonProperty("default_subjects")
     private String defaultSubjects;
 
+    /** 支持的授权方案列表。 */
     @JsonProperty("authorization_schemes")
     private List<Map<String, Object>> authorizationSchemes;
 
@@ -57,12 +74,10 @@ public class TransmitterMetadata {
     }
 
     /**
-     * Copy constructor. Shallow-copies the collection fields so the new
-     * instance can be mutated independently of {@code other}. Inner
-     * {@code Map<String, Object>} entries inside
-     * {@link #authorizationSchemes} are shared by reference — callers
-     * that need to mutate individual scheme maps should copy them
-     * themselves.
+     * 拷贝构造器。对集合字段做浅拷贝，使新实例可独立于 {@code other} 变更。
+     * <p>{@link #authorizationSchemes} 内部的 {@code Map<String, Object>} 条目
+     * 仍共享引用——若需变更单个 scheme 映射，调用方应自行拷贝。</p>
+     * @param other 源实例
      */
     public TransmitterMetadata(TransmitterMetadata other) {
         this.specVersion = other.specVersion;

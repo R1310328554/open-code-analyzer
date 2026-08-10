@@ -17,25 +17,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Custom deserializer for Security Events.
- * <pre>
- *      "events" (Security Events) Claim
- *       This claim contains a set of event statements that each provide
- *       information describing a single logical event that has occurred
- *       about a security subject (e.g., a state change to the subject).
- *       Multiple event identifiers with the same value MUST NOT be used.
- *       The "events" claim MUST NOT be used to express multiple
- *       independent logical events.
- *
- *       The value of the "events" claim is a JSON object whose members are
- *       name/value pairs whose names are URIs identifying the event
- *       statements being expressed.  Event identifiers SHOULD be stable
- *       values (e.g., a permanent URL for an event specification).  For
- *       each name present, the corresponding value MUST be a JSON object.
- *       The JSON object MAY be an empty object ("{}"), or it MAY be a JSON
- *       object containing data described by the profiling specification.
- * </pre>
- * See: https://datatracker.ietf.org/doc/html/rfc8417#section-2.2
+ * SET {@code events} 声明的自定义 Jackson 反序列化器。
+ * <p>{@code events} 声明包含一组事件语句，每条描述关于安全主体发生的一个逻辑事件
+ * （如主体状态变更）。同一事件标识符 MUST NOT 重复；MUST NOT 用单一 {@code events}
+ * 声明表达多个独立逻辑事件。</p>
+ * <p>值为 JSON 对象，成员名为标识事件语句的 URI，对应值 MUST 为 JSON 对象
+ * （可为空对象 {@code {}}，或按 profiling 规范携带数据）。</p>
+ * <p>定义见 https://datatracker.ietf.org/doc/html/rfc8417#section-2.2</p>
  */
 public class SsfEventMapJsonDeserializer extends JsonDeserializer<Map<String, SsfEvent>> {
 
@@ -64,13 +52,10 @@ public class SsfEventMapJsonDeserializer extends JsonDeserializer<Map<String, Ss
     }
 
     /**
-     * Resolves the {@link SsfEventRegistry} used to map event type URIs to
-     * concrete {@link SsfEvent} subclasses. Uses the per-session
-     * {@link SsfEventProvider} when a Keycloak session is bound to the
-     * current thread; otherwise returns {@code null} so the deserializer
-     * degrades to {@link GenericSsfEvent} for every event type rather than
-     * failing with an NPE — this keeps SET parsing available to callers
-     * (e.g. tests, background workers) that run outside a request scope.
+     * 解析用于将事件类型 URI 映射到具体 {@link SsfEvent} 子类的 {@link SsfEventRegistry}。
+     * <p>当前线程绑定 Keycloak 会话时使用 per-session {@link SsfEventProvider}；
+     * 否则返回 {@code null}，反序列化器对所有事件类型降级为 {@link GenericSsfEvent}，
+     * 避免 NPE——使 SET 解析在请求作用域外（如测试、后台 worker）仍可用。</p>
      */
     protected SsfEventRegistry resolveRegistry() {
 
