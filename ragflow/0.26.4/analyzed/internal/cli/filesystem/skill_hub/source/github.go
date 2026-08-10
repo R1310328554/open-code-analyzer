@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// github.go — GitHub 技能源适配器：通过 Contents API 递归拉取仓库目录中的技能文件。
+
 //
 
 package source
@@ -27,21 +29,25 @@ import (
 )
 
 // GitHubSource handles GitHub repository skills
+// GitHubSource 使用 GitHub REST API 获取仓库技能包。
 type GitHubSource struct {
 	client HTTPClientInterface
 }
 
 // NewGitHubSource creates a new GitHub source adapter
+// NewGitHubSource 构造 GitHub 源适配器。
 func NewGitHubSource(client HTTPClientInterface) *GitHubSource {
 	return &GitHubSource{client: client}
 }
 
 // SourceID returns the source identifier
+// SourceID 返回源标识 github。
 func (s *GitHubSource) SourceID() string {
 	return "github"
 }
 
 // TrustLevel returns the trust level based on repository
+// TrustLevel 受信仓库返回 trusted，否则 community。
 func (s *GitHubSource) TrustLevel(identifier string) string {
 	owner, repo, _, err := parseGitHubURL(identifier)
 	if err != nil {
@@ -54,6 +60,7 @@ func (s *GitHubSource) TrustLevel(identifier string) string {
 }
 
 // Fetch retrieves a skill from GitHub
+// Fetch 解析 GitHub URL 并下载目录下全部文件。
 func (s *GitHubSource) Fetch(identifier string) (*SkillBundle, error) {
 	owner, repo, pathStr, err := parseGitHubURL(identifier)
 	if err != nil {
@@ -98,6 +105,7 @@ func (s *GitHubSource) Fetch(identifier string) (*SkillBundle, error) {
 }
 
 // Inspect retrieves metadata from GitHub
+// Inspect 仅读取 SKILL.md 前置元数据。
 func (s *GitHubSource) Inspect(identifier string) (*SkillMetadata, error) {
 	owner, repo, pathStr, err := parseGitHubURL(identifier)
 	if err != nil {
@@ -123,6 +131,7 @@ func (s *GitHubSource) Inspect(identifier string) (*SkillMetadata, error) {
 }
 
 // fetchFileContent fetches a single file from GitHub
+// fetchFileContent 通过 Contents API 获取单个文件并解码 base64。
 func (s *GitHubSource) fetchFileContent(owner, repo, filePath string) (string, error) {
 	var url string
 	if filePath == "" || filePath == "." {
@@ -168,6 +177,7 @@ func (s *GitHubSource) fetchFileContent(owner, repo, filePath string) (string, e
 }
 
 // fetchDirectoryContents recursively fetches directory contents from GitHub
+// fetchDirectoryContents 递归列举目录并下载文件内容。
 func (s *GitHubSource) fetchDirectoryContents(owner, repo, dirPath string) (map[string][]byte, error) {
 	var url string
 	if dirPath == "" || dirPath == "." {
@@ -245,6 +255,7 @@ func (s *GitHubSource) fetchDirectoryContents(owner, repo, dirPath string) (map[
 }
 
 // downloadFile downloads a file from the given URL
+// downloadFile 从 download_url 下载文件字节。
 func (s *GitHubSource) downloadFile(url string) ([]byte, error) {
 	resp, err := s.client.Get(url)
 	if err != nil {

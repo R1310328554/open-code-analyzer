@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// base.go — 虚拟文件系统 Provider 基类：定义资源提供者接口、路径规范化与通用路径工具函数。
+
 //
 
 package filesystem
@@ -22,6 +24,7 @@ import (
 
 // Provider is the interface for all context providers
 // Each provider handles a specific resource type (datasets, chats, agents, etc.)
+// Provider 为各类资源（数据集、文件、技能等）的上下文提供者接口。
 type Provider interface {
 	// Name returns the provider name (e.g., "datasets", "chats")
 	Name() string
@@ -43,6 +46,7 @@ type Provider interface {
 }
 
 // BaseProvider provides common functionality for all providers
+// BaseProvider 封装名称、描述与根路径等通用字段。
 type BaseProvider struct {
 	name        string
 	description string
@@ -50,26 +54,31 @@ type BaseProvider struct {
 }
 
 // Name returns the provider name
+// Name 返回 Provider 标识名（如 datasets、files）。
 func (p *BaseProvider) Name() string {
 	return p.name
 }
 
 // Description returns the provider description
+// Description 返回人类可读的 Provider 描述。
 func (p *BaseProvider) Description() string {
 	return p.description
 }
 
 // GetRootPath returns the root path for this provider
+// GetRootPath 返回该 Provider 挂载的根路径。
 func (p *BaseProvider) GetRootPath() string {
 	return p.rootPath
 }
 
 // IsRootPath checks if the given path is the root path for this provider
+// IsRootPath 判断给定路径是否为 Provider 根路径。
 func (p *BaseProvider) IsRootPath(path string) bool {
 	return normalizePath(path) == normalizePath(p.rootPath)
 }
 
 // ParsePath parses a path and returns the subpath relative to the provider root
+// ParsePath 解析路径并返回相对 Provider 根的子路径。
 func (p *BaseProvider) ParsePath(path string) string {
 	normalized := normalizePath(path)
 	rootNormalized := normalizePath(p.rootPath)
@@ -86,6 +95,7 @@ func (p *BaseProvider) ParsePath(path string) string {
 }
 
 // SplitPath splits a path into components
+// SplitPath 将规范化路径按 '/' 拆分为非空组件列表。
 func SplitPath(path string) []string {
 	path = normalizePath(path)
 	if path == "" {
@@ -102,6 +112,7 @@ func SplitPath(path string) []string {
 }
 
 // normalizePath normalizes a path (removes leading/trailing slashes, handles "." and "..")
+// normalizePath 去除首尾斜杠并折叠 '.' 与 '..' 段。
 func normalizePath(path string) string {
 	path = trimSpace(path)
 	if path == "" {
@@ -140,6 +151,7 @@ func normalizePath(path string) string {
 }
 
 // Helper functions to avoid importing strings package in basic operations
+// trimSpace 去除字符串首尾空白字符（不依赖 strings 包）。
 func trimSpace(s string) string {
 	start := 0
 	end := len(s)
@@ -152,6 +164,7 @@ func trimSpace(s string) string {
 	return s[start:end]
 }
 
+// splitString 按单字节分隔符拆分字符串。
 func splitString(s string, sep byte) []string {
 	var result []string
 	start := 0
@@ -165,6 +178,7 @@ func splitString(s string, sep byte) []string {
 	return result
 }
 
+// joinStrings 用分隔符连接字符串切片。
 func joinStrings(strs []string, sep string) string {
 	if len(strs) == 0 {
 		return ""

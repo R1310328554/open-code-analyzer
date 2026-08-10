@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// file.go — 文件管理 Provider：通过 Python 后端 /files API 浏览、搜索与下载用户文件。
+
 //
 
 package filesystem
@@ -37,6 +39,7 @@ import (
 //   - GET /files/{file_id}/parent       -> Get parent folder
 //   - GET /files/{file_id}/ancestors    -> Get ancestor folders
 
+// FileProvider 封装文件管理器，维护文件夹 ID 缓存。
 type FileProvider struct {
 	BaseProvider
 	httpClient  HTTPClientInterface
@@ -45,6 +48,7 @@ type FileProvider struct {
 }
 
 // NewFileProvider creates a new FileProvider
+// NewFileProvider 构造文件 Provider 并初始化缓存。
 func NewFileProvider(httpClient HTTPClientInterface) *FileProvider {
 	return &FileProvider{
 		BaseProvider: BaseProvider{
@@ -58,6 +62,7 @@ func NewFileProvider(httpClient HTTPClientInterface) *FileProvider {
 }
 
 // Supports returns true if this provider can handle the given path
+// Supports 判断路径是否属于 files/ 命名空间。
 func (p *FileProvider) Supports(path string) bool {
 	normalized := normalizePath(path)
 	return normalized == "files" || strings.HasPrefix(normalized, "files/")
@@ -65,6 +70,7 @@ func (p *FileProvider) Supports(path string) bool {
 
 // List lists nodes at the given path
 // Path structure: files/ or files/{folder_name}/ or files/{folder_name}/{sub_path}/...
+// List 列出根目录或指定文件夹下的文件/子目录。
 func (p *FileProvider) List(ctx stdctx.Context, subPath string, opts *ListOptions) (*Result, error) {
 	// subPath is the path relative to "files/"
 	// Empty subPath means list root folder
@@ -84,6 +90,7 @@ func (p *FileProvider) List(ctx stdctx.Context, subPath string, opts *ListOption
 }
 
 // listPathRecursive recursively traverses the path and lists the final component
+// listPathRecursive 递归遍历多级路径并列出最终目录内容。
 func (p *FileProvider) listPathRecursive(ctx stdctx.Context, parts []string, opts *ListOptions) (*Result, error) {
 	if len(parts) == 0 {
 		return nil, fmt.Errorf("empty path")
@@ -153,6 +160,7 @@ func (p *FileProvider) listPathRecursive(ctx stdctx.Context, parts []string, opt
 }
 
 // Search searches for files/folders
+// Search 按名称子串过滤当前目录下的节点。
 func (p *FileProvider) Search(ctx stdctx.Context, subPath string, opts *SearchOptions) (*Result, error) {
 	if opts.Query == "" {
 		return p.List(ctx, subPath, &ListOptions{
@@ -186,6 +194,7 @@ func (p *FileProvider) Search(ctx stdctx.Context, subPath string, opts *SearchOp
 }
 
 // Cat retrieves file content
+// Cat 按路径定位文件并下载其二进制内容。
 func (p *FileProvider) Cat(ctx stdctx.Context, subPath string) ([]byte, error) {
 	if subPath == "" {
 		return nil, fmt.Errorf("cat requires a file path: files/{folder}/{file}")
@@ -216,6 +225,7 @@ func (p *FileProvider) Cat(ctx stdctx.Context, subPath string) ([]byte, error) {
 }
 
 // findNodeByPath recursively traverses the path to find the target node
+// findNodeByPath 逐级解析路径组件并返回目标 Node。
 func (p *FileProvider) findNodeByPath(ctx stdctx.Context, parts []string) (*Node, error) {
 	if len(parts) == 0 {
 		return nil, fmt.Errorf("empty path")
@@ -273,6 +283,7 @@ func (p *FileProvider) findNodeByPath(ctx stdctx.Context, parts []string) (*Node
 // ==================== Python Server API Methods ====================
 
 // getRootID gets or caches the root folder ID
+// getRootID 获取并缓存根文件夹 ID。
 func (p *FileProvider) getRootID(ctx stdctx.Context) (string, error) {
 	if p.rootID != "" {
 		return p.rootID, nil
@@ -320,6 +331,7 @@ func (p *FileProvider) listRootFolder(ctx stdctx.Context, opts *ListOptions) (*R
 }
 
 // listFilesByParentID lists files/folders by parent ID
+// listFilesByParentID 按 parent_id 分页列出子文件/文件夹。
 func (p *FileProvider) listFilesByParentID(ctx stdctx.Context, parentID string, parentPath string, opts *ListOptions) (*Result, error) {
 	// Build query parameters
 	queryParams := make([]string, 0)
@@ -410,6 +422,7 @@ func (p *FileProvider) listFolderByName(ctx stdctx.Context, folderName string, o
 }
 
 // getFolderIDByName finds folder ID by its name in root
+// getFolderIDByName 在根目录中按名称查找文件夹 ID。
 func (p *FileProvider) getFolderIDByName(ctx stdctx.Context, folderName string) (string, error) {
 	// Check cache first
 	if id, ok := p.folderCache[folderName]; ok {
@@ -519,6 +532,7 @@ func (p *FileProvider) getFileNode(ctx stdctx.Context, folderName, fileName stri
 }
 
 // downloadFile downloads file content
+// downloadFile 通过 GET /files/{id} 下载文件正文。
 func (p *FileProvider) downloadFile(ctx stdctx.Context, fileID string) ([]byte, error) {
 	path := fmt.Sprintf("/files/%s", fileID)
 	resp, err := p.httpClient.Request("GET", path, "auto", nil, nil)
@@ -543,6 +557,7 @@ func (p *FileProvider) downloadFile(ctx stdctx.Context, fileID string) ([]byte, 
 }
 
 // DeleteFile deletes a file or folder by its ID
+// DeleteFile 调用 DELETE /files 批量删除指定 ID。
 func (p *FileProvider) DeleteFile(ctx stdctx.Context, fileID string) error {
 	// Use JSON body format expected by Python backend: {"ids": ["file_id"]}
 	payload := map[string]interface{}{
@@ -579,6 +594,7 @@ func (p *FileProvider) DeleteFile(ctx stdctx.Context, fileID string) error {
 }
 
 // DeleteFolderByPath deletes a folder by its path (e.g., "skills/hub11/skill-name")
+// DeleteFolderByPath 按路径解析文件夹 ID 后执行删除。
 func (p *FileProvider) DeleteFolderByPath(ctx stdctx.Context, folderPath string) error {
 	parts := SplitPath(folderPath)
 	if len(parts) == 0 {
@@ -631,6 +647,7 @@ func (p *FileProvider) DeleteFolderByPath(ctx stdctx.Context, folderPath string)
 // ==================== Conversion Functions ====================
 
 // fileToNode converts a file map to a Node
+// fileToNode 将 /files API 记录转换为 Node 并缓存文件夹 ID。
 func (p *FileProvider) fileToNode(f map[string]interface{}, parentPath string) *Node {
 	name := getString(f["name"])
 	fileType := getString(f["type"])

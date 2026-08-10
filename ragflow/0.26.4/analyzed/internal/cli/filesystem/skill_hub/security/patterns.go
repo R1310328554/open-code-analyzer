@@ -12,12 +12,15 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// patterns.go — 技能安全威胁规则库：定义正则检测模式、受信仓库与安装策略矩阵。
+
 //
 
 package security
 
 // ThreatPattern represents a security threat detection pattern
 // Inspired by hermes-agent's skills_guard.py
+// ThreatPattern 描述一条安全威胁检测规则及其严重级别。
 type ThreatPattern struct {
 	Pattern     string // Regular expression pattern
 	PatternID   string // Unique identifier for this pattern
@@ -27,6 +30,7 @@ type ThreatPattern struct {
 }
 
 // ThreatPatterns contains all security threat detection rules
+// ThreatPatterns 汇总数据外泄、注入、破坏、持久化等检测规则。
 var ThreatPatterns = []ThreatPattern{
 	// ========== Data Exfiltration ==========
 	{
@@ -260,6 +264,7 @@ var ThreatPatterns = []ThreatPattern{
 
 // TrustedRepos contains the list of trusted repositories
 // These repos have a higher trust level
+// TrustedRepos 官方/知名技能仓库，享有更高信任级别。
 var TrustedRepos = map[string]bool{
 	"openai/skills":     true,
 	"anthropics/skills": true,
@@ -270,6 +275,7 @@ var TrustedRepos = map[string]bool{
 // InstallPolicy defines the installation policy for each trust level
 // Format: [safe, caution, dangerous] -> action
 // Actions: allow, block, ask
+// InstallPolicy 按信任级别映射 safe/caution/dangerous 到 allow/ask/block。
 var InstallPolicy = map[string][3]string{
 	"builtin":   {"allow", "allow", "allow"}, // Official skills: always allow
 	"trusted":   {"allow", "allow", "block"}, // Trusted repos: caution allowed, dangerous blocked
@@ -277,6 +283,7 @@ var InstallPolicy = map[string][3]string{
 }
 
 // VerdictIndex maps verdict to array index
+// VerdictIndex 将扫描结论映射到策略数组下标。
 var VerdictIndex = map[string]int{
 	"safe":      0,
 	"caution":   1,

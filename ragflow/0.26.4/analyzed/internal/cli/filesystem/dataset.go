@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// dataset.go — 数据集 Provider：通过 HTTP API 列出/搜索知识库与文档，支持语义检索。
+
 //
 
 package filesystem
@@ -27,6 +29,7 @@ import (
 )
 
 // HTTPResponse represents an HTTP response
+// HTTPResponse 封装后端 HTTP 响应的状态码、正文与耗时。
 type HTTPResponse struct {
 	StatusCode int
 	Body       []byte
@@ -35,6 +38,7 @@ type HTTPResponse struct {
 }
 
 // HTTPClientInterface defines the interface needed from HTTPClient
+// HTTPClientInterface 定义 DatasetProvider 所需的 HTTP 客户端能力。
 type HTTPClientInterface interface {
 	Request(method, path string, authKind string, headers map[string]string, jsonBody map[string]interface{}) (*HTTPResponse, error)
 	UploadMultipart(path string, contentType string, body io.Reader) error
@@ -45,12 +49,14 @@ type HTTPClientInterface interface {
 //   - datasets/              -> List all datasets
 //   - datasets/{name}        -> List documents in dataset
 //   - datasets/{name}/{doc_name} -> Get document info
+// DatasetProvider 管理 datasets/ 路径下的知识库与文档节点。
 type DatasetProvider struct {
 	BaseProvider
 	httpClient HTTPClientInterface
 }
 
 // NewDatasetProvider creates a new DatasetProvider
+// NewDatasetProvider 构造数据集 Provider 并注入 HTTP 客户端。
 func NewDatasetProvider(httpClient HTTPClientInterface) *DatasetProvider {
 	return &DatasetProvider{
 		BaseProvider: BaseProvider{
@@ -63,12 +69,14 @@ func NewDatasetProvider(httpClient HTTPClientInterface) *DatasetProvider {
 }
 
 // Supports returns true if this provider can handle the given path
+// Supports 判断路径是否以 datasets 为前缀。
 func (p *DatasetProvider) Supports(path string) bool {
 	normalized := normalizePath(path)
 	return normalized == "datasets" || strings.HasPrefix(normalized, "datasets/")
 }
 
 // List lists nodes at the given path
+// List 列出知识库、文档或返回单文档节点信息。
 func (p *DatasetProvider) List(ctx stdctx.Context, subPath string, opts *ListOptions) (*Result, error) {
 	// subPath is the path relative to "datasets/"
 	// Empty subPath means list all datasets
@@ -98,6 +106,7 @@ func (p *DatasetProvider) List(ctx stdctx.Context, subPath string, opts *ListOpt
 }
 
 // Search searches for datasets or documents
+// Search 在数据集或文档范围内执行关键词/语义搜索。
 func (p *DatasetProvider) Search(ctx stdctx.Context, subPath string, opts *SearchOptions) (*Result, error) {
 	if opts.Query == "" {
 		return p.List(ctx, subPath, &ListOptions{
@@ -122,6 +131,7 @@ func (p *DatasetProvider) Search(ctx stdctx.Context, subPath string, opts *Searc
 //   - cat datasets          -> Error: datasets is a directory, not a file
 //   - cat datasets/kb_name  -> Error: kb_name is a directory, not a file
 //   - cat datasets/kb_name/doc_name -> Would retrieve document content (if implemented)
+// Cat 读取文档内容（当前对目录路径返回错误）。
 func (p *DatasetProvider) Cat(ctx stdctx.Context, subPath string) ([]byte, error) {
 	if subPath == "" {
 		return nil, fmt.Errorf("'datasets' is a directory, not a file")
@@ -144,6 +154,7 @@ func (p *DatasetProvider) Cat(ctx stdctx.Context, subPath string) ([]byte, error
 
 // ==================== Dataset Operations ====================
 
+// listDatasets 调用 GET /datasets 列出全部知识库。
 func (p *DatasetProvider) listDatasets(ctx stdctx.Context, opts *ListOptions) (*Result, error) {
 	resp, err := p.httpClient.Request("GET", "/datasets", "auto", nil, nil)
 	if err != nil {
@@ -187,6 +198,7 @@ func (p *DatasetProvider) listDatasets(ctx stdctx.Context, opts *ListOptions) (*
 	}, nil
 }
 
+// getDataset 按名称查找单个知识库节点。
 func (p *DatasetProvider) getDataset(ctx stdctx.Context, name string) (*Node, error) {
 	// Check if trying to access hidden .knowledgebase
 	if name == ".knowledgebase" {
@@ -222,6 +234,7 @@ func (p *DatasetProvider) getDataset(ctx stdctx.Context, name string) (*Node, er
 	return nil, fmt.Errorf("%s: dataset '%s'", ErrNotFound, name)
 }
 
+// searchDatasets 在全部或指定知识库中执行检索。
 func (p *DatasetProvider) searchDatasets(ctx stdctx.Context, opts *SearchOptions) (*Result, error) {
 	// If no query is provided, just list datasets
 	if opts.Query == "" {
@@ -236,6 +249,7 @@ func (p *DatasetProvider) searchDatasets(ctx stdctx.Context, opts *SearchOptions
 }
 
 // searchWithRetrieval performs semantic search using the retrieval API
+// searchWithRetrieval 调用 POST /datasets/search 做向量语义检索。
 func (p *DatasetProvider) searchWithRetrieval(ctx stdctx.Context, opts *SearchOptions) (*Result, error) {
 	// Determine kb_ids to search in
 	var kbIDs []string
@@ -366,6 +380,7 @@ func (p *DatasetProvider) searchWithRetrieval(ctx stdctx.Context, opts *SearchOp
 }
 
 // chunkToNodeWithKBMapping converts a chunk map to a Node with kb_id -> name mapping
+// chunkToNodeWithKBMapping 将检索 chunk 转为 Node 并映射 kb_id 到名称。
 func (p *DatasetProvider) chunkToNodeWithKBMapping(chunk map[string]interface{}, kbIDToName map[string]string) *Node {
 	// Extract chunk content - try multiple field names
 	content := ""
@@ -480,6 +495,7 @@ func (p *DatasetProvider) chunkToNode(chunk map[string]interface{}) *Node {
 
 // ==================== Document Operations ====================
 
+// listDocuments 列出指定知识库下的文档。
 func (p *DatasetProvider) listDocuments(ctx stdctx.Context, datasetName string, opts *ListOptions) (*Result, error) {
 	// First get the dataset ID
 	ds, err := p.getDataset(ctx, datasetName)
@@ -651,6 +667,7 @@ func (p *DatasetProvider) searchDocuments(ctx stdctx.Context, datasetName string
 
 // ==================== Helper Functions ====================
 
+// datasetToNode 将 API 知识库记录转换为目录型 Node。
 func (p *DatasetProvider) datasetToNode(ds map[string]interface{}) *Node {
 	name := getString(ds["name"])
 	node := &Node{
@@ -676,6 +693,7 @@ func (p *DatasetProvider) datasetToNode(ds map[string]interface{}) *Node {
 	return node
 }
 
+// documentToNode 将 API 文档记录转换为文档型 Node。
 func (p *DatasetProvider) documentToNode(doc map[string]interface{}, datasetName string) *Node {
 	name := getString(doc["name"])
 	node := &Node{
@@ -736,6 +754,7 @@ func getFloat(v interface{}) float64 {
 	}
 }
 
+// parseTime 解析毫秒/秒时间戳或常见日期字符串。
 func parseTime(v interface{}) time.Time {
 	if v == nil {
 		return time.Time{}

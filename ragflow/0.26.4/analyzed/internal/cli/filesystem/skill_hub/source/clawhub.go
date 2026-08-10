@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// clawhub.go — ClawHub 技能源适配器：搜索/下载 ZIP 技能包，含限流重试与社区信任级别。
+
 //
 
 package source
@@ -33,6 +35,7 @@ import (
 )
 
 // progressLogger is a simple logger for user-facing progress messages
+// progressLogger 控制是否向终端输出安装进度消息。
 type progressLogger struct {
 	enabled bool
 }
@@ -59,28 +62,33 @@ const (
 // Reference implementation: hermes-agent/tools/skills_hub.py ClawHubSource
 // All skills are treated as community trust — ClawHavoc incident showed
 // their vetting is insufficient (341 malicious skills found Feb 2026).
+// ClawHubSource 通过 ClawHub REST API 获取技能元数据与文件。
 type ClawHubSource struct {
 	client HTTPClientInterface
 	logger progressLogger
 }
 
 // NewClawHubSource creates a new ClawHub source adapter
+// NewClawHubSource 构造 ClawHub 源适配器。
 func NewClawHubSource(client HTTPClientInterface) *ClawHubSource {
 	return &ClawHubSource{client: client, logger: progressLogger{enabled: true}}
 }
 
 // SourceID returns the source identifier
+// SourceID 返回源标识 clawhub。
 func (s *ClawHubSource) SourceID() string {
 	return "clawhub"
 }
 
 // TrustLevel returns the trust level for ClawHub
+// TrustLevel ClawHub 技能统一视为 community 信任。
 func (s *ClawHubSource) TrustLevel(identifier string) string {
 	// ClawHub has community verification
 	return "community"
 }
 
 // Search searches for skills on ClawHub matching the query
+// Search 在 ClawHub 上搜索技能并按相关性排序。
 func (s *ClawHubSource) Search(query string, limit int) ([]*SkillMetadata, error) {
 	if limit <= 0 {
 		limit = 10
@@ -167,6 +175,7 @@ func (s *ClawHubSource) Search(query string, limit int) ([]*SkillMetadata, error
 // Fetch retrieves a skill from ClawHub
 // Downloads the skill as a ZIP bundle and extracts text files
 // Supports identifier with version: "slug@version" or just "slug" (uses latest)
+// Fetch 下载指定 slug@version 技能并解压文本文件。
 func (s *ClawHubSource) Fetch(identifier string) (*SkillBundle, error) {
 	slug, specifiedVersion := extractSlugAndVersion(identifier)
 	s.logger.log("Looking up skill '%s' on ClawHub...", slug)
@@ -245,6 +254,7 @@ func (s *ClawHubSource) Fetch(identifier string) (*SkillBundle, error) {
 }
 
 // Inspect retrieves metadata from ClawHub without downloading full content
+// Inspect 仅获取 ClawHub 技能元数据，不下载完整内容。
 func (s *ClawHubSource) Inspect(identifier string) (*SkillMetadata, error) {
 	slug := extractSlug(identifier)
 
@@ -331,6 +341,7 @@ func (s *ClawHubSource) resolveLatestVersion(slug string, skillData *clawHubSkil
 }
 
 // downloadZip downloads skill as ZIP bundle and extracts text files
+// downloadZip 从 /download 端点获取 ZIP 并提取安全文本文件。
 func (s *ClawHubSource) downloadZip(slug, version string) (map[string][]byte, error) {
 	// Use the correct endpoint with slug parameter (matching hermes-agent)
 	url := fmt.Sprintf("%s/download?slug=%s&version=%s", clawHubBaseURL, slug, version)
@@ -495,6 +506,7 @@ func (s *ClawHubSource) fetchText(url string) (string, error) {
 }
 
 // doRequestWithRetry performs HTTP request with retry logic for 429 rate limiting
+// doRequestWithRetry 带 429 退避的重试 HTTP 请求。
 func (s *ClawHubSource) doRequestWithRetry(method, url string, body []byte) ([]byte, error) {
 	maxRetries := 5
 	var lastErr error
@@ -760,6 +772,7 @@ func (s *ClawHubSource) searchScore(query string, meta *SkillMetadata) int {
 // Helper types and functions
 
 // clawHubSkillData represents ClawHub skill API response
+// clawHubSkillData 映射 ClawHub 技能 API 响应字段。
 type clawHubSkillData struct {
 	Slug          string      `json:"slug"`
 	DisplayName   string      `json:"displayName"`
@@ -895,6 +908,7 @@ func extractQueryTerms(query string) []string {
 }
 
 // isSafePath validates that a path is safe (no directory traversal)
+// isSafePath 校验 ZIP 内路径不含目录穿越。
 func isSafePath(path string) bool {
 	// Clean the path
 	clean := filepath.Clean(path)
@@ -910,6 +924,7 @@ func isSafePath(path string) bool {
 }
 
 // isTextContent checks if content appears to be text (not binary)
+// isTextContent 通过检测 NUL 字节判断是否为文本内容。
 func isTextContent(data []byte) bool {
 	// Check for null bytes (indicates binary)
 	return !slices.Contains(data, 0)

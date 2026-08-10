@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// interface.go — 技能源接口与解析器：统一 local/github/clawhub/skillssh 引用格式并路由到适配器。
+
 //
 
 package source
@@ -25,6 +27,7 @@ import (
 )
 
 // SkillSource is the interface for skill sources
+// SkillSource 定义技能源的 Fetch、Inspect 与 TrustLevel 能力。
 type SkillSource interface {
 	// SourceID returns the source identifier (local, github, clawhub, skillssh)
 	SourceID() string
@@ -40,11 +43,13 @@ type SkillSource interface {
 }
 
 // SourceResolver resolves source references to appropriate adapters
+// SourceResolver 维护源名称到 SkillSource 实现的映射。
 type SourceResolver struct {
 	sources map[string]SkillSource
 }
 
 // NewSourceResolver creates a new source resolver
+// NewSourceResolver 注册 local、github、clawhub、skillssh 四类源。
 func NewSourceResolver(client HTTPClientInterface) *SourceResolver {
 	return &SourceResolver{
 		sources: map[string]SkillSource{
@@ -62,6 +67,7 @@ func NewSourceResolver(client HTTPClientInterface) *SourceResolver {
 //   - github.com/owner/repo/path -> github
 //   - clawhub://owner/skill-name, clawhub.ai/owner/skill-name -> clawhub
 //   - skill://skill-name, skills.sh/skill/name -> skillssh
+// Resolve 解析 URI/路径引用并返回对应源与标识符。
 func (r *SourceResolver) Resolve(ref string) (SkillSource, string, error) {
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
@@ -116,6 +122,7 @@ func (r *SourceResolver) Resolve(ref string) (SkillSource, string, error) {
 }
 
 // getHomeDir returns the user's home directory
+// getHomeDir 解析用户主目录（HOME 或 USERPROFILE）。
 func getHomeDir() (string, error) {
 	home := os.Getenv("HOME")
 	if home == "" {
@@ -128,6 +135,7 @@ func getHomeDir() (string, error) {
 }
 
 // parseGitHubURL parses a GitHub URL and returns owner, repo, and path
+// parseGitHubURL 解析 github.com/owner/repo/path 格式。
 func parseGitHubURL(urlStr string) (owner, repo, path string, err error) {
 	// Remove protocol prefix if present
 	urlStr = strings.TrimPrefix(urlStr, "https://")
@@ -159,6 +167,7 @@ func extractSkillNameFromPath(path string) string {
 }
 
 // isTrustedGitHubRepo checks if a GitHub repo is trusted
+// isTrustedGitHubRepo 检查 owner/repo 是否在受信列表中。
 func isTrustedGitHubRepo(owner, repo string) bool {
 	fullName := owner + "/" + repo
 	trusted := map[string]bool{
@@ -171,6 +180,7 @@ func isTrustedGitHubRepo(owner, repo string) bool {
 }
 
 // Helper to check if URL is valid
+// isValidURL 判断字符串是否为有效的 http/https URL。
 func isValidURL(str string) bool {
 	u, err := url.Parse(str)
 	return err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""

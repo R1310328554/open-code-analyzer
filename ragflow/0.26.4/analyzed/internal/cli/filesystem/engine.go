@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// engine.go — 虚拟文件系统引擎：注册 Provider、路由 List/Search/Cat 命令并解析根目录列表。
+
 //
 
 package filesystem
@@ -25,11 +27,13 @@ import (
 
 // Engine is the core of the Virtual Filesystem
 // It manages providers and routes commands to the appropriate provider
+// Engine 管理已注册的 Provider 并将 CLI 命令路由到对应实现。
 type Engine struct {
 	providers []Provider
 }
 
 // NewEngine creates a new Virtual Filesystem Engine
+// NewEngine 创建空的虚拟文件系统引擎实例。
 func NewEngine() *Engine {
 	return &Engine{
 		providers: make([]Provider, 0),
@@ -37,11 +41,13 @@ func NewEngine() *Engine {
 }
 
 // RegisterProvider registers a provider with the engine
+// RegisterProvider 向引擎注册一个资源 Provider。
 func (e *Engine) RegisterProvider(provider Provider) {
 	e.providers = append(e.providers, provider)
 }
 
 // GetProviders returns all registered providers
+// GetProviders 返回所有已注册 Provider 的名称与描述。
 func (e *Engine) GetProviders() []ProviderInfo {
 	infos := make([]ProviderInfo, 0, len(e.providers))
 	for _, p := range e.providers {
@@ -54,6 +60,7 @@ func (e *Engine) GetProviders() []ProviderInfo {
 }
 
 // Execute executes a command and returns the result
+// Execute 根据命令类型分派 List、Search 或 Cat 操作。
 func (e *Engine) Execute(ctx stdctx.Context, cmd *Command) (*Result, error) {
 	switch cmd.Type {
 	case CommandList:
@@ -69,6 +76,7 @@ func (e *Engine) Execute(ctx stdctx.Context, cmd *Command) (*Result, error) {
 }
 
 // resolveProvider finds the provider for a given path
+// resolveProvider 查找支持该路径的 Provider 并计算子路径。
 func (e *Engine) resolveProvider(path string) (Provider, string, error) {
 	path = normalizePath(path)
 
@@ -106,6 +114,7 @@ func (e *Engine) resolveProvider(path string) (Provider, string, error) {
 // If path is empty, returns:
 //  1. Built-in providers (e.g., datasets)
 //  2. Top-level directories from files provider (if any)
+// List 列出指定路径下的节点；空路径返回根级 Provider 与文件夹。
 func (e *Engine) List(ctx stdctx.Context, path string, opts *ListOptions) (*Result, error) {
 	// Normalize path
 	path = normalizePath(path)
@@ -134,6 +143,7 @@ func (e *Engine) List(ctx stdctx.Context, path string, opts *ListOptions) (*Resu
 // listRoot returns the root listing:
 // 1. Built-in providers (datasets, etc.)
 // 2. Top-level folders from files provider (file_manager)
+// listRoot 聚合内置 Provider 与 files 根目录下的顶层文件夹。
 func (e *Engine) listRoot(ctx stdctx.Context, opts *ListOptions) (*Result, error) {
 	nodes := make([]*Node, 0)
 	// Track names to avoid duplicates
@@ -185,6 +195,7 @@ func (e *Engine) listRoot(ctx stdctx.Context, opts *ListOptions) (*Result, error
 }
 
 // getFileProvider returns the files provider if registered
+// getFileProvider 返回已注册的 files Provider（若存在）。
 func (e *Engine) getFileProvider() Provider {
 	for _, p := range e.providers {
 		if p.Name() == "files" {
@@ -205,6 +216,7 @@ func (e *Engine) GetProvider(name string) Provider {
 }
 
 // Search searches for nodes matching the query
+// Search 在解析出的 Provider 上执行搜索。
 func (e *Engine) Search(ctx stdctx.Context, path string, opts *SearchOptions) (*Result, error) {
 	provider, subPath, err := e.resolveProvider(path)
 	if err != nil {
@@ -215,6 +227,7 @@ func (e *Engine) Search(ctx stdctx.Context, path string, opts *SearchOptions) (*
 }
 
 // Cat retrieves the content of a file/document
+// Cat 读取文件内容，必要时回退到 files Provider。
 func (e *Engine) Cat(ctx stdctx.Context, path string) ([]byte, error) {
 	provider, subPath, err := e.resolveProvider(path)
 	if err != nil {
@@ -230,6 +243,7 @@ func (e *Engine) Cat(ctx stdctx.Context, path string) ([]byte, error) {
 }
 
 // ParsePath parses a path and returns path information
+// ParsePath 解析路径组件并填充 PathInfo 元数据。
 func (e *Engine) ParsePath(path string) (*PathInfo, error) {
 	path = normalizePath(path)
 	components := SplitPath(path)
@@ -270,6 +284,7 @@ func (e *Engine) ParsePath(path string) (*PathInfo, error) {
 }
 
 // parseListOptions parses command params into ListOptions
+// parseListOptions 从命令参数映射构建 ListOptions。
 func parseListOptions(params map[string]interface{}) *ListOptions {
 	opts := &ListOptions{}
 
@@ -297,6 +312,7 @@ func parseListOptions(params map[string]interface{}) *ListOptions {
 }
 
 // parseSearchOptions parses command params into SearchOptions
+// parseSearchOptions 从命令参数映射构建 SearchOptions。
 func parseSearchOptions(params map[string]interface{}) *SearchOptions {
 	opts := &SearchOptions{}
 

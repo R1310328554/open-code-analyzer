@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// skillssh.go — skills.sh 技能源适配器：解析详情页 HTML 并委托 GitHub 源拉取实际技能包。
+
 //
 
 package source
@@ -39,6 +41,7 @@ var (
 )
 
 // SkillsShDetail holds parsed information from skills.sh detail page
+// SkillsShDetail 保存从 skills.sh 详情页解析的元信息。
 type SkillsShDetail struct {
 	Repo           string `json:"repo"`
 	InstallSkill   string `json:"install_skill"`
@@ -52,12 +55,14 @@ type SkillsShDetail struct {
 }
 
 // SkillsShSource handles skills.sh registry skills
+// SkillsShSource 组合 GitHub 源并在 skills.sh 上发现技能路径。
 type SkillsShSource struct {
 	client HTTPClientInterface
 	github *GitHubSource
 }
 
 // NewSkillsShSource creates a new skills.sh source adapter
+// NewSkillsShSource 构造 skills.sh 源适配器。
 func NewSkillsShSource(client HTTPClientInterface) *SkillsShSource {
 	return &SkillsShSource{
 		client: client,
@@ -66,11 +71,13 @@ func NewSkillsShSource(client HTTPClientInterface) *SkillsShSource {
 }
 
 // SourceID returns the source identifier
+// SourceID 返回源标识 skills-sh。
 func (s *SkillsShSource) SourceID() string {
 	return "skills-sh"
 }
 
 // TrustLevel returns the trust level for skills.sh
+// TrustLevel 委托底层 GitHub 仓库的信任级别判定。
 func (s *SkillsShSource) TrustLevel(identifier string) string {
 	canonical := s.normalizeIdentifier(identifier)
 	// Delegate to github trust level based on the repo
@@ -83,6 +90,7 @@ func (s *SkillsShSource) TrustLevel(identifier string) string {
 }
 
 // Fetch retrieves a skill from skills.sh
+// Fetch 解析 skills.sh 标识并尝试多个 GitHub 候选路径。
 func (s *SkillsShSource) Fetch(identifier string) (*SkillBundle, error) {
 	canonical := s.normalizeIdentifier(identifier)
 
@@ -135,6 +143,7 @@ func (s *SkillsShSource) Fetch(identifier string) (*SkillBundle, error) {
 }
 
 // Inspect retrieves metadata from skills.sh
+// Inspect 合并 GitHub 元数据与 skills.sh 页面摘要。
 func (s *SkillsShSource) Inspect(identifier string) (*SkillMetadata, error) {
 	canonical := s.normalizeIdentifier(identifier)
 
@@ -177,6 +186,7 @@ func (s *SkillsShSource) wrapIdentifier(identifier string) string {
 }
 
 // candidateIdentifiers generates possible GitHub paths for a skill
+// candidateIdentifiers 生成 owner/repo/skill 的多种 GitHub 路径候选。
 func (s *SkillsShSource) candidateIdentifiers(identifier string) []string {
 	parts := strings.SplitN(identifier, "/", 3)
 	if len(parts) < 3 {
@@ -206,6 +216,7 @@ func (s *SkillsShSource) candidateIdentifiers(identifier string) []string {
 }
 
 // fetchDetailPage fetches and parses skills.sh detail page
+// fetchDetailPage 抓取并解析 skills.sh 技能详情 HTML 页。
 func (s *SkillsShSource) fetchDetailPage(identifier string) (*SkillsShDetail, error) {
 	url := fmt.Sprintf("%s/%s", skillsShBaseURL, identifier)
 
@@ -272,6 +283,7 @@ func (s *SkillsShSource) parseDetailPage(identifier, html string) *SkillsShDetai
 }
 
 // discoverIdentifier tries to find the skill in non-standard locations
+// discoverIdentifier 在仓库树与非标准目录中搜索技能路径。
 func (s *SkillsShSource) discoverIdentifier(identifier string, detail *SkillsShDetail) (string, error) {
 	parts := strings.SplitN(identifier, "/", 3)
 	if len(parts) < 3 {
@@ -356,6 +368,7 @@ func (s *SkillsShSource) discoverIdentifier(identifier string, detail *SkillsShD
 }
 
 // findSkillInRepoTree searches for skill in repo tree
+// findSkillInRepoTree 通过 Git 树 API 递归定位技能目录。
 func (s *SkillsShSource) findSkillInRepoTree(repo, skillToken string) (string, error) {
 	// Get repo tree
 	url := fmt.Sprintf("https://api.github.com/repos/%s/git/trees/HEAD?recursive=1", repo)
@@ -567,6 +580,7 @@ func (s *SkillsShSource) extractRepoSlug(value string) string {
 }
 
 // stripHTML removes HTML tags
+// stripHTML 移除 HTML 标签并修剪空白。
 func (s *SkillsShSource) stripHTML(value string) string {
 	// Simple HTML tag removal
 	re := regexp.MustCompile(`<[^>]+>`)

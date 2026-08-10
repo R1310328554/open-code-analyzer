@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// skill.go — 技能 Provider 与上传器：管理 skills/ 空间、版本目录、校验规则及 /skills API 索引。
+
 //
 
 package filesystem
@@ -52,6 +54,7 @@ import (
 // Constants
 // ============================================================================
 
+// 技能包大小与默认空间等常量限制。
 const (
 	MaxSkillTotalSize = 50 * 1024 * 1024 // 50MB
 	MaxSkillFileSize  = 5 * 1024 * 1024  // 5MB per file
@@ -82,6 +85,7 @@ var defaultIgnorePatterns = []string{
 // ============================================================================
 
 // SkillMetadata represents the metadata from SKILL.md frontmatter
+// SkillMetadata 对应 SKILL.md YAML 前置元数据字段。
 type SkillMetadata struct {
 	Name        string      `yaml:"name"`
 	Description string      `yaml:"description"`
@@ -92,6 +96,7 @@ type SkillMetadata struct {
 }
 
 // SkillValidationResult represents the result of skill validation
+// SkillValidationResult 汇总本地技能目录校验结果。
 type SkillValidationResult struct {
 	Valid       bool
 	Name        string
@@ -103,6 +108,7 @@ type SkillValidationResult struct {
 }
 
 // SkillFile represents a file in the skill directory
+// SkillFile 表示待上传的单个文本文件及其相对路径。
 type SkillFile struct {
 	Path    string
 	Content []byte
@@ -110,6 +116,7 @@ type SkillFile struct {
 }
 
 // SkillConflictError represents a conflict error
+// SkillConflictError 表示同名同版本技能已存在时的冲突。
 type SkillConflictError struct {
 	Type    string // "name" or "version"
 	Name    string
@@ -127,12 +134,14 @@ func (e *SkillConflictError) Error() string {
 // SkillProvider
 // ============================================================================
 
+// SkillProvider 通过 /skills API 与文件系统列出/搜索/读取技能。
 type SkillProvider struct {
 	BaseProvider
 	httpClient HTTPClientInterface
 }
 
 // NewSkillProvider creates a new SkillProvider
+// NewSkillProvider 构造技能 Provider。
 func NewSkillProvider(httpClient HTTPClientInterface) *SkillProvider {
 	return &SkillProvider{
 		BaseProvider: BaseProvider{
@@ -145,6 +154,7 @@ func NewSkillProvider(httpClient HTTPClientInterface) *SkillProvider {
 }
 
 // Supports returns true if this provider can handle the given path
+// Supports 判断路径是否属于 skills/ 命名空间。
 func (p *SkillProvider) Supports(path string) bool {
 	normalized := normalizePath(path)
 	return normalized == "skills" || strings.HasPrefix(normalized, "skills/")
@@ -158,6 +168,7 @@ func isUUID(s string) bool {
 
 // List lists nodes at the given path
 // Path structure: skills/ or skills/{space_id}/ or skills/{space_id}/{skill_name}/...
+// List 列出空间、技能、版本或技能目录内容。
 func (p *SkillProvider) List(ctx stdctx.Context, subPath string, opts *ListOptions) (*Result, error) {
 	if subPath == "" {
 		// List all hubs
@@ -180,6 +191,7 @@ func (p *SkillProvider) List(ctx stdctx.Context, subPath string, opts *ListOptio
 }
 
 // Search searches for skills matching the query
+// Search 在技能索引或文件系统中搜索匹配技能。
 func (p *SkillProvider) Search(ctx stdctx.Context, subPath string, opts *SearchOptions) (*Result, error) {
 	if opts == nil || opts.Query == "" {
 		return nil, fmt.Errorf("search query is required")
@@ -309,6 +321,7 @@ func (p *SkillProvider) searchSkillsFromFileSystem(ctx stdctx.Context, spaceName
 
 // Cat retrieves the content of a skill file at the given path
 // Path structure: skills/{space_id}/{skill_name}/{version}/.../{file_path}
+// Cat 读取技能版本目录下的文件内容。
 func (p *SkillProvider) Cat(ctx stdctx.Context, path string) ([]byte, error) {
 	parts := SplitPath(path)
 	if len(parts) < 4 {
@@ -1205,6 +1218,7 @@ func (p *SkillProvider) getDefaultEmbdID(ctx stdctx.Context, spaceID string) (st
 
 // UploadSkill uploads a skill directory to the server
 // nameOverride: user-specified skill name (overrides SKILL.md metadata)
+// UploadSkill 校验本地技能目录并上传至文件系统与索引。
 func (p *SkillProvider) UploadSkill(ctx stdctx.Context, skillPath string, versionOverride string, spaceID string, fileProvider Provider, nameOverride string) error {
 	spaceID = normalizeSpaceID(spaceID)
 
@@ -1443,6 +1457,7 @@ func (p *SkillProvider) indexSkillFromUpload(ctx stdctx.Context, result *SkillVa
 
 // ValidateSkillDirectory validates a skill directory
 // nameOverride: user-specified skill name (overrides SKILL.md metadata)
+// ValidateSkillDirectory 校验 SKILL.md、semver 与文件大小/类型约束。
 func ValidateSkillDirectory(skillPath string, versionOverride string, nameOverride string) (*SkillValidationResult, []*SkillFile, error) {
 	info, err := os.Stat(skillPath)
 	if err != nil {
@@ -1572,6 +1587,7 @@ func ValidateSkillDirectory(skillPath string, versionOverride string, nameOverri
 }
 
 // readSkillFiles recursively reads all files in the skill directory
+// readSkillFiles 遍历技能目录并收集允许的文本文件。
 func readSkillFiles(skillPath string) ([]*SkillFile, error) {
 	var files []*SkillFile
 
@@ -1607,6 +1623,7 @@ func readSkillFiles(skillPath string) ([]*SkillFile, error) {
 }
 
 // parseFrontmatter extracts YAML frontmatter from markdown content
+// parseFrontmatter 从 SKILL.md 提取 YAML 前置元数据。
 func parseFrontmatter(content string) (*SkillMetadata, error) {
 	lines := strings.Split(content, "\n")
 
@@ -1638,12 +1655,14 @@ func parseFrontmatter(content string) (*SkillMetadata, error) {
 }
 
 // isValidSkillName checks if skill name follows slug format
+// isValidSkillName 校验技能名称格式（字母数字与连字符）。
 func isValidSkillName(name string) bool {
 	matched, _ := regexp.MatchString(`^[a-z0-9][a-z0-9_-]*$`, name)
 	return matched
 }
 
 // isValidSemver checks basic semver format
+// isValidSemver 校验版本号是否符合 semver 规范。
 func isValidSemver(version string) bool {
 	matched, _ := regexp.MatchString(`^\d+\.\d+\.\d+`, version)
 	return matched
@@ -1703,6 +1722,7 @@ func isMacJunkPath(path string) bool {
 }
 
 // shouldIgnore checks if path should be ignored
+// shouldIgnore 判断文件路径是否匹配忽略模式。
 func shouldIgnore(filePath string, patterns []string) bool {
 	normalizedPath := strings.ToLower(filePath)
 	for _, pattern := range patterns {
@@ -1788,6 +1808,7 @@ func normalizeSkillName(name string) string {
 }
 
 // GetValidationErrorMessage returns human-readable error message
+// GetValidationErrorMessage 将校验失败原因格式化为用户可读消息。
 func GetValidationErrorMessage(result *SkillValidationResult) string {
 	switch result.Error {
 	case "no_files":
@@ -1838,6 +1859,7 @@ func GetString(v interface{}) string {
 // ============================================================================
 
 // SkillUploader handles uploading skills to the server
+// SkillUploader 协调技能校验、文件上传与索引写入。
 type SkillUploader struct {
 	client        HTTPClientInterface
 	fileProvider  *FileProvider
@@ -1846,6 +1868,7 @@ type SkillUploader struct {
 }
 
 // NewSkillUploader creates a new uploader
+// NewSkillUploader 构造技能上传器并注入 HTTP 与文件 Provider。
 func NewSkillUploader(client HTTPClientInterface, fileProvider *FileProvider) *SkillUploader {
 	return &SkillUploader{
 		client:       client,
@@ -1882,6 +1905,7 @@ func parseSpaceFromPath(path string) string {
 
 // UploadSkill uploads a skill directory to the server
 // nameOverride: user-specified skill name (overrides SKILL.md metadata)
+// UploadSkill 执行完整上传流程：校验、建目录、上传文件、索引。
 func (u *SkillUploader) UploadSkill(ctx stdctx.Context, skillPath string, versionOverride string, hubPath string, nameOverride string) error {
 	// Parse space from path
 	spaceID := parseSpaceFromPath(hubPath)

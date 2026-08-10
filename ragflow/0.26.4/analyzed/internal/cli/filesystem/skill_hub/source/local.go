@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// local.go — 本地文件系统技能源：从目录读取 SKILL.md 与允许的文本文件构建 SkillBundle。
+
 //
 
 package source
@@ -26,24 +28,29 @@ import (
 )
 
 // LocalSource handles local filesystem skills
+// LocalSource 从本地目录加载技能，默认 community 信任。
 type LocalSource struct{}
 
 // NewLocalSource creates a new local source adapter
+// NewLocalSource 构造本地源适配器。
 func NewLocalSource() *LocalSource {
 	return &LocalSource{}
 }
 
 // SourceID returns the source identifier
+// SourceID 返回源标识 local。
 func (s *LocalSource) SourceID() string {
 	return "local"
 }
 
 // TrustLevel returns the trust level for local sources
+// TrustLevel 本地技能默认为 community 级别。
 func (s *LocalSource) TrustLevel(identifier string) string {
 	return "community" // Local skills default to community trust level
 }
 
 // Fetch retrieves a skill from the local filesystem
+// Fetch 遍历目录收集文本文件并解析 SKILL.md 元数据。
 func (s *LocalSource) Fetch(identifier string) (*SkillBundle, error) {
 	// Validate path exists
 	info, err := os.Stat(identifier)
@@ -134,6 +141,7 @@ func (s *LocalSource) Fetch(identifier string) (*SkillBundle, error) {
 }
 
 // Inspect retrieves metadata without reading all files
+// Inspect 仅读取 SKILL.md 前置元数据，不遍历全部文件。
 func (s *LocalSource) Inspect(identifier string) (*SkillMetadata, error) {
 	info, err := os.Stat(identifier)
 	if err != nil {
@@ -162,6 +170,7 @@ func (s *LocalSource) Inspect(identifier string) (*SkillMetadata, error) {
 
 // parseSkillFrontmatter extracts YAML frontmatter from SKILL.md content
 // Returns an error if frontmatter delimiters are missing or YAML is invalid
+// parseSkillFrontmatter 解析 SKILL.md 中 --- 包裹的 YAML 元数据。
 func parseSkillFrontmatter(content string) (*SkillMetadata, error) {
 	meta := &SkillMetadata{}
 
@@ -186,6 +195,7 @@ func parseSkillFrontmatter(content string) (*SkillMetadata, error) {
 }
 
 // isTextFile checks if a file is a text file based on extension
+// isTextFile 按扩展名判断是否为允许的文本文件。
 func isTextFile(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
 	if ext != "" && ext[0] == '.' {

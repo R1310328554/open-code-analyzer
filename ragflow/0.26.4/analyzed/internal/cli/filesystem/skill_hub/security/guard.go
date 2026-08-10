@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// guard.go — 技能安装安全策略：解析信任级别、执行安装决策并格式化扫描报告。
+
 //
 
 package security
@@ -22,12 +24,14 @@ import (
 )
 
 // Guard provides security policy enforcement
+// Guard 持有受信仓库列表与各信任级别的安装策略。
 type Guard struct {
 	trustedRepos map[string]bool
 	policy       map[string][3]string
 }
 
 // NewGuard creates a new security guard
+// NewGuard 使用默认 TrustedRepos 与 InstallPolicy 构造 Guard。
 func NewGuard() *Guard {
 	return &Guard{
 		trustedRepos: TrustedRepos,
@@ -37,6 +41,7 @@ func NewGuard() *Guard {
 
 // extractCanonicalRepo extracts the canonical owner/repo from an identifier
 // Supports formats: "owner/repo", "github.com/owner/repo/path", "owner/repo/path"
+// extractCanonicalRepo 从多种 URL 格式提取 owner/repo 规范键。
 func extractCanonicalRepo(identifier string) string {
 	// Normalize the identifier
 	identifier = strings.TrimSpace(identifier)
@@ -70,6 +75,7 @@ func extractCanonicalRepo(identifier string) string {
 }
 
 // ResolveTrustLevel determines the trust level based on source and identifier
+// ResolveTrustLevel 根据来源与标识符判定 builtin/trusted/community。
 func (g *Guard) ResolveTrustLevel(source, identifier string) string {
 	// Official/builtin source
 	if source == "official" || source == "builtin" {
@@ -88,6 +94,7 @@ func (g *Guard) ResolveTrustLevel(source, identifier string) string {
 
 // ShouldAllowInstall determines if installation should be allowed based on scan results
 // Returns (allowed bool, reason string)
+// ShouldAllowInstall 依据扫描结果与策略决定是否允许安装。
 func (g *Guard) ShouldAllowInstall(result *ScanResult, force bool) (bool, string) {
 	policy, ok := g.policy[result.TrustLevel]
 	if !ok {
@@ -120,6 +127,7 @@ func (g *Guard) ShouldAllowInstall(result *ScanResult, force bool) (bool, string
 }
 
 // FormatScanReport formats a scan result for display
+// FormatScanReport 将扫描结果格式化为终端可读报告。
 func (g *Guard) FormatScanReport(result *ScanResult) string {
 	var sb strings.Builder
 
@@ -154,11 +162,13 @@ func (g *Guard) FormatScanReport(result *ScanResult) string {
 }
 
 // AddTrustedRepo adds a repository to the trusted list
+// AddTrustedRepo 动态添加受信 GitHub 仓库。
 func (g *Guard) AddTrustedRepo(repo string) {
 	g.trustedRepos[repo] = true
 }
 
 // IsTrustedRepo checks if a repository is trusted
+// IsTrustedRepo 检查仓库是否在受信列表中。
 func (g *Guard) IsTrustedRepo(repo string) bool {
 	return g.trustedRepos[repo]
 }

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// dev_parser.go — 开发/调试 CLI 子命令解析：INSERT/GET/UPDATE/SET/DELETE/REMOVE/DROP/CREATE/EXPLAIN 等 chunk 与 metadata 操作。
+
 //
 
 package cli
@@ -23,6 +25,7 @@ import (
 
 // INSERT CHUNKS FROM FILE "file_path"
 // INSERT METADATA FROM FILE "file_path"
+// parseDevInsertCommand 解析 INSERT CHUNKS/METADATA FROM FILE 语句。
 func (p *Parser) parseDevInsertCommand() (*Command, error) {
 	p.nextToken() // consume INSERT
 
@@ -38,6 +41,7 @@ func (p *Parser) parseDevInsertCommand() (*Command, error) {
 
 // Internal CLI for GO
 // parseInsertChunksFromFile parses: INSERT CHUNKS FROM FILE "file_path"
+// parseInsertChunksFromFile 解析 INSERT CHUNKS FROM FILE "path"。
 func (p *Parser) parseInsertChunksFromFile() (*Command, error) {
 	p.nextToken() // consume CHUNKS
 
@@ -72,6 +76,7 @@ func (p *Parser) parseInsertChunksFromFile() (*Command, error) {
 
 // Internal CLI for GO
 // parseInsertMetadataFromFile parses: INSERT METADATA FROM FILE "file_path"
+// parseInsertMetadataFromFile 解析 INSERT METADATA FROM FILE "path"。
 func (p *Parser) parseInsertMetadataFromFile() (*Command, error) {
 	p.nextToken() // consume METADATA
 
@@ -105,6 +110,7 @@ func (p *Parser) parseInsertMetadataFromFile() (*Command, error) {
 }
 
 // parseDevGetCommand parses: GET CHUNK or GET METADATA
+// parseDevGetCommand 解析 GET CHUNK 或 GET METADATA 命令。
 func (p *Parser) parseDevGetCommand() (*Command, error) {
 	p.nextToken() // consume GET
 
@@ -119,6 +125,7 @@ func (p *Parser) parseDevGetCommand() (*Command, error) {
 }
 
 // parseGetChunk parses: GET CHUNK 'chunk_id' OF DOCUMENT 'doc_id' IN DATASET 'dataset_id'
+// parseGetChunk 解析 GET CHUNK 'id' OF DOCUMENT 'doc' IN DATASET 'ds'。
 func (p *Parser) parseGetChunk() (*Command, error) {
 	p.nextToken() // consume CHUNK
 
@@ -178,6 +185,7 @@ func (p *Parser) parseGetChunk() (*Command, error) {
 
 // Internal
 // parseDevUpdateCommand parses: UPDATE CHUNK 'chunk_id' OF DATASET 'dataset_name' SET '{"content": "..."}'
+// parseDevUpdateCommand 解析 UPDATE CHUNK ... SET JSON 命令。
 func (p *Parser) parseDevUpdateCommand() (*Command, error) {
 	p.nextToken() // consume UPDATE
 
@@ -190,6 +198,7 @@ func (p *Parser) parseDevUpdateCommand() (*Command, error) {
 
 // Internal CLI for GO
 // parseUpdateChunk parses: UPDATE CHUNK 'chunk_id' OF DOCUMENT 'doc_id' IN DATASET 'dataset_id' SET '{"content": "..."}'
+// parseUpdateChunk 解析 UPDATE CHUNK 完整语法并填充参数。
 func (p *Parser) parseUpdateChunk() (*Command, error) {
 	p.nextToken() // consume CHUNK
 
@@ -261,6 +270,7 @@ func (p *Parser) parseUpdateChunk() (*Command, error) {
 }
 
 // parseDevSetMeta parses: SET METADATA OF DOCUMENT 'doc_id' TO '{"key": "value"}'
+// parseDevSetMeta 解析 SET METADATA OF DOCUMENT 'id' TO JSON。
 func (p *Parser) parseDevSetMeta() (*Command, error) {
 	p.nextToken() // consume METADATA
 
@@ -309,6 +319,7 @@ func (p *Parser) parseDevSetMeta() (*Command, error) {
 
 // parseDevDeleteMeta parses: DELETE METADATA OF DOCUMENT 'doc_id' [KEYS '["key1", "key2"]']
 // If KEYS is not provided, deletes entire document metadata
+// parseDevDeleteMeta 解析 DELETE METADATA，可选 KEYS 数组。
 func (p *Parser) parseDevDeleteMeta() (*Command, error) {
 	p.nextToken() // consume METADATA
 
@@ -367,6 +378,7 @@ func (p *Parser) parseDevDeleteMeta() (*Command, error) {
 }
 
 // parseDevRemoveTags parses: REMOVE TAGS 'tag1', 'tag2' from DATASET 'dataset_name';
+// parseDevRemoveTags 解析 REMOVE TAGS 't1','t2' FROM DATASET 'name'。
 func (p *Parser) parseDevRemoveTags() (*Command, error) {
 	p.nextToken() // consume TAGS
 
@@ -424,6 +436,7 @@ func (p *Parser) parseDevRemoveTags() (*Command, error) {
 // parseDevRemoveChunk parses:
 //   - REMOVE CHUNKS 'chunk_id1', 'chunk_id2' FROM DOCUMENT 'doc_id' IN DATASET 'dataset_name';
 //   - REMOVE ALL CHUNKS FROM DOCUMENT 'doc_id' IN DATASET 'dataset_name';
+// parseDevRemoveChunk 解析 REMOVE CHUNKS/ALL CHUNKS FROM DOCUMENT 语句。
 func (p *Parser) parseDevRemoveChunk() (*Command, error) {
 	cmd := NewCommand("dev_remove_chunks")
 
@@ -514,6 +527,7 @@ func (p *Parser) parseDevRemoveChunk() (*Command, error) {
 
 // Internal CLI for GO
 // parseDevDropChunkStore parses: DROP CHUNK STORE for Dataset 'name'
+// parseDevDropChunkStore 解析 DROP CHUNK STORE FOR Dataset 'name'。
 func (p *Parser) parseDevDropChunkStore() (*Command, error) {
 	p.nextToken() // consume CHUNK STORE
 
@@ -545,6 +559,7 @@ func (p *Parser) parseDevDropChunkStore() (*Command, error) {
 }
 
 // parseDevDropMetadataStore parses: DROP METADATA STORE
+// parseDevDropMetadataStore 解析 DROP METADATA STORE 命令。
 func (p *Parser) parseDevDropMetadataStore() (*Command, error) {
 	// DROP METADATA STORE
 	p.nextToken() // consume METADATA
@@ -563,6 +578,7 @@ func (p *Parser) parseDevDropMetadataStore() (*Command, error) {
 
 // Internal CLI for GO
 // parseDevCreateChunkStore parses: CREATE CHUNK STORE for Dataset 'name' VECTOR SIZE N
+// parseDevCreateChunkStore 解析 CREATE CHUNK STORE ... VECTOR SIZE N。
 func (p *Parser) parseDevCreateChunkStore() (*Command, error) {
 	p.nextToken() // consume CHUNK STORE compound token
 
@@ -614,6 +630,7 @@ func (p *Parser) parseDevCreateChunkStore() (*Command, error) {
 
 // Internal CLI for GO
 // parseDevCreateMetadataStore parses: CREATE METADATA STORE
+// parseDevCreateMetadataStore 解析 CREATE METADATA STORE 命令。
 func (p *Parser) parseDevCreateMetadataStore() (*Command, error) {
 	// CREATE METADATA STORE
 	p.nextToken() // consume METADATA
@@ -630,6 +647,7 @@ func (p *Parser) parseDevCreateMetadataStore() (*Command, error) {
 	return NewCommand("dev_create_metadata_store"), nil
 }
 
+// parseCreateRole 解析 CREATE ROLE 及可选 DESCRIPTION 子句。
 func (p *Parser) parseCreateRole() (*Command, error) {
 	p.nextToken() // consume ROLE
 	roleName, err := p.parseIdentifier()
@@ -658,6 +676,7 @@ func (p *Parser) parseCreateRole() (*Command, error) {
 	return cmd, nil
 }
 
+// parseGetMetadata 解析 GET METADATA OF DATASET 'name' ... 列表。
 func (p *Parser) parseGetMetadata() (*Command, error) {
 	p.nextToken() // consume METADATA
 
@@ -706,6 +725,7 @@ func (p *Parser) parseGetMetadata() (*Command, error) {
 	return cmd, nil
 }
 
+// parseDevExplain 解析 EXPLAIN CHUNK 调试命令。
 func (p *Parser) parseDevExplain() (*Command, error) {
 	p.nextToken() // consume EXPLAIN
 
@@ -717,6 +737,7 @@ func (p *Parser) parseDevExplain() (*Command, error) {
 	}
 }
 
+// parseDevChunk 解析 CHUNK 'file' WITH 'dsl'，explain 控制是否仅解释。
 func (p *Parser) parseDevChunk(explain bool) (*Command, error) {
 	p.nextToken() // consume CHUNK
 

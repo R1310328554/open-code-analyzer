@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// scanner.go — 技能内容安全扫描器：对技能文件逐行匹配威胁模式并给出总体结论。
+
 //
 
 package security
@@ -22,6 +24,7 @@ import (
 )
 
 // Finding represents a security issue found during scanning
+// Finding 表示在单个文件中检测到的一条安全问题。
 type Finding struct {
 	PatternID   string // Rule ID
 	Severity    string // critical | high | medium | low
@@ -33,6 +36,7 @@ type Finding struct {
 }
 
 // ScanResult represents the result of a security scan
+// ScanResult 汇总技能扫描的来源、信任级别、结论与发现列表。
 type ScanResult struct {
 	SkillName  string
 	Source     string
@@ -42,11 +46,13 @@ type ScanResult struct {
 }
 
 // Scanner performs security scans on skill content
+// Scanner 持有 ThreatPatterns 并在文件内容上执行正则扫描。
 type Scanner struct {
 	patterns []ThreatPattern
 }
 
 // NewScanner creates a new security scanner
+// NewScanner 使用全局 ThreatPatterns 构造扫描器。
 func NewScanner() *Scanner {
 	return &Scanner{
 		patterns: ThreatPatterns,
@@ -54,6 +60,7 @@ func NewScanner() *Scanner {
 }
 
 // ScanSkill scans skill files for security threats
+// ScanSkill 扫描技能全部文件并返回带结论的 ScanResult。
 func (s *Scanner) ScanSkill(skillName, source, trustLevel string, files map[string][]byte) *ScanResult {
 	var allFindings []Finding
 
@@ -74,6 +81,7 @@ func (s *Scanner) ScanSkill(skillName, source, trustLevel string, files map[stri
 }
 
 // scanFile scans a single file for threats
+// scanFile 对单文件逐行应用所有威胁正则并收集 Finding。
 func (s *Scanner) scanFile(filename, content string) []Finding {
 	var findings []Finding
 	lines := strings.Split(content, "\n")
@@ -103,6 +111,7 @@ func (s *Scanner) scanFile(filename, content string) []Finding {
 }
 
 // determineVerdict determines the overall verdict based on findings
+// determineVerdict 根据最高严重级别判定 safe/caution/dangerous。
 func (s *Scanner) determineVerdict(findings []Finding) string {
 	if len(findings) == 0 {
 		return "safe"
@@ -129,6 +138,7 @@ func (s *Scanner) determineVerdict(findings []Finding) string {
 }
 
 // HasCriticalChecks if any finding is critical severity
+// HasCritical 检查是否存在 critical 级别发现。
 func (r *ScanResult) HasCritical() bool {
 	for _, f := range r.Findings {
 		if f.Severity == "critical" {
@@ -139,6 +149,7 @@ func (r *ScanResult) HasCritical() bool {
 }
 
 // CountBySeverity counts findings by severity level
+// CountBySeverity 统计指定严重级别的发现数量。
 func (r *ScanResult) CountBySeverity(severity string) int {
 	count := 0
 	for _, f := range r.Findings {
