@@ -1,3 +1,4 @@
+// Qwen3.5 图像预处理：智能缩放、patch 化与 2D RoPE 查找表。
 package qwen3_5
 
 import (
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/image/draw"
 )
 
+// Processor 像素预算来自 preprocessor：总像素 clamp 到 [shortest,longest] 并按 patch 对齐。
 // Processor bounds from the family's preprocessor config: total pixels are
 // clamped to [shortest_edge, longest_edge] with both sides rounded to
 // multiples of patch_size * spatial_merge_size.
@@ -17,6 +19,7 @@ const (
 	visionMaxPixels = 16777216
 )
 
+// preparedImage 保存单张图的 patch 网格与 CPU 侧查找表（block-major 顺序）。
 // preparedImage is the model-private state for one image: the pre-merge
 // patch grid and the CPU-computed lookups the encoder consumes, all in the
 // block-major merge order the pixel rows use.
@@ -36,6 +39,7 @@ func (p preparedImage) numTokens(merge int32) int32 {
 	return p.gridH * p.gridW / (merge * merge)
 }
 
+// smartResize 复刻参考实现：边长对齐 patch 因子并保持宽高比缩放。
 // smartResize ports the reference resize rule: round each side to the patch
 // factor, then scale into the pixel budget, preserving aspect ratio.
 func smartResize(height, width, factor int32) (int32, int32, error) {
@@ -63,6 +67,7 @@ func smartResize(height, width, factor int32) (int32, int32, error) {
 	return int32(hBar), int32(wBar), nil
 }
 
+// preprocessImage 解码图像、resize、归一化并 patchify。
 // preprocessImage decodes and prepares one image: aspect-preserving resize,
 // (x/255-0.5)/0.5 normalization, and patchification into the tower's
 // block-major row layout.
@@ -90,6 +95,7 @@ func (m *Model) preprocessImage(data []byte) (pixels []float32, prep preparedIma
 	return pixels, prep, nil
 }
 
+// patchifyImage 将 RGBA 转为视觉塔 block-major 行布局像素。
 // patchifyImage converts the resized image to the tower's row layout:
 // block-major over merge blocks, each row [channel][temporal duplicate]
 // [pixel row][pixel column].
@@ -129,6 +135,7 @@ func patchifyImage(resized *image.RGBA, gridH, gridW, patch, merge, temporal int
 	return pixels
 }
 
+// visionPatchLookups 计算每个 patch 的 2D RoPE 位置与双线性插值权重。
 // visionPatchLookups computes, in the block-major token order, each patch's
 // (h, w) rotary position and its four bilinear corners into the learned
 // side*side position grid with their weights.
@@ -168,6 +175,7 @@ func visionPatchLookups(gridH, gridW, merge, numPosEmbeddings int32) (ropePos, p
 	return ropePos, posIdx, posWt
 }
 
+// dropAlpha 非不透明图先转 RGB（与参考一致，非 alpha 合成）。
 // dropAlpha flattens a non-opaque image to straight RGB: the reference
 // drops alpha via RGB conversion before resizing, not by compositing.
 func dropAlpha(img image.Image, bounds image.Rectangle) image.Image {

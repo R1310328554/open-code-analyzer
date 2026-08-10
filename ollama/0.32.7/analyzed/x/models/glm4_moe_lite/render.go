@@ -1,3 +1,4 @@
+// GLM4-MoE-Lite 对话渲染：GLM-4 模板、思考模式与工具 XML。
 package glm4_moe_lite
 
 import (
@@ -8,36 +9,39 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Renderer 将多轮消息渲染为 GLM-4 聊天格式。
 // Renderer renders messages for GLM4-MoE-Lite models.
 //
+// GLM-4 思考模式说明（参见官方 thinking-mode 文档）：
 // GLM-4 Thinking Modes (ref: https://docs.z.ai/guides/capabilities/thinking-mode):
 //
-//  1. INTERLEAVED THINKING
+//  1. 交错思考（INTERLEAVED THINKING）
 //     The model thinks between tool calls and after receiving tool results.
 //     This enables complex step-by-step reasoning: interpreting each tool output
 //     before deciding what to do next. Thinking blocks are preserved and returned
 //     with tool results to maintain reasoning continuity.
 //
-//  2. PRESERVED THINKING
+//  2. 保留思考（PRESERVED THINKING）
 //     The model retains reasoning content from previous assistant turns in context.
 //     This preserves reasoning continuity across multi-turn conversations. The
 //     upstream API has a "clear_thinking" parameter to control this:
 //     - clear_thinking=true:  clears reasoning from previous turns (outputs </think>)
 //     - clear_thinking=false: preserves <think>...</think> blocks from previous turns
 //
-//  3. TURN-LEVEL THINKING
+//  3. 轮次级思考（TURN-LEVEL THINKING）
 //     Controls whether the model should reason on each turn. The upstream API
 //     uses "enable_thinking" parameter:
 //     - enable_thinking=true:  outputs <think> to start reasoning
 //     - enable_thinking=false: outputs </think> to skip reasoning
 //
-// OLLAMA DEFAULTS:
+// Ollama 默认行为：
 //   - Thinking is ENABLED by default (thinkValue=nil or true outputs <think>)
 //   - Thinking is PRESERVED by default (reasoning content from previous turns is always
 //     included in <think>...</think> blocks, equivalent to clear_thinking=false)
 //   - Users can disable thinking per-turn via thinkValue=false
 type Renderer struct{}
 
+// Render 渲染消息、工具定义与 assistant 起始思考标记。
 // Render renders messages into the GLM4 chat format.
 func (r *Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
 	var sb strings.Builder
@@ -110,6 +114,7 @@ func (r *Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *
 	return sb.String(), nil
 }
 
+// renderToolArguments 将工具参数转为 arg_key/arg_value XML。
 // renderToolArguments converts tool call arguments to GLM4 XML format.
 func renderToolArguments(args api.ToolCallFunctionArguments) string {
 	var sb strings.Builder
@@ -133,6 +138,7 @@ func renderToolArguments(args api.ToolCallFunctionArguments) string {
 	return sb.String()
 }
 
+// formatToolJSON 在 JSON 的 : 与 , 后插入空格以匹配 GLM 格式。
 // formatToolJSON formats JSON for GLM4 tool definitions by adding spaces after : and ,
 func formatToolJSON(raw []byte) string {
 	var sb strings.Builder

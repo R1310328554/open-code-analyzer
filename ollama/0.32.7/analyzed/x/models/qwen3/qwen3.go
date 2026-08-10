@@ -1,3 +1,4 @@
+// Package qwen3 提供 Qwen3 纯文本模型的 MLX 实现。
 // Package qwen3 provides the Qwen3 text model implementation for MLX.
 package qwen3
 
@@ -19,6 +20,7 @@ func init() {
 	base.Register("Qwen3ForCausalLM", newModel)
 }
 
+// Config 保存 Qwen3 超参与量化运行时字段。
 // Config holds Qwen3 model configuration.
 type Config struct {
 	HiddenSize            int32   `json:"hidden_size"`
@@ -44,6 +46,7 @@ type Config struct {
 	QKNormEps float32 `json:"-"`
 }
 
+// Model 为 Qwen3 纯文本因果语言模型。
 // Model is the Qwen3 text-only model.
 type Model struct {
 	EmbedTokens nn.EmbeddingLayer
@@ -57,6 +60,7 @@ type Model struct {
 	weightPrefix string
 }
 
+// Layer 为单个 Qwen3 解码器块。
 // Layer is a single Qwen3 decoder block.
 type Layer struct {
 	Attention     *Attention
@@ -65,6 +69,7 @@ type Layer struct {
 	MLPNorm       *nn.RMSNorm
 }
 
+// Attention 实现带 Q/K RMSNorm 的 Qwen3 注意力。
 // Attention implements Qwen3 attention with Q/K norms.
 type Attention struct {
 	QProj nn.LinearLayer
@@ -75,6 +80,7 @@ type Attention struct {
 	KNorm *nn.RMSNorm
 }
 
+// MLP 为 SwiGLU 前馈网络。
 // MLP is the feed-forward network with SwiGLU activation.
 type MLP struct {
 	GateProj nn.LinearLayer
@@ -82,6 +88,7 @@ type MLP struct {
 	DownProj nn.LinearLayer
 }
 
+// resolveWeightPrefix 解析权重前缀。
 func resolveWeightPrefix(tensors map[string]*mlx.Array) string {
 	for _, prefix := range []string{"", "language_model."} {
 		if tensors[prefix+"model.embed_tokens.weight"] != nil {
@@ -91,6 +98,7 @@ func resolveWeightPrefix(tensors map[string]*mlx.Array) string {
 	return ""
 }
 
+// newModel 从 Root 创建 Qwen3 模型。
 func newModel(root *model.Root) (base.Model, error) {
 	configData, err := root.Manifest.ReadConfig("config.json")
 	if err != nil {
@@ -171,6 +179,7 @@ func newModel(root *model.Root) (base.Model, error) {
 	return m, nil
 }
 
+// LoadWeights 绑定嵌入、层与 LM head 权重。
 // LoadWeights receives all tensors loaded from the manifest and assigns them
 // to model fields.
 func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
@@ -197,6 +206,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	} else if lmHead := linears.Make("lm_head"); lmHead != nil {
 		m.LMHead = lmHead
 	} else {
+		// Qwen3 checkpoint 常 tied lm_head 与 embed。
 		// Qwen3 checkpoints commonly tie output projection to embeddings.
 		m.LMHead = m.EmbedTokens.AsLinear()
 	}
@@ -316,6 +326,7 @@ func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positio
 	q = mlx.RoPEWithBase(q, int(cfg.HeadDim), false, cfg.RopeTheta, 1.0, positions)
 	k = mlx.RoPEWithBase(k, int(cfg.HeadDim), false, cfg.RopeTheta, 1.0, positions)
 
+	// MLX SDPA 原生 GQA，无需 repeat K/V。
 	// MLX SDPA supports grouped-query attention directly (Q heads can be a
 	// multiple of K/V heads), so avoid materializing repeated K/V tensors.
 	var kv nn.SDPAOption

@@ -1,4 +1,6 @@
+// Package glm4_moe_lite 提供 GLM4-MoE-Lite 的 MLX 实现（MLA 多头潜注意力 + MoE）。
 // Package glm4_moe_lite provides the GLM4-MoE-Lite implementation for MLX.
+// 本模型采用 MLA（多头潜注意力）与 MoE（混合专家）架构。
 // This model uses Multi-head Latent Attention (MLA) and Mixture of Experts (MoE).
 package glm4_moe_lite
 
@@ -21,12 +23,14 @@ func init() {
 	base.Register("GLM4MoeLite", newModel)
 }
 
+// RopeScaling 保存 RoPE 缩放配置。
 // RopeScaling holds RoPE scaling configuration
 type RopeScaling struct {
 	Factor       float32 `json:"factor"`
 	MscaleAllDim float32 `json:"mscale_all_dim"`
 }
 
+// Config 保存 GLM4-MoE-Lite 模型超参与量化运行时字段。
 // Config holds GLM4-MoE-Lite model configuration
 type Config struct {
 	HiddenSize            int32   `json:"hidden_size"`
@@ -41,6 +45,7 @@ type Config struct {
 	MaxPositionEmbeddings int32   `json:"max_position_embeddings"`
 	AttentionBias         bool    `json:"attention_bias"`
 
+	// MLA（多头潜注意力）低秩投影参数。
 	// MLA (Multi-head Latent Attention) parameters
 	QLoraRank     int32 `json:"q_lora_rank"`
 	KVLoraRank    int32 `json:"kv_lora_rank"`
@@ -48,6 +53,7 @@ type Config struct {
 	QKNopeHeadDim int32 `json:"qk_nope_head_dim"`
 	VHeadDim      int32 `json:"v_head_dim"`
 
+	// MoE 路由与专家相关参数。
 	// MoE parameters
 	NRoutedExperts      int32   `json:"n_routed_experts"`
 	NSharedExperts      int32   `json:"n_shared_experts"`
@@ -58,20 +64,24 @@ type Config struct {
 	NGroup              int32   `json:"n_group"`
 	TopKGroup           int32   `json:"topk_group"`
 
+	// RoPE 长度外推缩放。
 	// RoPE scaling
 	RopeScaling *RopeScaling `json:"rope_scaling"`
 
+	// 加载时根据量化类型填充的量化参数。
 	// Quantization parameters (set during load based on model quantization)
 	QuantGroupSize int                               `json:"-"` // Group size for quantization (default 64)
 	QuantBits      int                               `json:"-"` // Bits per weight (4 or 8)
 	QuantMode      string                            `json:"-"` // Quantization mode ("affine", etc.)
 	TensorQuant    map[string]*model.TensorQuantInfo `json:"-"`
 
+	// 派生字段（头维、注意力缩放等）。
 	// Computed fields
 	QHeadDim int32   `json:"-"` // qk_nope_head_dim + qk_rope_head_dim
 	Scale    float32 `json:"-"` // 1/sqrt(QHeadDim) with mscale adjustment
 }
 
+// MLAAttention 实现带权重吸收的 MLA 注意力。
 // MLAAttention implements Multi-head Latent Attention with absorption.
 type MLAAttention struct {
 	QAProj      nn.LinearLayer
@@ -87,6 +97,7 @@ type MLAAttention struct {
 	OProj nn.LinearLayer
 }
 
+// Forward 计算吸收式 MLA 注意力输出。
 // Forward computes absorbed MLA attention output.
 func (a *MLAAttention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, cfg *Config) *mlx.Array {
 	q := a.QAProj.Forward(x)
@@ -117,6 +128,8 @@ func (a *MLAAttention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, posi
 
 	keys := mlx.Concatenate([]*mlx.Array{kvLatent, kPE}, 3)
 
+	// MLA 将 K/V 压缩为单一张量：缓存沿末维存 [kvLatent,kPE]，
+	// V 取 kvLatent 前缀；WithMLAHistory 负责历史切片。
 	// MLA compresses K and V into a single tensor: the cache stores
 	// [kvLatent, kPE] concatenated along the last dim as its keys,
 	// and V is the kvLatent prefix (first KVLoraRank positions) of
@@ -142,6 +155,7 @@ func (a *MLAAttention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, posi
 	return a.OProj.Forward(out)
 }
 
+// DenseMLP 为稠密层实现标准 SwiGLU MLP。
 // DenseMLP implements the standard SwiGLU MLP for dense layers
 type DenseMLP struct {
 	GateProj nn.LinearLayer
@@ -149,17 +163,20 @@ type DenseMLP struct {
 	DownProj nn.LinearLayer
 }
 
+// Forward 执行 SwiGLU 前馈。
 // Forward applies the SwiGLU MLP
 func (m *DenseMLP) Forward(x *mlx.Array) *mlx.Array {
 	return m.DownProj.Forward(mlx.SwiGLU(m.GateProj.Forward(x), m.UpProj.Forward(x)))
 }
 
+// MoEGate 实现专家路由门控。
 // MoEGate implements the expert gating mechanism
 type MoEGate struct {
 	Gate                 nn.LinearLayer
 	EScoreCorrectionBias *mlx.Array
 }
 
+// Forward 返回 top-k 专家索引与路由分数。
 // Forward computes expert selection indices and scores
 func (g *MoEGate) Forward(x *mlx.Array, cfg *Config) (*mlx.Array, *mlx.Array) {
 	gates := g.Gate.Forward(x)
@@ -190,6 +207,7 @@ func (g *MoEGate) Forward(x *mlx.Array, cfg *Config) (*mlx.Array, *mlx.Array) {
 	return inds, scores
 }
 
+// SwitchMLP 用堆叠权重执行路由专家 MLP（支持 GatherMM/QMM）。
 // SwitchMLP implements the MoE expert computation using stacked weights
 type SwitchMLP struct {
 	GateWeight *mlx.Array
@@ -211,6 +229,7 @@ type SwitchMLP struct {
 	UseQuantized bool
 }
 
+// Forward 对选中专家执行 SwiGLU 并返回 [B,L,topK,H]。
 // Forward applies the switched expert MLP
 func (s *SwitchMLP) Forward(x *mlx.Array, indices *mlx.Array, cfg *Config) *mlx.Array {
 	dims := x.Dims()
@@ -265,6 +284,7 @@ func (s *SwitchMLP) Forward(x *mlx.Array, indices *mlx.Array, cfg *Config) *mlx.
 	return mlx.Reshape(down, B, L, topK, cfg.HiddenSize)
 }
 
+// SharedExperts 实现共享专家 SwiGLU MLP。
 // SharedExperts implements the shared expert MLP
 type SharedExperts struct {
 	GateProj nn.LinearLayer
@@ -277,6 +297,7 @@ func (s *SharedExperts) Forward(x *mlx.Array) *mlx.Array {
 	return s.DownProj.Forward(mlx.SwiGLU(s.GateProj.Forward(x), s.UpProj.Forward(x)))
 }
 
+// MoE 组合路由门、SwitchMLP 与可选共享专家。
 // MoE implements the full Mixture of Experts layer
 type MoE struct {
 	Gate          *MoEGate
@@ -303,6 +324,7 @@ func (m *MoE) Forward(x *mlx.Array, cfg *Config) *mlx.Array {
 	return mlx.Reshape(y, B, L, cfg.HiddenSize)
 }
 
+// DenseBlock 为前若干层的稠密 Transformer 块。
 // DenseBlock represents a dense transformer block (for first_k_dense_replace layers)
 type DenseBlock struct {
 	Attention              *MLAAttention
@@ -320,6 +342,7 @@ func (blk *DenseBlock) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, posi
 	return mlx.Add(h, r)
 }
 
+// MoEBlock 为 MoE Transformer 块。
 // MoEBlock represents a MoE transformer block
 type MoEBlock struct {
 	Attention              *MLAAttention
@@ -337,11 +360,13 @@ func (blk *MoEBlock) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positi
 	return mlx.Add(h, r)
 }
 
+// Block 为稠密块与 MoE 块的统一接口。
 // Block interface for both dense and MoE blocks
 type Block interface {
 	Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, cfg *Config) *mlx.Array
 }
 
+// Model 为完整 GLM4-MoE-Lite 因果语言模型。
 // Model represents the complete GLM4-MoE-Lite model
 type Model struct {
 	EmbedTokens nn.EmbeddingLayer
@@ -353,6 +378,7 @@ type Model struct {
 	*Config
 }
 
+// computeScale 计算注意力缩放（含 YaRN mscale 修正）。
 // computeScale computes the attention scale.
 func computeScale(cfg *Config) float32 {
 	keyLength := cfg.QKNopeHeadDim + cfg.QKRopeHeadDim
@@ -364,11 +390,13 @@ func computeScale(cfg *Config) float32 {
 	return scale
 }
 
+// supportsGatherQMM 判断量化模式是否支持 GatherQMM 内核。
 // supportsGatherQMM returns true if the quantization mode has GatherQMM kernel support.
 func supportsGatherQMM(mode string, bits int) bool {
 	return mode == "affine" && (bits == 4 || bits == 8)
 }
 
+// ExpertWeight 保存单个专家的权重及可选量化分量。
 // ExpertWeight holds a single expert's weight with optional quantization components.
 type ExpertWeight struct {
 	Weight    *mlx.Array
@@ -378,6 +406,7 @@ type ExpertWeight struct {
 	GroupSize int
 }
 
+// loadExpertWeight 从张量表加载单个专家投影权重。
 // loadExpertWeight loads an expert weight from the tensor map.
 func loadExpertWeight(tensors map[string]*mlx.Array, path string, useQuantized bool, cfg *Config) *ExpertWeight {
 	w := tensors[path+".weight"]
@@ -409,6 +438,7 @@ func loadExpertWeight(tensors map[string]*mlx.Array, path string, useQuantized b
 	return &ExpertWeight{Weight: w}
 }
 
+// StackedExpertWeights 保存堆叠后的全专家权重。
 // StackedExpertWeights holds stacked weights for all experts.
 type StackedExpertWeights struct {
 	Weight    *mlx.Array
@@ -418,6 +448,7 @@ type StackedExpertWeights struct {
 	GroupSize int
 }
 
+// loadStackedProjection 加载已堆叠的 3D 专家投影张量。
 // loadStackedProjection loads an expert projection stored as a single stacked
 // 3D tensor, or nil if base isn't present.
 func loadStackedProjection(tensors map[string]*mlx.Array, base string, useQuantized bool, cfg *Config) *StackedExpertWeights {
@@ -444,6 +475,7 @@ func loadStackedProjection(tensors map[string]*mlx.Array, base string, useQuanti
 	return &StackedExpertWeights{Weight: mlx.Dequantize(w, scales, qbiases, groupSize, bits, mode, nil)}
 }
 
+// loadStackedExperts 优先 .experts 路径，回退 switch_mlp 旧命名。
 // loadStackedExperts loads a stacked expert projection by its .experts name,
 // falling back to the switch_mlp name older imports use.
 func loadStackedExperts(tensors map[string]*mlx.Array, prefix, projName string, useQuantized bool, cfg *Config) *StackedExpertWeights {
@@ -453,6 +485,7 @@ func loadStackedExperts(tensors map[string]*mlx.Array, prefix, projName string, 
 	return loadStackedProjection(tensors, prefix+".mlp.switch_mlp."+projName, useQuantized, cfg)
 }
 
+// collectAndStackExpertWeights 逐专家收集并沿 axis 0 堆叠。
 // collectAndStackExpertWeights loads and stacks expert weights for one projection type.
 func collectAndStackExpertWeights(
 	tensors map[string]*mlx.Array,
@@ -497,6 +530,7 @@ func collectAndStackExpertWeights(
 	return result
 }
 
+// sanitizeExpertWeights 解析 gate/up/down，优先堆叠布局。
 // sanitizeExpertWeights resolves the three MoE projections, preferring the
 // stacked on-disk layout and falling back to per-expert tensors.
 func sanitizeExpertWeights(tensors map[string]*mlx.Array, prefix string, numExperts int32, useQuantized bool, cfg *Config) (gate, up, down *StackedExpertWeights) {
@@ -512,6 +546,7 @@ func sanitizeExpertWeights(tensors map[string]*mlx.Array, prefix string, numExpe
 	return gate, up, down
 }
 
+// sanitizeMLAWeights 将 kv_b_proj 拆为 embedQ/unembedOut 吸收格式。
 // sanitizeMLAWeights transforms kv_b_proj weights into absorbed MLA format.
 func sanitizeMLAWeights(tensors map[string]*mlx.Array, prefix string, cfg *Config) (*mlx.Array, *mlx.Array) {
 	path := prefix + ".self_attn.kv_b_proj"
@@ -520,6 +555,7 @@ func sanitizeMLAWeights(tensors map[string]*mlx.Array, prefix string, cfg *Confi
 		return nil, nil
 	}
 
+	// 若已量化则先反量化。
 	// Check if quantized and dequantize
 	if scales := tensors[path+".weight_scale"]; scales != nil {
 		qbiases := tensors[path+".weight_qbias"]
@@ -547,6 +583,7 @@ func sanitizeMLAWeights(tensors map[string]*mlx.Array, prefix string, cfg *Confi
 	return embedQ, unembedOut
 }
 
+// newModel 从 Root 创建模型（读 config 与 tokenizer，尚未加载权重）。
 // newModel creates a new GLM4-MoE-Lite model from a Root (config + tokenizer,
 // no weights loaded yet). Called by the registry via base.New().
 func newModel(root *model.Root) (base.Model, error) {
@@ -563,6 +600,7 @@ func newModel(root *model.Root) (base.Model, error) {
 	cfg.QHeadDim = cfg.QKNopeHeadDim + cfg.QKRopeHeadDim
 	cfg.Scale = computeScale(&cfg)
 
+	// 从 manifest 预扫描元数据设置量化参数。
 	// Set up quantization parameters from pre-scanned metadata
 	if qt := root.QuantType(); qt != "" {
 		cfg.QuantGroupSize, cfg.QuantBits, cfg.QuantMode = model.QuantizationParams(qt)
@@ -574,6 +612,7 @@ func newModel(root *model.Root) (base.Model, error) {
 	}
 	cfg.TensorQuant = root.AllTensorQuant()
 
+	// 加载 tokenizer.json 及相关配置。
 	// Load tokenizer
 	tokData, err := root.Manifest.ReadConfig("tokenizer.json")
 	if err != nil {
@@ -606,6 +645,7 @@ func newModel(root *model.Root) (base.Model, error) {
 	return m, nil
 }
 
+// LoadWeights 加载全部权重：MLA 吸收、专家堆叠与量化层。
 // LoadWeights receives all tensors loaded from the manifest and assigns them
 // to model fields. Handles MLA absorption, expert stacking, and quantized
 // layer creation.
@@ -626,21 +666,26 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 		}
 	}
 
+	// 加载词嵌入。
 	// Load embedding
 	m.EmbedTokens = model.MakeEmbeddingLayer(tensors, "model.embed_tokens", cfg.QuantGroupSize, cfg.QuantBits, cfg.QuantMode, cfg.TensorQuant)
 
+	// 加载最终 RMSNorm。
 	// Load final norm
 	if w := tensors["model.norm.weight"]; w != nil {
 		m.Norm = nn.NewRMSNorm(w, cfg.RMSNormEps)
 	}
 
+	// 加载语言模型输出头。
 	// Load LM head
 	m.LMHead = linears.Make("lm_head")
 
+	// 逐层加载注意力与 MLP/MoE。
 	// Load layers
 	for i := range cfg.NumHiddenLayers {
 		prefix := fmt.Sprintf("model.layers.%d", i)
 
+		// 注意力结构对稠密/MoE 块相同。
 		// Load attention (same for both block types)
 		attn := &MLAAttention{}
 		attn.QAProj = linears.Make(prefix + ".self_attn.q_a_proj")
@@ -654,6 +699,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 		}
 		attn.OProj = linears.Make(prefix + ".self_attn.o_proj")
 
+		// 将 kv_b 转为吸收式 MLA 权重。
 		// Sanitize MLA weights for absorbed attention
 		embedQ, unembedOut := sanitizeMLAWeights(tensors, prefix, cfg)
 		attn.EmbedQ = nn.NewMultiLinear(embedQ)
@@ -663,6 +709,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 		postAttnLN := tensors[prefix+".post_attention_layernorm.weight"]
 
 		if i < cfg.FirstKDenseReplace {
+			// 前 k 层使用稠密 MLP。
 			// Dense block
 			block := &DenseBlock{Attention: attn}
 			if inputLN != nil {
@@ -680,6 +727,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 
 			m.Layers[i] = block
 		} else {
+			// 其余层使用 MoE。
 			// MoE block
 			block := &MoEBlock{Attention: attn}
 			if inputLN != nil {
@@ -689,6 +737,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 				block.PostAttentionLayerNorm = nn.NewRMSNorm(postAttnLN, cfg.RMSNormEps)
 			}
 
+			// 堆叠或加载专家 gate/up/down。
 			// Stack expert weights
 			gate, up, down := sanitizeExpertWeights(tensors, prefix, cfg.NRoutedExperts, useQuantized, cfg)
 
@@ -726,6 +775,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 				SwitchMLP: switchMLP,
 			}
 
+			// 若配置有共享专家则加载。
 			// Load shared experts if present
 			if cfg.NSharedExperts > 0 {
 				block.MoE.SharedExperts = &SharedExperts{
@@ -742,6 +792,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	return nil
 }
 
+// Forward 执行嵌入、逐层块与最终归一化。
 // Forward computes the forward pass of the model
 func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	dims := b.InputIDs.Dims()
@@ -762,11 +813,13 @@ func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden
 	return h, h
 }
 
+// Unembed 经 LM head 得到 logits。
 // Unembed applies the LM head to get logits.
 func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	return m.LMHead.Forward(x)
 }
 
+// NewCaches 为每层创建 KV 缓存。
 // NewCaches builds a KV cache per layer.
 func (m *Model) NewCaches() []cache.Cache {
 	caches := make([]cache.Cache, len(m.Layers))
@@ -776,15 +829,19 @@ func (m *Model) NewCaches() []cache.Cache {
 	return caches
 }
 
+// MaxContextLength 返回最大上下文长度。
 // MaxContextLength returns the maximum context length
 func (m *Model) MaxContextLength() int { return int(m.MaxPositionEmbeddings) }
 
+// VocabSize 返回词表大小。
 // VocabSize returns the vocabulary size
 func (m *Model) VocabSize() int32 { return m.Config.VocabSize }
 
+// Tokenizer 返回模型分词器。
 // Tokenizer returns the model's tokenizer
 func (m *Model) Tokenizer() *tokenizer.Tokenizer { return m.tok }
 
+// NewCache 创建 KV 缓存切片（兼容旧接口）。
 // NewCache creates a new KV cache for the model
 func (m *Model) NewCache(maxSeqLen int32) []cache.Cache {
 	caches := make([]cache.Cache, len(m.Layers))
@@ -794,11 +851,13 @@ func (m *Model) NewCache(maxSeqLen int32) []cache.Cache {
 	return caches
 }
 
+// FormatPrompt 应用 GLM-4 聊天模板（默认开启思考）。
 // FormatPrompt applies the GLM-4 chat template with thinking enabled by default.
 func (m *Model) FormatPrompt(prompt string) string {
 	return "[gMASK]<sop><|user|>" + prompt + "<|assistant|><think>"
 }
 
+// FormatPromptWithThinking 显式控制是否输出思考块。
 // FormatPromptWithThinking applies the GLM-4 chat template with explicit thinking control.
 func (m *Model) FormatPromptWithThinking(prompt string, think bool) string {
 	if think {
@@ -807,11 +866,13 @@ func (m *Model) FormatPromptWithThinking(prompt string, think bool) string {
 	return "[gMASK]<sop><|user|>" + prompt + "<|assistant|></think>"
 }
 
+// NewRenderer 返回多轮对话渲染器。
 // NewRenderer returns a new Renderer for formatting multi-turn conversations.
 func (m *Model) NewRenderer() *Renderer {
 	return &Renderer{}
 }
 
+// NewParser 返回解析思考与工具调用的 Parser。
 // NewParser returns a new Parser for extracting thinking and tool calls from output.
 func (m *Model) NewParser() *Parser {
 	return &Parser{}

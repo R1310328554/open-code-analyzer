@@ -1,3 +1,4 @@
+// 循环状态算子：因果卷积与 Gated Delta 线性注意力。
 package nn
 
 import (
@@ -7,9 +8,11 @@ import (
 	"github.com/ollama/ollama/x/mlxrunner/mlx"
 )
 
+// RecurrentOption 配置 CausalConv1D 或 GatedDelta 调用。
 // RecurrentOption configures a call to CausalConv1D or GatedDelta.
 type RecurrentOption func(*recurrentConfig)
 
+// recurrentConfig 为 RecurrentOption 解析后的输入；history 与显式 state 二选一。
 // recurrentConfig is the resolved set of inputs supplied via
 // RecurrentOption. Exactly one of history or (convState/deltaState)
 // must be supplied per call.
@@ -21,6 +24,7 @@ type recurrentConfig struct {
 	convSiLU   bool
 }
 
+// WithRecurrentHistory 从缓存提供卷积与 delta 状态视图。
 // WithRecurrentHistory supplies a cache's per-layer view of conv and
 // delta state. The cache hides any storage layout (per-row, paged,
 // gather/scatter) behind the history.
@@ -28,6 +32,7 @@ func WithRecurrentHistory(h *RecurrentHistory) RecurrentOption {
 	return func(c *recurrentConfig) { c.history = h }
 }
 
+// WithRecurrentState 提供无缓存路径的显式 conv/delta 状态。
 // WithRecurrentState supplies explicit conv and delta state tensors
 // for the no-cache path. Each wrapper consumes one of the two — pass
 // nil for the unused slot when calling only one wrapper.
@@ -38,6 +43,7 @@ func WithRecurrentState(convState, deltaState *mlx.Array) RecurrentOption {
 	}
 }
 
+// WithConvSiLU 在 CausalConv1D 内对卷积输出融合 SiLU。
 // WithConvSiLU applies SiLU to the conv output inside CausalConv1D,
 // fused into the conv kernel when the conv fits its contract. GatedDelta
 // ignores it, so it can ride a shared option list.
@@ -45,6 +51,7 @@ func WithConvSiLU() RecurrentOption {
 	return func(c *recurrentConfig) { c.convSiLU = true }
 }
 
+// WithSnapshotSplits 在指定 token 偏移处切段并捕获边界状态。
 // WithSnapshotSplits requests that the scan run in segments cut at the given
 // offsets within this forward (0 < offset < L), capturing the recurrent state
 // at each boundary. The wrapper returns those per-boundary states to the
@@ -53,9 +60,11 @@ func WithSnapshotSplits(offsets []int) RecurrentOption {
 	return func(c *recurrentConfig) { c.splits = offsets }
 }
 
+// seg 表示前向内半开 token 区间 [start,end)。
 // seg is a half-open token range [start, end) within a forward.
 type seg struct{ start, end int32 }
 
+// segmentRanges 将内部切分点展开为覆盖 [0,L) 的连续段。
 // segmentRanges expands the interior cut offsets into consecutive [a,c) ranges
 // covering [0, L). Cuts are assumed sorted, deduped, and strictly interior; an
 // empty slice yields a single {0, L} segment.
@@ -69,6 +78,7 @@ func segmentRanges(splits []int, L int32) []seg {
 	return append(segs, seg{start, L})
 }
 
+// sliceSeg 沿 L 轴切分到段窗口，保持其它轴对齐。
 // sliceSeg slices x to the segment's window [s.start, s.end) along the L axis
 // (axis 1), keeping all other axes whole. Works for any rank — [B, L],
 // [B, L, H], [B, L, H, D] — so the padding mask and the packed projections
@@ -110,6 +120,7 @@ func resolveRecurrentConfig(opts []RecurrentOption) recurrentConfig {
 	return cfg
 }
 
+// CausalConv1D 执行带循环状态的深度可分因果 1D 卷积。
 // CausalConv1D runs a depthwise causal 1D convolution with recurrent
 // state management. Prepends the prior conv state along axis 1 and runs
 // the conv over the combined window.
@@ -214,6 +225,7 @@ func convStateAt(concat *mlx.Array, queryLens []int32, convTail int, boundary in
 		[]int32{B, boundary + int32(convTail), D})
 }
 
+// GatedDelta 在因果卷积输出上执行完整 gated-delta 线性注意力步。
 // GatedDelta runs the whole gated-delta step over the activated causal-conv
 // output: q/k norms, decay gate, and the scan. convOut rows are packed
 // [q | k | v]; ba is the packed [beta | alpha] projection output. Per-token
@@ -254,6 +266,7 @@ func GatedDelta(b *batch.Batch, convOut, ba, dtBias, aExp *mlx.Array, opts ...Re
 	return mlx.Concatenate(outs, 1), states
 }
 
+// RecurrentHistory 为循环缓存交给模型的不透明 per-forward 视图。
 // RecurrentHistory is an opaque per-forward view a recurrent cache
 // hands to the SSM kernel wrappers — prior conv and delta state
 // tensors. Models do not construct this directly; pass it through
@@ -266,6 +279,7 @@ type RecurrentHistory struct {
 	convState, deltaState *mlx.Array
 }
 
+// NewRecurrentHistory 构造 RecurrentHistory（测试/缓存内部使用）。
 // NewRecurrentHistory constructs a RecurrentHistory. Intended for
 // cache implementations across packages; model code uses
 // WithRecurrentHistory / WithRecurrentState instead.
@@ -273,6 +287,7 @@ func NewRecurrentHistory(convState, deltaState *mlx.Array) *RecurrentHistory {
 	return &RecurrentHistory{convState: convState, deltaState: deltaState}
 }
 
+// ConvState 返回当前卷积状态（自定义 SSM 路径逃生口）。
 // ConvState returns the current convolution state tensor.
 //
 // Last-resort escape hatch for custom SSM paths — may force a slow
@@ -280,6 +295,7 @@ func NewRecurrentHistory(convState, deltaState *mlx.Array) *RecurrentHistory {
 // internal storage. Prefer CausalConv1D via WithRecurrentHistory.
 func (h *RecurrentHistory) ConvState() *mlx.Array { return h.convState }
 
+// DeltaState 返回当前 delta 状态（自定义 SSM 路径逃生口）。
 // DeltaState returns the current delta state tensor.
 //
 // Last-resort escape hatch for custom SSM paths — may force a slow

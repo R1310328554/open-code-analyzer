@@ -1,3 +1,4 @@
+// Qwen3.5 视觉塔：patch 嵌入、2D RoPE 与多模态 scatter。
 package qwen3_5
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/ollama/ollama/x/models/nn"
 )
 
+// VisionConfig 保存 Qwen3.5 视觉塔配置。
 // VisionConfig holds the qwen3.5 vision tower configuration.
 type VisionConfig struct {
 	Depth                 int32 `json:"depth"`
@@ -29,6 +31,7 @@ type VisionConfig struct {
 	DeepstackVisualIndexes []int32 `json:"deepstack_visual_indexes"`
 }
 
+// multimodalConfig 承载顶层多模态字段（text_config 解包时丢弃）。
 // multimodalConfig carries the top-level fields the text_config unwrap
 // discards.
 type multimodalConfig struct {
@@ -63,6 +66,7 @@ func parseMultimodalConfig(configData []byte) (multimodalConfig, error) {
 	return mm, nil
 }
 
+// VisionTower 为 Qwen3.5 图像编码器：patch 嵌入 + 2D RoPE 双向 Transformer。
 // VisionTower is the qwen3.5 image encoder: a bidirectional transformer over
 // patch embeddings with interpolated learned positions and 2D rotary
 // attention, merged 2x2 into LM-space tokens.
@@ -84,6 +88,7 @@ type VisionBlock struct {
 	FC2   nn.LinearLayer
 }
 
+// visionLayout 为 Batch.Layout：prompt 内 3 通道 RoPE 与后续文本 delta。
 // visionLayout is the request's Batch.Layout value: the prompt's 3-channel
 // rope positions and the delta that continues them past the prompt.
 type visionLayout struct {
@@ -92,6 +97,7 @@ type visionLayout struct {
 	delta     int32
 }
 
+// visionWeightRoot 定位视觉塔权重前缀（model.visual → vision_tower）。
 // visionWeightRoot locates the tower's tensor prefix: the import pipeline
 // renames the reference's model.visual to vision_tower.
 func visionWeightRoot(tensors map[string]*mlx.Array) string {
@@ -201,6 +207,7 @@ func (m *Model) loadVisionWeights(tensors map[string]*mlx.Array, linears model.L
 
 func (m *Model) visionLoaded() bool { return m.VisionTower != nil }
 
+// PrepareMedia 预处理图像段、展开 vision token 并预计算 3 通道 RoPE。
 // PrepareMedia implements base.MediaModel: preprocess each image segment,
 // splice its vision_start + pads + vision_end expansion, and precompute the
 // request's 3-channel rope positions.
@@ -281,6 +288,7 @@ func (m *Model) PrepareMedia(segments []base.Segment) (*base.PreparedRequest, er
 	return prepared, nil
 }
 
+// EncodeMedia 对整图运行视觉塔，返回 [numTokens, hidden] 特征。
 // EncodeMedia implements base.MediaModel: run the tower over one whole
 // image, returning the lazy [numTokens, hidden] features.
 func (m *Model) EncodeMedia(item *base.PreparedItem, data *mlx.Array) *mlx.Array {
@@ -344,6 +352,7 @@ func (m *Model) EncodeMedia(item *base.PreparedItem, data *mlx.Array) *mlx.Array
 	return out
 }
 
+// visionRopeTables 构建视觉塔 2D RoPE cos/sin 表（fp32）。
 // visionRopeTables builds the tower's rotary tables: 2D positions, half the
 // head dim per axis, in fp32.
 func visionRopeTables(ropePos []int32, n, headDim int32) (cos, sin *mlx.Array) {
@@ -370,6 +379,7 @@ func visionRopeTables(ropePos []int32, n, headDim int32) (cos, sin *mlx.Array) {
 	return mlx.Cos(e), mlx.Sin(e)
 }
 
+// applyVisionRoPE 以 fp32 rotate-half 方式应用视觉 RoPE。
 // applyVisionRoPE applies full-dim rotate-half rotary in fp32, matching the
 // reference's float application.
 func applyVisionRoPE(t, cos, sin *mlx.Array) *mlx.Array {
@@ -388,6 +398,7 @@ func applyVisionRoPE(t, cos, sin *mlx.Array) *mlx.Array {
 	return mlx.Add(mlx.Mul(tf, c), mlx.Mul(rot, s)).AsType(dt)
 }
 
+// softRun 返回 media item 的 image token 区间（vision_start+pad+vision_end）。
 // softRun returns an item's image-token range: the expansion is
 // vision_start + pads + vision_end.
 func softRun(item batch.MediaItem, merge int32) (start, end int) {
@@ -395,6 +406,7 @@ func softRun(item batch.MediaItem, merge int32) (start, end int) {
 	return item.Pos + 1, item.Pos + 1 + int(prep.numTokens(merge))
 }
 
+// scatterMedia 用编码特征覆盖本 chunk 覆盖的 image token 行。
 // scatterMedia overwrites the image-token rows this chunk covers with the
 // item's encoded features. delta shifts each row's offset to the sequence
 // position of batch column 0.
@@ -418,6 +430,7 @@ func (m *Model) scatterMedia(h *mlx.Array, b *batch.Batch, delta int) *mlx.Array
 	return h
 }
 
+// ropePositions 返回每行 3 通道 M-RoPE 位置（无 layout 时为 nil）。
 // ropePositions returns each row's 3-channel positions, flattened [B][3][L],
 // from its layout: table rows inside the prompt, the uniform text
 // continuation past it. Rows without a layout advance uniformly on all
@@ -454,6 +467,7 @@ func ropePositions(b *batch.Batch, L int32) []int32 {
 	return out
 }
 
+// mropeCosSin 构建交错 T/H/W 三通道 M-RoPE cos/sin 表。
 // mropeCosSin builds the interleaved 3-channel rotary tables for one chunk:
 // each channel's frequencies laid out round-robin T,H,W across the rotary
 // half-dims, matching the reference's interleaved M-RoPE. positions is
@@ -491,6 +505,7 @@ func mropeCosSin(cfg *Config, positions []int32, L int32) (cos, sin *mlx.Array) 
 	return mlx.Cos(e), mlx.Sin(e)
 }
 
+// applyMRoPE 对前 RopeDim 维应用 M-RoPE，其余维直通。
 // applyMRoPE rotates the leading RopeDim dims with the chunk's tables,
 // passing the rest through, in the tensor's own dtype like the reference.
 func applyMRoPE(t, cos, sin *mlx.Array, ropeDim int32) *mlx.Array {

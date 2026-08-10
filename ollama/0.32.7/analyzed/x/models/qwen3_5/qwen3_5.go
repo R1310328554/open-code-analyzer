@@ -1,3 +1,4 @@
+// Package qwen3_5 提供 Qwen3.5 文本/MoE/混合注意力与多模态的 MLX 实现。
 // Package qwen3_5 provides the Qwen 3.5 text and MoE implementation for MLX.
 package qwen3_5
 
@@ -31,6 +32,7 @@ var (
 	_ base.MediaModel = (*Model)(nil)
 )
 
+// RopeParameters 承载 rope_parameters 下的可选 RoPE 元数据。
 // RopeParameters carries optional rope metadata embedded under rope_parameters.
 type RopeParameters struct {
 	Type                string  `json:"type"`
@@ -40,6 +42,7 @@ type RopeParameters struct {
 	MropeSection        []int32 `json:"mrope_section"`
 }
 
+// Config 保存 Qwen3.5 文本配置（顶层或 text_config 嵌套）。
 // Config holds Qwen 3.5 text config (top-level or nested text_config).
 type Config struct {
 	ModelType             string   `json:"model_type"`
@@ -91,6 +94,7 @@ type Config struct {
 	RopeDim int32   `json:"-"`
 }
 
+// Model 为 Qwen3.5 多模态/混合架构主模型。
 // Model is the Qwen 3.5 model.
 type Model struct {
 	EmbedTokens nn.EmbeddingLayer
@@ -111,6 +115,7 @@ type Model struct {
 	weightPrefix string
 }
 
+// MTPHead 为多 token 预测草稿头，共享 lm_head 与嵌入。
 // MTPHead is the multi-token-prediction draft head; it writes one KV cache
 // and reuses the model's lm_head.
 type MTPHead struct {
@@ -121,6 +126,7 @@ type MTPHead struct {
 	Norm  *nn.RMSNorm
 }
 
+// Layer 为解码器层（FullAttention 或 GatedDeltaNet + MLP/MoE）。
 // Layer is a transformer decoder layer.
 type Layer struct {
 	InputNorm         *nn.RMSNorm
@@ -132,6 +138,7 @@ type Layer struct {
 	MLP      MLPBlock
 }
 
+// FullAttention 为周期性使用的全注意力分支（M-RoPE）。
 // FullAttention is the full-attention branch used every N layers.
 type FullAttention struct {
 	QProj nn.LinearLayer
@@ -143,6 +150,7 @@ type FullAttention struct {
 	KNorm *nn.RMSNorm
 }
 
+// GatedDeltaNet 为 Gated Delta 线性注意力分支。
 // GatedDeltaNet is the recurrent linear-attention branch.
 type GatedDeltaNet struct {
 	InProjQKVZ nn.LinearLayer
@@ -156,11 +164,13 @@ type GatedDeltaNet struct {
 	AExp       *mlx.Array
 }
 
+// MLPBlock 为稠密与 MoE 前馈的统一接口。
 // MLPBlock is the feed-forward interface for dense and MoE blocks.
 type MLPBlock interface {
 	Forward(x *mlx.Array, cfg *Config) *mlx.Array
 }
 
+// DenseMLP 为 SwiGLU 稠密 FFN。
 // DenseMLP is SwiGLU feed-forward.
 type DenseMLP struct {
 	GateProj nn.LinearLayer
@@ -168,6 +178,7 @@ type DenseMLP struct {
 	DownProj nn.LinearLayer
 }
 
+// SparseMoE 为 Qwen3.5 稀疏 MoE（含共享专家）。
 // SparseMoE is Qwen3.5's sparse MoE with shared expert.
 type SparseMoE struct {
 	Gate             nn.LinearLayer
@@ -176,6 +187,7 @@ type SparseMoE struct {
 	SharedExpertGate nn.LinearLayer
 }
 
+// SwitchMLP 执行路由专家 MLP；gate/up 加载时融合为 gate_up。
 // SwitchMLP executes selected expert MLPs. Gate and up are always held
 // packed as one gate_up tensor; checkpoints that ship them separately are
 // fused at load.
@@ -378,6 +390,7 @@ func layerUsesMoE(cfg *Config, layer int32) bool {
 	return (layer+1)%cfg.DecoderSparseStep == 0
 }
 
+// NewModel 从 manifest Root 创建 Qwen3.5 模型。
 // NewModel creates a Qwen 3.5 model from a manifest root.
 func NewModel(root *model.Root) (base.Model, error) {
 	configData, err := root.Manifest.ReadConfig("config.json")
@@ -504,6 +517,7 @@ func fuseExpertStacks(a, b *mlx.Array, axis int) *mlx.Array {
 	return out
 }
 
+// fuseGateUpProjections 沿输出维拼接 gate/up 堆叠（量化路径精确）。
 // fuseGateUpProjections joins gate and up stacks along the output dimension,
 // which is exact for quantized stacks: groups run along the input dimension.
 func fuseGateUpProjections(gate, up *stackedExpertWeights) *stackedExpertWeights {
@@ -669,6 +683,7 @@ func collectPerExpertProjection(tensors map[string]*mlx.Array, cfg *Config, useQ
 	return out
 }
 
+// combinedGateUpProjection 加载已打包的 gate_up_proj；分离 checkpoint 返回 nil。
 // combinedGateUpProjection loads the packed mlp.experts.gate_up_proj stack;
 // nil when the checkpoint ships gate/up separately.
 func combinedGateUpProjection(tensors map[string]*mlx.Array, cfg *Config, useQuantized bool, layerPrefix string) *stackedExpertWeights {
@@ -717,6 +732,7 @@ func combinedGateUpProjection(tensors map[string]*mlx.Array, cfg *Config, useQua
 	}
 }
 
+// splitLastAxisHalves 将末轴均分为两半视图。
 // splitLastAxisHalves views the two halves of a's last axis.
 func splitLastAxisHalves(a *mlx.Array) (lo, hi *mlx.Array) {
 	dims := a.Dims()
@@ -734,6 +750,7 @@ func splitLastAxisHalves(a *mlx.Array) (lo, hi *mlx.Array) {
 	return mlx.SliceStartStop(a, beg, endLo), mlx.SliceStartStop(a, begHi, end)
 }
 
+// loadSwitchMLP 从任意支持的 checkpoint 布局组装 SwitchMLP。
 // loadSwitchMLP assembles a layer's routed experts from any supported
 // checkpoint layout.
 func loadSwitchMLP(tensors map[string]*mlx.Array, cfg *Config, useQuantized bool, layerPrefix string) (*SwitchMLP, error) {
@@ -805,6 +822,7 @@ func sanitizeConvWeight(w *mlx.Array) *mlx.Array {
 	return w
 }
 
+// loadNorm 从张量构建 RMSNorm；shift 时对零中心权重加 1。
 // loadNorm builds an RMSNorm from tensors[key], adding 1 to weights from
 // checkpoints that store them zero-centered.
 func loadNorm(tensors map[string]*mlx.Array, key string, shift bool, eps float32) *nn.RMSNorm {
@@ -818,6 +836,7 @@ func loadNorm(tensors map[string]*mlx.Array, key string, shift bool, eps float32
 	return nn.NewRMSNorm(w, eps)
 }
 
+// LoadWeights 绑定文本塔、视觉塔与 MTP 头权重。
 // LoadWeights assigns tensors to model fields.
 func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	layout := resolveTensorPathLayout(tensors)
@@ -893,6 +912,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	return m.loadVisionWeights(tensors, linears)
 }
 
+// loadLayer 从 layerPrefix 构建解码层（主栈与 MTP 共用）。
 // loadLayer builds a decoder layer from tensors at layerPrefix. It serves both
 // the main stack and the MTP head's single full-attention layer.
 func loadLayer(linears model.LinearFactory, tensors map[string]*mlx.Array, cfg *Config, layerPrefix string, isLinear, useMoE, useQuantizedExperts, shiftNorms bool) (*Layer, error) {
@@ -1015,6 +1035,7 @@ func loadLayer(linears model.LinearFactory, tensors map[string]*mlx.Array, cfg *
 	return layer, nil
 }
 
+// loadMTPHead 从 mtp.* 张量构建 MTP 草稿头。
 // loadMTPHead builds the MTP head from the mtp.* tensors. Its single decoder
 // layer is full attention even when the main stack is hybrid; lm_head and
 // embeddings are shared with the target.
@@ -1251,6 +1272,7 @@ func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	return m.LMHead.Forward(x)
 }
 
+// mtpDraft 将 Model 视为草稿模型以适配 DraftModel 接口。
 // mtpDraft is the model viewed as its own draft: the same struct, carrying
 // the DraftModel method set for the inline MTP head.
 type mtpDraft Model

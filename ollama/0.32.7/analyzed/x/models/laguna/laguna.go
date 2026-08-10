@@ -1,3 +1,4 @@
+// Package laguna 提供 Poolside Laguna 文本模型的 MLX 实现（混合 SWA/全局注意力 + MoE）。
 // Package laguna provides the Poolside Laguna text model implementation for MLX.
 package laguna
 
@@ -23,8 +24,10 @@ func init() {
 
 var _ base.Model = (*Model)(nil)
 
+// gatingMode 表示注意力门控模式字符串。
 type gatingMode string
 
+// ropeConfig 支持扁平或嵌套 full/sliding RoPE 配置。
 type ropeConfig struct {
 	flat    *nn.RopeParameters
 	full    *nn.RopeParameters
@@ -32,6 +35,7 @@ type ropeConfig struct {
 	nested  bool
 }
 
+// Config 承载 Laguna 超参、RoPE 运行时与量化字段。
 type Config struct {
 	ModelType                   string             `json:"model_type"`
 	HiddenSize                  int32              `json:"hidden_size"`
@@ -78,12 +82,14 @@ type Config struct {
 	SlidingRopeScale float32    `json:"-"`
 }
 
+// Model 为 Laguna 因果语言模型主体。
 type Model struct {
 	EmbedTokens nn.EmbeddingLayer
 	Layers      []*Layer
 	Norm        *nn.RMSNorm
 	LMHead      nn.LinearLayer
 
+	// auxHiddenLayers 为草稿条件采样的层索引；空则用最终 hidden。
 	// auxHiddenLayers are the tapped layers; empty means the final hidden.
 	auxHiddenLayers []int
 
@@ -91,6 +97,7 @@ type Model struct {
 	*Config
 }
 
+// Layer 为单层：注意力、MLP/MoE 与层归一化。
 type Layer struct {
 	InputNorm         *nn.RMSNorm
 	PostAttentionNorm *nn.RMSNorm
@@ -101,6 +108,7 @@ type Layer struct {
 	IsSliding bool
 }
 
+// Attention 含 Q/K/V/O/G 投影与 Q/K RMSNorm。
 type Attention struct {
 	QProj nn.LinearLayer
 	KProj nn.LinearLayer
@@ -114,14 +122,17 @@ type Attention struct {
 	NumHeads int32
 }
 
+// MLPBlock 为稠密或 MoE 前馈的统一接口。
 type MLPBlock interface {
 	Forward(x *mlx.Array, cfg *Config) *mlx.Array
 }
 
+// MLPBlockAdder 支持带残差加法的 MoE 前馈。
 type MLPBlockAdder interface {
 	ForwardAdd(x, residual *mlx.Array, cfg *Config) *mlx.Array
 }
 
+// DenseMLP 为 SwiGLU 稠密 FFN，可融合 gate_up 量化。
 type DenseMLP struct {
 	GateProj        nn.LinearLayer
 	UpProj          nn.LinearLayer
@@ -131,6 +142,7 @@ type DenseMLP struct {
 	GateUpUpScale   *mlx.Array
 }
 
+// SparseMoE 为 Laguna 路由 MoE（含共享专家）。
 type SparseMoE struct {
 	Gate                 nn.LinearLayer
 	SwitchMLP            *SwitchMLP
@@ -139,11 +151,13 @@ type SparseMoE struct {
 	RoutedScale          *mlx.Array
 }
 
+// SwitchMLP 用 GatherMM/QMM 执行选中专家 MLP。
 type SwitchMLP struct {
 	GateUpWeight *mlx.Array
 	GateWeight   *mlx.Array
 	UpWeight     *mlx.Array
 	DownWeight   *mlx.Array
+	// 源布局专家权重为 [experts,out,in]；GatherMM 惰性转置避免加载时物化 BF16。
 	// Source-layout expert weights are stored as [experts, out, in], matching
 	// the published tensors. GatherMM transposes them lazily so load does not
 	// materialize huge BF16 expert tensors.
@@ -162,6 +176,7 @@ type SwitchMLP struct {
 	GateUpMode, GateMode, UpMode, DownMode                     string
 }
 
+// stackedExpertWeights 保存堆叠专家权重与量化元数据。
 type stackedExpertWeights struct {
 	Weight       *mlx.Array
 	Scales       *mlx.Array
@@ -472,6 +487,7 @@ func clampRopeDim(v, maxDim int) int {
 	return v
 }
 
+// NewModel 从 manifest Root 解析配置并构造 Laguna 模型。
 func NewModel(root *model.Root) (base.Model, error) {
 	configData, err := root.Manifest.ReadConfig("config.json")
 	if err != nil {
@@ -722,6 +738,7 @@ func fuseDenseQuantizedLinears(a, b nn.LinearLayer) nn.LinearLayer {
 	}
 }
 
+// fuseDenseGateUp 仅融合量化 gate/up 权重与 scale；全局 scale 留在 DenseMLP 上。
 // fuseDenseGateUp fuses only the quantized weights and scales. Scalar global
 // scales from the original projections stay on DenseMLP and are applied after
 // the fused output is split back into gate/up halves.
@@ -982,6 +999,7 @@ func loadStackedProjection(tensors map[string]*mlx.Array, cfg *Config, useQuanti
 	return nil
 }
 
+// LoadWeights 加载嵌入、逐层注意力/MoE 与 LM head。
 func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	prefix := resolveWeightPrefix(tensors)
 	cfg := m.Config
@@ -1114,7 +1132,8 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 				if sw.GateUpWeightsSourceLayout {
 					sw.GateWeight = denseExpertWeight(gateW)
 					sw.UpWeight = denseExpertWeight(upW)
-					// Avoid pre-fusing source-layout BF16 gate/up weights: the
+					// 避免预融合源布局 BF16 gate/up：全尺寸 concat 可能在加载时超时。
+				// Avoid pre-fusing source-layout BF16 gate/up weights: the
 					// full-size concatenate can time out during model load.
 				} else {
 					sw.GateWeight = denseExpertWeightForGatherMM(gateW)
@@ -1170,6 +1189,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	return nil
 }
 
+// Forward 执行 RoPE、GQA SDPA 与 G 门控输出投影。
 func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, layer *Layer, cfg *Config) *mlx.Array {
 	numHeads := a.NumHeads
 	q := a.QProj.Forward(x)
@@ -1209,6 +1229,7 @@ func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positio
 	return a.OProj.Forward(out)
 }
 
+// Forward 执行 SwiGLU 稠密 FFN（可选融合 gate_up）。
 func (m *DenseMLP) Forward(x *mlx.Array, _ *Config) *mlx.Array {
 	if m.GateUpProj != nil {
 		gateUp := m.GateUpProj.Forward(x)
@@ -1227,6 +1248,7 @@ func weightForGatherMM(w *mlx.Array, sourceLayout bool) *mlx.Array {
 	return w
 }
 
+// Forward 对路由索引执行专家 GatherMM/QMM SwiGLU。
 func (s *SwitchMLP) Forward(x *mlx.Array, indices *mlx.Array, cfg *Config) *mlx.Array {
 	dims := x.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -1342,10 +1364,12 @@ func (m *SparseMoE) route(xFlat *mlx.Array, cfg *Config) (scores, inds *mlx.Arra
 	return scores, inds, false
 }
 
+// Forward 执行 MoE 路由、加权专家输出并加共享专家。
 func (m *SparseMoE) Forward(x *mlx.Array, cfg *Config) *mlx.Array {
 	return m.forward(x, nil, cfg)
 }
 
+// ForwardAdd 在 MoE 输出上额外加 residual。
 func (m *SparseMoE) ForwardAdd(x, residual *mlx.Array, cfg *Config) *mlx.Array {
 	return m.forward(x, residual, cfg)
 }
@@ -1379,6 +1403,7 @@ func moeWeightedSumAdd2(expertOut, scores, scale, addA, addB *mlx.Array) *mlx.Ar
 	return lagunaMoEWeightedSumAdd2(expertOut, scores, scale, addA, addB)[0]
 }
 
+// Forward 执行 Pre-LN 注意力与 Post-LN MLP/MoE 残差块。
 func (l *Layer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, cfg *Config) *mlx.Array {
 	xn := l.InputNorm.Forward(x, cfg.RMSNormEps)
 	r := l.Attention.Forward(xn, b, c, positions, B, L, l, cfg)
@@ -1391,6 +1416,7 @@ func (l *Layer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *
 	return mlx.Add(h, r)
 }
 
+// Forward 嵌入、逐层前向并返回最终 hidden 与 aux 特征。
 func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	dims := b.InputIDs.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -1418,18 +1444,21 @@ func (m *Model) forward(b *batch.Batch, caches []cache.Cache, B, L int32) (hidde
 	return out, out
 }
 
+// SetAuxHiddenLayers 指定草稿条件采样的层；Forward 将其 concat 为 auxHidden。
 // SetAuxHiddenLayers taps the listed layers' outputs, which Forward then
 // returns as the draft-conditioning state in place of the final hidden.
 func (m *Model) SetAuxHiddenLayers(layers []int) {
 	m.auxHiddenLayers = layers
 }
 
+// TokenEmbeddings 返回原始嵌入查表（供草稿模型复用目标词表）。
 // TokenEmbeddings is the raw lookup, for a draft that embeds with the
 // target's table.
 func (m *Model) TokenEmbeddings(ids *mlx.Array) *mlx.Array {
 	return m.EmbedTokens.Forward(ids)
 }
 
+// RawLogits 与 Unembed 相同，不附加输出装饰。
 // RawLogits matches Unembed: this head applies no output decoration.
 func (m *Model) RawLogits(hidden *mlx.Array) *mlx.Array {
 	return m.LMHead.Forward(hidden)
@@ -1451,6 +1480,7 @@ func (m *Model) Tokenizer() *tokenizer.Tokenizer {
 	return m.tok
 }
 
+// NewCaches 为滑动层创建 RotatingKVCache，其余为 KVCache。
 func (m *Model) NewCaches() []cache.Cache {
 	caches := make([]cache.Cache, len(m.Layers))
 	for i, layer := range m.Layers {

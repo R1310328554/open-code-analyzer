@@ -1,3 +1,4 @@
+// 缩放点积注意力：KV 缓存、逻辑 mask 与 fast SDPA 分发。
 package nn
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/ollama/ollama/x/mlxrunner/mlx"
 )
 
+// SDPAOption 配置 ScaledDotProductAttention 调用。
 // SDPAOption configures a call to ScaledDotProductAttention.
 type SDPAOption func(*sdpaConfig)
 
@@ -21,6 +23,7 @@ type sdpaConfig struct {
 	mask AttentionMask
 }
 
+// WithKVHistory 从 KV 缓存提供 K/V 视图与 mask applier。
 // WithKVHistory supplies a cache's per-layer view of K and V. The
 // cache hides any storage layout (sliding window, ring buffer,
 // k-padding) behind the history.
@@ -28,6 +31,7 @@ func WithKVHistory(h *KVHistory) SDPAOption {
 	return func(c *sdpaConfig) { c.history = h }
 }
 
+// WithMLAHistory 为吸收式 MLA 提供历史（V 为 K 的前 valueDim 维）。
 // WithMLAHistory supplies a cache's per-layer view for absorbed MLA
 // attention, where V is the first valueDim positions of K.
 func WithMLAHistory(h *KVHistory, valueDim int) SDPAOption {
@@ -35,6 +39,7 @@ func WithMLAHistory(h *KVHistory, valueDim int) SDPAOption {
 	return WithKVHistory(&KVHistory{k: h.K(), v: v, applier: h.applier})
 }
 
+// WithKV 为无缓存路径提供显式 K/V；kLens 为每行真实 key 长度。
 // WithKV supplies explicit K/V tensors for the no-cache path. kLens
 // gives per-row real key extents — pass b.SeqQueryLens for self-
 // attention, or the caller's own extents for cross-attention.
@@ -42,11 +47,13 @@ func WithKV(k, v *mlx.Array, kLens []int32) SDPAOption {
 	return func(c *sdpaConfig) { c.k = k; c.v = v; c.kLens = kLens }
 }
 
+// WithMask 提供模型逻辑坐标系下的注意力 mask。
 // WithMask supplies the model's logical-coordinate mask.
 func WithMask(m AttentionMask) SDPAOption {
 	return func(c *sdpaConfig) { c.mask = m }
 }
 
+// ScaledDotProductAttention 对 q 与 K/V 运行 fast SDPA，自动处理 padding mask。
 // ScaledDotProductAttention runs the fast SDPA kernel against q and
 // the keys/values supplied via exactly one of WithKV or
 // WithKVHistory. Automatically applies any Q/K padding masking required
@@ -189,6 +196,7 @@ func (inputs dispatchInputs) resolve() sdpaDispatch {
 	}
 }
 
+// MaskApplier 将缓存存储侧 mask 合成到逻辑 mask 上。
 // MaskApplier composes a cache's storage-mask contribution onto a
 // fully-composed logical mask. The returned mask may live in the
 // applier's own coordinate system (e.g. a rotated or compacted K layout),
@@ -206,6 +214,7 @@ type MaskApplier interface {
 	ApplyMask(logical AttentionMask) AttentionMask
 }
 
+// KVHistory 为 KV 缓存交给 SDPA 的 per-forward K/V 视图。
 // KVHistory is the per-forward view a KV cache hands to SDPA:
 // post-Update K and V plus an optional MaskApplier that composes
 // the cache's storage mask onto the caller's model mask.
@@ -214,6 +223,7 @@ type KVHistory struct {
 	applier MaskApplier
 }
 
+// NewKVHistory 构造 KVHistory（测试/缓存内部）。
 // NewKVHistory constructs a KVHistory. Intended for
 // cache implementations across packages; model code uses
 // WithKVHistory / WithKV instead.
@@ -221,6 +231,7 @@ func NewKVHistory(k, v *mlx.Array, applier MaskApplier) *KVHistory {
 	return &KVHistory{k: k, v: v, applier: applier}
 }
 
+// K 返回 Update 后的 keys（自定义注意力逃生口）。
 // K returns the post-Update keys tensor.
 //
 // Last-resort escape hatch for custom attention paths — may force a
@@ -229,6 +240,7 @@ func NewKVHistory(k, v *mlx.Array, applier MaskApplier) *KVHistory {
 // WithKVHistory.
 func (h *KVHistory) K() *mlx.Array { return h.k }
 
+// V 返回 Update 后的 values（自定义注意力逃生口）。
 // V returns the post-Update values tensor.
 //
 // Last-resort escape hatch for custom attention paths — may force a
@@ -237,6 +249,7 @@ func (h *KVHistory) K() *mlx.Array { return h.k }
 // WithKVHistory.
 func (h *KVHistory) V() *mlx.Array { return h.v }
 
+// Mask 返回该层 SDPA 的最终 AttentionMask。
 // Mask returns the final AttentionMask for this layer's SDPA —
 // cache storage restrictions composed onto the caller's fully-
 // composed logical mask.
@@ -252,6 +265,7 @@ func (h *KVHistory) Mask(logical AttentionMask) AttentionMask {
 	return h.applier.ApplyMask(logical)
 }
 
+// AttentionMask 用四种状态描述逻辑注意力 mask。
 // AttentionMask describes an attention mask in four states:
 //   - zero value: no mask.
 //   - flag-form causal (causal=true only): dispatches to the MLX
@@ -286,6 +300,7 @@ type relaxNode struct {
 	next *relaxNode
 }
 
+// CausalMask 返回纯因果 flag mask（AsArray 时再物化）。
 // CausalMask returns a flag-form causal mask. The mask stays
 // tensor-free — hitting the kernel's mask_mode="causal" fast path —
 // until something composes a relaxation, padding, or applier tensor
@@ -294,17 +309,20 @@ func CausalMask() AttentionMask {
 	return AttentionMask{causal: true}
 }
 
+// ArrayMask 包装显式可加性 mask 张量。
 // ArrayMask wraps an explicit additive tensor broadcast-compatible
 // with [B, 1, L, K].
 func ArrayMask(a *mlx.Array) AttentionMask {
 	return AttentionMask{array: a}
 }
 
+// IsZero 报告 mask 是否为零值（无 mask）。
 // IsZero reports whether the mask is the zero value (no mask at all).
 func (m AttentionMask) IsZero() bool {
 	return !m.causal && m.array == nil && m.relaxations == nil
 }
 
+// IsCausal 报告是否为纯因果 flag mask。
 // IsCausal reports whether the mask is pure flag-form causal — no
 // relaxations and no accumulated array. SDPA dispatches to the
 // kernel's "causal" fast path on this; any padding, applier
@@ -313,6 +331,7 @@ func (m AttentionMask) IsCausal() bool {
 	return m.causal && m.relaxations == nil && m.array == nil
 }
 
+// Relax 为 batch 序列 seq 记录放松矩形（允许 attend 到额外区域）。
 // Relax records a relaxation rectangle for batch sequence seq —
 // positions (q, k) with q in [qLo, qHi) and k in [kLo, kHi) become
 // freely attendable regardless of the causal base. Coordinates are
@@ -345,6 +364,7 @@ func (m AttentionMask) Relax(seq, qLo, qHi, kLo, kHi int) AttentionMask {
 	return m
 }
 
+// Intersect 返回两 mask 的逻辑相交（元素级合成）。
 // Intersect returns the element-wise sum of this mask and other. Masks are
 // additive and apply before softmax, so this is intersection
 // semantics — a position is valid only if both sides have 0 there.
@@ -413,6 +433,7 @@ func (m AttentionMask) Intersect(other AttentionMask) AttentionMask {
 	return result
 }
 
+// AsArray 将 mask 物化为 [B,1,L,K] 可加性张量。
 // AsArray materializes the mask as a [B, 1, L, K] additive tensor
 // (0 where valid, -inf where blocked). B and L come from b; K and
 // dtype come from the caller.

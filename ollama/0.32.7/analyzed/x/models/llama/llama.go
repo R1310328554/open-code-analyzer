@@ -1,3 +1,4 @@
+// Package llama 提供 Llama 风格仅解码器 Transformer 的 MLX 实现。
 // Package llama provides a Llama-style decoder-only transformer for MLX.
 package llama
 
@@ -19,6 +20,7 @@ func init() {
 	base.Register("LlamaForCausalLM", newModel)
 }
 
+// Config 保存 Llama 模型超参与量化运行时字段。
 // Config holds Llama model configuration.
 type Config struct {
 	HiddenSize            int32   `json:"hidden_size"`
@@ -32,17 +34,20 @@ type Config struct {
 	MaxPositionEmbeddings int32   `json:"max_position_embeddings"`
 	TieWordEmbeddings     bool    `json:"tie_word_embeddings"`
 
+	// 加载时填充的量化参数。
 	// Quantization parameters (set during load based on model quantization).
 	QuantGroupSize int                               `json:"-"`
 	QuantBits      int                               `json:"-"`
 	QuantMode      string                            `json:"-"`
 	TensorQuant    map[string]*model.TensorQuantInfo `json:"-"`
 
+	// 派生字段（head_dim、scale）。
 	// Computed fields.
 	HeadDim int32   `json:"-"`
 	Scale   float32 `json:"-"`
 }
 
+// Model 为 Llama 文本因果语言模型。
 // Model is a Llama text model.
 type Model struct {
 	EmbedTokens nn.EmbeddingLayer
@@ -76,6 +81,7 @@ type MLP struct {
 	DownProj nn.LinearLayer
 }
 
+// resolveWeightPrefix 解析 checkpoint 权重前缀（含 language_model.）。
 func resolveWeightPrefix(tensors map[string]*mlx.Array) string {
 	for _, prefix := range []string{"", "language_model."} {
 		if tensors[prefix+"model.embed_tokens.weight"] != nil {
@@ -85,6 +91,7 @@ func resolveWeightPrefix(tensors map[string]*mlx.Array) string {
 	return ""
 }
 
+// newModel 从 Root 读 config 与 tokenizer 并校验超参。
 func newModel(root *model.Root) (base.Model, error) {
 	configData, err := root.Manifest.ReadConfig("config.json")
 	if err != nil {
@@ -164,6 +171,7 @@ func newModel(root *model.Root) (base.Model, error) {
 	return m, nil
 }
 
+// LoadWeights 将 manifest 张量绑定到嵌入、层与 LM head。
 // LoadWeights receives all tensors loaded from the manifest and assigns them
 // to model fields.
 func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
@@ -190,6 +198,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	} else if lmHead := linears.Make("lm_head"); lmHead != nil {
 		m.LMHead = lmHead
 	} else {
+		// 许多 checkpoint 无独立 lm_head，回退 tied embeddings。
 		// Fallback used by many Llama checkpoints where output is tied.
 		m.LMHead = m.EmbedTokens.AsLinear()
 	}
@@ -237,6 +246,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	return nil
 }
 
+// Forward 执行嵌入、逐层 Pre-LN 块与最终 RMSNorm。
 func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	dims := b.InputIDs.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -275,6 +285,7 @@ func (m *Model) NewCaches() []cache.Cache {
 	return caches
 }
 
+// Forward 执行 Pre-LN 注意力与 MLP 残差连接。
 func (l *Layer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, cfg *Config) *mlx.Array {
 	h := mlx.Add(x, l.Attention.Forward(l.AttentionNorm.Forward(x, cfg.RMSNormEps), b, c, positions, B, L, cfg))
 	return mlx.Add(h, l.MLP.Forward(l.MLPNorm.Forward(h, cfg.RMSNormEps)))
@@ -297,6 +308,7 @@ func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positio
 	q = mlx.RoPEWithBase(q, int(cfg.HeadDim), false, cfg.RopeTheta, 1.0, positions)
 	k = mlx.RoPEWithBase(k, int(cfg.HeadDim), false, cfg.RopeTheta, 1.0, positions)
 
+	// MLX SDPA 原生支持 GQA，无需物化重复 K/V。
 	// MLX SDPA supports grouped-query attention directly (Q heads can be a
 	// multiple of K/V heads), so avoid materializing repeated K/V tensors.
 	var kv nn.SDPAOption
@@ -311,6 +323,7 @@ func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positio
 	return a.OProj.Forward(out)
 }
 
+// Forward 执行 SwiGLU 前馈。
 func (m *MLP) Forward(x *mlx.Array) *mlx.Array {
 	return m.DownProj.Forward(mlx.SwiGLU(m.GateProj.Forward(x), m.UpProj.Forward(x)))
 }

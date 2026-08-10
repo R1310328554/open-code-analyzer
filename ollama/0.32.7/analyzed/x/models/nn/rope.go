@@ -1,3 +1,4 @@
+// RoPE 工具：YaRN 频率表与部分旋转维 mscale。
 package nn
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/ollama/ollama/x/mlxrunner/mlx"
 )
 
+// RopeParameters 承载模型 config 中的 RoPE/YaRN 元数据。
 // RopeParameters carries common RoPE metadata embedded in model configs.
 type RopeParameters struct {
 	RopeTheta                     float32 `json:"rope_theta"`
@@ -19,6 +21,7 @@ type RopeParameters struct {
 	AttentionFactor               float32 `json:"attention_factor"`
 }
 
+// TypeName 优先返回 rope_type，否则 type。
 // TypeName returns rope_type when present, falling back to type.
 func (rp *RopeParameters) TypeName() string {
 	if rp == nil {
@@ -30,6 +33,7 @@ func (rp *RopeParameters) TypeName() string {
 	return rp.Type
 }
 
+// BuildYarnRopeFreqs 构建 YaRN 旋转频率表与 mscale。
 // BuildYarnRopeFreqs returns YaRN rotary frequencies and the mscale value.
 func BuildYarnRopeFreqs(dim int, base float32, rp *RopeParameters) (*mlx.Array, float32) {
 	if rp == nil || dim <= 0 {
@@ -103,6 +107,7 @@ func yarnRamp(i, low, high float64) float64 {
 	return v
 }
 
+// ScaleRotaryPart 仅对前 ropeDim 维应用 YaRN mscale。
 // ScaleRotaryPart applies YaRN's mscale to only the rotated dimensions.
 func ScaleRotaryPart(x *mlx.Array, ropeDim int, scale float32) *mlx.Array {
 	if scale == 1 {

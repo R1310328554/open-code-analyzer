@@ -1,3 +1,4 @@
+// Qwen3.5 Gated Delta 投影打包：统一 in_proj 行布局。
 package qwen3_5
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/ollama/ollama/x/models/nn"
 )
 
+// 运行时将线性注意力输入投影统一为固定行布局：
 // The runtime keeps one layout for the linear-attention input projections:
 // InProjQKVZ rows form [q | k | v | z] blocks and InProjBA rows form
 // [beta | alpha], so the causal conv consumes a contiguous qkv slice and
@@ -15,6 +17,7 @@ import (
 // layout; native combined checkpoints ship rows interleaved per key head and
 // are permuted into it once at load.
 
+// packGatedDeltaProjections 将分离或原生 checkpoint 投影打包为 [q|k|v|z] 与 [beta|alpha]。
 func packGatedDeltaProjections(qkv, z, b, a, qkvz, ba nn.LinearLayer, cfg *Config) (packedQKVZ, packedBA nn.LinearLayer, err error) {
 	switch {
 	case (qkvz != nil || ba != nil) && (qkv != nil || z != nil || b != nil || a != nil):
@@ -37,6 +40,7 @@ func packGatedDeltaProjections(qkv, z, b, a, qkvz, ba nn.LinearLayer, cfg *Confi
 	return nil, nil, fmt.Errorf("missing linear attention projections")
 }
 
+// nativeQKVZPerm 映射打包行到原生 in_proj_qkvz 行序。
 // nativeQKVZPerm maps packed row -> native row. Native in_proj_qkvz rows are
 // grouped per key head as [q(dk) | k(dk) | v(vPerK*dv) | z(vPerK*dv)].
 func nativeQKVZPerm(cfg *Config) []int32 {
@@ -61,6 +65,7 @@ func nativeQKVZPerm(cfg *Config) []int32 {
 	return perm
 }
 
+// nativeBAPerm 映射打包行到原生 in_proj_ba 行序。
 // nativeBAPerm maps packed row -> native row. Native in_proj_ba rows are
 // grouped per key head as [beta(vPerK) | alpha(vPerK)].
 func nativeBAPerm(cfg *Config) []int32 {
@@ -77,6 +82,7 @@ func nativeBAPerm(cfg *Config) []int32 {
 	return perm
 }
 
+// permuteProjectionRows 按 perm 重排行并重绑 Linear/QuantizedLinear。
 func permuteProjectionRows(layer nn.LinearLayer, perm []int32) (nn.LinearLayer, error) {
 	indices := mlx.NewArrayInt32(perm, []int32{int32(len(perm))})
 	takeRows := func(a *mlx.Array) *mlx.Array {
@@ -114,6 +120,7 @@ func permuteProjectionRows(layer nn.LinearLayer, perm []int32) (nn.LinearLayer, 
 	return nil, fmt.Errorf("unsupported projection type %T", layer)
 }
 
+// concatProjectionPair 沿输出维拼接两个投影层。
 func concatProjectionPair(hi, lo nn.LinearLayer) (nn.LinearLayer, error) {
 	hiQ, hiQuant := hi.(*nn.QuantizedLinear)
 	loQ, loQuant := lo.(*nn.QuantizedLinear)
@@ -137,6 +144,7 @@ func concatProjectionPair(hi, lo nn.LinearLayer) (nn.LinearLayer, error) {
 	return nn.NewLinear(weight, concatOptionalRows(hiD.Bias, loD.Bias, hiD.Weight, loD.Weight)), nil
 }
 
+// concatQuantizedPair 拼接两个量化投影的权重与 scale。
 func concatQuantizedPair(hi, lo *nn.QuantizedLinear) (nn.LinearLayer, error) {
 	var qbiases *mlx.Array
 	if hi.QBiases != nil || lo.QBiases != nil {
@@ -157,6 +165,7 @@ func concatQuantizedPair(hi, lo *nn.QuantizedLinear) (nn.LinearLayer, error) {
 	}, nil
 }
 
+// denseProjection 将 LinearLayer 转为稠密 Linear（必要时反量化）。
 func denseProjection(layer nn.LinearLayer) (*nn.Linear, error) {
 	switch l := layer.(type) {
 	case *nn.Linear:
@@ -168,6 +177,7 @@ func denseProjection(layer nn.LinearLayer) (*nn.Linear, error) {
 	return nil, fmt.Errorf("unsupported projection type %T", layer)
 }
 
+// concatOptionalRows 拼接两行向量，nil 侧用零填充。
 // concatOptionalRows concatenates two per-row vectors where nil means zero,
 // sized by the paired weights' row counts.
 func concatOptionalRows(hi, lo, hiRows, loRows *mlx.Array) *mlx.Array {
@@ -182,6 +192,7 @@ func concatOptionalRows(hi, lo, hiRows, loRows *mlx.Array) *mlx.Array {
 	return mlx.Concatenate([]*mlx.Array{hi, lo.AsType(hi.DType())}, 0)
 }
 
+// concatGlobalScales 将 global scale 拼接为 per-row 向量。
 // concatGlobalScales concatenates per-tensor or per-row global scales into a
 // per-row vector, where nil means one.
 func concatGlobalScales(hi, lo, hiRows, loRows *mlx.Array) *mlx.Array {
