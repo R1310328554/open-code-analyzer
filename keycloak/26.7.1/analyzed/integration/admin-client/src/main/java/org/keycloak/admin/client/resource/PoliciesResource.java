@@ -34,27 +34,49 @@ import org.keycloak.representations.idm.authorization.PolicyProviderRepresentati
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 
 /**
+ * 授权策略（Policy）集合的管理 REST 资源。
+ * <p>
+ * 支持创建、查询、评估策略，并提供各类型策略子资源的访问入口。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface PoliciesResource {
 
+    /** 创建新授权策略。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Response create(PolicyRepresentation representation);
 
+    /** 按 ID 获取单个策略管理资源。 */
     @Path("{id}")
     PolicyResource policy(@PathParam("id") String id);
 
+    /** 按名称查找策略。 */
     @Path("/search")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     PolicyRepresentation findByName(@QueryParam("name") String name);
 
+    /** 列出全部策略。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> policies();
 
+    /**
+     * 按多种条件过滤并分页列出策略。
+     *
+     * @param id 策略 ID
+     * @param name 策略名称
+     * @param type 策略类型
+     * @param resource 关联资源
+     * @param scope 关联作用域
+     * @param permission 是否为权限类型
+     * @param owner 所有者
+     * @param fields 返回字段选择
+     * @param firstResult 分页起始偏移
+     * @param maxResult 分页最大条数
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> policies(@QueryParam("policyId") String id,
@@ -68,41 +90,52 @@ public interface PoliciesResource {
             @QueryParam("first") Integer firstResult,
             @QueryParam("max") Integer maxResult);
 
+    /** 列出所有可用的策略提供程序类型。 */
     @Path("providers")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyProviderRepresentation> policyProviders();
 
+    /** 模拟评估授权策略决策结果。 */
     @POST
     @Consumes("application/json")
     @Produces("application/json")
     @Path("evaluate")
     PolicyEvaluationResponse evaluate(PolicyEvaluationRequest evaluationRequest);
 
+    /** 获取角色策略管理子资源。 */
     @Path("role")
     RolePoliciesResource role();
 
+    /** 获取用户策略管理子资源。 */
     @Path("user")
     UserPoliciesResource user();
 
+    /** 获取 JavaScript 策略管理子资源。 */
     @Path("js")
     JSPoliciesResource js();
 
+    /** 获取时间条件策略管理子资源。 */
     @Path("time")
     TimePoliciesResource time();
 
+    /** 获取聚合策略管理子资源。 */
     @Path("aggregate")
     AggregatePoliciesResource aggregate();
 
+    /** 获取客户端策略管理子资源。 */
     @Path("client")
     ClientPoliciesResource client();
 
+    /** 获取组策略管理子资源。 */
     @Path("group")
     GroupPoliciesResource group();
 
+    /** 获取客户端作用域策略管理子资源。 */
     @Path("client-scope")
     ClientScopePoliciesResource clientScope();
     
+    /** 获取正则表达式策略管理子资源。 */
     @Path("regex")
     RegexPoliciesResource regex();
 }

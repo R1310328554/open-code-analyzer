@@ -32,24 +32,31 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.OrganizationRepresentation;
 
 /**
+ * 领域内组织集合的管理 REST 资源。
+ * <p>
+ * 支持创建、查询、搜索与统计组织，并提供跨组织成员关系子资源。
+ * 本端点及其所有子端点自 Keycloak 25 起可用，且需启用特性 {@link org.keycloak.common.Profile.Feature#ORGANIZATION}。
+ *
  * @since Keycloak 25. All the child endpoints are also available since that version<p>
  *
  * This endpoint including all the child endpoints requires feature {@link org.keycloak.common.Profile.Feature#ORGANIZATION} to be enabled<p>
  */
 public interface OrganizationsResource {
 
+    /** 创建新组织。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     Response create(OrganizationRepresentation organization);
 
+    /** 按 ID 获取单个组织管理资源。 */
     @Path("{id}")
     OrganizationResource get(@PathParam("id") String id);
 
     /**
-     * Returns all organizations in the realm.
+     * 返回领域内的全部组织。
      *
-     * @return a list containing the organizations.
-     * @Deprecated Use {@link org.keycloak.admin.client.resource.OrganizationsResource#list} instead.
+     * @return 组织列表
+     * @Deprecated 请改用 {@link org.keycloak.admin.client.resource.OrganizationsResource#list}。
      */
     @Deprecated
     @GET
@@ -57,11 +64,11 @@ public interface OrganizationsResource {
     List<OrganizationRepresentation> getAll();
 
     /**
-     * Returns organizations in the realm.
+     * 分页返回领域内的组织。
      *
-     * @param firstResult index of the first element (pagination offset).
-     * @param maxResults the maximum number of results.
-     * @return a list containing the organizations.
+     * @param firstResult 首个元素索引（分页偏移）
+     * @param maxResults 最大返回数量
+     * @return 组织列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -71,25 +78,23 @@ public interface OrganizationsResource {
     );
 
     /**
-     * Returns all organizations that match the specified filter.
+     * 按名称或域名搜索组织。
      *
-     * @param search a {@code String} representing either an organization name or domain.
-     * @return a list containing the matched organizations.
+     * @param search 组织名称或域名的搜索文本
+     * @return 匹配的组织列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<OrganizationRepresentation> search(@QueryParam("search") String search);
 
     /**
-     * Returns all organizations that match the specified filters.
+     * 按多种条件搜索组织。
      *
-     * @param search a {@code String} representing either an organization name or domain.
-     * @param exact if {@code true}, the organizations will be searched using exact match for the {@code search} param - i.e.
-     *              either the organization name or one of its domains must match exactly the {@code search} param. If false,
-     *              the method returns all organizations whose name or (domains) partially match the {@code search} param.
-     * @param first the position of the first result to be processed (pagination offset). Ignored if negative or {@code null}.
-     * @param max the maximum number of results to be returned. Ignored if negative or {@code null}.
-     * @return a list containing the matched organizations.
+     * @param search 组织名称或域名的搜索文本
+     * @param exact 为 true 时名称或域名须与 search 精确匹配；为 false 时部分匹配即可
+     * @param first 分页起始位置；为负或 null 时忽略
+     * @param max 最大返回数量；为负或 null 时忽略
+     * @return 匹配的组织列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -101,17 +106,15 @@ public interface OrganizationsResource {
     );
 
     /**
-     * Returns all organizations that match the specified filters.
+     * 按多种条件搜索组织，可控制返回字段详略。
      *
-     * @param search a {@code String} representing either an organization name or domain.
-     * @param exact if {@code true}, the organizations will be searched using exact match for the {@code search} param - i.e.
-     *              either the organization name or one of its domains must match exactly the {@code search} param. If false,
-     *              the method returns all organizations whose name or (domains) partially match the {@code search} param.
-     * @param first the position of the first result to be processed (pagination offset). Ignored if negative or {@code null}.
-     * @param max the maximum number of results to be returned. Ignored if negative or {@code null}.
-     * @param briefRepresentation if {@code false} the full representation is to be returned. Otherwise, only the basic fields are returned. The parameter is supported since Keycloak 26.1
-     * @return a list containing the matched organizations.
-     * @since Keycloak 26.1. Use method {@link #search(String, Boolean, Integer, Integer)} for the older versions of the Keycloak server
+     * @param search 组织名称或域名的搜索文本
+     * @param exact 为 true 时名称或域名须与 search 精确匹配；为 false 时部分匹配即可
+     * @param first 分页起始位置；为负或 null 时忽略
+     * @param max 最大返回数量；为负或 null 时忽略
+     * @param briefRepresentation 为 false 时返回完整表示；否则仅返回基本字段。自 Keycloak 26.1 起支持
+     * @return 匹配的组织列表
+     * @since Keycloak 26.1. 旧版服务器请使用 {@link #search(String, Boolean, Integer, Integer)}
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -124,10 +127,10 @@ public interface OrganizationsResource {
     );
 
     /**
-     * Returns all organizations that contain attributes matching the specified query.
+     * 按自定义属性查询组织。
      *
-     * @param searchQuery a query to search for organization attributes, in the format 'key1:value2 key2:value2'.
-     * @return a list containing the organizations that match the attribute query.
+     * @param searchQuery 属性查询表达式，格式为 {@code key1:value1 key2:value2}
+     * @return 匹配属性条件的组织列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -136,12 +139,12 @@ public interface OrganizationsResource {
     );
 
     /**
-     * Returns all organizations that contain attributes matching the specified query.
+     * 按自定义属性查询组织，支持分页。
      *
-     * @param searchQuery a query to search for organization attributes, in the format 'key1:value2 key2:value2'.
-     * @param first the position of the first result to be processed (pagination offset). Ignored if negative or {@code null}.
-     * @param max the maximum number of results to be returned. Ignored if negative or {@code null}.
-     * @return a list containing the organizations that match the attribute query.
+     * @param searchQuery 属性查询表达式，格式为 {@code key1:value1 key2:value2}
+     * @param first 分页起始位置；为负或 null 时忽略
+     * @param max 最大返回数量；为负或 null 时忽略
+     * @return 匹配属性条件的组织列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -152,9 +155,10 @@ public interface OrganizationsResource {
     );
 
     /**
-     * Counts organizations by search.
-     * @param search text to look for.
-     * @return the number of organizations that match the search.
+     * 按搜索条件统计组织数量。
+     *
+     * @param search 搜索文本
+     * @return 匹配搜索条件的组织数量
      * @since Keycloak 26.3
      */
     @GET
@@ -164,12 +168,11 @@ public interface OrganizationsResource {
     long count(@QueryParam("search") String search);
 
     /**
-     * Counts organizations by search.
-     * @param search text to look for.
-     * @param exact if {@code true}, the organizations will be searched using exact match for the {@code search} param - i.e.
-     *              either the organization name or one of its domains must match exactly the {@code search} param. If false,
-     *              the method returns all organizations whose name or (domains) partially match the {@code search} param.
-     * @return the number of organizations that match the search.
+     * 按搜索条件统计组织数量，支持精确匹配。
+     *
+     * @param search 搜索文本
+     * @param exact 为 true 时名称或域名须与 search 精确匹配；为 false 时部分匹配即可
+     * @return 匹配搜索条件的组织数量
      * @since Keycloak 26.3
      */
     @GET
@@ -182,9 +185,10 @@ public interface OrganizationsResource {
     );
 
     /**
-     * Counts all organizations that contain attributes matching the specified query.
-     * @param searchQuery a query to search for organization attributes, in the format 'key1:value2 key2:value2'.
-     * @return the number of the organizations that match the attribute query.
+     * 按自定义属性统计组织数量。
+     *
+     * @param searchQuery 属性查询表达式，格式为 {@code key1:value1 key2:value2}
+     * @return 匹配属性条件的组织数量
      * @since Keycloak 26.3
      */
     @GET
@@ -196,6 +200,7 @@ public interface OrganizationsResource {
     );
 
 
+    /** 获取跨组织成员关系管理子资源。 */
     @Path("members")
     OrganizationsMembersResource members();
 }

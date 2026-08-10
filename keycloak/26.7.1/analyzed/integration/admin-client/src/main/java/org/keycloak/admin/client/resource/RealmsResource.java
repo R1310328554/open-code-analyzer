@@ -30,19 +30,26 @@ import jakarta.ws.rs.core.MediaType;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 领域（Realm）集合的顶层管理 REST 资源。
+ * <p>
+ * 映射至 {@code /admin/realms}，支持创建领域、列出全部领域及按名称访问单个领域。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 @Path("/admin/realms")
 @Consumes(MediaType.APPLICATION_JSON)
 public interface RealmsResource {
 
+    /** 按领域名称获取单个领域的管理资源。 */
     @Path("/{realm}")
     RealmResource realm(@PathParam("realm") String realm);
 
+    /** 创建新领域。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     void create(RealmRepresentation realmRepresentation);
 
+    /** 列出服务器上所有可访问的领域。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<RealmRepresentation> findAll();

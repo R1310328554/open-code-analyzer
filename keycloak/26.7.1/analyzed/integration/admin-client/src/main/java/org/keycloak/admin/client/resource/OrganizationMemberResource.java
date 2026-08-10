@@ -32,20 +32,27 @@ import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.MemberRepresentation;
 import org.keycloak.representations.idm.OrganizationRepresentation;
 
+/**
+ * 单个组织成员的管理 REST 资源。
+ * <p>
+ * 支持查询成员详情、移除成员，以及查看成员所属组织与组织内组。
+ */
 public interface OrganizationMemberResource {
 
+    /** 获取当前成员的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     MemberRepresentation toRepresentation();
 
+    /** 从组织中移除当前成员。 */
     @DELETE
     Response delete();
 
     /**
-     * Returns the organizations associated with the user
+     * 返回该用户关联的组织列表。
      *
      * @since Keycloak server 26
-     * @return the organizations associated with the user
+     * @return 用户所属的组织列表
      */
     @Path("organizations")
     @GET
@@ -53,11 +60,11 @@ public interface OrganizationMemberResource {
     List<OrganizationRepresentation> getOrganizations();
 
     /**
-     * Returns the organizations associated with the user
+     * 返回该用户关联的组织列表，可控制返回字段详略。
      *
-     * @param briefRepresentation if false, return the full representation. Otherwise, only the basic fields are returned. It is true by default. Parameter supported since Keycloak 26.3. It is assumed to be false for the older Keycloak server versions.
+     * @param briefRepresentation 为 false 时返回完整表示；否则仅返回基本字段，默认为 true。自 Keycloak 26.3 起支持；旧版服务器默认为 false。
      * @since Keycloak server 26
-     * @return the organizations associated with the user
+     * @return 用户所属的组织列表
      */
     @Path("organizations")
     @GET
@@ -66,13 +73,13 @@ public interface OrganizationMemberResource {
             @QueryParam("briefRepresentation") @DefaultValue("true") boolean briefRepresentation);
 
     /**
-     * Returns the organization group memberships for this member
+     * 返回该成员在组织内的组归属关系。
      *
-     * @param firstResult the position of the first result to be processed (pagination offset)
-     * @param maxResults the maximum number of results to be returned
-     * @param briefRepresentation if false, return the full representation. Otherwise, only the basic fields are returned. It is true by default.
+     * @param firstResult 分页起始位置
+     * @param maxResults 最大返回数量
+     * @param briefRepresentation 为 false 时返回完整表示；否则仅返回基本字段，默认为 true
      * @since Keycloak server 26.6.0
-     * @return the organization groups the member belongs to
+     * @return 成员所属的组织内组列表
      */
     @Path("groups")
     @GET
@@ -83,14 +90,14 @@ public interface OrganizationMemberResource {
             @QueryParam("briefRepresentation") @DefaultValue("true") boolean briefRepresentation);
 
     /**
-     * Returns the organization group memberships for this member
+     * 返回该成员在组织内的组归属关系，支持按名称搜索。
      *
-     * @param firstResult the position of the first result to be processed (pagination offset)
-     * @param maxResults the maximum number of results to be returned
-     * @param search a case-insensitive search string to filter groups by name. If {@code null} or blank, no filtering is applied.
-     * @param briefRepresentation if false, return the full representation. Otherwise, only the basic fields are returned. It is true by default.
+     * @param firstResult 分页起始位置
+     * @param maxResults 最大返回数量
+     * @param search 按组名进行不区分大小写的搜索；为 null 或空白时不启用过滤
+     * @param briefRepresentation 为 false 时返回完整表示；否则仅返回基本字段，默认为 true
      * @since Keycloak server 26.6.0
-     * @return the organization groups the member belongs to
+     * @return 成员所属的组织内组列表
      */
     @Path("groups")
     @GET

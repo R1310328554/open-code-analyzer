@@ -28,32 +28,45 @@ import jakarta.ws.rs.core.Response;
 
 import org.keycloak.representations.idm.OrganizationRepresentation;
 
+/**
+ * 单个组织的管理 REST 资源。
+ * <p>
+ * 支持读取、更新、删除组织，并提供成员、邀请、身份提供者与组等子资源访问入口。
+ */
 public interface OrganizationResource {
 
+    /** 获取当前组织的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     OrganizationRepresentation toRepresentation();
 
+    /** 更新组织配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     Response update(OrganizationRepresentation organization);
 
+    /** 删除当前组织。 */
     @DELETE
     Response delete();
 
+    /** 获取组织成员管理子资源。 */
     @Path("members")
     OrganizationMembersResource members();
 
     /**
+     * 获取组织邀请管理子资源。
+     *
      * @since Keycloak server 26.5.0.
-     * @return {@link OrganizationInvitationsResource} to manage organization invitations
+     * @return 用于管理组织邀请的 {@link OrganizationInvitationsResource}
      */
     @Path("invitations")
     OrganizationInvitationsResource invitations();
 
+    /** 获取组织身份提供者管理子资源。 */
     @Path("identity-providers")
     OrganizationIdentityProvidersResource identityProviders();
 
+    /** 获取组织内用户组管理子资源。 */
     @Path("groups")
     OrganizationGroupsResource groups();
 }

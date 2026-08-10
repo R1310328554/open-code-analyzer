@@ -31,31 +31,41 @@ import org.keycloak.representations.idm.authorization.ResourcePermissionRepresen
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 
 /**
+ * 单个基于资源的授权权限（Resource Permission）管理 REST 资源。
+ * <p>
+ * 支持读取、更新、删除权限，并查询关联策略、依赖策略及受保护资源。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface ResourcePermissionResource {
 
+    /** 获取当前资源权限的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ResourcePermissionRepresentation toRepresentation();
 
+    /** 更新资源权限配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(ResourcePermissionRepresentation representation);
 
+    /** 删除当前资源权限。 */
     @DELETE
     void remove();
 
+    /** 列出引用本权限的关联策略。 */
     @Path("/associatedPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> associatedPolicies();
 
+    /** 列出依赖本权限的其他策略。 */
     @Path("/dependentPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> dependentPolicies();
 
+    /** 列出本权限所保护的授权资源。 */
     @Path("/resources")
     @GET
     @Produces("application/json")

@@ -36,21 +36,28 @@ import org.keycloak.representations.idm.MemberRepresentation;
 import org.keycloak.representations.idm.MembershipType;
 import org.keycloak.representations.idm.OrganizationRepresentation;
 
+/**
+ * 组织成员集合的管理 REST 资源。
+ * <p>
+ * 支持添加/移除成员、分页列出成员、按条件搜索、邀请用户及统计成员数量。
+ */
 public interface OrganizationMembersResource {
 
+    /** 将已有用户添加为组织成员。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     Response addMember(String userId);
 
+    /** 按成员 ID 从组织中移除成员。 */
     @Path("{member-id}")
     @DELETE
     Response removeMember(@PathParam("member-id") String memberId);
 
     /**
-     * Return all members in the organization.
+     * 返回组织内的全部成员。
      *
-     * @return a list containing the organization members. Returns brief user representations by default.
-     * @Deprecated Use {@link org.keycloak.admin.client.resource.OrganizationMembersResource#list} instead.
+     * @return 组织成员列表；默认返回简要用户表示
+     * @Deprecated 请改用 {@link org.keycloak.admin.client.resource.OrganizationMembersResource#list}。
      */
     @Deprecated
     @GET
@@ -58,12 +65,11 @@ public interface OrganizationMembersResource {
     List<MemberRepresentation> getAll();
 
     /**
-     * Return members in the organization.
+     * 分页返回组织成员。
      *
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @return a list containing organization members. Returns brief user representations by default.
-     *         Use {@link #list(Integer, Integer, boolean)} to control the representation type.
+     * @param first 首个元素索引（分页偏移）
+     * @param max 最大返回数量
+     * @return 组织成员列表；默认返回简要用户表示。可通过 {@link #list(Integer, Integer, boolean)} 控制详略。
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -73,12 +79,12 @@ public interface OrganizationMembersResource {
     );
 
     /**
-     * Return members in the organization.
+     * 分页返回组织成员，可控制返回字段详略。
      *
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @param briefRepresentation if false, return the full representation. Otherwise, only the basic fields are returned. It is true by default. This parameter is available since Keycloak server 26.7.0
-     * @return a list containing organization members.
+     * @param first 首个元素索引（分页偏移）
+     * @param max 最大返回数量
+     * @param briefRepresentation 为 false 时返回完整表示；否则仅返回基本字段，默认为 true。自 Keycloak server 26.7.0 起可用
+     * @return 组织成员列表
      * @since Keycloak server 26.7
      */
     @GET
@@ -90,16 +96,13 @@ public interface OrganizationMembersResource {
     );
 
     /**
-     * Return all organization members that match the specified filters.
+     * 按搜索条件返回匹配的组织成员。
      *
-     * @param search a {@code String} representing either a member's username, e-mail, first name, or last name.
-     * @param exact if {@code true}, the members will be searched using exact match for the {@code search} param - i.e.
-     *              at least one of the username main attributes must match exactly the {@code search} param. If false,
-     *              the method returns all members with at least one main attribute partially matching the {@code search} param.
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @return a list containing the matched organization members. Returns brief user representations by default.
-     *         Use {@link #search(String, Boolean, Integer, Integer, boolean)} to control the representation type.
+     * @param search 用户名、邮箱、名或姓的搜索文本
+     * @param exact 为 true 时要求至少一个主要属性与 search 精确匹配；为 false 时部分匹配即可
+     * @param first 首个元素索引（分页偏移）
+     * @param max 最大返回数量
+     * @return 匹配的组织成员列表；默认返回简要用户表示。可通过 {@link #search(String, Boolean, Integer, Integer, boolean)} 控制详略。
      * @since Keycloak server 26.7.0
      */
     @GET
@@ -112,16 +115,14 @@ public interface OrganizationMembersResource {
     );
 
     /**
-     * Return all organization members that match the specified filters.
+     * 按搜索条件返回匹配的组织成员，可控制返回字段详略。
      *
-     * @param search a {@code String} representing either a member's username, e-mail, first name, or last name.
-     * @param exact if {@code true}, the members will be searched using exact match for the {@code search} param - i.e.
-     *              at least one of the username main attributes must match exactly the {@code search} param. If false,
-     *              the method returns all members with at least one main attribute partially matching the {@code search} param.
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @param briefRepresentation if false, return the full representation. Otherwise, only the basic fields are returned. It is true by default. This parameter is available since Keycloak server 26.7.0
-     * @return a list containing the matched organization members.
+     * @param search 用户名、邮箱、名或姓的搜索文本
+     * @param exact 为 true 时要求至少一个主要属性与 search 精确匹配；为 false 时部分匹配即可
+     * @param first 首个元素索引（分页偏移）
+     * @param max 最大返回数量
+     * @param briefRepresentation 为 false 时返回完整表示；否则仅返回基本字段，默认为 true。自 Keycloak server 26.7.0 起可用
+     * @return 匹配的组织成员列表
      * @since Keycloak server 26.7
      */
     @GET
@@ -135,18 +136,15 @@ public interface OrganizationMembersResource {
     );
 
     /**
-     * Return all organization members that match the specified filters.
+     * 按搜索条件与成员类型返回匹配的组织成员。
      *
-     * @param search a {@code String} representing either a member's username, e-mail, first name, or last name.
-     * @param exact if {@code true}, the members will be searched using exact match for the {@code search} param - i.e.
-     *              at least one of the username main attributes must match exactly the {@code search} param. If false,
-     *              the method returns all members with at least one main attribute partially matching the {@code search} param.
-     * @param membershipType The {@link org.keycloak.representations.idm.MembershipType}. The parameter is supported since Keycloak 26.1
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @return a list containing the matched organization members. Returns brief user representations by default.
-     *         Use {@link #search(String, Boolean, MembershipType, Integer, Integer, boolean)} to control the representation type.
-     * @since Keycloak 26.1. Use method {@link #search(String, Boolean, Integer, Integer)} for the older versions of the Keycloak server
+     * @param search 用户名、邮箱、名或姓的搜索文本
+     * @param exact 为 true 时要求至少一个主要属性与 search 精确匹配；为 false 时部分匹配即可
+     * @param membershipType {@link org.keycloak.representations.idm.MembershipType}；自 Keycloak 26.1 起支持
+     * @param first 首个元素索引（分页偏移）
+     * @param max 最大返回数量
+     * @return 匹配的组织成员列表；默认返回简要用户表示。可通过 {@link #search(String, Boolean, MembershipType, Integer, Integer, boolean)} 控制详略。
+     * @since Keycloak 26.1. 旧版服务器请使用 {@link #search(String, Boolean, Integer, Integer)}
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -159,17 +157,15 @@ public interface OrganizationMembersResource {
     );
 
     /**
-     * Return all organization members that match the specified filters.
+     * 按搜索条件与成员类型返回匹配的组织成员，可控制返回字段详略。
      *
-     * @param search a {@code String} representing either a member's username, e-mail, first name, or last name.
-     * @param exact if {@code true}, the members will be searched using exact match for the {@code search} param - i.e.
-     *              at least one of the username main attributes must match exactly the {@code search} param. If false,
-     *              the method returns all members with at least one main attribute partially matching the {@code search} param.
-     * @param membershipType The {@link org.keycloak.representations.idm.MembershipType}. The parameter is supported since Keycloak 26.1
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @param briefRepresentation if false, return the full representation. Otherwise, only the basic fields are returned. It is true by default.
-     * @return a list containing the matched organization members.
+     * @param search 用户名、邮箱、名或姓的搜索文本
+     * @param exact 为 true 时要求至少一个主要属性与 search 精确匹配；为 false 时部分匹配即可
+     * @param membershipType {@link org.keycloak.representations.idm.MembershipType}；自 Keycloak 26.1 起支持
+     * @param first 首个元素索引（分页偏移）
+     * @param max 最大返回数量
+     * @param briefRepresentation 为 false 时返回完整表示；否则仅返回基本字段，默认为 true
+     * @return 匹配的组织成员列表
      * @since Keycloak server 26.7
      */
     @GET
@@ -183,9 +179,11 @@ public interface OrganizationMembersResource {
             @QueryParam("briefRepresentation") @DefaultValue("true") boolean briefRepresentation
     );
 
+    /** 按成员 ID 获取单个成员管理资源。 */
     @Path("{id}")
     OrganizationMemberResource member(@PathParam("id") String id);
 
+    /** 通过邮箱邀请新用户加入组织。 */
     @POST
     @Path("invite-user")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -193,20 +191,24 @@ public interface OrganizationMembersResource {
                         @FormParam("firstName") String firstName,
                         @FormParam("lastName") String lastName);
 
+    /** 邀请已有用户加入组织。 */
     @POST
     @Path("invite-existing-user")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     Response inviteExistingUser(@FormParam("id") String id);
 
     /**
+     * 统计组织成员数量。
+     *
      * @since Keycloak server 26
-     * @return count of members of the organization
+     * @return 组织成员总数
      */
     @Path("count")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     Long count();
 
+    /** 查询指定成员所属的组织列表。 */
     @Path("{id}/organizations")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

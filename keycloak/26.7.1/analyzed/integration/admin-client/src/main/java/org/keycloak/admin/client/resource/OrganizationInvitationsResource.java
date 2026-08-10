@@ -32,56 +32,58 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.OrganizationInvitationRepresentation;
 
 /**
- * Managing organization invitations.
+ * 组织邀请的管理 REST 资源。
+ * <p>
+ * 支持列出、查询、删除邀请以及重新发送邀请邮件。
  *
  * @since Keycloak server 26.5.0
  */
 public interface OrganizationInvitationsResource {
 
     /**
-     * Return all invitations in the organization.
+     * 返回组织内的全部邀请。
      *
-     * @return a list containing all organization invitations.
+     * @return 包含所有组织邀请的列表
      */
     default List<OrganizationInvitationRepresentation> list() {
         return list(null, null, null, null, null, null, null);
     }
 
     /**
-     * Return invitations in the organization with pagination.
+     * 分页返回组织内的邀请。
      *
-     * @param first index of the first element (pagination offset). If null, starts from 0.
-     * @param max the maximum number of results. If null, returns all results.
-     * @return a list containing organization invitations.
+     * @param first 首个元素索引（分页偏移）；为 null 时从 0 开始
+     * @param max 最大返回数量；为 null 时返回全部结果
+     * @return 组织邀请列表
      */
     default List<OrganizationInvitationRepresentation> list(Integer first, Integer max) {
         return list(null, null, null, null, null, first, max);
     }
 
     /**
-     * Return invitations in the organization filtered by status.
+     * 按状态等条件过滤并分页返回组织邀请。
      *
-     * @param first index of the first element (pagination offset). If null, starts from 0.
-     * @param max the maximum number of results. If null, returns all results.
-     * @param status filter by invitation status (PENDING, EXPIRED). If null, returns all statuses.
-     * @param email filter by exact email match. If null, no email filtering is applied.
-     * @return a list containing organization invitations matching the criteria.
+     * @param first 首个元素索引（分页偏移）；为 null 时从 0 开始
+     * @param max 最大返回数量；为 null 时返回全部结果
+     * @param status 按邀请状态过滤（PENDING、EXPIRED）；为 null 时返回所有状态
+     * @param email 按邮箱精确匹配过滤；为 null 时不按邮箱过滤
+     * @return 符合条件的组织邀请列表
      */
     default List<OrganizationInvitationRepresentation> list(String status, String email, Integer first, Integer max) {
         return list(status, email, null, null, null, first, max);
     }
 
     /**
-     * Return invitations in the organization.
+     * 按多种条件查询组织邀请。
      *
-     * @param first index of the first element (pagination offset). If null, starts from 0.
-     * @param max the maximum number of results. If null, returns all results.
-     * @param status filter by invitation status (PENDING, EXPIRED). If null, returns all statuses.
-     * @param email filter by exact email match. If null, no email filtering is applied.
-     * @param search search text applied across email, firstName, and lastName fields. If null, no search filtering is applied.
-     * @param firstName filter by exact first name match. If null, no firstName filtering is applied.
-     * @param lastName filter by exact last name match. If null, no lastName filtering is applied.
-     * @return a list containing organization invitations matching the criteria.
+     * @param first 首个元素索引（分页偏移）；为 null 时从 0 开始
+     * @param max 最大返回数量；为 null 时返回全部结果
+     * @param status 按邀请状态过滤（PENDING、EXPIRED）；为 null 时返回所有状态
+     * @param email 按邮箱精确匹配过滤；为 null 时不按邮箱过滤
+     * @param search 在邮箱、名、姓字段上全文搜索；为 null 时不启用搜索
+     * @param firstName 按名精确匹配；为 null 时不按名过滤
+     * @param lastName 按姓精确匹配；为 null 时不按姓过滤
+     * @return 符合条件的组织邀请列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -95,10 +97,10 @@ public interface OrganizationInvitationsResource {
             @QueryParam("max") Integer max);
 
     /**
-     * Get invitation by ID.
+     * 按 ID 获取邀请详情。
      *
-     * @param id the invitation ID.
-     * @return the invitation representation.
+     * @param id 邀请 ID
+     * @return 邀请表示对象
      */
     @GET
     @Path("/{id}")
@@ -106,22 +108,22 @@ public interface OrganizationInvitationsResource {
     OrganizationInvitationRepresentation get(@PathParam("id") String id);
 
     /**
-     * Delete an invitation permanently.
-     * This action cannot be undone.
+     * 永久删除邀请，此操作不可撤销。
      *
-     * @param id the invitation ID.
-     * @return response indicating success or failure.
+     * @param id 邀请 ID
+     * @return 表示成功或失败的响应
      */
     @DELETE
     @Path("/{id}")
     Response delete(@PathParam("id") String id);
 
     /**
-     * Resend an invitation email.
-     * This generates a new invitation token with fresh expiration time.
+     * 重新发送邀请邮件。
+     * <p>
+     * 将生成新的邀请令牌并刷新过期时间。
      *
-     * @param id the invitation ID.
-     * @return response indicating success or failure.
+     * @param id 邀请 ID
+     * @return 表示成功或失败的响应
      */
     @POST
     @Path("/{id}/resend")

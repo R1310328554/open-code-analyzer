@@ -29,13 +29,18 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.keycloak.representations.idm.OrganizationRepresentation;
 
+/**
+ * 跨组织成员关系查询 REST 资源。
+ * <p>
+ * 用于按用户 ID 查询其所属的组织列表。
+ */
 public interface OrganizationsMembersResource {
 
     /**
-     * Returns the organizations associated with the user that has the specified id.
+     * 返回指定用户 ID 关联的组织列表。
      *
-     * @param id user id
-     * @return Organizations of the user
+     * @param id 用户 ID
+     * @return 用户所属的组织列表
      */
     @Path("{id}/organizations")
     @GET
@@ -44,11 +49,11 @@ public interface OrganizationsMembersResource {
             @PathParam("id") String id);
 
     /**
-     * Returns the organizations associated with the user that has the specified id.
+     * 返回指定用户 ID 关联的组织列表，可控制返回字段详略。
      *
-     * @param id user id
-     * @param briefRepresentation if false, return the full representation. Otherwise, only the basic fields are returned. It is true by default. Parameter supported since Keycloak 26.3. It is assumed to be false for the older Keycloak server versions.
-     * @return Organizations of the user
+     * @param id 用户 ID
+     * @param briefRepresentation 为 false 时返回完整表示；否则仅返回基本字段，默认为 true。自 Keycloak 26.3 起支持；旧版服务器默认为 false。
+     * @return 用户所属的组织列表
      */
     @Path("{id}/organizations")
     @GET

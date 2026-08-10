@@ -19,13 +19,19 @@ package org.keycloak.admin.client.resource;
 import jakarta.ws.rs.Path;
 
 /**
+ * 授权权限（Permission）集合的管理 REST 资源。
+ * <p>
+ * 提供基于资源与基于作用域两类权限子资源的访问入口。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface PermissionsResource {
 
+    /** 获取基于资源的权限管理子资源。 */
     @Path("resource")
     ResourcePermissionsResource resource();
 
+    /** 获取基于作用域的权限管理子资源。 */
     @Path("scope")
     ScopePermissionsResource scope();
 }

@@ -25,10 +25,15 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.authorization.RegexPolicyRepresentation;
 
 /**
+ * 正则表达式授权策略的管理 REST 资源。
+ * <p>
+ * 用于创建基于正则匹配条件的授权策略。
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 public interface RegexPoliciesResource {
 
+    /** 创建新的正则表达式策略。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
