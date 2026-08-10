@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:24:13Z",
-  "files": [
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/annotations/TestOnServer.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/runonserver/InjectRunOnServer.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/runonserver/InjectTestClassServer.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/runonserver/RunOnServerClient.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/runonserver/RunOnServerSupplier.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/runonserver/RunTestOnServer.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/runonserver/TestClassServer.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/runonserver/TestClassServerSupplier.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/timeoffset/InjectTimeOffSet.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/timeoffset/TimeOffSet.java",
-    "test-framework/remote/src/main/java/org/keycloak/testframework/remote/timeoffset/TimeOffsetSupplier.java",
-    "test-framework/test-containers/src/main/java/org/keycloak/testframework/database/AbstractContainerDatabaseSupplier.java",
-    "test-framework/test-containers/src/main/java/org/keycloak/testframework/database/AbstractContainerTestDatabase.java",
-    "test-framework/test-containers/src/main/java/org/keycloak/testframework/logging/JBossContainerLogConsumer.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/UITestFrameworkExtension.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 268,
-  "done": 5715
+  "done": 5730
 }
