@@ -1813,3 +1813,18 @@
 2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/singleobject/jpa/SingleUseObjectSerialization.java wave62a org/revoked/single-use/server-config JPA
 2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/storage/configuration/jpa/JpaServerConfigStorageProvider.java wave62a org/revoked/single-use/server-config JPA
 2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/storage/configuration/jpa/JpaServerConfigStorageProviderFactory.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/configuration/jpa/entity/ServerConfigEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/JpaHashUtils.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/JpaUserFederatedStorageProvider.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/JpaUserFederatedStorageProviderFactory.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/KeyUtils.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/BrokerLinkEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUser.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserAttributeEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserConsentClientScopeEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserConsentEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserCredentialEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserGroupMembershipEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserIssuedVerifiableCredentialEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserRequiredActionEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserRoleMappingEntity.java wave62b federated user storage JPA entities

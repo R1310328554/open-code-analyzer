@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:29:03Z",
-  "files": [
-    "model/jpa/src/main/java/org/keycloak/storage/configuration/jpa/entity/ServerConfigEntity.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/JpaHashUtils.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/JpaUserFederatedStorageProvider.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/JpaUserFederatedStorageProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/KeyUtils.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/BrokerLinkEntity.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUser.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserAttributeEntity.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserConsentClientScopeEntity.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserConsentEntity.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserCredentialEntity.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserGroupMembershipEntity.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserIssuedVerifiableCredentialEntity.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserRequiredActionEntity.java",
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserRoleMappingEntity.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4138,
-  "done": 1845
+  "done": 1860
 }
