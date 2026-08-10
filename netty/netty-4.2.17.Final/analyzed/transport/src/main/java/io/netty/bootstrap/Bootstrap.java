@@ -48,10 +48,14 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Bootstrap.class);
 
+    /** Bootstrap 配置视图 */
     private final BootstrapConfig config = new BootstrapConfig(this);
 
+    /** 外部地址解析器包装；{@code null} 时使用默认 */
     private ExternalAddressResolver externalResolver;
+    /** 为 {@code true} 时跳过主机名解析 */
     private volatile boolean disableResolver;
+    /** {@link #connect()} 的目标远程地址 */
     private volatile SocketAddress remoteAddress;
 
     public Bootstrap() { }
@@ -64,9 +68,9 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
     }
 
     /**
-     * Sets the {@link NameResolver} which will resolve the address of the unresolved named address.
+     * 设置地址解析器组，用于解析未解析的主机名 which will resolve the address of the unresolved named address.
      *
-     * @param resolver the {@link NameResolver} for this {@code Bootstrap}; may be {@code null}, in which case a default
+     * @param resolver 本 Bootstrap 使用的解析器组；{@code null} 时使用默认 for this {@code Bootstrap}; may be {@code null}, in which case a default
      *                 resolver will be used
      *
      * @see io.netty.resolver.DefaultAddressResolverGroup
@@ -78,7 +82,7 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
     }
 
     /**
-     * Disables address name resolution. Name resolution may be re-enabled with
+     * 禁用地址名称解析；可通过 {@link Bootstrap#resolver(AddressResolverGroup)} 重新启用. Name resolution may be re-enabled with
      * {@link Bootstrap#resolver(AddressResolverGroup)}
      */
     public Bootstrap disableResolver() {
@@ -88,7 +92,7 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
     }
 
     /**
-     * The {@link SocketAddress} to connect to once the {@link #connect()} method
+     * 调用 {@link #connect()} 时要连接的远程 {@link SocketAddress} the {@link #connect()} method
      * is called.
      */
     public Bootstrap remoteAddress(SocketAddress remoteAddress) {
@@ -113,7 +117,7 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
     }
 
     /**
-     * Connect a {@link Channel} to the remote peer.
+     * 连接 {@link Channel} 到远程对端
      */
     public ChannelFuture connect() {
         validate();
@@ -126,21 +130,21 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
     }
 
     /**
-     * Connect a {@link Channel} to the remote peer.
+     * 连接 {@link Channel} 到远程对端
      */
     public ChannelFuture connect(String inetHost, int inetPort) {
         return connect(InetSocketAddress.createUnresolved(inetHost, inetPort));
     }
 
     /**
-     * Connect a {@link Channel} to the remote peer.
+     * 连接 {@link Channel} 到远程对端
      */
     public ChannelFuture connect(InetAddress inetHost, int inetPort) {
         return connect(new InetSocketAddress(inetHost, inetPort));
     }
 
     /**
-     * Connect a {@link Channel} to the remote peer.
+     * 连接 {@link Channel} 到远程对端
      */
     public ChannelFuture connect(SocketAddress remoteAddress) {
         ObjectUtil.checkNotNull(remoteAddress, "remoteAddress");
@@ -149,7 +153,7 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
     }
 
     /**
-     * Connect a {@link Channel} to the remote peer.
+     * 连接 {@link Channel} 到远程对端
      */
     public ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress) {
         ObjectUtil.checkNotNull(remoteAddress, "remoteAddress");
@@ -170,18 +174,18 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
             }
             return doResolveAndConnect0(channel, remoteAddress, localAddress, channel.newPromise());
         } else {
-            // Registration future is almost always fulfilled already, but just in case it's not.
+            // 注册 Future 通常已完成，此处处理尚未完成的情况, but just in case it's not.
             final PendingRegistrationPromise promise = new PendingRegistrationPromise(channel);
             regFuture.addListener(future -> {
                 // Directly obtain the cause and do a null check so we only need one volatile read in case of a
                 // failure.
                 Throwable cause = future.cause();
                 if (cause != null) {
-                    // Registration on the EventLoop failed so fail the ChannelPromise directly to not cause an
+                    // EventLoop 注册失败：直接失败 Promise，避免后续访问 EventLoop 抛 IllegalStateException so fail the ChannelPromise directly to not cause an
                     // IllegalStateException once we try to access the EventLoop of the Channel.
                     promise.setFailure(cause);
                 } else {
-                    // Registration was successful, so set the correct executor to use.
+                    // 注册成功，切换 Promise 到正确的 EventExecutor（见 netty#2586） to use.
                     // See https://github.com/netty/netty/issues/2586
                     promise.registered();
                     doResolveAndConnect0(channel, remoteAddress, localAddress, promise);
@@ -209,7 +213,7 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
             }
 
             if (!resolver.isSupported(remoteAddress) || resolver.isResolved(remoteAddress)) {
-                // Resolver has no idea about what to do with the specified remote address or it's resolved already.
+                // 解析器不支持该地址类型，或地址已解析，直接连接 with the specified remote address or it's resolved already.
                 doConnect(remoteAddress, localAddress, promise);
                 return promise;
             }
@@ -220,17 +224,17 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
                 final Throwable resolveFailureCause = resolveFuture.cause();
 
                 if (resolveFailureCause != null) {
-                    // Failed to resolve immediately
+                    // 同步解析失败
                     channel.close();
                     promise.setFailure(resolveFailureCause);
                 } else {
-                    // Succeeded to resolve immediately; cached? (or did a blocking lookup)
+                    // 同步解析成功（可能来自缓存或阻塞查询）; cached? (or did a blocking lookup)
                     doConnect(resolveFuture.getNow(), localAddress, promise);
                 }
                 return promise;
             }
 
-            // Wait until the name resolution is finished.
+            // 异步等待名称解析完成
             resolveFuture.addListener((FutureListener<SocketAddress>) future -> {
                 if (future.cause() != null) {
                     channel.close();
@@ -248,7 +252,7 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
     private static void doConnect(
             final SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise connectPromise) {
 
-        // This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up
+        // 在 channelRegistered() 之前调度，使用户 handler 可在 channelRegistered 中配置 Pipeline is triggered.  Give user handlers a chance to set up
         // the pipeline in its channelRegistered() implementation.
         final Channel channel = connectPromise.channel();
         channel.eventLoop().execute(new Runnable() {
@@ -300,9 +304,8 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
     }
 
     /**
-     * Returns a deep clone of this bootstrap which has the identical configuration except that it uses
-     * the given {@link EventLoopGroup}. This method is useful when making multiple {@link Channel}s with similar
-     * settings.
+     * 返回配置相同的深拷贝 Bootstrap，但使用指定的 {@link EventLoopGroup}；
+     * 适用于批量创建配置相似的 {@link Channel}。
      */
     public Bootstrap clone(EventLoopGroup group) {
         Bootstrap bs = new Bootstrap(this);
@@ -326,7 +329,7 @@ public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
         return ExternalAddressResolver.getOrDefault(externalResolver);
     }
 
-    /* Holder to avoid NoClassDefFoundError in case netty-resolver dependency is excluded
+    /* 持有类避免排除 netty-resolver 依赖时出现 NoClassDefFoundError in case netty-resolver dependency is excluded
        (e.g. some address families do not need name resolution) */
     static final class ExternalAddressResolver {
         final AddressResolverGroup<SocketAddress> resolverGroup;

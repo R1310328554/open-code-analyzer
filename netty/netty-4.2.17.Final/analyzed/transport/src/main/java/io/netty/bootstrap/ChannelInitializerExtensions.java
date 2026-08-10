@@ -28,19 +28,20 @@ import java.util.List;
 import java.util.ServiceLoader;
 
 /**
- * The configurable facade that decides what {@link ChannelInitializerExtension}s to load and where to find them.
+ * 可配置的 {@link ChannelInitializerExtension} 加载门面：
+ * 根据系统属性决定使用空实现、仅日志或 ServiceLoader 加载并缓存扩展。
  */
 abstract class ChannelInitializerExtensions {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ChannelInitializerExtensions.class);
+    /** 单例实现，双重检查锁定初始化 */
     private static volatile ChannelInitializerExtensions implementation;
 
     private ChannelInitializerExtensions() {
     }
 
     /**
-     * Get the configuration extensions, which is a no-op implementation by default,
-     * or a service-loading implementation if the {@code io.netty.bootstrap.extensions} system property is
-     * {@code serviceload}.
+     * 获取扩展加载器。默认无操作；当 {@code io.netty.bootstrap.extensions} 为
+     * {@code serviceload} 或 {@code log} 时使用 ServiceLoader 实现。
      */
     static ChannelInitializerExtensions getExtensions() {
         ChannelInitializerExtensions impl = implementation;
@@ -66,10 +67,12 @@ abstract class ChannelInitializerExtensions {
     }
 
     /**
-     * Get the list of available extensions. The list is unmodifiable.
+     * @param cl 用于 ServiceLoader 的类加载器
+     * @return 不可变的扩展集合
      */
     abstract Collection<ChannelInitializerExtension> extensions(ClassLoader cl);
 
+    /** 未启用扩展时的空实现 */
     private static final class EmptyExtensions extends ChannelInitializerExtensions {
         @Override
         Collection<ChannelInitializerExtension> extensions(ClassLoader cl) {
@@ -77,7 +80,9 @@ abstract class ChannelInitializerExtensions {
         }
     }
 
+    /** 通过 ServiceLoader 发现并（可选）缓存扩展 */
     private static final class ServiceLoadingExtensions extends ChannelInitializerExtensions {
+        /** {@code true} 时缓存加载结果供 Bootstrap 使用；{@code log} 模式为 {@code false} */
         private final boolean loadAndCache;
 
         private WeakReference<ClassLoader> classLoader;
@@ -99,6 +104,7 @@ abstract class ChannelInitializerExtensions {
             return extensions;
         }
 
+        /** ServiceLoader 扫描并按 {@link ChannelInitializerExtension#priority()} 排序 */
         private static Collection<ChannelInitializerExtension> serviceLoadExtensions(boolean load, ClassLoader cl) {
             List<ChannelInitializerExtension> extensions = new ArrayList<ChannelInitializerExtension>();
 

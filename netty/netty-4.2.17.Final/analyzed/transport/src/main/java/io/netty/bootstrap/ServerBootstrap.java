@@ -45,12 +45,16 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ServerBootstrap.class);
 
-    // The order in which child ChannelOptions are applied is important they may depend on each other for validation
+    // 子 Channel 选项的应用顺序可能影响校验，须保持 LinkedHashMap 顺序 they may depend on each other for validation
     // purposes.
+    /** 接受连接后应用于子 Channel 的选项（有序） */
     private final Map<ChannelOption<?>, Object> childOptions = new LinkedHashMap<ChannelOption<?>, Object>();
+    /** 子 Channel 初始属性 */
     private final Map<AttributeKey<?>, Object> childAttrs = new ConcurrentHashMap<AttributeKey<?>, Object>();
     private final ServerBootstrapConfig config = new ServerBootstrapConfig(this);
+    /** 处理已接受子 Channel I/O 的 EventLoopGroup */
     private volatile EventLoopGroup childGroup;
+    /** 每个子 Channel Pipeline 末尾的业务 Handler */
     private volatile ChannelHandler childHandler;
 
     public ServerBootstrap() { }
@@ -66,7 +70,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
-     * Specify the {@link EventLoopGroup} which is used for the parent (acceptor) and the child (client).
+     * 指定父（acceptor）与子（client）Channel 共用的 {@link EventLoopGroup} (acceptor) and the child (client).
      */
     @Override
     public ServerBootstrap group(EventLoopGroup group) {
@@ -74,7 +78,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
-     * Set the {@link EventLoopGroup} for the parent (acceptor) and the child (client). These
+     * 分别设置父 acceptor 与子 client 的 {@link EventLoopGroup} (acceptor) and the child (client). These
      * {@link EventLoopGroup}'s are used to handle all the events and IO for {@link ServerChannel} and
      * {@link Channel}'s.
      * <p>
@@ -91,7 +95,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
-     * Allow to specify a {@link ChannelOption} which is used for the {@link Channel} instances once they get created
+     * 为 accept 后创建的子 {@link Channel} 设置 {@link ChannelOption}；{@code null} 移除已有选项
      * (after the acceptor accepted the {@link Channel}). Use a value of {@code null} to remove a previous set
      * {@link ChannelOption}.
      */
@@ -108,7 +112,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
-     * Set the specific {@link AttributeKey} with the given value on every child {@link Channel}. If the value is
+     * 为每个子 {@link Channel} 设置 {@link AttributeKey}；{@code null} 移除该键 {@link Channel}. If the value is
      * {@code null} the {@link AttributeKey} is removed
      */
     public <T> ServerBootstrap childAttr(AttributeKey<T> childKey, T value) {
@@ -122,7 +126,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
-     * Set the {@link ChannelHandler} which is used to serve the request for the {@link Channel}'s.
+     * 设置子 {@link Channel} 使用的 {@link ChannelHandler}。
      */
     public ServerBootstrap childHandler(ChannelHandler childHandler) {
         this.childHandler = ObjectUtil.checkNotNull(childHandler, "childHandler");
@@ -205,7 +209,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
             this.childAttrs = childAttrs;
             this.extensions = extensions;
 
-            // Task which is scheduled to re-enable auto-read.
+            // 异常后延迟 1 秒重新启用 autoRead 的任务（须在提交前创建，见 netty#1328）
             // It's important to create this Runnable before we try to submit it as otherwise the URLClassLoader may
             // not be able to load the class because of the file limit it already reached.
             //
@@ -263,12 +267,12 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             final ChannelConfig config = ctx.channel().config();
             if (config.isAutoRead()) {
-                // stop accept new connections for 1 second to allow the channel to recover
+                // 暂停 accept 1 秒以便 Channel 恢复（见 netty#1328） to allow the channel to recover
                 // See https://github.com/netty/netty/issues/1328
                 config.setAutoRead(false);
                 ctx.channel().eventLoop().schedule(enableAutoReadTask, 1, TimeUnit.SECONDS);
             }
-            // still let the exceptionCaught event flow through the pipeline to give the user
+            // 仍向上传播 exceptionCaught，供用户处理 the pipeline to give the user
             // a chance to do something with it
             ctx.fireExceptionCaught(cause);
         }
@@ -281,7 +285,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
-     * Return the configured {@link EventLoopGroup} which will be used for the child channels or {@code null}
+     * 返回子 Channel 使用的 {@link EventLoopGroup} channels or {@code null}
      * if non is configured yet.
      *
      * @deprecated Use {@link #config()} instead.

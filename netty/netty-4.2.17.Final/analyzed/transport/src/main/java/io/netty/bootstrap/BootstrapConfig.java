@@ -21,7 +21,7 @@ import io.netty.resolver.AddressResolverGroup;
 import java.net.SocketAddress;
 
 /**
- * Exposes the configuration of a {@link Bootstrap}.
+ * 暴露 {@link Bootstrap} 客户端引导配置的只读视图。
  */
 public final class BootstrapConfig extends AbstractBootstrapConfig<Bootstrap, Channel> {
 
@@ -30,15 +30,16 @@ public final class BootstrapConfig extends AbstractBootstrapConfig<Bootstrap, Ch
     }
 
     /**
-     * Returns the configured remote address or {@code null} if non is configured yet.
+     * @return 已配置的远程地址，尚未配置时返回 {@code null}
      */
     public SocketAddress remoteAddress() {
         return bootstrap.remoteAddress();
     }
 
     /**
-     * Returns the configured {@link AddressResolverGroup}, {@code null} if resolver was disabled
-     * with {@link Bootstrap#disableResolver()}, or the default if not configured yet.
+     * @return 已配置的 {@link AddressResolverGroup}；
+     *         若已通过 {@link Bootstrap#disableResolver()} 禁用则为 {@code null}；
+     *         尚未显式配置时返回默认解析器组
      */
     public AddressResolverGroup<?> resolver() {
         return bootstrap.resolver();

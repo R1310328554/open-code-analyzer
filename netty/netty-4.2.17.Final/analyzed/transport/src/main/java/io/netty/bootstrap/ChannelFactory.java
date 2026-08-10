@@ -18,12 +18,12 @@ package io.netty.bootstrap;
 import io.netty.channel.Channel;
 
 /**
- * @deprecated Use {@link io.netty.channel.ChannelFactory} instead.
+ * @deprecated 请改用 {@link io.netty.channel.ChannelFactory}。
  */
 @Deprecated
 public interface ChannelFactory<T extends Channel> {
     /**
-     * Creates a new channel.
+     * 创建新的 {@link Channel} 实例。
      */
     T newChannel();
 }

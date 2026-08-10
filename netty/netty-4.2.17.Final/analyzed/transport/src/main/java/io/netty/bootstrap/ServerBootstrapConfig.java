@@ -25,7 +25,7 @@ import io.netty.util.internal.StringUtil;
 import java.util.Map;
 
 /**
- * Exposes the configuration of a {@link ServerBootstrapConfig}.
+ * 暴露 {@link ServerBootstrap} 服务端引导配置的只读视图（含子 Channel 相关项）。
  */
 public final class ServerBootstrapConfig extends AbstractBootstrapConfig<ServerBootstrap, ServerChannel> {
 
@@ -34,8 +34,7 @@ public final class ServerBootstrapConfig extends AbstractBootstrapConfig<ServerB
     }
 
     /**
-     * Returns the configured {@link EventLoopGroup} which will be used for the child channels or {@code null}
-     * if non is configured yet.
+     * @return 子 Channel 使用的 {@link EventLoopGroup}，尚未配置时返回 {@code null}
      */
     @SuppressWarnings("deprecation")
     public EventLoopGroup childGroup() {
@@ -43,22 +42,21 @@ public final class ServerBootstrapConfig extends AbstractBootstrapConfig<ServerB
     }
 
     /**
-     * Returns the configured {@link ChannelHandler} be used for the child channels or {@code null}
-     * if non is configured yet.
+     * @return 子 Channel 的 {@link ChannelHandler}，尚未配置时返回 {@code null}
      */
     public ChannelHandler childHandler() {
         return bootstrap.childHandler();
     }
 
     /**
-     * Returns a copy of the configured options which will be used for the child channels.
+     * @return 子 Channel 选项映射的副本
      */
     public Map<ChannelOption<?>, Object> childOptions() {
         return bootstrap.childOptions();
     }
 
     /**
-     * Returns a copy of the configured attributes which will be used for the child channels.
+     * @return 子 Channel 属性映射的副本
      */
     public Map<AttributeKey<?>, Object> childAttrs() {
         return bootstrap.childAttrs();

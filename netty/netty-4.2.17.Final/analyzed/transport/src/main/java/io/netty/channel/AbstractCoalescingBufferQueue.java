@@ -31,16 +31,19 @@ import static io.netty.util.internal.PlatformDependent.throwException;
 @UnstableApi
 public abstract class AbstractCoalescingBufferQueue {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractCoalescingBufferQueue.class);
+    /** 交替存储 ByteBuf 与其后的 ChannelFutureListener/Promise 通知器 */
     private final ArrayDeque<Object> bufAndListenerPairs;
+    /** 跟踪待写字节数以反映 {@link Channel#isWritable()}；channel 为 null 时不更新 */
     private final PendingBytesTracker tracker;
+    /** 队列中所有 ByteBuf 的可读字节总数 */
     private int readableBytes;
 
     /**
-     * Create a new instance.
+     * 创建实例
      *
-     * @param channel the {@link Channel} which will have the {@link Channel#isWritable()} reflect the amount of queued
+     * @param channel 关联的 {@link Channel}，用于更新可写性；无则传 {@code null} which will have the {@link Channel#isWritable()} reflect the amount of queued
      *                buffers or {@code null} if there is no writability state updated.
-     * @param initSize the initial size of the underlying queue.
+     * @param initSize 底层队列初始容量 of the underlying queue.
      */
     protected AbstractCoalescingBufferQueue(Channel channel, int initSize) {
         bufAndListenerPairs = new ArrayDeque<Object>(initSize);
@@ -48,7 +51,7 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Add a buffer to the front of the queue and associate a promise with it that should be completed when
+     * 将缓冲区插入队首并关联 Promise and associate a promise with it that should be completed when
      * all the buffer's bytes have been consumed from the queue and written.
      * @param buf to add to the head of the queue
      * @param promise to complete when all the bytes have been consumed and written, can be void.
@@ -58,7 +61,7 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     private void addFirst(ByteBuf buf, ChannelFutureListener listener) {
-        // Touch the message to make it easier to debug buffer leaks.
+        // touch 便于排查缓冲区泄漏
         buf.touch();
 
         if (listener != null) {
@@ -69,35 +72,35 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Add a buffer to the end of the queue.
+     * 将缓冲区追加到队尾
      */
     public final void add(ByteBuf buf) {
         add(buf, (ChannelFutureListener) null);
     }
 
     /**
-     * Add a buffer to the end of the queue and associate a promise with it that should be completed when
+     * 将缓冲区追加到队尾并关联 Promise with it that should be completed when
      * all the buffer's bytes have been consumed from the queue and written.
      * @param buf to add to the tail of the queue
      * @param promise to complete when all the bytes have been consumed and written, can be void.
      */
     public final void add(ByteBuf buf, ChannelPromise promise) {
-        // buffers are added before promises so that we naturally 'consume' the entire buffer during removal
+        // 先入队 buffer 再入队 promise，出队时先消费完 buffer 再完成 promise 'consume' the entire buffer during removal
         // before we complete it's promise.
         add(buf, toChannelFutureListener(promise));
     }
 
     /**
-     * Add a buffer to the end of the queue and associate a listener with it that should be completed when
+     * 将缓冲区追加到队尾并关联 Listener with it that should be completed when
      * all the buffers  bytes have been consumed from the queue and written.
      * @param buf to add to the tail of the queue
      * @param listener to notify when all the bytes have been consumed and written, can be {@code null}.
      */
     public final void add(ByteBuf buf, ChannelFutureListener listener) {
-        // Touch the message to make it easier to debug buffer leaks.
+        // touch 便于排查缓冲区泄漏
         buf.touch();
 
-        // buffers are added before promises so that we naturally 'consume' the entire buffer during removal
+        // 先入队 buffer 再入队 promise，出队时先消费完 buffer 再完成 promise 'consume' the entire buffer during removal
         // before we complete it's promise.
         bufAndListenerPairs.add(buf);
         if (listener != null) {
@@ -107,7 +110,7 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Remove the first {@link ByteBuf} from the queue.
+     * 移除并返回队首 {@link ByteBuf}
      * @param aggregatePromise used to aggregate the promises and listeners for the returned buffer.
      * @return the first {@link ByteBuf} from the queue.
      */
@@ -131,7 +134,7 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Remove a {@link ByteBuf} from the queue with the specified number of bytes. Any added buffer who's bytes are
+     * 按指定字节数从队列移除并聚合 {@link ByteBuf}；完全消费的 buffer 在 aggregatePromise 完成时通知 Any added buffer who's bytes are
      * fully consumed during removal will have it's promise completed when the passed aggregate {@link ChannelPromise}
      * completes.
      *
@@ -145,7 +148,7 @@ public abstract class AbstractCoalescingBufferQueue {
         checkPositiveOrZero(bytes, "bytes");
         checkNotNull(aggregatePromise, "aggregatePromise");
 
-        // Use isEmpty rather than readableBytes==0 as we may have a promise associated with an empty buffer.
+        // 空队列判定用 isEmpty，因可能存在与空 buffer 绑定的 promise as we may have a promise associated with an empty buffer.
         if (bufAndListenerPairs.isEmpty()) {
             reconcileReadableBytes();
             return removeEmptyValue();
@@ -162,13 +165,13 @@ public abstract class AbstractCoalescingBufferQueue {
                 if (entry == null) {
                     break;
                 }
-                // fast-path vs abstract type
+                // ByteBuf 快速路径
                 if (entry instanceof ByteBuf) {
                     entryBuffer = (ByteBuf) entry;
                     int bufferBytes = entryBuffer.readableBytes();
 
                     if (bufferBytes > bytes) {
-                        // Add the buffer back to the queue as we can't consume all of it.
+                        // 当前 buffer 未完全消费，插回队首
                         bufAndListenerPairs.addFirst(entryBuffer);
                         if (bytes > 0) {
                             // Take a slice of what we can consume and retain it.
@@ -198,7 +201,7 @@ public abstract class AbstractCoalescingBufferQueue {
                 }
             }
         } catch (Throwable cause) {
-            // Always decrement to keep things consistent. We decrement directly here and not in a finally-block
+            // 异常路径仍递减 readableBytes 以保持状态一致 We decrement directly here and not in a finally-block
             // to ensure that the state is consistent even if it would be accessed via a listener that is
             // attached to the promise that we fail below.
             decrementReadableBytes(originalBytes - bytes);
@@ -221,28 +224,28 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * The number of readable bytes.
+     * 队列中可读字节总数
      */
     public final int readableBytes() {
         return readableBytes;
     }
 
     /**
-     * Are there pending buffers in the queue.
+     * 队列是否为空（无待写 buffer）
      */
     public final boolean isEmpty() {
         return bufAndListenerPairs.isEmpty();
     }
 
     /**
-     *  Release all buffers in the queue and complete all listeners and promises.
+     *  释放队列中全部 buffer 并以失败完成所有 listener/promise
      */
     public final void releaseAndFailAll(ChannelOutboundInvoker invoker, Throwable cause) {
         releaseAndCompleteAll(invoker.newFailedFuture(cause));
     }
 
     /**
-     * Copy all pending entries in this queue into the destination queue.
+     * 将本队列全部待处理条目复制到目标队列
      * @param dest to copy pending buffers to.
      */
     public final void copyTo(AbstractCoalescingBufferQueue dest) {
@@ -251,7 +254,7 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Writes all remaining elements in this queue.
+     * 将队列剩余元素全部写出到 {@link ChannelHandlerContext}
      * @param ctx The context to write all elements to.
      */
     public final void writeAndRemoveAll(ChannelHandlerContext ctx) {
@@ -303,12 +306,12 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Calculate the result of {@code current + next}.
+     * 子类实现：合并 {@code cumulation} 与 {@code next}
      */
     protected abstract ByteBuf compose(ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf next);
 
     /**
-     * Compose {@code cumulation} and {@code next} into a new {@link CompositeByteBuf}.
+     * 将两段 buffer 合并为 {@link CompositeByteBuf}
      */
     protected final ByteBuf composeIntoComposite(ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf next) {
         // Create a composite buffer to accumulate this pair and potentially all the buffers
@@ -326,7 +329,7 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Compose {@code cumulation} and {@code next} into a new {@link ByteBufAllocator#ioBuffer()}.
+     * 复制合并为新的 ioBuffer 并释放原 buffer
      * @param alloc The allocator to use to allocate the new buffer.
      * @param cumulation The current cumulation.
      * @param next The next buffer.
@@ -347,7 +350,7 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Calculate the first {@link ByteBuf} which will be used in subsequent calls to
+     * 计算后续 {@link #compose} 使用的首个累积 buffer to
      * {@link #compose(ByteBufAllocator, ByteBuf, ByteBuf)}.
      * @param bufferSize the optimal size of the buffer needed for cumulation
      * @return the first buffer
@@ -357,7 +360,7 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Calculate the first {@link ByteBuf} which will be used in subsequent calls to
+     * 计算后续 {@link #compose} 使用的首个累积 buffer to
      * {@link #compose(ByteBufAllocator, ByteBuf, ByteBuf)}.
      * This method is deprecated and will be removed in the future. Implementing classes should
      * override {@link #composeFirst(ByteBufAllocator, ByteBuf, int)} instead.
@@ -369,13 +372,13 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * The value to return when {@link #remove(ByteBufAllocator, int, ChannelPromise)} is called but the queue is empty.
+     * 队列为空时 {@link #remove} 的返回值，由子类定义
      * @return the {@link ByteBuf} which represents an empty queue.
      */
     protected abstract ByteBuf removeEmptyValue();
 
     /**
-     * Get the number of elements in this queue added via one of the {@link #add(ByteBuf)} methods.
+     * 通过 {@link #add} 入队的元素个数（含 listener 对）
      * @return the number of elements in this queue.
      */
     protected final int size() {
@@ -431,7 +434,7 @@ public abstract class AbstractCoalescingBufferQueue {
     }
 
     /**
-     * Resets readableBytes to 0 when the queue is empty. They can only diverge if a queued buffer was released
+     * 队列为空但 readableBytes 非零时重置计数（表示 buffer 被提前释放/消费的 bug，见 netty#16946） They can only diverge if a queued buffer was released
      * or consumed while still referenced by the queue (similar to a reference-counting bug) after it was added,
      * which would otherwise make remove(...) return empty buffers forever. Logged at error level because it
      * always indicates a bug that needs to be found.

@@ -19,103 +19,72 @@ import io.netty.channel.Channel;
 import io.netty.channel.ServerChannel;
 
 /**
- * A channel initializer extension make it possible to enforce rules and apply modifications across multiple,
- * disconnected uses of Netty within the same JVM process.
+ * Channel 初始化扩展点：可在同一 JVM 内跨多个互不关联的 Netty 使用场景统一注入规则或修改 Pipeline。
  * <p>
- * For instance, application-level firewall rules can be injected into all uses of Netty within an application,
- * without making changes to such uses that are otherwise outside the purview of the application code,
- * such as 3rd-party libraries.
+ * 例如应用级防火墙规则可注入到所有 Netty 管道（含第三方库），而无需修改库本身代码。
  * <p>
- * Channel initializer extensions are <em>not</em> enabled by default, because of their power to influence Netty
- * pipelines across libraries, frameworks, and use-cases.
- * Extensions must be explicitly enabled by setting the {@value #EXTENSIONS_SYSTEM_PROPERTY} to {@code serviceload}.
+ * 扩展默认<strong>未启用</strong>，因其能影响跨库、跨框架的全局 Pipeline。
+ * 须显式将 {@value #EXTENSIONS_SYSTEM_PROPERTY} 设为 {@code serviceload} 才会加载。
  * <p>
- * All channel initializer extensions that are available on the classpath will be
- * {@linkplain java.util.ServiceLoader#load(Class) service-loaded} and used by all {@link AbstractBootstrap} subclasses.
+ * classpath 上所有可用扩展将通过 {@linkplain java.util.ServiceLoader#load(Class) ServiceLoader}
+ * 加载，并由各 {@link AbstractBootstrap} 子类在初始化后回调。
  * <p>
- * Note that this feature will not work for Netty uses that are shaded <em>and relocated</em> into other libraries.
- * The classes in a relocated Netty library are technically distinct and incompatible types. This means the
- * service-loader in non-relocated Netty will not see types from a relocated Netty, and vice versa.
+ * 若 Netty 被 shade 并 relocate 到其他库，本机制无效：relocate 后的类型与原始 Netty 类型不兼容。
  */
 public abstract class ChannelInitializerExtension {
     /**
-     * The name of the system property that control initializer extensions.
+     * 控制初始化扩展行为的系统属性名。
      * <p>
-     * These extensions can potentially be a security liability, so they are disabled by default.
+     * 扩展存在潜在安全风险，默认关闭。
      * <p>
-     * To enable the extensions, application operators can explicitly opt in by setting this system property to the
-     * value {@code serviceload}. This will enable all the extensions that are available through the service loader
-     * mechanism.
-     * <p>
-     * To load and log (at INFO level) all available extensions without actually running them, set this system property
-     * to the value {@code log}.
+     * 设为 {@code serviceload} 时启用 ServiceLoader 发现的所有扩展；
+     * 设为 {@code log} 时仅加载并以 INFO 级别记录，不实际执行。
      */
     public static final String EXTENSIONS_SYSTEM_PROPERTY = "io.netty.bootstrap.extensions";
 
     /**
-     * Get the "priority" of this extension. If multiple extensions are avilable, then they will be called in their
-     * priority order, from lowest to highest.
+     * 返回扩展优先级。多个扩展可用时按优先级从低到高依次调用。
      * <p>
-     * Implementers are encouraged to pick a number between {@code -100.0} and {@code 100.0}, where extensions that have
-     * no particular opinion on their priority are encouraged to return {@code 0.0}.
+     * 建议取值 {@code -100.0} 至 {@code 100.0}，无特殊偏好时返回 {@code 0.0}。
      * <p>
-     * Extensions with lower priority will get called first, while extensions with greater priority may be able to
-     * observe the effects of extensions with lesser priority.
+     * 低优先级先执行，高优先级可观察到先执行扩展的效果。
+     * 同优先级时顺序不确定，实现应容忍前后均有其他扩展。
      * <p>
-     * Note that if multiple extensions have the same priority, then their relative order will be unpredictable.
-     * As such, implementations should always take into consideration that other extensions might be called before
-     * or after them.
-     * <p>
-     * Override this method to specify your own priority.
-     * The default implementation just returns {@code 0}.
+     * 默认返回 {@code 0}。
      *
-     * @return The priority.
+     * @return 优先级数值
      */
     public double priority() {
         return 0;
     }
 
     /**
-     * Called by {@link Bootstrap} after the initialization of the given client channel.
+     * {@link Bootstrap} 完成客户端 Channel 初始化后调用。
      * <p>
-     * The method is allowed to modify the handlers in the pipeline, the channel attributes, or the channel options.
-     * The method must refrain from doing any I/O, or from closing the channel.
-     * <p>
-     * Override this method to add your own callback logic.
-     * The default implementation does nothing.
+     * 允许修改 Pipeline、Channel 属性或选项；禁止 I/O 或关闭 Channel。
      *
-     * @param channel The channel that was initialized.
+     * @param channel 已初始化的 Channel
      */
     public void postInitializeClientChannel(Channel channel) {
     }
 
     /**
-     * Called by {@link ServerBootstrap} after the initialization of the given server listener channel.
-     * The listener channel is responsible for invoking the {@code accept(2)} system call,
-     * and for producing child channels.
+     * {@link ServerBootstrap} 完成服务端监听 Channel 初始化后调用。
+     * 监听 Channel 负责 {@code accept(2)} 并产生子 Channel。
      * <p>
-     * The method is allowed to modify the handlers in the pipeline, the channel attributes, or the channel options.
-     * The method must refrain from doing any I/O, or from closing the channel.
-     * <p>
-     * Override this method to add your own callback logic.
-     * The default implementation does nothing.
+     * 允许修改 Pipeline、属性或选项；禁止 I/O 或关闭 Channel。
      *
-     * @param channel The channel that was initialized.
+     * @param channel 已初始化的监听 Channel
      */
     public void postInitializeServerListenerChannel(ServerChannel channel) {
     }
 
     /**
-     * Called by {@link ServerBootstrap} after the initialization of the given child channel.
-     * A child channel is a newly established connection from a client to the server.
+     * {@link ServerBootstrap} 完成子 Channel（新接受的客户端连接）初始化后调用。
      * <p>
-     * The method is allowed to modify the handlers in the pipeline, the channel attributes, or the channel options.
-     * The method must refrain from doing any I/O, or from closing the channel.
-     * <p>
-     * Override this method to add your own callback logic.
-     * The default implementation does nothing.
+     * 允许修改 Pipeline、属性或选项；禁止 I/O 或关闭 Channel。
      *
-     * @param channel The channel that was initialized.
+     * @param channel 已初始化的子 Channel
      */
     public void postInitializeServerChildChannel(Channel channel) {
     }

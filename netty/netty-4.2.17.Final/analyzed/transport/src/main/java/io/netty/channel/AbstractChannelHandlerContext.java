@@ -57,52 +57,58 @@ import static io.netty.channel.ChannelHandlerMask.MASK_USER_EVENT_TRIGGERED;
 import static io.netty.channel.ChannelHandlerMask.MASK_WRITE;
 import static io.netty.channel.ChannelHandlerMask.mask;
 
+/**
+ * {@link ChannelHandlerContext} 的抽象实现：维护 Pipeline 双向链表节点、
+ * handler 生命周期状态及入站/出站事件派发逻辑。
+ */
+/**
+ * {@link ChannelHandlerContext} 的抽象实现：维护 Pipeline 双向链表节点、
+ * handler 生命周期状态及入站/出站事件派发逻辑。
+ */
 abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, ResourceLeakHint {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractChannelHandlerContext.class);
+    /** Pipeline 中下一个 Context（靠近 tail） */
     volatile AbstractChannelHandlerContext next;
+    /** Pipeline 中上一个 Context（靠近 head） */
     volatile AbstractChannelHandlerContext prev;
 
     private static final AtomicIntegerFieldUpdater<AbstractChannelHandlerContext> HANDLER_STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractChannelHandlerContext.class, "handlerState");
 
-    /**
-     * {@link ChannelHandler#handlerAdded(ChannelHandlerContext)} is about to be called.
-     */
+    /** 即将调用 {@link ChannelHandler#handlerAdded} */
     private static final int ADD_PENDING = 1;
-    /**
-     * {@link ChannelHandler#handlerAdded(ChannelHandlerContext)} was called.
-     */
+    /** {@link ChannelHandler#handlerAdded} 已调用 */
     private static final int ADD_COMPLETE = 2;
-    /**
-     * {@link ChannelHandler#handlerRemoved(ChannelHandlerContext)} was called.
-     */
+    /** {@link ChannelHandler#handlerRemoved} 已调用 */
     private static final int REMOVE_COMPLETE = 3;
-    /**
-     * Neither {@link ChannelHandler#handlerAdded(ChannelHandlerContext)}
-     * nor {@link ChannelHandler#handlerRemoved(ChannelHandlerContext)} was called.
-     */
+    /** 初始状态：尚未调用 handlerAdded/handlerRemoved */
     private static final int INIT = 0;
 
+    /** 所属 Pipeline */
     private final DefaultChannelPipeline pipeline;
+    /** Context 在 Pipeline 中的名称 */
     private final String name;
+    /** 是否保证事件顺序（EventLoop 或 OrderedEventExecutor） */
     private final boolean ordered;
+    /** 基于 Handler 类型预计算的 inbound/outbound 能力掩码 */
     private final int executionMask;
 
-    // Will be set to null if no child executor should be used, otherwise it will be set to the
+    // 非 null 时使用独立子 Executor 执行 handler；否则使用 Channel EventLoop, otherwise it will be set to the
     // child executor.
     final EventExecutor childExecutor;
-    // Cache the concrete value for the executor() method. This method is in the hot-path,
+    // 缓存 executor() 结果，热路径优化；deregister 时清空 This method is in the hot-path,
     // and it's a profitable optimisation to avoid as many dependent-loads as possible.
     // It does not need to be volatile, because it's always the same value for a given context,
     // within the lifetime of its registration with an event loop, and deregistering will clear it.
     EventExecutor contextExecutor;
     private ChannelFuture succeededFuture;
 
-    // Lazily instantiated tasks used to trigger events to a handler with different executor.
+    // 延迟创建：在子 Executor 上触发事件的 Runnable 任务
     // There is no need to make this volatile as at worse it will just create a few more instances then needed.
     private Tasks invokeTasks;
 
+    /** handler 在 Pipeline 中的生命周期状态 */
     private volatile int handlerState = INIT;
 
     AbstractChannelHandlerContext(DefaultChannelPipeline pipeline, EventExecutor executor,
@@ -144,15 +150,14 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return name;
     }
 
+    /** 向 inbound 链传播 channelRegistered 事件 */
     @Override
     public ChannelHandlerContext fireChannelRegistered() {
         AbstractChannelHandlerContext next = findContextInbound(MASK_CHANNEL_REGISTERED);
         if (next.executor().inEventLoop()) {
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -174,15 +179,14 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /** 向 inbound 链传播 channelUnregistered 事件 */
     @Override
     public ChannelHandlerContext fireChannelUnregistered() {
         final AbstractChannelHandlerContext next = findContextInbound(MASK_CHANNEL_UNREGISTERED);
         if (next.executor().inEventLoop()) {
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -204,15 +208,14 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /** 向 inbound 链传播 channelActive 事件 */
     @Override
     public ChannelHandlerContext fireChannelActive() {
         AbstractChannelHandlerContext next = findContextInbound(MASK_CHANNEL_ACTIVE);
         if (next.executor().inEventLoop()) {
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -234,15 +237,14 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /** 向 inbound 链传播 channelInactive 事件 */
     @Override
     public ChannelHandlerContext fireChannelInactive() {
         AbstractChannelHandlerContext next = findContextInbound(MASK_CHANNEL_INACTIVE);
         if (next.executor().inEventLoop()) {
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -264,6 +266,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /** 向 inbound 链传播 exceptionCaught 事件 */
     @Override
     public ChannelHandlerContext fireExceptionCaught(final Throwable cause) {
         AbstractChannelHandlerContext next = findContextInbound(MASK_EXCEPTION_CAUGHT);
@@ -306,6 +309,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         }
     }
 
+    /** 向 inbound 链传播 userEventTriggered 事件 */
     @Override
     public ChannelHandlerContext fireUserEventTriggered(final Object event) {
         ObjectUtil.checkNotNull(event, "event");
@@ -313,9 +317,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         if (next.executor().inEventLoop()) {
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -337,6 +339,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /** 向 inbound 链传播 channelRead 事件 */
     @Override
     public ChannelHandlerContext fireChannelRead(final Object msg) {
         AbstractChannelHandlerContext next = findContextInbound(MASK_CHANNEL_READ);
@@ -344,9 +347,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             final Object m = pipeline.touch(msg, next);
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -368,15 +369,14 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /** 向 inbound 链传播 channelReadComplete 事件 */
     @Override
     public ChannelHandlerContext fireChannelReadComplete() {
         AbstractChannelHandlerContext next = findContextInbound(MASK_CHANNEL_READ_COMPLETE);
         if (next.executor().inEventLoop()) {
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -398,15 +398,14 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /** 向 inbound 链传播 channelWritabilityChanged 事件 */
     @Override
     public ChannelHandlerContext fireChannelWritabilityChanged() {
         AbstractChannelHandlerContext next = findContextInbound(MASK_CHANNEL_WRITABILITY_CHANGED);
         if (next.executor().inEventLoop()) {
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -459,7 +458,8 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     }
 
     /**
-     * If possible check if the given {@link ChannelPromise} is using the same {@link EventExecutor} as this
+     * 若 {@link ChannelPromise} 的 Executor 与本 Context 不一致，则创建同 Executor 的新 Promise 并级联结果，
+     * 保证 {@link ChannelOutboundHandler} 添加的 listener 在 handler 同线程执行 as this
      * {@link ChannelHandlerContext} and if not return a new {@link ChannelPromise} that runs on the same
      * {@link EventExecutor} as this {@link ChannelHandlerContext}. The result of the new {@link ChannelPromise} is
      * cascaded to the old {@link ChannelPromise}.
@@ -477,11 +477,12 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return promise;
     }
 
+    /** 从本 Context 向 head 发起 bind 出站操作 */
     @Override
     public ChannelFuture bind(final SocketAddress localAddress, ChannelPromise promise) {
         ObjectUtil.checkNotNull(localAddress, "localAddress");
         if (isNotValidPromise(promise, false)) {
-            // cancelled
+            // Promise 已取消，直接返回
             return promise;
         }
 
@@ -491,9 +492,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             if (next.invokeHandler()) {
                 promise = ensurePromiseUseCorrectExecutor(promise);
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -523,13 +522,14 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return connect(remoteAddress, null, promise);
     }
 
+    /** 从本 Context 向 head 发起 connect 出站操作 */
     @Override
     public ChannelFuture connect(
             final SocketAddress remoteAddress, final SocketAddress localAddress, ChannelPromise promise) {
         ObjectUtil.checkNotNull(remoteAddress, "remoteAddress");
 
         if (isNotValidPromise(promise, false)) {
-            // cancelled
+            // Promise 已取消，直接返回
             return promise;
         }
 
@@ -539,9 +539,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             if (next.invokeHandler()) {
                 promise = ensurePromiseUseCorrectExecutor(promise);
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -574,7 +572,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             return close(promise);
         }
         if (isNotValidPromise(promise, false)) {
-            // cancelled
+            // Promise 已取消，直接返回
             return promise;
         }
 
@@ -584,9 +582,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             if (next.invokeHandler()) {
                 promise = ensurePromiseUseCorrectExecutor(promise);
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -614,7 +610,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     @Override
     public ChannelFuture close(ChannelPromise promise) {
         if (isNotValidPromise(promise, false)) {
-            // cancelled
+            // Promise 已取消，直接返回
             return promise;
         }
 
@@ -624,9 +620,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             if (next.invokeHandler()) {
                 promise = ensurePromiseUseCorrectExecutor(promise);
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -655,7 +649,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     @Override
     public ChannelFuture deregister(ChannelPromise promise) {
         if (isNotValidPromise(promise, false)) {
-            // cancelled
+            // Promise 已取消，直接返回
             return promise;
         }
 
@@ -665,9 +659,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             if (next.invokeHandler()) {
                 promise = ensurePromiseUseCorrectExecutor(promise);
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -699,9 +691,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         if (next.executor().inEventLoop()) {
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -745,9 +735,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         if (executor.inEventLoop()) {
             if (next.invokeHandler()) {
                 try {
-                    // DON'T CHANGE
-                    // Duplex handlers implements both out/in interfaces causing a scalability issue
-                    // see https://bugs.openjdk.org/browse/JDK-8180450
+                    // 勿改：Duplex handler 同时实现 in/out 接口会触发 JDK 可扩展性问题（见 JDK-8180450）
                     final ChannelHandler handler = next.handler();
                     final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
                     if (handler == headContext) {
@@ -771,6 +759,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /** write 后立即 flush */
     @Override
     public ChannelFuture writeAndFlush(Object msg, ChannelPromise promise) {
         write(msg, true, promise);
@@ -845,7 +834,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         try {
             if (isNotValidPromise(promise, true)) {
                 ReferenceCountUtil.release(msg);
-                return false; // cancelled
+                return false; // Promise 已取消，直接返回
             }
         } catch (RuntimeException e) {
             ReferenceCountUtil.release(msg);
@@ -865,16 +854,19 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         PromiseNotificationUtil.tryFailure(promise, cause, promise instanceof VoidChannelPromise ? null : logger);
     }
 
+    /** 创建绑定本 Channel EventLoop 的新 Promise */
     @Override
     public ChannelPromise newPromise() {
         return new DefaultChannelPromise(channel(), executor());
     }
 
+    /** 创建支持进度通知的 Promise */
     @Override
     public ChannelProgressivePromise newProgressivePromise() {
         return new DefaultChannelProgressivePromise(channel(), executor());
     }
 
+    /** 返回已成功完成的 Future 单例 */
     @Override
     public ChannelFuture newSucceededFuture() {
         ChannelFuture succeededFuture = this.succeededFuture;
@@ -884,11 +876,13 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return succeededFuture;
     }
 
+    /** 返回已失败的 Future */
     @Override
     public ChannelFuture newFailedFuture(Throwable cause) {
         return new FailedChannelFuture(channel(), executor(), cause);
     }
 
+    /** 校验 Promise 是否可用于当前 Channel（非 done、非跨 Channel） */
     private boolean isNotValidPromise(ChannelPromise promise, boolean allowVoidPromise) {
         ObjectUtil.checkNotNull(promise, "promise");
 
@@ -924,6 +918,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return false;
     }
 
+    /** 向 tail 方向查找下一个具备指定 inbound 掩码的 Context */
     private AbstractChannelHandlerContext findContextInbound(int mask) {
         AbstractChannelHandlerContext ctx = this;
         EventExecutor currentExecutor = executor();
@@ -933,6 +928,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return ctx;
     }
 
+    /** 向 head 方向查找下一个具备指定 outbound 掩码的 Context */
     private AbstractChannelHandlerContext findContextOutbound(int mask) {
         AbstractChannelHandlerContext ctx = this;
         EventExecutor currentExecutor = executor();
@@ -953,6 +949,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
                 (ctx.executor() == currentExecutor && (ctx.executionMask & mask) == 0);
     }
 
+    /** 返回不可完成的 void Promise（忽略结果） */
     @Override
     public ChannelPromise voidPromise() {
         return channel().voidPromise();
@@ -1057,6 +1054,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return '\'' + name + "' will handle the message from this point.";
     }
 
+    /** 返回 {@code HandlerName#0xChannelId} 形式描述 */
     @Override
     public String toString() {
         return StringUtil.simpleClassName(ChannelHandlerContext.class) + '(' + name + ", " + channel() + ')';

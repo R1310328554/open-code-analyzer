@@ -25,6 +25,11 @@ import io.netty.channel.EventLoop;
 
 import java.net.SocketAddress;
 
+/**
+ * 占位 {@link AbstractChannel}：在 {@link AbstractBootstrap#initAndRegister()} 中
+ * 当 {@link ChannelFactory#newChannel()} 失败且尚未得到有效 Channel 时，用于承载失败 Promise。
+ * 所有 I/O 操作均抛出 {@link UnsupportedOperationException}。
+ */
 final class FailedChannel extends AbstractChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
@@ -98,6 +103,7 @@ final class FailedChannel extends AbstractChannel {
         return METADATA;
     }
 
+    /** 仅支持 {@link #connect} 并以失败完成 Promise。 */
     private final class FailedChannelUnsafe extends AbstractUnsafe {
         @Override
         public void connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
