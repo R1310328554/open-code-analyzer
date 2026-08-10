@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:07:51Z",
-  "files": [
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsCacheEntry.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsCnameCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsErrorCauseException.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsNameResolver.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsNameResolverBuilder.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsNameResolverChannelStrategy.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsNameResolverException.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsNameResolverTimeoutException.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsQueryContext.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsQueryContextManager.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsQueryIdSpace.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsQueryLifecycleObserver.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsQueryLifecycleObserverFactory.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsRecordResolveContext.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 428,
-  "done": 1485
+  "done": 1500
 }
