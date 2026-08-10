@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T07:33:51Z",
   "files": [
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/BaseScopeEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/PermissionTicketRemovedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/PermissionTicketUpdatedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/PolicyRemovedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/PolicyUpdatedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/ResourceRemovedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/ResourceServerRemovedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/ResourceServerUpdatedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/ResourceUpdatedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/ScopeRemovedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/events/ScopeUpdatedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/stream/InResourcePredicate.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/stream/InResourceServerPredicate.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/authorization/stream/InScopePredicate.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/AbstractCachedClientScope.java",
     "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/AbstractExtendableRevisioned.java",
     "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/AbstractRevisioned.java",
     "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedClient.java",
@@ -33,5 +18,5 @@
     "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedUserVerifiableCredential.java"
   ],
   "remaining_pending": 4678,
-  "done": 1290
+  "done": 1305
 }
