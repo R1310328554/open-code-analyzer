@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:51:01Z",
-  "files": [
-    "operator/src/main/java/org/keycloak/operator/MultiVersionCRDPostProcessor.java",
-    "operator/src/main/java/org/keycloak/operator/Utils.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakAdminSecretDependentResource.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakClientBaseController.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakController.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakDeploymentDependentResource.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakDiscoveryServiceDependentResource.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakDistConfigurator.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakIngressDependentResource.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakNetworkPolicyDependentResource.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakOIDCClientController.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakRealmImportController.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakRealmImportJobDependentResource.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakRealmImportSecretDependentResource.java",
-    "operator/src/main/java/org/keycloak/operator/controllers/KeycloakSAMLClientController.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3928,
-  "done": 2055
+  "done": 2070
 }
