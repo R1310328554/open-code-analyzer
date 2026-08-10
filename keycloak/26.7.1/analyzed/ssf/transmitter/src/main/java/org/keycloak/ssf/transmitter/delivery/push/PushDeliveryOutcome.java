@@ -17,25 +17,18 @@
 package org.keycloak.ssf.transmitter.delivery.push;
 
 /**
- * Structured outcome of a single push attempt against a receiver
- * endpoint. Replaces the prior boolean return so the
- * {@link org.keycloak.ssf.transmitter.outbox.SsfPushDeliveryHandler
- * SsfPushDeliveryHandler} can surface the receiver's HTTP status and
- * body — or the underlying transport exception — into the outbox row's
- * {@code last_error} summary and {@code metadata.lastFailure}
- * structured detail.
+ * 向接收方端点单次 push 投递的结构化结果。
+ * 替代原先的简单布尔返回值，使 {@link org.keycloak.ssf.transmitter.outbox.SsfPushDeliveryHandler
+ * SsfPushDeliveryHandler} 能将接收方的 HTTP 状态与响应体——或底层传输异常——
+ * 写入发件箱行的 {@code last_error} 摘要及 {@code metadata.lastFailure} 结构化详情。
  *
- * <p>Three terminal shapes:
+ * <p>三种终态形态：</p>
  * <ul>
- *   <li>{@link #delivered(int, String) delivered}: receiver replied
- *       2xx. Carries the status for completeness; no error fields set.</li>
- *   <li>{@link #httpFailure(int, String, String) httpFailure}: receiver
- *       replied non-2xx. Carries status + (optionally truncated)
- *       response body for the operator's view.</li>
- *   <li>{@link #transportFailure(Throwable, String) transportFailure}:
- *       no HTTP response — DNS lookup failed, connection refused,
- *       socket timeout, etc. Carries the exception class name +
- *       message; status / body are null.</li>
+ *   <li>{@link #delivered(int, String) delivered}：接收方返回 2xx，携带状态码，无错误字段。</li>
+ *   <li>{@link #httpFailure(int, String, String) httpFailure}：接收方返回非 2xx，
+ *       携带状态码及（可选截断的）响应体供运维查看。</li>
+ *   <li>{@link #transportFailure(Throwable, String) transportFailure}：未收到 HTTP 响应
+ *       （DNS 解析失败、连接被拒、套接字超时等），携带异常类名与消息；status/body 为 null。</li>
  * </ul>
  */
 public record PushDeliveryOutcome(boolean delivered,
@@ -60,11 +53,9 @@ public record PushDeliveryOutcome(boolean delivered,
     }
 
     /**
-     * Used when the stream config itself is malformed (no endpoint URL,
-     * no delivery section). No HTTP attempt is made; the outcome
-     * carries a synthetic {@code exceptionClass} marker so the handler
-     * can recognize the case and route it to ORPHANED rather than
-     * RETRY.
+     * 流配置本身无效时使用（缺少 endpoint URL 或无 delivery 段）。
+     * 不会发起 HTTP 请求；结果携带合成的 {@code exceptionClass} 标记，
+     * 以便处理器识别该情况并将其路由至 ORPHANED 而非 RETRY。
      */
     public static PushDeliveryOutcome invalidConfig(String reason) {
         return new PushDeliveryOutcome(false, null, null, "InvalidStreamConfig", reason, null);

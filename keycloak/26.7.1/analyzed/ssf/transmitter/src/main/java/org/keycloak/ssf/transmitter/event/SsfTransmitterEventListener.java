@@ -30,7 +30,7 @@ import org.keycloak.storage.ReadOnlyException;
 import org.jboss.logging.Logger;
 
 /**
- * Maps Keycloak user and admin events to SSF events for delivery.
+ * 将 Keycloak 用户与管理事件映射为 SSF 事件以供投递。
  */
 public class SsfTransmitterEventListener implements EventListenerProvider {
 
@@ -142,11 +142,8 @@ public class SsfTransmitterEventListener implements EventListenerProvider {
     }
 
     /**
-     * Returns {@code true} when the receiver has marked the event type
-     * as emit-only ({@code ssf.emitOnlyEvents} contains it). The native
-     * event listener honours the gate; the synthetic-emit endpoint
-     * deliberately does not — its whole purpose is to fire exactly
-     * these events on demand.
+     * 接收方将事件类型标记为仅 emit（{@code ssf.emitOnlyEvents} 包含该类型）时返回 {@code true}。
+     * 原生事件监听器遵守该门控；合成 emit 端点刻意不遵守——其目的就是按需触发这些事件。
      */
     protected boolean isEmitOnlyEventForReceiver(String eventType, StreamConfig stream) {
         var emitOnly = stream.getEmitOnlyEvents();
@@ -154,11 +151,9 @@ public class SsfTransmitterEventListener implements EventListenerProvider {
     }
 
     /**
-     * True when any event entry in the token is emit-only for the
-     * receiver. Tokens almost always carry a single event in practice,
-     * but {@link SsfSecurityEventToken#getEvents()} is a Map keyed by
-     * event-type URI, so guard the iteration: a single match anywhere
-     * is enough to skip — partial delivery would be confusing.
+     * 令牌中任一事件条目对接收方为 emit-only 时为 true。实践中令牌几乎总携带单个事件，
+     * 但 {@link SsfSecurityEventToken#getEvents()} 是以事件类型 URI 为键的 Map，故需守卫迭代：
+     * 任意一处匹配即跳过——部分投递会造成混淆。
      */
     protected boolean isAnyEventEmitOnlyForReceiver(SsfSecurityEventToken token, StreamConfig stream) {
         var events = token.getEvents();
@@ -182,11 +177,9 @@ public class SsfTransmitterEventListener implements EventListenerProvider {
     }
 
     /**
-     * When a user logs in via a client that is an SSF receiver with
-     * {@code ssf.autoNotifyOnLogin=true} and
-     * {@code ssf.defaultSubjects=NONE}, automatically sets the
-     * {@code ssf.notify.<clientId>} attribute on the user so future
-     * events for that user are delivered to the receiver's stream.
+     * 用户通过 SSF 接收方客户端登录且 {@code ssf.autoNotifyOnLogin=true}、
+     * {@code ssf.defaultSubjects=NONE} 时，自动在用户上设置 {@code ssf.notify.<clientId>} 属性，
+     * 使该用户后续事件投递至接收方流。
      */
     protected void autoNotifyOnLogin(Event event, SsfTransmitterProvider transmitter) {
         String eventClientId = event.getClientId();
@@ -264,13 +257,9 @@ public class SsfTransmitterEventListener implements EventListenerProvider {
     }
 
     /**
-     * Mirrors the org-membership leg of the dispatcher's subject filter:
-     * a user is effectively subscribed when any of their organizations
-     * carries the {@code ssf.notify.<clientId>} attribute. We use the
-     * same {@link SsfTransmitterProvider#subjectInclusionResolver()}
-     * pluggable resolver as the dispatcher, so an extension that
-     * defines org-inclusion differently stays the single source of
-     * truth for both the auto-notify guard and the dispatch gate.
+     * 镜像派发器主体过滤器的组织成员关系分支：用户任一组织携带 {@code ssf.notify.<clientId>} 属性
+     * 时视为已订阅。与派发器共用 {@link SsfTransmitterProvider#subjectInclusionResolver()} 可插拔解析器，
+     * 使以不同方式定义组织包含的扩展对 auto-notify 门控与派发门控保持单一事实来源。
      */
     protected boolean isAnyOrganizationNotified(SsfTransmitterProvider transmitter, UserModel user, ClientModel client) {
         if (!Organizations.isEnabled(session)) {

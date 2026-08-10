@@ -8,59 +8,42 @@ import org.keycloak.ssf.transmitter.SsfTransmitterConfig;
 import org.keycloak.ssf.transmitter.stream.StreamConfig;
 
 /**
- * Resolves and validates the subject identifier format the transmitter
- * uses for the <em>user</em> part of outgoing SSF Security Event Tokens.
+ * 解析并校验发送方为出站 SSF SET 的<em>用户</em>部分使用的主体标识符格式。
  *
- * <p>Defaults to {@link IssuerSubjectId#TYPE iss_sub} (the transmitter
- * realm's issuer URL plus the user's Keycloak ID). Receiver clients can
- * override per-stream by setting the {@code ssf.userSubjectFormat}
- * attribute to one of the values in {@link #ALLOWED}; any other value is
- * rejected at stream create/update time so misconfigurations surface
- * before the first event emission.
+ * <p>默认为 {@link IssuerSubjectId#TYPE iss_sub}（发送方 realm 的发行方 URL 加用户 Keycloak ID）。
+ * 接收方客户端可通过 {@code ssf.userSubjectFormat} 属性按流覆盖为 {@link #ALLOWED} 中的值之一；
+ * 其他值在流创建/更新时被拒绝，使错误配置在首次事件发出前暴露。</p>
  *
- * <p>Two compositions are also supported —
- * {@link #COMPLEX_ISS_SUB_PLUS_TENANT complex.iss_sub+tenant} and
- * {@link #COMPLEX_EMAIL_PLUS_TENANT complex.email+tenant} — which wrap
- * the user subject in a complex subject and add a {@code tenant}
- * sibling carrying the user's Keycloak organization. The
- * {@code complex.} prefix flags that the SET will carry a
- * {@link org.keycloak.ssf.subject.ComplexSubjectId ComplexSubjectId}
- * rather than a single subject; the {@code +tenant} suffix names the
- * additional member. Both are Keycloak-only compositions, not
- * RFC 9493 subject identifier formats; receivers that don't understand
- * {@code critical_subject_members=["user","tenant"]} will reject the
- * stream at creation time.
+ * <p>另支持两种组合——{@link #COMPLEX_ISS_SUB_PLUS_TENANT complex.iss_sub+tenant} 与
+ * {@link #COMPLEX_EMAIL_PLUS_TENANT complex.email+tenant}——将用户主体包装为复合主体并添加携带用户 Keycloak 组织的
+ * {@code tenant} 兄弟成员。{@code complex.} 前缀表示 SET 将携带 {@link org.keycloak.ssf.subject.ComplexSubjectId ComplexSubjectId}
+ * 而非单一主体；{@code +tenant} 后缀命名附加成员。二者均为 Keycloak 专有组合，非 RFC 9493 主体标识符格式；
+ * 不理解 {@code critical_subject_members=["user","tenant"]} 的接收方会在创建流时拒绝。</p>
  *
- * <p>The allow-list is deliberately small for now — expanding it to
- * other SSF subject formats (e.g. {@code phone_number}, {@code aliases})
- * is a matter of extending the mapper's {@code buildUserSubjectId}
- * dispatch and adding the value here.
+ * <p>允许列表刻意保持精简——扩展至其他 SSF 主体格式（如 {@code phone_number}、{@code aliases}）
+ * 只需扩展 mapper 的 {@code buildUserSubjectId} 分发并在此添加对应值。</p>
  */
 public final class SsfUserSubjectFormats {
 
     /**
-     * Composition prefix that flags the SET will carry a
-     * {@link org.keycloak.ssf.subject.ComplexSubjectId ComplexSubjectId}
-     * rather than a single user subject. The portion after the prefix
-     * names the user-subject component (e.g. {@code iss_sub} /
-     * {@code email}); additional siblings are appended via composition
-     * suffixes such as {@link #TENANT_SUFFIX}.
+     * 组合前缀，表示 SET 将携带 {@link org.keycloak.ssf.subject.ComplexSubjectId ComplexSubjectId}
+     * 而非单一用户主体。前缀后的部分命名用户主体组件（如 {@code iss_sub}/{@code email}）；
+     * 附加兄弟成员通过 {@link #TENANT_SUFFIX} 等组合后缀追加。
      */
     public static final String COMPLEX_PREFIX = "complex.";
 
-    /** Composition suffix that asks the mapper to add a {@code tenant} member. */
+    /** 组合后缀，要求 mapper 添加 {@code tenant} 成员。 */
     public static final String TENANT_SUFFIX = "+tenant";
 
-    /** Composition: complex(user={@code iss_sub}, tenant=user's organization). */
+    /** 组合：complex(user={@code iss_sub}, tenant=用户所属组织)。 */
     public static final String COMPLEX_ISS_SUB_PLUS_TENANT = COMPLEX_PREFIX + IssuerSubjectId.TYPE + TENANT_SUFFIX;
 
-    /** Composition: complex(user={@code email}, tenant=user's organization). */
+    /** 组合：complex(user={@code email}, tenant=用户所属组织)。 */
     public static final String COMPLEX_EMAIL_PLUS_TENANT = COMPLEX_PREFIX + EmailSubjectId.TYPE + TENANT_SUFFIX;
 
     /**
-     * Subject identifier formats the transmitter knows how to produce
-     * for the user portion of an SSF SET. Validated at stream
-     * create/update time via {@link #isAllowed(String)}.
+     * 发送方已知如何为 SSF SET 的用户部分生成的主体标识符格式。
+     * 在流创建/更新时通过 {@link #isAllowed(String)} 校验。
      */
     public static final Set<String> ALLOWED = Set.of(
             IssuerSubjectId.TYPE,
@@ -69,9 +52,8 @@ public final class SsfUserSubjectFormats {
             COMPLEX_EMAIL_PLUS_TENANT);
 
     /**
-     * Default user subject identifier format — the realm issuer plus the
-     * user's Keycloak ID. Matches the behavior the transmitter had before
-     * this knob was added, so existing deployments observe no change.
+     * 默认用户主体标识符格式——realm 发行方加用户 Keycloak ID。
+     * 与添加此旋钮前发送方的行为一致，现有部署无变化。
      */
     public static final String DEFAULT = IssuerSubjectId.TYPE;
 
@@ -79,19 +61,16 @@ public final class SsfUserSubjectFormats {
     }
 
     /**
-     * Returns {@code true} if {@code format} carries the {@code +tenant}
-     * composition suffix — i.e. the mapper should add a tenant subject
-     * sibling to the complex SET subject.
+     * {@code format} 携带 {@code +tenant} 组合后缀时返回 {@code true}——
+     * 即 mapper 应向复合 SET 主体添加 tenant 主体兄弟成员。
      */
     public static boolean includesTenant(String format) {
         return format != null && format.endsWith(TENANT_SUFFIX);
     }
 
     /**
-     * Strips the {@link #COMPLEX_PREFIX complex.} prefix and the
-     * {@link #TENANT_SUFFIX +tenant} suffix to return the bare
-     * user-subject format ({@code iss_sub} / {@code email}). Pass-through
-     * when neither marker is present.
+     * 剥离 {@link #COMPLEX_PREFIX complex.} 前缀与 {@link #TENANT_SUFFIX +tenant} 后缀，
+     * 返回裸用户主体格式（{@code iss_sub}/{@code email}）。两者均不存在时原样返回。
      */
     public static String userPartOf(String format) {
         if (format == null) {
@@ -108,9 +87,7 @@ public final class SsfUserSubjectFormats {
     }
 
     /**
-     * Resolves the user subject format for a given stream, honoring the
-     * precedence: per-stream override → transmitter SPI default →
-     * hardcoded {@link #DEFAULT}.
+     * 解析给定流的用户主体格式，优先级：按流覆盖 → 发送方 SPI 默认 → 硬编码 {@link #DEFAULT}。
      */
     public static String resolveForStream(StreamConfig streamConfig, SsfTransmitterConfig transmitterConfig) {
 
@@ -132,10 +109,8 @@ public final class SsfUserSubjectFormats {
     }
 
     /**
-     * Returns {@code true} if the given format is in the allow-list.
-     * Blank or {@code null} values are treated as not allowed — callers
-     * should default to {@link #DEFAULT} before consulting this method
-     * if they want missing config to fall through.
+     * 给定格式在允许列表内时返回 {@code true}。
+     * 空白或 {@code null} 视为不允许——若希望缺失配置回退，调用方应先默认至 {@link #DEFAULT} 再调用本方法。
      */
     public static boolean isAllowed(String format) {
         return format != null && !format.isBlank() && ALLOWED.contains(format);

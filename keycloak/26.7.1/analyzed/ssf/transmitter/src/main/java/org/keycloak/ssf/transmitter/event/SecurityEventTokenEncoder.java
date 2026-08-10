@@ -12,12 +12,10 @@ import org.keycloak.ssf.event.token.SecurityEventToken;
 import org.keycloak.ssf.event.token.SsfSecurityEventToken;
 
 /**
- * Produces a signed, base64url-encoded JWS for a given SSF Security Event
- * Token. Deliberately kept as a thin JWS wrapper: algorithm selection and
- * allow-list enforcement live in
- * {@link SsfSignatureAlgorithms} and are resolved by the dispatcher before
- * calling {@link #encode(SecurityEventToken, String)}. This keeps the
- * encoder decoupled from the transmitter config and receiver-stream state.
+ * 为给定 SSF 安全事件令牌（SET）生成已签名、base64url 编码的 JWS。
+ * 刻意保持为薄 JWS 包装层：算法选择与允许列表校验由 {@link SsfSignatureAlgorithms} 负责，
+ * 并在调用 {@link #encode(SecurityEventToken, String)} 前由派发器解析。
+ * 这使编码器与发送方配置及接收方流状态解耦。
  */
 public class SecurityEventTokenEncoder {
 
@@ -28,12 +26,10 @@ public class SecurityEventTokenEncoder {
     }
 
     /**
-     * Signs and encodes the given token with the requested JWS algorithm.
+     * 使用请求的 JWS 算法对给定令牌签名并编码。
      *
-     * @throws SsfException if the realm has no {@link SignatureProvider}
-     *         registered for {@code signatureAlgorithm}. This surfaces
-     *         FIPS-restricted or misconfigured realms with a clear error
-     *         instead of NPE'ing deeper in {@link JWSBuilder}.
+     * @throws SsfException 若 realm 未为 {@code signatureAlgorithm} 注册 {@link SignatureProvider}。
+     *         对 FIPS 受限或配置错误的 realm 给出明确错误，而非在 {@link JWSBuilder} 深处 NPE。
      */
     public String encode(SecurityEventToken token, String signatureAlgorithm) {
 

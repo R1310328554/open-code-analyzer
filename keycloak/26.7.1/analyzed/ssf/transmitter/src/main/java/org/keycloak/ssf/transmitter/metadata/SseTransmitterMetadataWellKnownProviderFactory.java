@@ -10,25 +10,21 @@ import org.keycloak.wellknown.WellKnownProvider;
 import org.keycloak.wellknown.WellKnownProviderFactory;
 
 /**
- * Support for the legacy SSE (Shared Signals and Events) protocol, the predecessor of the SSF protocol.
+ * 对旧版 SSE（Shared Signals and Events）协议的支持，SSF 协议的前身。
  *
- * Factory implementation for creating instances of {@code SseTransmitterMetadataWellKnownProvider}.
- * This factory integrates with Keycloak's Well-Known Provider infrastructure and is enabled only
- * when the SSF feature is activated within the system configuration profile and the SSF Transmitter
- * feature is enabled for the current realm.
+ * 创建 {@code SseTransmitterMetadataWellKnownProvider} 实例的工厂实现。
+ * 集成 Keycloak Well-Known 提供者基础设施，仅在系统配置配置文件启用 SSF 功能
+ * 且当前 realm 启用 SSF 发送方功能时可用。
  */
 public class SseTransmitterMetadataWellKnownProviderFactory implements WellKnownProviderFactory, EnvironmentDependentProviderFactory {
 
     public static final String PROVIDER_ID = "sse-configuration";
 
     /**
-     * SPI property that disables the legacy SSE well-known endpoint.
-     * Set {@code spi-wellknown--sse-configuration--enabled=false} to
-     * unregister this factory entirely — deployments that only need the
-     * SSF 1.0 {@code /.well-known/ssf-configuration} endpoint can opt out
-     * of exposing the predecessor path. Defaults to {@code true} to
-     * preserve backwards compatibility with receivers that still rely on
-     * the legacy discovery document.
+     * 禁用旧版 SSE well-known 端点的 SPI 属性。
+     * 设置 {@code spi-wellknown--sse-configuration--enabled=false} 可完全注销本工厂——
+     * 仅需 SSF 1.0 {@code /.well-known/ssf-configuration} 端点的部署可选择不暴露前身路径。
+     * 默认为 {@code true}，以与仍依赖旧版发现文档的接收方保持向后兼容。
      */
     public static final String CONFIG_ENABLED = "enabled";
 

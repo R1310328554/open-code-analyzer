@@ -6,8 +6,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.ssf.metadata.TransmitterMetadata;
 
 /**
- * Well-Known Provider implementation for the legacy SSE (Shared Signals and Events) protocol metadata.
- * This provider is responsible for exposing SSE-related metadata through Keycloak's Well-Known Provider infrastructure.
+ * 旧版 SSE（Shared Signals and Events）协议元数据的 Well-Known 提供者实现。
+ * 负责通过 Keycloak Well-Known 提供者基础设施暴露 SSE 相关元数据。
  */
 public class SseTransmitterMetadataWellKnownProvider extends SsfTransmitterMetadataWellKnownProvider {
 

@@ -8,6 +8,10 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
+/**
+ * SSF 发送方事件监听器工厂：将 Keycloak 用户/管理事件映射为 SSF SET 并投递。
+ * 仅在启用 SSF 功能配置文件时可用。
+ */
 public class SsfTransmitterEventListenerFactory implements EventListenerProviderFactory, EnvironmentDependentProviderFactory {
 
     private static final String ID = "ssf-events";

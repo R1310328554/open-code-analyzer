@@ -48,7 +48,7 @@ import org.jboss.logging.Logger;
 
 
 /**
- * Generator for Security Event Tokens (SETs).
+ * 安全事件令牌（SET）生成器。
  */
 public class SecurityEventTokenMapper {
 
@@ -71,11 +71,9 @@ public class SecurityEventTokenMapper {
     public static final String KC_CREDENTIAL_USER_LABEL = "kc_credential_user_label";
 
     /**
-     * Issuer URL resolver. Invoked lazily at token-build time rather than
-     * at construction so that off-request callers (e.g. the scheduled
-     * SSF outbox drainer) that only need a mapper-less slice of the
-     * transmitter provider don't trip over {@code HttpRequest}-bound
-     * hostname resolution.
+     * 发行方 URL 解析器。在令牌构建时惰性调用而非构造时调用，
+     * 使脱离请求的调用方（例如定时 SSF 发件箱排空器）在仅需发送方 provider 的无 mapper 切片时
+     * 不会因依赖 {@code HttpRequest} 的主机名解析而失败。
      */
     protected final Function<KeycloakSession, String> issuerGenerator;
 
@@ -99,22 +97,20 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Generates a verification event for a stream.
+     * 为流生成验证事件。
      *
-     * @param stream The stream configuration
-     * @param state  The verification state
-     * @return The verification event as a JSON string
+     * @param stream 流配置
+     * @param state  验证状态
+     * @return 验证事件的 JSON 字符串表示
      */
     /**
-     * Generates a stream-updated SET communicating a stream status change to
-     * the receiver, per SSF §8.1.5. Subject is the stream itself (opaque
-     * {@code stream_id}), event payload carries the new status and the
-     * optional reason — same shape used by {@code GET /stream/status}.
+     * 按 SSF §8.1.5 生成 stream-updated SET，向接收方传达流状态变更。
+     * 主体为流本身（opaque {@code stream_id}），事件载荷携带新状态及可选原因——
+     * 与 {@code GET /stream/status} 使用的形状相同。
      *
-     * <p>Callers are expected to dispatch the returned token via
-     * {@link org.keycloak.ssf.transmitter.delivery.SecurityEventTokenDispatcher#deliverEvent
-     * deliverEvent} (gate-bypassing, async) so the receiver still sees the
-     * status change even when the new status is {@code paused}/{@code disabled}.
+     * <p>调用方应通过 {@link org.keycloak.ssf.transmitter.delivery.SecurityEventTokenDispatcher#deliverEvent
+     * deliverEvent}（绕过门控、异步）派发返回的令牌，使接收方在新状态为
+     * {@code paused}/{@code disabled} 时仍能看到状态变更。</p>
      */
     public SsfSecurityEventToken generateStreamUpdatedEvent(StreamConfig stream, StreamStatus newStatus) {
         try {
@@ -183,16 +179,16 @@ public class SecurityEventTokenMapper {
 
 
     /**
-     * Generates a session revoked event.
+     * 生成会话撤销事件。
      *
-     * @param event
-     * @param sessionId            The ID of the revoked session
-     * @param userId               The ID of the user
-     * @param eventTokenCustomizer
-     * @param adminEvent
-     * @param stream
-     * @param reason               The reason for the revocation
-     * @return The session revoked event as a SecurityEventToken
+     * @param event                用户事件
+     * @param sessionId            被撤销会话的 ID
+     * @param userId               用户 ID
+     * @param eventTokenCustomizer 事件令牌定制器
+     * @param adminEvent           管理事件
+     * @param stream               流配置
+     * @param reason               撤销原因
+     * @return 会话撤销事件，形式为 SecurityEventToken
      */
     public SsfSecurityEventToken generateSessionRevokedEvent(Event userEvent, AdminEvent adminEvent, StreamConfig stream, String reason) {
         try {
@@ -239,25 +235,19 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Generates a credential change event.
+     * 生成凭证变更事件。
      *
-     * <p>The CAEP {@code change_type} is supplied by the caller because
-     * Keycloak's {@code UPDATE_CREDENTIAL} / {@code REMOVE_CREDENTIAL} /
-     * {@code RESET_PASSWORD} event types each map to a different CAEP
-     * change_type (UPDATE / DELETE / UPDATE) and the dispatcher in
-     * {@link #toSecurityEventToken(Event, StreamConfig)} knows the right
-     * value for each. The {@code credentialType} string is read from
-     * {@code userEvent.getDetails().get(Details.CREDENTIAL_TYPE)} when
-     * present and falls back to {@code credentialTypeFallback} otherwise
-     * — used for events like {@code RESET_PASSWORD} that don't set the
-     * detail but where the credential type is implicit ("password").
+     * <p>CAEP {@code change_type} 由调用方提供，因为 Keycloak 的
+     * {@code UPDATE_CREDENTIAL}/{@code REMOVE_CREDENTIAL}/{@code RESET_PASSWORD} 事件类型
+     * 各自映射到不同的 CAEP change_type（UPDATE/DELETE/UPDATE），
+     * 而 {@link #toSecurityEventToken(Event, StreamConfig)} 中的派发器知道各类型的正确值。
+     * {@code credentialType} 字符串在存在时从 {@code userEvent.getDetails().get(Details.CREDENTIAL_TYPE)} 读取，
+     * 否则回退至 {@code credentialTypeFallback}——用于 {@code RESET_PASSWORD} 等未设置该详情
+     * 但凭证类型隐含为 "password" 的事件。</p>
      *
-     * <p>Distinguishing CREATE from UPDATE inside this path is left
-     * unimplemented: Keycloak fires {@code UPDATE_CREDENTIAL} for both
-     * "first credential of this type added" and "existing credential
-     * modified" without a marker on the event itself, so a heuristic
-     * here would be guesswork. UPDATE is the conservative default for
-     * additions and modifications.
+     * <p>此路径内区分 CREATE 与 UPDATE 尚未实现：Keycloak 对「首次添加该类型凭证」与
+     * 「修改现有凭证」均触发 {@code UPDATE_CREDENTIAL} 且事件本身无标记，
+     * 此处启发式判断不可靠。对新增与修改均保守采用 UPDATE。</p>
      */
     public SsfSecurityEventToken generateCredentialChangeEvent(Event userEvent,
                                                                AdminEvent adminEvent,
@@ -360,22 +350,16 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Builds a Security Event Token for a synthetic event produced by the
-     * admin-facing event emitter endpoint — i.e. an event that Keycloak
-     * did not observe itself but that a trusted IAM management client
-     * wants the transmitter to forward as if it had.
+     * 为管理端事件发射端点产生的合成事件构建安全事件令牌——即 Keycloak 自身未观察到、
+     * 但可信 IAM 管理客户端希望发送方代为转发的事件。
      *
-     * <p>The caller supplies the already-resolved event type URI, the
-     * deserialized event payload, and the RFC 9493 {@link SubjectId} the
-     * emitter chose. The {@code sub_id} is passed through verbatim — the
-     * emitter is trusted to pick a format appropriate for the receiver
-     * (which, unlike natively emitted events, is outside the transmitter's
-     * knowledge since the upstream system owns the subject identity).
+     * <p>调用方提供已解析的事件类型 URI、反序列化后的事件载荷及发射方选择的 RFC 9493 {@link SubjectId}。
+     * {@code sub_id} 原样传入——发射方受信会选择适合接收方的格式
+     *（与原生发出的事件不同，上游系统拥有主体身份，超出发送方所知范围）。</p>
      *
-     * <p>The SET is otherwise built with the standard header
-     * (iss, jti, iat, aud, txn) identical to natively emitted events.
+     * <p>SET 其余部分按标准头（iss、jti、iat、aud、txn）构建，与原生发出的事件相同。</p>
      *
-     * <p>Returns {@code null} if construction fails (logged).
+     * <p>构建失败时返回 {@code null}（已记录日志）。</p>
      */
     public SsfSecurityEventToken generateSyntheticEvent(StreamConfig stream,
                                                         String eventTypeUri,
@@ -398,24 +382,15 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Builds the SSF subject identifier for a Keycloak user according to
-     * the stream's configured user subject format (falling back to
-     * {@link SsfUserSubjectFormats#DEFAULT iss_sub}). Invoked for every
-     * event type whose {@code sub_id} carries a user identifier — both
-     * as the {@code user} field of a {@link ComplexSubjectId} (e.g. for
-     * {@link CaepSessionRevoked}) and as the top-level {@code sub_id}
-     * of simpler events (e.g. {@link CaepCredentialChange}).
+     * 按流配置的用户主体格式（回退至 {@link SsfUserSubjectFormats#DEFAULT iss_sub}）
+     * 为 Keycloak 用户构建 SSF 主体标识符。对所有 {@code sub_id} 携带用户标识符的事件类型调用——
+     * 既作为 {@link ComplexSubjectId} 的 {@code user} 字段（如 {@link CaepSessionRevoked}），
+     * 也作为较简单事件的顶层 {@code sub_id}（如 {@link CaepCredentialChange}）。
      *
-     * <p>When the configured format is {@code email} and no email is
-     * available for the user (user deleted mid-event, or simply has
-     * no email on record), this method throws an {@link SsfException}
-     * — silently substituting {@code iss_sub} would deliver a SET
-     * shaped differently from what the receiver negotiated, which a
-     * strict receiver would reject and a lenient receiver would
-     * misroute. The caller catches the exception, logs it, and drops
-     * the event. The receiver therefore sees no signal rather than a
-     * misrepresented one; operators see the warning and can fix the
-     * user record or change the stream's subject format.
+     * <p>当配置格式为 {@code email} 且用户无可用邮箱（事件中途用户被删或无邮箱记录）时，
+     * 本方法抛出 {@link SsfException}——静默替换为 {@code iss_sub} 会发出与接收方协商形状不同的 SET，
+     * 严格接收方会拒绝，宽松接收方会误路由。调用方捕获异常、记录日志并丢弃事件。
+     * 接收方因此看不到错误信号而非被误导的信号；运维人员看到警告后可修复用户记录或更改流的主体格式。</p>
      */
     protected SubjectId buildUserSubjectId(SsfSecurityEventToken eventToken, String userId, StreamConfig stream) {
 
@@ -446,15 +421,11 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * If the configured user-subject format carries the {@code +tenant}
-     * composition suffix, resolves the user's primary Keycloak
-     * organization and adds it as the {@code tenant} member of the
-     * given complex subject. No-op when the format does not include
-     * tenant. Throws {@link SsfException} (caught by the calling event
-     * generator and logged) when the user belongs to no organization —
-     * silently dropping the tenant slot would deliver a SET shaped
-     * differently from what the receiver negotiated, mirroring the
-     * fail-loud behaviour of the {@code email} format with no email.
+     * 若配置的用户主体格式携带 {@code +tenant} 组合后缀，则解析用户的主 Keycloak 组织
+     * 并将其作为 {@code tenant} 成员加入给定复合主体。格式不含 tenant 时为 no-op。
+     * 用户不属于任何组织时抛出 {@link SsfException}（由调用方事件生成器捕获并记录）——
+     * 静默丢弃 tenant 槽会发出与接收方协商形状不同的 SET，与无邮箱时 {@code email} 格式的
+     * 显式失败行为一致。
      */
     protected void addTenantIfConfigured(ComplexSubjectId complex, String userId, StreamConfig stream) {
         String format = SsfUserSubjectFormats.resolveForStream(stream, transmitterConfig);
@@ -465,16 +436,12 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Builds the user subject for the given receiver using the same
-     * code path as native event emission — honors the receiver's
-     * configured {@code ssf.userSubjectFormat} (iss_sub / email /
-     * complex.iss_sub+tenant / complex.email+tenant), with the same
-     * fail-loud behaviour for missing email or no organization.
+     * 使用与原生事件发射相同的代码路径为给定接收方构建用户主体——
+     * 遵循接收方配置的 {@code ssf.userSubjectFormat}（iss_sub/email/
+     * complex.iss_sub+tenant/complex.email+tenant），对缺失邮箱或无组织同样显式失败。
      *
-     * <p>Used by the admin "Pending Events" emit form so an operator
-     * can pick a user (by UUID) and let the transmitter format the
-     * sub_id per the receiver's negotiated subject shape, instead of
-     * the admin UI hardcoding {@code iss_sub} regardless of config.
+     * <p>供管理端「待处理事件」发射表单使用，运维人员可按 UUID 选择用户，
+     * 由发送方按接收方协商的主体形状格式化 sub_id，而非管理 UI 无视配置硬编码 {@code iss_sub}。</p>
      */
     public SubjectId buildSubjectForReceiver(StreamConfig stream, String userId) {
         SsfSecurityEventToken stub = newSecurityEventToken(stream);
@@ -482,12 +449,9 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Wraps the user subject in a {@link ComplexSubjectId} when the
-     * configured format includes the {@code +tenant} composition;
-     * returns the bare user subject otherwise. Used by event
-     * generators whose default emission shape is a single subject
-     * (e.g. {@code credential-change}) so they can pick up the tenant
-     * member without unconditionally switching to a complex shape.
+     * 当配置格式包含 {@code +tenant} 组合时将用户主体包装为 {@link ComplexSubjectId}；
+     * 否则返回裸用户主体。供默认发射形状为单一主体的事件生成器
+     *（如 {@code credential-change}）使用，以便在不无条件切换为复合形状的情况下加入 tenant 成员。
      */
     protected SubjectId composeUserSubject(SsfSecurityEventToken eventToken, String userId, StreamConfig stream) {
         SubjectId userSubject = buildUserSubjectId(eventToken, userId, stream);
@@ -502,22 +466,14 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Builds an {@link OpaqueSubjectId} carrying the user's primary
-     * Keycloak organization alias. Throws {@link SsfException} when
-     * the user belongs to no organization — see
-     * {@link #addTenantIfConfigured} for why fail-loud is the right
-     * choice.
+     * 构建携带用户主 Keycloak 组织别名的 {@link OpaqueSubjectId}。
+     * 用户不属于任何组织时抛出 {@link SsfException}——显式失败原因参见 {@link #addTenantIfConfigured}。
      *
-     * <p><b>Multi-org resolution policy: managed-preferred.</b> When the
-     * user belongs to multiple organizations, prefers the {@code MANAGED}
-     * membership (the org that provisioned the user — at most one per
-     * user, per Keycloak's organization model) and falls back to the
-     * first {@code UNMANAGED} membership otherwise. This gives users
-     * with a clear provisioning origin (SCIM, IdP federation, JIT) a
-     * stable "owning organization" answer; users that just associate
-     * with one or more orgs get a deterministic-but-arbitrary first-of-
-     * stream pick. Deployments that need stricter semantics
-     * (managed-only) or a different policy can subclass this method.
+     * <p><b>多组织解析策略：优先 MANAGED。</b> 用户属于多个组织时，优先选择 {@code MANAGED} 成员关系
+     *（配置该用户的组织——按 Keycloak 组织模型每用户至多一个），否则回退至第一个 {@code UNMANAGED} 成员关系。
+     * 这使具有明确配置来源（SCIM、IdP 联邦、JIT）的用户获得稳定的「所属组织」答案；
+     * 仅关联一个或多个组织的用户则得到确定但任意的流内首个选择。
+     * 需要更严格语义（仅 managed）或不同策略的部署可子类化此方法。</p>
      */
     protected SubjectId buildTenantSubject(String userId, StreamConfig stream) {
         if (session == null || userId == null) {
@@ -558,10 +514,8 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Resolves a Keycloak user's email address for the current realm.
-     * Returns {@code null} when the session is not available, the user
-     * cannot be resolved, or the user has no email — callers fall back
-     * to {@code iss_sub} in that case.
+     * 解析当前 realm 中 Keycloak 用户的邮箱地址。
+     * session 不可用、用户无法解析或用户无邮箱时返回 {@code null}——调用方在此情况下回退至 {@code iss_sub}。
      */
     protected String lookupUserEmail(String userId) {
         if (session == null || userId == null) {
@@ -579,18 +533,13 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Cheap predicate that returns {@code true} iff
-     * {@link #toSecurityEventToken(Event, StreamConfig)} would produce a
-     * non-null SET for {@code event}, based only on event type + details
-     * currently present on the event. Callers use this to short-circuit
-     * the per-event stream lookup in {@code SsfTransmitterEventListener}
-     * — if no mapping is possible, there is no point in hitting the
-     * client store to find eligible streams.
+     * 轻量谓词：仅基于事件类型及事件上现有 details，判断 {@link #toSecurityEventToken(Event, StreamConfig)}
+     * 对 {@code event} 是否会产出非 null SET 时返回 {@code true}。
+     * 调用方用于在 {@code SsfTransmitterEventListener} 中短路逐事件的流查找——
+     * 若无法映射，则无需访问客户端存储查找 eligible 流。
      *
-     * <p>The check deliberately mirrors the {@code switch} in
-     * {@link #toSecurityEventToken(Event, StreamConfig)} so the two stay in
-     * sync. New event types added to the mapper must be reflected here
-     * too, otherwise the listener will silently drop them.
+     * <p>该检查刻意镜像 {@link #toSecurityEventToken(Event, StreamConfig)} 中的 {@code switch} 以保持同步。
+     * mapper 新增的事件类型须在此同步反映，否则监听器会静默丢弃它们。</p>
      */
     public boolean canConvert(Event event) {
         if (event == null || shouldIgnoreEvent(event)) {
@@ -606,12 +555,10 @@ public class SecurityEventTokenMapper {
     }
 
     /**
-     * Cheap predicate that returns {@code true} iff
-     * {@link #toSecurityEventToken(AdminEvent, StreamConfig)} would produce a
-     * non-null SET for {@code adminEvent}. Currently the only mapped
-     * admin operation is the "log out all user sessions" path
-     * ({@code users/{userId}/logout}); everything else returns null and
-     * should short-circuit before any stream lookup happens.
+     * 轻量谓词：判断 {@link #toSecurityEventToken(AdminEvent, StreamConfig)} 对 {@code adminEvent}
+     * 是否会产出非 null SET 时返回 {@code true}。当前唯一映射的管理操作为
+     * 「注销用户全部会话」路径（{@code users/{userId}/logout}）；其余均返回 null，
+     * 应在任何流查找之前短路。
      */
     public boolean canConvert(AdminEvent adminEvent) {
         if (adminEvent == null) {

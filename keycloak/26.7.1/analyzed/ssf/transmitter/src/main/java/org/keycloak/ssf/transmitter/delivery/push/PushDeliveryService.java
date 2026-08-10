@@ -18,7 +18,7 @@ import org.apache.http.entity.StringEntity;
 import org.jboss.logging.Logger;
 
 /**
- * Service for delivering events using the PUSH delivery method.
+ * 使用 PUSH 投递方式向接收方发送事件的服务。
  */
 public class PushDeliveryService {
 
@@ -39,14 +39,12 @@ public class PushDeliveryService {
     }
 
     /**
-     * Delivers an event to a receiver endpoint using the PUSH delivery method.
+     * 使用 PUSH 投递方式将事件发送至接收方端点。
      *
-     * @param stream       The stream configuration
-     * @param encodedEvent The event to deliver
-     * @return outcome of the attempt: {@code delivered=true} on 2xx;
-     *         {@code httpFailure} carrying status + response body on
-     *         non-2xx; {@code transportFailure} carrying the exception
-     *         class + message on connection-level failures.
+     * @param stream       流配置
+     * @param encodedEvent 待投递的事件
+     * @return 投递结果：2xx 时 {@code delivered=true}；非 2xx 时为 {@code httpFailure}（含状态与响应体）；
+     *         连接级失败时为 {@code transportFailure}（含异常类名与消息）。
      */
     public PushDeliveryOutcome deliverEvent(StreamConfig stream, SecurityEventToken eventToken, String encodedEvent) {
         if (stream == null || stream.getDelivery() == null) {
@@ -66,14 +64,14 @@ public class PushDeliveryService {
     }
 
     /**
-     * Delivers an event to a receiver endpoint using the PUSH delivery method.
+     * 使用 PUSH 投递方式将事件发送至接收方端点。
      *
-     * @param endpointUrl         The endpoint URL to deliver the event to
-     * @param authorizationHeader The authorization header to use
-     * @param eventToken          The event token
-     * @param encodedEventToken   The encoded event to deliver
-     * @param stream
-     * @return structured outcome — see {@link PushDeliveryOutcome}.
+     * @param endpointUrl         目标端点 URL
+     * @param authorizationHeader 使用的 Authorization 请求头
+     * @param eventToken          事件令牌
+     * @param encodedEventToken   已编码的待投递事件
+     * @param stream              流配置
+     * @return 结构化投递结果，参见 {@link PushDeliveryOutcome}。
      */
     protected PushDeliveryOutcome deliverEvent(String endpointUrl, String authorizationHeader, SecurityEventToken eventToken, String encodedEventToken, StreamConfig stream) {
         try {

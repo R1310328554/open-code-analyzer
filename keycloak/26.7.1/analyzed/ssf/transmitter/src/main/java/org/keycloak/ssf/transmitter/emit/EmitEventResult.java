@@ -1,12 +1,9 @@
 package org.keycloak.ssf.transmitter.emit;
 
 /**
- * Outcome of a synthetic SSF event emission. Carries the dispatch
- * status, (on success) the {@code jti} of the SET that went out so the
- * caller can correlate it against transmitter logs / outbox state, and
- * an optional human-readable message used to surface validation
- * failures (e.g. payload-shape mismatch against the registered event
- * class) so the admin endpoint can return a 400 with a useful body.
+ * 合成 SSF 事件发射的结果。携带派发状态；成功时还包含已发出 SET 的 {@code jti}，
+ * 便于调用方与发送方日志/发件箱状态关联；可选的人类可读消息用于呈现校验失败
+ *（例如载荷形状与已注册事件类不匹配），使管理端点可返回含有效信息的 400 响应。
  */
 public record EmitEventResult(EmitEventStatus status, String jti, String message) {
 

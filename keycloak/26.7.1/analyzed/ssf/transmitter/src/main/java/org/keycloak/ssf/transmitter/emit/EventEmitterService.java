@@ -31,21 +31,16 @@ import org.keycloak.util.JsonSerialization;
 import org.jboss.logging.Logger;
 
 /**
- * Pushes synthetic SSF events injected by a trusted IAM management
- * client through the normal transmitter dispatch pipeline.
+ * 将可信 IAM 管理客户端注入的合成 SSF 事件推入常规发送方派发流水线。
  *
- * <p>Used by the admin-facing {@code /admin/realms/{realm}/ssf/clients/{id}/events/emit}
- * endpoint so external systems (e.g. the LDAP/IdM that actually owns
- * password changes) can forward credential-change and other events to
- * SSF receivers as if Keycloak had observed them itself. The signed SET
- * is built with the receiver's stream identity (iss/aud/format) and is
- * dispatched through the same outbox + push pipeline as native events.
+ * <p>供管理端 {@code /admin/realms/{realm}/ssf/clients/{id}/events/emit} 端点使用，
+ * 使外部系统（例如实际拥有密码变更的 LDAP/IdM）可将凭证变更等事件转发给 SSF 接收方，
+ * 如同 Keycloak 自身观察到一样。已签名的 SET 按接收方流身份（iss/aud/format）构建，
+ * 并通过与原生事件相同的发件箱 + push 流水线派发。</p>
  *
- * <p>Filter guards applied here mirror the dispatcher's: only events the
- * receiver subscribed to (via {@code events_requested}) and only subjects
- * the receiver is interested in (via {@code ssf.notify.<clientId>} and
- * {@code default_subjects}) are dispatched. Drop reasons are reported
- * back to the caller so emitter integrations can debug their wiring.
+ * <p>此处应用的过滤门控与派发器一致：仅派发接收方已订阅的事件（通过 {@code events_requested}）
+ * 及接收方感兴趣的主体（通过 {@code ssf.notify.<clientId>} 与 {@code default_subjects}）。
+ * 丢弃原因会回传给调用方，便于发射方集成调试其接线。</p>
  */
 public class EventEmitterService {
 
@@ -74,22 +69,17 @@ public class EventEmitterService {
     }
 
     /**
-     * Resolves the request, runs the receiver's dispatch filters, and
-     * pushes a single signed SET via the existing outbox path.
+     * 解析请求、执行接收方派发过滤器，并通过现有发件箱路径推送单个已签名 SET。
      *
-     * <p>The {@code subjectId} is an RFC 9493 Subject Identifier — one of
-     * {@code EmailSubjectId}, {@code IssuerSubjectId}, {@code OpaqueSubjectId},
-     * or {@code ComplexSubjectId}. For complex subjects the service drills
-     * into {@link ComplexSubjectId#getUser()} to run the subscription
-     * check, but passes the whole {@code sub_id} through verbatim to the
-     * SET so the receiver sees the exact shape the emitter supplied.
+     * <p>{@code subjectId} 为 RFC 9493 主体标识符——{@code EmailSubjectId}、
+     * {@code IssuerSubjectId}、{@code OpaqueSubjectId} 或 {@code ComplexSubjectId} 之一。
+     * 对复合主体，服务会深入 {@link ComplexSubjectId#getUser()} 执行订阅检查，
+     * 但将整个 {@code sub_id} 原样传入 SET，使接收方看到发射方提供的精确形状。</p>
      *
-     * <p>Stream-management event types (verification, stream-updated)
-     * bypass the subject-subscription filter the way the native
-     * dispatcher does — those events are about the stream itself, not a
-     * user.
+     * <p>流管理事件类型（verification、stream-updated）与原生派发器一样绕过主体订阅过滤器——
+     * 这些事件针对流本身，而非用户。</p>
      *
-     * @return the dispatch outcome — never {@code null}.
+     * @return 派发结果，永不为 {@code null}。
      */
     public EmitEventResult emit(ClientModel receiverClient,
                                 String eventTypeAliasOrUri,
@@ -236,17 +226,13 @@ public class EventEmitterService {
     }
 
     /**
-     * Resolves the entities referenced by the emitter's {@code sub_id}.
-     * For a {@link ComplexSubjectId} we drill into both
-     * {@link ComplexSubjectId#getUser()} and {@link ComplexSubjectId#getTenant()}
-     * — the user facet drives the per-user notify subscription and the
-     * tenant facet drives the org-level notify subscription. For a
-     * non-complex {@link SubjectId} only the user is resolved.
+     * 解析发射方 {@code sub_id} 所引用的实体。
+     * 对 {@link ComplexSubjectId}，会深入 {@link ComplexSubjectId#getUser()} 与
+     * {@link ComplexSubjectId#getTenant()}——用户方面驱动按用户的 notify 订阅，
+     * 租户方面驱动组织级 notify 订阅。对非复合 {@link SubjectId} 仅解析用户。
      *
-     * <p>Org resolution treats an {@link OpaqueSubjectId} {@code id} as
-     * the org's alias first, falling back to the org UUID. Other
-     * {@link SubjectId} formats in the tenant slot are not currently
-     * understood — they resolve to no organization.
+     * <p>组织解析优先将 {@link OpaqueSubjectId} 的 {@code id} 视为组织别名，
+     * 再回退至组织 UUID。租户槽中其他 {@link SubjectId} 格式当前不支持，解析为无组织。</p>
      */
     protected EmitSubjectResolution resolveSubject(SubjectId subjectId) {
         RealmModel realm = session.getContext().getRealm();
@@ -289,15 +275,12 @@ public class EventEmitterService {
     }
 
     /**
-     * Subscription gate that mirrors the native dispatcher's
-     * {@code SubjectSubscriptionFilter} but operates on a pre-resolved
-     * user / org pair so the emitter can also emit org-only events.
+     * 与原生派发器的 {@code SubjectSubscriptionFilter} 镜像的订阅门控，
+     * 但作用于预解析的用户/组织对，使发射方也可发出仅组织事件。
      *
      * <ul>
-     *     <li>{@code default_subjects=ALL}: deliver unless either the
-     *         user or the org is explicitly excluded.</li>
-     *     <li>{@code default_subjects=NONE}: deliver only when at least
-     *         one of the user / org facets is explicitly notified.</li>
+     *     <li>{@code default_subjects=ALL}：除非用户或组织被显式排除，否则投递。</li>
+     *     <li>{@code default_subjects=NONE}：仅当用户/组织方面至少一方被显式 notify 时投递。</li>
      * </ul>
      */
     protected boolean isSubjectDispatchable(EmitSubjectResolution resolved,
@@ -322,10 +305,9 @@ public class EventEmitterService {
     }
 
     /**
-     * Deserializes the raw event attributes into the typed event
-     * class registered for the given URI, propagating the Jackson
-     * conversion error as an {@link EventPayloadDeserializationException}
-     * so callers can surface the message back to the operator.
+     * 将原始事件属性反序列化为给定 URI 已注册的类型化事件类，
+     * 将 Jackson 转换错误包装为 {@link EventPayloadDeserializationException}，
+     * 以便调用方将消息回传给运维人员。
      */
     protected Object deserializeEventOrThrow(SsfEventRegistry registry,
                                              String eventTypeUri,
@@ -359,9 +341,7 @@ public class EventEmitterService {
     }
 
     /**
-     * Internal exception type used to ferry a Jackson conversion
-     * failure back to the admin endpoint without leaking the raw
-     * stack to the wire.
+     * 内部异常类型，用于将 Jackson 转换失败传回管理端点，而不向线格式泄露原始堆栈。
      */
     protected static class EventPayloadDeserializationException extends RuntimeException {
         public EventPayloadDeserializationException(String message, Throwable cause) {

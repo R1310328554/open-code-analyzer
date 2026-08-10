@@ -7,13 +7,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * RFC 8936 §2.2 polling response body.
+ * RFC 8936 §2.2 轮询响应体。
  *
- * <p>{@code sets} maps each delivered SET's {@code jti} to its signed JWS
- * payload (the receiver acks by passing those jtis back in the next
- * request's {@code ack} array). {@code moreAvailable} signals whether
- * the receiver should poll again immediately to drain remaining
- * pending events.
+ * <p>{@code sets} 将每个已投递 SET 的 {@code jti} 映射为其已签名的 JWS
+ * 载荷（接收方通过在下次请求的 {@code ack} 数组中回传这些 jti 进行确认）。
+ * {@code moreAvailable} 表示接收方是否应立即再次轮询以清空剩余待处理事件。</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PollResponse {
