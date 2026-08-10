@@ -15,23 +15,8 @@
     "internal/deepdoc/tsr.go",
     "internal/engine/elasticsearch/chunk.go",
     "internal/engine/elasticsearch/client.go",
-    "internal/engine/elasticsearch/common.go",
-    "internal/engine/elasticsearch/document.go",
-    "internal/engine/elasticsearch/meta_filter.go",
-    "internal/engine/elasticsearch/metadata.go",
-    "internal/engine/elasticsearch/sql.go",
-    "internal/engine/engine.go",
-    "internal/engine/global.go",
-    "internal/engine/infinity/chunk.go",
-    "internal/engine/infinity/client.go",
-    "internal/engine/infinity/common.go",
-    "internal/engine/infinity/document.go",
-    "internal/engine/infinity/infinity.go",
-    "internal/engine/infinity/meta_filter.go",
-    "internal/engine/infinity/metadata.go",
-    "internal/engine/infinity/sql.go",
-    "internal/engine/nats/nats.go"
+    "internal/engine/elasticsearch/common.go"
   ],
   "remaining_pending": 1074,
-  "done": 660
+  "done": 675
 }
