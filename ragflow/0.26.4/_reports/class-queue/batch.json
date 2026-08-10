@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T18:32:38Z",
-  "files": [
-    "internal/harness/events/clock.go",
-    "internal/harness/events/event.go",
-    "internal/harness/events/localfile.go",
-    "internal/harness/events/memory.go",
-    "internal/harness/events/nats.go",
-    "internal/harness/events/recorder.go",
-    "internal/harness/events/store.go",
-    "internal/harness/graph/channels/any_value.go",
-    "internal/harness/graph/channels/barrier.go",
-    "internal/harness/graph/channels/base.go",
-    "internal/harness/graph/channels/binop.go",
-    "internal/harness/graph/channels/ephemeral_value.go",
-    "internal/harness/graph/channels/last_value.go",
-    "internal/harness/graph/channels/reducer.go",
-    "internal/harness/graph/channels/topic.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 834,
-  "done": 915
+  "done": 930
 }
