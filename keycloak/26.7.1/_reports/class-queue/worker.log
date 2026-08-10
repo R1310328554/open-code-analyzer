@@ -463,3 +463,18 @@
 2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/DecisionEffect.java wave16a idm user-profile + authz policy reps
 2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/DecisionStrategy.java wave16a idm user-profile + authz policy reps
 2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/GroupPolicyRepresentation.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/JSPolicyRepresentation.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/Logic.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/Permission.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/PermissionRequest.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/PermissionResponse.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/PermissionTicketRepresentation.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/PermissionTicketToken.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/PolicyEnforcementMode.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/PolicyEvaluationRequest.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/PolicyEvaluationResponse.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/PolicyProviderRepresentation.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/PolicyRepresentation.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/RegexPolicyRepresentation.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ResourceOwnerRepresentation.java wave16b idm authz permission/policy reps
+2026-08-10T06:11:43Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ResourcePermissionRepresentation.java wave16b idm authz permission/policy reps
