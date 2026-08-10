@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:16:15Z",
-  "files": [
-    "server-spi/src/main/java/org/keycloak/organization/OrganizationProvider.java",
-    "server-spi/src/main/java/org/keycloak/policy/PasswordPolicyConfigException.java",
-    "server-spi/src/main/java/org/keycloak/policy/PasswordPolicyNotMetException.java",
-    "server-spi/src/main/java/org/keycloak/policy/PasswordPolicyProvider.java",
-    "server-spi/src/main/java/org/keycloak/policy/PolicyError.java",
-    "server-spi/src/main/java/org/keycloak/provider/ConfiguredPerClientProvider.java",
-    "server-spi/src/main/java/org/keycloak/provider/ConfiguredProvider.java",
-    "server-spi/src/main/java/org/keycloak/provider/InvalidationHandler.java",
-    "server-spi/src/main/java/org/keycloak/provider/Provider.java",
-    "server-spi/src/main/java/org/keycloak/provider/ProviderConfigProperty.java",
-    "server-spi/src/main/java/org/keycloak/provider/ProviderConfigPropertyNameNotUniqueException.java",
-    "server-spi/src/main/java/org/keycloak/provider/ProviderConfigurationBuilder.java",
-    "server-spi/src/main/java/org/keycloak/provider/ProviderEvent.java",
-    "server-spi/src/main/java/org/keycloak/provider/ProviderEventListener.java",
-    "server-spi/src/main/java/org/keycloak/provider/ProviderEventManager.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2308,
-  "done": 3675
+  "done": 3690
 }
