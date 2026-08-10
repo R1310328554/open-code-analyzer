@@ -27,12 +27,17 @@ import org.keycloak.userprofile.UserProfileContext;
 import org.keycloak.userprofile.UserProfileProvider;
 
 /**
+ * IdP 资料审查 FreeMarker Bean：展示 Broker 首次登录后待确认/编辑的用户属性。
+ * <p>基于 {@link UserProfileContext#IDP_REVIEW} 与 {@link UpdateProfileContext} 渲染动态表单。</p>
+ *
  * @author Vlastimil Elias <velias@redhat.com>
  */
 public class IdpReviewProfileBean extends AbstractUserProfileBean {
 
+    /** Broker 传入的待审查用户资料上下文。 */
     private UpdateProfileContext idpCtx;
     
+    /** @param idpCtx IdP 资料上下文 @param formData 表单回显 @param session Keycloak 会话 */
     public IdpReviewProfileBean(UpdateProfileContext idpCtx, MultivaluedMap<String, String> formData, KeycloakSession session) {
         super(formData);
         this.idpCtx = idpCtx;
@@ -40,16 +45,19 @@ public class IdpReviewProfileBean extends AbstractUserProfileBean {
     }
 
     @Override
+    /** 创建 {@link UserProfileContext#IDP_REVIEW} 场景的用户配置。 */
     protected UserProfile createUserProfile(UserProfileProvider provider) {
         return provider.create(UserProfileContext.IDP_REVIEW, null, null);
     }
 
     @Override
+    /** @param name 属性名 @return IdP 上下文中的默认值流 */
     protected Stream<String> getAttributeDefaultValues(String name) {
         return idpCtx.getAttributeStream(name);
     }
     
     @Override 
+    /** @return 用户配置上下文名称（IDP_REVIEW） */
     public String getContext() {
         return UserProfileContext.IDP_REVIEW.name();
     }

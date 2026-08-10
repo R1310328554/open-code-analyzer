@@ -27,16 +27,22 @@ import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModelException;
 
 /**
+ * FreeMarker 模板方法：按 Realm 与相对路径格式化必需操作（Required Action）URL。
+ * <p>实现 {@link TemplateMethodModelEx}，供 FTL 调用 {@code requiredActionUrl(action, path)}。</p>
  */
 public class RequiredActionUrlFormatterMethod implements TemplateMethodModelEx {
+    /** Realm 名称。 */
     private final String realm;
+    /** 服务基础 URI。 */
     private final URI baseUri;
 
+    /** @param realm Realm 模型 @param baseUri 基础 URI */
     public RequiredActionUrlFormatterMethod(RealmModel realm, URI baseUri) {
         this.realm = realm.getName();
         this.baseUri = baseUri;
     }
 
+    /** @param list 参数列表：[action, relativePath] @return 完整必需操作 URL */
     @Override
     public Object exec(List list) throws TemplateModelException {
         String action = list.get(0).toString();

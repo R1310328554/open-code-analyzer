@@ -47,11 +47,16 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.theme.Theme;
 
 /**
+ * 身份提供者（IdP）FreeMarker Bean：构建登录页可用的联邦身份源列表。
+ * <p>根据认证流上下文、已关联联邦身份与 Realm 配置，筛选并包装 {@link IdentityProviderModel}
+ * 为模板可读的 {@link IdentityProvider} 视图对象。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class IdentityProviderBean {
 
+    /** IdP 列表按 guiOrder 排序的比较器实例。 */
     public static OrderedModel.OrderedModelComparator<IdentityProvider> IDP_COMPARATOR_INSTANCE = new OrderedModel.OrderedModelComparator<>();
     private static final String ICON_THEME_PREFIX = "kcLogoIdP-";
     private static final String IDP_THEME_CONFIG_PREFIX = "kcTheme-";
@@ -62,6 +67,7 @@ public class IdentityProviderBean {
     protected RealmModel realm;
     protected URI baseURI;
 
+    /** @param session Keycloak 会话 @param realm 当前 Realm @param baseURI 服务基础 URI @param context 认证流上下文（可为 null） */
     public IdentityProviderBean(KeycloakSession session, RealmModel realm, URI baseURI, AuthenticationFlowContext context) {
         this.session = session;
         this.realm = realm;
@@ -69,6 +75,7 @@ public class IdentityProviderBean {
         this.context = context;
     }
 
+    /** @return 登录页应展示的身份提供者列表（懒加载并缓存） */
     public List<IdentityProvider> getProviders() {
         if (this.providers == null) {
             String existingIDP = this.getExistingIDP(session, context);
@@ -82,30 +89,33 @@ public class IdentityProviderBean {
         return this.providers;
     }
 
+    /** @return Keycloak 会话 */
     public KeycloakSession getSession() {
         return this.session;
     }
 
+    /** @return 当前 Realm */
     public RealmModel getRealm() {
         return this.realm;
     }
 
+    /** @return 服务基础 URI */
     public URI getBaseURI() {
         return this.baseURI;
     }
 
+    /** @return 认证流上下文 */
     public AuthenticationFlowContext getFlowContext() {
         return this.context;
     }
 
     /**
-     * Creates an {@link IdentityProvider} instance from the specified {@link IdentityProviderModel}.
+     * 根据 {@link IdentityProviderModel} 构建 {@link IdentityProvider} 实例。
      *
-     * @param realm a reference to the realm.
-     * @param baseURI the base URI.
-     * @param identityProvider the {@link IdentityProviderModel} from which the freemarker {@link IdentityProvider} is
-     *                         to be built.
-     * @return the constructed {@link IdentityProvider}.
+     * @param realm Realm 引用
+     * @param baseURI 基础 URI
+     * @param identityProvider 待转换的身份提供者模型
+     * @return 构造完成的 {@link IdentityProvider}
      */
     protected IdentityProvider createIdentityProvider(RealmModel realm, URI baseURI, IdentityProviderModel identityProvider) {
         String loginUrl = Urls.identityProviderAuthnRequest(baseURI, identityProvider.getAlias(), realm.getName()).toString();
@@ -121,9 +131,9 @@ public class IdentityProviderBean {
                 identityProvider.getConfig().get("guiOrder"), getLoginIconClasses(identityProvider), themeConfig);
     }
 
-    // Get icon classes defined in properties of current theme with key 'kcLogoIdP-{alias}'
-    // OR from IdentityProviderModel.getDisplayIconClasses if not defined in theme (for third-party IDPs like Sign-In-With-Apple)
-    // f.e. kcLogoIdP-github = fa fa-github
+    // 从当前登录主题 properties 读取 kcLogoIdP-{alias} 图标类，
+    // 或回退到 IdentityProviderModel.getDisplayIconClasses（第三方 IdP 如 Sign-In-With-Apple）
+    // 例如 kcLogoIdP-github = fa fa-github
     private String getLoginIconClasses(IdentityProviderModel identityProvider) {
         try {
             Theme theme = session.theme().getTheme(Theme.Type.LOGIN);
@@ -131,7 +141,7 @@ public class IdentityProviderBean {
             Optional<String> classesFromModel = Optional.ofNullable(identityProvider.getDisplayIconClasses());
             return classesFromTheme.orElse(classesFromModel.orElse(""));
         } catch (IOException e) {
-            //NOP
+            // 主题加载失败时忽略，返回空图标类
         }
         return "";
     }
@@ -147,13 +157,13 @@ public class IdentityProviderBean {
     }
 
     /**
-     * Checks if an IDP is being connected to the user's account. In this case the currentUser is {@code null} and the current flow
-     * is the {@code FIRST_BROKER_LOGIN_PATH}, so we should retrieve the IDP they used for login and filter it out of the list
-     * of IDPs that are available for login. (GHI #14173).
+     * 检测用户是否正在关联新的 IdP 到账户。
+     * <p>此时 currentUser 为 {@code null} 且流路径为 {@code FIRST_BROKER_LOGIN_PATH}，
+     * 需取出用于登录的 IdP 别名并从可选列表中排除（GHI #14173）。</p>
      *
-     * @param session a reference to the {@link KeycloakSession}.
-     * @param context a reference to the {@link AuthenticationFlowContext}.
-     * @return the alias of the IDP used for login before linking a new IDP to the user's account (if any).
+     * @param session {@link KeycloakSession} 引用
+     * @param context {@link AuthenticationFlowContext} 引用
+     * @return 关联新 IdP 前用于登录的 IdP 别名（若有）
      */
     protected String getExistingIDP(KeycloakSession session, AuthenticationFlowContext context) {
 
@@ -175,17 +185,14 @@ public class IdentityProviderBean {
     }
 
     /**
-     * Returns the list of IDPs linked with the user's federated identities, if any. In case these IDPs exist, the login
-     * page should show only the IDPs already linked to the user. Returning {@code null} indicates that all public enabled IDPs
-     * should be available.
-     * </p>
-     * Returning an empty set essentially narrows the list of available IDPs to zero, so no IDPs will be shown for login.
+     * 返回与用户联邦身份已关联的 IdP 别名集合。
+     * <p>非空时登录页仅展示已关联 IdP；返回 {@code null} 表示展示全部公开启用的 IdP；
+     * 空集合表示不展示任何 IdP。</p>
      *
-     * @param session a reference to the {@link KeycloakSession}.
-     * @param realm a reference to the realm.
-     * @param context a reference to the {@link AuthenticationFlowContext}.
-     * @return a {@link Set} containing the aliases of the IDPs that should be available for login. An empty set indicates
-     * that no IDPs should be available.
+     * @param session {@link KeycloakSession} 引用
+     * @param realm Realm 引用
+     * @param context {@link AuthenticationFlowContext} 引用
+     * @return 可用于登录的 IdP 别名集合
      */
     protected Set<String> getLinkedBrokerAliases(KeycloakSession session, RealmModel realm, AuthenticationFlowContext context) {
         Set<String> result = null;
@@ -197,7 +204,7 @@ public class IdentityProviderBean {
                         .collect(Collectors.toSet());
 
                 if (!federatedIdentities.isEmpty() || organizationsDisabled(realm)) {
-                    // if orgs are enabled, we don't want to return an empty set - we want the organization IDPs to be shown if those are available.
+                    // 启用组织功能时不应返回空集合，以便仍展示组织级 IdP
                     result = new HashSet<>(federatedIdentities);
                 }
             }
@@ -206,13 +213,12 @@ public class IdentityProviderBean {
     }
 
     /**
-     * Builds and returns a list of {@link IdentityProvider} instances from the specified set of federated IDPs. The IDPs
-     * must be enabled, not link-only, and not set to be hidden on login page. If any IDP has an alias that matches the
-     * {@code existingIDP} parameter, it must be filtered out.
+     * 从已关联联邦 IdP 别名集合构建 {@link IdentityProvider} 列表。
+     * <p>仅包含已启用、非仅链接且未在登录页隐藏的 IdP；{@code existingIDP} 会被排除。</p>
      *
-     * @param federatedProviders a {@link Set} containing the aliases of the federated IDPs that should be considered for login.
-     * @param existingIDP the alias of the IDP that must be filtered out from the result (used when linking a new IDP to a user's account).
-     * @return a {@link List} containing the constructed {@link IdentityProvider}s.
+     * @param federatedProviders 待考虑的联邦 IdP 别名集合
+     * @param existingIDP 需从结果中排除的 IdP 别名
+     * @return 构造完成的 {@link IdentityProvider} 列表
      */
     protected List<IdentityProvider> getFederatedIdentityProviders(Set<String> federatedProviders, String existingIDP) {
         return federatedProviders.stream()
@@ -224,23 +230,21 @@ public class IdentityProviderBean {
     }
 
     /**
-     * Returns a predicate that can filter out IDPs associated with the current user's federated identities before those
-     * are converted into {@link IdentityProvider}s. Subclasses may use this as a way to further refine the IDPs that are
-     * to be returned.
+     * 返回在转换为 {@link IdentityProvider} 前过滤联邦 IdP 的谓词。
+     * <p>子类可覆盖以进一步收窄返回的 IdP 集合。</p>
      *
-     * @return the custom {@link Predicate} used as a last filter before conversion into {@link IdentityProvider}
+     * @return 转换前使用的 {@link Predicate}
      */
     protected Predicate<IdentityProviderModel> federatedProviderPredicate() {
         return IdentityProviderStorageProvider.LoginFilter.getLoginPredicate();
     }
 
     /**
-     * Builds and returns a list of {@link IdentityProvider} instances that will be available for login. This method goes
-     * to the {@link IdentityProviderStorageProvider} to fetch the IDPs that can be used for login (enabled, not link-only and not set to be
-     * hidden on login page).
+     * 构建登录页可用的 {@link IdentityProvider} 列表。
+     * <p>从 {@link IdentityProviderStorageProvider} 获取已启用、非仅链接且未隐藏的 IdP。</p>
      *
-     * @param existingIDP the alias of the IDP that must be filtered out from the result (used when linking a new IDP to a user's account).
-     * @return a {@link List} containing the constructed {@link IdentityProvider}s.
+     * @param existingIDP 需从结果中排除的 IdP 别名
+     * @return 构造完成的 {@link IdentityProvider} 列表
      */
     protected List<IdentityProvider> searchForIdentityProviders(String existingIDP) {
         return session.identityProviders().getForLogin(IdentityProviderStorageProvider.FetchMode.REALM_ONLY, null)
@@ -253,10 +257,12 @@ public class IdentityProviderBean {
         return !Profile.isFeatureEnabled(Profile.Feature.ORGANIZATION) || !realm.isOrganizationsEnabled();
     }
 
+    /** 供 FreeMarker 模板使用的身份提供者视图对象。 */
     public static class IdentityProvider implements OrderedModel {
 
         private final String alias;
-        private final String providerId; // This refers to providerType (facebook, google, etc.)
+        /** 提供者类型标识（如 facebook、google 等）。 */
+        private final String providerId; // providerType
         private final String loginUrl;
         private final String guiOrder;
         private final String displayName;
@@ -277,14 +283,17 @@ public class IdentityProviderBean {
             this.themeConfig = themeConfig;
         }
 
+        /** @return IdP 别名 */
         public String getAlias() {
             return alias;
         }
 
+        /** @return IdP 认证请求 URL */
         public String getLoginUrl() {
             return loginUrl;
         }
 
+        /** @return 提供者类型 ID */
         public String getProviderId() {
             return providerId;
         }
@@ -294,14 +303,17 @@ public class IdentityProviderBean {
             return guiOrder;
         }
 
+        /** @return 登录按钮显示名称 */
         public String getDisplayName() {
             return displayName;
         }
 
+        /** @return 登录按钮图标 CSS 类 */
         public String getIconClasses() {
             return iconClasses;
         }
 
+        /** @return 主题相关额外配置（kcTheme- 前缀项） */
         public Map<String, String> getThemeConfig() {
             return themeConfig;
         }
