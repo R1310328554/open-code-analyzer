@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T10:29:48Z",
   "files": [
-    "server-spi-private/src/main/java/org/keycloak/credential/hash/Salt.java",
-    "server-spi-private/src/main/java/org/keycloak/crl/CrlStorageProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/crl/CrlStorageProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/crl/CrlStorageSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/CekManagementProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/CekManagementProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/CekManagementSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/ClientSignatureVerifierProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/ClientSignatureVerifierProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/ClientSignatureVerifierSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/ContentEncryptionProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/ContentEncryptionProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/ContentEncryptionSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/HashProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/HashProviderFactory.java",
     "server-spi-private/src/main/java/org/keycloak/crypto/HashSpi.java",
     "server-spi-private/src/main/java/org/keycloak/crypto/SignatureProvider.java",
     "server-spi-private/src/main/java/org/keycloak/crypto/SignatureProviderFactory.java",
@@ -33,5 +18,5 @@
     "server-spi-private/src/main/java/org/keycloak/email/EmailSenderProviderFactory.java"
   ],
   "remaining_pending": 2878,
-  "done": 3090
+  "done": 3105
 }
