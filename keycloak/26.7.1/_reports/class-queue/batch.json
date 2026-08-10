@@ -15,23 +15,8 @@
     "scim/model/src/main/java/org/keycloak/scim/model/user/UserEnterpriseModelSchema.java",
     "scim/model/src/main/java/org/keycloak/scim/model/user/UserExtensionModelSchema.java",
     "scim/model/src/main/java/org/keycloak/scim/model/user/UserResourceTypeProvider.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/user/UserResourceTypeProviderFactory.java",
-    "scim/services/src/main/java/org/keycloak/scim/services/Error.java",
-    "scim/services/src/main/java/org/keycloak/scim/services/ScimRealmResource.java",
-    "scim/services/src/main/java/org/keycloak/scim/services/ScimRealmResourceFactory.java",
-    "scim/services/src/main/java/org/keycloak/scim/services/ScimResourceTypeResource.java",
-    "server-spi-private/src/main/java/org/keycloak/ServerStartupError.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/AbstractAuthenticationFlowContext.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/AuthenticationFlow.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/AuthenticationFlowCallback.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/AuthenticationFlowCallbackFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/AuthenticationFlowContext.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/AuthenticationFlowError.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/AuthenticationFlowException.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/AuthenticationSelectionOption.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/Authenticator.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/AuthenticatorFactory.java"
+    "scim/model/src/main/java/org/keycloak/scim/model/user/UserResourceTypeProviderFactory.java"
   ],
   "remaining_pending": 3088,
-  "done": 2880
+  "done": 2895
 }
