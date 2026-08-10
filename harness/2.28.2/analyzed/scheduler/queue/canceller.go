@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// queue 包提供基于内存的构建取消通知机制（非 Redis 部署）。
 package queue
 
 import (
@@ -20,6 +21,7 @@ import (
 	"time"
 )
 
+// canceller 维护构建取消状态，并通过 channel 通知等待中的订阅者。
 type canceller struct {
 	sync.Mutex
 
@@ -27,6 +29,7 @@ type canceller struct {
 	cancelled   map[int64]time.Time
 }
 
+// newCanceller 创建内存版取消器实例。
 func newCanceller() *canceller {
 	return &canceller{
 		subscribers: make(map[chan struct{}]int64),
@@ -34,6 +37,7 @@ func newCanceller() *canceller {
 	}
 }
 
+// Cancel 标记指定构建 ID 为已取消，并关闭所有监听该 ID 的订阅 channel。
 func (c *canceller) Cancel(ctx context.Context, id int64) error {
 	c.Lock()
 	c.cancelled[id] = time.Now().Add(time.Minute * 5)
@@ -47,6 +51,7 @@ func (c *canceller) Cancel(ctx context.Context, id int64) error {
 	return nil
 }
 
+// Cancelled 阻塞等待指定构建被取消；若 context 取消则返回 false。
 func (c *canceller) Cancelled(ctx context.Context, id int64) (bool, error) {
 	subscriber := make(chan struct{})
 	c.Lock()
@@ -76,11 +81,10 @@ func (c *canceller) Cancelled(ctx context.Context, id int64) (bool, error) {
 	}
 }
 
+// collect 清理已过 TTL 的取消记录，为网络抖动留出重连窗口。
 func (c *canceller) collect() {
-	// the list of cancelled builds is stored with a ttl, and
-	// is not removed until the ttl is reached. This provides
-	// adequate window for clients with connectivity issues to
-	// reconnect and receive notification of cancel events.
+	// 已取消构建列表带 TTL，到期后才删除；
+	// 这样客户端短暂断连后仍能收到取消通知。
 	now := time.Now()
 	for build, timestamp := range c.cancelled {
 		if now.After(timestamp) {

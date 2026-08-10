@@ -16,11 +16,10 @@ package reaper
 
 import "time"
 
-// helper function returns the current time.
+// now 可替换的时间源，便于测试注入。
 var now = time.Now
 
-// helper function returns true if the time exceeded the
-// timeout duration.
+// isExceeded 判断自 unix 时刻起是否已超过 timeout+buffer 时长。
 func isExceeded(unix int64, timeout, buffer time.Duration) bool {
 	return now().After(
 		time.Unix(unix, 0).Add(timeout).Add(buffer),

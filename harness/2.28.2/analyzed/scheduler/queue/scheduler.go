@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// queue 包将调度队列与取消器组合为 core.Scheduler 实现。
 package queue
 
 import (
@@ -19,11 +20,13 @@ import (
 	"errors"
 )
 
+// scheduler 组合 queue 与内存 canceller，提供完整调度能力。
 type scheduler struct {
 	*queue
 	*canceller
 }
 
+// Stats 返回调度器统计信息（当前未实现）。
 func (d scheduler) Stats(context.Context) (interface{}, error) {
 	return nil, errors.New("not implemented")
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// queue 包实现构建阶段调度队列，将待执行阶段分派给匹配的 Runner worker。
 package queue
 
 import (
@@ -25,6 +26,7 @@ import (
 	"github.com/drone/drone-go/drone"
 )
 
+// queue 是阶段调度核心结构，维护 worker 池与调度循环。
 type queue struct {
 	sync.Mutex
 	globMx redisdb.LockErr
@@ -38,7 +40,7 @@ type queue struct {
 	ctx      context.Context
 }
 
-// newQueue returns a new Queue backed by the build datastore.
+// newQueue 创建由 StageStore 持久化支撑的调度队列并启动后台循环。
 func newQueue(ctx context.Context, store core.StageStore) *queue {
 	q := &queue{
 		store:    store,
@@ -52,6 +54,7 @@ func newQueue(ctx context.Context, store core.StageStore) *queue {
 	return q
 }
 
+// Schedule 通知调度器有新阶段待处理（非阻塞写入 ready 信号）。
 func (q *queue) Schedule(ctx context.Context, stage *core.Stage) error {
 	select {
 	case q.ready <- struct{}{}:
@@ -60,6 +63,7 @@ func (q *queue) Schedule(ctx context.Context, stage *core.Stage) error {
 	return nil
 }
 
+// Pause 暂停调度，signal 将不再分派新任务。
 func (q *queue) Pause(ctx context.Context) error {
 	q.Lock()
 	q.paused = true
@@ -67,6 +71,7 @@ func (q *queue) Pause(ctx context.Context) error {
 	return nil
 }
 
+// Paused 返回队列当前是否处于暂停状态。
 func (q *queue) Paused(ctx context.Context) (bool, error) {
 	q.Lock()
 	paused := q.paused
@@ -74,6 +79,7 @@ func (q *queue) Paused(ctx context.Context) (bool, error) {
 	return paused, nil
 }
 
+// Resume 恢复调度并触发一次 signal。
 func (q *queue) Resume(ctx context.Context) error {
 	q.Lock()
 	q.paused = false
@@ -86,6 +92,7 @@ func (q *queue) Resume(ctx context.Context) error {
 	return nil
 }
 
+// Request 注册一个 worker 并阻塞等待匹配的阶段任务；context 取消时返回错误。
 func (q *queue) Request(ctx context.Context, params core.Filter) (*core.Stage, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -120,6 +127,7 @@ func (q *queue) Request(ctx context.Context, params core.Filter) (*core.Stage, e
 	}
 }
 
+// signal 在全局锁保护下将未完成阶段匹配并分派给空闲 worker。
 func (q *queue) signal(ctx context.Context) error {
 	if err := q.globMx.LockContext(ctx); err != nil {
 		return err
@@ -151,43 +159,36 @@ func (q *queue) signal(ctx context.Context) error {
 			continue
 		}
 
-		// if the stage defines concurrency limits we
-		// need to make sure those limits are not exceeded
-		// before proceeding.
+		// 若阶段定义了并发上限，须确认未超限后再分派
 		if withinLimits(item, items) == false {
 			continue
 		}
 
-		// if the system defines concurrency limits
-		// per repository we need to make sure those limits
-		// are not exceeded before proceeding.
+		// 若系统按仓库设置了并发节流，须确认未超限后再分派
 		if shouldThrottle(item, items, item.LimitRepo) == true {
 			continue
 		}
 
 	loop:
 		for w := range q.workers {
-			// the worker must match the resource kind and type
+			// worker 的资源 kind/type 必须与阶段匹配
 			if !matchResource(w.kind, w.typ, item.Kind, item.Type) {
 				continue
 			}
 
 			if w.os != "" || w.arch != "" || w.variant != "" || w.kernel != "" {
-				// the worker is platform-specific. check to ensure
-				// the queue item matches the worker platform.
+				// worker 绑定了特定平台，须与阶段平台字段一致
 				if w.os != item.OS {
 					continue
 				}
 				if w.arch != item.Arch {
 					continue
 				}
-				// if the pipeline defines a variant it must match
-				// the worker variant (e.g. arm6, arm7, etc).
+				// 流水线若指定 variant（如 arm6/arm7），须与 worker 一致
 				if item.Variant != "" && item.Variant != w.variant {
 					continue
 				}
-				// if the pipeline defines a kernel version it must match
-				// the worker kernel version (e.g. 1709, 1803).
+				// 流水线若指定 kernel 版本（如 1709/1803），须与 worker 一致
 				if item.Kernel != "" && item.Kernel != w.kernel {
 					continue
 				}
@@ -234,6 +235,7 @@ func (q *queue) signal(ctx context.Context) error {
 	return nil
 }
 
+// start 是调度主循环：响应 ready 信号或定时 tick 调用 signal。
 func (q *queue) start() error {
 	for {
 		select {
@@ -247,6 +249,7 @@ func (q *queue) start() error {
 	}
 }
 
+// worker 表示一个等待任务的 Runner，携带平台过滤条件与任务 channel。
 type worker struct {
 	kind    string
 	typ     string
@@ -259,10 +262,12 @@ type worker struct {
 	done    <-chan struct{}
 }
 
+// counter 用于统计各键出现次数（当前未使用，保留供扩展）。
 type counter struct {
 	counts map[string]int
 }
 
+// checkLabels 判断阶段标签与 worker 标签是否完全一致。
 func checkLabels(a, b map[string]string) bool {
 	if len(a) != len(b) {
 		return false
@@ -275,6 +280,7 @@ func checkLabels(a, b map[string]string) bool {
 	return true
 }
 
+// withinLimits 检查同名阶段并发数是否低于阶段 Limit 配置。
 func withinLimits(stage *core.Stage, siblings []*core.Stage) bool {
 	if stage.Limit == 0 {
 		return true
@@ -298,39 +304,32 @@ func withinLimits(stage *core.Stage, siblings []*core.Stage) bool {
 	return count < stage.Limit
 }
 
+// shouldThrottle 按仓库级 LimitRepo 判断当前阶段是否应被节流跳过。
 func shouldThrottle(stage *core.Stage, siblings []*core.Stage, limit int) bool {
-	// if no throttle limit is defined (default) then
-	// return false to indicate no throttling is needed.
+	// 未配置节流上限时无需节流
 	if limit == 0 {
 		return false
 	}
-	// if the repository is running it is too late
-	// to skip and we can exit
+	// 已在运行的阶段无法跳过
 	if stage.Status == drone.StatusRunning {
 		return false
 	}
 
 	count := 0
-	// loop through running stages to count number of
-	// running stages for the parent repository.
+	// 统计同一仓库中 ID 更小的运行中/待处理阶段数量
 	for _, sibling := range siblings {
-		// ignore stages from other repository.
 		if sibling.RepoID != stage.RepoID {
 			continue
 		}
-		// ignore this stage and stages that were
-		// scheduled after this stage.
 		if sibling.ID >= stage.ID {
 			continue
 		}
 		count++
 	}
-	// if the count of running stages exceeds the
-	// throttle limit return true.
 	return count >= limit
 }
 
-// matchResource is a helper function that returns
+// matchResource 比较 worker 与阶段的资源 kind/type，空值使用默认值。
 func matchResource(kinda, typea, kindb, typeb string) bool {
 	if kinda == "" {
 		kinda = "pipeline"

@@ -15,6 +15,7 @@
 //go:build oss
 // +build oss
 
+// queue 包（OSS 构建）提供单机内存调度器，不使用 Redis。
 package queue
 
 import (
@@ -24,7 +25,7 @@ import (
 	"github.com/drone/drone/service/redisdb"
 )
 
-// New creates a new scheduler.
+// New 创建 OSS 版调度器，始终使用内存队列与内存取消器。
 func New(store core.StageStore, r redisdb.RedisDB) core.Scheduler {
 	return scheduler{
 		queue:     newQueue(context.Background(), store),

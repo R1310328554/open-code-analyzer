@@ -16,14 +16,11 @@ package canceler
 
 import "github.com/drone/drone/core"
 
+// match 判断 with 仓库中的构建是否应被当前 build 的 CancelPending 取消。
 func match(build *core.Build, with *core.Repository) bool {
-	// filter out existing builds for others
-	// repositories.
 	if with.ID != build.RepoID {
 		return false
 	}
-	// filter out builds that are newer than
-	// the current build.
 	if with.Build.Number >= build.Number {
 		return false
 	}
@@ -38,13 +35,9 @@ func match(build *core.Build, with *core.Repository) bool {
 		}
 	}
 
-	// filter out builds that do not match
-	// the same event type.
 	if with.Build.Event != build.Event {
 		return false
 	}
-	// filter out builds that do not match
-	// the same reference.
 	if with.Build.Ref != build.Ref {
 		return false
 	}

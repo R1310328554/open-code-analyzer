@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// reaper 包定期扫描并清理长期处于 pending/running 的僵尸构建。
 package reaper
 
 import (
@@ -25,22 +26,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Reaper finds and kills zombie jobs that are permanently
-// stuck in a pending or running state.
+// Reaper 查找并终止永久卡在 pending 或 running 状态的僵尸任务。
 type Reaper struct {
 	Repos    core.RepositoryStore
 	Builds   core.BuildStore
 	Stages   core.StageStore
 	Canceler core.Canceler
-	Pending  time.Duration // Pending is the pending pipeline deadline
-	Running  time.Duration // Running is the running pipeline deadline
+	Pending  time.Duration // Pending 是 pending 流水线超时阈值
+	Running  time.Duration // Running 是 running 流水线超时阈值
 
-	// Buffer is applied when calculating whether or not the timeout
-	// period is exceeded. The added buffer helps prevent false positives.
+	// Buffer 在判定超时时额外加宽，降低误杀概率
 	Buffer time.Duration
 }
 
-// New returns a new Reaper.
+// New 创建 Reaper，为零值参数填充默认超时与缓冲。
 func New(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -71,7 +70,7 @@ func New(
 	}
 }
 
-// Start starts the reaper.
+// Start 按给定间隔周期性执行 reap 扫描，直至 context 取消。
 func (r *Reaper) Start(ctx context.Context, dur time.Duration) error {
 	ticker := time.NewTicker(dur)
 	defer ticker.Stop()
@@ -86,10 +85,9 @@ func (r *Reaper) Start(ctx context.Context, dur time.Duration) error {
 	}
 }
 
+// reap 扫描 pending 与 running 构建，对超时项尝试取消。
 func (r *Reaper) reap(ctx context.Context) error {
 	defer func() {
-		// taking the paranoid approach to recover from
-		// a panic that should absolutely never happen.
 		if r := recover(); r != nil {
 			logrus.Errorf("reaper: unexpected panic: %s", r)
 			debug.PrintStack()
@@ -113,8 +111,6 @@ func (r *Reaper) reap(ctx context.Context) error {
 			WithField("build.status", build.Status).
 			WithField("build.created", build.Created)
 
-		// if a build is pending for longer than the maximum
-		// pending time limit, the build is maybe cancelled.
 		if isExceeded(build.Created, r.Pending, r.Buffer) {
 			logger.Traceln("reaper: cancel build: time limit exceeded")
 			err = r.reapMaybe(ctx, build)
@@ -142,8 +138,6 @@ func (r *Reaper) reap(ctx context.Context) error {
 			WithField("build.status", build.Status).
 			WithField("build.created", build.Created)
 
-		// if a build is running for longer than the maximum
-		// running time limit, the build is maybe cancelled.
 		if isExceeded(build.Started, r.Running, r.Buffer) {
 			logger.Traceln("reaper: cancel build: time limit exceeded")
 
@@ -161,16 +155,14 @@ func (r *Reaper) reap(ctx context.Context) error {
 	return result
 }
 
+// reapMaybe 根据构建与阶段状态决定是否调用 Canceler 取消僵尸构建。
 func (r *Reaper) reapMaybe(ctx context.Context, build *core.Build) error {
 	repo, err := r.Repos.Find(ctx, build.RepoID)
 	if err != nil {
 		return err
 	}
 
-	// if the build status is pending we can immediately
-	// cancel the build and all build stages.
 	if build.Status == core.StatusPending {
-		// TODO trace log entry
 		return r.Canceler.Cancel(ctx, repo, build)
 	}
 
@@ -189,20 +181,13 @@ func (r *Reaper) reapMaybe(ctx context.Context, build *core.Build) error {
 		}
 	}
 
-	// if the build stages are all pending we can immediately
-	// cancel the build.
 	if started == 0 {
-		// TODO trace log entry
 		return r.Canceler.Cancel(ctx, repo, build)
 	}
 
-	// if the build stage has exceeded the timeout by a reasonable
-	// margin cancel the build and all build stages, else ignore.
 	if isExceeded(started, time.Duration(repo.Timeout)*time.Minute, r.Buffer) {
-		// TODO trace log entry
 		return r.Canceler.Cancel(ctx, repo, build)
 	}
 
-	// TODO trace log entry
 	return nil
 }

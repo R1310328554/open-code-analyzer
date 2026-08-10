@@ -4,4 +4,5 @@
 
 // +build !oss
 
+// scheduler 包（非 OSS 构建）是阶段调度子系统的顶层包入口。
 package scheduler

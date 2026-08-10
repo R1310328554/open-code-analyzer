@@ -21,11 +21,13 @@ import (
 	"errors"
 )
 
+// schedulerRedis 组合 Redis 版队列与 Redis 取消器。
 type schedulerRedis struct {
 	*queue
 	*cancellerRedis
 }
 
+// Stats 返回调度器统计信息（当前未实现）。
 func (d schedulerRedis) Stats(context.Context) (interface{}, error) {
 	return nil, errors.New("not implemented")
 }

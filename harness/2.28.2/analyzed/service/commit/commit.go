@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// commit 包通过 go-scm 客户端提供提交查询与变更列表服务。
 package commit
 
 import (
@@ -21,7 +22,7 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-// New returns a new CommitServiceFactory.
+// New 创建实现 core.CommitService 的提交服务。
 func New(client *scm.Client, renew core.Renewer) core.CommitService {
 	return &service{
 		client: client,
@@ -29,11 +30,13 @@ func New(client *scm.Client, renew core.Renewer) core.CommitService {
 	}
 }
 
+// service 封装 SCM 客户端与令牌续期逻辑。
 type service struct {
 	renew  core.Renewer
 	client *scm.Client
 }
 
+// Find 按 SHA 从远程仓库获取提交详情。
 func (s *service) Find(ctx context.Context, user *core.User, repo, sha string) (*core.Commit, error) {
 	err := s.renew.Renew(ctx, user, false)
 	if err != nil {
@@ -68,6 +71,7 @@ func (s *service) Find(ctx context.Context, user *core.User, repo, sha string) (
 	}, nil
 }
 
+// FindRef 按分支或标签引用解析并返回对应提交（Bitbucket/Stash 需特殊处理）。
 func (s *service) FindRef(ctx context.Context, user *core.User, repo, ref string) (*core.Commit, error) {
 	err := s.renew.Renew(ctx, user, false)
 	if err != nil {
@@ -115,6 +119,7 @@ func (s *service) FindRef(ctx context.Context, user *core.User, repo, ref string
 	}, nil
 }
 
+// ListChanges 列出指定提交相对 ref 的文件变更。
 func (s *service) ListChanges(ctx context.Context, user *core.User, repo, sha, ref string) ([]*core.Change, error) {
 	err := s.renew.Renew(ctx, user, false)
 	if err != nil {

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// pubsub 包内部定义单个订阅者的消息分发与生命周期管理。
 package pubsub
 
 import (
@@ -20,6 +21,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// subscriber 表示一个 pubsub 订阅者，持有带缓冲的事件通道与退出信号。
 type subscriber struct {
 	sync.Mutex
 
@@ -28,18 +30,18 @@ type subscriber struct {
 	done    bool
 }
 
+// publish 向订阅者发送事件；若订阅者已关闭或通道已满则丢弃新消息。
 func (s *subscriber) publish(event *core.Message) {
 	select {
 	case <-s.quit:
 	case s.handler <- event:
 	default:
-		// events are sent on a buffered channel. If there
-		// is a slow consumer that is not processing events,
-		// the buffered channel will fill and newer messages
-		// are ignored.
+		// 事件写入带缓冲通道。若消费者处理过慢导致通道已满，
+		// 较新的消息将被忽略。
 	}
 }
 
+// close 关闭订阅者，仅首次调用时发送退出信号。
 func (s *subscriber) close() {
 	s.Lock()
 	if s.done == false {

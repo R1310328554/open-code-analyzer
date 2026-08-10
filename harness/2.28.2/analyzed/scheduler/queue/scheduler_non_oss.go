@@ -15,6 +15,7 @@
 //go:build !oss
 // +build !oss
 
+// queue 包（非 OSS 构建）根据 Redis 可用性选择分布式或内存调度器。
 package queue
 
 import (
@@ -25,7 +26,7 @@ import (
 	"github.com/drone/drone/service/redisdb"
 )
 
-// New creates a new scheduler.
+// New 创建调度器：无 Redis 时使用内存取消器，否则启用 Redis 分布式锁与取消。
 func New(store core.StageStore, r redisdb.RedisDB) core.Scheduler {
 	if r == nil {
 		return scheduler{

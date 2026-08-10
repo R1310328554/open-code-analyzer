@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// server 包封装 HTTP/HTTPS 服务器启动、TLS 与 ACME 自动证书逻辑。
 package server
 
 import (
@@ -26,7 +27,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// A Server defines parameters for running an HTTP server.
+// Server 定义 HTTP 服务器运行参数。
 type Server struct {
 	Acme    bool
 	Email   string
@@ -39,7 +40,7 @@ type Server struct {
 
 const timeoutGracefulShutdown = 5 * time.Second
 
-// ListenAndServe initializes a server to respond to HTTP network requests.
+// ListenAndServe 根据配置启动 HTTP、TLS 或 ACME 模式的服务器。
 func (s Server) ListenAndServe(ctx context.Context) error {
 	if s.Acme {
 		return s.listenAndServeAcme(ctx)
@@ -53,6 +54,7 @@ func (s Server) ListenAndServe(ctx context.Context) error {
 	return err
 }
 
+// listenAndServe 启动纯 HTTP 服务器并在 context 取消时优雅关闭。
 func (s Server) listenAndServe(ctx context.Context) error {
 	var g errgroup.Group
 	s1 := &http.Server{
@@ -71,6 +73,7 @@ func (s Server) listenAndServe(ctx context.Context) error {
 	return g.Wait()
 }
 
+// listenAndServeTLS 同时监听 :http（重定向）与 :https（TLS 服务）。
 func (s Server) listenAndServeTLS(ctx context.Context) error {
 	var g errgroup.Group
 	s1 := &http.Server{
@@ -107,6 +110,7 @@ func (s Server) listenAndServeTLS(ctx context.Context) error {
 	return g.Wait()
 }
 
+// listenAndServeAcme 使用 autocert 自动申请并续期 Let's Encrypt 证书。
 func (s Server) listenAndServeAcme(ctx context.Context) error {
 	var g errgroup.Group
 
@@ -153,11 +157,13 @@ func (s Server) listenAndServeAcme(ctx context.Context) error {
 	return g.Wait()
 }
 
+// redirect 将 HTTP 请求 307 重定向到 HTTPS。
 func redirect(w http.ResponseWriter, req *http.Request) {
 	target := "https://" + req.Host + req.URL.Path
 	http.Redirect(w, req, target, http.StatusTemporaryRedirect)
 }
 
+// cacheDir 返回 autocert 证书缓存目录（优先 XDG_CACHE_HOME）。
 func cacheDir() string {
 	const base = "golang-autocert"
 	if xdg := os.Getenv("XDG_CACHE_HOME"); xdg != "" {
