@@ -15,7 +15,14 @@
  */
 package com.sun.nio.sctp;
 
+/**
+ * SCTP 通道可配置选项的类型安全描述符。
+ * <p>与 {@link java.net.SocketOption} 类似，由 {@link SctpStandardSocketOptions}  提供标准常量；{@link #name()} 与 {@link #type()} 供反射与选项映射使用。</p>
+ * @param <T> 选项值 Java 类型
+ */
 public interface SctpSocketOption<T> {
+    /** 选项名称字符串（通常与内核/SCTP 栈一致） */
     String name();
+    /** 选项值的 {@link Class} 类型 */
     Class<T> type();
 }

@@ -15,5 +15,10 @@
  */
 package com.sun.nio.sctp;
 
+/**
+ * 处理 {@link SctpChannel#receive} 路径上到达的 SCTP 通知。
+ * <p>实现类可继承 {@link AbstractNotificationHandler}； 各 {@code handleNotification} 重载返回 {@link HandlerResult} 控制是否继续。</p>
+ * @param <T> 与 receive 调用方传入的 attachment 类型相同
+ */
 public interface NotificationHandler<T> {
 }

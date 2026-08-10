@@ -20,6 +20,7 @@ import java.net.SocketAddress;
 /**
  * A {@link SocketAddress} subclass to wrap the serial port address of a RXTX
  * device (e.g. COM1, /dev/ttyUSB0).
+ * <p>RXTX 串口设备地址：以端口名字符串标识端点（Windows {@code COMn}、 Linux {@code /dev/tty*} 等），用于 {@code bind/connect}。</p>
  *
  * @deprecated this transport will be removed in the next major version.
  */
@@ -28,10 +29,12 @@ public class RxtxDeviceAddress extends SocketAddress {
 
     private static final long serialVersionUID = -2907820090993709523L;
 
+    /** 串口设备路径或端口名 */
     private final String value;
 
     /**
      * Creates a RxtxDeviceAddress representing the address of the serial port.
+     * <p>以端口名字符串构造地址。</p>
      *
      * @param value the address of the device (e.g. COM1, /dev/ttyUSB0, ...)
      */
@@ -41,6 +44,7 @@ public class RxtxDeviceAddress extends SocketAddress {
 
     /**
      * @return The serial port address of the device (e.g. COM1, /dev/ttyUSB0, ...)
+     * <p>返回串口设备名字符串。</p>
      */
     public String value() {
         return value;

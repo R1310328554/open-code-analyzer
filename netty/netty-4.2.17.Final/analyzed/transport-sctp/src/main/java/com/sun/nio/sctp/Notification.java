@@ -15,6 +15,11 @@
  */
 package com.sun.nio.sctp;
 
+/**
+ * SCTP 内核/协议栈异步事件通知的标记接口。
+ * <p>具体子类型包括 {@link AssociationChangeNotification}、 {@link PeerAddressChangeNotification} 等；均关联一条 {@link Association}。</p>
+ */
 public interface Notification {
+    /** 返回触发本通知的 SCTP 关联 */
     Association association();
 }

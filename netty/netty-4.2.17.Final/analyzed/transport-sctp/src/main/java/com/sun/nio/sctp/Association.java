@@ -15,7 +15,12 @@
  */
 package com.sun.nio.sctp;
 
+/**
+ * 表示一条 SCTP 关联（association）：两端点间的逻辑连接， 可含多条流与多个 IP 地址。
+ * <p>本仓库中为非 SCTP 平台的占位 stub；真实 JDK 实现在支持 SCTP 的 OS 上提供。</p>
+ */
 public class Association {
+    /** 非 SCTP 平台加载时立即失败，避免误用 stub API */
     static {
         UnsupportedOperatingSystemException.raise();
     }

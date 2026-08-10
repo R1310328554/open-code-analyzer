@@ -15,6 +15,13 @@
  */
 package com.sun.nio.sctp;
 
+/**
+ * {@link NotificationHandler} 处理 SCTP 通知后的控制结果。
+ * <p>{@link #CONTINUE} 继续处理后续通知；{@link #RETURN} 终止当前 receive 循环。</p>
+ */
 public enum HandlerResult {
-    CONTINUE, RETURN
+    /** 继续接收并分发通知 */
+    CONTINUE,
+    /** 立即结束本次 {@code receive} 中的通知处理 */
+    RETURN
 }

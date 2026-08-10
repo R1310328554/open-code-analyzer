@@ -15,7 +15,12 @@
  */
 package com.sun.nio.sctp;
 
+/**
+ * 对端传输地址可达性变更通知（如 ADDR_AVAILABLE、ADDR_UNREACHABLE）。
+ * <p>多宿主 SCTP 关联中某 IP 路径失效或恢复时触发； 由 {@link NotificationHandler} 处理。</p>
+ */
 public abstract class PeerAddressChangeNotification implements Notification {
+    /** stub：非 SCTP 平台拒绝加载 */
     static {
         UnsupportedOperatingSystemException.raise();
     }

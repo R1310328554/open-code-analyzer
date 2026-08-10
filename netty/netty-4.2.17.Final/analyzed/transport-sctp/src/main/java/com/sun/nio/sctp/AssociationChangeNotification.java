@@ -15,7 +15,12 @@
  */
 package com.sun.nio.sctp;
 
+/**
+ * SCTP 关联生命周期变更通知（如 COMM_UP、COMM_LOST、RESTART、SHUTDOWN）。
+ * <p>由 {@link SctpChannel#receive} 的 {@link NotificationHandler} 回调； stub 类在非 SCTP 平台不可用。</p>
+ */
 public abstract class AssociationChangeNotification implements Notification {
+    /** 平台能力探测静态块 */
     static {
         UnsupportedOperatingSystemException.raise();
     }
