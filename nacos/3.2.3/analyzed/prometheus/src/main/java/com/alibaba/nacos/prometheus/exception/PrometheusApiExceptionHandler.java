@@ -28,7 +28,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- * Exception Handler for Prometheus API.
+ * Prometheus REST API 全局异常处理器。
+ *
+ * <p>仅作用于 {@code com.alibaba.nacos.prometheus.controller} 包， 将 {@link NacosException} 与 {@link NacosRuntimeException} 转为统一 {@link Result} JSON 响应。</p>
  *
  * @author karsonto
  * @date 2023/02/01
@@ -39,15 +41,18 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @ResponseBody
 public class PrometheusApiExceptionHandler {
     
+    /** 异常日志记录器。 */
     private static final Logger LOGGER =
         LoggerFactory.getLogger(PrometheusApiExceptionHandler.class);
     
+    /** 处理受检 NacosException，返回 500 与错误消息。 */
     @ExceptionHandler(NacosException.class)
     public ResponseEntity<Result<String>> handleNacosException(NacosException e) {
         LOGGER.error("got exception. {}", e.getErrMsg());
         return ResponseEntity.internalServerError().body(Result.failure(e.getErrMsg()));
     }
     
+    /** 处理运行时 NacosRuntimeException，按错误码返回 HTTP 状态。 */
     @ExceptionHandler(NacosRuntimeException.class)
     public ResponseEntity<Result<String>> handleNacosRuntimeException(NacosRuntimeException e) {
         LOGGER.error("got exception. {}", e.getMessage());

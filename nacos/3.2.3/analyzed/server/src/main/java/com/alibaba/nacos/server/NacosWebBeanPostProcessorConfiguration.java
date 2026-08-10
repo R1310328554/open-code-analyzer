@@ -27,7 +27,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Bean Post Processor Configuration for nacos web server.
+ * Nacos Web 进程 Bean 后处理器配置。
+ *
+ * <p>在启用 duplicate bean 增强时注册 Spring Bean 与 Configuration 重复定义检测后处理器， 避免 Basic/Web 双进程同 classpath 下 Bean 冲突。</p>
  *
  * @author xiweng.yy
  */
@@ -37,12 +39,14 @@ import org.springframework.context.annotation.Configuration;
     havingValue = "true", matchIfMissing = true)
 public class NacosWebBeanPostProcessorConfiguration {
     
+    /** 注册普通 Spring Bean 重复定义检测后处理器。 */
     @Bean
     public InstantiationAwareBeanPostProcessor nacosDuplicateSpringBeanPostProcessor(
         ConfigurableApplicationContext context) {
         return new NacosDuplicateSpringBeanPostProcessor(context);
     }
     
+    /** 注册 {@code @Configuration} 类重复定义检测后处理器。 */
     @Bean
     public InstantiationAwareBeanPostProcessor nacosDuplicateConfigurationBeanPostProcessor(
         ConfigurableApplicationContext context) {

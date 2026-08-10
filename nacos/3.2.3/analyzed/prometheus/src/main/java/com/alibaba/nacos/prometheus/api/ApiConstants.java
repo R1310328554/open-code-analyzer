@@ -17,17 +17,22 @@
 package com.alibaba.nacos.prometheus.api;
 
 /**
- * Api Constants.
+ * Prometheus 服务发现 REST API 路径常量。
+ *
+ * <p>定义全局、按命名空间、按服务三种 metrics 拉取 URL 模板， 供 {@link com.alibaba.nacos.prometheus.controller.PrometheusController} 与安全配置引用。</p>
  *
  * @author karsonto
  */
 public class ApiConstants {
     
+    /** 全量实例 Prometheus SD 接口根路径。 */
     public static final String PROMETHEUS_CONTROLLER_PATH = "/prometheus";
     
+    /** 按命名空间过滤的 metrics 路径模板。 */
     public static final String PROMETHEUS_CONTROLLER_NAMESPACE_PATH =
         "/prometheus/namespaceId/{namespaceId}";
     
+    /** 按命名空间与服务名过滤的 metrics 路径模板。 */
     public static final String PROMETHEUS_CONTROLLER_SERVICE_PATH =
         "/prometheus/namespaceId/{namespaceId}/service/{service}";
     

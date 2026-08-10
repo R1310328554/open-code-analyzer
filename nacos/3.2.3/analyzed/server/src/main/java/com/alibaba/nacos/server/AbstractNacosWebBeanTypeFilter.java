@@ -29,14 +29,18 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Abstract TypeFilter to filter Nacos Web Bean or not.
+ * 判断类是否为 Nacos Web Bean 的抽象 {@link TypeFilter}。
+ *
+ * <p>识别 {@link RestController}、{@link ControllerAdvice}、{@link Controller} 与 {@link NacosWebBean} 注解，供 Basic/Web 双进程组件扫描互斥使用。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractNacosWebBeanTypeFilter implements TypeFilter {
     
+    /** Web Bean 判定所用的注解类全名集合。 */
     private static final Set<String> WEB_BEAN_ANNOTATIONS = new HashSet<>();
     
+    /** 静态初始化 Web 相关注解类名。 */
     static {
         WEB_BEAN_ANNOTATIONS.add(RestController.class.getCanonicalName());
         WEB_BEAN_ANNOTATIONS.add(ControllerAdvice.class.getCanonicalName());
@@ -44,6 +48,7 @@ public abstract class AbstractNacosWebBeanTypeFilter implements TypeFilter {
         WEB_BEAN_ANNOTATIONS.add(NacosWebBean.class.getCanonicalName());
     }
     
+    /** 若类携带任一 Web 注解则返回 true。 */
     protected boolean isWebBean(MetadataReader metadataReader,
         MetadataReaderFactory metadataReaderFactory)
         throws IOException {

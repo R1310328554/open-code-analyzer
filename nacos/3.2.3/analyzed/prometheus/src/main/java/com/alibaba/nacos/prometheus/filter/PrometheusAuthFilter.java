@@ -39,7 +39,9 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import static com.alibaba.nacos.prometheus.api.ApiConstants.PROMETHEUS_CONTROLLER_PATH;
 
 /**
- * prometheus auth configuration.
+ * Prometheus 端点 HTTP Basic 认证过滤器配置。
+ *
+ * <p>在 {@code nacos.core.auth.enabled=true} 且存在 {@link PrometheusController} 时注册 Basic、匿名、授权与异常转换过滤器链，仅作用于 {@code /prometheus} 路径。</p>
  *
  * @author vividfish
  */
@@ -49,6 +51,7 @@ import static com.alibaba.nacos.prometheus.api.ApiConstants.PROMETHEUS_CONTROLLE
 @ConditionalOnBean(PrometheusController.class)
 public class PrometheusAuthFilter {
     
+    /** 构建基于 UserDetailsService 的 AuthenticationManager。 */
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http,
         UserDetailsService userDetailsService,
@@ -60,6 +63,7 @@ public class PrometheusAuthFilter {
         return authenticationManagerBuilder.getOrBuild();
     }
     
+    /** 注册 Basic 认证过滤器，顺序为 2。 */
     @Bean
     public FilterRegistrationBean<BasicAuthenticationFilter> basicAuthenticationFilter(
         AuthenticationManager authenticationManager) {
@@ -72,6 +76,7 @@ public class PrometheusAuthFilter {
         return registration;
     }
     
+    /** 注册匿名认证过滤器，顺序为 3。 */
     @Bean
     public FilterRegistrationBean<AnonymousAuthenticationFilter> anonymousAuthenticationFilter() {
         FilterRegistrationBean<AnonymousAuthenticationFilter> registration =
@@ -83,6 +88,7 @@ public class PrometheusAuthFilter {
         return registration;
     }
     
+    /** 注册已认证用户授权过滤器，顺序为 4。 */
     @Bean
     public FilterRegistrationBean<AuthorizationFilter> authorizationFilter() {
         FilterRegistrationBean<AuthorizationFilter> registration = new FilterRegistrationBean<>();
@@ -93,6 +99,7 @@ public class PrometheusAuthFilter {
         return registration;
     }
     
+    /** 注册认证/授权异常转 403 的过滤器，顺序为 1。 */
     @Bean
     public FilterRegistrationBean<ExceptionTranslationFilter> exceptionTranslationFilter() {
         FilterRegistrationBean<ExceptionTranslationFilter> registration =

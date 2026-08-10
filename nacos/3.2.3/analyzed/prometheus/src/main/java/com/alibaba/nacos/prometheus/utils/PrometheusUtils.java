@@ -29,15 +29,18 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.groupingBy;
 
 /**
- * prometheus common utils.
+ * Prometheus 服务发现 JSON 组装工具。
+ *
+ * <p>将 Nacos {@link Instance} 集合转为 Prometheus HTTP SD 所需的 {@code targets} 与 {@code labels} 结构，并规范化 metadata 标签名。</p>
  *
  * @author Joey777210
  */
 public class PrometheusUtils {
     
     /**
-     * Assemble arrayNodes for prometheus sd api.
+     * 按集群名分组实例并追加到 SD 数组节点。
      */
+    /** 遍历分组后的实例，逐个写入 arrayNode。 */
     public static void assembleArrayNodes(Set<Instance> targetSet, ArrayNode arrayNode) {
         Map<String, List<Instance>> groupingInsMap =
             targetSet.stream().collect(groupingBy(Instance::getClusterName));
@@ -50,21 +53,23 @@ public class PrometheusUtils {
     }
     
     /**
-     * assemble instance to json node, and export metadata to label.
+     * 将单个实例转为 Prometheus SD 条目 JSON。
      *
-     * @param clusterName the cluster name
-     * @param instance    instance info
+     * <p>targets 为 ip:port，labels 含集群名与实例 metadata（键名中 . 与 - 转为 _）。</p>
+     *
+     * @param clusterName 集群名称
+     * @param instance 实例信息
      */
     private static ObjectNode assembleInstanceToArrayNode(String clusterName, Instance instance) {
         
         ArrayNode targetsNode = JacksonUtils.createEmptyArrayNode();
         targetsNode.add(instance.getIp() + ":" + instance.getPort());
         ObjectNode labelNode = JacksonUtils.createEmptyJsonNode();
-        //mark cluster name
+        // 写入 __meta_clusterName 标签
         labelNode.put("__meta_clusterName", clusterName);
-        //export metadata
+        // 导出实例 metadata 为 Prometheus labels
         Map<String, String> metadata = instance.getMetadata();
-        // auto convert label names contain with "." and "-" to "_"
+        // 标签名中的点与横线自动替换为下划线
         metadata = metadata.entrySet().stream().collect(Collectors
             .toMap(e -> e.getKey().replace(".", "_").replace("-", "_"), e -> e.getValue()));
         

@@ -22,13 +22,16 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
 import java.io.IOException;
 
 /**
- * TypeFilter to filter beans which is Nacos Web.
+ * 仅保留 Web Bean 的组件扫描过滤器。
+ *
+ * <p>用于 {@link NacosServerBasicApplication}：匹配 Web Bean（{@code isWebBean}）， 在 excludeFilters 中排除，使基础进程不加载 REST 控制器等 Web 组件。</p>
  *
  * @author xiweng.yy
  */
 public class NacosWebBeanTypeFilter extends AbstractNacosWebBeanTypeFilter {
     
     @Override
+    /** Web Bean 时返回 true，配合 excludeFilter 排除注册。 */
     public boolean match(MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory)
         throws IOException {
         return super.isWebBean(metadataReader, metadataReaderFactory);

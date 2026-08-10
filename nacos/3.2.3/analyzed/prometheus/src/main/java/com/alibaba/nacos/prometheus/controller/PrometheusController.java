@@ -39,7 +39,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * Support Prometheus SD Controller.
+ * Prometheus 服务发现（HTTP SD）REST 控制器。
+ *
+ * <p>暴露 JSON 格式的 targets/labels 列表，供 Prometheus 抓取 Nacos 注册实例； 支持全量、按命名空间、按服务三种粒度查询。</p>
  *
  * @author karsonto
  */
@@ -47,23 +49,27 @@ import java.util.function.Predicate;
 @ConditionalOnProperty(name = "nacos.prometheus.metrics.enabled", havingValue = "true")
 public class PrometheusController {
     
+    /** 命名服务实例查询客户端（V2）。 */
     @Autowired
     private InstanceOperatorClientImpl instanceServiceV2;
     
+    /** 命名空间与服务元数据管理器。 */
     private final ServiceManager serviceManager;
     
+    /** 初始化并绑定 {@link ServiceManager} 单例。 */
     public PrometheusController() {
         this.serviceManager = ServiceManager.getInstance();
     }
     
     /**
-     * Get all service instances.
+     * 返回所有命名空间下全部健康实例的 Prometheus SD JSON。
      *
-     * @throws NacosException NacosException.
+     * @throws NacosException 实例列表查询失败时抛出
      */
     @Since("2.2.0")
     @GetMapping(value = ApiConstants.PROMETHEUS_CONTROLLER_PATH,
         produces = "application/json; charset=UTF-8")
+    /** 遍历全部命名空间与服务，组装 targets 数组。 */
     public ResponseEntity<String> metric() throws NacosException {
         ArrayNode arrayNode = JacksonUtils.createEmptyArrayNode();
         Set<Instance> targetSet = new HashSet<>();
@@ -85,13 +91,14 @@ public class PrometheusController {
     }
     
     /**
-     * Get service instances from designated namespace.
+     * 返回指定命名空间内全部实例的 Prometheus SD JSON。
      *
-     * @throws NacosException NacosException.
+     * @throws NacosException 实例列表查询失败时抛出
      */
     @Since("2.3.0")
     @GetMapping(value = ApiConstants.PROMETHEUS_CONTROLLER_NAMESPACE_PATH,
         produces = "application/json; charset=UTF-8")
+    /** 按 namespaceId 过滤服务后返回 SD JSON。 */
     public ResponseEntity<String> metricNamespace(@PathVariable("namespaceId") String namespaceId)
         throws NacosException {
         ArrayNode arrayNode = getServiceArrayNode(namespaceId, s -> true);
@@ -100,13 +107,14 @@ public class PrometheusController {
     }
     
     /**
-     * Get service instances from designated namespace and service.
+     * 返回指定命名空间与单个服务下实例的 Prometheus SD JSON。
      *
-     * @throws NacosException NacosException.
+     * @throws NacosException 实例列表查询失败时抛出
      */
     @Since("2.3.0")
     @GetMapping(value = ApiConstants.PROMETHEUS_CONTROLLER_SERVICE_PATH,
         produces = "application/json; charset=UTF-8")
+    /** 按 namespaceId 与 service 名精确过滤实例。 */
     public ResponseEntity<String> metricNamespaceService(
         @PathVariable("namespaceId") String namespaceId,
         @PathVariable("service") String service) throws NacosException {
@@ -115,6 +123,7 @@ public class PrometheusController {
         return ResponseEntity.ok().body(arrayNode.toString());
     }
     
+    /** 内部方法：按命名空间与服务谓词组装 SD 数组节点。 */
     private ArrayNode getServiceArrayNode(String namespaceId, Predicate<Service> serviceFilter)
         throws NacosException {
         ArrayNode arrayNode = JacksonUtils.createEmptyArrayNode();

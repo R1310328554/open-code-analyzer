@@ -27,7 +27,9 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Nacos Server basic starter class, which load common non-web container beans.
+ * Nacos Server 基础进程启动类（非 Web 容器 Bean）。
+ *
+ * <p>通过 {@link NacosWebBeanTypeFilter} 排除 Web 相关 Bean， 加载 core、naming、config 等后台服务组件；与 {@link NacosServerWebApplication} 拆分部署时使用。</p>
  *
  * @author xiweng.yy
  */
@@ -38,6 +40,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class NacosServerBasicApplication {
     
+    /** 启动 Nacos 基础 Spring Boot 应用。 */
     public static void main(String[] args) {
         SpringApplication.run(NacosServerBasicApplication.class, args);
     }

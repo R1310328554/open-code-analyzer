@@ -21,7 +21,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * PrometheusApp starter.
+ * Prometheus 指标模块独立启动入口。
+ *
+ * <p>扫描 {@code com.alibaba.nacos} 包并启用定时任务， 用于单独部署 Prometheus 服务发现 HTTP 端点。</p>
  *
  * @author karsonto
  */
@@ -29,6 +31,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(scanBasePackages = {"com.alibaba.nacos"})
 public class PrometheusApp {
     
+    /** 启动 Prometheus 模块 Spring Boot 应用。 */
     public static void main(String[] args) {
         SpringApplication.run(PrometheusApp.class, args);
     }

@@ -34,7 +34,9 @@ import static com.alibaba.nacos.prometheus.api.ApiConstants.PROMETHEUS_CONTROLLE
 import static com.alibaba.nacos.prometheus.api.ApiConstants.PROMETHEUS_CONTROLLER_SERVICE_PATH;
 
 /**
- * prometheus auth configuration, avoid spring security configuration override.
+ * Prometheus 端点 Spring Security 配置。
+ *
+ * <p>在未启用 Nacos 认证插件时，将 Prometheus SD 路径设为 {@code permitAll}， 避免全局 Security 拦截 metrics 拉取；启用认证时由 {@link com.alibaba.nacos.prometheus.filter.PrometheusAuthFilter} 处理。</p>
  *
  * @author vividfish
  */
@@ -43,6 +45,7 @@ import static com.alibaba.nacos.prometheus.api.ApiConstants.PROMETHEUS_CONTROLLE
 @ConditionalOnProperty(name = "nacos.prometheus.metrics.enabled", havingValue = "true")
 public class PrometheusSecurityConfiguration {
     
+    /** 无认证插件时对 Prometheus 路径放行。 */
     @Bean
     @Conditional(ConditionOnNoAuthPluginType.class)
     public SecurityFilterChain prometheusSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -54,9 +57,11 @@ public class PrometheusSecurityConfiguration {
         return http.getOrBuild();
     }
     
+    /** 当 {@code nacos.core.auth.system.type} 为空时匹配（未配置认证插件）。 */
     private static class ConditionOnNoAuthPluginType implements Condition {
         
         @Override
+        /** 检测环境是否未指定 Nacos 认证系统类型。 */
         public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
             String nacosAuthSystemType = context.getEnvironment()
                 .getProperty(Constants.Auth.NACOS_CORE_AUTH_SYSTEM_TYPE, "");

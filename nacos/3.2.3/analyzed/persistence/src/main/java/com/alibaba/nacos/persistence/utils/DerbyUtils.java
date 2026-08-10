@@ -20,23 +20,29 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Derby util.
+ * Derby 嵌入式数据库 SQL 工具类。
+ *
+ * <p>Derby 表名默认大写，外部 MySQL 等库的 INSERT 语句导入 Derby 时需做大小写与反引号转换。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public final class DerbyUtils {
     
+    /** 匹配 INSERT INTO ... VALUES 片段的正则表达式。 */
     private static final String INSERT_INTO_VALUES = "(INSERT INTO .+? VALUES)";
     
+    /** 预编译的 INSERT 语句匹配模式。 */
     private static final Pattern INSERT_INTO_PATTERN = Pattern.compile(INSERT_INTO_VALUES);
     
     /**
-     * Because Derby's database table name is uppercase, you need to do a conversion to the insert statement that was
-     * inserted.
+     * 将外部库的 INSERT 语句转换为 Derby 兼容格式。
      *
-     * @param sql external database insert sql
-     * @return derby insert sql
+     * <p>将 INSERT INTO 段转为大写并去除反引号，同时去掉末尾分号。</p>
+     *
+     * @param sql 外部数据库原始 INSERT SQL
+     * @return 适配 Derby 的 INSERT SQL
      */
+    /** 执行 INSERT 语句校正，无匹配时原样返回。 */
     public static String insertStatementCorrection(String sql) {
         Matcher matcher = INSERT_INTO_PATTERN.matcher(sql);
         if (!matcher.find()) {

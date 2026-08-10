@@ -27,7 +27,9 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.PropertySource;
 
 /**
- * Nacos Server web starter class, which load non-console web container beans.
+ * Nacos Server Web 进程启动类（非 Console Web Bean）。
+ *
+ * <p>通过 {@link NacosNormalBeanTypeFilter} 排除普通业务 Bean， 仅加载 REST API、Prometheus 等 Web 端点；加载 {@code nacos-server.properties} 配置。</p>
  *
  * @author xiweng.yy
  */
@@ -38,6 +40,7 @@ import org.springframework.context.annotation.PropertySource;
 @PropertySource("classpath:nacos-server.properties")
 public class NacosServerWebApplication {
     
+    /** 启动 Nacos Web Spring Boot 应用。 */
     public static void main(String[] args) {
         SpringApplication.run(NacosServerWebApplication.class, args);
     }
