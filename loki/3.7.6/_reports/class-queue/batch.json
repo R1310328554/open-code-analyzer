@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T22:03:41Z",
   "files": [
-    "pkg/engine/internal/arrowagg/arrowagg.go",
-    "pkg/engine/internal/arrowagg/hash.go",
-    "pkg/engine/internal/arrowagg/mapper.go",
-    "pkg/engine/internal/arrowagg/records.go",
-    "pkg/engine/internal/assertions/assertions.go",
-    "pkg/engine/internal/assertions/records.go",
-    "pkg/engine/internal/deletion/deletion.go",
-    "pkg/engine/internal/errors/errors.go",
-    "pkg/engine/internal/executor/aggregator.go",
-    "pkg/engine/internal/executor/arrow_compare.go",
-    "pkg/engine/internal/executor/batching.go",
-    "pkg/engine/internal/executor/cast.go",
-    "pkg/engine/internal/executor/column.go",
-    "pkg/engine/internal/executor/compat.go",
-    "pkg/engine/internal/executor/dataobjscan.go",
     "pkg/engine/internal/executor/dataobjscan_predicate.go",
     "pkg/engine/internal/executor/executor.go",
     "pkg/engine/internal/executor/expressions.go",
@@ -33,5 +18,5 @@
     "pkg/engine/internal/executor/pipeline_utils.go"
   ],
   "remaining_pending": 1042,
-  "done": 480
+  "done": 495
 }
