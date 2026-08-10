@@ -20,6 +20,9 @@ package org.keycloak.models;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link UserProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ * <p>按存储后端（JPA、LDAP、Infinispan 等）实例化用户 CRUD 提供者。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */

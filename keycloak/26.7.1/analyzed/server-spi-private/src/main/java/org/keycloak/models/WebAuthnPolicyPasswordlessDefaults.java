@@ -18,16 +18,19 @@
 package org.keycloak.models;
 
 /**
- * Default values for the WebAuthn configuration when used as passwordless.
+ * 无密码（Passwordless）场景下的 WebAuthn 策略默认值。
+ * <p>在 {@link WebAuthnPolicyTwoFactorDefaults} 基础上强制 resident key 与用户验证。</p>
  *
  * @author rmartinc
  */
 public class WebAuthnPolicyPasswordlessDefaults extends WebAuthnPolicyTwoFactorDefaults {
 
+    /** @return 无密码 WebAuthn 默认策略实例 */
     public static WebAuthnPolicy get() {
         return new WebAuthnPolicyPasswordlessDefaults();
     }
 
+    /** 构造无密码默认策略：resident key 与 user verification 均为 required。 */
     WebAuthnPolicyPasswordlessDefaults() {
         super();
         this.residentKey = Constants.WEBAUTHN_POLICY_OPTION_REQUIRED;

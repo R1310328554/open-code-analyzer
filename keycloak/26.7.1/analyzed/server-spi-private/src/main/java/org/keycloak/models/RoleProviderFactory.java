@@ -19,5 +19,9 @@ package org.keycloak.models;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link RoleProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ * <p>按存储后端（JPA、Infinispan 等）实例化 realm 角色 CRUD 提供者。</p>
+ */
 public interface RoleProviderFactory<T extends RoleProvider>  extends ProviderFactory<T> {
 }

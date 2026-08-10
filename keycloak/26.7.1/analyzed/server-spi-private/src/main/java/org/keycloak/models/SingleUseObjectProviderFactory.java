@@ -20,6 +20,9 @@ package org.keycloak.models;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link SingleUseObjectProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ * <p>管理一次性对象（如操作令牌、验证码）的存储与消费。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface SingleUseObjectProviderFactory<T extends SingleUseObjectProvider> extends ProviderFactory<T> {

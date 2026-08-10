@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 用户 SPI，注册 {@link UserProvider} 提供者类型。
+ * <p>管理 realm 用户的创建、查询、属性与凭据。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UserSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code user}。 */
     @Override
     public String getName() {
         return "user";
     }
 
+    /** 用户提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return UserProvider.class;
     }
 
+    /** 用户工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return UserProviderFactory.class;

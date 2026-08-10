@@ -23,16 +23,19 @@ import java.util.List;
 import org.keycloak.storage.ReadOnlyException;
 
 /**
- * Default values for the WebAuthn configuration when used as Two Factor.
+ * 双因素认证（2FA）场景下的 WebAuthn 策略默认值。
+ * <p>只读策略对象，所有 setter 均抛出 {@link ReadOnlyException}。</p>
  *
  * @author rmartinc
  */
 public class WebAuthnPolicyTwoFactorDefaults extends WebAuthnPolicy {
 
+    /** @return 2FA WebAuthn 默认策略实例 */
     public static WebAuthnPolicy get() {
         return new WebAuthnPolicyTwoFactorDefaults();
     }
 
+    /** 使用 {@link Constants} 中的 WebAuthn 默认值初始化各字段。 */
     WebAuthnPolicyTwoFactorDefaults() {
         this.rpEntityName = Constants.DEFAULT_WEBAUTHN_POLICY_RP_ENTITY_NAME;
         this.signatureAlgorithms = List.of(Constants.DEFAULT_WEBAUTHN_POLICY_SIGNATURE_ALGORITHMS.split(","));
@@ -120,6 +123,7 @@ public class WebAuthnPolicyTwoFactorDefaults extends WebAuthnPolicy {
         throwReadOnlyException();
     }
 
+    /** 默认策略不可修改，setter 统一调用此方法。 */
     private void throwReadOnlyException() {
         throw new ReadOnlyException("Default WebAuthnPolicy!");
     }

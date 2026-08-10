@@ -22,27 +22,35 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 用户会话 SPI，注册 {@link UserSessionProvider} 提供者类型。
+ * <p>管理在线/离线用户会话与客户端会话的生命周期。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UserSessionSpi implements Spi {
 
+    /** SPI 名称常量：{@code userSessions}。 */
     public static final String NAME = "userSessions";
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@link #NAME} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** 用户会话提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return UserSessionProvider.class;
     }
 
+    /** 用户会话工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return UserSessionProviderFactory.class;

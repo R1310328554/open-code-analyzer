@@ -19,6 +19,9 @@ package org.keycloak.models;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link UserLoginFailureProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ * <p>管理用户登录失败计数、临时锁定等 brute-force 防护状态。</p>
+ *
  * @author <a href="mailto:mkanis@redhat.com">Martin Kanis</a>
  */
 public interface UserLoginFailureProviderFactory<T extends UserLoginFailureProvider> extends ProviderFactory<T>  {

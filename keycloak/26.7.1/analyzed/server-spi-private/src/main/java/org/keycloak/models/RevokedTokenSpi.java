@@ -20,27 +20,33 @@ package org.keycloak.models;
 import org.keycloak.provider.Spi;
 
 /**
- * The {@link Spi} for {@link RevokedTokenProvider}.
+ * 已撤销令牌 SPI，注册 {@link RevokedTokenProvider} 提供者类型。
+ * <p>用于跟踪与校验已撤销的访问/刷新令牌，防止重放。</p>
  */
 public class RevokedTokenSpi implements Spi {
 
+    /** SPI 名称常量：{@code revokedToken}。 */
     public static final String NAME = "revokedToken";
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@link #NAME} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** 已撤销令牌提供者接口类型。 */
     @Override
     public Class<RevokedTokenProvider> getProviderClass() {
         return RevokedTokenProvider.class;
     }
 
+    /** 已撤销令牌工厂类型。 */
     @SuppressWarnings("rawtypes")
     @Override
     public Class<RevokedTokenProviderFactory> getProviderFactoryClass() {
