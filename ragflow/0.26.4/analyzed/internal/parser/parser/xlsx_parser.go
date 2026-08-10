@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 
+// xlsx_parser — CGO 构建下 .xlsx 解析，excelize 保留行列结构。
 package parser
 
 import (
@@ -26,10 +27,12 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// XLSXParser 解析 Office Open XML 电子表格并输出 HTML。
 type XLSXParser struct {
 	libType string
 }
 
+// NewXLSXParser 目前仅支持 OfficeOxide 库类型。
 func NewXLSXParser(libType string) (*XLSXParser, error) {
 	switch libType {
 	case OfficeOxide:
@@ -45,12 +48,7 @@ func (p *XLSXParser) String() string {
 	return "XLSXParser"
 }
 
-// ParseWithResult renders the spreadsheet as HTML — the python
-// ExcelParser shape. Each sheet becomes a <table> with row /
-// column structure preserved; sheet names become <h3> headings
-// so a downstream title chunker can pick them up. Implementation
-// uses excelize (already in go.mod) instead of office_oxide's
-// PlainText/ToMarkdown so cell boundaries survive the round-trip.
+// ParseWithResult 将各工作表转为带 <h3> 标题的 HTML 表格，保留单元格边界。
 func (p *XLSXParser) ParseWithResult(filename string, data []byte) ParseResult {
 	f, err := excelize.OpenReader(bytes.NewReader(data))
 	if err != nil {
@@ -89,3 +87,4 @@ func (p *XLSXParser) ParseWithResult(filename string, data []byte) ParseResult {
 		HTML:         html.String(),
 	}
 }
+// xlsx_parser.go — .xlsx 解析：excelize 读取工作表并输出 HTML，保留单元格边界。

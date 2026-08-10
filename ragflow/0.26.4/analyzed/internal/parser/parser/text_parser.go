@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// TextParser (port-rag-flow-pipeline-to-go.md Phase 2.5 Slice 1).
+// TextParser（Phase 2.5 Slice 1）— 纯文本与代码文件族解析器。
 //
 // The python rag/flow/parser/parser.py:_code path (L1066) routes
 // .txt / .py / .js / .java / .c / .cpp / .h / .php / .go / .ts / .sh
@@ -39,27 +39,18 @@ import (
 
 const TextParserLibType = "text"
 
-// TextParser is the text&code family parser. It implements the
-// structured ParseResultProducer contract directly.
+// TextParser 处理 text&code 文件族，直接实现 ParseResultProducer 结构化输出契约。
 type TextParser struct {
-	// maxItemBytes caps each emitted item's text length. The
-	// python TxtParser uses similar paragraph-style chunking;
-	// 8192 bytes is a conservative ceiling that prevents the
-	// downstream chunker from receiving oversized inputs.
+	// maxItemBytes 限制单条输出文本字节上限；8192 防止下游分块器收到过大段落。
 	maxItemBytes int
 }
 
-// NewTextParser constructs a TextParser. The libType argument
-// preserves the parser-library constructor signature for
-// consistency with the other family parsers; the value is ignored
-// (TextParser has no alternative backend).
+// NewTextParser 构造 TextParser；libType 仅为与其他解析器构造函数签名一致，实际忽略。
 func NewTextParser(_ string) (*TextParser, error) {
 	return &TextParser{maxItemBytes: 8192}, nil
 }
 
-// ParseWithResult emits one item per non-empty paragraph. The
-// output format is "json" to mirror the python TxtParser's
-// behaviour (it emits a list of items with text + doc_type_kwd).
+// ParseWithResult 按非空段落逐条输出 JSON 项（text + doc_type_kwd），对齐 Python TxtParser。
 //
 // The items slice is always non-nil so downstream chunkers see a
 // non-empty JSON payload even for an empty input (mirrors the
@@ -87,18 +78,14 @@ func (p *TextParser) String() string {
 	return "TextParser"
 }
 
-// errInvalidUTF8 is returned when the input bytes fail UTF-8
-// validation. Matches the python TxtParser's behaviour of
-// surfacing a clear error rather than emitting replacement bytes.
+// errInvalidUTF8 在输入非合法 UTF-8 时返回，与 Python 侧显式报错行为一致。
 var errInvalidUTF8 = errInvalidUTF8Sentinel("parser: text input is not valid UTF-8")
 
 type errInvalidUTF8Sentinel string
 
 func (e errInvalidUTF8Sentinel) Error() string { return string(e) }
 
-// utf8Valid is a tiny stdlib-free validator. We avoid
-// unicode/utf8.Valid to keep this file dependency-light; the
-// validation rule is the same (decode without rejecting bytes).
+// utf8Valid 轻量 UTF-8 校验，规则与 unicode/utf8.Valid 相同。
 func utf8Valid(data []byte) bool {
 	for i := 0; i < len(data); {
 		r, size := decodeRune(data[i:])
@@ -110,10 +97,7 @@ func utf8Valid(data []byte) bool {
 	return true
 }
 
-// decodeRune is a minimal UTF-8 decoder that mirrors
-// utf8.DecodeRune's signature: returns the rune and its byte
-// width. Returns (RuneError, 1) on invalid sequences, matching
-// the stdlib contract.
+// decodeRune 最小 UTF-8 解码器，无效序列返回 (RuneError, 1)。
 func decodeRune(p []byte) (rune, int) {
 	if len(p) == 0 {
 		return 0xFFFD, 0
@@ -143,9 +127,7 @@ func decodeRune(p []byte) (rune, int) {
 	return 0xFFFD, 1
 }
 
-// textParserItems splits `data` into paragraph-sized chunks. The
-// split rule mirrors the python TxtParser: blank lines separate
-// paragraphs; long paragraphs are sliced at maxItemBytes boundaries.
+// textParserItems 按空行分段；超长段在 maxItemBytes 处再切分。
 func textParserItems(data []byte, maxItemBytes int) []map[string]any {
 	var items []map[string]any
 	for _, raw := range bytes.Split(data, []byte("\n\n")) {
@@ -154,8 +136,7 @@ func textParserItems(data []byte, maxItemBytes int) []map[string]any {
 			continue
 		}
 		if maxItemBytes > 0 && len(text) > maxItemBytes {
-			// Slice at the nearest newline below maxItemBytes;
-			// falls back to a hard slice when no newline exists.
+			// 优先在 maxItemBytes 内最近换行处切分，否则硬切。
 			cut := strings.LastIndex(text[:maxItemBytes], "\n")
 			if cut <= 0 {
 				cut = maxItemBytes
@@ -176,3 +157,4 @@ func textParserItems(data []byte, maxItemBytes int) []map[string]any {
 	}
 	return items
 }
+// text_parser.go — 纯文本与代码文件解析器：按段落分块输出 Python 兼容的 JSON 条目（text + doc_type_kwd）。

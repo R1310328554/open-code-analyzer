@@ -38,7 +38,7 @@ const (
 	agentTagMaxLen    = 64
 )
 
-// ListAgentSessionsRequest are the parameters for ListAgentSessions.
+// ListAgentSessionsRequest 会话列表查询参数（分页、关键词、日期范围等）。
 type ListAgentSessionsRequest struct {
 	SessionID  string
 	UserID     string
@@ -53,7 +53,7 @@ type ListAgentSessionsRequest struct {
 	IncludeDSL bool
 }
 
-// ListAgentSessionsResponse is the response body for ListAgentSessions.
+// ListAgentSessionsResponse 会话列表响应：data 数组 + total。
 type ListAgentSessionsResponse struct {
 	Data  []map[string]interface{} `json:"data"`
 	Total int64                    `json:"total"`
@@ -71,8 +71,7 @@ type DeleteAgentSessionsResponse struct {
 	Errors       []string `json:"errors,omitempty"`
 }
 
-// CheckCanvasAccess returns true when the user is the canvas owner or
-// holds team-level permission for the owner's tenant.
+// CheckCanvasAccess 判断用户是否为画布所有者或团队权限成员。
 func (s *AgentService) CheckCanvasAccess(userID, canvasID string) (bool, error) {
 	canvas, err := s.canvasDAO.GetByID(canvasID)
 	if err != nil {
@@ -310,7 +309,7 @@ func checkDuplicateSessionIDs(ids []string) ([]string, []string) {
 	return uniqueIDs, duplicateMessages
 }
 
-// ListAgentSessions returns paginated agent sessions visible to the caller.
+// ListAgentSessions 分页列出 Agent 会话，含权限校验与日期过滤。
 func (s *AgentService) ListAgentSessions(userID, tenantID, agentID string, req ListAgentSessionsRequest) (*ListAgentSessionsResponse, common.ErrorCode, error) {
 	if agentID == "" {
 		return nil, common.CodeArgumentError, errors.New("agent_id is required")
@@ -376,7 +375,7 @@ func (s *AgentService) ListAgentSessions(userID, tenantID, agentID string, req L
 	return &ListAgentSessionsResponse{Data: data, Total: total}, common.CodeSuccess, nil
 }
 
-// GetAgentSession fetches a single conversation belonging to agentID.
+// GetAgentSession 按 session_id 获取单条会话。
 func (s *AgentService) GetAgentSession(userID, agentID, sessionID string) (*entity.API4Conversation, common.ErrorCode, error) {
 	if sessionID == "" {
 		return nil, common.CodeArgumentError, fmt.Errorf("session_id is required")
@@ -402,7 +401,7 @@ func (s *AgentService) GetAgentSession(userID, agentID, sessionID string) (*enti
 	return data, common.CodeSuccess, nil
 }
 
-// DeleteAgentSessionItem removes one conversation if it belongs to agentID.
+// DeleteAgentSessionItem 删除单条会话（需画布访问权限）。
 func (s *AgentService) DeleteAgentSessionItem(userID, agentID, sessionID string) (bool, common.ErrorCode, error) {
 	if sessionID == "" {
 		return false, common.CodeArgumentError, errors.New("session_id is required")
@@ -428,7 +427,7 @@ func (s *AgentService) DeleteAgentSessionItem(userID, agentID, sessionID string)
 	return true, common.CodeSuccess, nil
 }
 
-// DeleteAgentSessions removes multiple conversations owned by agentID.
+// DeleteAgentSessions 批量或全量删除会话；仅画布所有者可操作。
 // When ids is empty and deleteAll is true, every session under agentID is
 // removed.
 func (s *AgentService) DeleteAgentSessions(userID, agentID string, ids []string, deleteAll bool) (*DeleteAgentSessionsResult, common.ErrorCode, error) {
@@ -511,7 +510,7 @@ func (s *AgentService) DeleteAgentSessions(userID, agentID string, ids []string,
 	return &DeleteAgentSessionsResult{}, common.CodeSuccess, nil
 }
 
-// ListAgentTags list agent tags
+// ListAgentTags 聚合当前用户可见 Agent 的标签及计数。
 func (s *AgentService) ListAgentTags(userID, canvasCategory string) ([]AgentTagCount, common.ErrorCode, error) {
 	tenantIDs, err := s.userTenantDAO.GetTenantIDsByUserID(userID)
 	if err != nil {
@@ -546,7 +545,7 @@ func (s *AgentService) ListAgentTags(userID, canvasCategory string) ([]AgentTagC
 	return tags, common.CodeSuccess, nil
 }
 
-// normalizeAgentTags returns an error for unsupported tag payload types.
+// normalizeAgentTags 归一化标签输入（CSV/数组），去重并截断总长度 ≤512。
 // The branch behaviour intentionally mirrors the Python implementation:
 //   - string: treat the value as a CSV — split on "," and use each piece
 //     as a separate tag ("alpha,beta" → ["alpha", "beta"]).
@@ -621,7 +620,7 @@ func truncateRunes(value string, maxLen int) string {
 	return string(runes[:maxLen])
 }
 
-// UpdateAgentTags normalises tags and persists them on a single canvas.
+// UpdateAgentTags 更新单个画布 tags 字段。
 func (s *AgentService) UpdateAgentTags(userID, canvasID string, tags interface{}) (bool, common.ErrorCode, error) {
 	ok, err := s.CheckCanvasAccess(userID, canvasID)
 	if err != nil {
@@ -651,7 +650,7 @@ func (s *AgentService) UpdateAgentTags(userID, canvasID string, tags interface{}
 	return true, common.CodeSuccess, nil
 }
 
-// CreateAgentSessionRequest is the wire shape for POST
+// CreateAgentSessionRequest 创建会话 POST 请求体。
 // /api/v1/agents/:agent_id/sessions.
 type CreateAgentSessionRequest struct {
 	UserID   string
@@ -662,8 +661,7 @@ type CreateAgentSessionRequest struct {
 	Messages json.RawMessage
 }
 
-// CreateAgentSession inserts a fresh conversation row tied to the
-// given agent canvas. The Phase 5 stub intentionally does NOT run
+// CreateAgentSession 插入 api_4_conversation 行，默认 message=[]、reference={}。 The Phase 5 stub intentionally does NOT run
 // Canvas(dsl).reset() (eino runtime is still unimplemented in the Go
 // port); instead it stores a minimal but well-shaped row so that
 // subsequent ListAgentSessions / GetAgentSession / chat-completion
@@ -756,3 +754,4 @@ func (s *AgentService) CreateAgentSession(req *CreateAgentSessionRequest) (*enti
 	}
 	return row, common.CodeSuccess, nil
 }
+// agent_sessions.go — Agent 会话 CRUD、标签管理与消息/引用归一化。

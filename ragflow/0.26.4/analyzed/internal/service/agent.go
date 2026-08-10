@@ -43,18 +43,14 @@ import (
 	dslpkg "ragflow/internal/agent/dsl"
 )
 
-// webhookPayloadKey is the unexported context key RunAgent reads to
-// inject root["webhook_payload"]. Only the AgentService.RunAgentWithWebhook
-// public wrapper sets it; the chat / agent-run paths leave it absent so
-// existing callers see no behavior change.
+// webhookPayloadKey 为 Webhook 载荷的 context 键；仅 RunAgentWithWebhook 注入。
 //
 // We deliberately do NOT surface the payload as a new RunAgent parameter
 // — keeping the public signature stable means existing tests
 // (agent_run_e2e_test.go, agent_wait_for_user_test.go) keep compiling.
 type webhookPayloadKey struct{}
 
-// LoadCanvasByID is the read-side counterpart of loadCanvasForUser that
-// the webhook handler uses. It deliberately returns the raw DAO/service
+// LoadCanvasByID Webhook 读侧加载画布，错误映射留给 HTTP 层处理。 It deliberately returns the raw DAO/service
 // error (no error-code mapping) because the webhook envelope is 102
 // "Canvas not found." while the chat/run envelope is 103 "Make sure you
 // have permission..." — the choice must stay at the HTTP layer where
@@ -69,9 +65,7 @@ func (s *AgentService) LoadCanvasByID(
 	return s.loadCanvasForUser(ctx, userID, canvasID)
 }
 
-// RunAgentWithWebhook is a thin wrapper over RunAgent that attaches the
-// webhook payload to the runner root so the Begin component can surface
-// it as state.Sys["webhook_payload"] for downstream components.
+// RunAgentWithWebhook 将 Webhook 请求体注入 root，供 Begin 组件写入 sys.webhook_payload。
 //
 // The payload is intentionally passed via context value (rather than a new
 // RunAgent parameter) to keep the public RunAgent signature stable for
@@ -88,8 +82,7 @@ func (s *AgentService) RunAgentWithWebhook(
 	return s.RunAgent(ctx, userID, canvasID, "", "", "")
 }
 
-// ErrAgentNotOwner is returned by DeleteAgent when the canvas exists and
-// is accessible to the caller but is owned by a different user. It maps
+// ErrAgentNotOwner 删除时画布非当前用户所有，映射 Python「仅所有者可操作」。 It maps
 // to the Python "Only the owner of the agent is authorized for this
 // operation." message via handler.mapAgentError.
 //
@@ -99,8 +92,7 @@ func (s *AgentService) RunAgentWithWebhook(
 // ErrAgentNotOwner (owner).
 var ErrAgentNotOwner = errors.New("agent not owned by user")
 
-// ErrAgentStorageError is returned by RunAgent when the underlying
-// version / canvas / tenant DAO surfaces a non-sentinel error (DB
+// ErrAgentStorageError DAO 非预期错误哨兵，handler 映射为 500 且不泄露内部细节。 (DB
 // connectivity, schema drift, deadlock, etc.). The handler's
 // mapAgentError recognises this sentinel and maps it to
 // common.CodeServerError (500) with a SANITIZED message — the raw
@@ -114,7 +106,7 @@ var ErrAgentNotOwner = errors.New("agent not owned by user")
 // string. This sentinel closes that gap.
 var ErrAgentStorageError = errors.New("agent storage error")
 
-// AgentService agent service
+// AgentService Agent 画布业务层：DAO、Runner、Redis 检查点与运行跟踪。
 type AgentService struct {
 	canvasDAO           *dao.UserCanvasDAO
 	canvasTemplateDAO   *dao.CanvasTemplateDAO
@@ -123,12 +115,11 @@ type AgentService struct {
 	versionDAO          *dao.UserCanvasVersionDAO
 	api4ConversationDAO *dao.API4ConversationDAO
 
-	// driver is the per-process runner that drives canvas
-	// invocations and produces SSE events. V1 persistence is
+	// runner 驱动画布执行并产出 SSE 事件流。 V1 persistence is
 	// in-memory; a follow-up phase moves to Redis per plan §4.9.
 	runner *canvas.Runner
 
-	// Phase 4.4 V2 — Redis-backed run infrastructure. nil = in-memory
+	// Phase 4.4 V2 — Redis 检查点、状态序列化与 RunTracker。 nil = in-memory
 	// / no-tracking (test path, current production boot path until
 	// cmd/server_main.go wires them in v3.6.0).
 	//
@@ -149,13 +140,12 @@ type AgentService struct {
 	runStreams map[string]chan struct{}
 }
 
-// NewAgentService create agent service
+// NewAgentService 默认构造（无 Redis 基础设施，测试/兼容路径）。
 func NewAgentService() *AgentService {
 	return NewAgentServiceWithOptions(nil, nil, nil)
 }
 
-// NewAgentServiceWithOptions is the production constructor that
-// injects the Redis-backed run infrastructure. The zero-arg
+// NewAgentServiceWithOptions 生产构造器，可注入 CheckPointStore/StateSerializer/RunTracker。 The zero-arg
 // NewAgentService() remains as a thin wrapper that calls this with
 // all-nil options so existing call sites (cmd/server_main.go,
 // handler tests, agent_test.go) keep compiling.
@@ -187,14 +177,14 @@ func NewAgentServiceWithOptions(
 	}
 }
 
-// ListTemplates returns every canvas template. Mirrors Python
+// ListTemplates 返回全部画布模板列表。 Mirrors Python
 // agent_api.list_agent_template, which iterates CanvasTemplateService.get_all()
 // and serialises each row.
 func (s *AgentService) ListTemplates() ([]*entity.CanvasTemplate, error) {
 	return s.canvasTemplateDAO.GetAll()
 }
 
-// AgentItem is one entry in the list response.
+// AgentItem 列表接口中单条 Agent 摘要。
 type AgentItem struct {
 	ID             string  `json:"id"`
 	Avatar         *string `json:"avatar,omitempty"`
@@ -249,7 +239,7 @@ func toAgentItem(c *dao.UserCanvasListItem) *AgentItem {
 	}
 }
 
-// ListAgents returns agent canvases visible to userID.
+// ListAgents 分页列出用户可见 Agent，校验 owner_ids 授权范围。
 // Mirrors Python agent_api.list_agents — validates owner_ids against joined tenants,
 // then delegates to the DAO.
 func (s *AgentService) ListAgents(userID string, keywords string, page, pageSize int, orderBy string, desc bool, ownerIDs []string, canvasCategory, canvasType string, tags []string) (*ListAgentsResponse, common.ErrorCode, error) {
@@ -313,7 +303,7 @@ type CreateAgentRequest struct {
 	DSL            entity.JSONMap `json:"dsl,omitempty"`
 }
 
-// CreateAgent inserts a new user_canvas row. ID is assigned here.
+// CreateAgent 创建 Agent 画布：校验 DSL/标题、去重、NormalizeForCanvas。
 //
 // Returns the standard (T, common.ErrorCode, error) triple so the handler
 // can map validation/duplicate errors to codes 101/102 without
@@ -365,8 +355,7 @@ func (s *AgentService) CreateAgent(ctx context.Context, req *CreateAgentRequest)
 	return row, common.CodeSuccess, nil
 }
 
-// loadCanvasForUser is the shared IDOR guard used by every non-List
-// canvas method. It resolves the caller's tenant set, then asks the DAO
+// loadCanvasForUser 统一 IDOR 防护：租户可见性 + DAO 错误包装 ErrAgentStorageError。 It resolves the caller's tenant set, then asks the DAO
 // to load the canvas subject to the (owner OR team-in-tenant) predicate.
 // On miss or access-deny it returns dao.ErrUserCanvasNotFound so the
 // handler layer can map every "not yours" case to the same 404 envelope
@@ -407,14 +396,14 @@ func (s *AgentService) loadCanvasForUser(ctx context.Context, userID, canvasID s
 	return row, nil
 }
 
-// GetAgent returns a single canvas visible to the requesting user.
+// GetAgent 获取单个 Agent 详情。
 // Returns dao.ErrUserCanvasNotFound (not 403) when the canvas is missing
 // or belongs to another user.
 func (s *AgentService) GetAgent(ctx context.Context, userID, canvasID string) (*entity.UserCanvas, error) {
 	return s.loadCanvasForUser(ctx, userID, canvasID)
 }
 
-// UpdateAgent applies a draft patch to user_canvas. Settings updates may omit
+// UpdateAgent 局部更新草稿字段；DSL 变更时同步写版本快照。 Settings updates may omit
 // dsl; in that case the existing draft DSL must be preserved.
 func (s *AgentService) UpdateAgent(ctx context.Context, userID, canvasID string, patch map[string]interface{}) error {
 	canvasInstance, err := s.loadCanvasForUser(ctx, userID, canvasID)
@@ -469,7 +458,7 @@ func (s *AgentService) UpdateAgent(ctx context.Context, userID, canvasID string,
 	return nil
 }
 
-// ResetAgent clears the per-run state of a canvas (history, retrieval,
+// ResetAgent 重置 DSL 运行态（history/retrieval/memory/path 与 sys/env 全局变量）。 (history, retrieval,
 // memory, path) and zeroes every "sys.*" / "env.*" global, mirroring
 // the Python handler at api/apps/restful_apis/agent_api.py:992. The
 // reset transform is a pure DSL mutation; the persisted row in
@@ -503,8 +492,7 @@ func (s *AgentService) ResetAgent(ctx context.Context, userID, canvasID string) 
 	return row.DSL, nil
 }
 
-// DeleteAgent removes the canvas and cascades to its user_canvas_version
-// rows in a single transaction so a mid-flight failure cannot leave
+// DeleteAgent 事务删除画布及全部版本；仅所有者可操作。 so a mid-flight failure cannot leave
 // orphan version rows (Phase 5 §2.9; review follow-up M2).
 //
 // Owner-only by design (mirrors _require_canvas_owner_sync in the Python
@@ -543,8 +531,7 @@ type PublishAgentRequest struct {
 	DSL         entity.JSONMap `json:"dsl,omitempty"`
 }
 
-// PublishAgent appends a new user_canvas_version row and marks the parent
-// canvas as released in a single transaction. Existing versions are never
+// PublishAgent 事务发布：新增版本行并将父画布标记 release=true。 Existing versions are never
 // overwritten (§2.9); the parent canvas DSL/title/description/release
 // fields are updated atomically with the new version row.
 func (s *AgentService) PublishAgent(ctx context.Context, userID, canvasID string, req *PublishAgentRequest) (*entity.UserCanvasVersion, error) {
@@ -626,7 +613,7 @@ func buildVersionTitle(userNickname, agentTitle string, ts time.Time) string {
 	return fmt.Sprintf("%s_%s_%s", tenant, title, ts.Format("2006-01-02 15:04:05"))
 }
 
-// ListVersions returns every version for a canvas the user can see,
+// ListVersions 列出画布全部版本（先校验访问权限）。
 // newest first. The parent-canvas access check is enforced before the
 // version list is loaded so unauthorized users cannot enumerate version
 // ids of canvases they cannot read.
@@ -637,7 +624,7 @@ func (s *AgentService) ListVersions(ctx context.Context, userID, canvasID string
 	return s.versionDAO.ListByCanvasID(canvasID)
 }
 
-// GetVersion returns a single version of a canvas the user can see.
+// GetVersion 获取指定版本，校验归属 canvasID。
 // Returns dao.ErrUserCanvasVersionNotFound when the version does not
 // exist or belongs to a different canvas, and
 // dao.ErrUserCanvasNotFound when the parent canvas is not visible to
@@ -659,7 +646,7 @@ func (s *AgentService) GetVersion(ctx context.Context, userID, canvasID, version
 	return row, nil
 }
 
-// DeleteVersion removes a single version of a canvas the user can see.
+// DeleteVersion 删除单个版本记录。
 // Returns dao.ErrUserCanvasVersionNotFound when the row does not exist
 // (or belongs to a different canvas) and dao.ErrUserCanvasNotFound when
 // the parent canvas is not visible to the requesting user.
@@ -682,8 +669,7 @@ func (s *AgentService) DeleteVersion(ctx context.Context, userID, canvasID, vers
 	})
 }
 
-// RunAgent starts a run for the given canvas and returns a channel of
-// orchestrator events the HTTP layer streams back as SSE. The driver owns
+// RunAgent 启动画布运行，返回 SSE 事件 channel；支持会话续跑与版本/DSL 选择。 The driver owns
 // the wait-for-user cycle (eino interrupt, gap-analysis §11.6.4): the
 // RunFunc returns an interrupt error when a UserFillUp node pauses the
 // graph, the driver persists the interrupt id keyed by (canvasID,
@@ -850,8 +836,7 @@ func (s *AgentService) RunAgent(ctx context.Context, userID, canvasID, sessionID
 	return s.runner.Run(ctx, run, canvasID, sessionID, userInput, root), nil
 }
 
-// buildRunFunc assembles the per-run RunFunc the orchestrator (canvas.Runner)
-// drives.
+// buildRunFunc 组装单次运行的 RunFunc：Compile/Invoke、中断恢复与 token 统计。
 //
 // Phase 4.4 V2: this is the real Compile/Invoke path. The previous
 // V1 echo placeholder returned a synthesized answer without ever
@@ -1222,7 +1207,7 @@ func (s *AgentService) buildRunFunc(canvasID string, versionRow *entity.UserCanv
 	}
 }
 
-// runIDFor builds the per-run CanvasState identifier: canvasID
+// runIDFor 生成运行 ID：首跑用 canvasID，续跑附加 sessionID 防并发冲突。 canvasID
 // alone for first-touch runs, canvasID + sessionID for resumed runs
 // (so two concurrent sessions on the same canvas don't collide in
 // the snapshot map).
@@ -1342,8 +1327,7 @@ func normalisedDSLForRun(v *entity.UserCanvasVersion) map[string]any {
 	return dslpkg.NormalizeForRun(map[string]any(v.DSL))
 }
 
-// CancelAgent signals the in-flight run (if any) for the given canvas to
-// stop. It is a no-op when no run is currently registered, or when the
+// CancelAgent 关闭 runStreams 中的取消 channel，终止进行中的运行。 It is a no-op when no run is currently registered, or when the
 // requesting user has no read access to the canvas.
 func (s *AgentService) CancelAgent(ctx context.Context, userID, canvasID string) error {
 	if _, err := s.loadCanvasForUser(ctx, userID, canvasID); err != nil {
@@ -1363,3 +1347,4 @@ func (s *AgentService) CancelAgent(ctx context.Context, userID, canvasID string)
 	}
 	return nil
 }
+// agent.go — Agent 画布服务：CRUD、发布、运行编排（SSE）、取消与 IDOR 防护。

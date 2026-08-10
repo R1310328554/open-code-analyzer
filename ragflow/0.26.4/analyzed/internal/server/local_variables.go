@@ -14,6 +14,7 @@
 //  limitations under the License.
 //
 
+// local_variables — 进程内可热更新的本地运行时变量（如服务名）。
 package server
 
 import (
@@ -21,8 +22,9 @@ import (
 	"sync"
 )
 
+// LocalVariables 存放可在运行时修改的进程级变量。
 type LocalVariables struct {
-	ServerName *string // Server name, can be modified at runtime
+	ServerName *string // 服务显示名称，运行时可改
 }
 
 var (
@@ -31,6 +33,7 @@ var (
 	localVariablesMu   sync.RWMutex
 )
 
+// InitLocalVariables 初始化本地变量单例。
 func InitLocalVariables() error {
 	var initErr error
 	localVariablesOnce.Do(func() {
@@ -40,14 +43,17 @@ func InitLocalVariables() error {
 	return initErr
 }
 
+// SetServerName 设置当前进程服务名称。
 func SetServerName(serverName string) {
 	localVariablesMu.Lock()
 	defer localVariablesMu.Unlock()
 	localVariables.ServerName = &serverName
 }
 
+// GetServerName 读取当前服务名称。
 func GetServerName() string {
 	localVariablesMu.RLock()
 	defer localVariablesMu.RUnlock()
 	return *localVariables.ServerName
 }
+// local_variables.go — 运行时本地变量：可热更新的服务名称等进程级状态。

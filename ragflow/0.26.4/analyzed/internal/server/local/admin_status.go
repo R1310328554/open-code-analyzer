@@ -14,6 +14,7 @@
 //  limitations under the License.
 //
 
+// admin_status — 进程内 Admin 服务心跳/授权状态缓存。
 package local
 
 import (
@@ -22,8 +23,7 @@ import (
 	"sync"
 )
 
-// AdminStatus represents the admin status
-// 0 = valid, 1 = invalid
+// AdminStatus 管理端可用性：0 可用，1 不可用及原因。
 type AdminStatus struct {
 	Status int    `json:"status"` // 0 = available, 1 = not available
 	Reason string `json:"reason"` // reason for invalid status
@@ -35,8 +35,7 @@ var (
 	adminStatusOnce sync.Once
 )
 
-// InitAdminStatus initializes the global admin status
-// status: 0 = valid, 1 = invalid (default)
+// InitAdminStatus 进程启动时一次性初始化全局 Admin 状态。
 func InitAdminStatus(status int, reason string) {
 	adminStatusOnce.Do(func() {
 		adminStatus = &AdminStatus{
@@ -46,7 +45,7 @@ func InitAdminStatus(status int, reason string) {
 	})
 }
 
-// GetAdminStatus returns the current admin status
+// GetAdminStatus 线程安全读取当前 Admin 状态副本。
 func GetAdminStatus() AdminStatus {
 	adminStatusMu.RLock()
 	defer adminStatusMu.RUnlock()
@@ -59,7 +58,7 @@ func GetAdminStatus() AdminStatus {
 	}
 }
 
-// SetAdminStatus updates the admin status
+// SetAdminStatus 更新状态；不可用时写 Warn 日志。
 func SetAdminStatus(status int, reason string) {
 	adminStatusMu.Lock()
 	defer adminStatusMu.Unlock()
@@ -74,7 +73,7 @@ func SetAdminStatus(status int, reason string) {
 	}
 }
 
-// IsAdminAvailable returns true if admin is valid (Status == 0)
+// IsAdminAvailable 判断 Admin 是否可用（Status==0）。
 func IsAdminAvailable() bool {
 	adminStatusMu.RLock()
 	defer adminStatusMu.RUnlock()
@@ -83,3 +82,4 @@ func IsAdminAvailable() bool {
 	}
 	return adminStatus.Status == 0
 }
+// admin_status.go — 进程内 Admin 服务可用性状态（0 可用 / 1 不可用）。

@@ -34,7 +34,7 @@ import (
 	"ragflow/internal/common"
 )
 
-// TestDBConnectionRequest is the request body for AgentService.TestDBConnection.
+// TestDBConnectionRequest Agent 画布「测试数据库连接」请求体。
 type TestDBConnectionRequest struct {
 	DBType   string      `json:"db_type"`
 	Database string      `json:"database"`
@@ -44,8 +44,7 @@ type TestDBConnectionRequest struct {
 	Password string      `json:"password"`
 }
 
-// AllowAnyHostForTest mirrors utility.AllowAnyHostForTest: a test-only
-// override that disables the SSRF guard in AssertHostIsSafe. Production
+// AllowAnyHostForTest 仅测试二进制内可置 true，禁用 SSRF 主机校验。 Production
 // code MUST leave this at false. Tests that need to talk to a local
 // httptest server or stub-resolved DB host flip it on and reset it
 // in t.Cleanup.
@@ -61,8 +60,7 @@ func allowAnyHost() bool {
 	return AllowAnyHostForTest
 }
 
-// AssertHostIsSafe returns the first resolved public IP for host, or an
-// error when the host resolves to any non-public address. The check
+// AssertHostIsSafe DNS 解析后拒绝私网/保留地址，防止 SSRF 内网探测。 The check
 // mirrors the SSRF guard in the Python implementation so external
 // service calls cannot pivot to internal network ranges.
 func AssertHostIsSafe(host string) (string, error) {
@@ -221,8 +219,7 @@ func dbConnectionPort(port interface{}) string {
 	}
 }
 
-// TestDBConnection validates input and performs a probe connect against
-// the requested database. The probe enforces an SSRF allow-list and a
+// TestDBConnection 校验必填字段、SSRF 白名单后短超时 Ping 目标 MySQL/MariaDB。 The probe enforces an SSRF allow-list and a
 // short timeout to keep the API responsive when targets are unreachable.
 // The "required argument are missing" message has a trailing semicolon
 // and space to stay byte-identical with the Python implementation.
@@ -277,3 +274,4 @@ func (s *AgentService) TestDBConnection(userID string, req *TestDBConnectionRequ
 
 	return common.CodeSuccess, nil
 }
+// agent_dbcheck.go — 外部数据库连通性探测，含 SSRF 公网地址白名单校验。

@@ -27,13 +27,12 @@ import (
 	"go.uber.org/zap"
 )
 
-// Variables holds all runtime variables that can be changed during system operation
-// Unlike Config, these can be modified at runtime
+// Variables 运行时变量容器；与静态 Config 不同，可在运行中变更。
 type Variables struct {
 	//SecretKey string `json:"secret_key"`
 }
 
-// VariableStore interface for persistent storage (e.g., Redis)
+// VariableStore 持久化键值存储抽象（通常为 Redis）。
 type VariableStore interface {
 	Get(key string) (string, error)
 	Set(key string, value string, exp time.Duration) bool
@@ -55,8 +54,7 @@ const (
 	SecretKeyTTL = 0
 )
 
-// InitVariables initializes all runtime variables from persistent storage
-// This should be called after Config and Cache are initialized
+// InitVariables 在 Config 与 Cache 就绪后初始化运行时变量。
 func InitVariables(store VariableStore) error {
 	var initErr error
 	variablesOnce.Do(func() {
@@ -89,7 +87,7 @@ func InitVariables(store VariableStore) error {
 //	return globalVariables
 //}
 
-// GetSecretKey returns the current secret key
+// GetSecretKey 优先读配置密钥，否则从 Redis 获取或生成并写入。
 func GetSecretKey(store VariableStore) (string, error) {
 	if globalConfig.Server.SecretKey != nil {
 		return *globalConfig.Server.SecretKey, nil
@@ -117,7 +115,7 @@ func GetSecretKey(store VariableStore) (string, error) {
 //	}
 //}
 
-// GetOrCreateKey gets a key from store, or creates it if not exists
+// GetOrCreateKey 原子 Get/SetNX：键不存在时写入 newValue 并返回。
 // - If key exists in store, returns the stored value
 // - If key doesn't exist, calls createFn to generate value, stores it, and returns it
 // - Uses SetNX to ensure atomic creation (only one caller succeeds when key doesn't exist)
@@ -166,7 +164,7 @@ func GetOrCreateKey(store VariableStore, key string, newValue string) (string, e
 	return newValue, nil
 }
 
-// RefreshVariables refreshes all variables from storage
+// RefreshVariables 从存储重新加载变量（多实例同步）。
 // Call this when you want to reload variables from persistent storage
 func RefreshVariables(store VariableStore) error {
 	if store == nil {
@@ -194,7 +192,7 @@ func RefreshVariables(store VariableStore) error {
 	return nil
 }
 
-// VariableWatcher watches for variable changes in storage
+// VariableWatcher 定时轮询存储以感知其他实例的变量变更。
 // This can be used to detect changes made by other instances
 type VariableWatcher struct {
 	store    VariableStore
@@ -202,7 +200,7 @@ type VariableWatcher struct {
 	wg       sync.WaitGroup
 }
 
-// NewVariableWatcher creates a new variable watcher
+// NewVariableWatcher 构造变量变更监听器。
 func NewVariableWatcher(store VariableStore) *VariableWatcher {
 	return &VariableWatcher{
 		store:    store,
@@ -210,7 +208,7 @@ func NewVariableWatcher(store VariableStore) *VariableWatcher {
 	}
 }
 
-// Start starts watching for variable changes
+// Start 按 interval 周期调用 RefreshVariables。
 func (w *VariableWatcher) Start(interval time.Duration) {
 	w.wg.Go(func() {
 		ticker := time.NewTicker(interval)
@@ -230,14 +228,14 @@ func (w *VariableWatcher) Start(interval time.Duration) {
 	common.Info("Variable watcher started", zap.Duration("interval", interval))
 }
 
-// Stop stops the variable watcher
+// Stop 停止监听并等待 goroutine 退出。
 func (w *VariableWatcher) Stop() {
 	close(w.stopChan)
 	w.wg.Wait()
 	common.Info("Variable watcher stopped")
 }
 
-// SaveToStorage saves current variables to persistent storage
+// SaveToStorage 将内存变量写回持久化存储。
 func SaveToStorage(store VariableStore) error {
 	if store == nil {
 		return fmt.Errorf("store is nil")
@@ -263,3 +261,4 @@ func SaveToStorage(store VariableStore) error {
 func WithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), timeout)
 }
+// variable.go — 运行时变量与 Redis 持久化：密钥获取/创建、刷新与变更监听。

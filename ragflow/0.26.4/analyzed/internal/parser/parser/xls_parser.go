@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 
+// xls_parser — CGO 构建下旧版 Excel（.xls）解析，统一走 excelize。
 package parser
 
 import (
@@ -26,10 +27,12 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// XLSParser 解析 .xls 二进制表格，输出 HTML 供下游分块。
 type XLSParser struct {
 	libType string
 }
 
+// NewXLSParser 目前仅支持 OfficeOxide 库类型。
 func NewXLSParser(libType string) (*XLSParser, error) {
 	switch libType {
 	case OfficeOxide:
@@ -45,10 +48,7 @@ func (p *XLSParser) String() string {
 	return "XLSParser"
 }
 
-// ParseWithResult delegates to excelize which handles both .xls
-// and .xlsx through the same API. The python ExcelParser falls
-// back to a similar delegation; on the Go side excelize is the
-// single library for both extensions.
+// ParseWithResult 经 excelize 打开工作簿，各 sheet 渲染为 <table> HTML。
 func (p *XLSParser) ParseWithResult(filename string, data []byte) ParseResult {
 	f, err := excelize.OpenReader(bytes.NewReader(data))
 	if err != nil {
@@ -83,3 +83,4 @@ func (p *XLSParser) ParseWithResult(filename string, data []byte) ParseResult {
 		HTML:         html.String(),
 	}
 }
+// xls_parser.go — 旧版 .xls 解析：经 excelize 将各工作表渲染为 HTML 表格。

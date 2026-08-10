@@ -14,6 +14,7 @@
 //  limitations under the License.
 //
 
+// router.go — Gin 主路由：聚合全部 handler，划分免鉴权/Beta/会话鉴权三组。
 package router
 
 import (
@@ -23,6 +24,7 @@ import (
 	"ragflow/internal/handler"
 )
 
+// Router 持有各业务 handler 指针，由 Setup 挂载到 Gin Engine。
 type Router struct {
 	authHandler          *handler.AuthHandler
 	userHandler          *handler.UserHandler
@@ -56,7 +58,7 @@ type Router struct {
 	componentsHandler    *handler.ComponentsHandler
 }
 
-// NewRouter create router
+// NewRouter 构造路由聚合器，注入全部 handler 依赖。
 func NewRouter(
 	authHandler *handler.AuthHandler,
 	userHandler *handler.UserHandler,
@@ -123,18 +125,18 @@ func NewRouter(
 	}
 }
 
-// Setup setup routes
+// Setup 注册全局中间件、健康检查、OAuth 回调及 /api/v1 路由树。
 func (r *Router) Setup(engine *gin.Engine) {
-	// Mark all responses from Go with a header for debugging.
+	// 响应头 X-API-Source=go 便于区分 Go/Python 实现。
 	engine.Use(func(c *gin.Context) {
 		c.Header("X-API-Source", "go")
 		c.Next()
 	})
 
-	// Log all HTTP requests.
+	// 记录全部 HTTP 请求日志。
 	engine.Use(common.GinLogger())
 
-	// Health check
+	// 健康检查
 	engine.GET("/health", r.systemHandler.Health)
 
 	// System endpoints
@@ -192,8 +194,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 		apiNoAuth.GET("/dify/retrieval/health", r.difyRetrievalHandler.HealthCheck)
 	}
 
-	// Beta-token routes. Mirrors python's
-	// @login_required(auth_types=AUTH_BETA) on bot_api.py bot endpoints.
+	// Beta 令牌路由组：searchbots/chatbots/agentbots 等 SDK 场景。
 	apiBetaAuth := engine.Group("/api/v1")
 	apiBetaAuth.Use(r.authHandler.BetaAuthMiddleware())
 	{
@@ -223,7 +224,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 		}
 	}
 
-	// Protected routes
+	// 会话鉴权保护的路由组
 	authorized := engine.Group("")
 	authorized.Use(r.authHandler.AuthMiddleware())
 	{
@@ -551,7 +552,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 				allModels.GET("/:model_name", r.modelHandler.ShowModel)
 			}
 
-			// Agent routes
+			// Agent 画布路由
 			agents := v1.Group("/agents")
 			RegisterAgentRoutes(agents, r.agentHandler)
 
@@ -570,9 +571,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 				v1.GET("/components", r.componentsHandler.Get)
 			}
 
-			// Admin routes — Phase 6 per-tenant canvas runtime override.
-			// RegisterAdminRuntimeRoutes lives in admin_routes.go; a nil
-			// handler is tolerated and yields a no-op registration.
+			// 管理端路由 — Phase 6 租户运行时覆盖（见 admin_routes.go）。
 			admin := v1.Group("/admin")
 			RegisterAdminRuntimeRoutes(admin, r.adminRuntimeHandler)
 
@@ -697,6 +696,7 @@ func (r *Router) Setup(engine *gin.Engine) {
 		}
 	}
 
-	// Handle undefined routes
+	// 未匹配路由统一处理
 	engine.NoRoute(handler.HandleNoRoute)
 }
+// router.go — HTTP 主路由表：鉴权分组、v1 API 与各 handler 挂载入口。

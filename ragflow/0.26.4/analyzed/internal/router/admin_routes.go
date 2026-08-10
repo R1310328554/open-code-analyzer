@@ -14,10 +14,7 @@
 //  limitations under the License.
 //
 
-// Package router — admin_routes.go registers the Phase 6 per-tenant
-// canvas-runtime override endpoint on the existing v1 admin group. It is
-// kept separate from router.go so future admin endpoints can land here
-// without churn in the main route table.
+// admin_routes.go — Phase 6 租户 canvas 运行时覆盖路由，与主路由表分离便于扩展。
 package router
 
 import (
@@ -26,11 +23,7 @@ import (
 	"ragflow/internal/handler"
 )
 
-// RegisterAdminRuntimeRoutes wires the canvas-runtime override endpoint
-// onto an existing /admin RouterGroup. The caller is expected to be the
-// authorised v1 group; this function is intentionally agnostic of the
-// full path prefix so the same registration helper works for the main
-// server and any future admin sub-app.
+// RegisterAdminRuntimeRoutes 在 /admin 组注册 POST canvas-runtime/:tenant_id，设置租户运行时 go/python/auto。
 //
 // The single route is:
 //
@@ -52,3 +45,4 @@ func RegisterAdminRuntimeRoutes(g *gin.RouterGroup, h *handler.AdminRuntimeHandl
 	}
 	g.POST("/canvas-runtime/:tenant_id", h.SetTenantRuntime)
 }
+// admin_routes.go — Phase 6 管理端路由：租户级 canvas 运行时（go/python/auto）覆盖接口。

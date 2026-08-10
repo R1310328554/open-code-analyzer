@@ -14,6 +14,7 @@
 //  limitations under the License.
 //
 
+// admin_client — 向 Admin 服务周期性发送心跳与版本上报。
 package service
 
 import (
@@ -30,7 +31,7 @@ import (
 
 var AdminServiceClient *AdminClient
 
-// AdminClient is responsible for sending heartbeat reports to the admin server
+// AdminClient 负责向管理端 POST 心跳（服务名、类型、host/port、版本）。
 type AdminClient struct {
 	client       *utility.HTTPClient
 	logger       *zap.Logger
@@ -43,7 +44,7 @@ type AdminClient struct {
 	attemptCount int
 }
 
-// NewAdminClient creates a new heartbeat service instance
+// NewAdminClient 构造心跳客户端实例。
 func NewAdminClient(logger *zap.Logger, serverType common.ServerType, serverName, host string, port int) *AdminClient {
 	return &AdminClient{
 		logger:       logger,
@@ -57,7 +58,7 @@ func NewAdminClient(logger *zap.Logger, serverType common.ServerType, serverName
 	}
 }
 
-// InitHTTPClient initializes the HTTP client with admin server configuration
+// InitHTTPClient 按 AdminConfig 构建 HTTP 客户端（10s 超时）。
 func (h *AdminClient) InitHTTPClient() error {
 	adminConfig := server.GetAdminConfig()
 	if adminConfig == nil {
@@ -78,7 +79,7 @@ func (h *AdminClient) InitHTTPClient() error {
 	return nil
 }
 
-// SendHeartbeat sends a heartbeat message to the admin server
+// SendHeartbeat 发送心跳；连续成功时降频（attemptCount<10 时跳过）。
 func (h *AdminClient) SendHeartbeat() error {
 
 	if h.attemptCount < 10 {
@@ -147,3 +148,4 @@ func (h *AdminClient) SendHeartbeat() error {
 
 	return nil
 }
+// admin_client.go — Admin 心跳客户端：向管理端上报服务存活与版本信息。

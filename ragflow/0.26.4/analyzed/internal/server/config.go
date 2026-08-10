@@ -14,6 +14,7 @@
 //  limitations under the License.
 //
 
+// config.go — 全局配置：viper 加载 service_conf.yaml 与环境变量覆盖。
 package server
 
 import (
@@ -32,10 +33,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// DefaultConnectTimeout default connection timeout for external services
+// DefaultConnectTimeout 连接外部服务的默认超时（5 秒）。
 const DefaultConnectTimeout = 5 * time.Second
 
-// Config application configuration
+// Config 应用顶层配置结构，mapstructure 映射 YAML 各节。
 type Config struct {
 	Server           ServerConfig           `mapstructure:"server"`
 	Authentication   AuthenticationConfig   `mapstructure:"authentication"`
@@ -56,7 +57,7 @@ type Config struct {
 	FileSyncer       FileSyncerConfig       `mapstructure:"file_syncer"`
 }
 
-// AdminConfig admin server configuration
+// AdminConfig 管理端服务 host/port 配置。
 type AdminConfig struct {
 	Host string `mapstructure:"host"`
 	Port int    `mapstructure:"http_port"`
@@ -82,7 +83,7 @@ type FileSyncerConfig struct {
 	SyncInterval       int `mapstructure:"sync_interval"`
 }
 
-// UserDefaultLLMConfig user default LLM configuration
+// UserDefaultLLMConfig 新用户默认各模态 LLM 模型配置。
 type UserDefaultLLMConfig struct {
 	DefaultModels DefaultModelsConfig `mapstructure:"default_models"`
 }
@@ -106,7 +107,7 @@ type ModelConfig struct {
 	Factory string `mapstructure:"factory"`
 }
 
-// OAuthConfig OAuth configuration for a channel.
+// OAuthConfig 单渠道 OAuth/OIDC 客户端配置（类型、URL、凭证）。
 // Mirrors api/apps/auth/__init__.py's OAUTH_CONFIG entries: a Type that
 // selects the auth client flavor (oauth2 / oidc / github), plus the
 // transport URLs and client credentials. For OIDC the URLs are derived
@@ -126,14 +127,14 @@ type OAuthConfig struct {
 	Issuer           string `mapstructure:"issuer"`
 }
 
-// ServerConfig server configuration
+// ServerConfig HTTP 服务端口、模式与密钥。
 type ServerConfig struct {
 	Mode      string  `mapstructure:"mode"` // debug, release
 	Port      int     `mapstructure:"port"`
 	SecretKey *string `mapstructure:"secret_key"`
 }
 
-// DatabaseConfig database configuration
+// DatabaseConfig MySQL 连接参数。
 type DatabaseConfig struct {
 	Driver   string `mapstructure:"driver"` // mysql
 	Host     string `mapstructure:"host"`
@@ -144,7 +145,7 @@ type DatabaseConfig struct {
 	Charset  string `mapstructure:"charset"`
 }
 
-// LogConfig logging configuration.
+// LogConfig 日志级别、轮转文件路径与保留策略。
 //
 // Path, MaxSize, MaxBackups, MaxAge, and Compress configure the rotated
 // log file. The cmd/* entry points hardcode per-service defaults
@@ -171,7 +172,7 @@ type LogConfig struct {
 	Compress   *bool  `mapstructure:"compress"`    // gzip rotated files; nil = default true
 }
 
-// DocEngineConfig document engine configuration
+// DocEngineConfig 检索引擎类型（Elasticsearch / Infinity）及连接。
 type DocEngineConfig struct {
 	Type     EngineType           `mapstructure:"type"`
 	ES       *ElasticsearchConfig `mapstructure:"es"`
@@ -204,7 +205,7 @@ type InfinityConfig struct {
 
 type StorageType string
 
-// StorageConfig holds all storage-related configurations
+// StorageConfig 对象存储后端（MinIO/S3/OSS）配置。
 type StorageConfig struct {
 	Type  StorageType  `mapstructure:"type"`
 	Minio *MinioConfig `mapstructure:"minio"`
@@ -256,7 +257,7 @@ type S3Config struct {
 	PrefixPath       string `mapstructure:"prefix_path"`       // Path prefix (optional)
 }
 
-// RedisConfig Redis configuration
+// RedisConfig Redis 缓存/消息队列连接。
 type RedisConfig struct {
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
@@ -276,7 +277,7 @@ var (
 	allConfigs   []map[string]interface{}
 )
 
-// Init initialize configuration
+// Init 依次从配置文件与环境变量加载，并构建服务发现 allConfigs 列表。
 func Init(configPath string) error {
 
 	err := FromConfigFile(configPath)
@@ -878,12 +879,12 @@ func FromConfigFile(configPath string) error {
 	return nil
 }
 
-// Get get global configuration
+// GetConfig 返回全局 Config 指针。
 func GetConfig() *Config {
 	return globalConfig
 }
 
-// GetAdminConfig gets the admin server configuration
+// GetAdminConfig 返回 Admin 子配置。
 func GetAdminConfig() *AdminConfig {
 	if globalConfig == nil {
 		return nil
@@ -919,7 +920,7 @@ func PrintAll() {
 	zapLogger.Info("=== End Configurations ===")
 }
 
-// parseHostPort parses host:port string and returns host and port
+// parseHostPort 解析 host:port 或 URL 格式地址。
 func parseHostPort(hostPort string) (string, int) {
 	if hostPort == "" {
 		return "", 0
@@ -962,6 +963,7 @@ func getInt(m map[string]interface{}, key string) int {
 	return 0
 }
 
+// GetLanguage 根据 LANG/LANGUAGE 环境变量推断界面语言（Chinese/English）。
 func GetLanguage() string {
 	lang := os.Getenv("LANG")
 	if lang == "" {
@@ -978,3 +980,4 @@ func GetLanguage() string {
 
 	return "English"
 }
+// config.go — 应用配置加载：YAML/环境变量、服务发现列表与默认值映射。

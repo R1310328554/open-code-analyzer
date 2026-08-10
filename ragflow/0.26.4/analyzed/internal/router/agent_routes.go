@@ -14,9 +14,7 @@
 //  limitations under the License.
 //
 
-// Package router contains the HTTP route registration helpers used by
-// cmd/ragflow. This file is the dedicated registration site for the
-// agent canvas endpoints described in plan §4.8.
+// agent_routes.go — Agent 画布 REST 端点集中注册（plan §4.8）。
 package router
 
 import (
@@ -25,10 +23,7 @@ import (
 	"ragflow/internal/handler"
 )
 
-// RegisterAgentRoutes wires the Phase 5 agent endpoints onto an
-// existing /agents RouterGroup. The orchestrator passes the v1 group's
-// "/agents" sub-group here, so the function does not know about the
-// v1 prefix itself.
+// RegisterAgentRoutes 将模板/CRUD/运行/会话/Webhook 等路由挂到 /agents 子组。
 //
 // The existing GET /api/v1/agents (added in commit 0a7662cf3) is replaced
 // by this registration so the route count, ordering and middleware all
@@ -39,12 +34,12 @@ func RegisterAgentRoutes(g *gin.RouterGroup, h *handler.AgentHandler) {
 	if g == nil || h == nil {
 		return
 	}
-	// Discovery / metadata.
+	// 发现与元数据接口。
 	g.GET("/templates", h.ListAgentTemplates)
 	g.GET("/prompts", h.Prompts)
 	g.GET("/tags", h.ListAgentTags)
 
-	// Agent CRUD.
+	// Agent 画布增删改查与运行控制。
 	g.GET("", h.ListAgents)
 	g.POST("", h.CreateAgent)
 	g.GET("/:canvas_id", h.GetAgent)
@@ -56,29 +51,29 @@ func RegisterAgentRoutes(g *gin.RouterGroup, h *handler.AgentHandler) {
 	g.PUT("/:canvas_id/tags", h.UpdateAgentTags)
 	g.POST("/:canvas_id/reset", h.ResetAgent)
 
-	// File operations.
+	// 附件上传与下载。
 	g.GET("/download", h.DownloadAgentFile)
 	g.GET("/attachments/:attachment_id/download", h.DownloadAttachment)
 	g.GET("/attachments/:attachment_id/preview", h.PreviewAttachment)
 	g.POST("/:canvas_id/upload", h.UploadAgentFile)
 
-	// Component introspection + debug.
+	// 组件输入表单与调试。
 	g.GET("/:canvas_id/components/:component_id/input-form", h.GetComponentInputForm)
 	g.POST("/:canvas_id/components/:component_id/debug", h.DebugComponent)
 
-	// Versions.
+	// 发布版本管理。
 	g.GET("/:canvas_id/versions", h.ListVersions)
 	g.GET("/:canvas_id/versions/:version_id", h.GetVersion)
 	g.DELETE("/:canvas_id/versions/:version_id", h.DeleteVersion)
 
-	// Sessions.
+	// 运行会话列表与生命周期。
 	g.GET("/:canvas_id/sessions", h.ListAgentSessions)
 	g.POST("/:canvas_id/sessions", h.CreateAgentSession)
 	g.GET("/:canvas_id/sessions/:session_id", h.GetAgentSession)
 	g.DELETE("/:canvas_id/sessions", h.DeleteAgentSession)
 	g.DELETE("/:canvas_id/sessions/:session_id", h.DeleteAgentSession)
 
-	// Logs and webhook.
+	// 运行日志与 Webhook 触发（六 HTTP 方法同路径）。
 	g.GET("/:canvas_id/logs/:message_id", h.GetAgentLogs)
 	g.GET("/:canvas_id/webhook/logs", h.GetAgentWebhookLogs)
 	// Webhook trigger endpoints. The Python agent API
@@ -101,11 +96,7 @@ func RegisterAgentRoutes(g *gin.RouterGroup, h *handler.AgentHandler) {
 	g.POST("/test_db_connection", h.TestDBConnection)
 }
 
-// registerAnyMethod mirrors the Python
-// `@manager.route(path, methods=["POST","GET","PUT","PATCH","DELETE","HEAD"])`
-// pattern. Gin has no Match() helper, so we register each verb
-// explicitly. The handler is identical for all six — semantics differ
-// only by c.Request.Method.
+// registerAnyMethod 显式注册六种 HTTP 方法到同一路径，对齐 Python Flask 多方法路由。
 //
 // Centralising the registration here keeps RegisterAgentRoutes readable
 // when both the production trigger and the test trigger share the same
@@ -121,3 +112,4 @@ func registerAnyMethod(g *gin.RouterGroup, path string, h gin.HandlerFunc) {
 	g.DELETE(path, h)
 	g.HEAD(path, h)
 }
+// agent_routes.go — Agent 画布 CRUD、运行、会话、Webhook 等 REST 路由注册。

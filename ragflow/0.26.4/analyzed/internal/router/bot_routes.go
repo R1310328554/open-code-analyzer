@@ -14,6 +14,7 @@
 //  limitations under the License.
 //
 
+// bot_routes.go — 对外 Bot API：legacy chatbot 与 canvas agentbot _completion 路由。
 package router
 
 import (
@@ -22,8 +23,7 @@ import (
 	"ragflow/internal/handler"
 )
 
-// RegisterChatbotRoutes wires the dialog (legacy chatbot) endpoints
-// on the /api/v1/chatbots subtree. Mirrors python
+// RegisterChatbotRoutes 注册传统对话机器人 completion/info 路由（dialog_id 参数）。
 //
 //	@manager.route("/chatbots/<dialog_id>/completions")   bot_api.py:55
 //	@manager.route("/chatbots/<dialog_id>/info")          bot_api.py:126
@@ -41,8 +41,7 @@ func RegisterChatbotRoutes(g *gin.RouterGroup, mw gin.HandlerFunc, h *handler.Bo
 	g.GET("/:dialog_id/info", h.ChatbotInfo)
 }
 
-// RegisterAgentbotRoutes wires the canvas-based agent endpoints on
-// the /api/v1/agentbots subtree. Mirrors python
+// RegisterAgentbotRoutes 注册画布 Agent 机器人 completion/inputs/logs 路由。
 //
 //	@manager.route("/agentbots/<agent_id>/completions")   bot_api.py:157
 //	@manager.route("/agentbots/<agent_id>/inputs")        bot_api.py:239
@@ -55,3 +54,4 @@ func RegisterAgentbotRoutes(g *gin.RouterGroup, mw gin.HandlerFunc, h *handler.B
 	g.GET("/:agent_id/inputs", h.AgentbotInputs)
 	g.GET("/:agent_id/logs/:message_id", h.GetAgentbotLogs)
 }
+// bot_routes.go — 对话机器人（chatbots）与画布机器人（agentbots）公开 API 路由。
