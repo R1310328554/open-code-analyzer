@@ -25,6 +25,10 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 
 /**
+ * 登出确认页面对象，对应 {@code login-logout-confirm} 模板。
+ * <p>
+ * 用于在 SSO 登出流程中确认是否结束当前会话。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LogoutConfirmPage extends AbstractLoginPage {
@@ -32,14 +36,21 @@ public class LogoutConfirmPage extends AbstractLoginPage {
     @FindBy(css = "input[type=\"submit\"]")
     private WebElement confirmLogoutButton;
 
+    /**
+     * 绑定托管 WebDriver 并初始化页面对象。
+     *
+     * @param driver 托管 WebDriver 实例
+     */
     public LogoutConfirmPage(ManagedWebDriver driver) {
         super(driver);
     }
 
+    /** 通过回车键确认登出。 */
     public void confirmLogout() {
         confirmLogoutButton.sendKeys(Keys.ENTER);
     }
 
+    /** {@inheritDoc} 返回 {@code login-logout-confirm}。 */
     @Override
     public String getExpectedPageId() {
         return "login-logout-confirm";

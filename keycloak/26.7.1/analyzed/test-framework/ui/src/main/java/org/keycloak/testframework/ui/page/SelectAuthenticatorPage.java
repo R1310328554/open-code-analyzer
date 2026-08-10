@@ -8,39 +8,44 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
 /**
- * Login page with the list of authentication mechanisms, which are available to the user (Password, OTP, WebAuthn...)
+ * 认证方式选择页面对象，对应 {@code login-select-authenticator} 模板。
+ * <p>
+ * 列出用户可选的认证机制（密码、OTP、WebAuthn 等），供测试点击切换。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  * @author <a href="mailto:pzaoral@redhat.com">Peter Zaoral</a>
  */
 public class SelectAuthenticatorPage extends AbstractLoginPage {
 
-    // Corresponds to the PasswordForm
+    // 对应 PasswordForm 认证器
     public static final String PASSWORD = "Password";
 
-    // Corresponds to the WebAuthn authenticators
+    // 对应 WebAuthn/Passkey 认证器
     public static final String SECURITY_KEY = "Passkey";
 
+    /**
+     * 绑定托管 WebDriver 并初始化页面对象。
+     *
+     * @param driver 托管 WebDriver 实例
+     */
     public SelectAuthenticatorPage(ManagedWebDriver driver) {
         super(driver);
     }
 
     /**
+     * 点击选择指定的登录方式。
      *
-     * Selects the chosen login method (For example "Password") by click on it.
-     *
-     * @param loginMethodName name as displayed. For example "Password" or "Authenticator Application"
-     *
+     * @param loginMethodName 页面上展示的方式名称，例如 "Password" 或 "Authenticator Application"
      */
     public void selectLoginMethod(String loginMethodName) {
         getLoginMethodRowByName(loginMethodName).click();
     }
 
     /**
-     * Return help text corresponding to the named login method
+     * 读取指定登录方式对应的帮助说明文本。
      *
-     * @param loginMethodName name as displayed. For example "Password" or "Authenticator Application"
-     * @return
+     * @param loginMethodName 页面上展示的方式名称
+     * @return 帮助描述文本
      */
     public String getLoginMethodHelpText(String loginMethodName) {
         return getLoginMethodRowByName(loginMethodName).findElement(By.className("select-auth-box-desc")).getText();
@@ -62,6 +67,7 @@ public class SelectAuthenticatorPage extends AbstractLoginPage {
                 .orElseThrow(() -> new AssertionError("Login method '" + loginMethodName + "' not found in the available authentication mechanisms"));
     }
 
+    /** {@inheritDoc} 返回 {@code login-select-authenticator}。 */
     @Override
     public String getExpectedPageId() {
         return "login-select-authenticator";

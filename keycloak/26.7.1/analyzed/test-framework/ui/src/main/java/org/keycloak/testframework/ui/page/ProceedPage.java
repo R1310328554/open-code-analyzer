@@ -22,6 +22,9 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 
 /**
+ * 信息提示页面对象，对应 {@code login-info} 模板。
+ * <p>
+ * 展示说明文字并提供“点击此处继续”链接以推进流程。
  *
  * @author hmlnarik
  */
@@ -33,18 +36,26 @@ public class ProceedPage extends AbstractPage {
     @FindBy(linkText = "» Click here to proceed")
     private WebElement proceedLink;
 
+    /**
+     * 绑定托管 WebDriver 并初始化页面对象。
+     *
+     * @param driver 托管 WebDriver 实例
+     */
     public ProceedPage(ManagedWebDriver driver) {
         super(driver);
     }
 
+    /** @return 页面说明文本 */
     public String getInfo() {
         return infoMessage.getText();
     }
 
+    /** 点击继续链接以进入下一步。 */
     public void clickProceedLink() {
         proceedLink.click();
     }
 
+    /** {@inheritDoc} 返回 {@code login-info}。 */
     @Override
     public String getExpectedPageId() {
         return "login-info";
