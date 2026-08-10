@@ -31,6 +31,11 @@ import org.keycloak.common.util.PemUtils;
 import org.jboss.logging.Logger;
 
 /**
+ * 用户身份提取器的工厂与组合工具 SPI。
+ *
+ * <p>提供基于 X500 名称、SubjectAltName、正则匹配及 PEM 证书等多种提取策略，
+ * 并支持 {@link OrBuilder} 链式组合多个提取器。</p>
+ *
  * @author <a href="mailto:pnalyvayko@agi.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @date 7/30/2016
@@ -40,13 +45,16 @@ public abstract class UserIdentityExtractorProvider {
 
     private static final Logger logger = Logger.getLogger(UserIdentityExtractorProvider.class);
 
+    /** 从证书 SubjectAltName 扩展提取身份的抽象提取器。 */
     public abstract class  SubjectAltNameExtractor implements UserIdentityExtractor {
 
     }
 
+    /** 从 X500 名称 RDN 提取身份的抽象提取器。 */
     public abstract class X500NameRDNExtractor implements UserIdentityExtractor {
     }
 
+    /** 依次尝试两个提取器，前者返回 {@code null} 时使用后者。 */
     protected class OrExtractor implements UserIdentityExtractor {
 
         UserIdentityExtractor extractor;
@@ -70,6 +78,7 @@ public abstract class UserIdentityExtractorProvider {
         }
     }
 
+    /** 对提取值应用正则表达式并返回第一个捕获组作为身份。 */
     public class PatternMatcher implements UserIdentityExtractor {
         private final String _pattern;
         private final Function<X509Certificate[],String> _f;
@@ -100,6 +109,7 @@ public abstract class UserIdentityExtractorProvider {
         }
     }
 
+    /** 构建“或”组合提取器的辅助类。 */
     public class OrBuilder {
         UserIdentityExtractor extractor;
         UserIdentityExtractor other;
@@ -107,15 +117,18 @@ public abstract class UserIdentityExtractorProvider {
             this.extractor = extractor;
         }
 
+        /** 与另一提取器组成 {@link OrExtractor}。 */
         public UserIdentityExtractor or(UserIdentityExtractor other) {
             return new OrExtractor(extractor, other);
         }
     }
 
+    /** 以给定提取器为起点创建“或”组合构建器。 */
     public OrBuilder either(UserIdentityExtractor extractor) {
         return new OrBuilder(extractor);
     }
     
+    /** 返回将证书链首证书 PEM 编码作为用户身份的提取器。 */
     public UserIdentityExtractor getCertificatePemIdentityExtractor() {
         return new UserIdentityExtractor() {
             @Override
@@ -131,18 +144,30 @@ public abstract class UserIdentityExtractorProvider {
         };
     }
 
+    /**
+     * 返回对提取值应用正则并取第一个捕获组的提取器。
+     *
+     * @param pattern 正则表达式（须含恰好一个捕获组）
+     * @param valueToMatch 从证书链提取待匹配字符串的函数
+     */
     public UserIdentityExtractor getPatternIdentityExtractor(String pattern,
                                                                  Function<X509Certificate[],String> valueToMatch) {
                                                                      return new PatternMatcher(pattern, valueToMatch);
                                                                  }
 
+    /**
+     * 从 X500 名称指定 RDN 标识符提取用户身份。
+     *
+     * @param identifier RDN 属性名（如 CN、UID）
+     * @param x500Name 从证书链获取 {@link Principal} 的函数
+     */
     public abstract UserIdentityExtractor getX500NameExtractor(String identifier, Function<X509Certificate[],Principal> x500Name);
 
     /**
-     * Obtains the subjectAltName given a <code>generalName</code>.
+     * 从 SubjectAltName 扩展提取用户身份。
      *
-     * @param generalName an integer representing the general name. See {@link X509Certificate#getSubjectAlternativeNames()}
-     * @return the value from the subjectAltName extension
+     * @param generalName 通用名称类型整数，参见 {@link X509Certificate#getSubjectAlternativeNames()}
+     * @return 对应 generalName 的提取器
      */
     public abstract SubjectAltNameExtractor getSubjectAltNameExtractor(int generalName);
 }

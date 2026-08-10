@@ -23,18 +23,25 @@ import java.net.UnknownHostException;
 import org.keycloak.common.ClientConnection;
 
 /**
+ * Realm 是否强制 HTTPS 的策略枚举。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public enum SslRequired {
 
+    /** 所有请求均要求 HTTPS。 */
     ALL,
+    /** 仅外部（非本地）请求要求 HTTPS。 */
     EXTERNAL,
+    /** 不要求 HTTPS。 */
     NONE;
 
+    /** 根据客户端连接判断当前请求是否必须走 HTTPS。 */
     public boolean isRequired(ClientConnection connection) {
         return isRequired(connection.getRemoteAddr());
     }
 
+    /** 根据远程主机名或 IP 判断当前请求是否必须走 HTTPS。 */
     public boolean isRequired(String host) {
         switch (this) {
             case ALL:
@@ -42,15 +49,15 @@ public enum SslRequired {
             case NONE:
                 return false;
             case EXTERNAL:
-                // NOTE: this is sometimes using hostnames here, which require DNS resolution
-                // It assumes that the resolution will be the same on the client side
-                // - this will go away once EXTERNAL is no longer supported
+                // 注意：此处有时使用主机名，需要 DNS 解析；
+                // 假设客户端侧解析结果一致——EXTERNAL 废弃后将移除此逻辑
                 return !isLocal(host);
             default:
                 return true;
         }
     }
 
+    /** 判断地址是否为本地/内网（回环、站点本地、链路本地或 IPv6 ULA）。 */
     private boolean isLocal(String host) {
         if (host == null || host.isEmpty()) {
             return false; // InetAddress.getByName returns localhost for these
@@ -64,12 +71,12 @@ public enum SslRequired {
     }
 
     /**
-     * Check if the address is within IPv6 unique local address (ULA) range RFC4193.
+     * 判断地址是否属于 IPv6 唯一本地地址（ULA）范围 RFC4193。
      */
     private boolean isUniqueLocal(InetAddress address) {
         if (address instanceof java.net.Inet6Address) {
             byte[] addr = address.getAddress();
-            // Check if address is in unique local range fc00::/7
+            // 检查是否在 fc00::/7 范围内
             return ((byte) (addr[0] & 0b11111110)) == (byte) 0xFC;
         }
 

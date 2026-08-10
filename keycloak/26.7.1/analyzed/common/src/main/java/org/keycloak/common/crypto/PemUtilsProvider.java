@@ -32,7 +32,10 @@ import org.keycloak.common.util.DerUtils;
 import org.keycloak.common.util.PemException;
 
 /**
- * Utility classes to extract PublicKey, PrivateKey, and X509Certificate from openssl generated PEM files
+ * 从 OpenSSL 生成的 PEM 文件中解析公钥、私钥与 X.509 证书的 SPI 抽象基类。
+ *
+ * <p>提供 PEM 与 DER 互转、证书指纹（thumbprint）计算等通用逻辑，
+ * 私钥解码与编码由具体 {@link org.keycloak.common.crypto.CryptoProvider} 实现子类完成。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -41,11 +44,11 @@ public abstract class PemUtilsProvider {
 
 
     /**
-     * Decode a X509 Certificate from a PEM string
+     * 从 PEM 字符串解码 X.509 证书。
      *
-     * @param cert
-     * @return
-     * @throws Exception
+     * @param cert PEM 编码的证书字符串
+     * @return 解码后的证书；输入为 {@code null} 时返回 {@code null}
+     * @throws PemException PEM 格式无效或 DER 解析失败
      */
     public X509Certificate decodeCertificate(String cert) {
         if (cert == null) {
@@ -63,21 +66,23 @@ public abstract class PemUtilsProvider {
 
 
     /**
-     * Decode a Public Key from a PEM string
+     * 从 PEM 字符串解码 RSA 公钥（默认算法类型为 RSA）。
      *
-     * @param pem
-     * @return
-     * @throws Exception
+     * @param pem PEM 编码的公钥
+     * @return 解码后的公钥；输入为 {@code null} 时返回 {@code null}
+     * @throws PemException PEM 格式无效或 DER 解析失败
      */
     public PublicKey decodePublicKey(String pem) {
         return decodePublicKey(pem, "RSA");
     }
 
     /**
-     * Decode a Public Key from a PEM string
-     * @param pem The pem encoded pblic key
-     * @param type The type of the key (RSA, EC,...)
-     * @return The public key or null
+     * 从 PEM 字符串解码指定算法类型的公钥。
+     *
+     * @param pem PEM 编码的公钥
+     * @param type 密钥算法类型（如 RSA、EC）
+     * @return 解码后的公钥；输入为 {@code null} 时返回 {@code null}
+     * @throws PemException PEM 格式无效或 DER 解析失败
      */
     public PublicKey decodePublicKey(String pem, String type) {
         if (pem == null) {
@@ -94,21 +99,20 @@ public abstract class PemUtilsProvider {
 
 
     /**
-     * Decode a Private Key from a PEM string
+     * 从 PEM 字符串解码私钥。
      *
-     * @param pem
-     * @return
-     * @throws Exception
+     * @param pem PEM 编码的私钥
+     * @return 解码后的私钥
+     * @throws PemException PEM 格式无效或 DER 解析失败
      */
     public abstract PrivateKey decodePrivateKey(String pem);
 
 
     /**
-     * Encode a Key to a PEM string
+     * 将密钥编码为 PEM 字符串。
      *
-     * @param key
-     * @return
-     * @throws Exception
+     * @param key 待编码的密钥
+     * @return PEM 编码结果
      */
     public String encodeKey(Key key) {
         return encode(key);
@@ -116,15 +120,16 @@ public abstract class PemUtilsProvider {
     
 
     /**
-     * Encode a X509 Certificate to a PEM string
+     * 将 X.509 证书编码为 PEM 字符串。
      *
-     * @param certificate
-     * @return
+     * @param certificate 待编码的证书
+     * @return PEM 编码结果
      */
     public String encodeCertificate(Certificate certificate) {
         return encode(certificate);
     }
 
+    /** 将 PEM 文本（去除头尾标记后）解码为 DER 字节数组。 */
     public byte[] pemToDer(String pem) {
         try {
             pem = removeBeginEnd(pem);
@@ -134,6 +139,7 @@ public abstract class PemUtilsProvider {
         }
     }
 
+    /** 移除 PEM 头尾标记（BEGIN/END）及换行符，返回纯 Base64 载荷。 */
     public String removeBeginEnd(String pem) {
         pem = pem.replaceAll("-----BEGIN (.*)-----", "");
         pem = pem.replaceAll("-----END (.*)----", "");
@@ -142,6 +148,13 @@ public abstract class PemUtilsProvider {
         return pem.trim();
     }
 
+    /**
+     * 计算证书链首证书的指纹并以 Base64Url 编码返回。
+     *
+     * @param certChain PEM 证书链数组
+     * @param encoding 摘要算法名（如 SHA-256）
+     * @return Base64Url 编码的指纹字符串
+     */
     public String generateThumbprint(String[] certChain, String encoding) throws NoSuchAlgorithmException{
         return Base64Url.encode(generateThumbprintBytes(certChain, encoding));
     }
@@ -150,6 +163,7 @@ public abstract class PemUtilsProvider {
         return MessageDigest.getInstance(encoding).digest(pemToDer(certChain[0]));
     }
 
+    /** 将密钥或证书对象编码为 PEM 字符串（由子类实现）。 */
     protected abstract String encode(Object obj);
 
 }

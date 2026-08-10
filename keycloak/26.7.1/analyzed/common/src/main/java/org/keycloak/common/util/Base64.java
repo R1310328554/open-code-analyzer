@@ -3,10 +3,12 @@ package org.keycloak.common.util;
 import java.io.IOException;
 
 /**
- * <p>Encodes and decodes to and from Base64 notation.</p>
- * <p>Homepage: <a href="http://iharder.net/base64">http://iharder.net/base64</a>.</p>
+ * <p>Base64 编解码工具类（已废弃，请优先使用 {@link java.util.Base64}）。</p>
  *
- * <p>Example:</p>
+ * <p>支持标准、URL 安全与有序（ordered）多种 Base64 方言，可选 GZIP 压缩与 76 字符换行。
+ * 原始实现参见 <a href="http://iharder.net/base64">http://iharder.net/base64</a>。</p>
+ *
+ * <p>示例：</p>
  *
  * <code>String encoded = Base64.encode( myByteArray );</code>
  * <br />

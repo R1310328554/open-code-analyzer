@@ -18,17 +18,19 @@
 package org.keycloak.common.enums;
 
 /**
+ * 是否使用相对 URL 的配置策略。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public enum RelativeUrlsUsed {
 
     /**
-     * Always use relative URI and resolve them later based on browser HTTP request
+     * 始终使用相对 URI，后续根据浏览器 HTTP 请求解析为绝对地址。
      */
     ALWAYS,
 
     /**
-     * Relative Uri not used. Configuration contains absolute URI
+     * 不使用相对 URI；配置中直接包含绝对 URI。
      */
     NEVER;
 }

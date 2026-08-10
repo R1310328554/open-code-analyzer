@@ -6,7 +6,12 @@ import java.util.Optional;
 
 import org.keycloak.common.Profile;
 
-// Features configuration based on the option 'feature-<name>'
+/**
+ * 基于 {@code feature-<name>} 选项映射的特性配置解析器。
+ *
+ * <p>暂不支持 Profile 名称解析，参见
+ * <a href="https://github.com/keycloak/keycloak/issues/44003">keycloak#44003</a>。</p>
+ */
 public class SingleProfileConfigResolver implements ProfileConfigResolver {
     private final Map<String, Boolean> features;
 

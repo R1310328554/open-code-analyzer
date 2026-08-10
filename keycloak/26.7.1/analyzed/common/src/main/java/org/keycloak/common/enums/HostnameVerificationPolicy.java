@@ -17,27 +17,30 @@
 
 package org.keycloak.common.enums;
 
+/**
+ * TLS 连接时对服务端证书的主机名校验策略。
+ */
 public enum HostnameVerificationPolicy {
 
     /**
-     * Hostname verification is not done on the server's certificate
+     * 不校验服务端证书中的主机名。
      */
     ANY,
 
     /**
-     * Allows wildcards in subdomain names (e.g. *.foo.com) to match anything, including multiple levels (e.g. a.b.foo.com)
+     * 允许子域名通配符（如 {@code *.foo.com}）匹配任意层级（如 {@code a.b.foo.com}）。
      */
     @Deprecated
     WILDCARD,
 
     /**
-     * CN must match hostname connecting to
+     * 证书的 CN 必须与连接目标主机名一致。
      */
     @Deprecated
     STRICT,
 
     /**
-     * Similar to STRICT, but checks against a more complete public suffix matcher
+     * 类似 STRICT，但使用更完整的公共后缀匹配器进行校验。
      */
     DEFAULT
 }
