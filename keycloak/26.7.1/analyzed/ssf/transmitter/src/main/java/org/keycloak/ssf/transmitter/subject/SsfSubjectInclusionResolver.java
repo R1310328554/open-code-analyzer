@@ -5,18 +5,13 @@ import org.keycloak.models.OrganizationModel;
 import org.keycloak.models.UserModel;
 
 /**
- * Read-side gate that decides whether a user / organization counts as a
- * subscribed subject for a given receiver. Drives the dispatcher's
- * subject-selection filter and the synthetic-emit dispatchability
- * check.
+ * 读侧门控：判断用户或组织是否应视为某接收方的已订阅主体。
+ * 驱动分发器的主题筛选逻辑以及合成事件的可投递性检查。
  *
- * <p>The default implementation
- * ({@link DefaultSsfSubjectInclusionResolver}) reads the
- * {@code ssf.notify.<receiverClientId>} attribute on the user and the
- * user's owning organization via {@link SsfNotifyAttributes}.
- * Extensions can subclass it to layer additional sources (group
- * attribute lookups, role-based opt-ins, external policy services) on
- * top of the default behaviour, e.g.
+ * <p>默认实现 {@link DefaultSsfSubjectInclusionResolver} 通过
+ * {@link SsfNotifyAttributes} 读取用户及其所属组织上的
+ * {@code ssf.notify.<receiverClientId>} 属性。扩展可子类化并在默认行为之上
+ * 叠加额外来源（组属性查询、基于角色的订阅、外部策略服务等），例如：
  *
  * <pre>{@code
  * @Override
@@ -25,48 +20,42 @@ import org.keycloak.models.UserModel;
  * }
  * }</pre>
  *
- * <p>Resolved per-session via
- * {@link org.keycloak.ssf.transmitter.SsfTransmitterProvider#subjectInclusionResolver()}.
- * No standalone Keycloak SPI registration — extensions plug in by
- * overriding the transmitter provider's
- * {@code subjectInclusionResolver()} accessor or by supplying a custom
- * {@link org.keycloak.ssf.transmitter.SsfTransmitterServiceBuilder}.
+ * <p>按会话通过
+ * {@link org.keycloak.ssf.transmitter.SsfTransmitterProvider#subjectInclusionResolver()}
+ * 解析。无独立 Keycloak SPI 注册——扩展通过覆盖发送方 Provider 的
+ * {@code subjectInclusionResolver()} 访问器，或提供自定义
+ * {@link org.keycloak.ssf.transmitter.SsfTransmitterServiceBuilder} 接入。
  *
- * <p>Tombstone reads (the {@code ssf.notifyRemovedAt.*} attribute used
- * for the SSF §9.3 grace window) are intentionally NOT part of this
- * interface: those are timestamp lookups tied to the writer side
- * ({@link SsfNotifyAttributes#stampRemovedAtForUser}), not subscription
- * opinions, so they stay on the static helper.
+ * <p>墓碑读取（用于 SSF §9.3 宽限窗口的 {@code ssf.notifyRemovedAt.*} 属性）
+ * 有意不在此接口中：它们属于写侧的时间戳查询
+ *（{@link SsfNotifyAttributes#stampRemovedAtForUser}），而非订阅判定，
+ * 因此保留在静态辅助类上。
  */
 public interface SsfSubjectInclusionResolver {
 
     /**
-     * Whether the user should be treated as explicitly notified for
-     * this receiver. Drives the {@code default_subjects=NONE} include
-     * check — returning {@code true} delivers the event even when the
-     * stream is opt-in by default.
+     * 用户是否应视为对该接收方显式订阅。
+     * 驱动 {@code default_subjects=NONE} 的包含检查——返回 {@code true} 时，
+     * 即使流默认为 opt-in 也会投递事件。
      */
     boolean isUserNotified(KeycloakSession session, UserModel user, String receiverClientId);
 
     /**
-     * Whether the user should be treated as explicitly excluded for
-     * this receiver. Drives the {@code default_subjects=ALL} skip
-     * check — returning {@code true} drops the event even when the
-     * stream is broadcast by default.
+     * 用户是否应视为对该接收方显式排除。
+     * 驱动 {@code default_subjects=ALL} 的跳过检查——返回 {@code true} 时，
+     * 即使流默认为广播也会丢弃事件。
      */
     boolean isUserExcluded(KeycloakSession session, UserModel user, String receiverClientId);
 
     /**
-     * Org-level analog of {@link #isUserNotified}. Called per
-     * organization the user belongs to; any one matching org makes the
-     * subject notified.
+     * {@link #isUserNotified} 的组织级对应方法。
+     * 对用户所属的每个组织调用；任一匹配即视为已订阅。
      */
     boolean isOrganizationNotified(KeycloakSession session, OrganizationModel organization, String receiverClientId);
 
     /**
-     * Org-level analog of {@link #isUserExcluded}. Called per
-     * organization the user belongs to; any one matching org excludes
-     * the subject.
+     * {@link #isUserExcluded} 的组织级对应方法。
+     * 对用户所属的每个组织调用；任一匹配即排除该主体。
      */
     boolean isOrganizationExcluded(KeycloakSession session, OrganizationModel organization, String receiverClientId);
 }

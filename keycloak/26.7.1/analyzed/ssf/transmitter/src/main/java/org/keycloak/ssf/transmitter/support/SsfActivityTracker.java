@@ -5,27 +5,20 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.ssf.transmitter.stream.storage.client.ClientStreamStore;
 
 /**
- * Stamps {@link ClientStreamStore#SSF_LAST_ACTIVITY_TIMESLOT_KEY} on the
- * receiver client whenever it touches the SSF transmitter in a way
- * the spec classifies as "eligible Receiver activity" (SSF 1.0 §8.1.1
- * inactivity_timeout definition): any stream-management API hit for
- * PUSH or POLL streams, and the poll itself for POLL streams.
+ * 当接收方以规范定义的「合格 Receiver 活动」（SSF 1.0 §8.1.1 inactivity_timeout）方式
+ * 访问 SSF 发送方时，在接收方客户端上写入
+ * {@link ClientStreamStore#SSF_LAST_ACTIVITY_TIMESLOT_KEY}：
+ * PUSH 或 POLL 流的任意流管理 API 调用，以及 POLL 流的 poll 本身。
  *
- * <p>Writes coalesce — a stamp is only persisted when the stored
- * value is older than {@link #STAMP_GRANULARITY_SECONDS}. Without
- * this, a busy POLL receiver pulling every few seconds would hammer
- * the client-attribute table and trigger a cluster-wide Infinispan
- * invalidation per request; the inactivity-timeout check tolerates a
- * few minutes of staleness since real timeouts are minutes-to-days.
+ * <p>写入合并——仅当存储值早于 {@link #STAMP_GRANULARITY_SECONDS} 时才持久化。
+ * 否则繁忙的 POLL 接收方每隔数秒拉取会 hammer 客户端属性表并在每次请求触发集群级
+ * Infinispan 失效；不活动超时检查可容忍数分钟陈旧，因真实超时为分钟至天级。
  */
 public final class SsfActivityTracker {
 
     /**
-     * Persist the timeslot only when the stored value is older than
-     * this many seconds. 300s (5 min) = writes at most once every
-     * 5 minutes per receiver. Inactivity-timeout accuracy degrades by
-     * the same amount (up to 5 minutes late) — negligible given the
-     * UI exposes inactivity timeouts in minute / hour / day units.
+     * 仅当存储值早于该秒数时才持久化 timeslot。300 秒（5 分钟）= 每接收方至多每 5 分钟写一次。
+     * 不活动超时精度同等降级（至多晚 5 分钟）——相对 UI 以分/时/天展示的超时可忽略。
      */
     public static final long STAMP_GRANULARITY_SECONDS = 300L;
 
@@ -33,11 +26,9 @@ public final class SsfActivityTracker {
     }
 
     /**
-     * Records activity for the given receiver client. No-op when
-     * {@code client} is {@code null} (e.g. unauthenticated request
-     * that never resolved a caller) so call sites don't have to
-     * null-guard before invoking this helper. Write-coalesces per
-     * {@link #STAMP_GRANULARITY_SECONDS}.
+     * 记录给定接收方客户端的活动。{@code client} 为 {@code null} 时无操作
+     * （例如未认证且未解析调用方的请求），调用方无需空检查。
+     * 按 {@link #STAMP_GRANULARITY_SECONDS} 合并写入。
      */
     public static void stamp(ClientModel client) {
         if (client == null) {
@@ -52,7 +43,7 @@ public final class SsfActivityTracker {
                     return;
                 }
             } catch (NumberFormatException ignored) {
-                // Malformed attribute — fall through and overwrite.
+                // 属性格式错误——继续执行并覆盖。
             }
         }
         client.setAttribute(ClientStreamStore.SSF_LAST_ACTIVITY_TIMESLOT_KEY, String.valueOf(now));

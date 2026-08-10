@@ -25,21 +25,23 @@ import org.keycloak.storage.ReadOnlyException;
 import org.jboss.logging.Logger;
 
 /**
- * Orchestrates the add/remove subject lifecycle: resolves the subject
- * to a Keycloak entity via {@link SubjectResolver}, verifies stream
- * ownership, and toggles the {@code ssf.notify.<clientId>} attribute
- * on the resolved entity via {@link SsfNotifyAttributes}.
+ * 编排 add/remove 主题生命周期：通过 {@link SubjectResolver} 将主题解析为
+ * Keycloak 实体，校验流归属，并通过 {@link SsfNotifyAttributes} 切换已解析实体上的
+ * {@code ssf.notify.<clientId>} 属性。
  */
 public class SubjectManagementService {
 
     private static final Logger log = Logger.getLogger(SubjectManagementService.class);
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** @param session 当前请求会话 */
     public SubjectManagementService(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 接收方调用：向流添加订阅主题。 */
     public SubjectManagementResult addSubject(String callerClientId,
                                               AddSubjectRequest request) {
         SubjectManagementResult ownershipResult = checkOwnership(callerClientId, request.getStreamId());
@@ -52,12 +54,11 @@ public class SubjectManagementService {
         return registerSubjectForNotification(clientClientId, resolution);
     }
 
+    /** 将已解析主体注册为接收方通知对象。 */
     protected SubjectManagementResult registerSubjectForNotification(String callerClientId, SubjectResolution resolution) {
         if (resolution instanceof SubjectResolution.User u) {
-            // Re-adding wins over any prior receiver-driven removal —
-            // clear the SSF §9.3 tombstone so the dispatcher uses the
-            // fresh include marker instead of falling through to a
-            // stale grace-window check.
+            // 重新添加优先于先前由接收方触发的移除——清除 SSF §9.3 墓碑，
+            // 使分发器使用新的包含标记而非过期的宽限窗口检查。
             try {
                 SsfNotifyAttributes.clearRemovedAtForUser(u.user(), callerClientId);
                 SsfNotifyAttributes.setForUser(u.user(), callerClientId);
@@ -79,6 +80,7 @@ public class SubjectManagementService {
         return SubjectManagementResult.FORMAT_UNSUPPORTED;
     }
 
+    /** 接收方调用：从流移除订阅主题。 */
     public SubjectManagementResult removeSubject(String callerClientId,
                                                  RemoveSubjectRequest request) {
         SubjectManagementResult ownershipResult = checkOwnership(callerClientId, request.getStreamId());
@@ -89,17 +91,16 @@ public class SubjectManagementService {
         String clientClientId = resolveClientClientId(callerClientId);
         SubjectResolution resolution = resolveSubject(request.getSubject());
 
-        // Receiver-driven path: stamp the SSF §9.3 tombstone so the
-        // dispatcher can honor a configured grace window. Admin-driven
-        // removes go through removeSubjectByAdmin and skip the stamp.
+        // 接收方驱动路径：写入 SSF §9.3 墓碑，使分发器在配置的宽限期内继续投递。
+        // 管理员驱动的移除走 removeSubjectByAdmin，跳过墓碑写入。
         return unregisterSubjectForNotification(clientClientId, resolution, true);
     }
 
+    /** 将主体显式排除出接收方通知列表。 */
     protected SubjectManagementResult excludeSubjectFromNotification(String callerClientId, SubjectResolution resolution) {
         if (resolution instanceof SubjectResolution.User u) {
-            // Explicit exclusion is an admin-trusted action — no grace
-            // window. Clear any prior receiver-driven tombstone so the
-            // exclude marker takes effect immediately.
+            // 显式排除为管理员可信操作——无宽限窗口。清除先前接收方墓碑，
+            // 使排除标记立即生效。
             try {
                 SsfNotifyAttributes.clearRemovedAtForUser(u.user(), callerClientId);
                 SsfNotifyAttributes.excludeForUser(u.user(), callerClientId);
@@ -122,14 +123,10 @@ public class SubjectManagementService {
     }
 
     /**
-     * Clears the include / exclude marker for the resolved subject and,
-     * when {@code applyTombstone} is true, stamps the SSF §9.3 grace
-     * tombstone so the dispatcher can keep delivering events for the
-     * configured grace window. Tombstone is intentionally skipped on
-     * admin-driven removes — operator actions are trusted and take
-     * effect immediately. Receivers cannot opt out: enabling the grace
-     * via SPI means accepting that legitimate churn-removes also get
-     * the grace tail.
+     * 清除已解析主体的包含/排除标记；当 {@code applyTombstone} 为 true 时，
+     * 写入 SSF §9.3 宽限墓碑，使分发器在配置窗口内继续投递。
+     * 管理员驱动的移除有意跳过墓碑——操作员操作可信且立即生效。
+     * 接收方无法选择退出：通过 SPI 启用宽限即表示接受合法 churn 移除也获得宽限尾段。
      */
     protected SubjectManagementResult unregisterSubjectForNotification(String callerClientId, SubjectResolution resolution, boolean applyTombstone) {
         if (resolution instanceof SubjectResolution.User u) {
@@ -161,14 +158,10 @@ public class SubjectManagementService {
     }
 
     /**
-     * Logs a read-only user store and maps it to
-     * {@link SubjectManagementResult#SUBJECT_READ_ONLY}. The
-     * {@code ssf.notify.<clientId>} subscription state can't be persisted
-     * for subjects backed by a read-only provider (e.g. LDAP edit mode
-     * {@code READ_ONLY}, or import disabled), so the caller surfaces this
-     * as a clean limitation rather than letting the {@link ReadOnlyException}
-     * escape as a 500. Organizations are always Keycloak-managed, so only
-     * the user branches need this guard.
+     * 记录只读用户存储并将结果映射为 {@link SubjectManagementResult#SUBJECT_READ_ONLY}。
+     * 只读 Provider 支撑的主体无法持久化 {@code ssf.notify.<clientId>} 订阅状态
+     *（例如 LDAP {@code READ_ONLY} 或未启用导入），调用方以此作为明确限制返回，
+     * 避免 {@link ReadOnlyException} 逃逸为 500。组织始终由 Keycloak 管理，故仅用户分支需要此守卫。
      */
     protected SubjectManagementResult readOnlySubject(String operation, String callerClientId, UserModel user) {
         log.debugf("SSF subject %s: user %s is read-only; ssf.notify state cannot be persisted. "
@@ -178,9 +171,8 @@ public class SubjectManagementService {
     }
 
     /**
-     * Resolves a {@link SubjectId} to a Keycloak entity. Protected so
-     * subclasses can plug in custom resolution logic — e.g. additional
-     * subject formats or alternative lookup strategies.
+     * 将 {@link SubjectId} 解析为 Keycloak 实体。protected 以便子类接入自定义解析逻辑
+     *（例如额外主题格式或替代查找策略）。
      */
     protected SubjectResolution resolveSubject(SubjectId subjectId) {
         RealmModel realm = session.getContext().getRealm();
@@ -188,12 +180,10 @@ public class SubjectManagementService {
     }
 
     /**
-     * Admin-driven add: resolves by admin shorthand type (user-id,
-     * user-email, org-alias) and sets the notify attribute. Skips
-     * ownership check — admin is trusted.
+     * 管理员驱动添加：按管理员简写类型（user-id、user-email、org-alias）解析并设置 notify 属性。
+     * 跳过归属检查——管理员操作可信。
      *
-     * @return a result with the resolved entity type and id, or a
-     *         failure indicator.
+     * @return 含已解析实体类型与 id 的结果，或失败指示
      */
     public AdminSubjectResult addSubjectByAdmin(String clientId, String type, String value) {
         String clientClientId = resolveClientClientId(clientId);
@@ -203,8 +193,7 @@ public class SubjectManagementService {
     }
 
     /**
-     * Admin-driven ignore: resolves by admin shorthand type and sets the
-     * notify attribute to {@code false} (explicit exclusion).
+     * 管理员驱动忽略：按管理员简写类型解析并将 notify 属性设为 {@code false}（显式排除）。
      */
     public AdminSubjectResult ignoreSubjectByAdmin(String clientId, String type, String value) {
         String clientClientId = resolveClientClientId(clientId);
@@ -214,59 +203,44 @@ public class SubjectManagementService {
     }
 
     /**
-     * Admin-driven remove: resolves by admin shorthand type and clears
-     * the notify attribute.
+     * 管理员驱动移除：按管理员简写类型解析并清除 notify 属性。
      */
     public AdminSubjectResult removeSubjectByAdmin(String clientId, String type, String value) {
         String clientClientId = resolveClientClientId(clientId);
         SubjectResolution resolution = resolveByAdminType(type, value);
-        // Admin-driven removes deliberately skip the SSF §9.3 grace
-        // tombstone — operator actions are trusted and take effect
-        // immediately. Compromised-receiver protection only applies to
-        // the receiver-driven remove path.
+        // 管理员移除有意跳过 SSF §9.3 宽限墓碑——操作员操作可信且立即生效。
+        // 被攻破接收方防护仅适用于接收方驱动的 remove 路径。
         SubjectManagementResult result = unregisterSubjectForNotification(clientClientId, resolution, false);
         return toAdminResult(result, resolution);
     }
 
     /**
-     * Read-only inspection of a subject's effective notification state
-     * for a receiver client — what the dispatcher's subject gate would
-     * decide if an event for this subject were dispatched right now.
-     * Drives the admin UI's "Check" button so the displayed status
-     * reflects the actual gate logic instead of a client-side guess.
+     * 只读检查主体对某接收方客户端的有效通知状态——若此刻分发该主体事件，
+     * 分发器主题门控会作出的决定。驱动管理 UI「检查」按钮，使展示状态反映真实门控逻辑。
      *
-     * <p>Mirrors the dispatcher's decision order: per-user explicit
-     * settings always win over org inheritance and the
-     * {@code default_subjects} fallback. So a user with
-     * {@code ssf.notify.<clientId>=false} reads as {@code "ignored"}
-     * even when one of their organizations carries notify=true — an
-     * admin who clicked "Ignore" on a specific user expects that
-     * decision to stick regardless of any membership-driven defaults.
+     * <p>与分发器决策顺序一致：按用户显式设置始终优先于组织继承及
+     * {@code default_subjects} 回退。故 {@code ssf.notify.<clientId>=false} 的用户
+     * 读作 {@code "ignored"}，即使其某组织为 notify=true——管理员对特定用户点击
+     * 「忽略」时期望该决定不受成员资格默认值影响。
      *
-     * <p>Resolution order, returning the first match:
+     * <p>解析顺序，返回首个匹配：
      * <ol>
-     *   <li>{@code ssf.notify.<clientId>=true} on the user →
-     *       {@code "notified"}</li>
-     *   <li>{@code ssf.notify.<clientId>=false} on the user →
-     *       {@code "ignored"}</li>
-     *   <li>For users only: any of the user's organizations carries
-     *       {@code ssf.notify.<clientId>=true} →
+     *   <li>用户上 {@code ssf.notify.<clientId>=true} → {@code "notified"}</li>
+     *   <li>用户上 {@code ssf.notify.<clientId>=false} → {@code "ignored"}</li>
+     *   <li>仅用户：任一所属组织 {@code ssf.notify.<clientId>=true} →
      *       {@code "notified_via_org"}</li>
-     *   <li>{@code default_subjects=ALL} branch:
+     *   <li>{@code default_subjects=ALL} 分支：
      *     <ol type="a">
-     *       <li>For users only: any organization with
-     *           {@code ssf.notify.<clientId>=false} →
+     *       <li>仅用户：任一组织 {@code ssf.notify.<clientId>=false} →
      *           {@code "ignored_via_org"}</li>
-     *       <li>Otherwise → {@code "implicitly_included"}</li>
+     *       <li>否则 → {@code "implicitly_included"}</li>
      *     </ol>
      *   </li>
-     *   <li>{@code default_subjects=NONE} branch with no inclusion
-     *       signal → {@code "not_notified"}.</li>
+     *   <li>{@code default_subjects=NONE} 且无包含信号 → {@code "not_notified"}</li>
      * </ol>
      *
-     * <p>SSF §9.3 removal-grace tombstones and pluggable
-     * {@link SsfSubjectInclusionResolver} extensions are not yet
-     * reflected here; document as a follow-up.
+     * <p>SSF §9.3 移除宽限墓碑及可插拔 {@link SsfSubjectInclusionResolver} 扩展
+     * 尚未在此反映；后续跟进文档化。
      */
     public AdminSubjectStatus inspectSubjectByAdmin(ClientModel client, String type, String value) {
         SubjectResolution resolution = resolveByAdminType(type, value);
@@ -284,7 +258,7 @@ public class SubjectManagementService {
         if (resolution instanceof SubjectResolution.User u) {
             UserModel user = u.user();
 
-            // 1. Per-user explicit settings always win.
+            // 1. 按用户显式设置始终优先。
             if (SsfNotifyAttributes.isUserNotified(user, receiverClientId)) {
                 return new AdminSubjectStatus("notified", "user", user.getId(), null);
             }
@@ -292,13 +266,13 @@ public class SubjectManagementService {
                 return new AdminSubjectStatus("ignored", "user", user.getId(), null);
             }
 
-            // 2. Org-level inclusion (any org notify=true).
+            // 2. 组织级包含（任一组织 notify=true）。
             OrganizationModel notifyingOrg = firstOrgNotifying(user, receiverClientId);
             if (notifyingOrg != null) {
                 return new AdminSubjectStatus("notified_via_org", "user", user.getId(), notifyingOrg.getAlias());
             }
 
-            // 3. ALL mode: org-level exclusion check, otherwise implicitly included.
+            // 3. ALL 模式：检查组织级排除，否则隐式包含。
             if (defaultSubjects == DefaultSubjects.ALL) {
                 OrganizationModel excludingOrg = firstOrgExcluding(user, receiverClientId);
                 if (excludingOrg != null) {
@@ -307,7 +281,7 @@ public class SubjectManagementService {
                 return new AdminSubjectStatus("implicitly_included", "user", user.getId(), null);
             }
 
-            // 4. NONE mode with no inclusion signal.
+            // 4. NONE 模式且无包含信号。
             return new AdminSubjectStatus("not_notified", "user", user.getId(), null);
         }
         if (resolution instanceof SubjectResolution.Organization o) {
@@ -327,13 +301,9 @@ public class SubjectManagementService {
     }
 
     /**
-     * Returns the first organization the user is a member of that
-     * notifies for the receiver, or {@code null} when none does. The
-     * "first" org is whichever the {@link OrganizationProvider} stream
-     * returns first — typically deterministic for a given store but not
-     * spec'd as ordered. We surface the alias only as informational
-     * context for the admin UI; the dispatcher's gate doesn't care
-     * which org tipped the decision.
+     * 返回用户所属、且对该接收方已订阅的第一个组织，无则 {@code null}。
+     * 「第一个」组织为 {@link OrganizationProvider} 流返回的首个——通常对给定存储确定但规范未保证顺序。
+     * 别名仅作管理 UI 信息上下文；分发器门控不关心是哪个组织触发了决定。
      */
     protected OrganizationModel firstOrgNotifying(UserModel user, String receiverClientId) {
         if (!Organizations.isEnabled(session)) {
@@ -345,6 +315,7 @@ public class SubjectManagementService {
                 .orElse(null);
     }
 
+    /** 返回用户所属、且对该接收方已排除的第一个组织。 */
     protected OrganizationModel firstOrgExcluding(UserModel user, String receiverClientId) {
         if (!Organizations.isEnabled(session)) {
             return null;
@@ -356,18 +327,17 @@ public class SubjectManagementService {
     }
 
     /**
-     * Status surfaced by {@link #inspectSubjectByAdmin}.
+     * {@link #inspectSubjectByAdmin} 返回的状态。
      *
-     * @param status       canonical state name (e.g. {@code "notified"}, {@code "ignored_via_org"}).
-     * @param entityType   {@code "user"} or {@code "organization"}, or {@code null} when the
-     *                     subject couldn't be resolved.
-     * @param entityId     id of the resolved entity, or {@code null} when not resolved.
-     * @param sourceOrgAlias alias of the organization that drove the decision for the
-     *                     {@code *_via_org} states, or {@code null} otherwise. Lets the
-     *                     admin UI render which membership tipped the gate.
+     * @param status 规范状态名（如 {@code "notified"}、{@code "ignored_via_org"}）
+     * @param entityType {@code "user"} 或 {@code "organization"}，主体未解析时为 {@code null}
+     * @param entityId 已解析实体 id，未解析时为 {@code null}
+     * @param sourceOrgAlias 对 {@code *_via_org} 状态驱动决定的组织别名，否则 {@code null}；
+     *                       供管理 UI 展示是哪个成员资格触发了门控
      */
     public record AdminSubjectStatus(String status, String entityType, String entityId, String sourceOrgAlias) {}
 
+    /** 将 {@link SubjectManagementResult} 与解析结果转换为管理员 API 响应。 */
     protected AdminSubjectResult toAdminResult(SubjectManagementResult result, SubjectResolution resolution) {
         if (result == SubjectManagementResult.OK) {
             if (resolution instanceof SubjectResolution.User u) {
@@ -380,6 +350,7 @@ public class SubjectManagementService {
         return new AdminSubjectResult(result, null, null);
     }
 
+    /** 按管理员简写类型（user-id、user-email 等）解析主体。 */
     public SubjectResolution resolveByAdminType(String type, String value) {
         RealmModel realm = session.getContext().getRealm();
 
@@ -407,21 +378,16 @@ public class SubjectManagementService {
     }
 
     /**
-     * Resolves the admin shorthand {@code (type, value)} into a typed
-     * {@link SubjectId} suitable for handing straight to the synthetic
-     * event emitter. For user subjects ({@code user-id} /
-     * {@code user-email} / {@code user-username}) the sub_id is built
-     * via {@link org.keycloak.ssf.transmitter.event.SecurityEventTokenMapper#buildSubjectForReceiver
-     * buildSubjectForReceiver} so it honors the receiver's configured
-     * {@code ssf.userSubjectFormat}. For {@code org-alias} the result
-     * is a {@link ComplexSubjectId} with only a {@code tenant} facet
-     * (so the emitter routes it as an org-scoped event).
+     * 将管理员简写 {@code (type, value)} 解析为可直接交给合成事件发射器的
+     * {@link SubjectId}。用户主体（{@code user-id} / {@code user-email} /
+     * {@code user-username}）通过
+     * {@link org.keycloak.ssf.transmitter.event.SecurityEventTokenMapper#buildSubjectForReceiver
+     * buildSubjectForReceiver} 构建 sub_id，以遵循接收方配置的
+     * {@code ssf.userSubjectFormat}。{@code org-alias} 返回仅含 {@code tenant} 面的
+     * {@link ComplexSubjectId}（发射器按组织范围事件路由）。
      *
-     * <p>Throws {@link SsfException} with an operator-friendly message
-     * for each failure — unresolvable subject, unknown type, or the
-     * mapper's fail-loud cases (missing email, no organization for a
-     * {@code +tenant} format). The admin endpoint catches and surfaces
-     * as 400.
+     * <p>每种失败抛出带操作员友好消息的 {@link SsfException}——无法解析的主体、未知类型，
+     * 或映射器 fail-loud 场景（缺少邮箱、{@code +tenant} 格式无组织等）。管理端点捕获并以 400 返回。
      */
     public SubjectId resolveSubjectForEmit(StreamConfig stream,
                                            String subjectType,
@@ -442,15 +408,13 @@ public class SubjectManagementService {
         if (resolution instanceof SubjectResolution.NotFound) {
             throw new SubjectNotFoundException(subjectType, subjectValue);
         }
-        // UNSUPPORTED_FORMAT (unknown type or organization feature disabled).
+        // UNSUPPORTED_FORMAT（未知类型或组织功能未启用）。
         throw new SsfException("Unsupported subjectType: " + subjectType);
     }
 
     /**
-     * Resolves the internal client UUID to the human-readable OAuth
-     * {@code client_id} used as the {@code ssf.notify} attribute key.
-     * Falls back to the input if the client can't be resolved (e.g.
-     * deleted mid-request).
+     * 将内部客户端 UUID 解析为用作 {@code ssf.notify} 属性键的可读 OAuth {@code client_id}。
+     * 无法解析时（例如请求中途客户端被删）回退为输入值。
      */
     protected String resolveClientClientId(String clientUuid) {
         RealmModel realm = session.getContext().getRealm();
@@ -458,6 +422,7 @@ public class SubjectManagementService {
         return client != null ? client.getClientId() : clientUuid;
     }
 
+    /** 校验调用方是否拥有指定流；失败返回对应 {@link SubjectManagementResult}，成功返回 {@code null}。 */
     protected SubjectManagementResult checkOwnership(String callerClientId, String streamId) {
         ClientStreamStore streamStore = new ClientStreamStore(session);
         var client = session.getContext().getRealm().getClientById(callerClientId);

@@ -26,47 +26,36 @@ import java.util.Set;
 import org.keycloak.ssf.SsfException;
 
 /**
- * Per-receiver SSRF gate for the {@code ssf.validPushUrls} client-attribute
- * allow-list. Validates the receiver-supplied {@code delivery.endpoint_url}
- * against the configured allow-list using the same exact-or-trailing-wildcard
- * match semantics that OIDC redirect URI validation uses, plus three SSRF-
- * specific tightenings:
+ * 针对 {@code ssf.validPushUrls} 客户端属性白名单的每接收方 SSRF 门控。
+ * 使用与 OIDC 重定向 URI 校验相同的精确或尾部通配符匹配语义，验证接收方提供的
+ * {@code delivery.endpoint_url}，并附加三项 SSRF 收紧：
  *
  * <ol>
- *     <li>Bare {@code "*"} entries are silently dropped from the effective
- *         allow-list — a single keystroke must not be able to disable the
- *         SSRF defence.</li>
- *     <li>Wildcard entries must contain a host portion that is itself wildcard-
- *         and query-free; this prevents constructions like {@code "https://*"}
- *         or {@code "https://*.example.com/*"} that would expand the allow-list
- *         beyond a host the operator explicitly reviewed.</li>
- *     <li>After a successful match, the receiver-supplied URL itself is
- *         re-validated: scheme must be {@code https} and the host must not
- *         resolve to a loopback / link-local / site-local / unique-local /
- *         multicast / any-local address. Both checks are bypassed when
- *         {@link #allowInsecure} is {@code true} (closed-network deployments
- *         and integration tests pushing to a local mock server).</li>
+ *     <li>裸 {@code "*"} 条目从有效白名单静默丢弃——单次按键不得禁用 SSRF 防护。</li>
+ *     <li>通配符条目须含本身无通配符且无查询的主机部分；防止 {@code "https://*"} 或
+ *         {@code "https://*.example.com/*"} 等扩大白名单超出操作员审阅范围。</li>
+ *     <li>匹配成功后对接收方 URL 再校验：scheme 须为 {@code https}，主机不得解析为
+ *         环回/链路本地/站点本地/唯一本地/组播/任意本地地址。{@link #allowInsecure} 为
+ *         {@code true} 时两项均 bypass（封闭网络部署与推送到本地 mock 的集成测试）。</li>
  * </ol>
  *
- * <p>The match logic in {@link #matchesAllowList(Set, String)} is a deliberate
- * copy of {@code RedirectUtils.matchesRedirects} — kept SSF-local so the
- * security surface of the OIDC redirect-URI matcher is not touched by this
- * gate. Behaviour MUST be kept consistent between the two; track changes in
- * {@code RedirectUtils} and mirror them here when warranted.
+ * <p>{@link #matchesAllowList(Set, String)} 中的匹配逻辑刻意复制
+ * {@code RedirectUtils.matchesRedirects}——保持 SSF 本地，不触碰 OIDC 重定向 URI 匹配器安全面。
+ * 行为须与后者一致；跟踪 {@code RedirectUtils} 变更并在需要时镜像。
  */
 public final class SsfPushUrlValidator {
 
+    /** 是否允许非 HTTPS 及私有/环回主机（封闭网络或测试）。 */
     private final boolean allowInsecure;
 
+    /** @param allowInsecure 是否允许不安全推送目标 */
     public SsfPushUrlValidator(boolean allowInsecure) {
         this.allowInsecure = allowInsecure;
     }
 
     /**
-     * Validates the receiver-supplied push URL against the receiver client's
-     * allow-list. Throws {@link SsfPushUrlValidationException} with a stable
-     * machine-readable reason code when the URL must be rejected; returns
-     * silently on a successful match.
+     * 将接收方 push URL 与白名单校验。拒绝时抛出带稳定机器可读原因码的
+     * {@link SsfPushUrlValidationException}；匹配成功则静默返回。
      */
     public void validate(String pushUrl, Set<String> validPushUrls) {
         if (pushUrl == null || pushUrl.isBlank()) {
@@ -91,11 +80,9 @@ public final class SsfPushUrlValidator {
     }
 
     /**
-     * Drops bare-{@code *} entries and structurally invalid wildcard entries
-     * (host portion contains {@code *} or {@code ?}, missing scheme/host,
-     * non-http(s) scheme). The check is conservative — anything we can't
-     * confidently parse and approve is removed rather than rejected, on the
-     * theory that a misconfigured entry shouldn't silently widen the gate.
+     * 丢弃裸 {@code *} 及结构无效通配条目（主机含 {@code *} 或 {@code ?}、缺 scheme/主机、
+     * 非 http(s) scheme）。检查保守——无法 confident 解析并批准的条目移除而非拒绝，
+     * 避免错误配置条目静默扩大门控。
      */
     Set<String> filterUsableEntries(Set<String> entries) {
         Set<String> usable = new LinkedHashSet<>();
@@ -136,19 +123,16 @@ public final class SsfPushUrlValidator {
     }
 
     /**
-     * Copy of {@code RedirectUtils.matchesRedirects} with {@code allowWildcards=true}
-     * hard-coded — SSF push URL allow-listing always supports trailing-{@code *}
-     * wildcards. Returns the matched entry (post-{@code *} stripping for the
-     * wildcard case), or {@code null} when no entry matches.
+     * 复制 {@code RedirectUtils.matchesRedirects}，{@code allowWildcards=true} 硬编码——
+     * SSF push URL 白名单始终支持尾部 {@code *} 通配符。返回匹配条目（通配符情况下去除 {@code *}），
+     * 无匹配返回 {@code null}。
      *
-     * <p>Keep behaviour aligned with the OIDC matcher; if that one is fixed
-     * for an edge case, mirror the fix here.
+     * <p>与 OIDC 匹配器行为对齐；若后者修复边界情况，在此镜像修复。
      */
     static String matchesAllowList(Set<String> validUrls, String pushUrl) {
         for (String validUrl : validUrls) {
-            // Bare-* is filtered out upstream by filterUsableEntries; no need
-            // to special-case it here. Branch left commented to flag the
-            // intentional divergence from RedirectUtils.matchesRedirects.
+            // 裸 * 由 filterUsableEntries 上游过滤；此处无需特殊处理。
+            // 分支注释保留以标明与 RedirectUtils.matchesRedirects 的有意差异。
             // if ("*".equals(validUrl)) return validUrl;
             if (validUrl.endsWith("*") && !validUrl.contains("?")) {
                 int idx = pushUrl.indexOf('?');
@@ -158,9 +142,8 @@ public final class SsfPushUrlValidator {
                 String r = idx == -1 ? pushUrl : pushUrl.substring(0, idx);
                 int length = validUrl.length() - 1;
                 String trimmed = validUrl.substring(0, length);
-                // When the '*' is attached directly to the authority (no path
-                // separator after scheme://), a bare prefix match would also
-                // accept hosts that merely start with the allow-listed host.
+                // 当 '*' 直接附在 authority 上（scheme:// 后无路径分隔符）时，
+                // 裸前缀匹配也会接受仅以白名单主机开头的 host。
                 int schemeIdx = trimmed.indexOf("://");
                 if (schemeIdx >= 0 && trimmed.indexOf('/', schemeIdx + 3) == -1
                         && !trimmed.equals(r) && !r.startsWith(trimmed + "/")) {
@@ -184,17 +167,12 @@ public final class SsfPushUrlValidator {
     }
 
     /**
-     * Verifies the receiver-supplied URL's scheme and host class. With
-     * {@link #allowInsecure} {@code false} the URL must be {@code https} and
-     * the host must not resolve to a loopback / link-local / site-local /
-     * unique-local / multicast / any-local address. Unresolvable hostnames
-     * are accepted — a push to an unresolvable host fails harmlessly at
-     * delivery time and is not an SSRF.
+     * 校验接收方 URL 的 scheme 与主机类别。{@link #allowInsecure} 为 {@code false} 时
+     * URL 须为 {@code https}，主机不得解析为环回/链路本地/站点本地/唯一本地/组播/任意本地地址。
+     * 无法解析的主机名接受——推送到不可解析主机会在投递时无害失败，非 SSRF。
      *
-     * <p>The predicate combination ({@code isLoopbackAddress() ||
-     * isAnyLocalAddress() || isLinkLocalAddress() || isSiteLocalAddress()
-     * || isMulticastAddress()} plus the IPv6 unique-local check) mirrors
-     * {@code SslRequired.isLocal} in {@code keycloak-common}.
+     * <p>谓词组合（{@code isLoopbackAddress() || isAnyLocalAddress() || ...} 及 IPv6 唯一本地检查）
+     * 镜像 {@code keycloak-common} 中 {@code SslRequired.isLocal}。
      */
     private void validateSchemeAndHost(String pushUrl) {
         if (allowInsecure) {
@@ -222,8 +200,7 @@ public final class SsfPushUrlValidator {
         try {
             addresses = InetAddress.getAllByName(host);
         } catch (UnknownHostException e) {
-            // Unresolvable at config time. Accept — the receiver's push
-            // attempt will fail at delivery time, which is not an SSRF.
+            // 配置时无法解析。接受——接收方 push 在投递时失败，非 SSRF。
             return;
         }
         for (InetAddress address : addresses) {
@@ -246,8 +223,7 @@ public final class SsfPushUrlValidator {
     }
 
     /**
-     * IPv6 unique-local address range fc00::/7 (RFC 4193). Mirrors
-     * {@code SslRequired.isUniqueLocal}.
+     * IPv6 唯一本地地址范围 fc00::/7（RFC 4193）。镜像 {@code SslRequired.isUniqueLocal}。
      */
     private static boolean isUniqueLocalIpv6(InetAddress address) {
         if (!(address instanceof Inet6Address)) {
@@ -257,33 +233,38 @@ public final class SsfPushUrlValidator {
         return ((byte) (bytes[0] & 0b11111110)) == (byte) 0xFC;
     }
 
-    /** Stable reason codes for callers that want to map exceptions to specific HTTP responses or logs. */
+    /** 稳定原因码，供调用方映射异常到特定 HTTP 响应或日志。 */
     public enum Reason {
+        /** URL 缺失 */
         URL_MISSING,
+        /** URL 格式错误 */
         URL_MALFORMED,
+        /** 白名单为空 */
         ALLOWLIST_EMPTY,
+        /** 不在白名单中 */
         NOT_IN_ALLOWLIST,
+        /** 非安全 scheme */
         SCHEME_INSECURE,
+        /** 主机为私有/环回地址 */
         HOST_PRIVATE
     }
 
     /**
-     * Specialised {@link SsfException} carrying a stable {@link Reason} so
-     * tests / integrations can map a rejection to a specific cause without
-     * string-matching the user-facing message. The base {@code SsfException}
-     * is mapped to HTTP 400 by the existing exception mapper, so callers
-     * don't need to do anything special — throwing this is enough to surface
-     * a clean rejection to the receiver.
+     * 专用 {@link SsfException}，携带稳定 {@link Reason}，测试/集成可映射拒绝原因而无需字符串匹配用户消息。
+     * 基类 {@code SsfException} 已由现有异常映射器映射为 HTTP 400，调用方抛出即可向接收方返回清晰拒绝。
      */
     public static class SsfPushUrlValidationException extends SsfException {
 
+        /** 拒绝原因码 */
         private final Reason reason;
 
+        /** @param reason 原因码 @param message 用户可见消息 */
         public SsfPushUrlValidationException(Reason reason, String message) {
             super(message);
             this.reason = reason;
         }
 
+        /** 返回拒绝原因码。 */
         public Reason getReason() {
             return reason;
         }

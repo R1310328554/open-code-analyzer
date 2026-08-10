@@ -19,52 +19,52 @@ import org.keycloak.ssf.transmitter.stream.StreamConfig;
 import org.jboss.logging.Logger;
 
 /**
- * Dispatch-time check that controls per-subject event delivery based
- * on the stream's {@code default_subjects} setting and the
- * {@code ssf.notify.<clientId>} attribute on the event's subject.
+ * 分发时检查：基于流的 {@code default_subjects} 设置及事件主体上的
+ * {@code ssf.notify.<clientId>} 属性，控制按主体的事件投递。
  *
- * <p>Semantics:
+ * <p>语义：
  * <ul>
- *     <li>{@link DefaultSubjects#ALL}: deliver to everyone unless the
- *         user/org is explicitly excluded ({@code ssf.notify.<clientId>=false}).</li>
- *     <li>{@link DefaultSubjects#NONE}: deliver only when the user/org
- *         is explicitly included ({@code ssf.notify.<clientId>=true}).</li>
+ *     <li>{@link DefaultSubjects#ALL}：向所有人投递，除非用户/组织被显式排除
+ *         （{@code ssf.notify.<clientId>=false}）。</li>
+ *     <li>{@link DefaultSubjects#NONE}：仅在用户/组织被显式包含
+ *         （{@code ssf.notify.<clientId>=true}）时投递。</li>
  * </ul>
  *
- * <p>Called from
+ * <p>由
  * {@link org.keycloak.ssf.transmitter.delivery.SecurityEventTokenDispatcher}
- * after the event-type filter and before encoding/pushing.
+ * 在事件类型过滤之后、编码/推送之前调用。
  */
 public class SubjectSubscriptionFilter {
 
     private static final Logger log = Logger.getLogger(SubjectSubscriptionFilter.class);
 
     /**
-     * Grace window (seconds) during which a recently-removed subject
-     * still receives events on a {@link DefaultSubjects#NONE} stream.
-     * Defends against the SSF 1.0 §9.3 "Malicious Subject Removal"
-     * scenario. {@code 0} disables the grace check (current behavior
-     * preserved when the SPI knob is unset).
+     * 宽限窗口（秒）：最近被移除的主体在 {@link DefaultSubjects#NONE} 流上仍可接收事件。
+     * 防御 SSF 1.0 §9.3「恶意主题移除」场景。{@code 0} 禁用宽限检查（SPI 未设置时保持当前行为）。
      */
     protected final long subjectRemovalGraceSeconds;
 
     /**
-     * Pluggable include / exclude predicate. Default delegates to
-     * {@link SsfNotifyAttributes}; extensions plug in custom logic
-     * (group attribute lookups, role-based opt-ins) via the
-     * transmitter provider's
-     * {@link org.keycloak.ssf.transmitter.SsfTransmitterProvider#subjectInclusionResolver}.
+     * 可插拔的包含/排除谓词。默认委托 {@link SsfNotifyAttributes}；扩展通过发送方 Provider 的
+     * {@link org.keycloak.ssf.transmitter.SsfTransmitterProvider#subjectInclusionResolver}
+     * 接入自定义逻辑（组属性、基于角色的 opt-in 等）。
      */
     protected final SsfSubjectInclusionResolver subjectInclusionResolver;
 
+    /** 使用默认宽限（0）与默认包含解析器。 */
     public SubjectSubscriptionFilter() {
         this(0L, new DefaultSsfSubjectInclusionResolver());
     }
 
+    /** @param subjectRemovalGraceSeconds 移除宽限秒数 */
     public SubjectSubscriptionFilter(long subjectRemovalGraceSeconds) {
         this(subjectRemovalGraceSeconds, new DefaultSsfSubjectInclusionResolver());
     }
 
+    /**
+     * @param subjectRemovalGraceSeconds 移除宽限秒数
+     * @param subjectInclusionResolver 可插拔包含/排除解析器
+     */
     public SubjectSubscriptionFilter(long subjectRemovalGraceSeconds,
                                      SsfSubjectInclusionResolver subjectInclusionResolver) {
         this.subjectRemovalGraceSeconds = Math.max(0L, subjectRemovalGraceSeconds);
@@ -74,17 +74,14 @@ public class SubjectSubscriptionFilter {
     }
 
     /**
-     * Returns {@code true} if the event should be delivered to the given
-     * stream, {@code false} to silently skip it.
+     * 事件是否应投递到给定流：{@code true} 投递，{@code false} 静默跳过。
      */
     public boolean shouldDispatch(SsfSecurityEventToken eventToken,
                                          StreamConfig stream,
                                          String receiverClientId,
                                          KeycloakSession session) {
 
-        // Stream management events (verification, stream-updated) are
-        // always delivered — they're about the stream itself, not about
-        // a specific user subject.
+        // 流管理事件（验证、stream-updated）始终投递——关乎流本身，而非特定用户主体。
         if (isSsfStreamEvent(eventToken)) {
             return true;
         }
@@ -96,14 +93,11 @@ public class SubjectSubscriptionFilter {
     }
 
     /**
-     * Pre-token gate used by the native event listener to skip streams
-     * before running the mapper. Takes a pre-resolved user rather than
-     * a token subject — callers that need the token-subject semantics
-     * (complex subjects, stream management events) should use
-     * {@link #shouldDispatch(SsfSecurityEventToken, StreamConfig, String, KeycloakSession)}
-     * instead. The dispatcher-side gate still runs, so a mismatch
-     * between {@code event.getUserId()} and the final token subject
-     * (impersonation, actor-on-behalf) stays safe.
+     * 原生事件监听器使用的预令牌门控：在运行映射器前跳过流。
+     * 接受预解析用户而非令牌主体——需要令牌主体语义（复合主体、流管理事件）的调用方
+     * 应使用 {@link #shouldDispatch(SsfSecurityEventToken, StreamConfig, String, KeycloakSession)}。
+     * 分发器侧门控仍会运行，故 {@code event.getUserId()} 与最终令牌主体不一致
+     * （ impersonation、actor-on-behalf）仍安全。
      */
     public boolean shouldDispatchForUser(UserModel user,
                                          StreamConfig stream,
@@ -121,10 +115,9 @@ public class SubjectSubscriptionFilter {
         DefaultSubjects defaultSubjects = stream.getDefaultSubjects();
 
         if (user == null) {
-            // Event carries a subject but the user couldn't be resolved
-            // (deleted, issuer mismatch, unknown format, etc.).
-            // In ALL mode: deliver (benefit of the doubt).
-            // In NONE mode: block (can't verify subscription).
+            // 事件含主体但无法解析用户（已删、issuer 不匹配、未知格式等）。
+            // ALL 模式：投递（ benefit of the doubt）。
+            // NONE 模式：阻断（无法验证订阅）。
             boolean deliver = defaultSubjects == DefaultSubjects.ALL;
             if (!deliver) {
                 log.debugf("SSF subject filter: skipping event — user subject unresolvable (default_subjects=NONE). "
@@ -134,10 +127,8 @@ public class SubjectSubscriptionFilter {
             return deliver;
         }
 
-        // Per-user explicit settings always win over org inheritance
-        // and default_subjects fallback. An admin who clicked "Include"
-        // or "Ignore" on a specific user expects that decision to stick
-        // regardless of any org-membership-driven defaults.
+        // 按用户显式设置始终优先于组织继承及 default_subjects 回退。
+        // 管理员对特定用户点击「包含」或「忽略」时期望该决定不受组织成员资格默认值影响。
         if (subjectInclusionResolver.isUserNotified(session, user, receiverClientId)) {
             return true;
         }
@@ -150,7 +141,7 @@ public class SubjectSubscriptionFilter {
         }
 
         if (defaultSubjects == DefaultSubjects.ALL) {
-            // Broadcast mode: deliver unless any org excludes the user.
+            // 广播模式：除非任一组织排除该用户，否则投递。
             if (isOrganizationExcluded(user, receiverClientId, session)) {
                 log.debugf("SSF subject filter: skipping event — user is excluded via organization (default_subjects=ALL). "
                                 + "streamId=%s clientId=%s userId=%s jti=%s",
@@ -161,18 +152,14 @@ public class SubjectSubscriptionFilter {
             return true;
         }
 
-        // NONE mode: deliver only when explicitly included.
+        // NONE 模式：仅在显式包含时投递。
         if (isOrganizationNotified(user, receiverClientId, session)) {
             return true;
         }
 
-        // SSF §9.3 grace window — receiver-driven removes leave a
-        // tombstone; while we're inside the configured grace, keep
-        // delivering events for the subject so a compromised receiver
-        // can't silently silence events for a target. Effective grace
-        // is the per-receiver override (ssf.subjectRemovalGraceSeconds
-        // client attribute) when set, otherwise the transmitter-wide
-        // default this filter was constructed with. Zero disables.
+        // SSF §9.3 宽限窗口——接收方驱动的 remove 留下墓碑；在配置宽限内继续投递，
+        // 防止被攻破的接收方静默屏蔽目标事件。有效宽限为每接收方覆盖
+        // （ssf.subjectRemovalGraceSeconds 客户端属性）若已设置，否则为本过滤器构造时的发送方级默认值。0 禁用。
         long effectiveGrace = effectiveGraceSeconds(stream);
         if (effectiveGrace > 0
                 && isWithinRemovalGrace(user, receiverClientId, session, effectiveGrace)) {
@@ -191,12 +178,10 @@ public class SubjectSubscriptionFilter {
     }
 
     /**
-     * Resolves the effective grace window for a stream — prefers the
-     * per-receiver override
-     * ({@code ssf.subjectRemovalGraceSeconds} client attribute,
-     * surfaced on {@link StreamConfig#getSubjectRemovalGraceSeconds()})
-     * when set, otherwise falls back to the transmitter-wide default
-     * this filter was constructed with.
+     * 解析流的有效宽限窗口——优先每接收方覆盖
+     * （{@code ssf.subjectRemovalGraceSeconds} 客户端属性，见
+     * {@link StreamConfig#getSubjectRemovalGraceSeconds()}），
+     * 否则回退为本过滤器构造时的发送方级默认值。
      */
     protected long effectiveGraceSeconds(StreamConfig stream) {
         Integer perReceiver = stream != null ? stream.getSubjectRemovalGraceSeconds() : null;
@@ -207,10 +192,8 @@ public class SubjectSubscriptionFilter {
     }
 
     /**
-     * Returns {@code true} when the user (or any of the user's
-     * organizations) was removed via a receiver-driven {@code
-     * /subjects/remove} call within the last
-     * {@code graceSeconds} seconds.
+     * 用户（或其任一组织）是否在最近 {@code graceSeconds} 秒内
+     * 经接收方驱动的 {@code /subjects/remove} 移除。
      */
     protected boolean isWithinRemovalGrace(UserModel user, String receiverClientId, KeycloakSession session, long graceSeconds) {
         long now = Time.currentTime();
@@ -230,10 +213,8 @@ public class SubjectSubscriptionFilter {
     }
 
     /**
-     * Returns {@code true} if the event token carries an SSF stream
-     * management event (verification, stream-updated). These events
-     * are about the stream itself, not about a specific user, and
-     * must always be delivered regardless of subject filtering.
+     * 事件令牌是否携带 SSF 流管理事件（验证、stream-updated）。
+     * 这些事件关乎流本身而非特定用户，须始终投递，不受主题过滤影响。
      */
     protected boolean isSsfStreamEvent(SsfSecurityEventToken eventToken) {
         var events = eventToken.getEvents();
@@ -245,10 +226,8 @@ public class SubjectSubscriptionFilter {
     }
 
     /**
-     * Extracts and resolves the user from an event token's subject id.
-     * Handles both simple subjects (email, iss_sub, opaque) and complex
-     * subjects by drilling into {@link ComplexSubjectId#getUser()}.
-     * Returns {@code null} when no user can be resolved.
+     * 从事件令牌的主体 id 提取并解析用户。支持简单主体（email、iss_sub、opaque）
+     * 及复合主体（深入 {@link ComplexSubjectId#getUser()}）。无法解析时返回 {@code null}。
      */
     protected UserModel resolveUserFromEvent(SsfSecurityEventToken eventToken,
                                                   KeycloakSession session,
@@ -269,17 +248,15 @@ public class SubjectSubscriptionFilter {
         return lookupUserBySubject(session, realm, subjectId);
     }
 
+    /** 按 {@link SubjectId} 查找用户。 */
     protected UserModel lookupUserBySubject(KeycloakSession session, RealmModel realm, SubjectId userSubject) {
         return SubjectUserLookup.lookupUser(session, realm, userSubject);
     }
 
     /**
-     * Checks if any of the user's organizations is explicitly excluded
-     * per the {@link #subjectInclusionResolver}. The per-user exclude
-     * is intentionally NOT checked here — user-explicit settings are
-     * resolved earlier in {@link #evaluateSubjectSubscription} and
-     * always override org-level state, so this helper only answers the
-     * "is the user excluded *via* one of their orgs" question.
+     * 用户所属组织中是否有任一被 {@link #subjectInclusionResolver} 显式排除。
+     * 此处 intentionally 不检查按用户排除——已在 {@link #evaluateSubjectSubscription} 更早处理且始终覆盖组织级状态；
+     * 本辅助方法仅回答「用户是否通过某组织被排除」。
      */
     protected boolean isOrganizationExcluded(UserModel user, String receiverClientId, KeycloakSession session) {
         if (!Organizations.isEnabled(session)) {
@@ -289,10 +266,7 @@ public class SubjectSubscriptionFilter {
                 .anyMatch(org -> subjectInclusionResolver.isOrganizationExcluded(session, org, receiverClientId));
     }
 
-    /**
-     * Checks if any of the user's organizations is explicitly notified
-     * per the {@link #subjectInclusionResolver}.
-     */
+    /** 用户所属组织中是否有任一被 {@link #subjectInclusionResolver} 显式订阅。 */
     protected boolean isOrganizationNotified(UserModel user, String receiverClientId, KeycloakSession session) {
         if (!Organizations.isEnabled(session)) {
             return false;
