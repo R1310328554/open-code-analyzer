@@ -42,6 +42,7 @@ logger = logging.get_logger(__name__)
 
 # TODO: Move BatchFeature to be imported by both image_processing_utils and image_processing_utils_fast
 # We override the class string here, but logic is the same.
+# BatchFeature：图像处理器 __call__ 返回的字典式张量容器
 class BatchFeature(BaseBatchFeature):
     r"""
     Holds the output of the image processor specific `__call__` methods.
@@ -58,6 +59,7 @@ class BatchFeature(BaseBatchFeature):
 
 
 # TODO: (Amy) - factor out the common parts of this and the feature extractor
+# ImageProcessingMixin：from_pretrained/save_pretrained 与配置 JSON
 class ImageProcessingMixin(PushToHubMixin):
     """
     This is an image processor mixin used to provide saving/loading functionality for sequential and image feature

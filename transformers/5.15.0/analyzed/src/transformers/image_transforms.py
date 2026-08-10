@@ -43,6 +43,7 @@ if is_torch_available():
     import torch
 
 
+# to_channel_dimension_format：将图像转为指定通道维度格式
 def to_channel_dimension_format(
     image: np.ndarray,
     channel_dim: ChannelDimension | str,
@@ -86,6 +87,7 @@ def to_channel_dimension_format(
     return image
 
 
+# rescale：按 scale 缩放像素值（通常 1/255）
 def rescale(
     image: np.ndarray,
     scale: float,
@@ -124,6 +126,7 @@ def rescale(
     return rescaled_image
 
 
+# _rescale_for_pil_conversion：PIL 转换前的数值范围调整
 def _rescale_for_pil_conversion(image):
     """
     Detects whether or not the image needs to be rescaled before being converted to a PIL image.
@@ -151,6 +154,7 @@ def _rescale_for_pil_conversion(image):
     return do_rescale
 
 
+# to_pil_image：numpy/torch 数组转为 PIL Image
 def to_pil_image(
     image: Union[np.ndarray, "PIL.Image.Image", "torch.Tensor"],
     do_rescale: bool | None = None,
@@ -203,6 +207,7 @@ def to_pil_image(
     return PIL.Image.fromarray(image, mode=image_mode)
 
 
+# get_size_with_aspect_ratio：保持宽高比计算目标尺寸
 def get_size_with_aspect_ratio(image_size, size, max_size=None) -> tuple[int, int]:
     """
     Computes the output image size given the input image size and the desired output size.
@@ -243,6 +248,7 @@ def get_size_with_aspect_ratio(image_size, size, max_size=None) -> tuple[int, in
 
 
 # Logic adapted from torchvision resizing logic: https://github.com/pytorch/vision/blob/511924c1ced4ce0461197e5caa64ce5b9e558aab/torchvision/transforms/functional.py#L366
+# get_resize_output_image_size：根据 resize 参数计算输出高宽
 def get_resize_output_image_size(
     input_image: np.ndarray,
     size: int | tuple[int, int] | list[int] | tuple[int, ...],
@@ -310,6 +316,7 @@ def get_resize_output_image_size(
     return (new_long, new_short) if width <= height else (new_short, new_long)
 
 
+# resize：缩放图像到目标尺寸
 def resize(
     image: np.ndarray,
     size: tuple[int, int],
@@ -381,6 +388,7 @@ def resize(
     return resized_image
 
 
+# normalize：按 mean/std 标准化像素
 def normalize(
     image: np.ndarray,
     mean: float | Collection[float],
@@ -442,6 +450,7 @@ def normalize(
     return image
 
 
+# center_crop：中心裁剪到目标尺寸
 def center_crop(
     image: np.ndarray,
     size: tuple[int, int],
@@ -526,6 +535,7 @@ def center_crop(
     return new_image
 
 
+# _center_to_corners_format_torch：bbox 中心格式→角点格式（torch）
 def _center_to_corners_format_torch(bboxes_center: "torch.Tensor") -> "torch.Tensor":
     center_x, center_y, width, height = bboxes_center.unbind(-1)
     bbox_corners = torch.stack(
@@ -536,6 +546,7 @@ def _center_to_corners_format_torch(bboxes_center: "torch.Tensor") -> "torch.Ten
     return bbox_corners
 
 
+# _center_to_corners_format_numpy：bbox 中心格式→角点格式（numpy）
 def _center_to_corners_format_numpy(bboxes_center: np.ndarray) -> np.ndarray:
     center_x, center_y, width, height = bboxes_center.T
     bboxes_corners = np.stack(
@@ -547,6 +558,7 @@ def _center_to_corners_format_numpy(bboxes_center: np.ndarray) -> np.ndarray:
 
 
 # 2 functions below inspired by https://github.com/facebookresearch/detr/blob/master/util/box_ops.py
+# center_to_corners_format：bbox 中心格式→角点格式（自动分发）
 def center_to_corners_format(bboxes_center: TensorType) -> TensorType:
     """
     Converts bounding boxes from center format to corners format.
@@ -565,6 +577,7 @@ def center_to_corners_format(bboxes_center: TensorType) -> TensorType:
     raise ValueError(f"Unsupported input type {type(bboxes_center)}")
 
 
+# _corners_to_center_format_torch：bbox 角点格式→中心格式（torch）
 def _corners_to_center_format_torch(bboxes_corners: "torch.Tensor") -> "torch.Tensor":
     top_left_x, top_left_y, bottom_right_x, bottom_right_y = bboxes_corners.unbind(-1)
     b = [
@@ -576,6 +589,7 @@ def _corners_to_center_format_torch(bboxes_corners: "torch.Tensor") -> "torch.Te
     return torch.stack(b, dim=-1)
 
 
+# _corners_to_center_format_numpy：bbox 角点格式→中心格式（numpy）
 def _corners_to_center_format_numpy(bboxes_corners: np.ndarray) -> np.ndarray:
     top_left_x, top_left_y, bottom_right_x, bottom_right_y = bboxes_corners.T
     bboxes_center = np.stack(
@@ -590,6 +604,7 @@ def _corners_to_center_format_numpy(bboxes_corners: np.ndarray) -> np.ndarray:
     return bboxes_center
 
 
+# corners_to_center_format：bbox 角点格式→中心格式（自动分发）
 def corners_to_center_format(bboxes_corners: TensorType) -> TensorType:
     """
     Converts bounding boxes from corners format to center format.
@@ -608,6 +623,7 @@ def corners_to_center_format(bboxes_corners: TensorType) -> TensorType:
     raise ValueError(f"Unsupported input type {type(bboxes_corners)}")
 
 
+# safe_squeeze：安全 squeeze，避免移除 batch 维
 def safe_squeeze(
     tensor: Union[np.ndarray, "torch.Tensor"], axis: int | None = None
 ) -> Union[np.ndarray, "torch.Tensor"]:
@@ -626,6 +642,7 @@ def safe_squeeze(
 # 2 functions below copied from https://github.com/cocodataset/panopticapi/blob/master/panopticapi/utils.py
 # Copyright (c) 2018, Alexander Kirillov
 # All rights reserved.
+# rgb_to_id：RGB 颜色映射为语义分割 id
 def rgb_to_id(color):
     """
     Converts RGB color to unique ID.
@@ -637,6 +654,7 @@ def rgb_to_id(color):
     return int(color[0] + 256 * color[1] + 256 * 256 * color[2])
 
 
+# id_to_rgb：语义分割 id 映射回 RGB
 def id_to_rgb(id_map):
     """
     Converts unique ID to RGB color.
@@ -656,6 +674,7 @@ def id_to_rgb(id_map):
     return color
 
 
+# PaddingMode：填充模式枚举（constant/reflect 等）
 class PaddingMode(ExplicitEnum):
     """
     Enum class for the different padding modes to use when padding images.
@@ -667,6 +686,7 @@ class PaddingMode(ExplicitEnum):
     SYMMETRIC = "symmetric"
 
 
+# pad：按指定模式填充图像
 def pad(
     image: np.ndarray,
     padding: int | tuple[int, int] | Iterable[tuple[int, int]],
@@ -754,6 +774,7 @@ def pad(
 
 
 # TODO (Amy): Accept 1/3/4 channel numpy array as input and return np.array as default
+# convert_to_rgb：将图像转为 RGB 三通道
 def convert_to_rgb(image: ImageInput) -> ImageInput:
     """
     Converts an image to RGB format. Only converts if the image is of type PIL.Image.Image, otherwise returns the image
@@ -774,6 +795,7 @@ def convert_to_rgb(image: ImageInput) -> ImageInput:
     return image
 
 
+# flip_channel_order：翻转通道顺序（如 BGR↔RGB）
 def flip_channel_order(
     image: np.ndarray,
     data_format: ChannelDimension | None = None,
@@ -812,6 +834,7 @@ def flip_channel_order(
     return image
 
 
+# split_to_tiles：将图像张量切分为 tile 网格
 def split_to_tiles(images: "torch.Tensor", num_tiles_height: int, num_tiles_width: int) -> "torch.Tensor":
     # Split image into number of required tiles (width x height)
     batch_size, num_channels, height, width = images.size()
@@ -836,6 +859,7 @@ def split_to_tiles(images: "torch.Tensor", num_tiles_height: int, num_tiles_widt
     return image
 
 
+# divide_to_patches：将图像划分为 patch 列表
 def divide_to_patches(
     image: Union[np.ndarray, "torch.Tensor"], patch_size: int | tuple[int, int]
 ) -> list[Union[np.ndarray, "torch.Tensor"]]:
@@ -862,6 +886,7 @@ def divide_to_patches(
     return patches
 
 
+# _group_images_by_shape：按形状分组嵌套图像以批处理
 def _group_images_by_shape(nested_images, *paired_inputs, is_nested: bool = False):
     """
     Helper function to flatten a single level of nested image and batch structures and group by shape.
@@ -911,6 +936,7 @@ def _group_images_by_shape(nested_images, *paired_inputs, is_nested: bool = Fals
     return grouped_images, *paired_grouped_values, grouped_images_index
 
 
+# _reconstruct_nested_structure：将分组处理结果还原为嵌套结构
 def _reconstruct_nested_structure(indices, processed_images):
     """Helper function to reconstruct a single level nested structure."""
     # Get the number of sublists (handles empty sublists like in [[], [image]])
@@ -945,6 +971,7 @@ def _reconstruct_nested_structure(indices, processed_images):
     return result
 
 
+# _iterate_items：扁平/嵌套图像列表的统一迭代
 def _iterate_items(items, is_nested: bool):
     """
     Helper function to iterate over items yielding (key, item) pairs.
@@ -961,6 +988,7 @@ def _iterate_items(items, is_nested: bool):
             yield i, item
 
 
+# _get_device_from_images：从图像张量推断 device
 def _get_device_from_images(images, is_nested: bool) -> "torch.device":
     """
     Get the device from the first non-empty element in a (potentially nested) list of images.
@@ -976,6 +1004,7 @@ def _get_device_from_images(images, is_nested: bool) -> "torch.device":
     return images[0].device
 
 
+# group_images_by_shape：按形状分组并批处理变换的公开 API
 def group_images_by_shape(
     images: Union[list["torch.Tensor"], "torch.Tensor"],
     *paired_inputs,
@@ -1041,6 +1070,7 @@ def group_images_by_shape(
     return grouped_images, *paired_grouped_values, grouped_images_index
 
 
+# reorder_images：按原始索引顺序重排处理后的图像
 def reorder_images(
     processed_images: dict[tuple[int, int], "torch.Tensor"],
     grouped_images_index: dict[int | tuple[int, int], tuple[tuple[int, int], int]],

@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from ..utils import OptionalDependencyNotAvailable, _LazyModule, is_torch_available
 
 
+# _import_structure：_LazyModule 按需导入各集成子模块符号
 _import_structure = {
     "aqlm": ["replace_with_aqlm_linear"],
     "awq": [
@@ -326,4 +327,5 @@ if TYPE_CHECKING:
 else:
     import sys
 
+# TYPE_CHECKING 外注册 _LazyModule，避免未安装依赖时 eager import
     sys.modules[__name__] = _LazyModule(__name__, globals()["__file__"], _import_structure, module_spec=__spec__)

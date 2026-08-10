@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     import torch
 
 
+# SemanticSegmentationPostProcessorOutput：语义分割后处理输出（segmentation/scores）
 class SemanticSegmentationPostProcessorOutput(BatchFeature):
     """
     Output of a semantic segmentation post-processing step.

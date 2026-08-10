@@ -36,6 +36,7 @@ logger = logging.get_logger(__name__)
 
 
 @dataclass
+# WatermarkDetectorOutput：水印检测统计输出（z_score、p_value 等）
 class WatermarkDetectorOutput:
     """
     Outputs of a watermark detector.
@@ -68,6 +69,7 @@ class WatermarkDetectorOutput:
     confidence: np.ndarray | None = None
 
 
+# WatermarkDetector：Greenlist 水印检测，需与生成时相同配置
 class WatermarkDetector:
     r"""
     Detector for detection of watermark generated text. The detector needs to be given the exact same settings that were
@@ -240,6 +242,7 @@ class WatermarkDetector:
         return prediction
 
 
+# BayesianDetectorConfig：贝叶斯水印检测模型配置
 class BayesianDetectorConfig(PreTrainedConfig):
     """
     This is the configuration class to store the configuration of a [`BayesianDetectorModel`]. It is used to
@@ -270,6 +273,7 @@ class BayesianDetectorConfig(PreTrainedConfig):
 
 
 @dataclass
+# BayesianWatermarkDetectorModelOutput：贝叶斯检测模型 forward 输出
 class BayesianWatermarkDetectorModelOutput(ModelOutput):
     """
     Base class for outputs of models predicting if the text is watermarked.
@@ -285,6 +289,7 @@ class BayesianWatermarkDetectorModelOutput(ModelOutput):
     posterior_probabilities: torch.FloatTensor | None = None
 
 
+# BayesianDetectorWatermarkedLikelihood：水印似然估计子模块
 class BayesianDetectorWatermarkedLikelihood(nn.Module):
     """Watermarked likelihood model for binary-valued g-values.
 
@@ -347,6 +352,7 @@ class BayesianDetectorWatermarkedLikelihood(nn.Module):
         return 0.5 * ((g_values + 0.5) * p_two_unique_tokens + p_one_unique_token)
 
 
+# BayesianDetectorModel：可训练的贝叶斯水印检测 PreTrainedModel
 class BayesianDetectorModel(PreTrainedModel):
     r"""
     Bayesian classifier for watermark detection.
@@ -478,6 +484,7 @@ class BayesianDetectorModel(PreTrainedModel):
         return BayesianWatermarkDetectorModelOutput(loss=loss, posterior_probabilities=out)
 
 
+# SynthIDTextWatermarkDetector：SynthID 文本水印检测器
 class SynthIDTextWatermarkDetector:
     r"""
     SynthID text watermark detector class.

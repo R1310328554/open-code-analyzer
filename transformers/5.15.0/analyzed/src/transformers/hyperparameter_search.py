@@ -32,6 +32,7 @@ from .utils import logging
 logger = logging.get_logger(__name__)
 
 
+# HyperParamSearchBackendBase：超参搜索后端 ABC（run/default_hp_space）
 class HyperParamSearchBackendBase:
     name: str
     pip_package: str | None = None
@@ -57,6 +58,7 @@ class HyperParamSearchBackendBase:
         return f"`pip install {cls.pip_package or cls.name}`"
 
 
+# OptunaBackend：Optuna 超参搜索后端
 class OptunaBackend(HyperParamSearchBackendBase):
     name = "optuna"
 
@@ -71,6 +73,7 @@ class OptunaBackend(HyperParamSearchBackendBase):
         return default_hp_space_optuna(trial)
 
 
+# RayTuneBackend：Ray Tune 超参搜索后端
 class RayTuneBackend(HyperParamSearchBackendBase):
     name = "ray"
     pip_package = "'ray[tune]'"
@@ -86,6 +89,7 @@ class RayTuneBackend(HyperParamSearchBackendBase):
         return default_hp_space_ray(trial)
 
 
+# WandbBackend：Weights & Biases 超参搜索后端
 class WandbBackend(HyperParamSearchBackendBase):
     name = "wandb"
 
@@ -105,6 +109,7 @@ ALL_HYPERPARAMETER_SEARCH_BACKENDS = {
 }
 
 
+# default_hp_search_backend：返回首个可用的超参搜索后端名称
 def default_hp_search_backend() -> str:
     available_backends = [backend for backend in ALL_HYPERPARAMETER_SEARCH_BACKENDS.values() if backend.is_available()]
     if len(available_backends) > 0:

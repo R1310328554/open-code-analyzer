@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+# LOGITS_PROCESSOR_INPUTS_DOCSTRING：各 LogitsProcessor.__call__ 的通用参数文档模板
 LOGITS_PROCESSOR_INPUTS_DOCSTRING = r"""
     Args:
         input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`):
@@ -46,6 +47,7 @@ LOGITS_PROCESSOR_INPUTS_DOCSTRING = r"""
 """
 
 
+# LogitsProcessor：logits 处理器抽象基类，子类实现 __call__ 修改 scores
 class LogitsProcessor:
     """Abstract base class for all logit processors that can be applied during generation."""
 
@@ -60,6 +62,7 @@ class LogitsProcessor:
         )
 
 
+# LogitsProcessorList：顺序链式调用多个 logits 处理器
 class LogitsProcessorList(list):
     """
     This class can be used to create a list of [`LogitsProcessor`] to subsequently process a `scores` input tensor.
@@ -98,6 +101,7 @@ class LogitsProcessorList(list):
         return scores
 
 
+# MinLengthLogitsProcessor：未达 min_length 时将 EOS 概率置零
 class MinLengthLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] enforcing a min-length by setting EOS probability to 0. Note that, for decoder-only models
@@ -161,6 +165,7 @@ class MinLengthLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# MinNewTokensLengthLogitsProcessor：约束最少新生成 token 数
 class MinNewTokensLengthLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] enforcing a min-length of new tokens by setting EOS (End-Of-Sequence) token probability to 0.
@@ -235,6 +240,7 @@ class MinNewTokensLengthLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# TemperatureLogitsWarper：温度缩放 logits 以控制采样随机性
 class TemperatureLogitsWarper(LogitsProcessor):
     r"""
     [`LogitsProcessor`] for temperature (exponential scaling output probability distribution), which effectively means
@@ -303,6 +309,7 @@ class TemperatureLogitsWarper(LogitsProcessor):
         return scores_processed
 
 
+# RepetitionPenaltyLogitsProcessor：对已出现 token 施加重复惩罚
 class RepetitionPenaltyLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that prevents the repetition of previous tokens through a penalty. This penalty is applied at
@@ -413,6 +420,7 @@ class RepetitionPenaltyLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# EncoderRepetitionPenaltyLogitsProcessor：对 encoder 输入 token 施加重复惩罚
 class EncoderRepetitionPenaltyLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that works similarly to [`RepetitionPenaltyLogitsProcessor`], but with an *inverse* penalty
@@ -470,6 +478,7 @@ class EncoderRepetitionPenaltyLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# TopPLogitsWarper：nucleus 采样，保留累积概率 top_p 的 token
 class TopPLogitsWarper(LogitsProcessor):
     """
     [`LogitsProcessor`] that performs top-p, i.e. restricting to top tokens summing to prob_cut_off <= prob_cut_off.
@@ -539,6 +548,7 @@ class TopPLogitsWarper(LogitsProcessor):
         return scores_processed
 
 
+# TopKLogitsWarper：仅保留概率最高的 top_k 个 token
 class TopKLogitsWarper(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that performs top-k, i.e. restricting to the k highest probability elements. Often used
@@ -595,6 +605,7 @@ class TopKLogitsWarper(LogitsProcessor):
         return scores_processed
 
 
+# TopHLogitsWarper：基于熵的 top_h 截断采样
 class TopHLogitsWarper(LogitsProcessor):
     """
     [`LogitsProcessor`] that implements Top-H sampling, a decoding method which adaptively selects a subset of
@@ -701,6 +712,7 @@ class TopHLogitsWarper(LogitsProcessor):
         return scores_processed
 
 
+# MinPLogitsWarper：过滤低于 max_prob * min_p 的低概率 token
 class MinPLogitsWarper(LogitsProcessor):
     """
     [`LogitsProcessor`] that performs min-p, i.e. keeps all tokens that are above a minimum probability, scaled by the
@@ -777,6 +789,7 @@ class MinPLogitsWarper(LogitsProcessor):
         return scores_processed
 
 
+# TypicalLogitsWarper：典型采样，按信息含量筛选 token
 class TypicalLogitsWarper(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that performs typical decoding. Inspired on how humans use language, it prioritizes tokens
@@ -865,6 +878,7 @@ class TypicalLogitsWarper(LogitsProcessor):
         return scores_processed
 
 
+# EpsilonLogitsWarper：epsilon 截断采样 warper
 class EpsilonLogitsWarper(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that performs epsilon-sampling, i.e. restricting to tokens with `prob >= epsilon`. Takes the
@@ -934,6 +948,7 @@ class EpsilonLogitsWarper(LogitsProcessor):
         return scores_processed
 
 
+# EtaLogitsWarper：eta 采样 warper，平衡多样性与质量
 class EtaLogitsWarper(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that performs eta-sampling, a technique to filter out tokens with probabilities below a dynamic
@@ -1018,6 +1033,7 @@ class EtaLogitsWarper(LogitsProcessor):
         return scores_processed
 
 
+# _get_ngrams：从已生成序列提取 n-gram 索引
 def _get_ngrams(ngram_size: int, prev_input_ids: torch.Tensor, num_hypos: int):
     """
     Assume ngram_size=2 and prev_input_ids=tensor([[40, 2883, 2712, 4346]]). The output of generated ngrams look like
@@ -1047,6 +1063,7 @@ def _get_ngrams(ngram_size: int, prev_input_ids: torch.Tensor, num_hypos: int):
     return generated_ngrams
 
 
+# _get_generated_ngrams：收集需禁止的 n-gram 起始位置
 def _get_generated_ngrams(banned_ngrams, prev_input_ids, ngram_size, cur_len):
     """
     Determines the banned tokens for the current hypothesis based on previously generated n-grams.
@@ -1070,6 +1087,7 @@ def _get_generated_ngrams(banned_ngrams, prev_input_ids, ngram_size, cur_len):
     return banned_ngrams.get(ngram_idx, [])
 
 
+# NoRepeatNGramLogitsProcessor：禁止重复出现相同 n-gram
 class NoRepeatNGramLogitsProcessor(LogitsProcessor):
     r"""
     N-grams are groups of "n" consecutive words, characters, or tokens taken from a sequence of text. Given the
@@ -1139,6 +1157,7 @@ class NoRepeatNGramLogitsProcessor(LogitsProcessor):
         return scores.masked_fill(banned_mask[:, :vocab_size], -float("inf"))
 
 
+# EncoderNoRepeatNGramLogitsProcessor：encoder-decoder 模型的 encoder n-gram 约束
 class EncoderNoRepeatNGramLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that works similarly to [`NoRepeatNGramLogitsProcessor`], but applied exclusively to prevent
@@ -1208,6 +1227,7 @@ class EncoderNoRepeatNGramLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# SequenceBiasLogitsProcessor：对指定 token 序列施加偏置加减
 class SequenceBiasLogitsProcessor(LogitsProcessor):
     """
     [`LogitsProcessor`] that applies an additive bias on sequences. The bias is applied to the last token of a sequence
@@ -1392,6 +1412,7 @@ class SequenceBiasLogitsProcessor(LogitsProcessor):
             self.sequence_bias = {tuple(sublist[0]): sublist[1] for sublist in temp_sequence}
 
 
+# NoBadWordsLogitsProcessor：禁止生成 bad_words 列表中的序列
 class NoBadWordsLogitsProcessor(SequenceBiasLogitsProcessor):
     """
     [`LogitsProcessor`] that enforces that specified sequences will never be selected.
@@ -1481,6 +1502,7 @@ class NoBadWordsLogitsProcessor(SequenceBiasLogitsProcessor):
             )
 
 
+# PrefixConstrainedLogitsProcessor：每步仅允许 prefix_allowed_tokens_fn 返回的 token
 class PrefixConstrainedLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that enforces constrained generation and is useful for prefix-conditioned constrained
@@ -1553,6 +1575,7 @@ class PrefixConstrainedLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# ForcedBOSTokenLogitsProcessor：强制首 token 为 BOS
 class ForcedBOSTokenLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that enforces the specified token as the first generated token. Used with encoder-decoder
@@ -1598,6 +1621,7 @@ class ForcedBOSTokenLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# ForcedEOSTokenLogitsProcessor：在指定长度强制输出 EOS
 class ForcedEOSTokenLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that enforces the specified token as the last generated token when `max_length` is reached.
@@ -1654,6 +1678,7 @@ class ForcedEOSTokenLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# InfNanRemoveLogitsProcessor：将 inf/nan logits 替换为有限值
 class InfNanRemoveLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that removes all `nan` and `inf` values to avoid the generation method to fail. Note that using
@@ -1675,6 +1700,7 @@ class InfNanRemoveLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# ExponentialDecayLengthPenalty：指数衰减长度惩罚，鼓励更长/更短输出
 class ExponentialDecayLengthPenalty(LogitsProcessor):
     r"""
     [`LogitsProcessor`] that exponentially increases the score of the `eos_token_id` after `start_index` has been
@@ -1776,6 +1802,7 @@ class ExponentialDecayLengthPenalty(LogitsProcessor):
         return scores_processed
 
 
+# LogitNormalization：对 logits 做 log-softmax 归一化
 class LogitNormalization(LogitsProcessor):
     r"""
     [`LogitsProcessor`] for normalizing the scores using log-softmax. It's important to normalize
@@ -1813,6 +1840,7 @@ class LogitNormalization(LogitsProcessor):
         return scores_processed
 
 
+# SuppressTokensAtBeginLogitsProcessor：生成开头若干步抑制指定 token
 class SuppressTokensAtBeginLogitsProcessor(LogitsProcessor):
     r"""
     [`SuppressTokensAtBeginLogitsProcessor`] suppresses a list of tokens as soon as the `generate` function starts
@@ -1866,6 +1894,7 @@ class SuppressTokensAtBeginLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# SuppressTokensLogitsProcessor：全程抑制指定 token 集合
 class SuppressTokensLogitsProcessor(LogitsProcessor):
     r"""
     This processor can be used to suppress a list of tokens. The processor will set their log probs to `-inf` so
@@ -1906,6 +1935,7 @@ class SuppressTokensLogitsProcessor(LogitsProcessor):
         return scores
 
 
+# WhisperTimeStampLogitsProcessor：Whisper 时间戳 token 约束与对齐
 class WhisperTimeStampLogitsProcessor(LogitsProcessor):
     r"""
 
@@ -2047,6 +2077,7 @@ class WhisperTimeStampLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# WhisperNoSpeechDetection：Whisper 无语音检测 logits 处理
 class WhisperNoSpeechDetection(LogitsProcessor):
     """
     This processor can be used to detect silence when using Whisper. It should take as input unprocessed logits
@@ -2112,6 +2143,7 @@ class WhisperNoSpeechDetection(LogitsProcessor):
         return scores
 
 
+# ClassifierFreeGuidanceLogitsProcessor：CFG 引导，混合条件/无条件 logits
 class ClassifierFreeGuidanceLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] for classifier free guidance (CFG). The scores are split over the batch dimension,
@@ -2176,6 +2208,7 @@ class ClassifierFreeGuidanceLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# AlternatingCodebooksLogitsProcessor：多码本模型交替码本约束
 class AlternatingCodebooksLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] enforcing alternated generation between the two codebooks of Bark.
@@ -2221,6 +2254,7 @@ class AlternatingCodebooksLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# UnbatchedClassifierFreeGuidanceLogitsProcessor：非批处理 CFG logits 混合
 class UnbatchedClassifierFreeGuidanceLogitsProcessor(LogitsProcessor):
     r"""
     Logits processor for Classifier-Free Guidance (CFG). The processors computes a weighted average across scores
@@ -2339,6 +2373,7 @@ class UnbatchedClassifierFreeGuidanceLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# BarkEosPrioritizerLogitsProcessor：Bark 模型 EOS 优先级处理
 class BarkEosPrioritizerLogitsProcessor(LogitsProcessor):
     r"""This processor ensures that the EOS token is selected if its probability is greater than the `min_eos_p`.
 
@@ -2386,6 +2421,7 @@ class BarkEosPrioritizerLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# WatermarkLogitsProcessor：Greenlist 水印 logits 偏置
 class WatermarkLogitsProcessor(LogitsProcessor):
     r"""
     Logits processor for watermarking generated text. The processor modifies model output scores by adding a small bias to
@@ -2528,6 +2564,7 @@ class WatermarkLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# SynthIDTextWatermarkState：SynthID 文本水印状态（g 值、计数等）
 class SynthIDTextWatermarkState:
     """SynthID watermarking state."""
 
@@ -2559,6 +2596,7 @@ class SynthIDTextWatermarkState:
         self.num_calls = 0
 
 
+# SynthIDTextWatermarkLogitsProcessor：Google SynthID 文本水印 logits 处理
 class SynthIDTextWatermarkLogitsProcessor(LogitsProcessor):
     r"""
     Logits processor that implements watermarking techniques for text generation models.
@@ -3001,6 +3039,7 @@ class SynthIDTextWatermarkLogitsProcessor(LogitsProcessor):
         return coinflip_prob + coinflip_prob * (1 - coinflip_prob) * (1 - (1 / vocab_size))
 
 
+# DiaClassifierFreeGuidanceLogitsProcessor：Dia 模型 CFG logits 处理
 class DiaClassifierFreeGuidanceLogitsProcessor(LogitsProcessor):
     r"""
     [`LogitsProcessor`] for classifier free guidance (CFG). Similar to the original
@@ -3067,6 +3106,7 @@ class DiaClassifierFreeGuidanceLogitsProcessor(LogitsProcessor):
         return scores_processed
 
 
+# DiaEOSChannelFilterLogitsProcessor：Dia 多通道 EOS 过滤
 class DiaEOSChannelFilterLogitsProcessor(LogitsProcessor):
     r"""Specialized processor that ensures certain properties around EOS sampling:
         1. Only channel 0 can generate EOS
@@ -3139,6 +3179,7 @@ class DiaEOSChannelFilterLogitsProcessor(LogitsProcessor):
         return scores
 
 
+# DiaEOSDelayPatternLogitsProcessor：Dia EOS 延迟模式约束
 class DiaEOSDelayPatternLogitsProcessor(LogitsProcessor):
     r"""Special logits processor to handle the generation of the EOS token in Dia.
     This is due to the fact that Dia does not allow the generation of EOS in all

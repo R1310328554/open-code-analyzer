@@ -83,6 +83,7 @@ logger = logging.get_logger(__name__)
 
 
 @requires(backends=("torch", "torchvision"))
+# TorchvisionBackend：基于 torchvision v2 的 GPU 批处理后端
 class TorchvisionBackend(BaseImageProcessor):
     """Torchvision backend for GPU-accelerated batched image processing."""
 
@@ -413,6 +414,7 @@ class TorchvisionBackend(BaseImageProcessor):
 
 
 @requires(backends=("vision",))
+# PilBackend：基于 PIL/NumPy 的可移植 CPU 后端
 class PilBackend(BaseImageProcessor):
     """PIL/NumPy backend for portable CPU-only image processing."""
 

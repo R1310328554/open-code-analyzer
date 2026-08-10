@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from ..tokenization_utils_base import PreTrainedTokenizerBase
 
 
+# BaseStreamer：流式输出抽象基类，定义 put/end 回调
 class BaseStreamer:
     """
     Base class from which `.generate()` streamers should inherit.
@@ -39,6 +40,7 @@ class BaseStreamer:
         raise NotImplementedError()
 
 
+# TextStreamer：将完整单词实时打印到 stdout
 class TextStreamer(BaseStreamer):
     """
     Simple text streamer that prints the token(s) to stdout as soon as entire words are formed.
@@ -154,6 +156,7 @@ class TextStreamer(BaseStreamer):
         return False
 
 
+# TextIteratorStreamer：通过迭代器/队列消费生成文本
 class TextIteratorStreamer(TextStreamer):
     """
     Streamer that stores print-ready text in a queue, to be used by a downstream application as an iterator. This is
@@ -223,6 +226,7 @@ class TextIteratorStreamer(TextStreamer):
             return value
 
 
+# AsyncTextIteratorStreamer：异步迭代器版 TextIteratorStreamer
 class AsyncTextIteratorStreamer(TextStreamer):
     """
     Streamer that stores print-ready text in a queue, to be used by a downstream application as an async iterator.
@@ -311,6 +315,7 @@ class AsyncTextIteratorStreamer(TextStreamer):
                 return value
 
 
+# TextDiffusionStreamer：扩散式文本生成的流式输出
 class TextDiffusionStreamer(TextStreamer):
     """
     Streamer that prints text diffusion outputs. Intermediate diffusion steps (drafts) are temporary

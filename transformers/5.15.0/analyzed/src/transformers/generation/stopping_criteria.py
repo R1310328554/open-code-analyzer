@@ -16,9 +16,11 @@ from ..utils import add_start_docstrings, logging
 logger = logging.get_logger(__name__)
 # We maintain a module-level cache of the embedding vectors for the stop string criterion
 # because they are slow to compute
+# STOP_STRING_EMBEDDING_CACHE：stop string 嵌入向量 LRU 缓存，加速 StopStringCriteria
 STOP_STRING_EMBEDDING_CACHE = OrderedDict()
 
 
+# STOPPING_CRITERIA_INPUTS_DOCSTRING：StoppingCriteria.__call__ 通用参数文档模板
 STOPPING_CRITERIA_INPUTS_DOCSTRING = r"""
     Args:
         input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`):
@@ -43,6 +45,7 @@ STOPPING_CRITERIA_INPUTS_DOCSTRING = r"""
 """
 
 
+# StoppingCriteria：停止条件抽象基类，返回 bool 张量指示是否结束生成
 class StoppingCriteria(ABC):
     """Abstract base class for all stopping criteria that can be applied during generation.
 
@@ -55,6 +58,7 @@ class StoppingCriteria(ABC):
         raise NotImplementedError("StoppingCriteria needs to be subclassed")
 
 
+# MaxLengthCriteria：达到 max_length 时停止
 class MaxLengthCriteria(StoppingCriteria):
     """
     This class can be used to stop generation whenever the full generated number of tokens exceeds `max_length`. Keep
@@ -84,6 +88,7 @@ class MaxLengthCriteria(StoppingCriteria):
         return torch.full((input_ids.shape[0],), is_done, device=input_ids.device, dtype=torch.bool)
 
 
+# MaxTimeCriteria：超过 max_time 秒时停止
 class MaxTimeCriteria(StoppingCriteria):
     """
     This class can be used to stop generation whenever the full generation exceeds some amount of time. By default, the
@@ -107,6 +112,7 @@ class MaxTimeCriteria(StoppingCriteria):
         return torch.full((input_ids.shape[0],), is_done, device=input_ids.device, dtype=torch.bool)
 
 
+# StopStringCriteria：检测到指定 stop string 时停止
 class StopStringCriteria(StoppingCriteria):
     """
     This class can be used to stop generation whenever specific string sequences are generated. It preprocesses
@@ -531,6 +537,7 @@ class StopStringCriteria(StoppingCriteria):
         return torch.any(string_matches, dim=-1)
 
 
+# EosTokenCriteria：生成 EOS token 时停止
 class EosTokenCriteria(StoppingCriteria):
     """
     This class can be used to stop generation whenever the "end-of-sequence" token is generated.
@@ -581,6 +588,7 @@ class EosTokenCriteria(StoppingCriteria):
         return is_done
 
 
+# ConfidenceCriteria：最高 token 概率低于阈值时停止
 class ConfidenceCriteria(StoppingCriteria):
     """
     This class can be used to stop generation whenever assistant model's confidence in its prediction for the current token is lower than the threshold
@@ -602,6 +610,7 @@ class ConfidenceCriteria(StoppingCriteria):
         return False
 
 
+# StoppingCriteriaList：任一条件满足即停止的列表容器
 class StoppingCriteriaList(list):
     @add_start_docstrings(STOPPING_CRITERIA_INPUTS_DOCSTRING)
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> torch.BoolTensor:
@@ -618,6 +627,7 @@ class StoppingCriteriaList(list):
         return None
 
 
+# validate_stopping_criteria：校验并补全 stopping criteria 列表
 def validate_stopping_criteria(stopping_criteria: StoppingCriteriaList, max_length: int) -> StoppingCriteriaList:
     stopping_max_length = stopping_criteria.max_length
     new_stopping_criteria = deepcopy(stopping_criteria)

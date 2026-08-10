@@ -82,11 +82,13 @@ ImageInput = Union[
 ]
 
 
+# ChannelDimension：通道维度格式枚举（channels_first/last）
 class ChannelDimension(ExplicitEnum):
     FIRST = "channels_first"
     LAST = "channels_last"
 
 
+# AnnotationFormat：标注格式枚举（COCO detection/panoptic）
 class AnnotationFormat(ExplicitEnum):
     COCO_DETECTION = "coco_detection"
     COCO_PANOPTIC = "coco_panoptic"
@@ -95,16 +97,19 @@ class AnnotationFormat(ExplicitEnum):
 AnnotationType = dict[str, int | str | list[dict]]
 
 
+# is_pil_image：判断是否为 PIL.Image.Image
 def is_pil_image(img):
     return is_vision_available() and isinstance(img, PIL.Image.Image)
 
 
+# ImageType：图像类型枚举（PIL/NUMPY/TORCH）
 class ImageType(ExplicitEnum):
     PIL = "pillow"
     TORCH = "torch"
     NUMPY = "numpy"
 
 
+# get_image_type：推断输入图像的类型
 def get_image_type(image):
     if is_pil_image(image):
         return ImageType.PIL
@@ -115,14 +120,17 @@ def get_image_type(image):
     raise ValueError(f"Unrecognized image type {type(image)}")
 
 
+# is_valid_image：校验是否为支持的图像输入
 def is_valid_image(img):
     return is_pil_image(img) or is_numpy_array(img) or is_torch_tensor(img)
 
 
+# is_valid_list_of_images：校验列表中每项是否为有效图像
 def is_valid_list_of_images(images: list):
     return images and all(is_valid_image(image) for image in images)
 
 
+# concatenate_list：递归拼接嵌套列表
 def concatenate_list(input_list):
     if isinstance(input_list[0], list):
         return [item for sublist in input_list for item in sublist]
@@ -132,6 +140,7 @@ def concatenate_list(input_list):
         return torch.cat(input_list, dim=0)
 
 
+# valid_images：过滤并返回有效图像列表
 def valid_images(imgs):
     # If we have an list of images, make sure every image is valid
     if isinstance(imgs, (list, tuple)):
@@ -144,12 +153,14 @@ def valid_images(imgs):
     return True
 
 
+# is_batched：判断输入是否为批图像（4D 或列表）
 def is_batched(img):
     if isinstance(img, (list, tuple)):
         return is_valid_image(img[0])
     return False
 
 
+# is_scaled_image：判断 numpy 图像是否已缩放到 [0,1]
 def is_scaled_image(image: np.ndarray) -> bool:
     """
     Checks to see whether the pixel values have already been rescaled to [0, 1].
@@ -161,6 +172,7 @@ def is_scaled_image(image: np.ndarray) -> bool:
     return np.min(image) >= 0 and np.max(image) <= 1
 
 
+# make_list_of_images：将输入规范化为图像列表
 def make_list_of_images(images, expected_ndims: int = 3) -> list[ImageInput]:
     """
     Ensure that the output is a list of images. If the input is a single image, it is converted to a list of length 1.
@@ -199,6 +211,7 @@ def make_list_of_images(images, expected_ndims: int = 3) -> list[ImageInput]:
     )
 
 
+# make_flat_list_of_images：将嵌套图像结构展平为列表
 def make_flat_list_of_images(
     images: list[ImageInput] | ImageInput,
     expected_ndims: int = 3,
@@ -237,6 +250,7 @@ def make_flat_list_of_images(
     raise ValueError(f"Could not make a flat list of images from {images}")
 
 
+# make_nested_list_of_images：将扁平列表还原为嵌套结构
 def make_nested_list_of_images(
     images: list[ImageInput] | ImageInput,
     expected_ndims: int = 3,
@@ -276,6 +290,7 @@ def make_nested_list_of_images(
     raise ValueError("Invalid input type. Must be a single image, a list of images, or a list of batches of images.")
 
 
+# to_numpy_array：将 PIL/torch 图像转为 numpy
 def to_numpy_array(img) -> np.ndarray:
     if not is_valid_image(img):
         raise ValueError(f"Invalid image type: {type(img)}")
@@ -285,6 +300,7 @@ def to_numpy_array(img) -> np.ndarray:
     return to_numpy(img)
 
 
+# infer_channel_dimension_format：推断图像通道维度格式
 def infer_channel_dimension_format(
     image: np.ndarray, num_channels: int | tuple[int, ...] | None = None
 ) -> ChannelDimension:
@@ -324,6 +340,7 @@ def infer_channel_dimension_format(
     raise ValueError("Unable to infer channel dimension format")
 
 
+# get_channel_dimension_axis：返回通道维所在轴索引
 def get_channel_dimension_axis(image: np.ndarray, input_data_format: ChannelDimension | str | None = None) -> int:
     """
     Returns the channel dimension axis of the image.
@@ -346,6 +363,7 @@ def get_channel_dimension_axis(image: np.ndarray, input_data_format: ChannelDime
     raise ValueError(f"Unsupported data format: {input_data_format}")
 
 
+# get_image_size：返回图像 (height, width)
 def get_image_size(
     image: Union[np.ndarray, "PIL.Image.Image"], channel_dim: ChannelDimension | None = None
 ) -> tuple[int, int]:
@@ -375,6 +393,7 @@ def get_image_size(
         raise ValueError(f"Unsupported data format: {channel_dim}")
 
 
+# get_image_size_for_max_height_width：在 max 约束下计算缩放后尺寸
 def get_image_size_for_max_height_width(
     image_size: tuple[int, int],
     max_height: int,
@@ -406,6 +425,7 @@ def get_image_size_for_max_height_width(
     return new_height, new_width
 
 
+# max_across_indices：跨索引取各维最大值
 def max_across_indices(values: Iterable[Any]) -> list[Any]:
     """
     Return the maximum value across all indices of an iterable of values.
@@ -413,6 +433,7 @@ def max_across_indices(values: Iterable[Any]) -> list[Any]:
     return [max(values_i) for values_i in zip(*values)]
 
 
+# get_max_height_width：batch 内图像的最大高宽
 def get_max_height_width(
     images: list[Union["torch.Tensor", np.ndarray]], input_data_format: str | ChannelDimension = ChannelDimension.FIRST
 ) -> list[int]:
@@ -428,6 +449,7 @@ def get_max_height_width(
     return (max_height, max_width)
 
 
+# is_valid_annotation_coco_detection：校验 COCO 检测标注格式
 def is_valid_annotation_coco_detection(annotation: dict[str, list | tuple]) -> bool:
     if (
         isinstance(annotation, dict)
@@ -443,6 +465,7 @@ def is_valid_annotation_coco_detection(annotation: dict[str, list | tuple]) -> b
     return False
 
 
+# is_valid_annotation_coco_panoptic：校验 COCO panoptic 标注格式
 def is_valid_annotation_coco_panoptic(annotation: dict[str, list | tuple]) -> bool:
     if (
         isinstance(annotation, dict)
@@ -459,14 +482,17 @@ def is_valid_annotation_coco_panoptic(annotation: dict[str, list | tuple]) -> bo
     return False
 
 
+# valid_coco_detection_annotations：批量校验 COCO 检测标注
 def valid_coco_detection_annotations(annotations: Iterable[dict[str, list | tuple]]) -> bool:
     return all(is_valid_annotation_coco_detection(ann) for ann in annotations)
 
 
+# valid_coco_panoptic_annotations：批量校验 COCO panoptic 标注
 def valid_coco_panoptic_annotations(annotations: Iterable[dict[str, list | tuple]]) -> bool:
     return all(is_valid_annotation_coco_panoptic(ann) for ann in annotations)
 
 
+# load_image：从 URL/路径/base64 加载 PIL 图像
 def load_image(
     image: Union[str, "PIL.Image.Image"],
     timeout: float | None = None,
@@ -513,6 +539,7 @@ def load_image(
 
 
 @requires(backends=("torchvision",))
+# load_image_as_tensor：加载图像并转为 torch.Tensor
 def load_image_as_tensor(
     image: Union[str, "PIL.Image.Image"],
     timeout: float | None = None,
@@ -558,6 +585,7 @@ def load_image_as_tensor(
         )
 
 
+# load_images：批量加载多张图像
 def load_images(
     images: Union[list, tuple, str, "PIL.Image.Image"], timeout: float | None = None
 ) -> Union["PIL.Image.Image", list["PIL.Image.Image"], list[list["PIL.Image.Image"]]]:
@@ -579,6 +607,7 @@ def load_images(
         return load_image(images, timeout=timeout)
 
 
+# validate_preprocess_arguments：校验 resize/crop/normalize 等参数一致性
 def validate_preprocess_arguments(
     do_rescale: bool | None = None,
     rescale_factor: float | None = None,
@@ -625,6 +654,7 @@ def validate_preprocess_arguments(
         raise ValueError("`size` and `resample` must be specified if `do_resize` is `True`.")
 
 
+# ImageFeatureExtractionMixin：旧版图像特征提取兼容 mixin
 class ImageFeatureExtractionMixin:
     """
     Mixin that contain utilities for preparing image features.
@@ -976,6 +1006,7 @@ class ImageFeatureExtractionMixin:
         )
 
 
+# validate_annotations：校验标注列表格式与字段
 def validate_annotations(
     annotation_format: AnnotationFormat,
     supported_annotation_formats: tuple[AnnotationFormat, ...],
@@ -1001,6 +1032,7 @@ def validate_annotations(
             )
 
 
+# validate_kwargs：检查处理器是否收到未知 kwargs
 def validate_kwargs(valid_processor_keys: list[str], captured_kwargs: list[str]):
     unused_keys = set(captured_kwargs).difference(set(valid_processor_keys))
     if unused_keys:
@@ -1010,6 +1042,7 @@ def validate_kwargs(valid_processor_keys: list[str], captured_kwargs: list[str])
 
 
 @dataclass()
+# SizeDict：含 height/width 的尺寸 dataclass
 class SizeDict:
     """
     Hashable dictionary to store image size information.

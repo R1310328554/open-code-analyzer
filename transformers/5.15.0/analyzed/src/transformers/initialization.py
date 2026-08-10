@@ -21,6 +21,7 @@ import torch
 
 # Record all the torch primitives in advance, so that we can use them without them being modified when we patch torch
 # in context managers
+# TORCH_INIT_FUNCTIONS：预存 torch.nn.init 原函数，供 patch 后仍可调用
 TORCH_INIT_FUNCTIONS = {
     "uniform_": torch.nn.init.uniform_,
     "normal_": torch.nn.init.normal_,
@@ -39,6 +40,7 @@ TORCH_INIT_FUNCTIONS = {
 }
 
 
+# uniform_：均匀分布初始化，跳过 _is_hf_initialized 已初始化张量
 def uniform_(
     tensor: torch.Tensor, a: float = 0.0, b: float = 1.0, generator: torch.Generator | None = None
 ) -> torch.Tensor:
@@ -47,6 +49,7 @@ def uniform_(
     return tensor
 
 
+# normal_：正态分布初始化
 def normal_(
     tensor: torch.Tensor, mean: float = 0.0, std: float = 1.0, generator: torch.Generator | None = None
 ) -> torch.Tensor:
@@ -55,48 +58,56 @@ def normal_(
     return tensor
 
 
+# constant_：常数填充初始化
 def constant_(tensor: torch.Tensor, val: float) -> torch.Tensor:
     if not getattr(tensor, "_is_hf_initialized", False):
         return TORCH_INIT_FUNCTIONS["constant_"](tensor, val=val)
     return tensor
 
 
+# ones_：全 1 初始化
 def ones_(tensor: torch.Tensor) -> torch.Tensor:
     if not getattr(tensor, "_is_hf_initialized", False):
         return TORCH_INIT_FUNCTIONS["ones_"](tensor)
     return tensor
 
 
+# zeros_：全 0 初始化
 def zeros_(tensor: torch.Tensor) -> torch.Tensor:
     if not getattr(tensor, "_is_hf_initialized", False):
         return TORCH_INIT_FUNCTIONS["zeros_"](tensor)
     return tensor
 
 
+# eye_：单位矩阵初始化
 def eye_(tensor: torch.Tensor) -> torch.Tensor:
     if not getattr(tensor, "_is_hf_initialized", False):
         return TORCH_INIT_FUNCTIONS["eye_"](tensor)
     return tensor
 
 
+# dirac_：Dirac delta 卷积核初始化
 def dirac_(tensor: torch.Tensor, groups: int = 1) -> torch.Tensor:
     if not getattr(tensor, "_is_hf_initialized", False):
         return TORCH_INIT_FUNCTIONS["dirac_"](tensor, groups=groups)
     return tensor
 
 
+# xavier_uniform_：Xavier 均匀初始化
 def xavier_uniform_(tensor: torch.Tensor, gain: float = 1.0, generator: torch.Generator | None = None) -> torch.Tensor:
     if not getattr(tensor, "_is_hf_initialized", False):
         return TORCH_INIT_FUNCTIONS["xavier_uniform_"](tensor, gain=gain, generator=generator)
     return tensor
 
 
+# xavier_normal_：Xavier 正态初始化
 def xavier_normal_(tensor: torch.Tensor, gain: float = 1.0, generator: torch.Generator | None = None) -> torch.Tensor:
     if not getattr(tensor, "_is_hf_initialized", False):
         return TORCH_INIT_FUNCTIONS["xavier_normal_"](tensor, gain=gain, generator=generator)
     return tensor
 
 
+# kaiming_uniform_：Kaiming 均匀初始化（ReLU 友好）
 def kaiming_uniform_(
     tensor: torch.Tensor,
     a: float = 0,
@@ -111,6 +122,7 @@ def kaiming_uniform_(
     return tensor
 
 
+# kaiming_normal_：Kaiming 正态初始化
 def kaiming_normal_(
     tensor: torch.Tensor,
     a: float = 0,
@@ -125,6 +137,7 @@ def kaiming_normal_(
     return tensor
 
 
+# trunc_normal_：截断正态初始化
 def trunc_normal_(
     tensor: torch.Tensor,
     mean: float = 0.0,
@@ -138,6 +151,7 @@ def trunc_normal_(
     return tensor
 
 
+# orthogonal_：正交矩阵初始化
 def orthogonal_(
     tensor: torch.Tensor,
     gain: float = 1,
@@ -155,6 +169,7 @@ def orthogonal_(
     return tensor
 
 
+# sparse_：稀疏初始化
 def sparse_(
     tensor: torch.Tensor, sparsity: float, std: float = 0.01, generator: torch.Generator | None = None
 ) -> torch.Tensor:
@@ -163,6 +178,7 @@ def sparse_(
     return tensor
 
 
+# copy_：从 other 复制权重，跳过已初始化
 def copy_(tensor: torch.Tensor, other: torch.Tensor) -> torch.Tensor:
     if not getattr(tensor, "_is_hf_initialized", False):
         with torch.no_grad():
@@ -170,6 +186,7 @@ def copy_(tensor: torch.Tensor, other: torch.Tensor) -> torch.Tensor:
     return tensor
 
 
+# _variance_scaling：LeCun/Xavier 方差缩放初始化内部逻辑
 def _variance_scaling(tensor, mode="fan_in", distribution="normal"):
     fan_in, fan_out = torch.nn.init._calculate_fan_in_and_fan_out(tensor)
     if mode == "fan_in":
@@ -192,12 +209,14 @@ def _variance_scaling(tensor, mode="fan_in", distribution="normal"):
         raise ValueError(f"invalid distribution {distribution}")
 
 
+# lecun_normal_：LeCun 正态初始化
 def lecun_normal_(tensor):
     if not getattr(tensor, "_is_hf_initialized", False):
         _variance_scaling(tensor, mode="fan_in", distribution="truncated_normal")
     return tensor
 
 
+# default_flax_embed_init_：Flax 兼容的 embedding 默认初始化
 def default_flax_embed_init_(tensor):
     if not getattr(tensor, "_is_hf_initialized", False):
         _variance_scaling(tensor, mode="fan_in", distribution="normal")
@@ -224,6 +243,7 @@ TORCH_MODULES_TO_PATCH = (
 
 
 @contextmanager
+# guard_torch_init_functions：临时 patch torch.nn.init 为 HF 包装版本
 def guard_torch_init_functions():
     """
     Guard the `torch.nn.init` primitive functions to behave exactly like the functions in this file, i.e. be
@@ -251,6 +271,7 @@ def guard_torch_init_functions():
 
 
 @contextmanager
+# no_init_weights：上下文内禁用权重初始化以加速 from_pretrained
 def no_init_weights():
     """
     Disable weight initialization both at the torch-level, and at the transformers-level (`init_weights`).
@@ -288,6 +309,7 @@ def no_init_weights():
 
 
 @contextmanager
+# no_tie_weights：上下文内跳过 tie_weights 调用
 def no_tie_weights():
     """
     Disable weight tying during loading with `from_pretrained`. This is needed as we want to have access to ALL
@@ -310,6 +332,7 @@ def no_tie_weights():
 
 
 @contextmanager
+# meta_device_safe_creation_ops：meta device 上安全的创建算子上下文
 def meta_device_safe_creation_ops():
     """
     During meta-device model initialisation, ``torch.linspace`` produces meta

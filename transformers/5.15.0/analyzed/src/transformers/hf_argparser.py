@@ -33,6 +33,7 @@ DataClassType = NewType("DataClassType", Any)
 
 
 # From https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+# string_to_bool：将 yes/no、true/false 等字符串解析为 bool
 def string_to_bool(v):
     if isinstance(v, bool):
         return v
@@ -46,6 +47,7 @@ def string_to_bool(v):
         )
 
 
+# make_choice_type_function：为 choices 创建字符串到值的映射函数
 def make_choice_type_function(choices: list) -> Callable[[str], Any]:
     """
     Creates a mapping function from each choices string representation to the actual value. Used to support multiple
@@ -61,6 +63,7 @@ def make_choice_type_function(choices: list) -> Callable[[str], Any]:
     return lambda arg: str_to_choice.get(arg, arg)
 
 
+# HfArg：dataclass field 辅助函数，支持 aliases/help 等 argparse 元数据
 def HfArg(
     *,
     aliases: str | list[str] | None = None,
@@ -108,6 +111,7 @@ def HfArg(
     return dataclasses.field(metadata=metadata, default=default, default_factory=default_factory, **kwargs)
 
 
+# HfArgumentParser：从 dataclass 类型提示自动生成 CLI 参数
 class HfArgumentParser(ArgumentParser):
     """
     This subclass of `argparse.ArgumentParser` uses type hints on dataclasses to generate arguments.

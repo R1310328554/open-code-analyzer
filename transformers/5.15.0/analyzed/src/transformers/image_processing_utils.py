@@ -57,6 +57,7 @@ INIT_SERVICE_KWARGS = [
 ]
 
 
+# BaseImageProcessor：预处理流水线基类，子类实现 _preprocess
 class BaseImageProcessor(ImageProcessingMixin):
     r"""
     Base class for image processors with an inheritance-based backend architecture.
@@ -538,6 +539,7 @@ VALID_SIZE_DICT_KEYS = (
 )
 
 
+# is_valid_size_dict：校验 size 字典是否含 height/width
 def is_valid_size_dict(size_dict):
     if not isinstance(size_dict, dict):
         return False
@@ -549,6 +551,7 @@ def is_valid_size_dict(size_dict):
     return False
 
 
+# convert_to_size_dict：将 int/tuple/dict 统一转为 SizeDict
 def convert_to_size_dict(
     size: int | Iterable[int] | None = None,
     max_size: int | None = None,
@@ -580,6 +583,7 @@ def convert_to_size_dict(
     raise ValueError(f"Could not convert size input to size dict: {size}")
 
 
+# get_size_dict：解析并规范化 size 参数为 SizeDict
 def get_size_dict(
     size: int | Iterable[int] | dict[str, int] | SizeDict | None = None,
     max_size: int | None = None,
@@ -630,6 +634,7 @@ def get_size_dict(
     return size_dict
 
 
+# select_best_resolution：从候选分辨率中选最接近原图比例的
 def select_best_resolution(original_size: tuple, possible_resolutions: list) -> tuple:
     """
     Selects the best resolution from a list of possible resolutions based on the original size.
@@ -668,6 +673,7 @@ def select_best_resolution(original_size: tuple, possible_resolutions: list) -> 
     return best_fit
 
 
+# get_patch_output_size：计算 patch 划分后的输出尺寸
 def get_patch_output_size(image, target_resolution, input_data_format):
     """
     Given an image and a target resolution, calculate the output size of the image after cropping to the target

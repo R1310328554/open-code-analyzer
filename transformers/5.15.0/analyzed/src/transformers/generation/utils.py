@@ -166,6 +166,7 @@ MULTIMODAL_INPUTS_TO_DROP_OUTSIDE_PREFILL = (
 
 
 @dataclass
+# GenerateDecoderOnlyOutput：decoder-only 非 beam 生成输出 dataclass
 class GenerateDecoderOnlyOutput(ModelOutput):
     """
     Outputs of decoder-only generation models, when using non-beam methods.
@@ -202,6 +203,7 @@ class GenerateDecoderOnlyOutput(ModelOutput):
 
 
 @dataclass
+# GenerateEncoderDecoderOutput：encoder-decoder 非 beam 生成输出
 class GenerateEncoderDecoderOutput(ModelOutput):
     """
     Outputs of encoder-decoder generation models, when using non-beam methods.
@@ -250,6 +252,7 @@ class GenerateEncoderDecoderOutput(ModelOutput):
 
 
 @dataclass
+# GenerateBeamDecoderOnlyOutput：decoder-only beam search 输出
 class GenerateBeamDecoderOnlyOutput(ModelOutput):
     """
     Outputs of decoder-only generation models, when using beam methods.
@@ -294,6 +297,7 @@ class GenerateBeamDecoderOnlyOutput(ModelOutput):
 
 
 @dataclass
+# GenerateBeamEncoderDecoderOutput：encoder-decoder beam search 输出
 class GenerateBeamEncoderDecoderOutput(ModelOutput):
     """
     Outputs of encoder-decoder generation models, when using beam methods.
@@ -356,6 +360,7 @@ GenerateBeamOutput = GenerateBeamDecoderOnlyOutput | GenerateBeamEncoderDecoderO
 GenerateOutput = GenerateNonBeamOutput | GenerateBeamOutput
 
 
+# GenerationMixin：自回归生成混入类，模型继承后可调用 generate
 class GenerationMixin(ContinuousMixin):
     """
     A class containing all functions for auto-regressive text generation, to be used as a mixin in model classes.
@@ -388,6 +393,7 @@ class GenerationMixin(ContinuousMixin):
     # Should be overwritten by models that can generate non-text output
     output_modalities = ("text",)
 
+# adjust_generation_fn：加载/合并 GenerationConfig 并处理自定义 generate 仓库
     def adjust_generation_fn(
         self: "GenerativePreTrainedModel",
         generation_config,
@@ -451,6 +457,7 @@ class GenerationMixin(ContinuousMixin):
                 except OSError:  # there is no custom generate function
                     pass
 
+# load_custom_generate：从 Hub 加载 trust_remote_code 自定义 generate 实现
     def load_custom_generate(
         self,
         pretrained_model_name_or_path: str | os.PathLike | None = None,
@@ -516,6 +523,7 @@ class GenerationMixin(ContinuousMixin):
         custom_generate_function = get_class_in_module("generate", module)
         return custom_generate_function
 
+# prepare_inputs_for_generation：每步解码前准备 model forward 输入
     def prepare_inputs_for_generation(
         self: "GenerativePreTrainedModel",
         input_ids: torch.LongTensor,
@@ -643,6 +651,7 @@ class GenerationMixin(ContinuousMixin):
 
         return model_inputs
 
+# _prepare_model_inputs：整理 input_ids/inputs_embeds 等主输入
     def _prepare_model_inputs(
         self: "GenerativePreTrainedModel",
         inputs: torch.Tensor | None,
@@ -772,6 +781,7 @@ class GenerationMixin(ContinuousMixin):
             position_ids = position_ids.unsqueeze(0)
         return position_ids
 
+# _prepare_attention_mask_for_generation：构造或扩展 attention mask
     def _prepare_attention_mask_for_generation(
         self,
         inputs_tensor: torch.Tensor,
@@ -806,6 +816,7 @@ class GenerationMixin(ContinuousMixin):
         )
         return attention_mask
 
+# _prepare_encoder_decoder_kwargs_for_generation：encoder-decoder 编码阶段输入
     def _prepare_encoder_decoder_kwargs_for_generation(
         self: "GenerativePreTrainedModel",
         inputs_tensor: torch.Tensor,
@@ -1120,6 +1131,7 @@ class GenerationMixin(ContinuousMixin):
             )
         return candidate_generator
 
+# _get_logits_processor：根据 GenerationConfig 构建 LogitsProcessorList
     def _get_logits_processor(
         self: "GenerativePreTrainedModel",
         generation_config: GenerationConfig,
@@ -1355,6 +1367,7 @@ class GenerationMixin(ContinuousMixin):
             processors.append(LogitNormalization())
         return processors
 
+# _get_stopping_criteria：根据配置构建 StoppingCriteriaList
     def _get_stopping_criteria(
         self: "GenerativePreTrainedModel",
         generation_config: GenerationConfig,
@@ -1430,6 +1443,7 @@ class GenerationMixin(ContinuousMixin):
                 final_list.append(custom)
         return final_list
 
+# compute_transition_scores：计算生成序列各步 transition 分数
     def compute_transition_scores(
         self: "GenerativePreTrainedModel",
         sequences: torch.Tensor,
@@ -1768,6 +1782,7 @@ class GenerationMixin(ContinuousMixin):
 
         return generation_config
 
+# _prepare_generation_config：合并默认/模型/用户 GenerationConfig
     def _prepare_generation_config(
         self: "GenerativePreTrainedModel",
         generation_config: GenerationConfig | None,
@@ -1926,6 +1941,7 @@ class GenerationMixin(ContinuousMixin):
             or all(unsupported_name not in name for unsupported_name in unsupported_model_names)
         )
 
+# _prepare_cache_for_generation：初始化 Static/Dynamic/Quantized 等 KV cache
     def _prepare_cache_for_generation(
         self: "GenerativePreTrainedModel",
         generation_config: GenerationConfig,
@@ -2258,6 +2274,7 @@ class GenerationMixin(ContinuousMixin):
         return generation_mode_kwargs
 
     @torch.no_grad()
+# generate：自回归生成主入口，支持 greedy/sample/beam/assisted 等模式
     def generate(
         self: "GenerativePreTrainedModel",
         inputs: torch.Tensor | None = None,
@@ -2780,6 +2797,7 @@ class GenerationMixin(ContinuousMixin):
 
         return input_ids
 
+# _sample：multinomial 采样解码循环
     def _sample(
         self: "GenerativePreTrainedModel",
         input_ids: torch.LongTensor,
@@ -3205,6 +3223,7 @@ class GenerationMixin(ContinuousMixin):
 
     # end of auxiliary functions for beam search
 
+# _beam_search：beam search 解码循环
     def _beam_search(
         self: "GenerativePreTrainedModel",
         input_ids: torch.LongTensor,
@@ -3559,6 +3578,7 @@ class GenerationMixin(ContinuousMixin):
         else:
             return sequences
 
+# _assisted_decoding：投机/辅助解码（assistant model 或 prompt lookup）
     def _assisted_decoding(
         self: "GenerativePreTrainedModel",
         input_ids: torch.LongTensor,
@@ -3901,6 +3921,7 @@ class GenerationMixin(ContinuousMixin):
             return input_ids
 
     # TODO: v5.1: make public once API stabilized
+# _prefill：连续批处理 prefill 阶段 forward
     def _prefill(
         self: "GenerativePreTrainedModel",
         input_ids: torch.LongTensor,
@@ -3989,6 +4010,7 @@ class GenerationMixin(ContinuousMixin):
             return outputs
 
 
+# _speculative_sampling：投机采样接受/拒绝候选 token 的底层逻辑
 def _speculative_sampling(
     candidate_input_ids,
     candidate_logits,
@@ -4063,6 +4085,7 @@ def _speculative_sampling(
     return valid_tokens, n_matches
 
 
+# _split_model_outputs：拆分 model outputs 中新增 token 对应部分
 def _split_model_outputs(outputs, new_outputs, cur_len, added_len, is_decoder_attention=False):
     """
     Given the (decoder/cross attentions)/(decoder hidden states) for multiple generated tokens, splits it into a tuple
