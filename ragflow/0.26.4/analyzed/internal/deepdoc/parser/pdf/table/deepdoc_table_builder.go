@@ -1,3 +1,5 @@
+// deepdoc_table_builder.go — DeepDoc TSR 表格构建器：实现 pdf.TableBuilder，将 TSR 结构单元格组装为行列网格。
+
 package table
 
 import (
@@ -9,43 +11,29 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// DeepDocTableBuilder implements pdf.TableBuilder for the DeepDoc
-// table structure recognition service. Label injection is handled by the
-// NewTableBuilderFor factory.
+// DeepDocTableBuilder 实现 pdf.TableBuilder，对接 DeepDoc 表格结构识别服务；标签注入由 NewTableBuilderFor 工厂处理。
 type DeepDocTableBuilder struct {
 	doc pdf.DocAnalyzer
 }
 
-// NewDeepDocTableBuilder creates a TableBuilder. Labels must be set on the
-// underlying client by the caller (see deepdoc.go NewTableBuilderFor).
+// NewDeepDocTableBuilder 创建构建器；底层客户端标签由调用方设置。
 func NewDeepDocTableBuilder(doc pdf.DocAnalyzer) *DeepDocTableBuilder {
 	return &DeepDocTableBuilder{doc: doc}
 }
+// Name 返回构建器标识 "deepdoc"。
 func (b *DeepDocTableBuilder) Name() string { return "deepdoc" }
+// DetectCells 对裁剪表格图调用 DocAnalyzer.TSR 检测结构单元格。
 func (b *DeepDocTableBuilder) DetectCells(ctx context.Context, cropped image.Image) ([]pdf.TSRCell, error) {
 	return b.doc.TSR(ctx, cropped)
 }
 
-// GroupCells builds a row×column grid from structural cells.
-//
-// Input: structural cells with labels "table row", "table column",
-// "table column header", "table spanning cell".
-//
-// Algorithm:
-//  1. Extract row boundaries from "table row" cells, sort by Y.
-//  2. Extract column boundaries from "table column" cells, sort by X.
-//  3. Cross-product: grid[r][c].X0/Y0/X1/Y1 = col[c] × row[r].
-//  4. Header propagation: rows overlapping the header cell's Y range
-//     get Label = "table column header".
-//  5. Span injection: for each "table spanning cell", find grid cells
-//     whose center falls inside the span bbox.  The top-left cell gets
-//     the span label + extended bbox; remaining cells are zeroed (covered).
+// GroupCells 从 TSR 结构标签单元格构建行列网格：① 行/列边界排序；② 行列叉积；③ 表头行传播；④ 合并单元格注入（中心点在 span 内的格归零）。
 func (b *DeepDocTableBuilder) GroupCells(cells []pdf.TSRCell) [][]pdf.TSRCell {
 	if len(cells) == 0 {
 		return nil
 	}
 
-	// 1. Collect and sort structural elements.
+	// 1. 收集 table row/column/header/spanning 结构元素。
 	var rows, cols, spans []pdf.TSRCell
 	var header *pdf.TSRCell
 
@@ -70,14 +58,14 @@ func (b *DeepDocTableBuilder) GroupCells(cells []pdf.TSRCell) [][]pdf.TSRCell {
 	SortYFirstly(rows, 10)
 	SortXFirstly(cols, 10)
 
-	// 2. If no column cells, synthesize one wide column from row extents.
+	// 2. 无列单元格时按行范围合成单列。
 	if len(cols) == 0 {
 		x0 := rows[0].X0
 		x1 := rows[0].X1
 		cols = []pdf.TSRCell{{X0: x0, Y0: rows[0].Y0, X1: x1, Y1: rows[len(rows)-1].Y1, Label: "table column"}}
 	}
 
-	// 3. Cross-product to build grid.
+	// 3. 行列叉积生成 grid[r][c] 边界。
 	grid := make([][]pdf.TSRCell, len(rows))
 	for r := range rows {
 		grid[r] = make([]pdf.TSRCell, len(cols))
@@ -91,7 +79,7 @@ func (b *DeepDocTableBuilder) GroupCells(cells []pdf.TSRCell) [][]pdf.TSRCell {
 		}
 	}
 
-	// 4. Header propagation.
+	// 4. 与表头 Y 重叠的行标记为 table column header。
 	if header != nil {
 		for ri := range rows {
 			if rows[ri].Y0 >= header.Y0 && rows[ri].Y1 <= header.Y1 ||
@@ -103,7 +91,7 @@ func (b *DeepDocTableBuilder) GroupCells(cells []pdf.TSRCell) [][]pdf.TSRCell {
 		}
 	}
 
-	// 5. Span injection.
+	// 5. 合并单元格：左上角扩展 bbox，其余覆盖格清零。
 	for _, sp := range spans {
 		type cellIdx struct{ r, c int }
 		var covered []cellIdx
@@ -140,7 +128,7 @@ func (b *DeepDocTableBuilder) GroupCells(cells []pdf.TSRCell) [][]pdf.TSRCell {
 	return grid
 }
 
-// overlapsY reports whether two cells overlap in the Y dimension.
+// overlapsY 判断两单元格在 Y 方向是否重叠。
 func overlapsY(a, b pdf.TSRCell) bool {
 	return a.Y0 < b.Y1 && a.Y1 > b.Y0
 }

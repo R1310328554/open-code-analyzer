@@ -1,13 +1,10 @@
+// cropbox.go — PDF 原始字节解析：扫描 /CropBox 与 /Rotate 等字典项，无需完整 PDF 解析器。
+
 package pdfoxide
 
 import "strconv"
 
-// parseCropBoxFromRaw scans raw PDF bytes for /CropBox entries and
-// returns the array [x0, y0, x1, y1] for the given page index (0-based).
-// The second return value is false if no /CropBox was found.
-//
-// Algorithm: sequential scan of "/CropBox [...]" patterns — same approach
-// as parsePageRotationFromRaw.  Works for all common PDF generators.
+// parseCropBoxFromRaw 顺序扫描原始 PDF 中的 /CropBox [x0 y0 x1 y1]，按出现顺序对应页索引（0 基）；未找到返回 false。算法同 parsePageRotationFromRaw，兼容常见 PDF 生成器。
 func parseCropBoxFromRaw(data []byte, pageIdx int) ([4]float64, bool) {
 	type cb [4]float64
 	var boxes []cb
@@ -52,8 +49,7 @@ func parseCropBoxFromRaw(data []byte, pageIdx int) ([4]float64, bool) {
 	return [4]float64{}, false
 }
 
-// indexAfter finds the byte position right after the first occurrence of s in
-// data. Returns -1 if not found.
+// indexAfter 查找 s 首次出现后的字节位置，未找到返回 -1。
 func indexAfter(data []byte, s string) int {
 	for i := 0; i < len(data)-len(s); i++ {
 		match := true
@@ -70,12 +66,12 @@ func indexAfter(data []byte, s string) int {
 	return -1
 }
 
+// isSpace 判断空白字符（空格/制表/换行）。
 func isSpace(b byte) bool {
 	return b == ' ' || b == '\t' || b == '\n' || b == '\r'
 }
 
-// parseFloat parses a decimal number from the beginning of s.
-// Returns the value and the number of bytes consumed (0 on failure).
+// parseFloat 从字节串开头解析十进制浮点数，返回数值与消耗字节数（失败为 0）。
 func parseFloat(s []byte) (float64, int) {
 	i := 0
 	for i < len(s) && isSpace(s[i]) {

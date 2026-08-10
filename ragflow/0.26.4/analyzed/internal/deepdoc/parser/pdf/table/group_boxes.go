@@ -1,3 +1,5 @@
+// group_boxes.go — 文本框网格化：按 R/C 标注或 Y/X 坐标将 TextBox 分组为表格单元格，对齐 Python construct_table。
+
 package table
 
 import (
@@ -7,7 +9,7 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// rb is a row-box entry that holds cell data during grid construction.
+// rb 网格构建过程中的行-列单元格中间态（文本、坐标、标签）。
 type rb struct {
 	row, col       int
 	txt            string
@@ -15,9 +17,7 @@ type rb struct {
 	label          string
 }
 
-// GroupBoxesByRC groups text boxes into a cell grid by R/C annotations.
-// Matches Python's construct_table: sort by R, sort by C within each row,
-// merge nearby columns by X proximity.
+// GroupBoxesByRC 按 R/C 标注将 TextBox 分组为单元格网格；对齐 Python construct_table 的 R/C 排序与列压缩。
 func GroupBoxesByRC(boxes []pdf.TextBox) [][]pdf.TSRCell {
 	if len(boxes) == 0 {
 		return nil
@@ -33,7 +33,7 @@ func GroupBoxesByRC(boxes []pdf.TextBox) [][]pdf.TSRCell {
 	if maxR <= 0 {
 		return GroupBoxesByYX(boxes)
 	}
-	// Sort by R index first (Python: sort_R_firstly), then Y, then X.
+	// 先按 R（sort_R_firstly），再 Y、X 排序。
 	sort.Slice(boxes, func(i, j int) bool {
 		if boxes[i].R != boxes[j].R {
 			return boxes[i].R < boxes[j].R
@@ -44,28 +44,25 @@ func GroupBoxesByRC(boxes []pdf.TextBox) [][]pdf.TSRCell {
 		return boxes[i].X0 < boxes[j].X0
 	})
 
-	// Compress R indices: Python's sort_R_firstly grouping.
+	// 压缩 R 索引为连续行号。
 	rowMap, compressed := compressRowIndices(boxes)
 
-	// Collect boxes per row.
+	// 按行收集并合并同格 TextBox。
 	cmap, _ := collectBoxesPerRow(boxes, rowMap)
 
-	// Compress C indices per row.
+	// 每行内按 X 顺序压缩列索引。
 	cCompressed, cMaxCol := compressColIndices(boxes, rowMap, compressed)
 
-	// Build grid.
+	// 构建最终二维单元格网格。
 	return buildGrid(cmap, cCompressed, cMaxCol, compressed)
 }
 
-// GroupBoxesByYX groups boxes into a cell grid by Y/X coordinates,
-// matching Python's construct_table which uses sort_R_firstly and
-// sort_C_firstly when R/C annotations are absent. Falls back from
-// GroupBoxesByRC when boxes lack R/C annotations.
+// GroupBoxesByYX 无 R/C 时按页/Y/X 坐标分组：Y 重叠同行、X 重叠同列，对齐 Python sort_R/C_firstly 回退逻辑。
 func GroupBoxesByYX(boxes []pdf.TextBox) [][]pdf.TSRCell {
 	if len(boxes) == 0 {
 		return nil
 	}
-	// Sort by (page, top, x0) — same as Python sort_R_firstly with R=-1.
+	// 按 (页码, top, x0) 排序，等同 Python R=-1 的 sort_R_firstly。
 	sort.Slice(boxes, func(i, j int) bool {
 		if boxes[i].PageNumber != boxes[j].PageNumber {
 			return boxes[i].PageNumber < boxes[j].PageNumber
@@ -76,7 +73,7 @@ func GroupBoxesByYX(boxes []pdf.TextBox) [][]pdf.TSRCell {
 		return boxes[i].X0 < boxes[j].X0
 	})
 
-	// Group into rows by Y proximity (Python's row grouping).
+	// 按 Y 重叠与页码分组为行。
 	type rowGroup struct {
 		boxes    []pdf.TextBox
 		top, btm float64
@@ -89,7 +86,7 @@ func GroupBoxesByYX(boxes []pdf.TextBox) [][]pdf.TSRCell {
 	})
 	for i := 1; i < len(boxes); i++ {
 		prev := &rowGroups[len(rowGroups)-1]
-		// Python: same row if top < prev.btm (Y overlaps) and same page.
+		// 同行条件：同页且 top < 前行 bottom（Y 重叠）。
 		if boxes[i].PageNumber == prev.boxes[0].PageNumber && boxes[i].Top < prev.btm {
 			prev.boxes = append(prev.boxes, boxes[i])
 			if boxes[i].Top < prev.top {
@@ -107,14 +104,14 @@ func GroupBoxesByYX(boxes []pdf.TextBox) [][]pdf.TSRCell {
 		}
 	}
 
-	// Within each row, group into columns by X proximity.
+	// 行内按 X 重叠分组为列并拼接文本。
 	rows := make([][]pdf.TSRCell, len(rowGroups))
 	for ri, rg := range rowGroups {
-		// Sort by X0.
+		// 行内按 X0 排序。
 		sort.Slice(rg.boxes, func(i, j int) bool {
 			return rg.boxes[i].X0 < rg.boxes[j].X0
 		})
-		// Group by X overlap.
+		// 按 X 重叠合并相邻框为列。
 		var cols []struct {
 			boxes []pdf.TextBox
 			x1    float64
@@ -162,9 +159,7 @@ func GroupBoxesByYX(boxes []pdf.TextBox) [][]pdf.TSRCell {
 	return rows
 }
 
-// cellPosFromBox returns the position coordinates and label for a cell
-// derived from a text box.  Header cells use HLeft/HRight/HTop/HBott
-// for spanning-aware positions; regular cells use the box's own bounds.
+// cellPosFromBox 从 TextBox 取单元格坐标与标签；表头/合并格用 H*/SP 扩展边界。
 func cellPosFromBox(b pdf.TextBox) (x0, y0, x1, y1 float64, label string) {
 	x0, y0, x1, y1 = b.X0, b.Top, b.X1, b.Bottom
 	if b.H > 0 {
@@ -189,8 +184,7 @@ func cellPosFromBox(b pdf.TextBox) (x0, y0, x1, y1 float64, label string) {
 	return
 }
 
-// cellLabelFromBox returns the TSR label for a box based on H/SP annotations.
-// Used when merging multiple boxes into one cell — preserves the spanning label.
+// cellLabelFromBox 根据 H/SP 标注返回 TSR 标签，合并多框时保留合并格标签。
 func cellLabelFromBox(b pdf.TextBox) string {
 	if b.H > 0 {
 		return "table header"
@@ -201,9 +195,7 @@ func cellLabelFromBox(b pdf.TextBox) string {
 	return ""
 }
 
-// compressRowIndices compresses R values into contiguous row indices.
-// Returns rowMap (original R → compressed index) and the maximum compressed index.
-// Boxes must already be sorted by R, Y, X.
+// compressRowIndices 将原始 R 映射为连续行索引 rowMap。
 func compressRowIndices(boxes []pdf.TextBox) (map[int]int, int) {
 	rowMap := make(map[int]int) // original R → compressed row index
 	compressed := 0
@@ -221,8 +213,7 @@ func compressRowIndices(boxes []pdf.TextBox) (map[int]int, int) {
 	return rowMap, compressed
 }
 
-// collectBoxesPerRow collects boxes into row groups, merging boxes in the same cell.
-// Returns cmap (row → col → entry) and maxCols (max column index per row).
+// collectBoxesPerRow 按行-列合并 TextBox 文本与 spanning 坐标。
 func collectBoxesPerRow(boxes []pdf.TextBox, rowMap map[int]int) (map[int]map[int]*rb, map[int]int) {
 	cmap := make(map[int]map[int]*rb) // row → col → entry
 	maxCols := make(map[int]int)
@@ -243,7 +234,7 @@ func collectBoxesPerRow(boxes []pdf.TextBox, rowMap map[int]int) (map[int]map[in
 			if t != "" {
 				v.txt += " " + t
 			}
-			// Merge spanning coordinates (use widest extent).
+			// 合并 spanning 坐标取最宽范围。
 			if b.H > 0 || b.SP > 0 {
 				v.label = cellLabelFromBox(b)
 				if v.x0 > x0 {
@@ -269,15 +260,14 @@ func collectBoxesPerRow(boxes []pdf.TextBox, rowMap map[int]int) (map[int]map[in
 	return cmap, maxCols
 }
 
-// rowBox is a helper for compressColIndices.
+// rowBox compressColIndices 用的行内框辅助结构。
 type rowBox struct {
 	c, idx int
 	x0, x1 float64
 	txt    string
 }
 
-// compressColIndices compresses column indices per row based on X0 ordering and overlap.
-// Returns cCompressed (row → original C → compressed C) and cMaxCol (max compressed C per row).
+// compressColIndices 每行按 X0 排序并压缩列号，X 重叠则合并到上一列。
 func compressColIndices(boxes []pdf.TextBox, rowMap map[int]int, compressed int) (map[int]map[int]int, map[int]int) {
 	cCompressed := make(map[int]map[int]int) // row → (original C → compressed col)
 	cMaxCol := make(map[int]int)
@@ -290,7 +280,7 @@ func compressColIndices(boxes []pdf.TextBox, rowMap map[int]int, compressed int)
 			}
 		}
 		sort.Slice(rowBoxes, func(i, j int) bool { return rowBoxes[i].x0 < rowBoxes[j].x0 })
-		// Assign compressed column by X-order (disjoint X → new col).
+		// 按 X 顺序分配压缩列号，X 不重叠则新开列。
 		cMap := make(map[int]int) // original C → compressed col
 		right := 0.0
 		nCols := 0
@@ -300,7 +290,7 @@ func compressColIndices(boxes []pdf.TextBox, rowMap map[int]int, compressed int)
 				nCols++
 				right = rb.x1
 			} else {
-				// Overlapping X → merge into last column.
+				// X 重叠则并入上一列。
 				cMap[rb.c] = nCols - 1
 				if rb.x1 > right {
 					right = rb.x1
@@ -313,7 +303,7 @@ func compressColIndices(boxes []pdf.TextBox, rowMap map[int]int, compressed int)
 	return cCompressed, cMaxCol
 }
 
-// buildGrid builds the final cell grid from the collected and compressed data.
+// buildGrid 从 cmap 与列压缩映射构建最终 [][]TSRCell 网格。
 func buildGrid(cmap map[int]map[int]*rb, cCompressed map[int]map[int]int, cMaxCol map[int]int, compressed int) [][]pdf.TSRCell {
 	rows := make([][]pdf.TSRCell, compressed+1)
 	for ri := 0; ri <= compressed; ri++ {
@@ -330,7 +320,7 @@ func buildGrid(cmap map[int]map[int]*rb, cCompressed map[int]map[int]int, cMaxCo
 					rows[ri][cci].Y1 = v.y1
 					rows[ri][cci].Label = v.label
 				} else {
-					// Multiple originals map to same compressed cell — merge deterministically.
+					// 多原始列映射同一压缩格时确定性合并文本与边界。
 					if v.txt != "" {
 						rows[ri][cci].Text += " " + v.txt
 					}
@@ -356,6 +346,7 @@ func buildGrid(cmap map[int]map[int]*rb, cCompressed map[int]map[int]int, cMaxCo
 	return rows
 }
 
+// BoxesHaveAnnotations 判断是否至少有 2 行或 2 列 R/C 标注（maxR>0 或 maxC>0）。
 func BoxesHaveAnnotations(boxes []pdf.TextBox) bool {
 	maxR, maxC := 0, 0
 	for _, b := range boxes {
@@ -366,6 +357,6 @@ func BoxesHaveAnnotations(boxes []pdf.TextBox) bool {
 			maxC = b.C
 		}
 	}
-	// True if at least 2 rows or 2 cols (R/C are 0-based, so maxR>0 means ≥2 rows).
+	// R/C 为 0 基，maxR>0 表示至少两行或两列。
 	return maxR > 0 || maxC > 0
 }

@@ -1,5 +1,7 @@
 //go:build cgo
 
+// pdf_oxide_engine.go — pdf_oxide 引擎封装：字符提取含旋转/CropBox 校正，页渲染委托 pdfium 以匹配坐标系。
+
 package pdfoxide
 
 import (
@@ -9,7 +11,7 @@ import (
 	"ragflow/internal/deepdoc/parser/pdf/pdfium"
 )
 
-// Char represents a single character extracted from a PDF page.
+// Char 单字符，坐标已校正为与 pdfium 渲染一致的旋转后空间。
 type Char struct {
 	X0, X1      float64
 	Top, Bottom float64
@@ -19,13 +21,13 @@ type Char struct {
 	PageNumber  int
 }
 
-// Engine wraps pdf_oxide to extract chars and render pages.
+// Engine 包装 pdf_oxide Document，负责字符提取与页渲染调度。
 type Engine struct {
 	doc     *Document
 	rawData []byte
 }
 
-// NewEngine opens a PDF from bytes and returns an Engine.
+// NewEngine 从字节打开 PDF 并返回 Engine。
 func NewEngine(pdfBytes []byte) (*Engine, error) {
 	doc, err := OpenBytes(pdfBytes)
 	if err != nil {
@@ -34,8 +36,10 @@ func NewEngine(pdfBytes []byte) (*Engine, error) {
 	return &Engine{doc: doc, rawData: pdfBytes}, nil
 }
 
+// RawData 返回原始 PDF 字节供 pdfium 渲染与大纲提取。
 func (e *Engine) RawData() []byte { return e.rawData }
 
+// ExtractChars 提取去重字符并将 pdf_oxide 未旋转坐标变换为 pdfium 有效坐标系。
 func (e *Engine) ExtractChars(pageNum int) ([]Char, error) {
 	chars, err := e.doc.GetDedupePageChars(pageNum, 0.5)
 	if err != nil {
@@ -84,7 +88,7 @@ func (e *Engine) ExtractChars(pageNum int) ([]Char, error) {
 		rotation180 = true
 	}
 
-	// CropBox correction — shift origin if CropBox differs from MediaBox.
+	// CropBox 校正：CropBox 与 MediaBox 不一致时平移原点。
 	var cropDX, cropDY float64
 	realCrop, hasCrop := parseCropBoxFromRaw(e.rawData, pageNum)
 	if hasCrop {
@@ -158,7 +162,7 @@ func (e *Engine) ExtractChars(pageNum int) ([]Char, error) {
 			}
 		}
 
-		// Apply crop correction in the final coordinate space.
+		// 在最终坐标系施加旋转后的 CropBox 平移。
 		x0 += rotateCropDX
 		x1 += rotateCropDX
 		top += rotateCropDY
@@ -173,11 +177,7 @@ func (e *Engine) ExtractChars(pageNum int) ([]Char, error) {
 	return result, nil
 }
 
-// parsePageRotationFromRaw scans raw PDF bytes for /Rotate entries.
-// Returns the rotation value for the given page index, or 0 if not found.
-// NOTE: This only finds /Rotate defined directly on page objects.
-// Inherited /Rotate (from parent Pages dict) is not detected here but
-// is caught by the dimension-comparison fallback in ExtractChars.
+// parsePageRotationFromRaw 顺序扫描 /Rotate 值；仅检测页对象直接定义的旋转；继承旋转由 ExtractChars 尺寸对比兜底。
 func parsePageRotationFromRaw(data []byte, pageIdx int) int {
 	var rotations []int
 	rest := data
@@ -218,10 +218,7 @@ func parsePageRotationFromRaw(data []byte, pageIdx int) int {
 	return 0
 }
 
-// RenderPageImage uses pdfium for page rendering — pdfium correctly
-// applies /Rotate so the output matches character coordinates and DLA.
-// There is no pdf_oxide fallback because pdf_oxide does not apply
-// /Rotate, producing images in a different coordinate space.
+// RenderPageImage 委托 pdfium 渲染（正确应用 /Rotate），与字符坐标及 DLA 一致；pdf_oxide 不应用 /Rotate 故不作回退。
 func (e *Engine) RenderPageImage(pageNum int, dpi float64) (image.Image, error) {
 	return pdfium.RenderPage(e.rawData, pageNum, dpi)
 }
@@ -234,9 +231,7 @@ func (e *Engine) RenderPage(pageNum int, dpi float64) ([]byte, error) {
 	return result.Data, nil
 }
 
-// PageSize returns the effective page dimensions via pdfium, which
-// correctly applies /Rotate.  pdf_oxide's own PageSize returns raw
-// (unrotated) dimensions.
+// PageSize 优先 pdfium 有效尺寸（含 /Rotate）；失败回退 pdf_oxide 原始尺寸。
 func (e *Engine) PageSize(pageNum int) (float64, float64, error) {
 	w, h, err := pdfium.PageSize(e.rawData, pageNum)
 	if err != nil {
@@ -244,5 +239,7 @@ func (e *Engine) PageSize(pageNum int) (float64, float64, error) {
 	}
 	return w, h, nil
 }
+// PageCount 返回文档页数。
 func (e *Engine) PageCount() (int, error) { return e.doc.PageCount() }
+// Close 关闭底层 Document。
 func (e *Engine) Close() error            { e.doc.Close(); return nil }

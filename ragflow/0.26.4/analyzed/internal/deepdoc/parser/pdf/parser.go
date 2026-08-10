@@ -1,3 +1,5 @@
+// parser.go — DeepDoc PDF 核心解析流水线：对应 Python pdf_parser.RAGFlowPdfParser，负责预扫描、分页批处理、OCR/版面/表格识别与 Section 输出，构造后无状态可复用。
+
 package pdf
 
 import (
@@ -14,38 +16,42 @@ import (
 	util "ragflow/internal/deepdoc/parser/pdf/util"
 )
 
-// Parser is the core PDF text/layout extraction pipeline.
-// It corresponds to RAGFlowPdfParser in pdf_parser.py.
-// Stateless after construction — safe to reuse across documents.
+// Parser 是 PDF 文本与版面提取的核心流水线，对齐 pdf_parser.RAGFlowPdfParser；构造后无状态，可安全跨文档复用。
 type Parser struct {
 	Config pdf.ParserConfig
 }
 
-// pageResult holds per-page output from extractPages.
+// pageResult 保存 extractPages 单页处理结果（字符、OCR 框、错误等）。
 type pageResult struct {
+	// pg 页码（0 基）
 	pg       int
+	// ocrBoxes 本页 OCR/字符转框结果
 	ocrBoxes []pdf.TextBox
+	// chars 本页字符（含 OCR 合成字符）
 	chars    []pdf.TextChar
+	// ocrUsed 本页是否走了 OCR 路径
 	ocrUsed  bool
+	// pageImg 异步路径缓存的页渲染图
 	pageImg  image.Image
+	// err 本页处理错误
 	err      error
 }
 
-// New creates a new Parser with the given config.
+// NewParser 以给定 ParserConfig 创建解析器实例。
 func NewParser(cfg pdf.ParserConfig) *Parser {
 	return &Parser{Config: cfg}
 }
 
-// ── TableBuilder factory ───────────────────────────────────────────────────
+// ── TableBuilder 工厂：EE 包可在 init 中注入自定义表格构建器 ──
 
 var tableBuilderFactory func(pdf.DocAnalyzer) pdf.TableBuilder
 
-// RegisterTableBuilder registers a TableBuilder factory for the PDF parser.
-// EE packages call this from init() to inject EE-specific implementations.
+// RegisterTableBuilder 注册 TableBuilder 工厂；EE 包在 init() 中注入企业版实现。
 func RegisterTableBuilder(factory func(pdf.DocAnalyzer) pdf.TableBuilder) {
 	tableBuilderFactory = factory
 }
 
+// NewTableBuilderFor 优先使用已注册工厂，否则默认 DeepDocTableBuilder。
 func NewTableBuilderFor(doc pdf.DocAnalyzer) pdf.TableBuilder {
 	if tableBuilderFactory != nil {
 		return tableBuilderFactory(doc)
@@ -53,10 +59,9 @@ func NewTableBuilderFor(doc pdf.DocAnalyzer) pdf.TableBuilder {
 	return tbl.NewDeepDocTableBuilder(doc)
 }
 
-// ── Public API ─────────────────────────────────────────────────────────────
+// ── 公开 API ──
 
-// ParseRaw is the internal entry point: runs the core pipeline on an
-// already-opened engine. Exported for tests that inject mock engines.
+// ParseRaw 在已打开的 PDFEngine 上运行核心流水线；导出供注入 Mock 引擎的测试使用。
 func (p *Parser) ParseRaw(ctx context.Context, engine pdf.PDFEngine, docAnalyzer pdf.DocAnalyzer) (*pdf.ParseResult, error) {
 	tb := NewTableBuilderFor(docAnalyzer)
 
@@ -95,9 +100,9 @@ func (p *Parser) ParseRaw(ctx context.Context, engine pdf.PDFEngine, docAnalyzer
 	return result, nil
 }
 
-// ── ParseRaw helper functions ───────────────────────────────────────────────
+// ── ParseRaw 辅助函数 ──
 
-// normalizePageRange normalizes the page range based on config and actual page count.
+// normalizePageRange 根据配置 FromPage/ToPage 与实际页数规范化页区间。
 func (p *Parser) normalizePageRange(engine pdf.PDFEngine) (pageCount, fromPage, toPage int, err error) {
 	pageCount, err = engine.PageCount()
 	if err != nil {
@@ -119,7 +124,7 @@ func (p *Parser) normalizePageRange(engine pdf.PDFEngine) (pageCount, fromPage, 
 	return pageCount, fromPage, toPage, nil
 }
 
-// getBatchSize returns the batch size, defaulting to 50 if <= 0.
+// getBatchSize 返回批处理大小，≤0 时默认 50 页一批。
 func (p *Parser) getBatchSize() int {
 	batchSize := p.Config.BatchSize
 	if batchSize <= 0 {
@@ -128,7 +133,7 @@ func (p *Parser) getBatchSize() int {
 	return batchSize
 }
 
-// prescanPages extracts chars from all pages and computes median heights/widths.
+// prescanPages 预扫描全页字符并计算中位字高/字宽，同时检测英文文档与扫描噪声特征。
 func (p *Parser) prescanPages(ctx context.Context, engine pdf.PDFEngine, fromPage, toPage, totalPages int) (
 	map[int][]pdf.TextChar, map[int]float64, map[int]float64, bool, bool,
 ) {
@@ -152,7 +157,7 @@ func (p *Parser) prescanPages(ctx context.Context, engine pdf.PDFEngine, fromPag
 	return prescanChars, prescanMedianH, prescanMedianW, isEnglish, scanNoise
 }
 
-// extractOutlines extracts the PDF outlines, returning nil on error.
+// extractOutlines 提取 PDF 书签/大纲，失败时打日志并返回 nil 继续解析。
 func (p *Parser) extractOutlines(engine pdf.PDFEngine) []pdf.Outline {
 	outlines, outlineErr := engine.Outlines()
 	if outlineErr != nil {
@@ -162,7 +167,7 @@ func (p *Parser) extractOutlines(engine pdf.PDFEngine) []pdf.Outline {
 	return outlines
 }
 
-// processLargeDocument processes a large document in batches.
+// processLargeDocument 大文档按 batchSize 分批调用 processPages 并合并结果。
 func (p *Parser) processLargeDocument(ctx context.Context, engine pdf.PDFEngine, fromPage, toPage, batchSize int,
 	prescanChars map[int][]pdf.TextChar, prescanMedianH, prescanMedianW map[int]float64,
 	isEnglish, scanNoise bool, docAnalyzer pdf.DocAnalyzer, tb pdf.TableBuilder,
@@ -197,7 +202,7 @@ func (p *Parser) processLargeDocument(ctx context.Context, engine pdf.PDFEngine,
 	return result, nil
 }
 
-// mergeBatchResults merges the batch result into the main result.
+// mergeBatchResults 将单批 Sections/Tables/Metrics/PageImages 追加到总结果。
 func (p *Parser) mergeBatchResults(result, batch *pdf.ParseResult) {
 	result.Sections = append(result.Sections, batch.Sections...)
 	result.Tables = append(result.Tables, batch.Tables...)
@@ -214,8 +219,9 @@ func (p *Parser) mergeBatchResults(result, batch *pdf.ParseResult) {
 	result.Metrics.TablesCount += batch.Metrics.TablesCount
 }
 
-// ── extractPages helper functions ───────────────────────────────────────────
+// ── extractPages 页级并发提取 ──
 
+// extractPages 并发处理页区间：正常页同步渲染+合并，乱码/扫描页异步 OCR。
 func (p *Parser) extractPages(ctx context.Context, engine pdf.PDFEngine,
 	fromPage, toPage int,
 	prescanChars map[int][]pdf.TextChar,
@@ -251,7 +257,7 @@ func (p *Parser) extractPages(ctx context.Context, engine pdf.PDFEngine,
 	return p.collectPageResults(results, pageImages, medianHeights, medianWidths)
 }
 
-// setupPageConcurrency sets up the concurrency primitives for page processing.
+// setupPageConcurrency 按 MaxOCRConcurrency 创建信号量与 WaitGroup。
 func (p *Parser) setupPageConcurrency() (chan struct{}, *sync.WaitGroup) {
 	maxConc := p.Config.MaxOCRConcurrency
 	if maxConc <= 0 {
@@ -260,7 +266,7 @@ func (p *Parser) setupPageConcurrency() (chan struct{}, *sync.WaitGroup) {
 	return make(chan struct{}, maxConc), &sync.WaitGroup{}
 }
 
-// processPageSync processes a page synchronously (normal pages with non-garbled chars).
+// processPageSync 同步处理正常页：渲染页图后 ocrMergeChars 或 CharsToBoxes。
 func (p *Parser) processPageSync(ctx context.Context, engine pdf.PDFEngine, pg int, chars []pdf.TextChar,
 	pageImages map[int]image.Image, docAnalyzer pdf.DocAnalyzer,
 ) pageResult {
@@ -275,7 +281,7 @@ func (p *Parser) processPageSync(ctx context.Context, engine pdf.PDFEngine, pg i
 	return pageResult{pg: pg, ocrBoxes: ocrBoxes, chars: updatedChars, ocrUsed: ocrUsed}
 }
 
-// processPageAsync processes a page asynchronously (garbled pages or scan pages).
+// processPageAsync 异步处理乱码/扫描页：受信号量限制并发 OCR。
 func (p *Parser) processPageAsync(ctx context.Context, engine pdf.PDFEngine, pg int, chars []pdf.TextChar,
 	sem chan struct{}, docAnalyzer pdf.DocAnalyzer,
 ) pageResult {
@@ -298,10 +304,7 @@ func (p *Parser) processPageAsync(ctx context.Context, engine pdf.PDFEngine, pg 
 	return pageResult{pg: pg, ocrBoxes: ocrBoxes, chars: updatedChars, ocrUsed: ocrUsed, pageImg: pageImg}
 }
 
-// processPageBoxes processes OCR box extraction for a page, shared between sync and async paths.
-// Returns (ocrBoxes, updatedChars, ocrUsed). The updatedChars includes synthetic OCR
-// chars appended when OCR detect+recognize succeeds — callers must use the returned
-// chars slice, not the original, to get correct median/layout calculations.
+// processPageBoxes 同步/异步共用的 OCR 框提取逻辑；返回 (ocrBoxes, updatedChars, ocrUsed)。OCR 成功时会追加合成字符，调用方须用返回的 chars 计算中位值。
 func (p *Parser) processPageBoxes(ctx context.Context, pageImg image.Image, chars []pdf.TextChar, pg int,
 	renderErr error, docAnalyzer pdf.DocAnalyzer, isAsync bool,
 ) ([]pdf.TextBox, []pdf.TextChar, bool) {
@@ -349,7 +352,7 @@ func (p *Parser) processPageBoxes(ctx context.Context, pageImg image.Image, char
 	return ocrBoxes, chars, ocrUsed
 }
 
-// collectPageResults collects and merges the per-page results.
+// collectPageResults 汇总各 pageResult，合并 boxes/chars 并收集 OCR 错误。
 func (p *Parser) collectPageResults(results []pageResult, pageImages map[int]image.Image,
 	medianHeights, medianWidths map[int]float64,
 ) ([]pdf.TextBox, map[int][]pdf.TextChar, bool, error) {
@@ -382,8 +385,9 @@ func (p *Parser) collectPageResults(results []pageResult, pageImages map[int]ima
 	return boxes, pageChars, ocrUsedAny, errors.Join(errs...)
 }
 
-// ── Internal pipeline steps ────────────────────────────────────────────────
+// ── 内部流水线步骤 ──
 
+// retryScanNoise 扫描噪声文档全页重跑 detect+recognize OCR。
 func (p *Parser) retryScanNoise(ctx context.Context, engine pdf.PDFEngine,
 	fromPage, toPage int,
 	pageImages map[int]image.Image,
@@ -426,6 +430,7 @@ func (p *Parser) retryScanNoise(ctx context.Context, engine pdf.PDFEngine,
 	return boxes, pageChars, true
 }
 
+// retryZoom 无框时提高 Zoom×DlaScale 重渲染并 OCR，坐标按缩放比还原。
 func (p *Parser) retryZoom(ctx context.Context, engine pdf.PDFEngine,
 	fromPage, toPage int,
 	pageImages map[int]image.Image,
@@ -464,6 +469,7 @@ func (p *Parser) retryZoom(ctx context.Context, engine pdf.PDFEngine,
 	return boxes, ocrUsedAny
 }
 
+// buildLayout 执行 DeepDoc 表格增强、列分配、文本/纵向合并、表格替换与 Section 生成及 caption 合并。
 func (p *Parser) buildLayout(ctx context.Context,
 	result *pdf.ParseResult, engine pdf.PDFEngine,
 	boxes []pdf.TextBox, pageChars map[int][]pdf.TextChar,
@@ -507,6 +513,7 @@ func (p *Parser) buildLayout(ctx context.Context,
 	return nil
 }
 
+// processPages 单批页完整流程：extractPages → 扫描噪声/Zoom 重试 → buildLayout → 填充 Section 图片。
 func (p *Parser) processPages(ctx context.Context, engine pdf.PDFEngine,
 	fromPage, toPage int,
 	prescanChars map[int][]pdf.TextChar,
@@ -547,6 +554,7 @@ func (p *Parser) processPages(ctx context.Context, engine pdf.PDFEngine,
 	return result, nil
 }
 
+// fillSectionImages 为表格/图片 Section 匹配预渲染 base64 或按 position tag 裁剪页图。
 func (p *Parser) fillSectionImages(result *pdf.ParseResult) {
 	if len(result.PageImages) == 0 {
 		return
@@ -587,8 +595,7 @@ func (p *Parser) fillSectionImages(result *pdf.ParseResult) {
 	}
 }
 
-// matchTableImage looks up a pre-rendered table image for a section.
-// Uses Positions if available; falls back to TableItem Region boundaries.
+// matchTableImage 按页码+区域键查找预渲染表格图片；优先 Positions，回退 TableItem Region 边界。
 func matchTableImage(sec *pdf.Section, tableImgByRegion map[string]string) (string, bool) {
 	pg := 0
 	if len(sec.Positions) > 0 {

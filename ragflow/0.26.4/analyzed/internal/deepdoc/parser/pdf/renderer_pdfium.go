@@ -1,5 +1,7 @@
 //go:build cgo
 
+// renderer_pdfium.go — CGO 构建专用：用 pdfium 高质量光栅化替代 fallbackRender，提升 OCR/DLA 准确率。
+
 package pdf
 
 import (
@@ -9,9 +11,7 @@ import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
-// pdfiumRender uses the pdfium C library for higher-quality rasterisation
-// (AA, hinting) which is essential for downstream OCR/DLA accuracy on
-// scanned or low-quality PDFs.
+// pdfiumRender 使用 pdfium C 库高质量光栅化（抗锯齿、hinting），对扫描件与低质量 PDF 的 OCR/DLA 至关重要。
 func pdfiumRender(engine pdf.PDFEngine, pageNum int) (image.Image, error) {
 	raw := engine.RawData()
 	if raw == nil {
@@ -31,6 +31,7 @@ func pdfiumRender(engine pdf.PDFEngine, pageNum int) (image.Image, error) {
 	return img, nil
 }
 
+// init 注册 pdfiumRender 为全局 renderFn。
 func init() {
 	renderFn = pdfiumRender
 }

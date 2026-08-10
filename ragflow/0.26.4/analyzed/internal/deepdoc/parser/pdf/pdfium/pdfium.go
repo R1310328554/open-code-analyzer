@@ -1,9 +1,6 @@
 //go:build cgo
 
-// Package pdfium renders PDF pages using libpdfium (statically linked
-// at build time via CGO_LDFLAGS). It exists solely to replace pdf_oxide's
-// RenderPageRaw for use cases where image quality matters for downstream
-// OCR/DLA — pdf_oxide still handles all text/char/table extraction.
+// Package pdfium 使用静态链接的 libpdfium 渲染 PDF 页。专用于替代 pdf_oxide 的 RenderPageRaw，在 OCR/DLA 需要高质量光栅化时使用；文本/字符/表格提取仍由 pdf_oxide 负责。
 package pdfium
 
 /*
@@ -54,27 +51,25 @@ import (
 	"unsafe"
 )
 
-// Outline represents one entry in a PDF document outline (table of contents).
+// Outline 表示 PDF 大纲（书签/目录）中的一条记录。
 type Outline struct {
+	// Title 书签标题
 	Title      string
+	// Level 嵌套层级（0 为顶层）
 	Level      int
+	// PageNumber 目标页码（1 基，对齐 Python）
 	PageNumber int // 1-indexed, matching Python
 }
 
 var initOnce sync.Once
 
-// pdfiumMu serializes all pdfium C API access. pdfium is NOT thread-safe —
-// concurrent calls to FPDF_LoadPage / FPDF_RenderPageBitmap corrupt the
-// global heap, causing SIGSEGV. See TestPdfiumConcurrentSafety.
+// pdfiumMu 串行化所有 pdfium C API 调用；pdfium 非线程安全，并发调用会导致堆损坏 SIGSEGV（见 TestPdfiumConcurrentSafety）。
 var pdfiumMu sync.Mutex
 
-// Init initializes the PDFium library. Safe to call multiple times.
+// Init 初始化 PDFium 库，sync.Once 保证只执行一次，可重复调用。
 func Init() { initOnce.Do(func() { C.FPDF_InitLibrary() }) }
 
-// PageSize returns the page dimensions in PDF points (1/72 inch) as seen
-// after rotation.  For a page with /Rotate 90 on A4, this returns ~842×595
-// (swapped from the MediaBox 595×842).  The call is cheap — it opens the
-// document and page, reads dimensions, then closes.
+// PageSize 返回应用 /Rotate 后的页宽高（PDF 点，1/72 英寸）；如 A4 旋转 90° 时宽高互换；开销小，开页读后即关。
 func PageSize(pdfData []byte, pageIdx int) (width, height float64, err error) {
 	Init()
 	pdfiumMu.Lock()
@@ -87,8 +82,7 @@ func PageSize(pdfData []byte, pageIdx int) (width, height float64, err error) {
 	return pw, ph, nil
 }
 
-// RenderPage renders a single page of a PDF to an *image.RGBA at the given DPI.
-// pdfData is the raw PDF bytes, pageIdx is 0-based.
+// RenderPage 将单页渲染为 *image.RGBA；pdfData 为原始字节，pageIdx 0 基，dpi 控制分辨率。
 func RenderPage(pdfData []byte, pageIdx int, dpi float64) (*image.RGBA, error) {
 	Init()
 	pdfiumMu.Lock()
@@ -122,7 +116,7 @@ func RenderPage(pdfData []byte, pageIdx int, dpi float64) (*image.RGBA, error) {
 	// LCD text AA (0x02) is left off; default text smoothing is sufficient.
 	C.FPDF_RenderPageBitmap(bitmap, page, 0, 0, C.int(pxW), C.int(pxH), 0, 0x01)
 
-	// pdfium outputs BGRA; convert to RGBA.
+	// pdfium 输出 BGRA，逐像素转换为 RGBA。
 	img := image.NewRGBA(image.Rect(0, 0, pxW, pxH))
 	for y := 0; y < pxH; y++ {
 		for x := 0; x < pxW; x++ {
@@ -138,8 +132,7 @@ func RenderPage(pdfData []byte, pageIdx int, dpi float64) (*image.RGBA, error) {
 	return img, nil
 }
 
-// openPage opens a document and page, returning post-rotation dimensions
-// and a cleanup function.  Callers must call closeAll() to free resources.
+// openPage 打开文档与页，返回旋转后尺寸及 closeAll 清理函数；调用方必须释放资源。
 func openPage(pdfData []byte, pageIdx int) (
 	doc C.FPDF_DOCUMENT,
 	page C.FPDF_PAGE,
@@ -182,12 +175,7 @@ func openPage(pdfData []byte, pageIdx int) (
 	return
 }
 
-// ExtractOutlines returns the document outline (bookmarks / table of contents)
-// from a PDF. Returns nil for empty or broken PDFs. Title decoding uses UTF-16LE
-// as required by pdfium's FPDFBookmark_GetTitle.
-//
-// Traversal is iterative with an explicit stack to avoid stack overflow on deep
-// outline trees. pdfium is not thread-safe; callers must hold pdfiumMu.
+// ExtractOutlines 提取 PDF 书签大纲；空/损坏 PDF 返回 nil；标题 UTF-16LE 解码；显式栈迭代遍历防深树栈溢出；须持有 pdfiumMu。
 func ExtractOutlines(pdfData []byte) []Outline {
 	if len(pdfData) == 0 {
 		return nil
@@ -220,10 +208,11 @@ func ExtractOutlines(pdfData []byte) []Outline {
 			continue
 		}
 
-		// Title (UTF-16LE).
+		// 读取书签标题（UTF-16LE 编码）。
 		title := bookmarkTitle(top.bm)
 
-		// Page number.
+		// 解析书签目标页码。
+		// 无目标时默认第 1 页
 		pageNum := 1 // default to page 1 if dest is unavailable
 		if dest := C.FPDFBookmark_GetDest(doc, top.bm); dest != nil {
 			pn := C.FPDFDest_GetDestPageIndex(doc, dest)
@@ -234,7 +223,7 @@ func ExtractOutlines(pdfData []byte) []Outline {
 
 		result = append(result, Outline{Title: title, Level: top.level, PageNumber: pageNum})
 
-		// Push siblings after children so children are processed first (pre-order).
+		// 子节点先入栈实现前序遍历（先处理子书签再兄弟）。
 		if sibling := C.FPDFBookmark_GetNextSibling(doc, top.bm); sibling != nil {
 			stack = append(stack, frame{bm: sibling, level: top.level})
 		}
@@ -245,9 +234,9 @@ func ExtractOutlines(pdfData []byte) []Outline {
 	return result
 }
 
-// bookmarkTitle reads a bookmark's title (UTF-16LE) and converts to Go string.
+// bookmarkTitle 读取书签 UTF-16LE 标题并转为 Go 字符串。
 func bookmarkTitle(bm C.FPDF_BOOKMARK) string {
-	// First call: get required buffer length in bytes.
+	// 首次调用获取标题缓冲区字节长度。
 	buflen := C.FPDFBookmark_GetTitle(bm, nil, 0)
 	if buflen <= 0 {
 		return ""
@@ -255,11 +244,11 @@ func bookmarkTitle(bm C.FPDF_BOOKMARK) string {
 	buf := make([]byte, buflen)
 	C.FPDFBookmark_GetTitle(bm, unsafe.Pointer(&buf[0]), buflen)
 
-	// Title is UTF-16LE. Convert to []uint16 then decode.
+	// 标题为 UTF-16LE，转 []uint16 后 utf16.Decode。
 	n := int(buflen) / 2
 	u16 := unsafe.Slice((*uint16)(unsafe.Pointer(&buf[0])), n)
 
-	// Strip trailing null terminator if present.
+	// 去除末尾空终止符。
 	if n > 0 && u16[n-1] == 0 {
 		u16 = u16[:n-1]
 	}

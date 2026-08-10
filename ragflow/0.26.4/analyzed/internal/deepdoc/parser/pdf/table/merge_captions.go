@@ -1,9 +1,12 @@
+// merge_captions.go — 图表标题合并：将 caption Section 按空间邻近度附着到最近表格/图片并移除独立 caption 段。
+
 package table
 
 import (
 	pdf "ragflow/internal/deepdoc/parser/pdf/type"
 )
 
+// MergeCaptions 识别 caption 段，找最近父表格/图片合并文本后删除 caption 段；表格 caption  prepend 到 HTML 前。
 func MergeCaptions(sections []pdf.Section, figures []pdf.Section) []pdf.Section {
 	captions := make([]int, 0, 4)
 	for i, s := range sections {
@@ -25,7 +28,7 @@ func MergeCaptions(sections []pdf.Section, figures []pdf.Section) []pdf.Section 
 		}
 		captions = append(captions, i)
 	}
-	// Remove caption sections in reverse order.
+	// 标记所有 caption 索引后过滤出非 caption 段。
 	n := len(sections)
 	out := make([]pdf.Section, 0, n-len(captions))
 	capSet := make(map[int]bool, len(captions))
@@ -40,11 +43,7 @@ func MergeCaptions(sections []pdf.Section, figures []pdf.Section) []pdf.Section 
 	return out
 }
 
-// findNearestParent finds the nearest figure (for figure caption) or
-// table (for table caption) section by position proximity.
-// captionType is "table" or "figure" (from captionKind).
-// Returns the index in `sections` (for tables) or a virtual index mapping
-// to `figures` (negative offset for figures).
+// findNearestParent 按中心点欧氏距离找最近表格/图片父段；距离超过 maxCaptionGap 则不附着。
 func findNearestParent(captionIdx int, caption pdf.Section, sections []pdf.Section, figures []pdf.Section, captionType string) int {
 	find := func(targets []pdf.Section, skipIdx int) (int, float64) {
 		bestIdx := -1
@@ -73,11 +72,12 @@ func findNearestParent(captionIdx int, caption pdf.Section, sections []pdf.Secti
 		return bestIdx, bestDist
 	}
 
-	const maxCaptionGap = 40000.0 // PDF points (~7cm) — beyond this, don't attach.
+	// maxCaptionGap 最大附着距离（PDF 点，约 7cm），超出则不合并。
+const maxCaptionGap = 40000.0 // PDF points (~7cm) — beyond this, don't attach.
 	if captionType == pdf.LayoutTypeFigure && len(figures) > 0 {
 		idx, dist := find(figures, -1) // figures don't contain the caption itself
 		if idx >= 0 && dist < maxCaptionGap {
-			// Match by position coordinates, not PositionTag strings.
+			// 用坐标匹配 figures 与 sections 中的图片段，而非 PositionTag 字符串。
 			f := figures[idx]
 			for i, s := range sections {
 				if s.LayoutType != pdf.LayoutTypeFigure || len(s.Positions) == 0 || len(f.Positions) == 0 {

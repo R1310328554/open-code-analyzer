@@ -1,14 +1,6 @@
 //go:build cgo
 
-// Package pdfparser provides pdf_oxide-based PDF types and functions.
-//
-// This file wraps github.com/yfedoseev/pdf_oxide/go (pdf_oxide) to provide
-// pdfplumber-style character extraction, page rendering, and RAGFlow-compatible
-// utility functions. It is maintained as a standalone adapter layer so that
-// the pdfplumber compatibility code can be modified independently of the
-// pdf_oxide backend.
-//
-// Originally derived from github.com/yingfeng/pdfplumber-go.
+// Package pdfoxide 封装 github.com/yfedoseev/pdf_oxide/go，提供 pdfplumber 风格的字符提取、页渲染与 RAGFlow 兼容工具。独立适配层便于在不改动 pdf_oxide 后端的情况下维护兼容逻辑；源自 pdfplumber-go。
 
 package pdfoxide
 
@@ -23,10 +15,9 @@ import (
 	pdfoxide "github.com/yfedoseev/pdf_oxide/go"
 )
 
-// ── pdf_oxide-based types ──────────────────────────────────────────
+// ── pdf_oxide 适配类型 ──
 
-// Char represents a single character extracted from a PDF page,
-// matching pdfplumber's char dict format.
+// char 单字符结构，字段对齐 pdfplumber 的 char 字典。
 type char struct {
 	Text             string     `json:"text"`
 	Fontname         string     `json:"fontname"`
@@ -47,12 +38,12 @@ type char struct {
 	PageNumber       int        `json:"page_number"`
 }
 
-// Document wraps pdf_oxide's PdfDocument with pdf_oxide-based methods.
+// Document 包装 pdf_oxide PdfDocument 并提供 pdfplumber 风格方法。
 type Document struct {
 	Inner *pdfoxide.PdfDocument
 }
 
-// RenderResult holds the result of rendering a PDF page.
+// RenderResult 页渲染结果：RGBA 像素字节与宽高通道信息。
 type RenderResult struct {
 	Data     []byte
 	Width    int
@@ -60,9 +51,9 @@ type RenderResult struct {
 	Channels int
 }
 
-// ── Document methods ─────────────────────────────────────────────────────
+// ── Document 方法 ──
 
-// Open opens a PDF file from a file path.
+// Open 从文件路径打开 PDF。
 func Open(path string) (*Document, error) {
 	doc, err := pdfoxide.Open(path)
 	if err != nil {
@@ -71,7 +62,7 @@ func Open(path string) (*Document, error) {
 	return &Document{Inner: doc}, nil
 }
 
-// OpenBytes opens a PDF from raw bytes in memory.
+// OpenBytes 从内存字节打开 PDF。
 func OpenBytes(data []byte) (*Document, error) {
 	doc, err := pdfoxide.OpenFromBytes(data)
 	if err != nil {
@@ -80,7 +71,7 @@ func OpenBytes(data []byte) (*Document, error) {
 	return &Document{Inner: doc}, nil
 }
 
-// Close releases the document handle.
+// Close 释放文档句柄。
 func (d *Document) Close() {
 	if d.Inner != nil {
 		d.Inner.Close()
@@ -88,7 +79,7 @@ func (d *Document) Close() {
 	}
 }
 
-// PageCount returns the number of pages in the document.
+// PageCount 返回文档总页数。
 func (d *Document) PageCount() (int, error) {
 	if d.Inner == nil {
 		return 0, fmt.Errorf("pdfplumber: document is closed")
@@ -96,10 +87,7 @@ func (d *Document) PageCount() (int, error) {
 	return d.Inner.PageCount()
 }
 
-// PageSize returns the pre-rotation page dimensions from pdf_oxide in PDF
-// points (1/72 inch).  For a page with /Rotate 90, this returns the original
-// (unrotated) MediaBox dimensions — not the post-rotation visual size.
-// Compare with pdfium.PageSize to detect rotation.
+// PageSize 返回 pdf_oxide 的旋转前页尺寸（PDF 点）；/Rotate 90 时仍为未旋转 MediaBox；与 pdfium.PageSize 对比可检测旋转。
 func (d *Document) PageSize(pageIdx int) (width, height float64, err error) {
 	if d.Inner == nil {
 		return 0, 0, fmt.Errorf("pdfplumber: document is closed")
@@ -111,7 +99,7 @@ func (d *Document) PageSize(pageIdx int) (width, height float64, err error) {
 	return float64(info.Width), float64(info.Height), nil
 }
 
-// GetPageChars returns all characters on a page (0-indexed).
+// GetPageChars 提取单页全部字符（0 基页码），Y 轴翻转为 pdfplumber 左上原点。
 func (d *Document) GetPageChars(pageIdx int) ([]char, error) {
 	if d.Inner == nil {
 		return nil, fmt.Errorf("pdfplumber: document is closed")
@@ -178,8 +166,7 @@ func (d *Document) GetPageChars(pageIdx int) ([]char, error) {
 	return chars, nil
 }
 
-// GetDedupePageChars returns deduplicated characters on a page (0-indexed).
-// tolerance controls how close two chars must be to be considered duplicates.
+// GetDedupePageChars 返回去重后的页字符；tolerance 控制位置/字号相近判重阈值。
 func (d *Document) GetDedupePageChars(pageIdx int, tolerance float64) ([]char, error) {
 	chars, err := d.GetPageChars(pageIdx)
 	if err != nil {
@@ -188,7 +175,7 @@ func (d *Document) GetDedupePageChars(pageIdx int, tolerance float64) ([]char, e
 	return dedupeChars(chars, tolerance), nil
 }
 
-// GetPageText extracts plain text from a page (0-indexed), in reading order (top → x0).
+// GetPageText 按阅读顺序（top→x0）拼接页纯文本，行间/词间自动插空格或换行。
 func (d *Document) GetPageText(pageIdx int) (string, error) {
 	chars, err := d.GetPageChars(pageIdx)
 	if err != nil {
@@ -223,13 +210,14 @@ func (d *Document) GetPageText(pageIdx int) (string, error) {
 	return b.String(), nil
 }
 
-// ── Deduplication ────────────────────────────────────────────────────────
+// ── 字符去重 ──
+// dedupeChars 按 X0 排序后滑动窗口检测重叠>50%且同字体同字号的重复字符。
 func dedupeChars(chars []char, tolerance float64) []char {
 	if len(chars) == 0 {
 		return nil
 	}
 
-	// Sort by X0 so we only need a sliding window of nearby chars.
+	// 按 X0 排序，仅需向后扫描 maxCharWidth 范围内的候选重复。
 	sorted := make([]char, len(chars))
 	copy(sorted, chars)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].X0 < sorted[j].X0 })
@@ -277,11 +265,9 @@ func dedupeChars(chars []char, tolerance float64) []char {
 	return result
 }
 
-// ── Rendering ────────────────────────────────────────────────────────────
+// ── 页渲染 ──
 
-// RenderPage renders a PDF page to RGBA pixels using pdf_oxide.
-// pdfData must be the raw PDF bytes, pageIdx is 0-based, dpi is the resolution.
-// Prefer Document.RenderPage when you already have an open Document to avoid re-parsing.
+// RenderPage 独立函数：打开字节流渲染单页；已有 Document 时优先用其 RenderPage 避免重复解析。
 func RenderPage(pdfData []byte, pageIdx int, dpi float64) (*RenderResult, error) {
 	if len(pdfData) == 0 {
 		return nil, fmt.Errorf("pdfplumber: empty PDF data for rendering")
@@ -295,9 +281,7 @@ func RenderPage(pdfData []byte, pageIdx int, dpi float64) (*RenderResult, error)
 	return renderPageFromDoc(doc, pageIdx, dpi)
 }
 
-// RenderPage renders a single page using the already-open document.
-// Unlike the standalone RenderPage function, this reuses the open handle
-// and does not re-parse the PDF on every call.
+// Document.RenderPage 复用已打开句柄渲染，每页不重新解析 PDF。
 func (d *Document) RenderPage(pageIdx int, dpi float64) (*RenderResult, error) {
 	if d.Inner == nil {
 		return nil, fmt.Errorf("pdfplumber: document is closed")
@@ -305,8 +289,7 @@ func (d *Document) RenderPage(pageIdx int, dpi float64) (*RenderResult, error) {
 	return renderPageFromDoc(d.Inner, pageIdx, dpi)
 }
 
-// renderPageFromDoc is the shared rendering core: calls RenderPageRaw and
-// converts premultiplied alpha to straight alpha.
+// renderPageFromDoc 共享渲染核心：RenderPageRaw 后将预乘 alpha 转为直通 alpha。
 func renderPageFromDoc(doc *pdfoxide.PdfDocument, pageIdx int, dpi float64) (*RenderResult, error) {
 	pixmap, err := doc.RenderPageRaw(pageIdx, int(math.Round(dpi)))
 	if err != nil {
@@ -328,23 +311,23 @@ func renderPageFromDoc(doc *pdfoxide.PdfDocument, pageIdx int, dpi float64) (*Re
 	return &RenderResult{Data: data, Width: pixmap.Width, Height: pixmap.Height, Channels: 4}, nil
 }
 
-// InitRenderer is a no-op for pdf_oxide (renderer is initialized internally).
+// InitRenderer pdf_oxide 内部初始化渲染器，此处为空操作。
 func InitRenderer(path string) error { return nil }
 
-// ToImage converts a RenderResult to an image.RGBA.
+// ToImage 将 RenderResult 转为 *image.RGBA。
 func (r *RenderResult) ToImage() *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, r.Width, r.Height))
 	copy(img.Pix, r.Data)
 	return img
 }
 
-// ColorModel implements image.Image.
+// ColorModel 实现 image.Image 接口。
 func (r *RenderResult) ColorModel() color.Model { return color.RGBAModel }
 
-// Bounds implements image.Image.
+// Bounds 返回图像矩形边界。
 func (r *RenderResult) Bounds() image.Rectangle { return image.Rect(0, 0, r.Width, r.Height) }
 
-// At implements image.Image.
+// At 返回指定像素 RGBA 颜色。
 func (r *RenderResult) At(x, y int) color.Color {
 	if x < 0 || x >= r.Width || y < 0 || y >= r.Height {
 		return color.RGBA{}
@@ -356,9 +339,9 @@ func (r *RenderResult) At(x, y int) color.Color {
 	return color.RGBA{R: r.Data[idx], G: r.Data[idx+1], B: r.Data[idx+2], A: 255}
 }
 
-// ── Utility ──────────────────────────────────────────────────────────────
+// ── 工具函数 ──
 
-// TotalPageNumber opens a PDF and returns the page count.
+// TotalPageNumber 打开 PDF（路径或字节）并返回页数。
 func TotalPageNumber(path string, data []byte) (int, error) {
 	var doc *Document
 	var err error
