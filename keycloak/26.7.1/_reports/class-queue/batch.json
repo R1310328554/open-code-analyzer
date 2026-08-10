@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T11:57:38Z",
   "files": [
-    "services/src/main/java/org/keycloak/keys/AbstractGeneratedEcKeyProviderFactory.java",
-    "services/src/main/java/org/keycloak/keys/AbstractGeneratedRsaKeyProviderFactory.java",
-    "services/src/main/java/org/keycloak/keys/AbstractGeneratedSecretKeyProvider.java",
-    "services/src/main/java/org/keycloak/keys/AbstractGeneratedSecretKeyProviderFactory.java",
-    "services/src/main/java/org/keycloak/keys/AbstractImportedRsaKeyProviderFactory.java",
-    "services/src/main/java/org/keycloak/keys/AbstractRsaKeyProvider.java",
-    "services/src/main/java/org/keycloak/keys/AbstractRsaKeyProviderFactory.java",
-    "services/src/main/java/org/keycloak/keys/Attributes.java",
-    "services/src/main/java/org/keycloak/keys/DefaultKeyManager.java",
-    "services/src/main/java/org/keycloak/keys/GeneratedAesKeyProvider.java",
-    "services/src/main/java/org/keycloak/keys/GeneratedAesKeyProviderFactory.java",
-    "services/src/main/java/org/keycloak/keys/GeneratedEcdhKeyProvider.java",
-    "services/src/main/java/org/keycloak/keys/GeneratedEcdhKeyProviderFactory.java",
-    "services/src/main/java/org/keycloak/keys/GeneratedEcdsaKeyProvider.java",
-    "services/src/main/java/org/keycloak/keys/GeneratedEcdsaKeyProviderFactory.java",
     "services/src/main/java/org/keycloak/keys/GeneratedEddsaKeyProvider.java",
     "services/src/main/java/org/keycloak/keys/GeneratedEddsaKeyProviderFactory.java",
     "services/src/main/java/org/keycloak/keys/GeneratedHmacKeyProvider.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/keys/loader/HardcodedPublicKeyLoader.java"
   ],
   "remaining_pending": 1768,
-  "done": 4200
+  "done": 4215
 }
