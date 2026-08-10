@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// akshare.go — AkShare 东方财富 A 股新闻工具：调用 East Money JSONP 搜索 API 返回结构化新闻列表。
+
 //
 
 package tool
@@ -41,6 +43,7 @@ const maxAkShareResponseBytes = 4 << 20
 var akshareStockNewsEndpoint = "https://search-api-web.eastmoney.com/search/jsonp"
 
 // akshareParams is the JSON shape the model sends into InvokableRun.
+// akshareParams 为模型传入 InvokableRun 的 JSON 参数形状。
 type akshareParams struct {
 	Query  string `json:"query"`
 	Symbol string `json:"symbol,omitempty"`
@@ -94,11 +97,13 @@ type akshareEastMoneyArticle struct {
 
 // AkShareTool retrieves East Money stock news using the same endpoint
 // as AkShare's stock_news_em(symbol=...) helper.
+// AkShareTool 抓取指定股票代码的东方财富最新新闻。
 type AkShareTool struct {
 	helper *HTTPHelper
 	topN   int
 }
 
+// NewAkShareTool 使用默认 HTTPHelper 构造工具。
 func NewAkShareTool() *AkShareTool {
 	return NewAkShareToolWith(NewHTTPHelper())
 }
@@ -118,6 +123,7 @@ func NewAkShareToolWithTopN(h *HTTPHelper, topN int) *AkShareTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回 akshare_stock_news 工具的 schema 元数据。
 func (a *AkShareTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: akshareToolName,
@@ -134,6 +140,7 @@ func (a *AkShareTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 
 // InvokableRun fetches stock news from East Money and returns both a
 // formatted content string and structured article records.
+// InvokableRun 请求 East Money API 并返回 content + articles JSON。
 func (a *AkShareTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p akshareParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {
@@ -198,6 +205,7 @@ func (a *AkShareTool) InvokableRun(ctx context.Context, argsJSON string, _ ...to
 	return akshareJSON(env), nil
 }
 
+// buildAkShareStockNewsURL 构造 JSONP 搜索 URL 与内层 param JSON。
 func buildAkShareStockNewsURL(symbol string, topN int) (string, error) {
 	if topN <= 0 {
 		topN = defaultAkShareTopN
@@ -231,6 +239,7 @@ func buildAkShareStockNewsURL(symbol string, topN int) (string, error) {
 	return akshareStockNewsEndpoint + "?" + q.Encode(), nil
 }
 
+// parseAkShareStockNews 剥离 JSONP 包装并解析 cmsArticleWebOld 列表。
 func parseAkShareStockNews(body []byte, topN int) ([]akshareArticle, error) {
 	if topN <= 0 {
 		topN = defaultAkShareTopN
@@ -302,6 +311,7 @@ func cleanAkShareText(s string) string {
 // NOTE: the upstream Python PR's _invoke dropped 文章来源 from the
 // format string (5 args but only 4 {} placeholders); we preserve all
 // five fields here (link, title, content, date, source).
+// formatAkShareArticles 将新闻渲染为带链接的可读文本块。
 func formatAkShareArticles(articles []akshareArticle) string {
 	if len(articles) == 0 {
 		return ""

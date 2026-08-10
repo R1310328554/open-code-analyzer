@@ -14,6 +14,7 @@
 //  limitations under the License.
 //
 
+// exesql.go — ExeSQL 外部数据库查询工具：仅允许 SELECT，经 database/sql 直连用户配置的外部库。
 // Package tool — ExeSQL tool.
 //
 // ExeSQL lets an Agent component execute a SQL statement on a
@@ -95,6 +96,7 @@ const (
 // These are tool-level config (set on the canvas node, not exposed
 // to the LLM at function-call time), matching the Python ExeSQLParam
 // fields. The LLM only sees `sql` and optional `database` in args.
+// exesqlConnParams 为画布节点级 DB 连接配置，不对 LLM 暴露。
 type exesqlConnParams struct {
 	DBType     string // mysql | postgres | mariadb | mssql | oceanbase
 	Database   string
@@ -118,6 +120,7 @@ type ExeSQLConnParams = exesqlConnParams
 // Callers (e.g. the Universe A exesqlComponent wrapper) build the
 // params map from the canvas DSL; the tool-side decoding stays
 // in this package so the schema lives next to the type.
+// NewExeSQLConnParams 从 DSL params map 解码连接参数。
 func NewExeSQLConnParams(params map[string]any) (ExeSQLConnParams, error) {
 	conn := ExeSQLConnParams{}
 	if v, ok := params["db_type"].(string); ok {
@@ -190,6 +193,7 @@ func defaultExeSQLDialer(driver, dsn string) (*sql.DB, error) {
 // ExeSQLTool is the ExeSQL tool.
 // It validates SELECT-only at the parser level and executes the
 // statement against a user-configured external DB via `database/sql`.
+// ExeSQLTool 校验 SELECT-only 并通过 database/sql 执行查询。
 type ExeSQLTool struct {
 	conn   exesqlConnParams
 	dialer exesqlDialer
@@ -198,6 +202,7 @@ type ExeSQLTool struct {
 // NewExeSQLTool returns an ExeSQLTool wired to the given connection
 // params. The dialer defaults to `sql.Open`; tests can pass a
 // sqlmock-backed dialer via WithExeSQLDialer.
+// NewExeSQLTool 绑定连接参数，dialer 默认 sql.Open。
 func NewExeSQLTool(conn exesqlConnParams) *ExeSQLTool {
 	if conn.MaxRecords <= 0 {
 		conn.MaxRecords = exesqlDefaultMaxRecords
@@ -223,6 +228,7 @@ func (e *ExeSQLTool) WithExeSQLDialer(d exesqlDialer) *ExeSQLTool {
 // they're set on the tool instance, matching the Python convention
 // where ExeSQLParam fields like `db_type` / `host` are tool
 // configuration, not function-call arguments.
+// Info 仅向 LLM 暴露 sql 与可选 database 覆盖参数。
 func (e *ExeSQLTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: exesqlToolName,
@@ -247,6 +253,7 @@ func (e *ExeSQLTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 // returns the rows. Per-statement errors do not abort the node: they
 // are accumulated in the `Errors` slice of the response (the Python
 // tool does the same — `sql_res.append({"content": msg})`).
+// InvokableRun 校验 SQL、SSRF 校验主机、打开连接并返回 rows JSON。
 func (e *ExeSQLTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
 	if argumentsInJSON == "" {
 		return exesqlErrorResult(errors.New("exesql: empty arguments")), errors.New("exesql: empty arguments")
@@ -321,6 +328,7 @@ func (e *ExeSQLTool) InvokableRun(ctx context.Context, argumentsInJSON string, _
 // error entry but does not abort subsequent statements — this is
 // the same isolation guarantee the Python tool provides so that
 // earlier results survive a bad statement later in the batch.
+// exesqlExecute 按分号拆分语句，单条失败不中断后续语句。
 func exesqlExecute(ctx context.Context, db *sql.DB, sqlText string, maxRows int) (*exesqlResult, error) {
 	stmts := splitSQLStatements(sqlText)
 	res := &exesqlResult{}
@@ -478,6 +486,7 @@ func exesqlMarshalResult(r *exesqlResult) (string, error) {
 //     fields. Combining them as `host=h:p` is rejected by the driver.
 //   - go-mssqldb (denisenkom): ADO-style DSN — `server=` and `port=`
 //     are DISTINCT fields. `server=h:p;port=p` is also rejected.
+// exesqlDriverAndDSN 按 db_type 映射 mysql/postgres/mssql 等 DSN 格式。
 func exesqlDriverAndDSN(c exesqlConnParams) (driver, dsn string, err error) {
 	mysqlHostPort := net.JoinHostPort(c.Host, strconv.Itoa(c.Port))
 	switch strings.ToLower(c.DBType) {
@@ -575,6 +584,7 @@ var nonSelectKeywords = map[string]struct{}{
 // string literals, scan the first keyword, and reject if it's a
 // DML/DDL/DCL verb. SQL parsers in Go stdlib don't exist; this matches
 // the safety bar the Go shell needs.
+// isSelectStatement 启发式校验首关键字为只读语句，拒绝 DML/DDL。
 func isSelectStatement(sql string) bool {
 	cleaned := stripSQLComments(sql)
 	cleaned = stripSQLStrings(cleaned)

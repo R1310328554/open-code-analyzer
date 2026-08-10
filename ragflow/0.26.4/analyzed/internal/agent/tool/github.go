@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// github.go — GitHub 仓库搜索工具：GET Search API 返回 full_name/html_url/description/stargazers_count。
+
 //
 
 package tool
@@ -64,11 +66,13 @@ type githubEnvelope struct {
 // repository search tool. It
 // GETs the GitHub Search API via the shared HTTPHelper and returns the
 // top N repository matches.
+// GitHubTool 调用 GitHub repository search API。
 type GitHubTool struct {
 	helper *HTTPHelper
 }
 
 // NewGitHubTool returns a GitHubTool using the default HTTPHelper.
+// NewGitHubTool 使用默认 HTTPHelper 构造 GitHubTool。
 func NewGitHubTool() *GitHubTool {
 	return NewGitHubToolWith(NewHTTPHelper())
 }
@@ -83,6 +87,7 @@ func NewGitHubToolWith(h *HTTPHelper) *GitHubTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 暴露 query/max_results/token 参数 schema。
 func (g *GitHubTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: githubToolName,
@@ -109,6 +114,7 @@ func (g *GitHubTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 
 // buildGitHubURL constructs the GitHub repository search URL. Centralized
 // so the test suite can verify URL encoding without spinning up a server.
+// buildGitHubURL 构造 per_page 受限的 repositories 搜索 URL。
 func buildGitHubURL(query string, maxResults int) string {
 	if maxResults <= 0 {
 		maxResults = 5
@@ -123,6 +129,7 @@ func buildGitHubURL(query string, maxResults int) string {
 }
 
 // InvokableRun performs the GitHub repository search.
+// InvokableRun 可选 Bearer token 提升速率限制并返回 results JSON。
 func (g *GitHubTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p githubParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {

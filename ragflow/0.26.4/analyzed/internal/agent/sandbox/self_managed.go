@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// self_managed.go — 自托管沙箱 Provider：封装 executor_manager HTTP API（Docker+gVisor 容器池），Go 侧仅移植客户端调用面。
+
 //
 
 // self_managed.go is the Go port of
@@ -76,10 +78,12 @@ import (
 // selfManagedDefaultEndpoint is the canonical executor_manager
 // endpoint baked into the Python side. Operators override via
 // SANDBOX_EXECUTOR_MANAGER_URL.
+// selfManagedDefaultEndpoint 为 executor_manager 默认端点，可用 SANDBOX_EXECUTOR_MANAGER_URL 覆盖。
 const selfManagedDefaultEndpoint = "http://sandbox-executor-manager:9385"
 
 // SelfManagedProvider is the Go port of
 // `agent/sandbox/providers/self_managed.py::SelfManagedProvider`.
+// SelfManagedProvider 对接 self_managed.py，向 executor_manager POST /run 执行代码。
 type SelfManagedProvider struct {
 	endpoint     string
 	timeout      time.Duration
@@ -111,12 +115,14 @@ type SelfManagedProvider struct {
 // overrides (SANDBOX_BASE_PYTHON_IMAGE / SANDBOX_BASE_NODEJS_IMAGE)
 // are also read; empty values mean "use executor_manager's
 // default image" — no override.
+// newSelfManagedProviderFromEnv 从 SANDBOX_* 环境变量构造 Provider。
 func newSelfManagedProviderFromEnv() *SelfManagedProvider {
 	return newSelfManagedProviderFromConfig(selfManagedConfigFromEnv())
 }
 
 // selfManagedConfigFromEnv builds a config map from the SANDBOX_*
 // env vars, mirroring the admin-panel settings JSON shape.
+// selfManagedConfigFromEnv 将 SANDBOX_* 环境变量映射为 settings JSON 形状。
 func selfManagedConfigFromEnv() map[string]any {
 	return map[string]any{
 		"EXECUTOR_MANAGER_URL":         os.Getenv("SANDBOX_EXECUTOR_MANAGER_URL"),
@@ -134,6 +140,7 @@ func selfManagedConfigFromEnv() map[string]any {
 // without the SANDBOX_ prefix; see selfManagedConfigFromEnv for the
 // shape. Missing / unparseable values fall back to the same defaults
 // the env-driven path uses.
+// newSelfManagedProviderFromConfig 从管理面板 JSON 配置构造 Provider。
 func newSelfManagedProviderFromConfig(cfg map[string]any) *SelfManagedProvider {
 	endpoint := configString(cfg, "EXECUTOR_MANAGER_URL")
 	if endpoint == "" {
@@ -171,12 +178,14 @@ func newSelfManagedProviderFromConfig(cfg map[string]any) *SelfManagedProvider {
 }
 
 // ProviderType returns ProviderSelfManaged.
+// ProviderType 返回 ProviderSelfManaged。
 func (p *SelfManagedProvider) ProviderType() ProviderType {
 	return ProviderSelfManaged
 }
 
 // Initialize probes the upstream via /healthz. If unreachable, returns
 // an error so the manager does not register a broken provider.
+// Initialize 探活 /healthz，失败则不注册 Provider。
 func (p *SelfManagedProvider) Initialize(ctx context.Context) error {
 	if err := p.HealthCheck(ctx); err != nil {
 		return fmt.Errorf("self_managed: %w", err)
@@ -189,6 +198,7 @@ func (p *SelfManagedProvider) Initialize(ctx context.Context) error {
 
 // SupportedLanguages returns the languages the executor_manager
 // accepts.
+// SupportedLanguages 返回 executor_manager 接受的语言列表。
 func (p *SelfManagedProvider) SupportedLanguages() []string {
 	return []string{"python", "nodejs", "javascript"}
 }
@@ -196,6 +206,7 @@ func (p *SelfManagedProvider) SupportedLanguages() []string {
 // CreateInstance returns a logical instance handle. Self-managed's
 // instance lifetime is owned by the executor_manager's container
 // pool; this method only generates a tracking UUID.
+// CreateInstance 生成追踪 UUID；容器生命周期由 executor_manager 池管理。
 func (p *SelfManagedProvider) CreateInstance(ctx context.Context, template string) (*SandboxInstance, error) {
 	if !p.isInitialized() {
 		return nil, fmt.Errorf("self_managed: provider not initialized")
@@ -219,6 +230,7 @@ func (p *SelfManagedProvider) CreateInstance(ctx context.Context, template strin
 // ExecuteCode POSTs to {endpoint}/run with base64-encoded code.
 // The result is parsed and the structured `__RAGFLOW_RESULT__` marker
 // (if any) is extracted from stdout via ExtractStructuredResult.
+// ExecuteCode POST {endpoint}/run，base64 编码代码并解析结构化结果。
 func (p *SelfManagedProvider) ExecuteCode(
 	ctx context.Context,
 	inst *SandboxInstance,
@@ -344,6 +356,7 @@ func (p *SelfManagedProvider) ExecuteCode(
 // DestroyInstance is a no-op for self-managed. The executor_manager
 // returns the container to its pool after each /run call. We return
 // nil unconditionally, matching the Python implementation.
+// DestroyInstance 为 no-op：容器由 executor_manager 在 /run 后归还池中。
 func (p *SelfManagedProvider) DestroyInstance(ctx context.Context, inst *SandboxInstance) error {
 	if !p.isInitialized() {
 		return fmt.Errorf("self_managed: provider not initialized")
@@ -352,6 +365,7 @@ func (p *SelfManagedProvider) DestroyInstance(ctx context.Context, inst *Sandbox
 }
 
 // HealthCheck GETs {endpoint}/healthz.
+// HealthCheck GET {endpoint}/healthz 校验上游可用性。
 func (p *SelfManagedProvider) HealthCheck(ctx context.Context) error {
 	resp, err := p.healthHelper.Do(ctx, http.MethodGet, p.endpoint+"/healthz", "", "", nil)
 	if err != nil {
@@ -370,6 +384,7 @@ func (p *SelfManagedProvider) isInitialized() bool {
 	return p.initialized
 }
 
+// instanceIDOrEmpty 安全提取实例 ID，nil 时返回空串。
 func instanceIDOrEmpty(inst *SandboxInstance) string {
 	if inst == nil {
 		return ""

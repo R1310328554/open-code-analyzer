@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// code_exec_contract.go — CodeExec 输出契约：规范化返回值类型、推断 actual_type 并渲染 canonical content。
+
 //
 
 package tool
@@ -35,6 +37,7 @@ var codeExecSystemOutputKeys = map[string]struct{}{
 	"_elapsed_time":       {},
 }
 
+// CodeExecContract 描述单一业务输出与规范化后的值/类型/内容。
 type CodeExecContract struct {
 	BusinessOutput string
 	Value          any
@@ -42,6 +45,7 @@ type CodeExecContract struct {
 	Content        string
 }
 
+// BuildCodeExecContract 从 outputs 选取唯一业务输出并校验类型域。
 func BuildCodeExecContract(outputs map[string]any, rawResult any) (*CodeExecContract, error) {
 	businessName, businessMeta, err := selectCodeExecBusinessOutput(outputs)
 	if err != nil {
@@ -69,6 +73,7 @@ func BuildCodeExecContract(outputs map[string]any, rawResult any) (*CodeExecCont
 	}, nil
 }
 
+// NormalizeCodeExecOutputValue 递归规范化 map/slice 内的嵌套值。
 func NormalizeCodeExecOutputValue(value any) any {
 	switch v := value.(type) {
 	case []any:
@@ -88,6 +93,7 @@ func NormalizeCodeExecOutputValue(value any) any {
 	}
 }
 
+// InferCodeExecActualType 推断 String/Number/Array<T> 等 actual_type 字符串。
 func InferCodeExecActualType(value any) string {
 	value = NormalizeCodeExecOutputValue(value)
 	switch v := value.(type) {
@@ -129,6 +135,7 @@ func InferCodeExecActualType(value any) string {
 	}
 }
 
+// RenderCodeExecCanonicalContent 将值渲染为下游 Message 组件可用的 content。
 func RenderCodeExecCanonicalContent(value any) string {
 	value = NormalizeCodeExecOutputValue(value)
 	switch v := value.(type) {
@@ -147,6 +154,7 @@ func RenderCodeExecCanonicalContent(value any) string {
 	}
 }
 
+// selectCodeExecBusinessOutput 从 outputs 中选出唯一非系统保留业务输出。
 func selectCodeExecBusinessOutput(outputs map[string]any) (string, any, error) {
 	if len(outputs) == 1 {
 		for name, meta := range outputs {
@@ -206,6 +214,7 @@ func validateCodeExecTopLevelValueDomain(value any) error {
 	}
 }
 
+// validateCodeExecExpectedType 按 DSL 声明类型递归校验实际值。
 func validateCodeExecExpectedType(expectedType string, value any, path string) error {
 	etype, err := normalizeCodeExecExpectedType(expectedType)
 	if err != nil {

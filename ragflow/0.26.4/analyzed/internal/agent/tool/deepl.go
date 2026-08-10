@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// deepl.go — DeepL 翻译工具：POST /v2/translate 并返回 translations 结果列表。
+
 //
 
 package tool
@@ -69,11 +71,13 @@ var deeplProEndpoint = "https://api.deepl.com/v2/translate"
 // translation tool. It POSTs
 // a translation request to the DeepL /v2/translate endpoint via the
 // shared HTTPHelper.
+// DeepLTool 通过共享 HTTPHelper 调用 DeepL 免费/专业版 API。
 type DeepLTool struct {
 	helper *HTTPHelper
 }
 
 // NewDeepLTool returns a DeepLTool using the default HTTPHelper.
+// NewDeepLTool 使用默认 HTTPHelper 构造 DeepLTool。
 func NewDeepLTool() *DeepLTool {
 	return NewDeepLToolWith(NewHTTPHelper())
 }
@@ -88,6 +92,7 @@ func NewDeepLToolWith(h *HTTPHelper) *DeepLTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 暴露 api_key/text/source_lang/target_lang 参数 schema。
 func (d *DeepLTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: deeplToolName,
@@ -120,6 +125,7 @@ func (d *DeepLTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 // buildDeepLFormBody composes the application/x-www-form-urlencoded
 // body that the DeepL /v2/translate endpoint expects. Centralized so
 // the test suite can verify field encoding.
+// buildDeepLFormBody 构造 application/x-www-form-urlencoded 请求体。
 func buildDeepLFormBody(text, sourceLang, targetLang string) string {
 	form := url.Values{}
 	form.Set("text", text)
@@ -133,6 +139,7 @@ func buildDeepLFormBody(text, sourceLang, targetLang string) string {
 }
 
 // InvokableRun performs the DeepL translation.
+// InvokableRun 按 api_key 后缀选择 free/pro 端点并 POST 翻译请求。
 func (d *DeepLTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p deeplParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {

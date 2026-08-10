@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// email.go — SMTP 邮件发送工具：组装 RFC 822 消息并通过 net/smtp 提交。
+
 //
 
 package tool
@@ -54,15 +56,18 @@ type emailEnvelope struct {
 // RFC 822 message and submits it via the stdlib net/smtp client. All
 // authentication modes supported by net/smtp.Auth are available
 // (PLAIN, LOGIN, CRAM-MD5) by selecting the appropriate creds.
+// EmailTool 通过标准库 smtp.SendMail 发送纯文本邮件。
 type EmailTool struct{}
 
 // NewEmailTool returns an EmailTool. There is no shared HTTPHelper
 // (SMTP is not HTTP), so the constructor is the simplest possible.
+// NewEmailTool 构造无共享 HTTP 依赖的 EmailTool。
 func NewEmailTool() *EmailTool {
 	return &EmailTool{}
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 暴露 smtp_host/port/from/to/subject/body 等参数 schema。
 func (e *EmailTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: emailToolName,
@@ -115,6 +120,7 @@ func (e *EmailTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 // buildEmailMessage composes the RFC 822 wire format: headers + blank
 // line + body. Extracted so tests can verify subject / recipient
 // inclusion without opening a real socket.
+// buildEmailMessage 组装 RFC 822 报文（headers + 空行 + body）。
 func buildEmailMessage(from string, to []string, subject, body string) []byte {
 	var b strings.Builder
 	b.WriteString("From: " + from + "\r\n")
@@ -131,6 +137,7 @@ func buildEmailMessage(from string, to []string, subject, body string) []byte {
 // InvokableRun sends the email. We delegate to smtp.SendMail which
 // handles EHLO, STARTTLS, and AUTH transparently when an *smtp.Auth is
 // supplied; with nil auth it sends unauthenticated.
+// InvokableRun 校验参数后调用 smtp.SendMail 发送邮件。
 func (e *EmailTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p emailParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {
@@ -166,6 +173,7 @@ func (e *EmailTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool
 // validateEmailParams guards against obviously broken inputs. The
 // upstream SMTP server will give a better error for malformed
 // addresses, but the common case (empty / missing) is caught here.
+// validateEmailParams 拦截明显缺失的 host/port/from/to/subject。
 func validateEmailParams(p *emailParams) error {
 	switch {
 	case p.SMTPHost == "":

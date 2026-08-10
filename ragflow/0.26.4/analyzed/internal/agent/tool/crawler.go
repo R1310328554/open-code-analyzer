@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// crawler.go — 网页爬虫工具：单页 HTTP 抓取 + golang.org/x/net/html 提取正文与链接，含 SSRF 防护。
+
 //
 
 package tool
@@ -77,11 +79,13 @@ type crawlerResult struct {
 // The default production resolver is ResolveAndValidate (ssrf.go),
 // which rejects loopback / link-local / private / metadata targets and
 // returns the first safe A/AAAA record.
+// Resolver 校验 URL 并返回固定 IP，配合 DoPinned 防 DNS 重绑定。
 type Resolver func(rawURL string) (host string, ip net.IP, err error)
 
 // CrawlerTool is the Crawler tool. It fetches a single page
 // (max_depth=0) via HTTPHelper and extracts text + links with
 // golang.org/x/net/html.
+// CrawlerTool 抓取单页（max_depth=0）并返回 title/content/links。
 type CrawlerTool struct {
 	helper *HTTPHelper
 	// resolve is the URL resolver used to block internal / metadata
@@ -96,6 +100,7 @@ type CrawlerTool struct {
 // NewCrawlerTool returns a CrawlerTool using the default HTTPHelper.
 // Pass NewCrawlerToolWith(helper) to inject a custom HTTPHelper (e.g.
 // with a test transport).
+// NewCrawlerTool 使用默认 HTTPHelper 与 ResolveAndValidate。
 func NewCrawlerTool() *CrawlerTool {
 	return NewCrawlerToolWith(NewHTTPHelper())
 }
@@ -115,6 +120,7 @@ func NewCrawlerToolWith(h *HTTPHelper) *CrawlerTool {
 // is ResolveAndValidate; tests that point the crawler at an
 // httptest.NewServer (127.0.0.1) can pass a no-op that returns the
 // literal host. Returns the same receiver for fluent use.
+// WithResolver 替换 SSRF 校验与 IP 固定逻辑，便于 httptest 单测。
 func (c *CrawlerTool) WithResolver(fn Resolver) *CrawlerTool {
 	if fn != nil {
 		c.resolve = fn
@@ -123,6 +129,7 @@ func (c *CrawlerTool) WithResolver(fn Resolver) *CrawlerTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回 web_crawler 工具 schema，max_depth>0 当前不支持。
 func (c *CrawlerTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: crawlerToolName,
@@ -157,6 +164,7 @@ var ErrCrawlerDepthUnsupported = errors.New(
 // InvokableRun fetches a single page and returns extracted text + links.
 // max_depth>0 is rejected; multi-page crawling is deferred to a later
 // batch.
+// InvokableRun 经 DoPinned 抓取页面并 JSON 序列化 crawlerResult。
 func (c *CrawlerTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
 	var args crawlerArgs
 	if argumentsInJSON == "" {
@@ -225,6 +233,7 @@ func (c *CrawlerTool) InvokableRun(ctx context.Context, argumentsInJSON string, 
 // extractPage parses the HTML body and returns its title, plain text
 // content, and absolute links. It uses golang.org/x/net/html per plan
 // §2.11.4 (T2: HTTP + golang.org/x/net/html).
+// extractPage 解析 HTML 提取标题、纯文本正文与 href 链接列表。
 func extractPage(body []byte) (crawlerResult, error) {
 	doc, err := html.Parse(strings.NewReader(string(body)))
 	if err != nil {

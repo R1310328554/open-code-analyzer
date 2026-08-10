@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// ssh.go — SSH 远程沙箱 Provider：经 golang.org/x/crypto/ssh 在远程主机执行包装后的 Python/Node 脚本。
+
 //
 
 // ssh.go is the Go port of `agent/sandbox/providers/ssh.py`.
@@ -75,6 +77,7 @@ const (
 
 // SSHProvider is the Go port of
 // `agent/sandbox/providers/ssh.py::SSHProvider`.
+// SSHProvider 通过 SSH 在远程 work_dir 上传脚本、执行并收集 artifacts。
 type SSHProvider struct {
 	host             string
 	port             int
@@ -98,6 +101,7 @@ type SSHProvider struct {
 
 // sshInstance holds the per-connection state. Mirrors the Python
 // provider's _instances dict.
+// sshInstance 保存单连接状态，对应 Python 侧 _instances 字典条目。
 type sshInstance struct {
 	client        *ssh.Client
 	remoteWorkDir string
@@ -106,6 +110,7 @@ type sshInstance struct {
 // newSSHProviderFromEnv reads SSH_* env vars and returns a
 // provider ready for Initialize. The provider requires host +
 // username + (password OR private key) at Initialize time.
+// newSSHProviderFromEnv 从 SSH_* 环境变量构造 Provider。
 func newSSHProviderFromEnv() *SSHProvider {
 	return newSSHProviderFromConfig(sshConfigFromEnv())
 }
@@ -115,6 +120,7 @@ func newSSHProviderFromEnv() *SSHProvider {
 // a path on disk (read at provider-init time). KNOWN_HOSTS is the
 // path to an OpenSSH-format known_hosts file used to verify the
 // remote host's key (fail-closed when unset).
+// sshConfigFromEnv 读取 SSH_* 环境变量为配置 map。
 func sshConfigFromEnv() map[string]any {
 	return map[string]any{
 		"HOST":               os.Getenv("SSH_HOST"),
@@ -142,6 +148,7 @@ func sshConfigFromEnv() map[string]any {
 // env path). KNOWN_HOSTS is the path to a known_hosts file used
 // to verify the remote host key (required for security; the dial
 // fails closed when unset).
+// newSSHProviderFromConfig 从 settings JSON 构造 SSH Provider。
 func newSSHProviderFromConfig(cfg map[string]any) *SSHProvider {
 	p := &SSHProvider{
 		host:             configString(cfg, "HOST"),
@@ -181,6 +188,7 @@ func newSSHProviderFromConfig(cfg map[string]any) *SSHProvider {
 }
 
 // ProviderType returns ProviderSSH.
+// ProviderType 返回 ProviderSSH。
 func (p *SSHProvider) ProviderType() ProviderType { return ProviderSSH }
 
 // Initialize validates the config (host, username, auth) and
@@ -189,6 +197,7 @@ func (p *SSHProvider) ProviderType() ProviderType { return ProviderSSH }
 // plain Go error wrapped with the same intent. We do NOT open
 // a connection here — connectivity is verified by HealthCheck
 // and by CreateInstance.
+// Initialize 校验 host/username/认证配置，不在此建立连接。
 func (p *SSHProvider) Initialize(ctx context.Context) error {
 	if p.host == "" {
 		return errors.New("ssh: SSH_HOST env var is required")
@@ -217,6 +226,7 @@ func (p *SSHProvider) SupportedLanguages() []string {
 // CreateInstance opens a new SSH client, creates a remote
 // work_dir under the configured base, and registers the
 // instance for later teardown.
+// CreateInstance 建立 SSH 连接并在远程创建 work_dir 与 artifacts 子目录。
 func (p *SSHProvider) CreateInstance(ctx context.Context, template string) (*SandboxInstance, error) {
 	if !p.isInitialized() {
 		return nil, fmt.Errorf("ssh: provider not initialized")
@@ -268,6 +278,7 @@ func (p *SSHProvider) CreateInstance(ctx context.Context, template string) (*San
 // stdout / stderr, and collects artifacts. The wire format
 // matches the Python provider's `_upload_script` +
 // `_run_remote_command` + `_collect_artifacts` sequence.
+// ExecuteCode 上传包装脚本、远程执行并提取 __RAGFLOW_RESULT__ 结构化输出。
 func (p *SSHProvider) ExecuteCode(
 	ctx context.Context,
 	inst *SandboxInstance,
@@ -374,6 +385,7 @@ func (p *SSHProvider) ExecuteCode(
 // DestroyInstance removes the remote work_dir (via `rm -rf` over
 // SSH) and closes the SSH client. Mirrors the Python provider's
 // destroy_instance.
+// DestroyInstance 远程 rm -rf work_dir 并关闭 SSH 客户端。
 func (p *SSHProvider) DestroyInstance(ctx context.Context, inst *SandboxInstance) error {
 	if !p.isInitialized() {
 		return fmt.Errorf("ssh: provider not initialized")
@@ -403,6 +415,7 @@ func (p *SSHProvider) DestroyInstance(ctx context.Context, inst *SandboxInstance
 // HealthCheck verifies SSH connectivity by opening a session
 // and running `true`. The Python side's _assert_connectivity
 // does the same.
+// HealthCheck 拨号并运行 true 验证 SSH 连通性。
 func (p *SSHProvider) HealthCheck(ctx context.Context) error {
 	if !p.isInitialized() {
 		return errors.New("ssh: provider not initialized")
@@ -432,6 +445,7 @@ func (p *SSHProvider) isInitialized() bool {
 // dial opens an SSH client. The auth method is password OR
 // private key (whichever is set); the Python side accepts the
 // same two methods.
+// dial 建立 SSH 客户端，支持密码或私钥认证。
 func (p *SSHProvider) dial(ctx context.Context) (*ssh.Client, error) {
 	auth := []ssh.AuthMethod{}
 	if len(p.privateKey) > 0 {
@@ -469,6 +483,7 @@ func (p *SSHProvider) dial(ctx context.Context) (*ssh.Client, error) {
 // known_hosts file. The provider fails closed when no known_hosts
 // path is configured: this protects against man-in-the-middle attacks
 // on the SSH transport used to run sandboxed code.
+// hostKeyCallback 基于 known_hosts 校验远程主机密钥，未配置则拒绝连接。
 func (p *SSHProvider) hostKeyCallback() (ssh.HostKeyCallback, error) {
 	if p.knownHosts == "" {
 		return nil, errors.New("ssh: KNOWN_HOSTS not configured; refusing to connect without host key verification (set SSH_KNOWN_HOSTS)")
@@ -489,6 +504,7 @@ func (p *SSHProvider) hostKeyCallback() (ssh.HostKeyCallback, error) {
 // which single-quote escapes any value so the shell cannot be
 // tricked into re-interpreting it (see remoteMkdirAll,
 // remoteRemoveAll, remoteReadFile, remoteWriteFile, etc).
+// runRemoteCommand 经 SSH 执行命令，非零退出码通过 exit_code 返回而非 error。
 func (p *SSHProvider) runRemoteCommand(ctx context.Context, client *ssh.Client, command string, timeoutSec int) (string, string, int, error) {
 	sess, err := client.NewSession()
 	if err != nil {
@@ -625,6 +641,7 @@ type remoteEntry struct {
 // collectArtifacts walks the remote artifacts/ dir and returns
 // the list of files as {name, content_b64, mime_type, size}.
 // Enforces the same limits the local provider does.
+// collectArtifacts 遍历远程 artifacts/ 目录并按白名单收集 base64 文件。
 func (p *SSHProvider) collectArtifacts(client *ssh.Client, root string) ([]map[string]any, error) {
 	entries, err := p.remoteListDir(client, root)
 	if err != nil {
@@ -674,6 +691,7 @@ func (p *SSHProvider) collectArtifacts(client *ssh.Client, root string) ([]map[s
 // building `cd <work_dir> && <bin> <script>` commands. The
 // escape sequence for an embedded single quote is `\'` (a
 // backslash followed by a single quote).
+// shq 单引号 shell 转义，对齐 Python shlex.quote 行为。
 func shq(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `\'`) + "'"
 }

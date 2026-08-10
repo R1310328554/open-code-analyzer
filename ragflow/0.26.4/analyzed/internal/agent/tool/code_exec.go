@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// code_exec.go — CodeExec 代码沙箱工具：校验语言与脚本后 dispatch 到 SetSandboxClient 注册的沙箱客户端。
+
 //
 
 package tool
@@ -36,6 +38,7 @@ import (
 // side never reimplemented the sandbox). When a client is
 // registered via SetSandboxClient at boot, the tool dispatches
 // the execution.
+// ErrCodeExecSandboxMissing 在未注册沙箱客户端时返回。
 var ErrCodeExecSandboxMissing = errors.New(
 	"CodeExec sandbox client not registered — call SetSandboxClient at boot",
 )
@@ -48,6 +51,7 @@ const codeExecToolDescription = "This tool has a sandbox that can execute code w
 // codeExecArgs is the JSON shape the model sends in. The Python
 // tool accepts "lang" + "script"; we also accept "code" as a
 // synonym since some DSLs and tests use that spelling.
+// codeExecArgs 为模型 JSON 入参，兼容 lang/script 与 code 别名。
 type codeExecArgs struct {
 	Language string         `json:"language,omitempty"`
 	Lang     string         `json:"lang,omitempty"`
@@ -85,16 +89,19 @@ type codeExecResult struct {
 // CodeExecTool is the  for the CodeExec tool
 // ( . It validates language +
 // non-empty code and returns a structured "not-yet-wired" error.
+// CodeExecTool 实现 eino InvokableTool，对接 Python CodeExec 语义。
 type CodeExecTool struct{}
 
 // NewCodeExecTool returns a CodeExecTool implementing eino's
 // tool.InvokableTool interface.
+// NewCodeExecTool 构造 CodeExec 工具实例。
 func NewCodeExecTool() *CodeExecTool {
 	return &CodeExecTool{}
 }
 
 // Info returns the tool's metadata for the chat model. The schema mirrors
 // the Python CodeExecParam ToolMeta (plan , 字段对齐).
+// Info 返回 execute_code 工具 schema，字段对齐 Python ToolMeta。
 func (c *CodeExecTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: codeExecToolName,
@@ -117,6 +124,7 @@ func (c *CodeExecTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 
 // InvokableRun validates the inputs and dispatches to the
 // registered sandbox client via SetSandboxClient.
+// InvokableRun 校验参数并调用 GetSandboxClient().ExecuteCode。
 func (c *CodeExecTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
 	var args codeExecArgs
 	if argumentsInJSON == "" {
@@ -188,6 +196,7 @@ func (c *CodeExecTool) InvokableRun(ctx context.Context, argumentsInJSON string,
 // other than map[string]any) are silently dropped with a log
 // warning. This matches the Python tool's "skip on shape mismatch"
 // semantics — better to lose one artifact than to abort the run.
+// codeExecResultJSON 将 SandboxResponse 映射为 content/_ARTIFACTS 等 JSON 信封。
 func codeExecResultJSON(r *SandboxResponse) (string, error) {
 	if r == nil {
 		return codeExecStubResult("empty response"), nil
@@ -239,6 +248,7 @@ func codeExecResultJSON(r *SandboxResponse) (string, error) {
 // Metadata[key]. Items that aren't map[string]any are dropped with
 // a stderr log line so the operator can see the data loss without
 // the run aborting.
+// extractArtifactList 从 Metadata 提取 map 形 artifact 列表，形状不符则丢弃。
 func extractArtifactList(meta map[string]any, key string) []map[string]any {
 	raw, ok := meta[key]
 	if !ok {
@@ -295,6 +305,7 @@ func deserializeCodeExecStdout(stdout string) any {
 // normalizeCodeExecLang accepts the model's literal "language" or the
 // Python-style "lang" alias and maps synonyms to the canonical "python" /
 // "nodejs" forms used by the Python sandbox.
+// normalizeCodeExecLang 将 python3/js/node 等别名规范为 python/nodejs。
 func normalizeCodeExecLang(primary, alias string) string {
 	v := strings.ToLower(strings.TrimSpace(primary))
 	if v == "" {

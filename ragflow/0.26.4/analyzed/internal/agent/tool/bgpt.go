@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// bgpt.go — BGPT 科学文献搜索工具：POST bgpt.pro/api/mcp-search 返回全文证据结构化字段。
+
 //
 
 package tool
@@ -79,11 +81,13 @@ type bgptResponse struct {
 }
 
 // BGPTTool searches scientific papers via bgpt.pro.
+// BGPTTool 通过 BGPT API 检索论文并提取 methods/results/limitations 等字段。
 type BGPTTool struct {
 	helper *HTTPHelper
 }
 
 // NewBGPTTool returns a BGPTTool using the default HTTPHelper.
+// NewBGPTTool 使用默认 HTTPHelper 构造 BGPTTool。
 func NewBGPTTool() *BGPTTool {
 	return NewBGPTToolWith(NewHTTPHelper())
 }
@@ -97,6 +101,7 @@ func NewBGPTToolWith(h *HTTPHelper) *BGPTTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 暴露 query/num_results/api_key/days_back 参数 schema。
 func (b *BGPTTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: bgptToolName,
@@ -127,6 +132,7 @@ func (b *BGPTTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 }
 
 // InvokableRun performs the BGPT search.
+// InvokableRun POST 搜索请求并将上游 map 映射为 bgptResult 列表。
 func (b *BGPTTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p bgptParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {

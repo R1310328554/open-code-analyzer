@@ -14,6 +14,7 @@
 //  limitations under the License.
 //
 
+// code_exec_client.go — CodeExec 沙箱客户端抽象：启动时 SetSandboxClient 注入真实实现，默认 stub 返回 ErrSandboxNotWired。
 // CodeExec sandbox client. The Python sandbox service is kept
 // as-is (we do NOT rewrite the sandbox). The Go side has a
 // client that talks to the Python sandbox subsystem via the
@@ -50,6 +51,7 @@ import (
 // client. Production code calls SetSandboxClient at boot to install
 // a real client; the default is a stub returning
 // ErrSandboxNotWired.
+// SandboxClient 为 CodeExec 与沙箱子系统之间的 ExecuteCode 契约。
 type SandboxClient interface {
 	ExecuteCode(ctx context.Context, req SandboxRequest) (*SandboxResponse, error)
 }
@@ -58,6 +60,7 @@ type SandboxClient interface {
 // the sandbox subsystem. Mirrors `agent.sandbox.client.execute_code`'s
 // input surface. Arguments and Timeout are optional — the bridge
 // applies defaults (no args, 30s timeout) when zero-valued.
+// SandboxRequest 为工具到沙箱的 wire 形状，Timeout=0 时使用 Provider 默认 30s。
 type SandboxRequest struct {
 	Lang      string         // "python" | "javascript"
 	Script    string         // the user's code
@@ -69,6 +72,7 @@ type SandboxRequest struct {
 // captured streams; Returned is the legacy alias for the
 // structured main() return value; StructuredResult carries the
 // full extracted payload; Metadata holds provider-specific extras.
+// SandboxResponse 携带 stdout/stderr/结构化结果与 Provider 元数据。
 type SandboxResponse struct {
 	Stdout           string
 	Stderr           string
@@ -90,6 +94,7 @@ var (
 	sandboxClientImpl SandboxClient = stubSandboxClient{}
 )
 
+// SetSandboxClient 在进程启动时注册生产沙箱客户端。
 func SetSandboxClient(c SandboxClient) {
 	sandboxClientMu.Lock()
 	defer sandboxClientMu.Unlock()
@@ -100,6 +105,7 @@ func SetSandboxClient(c SandboxClient) {
 	sandboxClientImpl = c
 }
 
+// GetSandboxClient 返回当前注册的 SandboxClient（默认 stub）。
 func GetSandboxClient() SandboxClient {
 	sandboxClientMu.RLock()
 	defer sandboxClientMu.RUnlock()

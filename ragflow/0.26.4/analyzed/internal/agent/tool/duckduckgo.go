@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// duckduckgo.go — DuckDuckGo Instant Answer 搜索工具：返回 abstract 与扁平化 related_topics 列表。
+
 //
 
 package tool
@@ -77,11 +79,13 @@ type duckduckgoEnvelope struct {
 // performs a GET against the public Instant Answer endpoint using the
 // shared HTTPHelper and returns the abstract + a flat list of related
 // topics.
+// DuckDuckGoTool 调用 api.duckduckgo.com Instant Answer API。
 type DuckDuckGoTool struct {
 	helper *HTTPHelper
 }
 
 // NewDuckDuckGoTool returns a DuckDuckGoTool using the default HTTPHelper.
+// NewDuckDuckGoTool 使用默认 HTTPHelper 构造工具。
 func NewDuckDuckGoTool() *DuckDuckGoTool {
 	return NewDuckDuckGoToolWith(NewHTTPHelper())
 }
@@ -96,6 +100,7 @@ func NewDuckDuckGoToolWith(h *HTTPHelper) *DuckDuckGoTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回 duckduckgo 工具 query/max_results 参数 schema。
 func (d *DuckDuckGoTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: duckduckgoToolName,
@@ -116,6 +121,7 @@ func (d *DuckDuckGoTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 }
 
 // buildDuckDuckGoURL constructs the Instant Answer API URL.
+// buildDuckDuckGoURL 构造 format=json 的 Instant Answer URL。
 func buildDuckDuckGoURL(query string) string {
 	q := url.Values{}
 	q.Set("q", query)
@@ -127,6 +133,7 @@ func buildDuckDuckGoURL(query string) string {
 
 // flattenDuckDuckGoTopics flattens the upstream topic tree (which can
 // have arbitrary nesting) into a list, dropping entries without a URL.
+// flattenDuckDuckGoTopics 递归扁平化嵌套 Topics，丢弃无 URL 条目。
 func flattenDuckDuckGoTopics(in []duckduckgoTopic) []duckduckgoTopicOut {
 	var out []duckduckgoTopicOut
 	for _, t := range in {
@@ -142,6 +149,7 @@ func flattenDuckDuckGoTopics(in []duckduckgoTopic) []duckduckgoTopicOut {
 }
 
 // InvokableRun performs the DuckDuckGo Instant Answer query.
+// InvokableRun 查询 Instant Answer 并返回 JSON 信封。
 func (d *DuckDuckGoTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p duckduckgoParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {

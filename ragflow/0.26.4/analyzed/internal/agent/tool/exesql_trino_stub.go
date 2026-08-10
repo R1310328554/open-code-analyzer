@@ -8,6 +8,7 @@
 //      http://www.apache.org/licenses/LICENSE-2.0
 //
 
+// exesql_trino_stub.go — Trino DSN 辅助最小实现，供 exesql_trino_test 校验 splitTrinoCatalogSchema 与 DSN 前缀。
 // exesql_trino_stub.go — minimal implementations of the Trino DSN
 // helpers referenced by exesql_trino_test.go. The real
 // implementation lands when the trino driver integration moves
@@ -52,6 +53,7 @@ import (
 // (catalog, schema) pair. The first `.` or `/` is the catalog
 // separator; everything after it is the schema (which may itself
 // contain dots — the schema namespace is a free-form string).
+// splitTrinoCatalogSchema 将 catalog.schema 或 catalog/schema 拆成 Trino 对。
 func splitTrinoCatalogSchema(db string) (catalog, schema string) {
 	if db == "" {
 		return "", ""
@@ -69,6 +71,7 @@ func splitTrinoCatalogSchema(db string) (catalog, schema string) {
 // trinoDSN builds a Trino DSN from the project's exesql connection
 // params. Honours the Python-side quirks documented in
 // design doc §10.1 + gap analysis §11.4.1 row 5c.
+// trinoDSN 按 Python exesql.py 五处 quirks 构造 trino-go-client DSN。
 func trinoDSN(p exesqlConnParams) string {
 	scheme := "http"
 	if os.Getenv("TRINO_USE_TLS") != "" {
@@ -113,6 +116,7 @@ func trinoDSN(p exesqlConnParams) string {
 // formatTrinoDSNForLog is a small helper exposed for tests that
 // need to assert a DSN without the password portion leaking into
 // test logs. Not used by production code.
+// formatTrinoDSNForLog 脱敏 DSN 密码供测试日志断言。
 func formatTrinoDSNForLog(dsn string) string {
 	u, err := url.Parse(dsn)
 	if err != nil || u.User == nil {

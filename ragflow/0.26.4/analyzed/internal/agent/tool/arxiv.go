@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// arxiv.go — arXiv 学术预印本搜索工具：GET Atom API 并解析 title/authors/summary/pdf_url。
+
 //
 
 package tool
@@ -87,11 +89,13 @@ type arxivLink struct {
 // ArxivTool is the ArXiv academic search tool. It performs a GET
 // against the public ArXiv API and parses the Atom XML response
 // using the stdlib encoding/xml package.
+// ArxivTool 对接 export.arxiv.org/api/query 公开搜索接口。
 type ArxivTool struct {
 	helper *HTTPHelper
 }
 
 // NewArxivTool returns an ArxivTool using the default HTTPHelper.
+// NewArxivTool 使用默认 HTTPHelper 构造 ArxivTool。
 func NewArxivTool() *ArxivTool {
 	return NewArxivToolWith(NewHTTPHelper())
 }
@@ -106,6 +110,7 @@ func NewArxivToolWith(h *HTTPHelper) *ArxivTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 返回 arxiv 工具名称、描述与 query/max_results 参数 schema。
 func (a *ArxivTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: arxivToolName,
@@ -126,6 +131,7 @@ func (a *ArxivTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 }
 
 // buildArxivURL constructs the ArXiv /api/query URL.
+// buildArxivURL 构造 all:<query> 搜索 URL。
 func buildArxivURL(query string, maxResults int) string {
 	if maxResults <= 0 {
 		maxResults = 5
@@ -139,6 +145,7 @@ func buildArxivURL(query string, maxResults int) string {
 // parseArxivAtom decodes the upstream Atom XML and returns the model-
 // facing results. Exposed at package scope for unit testing with canned
 // XML.
+// parseArxivAtom 解码 Atom XML 为模型侧 results 列表。
 func parseArxivAtom(body []byte) ([]arxivResult, error) {
 	var feed arxivAtom
 	if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&feed); err != nil {
@@ -167,6 +174,7 @@ func parseArxivAtom(body []byte) ([]arxivResult, error) {
 // pickArxivPDF returns the entry's PDF link, preferring the explicit
 // rel="related" type="application/pdf" link and falling back to the
 // canonical abs/.../pdf URL derived from the entry id.
+// pickArxivPDF 优先取 rel=related 的 PDF 链接，否则从 entry id 推导。
 func pickArxivPDF(e arxivEntry) string {
 	for _, l := range e.Links {
 		if l.Rel == "related" && l.Type == "application/pdf" && l.Href != "" {
@@ -203,6 +211,7 @@ func normalizeArxivWhitespace(s string) string {
 }
 
 // InvokableRun performs the ArXiv search.
+// InvokableRun 执行 arXiv 搜索并返回 JSON results 信封。
 func (a *ArxivTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p arxivParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {
