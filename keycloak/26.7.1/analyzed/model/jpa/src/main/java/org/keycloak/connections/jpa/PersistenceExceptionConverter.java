@@ -21,11 +21,17 @@ import org.keycloak.connections.jpa.support.EntityManagerProxy;
 import org.keycloak.models.ModelException;
 
 /**
+ * 持久化异常转换工具：统一将 JPA/Hibernate 抛出的底层异常包装为 {@link ModelException}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class PersistenceExceptionConverter {
 
-    // For JTA, the database operations are executed during the commit phase of a transaction, and DB exceptions can be propagated differently
+    /**
+     * 将任意 Throwable 转为 {@link ModelException}。
+     * JTA 场景下数据库操作在 commit 阶段才真正执行，异常传播路径可能与资源本地事务不同，
+     * 具体解析逻辑委托给 {@link EntityManagerProxy#convert(Throwable)}。
+     */
     public static ModelException convert(Throwable t) {
         return EntityManagerProxy.convert(t);
     }

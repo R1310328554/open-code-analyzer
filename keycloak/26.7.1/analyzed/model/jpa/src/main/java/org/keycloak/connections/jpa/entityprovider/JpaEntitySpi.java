@@ -22,17 +22,19 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * JPA 实体扩展 SPI：允许第三方模块向 Keycloak EntityManager 注入额外 JPA 实体。
+ *
  * @author <a href="mailto:erik.mulder@docdatapayments.com">Erik Mulder</a>
- * 
- * Spi that allows for adding extra JPA entity's to the Keycloak entity manager.
  */
 public class JpaEntitySpi implements Spi {
 
+	/** 内部 SPI，仅供平台集成使用。 */
 	@Override
 	public boolean isInternal() {
 		return true;
 	}
 
+	/** SPI 注册名 {@code jpa-entity-provider}。 */
 	@Override
 	public String getName() {
 		return "jpa-entity-provider";

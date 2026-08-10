@@ -24,12 +24,16 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * 基于 Liquibase 的 {@link JpaUpdaterProviderFactory} 默认实现，Provider ID 为 {@code liquibase}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class LiquibaseJpaUpdaterProviderFactory implements JpaUpdaterProviderFactory {
 
+    /** 工厂标识，也是 server 配置中 updater provider 的默认选项。 */
     public static final String PROVIDER_ID = "liquibase";
 
+    /** 为当前会话创建 {@link LiquibaseJpaUpdaterProvider} 实例。 */
     @Override
     public JpaUpdaterProvider create(KeycloakSession session) {
         return new LiquibaseJpaUpdaterProvider(session);

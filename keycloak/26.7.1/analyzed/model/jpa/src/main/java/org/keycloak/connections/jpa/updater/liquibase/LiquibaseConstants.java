@@ -16,7 +16,11 @@
  */
 package org.keycloak.connections.jpa.updater.liquibase;
 
+/**
+ * Liquibase 集成相关常量。
+ */
 public class LiquibaseConstants {
 
+    /** Liquibase JDBC 执行器名称，用于 {@link liquibase.executor.ExecutorService} 查找。 */
     public static final String JDBC_EXECUTOR = "jdbc";
 }

@@ -21,16 +21,21 @@ import jakarta.persistence.PersistenceException;
 import org.keycloak.provider.ExceptionConverter;
 
 /**
+ * JPA 异常转换器：将 {@link PersistenceException} 映射为 Keycloak 领域层可理解的 {@link org.keycloak.models.ModelException}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class JpaExceptionConverter implements ExceptionConverter {
+
+    /** 仅处理 JPA 持久化异常，其余类型返回 null 交由其他转换器处理。 */
     @Override
     public Throwable convert(Throwable e) {
         if (!(e instanceof PersistenceException)) return null;
         return PersistenceExceptionConverter.convert(e);
     }
 
+    /** 转换器标识，供 SPI 注册与查找使用。 */
     @Override
     public String getId() {
         return "jpa";

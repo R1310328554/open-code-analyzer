@@ -20,6 +20,8 @@ package org.keycloak.connections.jpa.updater;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link JpaUpdaterProvider} 的 ProviderFactory 接口，由具体实现（如 Liquibase）注册到 SPI。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface JpaUpdaterProviderFactory extends ProviderFactory<JpaUpdaterProvider> {

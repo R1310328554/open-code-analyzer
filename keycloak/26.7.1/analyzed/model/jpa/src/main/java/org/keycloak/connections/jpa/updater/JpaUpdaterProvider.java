@@ -23,37 +23,39 @@ import java.sql.Connection;
 import org.keycloak.provider.Provider;
 
 /**
+ * JPA 数据库 schema 升级 Provider：负责校验、应用变更集或将 SQL 脚本导出到文件。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface JpaUpdaterProvider extends Provider {
 
     /**
-     * Status of database up-to-dateness
+     * 数据库 schema 与 changelog 的同步状态。
      */
     enum Status {
         /**
-         * Database is valid and up to date
+         * 数据库有效且已应用全部变更集。
          */
         VALID,
         /**
-         * No database exists.
+         * 数据库不存在或尚未初始化任何 changelog。
          */
         EMPTY,
         /**
-         * Database needs to be updated
+         * 存在未应用的变更集，需要升级。
          */
         OUTDATED
     }
 
     /**
-     * Updates the Keycloak database
+     * 对 Keycloak 数据库执行 schema 升级（应用所有待执行的 Liquibase changeset）。
      * @param connection DB connection
      * @param defaultSchema DB connection
      */
     void update(Connection connection, String defaultSchema);
 
     /**
-     * Checks whether Keycloak database is up to date with the most recent changesets
+     * 检查数据库是否已与最新 changeset 同步。
      * @param connection DB connection
      * @param defaultSchema DB schema to use
      * @return
@@ -61,7 +63,7 @@ public interface JpaUpdaterProvider extends Provider {
     Status validate(Connection connection, String defaultSchema);
 
     /**
-     * Exports the SQL update script into the given File.
+     * 将待执行的 SQL 升级脚本导出到指定文件（不直接修改数据库）。
      * @param connection DB connection
      * @param defaultSchema DB schema to use
      * @param file File to write to

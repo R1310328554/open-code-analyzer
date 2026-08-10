@@ -24,17 +24,18 @@ import liquibase.datatype.core.VarcharType;
 import liquibase.exception.DatabaseException;
 
 /**
- * Changes VARCHAR type with size greater than 255 to text type for MySQL 8 and newer.
- * 
- * Resolves Limits on Table Column Count and Row Size for MySQL 8
+ * MySQL 8+ 专用 VARCHAR 类型映射：长度超过 255 的 VARCHAR 自动降级为 TEXT，
+ * 以规避 MySQL 8 对表列数与行大小的限制。
  */
 public class MySQL8VarcharType extends VarcharType {
 
+    /** 优先级高于默认 {@link VarcharType}，确保 MySQL 8 场景优先选用本实现。 */
     @Override
     public int getPriority() {
         return super.getPriority() + 1; // Always take precedence over VarcharType
     }
 
+    /** MySQL 8 且 size &gt; 255 时映射为 TEXT，否则沿用父类逻辑。 */
     @Override
     public DatabaseDataType toDatabaseDataType(Database database) {
         if (database instanceof MySQLDatabase) {

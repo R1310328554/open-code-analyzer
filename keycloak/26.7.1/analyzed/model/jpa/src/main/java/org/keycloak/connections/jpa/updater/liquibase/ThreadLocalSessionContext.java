@@ -20,20 +20,27 @@ package org.keycloak.connections.jpa.updater.liquibase;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 线程本地 {@link KeycloakSession} 持有者。
+ * Liquibase 自定义 changeset 任务无法直接注入会话对象，故通过 ThreadLocal 在升级/校验期间传递当前会话。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ThreadLocalSessionContext {
 
+    /** 当前线程绑定的 Keycloak 会话。 */
     private static final ThreadLocal<KeycloakSession> currentSession = new ThreadLocal<KeycloakSession>();
 
+    /** 获取当前线程会话；未设置时返回 null。 */
     public static KeycloakSession getCurrentSession() {
         return currentSession.get();
     }
 
+    /** 将 Keycloak 会话绑定到当前线程（升级流程入口调用）。 */
     public static void setCurrentSession(KeycloakSession session) {
         currentSession.set(session);
     }
 
+    /** 清除线程本地会话，防止线程池复用时泄漏。 */
     public static void removeCurrentSession() {
         currentSession.remove();
     }

@@ -22,15 +22,19 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * JPA 数据库升级 SPI：注册 {@link JpaUpdaterProvider} 及其实现工厂（默认 Liquibase）。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JpaUpdaterSpi implements Spi {
 
+    /** 内部 SPI，由服务器启动流程自动选用实现。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称 {@code connectionsJpaUpdater}。 */
     @Override
     public String getName() {
         return "connectionsJpaUpdater";

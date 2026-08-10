@@ -20,9 +20,9 @@ package org.keycloak.connections.jpa.entityprovider;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link JpaEntityProvider} 的 ProviderFactory 扩展接口，供 SPI 发现与实例化扩展实体 Provider。
+ *
  * @author <a href="mailto:erik.mulder@docdatapayments.com">Erik Mulder</a>
- * 
- * Extended interface for a provider factory for JpaEntityProvider's.
  */
 public interface JpaEntityProviderFactory extends ProviderFactory<JpaEntityProvider> {
 
