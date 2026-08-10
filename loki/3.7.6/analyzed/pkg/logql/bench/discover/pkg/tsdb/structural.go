@@ -1,5 +1,7 @@
 package tsdb
 
+// structural 从本地 TSDB 索引枚举流、去重合并 chunk、构建倒排索引并可选服务多样性截断。
+
 import (
 	"context"
 	"fmt"
@@ -17,6 +19,7 @@ import (
 	tsdbindex "github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/index"
 )
 
+// parseSelectorMatchers 将 LogQL 标签子句解析为 Prometheus Matcher 供 ForSeries 过滤。
 // parseSelectorMatchers parses a LogQL-style label matcher clause (without
 // outer braces) into Prometheus label matchers suitable for ForSeries. If the
 // selector string is empty, a single match-everything matcher is returned.
@@ -37,6 +40,7 @@ func parseSelectorMatchers(selector string) ([]*labels.Matcher, error) {
 	return matchers, nil
 }
 
+// RunStructuralDiscovery 主入口：遍历索引、合并同 selector 流、构建 ByServiceName 等倒排表。
 // RunStructuralDiscovery enumerates streams from local TSDB indexes,
 // deduplicates by canonical selector, and builds structural inverted indexes.
 // When cfg.Selector is set, only streams matching those label matchers are
@@ -76,6 +80,7 @@ func RunStructuralDiscovery(cfg StructuralConfig, indexes []tsdb.Index) (*Struct
 			through,
 			func(lbls labels.Labels, fp model.Fingerprint, chks []tsdbindex.ChunkMeta) (stop bool) {
 				payload := cloneStructuralSeriesPayload(lbls, fp, chks)
+// stripInternalLabels 移除 __ 包裹的内部标签，避免 Loki API 查询挂起或空结果。
 				// Strip internal TSDB labels (__stream_shard__, __time_shard__, etc.)
 				// from the canonical selector so it can be used with the Loki query API.
 				payload.Labels = stripInternalLabels(payload.Labels)
@@ -192,6 +197,7 @@ func RunStructuralDiscovery(cfg StructuralConfig, indexes []tsdb.Index) (*Struct
 	}, nil
 }
 
+// resolveStructuralBounds 在 From/To 为零时取所有索引边界的并集。
 func resolveStructuralBounds(cfg StructuralConfig, indexes []tsdb.Index) (model.Time, model.Time, error) {
 	if len(indexes) == 0 {
 		return 0, 0, fmt.Errorf("at least one TSDB index is required")
@@ -241,6 +247,7 @@ func resolveStructuralBounds(cfg StructuralConfig, indexes []tsdb.Index) (model.
 	return model.TimeFromUnixNano(from.UnixNano()), model.TimeFromUnixNano(through.UnixNano()), nil
 }
 
+// cloneStructuralSeriesPayload 深拷贝标签与 chunk，避免 ForSeries 回调后数据失效。
 func cloneStructuralSeriesPayload(lbls labels.Labels, fp model.Fingerprint, chks []tsdbindex.ChunkMeta) StructuralSeriesPayload {
 	clonedChunks := make([]tsdbindex.ChunkMeta, len(chks))
 	copy(clonedChunks, chks)
@@ -268,6 +275,7 @@ func cloneStructuralLabelSet(src loghttp.LabelSet) loghttp.LabelSet {
 	return cloned
 }
 
+// stripInternalLabels 过滤以双下划线开头且结尾的标签键。
 // stripInternalLabels returns a copy of the LabelSet with internal TSDB labels
 // removed. Internal labels start and end with "__" (e.g. __stream_shard__,
 // __time_shard__). These labels are stored in TSDB indexes but are not visible
@@ -284,6 +292,7 @@ func stripInternalLabels(src loghttp.LabelSet) loghttp.LabelSet {
 	return out
 }
 
+// boundedLabelKeySet 预置 bench.LabelKeys 集合，用于 ByLabelKey 倒排索引。
 func boundedLabelKeySet() map[string]struct{} {
 	keys := make(map[string]struct{}, len(bench.LabelKeys))
 	for _, key := range bench.LabelKeys {
@@ -291,3 +300,4 @@ func boundedLabelKeySet() map[string]struct{} {
 	}
 	return keys
 }
+// ProgressWriter 按 ProgressInterval 回调 raw/unique 计数，默认 10 秒报告一次进度。

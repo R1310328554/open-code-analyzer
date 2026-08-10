@@ -1,5 +1,7 @@
 package tsdb
 
+// structural_types 定义结构发现运行的配置、中间载荷、合并流与最终输出结果类型。
+
 import (
 	"time"
 
@@ -9,6 +11,7 @@ import (
 	tsdbindex "github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/index"
 )
 
+// StructuralConfig 控制时间边界、MaxStreams 截断、Selector 过滤与进度回调。
 // StructuralConfig controls one TSDB structural discovery run.
 type StructuralConfig struct {
 	// UserID is accepted for tsdb.Index compatibility. It may be empty for
@@ -43,6 +46,7 @@ type StructuralConfig struct {
 	ProgressInterval time.Duration
 }
 
+// StructuralSeriesPayload 为 ForSeries 回调快照，避免索引关闭后悬垂引用。
 // StructuralSeriesPayload is the callback-owned input shape copied during
 // TSDB traversal before readers are closed.
 type StructuralSeriesPayload struct {
@@ -51,6 +55,7 @@ type StructuralSeriesPayload struct {
 	ChunkMetas  []tsdbindex.ChunkMeta
 }
 
+// MergedStream 按 canonical selector 聚合多索引来源的 chunk 与 SourceCount。
 // MergedStream is the deduplicated aggregate for one canonical selector.
 // Labels and ChunkMetas are deep-copied values, never callback-owned refs.
 type MergedStream struct {
@@ -60,6 +65,7 @@ type MergedStream struct {
 	SourceCount int
 }
 
+// StructuralResult 含倒排索引、选中 selector 列表及 MergedStreams 供后续 range 推导。
 // StructuralResult is the structural discovery output produced from local
 // TSDB indexes only.
 type StructuralResult struct {
@@ -72,3 +78,4 @@ type StructuralResult struct {
 	TotalSelected int
 	MergedStreams map[string]MergedStream
 }
+// MaxStreams 为零表示不截断，返回全部去重后的唯一流 selector。

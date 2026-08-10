@@ -1,5 +1,7 @@
 package tsdb
 
+// storage_types 定义 discover 工具的对象存储 CLI 配置：类型枚举、flag 注册与校验。
+
 import (
 	"flag"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 
 const defaultStoragePrefix = "index/"
 
+// StorageType 支持 s3、gcs、azure、filesystem 四种后端。
 type StorageType string
 
 const (
@@ -23,6 +26,7 @@ const (
 	StorageTypeFilesystem StorageType = "filesystem"
 )
 
+// StorageConfig 聚合通用字段与各后端专属配置块。
 type StorageConfig struct {
 	StorageType StorageType
 	Bucket      string
@@ -35,6 +39,7 @@ type StorageConfig struct {
 	Filesystem local.FSConfig
 }
 
+// RegisterFlags 注册 storage-type、bucket、tenant 及各后端子 flag。
 func (c *StorageConfig) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar((*string)(&c.StorageType), "storage-type", "", "Object storage backend for TSDB index access. Supported: s3, gcs, azure, filesystem.")
 	fs.StringVar(&c.Bucket, "bucket", "", "Primary object storage location alias. Maps to backend-specific bucket/container/directory settings.")
@@ -46,6 +51,7 @@ func (c *StorageConfig) RegisterFlags(fs *flag.FlagSet) {
 	c.Filesystem.RegisterFlagsWithPrefix("", fs)
 }
 
+// NormalizeAndValidate 规范化 storage-type 别名、补默认 prefix 并校验必填项。
 func (c *StorageConfig) NormalizeAndValidate() error {
 	c.StorageType = normalizeStorageType(c.StorageType)
 	if c.StorageType == "" {
@@ -90,6 +96,7 @@ func (c *StorageConfig) NormalizeAndValidate() error {
 	return nil
 }
 
+// normalizeStorageType 接受 blob/fs/local 等别名并映射到规范枚举值。
 func normalizeStorageType(t StorageType) StorageType {
 	cleaned := strings.ToLower(strings.TrimSpace(string(t)))
 	switch cleaned {
@@ -106,6 +113,7 @@ func normalizeStorageType(t StorageType) StorageType {
 	}
 }
 
+// normalizeStringAlias 统一 --bucket 与后端专属 bucket flag，冲突时报错。
 func (c *StorageConfig) normalizeStringAlias(backendField *string, backendFlag string) error {
 	c.Bucket = strings.TrimSpace(c.Bucket)
 	*backendField = strings.TrimSpace(*backendField)
@@ -131,6 +139,7 @@ func (c *StorageConfig) normalizeStringAlias(backendField *string, backendFlag s
 	return nil
 }
 
+// normalizeAzureContainerAlias 将 --bucket 同步到 azure.container-name。
 func (c *StorageConfig) normalizeAzureContainerAlias() error {
 	c.Bucket = strings.TrimSpace(c.Bucket)
 	c.Azure.ContainerName = strings.TrimSpace(c.Azure.ContainerName)
@@ -155,3 +164,4 @@ func (c *StorageConfig) normalizeAzureContainerAlias() error {
 
 	return nil
 }
+// defaultStoragePrefix 为 index/，与 shipper TSDB 索引在对象存储中的路径约定一致。

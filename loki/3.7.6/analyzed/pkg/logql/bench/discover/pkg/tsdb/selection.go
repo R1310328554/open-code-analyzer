@@ -1,11 +1,14 @@
 package tsdb
 
+// selection 按 service_name 分组轮询选取 canonical selector，避免单一服务垄断基准测试流样本。
+
 import (
 	"sort"
 
 	"github.com/grafana/loki/v3/pkg/loghttp"
 )
 
+// selectWithDiversity 在流数超过上限时跨服务轮询取样，组内排序保证确定性。
 // selectWithDiversity selects up to maxStreams canonical selectors from the
 // deduplicated seen map using a service-diversity strategy.
 //
@@ -23,6 +26,7 @@ import (
 // If len(seen) <= maxStreams, all selectors are returned (no truncation needed).
 func selectWithDiversity(seen map[string]loghttp.LabelSet, maxStreams int) []string {
 	if len(seen) <= maxStreams {
+// 流数未超限时直接返回全部 selector 的字典序列表。
 		// No capping needed: return all selectors in sorted order.
 		result := make([]string, 0, len(seen))
 		for canonical := range seen {
@@ -32,6 +36,7 @@ func selectWithDiversity(seen map[string]loghttp.LabelSet, maxStreams int) []str
 		return result
 	}
 
+// 无 service_name 标签的流归入空字符串组，仍参与轮询。
 	// Group by service_name (empty string key for selectors without one).
 	groups := make(map[string][]string)
 	for canonical, ls := range seen {
@@ -47,6 +52,7 @@ func selectWithDiversity(seen map[string]loghttp.LabelSet, maxStreams int) []str
 	}
 	sort.Strings(keys)
 
+// 每轮从各组取一条，小服务先耗尽，剩余名额由大服务填充。
 	// Interleave: round-robin one selector from each group per round.
 	result := make([]string, 0, maxStreams)
 	for round := 0; len(result) < maxStreams; round++ {
@@ -69,3 +75,4 @@ func selectWithDiversity(seen map[string]loghttp.LabelSet, maxStreams int) []str
 	sort.Strings(result)
 	return result
 }
+// 最终 result 再次排序，便于与 golden 文件及跨运行 diff 对齐。

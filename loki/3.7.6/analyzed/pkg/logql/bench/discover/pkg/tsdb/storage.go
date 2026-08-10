@@ -1,5 +1,7 @@
 package tsdb
 
+// storage 根据 StorageConfig 构造 S3/GCS/Azure/本地 FS 对象客户端与索引存储客户端。
+
 import (
 	"context"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	shipperstorage "github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/storage"
 )
 
+// newS3ObjectClient 等变量可替换，便于单测注入 mock ObjectClient。
 var (
 	newS3ObjectClient = func(cfg aws.S3Config, hedgingCfg hedging.Config) (client.ObjectClient, error) {
 		return aws.NewS3ObjectClient(cfg, hedgingCfg)
@@ -37,6 +40,7 @@ var (
 	azureBlobMetrics     azure.BlobStorageMetrics
 )
 
+// getAzureBlobMetrics 懒初始化 Azure 指标，sync.Once 保证只注册一次。
 func getAzureBlobMetrics() azure.BlobStorageMetrics {
 	azureBlobMetricsOnce.Do(func() {
 		azureBlobMetrics = azure.NewBlobStorageMetrics()
@@ -60,6 +64,7 @@ func NewObjectClient(cfg StorageConfig) (client.ObjectClient, error) {
 	}
 }
 
+// NewIndexStorageClient 校验配置后包装 ObjectClient 为 shipper 索引客户端。
 func NewIndexStorageClient(cfg StorageConfig) (shipperstorage.Client, error) {
 	if err := cfg.NormalizeAndValidate(); err != nil {
 		return nil, err
@@ -72,3 +77,4 @@ func NewIndexStorageClient(cfg StorageConfig) (shipperstorage.Client, error) {
 
 	return shipperstorage.NewIndexStorageClient(objClient, cfg.Prefix), nil
 }
+// hedging 配置当前传空，与 Loki 生产默认一致，后续可扩展重试策略。

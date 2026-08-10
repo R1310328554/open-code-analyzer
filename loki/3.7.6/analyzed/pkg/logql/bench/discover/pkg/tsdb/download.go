@@ -1,5 +1,7 @@
 package tsdb
 
+// download 从对象存储按时间范围发现并下载 TSDB 索引文件到本地临时目录，供后续结构发现与范围推导使用。
+
 import (
 	"context"
 	"fmt"
@@ -18,6 +20,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb"
 )
 
+// tsdbIndexTablePrefix 为默认索引表名前缀；dayInSeconds 用于按天生成表名。
 const (
 	tsdbIndexTablePrefix = "index_"
 	dayInSeconds         = 24 * 60 * 60
@@ -92,6 +95,7 @@ func DiscoverAndDownloadIndexes(ctx context.Context, client shipperstorage.Clien
 	return DownloadResult{Files: results}, nil
 }
 
+// normalizeDownloadRange 补全零值边界：to 默认当前 UTC，from 默认 to 前 24 小时。
 func normalizeDownloadRange(from, to time.Time) (time.Time, time.Time, error) {
 	if to.IsZero() {
 		to = time.Now().UTC()
@@ -109,6 +113,7 @@ func normalizeDownloadRange(from, to time.Time) (time.Time, time.Time, error) {
 	return from, to, nil
 }
 
+// tableNamesForRange 按 Unix 日序号生成 index_<day> 表名列表。
 func tableNamesForRange(from, to time.Time, prefix string) []string {
 	startDay := from.Unix() / dayInSeconds
 	endDay := to.Unix() / dayInSeconds
@@ -121,6 +126,7 @@ func tableNamesForRange(from, to time.Time, prefix string) []string {
 	return tables
 }
 
+// filterTSDBFilesByTimeOverlap 解析单租户 TSDB 对象名并保留与查询窗口重叠的文件。
 func filterTSDBFilesByTimeOverlap(files []shipperstorage.IndexFile, from, to model.Time) ([]DownloadedIndexFile, error) {
 	filtered := make([]DownloadedIndexFile, 0, len(files))
 
@@ -144,6 +150,7 @@ func filterTSDBFilesByTimeOverlap(files []shipperstorage.IndexFile, from, to mod
 	return filtered, nil
 }
 
+// parseSingleTenantTSDBObjectName 去除 .gz 后缀后解析 TSDB 路径标识符。
 func parseSingleTenantTSDBObjectName(name string) (tsdb.SingleTenantTSDBIdentifier, bool) {
 	trimmed := name
 	if shipperstorage.IsCompressedFile(name) {
@@ -153,6 +160,7 @@ func parseSingleTenantTSDBObjectName(name string) (tsdb.SingleTenantTSDBIdentifi
 	return tsdb.ParseSingleTenantTSDBPath(trimmed)
 }
 
+// downloadIndexFile 创建本地目录并调用 shipper 下载，支持压缩文件自动解压。
 func downloadIndexFile(ctx context.Context, client shipperstorage.Client, table, tenant, objectName, localPath string, compressed bool) error {
 	if err := ensureDirectory(filepath.Dir(localPath)); err != nil {
 		return fmt.Errorf("create local directory for %q: %w", localPath, err)
@@ -177,3 +185,4 @@ func downloadIndexFile(ctx context.Context, client shipperstorage.Client, table,
 var ensureDirectory = func(path string) error {
 	return os.MkdirAll(path, 0o755)
 }
+// 下载结果按表名与对象名排序，便于确定性回归测试与 diff 对比。

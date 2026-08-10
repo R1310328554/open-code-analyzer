@@ -1,5 +1,7 @@
 package bench
 
+// generator 按配置批量合成 logproto.Stream 与 Entry，支持标签基数、密集时段与 OTEL 结构化元数据，供基准 push 数据集。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -21,6 +23,7 @@ const (
 	errorLevel     = "error" // Constant for the error level string
 )
 
+// Batch 表示一批 logproto.Stream，Size 估算标签、行与结构化元数据总字节。
 // Batch represents a collection of log streams
 type Batch struct {
 	Streams []logproto.Stream
@@ -41,6 +44,7 @@ func (b Batch) Size() int {
 	return size
 }
 
+// LabelConfig 控制 cluster/namespace/service 等标签的基数范围。
 // LabelConfig configures the cardinality of generated labels
 type LabelConfig struct {
 	Clusters    int      // 1-10 clusters
@@ -67,6 +71,7 @@ var defaultLabelConfig = LabelConfig{
 	Datacenters: []string{"dc1", "dc2", "dc3"},
 }
 
+// GeneratorConfig 含时间跨度、DenseIntervals 高密度时段、NumStreams 与 Seed。
 // GeneratorConfig contains all configuration for the log generator
 type GeneratorConfig struct {
 	StartTime  time.Time
@@ -79,6 +84,7 @@ type GeneratorConfig struct {
 	Seed           int64 // Source of randomness
 }
 
+// DenseInterval 内日志条数约为正常时段的 10 倍，模拟流量尖峰。
 // DenseInterval represents a period of high log volume
 type DenseInterval struct {
 	Start    time.Time
@@ -109,6 +115,7 @@ func (c *GeneratorConfig) NewRand() *rand.Rand {
 	return rand.New(rand.NewSource(c.Seed))
 }
 
+// StreamMetadata 保存流的固定标签、关联 Service 及 MinRange 查询窗口元数据。
 // StreamMetadata holds the consistent properties of a stream
 type StreamMetadata struct {
 	Labels  string
@@ -120,6 +127,7 @@ type StreamMetadata struct {
 	MinInstantRange time.Duration
 }
 
+// Generator 预生成 StreamsMeta 并在 Batches 迭代中复用标签、刷新日志条目。
 // Generator represents a log generator with configuration
 type Generator struct {
 	config      GeneratorConfig
@@ -128,6 +136,7 @@ type Generator struct {
 	services    map[string]Service // Map of available applications by name
 }
 
+// Opt 提供链式 With* 方法，DefaultOpt 返回与 defaultGeneratorConfig 一致的默认值。
 // Opt represents configuration options for the generator
 type Opt struct {
 	startTime      time.Time
@@ -277,6 +286,7 @@ func (g *Generator) generateStreamMetadata() {
 
 // Batches returns an iterator that produces log batches
 // Each batch contains the configured number of streams with generated log entries
+// Batches 返回无限迭代器，每轮 yield 含 NumStreams 条流的 Batch。
 func (g *Generator) Batches() iter.Seq[*Batch] {
 	// Pre-generate stream metadata once
 	g.generateStreamMetadata()
@@ -306,6 +316,7 @@ func (g *Generator) Batches() iter.Seq[*Batch] {
 
 // generateEntriesForStream creates log entries for a specific stream
 // using the application and format from the stream metadata
+// generateEntriesForStream 按应用 LogGenerator 生成条目并附加 OTEL 结构化元数据。
 func (g *Generator) generateEntriesForStream(meta StreamMetadata) []logproto.Entry {
 	app := meta.Service
 	faker := NewFaker(g.rnd)
@@ -437,6 +448,7 @@ func (g *Generator) generateEntriesForStream(meta StreamMetadata) []logproto.Ent
 }
 
 // GenerateDataset generates a dataset of approximately the specified size
+// GenerateDataset 累积 batch 直至近似 targetSize 后序列化 PushRequest 写文件。
 func (g *Generator) GenerateDataset(targetSize int64, outputFile string) error {
 	var totalSize int64
 	streams := make([]logproto.Stream, 0, g.config.NumStreams)
@@ -499,3 +511,4 @@ func LoadConfig(dataDir string) (*GeneratorConfig, error) {
 
 	return &config, nil
 }
+// SaveConfig/LoadConfig 将 GeneratorConfig 持久化为 data 目录下 generator.json。

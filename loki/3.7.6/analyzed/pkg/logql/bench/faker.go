@@ -1,11 +1,14 @@
 package bench
 
+// faker 为 LogQL 基准测试生成可复现的伪造日志字段：HTTP、数据库、K8s、Mimir/Loki/Tempo 等多种服务格式的随机数据与 LogGenerator。
+
 import (
 	"fmt"
 	"math/rand"
 	"time"
 )
 
+// 包级变量提供各服务日志模板所需的枚举池，供 Faker 方法随机抽取。
 // Data for generating log entries
 var (
 	httpMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH"}
@@ -219,11 +222,13 @@ var (
 	}
 )
 
+// Faker 封装 *rand.Rand，保证同一 seed 下基准数据集可重复生成。
 // Faker provides methods to generate fake data consistently
 type Faker struct {
 	rnd *rand.Rand
 }
 
+// NewFaker 绑定外部随机源，通常来自 GeneratorConfig.Seed。
 // NewFaker creates a new faker with the given random source
 func NewFaker(rnd *rand.Rand) *Faker {
 	return &Faker{rnd: rnd}
@@ -479,6 +484,7 @@ func (f *Faker) GrafanaMessage() string {
 	return grafanaMessages[f.rnd.Intn(len(grafanaMessages))]
 }
 
+// LogGenerator 按日志级别、时间戳与 Faker 生成单行日志文本。
 // LogGenerator is a function that generates a log line
 type LogGenerator func(level string, timestamp time.Time, faker *Faker) string
 
@@ -491,6 +497,7 @@ const (
 	LogFormatUnstructured LogFormat = "unstructured"
 )
 
+// Service 描述一类应用的名称、格式、生成函数与 OTEL 资源属性模板。
 // Service represents a type of application that generates logs
 type Service struct {
 	Name         string
@@ -499,6 +506,7 @@ type Service struct {
 	OTELResource map[string]string // OTEL resource attributes
 }
 
+// defaultApplications 预注册 web-server、database、mimir、loki 等标准服务日志模式。
 // Register standard application types with known log patterns
 var defaultApplications = []Service{
 	{
@@ -970,3 +978,4 @@ var defaultApplications = []Service{
 		},
 	},
 }
+// 各 LogGenerator 以概率附加 request_id、trace 等字段，模拟真实日志的结构化变化。

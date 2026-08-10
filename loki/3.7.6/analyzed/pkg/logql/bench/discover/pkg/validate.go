@@ -1,11 +1,14 @@
 package discover
 
+// validate 对基准查询注册表做元数据解析校验，统计通过/失败并报告未引用的有界集合成员。
+
 import (
 	"fmt"
 
 	bench "github.com/grafana/loki/v3/pkg/logql/bench"
 )
 
+// QueryResolutionResult 记录单条查询模板经 MetadataVariableResolver 解析的结果或缺口。
 // QueryResolutionResult holds the outcome of resolving a single query template.
 type QueryResolutionResult struct {
 	// Definition is the query as loaded from the registry.
@@ -19,6 +22,7 @@ type QueryResolutionResult struct {
 	Err error
 }
 
+// SuiteStats 汇总单个 suite 内查询总数与通过/失败计数。
 // SuiteStats holds pass/fail counts for a single suite.
 type SuiteStats struct {
 	Total  int
@@ -26,6 +30,7 @@ type SuiteStats struct {
 	Failed int
 }
 
+// ValidationResult 聚合全部 suite 的解析结果及未引用 bounded-set 键列表。
 // ValidationResult summarises the outcome of running all queries in the
 // selected suites through the metadata resolver.
 type ValidationResult struct {
@@ -48,6 +53,7 @@ type ValidationResult struct {
 	UnreferencedKeys []UnreferencedKey
 }
 
+// UnreferencedKey 标识 keywords 等有界集合中未被任何查询引用的成员。
 // UnreferencedKey represents a member of a bounded set that no query references.
 type UnreferencedKey struct {
 	// BoundedSet names the set this key belongs to
@@ -58,6 +64,7 @@ type UnreferencedKey struct {
 	Key string
 }
 
+// RunValidation 加载 queriesDir 注册表，用固定种子 42 的 resolver 逐条解析。
 // RunValidation loads all non-skipped queries from the given suites and
 // resolves each one against the provided metadata. It returns a ValidationResult
 // containing per-query outcomes and a list of unreferenced bounded-set members.
@@ -112,6 +119,7 @@ func RunValidation(metadata *bench.DatasetMetadata, queriesDir string, suites []
 	return result, nil
 }
 
+// findUnreferencedKeys 对比 bench 预定义有界集合与查询 Requires 字段的引用覆盖。
 // findUnreferencedKeys walks all non-skipped queries across the given suites
 // and returns bounded-set members not referenced by any query.
 //
@@ -166,3 +174,4 @@ func findUnreferencedKeys(registry *bench.QueryRegistry, suites []bench.Suite) [
 
 	return unreferenced
 }
+// DetectedFields 为动态集合， intentionally 排除在未引用键检测之外。
