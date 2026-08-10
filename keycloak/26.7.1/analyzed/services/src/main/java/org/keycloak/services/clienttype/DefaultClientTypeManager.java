@@ -39,24 +39,34 @@ import org.keycloak.util.JsonSerialization;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认客户端类型管理器。
+ * <p>管理领域级与全局 {@link ClientTypeRepresentation} 的加载、校验、持久化， 并通过 {@link TypeAwareClientModelDelegate} 将类型约束应用到 {@link ClientModel}。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultClientTypeManager implements ClientTypeManager {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(DefaultClientTypeManager.class);
 
-    // Realm attribute where are client types saved
+    /** 领域属性键：存储领域自定义客户端类型 JSON */
     private static final String CLIENT_TYPE_REALM_ATTRIBUTE = "client-types";
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 全局预置客户端类型列表 */
     private final List<ClientTypeRepresentation> globalClientTypes;
 
+    /** 构造客户端类型管理器。
+     * @param session Keycloak 会话
+     * @param globalClientTypes 全局客户端类型定义
+     */
     public DefaultClientTypeManager(KeycloakSession session, List<ClientTypeRepresentation> globalClientTypes) {
         this.session = session;
         this.globalClientTypes = globalClientTypes;
     }
 
 
+    /** {@inheritDoc} 从领域属性加载客户端类型并合并全局类型 */
     @Override
     public ClientTypesRepresentation getClientTypes(RealmModel realm) throws ClientTypeException {
         String asStr = realm.getAttribute(CLIENT_TYPE_REALM_ATTRIBUTE);
@@ -66,7 +76,7 @@ public class DefaultClientTypeManager implements ClientTypeManager {
             result.setGlobalClientTypes(globalClientTypes);
         } else {
             try {
-                // Skip validation here for performance reasons
+                // 为性能考虑，加载时跳过校验
                 result = JsonSerialization.readValue(asStr, ClientTypesRepresentation.class);
                 result.setGlobalClientTypes(globalClientTypes);
             } catch (IOException ioe) {
@@ -78,9 +88,10 @@ public class DefaultClientTypeManager implements ClientTypeManager {
     }
 
 
+    /** {@inheritDoc} 校验后持久化领域客户端类型（不含全局类型） */
     @Override
     public void updateClientTypes(RealmModel realm, ClientTypesRepresentation clientTypes) throws ClientTypeException {
-        // Validate before save
+        // 保存前先校验配置
         List<ClientTypeRepresentation> validatedClientTypes = validateAndCastConfiguration(session, clientTypes.getRealmClientTypes(), globalClientTypes);
 
         ClientTypesRepresentation noGlobalsCopy = new ClientTypesRepresentation(validatedClientTypes, null);
@@ -94,6 +105,7 @@ public class DefaultClientTypeManager implements ClientTypeManager {
     }
 
 
+    /** {@inheritDoc} 按名称解析客户端类型并递归加载父类型 */
     @Override
     public ClientType getClientType(RealmModel realm, String typeName) throws ClientTypeException {
         ClientTypesRepresentation clientTypes = getClientTypes(realm);
@@ -112,6 +124,7 @@ public class DefaultClientTypeManager implements ClientTypeManager {
         return provider.getClientType(clientType, parent);
     }
 
+    /** {@inheritDoc} 若客户端指定了类型，则包装为类型感知的委托模型 */
     @Override
     public ClientModel augmentClient(ClientModel client) throws ClientTypeException {
         if (client.getType() == null) {
@@ -128,6 +141,12 @@ public class DefaultClientTypeManager implements ClientTypeManager {
         }
     }
 
+    /** 批量校验客户端类型列表，确保名称不与全局类型冲突。
+     * @param session Keycloak 会话
+     * @param clientTypes 待校验的领域类型列表
+     * @param globalTypes 已占用的全局类型名称来源
+     * @return 校验后的类型列表
+     */
     static List<ClientTypeRepresentation> validateAndCastConfiguration(KeycloakSession session, List<ClientTypeRepresentation> clientTypes, List<ClientTypeRepresentation> globalTypes) {
         Set<String> usedNames = globalTypes.stream()
                 .map(ClientTypeRepresentation::getName)
@@ -139,7 +158,12 @@ public class DefaultClientTypeManager implements ClientTypeManager {
     }
 
 
-    // TODO:client-types some javadoc or comment about how this method works
+    /** 校验单个客户端类型：Provider 存在、名称唯一，并委托 Provider 做配置检查。
+     * @param session Keycloak 会话
+     * @param clientType 待校验的类型表示
+     * @param currentNames 已使用的类型名称集合（会被更新）
+     * @return 经 Provider 校验后的类型表示
+     */
     private static ClientTypeRepresentation validateAndCastConfiguration(KeycloakSession session, ClientTypeRepresentation clientType, Set<String> currentNames) {
         ClientTypeProvider clientTypeProvider = session.getProvider(ClientTypeProvider.class, clientType.getProvider());
         if (clientTypeProvider == null) {
@@ -147,7 +171,7 @@ public class DefaultClientTypeManager implements ClientTypeManager {
             throw ClientTypeException.Message.INVALID_CLIENT_TYPE_PROVIDER.exception();
         }
 
-        // Validate name is not duplicated
+        // 校验类型名称不重复
         if (currentNames.contains(clientType.getName())) {
             logger.errorf("Duplicated client type name '%s'", clientType.getName());
             throw ClientTypeException.Message.DUPLICATE_CLIENT_TYPE.exception();
@@ -160,8 +184,9 @@ public class DefaultClientTypeManager implements ClientTypeManager {
     }
 
 
+    /** 在领域类型与全局类型中按名称查找客户端类型。 */
     private ClientTypeRepresentation getClientTypeByName(ClientTypesRepresentation clientTypes, String clientTypeName) {
-        // Search realm clientTypes
+        // 先在领域自定义类型中查找
         if (clientTypes.getRealmClientTypes() != null) {
             for (ClientTypeRepresentation clientType : clientTypes.getRealmClientTypes()) {
                 if (clientTypeName.equals(clientType.getName())) {
@@ -169,7 +194,7 @@ public class DefaultClientTypeManager implements ClientTypeManager {
                 }
             }
         }
-        // Search global clientTypes
+        // 再在全局类型中查找
         if (clientTypes.getGlobalClientTypes() != null) {
             for (ClientTypeRepresentation clientType : clientTypes.getGlobalClientTypes()) {
                 if (clientTypeName.equals(clientType.getName())) {

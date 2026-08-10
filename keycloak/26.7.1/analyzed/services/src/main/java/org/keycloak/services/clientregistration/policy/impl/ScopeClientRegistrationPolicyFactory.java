@@ -27,27 +27,34 @@ import org.keycloak.services.clientregistration.policy.AbstractClientRegistratio
 import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy;
 
 /**
+ * 范围（Scope）客户端注册策略工厂。
+ * <p>创建 {@link ScopeClientRegistrationPolicy}，使新注册客户端默认不允许全范围访问。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ScopeClientRegistrationPolicyFactory extends AbstractClientRegistrationPolicyFactory {
 
+    /** Provider 唯一标识符 */
     public static final String PROVIDER_ID = "scope";
 
+    /** {@inheritDoc} 创建 {@link ScopeClientRegistrationPolicy} 实例 */
     @Override
     public ClientRegistrationPolicy create(KeycloakSession session, ComponentModel model) {
         return new ScopeClientRegistrationPolicy(session, model);
     }
 
+    /** {@inheritDoc} 返回策略帮助说明 */
     @Override
     public String getHelpText() {
         return "When present, then newly registered client won't have full scope allowed";
     }
 
+    /** {@inheritDoc} 本策略无需额外配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.emptyList();
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;

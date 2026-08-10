@@ -36,44 +36,55 @@ import org.keycloak.util.JsonSerialization;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认客户端类型管理器工厂。
+ * <p>在 {@link Profile.Feature#CLIENT_TYPES} 特性启用时创建 {@link DefaultClientTypeManager}， 并从 classpath JSON 加载全局客户端类型。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultClientTypeManagerFactory implements ClientTypeManagerFactory {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(DefaultClientTypeManagerFactory.class);
 
+    /** 懒加载的全局客户端类型缓存 */
     private volatile List<ClientTypeRepresentation> globalClientTypes;
 
+    /** {@inheritDoc} 创建带全局类型列表的 {@link DefaultClientTypeManager} */
     @Override
     public ClientTypeManager create(KeycloakSession session) {
         return new DefaultClientTypeManager(session, getGlobalClientTypes(session));
     }
 
+    /** {@inheritDoc} 无额外初始化逻辑 */
     @Override
     public void init(Config.Scope config) {
 
     }
 
+    /** {@inheritDoc} 无后置初始化逻辑 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
 
     }
 
+    /** {@inheritDoc} 无资源需释放 */
     @Override
     public void close() {
 
     }
 
+    /** {@inheritDoc} 返回 {@code "default"} */
     @Override
     public String getId() {
         return "default";
     }
 
+    /** {@inheritDoc} 仅在 CLIENT_TYPES 特性开启时可用 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.CLIENT_TYPES);
     }
 
+    /** 双重检查锁定地从 JSON 资源加载并校验全局客户端类型。 */
     protected List<ClientTypeRepresentation> getGlobalClientTypes(KeycloakSession session) {
         if (globalClientTypes == null) {
             synchronized (this) {

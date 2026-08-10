@@ -29,14 +29,20 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.delegate.ClientModelLazyDelegate;
 
 /**
- * Delegates to client-type and underlying delegate
- *
+ * 类型感知的 {@link ClientModel} 懒加载委托。
+ * <p>读取/写入客户端属性时，先 consult {@link ClientType} 的适用性与只读约束， 再委托底层 {@link ClientModel}；不适用属性返回类型定义的缺省值。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class TypeAwareClientModelDelegate extends ClientModelLazyDelegate {
 
+    /** 绑定的客户端类型定义 */
     private final ClientType clientType;
 
+    /** 构造类型感知委托。
+     * @param clientType 非 null 的客户端类型
+     * @param clientModelSupplier 底层客户端模型供应器
+     * @throws IllegalArgumentException clientType 为 null 时
+     */
     public TypeAwareClientModelDelegate(ClientType clientType, Supplier<ClientModel> clientModelSupplier) {
         super(clientModelSupplier);
 
@@ -46,12 +52,14 @@ public class TypeAwareClientModelDelegate extends ClientModelLazyDelegate {
         this.clientType = clientType;
     }
 
+    /** {@inheritDoc} 经 {@link TypedClientSimpleAttribute#STANDARD_FLOW_ENABLED} 解析 */
     @Override
     public boolean isStandardFlowEnabled() {
         return TypedClientSimpleAttribute.STANDARD_FLOW_ENABLED
                 .getClientAttribute(clientType, super::isStandardFlowEnabled, Boolean.class);
     }
 
+    /** {@inheritDoc} 经类型约束后委托设置标准流程开关 */
     @Override
     public void setStandardFlowEnabled(boolean standardFlowEnabled) {
         TypedClientSimpleAttribute.STANDARD_FLOW_ENABLED
@@ -244,18 +252,19 @@ public class TypeAwareClientModelDelegate extends ClientModelLazyDelegate {
         }
     }
 
+    /** {@inheritDoc} 合并委托属性与客户端类型扩展属性 */
     @Override
     public Map<String, String> getAttributes() {
-        // Start with attributes set on the delegate.
+        // 以委托模型上的属性为起点
         Map<String, String> attributes = new HashMap<>(super.getAttributes());
 
-        // Get extended client type attributes and values from the client type configuration.
+        // 收集客户端类型配置中的扩展属性名
         Set<String> extendedClientTypeAttributes =
                 clientType.getOptionNames().stream()
                 .filter(optionName -> TypedClientExtendedAttribute.getAttributesByName().containsKey(optionName))
                 .collect(Collectors.toSet());
 
-        // Augment client type attributes on top of attributes on the delegate.
+        // 将类型扩展属性覆盖/补充到结果映射
         for (String entry : extendedClientTypeAttributes) {
             attributes.put(entry, getAttribute(entry));
         }

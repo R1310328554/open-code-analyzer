@@ -29,20 +29,21 @@ import org.keycloak.models.KeycloakSession;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 
 /**
- * Override explicitly added ExceptionMapper for handling <code>UnrecognizedPropertyException</code> in RestEasy Jackson
- *
- * <code>org.jboss.resteasy.plugins.providers.jackson.UnrecognizedPropertyExceptionHandler</code>
+ * Keycloak 版 Jackson 未知属性异常映射器。
+ * <p>显式覆盖 RestEasy 默认的 {@code UnrecognizedPropertyExceptionHandler}， 将 {@link UnrecognizedPropertyException} 转为带行/列信息的 400 响应。</p>
+ * <p>参考：{@code org.jboss.resteasy.plugins.providers.jackson.UnrecognizedPropertyExceptionHandler}</p>
  */
 @Provider
 public class KcUnrecognizedPropertyExceptionHandler implements ExceptionMapper<UnrecognizedPropertyException> {
 
+    /** 注入的 Keycloak 会话，供 {@link KeycloakErrorHandler} 使用 */
     @Context
     KeycloakSession session;
 
     /**
-     * Return escaped original message
-     * @param exception Exception to map
-     * @return The response with the error
+     * 将未知 JSON 字段异常映射为 Bad Request 响应。
+     * @param exception Jackson 反序列化时遇到的未知属性异常
+     * @return 包含类名、字段名及行列位置的错误响应
      */
     @Override
     public Response toResponse(UnrecognizedPropertyException exception) {

@@ -13,8 +13,9 @@ import org.keycloak.client.clienttype.ClientTypeException;
 
 import org.jboss.logging.Logger;
 
+/** 客户端顶层简单属性与客户端类型选项的映射枚举。 */
 enum TypedClientSimpleAttribute implements TypedClientAttribute {
-    // Top Level client attributes
+    // 客户端顶层属性
     STANDARD_FLOW_ENABLED("standardFlowEnabled", false),
     BEARER_ONLY("bearerOnly", false),
     CONSENT_REQUIRED("consentRequired", false),
@@ -29,7 +30,9 @@ enum TypedClientSimpleAttribute implements TypedClientAttribute {
     WEB_ORIGINS("webOrigins", Set.of()),
     ;
 
+    /** 属性在 ClientRepresentation 中的字段名 */
     private final String propertyName;
+    /** 类型不适用该属性时的返回值 */
     private final Object nonApplicableValue;
 
     TypedClientSimpleAttribute(String propertyName, Object nonApplicableValue) {
@@ -48,8 +51,9 @@ enum TypedClientSimpleAttribute implements TypedClientAttribute {
     }
 }
 
+/** 以客户端 attribute 实体存储的扩展类型属性枚举（OAuth2/SAML 等）。 */
 enum TypedClientExtendedAttribute implements TypedClientAttribute {
-    // Extended Client Type attributes defined as client attribute entities.
+    // 扩展客户端类型属性，对应 client attribute 键值
     DEVICE_AUTHORIZATION_GRANT_ENABLED("oauth2.device.authorization.grant.enabled", "false"),
     CIBA_GRANT_ENABLED("oidc.ciba.grant.enabled", "false"),
     LOGIN_THEME("login_theme", null),
@@ -88,6 +92,7 @@ enum TypedClientExtendedAttribute implements TypedClientAttribute {
     SAML_SINGLE_LOGOUT_SERVICE_URL_SOAP("saml_single_logout_service_url_soap", null);
 
 
+    /** 属性名到枚举常量的索引 */
     private static final Map<String, TypedClientExtendedAttribute> attributesByName = new HashMap<>();
 
     static {
@@ -113,11 +118,16 @@ enum TypedClientExtendedAttribute implements TypedClientAttribute {
         return nonApplicableValue;
     }
 
+    /** 返回扩展属性名索引映射。 */
     public static Map<String, TypedClientExtendedAttribute> getAttributesByName() {
         return attributesByName;
     }
 }
 
+/**
+ * 类型化客户端属性的读写契约。
+ * <p>根据 {@link ClientType#isApplicable(String)} 决定读写行为：不适用时返回/忽略 {@link #getNonApplicableValue()}；只读类型值禁止修改。</p>
+ */
 interface TypedClientAttribute {
     Logger logger = Logger.getLogger(TypedClientAttribute.class);
 
@@ -125,7 +135,7 @@ interface TypedClientAttribute {
         String propertyName = getPropertyName();
         Object nonApplicableValue = getNonApplicableValue();
 
-        // Check if clientType supports the feature.
+        // 检查客户端类型是否支持该属性
         if (!clientType.isApplicable(propertyName)) {
             try {
                 return tClass.cast(nonApplicableValue);
@@ -136,13 +146,13 @@ interface TypedClientAttribute {
         }
 
         T typeValue = clientType.getTypeValue(propertyName, tClass);
-        // If the value is not supplied by the client type, delegate to the client getter.
+        // 类型未提供值时回退到底层客户端 getter
         return typeValue == null ? clientGetter.get() : typeValue;
     }
 
     default <T> void setClientAttribute(ClientType clientType, T newValue, Consumer<T> clientSetter, Class<T> tClass) {
         String propertyName = getPropertyName();
-        // If feature is set as non-applicable, return directly
+        // 属性标记为不适用时直接返回
         if (!clientType.isApplicable(propertyName)) {
             if(!Objects.equals(getNonApplicableValue(), newValue)) {
                 logger.warnf("Property %s is not-applicable to client type %s and can not be modified.", propertyName, clientType.getName());
@@ -150,13 +160,13 @@ interface TypedClientAttribute {
             return;
         }
 
-        // If there is an attempt to change a value for an applicable field with a read-only value set, then throw an exception.
+        // 只读类型值被修改时抛出 ClientTypeException
         T readOnlyValue = clientType.getTypeValue(propertyName, tClass);
         if (readOnlyValue != null && !readOnlyValue.equals(newValue)) {
             throw ClientTypeException.Message.CLIENT_UPDATE_FAILED_CLIENT_TYPE_VALIDATION.exception(propertyName);
         }
 
-        // Delegate to clientSetter
+        // 通过校验后委托底层 setter
         clientSetter.accept(newValue);
     }
 
