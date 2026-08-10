@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:57:28Z",
-  "files": [
-    "address/src/main/java/com/alibaba/nacos/address/AddressServer.java",
-    "address/src/main/java/com/alibaba/nacos/address/component/AddressServerGeneratorManager.java",
-    "address/src/main/java/com/alibaba/nacos/address/component/AddressServerManager.java",
-    "address/src/main/java/com/alibaba/nacos/address/config/AddressServerSecurityConfiguration.java",
-    "address/src/main/java/com/alibaba/nacos/address/constant/AddressServerConstants.java",
-    "address/src/main/java/com/alibaba/nacos/address/controller/AddressServerClusterController.java",
-    "address/src/main/java/com/alibaba/nacos/address/controller/ServerListController.java",
-    "address/src/main/java/com/alibaba/nacos/address/misc/Loggers.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/config/AgentSpecDataBootstrapInitializer.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/config/AiEnabledFilter.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/config/AiResourceStorageInitializer.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/config/LegacyPromptData.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/config/McpCacheIndexProperties.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/config/McpConfiguration.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/config/McpServerIndexConfiguration.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2507,
-  "done": 15
+  "done": 30
 }
