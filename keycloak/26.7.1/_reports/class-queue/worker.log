@@ -1828,3 +1828,18 @@
 2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserIssuedVerifiableCredentialEntity.java wave62b federated user storage JPA entities
 2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserRequiredActionEntity.java wave62b federated user storage JPA entities
 2026-08-10T08:31:31Z DONE model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserRoleMappingEntity.java wave62b federated user storage JPA entities
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo1_9_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo1_9_2.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo20_0_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo21_0_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo22_0_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo23_0_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo24_0_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo24_0_3.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo25_0_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo26_0_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo26_1_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo26_2_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo26_3_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo26_4_0.java wave63b migrators 1.9 through 26.4.3
+2026-08-10T08:34:11Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo26_4_3.java wave63b migrators 1.9 through 26.4.3
