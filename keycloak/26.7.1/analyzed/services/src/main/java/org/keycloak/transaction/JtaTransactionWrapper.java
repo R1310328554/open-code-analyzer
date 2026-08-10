@@ -30,6 +30,9 @@ import org.keycloak.provider.ExceptionConverter;
 import org.jboss.logging.Logger;
 
 /**
+ * 将 Jakarta JTA {@link TransactionManager} 包装为 {@link KeycloakTransaction}。
+ * <p>构造时挂起已有用户事务并开启新事务；提交或回滚后恢复先前挂起的事务。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -37,11 +40,13 @@ public class JtaTransactionWrapper implements KeycloakTransaction {
     private static final Logger logger = Logger.getLogger(JtaTransactionWrapper.class);
     protected TransactionManager tm;
     protected Transaction ut;
+    /** 构造前挂起的用户事务，结束时需恢复。 */
     protected Transaction suspended;
     protected Exception ended;
     protected KeycloakSession session;
     private final RequestContextHelper requestContextHelper;
 
+    /** 挂起当前事务、开启新 JTA 事务并记录请求上下文。 */
     public JtaTransactionWrapper(KeycloakSession session, TransactionManager tm) {
         this.tm = tm;
         this.session = session;
@@ -67,6 +72,7 @@ public class JtaTransactionWrapper implements KeycloakTransaction {
         }
     }
 
+    /** 将 JTA 异常经 {@link ExceptionConverter} 转换后重新抛出。 */
     public void handleException(Throwable e) {
         logger.debug(getDetailedMessage("Exception during transaction operation."), e);
 
@@ -97,6 +103,7 @@ public class JtaTransactionWrapper implements KeycloakTransaction {
     public void begin() {
     }
 
+    /** 提交 JTA 事务并在 finally 中恢复挂起的事务。 */
     @Override
     public void commit() {
         try {
@@ -109,6 +116,7 @@ public class JtaTransactionWrapper implements KeycloakTransaction {
         }
     }
 
+    /** 回滚 JTA 事务并在 finally 中恢复挂起的事务。 */
     @Override
     public void rollback() {
         try {
@@ -161,6 +169,7 @@ public class JtaTransactionWrapper implements KeycloakTransaction {
     }
     */
 
+    /** 结束当前包装事务，如有挂起事务则恢复。 */
     protected void end() {
         ended = null;
         logMessage("JtaTransactionWrapper end.");
@@ -179,7 +188,7 @@ public class JtaTransactionWrapper implements KeycloakTransaction {
         if (logger.isTraceEnabled()) {
             String msg = getDetailedMessage(messageBase);
 
-            // Log the detailed messages in "debug" level for backwards compatibility, but just if "Trace" level is enabled
+            // 为向后兼容，在启用 Trace 时将详细消息以 debug 级别记录
             logger.debug(msg);
         } else if (logger.isDebugEnabled()) {
             logger.debug(messageBase + " Request Context: " + requestContextHelper.getContextInfo());

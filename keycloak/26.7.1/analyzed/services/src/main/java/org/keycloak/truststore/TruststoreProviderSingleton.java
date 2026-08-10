@@ -18,16 +18,20 @@
 package org.keycloak.truststore;
 
 /**
+ * {@link TruststoreProvider} 的全局单例持有者，供 {@link SSLSocketFactory} 等静态上下文访问。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 class TruststoreProviderSingleton {
 
     static private TruststoreProvider provider;
 
+    /** 注册全局信任库提供者实例。 */
     static void set(TruststoreProvider tp) {
         provider = tp;
     }
 
+    /** 返回已注册的信任库提供者，未初始化时为 null。 */
     static TruststoreProvider get() {
         return provider;
     }

@@ -27,18 +27,23 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * JBoss/WildFly 环境下通过 JNDI 查找 {@link TransactionManager} 的 {@link JtaTransactionManagerLookup} 实现。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class JBossJtaTransactionManagerLookup implements JtaTransactionManagerLookup {
     private static final Logger logger = Logger.getLogger(JBossJtaTransactionManagerLookup.class);
+    /** 缓存的 JTA 事务管理器。 */
     private TransactionManager tm;
 
+    /** 返回已查找的 {@link TransactionManager}。 */
     @Override
     public TransactionManager getTransactionManager() {
         return tm;
     }
 
+    /** 通过 JNDI {@code java:jboss/TransactionManager} 初始化事务管理器。 */
     @Override
     public void init(Config.Scope config) {
         try {

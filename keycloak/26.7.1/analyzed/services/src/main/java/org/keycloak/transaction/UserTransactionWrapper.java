@@ -22,12 +22,15 @@ import jakarta.transaction.UserTransaction;
 import org.keycloak.models.KeycloakTransaction;
 
 /**
+ * 将 Jakarta {@link UserTransaction} 委托包装为 {@link KeycloakTransaction}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UserTransactionWrapper implements KeycloakTransaction {
     protected UserTransaction ut;
 
+    /** 绑定底层 {@link UserTransaction}。 */
     public UserTransactionWrapper(UserTransaction ut) {
         this.ut = ut;
     }

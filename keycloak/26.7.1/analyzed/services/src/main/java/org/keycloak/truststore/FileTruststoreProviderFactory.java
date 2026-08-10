@@ -52,10 +52,14 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.jboss.logging.Logger;
 
 /**
+ * 文件型 {@link TruststoreProviderFactory}，从配置或系统属性加载信任库并注册单例。
+ * <p>已弃用的 {@code spi-truststore-file-*} 选项仍受支持，建议使用 {@code truststore-paths}。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class FileTruststoreProviderFactory implements TruststoreProviderFactory {
 
+    /** 主机名校验策略配置键。 */
     static final String HOSTNAME_VERIFICATION_POLICY = "hostname-verification-policy";
 
     private static final Logger log = Logger.getLogger(FileTruststoreProviderFactory.class);
@@ -67,11 +71,12 @@ public class FileTruststoreProviderFactory implements TruststoreProviderFactory 
         return provider;
     }
 
-    // For testing purposes
+    // 仅供测试注入 mock 提供者
     public void setProvider(TruststoreProvider provider) {
         this.provider = provider;
     }
 
+    /** 从配置、系统属性或 JRE 默认 cacerts 加载信任库并初始化提供者。 */
     @Override
     public void init(Config.Scope config) {
 
@@ -105,7 +110,7 @@ public class FileTruststoreProviderFactory implements TruststoreProviderFactory 
         try {
             truststore = KeystoreUtil.loadKeyStore(storepath, pass, type);
         } catch (Exception e) {
-            // in fips mode the default truststore type can be pkcs12, but the cacerts file will still be jks
+            // FIPS 模式下默认类型可能为 PKCS12，但 cacerts 仍为 JKS，需回退尝试
             if (system && !"jks".equalsIgnoreCase(type)) {
                 try {
                     truststore = KeystoreUtil.loadKeyStore(storepath, pass, "jks");
@@ -129,7 +134,7 @@ public class FileTruststoreProviderFactory implements TruststoreProviderFactory 
             }
         }
 
-        // load the HTTP trust-store if defined at startup
+        // 若启动时配置了 HTTPS 信任库则单独加载
         String httpsTrustStoreFile = config.root().get(HttpOptions.HTTPS_TRUST_STORE_FILE.getKey());
         KeyStore httpsTruststore = null;
         TruststoreCertificatesLoader httpsCertsLoader = null;
@@ -202,9 +207,12 @@ public class FileTruststoreProviderFactory implements TruststoreProviderFactory 
                 .build();
     }
 
+    /** 从 Keycloak 信任库读取证书，按根 CA 与中间 CA 分类。 */
     private static class TruststoreCertificatesLoader {
 
+        /** 按主题 DN 索引的自签名根 CA 证书。 */
         private Map<X500Principal, List<X509Certificate>> trustedRootCerts = new HashMap<>();
+        /** 按主题 DN 索引的中间 CA 证书。 */
         private Map<X500Principal, List<X509Certificate>> intermediateCerts = new HashMap<>();
 
 
@@ -213,11 +221,11 @@ public class FileTruststoreProviderFactory implements TruststoreProviderFactory 
         }
 
         /**
-         * Get all certificates from Keycloak Truststore, and classify them in two lists : root CAs and intermediates CAs
+         * 遍历信任库别名，将 X.509 证书分类为根 CA 与中间 CA 两类列表。
          */
         private void readTruststore(KeyStore truststore) {
 
-            //Reading truststore aliases & certificates
+            // 读取信任库别名与证书条目
             Enumeration<String> enumeration;
 
             try {
@@ -266,22 +274,22 @@ public class FileTruststoreProviderFactory implements TruststoreProviderFactory 
         }
 
         /**
-         * Checks whether given X.509 certificate is self-signed.
+         * 判断给定 X.509 证书是否为自签名（根 CA）。
          */
         private boolean isSelfSigned(X509Certificate cert)
                 throws CertificateException, NoSuchAlgorithmException,
                 NoSuchProviderException {
             try {
-                // Try to verify certificate signature with its own public key
+                // 尝试用证书自身公钥验证签名
                 PublicKey key = cert.getPublicKey();
                 cert.verify(key);
                 log.trace("certificate " + cert.getSubjectDN() + " detected as root CA");
                 return true;
             } catch (SignatureException sigEx) {
-                // Invalid signature --> not self-signed
+                // 签名无效，视为中间 CA
                 log.trace("certificate " + cert.getSubjectDN() + " detected as intermediate CA");
             } catch (InvalidKeyException keyEx) {
-                // Invalid key --> not self-signed
+                // 公钥无效，视为中间 CA
                 log.trace("certificate " + cert.getSubjectDN() + " detected as intermediate CA");
             }
             return false;

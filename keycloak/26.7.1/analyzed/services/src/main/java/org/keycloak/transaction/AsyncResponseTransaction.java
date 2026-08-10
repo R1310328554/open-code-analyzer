@@ -10,10 +10,10 @@ import org.keycloak.services.ErrorPage;
 import org.keycloak.services.messages.Messages;
 
 /**
- * When using {@link AsyncResponse#resume(Object)} directly in the code, the response is returned before all changes 
- * done withing this execution are committed. Therefore we need some mechanism that resumes the AsyncResponse after all
- * changes are successfully committed. This can be achieved by enlisting an instance of AsyncResponseTransaction into
- * the main transaction using {@link org.keycloak.models.KeycloakTransactionManager#enlistAfterCompletion(KeycloakTransaction)}.
+ * 异步响应事务包装器：在代码中直接调用 {@link AsyncResponse#resume(Object)} 时，HTTP 响应会在
+ * 当前执行上下文的所有变更提交之前返回。因此需要将 {@link AsyncResponseTransaction} 实例登记到
+ * 主事务的完成后回调中，待变更成功提交后再恢复 {@link AsyncResponse}。
+ * <p>通过 {@link org.keycloak.models.KeycloakTransactionManager#enlistAfterCompletion(KeycloakTransaction)} 实现。</p>
  */
 public class AsyncResponseTransaction implements KeycloakTransaction {
 
@@ -22,13 +22,12 @@ public class AsyncResponseTransaction implements KeycloakTransaction {
     private final Response responseToSend;
 
     /**
-     * This method creates a new AsyncResponseTransaction instance that resumes provided AsyncResponse
-     * {@code responseToFinishInTransaction} with given Response {@code responseToSend}. The transaction is enlisted 
-     * to {@link KeycloakTransactionManager}.
+     * 创建 {@link AsyncResponseTransaction} 并在事务提交/回滚时恢复指定的 {@link AsyncResponse}。
+     * 成功提交时发送 {@code responseToSend}，回滚时返回内部错误页。
      *
-     * @param session Current KeycloakSession
-     * @param responseToFinishInTransaction AsyncResponse to be resumed on {@link KeycloakTransactionManager} commit/rollback.
-     * @param responseToSend Response to be sent
+     * @param session 当前 {@link KeycloakSession}
+     * @param responseToFinishInTransaction 待恢复完成的 {@link AsyncResponse}
+     * @param responseToSend 提交成功时要发送的 {@link Response}
      */
     public static void finishAsyncResponseInTransaction(KeycloakSession session, AsyncResponse responseToFinishInTransaction, Response responseToSend) {
         session.getTransactionManager().enlistAfterCompletion(new AsyncResponseTransaction(session, responseToFinishInTransaction, responseToSend));
@@ -45,11 +44,13 @@ public class AsyncResponseTransaction implements KeycloakTransaction {
 
     }
 
+    /** 事务提交成功后恢复异步响应并发送响应体。 */
     @Override
     public void commit() {
         responseToFinishInTransaction.resume(responseToSend);
     }
 
+    /** 事务回滚时恢复异步响应并返回内部服务器错误页。 */
     @Override
     public void rollback() {
         responseToFinishInTransaction.resume(ErrorPage.error(session, null, Response.Status.INTERNAL_SERVER_ERROR, Messages.INTERNAL_SERVER_ERROR));

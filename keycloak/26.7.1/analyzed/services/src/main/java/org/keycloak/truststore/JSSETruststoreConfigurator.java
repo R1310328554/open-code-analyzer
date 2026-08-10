@@ -25,14 +25,19 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * 基于 {@link TruststoreProvider} 配置 JSSE {@link SSLContext} 与 {@link TrustManager}。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class JSSETruststoreConfigurator {
 
     private TruststoreProvider provider;
+    /** 懒加载的 {@link javax.net.ssl.SSLSocketFactory}。 */
     private volatile javax.net.ssl.SSLSocketFactory sslFactory;
+    /** 懒加载的信任管理器数组。 */
     private volatile TrustManager[] tm;
 
+    /** 从会话的 file 型 {@link TruststoreProviderFactory} 获取信任库提供者。 */
     public JSSETruststoreConfigurator(KeycloakSession session) {
         KeycloakSessionFactory factory = session.getKeycloakSessionFactory();
         TruststoreProviderFactory truststoreFactory = (TruststoreProviderFactory) factory.getProviderFactory(TruststoreProvider.class, "file");
@@ -43,10 +48,12 @@ public class JSSETruststoreConfigurator {
         }
     }
 
+    /** 直接使用已初始化的 {@link TruststoreProvider}。 */
     public JSSETruststoreConfigurator(TruststoreProvider provider) {
         this.provider = provider;
     }
 
+    /** 返回基于信任库初始化的 TLS {@link javax.net.ssl.SSLSocketFactory}，无提供者时返回 null。 */
     public javax.net.ssl.SSLSocketFactory getSSLSocketFactory() {
         if (provider == null) {
             return null;
@@ -68,6 +75,7 @@ public class JSSETruststoreConfigurator {
         return sslFactory;
     }
 
+    /** 返回基于信任库初始化的 {@link TrustManager} 数组。 */
     public TrustManager[] getTrustManagers() {
         if (provider == null) {
             return null;

@@ -35,13 +35,19 @@ import static org.keycloak.urls.UrlType.FRONTEND;
 import static org.keycloak.utils.StringUtil.isNotBlank;
 
 /**
+ * Hostname V2 {@link HostnameProvider} 实现，支持静态主机名、完整 URL、管理端 URL 与动态 backchannel。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class HostnameV2Provider implements HostnameProvider {
     private final KeycloakSession session;
+    /** 纯主机名字符串（非完整 URL 时使用）。 */
     private final String hostname;
+    /** 完整前端 URL（含 scheme）。 */
     private final URI hostnameUrl;
+    /** 管理控制台专用 URL。 */
     private final URI adminUrl;
+    /** 是否对 backchannel 请求动态使用原始请求 URI。 */
     private final Boolean backchannelDynamic;
     private static final UrlType defaultUrlType = FRONTEND;
 
@@ -55,6 +61,7 @@ public class HostnameV2Provider implements HostnameProvider {
         this.backchannelDynamic = backchannelDynamic;
     }
 
+    /** 按 {@link UrlType} 构建基础 URI（前端、管理端、后端或本地管理）。 */
     @Override
     public URI getBaseUri(UriInfo originalUriInfo, UrlType type) {
         UriBuilder builder;
@@ -65,8 +72,7 @@ public class HostnameV2Provider implements HostnameProvider {
                 break;
             case LOCAL_ADMIN:
                 builder = originalUriInfo.getBaseUriBuilder();
-                // This might not be enough if a reverse proxy is used. In that case we might e.g. have wrong local ports in originalUriInfo.
-                // However, that would be transparent to us (we don't know the actual server ports in this context AFAIK).
+                // 反向代理场景下本地端口可能不准确，此处无法感知实际服务端口
                 builder.host("localhost");
                 break;
             case BACKEND:
@@ -80,7 +86,7 @@ public class HostnameV2Provider implements HostnameProvider {
         }
 
         URI uri = builder.build();
-        // sanitize ports
+        // 规范化默认端口（80/443 映射为 -1）
         int normalizedPort = normalizedPort(uri);
         if (normalizedPort != uri.getPort()) {
             builder.port(normalizedPort);
@@ -90,6 +96,7 @@ public class HostnameV2Provider implements HostnameProvider {
         return uri;
     }
 
+    /** 将 HTTP 80 / HTTPS 443 映射为标准“无端口”表示。 */
     private int normalizedPort(URI uri) {
         if ((uri.getScheme().equals("http") && uri.getPort() == 80) || (uri.getScheme().equals("https") && uri.getPort() == 443)) {
             return -1;
@@ -97,6 +104,7 @@ public class HostnameV2Provider implements HostnameProvider {
         return uri.getPort();
     }
 
+    /** 判断当前请求是否来自前端（scheme/host/port 与配置的前端 URL 一致）。 */
     private boolean isFrontendRequest(UriInfo originalUriInfo) {
         URI frontend = getFrontUriBuilder(originalUriInfo).build();
         return frontend.getScheme().equals(originalUriInfo.getBaseUri().getScheme()) &&
@@ -104,6 +112,7 @@ public class HostnameV2Provider implements HostnameProvider {
                 frontend.getPort() == normalizedPort(originalUriInfo.getBaseUri());
     }
 
+    /** 构建前端 URI，优先使用 realm {@code frontendUrl} 属性，其次全局 hostname/hostnameUrl。 */
     private UriBuilder getFrontUriBuilder(UriInfo originalUriInfo) {
         UriBuilder builder = getRealmFrontUriBuilder();
 
@@ -131,7 +140,7 @@ public class HostnameV2Provider implements HostnameProvider {
                 .filter(url -> isNotBlank(url))
                 .filter(url -> {
                     try {
-                        // this check is aligned with other Hostname providers to avoid breaking changes; note that checking URL this way is considered insufficient, see e.g. https://stackoverflow.com/a/5965755
+                        // 与其他 Hostname 提供者保持一致，避免破坏性变更；此 URL 校验方式被认为不够充分
                         checkUrl(SslRequired.NONE, url, "Realm frontendUrl");
                     }
                     catch (IllegalArgumentException e) {
@@ -144,6 +153,7 @@ public class HostnameV2Provider implements HostnameProvider {
                 .orElse(null);
     }
 
+    /** 构建管理端 URI，未配置 {@code hostname-admin} 时回退到前端 URL。 */
     private UriBuilder getAdminUriBuilder(UriInfo originalUriInfo) {
         return adminUrl != null ? UriBuilder.fromUri(adminUrl) : getFrontUriBuilder(originalUriInfo);
     }

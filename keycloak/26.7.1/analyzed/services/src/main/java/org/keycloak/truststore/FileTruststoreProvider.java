@@ -27,6 +27,9 @@ import javax.security.auth.x500.X500Principal;
 import org.keycloak.common.enums.HostnameVerificationPolicy;
 
 /**
+ * 基于文件的 {@link TruststoreProvider} 实现，从 KeyStore 加载受信证书并构建 {@link SSLSocketFactory}。
+ * <p>支持独立 HTTPS 信任库及根 CA、中间 CA 证书分类查询。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class FileTruststoreProvider implements TruststoreProvider {
@@ -40,6 +43,7 @@ public class FileTruststoreProvider implements TruststoreProvider {
     private final Map<X500Principal, List<X509Certificate>> httpsRootCertificates;
     private final Map<X500Principal, List<X509Certificate>> httpsIntermediateCertificates;
 
+    /** 加载信任库、分类证书并通过 {@link JSSETruststoreConfigurator} 初始化 SSL 工厂。 */
     public FileTruststoreProvider(KeyStore truststore, HostnameVerificationPolicy policy,
             Map<X500Principal, List<X509Certificate>> rootCertificates, Map<X500Principal, List<X509Certificate>> intermediateCertificates,
             KeyStore httpsTruststore, Map<X500Principal, List<X509Certificate>> httpsRootCertificates, Map<X500Principal, List<X509Certificate>> httpsIntermediateCertificates) {

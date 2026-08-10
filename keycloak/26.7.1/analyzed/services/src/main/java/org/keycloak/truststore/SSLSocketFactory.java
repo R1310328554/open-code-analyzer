@@ -28,15 +28,13 @@ import org.jboss.logging.Logger;
 
 
 /**
- * Using this class is ugly, but it is the only way to push our truststore to the default LDAP client implementation.
+ * 自定义 {@link javax.net.ssl.SSLSocketFactory}，将 Keycloak 配置的信任库注入默认 LDAP 客户端等 JSSE 调用链。
  * <p>
- * This SSLSocketFactory can only use truststore configured by TruststoreProvider after the ProviderFactory was
- * initialized using standard Spi load / init mechanism. That will only happen if "truststore" provider is configured
- * by the Keycloak Provider SPI configuration mechanism
+ * 本工厂仅在 {@link TruststoreProviderFactory} 通过 SPI 完成初始化后可用；即必须在 Keycloak Provider SPI
+ * 配置中启用 {@code truststore} 提供者。
  * <p>
- * If TruststoreProvider is not available this SSLSocketFactory will delegate all operations to the SSLSocketFactory
- * returned by {@link org.keycloak.common.crypto.CryptoProvider#wrapFactoryForTruststore(javax.net.ssl.SSLSocketFactory)},
- * which will delegate further to the factory returned by javax.net.ssl.SSLSocketFactory.getDefault().
+ * 若 {@link TruststoreProvider} 不可用，则委托 {@link org.keycloak.common.crypto.CryptoProvider#wrapFactoryForTruststore(javax.net.ssl.SSLSocketFactory)}，
+ * 最终回退到 {@link javax.net.ssl.SSLSocketFactory#getDefault()}。
  *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
@@ -45,10 +43,13 @@ public class SSLSocketFactory extends javax.net.ssl.SSLSocketFactory implements 
 
     private static final Logger log = Logger.getLogger(SSLSocketFactory.class);
 
+    /** 单例实例。 */
     private static SSLSocketFactory instance;
 
+    /** 实际委托的底层 SSL 套接字工厂。 */
     private final javax.net.ssl.SSLSocketFactory sslsf;
 
+    /** 从 {@link TruststoreProviderSingleton} 或系统默认工厂构建委托实例。 */
     private SSLSocketFactory() {
 
         TruststoreProvider provider = TruststoreProviderSingleton.get();
@@ -65,6 +66,7 @@ public class SSLSocketFactory extends javax.net.ssl.SSLSocketFactory implements 
         sslsf = CryptoIntegration.getProvider().wrapFactoryForTruststore(sf);
     }
 
+    /** 返回懒加载的单例 {@link SSLSocketFactory}。 */
     public static synchronized SSLSocketFactory getDefault() {
         if (instance == null) {
             instance = new SSLSocketFactory();

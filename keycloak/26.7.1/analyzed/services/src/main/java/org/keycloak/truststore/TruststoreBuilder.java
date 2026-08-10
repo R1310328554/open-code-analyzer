@@ -37,52 +37,59 @@ import org.keycloak.common.util.KeystoreUtil.KeystoreFormat;
 import org.jboss.logging.Logger;
 
 /**
- * Builds a system-wide truststore from the given config options.
+ * 根据配置选项构建系统级合并信任库，并更新 JVM 系统属性。
  */
 public class TruststoreBuilder {
 
+    /** 系统属性：信任库文件路径。 */
     public static final String SYSTEM_TRUSTSTORE_KEY = "javax.net.ssl.trustStore";
+    /** 系统属性：信任库密码。 */
     public static final String SYSTEM_TRUSTSTORE_PASSWORD_KEY = "javax.net.ssl.trustStorePassword";
+    /** 系统属性：信任库类型。 */
     public static final String SYSTEM_TRUSTSTORE_TYPE_KEY = "javax.net.ssl.trustStoreType";
     private static final String CERT_PROTECTION_ALGORITHM_KEY = "keystore.pkcs12.certProtectionAlgorithm";
+    /** FIPS 兼容长度的占位密码。 */
     public static final String DUMMY_PASSWORD = "keycloakchangeit"; // fips length compliant dummy password
     static final String PKCS12 = "PKCS12";
 
+    /** Kubernetes 服务账号 CA 证书默认路径。 */
     private static final String KUBERNETES_CA_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt";
+    /** OpenShift 服务 CA 证书默认路径。 */
     private static final String SERVICE_CA_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt";
 
     private static final Logger LOGGER = Logger.getLogger(TruststoreBuilder.class);
 
+    /** 合并配置路径与可选默认信任库，写入 PKCS12 文件并设置系统属性。 */
     public static void setSystemTruststore(String[] truststores,
                                            boolean trustStoreIncludeDefault,
                                            String dataDir) {
         KeyStore truststore = createMergedTruststore(truststores, trustStoreIncludeDefault);
 
-        // save with a dummy password just in case some logic that uses the system properties needs to have one
+        // 使用占位密码保存，以防依赖系统属性的逻辑需要密码
         File file = saveTruststore(truststore, dataDir, DUMMY_PASSWORD.toCharArray());
 
-        // finally update the system properties
+        // 更新 JVM 系统属性指向合并后的信任库
         System.setProperty(TruststoreBuilder.SYSTEM_TRUSTSTORE_KEY, file.getAbsolutePath());
         System.setProperty(TruststoreBuilder.SYSTEM_TRUSTSTORE_TYPE_KEY, PKCS12);
         System.setProperty(TruststoreBuilder.SYSTEM_TRUSTSTORE_PASSWORD_KEY, DUMMY_PASSWORD);
     }
 
     /**
-     * Include the Kubernetes and/or OpenShift service CA truststore paths if enabled and the files exist.
-     * Uses the default well-known Kubernetes service account paths.
+     * 若 Kubernetes/OpenShift 服务 CA 文件存在，将其路径追加到信任库路径列表。
+     * 使用 Kubernetes 服务账号的标准路径。
      *
-     * @param trustStores the existing truststore paths
+     * @param trustStores 现有信任库路径列表
      */
     public static void includeKubernetesTrustStorePaths(List<String> trustStores) {
         includeKubernetesTrustStorePaths(trustStores, KUBERNETES_CA_PATH, SERVICE_CA_PATH);
     }
 
     /**
-     * Include the Kubernetes and/or OpenShift service CA truststore paths if enabled and the files exist.
+     * 若指定路径下的 Kubernetes/OpenShift 服务 CA 文件存在，将其追加到信任库路径列表。
      *
-     * @param trustStores the existing truststore paths
-     * @param kubernetesCaPath path to the Kubernetes service account CA certificate
-     * @param serviceCaPath path to the OpenShift service CA certificate
+     * @param trustStores 现有信任库路径列表
+     * @param kubernetesCaPath Kubernetes 服务账号 CA 证书路径
+     * @param serviceCaPath OpenShift 服务 CA 证书路径
      */
     public static void includeKubernetesTrustStorePaths(List<String> trustStores, String kubernetesCaPath, String serviceCaPath) {
         File kubernetesCA = new File(kubernetesCaPath);
@@ -100,8 +107,7 @@ public class TruststoreBuilder {
         File file = new File(dataDir, "keycloak-truststore.p12");
         file.getParentFile().mkdirs();
         try (FileOutputStream fos = new FileOutputStream(file)) {
-            // this should inhibit the use of encryption in storing the certs
-            // it's of course not concurrency safe, but it should only be run at startup
+            // 禁用证书条目加密，仅启动时执行，非并发安全
             String oldValue = System.setProperty(CERT_PROTECTION_ALGORITHM_KEY, "NONE");
             truststore.store(fos, password);
             if (oldValue != null) {
@@ -148,6 +154,7 @@ public class TruststoreBuilder {
         }
     }
 
+    /** 创建空 PKCS12 密钥库实例。 */
     static KeyStore createPkcs12KeyStore() {
         try {
             KeyStore truststore = KeyStore.getInstance(PKCS12);
@@ -159,10 +166,9 @@ public class TruststoreBuilder {
     }
 
     /**
-     * Include the default truststore, if it can be found.
+     * 若可找到则合并 JVM 默认信任库（cacerts/jssecacerts）。
      * <p>
-     * The existing system properties will be preserved so that this logic can be rerun without consuming
-     * the newly created merged truststore.
+     * 原有系统属性会备份为 {@code *.orig}，以便重复执行时不消费新合并的信任库。
      */
     static void includeDefaultTruststore(KeyStore truststore) {
         String originalTruststoreKey = TruststoreBuilder.SYSTEM_TRUSTSTORE_KEY + ".orig";
@@ -180,7 +186,7 @@ public class TruststoreBuilder {
             } else {
                 type = System.getProperty(TruststoreBuilder.SYSTEM_TRUSTSTORE_TYPE_KEY, KeyStore.getDefaultType());
                 password = System.getProperty(TruststoreBuilder.SYSTEM_TRUSTSTORE_PASSWORD_KEY);
-                // save the original information
+                // 备份原始系统属性
                 System.setProperty(originalTruststoreKey, trustStorePath);
                 System.setProperty(originalTruststoreTypeKey, type);
                 if (password == null) {
@@ -204,8 +210,9 @@ public class TruststoreBuilder {
         }
     }
 
+    /** 解析 JRE {@code lib/security} 下的 jssecacerts 或 cacerts 路径。 */
     static File getJRETruststore() {
-        // try jre locations - there doesn't seem to be a good default mechanism for this
+        // 尝试 JRE 常见位置，无统一标准 API
         String securityDirectory = System.getProperty("java.home") + File.separator + "lib" + File.separator
                 + "security";
         File jssecacertsFile = new File(securityDirectory, "jssecacerts");
@@ -235,8 +242,7 @@ public class TruststoreBuilder {
                     loadedAny = true;
                 } catch (CertificateException e) {
                     if (pemInputStream.available() > 0 || !loadedAny) {
-                        // any remaining input means there is an actual problem with the key contents or
-                        // file format
+                        // 仍有剩余输入说明格式或内容有问题
                         if (isPem || loadedAny) {
                             throw e;
                         }
@@ -263,10 +269,10 @@ public class TruststoreBuilder {
         String alias = null;
         if (cert instanceof X509Certificate) {
             X509Certificate x509Cert = (X509Certificate)cert;
-            // use an alias that should be unique, yet deterministic
+            // 使用确定性且尽量唯一的别名
             alias = x509Cert.getSubjectX500Principal().getName() + "_" + x509Cert.getSerialNumber().toString(16);
         } else {
-            // isn't expected
+            // 非预期类型
             alias = String.valueOf(Collections.list(truststore.aliases()).size());
         }
         truststore.setCertificateEntry(alias, cert);

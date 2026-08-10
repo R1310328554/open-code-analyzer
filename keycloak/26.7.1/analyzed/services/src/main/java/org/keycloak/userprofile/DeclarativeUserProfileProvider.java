@@ -58,26 +58,26 @@ import static org.keycloak.common.util.ObjectUtil.isBlank;
 import static org.keycloak.protocol.oidc.TokenManager.getRequestedClientScopes;
 
 /**
- * {@link UserProfileProvider} loading configuration from the changeable JSON file stored in component config. Parsed
- * configuration is cached.
+ * 声明式 {@link UserProfileProvider}：从组件配置中的可变更 JSON 加载用户档案配置，解析结果会缓存。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  * @author Vlastimil Elias <velias@redhat.com>
  */
 public class DeclarativeUserProfileProvider implements UserProfileProvider {
 
+    /** 组件配置中存储 UP JSON 的键。 */
     public static final String UP_COMPONENT_CONFIG_KEY = "kc.user.profile.config";
     protected static final String PARSED_CONFIG_COMPONENT_KEY = "kc.user.profile.metadata";
     protected static final String PARSED_UP_CONFIG_COMPONENT_KEY = "kc.parsed.up.config";
 
     /**
-     * Method used for predicate which returns true if any of the configuredScopes is requested in current auth flow.
+     * 判断当前认证流是否请求了配置中的任一 scope；用户管理 API 上下文下始终返回 true。
      *
-     * @param context to get current auth flow from
-     * @param configuredScopes to be evaluated
+     * @param context 属性上下文，用于获取当前认证流
+     * @param configuredScopes 待匹配的 scope 集合
      */
     private static boolean requestedScopePredicate(AttributeContext context, Set<String> configuredScopes) {
-        // any attribute is enabled and available when managing through the User Admin API
+        // 通过 User Admin API 管理时，任意属性均可用
         if (UserProfileContext.USER_API.equals(context.getContext())) {
             return true;
         }
@@ -103,6 +103,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
         this.parsedDefaultRawConfig = factory.getParsedDefaultRawConfig();
     }
 
+    /** 服务账号用户使用专用 {@link ServiceAccountAttributes}。 */
     protected Attributes createAttributes(UserProfileContext context, Map<String, ?> attributes,
             UserModel user, UserProfileMetadata metadata) {
 
@@ -131,7 +132,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
         UserProfileMetadata defaultMetadata = contextualMetadataRegistry.get(context);
 
         if (defaultMetadata == null) {
-            // some contexts (and their metadata) are available enabled when the corresponding feature is enabled
+            // 部分上下文及其元数据仅在对应特性启用时可用
             throw new RuntimeException("No metadata is bound to the " + context + " context");
         }
 
@@ -141,9 +142,9 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
     }
 
     /**
-     * Creates a {@link Function} for creating new users when the creating them using {@link UserProfile#create()}.
+     * 返回用于 {@link UserProfile#create()} 创建新用户的工厂函数。
      *
-     * @return a function for creating new users.
+     * @return 创建 {@link UserModel} 的函数
      */
     private Function<Attributes, UserModel> createUserFactory() {
         return new Function<>() {
@@ -154,7 +155,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
                 if (user == null) {
                     String userName = attributes.getFirst(UserModel.USERNAME);
 
-                    // fallback to email in case email is allowed
+                    // 若允许 email 作为用户名则回退到 email
                     if (userName == null) {
                         userName = attributes.getFirst(UserModel.EMAIL);
                     }
@@ -168,10 +169,10 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
     }
 
     /**
-     * Specifies how contextual profile metadata is configured at runtime.
+     * 按 realm 组件配置在运行时装饰上下文元数据，结果缓存在组件 note 中。
      *
-     * @param metadata the profile metadata
-     * @return the metadata
+     * @param metadata 基础档案元数据
+     * @return 装饰后的元数据
      */
     protected UserProfileMetadata configureUserProfile(UserProfileMetadata metadata, KeycloakSession session) {
         UserProfileContext context = metadata.getContext();
@@ -184,7 +185,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
 
         Map<UserProfileContext, UserProfileMetadata> metadataMap = component.getNote(PARSED_CONFIG_COMPONENT_KEY);
 
-        // not cached, create a note with cache
+        // 未缓存则创建 note 并写入
         if (metadataMap == null) {
             metadataMap = new ConcurrentHashMap<>();
             component.setNote(PARSED_CONFIG_COMPONENT_KEY, metadataMap);
@@ -215,7 +216,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
         RealmModel realm = session.getContext().getRealm();
         Optional<ComponentModel> optionalComponent = getComponentModel();
 
-        // Avoid creating componentModel and then removing it right away
+        // 避免创建组件后立即删除
         if (optionalComponent.isEmpty() && configuration == null) {
             return;
         }
@@ -244,9 +245,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
     }
 
     /**
-     * Decorate basic metadata based on 'per realm' configuration.
-     * This method is called for each {@link UserProfileContext} in each realm, and metadata are cached then and this
-     * method is called again only if configuration changes.
+     * 根据 realm 级 UP 配置装饰基础元数据；每个 {@link UserProfileContext} 在 realm 内调用一次并缓存。
      */
     protected UserProfileMetadata decorateUserProfileForCache(UserProfileMetadata decoratedMetadata, UPConfig parsedConfig) {
         UserProfileContext context = decoratedMetadata.getContext();
@@ -262,8 +261,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
             String attributeName = attrConfig.getName();
 
             if (!context.isAttributeSupported(attributeName)) {
-                // attributes not supported by the context are ignored
-                // for instance, only support email attribute when at the UPDATE_EMAIL context
+                // 当前上下文不支持的属性将被忽略（如 UPDATE_EMAIL 上下文仅支持 email）
                 continue;
             }
 
@@ -284,22 +282,20 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
             Predicate<AttributeContext> required = AttributeMetadata.ALWAYS_FALSE;
             if (rc != null) {
                 if (rc.isAlways() || context.isRoleForContext(rc.getRoles())) {
-                    // service accounts does not require common attributes
+                    // 服务账号不需要常规必填属性
                     required = c -> !isServiceAccountUser(c.getUser());
 
-                    // If scopes are configured, we will use scope-based selector and require the attribute just if scope is
-                    // in current authenticationSession (either default scope or by 'scope' parameter)
+                    // 若配置了 scope，则仅在当前 AuthenticationSession 包含对应 scope 时必填
                     if (rc.getScopes() != null && !rc.getScopes().isEmpty()) {
                         if (context.canBeAuthFlowContext()) {
                             required = (c) -> !isServiceAccountUser(c.getUser()) && requestedScopePredicate(c, rc.getScopes());
                         } else {
-                            // Scopes not available for admin and account contexts
+                            // 管理端与账户上下文不支持 scope
                             required = AttributeMetadata.ALWAYS_FALSE;
                         }
                     }
                 } else if (context.canBeAuthFlowContext() && rc.getScopes() != null && !rc.getScopes().isEmpty()) {
-                    // for contexts executed from auth flow and with configured scopes requirement
-                    // we have to create required validation with scopes based selector
+                    // 认证流上下文且配置了 scope 必填时，创建基于 scope 的选择器
                     required = (c) -> !isServiceAccountUser(c.getUser()) && requestedScopePredicate(c, rc.getScopes());
                 }
             }
@@ -327,8 +323,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
             Predicate<AttributeContext> selector = AttributeMetadata.ALWAYS_TRUE;
             UPAttributeSelector sc = attrConfig.getSelector();
             if (sc != null && !isBuiltInAttribute(context, attributeName) && context.canBeAuthFlowContext() && sc.getScopes() != null && !sc.getScopes().isEmpty()) {
-                // for contexts executed from auth flow and with configured scopes selector
-                // we have to create correct predicate
+                // 认证流上下文且配置了 scope 选择器时构建对应谓词
                 selector = (c) -> requestedScopePredicate(c, sc.getScopes());
             }
 
@@ -340,7 +335,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
 
             validators.add(new AttributeValidatorMetadata(ImmutableAttributeValidator.ID));
 
-            // make sure managed attributes single-valued are constrained to a single value
+            // 非多值托管属性限制为单值
             if (!attrConfig.isMultivalued() && validators.stream().map(AttributeValidatorMetadata::getValidatorId).noneMatch(MultiValueValidator.ID::equals)) {
                 validators.add(new AttributeValidatorMetadata(MultiValueValidator.ID, ValidatorConfig.builder()
                         .config("max", "1")
@@ -348,7 +343,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
             }
 
             if (isBuiltInAttribute(context, attributeName)) {
-                // make sure username and email are writable if permissions are not set
+                // 内置属性未配置权限时默认可读写
                 if (permissions == null || permissions.isEmpty()) {
                     writeAllowed = AttributeMetadata.ALWAYS_TRUE;
                     readAllowed = AttributeMetadata.ALWAYS_TRUE;
@@ -428,7 +423,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
     }
 
     /**
-     * Get parsed config file configured in model. Default one used if not configured.
+     * 从组件模型读取并解析 UP 配置；未配置时使用默认配置。
      */
     protected UPConfig parseConfigOrDefault(ComponentModel component) {
         String rawConfig = component.get(UP_COMPONENT_CONFIG_KEY);
@@ -445,8 +440,9 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
     }
 
     /**
-     * Create the component model to store configuration
-     * @return component model
+     * 创建用于持久化 UP 配置的组件模型。
+     *
+     * @return 新组件模型
      */
     protected ComponentModel createComponentModel() {
         RealmModel realm = session.getContext().getRealm();
@@ -454,11 +450,11 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
     }
 
     /**
-     * Create validator for validation configured in the user profile config.
+     * 根据用户档案配置创建验证器元数据。
      *
-     * @param validator id to create validator for
-     * @param validatorConfig of the validator
-     * @return validator metadata to run given validation
+     * @param validator 验证器 ID
+     * @param validatorConfig 验证器配置参数
+     * @return 可执行的验证器元数据
      */
     protected AttributeValidatorMetadata createConfiguredValidator(String validator, Map<String, Object> validatorConfig) {
         return new AttributeValidatorMetadata(validator, ValidatorConfig.builder().config(validatorConfig).config(AbstractSimpleValidator.IGNORE_EMPTY_VALUE, true).build());
@@ -504,7 +500,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
             RealmModel realm = session.getContext().getRealm();
             UPConfig parsedConfig = getConfigFromComponentModel(component);
 
-            //validate configuration to catch things like changed/removed validators etc, and warn early and clearly about this problem
+            // 校验配置以尽早发现验证器变更/移除等问题
             List<String> errors = UPConfigUtils.validate(session, parsedConfig);
             if (!errors.isEmpty()) {
                 throw new RuntimeException("UserProfile configuration for realm '" + realm.getName() + "' is invalid: " + errors);
@@ -523,13 +519,12 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
 
                     for (String id : validations.keySet()) {
                         List<AttributeValidatorMetadata> validators = metadata.getValidators();
-                        // do not include the default validators for built-in attributes into the base metadata
-                        // user-defined configuration will add its own validators
+                        // 内置属性的默认验证器不进入基础元数据，由用户配置重新添加
                         validators.removeIf(m -> m.getValidatorId().equals(id));
                     }
                 } else if (isOptionalBuiltInAttribute(attributeName)) {
-                    // removes optional default attributes in favor of user-defined configuration
-                    // make sure any attribute other than username and email are removed from the metadata
+                    // 移除可选内置属性，由用户配置接管
+                    // 确保除 username/email 外的属性从元数据中清除
                     attributes.remove();
                 }
             }
@@ -538,6 +533,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
         };
     }
 
+    /** 邮箱必填谓词：服务账号除外，且考虑“注册时 email 作为 username” realm 设置。 */
     private static class EmailRequiredPredicate implements Predicate<AttributeContext> {
         private final Predicate<AttributeContext> required;
 
@@ -560,6 +556,7 @@ public class DeclarativeUserProfileProvider implements UserProfileProvider {
         }
     }
 
+    /** 用户名必填谓词：当 realm 未启用“email 作为 username”时 username 必填。 */
     private static class UsernameRequiredPredicate implements Predicate<AttributeContext> {
         @Override
         public boolean test(AttributeContext context) {
