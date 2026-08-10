@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 配置模块日志门面：集中暴露启动、致命、拉取、Dump、追踪、通知等专用 Logger，并提供运行时动态调整 Logback 级别的方法。
  * Log util.
  *
  * @author Nacos
@@ -28,44 +29,54 @@ import org.slf4j.LoggerFactory;
 public class LogUtil {
     
     /**
+     * 配置服务启动与常规日志。
      * Default log.
      */
     public static final Logger DEFAULT_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.config.startLog");
     
     /**
+     * 致命错误日志，需触发告警。
      * Fatal error log, require alarm.
      */
     public static final Logger FATAL_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.config.fatal");
     
     /**
+     * 客户端 HTTP 拉取日志。
      * Http client log.
      */
     public static final Logger PULL_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.config.pullLog");
     
+    /** 拉取校验专用日志 */
     public static final Logger PULL_CHECK_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.config.pullCheckLog");
     
     /**
+     * 本地缓存 Dump 日志。
      * Dump log.
      */
     public static final Logger DUMP_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.config.dumpLog");
     
+    /** 内存与监控指标日志 */
     public static final Logger MEMORY_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.config.monitorLog");
     
+    /** 客户端请求日志 */
     public static final Logger CLIENT_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.config.clientLog");
     
+    /** 全链路 trace 日志，供 {@link com.alibaba.nacos.config.server.service.trace.ConfigTraceService} 写入 */
     public static final Logger TRACE_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.config.traceLog");
     
+    /** 长轮询/推送通知日志 */
     public static final Logger NOTIFY_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.config.notifyLog");
     
+    /** 按 logName 别名动态设置对应 Logger 的 Logback 级别 */
     public static void setLogLevel(String logName, String level) {
         
         switch (logName) {

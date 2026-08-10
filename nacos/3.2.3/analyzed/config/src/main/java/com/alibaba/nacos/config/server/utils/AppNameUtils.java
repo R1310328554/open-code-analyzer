@@ -21,12 +21,14 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import java.io.File;
 
 /**
+ * 应用名推断工具：依次尝试 {@code project.name} 系统属性与常见应用服务器 home 路径，解析出 Nacos 客户端侧上报的应用标识。
  * appName util.
  *
  * @author Nacos
  */
 public class AppNameUtils {
     
+    /** JVM 启动参数 project.name */
     private static final String PARAM_MARKING_PROJECT = "project.name";
     
     private static final String PARAM_MARKING_JBOSS = "jboss.server.home.dir";
@@ -35,6 +37,7 @@ public class AppNameUtils {
     
     private static final String PARAM_MARKING_TOMCAT = "catalina.base";
     
+    /** 阿里云标准部署根路径前缀 */
     private static final String LINUX_ADMIN_HOME = "/home/admin/";
     
     private static final String SERVER_JBOSS = "jboss";
@@ -45,8 +48,10 @@ public class AppNameUtils {
     
     private static final String SERVER_UNKNOWN = "unknown server";
     
+    /** 无法识别时的默认应用名 */
     private static final String DEFAULT_APP_NAME = "unknown";
     
+    /** 获取当前进程应用名：优先 project.name，其次从 server home 路径解析 */
     public static String getAppName() {
         String appName;
         
@@ -63,10 +68,12 @@ public class AppNameUtils {
         return DEFAULT_APP_NAME;
     }
     
+    /** 从 project.name 系统属性读取应用名 */
     private static String getAppNameByProjectName() {
         return System.getProperty(PARAM_MARKING_PROJECT);
     }
     
+    /** 从 JBoss/Jetty/Tomcat home 路径 /home/admin/{app}/ 段解析应用名 */
     private static String getAppNameByServerHome() {
         String serverHome = null;
         if (SERVER_JBOSS.equals(getServerType())) {
@@ -84,6 +91,7 @@ public class AppNameUtils {
         return null;
     }
     
+    /** 根据 JVM 属性判断当前运行的应用服务器类型 */
     private static String getServerType() {
         String serverType;
         if (System.getProperty(PARAM_MARKING_JBOSS) != null) {

@@ -19,12 +19,14 @@ package com.alibaba.nacos.config.server.utils;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
+ * GroupKey 编解码第二版：与 {@link GroupKey} 类似，tenant 为空时不追加第三段，为长轮询与 MD5 比对协议提供键格式。
  * Group key util.
  *
  * @author Nacos
  */
 public class GroupKey2 {
     
+    /** 生成 dataId+group 二元组键 */
     public static String getKey(String dataId, String group) {
         StringBuilder sb = new StringBuilder();
         urlEncode(dataId, sb);
@@ -33,6 +35,7 @@ public class GroupKey2 {
         return sb.toString();
     }
     
+    /** 生成 dataId+group+tenant 键，tenant 非空时才追加第三段 */
     public static String getKey(String dataId, String group, String tenant) {
         StringBuilder sb = new StringBuilder();
         urlEncode(dataId, sb);
@@ -46,6 +49,7 @@ public class GroupKey2 {
     }
     
     /**
+     * 解析 GroupKey 为 [dataId, group, tenant]，非法格式抛 IllegalArgumentException。
      * Parse the group key.
      */
     public static String[] parseKey(String groupKey) {
@@ -94,6 +98,7 @@ public class GroupKey2 {
     }
     
     /**
+     * URL 风格转义：{@code +} → {@code %2B}，{@code %} → {@code %25}。
      * + -> %2B % -> %25.
      */
     static void urlEncode(String str, StringBuilder sb) {

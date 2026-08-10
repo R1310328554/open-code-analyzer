@@ -55,6 +55,8 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapperInjector.HISTORY_LIST_ROW_MAPPER;
 
 /**
+ * 外部存储模式下配置历史记录的持久化实现：基于 JDBC 与插件化 Mapper 完成
+ * {@link com.alibaba.nacos.config.server.service.repository.HistoryConfigInfoPersistService} 定义的增删查操作。
  * ExternalHistoryConfigInfoPersistServiceImpl.
  *
  * @author lixiaoshuang
@@ -65,12 +67,16 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 public class ExternalHistoryConfigInfoPersistServiceImpl
     implements HistoryConfigInfoPersistService {
     
+    /** 动态数据源服务，提供 JDBC 与事务模板 */
     private DataSourceService dataSourceService;
     
+    /** Spring JDBC 模板，执行 SQL */
     protected JdbcTemplate jt;
     
+    /** 事务模板，用于需要原子性的写操作 */
     protected TransactionTemplate tjt;
     
+    /** 多数据库方言 Mapper 管理器 */
     private MapperManager mapperManager;
     
     public ExternalHistoryConfigInfoPersistServiceImpl() {
@@ -83,11 +89,13 @@ public class ExternalHistoryConfigInfoPersistServiceImpl
         this.mapperManager = MapperManager.instance(isDataSourceLogEnable);
     }
     
+    /** 创建外存分页助手，供历史列表查询使用 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new ExternalStoragePaginationHelperImpl<>(jt);
     }
     
+    /** 原子写入一条配置变更历史（含 MD5、发布类型、灰度名与扩展信息） */
     @Override
     public void insertConfigHistoryAtomic(long id, ConfigInfo configInfo, String srcIp,
         String srcUser,
@@ -112,11 +120,13 @@ public class ExternalHistoryConfigInfoPersistServiceImpl
                 publishTypeTmp,
                 grayNameTemp, extInfo, encryptedDataKey);
         } catch (DataAccessException e) {
+            // 数据库异常记录致命日志并向上抛出
             LogUtil.FATAL_LOG.error("[db-error] " + e, e);
             throw e;
         }
     }
     
+    /** 按起始时间与条数上限批量清理过期历史记录 */
     @Override
     public void removeConfigHistory(final Timestamp startTime, final int limitSize) {
         HistoryConfigInfoMapper historyConfigInfoMapper = mapperManager.findMapper(
@@ -129,6 +139,7 @@ public class ExternalHistoryConfigInfoPersistServiceImpl
         paginationHelper.updateLimit(mapperResult.getSql(), mapperResult.getParamList().toArray());
     }
     
+    /** 分页查询指定时间之后被删除的配置快照，用于增量同步 */
     @Override
     public List<ConfigInfoStateWrapper> findDeletedConfig(final Timestamp startTime, long startId,
         int pageSize,
@@ -166,6 +177,7 @@ public class ExternalHistoryConfigInfoPersistServiceImpl
         }
     }
     
+    /** 按 dataId/group/tenant 分页检索配置变更历史列表 */
     @Override
     public Page<ConfigHistoryInfo> findConfigHistory(String dataId, String group, String tenant,
         int pageNo,
@@ -199,6 +211,7 @@ public class ExternalHistoryConfigInfoPersistServiceImpl
         return page;
     }
     
+    /** 按历史主键 nid 查询单条历史详情，不存在时返回 null */
     @Override
     public ConfigHistoryInfo detailConfigHistory(Long nid) {
         HistoryConfigInfoMapper historyConfigInfoMapper = mapperManager.findMapper(
@@ -223,6 +236,7 @@ public class ExternalHistoryConfigInfoPersistServiceImpl
         
     }
     
+    /** 查询指定配置 id 的上一条历史记录，用于版本对比 */
     @Override
     public ConfigHistoryInfo detailPreviousConfigHistory(Long id) {
         HistoryConfigInfoMapper historyConfigInfoMapper = mapperManager.findMapper(
@@ -243,6 +257,7 @@ public class ExternalHistoryConfigInfoPersistServiceImpl
         }
     }
     
+    /** 统计指定时间之后的历史记录总数，供清理任务估算进度 */
     @Override
     public int findConfigHistoryCountByTime(final Timestamp startTime) {
         HistoryConfigInfoMapper historyConfigInfoMapper = mapperManager.findMapper(
@@ -259,6 +274,7 @@ public class ExternalHistoryConfigInfoPersistServiceImpl
         return result;
     }
     
+    /** 按 nid 游标获取下一条匹配的历史记录，支持灰度与发布类型过滤 */
     @Override
     public ConfigHistoryInfo getNextHistoryInfo(String dataId, String group, String tenant,
         String publishType,

@@ -21,6 +21,7 @@ import com.alibaba.nacos.config.server.constant.Constants;
 import static com.alibaba.nacos.config.server.constant.Constants.WORD_SEPARATOR;
 
 /**
+ * 配置内容工具：校验增量发布内容格式、解析 dataId 与正文分隔符、截断过长内容用于日志展示。
  * Content utils.
  *
  * @author Nacos
@@ -28,6 +29,7 @@ import static com.alibaba.nacos.config.server.constant.Constants.WORD_SEPARATOR;
 public class ContentUtils {
     
     /**
+     * 校验增量发布/删除内容：禁止空串、换行及 WORD_SEPARATOR 控制字符。
      * verify the pub config content.
      *
      * @param content content
@@ -50,6 +52,7 @@ public class ContentUtils {
         }
     }
     
+    /** 从 WORD_SEPARATOR 分隔的内容中提取 dataId（分隔符前段） */
     public static String getContentIdentity(String content) {
         int index = content.indexOf(WORD_SEPARATOR);
         if (index == -1) {
@@ -58,6 +61,7 @@ public class ContentUtils {
         return content.substring(0, index);
     }
     
+    /** 从 WORD_SEPARATOR 分隔的内容中提取正文（分隔符后段） */
     public static String getContent(String content) {
         int index = content.indexOf(WORD_SEPARATOR);
         if (index == -1) {
@@ -67,6 +71,7 @@ public class ContentUtils {
     }
     
     /**
+     * 截断过长内容至 100 字符并追加省略号，供日志安全输出。
      * Truncate the content.
      *
      * @param content content
@@ -82,5 +87,6 @@ public class ContentUtils {
         }
     }
     
+    /** 内容截断最大长度 */
     private static final int LIMIT_CONTENT_SIZE = 100;
 }

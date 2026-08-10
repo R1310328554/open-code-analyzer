@@ -19,21 +19,26 @@ package com.alibaba.nacos.config.server.utils;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * 累积计数统计器：基于 {@link java.util.concurrent.atomic.AtomicLong} 累加总量， {@link #stat()} 返回自上次统计以来的增量。
  * Accumulate Stat Count.
  *
  * @author Nacos
  */
 public class AccumulateStatCount {
     
+    /** 全局累计计数 */
     final AtomicLong total = new AtomicLong(0);
     
+    /** 上次 stat() 时的累计快照，用于计算增量 */
     long lastStatValue = 0;
     
+    /** 原子递增并返回新值 */
     public long increase() {
         return total.incrementAndGet();
     }
     
     /**
+     * 返回自上次调用以来的增量并更新快照。
      * accumulate stat.
      *
      * @return stat.

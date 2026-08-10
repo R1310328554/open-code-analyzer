@@ -20,11 +20,13 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
 /**
+ * 外部存储（MySQL 等）辅助工具：封装 Spring JDBC 主键回填所需的 {@link org.springframework.jdbc.support.KeyHolder}。
  * external storage utils.
  * @author shiyiyue
  */
 public class ExternalStorageUtils {
     
+    /** 创建 {@link org.springframework.jdbc.support.GeneratedKeyHolder}，供 insert 后读取自增主键 */
     public static KeyHolder createKeyHolder() {
         return new GeneratedKeyHolder();
     }

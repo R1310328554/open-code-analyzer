@@ -40,6 +40,7 @@ import static com.alibaba.nacos.config.server.constant.Constants.LINE_SEPARATOR;
 import static com.alibaba.nacos.config.server.constant.Constants.WORD_SEPARATOR;
 
 /**
+ * 长轮询 MD5 比对与监听协议工具：解析客户端上报的 configKeys、比较 MD5 变更、编码变更列表供 HTTP 响应返回。
  * MD5 util.
  *
  * @author Nacos
@@ -47,6 +48,7 @@ import static com.alibaba.nacos.config.server.constant.Constants.WORD_SEPARATOR;
 public class MD5Util {
     
     /**
+     * 委托 {@link com.alibaba.nacos.config.server.utils.Md5ComparatorDelegate} 执行 MD5 比对。
      * Compare Md5.
      */
     public static Map<String, ConfigListenState> compareMd5(HttpServletRequest request,
@@ -56,6 +58,7 @@ public class MD5Util {
     }
     
     /**
+     * 将变更 GroupKey 编码为旧版 {@code dataId:group;} 分号分隔格式。
      * Compare old Md5.
      */
     public static String compareMd5OldResult(Map<String, ConfigListenState> changedGroupKeys) {
@@ -72,6 +75,7 @@ public class MD5Util {
     }
     
     /**
+     * 将变更键列表用 WORD/LINE 分隔符拼接后 URL 编码，供新版长轮询响应。
      * Join and encode changedGroupKeys string.
      */
     public static String compareMd5ResultString(Map<String, ConfigListenState> changedGroupKeys)
@@ -103,6 +107,7 @@ public class MD5Util {
     }
     
     /**
+     * 解析客户端监听协议字符串为 groupKey→{@link com.alibaba.nacos.config.server.model.ConfigListenState} 映射；兼容旧版（D+G+MD5）与新版（D+G+MD5+T）格式。
      * Parse the transport protocol, which has two formats (W for field delimiter, L for each data delimiter) old: D w G
      * w MD5 l new: D w G w MD5 w T l.
      *
@@ -167,12 +172,14 @@ public class MD5Util {
         return md5Map;
     }
     
+    /** 按指定编码将 InputStream 读为字符串，encoding 为 null 时使用 Constants.ENCODE */
     public static String toString(InputStream input, String encoding) throws IOException {
         return (null == encoding) ? toString(new InputStreamReader(input, Constants.ENCODE))
             : toString(new InputStreamReader(input, encoding));
     }
     
     /**
+     * 将 Reader 内容读入字符串。
      * Reader to String.
      */
     public static String toString(Reader reader) throws IOException {
@@ -182,6 +189,7 @@ public class MD5Util {
     }
     
     /**
+     * 从 Reader 复制字符到 Writer，返回复制的字符总数。
      * Copy data to buffer.
      */
     public static long copy(Reader input, Writer output) throws IOException {
@@ -194,8 +202,10 @@ public class MD5Util {
         return count;
     }
     
+    /** 协议字段分隔符 ASCII 2 */
     static final char WORD_SEPARATOR_CHAR = (char) 2;
     
+    /** 协议条目分隔符 ASCII 1 */
     static final char LINE_SEPARATOR_CHAR = (char) 1;
     
 }

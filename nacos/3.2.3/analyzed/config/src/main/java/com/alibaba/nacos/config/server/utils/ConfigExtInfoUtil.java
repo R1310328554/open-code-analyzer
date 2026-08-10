@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 配置扩展信息（ext_info）JSON 构建工具：将高级发布参数、全量配置元数据或灰度规则序列化为持久化层 ext_info 字段。
  * Extra info util.
  *
  * @author Nacos
@@ -39,6 +40,7 @@ public class ConfigExtInfoUtil {
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
+    /** 高级发布参数字段到 ext_info JSON 键的映射表 */
     private static final Map<String, String> EXTRA_INFO_KEYS_MAPPING = new HashMap<>();
     
     static {
@@ -55,6 +57,7 @@ public class ConfigExtInfoUtil {
     }
     
     /**
+     * 从高级发布参数 Map 提取 ext_info JSON 字符串。
      * Extract the extInfo from advance config info.
      */
     public static String getExtraInfoFromAdvanceInfoMap(Map<String, Object> advanceConfigInfoMap,
@@ -88,6 +91,7 @@ public class ConfigExtInfoUtil {
     }
     
     /**
+     * 从 {@link com.alibaba.nacos.config.server.model.ConfigAllInfo} 组装 ext_info JSON。
      * Extract the extInfo from all config info.
      */
     public static String getExtInfoFromAllInfo(ConfigAllInfo configAllInfo) {
@@ -124,6 +128,7 @@ public class ConfigExtInfoUtil {
     }
     
     /**
+     * 从灰度名与灰度规则 JSON 构建 ext_info（含 gray_name、gray_rule 等）。
      * Extract the extInfo from gray config info.
      */
     public static String getExtInfoFromGrayInfo(String grayName, String grayRuleTmp,

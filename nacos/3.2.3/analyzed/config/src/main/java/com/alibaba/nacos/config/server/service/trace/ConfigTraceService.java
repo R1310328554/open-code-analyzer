@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 配置全链路追踪服务：将持久化、通知、Dump、Pull 等阶段事件以管道分隔格式写入 trace 日志，并驱动 {@link com.alibaba.nacos.config.server.monitor.MetricsMonitor} 计时指标。
  * Config trace.
  *
  * @author Nacos
@@ -35,26 +36,35 @@ import java.util.concurrent.TimeUnit;
 public class ConfigTraceService {
     
     /**
+     * 持久化阶段事件标识。
      * persist event.
      */
     public static final String PERSISTENCE_EVENT = "persist";
     
+    /** Beta 配置持久化事件 */
     public static final String PERSISTENCE_EVENT_BETA = "persist-beta";
     
+    /** Tag 配置持久化事件 */
     public static final String PERSISTENCE_EVENT_TAG = "persist-tag";
     
+    /** 元数据持久化事件 */
     public static final String PERSISTENCE_EVENT_METADATA = "persist-metadata";
     
     /**
+     * 持久化操作类型常量。
      * persist type.
      */
+    /** 发布/写入 */
     public static final String PERSISTENCE_TYPE_PUB = "pub";
     
+    /** 删除 */
     public static final String PERSISTENCE_TYPE_REMOVE = "remove";
     
+    /** 合并 */
     public static final String PERSISTENCE_TYPE_MERGE = "merge";
     
     /**
+     * 长轮询/推送通知阶段事件标识。
      * notify event.
      */
     public static final String NOTIFY_EVENT = "notify";
@@ -66,17 +76,23 @@ public class ConfigTraceService {
     public static final String NOTIFY_EVENT_TAG = "notify-tag";
     
     /**
+     * 通知结果类型常量。
      * notify type.
      */
+    /** 通知成功 */
     public static final String NOTIFY_TYPE_OK = "ok";
     
+    /** 通知失败 */
     public static final String NOTIFY_TYPE_ERROR = "error";
     
+    /** 客户端不健康 */
     public static final String NOTIFY_TYPE_UNHEALTH = "unhealth";
     
+    /** 通知过程异常 */
     public static final String NOTIFY_TYPE_EXCEPTION = "exception";
     
     /**
+     * 本地缓存 Dump 阶段事件标识。
      * dump event.
      */
     public static final String DUMP_EVENT = "dump";
@@ -88,20 +104,26 @@ public class ConfigTraceService {
     public static final String DUMP_EVENT_TAG = "dump-tag";
     
     /**
+     * Dump 结果类型常量。
      * dump type.
      */
+    /** Dump 成功 */
     public static final String DUMP_TYPE_OK = "ok";
     
+    /** 删除 Dump 成功 */
     public static final String DUMP_TYPE_REMOVE_OK = "remove-ok";
     
+    /** Dump 失败 */
     public static final String DUMP_TYPE_ERROR = "error";
     
     /**
+     * 客户端拉取配置阶段事件标识。
      * pull event.
      */
     public static final String PULL_EVENT = "pull";
     
     /**
+     * 拉取结果类型常量。
      * pull type.
      */
     public static final String PULL_TYPE_OK = "ok";
@@ -123,14 +145,16 @@ public class ConfigTraceService {
      * @param handleIp         remote ip
      * @param type             type
      * @param content          content
+      * <p>配置全链路 trace 日志服务；详见类级说明。</p>
      */
+    /** 记录持久化 trace：末尾 ext 字段为内容 MD5 */
     public static void logPersistenceEvent(String dataId, String group, String tenant,
         String requestIpAppName, long ts,
         String handleIp, String event, String type, String content) {
         if (!LogUtil.TRACE_LOG.isInfoEnabled()) {
             return;
         }
-        // Convenient tlog segmentation.
+        // 空 tenant 写 null 便于 tlog 分段解析
         if (StringUtils.isBlank(tenant)) {
             tenant = null;
         }
@@ -154,7 +178,9 @@ public class ConfigTraceService {
      * @param type             type
      * @param delayed          delayed
      * @param targetIp         target ip
+      * <p>配置全链路 trace 日志服务；详见类级说明。</p>
      */
+    /** 记录通知 trace 并上报 notify 耗时到 MetricsMonitor */
     public static void logNotifyEvent(String dataId, String group, String tenant,
         String requestIpAppName, long ts,
         String handleIp, String event, String type, long delayed, String targetIp) {
@@ -188,7 +214,9 @@ public class ConfigTraceService {
      * @param type             type
      * @param delayed          delayed
      * @param length           length
+      * <p>配置全链路 trace 日志服务；详见类级说明。</p>
      */
+    /** 记录标准 Dump trace，event 固定为 {@link #DUMP_EVENT} */
     public static void logDumpEvent(String dataId, String group, String tenant,
         String requestIpAppName, long ts,
         String handleIp, String type, long delayed, long length) {
@@ -197,6 +225,7 @@ public class ConfigTraceService {
             delayed, length);
     }
     
+    /** 记录带灰度名的 Dump trace，event 为 dump-{grayName} */
     public static void logDumpGrayNameEvent(String dataId, String group, String tenant,
         String grayName,
         String requestIpAppName, long ts, String handleIp, String type, long delayed, long length) {
@@ -234,7 +263,9 @@ public class ConfigTraceService {
      * @param ts               ts
      * @param handleIp         handle ip
      * @param type             type
+      * <p>配置全链路 trace 日志服务；详见类级说明。</p>
      */
+    /** 记录全量 Dump trace，event 固定为 dump-all */
     public static void logDumpAllEvent(String dataId, String group, String tenant,
         String requestIpAppName, long ts,
         String handleIp, String type) {
@@ -264,7 +295,9 @@ public class ConfigTraceService {
      * @param clientIp         clientIp
      * @param isNotify         isNotify
      * @param model            model
+      * <p>配置全链路 trace 日志服务；详见类级说明。</p>
      */
+    /** 记录客户端拉取 trace，含 delayed、clientIp、isNotify 与协议 model */
     public static void logPullEvent(String dataId, String group, String tenant,
         String requestIpAppName, long ts,
         String event, String type, long delayed, String clientIp, boolean isNotify, String model) {

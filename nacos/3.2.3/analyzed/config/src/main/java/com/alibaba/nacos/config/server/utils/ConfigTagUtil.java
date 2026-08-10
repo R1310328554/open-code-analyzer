@@ -19,21 +19,26 @@ package com.alibaba.nacos.config.server.utils;
 import java.util.Arrays;
 
 /**
+ * 配置 Tag 工具：识别 Istio 相关标签（virtual-service、destination-rule），供配置发布与路由策略分支判断。
  * Config Tag util.
  *
  * @author PoisonGravity
  */
 public class ConfigTagUtil {
     
+    /** Istio VirtualService 配置标签 */
     public static final String VIRTUAL_SERVICE = "virtual-service";
     
+    /** Istio DestinationRule 配置标签 */
     public static final String DESTINATION_RULE = "destination-rule";
     
+    /** 多 Tag 逗号分隔符 */
     private static final String TAGS_DELIMITER = ",";
     
     private static final String HYPHEN = "-";
     
     /**
+     * 判断 configTags 是否包含 Istio VirtualService 或 DestinationRule 标签（忽略连字符与大小写）。
      * <p>Checks if config tags contains "virtual-service" or "destination-rule".</p>
      * @param configTags the tags to check
      * @return {@code true} if the config tags contains "virtual-service" or "destination-rule".
@@ -52,6 +57,7 @@ public class ConfigTagUtil {
     }
     
     /**
+     * 从 configTags 中提取首个匹配的 Istio 类型标签，未匹配时返回 null。
      * <p>Gets the type of Istio from the config tags.</p>
      * @param configTags the tags to check
      * @return the type of Istio if it is found, {@code null} otherwise.

@@ -19,20 +19,24 @@ package com.alibaba.nacos.config.server.utils;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
+ * 配置分组键（GroupKey）编解码：将 dataId、group、tenant 用 {@code +} 连接，并对 {@code +}/{@code %} 做 URL 风格转义，供缓存索引与长轮询协议使用。
  * Synthesize dataId+groupId form. Escape reserved characters in dataId and groupId.
  *
  * @author jiuRen
  */
 public class GroupKey {
     
+    /** 生成 dataId+group 二元组键 */
     public static String getKey(String dataId, String group) {
         return doGetKey(dataId, group, "");
     }
     
+    /** 生成 dataId+group+datum 三元组键 */
     public static String getKey(String dataId, String group, String datumStr) {
         return doGetKey(dataId, group, datumStr);
     }
     
+    /** 生成含 tenant 命名空间的三元组键 */
     public static String getKeyTenant(String dataId, String group, String tenant) {
         return doGetKey(dataId, group, tenant);
     }
@@ -51,6 +55,7 @@ public class GroupKey {
     }
     
     /**
+     * 解析 GroupKey 字符串为 [dataId, group, tenant] 数组。
      * Parse the group key.
      */
     public static String[] parseKey(String groupKey) {
@@ -99,6 +104,7 @@ public class GroupKey {
     }
     
     /**
+     * URL 风格转义：{@code +} → {@code %2B}，{@code %} → {@code %25}。
      * + -> %2B % -> %25.
      */
     static void urlEncode(String str, StringBuilder sb) {

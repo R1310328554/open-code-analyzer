@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 内嵌存储（Raft）事务上下文工具：在写库前将 {@link com.alibaba.nacos.config.server.model.event.ConfigDumpEvent}
+ * 序列化写入 {@link com.alibaba.nacos.persistence.repository.embedded.EmbeddedStorageContextHolder} 扩展信息，供状态机异步横向通知。
  * Temporarily saves all insert, update, and delete statements under a transaction in the order in which they occur.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -45,7 +47,9 @@ public class EmbeddedStorageContextUtils {
      * @param configInfo {@link ConfigInfo}
      * @param srcIp      The IP of the operator
      * @param time       Operating time
+      * <p>内嵌存储 Raft 事务 Dump 事件上下文；详见类级说明。</p>
      */
+    /** 正式配置变更：非单机模式下附加 ConfigDumpEvent 到 Raft 扩展上下文 */
     public static void onModifyConfigInfo(ConfigInfo configInfo, String srcIp, Timestamp time) {
         if (!EnvUtil.getStandaloneMode()) {
             ConfigDumpEvent event =
@@ -69,7 +73,9 @@ public class EmbeddedStorageContextUtils {
      * @param betaIps    Receive client IP for grayscale configuration publishing
      * @param srcIp      The IP of the operator
      * @param time       Operating time
+      * <p>内嵌存储 Raft 事务 Dump 事件上下文；详见类级说明。</p>
      */
+    /** Beta 灰度配置变更：携带 betaIps 写入 Dump 事件 */
     public static void onModifyConfigBetaInfo(ConfigInfo configInfo, String betaIps, String srcIp,
         Timestamp time) {
         if (!EnvUtil.getStandaloneMode()) {
@@ -95,7 +101,9 @@ public class EmbeddedStorageContextUtils {
      * @param tag        tag info
      * @param srcIp      The IP of the operator
      * @param time       Operating time
+      * <p>内嵌存储 Raft 事务 Dump 事件上下文；详见类级说明。</p>
      */
+    /** Tag 维度配置变更：携带 tag 标识写入 Dump 事件 */
     public static void onModifyConfigTagInfo(ConfigInfo configInfo, String tag, String srcIp,
         Timestamp time) {
         if (!EnvUtil.getStandaloneMode()) {
@@ -120,7 +128,9 @@ public class EmbeddedStorageContextUtils {
      * @param grayRule gray rule
      * @param srcIp      The IP of the operator
      * @param time       Operating time
+      * <p>内嵌存储 Raft 事务 Dump 事件上下文；详见类级说明。</p>
      */
+    /** 灰度规则配置变更：携带 grayName 与 grayRule 写入 Dump 事件 */
     public static void onModifyConfigGrayInfo(ConfigInfo configInfo, String grayName,
         String grayRule, String srcIp, Timestamp time) {
         if (!EnvUtil.getStandaloneMode()) {
@@ -147,7 +157,9 @@ public class EmbeddedStorageContextUtils {
      * @param dataId      dataId
      * @param srcIp       The IP of the operator
      * @param time        Operating time
+      * <p>内嵌存储 Raft 事务 Dump 事件上下文；详见类级说明。</p>
      */
+    /** 删除正式配置：构造 remove=true 的 Dump 事件 */
     public static void onDeleteConfigInfo(String namespaceId, String group, String dataId,
         String srcIp,
         Timestamp time) {
@@ -168,7 +180,9 @@ public class EmbeddedStorageContextUtils {
      * via the raft state machine, along with the information.
      *
      * @param configInfos {@link ConfigAllInfo} list
+      * <p>内嵌存储 Raft 事务 Dump 事件上下文；详见类级说明。</p>
      */
+    /** 批量删除配置：聚合多条 remove 事件后一次性写入扩展上下文 */
     public static void onBatchDeleteConfigInfo(List<ConfigAllInfo> configInfos) {
         if (!EnvUtil.getStandaloneMode()) {
             List<ConfigDumpEvent> events = new ArrayList<>();
@@ -198,7 +212,9 @@ public class EmbeddedStorageContextUtils {
      * @param group       group
      * @param dataId      dataId
      * @param time        Operating time
+      * <p>内嵌存储 Raft 事务 Dump 事件上下文；详见类级说明。</p>
      */
+    /** 删除 Beta 配置：标记 isBeta=true 的 remove 事件 */
     public static void onDeleteConfigBetaInfo(String namespaceId, String group, String dataId,
         long time) {
         if (!EnvUtil.getStandaloneMode()) {
@@ -221,7 +237,9 @@ public class EmbeddedStorageContextUtils {
      * @param dataId      dataId
      * @param tag         tag info
      * @param srcIp       The IP of the operator
+      * <p>内嵌存储 Raft 事务 Dump 事件上下文；详见类级说明。</p>
      */
+    /** 删除 Tag 配置：携带 tag 与操作者 IP 的 remove 事件 */
     public static void onDeleteConfigTagInfo(String namespaceId, String group, String dataId,
         String tag,
         String srcIp) {
@@ -245,7 +263,9 @@ public class EmbeddedStorageContextUtils {
      * @param dataId      dataId
      * @param grayName gray name
      * @param srcIp       The IP of the operator
+      * <p>内嵌存储 Raft 事务 Dump 事件上下文；详见类级说明。</p>
      */
+    /** 删除灰度配置：携带 grayName 的 remove 事件 */
     public static void onDeleteConfigGrayInfo(String namespaceId, String group, String dataId,
         String grayName,
         String srcIp) {
