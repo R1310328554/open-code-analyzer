@@ -46,31 +46,36 @@ import org.keycloak.services.validation.Validation;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * OTP 表单认证器：展示 TOTP 输入页并校验一次性密码，继承 {@link AbstractUsernameFormAuthenticator} 的用户状态处理。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class OTPFormAuthenticator extends AbstractUsernameFormAuthenticator implements Authenticator, CredentialValidator<OTPCredentialProvider> {
 
-    // Freemarker attribute where selected OTP credential will be stored
+    /** Freemarker 属性名：当前选中的 OTP 凭证 ID。 */
     public static final String SELECTED_OTP_CREDENTIAL_ID = "selectedOtpCredentialId";
 
-    // Label to be shown in the UI for the "unnamed" OTP credential, which doesn't have userLabel
+    /** 无 userLabel 的 OTP 凭证在 UI 中显示的占位标签。 */
     public static final String UNNAMED = "unnamed";
 
 
     @Override
+    /** 处理 OTP 表单提交。 */
     public void action(AuthenticationFlowContext context) {
         validateOTP(context);
     }
 
 
     @Override
+    /** 展示 OTP 输入挑战页。 */
     public void authenticate(AuthenticationFlowContext context) {
         Response challengeResponse = challenge(context, null);
         context.challenge(challengeResponse);
     }
 
 
+    /** 校验用户提交的 TOTP；成功则标记 OTP 凭证类型并 success。 */
     public void validateOTP(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> inputData = context.getHttpRequest().getDecodedFormParameters();
 
@@ -89,7 +94,7 @@ public class OTPFormAuthenticator extends AbstractUsernameFormAuthenticator impl
 
         UserModel userModel = context.getUser();
         boolean userEnabled = enabledUser(context, userModel);
-        // the brute force lock might be lifted/user enabled in the meantime -> we need to clear the auth session note
+        // 暴力破解锁定可能已解除，需清除会话失效 note
         if (userEnabled) {
             context.getAuthenticationSession().removeAuthNote(AbstractUsernameFormAuthenticator.SESSION_INVALID);
         }
@@ -99,7 +104,7 @@ public class OTPFormAuthenticator extends AbstractUsernameFormAuthenticator impl
             return;
         }
         if (!userEnabled) {
-            // error in context is set in enabledUser/isDisabledByBruteForce
+            // 错误已在 enabledUser/isDisabledByBruteForce 中设置
             context.getAuthenticationSession().setAuthNote(AbstractUsernameFormAuthenticator.SESSION_INVALID, "true");
             return;
         }
@@ -121,6 +126,7 @@ public class OTPFormAuthenticator extends AbstractUsernameFormAuthenticator impl
     }
 
     @Override
+    /** @return 需要上下文中已有用户 */
     public boolean requiresUser() {
         return true;
     }
@@ -139,6 +145,7 @@ public class OTPFormAuthenticator extends AbstractUsernameFormAuthenticator impl
     }
 
     @Override
+    /** @return TOTP 登录表单响应 */
     protected Response createLoginForm(LoginFormsProvider form) {
         return form.createLoginTotp();
     }
@@ -149,6 +156,7 @@ public class OTPFormAuthenticator extends AbstractUsernameFormAuthenticator impl
     }
 
     @Override
+    /** 若用户未配置 TOTP，添加 CONFIGURE_TOTP 必需操作。 */
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
         AuthenticationSessionModel authenticationSession = session.getContext().getAuthenticationSession();
         if (!authenticationSession.getRequiredActions().contains(UserModel.RequiredAction.CONFIGURE_TOTP.name())) {
@@ -166,6 +174,7 @@ public class OTPFormAuthenticator extends AbstractUsernameFormAuthenticator impl
     }
 
     @Override
+    /** @return OTP 凭证 Provider */
     public OTPCredentialProvider getCredentialProvider(KeycloakSession session) {
         return (OTPCredentialProvider)session.getProvider(CredentialProvider.class, OTPCredentialProviderFactory.PROVIDER_ID);
     }

@@ -22,13 +22,17 @@ import org.keycloak.authentication.authenticators.browser.UsernamePasswordFormFa
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * IdP 用户名/密码表单认证器工厂：用于 broker 流程中的本地账户重新认证。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpUsernamePasswordFormFactory extends UsernamePasswordFormFactory {
 
+    /** Provider ID：idp-username-password-form。 */
     public static final String PROVIDER_ID = "idp-username-password-form";
 
     @Override
+    /** @return 新建 {@link IdpUsernamePasswordForm} 实例 */
     public Authenticator create(KeycloakSession session) {
         return new IdpUsernamePasswordForm(session);
     }
@@ -39,11 +43,13 @@ public class IdpUsernamePasswordFormFactory extends UsernamePasswordFormFactory 
     }
 
     @Override
+    /** @return 帮助说明：校验登录密码，用户名可能已由 IdP 认证确定 */
     public String getHelpText() {
         return "Validates a password from login form. Username may be already known from identity provider authentication";
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Username Password Form for identity provider reauthentication";
     }

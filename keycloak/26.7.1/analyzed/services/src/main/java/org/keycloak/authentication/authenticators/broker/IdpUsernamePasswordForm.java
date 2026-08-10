@@ -52,11 +52,13 @@ public class IdpUsernamePasswordForm extends UsernamePasswordForm {
 
     private final static Logger log = Logger.getLogger(IdpUsernamePasswordForm.class);
 
+    /** @param session 当前 Keycloak 会话 */
     public IdpUsernamePasswordForm(KeycloakSession session) {
         super(session);
     }
 
     @Override
+    /** 渲染用户名/密码登录表单（含 IdP 重新认证提示）。 */
     protected Response challenge(AuthenticationFlowContext context, MultivaluedMap<String, String> formData) {
         return setupForm(context, formData, getExistingUser(context))
                 .setStatus(Response.Status.OK)
@@ -78,6 +80,7 @@ public class IdpUsernamePasswordForm extends UsernamePasswordForm {
     }
 
     @Override
+    /** 若已有用户则写入上下文，并校验用户名与密码。 */
     protected boolean validateForm(AuthenticationFlowContext context, MultivaluedMap<String, String> formData) {
         Optional<UserModel> existingUser = getExistingUser(context);
         existingUser.ifPresent(context::setUser);
@@ -85,6 +88,7 @@ public class IdpUsernamePasswordForm extends UsernamePasswordForm {
         return validateUserAndPassword(context, formData);
     }
 
+    /** 配置登录表单：预填用户名、禁用注册、展示 IdP 重新认证信息及嵌套 broker 提示。 */
     protected LoginFormsProvider setupForm(AuthenticationFlowContext context, MultivaluedMap<String, String> formData, Optional<UserModel> existingUser) {
         SerializedBrokeredIdentityContext serializedCtx = SerializedBrokeredIdentityContext.readFromAuthenticationSession(context.getAuthenticationSession(), AbstractIdpAuthenticator.BROKERED_CONTEXT_NOTE);
         if (serializedCtx == null) {
@@ -114,6 +118,7 @@ public class IdpUsernamePasswordForm extends UsernamePasswordForm {
         return form;
     }
 
+    /** 从认证会话读取已关联的本地用户；不存在时返回 empty。 */
     private Optional<UserModel> getExistingUser(AuthenticationFlowContext context) {
         try {
             return Optional.of(AbstractIdpAuthenticator.getExistingUser(context.getSession(), context.getRealm(), context.getAuthenticationSession()));

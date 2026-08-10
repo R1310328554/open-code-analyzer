@@ -31,16 +31,22 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 
 /**
+ * IdP 资料审查认证器工厂：注册 {@link IdpReviewProfileAuthenticator} 单例，并配置首次登录时是否展示资料更新页。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpReviewProfileAuthenticatorFactory implements AuthenticatorFactory {
 
+    /** Provider ID：idp-review-profile。 */
     public static final String PROVIDER_ID = "idp-review-profile";
+    /** 单例认证器实例。 */
     static IdpReviewProfileAuthenticator SINGLETON = new IdpReviewProfileAuthenticator();
 
+    /** 配置项：首次登录时更新资料的策略（on/off/missing）。 */
     public static final String UPDATE_PROFILE_ON_FIRST_LOGIN = "update.profile.on.first.login";
 
     @Override
+    /** @return 单例 {@link IdpReviewProfileAuthenticator} */
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
     }
@@ -81,11 +87,13 @@ public class IdpReviewProfileAuthenticatorFactory implements AuthenticatorFactor
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Review Profile";
     }
 
     @Override
+    /** @return 帮助说明：用户审查并更新从 IdP 获取的资料 */
     public String getHelpText() {
         return "User reviews and updates profile data retrieved from Identity Provider in the displayed form";
     }
@@ -116,6 +124,7 @@ public class IdpReviewProfileAuthenticatorFactory implements AuthenticatorFactor
 
 
     @Override
+    /** @return 首次登录资料更新策略等配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }

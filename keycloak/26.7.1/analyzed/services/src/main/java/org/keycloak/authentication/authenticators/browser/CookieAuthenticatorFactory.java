@@ -28,11 +28,15 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * Cookie 认证器工厂：注册 {@link CookieAuthenticator} 单例，用于 SSO 静默登录。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CookieAuthenticatorFactory implements AuthenticatorFactory {
+    /** Provider ID：auth-cookie。 */
     public static final String PROVIDER_ID = "auth-cookie";
+    /** 单例认证器实例。 */
     static CookieAuthenticator SINGLETON = new CookieAuthenticator();
 
     @Override
@@ -76,11 +80,13 @@ public class CookieAuthenticatorFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Cookie";
     }
 
     @Override
+    /** @return 帮助说明：校验认证服务器设置的 SSO Cookie */
     public String getHelpText() {
         return "Validates the SSO cookie set by the auth server.";
     }

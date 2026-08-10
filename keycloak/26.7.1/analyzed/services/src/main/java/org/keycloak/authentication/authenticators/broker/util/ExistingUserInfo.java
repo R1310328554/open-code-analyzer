@@ -22,15 +22,21 @@ import java.io.IOException;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 已存在用户信息：broker 检测到属性冲突时记录重复用户 ID 及冲突属性名/值，可序列化存入认证会话 note。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ExistingUserInfo {
+    /** 已存在用户的 ID。 */
     private String existingUserId;
+    /** 发生冲突的属性名。 */
     private String duplicateAttributeName;
+    /** 发生冲突的属性值。 */
     private String duplicateAttributeValue;
 
     public ExistingUserInfo() {}
 
+    /** 构造包含冲突详情的已存在用户信息。 */
     public ExistingUserInfo(String existingUserId, String duplicateAttributeName, String duplicateAttributeValue) {
         this.existingUserId = existingUserId;
         this.duplicateAttributeName = duplicateAttributeName;
@@ -61,6 +67,7 @@ public class ExistingUserInfo {
         this.duplicateAttributeValue = duplicateAttributeValue;
     }
 
+    /** 将对象序列化为 JSON 字符串。 */
     public String serialize() {
         try {
             return JsonSerialization.writeValueAsString(this);
@@ -69,6 +76,7 @@ public class ExistingUserInfo {
         }
     }
 
+    /** 从 JSON 字符串反序列化为 {@link ExistingUserInfo}。 */
     public static ExistingUserInfo deserialize(String serialized) {
         try {
             return JsonSerialization.readValue(serialized, ExistingUserInfo.class);

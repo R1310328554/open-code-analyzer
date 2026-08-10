@@ -52,8 +52,10 @@ import static org.keycloak.provider.ProviderConfigProperty.STRING_TYPE;
  */
 public class ConditionalOtpFormAuthenticatorFactory implements AuthenticatorFactory {
 
+    /** Provider ID：auth-conditional-otp-form。 */
     public static final String PROVIDER_ID = "auth-conditional-otp-form";
 
+    /** 单例认证器实例。 */
     public static final ConditionalOtpFormAuthenticator SINGLETON = new ConditionalOtpFormAuthenticator();
 
     @Override
@@ -103,16 +105,19 @@ public class ConditionalOtpFormAuthenticatorFactory implements AuthenticatorFact
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Conditional OTP Form";
     }
 
     @Override
+    /** @return 帮助说明：按配置条件决定是否展示 OTP 表单 */
     public String getHelpText() {
         return "Validates a OTP on a separate OTP form. Only shown if required based on the configured conditions.";
     }
 
     @Override
+    /** @return 用户属性、角色、请求头与默认 OTP 策略等配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
 
         ProviderConfigProperty forceOtpUserAttribute = new ProviderConfigProperty();
@@ -162,6 +167,7 @@ public class ConditionalOtpFormAuthenticatorFactory implements AuthenticatorFact
     }
 
     @Override
+    /** @return 依赖 {@link AlternativeLookupProvider} 以支持角色缓存 */
     public Set<Class<? extends Provider>> dependsOn() {
         return Set.of(AlternativeLookupProvider.class); //for caching
     }

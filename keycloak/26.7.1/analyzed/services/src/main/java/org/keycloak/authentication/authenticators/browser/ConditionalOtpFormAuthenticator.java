@@ -86,10 +86,13 @@ import static org.keycloak.models.utils.KeycloakModelUtils.getRoleFromString;
  */
 public class ConditionalOtpFormAuthenticator extends OTPFormAuthenticator {
 
+    /** 用户属性/默认策略值：跳过 OTP。 */
     public static final String SKIP = "skip";
 
+    /** 用户属性/默认策略值：强制 OTP。 */
     public static final String FORCE = "force";
 
+    /** 配置项：控制 OTP 的用户属性名。 */
     public static final String OTP_CONTROL_USER_ATTRIBUTE = "otpControlAttribute";
 
     public static final String SKIP_OTP_ROLE = "skipOtpRole";
@@ -102,11 +105,13 @@ public class ConditionalOtpFormAuthenticator extends OTPFormAuthenticator {
 
     public static final String DEFAULT_OTP_OUTCOME = "defaultOtpOutcome";
 
+    /** OTP 决策：跳过、展示 OTP 表单或弃权（继续下一条件）。 */
     enum OtpDecision {
         SKIP_OTP, SHOW_OTP, ABSTAIN
     }
 
     @Override
+    /** 依次评估用户属性、角色、请求头与默认策略，决定跳过或展示 OTP。 */
     public void authenticate(AuthenticationFlowContext context) {
         AuthenticatorConfigModel model = context.getAuthenticatorConfig();
         Map<String, String> config = model != null? model.getConfig() : Collections.emptyMap();
@@ -165,6 +170,7 @@ public class ConditionalOtpFormAuthenticator extends OTPFormAuthenticator {
         super.authenticate(context);
     }
 
+    /** 根据用户属性值（skip/force）投票。 */
     private OtpDecision voteForUserOtpControlAttribute(UserModel user, Map<String, String> config) {
 
         if (!config.containsKey(OTP_CONTROL_USER_ATTRIBUTE)) {
@@ -191,7 +197,7 @@ public class ConditionalOtpFormAuthenticator extends OTPFormAuthenticator {
             return ABSTAIN;
         }
 
-        //Inverted to allow white-lists, e.g. for specifying trusted remote hosts: X-Forwarded-Host: (1.2.3.4|1.2.3.5)
+        // 白名单模式：匹配则跳过 OTP（如可信网络 X-Forwarded-Host）
         if (containsMatchingRequestHeader(requestHeaders, config.get(SKIP_OTP_FOR_HTTP_HEADER))) {
             return SKIP_OTP;
         }
@@ -209,10 +215,9 @@ public class ConditionalOtpFormAuthenticator extends OTPFormAuthenticator {
             return false;
         }
 
-        //TODO cache RequestHeader Patterns
-        //TODO how to deal with pattern syntax exceptions?
-        // need CASE_INSENSITIVE flag so that we also have matches when the underlying container use a different case than what
-        // is usually expected (e.g.: vertx)
+        // TODO：缓存请求头正则
+        // TODO：处理正则语法异常
+        // 忽略大小写以兼容 vertx 等容器对请求头大小写处理差异
         Pattern pattern = Pattern.compile(headerPattern, Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 
         for (Map.Entry<String, List<String>> entry : requestHeaders.entrySet()) {
@@ -303,6 +308,7 @@ public class ConditionalOtpFormAuthenticator extends OTPFormAuthenticator {
     }
 
     @Override
+    /** 若条件判定需要 OTP 且用户未配置 TOTP，添加 CONFIGURE_TOTP 必需操作。 */
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
         AuthenticationSessionModel authenticationSession = session.getContext().getAuthenticationSession();
         if (isOTPRequired(session, realm, user) && !authenticationSession.getRequiredActions().contains(UserModel.RequiredAction.CONFIGURE_TOTP.name())) {

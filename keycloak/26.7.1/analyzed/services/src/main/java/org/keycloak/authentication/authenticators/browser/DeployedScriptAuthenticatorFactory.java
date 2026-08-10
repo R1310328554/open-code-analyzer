@@ -32,6 +32,8 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.provider.ScriptProviderMetadata;
 
 /**
+ * 已部署脚本认证器工厂：从 {@link ScriptProviderMetadata} 动态创建基于脚本的认证器，并在 postInit 中注册配置。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public final class DeployedScriptAuthenticatorFactory extends ScriptBasedAuthenticatorFactory {
@@ -50,11 +52,13 @@ public final class DeployedScriptAuthenticatorFactory extends ScriptBasedAuthent
         this.metadata = metadata;
     }
 
+    /** 无参构造，供反射实例化。 */
     public DeployedScriptAuthenticatorFactory() {
-        // for reflection
+        // 供反射使用
     }
 
     @Override
+    /** @return 绑定固定配置的脚本认证器实例 */
     public Authenticator create(KeycloakSession session) {
         return authenticator;
     }
@@ -80,12 +84,14 @@ public final class DeployedScriptAuthenticatorFactory extends ScriptBasedAuthent
     }
 
     @Override
+    /** 从 metadata 创建 {@link AuthenticatorConfigModel} 并加载配置属性。 */
     public void init(Config.Scope config) {
         model = createModel(metadata);
         configProperties = super.getConfigProperties();
     }
 
     @Override
+    /** 在事务中向 {@link DeployedConfigurationsManager} 注册已部署认证器配置。 */
     public void postInit(KeycloakSessionFactory factory) {
         KeycloakModelUtils.runJobInTransaction(factory, session -> {
             new DeployedConfigurationsManager(session).registerDeployedAuthenticatorConfig(model);
@@ -110,6 +116,7 @@ public final class DeployedScriptAuthenticatorFactory extends ScriptBasedAuthent
         return metadata;
     }
 
+    /** 从脚本 metadata 构建认证器配置（含 scriptName/scriptCode/scriptDescription）。 */
     private AuthenticatorConfigModel createModel(ScriptProviderMetadata metadata) {
         AuthenticatorConfigModel model = new AuthenticatorConfigModel();
 
@@ -127,6 +134,7 @@ public final class DeployedScriptAuthenticatorFactory extends ScriptBasedAuthent
         return model;
     }
 
+    /** 将名称中的 / 与 . 替换为 -，用作配置 alias。 */
     private String sanitizeString(String value) {
         return value.replace('/', '-').replace('.', '-');
     }

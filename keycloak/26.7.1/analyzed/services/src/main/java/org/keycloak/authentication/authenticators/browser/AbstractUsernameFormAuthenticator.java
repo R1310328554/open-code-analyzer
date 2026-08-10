@@ -42,24 +42,30 @@ import static org.keycloak.services.validation.Validation.FIELD_PASSWORD;
 import static org.keycloak.services.validation.Validation.FIELD_USERNAME;
 
 /**
+ * 用户名表单认证器抽象基类：提供用户名查找、密码校验、暴力破解锁定与重复用户处理等通用逻辑。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public abstract class AbstractUsernameFormAuthenticator extends AbstractFormAuthenticator {
 
+    /** 认证会话 note：用户尝试登录时输入的用户名。 */
     public static final String ATTEMPTED_USERNAME = "ATTEMPTED_USERNAME";
 
     /**
+     * 认证会话 note：为 true 时隐藏用户名字段；通常与 {@link #ATTEMPTED_USERNAME} 配合，允许用户重新选择用户名。
      * An authentication session not to indicate that the username field should be hidden.
      * This note is usually set together with {@link #ATTEMPTED_USERNAME} to indicated that the
      * user can restart the flow by choosing a different username.
      * It should be set by authenticators that happen before this authenticator in the flow so that the original intent
      * is kept when this authenticator is executed on subsequent requests.
      */
+    /** 认证会话 note：是否隐藏用户名字段。 */
     public static final String USERNAME_HIDDEN = "USERNAME_HIDDEN";
+    /** 认证会话 note：标记会话因暴力破解等原因已失效。 */
     public static final String SESSION_INVALID = "SESSION_INVALID";
 
-    // Flag is true if user was already set in the authContext before this authenticator was triggered. In this case we skip clearing of the user after unsuccessful password authentication
+    /** 认证会话 note：本步骤前上下文中已设置用户时，密码错误后不清除用户。 */
     public static final String USER_SET_BEFORE_USERNAME_PASSWORD_AUTH = "USER_SET_BEFORE_USERNAME_PASSWORD_AUTH";
 
     @Override
@@ -71,6 +77,7 @@ public abstract class AbstractUsernameFormAuthenticator extends AbstractFormAuth
         return challenge(context, error, null);
     }
 
+    /** 构建带错误信息的用户名/密码登录挑战页。 */
     protected Response challenge(AuthenticationFlowContext context, String error, String field) {
         LoginFormsProvider form = context.form()
                 .setExecution(context.getExecution().getId());
@@ -78,7 +85,7 @@ public abstract class AbstractUsernameFormAuthenticator extends AbstractFormAuth
         AuthenticationSessionModel authenticationSession = context.getAuthenticationSession();
 
         if (Boolean.parseBoolean(authenticationSession.getAuthNote(USERNAME_HIDDEN))) {
-            // if username is hidden, shown errors in the password field instead
+            // 用户名隐藏时，错误显示在密码字段
             field = FIELD_PASSWORD;
         }
 
@@ -137,6 +144,7 @@ public abstract class AbstractUsernameFormAuthenticator extends AbstractFormAuth
     }
 
 
+    /** 查找用户、校验密码并确认账户可用。 */
     public boolean validateUserAndPassword(AuthenticationFlowContext context, MultivaluedMap<String, String> inputData)  {
         UserModel user = getUser(context, inputData);
         boolean shouldClearUserFromCtxAfterBadPassword = !isUserAlreadySetBeforeUsernamePasswordAuth(context);
@@ -150,12 +158,12 @@ public abstract class AbstractUsernameFormAuthenticator extends AbstractFormAuth
 
     private UserModel getUser(AuthenticationFlowContext context, MultivaluedMap<String, String> inputData) {
         if (isUserAlreadySetBeforeUsernamePasswordAuth(context)) {
-            // Get user from the authentication context in case he was already set before this authenticator
+            // 若前置步骤已设置用户，直接从上下文获取
             UserModel user = context.getUser();
             testInvalidUser(context, user);
             return user;
         } else {
-            // Normal login. In this case this authenticator is supposed to establish identity of the user from the provided username
+            // 常规登录：由本步骤根据表单用户名建立用户身份
             context.clearUser();
             return getUserFromForm(context, inputData);
         }
@@ -170,7 +178,7 @@ public abstract class AbstractUsernameFormAuthenticator extends AbstractFormAuth
             return null;
         }
 
-        // remove leading and trailing whitespace
+        // 去除用户名首尾空白
         username = username.trim();
 
         context.getEvent().detail(Details.USERNAME, username);
@@ -182,7 +190,7 @@ public abstract class AbstractUsernameFormAuthenticator extends AbstractFormAuth
         } catch (ModelDuplicateException mde) {
             ServicesLogger.LOGGER.modelDuplicateException(mde);
 
-            // Could happen during federation import
+            // 联邦导入时可能发生重复
             if (mde.getDuplicateFieldName() != null && mde.getDuplicateFieldName().equals(UserModel.EMAIL)) {
                 setDuplicateUserChallenge(context, Errors.EMAIL_IN_USE, Messages.EMAIL_EXISTS, AuthenticationFlowError.INVALID_USER);
             } else {
@@ -199,8 +207,7 @@ public abstract class AbstractUsernameFormAuthenticator extends AbstractFormAuth
         if (!enabledUser(context, user)) {
             return false;
         }
-        // When the user is already set, the password form has no rememberMe checkbox,
-        // so the form data must not overwrite the authNote saved by the preceding authenticator.
+        // 用户已预设时密码表单无 rememberMe，不覆盖前置步骤保存的 note
         if (!isUserAlreadySetBeforeUsernamePasswordAuth(context)) {
             AuthenticatorUtils.processRememberMe(context, inputData);
         }
@@ -224,7 +231,7 @@ public abstract class AbstractUsernameFormAuthenticator extends AbstractFormAuth
         }
     }
 
-    // Set up AuthenticationFlowContext error.
+    /** 处理密码错误或为空：记录事件、设置挑战并可选清除用户。 */
     private boolean badPasswordHandler(AuthenticationFlowContext context, UserModel user, boolean clearUser,boolean isEmptyPassword) {
         context.getEvent().user(user);
         context.getEvent().error(Errors.INVALID_USER_CREDENTIALS);

@@ -45,11 +45,15 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
+ * 序列化的 Broker 身份上下文：实现 {@link UpdateProfileContext}，可在认证会话 note 中 JSON 存取，支持 IdP 资料审查与 broker 流程间传递。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
 
+    /** 联邦身份上下文 ID。 */
     private String id;
+    /** IdP 侧用户名。 */
     private String brokerUsername;
     private String brokerSessionId;
     private String brokerUserId;
@@ -59,7 +63,9 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
     @JsonIgnore
     private boolean emailAsUsername;
 
+    /** 身份提供方 alias。 */
     private String identityProviderId;
+    /** IdP 上下文数据（含用户属性等），按类型序列化存储。 */
     private Map<String, ContextDataEntry> contextData = new HashMap<>();
 
     @JsonIgnore
@@ -264,6 +270,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
         }
     }
 
+    /** 反序列化为完整的 {@link BrokeredIdentityContext}，并关联 IdP 与认证会话。 */
     public BrokeredIdentityContext deserialize(KeycloakSession session, AuthenticationSessionModel authSession) {
         RealmModel realm = authSession.getRealm();
         IdentityProviderModel idpConfig = session.identityProviders().getByAlias(getIdentityProviderId());
@@ -305,6 +312,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
         return ctx;
     }
 
+    /** 将 {@link BrokeredIdentityContext} 序列化为可存入 note 的对象。 */
     public static SerializedBrokeredIdentityContext serialize(BrokeredIdentityContext context) {
         SerializedBrokeredIdentityContext ctx = new SerializedBrokeredIdentityContext();
         ctx.setId(context.getId());
@@ -332,7 +340,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
         return ctx;
     }
 
-    // Save this context as note to authSession
+    /** 将当前上下文 JSON 序列化后写入认证会话 note。 */
     public void saveToAuthenticationSession(AuthenticationSessionModel authSession, String noteKey) {
         try {
             String asString = JsonSerialization.writeValueAsString(this);
@@ -342,6 +350,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
         }
     }
 
+    /** 从认证会话 note 读取并反序列化上下文；note 不存在时返回 null。 */
     public static SerializedBrokeredIdentityContext readFromAuthenticationSession(AuthenticationSessionModel authSession, String noteKey) {
         String asString = authSession.getAuthNote(noteKey);
         if (asString == null) {
@@ -357,6 +366,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
         }
     }
 
+    /** 上下文数据条目：保存 Java 类型名与 IdP marshaller 序列化后的字符串。 */
     public static class ContextDataEntry {
 
         private String clazz;
@@ -378,6 +388,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
             this.data = data;
         }
 
+        /** 创建指定类型与序列化数据的条目。 */
         public static ContextDataEntry create(String clazz, String data) {
             ContextDataEntry entry = new ContextDataEntry();
             entry.setClazz(clazz);

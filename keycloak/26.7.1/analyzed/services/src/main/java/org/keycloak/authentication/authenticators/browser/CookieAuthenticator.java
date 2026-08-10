@@ -34,17 +34,21 @@ import org.keycloak.services.messages.Messages;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * SSO Cookie 认证器：校验身份 Cookie 实现静默登录；处理强制重新认证、步骤升级认证及组织上下文等场景。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CookieAuthenticator implements Authenticator {
 
     @Override
+    /** @return 不依赖上下文中已有用户 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** 校验 SSO Cookie：成功则附加用户会话，否则标记 attempted。 */
     public void authenticate(AuthenticationFlowContext context) {
         AuthenticationManager.AuthResult authResult = AuthenticationManager.authenticateIdentityCookie(context.getSession(),
                 context.getRealm(), true);
@@ -57,9 +61,9 @@ public class CookieAuthenticator implements Authenticator {
             context.setUser(authResult.user());
             AcrStore acrStore = new AcrStore(context.getSession(), authSession);
 
-            // Cookie re-authentication is skipped if re-authentication is required
+            // 协议要求重新认证时跳过 Cookie 静默登录
             if (protocol.requireReauthentication(authResult.session(), authSession)) {
-                // Full re-authentication, so we start with no loa
+                // 完整重新认证，从 NO_LOA 开始
                 acrStore.setLevelAuthenticatedToCurrentRequest(Constants.NO_LOA);
                 authSession.setAuthNote(AuthenticationManager.FORCED_REAUTHENTICATION, "true");
                 context.setForwardedInfoMessage(Messages.REAUTHENTICATE);
@@ -72,8 +76,7 @@ public class CookieAuthenticator implements Authenticator {
                 AuthenticatorUtils.updateCompletedExecutions(context.getAuthenticationSession(), authResult.session(), context.getExecution().getId());
 
                 if (acrStore.getRequestedLevelOfAuthentication(context.getTopLevelFlow()) > previouslyAuthenticatedLevel) {
-                    // Step-up authentication, we keep the loa from the existing user session.
-                    // The cookie alone is not enough and other authentications must follow.
+                    // 步骤升级认证：保留已有 LOA，Cookie 不足需后续认证
                     acrStore.setLevelAuthenticatedToCurrentRequest(previouslyAuthenticatedLevel);
 
                     if (authSession.getClientNote(Constants.KC_ACTION) != null) {
@@ -82,13 +85,13 @@ public class CookieAuthenticator implements Authenticator {
 
                     context.attempted();
                 } else {
-                    // Cookie only authentication
+                    // 仅 Cookie 认证成功
                     acrStore.setLevelAuthenticatedToCurrentRequest(previouslyAuthenticatedLevel);
                     authSession.setAuthNote(AuthenticationManager.SSO_AUTH, "true");
                     context.attachUserSession(authResult.session());
 
                     if (isOrganizationContext(context)) {
-                        // if re-authenticating in the scope of an organization, an organization must be resolved prior to authenticating the user
+                        // 组织上下文中需先解析组织再完成认证
                         context.attempted();
                     } else {
                         context.success();
@@ -118,6 +121,7 @@ public class CookieAuthenticator implements Authenticator {
 
     }
 
+    /** 判断当前登录是否在组织 scope 内。 */
     private boolean isOrganizationContext(AuthenticationFlowContext context) {
         KeycloakSession session = context.getSession();
 
