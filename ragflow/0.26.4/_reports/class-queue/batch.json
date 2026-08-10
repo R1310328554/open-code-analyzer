@@ -15,23 +15,8 @@
     "internal/agent/tool/email.go",
     "internal/agent/tool/exesql.go",
     "internal/agent/tool/exesql_trino_stub.go",
-    "internal/agent/tool/github.go",
-    "internal/agent/tool/google.go",
-    "internal/agent/tool/google_scholar.go",
-    "internal/agent/tool/http_helper.go",
-    "internal/agent/tool/jin10.go",
-    "internal/agent/tool/keenable.go",
-    "internal/agent/tool/mcp.go",
-    "internal/agent/tool/pubmed.go",
-    "internal/agent/tool/qweather.go",
-    "internal/agent/tool/registry.go",
-    "internal/agent/tool/retrieval.go",
-    "internal/agent/tool/retrieval_nlp.go",
-    "internal/agent/tool/retrieval_service.go",
-    "internal/agent/tool/searxng.go",
-    "internal/agent/tool/ssrf.go",
-    "internal/agent/tool/tavily.go"
+    "internal/agent/tool/github.go"
   ],
   "remaining_pending": 1254,
-  "done": 480
+  "done": 495
 }
