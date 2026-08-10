@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T02:13:12Z",
-  "files": [
-    "ai/src/main/java/com/alibaba/nacos/ai/service/repository/QueryCondition.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/resource/AiResourceManager.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/resource/PublishPipelineInfo.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/resource/ResourceVersionInfo.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/skills/SkillClientOperationService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/skills/SkillClientOperationServiceImpl.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/skills/SkillIndexManifestService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/skills/SkillOperationService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/skills/SkillOperationServiceImpl.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/skills/SkillQueryResult.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/skills/SkillUploadRequest.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/trace/AiResourceTraceEventInitializer.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/trace/AiResourceTraceService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/visibility/DefaultVisibilityAdvisorConverter.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/visibility/VisibilityAdvisorConverter.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2327,
-  "done": 195
+  "done": 210
 }
