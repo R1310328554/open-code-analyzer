@@ -2203,3 +2203,18 @@
 2026-08-10T09:11:27Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/QuarkusKeycloakSessionFactory.java wave75b property mappers + quarkus integration
 2026-08-10T09:11:27Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/cdi/KeycloakBeanProducer.java wave75b property mappers + quarkus integration
 2026-08-10T09:11:27Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/jaxrs/CloseSessionFilter.java wave75b property mappers + quarkus integration
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/ConfigKeystorePropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/DatabasePropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/EventPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/ExportPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/FeaturePropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/HealthPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/HostnameV2PropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/HttpAccessLogPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/HttpPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/ImportPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/LoggingPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/ManagementPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/MetricsPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/OpenApiPropertyMappers.java wave75a property mappers batch1
+2026-08-10T09:12:04Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/configuration/mappers/PropertyMapper.java wave75a property mappers batch1
