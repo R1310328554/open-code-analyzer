@@ -493,3 +493,18 @@
 2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/info/ClientInstallationRepresentation.java wave17a authz resource + oid4vc + info reps
 2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/info/CpuInfoRepresentation.java wave17a authz resource + oid4vc + info reps
 2026-08-10T06:14:25Z DONE core/src/main/java/org/keycloak/representations/info/CryptoInfoRepresentation.java wave17a authz resource + oid4vc + info reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/FeatureRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/FeatureType.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/MemoryInfoRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/ParameterizedScopeTypeRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/ProfileInfoRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/ProviderRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/ServerInfoRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/SpiInfoRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/SystemInfoRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/info/ThemeInfoRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/oidc/OIDCClientRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/oidc/TokenMetadataRepresentation.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/provider/ScriptProviderDescriptor.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/provider/ScriptProviderMetadata.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/userprofile/config/UPAttribute.java wave17b info/oidc/provider/userprofile reps
