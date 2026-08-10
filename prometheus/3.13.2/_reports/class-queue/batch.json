@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T20:41:53Z",
   "files": [
-    "tsdb/blockwriter.go",
-    "tsdb/chunkenc/appendable.go",
-    "tsdb/chunkenc/bstream.go",
-    "tsdb/chunkenc/chunk.go",
-    "tsdb/chunkenc/float_histogram.go",
-    "tsdb/chunkenc/histogram.go",
-    "tsdb/chunkenc/histogram_meta.go",
-    "tsdb/chunkenc/varbit.go",
-    "tsdb/chunkenc/xor.go",
-    "tsdb/chunkenc/xor2.go",
-    "tsdb/chunks/chunk_write_queue.go",
-    "tsdb/chunks/chunks.go",
-    "tsdb/chunks/head_chunks.go",
-    "tsdb/chunks/head_chunks_other.go",
-    "tsdb/chunks/head_chunks_windows.go",
     "tsdb/chunks/queue.go",
     "tsdb/chunks/samples.go",
     "tsdb/compact.go",
@@ -33,5 +18,5 @@
     "tsdb/fileutil/direct_io_writer.go"
   ],
   "remaining_pending": 234,
-  "done": 270
+  "done": 285
 }
