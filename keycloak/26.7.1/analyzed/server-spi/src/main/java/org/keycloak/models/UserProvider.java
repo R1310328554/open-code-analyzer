@@ -27,6 +27,9 @@ import org.keycloak.storage.user.UserQueryProvider;
 import org.keycloak.storage.user.UserRegistrationProvider;
 
 /**
+ * 用户 Provider：用户 CRUD、同意、联邦身份与可验证凭据的存储 SPI。
+ * <p>聚合 {@link UserLookupProvider}、{@link UserQueryProvider} 等子接口。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -37,6 +40,7 @@ public interface UserProvider extends Provider,
         UserBulkUpdateProvider {
 
     /**
+     * 设置用户的 notBefore 值。
      * Sets the notBefore value for the given user
      *
      * @param realm a reference to the realm
@@ -48,6 +52,7 @@ public interface UserProvider extends Provider,
     void setNotBeforeForUser(RealmModel realm, UserModel user, int notBefore);
 
     /**
+     * 获取用户的 notBefore 值。
      * Gets the notBefore value for the given user
      *
      * @param realm a reference to the realm
@@ -59,6 +64,7 @@ public interface UserProvider extends Provider,
     int getNotBeforeOfUser(RealmModel realm, UserModel user);
 
     /**
+     * 返回客户端对应的服务账户 {@link UserModel}。
      * Return a UserModel representing service account of the client
      *
      * @param client the client model
@@ -68,6 +74,7 @@ public interface UserProvider extends Provider,
     UserModel getServiceAccount(ClientModel client);
 
     /**
+     * 向存储新增用户（仅用于本地存储）。
      * Adds a new user into the storage.
      * <p/>
      * only used for local storage
@@ -85,6 +92,7 @@ public interface UserProvider extends Provider,
     UserModel addUser(RealmModel realm, String id, String username, boolean addDefaultRoles, boolean addDefaultRequiredActions);
 
     /**
+     * 移除指定用户存储 Provider 导入的全部用户。
      * Removes any imported users from a specific User Storage Provider.
      *
      * @param realm a reference to the realm
@@ -93,6 +101,7 @@ public interface UserProvider extends Provider,
     void removeImportedUsers(RealmModel realm, String storageProviderId);
 
     /**
+     * 将指定存储 Provider 导入用户的 federation link 置为 null。
      * Set federation link to {@code null} to imported users of a specific User Storage Provider
      *
      * @param realm a reference to the realm
@@ -100,9 +109,11 @@ public interface UserProvider extends Provider,
      */
     void unlinkUsers(RealmModel realm, String storageProviderId);
 
+    /* 用户 OAuth 同意相关方法 */
     /* USER CONSENTS methods */
 
     /**
+     * 为用户添加 OAuth 同意记录。
      * Add user consent for the user.
      *
      * @param realm a reference to the realm
@@ -114,6 +125,7 @@ public interface UserProvider extends Provider,
     void addConsent(RealmModel realm, String userId, UserConsentModel consent);
 
     /**
+     * 按用户 ID 与客户端内部 ID 返回用户同意模型。
      * Returns UserConsentModel given by a user with the userId for the client with clientInternalId
      *
      * @param realm a reference to the realm
@@ -126,6 +138,7 @@ public interface UserProvider extends Provider,
     UserConsentModel getConsentByClient(RealmModel realm, String userId, String clientInternalId);
 
     /**
+     * 获取指定用户的全部同意记录。
      * Obtains the consents associated with the user identified by the specified {@code userId}.
      *
      * @param realm a reference to the realm.
@@ -135,6 +148,7 @@ public interface UserProvider extends Provider,
     Stream<UserConsentModel> getConsentsStream(RealmModel realm, String userId);
 
     /**
+     * 更新已存储用户同意中的客户端范围。
      * Update client scopes in the stored user consent
      *
      * @param realm a reference to the realm
@@ -146,6 +160,7 @@ public interface UserProvider extends Provider,
     void updateConsent(RealmModel realm, String userId, UserConsentModel consent);
 
     /**
+     * 按用户 ID 与客户端 ID 撤销用户同意。
      * Remove a user consent given by the user id and client id
      *
      * @param realm a reference to the realm
@@ -158,6 +173,7 @@ public interface UserProvider extends Provider,
     boolean revokeConsentForClient(RealmModel realm, String userId, String clientInternalId);
 
     /**
+     * 为用户创建指定客户端范围的可验证凭据。
      * Create verifiable credential of specified credential scope for this user
      *
      * @param userId id of the user
@@ -167,6 +183,7 @@ public interface UserProvider extends Provider,
     UserVerifiableCredentialModel addVerifiableCredential(String userId, UserVerifiableCredentialModel credentialModel);
 
     /**
+     * 移除用户指定客户端范围的可验证凭据。
      * Remove verifiable credential of specified client scope from this user
      *
      * @param userId id if the user
@@ -176,6 +193,7 @@ public interface UserProvider extends Provider,
     boolean removeVerifiableCredential(String userId, String clientScopeId);
 
     /**
+     * 返回用户的全部可验证凭据。
      * Return all verifiable credentials of specified user
      *
      * @param userId id if the user
@@ -184,6 +202,7 @@ public interface UserProvider extends Provider,
     Stream<UserVerifiableCredentialModel> getVerifiableCredentialsByUser(String userId);
 
     /**
+     * 按 ID 获取可验证凭据。
      * Get a verifiable credential by its ID
      *
      * @param id the verifiable credential ID
@@ -192,6 +211,7 @@ public interface UserProvider extends Provider,
     UserVerifiableCredentialModel getVerifiableCredentialById(String id);
 
     /**
+     * 按用户 ID 与客户端范围 ID 获取可验证凭据。
      * Get a verifiable credential for a user by client scope ID
      *
      * @param userId id of the user
@@ -201,6 +221,7 @@ public interface UserProvider extends Provider,
     UserVerifiableCredentialModel getVerifiableCredentialByClientScope(String userId, String clientScopeId);
 
     /**
+     * 刷新用户属性快照并递增 revision 以更新可验证凭据。
      * Update verifiable credential by refreshing user attributes snapshot and incrementing revision
      *
      * @param userId id of the user
@@ -210,9 +231,11 @@ public interface UserProvider extends Provider,
      */
     UserVerifiableCredentialModel updateVerifiableCredential(String userId, String clientScopeId);
 
+    /* 联邦身份相关方法 */
     /* FEDERATED IDENTITIES methods */
 
     /**
+     * 在 realm 内为用户添加联邦身份关联。
      * Adds a federated identity link for the user within the realm
      *
      * @param realm a reference to the realm
@@ -223,6 +246,7 @@ public interface UserProvider extends Provider,
     void addFederatedIdentity(RealmModel realm, UserModel user, FederatedIdentityModel socialLink);
 
     /**
+     * 移除用户与指定 IdP 的联邦关联。
      * Removes federation link between the user and the identity provider given by its id
      *
      * @param realm a reference to the realm
@@ -235,6 +259,7 @@ public interface UserProvider extends Provider,
     boolean removeFederatedIdentity(RealmModel realm, UserModel user, String socialProvider);
 
     /**
+     * 更新联邦用户与 IdP 的关联详情。
      * Update details of association between the federatedUser and the idp given by the federatedIdentityModel
      *
      * @param realm a reference to the realm
@@ -245,6 +270,7 @@ public interface UserProvider extends Provider,
     void updateFederatedIdentity(RealmModel realm, UserModel federatedUser, FederatedIdentityModel federatedIdentityModel);
 
     /**
+     * 获取用户的全部联邦身份。
      * Obtains the federated identities of the specified user.
      *
      * @param realm a reference to the realm.
@@ -254,6 +280,7 @@ public interface UserProvider extends Provider,
     Stream<FederatedIdentityModel> getFederatedIdentitiesStream(RealmModel realm, UserModel user);
 
     /**
+     * 返回用户与 IdP 的关联详情。
      * Returns details of the association between the user and the socialProvider.
      *
      * @param realm a reference to the realm
@@ -264,6 +291,7 @@ public interface UserProvider extends Provider,
     FederatedIdentityModel getFederatedIdentity(RealmModel realm, UserModel user, String socialProvider);
 
     /**
+     * 按联邦身份链接查找对应用户。
      * Returns a userModel that corresponds to the given socialLink.
      *
      * @param realm a reference to the realm
@@ -274,9 +302,11 @@ public interface UserProvider extends Provider,
      */
     UserModel getUserByFederatedIdentity(RealmModel realm, FederatedIdentityModel socialLink);
 
+    /* 预删除回调：关联实体删除时清理用户相关数据 */
     /* PRE REMOVE methods - for cleaning user related properties when some other entity is removed */
 
     /**
+     * realm 删除时调用，应移除该 realm 全部用户。
      * Called when a realm is removed.
      * Should remove all users that belong to the realm.
      *
@@ -285,6 +315,7 @@ public interface UserProvider extends Provider,
     void preRemove(RealmModel realm);
 
     /**
+     * IdP 删除时调用，应移除相关联邦身份。
      * Called when an identity provider is removed.
      * Should remove all federated identities assigned to users from the provider.
      *
@@ -294,6 +325,7 @@ public interface UserProvider extends Provider,
     void preRemove(RealmModel realm, IdentityProviderModel provider);
 
     /**
+     * 角色删除时调用，应移除用户的该角色成员关系。
      * Called when a role is removed.
      * Should remove the role membership for each user.
      *
@@ -303,6 +335,7 @@ public interface UserProvider extends Provider,
     void preRemove(RealmModel realm, RoleModel role);
 
     /**
+     * 组删除时调用，应移除用户的该组成员关系。
      * Called when a group is removed.
      * Should remove the group membership for each user.
      *
@@ -312,6 +345,7 @@ public interface UserProvider extends Provider,
     void preRemove(RealmModel realm, GroupModel group);
 
     /**
+     * 客户端删除时调用，应移除与该客户端相关的用户同意。
      * Called when a client is removed.
      * Should remove all user consents associated with the client
      *
@@ -321,6 +355,7 @@ public interface UserProvider extends Provider,
     void preRemove(RealmModel realm, ClientModel client);
 
     /**
+     * 协议映射器删除时调用。
      * Called when a protocolMapper is removed
      *
      * @param protocolMapper the protocolMapper model
@@ -328,6 +363,7 @@ public interface UserProvider extends Provider,
     void preRemove(ProtocolMapperModel protocolMapper);
 
     /**
+     * 客户端范围删除时调用，应从用户同意中移除该范围。
      * Called when a client scope is removed.
      * Should remove the clientScope from each user consent
      *
@@ -336,6 +372,7 @@ public interface UserProvider extends Provider,
     void preRemove(ClientScopeModel clientScope);
 
     /**
+     * 组件删除时调用，应清理关联的用户存储数据。
      * Called when a component is removed.
      * Should remove all data in UserStorage associated with removed component.
      * For example,
@@ -351,6 +388,7 @@ public interface UserProvider extends Provider,
     void preRemove(RealmModel realm, ComponentModel component);
 
     /**
+     * 返回适用于大多数用户 Provider 的 {@link SubjectCredentialManager} 默认实现。
      * Default implementation of {@link SubjectCredentialManager} suitable for most of user providers
      *
      * @return user credential manager
@@ -358,6 +396,7 @@ public interface UserProvider extends Provider,
     UserCredentialManager getUserCredentialManager(UserModel user);
 
     /**
+     * 记录已向用户签发的可验证凭据。
      * Record that a verifiable credential was issued to a user.
      *
      * @param issuedVc model with userId, clientId, verifiableCredentialId set
@@ -366,6 +405,7 @@ public interface UserProvider extends Provider,
     IssuedVerifiableCredentialModel addIssuedVerifiableCredential(IssuedVerifiableCredentialModel issuedVc);
 
     /**
+     * 获取指定用户的全部已签发可验证凭据。
      * Get all issued verifiable credentials for a specific user.
      *
      * @param userId user ID
@@ -374,6 +414,7 @@ public interface UserProvider extends Provider,
     Stream<IssuedVerifiableCredentialModel> getIssuedVerifiableCredentialsStreamByUser(String userId);
 
     /**
+     * 按 ID 移除已签发的可验证凭据。
      * Remove an issued verifiable credential by its ID.
      *
      * @param credentialId the ID of the issued credential to remove
@@ -382,6 +423,7 @@ public interface UserProvider extends Provider,
     boolean removeIssuedVerifiableCredential(String credentialId);
 
     /**
+     * 移除所有 realm 中已过期的已签发可验证凭据。
      * Remove all expired issued verifiable credentials across all realms.
      * This is called periodically by the scheduled cleanup task.
      */

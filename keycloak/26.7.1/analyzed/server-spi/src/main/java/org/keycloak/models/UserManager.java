@@ -18,20 +18,32 @@
 package org.keycloak.models;
 
 /**
+ * 用户管理器：封装用户删除逻辑并发布 {@link UserModel.UserRemovedEvent}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UserManager {
 
     private KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public UserManager(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 删除用户并发布移除事件。
+     * @param realm 所属 realm
+     * @param user 待删除用户
+     * @return 是否成功删除 */
     public boolean removeUser(RealmModel realm, UserModel user) {
         return removeUser(realm, user, session.users());
     }
 
+    /** 使用指定 {@link UserProvider} 删除用户。
+     * @param realm 所属 realm
+     * @param user 待删除用户
+     * @param userProvider 用户 Provider
+     * @return 是否成功删除 */
     public boolean removeUser(RealmModel realm, UserModel user, UserProvider userProvider) {
         if (userProvider.removeUser(realm, user)) {
             session.getKeycloakSessionFactory().publish(new UserModel.UserRemovedEvent() {

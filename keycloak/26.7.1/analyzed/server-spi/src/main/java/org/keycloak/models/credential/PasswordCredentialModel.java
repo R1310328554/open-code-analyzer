@@ -11,9 +11,14 @@ import org.keycloak.util.JsonSerialization;
 
 import static org.keycloak.utils.StringUtil.isBlank;
 
+/**
+ * 密码凭据模型：封装密码哈希算法、盐值、迭代次数与编码后的密码。
+ */
 public class PasswordCredentialModel extends CredentialModel {
 
+    /** 密码凭据类型标识。 */
     public static final String TYPE = "password";
+    /** 密码历史凭据类型标识。 */
     public static final String PASSWORD_HISTORY = "password-history";
 
     private final PasswordCredentialData credentialData;
@@ -24,10 +29,12 @@ public class PasswordCredentialModel extends CredentialModel {
         this.secretData = secretData;
     }
 
+    /** 从 DTO 创建密码凭据。 */
     public static PasswordCredentialModel createFromValues(PasswordCredentialData credentialData, PasswordSecretData secretData) {
         return new PasswordCredentialModel(credentialData, secretData);
     }
 
+    /** 从哈希参数创建密码凭据。 */
     public static PasswordCredentialModel createFromValues(String algorithm, byte[] salt, int hashIterations, String encodedPassword){
         return createFromValues(algorithm, salt, hashIterations, null, encodedPassword);
     }
@@ -48,6 +55,7 @@ public class PasswordCredentialModel extends CredentialModel {
         }
     }
 
+    /** 从通用 {@link CredentialModel} 反序列化密码凭据。 */
     public static PasswordCredentialModel createFromCredentialModel(CredentialModel credentialModel) {
         try {
             PasswordCredentialData credentialData = isBlank(credentialModel.getCredentialData()) ? null : JsonSerialization.readValue(credentialModel.getCredentialData(),
@@ -68,10 +76,12 @@ public class PasswordCredentialModel extends CredentialModel {
     }
 
 
+    /** @return 密码公开凭据数据 */
     public PasswordCredentialData getPasswordCredentialData() {
         return credentialData;
     }
 
+    /** @return 密码密钥数据 */
     public PasswordSecretData getPasswordSecretData() {
         return secretData;
     }

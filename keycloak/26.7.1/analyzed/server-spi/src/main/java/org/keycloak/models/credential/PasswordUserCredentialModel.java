@@ -20,12 +20,18 @@ package org.keycloak.models.credential;
 import org.keycloak.models.UserCredentialModel;
 
 /**
+ * 密码用户凭据模型（已弃用）：请改用 {@link UserCredentialModel}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  *
  * @deprecated Recommended to use {@link UserCredentialModel} as it contains all the functionality required by this class
  */
 public class PasswordUserCredentialModel extends UserCredentialModel {
 
+    /** @param credentialId 凭据 ID
+     * @param type 凭据类型
+     * @param challengeResponse 挑战响应
+     * @param adminRequest 是否为管理员请求 */
     public PasswordUserCredentialModel(String credentialId, String type, String challengeResponse, boolean adminRequest) {
         super(credentialId, type, challengeResponse, adminRequest);
     }

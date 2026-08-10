@@ -15,12 +15,19 @@ import org.keycloak.models.utils.RecoveryAuthnCodesUtils;
 import org.keycloak.util.JsonSerialization;
 
 
+/**
+ * 恢复认证码凭据模型：管理一次性备份码的创建、消费与剩余计数。
+ */
 public class RecoveryAuthnCodesCredentialModel extends CredentialModel {
 
+    /** 恢复认证码凭据类型标识。 */
     public static final String TYPE = "recovery-authn-codes";
 
+    /** 已使用恢复码数量的 note 键。 */
     public static final String RECOVERY_CODES_NUMBER_USED = "recovery-codes-number-used";
+    /** 剩余恢复码数量的 note 键。 */
     public static final String RECOVERY_CODES_NUMBER_REMAINING = "recovery-codes-number-remaining";
+    /** 生成新恢复码操作的 note 键。 */
     public static final String RECOVERY_CODES_GENERATE_NEW_CODES = "recovery-codes-generate-new-codes";
 
     private final RecoveryAuthnCodesCredentialData credentialData;
@@ -32,6 +39,7 @@ public class RecoveryAuthnCodesCredentialModel extends CredentialModel {
         this.secretData = secretData;
     }
 
+    /** @return 下一个未使用的恢复码（若已全部用完则为空） */
     public Optional<RecoveryAuthnCodeRepresentation> getNextRecoveryAuthnCode() {
         if (allCodesUsed()) {
             return Optional.empty();
@@ -39,10 +47,12 @@ public class RecoveryAuthnCodesCredentialModel extends CredentialModel {
         return Optional.of(this.secretData.getCodes().get(0));
     }
 
+    /** @return 是否已全部用完 */
     public boolean allCodesUsed() {
         return this.secretData.getCodes().isEmpty();
     }
 
+    /** 消费并移除下一个恢复码。 */
     public void removeRecoveryAuthnCode() {
         try {
             this.secretData.removeNextBackupCode();
@@ -54,6 +64,7 @@ public class RecoveryAuthnCodesCredentialModel extends CredentialModel {
         }
     }
 
+    /** 从原始明文恢复码列表创建凭据。 */
     public static RecoveryAuthnCodesCredentialModel createFromValues(List<String> originalGeneratedCodes, long generatedAt,
                                                                      String userLabel) {
         RecoveryAuthnCodesSecretData secretData;
@@ -83,6 +94,7 @@ public class RecoveryAuthnCodesCredentialModel extends CredentialModel {
         }
     }
 
+    /** 从通用 {@link CredentialModel} 反序列化恢复码凭据。 */
     public static RecoveryAuthnCodesCredentialModel createFromCredentialModel(CredentialModel credentialModel) {
         RecoveryAuthnCodesCredentialData credentialData;
         RecoveryAuthnCodesSecretData secretData = null;

@@ -29,16 +29,23 @@ import org.keycloak.models.credential.dto.WebAuthnSecretData;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * WebAuthn 凭据模型：封装 FIDO2/WebAuthn 注册凭据的公开数据与计数器。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class WebAuthnCredentialModel extends CredentialModel {
 
+    // 双因素 WebAuthn 凭据类型
     // Credential type used for WebAuthn two factor credentials
+    /** 双因素 WebAuthn 凭据类型。 */
     public static final String TYPE_TWOFACTOR = "webauthn";
 
+    // 无密码 WebAuthn 凭据类型
     // Credential type used for WebAuthn passwordless credentials
+    /** 无密码 WebAuthn 凭据类型。 */
     public static final String TYPE_PASSWORDLESS = "webauthn-passwordless";
 
+    // 凭据数据与密钥
     // Either
     private final WebAuthnCredentialData credentialData;
     private final WebAuthnSecretData secretData;
@@ -49,6 +56,7 @@ public class WebAuthnCredentialModel extends CredentialModel {
         setType(credentialType);
     }
 
+    /** 创建 WebAuthn 凭据（无 transports）。 */
     public static WebAuthnCredentialModel create(String credentialType, String userLabel, String aaguid, String credentialId,
                                                  String attestationStatement, String credentialPublicKey, long counter, String attestationStatementFormat) {
         return create(credentialType, userLabel, aaguid, credentialId, attestationStatement, credentialPublicKey, counter, attestationStatementFormat, Collections.emptySet());
@@ -65,6 +73,7 @@ public class WebAuthnCredentialModel extends CredentialModel {
         return credentialModel;
     }
 
+    /** 从已有 DTO 创建 WebAuthn 凭据。 */
     public static WebAuthnCredentialModel create(String id, String credentialType, Long createdDate, String userLabel, WebAuthnCredentialData credentialData, WebAuthnSecretData secretData) {
         WebAuthnCredentialModel credentialModel = new WebAuthnCredentialModel(credentialType, credentialData, secretData);
         credentialModel.fillCredentialModelFields();
@@ -75,6 +84,7 @@ public class WebAuthnCredentialModel extends CredentialModel {
     }
 
 
+    /** 从通用 {@link CredentialModel} 反序列化 WebAuthn 凭据。 */
     public static WebAuthnCredentialModel createFromCredentialModel(CredentialModel credentialModel) {
         try {
             WebAuthnCredentialData credentialData = JsonSerialization.readValue(credentialModel.getCredentialData(), WebAuthnCredentialData.class);
@@ -93,6 +103,7 @@ public class WebAuthnCredentialModel extends CredentialModel {
         }
     }
 
+    /** 更新签名计数器（防克隆）。 */
     public void updateCounter(long counter) {
         credentialData.setCounter(counter);
         try {
@@ -103,11 +114,13 @@ public class WebAuthnCredentialModel extends CredentialModel {
     }
 
 
+    /** @return WebAuthn 公开凭据数据 */
     public WebAuthnCredentialData getWebAuthnCredentialData() {
         return credentialData;
     }
 
 
+    /** @return WebAuthn 密钥数据 */
     public WebAuthnSecretData getWebAuthnSecretData() {
         return secretData;
     }
