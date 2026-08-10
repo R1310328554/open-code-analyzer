@@ -42,6 +42,8 @@ import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * 基于 JPA Criteria API 的 {@link EventQuery} 实现，支持链式过滤与分页流式读取。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JpaEventQuery implements EventQuery {
@@ -50,9 +52,11 @@ public class JpaEventQuery implements EventQuery {
     private final CriteriaBuilder cb;
     private final CriteriaQuery<EventEntity> cq;
     private final Root<EventEntity> root;
+    /** 累积的 WHERE 谓词。 */
     private final ArrayList<Predicate> predicates;
     private Integer firstResult;
     private Integer maxResults;
+    /** 默认按时间降序。 */
     private boolean orderByDescTime = true;
 
     public JpaEventQuery(EntityManager em) {
@@ -104,6 +108,7 @@ public class JpaEventQuery implements EventQuery {
         return this;
     }
 
+    /** {@link Date} 版结束时间：扩展到当天 23:59:59.999 再过滤。 */
     @Override
     public EventQuery toDate(Date toDate) {
         Calendar calendar = new GregorianCalendar();
@@ -151,6 +156,7 @@ public class JpaEventQuery implements EventQuery {
         return this;
     }
 
+    /** 执行查询并以 {@link Stream} 返回转换后的 {@link Event}。 */
     @Override
     public Stream<Event> getResultStream() {
         if (!predicates.isEmpty()) {

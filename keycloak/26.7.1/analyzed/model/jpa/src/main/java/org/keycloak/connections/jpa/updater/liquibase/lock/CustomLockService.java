@@ -52,7 +52,9 @@ import liquibase.structure.core.Table;
 import org.jboss.logging.Logger;
 
 /**
- * Liquibase lock service, which has some bugfixes and assumes timeouts to be configured in milliseconds
+ * Keycloak 定制的 Liquibase 锁服务：修复上游缺陷，超时以毫秒计，并支持多命名空间锁行。
+ * <p>在 {@link StandardLockService} 基础上增强 H2 主键可见性检测、
+ * 按 {@link DBLockProvider.Namespace} 初始化锁表，以及 {@code SELECT FOR UPDATE} 式加锁。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -60,19 +62,15 @@ public class CustomLockService extends StandardLockService {
 
     private static final Logger log = Logger.getLogger(CustomLockService.class);
 
+    /** H2 上表创建非原子，须确认主键已可见，否则误判锁表已就绪。 */
     @Override
     protected boolean isDatabaseChangeLogLockTableCreated() throws DatabaseException {
         boolean originalReturnValue = super.isDatabaseChangeLogLockTableCreated();
         if (originalReturnValue && database.getConnection().getDatabaseProductName().equals("H2")) {
-            /* Liquibase only checks that the table exists. On the H2 database, creation of a table with a primary key is not atomic,
-               and the primary key might not be visible yet. The primary key would be needed to prevent inserting the data into the table
-               a second time. Inserting it a second time might lead to a failure when creating the primary key, which would then roll back
-               the creation of the table. Therefore, at least on the H2 database, checking for the primary key is essential.
-
-               An existing DATABASECHANGELOG might indicate that the insertion of data was completed previously.
-               Still, this isn't working with the DBLockTest which deletes only the DATABASECHANGELOGLOCK table.
-
-               See https://github.com/keycloak/keycloak/issues/15487 for more information.
+            /* Liquibase 仅检查表是否存在。H2 中带主键的建表非原子，主键可能尚未可见；
+               主键缺失会导致重复插入锁行，进而建主键失败并回滚整表创建。
+               已有 DATABASECHANGELOG 可表明数据曾插入完成，但 DBLockTest 仅删 LOCK 表时无效。
+               详见 https://github.com/keycloak/keycloak/issues/15487
              */
             Table lockTable = (Table) new Table().setName(database.getDatabaseChangeLogLockTableName()).setSchema(
                     new Schema(database.getLiquibaseCatalogName(), database.getLiquibaseSchemaName()));
@@ -95,6 +93,7 @@ public class CustomLockService extends StandardLockService {
         return originalReturnValue;
     }
 
+    /** 创建锁表、为各 {@link DBLockProvider.Namespace} 插入锁行，并处理 Derby 旧版 boolean 列兼容。 */
     @Override
     public void init() throws DatabaseException {
         Executor executor = Scope.getCurrentScope().getSingleton(ExecutorService.class).getExecutor(LiquibaseConstants.JDBC_EXECUTOR, database);
@@ -110,7 +109,7 @@ public class CustomLockService extends StandardLockService {
             } catch (DatabaseException de) {
                 log.warn("Failed to create lock table. Maybe other transaction created in the meantime. Retrying...", de);
                 if (log.isTraceEnabled()) {
-                    log.trace(de.getMessage(), de); //Log details at trace level
+                    log.trace(de.getMessage(), de); // 详细堆栈仅 TRACE 级别
                 }
                 database.rollback();
                 throw new LockRetryException(de);
@@ -145,18 +144,18 @@ public class CustomLockService extends StandardLockService {
         } catch (DatabaseException de) {
             log.warn("Failed to insert first record to the lock table. Maybe other transaction inserted in the meantime. Retrying...", de);
             if (log.isTraceEnabled()) {
-                log.trace(de.getMessage(), de); // Log details at trace level
+                log.trace(de.getMessage(), de); // 详细堆栈仅 TRACE 级别
             }
             database.rollback();
             throw new LockRetryException(de);
         }
 
 
-        // Keycloak doesn't support Derby, but keep it for sure...
-        if (executor.updatesDatabase() && database instanceof DerbyDatabase && ((DerbyDatabase) database).supportsBooleanDataType()) { //check if the changelog table is of an old smallint vs. boolean format
+        // Keycloak 不支持 Derby，但保留兼容逻辑以防万一
+        if (executor.updatesDatabase() && database instanceof DerbyDatabase && ((DerbyDatabase) database).supportsBooleanDataType()) { // 检查锁表 LOCKED 列是否为旧版 smallint 而非 boolean
             String lockTable = database.escapeTableName(database.getLiquibaseCatalogName(), database.getLiquibaseSchemaName(), database.getDatabaseChangeLogLockTableName());
             Object obj = executor.queryForObject(new RawSqlStatement("select min(locked) as test from " + lockTable + " fetch first row only"), Object.class);
-            if (!(obj instanceof Boolean)) { //wrong type, need to recreate table
+            if (!(obj instanceof Boolean)) { // 类型不符，需重建锁表
                 executor.execute(new DropTableStatement(database.getLiquibaseCatalogName(), database.getLiquibaseSchemaName(), database.getDatabaseChangeLogLockTableName(), false));
                 executor.execute(new CreateDatabaseChangeLogLockTableStatement());
                 executor.execute(new InitializeDatabaseChangeLogLockTableStatement());
@@ -165,6 +164,7 @@ public class CustomLockService extends StandardLockService {
 
     }
 
+    /** 查询锁表中已存在的 ID 集合，用于判断哪些命名空间行尚待插入。 */
     private Set<Integer> currentIdsInDatabaseChangeLogLockTable() throws DatabaseException {
         try {
             Executor executor = Scope.getCurrentScope().getSingleton(ExecutorService.class).getExecutor(LiquibaseConstants.JDBC_EXECUTOR, database);
@@ -181,8 +181,7 @@ public class CustomLockService extends StandardLockService {
             database.commit();
             return ids;
         } catch (UnexpectedLiquibaseException ulie) {
-            // It can happen with MariaDB Galera 10.1 that UnexpectedLiquibaseException is rethrown due the DB lock.
-            // It is sufficient to just rollback transaction and retry in that case.
+            // MariaDB Galera 10.1 可能因 DB 锁将 UnexpectedLiquibaseException 包装 DatabaseException，回滚后重试即可
             if (ulie.getCause() != null && ulie.getCause() instanceof DatabaseException) {
                 throw (DatabaseException) ulie.getCause();
             } else {
@@ -191,15 +190,18 @@ public class CustomLockService extends StandardLockService {
         }
     }
 
+    /** 等待默认 Liquibase 锁（ID=1）。 */
     @Override
     public void waitForLock() {
         waitForLock(new LockDatabaseChangeLogStatement());
     }
 
+    /** 等待指定命名空间对应的锁行。 */
     public void waitForLock(DBLockProvider.Namespace lock) {
         waitForLock(new CustomLockDatabaseChangeLogStatement(lock.getId()));
     }
 
+    /** 在 {@link #getChangeLogLockWaitTime()} 超时内循环尝试 {@link #acquireLock}。 */
     private void waitForLock(LockDatabaseChangeLogStatement lockStmt) {
         boolean locked = false;
         long startTime = Time.toMillis(Time.currentTime());
@@ -226,14 +228,16 @@ public class CustomLockService extends StandardLockService {
         }
     }
 
+    /** 尝试获取默认 Liquibase 锁。 */
     @Override
     public boolean acquireLock() {
         return acquireLock(new LockDatabaseChangeLogStatement());
     }
 
+    /** 执行悲观锁 SQL；失败返回 false 供 {@link #waitForLock} 重试。 */
     private boolean acquireLock(LockDatabaseChangeLogStatement lockStmt) {
         if (hasChangeLogLock) {
-            // We already have a lock
+            // 当前事务已持有锁
             return true;
         }
 
@@ -242,7 +246,7 @@ public class CustomLockService extends StandardLockService {
         try {
             database.rollback();
 
-            // Ensure table created and lock record inserted
+            // 确保锁表已创建且锁行已插入
             this.init();
         } catch (DatabaseException de) {
             throw new IllegalStateException("Failed to retrieve lock", de);
@@ -267,6 +271,7 @@ public class CustomLockService extends StandardLockService {
     }
 
 
+    /** 提交事务以释放 {@code SELECT FOR UPDATE} 行锁，并重置内存状态。 */
     @Override
     public void releaseLock() {
         try {

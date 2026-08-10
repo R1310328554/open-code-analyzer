@@ -32,7 +32,9 @@ import liquibase.statement.core.LockDatabaseChangeLogStatement;
 import org.jboss.logging.Logger;
 
 /**
- * We use "SELECT FOR UPDATE" pessimistic locking (Same algorithm like Hibernate LockMode.PESSIMISTIC_WRITE )
+ * 自定义 Liquibase 数据库变更日志锁 SQL 生成器，采用 {@code SELECT FOR UPDATE} 悲观锁
+ * （与 Hibernate {@code LockMode.PESSIMISTIC_WRITE} 同类语义）。
+ * <p>按数据库方言生成对应的行级排他锁语句，替代 Liquibase 默认的 UPDATE 式加锁。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -40,11 +42,13 @@ public class CustomLockDatabaseChangeLogGenerator extends LockDatabaseChangeLogG
 
     private static final Logger logger = Logger.getLogger(CustomLockDatabaseChangeLogGenerator.class);
 
+    /** 优先级略高于默认 {@link LockDatabaseChangeLogGenerator}，确保本生成器优先生效。 */
     @Override
     public int getPriority() {
-        return super.getPriority() + 1; // Ensure bigger priority than LockDatabaseChangeLogGenerator
+        return super.getPriority() + 1; // 确保优先级高于 LockDatabaseChangeLogGenerator
     }
 
+    /** 根据锁语句与数据库类型生成悲观锁 SQL（仅 SELECT FOR UPDATE 一类，不做 UPDATE）。 */
     @Override
     public Sql[] generateSql(LockDatabaseChangeLogStatement statement, Database database, SqlGeneratorChain sqlGeneratorChain) {
 
@@ -56,6 +60,7 @@ public class CustomLockDatabaseChangeLogGenerator extends LockDatabaseChangeLogG
     }
 
 
+    /** 按 {@code id} 锁定 {@code DATABASECHANGELOGLOCK} 表对应行，各数据库方言语法不同。 */
     private Sql generateSelectForUpdate(Database database, int id) {
         String catalog = database.getLiquibaseCatalogName();
         String schema = database.getLiquibaseSchemaName();

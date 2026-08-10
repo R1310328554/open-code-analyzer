@@ -23,19 +23,23 @@ import liquibase.logging.core.AbstractLogger;
 import org.jboss.logging.Logger;
 
 /**
- * A {@link liquibase.logging.Logger} implementation that delegates to a JBoss {@link Logger}.
+ * 将 Liquibase {@link liquibase.logging.Logger} 委托给 JBoss {@link Logger} 的适配器。
+ * <p>重新映射日志级别（如 Liquibase INFO → Keycloak DEBUG），并过滤已知无害的数据库警告。</p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class KeycloakLogger extends AbstractLogger {
 
+    /** 底层 JBoss 日志器，实际输出通道。 */
     private final Logger delegate;
 
+    /** @param clazz Liquibase 组件类，用于命名日志类别 */
     public KeycloakLogger(final Class clazz) {
         super();
         this.delegate = Logger.getLogger(clazz);
     }
 
+    /** Liquibase SEVERE → JBoss ERROR */
     @Override
     public void severe(String message) {
         this.delegate.error(message);
@@ -46,9 +50,10 @@ public class KeycloakLogger extends AbstractLogger {
         this.delegate.error(message, e);
     }
 
+    /** Liquibase WARNING → JBoss WARN；已知级联 DROP 不支持警告降级为 DEBUG。 */
     @Override
     public void warning(String message) {
-        // Ignore this warning as cascaded drops doesn't work anyway with all DBs, which we need to support
+        // 级联 DROP 并非所有数据库均支持，此警告可忽略并降为 DEBUG
         if ("Database does not support drop with cascade".equals(message)) {
             this.delegate.debug(message);
         } else {
@@ -61,6 +66,7 @@ public class KeycloakLogger extends AbstractLogger {
         this.delegate.warn(message, e);
     }
 
+    /** Liquibase INFO → JBoss DEBUG，避免迁移日志过于冗长。 */
     @Override
     public void info(String message) {
         this.delegate.debug(message);
@@ -71,6 +77,7 @@ public class KeycloakLogger extends AbstractLogger {
         this.delegate.debug(message, e);
     }
 
+    /** Liquibase DEBUG → JBoss TRACE（仅在 TRACE 开启时输出）。 */
     @Override
     public void debug(String message) {
         if (this.delegate.isTraceEnabled()) {
@@ -83,6 +90,7 @@ public class KeycloakLogger extends AbstractLogger {
         this.delegate.trace(message, e);
     }
 
+    /** 按 {@link Level} 映射到 JBoss 对应级别；{@code OFF} 直接忽略。 */
     @Override
     public void log(Level level, String message, Throwable e) {
         if (level.equals(Level.OFF)) {

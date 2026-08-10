@@ -22,25 +22,31 @@ import liquibase.exception.LockException;
 import liquibase.lockservice.StandardLockService;
 
 /**
- * Dummy lock service injected to Liquibase. Doesn't need to do anything as we already have a lock when Liquibase update is called.
+ * 注入 Liquibase 的空实现锁服务。
+ * <p>Keycloak 在调用 Liquibase 更新前已通过 {@link CustomLockService} 持有数据库锁，
+ * 因此 Liquibase 内部无需再次加锁，所有方法均为空操作。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DummyLockService extends StandardLockService {
 
+    /** 最高优先级，覆盖 Liquibase 默认 {@link StandardLockService}。 */
     @Override
     public int getPriority() {
         return Integer.MAX_VALUE;
     }
 
+    /** 无需初始化锁表，外层已处理。 */
     @Override
     public void init() throws DatabaseException {
     }
 
+    /** 外层已加锁，直接返回。 */
     @Override
     public void waitForLock() throws LockException {
     }
 
+    /** 锁由外层 {@link LiquibaseDBLockProvider} 管理，此处不释放。 */
     @Override
     public void releaseLock() throws LockException {
     }

@@ -42,6 +42,8 @@ import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * 基于 JPA Criteria API 的 {@link AdminEventQuery} 实现，支持链式过滤与分页流式读取。
+ *
  * @author <a href="mailto:giriraj.sharma27@gmail.com">Giriraj Sharma</a>
  */
 public class JpaAdminEventQuery implements AdminEventQuery {
@@ -50,11 +52,14 @@ public class JpaAdminEventQuery implements AdminEventQuery {
     private final CriteriaBuilder cb;
     private final CriteriaQuery<AdminEventEntity> cq;
     private final Root<AdminEventEntity> root;
+    /** 累积的 WHERE 谓词，最终 AND 合并。 */
     private final ArrayList<Predicate> predicates;
     private Integer firstResult;
     private Integer maxResults;
+    /** 默认按时间降序。 */
     private boolean orderByDescTime = true;
 
+    /** 初始化 Criteria 查询骨架。 */
     public JpaAdminEventQuery(EntityManager em) {
         this.em = em;
 
@@ -116,6 +121,7 @@ public class JpaAdminEventQuery implements AdminEventQuery {
         return this;
     }
 
+    /** 资源路径模糊匹配，{@code *} 转为 SQL {@code %} 通配符。 */
     @Override
     public AdminEventQuery resourcePath(String resourcePath) {
         Expression<String> rPath = root.get("resourcePath");
@@ -171,6 +177,7 @@ public class JpaAdminEventQuery implements AdminEventQuery {
         return this;
     }
 
+    /** 执行查询并以 {@link Stream} 返回，只读 hint + 分页 + 实体→DTO 转换。 */
     @Override
     public Stream<AdminEvent> getResultStream() {
         if (!predicates.isEmpty()) {

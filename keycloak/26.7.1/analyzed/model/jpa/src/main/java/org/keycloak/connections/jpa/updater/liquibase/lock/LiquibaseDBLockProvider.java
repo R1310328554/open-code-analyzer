@@ -34,13 +34,17 @@ import liquibase.exception.LiquibaseException;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于 Liquibase {@link CustomLockService} 的 JPA 数据库锁 {@link DBLockProvider} 实现。
+ * <p>在独立 JDBC 连接上通过 {@code SELECT FOR UPDATE} 锁定 {@code DATABASECHANGELOGLOCK} 指定命名空间行，
+ * 并在 JTA 事务外执行以避免与容器事务管理冲突。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LiquibaseDBLockProvider implements DBLockProvider {
 
     private static final Logger logger = Logger.getLogger(LiquibaseDBLockProvider.class);
 
-    // 10 should be sufficient
+    // 10 次重试通常足够应对并发建表/插行
     private final int DEFAULT_MAX_ATTEMPTS = 10;
 
 
@@ -58,6 +62,7 @@ public class LiquibaseDBLockProvider implements DBLockProvider {
     }
 
 
+    /** 延迟初始化：获取 JDBC 连接并配置 {@link CustomLockService}。 */
     private void lazyInit() {
         if (!initialized) {
             LiquibaseConnectionProvider liquibaseProvider = session.getProvider(LiquibaseConnectionProvider.class);
@@ -81,12 +86,13 @@ public class LiquibaseDBLockProvider implements DBLockProvider {
         }
     }
 
-    // Assumed transaction was rolled-back and we want to start with new DB connection
+    /** 事务已回滚后关闭旧连接并重新 lazyInit，供 {@link LockRetryException} 重试路径使用。 */
     private void restart() {
         safeCloseConnection();
         lazyInit();
     }
 
+    /** 在 JTA 事务外等待指定命名空间的数据库锁，遇 {@link LockRetryException} 时回滚并重试。 */
     @Override
     public void waitForLock(Namespace lock) {
         KeycloakModelUtils.suspendJtaTransaction(session.getKeycloakSessionFactory(), () -> {
@@ -111,7 +117,7 @@ public class LiquibaseDBLockProvider implements DBLockProvider {
             }, (int iteration, Throwable e) -> {
 
                 if (e instanceof LockRetryException && iteration < (DEFAULT_MAX_ATTEMPTS - 1)) {
-                    // Indicates we should try to acquire lock again in different transaction
+                    // 可在新事务中再次尝试获取锁
                     safeRollbackConnection();
                     restart();
                 } else {
@@ -124,6 +130,7 @@ public class LiquibaseDBLockProvider implements DBLockProvider {
 
     }
 
+    /** 释放当前命名空间锁并重置 {@link CustomLockService} 状态。 */
     @Override
     public void releaseLock() {
         KeycloakModelUtils.suspendJtaTransaction(session.getKeycloakSessionFactory(), () -> {
@@ -141,12 +148,14 @@ public class LiquibaseDBLockProvider implements DBLockProvider {
         return this.namespaceLocked;
     }
 
+    /** {@code SELECT FOR UPDATE} 锁由其他事务持有，无法强制解锁。 */
     @Override
     public boolean supportsForcedUnlock() {
-        // Implementation based on "SELECT FOR UPDATE" can't force unlock as it's locked by other transaction
+        // 基于 SELECT FOR UPDATE 的实现无法强制解除他事务持有的行锁
         return false;
     }
 
+    /** 销毁 Liquibase 锁表（测试/维护场景）。 */
     @Override
     public void destroyLockInfo() {
         KeycloakModelUtils.suspendJtaTransaction(session.getKeycloakSessionFactory(), () -> {
@@ -178,8 +187,9 @@ public class LiquibaseDBLockProvider implements DBLockProvider {
         }
     }
 
+    /** 关闭 JDBC 连接；内存库需显式关闭以防进程退出时自动关库。 */
     private void safeCloseConnection() {
-        // Close to prevent in-mem databases from closing
+        // 关闭连接，防止内存数据库在连接泄漏时过早 shutdown
         if (dbConnection != null) {
             try {
                 dbConnection.close();

@@ -49,15 +49,21 @@ import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
 import org.jboss.logging.Logger;
 
 /**
+ * JPA/Hibernate 工具类：持久化单元构建、命名查询加载、Schema 解析等。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JpaUtils {
 
+    /** Hibernate 默认 schema 配置键。 */
     public static final String HIBERNATE_DEFAULT_SCHEMA = "hibernate.default_schema";
+    /** 原生 SQL 命名查询后缀标记。 */
     public static final String QUERY_NATIVE_SUFFIX = "[native]";
+    /** JPQL 命名查询后缀标记。 */
     public static final String QUERY_JPQL_SUFFIX = "[jpql]";
     private static final Logger logger = Logger.getLogger(JpaUtils.class);
 
+    /** 为原生查询拼接 schema 前缀（若 EMF 配置了 default schema）。 */
     public static String getTableNameForNativeQuery(String tableName, EntityManager em) {
         final Dialect dialect = em.getEntityManagerFactory().unwrap(SessionFactoryImpl.class).getJdbcServices().getDialect();
         IdentifierHelper identifierHelper = em.getEntityManagerFactory().unwrap(SessionFactoryImpl.class).getJdbcServices().getJdbcEnvironment().getIdentifierHelper();
@@ -69,6 +75,7 @@ public class JpaUtils {
         return descriptors.stream().map(descriptor -> (ParsedPersistenceXmlDescriptor) descriptor).collect(Collectors.toList());
     }
 
+    /** 合并 persistence.xml 与 default-persistence.xml，注入扩展实体后构建 EMF。 */
     public static EntityManagerFactory createEntityManagerFactory(KeycloakSession session, String unitName, Map<String, Object> properties, boolean jta) {
         PersistenceUnitTransactionType txType = jta ? PersistenceUnitTransactionType.JTA : PersistenceUnitTransactionType.RESOURCE_LOCAL;
         PersistenceXmlParser parser = PersistenceXmlParser.create(properties);
@@ -86,11 +93,10 @@ public class JpaUtils {
             if (persistenceUnit.getName().equals(unitName)) {
                 List<Class<?>> providedEntities = getProvidedEntities(session);
                 for (Class<?> entityClass : providedEntities) {
-                    // Add all extra entity classes to the persistence unit.
+                    // 将 SPI 注册的额外实体类加入持久化单元
                     persistenceUnit.addClasses(entityClass.getName());
                 }
-                // Now build the entity manager factory, supplying a proxy classloader, so Hibernate will be able
-                // to find and load the extra provided entities.
+                // 使用代理 ClassLoader 构建 EMF，使 Hibernate 能加载 SPI 提供的实体
                 persistenceUnit.setTransactionType(txType);
                 persistenceUnit.setValidationMode(ValidationMode.NONE.name());
                 return Bootstrap.getEntityManagerFactoryBuilder(persistenceUnit, properties).build();
@@ -100,16 +106,16 @@ public class JpaUtils {
     }
 
     /**
-     * Get a list of all provided entities by looping over all configured entity providers.
+     * 汇总所有已配置 {@link JpaEntityProvider} 注册的 JPA 实体类。
      *
      * @param session the keycloak session
-     * @return a list of all provided entities (can be an empty list)
+     * @return 实体类列表（可能为空）
      */
     public static List<Class<?>> getProvidedEntities(KeycloakSession session) {
         List<Class<?>> providedEntityClasses = new ArrayList<>();
-        // Get all configured entity providers.
+        // 收集全部 JpaEntityProvider SPI
         Set<JpaEntityProvider> entityProviders = session.getAllProviders(JpaEntityProvider.class);
-        // For every provider, add all entity classes to the list.
+        // 合并各 Provider 声明的实体
         for (JpaEntityProvider entityProvider : entityProviders) {
             providedEntityClasses.addAll(entityProvider.getEntities());
         }
@@ -117,9 +123,9 @@ public class JpaUtils {
     }
 
     /**
-     * Get the name of custom table for liquibase updates for give ID of JpaEntityProvider
-     * @param jpaEntityProviderFactoryId
-     * @return table name
+     * 根据 {@link JpaEntityProvider} 工厂 ID 生成自定义 Liquibase changelog 表名。
+     * @param jpaEntityProviderFactoryId SPI 工厂标识
+     * @return 表名，形如 {@code DATABASECHANGELOG_XXXX}
      */
     public static String getCustomChangelogTableName(String jpaEntityProviderFactoryId) {
         String upperCased = jpaEntityProviderFactoryId.toUpperCase();
@@ -129,9 +135,9 @@ public class JpaUtils {
     }
 
     /**
-     * Loads the URL as a properties file.
-     * @param url The url to load, it can be null
-     * @return A properties file with the url loaded or null
+     * 从 URL 加载 properties 文件。
+     * @param url 资源 URL，可为 null
+     * @return 加载后的 Properties，url 为 null 时返回 null
      */
     public static Properties loadSqlProperties(URL url) {
         if (url == null) {
@@ -147,11 +153,10 @@ public class JpaUtils {
     }
 
     /**
-     * Returns the name of the query in the queries file. It searches for the
-     * three possible forms: name[native], name[jpql] or name.
-     * @param name The name of the query to search
-     * @param queries The properties file with the queries
-     * @return The key with the query found or null if not found
+     * 在 queries 属性文件中查找查询键：依次尝试 {@code name[native]}、{@code name[jpql]}、{@code name}。
+     * @param name 逻辑查询名
+     * @param queries 属性文件
+     * @return 匹配到的完整键名，未找到返回 null
      */
     private static String getQueryFromProperties(String name, Properties queries) {
         if (queries == null) {
@@ -172,11 +177,7 @@ public class JpaUtils {
         return null;
     }
 
-    /**
-     * Returns the query name but removing the suffix.
-     * @param name The query name as it is on the key
-     * @return The name without the suffix
-     */
+    /** 去掉查询键上的 {@link #QUERY_NATIVE_SUFFIX} 或 {@link #QUERY_JPQL_SUFFIX} 后缀。 */
     private static String getQueryShortName(String name) {
         if (name.endsWith(QUERY_NATIVE_SUFFIX)) {
             return name.substring(0, name.length() - QUERY_NATIVE_SUFFIX.length());
@@ -188,15 +189,10 @@ public class JpaUtils {
     }
 
     /**
-     * Method that adds the different query variants for the database.
-     * The method loads the queries specified in the files
-     * <em>META-INF/queries-{dbType}.properties</em> and the default
-     * <em>META-INF/queries-default.properties</em>. At least the default file
-     * should exist inside the jar file. The default file contains all the
-     * needed queries and the specific one can overload all or some of them for
-     * that database type.
-     * @param databaseType The database type as managed in
-     * @return
+     * 加载数据库类型专属的命名查询（{@code META-INF/queries-{dbType}.properties}）。
+     * <p>默认文件 {@code queries-default.properties} 提供全量查询，类型专属文件可覆盖部分条目。</p>
+     * @param databaseType 数据库类型标识
+     * @return 合并后的查询属性集
      */
     public static Properties loadSpecificNamedQueries(String databaseType) {
         URL specificUrl = JpaUtils.class.getClassLoader().getResource("META-INF/queries-" + databaseType + ".properties");
@@ -213,7 +209,7 @@ public class JpaUtils {
             String specificQueryNameFull = getQueryFromProperties(queryName, specificQueries);
 
             if (specificQueryNameFull != null) {
-                // the query is redefined in the specific database file => use it
+                // 该查询在数据库专属文件中重新定义 → 采用专属版本
                 queryNameFull = specificQueryNameFull;
                 querySql = specificQueries.getProperty(queryNameFull);
             }
@@ -225,11 +221,11 @@ public class JpaUtils {
     }
 
     /**
-     * Configures a named query to Hibernate.
+     * 向 Hibernate SessionFactory 注册命名查询（自动识别 native / JPQL）。
      *
-     * @param queryName the query name
-     * @param querySql the query SQL
-     * @param entityManager the entity manager
+     * @param queryName 查询名（可带后缀）
+     * @param querySql SQL 或 JPQL 文本
+     * @param entityManager 当前 EntityManager
      */
     public static void configureNamedQuery(String queryName, String querySql, EntityManager entityManager) {
         boolean isNative = queryName.endsWith(QUERY_NATIVE_SUFFIX);
@@ -246,6 +242,7 @@ public class JpaUtils {
         }
     }
 
+    /** 将 JDBC {@code DatabaseProductName} 规范化为 queries 文件名中的 dbType。 */
     public static String getDatabaseType(String productName) {
         switch (productName) {
             case "Microsoft SQL Server":
@@ -259,8 +256,8 @@ public class JpaUtils {
     }
 
     /**
-     * Helper to close the entity manager.
-     * @param em The entity manager to close
+     * 安全关闭 EntityManager，吞掉关闭异常并记录警告。
+     * @param em 待关闭的 EntityManager
      */
     public static void closeEntityManager(EntityManager em) {
         if (em != null) {

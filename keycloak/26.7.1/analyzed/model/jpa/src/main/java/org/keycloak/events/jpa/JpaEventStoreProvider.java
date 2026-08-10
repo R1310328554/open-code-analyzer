@@ -49,13 +49,16 @@ import org.jboss.logging.Logger;
 import static jakarta.persistence.PersistenceConfiguration.LOCK_TIMEOUT;
 
 /**
+ * JPA 实现的 {@link EventStoreProvider}：持久化用户事件与管理事件，并提供查询与过期清理。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JpaEventStoreProvider implements EventStoreProvider {
 
     private static final Logger logger = Logger.getLogger(JpaEventStoreProvider.class);
+    /** 过期事件批量删除每批最大行数。 */
     private static final int EXPIRED_DELETE_MAX_RESULTS = 500;
-    // maximum 4 minutes duration in case there is a big backlog of old events to be deleted
+    // 积压较多时单次清理最长 4 分钟，避免长时间占用事务
     private static final long EXPIRED_DELETE_TIME_LIMIT_MS = 4 * 60 * 1000L;
 
     private final KeycloakSession session;
@@ -86,6 +89,7 @@ public class JpaEventStoreProvider implements EventStoreProvider {
         em.createQuery("delete from EventEntity where realmId = :realmId and time < :time").setParameter("realmId", realm.getId()).setParameter("time", olderThan).executeUpdate();
     }
 
+    /** 按各 realm {@code eventsExpiration} 配置分批删除过期用户事件。 */
     @Override
     public void clearExpiredEvents() {
         int numDeleted = 0;
@@ -145,6 +149,7 @@ public class JpaEventStoreProvider implements EventStoreProvider {
     public void close() {
     }
 
+    /** 领域模型 → {@link EventEntity}，详情序列化为 JSON 写入长列。 */
     private EventEntity convertEvent(Event event) {
         EventEntity eventEntity = new EventEntity();
         eventEntity.setId(event.getId() == null ? UUID.randomUUID().toString() : event.getId());
@@ -160,6 +165,7 @@ public class JpaEventStoreProvider implements EventStoreProvider {
         return eventEntity;
     }
 
+    /** {@link EventEntity} → 领域 {@link Event}，反序列化详情 JSON。 */
     static Event convertEvent(EventEntity eventEntity) {
         Event event = new Event();
         event.setId(eventEntity.getId() == null ? UUID.randomUUID().toString() : eventEntity.getId());
@@ -175,6 +181,7 @@ public class JpaEventStoreProvider implements EventStoreProvider {
         return event;
     }
 
+    /** 领域 {@link AdminEvent} → {@link AdminEventEntity}。 */
     private AdminEventEntity convertAdminEvent(AdminEvent adminEvent, boolean includeRepresentation) {
         AdminEventEntity adminEventEntity = new AdminEventEntity();
         adminEventEntity.setId(adminEvent.getId() == null ? UUID.randomUUID().toString() : adminEvent.getId());
@@ -199,6 +206,7 @@ public class JpaEventStoreProvider implements EventStoreProvider {
         return adminEventEntity;
     }
 
+    /** {@link AdminEventEntity} → 领域 {@link AdminEvent}。 */
     static AdminEvent convertAdminEvent(AdminEventEntity adminEventEntity) {
         AdminEvent adminEvent = new AdminEvent();
         adminEvent.setId(adminEventEntity.getId() == null ? UUID.randomUUID().toString() : adminEventEntity.getId());
@@ -239,10 +247,11 @@ public class JpaEventStoreProvider implements EventStoreProvider {
         adminEvent.setAuthDetails(authDetails);
     }
 
+    /** 按 realm {@code adminEventsExpiration} 属性分批清理过期管理事件。 */
     protected void clearExpiredAdminEvents() {
         TypedQuery<RealmAttributeEntity> query = em.createNamedQuery("selectRealmAttributesNotEmptyByName", RealmAttributeEntity.class)
                 .setParameter("name", RealmAttributes.ADMIN_EVENTS_EXPIRATION);
-        // filtering on the attribute in Java as parsing the CLOB to BIGINT didn't work in H2 2.x, and it is also different on OracleDB
+        // 在 Java 侧过滤属性值：H2 2.x / Oracle 将 CLOB 转 BIGINT 不可靠
         List<Object[]> realmExpirations = query.getResultStream()
                 .filter(attribute -> {
                     try {
@@ -276,6 +285,10 @@ public class JpaEventStoreProvider implements EventStoreProvider {
         logger.debugf("Cleared %d expired admin events in all realms", numDeleted);
     }
 
+    /**
+     * 分批 SELECT ID + DELETE：悲观写锁且 skip locked，在独立短事务中执行以控制锁竞争。
+     * @return 本 scope 内累计删除行数
+     */
     private int deleteByIdBatches(String selectIdsQuery, Consumer<TypedQuery<String>> queryConfigurator, String deleteByIdsQuery, long deadline) {
         int deleted = 0;
         while (true) {
@@ -293,7 +306,7 @@ public class JpaEventStoreProvider implements EventStoreProvider {
                         List<String> eventIds = selectQuery
                                 .setMaxResults(EXPIRED_DELETE_MAX_RESULTS)
                                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
-                                .setHint(LOCK_TIMEOUT, -2) // skip locked
+                                .setHint(LOCK_TIMEOUT, -2) // 跳过已被其他事务锁定的行
                                 .getResultList();
                         if (eventIds.isEmpty()) {
                             return 0;
@@ -306,7 +319,7 @@ public class JpaEventStoreProvider implements EventStoreProvider {
                     "event-store-delete-batch");
 
             if (currentBatchDeleted == 0) {
-                // No IDs left in this scope. Return how many rows were deleted across previous batches.
+                // 本 scope 无更多待删 ID，返回已累计删除数
                 return deleted;
             }
             deleted += currentBatchDeleted;

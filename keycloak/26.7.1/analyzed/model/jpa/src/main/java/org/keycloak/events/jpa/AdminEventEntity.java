@@ -25,49 +25,65 @@ import jakarta.persistence.Table;
 import org.keycloak.connections.jpa.AsynchronousCommitAllowed;
 
 /**
+ * 管理事件（Admin Event）JPA 实体，映射表 {@code ADMIN_EVENT_ENTITY}。
+ * <p>记录 realm 内管理 API 操作审计：操作类型、资源路径、认证上下文及可选 representation。</p>
+ *
  * @author <a href="mailto:giriraj.sharma27@gmail.com">Giriraj Sharma</a>
  */
 @Entity
 @Table(name="ADMIN_EVENT_ENTITY")
 public class AdminEventEntity implements AsynchronousCommitAllowed {
 
+    /** 事件 UUID 主键。 */
     @Id
     @Column(name="ID", length = 36)
     private String id;
 
+    /** 事件发生时间戳（毫秒）。 */
     @Column(name="ADMIN_EVENT_TIME")
     private long time;
 
+    /** 被操作资源所属 realm ID。 */
     @Column(name="REALM_ID")
     private String realmId;
 
+    /** 操作类型（CREATE/UPDATE/DELETE/ACTION 等）。 */
     @Column(name="OPERATION_TYPE")
     private String operationType;
 
+    /** 资源类型（USER/CLIENT/REALM 等）。 */
     @Column(name="RESOURCE_TYPE", length = 64)
     private String resourceType;
 
+    /** 执行操作的认证 realm ID。 */
     @Column(name="AUTH_REALM_ID")
     private String authRealmId;
 
+    /** 执行操作的客户端 ID。 */
     @Column(name="AUTH_CLIENT_ID")
     private String authClientId;
 
+    /** 执行操作的用户 ID。 */
     @Column(name="AUTH_USER_ID")
     private String authUserId;
 
+    /** 操作来源 IP 地址。 */
     @Column(name="IP_ADDRESS")
     private String authIpAddress;
 
+    /** 被操作资源的 REST 路径。 */
     @Column(name="RESOURCE_PATH")
     private String resourcePath;
 
+    /** 可选的资源 JSON 表示（写入时由 includeRepresentation 控制）。 */
     @Column(name="REPRESENTATION")
     private String representation;
 
+    /** 操作失败时的错误信息。 */
     @Column(name="ERROR")
     private String error;
 
+    /** 附加详情 JSON（键值对序列化）。 */
     @Column(name="DETAILS_JSON")
     private String detailsJson;
 

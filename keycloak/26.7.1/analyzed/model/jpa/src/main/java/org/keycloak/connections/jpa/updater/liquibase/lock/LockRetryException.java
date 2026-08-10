@@ -18,8 +18,9 @@
 package org.keycloak.connections.jpa.updater.liquibase.lock;
 
 /**
- * Indicates that retrieve lock wasn't successful, but it worth to retry it in different transaction (For example if we were trying to create LOCK table, but other transaction
- * created the table in the meantime etc)
+ * 获取数据库锁失败但可在新事务中重试时抛出的异常。
+ * <p>典型场景：并发创建 {@code DATABASECHANGELOGLOCK} 表或插入首行锁记录时，
+ * 一方已成功而另一方收到 {@link liquibase.exception.DatabaseException}，回滚后重试即可。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */

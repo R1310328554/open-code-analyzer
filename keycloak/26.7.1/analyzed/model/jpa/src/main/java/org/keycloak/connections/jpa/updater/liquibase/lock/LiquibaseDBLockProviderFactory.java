@@ -27,19 +27,25 @@ import io.quarkus.runtime.configuration.DurationConverter;
 import org.jboss.logging.Logger;
 
 /**
+ * {@link DBLockProviderFactory} 的 JPA/Liquibase 实现工厂。
+ * <p>从配置读取 {@code lockWaitTimeout}（默认沿用迁移事务超时），创建 {@link LiquibaseDBLockProvider}。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LiquibaseDBLockProviderFactory implements DBLockProviderFactory {
 
     private static final Logger logger = Logger.getLogger(LiquibaseDBLockProviderFactory.class);
+    /** 工厂排序优先级，JPA 锁提供者优先于其他实现。 */
     public static final int PROVIDER_PRIORITY = 1;
 
+    /** 等待获取数据库锁的最长时间（毫秒）。 */
     private long lockWaitTimeoutMillis;
 
     public long getLockWaitTimeoutMillis() {
         return lockWaitTimeoutMillis;
     }
 
+    /** 解析 {@code lockWaitTimeout} 配置项并转换为毫秒。 */
     @Override
     public void init(Config.Scope config) {
         var lockWaitTimeout = config.get("lockWaitTimeout", TransactionOptions.MIGRATION_TRANSACTION_TIMEOUT);

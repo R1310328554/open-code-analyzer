@@ -25,44 +25,57 @@ import jakarta.persistence.Table;
 import org.keycloak.connections.jpa.AsynchronousCommitAllowed;
 
 /**
+ * 用户/客户端事件 JPA 实体，映射表 {@code EVENT_ENTITY}。
+ * <p>记录登录、令牌、错误等业务事件；详情 JSON 支持长文本列迁移。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @Entity
 @Table(name="EVENT_ENTITY")
 public class EventEntity implements AsynchronousCommitAllowed {
 
+    /** 事件 UUID 主键。 */
     @Id
     @Column(name="ID", length = 36)
     private String id;
 
+    /** 事件发生时间戳（毫秒）。 */
     @Column(name="EVENT_TIME")
     private long time;
 
+    /** 事件类型（LOGIN/LOGOUT/REGISTER_ERROR 等）。 */
     @Column(name="TYPE")
     private String type;
 
+    /** 所属 realm ID。 */
     @Column(name="REALM_ID")
     private String realmId;
 
+    /** 关联客户端 ID。 */
     @Column(name="CLIENT_ID")
     private String clientId;
 
+    /** 关联用户 ID。 */
     @Column(name="USER_ID")
     private String userId;
 
+    /** 关联用户会话 ID。 */
     @Column(name="SESSION_ID")
     private String sessionId;
 
+    /** 客户端 IP 地址。 */
     @Column(name="IP_ADDRESS")
     private String ipAddress;
 
+    /** 错误信息（失败类事件）。 */
     @Column(name="ERROR")
     private String error;
 
-    // This is the legacy field which is kept here to be able to read old events without the need to migrate them
+    // 遗留短列，保留以读取未迁移的旧事件数据
     @Column(name="DETAILS_JSON", length = 2550)
     private String detailsJson;
 
+    /** 长文本详情 JSON 列（新写入均走此列）。 */
     @Column(name="DETAILS_JSON_LONG_VALUE")
     private String detailsJsonLongValue;
 
@@ -138,6 +151,7 @@ public class EventEntity implements AsynchronousCommitAllowed {
         this.error = error;
     }
 
+    /** 优先返回长列详情，兼容旧版短列数据。 */
     public String getDetailsJson() {
         return detailsJsonLongValue != null ? detailsJsonLongValue : detailsJson;
     }
