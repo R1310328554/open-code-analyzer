@@ -28,13 +28,14 @@ import org.keycloak.jose.jwe.enc.AesGcmJWEEncryptionProvider;
 import org.keycloak.jose.jwe.enc.JWEEncryptionProvider;
 
 /**
+ * JWE 算法与内容加密提供者注册表（当前非可插拔，仅内置 RFC 7518 支持的算法）。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 class JWERegistry {
 
     // https://tools.ietf.org/html/rfc7518#page-22
-    // Registry not pluggable for now. Just supported algorithms included
+    // 注册表暂不可插拔，仅包含已支持的 enc 算法
     private static final Map<String, JWEEncryptionProvider> ENC_PROVIDERS = new HashMap<>();
 
     static {
@@ -47,6 +48,7 @@ class JWERegistry {
     }
 
 
+    /** 按 {@code alg} 解析密钥管理算法提供者；{@code dir} 使用内置 {@link DirectAlgorithmProvider}。 */
     static JWEAlgorithmProvider getAlgProvider(String alg) {
         // https://tools.ietf.org/html/rfc7518#page-12
         if (JWEConstants.DIRECT.equals(alg)) {
@@ -57,6 +59,7 @@ class JWERegistry {
     }
 
 
+    /** 按 {@code enc} 获取内容加密提供者。 */
     static JWEEncryptionProvider getEncProvider(String enc) {
         return ENC_PROVIDERS.get(enc);
     }

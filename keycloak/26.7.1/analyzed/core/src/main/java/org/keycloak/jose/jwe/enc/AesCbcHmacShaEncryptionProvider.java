@@ -39,6 +39,8 @@ import org.keycloak.jose.jwe.JWEKeyStorage;
 import org.keycloak.jose.jwe.JWEUtils;
 
 /**
+ * AES-CBC + HMAC-SHA 组合内容加密（RFC 7518 5.2）：CEK 前半用于 MAC，后半用于 AES。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AesCbcHmacShaEncryptionProvider implements JWEEncryptionProvider {
@@ -131,9 +133,9 @@ public abstract class AesCbcHmacShaEncryptionProvider implements JWEEncryptionPr
 
 
     private byte[] computeAuthenticationTag(byte[] aadBytes, byte[] ivBytes, byte[] cipherBytes, Key hmacKeySpec) throws NoSuchAlgorithmException, InvalidKeyException {
-        // Compute "al"
+        // 计算附加认证数据长度 "al"（64 位大端整数）
         ByteBuffer b = ByteBuffer.allocate(4);
-        b.order(ByteOrder.BIG_ENDIAN); // optional, the initial order of a byte buffer is always BIG_ENDIAN.
+        b.order(ByteOrder.BIG_ENDIAN); // 可选，ByteBuffer 默认即为 BIG_ENDIAN
         int aadLengthInBits = aadBytes.length * 8;
         b.putInt(aadLengthInBits);
         byte[] result1 = b.array();
@@ -197,6 +199,7 @@ public abstract class AesCbcHmacShaEncryptionProvider implements JWEEncryptionPr
 
 
 
+    /** A128CBC-HS256：16 字节 AES 密钥 + HMAC-SHA256。 */
     public static class Aes128CbcHmacSha256Provider extends AesCbcHmacShaEncryptionProvider {
 
         @Override
@@ -221,6 +224,7 @@ public abstract class AesCbcHmacShaEncryptionProvider implements JWEEncryptionPr
     }
 
 
+    /** A192CBC-HS384：24 字节 AES 密钥 + HMAC-SHA384。 */
     public static class Aes192CbcHmacSha384Provider extends AesCbcHmacShaEncryptionProvider {
 
         @Override
@@ -245,6 +249,7 @@ public abstract class AesCbcHmacShaEncryptionProvider implements JWEEncryptionPr
     }
 
 
+    /** A256CBC-HS512：32 字节 AES 密钥 + HMAC-SHA512。 */
     public static class Aes256CbcHmacSha512Provider extends AesCbcHmacShaEncryptionProvider {
 
         @Override

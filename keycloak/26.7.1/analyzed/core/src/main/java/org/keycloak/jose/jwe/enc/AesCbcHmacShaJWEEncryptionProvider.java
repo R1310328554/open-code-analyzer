@@ -19,6 +19,9 @@ package org.keycloak.jose.jwe.enc;
 
 import org.keycloak.jose.jwe.JWEConstants;
 
+/**
+ * 按 JWA 算法名参数化的 AES-CBC + HMAC-SHA 内容加密提供者（A128/A192/A256 CBC-HS）。
+ */
 public class AesCbcHmacShaJWEEncryptionProvider extends AesCbcHmacShaEncryptionProvider {
 
     private final int expectedCEKLength;
@@ -27,6 +30,11 @@ public class AesCbcHmacShaJWEEncryptionProvider extends AesCbcHmacShaEncryptionP
     private final int authenticationTagLength;
 
 
+    /**
+     * 根据 JWA {@code enc} 名称初始化 CEK 长度、AES 密钥长度与 HMAC 参数。
+     *
+     * @param jwaAlgorithmName 如 {@link JWEConstants#A128CBC_HS256}
+     */
     public AesCbcHmacShaJWEEncryptionProvider(String jwaAlgorithmName) {
         if (JWEConstants.A128CBC_HS256.equals(jwaAlgorithmName)) {
             expectedCEKLength = 32;

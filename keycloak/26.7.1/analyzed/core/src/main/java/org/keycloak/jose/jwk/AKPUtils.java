@@ -11,11 +11,12 @@ import java.util.Map;
 import org.keycloak.crypto.Algorithm;
 
 /**
- * Adds and removes prefix to X.509 DER encoded public keys.
+ * AKP 公钥编解码工具：为 X.509 DER 公钥添加/移除算法相关前缀，以适配 JWK {@code pub} 字段格式。
  */
 public class AKPUtils {
 
-    // See AKPJWKTest to generate new prefixes
+    // 新增算法前缀时可参考 AKPJWKTest 生成
+    /** 各 ML-DSA 算法对应的 X.509 SubjectPublicKeyInfo 固定前缀。 */
     static final Map<String, byte[]> PREFIXES = new HashMap<>();
     static {
         PREFIXES.put(Algorithm.ML_DSA_44, new byte[] { 48, -126, 5, 50, 48, 11, 6, 9, 96, -122, 72, 1, 101, 3, 4, 3, 17, 3, -126, 5, 33, 0, });
@@ -23,6 +24,12 @@ public class AKPUtils {
         PREFIXES.put(Algorithm.ML_DSA_87, new byte[] { 48, -126, 10, 50, 48, 11, 6, 9, 96, -122, 72, 1, 101, 3, 4, 3, 19, 3, -126, 10, 33, 0, });
     }
 
+    /**
+     * 将 JWK {@code pub} 字段解码为 {@link PublicKey}（拼接前缀后按 X.509 解析）。
+     *
+     * @param publicKey Base64URL 编码的公钥材料
+     * @param algorithm JWA 算法名（如 ML-DSA-44）
+     */
     public static PublicKey fromEncodedPub(String publicKey, String algorithm) {
         try {
             byte[] prefix = PREFIXES.get(algorithm);
@@ -37,6 +44,12 @@ public class AKPUtils {
         }
     }
 
+    /**
+     * 将 {@link PublicKey} 编码为 JWK {@code pub} 字段（去除 X.509 前缀后 Base64URL）。
+     *
+     * @param publicKey 公钥
+     * @param algorithm JWA 算法名
+     */
     public static String toEncodedPub(PublicKey publicKey, String algorithm) {
         byte[] prefix = PREFIXES.get(algorithm);
         byte[] keyOutWithoutPadding = removePadding(publicKey.getEncoded(), prefix.length);

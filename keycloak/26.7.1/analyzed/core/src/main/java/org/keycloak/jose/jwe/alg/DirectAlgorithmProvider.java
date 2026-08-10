@@ -25,15 +25,19 @@ import org.keycloak.jose.jwe.JWEKeyStorage;
 import org.keycloak.jose.jwe.enc.JWEEncryptionProvider;
 
 /**
+ * {@code dir}（Direct）密钥管理算法：CEK 直接来自共享密钥，无需额外的 CEK 封装步骤。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DirectAlgorithmProvider implements JWEAlgorithmProvider {
 
+    /** Direct 模式下无独立 CEK 密文，返回空数组。 */
     @Override
     public byte[] decodeCek(byte[] encodedCek, Key encryptionKey, JWEHeader header, JWEEncryptionProvider encryptionProvider) {
         return new byte[0];
     }
 
+    /** Direct 模式下无需编码 CEK，返回空数组。 */
     @Override
     public byte[] encodeCek(JWEEncryptionProvider encryptionProvider, JWEKeyStorage keyStorage, Key encryptionKey, JWEHeaderBuilder headerBuilder) {
         return new byte[0];

@@ -19,12 +19,20 @@ package org.keycloak.jose.jwe.enc;
 
 import org.keycloak.jose.jwe.JWEConstants;
 
+/**
+ * 按 JWA 算法名参数化的 AES-GCM 内容加密提供者（A128/A192/A256 GCM）。
+ */
 public class AesGcmJWEEncryptionProvider extends AesGcmEncryptionProvider {
 
     private final int expectedAesKeyLength;
     private final int expectedCEKLength;
 
 
+    /**
+     * 根据 JWA {@code enc} 名称初始化 AES 与 CEK 密钥长度。
+     *
+     * @param jwaAlgorithmName 如 {@link JWEConstants#A128GCM}
+     */
     public AesGcmJWEEncryptionProvider(String jwaAlgorithmName) {
         if (JWEConstants.A128GCM.equals(jwaAlgorithmName)) {
             expectedAesKeyLength = 16;

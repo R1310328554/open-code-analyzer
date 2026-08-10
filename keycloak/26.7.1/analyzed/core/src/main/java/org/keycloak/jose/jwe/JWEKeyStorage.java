@@ -24,17 +24,24 @@ import java.util.Map;
 import org.keycloak.jose.jwe.enc.JWEEncryptionProvider;
 
 /**
+ * JWE 密钥存储：管理加密/解密密钥、内容加密密钥（CEK）字节及其按用途拆分后的 {@link Key}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JWEKeyStorage {
 
+    /** 用于 CEK 加密的密钥（密钥管理算法侧）。 */
     private Key encryptionKey;
+    /** 用于 CEK 解密的密钥。 */
     private Key decryptionKey;
 
+    /** 原始 CEK 字节，可由 {@link JWEEncryptionProvider} 序列化/反序列化。 */
     private byte[] cekBytes;
 
+    /** 按用途（加密、MAC 签名等）缓存的 CEK 子密钥。 */
     private Map<KeyUse, Key> decodedCEK = new HashMap<>();
 
+    /** 当前内容加密算法提供者，负责 CEK 长度与编解码。 */
     private JWEEncryptionProvider encryptionProvider;
 
 
@@ -60,6 +67,7 @@ public class JWEKeyStorage {
         this.cekBytes = cekBytes;
     }
 
+    /** 获取 CEK 字节；若尚未设置则通过 {@link JWEEncryptionProvider#serializeCEK} 生成。 */
     public byte[] getCekBytes() {
         if (cekBytes == null) {
             cekBytes = encryptionProvider.serializeCEK(this);
@@ -73,6 +81,12 @@ public class JWEKeyStorage {
     }
 
 
+    /**
+     * 按用途获取 CEK 子密钥；缺失时可触发 CEK 生成与反序列化。
+     *
+     * @param keyUse 密钥用途（加密或 MAC）
+     * @param generateIfNotPresent 是否在 CEK 字节缺失时自动生成
+     */
     public Key getCEKKey(KeyUse keyUse, boolean generateIfNotPresent) {
         Key key = decodedCEK.get(keyUse);
         if (key == null) {
@@ -105,8 +119,11 @@ public class JWEKeyStorage {
     }
 
 
+    /** CEK 拆分后的密钥用途。 */
     public enum KeyUse {
+        /** AES 等内容加密。 */
         ENCRYPTION,
+        /** HMAC 等完整性校验。 */
         SIGNATURE
     }
 

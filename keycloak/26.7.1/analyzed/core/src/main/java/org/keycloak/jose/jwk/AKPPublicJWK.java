@@ -21,12 +21,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * AKP（Asymmetric Key Pair，如 ML-DSA）公钥的 JWK 表示，使用 {@code pub} 字段承载编码公钥。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class AKPPublicJWK extends JWK {
 
+    /** JWK 中 AKP 公钥材料的 JSON 属性名。 */
     public static final String PUB = "pub";
 
+    /** Base64URL 编码的公钥（不含 X.509 前缀）。 */
     @JsonProperty(PUB)
     private String pub;
 
@@ -38,6 +42,7 @@ public class AKPPublicJWK extends JWK {
         this.pub = pub;
     }
 
+    /** 优先从 {@code pub} 读取扩展声明，否则委托 {@link JWK#getOtherClaim}。 */
     @JsonIgnore
     @Override
     public <T> T getOtherClaim(String claimName, Class<T> claimType) {

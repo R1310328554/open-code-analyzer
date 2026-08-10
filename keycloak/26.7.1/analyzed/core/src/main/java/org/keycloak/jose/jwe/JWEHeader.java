@@ -30,35 +30,46 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
+ * JWE 头部（JWE Header），序列化为 Base64URL 编码的 JSON，承载算法、密钥与协商参数。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JWEHeader implements JOSEHeader {
 
+    /** 密钥管理算法（{@code alg}）。 */
     @JsonProperty("alg")
     private String algorithm;
 
+    /** 内容加密算法（{@code enc}）。 */
     @JsonProperty("enc")
     private String encryptionAlgorithm;
 
+    /** 压缩算法（{@code zip}），如 DEF。 */
     @JsonProperty("zip")
     private String compressionAlgorithm;
 
+    /** JWE 类型（{@code typ}）。 */
     @JsonProperty("typ")
     private String type;
 
+    /** 明文内容类型（{@code cty}）。 */
     @JsonProperty("cty")
     private String contentType;
 
+    /** 密钥标识（{@code kid}）。 */
     @JsonProperty("kid")
     private String keyId;
 
+    /** ECDH 临时公钥（{@code epk}）。 */
     @JsonProperty("epk")
     private ECPublicJWK ephemeralPublicKey;
 
+    /** 密钥协商发起方附加信息（{@code apu}）。 */
     @JsonProperty("apu")
     private String agreementPartyUInfo;
 
+    /** 密钥协商接收方附加信息（{@code apv}）。 */
     @JsonProperty("apv")
     private String agreementPartyVInfo;
 
@@ -162,10 +173,12 @@ public class JWEHeader implements JOSEHeader {
                 .agreementPartyVInfo(agreementPartyVInfo);
     }
 
+    /** 创建空的 {@link JWEHeaderBuilder}。 */
     public static JWEHeaderBuilder builder() {
         return new JWEHeaderBuilder();
     }
 
+    /** 流式构建 {@link JWEHeader} 的 Builder。 */
     public static class JWEHeaderBuilder {
         private String algorithm = null;
         private String encryptionAlgorithm = null;

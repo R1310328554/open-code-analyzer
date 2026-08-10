@@ -20,6 +20,8 @@ package org.keycloak.jose.jwe;
 import java.security.SecureRandom;
 
 /**
+ * JWE 辅助工具：生成密码学安全的随机字节（用于 CEK、IV 等）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JWEUtils {
@@ -27,6 +29,12 @@ public class JWEUtils {
     private JWEUtils() {
     }
 
+    /**
+     * 生成指定长度的随机密钥材料。
+     *
+     * @param bytes 字节长度
+     * @return 随机字节数组
+     */
     public static byte[] generateSecret(int bytes) {
         byte[] buf = new byte[bytes];
         new SecureRandom().nextBytes(buf);

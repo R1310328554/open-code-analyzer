@@ -25,51 +25,56 @@ import org.keycloak.jose.jwe.JWE;
 import org.keycloak.jose.jwe.JWEKeyStorage;
 
 /**
+ * JWE 内容加密算法（{@code enc}）提供者：负责明文加解密与 CEK 编解码。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface JWEEncryptionProvider {
 
     /**
-     * This method usually has 3 outputs:
-     * - generated initialization vector
-     * - encrypted content
-     * - authenticationTag for MAC validation
+     * 加密 JWE 明文，通常产生三项输出：
+     * <ul>
+     *   <li>初始化向量（IV）</li>
+     *   <li>密文</li>
+     *   <li>用于 MAC/完整性校验的 authenticationTag</li>
+     * </ul>
+     * 完成后应调用 {@link JWE#setEncryptedContentInfo(byte[], byte[], byte[])}。
      *
-     * It is supposed to call {@link JWE#setEncryptedContentInfo(byte[], byte[], byte[])} after it's finished
-     *
-     * @param jwe
-     * @throws IOException
-     * @throws GeneralSecurityException
+     * @param jwe 待加密的 JWE 对象
+     * @throws IOException IO 异常
+     * @throws GeneralSecurityException 密码学异常
      */
     void encodeJwe(JWE jwe) throws Exception;
 
 
     /**
-     * This method is supposed to verify checksums and decrypt content. Then it needs to call {@link JWE#content(byte[])} after it's finished
+     * 校验完整性并解密内容，完成后应调用 {@link JWE#content(byte[])}。
      *
-     * @param jwe
-     * @throws IOException
-     * @throws GeneralSecurityException
+     * @param jwe 待解密的 JWE 对象
+     * @throws IOException IO 异常
+     * @throws GeneralSecurityException 密码学异常
      */
     void verifyAndDecodeJwe(JWE jwe) throws Exception;
 
 
     /**
-     * This method requires that decoded CEK keys are present in the keyStorage.decodedCEK map before it's called
+     * 将 {@link JWEKeyStorage} 中已解码的 CEK 子密钥序列化为字节。
+     * 调用前需在 keyStorage 中准备好各用途的 CEK 密钥。
      *
-     * @param keyStorage
-     * @return
+     * @param keyStorage 密钥存储
+     * @return CEK 字节
      */
     byte[] serializeCEK(JWEKeyStorage keyStorage);
 
     /**
-     * This method is supposed to deserialize keys. It requires that {@link JWEKeyStorage#getCekBytes()} is set. After keys are deserialized,
-     * this method needs to call {@link JWEKeyStorage#setCEKKey(Key, JWEKeyStorage.KeyUse)} according to all uses, which this encryption algorithm requires.
+     * 从 {@link JWEKeyStorage#getCekBytes()} 反序列化 CEK，并按算法所需用途
+     * 调用 {@link JWEKeyStorage#setCEKKey(Key, JWEKeyStorage.KeyUse)}。
      *
-     * @param keyStorage
+     * @param keyStorage 密钥存储
      */
     void deserializeCEK(JWEKeyStorage keyStorage);
 
+    /** 返回该 {@code enc} 算法期望的 CEK 总字节长度。 */
     int getExpectedCEKLength();
 
 }

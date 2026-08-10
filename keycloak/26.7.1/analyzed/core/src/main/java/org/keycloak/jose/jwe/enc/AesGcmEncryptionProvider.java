@@ -31,10 +31,12 @@ import org.keycloak.jose.jwe.JWE;
 import org.keycloak.jose.jwe.JWEKeyStorage;
 import org.keycloak.jose.jwe.JWEUtils;
 
+/**
+ * AES-GCM 内容加密（RFC 7518 5.3）：IV 96 位，认证标签 128 位。
+ */
 public abstract class AesGcmEncryptionProvider implements JWEEncryptionProvider {
 
-    // 96 bits of IV is required
-    // Authentication Tag size must be 128 bits
+    // IV 必须为 96 位；认证标签必须为 128 位
     // https://tools.ietf.org/html/rfc7518#section-5.3
     private static final int AUTH_TAG_SIZE_BYTE = 16;
     private static final int IV_SIZE_BYTE = 12;
@@ -44,7 +46,7 @@ public abstract class AesGcmEncryptionProvider implements JWEEncryptionProvider 
 
         byte[] contentBytes = jwe.getContent();
 
-        // IV must be nonce (number used once)
+        // IV 必须为 nonce（一次性随机数）
         byte[] initializationVector = JWEUtils.generateSecret(IV_SIZE_BYTE);
 
         Key aesKey = jwe.getKeyStorage().getCEKKey(JWEKeyStorage.KeyUse.ENCRYPTION, false);
@@ -106,9 +108,7 @@ public abstract class AesGcmEncryptionProvider implements JWEEncryptionProvider 
     }
 
     private byte[] getAuthenticationTag(byte[] cipherBytes) {
-        // AES GCM cipher text consists of a cipher text an authentication tag.
-        // The authentication tag be encoded as an individual term in JWE.
-        // So extract it from the AES GCM cipher text.
+        // AES-GCM 密文由密文与认证标签组成；JWE 中标签单独编码，需从 GCM 输出中拆分
         // https://tools.ietf.org/html/rfc5116#section-5.1
         byte[] authenticationTag = new byte[AUTH_TAG_SIZE_BYTE];
         System.arraycopy(cipherBytes, cipherBytes.length - authenticationTag.length, authenticationTag, 0, authenticationTag.length);
@@ -116,9 +116,7 @@ public abstract class AesGcmEncryptionProvider implements JWEEncryptionProvider 
     }
 
     private byte[] getEncryptedContent(byte[] cipherBytes) throws NoSuchAlgorithmException, InvalidKeyException {
-        // AES GCM cipher text consists of a cipher text an authentication tag.
-        // The cipher text be encoded as an individual term in JWE.
-        // So extract it from the AES GCM cipher text.
+        // 从 GCM 输出中提取不含认证标签的密文部分，供 JWE 单独编码
         // https://tools.ietf.org/html/rfc5116#section-5.1
         byte[] encryptedContent = new byte[cipherBytes.length - AUTH_TAG_SIZE_BYTE];
         System.arraycopy(cipherBytes, 0, encryptedContent, 0, encryptedContent.length);
@@ -126,7 +124,7 @@ public abstract class AesGcmEncryptionProvider implements JWEEncryptionProvider 
     }
 
     private byte[] getAeadDecryptedTargetContent(JWE jwe) {
-        // In order to decrypt, need to construct AES GCM cipher text from JWE cipher text and authentication tag
+        // 解密前将 JWE 密文与认证标签拼回 GCM 期望的 AEAD 输入格式
         byte[] encryptedContent = jwe.getEncryptedContent();
         byte[] authTag = jwe.getAuthenticationTag();
         byte[] decryptedTargetContent = new byte[authTag.length + encryptedContent.length];

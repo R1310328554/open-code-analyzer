@@ -18,6 +18,8 @@
 package org.keycloak.jose.jwe;
 
 /**
+ * JWE 编解码、密钥协商或内容加解密失败时抛出的受检异常。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JWEException extends Exception {
