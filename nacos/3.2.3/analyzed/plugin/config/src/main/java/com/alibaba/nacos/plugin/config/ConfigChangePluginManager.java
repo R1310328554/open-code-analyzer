@@ -37,7 +37,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.Comparator;
 
 /**
- * All config change plugin manager.
+ * 配置变更插件统一管理器。
+ *
+ * <p>通过 SPI 加载所有 {@link ConfigChangePluginService} 实现，按服务类型与切点类型建立索引，
+ * 并在同一切点下按 {@link ConfigChangePluginService#getOrder()} 排序，供配置变更流程按序调用。</p>
  *
  * @author liyunfei
  */
@@ -45,26 +48,27 @@ public class ConfigChangePluginManager {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigChangePluginManager.class);
     
+    /** 插件服务 Map 初始容量，与预期插件数量一致。 */
     private static final Integer PLUGIN_SERVICE_COUNT = 4;
     
+    /** 切点类型数量，用于初始化切点索引 Map 容量。 */
     private static final Integer POINT_CUT_TYPE_COUNT = ConfigChangePointCutTypes.values().length;
     
     /**
-     * The relationship of serviceType and  {@link ConfigChangePluginService} ,default capacity is the count of plugin
-     * service.
+     * 服务类型与 {@link ConfigChangePluginService} 的映射，默认容量为插件服务数量。
      */
     private static final Map<String, ConfigChangePluginService> CONFIG_CHANGE_PLUGIN_SERVICE_MAP =
         new ConcurrentHashMap<>(
             PLUGIN_SERVICE_COUNT);
     
     /**
-     * The relationship of config change pointcut type and the list of {@link ConfigChangePluginService} will pointcut
-     * it, default capacity is the count of pointcutTypes.
+     * 配置变更切点类型与对应 {@link ConfigChangePluginService} 列表的映射，默认容量为切点类型数量。
      */
     private static final Map<ConfigChangePointCutTypes, List<ConfigChangePluginService>> CONFIG_CHANGE_PLUGIN_SERVICES_MAP =
         new ConcurrentHashMap<>(
             POINT_CUT_TYPE_COUNT);
     
+    /** 单例实例。 */
     private static final ConfigChangePluginManager INSTANCE = new ConfigChangePluginManager();
     
     private ConfigChangePluginManager() {
@@ -72,12 +76,12 @@ public class ConfigChangePluginManager {
     }
     
     /**
-     * Load all config change plugin services by spi.
+     * 通过 SPI 加载所有配置变更插件服务。
      */
     private static void loadConfigChangeServices() {
         Collection<ConfigChangePluginService> configChangePluginServices = NacosServiceLoader
             .load(ConfigChangePluginService.class);
-        // load all config change plugin by spi
+        // 通过 SPI 加载全部配置变更插件
         for (ConfigChangePluginService each : configChangePluginServices) {
             if (StringUtils.isEmpty(each.getServiceType())) {
                 LOGGER.warn(
@@ -90,22 +94,29 @@ public class ConfigChangePluginManager {
             LOGGER.info(
                 "[ConfigChangePluginManager] Load {}({}) ConfigChangeServiceName({}) successfully.",
                 each.getClass().getName(), each.getClass(), each.getServiceType());
-            // map the relationship of pointcut and plugin service
+            // 建立切点与插件服务的映射关系
             addPluginServiceByPointCut(each);
         }
-        // sort plugin service
+        // 按 order 对各切点下的插件服务排序
         sortPluginServiceByPointCut();
     }
     
+    /**
+     * 获取管理器单例。
+     *
+     * @return 配置变更插件管理器实例
+     */
     public static ConfigChangePluginManager getInstance() {
         return INSTANCE;
     }
     
     /**
-     * Dynamic get any pluginServiceImpl.
+     * 按服务类型动态查找插件实现。
      *
-     * @param serviceType plugin service type.
-     * @return
+     * <p>若插件状态检查器存在且该插件已被禁用，则返回空。</p>
+     *
+     * @param serviceType 插件服务类型
+     * @return 对应的插件服务，未找到或已禁用时为空
      */
     public Optional<ConfigChangePluginService> findPluginServiceImpl(String serviceType) {
         Optional<PluginStateChecker> checker = PluginStateCheckerHolder.getInstance();
@@ -119,10 +130,10 @@ public class ConfigChangePluginManager {
     }
     
     /**
-     * Dynamic add new ConfigChangeService.
+     * 动态注册新的配置变更插件服务。
      *
-     * @param configChangePluginService ConfigChangeService.
-     * @return
+     * @param configChangePluginService 待加入的插件服务
+     * @return 始终为 {@code true}
      */
     public static synchronized boolean join(ConfigChangePluginService configChangePluginService) {
         CONFIG_CHANGE_PLUGIN_SERVICE_MAP
@@ -132,16 +143,17 @@ public class ConfigChangePluginManager {
     }
     
     /**
-     * Get the plugin service queue of the pointcut method.
+     * 获取指定切点下的插件服务执行队列。
      *
-     * @param pointcutName pointcut method name,detail see {@link ConfigChangePointCutTypes}.
-     * @return
+     * @param pointcutName 切点方法名，详见 {@link ConfigChangePointCutTypes}
+     * @return 该切点对应的插件服务列表，无则返回空列表
      */
     public static List<ConfigChangePluginService> findPluginServicesByPointcut(
         ConfigChangePointCutTypes pointcutName) {
         return CONFIG_CHANGE_PLUGIN_SERVICES_MAP.getOrDefault(pointcutName, new ArrayList<>());
     }
     
+    /** 将插件服务注册到其声明的各个切点索引中。 */
     private static void addPluginServiceByPointCut(
         ConfigChangePluginService configChangePluginService) {
         ConfigChangePointCutTypes[] pointcutNames = configChangePluginService.pointcutMethodNames();
@@ -157,6 +169,7 @@ public class ConfigChangePluginManager {
         }
     }
     
+    /** 按 order 值对各切点下的插件服务列表升序排序。 */
     private static void sortPluginServiceByPointCut() {
         CONFIG_CHANGE_PLUGIN_SERVICES_MAP.forEach((type, pluginServices) -> {
             List<ConfigChangePluginService> sortedList = new ArrayList<>(pluginServices);
@@ -165,6 +178,7 @@ public class ConfigChangePluginManager {
         });
     }
     
+    /** 清空所有插件索引，仅用于测试。 */
     @JustForTest
     public static synchronized void reset() {
         CONFIG_CHANGE_PLUGIN_SERVICE_MAP.clear();
@@ -172,9 +186,9 @@ public class ConfigChangePluginManager {
     }
     
     /**
-     * Get all config change plugin services.
+     * 获取全部已加载的配置变更插件服务。
      *
-     * @return unmodifiable map of all config change plugin services
+     * @return 不可修改的服务类型到插件服务的映射
      */
     public Map<String, ConfigChangePluginService> getAllPlugins() {
         return Collections.unmodifiableMap(CONFIG_CHANGE_PLUGIN_SERVICE_MAP);

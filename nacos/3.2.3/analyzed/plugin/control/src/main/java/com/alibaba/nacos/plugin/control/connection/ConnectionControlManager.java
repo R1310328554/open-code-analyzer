@@ -34,18 +34,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * connection control manager.
+ * 连接数管控管理器抽象基类。
+ *
+ * <p>启动时加载 SPI 连接指标采集器、解析并应用连接限制规则，
+ * 并周期性上报各采集器的连接数汇总指标。</p>
  *
  * @author shiyiyu
  */
 public abstract class ConnectionControlManager {
     
+    /** 连接限制规则解析器。 */
     private final ConnectionControlRuleParser connectionControlRuleParser;
     
+    /** 当前生效的连接限制规则。 */
     protected ConnectionControlRule connectionControlRule;
     
+    /** SPI 加载的全部连接指标采集器。 */
     protected Collection<ConnectionMetricsCollector> metricsCollectorList;
     
+    /** 连接指标定时上报线程池。 */
     private ScheduledExecutorService executorService;
     
     public ConnectionControlManager() {
@@ -62,20 +69,31 @@ public abstract class ConnectionControlManager {
     }
     
     /**
-     * get manager name.
+     * 返回管理器实现名称。
      *
-     * @return name
+     * @return 管理器名称
      */
     public abstract String getName();
     
+    /**
+     * 构建连接规则解析器，子类可覆盖以使用自定义解析逻辑。
+     *
+     * @return 规则解析器实例
+     */
     protected ConnectionControlRuleParser buildConnectionControlRuleParser() {
         return new NacosConnectionControlRuleParser();
     }
     
+    /**
+     * 获取连接规则解析器。
+     *
+     * @return 规则解析器
+     */
     public ConnectionControlRuleParser getConnectionControlRuleParser() {
         return connectionControlRuleParser;
     }
     
+    /** 初始化单线程定时调度器，用于周期性上报连接指标。 */
     private void initExecuteService() {
         executorService = ExecutorFactory.newSingleScheduledExecutorService(r -> {
             Thread thread = new Thread(r, "nacos.plugin.control.connection.reporter");
@@ -84,6 +102,7 @@ public abstract class ConnectionControlManager {
         });
     }
     
+    /** 从本地或外部存储加载连接限制规则并解析。 */
     private void initConnectionRule() {
         RuleStorageProxy ruleStorageProxy = RuleStorageProxy.getInstance();
         String localRuleContent = ruleStorageProxy.getLocalDiskStorage().getConnectionRule();
@@ -110,30 +129,37 @@ public abstract class ConnectionControlManager {
         }
     }
     
+    /** 启动连接指标定时上报任务，初始延迟与间隔均为 3 秒。 */
     private void startConnectionMetricsReport() {
         executorService.scheduleWithFixedDelay(new ConnectionMetricsReporter(), 3000, 3000,
             TimeUnit.MILLISECONDS);
     }
     
+    /**
+     * 获取当前连接限制规则。
+     *
+     * @return 连接限制规则
+     */
     public ConnectionControlRule getConnectionLimitRule() {
         return connectionControlRule;
     }
     
     /**
-     * apply connection rule.
+     * 应用新的连接限制规则。
      *
-     * @param connectionControlRule not null.
+     * @param connectionControlRule 非空的连接限制规则
      */
     public abstract void applyConnectionLimitRule(ConnectionControlRule connectionControlRule);
     
     /**
-     * check connection allowed.
+     * 校验新连接是否允许建立。
      *
-     * @param connectionCheckRequest connectionCheckRequest.
-     * @return connection check response
+     * @param connectionCheckRequest 连接校验请求
+     * @return 连接校验响应
      */
     public abstract ConnectionCheckResponse check(ConnectionCheckRequest connectionCheckRequest);
     
+    /** 周期性汇总各采集器连接数并写入日志。 */
     class ConnectionMetricsReporter implements Runnable {
         
         @Override

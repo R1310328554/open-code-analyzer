@@ -24,12 +24,20 @@ import com.alibaba.nacos.plugin.control.connection.response.ConnectionCheckRespo
 import com.alibaba.nacos.plugin.control.connection.rule.ConnectionControlRule;
 
 /**
- * default connection control manager, no limit control.
+ * 默认连接管控管理器，不做任何连接数限制。
+ *
+ * <p>未配置管控插件或构建失败时的降级实现：规则变更仅记录日志，
+ * 连接校验始终返回 {@link ConnectionCheckCode#CHECK_SKIP} 放行。</p>
  *
  * @author shiyiyue
  */
 public class DefaultConnectionControlManager extends ConnectionControlManager {
     
+    /**
+     * 返回管理器名称 {@code noLimit}。
+     *
+     * @return 固定标识 {@code noLimit}
+     */
     @Override
     public String getName() {
         return "noLimit";
@@ -39,6 +47,11 @@ public class DefaultConnectionControlManager extends ConnectionControlManager {
         super();
     }
     
+    /**
+     * 更新连接限制规则并记录日志，但不实际执行限连逻辑。
+     *
+     * @param connectionControlRule 新的连接限制规则
+     */
     @Override
     public void applyConnectionLimitRule(ConnectionControlRule connectionControlRule) {
         super.connectionControlRule = connectionControlRule;
@@ -49,6 +62,12 @@ public class DefaultConnectionControlManager extends ConnectionControlManager {
             "Connection control updated, But connection control manager is no limit implementation.");
     }
     
+    /**
+     * 连接校验始终放行。
+     *
+     * @param connectionCheckRequest 连接校验请求
+     * @return 成功且跳过检查的响应
+     */
     @Override
     public ConnectionCheckResponse check(ConnectionCheckRequest connectionCheckRequest) {
         ConnectionCheckResponse connectionCheckResponse = new ConnectionCheckResponse();

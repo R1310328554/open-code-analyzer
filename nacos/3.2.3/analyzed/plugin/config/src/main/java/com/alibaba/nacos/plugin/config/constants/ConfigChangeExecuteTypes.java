@@ -17,17 +17,19 @@
 package com.alibaba.nacos.plugin.config.constants;
 
 /**
- * ConfigChangeExecuteTypes.
+ * 配置变更插件执行时机枚举。
+ *
+ * <p>标识插件在配置变更切点方法执行前还是执行后被调用。</p>
  *
  * @author liyunfei
  */
 public enum ConfigChangeExecuteTypes {
     /**
-     * Execute before pointcut.
+     * 在切点方法执行前调用插件。
      */
     EXECUTE_BEFORE_TYPE,
     /**
-     * Execute after pointcut.
+     * 在切点方法执行后调用插件。
      */
     EXECUTE_AFTER_TYPE
 }

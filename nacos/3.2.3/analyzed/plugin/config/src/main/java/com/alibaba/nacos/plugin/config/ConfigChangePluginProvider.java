@@ -23,18 +23,31 @@ import com.alibaba.nacos.plugin.config.spi.ConfigChangePluginService;
 import java.util.Map;
 
 /**
- * Config change plugin provider implementation.
+ * 配置变更插件提供者实现。
+ *
+ * <p>实现 {@link PluginProvider} 接口，向 Nacos 插件框架暴露 {@link PluginType#CONFIG_CHANGE}
+ * 类型下的全部 {@link ConfigChangePluginService} 实例。</p>
  *
  * @author WangzJi
  * @since 3.2.0
  */
 public class ConfigChangePluginProvider implements PluginProvider<ConfigChangePluginService> {
     
+    /**
+     * 返回配置变更插件类型标识。
+     *
+     * @return {@link PluginType#CONFIG_CHANGE}
+     */
     @Override
     public PluginType getPluginType() {
         return PluginType.CONFIG_CHANGE;
     }
     
+    /**
+     * 获取全部已加载的配置变更插件服务。
+     *
+     * @return 服务类型到插件服务的映射
+     */
     @Override
     public Map<String, ConfigChangePluginService> getAllPlugins() {
         return ConfigChangePluginManager.getInstance().getAllPlugins();

@@ -17,51 +17,59 @@
 package com.alibaba.nacos.plugin.config.constants;
 
 /**
- * Config change type depend on the pointcut method.
+ * 配置变更切点类型枚举。
+ *
+ * <p>每种类型对应一种配置变更入口（HTTP、RPC 或未知来源），用于插件声明其拦截范围。</p>
  *
  * @author liyunfei
  */
 public enum ConfigChangePointCutTypes {
     
     /**
-     * Publish or update config through http.
+     * 通过 HTTP 发布或更新配置。
      */
     PUBLISH_BY_HTTP("publishOrUpdateByHttp"),
     /**
-     * Publish config through rpc.
+     * 通过 RPC 发布配置。
      */
     PUBLISH_BY_RPC("publishOrUpdateByRpc"),
     /**
-     * Publish config with unknown source type.
+     * 来源未知的配置发布。
      */
     PUBLISH_BY_UNKNOWN("publishOrUpdateByUnknown"),
     /**
-     * Remove by id through http.
+     * 通过 HTTP 按 ID 删除单条配置。
      */
     REMOVE_BY_HTTP("removeSingleByHttp"),
     /**
-     * Remove through rpc.
+     * 通过 RPC 删除单条配置。
      */
     REMOVE_BY_RPC("removeSingleByRpc"),
     /**
-     * Remove with unknown source type.
+     * 来源未知的单条配置删除。
      */
     REMOVE_BY_UNKNOWN("removeSingleByUnknown"),
     /**
-     * Import config file through http/console.
+     * 通过 HTTP/控制台导入配置文件。
      */
     IMPORT_BY_HTTP("importFileByHttp"),
     /**
-     * Remove by ids through http.
+     * 通过 HTTP 批量删除配置。
      */
     REMOVE_BATCH_HTTP("removeBatchByHttp");
     
+    /** 切点对应的内部方法标识字符串。 */
     private final String value;
     
     ConfigChangePointCutTypes(String value) {
         this.value = value;
     }
     
+    /**
+     * 返回切点方法标识字符串。
+     *
+     * @return 切点 value
+     */
     public String value() {
         return value;
     }

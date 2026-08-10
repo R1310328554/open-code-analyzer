@@ -17,31 +17,33 @@
 package com.alibaba.nacos.plugin.control.connection;
 
 /**
- * connection count metrics collector.
+ * 连接数指标采集 SPI 接口。
+ *
+ * <p>各模块通过 SPI 注册采集器，供 {@link ConnectionControlManager} 汇总连接数并执行限连校验。</p>
  *
  * @author shiyiyue
  */
 public interface ConnectionMetricsCollector {
     
     /**
-     * get collector name.
+     * 获取采集器名称，用于指标汇总时的键标识。
      *
-     * @return
+     * @return 采集器名称
      */
     String getName();
     
     /**
-     * get total count.
+     * 获取当前总连接数。
      *
-     * @return
+     * @return 连接总数
      */
     int getTotalCount();
     
     /**
-     * get count for ip.
+     * 获取指定 IP 的连接数。
      *
-     * @param ip ip.
-     * @return
+     * @param ip 客户端 IP 地址
+     * @return 该 IP 的连接数
      */
     int getCountForIp(String ip);
 }

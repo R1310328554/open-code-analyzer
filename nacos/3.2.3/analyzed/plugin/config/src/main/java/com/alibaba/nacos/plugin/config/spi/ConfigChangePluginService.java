@@ -23,51 +23,54 @@ import com.alibaba.nacos.plugin.config.model.ConfigChangeRequest;
 import com.alibaba.nacos.plugin.config.model.ConfigChangeResponse;
 
 /**
- * ConfigChangePluginService.
+ * 配置变更插件 SPI 接口。
+ *
+ * <p>插件实现需声明服务类型、执行时机、切点范围及执行顺序，
+ * 在配置发布、删除或导入等变更流程中被框架按序回调。</p>
  *
  * @author liyunfei
  */
 public interface ConfigChangePluginService {
     
     /**
-     * execute config change plugin service.
+     * 执行配置变更插件逻辑。
      *
-     * @param configChangeRequest  ConfigChangeRequest
-     * @param configChangeResponse ConfigChangeResponse
+     * @param configChangeRequest  配置变更请求上下文
+     * @param configChangeResponse 配置变更响应，用于回写执行结果
      */
     void execute(ConfigChangeRequest configChangeRequest,
         ConfigChangeResponse configChangeResponse);
     
     /**
-     * execute type {@link ConfigChangeExecuteTypes}.
+     * 返回插件执行时机，参见 {@link ConfigChangeExecuteTypes}。
      *
-     * @return type
+     * @return 执行类型（切点前或切点后）
      */
     ConfigChangeExecuteTypes executeType();
     
     /**
-     * what kind of plugin service,such as webhook,whiteList and other,need keep a way with the constants config of you
-     * enum in {@link ConfigChangeConstants}.
+     * 返回插件服务类型标识，如 webhook、whiteList 等，
+     * 需与 {@link ConfigChangeConstants} 中对应配置项保持一致。
      *
-     * @return service type
+     * @return 服务类型字符串
      */
     String getServiceType();
     
     /**
-     * when pointcut the same method,according to order to load plugin service. order is lower,prior is higher.
+     * 同一切点下多个插件按 order 升序执行，数值越小优先级越高。
      *
-     * @return order
+     * @return 执行顺序值
      */
     int getOrder();
     
     /**
-     * the ConfigChangeTypes {@link ConfigChangePointCutTypes} of need to pointcut.
+     * 返回本插件需要拦截的配置变更切点类型数组，参见 {@link ConfigChangePointCutTypes}。
      *
      * <p>
-     * ConfigChangeTypes mean the relevant pointcut method.
+     * 切点类型即对应的配置变更入口方法。
      * </p>
      *
-     * @return array of pointcut the methods
+     * @return 需要拦截的切点类型数组
      */
     ConfigChangePointCutTypes[] pointcutMethodNames();
     

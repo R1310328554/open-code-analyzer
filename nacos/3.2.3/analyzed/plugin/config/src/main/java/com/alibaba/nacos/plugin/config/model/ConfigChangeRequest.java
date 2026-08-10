@@ -21,32 +21,64 @@ import com.alibaba.nacos.plugin.config.constants.ConfigChangePointCutTypes;
 import java.util.HashMap;
 
 /**
- * ConfigChangeRequest.
+ * 配置变更插件请求模型。
+ *
+ * <p>封装切点类型与键值对形式的请求参数，供 {@link com.alibaba.nacos.plugin.config.spi.ConfigChangePluginService}
+ * 在 execute 阶段读取上下文信息。</p>
  *
  * @author liyunfei
  */
 public class ConfigChangeRequest {
     
+    /** 本次配置变更对应的切点类型。 */
     private ConfigChangePointCutTypes requestType;
     
+    /** 请求附加参数，初始容量 8。 */
     private HashMap<String, Object> requestArgs = new HashMap<>(8);
     
+    /**
+     * 构造指定切点类型的配置变更请求。
+     *
+     * @param requestType 切点类型
+     */
     public ConfigChangeRequest(ConfigChangePointCutTypes requestType) {
         this.requestType = requestType;
     }
     
+    /**
+     * 获取请求切点类型。
+     *
+     * @return 切点类型
+     */
     public ConfigChangePointCutTypes getRequestType() {
         return requestType;
     }
     
+    /**
+     * 设置请求参数。
+     *
+     * @param key 参数键
+     * @param value 参数值
+     */
     public void setArg(String key, Object value) {
         requestArgs.put(key, value);
     }
     
+    /**
+     * 获取指定键的请求参数。
+     *
+     * @param key 参数键
+     * @return 参数值，不存在时返回 {@code null}
+     */
     public Object getArg(String key) {
         return requestArgs.getOrDefault(key, null);
     }
     
+    /**
+     * 获取全部请求参数。
+     *
+     * @return 参数 Map
+     */
     public HashMap<String, Object> getRequestArgs() {
         return requestArgs;
     }

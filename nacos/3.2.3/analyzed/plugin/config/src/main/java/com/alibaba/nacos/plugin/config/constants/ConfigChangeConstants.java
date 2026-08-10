@@ -17,18 +17,22 @@
 package com.alibaba.nacos.plugin.config.constants;
 
 /**
- * Config change plugin service constants.
+ * 配置变更插件服务相关常量定义。
+ *
+ * <p>包含插件配置前缀、请求参数键名等，供插件实现与框架交互时统一引用。</p>
  *
  * @author liyunfei
  */
 public class ConfigChangeConstants {
     
+    /** Nacos 核心配置插件属性前缀。 */
     public static final String NACOS_CORE_CONFIG_PLUGIN_PREFIX = "nacos.core.config.plugin.";
     
+    /** 插件自定义属性在请求参数中的键名。 */
     public static final String PLUGIN_PROPERTIES = "pluginProperties";
     
     /**
-     * The actual config method args.
+     * 原始配置方法调用参数在请求中的键名。
      */
     public static final String ORIGINAL_ARGS = "originalArgs";
     

@@ -17,16 +17,18 @@
 package com.alibaba.nacos.plugin.control.configs;
 
 /**
- * control plugin configs initializer.
+ * 管控插件配置初始化 SPI 接口。
+ *
+ * <p>实现类通过 SPI 注册，在 {@link ControlConfigs} 单例首次创建时注入各项配置参数。</p>
  *
  * @author shiyiyue
  */
 public interface ControlConfigsInitializer {
     
     /**
-     * init control configs.
+     * 初始化管控配置参数。
      *
-     * @param controlConfigs control configs.
+     * @param controlConfigs 待填充的配置容器
      */
     void initialize(ControlConfigs controlConfigs);
     

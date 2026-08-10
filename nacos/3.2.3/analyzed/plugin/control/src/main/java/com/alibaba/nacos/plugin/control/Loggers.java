@@ -20,18 +20,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * cotrol loggers.
+ * 管控插件模块日志 Logger 集中定义。
+ *
+ * <p>按功能域划分管控主流程、TPS 限流、连接管控等独立 Logger，便于运行时分别调整日志级别。</p>
  *
  * @author shiyiyue
  */
 public class Loggers {
     
+    /** 管控插件主流程日志。 */
     public static final Logger CONTROL =
         LoggerFactory.getLogger("com.alibaba.nacos.plugin.control");
     
+    /** TPS 限流相关日志。 */
     public static final Logger TPS =
         LoggerFactory.getLogger("com.alibaba.nacos.plugin.control.tps");
     
+    /** 连接数管控相关日志。 */
     public static final Logger CONNECTION =
         LoggerFactory.getLogger("com.alibaba.nacos.plugin.control.connection");
     
