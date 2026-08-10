@@ -1,3 +1,5 @@
+// use-callback-ref.ts — Radix 风格回调 ref：避免 callback 作为 prop/依赖触发多余重渲染。
+
 import * as React from 'react';
 
 /**
@@ -5,8 +7,8 @@ import * as React from 'react';
  */
 
 /**
- * A custom hook that converts a callback to a ref to avoid triggering re-renders when passed as a
- * prop or avoid re-executing effects when passed as a dependency
+ * 将 callback 存入 ref 并返回稳定引用函数，
+ * 避免作为 prop 或 effect 依赖时引发多余重渲染或重复执行。
  */
 function useCallbackRef<T extends (...args: never[]) => unknown>(
   callback: T | undefined,

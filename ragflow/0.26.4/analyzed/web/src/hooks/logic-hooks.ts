@@ -1,3 +1,5 @@
+// logic-hooks.ts — 通用业务逻辑 Hooks：分页、SSE 消息、聊天消息列表与表单辅助。
+
 import message from '@/components/ui/message';
 import { Authorization } from '@/constants/authorization';
 import { MessageType } from '@/constants/chat';
@@ -31,6 +33,7 @@ import { useTranslate } from './common-hooks';
 import { useSetPaginationParams } from './route-hook';
 import { useSaveSetting } from './use-user-setting-request';
 
+/** 返回上一次渲染周期的 value 快照。 */
 export function usePrevious<T>(value: T) {
   const ref = useRef<T>();
   useEffect(() => {
@@ -39,6 +42,7 @@ export function usePrevious<T>(value: T) {
   return ref.current;
 }
 
+/** 维护当前选中记录 state，供列表/详情联动使用。 */
 export const useSetSelectedRecord = <T = IKnowledgeFile>() => {
   const [currentRecord, setCurrentRecord] = useState<T>({} as T);
 
@@ -49,6 +53,7 @@ export const useSetSelectedRecord = <T = IKnowledgeFile>() => {
   return { currentRecord, setRecord };
 };
 
+/** 切换界面语言并持久化到用户设置。 */
 export const useChangeLanguage = () => {
   const { saveSetting } = useSaveSetting();
 
@@ -63,6 +68,7 @@ export const useChangeLanguage = () => {
   return changeLanguage;
 };
 
+/** 结合路由 query 的分页配置，page/size 同步到 URL。 */
 export const useGetPaginationWithRouter = () => {
   const { t } = useTranslate('common');
   const {
@@ -111,6 +117,7 @@ export const useGetPaginationWithRouter = () => {
   };
 };
 
+/** 搜索框输入与分页联动：输入变更时重置到第 1 页。 */
 export const useHandleSearchChange = () => {
   const [searchString, setSearchString] = useState('');
   const { pagination, setPagination } = useGetPaginationWithRouter();
@@ -126,6 +133,7 @@ export const useHandleSearchChange = () => {
   return { handleInputChange, searchString, pagination, setPagination };
 };
 
+/** 纯本地 state 分页（不写入路由 query）。 */
 export const useGetPagination = () => {
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10 });
   const { t } = useTranslate('common');
@@ -155,10 +163,12 @@ export const useGetPagination = () => {
   };
 };
 
+/** 应用静态配置（/conf.json）：如 appName。 */
 export interface AppConf {
   appName: string;
 }
 
+/** 挂载时拉取 /conf.json 并缓存 AppConf。 */
 export const useFetchAppConf = () => {
   const [appConf, setAppConf] = useState<AppConf>({} as AppConf);
   const fetchAppConf = useCallback(async () => {
@@ -204,6 +214,7 @@ function useSetDoneRecord() {
   };
 }
 
+/** POST + SSE 流式接收 LLM 回复，增量合并 answer 并支持多 chatBox 并发 done 状态。 */
 export const useSendMessageWithSse = () => {
   const [answer, setAnswer] = useState<IAnswer>({} as IAnswer);
   const [done, setDone] = useState(true);
@@ -345,6 +356,7 @@ export const useSendMessageWithSse = () => {
   };
 };
 
+/** 调用 TTS SSE 接口朗读文本，失败时 toast 提示。 */
 export const useSpeechWithSse = (url: string = api.chatsTts) => {
   const read = useCallback(
     async (body: any) => {
@@ -372,8 +384,9 @@ export const useSpeechWithSse = (url: string = api.chatsTts) => {
   return { read };
 };
 
-//#region chat hooks
+//#region 聊天相关 Hooks
 
+/** 消息列表自动滚底：用户未上滑时新消息到达后 scrollToBottom。 */
 export const useScrollToBottom = (
   messages?: unknown,
   containerRef?: React.RefObject<HTMLDivElement>,
@@ -431,6 +444,7 @@ export const useScrollToBottom = (
   return { scrollRef: ref, isAtBottom, scrollToBottom };
 };
 
+/** 聊天输入框：将字面量 \n/\t 转为真实换行与制表符。 */
 export const useHandleMessageInputChange = () => {
   const [value, setValue] = useState('');
 
@@ -447,6 +461,7 @@ export const useHandleMessageInputChange = () => {
   };
 };
 
+/** 维护前端派生消息列表：增删问答对、流式更新、截断与开场白。 */
 export const useSelectDerivedMessages = () => {
   const [derivedMessages, setDerivedMessages] = useState<IMessage[]>([]);
 
@@ -646,10 +661,12 @@ export const useSelectDerivedMessages = () => {
   };
 };
 
+/** 按 messageId 删除消息的回调接口。 */
 export interface IRemoveMessageById {
   removeMessageById(messageId: string): void;
 }
 
+/** 在 conversation state 中截断指定消息之后的记录并清空末条 assistant 内容。 */
 export const useRemoveMessagesAfterCurrentMessage = (
   setCurrentConversation: (
     callback: (state: IClientConversation) => IClientConversation,
@@ -687,10 +704,12 @@ export const useRemoveMessagesAfterCurrentMessage = (
   return { removeMessagesAfterCurrentMessage };
 };
 
+/** 可选的 regenerateMessage 回调接口。 */
 export interface IRegenerateMessage {
   regenerateMessage?: (message: Message) => void;
 }
 
+/** 重新生成：截断后续消息并以新 id 重发同一问题。 */
 export const useRegenerateMessage = ({
   removeMessagesAfterCurrentMessage,
   sendMessage,
@@ -734,6 +753,7 @@ export const useRegenerateMessage = ({
  * used to switch between different items, similar to radio
  * @returns
  */
+/** 单选切换：类似 radio，点击项更新 selectedId。 */
 export const useSelectItem = (defaultId?: string) => {
   const [selectedId, setSelectedId] = useState('');
 
@@ -758,6 +778,7 @@ const ChunkTokenNumMap = {
   knowledge_graph: 8192,
 };
 
+/** 分块方法变更时自动写入 parser_config.chunk_token_num 预设值。 */
 export const useHandleChunkMethodSelectChange = (form: FormInstance) => {
   // const form = Form.useFormInstance();
   const handleChange = useCallback(
@@ -776,6 +797,7 @@ export const useHandleChunkMethodSelectChange = (form: FormInstance) => {
 };
 
 // reset form fields when modal is form, closed
+/** Modal 从打开变为关闭时 resetFields 清空表单。 */
 export const useResetFormOnCloseModal = ({
   form,
   visible,

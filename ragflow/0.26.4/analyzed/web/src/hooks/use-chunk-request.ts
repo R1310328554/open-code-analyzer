@@ -1,3 +1,5 @@
+// use-chunk-request.ts — 知识库 Chunk CRUD Hooks：列表分页、创建/删除/切换可用状态。
+
 import message from '@/components/ui/message';
 import { PaginationProps } from '@/interfaces/antd-compat';
 import { ResponseGetType, ResponseType } from '@/interfaces/database/base';
@@ -16,6 +18,7 @@ import {
   useSetPaginationParams,
 } from './route-hook';
 
+/** Chunk 列表页 UI 状态：搜索、分页、available 筛选与 dataUpdatedAt。 */
 export interface IChunkListResult {
   searchString?: string;
   handleInputChange?: React.ChangeEventHandler<HTMLInputElement>;
@@ -26,6 +29,7 @@ export interface IChunkListResult {
   dataUpdatedAt?: number; // Timestamp when data was last updated - useful for cache busting
 }
 
+/** 从 React Query 缓存读取最近一次 fetchChunkList 结果。 */
 export const useSelectChunkList = () => {
   const queryClient = useQueryClient();
   const data = queryClient.getQueriesData<{
@@ -37,6 +41,7 @@ export const useSelectChunkList = () => {
   return data?.at(-1)?.[1];
 };
 
+/** 批量删除 Chunk，成功后重置分页并失效列表缓存。 */
 export const useDeleteChunk = () => {
   const queryClient = useQueryClient();
   const { setPaginationParams } = useSetPaginationParams();
@@ -63,6 +68,7 @@ export const useDeleteChunk = () => {
   return { data, loading, deleteChunk: mutateAsync };
 };
 
+/** 创建或更新 Chunk（有 chunk_id 时走 setChunk）。 */
 export const useCreateChunk = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -96,6 +102,7 @@ export const useCreateChunk = () => {
   return { data, loading, createChunk: mutateAsync };
 };
 
+/** 按 knowledgeId/doc_id/chunk_id 拉取单个 Chunk 详情。 */
 export const useFetchChunk = (
   chunkId?: string,
   documentId?: string,
@@ -120,6 +127,7 @@ export const useFetchChunk = (
   return data;
 };
 
+/** 分页拉取文档 Chunk 列表，支持关键词与 available_int 筛选。 */
 export const useFetchNextChunkList = (
   enabled = true,
 ): ResponseGetType<{
@@ -209,6 +217,7 @@ export const useFetchNextChunkList = (
   };
 };
 
+/** 批量切换 Chunk 启用/禁用（available_int）。 */
 export const useSwitchChunk = () => {
   const { t } = useTranslation();
   const { knowledgeId } = useGetKnowledgeSearchParams();

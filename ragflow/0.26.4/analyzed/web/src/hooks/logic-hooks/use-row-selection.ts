@@ -1,7 +1,10 @@
+// use-row-selection.ts — TanStack Table 行选中 state 与选中 id 解析。
+
 import { RowSelectionState } from '@tanstack/react-table';
 import { isEmpty } from 'lodash';
 import { useCallback, useMemo, useState } from 'react';
 
+/** 维护 RowSelectionState，提供清空、选中计数与是否为空。 */
 export function useRowSelection() {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
@@ -22,8 +25,10 @@ export function useRowSelection() {
   };
 }
 
+/** useRowSelection 返回值类型别名。 */
 export type UseRowSelectionType = ReturnType<typeof useRowSelection>;
 
+/** 从 rowSelection 解析选中行 id：兼容索引键与 getRowId 字符串键两种模式。 */
 export function useSelectedIds<T extends Array<{ id: string }>>(
   rowSelection: RowSelectionState,
   list: T,

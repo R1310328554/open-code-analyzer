@@ -1,3 +1,5 @@
+// use-chat-request.ts — 聊天/会话 API Hooks：Dialog CRUD、Session 管理与文件上传解析。
+
 import { FileUploadProps } from '@/components/file-upload';
 import message from '@/components/ui/message';
 import { ChatSearchParams } from '@/constants/chat';
@@ -28,6 +30,7 @@ import {
 } from './logic-hooks';
 import { useHandleSearchStrChange } from './logic-hooks/use-change-search';
 
+/** React Query 缓存键枚举：聊天与 Session 相关 API 动作。 */
 export const enum ChatApiAction {
   FetchChatList = 'fetchChatList',
   DeleteChat = 'deleteChat',
@@ -50,6 +53,7 @@ export const enum ChatApiAction {
   CreateSharedConversation = 'createSharedConversation',
 }
 
+/** 从 URL 读取 dialogId、conversationId、isNew 等聊天路由参数。 */
 export const useGetChatSearchParams = () => {
   const [currentQueryParameters] = useSearchParams();
 
@@ -61,6 +65,7 @@ export const useGetChatSearchParams = () => {
   };
 };
 
+/** 分页聊天列表：关键词防抖 + 路由分页。 */
 export const useFetchChatList = () => {
   const { searchString, handleInputChange } = useHandleSearchChange();
   const { pagination, setPagination } = useGetPaginationWithRouter();
@@ -116,6 +121,7 @@ export const useFetchChatList = () => {
   };
 };
 
+/** 删除 Dialog 并刷新列表。 */
 export const useDeleteChat = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -141,6 +147,7 @@ export const useDeleteChat = () => {
   return { data, loading, deleteChat: mutateAsync };
 };
 
+/** 创建新 Dialog。 */
 export const useCreateChat = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -167,6 +174,7 @@ export const useCreateChat = () => {
   return { data, loading, createChat: mutateAsync };
 };
 
+/** 全量更新 Dialog 配置。 */
 export const useUpdateChat = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -203,6 +211,7 @@ export const useUpdateChat = () => {
   return { data, loading, updateChat: mutateAsync };
 };
 
+/** 部分 PATCH 更新 Dialog。 */
 export const usePatchChat = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -239,6 +248,7 @@ export const usePatchChat = () => {
   return { data, loading, patchChat: mutateAsync };
 };
 
+/** 按路由 id 拉取单个 Dialog 详情。 */
 export const useFetchChat = () => {
   const { id } = useParams();
 
@@ -263,6 +273,7 @@ export const useFetchChat = () => {
 
 //#region Session
 
+/** 拉取当前 Dialog 下 Session 列表，支持本地 searchString 过滤。 */
 export const useFetchSessionList = () => {
   const { id } = useParams();
 
@@ -295,6 +306,7 @@ export const useFetchSessionList = () => {
   return { data, loading, refetch, searchString, handleInputChange };
 };
 
+/** 手动 mutation 拉取单个 Session，messages 补 UUID。 */
 export function useFetchSessionManually() {
   const { id: chatId } = useParams();
   const {
@@ -320,6 +332,7 @@ export function useFetchSessionManually() {
   return { data, loading, fetchSessionManually: mutateAsync };
 }
 
+/** 在指定 chatId 下创建新 Session。 */
 export const useCreateSession = () => {
   const queryClient = useQueryClient();
   const {
@@ -407,6 +420,7 @@ export const useRemoveSessions = () => {
   return { data, loading, removeSessions: mutateAsync };
 };
 
+/** 删除当前会话中的指定消息。 */
 export const useDeleteMessage = () => {
   const { conversationId } = useGetChatSearchParams();
   const { id: chatId } = useParams();
@@ -435,6 +449,7 @@ export const useDeleteMessage = () => {
   return { data, loading, deleteMessage: mutateAsync };
 };
 
+/** 提交消息点赞/点踩与文字反馈。 */
 export const useFeedback = () => {
   const { conversationId } = useGetChatSearchParams();
   const { id: chatId } = useParams();
@@ -471,6 +486,7 @@ type X = {
   conversationId?: string;
 };
 
+/** 上传文件到会话并触发解析，支持 AbortController 取消。 */
 export function useUploadAndParseFile() {
   const { conversationId: id } = useGetChatSearchParams();
   const { t } = useTranslation();
@@ -528,6 +544,7 @@ export function useUploadAndParseFile() {
   return { data, loading, uploadAndParseFile: mutateAsync, cancel };
 }
 
+/** 共享聊天模式下拉取外部聊天元信息。 */
 export const useFetchExternalChatInfo = () => {
   const { sharedId: id } = useGetSharedChatSearchParams();
 
@@ -555,6 +572,7 @@ export const useFetchExternalChatInfo = () => {
 
 //#region search page
 
+/** 根据提问生成思维导图数据（mutation）。 */
 export const useFetchMindMap = () => {
   const {
     data,
@@ -580,6 +598,7 @@ export const useFetchMindMap = () => {
   return { data, loading, fetchMindMap: mutateAsync };
 };
 
+/** 根据问题拉取相关推荐问句列表。 */
 export const useFetchRelatedQuestions = () => {
   const {
     data,

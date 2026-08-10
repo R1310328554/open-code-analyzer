@@ -1,13 +1,14 @@
+// parser-config-utils.ts — 解析器/Raptor 配置提取：已知字段归位，未知字段合并进 ext。
+
 /**
- * Utility functions for extracting parser and raptor config extensions.
- * These functions extract known fields from parser/raptor config objects
- * and merge unknown fields into the `ext` field for flexible configuration.
+ * 解析器与 Raptor 配置工具：从配置对象提取已知字段，
+ * 将其余未知键合并到 ext 以支持灵活扩展。
  */
 
 /**
- * Extracts Raptor configuration with extra fields merged into ext.
- * @param raptorConfig - The raptor configuration object
- * @returns Processed raptor config with extra fields in ext
+ * 提取 Raptor 配置：归一化 clustering_method/tree_builder，其余字段并入 ext。
+ * @param raptorConfig - Raptor 配置对象
+ * @returns 处理后的 Raptor 配置
  */
 export const extractRaptorConfigExt = (
   raptorConfig: Record<string, any> | undefined,
@@ -51,9 +52,9 @@ export const extractRaptorConfigExt = (
 };
 
 /**
- * Extracts Parser configuration with extra fields merged into ext.
- * @param parserConfig - The parser configuration object
- * @returns Processed parser config with extra fields in ext
+ * 提取 Parser 配置：拆分 parent_child、递归处理 raptor，未知字段并入 ext。
+ * @param parserConfig - 解析器配置对象
+ * @returns 处理后的 Parser 配置
  */
 export const extractParserConfigExt = (
   parserConfig: Record<string, any> | undefined,

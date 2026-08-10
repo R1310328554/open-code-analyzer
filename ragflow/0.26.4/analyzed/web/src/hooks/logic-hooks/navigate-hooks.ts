@@ -1,19 +1,24 @@
+// navigate-hooks.ts — 页面导航 Hook：数据集、聊天、Agent、搜索等路由跳转封装。
+
 import { AgentCategory, AgentQuery } from '@/constants/agent';
 import { NavigateToDataflowResultProps } from '@/pages/dataflow-result/interface';
 import { Routes } from '@/routes';
 import { useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 
+/** URL 查询参数键名枚举（knowledgeId、id）。 */
 export enum QueryStringMap {
   KnowledgeId = 'knowledgeId',
   id = 'id',
 }
 
+/** 聚合各业务模块 navigateTo* 方法，统一基于 react-router navigate。 */
 export const useNavigatePage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { id } = useParams();
 
+  /** 跳转数据集列表，可选 isCreate 打开创建弹窗。 */
   const navigateToDatasetList = useCallback(
     ({ isCreate = false }: { isCreate?: boolean }) => {
       if (isCreate) {
@@ -88,6 +93,7 @@ export const useNavigatePage = () => {
     navigate(Routes.AgentList);
   }, [navigate]);
 
+  /** 跳转 Agent 画布页，可选附带 category 查询参数。 */
   const navigateToAgent = useCallback(
     (id: string, category?: AgentCategory) => () => {
       navigate(`${Routes.Agent}/${id}?${AgentQuery.Category}=${category}`);
@@ -140,6 +146,7 @@ export const useNavigatePage = () => {
     [navigate],
   );
 
+  /** 读取当前 URL 中 knowledgeId/id 等查询参数。 */
   const getQueryString = useCallback(
     (queryStringKey?: QueryStringMap) => {
       const allQueryString = {
@@ -181,6 +188,7 @@ export const useNavigatePage = () => {
     [navigate],
   );
 
+  /** 跳转数据流解析结果页，props 序列化为 query string。 */
   const navigateToDataflowResult = useCallback(
     (props: NavigateToDataflowResultProps) => () => {
       const params: string[] = [];

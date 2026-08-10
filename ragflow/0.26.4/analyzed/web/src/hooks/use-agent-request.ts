@@ -1,3 +1,5 @@
+// use-agent-request.ts — Agent 画布 API Hooks：列表/CRUD、文件上传、Trace、会话与 Webhook 轮询。
+
 import { FileUploadProps } from '@/components/file-upload';
 import { useHandleFilterSubmit } from '@/components/list-filter-bar/use-handle-filter-submit';
 import message from '@/components/ui/message';
@@ -44,6 +46,7 @@ import {
   useHandleSearchChange,
 } from './logic-hooks';
 
+/** React Query mutationKey/queryKey 枚举：Agent 相关 API 动作标识。 */
 export const enum AgentApiAction {
   FetchAgentListByPage = 'fetchAgentListByPage',
   FetchAllAgentList = 'fetchAllAgentList',
@@ -79,6 +82,7 @@ export const enum AgentApiAction {
   UpdateAgentTags = 'updateAgentTags',
 }
 
+/** 拉取 Agent 模板列表。 */
 export const useFetchAgentTemplates = () => {
   const { data } = useQuery<IFlowTemplate[]>({
     queryKey: [AgentApiAction.FetchAgentTemplates],
@@ -129,6 +133,7 @@ const buildAgentListParams = ({
   return params;
 };
 
+/** 分页 Agent 列表：关键词防抖、筛选 owner/tags/canvasCategory 与路由分页联动。 */
 export const useFetchAgentListByPage = () => {
   const { searchString, handleInputChange } = useHandleSearchChange();
   const { pagination, setPagination } = useGetPaginationWithRouter();
@@ -200,6 +205,7 @@ export const useFetchAgentListByPage = () => {
   };
 };
 
+/** 一次性拉取全部 AgentCanvas 类别画布（pageSize 极大）。 */
 export function useFetchAllAgentList() {
   const { data, isFetching: loading } = useQuery<IFlow[]>({
     queryKey: [AgentApiAction.FetchAllAgentList],
@@ -222,6 +228,7 @@ export function useFetchAllAgentList() {
   return { data, loading };
 }
 
+/** 更新 Agent 标题/描述/权限/头像等元信息。 */
 export const useUpdateAgentSetting = () => {
   const queryClient = useQueryClient();
 
@@ -251,6 +258,7 @@ export const useUpdateAgentSetting = () => {
   return { data, loading, updateAgentSetting: mutateAsync };
 };
 
+/** 复制 Agent：拉详情后以「副本」标题 createAgent。 */
 export const useDuplicateAgent = () => {
   const queryClient = useQueryClient();
   const {
@@ -304,6 +312,7 @@ export const useDuplicateAgent = () => {
   return { data, loading, duplicateAgent: mutateAsync };
 };
 
+/** 删除 Agent 并刷新列表缓存。 */
 export const useDeleteAgent = () => {
   const queryClient = useQueryClient();
   const {
@@ -326,6 +335,7 @@ export const useDeleteAgent = () => {
   return { data, loading, deleteAgent: mutateAsync };
 };
 
+/** Agent 标签及出现次数统计。 */
 export interface IAgentTagCount {
   tag: string;
   count: number;
@@ -377,6 +387,7 @@ export const useUpdateAgentTags = () => {
   return { loading, updateAgentTags: mutateAsync };
 };
 
+/** 按路由 id 或 sharedId 拉取 Agent 详情，补全 dsl.messages UUID 与 SysHistory。 */
 export const useFetchAgent = (): {
   data: IFlow;
   loading: boolean;
@@ -439,6 +450,7 @@ export const useResetAgent = () => {
   return { data, loading, resetAgent: mutateAsync };
 };
 
+/** 创建或更新 Agent DSL/元数据，可选 toast 与缓存失效。 */
 export const useSetAgent = (showMessage: boolean = true) => {
   const { id } = useParams();
   const queryClient = useQueryClient();
@@ -492,6 +504,7 @@ export const useSetAgent = (showMessage: boolean = true) => {
 };
 
 // Only one file can be uploaded at a time
+/** 向 Agent 上传单个或多个文件（FormData），同时支持 shared_id 路由。 */
 export const useUploadAgentFile = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -583,6 +596,7 @@ export const useUploadAgentFileWithProgress = (identifier?: string | null) => {
   return { data, loading, uploadAgentFile: mutateAsync };
 };
 
+/** 按 messageId 轮询 Agent 执行 Trace；共享模式走 beta token 接口。 */
 export const useFetchMessageTrace = (canvasId?: string, isShare?: boolean) => {
   const { id } = useParams();
   // In shared mode there's no :id route param and `canvasId` actually carries
@@ -652,6 +666,7 @@ export const useTestDbConnect = () => {
   return { data, loading, testDbConnect: mutateAsync };
 };
 
+/** 单组件调试：向指定 component_id 提交 params 并返回结果。 */
 export const useDebugSingle = () => {
   const { id } = useParams();
   const {
@@ -746,6 +761,7 @@ export const useFetchVersion = (
   return { data, loading };
 };
 
+/** 分页拉取 Agent 画布运行日志/会话列表。 */
 export const useFetchAgentLog = (searchParams: IAgentLogsRequest) => {
   const { id } = useParams();
   const {
@@ -955,6 +971,7 @@ export const useFetchFlowSSE = (): {
   return { data, loading, refetch };
 };
 
+/** Webhook 触发 Trace 轮询：维护 webhook_id/since_ts，finished 时停止。 */
 export const useFetchWebhookTrace = (autoStart: boolean = true) => {
   const { id } = useParams();
   const [currentWebhookId, setCurrentWebhookId] = useState<string>('');
@@ -1022,6 +1039,7 @@ export const useFetchWebhookTrace = (autoStart: boolean = true) => {
   };
 };
 
+/** 为画布创建新会话并刷新会话列表缓存。 */
 export function useCreateAgentSession() {
   const queryClient = useQueryClient();
 
@@ -1047,6 +1065,7 @@ export function useCreateAgentSession() {
   return { data, loading, createAgentSession: mutateAsync };
 }
 
+/** 删除指定 canvasId 下的 sessionId 会话。 */
 export function useDeleteAgentSession() {
   const queryClient = useQueryClient();
 
