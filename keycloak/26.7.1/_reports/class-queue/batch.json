@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:43:12Z",
-  "files": [
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/rest/TestSamlApplicationResourceProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/rest/TestingResourceProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/rest/TestingResourceProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/rest/representation/AuthenticatorState.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/rest/representation/JGroupsStats.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/rest/representation/RemoteCacheStats.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/rest/representation/TestAuthenticationChannelRequest.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/rest/resource/TestingOIDCEndpointsApplicationResource.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/services/clientpolicy/condition/TestRaiseExceptionCondition.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/services/clientpolicy/condition/TestRaiseExceptionConditionFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/services/clientpolicy/executor/TestEnhancedPluggableTokenManagerExecutor.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/services/clientpolicy/executor/TestEnhancedPluggableTokenManagerExecutorFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/services/clientpolicy/executor/TestRaiseExceptionExecutor.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/services/clientpolicy/executor/TestRaiseExceptionExecutorFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/theme/CustomAccountResourceProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 58,
-  "done": 5925
+  "done": 5940
 }
