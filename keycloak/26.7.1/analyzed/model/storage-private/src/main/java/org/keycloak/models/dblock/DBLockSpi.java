@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 数据库锁 SPI：向 Keycloak 注册 {@link DBLockProvider} 及其工厂实现。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DBLockSpi implements Spi {
 
+    /** 内部 SPI，不对外暴露给扩展模块配置。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称，对应配置键 {@code dblock}。 */
     @Override
     public String getName() {
         return "dblock";
     }
 
+    /** 本 SPI 提供的 Provider 接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return DBLockProvider.class;
     }
 
+    /** 本 SPI 对应的 ProviderFactory 实现类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return DBLockProviderFactory.class;

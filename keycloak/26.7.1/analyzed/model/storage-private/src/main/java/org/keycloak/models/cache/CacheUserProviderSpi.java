@@ -22,26 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 用户缓存 SPI：向 Keycloak 注册 {@link UserCache} 及其工厂实现。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CacheUserProviderSpi implements Spi {
 
+    /** 内部 SPI，不对外暴露给扩展模块配置。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称，对应配置键 {@code userCache}。 */
     @Override
     public String getName() {
         return "userCache";
     }
 
+    /** 本 SPI 提供的 Provider 接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return UserCache.class;
     }
 
+    /** 本 SPI 对应的 ProviderFactory 实现类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return UserCacheProviderFactory.class;

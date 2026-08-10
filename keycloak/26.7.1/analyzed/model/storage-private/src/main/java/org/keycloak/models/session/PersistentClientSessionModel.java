@@ -18,22 +18,28 @@
 package org.keycloak.models.session;
 
 /**
+ * 持久化客户端会话的数据传输模型：关联用户会话、客户端及 JSON 序列化负载。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface PersistentClientSessionModel {
 
+    /** 所属用户会话 ID。 */
     String getUserSessionId();
 
     void setUserSessionId(String userSessionId);
 
+    /** 客户端内部 UUID。 */
     String getClientId();
 
     void setClientId(String clientId);
 
+    /** 会话最后活动时间戳（秒）。 */
     int getTimestamp();
 
     void setTimestamp(int timestamp);
 
+    /** JSON 序列化的会话扩展数据。 */
     String getData();
 
     void setData(String data);

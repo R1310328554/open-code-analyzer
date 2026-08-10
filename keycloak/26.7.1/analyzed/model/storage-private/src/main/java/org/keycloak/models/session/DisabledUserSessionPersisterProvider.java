@@ -32,13 +32,14 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
 
 /**
- * Persistence of userSessions is disabled . Useful just if you never need survive of userSessions/clientSessions
- * among server restart. Offline sessions / offline tokens will be invalid after server restart as well,
+ * 禁用用户会话持久化的 Provider 实现：所有读写均为空操作。
+ * 适用于无需在服务器重启后保留在线/离线会话的场景；重启后离线令牌亦会失效。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DisabledUserSessionPersisterProvider implements UserSessionPersisterProviderFactory, UserSessionPersisterProvider {
 
+    /** Provider 标识符，配置值为 {@code disabled}。 */
     public static final String ID = "disabled";
 
     @Override

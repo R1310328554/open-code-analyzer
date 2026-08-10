@@ -36,6 +36,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * {@link AuthenticatedClientSessionModel} 的持久化适配器：将客户端会话字段映射到
+ * {@link PersistentClientSessionModel}，并通过 JSON 序列化存储扩展数据。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class PersistentAuthenticatedClientSessionAdapter implements AuthenticatedClientSessionModel {
@@ -48,6 +51,7 @@ public class PersistentAuthenticatedClientSessionAdapter implements Authenticate
 
     private PersistentClientSessionData data;
 
+    /** 从运行时会话模型构造持久化适配器，并初始化 JSON 负载字段。 */
     public PersistentAuthenticatedClientSessionAdapter(KeycloakSession session, AuthenticatedClientSessionModel clientSession) {
         data = new PersistentClientSessionData();
         data.setAction(clientSession.getAction());
@@ -103,6 +107,7 @@ public class PersistentAuthenticatedClientSessionAdapter implements Authenticate
         userSession = clientSession.getUserSession();
     }
 
+    /** 从已持久化的 {@link PersistentClientSessionModel} 恢复适配器实例。 */
     public PersistentAuthenticatedClientSessionAdapter(KeycloakSession session, PersistentClientSessionModel model, RealmModel realm, ClientModel client, UserSessionModel userSession) {
         this.session = session;
         this.model = model;
@@ -111,7 +116,7 @@ public class PersistentAuthenticatedClientSessionAdapter implements Authenticate
         this.userSession = userSession;
     }
 
-    // Lazily init data
+    // 延迟反序列化 JSON 扩展数据
     private PersistentClientSessionData getData() {
         if (data == null) {
             try {
@@ -124,11 +129,11 @@ public class PersistentAuthenticatedClientSessionAdapter implements Authenticate
         return data;
     }
 
-    // Write updated model with latest serialized data
+    /** 将内存中的扩展数据序列化写回 {@link PersistentClientSessionModel} 并返回更新后的模型。 */
     public PersistentClientSessionModel getUpdatedModel() {
         try {
             if (data != null) {
-                // If data hasn't been initialized, it hasn't been touched and is unchanged. So need to deserialize and serialize it
+                // 若 data 尚未初始化，说明未被修改，无需重复序列化
                 String updatedData = JsonSerialization.writeValueAsString(getData());
                 this.model.setData(updatedData);
             }
@@ -265,6 +270,7 @@ public class PersistentAuthenticatedClientSessionAdapter implements Authenticate
                 "}";
     }
 
+    /** 客户端会话 JSON 负载的内部结构，对应持久化 {@code data} 字段。 */
     @JsonIgnoreProperties(ignoreUnknown = true)
     protected static class PersistentClientSessionData {
 
@@ -280,7 +286,7 @@ public class PersistentAuthenticatedClientSessionAdapter implements Authenticate
         @JsonProperty("action")
         private String action;
 
-        // TODO: Keeping those just for backwards compatibility. @JsonIgnoreProperties doesn't work on Wildfly - probably due to classloading issues
+        // 仅为向后兼容保留；Wildfly 上 @JsonIgnoreProperties 可能因类加载问题失效
         @JsonProperty("userSessionNotes")
         private Map<String, String> userSessionNotes;
         @JsonProperty("executionStatus")

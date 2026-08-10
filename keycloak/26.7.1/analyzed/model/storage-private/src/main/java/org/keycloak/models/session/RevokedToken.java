@@ -18,6 +18,10 @@
 package org.keycloak.models.session;
 
 /**
+ * 已撤销令牌记录：保存令牌标识及其过期时间，供撤销列表持久化与校验使用。
+ *
+ * @param tokenId 被撤销令牌的唯一标识
+ * @param expiry  令牌过期时间（Unix 纪元秒）
  * @author Alexander Schwartz
  */
 public record RevokedToken(String tokenId, long expiry) {

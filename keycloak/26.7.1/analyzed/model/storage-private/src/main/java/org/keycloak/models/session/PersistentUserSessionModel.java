@@ -18,26 +18,33 @@
 package org.keycloak.models.session;
 
 /**
+ * 持久化用户会话的数据传输模型：存储会话元数据及 JSON 序列化的扩展字段。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface PersistentUserSessionModel {
 
+    /** 用户会话 ID。 */
     String getUserSessionId();
 
     void setUserSessionId(String userSessionId);
 
+    /** 会话创建时间（秒）。 */
     int getStarted();
 
     void setStarted(int started);
 
+    /** 最近一次会话刷新时间（秒）。 */
     int getLastSessionRefresh();
 
     void setLastSessionRefresh(int lastSessionRefresh);
 
+    /** 是否为离线会话。 */
     boolean isOffline();
 
     void setOffline(boolean offline);
 
+    /** JSON 序列化的会话扩展数据。 */
     String getData();
 
     void setData(String data);
@@ -48,6 +55,7 @@ public interface PersistentUserSessionModel {
 
     void setBrokerSessionId(String brokerSessionId);
 
+    /** 是否勾选“记住我”。 */
     boolean isRememberMe();
 
     void setRememberMe(boolean rememberMe);

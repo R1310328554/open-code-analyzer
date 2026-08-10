@@ -22,6 +22,9 @@ import org.keycloak.models.KeycloakSession;
 import org.jboss.logging.Logger;
 
 /**
+ * 数据库锁管理器：从 {@link KeycloakSession} 获取 {@link DBLockProvider}，
+ * 并在启动时处理强制解锁等全局锁协调逻辑。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DBLockManager {
@@ -30,10 +33,12 @@ public class DBLockManager {
 
     private final KeycloakSession session;
 
+    /** 绑定当前 Keycloak 会话，后续通过该会话解析锁 Provider。 */
     public DBLockManager(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 检查系统属性是否要求启动时强制释放 DB 锁（生产环境慎用）。 */
     public void checkForcedUnlock() {
         if (Boolean.getBoolean("keycloak.dblock.forceUnlock")) {
             DBLockProvider lock = getDBLock();
@@ -46,10 +51,12 @@ public class DBLockManager {
         }
     }
 
+    /** 获取当前会话关联的 {@link DBLockProvider} 实例。 */
     public DBLockProvider getDBLock() {
         return session.getProvider(DBLockProvider.class);
     }
 
+    /** 获取 {@link DBLockProviderFactory}，用于访问锁 Provider 的配置与能力。 */
     public DBLockProviderFactory getDBLockFactory() {
         return (DBLockProviderFactory) session.getKeycloakSessionFactory().getProviderFactory(DBLockProvider.class);
     }

@@ -20,12 +20,12 @@ package org.keycloak.models.dblock;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link DBLockProvider} 工厂 SPI 接口，用于创建数据库锁 Provider 实例。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface DBLockProviderFactory extends ProviderFactory<DBLockProvider> {
 
-    /**
-     * Useful for testing to override provided configuration
-     */
+    /** 测试场景下覆盖锁重检间隔与等待超时（毫秒）。 */
     void setTimeouts(long lockRecheckTimeMillis, long lockWaitTimeoutMillis);
 }

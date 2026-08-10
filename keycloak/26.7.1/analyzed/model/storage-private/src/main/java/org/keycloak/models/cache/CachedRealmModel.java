@@ -24,42 +24,40 @@ import org.keycloak.models.StorageProviderRealmModel;
 import org.keycloak.provider.ProviderEvent;
 
 /**
- * Cached realms will implement this interface
+ * 已缓存的 Realm 模型应实现此接口，用于在缓存层与底层存储之间切换访问。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface CachedRealmModel extends StorageProviderRealmModel {
 
+    /** Realm 缓存相关事件，携带缓存模型与当前 {@link KeycloakSession}。 */
     interface RealmCachedEvent extends ProviderEvent {
         CachedRealmModel getRealm();
         KeycloakSession getKeycloakSession();
     }
 
     /**
-     * Invalidates the cache for this model and returns a delegate that represents the actual data provider
+     * 使本模型的缓存失效，并返回代表实际数据 Provider 的委托对象以便更新。
      *
-     * @return
+     * @return 可写操作的底层 {@link RealmModel} 委托
      */
     RealmModel getDelegateForUpdate();
 
-    /**
-     * Invalidate the cache for this model
-     *
-     */
+    /** 使本模型的缓存失效。 */
     void invalidate();
 
     /**
-     * When was the model was loaded from database.
+     * 返回模型从数据库加载时的时间戳。
      *
-     * @return
+     * @return 缓存加载时刻（毫秒）
      */
     long getCacheTimestamp();
 
     /**
-     * Returns a map that contains custom things that are cached along with this model.  You can write to this map.
+     * 返回与本模型一同缓存的自定义附加数据映射；调用方可向该映射写入条目。
      *
-     * @return
+     * @return 可写的附加缓存数据映射
      */
     ConcurrentHashMap getCachedWith();
 }

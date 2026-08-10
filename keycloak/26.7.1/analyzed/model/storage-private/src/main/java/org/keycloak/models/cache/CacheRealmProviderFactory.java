@@ -20,6 +20,8 @@ package org.keycloak.models.cache;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link CacheRealmProvider} 工厂 SPI 接口，用于创建 Realm 缓存 Provider 实例。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */

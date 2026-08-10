@@ -40,6 +40,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 
 /**
+ * {@link OfflineUserSessionModel} 的持久化适配器：在用户会话与
+ * {@link PersistentUserSessionModel} 之间转换，并懒加载 JSON 扩展数据与客户端会话。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class PersistentUserSessionAdapter implements OfflineUserSessionModel {
@@ -54,6 +57,7 @@ public class PersistentUserSessionAdapter implements OfflineUserSessionModel {
     private PersistentUserSessionData data;
     private Consumer<Map<String, AuthenticatedClientSessionModel>> clientSessionsLoader = ignored -> {};
 
+    /** 从运行时会话模型构造持久化适配器，复制元数据并保留客户端会话引用。 */
     public PersistentUserSessionAdapter(UserSessionModel other) {
         this.data = new PersistentUserSessionData();
         data.setAuthMethod(other.getAuthMethod());
@@ -160,6 +164,7 @@ public class PersistentUserSessionAdapter implements OfflineUserSessionModel {
         this.authenticatedClientSessions = other.getAuthenticatedClientSessions();
     }
 
+    /** 从已持久化的 {@link PersistentUserSessionModel} 恢复适配器实例。 */
     public PersistentUserSessionAdapter(KeycloakSession session, PersistentUserSessionModel model, RealmModel realm, String userId, Map<String, AuthenticatedClientSessionModel> clientSessions) {
         this.session = session;
         this.model = model;
@@ -168,7 +173,7 @@ public class PersistentUserSessionAdapter implements OfflineUserSessionModel {
         this.authenticatedClientSessions = clientSessions;
     }
 
-    // Lazily init data
+    // 延迟反序列化 JSON 扩展数据
     private PersistentUserSessionData getData() {
         if (data == null) {
             try {
@@ -181,11 +186,11 @@ public class PersistentUserSessionAdapter implements OfflineUserSessionModel {
         return data;
     }
 
-    // Write updated model with latest serialized data
+    /** 将内存中的扩展数据序列化写回 {@link PersistentUserSessionModel} 并返回更新后的模型。 */
     public PersistentUserSessionModel getUpdatedModel() {
         try {
             if (data != null) {
-                // If data hasn't been initialized, it hasn't been touched and is unchanged. So need to deserialize and serialize it
+                // 若 data 尚未初始化，说明未被修改，无需重复序列化
                 String updatedData = JsonSerialization.writeValueAsString(getData());
                 this.model.setData(updatedData);
             }
@@ -330,7 +335,7 @@ public class PersistentUserSessionAdapter implements OfflineUserSessionModel {
             return null;
         }
 
-        // Migration to Keycloak 3.2
+        // 迁移至 Keycloak 3.2：旧状态 LOGGING_IN 映射为 LOGGED_IN
         if (state.equals("LOGGING_IN")) {
             return State.LOGGED_IN;
         }
@@ -407,14 +412,17 @@ public class PersistentUserSessionAdapter implements OfflineUserSessionModel {
         getData().setBrokerUserId(brokerUserId);
     }
 
+    /** 注册客户端会话的懒加载回调，在首次访问 {@link #getAuthenticatedClientSessions()} 时触发。 */
     public void setClientSessionsLoader(Consumer<Map<String, AuthenticatedClientSessionModel>> clientSessionsLoader) {
         this.clientSessionsLoader = Objects.requireNonNullElse(clientSessionsLoader, this.clientSessionsLoader);
     }
 
+    /** 检测模型顶层与 JSON 负载中 rememberMe 字段是否不一致（需迁移）。 */
     public boolean requiresRememberMeMigration() {
         return model.isRememberMe() != getData().isRememberMe();
     }
 
+    /** 用户会话 JSON 负载的内部结构，对应持久化 {@code data} 字段。 */
     protected static class PersistentUserSessionData {
 
         @JsonProperty("brokerSessionId")
@@ -432,7 +440,7 @@ public class PersistentUserSessionAdapter implements OfflineUserSessionModel {
         @JsonProperty("rememberMe")
         private boolean rememberMe;
 
-        // TODO: Keeping those just for backwards compatibility. @JsonIgnoreProperties doesn't work on Wildfly - probably due to classloading issues
+        // 仅为向后兼容保留；Wildfly 上 @JsonIgnoreProperties 可能因类加载问题失效
         @JsonProperty("started")
         private int started;
 
