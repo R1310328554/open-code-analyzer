@@ -8,14 +8,14 @@ import java.lang.annotation.Target;
 import org.keycloak.testframework.injection.LifeCycle;
 
 /**
- * Injects a {@link org.keycloak.testframework.infinispan.InfinispanServer} that starts an external Infinispan server
+ * 注入 {@link org.keycloak.testframework.infinispan.InfinispanServer}，启动外部 Infinispan 服务器。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface InjectInfinispanServer {
 
     /**
-     * Controls the lifecycle of the resource
+     * 控制该资源的生命周期。
      */
     LifeCycle lifecycle() default LifeCycle.GLOBAL;
 }

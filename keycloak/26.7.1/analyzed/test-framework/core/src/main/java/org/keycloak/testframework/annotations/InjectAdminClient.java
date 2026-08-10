@@ -7,44 +7,47 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Injects a {@link org.keycloak.admin.client.Keycloak} instance to access Keycloak Admin APIs
+ * 注入 {@link org.keycloak.admin.client.Keycloak} 实例，用于访问 Keycloak 管理 REST API。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface InjectAdminClient {
 
     /**
-     * A ref must be set if a test requires multiple instances
+     * 若测试需要多个实例，必须设置 ref 引用标识。
      */
     String ref() default "";
 
     /**
-     * Set to attach to the non-default realm
+     * 指定要绑定的非默认 realm 的 ref。
      */
     String realmRef() default "";
 
     /**
-     * <code>BOOTSTRAP</code> attaches to the master realm and global test client, while <code>MANAGED_REALM</code>
-     * attaches to a managed realm using the specified client or user. When using <code>MANAGED_REALM</code> either
-     * client or user must be set in the {@link org.keycloak.testframework.realm.ManagedRealm} instance using the {@link org.keycloak.testframework.realm.RealmConfig} implementation
+     * <code>BOOTSTRAP</code> 绑定 master realm 与全局测试客户端；<code>MANAGED_REALM</code>
+     * 绑定受管 realm，并使用指定的 client 或 user 认证。使用 <code>MANAGED_REALM</code> 时，
+     * 须在 {@link org.keycloak.testframework.realm.ManagedRealm} 实例中通过 {@link org.keycloak.testframework.realm.RealmConfig} 实现配置 client 或 user。
      */
     Mode mode() default Mode.BOOTSTRAP;
 
     /**
-     * The client to authenticate as
-     * The client must be configured within the {@link org.keycloak.testframework.realm.ManagedRealm} instance, {@link org.keycloak.testframework.realm.ManagedClient} is not supported
+     * 以该客户端身份认证。
+     * 客户端须在 {@link org.keycloak.testframework.realm.ManagedRealm} 实例中配置，不支持 {@link org.keycloak.testframework.realm.ManagedClient}。
      */
     String client() default "";
 
     /**
-     * The user to authenticate as
-     * The user must be configured within the {@link org.keycloak.testframework.realm.ManagedRealm} instance, {@link org.keycloak.testframework.realm.ManagedUser} is not supported
+     * 以该用户身份认证。
+     * 用户须在 {@link org.keycloak.testframework.realm.ManagedRealm} 实例中配置，不支持 {@link org.keycloak.testframework.realm.ManagedUser}。
      */
     String user() default "";
 
+    /** 注入模式：引导或受管 realm。 */
     enum Mode {
 
+        /** 引导模式：绑定 master realm 与全局测试客户端。 */
         BOOTSTRAP,
+        /** 受管 realm 模式：绑定指定 realm 并使用配置的 client 或 user。 */
         MANAGED_REALM
 
     }

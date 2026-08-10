@@ -6,8 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Injects a {@link org.keycloak.testframework.server.KeycloakUrls} instance that can be used to discover various
- * endpoints offered by the Keycloak server
+ * 注入 {@link org.keycloak.testframework.server.KeycloakUrls}，用于发现 Keycloak 服务器提供的各类端点 URL。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

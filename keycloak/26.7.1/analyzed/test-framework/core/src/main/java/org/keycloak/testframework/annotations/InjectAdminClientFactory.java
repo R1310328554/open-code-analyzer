@@ -9,20 +9,20 @@ import java.lang.annotation.Target;
 import org.keycloak.testframework.injection.LifeCycle;
 
 /**
- * Injects a {@link org.keycloak.testframework.admin.AdminClientFactory} instance that can be used to create
- * {@link org.keycloak.admin.client.Keycloak} instances.
+ * 注入 {@link org.keycloak.testframework.admin.AdminClientFactory}，用于创建
+ * {@link org.keycloak.admin.client.Keycloak} 实例。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface InjectAdminClientFactory {
 
     /**
-     * A ref must be set if a test requires multiple instances
+     * 若测试需要多个实例，必须设置 ref 引用标识。
      */
     String ref() default "";
 
     /**
-     * Controls the lifecycle of the resource
+     * 控制该资源的生命周期。
      */
     LifeCycle lifecycle() default LifeCycle.CLASS;
 }

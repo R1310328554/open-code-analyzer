@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Injects a {@link org.keycloak.testframework.crypto.CryptoHelper} with various crypto utilities
+ * 注入 {@link org.keycloak.testframework.crypto.CryptoHelper}，提供各类加密工具方法。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

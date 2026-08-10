@@ -10,26 +10,29 @@ import org.keycloak.testframework.realm.ClientConfig;
 import org.keycloak.testframework.realm.DefaultClientConfig;
 
 /**
- * Injects a {@link org.keycloak.testframework.realm.ManagedClient} used to create a client within the realm
+ * 注入 {@link org.keycloak.testframework.realm.ManagedClient}，用于在 realm 内创建客户端。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface InjectClient {
 
     /**
-     * Used to define a custom configuration for the client
+     * 指定客户端的自定义配置类。
      */
     Class<? extends ClientConfig> config() default DefaultClientConfig.class;
 
     /**
-     * Controls the lifecycle of the resource
+     * 控制该资源的生命周期。
      */
     LifeCycle lifecycle() default LifeCycle.CLASS;
 
+    /**
+     * 若测试需要多个实例，必须设置 ref 引用标识。
+     */
     String ref() default "";
 
     /**
-     * Set to attach to the non-default realm
+     * 指定要绑定的非默认 realm 的 ref。
      */
     String realmRef() default "";
 

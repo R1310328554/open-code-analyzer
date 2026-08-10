@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Injects a {@link org.keycloak.http.simple.SimpleHttp} that can be used to do HTTP requests within tests.
+ * 注入 {@link org.keycloak.http.simple.SimpleHttp}，供测试内发起 HTTP 请求。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

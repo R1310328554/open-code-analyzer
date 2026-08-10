@@ -6,19 +6,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Injects a {@link org.keycloak.testframework.events.Events} instance that can be used to poll login events from Keycloak
+ * 注入 {@link org.keycloak.testframework.events.Events}，用于轮询 Keycloak 登录事件。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface InjectEvents {
 
     /**
-     * A ref must be set if a test requires multiple instances
+     * 若测试需要多个实例，必须设置 ref 引用标识。
      */
     String ref() default "";
 
     /**
-     * Set to attach to the non-default realm
+     * 指定要绑定的非默认 realm 的 ref。
      */
     String realmRef() default "";
 

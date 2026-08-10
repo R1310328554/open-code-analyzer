@@ -6,9 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Injects a {@link com.sun.net.httpserver.HttpServer} instance that can be used to register or unregister additional
- * contexts to the Mock HTTP server used for tests. This should usually only be used by suppliers and not directly
- * by test.
+ * 注入 {@link com.sun.net.httpserver.HttpServer}，用于在测试用 Mock HTTP 服务器上
+ * 注册或注销额外上下文。通常仅由 supplier 使用，测试代码不应直接使用。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

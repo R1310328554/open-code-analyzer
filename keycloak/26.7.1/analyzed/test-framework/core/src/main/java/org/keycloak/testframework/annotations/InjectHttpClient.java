@@ -6,13 +6,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Injects a {@link org.apache.http.client.HttpClient} that can be used to do HTTP requests within tests. See
- * {@link InjectSimpleHttp} as an alternative that provides a simpler API.
+ * 注入 {@link org.apache.http.client.HttpClient}，供测试内发起 HTTP 请求。
+ * 也可选用 {@link InjectSimpleHttp}，其 API 更简洁。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface InjectHttpClient {
 
+    /** 是否自动跟随 HTTP 重定向。 */
     boolean followRedirects() default true;
 
 }
