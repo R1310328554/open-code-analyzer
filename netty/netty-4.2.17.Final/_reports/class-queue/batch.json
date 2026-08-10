@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:44:04Z",
-  "files": [
-    "common/src/main/java/io/netty/util/internal/StringUtil.java",
-    "common/src/main/java/io/netty/util/internal/SuppressJava6Requirement.java",
-    "common/src/main/java/io/netty/util/internal/SuppressJava8Requirement.java",
-    "common/src/main/java/io/netty/util/internal/SystemPropertyUtil.java",
-    "common/src/main/java/io/netty/util/internal/ThreadExecutorMap.java",
-    "common/src/main/java/io/netty/util/internal/ThreadLocalRandom.java",
-    "common/src/main/java/io/netty/util/internal/ThrowableUtil.java",
-    "common/src/main/java/io/netty/util/internal/TypeParameterMatcher.java",
-    "common/src/main/java/io/netty/util/internal/UnpaddedInternalThreadLocalMap.java",
-    "common/src/main/java/io/netty/util/internal/UnsafeReferenceCountUpdater.java",
-    "common/src/main/java/io/netty/util/internal/UnstableApi.java",
-    "common/src/main/java/io/netty/util/internal/VarHandleFactory.java",
-    "common/src/main/java/io/netty/util/internal/VarHandleReferenceCountUpdater.java",
-    "common/src/main/java/io/netty/util/internal/logging/AbstractInternalLogger.java",
-    "common/src/main/java/io/netty/util/internal/logging/CommonsLogger.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 668,
-  "done": 1245
+  "done": 1260
 }
