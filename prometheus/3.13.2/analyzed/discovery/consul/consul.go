@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Consul 服务发现：通过 HashiCorp Consul Catalog/Health API 阻塞查询
+// 监听服务目录与实例健康状态，将节点/服务元数据映射为 Prometheus 抓取目标。
+
 package consul
 
 import (
@@ -72,6 +75,7 @@ const (
 	namespace = "prometheus"
 )
 
+// Consul 服务发现默认配置（localhost:8500、30s 刷新间隔）。
 // DefaultSDConfig is the default Consul SD configuration.
 var DefaultSDConfig = SDConfig{
 	TagSeparator:     ",",
@@ -86,6 +90,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Consul SD 配置：服务器地址、数据中心、服务/标签过滤与 HTTP 客户端选项。
 // SDConfig is the configuration for Consul service discovery.
 type SDConfig struct {
 	Server       string        `yaml:"server,omitempty"`
@@ -135,6 +140,7 @@ func (*SDConfig) NewDiscovererMetrics(reg prometheus.Registerer, rmi discovery.R
 func (*SDConfig) Name() string { return "consul" }
 
 // NewDiscoverer returns a Discoverer for the Config.
+// 按 SDConfig 构造 Consul Discovery 实例。
 func (c *SDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewDiscovery(c, opts.Logger, opts.Metrics)
 }
@@ -170,6 +176,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
+// Discovery 实现 Discoverer：维护 Consul 客户端并按配置 watch 服务实例。
 // Discovery retrieves target information from a Consul server
 // and updates them via watches.
 type Discovery struct {
@@ -191,6 +198,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new Discovery for the given config.
+// 创建 Discovery：配置 Consul 客户端、watch 参数与指标。
 func NewDiscovery(conf *SDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (*Discovery, error) {
 	m, ok := metrics.(*consulMetrics)
 	if !ok {
@@ -329,6 +337,7 @@ func (d *Discovery) initialize(ctx context.Context) {
 }
 
 // Run implements the Discoverer interface.
+// Discoverer 主循环：按配置 watch 目录或固定服务列表。
 func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	if d.finalizer != nil {
 		defer d.finalizer()
@@ -365,6 +374,7 @@ func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 // Watch the catalog for new services we would like to watch. This is called only
 // when we don't know yet the names of the services and need to ask Consul the
 // entire list of services.
+// 阻塞查询 Catalog 服务列表，动态增删 per-service watch。
 func (d *Discovery) watchServices(ctx context.Context, ch chan<- []*targetgroup.Group, lastIndex *uint64, services map[string]func()) {
 	catalog := d.client.Catalog()
 	d.logger.Debug("Watching services", "tags", strings.Join(d.watchedTags, ","), "filter", d.watchedFilter)
@@ -458,6 +468,7 @@ type consulService struct {
 }
 
 // Start watching a service.
+// 为单个服务启动 goroutine，周期性 Health API 阻塞查询。
 func (d *Discovery) watchService(ctx context.Context, ch chan<- []*targetgroup.Group, name string) {
 	srv := &consulService{
 		discovery: d,
@@ -496,6 +507,7 @@ func (d *Discovery) watchService(ctx context.Context, ch chan<- []*targetgroup.G
 }
 
 // Get updates for a service.
+// 查询服务实例并构建 targetgroup（地址、标签、元数据标签）。
 func (srv *consulService) watch(ctx context.Context, ch chan<- []*targetgroup.Group, health *consul.Health, lastIndex *uint64) {
 	srv.logger.Debug("Watching service", "service", srv.name, "tags", strings.Join(srv.tags, ","))
 

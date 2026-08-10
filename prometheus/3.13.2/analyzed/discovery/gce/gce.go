@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// GCE 服务发现：通过 Google Compute API 列出指定 project/zone 的 VM 实例，将网络、标签、元数据映射为 gce_* meta 标签与抓取地址。
+
 package gce
 
 import (
@@ -50,6 +52,7 @@ const (
 	gceLabelMachineType    = gceLabel + "machine_type"
 )
 
+// GCE SD 默认配置（80 端口、60s 刷新、逗号标签分隔符）。
 // DefaultSDConfig is the default GCE SD configuration.
 var DefaultSDConfig = SDConfig{
 	Port:            80,
@@ -61,6 +64,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// GCE SD 配置：project、zone、实例 filter、端口与刷新间隔。
 // SDConfig is the configuration for GCE based service discovery.
 type SDConfig struct {
 	// Project: The Google Cloud Project ID
@@ -120,6 +124,7 @@ type instancesLister func(ctx context.Context, f func(*compute.InstanceList) err
 // it on the interface-boxed Discovery struct. This keeps the binary smaller:
 // otherwise reflection keeps every Compute method live, defeating dead-code
 // elimination.
+// 闭包封装 Instances.List 分页，避免 Discovery 持有完整 compute.Service 反射体积。
 func newInstancesLister(svc *compute.Service, project, zone, filter string) instancesLister {
 	isvc := compute.NewInstancesService(svc)
 	return func(ctx context.Context, f func(*compute.InstanceList) error) error {
@@ -131,6 +136,7 @@ func newInstancesLister(svc *compute.Service, project, zone, filter string) inst
 	}
 }
 
+// Discovery 嵌入 refresh.Discovery，分页列出 Compute 实例。
 // Discovery periodically performs GCE-SD requests. It implements
 // the Discoverer interface.
 type Discovery struct {
@@ -143,6 +149,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new Discovery which periodically refreshes its targets.
+// 使用默认 OAuth 客户端创建 Compute Service 与 refresh Discovery。
 func NewDiscovery(conf SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*gceMetrics)
 	if !ok {
@@ -178,6 +185,7 @@ func NewDiscovery(conf SDConfig, opts discovery.DiscovererOptions) (*Discovery, 
 	return d, nil
 }
 
+// 遍历实例：主网卡私有 IP 作 __address__，附加 tags/metadata/labels。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	tg := &targetgroup.Group{
 		Source: fmt.Sprintf("GCE_%s_%s", d.project, d.zone),

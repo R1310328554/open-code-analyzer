@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// DigitalOcean 服务发现：通过 godo API 按 role 发现 Droplet 或托管数据库集群，映射为带 DO 元标签的抓取目标。
+
+// DigitalOcean 服务发现：通过 godo API 按 role 发现 Droplet 或托管数据库集群，映射为带 DO 元标签的抓取目标。
+
 package digitalocean
 
 import (
@@ -56,6 +60,7 @@ const (
 	doLabelVPC         = metaLabelPrefix + "vpc"
 )
 
+// DigitalOcean SD 角色：droplets（云主机）或 databases（托管数据库）。
 // Role is the role of the target within the DigitalOcean ecosystem.
 type Role string
 
@@ -80,6 +85,7 @@ func (c *Role) UnmarshalYAML(unmarshal func(any) error) error {
 	}
 }
 
+// DigitalOcean SD 默认配置（80 端口、60s 刷新、droplets 角色）。
 // DefaultSDConfig is the default DigitalOcean SD configuration.
 var DefaultSDConfig = SDConfig{
 	Port:             80,
@@ -99,6 +105,7 @@ func (*SDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.Ref
 	}
 }
 
+// DigitalOcean SD 配置：HTTP 客户端、刷新间隔、端口与 role。
 // SDConfig is the configuration for DigitalOcean based service discovery.
 type SDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
@@ -141,6 +148,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 }
 
 // NewDiscovery returns a new Discovery which periodically refreshes its targets.
+// 包装 refresh.Discovery，按 role 选择 droplets 或 databases refresher。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	m, ok := opts.Metrics.(*digitaloceanMetrics)
 	if !ok {
@@ -198,6 +206,7 @@ func newRefresher(conf *SDConfig) (refresher, error) {
 	return nil, fmt.Errorf("unknown DigitalOcean SD role %q", conf.Role)
 }
 
+// Droplet 发现器：分页列出云主机并生成 target 标签。
 type dropletsDiscovery struct {
 	client *godo.Client
 	port   int

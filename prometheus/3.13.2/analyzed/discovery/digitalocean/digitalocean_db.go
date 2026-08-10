@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// DigitalOcean 托管数据库服务发现：分页列出 DB 集群，优先使用私有连接主机作为抓取地址。
+
+// DigitalOcean 托管数据库服务发现：分页列出 DB 集群，优先使用私有连接主机作为抓取地址。
+
 package digitalocean
 
 import (
@@ -39,6 +43,7 @@ const (
 	dbLabelTagPrefix   = metaLabelPrefix + "db_tag_"
 )
 
+// 托管数据库发现器：通过 godo Databases API 列出集群。
 type databasesDiscovery struct {
 	client *godo.Client
 	port   int
@@ -92,6 +97,7 @@ func (d *databasesDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group,
 	return []*targetgroup.Group{tg}, nil
 }
 
+// 分页拉取全部数据库集群列表。
 func (d *databasesDiscovery) listClusters(ctx context.Context) ([]godo.Database, error) {
 	var (
 		clusters []godo.Database

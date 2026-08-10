@@ -11,8 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 无指标的服务发现占位实现：部分 SD 机制不需要专用 Prometheus 指标时使用。
+
 package discovery
 
+// 空操作 DiscovererMetrics，Register/Unregister 均不注册任何 collector。
 // NoopDiscovererMetrics creates a dummy metrics struct, because this SD doesn't have any metrics.
 type NoopDiscovererMetrics struct{}
 

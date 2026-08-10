@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// DigitalOcean SD 指标占位：复用 refresh 包通用刷新指标，无额外 Consul 式 RPC 指标。
+
+// DigitalOcean SD 指标占位：复用 refresh 包通用刷新指标，无额外 Consul 式 RPC 指标。
+
 package digitalocean
 
 import (

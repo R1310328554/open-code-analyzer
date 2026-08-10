@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 文件 SD 指标：读错误、扫描耗时、fsnotify 错误及文件 mtime Gauge。
+
 package file
 
 import (
@@ -30,6 +32,7 @@ type fileMetrics struct {
 	metricRegisterer discovery.MetricRegisterer
 }
 
+// 构造 fileMetrics 并绑定 MetricRegisterer。
 func newDiscovererMetrics(reg prometheus.Registerer, _ discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	fm := &fileMetrics{
 		fileSDReadErrorsCount: prometheus.NewCounter(

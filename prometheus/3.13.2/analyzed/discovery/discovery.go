@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus 服务发现核心包：定义 Discoverer 接口、配置注册、YAML 编组及静态/刷新类 SD 的公共类型与指标抽象。
+
+// Prometheus 服务发现核心包：定义 Discoverer 接口、配置注册、YAML 编组及静态/刷新类 SD 的公共类型与指标抽象。
+
 package discovery
 
 import (
@@ -24,6 +28,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// Discoverer 向 scrape 管理器推送 targetgroup 更新；初始应发送全量目标集。
 // Discoverer provides information about target groups. It maintains a set
 // of sources from which TargetGroups can originate. Whenever a discovery provider
 // detects a potential change, it sends the TargetGroup through its channel.
@@ -39,6 +44,7 @@ type Discoverer interface {
 	Run(ctx context.Context, up chan<- []*targetgroup.Group)
 }
 
+// 各 SD 机制内部指标的生命周期接口（Register/Unregister）。
 // DiscovererMetrics are internal metrics of service discovery mechanisms.
 type DiscovererMetrics interface {
 	Register() error
@@ -46,6 +52,7 @@ type DiscovererMetrics interface {
 }
 
 // DiscovererOptions provides options for a Discoverer.
+// 构造 Discoverer 时的日志、指标、HTTP 选项与 set 名称。
 type DiscovererOptions struct {
 	Logger *slog.Logger
 
@@ -87,11 +94,13 @@ type RefreshMetricsManager interface {
 }
 
 // SDMetrics holds all metrics for service discovery mechanisms.
+// 聚合所有 SD 机制的 DiscovererMetrics 与共享 RefreshMetricsManager。
 type SDMetrics struct {
 	MechanismMetrics map[string]DiscovererMetrics
 	RefreshManager   RefreshMetricsManager
 }
 
+// Config 接口：名称、NewDiscoverer 与 NewDiscovererMetrics 工厂。
 // A Config provides the configuration and constructor for a Discoverer.
 type Config interface {
 	// Name returns the name of the discovery mechanism.
@@ -105,6 +114,7 @@ type Config interface {
 	NewDiscovererMetrics(prometheus.Registerer, RefreshMetricsInstantiator) DiscovererMetrics
 }
 
+// Configs 在 YAML 中按 SD 类型名分组映射为多个 Config 实例。
 // Configs is a slice of Config values that uses custom YAML marshaling and unmarshaling
 // to represent itself as a mapping of the Config values grouped by their types.
 type Configs []Config
@@ -146,6 +156,7 @@ func (c Configs) MarshalYAML() (any, error) {
 	return cfgPtr.Interface(), nil
 }
 
+// StaticConfig 将内联 static_configs 目标组直接作为 Discoverer 数据源。
 // A StaticConfig is a Config that provides a static list of targets.
 type StaticConfig []*targetgroup.Group
 

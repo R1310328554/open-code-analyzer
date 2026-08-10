@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Eureka SD 指标占位：仅委托 refresh 包通用刷新指标，无 Eureka 专用 counter。
+
+// Eureka SD 指标占位：仅委托 refresh 包通用刷新指标，无 Eureka 专用 counter。
+
 package eureka
 
 import (

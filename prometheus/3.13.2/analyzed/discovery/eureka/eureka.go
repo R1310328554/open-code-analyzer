@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Eureka 服务发现：周期性从 Eureka Server 拉取注册实例，将应用/实例元数据映射为 Prometheus meta 标签与抓取地址。
+
 package eureka
 
 import (
@@ -58,6 +60,7 @@ const (
 	appInstanceMetadataPrefix               = metaAppInstanceLabelPrefix + "metadata_"
 )
 
+// Eureka SD 默认配置（30s 刷新间隔）。
 // DefaultSDConfig is the default Eureka SD configuration.
 var DefaultSDConfig = SDConfig{
 	RefreshInterval:  model.Duration(30 * time.Second),
@@ -68,6 +71,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Eureka SD 配置：Eureka Server URL 与 HTTP 客户端选项。
 // SDConfig is the configuration for applications running on Eureka.
 type SDConfig struct {
 	Server           string                  `yaml:"server,omitempty"`
@@ -116,6 +120,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
+// Discovery 嵌入 refresh.Discovery，通过 fetchApps 刷新目标。
 // Discovery provides service discovery based on a Eureka instance.
 type Discovery struct {
 	*refresh.Discovery
@@ -124,6 +129,7 @@ type Discovery struct {
 }
 
 // NewDiscovery creates a new Eureka discovery for the given role.
+// 校验 metrics 类型并创建带 refresh 回调的 Discovery。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*eurekaMetrics)
 	if !ok {
@@ -152,6 +158,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery,
 	return d, nil
 }
 
+// 拉取全部应用实例并合并为单个 targetgroup。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	apps, err := fetchApps(ctx, d.server, d.client)
 	if err != nil {
@@ -169,6 +176,7 @@ func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	return []*targetgroup.Group{tg}, nil
 }
 
+// 将 Application 下每个 Instance 转为带 eureka_* meta 标签的 LabelSet。
 func targetsForApp(app *Application) []model.LabelSet {
 	targets := make([]model.LabelSet, 0, len(app.Instances))
 

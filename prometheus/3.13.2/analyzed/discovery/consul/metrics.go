@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Consul 服务发现内部指标：RPC 失败计数与按 endpoint/call 分组的耗时摘要。
+
 package consul
 
 import (
@@ -31,6 +33,7 @@ type consulMetrics struct {
 	metricRegisterer discovery.MetricRegisterer
 }
 
+// 注册 sd_consul_rpc_* 指标并返回 consulMetrics。
 func newDiscovererMetrics(reg prometheus.Registerer, _ discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	m := &consulMetrics{
 		rpcFailuresCount: prometheus.NewCounter(

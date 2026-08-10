@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// DNS 服务发现：按配置的域名与记录类型（SRV/A/AAAA/MX/NS）周期性解析，将解析结果转为带 DNS meta 标签的抓取目标。
+
 package dns
 
 import (
@@ -50,6 +52,7 @@ const (
 	namespace = "prometheus"
 )
 
+// DNS SD 默认配置（30s 刷新、SRV 类型）。
 // DefaultSDConfig is the default DNS SD configuration.
 var DefaultSDConfig = SDConfig{
 	RefreshInterval: model.Duration(30 * time.Second),
@@ -60,6 +63,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// DNS SD 配置：待解析域名列表、记录类型、端口与刷新间隔。
 // SDConfig is the configuration for DNS based service discovery.
 type SDConfig struct {
 	Names           []string       `yaml:"names"`
@@ -104,6 +108,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// Discovery 嵌入 refresh.Discovery，并行解析多个域名。
 // Discovery periodically performs DNS-SD requests. It implements
 // the Discoverer interface.
 type Discovery struct {
@@ -118,6 +123,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new Discovery which periodically refreshes its targets.
+// 根据 Type 选择 qtype 并创建带 lookupFn 的 Discovery。
 func NewDiscovery(conf SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*dnsMetrics)
 	if !ok {
@@ -164,6 +170,7 @@ func NewDiscovery(conf SDConfig, opts discovery.DiscovererOptions) (*Discovery, 
 	return d, nil
 }
 
+// 对每个 name 并发 refreshOne，汇总 targetgroup 列表。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	var (
 		wg  sync.WaitGroup
@@ -192,6 +199,7 @@ func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	return tgs, nil
 }
 
+// 单次 DNS 查询：按记录类型构建 __address__ 与 SRV/MX/NS meta 标签。
 func (d *Discovery) refreshOne(ctx context.Context, name string, ch chan<- *targetgroup.Group) error {
 	response, err := d.lookupFn(name, d.qtype, d.logger)
 	d.metrics.dnsSDLookupsCount.Inc()
@@ -262,6 +270,7 @@ func (d *Discovery) refreshOne(ctx context.Context, name string, ch chan<- *targ
 	return nil
 }
 
+// 结合 /etc/resolv.conf 搜索域依次查询，处理 NXDOMAIN 与部分失败三种结果。
 // lookupWithSearchPath tries to get an answer for various permutations of
 // the given name, appending the system-configured search path as necessary.
 //
@@ -338,6 +347,7 @@ func lookupWithSearchPath(name string, qtype uint16, logger *slog.Logger) (*dns.
 // A non-viable answer is "anything else", which encompasses both various
 // system-level problems (like network timeouts) and also
 // valid-but-unexpected DNS responses (SERVFAIL, REFUSED, etc).
+// 依次向 resolv.conf 中的 nameserver 查询直至获得有效 RCODE。
 func lookupFromAnyServer(name string, qtype uint16, conf *dns.ClientConfig, logger *slog.Logger) (*dns.Msg, error) {
 	client := &dns.Client{}
 

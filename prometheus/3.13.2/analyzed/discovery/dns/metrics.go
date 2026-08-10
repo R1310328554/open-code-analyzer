@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// DNS 服务发现指标：DNS 查询总数、失败计数，并复用 refresh 刷新耗时指标。
+
 package dns
 
 import (
@@ -30,6 +32,7 @@ type dnsMetrics struct {
 	metricRegisterer discovery.MetricRegisterer
 }
 
+// 注册 sd_dns_lookups_total 与 sd_dns_lookup_failures_total。
 func newDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	m := &dnsMetrics{
 		refreshMetrics: rmi,

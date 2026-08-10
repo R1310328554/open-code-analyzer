@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Eureka REST 客户端：定义 /apps XML 响应结构体，通过 HTTP GET 拉取注册中心应用与实例列表。
+
+// Eureka REST 客户端：定义 /apps XML 响应结构体，通过 HTTP GET 拉取注册中心应用与实例列表。
+
 package eureka
 
 import (
@@ -31,6 +35,7 @@ type Applications struct {
 	Applications  []Application `xml:"application"`
 }
 
+// 单个 Eureka 应用及其 Instance 列表。
 type Application struct {
 	Name      string     `xml:"name"`
 	Instances []Instance `xml:"instance"`
@@ -78,6 +83,7 @@ type DataCenterInfo struct {
 
 const appListPath string = "/apps"
 
+// 请求 server/apps 并解码 XML 为 Applications。
 func fetchApps(ctx context.Context, server string, client *http.Client) (*Applications, error) {
 	url := fmt.Sprintf("%s%s", server, appListPath)
 

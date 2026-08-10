@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 文件服务发现：监视 JSON/YAML 目标组文件（glob + fsnotify），文件变更或定时刷新时重新加载并推送 targetgroup 更新。
+
 package file
 
 import (
@@ -42,7 +44,8 @@ import (
 var (
 	patFileSDName = regexp.MustCompile(`^[^*]*(\*[^/]*)?\.(json|yml|yaml|JSON|YML|YAML)$`)
 
-	// DefaultSDConfig is the default file SD configuration.
+	// 文件 SD 默认配置（5 分钟刷新间隔）。
+// DefaultSDConfig is the default file SD configuration.
 	DefaultSDConfig = SDConfig{
 		RefreshInterval: model.Duration(5 * time.Minute),
 	}
@@ -52,6 +55,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// 文件 SD 配置：glob 路径列表与刷新间隔。
 // SDConfig is the configuration for file based discovery.
 type SDConfig struct {
 	Files           []string       `yaml:"files"`
@@ -99,6 +103,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 
 const fileSDFilepathLabel = model.MetaLabelPrefix + "filepath"
 
+// 自定义 Collector：暴露各文件最后读取时的 mtime 指标。
 // TimestampCollector is a Custom Collector for Timestamps of the files.
 // TODO(ptodev): Now that each file SD has its own TimestampCollector
 // inside discovery/file/metrics.go, we can refactor this collector
@@ -160,6 +165,7 @@ func NewTimestampCollector() *TimestampCollector {
 	}
 }
 
+// Discovery 结合 fsnotify 与定时器，维护 lastRefresh 以检测删除的目标组。
 // Discovery provides service discovery functionality based
 // on files that contain target groups in JSON or YAML format. Refreshing
 // happens using file watches and periodic refreshes.
@@ -180,6 +186,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new file discovery for the given paths.
+// 创建文件 Discovery 并将实例注册到 TimestampCollector。
 func NewDiscovery(conf *SDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (*Discovery, error) {
 	fm, ok := metrics.(*fileMetrics)
 	if !ok {
@@ -236,6 +243,7 @@ func (d *Discovery) watchFiles() {
 }
 
 // Run implements the Discoverer interface.
+// 启动 fsnotify watcher，处理事件/定时器触发 refresh。
 func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -327,6 +335,7 @@ func (d *Discovery) stop() {
 
 // refresh reads all files matching the discovery's patterns and sends the respective
 // updated target groups through the channel.
+// 扫描匹配文件、读取目标组，并对已删除文件发送空 targetgroup。
 func (d *Discovery) refresh(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	t0 := time.Now()
 	defer func() {
@@ -373,6 +382,7 @@ func (d *Discovery) refresh(ctx context.Context, ch chan<- []*targetgroup.Group)
 
 // readFile reads a JSON or YAML list of targets groups from the file, depending on its
 // file extension. It returns full configuration target groups.
+// 按扩展名 JSON/YAML 解析 targetgroup 列表并设置 Source 与 filepath 标签。
 func (d *Discovery) readFile(filename string) ([]*targetgroup.Group, error) {
 	fd, err := os.Open(filename)
 	if err != nil {
