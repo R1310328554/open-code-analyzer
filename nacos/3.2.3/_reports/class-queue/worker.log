@@ -973,3 +973,18 @@
 2026-08-10T03:16:22Z DONE common/src/main/java/com/alibaba/nacos/common/paramcheck/ParamInfo.java nacos 3.2.3 wave32a [0:15] packagescan util/paramcheck
 2026-08-10T03:16:22Z DONE common/src/main/java/com/alibaba/nacos/common/pathencoder/PathEncoder.java nacos 3.2.3 wave32a [0:15] packagescan util/paramcheck
 2026-08-10T03:16:22Z DONE common/src/main/java/com/alibaba/nacos/common/pathencoder/PathEncoderManager.java nacos 3.2.3 wave32a [0:15] packagescan util/paramcheck
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/pathencoder/impl/WindowsEncoder.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/ConnectionType.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/PayloadRegistry.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/TlsConfig.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/Connection.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/ConnectionEventListener.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/RpcClient.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/RpcClientConfig.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/RpcClientConfigFactory.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/RpcClientFactory.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/RpcClientStatus.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/RpcClientTlsConfig.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/RpcClientTlsConfigFactory.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/RpcConfigFactory.java nacos 3.2.3 wave32b [15:30] common remote client
+2026-08-10T03:16:32Z DONE common/src/main/java/com/alibaba/nacos/common/remote/client/RpcConstants.java nacos 3.2.3 wave32b [15:30] common remote client
