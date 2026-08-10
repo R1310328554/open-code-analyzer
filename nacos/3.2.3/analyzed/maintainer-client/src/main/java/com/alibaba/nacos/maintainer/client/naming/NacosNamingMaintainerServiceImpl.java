@@ -56,20 +56,25 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * NacosNamingMaintainerServiceImpl.
+ * {@link NamingMaintainerService} 默认实现：通过 HTTP Admin API 操作命名服务。
+ *
+ * <p>继承 {@link AbstractCoreMaintainerService}，使用 {@link ClientHttpProxy} 同步调用服务端；实例/服务参数由 {@link RequestUtil} 序列化为查询参数。</p>
  *
  * @author Nacos
  */
 public class NacosNamingMaintainerServiceImpl extends AbstractCoreMaintainerService
     implements NamingMaintainerService {
     
+    /** 日志记录器。 */
     private static final Logger LOGGER =
         LoggerFactory.getLogger(NacosNamingMaintainerServiceImpl.class);
     
+    /** 使用客户端配置初始化 HTTP 代理与核心维护能力。 */
     public NacosNamingMaintainerServiceImpl(Properties properties) throws NacosException {
         super(properties);
     }
     
+    /** 创建命名服务（POST Admin API）。 */
     @Override
     public String createService(Service service) throws NacosException {
         service.validate();
@@ -86,6 +91,7 @@ public class NacosNamingMaintainerServiceImpl extends AbstractCoreMaintainerServ
         return result.getData();
     }
     
+    /** 更新命名服务元数据（PUT Admin API）。 */
     @Override
     public String updateService(Service service) throws NacosException {
         service.validate();
@@ -102,6 +108,7 @@ public class NacosNamingMaintainerServiceImpl extends AbstractCoreMaintainerServ
         return result.getData();
     }
     
+    /** 删除命名服务（DELETE Admin API）。 */
     @Override
     public String removeService(Service service) throws NacosException {
         service.validate();
@@ -160,6 +167,7 @@ public class NacosNamingMaintainerServiceImpl extends AbstractCoreMaintainerServ
         return result.getData();
     }
     
+    /** 分页列出服务的内部 HTTP 调用。 */
     private HttpRestResult<String> doListServices(String namespaceId, String groupNameParam,
         String serviceNameParam,
         boolean withInstances, boolean ignoreEmptyService, int pageNo, int pageSize)
@@ -246,6 +254,7 @@ public class NacosNamingMaintainerServiceImpl extends AbstractCoreMaintainerServ
         return result.getData();
     }
     
+    /** 注册实例；临时实例会记录警告日志。 */
     @Override
     public String registerInstance(Service service, Instance instance) throws NacosException {
         service.validate();
@@ -274,6 +283,7 @@ public class NacosNamingMaintainerServiceImpl extends AbstractCoreMaintainerServ
         return result.getData();
     }
     
+    /** 注销实例；临时实例可能因客户端长连接而失败。 */
     @Override
     public String deregisterInstance(Service service, Instance instance) throws NacosException {
         service.validate();
@@ -441,6 +451,7 @@ public class NacosNamingMaintainerServiceImpl extends AbstractCoreMaintainerServ
         return result.getData();
     }
     
+    /** 校验服务与实例 ephemeral 标志是否一致并记录冲突警告。 */
     private void checkEphemeral(Service service, Instance instance) {
         if (service.isEphemeral() != instance.isEphemeral()) {
             LOGGER.warn(
@@ -603,20 +614,24 @@ public class NacosNamingMaintainerServiceImpl extends AbstractCoreMaintainerServ
         return result.getData();
     }
     
+    /** 构建带空命名资源的 HTTP 请求。 */
     private HttpRequest.Builder buildRequestWithResource() {
         return new HttpRequest.Builder().setResource(
             RequestResource.namingBuilder().setResource(StringUtils.EMPTY).build());
     }
     
+    /** 构建绑定指定鉴权资源的 HTTP 请求。 */
     private HttpRequest.Builder buildRequestWithResource(RequestResource resource) {
         return new HttpRequest.Builder().setResource(resource);
     }
     
+    /** 从 {@link Service} 提取命名空间/分组/服务名构建鉴权资源。 */
     private RequestResource buildRequestResource(Service service) {
         return buildRequestResource(service.getNamespaceId(), service.getGroupName(),
             service.getName());
     }
     
+    /** 按三元组构建命名鉴权资源。 */
     private RequestResource buildRequestResource(String namespaceId, String groupName,
         String serviceName) {
         RequestResource.Builder builder = RequestResource.namingBuilder();

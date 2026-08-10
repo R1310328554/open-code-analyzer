@@ -29,7 +29,9 @@ import com.alibaba.nacos.maintainer.client.core.CoreMaintainerService;
 import java.util.Map;
 
 /**
- * Nacos Naming module maintainer service.
+ * Nacos 命名模块维护服务总接口：聚合服务、实例、客户端与运维能力。
+ *
+ * <p>继承 {@link ServiceMaintainerService}、{@link InstanceMaintainerService}、{@link NamingClientMaintainerService} 及 {@link CoreMaintainerService}。</p>
  *
  * @author Nacos
  */
@@ -43,6 +45,7 @@ public interface NamingMaintainerService
      * @param onlyStatus whether to return only status information
      * @return the metrics information
      * @throws NacosException if an error occurs
+      * <p>命名维护服务 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     MetricsInfo getMetrics(boolean onlyStatus) throws NacosException;
@@ -54,6 +57,7 @@ public interface NamingMaintainerService
      * @param logLevel the new log level
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名维护服务 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String setLogLevel(String logName, String logLevel) throws NacosException;
@@ -82,6 +86,7 @@ public interface NamingMaintainerService
      *                 {@link Instance#isEphemeral()} must be `false`.
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名维护服务 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String updateInstanceHealthStatus(Service service, Instance instance) throws NacosException;
@@ -91,6 +96,7 @@ public interface NamingMaintainerService
      *
      * @return a map of health checkers
      * @throws NacosException if an error occurs
+      * <p>命名维护服务 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     Map<String, AbstractHealthChecker> getHealthCheckers() throws NacosException;
@@ -107,6 +113,7 @@ public interface NamingMaintainerService
      *                  {@link ClusterInfo#getHosts()} will be ignored in this API.
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名维护服务 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String updateCluster(Service service, ClusterInfo cluster) throws NacosException;

@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Nacos naming module instance maintainer API.
+ * Nacos 命名模块实例维护 API：注册、注销、更新与查询服务实例。
+ *
+ * <p>提供多级默认参数重载（命名空间/分组/集群），核心操作委托 {@link #registerInstance(Service, Instance)} 等完整签名方法。</p>
  *
  * @author xiweng.yy
  */
@@ -41,6 +43,7 @@ public interface InstanceMaintainerService {
      * @param port        the port of the instance
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String registerInstance(String serviceName, String ip, int port) throws NacosException {
@@ -56,6 +59,7 @@ public interface InstanceMaintainerService {
      * @param port        the port of the instance
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String registerInstance(String groupName, String serviceName, String ip, int port)
@@ -73,6 +77,7 @@ public interface InstanceMaintainerService {
      * @param port        the port of the instance
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String registerInstance(String namespaceId, String groupName, String serviceName,
@@ -91,6 +96,7 @@ public interface InstanceMaintainerService {
      * @param clusterName the cluster name of instance
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String registerInstance(String serviceName, String ip, int port, String clusterName)
@@ -108,6 +114,7 @@ public interface InstanceMaintainerService {
      * @param clusterName the cluster name of instance
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String registerInstance(String groupName, String serviceName, String ip, int port,
@@ -128,6 +135,7 @@ public interface InstanceMaintainerService {
      * @param clusterName the cluster name of instance
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String registerInstance(String namespaceId, String groupName, String serviceName,
@@ -148,6 +156,7 @@ public interface InstanceMaintainerService {
      * @param instance      instance to be registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String registerInstance(String serviceName, Instance instance) throws NacosException {
@@ -162,6 +171,7 @@ public interface InstanceMaintainerService {
      * @param instance      instance to be registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String registerInstance(String groupName, String serviceName, Instance instance)
@@ -178,6 +188,7 @@ public interface InstanceMaintainerService {
      * @param instance      instance to be registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String registerInstance(String namespaceId, String groupName, String serviceName,
@@ -203,6 +214,7 @@ public interface InstanceMaintainerService {
      * @param instance  instance to be registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String registerInstance(Service service, Instance instance) throws NacosException;
@@ -215,6 +227,7 @@ public interface InstanceMaintainerService {
      * @param port        the port of the de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String deregisterInstance(String serviceName, String ip, int port)
@@ -231,6 +244,7 @@ public interface InstanceMaintainerService {
      * @param port        the port of the de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String deregisterInstance(String groupName, String serviceName, String ip, int port)
@@ -248,6 +262,7 @@ public interface InstanceMaintainerService {
      * @param port        the port of the de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String deregisterInstance(String namespaceId, String groupName, String serviceName,
@@ -266,6 +281,7 @@ public interface InstanceMaintainerService {
      * @param clusterName the cluster name of de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String deregisterInstance(String serviceName, String ip, int port, String clusterName)
@@ -283,6 +299,7 @@ public interface InstanceMaintainerService {
      * @param clusterName the cluster name of de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String deregisterInstance(String groupName, String serviceName, String ip, int port,
@@ -303,6 +320,7 @@ public interface InstanceMaintainerService {
      * @param clusterName the cluster name of de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String deregisterInstance(String namespaceId, String groupName, String serviceName,
@@ -323,6 +341,7 @@ public interface InstanceMaintainerService {
      * @param instance      instance to be de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String deregisterInstance(String serviceName, Instance instance) throws NacosException {
@@ -337,6 +356,7 @@ public interface InstanceMaintainerService {
      * @param instance      instance to be de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String deregisterInstance(String groupName, String serviceName, Instance instance)
@@ -353,6 +373,7 @@ public interface InstanceMaintainerService {
      * @param instance      instance to be de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String deregisterInstance(String namespaceId, String groupName, String serviceName,
@@ -381,6 +402,7 @@ public interface InstanceMaintainerService {
      * @param instance  instance to be de-registered
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String deregisterInstance(Service service, Instance instance) throws NacosException;
@@ -392,6 +414,7 @@ public interface InstanceMaintainerService {
      * @param instance      instance to be updated
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String updateInstance(String serviceName, Instance instance) throws NacosException {
@@ -406,6 +429,7 @@ public interface InstanceMaintainerService {
      * @param instance      instance to be updated
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String updateInstance(String groupName, String serviceName, Instance instance)
@@ -422,6 +446,7 @@ public interface InstanceMaintainerService {
      * @param instance      instance to be updated
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String updateInstance(String namespaceId, String groupName, String serviceName,
@@ -466,6 +491,7 @@ public interface InstanceMaintainerService {
      * @param instance  instance to be updated
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String updateInstance(Service service, Instance instance) throws NacosException;
@@ -490,6 +516,7 @@ public interface InstanceMaintainerService {
      * @param newMetadata   the new metadata to be updated
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     InstanceMetadataBatchResult batchUpdateInstanceMetadata(Service service,
@@ -516,6 +543,7 @@ public interface InstanceMaintainerService {
      * @param newMetadata   the new metadata to be removed
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     InstanceMetadataBatchResult batchDeleteInstanceMetadata(Service service,
@@ -538,6 +566,7 @@ public interface InstanceMaintainerService {
      * @param instance  instance to be updated
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String partialUpdateInstance(Service service, Instance instance) throws NacosException;
@@ -550,6 +579,7 @@ public interface InstanceMaintainerService {
      * @param healthyOnly   {@code true} if only return healthy instances, {@code false} if return all instances
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default List<Instance> listInstances(String serviceName, String clusterName,
@@ -567,6 +597,7 @@ public interface InstanceMaintainerService {
      * @param healthyOnly   {@code true} if only return healthy instances, {@code false} if return all instances
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default List<Instance> listInstances(String groupName, String serviceName, String clusterName,
@@ -586,6 +617,7 @@ public interface InstanceMaintainerService {
      * @param healthyOnly   {@code true} if only return healthy instances, {@code false} if return all instances
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default List<Instance> listInstances(String namespaceId, String groupName, String serviceName,
@@ -606,6 +638,7 @@ public interface InstanceMaintainerService {
      * @param healthyOnly   {@code true} if only return healthy instances, {@code false} if return all instances
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     List<Instance> listInstances(Service service, String clusterName, boolean healthyOnly)
@@ -619,6 +652,7 @@ public interface InstanceMaintainerService {
      * @param port        the port of the instance
      * @return the instance detail information
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Instance getInstanceDetail(String serviceName, String ip, int port)
@@ -635,6 +669,7 @@ public interface InstanceMaintainerService {
      * @param port        the port of the instance
      * @return the instance detail information
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Instance getInstanceDetail(String groupName, String serviceName, String ip, int port)
@@ -652,6 +687,7 @@ public interface InstanceMaintainerService {
      * @param port        the port of the instance
      * @return the instance detail information
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Instance getInstanceDetail(String namespaceId, String groupName, String serviceName,
@@ -670,6 +706,7 @@ public interface InstanceMaintainerService {
      * @param clusterName the cluster name
      * @return the instance detail information
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Instance getInstanceDetail(String serviceName, String ip, int port, String clusterName)
@@ -687,6 +724,7 @@ public interface InstanceMaintainerService {
      * @param clusterName the cluster name
      * @return the instance detail information
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Instance getInstanceDetail(String groupName, String serviceName, String ip, int port,
@@ -707,6 +745,7 @@ public interface InstanceMaintainerService {
      * @param clusterName the cluster name
      * @return the instance detail information
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Instance getInstanceDetail(String namespaceId, String groupName, String serviceName,
@@ -731,6 +770,7 @@ public interface InstanceMaintainerService {
      *                  and {@link Instance#getClusterName()} is optional. Others useless.
      * @return the instance detail information
      * @throws NacosException if an error occurs
+      * <p>命名实例维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     Instance getInstanceDetail(Service service, Instance instance) throws NacosException;

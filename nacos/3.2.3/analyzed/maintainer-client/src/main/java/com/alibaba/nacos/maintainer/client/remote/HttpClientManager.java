@@ -27,7 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *  Http client manager.
+ * 维护客户端 HTTP 连接管理器（单例）：提供共享 {@link NacosRestTemplate}。
+ *
+ * <p>使用 {@link DefaultHttpClientFactory} 创建同步 REST 客户端，在 {@link #shutdown()} 时销毁 BeanHolder 中的实例。</p>
  *
  * @author Nacos
  */
@@ -35,11 +37,13 @@ public class HttpClientManager implements Closeable {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpClientManager.class);
     
+    /** 单例实例（双重检查锁）。 */
     private static volatile HttpClientManager httpClientManager;
     
     private HttpClientManager() {
     }
     
+    /** 获取全局 {@link HttpClientManager} 单例。 */
     public static HttpClientManager getInstance() {
         if (httpClientManager == null) {
             synchronized (HttpClientManager.class) {
@@ -58,11 +62,13 @@ public class HttpClientManager implements Closeable {
      * get NacosRestTemplate Instance.
      *
      * @return NacosRestTemplate
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
     public NacosRestTemplate getNacosRestTemplate() {
         return HttpClientBeanHolder.getNacosRestTemplate(HTTP_CLIENT_FACTORY);
     }
     
+    /** 销毁 NacosRestTemplate 并释放 HTTP 连接池。 */
     @Override
     public void shutdown() throws NacosException {
         LOGGER.info("[HttpClientManager] Start destroying NacosRestTemplate");

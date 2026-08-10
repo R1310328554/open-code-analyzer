@@ -20,12 +20,15 @@ import com.alibaba.nacos.api.ability.ServerAbilities;
 import com.alibaba.nacos.core.ability.ServerAbilityInitializer;
 
 /**
- * Server ability initializer for naming.
+ * 命名模块服务端能力初始化器：向集群宣告命名相关特性。
+ *
+ * <p>实现 {@link ServerAbilityInitializer}，在启动时将 JRaft 支持标记为开启。</p>
  *
  * @author xiweng.yy
  */
 public class NamingAbilityInitializer implements ServerAbilityInitializer {
     
+    /** 设置命名模块支持 JRaft 一致性存储。 */
     @Override
     public void initialize(ServerAbilities abilities) {
         abilities.getNamingAbility().setSupportJraft(true);

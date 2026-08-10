@@ -26,7 +26,9 @@ import com.alibaba.nacos.api.naming.pojo.maintainer.ClientSummaryInfo;
 import java.util.List;
 
 /**
- * Nacos naming module client information maintainer API.
+ * Nacos 命名模块客户端信息维护 API：查询连接客户端及其发布/订阅关系。
+ *
+ * <p>支持按 clientId 或按服务维度双向查询发布者与订阅者列表。</p>
  *
  * @author xiweng.yy
  */
@@ -37,6 +39,7 @@ public interface NamingClientMaintainerService {
      *
      * @return the list of client IDs
      * @throws NacosException if an error occurs
+      * <p>命名客户端信息维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     List<String> getClientList() throws NacosException;
@@ -47,6 +50,7 @@ public interface NamingClientMaintainerService {
      * @param clientId the client ID
      * @return the client detail information
      * @throws NacosException if an error occurs
+      * <p>命名客户端信息维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     ClientSummaryInfo getClientDetail(String clientId) throws NacosException;
@@ -57,6 +61,7 @@ public interface NamingClientMaintainerService {
      * @param clientId the client ID
      * @return the list of published services
      * @throws NacosException if an error occurs
+      * <p>命名客户端信息维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     List<ClientServiceInfo> getPublishedServiceList(String clientId) throws NacosException;
@@ -67,6 +72,7 @@ public interface NamingClientMaintainerService {
      * @param clientId the client ID
      * @return the list of subscribed services
      * @throws NacosException if an error occurs
+      * <p>命名客户端信息维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     List<ClientServiceInfo> getSubscribeServiceList(String clientId) throws NacosException;
@@ -81,6 +87,7 @@ public interface NamingClientMaintainerService {
      * @param port        the port of the client
      * @return the list of clients
      * @throws NacosException if an error occurs
+      * <p>命名客户端信息维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     List<ClientPublisherInfo> getPublishedClientList(String namespaceId, String groupName,
@@ -97,6 +104,7 @@ public interface NamingClientMaintainerService {
      * @param port        the port of the client
      * @return the list of clients
      * @throws NacosException if an error occurs
+      * <p>命名客户端信息维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     List<ClientSubscriberInfo> getSubscribeClientList(String namespaceId, String groupName,

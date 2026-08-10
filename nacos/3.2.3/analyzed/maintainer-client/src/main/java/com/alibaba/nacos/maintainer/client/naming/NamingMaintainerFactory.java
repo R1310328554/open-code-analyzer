@@ -21,7 +21,9 @@ import com.alibaba.nacos.api.exception.NacosException;
 import java.util.Properties;
 
 /**
- * Nacos naming maintainer service.
+ * 命名维护服务工厂：创建 {@link NamingMaintainerService} 实例。
+ *
+ * <p>支持服务端地址字符串或完整 {@link Properties} 两种入口。</p>
  *
  * @author Nacos
  */
@@ -33,7 +35,9 @@ public class NamingMaintainerFactory {
      * @param serverList server list
      * @return naming maintainer service
      * @throws NacosException nacos exception
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
+    /** 根据 serverAddr 列表字符串创建命名维护服务。 */
     public static NamingMaintainerService createNamingMaintainerService(String serverList)
         throws NacosException {
         Properties properties = new Properties();
@@ -47,7 +51,9 @@ public class NamingMaintainerFactory {
      * @param properties properties
      * @return naming maintainer service
      * @throws NacosException nacos exception
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
+    /** 根据客户端 {@link Properties} 创建命名维护服务。 */
     public static NamingMaintainerService createNamingMaintainerService(Properties properties)
         throws NacosException {
         if (properties == null) {

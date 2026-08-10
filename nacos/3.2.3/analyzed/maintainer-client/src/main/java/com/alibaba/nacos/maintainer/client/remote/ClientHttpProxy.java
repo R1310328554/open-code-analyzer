@@ -55,7 +55,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Client Http Proxy.
+ * 维护客户端 HTTP 代理：服务端轮询、鉴权、重试与同步请求执行。
+ *
+ * <p>封装 {@link NacosRestTemplate} 与 {@link DefaultServerListManager}，支持 multipart 上传与 token 刷新重登。</p>
  *
  * @author Nacos
  */
@@ -63,28 +65,33 @@ public class ClientHttpProxy implements Closeable {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientHttpProxy.class);
     
+    /** 共享 Nacos HTTP 客户端模板。 */
     private final NacosRestTemplate nacosRestTemplate =
         HttpClientManager.getInstance().getNacosRestTemplate();
     
+    /** 是否启用 HTTPS（读取 TLS 系统属性）。 */
     private final boolean enableHttps = Boolean.getBoolean(TlsSystemConfig.TLS_ENABLE);
     
     private final long refreshIntervalMills = ParamUtil.getRefreshIntervalMills();
     
     private final int maxRetry = ParamUtil.getMaxRetryTimes();
     
+    /** Nacos 服务端地址列表管理器。 */
     private DefaultServerListManager serverListManager;
     
+    /** 客户端鉴权插件管理器。 */
     private ClientAuthPluginManager clientAuthPluginManager;
     
     private ScheduledExecutorService executor;
     
+    /** 初始化服务端列表、鉴权与定时刷新登录任务。 */
     public ClientHttpProxy(Properties properties) throws NacosException {
         initServerListManager(properties);
         initClientAuthService(properties);
         initScheduledExecutor(properties);
     }
     
-    /** Initialize the server list manager. */
+    /** 初始化并启动服务端列表管理器。 */
     public void initServerListManager(Properties properties) throws NacosException {
         serverListManager =
             new DefaultServerListManager(NacosClientProperties.PROTOTYPE.derive(properties));
@@ -108,6 +115,7 @@ public class ClientHttpProxy implements Closeable {
      * Login all available ClientAuthService instance.
      *
      * @param properties login identity information.
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
     public void login(Properties properties) {
         for (ClientAuthService clientAuthService : clientAuthPluginManager
@@ -122,7 +130,9 @@ public class ClientHttpProxy implements Closeable {
      * @param request http request
      * @return http result
      * @throws NacosException exception when request
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
+    /** 同步执行 HTTP 请求：失败时切换节点并重试直至超时。 */
     public HttpRestResult<String> executeSyncHttpRequest(HttpRequest request)
         throws NacosException {
         long endTime = System.currentTimeMillis() + ParamUtil.getReadTimeout();
@@ -200,6 +210,7 @@ public class ClientHttpProxy implements Closeable {
         return result.getMessage();
     }
     
+    /** 向指定节点发起单次 HTTP 调用（含鉴权头与 multipart 分支）。 */
     private HttpRestResult<String> executeSync(HttpRequest request, String serverAddr)
         throws Exception {
         long readTimeoutMs = ParamUtil.getReadTimeout();
@@ -316,6 +327,7 @@ public class ClientHttpProxy implements Closeable {
         });
     }
     
+    /** 拼接协议前缀、contextPath 与相对路径为完整 URL。 */
     private String buildUrl(String serverAddr, String relativePath) {
         if (!serverAddr.startsWith(RequestUrlConstants.HTTP_PREFIX) && !serverAddr.startsWith(
             RequestUrlConstants.HTTPS_PREFIX)) {
@@ -338,7 +350,9 @@ public class ClientHttpProxy implements Closeable {
     
     /**
      * Login again to refresh the accessToken.
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
+    /** 无权限响应时触发各鉴权插件重新登录。 */
     public void reLogin() {
         for (ClientAuthService clientAuthService : clientAuthPluginManager
             .getAuthServiceSpiImplSet()) {
@@ -355,6 +369,7 @@ public class ClientHttpProxy implements Closeable {
         }
     }
     
+    /** 关闭 HTTP 客户端、服务端列表管理与定时任务。 */
     @Override
     public void shutdown() throws NacosException {
         String className = this.getClass().getName();

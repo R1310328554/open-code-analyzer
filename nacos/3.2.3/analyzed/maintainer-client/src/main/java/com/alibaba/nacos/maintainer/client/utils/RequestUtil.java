@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Request Utils.
+ * 维护客户端请求参数转换工具：将 POJO 序列化为 Admin API 查询/表单参数。
+ *
+ * <p>覆盖 {@link Service}、{@link Instance}、批量实例元数据与 {@link ClusterInfo} 等场景。</p>
  *
  * @author xiweng.yy
  */
@@ -37,7 +39,9 @@ public class RequestUtil {
      *
      * @param service {@link Service} object
      * @return HTTP API request parameters
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
+    /** 将 {@link Service} 转为创建/更新服务的 HTTP 参数 Map。 */
     public static Map<String, String> toParameters(Service service) {
         Map<String, String> params = new HashMap<>(8);
         params.put("namespaceId", service.getNamespaceId());
@@ -56,7 +60,9 @@ public class RequestUtil {
      * @param service {@link Service} object
      * @param instance {@link Instance} object
      * @return HTTP API request parameters
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
+    /** 将服务与实例转为实例操作 HTTP 参数 Map。 */
     public static Map<String, String> toParameters(Service service, Instance instance) {
         Map<String, String> params = new HashMap<>(11);
         params.put("namespaceId", service.getNamespaceId());
@@ -80,7 +86,9 @@ public class RequestUtil {
      * @param instances list of  {@link Instance}
      * @param newMetadata new Metadata map
      * @return HTTP API request parameters
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
+    /** 将服务、实例列表与新元数据转为批量元数据操作参数。 */
     public static Map<String, String> toParameters(Service service, List<Instance> instances,
         Map<String, String> newMetadata) {
         Map<String, String> params = new HashMap<>(6);
@@ -99,7 +107,9 @@ public class RequestUtil {
      * @param service {@link Service} object
      * @param cluster list of  {@link ClusterInfo}
      * @return HTTP API request parameters
+      * <p>Nacos 模块组件；详见上方说明。</p>
      */
+    /** 将服务与集群信息转为集群更新 HTTP 参数 Map。 */
     public static Map<String, String> toParameters(Service service, ClusterInfo cluster) {
         Map<String, String> params = new HashMap<>(8);
         params.put("namespaceId", service.getNamespaceId());

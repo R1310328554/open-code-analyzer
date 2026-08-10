@@ -17,34 +17,22 @@
 package com.alibaba.nacos.naming.cluster;
 
 /**
- * A flag to indicate the exact status of a server.
+ * 命名服务端运行状态枚举：标识节点是否可对外提供服务。
  *
  * @author nkorange
  * @since 1.0.0
  */
 public enum ServerStatus {
-    /**
-     * server is up and ready for request.
-     */
+    /** 节点正常运行，可处理读写请求。 */
     UP,
-    /**
-     * server is out of service, something abnormal happened.
-     */
+    /** 节点异常下线，不可对外服务。 */
     DOWN,
-    /**
-     * server is preparing itself for request, usually 'UP' is the next status.
-     */
+    /** 节点启动中，通常随后变为 UP。 */
     STARTING,
-    /**
-     * server is manually paused.
-     */
+    /** 节点被手动暂停服务。 */
     PAUSED,
-    /**
-     * only write operation is permitted.
-     */
+    /** 仅允许写操作（读不可用）。 */
     WRITE_ONLY,
-    /**
-     * only read operation is permitted.
-     */
+    /** 仅允许读操作（写不可用）。 */
     READ_ONLY
 }

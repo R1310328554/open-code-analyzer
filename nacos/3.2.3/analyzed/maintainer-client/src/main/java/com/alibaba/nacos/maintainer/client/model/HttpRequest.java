@@ -22,30 +22,42 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * HttpRequest.
+ * 维护客户端 HTTP 请求模型：封装方法、路径、头、参数、正文与鉴权资源。
+ *
+ * <p>支持普通表单/JSON 请求及 {@link #isFileUpload()} 多部分文件上传；通过 {@link Builder} 链式构建。</p>
  *
  * @author Nacos
  */
 public class HttpRequest {
     
+    /** HTTP 方法（GET/POST/PUT/DELETE）。 */
     private String httpMethod;
     
+    /** 相对 Admin API 路径。 */
     private String path;
     
+    /** 自定义请求头。 */
     private Map<String, String> headers;
     
+    /** 查询或表单参数。 */
     private Map<String, String> paramValues;
     
+    /** JSON 请求体（POST 时使用）。 */
     private String body;
     
+    /** 鉴权资源（命名空间/分组/资源名）。 */
     private RequestResource resource;
     
+    /** 上传文件的原始字节。 */
     private byte[] fileBytes;
     
+    /** 上传文件名（Content-Disposition）。 */
     private String fileName;
     
+    /**  multipart 表单字段名。 */
     private String fileFieldName;
     
+    /** 构造不含文件上传的 HTTP 请求。 */
     public HttpRequest(String httpMethod, String path, Map<String, String> headers,
         Map<String, String> paramValues,
         String body, RequestResource resource) {
@@ -127,10 +139,12 @@ public class HttpRequest {
         return fileFieldName;
     }
     
+    /** 是否包含 multipart 文件上传数据。 */
     public boolean isFileUpload() {
         return fileBytes != null && fileBytes.length > 0;
     }
     
+    /** {@link HttpRequest} 链式构建器。 */
     public static class Builder {
         
         private String httpMethod;
@@ -188,6 +202,7 @@ public class HttpRequest {
          * @param fileName      file name sent in Content-Disposition
          * @param fileFieldName form field name (e.g. "file")
          * @return this builder
+          * <p>Nacos 模块组件；详见上方说明。</p>
          */
         public Builder setFileUpload(byte[] fileBytes, String fileName, String fileFieldName) {
             this.fileBytes = fileBytes;
@@ -196,7 +211,7 @@ public class HttpRequest {
             return this;
         }
         
-        /** Build the HTTP request. */
+        /** 构建 {@link HttpRequest} 实例。 */
         public HttpRequest build() {
             return new HttpRequest(httpMethod, path, headers, paramValues, body, resource,
                 fileBytes, fileName,

@@ -26,7 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * manage param tool.
+ * 维护客户端 HTTP 参数工具：连接/读超时、重试次数与鉴权刷新间隔。
+ *
+ * <p>配置项以 {@code MAINTAINER.CLIENT.*} 为键，从 {@link NacosClientProperties} 读取；另提供 Jackson 子类型预注册 {@link #initSerialization()}。</p>
  *
  * @author nacos
  */
@@ -34,12 +36,16 @@ public class ParamUtil {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ParamUtil.class);
     
+    /** HTTP 连接超时（毫秒）。 */
     private static int connectTimeout;
     
+    /** HTTP 读超时（毫秒）。 */
     private static int readTimeout;
     
+    /** 请求失败最大重试次数。 */
     private static int maxRetryTimes;
     
+    /** 鉴权 token 定时刷新间隔（毫秒）。 */
     private static long refreshIntervalMills;
     
     private static final String MAINTAINER_CLIENT_CONNECT_TIMEOUT_KEY =
@@ -130,6 +136,7 @@ public class ParamUtil {
         }
     }
     
+    /** 获取连接超时毫秒数。 */
     public static int getConnectTimeout() {
         return connectTimeout;
     }
@@ -138,6 +145,7 @@ public class ParamUtil {
         ParamUtil.connectTimeout = connectTimeout;
     }
     
+    /** 获取读超时毫秒数。 */
     public static int getReadTimeout() {
         return readTimeout;
     }
@@ -146,6 +154,7 @@ public class ParamUtil {
         ParamUtil.readTimeout = readTimeout;
     }
     
+    /** 获取最大重试次数。 */
     public static int getMaxRetryTimes() {
         return maxRetryTimes;
     }
@@ -158,6 +167,7 @@ public class ParamUtil {
         return Constants.DEFAULT_GROUP;
     }
     
+    /** 获取鉴权刷新间隔毫秒数。 */
     public static long getRefreshIntervalMills() {
         return refreshIntervalMills;
     }

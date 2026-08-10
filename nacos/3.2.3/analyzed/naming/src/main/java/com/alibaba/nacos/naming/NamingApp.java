@@ -21,7 +21,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Nacos naming starter.
+ * Nacos 命名模块 Spring Boot 启动入口。
+ *
+ * <p>扫描 {@code com.alibaba.nacos.naming} 与 {@code com.alibaba.nacos.core} 包，启用定时任务调度。</p>
  *
  * @author xxc
  */
@@ -29,6 +31,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(scanBasePackages = {"com.alibaba.nacos.naming", "com.alibaba.nacos.core"})
 public class NamingApp {
     
+    /** 启动命名服务 Spring 应用。 */
     public static void main(String[] args) {
         SpringApplication.run(NamingApp.class, args);
     }

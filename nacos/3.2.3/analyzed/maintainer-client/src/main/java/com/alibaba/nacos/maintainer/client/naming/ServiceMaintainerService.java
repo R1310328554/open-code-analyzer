@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Nacos naming module service maintainer API.
+ * Nacos 命名模块服务维护 API：创建、更新、删除与查询命名服务。
+ *
+ * <p>提供带默认命名空间/分组的重载，以及分页列表、订阅者查询与选择器管理。</p>
  *
  * @author xiweng.yy
  */
@@ -46,6 +48,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the name of the service
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createService(String serviceName) throws NacosException {
@@ -61,6 +64,7 @@ public interface ServiceMaintainerService {
      * @param serviceName  the name of the service
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createService(String groupName, String serviceName) throws NacosException {
@@ -77,6 +81,7 @@ public interface ServiceMaintainerService {
      * @param serviceName  the name of the service
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createService(String namespaceId, String groupName, String serviceName)
@@ -95,6 +100,7 @@ public interface ServiceMaintainerService {
      * @param ephemeral    if {@code true}, the service is ephemeral, otherwise persistent.
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createService(String namespaceId, String groupName, String serviceName,
@@ -115,6 +121,7 @@ public interface ServiceMaintainerService {
      * @param protectThreshold the protect threshold of the service
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createService(String namespaceId, String groupName, String serviceName,
@@ -135,6 +142,7 @@ public interface ServiceMaintainerService {
      * @param service   {@link Service} full information of service to be created.
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String createService(Service service) throws NacosException;
@@ -148,6 +156,7 @@ public interface ServiceMaintainerService {
      * @param newSelector           the new selector of the updated service
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String updateService(String serviceName, Map<String, String> newMetadata,
@@ -167,6 +176,7 @@ public interface ServiceMaintainerService {
      * @param newSelector           the new selector of the updated service
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String updateService(String groupName, String serviceName,
@@ -187,6 +197,7 @@ public interface ServiceMaintainerService {
      * @param newSelector           the new selector of the updated service
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String updateService(String namespaceId, String groupName, String serviceName,
@@ -208,6 +219,7 @@ public interface ServiceMaintainerService {
      * @param newSelector           the new selector of the updated service
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String updateService(String namespaceId, String groupName, String serviceName,
@@ -239,6 +251,7 @@ public interface ServiceMaintainerService {
      * @param service {@link Service} full information of service to be updated.
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String updateService(Service service) throws NacosException;
@@ -251,6 +264,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the service name
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String removeService(String serviceName) throws NacosException {
@@ -266,6 +280,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the service name
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String removeService(String groupName, String serviceName) throws NacosException {
@@ -280,6 +295,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the service name
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String removeService(String namespaceId, String groupName, String serviceName)
@@ -297,6 +313,7 @@ public interface ServiceMaintainerService {
      * @param service {@link Service} to be removed, need {@link Service#getNamespaceId()}, {@link Service#getGroupName()}, {@link Service#getName()}
      * @return the result of the operation
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     String removeService(Service service) throws NacosException;
@@ -307,6 +324,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the service name
      * @return the service detail information
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default ServiceDetailInfo getServiceDetail(String serviceName) throws NacosException {
@@ -320,6 +338,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the service name
      * @return the service detail information
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default ServiceDetailInfo getServiceDetail(String groupName, String serviceName)
@@ -335,6 +354,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the service name
      * @return the service detail information
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default ServiceDetailInfo getServiceDetail(String namespaceId, String groupName,
@@ -353,6 +373,7 @@ public interface ServiceMaintainerService {
      * @param service {@link Service} to be get, need {@link Service#getNamespaceId()}, {@link Service#getGroupName()}, {@link Service#getName()}
      * @return the service detail information
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     ServiceDetailInfo getServiceDetail(Service service) throws NacosException;
@@ -365,6 +386,7 @@ public interface ServiceMaintainerService {
      * @param namespaceId target namespace id
      * @return page of service view, {@link ServiceView} is a summary of service.
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ServiceView> listServices(String namespaceId) throws NacosException {
@@ -381,6 +403,7 @@ public interface ServiceMaintainerService {
      * @param serviceNameParam  the service name pattern, e.g., "" for all services, "service" for all services name match `.*service.*`.
      * @return page of service view, {@link ServiceView} is a summary of service.
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ServiceView> listServices(String namespaceId, String groupNameParam,
@@ -402,6 +425,7 @@ public interface ServiceMaintainerService {
      * @param pageSize           page size per page
      * @return page of service view, {@link ServiceView} is a summary of service.
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     Page<ServiceView> listServices(String namespaceId, String groupNameParam,
@@ -421,6 +445,7 @@ public interface ServiceMaintainerService {
      * @param namespaceId target namespace id
      * @return page of service detail, {@link ServiceDetailInfo} is a detail info of service.
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ServiceDetailInfo> listServicesWithDetail(String namespaceId)
@@ -443,6 +468,7 @@ public interface ServiceMaintainerService {
      * @param serviceNameParam  the service name pattern, e.g., "" for all services, "service" for all services name match `.*service.*`.
      * @return page of service detail, {@link ServiceDetailInfo} is a detail info of service.
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<ServiceDetailInfo> listServicesWithDetail(String namespaceId,
@@ -467,6 +493,7 @@ public interface ServiceMaintainerService {
      * @param pageSize              page size per page
      * @return page of service detail, {@link ServiceDetailInfo} is a detail info of service.
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     Page<ServiceDetailInfo> listServicesWithDetail(String namespaceId, String groupNameParam,
@@ -485,6 +512,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the service name
      * @return the page of subscribers
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<SubscriberInfo> getSubscribers(String serviceName) throws NacosException {
@@ -504,6 +532,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the service name
      * @return the page of subscribers
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<SubscriberInfo> getSubscribers(String groupName, String serviceName)
@@ -525,6 +554,7 @@ public interface ServiceMaintainerService {
      * @param serviceName the service name
      * @return the page of subscribers
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<SubscriberInfo> getSubscribers(String namespaceId, String groupName,
@@ -549,6 +579,7 @@ public interface ServiceMaintainerService {
      * @param pageSize    the page size
      * @return the page of subscribers
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<SubscriberInfo> getSubscribers(String namespaceId, String groupName,
@@ -570,6 +601,7 @@ public interface ServiceMaintainerService {
      * @param aggregation whether to aggregate results from all server members
      * @return the list of subscribers
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<SubscriberInfo> getSubscribers(String namespaceId, String groupName,
@@ -594,6 +626,7 @@ public interface ServiceMaintainerService {
      * @param aggregation whether to aggregate results from all server members
      * @return the list of subscribers
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     Page<SubscriberInfo> getSubscribers(Service service, int pageNo, int pageSize,
@@ -605,6 +638,7 @@ public interface ServiceMaintainerService {
      *
      * @return the list of selector types
      * @throws NacosException if an error occurs
+      * <p>命名服务维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     List<String> listSelectorTypes() throws NacosException;
