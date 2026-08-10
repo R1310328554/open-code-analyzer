@@ -1,3 +1,4 @@
+// safetensors 张量提取：流式读取单张量/打包 blob，避免整文件进内存。
 package safetensors
 
 import (
@@ -10,6 +11,7 @@ import (
 	"sort"
 )
 
+// tensorInfo 保存 safetensors 头中的张量元数据。
 // tensorInfo holds tensor metadata from safetensors headers.
 type tensorInfo struct {
 	Dtype       string  `json:"dtype"`
@@ -17,15 +19,18 @@ type tensorInfo struct {
 	DataOffsets [2]int  `json:"data_offsets"`
 }
 
+// TensorExtractor 从 safetensors 文件提取单张量；每路 io.Reader 可流式写入 blob。
 // TensorExtractor extracts individual tensors from a safetensors file.
 // It provides io.Reader interfaces for each tensor's raw data, enabling
 // streaming writes to blobs without loading entire tensors into memory.
 type TensorExtractor struct {
 	file       *os.File
-	dataOffset int64 // Start of tensor data region
+	dataOffset int64 // 张量数据区起始偏移
+	// Start of tensor data region
 	header     map[string]tensorInfo
 }
 
+// TensorData 含张量元数据及原始字节的 SectionReader。
 // TensorData holds tensor metadata and a reader for its raw bytes.
 type TensorData struct {
 	Name   string
@@ -35,6 +40,7 @@ type TensorData struct {
 	reader *io.SectionReader
 }
 
+// WithName 浅拷贝并替换逻辑张量名，共享同一底层 reader。
 // WithName returns a shallow copy of TensorData with a different logical tensor
 // name but the same underlying raw data reader.
 func (td *TensorData) WithName(name string) *TensorData {
@@ -52,11 +58,13 @@ func (td *TensorData) WithName(name string) *TensorData {
 	}
 }
 
+// Reader 返回张量原始字节的 io.Reader。
 // Reader returns an io.Reader for the tensor's raw bytes.
 func (td *TensorData) Reader() io.Reader {
 	return td.reader
 }
 
+// safetensorsHeader 构建仅含单张量的最小 safetensors JSON 头。
 // safetensorsHeader builds the JSON header for a minimal safetensors blob
 // containing a single tensor keyed by its name.
 func (td *TensorData) safetensorsHeader() []byte {
@@ -69,12 +77,14 @@ func (td *TensorData) safetensorsHeader() []byte {
 	}
 	headerJSON, _ := json.Marshal(header)
 
+	// 头 JSON 填充至 8 字节对齐。
 	// Pad header to 8-byte alignment
 	padding := (8 - len(headerJSON)%8) % 8
 	headerJSON = append(headerJSON, bytes.Repeat([]byte(" "), padding)...)
 	return headerJSON
 }
 
+// SafetensorsReader 输出最小 safetensors 包装流，供 mlx_load_safetensors 零拷贝加载。
 // SafetensorsReader returns a reader that outputs the tensor wrapped in
 // minimal safetensors format. This allows using mlx_load_safetensors on
 // individual tensor blobs for native zero-copy loading.
@@ -82,22 +92,26 @@ func (td *TensorData) safetensorsHeader() []byte {
 func (td *TensorData) SafetensorsReader() io.Reader {
 	headerJSON := td.safetensorsHeader()
 
+	// 8 字节小端长度前缀 + JSON 头。
 	// Build header with size prefix
 	headerBuf := new(bytes.Buffer)
 	binary.Write(headerBuf, binary.LittleEndian, uint64(len(headerJSON)))
 	headerBuf.Write(headerJSON)
 
+	// MultiReader：头 + 张量数据。
 	// Return multi-reader: header + tensor data
 	td.reader.Seek(0, io.SeekStart)
 	return io.MultiReader(headerBuf, td.reader)
 }
 
+// SafetensorsSize 返回包装后 safetensors 总字节数。
 // SafetensorsSize returns the total size of the safetensors-wrapped tensor.
 func (td *TensorData) SafetensorsSize() int64 {
 	headerJSON := td.safetensorsHeader()
 	return 8 + int64(len(headerJSON)) + td.Size
 }
 
+// NewTensorDataFromBytes 从已有原始字节构造 TensorData。
 // NewTensorDataFromBytes creates a TensorData from raw tensor bytes.
 // This is useful for constructing packed blobs from already-extracted data.
 func NewTensorDataFromBytes(name, dtype string, shape []int32, rawData []byte) *TensorData {
@@ -110,6 +124,7 @@ func NewTensorDataFromBytes(name, dtype string, shape []int32, rawData []byte) *
 	}
 }
 
+// NewTensorDataFromReaderAt 用任意 ReaderAt 支撑大张量，避免全量进内存。
 // NewTensorDataFromReaderAt creates a TensorData backed by an arbitrary
 // io.ReaderAt. This is useful for constructing large synthetic tensors from
 // temporary files without loading the full payload into memory.
@@ -123,24 +138,29 @@ func NewTensorDataFromReaderAt(name, dtype string, shape []int32, readerAt io.Re
 	}
 }
 
+// ExtractRawFromSafetensors 剥离 safetensors 头，读出纯张量字节。
 // ExtractRawFromSafetensors reads a safetensors-wrapped reader and extracts
 // the raw tensor data bytes (stripping the header).
 func ExtractRawFromSafetensors(r io.Reader) ([]byte, error) {
+	// 读 8 字节小端头长度。
 	// Read header size (8 bytes, little endian)
 	var headerSize uint64
 	if err := binary.Read(r, binary.LittleEndian, &headerSize); err != nil {
 		return nil, fmt.Errorf("failed to read header size: %w", err)
 	}
 
+	// 跳过 JSON 头。
 	// Skip header
 	if _, err := io.CopyN(io.Discard, r, int64(headerSize)); err != nil {
 		return nil, fmt.Errorf("failed to skip header: %w", err)
 	}
 
+	// 读剩余原始张量数据。
 	// Read remaining bytes (the raw tensor data)
 	return io.ReadAll(r)
 }
 
+// BuildPackedSafetensorsReader 流式输出含多 tensor 的有效 safetensors 文件。
 // BuildPackedSafetensorsReader builds a streaming io.Reader that outputs a valid
 // safetensors file containing multiple tensors. Used for packing expert tensors
 // into a single blob without loading all data into memory.
@@ -149,10 +169,12 @@ func BuildPackedSafetensorsReader(tensors []*TensorData) io.Reader {
 	return BuildPackedSafetensorsReaderWithMetadata(tensors, nil)
 }
 
+// BuildPackedSafetensorsReaderWithMetadata 同上，可附加 __metadata__。
 // BuildPackedSafetensorsReaderWithMetadata builds a streaming io.Reader that
 // outputs a valid safetensors file containing multiple tensors and optional
 // metadata.
 func BuildPackedSafetensorsReaderWithMetadata(tensors []*TensorData, metadata map[string]string) io.Reader {
+	// 按顺序累加 data_offsets 构建头。
 	// Build the header with sequential data offsets
 	header := make(map[string]any, len(tensors)+1)
 	var offset int
@@ -190,6 +212,7 @@ func BuildPackedSafetensorsReaderWithMetadata(tensors []*TensorData, metadata ma
 	return io.MultiReader(readers...)
 }
 
+// OpenForExtraction 打开文件供提取；调用方须 Close。
 // OpenForExtraction opens a safetensors file for tensor extraction.
 // The caller must call Close() when done.
 func OpenForExtraction(path string) (*TensorExtractor, error) {
@@ -225,6 +248,7 @@ func OpenForExtraction(path string) (*TensorExtractor, error) {
 	}, nil
 }
 
+// GetTensor 按名返回元数据与 SectionReader。
 // GetTensor returns tensor metadata and a reader for extracting a single tensor.
 func (te *TensorExtractor) GetTensor(name string) (*TensorData, error) {
 	info, ok := te.header[name]
@@ -244,6 +268,7 @@ func (te *TensorExtractor) GetTensor(name string) (*TensorData, error) {
 	}, nil
 }
 
+// ListTensors 返回排序后的全部张量名。
 // ListTensors returns all tensor names in sorted order.
 func (te *TensorExtractor) ListTensors() []string {
 	names := make([]string, 0, len(te.header))
@@ -254,16 +279,19 @@ func (te *TensorExtractor) ListTensors() []string {
 	return names
 }
 
+// TensorCount 返回文件中张量个数。
 // TensorCount returns the number of tensors in the file.
 func (te *TensorExtractor) TensorCount() int {
 	return len(te.header)
 }
 
+// Close 关闭底层文件。
 // Close closes the underlying file.
 func (te *TensorExtractor) Close() error {
 	return te.file.Close()
 }
 
+// ExtractAll 返回全部 TensorData；调用方仍须 Close TensorExtractor。
 // ExtractAll returns TensorData for all tensors in the file.
 // Each TensorData has a reader that reads from the original file.
 // The caller must call Close() on the TensorExtractor when done.

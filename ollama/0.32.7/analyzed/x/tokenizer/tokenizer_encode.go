@@ -1,3 +1,4 @@
+// 文本编码：特殊 token 切分、预分词、并行 chunk 与 BPE merge。
 package tokenizer
 
 import (
@@ -9,21 +10,25 @@ import (
 	"unicode/utf8"
 )
 
+// 并行编码阈值：输入与每 worker chunk 数。
 const (
 	encodeParallelMinInputBytes      = 4 * 1024
 	encodeParallelMinChunksPerWorker = 8
 )
 
+// tokenMatch 预分词正则匹配区间。
 type tokenMatch struct {
 	start int
 	end   int
 }
 
+// encodeChunk 编码单元：普通文本或特殊 token。
 type encodeChunk struct {
 	text      string
 	isSpecial bool
 }
 
+// isNonNewlineWhitespace 判断 s 是否仅含非换行空白。
 // isNonNewlineWhitespace returns true if s contains only whitespace characters (no newlines)
 func isNonNewlineWhitespace(s string) bool {
 	if s == "" {
@@ -40,6 +45,7 @@ func isNonNewlineWhitespace(s string) bool {
 	return true
 }
 
+// splitBySpecialTokens 按最长特殊 token 前缀切分文本。
 // splitBySpecialTokens splits text into parts, keeping special tokens as separate elements
 func (t *Tokenizer) splitBySpecialTokens(s string) []string {
 	if len(t.specialTokens) == 0 {
@@ -48,6 +54,7 @@ func (t *Tokenizer) splitBySpecialTokens(s string) []string {
 
 	tokens := t.sortedSpecialTokens
 	if len(tokens) == 0 {
+		// 非 loader 构造时分词器时的 sorted 列表回退。
 		// Fallback for tokenizers constructed outside the loaders.
 		tokens = make([]string, 0, len(t.specialTokens))
 		for tok := range t.specialTokens {
@@ -72,6 +79,7 @@ func (t *Tokenizer) splitBySpecialTokens(s string) []string {
 			}
 		}
 		if !found {
+			// 找下一处特殊 token 起始位置。
 			// Find next special token position
 			nextPos := len(remaining)
 			for _, tok := range tokens {
@@ -89,6 +97,7 @@ func (t *Tokenizer) splitBySpecialTokens(s string) []string {
 	return result
 }
 
+// adjustWhitespaceBoundary 调整预分词边界：空白与标点间的空格归属。
 func adjustWhitespaceBoundary(part string, curr, next *tokenMatch, spaceBeforePunct bool) {
 	m := part[curr.start:curr.end]
 	nextText := part[next.start:next.end]
@@ -124,6 +133,7 @@ func adjustWhitespaceBoundary(part string, curr, next *tokenMatch, spaceBeforePu
 	}
 }
 
+// forEachPartChunk 对片段做特殊 token 或预分词 chunk 回调。
 func (t *Tokenizer) forEachPartChunk(part string, fn func(encodeChunk)) {
 	if _, ok := t.specialTokens[part]; ok {
 		fn(encodeChunk{text: part, isSpecial: true})
@@ -166,6 +176,7 @@ func (t *Tokenizer) forEachPartChunk(part string, fn func(encodeChunk)) {
 	}
 }
 
+// appendEncodedChunk 编码单个 chunk 并追加 ID。
 func (t *Tokenizer) appendEncodedChunk(ids []int32, c encodeChunk) []int32 {
 	if c.isSpecial {
 		if id, ok := t.specialTokens[c.text]; ok {
@@ -177,12 +188,15 @@ func (t *Tokenizer) appendEncodedChunk(ids []int32, c encodeChunk) []int32 {
 	return t.encodeChunkInto(c.text, ids)
 }
 
+// Encode 将文本转为 token ID；大输入且 chunk 足够多时使用并行。
 // Encode tokenizes text to token IDs.
 // Parallel encoding is used only for very large inputs with enough chunks per worker.
 func (t *Tokenizer) Encode(s string, addBOS bool) []int32 {
+	// 先按特殊 token 切分。
 	// First: split by special tokens
 	parts := t.splitBySpecialTokens(s)
 
+	// 小输入快路径：顺序编码，不物化 chunk 切片。
 	// Fast path: encode sequentially without materializing chunk slices.
 	if len(s) < encodeParallelMinInputBytes {
 		var ids []int32
@@ -198,6 +212,7 @@ func (t *Tokenizer) Encode(s string, addBOS bool) []int32 {
 		return ids
 	}
 
+	// 大输入收集全部 chunk 以启用并行。
 	// For large inputs collect chunks to enable parallel processing.
 	var allChunks []encodeChunk
 	for _, part := range parts {
@@ -206,6 +221,7 @@ func (t *Tokenizer) Encode(s string, addBOS bool) []int32 {
 		})
 	}
 
+	// 仅当 chunk 数足以摊销 goroutine 开销时才并行。
 	// Encode chunks. Use the parallel path only when the chunk count is
 	// large enough to amortize goroutine/synchronization overhead.
 	useParallel := true
@@ -260,6 +276,7 @@ func (t *Tokenizer) Encode(s string, addBOS bool) []int32 {
 	return ids
 }
 
+// encodeChunkInto 对单 chunk 做 SP/BPE 变换后 BPE merge。
 // encodeChunkInto appends encoded tokens to ids and returns the extended slice.
 // Uses BPE merge algorithm for both BPE and SentencePiece tokenization.
 func (t *Tokenizer) encodeChunkInto(s string, ids []int32) []int32 {
@@ -267,6 +284,7 @@ func (t *Tokenizer) encodeChunkInto(s string, ids []int32) []int32 {
 		return ids
 	}
 
+	// SP：空格→▁；BPE：byteToRune 字节级编码。
 	// Apply encoding transformation
 	// SentencePiece: replace space with ▁
 	// BPE: convert bytes using precomputed table (GPT-2 byte-level encoding)
@@ -282,6 +300,7 @@ func (t *Tokenizer) encodeChunkInto(s string, ids []int32) []int32 {
 		encoded = sb.String()
 	}
 
+	// 整 chunk 命中单一词表项则直接 append。
 	// Fast path: check if entire chunk is a single token
 	if id, ok := t.vocab.Reverse[encoded]; ok {
 		return append(ids, id)

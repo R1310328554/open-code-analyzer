@@ -1,13 +1,16 @@
+// BPE merge 核心：堆+双向链表，按最低 merge rank 迭代合并。
 package tokenizer
 
 import "container/heap"
 
+// bpeMergeNode 链表节点：前后索引与当前子串。
 type bpeMergeNode struct {
 	prev  int
 	next  int
 	token string
 }
 
+// bpePair 表示可 merge 的相邻 token 对与 rank。
 type bpePair struct {
 	left  int
 	right int
@@ -15,20 +18,26 @@ type bpePair struct {
 	value string
 }
 
+// bpePairHeap 最小堆：rank 小优先，同 rank 左索引小优先。
 type bpePairHeap []*bpePair
 
+// Len 堆长度。
 func (h bpePairHeap) Len() int { return len(h) }
 
+// Less 堆序：rank 升序，tie-break 左索引。
 func (h bpePairHeap) Less(i, j int) bool {
 	return h[i].rank < h[j].rank || (h[i].rank == h[j].rank && h[i].left < h[j].left)
 }
 
+// Swap 交换堆元素。
 func (h bpePairHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 
+// Push 入堆。
 func (h *bpePairHeap) Push(x any) {
 	*h = append(*h, x.(*bpePair))
 }
 
+// Pop 弹出最小元素。
 func (h *bpePairHeap) Pop() any {
 	old := *h
 	n := len(old)
@@ -37,6 +46,7 @@ func (h *bpePairHeap) Pop() any {
 	return item
 }
 
+// encodeBPEMerge 对已编码字符串执行 BPE merge；仅重检相邻对。
 // encodeBPEMerge encodes using BPE merge algorithm.
 // Uses the heap/linked-list pair merge strategy from tokenizer/bytepairencoding.go:
 // merge the lowest-rank valid pair, then only recheck adjacent pairs.
@@ -134,6 +144,7 @@ func (t *Tokenizer) encodeBPEMerge(encoded string, ids []int32) []int32 {
 	return ids
 }
 
+// appendByteFallback 未知子串时用 <0xNN> 或字节级回退追加 ID。
 func (t *Tokenizer) appendByteFallback(ids []int32, token string) []int32 {
 	if t.typ == TokenizerBPE {
 		for _, r := range token {
@@ -146,6 +157,7 @@ func (t *Tokenizer) appendByteFallback(ids []int32, token string) []int32 {
 		return ids
 	}
 
+	// SentencePiece 回退走 UTF-8 字节→<0xNN> token。
 	// SentencePiece fallback uses the UTF-8 bytes for <0xNN> tokens.
 	for _, b := range []byte(token) {
 		if id := t.vocab.byteTokens[b]; id >= 0 {
@@ -155,6 +167,7 @@ func (t *Tokenizer) appendByteFallback(ids []int32, token string) []int32 {
 	return ids
 }
 
+// decodeByteLevelRune 将 GPT-2 编码 rune 还原为原始字节。
 func decodeByteLevelRune(r rune) (byte, bool) {
 	switch {
 	case r >= 0x00 && r <= 0xFF:

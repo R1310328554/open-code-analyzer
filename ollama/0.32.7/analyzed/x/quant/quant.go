@@ -1,3 +1,5 @@
+// Package quant 保存模型导入器、运行时加载器与 `ollama show` 共享的量化格式事实。
+// 本包不依赖 MLX C 库，避免 cgo 并防止多处手写副本漂移。
 // Package quant holds the quantization format facts shared by the model
 // importer, the runtime loader, and `ollama show`. It deliberately has no
 // dependency on the MLX C library, so any package can use it without pulling
@@ -7,12 +9,14 @@ package quant
 
 import "strings"
 
+// params 保存单种量化类型的组大小、位宽与模式。
 type params struct {
 	groupSize int
 	bits      int
 	mode      string
 }
 
+// byType 将规范量化类型映射到参数；别名由 Canonical 解析后再查表。
 // byType maps each canonical quantization type to its parameters. Aliases are
 // resolved to a canonical name by Canonical before lookup.
 var byType = map[string]params{
@@ -23,6 +27,7 @@ var byType = map[string]params{
 	"int8":  {groupSize: 64, bits: 8, mode: "affine"},
 }
 
+// Canonical 返回量化类型的规范名，解析别名（如 FP8/Q8→int8）；空串或未知类型返回空。
 // Canonical returns the canonical name for a quantization type, resolving
 // aliases (for example "FP8" and "Q8" both map to "int8"). It returns "" for
 // the empty string and for any type it does not recognize.
@@ -43,6 +48,7 @@ func Canonical(quantType string) string {
 	}
 }
 
+// Params 返回量化类型的默认组大小、位宽与模式；空串返回零；未知非空类型回退 8-bit affine。
 // Params returns the default group size, bit width, and mode for a
 // quantization type. The empty string returns zeros. An unrecognized
 // non-empty type falls back to 8-bit affine, matching the runtime loader's
@@ -57,6 +63,7 @@ func Params(quantType string) (groupSize, bits int, mode string) {
 	return 32, 8, "affine"
 }
 
+// Bits 返回已识别量化类型的位宽；空或未知返回 0（无回退）。
 // Bits returns the bit width of a recognized quantization type, or 0 if the
 // type is empty or unrecognized. Unlike Params it applies no fallback, so
 // callers that size or display tensors never act on an unknown type.
@@ -67,6 +74,7 @@ func Bits(quantType string) int {
 	return 0
 }
 
+// PackFactor 返回每个 U32 字打包的量化值个数；MLX 逻辑最后一维 = 存储维 × 该因子。
 // PackFactor returns how many quantized values are packed into one 32-bit
 // word, or 0 for an empty or unrecognized type. MLX stores quantized weights
 // packed into U32 words, so a tensor's logical last dimension is its stored

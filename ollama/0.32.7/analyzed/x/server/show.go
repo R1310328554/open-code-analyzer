@@ -1,3 +1,4 @@
+// server show 辅助：从 safetensors manifest 提取模型信息与张量列表，供 ollama show。
 package server
 
 import (
@@ -16,10 +17,12 @@ import (
 	"github.com/ollama/ollama/x/quant"
 )
 
+// canonicalQuantType 规范化量化类型字符串（小写去空白）。
 func canonicalQuantType(quantType string) string {
 	return strings.ToLower(strings.TrimSpace(quantType))
 }
 
+// modelConfig 对应 HuggingFace config.json 结构。
 // modelConfig represents the HuggingFace config.json structure
 type modelConfig struct {
 	Architectures         []string `json:"architectures"`
@@ -41,6 +44,7 @@ type modelConfig struct {
 	} `json:"text_config"`
 }
 
+// GetSafetensorsLLMInfo 从 safetensors LLM 读 config 并返回兼容 GGML KV 的 info map。
 // GetSafetensorsLLMInfo extracts model information from safetensors LLM models.
 // It reads the config.json layer and returns a map compatible with GGML's KV format.
 func GetSafetensorsLLMInfo(name model.Name) (map[string]any, error) {
@@ -54,6 +58,7 @@ func GetSafetensorsLLMInfo(name model.Name) (map[string]any, error) {
 		return nil, fmt.Errorf("failed to read config.json: %w", err)
 	}
 
+	// 从 manifest 层累计张量字节与张量数。
 	// Calculate total tensor bytes from manifest layers
 	var totalBytes int64
 	var tensorCount int64
@@ -66,6 +71,7 @@ func GetSafetensorsLLMInfo(name model.Name) (map[string]any, error) {
 
 	info := buildModelInfo(config, totalBytes, tensorCount)
 
+	// 量化模型优先用张量 shape 精确计数，避免字节估算偏低。
 	// For quantized models, byte-based estimation can significantly undercount
 	// parameters. Prefer exact counting from tensor shapes in safetensors headers.
 	if paramCount, err := getParameterCountFromManifest(mf); err == nil && paramCount > 0 {
@@ -75,9 +81,11 @@ func GetSafetensorsLLMInfo(name model.Name) (map[string]any, error) {
 	return info, nil
 }
 
+// buildModelInfo 由 config 与张量统计构建 info map（可单测）。
 // buildModelInfo constructs the model info map from config and tensor stats.
 // This is separated for testability.
 func buildModelInfo(config modelConfig, totalTensorBytes, tensorCount int64) map[string]any {
+	// 推断 Ollama 架构名（HF 名去后缀）。
 	// Determine architecture
 	arch := config.ModelType
 	if arch == "" && len(config.Architectures) > 0 {
@@ -89,6 +97,7 @@ func buildModelInfo(config modelConfig, totalTensorBytes, tensorCount int64) map
 		arch = strings.TrimSuffix(arch, "forconditionalgeneration")
 	}
 
+	// 多模态模型优先 text_config 的文本子配置。
 	// Use text_config values if they exist (for multimodal models)
 	hiddenSize := config.HiddenSize
 	maxPosEmbed := config.MaxPositionEmbeddings
@@ -106,6 +115,7 @@ func buildModelInfo(config modelConfig, totalTensorBytes, tensorCount int64) map
 		}
 	}
 
+	// 按 torch_dtype 估算每参数字节数以推算参数量。
 	// Get dtype to determine bytes per parameter for count calculation
 	dtype := config.TorchDtype
 
@@ -120,6 +130,7 @@ func buildModelInfo(config modelConfig, totalTensorBytes, tensorCount int64) map
 		bytesPerParam = 1
 	}
 
+	// 每 blob 约减 150 字节 safetensors 头开销。
 	// Subtract safetensors header overhead per tensor blob.
 	// Headers include __metadata__ with the tensor name, so overhead is ~150 bytes on average.
 	totalBytes := totalTensorBytes - tensorCount*150
@@ -165,6 +176,7 @@ func buildModelInfo(config modelConfig, totalTensorBytes, tensorCount int64) map
 	return info
 }
 
+// getParameterCountFromManifest 按张量 shape 累加参数量（含量化解包）。
 // getParameterCountFromManifest counts model parameters from tensor shapes.
 // This accounts for quantized tensors by using unpacked shapes from
 // getTensorInfoFromManifest.
@@ -210,6 +222,7 @@ func getParameterCountFromManifest(mf *manifest.Manifest) (int64, error) {
 	return total, nil
 }
 
+// GetSafetensorsTensorInfo 列出模型全部张量名、类型与逻辑 shape。
 // GetSafetensorsTensorInfo extracts tensor information from safetensors model layers.
 // Each tensor is stored as a minimal safetensors file with an 88-byte header containing metadata.
 func GetSafetensorsTensorInfo(name model.Name) ([]api.Tensor, error) {
@@ -221,6 +234,7 @@ func GetSafetensorsTensorInfo(name model.Name) ([]api.Tensor, error) {
 	return getTensorInfoFromManifest(mf)
 }
 
+// getTensorInfoFromManifest 从 manifest 解析张量；支持打包 blob 与 quant 元数据。
 // getTensorInfoFromManifest extracts tensor info from a manifest.
 // This is separated for testability.
 // For quantized tensors, reads quant_type from blob __metadata__.
@@ -233,6 +247,7 @@ func getTensorInfoFromManifest(mf *manifest.Manifest) ([]api.Tensor, error) {
 			continue
 		}
 
+		// 读 blob 内全部 safetensors 头条目。
 		// Read all tensor entries from the safetensors header
 		blobPath, err := manifest.BlobsPath(layer.Digest)
 		if err != nil {
@@ -250,6 +265,7 @@ func getTensorInfoFromManifest(mf *manifest.Manifest) ([]api.Tensor, error) {
 			continue
 		}
 
+		// 多主 tensor 视为打包 blob，名取自头内键。
 		// Determine if this is a packed blob (multiple main tensors)
 		isPacked := len(allInfos) > 1
 
@@ -268,6 +284,7 @@ func getTensorInfoFromManifest(mf *manifest.Manifest) ([]api.Tensor, error) {
 					shape[i] = uint64(s)
 				}
 
+				// 量化权重按 U32 打包；用 PackFactor 报告逻辑未打包 shape。
 				// Quantized weights are packed into U32 words; report the
 				// logical unpacked shape. PackFactor covers every quant type
 				// the engine produces (including mxfp4) from one table.
@@ -303,6 +320,7 @@ func getTensorInfoFromManifest(mf *manifest.Manifest) ([]api.Tensor, error) {
 	return tensors, nil
 }
 
+// GetSafetensorsDtype 返回模型最低精度量化类型；无量化则回退 config torch_dtype。
 // GetSafetensorsDtype returns the quantization type for a safetensors model.
 // Reads tensor headers and reports the lowest-precision quantized weight type.
 // Falls back to torch_dtype from config.json if no quant metadata exists.
@@ -349,6 +367,7 @@ func GetSafetensorsDtype(name model.Name) (string, error) {
 		return bestQuantType, nil
 	}
 
+	// 未量化时返回 config.json 的 torch_dtype。
 	// Not quantized - return torch_dtype from config.json
 	var cfg struct {
 		TorchDtype string `json:"torch_dtype"`
@@ -360,19 +379,24 @@ func GetSafetensorsDtype(name model.Name) (string, error) {
 	return cfg.TorchDtype, nil
 }
 
+// quantTypePrecision 用位宽衡量量化精度（越小越粗）。
 func quantTypePrecision(quantType string) int {
 	return quant.Bits(quantType)
 }
 
+// safetensorsTensorInfo 保存单张量头元数据（含量化推断字段）。
 // safetensorsTensorInfo holds metadata about a tensor from a safetensors header
 type safetensorsTensorInfo struct {
-	Name      string  // tensor name from the header key
+	Name      string  // 头键即张量逻辑名
+	// tensor name from the header key
 	Dtype     string  `json:"dtype"`
 	Shape     []int64 `json:"shape"`
-	QuantType string  // from __metadata__.quant_type (e.g., "int4", "int8", "nvfp4", "mxfp8")
+	QuantType string  // __metadata__.quant_type
+	// from __metadata__.quant_type (e.g., "int4", "int8", "nvfp4", "mxfp8")
 	GroupSize string  // from __metadata__.group_size (e.g., "32", "64")
 }
 
+// parseSafetensorsAllHeaders 解析全部主 tensor，跳过 .scale/.bias 等伴生项。
 // parseSafetensorsAllHeaders parses all tensor entries from a safetensors header.
 // Returns one safetensorsTensorInfo per main tensor, skipping quantization
 // companion entries such as __metadata__, .scale, .bias, and .global_scale.
@@ -385,7 +409,8 @@ func parseSafetensorsAllHeaders(r io.Reader) ([]safetensorsTensorInfo, error) {
 		return nil, fmt.Errorf("failed to read header size: %w", err)
 	}
 
-	if headerSize > 100*1024*1024 { // 100MB limit for packed blob headers
+	if headerSize > 100*1024*1024 { // 打包 blob 头上限 100MB
+	// 100MB limit for packed blob headers
 		return nil, fmt.Errorf("header size too large: %d", headerSize)
 	}
 
@@ -399,6 +424,7 @@ func parseSafetensorsAllHeaders(r io.Reader) ([]safetensorsTensorInfo, error) {
 		return nil, fmt.Errorf("failed to parse header: %w", err)
 	}
 
+	// 解析全局 __metadata__ 中的 quant_type/group_size。
 	// Parse global metadata if present
 	var globalQuantType, globalGroupSize string
 	if metaRaw, ok := header["__metadata__"]; ok {
@@ -409,12 +435,14 @@ func parseSafetensorsAllHeaders(r io.Reader) ([]safetensorsTensorInfo, error) {
 		}
 	}
 
+	// 收集键集以判断是否存在 .scale/.bias。
 	// Build a set of all keys for checking .scale/.bias presence
 	headerKeys := make(map[string]bool, len(header))
 	for k := range header {
 		headerKeys[k] = true
 	}
 
+	// 收集主 tensor 名并排序保证输出稳定。
 	// Collect all main tensor entries (sorted for deterministic output)
 	var mainNames []string
 	for name := range header {
@@ -434,10 +462,12 @@ func parseSafetensorsAllHeaders(r io.Reader) ([]safetensorsTensorInfo, error) {
 		info.Name = name
 
 		if globalQuantType != "" {
+			// 优先全局 quant 元数据。
 			// Use global metadata
 			info.QuantType = globalQuantType
 			info.GroupSize = globalGroupSize
-		} else if headerKeys[name+".scale"] {
+		} else if headerKeys[name+".scale"] { // 无全局元数据时由 shape 推断
+		
 			// No global metadata, but has .scale - infer quant type from shape
 			info.QuantType = inferQuantType(header, name)
 		}
@@ -452,6 +482,7 @@ func parseSafetensorsAllHeaders(r io.Reader) ([]safetensorsTensorInfo, error) {
 	return results, nil
 }
 
+// isSafetensorsCompanionTensor 判断是否为伴生张量键（非主权重）。
 func isSafetensorsCompanionTensor(name string) bool {
 	return name == "__metadata__" ||
 		strings.HasSuffix(name, ".scale") ||
@@ -459,9 +490,11 @@ func isSafetensorsCompanionTensor(name string) bool {
 		strings.HasSuffix(name, ".global_scale")
 }
 
+// inferQuantType 由主 tensor 与 .scale shape 比值推断 int4/int8。
 // inferQuantType infers the quantization type for a tensor from its shape and scale shape.
 // Returns "int4", "int8", etc. or "" if not quantized.
 func inferQuantType(header map[string]json.RawMessage, name string) string {
+	// 解析主 tensor shape。
 	// Parse the main tensor shape
 	var mainInfo struct {
 		Shape []int64 `json:"shape"`
@@ -470,6 +503,7 @@ func inferQuantType(header map[string]json.RawMessage, name string) string {
 		return ""
 	}
 
+	// 解析 scale shape。
 	// Parse scale shape to determine group size
 	scaleRaw, ok := header[name+".scale"]
 	if !ok {
@@ -482,6 +516,7 @@ func inferQuantType(header map[string]json.RawMessage, name string) string {
 		return ""
 	}
 
+	// 由 main/scale 列比推断 pack 与 group（int4→4，int8→16）。
 	// Calculate group size: main_cols * pack_factor / scale_cols
 	// Main dtype is U32, so we need to figure out the pack factor
 	// For int4: pack=8, group=32. scale_cols = original_cols / 32 = main_cols * 8 / 32 = main_cols / 4
