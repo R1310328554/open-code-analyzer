@@ -21,27 +21,28 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
- * Factory for {@link DefaultCredentialOfferStorage}.
- * 
- * <p>This factory provides the default cluster-aware implementation of credential offer storage.
- * The storage uses Keycloak's distributed cache infrastructure, making it suitable for
- * clustered and cross-DC deployments.
+ * {@link DefaultCredentialOfferStorage} 的 Provider 工厂。
+ * <p>提供集群感知的默认凭证发放存储实现，Provider ID 为 {@code default}。</p>
  */
 public class DefaultCredentialOfferStorageFactory implements CredentialOfferStorageFactory {
 
+    /** {@inheritDoc} 创建默认存储 Provider。 */
     @Override
     public CredentialOfferStorage create(KeycloakSession session) {
         return new DefaultCredentialOfferStorage(session);
     }
 
+    /** {@inheritDoc} 无额外初始化。 */
     @Override
     public void init(Config.Scope config) {
     }
 
+    /** {@inheritDoc} 无后置初始化。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** {@inheritDoc} 返回 {@code default}。 */
     @Override
     public String getId() {
         return "default";

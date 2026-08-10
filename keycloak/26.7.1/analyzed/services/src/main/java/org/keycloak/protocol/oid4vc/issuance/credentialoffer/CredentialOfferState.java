@@ -30,29 +30,41 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 
+/**
+ * 凭证发放（Credential Offer）的运行时状态。
+ * <p>包含 {@link CredentialsOffer} 载荷、目标客户端/用户、nonce、交易码及授权详情等，
+ * 序列化后存入 {@link CredentialOfferStorage}。</p>
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CredentialOfferState {
 
+    /** 凭证发放内部唯一标识（同时作为 singleUseObjects 键）。 */
     private String credentialsOfferId;
+    /** OID4VCI Credential Offer JSON 模型。 */
     private CredentialsOffer credentialsOffer;
+    /** 目标客户端 ID（可选绑定）。 */
     private String targetClientId;
+    /** 目标用户内部 ID（可选绑定）。 */
     private String targetUserId;
+    /** 嵌入 offerId 的 nonce，用于 authorization_code 流程关联。 */
     private String nonce;
+    /** 预授权流程可选的交易码（第二因素）。 */
     private String txCode;
+    /** 过期时间（Unix 秒）。 */
     private long expiresAt;
+    /** 各 credential_configuration_id 对应的 authorization_details。 */
     private List<OID4VCAuthorizationDetail> authDetails;
 
     /**
-     * Create a new CredentialOfferState.
-     * <p>
-     * This should only be called from the configured  {@code CredentialOfferProvider}.
-     * The constructor is public for testing purposes only.
+     * 创建新的 CredentialOfferState。
+     * <p>通常仅由已配置的 {@code CredentialOfferProvider} 调用；
+     * 构造函数公开仅供测试使用。</p>
      *
-     * @param credOffer   The credential offer
-     * @param clientId    The target client_id
-     * @param userId      The target user id
-     * @param expiresAt    The expiry date of the offer in seconds
-     * @param authDetailsProvider A provider function for authorization details, (optionally) one for each credential_configuration_id
+     * @param credOffer 凭证发放模型
+     * @param clientId 目标 client_id
+     * @param userId 目标用户 ID
+     * @param expiresAt 过期时间（Unix 秒）
+     * @param authDetailsProvider 按 credential_configuration_id 生成 authorization_details 的函数
      */
     public CredentialOfferState(
             CredentialsOffer credOffer,
@@ -73,45 +85,59 @@ public class CredentialOfferState {
         }
     }
 
+    /** @return 预授权码（若 grant 类型为 pre-authorized_code） */
     @JsonIgnore
     public Optional<String> getPreAuthorizedCode() {
         return Optional.ofNullable(credentialsOffer.getPreAuthorizedCode());
     }
 
+    /** @return 凭证发放内部 ID */
     public String getCredentialsOfferId() {
         return credentialsOfferId;
     }
 
+    /** @return Credential Offer JSON 模型 */
     public CredentialsOffer getCredentialsOffer() {
         return credentialsOffer;
     }
 
+    /** @return 目标客户端 ID */
     public String getTargetClientId() {
         return targetClientId;
     }
 
+    /** @return 目标用户 ID */
     public String getTargetUserId() {
         return targetUserId;
     }
 
+    /** @return 嵌入 offerId 的 nonce */
     public String getNonce() {
         return nonce;
     }
 
+    /** @return 交易码（若已设置） */
     public String getTxCode() {
         return txCode;
     }
 
+    /** @return 过期时间（Unix 秒） */
     public long getExpiresAt() {
         return expiresAt;
     }
 
+    /** @return authorization_details 的防御性拷贝列表 */
     public List<OID4VCAuthorizationDetail> getAuthorizationDetails() {
         return Optional.ofNullable(authDetails).orElse(List.of()).stream()
                 .map(OID4VCAuthorizationDetail::clone)
                 .toList();
     }
 
+    /**
+     * 按 credential_configuration_id 查找单条 authorization_details。
+     * @param credConfigId 凭证配置标识
+     * @return 匹配的详情克隆，未找到时 {@code null}
+     */
     public OID4VCAuthorizationDetail getAuthorizationDetails(String credConfigId) {
         return getAuthorizationDetails().stream()
                 .filter(it -> it.getCredentialConfigurationId().equals(credConfigId))
@@ -120,6 +146,11 @@ public class CredentialOfferState {
                 .orElse(null);
     }
 
+    /**
+     * 比较 authorization_details 是否与给定列表等价（忽略 issued_credential_id）。
+     * @param otherAuthDetails 待比较的详情列表
+     * @return 等价返回 {@code true}
+     */
     public boolean matchAuthorizationDetails(List<OID4VCAuthorizationDetail> otherAuthDetails) {
         if (authDetails == null && otherAuthDetails == null) { return true; }
         if (authDetails == null || otherAuthDetails == null) { return false; }
@@ -131,7 +162,7 @@ public class CredentialOfferState {
                 otherDetail = otherDetail.clone();
                 otherDetail.setIssuedCredentialId(null);
             }
-            // Unexpected issued_credential_id in authorization_details
+            // authorization_details 中不应出现 issued_credential_id
             assert authDetail.getIssuedCredentialId() == null;
             if (!authDetail.equals(otherDetail)) {
                 return false;
@@ -140,19 +171,20 @@ public class CredentialOfferState {
         return true;
     }
 
+    /** @return 当前时间是否已超过 expiresAt */
     @JsonIgnore
     public boolean isExpired() {
         int currentTime = Time.currentTime();
         return expiresAt <= currentTime;
     }
 
-    // Private ---------------------------------------------------------------------------------------------------------
+    // 私有 ---------------------------------------------------------------------------------------------------------
 
-    // For json serialization
+    // 供 JSON 反序列化：无参构造
     private CredentialOfferState() {
     }
 
-    // For json serialization
+    // 供 JSON 反序列化：设置 authorization_details
     private void setAuthorizationDetails(List<OID4VCAuthorizationDetail> authDetails) {
         this.authDetails = authDetails;
     }

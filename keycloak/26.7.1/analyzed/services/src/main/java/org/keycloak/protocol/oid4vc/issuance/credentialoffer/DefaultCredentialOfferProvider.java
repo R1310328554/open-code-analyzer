@@ -46,14 +46,18 @@ import static org.keycloak.protocol.oid4vc.model.PreAuthorizedCodeGrant.PRE_AUTH
 import static org.keycloak.protocol.oid4vc.utils.CredentialScopeUtils.findCredentialScopeModelByConfigurationId;
 
 /**
- * Default implementation of {@link CredentialOfferProvider}.
+ * {@link CredentialOfferProvider} 的默认实现。
+ * <p>校验 grant 类型、目标用户/客户端与凭证配置，构建 {@link CredentialOfferState} 并填充
+ * authorization_code 或 pre-authorized_code grant。</p>
  *
  * @author <a href="mailto:tdiesler@ibm.com">Thomas Diesler</a>
  */
 class DefaultCredentialOfferProvider implements CredentialOfferProvider {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     DefaultCredentialOfferProvider(KeycloakSession session) {
         this.session = session;
     }
@@ -67,7 +71,7 @@ class DefaultCredentialOfferProvider implements CredentialOfferProvider {
             String targetUsername,
             Integer expireAt) {
 
-        // Checks whether `--feature=oid4vc_vci_preauth_code` is enabled
+        // 检查是否启用 --feature=oid4vc-vci-preauth-code
         //
         boolean preAuthorized = PRE_AUTH_GRANT_TYPE.equals(grantType);
         if (preAuthorized && !Profile.isFeatureEnabled(Profile.Feature.OID4VC_VCI_PREAUTH_CODE)) {
@@ -75,7 +79,7 @@ class DefaultCredentialOfferProvider implements CredentialOfferProvider {
                     "OID4VCI pre-authorized code grant offers not enabled. Requires --feature=oid4vc-vci-preauth-code");
         }
 
-        // Ensure at least one credential_configuration_id
+        // 至少需要一个 credential_configuration_id
         //
         if (credentialConfigurationIds == null || credentialConfigurationIds.isEmpty()) {
             throw new CredentialOfferException(Errors.INVALID_REQUEST, "No credentialConfigurationIds");
@@ -83,25 +87,25 @@ class DefaultCredentialOfferProvider implements CredentialOfferProvider {
 
         RealmModel realmModel = this.session.getContext().getRealm();
 
-        // Validate the target user
+        // 校验目标用户
         //
         UserModel targetUser = Optional.ofNullable(targetUsername)
                 .map(tu -> validateTargetUser(session, realmModel, user, tu))
                 .orElse(null);
         String targetUserId = targetUser == null ? null : targetUser.getId();
 
-        // Validate the target client
+        // 校验目标客户端
         if (targetClientId != null) {
             validateTargetClient(realmModel, targetClientId);
         }
 
-        // Create the CredentialsOffer
+        // 构建 CredentialsOffer 模型
         //
         CredentialsOffer credOffer = new CredentialsOffer()
                 .setCredentialIssuer(OID4VCIssuerWellKnownProvider.getIssuer(session.getContext()))
                 .setCredentialConfigurationIds(credentialConfigurationIds);
 
-        // Create the CredentialOfferState
+        // 创建 CredentialOfferState 并生成 authorization_details
         //
         CredentialOfferState offerState = new CredentialOfferState(credOffer, targetClientId, targetUserId, expireAt, credOffersId -> {
             List<OID4VCAuthorizationDetail> authDetails = new ArrayList<>();
@@ -132,7 +136,7 @@ class DefaultCredentialOfferProvider implements CredentialOfferProvider {
         return offerState;
     }
 
-    // Private ---------------------------------------------------------------------------------------------------------
+    // 私有 ---------------------------------------------------------------------------------------------------------
 
     private UserModel validateTargetUser(KeycloakSession session, RealmModel realmModel, UserModel loginUserModel, String targetUser) {
         UserModel targetUserModel = session.users().getUserByUsername(realmModel, targetUser);
@@ -140,17 +144,17 @@ class DefaultCredentialOfferProvider implements CredentialOfferProvider {
             throw new CredentialOfferException(Errors.USER_NOT_FOUND, "User not found: " + targetUser);
         }
 
-        // Verify that the target user is enabled
+        // 确认目标用户已启用
         //
         if (!targetUserModel.isEnabled()) {
             throw new CredentialOfferException(Errors.USER_DISABLED, "User '" + targetUser + "' disabled");
         }
 
-        // Verify that the issuing user holds the required {@code credential_offer_create} role if `loginUser != targetUser`
-        // i.e. A self issued credential offer does not require the {@code credential_offer_create} role
+        // 当 loginUser != targetUser 时，签发用户须持有 credential_offer_create 角色
+        // 自签发 Credential Offer 不需要该角色
         //
-        //   - Targeted or Anonymous `authorization_code` grant
-        //   - Targeted `pre-authorized_code` grant
+        //   - 定向或匿名的 authorization_code grant
+        //   - 定向的 pre-authorized_code grant
         //
         if (Strings.isEmpty(targetUser) || !loginUserModel.getUsername().equals(targetUser)) {
             boolean hasCredentialOfferRole = loginUserModel.getRoleMappingsStream()
@@ -177,17 +181,15 @@ class DefaultCredentialOfferProvider implements CredentialOfferProvider {
         }
     }
 
-    /**
-     * Creates a pre-authorized code associated with credential offer state.
-     */
+    /** 为凭证发放状态创建预授权码。 */
     private String createPreAuthorizedCode(CredentialOfferState offerState) {
         PreAuthCodeHandler preAuthCodeHandler = session.getProvider(PreAuthCodeHandler.class);
         if (preAuthCodeHandler == null) {
             throw new IllegalStateException("No PreAuthCodeHandler provider available");
         }
 
-        // A PreAuthCodeCtx prevents accidental leaking of sensitive information.
-        // For instance, transactions codes must never leak into the pre-auth code.
+        // PreAuthCodeCtx 防止敏感信息（如 tx_code）泄露进预授权码
+        // 例如交易码绝不能嵌入预授权 JWT
         PreAuthCodeCtx ctx = new PreAuthCodeCtx(offerState);
 
         return preAuthCodeHandler.createPreAuthCode(ctx);

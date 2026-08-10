@@ -22,52 +22,45 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
 
 /**
- * A provider for OID4VCI Credential Offers.
+ * OID4VCI 凭证发放（Credential Offer）Provider 接口。
  *
- * In principle, it is the Issuer who creates a Credential Offer and then passes it to the Wallet. This can be done
- * by {@code credential_offer_uri}, by qr-code (for cross device flows), by a Wallet provided {@code credential_offer_endpoint}
- * or by some other means (e.g. email, messaging, etc.).
+ * <p>通常由签发方创建 Credential Offer 并传递给钱包，可通过 {@code credential_offer_uri}、
+ * 二维码（跨设备流程）、钱包提供的 {@code credential_offer_endpoint} 或其他渠道（邮件、消息等）交付。</p>
  *
- * The spec does not detail how to request a Credential Offer from an Issuer. In Keycloak, we provide an {@code /create-credential-offer}
- * endpoint that requires various access privileges depending on the offer that is to be created. Other means to create a
- * Credential Offer may exist in the Admin Console.
+ * <p>规范未详细说明如何向签发方请求 Credential Offer。Keycloak 提供 {@code /create-credential-offer}
+ * 端点，所需权限因发放类型而异；管理控制台也可能提供其他创建方式。</p>
  *
- * Depending on Credential Offer Policies for a given {@code credential_configuration_id} and Issuing User, these required
- * privileges may be permissible enough to allow for a "self-issued" Credential Offer.
+ * <p>根据给定 {@code credential_configuration_id} 与签发用户的 Credential Offer 策略，
+ * 所需权限可能足够宽松以支持「自签发」Credential Offer。</p>
  *
- * With the Credential Offer the Wallet receives a grant for set of {@code credential_configuration_ids}.
+ * <p>钱包通过 Credential Offer 获得一组 {@code credential_configuration_ids} 对应的授权。</p>
  *
- * Credential Offers come in two variants
+ * <p>Credential Offer 有两种授权类型：</p>
  * <ul>
- *     <li>{@code authorization_code} grant</li>
- *     <li>{@code pre-authorized_code} grant</li>
+ *     <li>{@code authorization_code} 授权码</li>
+ *     <li>{@code pre-authorized_code} 预授权码</li>
  * </ul>
  *
  * <h4>Authorization Code Grant</h4>
  *
- * With the {@code authorization_code} grant, the Wallet can send an Authorization Request that references one of the
- * {@code credential_configuration_ids} in {@code authorization_details}. Part of the {@code authorization_code} grant
- * is also some opaque {@code issuer_state} that the Wallet must include in the Authorization Request. This allows the
- * Issuer to correlate the Authorization Request with a previously made Credential Offer.
+ * <p>使用 {@code authorization_code} 时，钱包可在 Authorization Request 的 {@code authorization_details}
+ * 中引用某个 {@code credential_configuration_id}。该 grant 还包含不透明 {@code issuer_state}，
+ * 钱包必须在 Authorization Request 中携带，以便签发方关联先前的 Credential Offer。</p>
  *
- * The Wallet may also send an Authorization Request with a {@code scope} parameter and no {@code authorization_details}
- * nor {@code issuer_state}. This by-passes the Credential Offer process completely - the Authorization Server may
- * still return an Authorization Code, which can then be used in an AccessToken request and ultimately grants access
- * to Credentials associated with that {@code scope}.
+ * <p>钱包也可仅带 {@code scope}、不含 {@code authorization_details} 与 {@code issuer_state} 发起授权，
+ * 从而完全绕过 Credential Offer 流程——授权服务器仍可能返回 Authorization Code，
+ * 进而用于换取访问令牌并访问该 {@code scope} 关联的凭证。</p>
  *
- * Whether the Authorization Server grants access or the Credential Endpoint actually returns the wanted Credential again
- * depends on the effective Credential Policies. These may require an existing Credential Offer for a given and hence prevent
- * such a Credential Request on scope alone.
+ * <p>授权服务器是否放行、凭证端点是否返回目标凭证，取决于生效的 Credential 策略；
+ * 策略可能要求已有 Credential Offer，从而禁止仅凭 scope 请求凭证。</p>
  *
  * <h4>Pre-Authorized Code Grant</h4>
  *
- * As the name suggests, this is a "pre-authorized" grant that the Wallet can use directly in an AccessToken Request. No
- * further authorization is required on part of the Wallet. It works for cases where the Wallet cannot be expected to use
- * an {@code authorization_code} grant. Since this is bearer grant that gives direct access to the Credentials referenced
- * by {@code credential_configuration_ids}, the party that creates such a Credential Offer must take upmost be care about
- * how to communicate that "pre-authorized" grant. As a second authorization factor, the Issuer can create a {@code tx_code}
- * together with the Credential Offer. The {@code tx_code} is to be communicated via an alternative channel
- * (i.e. not together with the pre-authorized code).
+ * <p>预授权 grant 允许钱包直接在 Token Request 中使用，无需额外授权步骤，
+ * 适用于无法使用 {@code authorization_code} 的场景。由于是 bearer 型 grant，
+ * 可直接访问 {@code credential_configuration_ids} 引用的凭证，创建方必须谨慎选择传递渠道。</p>
+ *
+ * <p>作为第二因素，签发方可同时创建 {@code tx_code}，通过独立于预授权码的渠道传达。</p>
  *
  * https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer
  *
@@ -75,6 +68,16 @@ import org.keycloak.provider.Provider;
  */
 public interface CredentialOfferProvider extends Provider {
 
+    /**
+     * 创建凭证发放状态。
+     * @param user 当前登录/签发用户
+     * @param grantType 授权类型（{@code authorization_code} 或 {@code pre-authorized_code}）
+     * @param credentialConfigurationIds 凭证配置标识列表
+     * @param targetClientId 目标客户端 ID（可选）
+     * @param targetUserId 目标用户名（可选）
+     * @param expireAt 过期时间（Unix 秒，可选）
+     * @return 新建的 {@link CredentialOfferState}
+     */
     CredentialOfferState createCredentialOffer(
             UserModel user,
             String grantType,

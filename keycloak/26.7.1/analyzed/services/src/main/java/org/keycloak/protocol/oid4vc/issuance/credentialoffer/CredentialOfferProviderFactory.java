@@ -19,6 +19,9 @@ package org.keycloak.protocol.oid4vc.issuance.credentialoffer;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link CredentialOfferProvider} 的 Provider 工厂接口。
+ * <p>由 SPI 加载，用于在会话中创建凭证发放 Provider 实例。</p>
+ *
  * @author <a href="mailto:tdiesler@ibm.com">Thomas Diesler</a>
  */
 public interface CredentialOfferProviderFactory extends ProviderFactory<CredentialOfferProvider> {

@@ -19,11 +19,18 @@ package org.keycloak.protocol.oid4vc.issuance.credentialoffer;
 import org.keycloak.provider.Spi;
 
 /**
+ * 注册 {@link CredentialOfferProvider} 的 Keycloak SPI。
+ * <p>内部 SPI，Provider ID 为 {@code credential-offer-provider}。</p>
+ *
  * @author <a href="mailto:tdiesler@ibm.com">Thomas Diesler</a>
  */
 public class CredentialOfferProviderSpi implements Spi {
+    /** {@inheritDoc} 返回 SPI 名称 {@code credential-offer-provider}。 */
     @Override public String getName() { return "credential-offer-provider"; }
+    /** {@inheritDoc} Provider 接口类型。 */
     @Override public Class<CredentialOfferProvider> getProviderClass() { return CredentialOfferProvider.class; }
+    /** {@inheritDoc} Provider 工厂接口类型。 */
     @Override public Class<CredentialOfferProviderFactory> getProviderFactoryClass() { return CredentialOfferProviderFactory.class; }
+    /** {@inheritDoc} 标记为内部 SPI。 */
     @Override public boolean isInternal() { return true; }
 }

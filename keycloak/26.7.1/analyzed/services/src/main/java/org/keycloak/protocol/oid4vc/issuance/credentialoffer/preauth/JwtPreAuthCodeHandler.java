@@ -18,23 +18,26 @@ import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentatio
 import org.keycloak.wellknown.WellKnownProvider;
 
 /**
- * Implementation of {@link PreAuthCodeHandler} for JWT pre-authorized codes.
+ * 基于 JWT 的 {@link PreAuthCodeHandler} 实现。
+ * <p>将 {@link PreAuthCodeCtx} 编码为签名的 JWT 预授权码，并在验证时恢复上下文、校验 issuer/aud/exp 等声明。</p>
  */
 public class JwtPreAuthCodeHandler implements PreAuthCodeHandler {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public JwtPreAuthCodeHandler(KeycloakSession session) {
         this.session = session;
     }
 
     @Override
     public String createPreAuthCode(PreAuthCodeCtx preAuthCodeCtx) {
-        // Clone and nullify exp claim to avoid duplication
+        // 克隆上下文并清空 exp，避免 JWT 与 context 重复携带过期时间
         PreAuthCodeCtx clonedCtx = preAuthCodeCtx.clone();
         clonedCtx.setExpiresAt(null);
 
-        // Building
+        // 构建 JWT 载荷
         String salt = Base64Url.encode(SecretGenerator.getInstance().randomBytes());
         JwtPreAuthCode jwtBody = (JwtPreAuthCode) new JwtPreAuthCode()
                 .salt(salt)
@@ -44,31 +47,29 @@ public class JwtPreAuthCodeHandler implements PreAuthCodeHandler {
                 .issuedNow()
                 .exp(preAuthCodeCtx.getExpiresAt());
 
-        // Signing
+        // 签名并编码为紧凑 JWT 字符串
         return session.tokens().encode(jwtBody);
     }
 
     @Override
     public PreAuthCodeCtx verifyPreAuthCode(String preAuthCode) throws VerificationException {
-        // Decode and verify the JWT pre-auth code, and recover jwt payload
+        // 解码并验证 JWT 预授权码，恢复载荷
         JwtPreAuthCode jwtPayload = session.tokens().decode(preAuthCode, JwtPreAuthCode.class);
         if (jwtPayload == null) {
             throw new VerificationException("Pre-auth code decoding/verification failed");
         }
 
-        // Perform routine verification on claims
+        // 常规声明校验（issuer、audience、exp）
         verifyPreAuthCodeClaims(jwtPayload);
 
-        // Restore exp information to pre-auth code context
+        // 将 exp 写回 PreAuthCodeCtx
         PreAuthCodeCtx preAuthCodeCtx = jwtPayload.getContext();
         preAuthCodeCtx.setExpiresAt(jwtPayload.getExp());
 
         return preAuthCodeCtx;
     }
 
-    /**
-     * Performs routine verification of the claims in the JWT pre-auth code.
-     */
+    /** 校验 JWT 预授权码中的标准声明。 */
     private void verifyPreAuthCodeClaims(JwtPreAuthCode jwtPayload) throws VerificationException {
         if (jwtPayload.getContext() == null) {
             throw new VerificationException("Not a jwt pre-auth code: no pre-auth code context found");

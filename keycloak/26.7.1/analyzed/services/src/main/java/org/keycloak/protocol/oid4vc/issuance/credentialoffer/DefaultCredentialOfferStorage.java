@@ -29,38 +29,37 @@ import org.keycloak.util.JsonSerialization;
 import org.jboss.logging.Logger;
 
 /**
- * Default implementation of {@link CredentialOfferStorage} that uses Keycloak's
- * {@link org.keycloak.models.SingleUseObjectProvider} for storage.
- * 
- * <p>This implementation is cluster-aware and cross-DC aware, as it relies on
- * Infinispan's distributed cache infrastructure through the singleUseObjects API.
- * The storage automatically handles expiration and prevents memory leaks through
- * the underlying cache's expiration mechanisms.
+ * 基于 {@link org.keycloak.models.SingleUseObjectProvider} 的 {@link CredentialOfferStorage} 默认实现。
+ * <p>通过 singleUseObjects API 利用 Infinispan 分布式缓存，支持集群与跨数据中心部署；
+ * 过期由底层缓存 TTL 机制自动处理，避免内存泄漏。</p>
  */
 class DefaultCredentialOfferStorage implements CredentialOfferStorage {
 
+    /** 日志记录器。 */
     private static final Logger LOGGER = Logger.getLogger(OID4VCLoginProtocolFactory.class);
 
+    /** singleUseObject 条目中 JSON 载荷的键名。 */
     private static final String ENTRY_KEY = "json";
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     DefaultCredentialOfferStorage(KeycloakSession session) {
         this.session = session;
     }
 
     /**
-     * Calculates the lifespan in seconds from the current time to the expiration timestamp.
-     * 
-     * @param expiresAt Absolute expiration timestamp in seconds
-     * @return Lifespan in seconds, or 0 if the entry is already expired
+     * 计算从当前时间到过期时间的剩余存活秒数。
+     * @param expiresAt 绝对过期时间（Unix 秒）
+     * @return 剩余秒数；已过期返回 0
      */
     private long calculateLifespanSeconds(long expiresAt) {
         long currentTime = Time.currentTime();
         long lifespan = expiresAt - currentTime;
         
-        // If already expired or about to expire immediately, skip storage
-        // This prevents storing entries that won't be usable
+        // 已过期或即将过期则跳过存储
+        // 避免写入不可用的条目
         return Math.max(0, lifespan);
 
     }
@@ -68,7 +67,7 @@ class DefaultCredentialOfferStorage implements CredentialOfferStorage {
     @Override
     public void putOfferState(CredentialOfferState entry) {
 
-        // Skip storing if already expired (following pattern from InfinispanSingleUseObjectProviderFactory)
+        // 已过期则跳过存储（与 InfinispanSingleUseObjectProviderFactory 一致）
         long lifespanSeconds = calculateLifespanSeconds(entry.getExpiresAt());
         if (lifespanSeconds <= 0) {
             LOGGER.warnf("Credential offer state not stored - expired already");

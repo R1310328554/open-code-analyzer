@@ -18,6 +18,9 @@ package org.keycloak.protocol.oid4vc.issuance.credentialoffer;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link CredentialOfferStorage} 的 Provider 工厂接口。
+ */
 public interface CredentialOfferStorageFactory extends ProviderFactory<CredentialOfferStorage> {
 
     @Override

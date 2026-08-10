@@ -18,14 +18,22 @@ package org.keycloak.protocol.oid4vc.issuance.credentialoffer;
 
 import org.keycloak.provider.Provider;
 
+/**
+ * 凭证发放状态的存储 Provider 接口。
+ * <p>抽象 put/get/remove 操作，底层通常基于 {@link org.keycloak.models.SingleUseObjectProvider}。</p>
+ */
 public interface CredentialOfferStorage extends Provider {
 
+    /** 持久化凭证发放状态。 @param entry 待存储状态 */
     void putOfferState(CredentialOfferState entry);
 
+    /** 按 offerId 读取状态。 @param offerId 凭证发放 ID */
     CredentialOfferState getOfferStateById(String offerId);
 
+    /** 按 nonce 读取状态（内部解析嵌入的 offerId）。 @param nonce 含 offerId 的 nonce */
     CredentialOfferState getOfferStateByNonce(String nonce);
 
+    /** 删除凭证发放状态。 @param entry 待删除的状态对象 */
     void removeOfferState(CredentialOfferState entry);
 
     @Override
