@@ -19,6 +19,9 @@ import io.netty.internal.tcnative.SessionTicketKey;
 
 /**
  * Session Ticket Key
+ *
+ * <p>TLS 会话票据（session ticket）密钥的 Java 封装：name + HMAC + AES 三段固定长度，
+ * 经 {@link OpenSslSessionContext#setTicketKeys(OpenSslSessionTicketKey...)} 写入 native {@link SSLContext}。</p>
  */
 public final class OpenSslSessionTicketKey {
 
@@ -39,6 +42,7 @@ public final class OpenSslSessionTicketKey {
      */
     public static final int TICKET_KEY_SIZE = SessionTicketKey.TICKET_KEY_SIZE;
 
+    /** 底层 tcnative 票据密钥对象。 */
     final SessionTicketKey key;
 
     /**

@@ -20,6 +20,9 @@ import javax.net.ssl.SSLSession;
 
 /**
  * {@link SSLSession} sub-type that is used by our native implementation.
+ *
+ * <p>Netty OpenSSL 引擎使用的 {@link SSLSession} 子类型：提供无异常的对端证书探测及 named group 查询，
+ * 并返回 {@link OpenSslSessionContext}。</p>
  */
 public interface OpenSslSession extends SSLSession {
 
@@ -30,12 +33,17 @@ public interface OpenSslSession extends SSLSession {
      * {@link SSLPeerUnverifiedException} if no certs are provided, making it more efficient to check if a mTLS
      * connection is used.
      *
+     * <p>握手阶段对端是否已提供证书；相比 {@link #getPeerCertificates()} 不会在无证书时抛
+     * {@link SSLPeerUnverifiedException}，便于快速判断是否 mTLS。</p>
+     *
      * @return true if peer certificates are available.
      */
     boolean hasPeerCertificates();
 
     /**
      * Returns the used named group or {@code null} if none was used or if it can't be determined.
+     *
+     * <p>密钥交换使用的 named group（如 x25519、secp256r1）；无法确定时返回 {@code null}。</p>
      *
      * @return  the named group
      */

@@ -23,10 +23,14 @@ import java.util.List;
 /**
  * OpenSSL {@link ApplicationProtocolNegotiator} for NPN.
  *
+ * <p>基于 NPN（Next Protocol Negotiation）的 OpenSSL 应用层协议协商器；选择失败时取本地列表最后一项，
+ * 对端选中未知协议时仍接受。已废弃，请使用 {@link ApplicationProtocolConfig}。</p>
+ *
  * @deprecated use {@link ApplicationProtocolConfig}
  */
 @Deprecated
 public final class OpenSslNpnApplicationProtocolNegotiator implements OpenSslApplicationProtocolNegotiator {
+    /** 按优先级排列的 ALPN/NPN 协议名列表。 */
     private final List<String> protocols;
 
     public OpenSslNpnApplicationProtocolNegotiator(Iterable<String> protocols) {

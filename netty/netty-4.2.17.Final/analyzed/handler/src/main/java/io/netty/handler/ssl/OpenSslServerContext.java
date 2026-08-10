@@ -37,8 +37,12 @@ import static io.netty.util.internal.EmptyArrays.EMPTY_MAP_ENTRY;
  * A server-side {@link SslContext} which uses OpenSSL's SSL/TLS implementation.
  * <p>This class will use a finalizer to ensure native resources are automatically cleaned up. To avoid finalizers
  * and manually release the native memory see {@link ReferenceCountedOpenSslServerContext}.
+ *
+ * <p>基于 OpenSSL 的服务端 {@link SslContext}；构造时创建 {@link OpenSslServerSessionContext} 管理会话缓存与票据。
+ * 公开构造器已废弃，应使用 {@link SslContextBuilder}；失败时 {@code finally} 调用 {@link #release()}。</p>
  */
 public final class OpenSslServerContext extends OpenSslContext {
+    /** 服务端 SSL 会话缓存、票据与统计的上下文。 */
     private final OpenSslServerSessionContext sessionContext;
 
     /**
@@ -369,7 +373,7 @@ public final class OpenSslServerContext extends OpenSslContext {
         super(ciphers, cipherFilter, apn, SSL.SSL_MODE_SERVER, keyCertChain,
                 clientAuth, protocols, startTls, enableOcsp, null, resumptionController, options, credentials);
 
-        // Create a new SSL_CTX and configure it.
+        // 创建 SSL_CTX 并完成服务端会话上下文、KeyManager 等配置
         boolean success = false;
         boolean fallbackToJdkSignatureProviders = isJdkSignatureFallbackEnabled(options);
         try {

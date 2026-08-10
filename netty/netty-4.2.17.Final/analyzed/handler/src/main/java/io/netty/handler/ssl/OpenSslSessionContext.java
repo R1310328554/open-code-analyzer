@@ -29,19 +29,27 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * OpenSSL specific {@link SSLSessionContext} implementation.
+ *
+ * <p>OpenSSL {@link SSLSessionContext} 实现：挂接 {@link OpenSslSessionCache}、配置会话超时/容量、
+ * TLS session ticket 密钥，并在 {@link #destroy()} 时释放 {@link OpenSslKeyMaterialProvider}。</p>
  */
 public abstract class OpenSslSessionContext implements SSLSessionContext {
 
+    /** 本上下文 native 会话统计（SSL_CTX_sess_*）。 */
     private final OpenSslSessionStats stats;
 
     // The OpenSslKeyMaterialProvider is not really used by the OpenSslSessionContext but only be stored here
     // to make it easier to destroy it later because the ReferenceCountedOpenSslContext will hold a reference
     // to OpenSslSessionContext.
+    /** 随 SessionContext 一并销毁的密钥材料提供者（此处仅持有引用）。 */
     private final OpenSslKeyMaterialProvider provider;
 
+    /** 持有 native ctx 指针的 OpenSSL 上下文，防止 GC 提前释放 native 内存。 */
     final ReferenceCountedOpenSslContext context;
 
+    /** 外部会话缓存实现，通过 tcnative 回调与 OpenSSL 交互。 */
     private final OpenSslSessionCache sessionCache;
+    /** 服务端/客户端会话缓存模式位掩码（{@link SSL#SSL_SESS_CACHE_SERVER} 等）。 */
     private final long mask;
 
     // IMPORTANT: We take the OpenSslContext and not just the long (which points the native instance) to prevent
@@ -58,6 +66,7 @@ public abstract class OpenSslSessionContext implements SSLSessionContext {
         SSLContext.setSSLSessionCache(context.ctx, cache);
     }
 
+    /** 是否配置了 KeyManager（即 provider 非 null）。 */
     final boolean useKeyManager() {
         return provider != null;
     }
@@ -115,6 +124,8 @@ public abstract class OpenSslSessionContext implements SSLSessionContext {
 
     /**
      * Sets the SSL session ticket keys of this context.
+     *
+     * <p>设置 TLS session ticket 加密密钥；可传空数组由 native 库（如 BoringSSL）自动生成与轮换。</p>
      * @deprecated use {@link #setTicketKeys(OpenSslSessionTicketKey...)}.
      */
     @Deprecated
@@ -148,6 +159,8 @@ public abstract class OpenSslSessionContext implements SSLSessionContext {
      * If this is supported by the underlying native library should be checked in this case. For example
      * <a href="https://commondatastorage.googleapis.com/chromium-boringssl-docs/ssl.h.html#Session-tickets/">
      *     BoringSSL</a> is known to support this.
+     *
+     * <p>写入 session ticket 主密钥列表并清除 {@code SSL_OP_NO_TICKET}；空数组时仅启用 ticket 特性。</p>
      */
     public void setTicketKeys(OpenSslSessionTicketKey... keys) {
         ObjectUtil.checkNotNull(keys, "keys");
@@ -169,6 +182,8 @@ public abstract class OpenSslSessionContext implements SSLSessionContext {
 
     /**
      * Enable or disable caching of SSL sessions.
+     *
+     * <p>开关 SSL 会话缓存；关闭时清空 {@link OpenSslSessionCache}。</p>
      */
     public void setSessionCacheEnabled(boolean enabled) {
         long mode = enabled ? mask | SSL.SSL_SESS_CACHE_NO_INTERNAL_LOOKUP |
@@ -187,6 +202,8 @@ public abstract class OpenSslSessionContext implements SSLSessionContext {
 
     /**
      * Return {@code true} if caching of SSL sessions is enabled, {@code false} otherwise.
+     *
+     * <p>当前 {@code SSL_CTX} 是否启用了与本上下文 mask 匹配的会话缓存模式。</p>
      */
     public boolean isSessionCacheEnabled() {
         Lock readerLock = context.ctxLock.readLock();
@@ -200,6 +217,8 @@ public abstract class OpenSslSessionContext implements SSLSessionContext {
 
     /**
      * Returns the stats of this context.
+     *
+     * <p>返回 OpenSSL 会话统计封装 {@link OpenSslSessionStats}。</p>
      */
     public OpenSslSessionStats stats() {
         return stats;
@@ -207,6 +226,8 @@ public abstract class OpenSslSessionContext implements SSLSessionContext {
 
     /**
      * Remove the given {@link OpenSslInternalSession} from the cache, and so not re-use it for new connections.
+     *
+     * <p>从外部缓存移除指定会话 ID，后续连接不可复用。</p>
      */
     final void removeFromCache(OpenSslSessionId id) {
         sessionCache.removeSessionWithId(id);
@@ -220,6 +241,7 @@ public abstract class OpenSslSessionContext implements SSLSessionContext {
         return sessionCache.setSession(ssl, session, host, port);
     }
 
+    /** 销毁 provider 并清空全部缓存的 {@code SSL_SESSION*}。 */
     final void destroy() {
         if (provider != null) {
             provider.destroy();

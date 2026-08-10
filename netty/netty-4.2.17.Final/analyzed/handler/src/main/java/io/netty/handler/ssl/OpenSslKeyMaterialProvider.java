@@ -30,12 +30,18 @@ import static io.netty.handler.ssl.ReferenceCountedOpenSslContext.toBIO;
 
 /**
  * Provides {@link OpenSslKeyMaterial} for a given alias.
+ *
+ * <p>按 KeyManager alias 将证书链与私钥解析为 native {@link OpenSslKeyMaterial}；
+ * 内置单条目 {@link MaterialCache} 避免同一 alias 重复 PEM 解析，{@link #destroy()} 后拒绝新缓存。</p>
  */
 class OpenSslKeyMaterialProvider {
+    /** destroy 后写入 cache 的哨兵，CAS 循环直到清完旧条目。 */
     private static final MaterialCache SENTINEL_DESTROYED = new MaterialCache(null, null, null);
 
     private final X509KeyManager keyManager;
+    /** PKCS#8 私钥解密口令（可为 null）。 */
     private final String password;
+    /** 最近一次成功解析的 alias 材料缓存（至多一条）。 */
     private final AtomicReference<MaterialCache> cache;
 
     OpenSslKeyMaterialProvider(X509KeyManager keyManager, String password) {
@@ -44,6 +50,7 @@ class OpenSslKeyMaterialProvider {
         cache = new AtomicReference<>();
     }
 
+    /** 构造前校验证书链与私钥能否被 OpenSSL 解析；不可编码且允许 fallback 的私钥跳过校验。 */
     static void validateKeyMaterialSupported(X509Certificate[] keyCertChain, PrivateKey key, String keyPassword,
                                              boolean allowSignatureFallback)
             throws SSLException {
@@ -57,8 +64,7 @@ class OpenSslKeyMaterialProvider {
             return;
         }
 
-        // Skip validation for keys that don't expose encoded material
-        // These will be handled by the key fallback mechanism
+        // 无私钥 encoded 且启用签名 fallback 时，由 OpenSslPrivateKeyMethod 等路径处理
         if (key.getEncoded() == null && allowSignatureFallback) {
             return;
         }
@@ -106,6 +112,8 @@ class OpenSslKeyMaterialProvider {
 
     /**
      * Returns the underlying {@link X509KeyManager} that is used.
+     *
+     * <p>返回底层 {@link X509KeyManager}，供 {@link OpenSslKeyMaterialManager} 选择 alias。</p>
      */
     X509KeyManager keyManager() {
         return keyManager;
@@ -114,6 +122,8 @@ class OpenSslKeyMaterialProvider {
     /**
      * Returns the {@link OpenSslKeyMaterial} or {@code null} (if none) that should be used during the handshake by
      * OpenSSL.
+     *
+     * <p>按 alias 返回握手用材料；证书链为空返回 null。命中缓存且实例未变则复用 native 指针。</p>
      */
     OpenSslKeyMaterial chooseKeyMaterial(ByteBufAllocator allocator, String alias) throws Exception {
         X509Certificate[] certificates = keyManager.getCertificateChain(alias);
@@ -125,9 +135,9 @@ class OpenSslKeyMaterialProvider {
         MaterialCache materialCache = cache.get();
         if (materialCache != null && materialCache != SENTINEL_DESTROYED && materialCache.retain()) {
             if (materialCache.sameInstances(key, certificates)) {
-                return materialCache.material(); // We already called `retain()`
+                return materialCache.material(); // 已在 retain() 中增加引用计数
             } else {
-                // No match on this cache. Release and build a new one from scratch.
+                // 证书/私钥实例已变，释放旧缓存并重新解析
                 materialCache.release();
             }
         }
@@ -135,12 +145,12 @@ class OpenSslKeyMaterialProvider {
         OpenSslKeyMaterial keyMaterial = createKeyMaterial(allocator, certificates, key);
         materialCache = new MaterialCache(key, certificates, keyMaterial);
 
-        // Retain the new material to put in the cache, then replace and release the old material.
+        // 为新条目 retain 后放入 cache，并 release 被替换的旧条目
         materialCache.retain();
         MaterialCache oldMaterial = cache.getAndSet(materialCache);
         if (oldMaterial != null) {
             if (oldMaterial == SENTINEL_DESTROYED) {
-                destroyCache(); // Call `destroyCache()` instead of `destroy()` to avoid duplicating other effects.
+                destroyCache(); // 销毁过程中插入的新条目，走 destroyCache 避免重复释放
             } else {
                 oldMaterial.release();
             }
@@ -149,6 +159,7 @@ class OpenSslKeyMaterialProvider {
         return keyMaterial;
     }
 
+    /** 将 PEM 证书链与私钥解析为 native 指针并封装为 {@link OpenSslKeyMaterial}。 */
     private OpenSslKeyMaterial createKeyMaterial(
             ByteBufAllocator allocator, X509Certificate[] certificates, PrivateKey key)
             throws Exception {
@@ -170,8 +181,7 @@ class OpenSslKeyMaterialProvider {
                 keyMaterial = new DefaultOpenSslKeyMaterial(chain, pkey, certificates);
             }
 
-            // See the chain and pkey to 0 so we will not release it as the ownership was
-            // transferred to OpenSslKeyMaterial.
+            // 所有权已移交给 OpenSslKeyMaterial，此处置 0 避免 finally 重复 free
             chain = 0;
             pkey = 0;
             return keyMaterial;
@@ -190,11 +200,14 @@ class OpenSslKeyMaterialProvider {
 
     /**
      * Will be invoked once the provider should be destroyed.
+     *
+     * <p>上下文销毁时调用，清空并释放缓存的 native 材料。</p>
      */
     void destroy() {
         destroyCache();
     }
 
+    /** CAS 将 cache 设为 SENTINEL 并 release 所有已缓存材料。 */
     private void destroyCache() {
         MaterialCache oldMaterial;
         while ((oldMaterial = cache.getAndSet(SENTINEL_DESTROYED)) != SENTINEL_DESTROYED) {
@@ -204,6 +217,7 @@ class OpenSslKeyMaterialProvider {
         }
     }
 
+    /** 单 alias 材料缓存：按 PrivateKey/X509Certificate[] 引用相等判断是否可复用。 */
     private static final class MaterialCache {
         private final PrivateKey key;
         private final X509Certificate[] certs;

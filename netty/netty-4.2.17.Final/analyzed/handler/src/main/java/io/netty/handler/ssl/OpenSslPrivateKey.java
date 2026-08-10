@@ -24,8 +24,13 @@ import javax.security.auth.Destroyable;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
+/**
+ * <p>包装已解析的 native {@code EVP_PKEY*} 的 {@link PrivateKey} 实现：不提供 {@link #getEncoded()}，
+ * 引用计数归零时调用 {@code SSL.freePrivateKey}。可通过 {@link #newKeyMaterial} 与证书链组合为 {@link OpenSslKeyMaterial}。</p>
+ */
 final class OpenSslPrivateKey extends AbstractReferenceCounted implements PrivateKey {
 
+    /** native 私钥指针 {@code EVP_PKEY*}。 */
     private long privateKeyAddress;
 
     OpenSslPrivateKey(long privateKeyAddress) {
@@ -39,7 +44,7 @@ final class OpenSslPrivateKey extends AbstractReferenceCounted implements Privat
 
     @Override
     public String getFormat() {
-        // As we do not support encoding we should return null as stated in the javadocs of PrivateKey.
+        // 不支持编码导出，按 PrivateKey 规范返回 null
         return null;
     }
 
@@ -48,6 +53,7 @@ final class OpenSslPrivateKey extends AbstractReferenceCounted implements Privat
         return null;
     }
 
+    /** 返回 native 私钥地址；引用计数须 &gt; 0。 */
     long privateKeyAddress() {
         if (refCnt() <= 0) {
             throw new IllegalReferenceCountException();
@@ -113,16 +119,21 @@ final class OpenSslPrivateKey extends AbstractReferenceCounted implements Privat
      *
      * When the material is created we increment the reference count of the enclosing {@link OpenSslPrivateKey} and
      * decrement it again when the reference count of the {@link OpenSslKeyMaterial} reaches {@code 0}.
+     *
+     * <p>创建 {@link OpenSslKeyMaterial} 时 retain  enclosing 私钥，材料 release 至 0 时再 release 私钥。</p>
      */
     OpenSslKeyMaterial newKeyMaterial(long certificateChain, X509Certificate[] chain) {
         return new OpenSslPrivateKeyMaterial(certificateChain, chain);
     }
 
-    // Package-private for unit-test only
+    // 包内可见，仅供单元测试
+    /** 与 enclosing {@link OpenSslPrivateKey} 生命周期绑定的 {@link OpenSslKeyMaterial} 实现。 */
     final class OpenSslPrivateKeyMaterial extends AbstractReferenceCounted implements OpenSslKeyMaterial {
 
         // Package-private for unit-test only
+        /** native 证书链 {@code STACK_OF(X509)*}。 */
         long certificateChain;
+        /** Java 侧证书链副本，{@link #certificateChain()} 返回 clone。 */
         private final X509Certificate[] x509CertificateChain;
 
         OpenSslPrivateKeyMaterial(long certificateChain, X509Certificate[] x509CertificateChain) {

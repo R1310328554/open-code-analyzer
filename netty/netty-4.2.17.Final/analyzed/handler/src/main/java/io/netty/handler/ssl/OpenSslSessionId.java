@@ -21,12 +21,18 @@ import java.util.Arrays;
 
 /**
  * Represent the session ID used by an {@link OpenSslInternalSession}.
+ *
+ * <p>不可变会话 ID 包装：构造时接管 {@code byte[]} 所有权并缓存 {@link #hashCode()}，
+ * 用作 {@link OpenSslSessionCache} 的 LinkedHashMap 键。</p>
  */
 final class OpenSslSessionId {
 
+    /** 会话 ID 原始字节（内部持有，不对外暴露引用）。 */
     private final byte[] id;
+    /** 预计算的 hashCode，因 id 数组内容不再变化。 */
     private final int hashCode;
 
+    /** 空会话 ID 单例，用于未分配 ID 的场景。 */
     static final OpenSslSessionId NULL_ID = new OpenSslSessionId(EmptyArrays.EMPTY_BYTES);
 
     OpenSslSessionId(byte[] id) {
@@ -60,6 +66,7 @@ final class OpenSslSessionId {
         return hashCode;
     }
 
+    /** 返回 id 的防御性拷贝，供 {@link javax.net.ssl.SSLSession#getId()} 等 API 使用。 */
     byte[] cloneBytes() {
         return id.clone();
     }

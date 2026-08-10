@@ -23,6 +23,9 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * {@link OpenSslSessionContext} implementation which offers extra methods which are only useful for the server-side.
+ *
+ * <p>服务端会话上下文：在 {@link OpenSslSessionContext} 基础上支持
+ * {@link #setSessionIdContext(byte[])}，限定会话 ID 可复用的应用/主机范围。</p>
  */
 public final class OpenSslServerSessionContext extends OpenSslSessionContext {
     OpenSslServerSessionContext(ReferenceCountedOpenSslContext context, OpenSslKeyMaterialProvider provider) {
@@ -33,6 +36,8 @@ public final class OpenSslServerSessionContext extends OpenSslSessionContext {
      * Set the context within which session be reused (server side only)
      * See <a href="https://www.openssl.org/docs/ssl/SSL_CTX_set_session_id_context.html">
      *     man SSL_CTX_set_session_id_context</a>
+     *
+     * <p>设置会话 ID 上下文（任意二进制标识，如应用名+主机名），仅同上下文的服务端可复用会话缓存。</p>
      *
      * @param sidCtx can be any kind of binary data, it is therefore possible to use e.g. the name
      *               of the application and/or the hostname and/or service name

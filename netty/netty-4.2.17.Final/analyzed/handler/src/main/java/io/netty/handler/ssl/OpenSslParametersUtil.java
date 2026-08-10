@@ -24,9 +24,15 @@ import java.lang.invoke.MethodType;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 
+/**
+ * <p>通过 {@link MethodHandle} 访问 JDK 20+ {@link SSLParameters} 的 named groups API，
+ * 在较低 JDK 或反射失败时静默降级为 no-op。</p>
+ */
 final class OpenSslParametersUtil {
 
+    /** JDK 20+ {@code SSLParameters.getNamedGroups()}，不可用时为 null。 */
     private static final MethodHandle GET_NAMED_GROUPS;
+    /** JDK 20+ {@code SSLParameters.setNamedGroups(String[])}，不可用时为 null。 */
     private static final MethodHandle SET_NAMED_GROUPS;
 
     static {
@@ -43,6 +49,7 @@ final class OpenSslParametersUtil {
         SET_NAMED_GROUPS = setNamedGroups;
     }
 
+    /** 在特权块内解析虚拟方法句柄；SecurityException 等返回 null。 */
     private static MethodHandle obtainHandle(final MethodHandles.Lookup lookup,
                                              final String methodName, final MethodType type) {
         return AccessController.doPrivileged((PrivilegedAction<MethodHandle>) () -> {
@@ -56,6 +63,7 @@ final class OpenSslParametersUtil {
         });
     }
 
+    /** 读取 named groups；不支持或调用失败时返回 null。 */
     static String[] getNamesGroups(SSLParameters parameters) {
         if (GET_NAMED_GROUPS == null) {
             return null;
@@ -68,6 +76,7 @@ final class OpenSslParametersUtil {
         }
     }
 
+    /** 设置 named groups；不支持或调用失败时忽略。 */
     static void setNamesGroups(SSLParameters parameters, String[] names) {
         if (SET_NAMED_GROUPS == null) {
             return;

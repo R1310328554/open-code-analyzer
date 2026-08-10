@@ -28,6 +28,9 @@ import java.util.Arrays;
 /**
  * Manages key material for {@link OpenSslEngine}s and so set the right {@link PrivateKey}s and
  * {@link X509Certificate}s.
+ *
+ * <p>为 {@link ReferenceCountedOpenSslEngine} 选择并注入密钥材料：根据服务端 {@code authMethods} 或
+ * 客户端 {@code keyTypes}/issuer 调用 {@link X509KeyManager}，经 {@link OpenSslKeyMaterialProvider} 解析 PEM/native 指针。</p>
  */
 final class OpenSslKeyMaterialManager {
 
@@ -37,19 +40,23 @@ final class OpenSslKeyMaterialManager {
     // - https://android.googlesource.com/platform/external/
     //   conscrypt/+/master/src/main/java/org/conscrypt/SSLParametersImpl.java
     //
+    /** KeyManager {@code chooseServerAlias} 使用的 RSA 密钥类型字符串。 */
     static final String KEY_TYPE_RSA = "RSA";
     static final String KEY_TYPE_DH_RSA = "DH_RSA";
     static final String KEY_TYPE_EC = "EC";
     static final String KEY_TYPE_EC_EC = "EC_EC";
     static final String KEY_TYPE_EC_RSA = "EC_RSA";
 
+    /** authMethod 映射到位掩码，用于去重后依次尝试 alias。 */
     private static final int TYPE_RSA     = 1;      // 00001
     private static final int TYPE_DH_RSA  = 1 << 1; // 00010
     private static final int TYPE_EC      = 1 << 2; // 00100
     private static final int TYPE_EC_EC   = 1 << 3; // 01000
     private static final int TYPE_EC_RSA  = 1 << 4; // 10000
 
+    /** 从 KeyStore/KeyManager 解析 native 密钥材料的提供者。 */
     private final OpenSslKeyMaterialProvider provider;
+    /** 是否配置了临时 DH 密钥（影响匿名 DH/ECDH 是否必须证书）。 */
     private final boolean hasTmpDhKeys;
 
     OpenSslKeyMaterialManager(OpenSslKeyMaterialProvider provider, boolean hasTmpDhKeys) {
@@ -57,15 +64,14 @@ final class OpenSslKeyMaterialManager {
         this.hasTmpDhKeys = hasTmpDhKeys;
     }
 
+    /** 服务端：按 OpenSSL 提供的 authMethods 选择 alias 并设置密钥材料。 */
     void setKeyMaterialServerSide(ReferenceCountedOpenSslEngine engine) throws SSLException {
         String[] authMethods = engine.authMethods();
         if (authMethods.length == 0) {
             throw new SSLHandshakeException("Unable to find key material");
         }
 
-        // authMethods may contain duplicates or may result in the same type
-        // but call chooseServerAlias(...) may be expensive. So let's ensure
-        // we filter out duplicates.
+        // authMethods 可能重复或映射到同一 key type；chooseServerAlias 可能较慢，用位掩码去重。
 
         int seenTypes = 0;
         for (String authMethod : authMethods) {
@@ -86,12 +92,13 @@ final class OpenSslKeyMaterialManager {
 
         if (hasTmpDhKeys && authMethods.length == 1 &&
                 ("DH_anon".equals(authMethods[0]) || "ECDH_anon".equals(authMethods[0]))) {
-            return; // These auth methods don't require certificates.
+            return; // 匿名 DH/ECDH 无需本地证书。
         }
         throw new SSLHandshakeException("Unable to find key material for auth method(s): "
                 + Arrays.toString(authMethods));
     }
 
+    /** 将 TLS ClientHello 中的 auth method 字符串映射为内部类型位。 */
     private static int resolveKeyTypeBit(String authMethod) {
         switch (authMethod) {
             case "RSA":
@@ -122,10 +129,11 @@ final class OpenSslKeyMaterialManager {
         }
     }
 
+    /** 客户端：根据 CertificateRequest 的 keyTypes/issuer 选择客户端证书 alias。 */
     void setKeyMaterialClientSide(ReferenceCountedOpenSslEngine engine, String[] keyTypes,
                                   X500Principal[] issuer) throws SSLException {
         String alias = chooseClientAlias(engine, keyTypes, issuer);
-        // Only try to set the keymaterial if we have a match. This is also consistent with what OpenJDK does:
+        // 仅在有匹配 alias 时设置材料，与 OpenJDK CertificateRequest 行为一致：
         // https://hg.openjdk.java.net/jdk/jdk11/file/76072a077ee1/
         // src/java.base/share/classes/sun/security/ssl/CertificateRequest.java#l362
         if (alias != null) {
@@ -133,6 +141,7 @@ final class OpenSslKeyMaterialManager {
         }
     }
 
+    /** 解析 alias 对应材料并交给 engine；finally 中 release 临时 retain。 */
     private void setKeyMaterial(ReferenceCountedOpenSslEngine engine, String alias) throws SSLException {
         OpenSslKeyMaterial keyMaterial = null;
         try {

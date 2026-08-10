@@ -22,9 +22,13 @@ import javax.net.ssl.SSLEngine;
 
 /**
  * Allow to customize private key signing / decrypting (when using RSA). Only supported when using BoringSSL atm.
+ *
+ * <p>自定义私钥签名与 RSA 解密回调，供 OpenSSL 在无法直接使用 {@code EVP_PKEY} 时调用；
+ * 当前主要支持 BoringSSL。算法常量与 tcnative {@link SSLPrivateKeyMethod} 对齐。</p>
  */
 @UnstableApi
 public interface OpenSslPrivateKeyMethod {
+    /** RSA PKCS#1 SHA-1 签名算法 ID。 */
     int SSL_SIGN_RSA_PKCS1_SHA1 = SSLPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA1;
     int SSL_SIGN_RSA_PKCS1_SHA256 = SSLPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA256;
     int SSL_SIGN_RSA_PKCS1_SHA384 = SSLPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA384;
@@ -42,6 +46,8 @@ public interface OpenSslPrivateKeyMethod {
     /**
      * Signs the input with the given key and returns the signed bytes.
      *
+     * <p>使用指定签名算法对握手 digest 签名；返回值不得为 {@code null}。</p>
+     *
      * @param engine                the {@link SSLEngine}
      * @param signatureAlgorithm    the algorithm to use for signing
      * @param input                 the digest itself
@@ -52,6 +58,8 @@ public interface OpenSslPrivateKeyMethod {
 
     /**
      * Decrypts the input with the given key and returns the decrypted bytes.
+     *
+     * <p>RSA 私钥解密（如 TLS 密钥交换中的 encrypted premaster secret）。</p>
      *
      * @param engine                the {@link SSLEngine}
      * @param input                 the input which should be decrypted
