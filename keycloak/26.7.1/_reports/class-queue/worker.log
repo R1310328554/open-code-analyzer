@@ -523,3 +523,18 @@
 2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/WorkflowScheduleRepresentation.java wave18a userprofile config + workflows reps
 2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/WorkflowStateRepresentation.java wave18a userprofile config + workflows reps
 2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/WorkflowStepRepresentation.java wave18a userprofile config + workflows reps
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/AbstractSdJwtClaim.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/ArrayDisclosure.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/ClaimVerifier.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/DecoyArrayElement.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/DecoyClaim.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/DecoyEntry.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/Disclosable.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/DisclosureRedList.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/DisclosureSpec.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/IssuerSignedJWT.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/IssuerSignedJwtVerificationOpts.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/JwkParsingUtils.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/JwsToken.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwt.java wave18b sdjwt core classes
+2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwtArrayElement.java wave18b sdjwt core classes
