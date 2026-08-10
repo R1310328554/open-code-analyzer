@@ -19,22 +19,19 @@ package com.alibaba.nacos.api.lock.remote;
 import java.io.Serializable;
 
 /**
- * lock operation.
+ * 分布式锁远程操作类型枚举。
+ *
+ * <p>标识 {@link com.alibaba.nacos.api.lock.remote.request.LockOperationRequest} 要执行的动作。</p>
+ *
  * @author 985492783@qq.com
  */
 public enum LockOperationEnum implements Serializable {
     
-    /**
-     * Acquire.
-     */
+    /** 获取锁（加锁）。 */
     ACQUIRE,
-    /**
-     * Release.
-     */
+    /** 释放锁（解锁）。 */
     RELEASE,
-    /**
-     * Expire.
-     */
+    /** 锁过期（服务端主动清理）。 */
     EXPIRE;
     
     private static final long serialVersionUID = -241044344531890549L;

@@ -21,7 +21,9 @@ import com.alibaba.nacos.api.lock.remote.AbstractLockRequest;
 import com.alibaba.nacos.api.lock.remote.LockOperationEnum;
 
 /**
- * grpc acquire lock request.
+ * 分布式锁操作 gRPC 请求。
+ *
+ * <p>携带 {@link LockInstance} 与 {@link LockOperationEnum}，向服务端发起加锁、解锁或过期处理。</p>
  *
  * @author 985492783@qq.com
  * @description AcquireLockRequest
@@ -29,22 +31,28 @@ import com.alibaba.nacos.api.lock.remote.LockOperationEnum;
  */
 public class LockOperationRequest extends AbstractLockRequest {
     
+    /** 待操作的锁实例信息。 */
     private LockInstance lockInstance;
     
+    /** 锁操作类型（获取、释放或过期）。 */
     private LockOperationEnum lockOperationEnum;
     
+    /** 获取锁实例。 */
     public LockInstance getLockInstance() {
         return lockInstance;
     }
     
+    /** 设置锁实例。 */
     public void setLockInstance(LockInstance lockInstance) {
         this.lockInstance = lockInstance;
     }
     
+    /** 获取锁操作类型。 */
     public LockOperationEnum getLockOperationEnum() {
         return lockOperationEnum;
     }
     
+    /** 设置锁操作类型。 */
     public void setLockOperationEnum(LockOperationEnum lockOperationEnum) {
         this.lockOperationEnum = lockOperationEnum;
     }

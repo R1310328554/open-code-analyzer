@@ -21,7 +21,9 @@ import com.alibaba.nacos.api.remote.request.Request;
 import static com.alibaba.nacos.api.common.Constants.Lock.LOCK_MODULE;
 
 /**
- * lock grpc request.
+ * 分布式锁 gRPC 远程请求抽象基类。
+ *
+ * <p>固定返回锁模块标识 {@code LOCK_MODULE}，供 {@link Request} 路由分发。</p>
  *
  * @author 985492783@qq.com
  * @description LockRequest
@@ -29,6 +31,7 @@ import static com.alibaba.nacos.api.common.Constants.Lock.LOCK_MODULE;
  */
 public abstract class AbstractLockRequest extends Request {
     
+    /** 返回锁模块名称，用于远程请求路由。 */
     @Override
     public String getModule() {
         return LOCK_MODULE;

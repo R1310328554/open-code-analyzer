@@ -19,38 +19,49 @@ package com.alibaba.nacos.api.model.response;
 import java.util.Map;
 
 /**
- * Nacos client connection information.
+ * Nacos 客户端连接信息。
+ *
+ * <p>汇总连接追踪状态、客户端能力表及 {@link ConnectionMetaInfo} 元数据，供运维与诊断接口返回。</p>
  *
  * @author Nacos
  */
 public class ConnectionInfo {
     
+    /** 是否已启用连接追踪。 */
     private boolean traced = false;
     
+    /** 客户端能力协商表（能力名 → 是否支持）。 */
     private Map<String, Boolean> abilityTable;
     
+    /** 连接元数据详情。 */
     private ConnectionMetaInfo metaInfo;
     
+    /** 是否已启用连接追踪。 */
     public boolean isTraced() {
         return traced;
     }
     
+    /** 设置连接追踪开关。 */
     public void setTraced(boolean traced) {
         this.traced = traced;
     }
     
+    /** 设置客户端能力表。 */
     public void setAbilityTable(Map<String, Boolean> abilityTable) {
         this.abilityTable = abilityTable;
     }
     
+    /** 获取客户端能力表。 */
     public Map<String, Boolean> getAbilityTable() {
         return this.abilityTable;
     }
     
+    /** 获取连接元数据。 */
     public ConnectionMetaInfo getMetaInfo() {
         return metaInfo;
     }
     
+    /** 设置连接元数据。 */
     public void setMetaInfo(ConnectionMetaInfo metaInfo) {
         this.metaInfo = metaInfo;
     }

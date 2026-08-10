@@ -21,16 +21,18 @@ import com.alibaba.nacos.api.exception.api.NacosApiException;
 import java.io.Serializable;
 
 /**
- * Nacos HTTP Form API Object.
+ * Nacos HTTP 表单 API 对象接口。
+ *
+ * <p>控制台与 Open API 的 Form 参数对象实现本接口，在提交前调用 {@link #validate()} 校验参数合法性。</p>
  *
  * @author xiweng.yy
  */
 public interface NacosForm extends Serializable {
     
     /**
-     * check form parameters while valid.
+     * 校验表单参数合法性。
      *
-     * @throws NacosApiException when form parameters is invalid.
+     * @throws NacosApiException 参数不合法时抛出
      */
     void validate() throws NacosApiException;
 }

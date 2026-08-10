@@ -20,7 +20,9 @@ import com.alibaba.nacos.api.remote.response.Response;
 import com.alibaba.nacos.api.remote.response.ResponseCode;
 
 /**
- * grpc acquire lock response.
+ * 分布式锁操作 gRPC 响应。
+ *
+ * <p>封装加锁/解锁结果或失败原因，继承 {@link Response} 通用响应字段。</p>
  *
  * @author 985492783@qq.com
  * @description AcquireLockResponse
@@ -28,20 +30,28 @@ import com.alibaba.nacos.api.remote.response.ResponseCode;
  */
 public class LockOperationResponse extends Response {
     
+    /** 操作结果（通常为 {@link Boolean}）。 */
     private Object result;
     
+    /** 无参构造，供序列化或框架实例化使用。 */
     public LockOperationResponse() {
         
     }
     
+    /**
+     * 以布尔结果构造响应。
+     *
+     * @param result 操作是否成功
+     */
     public LockOperationResponse(Boolean result) {
         this.result = result;
     }
     
     /**
-     * create success response.
-     * @param result result
-     * @return LockOperationResponse
+     * 创建成功响应。
+     *
+     * @param result 操作结果
+     * @return 锁操作成功响应
      */
     public static LockOperationResponse success(Boolean result) {
         LockOperationResponse response = new LockOperationResponse(result);
@@ -49,9 +59,10 @@ public class LockOperationResponse extends Response {
     }
     
     /**
-     * create fail response.
-     * @param message message
-     * @return LockOperationResponse
+     * 创建失败响应。
+     *
+     * @param message 失败原因描述
+     * @return 锁操作失败响应
      */
     public static LockOperationResponse fail(String message) {
         LockOperationResponse response = new LockOperationResponse(false);
@@ -60,10 +71,12 @@ public class LockOperationResponse extends Response {
         return response;
     }
     
+    /** 获取操作结果。 */
     public Object getResult() {
         return result;
     }
     
+    /** 设置操作结果。 */
     public void setResult(Object result) {
         this.result = result;
     }
