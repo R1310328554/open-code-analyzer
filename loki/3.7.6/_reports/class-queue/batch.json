@@ -15,23 +15,8 @@
     "pkg/ruler/storage/wal/series.go",
     "pkg/ruler/storage/wal/util.go",
     "pkg/ruler/storage/wal/wal.go",
-    "pkg/ruler/util/relabel.go",
-    "pkg/runtime/config.go",
-    "pkg/scheduler/limits/definitions.go",
-    "pkg/scheduler/scheduler.go",
-    "pkg/scheduler/schedulerpb/custom.go",
-    "pkg/scheduler/schedulerpb/scheduler.pb.go",
-    "pkg/scratch/filesystem.go",
-    "pkg/scratch/memory.go",
-    "pkg/scratch/metrics.go",
-    "pkg/scratch/scratch.go",
-    "pkg/server/internal_server.go",
-    "pkg/storage/async_store.go",
-    "pkg/storage/batch.go",
-    "pkg/storage/bloom/v1/archive.go",
-    "pkg/storage/bloom/v1/ast_extractor.go",
-    "pkg/storage/bloom/v1/block.go"
+    "pkg/ruler/util/relabel.go"
   ],
   "remaining_pending": 412,
-  "done": 1110
+  "done": 1125
 }
