@@ -15,23 +15,8 @@
     "transport/src/main/java/io/netty/bootstrap/ServerBootstrapConfig.java",
     "transport/src/main/java/io/netty/channel/AbstractChannel.java",
     "transport/src/main/java/io/netty/channel/AbstractChannelHandlerContext.java",
-    "transport/src/main/java/io/netty/channel/AbstractCoalescingBufferQueue.java",
-    "transport/src/main/java/io/netty/channel/AbstractEventLoop.java",
-    "transport/src/main/java/io/netty/channel/AbstractEventLoopGroup.java",
-    "transport/src/main/java/io/netty/channel/AbstractServerChannel.java",
-    "transport/src/main/java/io/netty/channel/AdaptiveRecvByteBufAllocator.java",
-    "transport/src/main/java/io/netty/channel/AddressedEnvelope.java",
-    "transport/src/main/java/io/netty/channel/Channel.java",
-    "transport/src/main/java/io/netty/channel/ChannelConfig.java",
-    "transport/src/main/java/io/netty/channel/ChannelDuplexHandler.java",
-    "transport/src/main/java/io/netty/channel/ChannelException.java",
-    "transport/src/main/java/io/netty/channel/ChannelFactory.java",
-    "transport/src/main/java/io/netty/channel/ChannelFlushPromiseNotifier.java",
-    "transport/src/main/java/io/netty/channel/ChannelFuture.java",
-    "transport/src/main/java/io/netty/channel/ChannelFutureListener.java",
-    "transport/src/main/java/io/netty/channel/ChannelHandler.java",
-    "transport/src/main/java/io/netty/channel/ChannelHandlerAdapter.java"
+    "transport/src/main/java/io/netty/channel/AbstractCoalescingBufferQueue.java"
   ],
   "remaining_pending": 368,
-  "done": 1530
+  "done": 1545
 }
